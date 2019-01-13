@@ -10,7 +10,6 @@ import (
 // local to this package
 type loadSingleNode func(db *sqlx.DB) (stmt *sqlx.Stmt, err error)
 
-// we can codegen this so it's fine...
 func loadNode(id string, entity interface{}, sqlQuery loadSingleNode) error {
 	if entity == nil {
 		// TODO handle this better later. maybe have custom error
@@ -38,6 +37,12 @@ func loadNode(id string, entity interface{}, sqlQuery loadSingleNode) error {
 		var user User
 		err = stmt.Get(&user, id)
 		*v = *(&user)
+
+	// we can codegen this so it's fine...
+	case *Contact:
+		var contact Contact
+		err = stmt.Get(&contact, id)
+		*v = *(&contact)
 	default:
 		panic(fmt.Sprint("unknown type for entity", entity))
 	}
