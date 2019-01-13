@@ -11,7 +11,7 @@ import (
 type loadSingleNode func(db *sqlx.DB) (stmt *sqlx.Stmt, err error)
 
 // we can codegen this so it's fine...
-func loadNode(id string, entity interface{}, sqlQuery loadSingleNode) (interface{}, error) {
+func loadNode(id string, entity interface{}, sqlQuery loadSingleNode) error {
 	if entity == nil {
 		// TODO handle this better later. maybe have custom error
 		// return nil, err
@@ -21,7 +21,7 @@ func loadNode(id string, entity interface{}, sqlQuery loadSingleNode) (interface
 	db, err := data.DBConn()
 	if err != nil {
 		fmt.Println("error connecting to db ", err)
-		return nil, err
+		return err
 	}
 
 	defer db.Close()
@@ -29,31 +29,20 @@ func loadNode(id string, entity interface{}, sqlQuery loadSingleNode) (interface
 	stmt, err := sqlQuery(db)
 	if err != nil {
 		fmt.Println(err)
-		return nil, err
+		return err
 	}
 	defer stmt.Close()
 
-	var output interface{}
-	output = nil
-
 	switch v := entity.(type) {
 	case *User:
-		fmt.Println("*User")
 		var user User
 		err = stmt.Get(&user, id)
-		fmt.Println("scanned user", user)
-		output = user
-	case User:
-		fmt.Println("User")
-		var user User
-		err = stmt.Get(user, id)
-		entity = user
-
+		*v = *(&user)
 	default:
-		panic(fmt.Sprint("unknown type", v))
+		panic(fmt.Sprint("unknown type for entity", entity))
 	}
 	if err != nil {
 		fmt.Println(err)
 	}
-	return output, err
+	return err
 }
