@@ -32,13 +32,13 @@ func loadNode(id string, entity interface{}, sqlQuery loadSingleNode) error {
 	}
 	defer stmt.Close()
 
+	// Update the entity we're loading so the call site has the right data
+	// we can eventually codegen this so it's fine...
 	switch v := entity.(type) {
 	case *User:
 		var user User
 		err = stmt.Get(&user, id)
 		*v = *(&user)
-
-	// we can codegen this so it's fine...
 	case *Contact:
 		var contact Contact
 		err = stmt.Get(&contact, id)
