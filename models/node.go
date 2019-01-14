@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type node struct {
+type Node struct {
 	ID        string
 	CreatedAt time.Time
 	UpdatedAt time.Time
