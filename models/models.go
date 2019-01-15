@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/jarvis/data"
 )
 
@@ -16,10 +15,9 @@ import (
 type insertdata struct {
 	columns []string
 	values  []interface{}
-	newUUID string
 }
 
-func getFieldsAndValuesOfStruct(value reflect.Value) insertdata {
+func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata {
 	valueType := value.Type()
 
 	fieldCount := value.NumField()
@@ -31,6 +29,15 @@ func getFieldsAndValuesOfStruct(value reflect.Value) insertdata {
 	// add id column and value
 	columns = append(columns, "id")
 	values = append(values, newUUID)
+
+	// TODO could eventually set time fields
+	// make this a flag indicating if new object being created
+	if setIDField {
+		fbn := value.FieldByName("ID")
+		if fbn.IsValid() {
+			fbn.Set(reflect.ValueOf(newUUID))
+		}
+	}
 
 	for i := 0; i < fieldCount; i++ {
 		field := value.Field(i)
@@ -58,20 +65,17 @@ func getFieldsAndValuesOfStruct(value reflect.Value) insertdata {
 	columns = append(columns, "created_at", "updated_at")
 	values = append(values, time.Now(), time.Now())
 
-	return insertdata{columns, values, newUUID}
+	return insertdata{columns, values}
 }
 
-func getFieldsAndValues(obj interface{}) insertdata {
+func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 	value := reflect.ValueOf(obj)
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
 	}
 
-	return getFieldsAndValuesOfStruct(value)
+	return getFieldsAndValuesOfStruct(value, setIDField)
 }
-
-// local to this package
-type loadSingleNode func(db *sqlx.DB) (stmt *sqlx.Stmt, err error)
 
 func loadNode(id string, entity interface{}) error {
 	if entity == nil {
@@ -88,7 +92,7 @@ func loadNode(id string, entity interface{}) error {
 
 	defer db.Close()
 
-	insertdata := getFieldsAndValues(entity)
+	insertdata := getFieldsAndValues(entity, false)
 	// remove the time pieces. can't scan into embedded objects
 	columns := insertdata.columns[:len(insertdata.columns)-2]
 
@@ -124,4 +128,53 @@ func loadNode(id string, entity interface{}) error {
 		fmt.Println(err)
 	}
 	return err
+}
+
+func createNode(entity interface{}) error {
+	if entity == nil {
+		// same as loadNode in terms of handling this better
+		panic("nil entity passed to loadNode")
+	}
+	insertdata := getFieldsAndValues(entity, true)
+
+	colsString := strings.Join(insertdata.columns, ",")
+	var vals []string
+	for i := range insertdata.values {
+		vals = append(vals, fmt.Sprintf("$%d", i+1))
+	}
+	valsString := strings.Join(vals, ",")
+
+	// tablename needs to be stored somewhere or passed somehow
+	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s)", "users", colsString, valsString)
+	fmt.Println(computedQuery)
+
+	db, err := data.DBConn()
+	if err != nil {
+		fmt.Println("error connecting to db")
+		return err
+	}
+
+	defer db.Close()
+
+	stmt, err := db.Preparex(computedQuery)
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	res, err := stmt.Exec(insertdata.values...)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	rowCount, err := res.RowsAffected()
+
+	if err != nil || rowCount == 0 {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }
