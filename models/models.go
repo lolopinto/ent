@@ -77,7 +77,7 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 	return getFieldsAndValuesOfStruct(value, setIDField)
 }
 
-func loadNode(id string, entity interface{}) error {
+func loadNode(id string, entity interface{}, tableName string) error {
 	if entity == nil {
 		// TODO handle this better later. maybe have custom error
 		// return nil, err
@@ -98,9 +98,7 @@ func loadNode(id string, entity interface{}) error {
 
 	colsString := strings.Join(columns, ",")
 
-	// same as CREATE. name needs to be stored somewhere
-	// tablename needs to be stored somewhere
-	computedQuery := fmt.Sprintf("SELECT %s FROM %s WHERE id = $1", colsString, "users")
+	computedQuery := fmt.Sprintf("SELECT %s FROM %s WHERE id = $1", colsString, tableName)
 	fmt.Println(computedQuery)
 
 	stmt, err := db.Preparex(computedQuery)
@@ -130,7 +128,7 @@ func loadNode(id string, entity interface{}) error {
 	return err
 }
 
-func createNode(entity interface{}) error {
+func createNode(entity interface{}, tableName string) error {
 	if entity == nil {
 		// same as loadNode in terms of handling this better
 		panic("nil entity passed to loadNode")
@@ -144,8 +142,7 @@ func createNode(entity interface{}) error {
 	}
 	valsString := strings.Join(vals, ",")
 
-	// tablename needs to be stored somewhere or passed somehow
-	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s)", "users", colsString, valsString)
+	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s)", tableName, colsString, valsString)
 	fmt.Println(computedQuery)
 
 	db, err := data.DBConn()
