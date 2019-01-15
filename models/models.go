@@ -108,20 +108,7 @@ func loadNode(id string, entity interface{}, tableName string) error {
 	}
 	defer stmt.Close()
 
-	// Update the entity we're loading so the call site has the right data
-	// we can eventually codegen this so it's fine...
-	switch v := entity.(type) {
-	case *User:
-		var user User
-		err = stmt.Get(&user, id)
-		*v = *(&user)
-	case *Contact:
-		var contact Contact
-		err = stmt.Get(&contact, id)
-		*v = *(&contact)
-	default:
-		panic(fmt.Sprint("unknown type for entity", entity))
-	}
+	err = stmt.QueryRowx(id).StructScan(entity)
 	if err != nil {
 		fmt.Println(err)
 	}
