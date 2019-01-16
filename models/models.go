@@ -10,6 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lolopinto/jarvis/data"
+
+	_ "github.com/lib/pq" //driver not used
 )
 
 // todo deal with struct tags
@@ -150,7 +152,7 @@ func loadNodes(id string, nodes interface{}, colName string, tableName string) e
 	// get the base type from the slice
 	base := reflectx.Deref(slice.Elem())
 	// todo: confirm this is what I think it is
-	fmt.Println(base)
+	// fmt.Println(base)
 
 	// get a zero value of this
 	value = reflect.New(base)
