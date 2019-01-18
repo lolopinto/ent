@@ -21,6 +21,83 @@ type insertdata struct {
 	values  []interface{}
 }
 
+/**
+* Returns the list of columns which will be affected for a SELECT statement
+ */
+func (insertData insertdata) getColumnsString() string {
+	// remove the time pieces. can't scan into embedded objects
+	columns := insertData.columns[:len(insertData.columns)-2]
+
+	return strings.Join(columns, ", ")
+}
+
+/**
+* Returns the list of columns which will be affected for a SELECT statement
+ */
+func (insertData insertdata) getColumnsStringForInsert() string {
+	return strings.Join(insertData.columns, ", ")
+}
+
+/*
+* For an INSERT or UPDATE string, return the string for values
+* @see getValuesDataForInsert() and getValuesDataForUpdate
+ */
+func getValsString(values []interface{}) string {
+	var vals []string
+	for i := range values {
+		vals = append(vals, fmt.Sprintf("$%d", i+1))
+	}
+	return strings.Join(vals, ", ")
+}
+
+/*
+* Returns the string used in an INSERT statement for the values in the format:
+* INSERT INTO table_name (cols_string) VALUES(vals_string)
+ */
+func (insertData insertdata) getValuesDataForInsert() ([]interface{}, string) {
+	valsString := getValsString(insertData.values)
+	return insertData.values, valsString
+}
+
+/**
+* Returns a tuple of the following:
+*
+* We're not updating the ID and created_at columns
+*
+* values to be updated and
+* a comma-separated string of column to positional bindvars which will be affected for an UPDATE statement
+*
+*	The 2nd item returned is (col_name = $1, col_name2 = $2) etc.
+ */
+func (insertData insertdata) getValuesDataForUpdate() ([]interface{}, string) {
+	columns := insertData.columns
+	// remove the id field. don't update that when updating a node
+	columns = columns[1:]
+	// remove the created_at field which is the last one
+	columns = columns[:len(columns)-1]
+
+	values := insertData.values
+	// remove the id field. don't update that when updating a node
+	values = values[1:]
+	// remove the created_at field which is the last one
+	values = values[:len(values)-1]
+
+	if len(values) != len(columns) {
+		panic("columns and values not of equal length for update")
+	}
+
+	var vals []string
+	for i, column := range columns {
+		setter := fmt.Sprintf("%s = $%d", column, i+1)
+		vals = append(vals, setter)
+	}
+
+	valsString := strings.Join(vals, ", ")
+	return values, valsString
+}
+
+// todo: make this smarter. for example, it shouldn't go through the
+// process of reading the values from the struct/entity for reads
 func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata {
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
@@ -73,7 +150,9 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 		columns = append(columns, column)
 		values = append(values, field.Interface())
 	}
-	columns = append(columns, "created_at", "updated_at")
+	// put updated_at before created_at so it's easier to modify later
+	// for UPDATE. we don't want to change created_at field on UPDATE
+	columns = append(columns, "updated_at", "created_at")
 	values = append(values, time.Now(), time.Now())
 
 	return insertdata{columns, values}
@@ -82,13 +161,6 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 	value := reflect.ValueOf(obj)
 	return getFieldsAndValuesOfStruct(value, setIDField)
-}
-
-func getColumnsString(insertData insertdata) string {
-	// remove the time pieces. can't scan into embedded objects
-	columns := insertData.columns[:len(insertData.columns)-2]
-
-	return strings.Join(columns, ",")
 }
 
 func loadNode(id string, entity interface{}, tableName string) error {
@@ -105,7 +177,7 @@ func loadNode(id string, entity interface{}, tableName string) error {
 	defer db.Close()
 
 	insertData := getFieldsAndValues(entity, false)
-	colsString := getColumnsString(insertData)
+	colsString := insertData.getColumnsString()
 
 	computedQuery := fmt.Sprintf("SELECT %s FROM %s WHERE id = $1", colsString, tableName)
 	fmt.Println(computedQuery)
@@ -158,7 +230,7 @@ func loadNodes(id string, nodes interface{}, colName string, tableName string) e
 	value = reflect.New(base)
 	// really need to rename this haha
 	insertData := getFieldsAndValuesOfStruct(value, false)
-	colsString := getColumnsString(insertData)
+	colsString := insertData.getColumnsString()
 
 	computedQuery := fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", colsString, tableName, colName)
 	fmt.Println(computedQuery)
@@ -199,18 +271,17 @@ func createNode(entity interface{}, tableName string) error {
 		// same as loadNode in terms of handling this better
 		panic("nil entity passed to loadNode")
 	}
-	insertdata := getFieldsAndValues(entity, true)
+	insertData := getFieldsAndValues(entity, true)
+	colsString := insertData.getColumnsStringForInsert()
+	values, valsString := insertData.getValuesDataForInsert()
 
-	colsString := strings.Join(insertdata.columns, ",")
-	var vals []string
-	for i := range insertdata.values {
-		vals = append(vals, fmt.Sprintf("$%d", i+1))
-	}
-	valsString := strings.Join(vals, ",")
-
-	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s)", tableName, colsString, valsString)
+	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES( %s)", tableName, colsString, valsString)
 	fmt.Println(computedQuery)
 
+	return changeNode(computedQuery, values)
+}
+
+func changeNode(computedQuery string, values []interface{}) error {
 	db, err := data.DBConn()
 	if err != nil {
 		fmt.Println("error connecting to db")
@@ -226,7 +297,7 @@ func createNode(entity interface{}, tableName string) error {
 		return err
 	}
 
-	res, err := stmt.Exec(insertdata.values...)
+	res, err := stmt.Exec(values...)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -240,4 +311,47 @@ func createNode(entity interface{}, tableName string) error {
 		return err
 	}
 	return nil
+}
+
+// TODO should prevent updating relational fields maybe?
+func updateNode(entity interface{}, tableName string) error {
+	if entity == nil {
+		// same as loadNode in terms of handling this better
+		panic("nil entity passed to loadNode")
+	}
+
+	insertData := getFieldsAndValues(entity, false)
+
+	values, valsString := insertData.getValuesDataForUpdate()
+
+	id := findID(entity)
+	computedQuery := fmt.Sprintf(
+		"UPDATE %s SET %s WHERE id = '%s'",
+		tableName,
+		valsString,
+		id,
+	)
+	fmt.Println(computedQuery)
+
+	return changeNode(computedQuery, values)
+}
+
+// this is a hack because i'm lazy and don't want to go update getFieldsAndValuesOfStruct()
+// to do the right thing for now. now that I know what's going on here, can update everything
+func findID(entity interface{}) string {
+	value := reflect.ValueOf(entity).Elem()
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Field(i)
+		fieldType := field.Type()
+
+		if field.Kind() == reflect.Struct {
+			for j := 0; j < field.NumField(); j++ {
+				field2 := field.Field(j)
+				if fieldType.Field(j).Name == "ID" {
+					return field2.Interface().(string)
+				}
+			}
+		}
+	}
+	panic("Could not find ID field")
 }
