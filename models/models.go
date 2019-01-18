@@ -269,7 +269,7 @@ func loadNodes(id string, nodes interface{}, colName string, tableName string) e
 func createNode(entity interface{}, tableName string) error {
 	if entity == nil {
 		// same as loadNode in terms of handling this better
-		panic("nil entity passed to loadNode")
+		return errors.New("nil pointer passed to createNode")
 	}
 	insertData := getFieldsAndValues(entity, true)
 	colsString := insertData.getColumnsStringForInsert()
@@ -317,7 +317,8 @@ func changeNode(computedQuery string, values []interface{}) error {
 func updateNode(entity interface{}, tableName string) error {
 	if entity == nil {
 		// same as loadNode in terms of handling this better
-		panic("nil entity passed to loadNode")
+		return errors.New("nil pointer passed to updateNode")
+
 	}
 
 	insertData := getFieldsAndValues(entity, false)
@@ -354,4 +355,35 @@ func findID(entity interface{}) string {
 		}
 	}
 	panic("Could not find ID field")
+}
+
+func deleteNode(entity interface{}, tableName string) error {
+	if entity == nil {
+		return errors.New("nil pointer passed to deleteNode")
+	}
+
+	db, err := data.DBConn()
+	if err != nil {
+		fmt.Println("error connecting to db")
+		return err
+	}
+
+	defer db.Close()
+
+	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", tableName)
+	stmt, err := db.Preparex(query)
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	id := findID(entity)
+	_, err = stmt.Exec(id)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+	return nil
 }
