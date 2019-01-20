@@ -28,26 +28,14 @@ func (insertData insertdata) getColumnsString() string {
 	// remove the time pieces. can't scan into embedded objects
 	columns := insertData.columns[:len(insertData.columns)-2]
 
-	return strings.Join(columns, ", ")
+	return getColumnsString(columns)
 }
 
 /**
 * Returns the list of columns which will be affected for a SELECT statement
  */
 func (insertData insertdata) getColumnsStringForInsert() string {
-	return strings.Join(insertData.columns, ", ")
-}
-
-/*
-* For an INSERT or UPDATE string, return the string for values
-* @see getValuesDataForInsert() and getValuesDataForUpdate
- */
-func getValsString(values []interface{}) string {
-	var vals []string
-	for i := range values {
-		vals = append(vals, fmt.Sprintf("$%d", i+1))
-	}
-	return strings.Join(vals, ", ")
+	return getColumnsString(insertData.columns)
 }
 
 /*
@@ -94,6 +82,25 @@ func (insertData insertdata) getValuesDataForUpdate() ([]interface{}, string) {
 
 	valsString := strings.Join(vals, ", ")
 	return values, valsString
+}
+
+/*
+* For an INSERT or UPDATE string, return the string for values
+* @see getValuesDataForInsert() and getValuesDataForUpdate
+ */
+func getValsString(values []interface{}) string {
+	var vals []string
+	for i := range values {
+		vals = append(vals, fmt.Sprintf("$%d", i+1))
+	}
+	return strings.Join(vals, ", ")
+}
+
+/*
+ * Given a list of columns, returns a comma separated list for use in a SQL statement
+ */
+func getColumnsString(columns []string) string {
+	return strings.Join(columns, ", ")
 }
 
 // todo: make this smarter. for example, it shouldn't go through the
@@ -386,4 +393,66 @@ func deleteNode(entity interface{}, tableName string) error {
 	}
 	defer stmt.Close()
 	return nil
+}
+
+// EdgeOptions is a struct that can be used to configure an edge.
+// Time refers to the time associated with the edge. If not specified, defaults to current time
+// Data refers to whatever information that needs to be stored/associated with the edge
+// It's up to 255 characters
+type EdgeOptions struct {
+	Time time.Time
+	Data string
+}
+
+func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions) error {
+	var ok bool
+	var ent1, ent2 Entity
+	ent1, ok = entity1.(Entity)
+	if !ok {
+		return errors.New("entity1 is not an entity")
+	}
+	ent2, ok = entity2.(Entity)
+	if !ok {
+		return errors.New("entity2 is not an entity")
+	}
+
+	id1 := findID(entity1)
+	id2 := findID(entity2)
+
+	cols := []string{
+		"id1",
+		"id1_type",
+		"edge_type",
+		"id2",
+		"id2_type",
+		"time",
+		"data",
+	}
+
+	vals := []interface{}{
+		id1,
+		ent1.GetType(),
+		edgeType,
+		id2,
+		ent2.GetType(),
+	}
+	// add time as needed
+	if edgeOptions.Time.IsZero() {
+		vals = append(vals, time.Now())
+	} else {
+		vals = append(vals, edgeOptions.Time)
+	}
+	// zero value of data works for us. no check needed
+	vals = append(vals, edgeOptions.Data)
+
+	query := fmt.Sprintf(
+		"INSERT into %s (%s) VALUES(%s)", "edges_info",
+		getColumnsString(cols),
+		getValsString(vals),
+	)
+
+	fmt.Println(query)
+
+	// todo rename changeNode
+	return changeNode(query, vals)
 }
