@@ -285,10 +285,14 @@ func createNode(entity interface{}, tableName string) error {
 	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES( %s)", tableName, colsString, valsString)
 	fmt.Println(computedQuery)
 
-	return changeNode(computedQuery, values)
+	return performWrite(computedQuery, values, true)
 }
 
-func changeNode(computedQuery string, values []interface{}) error {
+/*
+ * performs a write (INSERT, UPDATE, DELETE statement) given the SQL statement
+ * and values to be updated in the database
+ */
+func performWrite(query string, values []interface{}, shouldCheckAffectedRows bool) error {
 	db, err := data.DBConn()
 	if err != nil {
 		fmt.Println("error connecting to db")
@@ -297,7 +301,7 @@ func changeNode(computedQuery string, values []interface{}) error {
 
 	defer db.Close()
 
-	stmt, err := db.Preparex(computedQuery)
+	stmt, err := db.Preparex(query)
 
 	if err != nil {
 		fmt.Println(err)
@@ -311,11 +315,12 @@ func changeNode(computedQuery string, values []interface{}) error {
 	}
 	defer stmt.Close()
 
-	rowCount, err := res.RowsAffected()
-
-	if err != nil || rowCount == 0 {
-		fmt.Println(err)
-		return err
+	if shouldCheckAffectedRows {
+		rowCount, err := res.RowsAffected()
+		if err != nil || rowCount == 0 {
+			fmt.Println(err, rowCount)
+			return err
+		}
 	}
 	return nil
 }
@@ -341,7 +346,7 @@ func updateNode(entity interface{}, tableName string) error {
 	)
 	fmt.Println(computedQuery)
 
-	return changeNode(computedQuery, values)
+	return performWrite(computedQuery, values, true)
 }
 
 // this is a hack because i'm lazy and don't want to go update getFieldsAndValuesOfStruct()
@@ -369,30 +374,10 @@ func deleteNode(entity interface{}, tableName string) error {
 		return errors.New("nil pointer passed to deleteNode")
 	}
 
-	db, err := data.DBConn()
-	if err != nil {
-		fmt.Println("error connecting to db")
-		return err
-	}
-
-	defer db.Close()
-
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", tableName)
-	stmt, err := db.Preparex(query)
-
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
 	id := findID(entity)
-	_, err = stmt.Exec(id)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer stmt.Close()
-	return nil
+
+	return performWrite(query, []interface{}{id}, false)
 }
 
 // EdgeOptions is a struct that can be used to configure an edge.
@@ -453,6 +438,5 @@ func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOp
 
 	fmt.Println(query)
 
-	// todo rename changeNode
-	return changeNode(query, vals)
+	return performWrite(query, vals, true)
 }
