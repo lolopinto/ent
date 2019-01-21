@@ -270,7 +270,12 @@ func loadNodes(id string, nodes interface{}, colName string, tableName string) e
 		direct.Set(reflect.Append(direct, reflect.Indirect(entity)))
 	}
 
-	return nil
+	err = rows.Err()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return err
 }
 
 func createNode(entity interface{}, tableName string) error {
