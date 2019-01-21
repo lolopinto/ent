@@ -285,14 +285,14 @@ func createNode(entity interface{}, tableName string) error {
 	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES( %s)", tableName, colsString, valsString)
 	fmt.Println(computedQuery)
 
-	return performWrite(computedQuery, values, true)
+	return performWrite(computedQuery, values)
 }
 
 /*
  * performs a write (INSERT, UPDATE, DELETE statement) given the SQL statement
  * and values to be updated in the database
  */
-func performWrite(query string, values []interface{}, shouldCheckAffectedRows bool) error {
+func performWrite(query string, values []interface{}) error {
 	db, err := data.DBConn()
 	if err != nil {
 		fmt.Println("error connecting to db")
@@ -315,12 +315,12 @@ func performWrite(query string, values []interface{}, shouldCheckAffectedRows bo
 	}
 	defer stmt.Close()
 
-	if shouldCheckAffectedRows {
-		rowCount, err := res.RowsAffected()
-		if err != nil || rowCount == 0 {
-			fmt.Println(err, rowCount)
-			return err
-		}
+	// TODO may need to eventually make this optional but for now
+	// let's assume all writes should affect at least one row
+	rowCount, err := res.RowsAffected()
+	if err != nil || rowCount == 0 {
+		fmt.Println(err, rowCount)
+		return err
 	}
 	return nil
 }
@@ -346,7 +346,7 @@ func updateNode(entity interface{}, tableName string) error {
 	)
 	fmt.Println(computedQuery)
 
-	return performWrite(computedQuery, values, true)
+	return performWrite(computedQuery, values)
 }
 
 // this is a hack because i'm lazy and don't want to go update getFieldsAndValuesOfStruct()
@@ -377,7 +377,7 @@ func deleteNode(entity interface{}, tableName string) error {
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", tableName)
 	id := findID(entity)
 
-	return performWrite(query, []interface{}{id}, false)
+	return performWrite(query, []interface{}{id})
 }
 
 // EdgeOptions is a struct that can be used to configure an edge.
@@ -389,16 +389,24 @@ type EdgeOptions struct {
 	Data string
 }
 
-func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions) error {
+func getEdgeEntities(entity1 interface{}, entity2 interface{}) (Entity, Entity, error) {
 	var ok bool
 	var ent1, ent2 Entity
 	ent1, ok = entity1.(Entity)
 	if !ok {
-		return errors.New("entity1 is not an entity")
+		return nil, nil, errors.New("entity1 is not an entity")
 	}
 	ent2, ok = entity2.(Entity)
 	if !ok {
-		return errors.New("entity2 is not an entity")
+		return nil, nil, errors.New("entity2 is not an entity")
+	}
+	return ent1, ent2, nil
+}
+
+func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions) error {
+	ent1, ent2, err := getEdgeEntities(entity1, entity2)
+	if err != nil {
+		return err
 	}
 
 	id1 := findID(entity1)
@@ -438,5 +446,26 @@ func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOp
 
 	fmt.Println(query)
 
-	return performWrite(query, vals, true)
+	return performWrite(query, vals)
+}
+
+func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) error {
+	_, _, err := getEdgeEntities(entity1, entity2)
+	if err != nil {
+		return err
+	}
+
+	id1 := findID(entity1)
+	id2 := findID(entity2)
+
+	query := fmt.Sprintf("DELETE FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3", "edges_info")
+
+	vals := []interface{}{
+		id1,
+		edgeType,
+		id2,
+	}
+
+	fmt.Println(query)
+	return performWrite(query, vals)
 }
