@@ -10,8 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lolopinto/jarvis/data"
-
-	_ "github.com/lib/pq" //driver not used
 )
 
 // todo deal with struct tags
@@ -174,20 +172,20 @@ func loadNode(id string, entity interface{}, tableName string) error {
 	if entity == nil {
 		return errors.New("nil pointer passed to loadNode")
 	}
+
 	// ok, so now we need a way to map from struct to fields
-	db, err := data.DBConn()
-	if err != nil {
-		fmt.Println("error connecting to db ", err)
-		return err
-	}
-
-	defer db.Close()
-
 	insertData := getFieldsAndValues(entity, false)
 	colsString := insertData.getColumnsString()
 
 	computedQuery := fmt.Sprintf("SELECT %s FROM %s WHERE id = $1", colsString, tableName)
 	fmt.Println(computedQuery)
+
+	db := data.DBConn()
+	if db == nil {
+		err := errors.New("error getting a valid db connection")
+		fmt.Println(err)
+		return err
+	}
 
 	stmt, err := db.Preparex(computedQuery)
 	if err != nil {
@@ -205,12 +203,6 @@ func loadNode(id string, entity interface{}, tableName string) error {
 
 // this borrows from/learns from scanAll in sqlx library
 func loadNodes(id string, nodes interface{}, colName string, tableName string) error {
-	db, err := data.DBConn()
-	if err != nil {
-		fmt.Println("error connecting to db ", err)
-		return err
-	}
-
 	value := reflect.ValueOf(nodes)
 	direct := reflect.Indirect(value)
 
@@ -239,10 +231,15 @@ func loadNodes(id string, nodes interface{}, colName string, tableName string) e
 	insertData := getFieldsAndValuesOfStruct(value, false)
 	colsString := insertData.getColumnsString()
 
+	db := data.DBConn()
+	if db == nil {
+		err := errors.New("error getting a valid db connection")
+		fmt.Println(err)
+		return err
+	}
+
 	computedQuery := fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", colsString, tableName, colName)
 	fmt.Println(computedQuery)
-
-	defer db.Close()
 
 	stmt, err := db.Preparex(computedQuery)
 	if err != nil {
@@ -298,13 +295,12 @@ func createNode(entity interface{}, tableName string) error {
  * and values to be updated in the database
  */
 func performWrite(query string, values []interface{}) error {
-	db, err := data.DBConn()
-	if err != nil {
-		fmt.Println("error connecting to db")
+	db := data.DBConn()
+	if db == nil {
+		err := errors.New("error getting a valid db connection")
+		fmt.Println(err)
 		return err
 	}
-
-	defer db.Close()
 
 	stmt, err := db.Preparex(query)
 
