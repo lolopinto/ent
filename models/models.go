@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
+
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lolopinto/jarvis/data"
@@ -275,7 +277,7 @@ func loadNodes(id string, nodes interface{}, colName string, tableName string) e
 	return err
 }
 
-func createNode(entity interface{}, tableName string) error {
+func createNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
 	if entity == nil {
 		// same as loadNode in terms of handling this better
 		return errors.New("nil pointer passed to createNode")
@@ -287,14 +289,18 @@ func createNode(entity interface{}, tableName string) error {
 	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES( %s)", tableName, colsString, valsString)
 	fmt.Println(computedQuery)
 
-	return performWrite(computedQuery, values)
+	return performWrite(computedQuery, values, tx)
+}
+
+func createNode(entity interface{}, tableName string) error {
+	return createNodeInTransaction(entity, tableName, nil)
 }
 
 /*
  * performs a write (INSERT, UPDATE, DELETE statement) given the SQL statement
  * and values to be updated in the database
  */
-func performWrite(query string, values []interface{}) error {
+func performWrite(query string, values []interface{}, tx *sqlx.Tx) error {
 	db := data.DBConn()
 	if db == nil {
 		err := errors.New("error getting a valid db connection")
@@ -302,7 +308,14 @@ func performWrite(query string, values []interface{}) error {
 		return err
 	}
 
-	stmt, err := db.Preparex(query)
+	var stmt *sqlx.Stmt
+	var err error
+	// handle if in transcation or not.
+	if tx == nil {
+		stmt, err = db.Preparex(query)
+	} else {
+		stmt, err = tx.Preparex(query)
+	}
 
 	if err != nil {
 		fmt.Println(err)
@@ -326,12 +339,10 @@ func performWrite(query string, values []interface{}) error {
 	return nil
 }
 
-// TODO should prevent updating relational fields maybe?
-func updateNode(entity interface{}, tableName string) error {
+func updateNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
 	if entity == nil {
 		// same as loadNode in terms of handling this better
 		return errors.New("nil pointer passed to updateNode")
-
 	}
 
 	insertData := getFieldsAndValues(entity, false)
@@ -347,7 +358,12 @@ func updateNode(entity interface{}, tableName string) error {
 	)
 	fmt.Println(computedQuery)
 
-	return performWrite(computedQuery, values)
+	return performWrite(computedQuery, values, tx)
+}
+
+// TODO should prevent updating relational fields maybe?
+func updateNode(entity interface{}, tableName string) error {
+	return updateNodeInTransaction(entity, tableName, nil)
 }
 
 // this is a hack because i'm lazy and don't want to go update getFieldsAndValuesOfStruct()
@@ -370,7 +386,7 @@ func findID(entity interface{}) string {
 	panic("Could not find ID field")
 }
 
-func deleteNode(entity interface{}, tableName string) error {
+func deleteNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
 	if entity == nil {
 		return errors.New("nil pointer passed to deleteNode")
 	}
@@ -378,7 +394,11 @@ func deleteNode(entity interface{}, tableName string) error {
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", tableName)
 	id := findID(entity)
 
-	return performWrite(query, []interface{}{id})
+	return performWrite(query, []interface{}{id}, tx)
+}
+
+func deleteNode(entity interface{}, tableName string) error {
+	return deleteNodeInTransaction(entity, tableName, nil)
 }
 
 // EdgeOptions is a struct that can be used to configure an edge.
@@ -404,7 +424,7 @@ func getEdgeEntities(entity1 interface{}, entity2 interface{}) (Entity, Entity, 
 	return ent1, ent2, nil
 }
 
-func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions) error {
+func addEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions, tx *sqlx.Tx) error {
 	ent1, ent2, err := getEdgeEntities(entity1, entity2)
 	if err != nil {
 		return err
@@ -447,10 +467,14 @@ func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOp
 
 	fmt.Println(query)
 
-	return performWrite(query, vals)
+	return performWrite(query, vals, tx)
 }
 
-func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) error {
+func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions) error {
+	return addEdgeInTransaction(entity1, entity1, edgeType, edgeOptions, nil)
+}
+
+func deleteEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType EdgeType, tx *sqlx.Tx) error {
 	_, _, err := getEdgeEntities(entity1, entity2)
 	if err != nil {
 		return err
@@ -468,5 +492,115 @@ func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) err
 	}
 
 	fmt.Println(query)
-	return performWrite(query, vals)
+	return performWrite(query, vals, tx)
+}
+
+func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) error {
+	return deleteEdgeInTransaction(entity1, entity1, edgeType, nil)
+}
+
+type WriteOperation string
+
+const (
+	InsertOperation WriteOperation = "insert"
+	UpdateOperation WriteOperation = "update"
+	DeleteOperation WriteOperation = "delete"
+)
+
+// TODO come up with a sensible method that can be used here
+// we really need a marker interface here (for now)
+type DataOperation interface {
+	ValidOperation() bool
+}
+
+type NodeOperation struct {
+	entity    interface{}
+	tableName string
+	operation WriteOperation
+}
+
+func (NodeOperation) ValidOperation() bool {
+	return true
+}
+
+type EdgeOperation struct {
+	entity1     interface{}
+	entity2     interface{}
+	edgeType    EdgeType
+	edgeOptions EdgeOptions // nullable for deletes?
+	operation   WriteOperation
+}
+
+func (EdgeOperation) ValidOperation() bool {
+	return true
+}
+
+// todo a plan for creation and deletion of nodes and edges
+// Todo eventually make this more complicated
+type QueryPlan struct {
+	//Nodes
+}
+
+func performNodeOperation(operation NodeOperation, tx *sqlx.Tx) error {
+	switch operation.operation {
+	case InsertOperation:
+		return createNodeInTransaction(operation.entity, operation.tableName, tx)
+	case UpdateOperation:
+		return updateNodeInTransaction(operation.entity, operation.tableName, tx)
+	case DeleteOperation:
+		return deleteNodeInTransaction(operation.entity, operation.tableName, tx)
+	default:
+		return fmt.Errorf("unsupported node operation %v passed to performAllOperations", operation)
+	}
+}
+
+func performEdgeOperation(operation EdgeOperation, tx *sqlx.Tx) error {
+	switch operation.operation {
+	case InsertOperation:
+		return addEdgeInTransaction(
+			operation.entity1,
+			operation.entity2,
+			operation.edgeType,
+			operation.edgeOptions,
+			tx,
+		)
+	case DeleteOperation:
+		return deleteEdgeInTransaction(
+			operation.entity1,
+			operation.entity2,
+			operation.edgeType,
+			tx,
+		)
+	default:
+		return fmt.Errorf("unsupported edge operation %v passed to performAllOperations", operation)
+	}
+}
+
+func performAllOperations(operations []DataOperation) error {
+	db := data.DBConn()
+	tx, err := db.Beginx()
+	if err != nil {
+		fmt.Println("error creating transaction", err)
+		return err
+	}
+
+	for _, operation := range operations {
+		switch v := operation.(type) {
+		case NodeOperation:
+			err = performNodeOperation(v, tx)
+		case EdgeOperation:
+			err = performEdgeOperation(v, tx)
+		default:
+			err = fmt.Errorf("invalid operation type %v passed to performAllOperations", v)
+		}
+
+		if err != nil {
+			fmt.Println("error during transaction", err)
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+	return nil
 }
