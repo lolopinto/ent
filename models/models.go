@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"reflect"
@@ -604,3 +605,92 @@ func performAllOperations(operations []DataOperation) error {
 	tx.Commit()
 	return nil
 }
+
+func loadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
+	db := data.DBConn()
+	if db == nil {
+		err := errors.New("error getting a valid db connection")
+		fmt.Println(err)
+		return nil, err
+	}
+
+	// TODO: eventually add support for complex queries
+	// ORDER BY time DESC default
+	// we need offset, limit eventually
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 ORDER BY time DESC", "edges_info")
+	fmt.Println(query)
+
+	stmt, err := db.Preparex(query)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Queryx(id, edgeType)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var edges []Edge
+	for rows.Next() {
+		var edge Edge
+		err = rows.StructScan(&edge)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		edges = append(edges, edge)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return edges, nil
+}
+
+// checks if an edge exists between 2 ids
+// don't have a use-case now but will in the future
+func loadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
+	db := data.DBConn()
+	if db == nil {
+		err := errors.New("error getting a valid db connection")
+		fmt.Println(err)
+		return nil, err
+	}
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3", "edges_info")
+	fmt.Println(query)
+
+	stmt, err := db.Preparex(query)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var edge Edge
+
+	err = stmt.QueryRowx(id, edgeType, id2).StructScan(&edge)
+
+	// nil state. return zero value of Edge for now. maybe come up with better
+	// way of doing this in the future
+	if err == sql.ErrNoRows {
+		fmt.Println("no rows", err)
+		return &Edge{}, err
+	}
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	// TODO handle no edge. what's the correct error type here?
+	return &edge, nil
+}
+
+//func loadNodesByType
