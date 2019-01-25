@@ -204,49 +204,6 @@ func loadNode(id string, entity interface{}, tableName string) error {
 	return err
 }
 
-/*
-type loadNodesQueryInfo struct {
-	insertData   insertdata    // todo really need to rename this lol
-	baseNodeType reflect.Type  // base type of each node being created here
-	destination  reflect.Value // "nodes" destination
-}
-
-// TODO kill
-func constructLoadNodesQueryInfo(nodes interface{}) (*loadNodesQueryInfo, error) {
-	value := reflect.ValueOf(nodes)
-	direct := reflect.Indirect(value)
-
-	if value.Kind() != reflect.Ptr {
-		return nil, errors.New("must pass a pointer to loadNodes")
-	}
-	if value.IsNil() {
-		return nil, errors.New("nil pointer passed to loadNodes")
-	}
-
-	// get the slice from the pointer
-	slice := reflectx.Deref(value.Type())
-	if slice.Kind() != reflect.Slice {
-		fmt.Println("sadness")
-		return nil, errors.New("sadness with error in loadNodes")
-	}
-
-	// get the base type from the slice
-	base := reflectx.Deref(slice.Elem())
-	// todo: confirm this is what I think it is
-	// fmt.Println(base)
-
-	// get a zero value of this
-	value = reflect.New(base)
-	// really need to rename this haha
-	insertData := getFieldsAndValuesOfStruct(value, false)
-	return &loadNodesQueryInfo{
-		insertData:   insertData,
-		baseNodeType: base,
-		destination:  direct,
-	}, nil
-}
-*/
-
 type loadNodesQuery func(insertData insertdata) (string, []interface{}, error)
 
 // this borrows from/learns from scanAll in sqlx library
