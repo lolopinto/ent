@@ -1,0 +1,45 @@
+# https://gqlgen.com/config/
+type User {
+   id: ID!
+   firstName: String!
+   lastName: String!
+   emailAddress: String!
+   contacts: [Contact]
+}
+
+type Contact {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  user: User!
+  contactEmails: [ContactEmail]
+  contactDates: [ContactDate]
+  contactPhoneNumbers: [ContactPhoneNumber]
+}
+
+type ContactPhoneNumber {
+  id: ID!
+  phoneNumber: String!
+  label: String
+  contact: Contact!
+}
+
+type ContactEmail {
+  id: ID!
+  emailAddress: String!
+  label: String
+  contact: Contact!
+}
+
+type ContactDate {
+  id: ID!
+  month: Int!
+  day: Int!
+  year: Int!
+  label: String
+  contact: Contact!
+}
+
+type Query {
+  user(id: ID): User
+}
