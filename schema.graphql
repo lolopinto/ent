@@ -1,10 +1,11 @@
 # https://gqlgen.com/config/
 type User {
-   id: ID!
-   firstName: String!
-   lastName: String!
-   emailAddress: String!
-   contacts: [Contact]
+  id: ID!
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  contacts: [Contact!]
+  notes: [Note!]
 }
 
 type Contact {
@@ -12,9 +13,9 @@ type Contact {
   firstName: String!
   lastName: String!
   user: User!
-  contactEmails: [ContactEmail]
-  contactDates: [ContactDate]
-  contactPhoneNumbers: [ContactPhoneNumber]
+  contactEmails: [ContactEmail!]
+  contactDates: [ContactDate!]
+  contactPhoneNumbers: [ContactPhoneNumber!]
 }
 
 type ContactPhoneNumber {
@@ -38,6 +39,12 @@ type ContactDate {
   year: Int!
   label: String
   contact: Contact!
+}
+
+type Note {
+  id: ID!
+  owner: User!
+  contentsDelta: String!
 }
 
 type Query {
