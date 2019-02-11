@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/lolopinto/jarvis/models"
 )
@@ -35,7 +36,6 @@ type contactResolver struct{ *Resolver }
 func (r *contactResolver) User(ctx context.Context, obj *models.Contact) (models.User, error) {
 	return models.LoadUser(obj.UserID)
 }
-
 func (r *contactResolver) ContactEmails(ctx context.Context, obj *models.Contact) ([]models.ContactEmail, error) {
 	return obj.GetContactEmails()
 }
@@ -82,6 +82,34 @@ type userResolver struct{ *Resolver }
 func (r *userResolver) Contacts(ctx context.Context, obj *models.User) ([]models.Contact, error) {
 	return obj.GetContacts()
 }
+func (r *userResolver) ContactsConnection(ctx context.Context, obj *models.User, first *int, after *string) (ContactsConnection, error) {
+	contacts, err := obj.GetContacts()
+	if err != nil {
+		return ContactsConnection{}, err
+	}
+	return ContactsConnection{
+		Nodes:      contacts,
+		TotalCount: len(contacts),
+		Edges:      make([]ContactsEdge, len(contacts)), // TODO these 2
+		PageInfo:   PageInfo{},
+	}, nil
+}
 func (r *userResolver) Notes(ctx context.Context, obj *models.User) ([]models.Note, error) {
 	return obj.GetNotes()
+}
+func (r *userResolver) NotesConnection(ctx context.Context, obj *models.User, first *int, after *string) (NotesConnection, error) {
+	notes, err := obj.GetNotes()
+	if err != nil {
+		return NotesConnection{}, err
+	}
+	// TODO this.
+	// TODO also have to build connections in a way that we don't load
+	// the notes until it's needed
+	fmt.Println(ctx)
+	return NotesConnection{
+		Nodes:      notes,
+		TotalCount: len(notes),
+		Edges:      make([]NotesEdge, len(notes)), // TODO these 2
+		PageInfo:   PageInfo{},
+	}, nil
 }

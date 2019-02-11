@@ -1,14 +1,63 @@
 # https://gqlgen.com/config/
-type User {
+
+interface Node {
+  id: ID!
+}
+
+type PageInfo {
+  startCursor: ID!
+  endCursor: ID!
+  hasNextPage: Boolean!
+}
+
+interface Edge {
+  cursor: ID!
+  node: Node!
+}
+
+interface Connection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [Edge!]
+  nodes: [Node!]
+}
+
+type NotesEdge implements Edge {
+  cursor: ID!
+  node: Note!
+}
+
+type NotesConnection implements Connection {
+  totalCount: Int!
+  edges: [NotesEdge!]
+  nodes: [Note!]
+  pageInfo: PageInfo!
+}
+
+type ContactsEdge implements Edge {
+  cursor: ID!
+  node: Contact!
+}
+
+type ContactsConnection implements Connection {
+  totalCount: Int!
+  edges: [ContactsEdge!]
+  nodes: [Contact!]
+  pageInfo: PageInfo!
+}
+
+type User implements Node {
   id: ID!
   firstName: String!
   lastName: String!
   emailAddress: String!
   contacts: [Contact!]
+  contactsConnection(first: Int, after: ID): ContactsConnection!
   notes: [Note!]
+  notesConnection(first: Int, after: ID): NotesConnection!
 }
 
-type Contact {
+type Contact implements Node {
   id: ID!
   firstName: String!
   lastName: String!
@@ -18,21 +67,21 @@ type Contact {
   contactPhoneNumbers: [ContactPhoneNumber!]
 }
 
-type ContactPhoneNumber {
+type ContactPhoneNumber implements Node {
   id: ID!
   phoneNumber: String!
   label: String
   contact: Contact!
 }
 
-type ContactEmail {
+type ContactEmail implements Node {
   id: ID!
   emailAddress: String!
   label: String
   contact: Contact!
 }
 
-type ContactDate {
+type ContactDate implements Node {
   id: ID!
   month: Int!
   day: Int!
@@ -41,7 +90,7 @@ type ContactDate {
   contact: Contact!
 }
 
-type Note {
+type Note implements Node {
   id: ID!
   owner: User!
   contentsDelta: String!

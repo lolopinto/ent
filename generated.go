@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 
@@ -78,10 +79,40 @@ type ComplexityRoot struct {
 		Contact     func(childComplexity int) int
 	}
 
+	ContactsConnection struct {
+		TotalCount func(childComplexity int) int
+		Edges      func(childComplexity int) int
+		Nodes      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+	}
+
+	ContactsEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Note struct {
 		Id            func(childComplexity int) int
 		Owner         func(childComplexity int) int
 		ContentsDelta func(childComplexity int) int
+	}
+
+	NotesConnection struct {
+		TotalCount func(childComplexity int) int
+		Edges      func(childComplexity int) int
+		Nodes      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+	}
+
+	NotesEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	PageInfo struct {
+		StartCursor func(childComplexity int) int
+		EndCursor   func(childComplexity int) int
+		HasNextPage func(childComplexity int) int
 	}
 
 	Query struct {
@@ -89,12 +120,14 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Id           func(childComplexity int) int
-		FirstName    func(childComplexity int) int
-		LastName     func(childComplexity int) int
-		EmailAddress func(childComplexity int) int
-		Contacts     func(childComplexity int) int
-		Notes        func(childComplexity int) int
+		Id                 func(childComplexity int) int
+		FirstName          func(childComplexity int) int
+		LastName           func(childComplexity int) int
+		EmailAddress       func(childComplexity int) int
+		Contacts           func(childComplexity int) int
+		ContactsConnection func(childComplexity int, first *int, after *string) int
+		Notes              func(childComplexity int) int
+		NotesConnection    func(childComplexity int, first *int, after *string) int
 	}
 }
 
@@ -121,7 +154,9 @@ type QueryResolver interface {
 }
 type UserResolver interface {
 	Contacts(ctx context.Context, obj *models.User) ([]models.Contact, error)
+	ContactsConnection(ctx context.Context, obj *models.User, first *int, after *string) (ContactsConnection, error)
 	Notes(ctx context.Context, obj *models.User) ([]models.Note, error)
+	NotesConnection(ctx context.Context, obj *models.User, first *int, after *string) (NotesConnection, error)
 }
 
 func field_Query_user_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
@@ -155,6 +190,74 @@ func field_Query___type_args(rawArgs map[string]interface{}) (map[string]interfa
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+
+}
+
+func field_User_contactsConnection_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		var err error
+		var ptr1 int
+		if tmp != nil {
+			ptr1, err = graphql.UnmarshalInt(tmp)
+			arg0 = &ptr1
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["after"]; ok {
+		var err error
+		var ptr1 string
+		if tmp != nil {
+			ptr1, err = graphql.UnmarshalID(tmp)
+			arg1 = &ptr1
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg1
+	return args, nil
+
+}
+
+func field_User_notesConnection_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		var err error
+		var ptr1 int
+		if tmp != nil {
+			ptr1, err = graphql.UnmarshalInt(tmp)
+			arg0 = &ptr1
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["after"]; ok {
+		var err error
+		var ptr1 string
+		if tmp != nil {
+			ptr1, err = graphql.UnmarshalID(tmp)
+			arg1 = &ptr1
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg1
 	return args, nil
 
 }
@@ -349,6 +452,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ContactPhoneNumber.Contact(childComplexity), true
 
+	case "ContactsConnection.totalCount":
+		if e.complexity.ContactsConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.ContactsConnection.TotalCount(childComplexity), true
+
+	case "ContactsConnection.edges":
+		if e.complexity.ContactsConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.ContactsConnection.Edges(childComplexity), true
+
+	case "ContactsConnection.nodes":
+		if e.complexity.ContactsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.ContactsConnection.Nodes(childComplexity), true
+
+	case "ContactsConnection.pageInfo":
+		if e.complexity.ContactsConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.ContactsConnection.PageInfo(childComplexity), true
+
+	case "ContactsEdge.cursor":
+		if e.complexity.ContactsEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.ContactsEdge.Cursor(childComplexity), true
+
+	case "ContactsEdge.node":
+		if e.complexity.ContactsEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.ContactsEdge.Node(childComplexity), true
+
 	case "Note.id":
 		if e.complexity.Note.Id == nil {
 			break
@@ -363,12 +508,75 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Note.Owner(childComplexity), true
 
-	case "Note.ContentsDelta":
+	case "Note.contentsDelta":
 		if e.complexity.Note.ContentsDelta == nil {
 			break
 		}
 
 		return e.complexity.Note.ContentsDelta(childComplexity), true
+
+	case "NotesConnection.totalCount":
+		if e.complexity.NotesConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.NotesConnection.TotalCount(childComplexity), true
+
+	case "NotesConnection.edges":
+		if e.complexity.NotesConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.NotesConnection.Edges(childComplexity), true
+
+	case "NotesConnection.nodes":
+		if e.complexity.NotesConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.NotesConnection.Nodes(childComplexity), true
+
+	case "NotesConnection.pageInfo":
+		if e.complexity.NotesConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.NotesConnection.PageInfo(childComplexity), true
+
+	case "NotesEdge.cursor":
+		if e.complexity.NotesEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.NotesEdge.Cursor(childComplexity), true
+
+	case "NotesEdge.node":
+		if e.complexity.NotesEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.NotesEdge.Node(childComplexity), true
+
+	case "PageInfo.startCursor":
+		if e.complexity.PageInfo.StartCursor == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.StartCursor(childComplexity), true
+
+	case "PageInfo.endCursor":
+		if e.complexity.PageInfo.EndCursor == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.EndCursor(childComplexity), true
+
+	case "PageInfo.hasNextPage":
+		if e.complexity.PageInfo.HasNextPage == nil {
+			break
+		}
+
+		return e.complexity.PageInfo.HasNextPage(childComplexity), true
 
 	case "Query.user":
 		if e.complexity.Query.User == nil {
@@ -417,12 +625,36 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Contacts(childComplexity), true
 
+	case "User.contactsConnection":
+		if e.complexity.User.ContactsConnection == nil {
+			break
+		}
+
+		args, err := field_User_contactsConnection_args(rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.User.ContactsConnection(childComplexity, args["first"].(*int), args["after"].(*string)), true
+
 	case "User.notes":
 		if e.complexity.User.Notes == nil {
 			break
 		}
 
 		return e.complexity.User.Notes(childComplexity), true
+
+	case "User.notesConnection":
+		if e.complexity.User.NotesConnection == nil {
+			break
+		}
+
+		args, err := field_User_notesConnection_args(rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.User.NotesConnection(childComplexity, args["first"].(*int), args["after"].(*string)), true
 
 	}
 	return 0, false
@@ -457,7 +689,7 @@ type executionContext struct {
 	*executableSchema
 }
 
-var contactImplementors = []string{"Contact"}
+var contactImplementors = []string{"Contact", "Node"}
 
 // nolint: gocyclo, errcheck, gas, goconst
 func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, obj *models.Contact) graphql.Marshaler {
@@ -805,7 +1037,7 @@ func (ec *executionContext) _Contact_contactPhoneNumbers(ctx context.Context, fi
 	return arr1
 }
 
-var contactDateImplementors = []string{"ContactDate"}
+var contactDateImplementors = []string{"ContactDate", "Node"}
 
 // nolint: gocyclo, errcheck, gas, goconst
 func (ec *executionContext) _ContactDate(ctx context.Context, sel ast.SelectionSet, obj *models.ContactDate) graphql.Marshaler {
@@ -1022,7 +1254,7 @@ func (ec *executionContext) _ContactDate_contact(ctx context.Context, field grap
 	return ec._Contact(ctx, field.Selections, &res)
 }
 
-var contactEmailImplementors = []string{"ContactEmail"}
+var contactEmailImplementors = []string{"ContactEmail", "Node"}
 
 // nolint: gocyclo, errcheck, gas, goconst
 func (ec *executionContext) _ContactEmail(ctx context.Context, sel ast.SelectionSet, obj *models.ContactEmail) graphql.Marshaler {
@@ -1175,7 +1407,7 @@ func (ec *executionContext) _ContactEmail_contact(ctx context.Context, field gra
 	return ec._Contact(ctx, field.Selections, &res)
 }
 
-var contactPhoneNumberImplementors = []string{"ContactPhoneNumber"}
+var contactPhoneNumberImplementors = []string{"ContactPhoneNumber", "Node"}
 
 // nolint: gocyclo, errcheck, gas, goconst
 func (ec *executionContext) _ContactPhoneNumber(ctx context.Context, sel ast.SelectionSet, obj *models.ContactPhoneNumber) graphql.Marshaler {
@@ -1328,7 +1560,305 @@ func (ec *executionContext) _ContactPhoneNumber_contact(ctx context.Context, fie
 	return ec._Contact(ctx, field.Selections, &res)
 }
 
-var noteImplementors = []string{"Note"}
+var contactsConnectionImplementors = []string{"ContactsConnection", "Connection"}
+
+// nolint: gocyclo, errcheck, gas, goconst
+func (ec *executionContext) _ContactsConnection(ctx context.Context, sel ast.SelectionSet, obj *ContactsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, contactsConnectionImplementors)
+
+	out := graphql.NewOrderedMap(len(fields))
+	invalid := false
+	for i, field := range fields {
+		out.Keys[i] = field.Alias
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ContactsConnection")
+		case "totalCount":
+			out.Values[i] = ec._ContactsConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "edges":
+			out.Values[i] = ec._ContactsConnection_edges(ctx, field, obj)
+		case "nodes":
+			out.Values[i] = ec._ContactsConnection_nodes(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._ContactsConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ContactsConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ContactsConnection) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "ContactsConnection",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalInt(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ContactsConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ContactsConnection) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "ContactsConnection",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]ContactsEdge)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	arr1 := make(graphql.Array, len(res))
+	var wg sync.WaitGroup
+
+	isLen1 := len(res) == 1
+	if !isLen1 {
+		wg.Add(len(res))
+	}
+
+	for idx1 := range res {
+		idx1 := idx1
+		rctx := &graphql.ResolverContext{
+			Index:  &idx1,
+			Result: &res[idx1],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(idx1 int) {
+			if !isLen1 {
+				defer wg.Done()
+			}
+			arr1[idx1] = func() graphql.Marshaler {
+
+				return ec._ContactsEdge(ctx, field.Selections, &res[idx1])
+			}()
+		}
+		if isLen1 {
+			f(idx1)
+		} else {
+			go f(idx1)
+		}
+
+	}
+	wg.Wait()
+	return arr1
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ContactsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *ContactsConnection) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "ContactsConnection",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Nodes, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]models.Contact)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	arr1 := make(graphql.Array, len(res))
+	var wg sync.WaitGroup
+
+	isLen1 := len(res) == 1
+	if !isLen1 {
+		wg.Add(len(res))
+	}
+
+	for idx1 := range res {
+		idx1 := idx1
+		rctx := &graphql.ResolverContext{
+			Index:  &idx1,
+			Result: &res[idx1],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(idx1 int) {
+			if !isLen1 {
+				defer wg.Done()
+			}
+			arr1[idx1] = func() graphql.Marshaler {
+
+				return ec._Contact(ctx, field.Selections, &res[idx1])
+			}()
+		}
+		if isLen1 {
+			f(idx1)
+		} else {
+			go f(idx1)
+		}
+
+	}
+	wg.Wait()
+	return arr1
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ContactsConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ContactsConnection) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "ContactsConnection",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(PageInfo)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	return ec._PageInfo(ctx, field.Selections, &res)
+}
+
+var contactsEdgeImplementors = []string{"ContactsEdge", "Edge"}
+
+// nolint: gocyclo, errcheck, gas, goconst
+func (ec *executionContext) _ContactsEdge(ctx context.Context, sel ast.SelectionSet, obj *ContactsEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, contactsEdgeImplementors)
+
+	out := graphql.NewOrderedMap(len(fields))
+	invalid := false
+	for i, field := range fields {
+		out.Keys[i] = field.Alias
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ContactsEdge")
+		case "cursor":
+			out.Values[i] = ec._ContactsEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "node":
+			out.Values[i] = ec._ContactsEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ContactsEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ContactsEdge) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "ContactsEdge",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalID(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _ContactsEdge_node(ctx context.Context, field graphql.CollectedField, obj *ContactsEdge) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "ContactsEdge",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.Contact)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	return ec._Contact(ctx, field.Selections, &res)
+}
+
+var noteImplementors = []string{"Note", "Node"}
 
 // nolint: gocyclo, errcheck, gas, goconst
 func (ec *executionContext) _Note(ctx context.Context, sel ast.SelectionSet, obj *models.Note) graphql.Marshaler {
@@ -1357,8 +1887,8 @@ func (ec *executionContext) _Note(ctx context.Context, sel ast.SelectionSet, obj
 				}
 				wg.Done()
 			}(i, field)
-		case "ContentsDelta":
-			out.Values[i] = ec._Note_ContentsDelta(ctx, field, obj)
+		case "contentsDelta":
+			out.Values[i] = ec._Note_contentsDelta(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
@@ -1429,7 +1959,7 @@ func (ec *executionContext) _Note_owner(ctx context.Context, field graphql.Colle
 }
 
 // nolint: vetshadow
-func (ec *executionContext) _Note_ContentsDelta(ctx context.Context, field graphql.CollectedField, obj *models.Note) graphql.Marshaler {
+func (ec *executionContext) _Note_contentsDelta(ctx context.Context, field graphql.CollectedField, obj *models.Note) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
@@ -1453,6 +1983,425 @@ func (ec *executionContext) _Note_ContentsDelta(ctx context.Context, field graph
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return graphql.MarshalString(res)
+}
+
+var notesConnectionImplementors = []string{"NotesConnection", "Connection"}
+
+// nolint: gocyclo, errcheck, gas, goconst
+func (ec *executionContext) _NotesConnection(ctx context.Context, sel ast.SelectionSet, obj *NotesConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, notesConnectionImplementors)
+
+	out := graphql.NewOrderedMap(len(fields))
+	invalid := false
+	for i, field := range fields {
+		out.Keys[i] = field.Alias
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NotesConnection")
+		case "totalCount":
+			out.Values[i] = ec._NotesConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "edges":
+			out.Values[i] = ec._NotesConnection_edges(ctx, field, obj)
+		case "nodes":
+			out.Values[i] = ec._NotesConnection_nodes(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._NotesConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _NotesConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *NotesConnection) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "NotesConnection",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalInt(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _NotesConnection_edges(ctx context.Context, field graphql.CollectedField, obj *NotesConnection) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "NotesConnection",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]NotesEdge)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	arr1 := make(graphql.Array, len(res))
+	var wg sync.WaitGroup
+
+	isLen1 := len(res) == 1
+	if !isLen1 {
+		wg.Add(len(res))
+	}
+
+	for idx1 := range res {
+		idx1 := idx1
+		rctx := &graphql.ResolverContext{
+			Index:  &idx1,
+			Result: &res[idx1],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(idx1 int) {
+			if !isLen1 {
+				defer wg.Done()
+			}
+			arr1[idx1] = func() graphql.Marshaler {
+
+				return ec._NotesEdge(ctx, field.Selections, &res[idx1])
+			}()
+		}
+		if isLen1 {
+			f(idx1)
+		} else {
+			go f(idx1)
+		}
+
+	}
+	wg.Wait()
+	return arr1
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _NotesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *NotesConnection) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "NotesConnection",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Nodes, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]models.Note)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	arr1 := make(graphql.Array, len(res))
+	var wg sync.WaitGroup
+
+	isLen1 := len(res) == 1
+	if !isLen1 {
+		wg.Add(len(res))
+	}
+
+	for idx1 := range res {
+		idx1 := idx1
+		rctx := &graphql.ResolverContext{
+			Index:  &idx1,
+			Result: &res[idx1],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(idx1 int) {
+			if !isLen1 {
+				defer wg.Done()
+			}
+			arr1[idx1] = func() graphql.Marshaler {
+
+				return ec._Note(ctx, field.Selections, &res[idx1])
+			}()
+		}
+		if isLen1 {
+			f(idx1)
+		} else {
+			go f(idx1)
+		}
+
+	}
+	wg.Wait()
+	return arr1
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _NotesConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *NotesConnection) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "NotesConnection",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(PageInfo)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	return ec._PageInfo(ctx, field.Selections, &res)
+}
+
+var notesEdgeImplementors = []string{"NotesEdge", "Edge"}
+
+// nolint: gocyclo, errcheck, gas, goconst
+func (ec *executionContext) _NotesEdge(ctx context.Context, sel ast.SelectionSet, obj *NotesEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, notesEdgeImplementors)
+
+	out := graphql.NewOrderedMap(len(fields))
+	invalid := false
+	for i, field := range fields {
+		out.Keys[i] = field.Alias
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NotesEdge")
+		case "cursor":
+			out.Values[i] = ec._NotesEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "node":
+			out.Values[i] = ec._NotesEdge_node(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _NotesEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *NotesEdge) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "NotesEdge",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalID(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _NotesEdge_node(ctx context.Context, field graphql.CollectedField, obj *NotesEdge) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "NotesEdge",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.Note)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	return ec._Note(ctx, field.Selections, &res)
+}
+
+var pageInfoImplementors = []string{"PageInfo"}
+
+// nolint: gocyclo, errcheck, gas, goconst
+func (ec *executionContext) _PageInfo(ctx context.Context, sel ast.SelectionSet, obj *PageInfo) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, pageInfoImplementors)
+
+	out := graphql.NewOrderedMap(len(fields))
+	invalid := false
+	for i, field := range fields {
+		out.Keys[i] = field.Alias
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PageInfo")
+		case "startCursor":
+			out.Values[i] = ec._PageInfo_startCursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "endCursor":
+			out.Values[i] = ec._PageInfo_endCursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "hasNextPage":
+			out.Values[i] = ec._PageInfo_hasNextPage(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _PageInfo_startCursor(ctx context.Context, field graphql.CollectedField, obj *PageInfo) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "PageInfo",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartCursor, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalID(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _PageInfo_endCursor(ctx context.Context, field graphql.CollectedField, obj *PageInfo) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "PageInfo",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EndCursor, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalID(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *PageInfo) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "PageInfo",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HasNextPage, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalBoolean(res)
 }
 
 var queryImplementors = []string{"Query"}
@@ -1594,7 +2543,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.___Schema(ctx, field.Selections, res)
 }
 
-var userImplementors = []string{"User"}
+var userImplementors = []string{"User", "Node"}
 
 // nolint: gocyclo, errcheck, gas, goconst
 func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *models.User) graphql.Marshaler {
@@ -1635,10 +2584,28 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				out.Values[i] = ec._User_contacts(ctx, field, obj)
 				wg.Done()
 			}(i, field)
+		case "contactsConnection":
+			wg.Add(1)
+			go func(i int, field graphql.CollectedField) {
+				out.Values[i] = ec._User_contactsConnection(ctx, field, obj)
+				if out.Values[i] == graphql.Null {
+					invalid = true
+				}
+				wg.Done()
+			}(i, field)
 		case "notes":
 			wg.Add(1)
 			go func(i int, field graphql.CollectedField) {
 				out.Values[i] = ec._User_notes(ctx, field, obj)
+				wg.Done()
+			}(i, field)
+		case "notesConnection":
+			wg.Add(1)
+			go func(i int, field graphql.CollectedField) {
+				out.Values[i] = ec._User_notesConnection(ctx, field, obj)
+				if out.Values[i] == graphql.Null {
+					invalid = true
+				}
 				wg.Done()
 			}(i, field)
 		default:
@@ -1818,6 +2785,40 @@ func (ec *executionContext) _User_contacts(ctx context.Context, field graphql.Co
 }
 
 // nolint: vetshadow
+func (ec *executionContext) _User_contactsConnection(ctx context.Context, field graphql.CollectedField, obj *models.User) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := field_User_contactsConnection_args(rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx := &graphql.ResolverContext{
+		Object: "User",
+		Args:   args,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().ContactsConnection(rctx, obj, args["first"].(*int), args["after"].(*string))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ContactsConnection)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	return ec._ContactsConnection(ctx, field.Selections, &res)
+}
+
+// nolint: vetshadow
 func (ec *executionContext) _User_notes(ctx context.Context, field graphql.CollectedField, obj *models.User) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
@@ -1872,6 +2873,40 @@ func (ec *executionContext) _User_notes(ctx context.Context, field graphql.Colle
 	}
 	wg.Wait()
 	return arr1
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _User_notesConnection(ctx context.Context, field graphql.CollectedField, obj *models.User) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := field_User_notesConnection_args(rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx := &graphql.ResolverContext{
+		Object: "User",
+		Args:   args,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().NotesConnection(rctx, obj, args["first"].(*int), args["after"].(*string))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(NotesConnection)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	return ec._NotesConnection(ctx, field.Selections, &res)
 }
 
 var __DirectiveImplementors = []string{"__Directive"}
@@ -3319,6 +4354,73 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 	return ec.___Type(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Connection(ctx context.Context, sel ast.SelectionSet, obj *Connection) graphql.Marshaler {
+	switch obj := (*obj).(type) {
+	case nil:
+		return graphql.Null
+	case NotesConnection:
+		return ec._NotesConnection(ctx, sel, &obj)
+	case *NotesConnection:
+		return ec._NotesConnection(ctx, sel, obj)
+	case ContactsConnection:
+		return ec._ContactsConnection(ctx, sel, &obj)
+	case *ContactsConnection:
+		return ec._ContactsConnection(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _Edge(ctx context.Context, sel ast.SelectionSet, obj *Edge) graphql.Marshaler {
+	switch obj := (*obj).(type) {
+	case nil:
+		return graphql.Null
+	case NotesEdge:
+		return ec._NotesEdge(ctx, sel, &obj)
+	case *NotesEdge:
+		return ec._NotesEdge(ctx, sel, obj)
+	case ContactsEdge:
+		return ec._ContactsEdge(ctx, sel, &obj)
+	case *ContactsEdge:
+		return ec._ContactsEdge(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj *Node) graphql.Marshaler {
+	switch obj := (*obj).(type) {
+	case nil:
+		return graphql.Null
+	case models.User:
+		return ec._User(ctx, sel, &obj)
+	case *models.User:
+		return ec._User(ctx, sel, obj)
+	case models.Contact:
+		return ec._Contact(ctx, sel, &obj)
+	case *models.Contact:
+		return ec._Contact(ctx, sel, obj)
+	case models.ContactPhoneNumber:
+		return ec._ContactPhoneNumber(ctx, sel, &obj)
+	case *models.ContactPhoneNumber:
+		return ec._ContactPhoneNumber(ctx, sel, obj)
+	case models.ContactEmail:
+		return ec._ContactEmail(ctx, sel, &obj)
+	case *models.ContactEmail:
+		return ec._ContactEmail(ctx, sel, obj)
+	case models.ContactDate:
+		return ec._ContactDate(ctx, sel, &obj)
+	case *models.ContactDate:
+		return ec._ContactDate(ctx, sel, obj)
+	case models.Note:
+		return ec._Note(ctx, sel, &obj)
+	case *models.Note:
+		return ec._Note(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) FieldMiddleware(ctx context.Context, obj interface{}, next graphql.Resolver) (ret interface{}) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3350,16 +4452,66 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var parsedSchema = gqlparser.MustLoadSchema(
 	&ast.Source{Name: "schema.graphql", Input: `# https://gqlgen.com/config/
-type User {
+
+interface Node {
+  id: ID!
+}
+
+type PageInfo {
+  startCursor: ID!
+  endCursor: ID!
+  hasNextPage: Boolean!
+}
+
+interface Edge {
+  cursor: ID!
+  node: Node!
+}
+
+interface Connection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [Edge!]
+  nodes: [Node!]
+
+}
+
+type NotesEdge implements Edge {
+  cursor: ID!
+  node: Note!
+}
+
+type NotesConnection implements Connection {
+  totalCount: Int!
+  edges: [NotesEdge!]
+  nodes: [Note!]
+  pageInfo: PageInfo!
+}
+
+type ContactsEdge implements Edge {
+  cursor: ID!
+  node: Contact!
+}
+
+type ContactsConnection implements Connection {
+  totalCount: Int!
+  edges: [ContactsEdge!]
+  nodes: [Contact!]
+  pageInfo: PageInfo!
+}
+
+type User implements Node {
   id: ID!
   firstName: String!
   lastName: String!
   emailAddress: String!
   contacts: [Contact!]
+  contactsConnection(first: Int, after: ID): ContactsConnection!
   notes: [Note!]
+  notesConnection(first: Int, after: ID): NotesConnection!
 }
 
-type Contact {
+type Contact implements Node {
   id: ID!
   firstName: String!
   lastName: String!
@@ -3369,21 +4521,21 @@ type Contact {
   contactPhoneNumbers: [ContactPhoneNumber!]
 }
 
-type ContactPhoneNumber {
+type ContactPhoneNumber implements Node {
   id: ID!
   phoneNumber: String!
   label: String
   contact: Contact!
 }
 
-type ContactEmail {
+type ContactEmail implements Node {
   id: ID!
   emailAddress: String!
   label: String
   contact: Contact!
 }
 
-type ContactDate {
+type ContactDate implements Node {
   id: ID!
   month: Int!
   day: Int!
@@ -3392,10 +4544,10 @@ type ContactDate {
   contact: Contact!
 }
 
-type Note {
+type Note implements Node {
   id: ID!
   owner: User!
-  ContentsDelta: String!
+  contentsDelta: String!
 }
 
 type Query {
