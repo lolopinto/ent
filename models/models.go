@@ -172,6 +172,8 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 }
 
 func loadNode(id string, entity interface{}, tableName string) error {
+	// TODO does it make sense to change the API we use here to instead pass it to entity?
+
 	if entity == nil {
 		return errors.New("nil pointer passed to loadNode")
 	}
@@ -202,6 +204,23 @@ func loadNode(id string, entity interface{}, tableName string) error {
 		fmt.Println(err)
 	}
 	return err
+}
+
+// EntityResult is the result of a call to loadNodeConc which returns an object
+// and the channel. TODO: This is just a test
+type EntityResult struct {
+	Entity interface{}
+	Err    error
+}
+
+func genLoadNode(id string, entity interface{}, tableName string, errChan chan error) {
+	err := loadNode(id, entity, tableName)
+	// result := EntityResult{
+	// 	Entity: entity,
+	// 	Err:    err,
+	// }
+	errChan <- err
+	//chanResult <- result
 }
 
 type loadNodesQuery func(insertData insertdata) (string, []interface{}, error)
