@@ -213,7 +213,7 @@ type EntityResult struct {
 	Err    error
 }
 
-func genLoadNode(id string, entity interface{}, tableName string, errChan chan error) {
+func genLoadNode(id string, entity interface{}, tableName string, errChan chan<- error) {
 	err := loadNode(id, entity, tableName)
 	// result := EntityResult{
 	// 	Entity: entity,
@@ -240,8 +240,8 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	// get the slice from the pointer
 	slice := reflectx.Deref(value.Type())
 	if slice.Kind() != reflect.Slice {
-		fmt.Println("sadness")
-		return errors.New("sadness with error in loadNodes")
+		fmt.Printf("slice kind is not a slice. it's a %v \n", slice.Kind())
+		return errors.New("format passed to loadNodes is unexpected")
 	}
 
 	// get the base type from the slice
@@ -280,7 +280,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	}
 	defer stmt.Close()
 
-	fmt.Println(values)
+	fmt.Println("values", values)
 	rows, err := stmt.Queryx(values...)
 	if err != nil {
 		fmt.Println("error performing query in loadNodes", err)
@@ -321,6 +321,12 @@ func loadNodes(id string, nodes interface{}, colName string, tableName string) e
 	}
 
 	return loadNodesHelper(nodes, sqlQuery)
+}
+
+func genLoadNodes(id string, nodes interface{}, colName string, tableName string, errChan chan<- error) {
+	err := loadNodes(id, nodes, colName, tableName)
+	fmt.Println("genLoadNodes result", err, nodes)
+	errChan <- err
 }
 
 func createNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
