@@ -210,7 +210,7 @@ func loadNode(id string, entity interface{}, tableName string) error {
 // and the channel. TODO: This is just a test
 type EntityResult struct {
 	Entity interface{}
-	Err    error
+	Error  error
 }
 
 func genLoadNode(id string, entity interface{}, tableName string, errChan chan<- error) {
