@@ -37,7 +37,7 @@ func init() {
 	if err != nil {
 		fmt.Println("DB unreachable", err)
 	}
-	fmt.Println("InitDB", db)
+	//fmt.Println("InitDB", db)
 }
 
 // DBConn returns a database connection pool to the DB for use
