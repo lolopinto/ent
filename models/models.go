@@ -215,7 +215,7 @@ type EntityResult struct {
 	Error  error
 }
 
-func genLoadNode(id string, entity interface{}, tableName string, errChan chan<- error) {
+func GenLoadNode(id string, entity interface{}, tableName string, errChan chan<- error) {
 	err := LoadNode(id, entity, tableName)
 	// result := EntityResult{
 	// 	Entity: entity,
@@ -325,9 +325,9 @@ func LoadNodes(id string, nodes interface{}, colName string, tableName string) e
 	return LoadNodesHelper(nodes, sqlQuery)
 }
 
-func genLoadNodes(id string, nodes interface{}, colName string, tableName string, errChan chan<- error) {
+func GenLoadNodes(id string, nodes interface{}, colName string, tableName string, errChan chan<- error) {
 	err := LoadNodes(id, nodes, colName, tableName)
-	fmt.Println("genLoadNodes result", err, nodes)
+	fmt.Println("GenLoadNodes result", err, nodes)
 	errChan <- err
 }
 
