@@ -334,7 +334,7 @@ func GenLoadNodes(id string, nodes interface{}, colName string, tableName string
 func createNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
 	if entity == nil {
 		// same as LoadNode in terms of handling this better
-		return errors.New("nil pointer passed to createNode")
+		return errors.New("nil pointer passed to CreateNode")
 	}
 	insertData := getFieldsAndValues(entity, true)
 	colsString := insertData.getColumnsStringForInsert()
@@ -346,7 +346,8 @@ func createNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) 
 	return performWrite(computedQuery, values, tx)
 }
 
-func createNode(entity interface{}, tableName string) error {
+// CreateNode creates a node
+func CreateNode(entity interface{}, tableName string) error {
 	return createNodeInTransaction(entity, tableName, nil)
 }
 
@@ -396,7 +397,7 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx) error {
 func updateNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
 	if entity == nil {
 		// same as LoadNode in terms of handling this better
-		return errors.New("nil pointer passed to updateNode")
+		return errors.New("nil pointer passed to UpdateNode")
 	}
 
 	insertData := getFieldsAndValues(entity, false)
@@ -415,8 +416,9 @@ func updateNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) 
 	return performWrite(computedQuery, values, tx)
 }
 
+// UpdateNode updates a node
 // TODO should prevent updating relational fields maybe?
-func updateNode(entity interface{}, tableName string) error {
+func UpdateNode(entity interface{}, tableName string) error {
 	return updateNodeInTransaction(entity, tableName, nil)
 }
 
@@ -442,7 +444,7 @@ func findID(entity interface{}) string {
 
 func deleteNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
 	if entity == nil {
-		return errors.New("nil pointer passed to deleteNode")
+		return errors.New("nil pointer passed to DeleteNode")
 	}
 
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", tableName)
@@ -451,7 +453,8 @@ func deleteNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) 
 	return performWrite(query, []interface{}{id}, tx)
 }
 
-func deleteNode(entity interface{}, tableName string) error {
+// DeleteNode deletes a node given the node object
+func DeleteNode(entity interface{}, tableName string) error {
 	return deleteNodeInTransaction(entity, tableName, nil)
 }
 
