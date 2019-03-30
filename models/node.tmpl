@@ -1,0 +1,72 @@
+package {{.PackageName}}
+
+import (
+  "github.com/lolopinto/jarvis/models"
+)
+
+// {{.Node}} represents the `{{.Node}}` model 
+type {{.Node}} struct {
+  models.Node
+  {{with .Fields -}}
+    {{ range . -}} 
+      {{.FieldName}} {{.FieldType}} {{.FieldTag}}
+    {{end -}}
+  {{end -}}
+}
+
+
+// {{.NodeResult}} stores the result of loading a {{.Node}}. It's a tuple type which has 2 fields: 
+// a {{.Node}} and an error
+type {{.NodeResult}} struct {
+  {{.Node}} {{.Node}}
+  Error error
+}
+
+// {{.NodesResult}} stores the result of loading a slice of {{.Node}}s. It's a tuple type which has 2 fields: 
+// a {{.NodesSlice}} and an error
+type {{.NodesResult}} struct {
+  {{.Nodes}} {{.NodesSlice}}
+  Error error
+}
+
+// IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
+func ({{.NodeInstance}} {{.Node}}) isNode() {}
+
+// GetType returns the NodeType of this entity. In this case: ContactType
+func ({{.NodeInstance}} *{{.Node}}) GetType() models.NodeType {
+	return {{.NodeType}}
+}
+
+// Load{{.Node}} loads the given {{.Node}} given the id
+func Load{{.Node}}(id string) ({{.Node}}, error) {
+  var {{.NodeInstance}} {{.Node}}
+  err := models.LoadNode(id, &{{.NodeInstance}}, "{{.TableName}}")
+  return {{.NodeInstance}}, err
+}
+
+// GenLoad{{.Node}} loads the given {{.Node}} given the id
+func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
+  var {{.NodeInstance}} {{.Node}}
+  chanErr := make(chan error)
+  go models.GenLoadNode(id, &{{.NodeInstance}}, "{{.TableName}}", chanErr)
+  err := <-chanErr
+  chan{{.NodeResult}} <- {{.NodeResult}}{
+    {{.Node}}: {{.NodeInstance}},
+    Error: err,
+  }
+}
+
+// Update{{.Node}} updates the given {{.Node}} given the id
+func Update{{.Node}}({{.NodeInstance}} {{.Node}}) ({{.Node}}, error) {
+	err := models.UpdateNode(&{{.NodeInstance}}, "{{.TableName}}")
+	return {{.NodeInstance}}, err
+}
+
+// Delete{{.Node}} deletes the given {{.Node}} 
+func Delete{{.Node}}({{.NodeInstance}} {{.Node}}) error {
+	return models.DeleteNode(&{{.NodeInstance}}, "{{.TableName}}")
+}
+
+// Add this to each entity to confirm it implements the interface
+var _ models.Entity = (*{{.Node}})(nil)
+
