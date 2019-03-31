@@ -80,6 +80,16 @@ func codegenPackage(packageName string, directoryPath string) {
 	}
 }
 
+// gets the string representation of the type
+func getStringType(f *ast.Field) string {
+	switch f.Type.(type) {
+	case *ast.Ident:
+		return f.Type.(*ast.Ident).Name
+	default:
+		panic("unsupported type. TODO fail gracefully")
+	}
+}
+
 func codegenImpl(packageName string, filePath string) {
 	fset := token.NewFileSet()
 	var src interface{}
@@ -109,10 +119,10 @@ func codegenImpl(packageName string, filePath string) {
 			if t := f.Tag; t != nil {
 				tag = t.Value
 			}
+
 			fields = append(fields, field{
 				FieldName: f.Names[0].Name,
-				// TODO why can't I get the type from this?
-				FieldType: "string", //string(f.Type),
+				FieldType: getStringType(f),
 				FieldTag:  tag,
 			})
 		}
