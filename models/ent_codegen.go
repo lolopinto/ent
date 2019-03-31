@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
-	"strings"
 	"text/template"
 
 	"github.com/iancoleman/strcase"
@@ -125,14 +124,13 @@ func codegenImpl(packageName string, filePath string) {
 		nodeData := nodeTemplate{
 			// TODO this shouldn't be hardcoded.
 			// take from directory name?
-			PackageName: packageName,
-			Node:        nodeName,
-			Nodes:       fmt.Sprintf("%ss", nodeName),
-			Fields:      fields,
-			NodeResult:  fmt.Sprintf("%sResult", nodeName),
-			NodesResult: fmt.Sprintf("%ssResult", nodeName),
-			// TODO this needs to really be pascal case but for now it works for Contact -> contact
-			NodeInstance: strings.ToLower(nodeName),
+			PackageName:  packageName,
+			Node:         nodeName,
+			Nodes:        fmt.Sprintf("%ss", nodeName),
+			Fields:       fields,
+			NodeResult:   fmt.Sprintf("%sResult", nodeName),
+			NodesResult:  fmt.Sprintf("%ssResult", nodeName),
+			NodeInstance: strcase.ToLowerCamel(nodeName),
 			NodesSlice:   fmt.Sprintf("[]%s", nodeName),
 			NodeType:     fmt.Sprintf("%sType", nodeName),
 			TableName:    "contacts", //fmt.Sprintf("%ss", nodeName),
