@@ -6,8 +6,10 @@ import (
 	"go/ast"
 	"go/format"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"io/ioutil"
+	"log"
 	"os"
 	"regexp"
 	"text/template"
@@ -81,13 +83,13 @@ func codegenPackage(packageName string, directoryPath string) {
 }
 
 // gets the string representation of the type
-func getStringType(f *ast.Field) string {
-	switch f.Type.(type) {
-	case *ast.Ident:
-		return f.Type.(*ast.Ident).Name
-	default:
-		panic("unsupported type. TODO fail gracefully")
+func getStringType(f *ast.Field, fset *token.FileSet) string {
+	var typeNameBuf bytes.Buffer
+	err := printer.Fprint(&typeNameBuf, fset, f.Type)
+	if err != nil {
+		log.Fatalf("failed getting the type of field %s", err)
 	}
+	return typeNameBuf.String()
 }
 
 func codegenImpl(packageName string, filePath string) {
@@ -122,7 +124,7 @@ func codegenImpl(packageName string, filePath string) {
 
 			fields = append(fields, field{
 				FieldName: f.Names[0].Name,
-				FieldType: getStringType(f),
+				FieldType: getStringType(f, fset),
 				FieldTag:  tag,
 			})
 		}
