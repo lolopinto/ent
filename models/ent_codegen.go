@@ -17,6 +17,23 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+type EdgeConfigType string
+
+const (
+	// FieldEdge represents a field edge which is an edge whose data is gotten from
+	// a field in the object
+	FieldEdgeType EdgeConfigType = "FIELD_EDGE"
+)
+
+type Edgeconfig struct {
+	EdgeType EdgeConfigType
+}
+
+type FieldEdge struct {
+	FieldName string
+	EntConfig interface{} // zero-value of the struct...
+}
+
 type nodeTemplate struct {
 	PackageName  string
 	Node         string
@@ -102,57 +119,74 @@ func codegenImpl(packageName string, filePath string) {
 	//ast.Print(fset, node)
 	//ast.NewObj(fset, "file")
 	//fmt.Println("Struct:")
+	var nodeData nodeTemplate
+
 	ast.Inspect(file, func(node ast.Node) bool {
 		// get struct
+		// TODO get the name from *ast.TypeSpec to verify a few things
+		// for now, we're assuming one struct which maps to what we want which isn't necessarily true
 		s, ok := node.(*ast.StructType)
-		if !ok {
-			return true
-		}
-		//s.
-		//ast.Print(fset, s)
-
-		//var fields = make([]field, s.Fields.NumFields())
-		var fields []field
-		for _, f := range s.Fields.List {
-			// use this to rename GraphQL, db fields, etc
-			// otherwise by default it passes this down
-			fmt.Printf("Field: %s Type: %s Tag: %v \n", f.Names[0].Name, f.Type, f.Tag)
-			var tag string
-			if t := f.Tag; t != nil {
-				tag = t.Value
-			}
-
-			fields = append(fields, field{
-				FieldName: f.Names[0].Name,
-				FieldType: getStringType(f, fset),
-				FieldTag:  tag,
-			})
+		if ok {
+			nodeData = parseConfig(s, packageName, fset)
 		}
 
-		// convert from pacakgename to camel case and add V2 till we convert
-		nodeName := strcase.ToCamel(packageName) + "V2"
-		//		nodeName := "ContactV2"
+		// TODO handle the name do things about it
+		fn, ok := node.(*ast.FuncDecl)
+		if ok {
+			fmt.Println(fn.Body)
+			fmt.Println(fn.Name)
+			fmt.Println(fn.Name.IsExported())
+			//parser.ParseExpr()
+			// TODO how to parse the method and get info out of it
+			ast.Print(fset, fn.Body)
 
-		nodeData := nodeTemplate{
-			// TODO this shouldn't be hardcoded.
-			// take from directory name?
-			PackageName:  packageName,
-			Node:         nodeName,
-			Nodes:        fmt.Sprintf("%ss", nodeName),
-			Fields:       fields,
-			NodeResult:   fmt.Sprintf("%sResult", nodeName),
-			NodesResult:  fmt.Sprintf("%ssResult", nodeName),
-			NodeInstance: strcase.ToLowerCamel(nodeName),
-			NodesSlice:   fmt.Sprintf("[]%s", nodeName),
-			NodeType:     fmt.Sprintf("%sType", nodeName),
-			TableName:    "contacts", //fmt.Sprintf("%ss", nodeName),
 		}
+		return true
+	})
 
+	// what's the best way to check not-zero value? for now, this will have to do
+	if len(nodeData.PackageName) > 0 {
 		writeModelFile(nodeData)
 		writeConstFile(nodeData)
+	}
+}
 
-		return false
-	})
+func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet) nodeTemplate {
+	var fields []field
+	for _, f := range s.Fields.List {
+		// use this to rename GraphQL, db fields, etc
+		// otherwise by default it passes this down
+		fmt.Printf("Field: %s Type: %s Tag: %v \n", f.Names[0].Name, f.Type, f.Tag)
+		var tag string
+		if t := f.Tag; t != nil {
+			tag = t.Value
+		}
+
+		fields = append(fields, field{
+			FieldName: f.Names[0].Name,
+			FieldType: getStringType(f, fset),
+			FieldTag:  tag,
+		})
+	}
+
+	// convert from pacakgename to camel case and add V2 till we convert
+	nodeName := strcase.ToCamel(packageName) + "V2"
+	//		nodeName := "ContactV2"
+
+	return nodeTemplate{
+		// TODO this shouldn't be hardcoded.
+		// take from directory name?
+		PackageName:  packageName,
+		Node:         nodeName,
+		Nodes:        fmt.Sprintf("%ss", nodeName),
+		Fields:       fields,
+		NodeResult:   fmt.Sprintf("%sResult", nodeName),
+		NodesResult:  fmt.Sprintf("%ssResult", nodeName),
+		NodeInstance: strcase.ToLowerCamel(nodeName),
+		NodesSlice:   fmt.Sprintf("[]%s", nodeName),
+		NodeType:     fmt.Sprintf("%sType", nodeName),
+		TableName:    "contacts", //fmt.Sprintf("%ss", nodeName),
+	}
 }
 
 func writeModelFile(nodeData nodeTemplate) {
