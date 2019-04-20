@@ -133,12 +133,13 @@ func codegenImpl(packageName string, filePath string) {
 		// TODO handle the name do things about it
 		fn, ok := node.(*ast.FuncDecl)
 		if ok {
-			fmt.Println(fn.Body)
+			//fmt.Println(fn.Body)
 			fmt.Println(fn.Name)
 			fmt.Println(fn.Name.IsExported())
 			//parser.ParseExpr()
 			// TODO how to parse the method and get info out of it
-			ast.Print(fset, fn.Body)
+			//ast.Print(fset, fn.Body)
+			parseFunc(fn)
 
 		}
 		return true
@@ -146,8 +147,93 @@ func codegenImpl(packageName string, filePath string) {
 
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
-		writeModelFile(nodeData)
-		writeConstFile(nodeData)
+		// TODO only do contact for now.
+		if nodeData.PackageName == "contact" {
+			writeModelFile(nodeData)
+			writeConstFile(nodeData)
+		}
+	}
+}
+
+// parses a function in edges file
+func parseFunc(fn *ast.FuncDecl) {
+	switch fn.Name.String() {
+	case "GetEdges":
+		parseEdgesFunc(fn)
+	default:
+		panic("invalid function name")
+	}
+}
+
+func getLastStatement(stmts []ast.Stmt) ast.Stmt {
+	length := len(stmts)
+	lastStmt := stmts[length-1]
+	return lastStmt
+}
+
+func getLastExpr(exprs []ast.Expr) ast.Expr {
+	length := len(exprs)
+	lastExpr := exprs[length-1]
+	return lastExpr
+}
+
+// http://goast.yuroyoro.net/ is really helpful to see the tree
+func parseEdgesFunc(fn *ast.FuncDecl) {
+	// fn.Body is an instance of *ast.BlockStmt
+	lastStmt := getLastStatement(fn.Body.List)
+
+	//fmt.Println(length)
+	// to handle the case where we have variables used to return something
+	returnStmt, ok := lastStmt.(*ast.ReturnStmt)
+	if !ok {
+		panic("last statement in function was not a return statement. ")
+	}
+
+	fmt.Println(len(returnStmt.Results))
+	// for _, stmt := range returnStmt.Results {
+
+	// }
+
+	lastExpr := getLastExpr(returnStmt.Results)
+	compositeListStmt, ok := lastExpr.(*ast.CompositeLit)
+	if !(ok && len(returnStmt.Results) == 1) {
+		panic("invalid number or format of return statement")
+	}
+
+	for _, expr := range compositeListStmt.Elts {
+		if keyValueExpr, ok := expr.(*ast.KeyValueExpr); ok {
+			parseEdgeItem(keyValueExpr)
+		} else {
+			panic("invalid expression in map returned from GetEdges")
+		}
+	}
+
+	//fmt.Println(len(fn.Body.List))
+	// for _, stmt := range fn.Body.List {
+	// 	// if exprStmt, ok := stmt.(*ast.ExprStmt); ok {
+
+	// 	// }
+	// }
+
+}
+
+type edge struct {
+	edgeName string
+}
+
+func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edge {
+	key, ok := keyValueExpr.Key.(*ast.BasicLit)
+	if !ok || key.Kind != token.STRING {
+		panic("invalid key for edge item")
+	}
+	var edgeName = key.Value
+
+	//value, ok := keyValueExpr.Value.(*ast.CompositeLit)
+	if !ok {
+		panic("invalid value for edge item")
+	}
+	return edge{
+		edgeName: edgeName,
 	}
 }
 
