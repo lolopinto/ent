@@ -156,8 +156,7 @@ func codegenImpl(packageName string, filePath string) {
 	//ast.NewObj(fset, "file")
 	//fmt.Println("Struct:")
 	var nodeData nodeTemplate
-	var configValue reflect.Value
-	//var configType reflect.Type
+	var edges []edgeInfo
 
 	ast.Inspect(file, func(node ast.Node) bool {
 		// get struct
@@ -166,39 +165,25 @@ func codegenImpl(packageName string, filePath string) {
 
 		if s, ok := node.(*ast.StructType); ok {
 			nodeData = parseConfig(s, packageName, fset)
-
-			//fmt.Println("reflect: ", reflect.ValueOf(node))
-			//configValue = reflect.ValueOf(node)
-		}
-
-		if decl, ok := node.(*ast.GenDecl); ok {
-			if decl.Tok == token.TYPE {
-				//configValue = getConfigReflectValue(packageName, decl)
-			}
 		}
 
 		// TODO handle the name do things about it
 		if fn, ok := node.(*ast.FuncDecl); ok {
-			//fmt.Println(fn.Body)
 			fmt.Println(fn.Name)
 			fmt.Println(fn.Name.IsExported())
 			//parser.ParseExpr()
 			// TODO how to parse the method and get info out of it
 			//ast.Print(fset, fn.Body)
-			parseFunc(fn)
+
+			switch fn.Name.Name {
+			case "GetEdges":
+				edges = parseEdgesFunc(fn)
+			}
 
 		}
 		return true
 	})
 
-	//getEdges(configValue)
-
-	if configValue.IsValid() && !configValue.IsNil() {
-		//		getEdges(configType, configValue)
-	} else {
-		//	panic("invalid type passed")
-
-	}
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
 		// TODO only do contact for now.
@@ -207,91 +192,6 @@ func codegenImpl(packageName string, filePath string) {
 			writeModelFile(nodeData)
 			writeConstFile(nodeData)
 		}
-	}
-}
-
-// todo rename
-func getConfigReflectValue(packageName string, decl *ast.GenDecl) reflect.Value {
-	for _, decl := range decl.Specs {
-		if decl, ok := decl.(*ast.TypeSpec); ok {
-			name := decl.Name
-			configName := fmt.Sprintf("%s.%s", packageName, name)
-			fmt.Println("configName:", configName)
-			return makeConfigInstance(configName)
-			// //fmt.Println("type:", name)
-			// configType := reflect.TypeOf(name)
-			// //configType.Elem().Set()
-			// // TODO need to initialize this somehow?
-			// return configType
-		}
-	}
-
-	panic("could not create an instance of reflect Value for instance. Need to call RegisterEntConfig")
-}
-
-func getEdges(configValue reflect.Value) {
-	// TODO make this better
-	//instead of trying to parse everything. we should only parse the struct,
-	//and then call the methods directly
-
-	// get a zero value of the type
-	//configValue = reflect.New(configType)
-	//configValue := reflect.Zero(configType)
-
-	// todo handle this somewhere else
-	// if !configValue.IsValid() || configValue.IsNil() {
-	// 	panic("invalid type passed")
-	// }
-
-	//configValue = reflect.ValueOf(configValue)
-
-	// if configValue.Kind() == reflect.Ptr {
-	// 	configValue = configValue.Elem()
-	// }
-	//
-	fmt.Println("type: %T", configValue, reflect.TypeOf(configValue.Elem().Interface()))
-	fmt.Println(configValue.Kind())
-
-	fmt.Println(configValue)
-	fmt.Println(configValue.Interface())
-	fmt.Println(reflect.Indirect(configValue).Kind())
-	// rawValue := reflect.ValueOf(configValue.Interface())
-	// fmt.Println(rawValue)
-	//	getEdgesMethod := reflect.Indirect(reflect.Indirect(configValue)).MethodByName("GetEdges")
-	//	getEdgesMethod2 := reflect.Indirect(configValue.Interface()).MethodByName("GetEdges")
-	getEdgesMethod3 := reflect.ValueOf(configValue).MethodByName("GetEdges")
-
-	//in := make([]reflect.Value, 0)
-	//fmt.Println(getEdgesMethod.IsValid())
-	//fmt.Println(getEdgesMethod2.IsValid())
-	fmt.Println(getEdgesMethod3.IsValid())
-
-	edgesList := getEdgesMethod3.Call(nil)
-
-	fmt.Println(edgesList)
-
-	edges := edgesList[0].Interface()
-
-	edgesMap, ok := edges.(map[string]interface{})
-	if !ok {
-		panic("sad, getEdges() doesn't return the right format")
-	}
-
-	for key, _ := range edgesMap {
-		fmt.Println(key)
-	}
-
-}
-
-// parses a function in edges file
-func parseFunc(fn *ast.FuncDecl) {
-	switch fn.Name.String() {
-	case "GetEdges":
-		parseEdgesFunc(fn)
-	case "init":
-		break
-	default:
-		panic("invalid function name")
 	}
 }
 
@@ -308,62 +208,153 @@ func getLastExpr(exprs []ast.Expr) ast.Expr {
 }
 
 // http://goast.yuroyoro.net/ is really helpful to see the tree
-func parseEdgesFunc(fn *ast.FuncDecl) {
+func parseEdgesFunc(fn *ast.FuncDecl) []edgeInfo {
 	// fn.Body is an instance of *ast.BlockStmt
 	lastStmt := getLastStatement(fn.Body.List)
 
 	//fmt.Println(length)
 	// to handle the case where we have variables used to return something
+	// not really a valid case but handle it anyways
 	returnStmt, ok := lastStmt.(*ast.ReturnStmt)
 	if !ok {
 		panic("last statement in function was not a return statement. ")
 	}
 
 	fmt.Println(len(returnStmt.Results))
-	// for _, stmt := range returnStmt.Results {
-
-	// }
 
 	lastExpr := getLastExpr(returnStmt.Results)
-	compositeListStmt, ok := lastExpr.(*ast.CompositeLit)
-	if !(ok && len(returnStmt.Results) == 1) {
+	compositeListStmt := getExprToCompositeLit(lastExpr)
+	if len(returnStmt.Results) != 1 {
 		panic("invalid number or format of return statement")
 	}
 
+	// get the
+	edges := make([]edgeInfo, len(compositeListStmt.Elts))
 	for _, expr := range compositeListStmt.Elts {
-		if keyValueExpr, ok := expr.(*ast.KeyValueExpr); ok {
-			parseEdgeItem(keyValueExpr)
-		} else {
-			panic("invalid expression in map returned from GetEdges")
-		}
+		keyValueExpr := getExprToKeyValueExpr(expr)
+		// get the edge as needed
+		edges = append(edges, parseEdgeItem(keyValueExpr))
 	}
 
-	//fmt.Println(len(fn.Body.List))
-	// for _, stmt := range fn.Body.List {
-	// 	// if exprStmt, ok := stmt.(*ast.ExprStmt); ok {
+	fmt.Println(edges)
 
-	// 	// }
-	// }
-
+	return edges
 }
 
-type edge struct {
-	edgeName string
+func getExprToCompositeLit(expr ast.Expr) *ast.CompositeLit {
+	value, ok := expr.(*ast.CompositeLit)
+	if !ok {
+		panic("invalid value for Expr. Expr was not of type CompositeLit")
+	}
+	return value
 }
 
-func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edge {
+func getExprToBasicLit(expr ast.Expr) *ast.BasicLit {
+	value, ok := expr.(*ast.BasicLit)
+	if !ok {
+		panic("invalid value for Expr. Expr was not of type BasicLit")
+	}
+	return value
+}
+
+func getExprToSelectorExpr(expr ast.Expr) *ast.SelectorExpr {
+	value, ok := expr.(*ast.SelectorExpr)
+	if !ok {
+		panic("invalid value for Expr. Expr was not of type SelectorExpr")
+	}
+	return value
+}
+
+func getExprToKeyValueExpr(expr ast.Expr) *ast.KeyValueExpr {
+	value, ok := expr.(*ast.KeyValueExpr)
+	if !ok {
+		panic("invalid value for Expr. Expr was not of type KeyValueExpr")
+	}
+	return value
+}
+
+func getExprToIdent(expr ast.Expr) *ast.Ident {
+	value, ok := expr.(*ast.Ident)
+	if !ok {
+		panic("invalid value for Expr. Expr was not of type Ident")
+	}
+	return value
+}
+
+type entConfigInfo struct {
+	PackageName string
+	ConfigName  string
+}
+
+type fieldEdgeInfo struct {
+	FieldName string
+	EntConfig entConfigInfo
+}
+
+type edgeInfo struct {
+	EdgeName  string
+	FieldEdge fieldEdgeInfo
+}
+
+func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
 	key, ok := keyValueExpr.Key.(*ast.BasicLit)
 	if !ok || key.Kind != token.STRING {
 		panic("invalid key for edge item")
 	}
 	var edgeName = key.Value
+	fmt.Println(edgeName)
 
-	//value, ok := keyValueExpr.Value.(*ast.CompositeLit)
-	if !ok {
-		panic("invalid value for edge item")
+	value := getExprToCompositeLit(keyValueExpr.Value)
+	typ := getExprToSelectorExpr(value.Type)
+	// ignore typ.X because for now it should always be models.FieldEdge or ent.FieldEdge...
+
+	edgeType := typ.Sel.Name
+	if edgeType != "FieldEdge" {
+		panic("unsupported edge type")
 	}
-	return edge{
-		edgeName: edgeName,
+	return edgeInfo{
+		EdgeName:  edgeName,
+		FieldEdge: parseFieldEdgeItem(value),
+	}
+}
+
+func parseFieldEdgeItem(lit *ast.CompositeLit) fieldEdgeInfo {
+	var fieldName string
+	var entConfig entConfigInfo
+	for _, expr := range lit.Elts {
+		keyValueExpr := getExprToKeyValueExpr(expr)
+		ident := getExprToIdent(keyValueExpr.Key)
+
+		switch ident.Name {
+		case "FieldName":
+			// TODO: this validates it's a string literal.
+			// does not format it.
+			// TODO make this
+			_, ok := expr.(*ast.Ident)
+			if ok {
+				panic("invalid FieldName value. Should not use an expression. Should be a string literal")
+			}
+			basicLit := getExprToBasicLit(keyValueExpr.Value)
+			fieldName = basicLit.Value
+
+		case "EntConfig":
+			value := getExprToCompositeLit(keyValueExpr.Value)
+			typ := getExprToSelectorExpr(value.Type)
+			entIdent := getExprToIdent(typ.X)
+
+			entConfig = entConfigInfo{
+				PackageName: entIdent.Name,
+				ConfigName:  typ.Sel.Name,
+			}
+
+		default:
+			panic("invalid identifier for field config")
+		}
+	}
+
+	return fieldEdgeInfo{
+		FieldName: fieldName,
+		EntConfig: entConfig,
 	}
 }
 
