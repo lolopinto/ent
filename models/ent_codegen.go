@@ -15,7 +15,6 @@ import (
 	"regexp"
 	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 )
 
@@ -53,6 +52,30 @@ type field struct {
 	FieldName string
 	FieldType string
 	FieldTag  string
+}
+
+var typeRegistry = make(map[string]reflect.Type)
+
+// RegisterType registers a type so we know how to create it in the future
+// This is because Go is a hard language to use for this.
+// See https://stackoverflow.com/questions/23030884/is-there-a-way-to-create-an-instance-of-a-struct-from-a-string
+// Until I figure out how to do this from AST, I'll have to make every Config do this
+// This is so that I don't have to parse every single function and eval it...
+func RegisterEntConfig(typedNil interface{}) {
+	fmt.Println("RegisterEntconfig")
+
+	t := reflect.TypeOf(typedNil).Elem()
+	typeRegistry[t.PkgPath()+"."+t.Name()] = t
+}
+
+func makeConfigInstance(configName string) reflect.Value {
+	fmt.Println("makeConfigInstance")
+	for k := range typeRegistry {
+		fmt.Println(k)
+	}
+	return reflect.New(typeRegistry[configName]).Elem()
+
+	//.Interface()
 }
 
 // CodeGenMain method does stuff TODO
@@ -94,11 +117,21 @@ func codegenPackage(packageName string, directoryPath string) {
 		}
 	}
 
+	filePath := directoryPath + "/" + files[0]
+
+	// var conf loader.Config
+	// conf.CreateFromFilenames(packageName, filePath)
+
+	// prog, err := conf.Load()
+	// die(err)
+	// fmt.Println(prog)
+
 	if len(files) > 1 {
 		die(fmt.Errorf("There was more than one config file in this directory %s", directoryPath))
 	} else if len(files) == 1 {
-		codegenImpl(packageName, directoryPath+"/"+files[0])
+		codegenImpl(packageName, filePath)
 	}
+
 }
 
 // gets the string representation of the type
@@ -115,7 +148,7 @@ func codegenImpl(packageName string, filePath string) {
 	fset := token.NewFileSet()
 	var src interface{}
 	file, err := parser.ParseFile(fset, filePath, src, parser.AllErrors)
-	spew.Dump(file)
+	//	spew.Dump(file)
 	die(err)
 	//fmt.Println(f)
 
@@ -124,7 +157,7 @@ func codegenImpl(packageName string, filePath string) {
 	//fmt.Println("Struct:")
 	var nodeData nodeTemplate
 	var configValue reflect.Value
-	var configType reflect.Type
+	//var configType reflect.Type
 
 	ast.Inspect(file, func(node ast.Node) bool {
 		// get struct
@@ -134,12 +167,14 @@ func codegenImpl(packageName string, filePath string) {
 		if s, ok := node.(*ast.StructType); ok {
 			nodeData = parseConfig(s, packageName, fset)
 
-			fmt.Println("reflect: ", reflect.ValueOf(node))
-			configValue = reflect.ValueOf(node)
+			//fmt.Println("reflect: ", reflect.ValueOf(node))
+			//configValue = reflect.ValueOf(node)
 		}
 
 		if decl, ok := node.(*ast.GenDecl); ok {
-			configType = getReflectType(decl)
+			if decl.Tok == token.TYPE {
+				//configValue = getConfigReflectValue(packageName, decl)
+			}
 		}
 
 		// TODO handle the name do things about it
@@ -156,7 +191,7 @@ func codegenImpl(packageName string, filePath string) {
 		return true
 	})
 
-	getEdges(configType, configValue)
+	//getEdges(configValue)
 
 	if configValue.IsValid() && !configValue.IsNil() {
 		//		getEdges(configType, configValue)
@@ -175,23 +210,26 @@ func codegenImpl(packageName string, filePath string) {
 	}
 }
 
-func getReflectType(decl *ast.GenDecl) reflect.Type {
-	if decl.Tok == token.TYPE {
-		for _, decl := range decl.Specs {
-			if decl, ok := decl.(*ast.TypeSpec); ok {
-				name := decl.Name
-				fmt.Println("type:", name)
-				configType := reflect.TypeOf(name)
-				//configType.Elem().Set()
-				// TODO need to initialize this somehow?
-				return configType
-			}
+// todo rename
+func getConfigReflectValue(packageName string, decl *ast.GenDecl) reflect.Value {
+	for _, decl := range decl.Specs {
+		if decl, ok := decl.(*ast.TypeSpec); ok {
+			name := decl.Name
+			configName := fmt.Sprintf("%s.%s", packageName, name)
+			fmt.Println("configName:", configName)
+			return makeConfigInstance(configName)
+			// //fmt.Println("type:", name)
+			// configType := reflect.TypeOf(name)
+			// //configType.Elem().Set()
+			// // TODO need to initialize this somehow?
+			// return configType
 		}
 	}
-	return nil
+
+	panic("could not create an instance of reflect Value for instance. Need to call RegisterEntConfig")
 }
 
-func getEdges(configType reflect.Type, configValue reflect.Value) {
+func getEdges(configValue reflect.Value) {
 	// TODO make this better
 	//instead of trying to parse everything. we should only parse the struct,
 	//and then call the methods directly
@@ -250,6 +288,8 @@ func parseFunc(fn *ast.FuncDecl) {
 	switch fn.Name.String() {
 	case "GetEdges":
 		parseEdgesFunc(fn)
+	case "init":
+		break
 	default:
 		panic("invalid function name")
 	}
