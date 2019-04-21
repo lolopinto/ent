@@ -11,9 +11,11 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
 	"regexp"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 )
 
@@ -113,6 +115,7 @@ func codegenImpl(packageName string, filePath string) {
 	fset := token.NewFileSet()
 	var src interface{}
 	file, err := parser.ParseFile(fset, filePath, src, parser.AllErrors)
+	spew.Dump(file)
 	die(err)
 	//fmt.Println(f)
 
@@ -120,19 +123,27 @@ func codegenImpl(packageName string, filePath string) {
 	//ast.NewObj(fset, "file")
 	//fmt.Println("Struct:")
 	var nodeData nodeTemplate
+	var configValue reflect.Value
+	var configType reflect.Type
 
 	ast.Inspect(file, func(node ast.Node) bool {
 		// get struct
 		// TODO get the name from *ast.TypeSpec to verify a few things
 		// for now, we're assuming one struct which maps to what we want which isn't necessarily true
-		s, ok := node.(*ast.StructType)
-		if ok {
+
+		if s, ok := node.(*ast.StructType); ok {
 			nodeData = parseConfig(s, packageName, fset)
+
+			fmt.Println("reflect: ", reflect.ValueOf(node))
+			configValue = reflect.ValueOf(node)
+		}
+
+		if decl, ok := node.(*ast.GenDecl); ok {
+			configType = getReflectType(decl)
 		}
 
 		// TODO handle the name do things about it
-		fn, ok := node.(*ast.FuncDecl)
-		if ok {
+		if fn, ok := node.(*ast.FuncDecl); ok {
 			//fmt.Println(fn.Body)
 			fmt.Println(fn.Name)
 			fmt.Println(fn.Name.IsExported())
@@ -145,14 +156,93 @@ func codegenImpl(packageName string, filePath string) {
 		return true
 	})
 
+	getEdges(configType, configValue)
+
+	if configValue.IsValid() && !configValue.IsNil() {
+		//		getEdges(configType, configValue)
+	} else {
+		//	panic("invalid type passed")
+
+	}
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
 		// TODO only do contact for now.
 		if nodeData.PackageName == "contact" {
+			//getEdges()
 			writeModelFile(nodeData)
 			writeConstFile(nodeData)
 		}
 	}
+}
+
+func getReflectType(decl *ast.GenDecl) reflect.Type {
+	if decl.Tok == token.TYPE {
+		for _, decl := range decl.Specs {
+			if decl, ok := decl.(*ast.TypeSpec); ok {
+				name := decl.Name
+				fmt.Println("type:", name)
+				configType := reflect.TypeOf(name)
+				//configType.Elem().Set()
+				// TODO need to initialize this somehow?
+				return configType
+			}
+		}
+	}
+	return nil
+}
+
+func getEdges(configType reflect.Type, configValue reflect.Value) {
+	// TODO make this better
+	//instead of trying to parse everything. we should only parse the struct,
+	//and then call the methods directly
+
+	// get a zero value of the type
+	//configValue = reflect.New(configType)
+	//configValue := reflect.Zero(configType)
+
+	// todo handle this somewhere else
+	// if !configValue.IsValid() || configValue.IsNil() {
+	// 	panic("invalid type passed")
+	// }
+
+	//configValue = reflect.ValueOf(configValue)
+
+	// if configValue.Kind() == reflect.Ptr {
+	// 	configValue = configValue.Elem()
+	// }
+	//
+	fmt.Println("type: %T", configValue, reflect.TypeOf(configValue.Elem().Interface()))
+	fmt.Println(configValue.Kind())
+
+	fmt.Println(configValue)
+	fmt.Println(configValue.Interface())
+	fmt.Println(reflect.Indirect(configValue).Kind())
+	// rawValue := reflect.ValueOf(configValue.Interface())
+	// fmt.Println(rawValue)
+	//	getEdgesMethod := reflect.Indirect(reflect.Indirect(configValue)).MethodByName("GetEdges")
+	//	getEdgesMethod2 := reflect.Indirect(configValue.Interface()).MethodByName("GetEdges")
+	getEdgesMethod3 := reflect.ValueOf(configValue).MethodByName("GetEdges")
+
+	//in := make([]reflect.Value, 0)
+	//fmt.Println(getEdgesMethod.IsValid())
+	//fmt.Println(getEdgesMethod2.IsValid())
+	fmt.Println(getEdgesMethod3.IsValid())
+
+	edgesList := getEdgesMethod3.Call(nil)
+
+	fmt.Println(edgesList)
+
+	edges := edgesList[0].Interface()
+
+	edgesMap, ok := edges.(map[string]interface{})
+	if !ok {
+		panic("sad, getEdges() doesn't return the right format")
+	}
+
+	for key, _ := range edgesMap {
+		fmt.Println(key)
+	}
+
 }
 
 // parses a function in edges file
