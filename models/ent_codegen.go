@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"reflect"
 	"regexp"
 	"strings"
 	"text/template"
@@ -54,30 +53,6 @@ type field struct {
 	FieldName string
 	FieldType string
 	FieldTag  string
-}
-
-var typeRegistry = make(map[string]reflect.Type)
-
-// RegisterType registers a type so we know how to create it in the future
-// This is because Go is a hard language to use for this.
-// See https://stackoverflow.com/questions/23030884/is-there-a-way-to-create-an-instance-of-a-struct-from-a-string
-// Until I figure out how to do this from AST, I'll have to make every Config do this
-// This is so that I don't have to parse every single function and eval it...
-func RegisterEntConfig(typedNil interface{}) {
-	fmt.Println("RegisterEntconfig")
-
-	t := reflect.TypeOf(typedNil).Elem()
-	typeRegistry[t.PkgPath()+"."+t.Name()] = t
-}
-
-func makeConfigInstance(configName string) reflect.Value {
-	fmt.Println("makeConfigInstance")
-	for k := range typeRegistry {
-		fmt.Println(k)
-	}
-	return reflect.New(typeRegistry[configName]).Elem()
-
-	//.Interface()
 }
 
 // CodeGenMain method does stuff TODO
@@ -190,7 +165,6 @@ func codegenImpl(packageName string, filePath string) {
 	if len(nodeData.PackageName) > 0 {
 		// TODO only do contact for now.
 		if nodeData.PackageName == "contact" {
-			//getEdges()
 			writeModelFile(nodeData)
 			writeConstFile(nodeData)
 		}
