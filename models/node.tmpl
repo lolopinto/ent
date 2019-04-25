@@ -56,6 +56,22 @@ func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
   }
 }
 
+{{/* todo: deal with im porting right packages above and circular dependency all that jazz*/}}
+{{/* this should be user/factory. user/config? user/query user/privacy etc. */}}
+{{with . -}}
+  {{$currentNodeInstance := .NodeInstance}}
+  {{$currentNode := .Node}}
+  {{range .Edges -}}
+    func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{.EdgeName}}(chan{{.NodeTemplate.NodeResult}} chan<- {{.NodeTemplate.NodeResult}}) {
+      {{$edgeName := .EdgeName -}}
+      {{with .NodeTemplate -}}
+        go {{.PackageName}}.GenLoad{{.Node}}({{$currentNode}}.{{$edgeName}}, chan{{.NodeResult}} )
+      {{end -}}
+    }
+
+  {{end}}
+{{end}}
+
 // Update{{.Node}} updates the given {{.Node}} given the id
 func Update{{.Node}}({{.NodeInstance}} {{.Node}}) ({{.Node}}, error) {
 	err := models.UpdateNode(&{{.NodeInstance}}, "{{.TableName}}")

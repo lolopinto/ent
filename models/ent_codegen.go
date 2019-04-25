@@ -13,6 +13,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/iancoleman/strcase"
@@ -46,6 +47,7 @@ type nodeTemplate struct {
 	NodesSlice   string
 	NodeType     string
 	TableName    string
+	Edges        []edgeInfo
 }
 
 type field struct {
@@ -170,19 +172,19 @@ func codegenImpl(packageName string, filePath string) {
 		// TODO handle the name do things about it
 		if fn, ok := node.(*ast.FuncDecl); ok {
 			fmt.Println(fn.Name)
-			fmt.Println(fn.Name.IsExported())
-			//parser.ParseExpr()
-			// TODO how to parse the method and get info out of it
-			//ast.Print(fset, fn.Body)
 
 			switch fn.Name.Name {
 			case "GetEdges":
 				edges = parseEdgesFunc(fn)
+				// TODO: validate edges. can only have one of each type etc
 			}
 
 		}
 		return true
 	})
+
+	// set edges and other fields gotten from parsing other things
+	nodeData.Edges = edges
 
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
@@ -230,13 +232,15 @@ func parseEdgesFunc(fn *ast.FuncDecl) []edgeInfo {
 
 	// get the
 	edges := make([]edgeInfo, len(compositeListStmt.Elts))
-	for _, expr := range compositeListStmt.Elts {
+	for idx, expr := range compositeListStmt.Elts {
 		keyValueExpr := getExprToKeyValueExpr(expr)
+		fmt.Println(keyValueExpr)
 		// get the edge as needed
-		edges = append(edges, parseEdgeItem(keyValueExpr))
+		edgeItem := parseEdgeItem(keyValueExpr)
+		edges[idx] = edgeItem
 	}
 
-	fmt.Println(edges)
+	//fmt.Println(edges)
 
 	return edges
 }
@@ -292,8 +296,9 @@ type fieldEdgeInfo struct {
 }
 
 type edgeInfo struct {
-	EdgeName  string
-	FieldEdge fieldEdgeInfo
+	EdgeName     string
+	FieldEdge    fieldEdgeInfo
+	NodeTemplate nodeTemplate
 }
 
 func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
@@ -302,6 +307,13 @@ func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
 		panic("invalid key for edge item")
 	}
 	var edgeName = key.Value
+	splitString := strings.Split(edgeName, "\"")
+	fmt.Println(splitString)
+	// verify that the first and last part are empty string?
+	if len(splitString) != 3 {
+		panic(fmt.Sprintf("edge %s is formatted weirdly as a string literal", edgeName))
+	}
+	edgeName = splitString[1]
 	fmt.Println(edgeName)
 
 	value := getExprToCompositeLit(keyValueExpr.Value)
@@ -312,9 +324,11 @@ func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
 	if edgeType != "FieldEdge" {
 		panic("unsupported edge type")
 	}
+	fieldEdgeItem := parseFieldEdgeItem(value)
 	return edgeInfo{
-		EdgeName:  edgeName,
-		FieldEdge: parseFieldEdgeItem(value),
+		EdgeName:     edgeName,
+		FieldEdge:    fieldEdgeItem,
+		NodeTemplate: getNodeTemplate(fieldEdgeItem.EntConfig.PackageName, []field{}),
 	}
 }
 
@@ -376,6 +390,10 @@ func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet) nod
 		})
 	}
 
+	return getNodeTemplate(packageName, fields)
+}
+
+func getNodeTemplate(packageName string, fields []field) nodeTemplate {
 	// convert from pacakgename to camel case and add V2 till we convert
 	nodeName := strcase.ToCamel(packageName) + "V2"
 	//		nodeName := "ContactV2"
@@ -392,7 +410,7 @@ func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet) nod
 		NodeInstance: strcase.ToLowerCamel(nodeName),
 		NodesSlice:   fmt.Sprintf("[]%s", nodeName),
 		NodeType:     fmt.Sprintf("%sType", nodeName),
-		TableName:    "contacts", //fmt.Sprintf("%ss", nodeName),
+		TableName:    fmt.Sprintf("%ss", packageName),
 	}
 }
 
