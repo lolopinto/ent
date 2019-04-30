@@ -30,9 +30,17 @@ type Edgeconfig struct {
 	EdgeType EdgeConfigType
 }
 
+// FieldEdge refers to when the Edge being loaded from an ent is a field on the same node/ent
 type FieldEdge struct {
 	FieldName string
 	EntConfig interface{} // zero-value of the struct...
+}
+
+// ForeignKeyEdge is when the edge is handled by having a foreign key in the other table
+// So contacts -> contact_emails with the ContactID being a field stored in ContactEmail table
+// There'll be a ForeignKey edge from Contact -> ContactEmails and then a FieldEdge from ContactEmail to Contact
+type ForeignKeyEdge struct {
+	EntConfig interface{} // zero-value of the struct
 }
 
 type nodeTemplate struct {
@@ -269,10 +277,15 @@ type fieldEdgeInfo struct {
 	EntConfig entConfigInfo
 }
 
+type foreignKeyEdgeInfo struct {
+	EntConfig entConfigInfo
+}
+
 type edgeInfo struct {
-	EdgeName     string
-	FieldEdge    fieldEdgeInfo
-	NodeTemplate nodeTemplate
+	EdgeName       string
+	FieldEdge      *fieldEdgeInfo
+	ForeignKeyEdge *foreignKeyEdgeInfo
+	NodeTemplate   nodeTemplate
 }
 
 func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
@@ -295,18 +308,33 @@ func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
 	// ignore typ.X because for now it should always be models.FieldEdge or ent.FieldEdge...
 
 	edgeType := typ.Sel.Name
-	if edgeType != "FieldEdge" {
+
+	var fieldEdgeItem *fieldEdgeInfo
+	var foreignKeyEdgeItem *foreignKeyEdgeInfo
+	var packageName string
+
+	switch edgeType {
+	case "FieldEdge":
+		fieldEdgeItem = parseFieldEdgeItem(value)
+		packageName = fieldEdgeItem.EntConfig.PackageName
+
+	case "ForeignKeyEdge":
+		foreignKeyEdgeItem = parseForeignKeyEdgeItem(value)
+		packageName = foreignKeyEdgeItem.EntConfig.PackageName
+
+	default:
 		panic("unsupported edge type")
+
 	}
-	fieldEdgeItem := parseFieldEdgeItem(value)
 	return edgeInfo{
-		EdgeName:     edgeName,
-		FieldEdge:    fieldEdgeItem,
-		NodeTemplate: getNodeTemplate(fieldEdgeItem.EntConfig.PackageName, []field{}),
+		EdgeName:       edgeName,
+		FieldEdge:      fieldEdgeItem,
+		ForeignKeyEdge: foreignKeyEdgeItem,
+		NodeTemplate:   getNodeTemplate(packageName, []field{}),
 	}
 }
 
-func parseFieldEdgeItem(lit *ast.CompositeLit) fieldEdgeInfo {
+func parseFieldEdgeItem(lit *ast.CompositeLit) *fieldEdgeInfo {
 	var fieldName string
 	var entConfig entConfigInfo
 	for _, expr := range lit.Elts {
@@ -326,23 +354,47 @@ func parseFieldEdgeItem(lit *ast.CompositeLit) fieldEdgeInfo {
 			fieldName = basicLit.Value
 
 		case "EntConfig":
-			value := getExprToCompositeLit(keyValueExpr.Value)
-			typ := getExprToSelectorExpr(value.Type)
-			entIdent := getExprToIdent(typ.X)
-
-			entConfig = entConfigInfo{
-				PackageName: entIdent.Name,
-				ConfigName:  typ.Sel.Name,
-			}
+			entConfig = getEntConfigFromExpr(keyValueExpr.Value)
 
 		default:
 			panic("invalid identifier for field config")
 		}
 	}
 
-	return fieldEdgeInfo{
+	return &fieldEdgeInfo{
 		FieldName: fieldName,
 		EntConfig: entConfig,
+	}
+}
+
+func parseForeignKeyEdgeItem(lit *ast.CompositeLit) *foreignKeyEdgeInfo {
+	var entConfig entConfigInfo
+
+	for _, expr := range lit.Elts {
+		keyValueExpr := getExprToKeyValueExpr(expr)
+		ident := getExprToIdent(keyValueExpr.Key)
+
+		switch ident.Name {
+		case "EntConfig":
+			entConfig = getEntConfigFromExpr(keyValueExpr.Value)
+
+		default:
+			panic("invalid identifier for field config")
+		}
+	}
+	return &foreignKeyEdgeInfo{
+		EntConfig: entConfig,
+	}
+}
+
+func getEntConfigFromExpr(expr ast.Expr) entConfigInfo {
+	value := getExprToCompositeLit(expr)
+	typ := getExprToSelectorExpr(value.Type)
+	entIdent := getExprToIdent(typ.X)
+
+	return entConfigInfo{
+		PackageName: entIdent.Name,
+		ConfigName:  typ.Sel.Name,
 	}
 }
 
@@ -375,16 +427,16 @@ func getNodeTemplate(packageName string, fields []field) nodeTemplate {
 	return nodeTemplate{
 		// TODO this shouldn't be hardcoded.
 		// take from directory name?
-		PackageName:  packageName,
-		Node:         nodeName,
-		Nodes:        fmt.Sprintf("%ss", nodeName),
+		PackageName:  packageName,                  // contact
+		Node:         nodeName,                     // Contact
+		Nodes:        fmt.Sprintf("%ss", nodeName), // Contacts
 		Fields:       fields,
-		NodeResult:   fmt.Sprintf("%sResult", nodeName),
-		NodesResult:  fmt.Sprintf("%ssResult", nodeName),
-		NodeInstance: strcase.ToLowerCamel(nodeName),
-		NodesSlice:   fmt.Sprintf("[]%s", nodeName),
-		NodeType:     fmt.Sprintf("%sType", nodeName),
-		TableName:    fmt.Sprintf("%ss", packageName),
+		NodeResult:   fmt.Sprintf("%sResult", nodeName),  // ContactResult
+		NodesResult:  fmt.Sprintf("%ssResult", nodeName), // ContactsResult
+		NodeInstance: strcase.ToLowerCamel(nodeName),     // contact
+		NodesSlice:   fmt.Sprintf("[]%s", nodeName),      // []Contact
+		NodeType:     fmt.Sprintf("%sType", nodeName),    // ContactType
+		TableName:    fmt.Sprintf("%ss", packageName),    // contacts
 	}
 }
 
@@ -409,9 +461,9 @@ func writeConstFile(nodeData nodeTemplate) {
 func writeFile(nodeData nodeTemplate, pathToTemplate string, templateName string, pathToFile string) {
 	path := []string{pathToTemplate}
 	t, err := template.New(templateName).ParseFiles(path...)
-	fmt.Println("sss")
 	die(err)
-	fmt.Println("ddd")
+	template.Must(t, err)
+	die(err)
 
 	var buffer bytes.Buffer
 

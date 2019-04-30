@@ -56,19 +56,35 @@ func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
   }
 }
 
-{{/* todo: deal with im porting right packages above and circular dependency all that jazz*/}}
+{{/* todo: deal with importing right packages above and circular dependency all that jazz*/}}
 {{/* this should be user/factory. user/config? user/query user/privacy etc. */}}
 {{with . -}}
   {{$currentNodeInstance := .NodeInstance}}
   {{$currentNode := .Node}}
+  {{$currentPackageName := .PackageName}}
   {{range .Edges -}}
-    func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{.EdgeName}}(chan{{.NodeTemplate.NodeResult}} chan<- {{.NodeTemplate.NodeResult}}) {
-      {{$edgeName := .EdgeName -}}
-      {{with .NodeTemplate -}}
-        go {{.PackageName}}.GenLoad{{.Node}}({{$currentNode}}.{{$edgeName}}, chan{{.NodeResult}} )
-      {{end -}}
-    }
-
+    {{$edgeName := .EdgeName -}}
+    {{$edgeInfo := .}}
+    {{with .NodeTemplate -}}
+      {{if $edgeInfo.FieldEdge -}}
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodeResult}} chan<- {{.NodeResult}}) {
+          go {{.PackageName}}.GenLoad{{.Node}}({{$currentNode}}.{{$edgeName}}, chan{{.NodeResult}} )
+        }
+      {{end}}
+      {{if $edgeInfo.ForeignKeyEdge -}}
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodeResult}} chan<- {{.NodeResult}}) {
+          var {{.NodeInstance}}s {{.NodesSlice}}
+          chanErr := make(chan error)
+          go models.GenLoadNodes({{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", "{{.PackageName}}s")
+          err := <-chanErr
+          chan{{.NodeResult}}s <- {{.NodeResult}}{
+            {{.Nodes}}: {{.NodeInstance}}s,
+            Error: err,
+          }
+        }
+      {{end}}
+     
+    {{end}}
   {{end}}
 {{end}}
 
@@ -85,4 +101,3 @@ func Delete{{.Node}}({{.NodeInstance}} {{.Node}}) error {
 
 // Add this to each entity to confirm it implements the interface
 var _ models.Entity = (*{{.Node}})(nil)
-
