@@ -10,7 +10,6 @@ import (
 	"go/token"
 	"io/ioutil"
 	"log"
-	"os"
 	"regexp"
 	"strings"
 	"text/template"
@@ -472,7 +471,7 @@ func writeFile(nodeData nodeTemplate, pathToTemplate string, templateName string
 	die(err)
 	//err = t.Execute(os.Stdout, nodeData)
 	//fmt.Println(buffer)
-	//fmt.Println(buffer.String())
+	fmt.Println(buffer.String())
 	// gofmt the buffer
 	bytes, err := format.Source(buffer.Bytes())
 	die(err)
@@ -489,7 +488,7 @@ func writeFile(nodeData nodeTemplate, pathToTemplate string, templateName string
 	// etc
 
 	// TODO figure out flags. I had os.O_CREATE but doesn't work for existing files
-	file, err := os.OpenFile(pathToFile, os.O_RDWR|os.O_EXCL, 0666)
+	/*file, err := os.OpenFile(pathToFile, os.O_WRONLY|os.O_SYNC, 0666)
 	if err == nil {
 		// nothing to do here
 		fmt.Println("existing file ", pathToFile)
@@ -501,10 +500,15 @@ func writeFile(nodeData nodeTemplate, pathToTemplate string, templateName string
 		// different type of error
 		die(err)
 	}
+	*/
 
-	_, err = file.Write(bytes)
+	// replace manual writes with ioutil.WriteFile as that seems to (small sample size) fix the
+	// weird issues I was sometimes seeing with overwriting an existing file
+	// and random characters appearing.
+	err = ioutil.WriteFile(pathToFile, bytes, 0666)
+	//	_, err = file.Write(bytes)
 	die(err)
-	err = file.Close()
+	//err = file.Close()
 	fmt.Println("wrote to file ", pathToFile)
 
 	//fmt.Printf("%s\n", bytes)
