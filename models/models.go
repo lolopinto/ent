@@ -662,7 +662,7 @@ func performAllOperations(operations []DataOperation) error {
 	return nil
 }
 
-func loadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
+func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 	db := data.DBConn()
 	if db == nil {
 		err := errors.New("error getting a valid db connection")
@@ -751,7 +751,7 @@ func loadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 
 func LoadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
 	// load the edges
-	edges, err := loadEdgesByType(id, edgeType)
+	edges, err := LoadEdgesByType(id, edgeType)
 	if err != nil {
 		return err
 	}
