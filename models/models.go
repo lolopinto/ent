@@ -171,11 +171,13 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 	return getFieldsAndValuesOfStruct(value, setIDField)
 }
 
-func loadNode(id string, entity interface{}, tableName string) error {
+// LoadNode loads a single node given the id, node object and tableName
+// TODO refactor this
+func LoadNode(id string, entity interface{}, tableName string) error {
 	// TODO does it make sense to change the API we use here to instead pass it to entity?
 
 	if entity == nil {
-		return errors.New("nil pointer passed to loadNode")
+		return errors.New("nil pointer passed to LoadNode")
 	}
 
 	// ok, so now we need a way to map from struct to fields
@@ -206,15 +208,15 @@ func loadNode(id string, entity interface{}, tableName string) error {
 	return err
 }
 
-// EntityResult is the result of a call to loadNodeConc which returns an object
+// EntityResult is the result of a call to LoadNodeConc which returns an object
 // and the channel. TODO: This is just a test
 type EntityResult struct {
 	Entity interface{}
 	Error  error
 }
 
-func genLoadNode(id string, entity interface{}, tableName string, errChan chan<- error) {
-	err := loadNode(id, entity, tableName)
+func GenLoadNode(id string, entity interface{}, tableName string, errChan chan<- error) {
+	err := LoadNode(id, entity, tableName)
 	// result := EntityResult{
 	// 	Entity: entity,
 	// 	Err:    err,
@@ -223,25 +225,25 @@ func genLoadNode(id string, entity interface{}, tableName string, errChan chan<-
 	//chanResult <- result
 }
 
-type loadNodesQuery func(insertData insertdata) (string, []interface{}, error)
+type LoadNodesQuery func(insertData insertdata) (string, []interface{}, error)
 
 // this borrows from/learns from scanAll in sqlx library
-func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
+func LoadNodesHelper(nodes interface{}, sqlQuery LoadNodesQuery) error {
 	value := reflect.ValueOf(nodes)
 	direct := reflect.Indirect(value)
 
 	if value.Kind() != reflect.Ptr {
-		return errors.New("must pass a pointer to loadNodes")
+		return errors.New("must pass a pointer to LoadNodes")
 	}
 	if value.IsNil() {
-		return errors.New("nil pointer passed to loadNodes")
+		return errors.New("nil pointer passed to LoadNodes")
 	}
 
 	// get the slice from the pointer
 	slice := reflectx.Deref(value.Type())
 	if slice.Kind() != reflect.Slice {
 		fmt.Printf("slice kind is not a slice. it's a %v \n", slice.Kind())
-		return errors.New("format passed to loadNodes is unexpected")
+		return errors.New("format passed to LoadNodes is unexpected")
 	}
 
 	// get the base type from the slice
@@ -275,7 +277,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 
 	stmt, err := db.Preparex(query)
 	if err != nil {
-		fmt.Println("error after prepare in loadNodes()", err)
+		fmt.Println("error after prepare in LoadNodes()", err)
 		return err
 	}
 	defer stmt.Close()
@@ -283,7 +285,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	fmt.Println("values", values)
 	rows, err := stmt.Queryx(values...)
 	if err != nil {
-		fmt.Println("error performing query in loadNodes", err)
+		fmt.Println("error performing query in LoadNodes", err)
 		return err
 	}
 
@@ -307,7 +309,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	return err
 }
 
-func loadNodes(id string, nodes interface{}, colName string, tableName string) error {
+func LoadNodes(id string, nodes interface{}, colName string, tableName string) error {
 	sqlQuery := func(insertData insertdata) (string, []interface{}, error) {
 		colsString := insertData.getColumnsString()
 		query := fmt.Sprintf(
@@ -320,19 +322,19 @@ func loadNodes(id string, nodes interface{}, colName string, tableName string) e
 		return query, []interface{}{id}, nil
 	}
 
-	return loadNodesHelper(nodes, sqlQuery)
+	return LoadNodesHelper(nodes, sqlQuery)
 }
 
-func genLoadNodes(id string, nodes interface{}, colName string, tableName string, errChan chan<- error) {
-	err := loadNodes(id, nodes, colName, tableName)
-	fmt.Println("genLoadNodes result", err, nodes)
+func GenLoadNodes(id string, nodes interface{}, colName string, tableName string, errChan chan<- error) {
+	err := LoadNodes(id, nodes, colName, tableName)
+	fmt.Println("GenLoadNodes result", err, nodes)
 	errChan <- err
 }
 
 func createNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
 	if entity == nil {
-		// same as loadNode in terms of handling this better
-		return errors.New("nil pointer passed to createNode")
+		// same as LoadNode in terms of handling this better
+		return errors.New("nil pointer passed to CreateNode")
 	}
 	insertData := getFieldsAndValues(entity, true)
 	colsString := insertData.getColumnsStringForInsert()
@@ -344,7 +346,8 @@ func createNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) 
 	return performWrite(computedQuery, values, tx)
 }
 
-func createNode(entity interface{}, tableName string) error {
+// CreateNode creates a node
+func CreateNode(entity interface{}, tableName string) error {
 	return createNodeInTransaction(entity, tableName, nil)
 }
 
@@ -393,8 +396,8 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx) error {
 
 func updateNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
 	if entity == nil {
-		// same as loadNode in terms of handling this better
-		return errors.New("nil pointer passed to updateNode")
+		// same as LoadNode in terms of handling this better
+		return errors.New("nil pointer passed to UpdateNode")
 	}
 
 	insertData := getFieldsAndValues(entity, false)
@@ -413,8 +416,9 @@ func updateNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) 
 	return performWrite(computedQuery, values, tx)
 }
 
+// UpdateNode updates a node
 // TODO should prevent updating relational fields maybe?
-func updateNode(entity interface{}, tableName string) error {
+func UpdateNode(entity interface{}, tableName string) error {
 	return updateNodeInTransaction(entity, tableName, nil)
 }
 
@@ -440,7 +444,7 @@ func findID(entity interface{}) string {
 
 func deleteNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
 	if entity == nil {
-		return errors.New("nil pointer passed to deleteNode")
+		return errors.New("nil pointer passed to DeleteNode")
 	}
 
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", tableName)
@@ -449,7 +453,8 @@ func deleteNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) 
 	return performWrite(query, []interface{}{id}, tx)
 }
 
-func deleteNode(entity interface{}, tableName string) error {
+// DeleteNode deletes a node given the node object
+func DeleteNode(entity interface{}, tableName string) error {
 	return deleteNodeInTransaction(entity, tableName, nil)
 }
 
@@ -744,7 +749,7 @@ func loadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 	return &edge, nil
 }
 
-func loadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
+func LoadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
 	// load the edges
 	edges, err := loadEdgesByType(id, edgeType)
 	if err != nil {
@@ -772,5 +777,5 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
 		return sqlx.In(query, ids)
 	}
 
-	return loadNodesHelper(nodes, sqlQuery)
+	return LoadNodesHelper(nodes, sqlQuery)
 }
