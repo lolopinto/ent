@@ -172,6 +172,8 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 }
 
 func loadNode(id string, entity interface{}, tableName string) error {
+	// TODO does it make sense to change the API we use here to instead pass it to entity?
+
 	if entity == nil {
 		return errors.New("nil pointer passed to loadNode")
 	}
@@ -204,6 +206,23 @@ func loadNode(id string, entity interface{}, tableName string) error {
 	return err
 }
 
+// EntityResult is the result of a call to loadNodeConc which returns an object
+// and the channel. TODO: This is just a test
+type EntityResult struct {
+	Entity interface{}
+	Error  error
+}
+
+func genLoadNode(id string, entity interface{}, tableName string, errChan chan<- error) {
+	err := loadNode(id, entity, tableName)
+	// result := EntityResult{
+	// 	Entity: entity,
+	// 	Err:    err,
+	// }
+	errChan <- err
+	//chanResult <- result
+}
+
 type loadNodesQuery func(insertData insertdata) (string, []interface{}, error)
 
 // this borrows from/learns from scanAll in sqlx library
@@ -221,8 +240,8 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	// get the slice from the pointer
 	slice := reflectx.Deref(value.Type())
 	if slice.Kind() != reflect.Slice {
-		fmt.Println("sadness")
-		return errors.New("sadness with error in loadNodes")
+		fmt.Printf("slice kind is not a slice. it's a %v \n", slice.Kind())
+		return errors.New("format passed to loadNodes is unexpected")
 	}
 
 	// get the base type from the slice
@@ -261,7 +280,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	}
 	defer stmt.Close()
 
-	fmt.Println(values)
+	fmt.Println("values", values)
 	rows, err := stmt.Queryx(values...)
 	if err != nil {
 		fmt.Println("error performing query in loadNodes", err)
@@ -302,6 +321,12 @@ func loadNodes(id string, nodes interface{}, colName string, tableName string) e
 	}
 
 	return loadNodesHelper(nodes, sqlQuery)
+}
+
+func genLoadNodes(id string, nodes interface{}, colName string, tableName string, errChan chan<- error) {
+	err := loadNodes(id, nodes, colName, tableName)
+	fmt.Println("genLoadNodes result", err, nodes)
+	errChan <- err
 }
 
 func createNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
