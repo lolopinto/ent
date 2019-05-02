@@ -42,6 +42,14 @@ type ForeignKeyEdge struct {
 	EntConfig interface{} // zero-value of the struct
 }
 
+// AssociationEdge is the fb-style edge where the information is stored in the edges_info table.
+// This is the preferred edge in the framework
+type AssociationEdge struct {
+	EntConfig interface{} // zero-value of the struct
+	// TODO custom table
+	// TODO existing edge to use instead of "generating" a new one.
+}
+
 type nodeTemplate struct {
 	PackageName  string
 	Node         string
@@ -171,7 +179,7 @@ func codegenImpl(packageName string, filePath string) {
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
 		// TODO only do contact for now.
-		if nodeData.PackageName == "contact" {
+		if nodeData.PackageName == "user" {
 			writeModelFile(nodeData)
 			writeConstFile(nodeData)
 		}
@@ -280,11 +288,16 @@ type foreignKeyEdgeInfo struct {
 	EntConfig entConfigInfo
 }
 
+type associationEdgeInfo struct {
+	EntConfig entConfigInfo
+}
+
 type edgeInfo struct {
-	EdgeName       string
-	FieldEdge      *fieldEdgeInfo
-	ForeignKeyEdge *foreignKeyEdgeInfo
-	NodeTemplate   nodeTemplate
+	EdgeName        string
+	FieldEdge       *fieldEdgeInfo
+	ForeignKeyEdge  *foreignKeyEdgeInfo
+	AssociationEdge *associationEdgeInfo
+	NodeTemplate    nodeTemplate
 }
 
 func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
@@ -310,6 +323,7 @@ func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
 
 	var fieldEdgeItem *fieldEdgeInfo
 	var foreignKeyEdgeItem *foreignKeyEdgeInfo
+	var associationEdgeItem *associationEdgeInfo
 	var packageName string
 
 	switch edgeType {
@@ -321,26 +335,30 @@ func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
 		foreignKeyEdgeItem = parseForeignKeyEdgeItem(value)
 		packageName = foreignKeyEdgeItem.EntConfig.PackageName
 
+	case "AssociationEdge":
+		associationEdgeItem = parseAssociationEdgeItem(value)
+		packageName = associationEdgeItem.EntConfig.PackageName
+
 	default:
 		panic("unsupported edge type")
 
 	}
 	return edgeInfo{
-		EdgeName:       edgeName,
-		FieldEdge:      fieldEdgeItem,
-		ForeignKeyEdge: foreignKeyEdgeItem,
-		NodeTemplate:   getNodeTemplate(packageName, []field{}),
+		EdgeName:        edgeName,
+		FieldEdge:       fieldEdgeItem,
+		ForeignKeyEdge:  foreignKeyEdgeItem,
+		AssociationEdge: associationEdgeItem,
+		NodeTemplate:    getNodeTemplate(packageName, []field{}),
 	}
 }
 
 func parseFieldEdgeItem(lit *ast.CompositeLit) *fieldEdgeInfo {
+	done := make(chan bool)
 	var fieldName string
 	var entConfig entConfigInfo
-	for _, expr := range lit.Elts {
-		keyValueExpr := getExprToKeyValueExpr(expr)
-		ident := getExprToIdent(keyValueExpr.Key)
 
-		switch ident.Name {
+	closure := func(identName string, keyValueExprValue ast.Expr, expr ast.Expr) {
+		switch identName {
 		case "FieldName":
 			// TODO: this validates it's a string literal.
 			// does not format it.
@@ -349,16 +367,19 @@ func parseFieldEdgeItem(lit *ast.CompositeLit) *fieldEdgeInfo {
 			if ok {
 				panic("invalid FieldName value. Should not use an expression. Should be a string literal")
 			}
-			basicLit := getExprToBasicLit(keyValueExpr.Value)
+			basicLit := getExprToBasicLit(keyValueExprValue)
 			fieldName = basicLit.Value
 
 		case "EntConfig":
-			entConfig = getEntConfigFromExpr(keyValueExpr.Value)
+			entConfig = getEntConfigFromExpr(keyValueExprValue)
 
 		default:
 			panic("invalid identifier for field config")
 		}
 	}
+
+	go parseEdgeItemHelper(lit, closure, done)
+	<-done
 
 	return &fieldEdgeInfo{
 		FieldName: fieldName,
@@ -367,23 +388,48 @@ func parseFieldEdgeItem(lit *ast.CompositeLit) *fieldEdgeInfo {
 }
 
 func parseForeignKeyEdgeItem(lit *ast.CompositeLit) *foreignKeyEdgeInfo {
+	entConfig := parseEntConfigOnlyFromEdgeItemHelper(lit)
+
+	return &foreignKeyEdgeInfo{
+		EntConfig: entConfig,
+	}
+}
+
+func parseAssociationEdgeItem(lit *ast.CompositeLit) *associationEdgeInfo {
+	entConfig := parseEntConfigOnlyFromEdgeItemHelper(lit)
+
+	return &associationEdgeInfo{
+		EntConfig: entConfig,
+	}
+}
+
+func parseEntConfigOnlyFromEdgeItemHelper(lit *ast.CompositeLit) entConfigInfo {
+	done := make(chan bool)
 	var entConfig entConfigInfo
 
-	for _, expr := range lit.Elts {
-		keyValueExpr := getExprToKeyValueExpr(expr)
-		ident := getExprToIdent(keyValueExpr.Key)
-
-		switch ident.Name {
+	closure := func(identName string, keyValueExprValue ast.Expr, _ ast.Expr) {
+		switch identName {
 		case "EntConfig":
-			entConfig = getEntConfigFromExpr(keyValueExpr.Value)
+			entConfig = getEntConfigFromExpr(keyValueExprValue)
 
 		default:
 			panic("invalid identifier for field config")
 		}
 	}
-	return &foreignKeyEdgeInfo{
-		EntConfig: entConfig,
+
+	go parseEdgeItemHelper(lit, closure, done)
+	<-done
+	return entConfig
+}
+
+func parseEdgeItemHelper(lit *ast.CompositeLit, valueFunc func(identName string, keyValueExprValue ast.Expr, expr ast.Expr), done chan<- bool) {
+	for _, expr := range lit.Elts {
+		keyValueExpr := getExprToKeyValueExpr(expr)
+		ident := getExprToIdent(keyValueExpr.Key)
+
+		valueFunc(ident.Name, keyValueExpr.Value, expr)
 	}
+	done <- true
 }
 
 func getEntConfigFromExpr(expr ast.Expr) entConfigInfo {
@@ -471,7 +517,7 @@ func writeFile(nodeData nodeTemplate, pathToTemplate string, templateName string
 	die(err)
 	//err = t.Execute(os.Stdout, nodeData)
 	//fmt.Println(buffer)
-	fmt.Println(buffer.String())
+	//fmt.Println(buffer.String())
 	// gofmt the buffer
 	bytes, err := format.Source(buffer.Bytes())
 	die(err)
