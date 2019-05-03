@@ -710,6 +710,26 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 	return edges, nil
 }
 
+func GenLoadEdgesByType(id string, edgeType EdgeType, errChan chan<- error) {
+	edges, err := LoadEdgesByType(id, edgeType)
+	fmt.Println("GenLoadEdgesByType result", err, edges)
+	errChan <- err
+}
+
+// GenLoadEdgesByTypeResult is a helper function that handles the loading of edges
+// concurrently since we get the strong typing across all edges since it's the
+// same Edge object being returned
+func GenLoadEdgesByTypeResult(id string, edgeType EdgeType, chanEdgesResult chan<- EdgesResult) {
+	var edges []Edge
+	chanErr := make(chan error)
+	go GenLoadEdgesByType(id, edgeType, chanErr)
+	err := <-chanErr
+	chanEdgesResult <- EdgesResult{
+		Edges: edges,
+		Error: err,
+	}
+}
+
 // checks if an edge exists between 2 ids
 // don't have a use-case now but will in the future
 func loadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
@@ -778,4 +798,10 @@ func LoadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
 	}
 
 	return LoadNodesHelper(nodes, sqlQuery)
+}
+
+func GenLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, errChan chan<- error) {
+	err := LoadNodesByType(id, edgeType, nodes)
+	fmt.Println("GenLoadEdgesByType result", err, nodes)
+	errChan <- err
 }
