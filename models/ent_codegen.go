@@ -47,7 +47,11 @@ type ForeignKeyEdge struct {
 type AssociationEdge struct {
 	EntConfig interface{} // zero-value of the struct
 	// TODO custom table
+	// TODO generate the edge and other fun things later
 	// TODO existing edge to use instead of "generating" a new one.
+
+	// TODO inverse and other fun things about edges
+	// same with foreign key edge
 }
 
 type nodeTemplate struct {
@@ -165,7 +169,7 @@ func codegenImpl(packageName string, filePath string) {
 
 			switch fn.Name.Name {
 			case "GetEdges":
-				edges = parseEdgesFunc(fn)
+				edges = parseEdgesFunc(packageName, fn)
 				// TODO: validate edges. can only have one of each type etc
 			}
 
@@ -199,7 +203,7 @@ func getLastExpr(exprs []ast.Expr) ast.Expr {
 }
 
 // http://goast.yuroyoro.net/ is really helpful to see the tree
-func parseEdgesFunc(fn *ast.FuncDecl) []edgeInfo {
+func parseEdgesFunc(packageName string, fn *ast.FuncDecl) []edgeInfo {
 	// fn.Body is an instance of *ast.BlockStmt
 	lastStmt := getLastStatement(fn.Body.List)
 
@@ -225,7 +229,7 @@ func parseEdgesFunc(fn *ast.FuncDecl) []edgeInfo {
 		keyValueExpr := getExprToKeyValueExpr(expr)
 		fmt.Println(keyValueExpr)
 		// get the edge as needed
-		edgeItem := parseEdgeItem(keyValueExpr)
+		edgeItem := parseEdgeItem(packageName, keyValueExpr)
 		edges[idx] = edgeItem
 	}
 
@@ -290,6 +294,7 @@ type foreignKeyEdgeInfo struct {
 
 type associationEdgeInfo struct {
 	EntConfig entConfigInfo
+	EdgeConst string
 }
 
 type edgeInfo struct {
@@ -300,7 +305,7 @@ type edgeInfo struct {
 	NodeTemplate    nodeTemplate
 }
 
-func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
+func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr) edgeInfo {
 	key, ok := keyValueExpr.Key.(*ast.BasicLit)
 	if !ok || key.Kind != token.STRING {
 		panic("invalid key for edge item")
@@ -336,7 +341,7 @@ func parseEdgeItem(keyValueExpr *ast.KeyValueExpr) edgeInfo {
 		packageName = foreignKeyEdgeItem.EntConfig.PackageName
 
 	case "AssociationEdge":
-		associationEdgeItem = parseAssociationEdgeItem(value)
+		associationEdgeItem = parseAssociationEdgeItem(containingPackageName, edgeName, value)
 		packageName = associationEdgeItem.EntConfig.PackageName
 
 	default:
@@ -395,11 +400,14 @@ func parseForeignKeyEdgeItem(lit *ast.CompositeLit) *foreignKeyEdgeInfo {
 	}
 }
 
-func parseAssociationEdgeItem(lit *ast.CompositeLit) *associationEdgeInfo {
+func parseAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.CompositeLit) *associationEdgeInfo {
 	entConfig := parseEntConfigOnlyFromEdgeItemHelper(lit)
+
+	edgeConst := strcase.ToCamel(containingPackageName) + "To" + edgeName + "Edge"
 
 	return &associationEdgeInfo{
 		EntConfig: entConfig,
+		EdgeConst: edgeConst,
 	}
 }
 

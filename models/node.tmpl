@@ -85,13 +85,12 @@ func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
       {{end}}
       {{if $edgeInfo.AssociationEdge -}}
         func ({{$currentNodeInstance}} *{{$currentNode}}) Get{{$edgeName}}Edges() ([]Edge, error) {
-          // TODO don't hardcode edge
-          return models.LoadEdgesByType({{$currentNodeInstance}}.ID, UserToNotesEdge)
+          return models.LoadEdgesByType({{$currentNodeInstance}}.ID, {{$edgeInfo.AssociationEdge.EdgeConst}})
         }
 
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Get{{$edgeName}}s() ({{.NodesSlice}}, error) {
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Get{{$edgeName}}() ({{.NodesSlice}}, error) {
           var {{.NodeInstance}}s {{.NodesSlice}}
-          err := models.LoadNodesByType({{$currentNodeInstance}}.ID, UserToNotesEdge, &{{.NodeInstance}}s)
+          err := models.LoadNodesByType({{$currentNodeInstance}}.ID, {{$edgeInfo.AssociationEdge.EdgeConst}}, &{{.NodeInstance}}s)
           return {{.NodeInstance}}s, err
         }
 
