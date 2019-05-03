@@ -17,3 +17,15 @@ type Edge struct {
 	Time     time.Time `db:"time"`
 	Data     string    `db:"data"` // nullable TODO nullable strings
 }
+
+// EdgeResult stores the result of loading an Edge concurrently
+type EdgeResult struct {
+	Edge  Edge
+	Error error
+}
+
+// EdgesResult stores the result of loading a slice of edges concurrently
+type EdgesResult struct {
+	Edges []Edge
+	Error error
+}
