@@ -183,10 +183,10 @@ func codegenImpl(packageName string, filePath string) {
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
 		// TODO only do contact for now.
-		if nodeData.PackageName == "user" {
-			writeModelFile(nodeData)
-			writeConstFile(nodeData)
-		}
+		//if nodeData.PackageName == "user" {
+		writeModelFile(nodeData)
+		writeConstFile(nodeData)
+		//}
 	}
 }
 
