@@ -183,10 +183,10 @@ func codegenImpl(packageName string, filePath string) {
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
 		// TODO only do contact for now.
-		//if nodeData.PackageName == "user" {
-		writeModelFile(nodeData)
-		writeConstFile(nodeData)
-		//}
+		if true || nodeData.PackageName == "contact" {
+			writeModelFile(nodeData)
+			writeConstFile(nodeData)
+		}
 	}
 }
 
@@ -454,22 +454,59 @@ func getEntConfigFromExpr(expr ast.Expr) entConfigInfo {
 func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet) nodeTemplate {
 	var fields []field
 	for _, f := range s.Fields.List {
+		fieldName := f.Names[0].Name
 		// use this to rename GraphQL, db fields, etc
 		// otherwise by default it passes this down
-		fmt.Printf("Field: %s Type: %s Tag: %v \n", f.Names[0].Name, f.Type, f.Tag)
-		var tag string
-		if t := f.Tag; t != nil {
-			tag = t.Value
-		}
+		fmt.Printf("Field: %s Type: %s Tag: %v \n", fieldName, f.Type, f.Tag)
+
+		tagStr := getTagString(fieldName, f.Tag)
 
 		fields = append(fields, field{
-			FieldName: f.Names[0].Name,
+			FieldName: fieldName,
 			FieldType: getStringType(f, fset),
-			FieldTag:  tag,
+			FieldTag:  tagStr,
 		})
 	}
 
 	return getNodeTemplate(packageName, fields)
+}
+
+func getTagString(fieldName string, tag *ast.BasicLit) string {
+	tagsMap := make(map[string]string)
+	if t := tag; t != nil {
+		// struct tag format should be something like `graphql:"firstName" db:"first_name"`
+		tags := strings.Split(t.Value, "`")
+		if len(tags) != 3 {
+			panic("invalid struct tag format. handle better. struct tag not enclosed by backticks")
+		}
+
+		// each tag is separated by a space
+		tags = strings.Split(tags[1], " ")
+		for _, tagInfo := range tags {
+			// TODO maybe eventually use a fancier struct tag library. for now, handle here
+			// get each tag and create a map
+			singleTag := strings.Split(tagInfo, ":")
+			if len(singleTag) != 2 {
+				panic("invalid struct tag format. handle better")
+			}
+			tagsMap[singleTag[0]] = singleTag[1]
+		}
+	}
+
+	// add the db tag it it doesn't exist
+	_, ok := tagsMap["db"]
+	if !ok {
+		tagsMap["db"] = "\"" + strcase.ToSnake(fieldName) + "\""
+	}
+
+	//fmt.Println(len(tagsMap))
+	//fmt.Println(tagsMap)
+	// convert the map back to the struct tag string format
+	var tags []string
+	for key, value := range tagsMap {
+		tags = append(tags, key+":"+value)
+	}
+	return "`" + strings.Join(tags, " ") + "`"
 }
 
 func getNodeTemplate(packageName string, fields []field) nodeTemplate {
