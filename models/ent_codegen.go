@@ -510,8 +510,8 @@ func getTagString(fieldName string, tag *ast.BasicLit) string {
 }
 
 func getNodeTemplate(packageName string, fields []field) nodeTemplate {
-	// convert from pacakgename to camel case and add V2 till we convert
-	nodeName := strcase.ToCamel(packageName) + "V2"
+	// convert from pacakgename to camel case
+	nodeName := strcase.ToCamel(packageName)
 	//		nodeName := "ContactV2"
 
 	return nodeTemplate{
