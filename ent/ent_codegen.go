@@ -1,4 +1,4 @@
-package models
+package ent
 
 import (
 	"bytes"
@@ -533,7 +533,7 @@ func getNodeTemplate(packageName string, fields []field) nodeTemplate {
 func writeModelFile(nodeData nodeTemplate) {
 	writeFile(
 		nodeData,
-		"models/node.tmpl",
+		"ent/node.tmpl",
 		"node.tmpl",
 		fmt.Sprintf("models/%s/%s.go", nodeData.PackageName, nodeData.PackageName),
 	)
@@ -542,7 +542,7 @@ func writeModelFile(nodeData nodeTemplate) {
 func writeConstFile(nodeData nodeTemplate) {
 	writeFile(
 		nodeData,
-		"models/constants.tmpl",
+		"ent/constants.tmpl",
 		"constants.tmpl",
 		fmt.Sprintf("models/%s/constants.go", nodeData.PackageName),
 	)
