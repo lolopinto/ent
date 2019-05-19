@@ -161,7 +161,7 @@ func codegenPackage(packageName string, filePath string) {
 
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
-		//writeModelFile(nodeData)
+		writeModelFile(nodeData)
 		writeMutatorFile(nodeData)
 	}
 }

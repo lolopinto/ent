@@ -82,7 +82,7 @@ func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
           chanErr := make(chan error)
           go ent.GenLoadNodes({{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", "{{.PackageName}}s", chanErr)
           err := <-chanErr
-          chan{{.NodeResult}}s <- {{.NodeResult}}{
+          chan{{.NodeResult}}s <- {{.NodesResult}}{
             {{.Nodes}}: {{.NodeInstance}}s,
             Error: err,
           }
@@ -98,7 +98,7 @@ func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
           chanErr := make(chan error)
           go ent.GenLoadNodesByType({{$currentNodeInstance}}.ID, {{$edgeInfo.AssociationEdge.EdgeConst}}, &{{.NodeInstance}}s, chanErr)
           err := <-chanErr
-          chan{{.NodeResult}}s <- {{.NodeResult}}{
+          chan{{.NodeResult}}s <- {{.NodesResult}}{
             {{.Nodes}}: {{.NodeInstance}}s,
             Error: err,
           }
