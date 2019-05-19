@@ -228,7 +228,7 @@ func GenLoadNode(id string, entity interface{}, tableName string, errChan chan<-
 type LoadNodesQuery func(insertData insertdata) (string, []interface{}, error)
 
 // this borrows from/learns from scanAll in sqlx library
-func LoadNodesHelper(nodes interface{}, sqlQuery LoadNodesQuery) error {
+func loadNodesHelper(nodes interface{}, sqlQuery LoadNodesQuery) error {
 	value := reflect.ValueOf(nodes)
 	direct := reflect.Indirect(value)
 
@@ -322,7 +322,7 @@ func LoadNodes(id string, nodes interface{}, colName string, tableName string) e
 		return query, []interface{}{id}, nil
 	}
 
-	return LoadNodesHelper(nodes, sqlQuery)
+	return loadNodesHelper(nodes, sqlQuery)
 }
 
 func GenLoadNodes(id string, nodes interface{}, colName string, tableName string, errChan chan<- error) {
@@ -799,7 +799,7 @@ func LoadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
 		return sqlx.In(query, ids)
 	}
 
-	return LoadNodesHelper(nodes, sqlQuery)
+	return loadNodesHelper(nodes, sqlQuery)
 }
 
 func GenLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, errChan chan<- error) {
