@@ -73,16 +73,16 @@ func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
     {{with .NodeTemplate -}}
       {{if $edgeInfo.FieldEdge -}}
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodeResult}} chan<- {{.NodeResult}}) {
-          go {{.PackageName}}.GenLoad{{.Node}}({{$currentNode}}.{{$edgeName}}, chan{{.NodeResult}} )
+          go GenLoad{{.Node}}({{$currentNodeInstance}}.{{$edgeInfo.FieldEdge.FieldName}}, chan{{.NodeResult}} )
         }
       {{end}}
       {{if $edgeInfo.ForeignKeyEdge -}}
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodeResult}} chan<- {{.NodeResult}}) {
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
           var {{.NodeInstance}}s {{.NodesSlice}}
           chanErr := make(chan error)
           go ent.GenLoadNodes({{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", "{{.PackageName}}s", chanErr)
           err := <-chanErr
-          chan{{.NodeResult}}s <- {{.NodesResult}}{
+          chan{{.NodesResult}} <- {{.NodesResult}}{
             {{.Nodes}}: {{.NodeInstance}}s,
             Error: err,
           }
@@ -93,12 +93,12 @@ func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
           go ent.GenLoadEdgesByTypeResult({{$currentNodeInstance}}.ID, {{$edgeInfo.AssociationEdge.EdgeConst}}, chanEdgesResult)
         }
 
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodeResult}} chan<- {{.NodeResult}}) {
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
           var {{.NodeInstance}}s {{.NodesSlice}}
           chanErr := make(chan error)
           go ent.GenLoadNodesByType({{$currentNodeInstance}}.ID, {{$edgeInfo.AssociationEdge.EdgeConst}}, &{{.NodeInstance}}s, chanErr)
           err := <-chanErr
-          chan{{.NodeResult}}s <- {{.NodesResult}}{
+          chan{{.NodesResult}} <- {{.NodesResult}}{
             {{.Nodes}}: {{.NodeInstance}}s,
             Error: err,
           }
