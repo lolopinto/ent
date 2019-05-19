@@ -110,16 +110,5 @@ func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
   {{end}}
 {{end}}
 
-// Update{{.Node}} updates the given {{.Node}} given the id
-func Update{{.Node}}({{.NodeInstance}} {{.Node}}) ({{.Node}}, error) {
-	err := ent.UpdateNode(&{{.NodeInstance}}, "{{.TableName}}")
-	return {{.NodeInstance}}, err
-}
-
-// Delete{{.Node}} deletes the given {{.Node}} 
-func Delete{{.Node}}({{.NodeInstance}} {{.Node}}) error {
-	return ent.DeleteNode(&{{.NodeInstance}}, "{{.TableName}}")
-}
-
 // Add this to each entity to confirm it implements the interface
 var _ ent.Entity = (*{{.Node}})(nil)
