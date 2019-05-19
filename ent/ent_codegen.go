@@ -281,20 +281,32 @@ type edgeInfo struct {
 	NodeTemplate    nodeTemplate
 }
 
-func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr) edgeInfo {
-	key, ok := keyValueExpr.Key.(*ast.BasicLit)
+// Takes an Expr and converts it to the underlying string without quotes
+// For example: in the GetEdges method below,
+// return map[string]interface{}{
+// 	"User": ent.FieldEdge{
+// 		FieldName: "UserID",
+// 		EntConfig: UserConfig{},
+// 	},
+// }
+// Calling this with the "User" Expr returns User and calling it with
+// the "UserID" Expr returns UserID
+func getUnderylingStringFromLiteralExpr(expr ast.Expr) string {
+	key, ok := expr.(*ast.BasicLit)
 	if !ok || key.Kind != token.STRING {
 		panic("invalid key for edge item")
 	}
-	var edgeName = key.Value
-	splitString := strings.Split(edgeName, "\"")
-	fmt.Println(splitString)
+	splitString := strings.Split(key.Value, "\"")
 	// verify that the first and last part are empty string?
 	if len(splitString) != 3 {
-		panic(fmt.Sprintf("edge %s is formatted weirdly as a string literal", edgeName))
+		panic(fmt.Sprintf("%s is formatted weirdly as a string literal", key.Value))
 	}
-	edgeName = splitString[1]
-	fmt.Println(edgeName)
+	return splitString[1]
+}
+
+func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr) edgeInfo {
+	edgeName := getUnderylingStringFromLiteralExpr(keyValueExpr.Key)
+	fmt.Println("EdgeName: ", edgeName, len(edgeName))
 
 	value := getExprToCompositeLit(keyValueExpr.Value)
 	typ := getExprToSelectorExpr(value.Type)
@@ -348,8 +360,8 @@ func parseFieldEdgeItem(lit *ast.CompositeLit) *fieldEdgeInfo {
 			if ok {
 				panic("invalid FieldName value. Should not use an expression. Should be a string literal")
 			}
-			basicLit := getExprToBasicLit(keyValueExprValue)
-			fieldName = basicLit.Value
+			fieldName = getUnderylingStringFromLiteralExpr(keyValueExprValue)
+			fmt.Println("Field name:", fieldName)
 
 		case "EntConfig":
 			entConfig = getEntConfigFromExpr(keyValueExprValue)
