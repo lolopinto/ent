@@ -10,6 +10,7 @@ import (
 	"go/token"
 	"io/ioutil"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 	"text/template"
@@ -160,7 +161,8 @@ func codegenPackage(packageName string, filePath string) {
 
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
-		writeModelFile(nodeData)
+		//writeModelFile(nodeData)
+		writeMutatorFile(nodeData)
 	}
 }
 
@@ -534,18 +536,42 @@ func getNodeTemplate(packageName string, fields []field) nodeTemplate {
 	}
 }
 
+type fileToWriteInfo struct {
+	nodeData          nodeTemplate
+	pathToTemplate    string
+	templateName      string
+	pathToFile        string
+	createDirIfNeeded bool
+}
+
 func writeModelFile(nodeData nodeTemplate) {
 	writeFile(
-		nodeData,
-		"ent/node.tmpl",
-		"node.tmpl",
-		fmt.Sprintf("models/%s.go", nodeData.PackageName),
+		fileToWriteInfo{
+			nodeData:       nodeData,
+			pathToTemplate: "ent/node.tmpl",
+			templateName:   "node.tmpl",
+			pathToFile:     fmt.Sprintf("models/%s.go", nodeData.PackageName),
+		},
 	)
 }
 
-func writeFile(nodeData nodeTemplate, pathToTemplate string, templateName string, pathToFile string) {
-	path := []string{pathToTemplate}
-	t, err := template.New(templateName).ParseFiles(path...)
+func writeMutatorFile(nodeData nodeTemplate) {
+	// this is not a real entmutator but this gets things working and
+	// hopefully means no circular dependencies
+	writeFile(
+		fileToWriteInfo{
+			nodeData:          nodeData,
+			pathToTemplate:    "ent/mutator.tmpl",
+			templateName:      "mutator.tmpl",
+			pathToFile:        fmt.Sprintf("models/%s/mutator/%s_mutator.go", nodeData.PackageName, nodeData.PackageName),
+			createDirIfNeeded: true,
+		},
+	)
+}
+
+func writeFile(file fileToWriteInfo) {
+	path := []string{file.pathToTemplate}
+	t, err := template.New(file.templateName).ParseFiles(path...)
 	die(err)
 	template.Must(t, err)
 	die(err)
@@ -553,7 +579,7 @@ func writeFile(nodeData nodeTemplate, pathToTemplate string, templateName string
 	var buffer bytes.Buffer
 
 	// execute the template and store in buffer
-	err = t.Execute(&buffer, nodeData)
+	err = t.Execute(&buffer, file.nodeData)
 	die(err)
 	//err = t.Execute(os.Stdout, nodeData)
 	//fmt.Println(buffer)
@@ -591,11 +617,32 @@ func writeFile(nodeData nodeTemplate, pathToTemplate string, templateName string
 	// replace manual writes with ioutil.WriteFile as that seems to (small sample size) fix the
 	// weird issues I was sometimes seeing with overwriting an existing file
 	// and random characters appearing.
-	err = ioutil.WriteFile(pathToFile, bytes, 0666)
+
+	if file.createDirIfNeeded {
+		path := strings.Split(file.pathToFile, "/")
+		// get directoryPath
+		// e.g. take something like models/contact/mutator/contact_mutator.go and get models/contact/mutator/
+		path = path[0 : len(path)-1]
+		directoryPath := strings.Join(path, "/")
+
+		_, err := os.Stat(directoryPath)
+
+		if os.IsNotExist(err) {
+			err = os.Mkdir(directoryPath, 0777)
+			if err != nil {
+				fmt.Println("created directory ", directoryPath)
+			}
+		}
+		if !os.IsNotExist(err) {
+			die(err)
+		}
+	}
+
+	err = ioutil.WriteFile(file.pathToFile, bytes, 0666)
 	//	_, err = file.Write(bytes)
 	die(err)
 	//err = file.Close()
-	fmt.Println("wrote to file ", pathToFile)
+	fmt.Println("wrote to file ", file.pathToFile)
 
 	//fmt.Printf("%s\n", bytes)
 	// b, err := format.Source(&buffer)
