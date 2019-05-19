@@ -80,54 +80,32 @@ func CodeGenMain() {
 	// have to use an "absolute" filepath for now
 	// TODO eventually use ParseDir... and *config.go
 	//parser.Parse
-	//os.Fi
-	// get root path, find directories in there
-	rootPath := "models"
+	// get root path, find config files in there
+	rootPath := "models/configs"
 	fileInfos, err := ioutil.ReadDir(rootPath)
 	//ioutil.re
 	die(err)
-	var directories []string
+	r, err := regexp.Compile("([a-z_]+)_config.go")
+	die(err)
+
 	for _, fileInfo := range fileInfos {
-		if fileInfo.IsDir() {
-			directories = append(directories, fileInfo.Name())
-			codegenPackage(fileInfo.Name(), rootPath+"/"+fileInfo.Name())
+		match := r.FindStringSubmatch(fileInfo.Name())
+
+		if len(match) == 2 {
+			fmt.Printf("config file Name %v \n", fileInfo.Name())
+			//files = append(files, fileInfo.Name())
+
+			packageName := match[1]
+			filePath := rootPath + "/" + fileInfo.Name()
+
+			fmt.Println(packageName, filePath)
+
+			codegenPackage(packageName, filePath)
+		} else {
+			fmt.Println("invalid non-config file found:", fileInfo.Name())
 		}
 		//fmt.Printf("IsDir %v Name %v \n", fileInfo.IsDir(), fileInfo.Name())
 	}
-
-	//	fmt.Println(files, err)
-}
-
-// codegenPackage codegens a given package
-func codegenPackage(packageName string, directoryPath string) {
-	fileInfos, err := ioutil.ReadDir(directoryPath)
-	die(err)
-	regex, err := regexp.Compile("config.go")
-	die(err)
-	var files []string
-	for _, fileInfo := range fileInfos {
-		match := regex.MatchString(fileInfo.Name())
-		if match {
-			fmt.Printf("config file Name %v \n", fileInfo.Name())
-			files = append(files, fileInfo.Name())
-		}
-	}
-
-	filePath := directoryPath + "/" + files[0]
-
-	// var conf loader.Config
-	// conf.CreateFromFilenames(packageName, filePath)
-
-	// prog, err := conf.Load()
-	// die(err)
-	// fmt.Println(prog)
-
-	if len(files) > 1 {
-		die(fmt.Errorf("There was more than one config file in this directory %s", directoryPath))
-	} else if len(files) == 1 {
-		codegenImpl(packageName, filePath)
-	}
-
 }
 
 // gets the string representation of the type
@@ -140,11 +118,11 @@ func getStringType(f *ast.Field, fset *token.FileSet) string {
 	return typeNameBuf.String()
 }
 
-func codegenImpl(packageName string, filePath string) {
+func codegenPackage(packageName string, filePath string) {
 	fset := token.NewFileSet()
 	var src interface{}
 	file, err := parser.ParseFile(fset, filePath, src, parser.AllErrors)
-	//	spew.Dump(file)
+	//spew.Dump(file)
 	die(err)
 	//fmt.Println(f)
 
@@ -182,11 +160,8 @@ func codegenImpl(packageName string, filePath string) {
 
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
-		// TODO only do contact for now.
-		if true || nodeData.PackageName == "contact" {
-			writeModelFile(nodeData)
-			writeConstFile(nodeData)
-		}
+		writeModelFile(nodeData)
+		writeConstFile(nodeData)
 	}
 }
 
@@ -440,15 +415,45 @@ func parseEdgeItemHelper(lit *ast.CompositeLit, valueFunc func(identName string,
 	done <- true
 }
 
-func getEntConfigFromExpr(expr ast.Expr) entConfigInfo {
-	value := getExprToCompositeLit(expr)
-	typ := getExprToSelectorExpr(value.Type)
-	entIdent := getExprToIdent(typ.X)
-
-	return entConfigInfo{
-		PackageName: entIdent.Name,
-		ConfigName:  typ.Sel.Name,
+func getNodeNameFromEntConfig(configName string) (string, error) {
+	r, err := regexp.Compile("([A-Za-z]+)Config")
+	die(err)
+	match := r.FindStringSubmatch(configName)
+	if len(match) == 2 {
+		return match[1], nil
 	}
+	return "", fmt.Errorf("couldn't match EntConfig name")
+}
+
+func getEntConfigFromExpr(expr ast.Expr) entConfigInfo {
+	lit := getExprToCompositeLit(expr)
+	// inlining getExprToSelectorExpr...
+	typ, ok := lit.Type.(*ast.SelectorExpr)
+	// This is when the EntConfig is of the form user.UserConfig
+	// don't actually support this case right now since all the configs are local
+	if ok {
+		entIdent := getExprToIdent(typ.X)
+		return entConfigInfo{
+			PackageName: entIdent.Name,
+			ConfigName:  typ.Sel.Name,
+		}
+	}
+
+	// inlining getExprToIdent...
+	// TODO figure out what we wanna do here
+	// This supports when the EntConfig is local to the module
+	entIdent, ok := lit.Type.(*ast.Ident)
+	if ok {
+		configName, err := getNodeNameFromEntConfig(entIdent.Name)
+		die(err)
+		return entConfigInfo{
+			// return a fake packageName e.g. user, contact to be used
+			// TODO fix places using this to return Node instead of fake packageName
+			PackageName: configName,
+			ConfigName:  entIdent.Name,
+		}
+	}
+	panic("Invalid value for Expr. Could not get EntConfig from Expr")
 }
 
 func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet) nodeTemplate {
