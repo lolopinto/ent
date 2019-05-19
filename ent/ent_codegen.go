@@ -161,7 +161,6 @@ func codegenPackage(packageName string, filePath string) {
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
 		writeModelFile(nodeData)
-		writeConstFile(nodeData)
 	}
 }
 
@@ -541,15 +540,6 @@ func writeModelFile(nodeData nodeTemplate) {
 		"ent/node.tmpl",
 		"node.tmpl",
 		fmt.Sprintf("models/%s/%s.go", nodeData.PackageName, nodeData.PackageName),
-	)
-}
-
-func writeConstFile(nodeData nodeTemplate) {
-	writeFile(
-		nodeData,
-		"ent/constants.tmpl",
-		"constants.tmpl",
-		fmt.Sprintf("models/%s/constants.go", nodeData.PackageName),
 	)
 }
 
