@@ -4,6 +4,11 @@ import (
   "github.com/lolopinto/jarvis/ent"
 )
 
+const (
+  // {{.NodeType}} uniquely identifies this object as an owner of something else
+  {{.NodeType}} ent.NodeType = "{{.NodeInstance}}"
+)
+
 // {{.Node}} represents the `{{.Node}}` model 
 type {{.Node}} struct {
   ent.Node
