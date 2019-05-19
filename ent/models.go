@@ -633,7 +633,9 @@ func performEdgeOperation(operation EdgeOperation, tx *sqlx.Tx) error {
 	}
 }
 
-func performAllOperations(operations []DataOperation) error {
+// PerformAllOperations is public for now but will long term be private and have a
+// much better API
+func PerformAllOperations(operations []DataOperation) error {
 	db := data.DBConn()
 	tx, err := db.Beginx()
 	if err != nil {
