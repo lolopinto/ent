@@ -539,7 +539,7 @@ func writeModelFile(nodeData nodeTemplate) {
 		nodeData,
 		"ent/node.tmpl",
 		"node.tmpl",
-		fmt.Sprintf("models/%s/%s.go", nodeData.PackageName, nodeData.PackageName),
+		fmt.Sprintf("models/%s.go", nodeData.PackageName),
 	)
 }
 
