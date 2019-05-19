@@ -571,9 +571,9 @@ type DataOperation interface {
 }
 
 type NodeOperation struct {
-	entity    interface{}
-	tableName string
-	operation WriteOperation
+	Entity    interface{}
+	TableName string
+	Operation WriteOperation
 }
 
 func (NodeOperation) ValidOperation() bool {
@@ -581,11 +581,11 @@ func (NodeOperation) ValidOperation() bool {
 }
 
 type EdgeOperation struct {
-	entity1     interface{}
-	entity2     interface{}
-	edgeType    EdgeType
-	edgeOptions EdgeOptions // nullable for deletes?
-	operation   WriteOperation
+	Entity1     interface{}
+	Entity2     interface{}
+	EdgeType    EdgeType
+	EdgeOptions EdgeOptions // nullable for deletes?
+	Operation   WriteOperation
 }
 
 func (EdgeOperation) ValidOperation() bool {
@@ -599,33 +599,33 @@ type QueryPlan struct {
 }
 
 func performNodeOperation(operation NodeOperation, tx *sqlx.Tx) error {
-	switch operation.operation {
+	switch operation.Operation {
 	case InsertOperation:
-		return createNodeInTransaction(operation.entity, operation.tableName, tx)
+		return createNodeInTransaction(operation.Entity, operation.TableName, tx)
 	case UpdateOperation:
-		return updateNodeInTransaction(operation.entity, operation.tableName, tx)
+		return updateNodeInTransaction(operation.Entity, operation.TableName, tx)
 	case DeleteOperation:
-		return deleteNodeInTransaction(operation.entity, operation.tableName, tx)
+		return deleteNodeInTransaction(operation.Entity, operation.TableName, tx)
 	default:
 		return fmt.Errorf("unsupported node operation %v passed to performAllOperations", operation)
 	}
 }
 
 func performEdgeOperation(operation EdgeOperation, tx *sqlx.Tx) error {
-	switch operation.operation {
+	switch operation.Operation {
 	case InsertOperation:
 		return addEdgeInTransaction(
-			operation.entity1,
-			operation.entity2,
-			operation.edgeType,
-			operation.edgeOptions,
+			operation.Entity1,
+			operation.Entity2,
+			operation.EdgeType,
+			operation.EdgeOptions,
 			tx,
 		)
 	case DeleteOperation:
 		return deleteEdgeInTransaction(
-			operation.entity1,
-			operation.entity2,
-			operation.edgeType,
+			operation.Entity1,
+			operation.Entity2,
+			operation.EdgeType,
 			tx,
 		)
 	default:
@@ -734,7 +734,7 @@ func GenLoadEdgesByTypeResult(id string, edgeType EdgeType, chanEdgesResult chan
 
 // checks if an edge exists between 2 ids
 // don't have a use-case now but will in the future
-func loadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
+func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 	db := data.DBConn()
 	if db == nil {
 		err := errors.New("error getting a valid db connection")
