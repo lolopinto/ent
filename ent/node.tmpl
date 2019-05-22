@@ -2,6 +2,7 @@ package models
 
 import (
   "github.com/lolopinto/jarvis/ent"
+  "github.com/lolopinto/jarvis/models/configs"
 )
 
 const (
@@ -45,7 +46,7 @@ func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
 // Load{{.Node}} loads the given {{.Node}} given the id
 func Load{{.Node}}(id string) ({{.Node}}, error) {
   var {{.NodeInstance}} {{.Node}}
-  err := ent.LoadNode(id, &{{.NodeInstance}}, "{{.TableName}}")
+  err := ent.LoadNode(id, &{{.NodeInstance}}, {{.EntConfig}})
   return {{.NodeInstance}}, err
 }
 
@@ -53,7 +54,7 @@ func Load{{.Node}}(id string) ({{.Node}}, error) {
 func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
   var {{.NodeInstance}} {{.Node}}
   chanErr := make(chan error)
-  go ent.GenLoadNode(id, &{{.NodeInstance}}, "{{.TableName}}", chanErr)
+  go ent.GenLoadNode(id, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
   err := <-chanErr
   chan{{.NodeResult}} <- {{.NodeResult}}{
     {{.Node}}: {{.NodeInstance}},
@@ -80,7 +81,7 @@ func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
           var {{.NodeInstance}}s {{.NodesSlice}}
           chanErr := make(chan error)
-          go ent.GenLoadNodes({{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", "{{.PackageName}}s", chanErr)
+          go ent.GenLoadNodes({{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", {{.EntConfig}}, chanErr)
           err := <-chanErr
           chan{{.NodesResult}} <- {{.NodesResult}}{
             {{.Nodes}}: {{.NodeInstance}}s,
