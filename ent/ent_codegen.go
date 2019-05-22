@@ -65,7 +65,7 @@ type nodeTemplate struct {
 	NodeInstance string
 	NodesSlice   string
 	NodeType     string
-	TableName    string
+	EntConfig    string
 	Edges        []edgeInfo
 }
 
@@ -539,12 +539,12 @@ func getNodeTemplate(packageName string, fields []field) nodeTemplate {
 		Node:         nodeName,                     // Contact
 		Nodes:        fmt.Sprintf("%ss", nodeName), // Contacts
 		Fields:       fields,
-		NodeResult:   fmt.Sprintf("%sResult", nodeName),  // ContactResult
-		NodesResult:  fmt.Sprintf("%ssResult", nodeName), // ContactsResult
-		NodeInstance: strcase.ToLowerCamel(nodeName),     // contact
-		NodesSlice:   fmt.Sprintf("[]%s", nodeName),      // []Contact
-		NodeType:     fmt.Sprintf("%sType", nodeName),    // ContactType
-		TableName:    fmt.Sprintf("%ss", packageName),    // contacts
+		NodeResult:   fmt.Sprintf("%sResult", nodeName),            // ContactResult
+		NodesResult:  fmt.Sprintf("%ssResult", nodeName),           // ContactsResult
+		NodeInstance: strcase.ToLowerCamel(nodeName),               // contact
+		NodesSlice:   fmt.Sprintf("[]%s", nodeName),                // []Contact
+		NodeType:     fmt.Sprintf("%sType", nodeName),              // ContactType
+		EntConfig:    fmt.Sprintf("&configs.%sConfig{}", nodeName), // &configs.ContactConfig{}
 	}
 }
 
