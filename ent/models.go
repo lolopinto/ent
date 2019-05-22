@@ -171,9 +171,9 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 	return getFieldsAndValuesOfStruct(value, setIDField)
 }
 
-// LoadNode loads a single node given the id, node object and tableName
+// LoadNode loads a single node given the id, node object and entConfig
 // TODO refactor this
-func LoadNode(id string, entity interface{}, tableName string) error {
+func LoadNode(id string, entity interface{}, entConfig Config) error {
 	// TODO does it make sense to change the API we use here to instead pass it to entity?
 
 	if entity == nil {
@@ -184,7 +184,7 @@ func LoadNode(id string, entity interface{}, tableName string) error {
 	insertData := getFieldsAndValues(entity, false)
 	colsString := insertData.getColumnsString()
 
-	computedQuery := fmt.Sprintf("SELECT %s FROM %s WHERE id = $1", colsString, tableName)
+	computedQuery := fmt.Sprintf("SELECT %s FROM %s WHERE id = $1", colsString, entConfig.GetTableName())
 	fmt.Println(computedQuery)
 
 	db := data.DBConn()
@@ -215,8 +215,8 @@ type EntityResult struct {
 	Error  error
 }
 
-func GenLoadNode(id string, entity interface{}, tableName string, errChan chan<- error) {
-	err := LoadNode(id, entity, tableName)
+func GenLoadNode(id string, entity interface{}, entConfig Config, errChan chan<- error) {
+	err := LoadNode(id, entity, entConfig)
 	// result := EntityResult{
 	// 	Entity: entity,
 	// 	Err:    err,
@@ -309,13 +309,13 @@ func loadNodesHelper(nodes interface{}, sqlQuery LoadNodesQuery) error {
 	return err
 }
 
-func LoadNodes(id string, nodes interface{}, colName string, tableName string) error {
+func LoadNodes(id string, nodes interface{}, colName string, entConfig Config) error {
 	sqlQuery := func(insertData insertdata) (string, []interface{}, error) {
 		colsString := insertData.getColumnsString()
 		query := fmt.Sprintf(
 			"SELECT %s FROM %s WHERE %s = $1",
 			colsString,
-			tableName,
+			entConfig.GetTableName(),
 			colName,
 		)
 		fmt.Println(query)
@@ -325,13 +325,13 @@ func LoadNodes(id string, nodes interface{}, colName string, tableName string) e
 	return loadNodesHelper(nodes, sqlQuery)
 }
 
-func GenLoadNodes(id string, nodes interface{}, colName string, tableName string, errChan chan<- error) {
-	err := LoadNodes(id, nodes, colName, tableName)
+func GenLoadNodes(id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
+	err := LoadNodes(id, nodes, colName, entConfig)
 	fmt.Println("GenLoadNodes result", err, nodes)
 	errChan <- err
 }
 
-func createNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
+func createNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) error {
 	if entity == nil {
 		// same as LoadNode in terms of handling this better
 		return errors.New("nil pointer passed to CreateNode")
@@ -340,15 +340,15 @@ func createNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) 
 	colsString := insertData.getColumnsStringForInsert()
 	values, valsString := insertData.getValuesDataForInsert()
 
-	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES( %s)", tableName, colsString, valsString)
+	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES( %s)", entConfig.GetTableName(), colsString, valsString)
 	fmt.Println(computedQuery)
 
 	return performWrite(computedQuery, values, tx)
 }
 
 // CreateNode creates a node
-func CreateNode(entity interface{}, tableName string) error {
-	return createNodeInTransaction(entity, tableName, nil)
+func CreateNode(entity interface{}, entConfig Config) error {
+	return createNodeInTransaction(entity, entConfig, nil)
 }
 
 /*
@@ -394,7 +394,7 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx) error {
 	return nil
 }
 
-func updateNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
+func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) error {
 	if entity == nil {
 		// same as LoadNode in terms of handling this better
 		return errors.New("nil pointer passed to UpdateNode")
@@ -407,7 +407,7 @@ func updateNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) 
 	id := findID(entity)
 	computedQuery := fmt.Sprintf(
 		"UPDATE %s SET %s WHERE id = '%s'",
-		tableName,
+		entConfig.GetTableName(),
 		valsString,
 		id,
 	)
@@ -418,8 +418,8 @@ func updateNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) 
 
 // UpdateNode updates a node
 // TODO should prevent updating relational fields maybe?
-func UpdateNode(entity interface{}, tableName string) error {
-	return updateNodeInTransaction(entity, tableName, nil)
+func UpdateNode(entity interface{}, entConfig Config) error {
+	return updateNodeInTransaction(entity, entConfig, nil)
 }
 
 // this is a hack because i'm lazy and don't want to go update getFieldsAndValuesOfStruct()
@@ -442,20 +442,20 @@ func findID(entity interface{}) string {
 	panic("Could not find ID field")
 }
 
-func deleteNodeInTransaction(entity interface{}, tableName string, tx *sqlx.Tx) error {
+func deleteNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) error {
 	if entity == nil {
 		return errors.New("nil pointer passed to DeleteNode")
 	}
 
-	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", tableName)
+	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", entConfig.GetTableName())
 	id := findID(entity)
 
 	return performWrite(query, []interface{}{id}, tx)
 }
 
 // DeleteNode deletes a node given the node object
-func DeleteNode(entity interface{}, tableName string) error {
-	return deleteNodeInTransaction(entity, tableName, nil)
+func DeleteNode(entity interface{}, entConfig Config) error {
+	return deleteNodeInTransaction(entity, entConfig, nil)
 }
 
 // EdgeOptions is a struct that can be used to configure an edge.
@@ -572,7 +572,7 @@ type DataOperation interface {
 
 type NodeOperation struct {
 	Entity    interface{}
-	TableName string
+	Config    Config
 	Operation WriteOperation
 }
 
@@ -601,11 +601,11 @@ type QueryPlan struct {
 func performNodeOperation(operation NodeOperation, tx *sqlx.Tx) error {
 	switch operation.Operation {
 	case InsertOperation:
-		return createNodeInTransaction(operation.Entity, operation.TableName, tx)
+		return createNodeInTransaction(operation.Entity, operation.Config, tx)
 	case UpdateOperation:
-		return updateNodeInTransaction(operation.Entity, operation.TableName, tx)
+		return updateNodeInTransaction(operation.Entity, operation.Config, tx)
 	case DeleteOperation:
-		return deleteNodeInTransaction(operation.Entity, operation.TableName, tx)
+		return deleteNodeInTransaction(operation.Entity, operation.Config, tx)
 	default:
 		return fmt.Errorf("unsupported node operation %v passed to performAllOperations", operation)
 	}
