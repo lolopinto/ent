@@ -517,7 +517,7 @@ func writeModelFile(nodeData nodeTemplate) {
 	writeFile(
 		fileToWriteInfo{
 			nodeData:       nodeData,
-			pathToTemplate: "ent/node.tmpl",
+			pathToTemplate: "cmd/gent/node.tmpl",
 			templateName:   "node.tmpl",
 			pathToFile:     fmt.Sprintf("models/%s.go", nodeData.PackageName),
 		},
@@ -530,7 +530,7 @@ func writeMutatorFile(nodeData nodeTemplate) {
 	writeFile(
 		fileToWriteInfo{
 			nodeData:          nodeData,
-			pathToTemplate:    "ent/mutator.tmpl",
+			pathToTemplate:    "cmd/gent/mutator.tmpl",
 			templateName:      "mutator.tmpl",
 			pathToFile:        fmt.Sprintf("models/%s/mutator/%s_mutator.go", nodeData.PackageName, nodeData.PackageName),
 			createDirIfNeeded: true,
