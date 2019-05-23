@@ -1,4 +1,4 @@
-package ent
+package main
 
 import (
 	"bytes"
@@ -30,31 +30,6 @@ type Edgeconfig struct {
 	EdgeType EdgeConfigType
 }
 
-// FieldEdge refers to when the Edge being loaded from an ent is a field on the same node/ent
-type FieldEdge struct {
-	FieldName string
-	EntConfig interface{} // zero-value of the struct...
-}
-
-// ForeignKeyEdge is when the edge is handled by having a foreign key in the other table
-// So contacts -> contact_emails with the ContactID being a field stored in ContactEmail table
-// There'll be a ForeignKey edge from Contact -> ContactEmails and then a FieldEdge from ContactEmail to Contact
-type ForeignKeyEdge struct {
-	EntConfig interface{} // zero-value of the struct
-}
-
-// AssociationEdge is the fb-style edge where the information is stored in the edges_info table.
-// This is the preferred edge in the framework
-type AssociationEdge struct {
-	EntConfig interface{} // zero-value of the struct
-	// TODO custom table
-	// TODO generate the edge and other fun things later
-	// TODO existing edge to use instead of "generating" a new one.
-
-	// TODO inverse and other fun things about edges
-	// same with foreign key edge
-}
-
 type nodeTemplate struct {
 	PackageName  string
 	Node         string
@@ -75,40 +50,6 @@ type field struct {
 	FieldTag  string
 }
 
-// CodeGenMain method does stuff TODO
-// TODO temporary for now until we build a generic thing used by everyone
-func CodeGenMain() {
-	// have to use an "absolute" filepath for now
-	// TODO eventually use ParseDir... and *config.go
-	//parser.Parse
-	// get root path, find config files in there
-	rootPath := "models/configs"
-	fileInfos, err := ioutil.ReadDir(rootPath)
-	//ioutil.re
-	die(err)
-	r, err := regexp.Compile("([a-z_]+)_config.go")
-	die(err)
-
-	for _, fileInfo := range fileInfos {
-		match := r.FindStringSubmatch(fileInfo.Name())
-
-		if len(match) == 2 {
-			fmt.Printf("config file Name %v \n", fileInfo.Name())
-			//files = append(files, fileInfo.Name())
-
-			packageName := match[1]
-			filePath := rootPath + "/" + fileInfo.Name()
-
-			fmt.Println(packageName, filePath)
-
-			codegenPackage(packageName, filePath)
-		} else {
-			fmt.Println("invalid non-config file found:", fileInfo.Name())
-		}
-		//fmt.Printf("IsDir %v Name %v \n", fileInfo.IsDir(), fileInfo.Name())
-	}
-}
-
 // gets the string representation of the type
 func getStringType(f *ast.Field, fset *token.FileSet) string {
 	var typeNameBuf bytes.Buffer
@@ -119,7 +60,7 @@ func getStringType(f *ast.Field, fset *token.FileSet) string {
 	return typeNameBuf.String()
 }
 
-func codegenPackage(packageName string, filePath string) {
+func codegenPackage(packageName string, filePath string, specificConfig string) {
 	fset := token.NewFileSet()
 	var src interface{}
 	file, err := parser.ParseFile(fset, filePath, src, parser.AllErrors)
@@ -132,19 +73,33 @@ func codegenPackage(packageName string, filePath string) {
 	//fmt.Println("Struct:")
 	var nodeData nodeTemplate
 	var edges []edgeInfo
+	var structName string
+	var bailedOut bool
 
 	ast.Inspect(file, func(node ast.Node) bool {
 		// get struct
 		// TODO get the name from *ast.TypeSpec to verify a few things
 		// for now, we're assuming one struct which maps to what we want which isn't necessarily true
 
-		if s, ok := node.(*ast.StructType); ok {
-			nodeData = parseConfig(s, packageName, fset)
+		if t, ok := node.(*ast.TypeSpec); ok && t.Type != nil {
+			structName = t.Name.Name
+
+			// specificConfig not specificed or specified and equal to structName
+			if specificConfig != "" && specificConfig != structName {
+				bailedOut = true
+				return false
+			}
+
+			// found the structName from the type, parse the struct type
+			// we need to od it this way because we can't get the structName
+			// from parsing node directly...
+			if s, ok := t.Type.(*ast.StructType); ok {
+				nodeData = parseConfig(s, packageName, fset)
+			}
 		}
 
-		// TODO handle the name do things about it
 		if fn, ok := node.(*ast.FuncDecl); ok {
-			fmt.Println(fn.Name)
+			fmt.Println("Method: ", fn.Name)
 
 			switch fn.Name.Name {
 			case "GetEdges":
@@ -156,9 +111,14 @@ func codegenPackage(packageName string, filePath string) {
 		return true
 	})
 
+	if bailedOut {
+		return
+	}
+
 	// set edges and other fields gotten from parsing other things
 	nodeData.Edges = edges
 
+	//fmt.Println(specificConfig, structName)
 	// what's the best way to check not-zero value? for now, this will have to do
 	if len(nodeData.PackageName) > 0 {
 		writeModelFile(nodeData)
@@ -306,7 +266,7 @@ func getUnderylingStringFromLiteralExpr(expr ast.Expr) string {
 
 func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr) edgeInfo {
 	edgeName := getUnderylingStringFromLiteralExpr(keyValueExpr.Key)
-	fmt.Println("EdgeName: ", edgeName, len(edgeName))
+	fmt.Println("EdgeName: ", edgeName)
 
 	value := getExprToCompositeLit(keyValueExpr.Value)
 	typ := getExprToSelectorExpr(value.Type)
@@ -530,11 +490,8 @@ func getTagString(fieldName string, tag *ast.BasicLit) string {
 func getNodeTemplate(packageName string, fields []field) nodeTemplate {
 	// convert from pacakgename to camel case
 	nodeName := strcase.ToCamel(packageName)
-	//		nodeName := "ContactV2"
 
 	return nodeTemplate{
-		// TODO this shouldn't be hardcoded.
-		// take from directory name?
 		PackageName:  packageName,                  // contact
 		Node:         nodeName,                     // Contact
 		Nodes:        fmt.Sprintf("%ss", nodeName), // Contacts
