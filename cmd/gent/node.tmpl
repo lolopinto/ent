@@ -2,6 +2,7 @@ package models
 
 import (
   "github.com/lolopinto/jarvis/ent"
+  "github.com/lolopinto/jarvis/ent/viewer"
   "github.com/lolopinto/jarvis/models/configs"
 )
 
@@ -51,10 +52,10 @@ func Load{{.Node}}(id string) ({{.Node}}, error) {
 }
 
 // GenLoad{{.Node}} loads the given {{.Node}} given the id
-func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
+func GenLoad{{.Node}}Privacy(viewer viewer.ViewerContext, id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
   var {{.NodeInstance}} {{.Node}}
   chanErr := make(chan error)
-  go ent.GenLoadNode(id, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
+  go ent.GenLoadPrivacyAwareNode(viewer, id, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
   err := <-chanErr
   chan{{.NodeResult}} <- {{.NodeResult}}{
     {{.Node}}: {{.NodeInstance}},
@@ -73,8 +74,8 @@ func GenLoad{{.Node}}(id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
     {{$edgeInfo := .}}
     {{with .NodeTemplate -}}
       {{if $edgeInfo.FieldEdge -}}
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodeResult}} chan<- {{.NodeResult}}) {
-          go GenLoad{{.Node}}({{$currentNodeInstance}}.{{$edgeInfo.FieldEdge.FieldName}}, chan{{.NodeResult}} )
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(viewer viewer.ViewerContext, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
+          go GenLoad{{.Node}}Privacy(viewer, {{$currentNodeInstance}}.{{$edgeInfo.FieldEdge.FieldName}}, chan{{.NodeResult}} )
         }
       {{end}}
       {{if $edgeInfo.ForeignKeyEdge -}}
