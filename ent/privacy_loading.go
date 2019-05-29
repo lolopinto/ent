@@ -109,7 +109,7 @@ func GenLoadPrivacyAwareNode(viewer viewer.ViewerContext, id string, ent interfa
 	// TODO rename these things..
 	// GenLoadNode should be the public facing one
 	// and GenLoadRawData or somethong along those lines should be what does the data fetching.
-	go GenLoadNode(id, ent, entConfig, chanErr)
+	go genLoadRawData(id, ent, entConfig, chanErr)
 	err := <-chanErr
 	if err != nil {
 		// there's an error, return the value here and we're done...

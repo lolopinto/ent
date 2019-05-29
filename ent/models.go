@@ -173,7 +173,7 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 
 // LoadNode loads a single node given the id, node object and entConfig
 // TODO refactor this
-func LoadNode(id string, entity interface{}, entConfig Config) error {
+func loadNodeRawData(id string, entity interface{}, entConfig Config) error {
 	// TODO does it make sense to change the API we use here to instead pass it to entity?
 
 	if entity == nil {
@@ -215,8 +215,8 @@ type EntityResult struct {
 	Error  error
 }
 
-func GenLoadNode(id string, entity interface{}, entConfig Config, errChan chan<- error) {
-	err := LoadNode(id, entity, entConfig)
+func genLoadRawData(id string, entity interface{}, entConfig Config, errChan chan<- error) {
+	err := loadNodeRawData(id, entity, entConfig)
 	// result := EntityResult{
 	// 	Entity: entity,
 	// 	Err:    err,
@@ -225,10 +225,10 @@ func GenLoadNode(id string, entity interface{}, entConfig Config, errChan chan<-
 	//chanResult <- result
 }
 
-type LoadNodesQuery func(insertData insertdata) (string, []interface{}, error)
+type loadNodesQuery func(insertData insertdata) (string, []interface{}, error)
 
 // this borrows from/learns from scanAll in sqlx library
-func loadNodesHelper(nodes interface{}, sqlQuery LoadNodesQuery) error {
+func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	value := reflect.ValueOf(nodes)
 	direct := reflect.Indirect(value)
 
