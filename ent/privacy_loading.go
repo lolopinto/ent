@@ -61,6 +61,14 @@ func setZeroVal(i interface{}) {
 	spew.Dump(i)
 }
 
+// TODO same issues as below
+func LoadPrivacyAwareNode(viewer viewer.ViewerContext, id string, ent interface{}, entConfig Config) error {
+	chanErr := make(chan error)
+	go GenLoadPrivacyAwareNode(viewer, id, ent, entConfig, chanErr)
+	err := <-chanErr
+	return err
+}
+
 // TODO...
 func GenLoadPrivacyAwareNode(viewer viewer.ViewerContext, id string, ent interface{}, entConfig Config, errChan chan<- error) {
 	// working solutions so far:
