@@ -45,9 +45,9 @@ func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
 }
 
 // Load{{.Node}} loads the given {{.Node}} given the id
-func Load{{.Node}}(id string) ({{.Node}}, error) {
+func Load{{.Node}}Privacy(viewer viewer.ViewerContext, id string) ({{.Node}}, error) {
   var {{.NodeInstance}} {{.Node}}
-  err := ent.LoadNode(id, &{{.NodeInstance}}, {{.EntConfig}})
+  err := ent.LoadPrivacyAwareNode(viewer, id, &{{.NodeInstance}}, {{.EntConfig}})
   return {{.NodeInstance}}, err
 }
 
