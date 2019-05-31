@@ -1,7 +1,6 @@
 package ent
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -20,6 +19,16 @@ type PrivacyError struct {
 // Error returns a formatted string that indicates why the ent is not visible
 func (err *PrivacyError) Error() string {
 	return fmt.Sprintf("Ent of type %s is not visbile due to privacy reasons", err.entType)
+}
+
+// InvalidEntPrivacyError is the error type returned when an ent does not implement the right privacy policy
+type InvalidEntPrivacyError struct {
+	entType string
+}
+
+// Error returns a formatted string that indicates why the ent is not visible
+func (err *InvalidEntPrivacyError) Error() string {
+	return fmt.Sprintf("Ent of type %s does not implement a privacy policy", err.entType)
 }
 
 // InvalidPrivacyRule is the error type returned when an ent does not have the right privacy rules
@@ -42,7 +51,17 @@ func IsInvalidPrivacyRule(err error) bool {
 	return ok
 }
 
+// IsInvalidEntPrivacyError returns a boolean indicating if an error is because an ent does not implement the right privacy policy
+func IsInvalidEntPrivacyError(err error) bool {
+	_, ok := err.(*InvalidEntPrivacyError)
+	return ok
+}
+
 func getTypeName(ent interface{}) string {
+	// for errors
+	if ent == nil {
+		return ""
+	}
 	t := reflect.TypeOf(ent)
 	if t.Kind() == reflect.Ptr {
 		return t.Elem().Name()
@@ -104,24 +123,42 @@ func GenLoadPrivacyAwareNode(viewer viewer.ViewerContext, id string, ent interfa
 	go genApplyPrivacyPolicy(viewer, ent, privacyResultChan)
 	result := <-privacyResultChan
 
+	fmt.Println("result", result, getTypeName(result.err))
+
 	// error in privacy loading
 	if result.err != nil {
 		setZeroVal(ent)
-		errChan <- err
+		logEntResult(ent, result.err)
+		errChan <- result.err
 	} else if result.visible {
 		// only when it's visible do we set it so that we can return nil
 		// success. return that value?
 		// result is visible
 		// no privacy error
+		logEntResult(ent, nil)
 		errChan <- nil
 	} else {
 		entData := ent
 		setZeroVal(ent)
-		errChan <- &PrivacyError{
+		err = &PrivacyError{
 			entType: getTypeName(entData),
 			id:      id,
 		}
+		logEntResult(ent, err)
+		errChan <- err
 	}
+
+}
+
+func logEntResult(ent interface{}, err error) {
+	// result
+	fmt.Println(
+		"result from loading ent ",
+		err,
+		IsPrivacyError(err),
+		IsInvalidEntPrivacyError(err),
+		ent,
+	)
 }
 
 type privacyResult struct {
@@ -134,12 +171,19 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent interface{}, privacy
 	entWithPrivacy, ok := ent.(EntWithPrivacy)
 	fmt.Println("genApplyPrivacyPolicy", ent, entWithPrivacy, ok)
 	if !ok {
+		fmt.Println("invalid ent")
 		privacyResultChan <- privacyResult{
 			visible: false,
-			// TODO eventually pass typed errors so we can detect the kinds of errors returned and do things with it
-			err: errors.New("invalid ent which does not implement a privacy policy passed"),
+			err: &InvalidEntPrivacyError{
+				entType: getTypeName(ent),
+			},
 		}
+	} else {
+		genApplyPrivacyPolicyReal(viewer, entWithPrivacy, ent, privacyResultChan)
 	}
+}
+
+func genApplyPrivacyPolicyReal(viewer viewer.ViewerContext, entWithPrivacy EntWithPrivacy, ent interface{}, privacyResultChan chan<- privacyResult) {
 	//	fmt.Println("before getPrivacyPolicy", entWithPrivacy)
 
 	privacyPolicy := entWithPrivacy.GetPrivacyPolicy()
