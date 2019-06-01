@@ -39,11 +39,13 @@ func main() {
 	rootPath := path
 	fileInfos, err := ioutil.ReadDir(rootPath)
 	die(err)
-	r, err := regexp.Compile("([a-z_]+)_config.go")
+	r, err := regexp.Compile(`(\w+)_config.go`)
 	die(err)
 
 	for _, fileInfo := range fileInfos {
 		match := r.FindStringSubmatch(fileInfo.Name())
+
+		fmt.Println("match", match)
 
 		if len(match) == 2 {
 
