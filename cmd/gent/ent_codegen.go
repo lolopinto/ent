@@ -60,6 +60,26 @@ func getStringType(f *ast.Field, fset *token.FileSet) string {
 	return typeNameBuf.String()
 }
 
+func shouldCodegenPackage(file *ast.File, specificConfig string) bool {
+	// nothing to do here
+	if specificConfig == "" {
+		return true
+	}
+
+	var returnVal bool
+
+	ast.Inspect(file, func(node ast.Node) bool {
+		if t, ok := node.(*ast.TypeSpec); ok && t.Type != nil {
+			structName := t.Name.Name
+
+			returnVal = specificConfig == structName
+			return false
+		}
+		return true
+	})
+	return returnVal
+}
+
 func codegenPackage(packageName string, filePath string, specificConfig string) {
 	fset := token.NewFileSet()
 	var src interface{}
@@ -73,29 +93,19 @@ func codegenPackage(packageName string, filePath string, specificConfig string) 
 	//fmt.Println("Struct:")
 	var nodeData nodeTemplate
 	var edges []edgeInfo
-	var structName string
-	var bailedOut bool
+
+	if !shouldCodegenPackage(file, specificConfig) {
+		return
+	}
 
 	ast.Inspect(file, func(node ast.Node) bool {
 		// get struct
 		// TODO get the name from *ast.TypeSpec to verify a few things
 		// for now, we're assuming one struct which maps to what we want which isn't necessarily true
 
-		if t, ok := node.(*ast.TypeSpec); ok && t.Type != nil {
-			structName = t.Name.Name
-
-			// specificConfig not specificed or specified and equal to structName
-			if specificConfig != "" && specificConfig != structName {
-				bailedOut = true
-				return false
-			}
-
-			// found the structName from the type, parse the struct type
-			// we need to od it this way because we can't get the structName
-			// from parsing node directly...
-			if s, ok := t.Type.(*ast.StructType); ok {
-				nodeData = parseConfig(s, packageName, fset)
-			}
+		// pass the structtype to get the config
+		if s, ok := node.(*ast.StructType); ok {
+			nodeData = parseConfig(s, packageName, fset)
 		}
 
 		if fn, ok := node.(*ast.FuncDecl); ok {
@@ -110,10 +120,6 @@ func codegenPackage(packageName string, filePath string, specificConfig string) 
 		}
 		return true
 	})
-
-	if bailedOut {
-		return
-	}
 
 	// set edges and other fields gotten from parsing other things
 	nodeData.Edges = edges
