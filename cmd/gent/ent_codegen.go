@@ -505,7 +505,7 @@ func getNodeTemplate(packageName string, fields []field) nodeTemplate {
 		NodeResult:   fmt.Sprintf("%sResult", nodeName),            // ContactResult
 		NodesResult:  fmt.Sprintf("%ssResult", nodeName),           // ContactsResult
 		NodeInstance: strcase.ToLowerCamel(nodeName),               // contact
-		NodesSlice:   fmt.Sprintf("[]%s", nodeName),                // []Contact
+		NodesSlice:   fmt.Sprintf("[]*%s", nodeName),               // []*Contact
 		NodeType:     fmt.Sprintf("%sType", nodeName),              // ContactType
 		EntConfig:    fmt.Sprintf("&configs.%sConfig{}", nodeName), // &configs.ContactConfig{}
 	}
