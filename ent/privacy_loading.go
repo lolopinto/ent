@@ -116,6 +116,7 @@ func GenLoadPrivacyAwareNode(viewer viewer.ViewerContext, id string, ent interfa
 		errChan <- err
 	}
 
+	// hmm todo need to wrap all of this in a new function or new else branch
 	fmt.Println("successfully loaded ent from data", ent)
 
 	// check privacy policy...
@@ -147,7 +148,6 @@ func GenLoadPrivacyAwareNode(viewer viewer.ViewerContext, id string, ent interfa
 		logEntResult(ent, err)
 		errChan <- err
 	}
-
 }
 
 func logEntResult(ent interface{}, err error) {
@@ -171,7 +171,7 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent interface{}, privacy
 	entWithPrivacy, ok := ent.(EntWithPrivacy)
 	fmt.Println("genApplyPrivacyPolicy", ent, entWithPrivacy, ok)
 	if !ok {
-		fmt.Println("invalid ent")
+		fmt.Println("invalid ent", ent)
 		privacyResultChan <- privacyResult{
 			visible: false,
 			err: &InvalidEntPrivacyError{
@@ -179,7 +179,7 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent interface{}, privacy
 			},
 		}
 	} else {
-		genApplyPrivacyPolicyReal(viewer, entWithPrivacy, ent, privacyResultChan)
+		go genApplyPrivacyPolicyReal(viewer, entWithPrivacy, ent, privacyResultChan)
 	}
 }
 
@@ -242,4 +242,62 @@ func genApplyPrivacyPolicyReal(viewer viewer.ViewerContext, entWithPrivacy EntWi
 	}
 
 	privacyResultChan <- result
+}
+
+func GenLoadPrivacyAwareNodes(viewer viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
+	chanErr := make(chan error)
+	go GenLoadNodes(id, nodes, colName, entConfig, chanErr)
+	err := <-chanErr
+	if err != nil {
+		errChan <- err
+	} else {
+		doneChan := make(chan bool)
+		go genApplyPrivacyPolicyForEnts(viewer, nodes, doneChan)
+		<-doneChan
+		errChan <- nil
+	}
+}
+
+// TODO change eveywhere using interface{}
+// TODO figure out go slice polymorphism in a sensible way :/
+func genApplyPrivacyPolicyForEnts(viewer viewer.ViewerContext, nodes interface{}, doneChan chan<- bool) {
+	// we know it's a slice since loadNodesHelper in data fetching code has already handled this so no need
+	// to do the checking again
+	// TODO figure out if we can do this without this much reflection
+	// OR at least reuse the reflection from lower level in the stack?
+	value := reflect.ValueOf(nodes)
+	slice := value.Elem()
+	direct := reflect.Indirect(value)
+
+	// check privacy policy for each of the nodes
+	resSlice := make([]privacyResult, slice.Len())
+	for idx := 0; idx < slice.Len(); idx++ {
+		node := slice.Index(idx).Interface()
+		c := make(chan privacyResult)
+		go genApplyPrivacyPolicy(viewer, node, c)
+		resSlice[idx] = <-c
+	}
+
+	sliceType := slice.Type()
+	resNodes := reflect.MakeSlice(sliceType, 0, slice.Cap())
+
+	for idx, res := range resSlice {
+		fmt.Println("result.....", res)
+
+		// visible and no err yay!
+		if res.visible && res.err == nil {
+			resNodes = reflect.Append(resNodes, slice.Index(idx))
+		} else if res.err != nil {
+			// TODO doesn't make sense to send this to the client since it could be
+			// lots of different ents not visible for whatever reason but maybe provide a way to
+			// see it.
+			// Maybe map instead of slice should be returned here?
+		}
+	}
+	// return privacy aware ents here
+	direct.Set(resNodes)
+
+	// we done, we out of here...
+
+	doneChan <- true
 }
