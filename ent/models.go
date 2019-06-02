@@ -299,7 +299,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 			break
 		}
 		// append each entity into "nodes" destination
-		direct.Set(reflect.Append(direct, reflect.Indirect(entity)))
+		direct.Set(reflect.Append(direct, entity))
 	}
 
 	err = rows.Err()
