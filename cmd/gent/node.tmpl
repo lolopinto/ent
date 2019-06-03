@@ -79,10 +79,10 @@ func GenLoad{{.Node}}Privacy(viewer viewer.ViewerContext, id string, chan{{.Node
         }
       {{end}}
       {{if $edgeInfo.ForeignKeyEdge -}}
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(viewer viewer.ViewerContext, chan{{.NodesResult}} chan<- {{.NodesResult}}) {
           var {{.NodeInstance}}s {{.NodesSlice}}
           chanErr := make(chan error)
-          go ent.GenLoadNodes({{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", {{.EntConfig}}, chanErr)
+          go ent.GenLoadPrivacyAwareNodes(viewer, {{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", {{.EntConfig}}, chanErr)
           err := <-chanErr
           chan{{.NodesResult}} <- {{.NodesResult}}{
             {{.Nodes}}: {{.NodeInstance}}s,
