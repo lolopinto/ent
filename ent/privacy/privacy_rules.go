@@ -60,3 +60,20 @@ func (rule AllowIfViewerIsOwnerRule) GenEval(viewer viewer.ViewerContext, ent in
 	}
 	resultChan <- SkipResult
 }
+
+// AllowIfViewerRule is a reusable rule that says the underlying ent is only visible
+// if the viewer ID is equal to the passed OwnerID
+type AllowIfViewerRule struct {
+	EntID string
+}
+
+// GenEval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
+// Otherwise, returns SkipResult
+func (rule AllowIfViewerRule) GenEval(viewer viewer.ViewerContext, ent interface{}, resultChan chan<- Result) {
+	// TODO. need to be able to cast to Entity here and not take a parameter here is best...
+	// so need to break up privacy constants vs reusable rules
+	if viewer.GetViewerID() == rule.EntID {
+		resultChan <- AllowResult
+	}
+	resultChan <- SkipResult
+}
