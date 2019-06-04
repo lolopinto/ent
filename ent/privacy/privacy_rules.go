@@ -45,3 +45,18 @@ func (rule DenyIfLoggedOutRule) GenEval(viewer viewer.ViewerContext, ent interfa
 	}
 	resultChan <- DenyResult
 }
+
+// AllowIfViewerIsOwnerRule is a reusable rule that says the underlying ent is only visible
+// if the viewer ID is equal to the passed OwnerID
+type AllowIfViewerIsOwnerRule struct {
+	OwnerID string
+}
+
+// GenEval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
+// Otherwise, returns SkipResult
+func (rule AllowIfViewerIsOwnerRule) GenEval(viewer viewer.ViewerContext, ent interface{}, resultChan chan<- Result) {
+	if viewer.GetViewerID() == rule.OwnerID {
+		resultChan <- AllowResult
+	}
+	resultChan <- SkipResult
+}
