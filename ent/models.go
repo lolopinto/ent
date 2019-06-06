@@ -309,7 +309,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	return err
 }
 
-func LoadNodes(id string, nodes interface{}, colName string, entConfig Config) error {
+func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) error {
 	sqlQuery := func(insertData insertdata) (string, []interface{}, error) {
 		colsString := insertData.getColumnsString()
 		query := fmt.Sprintf(
@@ -325,9 +325,9 @@ func LoadNodes(id string, nodes interface{}, colName string, entConfig Config) e
 	return loadNodesHelper(nodes, sqlQuery)
 }
 
-func GenLoadNodes(id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
-	err := LoadNodes(id, nodes, colName, entConfig)
-	fmt.Println("GenLoadNodes result", err, nodes)
+func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
+	err := loadForeignKeyNodes(id, nodes, colName, entConfig)
+	fmt.Println("genLoadForeignKeyNodes result", err, nodes)
 	errChan <- err
 }
 
@@ -771,7 +771,7 @@ func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 	return &edge, nil
 }
 
-func LoadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
+func loadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
 	// load the edges
 	edges, err := LoadEdgesByType(id, edgeType)
 	if err != nil {
@@ -802,8 +802,8 @@ func LoadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
 	return loadNodesHelper(nodes, sqlQuery)
 }
 
-func GenLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, errChan chan<- error) {
-	err := LoadNodesByType(id, edgeType, nodes)
+func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, errChan chan<- error) {
+	err := loadNodesByType(id, edgeType, nodes)
 	fmt.Println("GenLoadEdgesByType result", err, nodes)
 	errChan <- err
 }
