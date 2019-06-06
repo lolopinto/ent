@@ -81,15 +81,15 @@ func setZeroVal(i interface{}) {
 }
 
 // TODO same issues as below
-func LoadPrivacyAwareNode(viewer viewer.ViewerContext, id string, ent interface{}, entConfig Config) error {
+func LoadNode(viewer viewer.ViewerContext, id string, ent interface{}, entConfig Config) error {
 	chanErr := make(chan error)
-	go GenLoadPrivacyAwareNode(viewer, id, ent, entConfig, chanErr)
+	go GenLoadNode(viewer, id, ent, entConfig, chanErr)
 	err := <-chanErr
 	return err
 }
 
 // TODO...
-func GenLoadPrivacyAwareNode(viewer viewer.ViewerContext, id string, ent interface{}, entConfig Config, errChan chan<- error) {
+func GenLoadNode(viewer viewer.ViewerContext, id string, ent interface{}, entConfig Config, errChan chan<- error) {
 	// working solutions so far:
 	// use reflection to create a copy like below (need ent2 var)
 	// use reflection to set to zero-value.
@@ -244,13 +244,13 @@ func genApplyPrivacyPolicyReal(viewer viewer.ViewerContext, entWithPrivacy EntWi
 	privacyResultChan <- result
 }
 
-func GenLoadPrivacyAwareNodes(viewer viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
+func GenLoadForeignKeyNodes(viewer viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
 	go genLoadNodesImpl(viewer, nodes, errChan, func(chanErr chan<- error) {
 		go genLoadForeignKeyNodes(id, nodes, colName, entConfig, chanErr)
 	})
 }
 
-func GenLoadPrivacyAwareNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, errChan chan<- error) {
+func GenLoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, errChan chan<- error) {
 	go genLoadNodesImpl(viewer, nodes, errChan, func(chanErr chan<- error) {
 		go genLoadNodesByType(id, edgeType, nodes, chanErr)
 	})
