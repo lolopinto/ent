@@ -230,6 +230,8 @@ type fieldEdgeInfo struct {
 	EntConfig entConfigInfo
 }
 
+// TODO we need a FieldName in ent.ForeignKeyEdge and a sensible way to pass the field
+// down. Right now, it's depending on the fact that it aligns with the "package name"
 type foreignKeyEdgeInfo struct {
 	EntConfig entConfigInfo
 }
