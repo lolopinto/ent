@@ -245,8 +245,26 @@ func genApplyPrivacyPolicyReal(viewer viewer.ViewerContext, entWithPrivacy EntWi
 }
 
 func GenLoadPrivacyAwareNodes(viewer viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
+	go genLoadNodes(viewer, nodes, errChan, func(chanErr chan<- error) {
+		go GenLoadNodes(id, nodes, colName, entConfig, chanErr)
+	})
+}
+
+func GenLoadPrivacyAwareNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, errChan chan<- error) {
+	go genLoadNodes(viewer, nodes, errChan, func(chanErr chan<- error) {
+		go GenLoadNodesByType(id, edgeType, nodes, chanErr)
+	})
+}
+
+// function that does the actual work of loading the raw data when fetching a list of nodes
+type loadRawNodes func(chanErr chan<- error)
+
+// genLoadNodes takes the raw nodes fetched by whatever means we need to fetch data and applies a privacy check to
+// make sure that only the nodes which should be visible are returned to the viewer
+// params:...
+func genLoadNodes(viewer viewer.ViewerContext, nodes interface{}, errChan chan<- error, nodesLoader loadRawNodes) {
 	chanErr := make(chan error)
-	go GenLoadNodes(id, nodes, colName, entConfig, chanErr)
+	go nodesLoader(chanErr)
 	err := <-chanErr
 	if err != nil {
 		errChan <- err
