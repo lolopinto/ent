@@ -129,6 +129,7 @@ func codegenPackage(packageName string, filePath string, specificConfig string) 
 	if len(nodeData.PackageName) > 0 {
 		writeModelFile(nodeData)
 		writeMutatorFile(nodeData)
+		writePrivacyFile(nodeData)
 	}
 }
 
@@ -542,6 +543,18 @@ func writeMutatorFile(nodeData nodeTemplate) {
 			templateName:      "mutator.tmpl",
 			pathToFile:        fmt.Sprintf("models/%s/mutator/%s_mutator.go", nodeData.PackageName, nodeData.PackageName),
 			createDirIfNeeded: true,
+		},
+	)
+}
+
+func writePrivacyFile(nodeData nodeTemplate) {
+	// todo figure out what package should be here
+	writeFile(
+		fileToWriteInfo{
+			nodeData:       nodeData,
+			pathToTemplate: "cmd/gent/privacy.tmpl",
+			templateName:   "privacy.tmpl",
+			pathToFile:     fmt.Sprintf("models/%s_privacy.go", nodeData.PackageName),
 		},
 	)
 }

@@ -2,6 +2,7 @@ package models
 
 import (
   "github.com/lolopinto/jarvis/ent"
+  "github.com/lolopinto/jarvis/ent/privacy"
   "github.com/lolopinto/jarvis/ent/viewer"
   "github.com/lolopinto/jarvis/models/configs"
 )
@@ -42,6 +43,14 @@ func ({{.NodeInstance}} {{.Node}}) isNode() {}
 // GetType returns the NodeType of this entity. In this case: ContactType
 func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
 	return {{.NodeType}}
+}
+
+// GetPrivacyPolicy returns the PrivacyPolicy of this entity. 
+func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy2() privacy.Policy {
+  // TODO rename from PrivacyPolicy2 to PrivacyPolicy when I handle the manual parts.
+  return {{.Node}}PrivacyPolicy2{
+    {{.Node}}: {{.NodeInstance}},
+  }
 }
 
 // Load{{.Node}} loads the given {{.Node}} given the id
