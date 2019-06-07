@@ -81,7 +81,7 @@ func setZeroVal(i interface{}) {
 }
 
 // TODO same issues as below
-func LoadNode(viewer viewer.ViewerContext, id string, ent interface{}, entConfig Config) error {
+func LoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig Config) error {
 	chanErr := make(chan error)
 	go GenLoadNode(viewer, id, ent, entConfig, chanErr)
 	err := <-chanErr
@@ -89,7 +89,7 @@ func LoadNode(viewer viewer.ViewerContext, id string, ent interface{}, entConfig
 }
 
 // TODO...
-func GenLoadNode(viewer viewer.ViewerContext, id string, ent interface{}, entConfig Config, errChan chan<- error) {
+func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig Config, errChan chan<- error) {
 	// working solutions so far:
 	// use reflection to create a copy like below (need ent2 var)
 	// use reflection to set to zero-value.
@@ -156,7 +156,6 @@ func logEntResult(ent interface{}, err error) {
 		"result from loading ent ",
 		err,
 		IsPrivacyError(err),
-		IsInvalidEntPrivacyError(err),
 		ent,
 	)
 }
@@ -166,10 +165,9 @@ type privacyResult struct {
 	err     error
 }
 
-// apply the privacy policy and determine if the ent is visible
-func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent interface{}, privacyResultChan chan<- privacyResult) {
-	entWithPrivacy, ok := ent.(EntWithPrivacy)
-	fmt.Println("genApplyPrivacyPolicy", ent, entWithPrivacy, ok)
+func genApplyPrivacyPolicyUnsure(viewer viewer.ViewerContext, maybeEnt interface{}, privacyResultChan chan<- privacyResult) {
+	ent, ok := maybeEnt.(Entity)
+	fmt.Println("genApplyPrivacyPolicy", maybeEnt, ent, ok)
 	if !ok {
 		fmt.Println("invalid ent", ent)
 		privacyResultChan <- privacyResult{
@@ -179,14 +177,13 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent interface{}, privacy
 			},
 		}
 	} else {
-		go genApplyPrivacyPolicyReal(viewer, entWithPrivacy, ent, privacyResultChan)
+		go genApplyPrivacyPolicy(viewer, ent, privacyResultChan)
 	}
 }
 
-func genApplyPrivacyPolicyReal(viewer viewer.ViewerContext, entWithPrivacy EntWithPrivacy, ent interface{}, privacyResultChan chan<- privacyResult) {
-	//	fmt.Println("before getPrivacyPolicy", entWithPrivacy)
-
-	privacyPolicy := entWithPrivacy.GetPrivacyPolicy()
+// apply the privacy policy and determine if the ent is visible
+func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyResult) {
+	privacyPolicy := ent.GetPrivacyPolicy()
 	//fmt.Println("privacyPolicy ", privacyPolicy)
 
 	rules := privacyPolicy.Rules()
@@ -292,7 +289,7 @@ func genApplyPrivacyPolicyForEnts(viewer viewer.ViewerContext, nodes interface{}
 	for idx := 0; idx < slice.Len(); idx++ {
 		node := slice.Index(idx).Interface()
 		c := make(chan privacyResult)
-		go genApplyPrivacyPolicy(viewer, node, c)
+		go genApplyPrivacyPolicyUnsure(viewer, node, c)
 		resSlice[idx] = <-c
 	}
 
