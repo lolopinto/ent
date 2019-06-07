@@ -1,0 +1,37 @@
+package models
+
+import (
+  "github.com/lolopinto/jarvis/ent/privacy"
+  "github.com/lolopinto/jarvis/ent/viewer"
+)
+
+type {{.Node}}PrivacyPolicy2 struct {
+  {{.Node}} *{{.Node}}
+}
+
+func (policy {{.Node}}PrivacyPolicy2) Rules() []privacy.PolicyRule {
+	return []privacy.PolicyRule{
+		// standard first and last rule
+		privacy.AllowIfOmniscientRule{},
+    // TODO handle allowing people write custom rules in here...
+		privacy.AlwaysDenyRule{},
+	}
+}
+
+// AllowIfViewerCanSee{{.Node}}Rule is a reusable rule that can be called by different
+// ents to see if the contact can be visible
+type AllowIfViewerCanSee{{.Node}}Rule struct {
+	{{.Node}}ID string
+}
+
+func (rule AllowIfViewerCanSee{{.Node}}Rule) GenEval(viewer viewer.ViewerContext, ent interface{}, privacyResultChan chan<- privacy.Result) {
+	entResultChan := make(chan {{.NodeResult}})
+	go GenLoad{{.Node}}(viewer, rule.{{.Node}}ID, entResultChan)
+	entResult := <-entResultChan
+
+	if entResult.Error != nil {
+		privacyResultChan <- privacy.SkipResult
+	} else {
+		privacyResultChan <- privacy.AllowResult
+	}
+}
