@@ -5,25 +5,28 @@ import (
   "github.com/lolopinto/jarvis/ent/viewer"
 )
 
+// {{.Node}}PrivacyPolicy2 is the privacy policy for the {{.Node}} ent which helps decides if it's 
+// visible to the viewer
 type {{.Node}}PrivacyPolicy2 struct {
   {{.Node}} *{{.Node}}
 }
 
+// Rules is the list of rules that decides the visibility of the {{.Node}} ent to the viewer
 func (policy {{.Node}}PrivacyPolicy2) Rules() []privacy.PolicyRule {
 	return []privacy.PolicyRule{
-		// standard first and last rule
 		privacy.AllowIfOmniscientRule{},
-    // TODO handle allowing people write custom rules in here...
+    // BEGIN MANUAL SECTION: Add custom privacy rules below
+    // END MANUAL SECTION of privacy rules
 		privacy.AlwaysDenyRule{},
 	}
 }
 
-// AllowIfViewerCanSee{{.Node}}Rule is a reusable rule that can be called by different
-// ents to see if the contact can be visible
+// AllowIfViewerCanSee{{.Node}}Rule is a reusable rule that can be called by different ents to see if the contact can be visible
 type AllowIfViewerCanSee{{.Node}}Rule struct {
 	{{.Node}}ID string
 }
 
+// GenEval evaluates that the ent is visible to the user 
 func (rule AllowIfViewerCanSee{{.Node}}Rule) GenEval(viewer viewer.ViewerContext, ent interface{}, privacyResultChan chan<- privacy.Result) {
 	entResultChan := make(chan {{.NodeResult}})
 	go GenLoad{{.Node}}(viewer, rule.{{.Node}}ID, entResultChan)
