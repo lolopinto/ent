@@ -217,6 +217,9 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResul
 				visible: true,
 				err:     nil,
 			}
+			value := reflect.ValueOf(ent)
+			// set viewer in ent
+			setValueInEnt(value, "Viewer", viewer)
 			break
 		} else if res == privacy.DenyResult {
 			foundResult = true

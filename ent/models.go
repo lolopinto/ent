@@ -119,11 +119,28 @@ func getColumnsString(columns []string) string {
 	return strings.Join(columns, ", ")
 }
 
+func setValueInEnt(value reflect.Value, fieldName string, fieldValue interface{}) {
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
+	fbn := value.FieldByName(fieldName)
+	if fbn.IsValid() {
+		fbn.Set(reflect.ValueOf(fieldValue))
+	}
+}
+
 // todo: make this smarter. for example, it shouldn't go through the
 // process of reading the values from the struct/entity for reads
 func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata {
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
+	}
+
+	newUUID := uuid.New().String()
+	// TODO could eventually set time fields
+	// make this a flag indicating if new object being created
+	if setIDField {
+		setValueInEnt(value, "ID", newUUID)
 	}
 	valueType := value.Type()
 
@@ -134,19 +151,9 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 	var columns []string
 	var values []interface{}
 
-	newUUID := uuid.New().String()
 	// add id column and value
 	columns = append(columns, "id")
 	values = append(values, newUUID)
-
-	// TODO could eventually set time fields
-	// make this a flag indicating if new object being created
-	if setIDField {
-		fbn := value.FieldByName("ID")
-		if fbn.IsValid() {
-			fbn.Set(reflect.ValueOf(newUUID))
-		}
-	}
 
 	// use sqlx here?
 	for i := 0; i < fieldCount; i++ {
