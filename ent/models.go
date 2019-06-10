@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lolopinto/jarvis/data"
+	"github.com/lolopinto/jarvis/util"
 )
 
 // todo deal with struct tags
@@ -26,8 +27,20 @@ type insertdata struct {
 * Returns the list of columns which will be affected for a SELECT statement
  */
 func (insertData insertdata) getColumnsString() string {
-	// remove the time pieces. can't scan into embedded objects
-	columns := insertData.columns[:len(insertData.columns)-2]
+	columns := util.FilterSlice(insertData.columns, func(col string) bool {
+		switch col {
+		// remove Viewer. Not coming from DB. capital letter because no struct tag
+		case "Viewer":
+			fallthrough
+
+			// remove the time pieces. can't scan into embedded objects
+			// TODO: this is probably not true anymore...
+		case "updated_at", "created_at":
+			return false
+		default:
+			return true
+		}
+	})
 
 	return getColumnsString(columns)
 }
