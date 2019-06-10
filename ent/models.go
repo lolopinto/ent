@@ -27,6 +27,8 @@ type insertdata struct {
 * Returns the list of columns which will be affected for a SELECT statement
  */
 func (insertData insertdata) getColumnsString() string {
+	// don't quite need this since this is done in getFieldsAndValuesOfStruct()
+	// but all of this needs to be cleaned up now
 	columns := util.FilterSlice(insertData.columns, func(col string) bool {
 		switch col {
 		// remove Viewer. Not coming from DB. capital letter because no struct tag
@@ -150,6 +152,12 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 	for i := 0; i < fieldCount; i++ {
 		field := value.Field(i)
 		typeOfField := valueType.Field(i)
+
+		//		spew.Dump(field.Kind(), field, field.Interface())
+		if field.Kind() == reflect.Interface {
+			// something like viewer which doesn't belong in the db
+			continue
+		}
 
 		if field.Kind() == reflect.Struct {
 			continue
