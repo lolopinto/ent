@@ -5,14 +5,14 @@ import (
   "github.com/lolopinto/jarvis/ent/viewer"
 )
 
-// {{.Node}}PrivacyPolicy2 is the privacy policy for the {{.Node}} ent which helps decides if it's 
+// {{.Node}}PrivacyPolicy is the privacy policy for the {{.Node}} ent which helps decides if it's 
 // visible to the viewer
-type {{.Node}}PrivacyPolicy2 struct {
+type {{.Node}}PrivacyPolicy struct {
   {{.Node}} *{{.Node}}
 }
 
 // Rules is the list of rules that decides the visibility of the {{.Node}} ent to the viewer
-func (policy {{.Node}}PrivacyPolicy2) Rules() []privacy.PolicyRule {
+func (policy {{.Node}}PrivacyPolicy) Rules() []privacy.PolicyRule {
 	return []privacy.PolicyRule{
 		privacy.AllowIfOmniscientRule{},
     // BEGIN MANUAL SECTION: Add custom privacy rules below
