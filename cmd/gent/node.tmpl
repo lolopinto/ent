@@ -46,9 +46,8 @@ func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
 }
 
 // GetPrivacyPolicy returns the PrivacyPolicy of this entity. 
-func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy2() privacy.Policy {
-  // TODO rename from PrivacyPolicy2 to PrivacyPolicy when I handle the manual parts.
-  return {{.Node}}PrivacyPolicy2{
+func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy() privacy.Policy {
+  return {{.Node}}PrivacyPolicy{
     {{.Node}}: {{.NodeInstance}},
   }
 }

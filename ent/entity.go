@@ -6,5 +6,5 @@ type Entity interface {
 
 	// GetType returns the NodeType of this entity
 	GetType() NodeType
-	GetPrivacyPolicy2() privacy.Policy
+	GetPrivacyPolicy() privacy.Policy
 }

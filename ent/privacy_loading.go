@@ -183,7 +183,7 @@ func genApplyPrivacyPolicyUnsure(viewer viewer.ViewerContext, maybeEnt interface
 
 // apply the privacy policy and determine if the ent is visible
 func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyResult) {
-	privacyPolicy := ent.GetPrivacyPolicy2()
+	privacyPolicy := ent.GetPrivacyPolicy()
 	//fmt.Println("privacyPolicy ", privacyPolicy)
 
 	rules := privacyPolicy.Rules()
