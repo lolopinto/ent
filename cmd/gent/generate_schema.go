@@ -1,7 +1,13 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
 	"strings"
+
+	"github.com/lolopinto/jarvis/data"
 )
 
 type schemaInfo struct {
@@ -41,6 +47,24 @@ func generateSchema(nodes []*nodeTemplate) {
 	schema := schemaInfo{Tables: tables}
 	//spew.Dump(schema)
 	writeSchemaFile(&schema)
+
+	generateDbSchema()
+}
+
+func generateDbSchema() {
+	cmd := exec.Command(
+		"python3",
+		"python/auto_schema/gen_db_schema.py",
+		"-s=models/configs",
+		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
+	)
+	//spew.Dump(cmd)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("cmd.Run() failed with %s\n", err)
+	}
 }
 
 func writeSchemaFile(schema *schemaInfo) {

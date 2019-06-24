@@ -2,6 +2,8 @@ package data
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 
@@ -10,11 +12,11 @@ import (
 
 // all of this needs to be taken from a configuration file instead of hardcoded
 const (
-	host = "localhost"
-	port = 5432
-	user = "ola"
-	//  password = ""
-	dbname = "jarvis"
+	host     = "localhost"
+	port     = 5432
+	user     = "ola"
+	password = ""
+	dbname   = "jarvis"
 )
 
 var db *sqlx.DB
@@ -38,6 +40,27 @@ func init() {
 		fmt.Println("DB unreachable", err)
 	}
 	//fmt.Println("InitDB", db)
+}
+
+// GetSQLAlchemyDatabaseURIgo returns the databause uri needed by sqlalchemy to generate a schema file
+func GetSQLAlchemyDatabaseURIgo() string {
+	// overwriting to jarvis2 for now
+	dbname2 := "jarvis2"
+	// postgres only for now as above. specific driver also
+	driver := "postgresql+pg8000"
+
+	format := "{driver}://{user}:{password}@{host}:{port}/{dbname}"
+	r := strings.NewReplacer(
+		"{driver}", driver,
+		"{user}", user,
+		"{password}", password,
+		"{host}", host,
+		"{port}", strconv.Itoa(port),
+		"{dbname}", dbname2,
+	)
+
+	fmt.Println(r.Replace(format))
+	return r.Replace(format)
 }
 
 // DBConn returns a database connection pool to the DB for use
