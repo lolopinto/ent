@@ -14,6 +14,11 @@ class Command(object):
 
     alembic_cfg.set_main_option("version_locations", os.path.join(schema_path, "versions"))
 
+    # should probably make some of these configurable eventually
+    alembic_cfg.set_main_option("file_template", "%%(rev)s_%%(year)d%%(month)d%%(day)d%%(hour)d%%(minute)d%%(second)d_%%(slug)s")
+    alembic_cfg.set_main_option("truncate_slug_length", "40")
+    alembic_cfg.set_main_option("timezone", "utc") # use utc timezone.
+
     self.alembic_cfg = alembic_cfg
 
     # pass connection instead of re-creating it and using a sqlalchemy_url file
@@ -25,7 +30,6 @@ class Command(object):
     command.current(self.alembic_cfg, verbose=True)
 
   # Simulates running the `alembic revision -m` command
-  # TODO autogenerate the message based on reading the schema
   def revision(self, message):
     command.revision(self.alembic_cfg, message, autogenerate=True)
 
