@@ -54,11 +54,27 @@ class Runner(object):
     #migration_script = produce_migrations(self.mc, self.metadata)
     #print(render_python_code(migration_script.upgrade_ops))
 
-    self.revision()
+    self.revision(diff)
     self.upgrade()
 
-  def revision(self, message="schema change"):
+  def revision_message(self, diff):
+    result = {
+      # TODO support more as we add more support and test this
+      'add_table': lambda table: 'add %s table' % table.name,
+    }
+    changes = [result[op_type](changed) for (op_type, changed) in diff]
+
+    message = "\n".join(changes)
+    return message
+
+
+  def revision(self, diff=None):
     #print(self.cmd.current())
+
+    if diff is None:
+      diff = self.compute_changes()
+
+    message = self.revision_message(diff)
 
     self.cmd.revision(message)
 

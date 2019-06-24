@@ -67,6 +67,21 @@ def test_compute_changes_with_two_tables(new_test_runner, metadata_with_two_tabl
 
 
 @pytest.mark.usefixtures("metadata_with_table")
+def test_revision_message(new_test_runner, metadata_with_table):
+  r = new_test_runner(metadata_with_table)
+
+  message = r.revision_message(r.compute_changes())
+  assert message == "add accounts table"
+
+@pytest.mark.usefixtures("metadata_with_two_tables")
+def test_revision_message_two_tables(new_test_runner, metadata_with_two_tables):
+  r = new_test_runner(metadata_with_two_tables)
+
+  message = r.revision_message(r.compute_changes())
+  assert message == "add accounts table\nadd messages table"
+
+
+@pytest.mark.usefixtures("metadata_with_table")
 def test_new_revision(new_test_runner, metadata_with_table):
   r = new_test_runner(metadata_with_table)
 
@@ -75,7 +90,6 @@ def test_new_revision(new_test_runner, metadata_with_table):
   # 1 schema file should have been created 
   assert_num_files(r, 1)
   assert_num_tables(r, 0)
-
 
 @pytest.mark.usefixtures("metadata_with_table")
 def test_new_revision_with_multi_step(new_test_runner, metadata_with_table):
@@ -99,7 +113,7 @@ def test_new_revision_with_multi_step(new_test_runner, metadata_with_table):
   r2 = new_test_runner(metadata_with_table, r.get_schema_path())
   assert r.get_schema_path() == r2.get_schema_path()
   
-  r2.revision("schema change 2")
+  r2.revision()
 
   # we should have a 2nd schema path
   assert_num_files(r2, 2)
