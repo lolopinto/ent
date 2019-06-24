@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"regexp"
 
 	flag "github.com/ogier/pflag"
 )
@@ -32,37 +30,7 @@ func main() {
 	// }
 	// fmt.Println(dir)
 
-	// have to use an "absolute" filepath for now
-	// TODO eventually use ParseDir... and *config.go
-	//parser.Parse
-	// get root path, find config files in there
-	rootPath := path
-	fileInfos, err := ioutil.ReadDir(rootPath)
-	die(err)
-	r, err := regexp.Compile(`(\w+)_config.go`)
-	die(err)
-
-	for _, fileInfo := range fileInfos {
-		match := r.FindStringSubmatch(fileInfo.Name())
-
-		fmt.Println("match", match)
-
-		if len(match) == 2 {
-
-			//fmt.Printf("config file Name %v \n", fileInfo.Name())
-			//files = append(files, fileInfo.Name())
-
-			packageName := match[1]
-			filePath := rootPath + "/" + fileInfo.Name()
-
-			fmt.Println(packageName, filePath)
-
-			codegenPackage(packageName, filePath, specificConfig)
-		} else {
-			fmt.Println("invalid non-config file found:", fileInfo.Name())
-		}
-		//fmt.Printf("IsDir %v Name %v \n", fileInfo.IsDir(), fileInfo.Name())
-	}
+	parseSchemasAndGenerate(path, specificConfig)
 }
 
 func printUsageIfNecessary() {

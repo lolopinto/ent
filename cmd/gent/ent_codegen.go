@@ -8,6 +8,7 @@ import (
 	"go/format"
 	"go/parser"
 	"go/printer"
+	"go/scanner"
 	"go/token"
 	"io/ioutil"
 	"log"
@@ -16,6 +17,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 
 	// need to use dst because of this issue:
@@ -43,7 +45,7 @@ type nodeTemplate struct {
 	PackageName  string
 	Node         string
 	Nodes        string
-	Fields       []field
+	Fields       []fieldInfo
 	NodeResult   string
 	NodesResult  string
 	NodeInstance string
@@ -51,12 +53,14 @@ type nodeTemplate struct {
 	NodeType     string
 	EntConfig    string
 	Edges        []edgeInfo
+	TableName    string
 }
 
-type field struct {
+type fieldInfo struct {
 	FieldName string
 	FieldType string
 	FieldTag  string
+	TagMap    map[string]string
 }
 
 // gets the string representation of the type
@@ -89,7 +93,69 @@ func shouldCodegenPackage(file *ast.File, specificConfig string) bool {
 	return returnVal
 }
 
-func codegenPackage(packageName string, filePath string, specificConfig string) {
+func parseSchemasAndGenerate(rootPath string, specificConfig string) {
+	// have to use an "absolute" filepath for now
+	// TODO eventually use ParseDir... and *config.go
+	//parser.Parse
+	// get root path, find config files in there
+	fileInfos, err := ioutil.ReadDir(rootPath)
+	die(err)
+	r, err := regexp.Compile(`(\w+)_config.go`)
+	die(err)
+
+	var nodes []*nodeTemplate
+
+	for _, fileInfo := range fileInfos {
+		match := r.FindStringSubmatch(fileInfo.Name())
+
+		fmt.Println("match", match)
+
+		if len(match) == 2 {
+
+			//fmt.Printf("config file Name %v \n", fileInfo.Name())
+			//files = append(files, fileInfo.Name())
+
+			packageName := match[1]
+			filePath := rootPath + "/" + fileInfo.Name()
+
+			fmt.Println(packageName, filePath)
+
+			nodeData := parseNodeTemplate(packageName, filePath, specificConfig)
+			if nodeData != nil {
+				nodes = append(nodes, nodeData)
+			}
+		} else {
+			// well, this should be the schema.py file so this is fine.
+			fmt.Println("invalid non-config file found:", fileInfo.Name())
+		}
+		//fmt.Printf("IsDir %v Name %v \n", fileInfo.IsDir(), fileInfo.Name())
+	}
+
+	if len(nodes) == 0 {
+		return
+	}
+
+	fmt.Println("schema", len(nodes))
+
+	// TOOD validate things here first.
+
+	// generate python schema file first and then make changes to underlying db
+	//generateSchemaFile(nodes)
+	generateSchema(nodes)
+
+	for _, nodeData := range nodes {
+		//fmt.Println(specificConfig, structName)
+		// what's the best way to check not-zero value? for now, this will have to do
+		if len(nodeData.PackageName) > 0 {
+			writeModelFile(nodeData)
+			writeMutatorFile(nodeData)
+			writePrivacyFile(nodeData)
+		}
+
+	}
+}
+
+func parseNodeTemplate(packageName string, filePath string, specificConfig string) *nodeTemplate {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
 	//spew.Dump(file)
@@ -101,9 +167,10 @@ func codegenPackage(packageName string, filePath string, specificConfig string) 
 	//fmt.Println("Struct:")
 	var nodeData nodeTemplate
 	var edges []edgeInfo
+	var tableName string
 
 	if !shouldCodegenPackage(file, specificConfig) {
-		return
+		return nil
 	}
 
 	ast.Inspect(file, func(node ast.Node) bool {
@@ -123,6 +190,9 @@ func codegenPackage(packageName string, filePath string, specificConfig string) 
 			case "GetEdges":
 				edges = parseEdgesFunc(packageName, fn)
 				// TODO: validate edges. can only have one of each type etc
+
+			case "GetTableName":
+				tableName = getTableName(fn)
 			}
 
 		}
@@ -131,17 +201,12 @@ func codegenPackage(packageName string, filePath string, specificConfig string) 
 
 	// set edges and other fields gotten from parsing other things
 	nodeData.Edges = edges
+	nodeData.TableName = tableName
 
-	//fmt.Println(specificConfig, structName)
-	// what's the best way to check not-zero value? for now, this will have to do
-	if len(nodeData.PackageName) > 0 {
-		writeModelFile(nodeData)
-		writeMutatorFile(nodeData)
-		writePrivacyFile(nodeData)
-	}
+	return &nodeData
 }
 
-func getCompositeStmtsInFunc(fn *ast.FuncDecl) *ast.CompositeLit {
+func getLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
 	// fn.Body is an instance of *ast.BlockStmt
 	lastStmt := getLastStatement(fn.Body.List)
 
@@ -155,11 +220,16 @@ func getCompositeStmtsInFunc(fn *ast.FuncDecl) *ast.CompositeLit {
 
 	fmt.Println(len(returnStmt.Results))
 
-	lastExpr := getLastExpr(returnStmt.Results)
-	compositeListStmt := getExprToCompositeLit(lastExpr)
 	if len(returnStmt.Results) != 1 {
 		panic("invalid number or format of return statement")
 	}
+
+	return getLastExpr(returnStmt.Results)
+}
+
+func getCompositeStmtsInFunc(fn *ast.FuncDecl) *ast.CompositeLit {
+	lastExpr := getLastReturnStmtExpr(fn)
+	compositeListStmt := getExprToCompositeLit(lastExpr)
 	return compositeListStmt
 }
 
@@ -225,7 +295,7 @@ func parseFileForManualCode(path string) *astConfig {
 
 	for idx := 0; idx < len(file.Comments); idx++ {
 		cg := file.Comments[idx]
-		fmt.Println(cg.Text())
+		//fmt.Println(cg.Text())
 
 		if begin == nil {
 			if strings.HasPrefix(cg.Text(), "BEGIN MANUAL SECTION") {
@@ -273,7 +343,7 @@ func parseFileForManualCode(path string) *astConfig {
 					if !(fn.Pos() < begin.Pos() && end.Pos() < fn.End()) {
 						continue
 					}
-					fmt.Println("yay!...")
+					//fmt.Println("yay!...")
 
 					commentMap[fnName] = cgPair
 					//exprMap[fnName] = manualStmts
@@ -388,7 +458,7 @@ func rewriteAstWithConfig(config *astConfig, b []byte) []byte {
 		return true
 	})
 
-	decorator.Print(dstFile)
+	//decorator.Print(dstFile)
 	restoredFset, restoredFile, err := decorator.RestoreFile(dstFile)
 
 	var buf bytes.Buffer
@@ -408,6 +478,14 @@ func getLastExpr(exprs []ast.Expr) ast.Expr {
 	length := len(exprs)
 	lastExpr := exprs[length-1]
 	return lastExpr
+}
+
+// getTableName returns the name of the table the node should be stored in
+func getTableName(fn *ast.FuncDecl) string {
+	expr := getLastReturnStmtExpr(fn)
+	basicLit := getExprToBasicLit(expr)
+	fmt.Println("table name", basicLit.Value)
+	return basicLit.Value
 }
 
 // http://goast.yuroyoro.net/ is really helpful to see the tree
@@ -558,7 +636,7 @@ func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr)
 		FieldEdge:       fieldEdgeItem,
 		ForeignKeyEdge:  foreignKeyEdgeItem,
 		AssociationEdge: associationEdgeItem,
-		NodeTemplate:    getNodeTemplate(packageName, []field{}),
+		NodeTemplate:    getNodeTemplate(packageName, []fieldInfo{}),
 	}
 }
 
@@ -687,26 +765,28 @@ func getEntConfigFromExpr(expr ast.Expr) entConfigInfo {
 }
 
 func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet) nodeTemplate {
-	var fields []field
+	var fields []fieldInfo
 	for _, f := range s.Fields.List {
 		fieldName := f.Names[0].Name
 		// use this to rename GraphQL, db fields, etc
 		// otherwise by default it passes this down
 		fmt.Printf("Field: %s Type: %s Tag: %v \n", fieldName, f.Type, f.Tag)
 
-		tagStr := getTagString(fieldName, f.Tag)
+		tagStr, tagMap := getTagInfo(fieldName, f.Tag)
 
-		fields = append(fields, field{
+		fields = append(fields, fieldInfo{
 			FieldName: fieldName,
 			FieldType: getStringType(f, fset),
 			FieldTag:  tagStr,
+			TagMap:    tagMap,
 		})
 	}
+	//spew.Dump(fields)
 
 	return getNodeTemplate(packageName, fields)
 }
 
-func getTagString(fieldName string, tag *ast.BasicLit) string {
+func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string) {
 	tagsMap := make(map[string]string)
 	if t := tag; t != nil {
 		// struct tag format should be something like `graphql:"firstName" db:"first_name"`
@@ -741,10 +821,10 @@ func getTagString(fieldName string, tag *ast.BasicLit) string {
 	for key, value := range tagsMap {
 		tags = append(tags, key+":"+value)
 	}
-	return "`" + strings.Join(tags, " ") + "`"
+	return "`" + strings.Join(tags, " ") + "`", tagsMap
 }
 
-func getNodeTemplate(packageName string, fields []field) nodeTemplate {
+func getNodeTemplate(packageName string, fields []fieldInfo) nodeTemplate {
 	// convert from pacakgename to camel case
 	nodeName := strcase.ToCamel(packageName)
 
@@ -763,49 +843,53 @@ func getNodeTemplate(packageName string, fields []field) nodeTemplate {
 }
 
 type fileToWriteInfo struct {
-	nodeData           nodeTemplate
+	data               interface{}
 	pathToTemplate     string
 	templateName       string
 	pathToFile         string
 	createDirIfNeeded  bool
 	checkForManualCode bool
+	formatSource       bool
 }
 
-func writeModelFile(nodeData nodeTemplate) {
+func writeModelFile(nodeData *nodeTemplate) {
 	writeFile(
 		fileToWriteInfo{
-			nodeData:       nodeData,
+			data:           nodeData,
 			pathToTemplate: "cmd/gent/node.tmpl",
 			templateName:   "node.tmpl",
 			pathToFile:     fmt.Sprintf("models/%s.go", nodeData.PackageName),
+			formatSource:   true,
 		},
 	)
 }
 
-func writeMutatorFile(nodeData nodeTemplate) {
+func writeMutatorFile(nodeData *nodeTemplate) {
 	// this is not a real entmutator but this gets things working and
 	// hopefully means no circular dependencies
 	writeFile(
 		fileToWriteInfo{
-			nodeData:          nodeData,
+			data:              nodeData,
 			pathToTemplate:    "cmd/gent/mutator.tmpl",
 			templateName:      "mutator.tmpl",
 			pathToFile:        fmt.Sprintf("models/%s/mutator/%s_mutator.go", nodeData.PackageName, nodeData.PackageName),
 			createDirIfNeeded: true,
+			formatSource:      true,
 		},
 	)
 }
 
-func writePrivacyFile(nodeData nodeTemplate) {
+func writePrivacyFile(nodeData *nodeTemplate) {
 	pathToFile := fmt.Sprintf("models/%s_privacy.go", nodeData.PackageName)
 
 	writeFile(
 		fileToWriteInfo{
-			nodeData:           nodeData,
+			data:               nodeData,
 			pathToTemplate:     "cmd/gent/privacy.tmpl",
 			templateName:       "privacy.tmpl",
 			pathToFile:         pathToFile,
 			checkForManualCode: true,
+			formatSource:       true,
 		},
 	)
 }
@@ -815,21 +899,22 @@ func generateNewAst(file fileToWriteInfo) []byte {
 	path := []string{file.pathToTemplate}
 	t, err := template.New(file.templateName).ParseFiles(path...)
 	die(err)
-	template.Must(t, err)
-	die(err)
 
 	var buffer bytes.Buffer
 
 	// execute the template and store in buffer
-	err = t.Execute(&buffer, file.nodeData)
+	err = t.Execute(&buffer, file.data)
 	die(err)
 	//err = t.Execute(os.Stdout, nodeData)
 	//fmt.Println(buffer)
 	//fmt.Println(buffer.String())
 	// gofmt the buffer
-	bytes, err := format.Source(buffer.Bytes())
-	die(err)
-	return bytes
+	if file.formatSource {
+		bytes, err := format.Source(buffer.Bytes())
+		die(err)
+		return bytes
+	}
+	return buffer.Bytes()
 }
 
 func writeFile(file fileToWriteInfo) {
@@ -919,6 +1004,12 @@ func writeFile(file fileToWriteInfo) {
 
 func die(err error) {
 	if err != nil {
+		err2, ok := err.(scanner.ErrorList)
+		if ok {
+			for _, err3 := range err2 {
+				spew.Dump(err3)
+			}
+		}
 		panic(err)
 	}
 }
