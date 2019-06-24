@@ -44,7 +44,7 @@ class Runner(object):
     diff = self.compute_changes()
   
     if len(diff) == 0:
-      print("nothing to do here")
+      print("schema is up to date")
     else:
       self._apply_changes(diff)
 
