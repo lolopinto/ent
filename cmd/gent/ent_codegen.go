@@ -989,9 +989,6 @@ func writeFile(file fileToWriteInfo) {
 		fullPath := filepath.Join(".", file.pathToFile)
 		directoryPath := path.Dir(fullPath)
 
-		spew.Dump(fullPath)
-		spew.Dump(directoryPath)
-
 		_, err := os.Stat(directoryPath)
 
 		if os.IsNotExist(err) {

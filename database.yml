@@ -1,7 +1,0 @@
-development:
-  dialect: postgres
-  database: jarvis
-  user: ola
-  password: '' # should this be empty?
-  host: localhost # or 127.0.0.1
-  pool: 5 # ¯\_(ツ)_/¯ 

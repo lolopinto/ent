@@ -53,7 +53,6 @@ func getPathToCode(pathToConfig string) *codePath {
 	for i := len(pathParts) - 1; i > 0; i-- {
 		part := pathParts[i]
 		if len(strings.Split(part, ".")) > 1 {
-			fmt.Println(part, i)
 			idx = i
 			break
 		}
