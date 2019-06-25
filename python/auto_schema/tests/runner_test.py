@@ -52,6 +52,7 @@ def test_compute_changes_with_empty_metadata(new_test_runner, empty_metadata):
   assert r.compute_changes() == []
   assert_no_changes_made(r)
 
+
 @pytest.mark.usefixtures("metadata_with_table")
 def test_compute_changes_with_new_table(new_test_runner, metadata_with_table):
   r = new_test_runner(metadata_with_table)
@@ -66,12 +67,20 @@ def test_compute_changes_with_two_tables(new_test_runner, metadata_with_two_tabl
   assert_no_changes_made(r)
 
 
+@pytest.mark.usefixtures("metadata_with_foreign_key")
+def test_compute_changes_with_foreign_key_table(new_test_runner, metadata_with_foreign_key):
+  r = new_test_runner(metadata_with_foreign_key)
+  assert len(r.compute_changes()) == 2
+  assert_no_changes_made(r)
+
+
 @pytest.mark.usefixtures("metadata_with_table")
 def test_revision_message(new_test_runner, metadata_with_table):
   r = new_test_runner(metadata_with_table)
 
   message = r.revision_message(r.compute_changes())
   assert message == "add accounts table"
+
 
 @pytest.mark.usefixtures("metadata_with_two_tables")
 def test_revision_message_two_tables(new_test_runner, metadata_with_two_tables):
@@ -91,6 +100,7 @@ def test_new_revision(new_test_runner, metadata_with_table):
   assert_num_files(r, 1)
   assert_num_tables(r, 0)
 
+
 @pytest.mark.usefixtures("metadata_with_table")
 def test_new_revision_with_multi_step(new_test_runner, metadata_with_table):
   r = new_test_runner(metadata_with_table)
@@ -107,7 +117,7 @@ def test_new_revision_with_multi_step(new_test_runner, metadata_with_table):
   assert_num_tables(r, 2, ['accounts', 'alembic_version'])
 
   # get the message table
-  conftest.message_table(metadata_with_table)
+  conftest.messages_table(metadata_with_table)
 
   # recreate runner with last path and modified metadata
   r2 = new_test_runner(metadata_with_table, r.get_schema_path())
@@ -137,7 +147,7 @@ def test_sequential_table_adds(new_test_runner, metadata_with_table):
   validate_metadata_after_change(r, metadata_with_table)
 
   # get the message table
-  conftest.message_table(metadata_with_table)
+  conftest.messages_table(metadata_with_table)
 
   # recreate runner with last path and modified metadata
   r2 = new_test_runner(metadata_with_table, r.get_schema_path())
@@ -151,6 +161,7 @@ def test_sequential_table_adds(new_test_runner, metadata_with_table):
 
   validate_metadata_after_change(r, metadata_with_table)
 
+
 @pytest.mark.usefixtures("metadata_with_two_tables")
 def test_multiple_tables_added(new_test_runner, metadata_with_two_tables):
   r = new_test_runner(metadata_with_two_tables)
@@ -161,7 +172,18 @@ def test_multiple_tables_added(new_test_runner, metadata_with_two_tables):
   assert_num_tables(r, 3, ['accounts', 'alembic_version', 'messages'])
 
   validate_metadata_after_change(r, metadata_with_two_tables)
+
+@pytest.mark.usefixtures("metadata_with_foreign_key")
+def test_multiple_tables_added_with_foreign_key(new_test_runner, metadata_with_foreign_key):
+  r = new_test_runner(metadata_with_foreign_key)
+  r.run()
   
+  # should have the expected file with the expected tables
+  assert_num_files(r, 1) # because 2 new tables added at the same time, only one schema file needed
+  assert_num_tables(r, 3, ['accounts', 'alembic_version', 'contacts'])
+
+  validate_metadata_after_change(r, metadata_with_foreign_key)
+
 
 def validate_metadata_after_change(r, old_metadata):
   new_metadata = get_new_metadata_for_runner(r)
@@ -199,13 +221,33 @@ def validate_table(orig_table, table):
     assert orig_column.primary_key == column.primary_key
     assert orig_column.nullable == column.nullable
 
+    validate_foreign_key(orig_column, column)
+
     # we don't actually support all these below yet but when we do, it should start failing and we should know that
     assert orig_column.default == column.default
     assert orig_column.index == column.index
     assert orig_column.unique == column.unique
     assert orig_column.autoincrement == column.autoincrement
-    assert orig_column.foreign_keys == column.foreign_keys
     assert orig_column.key == column.key
     assert orig_column.onupdate == column.onupdate
     assert orig_column.constraints == column.constraints
     assert orig_column.comment == column.comment
+
+
+def validate_foreign_key(orig_column, column):
+  assert len(orig_column.foreign_keys) == len(orig_column.foreign_keys)
+
+  for fkey, orig_fkey in zip(column.foreign_keys, orig_column.foreign_keys):
+    assert str(fkey.column) == str(orig_fkey.column) # similar to what we do in validate_table on column.type
+    assert fkey.name == orig_fkey.name
+    assert fkey.ondelete == orig_fkey.ondelete
+    assert fkey.onupdate == orig_fkey.onupdate
+
+    # we don't actually support all these below yet but when we do, it should start failing and we should know that
+    assert fkey.deferrable == orig_fkey.deferrable
+    assert fkey.initially == orig_fkey.initially
+   # assert fkey.link_to_name == orig_fkey.link_to_name # this seems like it's expected to change. TODO figure this out more
+    assert fkey.use_alter == orig_fkey.use_alter
+    assert fkey.match == orig_fkey.match
+    assert fkey.info == orig_fkey.info
+    assert str(fkey.parent) == str(orig_fkey.parent)

@@ -3,7 +3,7 @@ import pytest
 import shutil
 import tempfile
 
-from sqlalchemy import (Column, MetaData, Integer, Date, String, Table)
+from sqlalchemy import (Column, MetaData, Integer, Date, String, Table, ForeignKey)
 
 from auto_schema import runner
 
@@ -14,7 +14,7 @@ def new_test_runner():
   def _make_new_test_runner(metadata, schema_path=None):
     # by default, this will be none and create a temp directory where things should go
     # sometimes, when we want to test multiple revisions, we'll send the previous path 
-    # so we don't reuse it.
+    # so we reuse it.
     if schema_path is None:
       schema_path = tempfile.mkdtemp()
 
@@ -57,14 +57,28 @@ def metadata_with_table():
 @pytest.fixture
 @pytest.mark.usefixtures("metadata_with_table")
 def metadata_with_two_tables(metadata_with_table):
-  message_table(metadata_with_table)
+  messages_table(metadata_with_table)
   return metadata_with_table
 
 
-def message_table(metadata):
+@pytest.fixture
+@pytest.mark.usefixtures("metadata_with_table")
+def metadata_with_foreign_key(metadata_with_table):
+  contacts_table(metadata_with_table)
+  return metadata_with_table
+
+
+def messages_table(metadata):
   Table('messages', metadata,
     Column('id', Integer, primary_key=True),
-    Column('account_id', Integer, nullable=False), 
+    Column('thread_id', Integer, nullable=False), 
     Column('message', String(5000), nullable=False),
   )
-  return message_table
+
+
+def contacts_table(metadata):
+  Table('contacts', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('account_id', Integer, ForeignKey('accounts.id', ondelete="CASCADE", name="contacts_account_id_fkey"), nullable=False),
+    Column('name', String(255), nullable=False)
+  )
