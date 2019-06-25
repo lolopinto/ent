@@ -6,8 +6,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"github.com/lolopinto/jarvis/ent/privacy"
-	"github.com/lolopinto/jarvis/ent/viewer"
+	"github.com/lolopinto/ent/ent/privacy"
+	"github.com/lolopinto/ent/ent/viewer"
 )
 
 // PrivacyError is the error type returned when an ent is not visible due to privacy reasons

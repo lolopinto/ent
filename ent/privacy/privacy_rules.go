@@ -1,7 +1,7 @@
 package privacy
 
 import (
-	"github.com/lolopinto/jarvis/ent/viewer"
+	"github.com/lolopinto/ent/ent/viewer"
 )
 
 // AlwaysAllowRule is a reusable rule that comes with the ent framework that says an ent is always visible to the viewer

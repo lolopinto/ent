@@ -13,7 +13,10 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"text/template"
 
@@ -93,7 +96,7 @@ func shouldCodegenPackage(file *ast.File, specificConfig string) bool {
 	return returnVal
 }
 
-func parseSchemasAndGenerate(rootPath string, specificConfig string) {
+func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codePath) {
 	// have to use an "absolute" filepath for now
 	// TODO eventually use ParseDir... and *config.go
 	//parser.Parse
@@ -124,9 +127,6 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string) {
 			if nodeData != nil {
 				nodes = append(nodes, nodeData)
 			}
-		} else {
-			// well, this should be the schema.py file so this is fine.
-			fmt.Println("invalid non-config file found:", fileInfo.Name())
 		}
 		//fmt.Printf("IsDir %v Name %v \n", fileInfo.IsDir(), fileInfo.Name())
 	}
@@ -147,11 +147,10 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string) {
 		//fmt.Println(specificConfig, structName)
 		// what's the best way to check not-zero value? for now, this will have to do
 		if len(nodeData.PackageName) > 0 {
-			writeModelFile(nodeData)
-			writeMutatorFile(nodeData)
+			writeModelFile(nodeData, codePathInfo)
+			writeMutatorFile(nodeData, codePathInfo)
 			writePrivacyFile(nodeData)
 		}
-
 	}
 }
 
@@ -852,11 +851,19 @@ type fileToWriteInfo struct {
 	formatSource       bool
 }
 
-func writeModelFile(nodeData *nodeTemplate) {
+type nodeTemplateCodePath struct {
+	NodeData *nodeTemplate
+	CodePath *codePath
+}
+
+func writeModelFile(nodeData *nodeTemplate, codePathInfo *codePath) {
 	writeFile(
 		fileToWriteInfo{
-			data:           nodeData,
-			pathToTemplate: "cmd/gent/node.tmpl",
+			data: nodeTemplateCodePath{
+				NodeData: nodeData,
+				CodePath: codePathInfo,
+			},
+			pathToTemplate: "templates/node.tmpl",
 			templateName:   "node.tmpl",
 			pathToFile:     fmt.Sprintf("models/%s.go", nodeData.PackageName),
 			formatSource:   true,
@@ -864,13 +871,16 @@ func writeModelFile(nodeData *nodeTemplate) {
 	)
 }
 
-func writeMutatorFile(nodeData *nodeTemplate) {
+func writeMutatorFile(nodeData *nodeTemplate, codePathInfo *codePath) {
 	// this is not a real entmutator but this gets things working and
 	// hopefully means no circular dependencies
 	writeFile(
 		fileToWriteInfo{
-			data:              nodeData,
-			pathToTemplate:    "cmd/gent/mutator.tmpl",
+			data: nodeTemplateCodePath{
+				NodeData: nodeData,
+				CodePath: codePathInfo,
+			},
+			pathToTemplate:    "templates/mutator.tmpl",
 			templateName:      "mutator.tmpl",
 			pathToFile:        fmt.Sprintf("models/%s/mutator/%s_mutator.go", nodeData.PackageName, nodeData.PackageName),
 			createDirIfNeeded: true,
@@ -885,7 +895,7 @@ func writePrivacyFile(nodeData *nodeTemplate) {
 	writeFile(
 		fileToWriteInfo{
 			data:               nodeData,
-			pathToTemplate:     "cmd/gent/privacy.tmpl",
+			pathToTemplate:     "templates/privacy.tmpl",
 			templateName:       "privacy.tmpl",
 			pathToFile:         pathToFile,
 			checkForManualCode: true,
@@ -894,9 +904,19 @@ func writePrivacyFile(nodeData *nodeTemplate) {
 	)
 }
 
+func getAbsolutePath(filePath string) string {
+	_, filename, _, ok := runtime.Caller(1)
+	if !ok {
+		die(errors.New("could not get path of template file"))
+	}
+	return path.Join(path.Dir(filename), filePath)
+}
+
 // generate new AST for the given file from the template
 func generateNewAst(file fileToWriteInfo) []byte {
-	path := []string{file.pathToTemplate}
+	templateAbsPath := getAbsolutePath(file.pathToTemplate)
+
+	path := []string{templateAbsPath}
 	t, err := template.New(file.templateName).ParseFiles(path...)
 	die(err)
 
@@ -966,21 +986,21 @@ func writeFile(file fileToWriteInfo) {
 	// and random characters appearing.
 
 	if file.createDirIfNeeded {
-		path := strings.Split(file.pathToFile, "/")
-		// get directoryPath
-		// e.g. take something like models/contact/mutator/contact_mutator.go and get models/contact/mutator/
-		path = path[0 : len(path)-1]
-		directoryPath := strings.Join(path, "/")
+		fullPath := filepath.Join(".", file.pathToFile)
+		directoryPath := path.Dir(fullPath)
+
+		spew.Dump(fullPath)
+		spew.Dump(directoryPath)
 
 		_, err := os.Stat(directoryPath)
 
 		if os.IsNotExist(err) {
-			err = os.Mkdir(directoryPath, 0777)
-			if err != nil {
+			err = os.MkdirAll(directoryPath, os.ModePerm)
+			if err == nil {
 				fmt.Println("created directory ", directoryPath)
 			}
 		}
-		if !os.IsNotExist(err) {
+		if os.IsNotExist(err) {
 			die(err)
 		}
 	}

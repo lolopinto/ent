@@ -3,18 +3,21 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	flag "github.com/ogier/pflag"
 )
 
 // flags
 var (
-	path           string
+	pathToConfig   string
 	specificConfig string
 )
 
 func init() {
-	flag.StringVarP(&path, "path", "p", "", "Path of config files")
+	flag.StringVarP(&pathToConfig, "path", "p", "", "Path of config files")
 	flag.StringVarP(&specificConfig, "config", "c", "", "Specific EntConfig to codegen")
 }
 
@@ -30,14 +33,43 @@ func main() {
 	// }
 	// fmt.Println(dir)
 
-	parseSchemasAndGenerate(path, specificConfig)
+	codePathInfo := getPathToCode(pathToConfig)
+	parseSchemasAndGenerate(pathToConfig, specificConfig, codePathInfo)
+}
+
+type codePath struct {
+	PathToConfigs string
+	PathToModels  string
+}
+
+func getPathToCode(pathToConfig string) *codePath {
+	abs, err := filepath.Abs(".")
+	die(err)
+	pathPastSymlinks, err := filepath.EvalSymlinks(abs)
+	// TODO: probably better to put this in some yml file but we're not there yet so reading from the filesystem instead...
+	pathParts := strings.Split(pathPastSymlinks, string(filepath.Separator))
+
+	var idx int
+	for i := len(pathParts) - 1; i > 0; i-- {
+		part := pathParts[i]
+		if len(strings.Split(part, ".")) > 1 {
+			fmt.Println(part, i)
+			idx = i
+			break
+		}
+	}
+	cp := strings.Join(pathParts[idx:], string(filepath.Separator))
+	return &codePath{
+		PathToConfigs: strconv.Quote(filepath.Join(cp, pathToConfig)),
+		PathToModels:  strconv.Quote(filepath.Join(cp, "models")),
+	}
 }
 
 func printUsageIfNecessary() {
 	if flag.NFlag() == 0 {
 		printOptions()
 		os.Exit(1)
-	} else if path == "" {
+	} else if pathToConfig == "" {
 		printOptions()
 		fmt.Println("Need to pass in path to config files")
 		os.Exit(1)

@@ -1,6 +1,6 @@
 package ent
 
-import "github.com/lolopinto/jarvis/ent/privacy"
+import "github.com/lolopinto/ent/ent/privacy"
 
 type Entity interface {
 

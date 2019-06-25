@@ -12,8 +12,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
-	"github.com/lolopinto/jarvis/data"
-	"github.com/lolopinto/jarvis/util"
+	"github.com/lolopinto/ent/data"
+	"github.com/lolopinto/ent/util"
 )
 
 // todo deal with struct tags

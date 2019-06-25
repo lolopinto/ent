@@ -1,7 +1,7 @@
 package privacy
 
 import (
-	"github.com/lolopinto/jarvis/ent/viewer"
+	"github.com/lolopinto/ent/ent/viewer"
 )
 
 // Result is what's returned by privacy method to indicate what should be returned to the client

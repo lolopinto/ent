@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/lolopinto/jarvis/data"
+	"github.com/lolopinto/ent/data"
 )
 
 type schemaInfo struct {
@@ -54,7 +54,7 @@ func generateSchema(nodes []*nodeTemplate) {
 func generateDbSchema() {
 	cmd := exec.Command(
 		"python3",
-		"python/auto_schema/gen_db_schema.py",
+		getAbsolutePath("../../python/auto_schema/gen_db_schema.py"),
 		"-s=models/configs",
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	)
@@ -71,7 +71,7 @@ func writeSchemaFile(schema *schemaInfo) {
 	writeFile(
 		fileToWriteInfo{
 			data:           schema,
-			pathToTemplate: "cmd/gent/schema.tmpl",
+			pathToTemplate: "templates/schema.tmpl",
 			templateName:   "schema.tmpl",
 			pathToFile:     "models/configs/schema.py",
 		},
