@@ -34,7 +34,11 @@ func initDbFile() {
 	var config dbConfig
 	b, err := ioutil.ReadFile("config/database.yml")
 	if err != nil {
-		log.Fatalf("could not read yml file to load db: %v", err)
+		b, err = ioutil.ReadFile("./testdata/config/database.yml")
+		// TODO handle this better
+		if err != nil {
+			log.Fatalf("could not read yml file to load db: %v", err)
+		}
 	}
 	err = yaml.Unmarshal(b, &config)
 	if err != nil {

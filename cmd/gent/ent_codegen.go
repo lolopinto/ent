@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -45,18 +46,19 @@ type Edgeconfig struct {
 }
 
 type nodeTemplate struct {
-	PackageName  string
-	Node         string
-	Nodes        string
-	Fields       []fieldInfo
-	NodeResult   string
-	NodesResult  string
-	NodeInstance string
-	NodesSlice   string
-	NodeType     string
-	EntConfig    string
-	Edges        []edgeInfo
-	TableName    string
+	PackageName   string
+	Node          string
+	Nodes         string
+	Fields        []fieldInfo
+	NodeResult    string
+	NodesResult   string
+	NodeInstance  string
+	NodesSlice    string
+	NodeType      string
+	EntConfig     string
+	EntConfigName string
+	Edges         []edgeInfo
+	TableName     string
 }
 
 type fieldInfo struct {
@@ -64,6 +66,17 @@ type fieldInfo struct {
 	FieldType string
 	FieldTag  string
 	TagMap    map[string]string
+}
+
+func (f *fieldInfo) getDbColName() string {
+	colName, err := strconv.Unquote(f.TagMap["db"])
+	die(err)
+
+	return colName
+}
+
+func (f *fieldInfo) getQuotedDBColName() string {
+	return f.TagMap["db"]
 }
 
 // gets the string representation of the type
@@ -96,7 +109,12 @@ func shouldCodegenPackage(file *ast.File, specificConfig string) bool {
 	return returnVal
 }
 
-func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codePath) {
+type codegenNodeTemplateInfo struct {
+	nodeData      *nodeTemplate
+	shouldCodegen bool
+}
+
+func parseAllSchemaFiles(rootPath string, specificConfig string, codePathInfo *codePath) map[string]*codegenNodeTemplateInfo {
 	// have to use an "absolute" filepath for now
 	// TODO eventually use ParseDir... and *config.go
 	//parser.Parse
@@ -106,7 +124,7 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 	r, err := regexp.Compile(`(\w+)_config.go`)
 	die(err)
 
-	var nodes []*nodeTemplate
+	allNodes := make(map[string]*codegenNodeTemplateInfo)
 
 	for _, fileInfo := range fileInfos {
 		match := r.FindStringSubmatch(fileInfo.Name())
@@ -115,35 +133,60 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 
 		if len(match) == 2 {
 
-			//fmt.Printf("config file Name %v \n", fileInfo.Name())
-			//files = append(files, fileInfo.Name())
-
 			packageName := match[1]
 			filePath := rootPath + "/" + fileInfo.Name()
 
 			fmt.Println(packageName, filePath)
 
-			nodeData := parseNodeTemplate(packageName, filePath, specificConfig)
-			if nodeData != nil {
-				nodes = append(nodes, nodeData)
+			// TODO break this into concurrent jobs
+			nodeData, shouldCodegen := parseNodeTemplate(packageName, filePath, nil, specificConfig)
+			allNodes[nodeData.EntConfigName] = &codegenNodeTemplateInfo{
+				nodeData:      nodeData,
+				shouldCodegen: shouldCodegen,
 			}
 		}
 		//fmt.Printf("IsDir %v Name %v \n", fileInfo.IsDir(), fileInfo.Name())
 	}
+	return allNodes
+}
 
-	if len(nodes) == 0 {
+// parseSchemasFromSource is mostly used by tests to test quick one-off scenarios
+func parseSchemasFromSource(sources map[string]string, specificConfig string) map[string]*codegenNodeTemplateInfo {
+	allNodes := make(map[string]*codegenNodeTemplateInfo)
+
+	for packageName, src := range sources {
+		// TODO break this into concurrent jobs, same as parseAllSchemaFiles above
+		// also make it smarter and have the accumulation happen in a helper function once it's more complicated
+		nodeData, shouldCodegen := parseNodeTemplate(packageName, "", src, specificConfig)
+		allNodes[nodeData.EntConfigName] = &codegenNodeTemplateInfo{
+			nodeData:      nodeData,
+			shouldCodegen: shouldCodegen,
+		}
+	}
+	return allNodes
+}
+
+func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codePath) {
+	allNodes := parseAllSchemaFiles(rootPath, specificConfig, codePathInfo)
+
+	if len(allNodes) == 0 {
 		return
 	}
 
-	fmt.Println("schema", len(nodes))
+	fmt.Println("schema", len(allNodes))
 
 	// TOOD validate things here first.
 
 	// generate python schema file first and then make changes to underlying db
 	//generateSchemaFile(nodes)
-	generateSchema(nodes)
+	schema := newSchema(allNodes)
+	schema.generateSchema()
 
-	for _, nodeData := range nodes {
+	for _, info := range allNodes {
+		if !info.shouldCodegen {
+			continue
+		}
+		nodeData := info.nodeData
 		//fmt.Println(specificConfig, structName)
 		// what's the best way to check not-zero value? for now, this will have to do
 		if len(nodeData.PackageName) > 0 {
@@ -154,9 +197,9 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 	}
 }
 
-func parseNodeTemplate(packageName string, filePath string, specificConfig string) *nodeTemplate {
+func parseNodeTemplate(packageName string, filePath string, src interface{}, specificConfig string) (*nodeTemplate, bool) {
 	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
+	file, err := parser.ParseFile(fset, filePath, src, parser.AllErrors)
 	//spew.Dump(file)
 	die(err)
 	//fmt.Println(f)
@@ -167,10 +210,6 @@ func parseNodeTemplate(packageName string, filePath string, specificConfig strin
 	var nodeData nodeTemplate
 	var edges []edgeInfo
 	var tableName string
-
-	if !shouldCodegenPackage(file, specificConfig) {
-		return nil
-	}
 
 	ast.Inspect(file, func(node ast.Node) bool {
 		// get struct
@@ -202,7 +241,7 @@ func parseNodeTemplate(packageName string, filePath string, specificConfig strin
 	nodeData.Edges = edges
 	nodeData.TableName = tableName
 
-	return &nodeData
+	return &nodeData, shouldCodegenPackage(file, specificConfig)
 }
 
 func getLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
@@ -810,7 +849,7 @@ func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string)
 	// add the db tag it it doesn't exist
 	_, ok := tagsMap["db"]
 	if !ok {
-		tagsMap["db"] = "\"" + strcase.ToSnake(fieldName) + "\""
+		tagsMap["db"] = strconv.Quote(strcase.ToSnake(fieldName))
 	}
 
 	//fmt.Println(len(tagsMap))
@@ -818,7 +857,10 @@ func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string)
 	// convert the map back to the struct tag string format
 	var tags []string
 	for key, value := range tagsMap {
-		tags = append(tags, key+":"+value)
+		// TODO: abstract this out better. only specific tags should we written to the ent
+		if key == "db" || key == "graphql" {
+			tags = append(tags, key+":"+value)
+		}
 	}
 	return "`" + strings.Join(tags, " ") + "`", tagsMap
 }
@@ -828,16 +870,17 @@ func getNodeTemplate(packageName string, fields []fieldInfo) nodeTemplate {
 	nodeName := strcase.ToCamel(packageName)
 
 	return nodeTemplate{
-		PackageName:  packageName,                  // contact
-		Node:         nodeName,                     // Contact
-		Nodes:        fmt.Sprintf("%ss", nodeName), // Contacts
-		Fields:       fields,
-		NodeResult:   fmt.Sprintf("%sResult", nodeName),            // ContactResult
-		NodesResult:  fmt.Sprintf("%ssResult", nodeName),           // ContactsResult
-		NodeInstance: strcase.ToLowerCamel(nodeName),               // contact
-		NodesSlice:   fmt.Sprintf("[]*%s", nodeName),               // []*Contact
-		NodeType:     fmt.Sprintf("%sType", nodeName),              // ContactType
-		EntConfig:    fmt.Sprintf("&configs.%sConfig{}", nodeName), // &configs.ContactConfig{}
+		PackageName:   packageName,                  // contact
+		Node:          nodeName,                     // Contact
+		Nodes:         fmt.Sprintf("%ss", nodeName), // Contacts
+		Fields:        fields,
+		NodeResult:    fmt.Sprintf("%sResult", nodeName),            // ContactResult
+		NodesResult:   fmt.Sprintf("%ssResult", nodeName),           // ContactsResult
+		NodeInstance:  strcase.ToLowerCamel(nodeName),               // contact
+		NodesSlice:    fmt.Sprintf("[]*%s", nodeName),               // []*Contact
+		NodeType:      fmt.Sprintf("%sType", nodeName),              // ContactType
+		EntConfig:     fmt.Sprintf("&configs.%sConfig{}", nodeName), // &configs.ContactConfig{}
+		EntConfigName: fmt.Sprintf("%sConfig", nodeName),            // ContactConfig
 	}
 }
 
