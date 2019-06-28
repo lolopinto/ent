@@ -55,7 +55,7 @@ func TestStringUserDefinedColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("first_name"),
-		"String(255)",
+		"Text()",
 		"nullable=False",
 	}
 	testColumn(t, column, "first_name", "FirstName", "first_name", parts)
@@ -66,7 +66,7 @@ func TestForeignKeyColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("account_id"), // db field
-		"String(255)",               // db type
+		"Text()",                    // db type
 		fmt.Sprintf(
 			"ForeignKey(%s, ondelete=%s, name=%s)", // ForeignKey expected by alembic to generate
 			strconv.Quote("accounts.id"),           // field foreign key is on

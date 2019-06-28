@@ -82,7 +82,7 @@ func (schema *schemaInfo) generateSchema() {
 
 	schema.writeSchemaFile()
 
-	//schema.generateDbSchema()
+	schema.generateDbSchema()
 }
 
 func (schema *schemaInfo) generateDbSchema() {
@@ -115,7 +115,7 @@ func (schema *schemaInfo) writeSchemaFile() {
 func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
 	switch f.FieldType {
 	case "string":
-		return "String(255)"
+		return "Text()"
 	case "bool":
 		return "Boolean()"
 	}
