@@ -5,7 +5,7 @@ from alembic import command
 
 class Command(object):
 
-  def __init__(self, engine, schema_path):
+  def __init__(self, connection, schema_path):
     alembic_cfg = Config()
 
     # script location is where we're running this from so keep that local
@@ -22,8 +22,7 @@ class Command(object):
     self.alembic_cfg = alembic_cfg
 
     # pass connection instead of re-creating it and using a sqlalchemy_url file
-    with engine.begin() as connection:
-      alembic_cfg.attributes['connection'] = connection
+    alembic_cfg.attributes['connection'] = connection
 
   # Returns the current revision of the database. Same as calling `alembic current`
   def current(self):

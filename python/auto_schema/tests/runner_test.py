@@ -1,3 +1,4 @@
+import pprint
 import pytest
 import os
 
@@ -11,7 +12,7 @@ def get_new_metadata_for_runner(r):
   # don't reflect but in fact get a new object so that we can reflect corectly
   new_metadata = MetaData()
   # fetch any new tables
-  new_metadata.reflect(bind=r.get_engine())
+  new_metadata.reflect(bind=r.get_connection())
   return new_metadata
 
 def assert_num_files(r, expected_count):
@@ -46,145 +47,6 @@ def assert_no_changes_made(r):
   assert_num_tables(r, 0)
 
 
-@pytest.mark.usefixtures("empty_metadata")
-def test_compute_changes_with_empty_metadata(new_test_runner, empty_metadata):
-  r = new_test_runner(empty_metadata)
-  assert r.compute_changes() == []
-  assert_no_changes_made(r)
-
-
-@pytest.mark.usefixtures("metadata_with_table")
-def test_compute_changes_with_new_table(new_test_runner, metadata_with_table):
-  r = new_test_runner(metadata_with_table)
-  assert len(r.compute_changes()) == 1
-  assert_no_changes_made(r)
-
-
-@pytest.mark.usefixtures("metadata_with_two_tables")
-def test_compute_changes_with_two_tables(new_test_runner, metadata_with_two_tables):
-  r = new_test_runner(metadata_with_two_tables)
-  assert len(r.compute_changes()) == 2
-  assert_no_changes_made(r)
-
-
-@pytest.mark.usefixtures("metadata_with_foreign_key")
-def test_compute_changes_with_foreign_key_table(new_test_runner, metadata_with_foreign_key):
-  r = new_test_runner(metadata_with_foreign_key)
-  assert len(r.compute_changes()) == 2
-  assert_no_changes_made(r)
-
-
-@pytest.mark.usefixtures("metadata_with_table")
-def test_revision_message(new_test_runner, metadata_with_table):
-  r = new_test_runner(metadata_with_table)
-
-  message = r.revision_message(r.compute_changes())
-  assert message == "add accounts table"
-
-
-@pytest.mark.usefixtures("metadata_with_two_tables")
-def test_revision_message_two_tables(new_test_runner, metadata_with_two_tables):
-  r = new_test_runner(metadata_with_two_tables)
-
-  message = r.revision_message(r.compute_changes())
-  assert message == "add accounts table\nadd messages table"
-
-
-@pytest.mark.usefixtures("metadata_with_table")
-def test_new_revision(new_test_runner, metadata_with_table):
-  r = new_test_runner(metadata_with_table)
-
-  r.revision()
-
-  # 1 schema file should have been created 
-  assert_num_files(r, 1)
-  assert_num_tables(r, 0)
-
-
-@pytest.mark.usefixtures("metadata_with_table")
-def test_new_revision_with_multi_step(new_test_runner, metadata_with_table):
-  r = new_test_runner(metadata_with_table)
-
-  r.revision()
-
-  # 1 schema file should have been created 
-  assert_num_files(r, 1)
-
-  # upgrade the schema in between. let's do a cursory check that it works
-  r.upgrade()
-
-  # confirm that 2 tables were created
-  assert_num_tables(r, 2, ['accounts', 'alembic_version'])
-
-  # get the message table
-  conftest.messages_table(metadata_with_table)
-
-  # recreate runner with last path and modified metadata
-  r2 = new_test_runner(metadata_with_table, r.get_schema_path())
-  assert r.get_schema_path() == r2.get_schema_path()
-  
-  r2.revision()
-
-  # we should have a 2nd schema path
-  assert_num_files(r2, 2)
-
-  # upgrade the schema and let's confirm it works
-  r.upgrade()
-
-  # confirm that a 3rd table was created
-  assert_num_tables(r, 3, ['accounts', 'alembic_version', 'messages'])
-
-
-@pytest.mark.usefixtures("metadata_with_table")
-def test_sequential_table_adds(new_test_runner, metadata_with_table):
-  r = new_test_runner(metadata_with_table)
-  r.run()
-  
-  # should have the expected file with the expected tables
-  assert_num_files(r, 1)
-  assert_num_tables(r, 2, ['accounts', 'alembic_version'])
-
-  validate_metadata_after_change(r, metadata_with_table)
-
-  # get the message table
-  conftest.messages_table(metadata_with_table)
-
-  # recreate runner with last path and modified metadata
-  r2 = new_test_runner(metadata_with_table, r.get_schema_path())
-  assert r.get_schema_path() == r2.get_schema_path()
-
-  r2.run()
-
-  # should have the expected files with the expected tables
-  assert_num_files(r, 2)
-  assert_num_tables(r, 3, ['accounts', 'alembic_version', 'messages'])
-
-  validate_metadata_after_change(r, metadata_with_table)
-
-
-@pytest.mark.usefixtures("metadata_with_two_tables")
-def test_multiple_tables_added(new_test_runner, metadata_with_two_tables):
-  r = new_test_runner(metadata_with_two_tables)
-  r.run()
-  
-  # should have the expected file with the expected tables
-  assert_num_files(r, 1) # because 2 new tables added at the same time, only one schema file needed
-  assert_num_tables(r, 3, ['accounts', 'alembic_version', 'messages'])
-
-  validate_metadata_after_change(r, metadata_with_two_tables)
-
-@pytest.mark.usefixtures("metadata_with_foreign_key")
-def test_multiple_tables_added_with_foreign_key(new_test_runner, metadata_with_foreign_key):
-  r = new_test_runner(metadata_with_foreign_key)
-  r.run()
-  
-  # should have the expected file with the expected tables
-  assert_num_files(r, 1) # because 2 new tables added at the same time, only one schema file needed
-  assert_num_tables(r, 3, ['accounts', 'alembic_version', 'contacts'])
-
-  validate_metadata_after_change(r, metadata_with_foreign_key)
-
-
 def validate_metadata_after_change(r, old_metadata):
   new_metadata = get_new_metadata_for_runner(r)
   assert new_metadata != old_metadata
@@ -199,6 +61,16 @@ def validate_metadata_after_change(r, old_metadata):
     else:
       # no need to do too much testing on this since we'll just have to trust that alembic works. 
       assert table.name == 'alembic_version'
+
+
+def run_and_validate_with_standard_metadata_table(r, metadata_with_table):
+  r.run()
+  
+  # should have the expected file with the expected tables
+  assert_num_files(r, 1)
+  assert_num_tables(r, 2, ['accounts', 'alembic_version'])
+
+  validate_metadata_after_change(r, metadata_with_table)
 
 
 def validate_table(orig_table, table):
@@ -227,7 +99,7 @@ def validate_table(orig_table, table):
     assert orig_column.default == column.default
     assert orig_column.index == column.index
     assert orig_column.unique == column.unique
-    assert orig_column.autoincrement == column.autoincrement
+    #assert orig_column.autoincrement == column.autoincrement # ignore autoincrement for now as there's differences btw default behavior and postgres
     assert orig_column.key == column.key
     assert orig_column.onupdate == column.onupdate
     assert orig_column.constraints == column.constraints
@@ -251,3 +123,165 @@ def validate_foreign_key(orig_column, column):
     assert fkey.match == orig_fkey.match
     assert fkey.info == orig_fkey.info
     assert str(fkey.parent) == str(orig_fkey.parent)
+
+
+class BaseTestRunner(object):
+
+  @pytest.mark.usefixtures("empty_metadata")
+  def test_compute_changes_with_empty_metadata(self, new_test_runner, empty_metadata):
+    r = new_test_runner(empty_metadata)
+    assert r.compute_changes() == []
+    assert_no_changes_made(r)
+
+
+  @pytest.mark.usefixtures("metadata_with_table")
+  def test_compute_changes_with_new_table(self, new_test_runner, metadata_with_table):
+    r = new_test_runner(metadata_with_table)
+    assert len(r.compute_changes()) == 1
+    assert_no_changes_made(r)
+
+
+  @pytest.mark.usefixtures("metadata_with_two_tables")
+  def test_compute_changes_with_two_tables(self, new_test_runner, metadata_with_two_tables):
+    r = new_test_runner(metadata_with_two_tables)
+    assert len(r.compute_changes()) == 2
+    assert_no_changes_made(r)
+
+
+  @pytest.mark.usefixtures("metadata_with_foreign_key")
+  def test_compute_changes_with_foreign_key_table(self, new_test_runner, metadata_with_foreign_key):
+    r = new_test_runner(metadata_with_foreign_key)
+    assert len(r.compute_changes()) == 2
+    assert_no_changes_made(r)
+
+
+  @pytest.mark.usefixtures("metadata_with_table")
+  def test_revision_message(self, new_test_runner, metadata_with_table):
+    r = new_test_runner(metadata_with_table)
+
+    message = r.revision_message()
+    assert message == "add accounts table"
+
+
+  @pytest.mark.usefixtures("metadata_with_two_tables")
+  def test_revision_message_two_tables(self, new_test_runner, metadata_with_two_tables):
+    r = new_test_runner(metadata_with_two_tables)
+
+    message = r.revision_message()
+    assert message == "add accounts table\nadd messages table"
+
+
+  @pytest.mark.usefixtures("metadata_with_table")
+  def test_new_revision(self, new_test_runner, metadata_with_table):
+    r = new_test_runner(metadata_with_table)
+
+    r.revision()
+
+    # 1 schema file should have been created 
+    assert_num_files(r, 1)
+    assert_num_tables(r, 0)
+
+
+  @pytest.mark.usefixtures("metadata_with_table")
+  def test_new_revision_with_multi_step(self, new_test_runner, metadata_with_table):
+    r = new_test_runner(metadata_with_table)
+
+    r.revision()
+
+    # 1 schema file should have been created 
+    assert_num_files(r, 1)
+
+    # upgrade the schema in between. let's do a cursory check that it works
+    r.upgrade()
+
+    # confirm that 2 tables were created
+    assert_num_tables(r, 2, ['accounts', 'alembic_version'])
+
+    # get the message table
+    conftest.messages_table(metadata_with_table)
+
+    # recreate runner with last path and modified metadata
+    r2 = new_test_runner(metadata_with_table, r)
+    assert r.get_schema_path() == r2.get_schema_path()
+    
+    r2.revision()
+
+    # we should have a 2nd schema path
+    assert_num_files(r2, 2)
+
+    # upgrade the schema and let's confirm it works
+    r.upgrade()
+
+    # confirm that a 3rd table was created
+    assert_num_tables(r, 3, ['accounts', 'alembic_version', 'messages'])
+
+
+  @pytest.mark.usefixtures("metadata_with_table")
+  def test_sequential_table_adds(self, new_test_runner, metadata_with_table):
+    r = new_test_runner(metadata_with_table)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+
+    # get the message table
+    conftest.messages_table(metadata_with_table)
+
+    # recreate runner with last path and modified metadata
+    r2 = new_test_runner(metadata_with_table, r)
+    assert r.get_schema_path() == r2.get_schema_path()
+
+    r2.run()
+
+    # should have the expected files with the expected tables
+    assert_num_files(r, 2)
+    assert_num_tables(r, 3, ['accounts', 'alembic_version', 'messages'])
+
+    validate_metadata_after_change(r, metadata_with_table)
+
+
+  @pytest.mark.usefixtures("metadata_with_two_tables")
+  def test_multiple_tables_added(self, new_test_runner, metadata_with_two_tables):
+    r = new_test_runner(metadata_with_two_tables)
+    r.run()
+    
+    # should have the expected file with the expected tables
+    assert_num_files(r, 1) # because 2 new tables added at the same time, only one schema file needed
+    assert_num_tables(r, 3, ['accounts', 'alembic_version', 'messages'])
+
+    validate_metadata_after_change(r, metadata_with_two_tables)
+
+  @pytest.mark.usefixtures("metadata_with_foreign_key")
+  def test_multiple_tables_added_with_foreign_key(self, new_test_runner, metadata_with_foreign_key):
+    r = new_test_runner(metadata_with_foreign_key)
+    r.run()
+    
+    # should have the expected file with the expected tables
+    assert_num_files(r, 1) # because 2 new tables added at the same time, only one schema file needed
+    assert_num_tables(r, 3, ['accounts', 'alembic_version', 'contacts'])
+
+    validate_metadata_after_change(r, metadata_with_foreign_key)
+
+class TestPostgresRunner(BaseTestRunner):
+
+  # only in postgres because modifying columns not supported by Sqlite
+  @pytest.mark.usefixtures("metadata_with_table")
+  def test_column_type_change(self, new_test_runner, metadata_with_table):
+    r = new_test_runner(metadata_with_table)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+
+    # recreate runner with last path and modified metadata
+    conftest.metadata_with_table_text_changed(metadata_with_table)
+    r2 = new_test_runner(metadata_with_table, r)
+
+    diff = r2.compute_changes()
+    pprint.pprint(diff, indent=2, width=30)
+
+    assert len(diff) == 1
+
+    assert r2.revision_message() == "modify type from VARCHAR(255) to TEXT"
+
+    r.run()
+
+    validate_metadata_after_change(r, metadata_with_table)
+    
+class TestSqliteRunner(BaseTestRunner):
+  pass
+

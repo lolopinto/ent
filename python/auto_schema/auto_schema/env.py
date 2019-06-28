@@ -8,6 +8,7 @@ from alembic import context
 
 # env.py apparently cannot be relative because of how it's loaded.
 from auto_schema import config
+from auto_schema import runner
 
 # set a bunch of loggic parameters based on default info in `alembic init as of 6/15/2019`
 log_config = {
@@ -55,7 +56,8 @@ dictConfig(log_config)
 target_metadata = config.metadata 
 
 # connection engine...
-engine = config.engine
+#engine = config.engine
+connection = config.connection
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -104,15 +106,18 @@ def run_migrations_online():
     #     prefix="sqlalchemy.",
     #     poolclass=pool.NullPool,
     # )
-    connectable = engine
+    #connectable = engine
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+    #print(runner.Runner.compare_type)
+    #with connectable.connect() as connection:
+    context.configure(
+        connection=connection, 
+        target_metadata=target_metadata,
+        compare_type=runner.Runner.compare_type,
+    )
 
-        with context.begin_transaction():
-            context.run_migrations()
+    with context.begin_transaction():
+        context.run_migrations()
 
 
 

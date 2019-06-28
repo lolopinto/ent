@@ -1,30 +1,50 @@
 import pprint
 
-from sqlalchemy import (create_engine)
+from sqlalchemy import (create_engine, VARCHAR, Text)
 
 from alembic.migration import MigrationContext
-from alembic.autogenerate import compare_metadata
 from alembic.autogenerate import produce_migrations
 from alembic.autogenerate import render_python_code
 
-import sys
 from . import command
 from . import config
 
 class Runner(object):
 
-  def __init__(self, metadata, database_uri, schema_path):
+  def __init__(self, metadata, connection, schema_path):
     self.metadata = metadata
-    self.database_uri = database_uri
     self.schema_path = schema_path
+    self.connection = connection
 
-    # save in config for access by env.py
     config.metadata = self.metadata
-    config.engine = create_engine(database_uri)
+    config.connection = connection
 
-    self.mc = MigrationContext.configure(config.engine.connect())
-    self.cmd = command.Command(config.engine, self.schema_path)
+    self.mc = MigrationContext.configure(connection=self.connection, opts={"compare_type":Runner.compare_type})
+    self.cmd = command.Command(self.connection, self.schema_path)
 
+
+  @classmethod
+  def runner_from_command_line(cls, metadata, args):
+    engine = create_engine(args.engine)
+    connection = engine.connect()
+    return Runner(metadata, connection, args.schema)
+
+
+
+  @classmethod
+  def compare_type(cls, context, inspected_column, metadata_column, inspected_type, metadata_type):
+    # return False if the metadata_type is the same as the inspected_type
+    # or None to allow the default implementation to compare these
+    # types. a return value of True means the two types do not
+    # match and should result in a type change operation.
+
+    #print(context, inspected_column, metadata_column, inspected_type, metadata_type, type(inspected_type), type(metadata_type))
+
+    # going from VARCHAR to Text is accepted & makes sense and we should accept that change.
+    if isinstance(inspected_type, VARCHAR) and isinstance(metadata_type, Text):
+      return True
+
+    return False
 
   def get_schema_path(self):
     return self.schema_path
@@ -32,12 +52,12 @@ class Runner(object):
   def get_metadata(self):
     return self.metadata
 
-  def get_engine(self):
-    return config.engine
+  def get_connection(self):
+    return config.connection
 
   def compute_changes(self):
-    diff = compare_metadata(self.mc, config.metadata)
-    return diff
+    migrations = produce_migrations(self.mc, config.metadata)
+    return migrations.upgrade_ops.ops
 
 
   def run(self):
@@ -49,7 +69,7 @@ class Runner(object):
       self._apply_changes(diff)
 
   def _apply_changes(self, diff):
-    pprint.pprint(diff, indent=2, width=20)
+    #pprint.pprint(diff, indent=2, width=20)
 
     #migration_script = produce_migrations(self.mc, self.metadata)
     #print(render_python_code(migration_script.upgrade_ops))
@@ -57,12 +77,25 @@ class Runner(object):
     self.revision(diff)
     self.upgrade()
 
-  def revision_message(self, diff):
-    result = {
-      # TODO support more as we add more support and test this
-      'add_table': lambda table: 'add %s table' % table.name,
+  def revision_message(self, diff=None):
+    if diff is None:
+      migrations = produce_migrations(self.mc, config.metadata)
+      diff = migrations.upgrade_ops.ops
+    
+    def alter_column_op(op):
+      if op.modify_type is not None:
+        return 'modify type from %s to %s' % (op.existing_type, op.modify_type)
+      else:
+        # TODO modify_nullable, modify_comment, modify_server_default, modify_name all valid options
+        return None
+    
+    class_name_map = {
+      'CreateTableOp': lambda op: 'add %s table' % op.table_name,
+      'ModifyTableOps': lambda op: "\n".join([class_name_map[type(child_op).__name__](child_op) for child_op in op.ops]),
+      'AlterColumnOp': lambda op: alter_column_op(op),
     }
-    changes = [result[op_type](changed) for (op_type, changed) in diff]
+
+    changes = [class_name_map[type(op).__name__](op) for op in diff]
 
     message = "\n".join(changes)
     return message
@@ -71,8 +104,8 @@ class Runner(object):
   def revision(self, diff=None):
     #print(self.cmd.current())
 
-    if diff is None:
-      diff = self.compute_changes()
+    # if diff is None:
+    #   diff = self.compute_changes()
 
     message = self.revision_message(diff)
 
