@@ -61,6 +61,17 @@ func TestStringUserDefinedColumn(t *testing.T) {
 	testColumn(t, column, "first_name", "FirstName", "first_name", parts)
 }
 
+func TestIntegerUserDefinedColumn(t *testing.T) {
+	column := getTestColumn("AccountConfig", "NumberOfLogins", t)
+
+	parts := []string{
+		strconv.Quote("number_of_logins"),
+		"Integer()",
+		"nullable=False",
+	}
+	testColumn(t, column, "number_of_logins", "NumberOfLogins", "number_of_logins", parts)
+}
+
 func TestForeignKeyColumn(t *testing.T) {
 	column := getTestColumn("TodoConfig", "AccountID", t)
 

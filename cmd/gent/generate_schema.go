@@ -119,6 +119,8 @@ func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
 		return "Text()"
 	case "bool":
 		return "Boolean()"
+	case "int":
+		return "Integer()"
 	}
 	panic("unsupported type for now")
 }
