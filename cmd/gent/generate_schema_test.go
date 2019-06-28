@@ -12,7 +12,7 @@ func TestGetIDColumn(t *testing.T) {
 	col := getEmptyTestSchema().getIDColumn()
 	parts := []string{
 		strconv.Quote("id"),
-		"UUID(as_uuid=True)",
+		"UUID()",
 		"primary_key=True",
 	}
 	testColumn(t, col, "id", "ID", "id", parts)
@@ -22,7 +22,7 @@ func TestGetCreatedAtColumn(t *testing.T) {
 	col := getEmptyTestSchema().getCreatedAtColumn()
 	parts := []string{
 		strconv.Quote("created_at"),
-		"Date",
+		"Date()",
 		"nullable=False",
 	}
 	testColumn(t, col, "created_at", "CreatedAt", "created_at", parts)
@@ -32,7 +32,7 @@ func TestGetUpdatedAtColumn(t *testing.T) {
 	col := getEmptyTestSchema().getUpdatedAtColumn()
 	parts := []string{
 		strconv.Quote("updated_at"),
-		"Date",
+		"Date()",
 		"nullable=False",
 	}
 	testColumn(t, col, "updated_at", "UpdatedAt", "updated_at", parts)
@@ -66,7 +66,7 @@ func TestForeignKeyColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("account_id"), // db field
-		"Text()",                    // db type
+		"UUID()",                    // db type
 		fmt.Sprintf(
 			"ForeignKey(%s, ondelete=%s, name=%s)", // ForeignKey expected by alembic to generate
 			strconv.Quote("accounts.id"),           // field foreign key is on

@@ -34,6 +34,7 @@ type dbTable struct {
 type dbColumn struct {
 	EntFieldName string
 	DBColName    string
+	DBType       string
 	ColString    string
 }
 
@@ -123,19 +124,19 @@ func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
 }
 
 func (schema *schemaInfo) getColumnForField(f *fieldInfo, nodeData *nodeTemplate) *dbColumn {
-	parts := []string{
-		f.getQuotedDBColName(),
-		schema.getDbTypeForField(f),
-	}
-	schema.addForeignKeyToPart(f, nodeData, &parts)
+	parts, dbType := schema.getForeignKeyInfo(f, nodeData)
 	parts = append(parts, "nullable=False")
-	return schema.getColumn(f.FieldName, f.getDbColName(), parts)
+
+	return schema.getColumn(f.FieldName, f.getDbColName(), dbType, parts)
 }
 
-func (schema *schemaInfo) addForeignKeyToPart(f *fieldInfo, nodeData *nodeTemplate, parts *[]string) {
+func (schema *schemaInfo) getForeignKeyInfo(f *fieldInfo, nodeData *nodeTemplate) ([]string, string) {
+	dbType := schema.getDbTypeForField(f)
+	parts := []string{}
+
 	fkey := f.TagMap["fkey"]
 	if fkey == "" {
-		return
+		return parts, dbType
 	}
 	// tablename and fkey struct tag are quoted so we have to unquote them
 	fkeyRaw, err := strconv.Unquote(fkey)
@@ -160,6 +161,14 @@ func (schema *schemaInfo) addForeignKeyToPart(f *fieldInfo, nodeData *nodeTempla
 	for _, col := range fkeyTable.Columns {
 		if col.EntFieldName == fkeyField {
 			fkeyDbField = col.DBColName
+
+			// if the foreign key is a uuid and we have it as string, convert the type we
+			// store in the db from string to UUID. This only works the first time the table
+			// is defined.
+			// Need to handle uuid as a first class type in Config files and/or handle the conversion from string to uuid after the fact
+			if col.DBType == "UUID()" && dbType == "Text()" {
+				dbType = "UUID()"
+			}
 			break
 		}
 	}
@@ -179,8 +188,8 @@ func (schema *schemaInfo) addForeignKeyToPart(f *fieldInfo, nodeData *nodeTempla
 	fkeyName := strings.Join(fkeyNameParts, "_")
 
 	// amend parts to add foreignkey line to generated schema
-	*parts = append(
-		*parts,
+	parts = append(
+		parts,
 		fmt.Sprintf(
 			"ForeignKey(%s, ondelete=%s, name=%s)",
 			strconv.Quote(strings.Join([]string{fkeyTableName, fkeyDbField}, ".")), // "user.id"
@@ -188,15 +197,15 @@ func (schema *schemaInfo) addForeignKeyToPart(f *fieldInfo, nodeData *nodeTempla
 			strconv.Quote(fkeyName),
 		),
 	)
+	return parts, dbType
 }
 
 func (schema *schemaInfo) getIDColumn() *dbColumn {
 	return schema.getColumn(
 		"ID",
 		"id",
+		"UUID()",
 		[]string{
-			strconv.Quote("id"),
-			"UUID(as_uuid=True)",
 			"primary_key=True",
 		},
 	)
@@ -206,9 +215,8 @@ func (schema *schemaInfo) getCreatedAtColumn() *dbColumn {
 	return schema.getColumn(
 		"CreatedAt",
 		"created_at",
+		"Date()",
 		[]string{
-			strconv.Quote("created_at"),
-			"Date",
 			"nullable=False",
 		},
 	)
@@ -218,16 +226,17 @@ func (schema *schemaInfo) getUpdatedAtColumn() *dbColumn {
 	return schema.getColumn(
 		"UpdatedAt",
 		"updated_at",
+		"Date()",
 		[]string{
-			strconv.Quote("updated_at"),
-			"Date",
 			"nullable=False",
 		},
 	)
 }
 
-func (schema *schemaInfo) getColumn(fieldName, dbName string, parts []string) *dbColumn {
+func (schema *schemaInfo) getColumn(fieldName, dbName, dbType string, extraParts []string) *dbColumn {
+	parts := []string{strconv.Quote(dbName), dbType}
+	parts = append(parts, extraParts...)
 	colString := strings.Join(parts, ", ")
 
-	return &dbColumn{EntFieldName: fieldName, DBColName: dbName, ColString: colString}
+	return &dbColumn{EntFieldName: fieldName, DBColName: dbName, DBType: dbType, ColString: colString}
 }

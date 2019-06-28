@@ -4,6 +4,7 @@ package configs
 type TodoConfig struct {
 	Completed bool
 	Text      string
+	// TODO maybe also support accounts.id which is the name of the underlying table. but we're abstracting out db information...
 	AccountID string `fkey:"AccountConfig.ID"`
 }
 
