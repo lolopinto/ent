@@ -121,6 +121,8 @@ func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
 		return "Boolean()"
 	case "int":
 		return "Integer()"
+	case "time.Time":
+		return "TIMESTAMP()"
 	}
 	panic("unsupported type for now")
 }
@@ -217,7 +219,7 @@ func (schema *schemaInfo) getCreatedAtColumn() *dbColumn {
 	return schema.getColumn(
 		"CreatedAt",
 		"created_at",
-		"Date()",
+		"TIMESTAMP()",
 		[]string{
 			"nullable=False",
 		},
@@ -228,7 +230,7 @@ func (schema *schemaInfo) getUpdatedAtColumn() *dbColumn {
 	return schema.getColumn(
 		"UpdatedAt",
 		"updated_at",
-		"Date()",
+		"TIMESTAMP()",
 		[]string{
 			"nullable=False",
 		},

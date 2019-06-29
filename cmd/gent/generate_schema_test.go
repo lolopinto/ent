@@ -22,7 +22,7 @@ func TestGetCreatedAtColumn(t *testing.T) {
 	col := getEmptyTestSchema().getCreatedAtColumn()
 	parts := []string{
 		strconv.Quote("created_at"),
-		"Date()",
+		"TIMESTAMP()",
 		"nullable=False",
 	}
 	testColumn(t, col, "created_at", "CreatedAt", "created_at", parts)
@@ -32,7 +32,7 @@ func TestGetUpdatedAtColumn(t *testing.T) {
 	col := getEmptyTestSchema().getUpdatedAtColumn()
 	parts := []string{
 		strconv.Quote("updated_at"),
-		"Date()",
+		"TIMESTAMP()",
 		"nullable=False",
 	}
 	testColumn(t, col, "updated_at", "UpdatedAt", "updated_at", parts)
@@ -45,7 +45,7 @@ func TestGetTableForNode(t *testing.T) {
 		t.Errorf("invalid table name for table. expected %s, got %s", "accounts", table.TableName)
 	}
 
-	if len(table.Columns) != 6 {
+	if len(table.Columns) != 8 {
 		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 6, len(table.Columns))
 	}
 }
@@ -70,6 +70,17 @@ func TestIntegerUserDefinedColumn(t *testing.T) {
 		"nullable=False",
 	}
 	testColumn(t, column, "number_of_logins", "NumberOfLogins", "number_of_logins", parts)
+}
+
+func TestTimeUserDefinedColumn(t *testing.T) {
+	column := getTestColumn("AccountConfig", "LastLoginAt", t)
+
+	parts := []string{
+		strconv.Quote("last_login_at"),
+		"TIMESTAMP()",
+		"nullable=False",
+	}
+	testColumn(t, column, "last_login_at", "LastLoginAt", "last_login_at", parts)
 }
 
 func TestForeignKeyColumn(t *testing.T) {
