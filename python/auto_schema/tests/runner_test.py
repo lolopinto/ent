@@ -2,8 +2,7 @@ import pprint
 import pytest
 import os
 
-from sqlalchemy import (MetaData)
-from sqlalchemy import (create_engine)
+from sqlalchemy import (create_engine, MetaData, TIMESTAMP)
 
 from . import conftest
 
@@ -86,10 +85,7 @@ def validate_table(orig_table, table):
     assert(id(orig_column)) != id(column)
 
     assert orig_column.name == column.name
-    # compare types by using the string version of the types. 
-    # seems to account for differences btw Integer and INTEGER, String(255) and VARCHAR(255) etc
-    assert str(orig_column.type) == str(column.type) 
-    #print(orig_column.type, column.type, orig_column.type == column.type, str(orig_column.type) == str(column.type))
+    validate_column_type(orig_column, column)
     assert orig_column.primary_key == column.primary_key
     assert orig_column.nullable == column.nullable
 
@@ -105,6 +101,17 @@ def validate_table(orig_table, table):
     assert orig_column.constraints == column.constraints
     assert orig_column.comment == column.comment
 
+
+def validate_column_type(orig_column, column):
+  #print(type(orig_column.type).__name__, orig_column.type, column.type, orig_column.type == column.type, str(orig_column.type) == str(column.type))
+
+  if isinstance(orig_column.type, TIMESTAMP):
+    assert orig_column.type.timezone == column.type.timezone
+  else:
+    # compare types by using the string version of the types. 
+    # seems to account for differences btw Integer and INTEGER, String(255) and VARCHAR(255) etc
+  
+    assert str(orig_column.type) == str(column.type) 
 
 def validate_foreign_key(orig_column, column):
   assert len(orig_column.foreign_keys) == len(orig_column.foreign_keys)
@@ -263,12 +270,17 @@ class TestPostgresRunner(BaseTestRunner):
 
   # only in postgres because modifying columns not supported by Sqlite
   @pytest.mark.usefixtures("metadata_with_table")
-  def test_column_type_change(self, new_test_runner, metadata_with_table):
+  @pytest.mark.parametrize(
+    "new_metadata_func, expected_message", 
+    [(conftest.metadata_with_table_text_changed, "modify type from VARCHAR(255) to TEXT" ),
+    (conftest.metadata_with_timestamp_changed, "modify type from DATE to TIMESTAMP")]
+    )
+  def test_column_type_change(self, new_test_runner, metadata_with_table, new_metadata_func, expected_message):
     r = new_test_runner(metadata_with_table)
     run_and_validate_with_standard_metadata_table(r, metadata_with_table)
 
     # recreate runner with last path and modified metadata
-    conftest.metadata_with_table_text_changed(metadata_with_table)
+    new_metadata_func(metadata_with_table)
     r2 = new_test_runner(metadata_with_table, r)
 
     diff = r2.compute_changes()
@@ -276,12 +288,13 @@ class TestPostgresRunner(BaseTestRunner):
 
     assert len(diff) == 1
 
-    assert r2.revision_message() == "modify type from VARCHAR(255) to TEXT"
+    assert r2.revision_message() == expected_message
 
     r.run()
 
     validate_metadata_after_change(r, metadata_with_table)
-    
+
+  
 class TestSqliteRunner(BaseTestRunner):
   pass
 

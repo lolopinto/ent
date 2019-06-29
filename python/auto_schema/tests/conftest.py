@@ -5,7 +5,7 @@ import tempfile
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from sqlalchemy import (Column, MetaData, Integer, Date, String, Text, Table, ForeignKey)
+from sqlalchemy import (Column, MetaData, Integer, Date, TIMESTAMP, String, Text, Table, ForeignKey)
 
 from auto_schema import runner
 
@@ -73,25 +73,35 @@ def empty_metadata():
 def metadata_with_table():
   metadata = MetaData()
   Table('accounts', metadata,
-    Column('id', Integer, primary_key=True), # TODO name primary_key?
+    Column('id', Integer(), primary_key=True), # TODO name primary_key?
     Column('email_address', String(255), nullable=False), 
     Column('first_name', Text(), nullable=False),
     Column('last_name', Text(), nullable=False),
-    Column('created_at', Date, nullable=False),
+    Column('created_at', Date(), nullable=False),
+    Column('updated_at', TIMESTAMP(), nullable=False),
   )
   return metadata
 
 # takes the account table and converts the email_address type from String(255) to Text()
 def metadata_with_table_text_changed(metadata):
-  # takes the tables and modifies the type of a specific column from String(255) to text
+  return _metadata_with_col_changed(metadata, 'email_address', 'accounts', Text())
+ 
+
+# takes the account table and converts the created_at type from Date() to TIMESTAMP()
+def metadata_with_timestamp_changed(metadata):
+  return _metadata_with_col_changed(metadata, 'created_at', 'accounts', TIMESTAMP())
+
+
+def _metadata_with_col_changed(metadata, col_name, table_name, new_type):
+ # takes the tables and modifies the type of a specific column from current type to given type
   def change_col_type(col):
-    if col.name != 'email_address':
+    if col.name != col_name:
       return col
     
-    col.type = Text()
+    col.type = new_type
     return col
 
-  tables = [t for t in metadata.sorted_tables if t.name == 'accounts']
+  tables = [t for t in metadata.sorted_tables if t.name == table_name]
   if len(tables) > 0:
     table = tables[0]
     table.columns = [change_col_type(col) for col in table.columns]

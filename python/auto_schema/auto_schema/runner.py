@@ -1,6 +1,6 @@
 import pprint
 
-from sqlalchemy import (create_engine, VARCHAR, Text)
+from sqlalchemy import (create_engine, VARCHAR, Text, Date, TIMESTAMP)
 
 from alembic.migration import MigrationContext
 from alembic.autogenerate import produce_migrations
@@ -40,8 +40,13 @@ class Runner(object):
 
     #print(context, inspected_column, metadata_column, inspected_type, metadata_type, type(inspected_type), type(metadata_type))
 
-    # going from VARCHAR to Text is accepted & makes sense and we should accept that change.
+    # going from VARCHAR to Text is accepted && makes sense and we should accept that change.
     if isinstance(inspected_type, VARCHAR) and isinstance(metadata_type, Text):
+      return True
+
+    # going from Date() to TIMESTAMP is accepted && makes sense and we should accept that change.
+    # TODO: we should allow going from all less-precise to more-precise since we're not losing any information
+    if isinstance(inspected_type, Date) and isinstance(metadata_type, TIMESTAMP):
       return True
 
     return False
