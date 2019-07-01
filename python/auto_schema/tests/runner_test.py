@@ -52,14 +52,14 @@ def validate_metadata_after_change(r, old_metadata):
 
   assert(len(old_metadata.sorted_tables)) != len(new_metadata.sorted_tables)
 
-  for table in new_metadata.sorted_tables:
-    orig_table = next((t for t in old_metadata.sorted_tables if table.name == t.name), None)
+  for db_table in new_metadata.sorted_tables:
+    schema_table = next((t for t in old_metadata.sorted_tables if db_table.name == t.name), None)
 
-    if orig_table is not None:
-      validate_table(orig_table, table)
+    if schema_table is not None:
+      validate_table(schema_table, db_table)
     else:
       # no need to do too much testing on this since we'll just have to trust that alembic works. 
-      assert table.name == 'alembic_version'
+      assert db_table.name == 'alembic_version'
 
 
 def run_and_validate_with_standard_metadata_table(r, metadata_with_table):
@@ -72,64 +72,116 @@ def run_and_validate_with_standard_metadata_table(r, metadata_with_table):
   validate_metadata_after_change(r, metadata_with_table)
 
 
-def validate_table(orig_table, table):
-  assert orig_table != table
-  assert id(orig_table) != id(table)
+def validate_table(schema_table, db_table):
+  assert schema_table != db_table
+  assert id(schema_table) != id(db_table)
 
-  assert orig_table.name == table.name
+  assert schema_table.name == db_table.name
 
-  assert len(orig_table.columns) == len(table.columns)
-
-  for orig_column, column in zip(orig_table.columns, table.columns):
-    assert orig_column != column
-    assert(id(orig_column)) != id(column)
-
-    assert orig_column.name == column.name
-    validate_column_type(orig_column, column)
-    assert orig_column.primary_key == column.primary_key
-    assert orig_column.nullable == column.nullable
-
-    validate_foreign_key(orig_column, column)
-
-    # we don't actually support all these below yet but when we do, it should start failing and we should know that
-    assert orig_column.default == column.default
-    assert orig_column.index == column.index
-    assert orig_column.unique == column.unique
-    #assert orig_column.autoincrement == column.autoincrement # ignore autoincrement for now as there's differences btw default behavior and postgres
-    assert orig_column.key == column.key
-    assert orig_column.onupdate == column.onupdate
-    assert orig_column.constraints == column.constraints
-    assert orig_column.comment == column.comment
+  validate_columns(schema_table, db_table)
+  validate_constraints(schema_table, db_table)
+  validate_indexes(schema_table, db_table)
 
 
-def validate_column_type(orig_column, column):
-  #print(type(orig_column.type).__name__, orig_column.type, column.type, orig_column.type == column.type, str(orig_column.type) == str(column.type))
+def validate_columns(schema_table, db_table):
+  schema_columns = schema_table.columns
+  db_columns = db_table.columns
+  assert len(schema_columns) == len(db_columns)
+  for schema_column, db_column in zip(schema_columns, db_columns):
+    validate_column(schema_column, db_column)
 
-  if isinstance(orig_column.type, TIMESTAMP):
-    assert orig_column.type.timezone == column.type.timezone
+
+def validate_column(schema_column, db_column):
+  assert schema_column != db_column
+  assert(id(schema_column)) != id(db_column)
+
+  assert schema_column.name == db_column.name
+  validate_column_type(schema_column, db_column)
+  assert schema_column.primary_key == db_column.primary_key
+  assert schema_column.nullable == db_column.nullable
+
+  validate_foreign_key(schema_column, db_column)
+
+  # we don't actually support all these below yet but when we do, it should start failing and we should know that
+  assert schema_column.default == db_column.default
+  assert schema_column.index == db_column.index
+  assert schema_column.unique == db_column.unique
+  #assert schema_column.autoincrement == db_column.autoincrement # ignore autoincrement for now as there's differences btw default behavior and postgres
+  assert schema_column.key == db_column.key
+  assert schema_column.onupdate == db_column.onupdate
+  assert schema_column.constraints == db_column.constraints
+  assert schema_column.comment == db_column.comment
+
+
+def validate_column_type(schema_column, db_column):
+  #print(type(schema_column.type).__name__, schema_column.type, db_column.type, schema_column.type == db_column.type, str(schema_column.type) == str(db_column.type))
+
+  if isinstance(schema_column.type, TIMESTAMP):
+    assert schema_column.type.timezone == db_column.type.timezone
   else:
     # compare types by using the string version of the types. 
     # seems to account for differences btw Integer and INTEGER, String(255) and VARCHAR(255) etc
   
-    assert str(orig_column.type) == str(column.type) 
+    assert str(schema_column.type) == str(db_column.type) 
 
-def validate_foreign_key(orig_column, column):
-  assert len(orig_column.foreign_keys) == len(orig_column.foreign_keys)
+def sort_fn(item): 
+  return item.name
 
-  for fkey, orig_fkey in zip(column.foreign_keys, orig_column.foreign_keys):
-    assert str(fkey.column) == str(orig_fkey.column) # similar to what we do in validate_table on column.type
-    assert fkey.name == orig_fkey.name
-    assert fkey.ondelete == orig_fkey.ondelete
-    assert fkey.onupdate == orig_fkey.onupdate
+def validate_indexes(schema_table, db_table):
+  # sort indexes so that the order for both are the same
+  schema_indexes = sorted(schema_table.indexes, key=sort_fn)
+  db_indexes = sorted(db_table.indexes, key=sort_fn)
+
+  assert len(schema_indexes) == len(db_indexes)
+  for schema_index, db_index in zip(schema_indexes, db_indexes):
+    # index names should be equal
+
+    assert schema_index.name == db_index.name
+
+    schema_index_columns = schema_index.columns
+    db_index_columns = db_index.columns
+    for schema_column, db_column in zip(schema_index_columns, db_index_columns):
+      validate_column(schema_column, db_column)
+
+
+def validate_constraints(schema_table, db_table):
+  # sort constraints so that the order for both are the same
+  schema_constraints = sorted(schema_table.constraints, key=sort_fn)
+  db_constraints = sorted(db_table.constraints, key=sort_fn)
+
+  assert len(schema_constraints) == len(db_constraints)
+
+  for schema_constraint, db_constraint in zip(schema_constraints, db_constraints):
+    # constraint names should be equal
+    assert schema_constraint.name == db_constraint.name
+
+    schema_constraint_columns = schema_constraint.columns
+    db_constraint_columns = db_constraint.columns
+
+    assert len(schema_constraint_columns) == len(db_constraint_columns)
+    for schema_column, db_column in zip(schema_constraint_columns, db_constraint_columns):
+      validate_column(schema_column, db_column)
+
+
+
+
+def validate_foreign_key(schema_column, db_column):
+  assert len(schema_column.foreign_keys) == len(schema_column.foreign_keys)
+
+  for db_fkey, schema_fkey in zip(db_column.foreign_keys, schema_column.foreign_keys):
+    assert str(db_fkey.column) == str(schema_fkey.column) # similar to what we do in validate_table on column.type
+    assert db_fkey.name == schema_fkey.name
+    assert db_fkey.ondelete == schema_fkey.ondelete
+    assert db_fkey.onupdate == schema_fkey.onupdate
 
     # we don't actually support all these below yet but when we do, it should start failing and we should know that
-    assert fkey.deferrable == orig_fkey.deferrable
-    assert fkey.initially == orig_fkey.initially
-   # assert fkey.link_to_name == orig_fkey.link_to_name # this seems like it's expected to change. TODO figure this out more
-    assert fkey.use_alter == orig_fkey.use_alter
-    assert fkey.match == orig_fkey.match
-    assert fkey.info == orig_fkey.info
-    assert str(fkey.parent) == str(orig_fkey.parent)
+    assert db_fkey.deferrable == schema_fkey.deferrable
+    assert db_fkey.initially == schema_fkey.initially
+   # assert db_fkey.link_to_name == schema_fkey.link_to_name # this seems like it's expected to change. TODO figure this out more
+    assert db_fkey.use_alter == schema_fkey.use_alter
+    assert db_fkey.match == schema_fkey.match
+    assert db_fkey.info == schema_fkey.info
+    assert str(db_fkey.parent) == str(schema_fkey.parent)
 
 
 class BaseTestRunner(object):
@@ -221,6 +273,12 @@ class BaseTestRunner(object):
 
     # confirm that a 3rd table was created
     assert_num_tables(r, 3, ['accounts', 'alembic_version', 'messages'])
+
+
+  @pytest.mark.usefixtures("metadata_with_table")
+  def test_new_table_add(self, new_test_runner, metadata_with_table):
+    r = new_test_runner(metadata_with_table)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_table)
 
 
   @pytest.mark.usefixtures("metadata_with_table")

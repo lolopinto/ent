@@ -5,7 +5,7 @@ import tempfile
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from sqlalchemy import (Column, MetaData, Integer, Date, TIMESTAMP, String, Text, Table, ForeignKey)
+import sqlalchemy as sa
 
 from auto_schema import runner
 
@@ -65,31 +65,33 @@ def new_test_runner(request):
 
 @pytest.fixture
 def empty_metadata():
-  metadata = MetaData()
+  metadata = sa.MetaData()
   return metadata
 
 
 @pytest.fixture
 def metadata_with_table():
-  metadata = MetaData()
-  Table('accounts', metadata,
-    Column('id', Integer(), primary_key=True), # TODO name primary_key?
-    Column('email_address', String(255), nullable=False), 
-    Column('first_name', Text(), nullable=False),
-    Column('last_name', Text(), nullable=False),
-    Column('created_at', Date(), nullable=False),
-    Column('updated_at', TIMESTAMP(), nullable=False),
+  metadata = sa.MetaData()
+  sa.Table('accounts', metadata,
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('email_address', sa.String(255), nullable=False), 
+    sa.Column('first_name', sa.Text(), nullable=False),
+    sa.Column('last_name', sa.Text(), nullable=False),
+    sa.Column('created_at', sa.Date(), nullable=False),
+    sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'), # use named primary key constraint instead of what we had per-column
+    sa.UniqueConstraint("email_address", name="accounts_unique_email_address"),
   )
   return metadata
 
 # takes the account table and converts the email_address type from String(255) to Text()
 def metadata_with_table_text_changed(metadata):
-  return _metadata_with_col_changed(metadata, 'email_address', 'accounts', Text())
+  return _metadata_with_col_changed(metadata, 'email_address', 'accounts', sa.Text())
  
 
 # takes the account table and converts the created_at type from Date() to TIMESTAMP()
 def metadata_with_timestamp_changed(metadata):
-  return _metadata_with_col_changed(metadata, 'created_at', 'accounts', TIMESTAMP())
+  return _metadata_with_col_changed(metadata, 'created_at', 'accounts', sa.TIMESTAMP())
 
 
 def _metadata_with_col_changed(metadata, col_name, table_name, new_type):
@@ -124,16 +126,19 @@ def metadata_with_foreign_key(metadata_with_table):
 
 
 def messages_table(metadata):
-  Table('messages', metadata,
-    Column('id', Integer, primary_key=True),
-    Column('thread_id', Integer, nullable=False), 
-    Column('message', String(5000), nullable=False),
+  sa.Table('messages', metadata,
+    sa.Column('id', sa.Integer()),
+    sa.Column('thread_id', sa.Integer(), nullable=False), 
+    sa.Column('message', sa.Text(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name='messages_id_pkey'), 
   )
 
 
 def contacts_table(metadata):
-  Table('contacts', metadata,
-    Column('id', Integer, primary_key=True),
-    Column('account_id', Integer, ForeignKey('accounts.id', ondelete="CASCADE", name="contacts_account_id_fkey"), nullable=False),
-    Column('name', String(255), nullable=False)
+  sa.Table('contacts', metadata,
+    sa.Column('id', sa.Integer(), primary_key=True),
+    sa.Column('account_id', sa.Integer, nullable=False),
+    sa.Column('name', sa.String(255), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="contacts_id_pkey"),
+    sa.ForeignKeyConstraint(['account_id'], ['accounts.id'], name="contacts_account_id_fkey", ondelete="CASCADE"),
   )
