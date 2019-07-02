@@ -98,6 +98,7 @@ class Runner(object):
       'CreateTableOp': lambda op: 'add %s table' % op.table_name,
       'ModifyTableOps': lambda op: "\n".join([class_name_map[type(child_op).__name__](child_op) for child_op in op.ops]),
       'AlterColumnOp': lambda op: alter_column_op(op),
+      'CreateUniqueConstraintOp': lambda op: 'add unique constraint %s' % op.constraint_name,
     }
 
     changes = [class_name_map[type(op).__name__](op) for op in diff]

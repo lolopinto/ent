@@ -72,6 +72,14 @@ def run_and_validate_with_standard_metadata_table(r, metadata_with_table):
   validate_metadata_after_change(r, metadata_with_table)
 
 
+def recreate_with_new_metadata(r, new_test_runner, metadata_with_table, metadata_func):
+  metadata_func(metadata_with_table)
+  # recreate and run
+  r2 = new_test_runner(metadata_with_table, r)
+  assert r.get_schema_path() == r2.get_schema_path()
+  return r2
+
+
 def validate_table(schema_table, db_table):
   assert schema_table != db_table
   assert id(schema_table) != id(db_table)
@@ -161,8 +169,6 @@ def validate_constraints(schema_table, db_table):
     assert len(schema_constraint_columns) == len(db_constraint_columns)
     for schema_column, db_column in zip(schema_constraint_columns, db_constraint_columns):
       validate_column(schema_column, db_column)
-
-
 
 
 def validate_foreign_key(schema_column, db_column):
@@ -256,12 +262,7 @@ class BaseTestRunner(object):
     # confirm that 2 tables were created
     assert_num_tables(r, 2, ['accounts', 'alembic_version'])
 
-    # get the message table
-    conftest.messages_table(metadata_with_table)
-
-    # recreate runner with last path and modified metadata
-    r2 = new_test_runner(metadata_with_table, r)
-    assert r.get_schema_path() == r2.get_schema_path()
+    r2 = recreate_with_new_metadata(r, new_test_runner, metadata_with_table, conftest.messages_table)
     
     r2.revision()
 
@@ -269,10 +270,10 @@ class BaseTestRunner(object):
     assert_num_files(r2, 2)
 
     # upgrade the schema and let's confirm it works
-    r.upgrade()
+    r2.upgrade()
 
     # confirm that a 3rd table was created
-    assert_num_tables(r, 3, ['accounts', 'alembic_version', 'messages'])
+    assert_num_tables(r2, 3, ['accounts', 'alembic_version', 'messages'])
 
 
   @pytest.mark.usefixtures("metadata_with_table")
@@ -286,20 +287,15 @@ class BaseTestRunner(object):
     r = new_test_runner(metadata_with_table)
     run_and_validate_with_standard_metadata_table(r, metadata_with_table)
 
-    # get the message table
-    conftest.messages_table(metadata_with_table)
-
-    # recreate runner with last path and modified metadata
-    r2 = new_test_runner(metadata_with_table, r)
-    assert r.get_schema_path() == r2.get_schema_path()
-
+    # recreate runner with last runner 
+    r2 = recreate_with_new_metadata(r, new_test_runner, metadata_with_table, conftest.messages_table)
     r2.run()
 
     # should have the expected files with the expected tables
-    assert_num_files(r, 2)
-    assert_num_tables(r, 3, ['accounts', 'alembic_version', 'messages'])
+    assert_num_files(r2, 2)
+    assert_num_tables(r2, 3, ['accounts', 'alembic_version', 'messages'])
 
-    validate_metadata_after_change(r, metadata_with_table)
+    validate_metadata_after_change(r2, metadata_with_table)
 
 
   @pytest.mark.usefixtures("metadata_with_two_tables")
@@ -323,6 +319,7 @@ class BaseTestRunner(object):
     assert_num_tables(r, 3, ['accounts', 'alembic_version', 'contacts'])
 
     validate_metadata_after_change(r, metadata_with_foreign_key)
+    
 
 class TestPostgresRunner(BaseTestRunner):
 
@@ -351,6 +348,26 @@ class TestPostgresRunner(BaseTestRunner):
     r.run()
 
     validate_metadata_after_change(r, metadata_with_table)
+
+
+  # only in postgres because "No support for ALTER of constraints in SQLite dialect"
+  @pytest.mark.usefixtures("metadata_with_table")
+  def test_unique_constraint_added(self, new_test_runner, metadata_with_table):
+    r = new_test_runner(metadata_with_table)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+
+    r2 = recreate_with_new_metadata(r, new_test_runner, metadata_with_table, conftest.metadata_with_unique_constraint_added)
+
+    message = r2.revision_message()
+    assert message == "add unique constraint accounts_unique_email_address"
+
+    r2.run()
+
+    # should have the expected files with the expected tables
+    assert_num_files(r2, 2)
+    assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
+    validate_metadata_after_change(r2, r2.get_metadata())
+
 
   
 class TestSqliteRunner(BaseTestRunner):

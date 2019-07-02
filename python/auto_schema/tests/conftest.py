@@ -78,11 +78,24 @@ def metadata_with_table():
     sa.Column('first_name', sa.Text(), nullable=False),
     sa.Column('last_name', sa.Text(), nullable=False),
     sa.Column('created_at', sa.Date(), nullable=False),
+    sa.Column('phone_number', sa.Text(), nullable=False),
     sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
     sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'), # use named primary key constraint instead of what we had per-column
+    sa.UniqueConstraint("phone_number", name="accounts_unique_phone_number"), # support unique constraint as part of initial table creation
+  )
+  return metadata
+  
+
+def metadata_with_unique_constraint_added(metadata):
+  tables = [t for t in metadata.sorted_tables if t.name == "accounts"]
+  table = tables[0]
+
+  table.append_constraint(    
+    # and then unique constraint added afterwards
     sa.UniqueConstraint("email_address", name="accounts_unique_email_address"),
   )
   return metadata
+
 
 # takes the account table and converts the email_address type from String(255) to Text()
 def metadata_with_table_text_changed(metadata):
