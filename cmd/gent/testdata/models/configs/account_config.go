@@ -6,8 +6,8 @@ import "time"
 type AccountConfig struct {
 	FirstName      string
 	LastName       string
-	PhoneNumber    string
-	NumberOfLogins int // stupid thing to store in an account but needed for testing purposes...
+	PhoneNumber    string `unique:"true"`
+	NumberOfLogins int    // stupid thing to store in an account but needed for testing purposes...
 	LastLoginAt    time.Time
 }
 

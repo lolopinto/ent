@@ -64,7 +64,6 @@ type foreignKeyConstraint struct {
 }
 
 func (constraint *foreignKeyConstraint) getConstraintString() string {
-
 	// generate a name for the foreignkey of the sort contacts_user_id_fkey.
 	// It takes the table name, the name of the column that references a foreign column in a foreign table and the fkey keyword to generate
 	fkeyNameParts := []string{
@@ -80,6 +79,25 @@ func (constraint *foreignKeyConstraint) getConstraintString() string {
 		strconv.Quote(strings.Join([]string{constraint.fkeyTableName, constraint.fkeyDbField}, ".")), // "accounts.id"
 		strconv.Quote(fkeyName),
 		strconv.Quote("CASCADE"),
+	)
+}
+
+type uniqueConstraint struct {
+	dbColumns []*dbColumn //theoretically supports more than one column but for now, there'll be only one
+	tableName string
+}
+
+func (constraint *uniqueConstraint) getConstraintString() string {
+	if len(constraint.dbColumns) != 1 {
+		die(fmt.Errorf("doesn't support multiple columns yet"))
+	}
+	col := constraint.dbColumns[0]
+	// name made of 3 parts: tableName, "unique", colName
+	pkeyNameParts := []string{constraint.tableName, "unique", col.DBColName}
+	return fmt.Sprintf(
+		"sa.UniqueConstraint(%s, name=%s)",
+		strconv.Quote(col.DBColName),
+		strconv.Quote(getNameFromParts(pkeyNameParts)),
 	)
 }
 
@@ -121,11 +139,11 @@ func (schema *schemaInfo) createTableForNode(nodeData *nodeTemplate) *dbTable {
 	columns = append(columns, schema.getUpdatedAtColumn())
 
 	for _, field := range nodeData.Fields {
-		column, constraint := schema.getColumnInfoForField(&field, nodeData)
+		column := schema.getColumnInfoForField(&field, nodeData, &constraints)
 		columns = append(columns, column)
-		if constraint != nil {
-			constraints = append(constraints, constraint)
-		}
+		// if colConstraints != nil {
+		// 	constraints = append(constraints, colConstraints...)
+		// }
 	}
 
 	return &dbTable{
@@ -218,27 +236,28 @@ func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
 	panic("unsupported type for now")
 }
 
-func (schema *schemaInfo) getColumnInfoForField(f *fieldInfo, nodeData *nodeTemplate) (*dbColumn, dbConstraint) {
-	dbType, constraint := schema.getForeignKeyInfo(f, nodeData)
-
+func (schema *schemaInfo) getColumnInfoForField(f *fieldInfo, nodeData *nodeTemplate, constraints *[]dbConstraint) *dbColumn {
+	dbType := schema.addForeignKeyConstraint(f, nodeData, constraints)
 	col := schema.getColumn(f.FieldName, f.getDbColName(), dbType, []string{
 		"nullable=False",
 	})
-	return col, constraint
+	schema.addUniqueConstraint(f, nodeData, col, constraints)
+	return col
 }
 
-func (schema *schemaInfo) getForeignKeyInfo(f *fieldInfo, nodeData *nodeTemplate) (string, dbConstraint) {
+// adds a foreignKeyConstraint to the array of constraints
+// also returns new dbType of column
+func (schema *schemaInfo) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTemplate, constraints *[]dbConstraint) string {
 	dbType := schema.getDbTypeForField(f)
 
 	fkey := f.TagMap["fkey"]
 	if fkey == "" {
-		return dbType, nil
+		return dbType
 	}
 	// tablename and fkey struct tag are quoted so we have to unquote them
 	fkeyRaw, err := strconv.Unquote(fkey)
 	die(err)
-	tableName, err := strconv.Unquote(nodeData.TableName)
-	die(err)
+	tableName := nodeData.getTableName()
 
 	fkeyParts := strings.Split(fkeyRaw, ".")
 	fkeyConfigName := fkeyParts[0]
@@ -279,7 +298,23 @@ func (schema *schemaInfo) getForeignKeyInfo(f *fieldInfo, nodeData *nodeTemplate
 		fkeyDbField:   fkeyDbField,
 		field:         f,
 	}
-	return dbType, constraint
+	*constraints = append(*constraints, constraint)
+	return dbType
+}
+
+func (schema *schemaInfo) addUniqueConstraint(f *fieldInfo, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
+	unique := f.TagMap["unique"]
+	if unique == "" {
+		return
+	}
+	if unique != strconv.Quote("true") {
+		die(fmt.Errorf("Invalid struct tag unique was not configured correctly"))
+	}
+	constraint := &uniqueConstraint{
+		dbColumns: []*dbColumn{col},
+		tableName: nodeData.getTableName(),
+	}
+	*constraints = append(*constraints, constraint)
 }
 
 func (schema *schemaInfo) getIDColumnInfo(tableName string) (*dbColumn, dbConstraint) {
