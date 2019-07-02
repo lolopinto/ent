@@ -61,6 +61,18 @@ type nodeTemplate struct {
 	TableName     string
 }
 
+func (nodeData *nodeTemplate) getTableName() string {
+	tableName, err := strconv.Unquote(nodeData.TableName)
+	die(err)
+
+	return tableName
+}
+
+// probably not needed?
+func (nodeData *nodeTemplate) getQuotedTableName() string {
+	return nodeData.TableName
+}
+
 type fieldInfo struct {
 	FieldName string
 	FieldType string

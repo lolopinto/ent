@@ -9,30 +9,40 @@ import (
 )
 
 func TestGetIDColumn(t *testing.T) {
-	col := getEmptyTestSchema().getIDColumn()
+	col := getTestColumn("AccountConfig", "ID", t)
+
 	parts := []string{
 		strconv.Quote("id"),
 		"UUID()",
-		"primary_key=True",
+		"nullable=False",
 	}
 	testColumn(t, col, "id", "ID", "id", parts)
+
+	constraint := getTestPrimaryKeyConstraint("AccountConfig", "ID", t)
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.PrimaryKeyConstraint(%s, name=%s)", strconv.Quote("id"), strconv.Quote("accounts_id_pkey")),
+	)
 }
 
 func TestGetCreatedAtColumn(t *testing.T) {
-	col := getEmptyTestSchema().getCreatedAtColumn()
+	col := getTestColumn("AccountConfig", "CreatedAt", t)
+
 	parts := []string{
 		strconv.Quote("created_at"),
-		"TIMESTAMP()",
+		"sa.TIMESTAMP()",
 		"nullable=False",
 	}
 	testColumn(t, col, "created_at", "CreatedAt", "created_at", parts)
 }
 
 func TestGetUpdatedAtColumn(t *testing.T) {
-	col := getEmptyTestSchema().getUpdatedAtColumn()
+	col := getTestColumn("AccountConfig", "UpdatedAt", t)
+
 	parts := []string{
 		strconv.Quote("updated_at"),
-		"TIMESTAMP()",
+		"sa.TIMESTAMP()",
 		"nullable=False",
 	}
 	testColumn(t, col, "updated_at", "UpdatedAt", "updated_at", parts)
@@ -48,6 +58,17 @@ func TestGetTableForNode(t *testing.T) {
 	if len(table.Columns) != 8 {
 		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 6, len(table.Columns))
 	}
+
+	// 1 primary key constraint expected
+	if len(table.Constraints) != 1 {
+		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 1, len(table.Constraints))
+	}
+
+	// 1 primary key and 1 foreign key constraint expected
+	table = getTestTable("TodoConfig", t)
+	if len(table.Constraints) != 2 {
+		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 2, len(table.Constraints))
+	}
 }
 
 func TestStringUserDefinedColumn(t *testing.T) {
@@ -55,7 +76,7 @@ func TestStringUserDefinedColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("first_name"),
-		"Text()",
+		"sa.Text()",
 		"nullable=False",
 	}
 	testColumn(t, column, "first_name", "FirstName", "first_name", parts)
@@ -66,7 +87,7 @@ func TestIntegerUserDefinedColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("number_of_logins"),
-		"Integer()",
+		"sa.Integer()",
 		"nullable=False",
 	}
 	testColumn(t, column, "number_of_logins", "NumberOfLogins", "number_of_logins", parts)
@@ -77,7 +98,7 @@ func TestTimeUserDefinedColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("last_login_at"),
-		"TIMESTAMP()",
+		"sa.TIMESTAMP()",
 		"nullable=False",
 	}
 	testColumn(t, column, "last_login_at", "LastLoginAt", "last_login_at", parts)
@@ -89,15 +110,22 @@ func TestForeignKeyColumn(t *testing.T) {
 	parts := []string{
 		strconv.Quote("account_id"), // db field
 		"UUID()",                    // db type
-		fmt.Sprintf(
-			"ForeignKey(%s, ondelete=%s, name=%s)", // ForeignKey expected by alembic to generate
-			strconv.Quote("accounts.id"),           // field foreign key is on
-			strconv.Quote("CASCADE"),               // ondelete cascade
-			strconv.Quote("todos_account_id_fkey"), // name of foreignkey field
-		),
 		"nullable=False",
 	}
 	testColumn(t, column, "account_id", "AccountID", "account_id", parts)
+
+	constraint := getTestForeignKeyConstraint("TodoConfig", "AccountID", t)
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf(
+			"sa.ForeignKeyConstraint([%s], [%s], name=%s, ondelete=%s)", // ForeignKey expected by alembic to generate
+			strconv.Quote("account_id"),                                 // column foreign key is on
+			strconv.Quote("accounts.id"),                                // field foreign key is on
+			strconv.Quote("todos_account_id_fkey"),                      // name of foreignkey field
+			strconv.Quote("CASCADE"),                                    // ondelete cascade
+		),
+	)
 }
 
 func TestInvalidForeignKeyConfig(t *testing.T) {
@@ -160,6 +188,12 @@ func testColumn(t *testing.T, col *dbColumn, colName string, expectedFieldName, 
 	}
 }
 
+func testConstraint(t *testing.T, constraint dbConstraint, expectedConstraintString string) {
+	if constraint.getConstraintString() != expectedConstraintString {
+		t.Errorf("getConstraintString() for constraint was not as expected. expected %s, got %s instead", expectedConstraintString, constraint.getConstraintString())
+	}
+}
+
 func getTestSchema() *schemaInfo {
 	return newSchema(
 		parseAllSchemaFiles(
@@ -180,10 +214,6 @@ func getInMemoryTestSchemas(sources map[string]string) *schemaInfo {
 			"",
 		),
 	)
-}
-
-func getEmptyTestSchema() *schemaInfo {
-	return newSchema(nil)
 }
 
 func getTestTable(configName string, t *testing.T) *dbTable {
@@ -207,17 +237,40 @@ func getTestTableFromSchema(configName string, schema *schemaInfo, t *testing.T)
 func getTestColumn(tableConfigName, colFieldName string, t *testing.T) *dbColumn {
 	table := getTestTable(tableConfigName, t)
 
-	var col *dbColumn
 	for _, column := range table.Columns {
 		if column.EntFieldName == colFieldName {
-			col = column
-			break
+			return column
 		}
 	}
-	if col == nil {
-		t.Errorf("no column %s for %s table", colFieldName, tableConfigName)
+	t.Errorf("no column %s for %s table", colFieldName, tableConfigName)
+	return nil
+}
+
+func getTestForeignKeyConstraint(tableConfigName, colFieldName string, t *testing.T) dbConstraint {
+	table := getTestTable(tableConfigName, t)
+
+	for _, constraint := range table.Constraints {
+		fkeyConstraint, ok := constraint.(*foreignKeyConstraint)
+		if ok && fkeyConstraint.field.FieldName == colFieldName {
+			return fkeyConstraint
+		}
 	}
-	return col
+	t.Errorf("no foreign key constraint for %s column for %s table", colFieldName, tableConfigName)
+	return nil
+}
+
+func getTestPrimaryKeyConstraint(tableConfigName, colFieldName string, t *testing.T) dbConstraint {
+	table := getTestTable(tableConfigName, t)
+
+	for _, constraint := range table.Constraints {
+		pKeyConstraint, ok := constraint.(*primaryKeyConstraint)
+		if ok {
+			// for now this only works on ID column so that's fine. TODO...
+			return pKeyConstraint
+		}
+	}
+	t.Errorf("no primary key constraint for %s column for %s table", colFieldName, tableConfigName)
+	return nil
 }
 
 func getAccountConfigContents(t *testing.T) string {

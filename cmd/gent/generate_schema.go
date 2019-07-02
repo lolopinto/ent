@@ -12,10 +12,75 @@ import (
 	"github.com/lolopinto/ent/data"
 )
 
-type schemaInfo struct {
-	Tables         []*dbTable
-	nodes          map[string]*codegenNodeTemplateInfo
-	configTableMap map[string]*dbTable
+func getNameFromParts(nameParts []string) string {
+	return strings.Join(nameParts, "_")
+}
+
+type dbTable struct {
+	Columns     []*dbColumn
+	Constraints []dbConstraint
+	TableName   string
+}
+
+type dbColumn struct {
+	EntFieldName string
+	DBColName    string
+	DBType       string
+	ColString    string
+}
+
+func (col *dbColumn) getLineInTable() string {
+	return fmt.Sprintf("sa.Column(%s)", col.ColString)
+}
+
+type dbConstraint interface {
+	getConstraintString() string
+}
+
+type primaryKeyConstraint struct {
+	dbColumns []*dbColumn //theoretically supports more than one column but for now, there'll be only one
+	tableName string
+}
+
+func (constraint *primaryKeyConstraint) getConstraintString() string {
+	if len(constraint.dbColumns) != 1 {
+		die(fmt.Errorf("doesn't support multiple columns yet"))
+	}
+	col := constraint.dbColumns[0]
+	// name made of 3 parts: tableName, colName, pkey
+	pkeyNameParts := []string{constraint.tableName, col.DBColName, "pkey"}
+	return fmt.Sprintf(
+		"sa.PrimaryKeyConstraint(%s, name=%s)",
+		strconv.Quote(col.DBColName),
+		strconv.Quote(getNameFromParts(pkeyNameParts)),
+	)
+}
+
+type foreignKeyConstraint struct {
+	tableName     string
+	fkeyTableName string // these are hardcoded to one table/field now but can be changed later...
+	fkeyDbField   string
+	field         *fieldInfo
+}
+
+func (constraint *foreignKeyConstraint) getConstraintString() string {
+
+	// generate a name for the foreignkey of the sort contacts_user_id_fkey.
+	// It takes the table name, the name of the column that references a foreign column in a foreign table and the fkey keyword to generate
+	fkeyNameParts := []string{
+		constraint.tableName,
+		constraint.field.getDbColName(),
+		"fkey",
+	}
+	fkeyName := getNameFromParts(fkeyNameParts)
+	return fmt.Sprintf(
+		//    sa.ForeignKeyConstraint(['account_id'], ['accounts.id'], name="contacts_account_id_fkey", ondelete="CASCADE"),
+		"sa.ForeignKeyConstraint([%s], [%s], name=%s, ondelete=%s)",
+		constraint.field.getQuotedDBColName(),
+		strconv.Quote(strings.Join([]string{constraint.fkeyTableName, constraint.fkeyDbField}, ".")), // "accounts.id"
+		strconv.Quote(fkeyName),
+		strconv.Quote("CASCADE"),
+	)
 }
 
 func newSchema(nodes map[string]*codegenNodeTemplateInfo) *schemaInfo {
@@ -26,16 +91,10 @@ func newSchema(nodes map[string]*codegenNodeTemplateInfo) *schemaInfo {
 	}
 }
 
-type dbTable struct {
-	Columns   []*dbColumn
-	TableName string
-}
-
-type dbColumn struct {
-	EntFieldName string
-	DBColName    string
-	DBType       string
-	ColString    string
+type schemaInfo struct {
+	Tables         []*dbTable
+	nodes          map[string]*codegenNodeTemplateInfo
+	configTableMap map[string]*dbTable
 }
 
 func (schema *schemaInfo) getTableForNode(nodeData *nodeTemplate) *dbTable {
@@ -52,18 +111,27 @@ func (schema *schemaInfo) getTableForNode(nodeData *nodeTemplate) *dbTable {
 
 func (schema *schemaInfo) createTableForNode(nodeData *nodeTemplate) *dbTable {
 	var columns []*dbColumn
+	var constraints []dbConstraint
 
-	columns = append(columns, schema.getIDColumn())
+	idCol, idConstraint := schema.getIDColumnInfo(nodeData.getTableName())
+	columns = append(columns, idCol)
+	constraints = append(constraints, idConstraint)
+
 	columns = append(columns, schema.getCreatedAtColumn())
 	columns = append(columns, schema.getUpdatedAtColumn())
 
 	for _, field := range nodeData.Fields {
-		columns = append(columns, schema.getColumnForField(&field, nodeData))
+		column, constraint := schema.getColumnInfoForField(&field, nodeData)
+		columns = append(columns, column)
+		if constraint != nil {
+			constraints = append(constraints, constraint)
+		}
 	}
 
 	return &dbTable{
-		TableName: nodeData.TableName,
-		Columns:   columns,
+		TableName:   nodeData.TableName,
+		Columns:     columns,
+		Constraints: constraints,
 	}
 }
 
@@ -105,7 +173,7 @@ func (schema *schemaInfo) generateDbSchema() {
 func (schema *schemaInfo) writeSchemaFile() {
 	writeFile(
 		fileToWriteInfo{
-			data:           schema, // TODO create an anonymous object that just has tables?
+			data:           schema.getSchemaForTemplate(),
 			pathToTemplate: "templates/schema.tmpl",
 			templateName:   "schema.tmpl",
 			pathToFile:     "models/configs/schema.py",
@@ -113,34 +181,58 @@ func (schema *schemaInfo) writeSchemaFile() {
 	)
 }
 
+func (schema *schemaInfo) getSchemaForTemplate() schemaForTemplate {
+	ret := schemaForTemplate{}
+
+	for _, table := range schema.Tables {
+
+		var lines []string
+		// columns first
+		for _, col := range table.Columns {
+			lines = append(lines, col.getLineInTable())
+		}
+		// then constraints
+		for _, constraint := range table.Constraints {
+			lines = append(lines, constraint.getConstraintString())
+		}
+
+		ret.Tables = append(ret.Tables, schemaTableInfo{
+			TableName:   table.TableName,
+			SchemaLines: lines,
+		})
+	}
+	return ret
+}
+
 func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
 	switch f.FieldType {
 	case "string":
-		return "Text()"
+		return "sa.Text()"
 	case "bool":
-		return "Boolean()"
+		return "sa.Boolean()"
 	case "int":
-		return "Integer()"
+		return "sa.Integer()"
 	case "time.Time":
-		return "TIMESTAMP()"
+		return "sa.TIMESTAMP()"
 	}
 	panic("unsupported type for now")
 }
 
-func (schema *schemaInfo) getColumnForField(f *fieldInfo, nodeData *nodeTemplate) *dbColumn {
-	parts, dbType := schema.getForeignKeyInfo(f, nodeData)
-	parts = append(parts, "nullable=False")
+func (schema *schemaInfo) getColumnInfoForField(f *fieldInfo, nodeData *nodeTemplate) (*dbColumn, dbConstraint) {
+	dbType, constraint := schema.getForeignKeyInfo(f, nodeData)
 
-	return schema.getColumn(f.FieldName, f.getDbColName(), dbType, parts)
+	col := schema.getColumn(f.FieldName, f.getDbColName(), dbType, []string{
+		"nullable=False",
+	})
+	return col, constraint
 }
 
-func (schema *schemaInfo) getForeignKeyInfo(f *fieldInfo, nodeData *nodeTemplate) ([]string, string) {
+func (schema *schemaInfo) getForeignKeyInfo(f *fieldInfo, nodeData *nodeTemplate) (string, dbConstraint) {
 	dbType := schema.getDbTypeForField(f)
-	parts := []string{}
 
 	fkey := f.TagMap["fkey"]
 	if fkey == "" {
-		return parts, dbType
+		return dbType, nil
 	}
 	// tablename and fkey struct tag are quoted so we have to unquote them
 	fkeyRaw, err := strconv.Unquote(fkey)
@@ -170,56 +262,47 @@ func (schema *schemaInfo) getForeignKeyInfo(f *fieldInfo, nodeData *nodeTemplate
 			// store in the db from string to UUID. This only works the first time the table
 			// is defined.
 			// Need to handle uuid as a first class type in Config files and/or handle the conversion from string to uuid after the fact
-			if col.DBType == "UUID()" && dbType == "Text()" {
+			if col.DBType == "UUID()" && dbType == "sa.Text()" {
 				dbType = "UUID()"
 			}
 			break
 		}
 	}
 
-	// TODO add tests and update the comments
 	if fkeyDbField == "" {
 		die(fmt.Errorf("invalid Field %s set as ForeignKey of field %s on ent config %s", fkeyField, f.FieldName, nodeData.EntConfigName))
 	}
 
-	// generate a name for the foreignkey of the sort contacts_user_id_fkey.
-	// It takes the table name, the name of the column that references a foreign column in a foreign table and the fkey keyword to generate
-	fkeyNameParts := []string{
-		tableName,
-		f.getDbColName(),
-		"fkey",
+	constraint := &foreignKeyConstraint{
+		tableName:     tableName,
+		fkeyTableName: fkeyTableName,
+		fkeyDbField:   fkeyDbField,
+		field:         f,
 	}
-	fkeyName := strings.Join(fkeyNameParts, "_")
-
-	// amend parts to add foreignkey line to generated schema
-	parts = append(
-		parts,
-		fmt.Sprintf(
-			"ForeignKey(%s, ondelete=%s, name=%s)",
-			strconv.Quote(strings.Join([]string{fkeyTableName, fkeyDbField}, ".")), // "user.id"
-			strconv.Quote("CASCADE"),
-			strconv.Quote(fkeyName),
-		),
-	)
-	return parts, dbType
+	return dbType, constraint
 }
 
-func (schema *schemaInfo) getIDColumn() *dbColumn {
-	return schema.getColumn(
+func (schema *schemaInfo) getIDColumnInfo(tableName string) (*dbColumn, dbConstraint) {
+	col := schema.getColumn(
 		"ID",
 		"id",
 		"UUID()",
 		[]string{
-			"primary_key=True",
+			"nullable=False",
 		},
 	)
+	constraint := &primaryKeyConstraint{
+		dbColumns: []*dbColumn{col},
+		tableName: tableName,
+	}
+	return col, constraint
 }
 
 func (schema *schemaInfo) getCreatedAtColumn() *dbColumn {
 	return schema.getColumn(
 		"CreatedAt",
 		"created_at",
-		"TIMESTAMP()",
+		"sa.TIMESTAMP()",
 		[]string{
 			"nullable=False",
 		},
@@ -230,7 +313,7 @@ func (schema *schemaInfo) getUpdatedAtColumn() *dbColumn {
 	return schema.getColumn(
 		"UpdatedAt",
 		"updated_at",
-		"TIMESTAMP()",
+		"sa.TIMESTAMP()",
 		[]string{
 			"nullable=False",
 		},
@@ -243,4 +326,15 @@ func (schema *schemaInfo) getColumn(fieldName, dbName, dbType string, extraParts
 	colString := strings.Join(parts, ", ")
 
 	return &dbColumn{EntFieldName: fieldName, DBColName: dbName, DBType: dbType, ColString: colString}
+}
+
+// represents information needed by the schema template file to generate the schema for a table
+type schemaTableInfo struct {
+	TableName   string
+	SchemaLines []string // list of lines that will be generated for each table e.g. sa.Column(...), sa.PrimaryKeyConstraint(...) etc
+}
+
+// wrapper object to represent the list of tables that will be passed to a schema template file
+type schemaForTemplate struct {
+	Tables []schemaTableInfo
 }
