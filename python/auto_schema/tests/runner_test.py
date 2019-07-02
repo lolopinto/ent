@@ -143,7 +143,6 @@ def validate_indexes(schema_table, db_table):
   assert len(schema_indexes) == len(db_indexes)
   for schema_index, db_index in zip(schema_indexes, db_indexes):
     # index names should be equal
-
     assert schema_index.name == db_index.name
 
     schema_index_columns = schema_index.columns
@@ -205,6 +204,12 @@ class BaseTestRunner(object):
     assert len(r.compute_changes()) == 1
     assert_no_changes_made(r)
 
+  @pytest.mark.usefixtures("metadata_with_table_with_index")
+  def test_compute_changes_with_index(self, new_test_runner, metadata_with_table_with_index):
+    r = new_test_runner(metadata_with_table_with_index)
+    assert len(r.compute_changes()) == 2 # create table and create index
+    assert_no_changes_made(r)
+
 
   @pytest.mark.usefixtures("metadata_with_two_tables")
   def test_compute_changes_with_two_tables(self, new_test_runner, metadata_with_two_tables):
@@ -228,6 +233,14 @@ class BaseTestRunner(object):
     assert message == "add accounts table"
 
 
+  @pytest.mark.usefixtures("metadata_with_table_with_index")
+  def test_revision_message_with_index(self, new_test_runner, metadata_with_table_with_index):
+    r = new_test_runner(metadata_with_table_with_index)
+
+    message = r.revision_message()
+    assert message == "add accounts table\nadd index accounts_first_name_idx"
+
+
   @pytest.mark.usefixtures("metadata_with_two_tables")
   def test_revision_message_two_tables(self, new_test_runner, metadata_with_two_tables):
     r = new_test_runner(metadata_with_two_tables)
@@ -239,6 +252,16 @@ class BaseTestRunner(object):
   @pytest.mark.usefixtures("metadata_with_table")
   def test_new_revision(self, new_test_runner, metadata_with_table):
     r = new_test_runner(metadata_with_table)
+
+    r.revision()
+
+    # 1 schema file should have been created 
+    assert_num_files(r, 1)
+    assert_num_tables(r, 0)
+
+  @pytest.mark.usefixtures("metadata_with_table_with_index")
+  def test_new_revision(self, new_test_runner, metadata_with_table_with_index):
+    r = new_test_runner(metadata_with_table_with_index)
 
     r.revision()
 
@@ -280,6 +303,12 @@ class BaseTestRunner(object):
   def test_new_table_add(self, new_test_runner, metadata_with_table):
     r = new_test_runner(metadata_with_table)
     run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+
+
+  @pytest.mark.usefixtures("metadata_with_table_with_index")
+  def test_new_table_with_index_added(self, new_test_runner, metadata_with_table_with_index):
+    r = new_test_runner(metadata_with_table_with_index)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_table_with_index)
 
 
   @pytest.mark.usefixtures("metadata_with_table")

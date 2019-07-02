@@ -87,14 +87,10 @@ def metadata_with_table():
   
 
 def metadata_with_unique_constraint_added(metadata):
-  tables = [t for t in metadata.sorted_tables if t.name == "accounts"]
-  table = tables[0]
-
-  table.append_constraint(    
-    # and then unique constraint added afterwards
+  return _add_constraint_to_metadata(
+    metadata,    # and then unique constraint added afterwards
     sa.UniqueConstraint("email_address", name="accounts_unique_email_address"),
   )
-  return metadata
 
 
 # takes the account table and converts the email_address type from String(255) to Text()
@@ -122,6 +118,15 @@ def _metadata_with_col_changed(metadata, col_name, table_name, new_type):
     table.columns = [change_col_type(col) for col in table.columns]
 
   return metadata
+
+
+@pytest.fixture
+@pytest.mark.usefixtures("metadata_with_table")
+def metadata_with_table_with_index(metadata_with_table):
+  return _add_constraint_to_metadata(
+    metadata_with_table,     
+    sa.Index("accounts_first_name_idx", "first_name"), #index the first name because we support searching for some reason
+  )
 
 
 @pytest.fixture
@@ -155,3 +160,11 @@ def contacts_table(metadata):
     sa.PrimaryKeyConstraint("id", name="contacts_id_pkey"),
     sa.ForeignKeyConstraint(['account_id'], ['accounts.id'], name="contacts_account_id_fkey", ondelete="CASCADE"),
   )
+
+def _add_constraint_to_metadata(metadata, constraint, table_name="accounts"):
+  tables = [t for t in metadata.sorted_tables if t.name == table_name]
+  table = tables[0]
+
+  table.append_constraint(constraint)
+  return metadata
+
