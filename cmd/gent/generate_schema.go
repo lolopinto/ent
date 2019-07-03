@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -37,23 +38,75 @@ type dbConstraint interface {
 	getConstraintString() string
 }
 
+func getConstraintStringForColumnBasedConstraint(constraint dbConstraint) string {
+	var dbColumns []*dbColumn
+	var tableName string
+	var extraNamePart string
+	var beforeColNameParts bool
+	var constraintName string
+
+	pKeyConstraint, ok := constraint.(*primaryKeyConstraint)
+	if ok {
+		dbColumns = pKeyConstraint.dbColumns
+		tableName = pKeyConstraint.tableName
+		extraNamePart = "pkey"
+		beforeColNameParts = false
+		constraintName = "sa.PrimaryKeyConstraint"
+	}
+	uniqConstraint, ok := constraint.(*uniqueConstraint)
+	if ok {
+		dbColumns = uniqConstraint.dbColumns
+		tableName = uniqConstraint.tableName
+		extraNamePart = "unique"
+		beforeColNameParts = true
+		constraintName = "sa.UniqueConstraint"
+	}
+	if constraintName == "" {
+		die(errors.New("invalid constraint passed"))
+	}
+
+	var formattedStrParts []string
+	formattedObjs := []interface{}{constraintName}
+	// name made of 3 parts: tableName, "unique", and then colNames... OR
+	// tableName, colNames... and then "pkey"
+	nameParts := []string{tableName}
+
+	if beforeColNameParts {
+		nameParts = append(nameParts, extraNamePart)
+	}
+
+	for _, col := range dbColumns {
+		// append all the %s we need for the names of the col in the formatted string
+		formattedStrParts = append(formattedStrParts, "%s")
+
+		// add quoted strings in order so we list the names of the columns in the call to sa.UniqueConstraint
+		formattedObjs = append(formattedObjs, strconv.Quote(col.DBColName))
+
+		// add the col name to parts needed for name of the unique constraint
+		nameParts = append(nameParts, col.DBColName)
+	}
+
+	if !beforeColNameParts {
+		nameParts = append(nameParts, extraNamePart)
+	}
+
+	// add the name to the end of the list of formatted objs
+	formattedObjs = append(formattedObjs, strconv.Quote(getNameFromParts(nameParts)))
+
+	formattedStr := "%s(" + strings.Join(formattedStrParts, ", ") + ", name=%s)"
+	return fmt.Sprintf(
+		formattedStr,
+		formattedObjs...,
+	)
+}
+
 type primaryKeyConstraint struct {
-	dbColumns []*dbColumn //theoretically supports more than one column but for now, there'll be only one
+	dbColumns []*dbColumn
 	tableName string
 }
 
 func (constraint *primaryKeyConstraint) getConstraintString() string {
-	if len(constraint.dbColumns) != 1 {
-		die(fmt.Errorf("doesn't support multiple columns yet"))
-	}
-	col := constraint.dbColumns[0]
-	// name made of 3 parts: tableName, colName, pkey
-	pkeyNameParts := []string{constraint.tableName, col.DBColName, "pkey"}
-	return fmt.Sprintf(
-		"sa.PrimaryKeyConstraint(%s, name=%s)",
-		strconv.Quote(col.DBColName),
-		strconv.Quote(getNameFromParts(pkeyNameParts)),
-	)
+	return getConstraintStringForColumnBasedConstraint(constraint)
 }
 
 type foreignKeyConstraint struct {
@@ -88,30 +141,7 @@ type uniqueConstraint struct {
 }
 
 func (constraint *uniqueConstraint) getConstraintString() string {
-	var formattedStrParts []string
-	var formattedObjs []interface{}
-	// name made of 3 parts: tableName, "unique", and then colNames...
-	uniqNameParts := []string{constraint.tableName, "unique"}
-
-	for _, col := range constraint.dbColumns {
-		// append all the %s we need for the names of the col in the formatted string
-		formattedStrParts = append(formattedStrParts, "%s")
-
-		// add quoted strings in order so we list the names of the columns in the call to sa.UniqueConstraint
-		formattedObjs = append(formattedObjs, strconv.Quote(col.DBColName))
-
-		// add the col name to parts needed for name of the unique constraint
-		uniqNameParts = append(uniqNameParts, col.DBColName)
-	}
-
-	// add the name to the end of the list of formatted objs
-	formattedObjs = append(formattedObjs, strconv.Quote(getNameFromParts(uniqNameParts)))
-
-	formattedStr := "sa.UniqueConstraint(" + strings.Join(formattedStrParts, ", ") + ", name=%s)"
-	return fmt.Sprintf(
-		formattedStr,
-		formattedObjs...,
-	)
+	return getConstraintStringForColumnBasedConstraint(constraint)
 }
 
 func newSchema(nodes map[string]*codegenNodeTemplateInfo) *schemaInfo {
@@ -270,7 +300,7 @@ func (schema *schemaInfo) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo,
 	columns = append(columns, schema.getTimeColumn())
 	columns = append(columns, schema.getData())
 
-	constraint := &uniqueConstraint{
+	constraint := &primaryKeyConstraint{
 		dbColumns: []*dbColumn{id1Col, edgeTypeCol, id2Col},
 		tableName: tableName,
 	}

@@ -284,7 +284,7 @@ func TestDataEdgeColumn(t *testing.T) {
 	testColumn(t, col, "data", "Data", "data", parts)
 }
 
-func TestUniqueConstraintInEdgeTable(t *testing.T) {
+func TestPrimaryKeyConstraintInEdgeTable(t *testing.T) {
 	table := getTestTableByName("accounts_friends_edge", t)
 
 	if len(table.Constraints) != 1 {
@@ -295,11 +295,11 @@ func TestUniqueConstraintInEdgeTable(t *testing.T) {
 	testConstraint(
 		t,
 		constraint,
-		fmt.Sprintf("sa.UniqueConstraint(%s, %s, %s, name=%s)",
+		fmt.Sprintf("sa.PrimaryKeyConstraint(%s, %s, %s, name=%s)",
 			strconv.Quote("id1"),
 			strconv.Quote("edge_type"),
 			strconv.Quote("id2"),
-			strconv.Quote("accounts_friends_edge_unique_id1_edge_type_id2"),
+			strconv.Quote("accounts_friends_edge_id1_edge_type_id2_pkey"),
 		),
 	)
 }
