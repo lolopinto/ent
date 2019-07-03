@@ -62,12 +62,14 @@ def validate_metadata_after_change(r, old_metadata):
       assert db_table.name == 'alembic_version'
 
 
-def run_and_validate_with_standard_metadata_table(r, metadata_with_table):
+def run_and_validate_with_standard_metadata_table(r, metadata_with_table, new_table_name='accounts'):
   r.run()
   
   # should have the expected file with the expected tables
   assert_num_files(r, 1)
-  assert_num_tables(r, 2, ['accounts', 'alembic_version'])
+  tables = [new_table_name, 'alembic_version']
+  tables.sort()
+  assert_num_tables(r, 2, tables)
 
   validate_metadata_after_change(r, metadata_with_table)
 
@@ -134,6 +136,10 @@ def validate_column_type(schema_column, db_column):
 
 def sort_fn(item): 
   return item.name
+  # if name is null, come back to this...
+  # if item.name is not None:
+  #   return type(item).__name__ + item.name
+  # return type(item).__name__
 
 def validate_indexes(schema_table, db_table):
   # sort indexes so that the order for both are the same
@@ -303,6 +309,38 @@ class BaseTestRunner(object):
   def test_new_table_add(self, new_test_runner, metadata_with_table):
     r = new_test_runner(metadata_with_table)
     run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+
+
+  @pytest.mark.usefixtures("test_metadata_with_multi_column_index")
+  def test_new_table_with_multi_column_index(self, new_test_runner, test_metadata_with_multi_column_index):
+    r = new_test_runner(test_metadata_with_multi_column_index)
+    run_and_validate_with_standard_metadata_table(r, test_metadata_with_multi_column_index)
+
+    tables = r.get_metadata().sorted_tables
+    assert len(r.get_metadata().sorted_tables) == 1
+    table = tables[0]
+
+    assert len(table.indexes) == 1
+    index = table.indexes.pop()
+    assert len(index.columns) == 2
+
+
+  @pytest.mark.usefixtures("metadata_with_multi_column_constraint")
+  def test_new_table_with_multi_column_constraint(self, new_test_runner, metadata_with_multi_column_constraint):
+    r = new_test_runner(metadata_with_multi_column_constraint)
+    run_and_validate_with_standard_metadata_table(
+      r, 
+      metadata_with_multi_column_constraint,
+      new_table_name='user_friends_edge',
+    )
+
+    tables = r.get_metadata().sorted_tables
+    assert len(r.get_metadata().sorted_tables) == 1
+    table = tables.pop()
+
+    assert len(table.constraints) == 1
+    constraint = table.constraints.pop()
+    assert len(constraint.columns) == 3
 
 
   @pytest.mark.usefixtures("metadata_with_table_with_index")

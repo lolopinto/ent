@@ -131,6 +131,30 @@ def metadata_with_table_with_index(metadata_with_table):
 
 @pytest.fixture
 @pytest.mark.usefixtures("metadata_with_table")
+def test_metadata_with_multi_column_index(metadata_with_table):
+  return _add_constraint_to_metadata(
+    metadata_with_table,     
+    sa.Index("accounts_first_name_last_name_idx", "first_name", "last_name"), #index the first and last name because we support searching by that
+  )
+
+@pytest.fixture
+def metadata_with_multi_column_constraint():
+  metadata = sa.MetaData()
+  sa.Table('user_friends_edge', metadata,
+    sa.Column('id1', sa.Integer(), nullable=False),
+    sa.Column('id1_type', sa.Text(), nullable=False), 
+    sa.Column('edge_type', sa.Integer(), nullable=False),
+    sa.Column('id2', sa.Integer(), nullable=False),
+    sa.Column('id2_type', sa.Text(), nullable=False),
+    sa.Column('time', sa.TIMESTAMP(), nullable=False),
+    sa.Column('data', sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="accounts_friends_edge_unique_id1_edge_type_id2"), 
+  )
+  return metadata
+
+
+@pytest.fixture
+@pytest.mark.usefixtures("metadata_with_table")
 def metadata_with_two_tables(metadata_with_table):
   messages_table(metadata_with_table)
   return metadata_with_table
