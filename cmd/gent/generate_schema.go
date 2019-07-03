@@ -17,9 +17,9 @@ func getNameFromParts(nameParts []string) string {
 }
 
 type dbTable struct {
-	Columns     []*dbColumn
-	Constraints []dbConstraint
-	TableName   string
+	Columns         []*dbColumn
+	Constraints     []dbConstraint
+	QuotedTableName string
 }
 
 type dbColumn struct {
@@ -83,21 +83,34 @@ func (constraint *foreignKeyConstraint) getConstraintString() string {
 }
 
 type uniqueConstraint struct {
-	dbColumns []*dbColumn //theoretically supports more than one column but for now, there'll be only one
+	dbColumns []*dbColumn
 	tableName string
 }
 
 func (constraint *uniqueConstraint) getConstraintString() string {
-	if len(constraint.dbColumns) != 1 {
-		die(fmt.Errorf("doesn't support multiple columns yet"))
+	var formattedStrParts []string
+	var formattedObjs []interface{}
+	// name made of 3 parts: tableName, "unique", and then colNames...
+	uniqNameParts := []string{constraint.tableName, "unique"}
+
+	for _, col := range constraint.dbColumns {
+		// append all the %s we need for the names of the col in the formatted string
+		formattedStrParts = append(formattedStrParts, "%s")
+
+		// add quoted strings in order so we list the names of the columns in the call to sa.UniqueConstraint
+		formattedObjs = append(formattedObjs, strconv.Quote(col.DBColName))
+
+		// add the col name to parts needed for name of the unique constraint
+		uniqNameParts = append(uniqNameParts, col.DBColName)
 	}
-	col := constraint.dbColumns[0]
-	// name made of 3 parts: tableName, "unique", colName
-	pkeyNameParts := []string{constraint.tableName, "unique", col.DBColName}
+
+	// add the name to the end of the list of formatted objs
+	formattedObjs = append(formattedObjs, strconv.Quote(getNameFromParts(uniqNameParts)))
+
+	formattedStr := "sa.UniqueConstraint(" + strings.Join(formattedStrParts, ", ") + ", name=%s)"
 	return fmt.Sprintf(
-		"sa.UniqueConstraint(%s, name=%s)",
-		strconv.Quote(col.DBColName),
-		strconv.Quote(getNameFromParts(pkeyNameParts)),
+		formattedStr,
+		formattedObjs...,
 	)
 }
 
@@ -147,29 +160,36 @@ func (schema *schemaInfo) createTableForNode(nodeData *nodeTemplate) *dbTable {
 	}
 
 	return &dbTable{
-		TableName:   nodeData.TableName,
-		Columns:     columns,
-		Constraints: constraints,
+		QuotedTableName: nodeData.TableName,
+		Columns:         columns,
+		Constraints:     constraints,
 	}
 }
 
 func (schema *schemaInfo) generateSchema() {
-	var tables []*dbTable
-
-	for _, info := range schema.nodes {
-		tables = append(tables, schema.getTableForNode(info.nodeData))
-	}
-
-	// sort tables by table name so that we are not always changing the order of the generated schema
-	sort.Slice(tables, func(i, j int) bool {
-		return tables[i].TableName < tables[j].TableName
-	})
-
-	schema.Tables = tables
+	schema.generateShemaTables()
 
 	schema.writeSchemaFile()
 
 	schema.generateDbSchema()
+}
+
+func (schema *schemaInfo) generateShemaTables() {
+	var tables []*dbTable
+
+	for _, info := range schema.nodes {
+		nodeData := info.nodeData
+		tables = append(tables, schema.getTableForNode(nodeData))
+
+		schema.addEdgeTables(nodeData, &tables)
+	}
+
+	// sort tables by table name so that we are not always changing the order of the generated schema
+	sort.Slice(tables, func(i, j int) bool {
+		return tables[i].QuotedTableName < tables[j].QuotedTableName
+	})
+
+	schema.Tables = tables
 }
 
 func (schema *schemaInfo) generateDbSchema() {
@@ -215,11 +235,51 @@ func (schema *schemaInfo) getSchemaForTemplate() schemaForTemplate {
 		}
 
 		ret.Tables = append(ret.Tables, schemaTableInfo{
-			TableName:   table.TableName,
+			TableName:   table.QuotedTableName,
 			SchemaLines: lines,
 		})
 	}
 	return ret
+}
+
+func (schema *schemaInfo) addEdgeTables(nodeData *nodeTemplate, tables *[]*dbTable) {
+	for _, edge := range nodeData.Edges {
+		// assoc edges associated with these
+		assocEdge := edge.AssociationEdge
+		if assocEdge == nil {
+			continue
+		}
+		table := schema.createEdgeTable(nodeData, edge, assocEdge)
+		*tables = append(*tables, table)
+	}
+}
+
+func (schema *schemaInfo) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo, assocEdge *associationEdgeInfo) *dbTable {
+	tableNameParts := []string{nodeData.getTableName(), strings.ToLower(edge.EdgeName), "edge"}
+	tableName := getNameFromParts(tableNameParts)
+
+	var columns []*dbColumn
+	id1Col := schema.getID1Column()
+	columns = append(columns, id1Col)
+	columns = append(columns, schema.getID1TypeColumn())
+	edgeTypeCol := schema.getEdgeType()
+	columns = append(columns, edgeTypeCol)
+	id2Col := schema.getID2Column()
+	columns = append(columns, id2Col)
+	columns = append(columns, schema.getID2TypeColumn())
+	columns = append(columns, schema.getTimeColumn())
+	columns = append(columns, schema.getData())
+
+	constraint := &uniqueConstraint{
+		dbColumns: []*dbColumn{id1Col, edgeTypeCol, id2Col},
+		tableName: tableName,
+	}
+
+	return &dbTable{
+		QuotedTableName: strconv.Quote(tableName),
+		Columns:         columns,
+		Constraints:     []dbConstraint{constraint},
+	}
 }
 
 func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
@@ -269,7 +329,7 @@ func (schema *schemaInfo) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTe
 	}
 
 	fkeyTable := schema.getTableForNode(fkeyConfig.nodeData)
-	fkeyTableName, err := strconv.Unquote(fkeyTable.TableName)
+	fkeyTableName, err := strconv.Unquote(fkeyTable.QuotedTableName)
 	die(err)
 
 	var fkeyDbField string
@@ -317,6 +377,8 @@ func (schema *schemaInfo) addUniqueConstraint(f *fieldInfo, nodeData *nodeTempla
 	*constraints = append(*constraints, constraint)
 }
 
+// getIDColumnInfo returns the information needed for every ID column in a node table. Returns the column and constraint that
+// every node table has
 func (schema *schemaInfo) getIDColumnInfo(tableName string) (*dbColumn, dbConstraint) {
 	col := schema.getColumn(
 		"ID",
@@ -333,6 +395,7 @@ func (schema *schemaInfo) getIDColumnInfo(tableName string) (*dbColumn, dbConstr
 	return col, constraint
 }
 
+// getCreatedAtColumn returns the dbColumn for every created_at column in a node table.
 func (schema *schemaInfo) getCreatedAtColumn() *dbColumn {
 	return schema.getColumn(
 		"CreatedAt",
@@ -344,6 +407,7 @@ func (schema *schemaInfo) getCreatedAtColumn() *dbColumn {
 	)
 }
 
+// getUpdatedAtColumn returns the dbColumn for every updated_at column in a node table.
 func (schema *schemaInfo) getUpdatedAtColumn() *dbColumn {
 	return schema.getColumn(
 		"UpdatedAt",
@@ -351,6 +415,90 @@ func (schema *schemaInfo) getUpdatedAtColumn() *dbColumn {
 		"sa.TIMESTAMP()",
 		[]string{
 			"nullable=False",
+		},
+	)
+}
+
+// getID1Column returns the id1 column for the first id in an edge table.
+func (schema *schemaInfo) getID1Column() *dbColumn {
+	return schema.getColumn(
+		"ID1",
+		"id1",
+		"UUID()",
+		[]string{
+			"nullable=False",
+		},
+	)
+}
+
+// getID1TypeColumn returns the id1_type column for the type of the first id in an edge table.
+func (schema *schemaInfo) getID1TypeColumn() *dbColumn {
+	return schema.getColumn(
+		"ID1Type",
+		"id1_type",
+		"sa.Text()",
+		[]string{
+			"nullable=False",
+		},
+	)
+}
+
+// getEdgeType returns the id1 column for the first id in an edge table.
+func (schema *schemaInfo) getEdgeType() *dbColumn {
+	return schema.getColumn(
+		"EdgeType",
+		"edge_type",
+		"UUID()",
+		[]string{
+			"nullable=False",
+		},
+	)
+}
+
+// getID2Column returns the id2 column for the second id in an edge table.
+func (schema *schemaInfo) getID2Column() *dbColumn {
+	return schema.getColumn(
+		"ID2",
+		"id2",
+		"UUID()",
+		[]string{
+			"nullable=False",
+		},
+	)
+}
+
+// getID2TypeColumn returns the id2_type column for the type of the second id in an edge table.
+func (schema *schemaInfo) getID2TypeColumn() *dbColumn {
+	return schema.getColumn(
+		"ID2Type",
+		"id2_type",
+		"sa.Text()",
+		[]string{
+			"nullable=False",
+		},
+	)
+}
+
+// getTimeColumn returns the time column for the time the row was inserted in an edge table
+func (schema *schemaInfo) getTimeColumn() *dbColumn {
+	return schema.getColumn(
+		"Time",
+		"time",
+		"sa.TIMESTAMP()",
+		[]string{
+			"nullable=False",
+		},
+	)
+}
+
+// getData returns the data column for any arbitrary data that can be stored in an edge table
+func (schema *schemaInfo) getData() *dbColumn {
+	return schema.getColumn(
+		"Data",
+		"data",
+		"sa.Text()",
+		[]string{
+			"nullable=True", // first nullable column! we should handle this correctly...
 		},
 	)
 }

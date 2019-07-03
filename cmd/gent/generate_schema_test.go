@@ -48,11 +48,11 @@ func TestGetUpdatedAtColumn(t *testing.T) {
 	testColumn(t, col, "updated_at", "UpdatedAt", "updated_at", parts)
 }
 
-func TestGetTableForNode(t *testing.T) {
+func TestTableForNode(t *testing.T) {
 	table := getTestTable("AccountConfig", t)
 
-	if table.TableName != strconv.Quote("accounts") {
-		t.Errorf("invalid table name for table. expected %s, got %s", "accounts", table.TableName)
+	if table.QuotedTableName != strconv.Quote("accounts") {
+		t.Errorf("invalid table name for table. expected %s, got %s", "accounts", table.QuotedTableName)
 	}
 
 	if len(table.Columns) != 8 {
@@ -61,7 +61,7 @@ func TestGetTableForNode(t *testing.T) {
 
 	// 1 primary key and 1 unique key constraint expected
 	if len(table.Constraints) != 2 {
-		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 1, len(table.Constraints))
+		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 2, len(table.Constraints))
 	}
 
 	// 1 primary key and 1 foreign key constraint expected
@@ -193,6 +193,117 @@ type TodoConfig struct {
 	getTestTableFromSchema("TodoConfig", schemas, t)
 }
 
+func TestGeneratedTableForEdge(t *testing.T) {
+	// AccountConfig, edge called Friends,
+	table := getTestTableByName("accounts_friends_edge", t)
+
+	if len(table.Columns) != 7 {
+		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 7, len(table.Columns))
+	}
+
+	// 1 unique key constraint for the id1, edge_type, id2 fields
+	if len(table.Constraints) != 1 {
+		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 1, len(table.Constraints))
+	}
+}
+
+func TestID1EdgeColumn(t *testing.T) {
+	col := getEdgeColumn("id1", t)
+
+	parts := []string{
+		strconv.Quote("id1"),
+		"UUID()",
+		"nullable=False",
+	}
+	testColumn(t, col, "id1", "ID1", "id1", parts)
+}
+
+func TestID1TypeEdgeColumn(t *testing.T) {
+	col := getEdgeColumn("id1_type", t)
+
+	parts := []string{
+		strconv.Quote("id1_type"),
+		"sa.Text()",
+		"nullable=False",
+	}
+	testColumn(t, col, "id1_type", "ID1Type", "id1_type", parts)
+}
+
+func TestEdgeTypeEdgeColumn(t *testing.T) {
+	col := getEdgeColumn("edge_type", t)
+
+	parts := []string{
+		strconv.Quote("edge_type"),
+		"UUID()",
+		"nullable=False",
+	}
+	testColumn(t, col, "edge_type", "EdgeType", "edge_type", parts)
+}
+
+func TestID2EdgeColumn(t *testing.T) {
+	col := getEdgeColumn("id2", t)
+
+	parts := []string{
+		strconv.Quote("id2"),
+		"UUID()",
+		"nullable=False",
+	}
+	testColumn(t, col, "id2", "ID2", "id2", parts)
+}
+
+func TestID2TypeEdgeColumn(t *testing.T) {
+	col := getEdgeColumn("id2_type", t)
+
+	parts := []string{
+		strconv.Quote("id2_type"),
+		"sa.Text()",
+		"nullable=False",
+	}
+	testColumn(t, col, "id2_type", "ID2Type", "id2_type", parts)
+}
+
+func TestTimeEdgeColumn(t *testing.T) {
+	col := getEdgeColumn("time", t)
+
+	parts := []string{
+		strconv.Quote("time"),
+		"sa.TIMESTAMP()",
+		"nullable=False",
+	}
+	testColumn(t, col, "time", "Time", "time", parts)
+}
+
+func TestDataEdgeColumn(t *testing.T) {
+	col := getEdgeColumn("data", t)
+
+	parts := []string{
+		strconv.Quote("data"),
+		"sa.Text()",
+		"nullable=True",
+	}
+	testColumn(t, col, "data", "Data", "data", parts)
+}
+
+func TestUniqueConstraintInEdgeTable(t *testing.T) {
+	table := getTestTableByName("accounts_friends_edge", t)
+
+	if len(table.Constraints) != 1 {
+		t.Errorf("expected 1 constraint in edge table, got %d", len(table.Constraints))
+	}
+	constraint := table.Constraints[0]
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.UniqueConstraint(%s, %s, %s, name=%s)",
+			strconv.Quote("id1"),
+			strconv.Quote("edge_type"),
+			strconv.Quote("id2"),
+			strconv.Quote("accounts_friends_edge_unique_id1_edge_type_id2"),
+		),
+	)
+}
+
 func testColumn(t *testing.T, col *dbColumn, colName string, expectedFieldName, expectedDBColName string, colStringParts []string) {
 	if col.EntFieldName != expectedFieldName {
 		t.Errorf("EntFieldName for the %s column was not as expected. expected %s, got %s instead", colName, expectedFieldName, col.EntFieldName)
@@ -236,9 +347,9 @@ func getInMemoryTestSchemas(sources map[string]string) *schemaInfo {
 }
 
 func getTestTable(configName string, t *testing.T) *dbTable {
-	schemaFiles := getTestSchema()
+	schema := getTestSchema()
 
-	return getTestTableFromSchema(configName, schemaFiles, t)
+	return getTestTableFromSchema(configName, schema, t)
 }
 
 func getTestTableFromSchema(configName string, schema *schemaInfo, t *testing.T) *dbTable {
@@ -283,7 +394,7 @@ func getTestPrimaryKeyConstraint(tableConfigName, colFieldName string, t *testin
 
 	for _, constraint := range table.Constraints {
 		pKeyConstraint, ok := constraint.(*primaryKeyConstraint)
-		if ok {
+		if ok && pKeyConstraint.dbColumns[0].EntFieldName == colFieldName {
 			// for now this only works on ID column so that's fine. TODO...
 			return pKeyConstraint
 		}
@@ -313,6 +424,32 @@ func getAccountConfigContents(t *testing.T) string {
 		t.Errorf("error loading account config")
 	}
 	return string(file)
+}
+
+func getTestTableByName(tableName string, t *testing.T) *dbTable {
+	tableName = strconv.Quote(tableName)
+	schema := getTestSchema()
+	schema.generateShemaTables()
+
+	for _, table := range schema.Tables {
+		if table.QuotedTableName == tableName {
+			return table
+		}
+	}
+	t.Errorf("no dbtable info for table %s", tableName)
+	return nil
+}
+
+func getEdgeColumn(colDBName string, t *testing.T) *dbColumn {
+	table := getTestTableByName("accounts_friends_edge", t)
+
+	for _, col := range table.Columns {
+		if col.DBColName == colDBName {
+			return col
+		}
+	}
+	t.Errorf("no db column %s for accounts_friends_edge table", colDBName)
+	return nil
 }
 
 func expectPanic(t *testing.T, expectedError string) {

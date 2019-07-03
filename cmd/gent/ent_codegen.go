@@ -616,6 +616,7 @@ type foreignKeyEdgeInfo struct {
 type associationEdgeInfo struct {
 	EntConfig entConfigInfo
 	EdgeConst string
+	EdgeName  string
 }
 
 type edgeInfo struct {
@@ -741,6 +742,7 @@ func parseAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.C
 	return &associationEdgeInfo{
 		EntConfig: entConfig,
 		EdgeConst: edgeConst,
+		EdgeName:  edgeName,
 	}
 }
 
