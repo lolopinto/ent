@@ -148,7 +148,24 @@ def metadata_with_multi_column_constraint():
     sa.Column('id2_type', sa.Text(), nullable=False),
     sa.Column('time', sa.TIMESTAMP(), nullable=False),
     sa.Column('data', sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="accounts_friends_edge_unique_id1_edge_type_id2"), 
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="accounts_friends_edge_id1_edge_type_id2_pkey"), 
+  )
+  return metadata
+
+
+@pytest.fixture
+def metadata_with_foreign_key_to_same_table():
+  metadata = sa.MetaData()
+  sa.Table('assoc_edge_config', metadata,
+    sa.Column('edge_type', sa.Integer(), nullable=False),
+    sa.Column('edge_name', sa.Text(), nullable=False),
+    #sa.Column('symmetric', sa.Boolean(), nullable=False), # TODO come back for this..., default=False),
+    sa.Column('inverse_edge_type', sa.Integer(), nullable=True),
+    sa.Column('edge_table', sa.Text(), nullable=False),
+    sa.Column('created_at', sa.TIMESTAMP(), nullable=False),
+    sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
+    sa.PrimaryKeyConstraint("edge_type", name="assoc_edge_config_edge_type_pkey"),
+    sa.ForeignKeyConstraint(['inverse_edge_type'], ['assoc_edge_config.edge_type'], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
   )
   return metadata
 

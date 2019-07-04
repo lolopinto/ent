@@ -293,8 +293,6 @@ func (schema *schemaInfo) addEdgeConfigTable(tables *[]*dbTable) {
 	var columns []*dbColumn
 	var constraints []dbConstraint
 
-	// what are the columns and constraints
-
 	// actually, this may make sense as a manual EntConfig and node...
 
 	edgeTypeCol := schema.getEdgeTypeColumn()
@@ -592,7 +590,7 @@ func (schema *schemaInfo) getDataColumn() *dbColumn {
 		"data",
 		"sa.Text()",
 		[]string{
-			"nullable=True", // first nullable column! we should handle this correctly...
+			"nullable=True",
 		},
 	)
 }

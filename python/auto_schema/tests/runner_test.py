@@ -2,14 +2,14 @@ import pprint
 import pytest
 import os
 
-from sqlalchemy import (create_engine, MetaData, TIMESTAMP)
+import sqlalchemy as sa
 
 from . import conftest
 
 def get_new_metadata_for_runner(r):
   #metadata = r.get_metadata()
   # don't reflect but in fact get a new object so that we can reflect corectly
-  new_metadata = MetaData()
+  new_metadata = sa.MetaData()
   # fetch any new tables
   new_metadata.reflect(bind=r.get_connection())
   return new_metadata
@@ -113,6 +113,9 @@ def validate_column(schema_column, db_column):
   validate_foreign_key(schema_column, db_column)
 
   # we don't actually support all these below yet but when we do, it should start failing and we should know that
+  #if schema_column.default != db_column.default:
+    #print(schema_column.default)
+    # print(db_column.default)
   assert schema_column.default == db_column.default
   assert schema_column.index == db_column.index
   assert schema_column.unique == db_column.unique
@@ -126,7 +129,7 @@ def validate_column(schema_column, db_column):
 def validate_column_type(schema_column, db_column):
   #print(type(schema_column.type).__name__, schema_column.type, db_column.type, schema_column.type == db_column.type, str(schema_column.type) == str(db_column.type))
 
-  if isinstance(schema_column.type, TIMESTAMP):
+  if isinstance(schema_column.type, sa.TIMESTAMP):
     assert schema_column.type.timezone == db_column.type.timezone
   else:
     # compare types by using the string version of the types. 
@@ -135,11 +138,11 @@ def validate_column_type(schema_column, db_column):
     assert str(schema_column.type) == str(db_column.type) 
 
 def sort_fn(item): 
-  return item.name
-  # if name is null, come back to this...
-  # if item.name is not None:
-  #   return type(item).__name__ + item.name
-  # return type(item).__name__
+  # if name is null, use type of object to sort
+  if item.name is None:
+    return type(item).__name__ + id(item)
+  # otherwise, use name + class name
+  return type(item).__name__ + item.name
 
 def validate_indexes(schema_table, db_table):
   # sort indexes so that the order for both are the same
@@ -162,9 +165,15 @@ def validate_constraints(schema_table, db_table):
   schema_constraints = sorted(schema_table.constraints, key=sort_fn)
   db_constraints = sorted(db_table.constraints, key=sort_fn)
 
+  # print(schema_constraints)
+  # print(db_constraints)
+
   assert len(schema_constraints) == len(db_constraints)
 
   for schema_constraint, db_constraint in zip(schema_constraints, db_constraints):
+    if isinstance(db_constraint, sa.CheckConstraint):
+      print(db_constraint.sqltext)
+  
     # constraint names should be equal
     assert schema_constraint.name == db_constraint.name
 
@@ -228,6 +237,14 @@ class BaseTestRunner(object):
   def test_compute_changes_with_foreign_key_table(self, new_test_runner, metadata_with_foreign_key):
     r = new_test_runner(metadata_with_foreign_key)
     assert len(r.compute_changes()) == 2
+    assert_no_changes_made(r)
+
+
+  @pytest.mark.usefixtures("metadata_with_foreign_key_to_same_table")
+  def test_compute_changes_with_foreign_key_to_same_table(self, new_test_runner, metadata_with_foreign_key_to_same_table):
+    r = new_test_runner(metadata_with_foreign_key_to_same_table)
+    # same table so don't need a second change. this is where the extra checks we're seeing are coming from?
+    assert len(r.compute_changes()) == 1 
     assert_no_changes_made(r)
 
 
@@ -376,16 +393,6 @@ class BaseTestRunner(object):
 
     validate_metadata_after_change(r, metadata_with_two_tables)
 
-  @pytest.mark.usefixtures("metadata_with_foreign_key")
-  def test_multiple_tables_added_with_foreign_key(self, new_test_runner, metadata_with_foreign_key):
-    r = new_test_runner(metadata_with_foreign_key)
-    r.run()
-    
-    # should have the expected file with the expected tables
-    assert_num_files(r, 1) # because 2 new tables added at the same time, only one schema file needed
-    assert_num_tables(r, 3, ['accounts', 'alembic_version', 'contacts'])
-
-    validate_metadata_after_change(r, metadata_with_foreign_key)
     
 
 class TestPostgresRunner(BaseTestRunner):
@@ -434,6 +441,15 @@ class TestPostgresRunner(BaseTestRunner):
     assert_num_files(r2, 2)
     assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
     validate_metadata_after_change(r2, r2.get_metadata())
+
+
+  # SQLITE does not support BOOLEAN datatype and adds another constraint that 
+  # can't really test for.
+  @pytest.mark.usefixtures("metadata_with_foreign_key_to_same_table")
+  def test_with_foreign_key_to_same_table(self, new_test_runner, metadata_with_foreign_key_to_same_table):
+    r = new_test_runner(metadata_with_foreign_key_to_same_table)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_foreign_key_to_same_table, new_table_name="assoc_edge_config")
+
 
 
   
