@@ -71,6 +71,19 @@ func TestTableForNode(t *testing.T) {
 	}
 }
 
+func TestTablesFromSchema(t *testing.T) {
+	schema := getTestSchema()
+	schema.generateShemaTables()
+
+	// accounts
+	// todos
+	// edge table
+	// edge_config
+	if len(schema.Tables) != 4 {
+		t.Errorf("invalid number of tables in schema. got %d, expected 4", len(schema.Tables))
+	}
+}
+
 func TestStringUserDefinedColumn(t *testing.T) {
 	column := getTestColumn("AccountConfig", "FirstName", t)
 
@@ -193,6 +206,104 @@ type TodoConfig struct {
 	getTestTableFromSchema("TodoConfig", schemas, t)
 }
 
+func TestGeneratedEdgeConfigTable(t *testing.T) {
+	// AccountConfig, edge called Friends,
+	table := getTestTableByName("assoc_edge_config", t)
+
+	if len(table.Columns) != 7 {
+		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 7, len(table.Columns))
+	}
+
+	// 1 primary key constraint for the edge_type field
+	// 1 foreign key constraint for the inverse_edge_type field
+	if len(table.Constraints) != 2 {
+		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 1, len(table.Constraints))
+	}
+}
+
+func TestEdgeNameEdgeConfigColumn(t *testing.T) {
+	col := getColumnFromNamedTable("edge_name", "assoc_edge_config", t)
+
+	parts := []string{
+		strconv.Quote("edge_name"),
+		"sa.Text()",
+		"nullable=False",
+	}
+	testColumn(t, col, "edge_name", "EdgeName", "edge_name", parts)
+}
+
+func TestSymmetricEdgeConfigColumn(t *testing.T) {
+	col := getColumnFromNamedTable("symmetric", "assoc_edge_config", t)
+
+	parts := []string{
+		strconv.Quote("symmetric"),
+		"sa.Bool()",
+		"nullable=False",
+		"default=False",
+	}
+	testColumn(t, col, "symmetric", "Symmetric", "symmetric", parts)
+}
+
+func TestInverseEdgeTypeConfigColumn(t *testing.T) {
+	col := getColumnFromNamedTable("inverse_edge_type", "assoc_edge_config", t)
+
+	parts := []string{
+		strconv.Quote("inverse_edge_type"),
+		"UUID()",
+		"nullable=True",
+	}
+	testColumn(t, col, "inverse_edge_type", "InverseEdgeType", "inverse_edge_type", parts)
+}
+
+func TestEdgeTableEdgeConfigColumn(t *testing.T) {
+	col := getColumnFromNamedTable("edge_table", "assoc_edge_config", t)
+
+	parts := []string{
+		strconv.Quote("edge_table"),
+		"sa.Text()",
+		"nullable=False",
+	}
+	testColumn(t, col, "edge_table", "EdgeTable", "edge_table", parts)
+}
+
+func TestPrimaryKeyConstraintInEdgeConfigTable(t *testing.T) {
+	table := getTestTableByName("assoc_edge_config", t)
+
+	if len(table.Constraints) != 2 {
+		t.Errorf("expected 2 constraints in edge config table, got %d", len(table.Constraints))
+	}
+	constraint := getTestPrimaryKeyConstraintFromTable(table, "EdgeType", t)
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.PrimaryKeyConstraint(%s, name=%s)",
+			strconv.Quote("edge_type"),
+			strconv.Quote("assoc_edge_config_edge_type_pkey"),
+		),
+	)
+}
+
+func TestForeignKeyConstraintInEdgeConfigTable(t *testing.T) {
+	table := getTestTableByName("assoc_edge_config", t)
+
+	if len(table.Constraints) != 2 {
+		t.Errorf("expected 2 constraints in edge config table, got %d", len(table.Constraints))
+	}
+	constraint := getTestForeignKeyConstraintFromTable(table, "InverseEdgeType", t)
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.ForeignKeyConstraint([%s], [%s], name=%s, ondelete=%s)",
+			strconv.Quote("inverse_edge_type"),
+			strconv.Quote("assoc_edge_config.edge_type"),
+			strconv.Quote("assoc_edge_config_inverse_edge_type_fkey"),
+			strconv.Quote("RESTRICT"),
+		),
+	)
+}
+
 func TestGeneratedTableForEdge(t *testing.T) {
 	// AccountConfig, edge called Friends,
 	table := getTestTableByName("accounts_friends_edge", t)
@@ -201,7 +312,7 @@ func TestGeneratedTableForEdge(t *testing.T) {
 		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 7, len(table.Columns))
 	}
 
-	// 1 unique key constraint for the id1, edge_type, id2 fields
+	// 1 primary key constraint for the id1, edge_type, id2 fields
 	if len(table.Constraints) != 1 {
 		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 1, len(table.Constraints))
 	}
@@ -312,9 +423,10 @@ func testColumn(t *testing.T, col *dbColumn, colName string, expectedFieldName, 
 		t.Errorf("DBColName for the %s column was not as expected. expected %s, got %s instead", colName, expectedDBColName, col.DBColName)
 	}
 
+	colString := col.getColString()
 	expectedColString := strings.Join(colStringParts, ", ")
-	if col.ColString != expectedColString {
-		t.Errorf("ColString for the %s column was not as expected. expected %s, got %s instead", colName, expectedColString, col.ColString)
+	if col.getColString() != expectedColString {
+		t.Errorf("ColString for the %s column was not as expected. expected %s, got %s instead", colName, expectedColString, colString)
 	}
 }
 
@@ -379,19 +491,27 @@ func getTestColumn(tableConfigName, colFieldName string, t *testing.T) *dbColumn
 func getTestForeignKeyConstraint(tableConfigName, colFieldName string, t *testing.T) dbConstraint {
 	table := getTestTable(tableConfigName, t)
 
+	return getTestForeignKeyConstraintFromTable(table, colFieldName, t)
+}
+
+func getTestForeignKeyConstraintFromTable(table *dbTable, colFieldName string, t *testing.T) dbConstraint {
 	for _, constraint := range table.Constraints {
 		fkeyConstraint, ok := constraint.(*foreignKeyConstraint)
-		if ok && fkeyConstraint.field.FieldName == colFieldName {
+		if ok && fkeyConstraint.column.EntFieldName == colFieldName {
 			return fkeyConstraint
 		}
 	}
-	t.Errorf("no foreign key constraint for %s column for %s table", colFieldName, tableConfigName)
+	t.Errorf("no foreign key constraint for %s column for %s table", colFieldName, table.QuotedTableName)
 	return nil
 }
 
 func getTestPrimaryKeyConstraint(tableConfigName, colFieldName string, t *testing.T) dbConstraint {
 	table := getTestTable(tableConfigName, t)
 
+	return getTestPrimaryKeyConstraintFromTable(table, colFieldName, t)
+}
+
+func getTestPrimaryKeyConstraintFromTable(table *dbTable, colFieldName string, t *testing.T) dbConstraint {
 	for _, constraint := range table.Constraints {
 		pKeyConstraint, ok := constraint.(*primaryKeyConstraint)
 		if ok && pKeyConstraint.dbColumns[0].EntFieldName == colFieldName {
@@ -399,7 +519,7 @@ func getTestPrimaryKeyConstraint(tableConfigName, colFieldName string, t *testin
 			return pKeyConstraint
 		}
 	}
-	t.Errorf("no primary key constraint for %s column for %s table", colFieldName, tableConfigName)
+	t.Errorf("no primary key constraint for %s column for %s table", colFieldName, table.QuotedTableName)
 	return nil
 }
 
@@ -441,7 +561,11 @@ func getTestTableByName(tableName string, t *testing.T) *dbTable {
 }
 
 func getEdgeColumn(colDBName string, t *testing.T) *dbColumn {
-	table := getTestTableByName("accounts_friends_edge", t)
+	return getColumnFromNamedTable(colDBName, "accounts_friends_edge", t)
+}
+
+func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColumn {
+	table := getTestTableByName(tableName, t)
 
 	for _, col := range table.Columns {
 		if col.DBColName == colDBName {

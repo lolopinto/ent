@@ -27,11 +27,17 @@ type dbColumn struct {
 	EntFieldName string
 	DBColName    string
 	DBType       string
-	ColString    string
+	extraParts   []string
+}
+
+func (col *dbColumn) getColString() string {
+	parts := []string{strconv.Quote(col.DBColName), col.DBType}
+	parts = append(parts, col.extraParts...)
+	return strings.Join(parts, ", ")
 }
 
 func (col *dbColumn) getLineInTable() string {
-	return fmt.Sprintf("sa.Column(%s)", col.ColString)
+	return fmt.Sprintf("sa.Column(%s)", col.getColString())
 }
 
 type dbConstraint interface {
@@ -110,10 +116,12 @@ func (constraint *primaryKeyConstraint) getConstraintString() string {
 }
 
 type foreignKeyConstraint struct {
+	// these are hardcoded to one table/field now but can be changed later...
 	tableName     string
-	fkeyTableName string // these are hardcoded to one table/field now but can be changed later...
-	fkeyDbField   string
-	field         *fieldInfo
+	column        *dbColumn
+	fkeyTableName string
+	fkeyColumn    *dbColumn
+	onDelete      string
 }
 
 func (constraint *foreignKeyConstraint) getConstraintString() string {
@@ -121,17 +129,21 @@ func (constraint *foreignKeyConstraint) getConstraintString() string {
 	// It takes the table name, the name of the column that references a foreign column in a foreign table and the fkey keyword to generate
 	fkeyNameParts := []string{
 		constraint.tableName,
-		constraint.field.getDbColName(),
+		constraint.column.DBColName,
 		"fkey",
+	}
+	onDelete := constraint.onDelete
+	if onDelete == "" {
+		onDelete = "CASCADE"
 	}
 	fkeyName := getNameFromParts(fkeyNameParts)
 	return fmt.Sprintf(
 		//    sa.ForeignKeyConstraint(['account_id'], ['accounts.id'], name="contacts_account_id_fkey", ondelete="CASCADE"),
 		"sa.ForeignKeyConstraint([%s], [%s], name=%s, ondelete=%s)",
-		constraint.field.getQuotedDBColName(),
-		strconv.Quote(strings.Join([]string{constraint.fkeyTableName, constraint.fkeyDbField}, ".")), // "accounts.id"
+		strconv.Quote(constraint.column.DBColName),
+		strconv.Quote(strings.Join([]string{constraint.fkeyTableName, constraint.fkeyColumn.DBColName}, ".")), // "accounts.id"
 		strconv.Quote(fkeyName),
-		strconv.Quote("CASCADE"),
+		strconv.Quote(onDelete),
 	)
 }
 
@@ -184,9 +196,6 @@ func (schema *schemaInfo) createTableForNode(nodeData *nodeTemplate) *dbTable {
 	for _, field := range nodeData.Fields {
 		column := schema.getColumnInfoForField(&field, nodeData, &constraints)
 		columns = append(columns, column)
-		// if colConstraints != nil {
-		// 	constraints = append(constraints, colConstraints...)
-		// }
 	}
 
 	return &dbTable{
@@ -207,11 +216,18 @@ func (schema *schemaInfo) generateSchema() {
 func (schema *schemaInfo) generateShemaTables() {
 	var tables []*dbTable
 
+	addedAtLeastOneTable := false
 	for _, info := range schema.nodes {
 		nodeData := info.nodeData
 		tables = append(tables, schema.getTableForNode(nodeData))
 
-		schema.addEdgeTables(nodeData, &tables)
+		if schema.addEdgeTables(nodeData, &tables) {
+			addedAtLeastOneTable = true
+		}
+	}
+
+	if addedAtLeastOneTable {
+		schema.addEdgeConfigTable(&tables)
 	}
 
 	// sort tables by table name so that we are not always changing the order of the generated schema
@@ -272,16 +288,62 @@ func (schema *schemaInfo) getSchemaForTemplate() schemaForTemplate {
 	return ret
 }
 
-func (schema *schemaInfo) addEdgeTables(nodeData *nodeTemplate, tables *[]*dbTable) {
+func (schema *schemaInfo) addEdgeConfigTable(tables *[]*dbTable) {
+	tableName := "assoc_edge_config"
+	var columns []*dbColumn
+	var constraints []dbConstraint
+
+	// what are the columns and constraints
+
+	// actually, this may make sense as a manual EntConfig and node...
+
+	edgeTypeCol := schema.getEdgeTypeColumn()
+	columns = append(columns, edgeTypeCol)
+	columns = append(columns, schema.getEdgeNameColumn())
+	columns = append(columns, schema.getSymmetricColumn())
+	inverseEdgeTypeCol := schema.getInverseEdgeTypeColumn()
+	columns = append(columns, inverseEdgeTypeCol)
+	columns = append(columns, schema.getEdgeTableColumn())
+
+	// why not?
+	columns = append(columns, schema.getCreatedAtColumn())
+	columns = append(columns, schema.getUpdatedAtColumn())
+
+	// primary key constraint on the edge_type col
+	constraints = append(constraints, &primaryKeyConstraint{
+		dbColumns: []*dbColumn{edgeTypeCol},
+		tableName: tableName,
+	})
+	// foreign key constraint on the edge_type column on the same table
+	constraints = append(constraints, &foreignKeyConstraint{
+		tableName:     tableName,
+		column:        inverseEdgeTypeCol,
+		fkeyTableName: tableName,
+		fkeyColumn:    edgeTypeCol,
+		onDelete:      "RESTRICT",
+	})
+
+	table := &dbTable{
+		QuotedTableName: strconv.Quote(tableName),
+		Columns:         columns,
+		Constraints:     constraints,
+	}
+	*tables = append(*tables, table)
+}
+
+func (schema *schemaInfo) addEdgeTables(nodeData *nodeTemplate, tables *[]*dbTable) bool {
+	addedAtLeastOneTable := false
 	for _, edge := range nodeData.Edges {
 		// assoc edges associated with these
 		assocEdge := edge.AssociationEdge
 		if assocEdge == nil {
 			continue
 		}
+		addedAtLeastOneTable = true
 		table := schema.createEdgeTable(nodeData, edge, assocEdge)
 		*tables = append(*tables, table)
 	}
+	return addedAtLeastOneTable
 }
 
 func (schema *schemaInfo) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo, assocEdge *associationEdgeInfo) *dbTable {
@@ -292,13 +354,13 @@ func (schema *schemaInfo) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo,
 	id1Col := schema.getID1Column()
 	columns = append(columns, id1Col)
 	columns = append(columns, schema.getID1TypeColumn())
-	edgeTypeCol := schema.getEdgeType()
+	edgeTypeCol := schema.getEdgeTypeColumn()
 	columns = append(columns, edgeTypeCol)
 	id2Col := schema.getID2Column()
 	columns = append(columns, id2Col)
 	columns = append(columns, schema.getID2TypeColumn())
 	columns = append(columns, schema.getTimeColumn())
-	columns = append(columns, schema.getData())
+	columns = append(columns, schema.getDataColumn())
 
 	constraint := &primaryKeyConstraint{
 		dbColumns: []*dbColumn{id1Col, edgeTypeCol, id2Col},
@@ -327,22 +389,22 @@ func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
 }
 
 func (schema *schemaInfo) getColumnInfoForField(f *fieldInfo, nodeData *nodeTemplate, constraints *[]dbConstraint) *dbColumn {
-	dbType := schema.addForeignKeyConstraint(f, nodeData, constraints)
+	dbType := schema.getDbTypeForField(f)
 	col := schema.getColumn(f.FieldName, f.getDbColName(), dbType, []string{
 		"nullable=False",
 	})
+
+	schema.addForeignKeyConstraint(f, nodeData, col, constraints)
 	schema.addUniqueConstraint(f, nodeData, col, constraints)
 	return col
 }
 
 // adds a foreignKeyConstraint to the array of constraints
 // also returns new dbType of column
-func (schema *schemaInfo) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTemplate, constraints *[]dbConstraint) string {
-	dbType := schema.getDbTypeForField(f)
-
+func (schema *schemaInfo) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
 	fkey := f.TagMap["fkey"]
 	if fkey == "" {
-		return dbType
+		return
 	}
 	// tablename and fkey struct tag are quoted so we have to unquote them
 	fkeyRaw, err := strconv.Unquote(fkey)
@@ -362,34 +424,33 @@ func (schema *schemaInfo) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTe
 	fkeyTableName, err := strconv.Unquote(fkeyTable.QuotedTableName)
 	die(err)
 
-	var fkeyDbField string
-	for _, col := range fkeyTable.Columns {
-		if col.EntFieldName == fkeyField {
-			fkeyDbField = col.DBColName
+	var fkeyColumn *dbColumn
+	for _, fkeyCol := range fkeyTable.Columns {
+		if fkeyCol.EntFieldName == fkeyField {
+			fkeyColumn = fkeyCol
 
 			// if the foreign key is a uuid and we have it as string, convert the type we
 			// store in the db from string to UUID. This only works the first time the table
 			// is defined.
 			// Need to handle uuid as a first class type in Config files and/or handle the conversion from string to uuid after the fact
-			if col.DBType == "UUID()" && dbType == "sa.Text()" {
-				dbType = "UUID()"
+			if fkeyCol.DBType == "UUID()" && col.DBType == "sa.Text()" {
+				col.DBType = "UUID()"
 			}
 			break
 		}
 	}
 
-	if fkeyDbField == "" {
+	if fkeyColumn == nil {
 		die(fmt.Errorf("invalid Field %s set as ForeignKey of field %s on ent config %s", fkeyField, f.FieldName, nodeData.EntConfigName))
 	}
 
 	constraint := &foreignKeyConstraint{
 		tableName:     tableName,
+		column:        col,
 		fkeyTableName: fkeyTableName,
-		fkeyDbField:   fkeyDbField,
-		field:         f,
+		fkeyColumn:    fkeyColumn,
 	}
 	*constraints = append(*constraints, constraint)
-	return dbType
 }
 
 func (schema *schemaInfo) addUniqueConstraint(f *fieldInfo, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
@@ -406,6 +467,9 @@ func (schema *schemaInfo) addUniqueConstraint(f *fieldInfo, nodeData *nodeTempla
 	}
 	*constraints = append(*constraints, constraint)
 }
+
+// TODO: eventually create EntConfigs/EntPatterns for these and take it from that instead of this manual behavior.
+// There's too many of this...
 
 // getIDColumnInfo returns the information needed for every ID column in a node table. Returns the column and constraint that
 // every node table has
@@ -474,7 +538,7 @@ func (schema *schemaInfo) getID1TypeColumn() *dbColumn {
 }
 
 // getEdgeType returns the id1 column for the first id in an edge table.
-func (schema *schemaInfo) getEdgeType() *dbColumn {
+func (schema *schemaInfo) getEdgeTypeColumn() *dbColumn {
 	return schema.getColumn(
 		"EdgeType",
 		"edge_type",
@@ -522,7 +586,7 @@ func (schema *schemaInfo) getTimeColumn() *dbColumn {
 }
 
 // getData returns the data column for any arbitrary data that can be stored in an edge table
-func (schema *schemaInfo) getData() *dbColumn {
+func (schema *schemaInfo) getDataColumn() *dbColumn {
 	return schema.getColumn(
 		"Data",
 		"data",
@@ -533,12 +597,53 @@ func (schema *schemaInfo) getData() *dbColumn {
 	)
 }
 
-func (schema *schemaInfo) getColumn(fieldName, dbName, dbType string, extraParts []string) *dbColumn {
-	parts := []string{strconv.Quote(dbName), dbType}
-	parts = append(parts, extraParts...)
-	colString := strings.Join(parts, ", ")
+func (schema *schemaInfo) getSymmetricColumn() *dbColumn {
+	return schema.getColumn(
+		"Symmetric",
+		"symmetric",
+		"sa.Bool()",
+		[]string{
+			"nullable=False",
+			"default=False",
+		},
+	)
+}
 
-	return &dbColumn{EntFieldName: fieldName, DBColName: dbName, DBType: dbType, ColString: colString}
+func (schema *schemaInfo) getEdgeNameColumn() *dbColumn {
+	return schema.getColumn(
+		"EdgeName",
+		"edge_name",
+		"sa.Text()",
+		[]string{
+			"nullable=False",
+		},
+	)
+}
+
+func (schema *schemaInfo) getInverseEdgeTypeColumn() *dbColumn {
+	return schema.getColumn(
+		"InverseEdgeType",
+		"inverse_edge_type",
+		"UUID()",
+		[]string{
+			"nullable=True",
+		},
+	)
+}
+
+func (schema *schemaInfo) getEdgeTableColumn() *dbColumn {
+	return schema.getColumn(
+		"EdgeTable",
+		"edge_table",
+		"sa.Text()",
+		[]string{
+			"nullable=False",
+		},
+	)
+}
+
+func (schema *schemaInfo) getColumn(fieldName, dbName, dbType string, extraParts []string) *dbColumn {
+	return &dbColumn{EntFieldName: fieldName, DBColName: dbName, DBType: dbType, extraParts: extraParts}
 }
 
 // represents information needed by the schema template file to generate the schema for a table
