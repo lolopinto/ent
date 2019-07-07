@@ -602,7 +602,7 @@ func (schema *schemaInfo) getSymmetricColumn() *dbColumn {
 		"sa.Bool()",
 		[]string{
 			"nullable=False",
-			"default=False",
+			"server_default='false'",
 		},
 	)
 }

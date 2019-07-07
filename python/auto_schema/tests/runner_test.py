@@ -3,6 +3,8 @@ import pytest
 import os
 
 import sqlalchemy as sa
+from sqlalchemy.sql.schema import DefaultClause
+from sqlalchemy.sql.elements import TextClause
 
 from . import conftest
 
@@ -46,6 +48,7 @@ def assert_no_changes_made(r):
   assert_num_tables(r, 0)
 
 
+# TODO audit that this is being called...
 def validate_metadata_after_change(r, old_metadata):
   new_metadata = get_new_metadata_for_runner(r)
   assert new_metadata != old_metadata
@@ -111,11 +114,9 @@ def validate_column(schema_column, db_column):
   assert schema_column.nullable == db_column.nullable
 
   validate_foreign_key(schema_column, db_column)
+  validate_column_server_default(schema_column, db_column)
 
   # we don't actually support all these below yet but when we do, it should start failing and we should know that
-  #if schema_column.default != db_column.default:
-    #print(schema_column.default)
-    # print(db_column.default)
   assert schema_column.default == db_column.default
   assert schema_column.index == db_column.index
   assert schema_column.unique == db_column.unique
@@ -124,6 +125,33 @@ def validate_column(schema_column, db_column):
   assert schema_column.onupdate == db_column.onupdate
   assert schema_column.constraints == db_column.constraints
   assert schema_column.comment == db_column.comment
+
+
+def validate_column_server_default(schema_column, db_column):
+  def get_clause_text(col):
+    if col.server_default is None:
+      return col.server_default
+    
+    assert isinstance(col.server_default, DefaultClause)
+
+    clause = col.server_default
+
+    clause_text = clause.arg
+    if isinstance(clause_text, TextClause):
+      clause_text = clause_text.text
+
+    # return the underlying string instead of quoted 
+    return str(clause_text).strip("'")
+
+  schema_clause_text = get_clause_text(schema_column)
+  db_clause_text = get_clause_text(db_column)
+
+  if schema_clause_text is None and db_column.autoincrement == True:
+    assert db_clause_text.startswith("nextval")
+  else:
+    assert schema_clause_text == db_clause_text
+
+
 
 
 def validate_column_type(schema_column, db_column):
@@ -449,7 +477,6 @@ class TestPostgresRunner(BaseTestRunner):
   def test_with_foreign_key_to_same_table(self, new_test_runner, metadata_with_foreign_key_to_same_table):
     r = new_test_runner(metadata_with_foreign_key_to_same_table)
     run_and_validate_with_standard_metadata_table(r, metadata_with_foreign_key_to_same_table, new_table_name="assoc_edge_config")
-
 
 
   

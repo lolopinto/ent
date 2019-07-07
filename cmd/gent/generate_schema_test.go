@@ -239,7 +239,7 @@ func TestSymmetricEdgeConfigColumn(t *testing.T) {
 		strconv.Quote("symmetric"),
 		"sa.Bool()",
 		"nullable=False",
-		"default=False",
+		"server_default='false'",
 	}
 	testColumn(t, col, "symmetric", "Symmetric", "symmetric", parts)
 }

@@ -78,6 +78,10 @@ def metadata_with_table():
     sa.Column('first_name', sa.Text(), nullable=False),
     sa.Column('last_name', sa.Text(), nullable=False),
     sa.Column('created_at', sa.Date(), nullable=False),
+
+    # test default sqlite
+    sa.Column('meaning_of_life', sa.Integer(), nullable=False, server_default='42'), 
+
     sa.Column('phone_number', sa.Text(), nullable=False),
     sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
     sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'), # use named primary key constraint instead of what we had per-column
@@ -159,7 +163,7 @@ def metadata_with_foreign_key_to_same_table():
   sa.Table('assoc_edge_config', metadata,
     sa.Column('edge_type', sa.Integer(), nullable=False),
     sa.Column('edge_name', sa.Text(), nullable=False),
-    #sa.Column('symmetric', sa.Boolean(), nullable=False), # TODO come back for this..., default=False),
+    sa.Column('symmetric', sa.Boolean(), nullable=False, server_default='false'), # use false instead of FALSE to avoid the need for craziness here
     sa.Column('inverse_edge_type', sa.Integer(), nullable=True),
     sa.Column('edge_table', sa.Text(), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(), nullable=False),
