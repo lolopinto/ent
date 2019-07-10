@@ -13,10 +13,18 @@ import (
 {{end -}}
 
 {{with .NodeData -}}
+{{with .ConstantGroups -}}
 const (
-  // {{.NodeType}} uniquely identifies this object as an owner of something else
-  {{.NodeType}} ent.NodeType = "{{.NodeInstance}}"
+  {{ range . -}}
+    {{$constType := .ConstType -}}
+    {{range .Constants -}}
+      // {{.Comment}}
+      {{.ConstName}} {{$constType}} = {{.ConstValue}}
+    {{end}}
+
+  {{end -}}
 )
+{{end -}}
 
 // {{.Node}} represents the `{{.Node}}` model 
 type {{.Node}} struct {

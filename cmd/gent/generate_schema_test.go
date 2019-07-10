@@ -233,15 +233,15 @@ func TestEdgeNameEdgeConfigColumn(t *testing.T) {
 }
 
 func TestSymmetricEdgeConfigColumn(t *testing.T) {
-	col := getColumnFromNamedTable("symmetric", "assoc_edge_config", t)
+	col := getColumnFromNamedTable("symmetric_edge", "assoc_edge_config", t)
 
 	parts := []string{
-		strconv.Quote("symmetric"),
-		"sa.Bool()",
+		strconv.Quote("symmetric_edge"),
+		"sa.Boolean()",
 		"nullable=False",
 		"server_default='false'",
 	}
-	testColumn(t, col, "symmetric", "Symmetric", "symmetric", parts)
+	testColumn(t, col, "symmetric_edge", "SymmetricEdge", "symmetric_edge", parts)
 }
 
 func TestInverseEdgeTypeConfigColumn(t *testing.T) {
@@ -436,17 +436,19 @@ func testConstraint(t *testing.T, constraint dbConstraint, expectedConstraintStr
 	}
 }
 
-func getTestSchema() *schemaInfo {
-	return newSchema(
-		parseAllSchemaFiles(
-			"./testdata/models/configs",
-			"",
-			&codePath{
-				PathToConfigs: "./testdata/models/configs/",
-				PathToModels:  "./testdata/models/",
-			},
-		),
+func getParsedTestSchemaFiles() map[string]*codegenNodeTemplateInfo {
+	return parseAllSchemaFiles(
+		"./testdata/models/configs",
+		"",
+		&codePath{
+			PathToConfigs: "./testdata/models/configs/",
+			PathToModels:  "./testdata/models/",
+		},
 	)
+}
+
+func getTestSchema() *schemaInfo {
+	return newSchema(getParsedTestSchemaFiles())
 }
 
 func getInMemoryTestSchemas(sources map[string]string) *schemaInfo {

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/jmoiron/sqlx"
 
 	"github.com/google/uuid"
@@ -152,8 +154,16 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 	var values []interface{}
 
 	// add id column and value
-	columns = append(columns, "id")
-	values = append(values, newUUID)
+	idCols := []string{"id"}
+	// TODO: this is theoretically wrong when setIDField is false. However, because we have different use cases, it's fine
+	// FIXIT.
+	idVals := []interface{}{newUUID}
+
+	// columns = append(columns, "id")
+	// values = append(values, newUUID)
+
+	// if it has a pkey, don't set anything.
+	var hasPKey bool
 
 	// use sqlx here?
 	for i := 0; i < fieldCount; i++ {
@@ -180,12 +190,27 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 		if tag != "" {
 			column = tag
 		} else {
+			// TODO this should not be acceptable since usecase is mostly db now...
+			// also autogen forces it...
 			column = typeOfField.Name
+		}
+
+		if typeOfField.Tag.Get("pkey") != "" {
+			hasPKey = true
 		}
 
 		columns = append(columns, column)
 		values = append(values, field.Interface())
 	}
+
+	if !hasPKey {
+		idCols = append(idCols, columns...)
+		columns = idCols
+
+		idVals = append(idVals, values...)
+		values = idVals
+	}
+
 	// put updated_at before created_at so it's easier to modify later
 	// for UPDATE. we don't want to change created_at field on UPDATE
 	columns = append(columns, "updated_at", "created_at")
@@ -255,23 +280,31 @@ func genLoadRawData(id string, entity interface{}, entConfig Config, errChan cha
 
 type loadNodesQuery func(insertData insertdata) (string, []interface{}, error)
 
-// this borrows from/learns from scanAll in sqlx library
-func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
+func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, error) {
 	value := reflect.ValueOf(nodes)
 	direct := reflect.Indirect(value)
 
 	if value.Kind() != reflect.Ptr {
-		return errors.New("must pass a pointer to LoadNodes")
+		return nil, nil, errors.New("must pass a pointer to method")
 	}
 	if value.IsNil() {
-		return errors.New("nil pointer passed to LoadNodes")
+		return nil, nil, errors.New("nil pointer passed to method")
 	}
 
 	// get the slice from the pointer
 	slice := reflectx.Deref(value.Type())
 	if slice.Kind() != reflect.Slice {
 		fmt.Printf("slice kind is not a slice. it's a %v \n", slice.Kind())
-		return errors.New("format passed to LoadNodes is unexpected")
+		return nil, nil, errors.New("format passed to method is unexpected")
+	}
+	return slice, &direct, nil
+}
+
+// this borrows from/learns from scanAll in sqlx library
+func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
+	slice, direct, err := validateSliceOfNodes(nodes)
+	if err != nil {
+		return err
 	}
 
 	// get the base type from the slice
@@ -280,7 +313,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	// fmt.Println(base)
 
 	// get a zero value of this
-	value = reflect.New(base)
+	value := reflect.New(base)
 	// really need to rename this haha
 	insertData := getFieldsAndValuesOfStruct(value, false)
 
@@ -327,7 +360,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 			break
 		}
 		// append each entity into "nodes" destination
-		direct.Set(reflect.Append(direct, entity))
+		direct.Set(reflect.Append(*direct, entity))
 	}
 
 	err = rows.Err()
@@ -368,8 +401,9 @@ func createNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 	colsString := insertData.getColumnsStringForInsert()
 	values, valsString := insertData.getValuesDataForInsert()
 
-	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES( %s)", entConfig.GetTableName(), colsString, valsString)
+	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s)", entConfig.GetTableName(), colsString, valsString)
 	fmt.Println(computedQuery)
+	spew.Dump(colsString, values, valsString)
 
 	return performWrite(computedQuery, values, tx)
 }
@@ -377,6 +411,30 @@ func createNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 // CreateNode creates a node
 func CreateNode(entity interface{}, entConfig Config) error {
 	return createNodeInTransaction(entity, entConfig, nil)
+}
+
+// CreateNodes creates multiple nodes
+func CreateNodes(nodes interface{}, entConfig Config) error {
+	_, direct, err := validateSliceOfNodes(nodes)
+	if err != nil {
+		return err
+	}
+
+	// This is not necessarily the best way to do this but this re-uses all the existing
+	// abstractions and wraps everything in a transcation
+	// TODO: maybe use the multirow VALUES syntax at https://www.postgresql.org/docs/8.2/sql-insert.html in the future.
+	var operations []DataOperation
+
+	for i := 0; i < direct.Len(); i++ {
+		entity := direct.Index(i).Interface()
+
+		operations = append(operations, NodeOperation{
+			Entity:    entity,
+			Config:    entConfig,
+			Operation: InsertOperation,
+		})
+	}
+	return PerformAllOperations(operations)
 }
 
 /*

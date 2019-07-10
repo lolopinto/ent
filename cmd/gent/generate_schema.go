@@ -298,7 +298,7 @@ func (schema *schemaInfo) addEdgeConfigTable(tables *[]*dbTable) {
 	edgeTypeCol := schema.getEdgeTypeColumn()
 	columns = append(columns, edgeTypeCol)
 	columns = append(columns, schema.getEdgeNameColumn())
-	columns = append(columns, schema.getSymmetricColumn())
+	columns = append(columns, schema.getSymmetricEdgeColumn())
 	inverseEdgeTypeCol := schema.getInverseEdgeTypeColumn()
 	columns = append(columns, inverseEdgeTypeCol)
 	columns = append(columns, schema.getEdgeTableColumn())
@@ -344,9 +344,13 @@ func (schema *schemaInfo) addEdgeTables(nodeData *nodeTemplate, tables *[]*dbTab
 	return addedAtLeastOneTable
 }
 
-func (schema *schemaInfo) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo, assocEdge *associationEdgeInfo) *dbTable {
+func getNameForEdgeTable(nodeData *nodeTemplate, edge edgeInfo) string {
 	tableNameParts := []string{nodeData.getTableName(), strings.ToLower(edge.EdgeName), "edge"}
-	tableName := getNameFromParts(tableNameParts)
+	return getNameFromParts(tableNameParts)
+}
+
+func (schema *schemaInfo) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo, assocEdge *associationEdgeInfo) *dbTable {
+	tableName := getNameForEdgeTable(nodeData, edge)
 
 	var columns []*dbColumn
 	id1Col := schema.getID1Column()
@@ -374,7 +378,7 @@ func (schema *schemaInfo) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo,
 
 func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
 	switch f.FieldType {
-	case "string":
+	case "string", "ent.NodeType": // todo figure out the correct way to convert this to scalar types
 		return "sa.Text()"
 	case "bool":
 		return "sa.Boolean()"
@@ -383,7 +387,7 @@ func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
 	case "time.Time":
 		return "sa.TIMESTAMP()"
 	}
-	panic("unsupported type for now")
+	panic(fmt.Errorf("unsupported type %s for now", f.FieldType))
 }
 
 func (schema *schemaInfo) getColumnInfoForField(f *fieldInfo, nodeData *nodeTemplate, constraints *[]dbConstraint) *dbColumn {
@@ -595,11 +599,14 @@ func (schema *schemaInfo) getDataColumn() *dbColumn {
 	)
 }
 
-func (schema *schemaInfo) getSymmetricColumn() *dbColumn {
+func (schema *schemaInfo) getSymmetricEdgeColumn() *dbColumn {
+	// TODO handle reserved keywords automatically.
+	// this was originally symmetric which isn't allowed
+	// see https://www.postgresql.org/docs/8.1/sql-keywords-appendix.html
 	return schema.getColumn(
-		"Symmetric",
-		"symmetric",
-		"sa.Bool()",
+		"SymmetricEdge",
+		"symmetric_edge",
+		"sa.Boolean()",
 		[]string{
 			"nullable=False",
 			"server_default='false'",

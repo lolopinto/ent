@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -22,7 +23,10 @@ import (
 	"text/template"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/google/uuid"
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/cmd/gent/configs"
+	"github.com/lolopinto/ent/ent"
 
 	// need to use dst because of this issue:
 	// https://github.com/golang/go/issues/20744
@@ -33,32 +37,32 @@ import (
 	"github.com/dave/dst/decorator"
 )
 
-type EdgeConfigType string
-
-const (
-	// FieldEdge represents a field edge which is an edge whose data is gotten from
-	// a field in the object
-	FieldEdgeType EdgeConfigType = "FIELD_EDGE"
-)
-
-type Edgeconfig struct {
-	EdgeType EdgeConfigType
+type nodeTemplate struct {
+	PackageName    string
+	Node           string
+	Nodes          string
+	Fields         []fieldInfo
+	NodeResult     string
+	NodesResult    string
+	NodeInstance   string
+	NodesSlice     string
+	NodeType       string
+	EntConfig      string
+	EntConfigName  string
+	Edges          []edgeInfo
+	TableName      string
+	ConstantGroups []constGroupInfo
 }
 
-type nodeTemplate struct {
-	PackageName   string
-	Node          string
-	Nodes         string
-	Fields        []fieldInfo
-	NodeResult    string
-	NodesResult   string
-	NodeInstance  string
-	NodesSlice    string
-	NodeType      string
-	EntConfig     string
-	EntConfigName string
-	Edges         []edgeInfo
-	TableName     string
+type constInfo struct {
+	ConstName  string
+	ConstValue string
+	Comment    string
+}
+
+type constGroupInfo struct {
+	ConstType string
+	Constants []constInfo
 }
 
 func (nodeData *nodeTemplate) getTableName() string {
@@ -122,8 +126,9 @@ func shouldCodegenPackage(file *ast.File, specificConfig string) bool {
 }
 
 type codegenNodeTemplateInfo struct {
-	nodeData      *nodeTemplate
-	shouldCodegen bool
+	nodeData                *nodeTemplate
+	shouldCodegen           bool
+	shouldParseExistingFile bool
 }
 
 func parseAllSchemaFiles(rootPath string, specificConfig string, codePathInfo *codePath) map[string]*codegenNodeTemplateInfo {
@@ -151,11 +156,8 @@ func parseAllSchemaFiles(rootPath string, specificConfig string, codePathInfo *c
 			fmt.Println(packageName, filePath)
 
 			// TODO break this into concurrent jobs
-			nodeData, shouldCodegen := parseNodeTemplate(packageName, filePath, nil, specificConfig)
-			allNodes[nodeData.EntConfigName] = &codegenNodeTemplateInfo{
-				nodeData:      nodeData,
-				shouldCodegen: shouldCodegen,
-			}
+			codegenInfo := parseNodeTemplate(packageName, filePath, nil, specificConfig)
+			allNodes[codegenInfo.nodeData.EntConfigName] = codegenInfo
 		}
 		//fmt.Printf("IsDir %v Name %v \n", fileInfo.IsDir(), fileInfo.Name())
 	}
@@ -169,13 +171,109 @@ func parseSchemasFromSource(sources map[string]string, specificConfig string) ma
 	for packageName, src := range sources {
 		// TODO break this into concurrent jobs, same as parseAllSchemaFiles above
 		// also make it smarter and have the accumulation happen in a helper function once it's more complicated
-		nodeData, shouldCodegen := parseNodeTemplate(packageName, "", src, specificConfig)
-		allNodes[nodeData.EntConfigName] = &codegenNodeTemplateInfo{
-			nodeData:      nodeData,
-			shouldCodegen: shouldCodegen,
-		}
+		codegenInfo := parseNodeTemplate(packageName, "", src, specificConfig)
+		allNodes[codegenInfo.nodeData.EntConfigName] = codegenInfo
 	}
 	return allNodes
+}
+
+// edgeConfig is corresponding ent for AssocEdgeConfig
+type edgeConfig struct {
+	EdgeType        string         `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
+	EdgeName        string         `db:"edge_name"`
+	SymmetricEdge   bool           `db:"symmetric_edge"`
+	InverseEdgeType sql.NullString `db:"inverse_edge_type"`
+	EdgeTable       string         `db:"edge_table"`
+}
+
+func generateConstsAndNewEdges(allNodes map[string]*codegenNodeTemplateInfo) []*edgeConfig {
+	var newEdges []*edgeConfig
+
+	for _, info := range allNodes {
+		if !info.shouldCodegen {
+			continue
+		}
+
+		nodeData := info.nodeData
+
+		nodeGroup := constGroupInfo{
+			ConstType: "ent.NodeType",
+			Constants: []constInfo{constInfo{
+				ConstName:  nodeData.NodeType,
+				ConstValue: strconv.Quote(nodeData.NodeInstance),
+				Comment: fmt.Sprintf(
+					"%s is the node type for the %s object. Used to identify this node in edges and other places.",
+					nodeData.NodeType,
+					nodeData.Node,
+				),
+			}},
+		}
+		nodeData.ConstantGroups = append(nodeData.ConstantGroups, nodeGroup)
+
+		// high level steps we need eventually
+		// 1 parse each config file
+		// 2 parse all config files (that's basically part of 1 but there's dependencies so we need to come back...)
+		// 3 parse db/models/external data as needed
+		// 4 validate all files/models/db state against each other to make sure they make sense
+		// 5 one more step to get new things. e.g. generate new uuids etc
+		// 6 generate new db schema
+		// 7 write new files
+		// 8 write edge config to db (this should really be a separate step since this needs to run in production every time)
+		if !info.shouldParseExistingFile {
+			continue
+		}
+		existingConsts := parseExistingModelFile(nodeData)
+
+		edgeConsts := existingConsts["ent.EdgeType"]
+		if edgeConsts == nil {
+			// no existing edge. initialize a map to do checks
+			edgeConsts = make(map[string]string)
+		}
+
+		edgeGroup := constGroupInfo{
+			ConstType: "ent.EdgeType",
+		}
+
+		for _, edge := range nodeData.Edges {
+			if edge.AssociationEdge == nil {
+				continue
+			}
+			// todo break the edges into different parts instead of all in .Edges
+			assocEdge := edge.AssociationEdge
+
+			constName := assocEdge.EdgeConst
+
+			// check if there's an existing edge
+			constValue := edgeConsts[constName]
+
+			// new edge
+			if constValue == "" {
+				constValue = uuid.New().String()
+				// keep track of new edges that we need to do things with
+				newEdges = append(newEdges, &edgeConfig{
+					EdgeType:      constValue,
+					EdgeName:      constName,
+					SymmetricEdge: false,
+					EdgeTable:     getNameForEdgeTable(nodeData, edge),
+				})
+			}
+
+			edgeGroup.Constants = append(edgeGroup.Constants, constInfo{
+				ConstName:  constName,
+				ConstValue: strconv.Quote(constValue),
+				Comment: fmt.Sprintf(
+					"%s is the edgeType for the %s to %s edge.",
+					constName,
+					nodeData.NodeInstance,
+					strings.ToLower(assocEdge.EdgeName),
+				),
+			})
+		}
+		nodeData.ConstantGroups = append(nodeData.ConstantGroups, edgeGroup)
+	}
+
+	//spew.Dump(newEdges)
+	return newEdges
 }
 
 func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codePath) {
@@ -189,10 +287,23 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 
 	// TOOD validate things here first.
 
-	// generate python schema file first and then make changes to underlying db
-	//generateSchemaFile(nodes)
+	// generate consts and get new edges to be written to db.
+	newEdges := generateConstsAndNewEdges(allNodes)
+
+	// generate python schema file and then make changes to underlying db
 	schema := newSchema(allNodes)
 	schema.generateSchema()
+
+	if len(newEdges) > 0 {
+		// write to local db.
+		// todo: need to figure out correct logic or way of making sure this gets
+		// written to production.
+		// use alembic revision history?
+		// create parallel structure?
+		// have a file where we dump it and then check that file?
+		err := ent.CreateNodes(&newEdges, &configs.AssocEdgeConfig{})
+		die(err)
+	}
 
 	for _, info := range allNodes {
 		if !info.shouldCodegen {
@@ -209,7 +320,84 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 	}
 }
 
-func parseNodeTemplate(packageName string, filePath string, src interface{}, specificConfig string) (*nodeTemplate, bool) {
+func getFilePathForModelFile(nodeData *nodeTemplate) string {
+	return fmt.Sprintf("models/%s.go", nodeData.PackageName)
+}
+
+// parses an existing model file and returns information about current constants in model file
+// It returns a mapping of type -> entValue -> constValue
+// We'll probably eventually need to return a lot more information later but this is all we need right now
+//
+// "ent.NodeType" => {
+//	"UserType" => "user",
+// },
+// "ent.EdgeType" => {
+//	"UserToNoteEdge" => {uuid},
+// },
+// Right now, it only returns strings but it should eventually be map[string]map[string]interface{}
+func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string {
+	fset := token.NewFileSet()
+	filePath := getFilePathForModelFile(nodeData)
+
+	_, err := os.Stat(filePath)
+	// file doesn't exist. nothing to do here since we haven't generated this before
+	if os.IsNotExist(err) {
+		return nil
+	}
+	die(err)
+
+	file, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
+	die(err)
+
+	constMap := make(map[string]map[string]string)
+
+	ast.Inspect(file, func(node ast.Node) bool {
+		if decl, ok := node.(*ast.GenDecl); ok && decl.Tok == token.CONST {
+			specs := decl.Specs
+
+			for _, spec := range specs {
+				valueSpec, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					die(fmt.Errorf("invalid spec"))
+				}
+
+				if len(valueSpec.Names) != 1 {
+					die(fmt.Errorf("expected 1 name for const declaration. got %d", len(valueSpec.Names)))
+				}
+				ident := valueSpec.Names[0]
+
+				constName := ident.Name
+
+				typ := getExprToSelectorExpr(valueSpec.Type)
+
+				typIdent := getExprToIdent(typ.X)
+
+				// todo this can probably be an ident.
+				// handle that if and when we get there...
+				constKey := typIdent.Name + "." + typ.Sel.Name
+				// ent:EdgeType, ent:NodeType etc...
+
+				if len(valueSpec.Values) != 1 {
+					die(fmt.Errorf("expected 1 value for const declaration. got %d", len(valueSpec.Values)))
+				}
+				val := valueSpec.Values[0]
+				basicLit := getExprToBasicLit(val)
+				constValue, err := strconv.Unquote(basicLit.Value)
+				die(err)
+
+				if constMap[constKey] == nil {
+					constMap[constKey] = make(map[string]string)
+				}
+				constMap[constKey][constName] = constValue
+			}
+		}
+
+		return true
+	})
+	return constMap
+}
+
+func parseNodeTemplate(packageName string, filePath string, src interface{}, specificConfig string) *codegenNodeTemplateInfo {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, filePath, src, parser.AllErrors)
 	//spew.Dump(file)
@@ -221,6 +409,7 @@ func parseNodeTemplate(packageName string, filePath string, src interface{}, spe
 	//fmt.Println("Struct:")
 	var nodeData nodeTemplate
 	var edges []edgeInfo
+	var hasAssociationEdge bool
 	var tableName string
 
 	ast.Inspect(file, func(node ast.Node) bool {
@@ -238,7 +427,7 @@ func parseNodeTemplate(packageName string, filePath string, src interface{}, spe
 
 			switch fn.Name.Name {
 			case "GetEdges":
-				edges = parseEdgesFunc(packageName, fn)
+				edges, hasAssociationEdge = parseEdgesFunc(packageName, fn)
 				// TODO: validate edges. can only have one of each type etc
 
 			case "GetTableName":
@@ -253,7 +442,11 @@ func parseNodeTemplate(packageName string, filePath string, src interface{}, spe
 	nodeData.Edges = edges
 	nodeData.TableName = tableName
 
-	return &nodeData, shouldCodegenPackage(file, specificConfig)
+	return &codegenNodeTemplateInfo{
+		nodeData:                &nodeData,
+		shouldCodegen:           shouldCodegenPackage(file, specificConfig),
+		shouldParseExistingFile: hasAssociationEdge,
+	}
 }
 
 func getLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
@@ -539,22 +732,26 @@ func getTableName(fn *ast.FuncDecl) string {
 }
 
 // http://goast.yuroyoro.net/ is really helpful to see the tree
-func parseEdgesFunc(packageName string, fn *ast.FuncDecl) []edgeInfo {
+func parseEdgesFunc(packageName string, fn *ast.FuncDecl) ([]edgeInfo, bool) {
 	elts := getEltsInFunc(fn)
 
 	// get the edges in teh function
 	edges := make([]edgeInfo, len(elts))
+	hasAssociationEdge := false
 	for idx, expr := range elts {
 		keyValueExpr := getExprToKeyValueExpr(expr)
 		fmt.Println(keyValueExpr)
 		// get the edge as needed
 		edgeItem := parseEdgeItem(packageName, keyValueExpr)
 		edges[idx] = edgeItem
+		if edgeItem.AssociationEdge != nil {
+			hasAssociationEdge = true
+		}
 	}
 
 	//fmt.Println(edges)
 
-	return edges
+	return edges, hasAssociationEdge
 }
 
 func getExprToCompositeLit(expr ast.Expr) *ast.CompositeLit {
@@ -737,6 +934,8 @@ func parseForeignKeyEdgeItem(lit *ast.CompositeLit) *foreignKeyEdgeInfo {
 func parseAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.CompositeLit) *associationEdgeInfo {
 	entConfig := parseEntConfigOnlyFromEdgeItemHelper(lit)
 
+	// todo...
+	// need to support custom edge...
 	edgeConst := strcase.ToCamel(containingPackageName) + "To" + edgeName + "Edge"
 
 	return &associationEdgeInfo{
@@ -922,7 +1121,7 @@ func writeModelFile(nodeData *nodeTemplate, codePathInfo *codePath) {
 			},
 			pathToTemplate: "templates/node.tmpl",
 			templateName:   "node.tmpl",
-			pathToFile:     fmt.Sprintf("models/%s.go", nodeData.PackageName),
+			pathToFile:     getFilePathForModelFile(nodeData),
 			formatSource:   true,
 		},
 	)
@@ -1012,36 +1211,6 @@ func writeFile(file fileToWriteInfo) {
 		bytes = rewriteAstWithConfig(config, bytes)
 	}
 
-	//codeForFile := string(bytes)
-
-	// write to stdout. this is just for debug purposes
-	//io.WriteString(os.Stdout, codeForFile)
-
-	// write to file
-	// TODO. this needs to be a lot better.
-	// add autgen things at top
-	// add signature that we can use in testing
-	// etc
-
-	// TODO figure out flags. I had os.O_CREATE but doesn't work for existing files
-	/*file, err := os.OpenFile(pathToFile, os.O_WRONLY|os.O_SYNC, 0666)
-	if err == nil {
-		// nothing to do here
-		fmt.Println("existing file ", pathToFile)
-	} else if os.IsNotExist(err) {
-		fmt.Println("new file ", pathToFile)
-		file, err = os.Create(pathToFile)
-		die(err)
-	} else {
-		// different type of error
-		die(err)
-	}
-	*/
-
-	// replace manual writes with ioutil.WriteFile as that seems to (small sample size) fix the
-	// weird issues I was sometimes seeing with overwriting an existing file
-	// and random characters appearing.
-
 	if file.createDirIfNeeded {
 		fullPath := filepath.Join(".", file.pathToFile)
 		directoryPath := path.Dir(fullPath)
@@ -1060,20 +1229,8 @@ func writeFile(file fileToWriteInfo) {
 	}
 
 	err := ioutil.WriteFile(file.pathToFile, bytes, 0666)
-	//	_, err = file.Write(bytes)
 	die(err)
-	//err = file.Close()
 	fmt.Println("wrote to file ", file.pathToFile)
-
-	//fmt.Printf("%s\n", bytes)
-	// b, err := format.Source(&buffer)
-
-	// fmt.Println(buffer.String())
-	// die(err)
-	// fmt.Println("gg")
-
-	//t = t
-	//fmt.Println(fields)
 }
 
 func die(err error) {
