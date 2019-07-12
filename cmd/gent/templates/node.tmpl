@@ -4,6 +4,9 @@ package models
 
 {{with .CodePath -}}
 import (
+  "context"
+  "fmt"
+
   "github.com/lolopinto/ent/ent"
   "github.com/lolopinto/ent/ent/privacy"
   "github.com/lolopinto/ent/ent/viewer"
@@ -41,7 +44,7 @@ type {{.Node}} struct {
 // {{.NodeResult}} stores the result of loading a {{.Node}}. It's a tuple type which has 2 fields: 
 // a {{.Node}} and an error
 type {{.NodeResult}} struct {
-  {{.Node}} {{.Node}}
+  {{.Node}} *{{.Node}}
   Error error
 }
 
@@ -67,11 +70,21 @@ func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy() privacy.Policy {
   }
 }
 
-// Load{{.Node}} loads the given {{.Node}} given the id
-func Load{{.Node}}(viewer viewer.ViewerContext, id string) ({{.Node}}, error) {
+// Load{{.Node}}FromContext loads the given {{.Node}} given the context and id
+func Load{{.Node}}FromContext(ctx context.Context, id string) (*{{.Node}}, error) {
+  val := ctx.Value("ViewerKey")
+	viewer, ok := val.(viewer.ViewerContext)
+	if !ok {
+		return nil, fmt.Errorf("invalid viewer passed to context")
+	}
+	return Load{{.Node}}(viewer, id)
+}
+
+// Load{{.Node}} loads the given {{.Node}} given the viewer and id
+func Load{{.Node}}(viewer viewer.ViewerContext, id string) (*{{.Node}}, error) {
   var {{.NodeInstance}} {{.Node}}
   err := ent.LoadNode(viewer, id, &{{.NodeInstance}}, {{.EntConfig}})
-  return {{.NodeInstance}}, err
+  return &{{.NodeInstance}}, err
 }
 
 // GenLoad{{.Node}} loads the given {{.Node}} given the id
@@ -81,7 +94,7 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
   go ent.GenLoadNode(viewer, id, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
   err := <-chanErr
   chan{{.NodeResult}} <- {{.NodeResult}}{
-    {{.Node}}: {{.NodeInstance}},
+    {{.Node}}: &{{.NodeInstance}},
     Error: err,
   }
 }
