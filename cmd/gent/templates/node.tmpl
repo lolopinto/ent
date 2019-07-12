@@ -5,7 +5,6 @@ package models
 {{with .CodePath -}}
 import (
   "context"
-  "fmt"
 
   "github.com/lolopinto/ent/ent"
   "github.com/lolopinto/ent/ent/privacy"
@@ -32,10 +31,8 @@ const (
 // {{.Node}} represents the `{{.Node}}` model 
 type {{.Node}} struct {
   ent.Node
-  {{with .Fields -}}
-    {{ range . -}} 
-      {{.FieldName}} {{.FieldType}} {{.FieldTag}}
-    {{end -}}
+  {{ range $field := .Fields -}} 
+    {{$field.FieldName}} {{fString $field}} {{$field.FieldTag}}
   {{end -}}
   Viewer viewer.ViewerContext
 }
@@ -72,12 +69,11 @@ func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy() privacy.Policy {
 
 // Load{{.Node}}FromContext loads the given {{.Node}} given the context and id
 func Load{{.Node}}FromContext(ctx context.Context, id string) (*{{.Node}}, error) {
-  val := ctx.Value("ViewerKey")
-	viewer, ok := val.(viewer.ViewerContext)
-	if !ok {
-		return nil, fmt.Errorf("invalid viewer passed to context")
-	}
-	return Load{{.Node}}(viewer, id)
+  v, err := viewer.ForContext(ctx)
+  if err != nil {
+    return nil, err
+  }
+	return Load{{.Node}}(v, id)
 }
 
 // Load{{.Node}} loads the given {{.Node}} given the viewer and id

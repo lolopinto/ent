@@ -1,0 +1,35 @@
+{{ reserveImport "context" }}
+{{ reserveImport "log" }}
+{{ reserveImport "net/http" }}
+{{ reserveImport "os" }}
+{{ reserveImport "github.com/99designs/gqlgen/handler" }}
+{{ reserveImport "github.com/gorilla/mux" }}
+{{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
+
+const defaultPort = "8080"
+
+func authMiddleware(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    // by default this works with a logged out viewer.
+    // TODO provide a way to inject a different viewer
+    v := viewer.LoggedOutViewer()
+    r = viewer.NewRequestWithContext(r, v)
+    next.ServeHTTP(w, r)
+  })
+}
+
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
+
+  r := mux.NewRouter()
+  r.Use(authMiddleware)
+
+	r.Handle("/", handler.Playground("GraphQL playground", "/query"))
+	r.Handle("/query", handler.GraphQL({{ lookupImport .ExecPackageName }}.NewExecutableSchema({{ lookupImport .ExecPackageName}}.Config{Resolvers: &{{ lookupImport .ResolverPackageName}}.Resolver{}})))
+
+	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	log.Fatal(http.ListenAndServe(":" + port, r))
+}

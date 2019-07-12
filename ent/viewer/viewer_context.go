@@ -1,5 +1,30 @@
 package viewer
 
+import (
+	"context"
+	"fmt"
+	"net/http"
+)
+
+type contextKey struct {
+	name string
+}
+
+var viewerCtxKey = &contextKey{"viewer"}
+
+func ForContext(ctx context.Context) (ViewerContext, error) {
+	val, ok := ctx.Value(viewerCtxKey).(ViewerContext)
+	if !ok {
+		return nil, fmt.Errorf("invalid viewer passed to context")
+	}
+	return val, nil
+}
+
+func NewRequestWithContext(r *http.Request, viewer ViewerContext) *http.Request {
+	ctx := context.WithValue(r.Context(), viewerCtxKey, viewer)
+	return r.WithContext(ctx)
+}
+
 // ViewerContext interface is to be implemented by clients to indicate
 // who's trying to view the ent
 type ViewerContext interface {

@@ -436,7 +436,7 @@ func testConstraint(t *testing.T, constraint dbConstraint, expectedConstraintStr
 	}
 }
 
-func getParsedTestSchemaFiles() map[string]*codegenNodeTemplateInfo {
+func getParsedTestSchemaFiles() codegenMapInfo {
 	return parseAllSchemaFiles(
 		"./testdata/models/configs",
 		"",
@@ -447,12 +447,12 @@ func getParsedTestSchemaFiles() map[string]*codegenNodeTemplateInfo {
 	)
 }
 
-func getTestSchema() *schemaInfo {
-	return newSchema(getParsedTestSchemaFiles())
+func getTestSchema() *dbSchema {
+	return newDBSchema(getParsedTestSchemaFiles())
 }
 
-func getInMemoryTestSchemas(sources map[string]string) *schemaInfo {
-	return newSchema(
+func getInMemoryTestSchemas(sources map[string]string) *dbSchema {
+	return newDBSchema(
 		parseSchemasFromSource(
 			sources,
 			"",
@@ -466,7 +466,7 @@ func getTestTable(configName string, t *testing.T) *dbTable {
 	return getTestTableFromSchema(configName, schema, t)
 }
 
-func getTestTableFromSchema(configName string, schema *schemaInfo, t *testing.T) *dbTable {
+func getTestTableFromSchema(configName string, schema *dbSchema, t *testing.T) *dbTable {
 	node := schema.nodes[configName]
 	if node == nil {
 		t.Errorf("no codegen info for %s table", configName)

@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/jmoiron/sqlx"
 
 	"github.com/google/uuid"
@@ -402,8 +400,8 @@ func createNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 	values, valsString := insertData.getValuesDataForInsert()
 
 	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s)", entConfig.GetTableName(), colsString, valsString)
-	fmt.Println(computedQuery)
-	spew.Dump(colsString, values, valsString)
+	//fmt.Println(computedQuery)
+	//spew.Dump(colsString, values, valsString)
 
 	return performWrite(computedQuery, values, tx)
 }

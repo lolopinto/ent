@@ -156,21 +156,21 @@ func (constraint *uniqueConstraint) getConstraintString() string {
 	return getConstraintStringForColumnBasedConstraint(constraint)
 }
 
-func newSchema(nodes map[string]*codegenNodeTemplateInfo) *schemaInfo {
+func newDBSchema(nodes codegenMapInfo) *dbSchema {
 	configTableMap := make(map[string]*dbTable)
-	return &schemaInfo{
+	return &dbSchema{
 		nodes:          nodes,
 		configTableMap: configTableMap,
 	}
 }
 
-type schemaInfo struct {
+type dbSchema struct {
 	Tables         []*dbTable
-	nodes          map[string]*codegenNodeTemplateInfo
+	nodes          codegenMapInfo
 	configTableMap map[string]*dbTable
 }
 
-func (schema *schemaInfo) getTableForNode(nodeData *nodeTemplate) *dbTable {
+func (schema *dbSchema) getTableForNode(nodeData *nodeTemplate) *dbTable {
 	table := schema.configTableMap[nodeData.EntConfigName]
 	if table != nil {
 		return table
@@ -182,7 +182,7 @@ func (schema *schemaInfo) getTableForNode(nodeData *nodeTemplate) *dbTable {
 	return table
 }
 
-func (schema *schemaInfo) createTableForNode(nodeData *nodeTemplate) *dbTable {
+func (schema *dbSchema) createTableForNode(nodeData *nodeTemplate) *dbTable {
 	var columns []*dbColumn
 	var constraints []dbConstraint
 
@@ -194,7 +194,7 @@ func (schema *schemaInfo) createTableForNode(nodeData *nodeTemplate) *dbTable {
 	columns = append(columns, schema.getUpdatedAtColumn())
 
 	for _, field := range nodeData.Fields {
-		column := schema.getColumnInfoForField(&field, nodeData, &constraints)
+		column := schema.getColumnInfoForField(field, nodeData, &constraints)
 		columns = append(columns, column)
 	}
 
@@ -205,7 +205,7 @@ func (schema *schemaInfo) createTableForNode(nodeData *nodeTemplate) *dbTable {
 	}
 }
 
-func (schema *schemaInfo) generateSchema() {
+func (schema *dbSchema) generateSchema() {
 	schema.generateShemaTables()
 
 	schema.writeSchemaFile()
@@ -213,7 +213,7 @@ func (schema *schemaInfo) generateSchema() {
 	schema.generateDbSchema()
 }
 
-func (schema *schemaInfo) generateShemaTables() {
+func (schema *dbSchema) generateShemaTables() {
 	var tables []*dbTable
 
 	addedAtLeastOneTable := false
@@ -238,10 +238,11 @@ func (schema *schemaInfo) generateShemaTables() {
 	schema.Tables = tables
 }
 
-func (schema *schemaInfo) generateDbSchema() {
+func (schema *dbSchema) generateDbSchema() {
 	cmd := exec.Command(
 		"python3",
 		getAbsolutePath("../../python/auto_schema/gen_db_schema.py"),
+		// TODO: this should be changed to use path to configs
 		"-s=models/configs",
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	)
@@ -254,19 +255,20 @@ func (schema *schemaInfo) generateDbSchema() {
 	}
 }
 
-func (schema *schemaInfo) writeSchemaFile() {
+func (schema *dbSchema) writeSchemaFile() {
 	writeFile(
-		fileToWriteInfo{
+		&templatedBasedFileWriter{
 			data:           schema.getSchemaForTemplate(),
-			pathToTemplate: "templates/schema.tmpl",
-			templateName:   "schema.tmpl",
-			pathToFile:     "models/configs/schema.py",
+			pathToTemplate: "templates/db_schema.tmpl",
+			templateName:   "db_schema.tmpl",
+			// TODO: this should be change to use path to configs
+			pathToFile: "models/configs/schema.py",
 		},
 	)
 }
 
-func (schema *schemaInfo) getSchemaForTemplate() schemaForTemplate {
-	ret := schemaForTemplate{}
+func (schema *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
+	ret := &dbSchemaTemplate{}
 
 	for _, table := range schema.Tables {
 
@@ -280,7 +282,7 @@ func (schema *schemaInfo) getSchemaForTemplate() schemaForTemplate {
 			lines = append(lines, constraint.getConstraintString())
 		}
 
-		ret.Tables = append(ret.Tables, schemaTableInfo{
+		ret.Tables = append(ret.Tables, dbSchemaTableInfo{
 			TableName:   table.QuotedTableName,
 			SchemaLines: lines,
 		})
@@ -288,7 +290,7 @@ func (schema *schemaInfo) getSchemaForTemplate() schemaForTemplate {
 	return ret
 }
 
-func (schema *schemaInfo) addEdgeConfigTable(tables *[]*dbTable) {
+func (schema *dbSchema) addEdgeConfigTable(tables *[]*dbTable) {
 	tableName := "assoc_edge_config"
 	var columns []*dbColumn
 	var constraints []dbConstraint
@@ -329,7 +331,7 @@ func (schema *schemaInfo) addEdgeConfigTable(tables *[]*dbTable) {
 	*tables = append(*tables, table)
 }
 
-func (schema *schemaInfo) addEdgeTables(nodeData *nodeTemplate, tables *[]*dbTable) bool {
+func (schema *dbSchema) addEdgeTables(nodeData *nodeTemplate, tables *[]*dbTable) bool {
 	addedAtLeastOneTable := false
 	for _, edge := range nodeData.Edges {
 		// assoc edges associated with these
@@ -349,7 +351,7 @@ func getNameForEdgeTable(nodeData *nodeTemplate, edge edgeInfo) string {
 	return getNameFromParts(tableNameParts)
 }
 
-func (schema *schemaInfo) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo, assocEdge *associationEdgeInfo) *dbTable {
+func (schema *dbSchema) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo, assocEdge *associationEdgeInfo) *dbTable {
 	tableName := getNameForEdgeTable(nodeData, edge)
 
 	var columns []*dbColumn
@@ -376,22 +378,8 @@ func (schema *schemaInfo) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo,
 	}
 }
 
-func (schema *schemaInfo) getDbTypeForField(f *fieldInfo) string {
-	switch f.FieldType {
-	case "string", "ent.NodeType": // todo figure out the correct way to convert this to scalar types
-		return "sa.Text()"
-	case "bool":
-		return "sa.Boolean()"
-	case "int":
-		return "sa.Integer()"
-	case "time.Time":
-		return "sa.TIMESTAMP()"
-	}
-	panic(fmt.Errorf("unsupported type %s for now", f.FieldType))
-}
-
-func (schema *schemaInfo) getColumnInfoForField(f *fieldInfo, nodeData *nodeTemplate, constraints *[]dbConstraint) *dbColumn {
-	dbType := schema.getDbTypeForField(f)
+func (schema *dbSchema) getColumnInfoForField(f *fieldInfo, nodeData *nodeTemplate, constraints *[]dbConstraint) *dbColumn {
+	dbType := getDbTypeForField(f)
 	col := schema.getColumn(f.FieldName, f.getDbColName(), dbType, []string{
 		"nullable=False",
 	})
@@ -403,7 +391,7 @@ func (schema *schemaInfo) getColumnInfoForField(f *fieldInfo, nodeData *nodeTemp
 
 // adds a foreignKeyConstraint to the array of constraints
 // also returns new dbType of column
-func (schema *schemaInfo) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
+func (schema *dbSchema) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
 	fkey := f.TagMap["fkey"]
 	if fkey == "" {
 		return
@@ -455,7 +443,7 @@ func (schema *schemaInfo) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTe
 	*constraints = append(*constraints, constraint)
 }
 
-func (schema *schemaInfo) addUniqueConstraint(f *fieldInfo, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
+func (schema *dbSchema) addUniqueConstraint(f *fieldInfo, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
 	unique := f.TagMap["unique"]
 	if unique == "" {
 		return
@@ -475,7 +463,7 @@ func (schema *schemaInfo) addUniqueConstraint(f *fieldInfo, nodeData *nodeTempla
 
 // getIDColumnInfo returns the information needed for every ID column in a node table. Returns the column and constraint that
 // every node table has
-func (schema *schemaInfo) getIDColumnInfo(tableName string) (*dbColumn, dbConstraint) {
+func (schema *dbSchema) getIDColumnInfo(tableName string) (*dbColumn, dbConstraint) {
 	col := schema.getColumn(
 		"ID",
 		"id",
@@ -492,7 +480,7 @@ func (schema *schemaInfo) getIDColumnInfo(tableName string) (*dbColumn, dbConstr
 }
 
 // getCreatedAtColumn returns the dbColumn for every created_at column in a node table.
-func (schema *schemaInfo) getCreatedAtColumn() *dbColumn {
+func (schema *dbSchema) getCreatedAtColumn() *dbColumn {
 	return schema.getColumn(
 		"CreatedAt",
 		"created_at",
@@ -504,7 +492,7 @@ func (schema *schemaInfo) getCreatedAtColumn() *dbColumn {
 }
 
 // getUpdatedAtColumn returns the dbColumn for every updated_at column in a node table.
-func (schema *schemaInfo) getUpdatedAtColumn() *dbColumn {
+func (schema *dbSchema) getUpdatedAtColumn() *dbColumn {
 	return schema.getColumn(
 		"UpdatedAt",
 		"updated_at",
@@ -516,7 +504,7 @@ func (schema *schemaInfo) getUpdatedAtColumn() *dbColumn {
 }
 
 // getID1Column returns the id1 column for the first id in an edge table.
-func (schema *schemaInfo) getID1Column() *dbColumn {
+func (schema *dbSchema) getID1Column() *dbColumn {
 	return schema.getColumn(
 		"ID1",
 		"id1",
@@ -528,7 +516,7 @@ func (schema *schemaInfo) getID1Column() *dbColumn {
 }
 
 // getID1TypeColumn returns the id1_type column for the type of the first id in an edge table.
-func (schema *schemaInfo) getID1TypeColumn() *dbColumn {
+func (schema *dbSchema) getID1TypeColumn() *dbColumn {
 	return schema.getColumn(
 		"ID1Type",
 		"id1_type",
@@ -540,7 +528,7 @@ func (schema *schemaInfo) getID1TypeColumn() *dbColumn {
 }
 
 // getEdgeType returns the id1 column for the first id in an edge table.
-func (schema *schemaInfo) getEdgeTypeColumn() *dbColumn {
+func (schema *dbSchema) getEdgeTypeColumn() *dbColumn {
 	return schema.getColumn(
 		"EdgeType",
 		"edge_type",
@@ -552,7 +540,7 @@ func (schema *schemaInfo) getEdgeTypeColumn() *dbColumn {
 }
 
 // getID2Column returns the id2 column for the second id in an edge table.
-func (schema *schemaInfo) getID2Column() *dbColumn {
+func (schema *dbSchema) getID2Column() *dbColumn {
 	return schema.getColumn(
 		"ID2",
 		"id2",
@@ -564,7 +552,7 @@ func (schema *schemaInfo) getID2Column() *dbColumn {
 }
 
 // getID2TypeColumn returns the id2_type column for the type of the second id in an edge table.
-func (schema *schemaInfo) getID2TypeColumn() *dbColumn {
+func (schema *dbSchema) getID2TypeColumn() *dbColumn {
 	return schema.getColumn(
 		"ID2Type",
 		"id2_type",
@@ -576,7 +564,7 @@ func (schema *schemaInfo) getID2TypeColumn() *dbColumn {
 }
 
 // getTimeColumn returns the time column for the time the row was inserted in an edge table
-func (schema *schemaInfo) getTimeColumn() *dbColumn {
+func (schema *dbSchema) getTimeColumn() *dbColumn {
 	return schema.getColumn(
 		"Time",
 		"time",
@@ -588,7 +576,7 @@ func (schema *schemaInfo) getTimeColumn() *dbColumn {
 }
 
 // getData returns the data column for any arbitrary data that can be stored in an edge table
-func (schema *schemaInfo) getDataColumn() *dbColumn {
+func (schema *dbSchema) getDataColumn() *dbColumn {
 	return schema.getColumn(
 		"Data",
 		"data",
@@ -599,7 +587,7 @@ func (schema *schemaInfo) getDataColumn() *dbColumn {
 	)
 }
 
-func (schema *schemaInfo) getSymmetricEdgeColumn() *dbColumn {
+func (schema *dbSchema) getSymmetricEdgeColumn() *dbColumn {
 	// TODO handle reserved keywords automatically.
 	// this was originally symmetric which isn't allowed
 	// see https://www.postgresql.org/docs/8.1/sql-keywords-appendix.html
@@ -614,7 +602,7 @@ func (schema *schemaInfo) getSymmetricEdgeColumn() *dbColumn {
 	)
 }
 
-func (schema *schemaInfo) getEdgeNameColumn() *dbColumn {
+func (schema *dbSchema) getEdgeNameColumn() *dbColumn {
 	return schema.getColumn(
 		"EdgeName",
 		"edge_name",
@@ -625,7 +613,7 @@ func (schema *schemaInfo) getEdgeNameColumn() *dbColumn {
 	)
 }
 
-func (schema *schemaInfo) getInverseEdgeTypeColumn() *dbColumn {
+func (schema *dbSchema) getInverseEdgeTypeColumn() *dbColumn {
 	return schema.getColumn(
 		"InverseEdgeType",
 		"inverse_edge_type",
@@ -636,7 +624,7 @@ func (schema *schemaInfo) getInverseEdgeTypeColumn() *dbColumn {
 	)
 }
 
-func (schema *schemaInfo) getEdgeTableColumn() *dbColumn {
+func (schema *dbSchema) getEdgeTableColumn() *dbColumn {
 	return schema.getColumn(
 		"EdgeTable",
 		"edge_table",
@@ -647,17 +635,17 @@ func (schema *schemaInfo) getEdgeTableColumn() *dbColumn {
 	)
 }
 
-func (schema *schemaInfo) getColumn(fieldName, dbName, dbType string, extraParts []string) *dbColumn {
+func (schema *dbSchema) getColumn(fieldName, dbName, dbType string, extraParts []string) *dbColumn {
 	return &dbColumn{EntFieldName: fieldName, DBColName: dbName, DBType: dbType, extraParts: extraParts}
 }
 
 // represents information needed by the schema template file to generate the schema for a table
-type schemaTableInfo struct {
+type dbSchemaTableInfo struct {
 	TableName   string
 	SchemaLines []string // list of lines that will be generated for each table e.g. sa.Column(...), sa.PrimaryKeyConstraint(...) etc
 }
 
 // wrapper object to represent the list of tables that will be passed to a schema template file
-type schemaForTemplate struct {
-	Tables []schemaTableInfo
+type dbSchemaTemplate struct {
+	Tables []dbSchemaTableInfo
 }
