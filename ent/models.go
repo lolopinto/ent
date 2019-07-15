@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lolopinto/ent/data"
-	"github.com/lolopinto/ent/util"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 // todo deal with struct tags

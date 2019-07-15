@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestGetIDColumn(t *testing.T) {
+func TestIDColumn(t *testing.T) {
 	col := getTestColumn("AccountConfig", "ID", t)
 
 	parts := []string{
@@ -26,7 +26,7 @@ func TestGetIDColumn(t *testing.T) {
 	)
 }
 
-func TestGetCreatedAtColumn(t *testing.T) {
+func TestCreatedAtColumn(t *testing.T) {
 	col := getTestColumn("AccountConfig", "CreatedAt", t)
 
 	parts := []string{
@@ -37,7 +37,7 @@ func TestGetCreatedAtColumn(t *testing.T) {
 	testColumn(t, col, "created_at", "CreatedAt", "created_at", parts)
 }
 
-func TestGetUpdatedAtColumn(t *testing.T) {
+func TestUpdatedAtColumn(t *testing.T) {
 	col := getTestColumn("AccountConfig", "UpdatedAt", t)
 
 	parts := []string{

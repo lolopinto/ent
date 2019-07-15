@@ -6,6 +6,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/lolopinto/ent/internal/util"
 )
 
 type fileWriter interface {
@@ -31,11 +33,11 @@ func writeFile(fw fileWriter) {
 			}
 		}
 		if os.IsNotExist(err) {
-			die(err)
+			util.Die(err)
 		}
 	}
 
 	err := ioutil.WriteFile(pathToFile, bytes, 0666)
-	die(err)
+	util.Die(err)
 	fmt.Println("wrote to file ", pathToFile)
 }

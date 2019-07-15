@@ -37,9 +37,7 @@ func (p *entGraphQLResolverPlugin) castToString(field *codegen.Field) bool {
 	// todo need to make this generic enough in the future
 	// castToSomething
 	// then call a getCastToBlah code
-	ft := getTypeForField(entField)
-	//spew.Dump(ft, ft.GetGraphQLType())
-	return ft.GetGraphQLType() == "String!"
+	return entField.GetGraphQLTypeForField() == "String!"
 }
 
 // ResolverBuild is the object passed to the template to generate the graphql code

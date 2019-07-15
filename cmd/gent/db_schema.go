@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/data"
+	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 func getNameFromParts(nameParts []string) string {
@@ -68,7 +70,7 @@ func getConstraintStringForColumnBasedConstraint(constraint dbConstraint) string
 		constraintName = "sa.UniqueConstraint"
 	}
 	if constraintName == "" {
-		die(errors.New("invalid constraint passed"))
+		util.Die(errors.New("invalid constraint passed"))
 	}
 
 	var formattedStrParts []string
@@ -186,15 +188,11 @@ func (schema *dbSchema) createTableForNode(nodeData *nodeTemplate) *dbTable {
 	var columns []*dbColumn
 	var constraints []dbConstraint
 
-	idCol, idConstraint := schema.getIDColumnInfo(nodeData.getTableName())
-	columns = append(columns, idCol)
-	constraints = append(constraints, idConstraint)
-
-	columns = append(columns, schema.getCreatedAtColumn())
-	columns = append(columns, schema.getUpdatedAtColumn())
-
-	for _, field := range nodeData.Fields {
-		column := schema.getColumnInfoForField(field, nodeData, &constraints)
+	for _, f := range nodeData.FieldInfo.Fields {
+		if !f.CreateDBColumn() {
+			continue
+		}
+		column := schema.getColumnInfoForField(f, nodeData, &constraints)
 		columns = append(columns, column)
 	}
 
@@ -305,7 +303,7 @@ func (schema *dbSchema) addEdgeConfigTable(tables *[]*dbTable) {
 	columns = append(columns, inverseEdgeTypeCol)
 	columns = append(columns, schema.getEdgeTableColumn())
 
-	// why not?
+	// // why not?
 	columns = append(columns, schema.getCreatedAtColumn())
 	columns = append(columns, schema.getUpdatedAtColumn())
 
@@ -378,41 +376,52 @@ func (schema *dbSchema) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo, a
 	}
 }
 
-func (schema *dbSchema) getColumnInfoForField(f *fieldInfo, nodeData *nodeTemplate, constraints *[]dbConstraint) *dbColumn {
-	dbType := getDbTypeForField(f)
-	col := schema.getColumn(f.FieldName, f.getDbColName(), dbType, []string{
+func (schema *dbSchema) getColumnInfoForField(f *field.Field, nodeData *nodeTemplate, constraints *[]dbConstraint) *dbColumn {
+	dbType := f.GetDbTypeForField()
+	col := schema.getColumn(f.FieldName, f.GetDbColName(), dbType, []string{
 		"nullable=False",
 	})
 
+	schema.addPrimaryKeyConstraint(f, nodeData, col, constraints)
 	schema.addForeignKeyConstraint(f, nodeData, col, constraints)
 	schema.addUniqueConstraint(f, nodeData, col, constraints)
 	return col
 }
 
+func (schema *dbSchema) addPrimaryKeyConstraint(f *field.Field, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
+	if !f.SingleFieldPrimaryKey() {
+		return
+	}
+
+	constraint := &primaryKeyConstraint{
+		dbColumns: []*dbColumn{col},
+		tableName: nodeData.getTableName(),
+	}
+	*constraints = append(*constraints, constraint)
+}
+
 // adds a foreignKeyConstraint to the array of constraints
 // also returns new dbType of column
-func (schema *dbSchema) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
-	fkey := f.TagMap["fkey"]
+func (schema *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
+	fkey := f.GetUnquotedKeyFromTag("fkey")
 	if fkey == "" {
 		return
 	}
-	// tablename and fkey struct tag are quoted so we have to unquote them
-	fkeyRaw, err := strconv.Unquote(fkey)
-	die(err)
+	// get unquoted table name
 	tableName := nodeData.getTableName()
 
-	fkeyParts := strings.Split(fkeyRaw, ".")
+	fkeyParts := strings.Split(fkey, ".")
 	fkeyConfigName := fkeyParts[0]
 	fkeyField := fkeyParts[1]
 
 	fkeyConfig := schema.nodes[fkeyConfigName]
 	if fkeyConfig == nil {
-		die(fmt.Errorf("invalid EntConfig %s set as ForeignKey of field %s on ent config %s", fkeyConfigName, f.FieldName, nodeData.EntConfigName))
+		util.Die(fmt.Errorf("invalid EntConfig %s set as ForeignKey of field %s on ent config %s", fkeyConfigName, f.FieldName, nodeData.EntConfigName))
 	}
 
 	fkeyTable := schema.getTableForNode(fkeyConfig.nodeData)
 	fkeyTableName, err := strconv.Unquote(fkeyTable.QuotedTableName)
-	die(err)
+	util.Die(err)
 
 	var fkeyColumn *dbColumn
 	for _, fkeyCol := range fkeyTable.Columns {
@@ -431,7 +440,7 @@ func (schema *dbSchema) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTemp
 	}
 
 	if fkeyColumn == nil {
-		die(fmt.Errorf("invalid Field %s set as ForeignKey of field %s on ent config %s", fkeyField, f.FieldName, nodeData.EntConfigName))
+		util.Die(fmt.Errorf("invalid Field %s set as ForeignKey of field %s on ent config %s", fkeyField, f.FieldName, nodeData.EntConfigName))
 	}
 
 	constraint := &foreignKeyConstraint{
@@ -443,13 +452,13 @@ func (schema *dbSchema) addForeignKeyConstraint(f *fieldInfo, nodeData *nodeTemp
 	*constraints = append(*constraints, constraint)
 }
 
-func (schema *dbSchema) addUniqueConstraint(f *fieldInfo, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
-	unique := f.TagMap["unique"]
+func (schema *dbSchema) addUniqueConstraint(f *field.Field, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
+	unique := f.GetUnquotedKeyFromTag("unique")
 	if unique == "" {
 		return
 	}
-	if unique != strconv.Quote("true") {
-		die(fmt.Errorf("Invalid struct tag unique was not configured correctly"))
+	if unique != "true" {
+		util.Die(fmt.Errorf("Invalid struct tag unique was not configured correctly"))
 	}
 	constraint := &uniqueConstraint{
 		dbColumns: []*dbColumn{col},
@@ -461,24 +470,7 @@ func (schema *dbSchema) addUniqueConstraint(f *fieldInfo, nodeData *nodeTemplate
 // TODO: eventually create EntConfigs/EntPatterns for these and take it from that instead of this manual behavior.
 // There's too many of this...
 
-// getIDColumnInfo returns the information needed for every ID column in a node table. Returns the column and constraint that
-// every node table has
-func (schema *dbSchema) getIDColumnInfo(tableName string) (*dbColumn, dbConstraint) {
-	col := schema.getColumn(
-		"ID",
-		"id",
-		"UUID()",
-		[]string{
-			"nullable=False",
-		},
-	)
-	constraint := &primaryKeyConstraint{
-		dbColumns: []*dbColumn{col},
-		tableName: tableName,
-	}
-	return col, constraint
-}
-
+// TODO remove these. only exists for assoc_edge_config column until we change this
 // getCreatedAtColumn returns the dbColumn for every created_at column in a node table.
 func (schema *dbSchema) getCreatedAtColumn() *dbColumn {
 	return schema.getColumn(

@@ -31,8 +31,10 @@ const (
 // {{.Node}} represents the `{{.Node}}` model 
 type {{.Node}} struct {
   ent.Node
-  {{ range $field := .Fields -}} 
-    {{$field.FieldName}} {{fString $field}} {{$field.FieldTag}}
+  {{ range $field := .FieldInfo.Fields -}} 
+    {{if $field.TopLevelStructField() -}}
+      {{$field.FieldName}} {{fTypeString $field}} {{$field.FieldTag}}
+    {{end -}}
   {{end -}}
   Viewer viewer.ViewerContext
 }

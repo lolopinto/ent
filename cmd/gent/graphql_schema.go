@@ -3,11 +3,9 @@ package main
 import (
 	"fmt"
 	"sort"
-	"strconv"
 
 	"github.com/99designs/gqlgen/api"
-
-	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/util"
 
 	"github.com/99designs/gqlgen/codegen/config"
 )
@@ -66,7 +64,7 @@ func (schema *graphQLSchema) writeGQLGenYamlFile(data *graphqlSchemaTemplate) {
 func (schema *graphQLSchema) generateGraphQLCode() {
 	cfg, err := config.LoadConfig("graphql/gqlgen.yml")
 	// TODO
-	die(err)
+	util.Die(err)
 
 	// We're handling the Resolver generation instead of using the stub graphqlgen produces.
 	// We build on the default implementation they support and go from there.
@@ -75,7 +73,7 @@ func (schema *graphQLSchema) generateGraphQLCode() {
 		api.AddPlugin(newGraphQLResolverPlugin(schema.nodes)),
 		api.AddPlugin(newGraphQLServerPlugin()),
 	)
-	die(err)
+	util.Die(err)
 }
 
 type graphQLSchemaInfo struct {
@@ -121,38 +119,20 @@ func (schema *graphQLSchema) buildGraphQLSchemaData() *graphqlSchemaTemplate {
 			TypeName: nodeData.Node, // Contact, User etc...
 		}
 
-		// add id type manually for now
-		// going to assume we don't want created at and updated at in graphql
-		// TODO add these to fields with graphql: "_"
-		// need to stop all this hardcoding going on
-		// and then add things that indicate whether it should be exposed to graphql/db/etc
-		schema.SchemaLines = append(
-			schema.SchemaLines,
-			fmt.Sprintf("%s: %s", "id", (&idType{}).GetGraphQLType()),
-		)
-
 		queries = append(
 			queries,
 			fmt.Sprintf("%s(id: ID!): %s", nodeData.NodeInstance, nodeData.Node),
 		)
 
-		for _, field := range nodeData.Fields {
-			fieldName := field.TagMap["graphql"]
-			if fieldName == "" {
-				fieldName = strcase.ToLowerCamel(field.FieldName)
-			} else {
-				fieldName2, err := strconv.Unquote(fieldName)
-				die(err)
-				fieldName = fieldName2
-			}
-			// field that should not be exposed to graphql e.g. passwords etc
-			if fieldName == "_" {
+		for _, f := range nodeData.FieldInfo.Fields {
+			expose, fieldName := f.ExposeToGraphQL()
+			if !expose {
 				continue
 			}
 
 			schema.SchemaLines = append(
 				schema.SchemaLines,
-				fmt.Sprintf("%s: %s", fieldName, getGraphQLTypeForField(field)),
+				fmt.Sprintf("%s: %s", fieldName, f.GetGraphQLTypeForField()),
 			)
 			// very simple, just get fields and create types. no nodes, edges, return ID fields etc
 			// and then we go from there...

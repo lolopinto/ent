@@ -1,4 +1,4 @@
-package main
+package field
 
 import (
 	"fmt"
@@ -86,7 +86,7 @@ type namedType struct {
 }
 
 func (t *namedType) getUnderlyingType() fieldType {
-	return getTypeForFieldFtype(t.actualType.Underlying())
+	return getTypeForEntType(t.actualType.Underlying())
 }
 
 func (t *namedType) GetDBType() string {
@@ -107,18 +107,12 @@ func (t *namedType) GetStructType() string {
 	return fp
 }
 
-func getTypeForField(f *fieldInfo) fieldType {
-	// fixed graphql but broke ent because it has string instead of ent.NodeType
-	// need to fix this next so it handles the underlying types and handles
-	// the different contexts correctly.
-	// and it needs to eventually handle enums that we do want to send to GraphQL
-	return getTypeForFieldFtype(f.FieldType)
-}
+func getTypeForEntType(entType types.Type) fieldType {
+	// this needs to eventually handle enums that we want to send to GraphQL
 
-func getTypeForFieldFtype(tt types.Type) fieldType {
-	switch tt.(type) {
+	switch entType.(type) {
 	case *types.Basic:
-		if t, ok := tt.(*types.Basic); ok {
+		if t, ok := entType.(*types.Basic); ok {
 			switch t.Kind() {
 			case types.String:
 				return &stringType{}
@@ -134,27 +128,19 @@ func getTypeForFieldFtype(tt types.Type) fieldType {
 		//		typ := tt.(*types.Named)
 
 		// TODO figure out all of this. not sure why it's a NamedType in one scenario and a StructType in another
-		switch tt.String() {
+		switch entType.String() {
 		case "time.Time":
 			return &timeType{}
 		}
 
-		return &namedType{actualType: tt}
+		return &namedType{actualType: entType}
 	case *types.Struct:
-		switch tt.String() {
+		switch entType.String() {
 		case "time.Time":
 			return &timeType{}
 		}
 	}
 
 	// fs := getFieldString(f)
-	panic(fmt.Errorf("unsupported type %s for now", tt.String()))
-}
-
-func getDbTypeForField(f *fieldInfo) string {
-	return getTypeForField(f).GetDBType()
-}
-
-func getGraphQLTypeForField(f *fieldInfo) string {
-	return getTypeForField(f).GetGraphQLType()
+	panic(fmt.Errorf("unsupported type %s for now", entType.String()))
 }

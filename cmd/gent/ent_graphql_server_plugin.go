@@ -6,6 +6,7 @@ import (
 	"github.com/99designs/gqlgen/codegen"
 	"github.com/99designs/gqlgen/codegen/templates"
 	"github.com/99designs/gqlgen/plugin"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 // inspired by servergen from gqlgen
@@ -21,7 +22,7 @@ func readTemplateFile(fileName string) string {
 	path := getAbsolutePath(fileName)
 
 	contents, err := ioutil.ReadFile(path)
-	die(err)
+	util.Die(err)
 	return string(contents)
 }
 

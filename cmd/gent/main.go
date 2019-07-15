@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lolopinto/ent/internal/util"
 	flag "github.com/ogier/pflag"
 )
 
@@ -44,7 +45,7 @@ type codePath struct {
 
 func getPathToCode(pathToConfig string) *codePath {
 	abs, err := filepath.Abs(".")
-	die(err)
+	util.Die(err)
 	pathPastSymlinks, err := filepath.EvalSymlinks(abs)
 	// TODO: probably better to put this in some yml file but we're not there yet so reading from the filesystem instead...
 	pathParts := strings.Split(pathPastSymlinks, string(filepath.Separator))

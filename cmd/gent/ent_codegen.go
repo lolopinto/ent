@@ -9,11 +9,8 @@ import (
 	"go/format"
 	"go/importer"
 	"go/parser"
-	"go/printer"
-	"go/scanner"
 	"go/token"
 	"go/types"
-	"log"
 	"os"
 	"path"
 	"regexp"
@@ -22,11 +19,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/cmd/gent/configs"
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/util"
 
 	// need to use dst because of this issue:
 	// https://github.com/golang/go/issues/20744
@@ -41,7 +39,7 @@ type nodeTemplate struct {
 	PackageName    string
 	Node           string
 	Nodes          string
-	Fields         []*fieldInfo
+	FieldInfo      *field.FieldInfo
 	NodeResult     string
 	NodesResult    string
 	NodeInstance   string
@@ -67,7 +65,7 @@ type constGroupInfo struct {
 
 func (nodeData *nodeTemplate) getTableName() string {
 	tableName, err := strconv.Unquote(nodeData.TableName)
-	die(err)
+	util.Die(err)
 
 	return tableName
 }
@@ -77,50 +75,8 @@ func (nodeData *nodeTemplate) getQuotedTableName() string {
 	return nodeData.TableName
 }
 
-func (nodeData *nodeTemplate) getFieldByName(fieldName string) *fieldInfo {
-	for _, field := range nodeData.Fields {
-		if field.FieldName == fieldName {
-			return field
-		}
-	}
-	return nil
-}
-
-type fieldInfo struct {
-	FieldName string
-	FieldType types.Type
-	FieldTag  string
-	TagMap    map[string]string
-}
-
-func (f *fieldInfo) getDbColName() string {
-	colName, err := strconv.Unquote(f.TagMap["db"])
-	die(err)
-
-	return colName
-}
-
-func (f *fieldInfo) getQuotedDBColName() string {
-	return f.TagMap["db"]
-}
-
-func getFieldString(f *fieldInfo) string {
-	ft := getTypeForField(f)
-	override, ok := ft.(fieldWithOverridenStructType)
-	if ok {
-		return override.GetStructType()
-	}
-	return f.FieldType.String()
-}
-
-// gets the string representation of the type
-func getStringType(f *ast.Field, fset *token.FileSet) string {
-	var typeNameBuf bytes.Buffer
-	err := printer.Fprint(&typeNameBuf, fset, f.Type)
-	if err != nil {
-		log.Fatalf("failed getting the type of field %s", err)
-	}
-	return typeNameBuf.String()
+func (nodeData *nodeTemplate) getFieldByName(fieldName string) *field.Field {
+	return nodeData.FieldInfo.GetFieldByName(fieldName)
 }
 
 func shouldCodegenPackage(file *ast.File, specificConfig string) bool {
@@ -187,7 +143,7 @@ func (p *configSchemaParser) ParseFiles() (*token.FileSet, map[string]*ast.File,
 	fset := token.NewFileSet()
 
 	r, err := regexp.Compile(`(\w+)_config.go`)
-	die(err)
+	util.Die(err)
 
 	filterFunc := func(fileInfo os.FileInfo) bool {
 		match := r.FindStringSubmatch(fileInfo.Name())
@@ -230,7 +186,7 @@ func (p *sourceSchemaParser) ParseFiles() (*token.FileSet, map[string]*ast.File,
 
 func parseFiles(p schemaParser) codegenMapInfo {
 	fset, configMap, err := p.ParseFiles()
-	die(err)
+	util.Die(err)
 
 	var files []*ast.File
 	for _, file := range configMap {
@@ -246,7 +202,7 @@ func parseFiles(p schemaParser) codegenMapInfo {
 	}
 	// TODO
 	_, err = conf.Check("models/configs", fset, files, &info)
-	die(err)
+	util.Die(err)
 	allNodes := newCodegenMapInfo()
 
 	for packageName, file := range configMap {
@@ -402,7 +358,7 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 		// create parallel structure?
 		// have a file where we dump it and then check that file?
 		err := ent.CreateNodes(&newEdges, &configs.AssocEdgeConfig{})
-		die(err)
+		util.Die(err)
 	}
 
 	for _, info := range allNodes {
@@ -448,10 +404,10 @@ func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string
 	if os.IsNotExist(err) {
 		return nil
 	}
-	die(err)
+	util.Die(err)
 
 	file, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
-	die(err)
+	util.Die(err)
 
 	constMap := make(map[string]map[string]string)
 
@@ -462,11 +418,11 @@ func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string
 			for _, spec := range specs {
 				valueSpec, ok := spec.(*ast.ValueSpec)
 				if !ok {
-					die(fmt.Errorf("invalid spec"))
+					util.Die(fmt.Errorf("invalid spec"))
 				}
 
 				if len(valueSpec.Names) != 1 {
-					die(fmt.Errorf("expected 1 name for const declaration. got %d", len(valueSpec.Names)))
+					util.Die(fmt.Errorf("expected 1 name for const declaration. got %d", len(valueSpec.Names)))
 				}
 				ident := valueSpec.Names[0]
 
@@ -482,12 +438,12 @@ func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string
 				// ent:EdgeType, ent:NodeType etc...
 
 				if len(valueSpec.Values) != 1 {
-					die(fmt.Errorf("expected 1 value for const declaration. got %d", len(valueSpec.Values)))
+					util.Die(fmt.Errorf("expected 1 value for const declaration. got %d", len(valueSpec.Values)))
 				}
 				val := valueSpec.Values[0]
 				basicLit := getExprToBasicLit(val)
 				constValue, err := strconv.Unquote(basicLit.Value)
-				die(err)
+				util.Die(err)
 
 				if constMap[constKey] == nil {
 					constMap[constKey] = make(map[string]string)
@@ -627,7 +583,7 @@ func parseFileForManualCode(path string) *astConfig {
 	}
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
-	die(err)
+	util.Die(err)
 
 	comments := []*commentGroupPair{}
 
@@ -709,7 +665,7 @@ func parseFileForManualCode(path string) *astConfig {
 func rewriteAstWithConfig(config *astConfig, b []byte) []byte {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "", b, parser.ParseComments)
-	die(err)
+	util.Die(err)
 
 	comments := []*ast.CommentGroup{}
 
@@ -729,18 +685,18 @@ func rewriteAstWithConfig(config *astConfig, b []byte) []byte {
 
 	// something weird happened, bad...
 	if len(comments) == 0 {
-		die(errors.New("did not find comments to be rewritten in generated file"))
+		util.Die(errors.New("did not find comments to be rewritten in generated file"))
 	}
 
 	// create decorator for file before it was changed
 	oldDec := decorator.NewDecorator(config.fset)
 	_, err = oldDec.DecorateFile(config.file)
-	die(err)
+	util.Die(err)
 
 	// Create a new decorator, which will track the mapping between ast and dst nodes
 	dec := decorator.NewDecorator(fset)
 	dstFile, err := dec.DecorateFile(file)
-	die(err)
+	util.Die(err)
 
 	// inspect the methods we care about
 	dst.Inspect(dstFile, func(node dst.Node) bool {
@@ -803,7 +759,7 @@ func rewriteAstWithConfig(config *astConfig, b []byte) []byte {
 
 	var buf bytes.Buffer
 	format.Node(&buf, restoredFset, restoredFile)
-	die(err)
+	util.Die(err)
 
 	return buf.Bytes()
 }
@@ -981,7 +937,7 @@ func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr)
 		FieldEdge:       fieldEdgeItem,
 		ForeignKeyEdge:  foreignKeyEdgeItem,
 		AssociationEdge: associationEdgeItem,
-		NodeTemplate:    getNodeTemplate(packageName, []*fieldInfo{}),
+		NodeTemplate:    getNodeTemplate(packageName, &field.FieldInfo{}),
 	}
 }
 
@@ -1073,7 +1029,7 @@ func parseEdgeItemHelper(lit *ast.CompositeLit, valueFunc func(identName string,
 
 func getNodeNameFromEntConfig(configName string) (string, error) {
 	r, err := regexp.Compile("([A-Za-z]+)Config")
-	die(err)
+	util.Die(err)
 	match := r.FindStringSubmatch(configName)
 	if len(match) == 2 {
 		return match[1], nil
@@ -1101,7 +1057,7 @@ func getEntConfigFromExpr(expr ast.Expr) entConfigInfo {
 	entIdent, ok := lit.Type.(*ast.Ident)
 	if ok {
 		configName, err := getNodeNameFromEntConfig(entIdent.Name)
-		die(err)
+		util.Die(err)
 		return entConfigInfo{
 			// return a fake packageName e.g. user, contact to be used
 			// TODO fix places using this to return Node instead of fake packageName
@@ -1113,69 +1069,12 @@ func getEntConfigFromExpr(expr ast.Expr) entConfigInfo {
 }
 
 func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet, info types.Info) nodeTemplate {
-	var fields []*fieldInfo
-	for _, f := range s.Fields.List {
-		fieldName := f.Names[0].Name
-		// use this to rename GraphQL, db fields, etc
-		// otherwise by default it passes this down
-		//fmt.Printf("Field: %s Type: %s Tag: %v \n", fieldName, f.Type, f.Tag)
+	fieldInfo := field.GetFieldInfoForStruct(s, fset, info)
 
-		tagStr, tagMap := getTagInfo(fieldName, f.Tag)
-
-		fields = append(fields, &fieldInfo{
-			FieldName: fieldName,
-			FieldType: info.TypeOf(f.Type),
-			FieldTag:  tagStr,
-			TagMap:    tagMap,
-		})
-	}
-	//spew.Dump(fields)
-
-	return getNodeTemplate(packageName, fields)
+	return getNodeTemplate(packageName, fieldInfo)
 }
 
-func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string) {
-	tagsMap := make(map[string]string)
-	if t := tag; t != nil {
-		// struct tag format should be something like `graphql:"firstName" db:"first_name"`
-		tags := strings.Split(t.Value, "`")
-		if len(tags) != 3 {
-			panic("invalid struct tag format. handle better. struct tag not enclosed by backticks")
-		}
-
-		// each tag is separated by a space
-		tags = strings.Split(tags[1], " ")
-		for _, tagInfo := range tags {
-			// TODO maybe eventually use a fancier struct tag library. for now, handle here
-			// get each tag and create a map
-			singleTag := strings.Split(tagInfo, ":")
-			if len(singleTag) != 2 {
-				panic("invalid struct tag format. handle better")
-			}
-			tagsMap[singleTag[0]] = singleTag[1]
-		}
-	}
-
-	// add the db tag it it doesn't exist
-	_, ok := tagsMap["db"]
-	if !ok {
-		tagsMap["db"] = strconv.Quote(strcase.ToSnake(fieldName))
-	}
-
-	//fmt.Println(len(tagsMap))
-	//fmt.Println(tagsMap)
-	// convert the map back to the struct tag string format
-	var tags []string
-	for key, value := range tagsMap {
-		// TODO: abstract this out better. only specific tags should we written to the ent
-		if key == "db" || key == "graphql" {
-			tags = append(tags, key+":"+value)
-		}
-	}
-	return "`" + strings.Join(tags, " ") + "`", tagsMap
-}
-
-func getNodeTemplate(packageName string, fields []*fieldInfo) nodeTemplate {
+func getNodeTemplate(packageName string, fieldInfo *field.FieldInfo) nodeTemplate {
 	// convert from pacakgename to camel case
 	nodeName := strcase.ToCamel(packageName)
 
@@ -1183,7 +1082,7 @@ func getNodeTemplate(packageName string, fields []*fieldInfo) nodeTemplate {
 		PackageName:   packageName,                  // contact
 		Node:          nodeName,                     // Contact
 		Nodes:         fmt.Sprintf("%ss", nodeName), // Contacts
-		Fields:        fields,
+		FieldInfo:     fieldInfo,
 		NodeResult:    fmt.Sprintf("%sResult", nodeName),            // ContactResult
 		NodesResult:   fmt.Sprintf("%ssResult", nodeName),           // ContactsResult
 		NodeInstance:  strcase.ToLowerCamel(nodeName),               // contact
@@ -1211,7 +1110,7 @@ func writeModelFile(nodeData *nodeTemplate, codePathInfo *codePath) {
 			pathToFile:     getFilePathForModelFile(nodeData),
 			formatSource:   true,
 			funcMap: template.FuncMap{
-				"fString": getFieldString,
+				"fTypeString": field.GetTypeInStructDefinition,
 			},
 		},
 	)
@@ -1253,7 +1152,7 @@ func writePrivacyFile(nodeData *nodeTemplate) {
 func getAbsolutePath(filePath string) string {
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
-		die(errors.New("could not get path of template file"))
+		util.Die(errors.New("could not get path of template file"))
 	}
 	return path.Join(path.Dir(filename), filePath)
 }
@@ -1265,33 +1164,21 @@ func generateNewAst(fw *templatedBasedFileWriter) []byte {
 	path := []string{templateAbsPath}
 	t := template.New(fw.templateName).Funcs(fw.funcMap)
 	t, err := t.ParseFiles(path...)
-	die(err)
+	util.Die(err)
 
 	var buffer bytes.Buffer
 
 	// execute the template and store in buffer
 	err = t.Execute(&buffer, fw.data)
-	die(err)
+	util.Die(err)
 	//err = t.Execute(os.Stdout, nodeData)
 	//fmt.Println(buffer)
 	//fmt.Println(buffer.String())
 	// gofmt the buffer
 	if fw.formatSource {
 		bytes, err := format.Source(buffer.Bytes())
-		die(err)
+		util.Die(err)
 		return bytes
 	}
 	return buffer.Bytes()
-}
-
-func die(err error) {
-	if err != nil {
-		err2, ok := err.(scanner.ErrorList)
-		if ok {
-			for _, err3 := range err2 {
-				spew.Dump(err3)
-			}
-		}
-		panic(err)
-	}
 }
