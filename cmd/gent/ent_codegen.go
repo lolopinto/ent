@@ -73,6 +73,18 @@ func (nodeData *nodeTemplate) getFieldByName(fieldName string) *field.Field {
 	return nodeData.FieldInfo.GetFieldByName(fieldName)
 }
 
+func (nodeData *nodeTemplate) getFieldEdgeByName(edgeName string) *edge.FieldEdge {
+	return nodeData.EdgeInfo.GetFieldEdgeByName(edgeName)
+}
+
+func (nodeData *nodeTemplate) getForeignKeyEdgeByName(edgeName string) *edge.ForeignKeyEdge {
+	return nodeData.EdgeInfo.GetForeignKeyEdgeByName(edgeName)
+}
+
+func (nodeData *nodeTemplate) getAssociationEdgeByName(edgeName string) *edge.AssociationEdge {
+	return nodeData.EdgeInfo.GetAssociationEdgeByName(edgeName)
+}
+
 func shouldCodegenPackage(file *ast.File, specificConfig string) bool {
 	// nothing to do here
 	if specificConfig == "" {

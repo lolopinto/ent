@@ -9,16 +9,21 @@ import (
 )
 
 type EdgeInfo struct {
-	FieldEdges   []*FieldEdge
-	ForeignKeys  []*ForeignKeyEdge
-	Associations []*AssociationEdge
+	// TODO hide FieldEdges etc
+	// make them accessors since we want to control mutations
+	FieldEdges    []*FieldEdge
+	fieldEdgeMap  map[string]*FieldEdge
+	ForeignKeys   []*ForeignKeyEdge
+	foreignKeyMap map[string]*ForeignKeyEdge
+	Associations  []*AssociationEdge
+	assocMap      map[string]*AssociationEdge
 }
 
 func newEdgeInfo() *EdgeInfo {
 	ret := &EdgeInfo{}
-	ret.FieldEdges = make([]*FieldEdge, 0)
-	ret.ForeignKeys = make([]*ForeignKeyEdge, 0)
-	ret.Associations = make([]*AssociationEdge, 0)
+	ret.fieldEdgeMap = make(map[string]*FieldEdge)
+	ret.foreignKeyMap = make(map[string]*ForeignKeyEdge)
+	ret.assocMap = make(map[string]*AssociationEdge)
 	return ret
 }
 
@@ -30,23 +35,44 @@ func (e *EdgeInfo) addEdge(edge Edge) {
 	fieldEdge, ok := edge.(*FieldEdge)
 	if ok {
 		e.FieldEdges = append(e.FieldEdges, fieldEdge)
+		e.fieldEdgeMap[fieldEdge.EdgeName] = fieldEdge
 		return
 	}
 	fkeyEdge, ok := edge.(*ForeignKeyEdge)
 	if ok {
 		e.ForeignKeys = append(e.ForeignKeys, fkeyEdge)
+		e.foreignKeyMap[fkeyEdge.EdgeName] = fkeyEdge
 		return
 	}
 	assocEdge, ok := edge.(*AssociationEdge)
 	if ok {
 		e.Associations = append(e.Associations, assocEdge)
+		e.assocMap[assocEdge.EdgeName] = assocEdge
 	}
+}
+
+func (e *EdgeInfo) GetFieldEdgeByName(edgeName string) *FieldEdge {
+	return e.fieldEdgeMap[edgeName]
+}
+
+func (e *EdgeInfo) GetForeignKeyEdgeByName(edgeName string) *ForeignKeyEdge {
+	return e.foreignKeyMap[edgeName]
+}
+
+func (e *EdgeInfo) GetAssociationEdgeByName(edgeName string) *AssociationEdge {
+	return e.assocMap[edgeName]
 }
 
 type Edge interface {
 	GetEdgeName() string
 	GetNodeInfo() codegen.NodeInfo
 	GetEntConfig() codegen.EntConfigInfo
+}
+
+// marker interface
+type PluralEdge interface {
+	Edge
+	PluralEdge() bool
 }
 
 type commonEdgeInfo struct {
@@ -80,14 +106,24 @@ type ForeignKeyEdge struct {
 	commonEdgeInfo
 }
 
+func (e *ForeignKeyEdge) PluralEdge() bool {
+	return true
+}
+
 var _ Edge = &ForeignKeyEdge{}
+var _ PluralEdge = &ForeignKeyEdge{}
 
 type AssociationEdge struct {
 	commonEdgeInfo
 	EdgeConst string
 }
 
+func (e *AssociationEdge) PluralEdge() bool {
+	return true
+}
+
 var _ Edge = &AssociationEdge{}
+var _ PluralEdge = &AssociationEdge{}
 
 // http://goast.yuroyoro.net/ is really helpful to see the tree
 func ParseEdgesFunc(packageName string, fn *ast.FuncDecl) *EdgeInfo {

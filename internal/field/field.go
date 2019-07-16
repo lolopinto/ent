@@ -32,6 +32,17 @@ func (fieldInfo *FieldInfo) GetFieldByName(fieldName string) *Field {
 	return fieldInfo.fieldMap[fieldName]
 }
 
+func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) {
+	fByName := fieldInfo.GetFieldByName(f.FieldName)
+	if fByName == nil {
+		panic("invalid field passed to InvalidateFieldForGraphQL")
+	}
+	if fByName != f {
+		panic("invalid field passed to InvalidateFieldForGraphQL")
+	}
+	f.exposeToGraphQL = false
+}
+
 type Field struct {
 	// todo: abstract out these 2 also...
 	FieldName             string

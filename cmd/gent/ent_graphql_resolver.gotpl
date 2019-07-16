@@ -34,8 +34,12 @@ type {{.ResolverType}} struct {}
 {{- /*todo this is the basics that's cheating. we need to define functions that take field and object information and figure out what type of field it is and do something about it*/ -}}
         {{- if castToString $field -}}
           return string(obj.OwnerType), nil
-        {{else }}
+        {{- else if loadObjectFromContext $field -}}
           return models.Load{{$field.GoFieldName}}FromContext(ctx, id)
+				{{- else if fieldEdge $field -}}
+					panic("field edge todo")
+				{{- else -}}
+					panic("not implemented")
         {{ end -}}
 			}
 			{{ end -}}

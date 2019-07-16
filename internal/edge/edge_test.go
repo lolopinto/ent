@@ -18,7 +18,7 @@ func TestEdgeInfo(t *testing.T) {
 
 func TestFieldEdge(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "todo")
-	edge := edgeInfo.FieldEdges[0]
+	edge := edgeInfo.GetFieldEdgeByName("Account")
 
 	if edge.EdgeName != "Account" {
 		t.Errorf("edge name of account field edge is not as expected, got %s instead", edge.EdgeName)
@@ -36,7 +36,7 @@ func TestFieldEdge(t *testing.T) {
 
 func TestForeignKeyEdge(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "account")
-	edge := edgeInfo.ForeignKeys[0]
+	edge := edgeInfo.GetForeignKeyEdgeByName("Todos")
 
 	if edge.EdgeName != "Todos" {
 		t.Errorf("edge name of todo foreign key edge is not as expected, got %s instead", edge.EdgeName)
@@ -50,7 +50,7 @@ func TestForeignKeyEdge(t *testing.T) {
 
 func TestAssociationEdge(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "account")
-	edge := edgeInfo.Associations[0]
+	edge := edgeInfo.GetAssociationEdgeByName("Friends")
 
 	if edge.GetEdgeName() != "Friends" {
 		t.Errorf("edge name of friends association edge is not as expected, got %s instead", edge.EdgeName)

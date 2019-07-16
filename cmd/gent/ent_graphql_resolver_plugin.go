@@ -22,7 +22,6 @@ func (p *entGraphQLResolverPlugin) Name() string {
 func (p *entGraphQLResolverPlugin) castToString(field *codegen.Field) bool {
 	objName := field.Object.Name
 
-	// TODO should probably return an error
 	template := p.nodes.getTemplateFromGraphQLName(objName)
 	if template == nil {
 		return false
@@ -38,6 +37,35 @@ func (p *entGraphQLResolverPlugin) castToString(field *codegen.Field) bool {
 	// castToSomething
 	// then call a getCastToBlah code
 	return entField.GetGraphQLTypeForField() == "String!"
+}
+
+func (p *entGraphQLResolverPlugin) loadObjectFromContext(field *codegen.Field) bool {
+	if len(field.Args) != 1 {
+		return false
+	}
+	firstArg := field.Args[0]
+
+	// for now just assume always id. TODO?
+	if firstArg.Name != "id" {
+		return false
+	}
+
+	// field.Object.Name = Query
+	// field.GoFieldName = Contact/User etc.
+	template := p.nodes.getTemplateFromGraphQLName(field.GoFieldName)
+	return template != nil
+}
+
+func (p *entGraphQLResolverPlugin) fieldEdge(field *codegen.Field) bool {
+	objName := field.Object.Name
+
+	template := p.nodes.getTemplateFromGraphQLName(objName)
+	if template == nil {
+		return false
+	}
+
+	edge := template.getFieldEdgeByName(field.GoFieldName)
+	return edge != nil
 }
 
 // ResolverBuild is the object passed to the template to generate the graphql code
@@ -61,7 +89,9 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 		GeneratedHeader: true,
 		Template:        readTemplateFile("ent_graphql_resolver.gotpl"),
 		Funcs: template.FuncMap{
-			"castToString": p.castToString,
+			"castToString":          p.castToString,
+			"loadObjectFromContext": p.loadObjectFromContext,
+			"fieldEdge":             p.fieldEdge,
 		},
 	})
 }
