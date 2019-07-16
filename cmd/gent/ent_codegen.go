@@ -1111,6 +1111,9 @@ func writeModelFile(nodeData *nodeTemplate, codePathInfo *codePath) {
 			formatSource:   true,
 			funcMap: template.FuncMap{
 				"fTypeString": field.GetTypeInStructDefinition,
+				"topLevelStructField": func(f *field.Field) bool {
+					return f.TopLevelStructField()
+				},
 			},
 		},
 	)

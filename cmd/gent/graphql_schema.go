@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sort"
+	"text/template"
 
 	"github.com/99designs/gqlgen/api"
 	"github.com/lolopinto/ent/internal/util"
@@ -38,6 +39,9 @@ func (schema *graphQLSchema) writeGraphQLSchema(data *graphqlSchemaTemplate) {
 			templateName:      "graphql_schema.tmpl",
 			pathToFile:        "graphql/schema.graphql",
 			createDirIfNeeded: true,
+			funcMap: template.FuncMap{
+				"sortedTypes": getSortedTypes,
+			},
 		},
 	)
 }
@@ -98,7 +102,7 @@ func (t *graphqlSchemaTemplate) addSchema(s *graphQLSchemaInfo) {
 	t.sortedTypes = append(t.sortedTypes, s)
 }
 
-func (t *graphqlSchemaTemplate) getSortedTypes() []*graphQLSchemaInfo {
+func getSortedTypes(t *graphqlSchemaTemplate) []*graphQLSchemaInfo {
 	// sort graphql types by type name so that we are not always changing the order of the generated schema
 	sort.Slice(t.sortedTypes, func(i, j int) bool {
 		return t.sortedTypes[i].TypeName < t.sortedTypes[j].TypeName
@@ -140,6 +144,9 @@ func (schema *graphQLSchema) buildGraphQLSchemaData() *graphqlSchemaTemplate {
 		ret.addSchema(schema)
 	}
 
+	sort.Slice(queries, func(i, j int) bool {
+		return queries[i] < queries[j]
+	})
 	// add everything as top level query for now
 	ret.addSchema(getQuerySchemaType(&queries))
 

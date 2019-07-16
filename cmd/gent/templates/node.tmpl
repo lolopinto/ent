@@ -32,7 +32,7 @@ const (
 type {{.Node}} struct {
   ent.Node
   {{ range $field := .FieldInfo.Fields -}} 
-    {{if $field.TopLevelStructField() -}}
+    {{if topLevelStructField $field -}}
       {{$field.FieldName}} {{fTypeString $field}} {{$field.FieldTag}}
     {{end -}}
   {{end -}}
