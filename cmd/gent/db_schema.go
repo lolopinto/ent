@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lolopinto/ent/internal/edge"
+
 	"github.com/lolopinto/ent/data"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/util"
@@ -330,27 +332,20 @@ func (schema *dbSchema) addEdgeConfigTable(tables *[]*dbTable) {
 }
 
 func (schema *dbSchema) addEdgeTables(nodeData *nodeTemplate, tables *[]*dbTable) bool {
-	addedAtLeastOneTable := false
-	for _, edge := range nodeData.Edges {
-		// assoc edges associated with these
-		assocEdge := edge.AssociationEdge
-		if assocEdge == nil {
-			continue
-		}
-		addedAtLeastOneTable = true
-		table := schema.createEdgeTable(nodeData, edge, assocEdge)
+	for _, assocEdge := range nodeData.EdgeInfo.Associations {
+		table := schema.createEdgeTable(nodeData, assocEdge)
 		*tables = append(*tables, table)
 	}
-	return addedAtLeastOneTable
+	return nodeData.EdgeInfo.HasAssociationEdges()
 }
 
-func getNameForEdgeTable(nodeData *nodeTemplate, edge edgeInfo) string {
-	tableNameParts := []string{nodeData.getTableName(), strings.ToLower(edge.EdgeName), "edge"}
+func getNameForEdgeTable(nodeData *nodeTemplate, e *edge.AssociationEdge) string {
+	tableNameParts := []string{nodeData.getTableName(), strings.ToLower(e.GetEdgeName()), "edge"}
 	return getNameFromParts(tableNameParts)
 }
 
-func (schema *dbSchema) createEdgeTable(nodeData *nodeTemplate, edge edgeInfo, assocEdge *associationEdgeInfo) *dbTable {
-	tableName := getNameForEdgeTable(nodeData, edge)
+func (schema *dbSchema) createEdgeTable(nodeData *nodeTemplate, assocEdge *edge.AssociationEdge) *dbTable {
+	tableName := getNameForEdgeTable(nodeData, assocEdge)
 
 	var columns []*dbColumn
 	id1Col := schema.getID1Column()

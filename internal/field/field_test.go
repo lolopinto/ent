@@ -1,13 +1,10 @@
 package field
 
 import (
-	"go/ast"
-	"go/importer"
-	"go/parser"
-	"go/token"
-	"go/types"
 	"strconv"
 	"testing"
+
+	"github.com/lolopinto/ent/internal/codegen"
 )
 
 func TestFieldInfo(t *testing.T) {
@@ -290,7 +287,7 @@ func testColName(t *testing.T, f *Field, expectedColName string) {
 
 func getTestFieldInfo(t *testing.T, configName string) *FieldInfo {
 	data := parseConfigFileForStruct(t)
-	fieldInfo := GetFieldInfoForStruct(data.structMap[configName], data.fset, data.info)
+	fieldInfo := GetFieldInfoForStruct(data.StructMap[configName], data.Fset, data.Info)
 
 	if fieldInfo == nil {
 		t.Errorf("invalid fieldInfo retrieved")
@@ -303,68 +300,8 @@ func getTestFieldByName(t *testing.T, configName string, fieldName string) *Fiel
 	return fieldInfo.GetFieldByName(fieldName)
 }
 
-type configData struct {
-	structMap map[string]*ast.StructType
-	fset      *token.FileSet
-	info      types.Info
-}
-
-// TODO abstract this logic into a reusable place.
-// or as part of codegen package
-// instead of returning these 3 objects. create a type that's returned here and that inspectFile in ent_codegen.go takes
-func parseConfigFileForStruct(t *testing.T) *configData {
-	filePaths := []string{
-		"../testdata/models/configs/account_config.go",
-		"../testdata/models/configs/todo_config.go",
-	}
-	fset := token.NewFileSet()
-
-	var files []*ast.File
-	for _, path := range filePaths {
-		file, err := parser.ParseFile(fset, path, nil, parser.AllErrors)
-		if err != nil {
-			t.Errorf("could not parse config file at path %s", path)
-		}
-		files = append(files, file)
-	}
-
-	structMap := make(map[string]*ast.StructType)
-
-	info := types.Info{
-		Types: make(map[ast.Expr]types.TypeAndValue),
-		Defs:  make(map[*ast.Ident]types.Object),
-		Uses:  make(map[*ast.Ident]types.Object),
-	}
-	conf := types.Config{
-		Importer: importer.Default(),
-	}
-	_, err := conf.Check("models/configs", fset, files, &info)
-	if err != nil {
-		t.Errorf("was unable to chek the file as needed. error: %s", err)
-	}
-
-	for _, file := range files {
-		var st *ast.StructType
-		var structName string
-		ast.Inspect(file, func(node ast.Node) bool {
-			if s, ok := node.(*ast.StructType); ok {
-				st = s
-			}
-
-			if t, ok := node.(*ast.TypeSpec); ok && t.Type != nil {
-				structName = t.Name.Name
-			}
-			return true
-		})
-
-		if st == nil || structName == "" {
-			t.Errorf("count not parse a struct type from config file")
-		}
-		structMap[structName] = st
-	}
-	return &configData{
-		structMap: structMap,
-		fset:      fset,
-		info:      info,
-	}
+func parseConfigFileForStruct(t *testing.T) *codegen.FileConfigData {
+	data := codegen.ParseFilesForTest(t)
+	data.ParseStructs(t)
+	return data
 }

@@ -103,16 +103,18 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
   {{$currentNodeInstance := .NodeInstance}}
   {{$currentNode := .Node}}
   {{$currentPackageName := .PackageName}}
-  {{range .Edges -}}
-    {{$edgeName := .EdgeName -}}
-    {{$edgeInfo := .}}
-    {{with .NodeTemplate -}}
-      {{if $edgeInfo.FieldEdge -}}
+  {{with .EdgeInfo}}
+    {{range $edge := .FieldEdges -}}
+      {{$edgeName := .EdgeName -}}
+      {{with .NodeInfo -}}
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodeResult}} chan<- {{.NodeResult}}) {
-          go GenLoad{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edgeInfo.FieldEdge.FieldName}}, chan{{.NodeResult}} )
+          go GenLoad{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edge.FieldName}}, chan{{.NodeResult}} )
         }
       {{end}}
-      {{if $edgeInfo.ForeignKeyEdge -}}
+    {{end}}
+    {{range $edge := .ForeignKeys -}}
+      {{$edgeName := .EdgeName -}}
+      {{with .NodeInfo -}}
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
           var {{.NodeInstance}}s {{.NodesSlice}}
           chanErr := make(chan error)
@@ -124,24 +126,25 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
           }
         }
       {{end}}
-      {{if $edgeInfo.AssociationEdge -}}
+    {{end}}
+    {{range $edge := .Associations -}}
+      {{$edgeName := .EdgeName -}}
+      {{with .NodeInfo -}}
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edges(chanEdgesResult chan<- ent.EdgesResult) {
-          go ent.GenLoadEdgesByTypeResult({{$currentNodeInstance}}.ID, {{$edgeInfo.AssociationEdge.EdgeConst}}, chanEdgesResult)
+          go ent.GenLoadEdgesByTypeResult({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, chanEdgesResult)
         }
 
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
           var {{.NodeInstance}}s {{.NodesSlice}}
           chanErr := make(chan error)
-          go ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edgeInfo.AssociationEdge.EdgeConst}}, &{{.NodeInstance}}s, chanErr)
+          go ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s, chanErr)
           err := <-chanErr
           chan{{.NodesResult}} <- {{.NodesResult}}{
             {{.Nodes}}: {{.NodeInstance}}s,
             Error: err,
           }
         }
-
       {{end}}
-     
     {{end}}
   {{end}}
 {{end}}

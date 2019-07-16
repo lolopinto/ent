@@ -20,9 +20,11 @@ import (
 	"text/template"
 
 	"github.com/google/uuid"
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/cmd/gent/configs"
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/astparser"
+	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/util"
 
@@ -36,18 +38,10 @@ import (
 )
 
 type nodeTemplate struct {
+	codegen.NodeInfo
 	PackageName    string
-	Node           string
-	Nodes          string
 	FieldInfo      *field.FieldInfo
-	NodeResult     string
-	NodesResult    string
-	NodeInstance   string
-	NodesSlice     string
-	NodeType       string
-	EntConfig      string
-	EntConfigName  string
-	Edges          []edgeInfo
+	EdgeInfo       *edge.EdgeInfo
 	TableName      string
 	ConstantGroups []constGroupInfo
 }
@@ -290,13 +284,7 @@ func generateConstsAndNewEdges(allNodes codegenMapInfo) []*edgeConfig {
 			ConstType: "ent.EdgeType",
 		}
 
-		for _, edge := range nodeData.Edges {
-			if edge.AssociationEdge == nil {
-				continue
-			}
-			// todo break the edges into different parts instead of all in .Edges
-			assocEdge := edge.AssociationEdge
-
+		for _, assocEdge := range nodeData.EdgeInfo.Associations {
 			constName := assocEdge.EdgeConst
 
 			// check if there's an existing edge
@@ -310,7 +298,7 @@ func generateConstsAndNewEdges(allNodes codegenMapInfo) []*edgeConfig {
 					EdgeType:      constValue,
 					EdgeName:      constName,
 					SymmetricEdge: false,
-					EdgeTable:     getNameForEdgeTable(nodeData, edge),
+					EdgeTable:     getNameForEdgeTable(nodeData, assocEdge),
 				})
 			}
 
@@ -321,7 +309,7 @@ func generateConstsAndNewEdges(allNodes codegenMapInfo) []*edgeConfig {
 					"%s is the edgeType for the %s to %s edge.",
 					constName,
 					nodeData.NodeInstance,
-					strings.ToLower(assocEdge.EdgeName),
+					strings.ToLower(assocEdge.GetEdgeName()),
 				),
 			})
 		}
@@ -428,9 +416,9 @@ func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string
 
 				constName := ident.Name
 
-				typ := getExprToSelectorExpr(valueSpec.Type)
+				typ := astparser.GetExprToSelectorExpr(valueSpec.Type)
 
-				typIdent := getExprToIdent(typ.X)
+				typIdent := astparser.GetExprToIdent(typ.X)
 
 				// todo this can probably be an ident.
 				// handle that if and when we get there...
@@ -441,7 +429,7 @@ func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string
 					util.Die(fmt.Errorf("expected 1 value for const declaration. got %d", len(valueSpec.Values)))
 				}
 				val := valueSpec.Values[0]
-				basicLit := getExprToBasicLit(val)
+				basicLit := astparser.GetExprToBasicLit(val)
 				constValue, err := strconv.Unquote(basicLit.Value)
 				util.Die(err)
 
@@ -462,8 +450,7 @@ func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specif
 	//ast.NewObj(fset, "file")
 	//fmt.Println("Struct:")
 	var nodeData nodeTemplate
-	var edges []edgeInfo
-	var hasAssociationEdge bool
+	edgeInfo := &edge.EdgeInfo{}
 	var tableName string
 
 	ast.Inspect(file, func(node ast.Node) bool {
@@ -481,7 +468,7 @@ func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specif
 
 			switch fn.Name.Name {
 			case "GetEdges":
-				edges, hasAssociationEdge = parseEdgesFunc(packageName, fn)
+				edgeInfo = edge.ParseEdgesFunc(packageName, fn)
 				// TODO: validate edges. can only have one of each type etc
 
 			case "GetTableName":
@@ -493,47 +480,14 @@ func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specif
 	})
 
 	// set edges and other fields gotten from parsing other things
-	nodeData.Edges = edges
+	nodeData.EdgeInfo = edgeInfo
 	nodeData.TableName = tableName
 
 	return &codegenNodeTemplateInfo{
 		nodeData:                &nodeData,
 		shouldCodegen:           shouldCodegenPackage(file, specificConfig),
-		shouldParseExistingFile: hasAssociationEdge,
+		shouldParseExistingFile: edgeInfo.HasAssociationEdges(),
 	}
-}
-
-func getLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
-	// fn.Body is an instance of *ast.BlockStmt
-	lastStmt := getLastStatement(fn.Body.List)
-
-	//fmt.Println(length)
-	// to handle the case where we have variables used to return something
-	// not really a valid case but handle it anyways
-	returnStmt, ok := lastStmt.(*ast.ReturnStmt)
-	if !ok {
-		panic("last statement in function was not a return statement. ")
-	}
-
-	//fmt.Println(len(returnStmt.Results))
-
-	if len(returnStmt.Results) != 1 {
-		panic("invalid number or format of return statement")
-	}
-
-	return getLastExpr(returnStmt.Results)
-}
-
-func getCompositeStmtsInFunc(fn *ast.FuncDecl) *ast.CompositeLit {
-	lastExpr := getLastReturnStmtExpr(fn)
-	compositeListStmt := getExprToCompositeLit(lastExpr)
-	return compositeListStmt
-}
-
-// given a function node, it gets the list of elts in the func
-// works for both edges in GetEdges() func and list of privacy rules in Rules
-func getEltsInFunc(fn *ast.FuncDecl) []ast.Expr {
-	return getCompositeStmtsInFunc(fn).Elts
 }
 
 // astConfig returns the config of a file before it was re-generated to keep
@@ -562,7 +516,7 @@ func (config *astConfig) getManualExprs(fnName string) []ast.Expr {
 // getLastExpr returns the last expression in the function for the given function name
 func (config *astConfig) getLastExpr(fnName string) ast.Expr {
 	allExprs := config.exprMap[fnName]
-	return getLastExpr(allExprs)
+	return astparser.GetLastExpr(allExprs)
 }
 
 // this is for keeping track of commentgroup pairs that have a BEGIN of...
@@ -644,7 +598,7 @@ func parseFileForManualCode(path string) *astConfig {
 					commentMap[fnName] = cgPair
 					//exprMap[fnName] = manualStmts
 					// store the entire elts in func...
-					exprMap[fnName] = getEltsInFunc(fn)
+					exprMap[fnName] = astparser.GetEltsInFunc(fn)
 				}
 			}
 		}
@@ -717,7 +671,7 @@ func rewriteAstWithConfig(config *astConfig, b []byte) []byte {
 		// take the DST func, convert to DST so we can use helper methods we have here
 		// and then convert back to DST so that we can
 		astFunc := dec.Ast.Nodes[fn].(*ast.FuncDecl)
-		compositeLit := getCompositeStmtsInFunc(astFunc)
+		compositeLit := astparser.GetCompositeStmtsInFunc(astFunc)
 
 		compositeLitDst := dec.Dst.Nodes[compositeLit].(*dst.CompositeLit)
 		elts := compositeLitDst.Elts
@@ -764,332 +718,21 @@ func rewriteAstWithConfig(config *astConfig, b []byte) []byte {
 	return buf.Bytes()
 }
 
-func getLastStatement(stmts []ast.Stmt) ast.Stmt {
-	length := len(stmts)
-	lastStmt := stmts[length-1]
-	return lastStmt
-}
-
-func getLastExpr(exprs []ast.Expr) ast.Expr {
-	length := len(exprs)
-	lastExpr := exprs[length-1]
-	return lastExpr
-}
-
 // getTableName returns the name of the table the node should be stored in
 func getTableName(fn *ast.FuncDecl) string {
-	expr := getLastReturnStmtExpr(fn)
-	basicLit := getExprToBasicLit(expr)
+	expr := astparser.GetLastReturnStmtExpr(fn)
+	basicLit := astparser.GetExprToBasicLit(expr)
 	//fmt.Println("table name", basicLit.Value)
 	return basicLit.Value
-}
-
-// http://goast.yuroyoro.net/ is really helpful to see the tree
-func parseEdgesFunc(packageName string, fn *ast.FuncDecl) ([]edgeInfo, bool) {
-	elts := getEltsInFunc(fn)
-
-	// get the edges in teh function
-	edges := make([]edgeInfo, len(elts))
-	hasAssociationEdge := false
-	for idx, expr := range elts {
-		keyValueExpr := getExprToKeyValueExpr(expr)
-		//fmt.Println(keyValueExpr)
-		// get the edge as needed
-		edgeItem := parseEdgeItem(packageName, keyValueExpr)
-		edges[idx] = edgeItem
-		if edgeItem.AssociationEdge != nil {
-			hasAssociationEdge = true
-		}
-	}
-
-	//fmt.Println(edges)
-
-	return edges, hasAssociationEdge
-}
-
-func getExprToCompositeLit(expr ast.Expr) *ast.CompositeLit {
-	value, ok := expr.(*ast.CompositeLit)
-	if !ok {
-		panic("invalid value for Expr. Expr was not of type CompositeLit")
-	}
-	return value
-}
-
-func getExprToBasicLit(expr ast.Expr) *ast.BasicLit {
-	value, ok := expr.(*ast.BasicLit)
-	if !ok {
-		panic("invalid value for Expr. Expr was not of type BasicLit")
-	}
-	return value
-}
-
-func getExprToSelectorExpr(expr ast.Expr) *ast.SelectorExpr {
-	value, ok := expr.(*ast.SelectorExpr)
-	if !ok {
-		panic("invalid value for Expr. Expr was not of type SelectorExpr")
-	}
-	return value
-}
-
-func getExprToKeyValueExpr(expr ast.Expr) *ast.KeyValueExpr {
-	value, ok := expr.(*ast.KeyValueExpr)
-	if !ok {
-		panic("invalid value for Expr. Expr was not of type KeyValueExpr")
-	}
-	return value
-}
-
-func getExprToIdent(expr ast.Expr) *ast.Ident {
-	value, ok := expr.(*ast.Ident)
-	if !ok {
-		panic("invalid value for Expr. Expr was not of type Ident")
-	}
-	return value
-}
-
-type entConfigInfo struct {
-	PackageName string
-	ConfigName  string
-}
-
-type fieldEdgeInfo struct {
-	FieldName string
-	EntConfig entConfigInfo
-}
-
-// TODO we need a FieldName in ent.ForeignKeyEdge and a sensible way to pass the field
-// down. Right now, it's depending on the fact that it aligns with the "package name"
-type foreignKeyEdgeInfo struct {
-	EntConfig entConfigInfo
-}
-
-type associationEdgeInfo struct {
-	EntConfig entConfigInfo
-	EdgeConst string
-	EdgeName  string
-}
-
-type edgeInfo struct {
-	EdgeName        string
-	FieldEdge       *fieldEdgeInfo
-	ForeignKeyEdge  *foreignKeyEdgeInfo
-	AssociationEdge *associationEdgeInfo
-	NodeTemplate    nodeTemplate
-}
-
-// Takes an Expr and converts it to the underlying string without quotes
-// For example: in the GetEdges method below,
-// return map[string]interface{}{
-// 	"User": ent.FieldEdge{
-// 		FieldName: "UserID",
-// 		EntConfig: UserConfig{},
-// 	},
-// }
-// Calling this with the "User" Expr returns User and calling it with
-// the "UserID" Expr returns UserID
-func getUnderylingStringFromLiteralExpr(expr ast.Expr) string {
-	key, ok := expr.(*ast.BasicLit)
-	if !ok || key.Kind != token.STRING {
-		panic("invalid key for edge item")
-	}
-	splitString := strings.Split(key.Value, "\"")
-	// verify that the first and last part are empty string?
-	if len(splitString) != 3 {
-		panic(fmt.Sprintf("%s is formatted weirdly as a string literal", key.Value))
-	}
-	return splitString[1]
-}
-
-func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr) edgeInfo {
-	edgeName := getUnderylingStringFromLiteralExpr(keyValueExpr.Key)
-	//fmt.Println("EdgeName: ", edgeName)
-
-	value := getExprToCompositeLit(keyValueExpr.Value)
-	typ := getExprToSelectorExpr(value.Type)
-	// ignore typ.X because for now it should always be models.FieldEdge or ent.FieldEdge...
-
-	edgeType := typ.Sel.Name
-
-	var fieldEdgeItem *fieldEdgeInfo
-	var foreignKeyEdgeItem *foreignKeyEdgeInfo
-	var associationEdgeItem *associationEdgeInfo
-	var packageName string
-
-	switch edgeType {
-	case "FieldEdge":
-		fieldEdgeItem = parseFieldEdgeItem(value)
-		packageName = fieldEdgeItem.EntConfig.PackageName
-
-	case "ForeignKeyEdge":
-		foreignKeyEdgeItem = parseForeignKeyEdgeItem(value)
-		packageName = foreignKeyEdgeItem.EntConfig.PackageName
-
-	case "AssociationEdge":
-		associationEdgeItem = parseAssociationEdgeItem(containingPackageName, edgeName, value)
-		packageName = associationEdgeItem.EntConfig.PackageName
-
-	default:
-		panic("unsupported edge type")
-
-	}
-	return edgeInfo{
-		EdgeName:        edgeName,
-		FieldEdge:       fieldEdgeItem,
-		ForeignKeyEdge:  foreignKeyEdgeItem,
-		AssociationEdge: associationEdgeItem,
-		NodeTemplate:    getNodeTemplate(packageName, &field.FieldInfo{}),
-	}
-}
-
-func parseFieldEdgeItem(lit *ast.CompositeLit) *fieldEdgeInfo {
-	done := make(chan bool)
-	var fieldName string
-	var entConfig entConfigInfo
-
-	closure := func(identName string, keyValueExprValue ast.Expr, expr ast.Expr) {
-		switch identName {
-		case "FieldName":
-			// TODO: this validates it's a string literal.
-			// does not format it.
-			// TODO make this
-			_, ok := expr.(*ast.Ident)
-			if ok {
-				panic("invalid FieldName value. Should not use an expression. Should be a string literal")
-			}
-			fieldName = getUnderylingStringFromLiteralExpr(keyValueExprValue)
-			//fmt.Println("Field name:", fieldName)
-
-		case "EntConfig":
-			entConfig = getEntConfigFromExpr(keyValueExprValue)
-
-		default:
-			panic("invalid identifier for field config")
-		}
-	}
-
-	go parseEdgeItemHelper(lit, closure, done)
-	<-done
-
-	return &fieldEdgeInfo{
-		FieldName: fieldName,
-		EntConfig: entConfig,
-	}
-}
-
-func parseForeignKeyEdgeItem(lit *ast.CompositeLit) *foreignKeyEdgeInfo {
-	entConfig := parseEntConfigOnlyFromEdgeItemHelper(lit)
-
-	return &foreignKeyEdgeInfo{
-		EntConfig: entConfig,
-	}
-}
-
-func parseAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.CompositeLit) *associationEdgeInfo {
-	entConfig := parseEntConfigOnlyFromEdgeItemHelper(lit)
-
-	// todo...
-	// need to support custom edge...
-	edgeConst := strcase.ToCamel(containingPackageName) + "To" + edgeName + "Edge"
-
-	return &associationEdgeInfo{
-		EntConfig: entConfig,
-		EdgeConst: edgeConst,
-		EdgeName:  edgeName,
-	}
-}
-
-func parseEntConfigOnlyFromEdgeItemHelper(lit *ast.CompositeLit) entConfigInfo {
-	done := make(chan bool)
-	var entConfig entConfigInfo
-
-	closure := func(identName string, keyValueExprValue ast.Expr, _ ast.Expr) {
-		switch identName {
-		case "EntConfig":
-			entConfig = getEntConfigFromExpr(keyValueExprValue)
-
-		default:
-			panic("invalid identifier for field config")
-		}
-	}
-
-	go parseEdgeItemHelper(lit, closure, done)
-	<-done
-	return entConfig
-}
-
-func parseEdgeItemHelper(lit *ast.CompositeLit, valueFunc func(identName string, keyValueExprValue ast.Expr, expr ast.Expr), done chan<- bool) {
-	for _, expr := range lit.Elts {
-		keyValueExpr := getExprToKeyValueExpr(expr)
-		ident := getExprToIdent(keyValueExpr.Key)
-
-		valueFunc(ident.Name, keyValueExpr.Value, expr)
-	}
-	done <- true
-}
-
-func getNodeNameFromEntConfig(configName string) (string, error) {
-	r, err := regexp.Compile("([A-Za-z]+)Config")
-	util.Die(err)
-	match := r.FindStringSubmatch(configName)
-	if len(match) == 2 {
-		return match[1], nil
-	}
-	return "", fmt.Errorf("couldn't match EntConfig name")
-}
-
-func getEntConfigFromExpr(expr ast.Expr) entConfigInfo {
-	lit := getExprToCompositeLit(expr)
-	// inlining getExprToSelectorExpr...
-	typ, ok := lit.Type.(*ast.SelectorExpr)
-	// This is when the EntConfig is of the form user.UserConfig
-	// don't actually support this case right now since all the configs are local
-	if ok {
-		entIdent := getExprToIdent(typ.X)
-		return entConfigInfo{
-			PackageName: entIdent.Name,
-			ConfigName:  typ.Sel.Name,
-		}
-	}
-
-	// inlining getExprToIdent...
-	// TODO figure out what we wanna do here
-	// This supports when the EntConfig is local to the module
-	entIdent, ok := lit.Type.(*ast.Ident)
-	if ok {
-		configName, err := getNodeNameFromEntConfig(entIdent.Name)
-		util.Die(err)
-		return entConfigInfo{
-			// return a fake packageName e.g. user, contact to be used
-			// TODO fix places using this to return Node instead of fake packageName
-			PackageName: configName,
-			ConfigName:  entIdent.Name,
-		}
-	}
-	panic("Invalid value for Expr. Could not get EntConfig from Expr")
 }
 
 func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet, info types.Info) nodeTemplate {
 	fieldInfo := field.GetFieldInfoForStruct(s, fset, info)
 
-	return getNodeTemplate(packageName, fieldInfo)
-}
-
-func getNodeTemplate(packageName string, fieldInfo *field.FieldInfo) nodeTemplate {
-	// convert from pacakgename to camel case
-	nodeName := strcase.ToCamel(packageName)
-
 	return nodeTemplate{
-		PackageName:   packageName,                  // contact
-		Node:          nodeName,                     // Contact
-		Nodes:         fmt.Sprintf("%ss", nodeName), // Contacts
-		FieldInfo:     fieldInfo,
-		NodeResult:    fmt.Sprintf("%sResult", nodeName),            // ContactResult
-		NodesResult:   fmt.Sprintf("%ssResult", nodeName),           // ContactsResult
-		NodeInstance:  strcase.ToLowerCamel(nodeName),               // contact
-		NodesSlice:    fmt.Sprintf("[]*%s", nodeName),               // []*Contact
-		NodeType:      fmt.Sprintf("%sType", nodeName),              // ContactType
-		EntConfig:     fmt.Sprintf("&configs.%sConfig{}", nodeName), // &configs.ContactConfig{}
-		EntConfigName: fmt.Sprintf("%sConfig", nodeName),            // ContactConfig
+		NodeInfo:    codegen.GetNodeInfo(packageName),
+		PackageName: packageName,
+		FieldInfo:   fieldInfo,
 	}
 }
 
@@ -1176,7 +819,7 @@ func generateNewAst(fw *templatedBasedFileWriter) []byte {
 	util.Die(err)
 	//err = t.Execute(os.Stdout, nodeData)
 	//fmt.Println(buffer)
-	//fmt.Println(buffer.String())
+	//	fmt.Println(buffer.String())
 	// gofmt the buffer
 	if fw.formatSource {
 		bytes, err := format.Source(buffer.Bytes())
