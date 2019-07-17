@@ -19,8 +19,9 @@ import (
 // todo deal with struct tags
 // todo empty interface{}
 type insertdata struct {
-	columns []string
-	values  []interface{}
+	columns  []string
+	values   []interface{}
+	pkeyName string
 }
 
 /**
@@ -161,7 +162,7 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 	// values = append(values, newUUID)
 
 	// if it has a pkey, don't set anything.
-	var hasPKey bool
+	var pkey string
 
 	// use sqlx here?
 	for i := 0; i < fieldCount; i++ {
@@ -194,14 +195,15 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 		}
 
 		if typeOfField.Tag.Get("pkey") != "" {
-			hasPKey = true
+			pkey = column
 		}
 
 		columns = append(columns, column)
 		values = append(values, field.Interface())
 	}
 
-	if !hasPKey {
+	if pkey == "" {
+		pkey = "id"
 		idCols = append(idCols, columns...)
 		columns = idCols
 
@@ -214,7 +216,7 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 	columns = append(columns, "updated_at", "created_at")
 	values = append(values, time.Now(), time.Now())
 
-	return insertdata{columns, values}
+	return insertdata{columns, values, pkey}
 }
 
 func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
@@ -224,7 +226,8 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 
 // LoadNode loads a single node given the id, node object and entConfig
 // TODO refactor this
-func loadNodeRawData(id string, entity interface{}, entConfig Config) error {
+
+func loadNodeRawDataFromTable(id string, entity interface{}, tableName string, tx *sqlx.Tx) error {
 	// TODO does it make sense to change the API we use here to instead pass it to entity?
 
 	if entity == nil {
@@ -235,8 +238,13 @@ func loadNodeRawData(id string, entity interface{}, entConfig Config) error {
 	insertData := getFieldsAndValues(entity, false)
 	colsString := insertData.getColumnsString()
 
-	computedQuery := fmt.Sprintf("SELECT %s FROM %s WHERE id = $1", colsString, entConfig.GetTableName())
-	fmt.Println(computedQuery)
+	computedQuery := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE %s = $1",
+		colsString,
+		tableName,
+		insertData.pkeyName,
+	)
+	//	fmt.Println(computedQuery)
 
 	db := data.DBConn()
 	if db == nil {
@@ -245,7 +253,8 @@ func loadNodeRawData(id string, entity interface{}, entConfig Config) error {
 		return err
 	}
 
-	stmt, err := db.Preparex(computedQuery)
+	stmt, err := getStmtFromTx(tx, db, computedQuery)
+
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -257,6 +266,10 @@ func loadNodeRawData(id string, entity interface{}, entConfig Config) error {
 		fmt.Println(err)
 	}
 	return err
+}
+
+func loadNodeRawData(id string, entity interface{}, entConfig Config) error {
+	return loadNodeRawDataFromTable(id, entity, entConfig.GetTableName(), nil)
 }
 
 // EntityResult is the result of a call to LoadNodeConc which returns an object
@@ -435,6 +448,18 @@ func CreateNodes(nodes interface{}, entConfig Config) error {
 	return PerformAllOperations(operations)
 }
 
+func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
+	var stmt *sqlx.Stmt
+	var err error
+	// handle if in transcation or not.
+	if tx == nil {
+		stmt, err = db.Preparex(query)
+	} else {
+		stmt, err = tx.Preparex(query)
+	}
+	return stmt, err
+}
+
 /*
  * performs a write (INSERT, UPDATE, DELETE statement) given the SQL statement
  * and values to be updated in the database
@@ -447,14 +472,7 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx) error {
 		return err
 	}
 
-	var stmt *sqlx.Stmt
-	var err error
-	// handle if in transcation or not.
-	if tx == nil {
-		stmt, err = db.Preparex(query)
-	} else {
-		stmt, err = tx.Preparex(query)
-	}
+	stmt, err := getStmtFromTx(tx, db, query)
 
 	if err != nil {
 		fmt.Println(err)
@@ -565,8 +583,19 @@ func getEdgeEntities(entity1 interface{}, entity2 interface{}) (Entity, Entity, 
 	return ent1, ent2, nil
 }
 
+func getEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
+	edgeData := &AssocEdgeData{}
+	err := loadNodeRawDataFromTable(string(edgeType), edgeData, "assoc_edge_config", tx)
+	return edgeData, err
+}
+
 func addEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions, tx *sqlx.Tx) error {
 	ent1, ent2, err := getEdgeEntities(entity1, entity2)
+	if err != nil {
+		return err
+	}
+
+	edgeData, err := getEdgeInfo(edgeType, tx)
 	if err != nil {
 		return err
 	}
@@ -601,7 +630,8 @@ func addEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType Edg
 	vals = append(vals, edgeOptions.Data)
 
 	query := fmt.Sprintf(
-		"INSERT into %s (%s) VALUES(%s)", "edges_info",
+		"INSERT into %s (%s) VALUES(%s)",
+		edgeData.EdgeTable,
 		getColumnsString(cols),
 		getValsString(vals),
 	)
@@ -621,10 +651,18 @@ func deleteEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType 
 		return err
 	}
 
+	edgeData, err := getEdgeInfo(edgeType, tx)
+	if err != nil {
+		return err
+	}
+
 	id1 := findID(entity1)
 	id2 := findID(entity2)
 
-	query := fmt.Sprintf("DELETE FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3", "edges_info")
+	query := fmt.Sprintf(
+		"DELETE FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3",
+		edgeData.EdgeTable,
+	)
 
 	vals := []interface{}{
 		id1,
@@ -756,10 +794,18 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 		return nil, err
 	}
 
+	edgeData, err := getEdgeInfo(edgeType, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// TODO: eventually add support for complex queries
 	// ORDER BY time DESC default
 	// we need offset, limit eventually
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 ORDER BY time DESC", "edges_info")
+	query := fmt.Sprintf(
+		"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 ORDER BY time DESC",
+		edgeData.EdgeTable,
+	)
 	fmt.Println(query)
 
 	stmt, err := db.Preparex(query)
@@ -826,7 +872,14 @@ func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 		return nil, err
 	}
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3", "edges_info")
+	edgeData, err := getEdgeInfo(edgeType, nil)
+	if err != nil {
+		return nil, err
+	}
+	query := fmt.Sprintf(
+		"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3",
+		edgeData.EdgeTable,
+	)
 	fmt.Println(query)
 
 	stmt, err := db.Preparex(query)
@@ -862,8 +915,14 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
 		return err
 	}
 
+	length := len(edges)
+	// no nodes, nothing to do here
+	if length == 0 {
+		return err
+	}
+
 	// get ids from the edges
-	ids := make([]interface{}, len(edges))
+	ids := make([]interface{}, length)
 	for idx, edge := range edges {
 		ids[idx] = edge.ID2
 	}

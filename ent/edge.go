@@ -1,6 +1,9 @@
 package ent
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 // Edge is the information about an edge between two Nodes
 // It's generic enough so that it applies across all types.
@@ -28,4 +31,14 @@ type EdgeResult struct {
 type EdgesResult struct {
 	Edges []Edge
 	Error error
+}
+
+// AssocEdgeData is corresponding ent for AssocEdgeConfig
+type AssocEdgeData struct {
+	EdgeType        string         `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
+	EdgeName        string         `db:"edge_name"`
+	SymmetricEdge   bool           `db:"symmetric_edge"`
+	InverseEdgeType sql.NullString `db:"inverse_edge_type"`
+	EdgeTable       string         `db:"edge_table"`
+	Timestamps
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"database/sql"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -239,17 +238,8 @@ func parseSchemasFromSource(sources map[string]string, specificConfig string) co
 	return parseFiles(p)
 }
 
-// edgeConfig is corresponding ent for AssocEdgeConfig
-type edgeConfig struct {
-	EdgeType        string         `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
-	EdgeName        string         `db:"edge_name"`
-	SymmetricEdge   bool           `db:"symmetric_edge"`
-	InverseEdgeType sql.NullString `db:"inverse_edge_type"`
-	EdgeTable       string         `db:"edge_table"`
-}
-
-func generateConstsAndNewEdges(allNodes codegenMapInfo) []*edgeConfig {
-	var newEdges []*edgeConfig
+func generateConstsAndNewEdges(allNodes codegenMapInfo) []*ent.AssocEdgeData {
+	var newEdges []*ent.AssocEdgeData
 
 	for _, info := range allNodes {
 		if !info.shouldCodegen {
@@ -306,7 +296,7 @@ func generateConstsAndNewEdges(allNodes codegenMapInfo) []*edgeConfig {
 			if constValue == "" {
 				constValue = uuid.New().String()
 				// keep track of new edges that we need to do things with
-				newEdges = append(newEdges, &edgeConfig{
+				newEdges = append(newEdges, &ent.AssocEdgeData{
 					EdgeType:      constValue,
 					EdgeName:      constName,
 					SymmetricEdge: false,
