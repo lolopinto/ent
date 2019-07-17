@@ -37,7 +37,7 @@ type {{.ResolverType}} struct {}
         {{- else if loadObjectFromContext $field -}}
           return models.Load{{$field.GoFieldName}}FromContext(ctx, id)
 				{{- else if fieldEdge $field -}}
-					panic("field edge todo")
+					return obj.Load{{$field.GoFieldName}}()
 				{{- else -}}
 					panic("not implemented")
         {{ end -}}

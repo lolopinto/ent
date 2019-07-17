@@ -250,10 +250,24 @@ func GenLoadForeignKeyNodes(viewer viewer.ViewerContext, id string, nodes interf
 	})
 }
 
+func LoadForeignKeyNodes(viewer viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) error {
+	errChan := make(chan error)
+	go GenLoadForeignKeyNodes(viewer, id, nodes, colName, entConfig, errChan)
+	err := <-errChan
+	return err
+}
+
 func GenLoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, errChan chan<- error) {
 	go genLoadNodesImpl(viewer, nodes, errChan, func(chanErr chan<- error) {
 		go genLoadNodesByType(id, edgeType, nodes, chanErr)
 	})
+}
+
+func LoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}) error {
+	errChan := make(chan error)
+	go GenLoadNodesByType(viewer, id, edgeType, nodes, errChan)
+	err := <-errChan
+	return err
 }
 
 // function that does the actual work of loading the raw data when fetching a list of nodes
