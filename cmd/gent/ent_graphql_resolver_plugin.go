@@ -68,6 +68,23 @@ func (p *entGraphQLResolverPlugin) fieldEdge(field *codegen.Field) bool {
 	return edge != nil
 }
 
+func (p *entGraphQLResolverPlugin) pluralEdge(field *codegen.Field) bool {
+	objName := field.Object.Name
+
+	template := p.nodes.getTemplateFromGraphQLName(objName)
+	if template == nil {
+		return false
+	}
+
+	fkeyEdge := template.getForeignKeyEdgeByName(field.GoFieldName)
+	if fkeyEdge != nil {
+		return true
+	}
+
+	assocEdge := template.getAssociationEdgeByName(field.GoFieldName)
+	return assocEdge != nil
+}
+
 // ResolverBuild is the object passed to the template to generate the graphql code
 type ResolverBuild struct {
 	*codegen.Data
@@ -92,6 +109,7 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 			"castToString":          p.castToString,
 			"loadObjectFromContext": p.loadObjectFromContext,
 			"fieldEdge":             p.fieldEdge,
+			"pluralEdge":            p.pluralEdge,
 		},
 	})
 }

@@ -38,6 +38,8 @@ type {{.ResolverType}} struct {}
           return models.Load{{$field.GoFieldName}}FromContext(ctx, id)
 				{{- else if fieldEdge $field -}}
 					return obj.Load{{$field.GoFieldName}}()
+				{{- else if pluralEdge $field -}}
+					return obj.Load{{$field.GoFieldName}}()
 				{{- else -}}
 					panic("not implemented")
         {{ end -}}

@@ -183,6 +183,18 @@ func TestGraphQLFieldEdge(t *testing.T) {
 	testEdge(t, e, "Account", "account: Account")
 }
 
+func TestGraphQLForeignKeyEdge(t *testing.T) {
+	e := getTestGraphqlPluralEdge("Account", "Todos", t)
+
+	testEdge(t, e, "Todos", "todos: [Todo!]!")
+}
+
+func TestGraphQLAssociationKeyEdge(t *testing.T) {
+	e := getTestGraphqlPluralEdge("Account", "Friends", t)
+
+	testEdge(t, e, "Friends", "friends: [Account!]!")
+}
+
 func testLine(t *testing.T, lineItem graphqlLineItem, expectedSchemaLine, itemName string) {
 	line := lineItem.GetSchemaLine()
 	if line != expectedSchemaLine {
@@ -271,7 +283,7 @@ func getTestGraphQLFieldEdge(typeName, edgeName string, t *testing.T) *graphqlFi
 	return e
 }
 
-func getTestGraphqlPluralEdge(typeName, edgeName string, t *testing.T) *grapqhlPluralEdge {
+func getTestGraphqlPluralEdge(typeName, edgeName string, t *testing.T) *graphqlPluralEdge {
 	s := getTestGraphQLObject(typeName, t)
 	e := s.getPluralEdgeByName(edgeName)
 	if e == nil {

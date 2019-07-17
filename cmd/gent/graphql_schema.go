@@ -67,11 +67,11 @@ func (schema *graphQLSchema) buildGraphQLSchemaInfo(nodeData *nodeTemplate) *gra
 	}
 
 	for _, edge := range nodeData.EdgeInfo.Associations {
-		schemaInfo.addPluralEdge(&grapqhlPluralEdge{PluralEdge: edge})
+		schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
 	}
 
 	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
-		schemaInfo.addPluralEdge(&grapqhlPluralEdge{PluralEdge: edge})
+		schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
 	}
 
 	// very simple, just get fields and create types. no nodes, edges, return ID fields etc
@@ -195,7 +195,9 @@ func (schema *graphQLSchema) getSchemaForTemplate() *graphqlSchemaTemplate {
 		for _, f := range typ.fieldEdges {
 			lines = append(lines, f.GetSchemaLine())
 		}
-		// TODO handle plural edges etc.
+		for _, e := range typ.pluralEdges {
+			lines = append(lines, e.GetSchemaLine())
+		}
 
 		// sort lines. TDOO best presentation?
 		sort.Slice(lines, func(i, j int) bool {
@@ -282,8 +284,18 @@ func (e *graphqlFieldEdge) GetSchemaLine() string {
 	return fmt.Sprintf("%s: %s", edgeName, nodeName)
 }
 
-type grapqhlPluralEdge struct {
+type graphqlPluralEdge struct {
 	edge.PluralEdge
+}
+
+func (e *graphqlPluralEdge) GetSchemaLine() string {
+	// TODO allow overrides of this
+	edgeName := strcase.ToLowerCamel(e.GetEdgeName())
+	nodeName := e.GetNodeInfo().Node
+
+	// ent always returns a slice and filters out empty objects so signature here is as-is
+	// It's confusing tho...
+	return fmt.Sprintf("%s: [%s!]!", edgeName, nodeName)
 }
 
 type graphQLSchemaInfo struct {
@@ -293,15 +305,15 @@ type graphQLSchemaInfo struct {
 	fieldEdges    []*graphqlFieldEdge
 	fieldMap      map[string]*graphQLField
 	fieldEdgeMap  map[string]*graphqlFieldEdge
-	pluralEdgeMap map[string]*grapqhlPluralEdge
-	pluralEdges   []*grapqhlPluralEdge
+	pluralEdgeMap map[string]*graphqlPluralEdge
+	pluralEdges   []*graphqlPluralEdge
 	nonEntFields  []*graphQLNonEntField
 }
 
 func newGraphQLSchemaInfo(typ, typeName string) *graphQLSchemaInfo {
 	fieldMap := make(map[string]*graphQLField)
 	fieldEdgeMap := make(map[string]*graphqlFieldEdge)
-	pluralEdgeMap := make(map[string]*grapqhlPluralEdge)
+	pluralEdgeMap := make(map[string]*graphqlPluralEdge)
 	return &graphQLSchemaInfo{
 		Type:          typ,
 		TypeName:      typeName,
@@ -322,7 +334,7 @@ func (s *graphQLSchemaInfo) addFieldEdge(e *graphqlFieldEdge) {
 	s.fieldEdgeMap[e.EdgeName] = e
 }
 
-func (s *graphQLSchemaInfo) addPluralEdge(e *grapqhlPluralEdge) {
+func (s *graphQLSchemaInfo) addPluralEdge(e *graphqlPluralEdge) {
 	s.pluralEdges = append(s.pluralEdges, e)
 	s.pluralEdgeMap[e.GetEdgeName()] = e
 }
@@ -335,7 +347,7 @@ func (s *graphQLSchemaInfo) getFieldEdgeByName(edgeName string) *graphqlFieldEdg
 	return s.fieldEdgeMap[edgeName]
 }
 
-func (s *graphQLSchemaInfo) getPluralEdgeByName(edgeName string) *grapqhlPluralEdge {
+func (s *graphQLSchemaInfo) getPluralEdgeByName(edgeName string) *graphqlPluralEdge {
 	return s.pluralEdgeMap[edgeName]
 }
 
