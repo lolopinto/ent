@@ -20,6 +20,25 @@ import (
 	"github.com/99designs/gqlgen/codegen/config"
 )
 
+// TODO break this into its own package
+type graphqlPlugin struct {
+}
+
+func (p *graphqlPlugin) pluginName() string {
+	return "graphql_plugin"
+}
+
+func (p *graphqlPlugin) processData(data *codegenData) error {
+	// eventually make this configurable
+	graphql := newGraphQLSchema(data.allNodes)
+	graphql.generateSchema()
+
+	// right now it all panics but we have to change that lol
+	return nil
+}
+
+var _ codegenPlugin = &graphqlPlugin{}
+
 type graphQLSchema struct {
 	nodes       codegenMapInfo
 	Types       map[string]*graphQLSchemaInfo
@@ -32,6 +51,7 @@ func newGraphQLSchema(nodes codegenMapInfo) *graphQLSchema {
 	return &graphQLSchema{
 		nodes: nodes,
 		Types: types,
+		//		Mutations:
 	}
 }
 

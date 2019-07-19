@@ -19,7 +19,6 @@ import (
 	"text/template"
 
 	"github.com/google/uuid"
-	"github.com/lolopinto/ent/cmd/gent/configs"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/astparser"
@@ -324,6 +323,17 @@ func generateConstsAndNewEdges(allNodes codegenMapInfo) []*ent.AssocEdgeData {
 	return newEdges
 }
 
+type codegenData struct {
+	allNodes codegenMapInfo
+	codePath *codePath
+	newEdges []*ent.AssocEdgeData
+}
+
+type codegenPlugin interface {
+	pluginName() string
+	processData(data *codegenData) error
+}
+
 func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codePath) {
 	allNodes := parseAllSchemaFiles(rootPath, specificConfig, codePathInfo)
 
@@ -331,48 +341,38 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 		return
 	}
 
+	// generate consts and get new edges to be written to db.
+	newEdges := generateConstsAndNewEdges(allNodes)
+
 	//fmt.Println("schema", len(allNodes))
 
 	// TOOD validate things here first.
 
-	// generate consts and get new edges to be written to db.
-	newEdges := generateConstsAndNewEdges(allNodes)
-
-	// generate python schema file and then make changes to underlying db
-	// db := newDBSchema(allNodes)
-	// db.generateSchema()
-
-	if len(newEdges) > 0 {
-		// write to local db.
-		// todo: need to figure out correct logic or way of making sure this gets
-		// written to production.
-		// use alembic revision history?
-		// create parallel structure?
-		// have a file where we dump it and then check that file?
-		err := ent.CreateNodes(&newEdges, &configs.AssocEdgeConfig{})
-		util.Die(err)
+	data := &codegenData{
+		allNodes: allNodes,
+		newEdges: newEdges,
+		codePath: codePathInfo,
 	}
 
-	for _, info := range allNodes {
-		if !info.shouldCodegen {
-			continue
-		}
-		nodeData := info.nodeData
-		//fmt.Println(specificConfig, structName)
-		if len(nodeData.PackageName) > 0 {
-			writeModelFile(nodeData, codePathInfo)
-			writeMutatorFile(nodeData, codePathInfo)
-			writePrivacyFile(nodeData)
+	// TODO refactor these from being called sequentially to something that can be called in parallel
+	// Right now, they're being called sequentially
+	// I don't see any reason why some can't be done in parrallel
+	// 0/ generate consts. has to block everything (not a plugin could be?) however blocking
+	// 1/ db
+	// 2/ create new nodes (blocked by db) since assoc_edge_config table may not exist yet
+	// 3/ model files. should be able to run on its own
+	// 4/ graphql should be able to run on its own
 
-			for _, action := range nodeData.ActionInfo.Actions {
-				writeActionFile(nodeData, action, codePathInfo)
-			}
-		}
+	plugins := []codegenPlugin{
+		new(dbPlugin),
+		new(assocEdgePlugin),
+		new(entCodegenPlugin),
+		new(graphqlPlugin),
 	}
 
-	// eventually make this configurable
-	// graphql := newGraphQLSchema(allNodes)
-	// graphql.generateSchema()
+	for _, p := range plugins {
+		p.processData(data)
+	}
 }
 
 func getFilePathForModelFile(nodeData *nodeTemplate) string {

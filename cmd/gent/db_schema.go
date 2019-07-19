@@ -17,6 +17,24 @@ import (
 	"github.com/lolopinto/ent/internal/util"
 )
 
+// TODO break this into its own package
+type dbPlugin struct {
+}
+
+func (p *dbPlugin) pluginName() string {
+	return "db_plugin"
+}
+
+func (p *dbPlugin) processData(data *codegenData) error {
+	// generate python schema file and then make changes to underlying db
+	db := newDBSchema(data.allNodes)
+	db.generateSchema()
+	// right now it all panics but we have to change that lol
+	return nil
+}
+
+var _ codegenPlugin = &dbPlugin{}
+
 func getNameFromParts(nameParts []string) string {
 	return strings.Join(nameParts, "_")
 }
