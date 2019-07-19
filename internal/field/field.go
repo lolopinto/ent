@@ -45,14 +45,18 @@ func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) {
 
 type Field struct {
 	// todo: abstract out these 2 also...
-	FieldName             string
-	FieldTag              string
-	tagMap                map[string]string
-	topLevelStructField   bool       // id, updated_at, created_at no...
-	entType               types.Type // not all fields will have an entType. probably don't need this...
-	fieldType             fieldType  // this is the underlying type for the field for graphql, db, etc
-	dbColumn              bool
-	exposeToGraphQL       bool
+	FieldName           string
+	FieldTag            string
+	tagMap              map[string]string
+	topLevelStructField bool       // id, updated_at, created_at no...
+	entType             types.Type // not all fields will have an entType. probably don't need this...
+	fieldType           fieldType  // this is the underlying type for the field for graphql, db, etc
+	dbColumn            bool
+	exposeToGraphQL     bool
+	exposeToActions     bool // TODO: figure out a better way for this long term. this is to allow password be hidden from reads but allowed in writes
+	// once password is a top level configurable type, it can control this e.g. exposeToCreate mutation yes!,
+	// expose to edit mutation no! obviously no delete. but then can be added in custom mutations e.g. editPassword()
+	// same with email address. shouldn't just be available to willy/nilly edit
 	singleFieldPrimaryKey bool
 }
 
@@ -106,6 +110,10 @@ func (f *Field) ExposeToGraphQL() (bool, string) {
 	return true, fieldName
 }
 
+func (f *Field) ExposeToActions() bool {
+	return f.exposeToActions
+}
+
 func (f *Field) TopLevelStructField() bool {
 	return f.topLevelStructField
 }
@@ -137,6 +145,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info types.In
 		FieldName:             "ID",
 		tagMap:                getTagMapFromJustFieldName("ID"),
 		exposeToGraphQL:       true,
+		exposeToActions:       false,
 		topLevelStructField:   false,
 		dbColumn:              true,
 		singleFieldPrimaryKey: true,
@@ -152,6 +161,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info types.In
 		FieldName:           "CreatedAt",
 		tagMap:              getTagMapFromJustFieldName("CreatedAt"),
 		exposeToGraphQL:     false,
+		exposeToActions:     false,
 		topLevelStructField: false,
 		dbColumn:            true,
 		fieldType:           &timeType{},
@@ -160,6 +170,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info types.In
 		FieldName:           "UpdatedAt",
 		tagMap:              getTagMapFromJustFieldName("UpdatedAt"),
 		exposeToGraphQL:     false,
+		exposeToActions:     false,
 		topLevelStructField: false,
 		dbColumn:            true,
 		fieldType:           &timeType{},
@@ -183,6 +194,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info types.In
 			topLevelStructField: true,
 			dbColumn:            true,
 			exposeToGraphQL:     true,
+			exposeToActions:     true,
 		})
 	}
 

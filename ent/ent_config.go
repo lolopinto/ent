@@ -8,6 +8,18 @@ type Config interface {
 	GetTableName() string
 }
 
+// ConfigWithEdges is the interface that EntConfigs which have edges implements
+type ConfigWithEdges interface {
+	// GetEdges returns the Edges that the ent supports
+	// TODO: change from map[string]inteface{}
+	GetEdges() map[string]interface{}
+}
+
+// ConfigWithActions is the interface that EntConfig which have actions implements
+type ConfigWithActions interface {
+	GetActions() []*ActionConfig
+}
+
 // FieldEdge refers to when the Edge being loaded from an ent is a field on the same node/ent
 type FieldEdge struct {
 	FieldName string

@@ -3,9 +3,9 @@ package astparser
 import (
 	"fmt"
 	"go/ast"
+	"strconv"
 
 	"go/token"
-	"strings"
 )
 
 func GetLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
@@ -93,6 +93,30 @@ func GetExprToIdent(expr ast.Expr) *ast.Ident {
 	return value
 }
 
+func GetExprToUnaryExpr(expr ast.Expr) *ast.UnaryExpr {
+	value, ok := expr.(*ast.UnaryExpr)
+	if !ok {
+		panic("invalid value for Expr. Expr was not of type UnaryExpr")
+	}
+	return value
+}
+
+// GetTypeNameFromExpr takes an ast Expr and returns the underlying type
+// Given the following Expr:
+// (*ast.SelectorExpr)(0xc000256440)({
+//	X: (*ast.Ident)(0xc000256400)(ent),
+//	Sel: (*ast.Ident)(0xc000256420)(ActionConfig)
+//  }),
+// function returns ent.ActionConfig
+func GetTypeNameFromExpr(expr ast.Expr) string {
+	typ := GetExprToSelectorExpr(expr)
+	typIdent := GetExprToIdent(typ.X)
+
+	// todo this can probably be an ident.
+	// handle that if and when we get there...
+	return typIdent.Name + "." + typ.Sel.Name
+}
+
 // Takes an Expr and converts it to the underlying string without quotes
 // For example: in the GetEdges method below,
 // return map[string]interface{}{
@@ -106,12 +130,11 @@ func GetExprToIdent(expr ast.Expr) *ast.Ident {
 func GetUnderylingStringFromLiteralExpr(expr ast.Expr) string {
 	key, ok := expr.(*ast.BasicLit)
 	if !ok || key.Kind != token.STRING {
-		panic("invalid key for edge item")
+		panic("invalid string literal in basic lit")
 	}
-	splitString := strings.Split(key.Value, "\"")
-	// verify that the first and last part are empty string?
-	if len(splitString) != 3 {
-		panic(fmt.Sprintf("%s is formatted weirdly as a string literal", key.Value))
+	str, err := strconv.Unquote(key.Value)
+	if err != nil {
+		panic(fmt.Sprintf("%s is formatted weirdly as a string literal err %s", key.Value, err))
 	}
-	return splitString[1]
+	return str
 }

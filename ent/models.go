@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lolopinto/ent/data"
+	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/lolopinto/ent/internal/util"
 )
 
@@ -87,10 +88,14 @@ func (insertData insertdata) getValuesDataForUpdate() ([]interface{}, string) {
 	// remove the created_at field which is the last one
 	values = values[:len(values)-1]
 
+	valsString := getValuesDataForUpdate(columns, values)
+	return values, valsString
+}
+
+func getValuesDataForUpdate(columns []string, values []interface{}) string {
 	if len(values) != len(columns) {
 		panic("columns and values not of equal length for update")
 	}
-
 	var vals []string
 	for i, column := range columns {
 		setter := fmt.Sprintf("%s = $%d", column, i+1)
@@ -98,7 +103,7 @@ func (insertData insertdata) getValuesDataForUpdate() ([]interface{}, string) {
 	}
 
 	valsString := strings.Join(vals, ", ")
-	return values, valsString
+	return valsString
 }
 
 /*
@@ -120,16 +125,6 @@ func getColumnsString(columns []string) string {
 	return strings.Join(columns, ", ")
 }
 
-func setValueInEnt(value reflect.Value, fieldName string, fieldValue interface{}) {
-	if value.Kind() == reflect.Ptr {
-		value = value.Elem()
-	}
-	fbn := value.FieldByName(fieldName)
-	if fbn.IsValid() {
-		fbn.Set(reflect.ValueOf(fieldValue))
-	}
-}
-
 // todo: make this smarter. for example, it shouldn't go through the
 // process of reading the values from the struct/entity for reads
 func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata {
@@ -141,7 +136,7 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 	// TODO could eventually set time fields
 	// make this a flag indicating if new object being created
 	if setIDField {
-		setValueInEnt(value, "ID", newUUID)
+		entreflect.SetValueInEnt(value, "ID", newUUID)
 	}
 	valueType := value.Type()
 
@@ -261,6 +256,7 @@ func loadNodeRawDataFromTable(id string, entity interface{}, tableName string, t
 	}
 	defer stmt.Close()
 
+	// stmt.QueryRowx(id)....
 	err = stmt.QueryRowx(id).StructScan(entity)
 	if err != nil {
 		fmt.Println(err)
@@ -403,6 +399,97 @@ func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entCon
 	errChan <- err
 }
 
+type EditedNodeInfo struct {
+	ExistingEnt    Entity
+	Entity         Entity
+	EntConfig      Config
+	EditableFields ActionFieldMap
+	Fields         map[string]interface{}
+}
+
+// CreateNodeFromActionMap creates a new Node and returns it in Entity
+// This is the new API for mutations that's going to replace the old CreateNode API
+func CreateNodeFromActionMap(info *EditedNodeInfo) error {
+	if info.ExistingEnt != nil {
+		return fmt.Errorf("CreateNodeFromActionMap passed an existing ent when creating an ent")
+	}
+
+	newUUID := uuid.New().String()
+	t := time.Now()
+
+	// initialize id, created_at and updated_at times
+	columns := []string{"id", "created_at", "updated_at"}
+	values := []interface{}{newUUID, t, t}
+
+	for fieldName, value := range info.Fields {
+		fieldInfo, ok := info.EditableFields[fieldName]
+		if !ok {
+			return errors.New("invalid field passed to CreateNodeFromActionMap")
+		}
+		columns = append(columns, fieldInfo.DB)
+		values = append(values, value)
+	}
+
+	colsString := getColumnsString(columns)
+	valsString := getValsString(values)
+	//	fields := make(map[string]interface{})
+
+	computedQuery := fmt.Sprintf(
+		"INSERT INTO %s (%s) VALUES(%s) RETURNING *",
+		info.EntConfig.GetTableName(),
+		colsString,
+		valsString,
+	)
+	//fmt.Println(computedQuery)
+	//spew.Dump(colsString, values, valsString)
+
+	// no tx for now. todo gonna get more complicated fast.
+	return performWrite(computedQuery, values, nil, info.Entity)
+
+	// return createNodeFromParts(
+	// 	colsString,
+	// 	valsString,
+	// 	values,
+	// 	info.Entity,
+	// 	info.EntConfig,
+	// 	nil, // no tx for now. todo gonna get more complicated fast.
+	// )
+}
+
+// EditNodeFromActionMap edits a Node and returns it in Entity
+// This is the new API for mutations that's going to replace the old UpdateNode API
+func EditNodeFromActionMap(info *EditedNodeInfo) error {
+	if info.ExistingEnt == nil {
+		return fmt.Errorf("EditNodeFromActionMap needs the entity that's being updated")
+	}
+	// initialize updated_at time
+	t := time.Now()
+
+	columns := []string{"updated_at"}
+	values := []interface{}{t}
+
+	for fieldName, value := range info.Fields {
+		fieldInfo, ok := info.EditableFields[fieldName]
+		if !ok {
+			return errors.New("invalid field passed to EditNodeFromActionMap")
+		}
+		columns = append(columns, fieldInfo.DB)
+		values = append(values, value)
+	}
+
+	valsString := getValuesDataForUpdate(columns, values)
+
+	computedQuery := fmt.Sprintf(
+		"UPDATE %s SET %s WHERE ID = '%s' RETURNING *",
+		info.EntConfig.GetTableName(),
+		valsString,
+		info.ExistingEnt.GetID(),
+	)
+
+	// no tx for now. todo gonna get more complicated fast.
+	return performWrite(computedQuery, values, nil, info.Entity)
+}
+
 func createNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) error {
 	if entity == nil {
 		// same as LoadNode in terms of handling this better
@@ -413,10 +500,8 @@ func createNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 	values, valsString := insertData.getValuesDataForInsert()
 
 	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s)", entConfig.GetTableName(), colsString, valsString)
-	//fmt.Println(computedQuery)
-	//spew.Dump(colsString, values, valsString)
 
-	return performWrite(computedQuery, values, tx)
+	return performWrite(computedQuery, values, tx, nil)
 }
 
 // CreateNode creates a node
@@ -460,11 +545,20 @@ func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
 	return stmt, err
 }
 
+// TODO rewrite a bunch of the queries. this is terrible now.
+/*
+type dbQuery interface {
+	Have a QueryBuilder for this
+	generateQuery() (string, []interface{}) // and even this can be broken down even more
+	executeQuery(sqlx.Stmt) // provide helpers for this...
+}
+*/
+
 /*
  * performs a write (INSERT, UPDATE, DELETE statement) given the SQL statement
  * and values to be updated in the database
  */
-func performWrite(query string, values []interface{}, tx *sqlx.Tx) error {
+func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity) error {
 	db := data.DBConn()
 	if db == nil {
 		err := errors.New("error getting a valid db connection")
@@ -479,7 +573,16 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx) error {
 		return err
 	}
 
-	res, err := stmt.Exec(values...)
+	var res sql.Result
+
+	checkRows := false
+	if entity == nil {
+		checkRows = true
+		res, err = stmt.Exec(values...)
+	} else {
+		err = stmt.QueryRowx(values...).StructScan(entity)
+	}
+
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -488,10 +591,12 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx) error {
 
 	// TODO may need to eventually make this optional but for now
 	// let's assume all writes should affect at least one row
-	rowCount, err := res.RowsAffected()
-	if err != nil || rowCount == 0 {
-		fmt.Println(err, rowCount)
-		return err
+	if checkRows {
+		rowCount, err := res.RowsAffected()
+		if err != nil || rowCount == 0 {
+			fmt.Println(err, rowCount)
+			return err
+		}
 	}
 	return nil
 }
@@ -515,7 +620,7 @@ func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 	)
 	fmt.Println(computedQuery)
 
-	return performWrite(computedQuery, values, tx)
+	return performWrite(computedQuery, values, tx, nil)
 }
 
 // UpdateNode updates a node
@@ -552,7 +657,7 @@ func deleteNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", entConfig.GetTableName())
 	id := findID(entity)
 
-	return performWrite(query, []interface{}{id}, tx)
+	return performWrite(query, []interface{}{id}, tx, nil)
 }
 
 // DeleteNode deletes a node given the node object
@@ -638,7 +743,7 @@ func addEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType Edg
 
 	fmt.Println(query)
 
-	return performWrite(query, vals, tx)
+	return performWrite(query, vals, tx, nil)
 }
 
 func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions) error {
@@ -671,7 +776,7 @@ func deleteEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType 
 	}
 
 	fmt.Println(query)
-	return performWrite(query, vals, tx)
+	return performWrite(query, vals, tx, nil)
 }
 
 func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) error {

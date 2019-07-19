@@ -172,8 +172,6 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
   {{end}}
 {{end}}
 
-// Add this to each entity to confirm it implements the interface
-var _ ent.Entity = (*{{.Node}})(nil)
-
+var _ ent.Entity = &{{.Node}}{}
 
 {{end -}}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/lolopinto/ent/ent/privacy"
 	"github.com/lolopinto/ent/ent/viewer"
+	entreflect "github.com/lolopinto/ent/internal/reflect"
 )
 
 // PrivacyError is the error type returned when an ent is not visible due to privacy reasons
@@ -219,7 +220,7 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResul
 			}
 			value := reflect.ValueOf(ent)
 			// set viewer in ent
-			setValueInEnt(value, "Viewer", viewer)
+			entreflect.SetValueInEnt(value, "Viewer", viewer)
 			break
 		} else if res == privacy.DenyResult {
 			foundResult = true

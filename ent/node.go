@@ -5,12 +5,16 @@ import (
 )
 
 type Timestamps struct {
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 }
 
 type Node struct {
-	ID string
+	ID string `db:"id"`
 	Timestamps
 	//	Viewer    viewer.ViewerContext // may make more sense here? and therefore need to change packages again?
+}
+
+func (node *Node) GetID() string {
+	return node.ID
 }

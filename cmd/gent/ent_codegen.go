@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lolopinto/ent/cmd/gent/configs"
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
@@ -43,6 +44,7 @@ type nodeTemplate struct {
 	EdgeInfo       *edge.EdgeInfo
 	TableName      string
 	ConstantGroups []constGroupInfo
+	ActionInfo     *action.ActionInfo
 }
 
 type constInfo struct {
@@ -337,8 +339,8 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 	newEdges := generateConstsAndNewEdges(allNodes)
 
 	// generate python schema file and then make changes to underlying db
-	db := newDBSchema(allNodes)
-	db.generateSchema()
+	// db := newDBSchema(allNodes)
+	// db.generateSchema()
 
 	if len(newEdges) > 0 {
 		// write to local db.
@@ -357,17 +359,20 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 		}
 		nodeData := info.nodeData
 		//fmt.Println(specificConfig, structName)
-		// what's the best way to check not-zero value? for now, this will have to do
 		if len(nodeData.PackageName) > 0 {
 			writeModelFile(nodeData, codePathInfo)
 			writeMutatorFile(nodeData, codePathInfo)
 			writePrivacyFile(nodeData)
+
+			for _, action := range nodeData.ActionInfo.Actions {
+				writeActionFile(nodeData, action, codePathInfo)
+			}
 		}
 	}
 
 	// eventually make this configurable
-	graphql := newGraphQLSchema(allNodes)
-	graphql.generateSchema()
+	// graphql := newGraphQLSchema(allNodes)
+	// graphql.generateSchema()
 }
 
 func getFilePathForModelFile(nodeData *nodeTemplate) string {
@@ -418,14 +423,7 @@ func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string
 
 				constName := ident.Name
 
-				typ := astparser.GetExprToSelectorExpr(valueSpec.Type)
-
-				typIdent := astparser.GetExprToIdent(typ.X)
-
-				// todo this can probably be an ident.
-				// handle that if and when we get there...
-				constKey := typIdent.Name + "." + typ.Sel.Name
-				// ent:EdgeType, ent:NodeType etc...
+				constKey := astparser.GetTypeNameFromExpr(valueSpec.Type)
 
 				if len(valueSpec.Values) != 1 {
 					util.Die(fmt.Errorf("expected 1 value for const declaration. got %d", len(valueSpec.Values)))
@@ -453,7 +451,10 @@ func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specif
 	//fmt.Println("Struct:")
 	var nodeData nodeTemplate
 	edgeInfo := &edge.EdgeInfo{}
+	actionInfo := &action.ActionInfo{}
 	var tableName string
+
+	var fns []func(nodeData *nodeTemplate)
 
 	ast.Inspect(file, func(node ast.Node) bool {
 		// get struct
@@ -473,6 +474,12 @@ func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specif
 				edgeInfo = edge.ParseEdgesFunc(packageName, fn)
 				// TODO: validate edges. can only have one of each type etc
 
+			case "GetActions":
+				// queue up to run later since it depends on parsed fieldInfo
+				fns = append(fns, func(nodeData *nodeTemplate) {
+					actionInfo = action.ParseActions(packageName, fn, nodeData.FieldInfo)
+				})
+
 			case "GetTableName":
 				tableName = getTableName(fn)
 			}
@@ -481,9 +488,15 @@ func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specif
 		return true
 	})
 
+	// run the queued up functions sequentially
+	for _, fn := range fns {
+		fn(&nodeData)
+	}
+
 	// set edges and other fields gotten from parsing other things
 	nodeData.EdgeInfo = edgeInfo
 	nodeData.TableName = tableName
+	nodeData.ActionInfo = actionInfo
 
 	return &codegenNodeTemplateInfo{
 		nodeData:                &nodeData,
@@ -782,6 +795,11 @@ func writeMutatorFile(nodeData *nodeTemplate, codePathInfo *codePath) {
 	)
 }
 
+type actionTemplate struct {
+	Action   action.Action
+	CodePath *codePath
+}
+
 func writePrivacyFile(nodeData *nodeTemplate) {
 	pathToFile := fmt.Sprintf("models/%s_privacy.go", nodeData.PackageName)
 
@@ -825,6 +843,10 @@ func generateNewAst(fw *templatedBasedFileWriter) []byte {
 	// gofmt the buffer
 	if fw.formatSource {
 		bytes, err := format.Source(buffer.Bytes())
+
+		if err != nil {
+			fmt.Println(buffer.String())
+		}
 		util.Die(err)
 		return bytes
 	}
