@@ -88,11 +88,7 @@ func (c *FileConfigData) ParseStructs(t *testing.T) {
 }
 
 func (c *FileConfigData) ParseEdgesFunc(t *testing.T) {
-	r, err := regexp.Compile(`(\w+)_config.go`)
-
-	if err != nil {
-		t.Errorf("error creating regex to check go files")
-	}
+	r := regexp.MustCompile(`(\w+)_config.go`)
 
 	for path, file := range c.fileMap {
 		var edgesFn *ast.FuncDecl

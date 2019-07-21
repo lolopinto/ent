@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"regexp"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -12,15 +10,18 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/imports"
 )
 
-func writeActionFile(nodeData *nodeTemplate, action action.Action, codePathInfo *codePath) {
-	fileName := strcase.ToSnake(action.GetActionName())
+func writeActionFile(nodeData *nodeTemplate, a action.Action, codePathInfo *codePath) {
+	fileName := strcase.ToSnake(a.GetActionName())
+	//	pathToFile := fmt.Sprintf("models/%s/action/%s.go", nodeData.PackageName, fileName)
+
+	imps := imports.Imports{}
 	writeFile(
 		&templatedBasedFileWriter{
 			data: actionTemplate{
-				Action:   action,
+				Action:   a,
 				CodePath: codePathInfo,
 			},
 			pathToTemplate:    "templates/action.tmpl",
@@ -28,16 +29,24 @@ func writeActionFile(nodeData *nodeTemplate, action action.Action, codePathInfo 
 			pathToFile:        fmt.Sprintf("models/%s/action/%s.go", nodeData.PackageName, fileName),
 			createDirIfNeeded: true,
 			formatSource:      true,
+			packageName:       "action",
+			imports:           &imps,
 			funcMap: template.FuncMap{
-				"actionMethodName":      getActionMethodName,
-				"actionMethodArgs":      getActionMethodArgs,
-				"embeddedActionType":    getEmbeddedActionType,
-				"paramsToEmbeddedType":  getActionParamsToEmbeddedType,
-				"actionName":            getActionName,
-				"fields":                getFields,
-				"saveActionType":        getSaveActionType,
-				"nodeInfo":              getNodeInfo,
-				"returnsObjectInstance": returnsObjectInstance,
+				"actionMethodName":        action.GetActionMethodName,
+				"actionMethodArgs":        getActionMethodArgs,
+				"actionMethodContextArgs": getActionMethodContextArgs,
+				"embeddedActionType":      getEmbeddedActionType,
+				"paramsToEmbeddedType":    getActionParamsToEmbeddedType,
+				"actionName":              getActionName,
+				"fields":                  action.GetFields,
+				"saveActionType":          getSaveActionType,
+				"nodeInfo":                getNodeInfo,
+				"returnsObjectInstance":   returnsObjectInstance,
+				"argsToViewerMethod":      getActionArgsFromContextToViewerMethod,
+
+				// our own version of reserveImport similar to what gqlgen provides. TOOD rename
+				"reserveImport": imps.Reserve,
+				"lookupImport":  imps.Lookup,
 			},
 		},
 	)
@@ -47,21 +56,6 @@ func getActionName(action action.Action) string {
 	return action.GetActionName()
 }
 
-func getActionMethodName(action action.Action) string {
-	r, err := regexp.Compile(`(\w+)Action`)
-
-	if err != nil {
-		panic("couldn't compile regex in actionMethodName")
-	}
-
-	// TODO need to verify that any name ends with Action or EntAction.
-	match := r.FindStringSubmatch(action.GetActionName())
-	if len(match) != 2 {
-		panic("invalid action name which should have been caught in validation. action names should end with Action or EntAction")
-	}
-	return match[1]
-}
-
 func getActionMethodArgs(action action.Action) string {
 	args := []string{"viewer viewer.ViewerContext"}
 
@@ -69,6 +63,29 @@ func getActionMethodArgs(action action.Action) string {
 		// if we're editing an existing object, e.g. EditUser
 		args = append(args, fmt.Sprintf("%s *models.%s", action.GetNodeInfo().NodeInstance, action.GetNodeInfo().Node))
 		// append object...
+	}
+
+	return strings.Join(args, ", ")
+}
+
+func getActionMethodContextArgs(action action.Action) string {
+	args := []string{"ctx context.Context"}
+
+	if action.MutatingExistingObject() {
+		// if we're editing an existing object, e.g. EditUser
+		args = append(args, fmt.Sprintf("%s *models.%s", action.GetNodeInfo().NodeInstance, action.GetNodeInfo().Node))
+		// append object...
+	}
+
+	return strings.Join(args, ", ")
+}
+
+func getActionArgsFromContextToViewerMethod(action action.Action) string {
+	args := []string{"v"}
+
+	if action.MutatingExistingObject() {
+		// if we're editing an existing object, e.g. EditUser, append the object
+		args = append(args, action.GetNodeInfo().NodeInstance)
 	}
 
 	return strings.Join(args, ", ")
@@ -98,33 +115,6 @@ func getEmbeddedActionType(action action.Action) string {
 		return "actions.DeleteEntActionMutator"
 	}
 	panic(fmt.Sprintf("invalid action %s not a supported type", action.GetActionName()))
-}
-
-type fieldActionTemplateInfo struct {
-	MethodName      string
-	InstanceName    string
-	InstanceType    string
-	FieldKey        string
-	FieldName       string
-	QuotedFieldName string
-	QuotedDBName    string
-}
-
-func getFields(action action.Action) []fieldActionTemplateInfo {
-	var fields []fieldActionTemplateInfo
-
-	for _, f := range action.GetFields() {
-
-		fields = append(fields, fieldActionTemplateInfo{
-			MethodName:      "Set" + f.FieldName,
-			InstanceName:    strcase.ToLowerCamel(f.FieldName),
-			InstanceType:    field.GetTypeInStructDefinition(f),
-			FieldName:       f.FieldName,
-			QuotedFieldName: strconv.Quote(f.FieldName),
-			QuotedDBName:    f.GetQuotedDBColName(),
-		})
-	}
-	return fields
 }
 
 func getSaveActionType(action action.Action) string {

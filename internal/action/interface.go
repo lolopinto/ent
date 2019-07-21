@@ -3,12 +3,14 @@ package action
 import (
 	"fmt"
 	"go/ast"
+	"regexp"
+	"strconv"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 
 	"github.com/lolopinto/ent/internal/codegen"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/util"
@@ -22,6 +24,7 @@ type Action interface {
 	MutatingExistingObject() bool // whether to add User, Note etc params
 	GetNodeInfo() codegen.NodeInfo
 	GetOperation() ent.ActionOperation
+	IsDeletingNode() bool
 }
 
 //type ActionWithFields interface{}
@@ -43,6 +46,14 @@ func newActionInfo(nodeName string) *ActionInfo {
 	ret.graphQLActionMap = make(map[string]Action)
 	ret.actionMap = make(map[string]Action)
 	return ret
+}
+
+func (info *ActionInfo) GetByGraphQLName(name string) Action {
+	return info.graphQLActionMap[name]
+}
+
+func (info *ActionInfo) GetByName(name string) Action {
+	return info.actionMap[name]
 }
 
 func (info *ActionInfo) addActions(actions []Action) {
@@ -104,6 +115,10 @@ func (action *commonActionInfo) GetOperation() ent.ActionOperation {
 	return action.Operation
 }
 
+func (action *commonActionInfo) IsDeletingNode() bool {
+	return action.Operation == ent.DeleteAction
+}
+
 // type mutateObjectActionInfo struct {
 // 	Fields []*field.Field
 // 	commonActionInfo
@@ -145,7 +160,6 @@ func (action *DeleteAction) MutatingExistingObject() bool {
 func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo) *ActionInfo {
 	// get the actions in the function
 	elts := astparser.GetEltsInFunc(fn)
-	spew.Dump(nodeName)
 
 	actionInfo := newActionInfo(nodeName)
 
@@ -166,7 +180,47 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo)
 
 		//		spew.Dump(expr)
 	}
-	//	spew.Dump(actionInfo)
+	// spew.Dump(actionInfo)
 
 	return actionInfo
+}
+
+// FieldActionTemplateInfo is passed to codegeneration template (both action and graphql) to generate
+// the code needed for actions
+type FieldActionTemplateInfo struct {
+	MethodName      string
+	InstanceName    string
+	InstanceType    string
+	FieldKey        string
+	FieldName       string
+	QuotedFieldName string
+	QuotedDBName    string
+}
+
+func GetActionMethodName(action Action) string {
+	r := regexp.MustCompile(`(\w+)Action`)
+
+	// TODO need to verify that any name ends with Action or EntAction.
+	match := r.FindStringSubmatch(action.GetActionName())
+	if len(match) != 2 {
+		panic("invalid action name which should have been caught in validation. action names should end with Action or EntAction")
+	}
+	return match[1]
+}
+
+func GetFields(action Action) []FieldActionTemplateInfo {
+	var fields []FieldActionTemplateInfo
+
+	for _, f := range action.GetFields() {
+
+		fields = append(fields, FieldActionTemplateInfo{
+			MethodName:      "Set" + f.FieldName,
+			InstanceName:    strcase.ToLowerCamel(f.FieldName),
+			InstanceType:    field.GetTypeInStructDefinition(f),
+			FieldName:       f.FieldName,
+			QuotedFieldName: strconv.Quote(f.FieldName),
+			QuotedDBName:    f.GetQuotedDBColName(),
+		})
+	}
+	return fields
 }

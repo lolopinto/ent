@@ -65,7 +65,7 @@ func (viewer LoggedOutViewerContext) HasIdentity() bool {
 
 // IsOmniscient returns a boolean indicating that the LoggedOutViewerContext cannot see most things by default
 func (viewer LoggedOutViewerContext) IsOmniscient() bool {
-	return false
+	return true
 }
 
 // LoggedOutViewer returns an instance of LoggedOutViewerContext as the default Viewer in the ent framework

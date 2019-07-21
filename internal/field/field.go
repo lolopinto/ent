@@ -87,16 +87,19 @@ func (f *Field) GetGraphQLTypeForField() string {
 	return f.fieldType.GetGraphQLType()
 }
 
-func (f *Field) ExposeToGraphQL() (bool, string) {
+func (f *Field) ExposeToGraphQL() bool {
 	if !f.exposeToGraphQL {
-		return false, ""
+		return false
 	}
 	fieldName := f.GetUnquotedKeyFromTag("graphql")
 
+	return fieldName != "_"
+}
+
+func (f *Field) GetGraphQLName() string {
+	fieldName := f.GetUnquotedKeyFromTag("graphql")
+
 	// field that should not be exposed to graphql e.g. passwords etc
-	if fieldName == "_" {
-		return false, ""
-	}
 
 	// TODO come up with a better way of handling this
 	if f.FieldName == "ID" {
@@ -104,10 +107,11 @@ func (f *Field) ExposeToGraphQL() (bool, string) {
 	}
 
 	// no fieldName so generate one
-	if fieldName == "" {
+	// _ is when we're returning a fieldName for actions
+	if fieldName == "" || fieldName == "_" {
 		fieldName = strcase.ToLowerCamel(f.FieldName)
 	}
-	return true, fieldName
+	return fieldName
 }
 
 func (f *Field) ExposeToActions() bool {

@@ -46,8 +46,7 @@ func GetEntConfigFromExpr(expr ast.Expr) EntConfigInfo {
 }
 
 func getNodeNameFromEntConfig(configName string) (string, error) {
-	r, err := regexp.Compile("([A-Za-z]+)Config")
-	util.Die(err)
+	r := regexp.MustCompile("([A-Za-z]+)Config")
 	match := r.FindStringSubmatch(configName)
 	if len(match) == 2 {
 		return match[1], nil

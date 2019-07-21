@@ -1,16 +1,21 @@
 package main
 
 import (
+	"path/filepath"
+	"strconv"
 	"text/template"
 
 	"github.com/99designs/gqlgen/codegen"
 	"github.com/99designs/gqlgen/codegen/templates"
 	"github.com/99designs/gqlgen/plugin"
+	"github.com/lolopinto/ent/internal/action"
+	"github.com/pkg/errors"
 )
 
 // inspired by resolvergen from gqlgen
 type entGraphQLResolverPlugin struct {
-	nodes codegenMapInfo
+	nodes    codegenMapInfo
+	codePath *codePath
 }
 
 var _ plugin.CodeGenerator = &entGraphQLResolverPlugin{}
@@ -85,6 +90,33 @@ func (p *entGraphQLResolverPlugin) pluralEdge(field *codegen.Field) bool {
 	return assocEdge != nil
 }
 
+func (p *entGraphQLResolverPlugin) mutation(field *codegen.Field) action.Action {
+	if field.Object.Name != "Mutation" {
+		return nil
+	}
+	//	spew.Dump(field)
+
+	//	spew.Dump(field.TypeReference.Definition.Name)
+
+	// Name -> userCreate, GoFieldName -> UserCreate
+	//	spew.Dump(field.GoFieldName, field.GoReceiverName)
+	//	spew.Dump(field)
+	return p.nodes.getActionFromGraphQLName(field.Name)
+	//	spew.Dump(field.Name, action)
+}
+
+func (p *entGraphQLResolverPlugin) getActionPath(a action.Action) string {
+	path, err := strconv.Unquote(p.codePath.PathToModels)
+	if err != nil {
+		panic(errors.Wrap(err, "could not unquote path"))
+	}
+
+	// TODO these names are broken. fix it
+	// this is equivalent to nodeData.PackageName which is what we're using when
+	// generating the file
+	return filepath.Join(path, a.GetNodeInfo().NodeInstance, "action")
+}
+
 // ResolverBuild is the object passed to the template to generate the graphql code
 type ResolverBuild struct {
 	*codegen.Data
@@ -104,18 +136,23 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 		Filename:        "graphql/resolver.go",
 		Data:            resolverBuild,
 		GeneratedHeader: true,
-		Template:        readTemplateFile("ent_graphql_resolver.gotpl"),
+		Template:        readTemplateFile("ent_graphql_resolver.gotmpl"),
 		Funcs: template.FuncMap{
 			"castToString":          p.castToString,
 			"loadObjectFromContext": p.loadObjectFromContext,
 			"fieldEdge":             p.fieldEdge,
 			"pluralEdge":            p.pluralEdge,
+			"mutation":              p.mutation,
+			"actionMethodName":      action.GetActionMethodName,
+			"actionFields":          action.GetFields,
+			"actionPath":            p.getActionPath,
 		},
 	})
 }
 
-func newGraphQLResolverPlugin(nodes codegenMapInfo) plugin.Plugin {
+func newGraphQLResolverPlugin(data *codegenData) plugin.Plugin {
 	return &entGraphQLResolverPlugin{
-		nodes: nodes,
+		nodes:    data.allNodes,
+		codePath: data.codePath,
 	}
 }

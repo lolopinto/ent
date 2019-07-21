@@ -196,7 +196,7 @@ func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName s
 		)
 	}
 
-	expose, fieldName := f.ExposeToGraphQL()
+	expose := f.ExposeToGraphQL()
 	if expose != expFieldProps.exposeToGraphQL {
 		t.Errorf(
 			"expected field exposed to graphql status to return %v, got %v instead",
@@ -205,6 +205,7 @@ func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName s
 		)
 	}
 
+	fieldName := f.GetGraphQLName()
 	if fieldName != expectedGraphQLFieldName {
 		t.Errorf(
 			"expected graphql field name to be %s, got %s instead",

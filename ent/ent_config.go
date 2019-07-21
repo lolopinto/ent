@@ -10,6 +10,7 @@ type Config interface {
 
 // ConfigWithEdges is the interface that EntConfigs which have edges implements
 type ConfigWithEdges interface {
+	Config
 	// GetEdges returns the Edges that the ent supports
 	// TODO: change from map[string]inteface{}
 	GetEdges() map[string]interface{}
@@ -17,6 +18,7 @@ type ConfigWithEdges interface {
 
 // ConfigWithActions is the interface that EntConfig which have actions implements
 type ConfigWithActions interface {
+	Config
 	GetActions() []*ActionConfig
 }
 

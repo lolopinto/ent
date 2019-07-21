@@ -146,7 +146,7 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, actionT
 	// add ability to automatically remove id field
 
 	// no override of fields so we should get default fields
-	if len(fields) == 0 {
+	if len(fieldNames) == 0 {
 		for _, f := range fieldInfo.Fields {
 			if f.ExposeToActions() {
 				fields = append(fields, f)

@@ -85,6 +85,10 @@ func (nodeData *nodeTemplate) getAssociationEdgeByName(edgeName string) *edge.As
 	return nodeData.EdgeInfo.GetAssociationEdgeByName(edgeName)
 }
 
+func (nodeData *nodeTemplate) getActionByGraphQLName(graphQLName string) action.Action {
+	return nodeData.ActionInfo.GetByGraphQLName(graphQLName)
+}
+
 func shouldCodegenPackage(file *ast.File, specificConfig string) bool {
 	// nothing to do here
 	if specificConfig == "" {
@@ -135,6 +139,17 @@ func (m codegenMapInfo) getTemplateFromGraphQLName(nodeName string) *nodeTemplat
 	return nodeInfo.nodeData
 }
 
+func (m codegenMapInfo) getActionFromGraphQLName(graphQLName string) action.Action {
+	// TODO come up with a better mapping than this
+	for _, info := range m {
+		a := info.nodeData.getActionByGraphQLName(graphQLName)
+		if a != nil {
+			return a
+		}
+	}
+	return nil
+}
+
 type schemaParser interface {
 	ParseFiles() (*token.FileSet, map[string]*ast.File, error)
 }
@@ -148,8 +163,7 @@ type configSchemaParser struct {
 func (p *configSchemaParser) ParseFiles() (*token.FileSet, map[string]*ast.File, error) {
 	fset := token.NewFileSet()
 
-	r, err := regexp.Compile(`(\w+)_config.go`)
-	util.Die(err)
+	r := regexp.MustCompile(`(\w+)_config.go`)
 
 	filterFunc := func(fileInfo os.FileInfo) bool {
 		match := r.FindStringSubmatch(fileInfo.Name())
@@ -364,9 +378,9 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 	// 4/ graphql should be able to run on its own
 
 	plugins := []codegenPlugin{
-		new(dbPlugin),
-		new(assocEdgePlugin),
-		new(entCodegenPlugin),
+		// new(dbPlugin),
+		// new(assocEdgePlugin),
+		//		new(entCodegenPlugin),
 		new(graphqlPlugin),
 	}
 
@@ -821,34 +835,4 @@ func getAbsolutePath(filePath string) string {
 		util.Die(errors.New("could not get path of template file"))
 	}
 	return path.Join(path.Dir(filename), filePath)
-}
-
-// generate new AST for the given file from the template
-func generateNewAst(fw *templatedBasedFileWriter) []byte {
-	templateAbsPath := getAbsolutePath(fw.pathToTemplate)
-
-	path := []string{templateAbsPath}
-	t := template.New(fw.templateName).Funcs(fw.funcMap)
-	t, err := t.ParseFiles(path...)
-	util.Die(err)
-
-	var buffer bytes.Buffer
-
-	// execute the template and store in buffer
-	err = t.Execute(&buffer, fw.data)
-	util.Die(err)
-	//err = t.Execute(os.Stdout, nodeData)
-	//fmt.Println(buffer)
-	//	fmt.Println(buffer.String())
-	// gofmt the buffer
-	if fw.formatSource {
-		bytes, err := format.Source(buffer.Bytes())
-
-		if err != nil {
-			fmt.Println(buffer.String())
-		}
-		util.Die(err)
-		return bytes
-	}
-	return buffer.Bytes()
 }
