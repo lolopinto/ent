@@ -38,9 +38,11 @@ type ActionMutator interface {
 
 type editNodeActionMutator struct {
 	ActionMutator
-	Viewer       viewer.ViewerContext
-	editedFields map[string]interface{}
-	validated    bool
+	Viewer        viewer.ViewerContext
+	editedFields  map[string]interface{}
+	inboundEdges  []*ent.EditedEdgeInfo
+	outboundEdges []*ent.EditedEdgeInfo
+	validated     bool
 }
 
 // func validateAction(actionMutator ActionMutator, entity ent.Entity, entConfig ent.Config) error {
@@ -53,6 +55,22 @@ func (action *editNodeActionMutator) SetField(fieldName string, val interface{})
 	}
 	//	spew.Dump(fieldName, val, action.fieldMap)
 	action.editedFields[fieldName] = val
+}
+
+func (action *editNodeActionMutator) AddInboundEdge(edgeType ent.EdgeType, id1 string, nodeType ent.NodeType) {
+	action.inboundEdges = append(action.inboundEdges, &ent.EditedEdgeInfo{
+		EdgeType: edgeType,
+		Id:       id1,
+		NodeType: nodeType,
+	})
+}
+
+func (action *editNodeActionMutator) AddOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType) {
+	action.inboundEdges = append(action.inboundEdges, &ent.EditedEdgeInfo{
+		EdgeType: edgeType,
+		Id:       id2,
+		NodeType: nodeType,
+	})
 }
 
 // Validate that the action is valid
@@ -125,6 +143,8 @@ func (action *CreateEntActionMutator) SaveAction(entity ent.Entity, fieldMap ent
 		EntConfig:      action.EntConfig,
 		EditableFields: fieldMap,
 		Fields:         action.editedFields,
+		InboundEdges:   action.inboundEdges,
+		OutboundEdges:  action.outboundEdges,
 	})
 	if err != nil {
 		return err
@@ -149,6 +169,8 @@ func (action *EditEntActionMutator) SaveAction(entity ent.Entity, fieldMap ent.A
 		EditableFields: fieldMap,
 		Fields:         action.editedFields,
 		ExistingEnt:    action.Ent,
+		InboundEdges:   action.inboundEdges,
+		OutboundEdges:  action.outboundEdges,
 	})
 	if err != nil {
 		return err

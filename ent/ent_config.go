@@ -24,8 +24,9 @@ type ConfigWithActions interface {
 
 // FieldEdge refers to when the Edge being loaded from an ent is a field on the same node/ent
 type FieldEdge struct {
-	FieldName string
-	EntConfig interface{} // zero-value of the struct...
+	FieldName   string
+	EntConfig   interface{} // zero-value of the struct...
+	InverseEdge string      // TODO: come up with a better way of doing this.
 }
 
 // ForeignKeyEdge is when the edge is handled by having a foreign key in the other table

@@ -8,6 +8,7 @@ import (
 // Edge is the information about an edge between two Nodes
 // It's generic enough so that it applies across all types.
 // Doesn't care what table it's stored in.
+// TODO fix comment about where edges are stored.
 // By default, edges are stored in the `edges_info` table but we
 // can have custom edge tables for specific edges where we know
 // there'll be a lot of data

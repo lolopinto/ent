@@ -11,7 +11,7 @@
 
 {{end -}}
 
-{{with $action := .Action -}}
+{{$action := .Action -}}
 {{$actionName := actionName $action}}
 {{$embeddedActionType := embeddedActionType $action}}
 {{$nodeInfo := nodeInfo $action -}}
@@ -47,7 +47,13 @@ func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
 {{ range $field := $fields -}}
 // {{$field.MethodName}} sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
 func (action *{{$actionName}}) {{$field.MethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$actionName}} {
-action.SetField({{$field.QuotedFieldName}}, {{$field.InstanceName}})
+  action.SetField({{$field.QuotedFieldName}}, {{$field.InstanceName}})
+  {{$inverseEdge := $field.InverseEdge -}}
+   {{ if $inverseEdge -}}
+    {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
+    {{/* TODO time and data support later */ -}}  
+    action.AddInboundEdge(models.{{$inverseEdge.EdgeConst}}, {{$field.InstanceName}}, models.{{$edgeNodeInfo.NodeType}})
+  {{ end -}}
   return action
 }
 
@@ -85,5 +91,3 @@ func (action * {{$actionName}}) Save() {{saveActionType $action}} {
 var _ actions.ActionMutator = &{{$actionName}}{}
 {{end -}}
 
-
-{{end -}}

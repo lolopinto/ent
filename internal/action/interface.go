@@ -10,6 +10,7 @@ import (
 	"github.com/lolopinto/ent/ent"
 
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/edge"
 
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/field"
@@ -157,7 +158,7 @@ func (action *DeleteAction) MutatingExistingObject() bool {
 // 	return []string{}
 // }
 
-func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo) *ActionInfo {
+func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo) *ActionInfo {
 	// get the actions in the function
 	elts := astparser.GetEltsInFunc(fn)
 
@@ -195,6 +196,7 @@ type FieldActionTemplateInfo struct {
 	FieldName       string
 	QuotedFieldName string
 	QuotedDBName    string
+	InverseEdge     *edge.AssociationEdge
 }
 
 func GetActionMethodName(action Action) string {
@@ -220,6 +222,7 @@ func GetFields(action Action) []FieldActionTemplateInfo {
 			FieldName:       f.FieldName,
 			QuotedFieldName: strconv.Quote(f.FieldName),
 			QuotedDBName:    f.GetQuotedDBColName(),
+			InverseEdge:     f.InverseEdge,
 		})
 	}
 	return fields

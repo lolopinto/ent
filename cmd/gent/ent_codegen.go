@@ -18,6 +18,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
@@ -113,6 +114,7 @@ type codegenNodeTemplateInfo struct {
 	nodeData                *nodeTemplate
 	shouldCodegen           bool
 	shouldParseExistingFile bool
+	fns                     map[string]processingFn
 }
 
 // TODO come up with a better name here
@@ -148,6 +150,36 @@ func (m codegenMapInfo) getActionFromGraphQLName(graphQLName string) action.Acti
 		}
 	}
 	return nil
+}
+
+func (m codegenMapInfo) AddLinkedEdges(nodeData *nodeTemplate) {
+	fieldInfo := nodeData.FieldInfo
+	edgeInfo := nodeData.EdgeInfo
+
+	for _, e := range edgeInfo.FieldEdges {
+		f := fieldInfo.GetFieldByName(e.FieldName)
+		if f == nil {
+			panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
+		}
+		//f.LinkedEdge = e // TODO move to local...
+		config := e.GetEntConfig()
+		//		spew.Dump(config)
+
+		foreignInfo, ok := m[config.ConfigName]
+		if !ok {
+			panic(fmt.Errorf("could not find the EntConfig codegen info for %s", config.ConfigName))
+		}
+		foreignEdgeInfo := foreignInfo.nodeData.EdgeInfo
+		for _, fEdge := range foreignEdgeInfo.Associations {
+			if fEdge.GetEdgeName() == "Notes" {
+				// TODO don't hardcode this
+				spew.Dump(fEdge)
+				f.InverseEdge = fEdge
+				break
+			}
+
+		}
+	}
 }
 
 type schemaParser interface {
@@ -231,6 +263,21 @@ func parseFiles(p schemaParser) codegenMapInfo {
 
 		codegenInfo := inspectFile(packageName, file, fset, specificConfig, info)
 		allNodes.addConfig(codegenInfo)
+	}
+
+	for _, info := range allNodes {
+		nodeData := info.nodeData
+
+		// link fields and edges.
+		// breaking this down into a separate stage because we want all configs loaded.
+		allNodes.AddLinkedEdges(nodeData)
+		//	nodeData.FieldInfo.AddLinkedEdges(nodeData.EdgeInfo)
+
+		// run the queued up functions
+		// when there's more than one, we can add dependencies
+		for _, fn := range info.fns {
+			fn(nodeData)
+		}
 	}
 	return allNodes
 }
@@ -381,7 +428,7 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 		// new(dbPlugin),
 		// new(assocEdgePlugin),
 		new(entCodegenPlugin),
-		new(graphqlPlugin),
+		//		new(graphqlPlugin),
 	}
 
 	for _, p := range plugins {
@@ -459,16 +506,27 @@ func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string
 	return constMap
 }
 
+type processingFn func(nodeData *nodeTemplate)
+
+//type
+
 func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specificConfig string, info types.Info) *codegenNodeTemplateInfo {
 	//ast.Print(fset, node)
 	//ast.NewObj(fset, "file")
 	//fmt.Println("Struct:")
-	var nodeData nodeTemplate
+	nodeData := &nodeTemplate{}
 	edgeInfo := &edge.EdgeInfo{}
-	actionInfo := &action.ActionInfo{}
+	// actionInfo := &action.ActionInfo{}
 	var tableName string
 
-	var fns []func(nodeData *nodeTemplate)
+	//	var fns []processingFn
+
+	// var edgesFn processingFn
+	// var actionsFn processingFn
+
+	fns := make(map[string]processingFn)
+
+	//	order
 
 	ast.Inspect(file, func(node ast.Node) bool {
 		// get struct
@@ -485,14 +543,14 @@ func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specif
 
 			switch fn.Name.Name {
 			case "GetEdges":
-				edgeInfo = edge.ParseEdgesFunc(packageName, fn)
 				// TODO: validate edges. can only have one of each type etc
+				edgeInfo = edge.ParseEdgesFunc(packageName, fn)
 
 			case "GetActions":
-				// queue up to run later since it depends on parsed fieldInfo
-				fns = append(fns, func(nodeData *nodeTemplate) {
-					actionInfo = action.ParseActions(packageName, fn, nodeData.FieldInfo)
-				})
+				// queue up to run later since it depends on parsed fieldInfo and edges
+				fns["actionsFn"] = func(nodeData *nodeTemplate) {
+					nodeData.ActionInfo = action.ParseActions(packageName, fn, nodeData.FieldInfo, nodeData.EdgeInfo)
+				}
 
 			case "GetTableName":
 				tableName = getTableName(fn)
@@ -502,20 +560,23 @@ func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specif
 		return true
 	})
 
+	// link fields and edges
+	//	nodeData.FieldInfo.AddLinkedEdges(edgeInfo)
+
 	// run the queued up functions sequentially
-	for _, fn := range fns {
-		fn(&nodeData)
-	}
+	// for _, fn := range fns {
+	// 	fn(nodeData)
+	// }
 
 	// set edges and other fields gotten from parsing other things
 	nodeData.EdgeInfo = edgeInfo
 	nodeData.TableName = tableName
-	nodeData.ActionInfo = actionInfo
 
 	return &codegenNodeTemplateInfo{
-		nodeData:                &nodeData,
+		nodeData:                nodeData,
 		shouldCodegen:           shouldCodegenPackage(file, specificConfig),
 		shouldParseExistingFile: edgeInfo.HasAssociationEdges(),
+		fns:                     fns,
 	}
 }
 
@@ -755,10 +816,10 @@ func getTableName(fn *ast.FuncDecl) string {
 	return basicLit.Value
 }
 
-func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet, info types.Info) nodeTemplate {
+func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet, info types.Info) *nodeTemplate {
 	fieldInfo := field.GetFieldInfoForStruct(s, fset, info)
 
-	return nodeTemplate{
+	return &nodeTemplate{
 		NodeInfo:    codegen.GetNodeInfo(packageName),
 		PackageName: packageName,
 		FieldInfo:   fieldInfo,

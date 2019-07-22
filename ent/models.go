@@ -405,6 +405,14 @@ type EditedNodeInfo struct {
 	EntConfig      Config
 	EditableFields ActionFieldMap
 	Fields         map[string]interface{}
+	InboundEdges   []*EditedEdgeInfo
+	OutboundEdges  []*EditedEdgeInfo
+}
+
+type EditedEdgeInfo struct {
+	EdgeType EdgeType
+	Id       string
+	NodeType NodeType
 }
 
 // CreateNodeFromActionMap creates a new Node and returns it in Entity
@@ -412,6 +420,18 @@ type EditedNodeInfo struct {
 func CreateNodeFromActionMap(info *EditedNodeInfo) error {
 	if info.ExistingEnt != nil {
 		return fmt.Errorf("CreateNodeFromActionMap passed an existing ent when creating an ent")
+	}
+
+	var tx *sqlx.Tx
+	var err error
+
+	if len(info.InboundEdges) > 0 || len(info.OutboundEdges) > 0 {
+		db := data.DBConn()
+		tx, err = db.Beginx()
+		if err != nil {
+			fmt.Println("error creating transaction", err)
+			return err
+		}
 	}
 
 	newUUID := uuid.New().String()
@@ -444,16 +464,61 @@ func CreateNodeFromActionMap(info *EditedNodeInfo) error {
 	//spew.Dump(colsString, values, valsString)
 
 	// no tx for now. todo gonna get more complicated fast.
-	return performWrite(computedQuery, values, nil, info.Entity)
+	err = performWrite(computedQuery, values, tx, info.Entity)
 
-	// return createNodeFromParts(
-	// 	colsString,
-	// 	valsString,
-	// 	values,
-	// 	info.Entity,
-	// 	info.EntConfig,
-	// 	nil, // no tx for now. todo gonna get more complicated fast.
-	// )
+	if err != nil && tx != nil {
+		fmt.Println("error during transaction", err)
+		tx.Rollback()
+		return err
+	}
+
+	// TODO this is too manual. fix it.
+	// need to rebuild all this using PerformAllOperations()
+	newType := info.Entity.GetType()
+
+	for _, edge := range info.InboundEdges {
+		edgeOptions := EdgeOptions{Time: t}
+		err = addEdgeInTransactionRaw(
+			edge.EdgeType,
+			edge.Id,
+			newUUID,
+			edge.NodeType,
+			newType,
+			edgeOptions,
+			tx,
+		)
+
+		if err != nil && tx != nil {
+			fmt.Println("error during transaction", err)
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, edge := range info.OutboundEdges {
+		edgeOptions := EdgeOptions{Time: t}
+		err = addEdgeInTransactionRaw(
+			edge.EdgeType,
+			newUUID,
+			edge.Id,
+			newType,
+			edge.NodeType,
+			edgeOptions,
+			tx,
+		)
+
+		if err != nil && tx != nil {
+			fmt.Println("error during transaction", err)
+			tx.Rollback()
+			return err
+		}
+	}
+
+	if tx != nil {
+		tx.Commit()
+	}
+
+	return nil
 }
 
 // EditNodeFromActionMap edits a Node and returns it in Entity
@@ -700,13 +765,25 @@ func addEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType Edg
 		return err
 	}
 
+	id1 := findID(entity1)
+	id2 := findID(entity2)
+
+	return addEdgeInTransactionRaw(
+		edgeType,
+		id1,
+		id2,
+		ent1.GetType(),
+		ent2.GetType(),
+		edgeOptions,
+		tx,
+	)
+}
+
+func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Type NodeType, edgeOptions EdgeOptions, tx *sqlx.Tx) error {
 	edgeData, err := getEdgeInfo(edgeType, tx)
 	if err != nil {
 		return err
 	}
-
-	id1 := findID(entity1)
-	id2 := findID(entity2)
 
 	cols := []string{
 		"id1",
@@ -720,10 +797,10 @@ func addEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType Edg
 
 	vals := []interface{}{
 		id1,
-		ent1.GetType(),
+		id1Ttype,
 		edgeType,
 		id2,
-		ent2.GetType(),
+		id2Type,
 	}
 	// add time as needed
 	if edgeOptions.Time.IsZero() {

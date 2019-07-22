@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/util"
 )
 
@@ -58,6 +59,8 @@ type Field struct {
 	// expose to edit mutation no! obviously no delete. but then can be added in custom mutations e.g. editPassword()
 	// same with email address. shouldn't just be available to willy/nilly edit
 	singleFieldPrimaryKey bool
+	//	LinkedEdge            edge.Edge
+	InverseEdge *edge.AssociationEdge
 }
 
 func (f *Field) GetDbColName() string {
