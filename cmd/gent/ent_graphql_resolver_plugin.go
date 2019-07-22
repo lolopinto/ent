@@ -8,6 +8,7 @@ import (
 	"github.com/99designs/gqlgen/codegen"
 	"github.com/99designs/gqlgen/codegen/templates"
 	"github.com/99designs/gqlgen/plugin"
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/pkg/errors"
 )
@@ -114,7 +115,10 @@ func (p *entGraphQLResolverPlugin) getActionPath(a action.Action) string {
 	// TODO these names are broken. fix it
 	// this is equivalent to nodeData.PackageName which is what we're using when
 	// generating the file
-	return filepath.Join(path, a.GetNodeInfo().NodeInstance, "action")
+	// need to make sure we support contact_date etc
+	// to be consistent with writeActionFile
+	actionPath := filepath.Join(path, strcase.ToSnake(a.GetNodeInfo().Node), "action")
+	return actionPath
 }
 
 // ResolverBuild is the object passed to the template to generate the graphql code

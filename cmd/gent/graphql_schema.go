@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -294,7 +295,7 @@ func (schema *graphQLSchema) generateGraphQLCode() {
 	err = api.Generate(
 		cfg,
 		api.AddPlugin(newGraphQLResolverPlugin(schema.config)),
-		api.AddPlugin(newGraphQLServerPlugin()),
+		api.AddPlugin(newGraphQLServerPlugin(schema.config)),
 	)
 	util.Die(err)
 }
@@ -496,27 +497,22 @@ func (c *graphQLYamlConfig) addSchema() {
 func (c *graphQLYamlConfig) addModelsConfig(schema *graphQLSchema) {
 	// this creates a nested models: User: path_to_model map in here
 	models := make(map[string]interface{})
+
+	pathToModels, err := strconv.Unquote(schema.config.codePath.PathToModels)
+	util.Die(err)
 	for _, info := range schema.config.allNodes {
 		nodeData := info.nodeData
 
 		model := make(map[string]string)
 
 		model["model"] = fmt.Sprintf(
-			// TODO get the correct path
-			"github.com/lolopinto/jarvis/models.%s",
+			// e.g. github.com/lolopinto/jarvis/models.User
+			"%s.%s",
+			pathToModels,
 			nodeData.Node,
 		)
 		models[nodeData.Node] = model
 	}
-
-	// TODO...
-	// model := make(map[string]string)
-	// model["model"] = "github.com/lolopinto/jarvis/graphql.UserCreateInput"
-	// models["UserCreateInput"] = model
-
-	// model = make(map[string]string)
-	// model["model"] = "github.com/lolopinto/jarvis/graphql.UserCreateResponse"
-	// models["UserCreateResponse"] = model
 
 	c.addEntry("models", models)
 }

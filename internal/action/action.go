@@ -230,7 +230,9 @@ func (action *createActionType) getDefaultActionName(nodeName string) string {
 }
 
 func (action *createActionType) getDefaultGraphQLName(nodeName string) string {
-	return nodeName + "Create"
+	// user -> user
+	// contact_date -> contactDate
+	return strcase.ToLowerCamel(nodeName) + "Create"
 }
 
 func (action *createActionType) getAction(commonInfo commonActionInfo) Action {
@@ -259,7 +261,7 @@ func (action *editActionType) getDefaultActionName(nodeName string) string {
 }
 
 func (action *editActionType) getDefaultGraphQLName(nodeName string) string {
-	return nodeName + "Edit"
+	return strcase.ToLowerCamel(nodeName) + "Edit"
 }
 
 func (action *editActionType) getAction(commonInfo commonActionInfo) Action {
@@ -288,7 +290,7 @@ func (action *deleteActionType) getDefaultActionName(nodeName string) string {
 }
 
 func (action *deleteActionType) getDefaultGraphQLName(nodeName string) string {
-	return nodeName + "Delete"
+	return strcase.ToLowerCamel(nodeName) + "Delete"
 }
 
 func (action *deleteActionType) getAction(commonInfo commonActionInfo) Action {

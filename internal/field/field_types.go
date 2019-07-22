@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"go/types"
 	"path/filepath"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type fieldType interface {
@@ -101,9 +99,9 @@ func (t *namedType) GetStructType() string {
 	// get the string version of the type and return the filepath
 	// we can eventually use this to gather import paths...
 	ret := t.actualType.String()
-	spew.Dump("GetStructType", ret)
-	gg, fp := filepath.Split(ret)
-	spew.Dump(gg, fp)
+	//	spew.Dump("GetStructType", ret)
+	_, fp := filepath.Split(ret)
+	//spew.Dump(gg, fp)
 	return fp
 }
 

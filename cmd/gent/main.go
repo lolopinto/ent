@@ -44,6 +44,7 @@ func main() {
 type codePath struct {
 	PathToConfigs string
 	PathToModels  string
+	PathToRoot    string
 }
 
 func getPathToCode(pathToConfig string) *codePath {
@@ -77,6 +78,7 @@ func getPathToCode(pathToConfig string) *codePath {
 	}
 
 	return &codePath{
+		PathToRoot:    cp,
 		PathToConfigs: strconv.Quote(filepath.Join(cp, pathToConfig)),
 		PathToModels:  strconv.Quote(filepath.Join(cp, "models")),
 	}
