@@ -422,103 +422,9 @@ func CreateNodeFromActionMap(info *EditedNodeInfo) error {
 		return fmt.Errorf("CreateNodeFromActionMap passed an existing ent when creating an ent")
 	}
 
-	var tx *sqlx.Tx
-	var err error
-
-	if len(info.InboundEdges) > 0 || len(info.OutboundEdges) > 0 {
-		db := data.DBConn()
-		tx, err = db.Beginx()
-		if err != nil {
-			fmt.Println("error creating transaction", err)
-			return err
-		}
-	}
-
-	newUUID := uuid.New().String()
-	t := time.Now()
-
-	// initialize id, created_at and updated_at times
-	columns := []string{"id", "created_at", "updated_at"}
-	values := []interface{}{newUUID, t, t}
-
-	for fieldName, value := range info.Fields {
-		fieldInfo, ok := info.EditableFields[fieldName]
-		if !ok {
-			return errors.New("invalid field passed to CreateNodeFromActionMap")
-		}
-		columns = append(columns, fieldInfo.DB)
-		values = append(values, value)
-	}
-
-	colsString := getColumnsString(columns)
-	valsString := getValsString(values)
-	//	fields := make(map[string]interface{})
-
-	computedQuery := fmt.Sprintf(
-		"INSERT INTO %s (%s) VALUES(%s) RETURNING *",
-		info.EntConfig.GetTableName(),
-		colsString,
-		valsString,
-	)
-	//fmt.Println(computedQuery)
-	//spew.Dump(colsString, values, valsString)
-
-	// no tx for now. todo gonna get more complicated fast.
-	err = performWrite(computedQuery, values, tx, info.Entity)
-
-	if err != nil && tx != nil {
-		fmt.Println("error during transaction", err)
-		tx.Rollback()
-		return err
-	}
-
-	// TODO this is too manual. fix it.
-	// need to rebuild all this using PerformAllOperations()
-	newType := info.Entity.GetType()
-
-	for _, edge := range info.InboundEdges {
-		edgeOptions := EdgeOptions{Time: t}
-		err = addEdgeInTransactionRaw(
-			edge.EdgeType,
-			edge.Id,
-			newUUID,
-			edge.NodeType,
-			newType,
-			edgeOptions,
-			tx,
-		)
-
-		if err != nil && tx != nil {
-			fmt.Println("error during transaction", err)
-			tx.Rollback()
-			return err
-		}
-	}
-
-	for _, edge := range info.OutboundEdges {
-		edgeOptions := EdgeOptions{Time: t}
-		err = addEdgeInTransactionRaw(
-			edge.EdgeType,
-			newUUID,
-			edge.Id,
-			newType,
-			edge.NodeType,
-			edgeOptions,
-			tx,
-		)
-
-		if err != nil && tx != nil {
-			fmt.Println("error during transaction", err)
-			tx.Rollback()
-			return err
-		}
-	}
-
-	if tx != nil {
-		tx.Commit()
-	}
-
-	return nil
+	// perform in a transaction as needed
+	ops := buildOperations(info)
+	return performAllOperations(ops)
 }
 
 // EditNodeFromActionMap edits a Node and returns it in Entity
@@ -527,32 +433,58 @@ func EditNodeFromActionMap(info *EditedNodeInfo) error {
 	if info.ExistingEnt == nil {
 		return fmt.Errorf("EditNodeFromActionMap needs the entity that's being updated")
 	}
-	// initialize updated_at time
-	t := time.Now()
 
-	columns := []string{"updated_at"}
-	values := []interface{}{t}
+	// perform in a transaction as needed
+	ops := buildOperations(info)
+	return performAllOperations(ops)
+}
 
-	for fieldName, value := range info.Fields {
-		fieldInfo, ok := info.EditableFields[fieldName]
-		if !ok {
-			return errors.New("invalid field passed to EditNodeFromActionMap")
-		}
-		columns = append(columns, fieldInfo.DB)
-		values = append(values, value)
+func buildOperations(info *EditedNodeInfo) []dataOperation {
+	// build up operations as needed
+	// 1/ operation to create the ent as needed
+	ops := []dataOperation{
+		&nodeWithActionMapOperation{info},
 	}
 
-	valsString := getValuesDataForUpdate(columns, values)
+	// 2 all inbound edges with id2 placeholder for newly created ent
+	for _, edge := range info.InboundEdges {
+		edgeOp := &edgeOperation{
+			edgeType: edge.EdgeType,
+			id1:      edge.Id,
+			id1Type:  edge.NodeType,
+		}
+		if info.ExistingEnt == nil {
+			edgeOp.id2 = idPlaceHolder
+		} else {
+			continue
+			// TODO uncomment this out eventually. we need to change the SQL QUERY
+			// to ON DUPLICATE KEY UPDATE. or check first if the edge exists.
+			// same as below.
+			// For now, just do nothing
+			// edgeOp.id2 = info.ExistingEnt.GetID()
+			// edgeOp.id2Type = info.ExistingEnt.GetType()
+		}
+		ops = append(ops, edgeOp)
+	}
 
-	computedQuery := fmt.Sprintf(
-		"UPDATE %s SET %s WHERE ID = '%s' RETURNING *",
-		info.EntConfig.GetTableName(),
-		valsString,
-		info.ExistingEnt.GetID(),
-	)
+	// 3 all outbound edges with id1 placeholder for newly created ent
+	for _, edge := range info.OutboundEdges {
+		edgeOp := &edgeOperation{
+			edgeType: edge.EdgeType,
+			id2:      edge.Id,
+			id2Type:  edge.NodeType,
+		}
+		if info.ExistingEnt == nil {
+			edgeOp.id1 = idPlaceHolder
+		} else {
+			continue
+			// edgeOp.id2 = info.ExistingEnt.GetID()
+			// edgeOp.id2Type = info.ExistingEnt.GetType()
+		}
+		ops = append(ops, edgeOp)
+	}
 
-	// no tx for now. todo gonna get more complicated fast.
-	return performWrite(computedQuery, values, nil, info.Entity)
+	return ops
 }
 
 func createNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) error {
@@ -584,18 +516,18 @@ func CreateNodes(nodes interface{}, entConfig Config) error {
 	// This is not necessarily the best way to do this but this re-uses all the existing
 	// abstractions and wraps everything in a transcation
 	// TODO: maybe use the multirow VALUES syntax at https://www.postgresql.org/docs/8.2/sql-insert.html in the future.
-	var operations []DataOperation
+	var operations []dataOperation
 
 	for i := 0; i < direct.Len(); i++ {
 		entity := direct.Index(i).Interface()
 
-		operations = append(operations, NodeOperation{
-			Entity:    entity,
-			Config:    entConfig,
-			Operation: InsertOperation,
+		operations = append(operations, &legacyNodeOperation{
+			entity:    entity,
+			config:    entConfig,
+			operation: insertOperation,
 		})
 	}
-	return PerformAllOperations(operations)
+	return performAllOperations(operations)
 }
 
 func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
@@ -858,114 +790,6 @@ func deleteEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType 
 
 func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) error {
 	return deleteEdgeInTransaction(entity1, entity1, edgeType, nil)
-}
-
-type WriteOperation string
-
-const (
-	InsertOperation WriteOperation = "insert"
-	UpdateOperation WriteOperation = "update"
-	DeleteOperation WriteOperation = "delete"
-)
-
-// TODO come up with a sensible method that can be used here
-// we really need a marker interface here (for now)
-type DataOperation interface {
-	ValidOperation() bool
-}
-
-type NodeOperation struct {
-	Entity    interface{}
-	Config    Config
-	Operation WriteOperation
-}
-
-func (NodeOperation) ValidOperation() bool {
-	return true
-}
-
-type EdgeOperation struct {
-	Entity1     interface{}
-	Entity2     interface{}
-	EdgeType    EdgeType
-	EdgeOptions EdgeOptions // nullable for deletes?
-	Operation   WriteOperation
-}
-
-func (EdgeOperation) ValidOperation() bool {
-	return true
-}
-
-// todo a plan for creation and deletion of nodes and edges
-// Todo eventually make this more complicated
-type QueryPlan struct {
-	//Nodes
-}
-
-func performNodeOperation(operation NodeOperation, tx *sqlx.Tx) error {
-	switch operation.Operation {
-	case InsertOperation:
-		return createNodeInTransaction(operation.Entity, operation.Config, tx)
-	case UpdateOperation:
-		return updateNodeInTransaction(operation.Entity, operation.Config, tx)
-	case DeleteOperation:
-		return deleteNodeInTransaction(operation.Entity, operation.Config, tx)
-	default:
-		return fmt.Errorf("unsupported node operation %v passed to performAllOperations", operation)
-	}
-}
-
-func performEdgeOperation(operation EdgeOperation, tx *sqlx.Tx) error {
-	switch operation.Operation {
-	case InsertOperation:
-		return addEdgeInTransaction(
-			operation.Entity1,
-			operation.Entity2,
-			operation.EdgeType,
-			operation.EdgeOptions,
-			tx,
-		)
-	case DeleteOperation:
-		return deleteEdgeInTransaction(
-			operation.Entity1,
-			operation.Entity2,
-			operation.EdgeType,
-			tx,
-		)
-	default:
-		return fmt.Errorf("unsupported edge operation %v passed to performAllOperations", operation)
-	}
-}
-
-// PerformAllOperations is public for now but will long term be private and have a
-// much better API
-func PerformAllOperations(operations []DataOperation) error {
-	db := data.DBConn()
-	tx, err := db.Beginx()
-	if err != nil {
-		fmt.Println("error creating transaction", err)
-		return err
-	}
-
-	for _, operation := range operations {
-		switch v := operation.(type) {
-		case NodeOperation:
-			err = performNodeOperation(v, tx)
-		case EdgeOperation:
-			err = performEdgeOperation(v, tx)
-		default:
-			err = fmt.Errorf("invalid operation type %v passed to performAllOperations", v)
-		}
-
-		if err != nil {
-			fmt.Println("error during transaction", err)
-			tx.Rollback()
-			return err
-		}
-	}
-
-	tx.Commit()
-	return nil
 }
 
 func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
