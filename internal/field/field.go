@@ -143,7 +143,7 @@ func (f *Field) GetUnquotedKeyFromTag(key string) string {
 	return rawVal
 }
 
-func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info types.Info) *FieldInfo {
+func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.Info) *FieldInfo {
 	fieldInfo := newFieldInfo()
 
 	// TODO eventually get these from ent.Node instead of doing this manually
@@ -194,7 +194,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info types.In
 		entType := info.TypeOf(f.Type)
 		fieldInfo.addField(&Field{
 			FieldName:           fieldName,
-			entType:             info.TypeOf(f.Type),
+			entType:             entType,
 			fieldType:           getTypeForEntType(entType),
 			FieldTag:            tagStr,
 			tagMap:              tagMap,

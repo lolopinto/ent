@@ -39,8 +39,13 @@ type ForeignKeyEdge struct {
 // AssociationEdge is the fb-style edge where the information is stored in the edges_info table.
 // This is the preferred edge in the framework
 type AssociationEdge struct {
-	EntConfig       interface{} // zero-value of the struct
-	CustomTableName string      // TODO come back
+	EntConfig interface{} // zero-value of the struct
+	//CustomTableName string      // TODO come back
+	// have to pick one or the other
+	//InverseEdge *AssociationEdge
+	InverseEdge bool // TODO make this configurable also. for now, we just use default values
+	Symmetric   bool
+
 	// TODO custom table
 	// TODO generate the edge and other fun things later
 	// TODO existing edge to use instead of "generating" a new one.

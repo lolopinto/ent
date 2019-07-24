@@ -1,6 +1,7 @@
 package edge
 
 import (
+	"fmt"
 	"go/ast"
 
 	"github.com/iancoleman/strcase"
@@ -115,7 +116,9 @@ var _ PluralEdge = &ForeignKeyEdge{}
 
 type AssociationEdge struct {
 	commonEdgeInfo
-	EdgeConst string
+	EdgeConst   string
+	Symmetric   bool
+	InverseEdge bool
 }
 
 func (e *AssociationEdge) PluralEdge() bool {
@@ -170,34 +173,34 @@ func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr)
 	}
 }
 
+type parseEdgeItemFunc func(expr ast.Expr, keyValueExprValue ast.Expr)
+
+func initEdgeItemFunc(entConfig *codegen.EntConfigInfo) map[string]parseEdgeItemFunc {
+	funcMap := make(map[string]parseEdgeItemFunc)
+
+	funcMap["EntConfig"] = func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		*entConfig = codegen.GetEntConfigFromExpr(keyValueExprValue)
+	}
+	return funcMap
+}
+
 func parseFieldEdgeItem(lit *ast.CompositeLit, edgeName string) *FieldEdge {
-	done := make(chan bool)
 	var fieldName string
 	var entConfig codegen.EntConfigInfo
+	funcMap := initEdgeItemFunc(&entConfig)
 
-	closure := func(identName string, keyValueExprValue ast.Expr, expr ast.Expr) {
-		switch identName {
-		case "FieldName":
-			// TODO: this validates it's a string literal.
-			// does not format it.
-			// TODO make this
-			_, ok := expr.(*ast.Ident)
-			if ok {
-				panic("invalid FieldName value. Should not use an expression. Should be a string literal")
-			}
-			fieldName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
-			//fmt.Println("Field name:", fieldName)
-
-		case "EntConfig":
-			entConfig = codegen.GetEntConfigFromExpr(keyValueExprValue)
-
-		default:
-			panic("invalid identifier for field config")
+	funcMap["FieldName"] = func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		// TODO: this validates it's a string literal.
+		// does not format it.
+		// TODO make this
+		_, ok := expr.(*ast.Ident)
+		if ok {
+			panic("invalid FieldName value. Should not use an expression. Should be a string literal")
 		}
+		fieldName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
 	}
 
-	go parseEdgeItemHelper(lit, closure, done)
-	<-done
+	parseEdgeItems(funcMap, lit)
 
 	return &FieldEdge{
 		commonEdgeInfo: getCommonEdgeInfo(edgeName, entConfig),
@@ -222,43 +225,46 @@ func parseForeignKeyEdgeItem(lit *ast.CompositeLit, edgeName string) *ForeignKey
 }
 
 func parseAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.CompositeLit) *AssociationEdge {
-	entConfig := parseEntConfigOnlyFromEdgeItemHelper(lit)
+	var entConfig codegen.EntConfigInfo
+	funcMap := initEdgeItemFunc(&entConfig)
 
-	// todo...
-	// need to support custom edge...
-	edgeConst := strcase.ToCamel(containingPackageName) + "To" + edgeName + "Edge"
+	ret := &AssociationEdge{}
 
-	return &AssociationEdge{
-		commonEdgeInfo: getCommonEdgeInfo(edgeName, entConfig),
-		EdgeConst:      edgeConst,
+	funcMap["Symmetric"] = func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		ret.Symmetric = astparser.GetBooleanValueFromExpr(keyValueExprValue)
 	}
+
+	funcMap["InverseEdge"] = func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		ret.InverseEdge = astparser.GetBooleanValueFromExpr(keyValueExprValue)
+	}
+
+	parseEdgeItems(funcMap, lit)
+
+	// todo... need to support custom edge...
+	ret.EdgeConst = strcase.ToCamel(containingPackageName) + "To" + edgeName + "Edge"
+
+	ret.commonEdgeInfo = getCommonEdgeInfo(edgeName, entConfig)
+
+	return ret
 }
 
 func parseEntConfigOnlyFromEdgeItemHelper(lit *ast.CompositeLit) codegen.EntConfigInfo {
-	done := make(chan bool)
 	var entConfig codegen.EntConfigInfo
 
-	closure := func(identName string, keyValueExprValue ast.Expr, _ ast.Expr) {
-		switch identName {
-		case "EntConfig":
-			entConfig = codegen.GetEntConfigFromExpr(keyValueExprValue)
-
-		default:
-			panic("invalid identifier for field config")
-		}
-	}
-
-	go parseEdgeItemHelper(lit, closure, done)
-	<-done
+	funcMap := initEdgeItemFunc(&entConfig)
+	parseEdgeItems(funcMap, lit)
 	return entConfig
 }
 
-func parseEdgeItemHelper(lit *ast.CompositeLit, valueFunc func(identName string, keyValueExprValue ast.Expr, expr ast.Expr), done chan<- bool) {
+func parseEdgeItems(funcMap map[string]parseEdgeItemFunc, lit *ast.CompositeLit) {
 	for _, expr := range lit.Elts {
 		keyValueExpr := astparser.GetExprToKeyValueExpr(expr)
 		ident := astparser.GetExprToIdent(keyValueExpr.Key)
 
-		valueFunc(ident.Name, keyValueExpr.Value, expr)
+		valueFunc, ok := funcMap[ident.Name]
+		if !ok {
+			panic(fmt.Errorf("invalid identifier %s for config", ident.Name))
+		}
+		valueFunc(expr, keyValueExpr.Value)
 	}
-	done <- true
 }

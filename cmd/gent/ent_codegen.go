@@ -261,7 +261,7 @@ func parseFiles(p schemaParser) codegenMapInfo {
 		// TODO rename packageName to something better it's contact_date in contact_date_config.go
 		// TODO break this into concurrent jobs
 
-		codegenInfo := inspectFile(packageName, file, fset, specificConfig, info)
+		codegenInfo := inspectFile(packageName, file, fset, specificConfig, &info)
 		allNodes.addConfig(codegenInfo)
 	}
 
@@ -510,7 +510,7 @@ type processingFn func(nodeData *nodeTemplate)
 
 //type
 
-func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specificConfig string, info types.Info) *codegenNodeTemplateInfo {
+func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specificConfig string, info *types.Info) *codegenNodeTemplateInfo {
 	//ast.Print(fset, node)
 	//ast.NewObj(fset, "file")
 	//fmt.Println("Struct:")
@@ -816,7 +816,7 @@ func getTableName(fn *ast.FuncDecl) string {
 	return basicLit.Value
 }
 
-func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet, info types.Info) *nodeTemplate {
+func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet, info *types.Info) *nodeTemplate {
 	fieldInfo := field.GetFieldInfoForStruct(s, fset, info)
 
 	return &nodeTemplate{

@@ -9,11 +9,15 @@ import (
 func TestEdgeInfo(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "account")
 
-	testEdgeInfo(t, edgeInfo, 0, 1, 1)
+	testEdgeInfo(t, edgeInfo, 0, 1, 2)
 
 	edgeInfo = getTestEdgeInfo(t, "todo")
 
 	testEdgeInfo(t, edgeInfo, 1, 0, 0)
+
+	edgeInfo = getTestEdgeInfo(t, "folder")
+
+	testEdgeInfo(t, edgeInfo, 0, 0, 1)
 }
 
 func TestFieldEdge(t *testing.T) {
@@ -50,15 +54,48 @@ func TestForeignKeyEdge(t *testing.T) {
 
 func TestAssociationEdge(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "account")
+	edge := edgeInfo.GetAssociationEdgeByName("Folders")
+
+	testAssocEdge(t, edge, "Folders", false, false)
+
+	testEntConfig(t, edge.entConfig, "Folder", "FolderConfig")
+
+	testNodeInfo(t, edge.NodeInfo, "Folder")
+}
+
+func TestSymmetricAssociationEdge(t *testing.T) {
+	edgeInfo := getTestEdgeInfo(t, "account")
 	edge := edgeInfo.GetAssociationEdgeByName("Friends")
 
-	if edge.GetEdgeName() != "Friends" {
-		t.Errorf("edge name of friends association edge is not as expected, got %s instead", edge.EdgeName)
-	}
+	testAssocEdge(t, edge, "Friends", true, false)
 
 	testEntConfig(t, edge.entConfig, "Account", "AccountConfig")
 
 	testNodeInfo(t, edge.NodeInfo, "Account")
+}
+
+func TestInverseAssociationEdge(t *testing.T) {
+	edgeInfo := getTestEdgeInfo(t, "folder")
+	edge := edgeInfo.GetAssociationEdgeByName("Todos")
+
+	testAssocEdge(t, edge, "Todos", false, true)
+
+	testEntConfig(t, edge.entConfig, "Todo", "TodoConfig")
+
+	testNodeInfo(t, edge.NodeInfo, "Todo")
+}
+
+func testAssocEdge(t *testing.T, edge *AssociationEdge, edgeName string, symmetric, inverseEdge bool) {
+	if edge.GetEdgeName() != edgeName {
+		t.Errorf("name of edge was not as expected, expected %s, got %s instead", edgeName, edge.EdgeName)
+	}
+
+	if edge.Symmetric != symmetric {
+		t.Errorf("assoc edge with name %s symmetric value was not as expected", edgeName)
+	}
+	if edge.InverseEdge != inverseEdge {
+		t.Errorf("assoc edge with name %s inverse edge value was not as expected", edgeName)
+	}
 }
 
 func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expFieldEdges, expForeignKeys, expAssocs int) {

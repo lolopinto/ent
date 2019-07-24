@@ -138,3 +138,8 @@ func GetUnderylingStringFromLiteralExpr(expr ast.Expr) string {
 	}
 	return str
 }
+
+func GetBooleanValueFromExpr(expr ast.Expr) bool {
+	ident := GetExprToIdent(expr)
+	return ident.Name == "true"
+}

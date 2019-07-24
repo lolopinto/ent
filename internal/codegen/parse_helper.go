@@ -2,67 +2,79 @@ package codegen
 
 import (
 	"go/ast"
-	"go/importer"
-	"go/parser"
 	"go/token"
 	"go/types"
-	"path/filepath"
 	"regexp"
 	"testing"
+
+	"golang.org/x/tools/go/packages"
+	//	"github.com/davecgh/go-spew/spew"
 )
 
 type FileConfigData struct {
 	StructMap map[string]*ast.StructType
 	FuncMap   map[string]*ast.FuncDecl
 	Fset      *token.FileSet
-	Info      types.Info
+	Info      *types.Info
 	files     []*ast.File
 	fileMap   map[string]*ast.File
 }
 
-func ParseFilesForTest(t *testing.T) *FileConfigData {
+// parse and save for reuse in tests
+var savedRes *FileConfigData // TODO this doesn't work when field_test and edge_test are run at the same time...
+
+func ParseFilesForTest(t *testing.T, needTypes ...bool) *FileConfigData {
+	if savedRes != nil {
+		return savedRes
+	}
 	structMap := make(map[string]*ast.StructType)
 	funcMap := make(map[string]*ast.FuncDecl)
 	fileMap := make(map[string]*ast.File)
 
-	filePaths := []string{
-		"../testdata/models/configs/account_config.go",
-		"../testdata/models/configs/todo_config.go",
+	var mode packages.LoadMode
+	if len(needTypes) == 0 {
+		mode = packages.LoadSyntax
+	} else {
+		mode = packages.LoadTypes | packages.LoadSyntax
 	}
-	fset := token.NewFileSet()
+	cfg := &packages.Config{
+		//Fset: fset,
+		// the more I load, the slower this is...
+		// this is a lot slower than the old thing. what am I doing wrong or differently?
+		Mode: mode,
+	}
+	pkgs, err := packages.Load(cfg, "../testdata/models/configs")
+	if err != nil {
+		t.Errorf("was unable to check the package as needed. error: %s", err)
+	}
+
+	if len(pkgs) != 1 {
+		t.Errorf("expected 1 package, got %d instead", len(pkgs))
+	}
+	pkg := pkgs[0]
 
 	var files []*ast.File
-	for _, path := range filePaths {
-		file, err := parser.ParseFile(fset, path, nil, parser.AllErrors)
-		if err != nil {
-			t.Errorf("could not parse config file at path %s", path)
-		}
-		_, filePath := filepath.Split(path)
+
+	if len(pkg.GoFiles) != len(pkg.Syntax) {
+		t.Errorf("don't have the same number of named files and parsed files")
+	}
+
+	for idx, filePath := range pkg.GoFiles {
+		file := pkg.Syntax[idx]
+
 		fileMap[filePath] = file
 		files = append(files, file)
 	}
 
-	info := types.Info{
-		Types: make(map[ast.Expr]types.TypeAndValue),
-		Defs:  make(map[*ast.Ident]types.Object),
-		Uses:  make(map[*ast.Ident]types.Object),
-	}
-	conf := types.Config{
-		Importer: importer.Default(),
-	}
-	_, err := conf.Check("models/configs", fset, files, &info)
-	if err != nil {
-		t.Errorf("was unable to chek the file as needed. error: %s", err)
-	}
-
-	return &FileConfigData{
+	savedRes = &FileConfigData{
 		StructMap: structMap,
 		FuncMap:   funcMap,
-		Fset:      fset,
-		Info:      info,
+		Fset:      pkg.Fset,
+		Info:      pkg.TypesInfo,
 		files:     files,
 		fileMap:   fileMap,
 	}
+	return savedRes
 }
 
 func (c *FileConfigData) ParseStructs(t *testing.T) {

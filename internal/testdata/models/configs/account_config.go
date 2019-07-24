@@ -28,6 +28,11 @@ func (config *AccountConfig) GetEdges() map[string]interface{} {
 		},
 		"Friends": ent.AssociationEdge{
 			EntConfig: AccountConfig{},
+			Symmetric: true,
+		},
+		// edge from account -> folders. one-way edge with the inverse data being stored in the field
+		"Folders": ent.AssociationEdge{
+			EntConfig: FolderConfig{},
 		},
 	}
 }

@@ -48,7 +48,7 @@ func TestCreatedAtField(t *testing.T) {
 			topLevelStructField:   false,
 			dbColumn:              true,
 		},
-		"",
+		"createdAt",
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time!")
@@ -67,7 +67,7 @@ func TestUpdatedAtField(t *testing.T) {
 			topLevelStructField:   false,
 			dbColumn:              true,
 		},
-		"",
+		"updatedAt",
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time!")
@@ -120,7 +120,7 @@ func TestHiddenGraphQLField(t *testing.T) {
 			topLevelStructField:   true,
 			dbColumn:              true,
 		},
-		"",
+		"numberOfLogins",
 	)
 }
 
@@ -209,8 +209,8 @@ func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName s
 	if fieldName != expectedGraphQLFieldName {
 		t.Errorf(
 			"expected graphql field name to be %s, got %s instead",
-			fieldName,
 			expectedGraphQLFieldName,
+			fieldName,
 		)
 	}
 
@@ -302,7 +302,7 @@ func getTestFieldByName(t *testing.T, configName string, fieldName string) *Fiel
 }
 
 func parseConfigFileForStruct(t *testing.T) *codegen.FileConfigData {
-	data := codegen.ParseFilesForTest(t)
+	data := codegen.ParseFilesForTest(t, true)
 	data.ParseStructs(t)
 	return data
 }

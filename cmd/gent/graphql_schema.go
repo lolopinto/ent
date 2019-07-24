@@ -150,6 +150,9 @@ func (schema *graphQLSchema) generateGraphQLSchemaData() {
 }
 
 func (schema *graphQLSchema) processActions(actionInfo *action.ActionInfo) {
+	if actionInfo == nil {
+		return
+	}
 	for _, action := range actionInfo.Actions {
 		if !action.ExposedToGraphQL() {
 			continue

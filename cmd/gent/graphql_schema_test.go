@@ -9,11 +9,12 @@ import (
 func TestBuildGraphQLSchema(t *testing.T) {
 	schema := getTestGraphQLSchema(t)
 
-	if len(schema.Types) != 3 {
+	if len(schema.Types) != 4 {
 		// Account from AccountConfig
-		// TodoConfig from TODO
+		// Todo from TodoConfig
+		// Folder from FolderConfig
 		// Query
-		t.Errorf("expected 3 types created, got %d instead", len(schema.Types))
+		t.Errorf("expected 4 types created, got %d instead", len(schema.Types))
 	}
 }
 
@@ -91,12 +92,14 @@ type TodoConfig struct {
 	}
 	`
 
-	s := newGraphQLSchema(
-		parseSchemasFromSource(
+	data := &codegenData{
+		allNodes: parseSchemasFromSource(
 			sources,
 			"",
 		),
-	)
+	}
+	s := newGraphQLSchema(data)
+
 	s.generateGraphQLSchemaData()
 	f := getTestGraphQLFieldFromTemplate("Todo", "AccountID", s, t)
 
@@ -269,7 +272,10 @@ func getTestGraphQLFieldFromTemplate(typeName, fieldName string, schema *graphQL
 }
 
 func getTestGraphQLSchema(t *testing.T) *graphQLSchema {
-	schema := newGraphQLSchema(getParsedTestSchemaFiles())
+	data := &codegenData{
+		allNodes: getParsedTestSchemaFiles(),
+	}
+	schema := newGraphQLSchema(data)
 	schema.generateGraphQLSchemaData()
 	return schema
 }

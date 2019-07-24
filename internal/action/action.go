@@ -63,8 +63,8 @@ func parseActions(nodeName string, compositeLit *ast.CompositeLit, fieldInfo *fi
 			customActionName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExpr.Value)
 
 		case "HideFromGraphQL":
-			ident := astparser.GetExprToIdent(keyValueExpr.Value)
-			exposeToGraphQL = ident.Name != "true" // only values should be "true" or "false"
+			// exposeToGraphQL is inverse of HideFromGraphQL
+			exposeToGraphQL = !astparser.GetBooleanValueFromExpr(keyValueExpr.Value)
 
 		case "CustomGraphQLName":
 			customGraphQLName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExpr.Value)
