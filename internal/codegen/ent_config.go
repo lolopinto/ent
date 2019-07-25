@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"regexp"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/util"
 )
@@ -52,4 +53,12 @@ func getNodeNameFromEntConfig(configName string) (string, error) {
 		return match[1], nil
 	}
 	return "", fmt.Errorf("couldn't match EntConfig name")
+}
+
+func GetEntConfigFromName(packageName string) EntConfigInfo {
+	name := strcase.ToCamel(packageName)
+	return EntConfigInfo{
+		PackageName: name,
+		ConfigName:  fmt.Sprintf("%sConfig", name),
+	}
 }

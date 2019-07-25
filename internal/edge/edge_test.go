@@ -56,46 +56,129 @@ func TestAssociationEdge(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "account")
 	edge := edgeInfo.GetAssociationEdgeByName("Folders")
 
-	testAssocEdge(t, edge, "Folders", false, false)
+	expectedAssocEdge := &AssociationEdge{
+		EdgeConst: "AccountToFoldersEdge",
+		commonEdgeInfo: getCommonEdgeInfo(
+			"Folders",
+			codegen.GetEntConfigFromName("folder"),
+		),
+	}
 
-	testEntConfig(t, edge.entConfig, "Folder", "FolderConfig")
-
-	testNodeInfo(t, edge.NodeInfo, "Folder")
+	testAssocEdge(t, edge, expectedAssocEdge)
 }
 
 func TestSymmetricAssociationEdge(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "account")
 	edge := edgeInfo.GetAssociationEdgeByName("Friends")
 
-	testAssocEdge(t, edge, "Friends", true, false)
+	expectedAssocEdge := &AssociationEdge{
+		EdgeConst: "AccountToFriendsEdge",
+		commonEdgeInfo: getCommonEdgeInfo(
+			"Friends",
+			codegen.GetEntConfigFromName("account"),
+		),
+		Symmetric: true,
+	}
 
-	testEntConfig(t, edge.entConfig, "Account", "AccountConfig")
-
-	testNodeInfo(t, edge.NodeInfo, "Account")
+	testAssocEdge(t, edge, expectedAssocEdge)
 }
 
 func TestInverseAssociationEdge(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "folder")
 	edge := edgeInfo.GetAssociationEdgeByName("Todos")
 
-	testAssocEdge(t, edge, "Todos", false, true)
+	expectedAssocEdge := &AssociationEdge{
+		EdgeConst: "FolderToTodosEdge",
+		commonEdgeInfo: getCommonEdgeInfo(
+			"Todos",
+			codegen.GetEntConfigFromName("todo"),
+		),
+		InverseEdge: &InverseAssocEdge{
+			EdgeConst: "TodoToFoldersEdge",
+			commonEdgeInfo: getCommonEdgeInfo(
+				"Folders",
+				codegen.GetEntConfigFromName("folder"),
+			),
+		},
+	}
 
-	testEntConfig(t, edge.entConfig, "Todo", "TodoConfig")
-
-	testNodeInfo(t, edge.NodeInfo, "Todo")
+	testAssocEdge(t, edge, expectedAssocEdge)
 }
 
-func testAssocEdge(t *testing.T, edge *AssociationEdge, edgeName string, symmetric, inverseEdge bool) {
-	if edge.GetEdgeName() != edgeName {
-		t.Errorf("name of edge was not as expected, expected %s, got %s instead", edgeName, edge.EdgeName)
+func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
+	if edge.GetEdgeName() != expectedAssocEdge.EdgeName {
+		t.Errorf(
+			"name of edge was not as expected, expected %s, got %s instead",
+			expectedAssocEdge.EdgeName,
+			edge.EdgeName,
+		)
 	}
 
-	if edge.Symmetric != symmetric {
+	edgeName := edge.GetEdgeName()
+
+	if edge.EdgeConst != expectedAssocEdge.EdgeConst {
+		t.Errorf(
+			"edge const of edge %s was not as expected, expected %s, got %s instead",
+			edgeName,
+			expectedAssocEdge.EdgeConst,
+			edge.EdgeConst,
+		)
+	}
+
+	if edge.Symmetric != expectedAssocEdge.Symmetric {
 		t.Errorf("assoc edge with name %s symmetric value was not as expected", edgeName)
 	}
-	if edge.InverseEdge != inverseEdge {
-		t.Errorf("assoc edge with name %s inverse edge value was not as expected", edgeName)
+
+	testInverseAssociationEdge(t, edgeName, edge, expectedAssocEdge)
+
+	expectedPackageName := expectedAssocEdge.entConfig.PackageName
+	expectedConfigName := expectedAssocEdge.entConfig.ConfigName
+	testEntConfig(t, edge.entConfig, expectedPackageName, expectedConfigName)
+
+	testNodeInfo(t, edge.NodeInfo, expectedAssocEdge.NodeInfo.Node)
+}
+
+func testInverseAssociationEdge(t *testing.T, edgeName string, edge, expectedAssocEdge *AssociationEdge) {
+	inverseEdge := edge.InverseEdge
+	expectedInverseEdge := expectedAssocEdge.InverseEdge
+
+	if expectedInverseEdge == nil && inverseEdge != nil {
+		t.Errorf("expected inverse edge with edge name %s to be nil and it was not nil", edgeName)
+		return
 	}
+
+	if expectedInverseEdge != nil && inverseEdge == nil {
+		t.Errorf("expected inverse edge with edge name %s to be non-nil and it was nil", edgeName)
+		return
+	}
+
+	if expectedInverseEdge == nil && inverseEdge == nil {
+		return
+	}
+
+	if inverseEdge.GetEdgeName() != expectedInverseEdge.EdgeName {
+		t.Errorf(
+			"name of inverse edge for edge %s was not as expected, expected %s, got %s instead",
+			edgeName,
+			inverseEdge.EdgeName,
+			expectedInverseEdge.EdgeName,
+		)
+	}
+
+	if inverseEdge.EdgeConst != expectedInverseEdge.EdgeConst {
+		t.Errorf(
+			"edge const of inverse edge %s was not as expected, expected %s, got %s instead",
+			edgeName,
+			inverseEdge.EdgeConst,
+			expectedInverseEdge.EdgeConst,
+		)
+	}
+
+	expectedPackageName := inverseEdge.entConfig.PackageName
+	expectedConfigName := inverseEdge.entConfig.ConfigName
+	testEntConfig(t, inverseEdge.entConfig, expectedPackageName, expectedConfigName)
+
+	testNodeInfo(t, inverseEdge.NodeInfo, expectedInverseEdge.NodeInfo.Node)
 }
 
 func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expFieldEdges, expForeignKeys, expAssocs int) {

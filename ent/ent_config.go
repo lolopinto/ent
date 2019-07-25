@@ -43,7 +43,7 @@ type AssociationEdge struct {
 	//CustomTableName string      // TODO come back
 	// have to pick one or the other
 	//InverseEdge *AssociationEdge
-	InverseEdge bool // TODO make this configurable also. for now, we just use default values
+	InverseEdge *InverseAssocEdge
 	Symmetric   bool
 
 	// TODO custom table
@@ -52,4 +52,10 @@ type AssociationEdge struct {
 
 	// TODO inverse and other fun things about edges
 	// same with foreign key edge
+}
+
+type InverseAssocEdge struct {
+	EdgeName string
+	// TODO make this more configurable also. for now, we just use default values
+	// similar to assoc edge
 }

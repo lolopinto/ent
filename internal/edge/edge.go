@@ -1,12 +1,13 @@
 package edge
 
 import (
-	"fmt"
 	"go/ast"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/depgraph"
 )
 
 type EdgeInfo struct {
@@ -114,11 +115,16 @@ func (e *ForeignKeyEdge) PluralEdge() bool {
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
 
+type InverseAssocEdge struct {
+	commonEdgeInfo
+	EdgeConst string
+}
+
 type AssociationEdge struct {
 	commonEdgeInfo
 	EdgeConst   string
 	Symmetric   bool
-	InverseEdge bool
+	InverseEdge *InverseAssocEdge
 }
 
 func (e *AssociationEdge) PluralEdge() bool {
@@ -152,19 +158,16 @@ func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr)
 	//fmt.Println("EdgeName: ", edgeName)
 
 	value := astparser.GetExprToCompositeLit(keyValueExpr.Value)
-	typ := astparser.GetExprToSelectorExpr(value.Type)
-	// ignore typ.X because for now it should always be models.FieldEdge or ent.FieldEdge...
-
-	edgeType := typ.Sel.Name
+	edgeType := astparser.GetTypeNameFromExpr(value.Type)
 
 	switch edgeType {
-	case "FieldEdge":
+	case "ent.FieldEdge":
 		return parseFieldEdgeItem(value, edgeName)
 
-	case "ForeignKeyEdge":
+	case "ent.ForeignKeyEdge":
 		return parseForeignKeyEdgeItem(value, edgeName)
 
-	case "AssociationEdge":
+	case "ent.AssociationEdge":
 		return parseAssociationEdgeItem(containingPackageName, edgeName, value)
 
 	default:
@@ -175,21 +178,43 @@ func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr)
 
 type parseEdgeItemFunc func(expr ast.Expr, keyValueExprValue ast.Expr)
 
-func initEdgeItemFunc(entConfig *codegen.EntConfigInfo) map[string]parseEdgeItemFunc {
-	funcMap := make(map[string]parseEdgeItemFunc)
+type parseEdgeGraph struct {
+	depgraph.Depgraph
+	lit *ast.CompositeLit
+}
 
-	funcMap["EntConfig"] = func(expr ast.Expr, keyValueExprValue ast.Expr) {
+func initDepgraph(lit *ast.CompositeLit, entConfig *codegen.EntConfigInfo) *parseEdgeGraph {
+	//map[string]parseEdgeItemFunc {
+	g := &parseEdgeGraph{lit: lit}
+	g.AddItem("EntConfig", func(expr ast.Expr, keyValueExprValue ast.Expr) {
 		*entConfig = codegen.GetEntConfigFromExpr(keyValueExprValue)
+	})
+	return g
+}
+
+func (g *parseEdgeGraph) RunLoop() {
+	for _, expr := range g.lit.Elts {
+		keyValueExpr := astparser.GetExprToKeyValueExpr(expr)
+		ident := astparser.GetExprToIdent(keyValueExpr.Key)
+
+		g.CheckAndQueue(ident.Name, func(item interface{}) {
+			// can't cast to parseEdgeItemFunc :(
+			valueFunc, ok := item.(func(ast.Expr, ast.Expr))
+			if !ok {
+				panic("invalid func passed")
+			}
+			valueFunc(expr, keyValueExpr.Value)
+		})
 	}
-	return funcMap
+	g.RunQueuedUpItems()
 }
 
 func parseFieldEdgeItem(lit *ast.CompositeLit, edgeName string) *FieldEdge {
 	var fieldName string
 	var entConfig codegen.EntConfigInfo
-	funcMap := initEdgeItemFunc(&entConfig)
+	g := initDepgraph(lit, &entConfig)
 
-	funcMap["FieldName"] = func(expr ast.Expr, keyValueExprValue ast.Expr) {
+	g.AddItem("FieldName", func(expr ast.Expr, keyValueExprValue ast.Expr) {
 		// TODO: this validates it's a string literal.
 		// does not format it.
 		// TODO make this
@@ -198,9 +223,9 @@ func parseFieldEdgeItem(lit *ast.CompositeLit, edgeName string) *FieldEdge {
 			panic("invalid FieldName value. Should not use an expression. Should be a string literal")
 		}
 		fieldName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
-	}
+	})
 
-	parseEdgeItems(funcMap, lit)
+	g.RunLoop()
 
 	return &FieldEdge{
 		commonEdgeInfo: getCommonEdgeInfo(edgeName, entConfig),
@@ -224,47 +249,83 @@ func parseForeignKeyEdgeItem(lit *ast.CompositeLit, edgeName string) *ForeignKey
 	}
 }
 
+func parseInverseAssocEdge(entConfig codegen.EntConfigInfo, containingPackageName string, keyValueExprValue ast.Expr) *InverseAssocEdge {
+	compositLit := astparser.GetComposeLitInUnaryExpr(keyValueExprValue)
+	if astparser.GetTypeNameFromExpr(compositLit.Type) != "ent.InverseAssocEdge" {
+		panic("invalid inverse assoc edge")
+	}
+
+	ret := &InverseAssocEdge{}
+
+	var edgeName string
+	for _, expr := range compositLit.Elts {
+		kve := astparser.GetExprToKeyValueExpr(expr)
+
+		key := astparser.GetExprToIdent(kve.Key)
+		if key.Name != "EdgeName" {
+			// we only support one key now so keeping it simple like this.
+			// this is a perfetct usecase for run loop and depgraph eventually
+			panic("invalid key in inverse assco edge")
+		}
+		edgeName = astparser.GetUnderylingStringFromLiteralExpr(kve.Value)
+	}
+
+	if edgeName == "" {
+		panic("no edge name provided for inverse assoc edge")
+	}
+
+	// add inverse const for this edge
+	ret.EdgeConst = getEdgeCostName(entConfig.PackageName, edgeName)
+
+	ret.commonEdgeInfo = getCommonEdgeInfo(
+		edgeName,
+		// need to create a new EntConfig for the inverse edge
+
+		// take something like folder and create Folder and FolderConfig
+		// TODO: probably want to pass this down instead of magically configuring this
+
+		codegen.GetEntConfigFromName(containingPackageName),
+	)
+	return ret
+}
+
 func parseAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.CompositeLit) *AssociationEdge {
 	var entConfig codegen.EntConfigInfo
-	funcMap := initEdgeItemFunc(&entConfig)
+	g := initDepgraph(lit, &entConfig)
 
 	ret := &AssociationEdge{}
 
-	funcMap["Symmetric"] = func(expr ast.Expr, keyValueExprValue ast.Expr) {
+	g.AddItem("Symmetric", func(expr ast.Expr, keyValueExprValue ast.Expr) {
 		ret.Symmetric = astparser.GetBooleanValueFromExpr(keyValueExprValue)
-	}
+	})
 
-	funcMap["InverseEdge"] = func(expr ast.Expr, keyValueExprValue ast.Expr) {
-		ret.InverseEdge = astparser.GetBooleanValueFromExpr(keyValueExprValue)
-	}
+	g.AddItem("InverseEdge", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		//
+		// EntConfig is a pre-requisite so indicate as much since we don't wanna parse it twice
 
-	parseEdgeItems(funcMap, lit)
+		ret.InverseEdge = parseInverseAssocEdge(entConfig, containingPackageName, keyValueExprValue)
+	},
+		"EntConfig")
 
-	// todo... need to support custom edge...
-	ret.EdgeConst = strcase.ToCamel(containingPackageName) + "To" + edgeName + "Edge"
+	g.RunLoop()
+
+	ret.EdgeConst = getEdgeCostName(containingPackageName, edgeName)
 
 	ret.commonEdgeInfo = getCommonEdgeInfo(edgeName, entConfig)
 
+	spew.Dump(ret)
 	return ret
+}
+
+func getEdgeCostName(packageName, edgeName string) string {
+	// todo... need to support custom edges at some point...
+	return strcase.ToCamel(packageName) + "To" + edgeName + "Edge"
 }
 
 func parseEntConfigOnlyFromEdgeItemHelper(lit *ast.CompositeLit) codegen.EntConfigInfo {
 	var entConfig codegen.EntConfigInfo
 
-	funcMap := initEdgeItemFunc(&entConfig)
-	parseEdgeItems(funcMap, lit)
+	g := initDepgraph(lit, &entConfig)
+	g.RunLoop()
 	return entConfig
-}
-
-func parseEdgeItems(funcMap map[string]parseEdgeItemFunc, lit *ast.CompositeLit) {
-	for _, expr := range lit.Elts {
-		keyValueExpr := astparser.GetExprToKeyValueExpr(expr)
-		ident := astparser.GetExprToIdent(keyValueExpr.Key)
-
-		valueFunc, ok := funcMap[ident.Name]
-		if !ok {
-			panic(fmt.Errorf("invalid identifier %s for config", ident.Name))
-		}
-		valueFunc(expr, keyValueExpr.Value)
-	}
 }

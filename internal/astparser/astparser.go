@@ -101,6 +101,11 @@ func GetExprToUnaryExpr(expr ast.Expr) *ast.UnaryExpr {
 	return value
 }
 
+func GetComposeLitInUnaryExpr(expr ast.Expr) *ast.CompositeLit {
+	uExpr := GetExprToUnaryExpr(expr)
+	return GetExprToCompositeLit(uExpr.X)
+}
+
 // GetTypeNameFromExpr takes an ast Expr and returns the underlying type
 // Given the following Expr:
 // (*ast.SelectorExpr)(0xc000256440)({

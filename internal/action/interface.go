@@ -167,8 +167,7 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 	for _, expr := range elts {
 		// hardcode to unary expressions for now but this may not be what we want
 
-		uExpr := astparser.GetExprToUnaryExpr(expr)
-		compositeLit := astparser.GetExprToCompositeLit(uExpr.X)
+		compositeLit := astparser.GetComposeLitInUnaryExpr(expr)
 		typeName := astparser.GetTypeNameFromExpr(compositeLit.Type)
 
 		if typeName != "ent.ActionConfig" {

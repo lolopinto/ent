@@ -11,6 +11,7 @@ require (
 	github.com/lib/pq v1.0.0
 	github.com/ogier/pflag v0.0.1
 	github.com/pkg/errors v0.8.1
+	github.com/stretchr/testify v1.3.0
 	github.com/urfave/cli v1.20.0
 	github.com/vektah/gqlparser v1.1.2
 	golang.org/x/tools v0.0.0-20190515012406-7d7faa4812bd

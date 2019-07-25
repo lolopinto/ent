@@ -20,8 +20,12 @@ func (config *FolderConfig) GetEdges() map[string]interface{} {
 	return map[string]interface{}{
 		// inverse edge from a folder to the todos in that folder
 		"Todos": ent.AssociationEdge{
-			EntConfig:   TodoConfig{},
-			InverseEdge: true,
+			// intentionally written in this order to test depgraph until we write tests for that
+			InverseEdge: &ent.InverseAssocEdge{
+				EdgeName: "Folders",
+				//EntConfig: FolderConfig{}, // do we have the containing entconfig? this should be implied
+			},
+			EntConfig: TodoConfig{},
 		},
 	}
 }
