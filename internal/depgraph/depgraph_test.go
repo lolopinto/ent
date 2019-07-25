@@ -250,7 +250,7 @@ func TestRunWithDeps(t *testing.T) {
 	g.Run(func(item interface{}) {
 		execFn, ok := item.(func(*object))
 		if !ok {
-			panic("invalid object passed")
+			panic("invalid function passed")
 		}
 		execFn(&hardToCalObj)
 	})

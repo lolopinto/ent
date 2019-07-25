@@ -3,7 +3,6 @@ package edge
 import (
 	"go/ast"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -300,7 +299,6 @@ func parseAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.C
 	})
 
 	g.AddItem("InverseEdge", func(expr ast.Expr, keyValueExprValue ast.Expr) {
-		//
 		// EntConfig is a pre-requisite so indicate as much since we don't wanna parse it twice
 
 		ret.InverseEdge = parseInverseAssocEdge(entConfig, containingPackageName, keyValueExprValue)
@@ -313,7 +311,6 @@ func parseAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.C
 
 	ret.commonEdgeInfo = getCommonEdgeInfo(edgeName, entConfig)
 
-	spew.Dump(ret)
 	return ret
 }
 
