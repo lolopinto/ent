@@ -26,7 +26,8 @@ type ConfigWithActions interface {
 type FieldEdge struct {
 	FieldName   string
 	EntConfig   interface{} // zero-value of the struct...
-	InverseEdge string      // TODO: come up with a better way of doing this.
+	InverseEdge string      // InverseEdge represents the edge from the other ent to this so that when we set the field we know what edge to write
+	// can specify it on the other side also. e.g. InverseField NoteID so that we know what field to write
 }
 
 // ForeignKeyEdge is when the edge is handled by having a foreign key in the other table

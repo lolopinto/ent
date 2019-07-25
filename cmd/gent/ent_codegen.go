@@ -283,13 +283,16 @@ func (m codegenMapInfo) AddLinkedEdges(nodeData *nodeTemplate) {
 	edgeInfo := nodeData.EdgeInfo
 
 	for _, e := range edgeInfo.FieldEdges {
+		// no inverse edge name, nothing to do here
+		if e.InverseEdgeName == "" {
+			continue
+		}
 		f := fieldInfo.GetFieldByName(e.FieldName)
 		if f == nil {
 			panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
 		}
-		//f.LinkedEdge = e // TODO move to local...
+
 		config := e.GetEntConfig()
-		//		spew.Dump(config)
 
 		foreignInfo, ok := m[config.ConfigName]
 		if !ok {
@@ -297,13 +300,10 @@ func (m codegenMapInfo) AddLinkedEdges(nodeData *nodeTemplate) {
 		}
 		foreignEdgeInfo := foreignInfo.nodeData.EdgeInfo
 		for _, fEdge := range foreignEdgeInfo.Associations {
-			if fEdge.GetEdgeName() == "Notes" {
-				// TODO don't hardcode this
-				//spew.Dump(fEdge)
+			if fEdge.GetEdgeName() == e.InverseEdgeName {
 				f.InverseEdge = fEdge
 				break
 			}
-
 		}
 	}
 }

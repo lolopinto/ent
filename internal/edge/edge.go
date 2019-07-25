@@ -96,7 +96,8 @@ func (e *commonEdgeInfo) GetEntConfig() codegen.EntConfigInfo {
 
 type FieldEdge struct {
 	commonEdgeInfo
-	FieldName string
+	FieldName       string
+	InverseEdgeName string
 }
 
 var _ Edge = &FieldEdge{}
@@ -210,25 +211,24 @@ func (g *parseEdgeGraph) RunLoop() {
 
 func parseFieldEdgeItem(lit *ast.CompositeLit, edgeName string) *FieldEdge {
 	var fieldName string
+	var inverseEdgeName string
 	var entConfig codegen.EntConfigInfo
 	g := initDepgraph(lit, &entConfig)
 
 	g.AddItem("FieldName", func(expr ast.Expr, keyValueExprValue ast.Expr) {
-		// TODO: this validates it's a string literal.
-		// does not format it.
-		// TODO make this
-		_, ok := expr.(*ast.Ident)
-		if ok {
-			panic("invalid FieldName value. Should not use an expression. Should be a string literal")
-		}
 		fieldName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
+	})
+
+	g.AddItem("InverseEdge", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		inverseEdgeName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
 	})
 
 	g.RunLoop()
 
 	return &FieldEdge{
-		commonEdgeInfo: getCommonEdgeInfo(edgeName, entConfig),
-		FieldName:      fieldName,
+		commonEdgeInfo:  getCommonEdgeInfo(edgeName, entConfig),
+		FieldName:       fieldName,
+		InverseEdgeName: inverseEdgeName,
 	}
 }
 
