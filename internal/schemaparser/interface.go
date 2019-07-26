@@ -92,6 +92,10 @@ func LoadPackage(p Parser) *packages.Package {
 	}
 	pkg := pkgs[0]
 
+	if len(pkg.Errors) > 0 {
+		util.ErrSlice(pkg.Errors)
+	}
+
 	if len(pkg.GoFiles) != len(pkg.Syntax) {
 		panic(
 			fmt.Errorf(

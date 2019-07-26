@@ -106,6 +106,34 @@ func TestInverseAssociationEdge(t *testing.T) {
 	testAssocEdge(t, edge, expectedAssocEdge)
 }
 
+func TestAddingInverseEdge(t *testing.T) {
+	edgeInfo := getTestEdgeInfo(t, "folder")
+	edge := edgeInfo.GetAssociationEdgeByName("Todos")
+
+	inverseEdgeInfo := getTestEdgeInfo(t, "todo")
+
+	if len(inverseEdgeInfo.Associations) != 0 {
+		t.Errorf("expected no associations since nothing is defined for Todo")
+	}
+
+	edge.AddInverseEdge(inverseEdgeInfo)
+	if len(inverseEdgeInfo.Associations) != 1 {
+		t.Errorf("expected 1 association since edge.AddInverseEdge was called")
+	}
+	edge2 := inverseEdgeInfo.GetAssociationEdgeByName("Folders")
+
+	expectedAssocEdge := &AssociationEdge{
+		EdgeConst: "TodoToFoldersEdge",
+		commonEdgeInfo: getCommonEdgeInfo(
+			"Folders",
+			codegen.GetEntConfigFromName("folder"),
+		),
+		IsInverseEdge: true,
+	}
+
+	testAssocEdge(t, edge2, expectedAssocEdge)
+}
+
 func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
 	if edge.GetEdgeName() != expectedAssocEdge.EdgeName {
 		t.Errorf(
@@ -128,6 +156,15 @@ func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
 
 	if edge.Symmetric != expectedAssocEdge.Symmetric {
 		t.Errorf("assoc edge with name %s symmetric value was not as expected", edgeName)
+	}
+
+	if edge.IsInverseEdge != expectedAssocEdge.IsInverseEdge {
+		t.Errorf(
+			"is inverse edge flag for assoc edge with name %s was not as expected, expected %v, got %v instead",
+			edgeName,
+			expectedAssocEdge.IsInverseEdge,
+			edge.IsInverseEdge,
+		)
 	}
 
 	testInverseAssociationEdge(t, edgeName, edge, expectedAssocEdge)

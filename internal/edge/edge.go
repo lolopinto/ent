@@ -1,6 +1,7 @@
 package edge
 
 import (
+	"fmt"
 	"go/ast"
 
 	"github.com/iancoleman/strcase"
@@ -20,7 +21,7 @@ type EdgeInfo struct {
 	assocMap      map[string]*AssociationEdge
 }
 
-func newEdgeInfo() *EdgeInfo {
+func NewEdgeInfo() *EdgeInfo {
 	ret := &EdgeInfo{}
 	ret.fieldEdgeMap = make(map[string]*FieldEdge)
 	ret.foreignKeyMap = make(map[string]*ForeignKeyEdge)
@@ -122,13 +123,37 @@ type InverseAssocEdge struct {
 
 type AssociationEdge struct {
 	commonEdgeInfo
-	EdgeConst   string
-	Symmetric   bool
-	InverseEdge *InverseAssocEdge
+	EdgeConst     string
+	Symmetric     bool
+	InverseEdge   *InverseAssocEdge
+	IsInverseEdge bool
 }
 
 func (e *AssociationEdge) PluralEdge() bool {
 	return true
+}
+
+func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) {
+	inverseEdge := e.InverseEdge
+	if inverseEdge == nil {
+		return
+	}
+
+	inverseAssocEdge := inverseEdgeInfo.GetAssociationEdgeByName(inverseEdge.EdgeName)
+	if inverseAssocEdge != nil {
+		panic(
+			fmt.Errorf(
+				"trying to add inverse assoc edge with name %s when edge already exists",
+				inverseEdge.EdgeName,
+			),
+		)
+	}
+
+	inverseEdgeInfo.addEdge(&AssociationEdge{
+		EdgeConst:      inverseEdge.EdgeConst,
+		commonEdgeInfo: inverseEdge.commonEdgeInfo,
+		IsInverseEdge:  true,
+	})
 }
 
 var _ Edge = &AssociationEdge{}
@@ -136,7 +161,7 @@ var _ PluralEdge = &AssociationEdge{}
 
 // http://goast.yuroyoro.net/ is really helpful to see the tree
 func ParseEdgesFunc(packageName string, fn *ast.FuncDecl) *EdgeInfo {
-	ret := newEdgeInfo()
+	ret := NewEdgeInfo()
 
 	elts := astparser.GetEltsInFunc(fn)
 

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/parsehelper"
-	"github.com/lolopinto/ent/internal/schema"
 )
 
 func TestBuildGraphQLSchema(t *testing.T) {
@@ -95,12 +94,8 @@ type TodoConfig struct {
 	}
 	`
 
-	data := parsehelper.ParseFilesForTest(
-		t,
-		parsehelper.Sources("GraphQLOtherIDWithNoEdge", sources),
-	)
 	s := newGraphQLSchema(&codegenData{
-		allNodes: schema.ParsePackage(data.Pkg),
+		allNodes: parsehelper.ParseNodeDataMap(t, sources, "GraphQLOtherIDWithNoEdge"),
 	})
 
 	s.generateGraphQLSchemaData()

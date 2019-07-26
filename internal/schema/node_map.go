@@ -171,7 +171,7 @@ func (m NodeMapInfo) parseFile(packageName string, file *ast.File, fset *token.F
 	nodeData := &NodeData{
 		PackageName: packageName,
 		NodeInfo:    codegen.GetNodeInfo(packageName),
-		EdgeInfo:    &edge.EdgeInfo{}, // default in case no edges
+		EdgeInfo:    edge.NewEdgeInfo(),
 	}
 	// run the depgraph to get as much data as we can get now.
 	g.Run(func(item interface{}) {
@@ -187,9 +187,15 @@ func (m NodeMapInfo) parseFile(packageName string, file *ast.File, fset *token.F
 		// want all configs loaded for this.
 		// Actions depends on this.
 		"LinkedEdges", func(nodeData *NodeData) {
-			m.AddLinkedEdges(nodeData)
+			m.addLinkedEdges(nodeData)
 		},
 	)
+
+	// inverse edges also require everything to be loaded
+	g2.AddItem(
+		"InverseEdges", func(nodeData *NodeData) {
+			m.addInverseAssocEdges(nodeData)
+		})
 
 	return &NodeDataInfo{
 		depgraph:                g2,
@@ -199,7 +205,7 @@ func (m NodeMapInfo) parseFile(packageName string, file *ast.File, fset *token.F
 	}
 }
 
-func (m NodeMapInfo) AddLinkedEdges(nodeData *NodeData) {
+func (m NodeMapInfo) addLinkedEdges(nodeData *NodeData) {
 	fieldInfo := nodeData.FieldInfo
 	edgeInfo := nodeData.EdgeInfo
 
@@ -226,6 +232,25 @@ func (m NodeMapInfo) AddLinkedEdges(nodeData *NodeData) {
 				break
 			}
 		}
+	}
+}
+
+func (m NodeMapInfo) addInverseAssocEdges(nodeData *NodeData) {
+	edgeInfo := nodeData.EdgeInfo
+
+	for _, assocEdge := range edgeInfo.Associations {
+		if assocEdge.InverseEdge == nil {
+			continue
+		}
+		configName := assocEdge.NodeInfo.EntConfigName
+		inverseInfo, ok := m[configName]
+		if !ok {
+			panic(fmt.Errorf("could not find the EntConfig codegen info for %s", configName))
+		}
+
+		inverseEdgeInfo := inverseInfo.NodeData.EdgeInfo
+
+		assocEdge.AddInverseEdge(inverseEdgeInfo)
 	}
 }
 

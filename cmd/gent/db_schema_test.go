@@ -455,11 +455,9 @@ func getTestSchema(t *testing.T) *dbSchema {
 }
 
 func getInMemoryTestSchemas(t *testing.T, sources map[string]string, uniqueKey string) *dbSchema {
-	data := parsehelper.ParseFilesForTest(
-		t,
-		parsehelper.Sources(uniqueKey, sources),
-	)
-	return newDBSchema(schema.ParsePackage(data.Pkg))
+	return newDBSchema(parseNodeDataMap(
+		t, sources, uniqueKey,
+	))
 }
 
 func getTestTable(configName string, t *testing.T) *dbTable {
@@ -592,4 +590,13 @@ func expectPanic(t *testing.T, expectedError string) {
 			t.Errorf("error not as expected, was %s instead", err.Error())
 		}
 	}
+}
+
+// inlining this in a bunch of places to break the import cycle
+func parseNodeDataMap(t *testing.T, sources map[string]string, uniqueKeyForSources string) schema.NodeMapInfo {
+	data := parsehelper.ParseFilesForTest(
+		t,
+		parsehelper.Sources(uniqueKeyForSources, sources),
+	)
+	return schema.ParsePackage(data.Pkg)
 }

@@ -4,6 +4,7 @@ import (
 	"go/scanner"
 
 	"github.com/davecgh/go-spew/spew"
+	"golang.org/x/tools/go/packages"
 )
 
 func Die(err error) {
@@ -17,4 +18,12 @@ func Die(err error) {
 		}
 		panic(err)
 	}
+}
+
+func ErrSlice(err []packages.Error) {
+	str := ""
+	for _, e := range err {
+		str += e.Error() + "\n"
+	}
+	panic(str)
 }
