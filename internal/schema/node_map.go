@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
@@ -125,10 +124,28 @@ func (m NodeMapInfo) parseFile(
 	// things that need all nodeDatas loaded
 	g2 := &depgraph.Depgraph{}
 
+	var shouldCodegen bool
+
 	ast.Inspect(file, func(node ast.Node) bool {
-		// get struct
-		// TODO get the name from *ast.TypeSpec to verify a few things
+
+		// TODO verification
 		// for now, we're assuming one struct which maps to what we want which isn't necessarily true
+		if t, ok := node.(*ast.TypeSpec); ok && t.Type != nil {
+			structName := t.Name.Name
+
+			// can eventually make this better but doing it this way to make the public API better
+			if len(specificConfigs) == 0 ||
+				(len(specificConfigs) == 1 && specificConfigs[0] == "") {
+				shouldCodegen = true
+			} else {
+				for _, specificConfig := range specificConfigs {
+					if specificConfig == structName {
+						shouldCodegen = true
+						break
+					}
+				}
+			}
+		}
 
 		// pass the structtype to get the config
 		if s, ok := node.(*ast.StructType); ok {
@@ -199,7 +216,7 @@ func (m NodeMapInfo) parseFile(
 	return &NodeDataInfo{
 		depgraph:                g2,
 		NodeData:                nodeData,
-		ShouldCodegen:           shouldCodegenPackage(file, specificConfigs),
+		ShouldCodegen:           shouldCodegen,
 		ShouldParseExistingFile: nodeData.EdgeInfo.HasAssociationEdges(),
 	}
 }
@@ -289,9 +306,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 	if !info.ShouldParseExistingFile {
 		return
 	}
-	// TODO figure this out for the sources...
 	existingConsts := parseExistingModelFile(nodeData)
-	spew.Dump(existingConsts)
 
 	edgeConsts := existingConsts["ent.EdgeType"]
 	if edgeConsts == nil {
@@ -340,31 +355,4 @@ func getTableName(fn *ast.FuncDecl) string {
 	expr := astparser.GetLastReturnStmtExpr(fn)
 	basicLit := astparser.GetExprToBasicLit(expr)
 	return basicLit.Value
-}
-
-// TODO inline this again...
-func shouldCodegenPackage(file *ast.File, specificConfigs []string) bool {
-	if len(specificConfigs) == 0 {
-		// nothing to do here
-		return true
-	}
-
-	returnVal := false
-
-	ast.Inspect(file, func(node ast.Node) bool {
-		if t, ok := node.(*ast.TypeSpec); ok && t.Type != nil {
-			structName := t.Name.Name
-
-			// can eventually make this better but doing it this way to make the outward API better
-			for _, specificConfig := range specificConfigs {
-				if specificConfig == structName {
-					returnVal = true
-					break
-				}
-			}
-			return false
-		}
-		return true
-	})
-	return returnVal
 }
