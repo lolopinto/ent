@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"sort"
 	"testing"
+
+	"github.com/lolopinto/ent/internal/parsehelper"
+	"github.com/lolopinto/ent/internal/schema"
 )
 
 func TestBuildGraphQLSchema(t *testing.T) {
@@ -92,13 +95,13 @@ type TodoConfig struct {
 	}
 	`
 
-	data := &codegenData{
-		allNodes: parseSchemasFromSource(
-			sources,
-			"",
-		),
-	}
-	s := newGraphQLSchema(data)
+	data := parsehelper.ParseFilesForTest(
+		t,
+		parsehelper.Sources("GraphQLOtherIDWithNoEdge", sources),
+	)
+	s := newGraphQLSchema(&codegenData{
+		allNodes: schema.ParsePackage(data.Pkg),
+	})
 
 	s.generateGraphQLSchemaData()
 	f := getTestGraphQLFieldFromTemplate("Todo", "AccountID", s, t)
@@ -273,7 +276,7 @@ func getTestGraphQLFieldFromTemplate(typeName, fieldName string, schema *graphQL
 
 func getTestGraphQLSchema(t *testing.T) *graphQLSchema {
 	data := &codegenData{
-		allNodes: getParsedTestSchemaFiles(),
+		allNodes: getParsedTestSchemaFiles(t),
 	}
 	schema := newGraphQLSchema(data)
 	schema.generateGraphQLSchemaData()

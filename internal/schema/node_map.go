@@ -17,13 +17,17 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// Given a schema file parser, Parse parses the schema to return the completely 
+// Given a schema file parser, Parse parses the schema to return the completely
 // parsed schema
-func Parse(p schemaparser.Parser, specificConfigs... string) NodeMapInfo {
+func Parse(p schemaparser.Parser, specificConfigs ...string) NodeMapInfo {
 	nodes := newSchema()
-
 	nodes.ParseFiles(p, specificConfigs...)
+	return nodes
+}
 
+func ParsePackage(pkg *packages.Package, specificConfigs ...string) NodeMapInfo {
+	nodes := newSchema()
+	nodes.ParsePackage(pkg, specificConfigs...)
 	return nodes
 }
 

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/parsehelper"
 )
 
 func TestFieldInfo(t *testing.T) {
@@ -301,8 +301,8 @@ func getTestFieldByName(t *testing.T, configName string, fieldName string) *Fiel
 	return fieldInfo.GetFieldByName(fieldName)
 }
 
-func parseConfigFileForStruct(t *testing.T) *codegen.FileConfigData {
-	data := codegen.ParseFilesForTest(t, true)
+func parseConfigFileForStruct(t *testing.T) *parsehelper.FileConfigData {
+	data := parsehelper.ParseFilesForTest(t)
 	data.ParseStructs(t)
 	return data
 }

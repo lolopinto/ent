@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
 )
 
@@ -75,7 +75,7 @@ func TestTableForNode(t *testing.T) {
 }
 
 func TestTablesFromSchema(t *testing.T) {
-	schema := getTestSchema()
+	schema := getTestSchema(t)
 	schema.generateShemaTables()
 
 	// accounts
@@ -179,7 +179,7 @@ type TodoConfig struct {
 	}
 	`
 
-	schemas := getInMemoryTestSchemas(sources)
+	schemas := getInMemoryTestSchemas(t, sources, "InvalidForeignKeyConfig")
 
 	defer expectPanic(t, "invalid EntConfig accounts set as ForeignKey of field AccountID on ent config TodoConfig")
 
@@ -202,7 +202,7 @@ type TodoConfig struct {
 	}
 	`
 
-	schemas := getInMemoryTestSchemas(sources)
+	schemas := getInMemoryTestSchemas(t, sources, "InvalidForeignKey")
 
 	defer expectPanic(t, "invalid Field Bar set as ForeignKey of field AccountID on ent config TodoConfig")
 
@@ -439,31 +439,31 @@ func testConstraint(t *testing.T, constraint dbConstraint, expectedConstraintStr
 	}
 }
 
-func getParsedTestSchemaFiles() schema.NodeMapInfo {
-	return parseAllSchemaFiles(
-		"./testdata/models/configs",
-		&codegen.CodePath{
-			PathToConfigs: "./testdata/models/configs/",
-			PathToModels:  "./testdata/models/",
-		},
+func getParsedTestSchemaFiles(t *testing.T) schema.NodeMapInfo {
+	// use parsehelper.ParseFilesForTest since that caches it
+	data := parsehelper.ParseFilesForTest(
+		t,
+		// this is using the testdata local to gent
+		// will be fixed and standardized at some point
+		parsehelper.RootPath("./testdata/models/configs/"),
 	)
+	return schema.ParsePackage(data.Pkg)
 }
 
-func getTestSchema() *dbSchema {
-	return newDBSchema(getParsedTestSchemaFiles())
+func getTestSchema(t *testing.T) *dbSchema {
+	return newDBSchema(getParsedTestSchemaFiles(t))
 }
 
-func getInMemoryTestSchemas(sources map[string]string) *dbSchema {
-	return newDBSchema(
-		parseSchemasFromSource(
-			sources,
-			"",
-		),
+func getInMemoryTestSchemas(t *testing.T, sources map[string]string, uniqueKey string) *dbSchema {
+	data := parsehelper.ParseFilesForTest(
+		t,
+		parsehelper.Sources(uniqueKey, sources),
 	)
+	return newDBSchema(schema.ParsePackage(data.Pkg))
 }
 
 func getTestTable(configName string, t *testing.T) *dbTable {
-	schema := getTestSchema()
+	schema := getTestSchema(t)
 
 	return getTestTableFromSchema(configName, schema, t)
 }
@@ -552,7 +552,7 @@ func getAccountConfigContents(t *testing.T) string {
 
 func getTestTableByName(tableName string, t *testing.T) *dbTable {
 	tableName = strconv.Quote(tableName)
-	schema := getTestSchema()
+	schema := getTestSchema(t)
 	schema.generateShemaTables()
 
 	for _, table := range schema.Tables {

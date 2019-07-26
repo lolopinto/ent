@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/parsehelper"
 )
 
 func TestEdgeInfo(t *testing.T) {
@@ -232,8 +233,8 @@ func getTestEdgeInfo(t *testing.T, packageName string) *EdgeInfo {
 	return edgeInfo
 }
 
-func parseConfigFileForFunc(t *testing.T) *codegen.FileConfigData {
-	data := codegen.ParseFilesForTest(t)
+func parseConfigFileForFunc(t *testing.T) *parsehelper.FileConfigData {
+	data := parsehelper.ParseFilesForTest(t)
 	data.ParseEdgesFunc(t)
 	return data
 }

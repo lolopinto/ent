@@ -35,10 +35,9 @@ import (
 	"github.com/dave/dst/decorator"
 )
 
-func parseAllSchemaFiles(rootPath string, codePathInfo *codegen.CodePath, specificConfigs ...string) schema.NodeMapInfo {
+func parseAllSchemaFiles(rootPath string, specificConfigs ...string) schema.NodeMapInfo {
 	p := &schemaparser.ConfigSchemaParser{
-		RootPath:       rootPath,
-		CodePathInfo:   codePathInfo,
+		RootPath: rootPath,
 	}
 
 	return schema.Parse(p, specificConfigs...)
@@ -150,7 +149,7 @@ type codegenPlugin interface {
 }
 
 func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codegen.CodePath) {
-	allNodes := parseAllSchemaFiles(rootPath, codePathInfo, specificConfig)
+	allNodes := parseAllSchemaFiles(rootPath, specificConfig)
 
 	if len(allNodes) == 0 {
 		return

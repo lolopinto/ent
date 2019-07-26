@@ -9,7 +9,7 @@ import (
 
 func TestGenerateNewEdges(t *testing.T) {
 	// TODO figure out the best place to put these files
-	schemaFiles := getParsedTestSchemaFiles()
+	schemaFiles := getParsedTestSchemaFiles(t)
 	newEdges := generateConstsAndNewEdges(schemaFiles)
 
 	if len(newEdges) != 1 {
@@ -40,7 +40,7 @@ func TestGenerateNewEdges(t *testing.T) {
 }
 
 func TestGeneratedConstants(t *testing.T) {
-	schemaFiles := getParsedTestSchemaFiles()
+	schemaFiles := getParsedTestSchemaFiles(t)
 	generateConstsAndNewEdges(schemaFiles)
 
 	accountInfo := schemaFiles["AccountConfig"]

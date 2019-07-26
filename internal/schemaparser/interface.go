@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/util"
 	"golang.org/x/tools/go/packages"
 )
@@ -21,15 +20,20 @@ type ParserNeedsCleanup interface {
 }
 
 type ConfigSchemaParser struct {
-	RootPath       string
-	CodePathInfo   *codegen.CodePath
+	RootPath      string
+	DisableSyntax bool
 }
 
 func (p *ConfigSchemaParser) GetConfig() (*packages.Config, string, error) {
+	mode := packages.LoadTypes | packages.LoadSyntax
+	// if p.DisableSyntax {
+	// 	mode = packages.LoadTypes
+	// }
+
 	cfg := &packages.Config{
 		// the more I load, the slower this is...
 		// this is a lot slower than the old thing. what am I doing wrong or differently?
-		Mode: packages.LoadTypes | packages.LoadSyntax,
+		Mode: mode,
 	}
 	absPath, err := filepath.Abs(p.RootPath)
 	return cfg, absPath, err
