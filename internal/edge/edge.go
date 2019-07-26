@@ -182,7 +182,11 @@ func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr)
 	edgeName := astparser.GetUnderylingStringFromLiteralExpr(keyValueExpr.Key)
 	//fmt.Println("EdgeName: ", edgeName)
 
-	value := astparser.GetExprToCompositeLit(keyValueExpr.Value)
+	// if it's ent.FieldEdge or &ent.FieldEdge, we should allow it
+	// need to allow tests for this
+	// ent.FieldEdge is CompositLit
+	// &ent.FieldEdge is CompositLit in an unary expresion
+	value := astparser.GetExprToCompositeLitAllowUnaryExpr(keyValueExpr.Value)
 	edgeType := astparser.GetTypeNameFromExpr(value.Type)
 
 	switch edgeType {
