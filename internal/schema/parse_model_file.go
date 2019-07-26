@@ -78,6 +78,27 @@ func parseExistingModelFile(nodeData *NodeData) map[string]map[string]string {
 	return constMap
 }
 
+// maps all the way down ugh
+var cachedModelFileMap map[string]map[string]map[string]string
+
+func getParsedExistingModelFile(nodeData *NodeData) map[string]map[string]string {
+	if cachedModelFileMap == nil {
+		cachedModelFileMap = make(map[string]map[string]map[string]string)
+	}
+	existingConsts := cachedModelFileMap[nodeData.PackageName]
+	if existingConsts != nil {
+		return existingConsts
+	}
+
+	existingConsts = parseExistingModelFile(nodeData)
+	if existingConsts == nil {
+		existingConsts = make(map[string]map[string]string)
+	}
+	// add to cache
+	cachedModelFileMap[nodeData.PackageName] = existingConsts
+	return existingConsts
+}
+
 // TODO this is duplicated in ent_codegen.go
 func getFilePathForModelFile(nodeData *NodeData) string {
 	return fmt.Sprintf("models/%s.go", nodeData.PackageName)

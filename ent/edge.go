@@ -36,10 +36,10 @@ type EdgesResult struct {
 
 // AssocEdgeData is corresponding ent for AssocEdgeConfig
 type AssocEdgeData struct {
-	EdgeType        string         `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
-	EdgeName        string         `db:"edge_name"`
-	SymmetricEdge   bool           `db:"symmetric_edge"`
-	InverseEdgeType sql.NullString `db:"inverse_edge_type"`
-	EdgeTable       string         `db:"edge_table"`
+	EdgeType        string          `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
+	EdgeName        string          `db:"edge_name"`
+	SymmetricEdge   bool            `db:"symmetric_edge"`
+	InverseEdgeType *sql.NullString `db:"inverse_edge_type"`
+	EdgeTable       string          `db:"edge_table"`
 	Timestamps
 }

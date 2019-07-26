@@ -1,10 +1,12 @@
 package schema_test
 
 import (
+	"database/sql"
 	"strconv"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/parsehelper"
@@ -93,7 +95,6 @@ type TodoConfig struct {
 }
 
 func TestInverseAssocEdgeSameEnt(t *testing.T) {
-
 	sources := make(map[string]string)
 
 	sources["account_config.go"] = `
@@ -148,6 +149,53 @@ type AccountConfig struct {
 	if !friendRequestsReceived.IsInverseEdge {
 		t.Error("expected the friend request is inverse edge field to be true")
 	}
+
+	newEdges := s.GetNewEdges()
+
+	if len(newEdges) != 2 {
+		t.Errorf("Expected 2 new edges generated in schema, got %d instead", len(newEdges))
+	}
+	friendRequestsEdge := newEdges[0]
+	friendRequestsReceivedEdge := newEdges[1]
+
+	expectedEdge := &ent.AssocEdgeData{
+		EdgeName:      "AccountToFriendRequestsEdge",
+		SymmetricEdge: false,
+		InverseEdgeType: &sql.NullString{
+			String: friendRequestsReceivedEdge.EdgeType,
+			Valid:  true,
+		},
+		EdgeTable: "accounts_friend_requests_edge",
+	}
+
+	testNewEdge(t, friendRequestsEdge, expectedEdge)
+
+	expectedInverseEdge := &ent.AssocEdgeData{
+		EdgeName:      "AccountToFriendRequestsReceivedEdge",
+		SymmetricEdge: false,
+		InverseEdgeType: &sql.NullString{
+			String: friendRequestsEdge.EdgeType,
+			Valid:  true,
+		},
+		EdgeTable: "accounts_friend_requests_edge",
+	}
+	testNewEdge(t, friendRequestsReceivedEdge, expectedInverseEdge)
+
+	accountInfo := s.Nodes["AccountConfig"]
+
+	testConstants(
+		t,
+		accountInfo,
+		map[string]map[string]string{
+			"ent.NodeType": map[string]string{
+				"AccountType": "account",
+			},
+			"ent.EdgeType": map[string]string{
+				"AccountToFriendRequestsEdge":         "",
+				"AccountToFriendRequestsReceivedEdge": "",
+			},
+		},
+	)
 }
 
 func TestInverseAssocEdge(t *testing.T) {
@@ -216,6 +264,65 @@ type TodoConfig struct {
 	if !accounts.IsInverseEdge {
 		t.Error("expected the todo -> todo accounts edge field to be true")
 	}
+
+	newEdges := s.GetNewEdges()
+
+	if len(newEdges) != 2 {
+		t.Errorf("Expected 2 new edges generated in schema, got %d instead", len(newEdges))
+	}
+	accountTodosEdge := newEdges[0]
+	todoAccountsEdge := newEdges[1]
+
+	expectedEdge := &ent.AssocEdgeData{
+		EdgeName:      "AccountToTodosEdge",
+		SymmetricEdge: false,
+		InverseEdgeType: &sql.NullString{
+			String: todoAccountsEdge.EdgeType,
+			Valid:  true,
+		},
+		EdgeTable: "accounts_todos_edge",
+	}
+
+	testNewEdge(t, accountTodosEdge, expectedEdge)
+
+	expectedInverseEdge := &ent.AssocEdgeData{
+		EdgeName:      "TodoToAccountsEdge",
+		SymmetricEdge: false,
+		InverseEdgeType: &sql.NullString{
+			String: accountTodosEdge.EdgeType,
+			Valid:  true,
+		},
+		EdgeTable: "accounts_todos_edge",
+	}
+	testNewEdge(t, todoAccountsEdge, expectedInverseEdge)
+
+	accountInfo := s.Nodes["AccountConfig"]
+	testConstants(
+		t,
+		accountInfo,
+		map[string]map[string]string{
+			"ent.NodeType": map[string]string{
+				"AccountType": "account",
+			},
+			"ent.EdgeType": map[string]string{
+				"AccountToTodosEdge": "",
+			},
+		},
+	)
+
+	todoInfo := s.Nodes["TodoConfig"]
+	testConstants(
+		t,
+		todoInfo,
+		map[string]map[string]string{
+			"ent.NodeType": map[string]string{
+				"TodoType": "todo",
+			},
+			"ent.EdgeType": map[string]string{
+				"TodoToAccountsEdge": "",
+			},
+		},
+	)
 }
 
 func TestGenerateNewEdges(t *testing.T) {
@@ -223,30 +330,18 @@ func TestGenerateNewEdges(t *testing.T) {
 	newEdges := s.GetNewEdges()
 
 	if len(newEdges) != 1 {
-		t.Errorf("Expected 1 new edge generated in model, got %d instead", len(newEdges))
+		t.Errorf("Expected 1 new edge generated in schema, got %d instead", len(newEdges))
 	}
 	newEdge := newEdges[0]
 
-	_, err := uuid.Parse(newEdge.EdgeType)
-	if err != nil {
-		t.Errorf("Expected a new edge type of uuid generated. didn't get it, got %s instead", newEdge.EdgeType)
+	expectedEdge := &ent.AssocEdgeData{
+		EdgeName:        "AccountToFriendsEdge",
+		SymmetricEdge:   false,
+		InverseEdgeType: &sql.NullString{},
+		EdgeTable:       "accounts_friends_edge",
 	}
 
-	if newEdge.EdgeName != "AccountToFriendsEdge" {
-		t.Errorf("edgename of newly generated edge was not as expected")
-	}
-
-	if newEdge.SymmetricEdge {
-		t.Errorf("expected a non-symmetric edge. got a symmetric edge instead")
-	}
-
-	if newEdge.InverseEdgeType.Valid {
-		t.Errorf("expected invalid inverse edge type. got a valid one instead")
-	}
-
-	if newEdge.EdgeTable != "accounts_friends_edge" {
-		t.Errorf("invalid edge table in newly generated edge")
-	}
+	testNewEdge(t, newEdge, expectedEdge)
 }
 
 func TestGeneratedConstants(t *testing.T) {
@@ -254,54 +349,30 @@ func TestGeneratedConstants(t *testing.T) {
 
 	accountInfo := s.Nodes["AccountConfig"]
 
-	numConsts := len(accountInfo.NodeData.ConstantGroups)
-	if numConsts != 2 {
-		t.Errorf("expected 2 constants for account node. got %d instead", numConsts)
-	}
-	firstGroup := accountInfo.NodeData.ConstantGroups[0]
-	if firstGroup.ConstType != "ent.NodeType" {
-		t.Errorf("expected nodeType to be the first constant group, got %s instead", firstGroup.ConstType)
-	}
-	if len(firstGroup.Constants) != 1 {
-		t.Errorf("expected 1 constant in the first constant group, got %d instead", len(firstGroup.Constants))
-	}
-	constant := firstGroup.Constants[0]
-	if constant.ConstName != "AccountType" {
-		t.Errorf("unexpected constant name generated for account node, got %s instead of expected", constant.ConstName)
-	}
-	if constant.ConstValue != strconv.Quote("account") {
-		t.Errorf("unexpected constant value for account type constant, got %s", constant.ConstValue)
-	}
-
-	secondGroup := accountInfo.NodeData.ConstantGroups[1]
-	if secondGroup.ConstType != "ent.EdgeType" {
-		t.Errorf("expected edgeType to be the second constant group, got %s instead", secondGroup.ConstType)
-	}
-	if len(secondGroup.Constants) != 1 {
-		t.Errorf("expected 1 constant in the second constant group, got %d instead", len(secondGroup.Constants))
-	}
-	constant = secondGroup.Constants[0]
-	if constant.ConstName != "AccountToFriendsEdge" {
-		t.Errorf("unexpected constant name generated for account to friends edge, got %s instead of expected", constant.ConstName)
-	}
-	_, err := uuid.Parse(constant.ConstValue)
-	if err != nil {
-		t.Errorf("expected uuid as constant value for edge, got %s with err %s parsing uuid instead", constant.ConstValue, err)
-	}
+	testConstants(
+		t,
+		accountInfo,
+		map[string]map[string]string{
+			"ent.NodeType": map[string]string{
+				"AccountType": "account",
+			},
+			"ent.EdgeType": map[string]string{
+				"AccountToFriendsEdge": "",
+			},
+		},
+	)
 
 	todoInfo := s.Nodes["TodoConfig"]
 
-	numConsts = len(todoInfo.NodeData.ConstantGroups)
-	if numConsts != 1 {
-		t.Errorf("expected 1 constant for todo node. got %d instead", numConsts)
-	}
-	firstGroup = todoInfo.NodeData.ConstantGroups[0]
-	if firstGroup.ConstType != "ent.NodeType" {
-		t.Errorf("expected nodeType to be the first constant group, got %s instead", firstGroup.ConstType)
-	}
-	if len(firstGroup.Constants) != 1 {
-		t.Errorf("expected 1 constant in the first constant group, got %d instead", len(firstGroup.Constants))
-	}
+	testConstants(
+		t,
+		todoInfo,
+		map[string]map[string]string{
+			"ent.NodeType": map[string]string{
+				"TodoType": "todo",
+			},
+		},
+	)
 }
 
 // inlining this in a bunch of places to break the import cycle
@@ -367,4 +438,110 @@ func (config *TodoConfig) GetTableName() string {
 	`
 
 	return parseSchema(t, sources, "NewConstsAndEdges")
+}
+
+func testNewEdge(t *testing.T, newEdge, expectedEdge *ent.AssocEdgeData) {
+	_, err := uuid.Parse(newEdge.EdgeType)
+	if err != nil {
+		t.Errorf("Expected a new edge type of uuid generated. didn't get it, got %s instead", newEdge.EdgeType)
+	}
+
+	if newEdge.EdgeName != expectedEdge.EdgeName {
+		t.Errorf(
+			"edgename of newly generated edge was not as expected, expected %s, got %s instead",
+			expectedEdge.EdgeName,
+			newEdge.EdgeName,
+		)
+	}
+
+	if newEdge.SymmetricEdge != expectedEdge.SymmetricEdge {
+		t.Errorf(
+			"symmetric edge value of edge was not as expected. expected %v got %v instead",
+			expectedEdge.SymmetricEdge,
+			newEdge.SymmetricEdge,
+		)
+	}
+
+	if expectedEdge.InverseEdgeType.Valid != newEdge.InverseEdgeType.Valid {
+		t.Errorf(
+			"inverse edge validity of edge was not as expecfted. expected %v got %v instead",
+			expectedEdge.InverseEdgeType.Valid,
+			newEdge.InverseEdgeType.Valid,
+		)
+	}
+
+	if expectedEdge.InverseEdgeType.Valid && expectedEdge.InverseEdgeType.String != newEdge.InverseEdgeType.String {
+		t.Errorf(
+			"inverse edge value of edge was not as expecfted. expected %s got %s instead",
+			expectedEdge.InverseEdgeType.String,
+			newEdge.InverseEdgeType.String,
+		)
+	}
+
+	if newEdge.EdgeTable != expectedEdge.EdgeTable {
+		t.Errorf(
+			"invalid edge table in newly generated edge. expected %s, got %s instead",
+			expectedEdge.EdgeTable,
+			newEdge.EdgeTable,
+		)
+	}
+}
+
+func testConstants(t *testing.T, info *schema.NodeDataInfo, constMap map[string]map[string]string) {
+	numConsts := len(info.NodeData.ConstantGroups)
+	if numConsts != len(constMap) {
+		t.Errorf(
+			"expected %d constants for %s node. got %d instead",
+			len(constMap),
+			info.NodeData.PackageName,
+			numConsts,
+		)
+	}
+
+	for constType, constDeetsMap := range constMap {
+		nodeGroup := info.NodeData.ConstantGroups[constType]
+		if nodeGroup == nil {
+			t.Errorf(
+				"expected group of const type %s for node %s to exist. it doesn't",
+				constType,
+				info.NodeData.PackageName,
+			)
+		}
+		if nodeGroup.ConstType != constType {
+			t.Errorf(
+				"expected const type of node %s to be %s. it was %s instead",
+				info.NodeData.PackageName,
+				constType,
+				nodeGroup.ConstType,
+			)
+		}
+
+		for constName, constValue := range constDeetsMap {
+			constant := nodeGroup.Constants[constName]
+			if constant == nil {
+				t.Errorf(
+					"expected constant with name %s for node %s to exist. it doesn't",
+					constName,
+					info.NodeData.PackageName,
+				)
+			}
+
+			if constant.ConstName != constName {
+				t.Errorf(
+					"unexpected constant name generated for %s node, got %s instead of expected %s",
+					info.NodeData.PackageName,
+					constant.ConstName,
+					constName,
+				)
+			}
+			if constType == "ent.EdgeType" {
+				_, err := uuid.Parse(constant.ConstValue)
+				if err != nil {
+					t.Errorf("expected uuid as constant value for edge, got %s with err %s parsing uuid instead", constant.ConstValue, err)
+				}
+			} else if constant.ConstValue != strconv.Quote(constValue) {
+				t.Errorf("unexpected constant value for %s type constant, got %s", info.NodeData.PackageName, constant.ConstValue)
+			}
+		}
+	}
 }

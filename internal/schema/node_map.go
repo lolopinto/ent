@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"database/sql"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -9,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
@@ -18,6 +20,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schemaparser"
+	"github.com/lolopinto/ent/internal/util"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -179,11 +182,12 @@ func (m NodeMapInfo) parseFile(
 		return true
 	})
 
-	nodeData := &NodeData{
-		PackageName: packageName,
-		NodeInfo:    codegen.GetNodeInfo(packageName),
-		EdgeInfo:    edge.NewEdgeInfo(),
-	}
+	nodeData := newNodeData(
+		packageName,
+		codegen.GetNodeInfo(packageName),
+		edge.NewEdgeInfo(),
+	)
+
 	// run the depgraph to get as much data as we can get now.
 	g.Run(func(item interface{}) {
 		execFn, ok := item.(func(*NodeData))
@@ -279,9 +283,10 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 
 	nodeData := info.NodeData
 
-	nodeGroup := ConstGroupInfo{
-		ConstType: "ent.NodeType",
-		Constants: []ConstInfo{ConstInfo{
+	nodeData.addConstInfo(
+		"ent.NodeType",
+		nodeData.NodeType,
+		&ConstInfo{
 			ConstName:  nodeData.NodeType,
 			ConstValue: strconv.Quote(nodeData.NodeInstance),
 			Comment: fmt.Sprintf(
@@ -289,9 +294,8 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 				nodeData.NodeType,
 				nodeData.Node,
 			),
-		}},
-	}
-	nodeData.ConstantGroups = append(nodeData.ConstantGroups, nodeGroup)
+		},
+	)
 
 	// high level steps we need eventually
 	// 1 parse each config file
@@ -306,48 +310,109 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 	if !info.ShouldParseExistingFile {
 		return
 	}
-	existingConsts := parseExistingModelFile(nodeData)
+	existingConsts := getParsedExistingModelFile(nodeData)
 
 	edgeConsts := existingConsts["ent.EdgeType"]
-	if edgeConsts == nil {
-		// no existing edge. initialize a map to do checks
-		edgeConsts = make(map[string]string)
-	}
-
-	edgeGroup := ConstGroupInfo{
-		ConstType: "ent.EdgeType",
-	}
 
 	for _, assocEdge := range nodeData.EdgeInfo.Associations {
+		// handled by the "main edge". we're assuming for now that you won't add an inverse edge after the fact
+		// would need to deal with this later when that changes/becomes more complicated
+		// need to change a bunch of logic to support this.
+		// info.ShouldCodegen should change after this is set. we need to go generate every single assoc
+		// easiest thing is to remove the info.ShouldCodegen flag here probably
+		if assocEdge.IsInverseEdge {
+			continue
+		}
 		constName := assocEdge.EdgeConst
 
+		edgeTable := GetNameForEdgeTable(nodeData, assocEdge)
 		// check if there's an existing edge
 		constValue := edgeConsts[constName]
+
+		inverseEdge := assocEdge.InverseEdge
+
+		var inverseConstName string
+		var inverseConstValue string
+		var newInverseEdge bool
+		// is there an inverse?
+		if inverseEdge != nil {
+			inverseConstName, inverseConstValue, newInverseEdge = m.getInverseEdgeType(assocEdge, inverseEdge)
+			spew.Dump(inverseConstName, inverseConstValue, newInverseEdge)
+		}
 
 		// new edge
 		if constValue == "" {
 			constValue = uuid.New().String()
 			// keep track of new edges that we need to do things with
+			newEdge := &ent.AssocEdgeData{
+				EdgeType:        constValue,
+				EdgeName:        constName,
+				SymmetricEdge:   assocEdge.Symmetric,
+				EdgeTable:       edgeTable,
+				InverseEdgeType: &sql.NullString{},
+			}
+
+			if inverseConstValue != "" {
+				util.Die(newEdge.InverseEdgeType.Scan(inverseConstValue))
+			}
+
+			*newEdges = append(*newEdges, newEdge)
+		}
+
+		if newInverseEdge {
+			ns := &sql.NullString{}
+			util.Die(ns.Scan(constValue))
+
+			// add inverse edge to list of new edges
 			*newEdges = append(*newEdges, &ent.AssocEdgeData{
-				EdgeType:      constValue,
-				EdgeName:      constName,
-				SymmetricEdge: false,
-				EdgeTable:     GetNameForEdgeTable(nodeData, assocEdge),
+				EdgeType:        inverseConstValue,
+				EdgeName:        inverseConstName,
+				SymmetricEdge:   false, // we know for sure that we can't be symmetric and have an inverse edge
+				EdgeTable:       edgeTable,
+				InverseEdgeType: ns,
 			})
 		}
 
-		edgeGroup.Constants = append(edgeGroup.Constants, ConstInfo{
+		m.addNewEdgeType(nodeData, constName, constValue, assocEdge)
+	}
+}
+
+func (m NodeMapInfo) getInverseEdgeType(assocEdge *edge.AssociationEdge, inverseEdge *edge.InverseAssocEdge) (string, string, bool) {
+	inverseConstName := inverseEdge.EdgeConst
+
+	inverseNodeDataInfo := m[assocEdge.GetEntConfig().ConfigName]
+	inverseNodeData := inverseNodeDataInfo.NodeData
+	inverseExistingConsts := getParsedExistingModelFile(inverseNodeData)
+	inverseEdgeConsts := inverseExistingConsts["ent.EdgeType"]
+
+	inverseConstValue := inverseEdgeConsts[inverseConstName]
+	if inverseConstValue == "" {
+		inverseConstValue = uuid.New().String()
+
+		// add inverse edge constant
+		m.addNewEdgeType(inverseNodeData, inverseConstName, inverseConstValue, inverseEdge)
+
+		return inverseConstName, inverseConstValue, true
+	}
+	return inverseConstName, inverseConstValue, false
+}
+
+func (m NodeMapInfo) addNewEdgeType(nodeData *NodeData, constName, constValue string, edge edge.Edge) {
+	// this is a map so easier to deal with duplicate consts if we run into them
+	nodeData.addConstInfo(
+		"ent.EdgeType",
+		constName,
+		&ConstInfo{
 			ConstName:  constName,
 			ConstValue: strconv.Quote(constValue),
 			Comment: fmt.Sprintf(
 				"%s is the edgeType for the %s to %s edge.",
 				constName,
 				nodeData.NodeInstance,
-				strings.ToLower(assocEdge.GetEdgeName()),
+				strings.ToLower(edge.GetEdgeName()),
 			),
-		})
-	}
-	nodeData.ConstantGroups = append(nodeData.ConstantGroups, edgeGroup)
+		},
+	)
 }
 
 // getTableName returns the name of the table the node should be stored in

@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"sort"
 	"strconv"
 
 	"github.com/lolopinto/ent/internal/action"
@@ -18,7 +19,21 @@ type ConstInfo struct {
 
 type ConstGroupInfo struct {
 	ConstType string
-	Constants []ConstInfo
+	Constants map[string]*ConstInfo
+}
+
+func (cg *ConstGroupInfo) GetSortedConstants() []*ConstInfo {
+	var sorted []*ConstInfo
+
+	for _, constant := range cg.Constants {
+		sorted = append(sorted, constant)
+	}
+
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].ConstName < sorted[j].ConstName
+	})
+
+	return sorted
 }
 
 type NodeData struct {
@@ -27,8 +42,18 @@ type NodeData struct {
 	FieldInfo      *field.FieldInfo
 	EdgeInfo       *edge.EdgeInfo
 	TableName      string
-	ConstantGroups []ConstGroupInfo
+	ConstantGroups map[string]*ConstGroupInfo
 	ActionInfo     *action.ActionInfo
+}
+
+func newNodeData(packageName string, nodeInfo codegen.NodeInfo, edgeInfo *edge.EdgeInfo) *NodeData {
+	nodeData := &NodeData{
+		PackageName: packageName,
+		NodeInfo:    nodeInfo,
+		EdgeInfo:    edgeInfo,
+	}
+	nodeData.ConstantGroups = make(map[string]*ConstGroupInfo)
+	return nodeData
 }
 
 func (nodeData *NodeData) GetTableName() string {
@@ -61,4 +86,45 @@ func (nodeData *NodeData) GetAssociationEdgeByName(edgeName string) *edge.Associ
 
 func (nodeData *NodeData) GetActionByGraphQLName(graphQLName string) action.Action {
 	return nodeData.ActionInfo.GetByGraphQLName(graphQLName)
+}
+
+func (nodeData *NodeData) addConstInfo(constType string, constName string, constInfo *ConstInfo) {
+	constGroup := nodeData.ConstantGroups[constType]
+	if constGroup == nil {
+		constGroup = &ConstGroupInfo{
+			ConstType: constType,
+		}
+		nodeData.ConstantGroups[constType] = constGroup
+	}
+	if constGroup.Constants == nil {
+		constGroup.Constants = make(map[string]*ConstInfo)
+	}
+	constGroup.Constants[constName] = constInfo
+}
+
+func (nodeData *NodeData) GetSortedConstantGroups() []*ConstGroupInfo {
+	var sorted []*ConstGroupInfo
+
+	for _, group := range nodeData.ConstantGroups {
+		sorted = append(sorted, group)
+	}
+
+	// manual sorting to make sure ent.NodeType then ent.EdgeType then sorted by name
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].ConstType == "ent.NodeType" {
+			return false
+		}
+		if sorted[i].ConstType == "ent.NodeType" {
+			return true
+		}
+		if sorted[i].ConstType == "ent.EdgeType" {
+			return false
+		}
+		if sorted[i].ConstType == "ent.EdgeType" {
+			return false
+		}
+		return sorted[i].ConstType < sorted[j].ConstType
+	})
+
+	return sorted
 }

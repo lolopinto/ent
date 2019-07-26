@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
@@ -80,7 +81,7 @@ func (s *Schema) GetNewEdges() []*ent.AssocEdgeData {
 }
 
 func GetNameForEdgeTable(nodeData *NodeData, assocEdge *edge.AssociationEdge) string {
-	tableNameParts := []string{nodeData.GetTableName(), strings.ToLower(assocEdge.GetEdgeName()), "edge"}
+	tableNameParts := []string{nodeData.GetTableName(), strings.ToLower(strcase.ToSnake(assocEdge.GetEdgeName())), "edge"}
 	return getNameFromParts(tableNameParts)
 }
 

@@ -15,11 +15,11 @@ import (
 {{end -}}
 
 {{with .NodeData -}}
-{{with .ConstantGroups -}}
+{{with .GetSortedConstantGroups -}}
 const (
   {{ range . -}}
     {{$constType := .ConstType -}}
-    {{range .Constants -}}
+    {{range .GetSortedConstants -}}
       // {{.Comment}}
       {{.ConstName}} {{$constType}} = {{.ConstValue}}
     {{end}}
