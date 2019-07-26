@@ -22,7 +22,6 @@ func (p *entCodegenPlugin) processData(data *codegenData) error {
 		//fmt.Println(specificConfig, structName)
 		if len(nodeData.PackageName) > 0 {
 			writeModelFile(nodeData, data.codePath)
-			writeMutatorFile(nodeData, data.codePath)
 			writePrivacyFile(nodeData)
 
 			for _, action := range nodeData.ActionInfo.Actions {

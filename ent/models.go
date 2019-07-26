@@ -622,9 +622,9 @@ func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 
 // UpdateNode updates a node
 // TODO should prevent updating relational fields maybe?
-func UpdateNode(entity interface{}, entConfig Config) error {
-	return updateNodeInTransaction(entity, entConfig, nil)
-}
+// func UpdateNode(entity interface{}, entConfig Config) error {
+// 	return updateNodeInTransaction(entity, entConfig, nil)
+// }
 
 // this is a hack because i'm lazy and don't want to go update getFieldsAndValuesOfStruct()
 // to do the right thing for now. now that I know what's going on here, can update everything

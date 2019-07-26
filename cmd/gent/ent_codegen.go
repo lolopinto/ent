@@ -351,24 +351,6 @@ func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
 	)
 }
 
-func writeMutatorFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
-	// this is not a real entmutator but this gets things working and
-	// hopefully means no circular dependencies
-	writeFile(
-		&templatedBasedFileWriter{
-			data: nodeTemplateCodePath{
-				NodeData: nodeData,
-				CodePath: codePathInfo,
-			},
-			pathToTemplate:    "templates/mutator.tmpl",
-			templateName:      "mutator.tmpl",
-			pathToFile:        fmt.Sprintf("models/%s/mutator/%s_mutator.go", nodeData.PackageName, nodeData.PackageName),
-			createDirIfNeeded: true,
-			formatSource:      true,
-		},
-	)
-}
-
 type actionTemplate struct {
 	Action   action.Action
 	CodePath *codegen.CodePath
