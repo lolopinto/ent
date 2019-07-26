@@ -12,12 +12,9 @@ import (
 	"path"
 
 	"runtime"
-	"strconv"
 	"strings"
 	"text/template"
 
-	"github.com/google/uuid"
-	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -51,96 +48,9 @@ func parseSchemasFromSource(sources map[string]string, specificConfigs ...string
 	return schema.Parse(p, specificConfigs...)
 }
 
-// TODO move this into schema...
-
-func generateConstsAndNewEdges(s *schema.Schema) []*ent.AssocEdgeData {
-	var newEdges []*ent.AssocEdgeData
-
-	for _, info := range s.Nodes {
-		if !info.ShouldCodegen {
-			continue
-		}
-
-		nodeData := info.NodeData
-
-		nodeGroup := schema.ConstGroupInfo{
-			ConstType: "ent.NodeType",
-			Constants: []schema.ConstInfo{schema.ConstInfo{
-				ConstName:  nodeData.NodeType,
-				ConstValue: strconv.Quote(nodeData.NodeInstance),
-				Comment: fmt.Sprintf(
-					"%s is the node type for the %s object. Used to identify this node in edges and other places.",
-					nodeData.NodeType,
-					nodeData.Node,
-				),
-			}},
-		}
-		nodeData.ConstantGroups = append(nodeData.ConstantGroups, nodeGroup)
-
-		// high level steps we need eventually
-		// 1 parse each config file
-		// 2 parse all config files (that's basically part of 1 but there's dependencies so we need to come back...)
-		// 3 parse db/models/external data as needed
-		// 4 validate all files/models/db state against each other to make sure they make sense
-		// 5 one more step to get new things. e.g. generate new uuids etc
-		// 6 generate new db schema
-		// 7 write new files
-		// 8 write edge config to db (this should really be a separate step since this needs to run in production every time)
-		if !info.ShouldParseExistingFile {
-			continue
-		}
-		existingConsts := parseExistingModelFile(nodeData)
-
-		edgeConsts := existingConsts["ent.EdgeType"]
-		if edgeConsts == nil {
-			// no existing edge. initialize a map to do checks
-			edgeConsts = make(map[string]string)
-		}
-
-		edgeGroup := schema.ConstGroupInfo{
-			ConstType: "ent.EdgeType",
-		}
-
-		for _, assocEdge := range nodeData.EdgeInfo.Associations {
-			constName := assocEdge.EdgeConst
-
-			// check if there's an existing edge
-			constValue := edgeConsts[constName]
-
-			// new edge
-			if constValue == "" {
-				constValue = uuid.New().String()
-				// keep track of new edges that we need to do things with
-				newEdges = append(newEdges, &ent.AssocEdgeData{
-					EdgeType:      constValue,
-					EdgeName:      constName,
-					SymmetricEdge: false,
-					EdgeTable:     getNameForEdgeTable(nodeData, assocEdge),
-				})
-			}
-
-			edgeGroup.Constants = append(edgeGroup.Constants, schema.ConstInfo{
-				ConstName:  constName,
-				ConstValue: strconv.Quote(constValue),
-				Comment: fmt.Sprintf(
-					"%s is the edgeType for the %s to %s edge.",
-					constName,
-					nodeData.NodeInstance,
-					strings.ToLower(assocEdge.GetEdgeName()),
-				),
-			})
-		}
-		nodeData.ConstantGroups = append(nodeData.ConstantGroups, edgeGroup)
-	}
-
-	//spew.Dump(newEdges)
-	return newEdges
-}
-
 type codegenData struct {
 	schema   *schema.Schema
 	codePath *codegen.CodePath
-	newEdges []*ent.AssocEdgeData
 }
 
 type codegenPlugin interface {
@@ -155,17 +65,10 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 		return
 	}
 
-	// generate consts and get new edges to be written to db.
-	newEdges := generateConstsAndNewEdges(schema)
-
-	//fmt.Println("schema", len(allNodes))
-
 	// TOOD validate things here first.
 
 	data := &codegenData{
-		schema: schema,
-		//		allNodes: allNodes,
-		newEdges: newEdges,
+		schema:   schema,
 		codePath: codePathInfo,
 	}
 
@@ -179,10 +82,10 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 	// 4/ graphql should be able to run on its own
 
 	plugins := []codegenPlugin{
-		// new(dbPlugin),
-		// new(assocEdgePlugin),
+		new(dbPlugin),
+		new(assocEdgePlugin),
 		new(entCodegenPlugin),
-		//		new(graphqlPlugin),
+		new(graphqlPlugin),
 	}
 
 	for _, p := range plugins {
@@ -192,72 +95,6 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 
 func getFilePathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("models/%s.go", nodeData.PackageName)
-}
-
-// parses an existing model file and returns information about current constants in model file
-// It returns a mapping of type -> entValue -> constValue
-// We'll probably eventually need to return a lot more information later but this is all we need right now
-//
-// "ent.NodeType" => {
-//	"UserType" => "user",
-// },
-// "ent.EdgeType" => {
-//	"UserToNoteEdge" => {uuid},
-// },
-// Right now, it only returns strings but it should eventually be map[string]map[string]interface{}
-func parseExistingModelFile(nodeData *schema.NodeData) map[string]map[string]string {
-	fset := token.NewFileSet()
-	filePath := getFilePathForModelFile(nodeData)
-
-	_, err := os.Stat(filePath)
-	// file doesn't exist. nothing to do here since we haven't generated this before
-	if os.IsNotExist(err) {
-		return nil
-	}
-	util.Die(err)
-
-	file, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
-	util.Die(err)
-
-	constMap := make(map[string]map[string]string)
-
-	ast.Inspect(file, func(node ast.Node) bool {
-		if decl, ok := node.(*ast.GenDecl); ok && decl.Tok == token.CONST {
-			specs := decl.Specs
-
-			for _, spec := range specs {
-				valueSpec, ok := spec.(*ast.ValueSpec)
-				if !ok {
-					util.Die(fmt.Errorf("invalid spec"))
-				}
-
-				if len(valueSpec.Names) != 1 {
-					util.Die(fmt.Errorf("expected 1 name for const declaration. got %d", len(valueSpec.Names)))
-				}
-				ident := valueSpec.Names[0]
-
-				constName := ident.Name
-
-				constKey := astparser.GetTypeNameFromExpr(valueSpec.Type)
-
-				if len(valueSpec.Values) != 1 {
-					util.Die(fmt.Errorf("expected 1 value for const declaration. got %d", len(valueSpec.Values)))
-				}
-				val := valueSpec.Values[0]
-				basicLit := astparser.GetExprToBasicLit(val)
-				constValue, err := strconv.Unquote(basicLit.Value)
-				util.Die(err)
-
-				if constMap[constKey] == nil {
-					constMap[constKey] = make(map[string]string)
-				}
-				constMap[constKey][constName] = constValue
-			}
-		}
-
-		return true
-	})
-	return constMap
 }
 
 // astConfig returns the config of a file before it was re-generated to keep

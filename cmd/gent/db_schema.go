@@ -358,13 +358,8 @@ func (s *dbSchema) addEdgeTables(nodeData *schema.NodeData, tables *[]*dbTable) 
 	return nodeData.EdgeInfo.HasAssociationEdges()
 }
 
-func getNameForEdgeTable(nodeData *schema.NodeData, e *edge.AssociationEdge) string {
-	tableNameParts := []string{nodeData.GetTableName(), strings.ToLower(e.GetEdgeName()), "edge"}
-	return getNameFromParts(tableNameParts)
-}
-
 func (s *dbSchema) createEdgeTable(nodeData *schema.NodeData, assocEdge *edge.AssociationEdge) *dbTable {
-	tableName := getNameForEdgeTable(nodeData, assocEdge)
+	tableName := schema.GetNameForEdgeTable(nodeData, assocEdge)
 
 	var columns []*dbColumn
 	id1Col := s.getID1Column()

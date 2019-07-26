@@ -6,7 +6,12 @@ import (
 	"go/token"
 	"go/types"
 	"regexp"
+	"strconv"
+	"strings"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/google/uuid"
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -55,10 +60,10 @@ func (m NodeMapInfo) getActionFromGraphQLName(graphQLName string) action.Action 
 	return nil
 }
 
-func (m NodeMapInfo) ParsePackage(pkg *packages.Package, specificConfigs ...string) {
+func (m NodeMapInfo) parsePackage(pkg *packages.Package, newEdges *[]*ent.AssocEdgeData, specificConfigs ...string) {
 	r := regexp.MustCompile(`(\w+)_config.go`)
 
-	info := pkg.TypesInfo
+	typeInfo := pkg.TypesInfo
 	fset := pkg.Fset
 
 	// first pass to parse the files and do as much as we can
@@ -73,7 +78,7 @@ func (m NodeMapInfo) ParsePackage(pkg *packages.Package, specificConfigs ...stri
 
 		file := pkg.Syntax[idx]
 
-		codegenInfo := m.parseFile(packageName, file, fset, specificConfigs, info)
+		codegenInfo := m.parseFile(packageName, file, fset, specificConfigs, typeInfo, newEdges)
 		m.addConfig(codegenInfo)
 	}
 
@@ -83,26 +88,33 @@ func (m NodeMapInfo) ParsePackage(pkg *packages.Package, specificConfigs ...stri
 		if info.depgraph == nil {
 			continue
 		}
-		nodeData := info.NodeData
 
 		// probably make this concurrent in the future
 		info.depgraph.Run(func(item interface{}) {
-			execFn, ok := item.(func(*NodeData))
+			execFn, ok := item.(func(*NodeDataInfo))
 			if !ok {
 				panic("invalid function passed")
 			}
-			execFn(nodeData)
+			execFn(info)
 		})
 	}
 }
 
-func (m NodeMapInfo) ParseFiles(p schemaparser.Parser, specificConfigs ...string) {
+func (m NodeMapInfo) parseFiles(p schemaparser.Parser, newEdges *[]*ent.AssocEdgeData, specificConfigs ...string) {
 	pkg := schemaparser.LoadPackage(p)
 
-	m.ParsePackage(pkg, specificConfigs...)
+	m.parsePackage(pkg, newEdges, specificConfigs...)
 }
 
-func (m NodeMapInfo) parseFile(packageName string, file *ast.File, fset *token.FileSet, specificConfigs []string, info *types.Info) *NodeDataInfo {
+// TODO this is ugly but it's private...
+func (m NodeMapInfo) parseFile(
+	packageName string,
+	file *ast.File,
+	fset *token.FileSet,
+	specificConfigs []string,
+	typeInfo *types.Info,
+	newEdges *[]*ent.AssocEdgeData,
+) *NodeDataInfo {
 	//ast.Print(fset, node)
 	//ast.NewObj(fset, "file")
 	//fmt.Println("Struct:")
@@ -110,7 +122,7 @@ func (m NodeMapInfo) parseFile(packageName string, file *ast.File, fset *token.F
 	// initial parsing
 	g := &depgraph.Depgraph{}
 
-	// things that need the entire nodeData loaded
+	// things that need all nodeDatas loaded
 	g2 := &depgraph.Depgraph{}
 
 	ast.Inspect(file, func(node ast.Node) bool {
@@ -122,7 +134,7 @@ func (m NodeMapInfo) parseFile(packageName string, file *ast.File, fset *token.F
 		if s, ok := node.(*ast.StructType); ok {
 
 			g.AddItem("ParseFields", func(nodeData *NodeData) {
-				nodeData.FieldInfo = field.GetFieldInfoForStruct(s, fset, info)
+				nodeData.FieldInfo = field.GetFieldInfoForStruct(s, fset, typeInfo)
 			})
 		}
 
@@ -136,7 +148,8 @@ func (m NodeMapInfo) parseFile(packageName string, file *ast.File, fset *token.F
 
 			case "GetActions":
 				// queue up to run later since it depends on parsed fieldInfo and edges
-				g2.AddItem("GetActions", func(nodeData *NodeData) {
+				g2.AddItem("GetActions", func(info *NodeDataInfo) {
+					nodeData := info.NodeData
 					nodeData.ActionInfo = action.ParseActions(packageName, fn, nodeData.FieldInfo, nodeData.EdgeInfo)
 				}, "LinkedEdges")
 
@@ -167,16 +180,21 @@ func (m NodeMapInfo) parseFile(packageName string, file *ast.File, fset *token.F
 	g2.AddItem(
 		// want all configs loaded for this.
 		// Actions depends on this.
-		"LinkedEdges", func(nodeData *NodeData) {
-			m.addLinkedEdges(nodeData)
+		"LinkedEdges", func(info *NodeDataInfo) {
+			m.addLinkedEdges(info)
 		},
 	)
 
 	// inverse edges also require everything to be loaded
 	g2.AddItem(
-		"InverseEdges", func(nodeData *NodeData) {
-			m.addInverseAssocEdges(nodeData)
+		"InverseEdges", func(info *NodeDataInfo) {
+			m.addInverseAssocEdges(info)
 		})
+
+	// add new consts and edges as a dependency of linked edges and inverse edges
+	g2.AddItem("ConstsAndEdges", func(info *NodeDataInfo) {
+		m.addNewConstsAndEdges(info, newEdges)
+	}, "LinkedEdges", "InverseEdges")
 
 	return &NodeDataInfo{
 		depgraph:                g2,
@@ -186,7 +204,8 @@ func (m NodeMapInfo) parseFile(packageName string, file *ast.File, fset *token.F
 	}
 }
 
-func (m NodeMapInfo) addLinkedEdges(nodeData *NodeData) {
+func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
+	nodeData := info.NodeData
 	fieldInfo := nodeData.FieldInfo
 	edgeInfo := nodeData.EdgeInfo
 
@@ -216,7 +235,8 @@ func (m NodeMapInfo) addLinkedEdges(nodeData *NodeData) {
 	}
 }
 
-func (m NodeMapInfo) addInverseAssocEdges(nodeData *NodeData) {
+func (m NodeMapInfo) addInverseAssocEdges(info *NodeDataInfo) {
+	nodeData := info.NodeData
 	edgeInfo := nodeData.EdgeInfo
 
 	for _, assocEdge := range edgeInfo.Associations {
@@ -235,14 +255,94 @@ func (m NodeMapInfo) addInverseAssocEdges(nodeData *NodeData) {
 	}
 }
 
+func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.AssocEdgeData) {
+	if !info.ShouldCodegen {
+		return
+	}
+
+	nodeData := info.NodeData
+
+	nodeGroup := ConstGroupInfo{
+		ConstType: "ent.NodeType",
+		Constants: []ConstInfo{ConstInfo{
+			ConstName:  nodeData.NodeType,
+			ConstValue: strconv.Quote(nodeData.NodeInstance),
+			Comment: fmt.Sprintf(
+				"%s is the node type for the %s object. Used to identify this node in edges and other places.",
+				nodeData.NodeType,
+				nodeData.Node,
+			),
+		}},
+	}
+	nodeData.ConstantGroups = append(nodeData.ConstantGroups, nodeGroup)
+
+	// high level steps we need eventually
+	// 1 parse each config file
+	// 2 parse all config files (that's basically part of 1 but there's dependencies so we need to come back...)
+	// 3 parse db/models/external data as needed
+	// 4 validate all files/models/db state against each other to make sure they make sense
+	// 5 one more step to get new things. e.g. generate new uuids etc
+	// 6 generate new db schema
+	// 7 write new files
+	// 8 write edge config to db (this should really be a separate step since this needs to run in production every time)
+	//	spew.Dump(info)
+	if !info.ShouldParseExistingFile {
+		return
+	}
+	// TODO figure this out for the sources...
+	existingConsts := parseExistingModelFile(nodeData)
+	spew.Dump(existingConsts)
+
+	edgeConsts := existingConsts["ent.EdgeType"]
+	if edgeConsts == nil {
+		// no existing edge. initialize a map to do checks
+		edgeConsts = make(map[string]string)
+	}
+
+	edgeGroup := ConstGroupInfo{
+		ConstType: "ent.EdgeType",
+	}
+
+	for _, assocEdge := range nodeData.EdgeInfo.Associations {
+		constName := assocEdge.EdgeConst
+
+		// check if there's an existing edge
+		constValue := edgeConsts[constName]
+
+		// new edge
+		if constValue == "" {
+			constValue = uuid.New().String()
+			// keep track of new edges that we need to do things with
+			*newEdges = append(*newEdges, &ent.AssocEdgeData{
+				EdgeType:      constValue,
+				EdgeName:      constName,
+				SymmetricEdge: false,
+				EdgeTable:     GetNameForEdgeTable(nodeData, assocEdge),
+			})
+		}
+
+		edgeGroup.Constants = append(edgeGroup.Constants, ConstInfo{
+			ConstName:  constName,
+			ConstValue: strconv.Quote(constValue),
+			Comment: fmt.Sprintf(
+				"%s is the edgeType for the %s to %s edge.",
+				constName,
+				nodeData.NodeInstance,
+				strings.ToLower(assocEdge.GetEdgeName()),
+			),
+		})
+	}
+	nodeData.ConstantGroups = append(nodeData.ConstantGroups, edgeGroup)
+}
+
 // getTableName returns the name of the table the node should be stored in
 func getTableName(fn *ast.FuncDecl) string {
 	expr := astparser.GetLastReturnStmtExpr(fn)
 	basicLit := astparser.GetExprToBasicLit(expr)
-	//fmt.Println("table name", basicLit.Value)
 	return basicLit.Value
 }
 
+// TODO inline this again...
 func shouldCodegenPackage(file *ast.File, specificConfigs []string) bool {
 	if len(specificConfigs) == 0 {
 		// nothing to do here

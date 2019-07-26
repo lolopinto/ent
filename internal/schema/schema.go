@@ -2,7 +2,9 @@ package schema
 
 import (
 	"errors"
+	"strings"
 
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
@@ -12,11 +14,8 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes NodeMapInfo
-}
-
-func (s *Schema) init() {
-	s.Nodes = make(map[string]*NodeDataInfo)
+	Nodes    NodeMapInfo
+	newEdges []*ent.AssocEdgeData
 }
 
 // Given a schema file parser, Parse parses the schema to return the completely
@@ -24,15 +23,23 @@ func (s *Schema) init() {
 func Parse(p schemaparser.Parser, specificConfigs ...string) *Schema {
 	s := &Schema{}
 	s.init()
-	s.Nodes.ParseFiles(p, specificConfigs...)
+	var newEdges []*ent.AssocEdgeData
+	s.Nodes.parseFiles(p, &newEdges, specificConfigs...)
+	s.newEdges = newEdges
 	return s
 }
 
 func ParsePackage(pkg *packages.Package, specificConfigs ...string) *Schema {
 	s := &Schema{}
 	s.init()
-	s.Nodes.ParsePackage(pkg, specificConfigs...)
+	var newEdges []*ent.AssocEdgeData
+	s.Nodes.parsePackage(pkg, &newEdges, specificConfigs...)
+	s.newEdges = newEdges
 	return s
+}
+
+func (s *Schema) init() {
+	s.Nodes = make(map[string]*NodeDataInfo)
 }
 
 func (s *Schema) GetNodeDataFromGraphQLName(nodeName string) *NodeData {
@@ -66,4 +73,18 @@ func (s *Schema) GetFieldByName(entConfig, fieldName string) (*field.Field, erro
 		return nil, errors.New("error getting field")
 	}
 	return ret, nil
+}
+
+func (s *Schema) GetNewEdges() []*ent.AssocEdgeData {
+	return s.newEdges
+}
+
+func GetNameForEdgeTable(nodeData *NodeData, assocEdge *edge.AssociationEdge) string {
+	tableNameParts := []string{nodeData.GetTableName(), strings.ToLower(assocEdge.GetEdgeName()), "edge"}
+	return getNameFromParts(tableNameParts)
+}
+
+// duplicated from db_schema.go
+func getNameFromParts(nameParts []string) string {
+	return strings.Join(nameParts, "_")
 }
