@@ -3,7 +3,10 @@ package schema_test
 import (
 	"testing"
 
+	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/parsehelper"
+	"github.com/lolopinto/ent/internal/schema"
 )
 
 func TestInverseFieldEdge(t *testing.T) {
@@ -56,15 +59,15 @@ type TodoConfig struct {
 		}
 	}
 	`
-	m := parseNodeDataMap(t, sources, "InverseFieldEdge")
-	textField := m["TodoConfig"].NodeData.GetFieldByName("Text")
+	s := parseSchema(t, sources, "InverseFieldEdge")
+	textField := getFieldFromSchema(t, s, "TodoConfig", "Text")
 
 	if textField.InverseEdge != nil {
 		t.Errorf(
 			"expected the text field to have no inverse edge. instead it did",
 		)
 	}
-	accountField := m["TodoConfig"].NodeData.GetFieldByName("AccountID")
+	accountField := getFieldFromSchema(t, s, "TodoConfig", "AccountID")
 	inverseEdge := accountField.InverseEdge
 	if inverseEdge == nil {
 		t.Errorf(
@@ -117,9 +120,8 @@ type AccountConfig struct {
 	}
 	`
 
-	m := parseNodeDataMap(t, sources, "InverseAssocEdgeSameEnt")
-
-	friendRequests := m["AccountConfig"].NodeData.EdgeInfo.GetAssociationEdgeByName("FriendRequests")
+	s := parseSchema(t, sources, "InverseAssocEdgeSameEnt")
+	friendRequests := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequests")
 
 	if friendRequests == nil {
 		t.Error(
@@ -131,7 +133,7 @@ type AccountConfig struct {
 		t.Error("expected the friend requests edge to have an inverse edge")
 	}
 
-	friendRequestsReceived := m["AccountConfig"].NodeData.EdgeInfo.GetAssociationEdgeByName("FriendRequestsReceived")
+	friendRequestsReceived := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequestsReceived")
 	if friendRequestsReceived == nil {
 		t.Error(
 			"expected the friend requests received edge to not be nil",
@@ -187,8 +189,8 @@ type TodoConfig struct {
 		return "todos"
 	}
 	`
-	m := parseNodeDataMap(t, sources, "InverseAssocEdge")
-	todos := m["AccountConfig"].NodeData.EdgeInfo.GetAssociationEdgeByName("Todos")
+	s := parseSchema(t, sources, "InverseAssocEdge")
+	todos := getEdgeFromSchema(t, s, "AccountConfig", "Todos")
 
 	if todos == nil {
 		t.Error(
@@ -200,7 +202,7 @@ type TodoConfig struct {
 		t.Error("expected the todos edge to have an inverse edge")
 	}
 
-	accounts := m["TodoConfig"].NodeData.EdgeInfo.GetAssociationEdgeByName("Accounts")
+	accounts := getEdgeFromSchema(t, s, "TodoConfig", "Accounts")
 	if accounts == nil {
 		t.Error(
 			"expected the todo -> accounts edge to not be nil",
@@ -217,10 +219,26 @@ type TodoConfig struct {
 }
 
 // inlining this in a bunch of places to break the import cycle
-func parseNodeDataMap(t *testing.T, sources map[string]string, uniqueKeyForSources string) schema.NodeMapInfo {
+func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources string) *schema.Schema {
 	data := parsehelper.ParseFilesForTest(
 		t,
 		parsehelper.Sources(uniqueKeyForSources, sources),
 	)
 	return schema.ParsePackage(data.Pkg)
+}
+
+func getEdgeFromSchema(t *testing.T, s *schema.Schema, configName, edgeName string) *edge.AssociationEdge {
+	ret, err := s.GetAssocEdgeByName(configName, edgeName)
+	if err != nil {
+		t.Errorf("error getting edge from schema")
+	}
+	return ret
+}
+
+func getFieldFromSchema(t *testing.T, s *schema.Schema, configName, fieldName string) *field.Field {
+	ret, err := s.GetFieldByName(configName, fieldName)
+	if err != nil {
+		t.Errorf("error getting field from schema")
+	}
+	return ret
 }

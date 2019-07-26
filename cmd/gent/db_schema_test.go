@@ -439,7 +439,7 @@ func testConstraint(t *testing.T, constraint dbConstraint, expectedConstraintStr
 	}
 }
 
-func getParsedTestSchemaFiles(t *testing.T) schema.NodeMapInfo {
+func getParsedTestSchema(t *testing.T) *schema.Schema {
 	// use parsehelper.ParseFilesForTest since that caches it
 	data := parsehelper.ParseFilesForTest(
 		t,
@@ -451,11 +451,11 @@ func getParsedTestSchemaFiles(t *testing.T) schema.NodeMapInfo {
 }
 
 func getTestSchema(t *testing.T) *dbSchema {
-	return newDBSchema(getParsedTestSchemaFiles(t))
+	return newDBSchema(getParsedTestSchema(t))
 }
 
 func getInMemoryTestSchemas(t *testing.T, sources map[string]string, uniqueKey string) *dbSchema {
-	return newDBSchema(parseNodeDataMap(
+	return newDBSchema(parseSchema(
 		t, sources, uniqueKey,
 	))
 }
@@ -466,12 +466,12 @@ func getTestTable(configName string, t *testing.T) *dbTable {
 	return getTestTableFromSchema(configName, schema, t)
 }
 
-func getTestTableFromSchema(configName string, schema *dbSchema, t *testing.T) *dbTable {
-	node := schema.nodes[configName]
+func getTestTableFromSchema(configName string, s *dbSchema, t *testing.T) *dbTable {
+	node := s.schema.Nodes[configName]
 	if node == nil {
 		t.Errorf("no codegen info for %s table", configName)
 	}
-	table := schema.getTableForNode(node.NodeData)
+	table := s.getTableForNode(node.NodeData)
 	if table == nil {
 		t.Errorf("no dbtable info for %s", configName)
 	}
@@ -593,7 +593,7 @@ func expectPanic(t *testing.T, expectedError string) {
 }
 
 // inlining this in a bunch of places to break the import cycle
-func parseNodeDataMap(t *testing.T, sources map[string]string, uniqueKeyForSources string) schema.NodeMapInfo {
+func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources string) *schema.Schema {
 	data := parsehelper.ParseFilesForTest(
 		t,
 		parsehelper.Sources(uniqueKeyForSources, sources),

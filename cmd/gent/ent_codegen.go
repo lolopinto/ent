@@ -35,7 +35,7 @@ import (
 	"github.com/dave/dst/decorator"
 )
 
-func parseAllSchemaFiles(rootPath string, specificConfigs ...string) schema.NodeMapInfo {
+func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Schema {
 	p := &schemaparser.ConfigSchemaParser{
 		RootPath: rootPath,
 	}
@@ -44,7 +44,7 @@ func parseAllSchemaFiles(rootPath string, specificConfigs ...string) schema.Node
 }
 
 // parseSchemasFromSource is mostly used by tests to test quick one-off scenarios
-func parseSchemasFromSource(sources map[string]string, specificConfigs ...string) schema.NodeMapInfo {
+func parseSchemasFromSource(sources map[string]string, specificConfigs ...string) *schema.Schema {
 	p := &schemaparser.SourceSchemaParser{
 		Sources: sources,
 	}
@@ -53,10 +53,10 @@ func parseSchemasFromSource(sources map[string]string, specificConfigs ...string
 
 // TODO move this into schema...
 
-func generateConstsAndNewEdges(allNodes schema.NodeMapInfo) []*ent.AssocEdgeData {
+func generateConstsAndNewEdges(s *schema.Schema) []*ent.AssocEdgeData {
 	var newEdges []*ent.AssocEdgeData
 
-	for _, info := range allNodes {
+	for _, info := range s.Nodes {
 		if !info.ShouldCodegen {
 			continue
 		}
@@ -138,7 +138,7 @@ func generateConstsAndNewEdges(allNodes schema.NodeMapInfo) []*ent.AssocEdgeData
 }
 
 type codegenData struct {
-	allNodes schema.NodeMapInfo
+	schema   *schema.Schema
 	codePath *codegen.CodePath
 	newEdges []*ent.AssocEdgeData
 }
@@ -149,21 +149,22 @@ type codegenPlugin interface {
 }
 
 func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codegen.CodePath) {
-	allNodes := parseAllSchemaFiles(rootPath, specificConfig)
+	schema := parseAllSchemaFiles(rootPath, specificConfig)
 
-	if len(allNodes) == 0 {
+	if len(schema.Nodes) == 0 {
 		return
 	}
 
 	// generate consts and get new edges to be written to db.
-	newEdges := generateConstsAndNewEdges(allNodes)
+	newEdges := generateConstsAndNewEdges(schema)
 
 	//fmt.Println("schema", len(allNodes))
 
 	// TOOD validate things here first.
 
 	data := &codegenData{
-		allNodes: allNodes,
+		schema: schema,
+		//		allNodes: allNodes,
 		newEdges: newEdges,
 		codePath: codePathInfo,
 	}

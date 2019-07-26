@@ -17,25 +17,6 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// Given a schema file parser, Parse parses the schema to return the completely
-// parsed schema
-func Parse(p schemaparser.Parser, specificConfigs ...string) NodeMapInfo {
-	nodes := newSchema()
-	nodes.ParseFiles(p, specificConfigs...)
-	return nodes
-}
-
-func ParsePackage(pkg *packages.Package, specificConfigs ...string) NodeMapInfo {
-	nodes := newSchema()
-	nodes.ParsePackage(pkg, specificConfigs...)
-	return nodes
-}
-
-func newSchema() NodeMapInfo {
-	nodes := make(map[string]*NodeDataInfo)
-	return nodes
-}
-
 // NodeDataInfo stores information related to a particular Node
 type NodeDataInfo struct {
 	NodeData                *NodeData
@@ -52,7 +33,7 @@ func (m NodeMapInfo) addConfig(info *NodeDataInfo) {
 	m[info.NodeData.EntConfigName] = info
 }
 
-func (m NodeMapInfo) GetNodeDataFromGraphQLName(nodeName string) *NodeData {
+func (m NodeMapInfo) getNodeDataFromGraphQLName(nodeName string) *NodeData {
 	// just assume this for now. may not be correct in the long run
 	configName := nodeName + "Config"
 
@@ -63,7 +44,7 @@ func (m NodeMapInfo) GetNodeDataFromGraphQLName(nodeName string) *NodeData {
 	return nodeInfo.NodeData
 }
 
-func (m NodeMapInfo) GetActionFromGraphQLName(graphQLName string) action.Action {
+func (m NodeMapInfo) getActionFromGraphQLName(graphQLName string) action.Action {
 	// TODO come up with a better mapping than this
 	for _, info := range m {
 		a := info.NodeData.GetActionByGraphQLName(graphQLName)

@@ -11,14 +11,14 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	intcodegen "github.com/lolopinto/ent/internal/codegen"
-	 "github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema"
 
 	"github.com/pkg/errors"
 )
 
 // inspired by resolvergen from gqlgen
 type entGraphQLResolverPlugin struct {
-	nodes    schema.NodeMapInfo
+	schema   *schema.Schema
 	codePath *intcodegen.CodePath
 }
 
@@ -31,7 +31,7 @@ func (p *entGraphQLResolverPlugin) Name() string {
 func (p *entGraphQLResolverPlugin) castToString(field *codegen.Field) bool {
 	objName := field.Object.Name
 
-	nodeData := p.nodes.GetNodeDataFromGraphQLName(objName)
+	nodeData := p.schema.GetNodeDataFromGraphQLName(objName)
 	if nodeData == nil {
 		return false
 	}
@@ -61,14 +61,14 @@ func (p *entGraphQLResolverPlugin) loadObjectFromContext(field *codegen.Field) b
 
 	// field.Object.Name = Query
 	// field.GoFieldName = Contact/User etc.
-	nodeData := p.nodes.GetNodeDataFromGraphQLName(field.GoFieldName)
+	nodeData := p.schema.GetNodeDataFromGraphQLName(field.GoFieldName)
 	return nodeData != nil
 }
 
 func (p *entGraphQLResolverPlugin) fieldEdge(field *codegen.Field) bool {
 	objName := field.Object.Name
 
-	nodeData := p.nodes.GetNodeDataFromGraphQLName(objName)
+	nodeData := p.schema.GetNodeDataFromGraphQLName(objName)
 	if nodeData == nil {
 		return false
 	}
@@ -80,7 +80,7 @@ func (p *entGraphQLResolverPlugin) fieldEdge(field *codegen.Field) bool {
 func (p *entGraphQLResolverPlugin) pluralEdge(field *codegen.Field) bool {
 	objName := field.Object.Name
 
-	nodeData := p.nodes.GetNodeDataFromGraphQLName(objName)
+	nodeData := p.schema.GetNodeDataFromGraphQLName(objName)
 	if nodeData == nil {
 		return false
 	}
@@ -105,7 +105,7 @@ func (p *entGraphQLResolverPlugin) mutation(field *codegen.Field) action.Action 
 	// Name -> userCreate, GoFieldName -> UserCreate
 	//	spew.Dump(field.GoFieldName, field.GoReceiverName)
 	//	spew.Dump(field)
-	return p.nodes.GetActionFromGraphQLName(field.Name)
+	return p.schema.GetActionFromGraphQLName(field.Name)
 	//	spew.Dump(field.Name, action)
 }
 
@@ -159,7 +159,7 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 
 func newGraphQLResolverPlugin(data *codegenData) plugin.Plugin {
 	return &entGraphQLResolverPlugin{
-		nodes:    data.allNodes,
+		schema:   data.schema,
 		codePath: data.codePath,
 	}
 }

@@ -14,7 +14,7 @@ func (p *entCodegenPlugin) pluginName() string {
 }
 
 func (p *entCodegenPlugin) processData(data *codegenData) error {
-	for _, info := range data.allNodes {
+	for _, info := range data.schema.Nodes {
 		if !info.ShouldCodegen {
 			continue
 		}

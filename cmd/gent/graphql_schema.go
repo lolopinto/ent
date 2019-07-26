@@ -7,20 +7,17 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/iancoleman/strcase"
+
 	"github.com/lolopinto/ent/ent"
 
 	"github.com/lolopinto/ent/internal/action"
-
-	"github.com/iancoleman/strcase"
-
 	"github.com/lolopinto/ent/internal/edge"
-
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema"
-
-	"github.com/99designs/gqlgen/api"
 	"github.com/lolopinto/ent/internal/util"
 
+	"github.com/99designs/gqlgen/api"
 	"github.com/99designs/gqlgen/codegen/config"
 )
 
@@ -135,22 +132,22 @@ func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *schema.NodeData) {
 	schema.addSchemaInfo(schemaInfo)
 }
 
-func (schema *graphQLSchema) generateGraphQLSchemaData() {
+func (s *graphQLSchema) generateGraphQLSchemaData() {
 
-	for _, info := range schema.config.allNodes {
+	for _, info := range s.config.schema.Nodes {
 		nodeData := info.NodeData
 
 		// add the GraphQL type e.g. User, Contact etc
-		schema.addGraphQLInfoForType(nodeData)
+		s.addGraphQLInfoForType(nodeData)
 
-		schema.processActions(nodeData.ActionInfo)
+		s.processActions(nodeData.ActionInfo)
 	}
 
-	schema.addSchemaInfo(schema.getQuerySchemaType())
-	schema.addSchemaInfo(schema.getMutationSchemaType())
+	s.addSchemaInfo(s.getQuerySchemaType())
+	s.addSchemaInfo(s.getMutationSchemaType())
 }
 
-func (schema *graphQLSchema) processActions(actionInfo *action.ActionInfo) {
+func (s *graphQLSchema) processActions(actionInfo *action.ActionInfo) {
 	if actionInfo == nil {
 		return
 	}
@@ -160,11 +157,11 @@ func (schema *graphQLSchema) processActions(actionInfo *action.ActionInfo) {
 		}
 		//		spew.Dump(action)
 
-		schema.processAction(action)
+		s.processAction(action)
 	}
 }
 
-func (schema *graphQLSchema) processAction(action action.Action) {
+func (s *graphQLSchema) processAction(action action.Action) {
 	actionName := action.GetGraphQLName()
 
 	// TODO support shared input types
@@ -187,7 +184,7 @@ func (schema *graphQLSchema) processAction(action action.Action) {
 	}
 
 	// TODO add field if it makes sense... e.g. EditXXX and deleteXXX mutations
-	schema.addSchemaInfo(inputSchemaInfo)
+	s.addSchemaInfo(inputSchemaInfo)
 
 	responseTypeName := strcase.ToCamel(actionName + "Response")
 	responseTypeSchemaInfo := newGraphQLSchemaInfo("type", responseTypeName)
@@ -214,10 +211,10 @@ func (schema *graphQLSchema) processAction(action action.Action) {
 			})
 	}
 
-	schema.addSchemaInfo(responseTypeSchemaInfo)
+	s.addSchemaInfo(responseTypeSchemaInfo)
 
 	// add mutation as a top level mutation field
-	schema.addMutationField(&graphQLNonEntField{
+	s.addMutationField(&graphQLNonEntField{
 		fieldName: actionName,
 		fieldType: responseTypeName, // TODO should this be required?
 		args: []*graphQLArg{
@@ -229,21 +226,21 @@ func (schema *graphQLSchema) processAction(action action.Action) {
 	})
 }
 
-func (schema *graphQLSchema) getQuerySchemaType() *graphQLSchemaInfo {
+func (s *graphQLSchema) getQuerySchemaType() *graphQLSchemaInfo {
 	// add everything as top level query for now
 
 	return &graphQLSchemaInfo{
 		Type:         "type",
 		TypeName:     "Query",
-		nonEntFields: schema.queryFields,
+		nonEntFields: s.queryFields,
 	}
 }
 
-func (schema *graphQLSchema) getMutationSchemaType() *graphQLSchemaInfo {
+func (s *graphQLSchema) getMutationSchemaType() *graphQLSchemaInfo {
 	return &graphQLSchemaInfo{
 		Type:         "type",
 		TypeName:     "Mutation",
-		nonEntFields: schema.mutationFields,
+		nonEntFields: s.mutationFields,
 	}
 }
 
@@ -255,10 +252,10 @@ func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 	return t.Types
 }
 
-func (schema *graphQLSchema) writeGraphQLSchema() {
+func (s *graphQLSchema) writeGraphQLSchema() {
 	writeFile(
 		&templatedBasedFileWriter{
-			data:              schema.getSchemaForTemplate(),
+			data:              s.getSchemaForTemplate(),
 			pathToTemplate:    "templates/graphql/graphql_schema.tmpl",
 			templateName:      "graphql_schema.tmpl",
 			pathToFile:        "graphql/schema.graphql",
@@ -270,12 +267,12 @@ func (schema *graphQLSchema) writeGraphQLSchema() {
 	)
 }
 
-func (schema *graphQLSchema) writeGQLGenYamlFile() {
+func (s *graphQLSchema) writeGQLGenYamlFile() {
 	// TODO use 	"github.com/99designs/gqlgen/codegen/config
 	c := newGraphQLYamlConfig()
 
 	c.addSchema()
-	c.addModelsConfig(schema)
+	c.addModelsConfig(s)
 	c.addExecConfig()
 	c.addModelConfig()
 	///c.addResolverConfig() // don't need this since we're handling this ourselves
@@ -289,7 +286,7 @@ func (schema *graphQLSchema) writeGQLGenYamlFile() {
 	)
 }
 
-func (schema *graphQLSchema) generateGraphQLCode() {
+func (s *graphQLSchema) generateGraphQLCode() {
 	cfg, err := config.LoadConfig("graphql/gqlgen.yml")
 	// TODO
 	util.Die(err)
@@ -298,17 +295,17 @@ func (schema *graphQLSchema) generateGraphQLCode() {
 	// We build on the default implementation they support and go from there.
 	err = api.Generate(
 		cfg,
-		api.AddPlugin(newGraphQLResolverPlugin(schema.config)),
-		api.AddPlugin(newGraphQLServerPlugin(schema.config)),
+		api.AddPlugin(newGraphQLResolverPlugin(s.config)),
+		api.AddPlugin(newGraphQLServerPlugin(s.config)),
 	)
 	util.Die(err)
 }
 
 // get the schema that will be passed to the template for rendering in a schema file
-func (schema *graphQLSchema) getSchemaForTemplate() *graphqlSchemaTemplate {
+func (s *graphQLSchema) getSchemaForTemplate() *graphqlSchemaTemplate {
 	ret := &graphqlSchemaTemplate{}
 
-	for _, typ := range schema.Types {
+	for _, typ := range s.Types {
 
 		var lines []string
 		for _, f := range typ.fields {
@@ -498,13 +495,13 @@ func (c *graphQLYamlConfig) addSchema() {
 	c.addEntry("schema", []string{"graphql/schema.graphql"})
 }
 
-func (c *graphQLYamlConfig) addModelsConfig(schema *graphQLSchema) {
+func (c *graphQLYamlConfig) addModelsConfig(s *graphQLSchema) {
 	// this creates a nested models: User: path_to_model map in here
 	models := make(map[string]interface{})
 
-	pathToModels, err := strconv.Unquote(schema.config.codePath.PathToModels)
+	pathToModels, err := strconv.Unquote(s.config.codePath.PathToModels)
 	util.Die(err)
-	for _, info := range schema.config.allNodes {
+	for _, info := range s.config.schema.Nodes {
 		nodeData := info.NodeData
 
 		model := make(map[string]string)

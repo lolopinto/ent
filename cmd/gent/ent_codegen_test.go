@@ -9,8 +9,8 @@ import (
 
 func TestGenerateNewEdges(t *testing.T) {
 	// TODO figure out the best place to put these files
-	schemaFiles := getParsedTestSchemaFiles(t)
-	newEdges := generateConstsAndNewEdges(schemaFiles)
+	s := getParsedTestSchema(t)
+	newEdges := generateConstsAndNewEdges(s)
 
 	if len(newEdges) != 1 {
 		t.Errorf("Expected 1 new edge generated in model, got %d instead", len(newEdges))
@@ -40,10 +40,10 @@ func TestGenerateNewEdges(t *testing.T) {
 }
 
 func TestGeneratedConstants(t *testing.T) {
-	schemaFiles := getParsedTestSchemaFiles(t)
-	generateConstsAndNewEdges(schemaFiles)
+	s := getParsedTestSchema(t)
+	generateConstsAndNewEdges(s)
 
-	accountInfo := schemaFiles["AccountConfig"]
+	accountInfo := s.Nodes["AccountConfig"]
 
 	numConsts := len(accountInfo.NodeData.ConstantGroups)
 	if numConsts != 2 {
@@ -80,7 +80,7 @@ func TestGeneratedConstants(t *testing.T) {
 		t.Errorf("expected uuid as constant value for edge, got %s with err %s parsing uuid instead", constant.ConstValue, err)
 	}
 
-	todoInfo := schemaFiles["TodoConfig"]
+	todoInfo := s.Nodes["TodoConfig"]
 
 	numConsts = len(todoInfo.NodeData.ConstantGroups)
 	if numConsts != 1 {
