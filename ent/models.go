@@ -727,21 +727,23 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 		"data",
 	}
 
+	// get time for queries
+	var t time.Time
+	if edgeOptions.Time.IsZero() {
+		t = time.Now()
+	} else {
+		t = edgeOptions.Time
+	}
+
 	vals := []interface{}{
 		id1,
 		id1Ttype,
 		edgeType,
 		id2,
 		id2Type,
+		t,
+		edgeOptions.Data, // zero value of data works for us. no check needed
 	}
-	// add time as needed
-	if edgeOptions.Time.IsZero() {
-		vals = append(vals, time.Now())
-	} else {
-		vals = append(vals, edgeOptions.Time)
-	}
-	// zero value of data works for us. no check needed
-	vals = append(vals, edgeOptions.Data)
 
 	query := fmt.Sprintf(
 		"INSERT into %s (%s) VALUES(%s)",
@@ -752,7 +754,58 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 
 	fmt.Println(query)
 
-	return performWrite(query, vals, tx, nil)
+	err = performWrite(query, vals, tx, nil)
+	if err != nil {
+		return err
+	}
+
+	// TODO should look into combining these into same QUERY similarly to what we need to do in CreateNodes()
+	// need to re-write and test all of this
+
+	// write symmetric edge
+	if edgeData.SymmetricEdge {
+		vals = []interface{}{
+			id2,
+			id2Type,
+			edgeType,
+			id1,
+			id1Ttype,
+			t,
+			edgeOptions.Time,
+		}
+
+		query = fmt.Sprintf(
+			"INSERT into %s (%s) VALUES(%s)",
+			edgeData.EdgeTable,
+			getColumnsString(cols),
+			getValsString(vals),
+		)
+		return performWrite(query, vals, tx, nil)
+	}
+
+	// write inverse edge
+	if edgeData.InverseEdgeType != nil && edgeData.InverseEdgeType.Valid {
+		// write an edge from id2 to id2 with new edge type
+		vals = []interface{}{
+			id2,
+			id2Type,
+			edgeData.InverseEdgeType.String,
+			id1,
+			id1Ttype,
+			t,
+			edgeOptions.Time,
+		}
+
+		query = fmt.Sprintf(
+			"INSERT into %s (%s) VALUES(%s)",
+			edgeData.EdgeTable,
+			getColumnsString(cols),
+			getValsString(vals),
+		)
+		return performWrite(query, vals, tx, nil)
+	}
+
+	return nil
 }
 
 func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions) error {
