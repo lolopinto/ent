@@ -163,8 +163,8 @@ func TestForeignKeyColumn(t *testing.T) {
 func TestInvalidForeignKeyConfig(t *testing.T) {
 	sources := make(map[string]string)
 
-	sources["account"] = getAccountConfigContents(t)
-	sources["todo"] = `
+	sources["account_config.go"] = getAccountConfigContents(t)
+	sources["todo_config.go"] = `
 	package configs
 
 type TodoConfig struct {
@@ -186,8 +186,8 @@ type TodoConfig struct {
 func TestInvalidForeignKeyColumn(t *testing.T) {
 	sources := make(map[string]string)
 
-	sources["account"] = getAccountConfigContents(t)
-	sources["todo"] = `
+	sources["account_config.go"] = getAccountConfigContents(t)
+	sources["todo_config.go"] = `
 	package configs
 
 type TodoConfig struct {

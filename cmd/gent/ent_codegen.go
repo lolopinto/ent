@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
-	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
+	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
+
 	"runtime"
 	"strconv"
 	"strings"
@@ -27,6 +29,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/util"
+	"golang.org/x/tools/go/packages"
 
 	// need to use dst because of this issue:
 	// https://github.com/golang/go/issues/20744
@@ -152,33 +155,54 @@ func (m codegenMapInfo) getActionFromGraphQLName(graphQLName string) action.Acti
 	return nil
 }
 
-func (m codegenMapInfo) ParseFiles(p schemaParser) {
-	fset, configMap, err := p.ParseFiles()
+func loadPackage(p schemaParser) *packages.Package {
+	cfg, dir, err := p.GetConfig()
+
+	parserWithCleanup, ok := p.(schemaParserNeedsCleanup)
+	if ok {
+		defer parserWithCleanup.Cleanup()
+	}
 	util.Die(err)
 
-	var files []*ast.File
-	for _, file := range configMap {
-		files = append(files, file)
-	}
-	info := types.Info{
-		Types: make(map[ast.Expr]types.TypeAndValue),
-		Defs:  make(map[*ast.Ident]types.Object),
-		Uses:  make(map[*ast.Ident]types.Object),
-	}
-	conf := types.Config{
-		Importer: importer.Default(),
-	}
-	// TODO
-	_, err = conf.Check("models/configs", fset, files, &info)
+	pkgs, err := packages.Load(cfg, dir)
 	util.Die(err)
+
+	if len(pkgs) != 1 {
+		panic("invalid number of packages. TODO ola figure out why there's more than one package in a folder")
+	}
+	pkg := pkgs[0]
+
+	if len(pkg.GoFiles) != len(pkg.Syntax) {
+		panic(
+			fmt.Errorf(
+				"don't have the same number of named files and parsed files. %d filenames %d files",
+				len(pkg.GoFiles),
+				len(pkg.Syntax),
+			),
+		)
+	}
+	return pkg
+}
+
+func (m codegenMapInfo) ParsePackage(pkg *packages.Package) {
+	r := regexp.MustCompile(`(\w+)_config.go`)
+
+	info := pkg.TypesInfo
+	fset := pkg.Fset
 
 	// first pass to parse the files and do as much as we can
-	for packageName, file := range configMap {
-
+	for idx, filePath := range pkg.GoFiles {
+		match := r.FindStringSubmatch(filePath)
+		if len(match) != 2 {
+			panic(fmt.Errorf("invalid filename match, expected length 2, have length %d", len(match)))
+		}
 		// TODO rename packageName to something better it's contact_date in contact_date_config.go
 		// TODO break this into concurrent jobs
+		packageName := match[1]
 
-		codegenInfo := m.parseFile(packageName, file, fset, specificConfig, &info)
+		file := pkg.Syntax[idx]
+
+		codegenInfo := m.parseFile(packageName, file, fset, specificConfig, info)
 		m.addConfig(codegenInfo)
 	}
 
@@ -199,6 +223,12 @@ func (m codegenMapInfo) ParseFiles(p schemaParser) {
 			execFn(nodeData)
 		})
 	}
+}
+
+func (m codegenMapInfo) ParseFiles(p schemaParser) {
+	pkg := loadPackage(p)
+
+	m.ParsePackage(pkg)
 }
 
 func (m codegenMapInfo) parseFile(packageName string, file *ast.File, fset *token.FileSet, specificConfig string, info *types.Info) *codegenNodeTemplateInfo {
@@ -251,6 +281,7 @@ func (m codegenMapInfo) parseFile(packageName string, file *ast.File, fset *toke
 	nodeData := &nodeTemplate{
 		PackageName: packageName,
 		NodeInfo:    codegen.GetNodeInfo(packageName),
+		EdgeInfo:    &edge.EdgeInfo{}, // default in case no edges
 	}
 	// run the depgraph to get as much data as we can get now.
 	g.Run(func(item interface{}) {
@@ -309,7 +340,12 @@ func (m codegenMapInfo) AddLinkedEdges(nodeData *nodeTemplate) {
 }
 
 type schemaParser interface {
-	ParseFiles() (*token.FileSet, map[string]*ast.File, error)
+	GetConfig() (*packages.Config, string, error)
+}
+
+type schemaParserNeedsCleanup interface {
+	schemaParser
+	Cleanup()
 }
 
 type configSchemaParser struct {
@@ -318,48 +354,51 @@ type configSchemaParser struct {
 	codePathInfo   *codePath
 }
 
-func (p *configSchemaParser) ParseFiles() (*token.FileSet, map[string]*ast.File, error) {
-	fset := token.NewFileSet()
-
-	r := regexp.MustCompile(`(\w+)_config.go`)
-
-	filterFunc := func(fileInfo os.FileInfo) bool {
-		match := r.FindStringSubmatch(fileInfo.Name())
-		return len(match) == 2
+func (p *configSchemaParser) GetConfig() (*packages.Config, string, error) {
+	cfg := &packages.Config{
+		//Fset: fset,
+		// the more I load, the slower this is...
+		// this is a lot slower than the old thing. what am I doing wrong or differently?
+		Mode: packages.LoadTypes | packages.LoadSyntax,
 	}
-
-	pkgs, err := parser.ParseDir(fset, p.rootPath, filterFunc, parser.AllErrors)
-	if err != nil {
-		return fset, nil, err
-	}
-	if len(pkgs) != 1 {
-		return fset, nil, fmt.Errorf("TODO ola figure out why there's more than one package in a folder")
-	}
-
-	// return map -> "packageName" -> *ast.File
-	configMap := make(map[string]*ast.File)
-	for key, file := range pkgs["configs"].Files {
-		match := r.FindStringSubmatch(key)
-		configMap[match[1]] = file
-	}
-	return fset, configMap, nil
+	absPath, err := filepath.Abs(p.rootPath)
+	return cfg, absPath, err
 }
 
 type sourceSchemaParser struct {
 	sources map[string]string
+	tempDir string
 }
 
-func (p *sourceSchemaParser) ParseFiles() (*token.FileSet, map[string]*ast.File, error) {
-	fset := token.NewFileSet()
-	configMap := make(map[string]*ast.File)
-	for packageName, src := range p.sources {
-		file, err := parser.ParseFile(fset, "", src, parser.AllErrors)
-		if err != nil {
-			return fset, nil, err
-		}
-		configMap[packageName] = file
+func (p *sourceSchemaParser) GetConfig() (*packages.Config, string, error) {
+	overlay := make(map[string][]byte)
+
+	var err error
+	p.tempDir, err = ioutil.TempDir("./testdata/", "test")
+	util.Die(err)
+
+	configDir := filepath.Join(p.tempDir, "configs")
+	err = os.MkdirAll(configDir, 0666)
+	util.Die(err)
+
+	for key, source := range p.sources {
+		// create overlays of path to source for data to be read from disk
+		path := filepath.Join(configDir, key)
+		overlay[path] = []byte(source)
 	}
-	return fset, configMap, nil
+
+	cfg := &packages.Config{
+		//Fset: fset,
+		// the more I load, the slower this is...
+		// this is a lot slower than the old thing. what am I doing wrong or differently?
+		Mode:    packages.LoadTypes | packages.LoadSyntax,
+		Overlay: overlay,
+	}
+	return cfg, configDir, err
+}
+
+func (p *sourceSchemaParser) Cleanup() {
+	os.RemoveAll(p.tempDir)
 }
 
 func parseFiles(p schemaParser) codegenMapInfo {
