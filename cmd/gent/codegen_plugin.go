@@ -15,10 +15,10 @@ func (p *entCodegenPlugin) pluginName() string {
 
 func (p *entCodegenPlugin) processData(data *codegenData) error {
 	for _, info := range data.allNodes {
-		if !info.shouldCodegen {
+		if !info.ShouldCodegen {
 			continue
 		}
-		nodeData := info.nodeData
+		nodeData := info.NodeData
 		//fmt.Println(specificConfig, structName)
 		if len(nodeData.PackageName) > 0 {
 			writeModelFile(nodeData, data.codePath)

@@ -14,6 +14,7 @@ import (
 
 	"github.com/lolopinto/ent/data"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/util"
 )
 
@@ -178,7 +179,7 @@ func (constraint *uniqueConstraint) getConstraintString() string {
 	return getConstraintStringForColumnBasedConstraint(constraint)
 }
 
-func newDBSchema(nodes codegenMapInfo) *dbSchema {
+func newDBSchema(nodes schema.NodeMapInfo) *dbSchema {
 	configTableMap := make(map[string]*dbTable)
 	return &dbSchema{
 		nodes:          nodes,
@@ -188,11 +189,11 @@ func newDBSchema(nodes codegenMapInfo) *dbSchema {
 
 type dbSchema struct {
 	Tables         []*dbTable
-	nodes          codegenMapInfo
+	nodes          schema.NodeMapInfo
 	configTableMap map[string]*dbTable
 }
 
-func (schema *dbSchema) getTableForNode(nodeData *nodeTemplate) *dbTable {
+func (schema *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
 	table := schema.configTableMap[nodeData.EntConfigName]
 	if table != nil {
 		return table
@@ -204,7 +205,7 @@ func (schema *dbSchema) getTableForNode(nodeData *nodeTemplate) *dbTable {
 	return table
 }
 
-func (schema *dbSchema) createTableForNode(nodeData *nodeTemplate) *dbTable {
+func (schema *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	var columns []*dbColumn
 	var constraints []dbConstraint
 
@@ -236,7 +237,7 @@ func (schema *dbSchema) generateShemaTables() {
 
 	addedAtLeastOneTable := false
 	for _, info := range schema.nodes {
-		nodeData := info.nodeData
+		nodeData := info.NodeData
 		tables = append(tables, schema.getTableForNode(nodeData))
 
 		if schema.addEdgeTables(nodeData, &tables) {
@@ -349,7 +350,7 @@ func (schema *dbSchema) addEdgeConfigTable(tables *[]*dbTable) {
 	*tables = append(*tables, table)
 }
 
-func (schema *dbSchema) addEdgeTables(nodeData *nodeTemplate, tables *[]*dbTable) bool {
+func (schema *dbSchema) addEdgeTables(nodeData *schema.NodeData, tables *[]*dbTable) bool {
 	for _, assocEdge := range nodeData.EdgeInfo.Associations {
 		table := schema.createEdgeTable(nodeData, assocEdge)
 		*tables = append(*tables, table)
@@ -357,12 +358,12 @@ func (schema *dbSchema) addEdgeTables(nodeData *nodeTemplate, tables *[]*dbTable
 	return nodeData.EdgeInfo.HasAssociationEdges()
 }
 
-func getNameForEdgeTable(nodeData *nodeTemplate, e *edge.AssociationEdge) string {
-	tableNameParts := []string{nodeData.getTableName(), strings.ToLower(e.GetEdgeName()), "edge"}
+func getNameForEdgeTable(nodeData *schema.NodeData, e *edge.AssociationEdge) string {
+	tableNameParts := []string{nodeData.GetTableName(), strings.ToLower(e.GetEdgeName()), "edge"}
 	return getNameFromParts(tableNameParts)
 }
 
-func (schema *dbSchema) createEdgeTable(nodeData *nodeTemplate, assocEdge *edge.AssociationEdge) *dbTable {
+func (schema *dbSchema) createEdgeTable(nodeData *schema.NodeData, assocEdge *edge.AssociationEdge) *dbTable {
 	tableName := getNameForEdgeTable(nodeData, assocEdge)
 
 	var columns []*dbColumn
@@ -389,7 +390,7 @@ func (schema *dbSchema) createEdgeTable(nodeData *nodeTemplate, assocEdge *edge.
 	}
 }
 
-func (schema *dbSchema) getColumnInfoForField(f *field.Field, nodeData *nodeTemplate, constraints *[]dbConstraint) *dbColumn {
+func (schema *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeData, constraints *[]dbConstraint) *dbColumn {
 	dbType := f.GetDbTypeForField()
 	col := schema.getColumn(f.FieldName, f.GetDbColName(), dbType, []string{
 		"nullable=False",
@@ -401,27 +402,27 @@ func (schema *dbSchema) getColumnInfoForField(f *field.Field, nodeData *nodeTemp
 	return col
 }
 
-func (schema *dbSchema) addPrimaryKeyConstraint(f *field.Field, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
+func (schema *dbSchema) addPrimaryKeyConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
 	if !f.SingleFieldPrimaryKey() {
 		return
 	}
 
 	constraint := &primaryKeyConstraint{
 		dbColumns: []*dbColumn{col},
-		tableName: nodeData.getTableName(),
+		tableName: nodeData.GetTableName(),
 	}
 	*constraints = append(*constraints, constraint)
 }
 
 // adds a foreignKeyConstraint to the array of constraints
 // also returns new dbType of column
-func (schema *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
+func (schema *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
 	fkey := f.GetUnquotedKeyFromTag("fkey")
 	if fkey == "" {
 		return
 	}
 	// get unquoted table name
-	tableName := nodeData.getTableName()
+	tableName := nodeData.GetTableName()
 
 	fkeyParts := strings.Split(fkey, ".")
 	fkeyConfigName := fkeyParts[0]
@@ -432,7 +433,7 @@ func (schema *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *nodeTe
 		util.Die(fmt.Errorf("invalid EntConfig %s set as ForeignKey of field %s on ent config %s", fkeyConfigName, f.FieldName, nodeData.EntConfigName))
 	}
 
-	fkeyTable := schema.getTableForNode(fkeyConfig.nodeData)
+	fkeyTable := schema.getTableForNode(fkeyConfig.NodeData)
 	fkeyTableName, err := strconv.Unquote(fkeyTable.QuotedTableName)
 	util.Die(err)
 
@@ -465,7 +466,7 @@ func (schema *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *nodeTe
 	*constraints = append(*constraints, constraint)
 }
 
-func (schema *dbSchema) addUniqueConstraint(f *field.Field, nodeData *nodeTemplate, col *dbColumn, constraints *[]dbConstraint) {
+func (schema *dbSchema) addUniqueConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
 	unique := f.GetUnquotedKeyFromTag("unique")
 	if unique == "" {
 		return
@@ -475,7 +476,7 @@ func (schema *dbSchema) addUniqueConstraint(f *field.Field, nodeData *nodeTempla
 	}
 	constraint := &uniqueConstraint{
 		dbColumns: []*dbColumn{col},
-		tableName: nodeData.getTableName(),
+		tableName: nodeData.GetTableName(),
 	}
 	*constraints = append(*constraints, constraint)
 }

@@ -45,11 +45,11 @@ func TestGeneratedConstants(t *testing.T) {
 
 	accountInfo := schemaFiles["AccountConfig"]
 
-	numConsts := len(accountInfo.nodeData.ConstantGroups)
+	numConsts := len(accountInfo.NodeData.ConstantGroups)
 	if numConsts != 2 {
 		t.Errorf("expected 2 constants for account node. got %d instead", numConsts)
 	}
-	firstGroup := accountInfo.nodeData.ConstantGroups[0]
+	firstGroup := accountInfo.NodeData.ConstantGroups[0]
 	if firstGroup.ConstType != "ent.NodeType" {
 		t.Errorf("expected nodeType to be the first constant group, got %s instead", firstGroup.ConstType)
 	}
@@ -64,7 +64,7 @@ func TestGeneratedConstants(t *testing.T) {
 		t.Errorf("unexpected constant value for account type constant, got %s", constant.ConstValue)
 	}
 
-	secondGroup := accountInfo.nodeData.ConstantGroups[1]
+	secondGroup := accountInfo.NodeData.ConstantGroups[1]
 	if secondGroup.ConstType != "ent.EdgeType" {
 		t.Errorf("expected edgeType to be the second constant group, got %s instead", secondGroup.ConstType)
 	}
@@ -82,11 +82,11 @@ func TestGeneratedConstants(t *testing.T) {
 
 	todoInfo := schemaFiles["TodoConfig"]
 
-	numConsts = len(todoInfo.nodeData.ConstantGroups)
+	numConsts = len(todoInfo.NodeData.ConstantGroups)
 	if numConsts != 1 {
 		t.Errorf("expected 1 constant for todo node. got %d instead", numConsts)
 	}
-	firstGroup = todoInfo.nodeData.ConstantGroups[0]
+	firstGroup = todoInfo.NodeData.ConstantGroups[0]
 	if firstGroup.ConstType != "ent.NodeType" {
 		t.Errorf("expected nodeType to be the first constant group, got %s instead", firstGroup.ConstType)
 	}

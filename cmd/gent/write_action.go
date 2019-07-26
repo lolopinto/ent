@@ -11,9 +11,10 @@ import (
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/imports"
+	"github.com/lolopinto/ent/internal/schema"
 )
 
-func writeActionFile(nodeData *nodeTemplate, a action.Action, codePathInfo *codePath) {
+func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *codegen.CodePath) {
 	fileName := strcase.ToSnake(a.GetActionName())
 	//	pathToFile := fmt.Sprintf("models/%s/action/%s.go", nodeData.PackageName, fileName)
 

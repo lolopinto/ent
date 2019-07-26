@@ -7,12 +7,14 @@ import (
 	"github.com/99designs/gqlgen/codegen"
 	"github.com/99designs/gqlgen/codegen/templates"
 	"github.com/99designs/gqlgen/plugin"
+
+	intcodegen "github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/util"
 )
 
 // inspired by servergen from gqlgen
 type entGraphQLServerPlugin struct {
-	codePath *codePath
+	codePath *intcodegen.CodePath
 }
 
 var _ plugin.CodeGenerator = &entGraphQLServerPlugin{}

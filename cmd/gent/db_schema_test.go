@@ -6,6 +6,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/schema"
 )
 
 func TestIDColumn(t *testing.T) {
@@ -436,11 +439,10 @@ func testConstraint(t *testing.T, constraint dbConstraint, expectedConstraintStr
 	}
 }
 
-func getParsedTestSchemaFiles() codegenMapInfo {
+func getParsedTestSchemaFiles() schema.NodeMapInfo {
 	return parseAllSchemaFiles(
 		"./testdata/models/configs",
-		"",
-		&codePath{
+		&codegen.CodePath{
 			PathToConfigs: "./testdata/models/configs/",
 			PathToModels:  "./testdata/models/",
 		},
@@ -471,7 +473,7 @@ func getTestTableFromSchema(configName string, schema *dbSchema, t *testing.T) *
 	if node == nil {
 		t.Errorf("no codegen info for %s table", configName)
 	}
-	table := schema.getTableForNode(node.nodeData)
+	table := schema.getTableForNode(node.NodeData)
 	if table == nil {
 		t.Errorf("no dbtable info for %s", configName)
 	}

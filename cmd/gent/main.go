@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/util"
 
 	flag "github.com/ogier/pflag"
@@ -41,13 +42,7 @@ func main() {
 	parseSchemasAndGenerate(pathToConfig, specificConfig, codePathInfo)
 }
 
-type codePath struct {
-	PathToConfigs string
-	PathToModels  string
-	PathToRoot    string
-}
-
-func getPathToCode(pathToConfig string) *codePath {
+func getPathToCode(pathToConfig string) *codegen.CodePath {
 	b, err := ioutil.ReadFile("go.mod")
 
 	var cp string
@@ -77,7 +72,7 @@ func getPathToCode(pathToConfig string) *codePath {
 		cp = strings.Join(pathParts[idx:], string(filepath.Separator))
 	}
 
-	return &codePath{
+	return &codegen.CodePath{
 		PathToRoot:    cp,
 		PathToConfigs: strconv.Quote(filepath.Join(cp, pathToConfig)),
 		PathToModels:  strconv.Quote(filepath.Join(cp, "models")),

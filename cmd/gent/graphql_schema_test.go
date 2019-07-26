@@ -79,7 +79,7 @@ func TestGraphQLOtherIDField(t *testing.T) {
 func TestGraphQLOtherIDWithNoEdge(t *testing.T) {
 	sources := make(map[string]string)
 
-	sources["todo"] = `
+	sources["todo_config.go"] = `
 	package configs
 
 type TodoConfig struct {

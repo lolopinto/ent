@@ -8,12 +8,8 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
-	"go/types"
-	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
-	"regexp"
 
 	"runtime"
 	"strconv"
@@ -25,11 +21,10 @@ import (
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/depgraph"
-	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
-	"golang.org/x/tools/go/packages"
 
 	// need to use dst because of this issue:
 	// https://github.com/golang/go/issues/20744
@@ -40,405 +35,38 @@ import (
 	"github.com/dave/dst/decorator"
 )
 
-type nodeTemplate struct {
-	codegen.NodeInfo
-	PackageName    string
-	FieldInfo      *field.FieldInfo
-	EdgeInfo       *edge.EdgeInfo
-	TableName      string
-	ConstantGroups []constGroupInfo
-	ActionInfo     *action.ActionInfo
-}
-
-type constInfo struct {
-	ConstName  string
-	ConstValue string
-	Comment    string
-}
-
-type constGroupInfo struct {
-	ConstType string
-	Constants []constInfo
-}
-
-func (nodeData *nodeTemplate) getTableName() string {
-	tableName, err := strconv.Unquote(nodeData.TableName)
-	util.Die(err)
-
-	return tableName
-}
-
-// probably not needed?
-func (nodeData *nodeTemplate) getQuotedTableName() string {
-	return nodeData.TableName
-}
-
-func (nodeData *nodeTemplate) getFieldByName(fieldName string) *field.Field {
-	return nodeData.FieldInfo.GetFieldByName(fieldName)
-}
-
-func (nodeData *nodeTemplate) getFieldEdgeByName(edgeName string) *edge.FieldEdge {
-	return nodeData.EdgeInfo.GetFieldEdgeByName(edgeName)
-}
-
-func (nodeData *nodeTemplate) getForeignKeyEdgeByName(edgeName string) *edge.ForeignKeyEdge {
-	return nodeData.EdgeInfo.GetForeignKeyEdgeByName(edgeName)
-}
-
-func (nodeData *nodeTemplate) getAssociationEdgeByName(edgeName string) *edge.AssociationEdge {
-	return nodeData.EdgeInfo.GetAssociationEdgeByName(edgeName)
-}
-
-func (nodeData *nodeTemplate) getActionByGraphQLName(graphQLName string) action.Action {
-	return nodeData.ActionInfo.GetByGraphQLName(graphQLName)
-}
-
-func shouldCodegenPackage(file *ast.File, specificConfig string) bool {
-	// nothing to do here
-	if specificConfig == "" {
-		return true
+func parseAllSchemaFiles(rootPath string, codePathInfo *codegen.CodePath, specificConfigs ...string) schema.NodeMapInfo {
+	p := &schemaparser.ConfigSchemaParser{
+		RootPath:       rootPath,
+		CodePathInfo:   codePathInfo,
 	}
 
-	var returnVal bool
-
-	ast.Inspect(file, func(node ast.Node) bool {
-		if t, ok := node.(*ast.TypeSpec); ok && t.Type != nil {
-			structName := t.Name.Name
-
-			returnVal = specificConfig == structName
-			return false
-		}
-		return true
-	})
-	return returnVal
-}
-
-type codegenNodeTemplateInfo struct {
-	nodeData                *nodeTemplate
-	shouldCodegen           bool
-	shouldParseExistingFile bool
-	depgraph                *depgraph.Depgraph
-}
-
-// TODO come up with a better name here
-// and for all related types
-type codegenMapInfo map[string]*codegenNodeTemplateInfo
-
-func newCodegenMapInfo() codegenMapInfo {
-	allNodes := make(map[string]*codegenNodeTemplateInfo)
-	return allNodes
-}
-
-func (m codegenMapInfo) addConfig(codegenInfo *codegenNodeTemplateInfo) {
-	m[codegenInfo.nodeData.EntConfigName] = codegenInfo
-}
-
-func (m codegenMapInfo) getTemplateFromGraphQLName(nodeName string) *nodeTemplate {
-	// just assume this for now. may not be correct in the long run
-	configName := nodeName + "Config"
-
-	nodeInfo, ok := m[configName]
-	if !ok {
-		return nil
-	}
-	return nodeInfo.nodeData
-}
-
-func (m codegenMapInfo) getActionFromGraphQLName(graphQLName string) action.Action {
-	// TODO come up with a better mapping than this
-	for _, info := range m {
-		a := info.nodeData.getActionByGraphQLName(graphQLName)
-		if a != nil {
-			return a
-		}
-	}
-	return nil
-}
-
-func loadPackage(p schemaParser) *packages.Package {
-	cfg, dir, err := p.GetConfig()
-
-	parserWithCleanup, ok := p.(schemaParserNeedsCleanup)
-	if ok {
-		defer parserWithCleanup.Cleanup()
-	}
-	util.Die(err)
-
-	pkgs, err := packages.Load(cfg, dir)
-	util.Die(err)
-
-	if len(pkgs) != 1 {
-		panic("invalid number of packages. TODO ola figure out why there's more than one package in a folder")
-	}
-	pkg := pkgs[0]
-
-	if len(pkg.GoFiles) != len(pkg.Syntax) {
-		panic(
-			fmt.Errorf(
-				"don't have the same number of named files and parsed files. %d filenames %d files",
-				len(pkg.GoFiles),
-				len(pkg.Syntax),
-			),
-		)
-	}
-	return pkg
-}
-
-func (m codegenMapInfo) ParsePackage(pkg *packages.Package) {
-	r := regexp.MustCompile(`(\w+)_config.go`)
-
-	info := pkg.TypesInfo
-	fset := pkg.Fset
-
-	// first pass to parse the files and do as much as we can
-	for idx, filePath := range pkg.GoFiles {
-		match := r.FindStringSubmatch(filePath)
-		if len(match) != 2 {
-			panic(fmt.Errorf("invalid filename match, expected length 2, have length %d", len(match)))
-		}
-		// TODO rename packageName to something better it's contact_date in contact_date_config.go
-		// TODO break this into concurrent jobs
-		packageName := match[1]
-
-		file := pkg.Syntax[idx]
-
-		codegenInfo := m.parseFile(packageName, file, fset, specificConfig, info)
-		m.addConfig(codegenInfo)
-	}
-
-	// second pass to run things that depend on the entire data being loaded
-	for _, info := range m {
-
-		if info.depgraph == nil {
-			continue
-		}
-		nodeData := info.nodeData
-
-		// probably make this concurrent in the future
-		info.depgraph.Run(func(item interface{}) {
-			execFn, ok := item.(func(*nodeTemplate))
-			if !ok {
-				panic("invalid function passed")
-			}
-			execFn(nodeData)
-		})
-	}
-}
-
-func (m codegenMapInfo) ParseFiles(p schemaParser) {
-	pkg := loadPackage(p)
-
-	m.ParsePackage(pkg)
-}
-
-func (m codegenMapInfo) parseFile(packageName string, file *ast.File, fset *token.FileSet, specificConfig string, info *types.Info) *codegenNodeTemplateInfo {
-	//ast.Print(fset, node)
-	//ast.NewObj(fset, "file")
-	//fmt.Println("Struct:")
-
-	// initial parsing
-	g := &depgraph.Depgraph{}
-
-	// things that need the entire nodeData loaded
-	g2 := &depgraph.Depgraph{}
-
-	ast.Inspect(file, func(node ast.Node) bool {
-		// get struct
-		// TODO get the name from *ast.TypeSpec to verify a few things
-		// for now, we're assuming one struct which maps to what we want which isn't necessarily true
-
-		// pass the structtype to get the config
-		if s, ok := node.(*ast.StructType); ok {
-
-			g.AddItem("ParseFields", func(nodeData *nodeTemplate) {
-				nodeData.FieldInfo = field.GetFieldInfoForStruct(s, fset, info)
-			})
-		}
-
-		if fn, ok := node.(*ast.FuncDecl); ok {
-			switch fn.Name.Name {
-			case "GetEdges":
-				g.AddItem("GetEdges", func(nodeData *nodeTemplate) {
-					// TODO: validate edges. can only have one of each type etc
-					nodeData.EdgeInfo = edge.ParseEdgesFunc(packageName, fn)
-				})
-
-			case "GetActions":
-				// queue up to run later since it depends on parsed fieldInfo and edges
-				g2.AddItem("GetActions", func(nodeData *nodeTemplate) {
-					nodeData.ActionInfo = action.ParseActions(packageName, fn, nodeData.FieldInfo, nodeData.EdgeInfo)
-				}, "LinkedEdges")
-
-			case "GetTableName":
-				g.AddItem("GetTableName", func(nodeData *nodeTemplate) {
-					nodeData.TableName = getTableName(fn)
-				})
-			}
-		}
-		return true
-	})
-
-	nodeData := &nodeTemplate{
-		PackageName: packageName,
-		NodeInfo:    codegen.GetNodeInfo(packageName),
-		EdgeInfo:    &edge.EdgeInfo{}, // default in case no edges
-	}
-	// run the depgraph to get as much data as we can get now.
-	g.Run(func(item interface{}) {
-		execFn, ok := item.(func(*nodeTemplate))
-		if !ok {
-			panic("invalid function passed")
-		}
-		execFn(nodeData)
-	})
-
-	// queue up linking edges
-	g2.AddItem(
-		// want all configs loaded for this.
-		// Actions depends on this.
-		"LinkedEdges", func(nodeData *nodeTemplate) {
-			m.AddLinkedEdges(nodeData)
-		},
-	)
-
-	return &codegenNodeTemplateInfo{
-		depgraph:                g2,
-		nodeData:                nodeData,
-		shouldCodegen:           shouldCodegenPackage(file, specificConfig),
-		shouldParseExistingFile: nodeData.EdgeInfo.HasAssociationEdges(),
-	}
-}
-
-func (m codegenMapInfo) AddLinkedEdges(nodeData *nodeTemplate) {
-	fieldInfo := nodeData.FieldInfo
-	edgeInfo := nodeData.EdgeInfo
-
-	for _, e := range edgeInfo.FieldEdges {
-		// no inverse edge name, nothing to do here
-		if e.InverseEdgeName == "" {
-			continue
-		}
-		f := fieldInfo.GetFieldByName(e.FieldName)
-		if f == nil {
-			panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
-		}
-
-		config := e.GetEntConfig()
-
-		foreignInfo, ok := m[config.ConfigName]
-		if !ok {
-			panic(fmt.Errorf("could not find the EntConfig codegen info for %s", config.ConfigName))
-		}
-		foreignEdgeInfo := foreignInfo.nodeData.EdgeInfo
-		for _, fEdge := range foreignEdgeInfo.Associations {
-			if fEdge.GetEdgeName() == e.InverseEdgeName {
-				f.InverseEdge = fEdge
-				break
-			}
-		}
-	}
-}
-
-type schemaParser interface {
-	GetConfig() (*packages.Config, string, error)
-}
-
-type schemaParserNeedsCleanup interface {
-	schemaParser
-	Cleanup()
-}
-
-type configSchemaParser struct {
-	rootPath       string
-	specificConfig string
-	codePathInfo   *codePath
-}
-
-func (p *configSchemaParser) GetConfig() (*packages.Config, string, error) {
-	cfg := &packages.Config{
-		//Fset: fset,
-		// the more I load, the slower this is...
-		// this is a lot slower than the old thing. what am I doing wrong or differently?
-		Mode: packages.LoadTypes | packages.LoadSyntax,
-	}
-	absPath, err := filepath.Abs(p.rootPath)
-	return cfg, absPath, err
-}
-
-type sourceSchemaParser struct {
-	sources map[string]string
-	tempDir string
-}
-
-func (p *sourceSchemaParser) GetConfig() (*packages.Config, string, error) {
-	overlay := make(map[string][]byte)
-
-	var err error
-	p.tempDir, err = ioutil.TempDir("./testdata/", "test")
-	util.Die(err)
-
-	configDir := filepath.Join(p.tempDir, "configs")
-	err = os.MkdirAll(configDir, 0666)
-	util.Die(err)
-
-	for key, source := range p.sources {
-		// create overlays of path to source for data to be read from disk
-		path := filepath.Join(configDir, key)
-		overlay[path] = []byte(source)
-	}
-
-	cfg := &packages.Config{
-		//Fset: fset,
-		// the more I load, the slower this is...
-		// this is a lot slower than the old thing. what am I doing wrong or differently?
-		Mode:    packages.LoadTypes | packages.LoadSyntax,
-		Overlay: overlay,
-	}
-	return cfg, configDir, err
-}
-
-func (p *sourceSchemaParser) Cleanup() {
-	os.RemoveAll(p.tempDir)
-}
-
-func parseFiles(p schemaParser) codegenMapInfo {
-	allNodes := newCodegenMapInfo()
-
-	allNodes.ParseFiles(p)
-	return allNodes
-}
-
-func parseAllSchemaFiles(rootPath string, specificConfig string, codePathInfo *codePath) codegenMapInfo {
-	p := &configSchemaParser{
-		rootPath:       rootPath,
-		specificConfig: specificConfig,
-		codePathInfo:   codePathInfo,
-	}
-
-	return parseFiles(p)
+	return schema.Parse(p, specificConfigs...)
 }
 
 // parseSchemasFromSource is mostly used by tests to test quick one-off scenarios
-func parseSchemasFromSource(sources map[string]string, specificConfig string) codegenMapInfo {
-	p := &sourceSchemaParser{
-		sources: sources,
+func parseSchemasFromSource(sources map[string]string, specificConfigs ...string) schema.NodeMapInfo {
+	p := &schemaparser.SourceSchemaParser{
+		Sources: sources,
 	}
-	return parseFiles(p)
+	return schema.Parse(p, specificConfigs...)
 }
 
-func generateConstsAndNewEdges(allNodes codegenMapInfo) []*ent.AssocEdgeData {
+// TODO move this into schema...
+
+func generateConstsAndNewEdges(allNodes schema.NodeMapInfo) []*ent.AssocEdgeData {
 	var newEdges []*ent.AssocEdgeData
 
 	for _, info := range allNodes {
-		if !info.shouldCodegen {
+		if !info.ShouldCodegen {
 			continue
 		}
 
-		nodeData := info.nodeData
+		nodeData := info.NodeData
 
-		nodeGroup := constGroupInfo{
+		nodeGroup := schema.ConstGroupInfo{
 			ConstType: "ent.NodeType",
-			Constants: []constInfo{constInfo{
+			Constants: []schema.ConstInfo{schema.ConstInfo{
 				ConstName:  nodeData.NodeType,
 				ConstValue: strconv.Quote(nodeData.NodeInstance),
 				Comment: fmt.Sprintf(
@@ -459,7 +87,7 @@ func generateConstsAndNewEdges(allNodes codegenMapInfo) []*ent.AssocEdgeData {
 		// 6 generate new db schema
 		// 7 write new files
 		// 8 write edge config to db (this should really be a separate step since this needs to run in production every time)
-		if !info.shouldParseExistingFile {
+		if !info.ShouldParseExistingFile {
 			continue
 		}
 		existingConsts := parseExistingModelFile(nodeData)
@@ -470,7 +98,7 @@ func generateConstsAndNewEdges(allNodes codegenMapInfo) []*ent.AssocEdgeData {
 			edgeConsts = make(map[string]string)
 		}
 
-		edgeGroup := constGroupInfo{
+		edgeGroup := schema.ConstGroupInfo{
 			ConstType: "ent.EdgeType",
 		}
 
@@ -492,7 +120,7 @@ func generateConstsAndNewEdges(allNodes codegenMapInfo) []*ent.AssocEdgeData {
 				})
 			}
 
-			edgeGroup.Constants = append(edgeGroup.Constants, constInfo{
+			edgeGroup.Constants = append(edgeGroup.Constants, schema.ConstInfo{
 				ConstName:  constName,
 				ConstValue: strconv.Quote(constValue),
 				Comment: fmt.Sprintf(
@@ -511,8 +139,8 @@ func generateConstsAndNewEdges(allNodes codegenMapInfo) []*ent.AssocEdgeData {
 }
 
 type codegenData struct {
-	allNodes codegenMapInfo
-	codePath *codePath
+	allNodes schema.NodeMapInfo
+	codePath *codegen.CodePath
 	newEdges []*ent.AssocEdgeData
 }
 
@@ -521,8 +149,8 @@ type codegenPlugin interface {
 	processData(data *codegenData) error
 }
 
-func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codePath) {
-	allNodes := parseAllSchemaFiles(rootPath, specificConfig, codePathInfo)
+func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codegen.CodePath) {
+	allNodes := parseAllSchemaFiles(rootPath, codePathInfo, specificConfig)
 
 	if len(allNodes) == 0 {
 		return
@@ -562,7 +190,7 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 	}
 }
 
-func getFilePathForModelFile(nodeData *nodeTemplate) string {
+func getFilePathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("models/%s.go", nodeData.PackageName)
 }
 
@@ -577,7 +205,7 @@ func getFilePathForModelFile(nodeData *nodeTemplate) string {
 //	"UserToNoteEdge" => {uuid},
 // },
 // Right now, it only returns strings but it should eventually be map[string]map[string]interface{}
-func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string {
+func parseExistingModelFile(nodeData *schema.NodeData) map[string]map[string]string {
 	fset := token.NewFileSet()
 	filePath := getFilePathForModelFile(nodeData)
 
@@ -631,8 +259,6 @@ func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string
 	})
 	return constMap
 }
-
-type processingFn func(nodeData *nodeTemplate)
 
 // astConfig returns the config of a file before it was re-generated to keep
 // useful information that'll be needed when we need to regenerate the manual sections
@@ -862,20 +488,12 @@ func rewriteAstWithConfig(config *astConfig, b []byte) []byte {
 	return buf.Bytes()
 }
 
-// getTableName returns the name of the table the node should be stored in
-func getTableName(fn *ast.FuncDecl) string {
-	expr := astparser.GetLastReturnStmtExpr(fn)
-	basicLit := astparser.GetExprToBasicLit(expr)
-	//fmt.Println("table name", basicLit.Value)
-	return basicLit.Value
-}
-
 type nodeTemplateCodePath struct {
-	NodeData *nodeTemplate
-	CodePath *codePath
+	NodeData *schema.NodeData
+	CodePath *codegen.CodePath
 }
 
-func writeModelFile(nodeData *nodeTemplate, codePathInfo *codePath) {
+func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
 	writeFile(
 		&templatedBasedFileWriter{
 			data: nodeTemplateCodePath{
@@ -896,7 +514,7 @@ func writeModelFile(nodeData *nodeTemplate, codePathInfo *codePath) {
 	)
 }
 
-func writeMutatorFile(nodeData *nodeTemplate, codePathInfo *codePath) {
+func writeMutatorFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
 	// this is not a real entmutator but this gets things working and
 	// hopefully means no circular dependencies
 	writeFile(
@@ -916,10 +534,10 @@ func writeMutatorFile(nodeData *nodeTemplate, codePathInfo *codePath) {
 
 type actionTemplate struct {
 	Action   action.Action
-	CodePath *codePath
+	CodePath *codegen.CodePath
 }
 
-func writePrivacyFile(nodeData *nodeTemplate) {
+func writePrivacyFile(nodeData *schema.NodeData) {
 	pathToFile := fmt.Sprintf("models/%s_privacy.go", nodeData.PackageName)
 
 	writeFile(

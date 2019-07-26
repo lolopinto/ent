@@ -10,13 +10,16 @@ import (
 	"github.com/99designs/gqlgen/plugin"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
+	intcodegen "github.com/lolopinto/ent/internal/codegen"
+	 "github.com/lolopinto/ent/internal/schema"
+
 	"github.com/pkg/errors"
 )
 
 // inspired by resolvergen from gqlgen
 type entGraphQLResolverPlugin struct {
-	nodes    codegenMapInfo
-	codePath *codePath
+	nodes    schema.NodeMapInfo
+	codePath *intcodegen.CodePath
 }
 
 var _ plugin.CodeGenerator = &entGraphQLResolverPlugin{}
@@ -28,12 +31,12 @@ func (p *entGraphQLResolverPlugin) Name() string {
 func (p *entGraphQLResolverPlugin) castToString(field *codegen.Field) bool {
 	objName := field.Object.Name
 
-	template := p.nodes.getTemplateFromGraphQLName(objName)
-	if template == nil {
+	nodeData := p.nodes.GetNodeDataFromGraphQLName(objName)
+	if nodeData == nil {
 		return false
 	}
 
-	entField := template.getFieldByName(field.GoFieldName)
+	entField := nodeData.GetFieldByName(field.GoFieldName)
 	//spew.Dump(field, entField)
 	if entField == nil {
 		return false
@@ -58,36 +61,36 @@ func (p *entGraphQLResolverPlugin) loadObjectFromContext(field *codegen.Field) b
 
 	// field.Object.Name = Query
 	// field.GoFieldName = Contact/User etc.
-	template := p.nodes.getTemplateFromGraphQLName(field.GoFieldName)
-	return template != nil
+	nodeData := p.nodes.GetNodeDataFromGraphQLName(field.GoFieldName)
+	return nodeData != nil
 }
 
 func (p *entGraphQLResolverPlugin) fieldEdge(field *codegen.Field) bool {
 	objName := field.Object.Name
 
-	template := p.nodes.getTemplateFromGraphQLName(objName)
-	if template == nil {
+	nodeData := p.nodes.GetNodeDataFromGraphQLName(objName)
+	if nodeData == nil {
 		return false
 	}
 
-	edge := template.getFieldEdgeByName(field.GoFieldName)
+	edge := nodeData.GetFieldEdgeByName(field.GoFieldName)
 	return edge != nil
 }
 
 func (p *entGraphQLResolverPlugin) pluralEdge(field *codegen.Field) bool {
 	objName := field.Object.Name
 
-	template := p.nodes.getTemplateFromGraphQLName(objName)
-	if template == nil {
+	nodeData := p.nodes.GetNodeDataFromGraphQLName(objName)
+	if nodeData == nil {
 		return false
 	}
 
-	fkeyEdge := template.getForeignKeyEdgeByName(field.GoFieldName)
+	fkeyEdge := nodeData.GetForeignKeyEdgeByName(field.GoFieldName)
 	if fkeyEdge != nil {
 		return true
 	}
 
-	assocEdge := template.getAssociationEdgeByName(field.GoFieldName)
+	assocEdge := nodeData.GetAssociationEdgeByName(field.GoFieldName)
 	return assocEdge != nil
 }
 
@@ -102,7 +105,7 @@ func (p *entGraphQLResolverPlugin) mutation(field *codegen.Field) action.Action 
 	// Name -> userCreate, GoFieldName -> UserCreate
 	//	spew.Dump(field.GoFieldName, field.GoReceiverName)
 	//	spew.Dump(field)
-	return p.nodes.getActionFromGraphQLName(field.Name)
+	return p.nodes.GetActionFromGraphQLName(field.Name)
 	//	spew.Dump(field.Name, action)
 }
 

@@ -16,6 +16,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema"
 
 	"github.com/99designs/gqlgen/api"
 	"github.com/lolopinto/ent/internal/util"
@@ -83,7 +84,7 @@ func (schema *graphQLSchema) addSchemaInfo(info *graphQLSchemaInfo) {
 	schema.sortedTypes = append(schema.sortedTypes, info)
 }
 
-func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *nodeTemplate) {
+func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *schema.NodeData) {
 	// Contact, User etc...
 	schemaInfo := newGraphQLSchemaInfo("type", nodeData.Node)
 
@@ -137,7 +138,7 @@ func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *nodeTemplate) {
 func (schema *graphQLSchema) generateGraphQLSchemaData() {
 
 	for _, info := range schema.config.allNodes {
-		nodeData := info.nodeData
+		nodeData := info.NodeData
 
 		// add the GraphQL type e.g. User, Contact etc
 		schema.addGraphQLInfoForType(nodeData)
@@ -504,7 +505,7 @@ func (c *graphQLYamlConfig) addModelsConfig(schema *graphQLSchema) {
 	pathToModels, err := strconv.Unquote(schema.config.codePath.PathToModels)
 	util.Die(err)
 	for _, info := range schema.config.allNodes {
-		nodeData := info.nodeData
+		nodeData := info.NodeData
 
 		model := make(map[string]string)
 
