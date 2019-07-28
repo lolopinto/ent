@@ -352,6 +352,12 @@ func (s *dbSchema) addEdgeConfigTable(tables *[]*dbTable) {
 
 func (s *dbSchema) addEdgeTables(nodeData *schema.NodeData, tables *[]*dbTable) bool {
 	for _, assocEdge := range nodeData.EdgeInfo.Associations {
+		// TODO add test for this. if we have an inverse edge, no need to create
+		// a table for it since it's stored in the same table as original edge and that'll
+		// handle creating table
+		if assocEdge.IsInverseEdge {
+			continue
+		}
 		table := s.createEdgeTable(nodeData, assocEdge)
 		*tables = append(*tables, table)
 	}

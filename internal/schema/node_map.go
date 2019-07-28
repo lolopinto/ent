@@ -10,12 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/astparser"
-	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
@@ -182,11 +180,7 @@ func (m NodeMapInfo) parseFile(
 		return true
 	})
 
-	nodeData := newNodeData(
-		packageName,
-		codegen.GetNodeInfo(packageName),
-		edge.NewEdgeInfo(),
-	)
+	nodeData := newNodeData(packageName)
 
 	// run the depgraph to get as much data as we can get now.
 	g.Run(func(item interface{}) {
@@ -337,7 +331,6 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 		// is there an inverse?
 		if inverseEdge != nil {
 			inverseConstName, inverseConstValue, newInverseEdge = m.getInverseEdgeType(assocEdge, inverseEdge)
-			spew.Dump(inverseConstName, inverseConstValue, newInverseEdge)
 		}
 
 		// new edge
@@ -345,15 +338,20 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 			constValue = uuid.New().String()
 			// keep track of new edges that we need to do things with
 			newEdge := &ent.AssocEdgeData{
-				EdgeType:        constValue,
-				EdgeName:        constName,
-				SymmetricEdge:   assocEdge.Symmetric,
-				EdgeTable:       edgeTable,
-				InverseEdgeType: &sql.NullString{},
+				EdgeType:      constValue,
+				EdgeName:      constName,
+				SymmetricEdge: assocEdge.Symmetric,
+				EdgeTable:     edgeTable,
 			}
 
 			if inverseConstValue != "" {
-				util.Die(newEdge.InverseEdgeType.Scan(inverseConstValue))
+				// TODO update tests. we want null values here instead of ""
+				// issue is foreign key constraint.
+				// so we're trying to write a foreign key when the row doesn't exist yet
+				// either need to do writes then updates or remove the foreign key
+				ns := &sql.NullString{}
+				util.Die(ns.Scan(inverseConstValue))
+				newEdge.InverseEdgeType = ns
 			}
 
 			*newEdges = append(*newEdges, newEdge)

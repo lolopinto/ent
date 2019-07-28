@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
+	"github.com/lolopinto/ent/cmd/gent/configs"
 	"github.com/lolopinto/ent/data"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/lolopinto/ent/internal/util"
@@ -20,9 +21,10 @@ import (
 // todo deal with struct tags
 // todo empty interface{}
 type insertdata struct {
-	columns  []string
-	values   []interface{}
-	pkeyName string
+	columns       []string
+	values        []interface{}
+	pkeyName      string
+	pkeyFieldName string
 }
 
 /**
@@ -158,6 +160,7 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 
 	// if it has a pkey, don't set anything.
 	var pkey string
+	var pkeyFieldName string
 
 	// use sqlx here?
 	for i := 0; i < fieldCount; i++ {
@@ -191,6 +194,7 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 
 		if typeOfField.Tag.Get("pkey") != "" {
 			pkey = column
+			pkeyFieldName = typeOfField.Name
 		}
 
 		columns = append(columns, column)
@@ -199,6 +203,7 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 
 	if pkey == "" {
 		pkey = "id"
+		pkeyFieldName = "ID"
 		idCols = append(idCols, columns...)
 		columns = idCols
 
@@ -211,7 +216,7 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 	columns = append(columns, "updated_at", "created_at")
 	values = append(values, time.Now(), time.Now())
 
-	return insertdata{columns, values, pkey}
+	return insertdata{columns, values, pkey, pkeyFieldName}
 }
 
 func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
@@ -513,13 +518,40 @@ func CreateNodes(nodes interface{}, entConfig Config) error {
 		return err
 	}
 
+	_, ok := entConfig.(*configs.AssocEdgeConfig)
+
 	// This is not necessarily the best way to do this but this re-uses all the existing
 	// abstractions and wraps everything in a transcation
 	// TODO: maybe use the multirow VALUES syntax at https://www.postgresql.org/docs/8.2/sql-insert.html in the future.
 	var operations []dataOperation
+	var updateOps []dataOperation
 
 	for i := 0; i < direct.Len(); i++ {
 		entity := direct.Index(i).Interface()
+
+		if ok {
+			assocEdge := entity.(*AssocEdgeData)
+			if assocEdge.InverseEdgeType != nil && assocEdge.InverseEdgeType.Valid {
+
+				updateOps = append(updateOps, &legacyNodeOperation{
+					entity: &AssocEdgeData{
+						EdgeType: assocEdge.EdgeType,
+						InverseEdgeType: &sql.NullString{
+							Valid:  true,
+							String: assocEdge.InverseEdgeType.String,
+						},
+						SymmetricEdge: assocEdge.SymmetricEdge,
+						EdgeName:      assocEdge.EdgeName,
+						EdgeTable:     assocEdge.EdgeTable,
+					},
+					config:    entConfig,
+					operation: updateOperation,
+				})
+
+				// remove this for now. we'll depend on update in same transaction
+				assocEdge.InverseEdgeType = nil
+			}
+		}
 
 		operations = append(operations, &legacyNodeOperation{
 			entity:    entity,
@@ -527,6 +559,8 @@ func CreateNodes(nodes interface{}, entConfig Config) error {
 			operation: insertOperation,
 		})
 	}
+	// append all update ops to the end of the operations
+	operations = append(operations, updateOps...)
 	return performAllOperations(operations)
 }
 
@@ -608,14 +642,16 @@ func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 
 	values, valsString := insertData.getValuesDataForUpdate()
 
-	id := findID(entity)
+	id := findID(entity, insertData.pkeyFieldName)
 	computedQuery := fmt.Sprintf(
-		"UPDATE %s SET %s WHERE id = '%s'",
+		"UPDATE %s SET %s WHERE %s = '%s'",
 		entConfig.GetTableName(),
 		valsString,
+		insertData.pkeyName,
 		id,
 	)
 	fmt.Println(computedQuery)
+	//	spew.
 
 	return performWrite(computedQuery, values, tx, nil)
 }
@@ -628,16 +664,25 @@ func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 
 // this is a hack because i'm lazy and don't want to go update getFieldsAndValuesOfStruct()
 // to do the right thing for now. now that I know what's going on here, can update everything
-func findID(entity interface{}) string {
+func findID(entity interface{}, pkeyFieldName ...string) string {
+	name := "ID"
+	if len(pkeyFieldName) != 0 {
+		name = pkeyFieldName[0]
+	}
 	value := reflect.ValueOf(entity).Elem()
+	valueType := value.Type()
 	for i := 0; i < value.NumField(); i++ {
 		field := value.Field(i)
+		typeOfField := valueType.Field(i)
 		fieldType := field.Type()
 
+		if typeOfField.Name == name {
+			return field.Interface().(string)
+		}
 		if field.Kind() == reflect.Struct {
 			for j := 0; j < field.NumField(); j++ {
 				field2 := field.Field(j)
-				if fieldType.Field(j).Name == "ID" {
+				if fieldType.Field(j).Name == name {
 					return field2.Interface().(string)
 				}
 			}

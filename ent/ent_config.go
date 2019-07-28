@@ -22,6 +22,9 @@ type ConfigWithActions interface {
 	GetActions() []*ActionConfig
 }
 
+// TODO change everywhere from ent.
+type EdgeMap map[string]interface{}
+
 // FieldEdge refers to when the Edge being loaded from an ent is a field on the same node/ent
 type FieldEdge struct {
 	FieldName   string

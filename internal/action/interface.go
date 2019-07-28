@@ -42,7 +42,7 @@ type ActionInfo struct {
 	// DeleteAction     *Action
 }
 
-func newActionInfo(nodeName string) *ActionInfo {
+func NewActionInfo() *ActionInfo {
 	ret := &ActionInfo{}
 	ret.graphQLActionMap = make(map[string]Action)
 	ret.actionMap = make(map[string]Action)
@@ -162,7 +162,7 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 	// get the actions in the function
 	elts := astparser.GetEltsInFunc(fn)
 
-	actionInfo := newActionInfo(nodeName)
+	actionInfo := NewActionInfo()
 
 	for _, expr := range elts {
 		// hardcode to unary expressions for now but this may not be what we want

@@ -87,7 +87,6 @@ type nodeWithActionMapOperation struct {
 	info *EditedNodeInfo
 }
 
-// for now this is only insert. TODO move update in here also.
 func (op *nodeWithActionMapOperation) PerformWrite(tx *sqlx.Tx) error {
 	var queryOp nodeOp
 	if op.info.ExistingEnt == nil {

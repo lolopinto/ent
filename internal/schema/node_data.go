@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
@@ -46,11 +47,13 @@ type NodeData struct {
 	ActionInfo     *action.ActionInfo
 }
 
-func newNodeData(packageName string, nodeInfo codegen.NodeInfo, edgeInfo *edge.EdgeInfo) *NodeData {
+func newNodeData(packageName string) *NodeData {
+	spew.Dump(packageName)
 	nodeData := &NodeData{
 		PackageName: packageName,
-		NodeInfo:    nodeInfo,
-		EdgeInfo:    edgeInfo,
+		NodeInfo:    codegen.GetNodeInfo(packageName),
+		EdgeInfo:    edge.NewEdgeInfo(),
+		ActionInfo:  action.NewActionInfo(),
 	}
 	nodeData.ConstantGroups = make(map[string]*ConstGroupInfo)
 	return nodeData
@@ -89,6 +92,7 @@ func (nodeData *NodeData) GetActionByGraphQLName(graphQLName string) action.Acti
 }
 
 func (nodeData *NodeData) addConstInfo(constType string, constName string, constInfo *ConstInfo) {
+	spew.Dump(constType, constName, constInfo)
 	constGroup := nodeData.ConstantGroups[constType]
 	if constGroup == nil {
 		constGroup = &ConstGroupInfo{

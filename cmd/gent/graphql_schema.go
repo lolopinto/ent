@@ -144,7 +144,10 @@ func (s *graphQLSchema) generateGraphQLSchemaData() {
 	}
 
 	s.addSchemaInfo(s.getQuerySchemaType())
-	s.addSchemaInfo(s.getMutationSchemaType())
+	mutationsType := s.getMutationSchemaType()
+	if mutationsType != nil {
+		s.addSchemaInfo(mutationsType)
+	}
 }
 
 func (s *graphQLSchema) processActions(actionInfo *action.ActionInfo) {
@@ -237,6 +240,9 @@ func (s *graphQLSchema) getQuerySchemaType() *graphQLSchemaInfo {
 }
 
 func (s *graphQLSchema) getMutationSchemaType() *graphQLSchemaInfo {
+	if len(s.mutationFields) == 0 {
+		return nil
+	}
 	return &graphQLSchemaInfo{
 		Type:         "type",
 		TypeName:     "Mutation",
@@ -332,6 +338,10 @@ func (s *graphQLSchema) getSchemaForTemplate() *graphqlSchemaTemplate {
 			SchemaLines: lines,
 		})
 	}
+
+	// TODO go through and figure out what scalars are needed and build them
+	// up instead of this manual addition
+	ret.Scalars = []string{"Time"}
 	return ret
 }
 
@@ -545,7 +555,8 @@ func (c *graphQLYamlConfig) addResolverConfig() {
 
 // wrapper object to represent the list of schema types that will be passed to a schema template file
 type graphqlSchemaTemplate struct {
-	Types []*graphqlSchemaTypeInfo
+	Types   []*graphqlSchemaTypeInfo
+	Scalars []string
 }
 
 // represents information needed by the schema template file to generate the schema for each type
