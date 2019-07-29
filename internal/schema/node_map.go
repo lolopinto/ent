@@ -60,11 +60,13 @@ func (m NodeMapInfo) getActionFromGraphQLName(graphQLName string) action.Action 
 	return nil
 }
 
-func (m NodeMapInfo) parsePackage(pkg *packages.Package, newEdges *[]*ent.AssocEdgeData, specificConfigs ...string) {
+func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...string) *assocEdgeData {
 	r := regexp.MustCompile(`(\w+)_config.go`)
 
 	typeInfo := pkg.TypesInfo
 	fset := pkg.Fset
+
+	edgeData := m.loadExistingEdges()
 
 	// first pass to parse the files and do as much as we can
 	for idx, filePath := range pkg.GoFiles {
@@ -78,7 +80,7 @@ func (m NodeMapInfo) parsePackage(pkg *packages.Package, newEdges *[]*ent.AssocE
 
 		file := pkg.Syntax[idx]
 
-		codegenInfo := m.parseFile(packageName, file, fset, specificConfigs, typeInfo, newEdges)
+		codegenInfo := m.parseFile(packageName, file, fset, specificConfigs, typeInfo, edgeData)
 		m.addConfig(codegenInfo)
 	}
 
@@ -98,12 +100,13 @@ func (m NodeMapInfo) parsePackage(pkg *packages.Package, newEdges *[]*ent.AssocE
 			execFn(info)
 		})
 	}
+	return edgeData
 }
 
-func (m NodeMapInfo) parseFiles(p schemaparser.Parser, newEdges *[]*ent.AssocEdgeData, specificConfigs ...string) {
+func (m NodeMapInfo) parseFiles(p schemaparser.Parser, specificConfigs ...string) *assocEdgeData {
 	pkg := schemaparser.LoadPackage(p)
 
-	m.parsePackage(pkg, newEdges, specificConfigs...)
+	return m.parsePackage(pkg, specificConfigs...)
 }
 
 // TODO this is ugly but it's private...
@@ -113,7 +116,7 @@ func (m NodeMapInfo) parseFile(
 	fset *token.FileSet,
 	specificConfigs []string,
 	typeInfo *types.Info,
-	newEdges *[]*ent.AssocEdgeData,
+	edgeData *assocEdgeData,
 ) *NodeDataInfo {
 	//ast.Print(fset, node)
 	//ast.NewObj(fset, "file")
@@ -210,7 +213,7 @@ func (m NodeMapInfo) parseFile(
 
 	// add new consts and edges as a dependency of linked edges and inverse edges
 	g2.AddItem("ConstsAndEdges", func(info *NodeDataInfo) {
-		m.addNewConstsAndEdges(info, newEdges)
+		m.addNewConstsAndEdges(info, edgeData)
 	}, "LinkedEdges", "InverseEdges")
 
 	return &NodeDataInfo{
@@ -272,11 +275,7 @@ func (m NodeMapInfo) addInverseAssocEdges(info *NodeDataInfo) {
 	}
 }
 
-func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.AssocEdgeData) {
-	if !info.ShouldCodegen {
-		return
-	}
-
+func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeData) {
 	nodeData := info.NodeData
 
 	nodeData.addConstInfo(
@@ -302,13 +301,6 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 	// 6 generate new db schema
 	// 7 write new files
 	// 8 write edge config to db (this should really be a separate step since this needs to run in production every time)
-	//	spew.Dump(info)
-	// if !info.ShouldParseExistingFile {
-	// 	//return
-	// }
-	existingConsts := getParsedExistingModelFile(nodeData)
-
-	edgeConsts := existingConsts["ent.EdgeType"]
 
 	for _, assocEdge := range nodeData.EdgeInfo.Associations {
 		// handled by the "main edge". we're assuming for now that you won't add an inverse edge after the fact
@@ -322,7 +314,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 		constName := assocEdge.EdgeConst
 
 		// check if there's an existing edge
-		constValue := edgeConsts[constName]
+		constValue := edgeData.edgeTypeOfEdge(constName)
 
 		inverseEdge := assocEdge.InverseEdge
 
@@ -331,7 +323,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 		var newInverseEdge bool
 		// is there an inverse?
 		if inverseEdge != nil {
-			inverseConstName, inverseConstValue, newInverseEdge = m.getInverseEdgeType(assocEdge, inverseEdge)
+			inverseConstName, inverseConstValue, newInverseEdge = m.getInverseEdgeType(assocEdge, inverseEdge, edgeData)
 		}
 
 		// new edge
@@ -347,15 +339,10 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 			}
 
 			if inverseConstValue != "" {
-				// TODO update tests. we want null values here instead of ""
-				// issue is foreign key constraint.
-				// so we're trying to write a foreign key when the row doesn't exist yet
-				// either need to do writes then updates or remove the foreign key
-				// TODO....
 				util.Die(newEdge.InverseEdgeType.Scan(inverseConstValue))
 			}
 
-			*newEdges = append(*newEdges, newEdge)
+			edgeData.addNewEdge(newEdge)
 		}
 
 		if newInverseEdge {
@@ -363,7 +350,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 			util.Die(ns.Scan(constValue))
 
 			// add inverse edge to list of new edges
-			*newEdges = append(*newEdges, &ent.AssocEdgeData{
+			edgeData.addNewEdge(&ent.AssocEdgeData{
 				EdgeType:        inverseConstValue,
 				EdgeName:        inverseConstName,
 				SymmetricEdge:   false, // we know for sure that we can't be symmetric and have an inverse edge
@@ -425,24 +412,23 @@ func (m NodeMapInfo) addConstsFromEdgeGroups(nodeData *NodeData) {
 	}
 }
 
-func (m NodeMapInfo) getInverseEdgeType(assocEdge *edge.AssociationEdge, inverseEdge *edge.InverseAssocEdge) (string, string, bool) {
+func (m NodeMapInfo) getInverseEdgeType(assocEdge *edge.AssociationEdge, inverseEdge *edge.InverseAssocEdge, edgeData *assocEdgeData) (string, string, bool) {
 	inverseConstName := inverseEdge.EdgeConst
 
 	inverseNodeDataInfo := m[assocEdge.GetEntConfig().ConfigName]
 	inverseNodeData := inverseNodeDataInfo.NodeData
-	inverseExistingConsts := getParsedExistingModelFile(inverseNodeData)
-	inverseEdgeConsts := inverseExistingConsts["ent.EdgeType"]
 
-	inverseConstValue := inverseEdgeConsts[inverseConstName]
+	// check if there's an existing edge
+	newEdge := !edgeData.existingEdge(inverseConstName)
+	inverseConstValue := edgeData.edgeTypeOfEdge(inverseConstName)
 	if inverseConstValue == "" {
 		inverseConstValue = uuid.New().String()
-
-		// add inverse edge constant
-		m.addNewEdgeType(inverseNodeData, inverseConstName, inverseConstValue, inverseEdge)
-
-		return inverseConstName, inverseConstValue, true
 	}
-	return inverseConstName, inverseConstValue, false
+
+	// add inverse edge constant
+	m.addNewEdgeType(inverseNodeData, inverseConstName, inverseConstValue, inverseEdge)
+
+	return inverseConstName, inverseConstValue, newEdge
 }
 
 func (m NodeMapInfo) addNewEdgeType(nodeData *NodeData, constName, constValue string, edge edge.Edge) {

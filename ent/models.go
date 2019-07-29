@@ -2,7 +2,7 @@ package ent
 
 import (
 	"database/sql"
-	"errors"
+	//	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -16,6 +16,7 @@ import (
 	"github.com/lolopinto/ent/data"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/lolopinto/ent/internal/util"
+	"github.com/pkg/errors"
 )
 
 // todo deal with struct tags
@@ -1053,4 +1054,14 @@ func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, errChan
 	err := loadNodesByType(id, edgeType, nodes)
 	fmt.Println("GenLoadEdgesByType result", err, nodes)
 	errChan <- err
+}
+
+func GenLoadAssocEdges(nodes interface{}) error{
+	sqlQuery := func(_ insertdata) (string, []interface{}, error) {
+		query := "SELECT * FROM assoc_edge_config"
+
+		fmt.Println(query)
+		return query, []interface{}{}, nil
+	}
+	return loadNodesHelper(nodes, sqlQuery)
 }

@@ -3,6 +3,7 @@ package schema
 import (
 	"errors"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
@@ -22,18 +23,17 @@ type Schema struct {
 func Parse(p schemaparser.Parser, specificConfigs ...string) *Schema {
 	s := &Schema{}
 	s.init()
-	var newEdges []*ent.AssocEdgeData
-	s.Nodes.parseFiles(p, &newEdges, specificConfigs...)
-	s.newEdges = newEdges
+	edgeData := s.Nodes.parseFiles(p, specificConfigs...)
+	s.newEdges = edgeData.newEdges
+	spew.Dump("new edges", len(s.newEdges))
 	return s
 }
 
 func ParsePackage(pkg *packages.Package, specificConfigs ...string) *Schema {
 	s := &Schema{}
 	s.init()
-	var newEdges []*ent.AssocEdgeData
-	s.Nodes.parsePackage(pkg, &newEdges, specificConfigs...)
-	s.newEdges = newEdges
+	edgeData := s.Nodes.parsePackage(pkg, specificConfigs...)
+	s.newEdges = edgeData.newEdges
 	return s
 }
 

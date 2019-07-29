@@ -323,7 +323,8 @@ func (s *dbSchema) addEdgeConfigTable() {
 
 	edgeTypeCol := s.getEdgeTypeColumn()
 	columns = append(columns, edgeTypeCol)
-	columns = append(columns, s.getEdgeNameColumn())
+	edgeNameCol := s.getEdgeNameColumn()
+	columns = append(columns, edgeNameCol)
 	columns = append(columns, s.getSymmetricEdgeColumn())
 	inverseEdgeTypeCol := s.getInverseEdgeTypeColumn()
 	columns = append(columns, inverseEdgeTypeCol)
@@ -336,6 +337,11 @@ func (s *dbSchema) addEdgeConfigTable() {
 	// primary key constraint on the edge_type col
 	constraints = append(constraints, &primaryKeyConstraint{
 		dbColumns: []*dbColumn{edgeTypeCol},
+		tableName: tableName,
+	})
+	// TODO make edgeName column unique
+	constraints = append(constraints, &uniqueConstraint{
+		dbColumns: []*dbColumn{edgeNameCol},
 		tableName: tableName,
 	})
 	// foreign key constraint on the edge_type column on the same table
