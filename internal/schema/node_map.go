@@ -162,6 +162,8 @@ func (m NodeMapInfo) parseFile(
 				g.AddItem("GetEdges", func(nodeData *NodeData) {
 					// TODO: validate edges. can only have one of each type etc
 					nodeData.EdgeInfo = edge.ParseEdgesFunc(packageName, fn)
+
+					m.addConstsFromEdgeGroups(nodeData)
 				})
 
 			case "GetActions":
@@ -301,9 +303,9 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 	// 7 write new files
 	// 8 write edge config to db (this should really be a separate step since this needs to run in production every time)
 	//	spew.Dump(info)
-	if !info.ShouldParseExistingFile {
-		return
-	}
+	// if !info.ShouldParseExistingFile {
+	// 	//return
+	// }
 	existingConsts := getParsedExistingModelFile(nodeData)
 
 	edgeConsts := existingConsts["ent.EdgeType"]
@@ -319,7 +321,6 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 		}
 		constName := assocEdge.EdgeConst
 
-		edgeTable := GetNameForEdgeTable(nodeData, assocEdge)
 		// check if there's an existing edge
 		constValue := edgeConsts[constName]
 
@@ -338,10 +339,11 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 			constValue = uuid.New().String()
 			// keep track of new edges that we need to do things with
 			newEdge := &ent.AssocEdgeData{
-				EdgeType:      constValue,
-				EdgeName:      constName,
-				SymmetricEdge: assocEdge.Symmetric,
-				EdgeTable:     edgeTable,
+				EdgeType:        constValue,
+				EdgeName:        constName,
+				SymmetricEdge:   assocEdge.Symmetric,
+				EdgeTable:       assocEdge.TableName,
+				InverseEdgeType: &sql.NullString{},
 			}
 
 			if inverseConstValue != "" {
@@ -349,9 +351,8 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 				// issue is foreign key constraint.
 				// so we're trying to write a foreign key when the row doesn't exist yet
 				// either need to do writes then updates or remove the foreign key
-				ns := &sql.NullString{}
-				util.Die(ns.Scan(inverseConstValue))
-				newEdge.InverseEdgeType = ns
+				// TODO....
+				util.Die(newEdge.InverseEdgeType.Scan(inverseConstValue))
 			}
 
 			*newEdges = append(*newEdges, newEdge)
@@ -366,12 +367,61 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, newEdges *[]*ent.A
 				EdgeType:        inverseConstValue,
 				EdgeName:        inverseConstName,
 				SymmetricEdge:   false, // we know for sure that we can't be symmetric and have an inverse edge
-				EdgeTable:       edgeTable,
+				EdgeTable:       assocEdge.TableName,
 				InverseEdgeType: ns,
 			})
 		}
 
 		m.addNewEdgeType(nodeData, constName, constValue, assocEdge)
+	}
+}
+
+func getNameFromParts(nameParts []string) string {
+	return strings.Join(nameParts, "_")
+}
+
+func (m NodeMapInfo) addConstsFromEdgeGroups(nodeData *NodeData) {
+	for _, edgeGroup := range nodeData.EdgeInfo.AssocGroups {
+		for edgeName := range edgeGroup.Edges {
+			constName := edgeGroup.GetConstNameForEdgeName(edgeName)
+			constValue := strings.ToLower(
+				getNameFromParts(
+					[]string{
+						nodeData.Node,
+						edgeName,
+					},
+				))
+
+			// TODO
+			nodeData.addConstInfo(
+				edgeGroup.ConstType,
+				constName,
+				&ConstInfo{
+					ConstName:  constName,
+					ConstValue: strconv.Quote(constValue),
+					Comment: fmt.Sprintf(
+						"%s is the edge representing the status for the %s edge.",
+						constName,
+						edgeName,
+					),
+				},
+			)
+		}
+
+		// unknown. TODO
+		// nodeData.addConstInfo(
+		// 	constType,
+		// 	//Unknownæ,
+		// 	&ConstInfo{
+		// 		ConstName:  constName,
+		// 		ConstValue: strconv.Quote(constValue),
+		// 		Comment: fmt.Sprintf(
+		// 			"%s is the edge representing the status for the %s edge.",
+		// 			constName,
+		// 			edgeName,
+		// 		),
+		// 	},
+		// )
 	}
 }
 

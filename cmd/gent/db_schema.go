@@ -181,9 +181,11 @@ func (constraint *uniqueConstraint) getConstraintString() string {
 
 func newDBSchema(schema *schema.Schema) *dbSchema {
 	configTableMap := make(map[string]*dbTable)
+	tableMap := make(map[string]*dbTable)
 	return &dbSchema{
 		schema:         schema,
 		configTableMap: configTableMap,
+		tableMap:       tableMap,
 	}
 }
 
@@ -191,6 +193,7 @@ type dbSchema struct {
 	Tables         []*dbTable
 	schema         *schema.Schema
 	configTableMap map[string]*dbTable
+	tableMap       map[string]*dbTable
 }
 
 func (s *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
@@ -224,37 +227,39 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	}
 }
 
-func (schema *dbSchema) generateSchema() {
-	schema.generateShemaTables()
+func (s *dbSchema) addTable(table *dbTable) {
+	s.Tables = append(s.Tables, table)
+	s.tableMap[table.QuotedTableName] = table
+}
 
-	schema.writeSchemaFile()
+func (s *dbSchema) generateSchema() {
+	s.generateShemaTables()
 
-	schema.generateDbSchema()
+	s.writeSchemaFile()
+
+	s.generateDbSchema()
 }
 
 func (s *dbSchema) generateShemaTables() {
-	var tables []*dbTable
 
 	addedAtLeastOneTable := false
 	for _, info := range s.schema.Nodes {
 		nodeData := info.NodeData
-		tables = append(tables, s.getTableForNode(nodeData))
+		s.addTable(s.getTableForNode(nodeData))
 
-		if s.addEdgeTables(nodeData, &tables) {
+		if s.addEdgeTables(nodeData) {
 			addedAtLeastOneTable = true
 		}
 	}
 
 	if addedAtLeastOneTable {
-		s.addEdgeConfigTable(&tables)
+		s.addEdgeConfigTable()
 	}
 
 	// sort tables by table name so that we are not always changing the order of the generated schema
-	sort.Slice(tables, func(i, j int) bool {
-		return tables[i].QuotedTableName < tables[j].QuotedTableName
+	sort.Slice(s.Tables, func(i, j int) bool {
+		return s.Tables[i].QuotedTableName < s.Tables[j].QuotedTableName
 	})
-
-	s.Tables = tables
 }
 
 func (s *dbSchema) generateDbSchema() {
@@ -309,7 +314,7 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 	return ret
 }
 
-func (s *dbSchema) addEdgeConfigTable(tables *[]*dbTable) {
+func (s *dbSchema) addEdgeConfigTable() {
 	tableName := "assoc_edge_config"
 	var columns []*dbColumn
 	var constraints []dbConstraint
@@ -342,15 +347,14 @@ func (s *dbSchema) addEdgeConfigTable(tables *[]*dbTable) {
 		onDelete:      "RESTRICT",
 	})
 
-	table := &dbTable{
+	s.addTable(&dbTable{
 		QuotedTableName: strconv.Quote(tableName),
 		Columns:         columns,
 		Constraints:     constraints,
-	}
-	*tables = append(*tables, table)
+	})
 }
 
-func (s *dbSchema) addEdgeTables(nodeData *schema.NodeData, tables *[]*dbTable) bool {
+func (s *dbSchema) addEdgeTables(nodeData *schema.NodeData) bool {
 	for _, assocEdge := range nodeData.EdgeInfo.Associations {
 		// TODO add test for this. if we have an inverse edge, no need to create
 		// a table for it since it's stored in the same table as original edge and that'll
@@ -358,14 +362,18 @@ func (s *dbSchema) addEdgeTables(nodeData *schema.NodeData, tables *[]*dbTable) 
 		if assocEdge.IsInverseEdge {
 			continue
 		}
+		// edge with shared table. nothing to do here
+		if s.tableMap[strconv.Quote(assocEdge.TableName)] != nil {
+			continue
+		}
 		table := s.createEdgeTable(nodeData, assocEdge)
-		*tables = append(*tables, table)
+		s.addTable(table)
 	}
 	return nodeData.EdgeInfo.HasAssociationEdges()
 }
 
 func (s *dbSchema) createEdgeTable(nodeData *schema.NodeData, assocEdge *edge.AssociationEdge) *dbTable {
-	tableName := schema.GetNameForEdgeTable(nodeData, assocEdge)
+	tableName := assocEdge.TableName
 
 	var columns []*dbColumn
 	id1Col := s.getID1Column()

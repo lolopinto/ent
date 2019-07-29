@@ -23,7 +23,6 @@ func (config *FolderConfig) GetEdges() map[string]interface{} {
 			// intentionally written in this order to test depgraph until we write tests for that
 			InverseEdge: &ent.InverseAssocEdge{
 				EdgeName: "Folders",
-				//EntConfig: FolderConfig{}, // do we have the containing entconfig? this should be implied
 			},
 			EntConfig: TodoConfig{},
 		},

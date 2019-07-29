@@ -309,7 +309,7 @@ func TestForeignKeyConstraintInEdgeConfigTable(t *testing.T) {
 
 func TestGeneratedTableForEdge(t *testing.T) {
 	// AccountConfig, edge called Friends,
-	table := getTestTableByName("accounts_friends_edge", t)
+	table := getTestTableByName("account_friends_edges", t)
 
 	if len(table.Columns) != 7 {
 		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 7, len(table.Columns))
@@ -399,7 +399,7 @@ func TestDataEdgeColumn(t *testing.T) {
 }
 
 func TestPrimaryKeyConstraintInEdgeTable(t *testing.T) {
-	table := getTestTableByName("accounts_friends_edge", t)
+	table := getTestTableByName("account_friends_edges", t)
 
 	if len(table.Constraints) != 1 {
 		t.Errorf("expected 1 constraint in edge table, got %d", len(table.Constraints))
@@ -413,7 +413,7 @@ func TestPrimaryKeyConstraintInEdgeTable(t *testing.T) {
 			strconv.Quote("id1"),
 			strconv.Quote("edge_type"),
 			strconv.Quote("id2"),
-			strconv.Quote("accounts_friends_edge_id1_edge_type_id2_pkey"),
+			strconv.Quote("account_friends_edges_id1_edge_type_id2_pkey"),
 		),
 	)
 }
@@ -563,7 +563,7 @@ func getTestTableByName(tableName string, t *testing.T) *dbTable {
 }
 
 func getEdgeColumn(colDBName string, t *testing.T) *dbColumn {
-	return getColumnFromNamedTable(colDBName, "accounts_friends_edge", t)
+	return getColumnFromNamedTable(colDBName, "account_friends_edges", t)
 }
 
 func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColumn {
@@ -574,7 +574,7 @@ func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColum
 			return col
 		}
 	}
-	t.Errorf("no db column %s for accounts_friends_edge table", colDBName)
+	t.Errorf("no db column %s for account_friends_edges table", colDBName)
 	return nil
 }
 

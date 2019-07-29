@@ -100,6 +100,7 @@ class Runner(object):
       'AlterColumnOp': lambda op: alter_column_op(op),
       'CreateUniqueConstraintOp': lambda op: 'add unique constraint %s' % op.constraint_name,
       'CreateIndexOp': lambda op: 'add index %s'% op.index_name,
+      'AddColumnOp': lambda op: 'add column %s to table %s' % (op.column.name, op.table_name),
     }
 
     changes = [class_name_map[type(op).__name__](op) for op in diff]

@@ -2,6 +2,7 @@ package main
 
 import (
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"text/template"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	intcodegen "github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema"
 
 	"github.com/pkg/errors"
@@ -29,9 +31,7 @@ func (p *entGraphQLResolverPlugin) Name() string {
 }
 
 func (p *entGraphQLResolverPlugin) castToString(field *codegen.Field) bool {
-	objName := field.Object.Name
-
-	nodeData := p.schema.GetNodeDataFromGraphQLName(objName)
+	nodeData := p.getNodeDataForField(field)
 	if nodeData == nil {
 		return false
 	}
@@ -46,6 +46,12 @@ func (p *entGraphQLResolverPlugin) castToString(field *codegen.Field) bool {
 	// castToSomething
 	// then call a getCastToBlah code
 	return entField.GetGraphQLTypeForField() == "String!"
+}
+
+func (p *entGraphQLResolverPlugin) getNodeDataForField(field *codegen.Field) *schema.NodeData {
+	objName := field.Object.Name
+
+	return p.schema.GetNodeDataFromGraphQLName(objName)
 }
 
 func (p *entGraphQLResolverPlugin) loadObjectFromContext(field *codegen.Field) bool {
@@ -66,9 +72,7 @@ func (p *entGraphQLResolverPlugin) loadObjectFromContext(field *codegen.Field) b
 }
 
 func (p *entGraphQLResolverPlugin) fieldEdge(field *codegen.Field) bool {
-	objName := field.Object.Name
-
-	nodeData := p.schema.GetNodeDataFromGraphQLName(objName)
+	nodeData := p.getNodeDataForField(field)
 	if nodeData == nil {
 		return false
 	}
@@ -78,9 +82,7 @@ func (p *entGraphQLResolverPlugin) fieldEdge(field *codegen.Field) bool {
 }
 
 func (p *entGraphQLResolverPlugin) pluralEdge(field *codegen.Field) bool {
-	objName := field.Object.Name
-
-	nodeData := p.schema.GetNodeDataFromGraphQLName(objName)
+	nodeData := p.getNodeDataForField(field)
 	if nodeData == nil {
 		return false
 	}
@@ -107,6 +109,24 @@ func (p *entGraphQLResolverPlugin) mutation(field *codegen.Field) action.Action 
 	//	spew.Dump(field)
 	return p.schema.GetActionFromGraphQLName(field.Name)
 	//	spew.Dump(field.Name, action)
+}
+
+func (p *entGraphQLResolverPlugin) groupEdgeEnum(field *codegen.Field) *edge.AssociationEdgeGroup {
+	nodeData := p.getNodeDataForField(field)
+	if nodeData == nil {
+		return nil
+	}
+	r := regexp.MustCompile(`Viewer(\w+)`)
+	match := r.FindStringSubmatch(field.GoFieldName)
+	if len(match) != 2 {
+		return nil
+	}
+
+	return nodeData.EdgeInfo.GetAssociationEdgeGroupByStatusName(match[1])
+}
+
+func (p *entGraphQLResolverPlugin) groupEdgeEnumConst(field *codegen.Field) string {
+	return p.groupEdgeEnum(field).ConstType
 }
 
 func (p *entGraphQLResolverPlugin) getActionPath(a action.Action) string {
@@ -153,6 +173,8 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 			"actionMethodName":      action.GetActionMethodName,
 			"actionFields":          action.GetFields,
 			"actionPath":            p.getActionPath,
+			"groupEdgeEnum":         p.groupEdgeEnum,
+			"groupEdgeEnumConst":    p.groupEdgeEnumConst,
 		},
 	})
 }

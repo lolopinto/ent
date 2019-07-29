@@ -105,6 +105,13 @@ func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *schema.NodeData) {
 		schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
 	}
 
+	for _, edgeGroup := range nodeData.EdgeInfo.AssocGroups {
+		schemaInfo.addNonEntField(&graphQLNonEntField{
+			fieldName: edgeGroup.GetStatusFieldName(),
+			fieldType: edgeGroup.ConstType,
+		})
+	}
+
 	// very simple, just get fields and create types. no nodes, edges, return ID fields etc
 	// and then we go from there...
 
@@ -113,6 +120,15 @@ func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *schema.NodeData) {
 			continue
 		}
 		schemaInfo.addField(&graphQLField{Field: f})
+	}
+
+	// add any enums
+	for _, cg := range nodeData.ConstantGroups {
+		if !cg.CreateNewType() {
+			continue
+		}
+
+		schema.addSchemaInfo(schema.processConstantForEnum(cg))
 	}
 
 	// top level quries that will show up e.g. user(id: ), account(id: ) etc
@@ -133,7 +149,6 @@ func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *schema.NodeData) {
 }
 
 func (s *graphQLSchema) generateGraphQLSchemaData() {
-
 	for _, info := range s.config.schema.Nodes {
 		nodeData := info.NodeData
 
@@ -227,6 +242,21 @@ func (s *graphQLSchema) processAction(action action.Action) {
 			},
 		},
 	})
+}
+
+func (s *graphQLSchema) processConstantForEnum(cg *schema.ConstGroupInfo) *graphQLSchemaInfo {
+	enumSchemaInfo := newGraphQLSchemaInfo("enum", cg.ConstType)
+
+	for _, constant := range cg.Constants {
+		unquoted, err := strconv.Unquote(constant.ConstValue)
+
+		util.Die(err)
+		// TODO deal with this
+		enumSchemaInfo.addNonEntField(&graphQLNonEntField{
+			fieldName: strcase.ToScreamingSnake(unquoted),
+		})
+	}
+	return enumSchemaInfo
 }
 
 func (s *graphQLSchema) getQuerySchemaType() *graphQLSchemaInfo {
@@ -382,6 +412,11 @@ func (f *graphQLNonEntField) GetSchemaLine() string {
 			getArgsStr(f.args),
 			f.fieldType,
 		)
+	}
+
+	// enum declarations just have a name so doing that
+	if f.fieldType == "" {
+		return f.fieldName
 	}
 
 	return fmt.Sprintf("%s: %s", f.fieldName, f.fieldType)

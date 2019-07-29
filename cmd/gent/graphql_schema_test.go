@@ -9,12 +9,11 @@ import (
 func TestBuildGraphQLSchema(t *testing.T) {
 	schema := getTestGraphQLSchema(t)
 
-	if len(schema.Types) != 4 {
+	if len(schema.Types) != 3 {
 		// Account from AccountConfig
 		// Todo from TodoConfig
-		// Folder from FolderConfig
 		// Query
-		t.Errorf("expected 4 types created, got %d instead", len(schema.Types))
+		t.Errorf("expected 3 types created, got %d instead", len(schema.Types))
 	}
 }
 

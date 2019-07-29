@@ -58,6 +58,13 @@ type AssociationEdge struct {
 	// same with foreign key edge
 }
 
+//type EdgeGroup map[string]*AssociationEdge
+
+type AssociationEdgeGroup struct {
+	EdgeGroups      EdgeMap
+	GroupStatusName string // Name of the group e.g. Rsvp. will be used to create a Node{GroupName}Status object and a bunch of other things
+}
+
 type InverseAssocEdge struct {
 	EdgeName string
 	// TODO make this more configurable also. for now, we just use default values

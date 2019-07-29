@@ -26,6 +26,18 @@ func (config *AccountConfig) GetEdges() map[string]interface{} {
 		"Todos": ent.ForeignKeyEdge{
 			EntConfig: TodoConfig{},
 		},
+		"Friendships": ent.AssociationEdgeGroup{
+			EdgeGroups: ent.EdgeMap{
+				"FriendRequests": ent.AssociationEdge{
+					EntConfig: AccountConfig{},
+					InverseEdge: &ent.InverseAssocEdge{
+						EdgeName: "FriendRequestsReceived",
+					},
+				},
+			},
+			GroupStatusName: "FriendshipStatus",
+			// TODO move Friends in here
+		},
 		"Friends": ent.AssociationEdge{
 			EntConfig: AccountConfig{},
 			Symmetric: true,

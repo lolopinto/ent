@@ -2,9 +2,7 @@ package schema
 
 import (
 	"errors"
-	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
@@ -78,14 +76,4 @@ func (s *Schema) GetFieldByName(entConfig, fieldName string) (*field.Field, erro
 
 func (s *Schema) GetNewEdges() []*ent.AssocEdgeData {
 	return s.newEdges
-}
-
-func GetNameForEdgeTable(nodeData *NodeData, assocEdge *edge.AssociationEdge) string {
-	tableNameParts := []string{nodeData.GetTableName(), strings.ToLower(strcase.ToSnake(assocEdge.GetEdgeName())), "edge"}
-	return getNameFromParts(tableNameParts)
-}
-
-// duplicated from db_schema.go
-func getNameFromParts(nameParts []string) string {
-	return strings.Join(nameParts, "_")
 }

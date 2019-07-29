@@ -75,6 +75,14 @@ type {{.ResolverType}} struct {}
 					return obj.Load{{$field.GoFieldName}}()
 				{{- else if mutation $field -}}
 					{{- template "action" $field -}}
+				{{- else if groupEdgeEnum $field -}}
+					enum, err := obj.{{$field.GoFieldName}}ForGQL()
+					if err != nil {
+						return nil, err
+					}
+					// cast to enum that graphql resolve would have generated
+					cast := {{groupEdgeEnumConst $field}}(*enum)
+					return &cast, err
 				{{- else -}}
 					panic("not implemented")
         {{ end -}}

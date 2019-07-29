@@ -5,6 +5,7 @@ package models
 {{with .CodePath -}}
 import (
   "context"
+  "strings"
 
   "github.com/lolopinto/ent/ent"
   "github.com/lolopinto/ent/ent/privacy"
@@ -16,6 +17,13 @@ import (
 
 {{with .NodeData -}}
 {{with .GetSortedConstantGroups -}}
+
+{{ range . -}}
+  {{if .CreateNewType -}}
+  type {{.ConstType}} string
+  {{end -}}
+{{end -}}
+
 const (
   {{ range . -}}
     {{$constType := .ConstType -}}
@@ -168,7 +176,43 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
           return {{.NodeInstance}}s, err
         }
       {{end}}
-    {{end}}
+    {{end }}
+
+    {{range $assocEdgeGroup := .AssocGroups -}}
+      {{- $const := $assocEdgeGroup.ConstType -}}
+      // TODO concurrent versions
+      func ({{$currentNodeInstance}} *{{$currentNode}}) {{$assocEdgeGroup.GetStatusFuncName}}() (*{{$const}}, error) {
+        {{ range $assocEdge := $assocEdgeGroup.Edges -}}
+          {{$edgeName := $assocEdge.EdgeName -}}
+          v{{$edgeName}}, err{{$edgeName}} := ent.LoadEdgeByType({{$currentNodeInstance}}.ID, {{$assocEdge.EdgeConst}}, {{$currentNodeInstance}}.Viewer.GetViewerID())
+        {{ end -}}
+        {{ range $assocEdge := $assocEdgeGroup.Edges -}}
+          {{$edgeName := $assocEdge.EdgeName -}}
+          if err{{$edgeName}} != nil {
+            return nil, err{{$edgeName}}
+          }
+        {{end -}}
+        var ret {{$const}}
+        {{ range $assocEdge := $assocEdgeGroup.Edges -}}
+          {{$edgeName := $assocEdge.EdgeName -}}
+          if v{{$edgeName}} != nil {
+            ret = {{$assocEdgeGroup.GetConstNameForEdgeName $edgeName}}
+          }
+        {{ end -}}
+        return &ret, nil
+      }
+
+      func ({{$currentNodeInstance}} *{{$currentNode}}) {{$assocEdgeGroup.GetStatusFuncName}}ForGQL() (*string, error) {
+        enum, err := {{$currentNodeInstance}}.{{$assocEdgeGroup.GetStatusFuncName}}()
+        if err != nil {
+          return nil, err
+        }
+        str := string(*enum)
+        return &str, nil
+      }
+
+
+    {{ end -}}
   {{end}}
 {{end}}
 

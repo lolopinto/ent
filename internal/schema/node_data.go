@@ -4,7 +4,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
@@ -37,6 +36,13 @@ func (cg *ConstGroupInfo) GetSortedConstants() []*ConstInfo {
 	return sorted
 }
 
+func (cg *ConstGroupInfo) CreateNewType() bool {
+	if cg.ConstType == "ent.NodeType" || cg.ConstType == "ent.EdgeType" {
+		return false
+	}
+	return true
+}
+
 type NodeData struct {
 	codegen.NodeInfo
 	PackageName    string
@@ -48,7 +54,6 @@ type NodeData struct {
 }
 
 func newNodeData(packageName string) *NodeData {
-	spew.Dump(packageName)
 	nodeData := &NodeData{
 		PackageName: packageName,
 		NodeInfo:    codegen.GetNodeInfo(packageName),
@@ -92,7 +97,6 @@ func (nodeData *NodeData) GetActionByGraphQLName(graphQLName string) action.Acti
 }
 
 func (nodeData *NodeData) addConstInfo(constType string, constName string, constInfo *ConstInfo) {
-	spew.Dump(constType, constName, constInfo)
 	constGroup := nodeData.ConstantGroups[constType]
 	if constGroup == nil {
 		constGroup = &ConstGroupInfo{
@@ -115,17 +119,17 @@ func (nodeData *NodeData) GetSortedConstantGroups() []*ConstGroupInfo {
 
 	// manual sorting to make sure ent.NodeType then ent.EdgeType then sorted by name
 	sort.Slice(sorted, func(i, j int) bool {
-		if sorted[i].ConstType == "ent.NodeType" {
+		if sorted[j].ConstType == "ent.NodeType" {
 			return false
 		}
 		if sorted[i].ConstType == "ent.NodeType" {
 			return true
 		}
-		if sorted[i].ConstType == "ent.EdgeType" {
+		if sorted[j].ConstType == "ent.EdgeType" {
 			return false
 		}
 		if sorted[i].ConstType == "ent.EdgeType" {
-			return false
+			return true
 		}
 		return sorted[i].ConstType < sorted[j].ConstType
 	})

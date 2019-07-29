@@ -10,7 +10,7 @@ import (
 func TestEdgeInfo(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "account")
 
-	testEdgeInfo(t, edgeInfo, 0, 1, 2)
+	testEdgeInfo(t, edgeInfo, 0, 1, 3)
 
 	edgeInfo = getTestEdgeInfo(t, "todo")
 
@@ -63,6 +63,7 @@ func TestAssociationEdge(t *testing.T) {
 			"Folders",
 			codegen.GetEntConfigFromName("folder"),
 		),
+		TableName: "account_folders_edges",
 	}
 
 	testAssocEdge(t, edge, expectedAssocEdge)
@@ -79,6 +80,7 @@ func TestSymmetricAssociationEdge(t *testing.T) {
 			codegen.GetEntConfigFromName("account"),
 		),
 		Symmetric: true,
+		TableName: "account_friends_edges",
 	}
 
 	testAssocEdge(t, edge, expectedAssocEdge)
@@ -101,6 +103,7 @@ func TestInverseAssociationEdge(t *testing.T) {
 				codegen.GetEntConfigFromName("folder"),
 			),
 		},
+		TableName: "folder_todos_edges",
 	}
 
 	testAssocEdge(t, edge, expectedAssocEdge)
@@ -129,9 +132,46 @@ func TestAddingInverseEdge(t *testing.T) {
 			codegen.GetEntConfigFromName("folder"),
 		),
 		IsInverseEdge: true,
+		TableName:     "folder_tods_edges",
 	}
 
 	testAssocEdge(t, edge2, expectedAssocEdge)
+}
+
+func TestEdgeGroup(t *testing.T) {
+	edgeInfo := getTestEdgeInfo(t, "account")
+	edgeGroup := edgeInfo.GetAssociationEdgeGroupByStatusName("FriendshipStatus")
+
+	friendRequestsEdge := edgeInfo.GetAssociationEdgeByName("FriendRequests")
+
+	expectedFriendRequestsEdge := &AssociationEdge{
+		EdgeConst: "AccountToFriendRequestsEdge",
+		commonEdgeInfo: getCommonEdgeInfo(
+			"FriendRequests",
+			codegen.GetEntConfigFromName("account"),
+		),
+		InverseEdge: &InverseAssocEdge{
+			EdgeConst: "AccountToFriendRequestsReceivedEdge",
+			commonEdgeInfo: getCommonEdgeInfo(
+				"FriendRequestsReceived",
+				codegen.GetEntConfigFromName("account"),
+			),
+		},
+		TableName: "account_friendships_edges",
+	}
+
+	testAssocEdge(t, friendRequestsEdge, expectedFriendRequestsEdge)
+
+	expectedAssocEdgeGroup := &AssociationEdgeGroup{
+		GroupName:       "Friendships",
+		GroupStatusName: "FriendshipStatus",
+		ConstType:       "AccountFriendshipStatus",
+		Edges: map[string]*AssociationEdge{
+			"FriendRequests": friendRequestsEdge,
+		},
+	}
+
+	testAssocEdgeGroup(t, edgeGroup, expectedAssocEdgeGroup)
 }
 
 func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
@@ -258,6 +298,52 @@ func testNodeInfo(t *testing.T, nodeInfo codegen.NodeInfo, expectedNodename stri
 			expectedNodename,
 			nodeInfo.Node,
 		)
+	}
+}
+
+func testAssocEdgeGroup(t *testing.T, edgeGroup, expectedAssocEdgeGroup *AssociationEdgeGroup) {
+	if edgeGroup.GroupName != expectedAssocEdgeGroup.GroupName {
+		t.Errorf(
+			"group name of edge group was not as expected, expected %s, got %s instead",
+			expectedAssocEdgeGroup.GroupName,
+			edgeGroup.GroupName,
+		)
+	}
+
+	if edgeGroup.GroupStatusName != expectedAssocEdgeGroup.GroupStatusName {
+		t.Errorf(
+			"group status name of edge group was not as expected, expected %s, got %s instead",
+			expectedAssocEdgeGroup.GroupStatusName,
+			edgeGroup.GroupStatusName,
+		)
+	}
+
+	if edgeGroup.ConstType != expectedAssocEdgeGroup.ConstType {
+		t.Errorf(
+			"const type of edge group was not as expected, expected %s, got %s instead",
+			expectedAssocEdgeGroup.ConstType,
+			edgeGroup.ConstType,
+		)
+	}
+
+	if len(edgeGroup.Edges) != len(expectedAssocEdgeGroup.Edges) {
+		t.Errorf(
+			"number of edges for edge group was not as expected, expected %d, got %d instead",
+			len(expectedAssocEdgeGroup.Edges),
+			len(edgeGroup.Edges),
+		)
+	}
+
+	for edgeName, expectedAssocEdge := range expectedAssocEdgeGroup.Edges {
+		assocEdge := edgeGroup.Edges[edgeName]
+
+		if assocEdge == nil {
+			t.Errorf(
+				"expected an assoc edge of name %s to exist. it didn't",
+				edgeName,
+			)
+		}
+		testAssocEdge(t, assocEdge, expectedAssocEdge)
 	}
 }
 

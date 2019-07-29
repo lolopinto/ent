@@ -122,12 +122,16 @@ func GetExprToCompositeLitAllowUnaryExpr(expr ast.Expr) *ast.CompositeLit {
 //  }),
 // function returns ent.ActionConfig
 func GetTypeNameFromExpr(expr ast.Expr) string {
-	typ := GetExprToSelectorExpr(expr)
-	typIdent := GetExprToIdent(typ.X)
+	// handle ent.NodeType and ent.EdgeType
+	typ, ok := expr.(*ast.SelectorExpr)
+	if ok {
+		typIdent := GetExprToIdent(typ.X)
+		return typIdent.Name + "." + typ.Sel.Name
+	}
 
-	// todo this can probably be an ident.
-	// handle that if and when we get there...
-	return typIdent.Name + "." + typ.Sel.Name
+	// handle local constants
+	ident := GetExprToIdent(expr)
+	return ident.Name
 }
 
 // Takes an Expr and converts it to the underlying string without quotes

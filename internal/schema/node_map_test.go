@@ -165,7 +165,7 @@ type AccountConfig struct {
 			String: friendRequestsReceivedEdge.EdgeType,
 			Valid:  true,
 		},
-		EdgeTable: "accounts_friend_requests_edge",
+		EdgeTable: "account_friend_requests_edges",
 	}
 
 	testNewEdge(t, friendRequestsEdge, expectedEdge)
@@ -177,7 +177,7 @@ type AccountConfig struct {
 			String: friendRequestsEdge.EdgeType,
 			Valid:  true,
 		},
-		EdgeTable: "accounts_friend_requests_edge",
+		EdgeTable: "account_friend_requests_edges",
 	}
 	testNewEdge(t, friendRequestsReceivedEdge, expectedInverseEdge)
 
@@ -262,7 +262,7 @@ type TodoConfig struct {
 	}
 
 	if !accounts.IsInverseEdge {
-		t.Error("expected the todo -> todo accounts edge field to be true")
+		t.Error("expected the todo -> todo accounts inverse edge field to be true")
 	}
 
 	newEdges := s.GetNewEdges()
@@ -280,7 +280,7 @@ type TodoConfig struct {
 			String: todoAccountsEdge.EdgeType,
 			Valid:  true,
 		},
-		EdgeTable: "accounts_todos_edge",
+		EdgeTable: "account_todos_edges",
 	}
 
 	testNewEdge(t, accountTodosEdge, expectedEdge)
@@ -292,7 +292,7 @@ type TodoConfig struct {
 			String: accountTodosEdge.EdgeType,
 			Valid:  true,
 		},
-		EdgeTable: "accounts_todos_edge",
+		EdgeTable: "account_todos_edges",
 	}
 	testNewEdge(t, todoAccountsEdge, expectedInverseEdge)
 
@@ -325,6 +325,148 @@ type TodoConfig struct {
 	)
 }
 
+func TestEdgeGroup(t *testing.T) {
+	sources := make(map[string]string)
+
+	sources["account_config.go"] = `
+	package configs
+
+type AccountConfig struct {
+	FirstName string
+}
+
+	func (config *AccountConfig) GetTableName() string {
+		return "accounts"
+	}
+	`
+
+	sources["event_config.go"] = `
+	package configs
+
+	import "time"
+	import "github.com/lolopinto/ent/ent"
+
+type EventConfig struct {
+	StartTime time.Time
+}
+
+	func (config *EventConfig) GetTableName() string {
+		return "events"
+	}
+
+	func (config *EventConfig) GetEdges() map[string]interface{} {
+		return ent.EdgeMap {
+			"Rsvps": ent.AssociationEdgeGroup {
+				GroupStatusName: "Rsvp",
+				EdgeGroups: ent.EdgeMap{
+					"AttendingUsers": ent.AssociationEdge{
+						EntConfig: AccountConfig{},
+						InverseEdge: &ent.InverseAssocEdge{
+							EdgeName: "EventsAttending",
+						},
+					},
+					"DeclinedUsers": ent.AssociationEdge{
+						EntConfig: AccountConfig{},
+						InverseEdge: &ent.InverseAssocEdge{
+							EdgeName: "DeclinedEvents",
+						},
+					},
+				},
+			},
+		}
+	}
+	`
+	s := parseSchema(t, sources, "EdgeGroup")
+	attendees := getEdgeFromSchema(t, s, "EventConfig", "AttendingUsers")
+
+	if attendees == nil {
+		t.Error(
+			"expected the attendees edge to not be nil",
+		)
+	}
+
+	if attendees.InverseEdge == nil {
+		t.Error("expected the attendes edge to have an inverse edge")
+	}
+
+	eventsAttending := getEdgeFromSchema(t, s, "AccountConfig", "EventsAttending")
+	if eventsAttending == nil {
+		t.Error(
+			"expected the account -> events attending edge to not be nil",
+		)
+	}
+
+	if eventsAttending.InverseEdge != nil {
+		t.Error("expected the events attending inverse edge field to be nil")
+	}
+
+	if !eventsAttending.IsInverseEdge {
+		t.Error("expected the user -> events attending inverse edge field to be true")
+	}
+
+	newEdges := s.GetNewEdges()
+
+	// TODO event rsvp status consts coming
+	if len(newEdges) != 4 {
+		t.Errorf("Expected 4 new edges generated in schema, got %d instead", len(newEdges))
+	}
+
+	expectedEdgeNames := []string{
+		"EventToAttendingUsersEdge",
+		"AccountToEventsAttendingEdge",
+		"EventToDeclinedUsersEdge",
+		"AccountToDeclinedEventsEdge",
+	}
+
+	for idx, edgeName := range expectedEdgeNames {
+		edge := newEdges[idx]
+		var inverseEdge *ent.AssocEdgeData
+		if idx%2 == 0 {
+			inverseEdge = newEdges[idx+1]
+		} else {
+			inverseEdge = newEdges[idx-1]
+		}
+
+		expectedEdge := &ent.AssocEdgeData{
+			EdgeName:      edgeName,
+			SymmetricEdge: false,
+			InverseEdgeType: &sql.NullString{
+				String: inverseEdge.EdgeType,
+				Valid:  true,
+			},
+			EdgeTable: "event_rsvps_edges",
+		}
+		testNewEdge(t, edge, expectedEdge)
+	}
+
+	// accountInfo := s.Nodes["AccountConfig"]
+	// testConstants(
+	// 	t,
+	// 	accountInfo,
+	// 	map[string]map[string]string{
+	// 		"ent.NodeType": map[string]string{
+	// 			"AccountType": "account",
+	// 		},
+	// 		"ent.EdgeType": map[string]string{
+	// 			"AccountToTodosEdge": "",
+	// 		},
+	// 	},
+	// )
+
+	// todoInfo := s.Nodes["TodoConfig"]
+	// testConstants(
+	// 	t,
+	// 	todoInfo,
+	// 	map[string]map[string]string{
+	// 		"ent.NodeType": map[string]string{
+	// 			"TodoType": "todo",
+	// 		},
+	// 		"ent.EdgeType": map[string]string{
+	// 			"TodoToAccountsEdge": "",
+	// 		},
+	// 	},
+	// )
+}
 func TestGenerateNewEdges(t *testing.T) {
 	s := getSchemaForNewConstsAndEdges(t)
 	newEdges := s.GetNewEdges()
@@ -338,7 +480,7 @@ func TestGenerateNewEdges(t *testing.T) {
 		EdgeName:        "AccountToFriendsEdge",
 		SymmetricEdge:   false,
 		InverseEdgeType: &sql.NullString{},
-		EdgeTable:       "accounts_friends_edge",
+		EdgeTable:       "account_friends_edges",
 	}
 
 	testNewEdge(t, newEdge, expectedEdge)
