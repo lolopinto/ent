@@ -453,6 +453,7 @@ func EditNodeFromActionMap(info *EditedNodeInfo) error {
 func buildOperations(info *EditedNodeInfo) []dataOperation {
 	// build up operations as needed
 	// 1/ operation to create the ent as needed
+	// TODO check to see if any fields
 	ops := []dataOperation{
 		&nodeWithActionMapOperation{info},
 	}
@@ -467,13 +468,8 @@ func buildOperations(info *EditedNodeInfo) []dataOperation {
 		if info.ExistingEnt == nil {
 			edgeOp.id2 = idPlaceHolder
 		} else {
-			continue
-			// TODO uncomment this out eventually. we need to change the SQL QUERY
-			// to ON DUPLICATE KEY UPDATE. or check first if the edge exists.
-			// same as below.
-			// For now, just do nothing
-			// edgeOp.id2 = info.ExistingEnt.GetID()
-			// edgeOp.id2Type = info.ExistingEnt.GetType()
+			edgeOp.id2 = info.ExistingEnt.GetID()
+			edgeOp.id2Type = info.ExistingEnt.GetType()
 		}
 		ops = append(ops, edgeOp)
 	}
@@ -488,9 +484,8 @@ func buildOperations(info *EditedNodeInfo) []dataOperation {
 		if info.ExistingEnt == nil {
 			edgeOp.id1 = idPlaceHolder
 		} else {
-			continue
-			// edgeOp.id2 = info.ExistingEnt.GetID()
-			// edgeOp.id2Type = info.ExistingEnt.GetType()
+			edgeOp.id1 = info.ExistingEnt.GetID()
+			edgeOp.id1Type = info.ExistingEnt.GetType()
 		}
 		ops = append(ops, edgeOp)
 	}
@@ -797,7 +792,9 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 	}
 
 	query := fmt.Sprintf(
-		"INSERT into %s (%s) VALUES(%s)",
+		// postgres specific
+		// this is where the db dialects will eventually be needed
+		"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO NOTHING",
 		edgeData.EdgeTable,
 		getColumnsString(cols),
 		getValsString(vals),
@@ -826,7 +823,7 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 		}
 
 		query = fmt.Sprintf(
-			"INSERT into %s (%s) VALUES(%s)",
+			"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO NOTHING",
 			edgeData.EdgeTable,
 			getColumnsString(cols),
 			getValsString(vals),
@@ -848,7 +845,7 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 		}
 
 		query = fmt.Sprintf(
-			"INSERT into %s (%s) VALUES(%s)",
+			"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO NOTHING",
 			edgeData.EdgeTable,
 			getColumnsString(cols),
 			getValsString(vals),
@@ -917,6 +914,7 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 		edgeData.EdgeTable,
 	)
 	fmt.Println(query)
+	fmt.Println(id, edgeType)
 
 	stmt, err := db.Preparex(query)
 	if err != nil {

@@ -172,6 +172,7 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 			"mutation":              p.mutation,
 			"actionMethodName":      action.GetActionMethodName,
 			"actionFields":          action.GetFields,
+			"actionEdges":           action.GetEdges,
 			"actionPath":            p.getActionPath,
 			"groupEdgeEnum":         p.groupEdgeEnum,
 			"groupEdgeEnumConst":    p.groupEdgeEnumConst,

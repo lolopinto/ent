@@ -33,13 +33,13 @@ func {{$actionMethodName}}FromContext( {{actionMethodContextArgs $action}}) *{{$
 
 // {{$actionMethodName}} is the factory method to get an ...
 func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
-  return &{{$actionName}}{
-    {{embeddedActionType $action}}{
-      {{ range paramsToEmbeddedType $action -}}
-        {{.}}
-      {{ end -}}
-    },
-  }
+  action := &{{$actionName}}{}
+  action.Viewer = viewer
+  action.EntConfig = {{$nodeInfo.EntConfig}}
+  {{ if $action.MutatingExistingObject -}}
+  action.Ent = {{$nodeInfo.NodeInstance}}
+  {{ end -}}
+  return action
 }
 
 {{$fields := fields $action}}
@@ -59,8 +59,25 @@ func (action *{{$actionName}}) {{$field.MethodName}}({{$field.InstanceName}} {{$
 
 {{end -}}
 
+{{ $edges := edges $action}}
 
-{{ if $fields -}}
+{{ range $edge := $edges -}}
+// {{$edge.MethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
+func (action *{{$actionName}}) {{$edge.MethodName}}({{$edge.InstanceName}} {{$edge.InstanceType}}) *{{$actionName}} {
+    {{/* TODO time and data support later */ -}}  
+  action.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}.ID, models.{{$edge.NodeType}})
+  return action
+}
+
+// {{$edge.MethodName}} adds an instance of {{$edge.Node}}Id to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
+func (action *{{$actionName}}) {{$edge.MethodName}}ID({{$edge.InstanceName}}ID string) *{{$actionName}} {
+  {{/* TODO time and data support later */ -}}  
+  action.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}})
+  return action
+}
+{{end -}}
+
+
 // GetFields returns the fields that could be edited in this mutation
 func (action *{{$actionName}}) GetFieldMap() ent.ActionFieldMap {
   return ent.ActionFieldMap {
@@ -72,9 +89,6 @@ func (action *{{$actionName}}) GetFieldMap() ent.ActionFieldMap {
     {{end -}}
   }
 }
-
-{{end -}}
-
 
 // Save is the method called to execute this action and save change
 func (action * {{$actionName}}) Save() {{saveActionType $action}} {

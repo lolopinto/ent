@@ -45,6 +45,11 @@ func (config *AccountConfig) GetEdges() map[string]interface{} {
 		// edge from account -> folders. one-way edge with the inverse data being stored in the field
 		"Folders": ent.AssociationEdge{
 			EntConfig: FolderConfig{},
+			EdgeAction: &ent.EdgeActionConfig{
+				Action:            ent.AddEdgeAction,
+				CustomActionName:  "AccountAddFoldersAction", // EventAddInviteesAction is default
+				CustomGraphQLName: "accountFolderAdd",
+			},
 		},
 	}
 }

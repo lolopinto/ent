@@ -45,6 +45,34 @@ type editNodeActionMutator struct {
 	validated     bool
 }
 
+type editExistingNodeActionMutator struct {
+	editNodeActionMutator
+	Viewer    viewer.ViewerContext
+	EntConfig ent.Config
+	Ent       ent.Entity // TODO
+}
+
+func (action *editExistingNodeActionMutator) SaveAction(entity ent.Entity, fieldMap ent.ActionFieldMap) error {
+	if action.editedFields == nil {
+		action.editedFields = make(map[string]interface{})
+	}
+	action.Validate(fieldMap)
+	err := ent.EditNodeFromActionMap(&ent.EditedNodeInfo{
+		Entity:         entity,
+		EntConfig:      action.EntConfig,
+		EditableFields: fieldMap,
+		Fields:         action.editedFields,
+		ExistingEnt:    action.Ent,
+		InboundEdges:   action.inboundEdges,
+		OutboundEdges:  action.outboundEdges,
+	})
+	if err != nil {
+		return err
+	}
+	entreflect.SetValueInEnt(reflect.ValueOf(entity), "Viewer", action.Viewer)
+	return nil
+}
+
 // func validateAction(actionMutator ActionMutator, entity ent.Entity, entConfig ent.Config) error {
 
 // }
@@ -66,7 +94,7 @@ func (action *editNodeActionMutator) AddInboundEdge(edgeType ent.EdgeType, id1 s
 }
 
 func (action *editNodeActionMutator) AddOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType) {
-	action.inboundEdges = append(action.inboundEdges, &ent.EditedEdgeInfo{
+	action.outboundEdges = append(action.outboundEdges, &ent.EditedEdgeInfo{
 		EdgeType: edgeType,
 		Id:       id2,
 		NodeType: nodeType,
@@ -155,28 +183,7 @@ func (action *CreateEntActionMutator) SaveAction(entity ent.Entity, fieldMap ent
 }
 
 type EditEntActionMutator struct {
-	editNodeActionMutator
-	Viewer    viewer.ViewerContext
-	EntConfig ent.Config
-	Ent       ent.Entity // TODO
-}
-
-func (action *EditEntActionMutator) SaveAction(entity ent.Entity, fieldMap ent.ActionFieldMap) error {
-	action.Validate(fieldMap)
-	err := ent.EditNodeFromActionMap(&ent.EditedNodeInfo{
-		Entity:         entity,
-		EntConfig:      action.EntConfig,
-		EditableFields: fieldMap,
-		Fields:         action.editedFields,
-		ExistingEnt:    action.Ent,
-		InboundEdges:   action.inboundEdges,
-		OutboundEdges:  action.outboundEdges,
-	})
-	if err != nil {
-		return err
-	}
-	entreflect.SetValueInEnt(reflect.ValueOf(entity), "Viewer", action.Viewer)
-	return nil
+	editExistingNodeActionMutator
 }
 
 type DeleteEntActionMutator struct {
@@ -188,4 +195,12 @@ type DeleteEntActionMutator struct {
 // TODO this should be private... other people shouldn't be able to call this :(
 func (action *DeleteEntActionMutator) SaveAction() error {
 	return ent.DeleteNode(action.Ent, action.EntConfig)
+}
+
+type AddEdgeActionMutator struct {
+	editExistingNodeActionMutator
+}
+
+type RemoveEdgeActionMutator struct {
+	editExistingNodeActionMutator
 }

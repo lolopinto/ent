@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"go/ast"
 
-	"github.com/lolopinto/ent/ent"
-
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/edge"
 
 	"github.com/lolopinto/ent/internal/field"
-
-	"github.com/iancoleman/strcase"
 
 	"github.com/lolopinto/ent/internal/astparser"
 )
@@ -74,7 +71,7 @@ func parseActions(nodeName string, compositeLit *ast.CompositeLit, fieldInfo *fi
 	typ := getActionTypeFromString(actionTypeStr)
 
 	// create/edit/delete
-	concreteAction, ok := typ.(concreteActionType)
+	concreteAction, ok := typ.(concreteNodeActionType)
 	if ok {
 		fields := getFieldsForAction(fieldNames, fieldInfo, actionTypeStr, concreteAction)
 
@@ -135,7 +132,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 	return actions
 }
 
-func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, actionTypeStr string, typ concreteActionType) []*field.Field {
+func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, actionTypeStr string, typ concreteNodeActionType) []*field.Field {
 	var fields []*field.Field
 	if !typ.supportsFieldsFromEnt() {
 		return fields
@@ -167,6 +164,32 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, actionT
 	return fields
 }
 
+func processEdgeAction(nodeName string, assocEdge *edge.AssociationEdge) Action {
+	edgeAction := assocEdge.EdgeAction
+
+	var typ concreteEdgeActionType
+	switch edgeAction.Action {
+	case "ent.AddEdgeAction":
+		typ = &addEdgeActionType{}
+	case "ent.RemoveEdgeAction":
+		typ = &removeEdgeActionType{}
+	default:
+		panic(fmt.Errorf("invalid action type %s for edge action", edgeAction.Action))
+	}
+
+	return typ.getAction(
+		getCommonInfoForEdgeAction(
+			nodeName,
+			assocEdge.EdgeName,
+			typ,
+			edgeAction,
+			[]*edge.AssociationEdge{
+				assocEdge,
+			},
+		),
+	)
+}
+
 // todo
 func getCreateAction(commonInfo commonActionInfo) *CreateAction {
 	return &CreateAction{
@@ -186,7 +209,19 @@ func getDeleteAction(commonInfo commonActionInfo) *DeleteAction {
 	}
 }
 
-func getCommonInfo(nodeName string, typ concreteActionType, customActionName, customGraphQLName string, exposeToGraphQL bool, fields []*field.Field) commonActionInfo {
+func getAddEdgeAction(commonInfo commonActionInfo) *AddEdgeAction {
+	return &AddEdgeAction{
+		commonActionInfo: commonInfo,
+	}
+}
+
+func getRemoveEdgeAction(commonInfo commonActionInfo) *RemoveEdgeAction {
+	return &RemoveEdgeAction{
+		commonActionInfo: commonInfo,
+	}
+}
+
+func getCommonInfo(nodeName string, typ concreteNodeActionType, customActionName, customGraphQLName string, exposeToGraphQL bool, fields []*field.Field) commonActionInfo {
 	var graphqlName string
 	if exposeToGraphQL {
 		graphqlName = getGraphQLNameForActionType(nodeName, typ, customGraphQLName)
@@ -201,149 +236,33 @@ func getCommonInfo(nodeName string, typ concreteActionType, customActionName, cu
 	}
 }
 
-type concreteActionType interface {
-	actionType
-	getDefaultActionName(nodeName string) string
-	getDefaultGraphQLName(nodeName string) string
-	supportsFieldsFromEnt() bool
-	getAction(commonInfo commonActionInfo) Action
-	getOperation() ent.ActionOperation
-}
-
-type actionType interface {
-	getActionName() string
-}
-
-// type actionTypeWithFields interface {
-// 	getAction(commonInfo commonActionInfo, fields []*field.Field) Action
-// }
-
-// type actionTypeWithoutFields interface {
-// 	getAction(commonInfo commonActionInfo) Action
-// }
-
-type createActionType struct {
-}
-
-func (action *createActionType) getDefaultActionName(nodeName string) string {
-	return "Create" + strcase.ToCamel(nodeName) + "Action"
-}
-
-func (action *createActionType) getDefaultGraphQLName(nodeName string) string {
-	// user -> user
-	// contact_date -> contactDate
-	return strcase.ToLowerCamel(nodeName) + "Create"
-}
-
-func (action *createActionType) getAction(commonInfo commonActionInfo) Action {
-	return getCreateAction(commonInfo)
-}
-
-func (action *createActionType) supportsFieldsFromEnt() bool {
-	return true
-}
-
-func (action *createActionType) getActionName() string {
-	return "ent.CreateAction"
-}
-
-func (action *createActionType) getOperation() ent.ActionOperation {
-	return ent.CreateAction
-}
-
-var _ concreteActionType = &createActionType{}
-
-type editActionType struct {
-}
-
-func (action *editActionType) getDefaultActionName(nodeName string) string {
-	return "Edit" + strcase.ToCamel(nodeName) + "Action"
-}
-
-func (action *editActionType) getDefaultGraphQLName(nodeName string) string {
-	return strcase.ToLowerCamel(nodeName) + "Edit"
-}
-
-func (action *editActionType) getAction(commonInfo commonActionInfo) Action {
-	return getEditAction(commonInfo)
-}
-
-func (action *editActionType) supportsFieldsFromEnt() bool {
-	return true
-}
-
-func (action *editActionType) getActionName() string {
-	return "ent.EditAction"
-}
-
-func (action *editActionType) getOperation() ent.ActionOperation {
-	return ent.EditAction
-}
-
-var _ concreteActionType = &editActionType{}
-
-type deleteActionType struct {
-}
-
-func (action *deleteActionType) getDefaultActionName(nodeName string) string {
-	return "Delete" + strcase.ToCamel(nodeName) + "Action"
-}
-
-func (action *deleteActionType) getDefaultGraphQLName(nodeName string) string {
-	return strcase.ToLowerCamel(nodeName) + "Delete"
-}
-
-func (action *deleteActionType) getAction(commonInfo commonActionInfo) Action {
-	return getDeleteAction(commonInfo)
-}
-
-func (action *deleteActionType) supportsFieldsFromEnt() bool {
-	return false
-}
-
-func (action *deleteActionType) getActionName() string {
-	return "ent.DeleteAction"
-}
-
-func (action *deleteActionType) getOperation() ent.ActionOperation {
-	return ent.DeleteAction
-}
-
-var _ concreteActionType = &deleteActionType{}
-
-type mutationsActionType struct {
-}
-
-func (action *mutationsActionType) getActionName() string {
-	return "ent.MutationsAction"
-}
-
-var _ actionType = &mutationsActionType{}
-
-func getActionTypeFromString(typ string) actionType {
-	switch typ {
-	case "ent.CreateAction":
-		return &createActionType{}
-	case "ent.EditAction":
-		return &editActionType{}
-	case "ent.DeleteAction":
-		return &deleteActionType{}
-	case "ent.MutationsAction":
-		return &mutationsActionType{}
+func getCommonInfoForEdgeAction(
+	nodeName,
+	edgeName string,
+	typ concreteEdgeActionType,
+	edgeAction *edge.EdgeAction,
+	// customActionName, customGraphQLName string,
+	// exposeToGraphQL bool,
+	edges []*edge.AssociationEdge) commonActionInfo {
+	var graphqlName, actionName string
+	if edgeAction.ExposeToGraphQL {
+		if edgeAction.CustomGraphQLName == "" {
+			graphqlName = typ.getDefaultGraphQLName(nodeName, edgeName)
+		} else {
+			graphqlName = edgeAction.CustomGraphQLName
+		}
 	}
-	panic(fmt.Errorf("invalid action type passed %s", typ))
-}
-
-func getActionNameForActionType(nodeName string, typ concreteActionType, customName string) string {
-	if customName != "" {
-		return customName
+	if edgeAction.CustomActionName == "" {
+		actionName = typ.getDefaultActionName(nodeName, edgeName)
+	} else {
+		actionName = edgeAction.CustomActionName
 	}
-	return typ.getDefaultActionName(nodeName)
-}
-
-func getGraphQLNameForActionType(nodeName string, typ concreteActionType, customName string) string {
-	if customName != "" {
-		return customName
+	return commonActionInfo{
+		ActionName:      actionName,
+		GraphQLName:     graphqlName,
+		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
+		Edges:           edges, // TODO
+		NodeInfo:        codegen.GetNodeInfo(nodeName),
+		Operation:       typ.getOperation(),
 	}
-	return typ.getDefaultGraphQLName(nodeName)
 }

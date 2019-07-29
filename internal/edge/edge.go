@@ -143,6 +143,17 @@ type AssociationEdge struct {
 	IsInverseEdge bool
 	TableName     string // TableName will be gotten from the GroupName if part of a group or derived from each edge
 	// will eventually be made configurable to the user
+	EdgeAction *EdgeAction
+}
+
+// EdgeAction holds as little data as possible about the edge action
+// and depends on action to take that information, process it and generate the
+// action specific metadata
+type EdgeAction struct {
+	Action            string
+	CustomActionName  string
+	CustomGraphQLName string
+	ExposeToGraphQL   bool
 }
 
 func (e *AssociationEdge) PluralEdge() bool {
@@ -321,16 +332,28 @@ func parseForeignKeyEdgeItem(edgeInfo *EdgeInfo, lit *ast.CompositeLit, edgeName
 	return nil
 }
 
-func parseInverseAssocEdge(entConfig codegen.EntConfigInfo, containingPackageName string, keyValueExprValue ast.Expr) *InverseAssocEdge {
+func getEltsInEdge(keyValueExprValue ast.Expr, expectedType string) []ast.Expr {
 	compositLit := astparser.GetComposeLitInUnaryExpr(keyValueExprValue)
-	if astparser.GetTypeNameFromExpr(compositLit.Type) != "ent.InverseAssocEdge" {
-		panic("invalid inverse assoc edge")
+	typName := astparser.GetTypeNameFromExpr(compositLit.Type)
+	if typName != expectedType {
+		panic(
+			fmt.Errorf(
+				"invalid type name. expected %s got %s",
+				expectedType,
+				typName,
+			),
+		)
 	}
+	return compositLit.Elts
+}
+
+func parseInverseAssocEdge(entConfig codegen.EntConfigInfo, containingPackageName string, keyValueExprValue ast.Expr) *InverseAssocEdge {
+	elts := getEltsInEdge(keyValueExprValue, "ent.InverseAssocEdge")
 
 	ret := &InverseAssocEdge{}
 
 	var edgeName string
-	for _, expr := range compositLit.Elts {
+	for _, expr := range elts {
 		kve := astparser.GetExprToKeyValueExpr(expr)
 
 		key := astparser.GetExprToIdent(kve.Key)
@@ -388,8 +411,11 @@ func getParsedAssociationEdgeItem(containingPackageName, edgeName string, lit *a
 		// EntConfig is a pre-requisite so indicate as much since we don't wanna parse it twice
 
 		assocEdge.InverseEdge = parseInverseAssocEdge(entConfig, containingPackageName, keyValueExprValue)
-	},
-		"EntConfig")
+	}, "EntConfig")
+
+	g.AddItem("EdgeAction", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		assocEdge.EdgeAction = parseEdgeAction(keyValueExprValue)
+	})
 
 	g.RunLoop()
 
@@ -440,6 +466,34 @@ func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, gr
 	g.RunLoop()
 	edgeInfo.addEdgeGroup(edgeGroup)
 	return nil
+}
+
+func parseEdgeAction(keyValueExprValue ast.Expr) *EdgeAction {
+	elts := getEltsInEdge(keyValueExprValue, "ent.EdgeActionConfig")
+
+	ret := &EdgeAction{
+		ExposeToGraphQL: true,
+	}
+	for _, expr := range elts {
+		kve := astparser.GetExprToKeyValueExpr(expr)
+
+		ident := astparser.GetExprToIdent(kve.Key)
+		switch ident.Name {
+		case "Action":
+			ret.Action = astparser.GetTypeNameFromExpr(kve.Value)
+
+		case "CustomActionName":
+			ret.CustomActionName = astparser.GetUnderylingStringFromLiteralExpr(kve.Value)
+
+		case "CustomGraphQLName":
+			ret.CustomGraphQLName = astparser.GetUnderylingStringFromLiteralExpr(kve.Value)
+
+		case "HideFromGraphQL":
+			ret.ExposeToGraphQL = !astparser.GetBooleanValueFromExpr(kve.Value)
+		}
+	}
+
+	return ret
 }
 
 func getEdgeCostName(packageName, edgeName string) string {

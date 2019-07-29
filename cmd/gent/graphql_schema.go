@@ -201,6 +201,14 @@ func (s *graphQLSchema) processAction(action action.Action) {
 		inputSchemaInfo.addField(&graphQLField{Field: f})
 	}
 
+	// add each edge that's part of this mutation as an id
+	for _, edge := range action.GetEdges() {
+		inputSchemaInfo.addNonEntField(&graphQLNonEntField{
+			fieldName: fmt.Sprintf("%sId", edge.NodeInfo.NodeInstance),
+			fieldType: "ID!",
+		})
+	}
+
 	// TODO add field if it makes sense... e.g. EditXXX and deleteXXX mutations
 	s.addSchemaInfo(inputSchemaInfo)
 

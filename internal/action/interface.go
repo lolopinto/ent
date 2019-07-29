@@ -19,6 +19,7 @@ import (
 
 type Action interface {
 	GetFields() []*field.Field
+	GetEdges() []*edge.AssociationEdge
 	GetActionName() string
 	ExposedToGraphQL() bool
 	GetGraphQLName() string
@@ -57,7 +58,7 @@ func (info *ActionInfo) GetByName(name string) Action {
 	return info.actionMap[name]
 }
 
-func (info *ActionInfo) addActions(actions []Action) {
+func (info *ActionInfo) addActions(actions ...Action) {
 	for _, action := range actions {
 		info.Actions = append(info.Actions, action)
 		actionName := action.GetActionName()
@@ -88,6 +89,7 @@ type commonActionInfo struct {
 	ExposeToGraphQL bool
 	GraphQLName     string
 	Fields          []*field.Field
+	Edges           []*edge.AssociationEdge // for edge actions for now but eventually other actions
 	Operation       ent.ActionOperation
 	codegen.NodeInfo
 }
@@ -106,6 +108,10 @@ func (action *commonActionInfo) GetGraphQLName() string {
 
 func (action *commonActionInfo) GetFields() []*field.Field {
 	return action.Fields
+}
+
+func (action *commonActionInfo) GetEdges() []*edge.AssociationEdge {
+	return action.Edges
 }
 
 func (action *commonActionInfo) GetNodeInfo() codegen.NodeInfo {
@@ -133,24 +139,35 @@ type CreateAction struct {
 	commonActionInfo
 }
 
+type mutationExistingObjAction struct {
+}
+
+func (action *mutationExistingObjAction) MutatingExistingObject() bool {
+	return true
+}
+
 func (action *CreateAction) MutatingExistingObject() bool {
 	return false
 }
 
 type EditAction struct {
 	commonActionInfo
-}
-
-func (action *EditAction) MutatingExistingObject() bool {
-	return true
+	mutationExistingObjAction
 }
 
 type DeleteAction struct {
 	commonActionInfo
+	mutationExistingObjAction
 }
 
-func (action *DeleteAction) MutatingExistingObject() bool {
-	return true
+type AddEdgeAction struct {
+	commonActionInfo
+	mutationExistingObjAction
+}
+
+type RemoveEdgeAction struct {
+	commonActionInfo
+	mutationExistingObjAction
 }
 
 // func (action *DeleteAction) GetFields() []string {
@@ -176,9 +193,17 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 			)
 		}
 
-		actionInfo.addActions(parseActions(nodeName, compositeLit, fieldInfo))
+		actionInfo.addActions(parseActions(nodeName, compositeLit, fieldInfo)...)
 
 		//		spew.Dump(expr)
+	}
+
+	for _, assocEdge := range edgeInfo.Associations {
+		if assocEdge.EdgeAction == nil {
+			continue
+		}
+		actionInfo.addActions(processEdgeAction(nodeName, assocEdge))
+
 	}
 	// spew.Dump(actionInfo)
 
@@ -225,4 +250,37 @@ func GetFields(action Action) []FieldActionTemplateInfo {
 		})
 	}
 	return fields
+}
+
+type EdgeActionTemplateInfo struct {
+	MethodName   string
+	EdgeName     string
+	InstanceName string
+	InstanceType string
+	//	AssocEdge    *edge.AssociationEdge
+	EdgeConst string
+	NodeType  string
+	Node      string
+	NodeID    string
+}
+
+func GetEdges(action Action) []EdgeActionTemplateInfo {
+	var edges []EdgeActionTemplateInfo
+
+	for _, edge := range action.GetEdges() {
+		edgeName := edge.GetEdgeName()
+
+		edges = append(edges, EdgeActionTemplateInfo{
+			Node:         edge.NodeInfo.Node,
+			MethodName:   "Add" + edge.NodeInfo.Node,
+			EdgeName:     edgeName,
+			InstanceName: edge.NodeInfo.NodeInstance,
+			InstanceType: fmt.Sprintf("*models.%s", edge.NodeInfo.Node),
+			EdgeConst:    edge.EdgeConst,
+			//AssocEdge:    edge,
+			NodeType: edge.NodeInfo.NodeType,
+			NodeID:   edge.NodeInfo.Node + "ID",
+		})
+	}
+	return edges
 }

@@ -56,6 +56,7 @@ type AssociationEdge struct {
 
 	// TODO inverse and other fun things about edges
 	// same with foreign key edge
+	EdgeAction *EdgeActionConfig
 }
 
 //type EdgeGroup map[string]*AssociationEdge

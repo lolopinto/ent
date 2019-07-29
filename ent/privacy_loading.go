@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/lolopinto/ent/ent/privacy"
 	"github.com/lolopinto/ent/ent/viewer"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
@@ -78,7 +76,7 @@ func setZeroVal(i interface{}) {
 	v := reflect.ValueOf(i)
 
 	v.Elem().Set(reflect.Zero(v.Elem().Type()))
-	spew.Dump(i)
+	//	spew.Dump(i)
 }
 
 // TODO same issues as below
@@ -125,7 +123,7 @@ func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig C
 	go genApplyPrivacyPolicy(viewer, ent, privacyResultChan)
 	result := <-privacyResultChan
 
-	fmt.Println("result", result, getTypeName(result.err))
+	//fmt.Println("result", result, getTypeName(result.err))
 
 	// error in privacy loading
 	if result.err != nil {
@@ -190,7 +188,7 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResul
 	rules := privacyPolicy.Rules()
 
 	//fmt.Println("rules ", rules)
-	spew.Dump("rules", rules)
+	//	spew.Dump("rules", rules)
 	// TODO this is all done in parallel.
 	// will eventually be worth having different modes and testing it per ent
 	// and figuring out based on logic which mode makes sense for each ent
@@ -315,7 +313,7 @@ func genApplyPrivacyPolicyForEnts(viewer viewer.ViewerContext, nodes interface{}
 	resNodes := reflect.MakeSlice(sliceType, 0, slice.Cap())
 
 	for idx, res := range resSlice {
-		fmt.Println("result.....", res)
+		//	fmt.Println("result.....", res)
 
 		// visible and no err yay!
 		if res.visible && res.err == nil {

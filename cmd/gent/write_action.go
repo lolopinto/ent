@@ -37,9 +37,9 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 				"actionMethodArgs":        getActionMethodArgs,
 				"actionMethodContextArgs": getActionMethodContextArgs,
 				"embeddedActionType":      getEmbeddedActionType,
-				"paramsToEmbeddedType":    getActionParamsToEmbeddedType,
 				"actionName":              getActionName,
 				"fields":                  action.GetFields,
+				"edges":                   action.GetEdges,
 				"saveActionType":          getSaveActionType,
 				"nodeInfo":                getNodeInfo,
 				"returnsObjectInstance":   returnsObjectInstance,
@@ -92,20 +92,6 @@ func getActionArgsFromContextToViewerMethod(action action.Action) string {
 	return strings.Join(args, ", ")
 }
 
-func getActionParamsToEmbeddedType(action action.Action) []string {
-	nodeInfo := action.GetNodeInfo()
-
-	params := []string{
-		"Viewer: viewer,",
-		fmt.Sprintf("EntConfig: %s,", nodeInfo.EntConfig),
-	}
-
-	if action.MutatingExistingObject() {
-		params = append(params, fmt.Sprintf("Ent: %s,", nodeInfo.NodeInstance))
-	}
-	return params
-}
-
 func getEmbeddedActionType(action action.Action) string {
 	switch action.GetOperation() {
 	case ent.CreateAction:
@@ -114,6 +100,10 @@ func getEmbeddedActionType(action action.Action) string {
 		return "actions.EditEntActionMutator"
 	case ent.DeleteAction:
 		return "actions.DeleteEntActionMutator"
+	case ent.AddEdgeAction:
+		return "actions.AddEdgeActionMutator"
+	case ent.RemoveEdgeAction:
+		return "actions.RemoveEdgeActionMutator"
 	}
 	panic(fmt.Sprintf("invalid action %s not a supported type", action.GetActionName()))
 }
@@ -131,5 +121,5 @@ func getNodeInfo(action action.Action) codegen.NodeInfo {
 }
 
 func returnsObjectInstance(action action.Action) bool {
-	return action.GetOperation() == ent.CreateAction || action.GetOperation() == ent.EditAction
+	return action.GetOperation() != ent.DeleteAction
 }
