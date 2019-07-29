@@ -161,7 +161,7 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
           var {{.NodeInstance}}s {{.NodesSlice}}
           chanErr := make(chan error)
-          go ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s, chanErr)
+          go ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s, {{.EntConfig}}, chanErr)
           err := <-chanErr
           chan{{.NodesResult}} <- {{.NodesResult}}{
             {{.Nodes}}: {{.NodeInstance}}s,
@@ -172,7 +172,7 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() ({{.NodesSlice}}, error) {
           var {{.NodeInstance}}s {{.NodesSlice}}
-          err := ent.LoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s)
+          err := ent.LoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s, {{.EntConfig}})
           return {{.NodeInstance}}s, err
         }
       {{end}}
@@ -182,6 +182,11 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
       {{- $const := $assocEdgeGroup.ConstType -}}
       // TODO concurrent versions
       func ({{$currentNodeInstance}} *{{$currentNode}}) {{$assocEdgeGroup.GetStatusFuncName}}() (*{{$const}}, error) {
+        if !{{$currentNodeInstance}}.Viewer.HasIdentity() {
+          // TODO add CANNOT_RSVP enum 
+          ret := EventInvitees
+      		return &ret, nil
+        }
         {{ range $assocEdge := $assocEdgeGroup.Edges -}}
           {{$edgeName := $assocEdge.EdgeName -}}
           v{{$edgeName}}, err{{$edgeName}} := ent.LoadEdgeByType({{$currentNodeInstance}}.ID, {{$assocEdge.EdgeConst}}, {{$currentNodeInstance}}.Viewer.GetViewerID())

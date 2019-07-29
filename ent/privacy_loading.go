@@ -258,15 +258,15 @@ func LoadForeignKeyNodes(viewer viewer.ViewerContext, id string, nodes interface
 	return err
 }
 
-func GenLoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, errChan chan<- error) {
+func GenLoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
 	go genLoadNodesImpl(viewer, nodes, errChan, func(chanErr chan<- error) {
-		go genLoadNodesByType(id, edgeType, nodes, chanErr)
+		go genLoadNodesByType(id, edgeType, nodes, entConfig, chanErr)
 	})
 }
 
-func LoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}) error {
+func LoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
 	errChan := make(chan error)
-	go GenLoadNodesByType(viewer, id, edgeType, nodes, errChan)
+	go GenLoadNodesByType(viewer, id, edgeType, nodes, entConfig, errChan)
 	err := <-errChan
 	return err
 }

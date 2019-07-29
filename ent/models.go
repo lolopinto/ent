@@ -174,8 +174,14 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 			continue
 		}
 
+		tag := typeOfField.Tag.Get("db")
+
 		if field.Kind() == reflect.Struct {
-			continue
+			if tag == "" {
+				// ent.Node
+				// allow struct fields like start_time and end_time through
+				continue
+			}
 			// TODO figure this out eventually
 			// can hardcode the other info for now
 			// or just migrate to use pop
@@ -184,7 +190,6 @@ func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata
 		//fmt.Println(field.Kind(), field.Type())
 
 		var column string
-		tag := typeOfField.Tag.Get("db")
 		if tag != "" {
 			column = tag
 		} else {
@@ -1013,7 +1018,7 @@ func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 	return &edge, nil
 }
 
-func loadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
+func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
 	// load the edges
 	edges, err := LoadEdgesByType(id, edgeType)
 	if err != nil {
@@ -1040,7 +1045,7 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
 		query := fmt.Sprintf(
 			"SELECT %s FROM %s WHERE id IN (?)",
 			colsString,
-			"notes", // TODO get this from the edge
+			entConfig.GetTableName(),
 		)
 
 		// rebind for IN query
@@ -1050,13 +1055,13 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}) error {
 	return loadNodesHelper(nodes, sqlQuery)
 }
 
-func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, errChan chan<- error) {
-	err := loadNodesByType(id, edgeType, nodes)
+func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
+	err := loadNodesByType(id, edgeType, nodes, entConfig)
 	fmt.Println("GenLoadEdgesByType result", err, nodes)
 	errChan <- err
 }
 
-func GenLoadAssocEdges(nodes interface{}) error{
+func GenLoadAssocEdges(nodes interface{}) error {
 	sqlQuery := func(_ insertdata) (string, []interface{}, error) {
 		query := "SELECT * FROM assoc_edge_config"
 
