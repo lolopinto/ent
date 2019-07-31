@@ -23,6 +23,7 @@ type dataOperationWithEnt interface {
 }
 
 type dataOperationWithPlaceHolder interface {
+	HasPlaceholder() bool
 	AugmentWithPlaceHolder(createdObj Entity, t time.Time)
 }
 
@@ -180,13 +181,14 @@ func (op *updateNodeOp) getSQLQuery(columns []string, values []interface{}) stri
 }
 
 type edgeOperation struct {
-	edgeType EdgeType
-	id1      string
-	id1Type  NodeType
-	id2      string
-	id2Type  NodeType
-	time     time.Time
-	data     string
+	edgeType  EdgeType
+	id1       string
+	id1Type   NodeType
+	id2       string
+	id2Type   NodeType
+	time      time.Time
+	data      string
+	operation writeOperation
 }
 
 func (op *edgeOperation) PerformWrite(tx *sqlx.Tx) error {
@@ -200,15 +202,26 @@ func (op *edgeOperation) PerformWrite(tx *sqlx.Tx) error {
 	}
 	edgeOptions := EdgeOptions{Time: op.time, Data: op.data}
 
-	return addEdgeInTransactionRaw(
-		op.edgeType,
-		op.id1,
-		op.id2,
-		op.id1Type,
-		op.id2Type,
-		edgeOptions,
-		tx,
-	)
+	switch op.operation {
+	case insertOperation:
+		return addEdgeInTransactionRaw(
+			op.edgeType,
+			op.id1,
+			op.id2,
+			op.id1Type,
+			op.id2Type,
+			edgeOptions,
+			tx,
+		)
+	case deleteOperation:
+		return deleteEdgeInTransactionRaw(op.edgeType, op.id1, op.id2, tx)
+	default:
+		return fmt.Errorf("unsupported edge operation %v passed to edgeOperation.PerformWrite", op)
+	}
+}
+
+func (op *edgeOperation) HasPlaceholder() bool {
+	return op.id1 == idPlaceHolder || op.id2 == idPlaceHolder
 }
 
 func (op *edgeOperation) AugmentWithPlaceHolder(createdObj Entity, t time.Time) {
@@ -231,6 +244,10 @@ func handleAugment(op dataOperation, ent Entity, t time.Time) error {
 	augmentOp, ok := op.(dataOperationWithPlaceHolder)
 
 	if !ok {
+		return nil
+	}
+
+	if !augmentOp.HasPlaceholder() {
 		return nil
 	}
 

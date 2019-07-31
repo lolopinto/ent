@@ -209,6 +209,13 @@ func (s *graphQLSchema) processAction(action action.Action) {
 		})
 	}
 
+	for _, f := range action.GetNonEntFields() {
+		inputSchemaInfo.addNonEntField(&graphQLNonEntField{
+			fieldName: f.GetGraphQLName(),
+			fieldType: f.FieldType.GetGraphQLType(),
+		})
+	}
+
 	// TODO add field if it makes sense... e.g. EditXXX and deleteXXX mutations
 	s.addSchemaInfo(inputSchemaInfo)
 

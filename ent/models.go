@@ -411,13 +411,15 @@ func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entCon
 }
 
 type EditedNodeInfo struct {
-	ExistingEnt    Entity
-	Entity         Entity
-	EntConfig      Config
-	EditableFields ActionFieldMap
-	Fields         map[string]interface{}
-	InboundEdges   []*EditedEdgeInfo
-	OutboundEdges  []*EditedEdgeInfo
+	ExistingEnt          Entity
+	Entity               Entity
+	EntConfig            Config
+	EditableFields       ActionFieldMap
+	Fields               map[string]interface{}
+	InboundEdges         []*EditedEdgeInfo
+	OutboundEdges        []*EditedEdgeInfo
+	RemovedInboundEdges  []*EditedEdgeInfo
+	RemovedOutboundEdges []*EditedEdgeInfo
 }
 
 type EditedEdgeInfo struct {
@@ -461,9 +463,10 @@ func buildOperations(info *EditedNodeInfo) []dataOperation {
 	// 2 all inbound edges with id2 placeholder for newly created ent
 	for _, edge := range info.InboundEdges {
 		edgeOp := &edgeOperation{
-			edgeType: edge.EdgeType,
-			id1:      edge.Id,
-			id1Type:  edge.NodeType,
+			edgeType:  edge.EdgeType,
+			id1:       edge.Id,
+			id1Type:   edge.NodeType,
+			operation: insertOperation,
 		}
 		if info.ExistingEnt == nil {
 			edgeOp.id2 = idPlaceHolder
@@ -477,12 +480,46 @@ func buildOperations(info *EditedNodeInfo) []dataOperation {
 	// 3 all outbound edges with id1 placeholder for newly created ent
 	for _, edge := range info.OutboundEdges {
 		edgeOp := &edgeOperation{
-			edgeType: edge.EdgeType,
-			id2:      edge.Id,
-			id2Type:  edge.NodeType,
+			edgeType:  edge.EdgeType,
+			id2:       edge.Id,
+			id2Type:   edge.NodeType,
+			operation: insertOperation,
 		}
 		if info.ExistingEnt == nil {
 			edgeOp.id1 = idPlaceHolder
+		} else {
+			edgeOp.id1 = info.ExistingEnt.GetID()
+			edgeOp.id1Type = info.ExistingEnt.GetType()
+		}
+		ops = append(ops, edgeOp)
+	}
+
+	// verbose but prefer operation private to ent
+	for _, edge := range info.RemovedInboundEdges {
+		edgeOp := &edgeOperation{
+			edgeType:  edge.EdgeType,
+			id1:       edge.Id,
+			id1Type:   edge.NodeType,
+			operation: deleteOperation,
+		}
+		if info.ExistingEnt == nil {
+			panic("invalid. cannot remove edge when there's no existing ent")
+		} else {
+			edgeOp.id2 = info.ExistingEnt.GetID()
+			edgeOp.id2Type = info.ExistingEnt.GetType()
+		}
+		ops = append(ops, edgeOp)
+	}
+
+	for _, edge := range info.RemovedOutboundEdges {
+		edgeOp := &edgeOperation{
+			edgeType:  edge.EdgeType,
+			id2:       edge.Id,
+			id2Type:   edge.NodeType,
+			operation: deleteOperation,
+		}
+		if info.ExistingEnt == nil {
+			panic("invalid. cannot remove edge when there's no existing ent")
 		} else {
 			edgeOp.id1 = info.ExistingEnt.GetID()
 			edgeOp.id1Type = info.ExistingEnt.GetType()
@@ -866,13 +903,17 @@ func deleteEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType 
 		return err
 	}
 
+	id1 := findID(entity1)
+	id2 := findID(entity2)
+
+	return deleteEdgeInTransactionRaw(edgeType, id1, id2, tx)
+}
+
+func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx) error {
 	edgeData, err := getEdgeInfo(edgeType, tx)
 	if err != nil {
 		return err
 	}
-
-	id1 := findID(entity1)
-	id2 := findID(entity2)
 
 	query := fmt.Sprintf(
 		"DELETE FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3",

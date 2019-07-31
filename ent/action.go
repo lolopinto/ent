@@ -11,6 +11,7 @@ const (
 	MutationsAction                             // this should probably be the default for most ents. creates create/edit/delete and provides default behavior.
 	AddEdgeAction
 	RemoveEdgeAction
+	EdgeGroupAction
 )
 
 // type ActionFieldTypeMap map[string]string

@@ -51,7 +51,7 @@ type Field struct {
 	tagMap              map[string]string
 	topLevelStructField bool       // id, updated_at, created_at no...
 	entType             types.Type // not all fields will have an entType. probably don't need this...
-	fieldType           fieldType  // this is the underlying type for the field for graphql, db, etc
+	fieldType           FieldType  // this is the underlying type for the field for graphql, db, etc
 	dbColumn            bool
 	exposeToGraphQL     bool
 	exposeToActions     bool // TODO: figure out a better way for this long term. this is to allow password be hidden from reads but allowed in writes
@@ -75,7 +75,7 @@ func (f *Field) GetQuotedDBColName() string {
 }
 
 func GetTypeInStructDefinition(f *Field) string {
-	override, ok := f.fieldType.(fieldWithOverridenStructType)
+	override, ok := f.fieldType.(FieldWithOverridenStructType)
 	if ok {
 		return override.GetStructType()
 	}
@@ -156,7 +156,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 		topLevelStructField:   false,
 		dbColumn:              true,
 		singleFieldPrimaryKey: true,
-		fieldType:             &idType{},
+		fieldType:             &IdType{},
 	})
 
 	// going to assume we don't want created at and updated at in graphql
@@ -171,7 +171,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 		exposeToActions:     false,
 		topLevelStructField: false,
 		dbColumn:            true,
-		fieldType:           &timeType{},
+		fieldType:           &TimeType{},
 	})
 	fieldInfo.addField(&Field{
 		FieldName:           "UpdatedAt",
@@ -180,7 +180,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 		exposeToActions:     false,
 		topLevelStructField: false,
 		dbColumn:            true,
-		fieldType:           &timeType{},
+		fieldType:           &TimeType{},
 	})
 
 	for _, f := range s.Fields.List {

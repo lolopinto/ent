@@ -68,7 +68,8 @@ func (fw *templatedBasedFileWriter) GenerateBytes() []byte {
 		},
 	)
 	if err != nil {
-		fmt.Println(string(b))
+		fmt.Println(string(buf.Bytes()))
+		util.Die(err)
 	}
 
 	// if fw.formatSource {
@@ -104,7 +105,6 @@ func (fw *templatedBasedFileWriter) generateNewAst() *bytes.Buffer {
 	//err = t.Execute(os.Stdout, nodeData)
 	//fmt.Println(buffer)
 	//	fmt.Println(buffer.String())
-	// gofmt the buffer
 
 	return &buffer
 }

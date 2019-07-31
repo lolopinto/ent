@@ -190,6 +190,36 @@ func (action *removeEdgeActionType) getOperation() ent.ActionOperation {
 
 var _ concreteEdgeActionType = &removeEdgeActionType{}
 
+type groupEdgeActionType struct {
+}
+
+func (action *groupEdgeActionType) getDefaultActionName(nodeName, edgeName string) string {
+	panic("not supported for now")
+}
+
+func (action *groupEdgeActionType) getDefaultGraphQLName(nodeName, edgeName string) string {
+	panic("not supported for now")
+}
+
+func (action *groupEdgeActionType) getAction(commonInfo commonActionInfo) Action {
+	return getRemoveEdgeAction(commonInfo)
+}
+
+func (action *groupEdgeActionType) supportsFieldsFromEnt() bool {
+	// hmm! technically not?? todo come back
+	return true
+}
+
+func (action *groupEdgeActionType) getActionName() string {
+	return "ent.EdgeGroupAction"
+}
+
+func (action *groupEdgeActionType) getOperation() ent.ActionOperation {
+	return ent.EdgeGroupAction
+}
+
+var _ concreteEdgeActionType = &groupEdgeActionType{}
+
 func getActionTypeFromString(typ string) actionType {
 	switch typ {
 	case "ent.CreateAction":
@@ -204,6 +234,8 @@ func getActionTypeFromString(typ string) actionType {
 		return &addEdgeActionType{}
 	case "ent.RemoveEdgeAction":
 		return &removeEdgeActionType{}
+	case "ent.EdgeGroupAction":
+		return &groupEdgeActionType{}
 	}
 	panic(fmt.Errorf("invalid action type passed %s", typ))
 }

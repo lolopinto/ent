@@ -10,6 +10,7 @@ import (
 	"go/token"
 	"os"
 	"path"
+	"strconv"
 
 	"runtime"
 	"strings"
@@ -343,6 +344,7 @@ func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
 			formatSource:   true,
 			funcMap: template.FuncMap{
 				"fTypeString": field.GetTypeInStructDefinition,
+				"quoteStr":    strconv.Quote,
 				"topLevelStructField": func(f *field.Field) bool {
 					return f.TopLevelStructField()
 				},

@@ -59,6 +59,21 @@ func (action *{{$actionName}}) {{$field.MethodName}}({{$field.InstanceName}} {{$
 
 {{end -}}
 
+{{$nonEntFields := nonEntFields $action}}
+{{ range $field := $nonEntFields -}}
+// {{$field.MethodName}} sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
+func (action *{{$actionName}}) {{$field.MethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$actionName}} {
+  {{ if $field.IsStatusEnum -}}
+    action.SetEnumValue({{$field.InstanceName}})
+  {{ end -}}
+  {{ if $field.IsGroupID -}}
+    action.SetIDValue({{$field.InstanceName}}, {{$field.NodeType}})
+  {{ end -}}
+  return action
+}
+
+{{end -}}
+
 {{ $edges := edges $action}}
 
 {{ range $edge := $edges -}}
@@ -90,10 +105,18 @@ func (action *{{$actionName}}) GetFieldMap() ent.ActionFieldMap {
   }
 }
 
+
 // Save is the method called to execute this action and save change
 func (action * {{$actionName}}) Save() {{saveActionType $action}} {
   {{ if returnsObjectInstance $action -}}
     var {{$nodeInfo.NodeInstance}} models.{{$nodeInfo.Node}}
+    {{ if edgeGroupAction $action -}}
+      {{ range $field := $nonEntFields -}} 
+        {{ if $field.IsStatusEnum -}}
+          action.SetStatusMap({{$nodeInfo.NodeInstance}}.Viewer{{$field.FieldName}}Map())
+        {{end -}}
+      {{end -}}
+    {{end -}}
     err := action.SaveAction(&{{$nodeInfo.NodeInstance}}, action.GetFieldMap())
     return &{{$nodeInfo.NodeInstance}}, err
   {{else -}}

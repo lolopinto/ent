@@ -149,6 +149,7 @@ func TestEdgeGroup(t *testing.T) {
 	edgeGroup := edgeInfo.GetAssociationEdgeGroupByStatusName("FriendshipStatus")
 
 	friendRequestsEdge := edgeInfo.GetAssociationEdgeByName("FriendRequests")
+	friendsEdge := edgeInfo.GetAssociationEdgeByName("Friends")
 
 	expectedFriendRequestsEdge := &AssociationEdge{
 		EdgeConst: "AccountToFriendRequestsEdge",
@@ -174,6 +175,13 @@ func TestEdgeGroup(t *testing.T) {
 		ConstType:       "AccountFriendshipStatus",
 		Edges: map[string]*AssociationEdge{
 			"FriendRequests": friendRequestsEdge,
+			"Friends": friendsEdge,
+		},
+		EdgeAction: &EdgeAction{
+			Action:            "ent.AddEdgeAction",
+			CustomActionName:  "AccountFriendshipStatusAction",
+			CustomGraphQLName: "accountSetFriendshipStatus",
+			ExposeToGraphQL:   true,
 		},
 	}
 

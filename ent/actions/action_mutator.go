@@ -3,7 +3,9 @@ package actions
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
@@ -38,11 +40,13 @@ type ActionMutator interface {
 
 type editNodeActionMutator struct {
 	ActionMutator
-	Viewer        viewer.ViewerContext
-	editedFields  map[string]interface{}
-	inboundEdges  []*ent.EditedEdgeInfo
-	outboundEdges []*ent.EditedEdgeInfo
-	validated     bool
+	Viewer               viewer.ViewerContext
+	editedFields         map[string]interface{}
+	inboundEdges         []*ent.EditedEdgeInfo
+	outboundEdges        []*ent.EditedEdgeInfo
+	removedInboundEdges  []*ent.EditedEdgeInfo
+	removedOutboundEdges []*ent.EditedEdgeInfo
+	validated            bool
 }
 
 type editExistingNodeActionMutator struct {
@@ -56,15 +60,20 @@ func (action *editExistingNodeActionMutator) SaveAction(entity ent.Entity, field
 	if action.editedFields == nil {
 		action.editedFields = make(map[string]interface{})
 	}
-	action.Validate(fieldMap)
-	err := ent.EditNodeFromActionMap(&ent.EditedNodeInfo{
-		Entity:         entity,
-		EntConfig:      action.EntConfig,
-		EditableFields: fieldMap,
-		Fields:         action.editedFields,
-		ExistingEnt:    action.Ent,
-		InboundEdges:   action.inboundEdges,
-		OutboundEdges:  action.outboundEdges,
+	err := action.Validate(fieldMap)
+	if err != nil {
+		return err
+	}
+	err = ent.EditNodeFromActionMap(&ent.EditedNodeInfo{
+		Entity:               entity,
+		EntConfig:            action.EntConfig,
+		EditableFields:       fieldMap,
+		Fields:               action.editedFields,
+		ExistingEnt:          action.Ent,
+		InboundEdges:         action.inboundEdges,
+		OutboundEdges:        action.outboundEdges,
+		RemovedInboundEdges:  action.removedInboundEdges,
+		RemovedOutboundEdges: action.removedOutboundEdges,
 	})
 	if err != nil {
 		return err
@@ -95,6 +104,22 @@ func (action *editNodeActionMutator) AddInboundEdge(edgeType ent.EdgeType, id1 s
 
 func (action *editNodeActionMutator) AddOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType) {
 	action.outboundEdges = append(action.outboundEdges, &ent.EditedEdgeInfo{
+		EdgeType: edgeType,
+		Id:       id2,
+		NodeType: nodeType,
+	})
+}
+
+func (action *editNodeActionMutator) RemoveInboundEdge(edgeType ent.EdgeType, id1 string, nodeType ent.NodeType) {
+	action.removedInboundEdges = append(action.removedInboundEdges, &ent.EditedEdgeInfo{
+		EdgeType: edgeType,
+		Id:       id1,
+		NodeType: nodeType,
+	})
+}
+
+func (action *editNodeActionMutator) RemoveOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType) {
+	action.removedOutboundEdges = append(action.removedOutboundEdges, &ent.EditedEdgeInfo{
 		EdgeType: edgeType,
 		Id:       id2,
 		NodeType: nodeType,
@@ -165,14 +190,19 @@ func (action *CreateEntActionMutator) SaveAction(entity ent.Entity, fieldMap ent
 	//	spew.Dump(action.GetFieldMap())
 
 	// TODO figure out why I need to pass this in. I don't get it :()
-	action.Validate(fieldMap)
-	err := ent.CreateNodeFromActionMap(&ent.EditedNodeInfo{
-		Entity:         entity,
-		EntConfig:      action.EntConfig,
-		EditableFields: fieldMap,
-		Fields:         action.editedFields,
-		InboundEdges:   action.inboundEdges,
-		OutboundEdges:  action.outboundEdges,
+	err := action.Validate(fieldMap)
+	if err != nil {
+		return err
+	}
+	err = ent.CreateNodeFromActionMap(&ent.EditedNodeInfo{
+		Entity:               entity,
+		EntConfig:            action.EntConfig,
+		EditableFields:       fieldMap,
+		Fields:               action.editedFields,
+		InboundEdges:         action.inboundEdges,
+		OutboundEdges:        action.outboundEdges,
+		RemovedInboundEdges:  action.removedInboundEdges,
+		RemovedOutboundEdges: action.removedOutboundEdges,
 	})
 	if err != nil {
 		return err
@@ -203,4 +233,73 @@ type AddEdgeActionMutator struct {
 
 type RemoveEdgeActionMutator struct {
 	editExistingNodeActionMutator
+}
+
+type EdgeGroupActionMutator struct {
+	editExistingNodeActionMutator
+	enumValue string
+	idValue   string
+	nodeType  ent.NodeType
+	statusMap ent.AssocStatusMap
+}
+
+func (action *EdgeGroupActionMutator) SetEnumValue(enumValue string) {
+	action.enumValue = enumValue
+}
+
+func (action *EdgeGroupActionMutator) SetIDValue(idValue string, nodeType ent.NodeType) {
+	action.idValue = idValue
+	action.nodeType = nodeType
+}
+
+func (action *EdgeGroupActionMutator) SetStatusMap(statusMap ent.AssocStatusMap) {
+	action.statusMap = statusMap
+}
+
+func (action *EdgeGroupActionMutator) SaveAction(entity ent.Entity, fieldMap ent.ActionFieldMap) error {
+	// TODO these should be in a pre-process step. the same code below is similar
+	action.Validate()
+	for key, value := range action.statusMap {
+		// todo don't hardcode this
+		if !value.UseInStatusMutation || key == "event_invitees" {
+			continue
+		}
+		if key == strings.ToLower(action.enumValue) {
+			action.AddOutboundEdge(value.Edge, action.idValue, action.nodeType)
+		} else {
+			action.RemoveOutboundEdge(value.Edge, action.idValue, action.nodeType)
+		}
+	}
+	spew.Dump("outbound", action.outboundEdges)
+	spew.Dump("outbound removed", action.removedOutboundEdges)
+	err := ent.EditNodeFromActionMap(&ent.EditedNodeInfo{
+		Entity:               entity,
+		EntConfig:            action.EntConfig,
+		EditableFields:       fieldMap,
+		Fields:               action.editedFields,
+		ExistingEnt:          action.Ent,
+		InboundEdges:         action.inboundEdges,
+		OutboundEdges:        action.outboundEdges,
+		RemovedInboundEdges:  action.removedInboundEdges,
+		RemovedOutboundEdges: action.removedOutboundEdges,
+	})
+	if err != nil {
+		return err
+	}
+	entreflect.SetValueInEnt(reflect.ValueOf(entity), "Viewer", action.Viewer)
+	return nil
+}
+
+func (action *EdgeGroupActionMutator) Validate() error {
+	if action.enumValue == "" || action.idValue == "" {
+		return &ent.ActionValidationError{
+			Errors: []*ent.ActionErrorInfo{
+				&ent.ActionErrorInfo{
+					ErrorMsg: "required field not set",
+				},
+			},
+			ActionName: "TODO",
+		}
+	}
+	return nil
 }

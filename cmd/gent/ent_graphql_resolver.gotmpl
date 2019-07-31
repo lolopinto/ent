@@ -35,6 +35,10 @@
 	{{range $edge := $edges -}}	
 		{{$edge.MethodName}}ID(input.{{$edge.NodeID}}).
 	{{end -}}
+	{{$fields := actionNonEntFields $action}}
+	{{range $field := $fields -}}	
+		{{$field.MethodName}}(input.{{$field.FieldName}}).
+	{{end -}}
 		Save()
 	
 	if err != nil {

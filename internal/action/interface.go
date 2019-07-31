@@ -17,8 +17,21 @@ import (
 	"github.com/lolopinto/ent/internal/util"
 )
 
+type NonEntField struct {
+	FieldName string
+	FieldType field.FieldType
+	Flag      string
+	NodeType  string
+}
+
+func (f *NonEntField) GetGraphQLName() string {
+	return strcase.ToLowerCamel(f.FieldName)
+}
+
 type Action interface {
 	GetFields() []*field.Field
+	// TODO make this a generic abstraction. have run into this in other places
+	GetNonEntFields() []*NonEntField
 	GetEdges() []*edge.AssociationEdge
 	GetActionName() string
 	ExposedToGraphQL() bool
@@ -89,6 +102,7 @@ type commonActionInfo struct {
 	ExposeToGraphQL bool
 	GraphQLName     string
 	Fields          []*field.Field
+	NonEntFields    []*NonEntField
 	Edges           []*edge.AssociationEdge // for edge actions for now but eventually other actions
 	Operation       ent.ActionOperation
 	codegen.NodeInfo
@@ -112,6 +126,10 @@ func (action *commonActionInfo) GetFields() []*field.Field {
 
 func (action *commonActionInfo) GetEdges() []*edge.AssociationEdge {
 	return action.Edges
+}
+
+func (action *commonActionInfo) GetNonEntFields() []*NonEntField {
+	return action.NonEntFields
 }
 
 func (action *commonActionInfo) GetNodeInfo() codegen.NodeInfo {
@@ -140,6 +158,7 @@ type CreateAction struct {
 }
 
 type mutationExistingObjAction struct {
+	commonActionInfo
 }
 
 func (action *mutationExistingObjAction) MutatingExistingObject() bool {
@@ -170,10 +189,10 @@ type RemoveEdgeAction struct {
 	mutationExistingObjAction
 }
 
-// func (action *DeleteAction) GetFields() []string {
-// 	// TODO. we wanna return placeId, userId, etc
-// 	return []string{}
-// }
+type EdgeGroupAction struct {
+	commonActionInfo
+	mutationExistingObjAction
+}
 
 func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo) *ActionInfo {
 	// get the actions in the function
@@ -205,6 +224,14 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 		actionInfo.addActions(processEdgeAction(nodeName, assocEdge))
 
 	}
+
+	for _, assocGroup := range edgeInfo.AssocGroups {
+		if assocGroup.EdgeAction == nil {
+			continue
+		}
+		actionInfo.addActions(processEdgeGroupAction(nodeName, assocGroup))
+
+	}
 	// spew.Dump(actionInfo)
 
 	return actionInfo
@@ -221,6 +248,9 @@ type FieldActionTemplateInfo struct {
 	QuotedFieldName string
 	QuotedDBName    string
 	InverseEdge     *edge.AssociationEdge
+	IsStatusEnum    bool
+	IsGroupID       bool
+	NodeType        string
 }
 
 func GetActionMethodName(action Action) string {
@@ -247,6 +277,24 @@ func GetFields(action Action) []FieldActionTemplateInfo {
 			QuotedFieldName: strconv.Quote(f.FieldName),
 			QuotedDBName:    f.GetQuotedDBColName(),
 			InverseEdge:     f.InverseEdge,
+		})
+	}
+	return fields
+}
+
+func GetNonEntFields(action Action) []FieldActionTemplateInfo {
+	var fields []FieldActionTemplateInfo
+
+	for _, f := range action.GetNonEntFields() {
+
+		fields = append(fields, FieldActionTemplateInfo{
+			MethodName:   "Add" + f.FieldName,
+			InstanceName: strcase.ToLowerCamel(f.FieldName),
+			InstanceType: "string", // TODO this needs to work for other
+			FieldName:    f.FieldName,
+			IsStatusEnum: f.Flag == "Enum", // TODO best way?
+			IsGroupID:    f.Flag == "ID",
+			NodeType:     f.NodeType,
 		})
 	}
 	return fields
@@ -282,5 +330,6 @@ func GetEdges(action Action) []EdgeActionTemplateInfo {
 			NodeID:   edge.NodeInfo.Node + "ID",
 		})
 	}
+
 	return edges
 }

@@ -6,96 +6,96 @@ import (
 	"path/filepath"
 )
 
-type fieldType interface {
+type FieldType interface {
 	GetDBType() string
 	// for now we're going to assume every GraphQL Type is required
 	GetGraphQLType() string
 }
 
-type fieldWithOverridenStructType interface {
+type FieldWithOverridenStructType interface {
 	GetStructType() string
 }
 
-type stringType struct{}
+type StringType struct{}
 
-func (t *stringType) GetDBType() string {
+func (t *StringType) GetDBType() string {
 	return "sa.Text()"
 }
 
-func (t *stringType) GetGraphQLType() string {
+func (t *StringType) GetGraphQLType() string {
 	return "String!"
 }
 
-type boolType struct{}
+type BoolType struct{}
 
-func (t *boolType) GetDBType() string {
+func (t *BoolType) GetDBType() string {
 	return "sa.Boolean()"
 }
 
-func (t *boolType) GetGraphQLType() string {
+func (t *BoolType) GetGraphQLType() string {
 	return "Boolean!"
 }
 
 // TODO uuid support needed
 // and eventually need to work for non uuid types...
-type idType struct{}
+type IdType struct{}
 
-func (t *idType) GetDBType() string {
+func (t *IdType) GetDBType() string {
 	return "UUID()"
 }
 
-func (t *idType) GetGraphQLType() string {
+func (t *IdType) GetGraphQLType() string {
 	return "ID!"
 }
 
-type integerType struct{}
+type IntegerType struct{}
 
-func (t *integerType) GetDBType() string {
+func (t *IntegerType) GetDBType() string {
 	return "sa.Integer()"
 }
 
-func (t *integerType) GetGraphQLType() string {
+func (t *IntegerType) GetGraphQLType() string {
 	return "Int!"
 }
 
-type floatType struct{}
+type FloatType struct{}
 
-func (t *floatType) GetDBType() string {
+func (t *FloatType) GetDBType() string {
 	return "sa.Float()"
 }
 
-func (t *floatType) GetGraphQLType() string {
+func (t *FloatType) GetGraphQLType() string {
 	return "Float!"
 }
 
-type timeType struct{}
+type TimeType struct{}
 
-func (t *timeType) GetDBType() string {
+func (t *TimeType) GetDBType() string {
 	return "sa.TIMESTAMP()"
 }
 
 //use the built in graphql type
-func (t *timeType) GetGraphQLType() string {
+func (t *TimeType) GetGraphQLType() string {
 	return "Time!"
 }
 
-type namedType struct {
+type NamedType struct {
 	actualType types.Type
 }
 
-func (t *namedType) getUnderlyingType() fieldType {
+func (t *NamedType) getUnderlyingType() FieldType {
 	return getTypeForEntType(t.actualType.Underlying())
 }
 
-func (t *namedType) GetDBType() string {
+func (t *NamedType) GetDBType() string {
 	return t.getUnderlyingType().GetDBType()
 }
 
-func (t *namedType) GetGraphQLType() string {
+func (t *NamedType) GetGraphQLType() string {
 	return t.getUnderlyingType().GetGraphQLType()
 }
 
-func (t *namedType) GetStructType() string {
+func (t *NamedType) GetStructType() string {
 	// get the string version of the type and return the filepath
 	// we can eventually use this to gather import paths...
 	ret := t.actualType.String()
@@ -105,7 +105,7 @@ func (t *namedType) GetStructType() string {
 	return fp
 }
 
-func getTypeForEntType(entType types.Type) fieldType {
+func getTypeForEntType(entType types.Type) FieldType {
 	// this needs to eventually handle enums that we want to send to GraphQL
 
 	switch entType.(type) {
@@ -113,13 +113,13 @@ func getTypeForEntType(entType types.Type) fieldType {
 		if t, ok := entType.(*types.Basic); ok {
 			switch t.Kind() {
 			case types.String:
-				return &stringType{}
+				return &StringType{}
 			case types.Bool:
-				return &boolType{}
+				return &BoolType{}
 			case types.Int, types.Int16, types.Int32, types.Int64:
-				return &integerType{}
+				return &IntegerType{}
 			case types.Float32, types.Float64:
-				return &floatType{}
+				return &FloatType{}
 			}
 		}
 	case *types.Named:
@@ -128,14 +128,14 @@ func getTypeForEntType(entType types.Type) fieldType {
 		// TODO figure out all of this. not sure why it's a NamedType in one scenario and a StructType in another
 		switch entType.String() {
 		case "time.Time":
-			return &timeType{}
+			return &TimeType{}
 		}
 
-		return &namedType{actualType: entType}
+		return &NamedType{actualType: entType}
 	case *types.Struct:
 		switch entType.String() {
 		case "time.Time":
-			return &timeType{}
+			return &TimeType{}
 		}
 	}
 

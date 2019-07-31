@@ -3,6 +3,7 @@ package edge
 import (
 	"fmt"
 	"go/ast"
+	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -191,6 +192,7 @@ type AssociationEdgeGroup struct {
 	GroupStatusName string                      // should be something like RsvpStatus
 	ConstType       string                      // and then this becomes EventRsvpStatus
 	Edges           map[string]*AssociationEdge // TODO...
+	EdgeAction      *EdgeAction
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetAssociationByName(edgeName string) *AssociationEdge {
@@ -208,6 +210,10 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusFieldName() string {
 func (edgeGroup *AssociationEdgeGroup) GetConstNameForEdgeName(edgeName string) string {
 	// TODO need NodeData.Node
 	return "Event" + edgeName
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetQuotedConstNameForEdgeName(edgeName string) string {
+	return strconv.Quote(edgeGroup.GetConstNameForEdgeName(edgeName))
 }
 
 // http://goast.yuroyoro.net/ is really helpful to see the tree
@@ -461,6 +467,10 @@ func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, gr
 	g.AddItem("GroupStatusName", func(expr ast.Expr, keyValueExprValue ast.Expr) {
 		edgeGroup.GroupStatusName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
 		edgeGroup.ConstType = codegen.GetNodeInfo(containingPackageName).Node + edgeGroup.GroupStatusName
+	})
+
+	g.AddItem("EdgeAction", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		edgeGroup.EdgeAction = parseEdgeAction(keyValueExprValue)
 	})
 
 	g.RunLoop()
