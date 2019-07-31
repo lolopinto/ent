@@ -3,7 +3,8 @@
 package models
 
 import (
-  "github.com/lolopinto/ent/ent/privacy"
+	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/privacy"
   "github.com/lolopinto/ent/ent/viewer"
 )
 
@@ -14,8 +15,8 @@ type {{.Node}}PrivacyPolicy struct {
 }
 
 // Rules is the list of rules that decides the visibility of the {{.Node}} ent to the viewer
-func (policy {{.Node}}PrivacyPolicy) Rules() []privacy.PolicyRule {
-	return []privacy.PolicyRule{
+func (policy {{.Node}}PrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
+	return []ent.PrivacyPolicyRule{
 		privacy.AllowIfOmniscientRule{},
     // BEGIN MANUAL SECTION: Add custom privacy rules below
     // END MANUAL SECTION of privacy rules
@@ -29,14 +30,14 @@ type AllowIfViewerCanSee{{.Node}}Rule struct {
 }
 
 // GenEval evaluates that the ent is visible to the user 
-func (rule AllowIfViewerCanSee{{.Node}}Rule) GenEval(viewer viewer.ViewerContext, ent interface{}, privacyResultChan chan<- privacy.Result) {
+func (rule AllowIfViewerCanSee{{.Node}}Rule) GenEval(viewer viewer.ViewerContext, entity interface{}, privacyResultChan chan<- ent.PrivacyResult) {
 	entResultChan := make(chan {{.NodeResult}})
 	go GenLoad{{.Node}}(viewer, rule.{{.Node}}ID, entResultChan)
 	entResult := <-entResultChan
 
 	if entResult.Error != nil {
-		privacyResultChan <- privacy.SkipResult
+		privacyResultChan <- ent.SkipPrivacyResult
 	} else {
-		privacyResultChan <- privacy.AllowResult
+		privacyResultChan <- ent.AllowPrivacyResult
 	}
 }

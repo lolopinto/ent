@@ -9,7 +9,6 @@ import (
   "strings"
 
   "github.com/lolopinto/ent/ent"
-  "github.com/lolopinto/ent/ent/privacy"
   "github.com/lolopinto/ent/ent/viewer"
 
   {{.PathToConfigs}}
@@ -74,7 +73,7 @@ func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
 }
 
 // GetPrivacyPolicy returns the PrivacyPolicy of this entity. 
-func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy() privacy.Policy {
+func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy() ent.PrivacyPolicy {
   return {{.Node}}PrivacyPolicy{
     {{.Node}}: {{.NodeInstance}},
   }
@@ -160,6 +159,10 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
           go ent.GenLoadEdgesByTypeResult({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, chanEdgesResult)
         }
 
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}ByType(id2 string) (*ent.Edge, error) {
+          return ent.LoadEdgeByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, id2)
+        }
+
         // Gen{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
           var {{.NodeInstance}}s {{.NodesSlice}}
@@ -204,7 +207,8 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
         }
         var ret {{$const}}
         for key, edge := range edges {
-          if edge != nil {
+          // TODO better zero value behavior at some point
+      		if edge != nil && edge.ID1 != "" {
             var ok bool
             ret, ok = statusMap[key].ConstName.({{$const}})
             if !ok {

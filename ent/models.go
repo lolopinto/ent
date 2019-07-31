@@ -1045,8 +1045,9 @@ func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 	// nil state. return zero value of Edge for now. maybe come up with better
 	// way of doing this in the future
 	if err == sql.ErrNoRows {
-		fmt.Println("no rows", err)
-		return &Edge{}, err
+		//fmt.Println("no rows", err)
+		// don't mark this as an error. just no data
+		return &Edge{}, nil
 	}
 	if err != nil {
 		fmt.Println(err)
