@@ -95,16 +95,15 @@ type AllowIfEdgeExistsRule struct {
 	Func func(viewer viewer.ViewerContext, ent interface{}) (*ent.Edge, error)
 
 	// ID1 string
-	// ID2 string 
-	// EdgeType EdgeType 
+	// ID2 string
+	// EdgeType EdgeType
 }
 
 func (rule AllowIfEdgeExistsRule) GenEval(viewer viewer.ViewerContext, entity interface{}, resultChan chan<- ent.PrivacyResult) {
 	edge, err := rule.Func(viewer, entity)
 	if err != nil {
 		resultChan <- ent.SkipPrivacyResult
-	}
-	if edge == nil || edge.ID1 == "" {
+	} else if edge == nil || edge.ID1 == "" {
 		resultChan <- ent.SkipPrivacyResult
 	} else {
 		resultChan <- ent.AllowPrivacyResult

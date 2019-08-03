@@ -1,15 +1,19 @@
 package schema
 
 import (
+	"fmt"
+
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/internal/util"
 )
 
 func (m NodeMapInfo) loadExistingEdges() *assocEdgeData {
 	// load all edges in db
 	var existingEdges []*ent.AssocEdgeData
 	err := ent.GenLoadAssocEdges(&existingEdges)
-	util.Die(err)
+	if err != nil {
+		fmt.Println("error loading data. assoc_edge_config related. todo fix", err)
+	}
+	//	util.Die(err)
 
 	edgeMap := make(map[string]*ent.AssocEdgeData)
 	for _, assocEdgeData := range existingEdges {
