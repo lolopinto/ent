@@ -3,35 +3,58 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/iancoleman/strcase"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/lolopinto/ent/ent"
 
+	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
-
 	"github.com/lolopinto/ent/internal/field"
-
-	"github.com/99designs/gqlgen/api"
+	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/util"
 
+	"github.com/99designs/gqlgen/api"
 	"github.com/99designs/gqlgen/codegen/config"
 )
 
-type graphQLSchema struct {
-	nodes       codegenMapInfo
-	Types       map[string]*graphQLSchemaInfo
-	sortedTypes []*graphQLSchemaInfo
+// TODO break this into its own package
+type graphqlPlugin struct {
 }
 
-func newGraphQLSchema(nodes codegenMapInfo) *graphQLSchema {
+func (p *graphqlPlugin) pluginName() string {
+	return "graphql_plugin"
+}
+
+func (p *graphqlPlugin) processData(data *codegenData) error {
+	// eventually make this configurable
+	graphql := newGraphQLSchema(data)
+	graphql.generateSchema()
+
+	// right now it all panics but we have to change that lol
+	return nil
+}
+
+var _ codegenPlugin = &graphqlPlugin{}
+
+type graphQLSchema struct {
+	config         *codegenData
+	Types          map[string]*graphQLSchemaInfo
+	sortedTypes    []*graphQLSchemaInfo
+	queryFields    []*graphQLNonEntField
+	mutationFields []*graphQLNonEntField
+}
+
+func newGraphQLSchema(data *codegenData) *graphQLSchema {
 	types := make(map[string]*graphQLSchemaInfo)
 
 	return &graphQLSchema{
-		nodes: nodes,
-		Types: types,
+		config: data,
+		Types:  types,
+		//		Mutations:
 	}
 }
 
@@ -45,12 +68,20 @@ func (schema *graphQLSchema) generateSchema() {
 	schema.generateGraphQLCode()
 }
 
+func (schema *graphQLSchema) addQueryField(f *graphQLNonEntField) {
+	schema.queryFields = append(schema.queryFields, f)
+}
+
+func (schema *graphQLSchema) addMutationField(f *graphQLNonEntField) {
+	schema.mutationFields = append(schema.mutationFields, f)
+}
+
 func (schema *graphQLSchema) addSchemaInfo(info *graphQLSchemaInfo) {
 	schema.Types[info.TypeName] = info
 	schema.sortedTypes = append(schema.sortedTypes, info)
 }
 
-func (schema *graphQLSchema) buildGraphQLSchemaInfo(nodeData *nodeTemplate) *graphQLSchemaInfo {
+func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *schema.NodeData) {
 	// Contact, User etc...
 	schemaInfo := newGraphQLSchemaInfo("type", nodeData.Node)
 
@@ -74,51 +105,193 @@ func (schema *graphQLSchema) buildGraphQLSchemaInfo(nodeData *nodeTemplate) *gra
 		schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
 	}
 
+	for _, edgeGroup := range nodeData.EdgeInfo.AssocGroups {
+		schemaInfo.addNonEntField(&graphQLNonEntField{
+			fieldName: edgeGroup.GetStatusFieldName(),
+			fieldType: edgeGroup.ConstType,
+		})
+	}
+
 	// very simple, just get fields and create types. no nodes, edges, return ID fields etc
 	// and then we go from there...
 
 	for _, f := range nodeData.FieldInfo.Fields {
-		expose, _ := f.ExposeToGraphQL()
-		if !expose {
+		if !f.ExposeToGraphQL() {
 			continue
 		}
 		schemaInfo.addField(&graphQLField{Field: f})
 	}
 
-	return schemaInfo
-}
+	// add any enums
+	for _, cg := range nodeData.ConstantGroups {
+		if !cg.CreateNewType() {
+			continue
+		}
 
-func (schema *graphQLSchema) generateGraphQLSchemaData() {
-	// top level quries that will show up e.g. user(id: ), account(id: ) etc
-	// add everything as top level query for now
-	var queryFields []*graphQLNonEntField
-	for _, info := range schema.nodes {
-		nodeData := info.nodeData
-
-		queryFields = append(queryFields, &graphQLNonEntField{
-			fieldName: nodeData.NodeInstance,
-			fieldType: nodeData.Node,
-			args: []*graphQLArg{
-				&graphQLArg{
-					fieldName: "id",
-					fieldType: "ID!",
-				},
-			},
-		})
-
-		schemaInfo := schema.buildGraphQLSchemaInfo(nodeData)
-		schema.addSchemaInfo(schemaInfo)
+		schema.addSchemaInfo(schema.processConstantForEnum(cg))
 	}
 
+	// top level quries that will show up e.g. user(id: ), account(id: ) etc
 	// add everything as top level query for now
-	schema.addSchemaInfo(schema.getQuerySchemaType(queryFields))
+	schema.addQueryField(&graphQLNonEntField{
+		fieldName: nodeData.NodeInstance,
+		fieldType: nodeData.Node,
+		args: []*graphQLArg{
+			&graphQLArg{
+				fieldName: "id",
+				fieldType: "ID!",
+			},
+		},
+	})
+
+	// add the type as a top level GraphQL object
+	schema.addSchemaInfo(schemaInfo)
 }
 
-func (schema *graphQLSchema) getQuerySchemaType(queryFields []*graphQLNonEntField) *graphQLSchemaInfo {
+func (s *graphQLSchema) generateGraphQLSchemaData() {
+	for _, info := range s.config.schema.Nodes {
+		nodeData := info.NodeData
+
+		// add the GraphQL type e.g. User, Contact etc
+		s.addGraphQLInfoForType(nodeData)
+
+		s.processActions(nodeData.ActionInfo)
+	}
+
+	s.addSchemaInfo(s.getQuerySchemaType())
+	mutationsType := s.getMutationSchemaType()
+	if mutationsType != nil {
+		s.addSchemaInfo(mutationsType)
+	}
+}
+
+func (s *graphQLSchema) processActions(actionInfo *action.ActionInfo) {
+	if actionInfo == nil {
+		return
+	}
+	for _, action := range actionInfo.Actions {
+		if !action.ExposedToGraphQL() {
+			continue
+		}
+		//		spew.Dump(action)
+
+		s.processAction(action)
+	}
+}
+
+func (s *graphQLSchema) processAction(action action.Action) {
+	actionName := action.GetGraphQLName()
+
+	// TODO support shared input types
+	inputTypeName := strcase.ToCamel(actionName + "Input")
+	inputSchemaInfo := newGraphQLSchemaInfo("input", inputTypeName)
+
+	// add id field for editXXX and deleteXXX mutations
+	if action.MutatingExistingObject() {
+		inputSchemaInfo.addNonEntField(
+			&graphQLNonEntField{
+				fieldName: fmt.Sprintf("%sId", action.GetNodeInfo().NodeInstance),
+				fieldType: "ID!",
+			},
+		)
+	}
+	// get all the fields in the action and add it to the input
+	// userCreate mutation -> UserCreateInput
+	for _, f := range action.GetFields() {
+		inputSchemaInfo.addField(&graphQLField{Field: f})
+	}
+
+	// add each edge that's part of this mutation as an id
+	for _, edge := range action.GetEdges() {
+		inputSchemaInfo.addNonEntField(&graphQLNonEntField{
+			fieldName: fmt.Sprintf("%sId", edge.NodeInfo.NodeInstance),
+			fieldType: "ID!",
+		})
+	}
+
+	for _, f := range action.GetNonEntFields() {
+		inputSchemaInfo.addNonEntField(&graphQLNonEntField{
+			fieldName: f.GetGraphQLName(),
+			fieldType: f.FieldType.GetGraphQLType(),
+		})
+	}
+
+	// TODO add field if it makes sense... e.g. EditXXX and deleteXXX mutations
+	s.addSchemaInfo(inputSchemaInfo)
+
+	responseTypeName := strcase.ToCamel(actionName + "Response")
+	responseTypeSchemaInfo := newGraphQLSchemaInfo("type", responseTypeName)
+
+	nodeInfo := action.GetNodeInfo()
+
+	// TODO add viewer to response once we introduce that type
+
+	// TODO generic action Returns Object? method
+	if action.GetOperation() != ent.DeleteAction {
+		responseTypeSchemaInfo.addNonEntField(
+			&graphQLNonEntField{
+				fieldName: nodeInfo.NodeInstance,
+				fieldType: nodeInfo.Node,
+			},
+		)
+	} else { // TODO delete mutation?
+		// delete
+		responseTypeSchemaInfo.addNonEntField(
+			&graphQLNonEntField{
+				// add a deletedPlaceId, deletedContactId node to response
+				fieldName: fmt.Sprintf("deleted%sId", nodeInfo.Node),
+				fieldType: "ID",
+			})
+	}
+
+	s.addSchemaInfo(responseTypeSchemaInfo)
+
+	// add mutation as a top level mutation field
+	s.addMutationField(&graphQLNonEntField{
+		fieldName: actionName,
+		fieldType: responseTypeName, // TODO should this be required?
+		args: []*graphQLArg{
+			&graphQLArg{
+				fieldName: "input",
+				fieldType: fmt.Sprintf("%s!", inputTypeName),
+			},
+		},
+	})
+}
+
+func (s *graphQLSchema) processConstantForEnum(cg *schema.ConstGroupInfo) *graphQLSchemaInfo {
+	enumSchemaInfo := newGraphQLSchemaInfo("enum", cg.ConstType)
+
+	for _, constant := range cg.Constants {
+		unquoted, err := strconv.Unquote(constant.ConstValue)
+
+		util.Die(err)
+		// TODO deal with this
+		enumSchemaInfo.addNonEntField(&graphQLNonEntField{
+			fieldName: strcase.ToScreamingSnake(unquoted),
+		})
+	}
+	return enumSchemaInfo
+}
+
+func (s *graphQLSchema) getQuerySchemaType() *graphQLSchemaInfo {
+	// add everything as top level query for now
+
 	return &graphQLSchemaInfo{
 		Type:         "type",
 		TypeName:     "Query",
-		nonEntFields: queryFields,
+		nonEntFields: s.queryFields,
+	}
+}
+
+func (s *graphQLSchema) getMutationSchemaType() *graphQLSchemaInfo {
+	if len(s.mutationFields) == 0 {
+		return nil
+	}
+	return &graphQLSchemaInfo{
+		Type:         "type",
+		TypeName:     "Mutation",
+		nonEntFields: s.mutationFields,
 	}
 }
 
@@ -130,10 +303,10 @@ func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 	return t.Types
 }
 
-func (schema *graphQLSchema) writeGraphQLSchema() {
+func (s *graphQLSchema) writeGraphQLSchema() {
 	writeFile(
 		&templatedBasedFileWriter{
-			data:              schema.getSchemaForTemplate(),
+			data:              s.getSchemaForTemplate(),
 			pathToTemplate:    "templates/graphql/graphql_schema.tmpl",
 			templateName:      "graphql_schema.tmpl",
 			pathToFile:        "graphql/schema.graphql",
@@ -145,12 +318,12 @@ func (schema *graphQLSchema) writeGraphQLSchema() {
 	)
 }
 
-func (schema *graphQLSchema) writeGQLGenYamlFile() {
+func (s *graphQLSchema) writeGQLGenYamlFile() {
 	// TODO use 	"github.com/99designs/gqlgen/codegen/config
 	c := newGraphQLYamlConfig()
 
 	c.addSchema()
-	c.addModelsConfig(schema)
+	c.addModelsConfig(s)
 	c.addExecConfig()
 	c.addModelConfig()
 	///c.addResolverConfig() // don't need this since we're handling this ourselves
@@ -164,7 +337,7 @@ func (schema *graphQLSchema) writeGQLGenYamlFile() {
 	)
 }
 
-func (schema *graphQLSchema) generateGraphQLCode() {
+func (s *graphQLSchema) generateGraphQLCode() {
 	cfg, err := config.LoadConfig("graphql/gqlgen.yml")
 	// TODO
 	util.Die(err)
@@ -173,17 +346,17 @@ func (schema *graphQLSchema) generateGraphQLCode() {
 	// We build on the default implementation they support and go from there.
 	err = api.Generate(
 		cfg,
-		api.AddPlugin(newGraphQLResolverPlugin(schema.nodes)),
-		api.AddPlugin(newGraphQLServerPlugin()),
+		api.AddPlugin(newGraphQLResolverPlugin(s.config)),
+		api.AddPlugin(newGraphQLServerPlugin(s.config)),
 	)
 	util.Die(err)
 }
 
 // get the schema that will be passed to the template for rendering in a schema file
-func (schema *graphQLSchema) getSchemaForTemplate() *graphqlSchemaTemplate {
+func (s *graphQLSchema) getSchemaForTemplate() *graphqlSchemaTemplate {
 	ret := &graphqlSchemaTemplate{}
 
-	for _, typ := range schema.Types {
+	for _, typ := range s.Types {
 
 		var lines []string
 		for _, f := range typ.fields {
@@ -210,6 +383,10 @@ func (schema *graphQLSchema) getSchemaForTemplate() *graphqlSchemaTemplate {
 			SchemaLines: lines,
 		})
 	}
+
+	// TODO go through and figure out what scalars are needed and build them
+	// up instead of this manual addition
+	ret.Scalars = []string{"Time"}
 	return ret
 }
 
@@ -252,6 +429,11 @@ func (f *graphQLNonEntField) GetSchemaLine() string {
 		)
 	}
 
+	// enum declarations just have a name so doing that
+	if f.fieldType == "" {
+		return f.fieldName
+	}
+
 	return fmt.Sprintf("%s: %s", f.fieldName, f.fieldType)
 }
 
@@ -265,8 +447,7 @@ type graphQLField struct {
 }
 
 func (f *graphQLField) GetSchemaLine() string {
-	// TODO break expose and fieldName again
-	_, fieldName := f.ExposeToGraphQL()
+	fieldName := f.GetGraphQLName()
 
 	return fmt.Sprintf("%s: %s", fieldName, f.GetGraphQLTypeForField())
 }
@@ -328,9 +509,13 @@ func (s *graphQLSchemaInfo) addField(f *graphQLField) {
 	s.fieldMap[f.FieldName] = f
 }
 
+func (s *graphQLSchemaInfo) addNonEntField(f *graphQLNonEntField) {
+	s.nonEntFields = append(s.nonEntFields, f)
+}
+
 func (s *graphQLSchemaInfo) addFieldEdge(e *graphqlFieldEdge) {
 	s.fieldEdges = append(s.fieldEdges, e)
-	spew.Dump(e.EdgeName)
+	//	spew.Dump(e.EdgeName)
 	s.fieldEdgeMap[e.EdgeName] = e
 }
 
@@ -370,21 +555,24 @@ func (c *graphQLYamlConfig) addSchema() {
 	c.addEntry("schema", []string{"graphql/schema.graphql"})
 }
 
-func (c *graphQLYamlConfig) addModelsConfig(schema *graphQLSchema) {
+func (c *graphQLYamlConfig) addModelsConfig(s *graphQLSchema) {
 	// this creates a nested models: User: path_to_model map in here
 	models := make(map[string]interface{})
-	for _, t := range schema.Types {
-		if t.TypeName == "Query" {
-			continue
-		}
+
+	pathToModels, err := strconv.Unquote(s.config.codePath.PathToModels)
+	util.Die(err)
+	for _, info := range s.config.schema.Nodes {
+		nodeData := info.NodeData
+
 		model := make(map[string]string)
 
 		model["model"] = fmt.Sprintf(
-			// TODO get the correct path
-			"github.com/lolopinto/jarvis/models.%s",
-			t.TypeName,
+			// e.g. github.com/lolopinto/jarvis/models.User
+			"%s.%s",
+			pathToModels,
+			nodeData.Node,
 		)
-		models[t.TypeName] = model
+		models[nodeData.Node] = model
 	}
 
 	c.addEntry("models", models)
@@ -417,7 +605,8 @@ func (c *graphQLYamlConfig) addResolverConfig() {
 
 // wrapper object to represent the list of schema types that will be passed to a schema template file
 type graphqlSchemaTemplate struct {
-	Types []*graphqlSchemaTypeInfo
+	Types   []*graphqlSchemaTypeInfo
+	Scalars []string
 }
 
 // represents information needed by the schema template file to generate the schema for each type

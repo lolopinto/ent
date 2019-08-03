@@ -5,9 +5,10 @@ package models
 {{with .CodePath -}}
 import (
   "context"
+  "errors"
+  "strings"
 
   "github.com/lolopinto/ent/ent"
-  "github.com/lolopinto/ent/ent/privacy"
   "github.com/lolopinto/ent/ent/viewer"
 
   {{.PathToConfigs}}
@@ -15,11 +16,20 @@ import (
 {{end -}}
 
 {{with .NodeData -}}
-{{with .ConstantGroups -}}
+{{ $constGroup := .ConstantGroups -}}
+
+{{with .GetSortedConstantGroups -}}
+
+{{ range . -}}
+  {{if .CreateNewType -}}
+  type {{.ConstType}} string
+  {{end -}}
+{{end -}}
+
 const (
   {{ range . -}}
     {{$constType := .ConstType -}}
-    {{range .Constants -}}
+    {{range .GetSortedConstants -}}
       // {{.Comment}}
       {{.ConstName}} {{$constType}} = {{.ConstValue}}
     {{end}}
@@ -63,7 +73,7 @@ func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
 }
 
 // GetPrivacyPolicy returns the PrivacyPolicy of this entity. 
-func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy() privacy.Policy {
+func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy() ent.PrivacyPolicy {
   return {{.Node}}PrivacyPolicy{
     {{.Node}}: {{.NodeInstance}},
   }
@@ -149,11 +159,15 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
           go ent.GenLoadEdgesByTypeResult({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, chanEdgesResult)
         }
 
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}ByType(id2 string) (*ent.Edge, error) {
+          return ent.LoadEdgeByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, id2)
+        }
+
         // Gen{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
           var {{.NodeInstance}}s {{.NodesSlice}}
           chanErr := make(chan error)
-          go ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s, chanErr)
+          go ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s, {{.EntConfig}}, chanErr)
           err := <-chanErr
           chan{{.NodesResult}} <- {{.NodesResult}}{
             {{.Nodes}}: {{.NodeInstance}}s,
@@ -164,16 +178,78 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() ({{.NodesSlice}}, error) {
           var {{.NodeInstance}}s {{.NodesSlice}}
-          err := ent.LoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s)
+          err := ent.LoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s, {{.EntConfig}})
           return {{.NodeInstance}}s, err
         }
       {{end}}
-    {{end}}
+    {{end }}
+
+    {{range $assocEdgeGroup := .AssocGroups -}}
+      {{- $const := $assocEdgeGroup.ConstType -}}
+      {{$funcName := $assocEdgeGroup.GetStatusFuncName -}}
+      func ({{$currentNodeInstance}} *{{$currentNode}}) {{$funcName}}() (*{{$const}}, error) {
+        if !{{$currentNodeInstance}}.Viewer.HasIdentity() {
+          // TODO add CANNOT_RSVP enum 
+          ret := EventInvitees
+      		return &ret, nil
+        }
+        statusMap := {{$currentNodeInstance}}.{{$funcName}}Map()
+        edges := make(map[string]*ent.Edge)
+        errs := make(map[string]error)
+        for key, data := range statusMap {
+          // TODO concurrent versions
+          edges[key], errs[key] = ent.LoadEdgeByType({{$currentNodeInstance}}.ID, data.Edge, {{$currentNodeInstance}}.Viewer.GetViewerID())
+        }
+        for _, err := range errs {
+          if err != nil {
+            return nil, err
+          }
+        }
+        var ret {{$const}}
+        for key, edge := range edges {
+          // TODO better zero value behavior at some point
+      		if edge != nil && edge.ID1 != "" {
+            var ok bool
+            ret, ok = statusMap[key].ConstName.({{$const}})
+            if !ok {
+      				return nil, errors.New("error casting constant to {{$const}}")
+      			}
+            break
+          }
+        }
+        return &ret, nil
+      }
+
+      func ({{$currentNodeInstance}} *{{$currentNode}}) {{$funcName}}ForGQL() (*string, error) {
+        enum, err := {{$currentNodeInstance}}.{{$assocEdgeGroup.GetStatusFuncName}}()
+        if err != nil {
+          return nil, err
+        }
+        str := string(*enum)
+        return &str, nil
+      }
+
+      // TODO remove ViewerFrom this
+      func ({{$currentNodeInstance}} *{{$currentNode}}) {{$funcName}}Map() ent.AssocStatusMap {
+        {{ $constInfo := index $constGroup $const -}}
+        return ent.AssocStatusMap {
+        {{ range $assocEdge := $assocEdgeGroup.Edges -}}
+          {{ $edgeName := $assocEdge.EdgeName -}}
+          {{ $constName := $assocEdgeGroup.GetConstNameForEdgeName $edgeName -}}
+          {{ $constInfo := index $constInfo.Constants $constName -}}
+          {{ $constInfo.ConstValue}}: &ent.AssociationEdgeGroupStatusInfo{
+            EdgeName: "{{$edgeName}}",
+            Edge: {{$assocEdge.EdgeConst}},
+            ConstName: {{$constName}},
+            UseInStatusMutation: true,
+          },
+        {{ end -}}
+        }
+      }
+    {{ end -}}
   {{end}}
 {{end}}
 
-// Add this to each entity to confirm it implements the interface
-var _ ent.Entity = (*{{.Node}})(nil)
-
+var _ ent.Entity = &{{.Node}}{}
 
 {{end -}}

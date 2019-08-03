@@ -1,29 +1,36 @@
 package edge
 
 import (
+	"fmt"
 	"go/ast"
+	"strconv"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/depgraph"
 )
 
 type EdgeInfo struct {
 	// TODO hide FieldEdges etc
 	// make them accessors since we want to control mutations
-	FieldEdges    []*FieldEdge
-	fieldEdgeMap  map[string]*FieldEdge
-	ForeignKeys   []*ForeignKeyEdge
-	foreignKeyMap map[string]*ForeignKeyEdge
-	Associations  []*AssociationEdge
-	assocMap      map[string]*AssociationEdge
+	FieldEdges     []*FieldEdge
+	fieldEdgeMap   map[string]*FieldEdge
+	ForeignKeys    []*ForeignKeyEdge
+	foreignKeyMap  map[string]*ForeignKeyEdge
+	Associations   []*AssociationEdge
+	assocMap       map[string]*AssociationEdge
+	AssocGroups    []*AssociationEdgeGroup
+	assocGroupsMap map[string]*AssociationEdgeGroup
 }
 
-func newEdgeInfo() *EdgeInfo {
+func NewEdgeInfo() *EdgeInfo {
 	ret := &EdgeInfo{}
 	ret.fieldEdgeMap = make(map[string]*FieldEdge)
 	ret.foreignKeyMap = make(map[string]*ForeignKeyEdge)
 	ret.assocMap = make(map[string]*AssociationEdge)
+	ret.assocGroupsMap = make(map[string]*AssociationEdgeGroup)
 	return ret
 }
 
@@ -51,6 +58,12 @@ func (e *EdgeInfo) addEdge(edge Edge) {
 	}
 }
 
+// this is not an edge so doesn't implement Edge interface
+func (e *EdgeInfo) addEdgeGroup(assocEdgeGroup *AssociationEdgeGroup) {
+	e.AssocGroups = append(e.AssocGroups, assocEdgeGroup)
+	e.assocGroupsMap[assocEdgeGroup.GroupStatusName] = assocEdgeGroup
+}
+
 func (e *EdgeInfo) GetFieldEdgeByName(edgeName string) *FieldEdge {
 	return e.fieldEdgeMap[edgeName]
 }
@@ -61,6 +74,10 @@ func (e *EdgeInfo) GetForeignKeyEdgeByName(edgeName string) *ForeignKeyEdge {
 
 func (e *EdgeInfo) GetAssociationEdgeByName(edgeName string) *AssociationEdge {
 	return e.assocMap[edgeName]
+}
+
+func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *AssociationEdgeGroup {
+	return e.assocGroupsMap[groupStatusName]
 }
 
 type Edge interface {
@@ -95,7 +112,8 @@ func (e *commonEdgeInfo) GetEntConfig() codegen.EntConfigInfo {
 
 type FieldEdge struct {
 	commonEdgeInfo
-	FieldName string
+	FieldName       string
+	InverseEdgeName string
 }
 
 var _ Edge = &FieldEdge{}
@@ -113,56 +131,132 @@ func (e *ForeignKeyEdge) PluralEdge() bool {
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
 
-type AssociationEdge struct {
+type InverseAssocEdge struct {
 	commonEdgeInfo
 	EdgeConst string
+}
+
+type AssociationEdge struct {
+	commonEdgeInfo
+	EdgeConst     string
+	Symmetric     bool
+	InverseEdge   *InverseAssocEdge
+	IsInverseEdge bool
+	TableName     string // TableName will be gotten from the GroupName if part of a group or derived from each edge
+	// will eventually be made configurable to the user
+	EdgeAction *EdgeAction
+}
+
+// EdgeAction holds as little data as possible about the edge action
+// and depends on action to take that information, process it and generate the
+// action specific metadata
+type EdgeAction struct {
+	Action            string
+	CustomActionName  string
+	CustomGraphQLName string
+	ExposeToGraphQL   bool
 }
 
 func (e *AssociationEdge) PluralEdge() bool {
 	return true
 }
 
+func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) {
+	inverseEdge := e.InverseEdge
+	if inverseEdge == nil {
+		return
+	}
+
+	inverseAssocEdge := inverseEdgeInfo.GetAssociationEdgeByName(inverseEdge.EdgeName)
+	if inverseAssocEdge != nil {
+		panic(
+			fmt.Errorf(
+				"trying to add inverse assoc edge with name %s when edge already exists",
+				inverseEdge.EdgeName,
+			),
+		)
+	}
+
+	inverseEdgeInfo.addEdge(&AssociationEdge{
+		EdgeConst:      inverseEdge.EdgeConst,
+		commonEdgeInfo: inverseEdge.commonEdgeInfo,
+		IsInverseEdge:  true,
+	})
+}
+
 var _ Edge = &AssociationEdge{}
 var _ PluralEdge = &AssociationEdge{}
 
+type AssociationEdgeGroup struct {
+	GroupName       string                      // this is the name of the edge which is different from the name of the status. confusing
+	GroupStatusName string                      // should be something like RsvpStatus
+	ConstType       string                      // and then this becomes EventRsvpStatus
+	Edges           map[string]*AssociationEdge // TODO...
+	EdgeAction      *EdgeAction
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetAssociationByName(edgeName string) *AssociationEdge {
+	return edgeGroup.Edges[edgeName]
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetStatusFuncName() string {
+	return "Viewer" + edgeGroup.GroupStatusName
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetStatusFieldName() string {
+	return "viewer" + edgeGroup.GroupStatusName
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetConstNameForEdgeName(edgeName string) string {
+	// TODO need NodeData.Node
+	return "Event" + edgeName
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetQuotedConstNameForEdgeName(edgeName string) string {
+	return strconv.Quote(edgeGroup.GetConstNameForEdgeName(edgeName))
+}
+
 // http://goast.yuroyoro.net/ is really helpful to see the tree
 func ParseEdgesFunc(packageName string, fn *ast.FuncDecl) *EdgeInfo {
-	ret := newEdgeInfo()
+	ret := NewEdgeInfo()
 
 	elts := astparser.GetEltsInFunc(fn)
 
-	// get the edges in the function
 	for _, expr := range elts {
 		keyValueExpr := astparser.GetExprToKeyValueExpr(expr)
-		//fmt.Println(keyValueExpr)
-		// get the edge as needed
-		edgeItem := parseEdgeItem(packageName, keyValueExpr)
+		err := parseEdgeItem(ret, packageName, keyValueExpr)
 
-		ret.addEdge(edgeItem)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return ret
 }
 
-func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr) Edge {
+func parseEdgeItem(edgeInfo *EdgeInfo, containingPackageName string, keyValueExpr *ast.KeyValueExpr) error {
 	edgeName := astparser.GetUnderylingStringFromLiteralExpr(keyValueExpr.Key)
 	//fmt.Println("EdgeName: ", edgeName)
 
-	value := astparser.GetExprToCompositeLit(keyValueExpr.Value)
-	typ := astparser.GetExprToSelectorExpr(value.Type)
-	// ignore typ.X because for now it should always be models.FieldEdge or ent.FieldEdge...
-
-	edgeType := typ.Sel.Name
+	// if it's ent.FieldEdge or &ent.FieldEdge, we should allow it
+	// need to allow tests for this
+	// ent.FieldEdge is CompositLit
+	// &ent.FieldEdge is CompositLit in an unary expresion
+	value := astparser.GetExprToCompositeLitAllowUnaryExpr(keyValueExpr.Value)
+	edgeType := astparser.GetTypeNameFromExpr(value.Type)
 
 	switch edgeType {
-	case "FieldEdge":
-		return parseFieldEdgeItem(value, edgeName)
+	case "ent.FieldEdge":
+		return parseFieldEdgeItem(edgeInfo, value, edgeName)
 
-	case "ForeignKeyEdge":
-		return parseForeignKeyEdgeItem(value, edgeName)
+	case "ent.ForeignKeyEdge":
+		return parseForeignKeyEdgeItem(edgeInfo, value, edgeName)
 
-	case "AssociationEdge":
-		return parseAssociationEdgeItem(containingPackageName, edgeName, value)
+	case "ent.AssociationEdge":
+		return parseAssociationEdgeItem(edgeInfo, containingPackageName, edgeName, value)
+
+	case "ent.AssociationEdgeGroup":
+		return parseAssociationEdgeGroupItem(edgeInfo, containingPackageName, edgeName, value)
 
 	default:
 		panic("unsupported edge type")
@@ -170,39 +264,61 @@ func parseEdgeItem(containingPackageName string, keyValueExpr *ast.KeyValueExpr)
 	}
 }
 
-func parseFieldEdgeItem(lit *ast.CompositeLit, edgeName string) *FieldEdge {
-	done := make(chan bool)
-	var fieldName string
-	var entConfig codegen.EntConfigInfo
+type parseEdgeItemFunc func(expr ast.Expr, keyValueExprValue ast.Expr)
 
-	closure := func(identName string, keyValueExprValue ast.Expr, expr ast.Expr) {
-		switch identName {
-		case "FieldName":
-			// TODO: this validates it's a string literal.
-			// does not format it.
-			// TODO make this
-			_, ok := expr.(*ast.Ident)
-			if ok {
-				panic("invalid FieldName value. Should not use an expression. Should be a string literal")
+type parseEdgeGraph struct {
+	depgraph.Depgraph
+	lit *ast.CompositeLit
+}
+
+func initDepgraph(lit *ast.CompositeLit, entConfig *codegen.EntConfigInfo) *parseEdgeGraph {
+	//map[string]parseEdgeItemFunc {
+	g := &parseEdgeGraph{lit: lit}
+	g.AddItem("EntConfig", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		*entConfig = codegen.GetEntConfigFromExpr(keyValueExprValue)
+	})
+	return g
+}
+
+func (g *parseEdgeGraph) RunLoop() {
+	for _, expr := range g.lit.Elts {
+		keyValueExpr := astparser.GetExprToKeyValueExpr(expr)
+		ident := astparser.GetExprToIdent(keyValueExpr.Key)
+
+		g.CheckAndQueue(ident.Name, func(item interface{}) {
+			// can't cast to parseEdgeItemFunc :(
+			valueFunc, ok := item.(func(ast.Expr, ast.Expr))
+			if !ok {
+				panic("invalid func passed")
 			}
-			fieldName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
-			//fmt.Println("Field name:", fieldName)
-
-		case "EntConfig":
-			entConfig = codegen.GetEntConfigFromExpr(keyValueExprValue)
-
-		default:
-			panic("invalid identifier for field config")
-		}
+			valueFunc(expr, keyValueExpr.Value)
+		})
 	}
+	g.RunQueuedUpItems()
+}
 
-	go parseEdgeItemHelper(lit, closure, done)
-	<-done
+func parseFieldEdgeItem(edgeInfo *EdgeInfo, lit *ast.CompositeLit, edgeName string) error {
+	var fieldName string
+	var inverseEdgeName string
+	var entConfig codegen.EntConfigInfo
+	g := initDepgraph(lit, &entConfig)
 
-	return &FieldEdge{
-		commonEdgeInfo: getCommonEdgeInfo(edgeName, entConfig),
-		FieldName:      fieldName,
-	}
+	g.AddItem("FieldName", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		fieldName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
+	})
+
+	g.AddItem("InverseEdge", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		inverseEdgeName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
+	})
+
+	g.RunLoop()
+
+	edgeInfo.addEdge(&FieldEdge{
+		commonEdgeInfo:  getCommonEdgeInfo(edgeName, entConfig),
+		FieldName:       fieldName,
+		InverseEdgeName: inverseEdgeName,
+	})
+	return nil
 }
 
 func getCommonEdgeInfo(edgeName string, entConfig codegen.EntConfigInfo) commonEdgeInfo {
@@ -213,52 +329,197 @@ func getCommonEdgeInfo(edgeName string, entConfig codegen.EntConfigInfo) commonE
 	}
 }
 
-func parseForeignKeyEdgeItem(lit *ast.CompositeLit, edgeName string) *ForeignKeyEdge {
+func parseForeignKeyEdgeItem(edgeInfo *EdgeInfo, lit *ast.CompositeLit, edgeName string) error {
 	entConfig := parseEntConfigOnlyFromEdgeItemHelper(lit)
 
-	return &ForeignKeyEdge{
+	edgeInfo.addEdge(&ForeignKeyEdge{
 		commonEdgeInfo: getCommonEdgeInfo(edgeName, entConfig),
-	}
+	})
+	return nil
 }
 
-func parseAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.CompositeLit) *AssociationEdge {
-	entConfig := parseEntConfigOnlyFromEdgeItemHelper(lit)
-
-	// todo...
-	// need to support custom edge...
-	edgeConst := strcase.ToCamel(containingPackageName) + "To" + edgeName + "Edge"
-
-	return &AssociationEdge{
-		commonEdgeInfo: getCommonEdgeInfo(edgeName, entConfig),
-		EdgeConst:      edgeConst,
+func getEltsInEdge(keyValueExprValue ast.Expr, expectedType string) []ast.Expr {
+	compositLit := astparser.GetComposeLitInUnaryExpr(keyValueExprValue)
+	typName := astparser.GetTypeNameFromExpr(compositLit.Type)
+	if typName != expectedType {
+		panic(
+			fmt.Errorf(
+				"invalid type name. expected %s got %s",
+				expectedType,
+				typName,
+			),
+		)
 	}
+	return compositLit.Elts
 }
 
-func parseEntConfigOnlyFromEdgeItemHelper(lit *ast.CompositeLit) codegen.EntConfigInfo {
-	done := make(chan bool)
+func parseInverseAssocEdge(entConfig codegen.EntConfigInfo, containingPackageName string, keyValueExprValue ast.Expr) *InverseAssocEdge {
+	elts := getEltsInEdge(keyValueExprValue, "ent.InverseAssocEdge")
+
+	ret := &InverseAssocEdge{}
+
+	var edgeName string
+	for _, expr := range elts {
+		kve := astparser.GetExprToKeyValueExpr(expr)
+
+		key := astparser.GetExprToIdent(kve.Key)
+		if key.Name != "EdgeName" {
+			// we only support one key now so keeping it simple like this.
+			// this is a perfetct usecase for run loop and depgraph eventually
+			panic("invalid key in inverse assco edge")
+		}
+		edgeName = astparser.GetUnderylingStringFromLiteralExpr(kve.Value)
+	}
+
+	if edgeName == "" {
+		panic("no edge name provided for inverse assoc edge")
+	}
+
+	// add inverse const for this edge
+	ret.EdgeConst = getEdgeCostName(entConfig.PackageName, edgeName)
+
+	ret.commonEdgeInfo = getCommonEdgeInfo(
+		edgeName,
+		// need to create a new EntConfig for the inverse edge
+
+		// take something like folder and create Folder and FolderConfig
+		// TODO: probably want to pass this down instead of magically configuring this
+
+		codegen.GetEntConfigFromName(containingPackageName),
+	)
+	return ret
+}
+
+func parseAssociationEdgeItem(edgeInfo *EdgeInfo, containingPackageName, edgeName string, lit *ast.CompositeLit) error {
+	assocEdge := getParsedAssociationEdgeItem(containingPackageName, edgeName, lit)
+
+	tableNameParts := []string{
+		containingPackageName,
+		strings.ToLower(strcase.ToSnake(edgeName)),
+		"edges",
+	}
+	assocEdge.TableName = getNameFromParts(tableNameParts)
+	edgeInfo.addEdge(assocEdge)
+	return nil
+}
+
+func getParsedAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.CompositeLit) *AssociationEdge {
 	var entConfig codegen.EntConfigInfo
+	g := initDepgraph(lit, &entConfig)
 
-	closure := func(identName string, keyValueExprValue ast.Expr, _ ast.Expr) {
-		switch identName {
-		case "EntConfig":
-			entConfig = codegen.GetEntConfigFromExpr(keyValueExprValue)
+	assocEdge := &AssociationEdge{}
 
-		default:
-			panic("invalid identifier for field config")
+	g.AddItem("Symmetric", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		assocEdge.Symmetric = astparser.GetBooleanValueFromExpr(keyValueExprValue)
+	})
+
+	g.AddItem("InverseEdge", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		// EntConfig is a pre-requisite so indicate as much since we don't wanna parse it twice
+
+		assocEdge.InverseEdge = parseInverseAssocEdge(entConfig, containingPackageName, keyValueExprValue)
+	}, "EntConfig")
+
+	g.AddItem("EdgeAction", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		assocEdge.EdgeAction = parseEdgeAction(keyValueExprValue)
+	})
+
+	g.RunLoop()
+
+	assocEdge.EdgeConst = getEdgeCostName(containingPackageName, edgeName)
+
+	assocEdge.commonEdgeInfo = getCommonEdgeInfo(edgeName, entConfig)
+	return assocEdge
+}
+
+func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, groupKey string, lit *ast.CompositeLit) error {
+	edgeGroup := &AssociationEdgeGroup{
+		GroupName: groupKey,
+	}
+	edgeGroup.Edges = make(map[string]*AssociationEdge)
+
+	g := &parseEdgeGraph{lit: lit}
+
+	tableNameParts := []string{
+		containingPackageName,
+		strings.ToLower(strcase.ToSnake(groupKey)),
+		"edges",
+	}
+	tableName := getNameFromParts(tableNameParts)
+
+	g.AddItem("EdgeGroups", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		elts := astparser.GetExprToCompositeLit(keyValueExprValue).Elts
+
+		for _, expr2 := range elts {
+			kve := astparser.GetExprToKeyValueExpr(expr2)
+			edgeName := astparser.GetUnderylingStringFromLiteralExpr(kve.Key)
+
+			lit2 := astparser.GetExprToCompositeLitAllowUnaryExpr(kve.Value)
+			assocEdge := getParsedAssociationEdgeItem(containingPackageName, edgeName, lit2)
+
+			// all the edges in a group have the same table name
+			assocEdge.TableName = tableName
+			edgeInfo.addEdge(assocEdge)
+
+			edgeGroup.Edges[edgeName] = assocEdge
+		}
+	})
+
+	g.AddItem("GroupStatusName", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		edgeGroup.GroupStatusName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
+		edgeGroup.ConstType = codegen.GetNodeInfo(containingPackageName).Node + edgeGroup.GroupStatusName
+	})
+
+	g.AddItem("EdgeAction", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		edgeGroup.EdgeAction = parseEdgeAction(keyValueExprValue)
+	})
+
+	g.RunLoop()
+	edgeInfo.addEdgeGroup(edgeGroup)
+	return nil
+}
+
+func parseEdgeAction(keyValueExprValue ast.Expr) *EdgeAction {
+	elts := getEltsInEdge(keyValueExprValue, "ent.EdgeActionConfig")
+
+	ret := &EdgeAction{
+		ExposeToGraphQL: true,
+	}
+	for _, expr := range elts {
+		kve := astparser.GetExprToKeyValueExpr(expr)
+
+		ident := astparser.GetExprToIdent(kve.Key)
+		switch ident.Name {
+		case "Action":
+			ret.Action = astparser.GetTypeNameFromExpr(kve.Value)
+
+		case "CustomActionName":
+			ret.CustomActionName = astparser.GetUnderylingStringFromLiteralExpr(kve.Value)
+
+		case "CustomGraphQLName":
+			ret.CustomGraphQLName = astparser.GetUnderylingStringFromLiteralExpr(kve.Value)
+
+		case "HideFromGraphQL":
+			ret.ExposeToGraphQL = !astparser.GetBooleanValueFromExpr(kve.Value)
 		}
 	}
 
-	go parseEdgeItemHelper(lit, closure, done)
-	<-done
+	return ret
+}
+
+func getEdgeCostName(packageName, edgeName string) string {
+	// todo... need to support custom edges at some point...
+	return strcase.ToCamel(packageName) + "To" + edgeName + "Edge"
+}
+
+func parseEntConfigOnlyFromEdgeItemHelper(lit *ast.CompositeLit) codegen.EntConfigInfo {
+	var entConfig codegen.EntConfigInfo
+
+	g := initDepgraph(lit, &entConfig)
+	g.RunLoop()
 	return entConfig
 }
 
-func parseEdgeItemHelper(lit *ast.CompositeLit, valueFunc func(identName string, keyValueExprValue ast.Expr, expr ast.Expr), done chan<- bool) {
-	for _, expr := range lit.Elts {
-		keyValueExpr := astparser.GetExprToKeyValueExpr(expr)
-		ident := astparser.GetExprToIdent(keyValueExpr.Key)
-
-		valueFunc(ident.Name, keyValueExpr.Value, expr)
-	}
-	done <- true
+// duplicated from db_schema.go
+func getNameFromParts(nameParts []string) string {
+	return strings.Join(nameParts, "_")
 }

@@ -2,12 +2,16 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/util"
+
 	flag "github.com/ogier/pflag"
 )
 
@@ -38,28 +42,38 @@ func main() {
 	parseSchemasAndGenerate(pathToConfig, specificConfig, codePathInfo)
 }
 
-type codePath struct {
-	PathToConfigs string
-	PathToModels  string
-}
+func getPathToCode(pathToConfig string) *codegen.CodePath {
+	b, err := ioutil.ReadFile("go.mod")
 
-func getPathToCode(pathToConfig string) *codePath {
-	abs, err := filepath.Abs(".")
-	util.Die(err)
-	pathPastSymlinks, err := filepath.EvalSymlinks(abs)
-	// TODO: probably better to put this in some yml file but we're not there yet so reading from the filesystem instead...
-	pathParts := strings.Split(pathPastSymlinks, string(filepath.Separator))
+	var cp string
+	// file exists. simple and done
+	if err == nil {
+		contents := string(b)
+		r := regexp.MustCompile(`module (.*)\n`)
 
-	var idx int
-	for i := len(pathParts) - 1; i > 0; i-- {
-		part := pathParts[i]
-		if len(strings.Split(part, ".")) > 1 {
-			idx = i
-			break
+		match := r.FindStringSubmatch(contents)
+
+		cp = match[1]
+	} else {
+		abs, err := filepath.Abs(".")
+		util.Die(err)
+		pathPastSymlinks, err := filepath.EvalSymlinks(abs)
+		// TODO: probably better to put this in some yml file but we're not there yet so reading from the filesystem instead...
+		pathParts := strings.Split(pathPastSymlinks, string(filepath.Separator))
+
+		var idx int
+		for i := len(pathParts) - 1; i > 0; i-- {
+			part := pathParts[i]
+			if len(strings.Split(part, ".")) > 1 {
+				idx = i
+				break
+			}
 		}
+		cp = strings.Join(pathParts[idx:], string(filepath.Separator))
 	}
-	cp := strings.Join(pathParts[idx:], string(filepath.Separator))
-	return &codePath{
+
+	return &codegen.CodePath{
+		PathToRoot:    cp,
 		PathToConfigs: strconv.Quote(filepath.Join(cp, pathToConfig)),
 		PathToModels:  strconv.Quote(filepath.Join(cp, "models")),
 	}

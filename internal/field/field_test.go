@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/parsehelper"
 )
 
 func TestFieldInfo(t *testing.T) {
@@ -48,7 +48,7 @@ func TestCreatedAtField(t *testing.T) {
 			topLevelStructField:   false,
 			dbColumn:              true,
 		},
-		"",
+		"createdAt",
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time!")
@@ -67,7 +67,7 @@ func TestUpdatedAtField(t *testing.T) {
 			topLevelStructField:   false,
 			dbColumn:              true,
 		},
-		"",
+		"updatedAt",
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time!")
@@ -120,7 +120,7 @@ func TestHiddenGraphQLField(t *testing.T) {
 			topLevelStructField:   true,
 			dbColumn:              true,
 		},
-		"",
+		"numberOfLogins",
 	)
 }
 
@@ -196,7 +196,7 @@ func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName s
 		)
 	}
 
-	expose, fieldName := f.ExposeToGraphQL()
+	expose := f.ExposeToGraphQL()
 	if expose != expFieldProps.exposeToGraphQL {
 		t.Errorf(
 			"expected field exposed to graphql status to return %v, got %v instead",
@@ -205,11 +205,12 @@ func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName s
 		)
 	}
 
+	fieldName := f.GetGraphQLName()
 	if fieldName != expectedGraphQLFieldName {
 		t.Errorf(
 			"expected graphql field name to be %s, got %s instead",
-			fieldName,
 			expectedGraphQLFieldName,
+			fieldName,
 		)
 	}
 
@@ -300,8 +301,8 @@ func getTestFieldByName(t *testing.T, configName string, fieldName string) *Fiel
 	return fieldInfo.GetFieldByName(fieldName)
 }
 
-func parseConfigFileForStruct(t *testing.T) *codegen.FileConfigData {
-	data := codegen.ParseFilesForTest(t)
+func parseConfigFileForStruct(t *testing.T) *parsehelper.FileConfigData {
+	data := parsehelper.ParseFilesForTest(t)
 	data.ParseStructs(t)
 	return data
 }

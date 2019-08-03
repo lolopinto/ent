@@ -11,7 +11,7 @@ func TestBuildGraphQLSchema(t *testing.T) {
 
 	if len(schema.Types) != 3 {
 		// Account from AccountConfig
-		// TodoConfig from TODO
+		// Todo from TodoConfig
 		// Query
 		t.Errorf("expected 3 types created, got %d instead", len(schema.Types))
 	}
@@ -78,7 +78,7 @@ func TestGraphQLOtherIDField(t *testing.T) {
 func TestGraphQLOtherIDWithNoEdge(t *testing.T) {
 	sources := make(map[string]string)
 
-	sources["todo"] = `
+	sources["todo_config.go"] = `
 	package configs
 
 type TodoConfig struct {
@@ -91,12 +91,10 @@ type TodoConfig struct {
 	}
 	`
 
-	s := newGraphQLSchema(
-		parseSchemasFromSource(
-			sources,
-			"",
-		),
-	)
+	s := newGraphQLSchema(&codegenData{
+		schema: parseSchema(t, sources, "GraphQLOtherIDWithNoEdge"),
+	})
+
 	s.generateGraphQLSchemaData()
 	f := getTestGraphQLFieldFromTemplate("Todo", "AccountID", s, t)
 
@@ -269,7 +267,10 @@ func getTestGraphQLFieldFromTemplate(typeName, fieldName string, schema *graphQL
 }
 
 func getTestGraphQLSchema(t *testing.T) *graphQLSchema {
-	schema := newGraphQLSchema(getParsedTestSchemaFiles())
+	data := &codegenData{
+		schema: getParsedTestSchema(t),
+	}
+	schema := newGraphQLSchema(data)
 	schema.generateGraphQLSchemaData()
 	return schema
 }

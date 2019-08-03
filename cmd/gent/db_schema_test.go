@@ -6,6 +6,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/lolopinto/ent/internal/parsehelper"
+	"github.com/lolopinto/ent/internal/schema"
 )
 
 func TestIDColumn(t *testing.T) {
@@ -72,7 +75,7 @@ func TestTableForNode(t *testing.T) {
 }
 
 func TestTablesFromSchema(t *testing.T) {
-	schema := getTestSchema()
+	schema := getTestSchema(t)
 	schema.generateShemaTables()
 
 	// accounts
@@ -163,8 +166,8 @@ func TestForeignKeyColumn(t *testing.T) {
 func TestInvalidForeignKeyConfig(t *testing.T) {
 	sources := make(map[string]string)
 
-	sources["account"] = getAccountConfigContents(t)
-	sources["todo"] = `
+	sources["account_config.go"] = getAccountConfigContents(t)
+	sources["todo_config.go"] = `
 	package configs
 
 type TodoConfig struct {
@@ -176,7 +179,7 @@ type TodoConfig struct {
 	}
 	`
 
-	schemas := getInMemoryTestSchemas(sources)
+	schemas := getInMemoryTestSchemas(t, sources, "InvalidForeignKeyConfig")
 
 	defer expectPanic(t, "invalid EntConfig accounts set as ForeignKey of field AccountID on ent config TodoConfig")
 
@@ -186,8 +189,8 @@ type TodoConfig struct {
 func TestInvalidForeignKeyColumn(t *testing.T) {
 	sources := make(map[string]string)
 
-	sources["account"] = getAccountConfigContents(t)
-	sources["todo"] = `
+	sources["account_config.go"] = getAccountConfigContents(t)
+	sources["todo_config.go"] = `
 	package configs
 
 type TodoConfig struct {
@@ -199,7 +202,7 @@ type TodoConfig struct {
 	}
 	`
 
-	schemas := getInMemoryTestSchemas(sources)
+	schemas := getInMemoryTestSchemas(t, sources, "InvalidForeignKey")
 
 	defer expectPanic(t, "invalid Field Bar set as ForeignKey of field AccountID on ent config TodoConfig")
 
@@ -306,7 +309,7 @@ func TestForeignKeyConstraintInEdgeConfigTable(t *testing.T) {
 
 func TestGeneratedTableForEdge(t *testing.T) {
 	// AccountConfig, edge called Friends,
-	table := getTestTableByName("accounts_friends_edge", t)
+	table := getTestTableByName("account_friends_edges", t)
 
 	if len(table.Columns) != 7 {
 		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 7, len(table.Columns))
@@ -396,7 +399,7 @@ func TestDataEdgeColumn(t *testing.T) {
 }
 
 func TestPrimaryKeyConstraintInEdgeTable(t *testing.T) {
-	table := getTestTableByName("accounts_friends_edge", t)
+	table := getTestTableByName("account_friends_edges", t)
 
 	if len(table.Constraints) != 1 {
 		t.Errorf("expected 1 constraint in edge table, got %d", len(table.Constraints))
@@ -410,7 +413,7 @@ func TestPrimaryKeyConstraintInEdgeTable(t *testing.T) {
 			strconv.Quote("id1"),
 			strconv.Quote("edge_type"),
 			strconv.Quote("id2"),
-			strconv.Quote("accounts_friends_edge_id1_edge_type_id2_pkey"),
+			strconv.Quote("account_friends_edges_id1_edge_type_id2_pkey"),
 		),
 	)
 }
@@ -436,42 +439,39 @@ func testConstraint(t *testing.T, constraint dbConstraint, expectedConstraintStr
 	}
 }
 
-func getParsedTestSchemaFiles() codegenMapInfo {
-	return parseAllSchemaFiles(
-		"./testdata/models/configs",
-		"",
-		&codePath{
-			PathToConfigs: "./testdata/models/configs/",
-			PathToModels:  "./testdata/models/",
-		},
+func getParsedTestSchema(t *testing.T) *schema.Schema {
+	// use parsehelper.ParseFilesForTest since that caches it
+	data := parsehelper.ParseFilesForTest(
+		t,
+		// this is using the testdata local to gent
+		// will be fixed and standardized at some point
+		parsehelper.RootPath("./testdata/models/configs/"),
 	)
+	return schema.ParsePackage(data.Pkg)
 }
 
-func getTestSchema() *dbSchema {
-	return newDBSchema(getParsedTestSchemaFiles())
+func getTestSchema(t *testing.T) *dbSchema {
+	return newDBSchema(getParsedTestSchema(t))
 }
 
-func getInMemoryTestSchemas(sources map[string]string) *dbSchema {
-	return newDBSchema(
-		parseSchemasFromSource(
-			sources,
-			"",
-		),
-	)
+func getInMemoryTestSchemas(t *testing.T, sources map[string]string, uniqueKey string) *dbSchema {
+	return newDBSchema(parseSchema(
+		t, sources, uniqueKey,
+	))
 }
 
 func getTestTable(configName string, t *testing.T) *dbTable {
-	schema := getTestSchema()
+	schema := getTestSchema(t)
 
 	return getTestTableFromSchema(configName, schema, t)
 }
 
-func getTestTableFromSchema(configName string, schema *dbSchema, t *testing.T) *dbTable {
-	node := schema.nodes[configName]
+func getTestTableFromSchema(configName string, s *dbSchema, t *testing.T) *dbTable {
+	node := s.schema.Nodes[configName]
 	if node == nil {
 		t.Errorf("no codegen info for %s table", configName)
 	}
-	table := schema.getTableForNode(node.nodeData)
+	table := s.getTableForNode(node.NodeData)
 	if table == nil {
 		t.Errorf("no dbtable info for %s", configName)
 	}
@@ -550,7 +550,7 @@ func getAccountConfigContents(t *testing.T) string {
 
 func getTestTableByName(tableName string, t *testing.T) *dbTable {
 	tableName = strconv.Quote(tableName)
-	schema := getTestSchema()
+	schema := getTestSchema(t)
 	schema.generateShemaTables()
 
 	for _, table := range schema.Tables {
@@ -563,7 +563,7 @@ func getTestTableByName(tableName string, t *testing.T) *dbTable {
 }
 
 func getEdgeColumn(colDBName string, t *testing.T) *dbColumn {
-	return getColumnFromNamedTable(colDBName, "accounts_friends_edge", t)
+	return getColumnFromNamedTable(colDBName, "account_friends_edges", t)
 }
 
 func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColumn {
@@ -574,7 +574,7 @@ func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColum
 			return col
 		}
 	}
-	t.Errorf("no db column %s for accounts_friends_edge table", colDBName)
+	t.Errorf("no db column %s for account_friends_edges table", colDBName)
 	return nil
 }
 
@@ -590,4 +590,13 @@ func expectPanic(t *testing.T, expectedError string) {
 			t.Errorf("error not as expected, was %s instead", err.Error())
 		}
 	}
+}
+
+// inlining this in a bunch of places to break the import cycle
+func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources string) *schema.Schema {
+	data := parsehelper.ParseFilesForTest(
+		t,
+		parsehelper.Sources(uniqueKeyForSources, sources),
+	)
+	return schema.ParsePackage(data.Pkg)
 }

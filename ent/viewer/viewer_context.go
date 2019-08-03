@@ -31,13 +31,17 @@ type ViewerContext interface {
 
 	// returns the logged in user. should return nil if logged out
 	// Can't have a generic User object to return because Go is hard
+
+	// TODO rename to LoggedInEntity() that returns Entity instead of GetUser() that returns interface{}
+	// would need to reorganize a few things
 	GetUser() interface{}
 
 	// returns the ID of the logged in viewer
+	// LoggedInViewerID()?
 	GetViewerID() string
 
 	// Boolean indicating that the viewer is logged in or not
-	HasIdentity() bool
+	HasIdentity() bool // this is implied from above
 
 	// Returns a boolean indicating if this user can see everything
 	// Needed for places without actual privacy checks or for admin tools

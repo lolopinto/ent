@@ -1,0 +1,101 @@
+{{ reserveImport "context"  }}
+{{ reserveImport "fmt"  }}
+{{ reserveImport "strconv"  }}
+{{ reserveImport "time"  }}
+{{ reserveImport "sync"  }}
+{{ reserveImport "errors"  }}
+{{ reserveImport "bytes"  }}
+
+{{define "action"}}
+	{{ $field := . -}}
+	{{ $action := mutation $field -}}
+	{{ $actionMethodName := actionMethodName $action -}}
+	{{ $nodeInfo := $action.GetNodeInfo -}}
+	{{ $node := $nodeInfo.Node -}}
+	{{ $actionPath := actionPath $action | lookupImport -}}
+	{{- if $action.MutatingExistingObject -}}
+		existingNode, err := models.Load{{$node}}FromContext(ctx, input.{{$node}}ID)
+		if err != nil {
+			return nil, err
+		}
+
+		{{ if $action.IsDeletingNode -}}
+			err = {{ $actionPath }}.{{$actionMethodName}}FromContext(ctx, existingNode).
+		{{else -}}
+			node, err := {{ $actionPath }}.{{$actionMethodName}}FromContext(ctx, existingNode).
+		{{end -}}
+	{{else -}}
+		node, err := {{ $actionPath }}.{{$actionMethodName}}FromContext(ctx).
+	{{end -}}
+	{{$fields := actionFields $action}}
+	{{range $field := $fields -}}	
+		{{$field.MethodName}}(input.{{$field.FieldName}}).
+	{{end -}}
+	{{$edges := actionEdges $action}}
+	{{range $edge := $edges -}}	
+		{{$edge.MethodName}}ID(input.{{$edge.NodeID}}).
+	{{end -}}
+	{{$fields := actionNonEntFields $action}}
+	{{range $field := $fields -}}	
+		{{$field.MethodName}}(input.{{$field.FieldName}}).
+	{{end -}}
+		Save()
+	
+	if err != nil {
+		return nil, err
+	}
+
+	return &{{$field.TypeReference.Definition.Name}}{
+		{{/* for create and edit mutations, we return the node. */ -}}
+		{{ if $action.IsDeletingNode -}}
+			Deleted{{$node}}ID: &existingNode.ID,
+		{{else -}}
+			{{$nodeInfo.Node}}: node,
+		{{end -}}
+	}, nil
+{{end}}
+
+type {{.ResolverType}} struct {}
+
+{{ range $object := .Objects -}}
+	{{- if $object.HasResolvers -}}
+		func (r *{{$.ResolverType}}) {{$object.Name}}() {{ $object.ResolverInterface | ref }} {
+			return &{{lcFirst $object.Name}}{{ucFirst $.ResolverType}}{r}
+		}
+	{{ end -}}
+{{ end }}
+
+{{ range $object := .Objects -}}
+	{{- if $object.HasResolvers -}}
+		type {{lcFirst $object.Name}}{{ucFirst $.ResolverType}} struct { *{{$.ResolverType}} }
+
+		{{ range $field := $object.Fields -}}
+			{{- if $field.IsResolver }}
+			func (r *{{lcFirst $object.Name}}{{ucFirst $.ResolverType}}) {{$field.GoFieldName}}{{ $field.ShortResolverDeclaration }} {
+
+        {{- if castToString $field -}}
+          return string(obj.OwnerType), nil
+        {{- else if loadObjectFromContext $field -}}
+          return models.Load{{$field.GoFieldName}}FromContext(ctx, id)
+				{{- else if fieldEdge $field -}}
+					return obj.Load{{$field.GoFieldName}}()
+				{{- else if pluralEdge $field -}}
+					return obj.Load{{$field.GoFieldName}}()
+				{{- else if mutation $field -}}
+					{{- template "action" $field -}}
+				{{- else if groupEdgeEnum $field -}}
+					enum, err := obj.{{$field.GoFieldName}}ForGQL()
+					if err != nil {
+						return nil, err
+					}
+					// cast to enum that graphql resolve would have generated
+					cast := {{groupEdgeEnumConst $field}}(*enum)
+					return &cast, err
+				{{- else -}}
+					panic("not implemented")
+        {{ end -}}
+			}
+			{{ end -}}
+		{{ end -}}
+	{{ end -}}
+{{ end }}

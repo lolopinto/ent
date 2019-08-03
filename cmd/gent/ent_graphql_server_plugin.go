@@ -2,15 +2,20 @@ package main
 
 import (
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/99designs/gqlgen/codegen"
 	"github.com/99designs/gqlgen/codegen/templates"
 	"github.com/99designs/gqlgen/plugin"
+
+	intcodegen "github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/util"
 )
 
 // inspired by servergen from gqlgen
-type entGraphQLServerPlugin struct{}
+type entGraphQLServerPlugin struct {
+	codePath *intcodegen.CodePath
+}
 
 var _ plugin.CodeGenerator = &entGraphQLServerPlugin{}
 
@@ -27,10 +32,11 @@ func readTemplateFile(fileName string) string {
 }
 
 func (p *entGraphQLServerPlugin) GenerateCode(data *codegen.Data) error {
+	graphqlPath := filepath.Join(p.codePath.PathToRoot, "graphql")
 	serverBuild := &ServerBuild{
-		// TODO...
-		ExecPackageName:     "github.com/lolopinto/jarvis/graphql",
-		ResolverPackageName: "github.com/lolopinto/jarvis/graphql",
+
+		ExecPackageName:     graphqlPath,
+		ResolverPackageName: graphqlPath,
 	}
 
 	return templates.Render(templates.Options{
@@ -49,6 +55,8 @@ type ServerBuild struct {
 	ResolverPackageName string
 }
 
-func newGraphQLServerPlugin() plugin.Plugin {
-	return &entGraphQLServerPlugin{}
+func newGraphQLServerPlugin(data *codegenData) plugin.Plugin {
+	return &entGraphQLServerPlugin{
+		codePath: data.codePath,
+	}
 }

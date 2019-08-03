@@ -6,25 +6,22 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
-	"go/importer"
 	"go/parser"
 	"go/token"
-	"go/types"
 	"os"
 	"path"
-	"regexp"
-	"runtime"
 	"strconv"
+
+	"runtime"
 	"strings"
 	"text/template"
 
-	"github.com/google/uuid"
-	"github.com/lolopinto/ent/cmd/gent/configs"
-	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
 
 	// need to use dst because of this issue:
@@ -36,460 +33,69 @@ import (
 	"github.com/dave/dst/decorator"
 )
 
-type nodeTemplate struct {
-	codegen.NodeInfo
-	PackageName    string
-	FieldInfo      *field.FieldInfo
-	EdgeInfo       *edge.EdgeInfo
-	TableName      string
-	ConstantGroups []constGroupInfo
-}
-
-type constInfo struct {
-	ConstName  string
-	ConstValue string
-	Comment    string
-}
-
-type constGroupInfo struct {
-	ConstType string
-	Constants []constInfo
-}
-
-func (nodeData *nodeTemplate) getTableName() string {
-	tableName, err := strconv.Unquote(nodeData.TableName)
-	util.Die(err)
-
-	return tableName
-}
-
-// probably not needed?
-func (nodeData *nodeTemplate) getQuotedTableName() string {
-	return nodeData.TableName
-}
-
-func (nodeData *nodeTemplate) getFieldByName(fieldName string) *field.Field {
-	return nodeData.FieldInfo.GetFieldByName(fieldName)
-}
-
-func (nodeData *nodeTemplate) getFieldEdgeByName(edgeName string) *edge.FieldEdge {
-	return nodeData.EdgeInfo.GetFieldEdgeByName(edgeName)
-}
-
-func (nodeData *nodeTemplate) getForeignKeyEdgeByName(edgeName string) *edge.ForeignKeyEdge {
-	return nodeData.EdgeInfo.GetForeignKeyEdgeByName(edgeName)
-}
-
-func (nodeData *nodeTemplate) getAssociationEdgeByName(edgeName string) *edge.AssociationEdge {
-	return nodeData.EdgeInfo.GetAssociationEdgeByName(edgeName)
-}
-
-func shouldCodegenPackage(file *ast.File, specificConfig string) bool {
-	// nothing to do here
-	if specificConfig == "" {
-		return true
+func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Schema {
+	p := &schemaparser.ConfigSchemaParser{
+		RootPath: rootPath,
 	}
 
-	var returnVal bool
-
-	ast.Inspect(file, func(node ast.Node) bool {
-		if t, ok := node.(*ast.TypeSpec); ok && t.Type != nil {
-			structName := t.Name.Name
-
-			returnVal = specificConfig == structName
-			return false
-		}
-		return true
-	})
-	return returnVal
-}
-
-type codegenNodeTemplateInfo struct {
-	nodeData                *nodeTemplate
-	shouldCodegen           bool
-	shouldParseExistingFile bool
-}
-
-// TODO come up with a better name here
-// and for all related types
-type codegenMapInfo map[string]*codegenNodeTemplateInfo
-
-func newCodegenMapInfo() codegenMapInfo {
-	allNodes := make(map[string]*codegenNodeTemplateInfo)
-	return allNodes
-}
-
-func (m codegenMapInfo) addConfig(codegenInfo *codegenNodeTemplateInfo) {
-	m[codegenInfo.nodeData.EntConfigName] = codegenInfo
-}
-
-func (m codegenMapInfo) getTemplateFromGraphQLName(nodeName string) *nodeTemplate {
-	// just assume this for now. may not be correct in the long run
-	configName := nodeName + "Config"
-
-	nodeInfo, ok := m[configName]
-	if !ok {
-		return nil
-	}
-	return nodeInfo.nodeData
-}
-
-type schemaParser interface {
-	ParseFiles() (*token.FileSet, map[string]*ast.File, error)
-}
-
-type configSchemaParser struct {
-	rootPath       string
-	specificConfig string
-	codePathInfo   *codePath
-}
-
-func (p *configSchemaParser) ParseFiles() (*token.FileSet, map[string]*ast.File, error) {
-	fset := token.NewFileSet()
-
-	r, err := regexp.Compile(`(\w+)_config.go`)
-	util.Die(err)
-
-	filterFunc := func(fileInfo os.FileInfo) bool {
-		match := r.FindStringSubmatch(fileInfo.Name())
-		return len(match) == 2
-	}
-
-	pkgs, err := parser.ParseDir(fset, p.rootPath, filterFunc, parser.AllErrors)
-	if err != nil {
-		return fset, nil, err
-	}
-	if len(pkgs) != 1 {
-		return fset, nil, fmt.Errorf("TODO ola figure out why there's more than one package in a folder")
-	}
-
-	// return map -> "packageName" -> *ast.File
-	configMap := make(map[string]*ast.File)
-	for key, file := range pkgs["configs"].Files {
-		match := r.FindStringSubmatch(key)
-		configMap[match[1]] = file
-	}
-	return fset, configMap, nil
-}
-
-type sourceSchemaParser struct {
-	sources map[string]string
-}
-
-func (p *sourceSchemaParser) ParseFiles() (*token.FileSet, map[string]*ast.File, error) {
-	fset := token.NewFileSet()
-	configMap := make(map[string]*ast.File)
-	for packageName, src := range p.sources {
-		file, err := parser.ParseFile(fset, "", src, parser.AllErrors)
-		if err != nil {
-			return fset, nil, err
-		}
-		configMap[packageName] = file
-	}
-	return fset, configMap, nil
-}
-
-func parseFiles(p schemaParser) codegenMapInfo {
-	fset, configMap, err := p.ParseFiles()
-	util.Die(err)
-
-	var files []*ast.File
-	for _, file := range configMap {
-		files = append(files, file)
-	}
-	info := types.Info{
-		Types: make(map[ast.Expr]types.TypeAndValue),
-		Defs:  make(map[*ast.Ident]types.Object),
-		Uses:  make(map[*ast.Ident]types.Object),
-	}
-	conf := types.Config{
-		Importer: importer.Default(),
-	}
-	// TODO
-	_, err = conf.Check("models/configs", fset, files, &info)
-	util.Die(err)
-	allNodes := newCodegenMapInfo()
-
-	for packageName, file := range configMap {
-		// TODO rename packageName to something better it's contact_date in contact_date_config.go
-		// TODO break this into concurrent jobs
-
-		codegenInfo := inspectFile(packageName, file, fset, specificConfig, info)
-		allNodes.addConfig(codegenInfo)
-	}
-	return allNodes
-}
-
-func parseAllSchemaFiles(rootPath string, specificConfig string, codePathInfo *codePath) codegenMapInfo {
-	p := &configSchemaParser{
-		rootPath:       rootPath,
-		specificConfig: specificConfig,
-		codePathInfo:   codePathInfo,
-	}
-
-	return parseFiles(p)
+	return schema.Parse(p, specificConfigs...)
 }
 
 // parseSchemasFromSource is mostly used by tests to test quick one-off scenarios
-func parseSchemasFromSource(sources map[string]string, specificConfig string) codegenMapInfo {
-	p := &sourceSchemaParser{
-		sources: sources,
+func parseSchemasFromSource(sources map[string]string, specificConfigs ...string) *schema.Schema {
+	p := &schemaparser.SourceSchemaParser{
+		Sources: sources,
 	}
-	return parseFiles(p)
+	return schema.Parse(p, specificConfigs...)
 }
 
-func generateConstsAndNewEdges(allNodes codegenMapInfo) []*ent.AssocEdgeData {
-	var newEdges []*ent.AssocEdgeData
-
-	for _, info := range allNodes {
-		if !info.shouldCodegen {
-			continue
-		}
-
-		nodeData := info.nodeData
-
-		nodeGroup := constGroupInfo{
-			ConstType: "ent.NodeType",
-			Constants: []constInfo{constInfo{
-				ConstName:  nodeData.NodeType,
-				ConstValue: strconv.Quote(nodeData.NodeInstance),
-				Comment: fmt.Sprintf(
-					"%s is the node type for the %s object. Used to identify this node in edges and other places.",
-					nodeData.NodeType,
-					nodeData.Node,
-				),
-			}},
-		}
-		nodeData.ConstantGroups = append(nodeData.ConstantGroups, nodeGroup)
-
-		// high level steps we need eventually
-		// 1 parse each config file
-		// 2 parse all config files (that's basically part of 1 but there's dependencies so we need to come back...)
-		// 3 parse db/models/external data as needed
-		// 4 validate all files/models/db state against each other to make sure they make sense
-		// 5 one more step to get new things. e.g. generate new uuids etc
-		// 6 generate new db schema
-		// 7 write new files
-		// 8 write edge config to db (this should really be a separate step since this needs to run in production every time)
-		if !info.shouldParseExistingFile {
-			continue
-		}
-		existingConsts := parseExistingModelFile(nodeData)
-
-		edgeConsts := existingConsts["ent.EdgeType"]
-		if edgeConsts == nil {
-			// no existing edge. initialize a map to do checks
-			edgeConsts = make(map[string]string)
-		}
-
-		edgeGroup := constGroupInfo{
-			ConstType: "ent.EdgeType",
-		}
-
-		for _, assocEdge := range nodeData.EdgeInfo.Associations {
-			constName := assocEdge.EdgeConst
-
-			// check if there's an existing edge
-			constValue := edgeConsts[constName]
-
-			// new edge
-			if constValue == "" {
-				constValue = uuid.New().String()
-				// keep track of new edges that we need to do things with
-				newEdges = append(newEdges, &ent.AssocEdgeData{
-					EdgeType:      constValue,
-					EdgeName:      constName,
-					SymmetricEdge: false,
-					EdgeTable:     getNameForEdgeTable(nodeData, assocEdge),
-				})
-			}
-
-			edgeGroup.Constants = append(edgeGroup.Constants, constInfo{
-				ConstName:  constName,
-				ConstValue: strconv.Quote(constValue),
-				Comment: fmt.Sprintf(
-					"%s is the edgeType for the %s to %s edge.",
-					constName,
-					nodeData.NodeInstance,
-					strings.ToLower(assocEdge.GetEdgeName()),
-				),
-			})
-		}
-		nodeData.ConstantGroups = append(nodeData.ConstantGroups, edgeGroup)
-	}
-
-	//spew.Dump(newEdges)
-	return newEdges
+type codegenData struct {
+	schema   *schema.Schema
+	codePath *codegen.CodePath
 }
 
-func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codePath) {
-	allNodes := parseAllSchemaFiles(rootPath, specificConfig, codePathInfo)
+type codegenPlugin interface {
+	pluginName() string
+	processData(data *codegenData) error
+}
 
-	if len(allNodes) == 0 {
+func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codegen.CodePath) {
+	schema := parseAllSchemaFiles(rootPath, specificConfig)
+
+	if len(schema.Nodes) == 0 {
 		return
 	}
 
-	//fmt.Println("schema", len(allNodes))
-
 	// TOOD validate things here first.
 
-	// generate consts and get new edges to be written to db.
-	newEdges := generateConstsAndNewEdges(allNodes)
-
-	// generate python schema file and then make changes to underlying db
-	db := newDBSchema(allNodes)
-	db.generateSchema()
-
-	if len(newEdges) > 0 {
-		// write to local db.
-		// todo: need to figure out correct logic or way of making sure this gets
-		// written to production.
-		// use alembic revision history?
-		// create parallel structure?
-		// have a file where we dump it and then check that file?
-		err := ent.CreateNodes(&newEdges, &configs.AssocEdgeConfig{})
-		util.Die(err)
+	data := &codegenData{
+		schema:   schema,
+		codePath: codePathInfo,
 	}
 
-	for _, info := range allNodes {
-		if !info.shouldCodegen {
-			continue
-		}
-		nodeData := info.nodeData
-		//fmt.Println(specificConfig, structName)
-		// what's the best way to check not-zero value? for now, this will have to do
-		if len(nodeData.PackageName) > 0 {
-			writeModelFile(nodeData, codePathInfo)
-			writeMutatorFile(nodeData, codePathInfo)
-			writePrivacyFile(nodeData)
-		}
+	// TODO refactor these from being called sequentially to something that can be called in parallel
+	// Right now, they're being called sequentially
+	// I don't see any reason why some can't be done in parrallel
+	// 0/ generate consts. has to block everything (not a plugin could be?) however blocking
+	// 1/ db
+	// 2/ create new nodes (blocked by db) since assoc_edge_config table may not exist yet
+	// 3/ model files. should be able to run on its own
+	// 4/ graphql should be able to run on its own
+
+	plugins := []codegenPlugin{
+		new(dbPlugin),
+		new(assocEdgePlugin),
+		new(entCodegenPlugin),
+		new(graphqlPlugin),
 	}
 
-	// eventually make this configurable
-	graphql := newGraphQLSchema(allNodes)
-	graphql.generateSchema()
+	for _, p := range plugins {
+		p.processData(data)
+	}
 }
 
-func getFilePathForModelFile(nodeData *nodeTemplate) string {
+func getFilePathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("models/%s.go", nodeData.PackageName)
-}
-
-// parses an existing model file and returns information about current constants in model file
-// It returns a mapping of type -> entValue -> constValue
-// We'll probably eventually need to return a lot more information later but this is all we need right now
-//
-// "ent.NodeType" => {
-//	"UserType" => "user",
-// },
-// "ent.EdgeType" => {
-//	"UserToNoteEdge" => {uuid},
-// },
-// Right now, it only returns strings but it should eventually be map[string]map[string]interface{}
-func parseExistingModelFile(nodeData *nodeTemplate) map[string]map[string]string {
-	fset := token.NewFileSet()
-	filePath := getFilePathForModelFile(nodeData)
-
-	_, err := os.Stat(filePath)
-	// file doesn't exist. nothing to do here since we haven't generated this before
-	if os.IsNotExist(err) {
-		return nil
-	}
-	util.Die(err)
-
-	file, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
-	util.Die(err)
-
-	constMap := make(map[string]map[string]string)
-
-	ast.Inspect(file, func(node ast.Node) bool {
-		if decl, ok := node.(*ast.GenDecl); ok && decl.Tok == token.CONST {
-			specs := decl.Specs
-
-			for _, spec := range specs {
-				valueSpec, ok := spec.(*ast.ValueSpec)
-				if !ok {
-					util.Die(fmt.Errorf("invalid spec"))
-				}
-
-				if len(valueSpec.Names) != 1 {
-					util.Die(fmt.Errorf("expected 1 name for const declaration. got %d", len(valueSpec.Names)))
-				}
-				ident := valueSpec.Names[0]
-
-				constName := ident.Name
-
-				typ := astparser.GetExprToSelectorExpr(valueSpec.Type)
-
-				typIdent := astparser.GetExprToIdent(typ.X)
-
-				// todo this can probably be an ident.
-				// handle that if and when we get there...
-				constKey := typIdent.Name + "." + typ.Sel.Name
-				// ent:EdgeType, ent:NodeType etc...
-
-				if len(valueSpec.Values) != 1 {
-					util.Die(fmt.Errorf("expected 1 value for const declaration. got %d", len(valueSpec.Values)))
-				}
-				val := valueSpec.Values[0]
-				basicLit := astparser.GetExprToBasicLit(val)
-				constValue, err := strconv.Unquote(basicLit.Value)
-				util.Die(err)
-
-				if constMap[constKey] == nil {
-					constMap[constKey] = make(map[string]string)
-				}
-				constMap[constKey][constName] = constValue
-			}
-		}
-
-		return true
-	})
-	return constMap
-}
-
-func inspectFile(packageName string, file *ast.File, fset *token.FileSet, specificConfig string, info types.Info) *codegenNodeTemplateInfo {
-	//ast.Print(fset, node)
-	//ast.NewObj(fset, "file")
-	//fmt.Println("Struct:")
-	var nodeData nodeTemplate
-	edgeInfo := &edge.EdgeInfo{}
-	var tableName string
-
-	ast.Inspect(file, func(node ast.Node) bool {
-		// get struct
-		// TODO get the name from *ast.TypeSpec to verify a few things
-		// for now, we're assuming one struct which maps to what we want which isn't necessarily true
-
-		// pass the structtype to get the config
-		if s, ok := node.(*ast.StructType); ok {
-			nodeData = parseConfig(s, packageName, fset, info)
-		}
-
-		if fn, ok := node.(*ast.FuncDecl); ok {
-			//fmt.Println("Method: ", fn.Name)
-
-			switch fn.Name.Name {
-			case "GetEdges":
-				edgeInfo = edge.ParseEdgesFunc(packageName, fn)
-				// TODO: validate edges. can only have one of each type etc
-
-			case "GetTableName":
-				tableName = getTableName(fn)
-			}
-
-		}
-		return true
-	})
-
-	// set edges and other fields gotten from parsing other things
-	nodeData.EdgeInfo = edgeInfo
-	nodeData.TableName = tableName
-
-	return &codegenNodeTemplateInfo{
-		nodeData:                &nodeData,
-		shouldCodegen:           shouldCodegenPackage(file, specificConfig),
-		shouldParseExistingFile: edgeInfo.HasAssociationEdges(),
-	}
 }
 
 // astConfig returns the config of a file before it was re-generated to keep
@@ -720,30 +326,12 @@ func rewriteAstWithConfig(config *astConfig, b []byte) []byte {
 	return buf.Bytes()
 }
 
-// getTableName returns the name of the table the node should be stored in
-func getTableName(fn *ast.FuncDecl) string {
-	expr := astparser.GetLastReturnStmtExpr(fn)
-	basicLit := astparser.GetExprToBasicLit(expr)
-	//fmt.Println("table name", basicLit.Value)
-	return basicLit.Value
-}
-
-func parseConfig(s *ast.StructType, packageName string, fset *token.FileSet, info types.Info) nodeTemplate {
-	fieldInfo := field.GetFieldInfoForStruct(s, fset, info)
-
-	return nodeTemplate{
-		NodeInfo:    codegen.GetNodeInfo(packageName),
-		PackageName: packageName,
-		FieldInfo:   fieldInfo,
-	}
-}
-
 type nodeTemplateCodePath struct {
-	NodeData *nodeTemplate
-	CodePath *codePath
+	NodeData *schema.NodeData
+	CodePath *codegen.CodePath
 }
 
-func writeModelFile(nodeData *nodeTemplate, codePathInfo *codePath) {
+func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
 	writeFile(
 		&templatedBasedFileWriter{
 			data: nodeTemplateCodePath{
@@ -756,6 +344,7 @@ func writeModelFile(nodeData *nodeTemplate, codePathInfo *codePath) {
 			formatSource:   true,
 			funcMap: template.FuncMap{
 				"fTypeString": field.GetTypeInStructDefinition,
+				"quoteStr":    strconv.Quote,
 				"topLevelStructField": func(f *field.Field) bool {
 					return f.TopLevelStructField()
 				},
@@ -764,25 +353,12 @@ func writeModelFile(nodeData *nodeTemplate, codePathInfo *codePath) {
 	)
 }
 
-func writeMutatorFile(nodeData *nodeTemplate, codePathInfo *codePath) {
-	// this is not a real entmutator but this gets things working and
-	// hopefully means no circular dependencies
-	writeFile(
-		&templatedBasedFileWriter{
-			data: nodeTemplateCodePath{
-				NodeData: nodeData,
-				CodePath: codePathInfo,
-			},
-			pathToTemplate:    "templates/mutator.tmpl",
-			templateName:      "mutator.tmpl",
-			pathToFile:        fmt.Sprintf("models/%s/mutator/%s_mutator.go", nodeData.PackageName, nodeData.PackageName),
-			createDirIfNeeded: true,
-			formatSource:      true,
-		},
-	)
+type actionTemplate struct {
+	Action   action.Action
+	CodePath *codegen.CodePath
 }
 
-func writePrivacyFile(nodeData *nodeTemplate) {
+func writePrivacyFile(nodeData *schema.NodeData) {
 	pathToFile := fmt.Sprintf("models/%s_privacy.go", nodeData.PackageName)
 
 	writeFile(
@@ -803,30 +379,4 @@ func getAbsolutePath(filePath string) string {
 		util.Die(errors.New("could not get path of template file"))
 	}
 	return path.Join(path.Dir(filename), filePath)
-}
-
-// generate new AST for the given file from the template
-func generateNewAst(fw *templatedBasedFileWriter) []byte {
-	templateAbsPath := getAbsolutePath(fw.pathToTemplate)
-
-	path := []string{templateAbsPath}
-	t := template.New(fw.templateName).Funcs(fw.funcMap)
-	t, err := t.ParseFiles(path...)
-	util.Die(err)
-
-	var buffer bytes.Buffer
-
-	// execute the template and store in buffer
-	err = t.Execute(&buffer, fw.data)
-	util.Die(err)
-	//err = t.Execute(os.Stdout, nodeData)
-	//fmt.Println(buffer)
-	//	fmt.Println(buffer.String())
-	// gofmt the buffer
-	if fw.formatSource {
-		bytes, err := format.Source(buffer.Bytes())
-		util.Die(err)
-		return bytes
-	}
-	return buffer.Bytes()
 }

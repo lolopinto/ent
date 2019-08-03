@@ -26,8 +26,37 @@ func (config *AccountConfig) GetEdges() map[string]interface{} {
 		"Todos": ent.ForeignKeyEdge{
 			EntConfig: TodoConfig{},
 		},
-		"Friends": ent.AssociationEdge{
-			EntConfig: AccountConfig{},
+		"Friendships": ent.AssociationEdgeGroup{
+			EdgeGroups: ent.EdgeMap{
+				"FriendRequests": ent.AssociationEdge{
+					EntConfig: AccountConfig{},
+					InverseEdge: &ent.InverseAssocEdge{
+						// inverse on the same edge need to be part of the same status
+						// and accounted for
+						EdgeName: "FriendRequestsReceived",
+					},
+				},
+				"Friends": ent.AssociationEdge{
+					EntConfig: AccountConfig{},
+					Symmetric: true,
+				},
+			},
+			// this makes more sense for events than this but for tests....
+			GroupStatusName: "FriendshipStatus",
+			EdgeAction: &ent.EdgeActionConfig{
+				Action:            ent.AddEdgeAction,
+				CustomActionName:  "AccountFriendshipStatusAction",
+				CustomGraphQLName: "accountSetFriendshipStatus",
+			},
+		},
+		// edge from account -> folders. one-way edge with the inverse data being stored in the field
+		"Folders": ent.AssociationEdge{
+			EntConfig: FolderConfig{},
+			EdgeAction: &ent.EdgeActionConfig{
+				Action:            ent.AddEdgeAction,
+				CustomActionName:  "AccountAddFoldersAction", // EventAddInviteesAction is default
+				CustomGraphQLName: "accountFolderAdd",
+			},
 		},
 	}
 }
