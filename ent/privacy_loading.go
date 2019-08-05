@@ -115,7 +115,7 @@ func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig C
 	}
 
 	// hmm todo need to wrap all of this in a new function or new else branch
-	fmt.Println("successfully loaded ent from data", ent)
+	//fmt.Println("successfully loaded ent from data", ent)
 
 	// check privacy policy...
 	privacyResultChan := make(chan privacyResult)
@@ -150,8 +150,8 @@ func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig C
 
 func logEntResult(ent interface{}, err error) {
 	// result
-	fmt.Println(
-		"result from loading ent ",
+	fmt.Printf(
+		"result from loading ent: err %v  privacy errror %v ent %v \n",
 		err,
 		IsPrivacyError(err),
 		ent,
@@ -214,7 +214,7 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResul
 
 	// go through results of privacyRules and see what the privacy policy returns
 	for _, res := range resSlice {
-		fmt.Println("res from privacy rule", res)
+		//fmt.Println("res from privacy rule", res)
 		if res == AllowPrivacyResult || res == DenyPrivacyResult {
 			foundResult = true
 			result = privacyResult{

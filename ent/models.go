@@ -336,7 +336,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	insertData := getFieldsAndValuesOfStruct(value, false)
 
 	query, values, err := sqlQuery(insertData)
-	fmt.Println(query, err)
+	//fmt.Println(query, err)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -352,7 +352,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	// rebind the query for our backend.
 	// TODO: should we only do this when needed?
 	query = db.Rebind(query)
-	fmt.Println("rebound query ", query)
+	//fmt.Println("rebound query ", query)
 
 	stmt, err := db.Preparex(query)
 	if err != nil {
@@ -361,7 +361,7 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 	}
 	defer stmt.Close()
 
-	fmt.Println("values", values)
+	//fmt.Println("values", values)
 	rows, err := stmt.Queryx(values...)
 	if err != nil {
 		fmt.Println("error performing query in LoadNodes", err)
@@ -397,7 +397,7 @@ func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig
 			entConfig.GetTableName(),
 			colName,
 		)
-		fmt.Println(query)
+		//fmt.Println(query)
 		return query, []interface{}{id}, nil
 	}
 
@@ -406,7 +406,7 @@ func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig
 
 func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
 	err := loadForeignKeyNodes(id, nodes, colName, entConfig)
-	fmt.Println("genLoadForeignKeyNodes result", err, nodes)
+	//fmt.Println("genLoadForeignKeyNodes result", err, nodes)
 	errChan <- err
 }
 
@@ -837,7 +837,7 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 		getValsString(vals),
 	)
 
-	fmt.Println(query)
+	//fmt.Println(query)
 
 	err = performWrite(query, vals, tx, nil)
 	if err != nil {
@@ -926,8 +926,32 @@ func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx)
 		id2,
 	}
 
-	fmt.Println(query)
-	return performWrite(query, vals, tx, nil)
+	//fmt.Println(query)
+	err = performWrite(query, vals, tx, nil)
+	if err != nil {
+		return err
+	}
+
+	// TODO move this up a layer
+	// should not be in addEdge and deleteEdge
+	if edgeData.InverseEdgeType != nil && edgeData.InverseEdgeType.Valid {
+		vals = []interface{}{
+			id2,
+			edgeData.InverseEdgeType.String,
+			id1,
+		}
+		return performWrite(query, vals, tx, nil)
+	}
+
+	if edgeData.SymmetricEdge {
+		vals = []interface{}{
+			id2,
+			edgeType,
+			id1,
+		}
+		return performWrite(query, vals, tx, nil)
+	}
+	return nil
 }
 
 func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) error {
@@ -954,8 +978,8 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 		"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 ORDER BY time DESC",
 		edgeData.EdgeTable,
 	)
-	fmt.Println(query)
-	fmt.Println(id, edgeType)
+	//fmt.Println(query)
+	//fmt.Println(id, edgeType)
 
 	stmt, err := db.Preparex(query)
 	if err != nil {
@@ -991,8 +1015,9 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 	return edges, nil
 }
 
-func GenLoadEdgesByType(id string, edgeType EdgeType, errChan chan<- error) {
-	edges, err := LoadEdgesByType(id, edgeType)
+func GenLoadEdgesByType(id string, edgeType EdgeType, edges *[]Edge, errChan chan<- error) {
+	var err error
+	*edges, err = LoadEdgesByType(id, edgeType)
 	fmt.Println("GenLoadEdgesByType result", err, edges)
 	errChan <- err
 }
@@ -1001,12 +1026,12 @@ func GenLoadEdgesByType(id string, edgeType EdgeType, errChan chan<- error) {
 // concurrently since we get the strong typing across all edges since it's the
 // same Edge object being returned
 func GenLoadEdgesByTypeResult(id string, edgeType EdgeType, chanEdgesResult chan<- EdgesResult) {
-	var edges []Edge
+	var edges *[]Edge
 	chanErr := make(chan error)
-	go GenLoadEdgesByType(id, edgeType, chanErr)
+	go GenLoadEdgesByType(id, edgeType, edges, chanErr)
 	err := <-chanErr
 	chanEdgesResult <- EdgesResult{
-		Edges: edges,
+		Edges: *edges,
 		Error: err,
 	}
 }
@@ -1029,7 +1054,7 @@ func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 		"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3",
 		edgeData.EdgeTable,
 	)
-	fmt.Println(query)
+	//	fmt.Println(query)
 
 	stmt, err := db.Preparex(query)
 	if err != nil {
@@ -1097,7 +1122,7 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig 
 
 func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
 	err := loadNodesByType(id, edgeType, nodes, entConfig)
-	fmt.Println("GenLoadEdgesByType result", err, nodes)
+	//fmt.Println("GenLoadEdgesByType result", err, nodes)
 	errChan <- err
 }
 
