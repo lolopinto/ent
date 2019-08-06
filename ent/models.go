@@ -233,6 +233,48 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 // LoadNode loads a single node given the id, node object and entConfig
 // TODO refactor this
 
+func LoadNodeFromParts(entity interface{}, config Config, field string, val interface{}) error {
+	// TODO duplicated from below and returns too much since not privacy backed
+
+	if entity == nil {
+		return errors.New("nil pointer passed to LoadNode")
+	}
+
+	// ok, so now we need a way to map from struct to fields
+	insertData := getFieldsAndValues(entity, false)
+	colsString := insertData.getColumnsString()
+
+	computedQuery := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE %s = $1",
+		colsString,
+		config.GetTableName(),
+		field,
+	)
+	fmt.Println(computedQuery)
+
+	db := data.DBConn()
+	if db == nil {
+		err := errors.New("error getting a valid db connection")
+		fmt.Println(err)
+		return err
+	}
+
+	stmt, err := getStmtFromTx(nil, db, computedQuery)
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	// stmt.QueryRowx(id)....
+	err = stmt.QueryRowx(val).StructScan(entity)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return err
+}
+
 func loadNodeRawDataFromTable(id string, entity interface{}, tableName string, tx *sqlx.Tx) error {
 	// TODO does it make sense to change the API we use here to instead pass it to entity?
 
