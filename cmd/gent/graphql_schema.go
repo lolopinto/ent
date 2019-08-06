@@ -81,7 +81,7 @@ func (schema *graphQLSchema) addSchemaInfo(info *graphQLSchemaInfo) {
 	schema.sortedTypes = append(schema.sortedTypes, info)
 }
 
-func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *schema.NodeData) {
+func (schema *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) {
 	// Contact, User etc...
 	schemaInfo := newGraphQLSchemaInfo("type", nodeData.Node)
 
@@ -98,10 +98,16 @@ func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *schema.NodeData) {
 	}
 
 	for _, edge := range nodeData.EdgeInfo.Associations {
+		if nodeMap.HideFromGraphQL(edge) {
+			continue
+		}
 		schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
 	}
 
 	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
+		if nodeMap.HideFromGraphQL(edge) {
+			continue
+		}
 		schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
 	}
 
@@ -149,11 +155,16 @@ func (schema *graphQLSchema) addGraphQLInfoForType(nodeData *schema.NodeData) {
 }
 
 func (s *graphQLSchema) generateGraphQLSchemaData() {
-	for _, info := range s.config.schema.Nodes {
+	nodeMap := s.config.schema.Nodes
+	for _, info := range nodeMap {
 		nodeData := info.NodeData
 
+		if nodeData.HideFromGraphQL {
+			continue
+		}
+
 		// add the GraphQL type e.g. User, Contact etc
-		s.addGraphQLInfoForType(nodeData)
+		s.addGraphQLInfoForType(nodeMap, nodeData)
 
 		s.processActions(nodeData.ActionInfo)
 	}
@@ -563,6 +574,10 @@ func (c *graphQLYamlConfig) addModelsConfig(s *graphQLSchema) {
 	util.Die(err)
 	for _, info := range s.config.schema.Nodes {
 		nodeData := info.NodeData
+
+		if nodeData.HideFromGraphQL {
+			continue
+		}
 
 		model := make(map[string]string)
 

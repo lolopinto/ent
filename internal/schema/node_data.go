@@ -45,12 +45,13 @@ func (cg *ConstGroupInfo) CreateNewType() bool {
 
 type NodeData struct {
 	codegen.NodeInfo
-	PackageName    string
-	FieldInfo      *field.FieldInfo
-	EdgeInfo       *edge.EdgeInfo
-	TableName      string
-	ConstantGroups map[string]*ConstGroupInfo
-	ActionInfo     *action.ActionInfo
+	PackageName     string
+	FieldInfo       *field.FieldInfo
+	EdgeInfo        *edge.EdgeInfo
+	TableName       string
+	ConstantGroups  map[string]*ConstGroupInfo
+	ActionInfo      *action.ActionInfo
+	HideFromGraphQL bool
 }
 
 func newNodeData(packageName string) *NodeData {

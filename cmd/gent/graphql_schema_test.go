@@ -101,6 +101,33 @@ type TodoConfig struct {
 	testField(t, f, "AccountID", "accountID: String!")
 }
 
+func TestGraphQLHiddenObj(t *testing.T) {
+	sources := make(map[string]string)
+
+	sources["hidden_obj_config.go"] = `
+	package configs
+
+type HiddenObjConfig struct {
+	Text      string
+}
+
+	func (config *HiddenObjConfig) GetTableName() string {
+		return "hidden_obj"
+	}
+
+	func (config *HiddenObjConfig) HideFromGraphQL() bool {
+		return true
+	}
+	`
+
+	s := newGraphQLSchema(&codegenData{
+		schema: parseSchema(t, sources, "GraphQLHiddenObj"),
+	})
+
+	defer expectPanic(t, "couldn't get graphql object for HiddenObj object")
+	getTestGraphQLObjectFromSchema("HiddenObj", s, t)
+}
+
 func TestNonExistentField(t *testing.T) {
 	defer expectPanic(t, "couldn't get graphql field AccountID for Account object")
 

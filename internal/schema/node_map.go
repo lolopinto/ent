@@ -180,6 +180,11 @@ func (m NodeMapInfo) parseFile(
 				g.AddItem("GetTableName", func(nodeData *NodeData) {
 					nodeData.TableName = getTableName(fn)
 				})
+
+			case "HideFromGraphQL":
+				g.AddItem("HideFromGraphQL", func(nodeData *NodeData) {
+					nodeData.HideFromGraphQL = getHideFromGraphQL(fn)
+				})
 			}
 		}
 		return true
@@ -449,9 +454,23 @@ func (m NodeMapInfo) addNewEdgeType(nodeData *NodeData, constName, constValue st
 	)
 }
 
+func (m NodeMapInfo) HideFromGraphQL(edge edge.Edge) bool {
+	node := edge.GetNodeInfo().Node
+	nodeData := m.getNodeDataFromGraphQLName(node)
+	if nodeData == nil {
+		return true
+	}
+	return nodeData.HideFromGraphQL
+}
+
 // getTableName returns the name of the table the node should be stored in
 func getTableName(fn *ast.FuncDecl) string {
 	expr := astparser.GetLastReturnStmtExpr(fn)
 	basicLit := astparser.GetExprToBasicLit(expr)
 	return basicLit.Value
+}
+
+func getHideFromGraphQL(fn *ast.FuncDecl) bool {
+	expr := astparser.GetLastReturnStmtExpr(fn)
+	return astparser.GetBooleanValueFromExpr(expr)
 }
