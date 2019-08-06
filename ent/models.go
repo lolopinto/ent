@@ -1168,7 +1168,37 @@ func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConf
 	errChan <- err
 }
 
+type nodeExists struct {
+	Exists bool `db:"exists"`
+}
+
 func GenLoadAssocEdges(nodes interface{}) error {
+	db := data.DBConn()
+	if db == nil {
+		err := errors.New("error getting a valid db connection")
+		fmt.Println(err)
+		return err
+	}
+
+	query := fmt.Sprintf("SELECT to_regclass($1) IS NOT NULL as exists")
+
+	stmt, err := db.Preparex(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer stmt.Close()
+
+	var n nodeExists
+	err = stmt.QueryRowx("assoc_edge_config").StructScan(&n)
+	if err != nil {
+		return err
+	}
+	if !n.Exists {
+		fmt.Println("no assoc_edge_config table yet")
+		return nil
+	}
+
 	sqlQuery := func(_ insertdata) (string, []interface{}, error) {
 		query := "SELECT * FROM assoc_edge_config"
 

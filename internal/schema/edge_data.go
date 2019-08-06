@@ -4,16 +4,26 @@ import (
 	"fmt"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/util"
 )
+
+// func (m NodeMapInfo) hasEdges() bool {
+// 	for _, info := range m {
+// 		if info.NodeData.EdgeInfo.HasAssociationEdges() {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
 
 func (m NodeMapInfo) loadExistingEdges() *assocEdgeData {
 	// load all edges in db
 	var existingEdges []*ent.AssocEdgeData
 	err := ent.GenLoadAssocEdges(&existingEdges)
 	if err != nil {
-		fmt.Println("error loading data. assoc_edge_config related. todo fix", err)
+		fmt.Println("error loading data. assoc_edge_config related", err)
 	}
-	//	util.Die(err)
+	util.Die(err)
 
 	edgeMap := make(map[string]*ent.AssocEdgeData)
 	for _, assocEdgeData := range existingEdges {
