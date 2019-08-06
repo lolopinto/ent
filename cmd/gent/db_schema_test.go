@@ -62,8 +62,8 @@ func TestTableForNode(t *testing.T) {
 		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 6, len(table.Columns))
 	}
 
-	// 1 primary key and 1 unique key constraint expected
-	if len(table.Constraints) != 2 {
+	// 1 primary key, 1 unique, 1 index constraints expected
+	if len(table.Constraints) != 3 {
 		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 2, len(table.Constraints))
 	}
 
@@ -136,6 +136,25 @@ func TestUniqueColumn(t *testing.T) {
 		t,
 		constraint,
 		fmt.Sprintf("sa.UniqueConstraint(%s, name=%s)", strconv.Quote("phone_number"), strconv.Quote("accounts_unique_phone_number")),
+	)
+}
+
+func TestIndexedColumn(t *testing.T) {
+	column := getTestColumn("AccountConfig", "LastName", t)
+
+	parts := []string{
+		strconv.Quote("last_name"), // db field
+		"sa.Text()",                // db type
+		"nullable=False",
+	}
+	testColumn(t, column, "last_name", "LastName", "last_name", parts)
+
+	constraint := getTestIndexedConstraint("AccountConfig", "LastName", t)
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s)", strconv.Quote("accounts_last_name_idx"), strconv.Quote("last_name")),
 	)
 }
 
@@ -219,8 +238,8 @@ func TestGeneratedEdgeConfigTable(t *testing.T) {
 
 	// 1 primary key constraint for the edge_type field
 	// 1 foreign key constraint for the inverse_edge_type field
-	if len(table.Constraints) != 2 {
-		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 1, len(table.Constraints))
+	if len(table.Constraints) != 3 {
+		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 3, len(table.Constraints))
 	}
 }
 
@@ -272,7 +291,7 @@ func TestEdgeTableEdgeConfigColumn(t *testing.T) {
 func TestPrimaryKeyConstraintInEdgeConfigTable(t *testing.T) {
 	table := getTestTableByName("assoc_edge_config", t)
 
-	if len(table.Constraints) != 2 {
+	if len(table.Constraints) != 3 {
 		t.Errorf("expected 2 constraints in edge config table, got %d", len(table.Constraints))
 	}
 	constraint := getTestPrimaryKeyConstraintFromTable(table, "EdgeType", t)
@@ -290,7 +309,7 @@ func TestPrimaryKeyConstraintInEdgeConfigTable(t *testing.T) {
 func TestForeignKeyConstraintInEdgeConfigTable(t *testing.T) {
 	table := getTestTableByName("assoc_edge_config", t)
 
-	if len(table.Constraints) != 2 {
+	if len(table.Constraints) != 3 {
 		t.Errorf("expected 2 constraints in edge config table, got %d", len(table.Constraints))
 	}
 	constraint := getTestForeignKeyConstraintFromTable(table, "InverseEdgeType", t)
@@ -534,6 +553,21 @@ func getTestUniqueKeyConstraint(tableConfigName, colFieldName string, t *testing
 		if ok && uniqConstraint.dbColumns[0].EntFieldName == colFieldName {
 			// for now there can only be oen column so it's fine.
 			return uniqConstraint
+		}
+	}
+	t.Errorf("no unique constraint for %s column for %s table", colFieldName, tableConfigName)
+	return nil
+}
+
+func getTestIndexedConstraint(tableConfigName, colFieldName string, t *testing.T) dbConstraint {
+	table := getTestTable(tableConfigName, t)
+
+	for _, constraint := range table.Constraints {
+		idxConstraint, ok := constraint.(*indexConstraint)
+		fmt.Println(idxConstraint, ok)
+		if ok && idxConstraint.dbColumns[0].EntFieldName == colFieldName {
+			// for now there can only be oen column so it's fine.
+			return idxConstraint
 		}
 	}
 	t.Errorf("no unique constraint for %s column for %s table", colFieldName, tableConfigName)

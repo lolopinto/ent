@@ -179,6 +179,32 @@ func (constraint *uniqueConstraint) getConstraintString() string {
 	return getConstraintStringForColumnBasedConstraint(constraint)
 }
 
+type indexConstraint struct {
+	dbColumns []*dbColumn
+	tableName string
+}
+
+func (constraint *indexConstraint) getConstraintString() string {
+	idxNameParts := []string{
+		constraint.tableName,
+	}
+	var colNames []string
+	for _, col := range constraint.dbColumns {
+		idxNameParts = append(idxNameParts, col.DBColName)
+		colNames = append(colNames, strconv.Quote(col.DBColName))
+	}
+	idxNameParts = append(idxNameParts, "idx")
+
+	fields := []string{
+		strconv.Quote(getNameFromParts(idxNameParts)),
+	}
+	fields = append(fields, colNames...)
+
+	return fmt.Sprintf(
+		"sa.Index(%s)", strings.Join(fields, ", "),
+	)
+}
+
 func newDBSchema(schema *schema.Schema) *dbSchema {
 	configTableMap := make(map[string]*dbTable)
 	tableMap := make(map[string]*dbTable)
@@ -414,6 +440,7 @@ func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeDa
 	s.addPrimaryKeyConstraint(f, nodeData, col, constraints)
 	s.addForeignKeyConstraint(f, nodeData, col, constraints)
 	s.addUniqueConstraint(f, nodeData, col, constraints)
+	s.addIndexConstraint(f, nodeData, col, constraints)
 	return col
 }
 
@@ -490,6 +517,21 @@ func (s *dbSchema) addUniqueConstraint(f *field.Field, nodeData *schema.NodeData
 		util.Die(fmt.Errorf("Invalid struct tag unique was not configured correctly"))
 	}
 	constraint := &uniqueConstraint{
+		dbColumns: []*dbColumn{col},
+		tableName: nodeData.GetTableName(),
+	}
+	*constraints = append(*constraints, constraint)
+}
+
+func (s *dbSchema) addIndexConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
+	index := f.GetUnquotedKeyFromTag("index")
+	if index == "" {
+		return
+	}
+	if index != "true" {
+		util.Die(fmt.Errorf("Invalid struct tag index was not configured correctly"))
+	}
+	constraint := &indexConstraint{
 		dbColumns: []*dbColumn{col},
 		tableName: nodeData.GetTableName(),
 	}
