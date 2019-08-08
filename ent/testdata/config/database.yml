@@ -1,9 +1,9 @@
 # copied from gent. todo handle this generically
-development:
-  dialect: postgres
-  database: jarvis_test
-  user: ola
-  password: '' 
-  host: localhost 
-  port: 5432
-  pool: 5 # ¯\_(ツ)_/¯ 
+dialect: postgres
+database: jarvis_test
+user: ola
+password: '' 
+host: localhost 
+port: 5432
+pool: 5 # ¯\_(ツ)_/¯ 
+sslmode: disable

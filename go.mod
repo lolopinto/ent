@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/iancoleman/strcase v0.0.0-20190422225806-e506e3ef7365
 	github.com/jmoiron/sqlx v1.2.0
+	github.com/joho/godotenv v1.3.0
 	github.com/lib/pq v1.0.0
 	github.com/ogier/pflag v0.0.1
 	github.com/pkg/errors v0.8.1

@@ -61,9 +61,9 @@ func newGraphQLSchema(data *codegenData) *graphQLSchema {
 func (schema *graphQLSchema) generateSchema() {
 	schema.generateGraphQLSchemaData()
 
-	schema.writeGraphQLSchema()
+	//	schema.writeGraphQLSchema()
 
-	schema.writeGQLGenYamlFile()
+	//	schema.writeGQLGenYamlFile()
 
 	schema.generateGraphQLCode()
 }
