@@ -3,6 +3,8 @@ import os
 from alembic.config import Config
 from alembic import command
 
+from . import runner
+
 class Command(object):
 
   def __init__(self, connection, schema_path):
@@ -18,6 +20,7 @@ class Command(object):
     alembic_cfg.set_main_option("file_template", "%%(rev)s_%%(year)d%%(month)d%%(day)d%%(hour)d%%(minute)d%%(second)d_%%(slug)s")
     alembic_cfg.set_main_option("truncate_slug_length", "40")
     alembic_cfg.set_main_option("timezone", "utc") # use utc timezone.
+    alembic_cfg.set_section_option("alembic:exclude", "tables", runner.Runner.exclude_tables())
 
     self.alembic_cfg = alembic_cfg
 

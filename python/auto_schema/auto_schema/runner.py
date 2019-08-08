@@ -19,7 +19,13 @@ class Runner(object):
     config.metadata = self.metadata
     config.connection = connection
 
-    self.mc = MigrationContext.configure(connection=self.connection, opts={"compare_type":Runner.compare_type})
+    self.mc = MigrationContext.configure(
+      connection=self.connection, 
+      opts={
+        "compare_type": Runner.compare_type,
+        "include_object": Runner.include_object,
+      },
+    )
     self.cmd = command.Command(self.connection, self.schema_path)
 
 
@@ -29,6 +35,11 @@ class Runner(object):
     connection = engine.connect()
     return Runner(metadata, connection, args.schema)
 
+
+  @classmethod
+  def exclude_tables(cls):
+    # prevent default POSTGIS tables from affecting this
+    return "geography_columns,geometry_columns,raster_columns,raster_overviews,spatial_ref_sys"
 
 
   @classmethod
@@ -50,6 +61,17 @@ class Runner(object):
       return True
 
     return False
+
+
+  @classmethod
+  def include_object(cls, object, name, type_, reflected, compare_to):    
+    exclude_tables = Runner.exclude_tables().split(',')
+
+    if type_ == "table" and name in exclude_tables:
+        return False
+    else:
+        return True
+
 
   def get_schema_path(self):
     return self.schema_path
@@ -79,6 +101,8 @@ class Runner(object):
     #migration_script = produce_migrations(self.mc, self.metadata)
     #print(render_python_code(migration_script.upgrade_ops))
 
+    # TODO we need a top level upgrade path which is run when we get to production instead of running this
+    # we need to only call upgrade() and not revision() and then upgrade()
     self.revision(diff)
     self.upgrade()
 

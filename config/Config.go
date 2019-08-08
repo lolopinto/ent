@@ -36,10 +36,12 @@ func (db *DBConfig) GetConnectionStr() string {
 }
 
 func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
+	if db.connection != "" {
+		return db.connection
+	}
 	// postgres only for now as above. specific driver also
-	// TODO handle null connection string
 	// no ssl mode
-	return getConnectionStr(db.rawDBInfo, "postgresql+pg8000", false)
+	return getConnectionStr(db.rawDBInfo, "postgres", false)
 }
 
 func getConnectionStr(dbData *RawDbInfo, driver string, sslmode bool) string {
