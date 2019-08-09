@@ -165,7 +165,7 @@ type privacyResult struct {
 
 func genApplyPrivacyPolicyUnsure(viewer viewer.ViewerContext, maybeEnt interface{}, privacyResultChan chan<- privacyResult) {
 	ent, ok := maybeEnt.(Entity)
-	fmt.Println("genApplyPrivacyPolicy", maybeEnt, ent, ok)
+	//fmt.Println("genApplyPrivacyPolicy", maybeEnt, ent, ok)
 	if !ok {
 		fmt.Println("invalid ent", ent)
 		privacyResultChan <- privacyResult{

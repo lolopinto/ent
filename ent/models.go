@@ -703,9 +703,11 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 	// TODO may need to eventually make this optional but for now
 	// let's assume all writes should affect at least one row
 	if checkRows {
+		// TODO this doesn't work anymore  when removing an edge that may not exist
+		// so if we still care about this move this to a new layer
 		rowCount, err := res.RowsAffected()
 		if err != nil || rowCount == 0 {
-			fmt.Println(err, rowCount)
+			//fmt.Println(err, rowCount)
 			return err
 		}
 	}

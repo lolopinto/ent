@@ -41,11 +41,15 @@ type ViewerContext interface {
 	GetViewerID() string
 
 	// Boolean indicating that the viewer is logged in or not
+	// TODO kill this from interface. imply it from viewerID
 	HasIdentity() bool // this is implied from above
 
 	// Returns a boolean indicating if this user can see everything
 	// Needed for places without actual privacy checks or for admin tools
 	// or other such things
+	// rename to CanSeeAllContent()? OverridePrivacyChecks()?
+	// Or just have a second interface that's not necessary to mandate and do a typecheck on that
+	// ViewerContextWhichOverridesPrivacy
 	IsOmniscient() bool
 }
 

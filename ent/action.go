@@ -57,8 +57,9 @@ type ActionValidationError struct {
 
 func (err *ActionValidationError) Error() string {
 	return fmt.Sprintf(
-		"error validating action %s, encountered %d errors validating",
+		"error validating action %s, encountered %d errors validating, errors %v",
 		err.ActionName,
 		len(err.Errors),
+		err.Errors,
 	)
 }
