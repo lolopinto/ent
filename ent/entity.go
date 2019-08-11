@@ -6,4 +6,9 @@ type Entity interface {
 	GetID() string // TODO uuid
 	GetType() NodeType
 	GetPrivacyPolicy() PrivacyPolicy
+	dataEntity
+}
+
+type dataEntity interface {
+	FillFromMap(map[string]interface{}) error
 }

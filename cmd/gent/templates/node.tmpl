@@ -8,6 +8,8 @@ import (
   "errors"
   "strings"
 
+	"github.com/google/uuid"
+
   "github.com/lolopinto/ent/ent"
   "github.com/lolopinto/ent/ent/viewer"
 
@@ -248,6 +250,33 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
       }
     {{ end -}}
   {{end}}
+
+func ({{$currentNodeInstance}} *{{$currentNode}}) FillFromMap(data map[string]interface{}) error {
+	for k, v := range data {
+		switch k {
+      case "id":
+      id := uuid.UUID{}
+			if err := id.Scan(v); err != nil {
+				return err
+			}
+      {{$currentNodeInstance}}.ID = id.String()
+			break
+      {{ range $field := .FieldInfo.Fields -}} 
+        {{if topLevelStructField $field -}}
+          case "{{$field.GetDbColName}}": 
+            var ok bool
+            {{$currentNodeInstance}}.{{$field.FieldName}}, ok = v.({{fTypeString $field}})
+            if !ok {
+              return errors.New("could not convert {{$field.FieldName}} field to appropriate type")
+            }
+            break
+        {{end -}}
+      {{end -}}
+    }
+  }
+  return nil
+}
+
 {{end}}
 
 var _ ent.Entity = &{{.Node}}{}

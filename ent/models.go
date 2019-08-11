@@ -2,13 +2,16 @@ package ent
 
 import (
 	"database/sql"
+
 	//	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
+	"github.com/rocketlaunchr/remember-go"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
@@ -275,49 +278,76 @@ func LoadNodeFromParts(entity interface{}, config Config, field string, val inte
 	return err
 }
 
-func loadNodeRawDataFromTable(id string, entity interface{}, tableName string, tx *sqlx.Tx) error {
+func getKeyForNode(id, tableName string) string {
+	return remember.CreateKey(false, "_", "table_id", tableName, id)
+}
+
+func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx *sqlx.Tx) error {
 	// TODO does it make sense to change the API we use here to instead pass it to entity?
 
 	if entity == nil {
 		return errors.New("nil pointer passed to LoadNode")
 	}
 
-	// ok, so now we need a way to map from struct to fields
-	insertData := getFieldsAndValues(entity, false)
-	colsString := insertData.getColumnsString()
+	key := getKeyForNode(id, tableName)
+	fn := func() (map[string]interface{}, error) {
+		spew.Dump("cache miss for key", key)
+		// ok, so now we need a way to map from struct to fields
+		// TODO while this is manual, cache this
+		insertData := getFieldsAndValues(entity, false)
+		colsString := insertData.getColumnsString()
 
-	computedQuery := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s = $1",
-		colsString,
-		tableName,
-		insertData.pkeyName,
-	)
-	//	fmt.Println(computedQuery)
+		computedQuery := fmt.Sprintf(
+			"SELECT %s FROM %s WHERE %s = $1",
+			colsString,
+			tableName,
+			insertData.pkeyName,
+		)
+		//	fmt.Println(computedQuery)
 
-	db := data.DBConn()
-	if db == nil {
-		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
+		db := data.DBConn()
+		if db == nil {
+			err := errors.New("error getting a valid db connection")
+			fmt.Println(err)
+			return nil, err
+		}
+
+		stmt, err := getStmtFromTx(tx, db, computedQuery)
+
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		defer stmt.Close()
+
+		// stmt.QueryRowx(id)....
+		//		err = stmt.QueryRowx(id).StructScan(entity)
+		dataMap := make(map[string]interface{})
+		err = stmt.QueryRowx(id).MapScan(dataMap)
+		//spew.Dump("struct scan", entity)
+		//		spew.Dump("mapScan", dataMap)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		return dataMap, nil
+		//return entity, nil
+	}
+
+	actual, err := getItemFromCacheMaybe(key, fn)
+	if err != nil {
 		return err
 	}
-
-	stmt, err := getStmtFromTx(tx, db, computedQuery)
-
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer stmt.Close()
-
-	// stmt.QueryRowx(id)....
-	err = stmt.QueryRowx(id).StructScan(entity)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return err
+	//	spew.Dump("actual", actual)
+	return entity.FillFromMap(actual)
+	// if err != nil {
+	// 	return err
+	// }
+	// //	spew.Dump(entity)
+	// return nil
 }
 
-func loadNodeRawData(id string, entity interface{}, entConfig Config) error {
+func loadNodeRawData(id string, entity dataEntity, entConfig Config) error {
 	return loadNodeRawDataFromTable(id, entity, entConfig.GetTableName(), nil)
 }
 
@@ -328,7 +358,7 @@ type EntityResult struct {
 	Error  error
 }
 
-func genLoadRawData(id string, entity interface{}, entConfig Config, errChan chan<- error) {
+func genLoadRawData(id string, entity dataEntity, entConfig Config, errChan chan<- error) {
 	err := loadNodeRawData(id, entity, entConfig)
 	// result := EntityResult{
 	// 	Entity: entity,
@@ -735,6 +765,7 @@ func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 	fmt.Println(computedQuery)
 	//	spew.
 
+	deleteKey(getKeyForNode(id, entConfig.GetTableName()))
 	return performWrite(computedQuery, values, tx, nil)
 }
 
@@ -781,6 +812,7 @@ func deleteNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", entConfig.GetTableName())
 	id := findID(entity)
 
+	deleteKey(getKeyForNode(id, entConfig.GetTableName()))
 	return performWrite(query, []interface{}{id}, tx, nil)
 }
 

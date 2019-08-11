@@ -3,6 +3,9 @@ package ent
 import (
 	"database/sql"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 // Edge is the information about an edge between two Nodes
@@ -42,4 +45,54 @@ type AssocEdgeData struct {
 	InverseEdgeType *sql.NullString `db:"inverse_edge_type"`
 	EdgeTable       string          `db:"edge_table"`
 	Timestamps
+}
+
+func (edgeData *AssocEdgeData) FillFromMap(data map[string]interface{}) error {
+	// can cache AssocEdgeData though :/
+	// however leaving as-is because probably better for when this comes from a different cache
+	for k, v := range data {
+		switch k {
+		case "edge_type":
+			id := uuid.UUID{}
+			if err := id.Scan(v); err != nil {
+				return err
+			}
+			edgeData.EdgeType = id.String()
+			break
+		case "edge_name":
+			var ok bool
+			edgeData.EdgeName, ok = v.(string)
+			if !ok {
+				return errors.New("could not convert edge_name field to appropriate type")
+			}
+			break
+		case "symmetric_edge":
+			var ok bool
+			edgeData.SymmetricEdge, ok = v.(bool)
+			if !ok {
+				return errors.New("could not convert symmetric_edge field to appropriate type")
+			}
+			break
+		case "inverse_edge_type":
+			if v != nil {
+				id := uuid.UUID{}
+				if err := id.Scan(v); err != nil {
+					return err
+				}
+				edgeData.InverseEdgeType = &sql.NullString{
+					Valid:  true,
+					String: id.String(),
+				}
+			}
+			break
+		case "edge_table":
+			var ok bool
+			edgeData.EdgeTable, ok = v.(string)
+			if !ok {
+				return errors.New("could not convert edge_table field to appropriate type")
+			}
+			break
+		}
+	}
+	return nil
 }
