@@ -94,36 +94,40 @@ func (action *editNodeActionMutator) SetField(fieldName string, val interface{})
 	action.editedFields[fieldName] = val
 }
 
-func (action *editNodeActionMutator) AddInboundEdge(edgeType ent.EdgeType, id1 string, nodeType ent.NodeType) {
-	action.inboundEdges = append(action.inboundEdges, &ent.EditedEdgeInfo{
-		EdgeType: edgeType,
-		Id:       id1,
-		NodeType: nodeType,
-	})
+func (action *editNodeActionMutator) AddInboundEdge(edgeType ent.EdgeType, id1 string, nodeType ent.NodeType, options ...func(*ent.EditedEdgeInfo)) {
+	action.inboundEdges = append(action.inboundEdges, action.getEditedEdgeInfo(edgeType, id1, nodeType, options...))
 }
 
-func (action *editNodeActionMutator) AddOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType) {
-	action.outboundEdges = append(action.outboundEdges, &ent.EditedEdgeInfo{
+func (action *editNodeActionMutator) getEditedEdgeInfo(edgeType ent.EdgeType, id string, nodeType ent.NodeType, options ...func(*ent.EditedEdgeInfo)) *ent.EditedEdgeInfo {
+	info := &ent.EditedEdgeInfo{
 		EdgeType: edgeType,
-		Id:       id2,
+		Id:       id,
 		NodeType: nodeType,
-	})
+	}
+	for _, opt := range options {
+		opt(info)
+	}
+	return info
+}
+
+func (action *editNodeActionMutator) AddOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType, options ...func(*ent.EditedEdgeInfo)) {
+	for _, edge := range action.outboundEdges {
+		if edge.EdgeType == edgeType && edge.Id == id2 && nodeType == edge.NodeType {
+			// already been added ingore for now
+			// the hack in resolver_manual.go in ent-rsvp calls it before this...
+			return
+		}
+	}
+	action.outboundEdges = append(action.outboundEdges, action.getEditedEdgeInfo(edgeType, id2, nodeType, options...))
+	spew.Dump(action.outboundEdges)
 }
 
 func (action *editNodeActionMutator) RemoveInboundEdge(edgeType ent.EdgeType, id1 string, nodeType ent.NodeType) {
-	action.removedInboundEdges = append(action.removedInboundEdges, &ent.EditedEdgeInfo{
-		EdgeType: edgeType,
-		Id:       id1,
-		NodeType: nodeType,
-	})
+	action.removedInboundEdges = append(action.removedInboundEdges, action.getEditedEdgeInfo(edgeType, id1, nodeType))
 }
 
 func (action *editNodeActionMutator) RemoveOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType) {
-	action.removedOutboundEdges = append(action.removedOutboundEdges, &ent.EditedEdgeInfo{
-		EdgeType: edgeType,
-		Id:       id2,
-		NodeType: nodeType,
-	})
+	action.removedOutboundEdges = append(action.removedOutboundEdges, action.getEditedEdgeInfo(edgeType, id2, nodeType))
 }
 
 // Validate that the action is valid

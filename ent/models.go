@@ -498,6 +498,20 @@ type EditedEdgeInfo struct {
 	EdgeType EdgeType
 	Id       string
 	NodeType NodeType
+	Data     string
+	Time     time.Time
+}
+
+func EdgeTime(t time.Time) func(*EditedEdgeInfo) {
+	return func(info *EditedEdgeInfo) {
+		info.Time = t
+	}
+}
+
+func EdgeData(data string) func(*EditedEdgeInfo) {
+	return func(info *EditedEdgeInfo) {
+		info.Data = data
+	}
 }
 
 // CreateNodeFromActionMap creates a new Node and returns it in Entity
@@ -539,6 +553,8 @@ func buildOperations(info *EditedNodeInfo) []dataOperation {
 			id1:       edge.Id,
 			id1Type:   edge.NodeType,
 			operation: insertOperation,
+			time:      edge.Time,
+			data:      edge.Data,
 		}
 		if info.ExistingEnt == nil {
 			edgeOp.id2 = idPlaceHolder
@@ -556,6 +572,8 @@ func buildOperations(info *EditedNodeInfo) []dataOperation {
 			id2:       edge.Id,
 			id2Type:   edge.NodeType,
 			operation: insertOperation,
+			time:      edge.Time,
+			data:      edge.Data,
 		}
 		if info.ExistingEnt == nil {
 			edgeOp.id1 = idPlaceHolder
@@ -726,6 +744,7 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 
 	if err != nil {
 		fmt.Println(err)
+		fmt.Println(query, values)
 		return err
 	}
 	defer stmt.Close()
@@ -904,16 +923,17 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 		edgeOptions.Data, // zero value of data works for us. no check needed
 	}
 
+	spew.Dump("data!!!!", edgeOptions.Data)
 	query := fmt.Sprintf(
 		// postgres specific
 		// this is where the db dialects will eventually be needed
-		"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO NOTHING",
+		"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
 		edgeData.EdgeTable,
 		getColumnsString(cols),
 		getValsString(vals),
 	)
 
-	//fmt.Println(query)
+	fmt.Println(query)
 
 	err = performWrite(query, vals, tx, nil)
 	if err != nil {
@@ -932,11 +952,11 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 			id1,
 			id1Ttype,
 			t,
-			edgeOptions.Time,
+			edgeOptions.Data,
 		}
 
 		query = fmt.Sprintf(
-			"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO NOTHING",
+			"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
 			edgeData.EdgeTable,
 			getColumnsString(cols),
 			getValsString(vals),
@@ -954,11 +974,11 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 			id1,
 			id1Ttype,
 			t,
-			edgeOptions.Time,
+			edgeOptions.Data,
 		}
 
 		query = fmt.Sprintf(
-			"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO NOTHING",
+			"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
 			edgeData.EdgeTable,
 			getColumnsString(cols),
 			getValsString(vals),
@@ -1102,12 +1122,12 @@ func GenLoadEdgesByType(id string, edgeType EdgeType, edges *[]Edge, errChan cha
 // concurrently since we get the strong typing across all edges since it's the
 // same Edge object being returned
 func GenLoadEdgesByTypeResult(id string, edgeType EdgeType, chanEdgesResult chan<- EdgesResult) {
-	var edges *[]Edge
+	var edges []Edge
 	chanErr := make(chan error)
-	go GenLoadEdgesByType(id, edgeType, edges, chanErr)
+	go GenLoadEdgesByType(id, edgeType, &edges, chanErr)
 	err := <-chanErr
 	chanEdgesResult <- EdgesResult{
-		Edges: *edges,
+		Edges: edges,
 		Error: err,
 	}
 }
