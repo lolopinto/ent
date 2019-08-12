@@ -61,9 +61,9 @@ func newGraphQLSchema(data *codegenData) *graphQLSchema {
 func (schema *graphQLSchema) generateSchema() {
 	schema.generateGraphQLSchemaData()
 
-	//	schema.writeGraphQLSchema()
+	//schema.writeGraphQLSchema()
 
-	//	schema.writeGQLGenYamlFile()
+	schema.writeGQLGenYamlFile()
 
 	schema.generateGraphQLCode()
 }
@@ -81,9 +81,11 @@ func (schema *graphQLSchema) addSchemaInfo(info *graphQLSchemaInfo) {
 	schema.sortedTypes = append(schema.sortedTypes, info)
 }
 
-func (schema *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) {
+func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) {
 	// Contact, User etc...
 	schemaInfo := newGraphQLSchemaInfo("type", nodeData.Node)
+	// all top level nodes implement the Node interface
+	schemaInfo.interfaces = []string{"Node"}
 
 	fieldInfo := nodeData.FieldInfo
 	// for any edge fields that reference an existing ID field, invalidate the id field so that it's not exposed to GraphQL
@@ -102,6 +104,7 @@ func (schema *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, n
 			continue
 		}
 		schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
+		s.addEdgeAndConnection(edge)
 	}
 
 	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
@@ -134,12 +137,12 @@ func (schema *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, n
 			continue
 		}
 
-		schema.addSchemaInfo(schema.processConstantForEnum(cg))
+		s.addSchemaInfo(s.processConstantForEnum(cg))
 	}
 
 	// top level quries that will show up e.g. user(id: ), account(id: ) etc
 	// add everything as top level query for now
-	schema.addQueryField(&graphQLNonEntField{
+	s.addQueryField(&graphQLNonEntField{
 		fieldName: nodeData.NodeInstance,
 		fieldType: nodeData.Node,
 		args: []*graphQLArg{
@@ -151,10 +154,13 @@ func (schema *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, n
 	})
 
 	// add the type as a top level GraphQL object
-	schema.addSchemaInfo(schemaInfo)
+	s.addSchemaInfo(schemaInfo)
 }
 
 func (s *graphQLSchema) generateGraphQLSchemaData() {
+	s.addSchemaInfo(s.getNodeInterfaceType())
+	s.addSchemaInfo(s.getEdgeInterfaceType())
+	s.addSchemaInfo(s.getConnectionInterfaceType())
 	nodeMap := s.config.schema.Nodes
 	for _, info := range nodeMap {
 		nodeData := info.NodeData
@@ -306,6 +312,90 @@ func (s *graphQLSchema) getMutationSchemaType() *graphQLSchemaInfo {
 	}
 }
 
+func (s *graphQLSchema) getNodeInterfaceType() *graphQLSchemaInfo {
+	return &graphQLSchemaInfo{
+		Type:     "interface",
+		TypeName: "Node",
+		nonEntFields: []*graphQLNonEntField{
+			&graphQLNonEntField{
+				fieldName: "id",
+				fieldType: "ID!",
+			},
+		},
+	}
+}
+
+func (s *graphQLSchema) getEdgeInterfaceType() *graphQLSchemaInfo {
+	return &graphQLSchemaInfo{
+		Type:     "interface",
+		TypeName: "Edge",
+		nonEntFields: []*graphQLNonEntField{
+			// &graphQLNonEntField{
+			// 	fieldName: "cursor",
+			// 	fieldType: "ID",
+			// },
+			&graphQLNonEntField{
+				fieldName: "node",
+				fieldType: "Node!",
+			},
+		},
+	}
+}
+
+func (s *graphQLSchema) getConnectionInterfaceType() *graphQLSchemaInfo {
+	return &graphQLSchemaInfo{
+		Type:     "interface",
+		TypeName: "Connection",
+		nonEntFields: []*graphQLNonEntField{
+			&graphQLNonEntField{
+				fieldName: "edges",
+				fieldType: "[Edge!]",
+			},
+			&graphQLNonEntField{
+				fieldName: "nodes",
+				fieldType: "[Node!]",
+			},
+		},
+	}
+}
+
+func (s *graphQLSchema) addEdgeAndConnection(assocEdge *edge.AssociationEdge) {
+	gqlEdge := &graphQLSchemaInfo{
+		Type:     "type",
+		TypeName: assocEdge.NodeInfo.Nodes + "Edge",
+		nonEntFields: []*graphQLNonEntField{
+			&graphQLNonEntField{
+				fieldName: "node",
+				fieldType: fmt.Sprintf("%s!", assocEdge.NodeInfo.Node),
+			},
+		},
+		interfaces: []string{
+			"Edge",
+		},
+	}
+
+	gqlConnection := &graphQLSchemaInfo{
+		Type:     "type",
+		TypeName: assocEdge.NodeInfo.Nodes + "Connection",
+		nonEntFields: []*graphQLNonEntField{
+			&graphQLNonEntField{
+				fieldName: "edges",
+				fieldType: fmt.Sprintf("[%sEdge!]", assocEdge.NodeInfo.Nodes),
+			},
+			&graphQLNonEntField{
+				fieldName: "nodes",
+				fieldType: fmt.Sprintf("[%s!]", assocEdge.NodeInfo.Node),
+			},
+		},
+		interfaces: []string{
+			"Connection",
+		},
+	}
+
+	s.addSchemaInfo(gqlEdge)
+	s.addSchemaInfo(gqlConnection)
+}
+
 func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 	// sort graphql types by type name so that we are not always changing the order of the generated schema
 	sort.Slice(t.Types, func(i, j int) bool {
@@ -389,9 +479,9 @@ func (s *graphQLSchema) getSchemaForTemplate() *graphqlSchemaTemplate {
 		})
 
 		ret.Types = append(ret.Types, &graphqlSchemaTypeInfo{
-			Type:        typ.Type,
-			TypeName:    typ.TypeName,
-			SchemaLines: lines,
+			OpeningSchemaLine: typ.GetOpeningSchemaLine(),
+			TypeName:          typ.TypeName,
+			SchemaLines:       lines,
 		})
 	}
 
@@ -493,6 +583,7 @@ func (e *graphqlPluralEdge) GetSchemaLine() string {
 type graphQLSchemaInfo struct {
 	Type          string
 	TypeName      string
+	interfaces    []string
 	fields        []*graphQLField
 	fieldEdges    []*graphqlFieldEdge
 	fieldMap      map[string]*graphQLField
@@ -545,6 +636,13 @@ func (s *graphQLSchemaInfo) getFieldEdgeByName(edgeName string) *graphqlFieldEdg
 
 func (s *graphQLSchemaInfo) getPluralEdgeByName(edgeName string) *graphqlPluralEdge {
 	return s.pluralEdgeMap[edgeName]
+}
+
+func (s *graphQLSchemaInfo) GetOpeningSchemaLine() string {
+	if len(s.interfaces) == 0 {
+		return fmt.Sprintf("%s %s {", s.Type, s.TypeName)
+	}
+	return fmt.Sprintf("%s %s implements %s {", s.Type, s.TypeName, strings.Join(s.interfaces, "&"))
 }
 
 type graphQLYamlConfig struct {
@@ -626,7 +724,7 @@ type graphqlSchemaTemplate struct {
 
 // represents information needed by the schema template file to generate the schema for each type
 type graphqlSchemaTypeInfo struct {
-	Type        string
-	TypeName    string
-	SchemaLines []string // list of lines that will be generated for each graphql type e.g. "id: ID!", "user(id: ID!): User" etc
+	TypeName          string
+	OpeningSchemaLine string
+	SchemaLines       []string // list of lines that will be generated for each graphql type e.g. "id: ID!", "user(id: ID!): User" etc
 }

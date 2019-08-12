@@ -2,12 +2,12 @@
 
 {{ with sortedTypes . -}}
 {{- range .}}
-{{ .Type}} {{.TypeName}} {
+{{ .OpeningSchemaLine}}
   {{- with .SchemaLines -}}
     {{- range .}}
     {{.}}
     {{- end -}}
-    {{- end}}
+  {{- end}}
 }
 {{ end -}}
 {{end }}

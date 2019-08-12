@@ -67,7 +67,7 @@ type {{.NodesResult}} struct {
 }
 
 // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
-func ({{.NodeInstance}} {{.Node}}) isNode() {}
+func ({{.NodeInstance}} {{.Node}}) IsNode() {}
 
 // GetType returns the NodeType of this entity. In this case: ContactType
 func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
