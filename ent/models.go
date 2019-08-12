@@ -469,7 +469,7 @@ func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig
 			entConfig.GetTableName(),
 			colName,
 		)
-		//fmt.Println(query)
+		fmt.Println(query)
 		return query, []interface{}{id}, nil
 	}
 
@@ -1054,7 +1054,7 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 		"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 ORDER BY time DESC",
 		edgeData.EdgeTable,
 	)
-	//fmt.Println(query)
+	fmt.Println(query)
 	//fmt.Println(id, edgeType)
 
 	stmt, err := db.Preparex(query)
@@ -1188,6 +1188,7 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig 
 			colsString,
 			entConfig.GetTableName(),
 		)
+		fmt.Println(query)
 
 		// rebind for IN query
 		return sqlx.In(query, ids)
