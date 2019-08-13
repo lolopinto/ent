@@ -149,13 +149,14 @@ func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig C
 }
 
 func logEntResult(ent interface{}, err error) {
+	return;
 	// result
-	fmt.Printf(
-		"result from loading ent: err %v  privacy errror %v ent %v \n",
-		err,
-		IsPrivacyError(err),
-		ent,
-	)
+	// fmt.Printf(
+	// 	"result from loading ent: err %v  privacy errror %v ent %v \n",
+	// 	err,
+	// 	IsPrivacyError(err),
+	// 	ent,
+	// )
 }
 
 type privacyResult struct {

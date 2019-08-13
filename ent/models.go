@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"time"
+	"runtime/debug"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
@@ -279,10 +280,17 @@ func LoadNodeFromParts(entity interface{}, config Config, field string, val inte
 }
 
 func getKeyForNode(id, tableName string) string {
+	if id == "" {
+		debug.PrintStack()
+		panic(errors.WithStack(errors.New("empty id passed")))
+	}
 	return remember.CreateKey(false, "_", "table_id", tableName, id)
 }
 
 func getKeyForEdge(id string, edgeType EdgeType) string {
+	if id == "" {
+		panic(errors.WithStack(errors.New("empty id passed")))
+	}
 	return remember.CreateKey(false, "_", "edge_id", edgeType, id)
 }
 
@@ -293,9 +301,15 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 		return errors.New("nil pointer passed to LoadNode")
 	}
 
+	// if id == "" {
+	// 	// nothing to do here...
+	// 	return nil
+	// }
+
 	key := getKeyForNode(id, tableName)
 	fn := func() (map[string]interface{}, error) {
-		spew.Dump("cache miss for key", key)
+//		spew.Dump("cache miss for key", key)
+
 		// ok, so now we need a way to map from struct to fields
 		// TODO while this is manual, cache this
 		insertData := getFieldsAndValues(entity, false)
@@ -329,7 +343,7 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 		dataMap := make(map[string]interface{})
 		err = stmt.QueryRowx(id).MapScan(dataMap)
 		//spew.Dump("struct scan", entity)
-		//		spew.Dump("mapScan", dataMap)
+				spew.Dump("mapScan", dataMap)
 		if err != nil {
 			fmt.Println(err)
 			return nil, err
@@ -451,7 +465,7 @@ func loadNodesDBHelper(qHelper *loadNodesQueryHelper, direct *reflect.Value, bas
 		if qHelper.storeNodesInCache {
 			dataMap := make(map[string]interface{})
 			err = rows.MapScan(dataMap)
-			//			spew.Dump("dataMap", dataMap)
+						spew.Dump("dataMap", dataMap)
 			if err != nil {
 				fmt.Println(err)
 				return err
@@ -1132,7 +1146,7 @@ func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) err
 func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 	key := getKeyForEdge(id, edgeType)
 	fn := func() ([]map[string]interface{}, error) {
-		spew.Dump("cache miss for key", key)
+		//		spew.Dump("cache miss for key", key)
 
 		db := data.DBConn()
 		if db == nil {
@@ -1179,7 +1193,7 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 
 			//		err = rows.StructScan(&edge)
 			err = rows.MapScan(dataMap)
-			//			spew.Dump(dataMap)
+						spew.Dump(dataMap)
 			if err != nil {
 				fmt.Println(err)
 				break
@@ -1312,6 +1326,7 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig 
 		}
 	}
 
+	// spew.Dump(edges)
 	// spew.Dump("loadddddNodeeeees")
 	// spew.Dump(cachedRawData)
 	// spew.Dump(ids)
@@ -1327,6 +1342,7 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig 
 			entConfig.GetTableName(),
 		)
 		fmt.Println(query)
+		spew.Dump(ids)
 
 		// rebind for IN query
 		return sqlx.In(query, ids)

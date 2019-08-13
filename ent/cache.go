@@ -49,7 +49,9 @@ func getItemFromCacheMaybe(key string, dataFunc func() (map[string]interface{}, 
 	// cacheFunc =
 
 	data, err := getSingleCachedItem(key, func() (interface{}, bool, error) {
-		return remember.Cache(ctx, ms, key, cacheTTL, fn)
+		return remember.Cache(ctx, ms, key, cacheTTL, fn, remember.Options{
+			DisableCacheUsage:  true,
+		})
 	})
 	if err != nil {
 		return nil, err
@@ -96,14 +98,15 @@ func getItemsFromCacheMaybe(key string, dataFunc func() ([]map[string]interface{
 	// if err != nil {
 	// 	return nil, err
 	// }
-	result, found, err := remember.Cache(ctx, ms, key, 1*time.Hour, fn)
+	result, found, err := remember.Cache(ctx, ms, key, 1*time.Hour, fn, remember.Options{
+		DisableCacheUsage:  true,
+	})
 	if err != nil {
 		fmt.Println("error getting items from cache. whelp")
 		spew.Dump("key", key, "result", result, "found", found, "err", err)
-
 	}
 	if found {
-		spew.Dump("cache hit for key ", key)
+		//		spew.Dump("cache hit for key ", key)
 		//		spew.Dump(result)
 	}
 	data, ok := result.(*cachedItems)
@@ -125,7 +128,7 @@ func getSingleCachedItem(key string, cacheFunc cacheRetrievalFunc) (*cachedItem,
 	}
 	//	spew.Dump(result, found, err)
 	if found { // literally just means cache hit
-		spew.Dump("cache hit for key ", key)
+		//		spew.Dump("cache hit for key ", key)
 		//		spew.Dump(result)
 	}
 	// nothing in the cache
