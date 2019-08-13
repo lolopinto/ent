@@ -6,10 +6,10 @@ import (
 	//	"errors"
 	"fmt"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
 	"github.com/rocketlaunchr/remember-go"
 
@@ -279,7 +279,18 @@ func LoadNodeFromParts(entity interface{}, config Config, field string, val inte
 }
 
 func getKeyForNode(id, tableName string) string {
+	if id == "" {
+		debug.PrintStack()
+		panic(errors.WithStack(errors.New("empty id passed")))
+	}
 	return remember.CreateKey(false, "_", "table_id", tableName, id)
+}
+
+func getKeyForEdge(id string, edgeType EdgeType) string {
+	if id == "" {
+		panic(errors.WithStack(errors.New("empty id passed")))
+	}
+	return remember.CreateKey(false, "_", "edge_id", edgeType, id)
 }
 
 func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx *sqlx.Tx) error {
@@ -289,9 +300,15 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 		return errors.New("nil pointer passed to LoadNode")
 	}
 
+	// if id == "" {
+	// 	// nothing to do here...
+	// 	return nil
+	// }
+
 	key := getKeyForNode(id, tableName)
 	fn := func() (map[string]interface{}, error) {
-		spew.Dump("cache miss for key", key)
+		fmt.Println("cache miss for key", key)
+
 		// ok, so now we need a way to map from struct to fields
 		// TODO while this is manual, cache this
 		insertData := getFieldsAndValues(entity, false)
@@ -320,11 +337,8 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 		}
 		defer stmt.Close()
 
-		// stmt.QueryRowx(id)....
-		//		err = stmt.QueryRowx(id).StructScan(entity)
 		dataMap := make(map[string]interface{})
 		err = stmt.QueryRowx(id).MapScan(dataMap)
-		//spew.Dump("struct scan", entity)
 		//		spew.Dump("mapScan", dataMap)
 		if err != nil {
 			fmt.Println(err)
@@ -338,13 +352,7 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 	if err != nil {
 		return err
 	}
-	//	spew.Dump("actual", actual)
 	return entity.FillFromMap(actual)
-	// if err != nil {
-	// 	return err
-	// }
-	// //	spew.Dump(entity)
-	// return nil
 }
 
 func loadNodeRawData(id string, entity dataEntity, entConfig Config) error {
@@ -366,6 +374,14 @@ func genLoadRawData(id string, entity dataEntity, entConfig Config, errChan chan
 	// }
 	errChan <- err
 	//chanResult <- result
+}
+
+type loadNodesQueryHelper struct {
+	query             loadNodesQuery
+	tableName         string // for caching and configuring
+	cachedRawData     []interface{}
+	storeNodesInCache bool
+	disableQuery      bool
 }
 
 type loadNodesQuery func(insertData insertdata) (string, []interface{}, error)
@@ -391,23 +407,14 @@ func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, erro
 }
 
 // this borrows from/learns from scanAll in sqlx library
-func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
-	slice, direct, err := validateSliceOfNodes(nodes)
-	if err != nil {
-		return err
-	}
 
-	// get the base type from the slice
-	base := reflectx.Deref(slice.Elem())
-	// todo: confirm this is what I think it is
-	// fmt.Println(base)
-
+func loadNodesDBHelper(qHelper *loadNodesQueryHelper, direct *reflect.Value, base reflect.Type) error {
 	// get a zero value of this
 	value := reflect.New(base)
 	// really need to rename this haha
 	insertData := getFieldsAndValuesOfStruct(value, false)
 
-	query, values, err := sqlQuery(insertData)
+	query, values, err := qHelper.query(insertData)
 	//fmt.Println(query, err)
 	if err != nil {
 		fmt.Println(err)
@@ -444,13 +451,37 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 
 	for rows.Next() {
 		entity := reflect.New(base)
-		err = rows.StructScan(entity.Interface())
-		if err != nil {
-			fmt.Println(err)
-			break
+
+		if qHelper.storeNodesInCache {
+			dataMap := make(map[string]interface{})
+			err = rows.MapScan(dataMap)
+			//			spew.Dump("dataMap", dataMap)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			id := uuid.UUID{}
+			if err := id.Scan(dataMap["id"]); err != nil {
+				return err
+			}
+			setSingleCachedItem(
+				getKeyForNode(id.String(), qHelper.tableName),
+				dataMap,
+				nil,
+			)
+			err = fillFromMap(direct, dataMap, entity)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = rows.StructScan(entity.Interface())
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			// append each entity into "nodes" destination
+			direct.Set(reflect.Append(*direct, entity))
 		}
-		// append each entity into "nodes" destination
-		direct.Set(reflect.Append(*direct, entity))
 	}
 
 	err = rows.Err()
@@ -458,6 +489,54 @@ func loadNodesHelper(nodes interface{}, sqlQuery loadNodesQuery) error {
 		fmt.Println(err)
 	}
 	return err
+}
+
+func loadNodesHelper(nodes interface{}, qHelper *loadNodesQueryHelper) error {
+	slice, direct, err := validateSliceOfNodes(nodes)
+	if err != nil {
+		return err
+	}
+	// get the base type from the slice
+	base := reflectx.Deref(slice.Elem())
+
+	if !qHelper.disableQuery {
+		err := loadNodesDBHelper(qHelper, direct, base)
+		if err != nil {
+			return err
+		}
+	} else {
+		//		spew.Dump("skipped db!!!")
+	}
+
+	// todo when this is done with goroutines correctly as it should the order will be correct.
+	// now it just enforces cached data
+	for _, data := range qHelper.cachedRawData {
+		entity := reflect.New(base)
+
+		err = fillFromMap(direct, data, entity)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func fillFromMap(direct *reflect.Value, data interface{}, entity reflect.Value) error {
+	method := reflect.ValueOf(entity.Interface()).MethodByName("FillFromMap")
+	if !method.IsValid() {
+		panic("help")
+	}
+	res := method.Call([]reflect.Value{reflect.ValueOf(data)})
+	if len(res) != 1 {
+		panic("invalid number of results. FillFromMap should have returned 1 item")
+	}
+	err := res[0].Interface()
+	if err != nil {
+		return errors.New(fmt.Sprintf("%v", err))
+	}
+	direct.Set(reflect.Append(*direct, entity))
+	return nil
 }
 
 func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) error {
@@ -473,7 +552,10 @@ func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig
 		return query, []interface{}{id}, nil
 	}
 
-	return loadNodesHelper(nodes, sqlQuery)
+	return loadNodesHelper(nodes, &loadNodesQueryHelper{
+		query:     sqlQuery,
+		tableName: entConfig.GetTableName(),
+	})
 }
 
 func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
@@ -774,6 +856,8 @@ func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 	values, valsString := insertData.getValuesDataForUpdate()
 
 	id := findID(entity, insertData.pkeyFieldName)
+	deleteKey(getKeyForNode(id, entConfig.GetTableName()))
+
 	computedQuery := fmt.Sprintf(
 		"UPDATE %s SET %s WHERE %s = '%s'",
 		entConfig.GetTableName(),
@@ -782,9 +866,6 @@ func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 		id,
 	)
 	fmt.Println(computedQuery)
-	//	spew.
-
-	deleteKey(getKeyForNode(id, entConfig.GetTableName()))
 	return performWrite(computedQuery, values, tx, nil)
 }
 
@@ -923,7 +1004,7 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 		edgeOptions.Data, // zero value of data works for us. no check needed
 	}
 
-	spew.Dump("data!!!!", edgeOptions.Data)
+	//	spew.Dump("data!!!!", edgeOptions.Data)
 	query := fmt.Sprintf(
 		// postgres specific
 		// this is where the db dialects will eventually be needed
@@ -935,6 +1016,7 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 
 	fmt.Println(query)
 
+	deleteKey(getKeyForEdge(id1, edgeType))
 	err = performWrite(query, vals, tx, nil)
 	if err != nil {
 		return err
@@ -961,6 +1043,7 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 			getColumnsString(cols),
 			getValsString(vals),
 		)
+		deleteKey(getKeyForEdge(id2, edgeType))
 		return performWrite(query, vals, tx, nil)
 	}
 
@@ -983,6 +1066,7 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 			getColumnsString(cols),
 			getValsString(vals),
 		)
+		deleteKey(getKeyForEdge(id2, EdgeType(edgeData.InverseEdgeType.String)))
 		return performWrite(query, vals, tx, nil)
 	}
 
@@ -1023,6 +1107,8 @@ func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx)
 	}
 
 	//fmt.Println(query)
+	deleteKey(getKeyForEdge(id1, edgeType))
+
 	err = performWrite(query, vals, tx, nil)
 	if err != nil {
 		return err
@@ -1036,6 +1122,7 @@ func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx)
 			edgeData.InverseEdgeType.String,
 			id1,
 		}
+		deleteKey(getKeyForEdge(id2, EdgeType(edgeData.InverseEdgeType.String)))
 		return performWrite(query, vals, tx, nil)
 	}
 
@@ -1045,6 +1132,7 @@ func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx)
 			edgeType,
 			id1,
 		}
+		deleteKey(getKeyForEdge(id2, edgeType))
 		return performWrite(query, vals, tx, nil)
 	}
 	return nil
@@ -1055,59 +1143,82 @@ func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) err
 }
 
 func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
-	db := data.DBConn()
-	if db == nil {
-		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
-		return nil, err
-	}
+	key := getKeyForEdge(id, edgeType)
+	fn := func() ([]map[string]interface{}, error) {
+		fmt.Println("cache miss for key", key)
 
-	edgeData, err := getEdgeInfo(edgeType, nil)
-	if err != nil {
-		return nil, err
-	}
+		db := data.DBConn()
+		if db == nil {
+			err := errors.New("error getting a valid db connection")
+			fmt.Println(err)
+			return nil, err
+		}
 
-	// TODO: eventually add support for complex queries
-	// ORDER BY time DESC default
-	// we need offset, limit eventually
-	query := fmt.Sprintf(
-		"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 ORDER BY time DESC",
-		edgeData.EdgeTable,
-	)
-	fmt.Println(query)
-	//fmt.Println(id, edgeType)
+		edgeData, err := getEdgeInfo(edgeType, nil)
+		if err != nil {
+			return nil, err
+		}
 
-	stmt, err := db.Preparex(query)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-	defer stmt.Close()
+		// TODO: eventually add support for complex queries
+		// ORDER BY time DESC default
+		// we need offset, limit eventually
+		query := fmt.Sprintf(
+			"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 ORDER BY time DESC",
+			edgeData.EdgeTable,
+		)
+		fmt.Println(query)
+		//fmt.Println(id, edgeType)
 
-	rows, err := stmt.Queryx(id, edgeType)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	var edges []Edge
-	for rows.Next() {
-		var edge Edge
-		err = rows.StructScan(&edge)
+		stmt, err := db.Preparex(query)
 		if err != nil {
 			fmt.Println(err)
-			break
+			return nil, err
 		}
-		edges = append(edges, edge)
+		defer stmt.Close()
+
+		rows, err := stmt.Queryx(id, edgeType)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+
+		defer rows.Close()
+
+		var edges []map[string]interface{}
+		for rows.Next() {
+			//		var edge Edge
+
+			dataMap := make(map[string]interface{})
+
+			//		err = rows.StructScan(&edge)
+			err = rows.MapScan(dataMap)
+			//	spew.Dump(dataMap)
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			edges = append(edges, dataMap)
+		}
+
+		err = rows.Err()
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		return edges, err
 	}
 
-	err = rows.Err()
+	actual, err := getItemsFromCacheMaybe(key, fn)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
+	edges := make([]Edge, len(actual))
+	for idx := range actual {
+		var edge Edge
+		edge.FillFromMap(actual[idx])
+		edges[idx] = edge
+	}
+
 	return edges, nil
 }
 
@@ -1133,8 +1244,11 @@ func GenLoadEdgesByTypeResult(id string, edgeType EdgeType, chanEdgesResult chan
 }
 
 // checks if an edge exists between 2 ids
-// don't have a use-case now but will in the future
 func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
+	// sql no rows behavior
+	if id == "" || id2 == "" {
+		return &Edge{}, nil
+	}
 	db := data.DBConn()
 	if db == nil {
 		err := errors.New("error getting a valid db connection")
@@ -1192,11 +1306,29 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig 
 		return err
 	}
 
+	//	spew.Dump(edges)
 	// get ids from the edges
-	ids := make([]interface{}, length)
-	for idx, edge := range edges {
-		ids[idx] = edge.ID2
+	//	ids := make([]interface{}, length)
+	var ids []interface{}
+	cachedRawData := []interface{}{}
+	for _, edge := range edges {
+		cachedItem, err := getItemInCache(getKeyForNode(edge.ID2, entConfig.GetTableName()))
+		if err != nil {
+			fmt.Println("error getting cached item", err)
+			return err
+		}
+		//		spew.Dump(cachedItem, err)
+		if cachedItem != nil {
+			cachedRawData = append(cachedRawData, cachedItem)
+		} else {
+			ids = append(ids, edge.ID2)
+		}
 	}
+
+	// spew.Dump(edges)
+	// spew.Dump("loadddddNodeeeees")
+	// spew.Dump(cachedRawData)
+	// spew.Dump(ids)
 
 	// construct the sqlQuery that we'll use to query each node table
 	sqlQuery := func(insertData insertdata) (string, []interface{}, error) {
@@ -1208,13 +1340,20 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig 
 			colsString,
 			entConfig.GetTableName(),
 		)
-		fmt.Println(query)
+		// fmt.Println(query)
+		// spew.Dump(ids)
 
 		// rebind for IN query
 		return sqlx.In(query, ids)
 	}
 
-	return loadNodesHelper(nodes, sqlQuery)
+	return loadNodesHelper(nodes, &loadNodesQueryHelper{
+		query:             sqlQuery,
+		tableName:         entConfig.GetTableName(),
+		cachedRawData:     cachedRawData,
+		storeNodesInCache: true,
+		disableQuery:      len(ids) == 0, // we hit the cache for everything, don't do the sql query. todo: refactor
+	})
 }
 
 func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
@@ -1260,5 +1399,8 @@ func GenLoadAssocEdges(nodes interface{}) error {
 		fmt.Println(query)
 		return query, []interface{}{}, nil
 	}
-	return loadNodesHelper(nodes, sqlQuery)
+	return loadNodesHelper(nodes, &loadNodesQueryHelper{
+		query:     sqlQuery,
+		tableName: "assoc_edge_config",
+	})
 }

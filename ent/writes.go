@@ -177,6 +177,8 @@ func (op *updateNodeOp) getSQLQuery(columns []string, values []interface{}) stri
 
 	//fmt.Println(computedQuery)
 	//spew.Dump(colsString, values, valsString)
+	deleteKey(getKeyForNode(op.info.ExistingEnt.GetID(), op.info.EntConfig.GetTableName()))
+
 	return computedQuery
 }
 
