@@ -4,8 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
+	"github.com/lolopinto/ent/ent/cast"
 )
 
 // Edge is the information about an edge between two Nodes
@@ -23,6 +22,61 @@ type Edge struct {
 	ID2Type  NodeType  `db:"id2_type"`
 	Time     time.Time `db:"time"`
 	Data     string    `db:"data"` // nullable TODO nullable strings
+}
+
+// if not this, use reflection?
+func (edge *Edge) FillFromMap(data map[string]interface{}) error {
+	for k, v := range data {
+		var err error
+		switch k {
+		case "id1":
+			edge.ID1, err = cast.ToUUIDString(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "id1_type":
+			id1Type, err := cast.ToString(v)
+			if err != nil {
+				return err
+			}
+			edge.ID1Type = NodeType(id1Type)
+			break
+		case "edge_type":
+			id, err := cast.ToUUIDString(v)
+			if err != nil {
+				return err
+			}
+			edge.EdgeType = EdgeType(id)
+			break
+		case "id2":
+			edge.ID2, err = cast.ToUUIDString(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "id2_type":
+			id2Type, err := cast.ToString(v)
+			if err != nil {
+				return err
+			}
+			edge.ID2Type = NodeType(id2Type)
+			break
+		case "time":
+			edge.Time, err = cast.ToTime(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "data":
+			edge.Data, err = cast.ToString(v)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+	return nil
 }
 
 // EdgeResult stores the result of loading an Edge concurrently
@@ -51,45 +105,43 @@ func (edgeData *AssocEdgeData) FillFromMap(data map[string]interface{}) error {
 	// can cache AssocEdgeData though :/
 	// however leaving as-is because probably better for when this comes from a different cache
 	for k, v := range data {
+		var err error
 		switch k {
 		case "edge_type":
-			id := uuid.UUID{}
-			if err := id.Scan(v); err != nil {
+			edgeData.EdgeType, err = cast.ToUUIDString(v)
+			if err != nil {
 				return err
 			}
-			edgeData.EdgeType = id.String()
 			break
 		case "edge_name":
-			var ok bool
-			edgeData.EdgeName, ok = v.(string)
-			if !ok {
-				return errors.New("could not convert edge_name field to appropriate type")
+			edgeData.EdgeName, err = cast.ToString(v)
+			if err != nil {
+				return err
 			}
 			break
 		case "symmetric_edge":
-			var ok bool
-			edgeData.SymmetricEdge, ok = v.(bool)
-			if !ok {
-				return errors.New("could not convert symmetric_edge field to appropriate type")
+			edgeData.SymmetricEdge, err = cast.ToBool(v)
+			if err != nil {
+				return err
 			}
 			break
 		case "inverse_edge_type":
 			if v != nil {
-				id := uuid.UUID{}
-				if err := id.Scan(v); err != nil {
+				//				spew.Dump("inverse_edge_type",v)
+				id, err := cast.ToUUIDString(v)
+				if err != nil {
 					return err
 				}
 				edgeData.InverseEdgeType = &sql.NullString{
 					Valid:  true,
-					String: id.String(),
+					String: id,
 				}
 			}
 			break
 		case "edge_table":
-			var ok bool
-			edgeData.EdgeTable, ok = v.(string)
-			if !ok {
-				return errors.New("could not convert edge_table field to appropriate type")
+			edgeData.EdgeTable, err = cast.ToString(v)
+			if err != nil {
+				return err
 			}
 			break
 		}
