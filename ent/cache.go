@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	"github.com/rocketlaunchr/remember-go"
 	"github.com/rocketlaunchr/remember-go/memory"
@@ -45,9 +44,6 @@ func getItemFromCacheMaybe(key string, dataFunc func() (map[string]interface{}, 
 		}, nil
 	}
 
-	// var cacheFunc cacheRetrievalFunc
-	// cacheFunc =
-
 	data, err := getSingleCachedItem(key, func() (interface{}, bool, error) {
 		return remember.Cache(ctx, ms, key, cacheTTL, fn)
 	})
@@ -55,21 +51,6 @@ func getItemFromCacheMaybe(key string, dataFunc func() (map[string]interface{}, 
 		return nil, err
 	}
 
-	// if data == nil {
-	// 	return nil, nil
-	// }
-	// result, found, err := remember.Cache(ctx, ms, key, 1*time.Hour, fn)
-	// if err != nil {
-	// 	fmt.Println("error getting item from cache. whelp")
-	// }
-	// if found {
-	// 	spew.Dump("cache hit for key ", key)
-	// 	//		spew.Dump(result)
-	// }
-	// data, ok := result.(*cachedItem)
-	// if !ok {
-	// 	return nil, errors.New("got incorrect item from cache. whelp")
-	// }
 	// do we wanna cache errors? right now yes. todo come back to that?
 	// todo depends on the types of errors
 	// caching it so far so we don't hammer the db for no data rows
@@ -90,24 +71,13 @@ func getItemsFromCacheMaybe(key string, dataFunc func() ([]map[string]interface{
 			err:   err,
 		}, nil
 	}
-	// data, err = getSingleCachedItem(key, func() cacheRetrievalFunc {
-	// 	remember.Cache(ctx, ms, key, 1*time.Hour, fn)
-	// })
-	// if err != nil {
-	// 	return nil, err
-	// }
-	result, found, err := remember.Cache(ctx, ms, key, 1*time.Hour, fn)
+
+	data, err := getMultiCacheItem(key, func() (interface{}, bool, error) {
+		return remember.Cache(ctx, ms, key, 1*time.Hour, fn)
+	})
+
 	if err != nil {
-		fmt.Println("error getting items from cache. whelp")
-		spew.Dump("key", key, "result", result, "found", found, "err", err)
-	}
-	if found {
-		fmt.Println("cache hit for key ", key)
-		//		spew.Dump(result)
-	}
-	data, ok := result.(*cachedItems)
-	if !ok {
-		return nil, errors.New("got incorrect item from cache. whelp")
+		return nil, err
 	}
 	// do we wanna cache errors? right now yes. todo come back to that?
 	// todo depends on the types of errors
@@ -115,7 +85,7 @@ func getItemsFromCacheMaybe(key string, dataFunc func() ([]map[string]interface{
 	return data.datas, data.err
 }
 
-func getSingleCachedItem(key string, cacheFunc cacheRetrievalFunc) (*cachedItem, error) {
+func cacheRetrieval(key string, cacheFunc cacheRetrievalFunc) (interface{}, error) {
 	result, found, err := cacheFunc()
 	if err != nil {
 		fmt.Println("error getting item from cache. whelp")
@@ -131,7 +101,33 @@ func getSingleCachedItem(key string, cacheFunc cacheRetrievalFunc) (*cachedItem,
 	if result == nil {
 		return nil, nil
 	}
+
+	return result, nil
+}
+
+func getSingleCachedItem(key string, cacheFunc cacheRetrievalFunc) (*cachedItem, error) {
+	result, err := cacheRetrieval(key, cacheFunc)
+	if err != nil {
+		return nil, err
+	} else if result == nil {
+		return nil, nil
+	}
 	data, ok := result.(*cachedItem)
+	if !ok {
+		//		spew.Dump("result", result, "key", key, "item in cache")
+		return nil, errors.New("got incorrect item from cache. whelp")
+	}
+	return data, nil
+}
+
+func getMultiCacheItem(key string, cacheFunc cacheRetrievalFunc) (*cachedItems, error) {
+	result, err := cacheRetrieval(key, cacheFunc)
+	if err != nil {
+		return nil, err
+	} else if result == nil {
+		return nil, nil
+	}
+	data, ok := result.(*cachedItems)
 	if !ok {
 		//		spew.Dump("result", result, "key", key, "item in cache")
 		return nil, errors.New("got incorrect item from cache. whelp")
@@ -164,7 +160,19 @@ func getItemInCache(key string) (map[string]interface{}, error) {
 	return data.data, nil
 }
 
-//func splitKeys()
+func getItemsInCache(key string) ([]map[string]interface{}, error) {
+	data, err := getMultiCacheItem(key, func() (interface{}, bool, error) {
+		return ms.Get(key)
+	})
+	if err != nil {
+		return nil, err
+	}
+	// no cached item
+	if data == nil {
+		return nil, nil
+	}
+	return data.datas, nil
+}
 
 // type loader interface {
 // 	GetKey() string

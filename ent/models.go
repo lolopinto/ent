@@ -293,6 +293,13 @@ func getKeyForEdge(id string, edgeType EdgeType) string {
 	return remember.CreateKey(false, "_", "edge_id", edgeType, id)
 }
 
+// func getKeyForEdgePair(id string, edgeType EdgeType, id2 string) string {
+// 	if id == "" || id2 == "" {
+// 		panic(errors.WithStack(errors.New("empty id passed")))
+// 	}
+// 	return remember.CreateKey(false, "_", "edge_id_id2", edgeType, id, id2)
+// }
+
 func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx *sqlx.Tx) error {
 	// TODO does it make sense to change the API we use here to instead pass it to entity?
 
@@ -320,7 +327,7 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 			tableName,
 			insertData.pkeyName,
 		)
-		//	fmt.Println(computedQuery)
+		fmt.Println(computedQuery)
 
 		db := data.DBConn()
 		if db == nil {
@@ -1245,52 +1252,92 @@ func GenLoadEdgesByTypeResult(id string, edgeType EdgeType, chanEdgesResult chan
 
 // checks if an edge exists between 2 ids
 func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
-	// sql no rows behavior
-	if id == "" || id2 == "" {
-		return &Edge{}, nil
-	}
-	db := data.DBConn()
-	if db == nil {
-		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
-		return nil, err
-	}
-
-	edgeData, err := getEdgeInfo(edgeType, nil)
+	// check if we can use the standard id1->edgeType cache
+	edges, err := LoadEdgesByType(id, edgeType)
 	if err != nil {
 		return nil, err
 	}
-	query := fmt.Sprintf(
-		"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3",
-		edgeData.EdgeTable,
-	)
-	//	fmt.Println(query)
-
-	stmt, err := db.Preparex(query)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
+	for _, edge := range edges {
+		if edge.ID2 == id2 {
+			return &edge, nil
+		}
 	}
-	defer stmt.Close()
+	// no edge
+	return &Edge{}, nil
 
-	var edge Edge
+	// this checks if the edge exists based on the cache key and then does nothing about it
+	// I think this approach is the best longterm approach but we don't have the way to delete
+	// all the pairwise edges when there's a miss
+	// above is only a temporary solution.
+	// key := getKeyForEdge(id, edgeType)
+	// items, err := getItemsInCache(key)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if items != nil {
+	// 	for _, item := range items {
+	// 		//			spew.Dump(item)
+	// 		if item["id2"] != nil {
+	// 			fmt.Printf("cache hit id1 %s, edge_type %s, id2 %s \n", id, edgeType, id2)
+	// 			var edge Edge
+	// 			err = edge.FillFromMap(item)
+	// 			if err != nil {
+	// 				return nil, err
+	// 			} else {
+	// 				return &edge, nil
+	// 			}
+	// 		}
+	// 	}
+	// }
+	// fmt.Printf("cache miss id1 %s, edge_type %s, id2 %s \n", id, edgeType, id2)
 
-	err = stmt.QueryRowx(id, edgeType, id2).StructScan(&edge)
+	// // todo...
+	// // sql no rows behavior
+	// if id == "" || id2 == "" {
+	// 	return &Edge{}, nil
+	// }
+	// db := data.DBConn()
+	// if db == nil {
+	// 	err := errors.New("error getting a valid db connection")
+	// 	fmt.Println(err)
+	// 	return nil, err
+	// }
 
-	// nil state. return zero value of Edge for now. maybe come up with better
-	// way of doing this in the future
-	if err == sql.ErrNoRows {
-		//fmt.Println("no rows", err)
-		// don't mark this as an error. just no data
-		return &Edge{}, nil
-	}
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
+	// edgeData, err := getEdgeInfo(edgeType, nil)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// query := fmt.Sprintf(
+	// 	"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3",
+	// 	edgeData.EdgeTable,
+	// )
+	// fmt.Println(query)
 
-	// TODO handle no edge. what's the correct error type here?
-	return &edge, nil
+	// stmt, err := db.Preparex(query)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return nil, err
+	// }
+	// defer stmt.Close()
+
+	// var edge Edge
+
+	// err = stmt.QueryRowx(id, edgeType, id2).StructScan(&edge)
+
+	// // nil state. return zero value of Edge for now. maybe come up with better
+	// // way of doing this in the future
+	// if err == sql.ErrNoRows {
+	// 	//fmt.Println("no rows", err)
+	// 	// don't mark this as an error. just no data
+	// 	return &Edge{}, nil
+	// }
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return nil, err
+	// }
+
+	// // TODO handle no edge. what's the correct error type here?
+	// return &edge, nil
 }
 
 func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
@@ -1340,7 +1387,7 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig 
 			colsString,
 			entConfig.GetTableName(),
 		)
-		// fmt.Println(query)
+		fmt.Println(query)
 		// spew.Dump(ids)
 
 		// rebind for IN query
@@ -1375,7 +1422,7 @@ func GenLoadAssocEdges(nodes interface{}) error {
 	}
 
 	query := fmt.Sprintf("SELECT to_regclass($1) IS NOT NULL as exists")
-
+	fmt.Println(query)
 	stmt, err := db.Preparex(query)
 	if err != nil {
 		fmt.Println(err)
