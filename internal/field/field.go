@@ -90,6 +90,10 @@ func (f *Field) GetGraphQLTypeForField() string {
 	return f.fieldType.GetGraphQLType()
 }
 
+func (f *Field) GetCastToMethod() string {
+	return f.fieldType.GetCastToMethod()
+}
+
 func (f *Field) ExposeToGraphQL() bool {
 	if !f.exposeToGraphQL {
 		return false

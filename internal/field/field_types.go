@@ -10,6 +10,7 @@ type FieldType interface {
 	GetDBType() string
 	// for now we're going to assume every GraphQL Type is required
 	GetGraphQLType() string
+	GetCastToMethod() string // returns the method in cast.go (cast.To***) which casts from interface{} to strongly typed
 }
 
 type FieldWithOverridenStructType interface {
@@ -26,6 +27,10 @@ func (t *StringType) GetGraphQLType() string {
 	return "String!"
 }
 
+func (t *StringType) GetCastToMethod() string {
+	return "cast.ToString"
+}
+
 type BoolType struct{}
 
 func (t *BoolType) GetDBType() string {
@@ -34,6 +39,10 @@ func (t *BoolType) GetDBType() string {
 
 func (t *BoolType) GetGraphQLType() string {
 	return "Boolean!"
+}
+
+func (t *BoolType) GetCastToMethod() string {
+	return "cast.ToBool"
 }
 
 // TODO uuid support needed
@@ -48,6 +57,10 @@ func (t *IdType) GetGraphQLType() string {
 	return "ID!"
 }
 
+func (t *IdType) GetCastToMethod() string {
+	return "cast.ToUUIDString"
+}
+
 type IntegerType struct{}
 
 func (t *IntegerType) GetDBType() string {
@@ -56,6 +69,10 @@ func (t *IntegerType) GetDBType() string {
 
 func (t *IntegerType) GetGraphQLType() string {
 	return "Int!"
+}
+
+func (t *IntegerType) GetCastToMethod() string {
+	return "cast.ToInt"
 }
 
 type FloatType struct{}
@@ -68,6 +85,10 @@ func (t *FloatType) GetGraphQLType() string {
 	return "Float!"
 }
 
+func (t *FloatType) GetCastToMethod() string {
+	panic("todo!")
+}
+
 type TimeType struct{}
 
 func (t *TimeType) GetDBType() string {
@@ -77,6 +98,10 @@ func (t *TimeType) GetDBType() string {
 //use the built in graphql type
 func (t *TimeType) GetGraphQLType() string {
 	return "Time!"
+}
+
+func (t *TimeType) GetCastToMethod() string {
+	return "cast.ToTime"
 }
 
 type NamedType struct {
@@ -93,6 +118,10 @@ func (t *NamedType) GetDBType() string {
 
 func (t *NamedType) GetGraphQLType() string {
 	return t.getUnderlyingType().GetGraphQLType()
+}
+
+func (t *NamedType) GetCastToMethod() string {
+	panic("todo!")
 }
 
 func (t *NamedType) GetStructType() string {

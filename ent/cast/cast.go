@@ -28,7 +28,7 @@ func ToTime(v interface{}) (time.Time, error) {
 func ToString(v interface{}) (string, error) {
 	str, ok := v.(string)
 	if !ok {
-		return "", errors.New("could not convert data field to appropriate type")
+		return "", errors.New("could not convert string field to appropriate type")
 	}
 	return str, nil
 }
@@ -36,7 +36,7 @@ func ToString(v interface{}) (string, error) {
 func ToBool(v interface{}) (bool, error) {
 	val, ok := v.(bool)
 	if !ok {
-		return false, errors.New("could not convert data field to appropriate type")
+		return false, errors.New("could not convert bool field to appropriate type")
 	}
 	return val, nil
 }
@@ -51,7 +51,7 @@ func ToInt(v interface{}) (int, error) {
 	if ok {
 		return int(val2), nil
 	}
-	return 0, errors.New("could not convert field to appropriate type")
+	return 0, errors.New("could not convert int field to appropriate type")
 }
 
 //func ToNullString
