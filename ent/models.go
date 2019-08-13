@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
 	"github.com/rocketlaunchr/remember-go"
 
@@ -308,7 +307,7 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 
 	key := getKeyForNode(id, tableName)
 	fn := func() (map[string]interface{}, error) {
-		//		spew.Dump("cache miss for key", key)
+		fmt.Println("cache miss for key", key)
 
 		// ok, so now we need a way to map from struct to fields
 		// TODO while this is manual, cache this
@@ -338,11 +337,8 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 		}
 		defer stmt.Close()
 
-		// stmt.QueryRowx(id)....
-		//		err = stmt.QueryRowx(id).StructScan(entity)
 		dataMap := make(map[string]interface{})
 		err = stmt.QueryRowx(id).MapScan(dataMap)
-		//spew.Dump("struct scan", entity)
 		//		spew.Dump("mapScan", dataMap)
 		if err != nil {
 			fmt.Println(err)
@@ -356,13 +352,7 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 	if err != nil {
 		return err
 	}
-	//	spew.Dump("actual", actual)
 	return entity.FillFromMap(actual)
-	// if err != nil {
-	// 	return err
-	// }
-	// //	spew.Dump(entity)
-	// return nil
 }
 
 func loadNodeRawData(id string, entity dataEntity, entConfig Config) error {
@@ -479,39 +469,10 @@ func loadNodesDBHelper(qHelper *loadNodesQueryHelper, direct *reflect.Value, bas
 				dataMap,
 				nil,
 			)
-			//			nodesMap = append(nodesMap, dataMap)
-			fillFromMap(direct, dataMap, entity)
-
-			// method := reflect.ValueOf(entity.Interface()).MethodByName("FillFromMap")
-			// if !method.IsValid() {
-			// 	panic("help")
-			// }
-			// // call method with one argument of data and bind it to result to put cached items in there
-			// res := method.Call([]reflect.Value{reflect.ValueOf(dataMap)})
-			// if len(res) != 1 {
-			// 	panic("invalid number of results. FillFromMap should have returned 1 item")
-			// }
-			// // val := reflect.ValueOf(res[0]).Interface()
-			// // if val != nil {
-			// // 	spew.Dump(val)
-			// // }
-			// //			reflect.TypeOf(res)
-			// err, ok := res[0].Interface().(error)
-			// spew.Dump(reflect.ValueOf(res[0]), reflect.ValueOf(res[0].Interface()), res[0], err, ok)
-			// //			reflect.Value
-			// if !ok {
-			// 	fmt.Println("not an error type")
-			// 	return errors.New("didn't return an error")
-			// }
-			// if err != nil {
-			// 	fmt.Println(err)
-			// 	return err
-			// }
-			// // fmt.Printf("%v", res[0], reflect.ValueOf(res[0]).Interface())
-			// // reflect.Kind(va)
-			// // spew.Dump(reflect.ValueOf(res[0]).Interface())
-
-			// //			spew.Dump(res)
+			err = fillFromMap(direct, dataMap, entity)
+			if err != nil {
+				return err
+			}
 		} else {
 			err = rows.StructScan(entity.Interface())
 			if err != nil {
@@ -544,7 +505,7 @@ func loadNodesHelper(nodes interface{}, qHelper *loadNodesQueryHelper) error {
 			return err
 		}
 	} else {
-		spew.Dump("skipped db!!!")
+		//		spew.Dump("skipped db!!!")
 	}
 
 	// todo when this is done with goroutines correctly as it should the order will be correct.
@@ -552,15 +513,10 @@ func loadNodesHelper(nodes interface{}, qHelper *loadNodesQueryHelper) error {
 	for _, data := range qHelper.cachedRawData {
 		entity := reflect.New(base)
 
-		fillFromMap(direct, data, entity)
-		// //		entity.Interface()
-		// method := reflect.ValueOf(entity.Interface()).MethodByName("FillFromMap")
-		// if !method.IsValid() {
-		// 	panic("help")
-		// }
-		// // call method with one argument of data and bind it to result to put cached items in there
-		// method.Call([]reflect.Value{reflect.ValueOf(data)})
-		// direct.Set(reflect.Append(*direct, entity))
+		err = fillFromMap(direct, data, entity)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -900,6 +856,8 @@ func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 	values, valsString := insertData.getValuesDataForUpdate()
 
 	id := findID(entity, insertData.pkeyFieldName)
+	deleteKey(getKeyForNode(id, entConfig.GetTableName()))
+
 	computedQuery := fmt.Sprintf(
 		"UPDATE %s SET %s WHERE %s = '%s'",
 		entConfig.GetTableName(),
@@ -908,9 +866,6 @@ func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) 
 		id,
 	)
 	fmt.Println(computedQuery)
-	//	spew.
-
-	deleteKey(getKeyForNode(id, entConfig.GetTableName()))
 	return performWrite(computedQuery, values, tx, nil)
 }
 
@@ -1111,7 +1066,7 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 			getColumnsString(cols),
 			getValsString(vals),
 		)
-		deleteKey(getKeyForEdge(id2, edgeType))
+		deleteKey(getKeyForEdge(id2, EdgeType(edgeData.InverseEdgeType.String)))
 		return performWrite(query, vals, tx, nil)
 	}
 
@@ -1167,7 +1122,7 @@ func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx)
 			edgeData.InverseEdgeType.String,
 			id1,
 		}
-		deleteKey(getKeyForEdge(id2, edgeType))
+		deleteKey(getKeyForEdge(id2, EdgeType(edgeData.InverseEdgeType.String)))
 		return performWrite(query, vals, tx, nil)
 	}
 
@@ -1190,7 +1145,7 @@ func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) err
 func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 	key := getKeyForEdge(id, edgeType)
 	fn := func() ([]map[string]interface{}, error) {
-		//		spew.Dump("cache miss for key", key)
+		fmt.Println("cache miss for key", key)
 
 		db := data.DBConn()
 		if db == nil {
@@ -1385,8 +1340,8 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig 
 			colsString,
 			entConfig.GetTableName(),
 		)
-		fmt.Println(query)
-		spew.Dump(ids)
+		// fmt.Println(query)
+		// spew.Dump(ids)
 
 		// rebind for IN query
 		return sqlx.In(query, ids)
