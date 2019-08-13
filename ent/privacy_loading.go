@@ -3,6 +3,7 @@ package ent
 import (
 	"fmt"
 	"reflect"
+	"runtime/debug"
 
 	"github.com/lolopinto/ent/ent/viewer"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
@@ -88,6 +89,9 @@ func LoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig Conf
 
 // TODO...
 func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig Config, errChan chan<- error) {
+	if id == "" {
+		debug.PrintStack()
+	}
 	// working solutions so far:
 	// use reflection to create a copy like below (need ent2 var)
 	// use reflection to set to zero-value.
@@ -149,7 +153,7 @@ func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig C
 }
 
 func logEntResult(ent interface{}, err error) {
-	return;
+	return
 	// result
 	// fmt.Printf(
 	// 	"result from loading ent: err %v  privacy errror %v ent %v \n",

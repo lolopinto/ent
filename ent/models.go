@@ -6,9 +6,9 @@ import (
 	//	"errors"
 	"fmt"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"time"
-	"runtime/debug"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
@@ -308,7 +308,7 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 
 	key := getKeyForNode(id, tableName)
 	fn := func() (map[string]interface{}, error) {
-//		spew.Dump("cache miss for key", key)
+		//		spew.Dump("cache miss for key", key)
 
 		// ok, so now we need a way to map from struct to fields
 		// TODO while this is manual, cache this
@@ -343,7 +343,7 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 		dataMap := make(map[string]interface{})
 		err = stmt.QueryRowx(id).MapScan(dataMap)
 		//spew.Dump("struct scan", entity)
-				spew.Dump("mapScan", dataMap)
+		//		spew.Dump("mapScan", dataMap)
 		if err != nil {
 			fmt.Println(err)
 			return nil, err
@@ -465,7 +465,7 @@ func loadNodesDBHelper(qHelper *loadNodesQueryHelper, direct *reflect.Value, bas
 		if qHelper.storeNodesInCache {
 			dataMap := make(map[string]interface{})
 			err = rows.MapScan(dataMap)
-						spew.Dump("dataMap", dataMap)
+			//			spew.Dump("dataMap", dataMap)
 			if err != nil {
 				fmt.Println(err)
 				return err
@@ -480,22 +480,47 @@ func loadNodesDBHelper(qHelper *loadNodesQueryHelper, direct *reflect.Value, bas
 				nil,
 			)
 			//			nodesMap = append(nodesMap, dataMap)
+			fillFromMap(direct, dataMap, entity)
 
-			method := reflect.ValueOf(entity.Interface()).MethodByName("FillFromMap")
-			if !method.IsValid() {
-				panic("help")
-			}
-			// call method with one argument of data and bind it to result to put cached items in there
-			method.Call([]reflect.Value{reflect.ValueOf(dataMap)})
+			// method := reflect.ValueOf(entity.Interface()).MethodByName("FillFromMap")
+			// if !method.IsValid() {
+			// 	panic("help")
+			// }
+			// // call method with one argument of data and bind it to result to put cached items in there
+			// res := method.Call([]reflect.Value{reflect.ValueOf(dataMap)})
+			// if len(res) != 1 {
+			// 	panic("invalid number of results. FillFromMap should have returned 1 item")
+			// }
+			// // val := reflect.ValueOf(res[0]).Interface()
+			// // if val != nil {
+			// // 	spew.Dump(val)
+			// // }
+			// //			reflect.TypeOf(res)
+			// err, ok := res[0].Interface().(error)
+			// spew.Dump(reflect.ValueOf(res[0]), reflect.ValueOf(res[0].Interface()), res[0], err, ok)
+			// //			reflect.Value
+			// if !ok {
+			// 	fmt.Println("not an error type")
+			// 	return errors.New("didn't return an error")
+			// }
+			// if err != nil {
+			// 	fmt.Println(err)
+			// 	return err
+			// }
+			// // fmt.Printf("%v", res[0], reflect.ValueOf(res[0]).Interface())
+			// // reflect.Kind(va)
+			// // spew.Dump(reflect.ValueOf(res[0]).Interface())
+
+			// //			spew.Dump(res)
 		} else {
 			err = rows.StructScan(entity.Interface())
 			if err != nil {
 				fmt.Println(err)
-				break
+				return err
 			}
+			// append each entity into "nodes" destination
+			direct.Set(reflect.Append(*direct, entity))
 		}
-		// append each entity into "nodes" destination
-		direct.Set(reflect.Append(*direct, entity))
 	}
 
 	err = rows.Err()
@@ -526,16 +551,35 @@ func loadNodesHelper(nodes interface{}, qHelper *loadNodesQueryHelper) error {
 	// now it just enforces cached data
 	for _, data := range qHelper.cachedRawData {
 		entity := reflect.New(base)
-		//		entity.Interface()
-		method := reflect.ValueOf(entity.Interface()).MethodByName("FillFromMap")
-		if !method.IsValid() {
-			panic("help")
-		}
-		// call method with one argument of data and bind it to result to put cached items in there
-		method.Call([]reflect.Value{reflect.ValueOf(data)})
-		direct.Set(reflect.Append(*direct, entity))
+
+		fillFromMap(direct, data, entity)
+		// //		entity.Interface()
+		// method := reflect.ValueOf(entity.Interface()).MethodByName("FillFromMap")
+		// if !method.IsValid() {
+		// 	panic("help")
+		// }
+		// // call method with one argument of data and bind it to result to put cached items in there
+		// method.Call([]reflect.Value{reflect.ValueOf(data)})
+		// direct.Set(reflect.Append(*direct, entity))
 	}
 
+	return nil
+}
+
+func fillFromMap(direct *reflect.Value, data interface{}, entity reflect.Value) error {
+	method := reflect.ValueOf(entity.Interface()).MethodByName("FillFromMap")
+	if !method.IsValid() {
+		panic("help")
+	}
+	res := method.Call([]reflect.Value{reflect.ValueOf(data)})
+	if len(res) != 1 {
+		panic("invalid number of results. FillFromMap should have returned 1 item")
+	}
+	err := res[0].Interface()
+	if err != nil {
+		return errors.New(fmt.Sprintf("%v", err))
+	}
+	direct.Set(reflect.Append(*direct, entity))
 	return nil
 }
 
@@ -1193,7 +1237,7 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 
 			//		err = rows.StructScan(&edge)
 			err = rows.MapScan(dataMap)
-						spew.Dump(dataMap)
+			//	spew.Dump(dataMap)
 			if err != nil {
 				fmt.Println(err)
 				break

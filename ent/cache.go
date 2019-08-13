@@ -50,7 +50,8 @@ func getItemFromCacheMaybe(key string, dataFunc func() (map[string]interface{}, 
 
 	data, err := getSingleCachedItem(key, func() (interface{}, bool, error) {
 		return remember.Cache(ctx, ms, key, cacheTTL, fn, remember.Options{
-			DisableCacheUsage:  true,
+			// DisableCacheUsage: true,
+			// UseFreshData:      true,
 		})
 	})
 	if err != nil {
@@ -99,7 +100,8 @@ func getItemsFromCacheMaybe(key string, dataFunc func() ([]map[string]interface{
 	// 	return nil, err
 	// }
 	result, found, err := remember.Cache(ctx, ms, key, 1*time.Hour, fn, remember.Options{
-		DisableCacheUsage:  true,
+		// DisableCacheUsage: true,
+		// UseFreshData:      true,
 	})
 	if err != nil {
 		fmt.Println("error getting items from cache. whelp")

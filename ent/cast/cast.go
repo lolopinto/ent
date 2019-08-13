@@ -41,4 +41,17 @@ func ToBool(v interface{}) (bool, error) {
 	return val, nil
 }
 
+func ToInt(v interface{}) (int, error) {
+	// losing some data
+	val, ok := v.(int)
+	if ok {
+		return val, nil
+	}
+	val2, ok := v.(int64)
+	if ok {
+		return int(val2), nil
+	}
+	return 0, errors.New("could not convert field to appropriate type")
+}
+
 //func ToNullString
