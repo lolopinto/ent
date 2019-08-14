@@ -57,6 +57,7 @@ type ViewerContext interface {
 type LoggedOutViewerContext struct{}
 
 // GetUser returns the Logged in User. For the LoggedOutViewerContext, this is nil
+// TODO make the pointer implement the interface instead
 func (viewer LoggedOutViewerContext) GetUser() interface{} {
 	return nil
 }
