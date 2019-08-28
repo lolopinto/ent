@@ -236,23 +236,31 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 // LoadNode loads a single node given the id, node object and entConfig
 // TODO refactor this
 
-func LoadNodeFromParts(entity interface{}, config Config, field string, val interface{}) error {
+func LoadNodeFromParts(entity interface{}, config Config, parts ...interface{}) error {
 	// TODO duplicated from below and returns too much since not privacy backed
 
 	if entity == nil {
 		return errors.New("nil pointer passed to LoadNode")
 	}
 
+	if len(parts) < 2 {
+		return errors.New("invalid number of parts passed")
+	}
+
+	if len(parts)%2 != 0 {
+		return errors.New("expected even number of parts, got and odd number")
+	}
+
 	// ok, so now we need a way to map from struct to fields
 	insertData := getFieldsAndValues(entity, false)
 	colsString := insertData.getColumnsString()
 
-	computedQuery := fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s = $1",
-		colsString,
-		config.GetTableName(),
-		field,
-	)
+	sql := &sqlBuilder{
+		colsString: colsString,
+		tableName:  config.GetTableName(),
+		parts:      parts,
+	}
+	computedQuery := sql.getQuery()
 	fmt.Println(computedQuery)
 
 	db := data.DBConn()
@@ -270,8 +278,7 @@ func LoadNodeFromParts(entity interface{}, config Config, field string, val inte
 	}
 	defer stmt.Close()
 
-	// stmt.QueryRowx(id)....
-	err = stmt.QueryRowx(val).StructScan(entity)
+	err = stmt.QueryRowx(sql.getValues()...).StructScan(entity)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -288,6 +295,7 @@ func getKeyForNode(id, tableName string) string {
 
 func getKeyForEdge(id string, edgeType EdgeType) string {
 	if id == "" {
+		debug.PrintStack()
 		panic(errors.WithStack(errors.New("empty id passed")))
 	}
 	return remember.CreateKey(false, "_", "edge_id", edgeType, id)
@@ -308,8 +316,8 @@ func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx
 	}
 
 	// if id == "" {
-	// 	// nothing to do here...
-	// 	return nil
+	//			// nothing to do here...
+	// return nil
 	// }
 
 	key := getKeyForNode(id, tableName)
