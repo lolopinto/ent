@@ -234,55 +234,15 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 }
 
 // LoadNode loads a single node given the id, node object and entConfig
-// TODO refactor this
-
+// LoadNodeFromParts loads a node given different strings
 func LoadNodeFromParts(entity dataEntity, config Config, parts ...interface{}) error {
-	// TODO duplicated from below and returns too much since not privacy backed
-
-	if entity == nil {
-		return errors.New("nil pointer passed to LoadNode")
-	}
-
-	if len(parts) < 2 {
-		return errors.New("invalid number of parts passed")
-	}
-
-	if len(parts)%2 != 0 {
-		return errors.New("expected even number of parts, got and odd number")
-	}
-
-	// ok, so now we need a way to map from struct to fields
-	insertData := getFieldsAndValues(entity, false)
-	colsString := insertData.getColumnsString()
-
-	sql := &sqlBuilder{
-		colsString: colsString,
-		tableName:  config.GetTableName(),
-		parts:      parts,
-	}
-	computedQuery := sql.getQuery()
-	fmt.Println(computedQuery)
-
-	db := data.DBConn()
-	if db == nil {
-		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
-		return err
-	}
-
-	stmt, err := getStmtFromTx(nil, db, computedQuery)
-
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer stmt.Close()
-
-	err = stmt.QueryRowx(sql.getValues()...).StructScan(entity)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return err
+	return loadData(
+		&loadNodeFromPartsLoader{
+			config: config,
+			parts:  parts,
+		},
+		entity,
+	)
 }
 
 func getKeyForNode(id, tableName string) string {
