@@ -1,0 +1,13 @@
+exec:
+    filename: graphql/generated.go
+    package: graphql
+model:
+    filename: graphql/models_gen.go
+    package: graphql
+models:
+    Event:
+        model: github.com/lolopinto/ent/ent/testdata/models.Event
+    User:
+        model: github.com/lolopinto/ent/ent/testdata/models.User
+schema:
+  - graphql/schema.graphql

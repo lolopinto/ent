@@ -1,8 +1,24 @@
 package ent
 
 import (
+	"database/sql"
+
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+
+	"gopkg.in/khaiql/dbcleaner.v2"
+	"gopkg.in/khaiql/dbcleaner.v2/engine"
+
+	"github.com/lolopinto/ent/config"
+	"github.com/lolopinto/ent/ent/viewer"
+//	"github.com/davecgh/go-spew/spew"
+
+	// "github.com/lolopinto/ent/ent/testdata/models"
+	// "github.com/lolopinto/ent/ent/testdata/models/configs"
+
 )
 
 type user struct {
@@ -99,4 +115,113 @@ func TestGetFieldsAndValuesOfNonNodeSetIDFieldStruct(t *testing.T) {
 	}
 	// calling with setIDField true shouldn't break anything
 	getFieldsAndValuesOfStruct(reflect.ValueOf(edge), true)
+}
+
+type modelsTestSuite struct {
+	suite.Suite
+}
+
+var Cleaner = dbcleaner.New()
+
+func (suite *modelsTestSuite) SetupSuite() {
+	postgres := engine.NewPostgresEngine(config.GetConnectionStr())
+	Cleaner.SetEngine(postgres)
+}
+
+// TODO make this automatic based on db
+// TODO make this a base class for all future tests that operate on the db
+func (suite *modelsTestSuite) SetupTest() {
+	Cleaner.Acquire("users")
+	Cleaner.Acquire("user_events_edges")
+	Cleaner.Acquire("events")
+}
+
+func (suite *modelsTestSuite) TearDownTest() {
+	Cleaner.Clean("users")
+	Cleaner.Clean("user_events_edges")
+	Cleaner.Clean("events")
+}
+
+// manual for now until I figure out code generated and all that jazz
+type testUser struct {
+	Node
+	EmailAddress string `db:"email_address"`
+	FirstName    string `db:"first_name"`
+	LastName     string `db:"last_name"`
+	Viewer       viewer.ViewerContext
+}
+
+func (user *testUser) FillFromMap(data map[string]interface{}) error {
+	panic("should not be called")
+}
+
+type testUserConfig struct {}
+
+func (config *testUserConfig) GetTableName() string {
+	return "users"
+}
+
+func (suite *modelsTestSuite) TestLoadNodeFromParts() {
+	user := testUser{
+		EmailAddress: "test@email.com",
+		FirstName: "Ola",
+		LastName: "Okelola",
+	}
+	err := CreateNode(&user, &testUserConfig{})
+	assert.Nil(suite.T(), err)
+
+	var testCases = []struct {
+		parts []interface{}
+		foundResult bool
+	}{
+		{
+			[]interface{}{
+				"first_name",
+				"Ola",
+			},
+			true,
+		},
+		{
+			[]interface{}{
+				"first_name",
+				"Ola",
+				"last_name",
+				"Okelola",
+			},
+			true,
+		},
+		{
+			[]interface{}{
+				"email_address",
+				"test@email.com",
+				"last_name",
+				"Okelola",
+			},
+			true,
+		},
+		{
+			[]interface{}{
+				"email_address",
+				"Okelola",
+			},
+			false,
+		},
+	}
+
+	for _, tt := range testCases {
+		var existingUser testUser
+		err = LoadNodeFromParts(&existingUser, &testUserConfig{}, tt.parts...)
+		if tt.foundResult {
+			assert.Nil(suite.T(), err)
+			assert.NotZero(suite.T(), existingUser)
+		} else {
+			assert.NotNil(suite.T(), err)
+			assert.Equal(suite.T(), err, sql.ErrNoRows)
+			assert.Zero(suite.T(), existingUser)
+		}
+	}
+}
+
+func TestModelsSuite(t *testing.T) {
+	suite.Run(t, new(modelsTestSuite))
 }

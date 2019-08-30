@@ -236,7 +236,7 @@ func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
 // LoadNode loads a single node given the id, node object and entConfig
 // TODO refactor this
 
-func LoadNodeFromParts(entity interface{}, config Config, parts ...interface{}) error {
+func LoadNodeFromParts(entity dataEntity, config Config, parts ...interface{}) error {
 	// TODO duplicated from below and returns too much since not privacy backed
 
 	if entity == nil {
