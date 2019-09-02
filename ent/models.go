@@ -268,70 +268,14 @@ func getKeyForEdge(id string, edgeType EdgeType) string {
 // 	return remember.CreateKey(false, "_", "edge_id_id2", edgeType, id, id2)
 // }
 
-func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx *sqlx.Tx) error {
-	// TODO does it make sense to change the API we use here to instead pass it to entity?
-
-	if entity == nil {
-		return errors.New("nil pointer passed to LoadNode")
-	}
-
-	// if id == "" {
-	//			// nothing to do here...
-	// return nil
-	// }
-
-	key := getKeyForNode(id, tableName)
-	fn := func() (map[string]interface{}, error) {
-		fmt.Println("cache miss for key", key)
-
-		// ok, so now we need a way to map from struct to fields
-		// TODO while this is manual, cache this
-		insertData := getFieldsAndValues(entity, false)
-		colsString := insertData.getColumnsString()
-
-		computedQuery := fmt.Sprintf(
-			"SELECT %s FROM %s WHERE %s = $1",
-			colsString,
-			tableName,
-			insertData.pkeyName,
-		)
-		fmt.Println(computedQuery)
-
-		db := data.DBConn()
-		if db == nil {
-			err := errors.New("error getting a valid db connection")
-			fmt.Println(err)
-			return nil, err
-		}
-
-		stmt, err := getStmtFromTx(tx, db, computedQuery)
-
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-		defer stmt.Close()
-
-		dataMap := make(map[string]interface{})
-		err = stmt.QueryRowx(id).MapScan(dataMap)
-		//		spew.Dump("mapScan", dataMap)
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-		return dataMap, nil
-		//return entity, nil
-	}
-
-	actual, err := getItemFromCacheMaybe(key, fn)
-	if err != nil {
-		return err
-	}
-	return entity.FillFromMap(actual)
-}
-
 func loadNodeRawData(id string, entity dataEntity, entConfig Config) error {
-	return loadNodeRawDataFromTable(id, entity, entConfig.GetTableName(), nil)
+	return loadData(
+		&loadNodeFromPKey{
+			id:        id,
+			tableName: entConfig.GetTableName(),
+		},
+		entity,
+	)
 }
 
 // EntityResult is the result of a call to LoadNodeConc which returns an object
@@ -921,7 +865,14 @@ func getEdgeEntities(entity1 interface{}, entity2 interface{}) (Entity, Entity, 
 
 func getEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
 	edgeData := &AssocEdgeData{}
-	err := loadNodeRawDataFromTable(string(edgeType), edgeData, "assoc_edge_config", tx)
+	err := loadData(
+		&loadNodeFromPKey{
+			id:        string(edgeType),
+			tableName: "assoc_edge_config",
+		},
+		edgeData,
+		cfgtx(tx),
+	)
 	return edgeData, err
 }
 

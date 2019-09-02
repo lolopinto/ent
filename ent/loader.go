@@ -3,12 +3,13 @@ package ent
 import (
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/data"
 	"github.com/pkg/errors"
 )
 
 type loader interface {
-	GetSqlBuilder(entity dataEntity) *sqlBuilder
+	GetSQLBuilder(entity dataEntity) *sqlBuilder
 }
 
 type cachedLoader interface {
@@ -21,20 +22,26 @@ type validatedLoader interface {
 	Validate() error
 }
 
-func loadData(l loader, entity dataEntity) error {
-	if entity == nil {
-		return errors.New("nil pointer passed to loadData")
-	}
+type dbQuery struct {
+	cfg    *loaderConfig
+	l      loader
+	entity dataEntity
+}
 
-	// validate the loader
-	validator, ok := l.(validatedLoader)
-	if ok {
-		if err := validator.Validate(); err != nil {
-			return err
-		}
-	}
+func (q *dbQuery) StructScan() error {
+	return q.query(q.entity, func(row *sqlx.Row) error {
+		return row.StructScan(q.entity)
+	})
+}
 
-	builder := l.GetSqlBuilder(entity)
+func (q *dbQuery) MapScan(dataMap map[string]interface{}) error {
+	return q.query(q.entity, func(row *sqlx.Row) error {
+		return row.MapScan(dataMap)
+	})
+}
+
+func (q *dbQuery) query(entity dataEntity, processRow func(*sqlx.Row) error) error {
+	builder := q.l.GetSQLBuilder(entity)
 	query := builder.getQuery()
 	fmt.Println(query)
 
@@ -45,7 +52,7 @@ func loadData(l loader, entity dataEntity) error {
 		return err
 	}
 
-	stmt, err := getStmtFromTx(nil, db, query)
+	stmt, err := getStmtFromTx(q.cfg.tx, db, query)
 
 	if err != nil {
 		fmt.Println(err)
@@ -53,11 +60,73 @@ func loadData(l loader, entity dataEntity) error {
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRowx(builder.getValues()...).StructScan(entity)
+	row := stmt.QueryRowx(builder.getValues()...)
+	err = processRow(row)
 	if err != nil {
 		fmt.Println(err)
 	}
 	return err
+}
+
+type loaderConfig struct {
+	tx *sqlx.Tx
+	// TODO disable
+	//	disableCache bool
+}
+
+func cfgtx(tx *sqlx.Tx) func(*loaderConfig) {
+	return func(cfg *loaderConfig) {
+		cfg.tx = tx
+	}
+}
+
+func loadData(l loader, entity dataEntity, options ...func(*loaderConfig)) error {
+	if entity == nil {
+		return errors.New("nil pointer passed to loadData")
+	}
+
+	cfg := &loaderConfig{}
+	for _, opt := range options {
+		opt(cfg)
+	}
+
+	// validate the loader
+	validator, ok := l.(validatedLoader)
+	if ok {
+		if err := validator.Validate(); err != nil {
+			return err
+		}
+	}
+
+	q := &dbQuery{
+		cfg:    cfg,
+		l:      l,
+		entity: entity,
+	}
+
+	// loader supports a cache. check it out
+	cacheable, ok := l.(cachedLoader)
+	if ok {
+		// handle cache access
+		key := cacheable.GetCacheKey()
+
+		fn := func() (map[string]interface{}, error) {
+			dataMap := make(map[string]interface{})
+			fmt.Println("cache miss for key", key)
+
+			// query and scan into map. return data in format needed by cache function
+			err := q.MapScan(dataMap)
+			return dataMap, err
+		}
+
+		actual, err := getItemFromCacheMaybe(key, fn)
+		if err != nil {
+			return err
+		}
+		return entity.FillFromMap(actual)
+	}
+
+	return q.StructScan()
 }
 
 // TODO figure out if this is the right long term API
@@ -77,7 +146,7 @@ func (l *loadNodeFromPartsLoader) Validate() error {
 	return nil
 }
 
-func (l *loadNodeFromPartsLoader) GetSqlBuilder(entity dataEntity) *sqlBuilder {
+func (l *loadNodeFromPartsLoader) GetSQLBuilder(entity dataEntity) *sqlBuilder {
 	// ok, so now we need a way to map from struct to fields
 	insertData := getFieldsAndValues(entity, false)
 	colsString := insertData.getColumnsString()
@@ -87,4 +156,29 @@ func (l *loadNodeFromPartsLoader) GetSqlBuilder(entity dataEntity) *sqlBuilder {
 		tableName:  l.config.GetTableName(),
 		parts:      l.parts,
 	}
+}
+
+type loadNodeFromPKey struct {
+	id        string
+	tableName string
+}
+
+func (l *loadNodeFromPKey) GetSQLBuilder(entity dataEntity) *sqlBuilder {
+	// ok, so now we need a way to map from struct to fields
+	// TODO while this is manual, cache this
+	insertData := getFieldsAndValues(entity, false)
+	colsString := insertData.getColumnsString()
+
+	return &sqlBuilder{
+		colsString: colsString,
+		tableName:  l.tableName,
+		parts: []interface{}{
+			insertData.pkeyName,
+			l.id,
+		},
+	}
+}
+
+func (l *loadNodeFromPKey) GetCacheKey() string {
+	return getKeyForNode(l.id, l.tableName)
 }

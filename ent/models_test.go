@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
@@ -13,12 +14,11 @@ import (
 	"gopkg.in/khaiql/dbcleaner.v2/engine"
 
 	"github.com/lolopinto/ent/config"
+	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/viewer"
-//	"github.com/davecgh/go-spew/spew"
-
+	//	"github.com/davecgh/go-spew/spew"
 	// "github.com/lolopinto/ent/ent/testdata/models"
 	// "github.com/lolopinto/ent/ent/testdata/models/configs"
-
 )
 
 type user struct {
@@ -152,10 +152,39 @@ type testUser struct {
 }
 
 func (user *testUser) FillFromMap(data map[string]interface{}) error {
-	panic("should not be called")
+	for k, v := range data {
+		var err error
+		switch k {
+		case "id":
+			user.ID, err = cast.ToUUIDString(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "email_address":
+			user.EmailAddress, err = cast.ToString(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "first_name":
+			user.FirstName, err = cast.ToString(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "last_name":
+			user.LastName, err = cast.ToString(v)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+	return nil
 }
 
-type testUserConfig struct {}
+type testUserConfig struct{}
 
 func (config *testUserConfig) GetTableName() string {
 	return "users"
@@ -164,14 +193,14 @@ func (config *testUserConfig) GetTableName() string {
 func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 	user := testUser{
 		EmailAddress: "test@email.com",
-		FirstName: "Ola",
-		LastName: "Okelola",
+		FirstName:    "Ola",
+		LastName:     "Okelola",
 	}
 	err := CreateNode(&user, &testUserConfig{})
 	assert.Nil(suite.T(), err)
 
 	var testCases = []struct {
-		parts []interface{}
+		parts       []interface{}
 		foundResult bool
 	}{
 		{
@@ -218,6 +247,72 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 			assert.NotNil(suite.T(), err)
 			assert.Equal(suite.T(), err, sql.ErrNoRows)
 			assert.Zero(suite.T(), existingUser)
+		}
+	}
+}
+
+func (suite *modelsTestSuite) TestLoadNodeFromID() {
+	user := testUser{
+		EmailAddress: "test@email.com",
+		FirstName:    "Ola",
+		LastName:     "Okelola",
+	}
+	err := CreateNode(&user, &testUserConfig{})
+	assert.Nil(suite.T(), err)
+
+	var testCases = []struct {
+		id          string
+		foundResult bool
+	}{
+		{
+			user.ID,
+			true,
+		},
+		{
+			uuid.New().String(),
+			false,
+		},
+	}
+
+	for _, tt := range testCases {
+		var existingUser testUser
+		err = loadNodeRawData(tt.id, &existingUser, &testUserConfig{})
+		if tt.foundResult {
+			assert.Nil(suite.T(), err)
+			assert.NotZero(suite.T(), existingUser)
+		} else {
+			assert.NotNil(suite.T(), err)
+			assert.Equal(suite.T(), err, sql.ErrNoRows)
+			assert.Zero(suite.T(), existingUser)
+		}
+	}
+}
+
+func (suite *modelsTestSuite) TestGetEdgeInfo() {
+	var testCases = []struct {
+		edgeType    string
+		foundResult bool
+	}{
+		{
+			// constant in user.go testdata
+			"41bddf81-0c26-432c-9133-2f093af2c07c",
+			true,
+		},
+		{
+			uuid.New().String(),
+			false,
+		},
+	}
+
+	for _, tt := range testCases {
+		edgeData, err := getEdgeInfo(EdgeType(tt.edgeType), nil)
+		if tt.foundResult {
+			assert.Nil(suite.T(), err)
+			assert.NotZero(suite.T(), edgeData)
+		} else {
+			assert.NotNil(suite.T(), err)
+			assert.Equal(suite.T(), err, sql.ErrNoRows)
+			assert.Zero(suite.T(), *edgeData)
 		}
 	}
 }
