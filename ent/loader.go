@@ -4,12 +4,11 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/lolopinto/ent/data"
 	"github.com/pkg/errors"
 )
 
 type loader interface {
-	GetSQLBuilder(entity dataEntity) *sqlBuilder
+	GetSQLBuilder() (*sqlBuilder, error)
 }
 
 type cachedLoader interface {
@@ -22,50 +21,18 @@ type validatedLoader interface {
 	Validate() error
 }
 
-type dbQuery struct {
-	cfg    *loaderConfig
-	l      loader
-	entity dataEntity
+type singleRowLoader interface {
+	loader
+	GetEntity() dataEntity
 }
 
-func (q *dbQuery) StructScan() error {
-	return q.query(q.entity, func(row *sqlx.Row) error {
-		return row.StructScan(q.entity)
-	})
-}
-
-func (q *dbQuery) MapScan(dataMap map[string]interface{}) error {
-	return q.query(q.entity, func(row *sqlx.Row) error {
-		return row.MapScan(dataMap)
-	})
-}
-
-func (q *dbQuery) query(entity dataEntity, processRow func(*sqlx.Row) error) error {
-	builder := q.l.GetSQLBuilder(entity)
-	query := builder.getQuery()
-	fmt.Println(query)
-
-	db := data.DBConn()
-	if db == nil {
-		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
-		return err
-	}
-
-	stmt, err := getStmtFromTx(q.cfg.tx, db, query)
-
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer stmt.Close()
-
-	row := stmt.QueryRowx(builder.getValues()...)
-	err = processRow(row)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return err
+type multiRowLoader interface {
+	loader
+	// TODO... this returns a new Edge etc
+	GetNewInstance() dataEntity
+	// this returns the slice. both of this hard because of go nonsense. TODO
+	//GetNewSlice() dataEntity
+	Append(entity dataEntity)
 }
 
 type loaderConfig struct {
@@ -80,11 +47,7 @@ func cfgtx(tx *sqlx.Tx) func(*loaderConfig) {
 	}
 }
 
-func loadData(l loader, entity dataEntity, options ...func(*loaderConfig)) error {
-	if entity == nil {
-		return errors.New("nil pointer passed to loadData")
-	}
-
+func loadData(l loader, options ...func(*loaderConfig)) error {
 	cfg := &loaderConfig{}
 	for _, opt := range options {
 		opt(cfg)
@@ -99,9 +62,48 @@ func loadData(l loader, entity dataEntity, options ...func(*loaderConfig)) error
 	}
 
 	q := &dbQuery{
-		cfg:    cfg,
-		l:      l,
-		entity: entity,
+		cfg: cfg,
+		l:   l,
+		//		entity: entity,
+	}
+
+	multiRowLoader, ok := l.(multiRowLoader)
+	if ok {
+		return loadMultiRowData(multiRowLoader, q)
+	}
+	singleRowLoader, ok := l.(singleRowLoader)
+	if ok {
+		return loadRowData(singleRowLoader, q)
+	}
+	panic("invalid loader passed")
+}
+
+func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
+	cacheable, ok := l.(cachedLoader)
+	if ok {
+		key := cacheable.GetCacheKey()
+
+		fn := func() ([]map[string]interface{}, error) {
+			return q.MapScanRows()
+		}
+
+		actual, err := getItemsFromCacheMaybe(key, fn)
+		if err != nil {
+			return err
+		}
+		for idx := range actual {
+			instance := l.GetNewInstance()
+			instance.FillFromMap(actual[idx])
+			l.Append(instance)
+		}
+		return nil
+	}
+	return q.StructScanRows(l)
+}
+
+func loadRowData(l singleRowLoader, q *dbQuery) error {
+	if l.GetEntity() == nil {
+		return errors.New("nil entity passed to loadData")
 	}
 
 	// loader supports a cache. check it out
@@ -123,16 +125,17 @@ func loadData(l loader, entity dataEntity, options ...func(*loaderConfig)) error
 		if err != nil {
 			return err
 		}
-		return entity.FillFromMap(actual)
+		return l.GetEntity().FillFromMap(actual)
 	}
 
-	return q.StructScan()
+	return q.StructScan(l)
 }
 
 // TODO figure out if this is the right long term API
 type loadNodeFromPartsLoader struct {
 	config Config
 	parts  []interface{}
+	entity dataEntity
 }
 
 func (l *loadNodeFromPartsLoader) Validate() error {
@@ -146,27 +149,32 @@ func (l *loadNodeFromPartsLoader) Validate() error {
 	return nil
 }
 
-func (l *loadNodeFromPartsLoader) GetSQLBuilder(entity dataEntity) *sqlBuilder {
+func (l *loadNodeFromPartsLoader) GetEntity() dataEntity {
+	return l.entity
+}
+
+func (l *loadNodeFromPartsLoader) GetSQLBuilder() (*sqlBuilder, error) {
 	// ok, so now we need a way to map from struct to fields
-	insertData := getFieldsAndValues(entity, false)
+	insertData := getFieldsAndValues(l.entity, false)
 	colsString := insertData.getColumnsString()
 
 	return &sqlBuilder{
 		colsString: colsString,
 		tableName:  l.config.GetTableName(),
 		parts:      l.parts,
-	}
+	}, nil
 }
 
 type loadNodeFromPKey struct {
 	id        string
 	tableName string
+	entity    dataEntity
 }
 
-func (l *loadNodeFromPKey) GetSQLBuilder(entity dataEntity) *sqlBuilder {
+func (l *loadNodeFromPKey) GetSQLBuilder() (*sqlBuilder, error) {
 	// ok, so now we need a way to map from struct to fields
 	// TODO while this is manual, cache this
-	insertData := getFieldsAndValues(entity, false)
+	insertData := getFieldsAndValues(l.entity, false)
 	colsString := insertData.getColumnsString()
 
 	return &sqlBuilder{
@@ -176,9 +184,67 @@ func (l *loadNodeFromPKey) GetSQLBuilder(entity dataEntity) *sqlBuilder {
 			insertData.pkeyName,
 			l.id,
 		},
-	}
+	}, nil
+}
+
+func (l *loadNodeFromPKey) GetEntity() dataEntity {
+	return l.entity
 }
 
 func (l *loadNodeFromPKey) GetCacheKey() string {
 	return getKeyForNode(l.id, l.tableName)
+}
+
+type loadEdgesByType struct {
+	id       string
+	edgeType EdgeType
+	edges    []Edge
+}
+
+func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
+	edgeData, err := getEdgeInfo(l.edgeType, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: eventually add support for complex queries
+	// ORDER BY time DESC default
+	// we need offset, limit eventuall
+
+	return &sqlBuilder{
+		colsString: "*",
+		tableName:  edgeData.EdgeTable,
+		parts: []interface{}{
+			"id1",
+			l.id,
+			"edge_type",
+			l.edgeType,
+		},
+		order: "time DESC",
+	}, nil
+}
+
+func (l *loadEdgesByType) GetCacheKey() string {
+	return getKeyForEdge(l.id, l.edgeType)
+}
+
+func (l *loadEdgesByType) GetNewInstance() dataEntity {
+	var edge Edge
+	return &edge
+}
+
+func (l *loadEdgesByType) Append(entity dataEntity) {
+	edge, ok := entity.(*Edge)
+	if !ok {
+		panic("invalid type passed")
+	}
+	l.edges = append(l.edges, *edge)
+}
+
+func (l *loadEdgesByType) LoadData() ([]Edge, error) {
+	err := loadData(l)
+	if err != nil {
+		return nil, err
+	}
+	return l.edges, nil
 }

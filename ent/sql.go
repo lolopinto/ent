@@ -10,6 +10,12 @@ type sqlBuilder struct {
 	colsString string // not long term value of course
 	tableName  string
 	parts      []interface{}
+	order      string
+}
+
+func (s *sqlBuilder) orderBy(orderBy string) *sqlBuilder {
+	s.order = orderBy
+	return s
 }
 
 func (s *sqlBuilder) getQuery() string {
@@ -23,12 +29,19 @@ func (s *sqlBuilder) getQuery() string {
 		pos++
 	}
 
-	return fmt.Sprintf(
-		"SELECT %s FROM %s WHERE %s",
-		s.colsString,
-		s.tableName,
-		strings.Join(whereParts, " AND "),
-	)
+	format := "SELECT {cols} FROM {table} WHERE {where}"
+	parts := []string{
+		"{cols}", s.colsString,
+		"{table}", s.tableName,
+		"{where}", strings.Join(whereParts, " AND "),
+	}
+	if s.order != "" {
+		format = format + " ORDER BY {order}"
+		parts = append(parts, "{order}", s.order)
+	}
+
+	r := strings.NewReplacer(parts...)
+	return r.Replace(format)
 }
 
 func (s *sqlBuilder) getValues() []interface{} {

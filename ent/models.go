@@ -240,8 +240,8 @@ func LoadNodeFromParts(entity dataEntity, config Config, parts ...interface{}) e
 		&loadNodeFromPartsLoader{
 			config: config,
 			parts:  parts,
+			entity: entity,
 		},
-		entity,
 	)
 }
 
@@ -273,8 +273,8 @@ func loadNodeRawData(id string, entity dataEntity, entConfig Config) error {
 		&loadNodeFromPKey{
 			id:        id,
 			tableName: entConfig.GetTableName(),
+			entity:    entity,
 		},
-		entity,
 	)
 }
 
@@ -869,8 +869,8 @@ func getEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
 		&loadNodeFromPKey{
 			id:        string(edgeType),
 			tableName: "assoc_edge_config",
+			entity:    edgeData,
 		},
-		edgeData,
 		cfgtx(tx),
 	)
 	return edgeData, err
@@ -1069,83 +1069,11 @@ func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) err
 }
 
 func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
-	key := getKeyForEdge(id, edgeType)
-	fn := func() ([]map[string]interface{}, error) {
-		fmt.Println("cache miss for key", key)
-
-		db := data.DBConn()
-		if db == nil {
-			err := errors.New("error getting a valid db connection")
-			fmt.Println(err)
-			return nil, err
-		}
-
-		edgeData, err := getEdgeInfo(edgeType, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		// TODO: eventually add support for complex queries
-		// ORDER BY time DESC default
-		// we need offset, limit eventually
-		query := fmt.Sprintf(
-			"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 ORDER BY time DESC",
-			edgeData.EdgeTable,
-		)
-		fmt.Println(query)
-		//fmt.Println(id, edgeType)
-
-		stmt, err := db.Preparex(query)
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-		defer stmt.Close()
-
-		rows, err := stmt.Queryx(id, edgeType)
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-
-		defer rows.Close()
-
-		var edges []map[string]interface{}
-		for rows.Next() {
-			//		var edge Edge
-
-			dataMap := make(map[string]interface{})
-
-			//		err = rows.StructScan(&edge)
-			err = rows.MapScan(dataMap)
-			//	spew.Dump(dataMap)
-			if err != nil {
-				fmt.Println(err)
-				break
-			}
-			edges = append(edges, dataMap)
-		}
-
-		err = rows.Err()
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-		return edges, err
+	l := &loadEdgesByType{
+		id:       id,
+		edgeType: edgeType,
 	}
-
-	actual, err := getItemsFromCacheMaybe(key, fn)
-	if err != nil {
-		return nil, err
-	}
-	edges := make([]Edge, len(actual))
-	for idx := range actual {
-		var edge Edge
-		edge.FillFromMap(actual[idx])
-		edges[idx] = edge
-	}
-
-	return edges, nil
+	return l.LoadData()
 }
 
 func GenLoadEdgesByType(id string, edgeType EdgeType, edges *[]Edge, errChan chan<- error) {

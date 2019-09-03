@@ -59,6 +59,24 @@ func TestSQLBuilder(t *testing.T) {
 				"whelp",
 			},
 		},
+		{
+			&sqlBuilder{
+				colsString: "*",
+				tableName:  "objects",
+				parts: []interface{}{
+					"foo",
+					1,
+					"bar",
+					"ola@ola.com",
+				},
+				order: "time DESC",
+			},
+			"SELECT * FROM objects WHERE foo = $1 AND bar = $2 ORDER BY time DESC",
+			[]interface{}{
+				1,
+				"ola@ola.com",
+			},
+		},
 	}
 
 	for _, tt := range testCases {

@@ -2,6 +2,7 @@ package ent
 
 import (
 	"database/sql"
+	"time"
 
 	"reflect"
 	"testing"
@@ -186,18 +187,38 @@ func (user *testUser) FillFromMap(data map[string]interface{}) error {
 
 type testUserConfig struct{}
 
+const TestUserToEventsEdge EdgeType = "41bddf81-0c26-432c-9133-2f093af2c07c"
+
 func (config *testUserConfig) GetTableName() string {
 	return "users"
 }
 
-func (suite *modelsTestSuite) TestLoadNodeFromParts() {
-	user := testUser{
-		EmailAddress: "test@email.com",
-		FirstName:    "Ola",
-		LastName:     "Okelola",
+func (config *testUserConfig) GetEdges() EdgeMap {
+	return EdgeMap{
+		"Events": &AssociationEdge{
+			EntConfig: testEventConfig{},
+		},
 	}
-	err := CreateNode(&user, &testUserConfig{})
-	assert.Nil(suite.T(), err)
+}
+
+type testEvent struct {
+	Node
+	Name      string    `db:"name"`
+	UserID    string    `db:"user_id"`
+	StartTime time.Time `db:"start_time"`
+	EndTime   time.Time `db:"end_time"`
+	Location  string    `db:"location"`
+	Viewer    viewer.ViewerContext
+}
+
+type testEventConfig struct{}
+
+func (config *testEventConfig) GetTableName() string {
+	return "events"
+}
+
+func (suite *modelsTestSuite) TestLoadNodeFromParts() {
+	createTestUser(suite)
 
 	var testCases = []struct {
 		parts       []interface{}
@@ -239,7 +260,7 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 
 	for _, tt := range testCases {
 		var existingUser testUser
-		err = LoadNodeFromParts(&existingUser, &testUserConfig{}, tt.parts...)
+		err := LoadNodeFromParts(&existingUser, &testUserConfig{}, tt.parts...)
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
 			assert.NotZero(suite.T(), existingUser)
@@ -252,13 +273,7 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 }
 
 func (suite *modelsTestSuite) TestLoadNodeFromID() {
-	user := testUser{
-		EmailAddress: "test@email.com",
-		FirstName:    "Ola",
-		LastName:     "Okelola",
-	}
-	err := CreateNode(&user, &testUserConfig{})
-	assert.Nil(suite.T(), err)
+	user := createTestUser(suite)
 
 	var testCases = []struct {
 		id          string
@@ -276,7 +291,7 @@ func (suite *modelsTestSuite) TestLoadNodeFromID() {
 
 	for _, tt := range testCases {
 		var existingUser testUser
-		err = loadNodeRawData(tt.id, &existingUser, &testUserConfig{})
+		err := loadNodeRawData(tt.id, &existingUser, &testUserConfig{})
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
 			assert.NotZero(suite.T(), existingUser)
@@ -290,22 +305,21 @@ func (suite *modelsTestSuite) TestLoadNodeFromID() {
 
 func (suite *modelsTestSuite) TestGetEdgeInfo() {
 	var testCases = []struct {
-		edgeType    string
+		edgeType    EdgeType
 		foundResult bool
 	}{
 		{
-			// constant in user.go testdata
-			"41bddf81-0c26-432c-9133-2f093af2c07c",
+			TestUserToEventsEdge,
 			true,
 		},
 		{
-			uuid.New().String(),
+			EdgeType(uuid.New().String()),
 			false,
 		},
 	}
 
 	for _, tt := range testCases {
-		edgeData, err := getEdgeInfo(EdgeType(tt.edgeType), nil)
+		edgeData, err := getEdgeInfo(tt.edgeType, nil)
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
 			assert.NotZero(suite.T(), edgeData)
@@ -313,6 +327,81 @@ func (suite *modelsTestSuite) TestGetEdgeInfo() {
 			assert.NotNil(suite.T(), err)
 			assert.Equal(suite.T(), err, sql.ErrNoRows)
 			assert.Zero(suite.T(), *edgeData)
+		}
+	}
+}
+
+func createTestUser(suite *modelsTestSuite) *testUser {
+	user := testUser{
+		EmailAddress: "test@email.com",
+		FirstName:    "Ola",
+		LastName:     "Okelola",
+	}
+	err := CreateNode(&user, &testUserConfig{})
+	assert.Nil(suite.T(), err)
+	return &user
+}
+
+func createTestEvent(suite *modelsTestSuite, user *testUser) *testEvent {
+	event := testEvent{
+		Name:      "Fun event",
+		UserID:    user.ID,
+		StartTime: time.Now(),
+		EndTime:   time.Now().Add(time.Hour * 24 * 3),
+		Location:  "fun location",
+	}
+
+	// manual testing until we come up with better way of doing this
+	// when i fix the bugs
+	err := CreateNode(&event, &testEventConfig{})
+	assert.Nil(suite.T(), err)
+	err = addEdgeInTransactionRaw(
+		TestUserToEventsEdge,
+		user.ID,
+		event.ID,
+		NodeType("user"),
+		NodeType("event"),
+		EdgeOptions{},
+		nil,
+	)
+	assert.Nil(suite.T(), err)
+
+	return &event
+}
+
+func (suite *modelsTestSuite) TestLoadEdgesByType() {
+	user := createTestUser(suite)
+	event := createTestEvent(suite, user)
+	event2 := createTestEvent(suite, user)
+
+	var testCases = []struct {
+		id1         string
+		foundResult bool
+	}{
+		{
+			user.ID,
+			true,
+		},
+		{
+			event.ID,
+			false,
+		},
+	}
+
+	for _, tt := range testCases {
+		edges, err := LoadEdgesByType(tt.id1, TestUserToEventsEdge)
+		assert.Nil(suite.T(), err)
+		if tt.foundResult {
+			assert.NotEmpty(suite.T(), edges)
+
+			assert.Len(suite.T(), edges, 2)
+			for _, edge := range edges {
+				assert.NotZero(suite.T(), edge)
+				assert.Contains(suite.T(), []string{event.ID, event2.ID}, edge.ID2)
+			}
+		} else {
+			assert.Len(suite.T(), edges, 0)
+			assert.Empty(suite.T(), edges)
 		}
 	}
 }
