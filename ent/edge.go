@@ -87,7 +87,7 @@ type EdgeResult struct {
 
 // EdgesResult stores the result of loading a slice of edges concurrently
 type EdgesResult struct {
-	Edges []Edge
+	Edges []*Edge
 	Error error
 }
 

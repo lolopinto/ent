@@ -1068,7 +1068,7 @@ func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) err
 	return deleteEdgeInTransaction(entity1, entity1, edgeType, nil)
 }
 
-func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
+func LoadEdgesByType(id string, edgeType EdgeType) ([]*Edge, error) {
 	l := &loadEdgesByType{
 		id:       id,
 		edgeType: edgeType,
@@ -1076,7 +1076,7 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
 	return l.LoadData()
 }
 
-func GenLoadEdgesByType(id string, edgeType EdgeType, edges *[]Edge, errChan chan<- error) {
+func GenLoadEdgesByType(id string, edgeType EdgeType, edges *[]*Edge, errChan chan<- error) {
 	var err error
 	*edges, err = LoadEdgesByType(id, edgeType)
 	fmt.Println("GenLoadEdgesByType result", err, edges)
@@ -1087,7 +1087,7 @@ func GenLoadEdgesByType(id string, edgeType EdgeType, edges *[]Edge, errChan cha
 // concurrently since we get the strong typing across all edges since it's the
 // same Edge object being returned
 func GenLoadEdgesByTypeResult(id string, edgeType EdgeType, chanEdgesResult chan<- EdgesResult) {
-	var edges []Edge
+	var edges []*Edge
 	chanErr := make(chan error)
 	go GenLoadEdgesByType(id, edgeType, &edges, chanErr)
 	err := <-chanErr
@@ -1106,7 +1106,7 @@ func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 	}
 	for _, edge := range edges {
 		if edge.ID2 == id2 {
-			return &edge, nil
+			return edge, nil
 		}
 	}
 	// no edge

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/pkg/errors"
@@ -46,18 +45,12 @@ type multiRowLoader interface {
 	// Two supported types:
 	// 1 dataEntity
 	// 2 reflect.Value in which underlying element is a dataEntity, specifically has a FillFromMap() method which can be called via reflection
-
-	// TODO should we combine these? we need to StructScan() and FillFromValue() underlying interface()
-
+	// when it's a reflect.Value(), StructScan() will be called with the underlying Interface() method
+	// we want reflect.Value to know when to use reflection vs not
 	// It's expected that the item is also appended to the internal slice which is used to keep track
-	// of the items retrieved
-	// The reason why this is combined into one
-	GetNewInstance() interface{}
+	// of the items retrieved when returned.
 
-	// Append is called with the instance after FillFromMap has been called
-	// Should append the item passed in to the internal slice which is used to keep track
-	// of the items retrieved
-	Append(entity interface{})
+	GetNewInstance() interface{}
 }
 
 type loaderConfig struct {
@@ -168,7 +161,7 @@ func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 				// todo handle reflect.Value later
 				panic("invalid item returned from loader.GetNewInstance()")
 			}
-			l.Append(instance)
+			//l.Append(instance)
 		}
 		return nil
 	}
@@ -272,7 +265,7 @@ func (l *loadNodeFromPKey) GetCacheKey() string {
 type loadEdgesByType struct {
 	id       string
 	edgeType EdgeType
-	edges    []Edge
+	edges    []*Edge
 }
 
 func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
@@ -305,18 +298,11 @@ func (l *loadEdgesByType) GetCacheKey() string {
 
 func (l *loadEdgesByType) GetNewInstance() interface{} {
 	var edge Edge
+	l.edges = append(l.edges, &edge)
 	return &edge
 }
 
-func (l *loadEdgesByType) Append(entity interface{}) {
-	edge, ok := entity.(*Edge)
-	if !ok {
-		panic("invalid type passed")
-	}
-	l.edges = append(l.edges, *edge)
-}
-
-func (l *loadEdgesByType) LoadData() ([]Edge, error) {
+func (l *loadEdgesByType) LoadData() ([]*Edge, error) {
 	err := loadData(l)
 	if err != nil {
 		return nil, err
@@ -374,17 +360,9 @@ func (l *loadMultipleNodesFromQuery) Validate() error {
 }
 
 func (l *loadMultipleNodesFromQuery) GetNewInstance() interface{} {
-	//	entity :=
-	return reflect.New(l.base)
-	//	return entity.Interface()
-}
+	entity := reflect.New(l.base)
 
-func (l *loadMultipleNodesFromQuery) Append(entity interface{}) {
-	spew.Dump(entity)
-	value, ok := entity.(reflect.Value)
-	if !ok {
-		panic("invalid type passed")
-	}
+	l.direct.Set(reflect.Append(*l.direct, entity))
 
-	l.direct.Set(reflect.Append(*l.direct, value))
+	return entity
 }

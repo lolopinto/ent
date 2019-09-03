@@ -53,7 +53,7 @@ func (q *dbQuery) StructScanRows(l multiRowLoader) error {
 					fmt.Println(err)
 					return err
 				}
-				l.Append(instance)
+				//				l.Append(instance)
 			}
 			return nil
 		}})
