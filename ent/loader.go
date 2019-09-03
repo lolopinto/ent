@@ -366,3 +366,18 @@ func (l *loadMultipleNodesFromQuery) GetNewInstance() interface{} {
 
 	return entity
 }
+
+type loadMultipleNodesFromQueryNodeDependent struct {
+	loadMultipleNodesFromQuery
+}
+
+func (l *loadMultipleNodesFromQueryNodeDependent) GetSQLBuilder() (*sqlBuilder, error) {
+	// TODO don't use colsString for this long term. that's a bigger change to the framework
+	// and having that be generated and typed ala FillFromMap
+	value := reflect.New(l.base)
+	insertData := getFieldsAndValuesOfStruct(value, false)
+
+	// pass colsString to determine which fields to query
+	l.sqlBuilder.colsString = insertData.getColumnsString()
+	return l.sqlBuilder, nil
+}

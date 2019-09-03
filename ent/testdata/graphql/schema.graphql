@@ -6,6 +6,14 @@ interface Connection {
     nodes: [Node!]
 }
 
+type Contact implements Node {
+    emailAddress: String!
+    firstName: String!
+    id: ID!
+    lastName: String!
+    userID: String!
+}
+
 interface Edge {
     node: Node!
 }
@@ -33,6 +41,7 @@ interface Node {
 }
 
 type Query {
+    contact(id: ID!): Contact
     event(id: ID!): Event
     user(id: ID!): User
 }

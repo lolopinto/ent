@@ -19,6 +19,19 @@ sa.Table("assoc_edge_config", metadata,
     sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
 )
    
+sa.Table("contacts", metadata,
+    sa.Column("id", UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("email_address", sa.Text(), nullable=False),
+    sa.Column("first_name", sa.Text(), nullable=False),
+    sa.Column("last_name", sa.Text(), nullable=False),
+    sa.Column("user_id", UUID(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="contacts_id_pkey"),
+    sa.UniqueConstraint("email_address", name="contacts_unique_email_address"),
+    sa.ForeignKeyConstraint(["user_id"], ["users.id"], name="contacts_user_id_fkey", ondelete="CASCADE"),
+)
+   
 sa.Table("events", metadata,
     sa.Column("id", UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),

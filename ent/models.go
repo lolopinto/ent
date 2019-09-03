@@ -459,22 +459,17 @@ func fillFromMap(direct *reflect.Value, data interface{}, entity reflect.Value) 
 }
 
 func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) error {
-	sqlQuery := func(insertData insertdata) (string, []interface{}, error) {
-		colsString := insertData.getColumnsString()
-		query := fmt.Sprintf(
-			"SELECT %s FROM %s WHERE %s = $1",
-			colsString,
-			entConfig.GetTableName(),
-			colName,
-		)
-		fmt.Println(query)
-		return query, []interface{}{id}, nil
-	}
-
-	return loadNodesHelper(nodes, &loadNodesQueryHelper{
-		query:     sqlQuery,
+	// build loader to use
+	l := &loadMultipleNodesFromQueryNodeDependent{}
+	l.sqlBuilder = &sqlBuilder{
 		tableName: entConfig.GetTableName(),
-	})
+		parts: []interface{}{
+			colName,
+			id,
+		},
+	}
+	l.nodes = nodes
+	return loadData(l)
 }
 
 func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {

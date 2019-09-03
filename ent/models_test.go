@@ -2,7 +2,12 @@ package ent
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
+
+	"math/rand"
+	"strconv"
+	"strings"
 
 	"reflect"
 	"testing"
@@ -217,6 +222,21 @@ func (config *testEventConfig) GetTableName() string {
 	return "events"
 }
 
+type testContact struct {
+	Node
+	EmailAddress string `db:"email_address"`
+	FirstName    string `db:"first_name"`
+	LastName     string `db:"last_name"`
+	UserID       string `db:"user_id"`
+	Viewer       viewer.ViewerContext
+}
+
+type testContactConfig struct{}
+
+func (config *testContactConfig) GetTableName() string {
+	return "contacts"
+}
+
 func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 	createTestUser(suite)
 
@@ -369,6 +389,28 @@ func createTestEvent(suite *modelsTestSuite, user *testUser) *testEvent {
 	return &event
 }
 
+func generateRandCode(n int) string {
+	rand.Seed(time.Now().UnixNano())
+
+	var sb strings.Builder
+	for i := 0; i < n; i++ {
+		sb.WriteString(strconv.Itoa(rand.Intn(9)))
+	}
+	return sb.String()
+}
+
+func createTestContact(suite *modelsTestSuite, user *testUser) *testContact {
+	contact := testContact{
+		EmailAddress: fmt.Sprintf("test-contact-%s@email.com", generateRandCode(9)),
+		UserID:       user.ID,
+		FirstName:    "first-name",
+		LastName:     "last-name",
+	}
+	err := CreateNode(&contact, &testContactConfig{})
+	assert.Nil(suite.T(), err)
+	return &contact
+}
+
 func (suite *modelsTestSuite) TestLoadEdgesByType() {
 	user := createTestUser(suite)
 	event := createTestEvent(suite, user)
@@ -417,6 +459,44 @@ func (suite *modelsTestSuite) TestLoadAssocEdges() {
 
 	assert.NotEmpty(suite.T(), existingEdges)
 	assert.Nil(suite.T(), err)
+}
+
+func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
+	user := createTestUser(suite)
+	contact := createTestContact(suite, user)
+	contact2 := createTestContact(suite, user)
+
+	var testCases = []struct {
+		id          string
+		foundResult bool
+	}{
+		{
+			user.ID,
+			true,
+		},
+		{
+			contact.ID,
+			false,
+		},
+	}
+
+	for _, tt := range testCases {
+		var contacts []*testContact
+		err := loadForeignKeyNodes(tt.id, &contacts, "user_id", &testContactConfig{})
+		assert.Nil(suite.T(), err)
+		if tt.foundResult {
+			assert.NotEmpty(suite.T(), contacts)
+
+			assert.Len(suite.T(), contacts, 2)
+			for _, loadedContact := range contacts {
+				assert.NotZero(suite.T(), loadedContact)
+				assert.Contains(suite.T(), []string{contact.ID, contact2.ID}, loadedContact.ID)
+			}
+		} else {
+			assert.Len(suite.T(), contacts, 0)
+			assert.Empty(suite.T(), contacts)
+		}
+	}
 }
 
 func TestModelsSuite(t *testing.T) {

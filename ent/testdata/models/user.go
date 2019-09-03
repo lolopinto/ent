@@ -8,6 +8,8 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/viewer"
+
+	"/Users/ola/code/ent/ent/testdata/models/configs"
 )
 
 const (

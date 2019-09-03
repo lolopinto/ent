@@ -5,9 +5,11 @@ model:
     filename: graphql/models_gen.go
     package: graphql
 models:
+    Contact:
+        model: /Users/ola/code/ent/ent/testdata/models.Contact
     Event:
-        model: github.com/lolopinto/ent/ent/testdata/models.Event
+        model: /Users/ola/code/ent/ent/testdata/models.Event
     User:
-        model: github.com/lolopinto/ent/ent/testdata/models.User
+        model: /Users/ola/code/ent/ent/testdata/models.User
 schema:
   - graphql/schema.graphql
