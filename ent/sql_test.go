@@ -77,6 +77,20 @@ func TestSQLBuilder(t *testing.T) {
 				"ola@ola.com",
 			},
 		},
+		{
+			&sqlBuilder{
+				rawQuery: "SELECT * FROM objects WHERE foo = $1 AND bar = $2",
+				rawValues: []interface{}{
+					1,
+					"ola@ola.com",
+				},
+			},
+			"SELECT * FROM objects WHERE foo = $1 AND bar = $2",
+			[]interface{}{
+				1,
+				"ola@ola.com",
+			},
+		},
 	}
 
 	for _, tt := range testCases {

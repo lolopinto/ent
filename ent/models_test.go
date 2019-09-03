@@ -406,6 +406,19 @@ func (suite *modelsTestSuite) TestLoadEdgesByType() {
 	}
 }
 
+func (suite *modelsTestSuite) TestLoadAssocEdges() {
+	// This is dependent on 2 things:
+	// 1/ table already existing so first pass of chained loader works
+	// 2/ table not being empty and full of valid data
+	// we can't remove and re-add fresh data because of how dbcleaner works
+	// we can't validate the number of edges here because that's subject to change
+	var existingEdges []*AssocEdgeData
+	err := GenLoadAssocEdges(&existingEdges)
+
+	assert.NotEmpty(suite.T(), existingEdges)
+	assert.Nil(suite.T(), err)
+}
+
 func TestModelsSuite(t *testing.T) {
 	suite.Run(t, new(modelsTestSuite))
 }

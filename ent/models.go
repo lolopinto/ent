@@ -1260,41 +1260,20 @@ type nodeExists struct {
 	Exists bool `db:"exists"`
 }
 
-func GenLoadAssocEdges(nodes interface{}) error {
-	db := data.DBConn()
-	if db == nil {
-		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
-		return err
-	}
+func (n *nodeExists) FillFromMap(map[string]interface{}) error {
+	panic("should never be called since not cacheable")
+}
 
-	query := fmt.Sprintf("SELECT to_regclass($1) IS NOT NULL as exists")
-	fmt.Println(query)
-	stmt, err := db.Preparex(query)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer stmt.Close()
-
-	var n nodeExists
-	err = stmt.QueryRowx("assoc_edge_config").StructScan(&n)
-	if err != nil {
-		return err
-	}
-	if !n.Exists {
-		fmt.Println("no assoc_edge_config table yet")
-		return nil
-	}
-
-	sqlQuery := func(_ insertdata) (string, []interface{}, error) {
-		query := "SELECT * FROM assoc_edge_config"
-
-		fmt.Println(query)
-		return query, []interface{}{}, nil
-	}
-	return loadNodesHelper(nodes, &loadNodesQueryHelper{
-		query:     sqlQuery,
-		tableName: "assoc_edge_config",
-	})
+func GenLoadAssocEdges(nodes *[]*AssocEdgeData) error {
+	return chainLoaders(
+		[]loader{
+			&loadAssocEdgeConfigExists{},
+			&loadMultipleNodesFromQuery{
+				sqlBuilder: &sqlBuilder{
+					rawQuery: "SELECT * FROM assoc_edge_config",
+				},
+				nodes: nodes,
+			},
+		},
+	)
 }

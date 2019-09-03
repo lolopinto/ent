@@ -2,6 +2,7 @@ package ent
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/data"
@@ -39,8 +40,15 @@ func (q *dbQuery) StructScanRows(l multiRowLoader) error {
 		multiRows: func(rows *sqlx.Rows) error {
 
 			for rows.Next() {
+				var err error
 				instance := l.GetNewInstance()
-				err := rows.StructScan(instance)
+				value, ok := instance.(reflect.Value)
+				if ok {
+					err = rows.StructScan(value.Interface())
+				} else {
+					// otherwise assume it implements Scan interface
+					err = rows.StructScan(instance)
+				}
 				if err != nil {
 					fmt.Println(err)
 					return err

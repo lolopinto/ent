@@ -2,8 +2,11 @@ package ent
 
 import (
 	"fmt"
+	"reflect"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/pkg/errors"
 )
 
@@ -26,13 +29,35 @@ type singleRowLoader interface {
 	GetEntity() dataEntity
 }
 
+// a loader that can be chained with other loaders and receives input from other loaders
+type chainableInputLoader interface {
+	loader
+	SetInput(interface{})
+}
+
+type chainableOutputLoader interface {
+	loader
+	GetOutput() interface{} // should return nil to indicate not to call next loader
+}
+
 type multiRowLoader interface {
 	loader
-	// TODO... this returns a new Edge etc
-	GetNewInstance() dataEntity
-	// this returns the slice. both of this hard because of go nonsense. TODO
-	//GetNewSlice() dataEntity
-	Append(entity dataEntity)
+	// GetNewInstance returns a new instance of the item being read from the database
+	// Two supported types:
+	// 1 dataEntity
+	// 2 reflect.Value in which underlying element is a dataEntity, specifically has a FillFromMap() method which can be called via reflection
+
+	// TODO should we combine these? we need to StructScan() and FillFromValue() underlying interface()
+
+	// It's expected that the item is also appended to the internal slice which is used to keep track
+	// of the items retrieved
+	// The reason why this is combined into one
+	GetNewInstance() interface{}
+
+	// Append is called with the instance after FillFromMap has been called
+	// Should append the item passed in to the internal slice which is used to keep track
+	// of the items retrieved
+	Append(entity interface{})
 }
 
 type loaderConfig struct {
@@ -78,6 +103,49 @@ func loadData(l loader, options ...func(*loaderConfig)) error {
 	panic("invalid loader passed")
 }
 
+func chainLoaders(loaders []loader, options ...func(*loaderConfig)) error {
+	///	length := len(loaders)
+	var output interface{}
+
+	for idx, l := range loaders {
+		inputLoader, ok := l.(chainableInputLoader)
+
+		if ok {
+			if idx == 0 {
+				panic("first loader cannot require an input")
+			}
+
+			if output == nil {
+				panic("loader requires an input but no input to pass in")
+			}
+			inputLoader.SetInput(output)
+		}
+
+		// call loader
+		err := loadData(l, options...)
+		if err != nil {
+			return err
+		}
+
+		outputLoader, ok := l.(chainableOutputLoader)
+		if ok {
+			output = outputLoader.GetOutput()
+
+			// no error but we're done here. nothing to pass along
+			if output == nil {
+				return nil
+			}
+
+		} else {
+			output = nil
+		}
+	}
+	if output != nil {
+		panic("ended with an output loader which didn't do anything with it")
+	}
+	return nil
+}
+
 func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 	cacheable, ok := l.(cachedLoader)
 	if ok {
@@ -93,7 +161,13 @@ func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 		}
 		for idx := range actual {
 			instance := l.GetNewInstance()
-			instance.FillFromMap(actual[idx])
+			entity, ok := instance.(dataEntity)
+			if ok {
+				entity.FillFromMap(actual[idx])
+			} else {
+				// todo handle reflect.Value later
+				panic("invalid item returned from loader.GetNewInstance()")
+			}
 			l.Append(instance)
 		}
 		return nil
@@ -202,6 +276,7 @@ type loadEdgesByType struct {
 }
 
 func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
+	// TODO make chainable?
 	edgeData, err := getEdgeInfo(l.edgeType, nil)
 	if err != nil {
 		return nil, err
@@ -228,12 +303,12 @@ func (l *loadEdgesByType) GetCacheKey() string {
 	return getKeyForEdge(l.id, l.edgeType)
 }
 
-func (l *loadEdgesByType) GetNewInstance() dataEntity {
+func (l *loadEdgesByType) GetNewInstance() interface{} {
 	var edge Edge
 	return &edge
 }
 
-func (l *loadEdgesByType) Append(entity dataEntity) {
+func (l *loadEdgesByType) Append(entity interface{}) {
 	edge, ok := entity.(*Edge)
 	if !ok {
 		panic("invalid type passed")
@@ -247,4 +322,69 @@ func (l *loadEdgesByType) LoadData() ([]Edge, error) {
 		return nil, err
 	}
 	return l.edges, nil
+}
+
+type loadAssocEdgeConfigExists struct {
+	n nodeExists
+}
+
+func (l *loadAssocEdgeConfigExists) GetSQLBuilder() (*sqlBuilder, error) {
+	return &sqlBuilder{
+		rawQuery: "SELECT to_regclass($1) IS NOT NULL as exists",
+		rawValues: []interface{}{
+			"assoc_edge_config",
+		},
+	}, nil
+}
+
+func (l *loadAssocEdgeConfigExists) GetEntity() dataEntity {
+	return &l.n
+}
+
+func (l *loadAssocEdgeConfigExists) GetOutput() interface{} {
+	// has an output that's not necessary passable. just indicates whether we should continue
+	// so GetOutput has 2 different meanings. This should mean continue chaining vs input/output
+	// maybe decouple this later?
+	if l.n.Exists {
+		return l.n.Exists
+	}
+	return nil
+}
+
+type loadMultipleNodesFromQuery struct {
+	sqlBuilder *sqlBuilder
+	nodes      interface{}
+	// private...
+	base   reflect.Type
+	direct *reflect.Value
+}
+
+func (l *loadMultipleNodesFromQuery) GetSQLBuilder() (*sqlBuilder, error) {
+	return l.sqlBuilder, nil
+}
+
+func (l *loadMultipleNodesFromQuery) Validate() error {
+	slice, direct, err := validateSliceOfNodes(l.nodes)
+	if err != nil {
+		return err
+	}
+	l.direct = direct
+	l.base = reflectx.Deref(slice.Elem())
+	return err
+}
+
+func (l *loadMultipleNodesFromQuery) GetNewInstance() interface{} {
+	//	entity :=
+	return reflect.New(l.base)
+	//	return entity.Interface()
+}
+
+func (l *loadMultipleNodesFromQuery) Append(entity interface{}) {
+	spew.Dump(entity)
+	value, ok := entity.(reflect.Value)
+	if !ok {
+		panic("invalid type passed")
+	}
+
+	l.direct.Set(reflect.Append(*l.direct, value))
 }

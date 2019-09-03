@@ -11,6 +11,8 @@ type sqlBuilder struct {
 	tableName  string
 	parts      []interface{}
 	order      string
+	rawQuery   string
+	rawValues  []interface{}
 }
 
 func (s *sqlBuilder) orderBy(orderBy string) *sqlBuilder {
@@ -19,6 +21,10 @@ func (s *sqlBuilder) orderBy(orderBy string) *sqlBuilder {
 }
 
 func (s *sqlBuilder) getQuery() string {
+	if s.rawQuery != "" {
+		return s.rawQuery
+	}
+
 	var whereParts []string
 	pos := 1
 	for idx, val := range s.parts {
@@ -45,6 +51,10 @@ func (s *sqlBuilder) getQuery() string {
 }
 
 func (s *sqlBuilder) getValues() []interface{} {
+	// TODO validate that rawQuery and rawValues are passed together
+	if len(s.rawValues) != 0 {
+		return s.rawValues
+	}
 	var ret []interface{}
 	for idx, val := range s.parts {
 		if idx%2 == 0 {
