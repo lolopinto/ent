@@ -295,16 +295,6 @@ func genLoadRawData(id string, entity dataEntity, entConfig Config, errChan chan
 	//chanResult <- result
 }
 
-type loadNodesQueryHelper struct {
-	query             loadNodesQuery
-	tableName         string // for caching and configuring
-	cachedRawData     []interface{}
-	storeNodesInCache bool
-	disableQuery      bool
-}
-
-type loadNodesQuery func(insertData insertdata) (string, []interface{}, error)
-
 func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, error) {
 	value := reflect.ValueOf(nodes)
 	direct := reflect.Indirect(value)
@@ -325,145 +315,12 @@ func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, erro
 	return slice, &direct, nil
 }
 
-// this borrows from/learns from scanAll in sqlx library
-
-func loadNodesDBHelper(qHelper *loadNodesQueryHelper, direct *reflect.Value, base reflect.Type) error {
-	// get a zero value of this
-	value := reflect.New(base)
-	// really need to rename this haha
-	insertData := getFieldsAndValuesOfStruct(value, false)
-
-	query, values, err := qHelper.query(insertData)
-	//fmt.Println(query, err)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	db := data.DBConn()
-	if db == nil {
-		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
-		return err
-	}
-
-	// rebind the query for our backend.
-	// TODO: should we only do this when needed?
-	query = db.Rebind(query)
-	//fmt.Println("rebound query ", query)
-
-	stmt, err := db.Preparex(query)
-	if err != nil {
-		fmt.Println("error after prepare in LoadNodes()", err)
-		return err
-	}
-	defer stmt.Close()
-
-	//fmt.Println("values", values)
-	rows, err := stmt.Queryx(values...)
-	if err != nil {
-		fmt.Println("error performing query in LoadNodes", err)
-		return err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		entity := reflect.New(base)
-
-		if qHelper.storeNodesInCache {
-			dataMap := make(map[string]interface{})
-			err = rows.MapScan(dataMap)
-			//			spew.Dump("dataMap", dataMap)
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-			id := uuid.UUID{}
-			if err := id.Scan(dataMap["id"]); err != nil {
-				return err
-			}
-			setSingleCachedItem(
-				getKeyForNode(id.String(), qHelper.tableName),
-				dataMap,
-				nil,
-			)
-			err = fillFromMap(direct, dataMap, entity)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = rows.StructScan(entity.Interface())
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-			// append each entity into "nodes" destination
-			direct.Set(reflect.Append(*direct, entity))
-		}
-	}
-
-	err = rows.Err()
-	if err != nil {
-		fmt.Println(err)
-	}
-	return err
-}
-
-func loadNodesHelper(nodes interface{}, qHelper *loadNodesQueryHelper) error {
-	slice, direct, err := validateSliceOfNodes(nodes)
-	if err != nil {
-		return err
-	}
-	// get the base type from the slice
-	base := reflectx.Deref(slice.Elem())
-
-	if !qHelper.disableQuery {
-		err := loadNodesDBHelper(qHelper, direct, base)
-		if err != nil {
-			return err
-		}
-	} else {
-		//		spew.Dump("skipped db!!!")
-	}
-
-	// todo when this is done with goroutines correctly as it should the order will be correct.
-	// now it just enforces cached data
-	for _, data := range qHelper.cachedRawData {
-		entity := reflect.New(base)
-
-		err = fillFromMap(direct, data, entity)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func fillFromMap(direct *reflect.Value, data interface{}, entity reflect.Value) error {
-	method := reflect.ValueOf(entity.Interface()).MethodByName("FillFromMap")
-	if !method.IsValid() {
-		panic("help")
-	}
-	res := method.Call([]reflect.Value{reflect.ValueOf(data)})
-	if len(res) != 1 {
-		panic("invalid number of results. FillFromMap should have returned 1 item")
-	}
-	err := res[0].Interface()
-	if err != nil {
-		return errors.New(fmt.Sprintf("%v", err))
-	}
-	direct.Set(reflect.Append(*direct, entity))
-	return nil
-}
-
 func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) error {
 	// build loader to use
 	l := &loadMultipleNodesFromQueryNodeDependent{}
 	l.sqlBuilder = &sqlBuilder{
 		tableName: entConfig.GetTableName(),
-		parts: []interface{}{
+		whereParts: []interface{}{
 			colName,
 			id,
 		},
@@ -691,23 +548,18 @@ func CreateNodes(nodes interface{}, entConfig Config) error {
 func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
 	var stmt *sqlx.Stmt
 	var err error
+
 	// handle if in transcation or not.
 	if tx == nil {
+		// automatically rebinding now but we need to handle this better later
+		query = db.Rebind(query)
 		stmt, err = db.Preparex(query)
 	} else {
+		query = tx.Rebind(query)
 		stmt, err = tx.Preparex(query)
 	}
 	return stmt, err
 }
-
-// TODO rewrite a bunch of the queries. this is terrible now.
-/*
-type dbQuery interface {
-	Have a QueryBuilder for this
-	generateQuery() (string, []interface{}) // and even this can be broken down even more
-	executeQuery(sqlx.Stmt) // provide helpers for this...
-}
-*/
 
 /*
  * performs a write (INSERT, UPDATE, DELETE statement) given the SQL statement
@@ -1183,80 +1035,26 @@ func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 }
 
 func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
-	// load the edges
-	edges, err := LoadEdgesByType(id, edgeType)
-	if err != nil {
-		return err
+	l := &loadNodesLoader{
+		entConfig: entConfig,
 	}
-
-	length := len(edges)
-	// no nodes, nothing to do here
-	if length == 0 {
-		return err
-	}
-
-	//	spew.Dump(edges)
-	// get ids from the edges
-	//	ids := make([]interface{}, length)
-	var ids []interface{}
-	cachedRawData := []interface{}{}
-	for _, edge := range edges {
-		cachedItem, err := getItemInCache(getKeyForNode(edge.ID2, entConfig.GetTableName()))
-		if err != nil {
-			fmt.Println("error getting cached item", err)
-			return err
-		}
-		//		spew.Dump(cachedItem, err)
-		if cachedItem != nil {
-			cachedRawData = append(cachedRawData, cachedItem)
-		} else {
-			ids = append(ids, edge.ID2)
-		}
-	}
-
-	// spew.Dump(edges)
-	// spew.Dump("loadddddNodeeeees")
-	// spew.Dump(cachedRawData)
-	// spew.Dump(ids)
-
-	// construct the sqlQuery that we'll use to query each node table
-	sqlQuery := func(insertData insertdata) (string, []interface{}, error) {
-		colsString := insertData.getColumnsString()
-
-		// get basic formatted string for QUERY
-		query := fmt.Sprintf(
-			"SELECT %s FROM %s WHERE id IN (?)",
-			colsString,
-			entConfig.GetTableName(),
-		)
-		fmt.Println(query)
-		// spew.Dump(ids)
-
-		// rebind for IN query
-		return sqlx.In(query, ids)
-	}
-
-	return loadNodesHelper(nodes, &loadNodesQueryHelper{
-		query:             sqlQuery,
-		tableName:         entConfig.GetTableName(),
-		cachedRawData:     cachedRawData,
-		storeNodesInCache: true,
-		disableQuery:      len(ids) == 0, // we hit the cache for everything, don't do the sql query. todo: refactor
-	})
+	l.nodes = nodes
+	return chainLoaders(
+		[]loader{
+			&loadEdgesByType{
+				id:         id,
+				edgeType:   edgeType,
+				outputID2s: true,
+			},
+			l,
+		},
+	)
 }
 
 func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
 	err := loadNodesByType(id, edgeType, nodes, entConfig)
 	//fmt.Println("GenLoadEdgesByType result", err, nodes)
 	errChan <- err
-}
-
-type nodeExists struct {
-	Exists bool `db:"exists"`
-}
-
-func (n *nodeExists) FillFromMap(map[string]interface{}) error {
-	panic("should never be called since not cacheable")
 }
 
 func GenLoadAssocEdges(nodes *[]*AssocEdgeData) error {

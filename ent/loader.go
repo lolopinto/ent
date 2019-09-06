@@ -31,9 +31,10 @@ type singleRowLoader interface {
 // a loader that can be chained with other loaders and receives input from other loaders
 type chainableInputLoader interface {
 	loader
-	SetInput(interface{})
+	SetInput(interface{}) error
 }
 
+// a loader that can be chained with other loaders and passes output to other loaders
 type chainableOutputLoader interface {
 	loader
 	GetOutput() interface{} // should return nil to indicate not to call next loader
@@ -51,6 +52,19 @@ type multiRowLoader interface {
 	// of the items retrieved when returned.
 
 	GetNewInstance() interface{}
+}
+
+// hmm.
+// for now coupling this but this may not always be true...
+type multiInputLoader interface {
+	// this handles going through the inputs, figuring out what's cached first and then limiting the query to only those that are not in the cache and
+	// then after fetching from the db, storing cached item based on the CacheKey returned
+	multiRowLoader
+	GetInputIDs() []string
+	LimitQueryTo(ids []string)
+	// GetCacheKeyForID assumes the key is dependent on the id
+	// Called For each inputID to see if we can hit the cache for that id and then called for each id retrieved from the database to store in cache
+	GetCacheKeyForID(id string) string
 }
 
 type loaderConfig struct {
@@ -79,10 +93,23 @@ func loadData(l loader, options ...func(*loaderConfig)) error {
 		}
 	}
 
+	// handle loaders that have multiple items that can be cached
+	// and check to see if we need to hit db
+	multiInputLoader, ok := l.(multiInputLoader)
+	if ok {
+		ids, err := checkCacheForMultiInputLoader(multiInputLoader)
+		if err != nil {
+			return err
+		}
+		// nothing to do here
+		if len(ids) == 0 {
+			return nil
+		}
+	}
+
 	q := &dbQuery{
 		cfg: cfg,
 		l:   l,
-		//		entity: entity,
 	}
 
 	multiRowLoader, ok := l.(multiRowLoader)
@@ -94,6 +121,30 @@ func loadData(l loader, options ...func(*loaderConfig)) error {
 		return loadRowData(singleRowLoader, q)
 	}
 	panic("invalid loader passed")
+}
+
+func checkCacheForMultiInputLoader(l multiInputLoader) ([]string, error) {
+	var ids []string
+	for _, inputID := range l.GetInputIDs() {
+		cachedItem, err := getItemInCache(
+			l.GetCacheKeyForID(inputID),
+		)
+		if err != nil {
+			fmt.Println("error getting cached item", err)
+			return nil, err
+		}
+		if cachedItem != nil {
+			// TODO we need to care about correct order but for now whatever
+			fillInstance(l, cachedItem)
+		} else {
+			ids = append(ids, inputID)
+		}
+	}
+
+	if len(ids) != 0 {
+		l.LimitQueryTo(ids)
+	}
+	return ids, nil
 }
 
 func chainLoaders(loaders []loader, options ...func(*loaderConfig)) error {
@@ -153,19 +204,45 @@ func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 			return err
 		}
 		for idx := range actual {
-			instance := l.GetNewInstance()
-			entity, ok := instance.(dataEntity)
-			if ok {
-				entity.FillFromMap(actual[idx])
-			} else {
-				// todo handle reflect.Value later
-				panic("invalid item returned from loader.GetNewInstance()")
+			err := fillInstance(l, actual[idx])
+			if err != nil {
+				return err
 			}
-			//l.Append(instance)
 		}
 		return nil
 	}
+	multiCacheable, ok := l.(multiInputLoader)
+	if ok {
+		return q.MapScanAndFillRows(multiCacheable)
+	}
 	return q.StructScanRows(l)
+}
+
+func fillInstance(l multiRowLoader, dataMap map[string]interface{}) error {
+	instance := l.GetNewInstance()
+	entity, ok := instance.(dataEntity)
+	if ok {
+		return entity.FillFromMap(dataMap)
+	}
+	value, ok := instance.(reflect.Value)
+	if !ok {
+		panic("invalid item returned from loader.GetNewInstance()")
+	}
+
+	// fillFromMap reflection time
+	method := reflect.ValueOf(value.Interface()).MethodByName("FillFromMap")
+	if !method.IsValid() {
+		panic("invalid")
+	}
+	res := method.Call([]reflect.Value{reflect.ValueOf(dataMap)})
+	if len(res) != 1 {
+		panic("invalid number of results. FillFromMap should have returned 1 item")
+	}
+	err := res[0].Interface()
+	if err != nil {
+		return errors.New(fmt.Sprintf("%v", err))
+	}
+	return nil
 }
 
 func loadRowData(l singleRowLoader, q *dbQuery) error {
@@ -228,7 +305,7 @@ func (l *loadNodeFromPartsLoader) GetSQLBuilder() (*sqlBuilder, error) {
 	return &sqlBuilder{
 		colsString: colsString,
 		tableName:  l.config.GetTableName(),
-		parts:      l.parts,
+		whereParts: l.parts,
 	}, nil
 }
 
@@ -247,7 +324,7 @@ func (l *loadNodeFromPKey) GetSQLBuilder() (*sqlBuilder, error) {
 	return &sqlBuilder{
 		colsString: colsString,
 		tableName:  l.tableName,
-		parts: []interface{}{
+		whereParts: []interface{}{
 			insertData.pkeyName,
 			l.id,
 		},
@@ -263,9 +340,10 @@ func (l *loadNodeFromPKey) GetCacheKey() string {
 }
 
 type loadEdgesByType struct {
-	id       string
-	edgeType EdgeType
-	edges    []*Edge
+	id         string
+	edgeType   EdgeType
+	edges      []*Edge
+	outputID2s bool
 }
 
 func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
@@ -282,7 +360,7 @@ func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
 	return &sqlBuilder{
 		colsString: "*",
 		tableName:  edgeData.EdgeTable,
-		parts: []interface{}{
+		whereParts: []interface{}{
 			"id1",
 			l.id,
 			"edge_type",
@@ -302,12 +380,36 @@ func (l *loadEdgesByType) GetNewInstance() interface{} {
 	return &edge
 }
 
+func (l *loadEdgesByType) GetOutput() interface{} {
+	// nothing to do here
+	if len(l.edges) == 0 {
+		return nil
+	}
+
+	if l.outputID2s {
+		ids := make([]string, len(l.edges))
+		for idx, edge := range l.edges {
+			ids[idx] = edge.ID2
+		}
+		return ids
+	}
+	return l.edges
+}
+
 func (l *loadEdgesByType) LoadData() ([]*Edge, error) {
 	err := loadData(l)
 	if err != nil {
 		return nil, err
 	}
 	return l.edges, nil
+}
+
+type nodeExists struct {
+	Exists bool `db:"exists"`
+}
+
+func (n *nodeExists) FillFromMap(map[string]interface{}) error {
+	panic("should never be called since not cacheable")
 }
 
 type loadAssocEdgeConfigExists struct {
@@ -374,10 +476,82 @@ type loadMultipleNodesFromQueryNodeDependent struct {
 func (l *loadMultipleNodesFromQueryNodeDependent) GetSQLBuilder() (*sqlBuilder, error) {
 	// TODO don't use colsString for this long term. that's a bigger change to the framework
 	// and having that be generated and typed ala FillFromMap
+	if l.base == nil {
+		return nil, errors.New("validate wasn't called or don't have the right data")
+	}
+	if l.sqlBuilder == nil {
+		return nil, errors.New("sqlbuilder required")
+	}
 	value := reflect.New(l.base)
 	insertData := getFieldsAndValuesOfStruct(value, false)
 
 	// pass colsString to determine which fields to query
 	l.sqlBuilder.colsString = insertData.getColumnsString()
 	return l.sqlBuilder, nil
+}
+
+type loadNodesLoader struct {
+	ids []string
+	//	edgeType  EdgeType
+	//	nodes     interface{}
+	entConfig Config
+	loadMultipleNodesFromQueryNodeDependent
+}
+
+func (l *loadNodesLoader) Validate() error {
+	err := l.loadMultipleNodesFromQueryNodeDependent.Validate()
+	if err != nil {
+		return err
+	}
+	if len(l.ids) == 0 {
+		return errors.New("chainable loader didn't pass any ids")
+	}
+	return nil
+}
+
+func (l *loadNodesLoader) SetInput(val interface{}) error {
+	ids, ok := val.([]string)
+	if !ok {
+		return errors.New("invalid input passed to loadNodesLoader")
+	}
+	l.ids = ids
+	return nil
+}
+
+func (l *loadNodesLoader) GetInputIDs() []string {
+	return l.ids
+}
+
+func (l *loadNodesLoader) LimitQueryTo(ids []string) {
+	l.ids = ids
+}
+
+func (l *loadNodesLoader) GetSQLBuilder() (*sqlBuilder, error) {
+	// TODO handle this better
+	if l.sqlBuilder == nil {
+		l.sqlBuilder = &sqlBuilder{
+			tableName: l.entConfig.GetTableName(),
+		}
+	}
+	if len(l.ids) == 0 {
+		return nil, errors.New("shouldn't call GetSQLBuilder() if there are no ids")
+	}
+
+	// get the sql builder from composited object and then override it to pass i
+	builder, err := l.loadMultipleNodesFromQueryNodeDependent.GetSQLBuilder()
+
+	if err != nil {
+		return nil, err
+	}
+
+	inArgs := make([]interface{}, len(l.ids))
+	for idx, id := range l.ids {
+		inArgs[idx] = id
+	}
+	builder.in("id", inArgs)
+	return builder, nil
+}
+
+func (l *loadNodesLoader) GetCacheKeyForID(id string) string {
+	return getKeyForNode(id, l.entConfig.GetTableName())
 }

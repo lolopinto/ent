@@ -12,7 +12,7 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				colsString: "id, foo, bar",
 				tableName:  "objects",
-				parts: []interface{}{
+				whereParts: []interface{}{
 					"foo",
 					1,
 				},
@@ -26,7 +26,7 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				colsString: "id, foo, bar",
 				tableName:  "objects",
-				parts: []interface{}{
+				whereParts: []interface{}{
 					"foo",
 					1,
 					"bar",
@@ -43,7 +43,7 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				colsString: "id, foo, bar",
 				tableName:  "objects",
-				parts: []interface{}{
+				whereParts: []interface{}{
 					"foo",
 					1,
 					"bar",
@@ -63,7 +63,7 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				colsString: "*",
 				tableName:  "objects",
-				parts: []interface{}{
+				whereParts: []interface{}{
 					"foo",
 					1,
 					"bar",
@@ -89,6 +89,24 @@ func TestSQLBuilder(t *testing.T) {
 			[]interface{}{
 				1,
 				"ola@ola.com",
+			},
+		},
+		{
+			&sqlBuilder{
+				colsString: "id, foo, bar",
+				tableName:  "objects",
+				inField:    "id",
+				inArgs: []interface{}{
+					"1",
+					"2",
+					"3",
+				},
+			},
+			"SELECT id, foo, bar FROM objects WHERE id IN (?, ?, ?)",
+			[]interface{}{
+				"1",
+				"2",
+				"3",
 			},
 		},
 	}

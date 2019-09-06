@@ -3,16 +3,26 @@ package ent
 import (
 	"fmt"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // first simple version of sql builder
 type sqlBuilder struct {
 	colsString string // not long term value of course
 	tableName  string
-	parts      []interface{}
+	whereParts []interface{}
+	inField    string
+	inArgs     []interface{}
 	order      string
 	rawQuery   string
 	rawValues  []interface{}
+}
+
+func (s *sqlBuilder) in(field string, args []interface{}) *sqlBuilder {
+	s.inField = field
+	s.inArgs = args
+	return s
 }
 
 func (s *sqlBuilder) orderBy(orderBy string) *sqlBuilder {
@@ -25,29 +35,53 @@ func (s *sqlBuilder) getQuery() string {
 		return s.rawQuery
 	}
 
-	var whereParts []string
-	pos := 1
-	for idx, val := range s.parts {
-		if idx%2 == 1 {
-			continue
+	var whereClause string
+
+	if len(s.whereParts) != 0 {
+		var whereParts []string
+		pos := 1
+		for idx, val := range s.whereParts {
+			if idx%2 == 1 {
+				continue
+			}
+			whereParts = append(whereParts, fmt.Sprintf("%s = $%d", val, pos))
+			pos++
 		}
-		whereParts = append(whereParts, fmt.Sprintf("%s = $%d", val, pos))
-		pos++
+		whereClause = strings.Join(whereParts, " AND ")
+	} else if s.inField != "" {
+		whereClause = fmt.Sprintf("%s IN (?)", s.inField)
 	}
 
-	format := "SELECT {cols} FROM {table} WHERE {where}"
+	var formatSb strings.Builder
+
+	formatSb.WriteString("SELECT {cols} FROM {table}")
+
 	parts := []string{
 		"{cols}", s.colsString,
 		"{table}", s.tableName,
-		"{where}", strings.Join(whereParts, " AND "),
+	}
+	if whereClause != "" {
+		formatSb.WriteString(" WHERE {where}")
+		parts = append(parts, "{where}", whereClause)
 	}
 	if s.order != "" {
-		format = format + " ORDER BY {order}"
+		formatSb.WriteString(" ORDER BY {order}")
 		parts = append(parts, "{order}", s.order)
 	}
 
 	r := strings.NewReplacer(parts...)
-	return r.Replace(format)
+	query := r.Replace(formatSb.String())
+
+	// rebind for IN query using sqlx.In
+	if len(s.inArgs) != 0 {
+		var err error
+		query, s.inArgs, err = sqlx.In(query, s.inArgs)
+		if err != nil {
+			// TODO make this return an error correctly
+			panic(err)
+		}
+	}
+	return query
 }
 
 func (s *sqlBuilder) getValues() []interface{} {
@@ -55,8 +89,13 @@ func (s *sqlBuilder) getValues() []interface{} {
 	if len(s.rawValues) != 0 {
 		return s.rawValues
 	}
+	// IN query
+	if len(s.inArgs) != 0 {
+		return s.inArgs
+	}
+
 	var ret []interface{}
-	for idx, val := range s.parts {
+	for idx, val := range s.whereParts {
 		if idx%2 == 0 {
 			continue
 		}

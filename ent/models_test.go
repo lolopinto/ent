@@ -190,6 +190,51 @@ func (user *testUser) FillFromMap(data map[string]interface{}) error {
 	return nil
 }
 
+func (event *testEvent) FillFromMap(data map[string]interface{}) error {
+	for k, v := range data {
+		var err error
+		switch k {
+		case "id":
+			event.ID, err = cast.ToUUIDString(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "name":
+			event.Name, err = cast.ToString(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "user_id":
+			event.UserID, err = cast.ToString(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "location":
+			event.Location, err = cast.ToString(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "start_time":
+			event.StartTime, err = cast.ToTime(v)
+			if err != nil {
+				return err
+			}
+			break
+		case "end_time":
+			event.EndTime, err = cast.ToTime(v)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+	return nil
+}
+
 type testUserConfig struct{}
 
 const TestUserToEventsEdge EdgeType = "41bddf81-0c26-432c-9133-2f093af2c07c"
@@ -495,6 +540,44 @@ func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
 		} else {
 			assert.Len(suite.T(), contacts, 0)
 			assert.Empty(suite.T(), contacts)
+		}
+	}
+}
+
+func (suite *modelsTestSuite) TestLoadNodesByType() {
+	user := createTestUser(suite)
+	event := createTestEvent(suite, user)
+	event2 := createTestEvent(suite, user)
+
+	var testCases = []struct {
+		id1         string
+		foundResult bool
+	}{
+		{
+			user.ID,
+			true,
+		},
+		{
+			event.ID,
+			false,
+		},
+	}
+
+	for _, tt := range testCases {
+		var events []*testEvent
+		err := loadNodesByType(tt.id1, TestUserToEventsEdge, &events, &testEventConfig{})
+		assert.Nil(suite.T(), err)
+		if tt.foundResult {
+			assert.NotEmpty(suite.T(), events)
+
+			assert.Len(suite.T(), events, 2)
+			for _, loadedEvent := range events {
+				assert.NotZero(suite.T(), loadedEvent)
+				assert.Contains(suite.T(), []string{event.ID, event2.ID}, loadedEvent.ID)
+			}
+		} else {
+			assert.Len(suite.T(), events, 0)
+			assert.Empty(suite.T(), events)
 		}
 	}
 }

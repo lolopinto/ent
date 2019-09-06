@@ -6,6 +6,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/data"
+	"github.com/lolopinto/ent/ent/cast"
 	"github.com/pkg/errors"
 )
 
@@ -53,7 +54,6 @@ func (q *dbQuery) StructScanRows(l multiRowLoader) error {
 					fmt.Println(err)
 					return err
 				}
-				//				l.Append(instance)
 			}
 			return nil
 		}})
@@ -78,6 +78,34 @@ func (q *dbQuery) MapScanRows() ([]map[string]interface{}, error) {
 		}})
 
 	return dataRows, err
+}
+
+func (q *dbQuery) MapScanAndFillRows(l multiInputLoader) error {
+	return q.query(&processRawData{
+		multiRows: func(rows *sqlx.Rows) error {
+
+			for rows.Next() {
+				dataMap := make(map[string]interface{})
+				err := rows.MapScan(dataMap)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+
+				idStr, err := cast.ToUUIDString(dataMap["id"])
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+				key := l.GetCacheKeyForID(idStr)
+				// set in cache
+				setSingleCachedItem(key, dataMap, nil)
+
+				// call GetInstance() and FillFromMap on that instance
+				fillInstance(l, dataMap)
+			}
+			return nil
+		}})
 }
 
 func (q *dbQuery) query(processor *processRawData) error {

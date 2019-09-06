@@ -18,6 +18,7 @@ require (
 	github.com/rocketlaunchr/remember-go v1.0.0
 	github.com/stretchr/testify v1.3.0
 	github.com/urfave/cli v1.20.0
+	github.com/vektah/dataloaden v0.3.0 // indirect
 	github.com/vektah/gqlparser v1.1.2
 	golang.org/x/tools v0.0.0-20190515012406-7d7faa4812bd
 	gopkg.in/khaiql/dbcleaner.v2 v2.3.0
