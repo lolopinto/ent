@@ -9,6 +9,15 @@ type Entity interface {
 	dataEntity
 }
 
-type dataEntity interface {
+//type CastFromRawData func(interface{}) error
+
+// todo convert everything else
+type dataEntity2 interface {
 	FillFromMap(map[string]interface{}) error
+}
+
+type DBFields map[string]func(interface{}) error
+
+type dataEntity interface {
+	DBFields() DBFields
 }

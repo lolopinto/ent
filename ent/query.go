@@ -16,9 +16,8 @@ type processRawData struct {
 }
 
 type dbQuery struct {
-	cfg *loaderConfig
-	l   loader
-	//	entity    dataEntity
+	cfg       *loaderConfig
+	l         loader
 	singleRow bool
 }
 
@@ -101,7 +100,7 @@ func (q *dbQuery) MapScanAndFillRows(l multiInputLoader) error {
 				// set in cache
 				setSingleCachedItem(key, dataMap, nil)
 
-				// call GetInstance() and FillFromMap on that instance
+				// call GetInstance() and DBFields on that instance
 				fillInstance(l, dataMap)
 			}
 			return nil

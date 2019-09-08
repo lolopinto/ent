@@ -45,7 +45,7 @@ type multiRowLoader interface {
 	// GetNewInstance returns a new instance of the item being read from the database
 	// Two supported types:
 	// 1 dataEntity
-	// 2 reflect.Value in which underlying element is a dataEntity, specifically has a FillFromMap() method which can be called via reflection
+	// 2 reflect.Value in which underlying element is a dataEntity, specifically has a DBFields() method which can be called via reflection
 	// when it's a reflect.Value(), StructScan() will be called with the underlying Interface() method
 	// we want reflect.Value to know when to use reflection vs not
 	// It's expected that the item is also appended to the internal slice which is used to keep track
@@ -218,31 +218,53 @@ func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 	return q.StructScanRows(l)
 }
 
+func fillEntityFromMap(entity dataEntity, dataMap map[string]interface{}) error {
+	return fillEntityFromFields(entity.DBFields(), dataMap)
+}
+
+func fillEntityFromFields(fields DBFields, dataMap map[string]interface{}) error {
+	for k, v := range dataMap {
+		fieldFunc, ok := fields[k]
+		if !ok {
+			// todo throw an exception eventually. for now this exists for created_at and updadted_at which may not be there
+			fmt.Println("field retrieved from database which has no func")
+			continue
+		}
+		err := fieldFunc(v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func fillInstance(l multiRowLoader, dataMap map[string]interface{}) error {
 	instance := l.GetNewInstance()
 	entity, ok := instance.(dataEntity)
 	if ok {
-		return entity.FillFromMap(dataMap)
+		return fillEntityFromMap(entity, dataMap)
 	}
+
 	value, ok := instance.(reflect.Value)
 	if !ok {
 		panic("invalid item returned from loader.GetNewInstance()")
 	}
 
-	// fillFromMap reflection time
-	method := reflect.ValueOf(value.Interface()).MethodByName("FillFromMap")
+	// DBFields reflection time
+	method := reflect.ValueOf(value.Interface()).MethodByName("DBFields")
 	if !method.IsValid() {
 		panic("invalid")
 	}
-	res := method.Call([]reflect.Value{reflect.ValueOf(dataMap)})
+	res := method.Call([]reflect.Value{})
 	if len(res) != 1 {
-		panic("invalid number of results. FillFromMap should have returned 1 item")
+		panic("invalid number of results. DBFields should have returned 1 item")
 	}
-	err := res[0].Interface()
-	if err != nil {
-		return errors.New(fmt.Sprintf("%v", err))
+	val := res[0].Interface()
+	fields, ok := val.(DBFields)
+	if !ok {
+		panic("invalid value returned from DBFields")
 	}
-	return nil
+	return fillEntityFromFields(fields, dataMap)
 }
 
 func loadRowData(l singleRowLoader, q *dbQuery) error {
@@ -269,7 +291,7 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 		if err != nil {
 			return err
 		}
-		return l.GetEntity().FillFromMap(actual)
+		return fillEntityFromMap(l.GetEntity(), actual)
 	}
 
 	return q.StructScan(l)
@@ -408,7 +430,7 @@ type nodeExists struct {
 	Exists bool `db:"exists"`
 }
 
-func (n *nodeExists) FillFromMap(map[string]interface{}) error {
+func (n *nodeExists) DBFields() DBFields {
 	panic("should never be called since not cacheable")
 }
 
@@ -476,6 +498,7 @@ type loadMultipleNodesFromQueryNodeDependent struct {
 func (l *loadMultipleNodesFromQueryNodeDependent) GetSQLBuilder() (*sqlBuilder, error) {
 	// TODO don't use colsString for this long term. that's a bigger change to the framework
 	// and having that be generated and typed ala FillFromMap
+	// TODO!!!
 	if l.base == nil {
 		return nil, errors.New("validate wasn't called or don't have the right data")
 	}

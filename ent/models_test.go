@@ -157,82 +157,64 @@ type testUser struct {
 	Viewer       viewer.ViewerContext
 }
 
-func (user *testUser) FillFromMap(data map[string]interface{}) error {
-	for k, v := range data {
-		var err error
-		switch k {
-		case "id":
+func (user *testUser) DBFields() DBFields {
+	return DBFields{
+		"id": func(v interface{}) error {
+			var err error
 			user.ID, err = cast.ToUUIDString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "email_address":
+			return err
+		},
+		"email_address": func(v interface{}) error {
+			var err error
 			user.EmailAddress, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "first_name":
+			return err
+		},
+		"first_name": func(v interface{}) error {
+			var err error
 			user.FirstName, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "last_name":
+			return err
+		},
+		"last_name": func(v interface{}) error {
+			var err error
 			user.LastName, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		}
+			return err
+		},
 	}
-	return nil
 }
 
-func (event *testEvent) FillFromMap(data map[string]interface{}) error {
-	for k, v := range data {
-		var err error
-		switch k {
-		case "id":
+func (event *testEvent) DBFields() DBFields {
+	return DBFields{
+		"id": func(v interface{}) error {
+			var err error
 			event.ID, err = cast.ToUUIDString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "name":
+			return err
+		},
+		"name": func(v interface{}) error {
+			var err error
 			event.Name, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "user_id":
+			return err
+		},
+		"user_id": func(v interface{}) error {
+			var err error
 			event.UserID, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "location":
+			return err
+		},
+		"location": func(v interface{}) error {
+			var err error
 			event.Location, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "start_time":
+			return err
+		},
+		"start_time": func(v interface{}) error {
+			var err error
 			event.StartTime, err = cast.ToTime(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "end_time":
+			return err
+		},
+		"end_time": func(v interface{}) error {
+			var err error
 			event.EndTime, err = cast.ToTime(v)
-			if err != nil {
-				return err
-			}
-			break
-		}
+			return err
+		},
 	}
-	return nil
 }
 
 type testUserConfig struct{}

@@ -24,59 +24,44 @@ type Edge struct {
 	Data     string    `db:"data"` // nullable TODO nullable strings
 }
 
-// if not this, use reflection?
-func (edge *Edge) FillFromMap(data map[string]interface{}) error {
-	for k, v := range data {
-		var err error
-		switch k {
-		case "id1":
+func (edge *Edge) DBFields() DBFields {
+	return DBFields{
+		"id1": func(v interface{}) error {
+			var err error
 			edge.ID1, err = cast.ToUUIDString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "id1_type":
+			return err
+		},
+		"id1_type": func(v interface{}) error {
 			id1Type, err := cast.ToString(v)
-			if err != nil {
-				return err
-			}
 			edge.ID1Type = NodeType(id1Type)
-			break
-		case "edge_type":
+			return err
+		},
+		"edge_type": func(v interface{}) error {
 			id, err := cast.ToUUIDString(v)
-			if err != nil {
-				return err
-			}
 			edge.EdgeType = EdgeType(id)
-			break
-		case "id2":
+			return err
+		},
+		"id2": func(v interface{}) error {
+			var err error
 			edge.ID2, err = cast.ToUUIDString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "id2_type":
+			return err
+		},
+		"id2_type": func(v interface{}) error {
 			id2Type, err := cast.ToString(v)
-			if err != nil {
-				return err
-			}
 			edge.ID2Type = NodeType(id2Type)
-			break
-		case "time":
+			return err
+		},
+		"time": func(v interface{}) error {
+			var err error
 			edge.Time, err = cast.ToTime(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "data":
+			return err
+		},
+		"data": func(v interface{}) error {
+			var err error
 			edge.Data, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		}
+			return err
+		},
 	}
-	return nil
 }
 
 // EdgeResult stores the result of loading an Edge concurrently
@@ -101,50 +86,40 @@ type AssocEdgeData struct {
 	Timestamps
 }
 
-func (edgeData *AssocEdgeData) FillFromMap(data map[string]interface{}) error {
+func (edgeData *AssocEdgeData) DBFields() DBFields {
 	// can cache AssocEdgeData though :/
 	// however leaving as-is because probably better for when this comes from a different cache
-	for k, v := range data {
-		var err error
-		switch k {
-		case "edge_type":
+	return DBFields{
+		"edge_type": func(v interface{}) error {
+			var err error
 			edgeData.EdgeType, err = cast.ToUUIDString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "edge_name":
+			return err
+		},
+		"edge_name": func(v interface{}) error {
+			var err error
 			edgeData.EdgeName, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "symmetric_edge":
+			return err
+		},
+		"symmetric_edge": func(v interface{}) error {
+			var err error
 			edgeData.SymmetricEdge, err = cast.ToBool(v)
+			return err
+		},
+		"inverse_edge_type": func(v interface{}) error {
+			id, err := cast.ToUUIDString(v)
 			if err != nil {
 				return err
 			}
-			break
-		case "inverse_edge_type":
-			if v != nil {
-				//				spew.Dump("inverse_edge_type",v)
-				id, err := cast.ToUUIDString(v)
-				if err != nil {
-					return err
-				}
-				edgeData.InverseEdgeType = &sql.NullString{
-					Valid:  true,
-					String: id,
-				}
+			edgeData.InverseEdgeType = &sql.NullString{
+				Valid:  true,
+				String: id,
 			}
-			break
-		case "edge_table":
+			return nil
+		},
+		"edge_table": func(v interface{}) error {
+			var err error
 			edgeData.EdgeTable, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		}
+			return err
+		},
 	}
-	return nil
 }
