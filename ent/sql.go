@@ -9,6 +9,8 @@ import (
 
 // first simple version of sql builder
 type sqlBuilder struct {
+	entity     dataEntity
+	fields     DBFields
 	colsString string // not long term value of course
 	tableName  string
 	whereParts []interface{}
@@ -28,6 +30,29 @@ func (s *sqlBuilder) in(field string, args []interface{}) *sqlBuilder {
 func (s *sqlBuilder) orderBy(orderBy string) *sqlBuilder {
 	s.order = orderBy
 	return s
+}
+
+func (s *sqlBuilder) getColsString() string {
+	if s.colsString != "" {
+		return s.colsString
+	}
+
+	var fields DBFields
+	if s.fields != nil {
+		fields = s.fields
+	} else if s.entity != nil {
+		fields = s.entity.DBFields()
+	} else {
+		return "*" // todo good default???
+	}
+
+	columns := make([]string, len(fields))
+	idx := 0
+	for k := range fields {
+		columns[idx] = k
+		idx++
+	}
+	return strings.Join(columns, ", ")
 }
 
 func (s *sqlBuilder) getQuery() string {
@@ -57,7 +82,7 @@ func (s *sqlBuilder) getQuery() string {
 	formatSb.WriteString("SELECT {cols} FROM {table}")
 
 	parts := []string{
-		"{cols}", s.colsString,
+		"{cols}", s.getColsString(),
 		"{table}", s.tableName,
 	}
 	if whereClause != "" {

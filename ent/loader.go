@@ -250,10 +250,15 @@ func fillInstance(l multiRowLoader, dataMap map[string]interface{}) error {
 		panic("invalid item returned from loader.GetNewInstance()")
 	}
 
+	fields := getFieldsFromReflectValue(value)
+	return fillEntityFromFields(fields, dataMap)
+}
+
+func getFieldsFromReflectValue(value reflect.Value) DBFields {
 	// DBFields reflection time
 	method := reflect.ValueOf(value.Interface()).MethodByName("DBFields")
 	if !method.IsValid() {
-		panic("invalid")
+		panic("method DBFields doesn't exist on passed in item")
 	}
 	res := method.Call([]reflect.Value{})
 	if len(res) != 1 {
@@ -264,7 +269,7 @@ func fillInstance(l multiRowLoader, dataMap map[string]interface{}) error {
 	if !ok {
 		panic("invalid value returned from DBFields")
 	}
-	return fillEntityFromFields(fields, dataMap)
+	return fields
 }
 
 func loadRowData(l singleRowLoader, q *dbQuery) error {
@@ -320,12 +325,8 @@ func (l *loadNodeFromPartsLoader) GetEntity() dataEntity {
 }
 
 func (l *loadNodeFromPartsLoader) GetSQLBuilder() (*sqlBuilder, error) {
-	// ok, so now we need a way to map from struct to fields
-	insertData := getFieldsAndValues(l.entity, false)
-	colsString := insertData.getColumnsString()
-
 	return &sqlBuilder{
-		colsString: colsString,
+		entity:     l.entity,
 		tableName:  l.config.GetTableName(),
 		whereParts: l.parts,
 	}, nil
@@ -338,16 +339,16 @@ type loadNodeFromPKey struct {
 }
 
 func (l *loadNodeFromPKey) GetSQLBuilder() (*sqlBuilder, error) {
-	// ok, so now we need a way to map from struct to fields
-	// TODO while this is manual, cache this
-	insertData := getFieldsAndValues(l.entity, false)
-	colsString := insertData.getColumnsString()
-
+	pKey := "id"
+	entityWithPkey, ok := l.entity.(dataEntityWithDiffPKey)
+	if ok {
+		pKey = entityWithPkey.GetPrimaryKey()
+	}
 	return &sqlBuilder{
-		colsString: colsString,
-		tableName:  l.tableName,
+		entity:    l.entity,
+		tableName: l.tableName,
 		whereParts: []interface{}{
-			insertData.pkeyName,
+			pKey,
 			l.id,
 		},
 	}, nil
@@ -496,9 +497,6 @@ type loadMultipleNodesFromQueryNodeDependent struct {
 }
 
 func (l *loadMultipleNodesFromQueryNodeDependent) GetSQLBuilder() (*sqlBuilder, error) {
-	// TODO don't use colsString for this long term. that's a bigger change to the framework
-	// and having that be generated and typed ala FillFromMap
-	// TODO!!!
 	if l.base == nil {
 		return nil, errors.New("validate wasn't called or don't have the right data")
 	}
@@ -506,10 +504,9 @@ func (l *loadMultipleNodesFromQueryNodeDependent) GetSQLBuilder() (*sqlBuilder, 
 		return nil, errors.New("sqlbuilder required")
 	}
 	value := reflect.New(l.base)
-	insertData := getFieldsAndValuesOfStruct(value, false)
-
-	// pass colsString to determine which fields to query
-	l.sqlBuilder.colsString = insertData.getColumnsString()
+	fields := getFieldsFromReflectValue(value)
+	// pass fields to determine which columns to query
+	l.sqlBuilder.fields = fields
 	return l.sqlBuilder, nil
 }
 

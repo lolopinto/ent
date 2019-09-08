@@ -258,6 +258,36 @@ type testContact struct {
 	Viewer       viewer.ViewerContext
 }
 
+func (contact *testContact) DBFields() DBFields {
+	return DBFields{
+		"id": func(v interface{}) error {
+			var err error
+			contact.ID, err = cast.ToUUIDString(v)
+			return err
+		},
+		"email_address": func(v interface{}) error {
+			var err error
+			contact.EmailAddress, err = cast.ToString(v)
+			return err
+		},
+		"first_name": func(v interface{}) error {
+			var err error
+			contact.FirstName, err = cast.ToString(v)
+			return err
+		},
+		"last_name": func(v interface{}) error {
+			var err error
+			contact.LastName, err = cast.ToString(v)
+			return err
+		},
+		"user_id": func(v interface{}) error {
+			var err error
+			contact.UserID, err = cast.ToString(v)
+			return err
+		},
+	}
+}
+
 type testContactConfig struct{}
 
 func (config *testContactConfig) GetTableName() string {

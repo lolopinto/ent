@@ -123,3 +123,7 @@ func (edgeData *AssocEdgeData) DBFields() DBFields {
 		},
 	}
 }
+
+func (edgeData *AssocEdgeData) GetPrimaryKey() string {
+	return "edge_type"
+}
