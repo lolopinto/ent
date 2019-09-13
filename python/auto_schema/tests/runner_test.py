@@ -7,6 +7,8 @@ from sqlalchemy.sql.schema import DefaultClause
 from sqlalchemy.sql.elements import TextClause
 
 from . import conftest
+from auto_schema import edge_data
+
 
 def get_new_metadata_for_runner(r):
   #metadata = r.get_metadata()
@@ -46,6 +48,34 @@ def assert_num_tables(r, expected_count, tables=None):
 def assert_no_changes_made(r):
   assert_num_files(r, 0)
   assert_num_tables(r, 0)
+
+
+def validate_edges_from_metadata(metadata, r):
+  edges_from_metadata = metadata.info.setdefault("edges", {})
+
+  # denestify the schema
+  if len(edges_from_metadata) != 0:
+    edges_from_metadata = edges_from_metadata['public']
+
+  db_edges = {}
+  for row in r.get_connection().execute("SELECT * FROM assoc_edge_config"):
+    row_dict = dict(row)
+    db_edges[row_dict['edge_name']] = row_dict
+
+  # same number of edges
+  assert len(db_edges) == len(edges_from_metadata)
+
+  for k, edge in edges_from_metadata.items():
+    db_edge = db_edges.get(k)
+
+    assert db_edge is not None
+
+    assert db_edge['edge_name'] == edge['edge_name']
+    assert db_edge['edge_type'] == edge['edge_type']
+    assert db_edge['edge_table'] == edge['edge_table']
+    assert db_edge.get('inverse_edge_type') == edge.get('inverse_edge_type')
+    # 0 == False??
+    assert db_edge.get('symmetric_edge') == edge.get('symmetric_edge')
 
 
 # TODO audit that this is being called...
@@ -165,12 +195,14 @@ def validate_column_type(schema_column, db_column):
   
     assert str(schema_column.type) == str(db_column.type) 
 
+
 def sort_fn(item): 
   # if name is null, use type of object to sort
   if item.name is None:
     return type(item).__name__ + id(item)
   # otherwise, use name + class name
   return type(item).__name__ + item.name
+
 
 def validate_indexes(schema_table, db_table):
   # sort indexes so that the order for both are the same
@@ -230,6 +262,39 @@ def validate_foreign_key(schema_column, db_column):
     assert db_fkey.match == schema_fkey.match
     assert db_fkey.info == schema_fkey.info
     assert str(db_fkey.parent) == str(schema_fkey.parent)
+
+
+def setup_assoc_edge_config(new_test_runner):
+  # no revision, just do the changes to setup base case 
+  r = new_test_runner(conftest.metadata_assoc_edge_config())
+  assert len(r.compute_changes()) == 1
+  r.run()
+  assert_num_tables(r, 2, ['alembic_version', 'assoc_edge_config'])
+  assert_num_files(r, 1)
+  #r.get_metadata().reflect(bind=r.get_connection())
+
+  return r
+
+
+def run_edge_metadata_script(new_test_runner, metadata, message, num_files = 2, prev_runner = None, num_changes = 1):
+  # TODO combine with recreate_with_new_metadata?
+  if prev_runner is None:
+    prev_runner = setup_assoc_edge_config(new_test_runner)
+
+  metadata.bind = prev_runner.get_connection()
+  metadata.reflect()
+
+  r = new_test_runner(metadata, prev_runner)
+  assert len(r.compute_changes()) == num_changes
+
+  assert r.revision_message() == message
+
+  r.run()
+  # new file added for edge
+  assert_num_files(r, num_files)
+  validate_edges_from_metadata(metadata, r)
+
+  return r
 
 
 class BaseTestRunner(object):
@@ -421,6 +486,98 @@ class BaseTestRunner(object):
 
     validate_metadata_after_change(r, metadata_with_two_tables)
 
+
+  @pytest.mark.usefixtures("metadata_with_no_edges")
+  def test_no_new_edges(self, new_test_runner, metadata_with_no_edges):
+    run_edge_metadata_script(
+      new_test_runner,
+      metadata_with_no_edges,
+      message = '',
+      num_files = 1, # just the first file
+      num_changes = 0
+    )
+
+
+  @pytest.mark.usefixtures("metadata_with_one_edge")
+  def test_one_new_edge(self, new_test_runner, metadata_with_one_edge):
+    run_edge_metadata_script(
+      new_test_runner,
+      metadata_with_one_edge,
+      "add edge UserToFollowersEdge"
+    )
+
+
+  @pytest.mark.usefixtures("metadata_with_symmetric_edge")
+  def test_symmetric_edge(self, new_test_runner, metadata_with_symmetric_edge):
+    run_edge_metadata_script(
+      new_test_runner,
+      metadata_with_symmetric_edge,
+      "add edge UserToFriendsEdge"
+    )
+
+
+  @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_no_edges")
+  def test_new_edge_then_remove(self, new_test_runner, metadata_with_one_edge, metadata_with_no_edges):
+    r = run_edge_metadata_script(
+      new_test_runner,
+      metadata_with_one_edge,
+      "add edge UserToFollowersEdge"
+    )
+
+    run_edge_metadata_script(
+      new_test_runner,
+      metadata_with_no_edges,
+      "remove edge UserToFollowersEdge",
+      num_files = 3,
+      prev_runner = r
+    )
+
+
+  @pytest.mark.usefixtures("metadata_with_inverse_edge")
+  def test_inverse_edge_added_same_time(self, new_test_runner, metadata_with_inverse_edge, metadata_with_no_edges):
+    r = run_edge_metadata_script(
+      new_test_runner,
+      metadata_with_inverse_edge,
+      "add edges UserToFolloweesEdge, UserToFollowersEdge", 
+    )
+
+    run_edge_metadata_script(
+      new_test_runner,
+      metadata_with_no_edges,
+      "remove edges UserToFolloweesEdge, UserToFollowersEdge", 
+      prev_runner = r,
+      num_files = 3,
+    )
+
+  @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_inverse_edge", "metadata_with_no_edges")
+  def test_inverse_edge_added_after(self, new_test_runner, metadata_with_one_edge, metadata_with_inverse_edge, metadata_with_no_edges):
+    r = run_edge_metadata_script(
+      new_test_runner,
+      metadata_with_one_edge,
+      "add edge UserToFollowersEdge"
+    )
+
+    # TODO need to test up/down for edges
+    # TODO need to change the rendered to only show the minimum
+    # e.g. op.remove_edge(edge_type)
+
+    r2 = run_edge_metadata_script(
+      new_test_runner,
+      metadata_with_inverse_edge,
+      "add edge UserToFolloweesEdge\nmodify edge UserToFollowersEdge", 
+      prev_runner = r,
+      num_files = 3,
+      num_changes = 2,
+    )
+
+    run_edge_metadata_script(
+      new_test_runner,
+      metadata_with_no_edges,
+      "remove edges UserToFolloweesEdge, UserToFollowersEdge", 
+      prev_runner = r2,
+      num_files = 4,
+      num_changes = 1,
+    )
     
 
 class TestPostgresRunner(BaseTestRunner):
