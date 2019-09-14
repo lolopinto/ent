@@ -10,7 +10,7 @@ require (
 	github.com/iancoleman/strcase v0.0.0-20190422225806-e506e3ef7365
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/joho/godotenv v1.3.0
-	github.com/khaiql/dbcleaner v2.3.0+incompatible // indirect
+	github.com/khaiql/dbcleaner v2.3.0+incompatible
 	github.com/lib/pq v1.0.0
 	github.com/ogier/pflag v0.0.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect

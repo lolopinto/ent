@@ -3,7 +3,6 @@ package schema
 import (
 	"errors"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
@@ -15,24 +14,29 @@ import (
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
 	Nodes    NodeMapInfo
+	edges    map[string]*ent.AssocEdgeData
 	newEdges []*ent.AssocEdgeData
 }
 
 // Given a schema file parser, Parse parses the schema to return the completely
 // parsed schema
 func Parse(p schemaparser.Parser, specificConfigs ...string) *Schema {
-	s := &Schema{}
-	s.init()
-	edgeData := s.Nodes.parseFiles(p, specificConfigs...)
-	s.newEdges = edgeData.newEdges
-	spew.Dump("new edges", len(s.newEdges))
-	return s
+	return parse(func(s *Schema) *assocEdgeData {
+		return s.Nodes.parseFiles(p, specificConfigs...)
+	})
 }
 
 func ParsePackage(pkg *packages.Package, specificConfigs ...string) *Schema {
+	return parse(func(s *Schema) *assocEdgeData {
+		return s.Nodes.parsePackage(pkg, specificConfigs...)
+	})
+}
+
+func parse(parseFn func(*Schema) *assocEdgeData) *Schema {
 	s := &Schema{}
 	s.init()
-	edgeData := s.Nodes.parsePackage(pkg, specificConfigs...)
+	edgeData := parseFn(s)
+	s.edges = edgeData.edgeMap
 	s.newEdges = edgeData.newEdges
 	return s
 }
@@ -74,6 +78,12 @@ func (s *Schema) GetFieldByName(entConfig, fieldName string) (*field.Field, erro
 	return ret, nil
 }
 
+// GetNewEdges only exists for testing purposes to differentiate between existing and new edges
 func (s *Schema) GetNewEdges() []*ent.AssocEdgeData {
 	return s.newEdges
+}
+
+// GetEdges returns all the edges in the schema
+func (s *Schema) GetEdges() map[string]*ent.AssocEdgeData {
+	return s.edges
 }
