@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/edge"
 
 	"github.com/lolopinto/ent/data"
@@ -337,7 +338,49 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 			SchemaLines: lines,
 		})
 	}
+
+	for _, edge := range s.schema.GetEdges() {
+		ret.Edges = append(ret.Edges, dbEdgeInfo{
+			EdgeName: edge.EdgeName,
+			EdgeLine: s.getEdgeLine(edge),
+		})
+	}
+
+	// sort edges
+	sort.Slice(ret.Edges, func(i, j int) bool {
+		return ret.Edges[i].EdgeName < ret.Edges[j].EdgeName
+	})
 	return ret
+}
+
+func (s *dbSchema) getEdgeLine(edge *ent.AssocEdgeData) string {
+	kvPairs := []string{
+		s.getEdgeKVPair("edge_name", strconv.Quote(edge.EdgeName)),
+		s.getEdgeKVPair("edge_type", strconv.Quote(edge.EdgeType)),
+		s.getEdgeKVPair("edge_table", strconv.Quote(edge.EdgeTable)),
+		s.getEdgeKVPair("symmetric_edge", s.getSymmetricEdgeValInEdge(edge)),
+		s.getEdgeKVPair("inverse_edge_type", s.getInverseEdgeValInEdge(edge)),
+	}
+
+	return fmt.Sprintf("{%s}", strings.Join(kvPairs, ", "))
+}
+
+func (s *dbSchema) getEdgeKVPair(key, val string) string {
+	return strconv.Quote(key) + ":" + val
+}
+
+func (s *dbSchema) getSymmetricEdgeValInEdge(edge *ent.AssocEdgeData) string {
+	if edge.SymmetricEdge {
+		return "True"
+	}
+	return "False"
+}
+
+func (s *dbSchema) getInverseEdgeValInEdge(edge *ent.AssocEdgeData) string {
+	if edge.InverseEdgeType == nil || !edge.InverseEdgeType.Valid {
+		return "None"
+	}
+	return strconv.Quote(edge.InverseEdgeType.String)
 }
 
 func (s *dbSchema) addEdgeConfigTable() {
@@ -708,7 +751,13 @@ type dbSchemaTableInfo struct {
 	SchemaLines []string // list of lines that will be generated for each table e.g. sa.Column(...), sa.PrimaryKeyConstraint(...) etc
 }
 
+type dbEdgeInfo struct {
+	EdgeName string
+	EdgeLine string // generated line for edge (python dict)
+}
+
 // wrapper object to represent the list of tables that will be passed to a schema template file
 type dbSchemaTemplate struct {
 	Tables []dbSchemaTableInfo
+	Edges  []dbEdgeInfo
 }

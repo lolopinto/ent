@@ -15,7 +15,19 @@ sa.Table({{- .TableName}}, metadata,
     {{- end }}
 )
   {{ end -}}
-{{end}}
+{{- end}}
+
+edges = {
+  'public': {
+{{- with .Edges -}}
+  {{- range .}}
+    '{{.EdgeName}}': {{.EdgeLine}},
+  {{- end}}
+{{- end}}
+  }
+}
+
+metadata.info.setdefault("edges", edges)
 
 def get_metadata():
   return metadata
