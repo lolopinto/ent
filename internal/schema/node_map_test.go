@@ -763,6 +763,7 @@ func (suite *edgeTestSuite) TearDownTest() {
 	Cleaner.Clean("assoc_edge_config")
 }
 
+// TODO use github.com/lolopinto/ent/cmd/gent/configs.AssocEdgeConfig
 type assocEdgeConfig struct{}
 
 func (config *assocEdgeConfig) GetTableName() string {

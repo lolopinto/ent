@@ -15,7 +15,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
-	"github.com/lolopinto/ent/cmd/gent/configs"
 	"github.com/lolopinto/ent/data"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/lolopinto/ent/internal/util"
@@ -473,78 +472,6 @@ func buildOperations(info *EditedNodeInfo) []dataOperation {
 	return ops
 }
 
-func createNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) error {
-	if entity == nil {
-		// same as LoadNode in terms of handling this better
-		return errors.New("nil pointer passed to CreateNode")
-	}
-	insertData := getFieldsAndValues(entity, true)
-	colsString := insertData.getColumnsStringForInsert()
-	values, valsString := insertData.getValuesDataForInsert()
-
-	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s)", entConfig.GetTableName(), colsString, valsString)
-
-	return performWrite(computedQuery, values, tx, nil)
-}
-
-// CreateNode creates a node
-func CreateNode(entity interface{}, entConfig Config) error {
-	return createNodeInTransaction(entity, entConfig, nil)
-}
-
-// CreateNodes creates multiple nodes
-func CreateNodes(nodes interface{}, entConfig Config) error {
-	_, direct, err := validateSliceOfNodes(nodes)
-	if err != nil {
-		return err
-	}
-
-	_, ok := entConfig.(*configs.AssocEdgeConfig)
-
-	// This is not necessarily the best way to do this but this re-uses all the existing
-	// abstractions and wraps everything in a transcation
-	// TODO: maybe use the multirow VALUES syntax at https://www.postgresql.org/docs/8.2/sql-insert.html in the future.
-	var operations []dataOperation
-	var updateOps []dataOperation
-
-	for i := 0; i < direct.Len(); i++ {
-		entity := direct.Index(i).Interface()
-
-		if ok {
-			assocEdge := entity.(*AssocEdgeData)
-			if assocEdge.InverseEdgeType != nil && assocEdge.InverseEdgeType.Valid {
-
-				updateOps = append(updateOps, &legacyNodeOperation{
-					entity: &AssocEdgeData{
-						EdgeType: assocEdge.EdgeType,
-						InverseEdgeType: &sql.NullString{
-							Valid:  true,
-							String: assocEdge.InverseEdgeType.String,
-						},
-						SymmetricEdge: assocEdge.SymmetricEdge,
-						EdgeName:      assocEdge.EdgeName,
-						EdgeTable:     assocEdge.EdgeTable,
-					},
-					config:    entConfig,
-					operation: updateOperation,
-				})
-
-				// remove this for now. we'll depend on update in same transaction
-				assocEdge.InverseEdgeType = nil
-			}
-		}
-
-		operations = append(operations, &legacyNodeOperation{
-			entity:    entity,
-			config:    entConfig,
-			operation: insertOperation,
-		})
-	}
-	// append all update ops to the end of the operations
-	operations = append(operations, updateOps...)
-	return performAllOperations(operations)
-}
-
 func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
 	var stmt *sqlx.Stmt
 	var err error
@@ -610,36 +537,6 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 	}
 	return nil
 }
-
-func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) error {
-	if entity == nil {
-		// same as LoadNode in terms of handling this better
-		return errors.New("nil pointer passed to UpdateNode")
-	}
-
-	insertData := getFieldsAndValues(entity, false)
-
-	values, valsString := insertData.getValuesDataForUpdate()
-
-	id := findID(entity, insertData.pkeyFieldName)
-	deleteKey(getKeyForNode(id, entConfig.GetTableName()))
-
-	computedQuery := fmt.Sprintf(
-		"UPDATE %s SET %s WHERE %s = '%s'",
-		entConfig.GetTableName(),
-		valsString,
-		insertData.pkeyName,
-		id,
-	)
-	fmt.Println(computedQuery)
-	return performWrite(computedQuery, values, tx, nil)
-}
-
-// UpdateNode updates a node
-// TODO should prevent updating relational fields maybe?
-// func UpdateNode(entity interface{}, entConfig Config) error {
-// 	return updateNodeInTransaction(entity, entConfig, nil)
-// }
 
 // this is a hack because i'm lazy and don't want to go update getFieldsAndValuesOfStruct()
 // to do the right thing for now. now that I know what's going on here, can update everything

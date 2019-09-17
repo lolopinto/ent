@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/iancoleman/strcase"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
@@ -21,6 +22,7 @@ import (
 
 	"github.com/lolopinto/ent/config"
 	"github.com/lolopinto/ent/ent/cast"
+
 	"github.com/lolopinto/ent/ent/viewer"
 	//	"github.com/davecgh/go-spew/spew"
 	// "github.com/lolopinto/ent/ent/testdata/models"
@@ -37,9 +39,6 @@ type user struct {
 type assocEdgeWithPkey struct {
 	EdgeType string `db:"edge_type" pkey:"true"` // this is a pkey telling getFieldsAndValuesOfStruct() to not get the id key or try and set it
 	EdgeName string `db:"edge_name"`
-	// we still add magical created_at and updated_at fields here though because we're cheating and it works for what we want.
-	// TODO: change getFieldsAndValuesOfStruct() to go down the rabbit hole and do the right thing by checking the fields we care
-	// about instead of this
 }
 
 func TestGetFieldsAndValuesOfNodeStruct(t *testing.T) {
@@ -148,8 +147,28 @@ func (suite *modelsTestSuite) TearDownTest() {
 	Cleaner.Clean("events")
 }
 
+type simpleObj struct{}
+
+func (obj *simpleObj) GetType() NodeType {
+	panic("whaa")
+}
+
+func (obj *simpleObj) GetPrivacyPolicy() PrivacyPolicy {
+	return simplePrivacyPolicy{}
+}
+
+type simplePrivacyPolicy struct{}
+
+func (policy simplePrivacyPolicy) Rules() []PrivacyPolicyRule {
+	return []PrivacyPolicyRule{
+		// it actually doesn't require any rules for now so this is fine.
+		// also, we only need this for interface purposes
+	}
+}
+
 // manual for now until I figure out code generated and all that jazz
 type testUser struct {
+	simpleObj
 	Node
 	EmailAddress string `db:"email_address"`
 	FirstName    string `db:"first_name"`
@@ -180,6 +199,33 @@ func (user *testUser) DBFields() DBFields {
 			return err
 		},
 	}
+}
+
+type testUserConfig struct{}
+
+const TestUserToEventsEdge EdgeType = "41bddf81-0c26-432c-9133-2f093af2c07c"
+
+func (config *testUserConfig) GetTableName() string {
+	return "users"
+}
+
+func (config *testUserConfig) GetEdges() EdgeMap {
+	return EdgeMap{
+		"Events": &AssociationEdge{
+			EntConfig: testEventConfig{},
+		},
+	}
+}
+
+type testEvent struct {
+	simpleObj
+	Node
+	Name      string    `db:"name"`
+	UserID    string    `db:"user_id"`
+	StartTime time.Time `db:"start_time"`
+	EndTime   time.Time `db:"end_time"`
+	Location  string    `db:"location"`
+	Viewer    viewer.ViewerContext
 }
 
 func (event *testEvent) DBFields() DBFields {
@@ -217,32 +263,6 @@ func (event *testEvent) DBFields() DBFields {
 	}
 }
 
-type testUserConfig struct{}
-
-const TestUserToEventsEdge EdgeType = "41bddf81-0c26-432c-9133-2f093af2c07c"
-
-func (config *testUserConfig) GetTableName() string {
-	return "users"
-}
-
-func (config *testUserConfig) GetEdges() EdgeMap {
-	return EdgeMap{
-		"Events": &AssociationEdge{
-			EntConfig: testEventConfig{},
-		},
-	}
-}
-
-type testEvent struct {
-	Node
-	Name      string    `db:"name"`
-	UserID    string    `db:"user_id"`
-	StartTime time.Time `db:"start_time"`
-	EndTime   time.Time `db:"end_time"`
-	Location  string    `db:"location"`
-	Viewer    viewer.ViewerContext
-}
-
 type testEventConfig struct{}
 
 func (config *testEventConfig) GetTableName() string {
@@ -250,6 +270,7 @@ func (config *testEventConfig) GetTableName() string {
 }
 
 type testContact struct {
+	simpleObj
 	Node
 	EmailAddress string `db:"email_address"`
 	FirstName    string `db:"first_name"`
@@ -409,28 +430,46 @@ func (suite *modelsTestSuite) TestGetEdgeInfo() {
 }
 
 func createTestUser(suite *modelsTestSuite) *testUser {
-	user := testUser{
-		EmailAddress: "test@email.com",
-		FirstName:    "Ola",
-		LastName:     "Okelola",
+	var user testUser
+
+	fields := map[string]interface{}{
+		"EmailAddress": "test@email.com",
+		"FirstName":    "Ola",
+		"LastName":     "Okelola",
 	}
-	err := CreateNode(&user, &testUserConfig{})
+
+	err := CreateNodeFromActionMap(
+		&EditedNodeInfo{
+			Entity:         &user,
+			EntConfig:      &testUserConfig{},
+			Fields:         fields,
+			EditableFields: getFieldMapFromFields(fields),
+		},
+	)
 	assert.Nil(suite.T(), err)
 	return &user
 }
 
 func createTestEvent(suite *modelsTestSuite, user *testUser) *testEvent {
-	event := testEvent{
-		Name:      "Fun event",
-		UserID:    user.ID,
-		StartTime: time.Now(),
-		EndTime:   time.Now().Add(time.Hour * 24 * 3),
-		Location:  "fun location",
-	}
+	var event testEvent
 
+	fields := map[string]interface{}{
+		"Name":      "Fun event",
+		"UserID":    user.ID,
+		"StartTime": time.Now(),
+		"EndTime":   time.Now().Add(time.Hour * 24 * 3),
+		"Location":  "fun location",
+	}
+	err := CreateNodeFromActionMap(
+		&EditedNodeInfo{
+			Entity:         &event,
+			EntConfig:      &testEventConfig{},
+			Fields:         fields,
+			EditableFields: getFieldMapFromFields(fields),
+		},
+	)
 	// manual testing until we come up with better way of doing this
 	// when i fix the bugs
-	err := CreateNode(&event, &testEventConfig{})
 	assert.Nil(suite.T(), err)
 	err = addEdgeInTransactionRaw(
 		TestUserToEventsEdge,
@@ -457,15 +496,35 @@ func generateRandCode(n int) string {
 }
 
 func createTestContact(suite *modelsTestSuite, user *testUser) *testContact {
-	contact := testContact{
-		EmailAddress: fmt.Sprintf("test-contact-%s@email.com", generateRandCode(9)),
-		UserID:       user.ID,
-		FirstName:    "first-name",
-		LastName:     "last-name",
+	var contact testContact
+
+	fields := map[string]interface{}{
+		"EmailAddress": fmt.Sprintf("test-contact-%s@email.com", generateRandCode(9)),
+		"UserID":       user.ID,
+		"FirstName":    "first-name",
+		"LastName":     "last-name",
 	}
-	err := CreateNode(&contact, &testContactConfig{})
+	err := CreateNodeFromActionMap(
+		&EditedNodeInfo{
+			Entity:         &contact,
+			EntConfig:      &testContactConfig{},
+			Fields:         fields,
+			EditableFields: getFieldMapFromFields(fields),
+		},
+	)
 	assert.Nil(suite.T(), err)
 	return &contact
+}
+
+func getFieldMapFromFields(fields map[string]interface{}) ActionFieldMap {
+	ret := make(ActionFieldMap)
+	for k := range fields {
+		ret[k] = &MutatingFieldInfo{
+			DB:       strcase.ToSnake(k),
+			Required: true,
+		}
+	}
+	return ret
 }
 
 func (suite *modelsTestSuite) TestLoadEdgesByType() {
