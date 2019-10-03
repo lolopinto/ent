@@ -159,19 +159,7 @@ def metadata_with_multi_column_constraint():
 
 @pytest.fixture
 def metadata_with_foreign_key_to_same_table():
-  metadata = sa.MetaData()
-  sa.Table('assoc_edge_config', metadata,
-    sa.Column('edge_type', sa.Integer(), nullable=False),
-    sa.Column('edge_name', sa.Text(), nullable=False),
-    sa.Column('symmetric', sa.Boolean(), nullable=False, server_default='false'), # use false instead of FALSE to avoid the need for craziness here
-    sa.Column('inverse_edge_type', sa.Integer(), nullable=True),
-    sa.Column('edge_table', sa.Text(), nullable=False),
-    sa.Column('created_at', sa.TIMESTAMP(), nullable=False),
-    sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
-    sa.PrimaryKeyConstraint("edge_type", name="assoc_edge_config_edge_type_pkey"),
-    sa.ForeignKeyConstraint(['inverse_edge_type'], ['assoc_edge_config.edge_type'], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
-  )
-  return metadata
+  return metadata_assoc_edge_config()
 
 
 @pytest.fixture
@@ -186,6 +174,86 @@ def metadata_with_two_tables(metadata_with_table):
 def metadata_with_foreign_key(metadata_with_table):
   contacts_table(metadata_with_table)
   return metadata_with_table
+
+
+def metadata_assoc_edge_config():
+  metadata = sa.MetaData()
+  assoc_edge_config_table(metadata)
+  return metadata
+
+
+@pytest.fixture
+def metadata_with_no_edges():
+  metadata = metadata_assoc_edge_config()
+  metadata.info.setdefault("edges", {})
+  return metadata
+
+
+@pytest.fixture
+def metadata_with_one_edge():
+  metadata = metadata_assoc_edge_config()
+  # 1 edge, no inverse
+  edges = {
+    'public': {
+      'UserToFollowersEdge': user_to_followers_edge(),
+    }
+  }
+
+  metadata.info.setdefault("edges", edges)
+  return metadata
+
+@pytest.fixture
+def metadata_with_symmetric_edge():
+  metadata = metadata_assoc_edge_config()
+  # 1 edge, no inverse
+  edges = {
+    'public': {
+      'UserToFriendsEdge': {
+        'edge_name': 'UserToFriendsEdge',
+        'edge_type': 10,
+        'symmetric_edge': True,
+        'edge_table': 'user_friends_edge',
+      }
+    }
+  }
+
+  metadata.info.setdefault("edges", edges)
+  return metadata
+
+
+@pytest.fixture
+def metadata_with_inverse_edge():
+  metadata = metadata_assoc_edge_config()
+  # 2 edges, inverse of each other
+  edges = {
+    'public': {
+      'UserToFollowersEdge': user_to_followers_edge(inverse_edge_type=2),
+      'UserToFolloweesEdge': users_to_followees_edge(inverse_edge_type=1),
+    }
+  }
+
+  metadata.info.setdefault("edges", edges)
+  return metadata
+  
+
+def user_to_followers_edge(edge_type = 1, inverse_edge_type=None):
+  return {
+    'edge_name': 'UserToFollowersEdge',
+    'edge_type': edge_type,
+    'edge_table': 'user_followers_edge',
+    'symmetric_edge': False,
+    'inverse_edge_type': inverse_edge_type,
+  }
+
+
+def users_to_followees_edge(edge_type = 2, inverse_edge_type=None):
+  return {
+    'edge_name': 'UserToFolloweesEdge',
+    'edge_type': edge_type,
+    'edge_table': 'user_followers_edge',
+    'symmetric_edge': False,
+    'inverse_edge_type': inverse_edge_type,
+  }
 
 
 def messages_table(metadata):
@@ -205,6 +273,26 @@ def contacts_table(metadata):
     sa.PrimaryKeyConstraint("id", name="contacts_id_pkey"),
     sa.ForeignKeyConstraint(['account_id'], ['accounts.id'], name="contacts_account_id_fkey", ondelete="CASCADE"),
   )
+
+
+# this is the structure that's automatically created by ent
+# TODO: should test this so that if the generation changes, we catch this
+# need an integration test of some sort
+# this doesn't quite match because i'm doing integer instead of uuid
+# todo: one postgres test with uuid
+def assoc_edge_config_table(metadata):
+  sa.Table('assoc_edge_config', metadata,
+    sa.Column('edge_type', sa.Integer(), nullable=False),
+    sa.Column('edge_name', sa.Text(), nullable=False),
+    sa.Column('symmetric_edge', sa.Boolean(), nullable=False, server_default='false'), # use false instead of FALSE to avoid the need for craziness here
+    sa.Column('inverse_edge_type', sa.Integer(), nullable=True),
+    sa.Column('edge_table', sa.Text(), nullable=False),
+    sa.Column('created_at', sa.TIMESTAMP(), nullable=False),
+    sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
+    sa.PrimaryKeyConstraint("edge_type", name="assoc_edge_config_edge_type_pkey"),
+    sa.ForeignKeyConstraint(['inverse_edge_type'], ['assoc_edge_config.edge_type'], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
+  )
+
 
 def _add_constraint_to_metadata(metadata, constraint, table_name="accounts"):
   tables = [t for t in metadata.sorted_tables if t.name == table_name]

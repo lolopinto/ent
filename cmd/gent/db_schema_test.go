@@ -7,8 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIDColumn(t *testing.T) {
@@ -80,10 +82,21 @@ func TestTablesFromSchema(t *testing.T) {
 
 	// accounts
 	// todos
-	// edge table
 	// edge_config
-	if len(schema.Tables) != 4 {
+	// account_friends_edge
+	// account_friend_requests_edge
+	// account_todos_assoc_edge
+	if len(schema.Tables) != 6 {
 		t.Errorf("invalid number of tables in schema. got %d, expected 4", len(schema.Tables))
+	}
+}
+
+func TestEdgesFromSchema(t *testing.T) {
+	schema := getTestSchema(t)
+	template := schema.getSchemaForTemplate()
+
+	if len(template.Edges) != 4 {
+		t.Errorf("incorrect number of edges generated")
 	}
 }
 
@@ -437,6 +450,52 @@ func TestPrimaryKeyConstraintInEdgeTable(t *testing.T) {
 	)
 }
 
+func TestSimpleEdge(t *testing.T) {
+	edge := getEdgeByName("AccountToTodosAssocEdge", t)
+	expectedParts := map[string]string{
+		"edge_name":         strconv.Quote("AccountToTodosAssocEdge"),
+		"edge_type":         "1", // it checks that real uuid instead
+		"edge_table":        strconv.Quote("account_todos_assoc_edges"),
+		"symmetric_edge":    "False",
+		"inverse_edge_type": "None",
+	}
+	testEdgeInSchema(t, edge, expectedParts)
+}
+
+func TestSymmetricEdge(t *testing.T) {
+	edge := getEdgeByName("AccountToFriendsEdge", t)
+	expectedParts := map[string]string{
+		"edge_name":         strconv.Quote("AccountToFriendsEdge"),
+		"edge_type":         "1", // it checks that real uuid instead
+		"edge_table":        strconv.Quote("account_friends_edges"),
+		"symmetric_edge":    "True",
+		"inverse_edge_type": "None",
+	}
+	testEdgeInSchema(t, edge, expectedParts)
+}
+
+func TestInverseEdge(t *testing.T) {
+	edge := getEdgeByName("AccountToFriendRequestsEdge", t)
+	expectedParts := map[string]string{
+		"edge_name":         strconv.Quote("AccountToFriendRequestsEdge"),
+		"edge_type":         "1", // it checks that real uuid instead
+		"edge_table":        strconv.Quote("account_friend_requests_edges"),
+		"symmetric_edge":    "False",
+		"inverse_edge_type": "1",
+	}
+	testEdgeInSchema(t, edge, expectedParts)
+
+	edge2 := getEdgeByName("AccountToFriendRequestsReceivedEdge", t)
+	expectedParts2 := map[string]string{
+		"edge_name":         strconv.Quote("AccountToFriendRequestsReceivedEdge"),
+		"edge_type":         "1", // it checks that real uuid instead
+		"edge_table":        strconv.Quote("account_friend_requests_edges"),
+		"symmetric_edge":    "False",
+		"inverse_edge_type": "1",
+	}
+	testEdgeInSchema(t, edge2, expectedParts2)
+}
+
 func testColumn(t *testing.T, col *dbColumn, colName string, expectedFieldName, expectedDBColName string, colStringParts []string) {
 	if col.EntFieldName != expectedFieldName {
 		t.Errorf("EntFieldName for the %s column was not as expected. expected %s, got %s instead", colName, expectedFieldName, col.EntFieldName)
@@ -455,6 +514,38 @@ func testColumn(t *testing.T, col *dbColumn, colName string, expectedFieldName, 
 func testConstraint(t *testing.T, constraint dbConstraint, expectedConstraintString string) {
 	if constraint.getConstraintString() != expectedConstraintString {
 		t.Errorf("getConstraintString() for constraint was not as expected. expected %s, got %s instead", expectedConstraintString, constraint.getConstraintString())
+	}
+}
+
+func testEdgeInSchema(t *testing.T, edge *dbEdgeInfo, expectedParts map[string]string) {
+	parts := strings.Split(edge.EdgeLine, ",")
+	for _, part := range parts {
+		str := strings.TrimRight(strings.TrimLeft(part, "{"), "}")
+		strParts := strings.Split(str, ":")
+		if len(strParts) != 2 {
+			t.Errorf("invalid format")
+		}
+		key, err := strconv.Unquote(strings.TrimSpace(strParts[0]))
+		assert.Nil(t, err)
+		val := strParts[1]
+
+		assert.Contains(t, expectedParts, key)
+
+		// verify that edge_type is a uuid
+		if key == "edge_type" {
+			_, err := uuid.Parse(val)
+			assert.Nil(t, err)
+		} else if key == "inverse_edge_type" {
+			// verify that inverse_edge_type is uuid or none
+			if expectedParts[key] == "None" {
+				assert.Equal(t, expectedParts[key], val)
+			} else {
+				_, err := uuid.Parse(val)
+				assert.Nil(t, err)
+			}
+		} else {
+			assert.Equal(t, expectedParts[key], val)
+		}
 	}
 }
 
@@ -609,6 +700,20 @@ func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColum
 		}
 	}
 	t.Errorf("no db column %s for account_friends_edges table", colDBName)
+	return nil
+}
+
+func getEdgeByName(edgeName string, t *testing.T) *dbEdgeInfo {
+	s := getTestSchema(t)
+	template := s.getSchemaForTemplate()
+
+	//	spew.Dump(template.Edges)
+	for _, edge := range template.Edges {
+		if edge.EdgeName == edgeName {
+			return &edge
+		}
+	}
+	t.Errorf("no edge for %s found", edgeName)
 	return nil
 }
 

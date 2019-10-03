@@ -31,6 +31,17 @@ func (config *AccountConfig) GetEdges() map[string]interface{} {
 		},
 		"Friends": ent.AssociationEdge{
 			EntConfig: AccountConfig{},
+			Symmetric: true,
+		},
+		"FriendRequests": ent.AssociationEdge{
+			EntConfig: AccountConfig{},
+			InverseEdge: &ent.InverseAssocEdge{
+				EdgeName: "FriendRequestsReceived",
+			},
+		},
+		// just to have assoc version also
+		"TodosAssoc": ent.AssociationEdge{
+			EntConfig: TodoConfig{},
 		},
 	}
 }

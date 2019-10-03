@@ -94,6 +94,14 @@ func Get() *Config {
 	return cfg
 }
 
+func GetConnectionStr() string {
+	cfg := Get()
+	if cfg == nil {
+		log.Fatalf("invalid config")
+	}
+	return cfg.DB.GetConnectionStr()
+}
+
 func loadDBConfig() *DBConfig {
 	// this is what we'll use in production. what render supports
 	conn := getEnv("DB_CONNECTION_STRING", "")

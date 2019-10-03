@@ -10,6 +10,11 @@ from alembic import context
 from auto_schema import config
 from auto_schema import runner
 
+# these 3 needed for edge comparisons
+from auto_schema import edge_comparator
+from auto_schema import edge_op
+from auto_schema import edge_renderer
+
 # set a bunch of loggic parameters based on default info in `alembic init as of 6/15/2019`
 log_config = {
     'version': 1,

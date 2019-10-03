@@ -64,10 +64,10 @@ class Runner(object):
 
 
   @classmethod
-  def include_object(cls, object, name, type_, reflected, compare_to):    
+  def include_object(cls, object, name, type, reflected, compare_to):    
     exclude_tables = Runner.exclude_tables().split(',')
 
-    if type_ == "table" and name in exclude_tables:
+    if type == "table" and name in exclude_tables:
         return False
     else:
         return True
@@ -125,6 +125,9 @@ class Runner(object):
       'CreateUniqueConstraintOp': lambda op: 'add unique constraint %s' % op.constraint_name,
       'CreateIndexOp': lambda op: 'add index %s'% op.index_name,
       'AddColumnOp': lambda op: 'add column %s to table %s' % (op.column.name, op.table_name),
+      'AddEdgesOp': lambda op: op.get_revision_message(),
+      'RemoveEdgesOp': lambda op: op.get_revision_message(),
+      'ModifyEdgeOp': lambda op: op.get_revision_message(),
     }
 
     changes = [class_name_map[type(op).__name__](op) for op in diff]

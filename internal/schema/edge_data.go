@@ -7,15 +7,6 @@ import (
 	"github.com/lolopinto/ent/internal/util"
 )
 
-// func (m NodeMapInfo) hasEdges() bool {
-// 	for _, info := range m {
-// 		if info.NodeData.EdgeInfo.HasAssociationEdges() {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
-
 func (m NodeMapInfo) loadExistingEdges() *assocEdgeData {
 	// load all edges in db
 	var existingEdges []*ent.AssocEdgeData
@@ -35,6 +26,7 @@ func (m NodeMapInfo) loadExistingEdges() *assocEdgeData {
 }
 
 type assocEdgeData struct {
+	// differentiate between new edges and existing edges for tests
 	edgeMap  map[string]*ent.AssocEdgeData
 	newEdges []*ent.AssocEdgeData
 }
@@ -52,4 +44,5 @@ func (edgeData *assocEdgeData) edgeTypeOfEdge(constName string) string {
 
 func (edgeData *assocEdgeData) addNewEdge(newEdge *ent.AssocEdgeData) {
 	edgeData.newEdges = append(edgeData.newEdges, newEdge)
+	edgeData.edgeMap[newEdge.EdgeName] = newEdge
 }

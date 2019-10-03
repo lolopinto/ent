@@ -27,12 +27,6 @@ type dataOperationWithPlaceHolder interface {
 	AugmentWithPlaceHolder(createdObj Entity, t time.Time)
 }
 
-type legacyNodeOperation struct {
-	entity    interface{}
-	config    Config
-	operation writeOperation
-}
-
 type writeOperation string
 
 const (
@@ -40,49 +34,6 @@ const (
 	updateOperation writeOperation = "update"
 	deleteOperation writeOperation = "delete"
 )
-
-func (op *legacyNodeOperation) PerformWrite(tx *sqlx.Tx) error {
-	switch op.operation {
-	case insertOperation:
-		return createNodeInTransaction(op.entity, op.config, tx)
-	case updateOperation:
-		return updateNodeInTransaction(op.entity, op.config, tx)
-	case deleteOperation:
-		return deleteNodeInTransaction(op.entity, op.config, tx)
-	default:
-		return fmt.Errorf("unsupported node operation %v passed to legacyNodeOperation.PerformWrite", op)
-	}
-}
-
-type legacyEdgeOperation struct {
-	entity1     interface{}
-	entity2     interface{}
-	edgeType    EdgeType
-	edgeOptions EdgeOptions // nullable for deletes?
-	operation   writeOperation
-}
-
-func (op *legacyEdgeOperation) PerformWrite(tx *sqlx.Tx) error {
-	switch op.operation {
-	case insertOperation:
-		return addEdgeInTransaction(
-			op.entity1,
-			op.entity2,
-			op.edgeType,
-			op.edgeOptions,
-			tx,
-		)
-	case deleteOperation:
-		return deleteEdgeInTransaction(
-			op.entity1,
-			op.entity2,
-			op.edgeType,
-			tx,
-		)
-	default:
-		return fmt.Errorf("unsupported edge operation %v passed to performAllOperations", op)
-	}
-}
 
 type nodeWithActionMapOperation struct {
 	info *EditedNodeInfo
@@ -100,7 +51,7 @@ func (op *nodeWithActionMapOperation) PerformWrite(tx *sqlx.Tx) error {
 	for fieldName, value := range op.info.Fields {
 		fieldInfo, ok := op.info.EditableFields[fieldName]
 		if !ok {
-			return errors.New("invalid field passed to CreateNodeFromActionMap")
+			return errors.New(fmt.Sprintf("invalid field %s passed to CreateNodeFromActionMap", fieldName))
 		}
 		columns = append(columns, fieldInfo.DB)
 		values = append(values, value)

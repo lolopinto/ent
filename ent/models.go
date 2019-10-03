@@ -13,90 +13,10 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rocketlaunchr/remember-go"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx/reflectx"
-	"github.com/lolopinto/ent/cmd/gent/configs"
 	"github.com/lolopinto/ent/data"
-	entreflect "github.com/lolopinto/ent/internal/reflect"
-	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
 )
-
-// todo deal with struct tags
-// todo empty interface{}
-type insertdata struct {
-	columns       []string
-	values        []interface{}
-	pkeyName      string
-	pkeyFieldName string
-}
-
-/**
-* Returns the list of columns which will be affected for a SELECT statement
- */
-func (insertData insertdata) getColumnsString() string {
-	// don't quite need this since this is done in getFieldsAndValuesOfStruct()
-	// but all of this needs to be cleaned up now
-	columns := util.FilterSlice(insertData.columns, func(col string) bool {
-		switch col {
-		// remove Viewer. Not coming from DB. capital letter because no struct tag
-		case "Viewer":
-			fallthrough
-
-			// remove the time pieces. can't scan into embedded objects
-			// TODO: this is probably not true anymore...
-		case "updated_at", "created_at":
-			return false
-		default:
-			return true
-		}
-	})
-
-	return getColumnsString(columns)
-}
-
-/**
-* Returns the list of columns which will be affected for a SELECT statement
- */
-func (insertData insertdata) getColumnsStringForInsert() string {
-	return getColumnsString(insertData.columns)
-}
-
-/*
-* Returns the string used in an INSERT statement for the values in the format:
-* INSERT INTO table_name (cols_string) VALUES(vals_string)
- */
-func (insertData insertdata) getValuesDataForInsert() ([]interface{}, string) {
-	valsString := getValsString(insertData.values)
-	return insertData.values, valsString
-}
-
-/**
-* Returns a tuple of the following:
-*
-* We're not updating the ID and created_at columns
-*
-* values to be updated and
-* a comma-separated string of column to positional bindvars which will be affected for an UPDATE statement
-*
-*	The 2nd item returned is (col_name = $1, col_name2 = $2) etc.
- */
-func (insertData insertdata) getValuesDataForUpdate() ([]interface{}, string) {
-	columns := insertData.columns
-	// remove the id field. don't update that when updating a node
-	columns = columns[1:]
-	// remove the created_at field which is the last one
-	columns = columns[:len(columns)-1]
-
-	values := insertData.values
-	// remove the id field. don't update that when updating a node
-	values = values[1:]
-	// remove the created_at field which is the last one
-	values = values[:len(values)-1]
-
-	valsString := getValuesDataForUpdate(columns, values)
-	return values, valsString
-}
 
 func getValuesDataForUpdate(columns []string, values []interface{}) string {
 	if len(values) != len(columns) {
@@ -131,158 +51,16 @@ func getColumnsString(columns []string) string {
 	return strings.Join(columns, ", ")
 }
 
-// todo: make this smarter. for example, it shouldn't go through the
-// process of reading the values from the struct/entity for reads
-func getFieldsAndValuesOfStruct(value reflect.Value, setIDField bool) insertdata {
-	if value.Kind() == reflect.Ptr {
-		value = value.Elem()
-	}
-
-	newUUID := uuid.New().String()
-	// TODO could eventually set time fields
-	// make this a flag indicating if new object being created
-	if setIDField {
-		entreflect.SetValueInEnt(value, "ID", newUUID)
-	}
-	valueType := value.Type()
-
-	//fmt.Println(value, valueType)
-
-	fieldCount := value.NumField()
-	// fields -1 for node + 3 for uuid, created_at, updated_at
-	var columns []string
-	var values []interface{}
-
-	// add id column and value
-	idCols := []string{"id"}
-	// TODO: this is theoretically wrong when setIDField is false. However, because we have different use cases, it's fine
-	// FIXIT.
-	idVals := []interface{}{newUUID}
-
-	// columns = append(columns, "id")
-	// values = append(values, newUUID)
-
-	// if it has a pkey, don't set anything.
-	var pkey string
-	var pkeyFieldName string
-
-	// use sqlx here?
-	for i := 0; i < fieldCount; i++ {
-		field := value.Field(i)
-		typeOfField := valueType.Field(i)
-
-		//		spew.Dump(field.Kind(), field, field.Interface())
-		if field.Kind() == reflect.Interface {
-			// something like viewer which doesn't belong in the db
-			continue
-		}
-
-		tag := typeOfField.Tag.Get("db")
-
-		if field.Kind() == reflect.Struct {
-			if tag == "" {
-				// ent.Node
-				// allow struct fields like start_time and end_time through
-				continue
-			}
-			// TODO figure this out eventually
-			// can hardcode the other info for now
-			// or just migrate to use pop
-			//getFieldsAndValuesOfStruct(field)
-		}
-		//fmt.Println(field.Kind(), field.Type())
-
-		var column string
-		if tag != "" {
-			column = tag
-		} else {
-			// TODO this should not be acceptable since usecase is mostly db now...
-			// also autogen forces it...
-			column = typeOfField.Name
-		}
-
-		if typeOfField.Tag.Get("pkey") != "" {
-			pkey = column
-			pkeyFieldName = typeOfField.Name
-		}
-
-		columns = append(columns, column)
-		values = append(values, field.Interface())
-	}
-
-	if pkey == "" {
-		pkey = "id"
-		pkeyFieldName = "ID"
-		idCols = append(idCols, columns...)
-		columns = idCols
-
-		idVals = append(idVals, values...)
-		values = idVals
-	}
-
-	// put updated_at before created_at so it's easier to modify later
-	// for UPDATE. we don't want to change created_at field on UPDATE
-	columns = append(columns, "updated_at", "created_at")
-	values = append(values, time.Now(), time.Now())
-
-	return insertdata{columns, values, pkey, pkeyFieldName}
-}
-
-func getFieldsAndValues(obj interface{}, setIDField bool) insertdata {
-	value := reflect.ValueOf(obj)
-	return getFieldsAndValuesOfStruct(value, setIDField)
-}
-
 // LoadNode loads a single node given the id, node object and entConfig
-// TODO refactor this
-
-func LoadNodeFromParts(entity interface{}, config Config, parts ...interface{}) error {
-	// TODO duplicated from below and returns too much since not privacy backed
-
-	if entity == nil {
-		return errors.New("nil pointer passed to LoadNode")
-	}
-
-	if len(parts) < 2 {
-		return errors.New("invalid number of parts passed")
-	}
-
-	if len(parts)%2 != 0 {
-		return errors.New("expected even number of parts, got and odd number")
-	}
-
-	// ok, so now we need a way to map from struct to fields
-	insertData := getFieldsAndValues(entity, false)
-	colsString := insertData.getColumnsString()
-
-	sql := &sqlBuilder{
-		colsString: colsString,
-		tableName:  config.GetTableName(),
-		parts:      parts,
-	}
-	computedQuery := sql.getQuery()
-	fmt.Println(computedQuery)
-
-	db := data.DBConn()
-	if db == nil {
-		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
-		return err
-	}
-
-	stmt, err := getStmtFromTx(nil, db, computedQuery)
-
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer stmt.Close()
-
-	err = stmt.QueryRowx(sql.getValues()...).StructScan(entity)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return err
+// LoadNodeFromParts loads a node given different strings
+func LoadNodeFromParts(entity dataEntity, config Config, parts ...interface{}) error {
+	return loadData(
+		&loadNodeFromPartsLoader{
+			config: config,
+			parts:  parts,
+			entity: entity,
+		},
+	)
 }
 
 func getKeyForNode(id, tableName string) string {
@@ -308,70 +86,14 @@ func getKeyForEdge(id string, edgeType EdgeType) string {
 // 	return remember.CreateKey(false, "_", "edge_id_id2", edgeType, id, id2)
 // }
 
-func loadNodeRawDataFromTable(id string, entity dataEntity, tableName string, tx *sqlx.Tx) error {
-	// TODO does it make sense to change the API we use here to instead pass it to entity?
-
-	if entity == nil {
-		return errors.New("nil pointer passed to LoadNode")
-	}
-
-	// if id == "" {
-	//			// nothing to do here...
-	// return nil
-	// }
-
-	key := getKeyForNode(id, tableName)
-	fn := func() (map[string]interface{}, error) {
-		fmt.Println("cache miss for key", key)
-
-		// ok, so now we need a way to map from struct to fields
-		// TODO while this is manual, cache this
-		insertData := getFieldsAndValues(entity, false)
-		colsString := insertData.getColumnsString()
-
-		computedQuery := fmt.Sprintf(
-			"SELECT %s FROM %s WHERE %s = $1",
-			colsString,
-			tableName,
-			insertData.pkeyName,
-		)
-		fmt.Println(computedQuery)
-
-		db := data.DBConn()
-		if db == nil {
-			err := errors.New("error getting a valid db connection")
-			fmt.Println(err)
-			return nil, err
-		}
-
-		stmt, err := getStmtFromTx(tx, db, computedQuery)
-
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-		defer stmt.Close()
-
-		dataMap := make(map[string]interface{})
-		err = stmt.QueryRowx(id).MapScan(dataMap)
-		//		spew.Dump("mapScan", dataMap)
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-		return dataMap, nil
-		//return entity, nil
-	}
-
-	actual, err := getItemFromCacheMaybe(key, fn)
-	if err != nil {
-		return err
-	}
-	return entity.FillFromMap(actual)
-}
-
 func loadNodeRawData(id string, entity dataEntity, entConfig Config) error {
-	return loadNodeRawDataFromTable(id, entity, entConfig.GetTableName(), nil)
+	return loadData(
+		&loadNodeFromPKey{
+			id:        id,
+			tableName: entConfig.GetTableName(),
+			entity:    entity,
+		},
+	)
 }
 
 // EntityResult is the result of a call to LoadNodeConc which returns an object
@@ -390,16 +112,6 @@ func genLoadRawData(id string, entity dataEntity, entConfig Config, errChan chan
 	errChan <- err
 	//chanResult <- result
 }
-
-type loadNodesQueryHelper struct {
-	query             loadNodesQuery
-	tableName         string // for caching and configuring
-	cachedRawData     []interface{}
-	storeNodesInCache bool
-	disableQuery      bool
-}
-
-type loadNodesQuery func(insertData insertdata) (string, []interface{}, error)
 
 func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, error) {
 	value := reflect.ValueOf(nodes)
@@ -421,156 +133,18 @@ func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, erro
 	return slice, &direct, nil
 }
 
-// this borrows from/learns from scanAll in sqlx library
-
-func loadNodesDBHelper(qHelper *loadNodesQueryHelper, direct *reflect.Value, base reflect.Type) error {
-	// get a zero value of this
-	value := reflect.New(base)
-	// really need to rename this haha
-	insertData := getFieldsAndValuesOfStruct(value, false)
-
-	query, values, err := qHelper.query(insertData)
-	//fmt.Println(query, err)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	db := data.DBConn()
-	if db == nil {
-		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
-		return err
-	}
-
-	// rebind the query for our backend.
-	// TODO: should we only do this when needed?
-	query = db.Rebind(query)
-	//fmt.Println("rebound query ", query)
-
-	stmt, err := db.Preparex(query)
-	if err != nil {
-		fmt.Println("error after prepare in LoadNodes()", err)
-		return err
-	}
-	defer stmt.Close()
-
-	//fmt.Println("values", values)
-	rows, err := stmt.Queryx(values...)
-	if err != nil {
-		fmt.Println("error performing query in LoadNodes", err)
-		return err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		entity := reflect.New(base)
-
-		if qHelper.storeNodesInCache {
-			dataMap := make(map[string]interface{})
-			err = rows.MapScan(dataMap)
-			//			spew.Dump("dataMap", dataMap)
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-			id := uuid.UUID{}
-			if err := id.Scan(dataMap["id"]); err != nil {
-				return err
-			}
-			setSingleCachedItem(
-				getKeyForNode(id.String(), qHelper.tableName),
-				dataMap,
-				nil,
-			)
-			err = fillFromMap(direct, dataMap, entity)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = rows.StructScan(entity.Interface())
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-			// append each entity into "nodes" destination
-			direct.Set(reflect.Append(*direct, entity))
-		}
-	}
-
-	err = rows.Err()
-	if err != nil {
-		fmt.Println(err)
-	}
-	return err
-}
-
-func loadNodesHelper(nodes interface{}, qHelper *loadNodesQueryHelper) error {
-	slice, direct, err := validateSliceOfNodes(nodes)
-	if err != nil {
-		return err
-	}
-	// get the base type from the slice
-	base := reflectx.Deref(slice.Elem())
-
-	if !qHelper.disableQuery {
-		err := loadNodesDBHelper(qHelper, direct, base)
-		if err != nil {
-			return err
-		}
-	} else {
-		//		spew.Dump("skipped db!!!")
-	}
-
-	// todo when this is done with goroutines correctly as it should the order will be correct.
-	// now it just enforces cached data
-	for _, data := range qHelper.cachedRawData {
-		entity := reflect.New(base)
-
-		err = fillFromMap(direct, data, entity)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func fillFromMap(direct *reflect.Value, data interface{}, entity reflect.Value) error {
-	method := reflect.ValueOf(entity.Interface()).MethodByName("FillFromMap")
-	if !method.IsValid() {
-		panic("help")
-	}
-	res := method.Call([]reflect.Value{reflect.ValueOf(data)})
-	if len(res) != 1 {
-		panic("invalid number of results. FillFromMap should have returned 1 item")
-	}
-	err := res[0].Interface()
-	if err != nil {
-		return errors.New(fmt.Sprintf("%v", err))
-	}
-	direct.Set(reflect.Append(*direct, entity))
-	return nil
-}
-
 func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) error {
-	sqlQuery := func(insertData insertdata) (string, []interface{}, error) {
-		colsString := insertData.getColumnsString()
-		query := fmt.Sprintf(
-			"SELECT %s FROM %s WHERE %s = $1",
-			colsString,
-			entConfig.GetTableName(),
-			colName,
-		)
-		fmt.Println(query)
-		return query, []interface{}{id}, nil
-	}
-
-	return loadNodesHelper(nodes, &loadNodesQueryHelper{
-		query:     sqlQuery,
+	// build loader to use
+	l := &loadMultipleNodesFromQueryNodeDependent{}
+	l.sqlBuilder = &sqlBuilder{
 		tableName: entConfig.GetTableName(),
-	})
+		whereParts: []interface{}{
+			colName,
+			id,
+		},
+	}
+	l.nodes = nodes
+	return loadData(l)
 }
 
 func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
@@ -717,98 +291,21 @@ func buildOperations(info *EditedNodeInfo) []dataOperation {
 	return ops
 }
 
-func createNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) error {
-	if entity == nil {
-		// same as LoadNode in terms of handling this better
-		return errors.New("nil pointer passed to CreateNode")
-	}
-	insertData := getFieldsAndValues(entity, true)
-	colsString := insertData.getColumnsStringForInsert()
-	values, valsString := insertData.getValuesDataForInsert()
-
-	computedQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES(%s)", entConfig.GetTableName(), colsString, valsString)
-
-	return performWrite(computedQuery, values, tx, nil)
-}
-
-// CreateNode creates a node
-func CreateNode(entity interface{}, entConfig Config) error {
-	return createNodeInTransaction(entity, entConfig, nil)
-}
-
-// CreateNodes creates multiple nodes
-func CreateNodes(nodes interface{}, entConfig Config) error {
-	_, direct, err := validateSliceOfNodes(nodes)
-	if err != nil {
-		return err
-	}
-
-	_, ok := entConfig.(*configs.AssocEdgeConfig)
-
-	// This is not necessarily the best way to do this but this re-uses all the existing
-	// abstractions and wraps everything in a transcation
-	// TODO: maybe use the multirow VALUES syntax at https://www.postgresql.org/docs/8.2/sql-insert.html in the future.
-	var operations []dataOperation
-	var updateOps []dataOperation
-
-	for i := 0; i < direct.Len(); i++ {
-		entity := direct.Index(i).Interface()
-
-		if ok {
-			assocEdge := entity.(*AssocEdgeData)
-			if assocEdge.InverseEdgeType != nil && assocEdge.InverseEdgeType.Valid {
-
-				updateOps = append(updateOps, &legacyNodeOperation{
-					entity: &AssocEdgeData{
-						EdgeType: assocEdge.EdgeType,
-						InverseEdgeType: &sql.NullString{
-							Valid:  true,
-							String: assocEdge.InverseEdgeType.String,
-						},
-						SymmetricEdge: assocEdge.SymmetricEdge,
-						EdgeName:      assocEdge.EdgeName,
-						EdgeTable:     assocEdge.EdgeTable,
-					},
-					config:    entConfig,
-					operation: updateOperation,
-				})
-
-				// remove this for now. we'll depend on update in same transaction
-				assocEdge.InverseEdgeType = nil
-			}
-		}
-
-		operations = append(operations, &legacyNodeOperation{
-			entity:    entity,
-			config:    entConfig,
-			operation: insertOperation,
-		})
-	}
-	// append all update ops to the end of the operations
-	operations = append(operations, updateOps...)
-	return performAllOperations(operations)
-}
-
 func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
 	var stmt *sqlx.Stmt
 	var err error
+
 	// handle if in transcation or not.
 	if tx == nil {
+		// automatically rebinding now but we need to handle this better later
+		query = db.Rebind(query)
 		stmt, err = db.Preparex(query)
 	} else {
+		query = tx.Rebind(query)
 		stmt, err = tx.Preparex(query)
 	}
 	return stmt, err
 }
-
-// TODO rewrite a bunch of the queries. this is terrible now.
-/*
-type dbQuery interface {
-	Have a QueryBuilder for this
-	generateQuery() (string, []interface{}) // and even this can be broken down even more
-	executeQuery(sqlx.Stmt) // provide helpers for this...
-}
-*/
 
 /*
  * performs a write (INSERT, UPDATE, DELETE statement) given the SQL statement
@@ -859,36 +356,6 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 	}
 	return nil
 }
-
-func updateNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) error {
-	if entity == nil {
-		// same as LoadNode in terms of handling this better
-		return errors.New("nil pointer passed to UpdateNode")
-	}
-
-	insertData := getFieldsAndValues(entity, false)
-
-	values, valsString := insertData.getValuesDataForUpdate()
-
-	id := findID(entity, insertData.pkeyFieldName)
-	deleteKey(getKeyForNode(id, entConfig.GetTableName()))
-
-	computedQuery := fmt.Sprintf(
-		"UPDATE %s SET %s WHERE %s = '%s'",
-		entConfig.GetTableName(),
-		valsString,
-		insertData.pkeyName,
-		id,
-	)
-	fmt.Println(computedQuery)
-	return performWrite(computedQuery, values, tx, nil)
-}
-
-// UpdateNode updates a node
-// TODO should prevent updating relational fields maybe?
-// func UpdateNode(entity interface{}, entConfig Config) error {
-// 	return updateNodeInTransaction(entity, entConfig, nil)
-// }
 
 // this is a hack because i'm lazy and don't want to go update getFieldsAndValuesOfStruct()
 // to do the right thing for now. now that I know what's going on here, can update everything
@@ -961,7 +428,14 @@ func getEdgeEntities(entity1 interface{}, entity2 interface{}) (Entity, Entity, 
 
 func getEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
 	edgeData := &AssocEdgeData{}
-	err := loadNodeRawDataFromTable(string(edgeType), edgeData, "assoc_edge_config", tx)
+	err := loadData(
+		&loadNodeFromPKey{
+			id:        string(edgeType),
+			tableName: "assoc_edge_config",
+			entity:    edgeData,
+		},
+		cfgtx(tx),
+	)
 	return edgeData, err
 }
 
@@ -1157,87 +631,15 @@ func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) err
 	return deleteEdgeInTransaction(entity1, entity1, edgeType, nil)
 }
 
-func LoadEdgesByType(id string, edgeType EdgeType) ([]Edge, error) {
-	key := getKeyForEdge(id, edgeType)
-	fn := func() ([]map[string]interface{}, error) {
-		fmt.Println("cache miss for key", key)
-
-		db := data.DBConn()
-		if db == nil {
-			err := errors.New("error getting a valid db connection")
-			fmt.Println(err)
-			return nil, err
-		}
-
-		edgeData, err := getEdgeInfo(edgeType, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		// TODO: eventually add support for complex queries
-		// ORDER BY time DESC default
-		// we need offset, limit eventually
-		query := fmt.Sprintf(
-			"SELECT * FROM %s WHERE id1 = $1 AND edge_type = $2 ORDER BY time DESC",
-			edgeData.EdgeTable,
-		)
-		fmt.Println(query)
-		//fmt.Println(id, edgeType)
-
-		stmt, err := db.Preparex(query)
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-		defer stmt.Close()
-
-		rows, err := stmt.Queryx(id, edgeType)
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-
-		defer rows.Close()
-
-		var edges []map[string]interface{}
-		for rows.Next() {
-			//		var edge Edge
-
-			dataMap := make(map[string]interface{})
-
-			//		err = rows.StructScan(&edge)
-			err = rows.MapScan(dataMap)
-			//	spew.Dump(dataMap)
-			if err != nil {
-				fmt.Println(err)
-				break
-			}
-			edges = append(edges, dataMap)
-		}
-
-		err = rows.Err()
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-		return edges, err
+func LoadEdgesByType(id string, edgeType EdgeType) ([]*Edge, error) {
+	l := &loadEdgesByType{
+		id:       id,
+		edgeType: edgeType,
 	}
-
-	actual, err := getItemsFromCacheMaybe(key, fn)
-	if err != nil {
-		return nil, err
-	}
-	edges := make([]Edge, len(actual))
-	for idx := range actual {
-		var edge Edge
-		edge.FillFromMap(actual[idx])
-		edges[idx] = edge
-	}
-
-	return edges, nil
+	return l.LoadData()
 }
 
-func GenLoadEdgesByType(id string, edgeType EdgeType, edges *[]Edge, errChan chan<- error) {
+func GenLoadEdgesByType(id string, edgeType EdgeType, edges *[]*Edge, errChan chan<- error) {
 	var err error
 	*edges, err = LoadEdgesByType(id, edgeType)
 	fmt.Println("GenLoadEdgesByType result", err, edges)
@@ -1248,7 +650,7 @@ func GenLoadEdgesByType(id string, edgeType EdgeType, edges *[]Edge, errChan cha
 // concurrently since we get the strong typing across all edges since it's the
 // same Edge object being returned
 func GenLoadEdgesByTypeResult(id string, edgeType EdgeType, chanEdgesResult chan<- EdgesResult) {
-	var edges []Edge
+	var edges []*Edge
 	chanErr := make(chan error)
 	go GenLoadEdgesByType(id, edgeType, &edges, chanErr)
 	err := <-chanErr
@@ -1267,7 +669,7 @@ func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 	}
 	for _, edge := range edges {
 		if edge.ID2 == id2 {
-			return &edge, nil
+			return edge, nil
 		}
 	}
 	// no edge
@@ -1349,66 +751,20 @@ func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 }
 
 func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
-	// load the edges
-	edges, err := LoadEdgesByType(id, edgeType)
-	if err != nil {
-		return err
+	l := &loadNodesLoader{
+		entConfig: entConfig,
 	}
-
-	length := len(edges)
-	// no nodes, nothing to do here
-	if length == 0 {
-		return err
-	}
-
-	//	spew.Dump(edges)
-	// get ids from the edges
-	//	ids := make([]interface{}, length)
-	var ids []interface{}
-	cachedRawData := []interface{}{}
-	for _, edge := range edges {
-		cachedItem, err := getItemInCache(getKeyForNode(edge.ID2, entConfig.GetTableName()))
-		if err != nil {
-			fmt.Println("error getting cached item", err)
-			return err
-		}
-		//		spew.Dump(cachedItem, err)
-		if cachedItem != nil {
-			cachedRawData = append(cachedRawData, cachedItem)
-		} else {
-			ids = append(ids, edge.ID2)
-		}
-	}
-
-	// spew.Dump(edges)
-	// spew.Dump("loadddddNodeeeees")
-	// spew.Dump(cachedRawData)
-	// spew.Dump(ids)
-
-	// construct the sqlQuery that we'll use to query each node table
-	sqlQuery := func(insertData insertdata) (string, []interface{}, error) {
-		colsString := insertData.getColumnsString()
-
-		// get basic formatted string for QUERY
-		query := fmt.Sprintf(
-			"SELECT %s FROM %s WHERE id IN (?)",
-			colsString,
-			entConfig.GetTableName(),
-		)
-		fmt.Println(query)
-		// spew.Dump(ids)
-
-		// rebind for IN query
-		return sqlx.In(query, ids)
-	}
-
-	return loadNodesHelper(nodes, &loadNodesQueryHelper{
-		query:             sqlQuery,
-		tableName:         entConfig.GetTableName(),
-		cachedRawData:     cachedRawData,
-		storeNodesInCache: true,
-		disableQuery:      len(ids) == 0, // we hit the cache for everything, don't do the sql query. todo: refactor
-	})
+	l.nodes = nodes
+	return chainLoaders(
+		[]loader{
+			&loadEdgesByType{
+				id:         id,
+				edgeType:   edgeType,
+				outputID2s: true,
+			},
+			l,
+		},
+	)
 }
 
 func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
@@ -1417,45 +773,16 @@ func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConf
 	errChan <- err
 }
 
-type nodeExists struct {
-	Exists bool `db:"exists"`
-}
-
-func GenLoadAssocEdges(nodes interface{}) error {
-	db := data.DBConn()
-	if db == nil {
-		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
-		return err
-	}
-
-	query := fmt.Sprintf("SELECT to_regclass($1) IS NOT NULL as exists")
-	fmt.Println(query)
-	stmt, err := db.Preparex(query)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer stmt.Close()
-
-	var n nodeExists
-	err = stmt.QueryRowx("assoc_edge_config").StructScan(&n)
-	if err != nil {
-		return err
-	}
-	if !n.Exists {
-		fmt.Println("no assoc_edge_config table yet")
-		return nil
-	}
-
-	sqlQuery := func(_ insertdata) (string, []interface{}, error) {
-		query := "SELECT * FROM assoc_edge_config"
-
-		fmt.Println(query)
-		return query, []interface{}{}, nil
-	}
-	return loadNodesHelper(nodes, &loadNodesQueryHelper{
-		query:     sqlQuery,
-		tableName: "assoc_edge_config",
-	})
+func GenLoadAssocEdges(nodes *[]*AssocEdgeData) error {
+	return chainLoaders(
+		[]loader{
+			&loadAssocEdgeConfigExists{},
+			&loadMultipleNodesFromQuery{
+				sqlBuilder: &sqlBuilder{
+					rawQuery: "SELECT * FROM assoc_edge_config",
+				},
+				nodes: nodes,
+			},
+		},
+	)
 }

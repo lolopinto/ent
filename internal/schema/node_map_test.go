@@ -2,15 +2,22 @@ package schema_test
 
 import (
 	"database/sql"
+	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/khaiql/dbcleaner"
+	"github.com/khaiql/dbcleaner/engine"
+	"github.com/lolopinto/ent/config"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestInverseFieldEdge(t *testing.T) {
@@ -150,13 +157,13 @@ type AccountConfig struct {
 		t.Error("expected the friend request is inverse edge field to be true")
 	}
 
-	newEdges := s.GetNewEdges()
+	edges := s.GetEdges()
 
-	if len(newEdges) != 2 {
-		t.Errorf("Expected 2 new edges generated in schema, got %d instead", len(newEdges))
+	if len(edges) != 2 {
+		t.Errorf("Expected 2 edges generated in schema, got %d instead", len(edges))
 	}
-	friendRequestsEdge := newEdges[0]
-	friendRequestsReceivedEdge := newEdges[1]
+	friendRequestsEdge := edges["AccountToFriendRequestsEdge"]
+	friendRequestsReceivedEdge := edges["AccountToFriendRequestsReceivedEdge"]
 
 	expectedEdge := &ent.AssocEdgeData{
 		EdgeName:      "AccountToFriendRequestsEdge",
@@ -168,7 +175,7 @@ type AccountConfig struct {
 		EdgeTable: "account_friend_requests_edges",
 	}
 
-	testNewEdge(t, friendRequestsEdge, expectedEdge)
+	testEdge(t, friendRequestsEdge, expectedEdge)
 
 	expectedInverseEdge := &ent.AssocEdgeData{
 		EdgeName:      "AccountToFriendRequestsReceivedEdge",
@@ -179,7 +186,7 @@ type AccountConfig struct {
 		},
 		EdgeTable: "account_friend_requests_edges",
 	}
-	testNewEdge(t, friendRequestsReceivedEdge, expectedInverseEdge)
+	testEdge(t, friendRequestsReceivedEdge, expectedInverseEdge)
 
 	accountInfo := s.Nodes["AccountConfig"]
 
@@ -265,13 +272,13 @@ type TodoConfig struct {
 		t.Error("expected the todo -> todo accounts inverse edge field to be true")
 	}
 
-	newEdges := s.GetNewEdges()
+	edges := s.GetEdges()
 
-	if len(newEdges) != 2 {
-		t.Errorf("Expected 2 new edges generated in schema, got %d instead", len(newEdges))
+	if len(edges) != 2 {
+		t.Errorf("Expected 2 edges generated in schema, got %d instead", len(edges))
 	}
-	accountTodosEdge := newEdges[0]
-	todoAccountsEdge := newEdges[1]
+	accountTodosEdge := edges["AccountToTodosEdge"]
+	todoAccountsEdge := edges["TodoToAccountsEdge"]
 
 	expectedEdge := &ent.AssocEdgeData{
 		EdgeName:      "AccountToTodosEdge",
@@ -283,7 +290,7 @@ type TodoConfig struct {
 		EdgeTable: "account_todos_edges",
 	}
 
-	testNewEdge(t, accountTodosEdge, expectedEdge)
+	testEdge(t, accountTodosEdge, expectedEdge)
 
 	expectedInverseEdge := &ent.AssocEdgeData{
 		EdgeName:      "TodoToAccountsEdge",
@@ -294,7 +301,7 @@ type TodoConfig struct {
 		},
 		EdgeTable: "account_todos_edges",
 	}
-	testNewEdge(t, todoAccountsEdge, expectedInverseEdge)
+	testEdge(t, todoAccountsEdge, expectedInverseEdge)
 
 	accountInfo := s.Nodes["AccountConfig"]
 	testConstants(
@@ -404,11 +411,11 @@ type EventConfig struct {
 		t.Error("expected the user -> events attending inverse edge field to be true")
 	}
 
-	newEdges := s.GetNewEdges()
+	edges := s.GetEdges()
 
 	// TODO event rsvp status consts coming
-	if len(newEdges) != 4 {
-		t.Errorf("Expected 4 new edges generated in schema, got %d instead", len(newEdges))
+	if len(edges) != 4 {
+		t.Errorf("Expected 4 edges generated in schema, got %d instead", len(edges))
 	}
 
 	expectedEdgeNames := []string{
@@ -419,13 +426,15 @@ type EventConfig struct {
 	}
 
 	for idx, edgeName := range expectedEdgeNames {
-		edge := newEdges[idx]
-		var inverseEdge *ent.AssocEdgeData
+		edge := edges[edgeName]
+		var inverseEdgeName string
 		if idx%2 == 0 {
-			inverseEdge = newEdges[idx+1]
+			inverseEdgeName = expectedEdgeNames[idx+1]
 		} else {
-			inverseEdge = newEdges[idx-1]
+			inverseEdgeName = expectedEdgeNames[idx-1]
 		}
+
+		inverseEdge := edges[inverseEdgeName]
 
 		expectedEdge := &ent.AssocEdgeData{
 			EdgeName:      edgeName,
@@ -436,7 +445,7 @@ type EventConfig struct {
 			},
 			EdgeTable: "event_rsvps_edges",
 		}
-		testNewEdge(t, edge, expectedEdge)
+		testEdge(t, edge, expectedEdge)
 	}
 
 	// accountInfo := s.Nodes["AccountConfig"]
@@ -467,23 +476,10 @@ type EventConfig struct {
 	// 	},
 	// )
 }
+
 func TestGenerateNewEdges(t *testing.T) {
 	s := getSchemaForNewConstsAndEdges(t)
-	newEdges := s.GetNewEdges()
-
-	if len(newEdges) != 1 {
-		t.Errorf("Expected 1 new edge generated in schema, got %d instead", len(newEdges))
-	}
-	newEdge := newEdges[0]
-
-	expectedEdge := &ent.AssocEdgeData{
-		EdgeName:        "AccountToFriendsEdge",
-		SymmetricEdge:   false,
-		InverseEdgeType: &sql.NullString{},
-		EdgeTable:       "account_friends_edges",
-	}
-
-	testNewEdge(t, newEdge, expectedEdge)
+	testEdgesFromConstsAndEdges(t, s)
 }
 
 func TestGeneratedConstants(t *testing.T) {
@@ -542,7 +538,7 @@ func getFieldFromSchema(t *testing.T, s *schema.Schema, configName, fieldName st
 	return ret
 }
 
-func getSchemaForNewConstsAndEdges(t *testing.T) *schema.Schema {
+func getSourcesForNewConstsAndEdges() map[string]string {
 	sources := make(map[string]string)
 
 	sources["account_config.go"] = `
@@ -579,52 +575,108 @@ func (config *TodoConfig) GetTableName() string {
 }
 	`
 
+	return sources
+}
+
+func getSources2ForNewConstsAndEdges(t *testing.T) map[string]string {
+	sources := getSourcesForNewConstsAndEdges()
+
+	todoConfig := sources["todo_config.go"]
+
+	index := strings.Index(todoConfig, "type TodoConfig")
+	assert.NotEqual(t, index, -1)
+
+	// need to add import github.com/lolopinto/ent/ent
+	todoConfig = todoConfig[:index] + `import "github.com/lolopinto/ent/ent"
+	
+	` + todoConfig[index:]
+
+	// add a new edge in a second PR
+	sources["todo_config.go"] = todoConfig +
+		`
+	func (config *TodoConfig) GetEdges() map[string]interface{} {
+		return map[string]interface{}{
+			"Account": ent.AssociationEdge{
+				EntConfig: AccountConfig{},
+			},
+		}
+	}
+	`
+	fmt.Println(sources["todo_config.go"])
+	return sources
+}
+
+func getSchemaForNewConstsAndEdges(t *testing.T) *schema.Schema {
+	sources := getSourcesForNewConstsAndEdges()
 	return parseSchema(t, sources, "NewConstsAndEdges")
 }
 
-func testNewEdge(t *testing.T, newEdge, expectedEdge *ent.AssocEdgeData) {
-	_, err := uuid.Parse(newEdge.EdgeType)
-	if err != nil {
-		t.Errorf("Expected a new edge type of uuid generated. didn't get it, got %s instead", newEdge.EdgeType)
+func getSchemaForNewConstsAndEdges2(t *testing.T) *schema.Schema {
+	sources := getSources2ForNewConstsAndEdges(t)
+	return parseSchema(t, sources, "NewConstsAndEdges2")
+}
+
+func testEdgesFromConstsAndEdges(t *testing.T, s *schema.Schema) {
+	newEdges := s.GetNewEdges()
+
+	if len(newEdges) != 1 {
+		t.Errorf("Expected 1 new edge generated in schema, got %d instead", len(newEdges))
+	}
+	newEdge := newEdges[0]
+
+	expectedEdge := &ent.AssocEdgeData{
+		EdgeName:        "AccountToFriendsEdge",
+		SymmetricEdge:   false,
+		InverseEdgeType: &sql.NullString{},
+		EdgeTable:       "account_friends_edges",
 	}
 
-	if newEdge.EdgeName != expectedEdge.EdgeName {
+	testEdge(t, newEdge, expectedEdge)
+}
+
+func testEdge(t *testing.T, edge, expectedEdge *ent.AssocEdgeData) {
+	_, err := uuid.Parse(edge.EdgeType)
+	if err != nil {
+		t.Errorf("Expected an edge type of uuid. didn't get it, got %s instead", edge.EdgeType)
+	}
+
+	if edge.EdgeName != expectedEdge.EdgeName {
 		t.Errorf(
-			"edgename of newly generated edge was not as expected, expected %s, got %s instead",
+			"name of edge was not as expected, expected %s, got %s instead",
 			expectedEdge.EdgeName,
-			newEdge.EdgeName,
+			edge.EdgeName,
 		)
 	}
 
-	if newEdge.SymmetricEdge != expectedEdge.SymmetricEdge {
+	if edge.SymmetricEdge != expectedEdge.SymmetricEdge {
 		t.Errorf(
 			"symmetric edge value of edge was not as expected. expected %v got %v instead",
 			expectedEdge.SymmetricEdge,
-			newEdge.SymmetricEdge,
+			edge.SymmetricEdge,
 		)
 	}
 
-	if expectedEdge.InverseEdgeType.Valid != newEdge.InverseEdgeType.Valid {
+	if expectedEdge.InverseEdgeType.Valid != edge.InverseEdgeType.Valid {
 		t.Errorf(
 			"inverse edge validity of edge was not as expecfted. expected %v got %v instead",
 			expectedEdge.InverseEdgeType.Valid,
-			newEdge.InverseEdgeType.Valid,
+			edge.InverseEdgeType.Valid,
 		)
 	}
 
-	if expectedEdge.InverseEdgeType.Valid && expectedEdge.InverseEdgeType.String != newEdge.InverseEdgeType.String {
+	if expectedEdge.InverseEdgeType.Valid && expectedEdge.InverseEdgeType.String != edge.InverseEdgeType.String {
 		t.Errorf(
 			"inverse edge value of edge was not as expecfted. expected %s got %s instead",
 			expectedEdge.InverseEdgeType.String,
-			newEdge.InverseEdgeType.String,
+			edge.InverseEdgeType.String,
 		)
 	}
 
-	if newEdge.EdgeTable != expectedEdge.EdgeTable {
+	if edge.EdgeTable != expectedEdge.EdgeTable {
 		t.Errorf(
 			"invalid edge table in newly generated edge. expected %s, got %s instead",
 			expectedEdge.EdgeTable,
-			newEdge.EdgeTable,
+			edge.EdgeTable,
 		)
 	}
 }
@@ -686,4 +738,65 @@ func testConstants(t *testing.T, info *schema.NodeDataInfo, constMap map[string]
 			}
 		}
 	}
+}
+
+type edgeTestSuite struct {
+	suite.Suite
+}
+
+var Cleaner = dbcleaner.New()
+
+func (suite *edgeTestSuite) SetupSuite() {
+	postgres := engine.NewPostgresEngine(config.GetConnectionStr())
+	Cleaner.SetEngine(postgres)
+}
+
+func (suite *edgeTestSuite) SetupTest() {
+	// this depends on "jarvis_test" having the table pre-configured but empty.
+	// ran this command: "pg_dump -t assoc_edge_config ent_test | psql jarvis_test"
+	// and then "delete from assoc_edge_config;" in psql to delete the rows to be clean
+	// TODO fix this to be done correctly
+	Cleaner.Acquire("assoc_edge_config")
+}
+
+func (suite *edgeTestSuite) TearDownTest() {
+	Cleaner.Clean("assoc_edge_config")
+}
+
+// TODO use github.com/lolopinto/ent/cmd/gent/configs.AssocEdgeConfig
+type assocEdgeConfig struct{}
+
+func (config *assocEdgeConfig) GetTableName() string {
+	return "assoc_edge_config"
+}
+
+func (suite *edgeTestSuite) TestNewVsExistingEdges() {
+	t := suite.T()
+	s := getSchemaForNewConstsAndEdges(t)
+	testEdgesFromConstsAndEdges(t, s)
+
+	// 1 new edge added. 1 edge total
+	suite.validateSchema(s, 1, 1)
+
+	s2 := getSchemaForNewConstsAndEdges2(t)
+
+	// 1 new edge added. 2 edges total
+	suite.validateSchema(s2, 2, 1)
+}
+
+func (suite *edgeTestSuite) validateSchema(s *schema.Schema, expectedEdges, expectedNewEdges int) {
+	assert.Equal(suite.T(), len(s.GetNewEdges()), expectedNewEdges)
+	for _, edge := range s.GetNewEdges() {
+		err := ent.CreateNode(edge, &assocEdgeConfig{})
+		assert.Nil(suite.T(), err)
+	}
+
+	assert.Equal(suite.T(), len(s.GetEdges()), expectedEdges)
+	var dbEdges []*ent.AssocEdgeData
+	assert.Nil(suite.T(), ent.GenLoadAssocEdges(&dbEdges))
+	assert.Equal(suite.T(), len(s.GetEdges()), len(dbEdges))
+}
+
+func TestEdgeSuite(t *testing.T) {
+	suite.Run(t, new(edgeTestSuite))
 }
