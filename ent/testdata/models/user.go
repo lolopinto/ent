@@ -114,37 +114,29 @@ func (user *User) LoadEvents() ([]*Event, error) {
 	return events, err
 }
 
-func (user *User) FillFromMap(data map[string]interface{}) error {
-	for k, v := range data {
-		var err error
-		switch k {
-		case "id":
+func (user *User) DBFields() ent.DBFields {
+	return ent.DBFields{
+		"id": func(v interface{}) error {
+			var err error
 			user.ID, err = cast.ToUUIDString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "email_address":
+			return err
+		},
+		"email_address": func(v interface{}) error {
+			var err error
 			user.EmailAddress, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "first_name":
+			return err
+		},
+		"first_name": func(v interface{}) error {
+			var err error
 			user.FirstName, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "last_name":
+			return err
+		},
+		"last_name": func(v interface{}) error {
+			var err error
 			user.LastName, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		}
+			return err
+		},
 	}
-	return nil
 }
 
 var _ ent.Entity = &User{}

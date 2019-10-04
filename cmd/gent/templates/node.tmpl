@@ -252,29 +252,23 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
     {{ end -}}
   {{end}}
 
-func ({{$currentNodeInstance}} *{{$currentNode}}) FillFromMap(data map[string]interface{}) error {
-	for k, v := range data {
-    var err error
-		switch k {
-      case "id":
+func ({{$currentNodeInstance}} *{{$currentNode}}) DBFields() ent.DBFields {
+  return ent.DBFields {
+    "id": func(v interface{}) error {
+      var err error
       {{$currentNodeInstance}}.ID, err = cast.ToUUIDString(v)
-      if err != nil {
-        return err
-      }
-			break
-      {{ range $field := .FieldInfo.Fields -}} 
-        {{if topLevelStructField $field -}}
-          case "{{$field.GetDbColName}}": 
-            {{$currentNodeInstance}}.{{$field.FieldName}}, err = {{$field.GetCastToMethod}}(v)
-            if err != nil {
-              return err
-            }
-            break
-        {{end -}}
+      return err
+    },
+    {{ range $field := .FieldInfo.Fields -}}
+      {{if topLevelStructField $field -}}
+        "{{$field.GetDbColName}}": func(v interface{}) error {
+          var err error
+          {{$currentNodeInstance}}.{{$field.FieldName}}, err = {{$field.GetCastToMethod}}(v)
+          return err
+        },
       {{end -}}
-    }
+    {{end -}}
   }
-  return nil
 }
 
 {{end}}

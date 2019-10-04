@@ -67,5 +67,13 @@ sa.Table("users", metadata,
 )
   
 
+edges = {
+  'public': {
+    'UserToEventsEdge': {"edge_name":"UserToEventsEdge", "edge_type":"41bddf81-0c26-432c-9133-2f093af2c07c", "edge_table":"user_events_edges", "symmetric_edge":False, "inverse_edge_type":None},
+  }
+}
+
+metadata.info.setdefault("edges", edges)
+
 def get_metadata():
   return metadata

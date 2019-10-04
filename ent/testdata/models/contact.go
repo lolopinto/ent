@@ -84,43 +84,34 @@ func GenLoadContact(viewer viewer.ViewerContext, id string, chanContactResult ch
 	}
 }
 
-func (contact *Contact) FillFromMap(data map[string]interface{}) error {
-	for k, v := range data {
-		var err error
-		switch k {
-		case "id":
+func (contact *Contact) DBFields() ent.DBFields {
+	return ent.DBFields{
+		"id": func(v interface{}) error {
+			var err error
 			contact.ID, err = cast.ToUUIDString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "email_address":
+			return err
+		},
+		"email_address": func(v interface{}) error {
+			var err error
 			contact.EmailAddress, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "first_name":
+			return err
+		},
+		"first_name": func(v interface{}) error {
+			var err error
 			contact.FirstName, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "last_name":
+			return err
+		},
+		"last_name": func(v interface{}) error {
+			var err error
 			contact.LastName, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		case "user_id":
+			return err
+		},
+		"user_id": func(v interface{}) error {
+			var err error
 			contact.UserID, err = cast.ToString(v)
-			if err != nil {
-				return err
-			}
-			break
-		}
+			return err
+		},
 	}
-	return nil
 }
 
 var _ ent.Entity = &Contact{}
