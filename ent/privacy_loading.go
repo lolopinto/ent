@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"sync"
 
 	"github.com/lolopinto/ent/ent/viewer"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
@@ -192,33 +193,32 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResul
 	// set viewer in ent
 	entreflect.SetValueInEnt(value, "Viewer", viewer)
 
-	privacyPolicy := ent.GetPrivacyPolicy()
-	//fmt.Println("privacyPolicy ", privacyPolicy)
+	rules := ent.GetPrivacyPolicy().Rules()
 
-	rules := privacyPolicy.Rules()
-
-	//fmt.Println("rules ", rules)
-	//	spew.Dump("rules", rules)
 	// TODO this is all done in parallel.
 	// will eventually be worth having different modes and testing it per ent
 	// and figuring out based on logic which mode makes sense for each ent
 
-	//var chanResSlice []chan PrivacyResult
-	resSlice := make([]PrivacyResult, len(rules))
+	var wg sync.WaitGroup
+	results := make([]PrivacyResult, len(rules))
+	wg.Add(len(rules))
 
 	// go through the rules, build up the channels.
 	// do this manually so that we guarantee the order of the results...
 	for idx, rule := range rules {
-		c := make(chan PrivacyResult)
-		go rule.GenEval(viewer, ent, c)
-		resSlice[idx] = <-c
+		f := func(idx int) {
+			defer wg.Done()
+			results[idx] = rule.Eval(viewer, ent)
+		}
+		go f(idx)
 	}
+	wg.Wait()
 
 	var result privacyResult
 	var foundResult bool
 
 	// go through results of privacyRules and see what the privacy policy returns
-	for _, res := range resSlice {
+	for _, res := range results {
 		//fmt.Println("res from privacy rule", res)
 		if res == AllowPrivacyResult || res == DenyPrivacyResult {
 			foundResult = true

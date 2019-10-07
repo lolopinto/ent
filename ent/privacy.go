@@ -51,12 +51,12 @@ type PrivacyPolicy interface {
 // // TBD on if we'll keep this long-term.
 // // TODO...
 // type PrivacyPolicySimple interface {
-// 	// GenEval is the method called to evaluate the visibility of the ent
-// 	GenEval(viewer viewer.ViewerContext, ent interface{}, boolChan chan<- bool)
+// 	// Eval is the method called to evaluate the visibility of the ent
+// 	Eval(viewer viewer.ViewerContext, ent Entity) bool
 // }
 
 // PolicyRule is an independent PrivacyRule that evaluates an ent and determines if it's visible or not
 type PrivacyPolicyRule interface {
-	// GenEval is the method called to evaluate the visibility of the ent
-	GenEval(viewer viewer.ViewerContext, ent interface{}, resultChan chan<- PrivacyResult)
+	// Eval is the method called to evaluate the visibility of the ent
+	Eval(viewer viewer.ViewerContext, ent Entity) PrivacyResult
 }

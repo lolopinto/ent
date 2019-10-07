@@ -29,15 +29,14 @@ type AllowIfViewerCanSeeEventRule struct {
 	EventID string
 }
 
-// GenEval evaluates that the ent is visible to the user
-func (rule AllowIfViewerCanSeeEventRule) GenEval(viewer viewer.ViewerContext, entity interface{}, privacyResultChan chan<- ent.PrivacyResult) {
+// Eval evaluates that the ent is visible to the user
+func (rule AllowIfViewerCanSeeEventRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	entResultChan := make(chan EventResult)
 	go GenLoadEvent(viewer, rule.EventID, entResultChan)
 	entResult := <-entResultChan
 
 	if entResult.Error != nil {
-		privacyResultChan <- ent.SkipPrivacyResult
-	} else {
-		privacyResultChan <- ent.AllowPrivacyResult
+		return ent.Skip()
 	}
+	return ent.Allow()
 }
