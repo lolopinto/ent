@@ -205,10 +205,12 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResul
 
 	// go through the rules, build up the channels.
 	// do this manually so that we guarantee the order of the results...
-	for idx, rule := range rules {
-		f := func(idx int) {
+	for idx := range rules {
+		idx := idx
+		rule := rules[idx]
+		f := func(i int) {
 			defer wg.Done()
-			results[idx] = rule.Eval(viewer, ent)
+			results[i] = rule.Eval(viewer, ent)
 		}
 		go f(idx)
 	}
