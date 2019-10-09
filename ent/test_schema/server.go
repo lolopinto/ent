@@ -7,7 +7,7 @@ import (
 
 	"github.com/99designs/gqlgen/handler"
 	"github.com/gorilla/mux"
-	"github.com/lolopinto/ent/ent/testdata/graphql"
+	"github.com/lolopinto/ent/ent/test_schema/graphql"
 	"github.com/lolopinto/ent/ent/viewer"
 )
 
