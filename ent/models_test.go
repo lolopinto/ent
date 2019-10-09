@@ -1,4 +1,4 @@
-package ent
+package ent_test
 
 import (
 	"database/sql"
@@ -9,13 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/lolopinto/ent/config"
+	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/test_schema/models"
+	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 	"gopkg.in/khaiql/dbcleaner.v2"
 	"gopkg.in/khaiql/dbcleaner.v2/engine"
-
-	"github.com/lolopinto/ent/config"
-	//	"github.com/davecgh/go-spew/spew"
-	// "github.com/lolopinto/ent/ent/testdata/models"
-	// "github.com/lolopinto/ent/ent/testdata/models/configs"
 )
 
 type modelsTestSuite struct {
@@ -85,8 +84,8 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 	}
 
 	for _, tt := range testCases {
-		var existingUser testUser
-		err := LoadNodeFromParts(&existingUser, &testUserConfig{}, tt.parts...)
+		var existingUser models.User
+		err := ent.LoadNodeFromParts(&existingUser, &configs.UserConfig{}, tt.parts...)
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
 			assert.NotZero(suite.T(), existingUser)
@@ -116,8 +115,8 @@ func (suite *modelsTestSuite) TestLoadNodeFromID() {
 	}
 
 	for _, tt := range testCases {
-		var existingUser testUser
-		err := loadNodeRawData(tt.id, &existingUser, &testUserConfig{})
+		var existingUser models.User
+		err := ent.LoadNodeRawData(tt.id, &existingUser, &configs.UserConfig{})
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
 			assert.NotZero(suite.T(), existingUser)
@@ -131,21 +130,21 @@ func (suite *modelsTestSuite) TestLoadNodeFromID() {
 
 func (suite *modelsTestSuite) TestGetEdgeInfo() {
 	var testCases = []struct {
-		edgeType    EdgeType
+		edgeType    ent.EdgeType
 		foundResult bool
 	}{
 		{
-			TestUserToEventsEdge,
+			models.UserToEventsEdge,
 			true,
 		},
 		{
-			EdgeType(uuid.New().String()),
+			ent.EdgeType(uuid.New().String()),
 			false,
 		},
 	}
 
 	for _, tt := range testCases {
-		edgeData, err := getEdgeInfo(tt.edgeType, nil)
+		edgeData, err := ent.GetEdgeInfo(tt.edgeType, nil)
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
 			assert.NotZero(suite.T(), edgeData)
@@ -177,7 +176,7 @@ func (suite *modelsTestSuite) TestLoadEdgesByType() {
 	}
 
 	for _, tt := range testCases {
-		edges, err := LoadEdgesByType(tt.id1, TestUserToEventsEdge)
+		edges, err := ent.LoadEdgesByType(tt.id1, models.UserToEventsEdge)
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
 			assert.NotEmpty(suite.T(), edges)
@@ -200,8 +199,8 @@ func (suite *modelsTestSuite) TestLoadAssocEdges() {
 	// 2/ table not being empty and full of valid data
 	// we can't remove and re-add fresh data because of how dbcleaner works
 	// we can't validate the number of edges here because that's subject to change
-	var existingEdges []*AssocEdgeData
-	err := GenLoadAssocEdges(&existingEdges)
+	var existingEdges []*ent.AssocEdgeData
+	err := ent.GenLoadAssocEdges(&existingEdges)
 
 	assert.NotEmpty(suite.T(), existingEdges)
 	assert.Nil(suite.T(), err)
@@ -227,8 +226,8 @@ func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
 	}
 
 	for _, tt := range testCases {
-		var contacts []*testContact
-		err := loadForeignKeyNodes(tt.id, &contacts, "user_id", &testContactConfig{})
+		var contacts []*models.Contact
+		err := ent.LoadRawForeignKeyNodes(tt.id, &contacts, "user_id", &configs.ContactConfig{})
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
 			assert.NotEmpty(suite.T(), contacts)
@@ -265,8 +264,8 @@ func (suite *modelsTestSuite) TestLoadNodesByType() {
 	}
 
 	for _, tt := range testCases {
-		var events []*testEvent
-		err := loadNodesByType(tt.id1, TestUserToEventsEdge, &events, &testEventConfig{})
+		var events []*models.Event
+		err := ent.LoadRawNodesByType(tt.id1, models.UserToEventsEdge, &events, &configs.EventConfig{})
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
 			assert.NotEmpty(suite.T(), events)

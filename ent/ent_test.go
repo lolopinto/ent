@@ -1,4 +1,4 @@
-package ent
+package ent_test
 
 import (
 	"fmt"
@@ -8,218 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
-	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/test_schema/models"
+	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/stretchr/testify/assert"
 )
-
-type simpleObj struct {
-	Entity
-}
-
-func (obj *simpleObj) GetType() NodeType {
-	panic("whaa")
-}
-
-func (obj *simpleObj) GetPrivacyPolicy() PrivacyPolicy {
-	return simplePrivacyPolicy{EntID: obj.GetID()}
-}
-
-// todo these are duplicated from privacy_rules.go
-type allowIfOmniscientRule struct{}
-
-func (allowIfOmniscientRule) Eval(viewer viewer.ViewerContext, entity Entity) PrivacyResult {
-	if viewer.IsOmniscient() {
-		return Allow()
-	}
-	return Skip()
-}
-
-type allowIfViewerIsOwnerRule struct {
-	OwnerID string
-}
-
-func (rule allowIfViewerIsOwnerRule) Eval(viewer viewer.ViewerContext, entity Entity) PrivacyResult {
-	if viewer.GetViewerID() == rule.OwnerID {
-		return Allow()
-	}
-	return Skip()
-}
-
-type alwaysDenyRule struct{}
-
-// Eval is the method called to evaluate the visibility of the ent and always returns DenyResult
-func (rule alwaysDenyRule) Eval(viewer viewer.ViewerContext, entity Entity) PrivacyResult {
-	return Deny()
-}
-
-type simplePrivacyPolicy struct {
-	EntID string
-}
-
-func (policy simplePrivacyPolicy) Rules() []PrivacyPolicyRule {
-	spew.Dump(policy.EntID)
-	return []PrivacyPolicyRule{
-		allowIfOmniscientRule{},
-		allowIfViewerIsOwnerRule{OwnerID: policy.EntID},
-		alwaysDenyRule{},
-	}
-}
-
-// manual for now until I figure out code generated and all that jazz
-type testUser struct {
-	simpleObj
-	Node
-	EmailAddress string `db:"email_address"`
-	FirstName    string `db:"first_name"`
-	LastName     string `db:"last_name"`
-	Viewer       viewer.ViewerContext
-}
-
-func (user *testUser) GetPrivacyPolicy() PrivacyPolicy {
-	return simplePrivacyPolicy{EntID: user.GetID()}
-}
-
-func (user *testUser) DBFields() DBFields {
-	return DBFields{
-		"id": func(v interface{}) error {
-			var err error
-			user.ID, err = cast.ToUUIDString(v)
-			return err
-		},
-		"email_address": func(v interface{}) error {
-			var err error
-			user.EmailAddress, err = cast.ToString(v)
-			return err
-		},
-		"first_name": func(v interface{}) error {
-			var err error
-			user.FirstName, err = cast.ToString(v)
-			return err
-		},
-		"last_name": func(v interface{}) error {
-			var err error
-			user.LastName, err = cast.ToString(v)
-			return err
-		},
-	}
-}
-
-type testUserConfig struct{}
-
-const TestUserToEventsEdge EdgeType = "41bddf81-0c26-432c-9133-2f093af2c07c"
-
-func (config *testUserConfig) GetTableName() string {
-	return "users"
-}
-
-func (config *testUserConfig) GetEdges() EdgeMap {
-	return EdgeMap{
-		"Events": &AssociationEdge{
-			EntConfig: testEventConfig{},
-		},
-	}
-}
-
-type testEvent struct {
-	simpleObj
-	Node
-	Name      string    `db:"name"`
-	UserID    string    `db:"user_id"`
-	StartTime time.Time `db:"start_time"`
-	EndTime   time.Time `db:"end_time"`
-	Location  string    `db:"location"`
-	Viewer    viewer.ViewerContext
-}
-
-func (event *testEvent) DBFields() DBFields {
-	return DBFields{
-		"id": func(v interface{}) error {
-			var err error
-			event.ID, err = cast.ToUUIDString(v)
-			return err
-		},
-		"name": func(v interface{}) error {
-			var err error
-			event.Name, err = cast.ToString(v)
-			return err
-		},
-		"user_id": func(v interface{}) error {
-			var err error
-			event.UserID, err = cast.ToString(v)
-			return err
-		},
-		"location": func(v interface{}) error {
-			var err error
-			event.Location, err = cast.ToString(v)
-			return err
-		},
-		"start_time": func(v interface{}) error {
-			var err error
-			event.StartTime, err = cast.ToTime(v)
-			return err
-		},
-		"end_time": func(v interface{}) error {
-			var err error
-			event.EndTime, err = cast.ToTime(v)
-			return err
-		},
-	}
-}
-
-type testEventConfig struct{}
-
-func (config *testEventConfig) GetTableName() string {
-	return "events"
-}
-
-type testContact struct {
-	simpleObj
-	Node
-	EmailAddress string `db:"email_address"`
-	FirstName    string `db:"first_name"`
-	LastName     string `db:"last_name"`
-	UserID       string `db:"user_id"`
-	Viewer       viewer.ViewerContext
-}
-
-func (contact *testContact) DBFields() DBFields {
-	return DBFields{
-		"id": func(v interface{}) error {
-			var err error
-			contact.ID, err = cast.ToUUIDString(v)
-			return err
-		},
-		"email_address": func(v interface{}) error {
-			var err error
-			contact.EmailAddress, err = cast.ToString(v)
-			return err
-		},
-		"first_name": func(v interface{}) error {
-			var err error
-			contact.FirstName, err = cast.ToString(v)
-			return err
-		},
-		"last_name": func(v interface{}) error {
-			var err error
-			contact.LastName, err = cast.ToString(v)
-			return err
-		},
-		"user_id": func(v interface{}) error {
-			var err error
-			contact.UserID, err = cast.ToString(v)
-			return err
-		},
-	}
-}
-
-type testContactConfig struct{}
-
-func (config *testContactConfig) GetTableName() string {
-	return "contacts"
-}
 
 // TODO these are duplicated from privacy_rules_test.go
 type omniViewerContext struct {
@@ -246,8 +41,8 @@ func (loggedinViewerContext) HasIdentity() bool {
 	return true
 }
 
-func createTestUser(t *testing.T) *testUser {
-	var user testUser
+func createTestUser(t *testing.T) *models.User {
+	var user models.User
 
 	fields := map[string]interface{}{
 		"EmailAddress": "test@email.com",
@@ -255,10 +50,10 @@ func createTestUser(t *testing.T) *testUser {
 		"LastName":     "Okelola",
 	}
 
-	err := CreateNodeFromActionMap(
-		&EditedNodeInfo{
+	err := ent.CreateNodeFromActionMap(
+		&ent.EditedNodeInfo{
 			Entity:         &user,
-			EntConfig:      &testUserConfig{},
+			EntConfig:      &configs.UserConfig{},
 			Fields:         fields,
 			EditableFields: getFieldMapFromFields(fields),
 		},
@@ -267,8 +62,8 @@ func createTestUser(t *testing.T) *testUser {
 	return &user
 }
 
-func createTestEvent(t *testing.T, user *testUser) *testEvent {
-	var event testEvent
+func createTestEvent(t *testing.T, user *models.User) *models.Event {
+	var event models.Event
 
 	fields := map[string]interface{}{
 		"Name":      "Fun event",
@@ -277,25 +72,20 @@ func createTestEvent(t *testing.T, user *testUser) *testEvent {
 		"EndTime":   time.Now().Add(time.Hour * 24 * 3),
 		"Location":  "fun location",
 	}
-	err := CreateNodeFromActionMap(
-		&EditedNodeInfo{
+	err := ent.CreateNodeFromActionMap(
+		&ent.EditedNodeInfo{
 			Entity:         &event,
-			EntConfig:      &testEventConfig{},
+			EntConfig:      &configs.EventConfig{},
 			Fields:         fields,
 			EditableFields: getFieldMapFromFields(fields),
+			InboundEdges: []*ent.EditedEdgeInfo{
+				&ent.EditedEdgeInfo{
+					EdgeType: models.UserToEventsEdge,
+					Id:       user.ID,
+					NodeType: user.GetType(),
+				},
+			},
 		},
-	)
-	// manual testing until we come up with better way of doing this
-	// when i fix the bugs
-	assert.Nil(t, err)
-	err = addEdgeInTransactionRaw(
-		TestUserToEventsEdge,
-		user.ID,
-		event.ID,
-		NodeType("user"),
-		NodeType("event"),
-		EdgeOptions{},
-		nil,
 	)
 	assert.Nil(t, err)
 
@@ -312,8 +102,8 @@ func generateRandCode(n int) string {
 	return sb.String()
 }
 
-func createTestContact(t *testing.T, user *testUser) *testContact {
-	var contact testContact
+func createTestContact(t *testing.T, user *models.User) *models.Contact {
+	var contact models.Contact
 
 	fields := map[string]interface{}{
 		"EmailAddress": fmt.Sprintf("test-contact-%s@email.com", generateRandCode(9)),
@@ -321,10 +111,10 @@ func createTestContact(t *testing.T, user *testUser) *testContact {
 		"FirstName":    "first-name",
 		"LastName":     "last-name",
 	}
-	err := CreateNodeFromActionMap(
-		&EditedNodeInfo{
+	err := ent.CreateNodeFromActionMap(
+		&ent.EditedNodeInfo{
 			Entity:         &contact,
-			EntConfig:      &testContactConfig{},
+			EntConfig:      &configs.ContactConfig{},
 			Fields:         fields,
 			EditableFields: getFieldMapFromFields(fields),
 		},
@@ -333,10 +123,10 @@ func createTestContact(t *testing.T, user *testUser) *testContact {
 	return &contact
 }
 
-func getFieldMapFromFields(fields map[string]interface{}) ActionFieldMap {
-	ret := make(ActionFieldMap)
+func getFieldMapFromFields(fields map[string]interface{}) ent.ActionFieldMap {
+	ret := make(ent.ActionFieldMap)
 	for k := range fields {
-		ret[k] = &MutatingFieldInfo{
+		ret[k] = &ent.MutatingFieldInfo{
 			DB:       strcase.ToSnake(k),
 			Required: true,
 		}

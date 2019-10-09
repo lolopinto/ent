@@ -19,6 +19,7 @@ func (policy UserPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 	return []ent.PrivacyPolicyRule{
 		privacy.AllowIfOmniscientRule{},
 		// BEGIN MANUAL SECTION: Add custom privacy rules below
+		privacy.AllowIfViewerIsOwnerRule{OwnerID: policy.User.ID},
 		// END MANUAL SECTION of privacy rules
 		privacy.AlwaysDenyRule{},
 	}

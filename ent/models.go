@@ -86,7 +86,8 @@ func getKeyForEdge(id string, edgeType EdgeType) string {
 // 	return remember.CreateKey(false, "_", "edge_id_id2", edgeType, id, id2)
 // }
 
-func loadNodeRawData(id string, entity dataEntity, entConfig Config) error {
+// TODO move this and other raw data access pattern methods to a lower level API below ent
+func LoadNodeRawData(id string, entity dataEntity, entConfig Config) error {
 	return loadData(
 		&loadNodeFromPKey{
 			id:        id,
@@ -104,7 +105,7 @@ type EntityResult struct {
 }
 
 func genLoadRawData(id string, entity dataEntity, entConfig Config, errChan chan<- error) {
-	err := loadNodeRawData(id, entity, entConfig)
+	err := LoadNodeRawData(id, entity, entConfig)
 	// result := EntityResult{
 	// 	Entity: entity,
 	// 	Err:    err,
@@ -133,7 +134,8 @@ func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, erro
 	return slice, &direct, nil
 }
 
-func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) error {
+// TODO also move to lower level loader/data package
+func LoadRawForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) error {
 	// build loader to use
 	l := &loadMultipleNodesFromQueryNodeDependent{}
 	l.sqlBuilder = &sqlBuilder{
@@ -148,8 +150,7 @@ func loadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig
 }
 
 func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
-	err := loadForeignKeyNodes(id, nodes, colName, entConfig)
-	//fmt.Println("genLoadForeignKeyNodes result", err, nodes)
+	err := LoadRawForeignKeyNodes(id, nodes, colName, entConfig)
 	errChan <- err
 }
 
@@ -426,7 +427,9 @@ func getEdgeEntities(entity1 interface{}, entity2 interface{}) (Entity, Entity, 
 	return ent1, ent2, nil
 }
 
-func getEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
+// TODO figure out correct long-term API here
+// this is the single get of GenLoadAssocEdges so shouldn't be too hard
+func GetEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
 	edgeData := &AssocEdgeData{}
 	err := loadData(
 		&loadNodeFromPKey{
@@ -460,7 +463,7 @@ func addEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType Edg
 }
 
 func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Type NodeType, edgeOptions EdgeOptions, tx *sqlx.Tx) error {
-	edgeData, err := getEdgeInfo(edgeType, tx)
+	edgeData, err := GetEdgeInfo(edgeType, tx)
 	if err != nil {
 		return err
 	}
@@ -579,7 +582,7 @@ func deleteEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType 
 }
 
 func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx) error {
-	edgeData, err := getEdgeInfo(edgeType, tx)
+	edgeData, err := GetEdgeInfo(edgeType, tx)
 	if err != nil {
 		return err
 	}
@@ -750,7 +753,7 @@ func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
 	// return &edge, nil
 }
 
-func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
+func LoadRawNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
 	l := &loadNodesLoader{
 		entConfig: entConfig,
 	}
@@ -768,7 +771,7 @@ func loadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig 
 }
 
 func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
-	err := loadNodesByType(id, edgeType, nodes, entConfig)
+	err := LoadRawNodesByType(id, edgeType, nodes, entConfig)
 	//fmt.Println("GenLoadEdgesByType result", err, nodes)
 	errChan <- err
 }

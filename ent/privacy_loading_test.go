@@ -1,9 +1,12 @@
-package ent
+package ent_test
 
 import (
 	"testing"
 
 	"github.com/lolopinto/ent/config"
+	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/test_schema/models"
+	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -61,9 +64,9 @@ func (suite *privacyTestSuite) TestLoadNode() {
 	}
 
 	for _, tt := range testCases {
-		var user testUser
+		var user models.User
 
-		err := LoadNode(tt.viewer, dbUser.ID, &user, &testUserConfig{})
+		err := ent.LoadNode(tt.viewer, dbUser.ID, &user, &configs.UserConfig{})
 
 		if tt.visible {
 			assert.Nil(suite.T(), err)
@@ -71,7 +74,7 @@ func (suite *privacyTestSuite) TestLoadNode() {
 			assert.Equal(suite.T(), user.Viewer, tt.viewer)
 		} else {
 			assert.Error(suite.T(), err)
-			assert.True(suite.T(), IsPrivacyError(err))
+			assert.True(suite.T(), ent.IsPrivacyError(err))
 			assert.Zero(suite.T(), user)
 		}
 	}
