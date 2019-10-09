@@ -185,15 +185,8 @@ func genApplyPrivacyPolicyUnsure(viewer viewer.ViewerContext, maybeEnt interface
 	}
 }
 
-// apply the privacy policy and determine if the ent is visible
-func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyResult) {
-	// TODO do this programmatically without reflection later
-	// set viewer at the beginning because it's needed in GetPrivacyPolicy sometimes
-	value := reflect.ValueOf(ent)
-	// set viewer in ent
-	entreflect.SetValueInEnt(value, "Viewer", viewer)
-
-	rules := ent.GetPrivacyPolicy().Rules()
+func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPrivacyPolicy, ent Entity) (bool, error) {
+	rules := objWithPolicy.GetPrivacyPolicy().Rules()
 
 	// TODO this is all done in parallel.
 	// will eventually be worth having different modes and testing it per ent
@@ -216,32 +209,33 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResul
 	}
 	wg.Wait()
 
-	var result privacyResult
-	var foundResult bool
-
 	// go through results of privacyRules and see what the privacy policy returns
 	for _, res := range results {
 		//fmt.Println("res from privacy rule", res)
 		if res == AllowPrivacyResult || res == DenyPrivacyResult {
-			foundResult = true
-			result = privacyResult{
-				visible: res == AllowPrivacyResult,
-				err:     nil,
-			}
-			break
+			return res == AllowPrivacyResult, nil
 		}
 	}
 
-	if !foundResult {
-		result = privacyResult{
-			visible: false,
-			// TODO eventually figure out how to do this with static analysis
-			// would be preferable to detect this at compile time instead of runtime
-			// or with a test
-			err: &InvalidPrivacyRule{},
-		}
-	}
+	// TODO eventually figure out how to do this with static analysis
+	// would be preferable to detect this at compile time instead of runtime
+	// or with a test
+	return false, &InvalidPrivacyRule{}
+}
 
+// apply the privacy policy and determine if the ent is visible
+func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyResult) {
+	// TODO do this programmatically without reflection later
+	// set viewer at the beginning because it's needed in GetPrivacyPolicy sometimes
+	value := reflect.ValueOf(ent)
+	// set viewer in ent
+	entreflect.SetValueInEnt(value, "Viewer", viewer)
+
+	visible, err := ApplyPrivacyPolicy(viewer, ent, ent)
+	result := privacyResult{
+		visible: visible,
+		err:     err,
+	}
 	privacyResultChan <- result
 }
 

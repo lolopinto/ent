@@ -2,9 +2,6 @@ package ent_test
 
 import (
 	"fmt"
-	"math/rand"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -12,34 +9,9 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/test_schema/models"
 	"github.com/lolopinto/ent/ent/test_schema/models/configs"
-	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 )
-
-// TODO these are duplicated from privacy_rules_test.go
-type omniViewerContext struct {
-	viewer.LoggedOutViewerContext
-}
-
-func (omniViewerContext) IsOmniscient() bool {
-	return true
-}
-
-type loggedinViewerContext struct {
-	viewer.LoggedOutViewerContext
-	viewerID string
-}
-
-func (v loggedinViewerContext) GetViewerID() string {
-	if v.viewerID != "" {
-		return v.viewerID
-	}
-	return "1"
-}
-
-func (loggedinViewerContext) HasIdentity() bool {
-	return true
-}
 
 func createTestUser(t *testing.T) *models.User {
 	var user models.User
@@ -92,21 +64,11 @@ func createTestEvent(t *testing.T, user *models.User) *models.Event {
 	return &event
 }
 
-func generateRandCode(n int) string {
-	rand.Seed(time.Now().UnixNano())
-
-	var sb strings.Builder
-	for i := 0; i < n; i++ {
-		sb.WriteString(strconv.Itoa(rand.Intn(9)))
-	}
-	return sb.String()
-}
-
 func createTestContact(t *testing.T, user *models.User) *models.Contact {
 	var contact models.Contact
 
 	fields := map[string]interface{}{
-		"EmailAddress": fmt.Sprintf("test-contact-%s@email.com", generateRandCode(9)),
+		"EmailAddress": fmt.Sprintf("test-contact-%s@email.com", util.GenerateRandCode(9)),
 		"UserID":       user.ID,
 		"FirstName":    "first-name",
 		"LastName":     "last-name",

@@ -8,6 +8,7 @@ import (
 	"github.com/lolopinto/ent/ent/test_schema/models"
 	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/khaiql/dbcleaner.v2"
@@ -42,7 +43,7 @@ func (suite *privacyTestSuite) TestLoadNode() {
 		testCase string
 	}{
 		{
-			omniViewerContext{},
+			viewertesting.OmniViewerContext{},
 			true,
 			"logged in viewer",
 		},
@@ -52,12 +53,12 @@ func (suite *privacyTestSuite) TestLoadNode() {
 			"logged out viewer",
 		},
 		{
-			loggedinViewerContext{viewerID: dbUser.ID},
+			viewertesting.LoggedinViewerContext{ViewerID: dbUser.ID},
 			true,
 			"logged in viewer same as user",
 		},
 		{
-			loggedinViewerContext{viewerID: "1"},
+			viewertesting.LoggedinViewerContext{ViewerID: "1"},
 			false,
 			"logged in viewer different from user",
 		},

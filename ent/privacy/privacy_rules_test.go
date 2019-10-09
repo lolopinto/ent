@@ -8,34 +8,9 @@ import (
 
 	"github.com/lolopinto/ent/ent/test_schema/models"
 	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/stretchr/testify/assert"
 )
-
-// TODO put these viewercontexts in a reusable ent_test
-
-type omniViewerContext struct {
-	viewer.LoggedOutViewerContext
-}
-
-func (omniViewerContext) IsOmniscient() bool {
-	return true
-}
-
-type loggedinViewerContext struct {
-	viewer.LoggedOutViewerContext
-	viewerID string
-}
-
-func (v loggedinViewerContext) GetViewerID() string {
-	if v.viewerID != "" {
-		return v.viewerID
-	}
-	return "1"
-}
-
-func (loggedinViewerContext) HasIdentity() bool {
-	return true
-}
 
 func TestRules(t *testing.T) {
 	var testCases = []struct {
@@ -53,13 +28,13 @@ func TestRules(t *testing.T) {
 		},
 		{
 			privacy.AlwaysAllowRule{},
-			omniViewerContext{},
+			viewertesting.OmniViewerContext{},
 			ent.AllowPrivacyResult,
 			"AlwaysAllowRule with omni viewer",
 		},
 		{
 			privacy.AlwaysAllowRule{},
-			loggedinViewerContext{},
+			viewertesting.LoggedinViewerContext{},
 			ent.AllowPrivacyResult,
 			"AlwaysAllowRule with logged in viewer",
 		},
@@ -73,13 +48,13 @@ func TestRules(t *testing.T) {
 		},
 		{
 			privacy.AlwaysDenyRule{},
-			omniViewerContext{},
+			viewertesting.OmniViewerContext{},
 			ent.DenyPrivacyResult,
 			"AlwaysDenyRule with omni viewer",
 		},
 		{
 			privacy.AlwaysDenyRule{},
-			loggedinViewerContext{},
+			viewertesting.LoggedinViewerContext{},
 			ent.DenyPrivacyResult,
 			"AlwaysDenyRule with logged in viewer",
 		},
@@ -93,13 +68,13 @@ func TestRules(t *testing.T) {
 		},
 		{
 			privacy.AllowIfOmniscientRule{},
-			omniViewerContext{},
+			viewertesting.OmniViewerContext{},
 			ent.AllowPrivacyResult,
 			"AllowIfOmniscientRule with omni viewer",
 		},
 		{
 			privacy.AllowIfOmniscientRule{},
-			loggedinViewerContext{},
+			viewertesting.LoggedinViewerContext{},
 			ent.SkipPrivacyResult,
 			"AllowIfOmniscientRule with logged in viewer",
 		},
@@ -113,13 +88,13 @@ func TestRules(t *testing.T) {
 		},
 		{
 			privacy.DenyIfLoggedOutRule{},
-			omniViewerContext{},
+			viewertesting.OmniViewerContext{},
 			ent.DenyPrivacyResult,
 			"DenyIfLoggedOutRule with omni viewer",
 		},
 		{
 			privacy.DenyIfLoggedOutRule{},
-			loggedinViewerContext{},
+			viewertesting.LoggedinViewerContext{},
 			ent.SkipPrivacyResult,
 			"DenyIfLoggedOutRule with logged in viewer",
 		},
@@ -133,19 +108,19 @@ func TestRules(t *testing.T) {
 		},
 		{
 			privacy.AllowIfViewerIsOwnerRule{OwnerID: "1"},
-			omniViewerContext{},
+			viewertesting.OmniViewerContext{},
 			ent.SkipPrivacyResult,
 			"AllowIfViewerIsOwnerRule with omni viewer",
 		},
 		{
 			privacy.AllowIfViewerIsOwnerRule{OwnerID: "1"},
-			loggedinViewerContext{},
+			viewertesting.LoggedinViewerContext{},
 			ent.AllowPrivacyResult,
 			"AllowIfViewerIsOwnerRule with logged in viewer",
 		},
 		{
 			privacy.AllowIfViewerIsOwnerRule{OwnerID: "1"},
-			loggedinViewerContext{viewerID: "3"},
+			viewertesting.LoggedinViewerContext{ViewerID: "3"},
 			ent.SkipPrivacyResult,
 			"AllowIfViewerIsOwnerRule with different logged in viewer",
 		},
@@ -159,19 +134,19 @@ func TestRules(t *testing.T) {
 		},
 		{
 			privacy.AllowIfViewerRule{EntID: "1"},
-			omniViewerContext{},
+			viewertesting.OmniViewerContext{},
 			ent.SkipPrivacyResult,
 			"AllowIfViewerRule with omni viewer",
 		},
 		{
 			privacy.AllowIfViewerRule{EntID: "1"},
-			loggedinViewerContext{},
+			viewertesting.LoggedinViewerContext{},
 			ent.AllowPrivacyResult,
 			"AllowIfViewerRule with logged in viewer",
 		},
 		{
 			privacy.AllowIfViewerRule{EntID: "1"},
-			loggedinViewerContext{viewerID: "3"},
+			viewertesting.LoggedinViewerContext{ViewerID: "3"},
 			ent.SkipPrivacyResult,
 			"AllowIfViewerRule with different logged in viewer",
 		},

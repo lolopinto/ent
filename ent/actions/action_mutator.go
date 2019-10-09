@@ -11,13 +11,6 @@ import (
 	entreflect "github.com/lolopinto/ent/internal/reflect"
 )
 
-// type ActionMutator interface {
-
-// }
-// type ActionMutator struct {
-// 	Viewer viewer.ViewerContext
-// }
-
 // // TODO
 // type ActionWithValidators interface {
 // 	GetValidators() bool
@@ -34,8 +27,9 @@ import (
 // validators and observers not implemented yet
 
 type ActionMutator interface {
+	Action
 	//Validate() error
-	GetFieldMap() ent.ActionFieldMap
+	//	GetFieldMap() ent.ActionFieldMap
 }
 
 type editNodeActionMutator struct {
@@ -90,7 +84,6 @@ func (action *editNodeActionMutator) SetField(fieldName string, val interface{})
 	if action.editedFields == nil {
 		action.editedFields = make(map[string]interface{})
 	}
-	//	spew.Dump(fieldName, val, action.fieldMap)
 	action.editedFields[fieldName] = val
 }
 
@@ -274,8 +267,6 @@ func (action *EdgeGroupActionMutator) SaveAction(entity ent.Entity, fieldMap ent
 			action.RemoveOutboundEdge(value.Edge, action.idValue, action.nodeType)
 		}
 	}
-	spew.Dump("outbound", action.outboundEdges)
-	spew.Dump("outbound removed", action.removedOutboundEdges)
 	err := ent.EditNodeFromActionMap(&ent.EditedNodeInfo{
 		Entity:               entity,
 		EntConfig:            action.EntConfig,
