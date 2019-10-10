@@ -371,7 +371,7 @@ type loadEdgesByType struct {
 
 func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
 	// TODO make chainable?
-	edgeData, err := getEdgeInfo(l.edgeType, nil)
+	edgeData, err := GetEdgeInfo(l.edgeType, nil)
 	if err != nil {
 		return nil, err
 	}

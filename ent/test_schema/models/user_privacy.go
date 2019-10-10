@@ -19,6 +19,7 @@ func (policy UserPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 	return []ent.PrivacyPolicyRule{
 		privacy.AllowIfOmniscientRule{},
 		// BEGIN MANUAL SECTION: Add custom privacy rules below
+		privacy.AllowIfViewerIsOwnerRule{OwnerID: policy.User.ID},
 		// END MANUAL SECTION of privacy rules
 		privacy.AlwaysDenyRule{},
 	}
@@ -29,15 +30,14 @@ type AllowIfViewerCanSeeUserRule struct {
 	UserID string
 }
 
-// GenEval evaluates that the ent is visible to the user
-func (rule AllowIfViewerCanSeeUserRule) GenEval(viewer viewer.ViewerContext, entity interface{}, privacyResultChan chan<- ent.PrivacyResult) {
+// Eval evaluates that the ent is visible to the user
+func (rule AllowIfViewerCanSeeUserRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	entResultChan := make(chan UserResult)
 	go GenLoadUser(viewer, rule.UserID, entResultChan)
 	entResult := <-entResultChan
 
 	if entResult.Error != nil {
-		privacyResultChan <- ent.SkipPrivacyResult
-	} else {
-		privacyResultChan <- ent.AllowPrivacyResult
+		return ent.Skip()
 	}
+	return ent.Allow()
 }

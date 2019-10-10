@@ -29,15 +29,14 @@ type AllowIfViewerCanSee{{.Node}}Rule struct {
 	{{.Node}}ID string
 }
 
-// GenEval evaluates that the ent is visible to the user 
-func (rule AllowIfViewerCanSee{{.Node}}Rule) GenEval(viewer viewer.ViewerContext, entity interface{}, privacyResultChan chan<- ent.PrivacyResult) {
+// Eval evaluates that the ent is visible to the user 
+func (rule AllowIfViewerCanSee{{.Node}}Rule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	entResultChan := make(chan {{.NodeResult}})
 	go GenLoad{{.Node}}(viewer, rule.{{.Node}}ID, entResultChan)
 	entResult := <-entResultChan
 
 	if entResult.Error != nil {
-		privacyResultChan <- ent.SkipPrivacyResult
-	} else {
-		privacyResultChan <- ent.AllowPrivacyResult
-	}
+		return ent.Skip()
+	} 
+	return ent.Allow()
 }

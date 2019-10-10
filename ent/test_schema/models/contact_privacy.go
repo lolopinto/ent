@@ -29,15 +29,14 @@ type AllowIfViewerCanSeeContactRule struct {
 	ContactID string
 }
 
-// GenEval evaluates that the ent is visible to the user
-func (rule AllowIfViewerCanSeeContactRule) GenEval(viewer viewer.ViewerContext, entity interface{}, privacyResultChan chan<- ent.PrivacyResult) {
+// Eval evaluates that the ent is visible to the user
+func (rule AllowIfViewerCanSeeContactRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	entResultChan := make(chan ContactResult)
 	go GenLoadContact(viewer, rule.ContactID, entResultChan)
 	entResult := <-entResultChan
 
 	if entResult.Error != nil {
-		privacyResultChan <- ent.SkipPrivacyResult
-	} else {
-		privacyResultChan <- ent.AllowPrivacyResult
+		return ent.Skip()
 	}
+	return ent.Allow()
 }

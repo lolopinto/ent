@@ -1,240 +1,49 @@
-package ent
+package ent_test
 
 import (
 	"database/sql"
-	"fmt"
-	"time"
-
-	"math/rand"
-	"strconv"
-	"strings"
 
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/iancoleman/strcase"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/lolopinto/ent/config"
+	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/test_schema/models"
+	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 	"gopkg.in/khaiql/dbcleaner.v2"
 	"gopkg.in/khaiql/dbcleaner.v2/engine"
-
-	"github.com/lolopinto/ent/config"
-	"github.com/lolopinto/ent/ent/cast"
-
-	"github.com/lolopinto/ent/ent/viewer"
-	//	"github.com/davecgh/go-spew/spew"
-	// "github.com/lolopinto/ent/ent/testdata/models"
-	// "github.com/lolopinto/ent/ent/testdata/models/configs"
 )
-
-type user struct {
-	Node
-	FirstName string `db:"first_name"`
-	LastName  string `db:"last_name"`
-	UserID    string `db:"user_id"`
-}
-
-type assocEdgeWithPkey struct {
-	EdgeType string `db:"edge_type" pkey:"true"` // this is a pkey telling getFieldsAndValuesOfStruct() to not get the id key or try and set it
-	EdgeName string `db:"edge_name"`
-}
 
 type modelsTestSuite struct {
 	suite.Suite
+	cleaner dbcleaner.DbCleaner
 }
 
-var Cleaner = dbcleaner.New()
-
 func (suite *modelsTestSuite) SetupSuite() {
+	suite.cleaner = dbcleaner.New()
 	postgres := engine.NewPostgresEngine(config.GetConnectionStr())
-	Cleaner.SetEngine(postgres)
+	suite.cleaner.SetEngine(postgres)
 }
 
 // TODO make this automatic based on db
 // TODO make this a base class for all future tests that operate on the db
 func (suite *modelsTestSuite) SetupTest() {
-	Cleaner.Acquire("users")
-	Cleaner.Acquire("user_events_edges")
-	Cleaner.Acquire("events")
+	suite.cleaner.Acquire("users")
+	suite.cleaner.Acquire("user_events_edges")
+	suite.cleaner.Acquire("events")
 }
 
 func (suite *modelsTestSuite) TearDownTest() {
-	Cleaner.Clean("users")
-	Cleaner.Clean("user_events_edges")
-	Cleaner.Clean("events")
-}
-
-type simpleObj struct{}
-
-func (obj *simpleObj) GetType() NodeType {
-	panic("whaa")
-}
-
-func (obj *simpleObj) GetPrivacyPolicy() PrivacyPolicy {
-	return simplePrivacyPolicy{}
-}
-
-type simplePrivacyPolicy struct{}
-
-func (policy simplePrivacyPolicy) Rules() []PrivacyPolicyRule {
-	return []PrivacyPolicyRule{
-		// it actually doesn't require any rules for now so this is fine.
-		// also, we only need this for interface purposes
-	}
-}
-
-// manual for now until I figure out code generated and all that jazz
-type testUser struct {
-	simpleObj
-	Node
-	EmailAddress string `db:"email_address"`
-	FirstName    string `db:"first_name"`
-	LastName     string `db:"last_name"`
-	Viewer       viewer.ViewerContext
-}
-
-func (user *testUser) DBFields() DBFields {
-	return DBFields{
-		"id": func(v interface{}) error {
-			var err error
-			user.ID, err = cast.ToUUIDString(v)
-			return err
-		},
-		"email_address": func(v interface{}) error {
-			var err error
-			user.EmailAddress, err = cast.ToString(v)
-			return err
-		},
-		"first_name": func(v interface{}) error {
-			var err error
-			user.FirstName, err = cast.ToString(v)
-			return err
-		},
-		"last_name": func(v interface{}) error {
-			var err error
-			user.LastName, err = cast.ToString(v)
-			return err
-		},
-	}
-}
-
-type testUserConfig struct{}
-
-const TestUserToEventsEdge EdgeType = "41bddf81-0c26-432c-9133-2f093af2c07c"
-
-func (config *testUserConfig) GetTableName() string {
-	return "users"
-}
-
-func (config *testUserConfig) GetEdges() EdgeMap {
-	return EdgeMap{
-		"Events": &AssociationEdge{
-			EntConfig: testEventConfig{},
-		},
-	}
-}
-
-type testEvent struct {
-	simpleObj
-	Node
-	Name      string    `db:"name"`
-	UserID    string    `db:"user_id"`
-	StartTime time.Time `db:"start_time"`
-	EndTime   time.Time `db:"end_time"`
-	Location  string    `db:"location"`
-	Viewer    viewer.ViewerContext
-}
-
-func (event *testEvent) DBFields() DBFields {
-	return DBFields{
-		"id": func(v interface{}) error {
-			var err error
-			event.ID, err = cast.ToUUIDString(v)
-			return err
-		},
-		"name": func(v interface{}) error {
-			var err error
-			event.Name, err = cast.ToString(v)
-			return err
-		},
-		"user_id": func(v interface{}) error {
-			var err error
-			event.UserID, err = cast.ToString(v)
-			return err
-		},
-		"location": func(v interface{}) error {
-			var err error
-			event.Location, err = cast.ToString(v)
-			return err
-		},
-		"start_time": func(v interface{}) error {
-			var err error
-			event.StartTime, err = cast.ToTime(v)
-			return err
-		},
-		"end_time": func(v interface{}) error {
-			var err error
-			event.EndTime, err = cast.ToTime(v)
-			return err
-		},
-	}
-}
-
-type testEventConfig struct{}
-
-func (config *testEventConfig) GetTableName() string {
-	return "events"
-}
-
-type testContact struct {
-	simpleObj
-	Node
-	EmailAddress string `db:"email_address"`
-	FirstName    string `db:"first_name"`
-	LastName     string `db:"last_name"`
-	UserID       string `db:"user_id"`
-	Viewer       viewer.ViewerContext
-}
-
-func (contact *testContact) DBFields() DBFields {
-	return DBFields{
-		"id": func(v interface{}) error {
-			var err error
-			contact.ID, err = cast.ToUUIDString(v)
-			return err
-		},
-		"email_address": func(v interface{}) error {
-			var err error
-			contact.EmailAddress, err = cast.ToString(v)
-			return err
-		},
-		"first_name": func(v interface{}) error {
-			var err error
-			contact.FirstName, err = cast.ToString(v)
-			return err
-		},
-		"last_name": func(v interface{}) error {
-			var err error
-			contact.LastName, err = cast.ToString(v)
-			return err
-		},
-		"user_id": func(v interface{}) error {
-			var err error
-			contact.UserID, err = cast.ToString(v)
-			return err
-		},
-	}
-}
-
-type testContactConfig struct{}
-
-func (config *testContactConfig) GetTableName() string {
-	return "contacts"
+	suite.cleaner.Clean("users")
+	suite.cleaner.Clean("user_events_edges")
+	suite.cleaner.Clean("events")
 }
 
 func (suite *modelsTestSuite) TestLoadNodeFromParts() {
-	createTestUser(suite)
+	createTestUser(suite.T())
 
 	var testCases = []struct {
 		parts       []interface{}
@@ -275,8 +84,8 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 	}
 
 	for _, tt := range testCases {
-		var existingUser testUser
-		err := LoadNodeFromParts(&existingUser, &testUserConfig{}, tt.parts...)
+		var existingUser models.User
+		err := ent.LoadNodeFromParts(&existingUser, &configs.UserConfig{}, tt.parts...)
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
 			assert.NotZero(suite.T(), existingUser)
@@ -289,7 +98,7 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 }
 
 func (suite *modelsTestSuite) TestLoadNodeFromID() {
-	user := createTestUser(suite)
+	user := createTestUser(suite.T())
 
 	var testCases = []struct {
 		id          string
@@ -306,8 +115,8 @@ func (suite *modelsTestSuite) TestLoadNodeFromID() {
 	}
 
 	for _, tt := range testCases {
-		var existingUser testUser
-		err := loadNodeRawData(tt.id, &existingUser, &testUserConfig{})
+		var existingUser models.User
+		err := ent.LoadNodeRawData(tt.id, &existingUser, &configs.UserConfig{})
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
 			assert.NotZero(suite.T(), existingUser)
@@ -321,21 +130,21 @@ func (suite *modelsTestSuite) TestLoadNodeFromID() {
 
 func (suite *modelsTestSuite) TestGetEdgeInfo() {
 	var testCases = []struct {
-		edgeType    EdgeType
+		edgeType    ent.EdgeType
 		foundResult bool
 	}{
 		{
-			TestUserToEventsEdge,
+			models.UserToEventsEdge,
 			true,
 		},
 		{
-			EdgeType(uuid.New().String()),
+			ent.EdgeType(uuid.New().String()),
 			false,
 		},
 	}
 
 	for _, tt := range testCases {
-		edgeData, err := getEdgeInfo(tt.edgeType, nil)
+		edgeData, err := ent.GetEdgeInfo(tt.edgeType, nil)
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
 			assert.NotZero(suite.T(), edgeData)
@@ -347,108 +156,10 @@ func (suite *modelsTestSuite) TestGetEdgeInfo() {
 	}
 }
 
-func createTestUser(suite *modelsTestSuite) *testUser {
-	var user testUser
-
-	fields := map[string]interface{}{
-		"EmailAddress": "test@email.com",
-		"FirstName":    "Ola",
-		"LastName":     "Okelola",
-	}
-
-	err := CreateNodeFromActionMap(
-		&EditedNodeInfo{
-			Entity:         &user,
-			EntConfig:      &testUserConfig{},
-			Fields:         fields,
-			EditableFields: getFieldMapFromFields(fields),
-		},
-	)
-	assert.Nil(suite.T(), err)
-	return &user
-}
-
-func createTestEvent(suite *modelsTestSuite, user *testUser) *testEvent {
-	var event testEvent
-
-	fields := map[string]interface{}{
-		"Name":      "Fun event",
-		"UserID":    user.ID,
-		"StartTime": time.Now(),
-		"EndTime":   time.Now().Add(time.Hour * 24 * 3),
-		"Location":  "fun location",
-	}
-	err := CreateNodeFromActionMap(
-		&EditedNodeInfo{
-			Entity:         &event,
-			EntConfig:      &testEventConfig{},
-			Fields:         fields,
-			EditableFields: getFieldMapFromFields(fields),
-		},
-	)
-	// manual testing until we come up with better way of doing this
-	// when i fix the bugs
-	assert.Nil(suite.T(), err)
-	err = addEdgeInTransactionRaw(
-		TestUserToEventsEdge,
-		user.ID,
-		event.ID,
-		NodeType("user"),
-		NodeType("event"),
-		EdgeOptions{},
-		nil,
-	)
-	assert.Nil(suite.T(), err)
-
-	return &event
-}
-
-func generateRandCode(n int) string {
-	rand.Seed(time.Now().UnixNano())
-
-	var sb strings.Builder
-	for i := 0; i < n; i++ {
-		sb.WriteString(strconv.Itoa(rand.Intn(9)))
-	}
-	return sb.String()
-}
-
-func createTestContact(suite *modelsTestSuite, user *testUser) *testContact {
-	var contact testContact
-
-	fields := map[string]interface{}{
-		"EmailAddress": fmt.Sprintf("test-contact-%s@email.com", generateRandCode(9)),
-		"UserID":       user.ID,
-		"FirstName":    "first-name",
-		"LastName":     "last-name",
-	}
-	err := CreateNodeFromActionMap(
-		&EditedNodeInfo{
-			Entity:         &contact,
-			EntConfig:      &testContactConfig{},
-			Fields:         fields,
-			EditableFields: getFieldMapFromFields(fields),
-		},
-	)
-	assert.Nil(suite.T(), err)
-	return &contact
-}
-
-func getFieldMapFromFields(fields map[string]interface{}) ActionFieldMap {
-	ret := make(ActionFieldMap)
-	for k := range fields {
-		ret[k] = &MutatingFieldInfo{
-			DB:       strcase.ToSnake(k),
-			Required: true,
-		}
-	}
-	return ret
-}
-
 func (suite *modelsTestSuite) TestLoadEdgesByType() {
-	user := createTestUser(suite)
-	event := createTestEvent(suite, user)
-	event2 := createTestEvent(suite, user)
+	user := createTestUser(suite.T())
+	event := createTestEvent(suite.T(), user)
+	event2 := createTestEvent(suite.T(), user)
 
 	var testCases = []struct {
 		id1         string
@@ -465,7 +176,7 @@ func (suite *modelsTestSuite) TestLoadEdgesByType() {
 	}
 
 	for _, tt := range testCases {
-		edges, err := LoadEdgesByType(tt.id1, TestUserToEventsEdge)
+		edges, err := ent.LoadEdgesByType(tt.id1, models.UserToEventsEdge)
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
 			assert.NotEmpty(suite.T(), edges)
@@ -488,17 +199,17 @@ func (suite *modelsTestSuite) TestLoadAssocEdges() {
 	// 2/ table not being empty and full of valid data
 	// we can't remove and re-add fresh data because of how dbcleaner works
 	// we can't validate the number of edges here because that's subject to change
-	var existingEdges []*AssocEdgeData
-	err := GenLoadAssocEdges(&existingEdges)
+	var existingEdges []*ent.AssocEdgeData
+	err := ent.GenLoadAssocEdges(&existingEdges)
 
 	assert.NotEmpty(suite.T(), existingEdges)
 	assert.Nil(suite.T(), err)
 }
 
 func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
-	user := createTestUser(suite)
-	contact := createTestContact(suite, user)
-	contact2 := createTestContact(suite, user)
+	user := createTestUser(suite.T())
+	contact := createTestContact(suite.T(), user)
+	contact2 := createTestContact(suite.T(), user)
 
 	var testCases = []struct {
 		id          string
@@ -515,8 +226,8 @@ func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
 	}
 
 	for _, tt := range testCases {
-		var contacts []*testContact
-		err := loadForeignKeyNodes(tt.id, &contacts, "user_id", &testContactConfig{})
+		var contacts []*models.Contact
+		err := ent.LoadRawForeignKeyNodes(tt.id, &contacts, "user_id", &configs.ContactConfig{})
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
 			assert.NotEmpty(suite.T(), contacts)
@@ -534,9 +245,9 @@ func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
 }
 
 func (suite *modelsTestSuite) TestLoadNodesByType() {
-	user := createTestUser(suite)
-	event := createTestEvent(suite, user)
-	event2 := createTestEvent(suite, user)
+	user := createTestUser(suite.T())
+	event := createTestEvent(suite.T(), user)
+	event2 := createTestEvent(suite.T(), user)
 
 	var testCases = []struct {
 		id1         string
@@ -553,8 +264,8 @@ func (suite *modelsTestSuite) TestLoadNodesByType() {
 	}
 
 	for _, tt := range testCases {
-		var events []*testEvent
-		err := loadNodesByType(tt.id1, TestUserToEventsEdge, &events, &testEventConfig{})
+		var events []*models.Event
+		err := ent.LoadRawNodesByType(tt.id1, models.UserToEventsEdge, &events, &configs.EventConfig{})
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
 			assert.NotEmpty(suite.T(), events)

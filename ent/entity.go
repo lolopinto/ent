@@ -1,11 +1,14 @@
 package ent
 
-type Entity interface {
+type ObjectWithPrivacyPolicy interface {
+	GetPrivacyPolicy() PrivacyPolicy
+}
 
+type Entity interface {
+	ObjectWithPrivacyPolicy
 	// GetType returns the NodeType of this entity
 	GetID() string // TODO uuid
 	GetType() NodeType
-	GetPrivacyPolicy() PrivacyPolicy
 	dataEntity
 }
 

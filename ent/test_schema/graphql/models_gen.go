@@ -3,7 +3,7 @@
 package graphql
 
 import (
-	"github.com/lolopinto/ent/ent/testdata/models"
+	"github.com/lolopinto/ent/ent/test_schema/models"
 )
 
 type Connection interface {

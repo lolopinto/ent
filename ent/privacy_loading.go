@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"sync"
 
 	"github.com/lolopinto/ent/ent/viewer"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
@@ -184,6 +185,44 @@ func genApplyPrivacyPolicyUnsure(viewer viewer.ViewerContext, maybeEnt interface
 	}
 }
 
+func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPrivacyPolicy, ent Entity) (bool, error) {
+	rules := objWithPolicy.GetPrivacyPolicy().Rules()
+
+	// TODO this is all done in parallel.
+	// will eventually be worth having different modes and testing it per ent
+	// and figuring out based on logic which mode makes sense for each ent
+
+	var wg sync.WaitGroup
+	results := make([]PrivacyResult, len(rules))
+	wg.Add(len(rules))
+
+	// go through the rules, build up the channels.
+	// do this manually so that we guarantee the order of the results...
+	for idx := range rules {
+		idx := idx
+		rule := rules[idx]
+		f := func(i int) {
+			defer wg.Done()
+			results[i] = rule.Eval(viewer, ent)
+		}
+		go f(idx)
+	}
+	wg.Wait()
+
+	// go through results of privacyRules and see what the privacy policy returns
+	for _, res := range results {
+		//fmt.Println("res from privacy rule", res)
+		if res == AllowPrivacyResult || res == DenyPrivacyResult {
+			return res == AllowPrivacyResult, nil
+		}
+	}
+
+	// TODO eventually figure out how to do this with static analysis
+	// would be preferable to detect this at compile time instead of runtime
+	// or with a test
+	return false, &InvalidPrivacyRule{}
+}
+
 // apply the privacy policy and determine if the ent is visible
 func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyResult) {
 	// TODO do this programmatically without reflection later
@@ -192,54 +231,11 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResul
 	// set viewer in ent
 	entreflect.SetValueInEnt(value, "Viewer", viewer)
 
-	privacyPolicy := ent.GetPrivacyPolicy()
-	//fmt.Println("privacyPolicy ", privacyPolicy)
-
-	rules := privacyPolicy.Rules()
-
-	//fmt.Println("rules ", rules)
-	//	spew.Dump("rules", rules)
-	// TODO this is all done in parallel.
-	// will eventually be worth having different modes and testing it per ent
-	// and figuring out based on logic which mode makes sense for each ent
-
-	//var chanResSlice []chan PrivacyResult
-	resSlice := make([]PrivacyResult, len(rules))
-
-	// go through the rules, build up the channels.
-	// do this manually so that we guarantee the order of the results...
-	for idx, rule := range rules {
-		c := make(chan PrivacyResult)
-		go rule.GenEval(viewer, ent, c)
-		resSlice[idx] = <-c
+	visible, err := ApplyPrivacyPolicy(viewer, ent, ent)
+	result := privacyResult{
+		visible: visible,
+		err:     err,
 	}
-
-	var result privacyResult
-	var foundResult bool
-
-	// go through results of privacyRules and see what the privacy policy returns
-	for _, res := range resSlice {
-		//fmt.Println("res from privacy rule", res)
-		if res == AllowPrivacyResult || res == DenyPrivacyResult {
-			foundResult = true
-			result = privacyResult{
-				visible: res == AllowPrivacyResult,
-				err:     nil,
-			}
-			break
-		}
-	}
-
-	if !foundResult {
-		result = privacyResult{
-			visible: false,
-			// TODO eventually figure out how to do this with static analysis
-			// would be preferable to detect this at compile time instead of runtime
-			// or with a test
-			err: &InvalidPrivacyRule{},
-		}
-	}
-
 	privacyResultChan <- result
 }
 

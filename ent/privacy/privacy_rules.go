@@ -8,43 +8,43 @@ import (
 // AlwaysAllowRule is a reusable rule that comes with the ent framework that says an ent is always visible to the viewer
 type AlwaysAllowRule struct{}
 
-// GenEval is the method called to evaluate the visibility of the ent and always returns AllowResult
-func (rule AlwaysAllowRule) GenEval(viewer viewer.ViewerContext, entity interface{}, resultChan chan<- ent.PrivacyResult) {
-	resultChan <- ent.AllowPrivacyResult
+// Eval is the method called to evaluate the visibility of the ent and always returns AllowResult
+func (rule AlwaysAllowRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	return ent.Allow()
 }
 
 // AlwaysDenyRule is a reusable rule that comes with the ent framework that says an ent is always invisible to the viewer
 type AlwaysDenyRule struct{}
 
-// GenEval is the method called to evaluate the visibility of the ent and always returns DenyResult
-func (rule AlwaysDenyRule) GenEval(viewer viewer.ViewerContext, entity interface{}, resultChan chan<- ent.PrivacyResult) {
-	resultChan <- ent.DenyPrivacyResult
+// Eval is the method called to evaluate the visibility of the ent and always returns DenyResult
+func (rule AlwaysDenyRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	return ent.Deny()
 }
 
 // AllowIfOmniscientRule is a reusable rule that comes with the ent framework that says an ent is visible to the viewer if the
 // viewer is omniscient (or has admin privileges)
 type AllowIfOmniscientRule struct{}
 
-// GenEval is the method called to evaluate the visibility of the ent and always returns AllowResult if viewer is omniscient.
+// Eval is the method called to evaluate the visibility of the ent and always returns AllowResult if viewer is omniscient.
 // Otherwise, returns SkipResult
-func (rule AllowIfOmniscientRule) GenEval(viewer viewer.ViewerContext, entity interface{}, resultChan chan<- ent.PrivacyResult) {
+func (rule AllowIfOmniscientRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	if viewer.IsOmniscient() {
-		resultChan <- ent.AllowPrivacyResult
+		return ent.Allow()
 	}
-	resultChan <- ent.SkipPrivacyResult
+	return ent.Skip()
 }
 
 // DenyIfLoggedOutRule is a reusable rule that comes with the ent framework that says an ent is not visible to
 // any logged out users
 type DenyIfLoggedOutRule struct{}
 
-// GenEval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
+// Eval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
 // Otherwise, returns SkipResult
-func (rule DenyIfLoggedOutRule) GenEval(viewer viewer.ViewerContext, entity interface{}, resultChan chan<- ent.PrivacyResult) {
+func (rule DenyIfLoggedOutRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	if viewer.HasIdentity() {
-		resultChan <- ent.SkipPrivacyResult
+		return ent.Skip()
 	}
-	resultChan <- ent.DenyPrivacyResult
+	return ent.Deny()
 }
 
 // AllowIfViewerIsOwnerRule is a reusable rule that says the underlying ent is only visible
@@ -53,59 +53,59 @@ type AllowIfViewerIsOwnerRule struct {
 	OwnerID string
 }
 
-// GenEval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
+// Eval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
 // Otherwise, returns SkipResult
-func (rule AllowIfViewerIsOwnerRule) GenEval(viewer viewer.ViewerContext, entity interface{}, resultChan chan<- ent.PrivacyResult) {
+func (rule AllowIfViewerIsOwnerRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	if viewer.GetViewerID() == rule.OwnerID {
-		resultChan <- ent.AllowPrivacyResult
+		return ent.Allow()
 	}
-	resultChan <- ent.SkipPrivacyResult
+	return ent.Skip()
 }
 
 // AllowIfViewerRule is a reusable rule that says the underlying ent is only visible
-// if the viewer ID is equal to the passed OwnerID
+// if the viewer ID is equal to the passed EntID
 type AllowIfViewerRule struct {
 	EntID string
 }
 
-// GenEval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
+// Eval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
 // Otherwise, returns SkipResult
-func (rule AllowIfViewerRule) GenEval(viewer viewer.ViewerContext, entity interface{}, resultChan chan<- ent.PrivacyResult) {
+func (rule AllowIfViewerRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	// TODO. need to be able to cast to Entity here and not take a parameter here is best...
 	// so need to break up privacy constants vs reusable rules
 	if viewer.GetViewerID() == rule.EntID {
-		resultChan <- ent.AllowPrivacyResult
+		return ent.Allow()
 	}
-	resultChan <- ent.SkipPrivacyResult
+	return ent.Skip()
 }
 
 type AllowIfClosureRule struct {
 	// TODO this should be Entity when this is typed to Entity correctly
-	Func func(viewer viewer.ViewerContext, ent interface{}) bool
+	Func func(viewer viewer.ViewerContext, ent ent.Entity) bool
 }
 
-func (rule AllowIfClosureRule) GenEval(viewer viewer.ViewerContext, entity interface{}, resultChan chan<- ent.PrivacyResult) {
+func (rule AllowIfClosureRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	if rule.Func(viewer, entity) {
-		resultChan <- ent.AllowPrivacyResult
+		return ent.Allow()
 	}
-	resultChan <- ent.SkipPrivacyResult
+	return ent.Skip()
 }
 
 type AllowIfEdgeExistsRule struct {
-	Func func(viewer viewer.ViewerContext, ent interface{}) (*ent.Edge, error)
+	Func func(viewer viewer.ViewerContext, entity ent.Entity) (*ent.Edge, error)
 
 	// ID1 string
 	// ID2 string
 	// EdgeType EdgeType
 }
 
-func (rule AllowIfEdgeExistsRule) GenEval(viewer viewer.ViewerContext, entity interface{}, resultChan chan<- ent.PrivacyResult) {
+func (rule AllowIfEdgeExistsRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	edge, err := rule.Func(viewer, entity)
 	if err != nil {
-		resultChan <- ent.SkipPrivacyResult
+		return ent.Skip()
 	} else if edge == nil || edge.ID1 == "" {
-		resultChan <- ent.SkipPrivacyResult
+		return ent.Skip()
 	} else {
-		resultChan <- ent.AllowPrivacyResult
+		return ent.Allow()
 	}
 }

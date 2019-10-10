@@ -5,7 +5,7 @@ package graphql
 import (
 	"context"
 
-	"github.com/lolopinto/ent/ent/testdata/models"
+	"github.com/lolopinto/ent/ent/test_schema/models"
 )
 
 type Resolver struct{}
@@ -27,6 +27,10 @@ func (r *eventResolver) User(ctx context.Context, obj *models.Event) (*models.Us
 }
 
 type queryResolver struct{ *Resolver }
+
+func (r *queryResolver) Contact(ctx context.Context, id string) (*models.Contact, error) {
+	return models.LoadContactFromContext(ctx, id)
+}
 
 func (r *queryResolver) Event(ctx context.Context, id string) (*models.Event, error) {
 	return models.LoadEventFromContext(ctx, id)
