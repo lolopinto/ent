@@ -73,6 +73,7 @@ func (a *createUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 		privacy.Rules(
 			privacy.AlwaysAllowRule{},
 		),
+		&a.user,
 	}
 }
 
@@ -106,6 +107,7 @@ func (a *editUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 			privacy.AllowIfViewerIsOwnerRule{a.existingEnt.ID},
 			privacy.AlwaysDenyRule{},
 		),
+		&a.user,
 	}
 }
 

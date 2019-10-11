@@ -19,9 +19,18 @@ func (policy ContactPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 	return []ent.PrivacyPolicyRule{
 		privacy.AllowIfOmniscientRule{},
 		// BEGIN MANUAL SECTION: Add custom privacy rules below
+		privacy.AllowIfViewerIsOwnerRule{OwnerID: policy.Contact.UserID},
+		// privacy.AllowIfEdgeExistsRule{
+
+		// }
 		// END MANUAL SECTION of privacy rules
 		privacy.AlwaysDenyRule{},
 	}
+}
+
+// Ent returns the underlying ent whose privacy policy this is.
+func (policy ContactPrivacyPolicy) Ent() ent.Entity {
+	return policy.Contact
 }
 
 // AllowIfViewerCanSeeContactRule is a reusable rule that can be called by different ents to see if the contact can be visible

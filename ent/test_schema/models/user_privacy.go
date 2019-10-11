@@ -25,6 +25,11 @@ func (policy UserPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 	}
 }
 
+// Ent returns the underlying ent whose privacy policy this is.
+func (policy UserPrivacyPolicy) Ent() ent.Entity {
+	return policy.User
+}
+
 // AllowIfViewerCanSeeUserRule is a reusable rule that can be called by different ents to see if the contact can be visible
 type AllowIfViewerCanSeeUserRule struct {
 	UserID string

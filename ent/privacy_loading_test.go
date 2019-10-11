@@ -131,6 +131,7 @@ func (suite *privacyTestSuite) TestAllowIfViewerCanSeeEntRule() {
 					models.AllowIfViewerCanSeeUserRule{UserID: id},
 					privacy.AlwaysDenyRule{},
 				),
+				nil,
 			},
 			nil,
 		)

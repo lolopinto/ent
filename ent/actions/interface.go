@@ -22,7 +22,6 @@ type ActionWithValidator interface {
 type ActionWithPermissions interface {
 	Action
 	GetPrivacyPolicy() ent.PrivacyPolicy
-	GetUnderlyingEnt() ent.Entity // maybe this should not even be here and should just be on Action
 }
 
 type ActionPermissionsError struct{}
@@ -52,7 +51,7 @@ func Save(action Action) error {
 }
 
 func applyActionPermissions(action ActionWithPermissions) error {
-	err := ent.ApplyPrivacyPolicy(action.GetViewer(), action, action.GetUnderlyingEnt())
+	err := ent.ApplyPrivacyPolicy(action.GetViewer(), action, action.GetPrivacyPolicy().Ent())
 	if ent.IsPrivacyError(err) {
 		return &ActionPermissionsError{}
 	}

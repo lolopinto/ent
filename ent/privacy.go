@@ -40,10 +40,11 @@ func Skip() PrivacyResult {
 	return SkipPrivacyResult
 }
 
-// Policy defines the set of Privacy rules that need to be implemented by this ent
+// PrivacyPolicy defines the set of Privacy rules that need to be implemented by this ent
 // to end up with a decision on if this ent is visible to the viewer
 type PrivacyPolicy interface {
 	Rules() []PrivacyPolicyRule
+	Ent() Entity
 }
 
 // // PolicySimple defines a single method to be evaluated to determine if an ent is visible
@@ -55,7 +56,7 @@ type PrivacyPolicy interface {
 // 	Eval(viewer viewer.ViewerContext, ent Entity) bool
 // }
 
-// PolicyRule is an independent PrivacyRule that evaluates an ent and determines if it's visible or not
+// PrivacyPolicyRule is an independent PrivacyRule that evaluates an ent and determines if it's visible or not
 type PrivacyPolicyRule interface {
 	// Eval is the method called to evaluate the visibility of the ent
 	Eval(viewer viewer.ViewerContext, ent Entity) PrivacyResult

@@ -12,6 +12,8 @@ type Entity interface {
 	GetID() string // TODO uuid
 	GetType() NodeType
 	GetViewer() viewer.ViewerContext
+
+	// TODO break this into EntityBackedByDB or something
 	dataEntity
 }
 
