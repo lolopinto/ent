@@ -7,6 +7,7 @@ import (
   "context"
   "errors"
   "strings"
+  "sync"
 
 	"github.com/google/uuid"
 
@@ -99,15 +100,14 @@ func Load{{.Node}}(viewer viewer.ViewerContext, id string) (*{{.Node}}, error) {
 }
 
 // GenLoad{{.Node}} loads the given {{.Node}} given the id
-func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
+func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeResult}}, wg *sync.WaitGroup) {
+  defer wg.Done()
   var {{.NodeInstance}} {{.Node}}
   chanErr := make(chan error)
   go ent.GenLoadNode(viewer, id, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
   err := <-chanErr
-  chan{{.NodeResult}} <- {{.NodeResult}}{
-    {{.Node}}: &{{.NodeInstance}},
-    Error: err,
-  }
+  result.{{.Node}} = &{{.NodeInstance}}
+  result.Error = err
 }
 
 {{/* todo: deal with importing right packages above and circular dependency all that jazz*/}}
@@ -121,8 +121,8 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
       {{$edgeName := .EdgeName -}}
       {{with .NodeInfo -}}
         // Gen{{$edgeName}} returns the {{$edgeName}} associated with the {{$currentNode}} instance
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodeResult}} chan<- {{.NodeResult}}) {
-          go GenLoad{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edge.FieldName}}, chan{{.NodeResult}} )
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(result *{{.NodeResult}}, wg *sync.WaitGroup) {
+          go GenLoad{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edge.FieldName}}, result, wg )
         }
 
         // Load{{$edgeName}} returns the {{$edgeName}} associated with the {{$currentNode}} instance

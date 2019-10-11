@@ -52,12 +52,12 @@ func Save(action Action) error {
 }
 
 func applyActionPermissions(action ActionWithPermissions) error {
-	visible, err := ent.ApplyPrivacyPolicy(action.GetViewer(), action, action.GetUnderlyingEnt())
+	err := ent.ApplyPrivacyPolicy(action.GetViewer(), action, action.GetUnderlyingEnt())
+	if ent.IsPrivacyError(err) {
+		return &ActionPermissionsError{}
+	}
 	if err != nil {
 		return err
-	}
-	if !visible {
-		return &ActionPermissionsError{}
 	}
 	return nil
 }

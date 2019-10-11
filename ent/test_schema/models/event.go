@@ -4,6 +4,7 @@ package models
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/lolopinto/ent/ent"
@@ -75,20 +76,19 @@ func LoadEvent(viewer viewer.ViewerContext, id string) (*Event, error) {
 }
 
 // GenLoadEvent loads the given Event given the id
-func GenLoadEvent(viewer viewer.ViewerContext, id string, chanEventResult chan<- EventResult) {
+func GenLoadEvent(viewer viewer.ViewerContext, id string, result *EventResult, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var event Event
 	chanErr := make(chan error)
 	go ent.GenLoadNode(viewer, id, &event, &configs.EventConfig{}, chanErr)
 	err := <-chanErr
-	chanEventResult <- EventResult{
-		Event: &event,
-		Error: err,
-	}
+	result.Event = &event
+	result.Error = err
 }
 
 // GenUser returns the User associated with the Event instance
-func (event *Event) GenUser(chanUserResult chan<- UserResult) {
-	go GenLoadUser(event.Viewer, event.UserID, chanUserResult)
+func (event *Event) GenUser(result *UserResult, wg *sync.WaitGroup) {
+	go GenLoadUser(event.Viewer, event.UserID, result, wg)
 }
 
 // LoadUser returns the User associated with the Event instance

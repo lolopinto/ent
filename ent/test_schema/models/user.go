@@ -4,6 +4,7 @@ package models
 
 import (
 	"context"
+	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -75,15 +76,14 @@ func LoadUser(viewer viewer.ViewerContext, id string) (*User, error) {
 }
 
 // GenLoadUser loads the given User given the id
-func GenLoadUser(viewer viewer.ViewerContext, id string, chanUserResult chan<- UserResult) {
+func GenLoadUser(viewer viewer.ViewerContext, id string, result *UserResult, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var user User
 	chanErr := make(chan error)
 	go ent.GenLoadNode(viewer, id, &user, &configs.UserConfig{}, chanErr)
 	err := <-chanErr
-	chanUserResult <- UserResult{
-		User:  &user,
-		Error: err,
-	}
+	result.User = &user
+	result.Error = err
 }
 
 // GenEventsEdges returns the Event edges associated with the User instance

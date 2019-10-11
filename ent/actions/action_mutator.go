@@ -2,7 +2,6 @@ package actions
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
@@ -72,7 +71,7 @@ func (action *editExistingNodeActionMutator) SaveAction(entity ent.Entity, field
 	if err != nil {
 		return err
 	}
-	entreflect.SetValueInEnt(reflect.ValueOf(entity), "Viewer", action.Viewer)
+	entreflect.SetViewerInEnt(action.Viewer, entity)
 	return nil
 }
 
@@ -205,7 +204,7 @@ func (action *CreateEntActionMutator) SaveAction(entity ent.Entity, fieldMap ent
 		return err
 	}
 	// set the viewer of the ent
-	entreflect.SetValueInEnt(reflect.ValueOf(entity), "Viewer", action.Viewer)
+	entreflect.SetViewerInEnt(action.Viewer, entity)
 	return nil
 }
 
@@ -281,7 +280,7 @@ func (action *EdgeGroupActionMutator) SaveAction(entity ent.Entity, fieldMap ent
 	if err != nil {
 		return err
 	}
-	entreflect.SetValueInEnt(reflect.ValueOf(entity), "Viewer", action.Viewer)
+	entreflect.SetViewerInEnt(action.Viewer, entity)
 	return nil
 }
 

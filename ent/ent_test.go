@@ -17,7 +17,7 @@ func createTestUser(t *testing.T) *models.User {
 	var user models.User
 
 	fields := map[string]interface{}{
-		"EmailAddress": "test@email.com",
+		"EmailAddress": fmt.Sprintf("test-%s@email.com", util.GenerateRandCode(9)),
 		"FirstName":    "Ola",
 		"LastName":     "Okelola",
 	}

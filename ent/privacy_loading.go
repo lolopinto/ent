@@ -16,6 +16,17 @@ type PrivacyError struct {
 	id      string
 }
 
+func getPrivacyError(ent Entity) *PrivacyError {
+	var id string
+	if ent != nil {
+		id = ent.GetID()
+	}
+	return &PrivacyError{
+		entType: getTypeName(ent),
+		id:      id,
+	}
+}
+
 // Error returns a formatted string that indicates why the ent is not visible
 func (err *PrivacyError) Error() string {
 	return fmt.Sprintf("Ent of type %s is not visible due to privacy reasons", err.entType)
@@ -57,7 +68,7 @@ func IsInvalidEntPrivacyError(err error) bool {
 	return ok
 }
 
-func getTypeName(ent interface{}) string {
+func getTypeName(ent Entity) string {
 	// for errors
 	if ent == nil {
 		return ""
@@ -67,17 +78,6 @@ func getTypeName(ent interface{}) string {
 		return t.Elem().Name()
 	}
 	return t.Name()
-}
-
-func setZeroVal(i interface{}) {
-	// neither of these work...
-	//ent = nil
-	// &ent = nil
-	//this doesn't quite set any embedded structs to nil...
-	v := reflect.ValueOf(i)
-
-	v.Elem().Set(reflect.Zero(v.Elem().Type()))
-	//	spew.Dump(i)
 }
 
 // TODO same issues as below
@@ -131,7 +131,7 @@ func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig C
 
 	// error in privacy loading
 	if result.err != nil {
-		setZeroVal(ent)
+		entreflect.SetZeroVal(ent)
 		logEntResult(ent, result.err)
 		errChan <- result.err
 	} else if result.visible {
@@ -143,7 +143,7 @@ func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig C
 		errChan <- nil
 	} else {
 		entData := ent
-		setZeroVal(ent)
+		entreflect.SetZeroVal(ent)
 		err = &PrivacyError{
 			entType: getTypeName(entData),
 			id:      id,
@@ -185,7 +185,7 @@ func genApplyPrivacyPolicyUnsure(viewer viewer.ViewerContext, maybeEnt interface
 	}
 }
 
-func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPrivacyPolicy, ent Entity) (bool, error) {
+func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPrivacyPolicy, ent Entity) error {
 	rules := objWithPolicy.GetPrivacyPolicy().Rules()
 
 	// TODO this is all done in parallel.
@@ -212,28 +212,28 @@ func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPri
 	// go through results of privacyRules and see what the privacy policy returns
 	for _, res := range results {
 		//fmt.Println("res from privacy rule", res)
-		if res == AllowPrivacyResult || res == DenyPrivacyResult {
-			return res == AllowPrivacyResult, nil
+		if res == AllowPrivacyResult {
+			return nil
+		} else if res == DenyPrivacyResult {
+			return getPrivacyError(ent)
 		}
 	}
 
 	// TODO eventually figure out how to do this with static analysis
 	// would be preferable to detect this at compile time instead of runtime
 	// or with a test
-	return false, &InvalidPrivacyRule{}
+	return &InvalidPrivacyRule{}
 }
 
 // apply the privacy policy and determine if the ent is visible
 func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyResult) {
 	// TODO do this programmatically without reflection later
 	// set viewer at the beginning because it's needed in GetPrivacyPolicy sometimes
-	value := reflect.ValueOf(ent)
-	// set viewer in ent
-	entreflect.SetValueInEnt(value, "Viewer", viewer)
+	entreflect.SetViewerInEnt(viewer, ent)
 
-	visible, err := ApplyPrivacyPolicy(viewer, ent, ent)
+	err := ApplyPrivacyPolicy(viewer, ent, ent)
 	result := privacyResult{
-		visible: visible,
+		visible: err == nil,
 		err:     err,
 	}
 	privacyResultChan <- result

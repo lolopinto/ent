@@ -31,11 +31,8 @@ type AllowIfViewerCanSeeEventRule struct {
 
 // Eval evaluates that the ent is visible to the user
 func (rule AllowIfViewerCanSeeEventRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	entResultChan := make(chan EventResult)
-	go GenLoadEvent(viewer, rule.EventID, entResultChan)
-	entResult := <-entResultChan
-
-	if entResult.Error != nil {
+	_, err := LoadEvent(viewer, rule.EventID)
+	if err != nil {
 		return ent.Skip()
 	}
 	return ent.Allow()

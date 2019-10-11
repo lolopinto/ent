@@ -43,7 +43,7 @@ func (suite *modelsTestSuite) TearDownTest() {
 }
 
 func (suite *modelsTestSuite) TestLoadNodeFromParts() {
-	createTestUser(suite.T())
+	user := createTestUser(suite.T())
 
 	var testCases = []struct {
 		parts       []interface{}
@@ -68,7 +68,7 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 		{
 			[]interface{}{
 				"email_address",
-				"test@email.com",
+				user.EmailAddress,
 				"last_name",
 				"Okelola",
 			},

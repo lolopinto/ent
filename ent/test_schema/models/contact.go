@@ -4,6 +4,7 @@ package models
 
 import (
 	"context"
+	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -73,15 +74,14 @@ func LoadContact(viewer viewer.ViewerContext, id string) (*Contact, error) {
 }
 
 // GenLoadContact loads the given Contact given the id
-func GenLoadContact(viewer viewer.ViewerContext, id string, chanContactResult chan<- ContactResult) {
+func GenLoadContact(viewer viewer.ViewerContext, id string, result *ContactResult, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var contact Contact
 	chanErr := make(chan error)
 	go ent.GenLoadNode(viewer, id, &contact, &configs.ContactConfig{}, chanErr)
 	err := <-chanErr
-	chanContactResult <- ContactResult{
-		Contact: &contact,
-		Error:   err,
-	}
+	result.Contact = &contact
+	result.Error = err
 }
 
 func (contact *Contact) DBFields() ent.DBFields {

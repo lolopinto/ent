@@ -8,6 +8,12 @@ type InlinePrivacyPolicy struct {
 	Ruless []ent.PrivacyPolicyRule
 }
 
+// GetPrivacyPolicy returns the inline privacy policy as a privacy policy
+// This enables InlinePrivacyPolicy to implement the interface ObjectWithPrivacyPolicy
+func (p InlinePrivacyPolicy) GetPrivacyPolicy() ent.PrivacyPolicy {
+	return p
+}
+
 // Rules returns the given list of rules
 func (p InlinePrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 	return p.Ruless

@@ -97,21 +97,9 @@ func LoadNodeRawData(id string, entity dataEntity, entConfig Config) error {
 	)
 }
 
-// EntityResult is the result of a call to LoadNodeConc which returns an object
-// and the channel. TODO: This is just a test
-type EntityResult struct {
-	Entity interface{}
-	Error  error
-}
-
 func genLoadRawData(id string, entity dataEntity, entConfig Config, errChan chan<- error) {
 	err := LoadNodeRawData(id, entity, entConfig)
-	// result := EntityResult{
-	// 	Entity: entity,
-	// 	Err:    err,
-	// }
 	errChan <- err
-	//chanResult <- result
 }
 
 func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, error) {

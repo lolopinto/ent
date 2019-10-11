@@ -31,12 +31,9 @@ type AllowIfViewerCanSee{{.Node}}Rule struct {
 
 // Eval evaluates that the ent is visible to the user 
 func (rule AllowIfViewerCanSee{{.Node}}Rule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	entResultChan := make(chan {{.NodeResult}})
-	go GenLoad{{.Node}}(viewer, rule.{{.Node}}ID, entResultChan)
-	entResult := <-entResultChan
-
-	if entResult.Error != nil {
+	_, err := Load{{.Node}}(viewer, rule.{{.Node}}ID)
+	if err != nil {
 		return ent.Skip()
-	} 
+	}
 	return ent.Allow()
 }

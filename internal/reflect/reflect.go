@@ -12,3 +12,18 @@ func SetValueInEnt(value reflect.Value, fieldName string, fieldValue interface{}
 		fbn.Set(reflect.ValueOf(fieldValue))
 	}
 }
+
+func SetZeroVal(i interface{}) {
+	// neither of these work...
+	//ent = nil
+	// &ent = nil
+	//this doesn't quite set any embedded structs to nil...
+	v := reflect.ValueOf(i)
+
+	v.Elem().Set(reflect.Zero(v.Elem().Type()))
+	//	spew.Dump(i)
+}
+
+func SetViewerInEnt(v, ent interface{}) {
+	SetValueInEnt(reflect.ValueOf(ent), "Viewer", v)
+}
