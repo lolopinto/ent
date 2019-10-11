@@ -42,6 +42,10 @@ func (r *queryResolver) User(ctx context.Context, id string) (*models.User, erro
 
 type userResolver struct{ *Resolver }
 
+func (r *userResolver) Contacts(ctx context.Context, obj *models.User) ([]*models.Contact, error) {
+	return obj.LoadContacts()
+}
+
 func (r *userResolver) Events(ctx context.Context, obj *models.User) ([]*models.Event, error) {
 	return obj.LoadEvents()
 }

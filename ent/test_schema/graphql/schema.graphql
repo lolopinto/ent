@@ -47,6 +47,7 @@ type Query {
 }
 
 type User implements Node {
+    contacts: [Contact!]!
     emailAddress: String!
     events: [Event!]!
     firstName: String!

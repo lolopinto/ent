@@ -86,6 +86,25 @@ func GenLoadUser(viewer viewer.ViewerContext, id string, result *UserResult, wg 
 	result.Error = err
 }
 
+// GenContacts returns the Contacts associated with the User instance
+func (user *User) GenContacts(chanContactsResult chan<- ContactsResult) {
+	var contacts []*Contact
+	chanErr := make(chan error)
+	go ent.GenLoadForeignKeyNodes(user.Viewer, user.ID, &contacts, "user_id", &configs.ContactConfig{}, chanErr)
+	err := <-chanErr
+	chanContactsResult <- ContactsResult{
+		Contacts: contacts,
+		Error:    err,
+	}
+}
+
+// LoadContacts returns the Contacts associated with the User instance
+func (user *User) LoadContacts() ([]*Contact, error) {
+	var contacts []*Contact
+	err := ent.LoadForeignKeyNodes(user.Viewer, user.ID, &contacts, "user_id", &configs.ContactConfig{})
+	return contacts, err
+}
+
 // GenEventsEdges returns the Event edges associated with the User instance
 func (user *User) GenEventsEdges(chanEdgesResult chan<- ent.EdgesResult) {
 	go ent.GenLoadEdgesByTypeResult(user.ID, UserToEventsEdge, chanEdgesResult)
