@@ -30,9 +30,10 @@ class Runner(object):
 
 
   @classmethod
-  def runner_from_command_line(cls, metadata, args):
+  def from_command_line(cls, metadata, args):
     engine = sa.create_engine(args.engine)
     connection = engine.connect()
+    metadata.bind = connection
     return Runner(metadata, connection, args.schema)
 
 

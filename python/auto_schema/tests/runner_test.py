@@ -7,8 +7,6 @@ from sqlalchemy.sql.schema import DefaultClause
 from sqlalchemy.sql.elements import TextClause
 
 from . import conftest
-from auto_schema import edge_data
-
 
 def get_new_metadata_for_runner(r):
   #metadata = r.get_metadata()

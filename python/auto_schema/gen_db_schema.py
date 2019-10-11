@@ -20,7 +20,7 @@ if __name__ == "__main__" :
 
   schema = import_module('schema')
   metadata = schema.get_metadata()
-  
-  r = runner.Runner.runner_from_command_line(metadata, args)
+
+  r = runner.Runner.from_command_line(metadata, args)
   r.run()
   
