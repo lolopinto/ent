@@ -1,5 +1,7 @@
 package ent
 
+import "github.com/lolopinto/ent/ent/viewer"
+
 type ObjectWithPrivacyPolicy interface {
 	GetPrivacyPolicy() PrivacyPolicy
 }
@@ -9,6 +11,7 @@ type Entity interface {
 	// GetType returns the NodeType of this entity
 	GetID() string // TODO uuid
 	GetType() NodeType
+	GetViewer() viewer.ViewerContext
 	dataEntity
 }
 

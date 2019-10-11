@@ -76,6 +76,10 @@ func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
 	return {{.NodeType}}
 }
 
+func ({{.NodeInstance}} *{{.Node}}) GetViewer() viewer.ViewerContext {
+  return {{.NodeInstance}}.Viewer
+}
+
 // GetPrivacyPolicy returns the PrivacyPolicy of this entity. 
 func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy() ent.PrivacyPolicy {
   return {{.Node}}PrivacyPolicy{

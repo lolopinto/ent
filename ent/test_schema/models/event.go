@@ -52,6 +52,10 @@ func (event *Event) GetType() ent.NodeType {
 	return EventType
 }
 
+func (event *Event) GetViewer() viewer.ViewerContext {
+	return event.Viewer
+}
+
 // GetPrivacyPolicy returns the PrivacyPolicy of this entity.
 func (event *Event) GetPrivacyPolicy() ent.PrivacyPolicy {
 	return EventPrivacyPolicy{

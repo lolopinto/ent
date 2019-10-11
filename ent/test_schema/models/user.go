@@ -54,6 +54,10 @@ func (user *User) GetType() ent.NodeType {
 	return UserType
 }
 
+func (user *User) GetViewer() viewer.ViewerContext {
+	return user.Viewer
+}
+
 // GetPrivacyPolicy returns the PrivacyPolicy of this entity.
 func (user *User) GetPrivacyPolicy() ent.PrivacyPolicy {
 	return UserPrivacyPolicy{

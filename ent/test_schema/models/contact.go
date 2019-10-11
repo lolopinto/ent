@@ -50,6 +50,10 @@ func (contact *Contact) GetType() ent.NodeType {
 	return ContactType
 }
 
+func (contact *Contact) GetViewer() viewer.ViewerContext {
+	return contact.Viewer
+}
+
 // GetPrivacyPolicy returns the PrivacyPolicy of this entity.
 func (contact *Contact) GetPrivacyPolicy() ent.PrivacyPolicy {
 	return ContactPrivacyPolicy{
