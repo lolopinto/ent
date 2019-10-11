@@ -49,3 +49,7 @@ func (r *userResolver) Contacts(ctx context.Context, obj *models.User) ([]*model
 func (r *userResolver) Events(ctx context.Context, obj *models.User) ([]*models.Event, error) {
 	return obj.LoadEvents()
 }
+
+func (r *userResolver) FamilyMembers(ctx context.Context, obj *models.User) ([]*models.User, error) {
+	return obj.LoadFamilyMembers()
+}

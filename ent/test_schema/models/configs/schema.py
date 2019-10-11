@@ -55,6 +55,17 @@ sa.Table("user_events_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_events_edges_id1_edge_type_id2_pkey"),
 )
    
+sa.Table("user_family_members_edges", metadata,
+    sa.Column("id1", UUID(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", UUID(), nullable=False),
+    sa.Column("id2", UUID(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_family_members_edges_id1_edge_type_id2_pkey"),
+)
+   
 sa.Table("users", metadata,
     sa.Column("id", UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -70,6 +81,7 @@ sa.Table("users", metadata,
 edges = {
   'public': {
     'UserToEventsEdge': {"edge_name":"UserToEventsEdge", "edge_type":"41bddf81-0c26-432c-9133-2f093af2c07c", "edge_table":"user_events_edges", "symmetric_edge":False, "inverse_edge_type":None},
+    'UserToFamilyMembersEdge': {"edge_name":"UserToFamilyMembersEdge", "edge_type":"38176101-6adc-4e0d-bd36-08cdc45f5ed2", "edge_table":"user_family_members_edges", "symmetric_edge":False, "inverse_edge_type":None},
   }
 }
 

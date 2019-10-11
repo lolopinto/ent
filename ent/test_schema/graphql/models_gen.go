@@ -30,3 +30,16 @@ type EventsEdge struct {
 }
 
 func (EventsEdge) IsEdge() {}
+
+type UsersConnection struct {
+	Edges []*UsersEdge   `json:"edges"`
+	Nodes []*models.User `json:"nodes"`
+}
+
+func (UsersConnection) IsConnection() {}
+
+type UsersEdge struct {
+	Node *models.User `json:"node"`
+}
+
+func (UsersEdge) IsEdge() {}

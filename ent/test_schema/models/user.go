@@ -19,6 +19,8 @@ const (
 
 	// UserToEventsEdge is the edgeType for the user to events edge.
 	UserToEventsEdge ent.EdgeType = "41bddf81-0c26-432c-9133-2f093af2c07c"
+	// UserToFamilyMembersEdge is the edgeType for the user to familymembers edge.
+	UserToFamilyMembersEdge ent.EdgeType = "38176101-6adc-4e0d-bd36-08cdc45f5ed2"
 )
 
 // User represents the `User` model
@@ -131,6 +133,34 @@ func (user *User) LoadEvents() ([]*Event, error) {
 	var events []*Event
 	err := ent.LoadNodesByType(user.Viewer, user.ID, UserToEventsEdge, &events, &configs.EventConfig{})
 	return events, err
+}
+
+// GenFamilyMembersEdges returns the User edges associated with the User instance
+func (user *User) GenFamilyMembersEdges(chanEdgesResult chan<- ent.EdgesResult) {
+	go ent.GenLoadEdgesByTypeResult(user.ID, UserToFamilyMembersEdge, chanEdgesResult)
+}
+
+func (user *User) LoadFamilyMembersByType(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(user.ID, UserToFamilyMembersEdge, id2)
+}
+
+// GenFamilyMembers returns the Users associated with the User instance
+func (user *User) GenFamilyMembers(chanUsersResult chan<- UsersResult) {
+	var users []*User
+	chanErr := make(chan error)
+	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, &users, &configs.UserConfig{}, chanErr)
+	err := <-chanErr
+	chanUsersResult <- UsersResult{
+		Users: users,
+		Error: err,
+	}
+}
+
+// LoadFamilyMembers returns the Users associated with the User instance
+func (user *User) LoadFamilyMembers() ([]*User, error) {
+	var users []*User
+	err := ent.LoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, &users, &configs.UserConfig{})
+	return users, err
 }
 
 func (user *User) DBFields() ent.DBFields {

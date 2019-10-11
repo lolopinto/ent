@@ -50,9 +50,19 @@ type User implements Node {
     contacts: [Contact!]!
     emailAddress: String!
     events: [Event!]!
+    familyMembers: [User!]!
     firstName: String!
     id: ID!
     lastName: String!
+}
+
+type UsersConnection implements Connection {
+    edges: [UsersEdge!]
+    nodes: [User!]
+}
+
+type UsersEdge implements Edge {
+    node: User!
 }
 
 

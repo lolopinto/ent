@@ -20,5 +20,8 @@ func (config *UserConfig) GetEdges() ent.EdgeMap {
 		"Contacts": &ent.ForeignKeyEdge{
 			EntConfig: ContactConfig{},
 		},
+		"FamilyMembers": &ent.AssociationEdge{
+			EntConfig: UserConfig{},
+		},
 	}
 }
