@@ -103,22 +103,23 @@ func GetConnectionStr() string {
 }
 
 func loadDBConfig() *DBConfig {
-	// this is what we'll use in production. what render supports
-	conn := getEnv("DB_CONNECTION_STRING", "")
-	if conn != "" {
-		return &DBConfig{
-			connection: conn,
-		}
-	}
-	// for tests and development
 	path := getEnv("PATH_TO_DB_FILE", "config/database.yml")
-	if path == "" {
+	_, err := os.Stat(path)
+	if err != nil {
+		// this is what we'll use in production. what render supports
+		conn := getEnv("DB_CONNECTION_STRING", "")
+		if conn != "" {
+			return &DBConfig{
+				connection: conn,
+			}
+		}
 		return nil
 	}
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatalf("could not read yml file to load db: %v", err)
 	}
+
 	var dbData RawDbInfo
 	err = yaml.Unmarshal(b, &dbData)
 	if err != nil {

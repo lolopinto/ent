@@ -96,7 +96,7 @@ func TestEdgesFromSchema(t *testing.T) {
 	template := schema.getSchemaForTemplate()
 
 	if len(template.Edges) != 4 {
-		t.Errorf("incorrect number of edges generated")
+		t.Errorf("incorrect number of edges generated, expected %d got %d", 4, len(template.Edges))
 	}
 }
 

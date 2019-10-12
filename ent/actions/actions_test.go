@@ -5,15 +5,13 @@ import (
 	"testing"
 
 	"github.com/iancoleman/strcase"
-	"github.com/khaiql/dbcleaner"
-	"github.com/khaiql/dbcleaner/engine"
-	"github.com/lolopinto/ent/config"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/privacy"
 	"github.com/lolopinto/ent/ent/test_schema/models"
 	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
+	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -118,22 +116,14 @@ func (a *editUserAction) GetUnderlyingEnt() ent.Entity {
 var _ ActionWithPermissions = &editUserAction{}
 
 type actionsPermissionsSuite struct {
-	suite.Suite
-	cleaner dbcleaner.DbCleaner
+	testingutils.Suite
 }
 
 func (suite *actionsPermissionsSuite) SetupSuite() {
-	suite.cleaner = dbcleaner.New()
-	postgres := engine.NewPostgresEngine(config.GetConnectionStr())
-	suite.cleaner.SetEngine(postgres)
-}
-
-func (suite *actionsPermissionsSuite) SetupTest() {
-	suite.cleaner.Acquire("users")
-}
-
-func (suite *actionsPermissionsSuite) TearDownTest() {
-	suite.cleaner.Clean("users")
+	suite.Tables = []string{
+		"users",
+	}
+	suite.Suite.SetupSuite()
 }
 
 func createUser(v viewer.ViewerContext) (createUserAction, error) {

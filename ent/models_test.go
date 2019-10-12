@@ -9,37 +9,24 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/lolopinto/ent/config"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/test_schema/models"
 	"github.com/lolopinto/ent/ent/test_schema/models/configs"
-	"gopkg.in/khaiql/dbcleaner.v2"
-	"gopkg.in/khaiql/dbcleaner.v2/engine"
+	"github.com/lolopinto/ent/internal/testingutils"
 )
 
 type modelsTestSuite struct {
-	suite.Suite
-	cleaner dbcleaner.DbCleaner
+	testingutils.Suite
 }
 
 func (suite *modelsTestSuite) SetupSuite() {
-	suite.cleaner = dbcleaner.New()
-	postgres := engine.NewPostgresEngine(config.GetConnectionStr())
-	suite.cleaner.SetEngine(postgres)
-}
-
-// TODO make this automatic based on db
-// TODO make this a base class for all future tests that operate on the db
-func (suite *modelsTestSuite) SetupTest() {
-	suite.cleaner.Acquire("users")
-	suite.cleaner.Acquire("user_events_edges")
-	suite.cleaner.Acquire("events")
-}
-
-func (suite *modelsTestSuite) TearDownTest() {
-	suite.cleaner.Clean("users")
-	suite.cleaner.Clean("user_events_edges")
-	suite.cleaner.Clean("events")
+	// TODO make this automatic based on db
+	suite.Tables = []string{
+		"users",
+		"events",
+		"user_events_edges",
+	}
+	suite.Suite.SetupSuite()
 }
 
 func (suite *modelsTestSuite) TestLoadNodeFromParts() {

@@ -4,7 +4,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/lolopinto/ent/config"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/privacy"
 	"github.com/lolopinto/ent/ent/test_schema/models"
@@ -12,29 +11,22 @@ import (
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
+	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gopkg.in/khaiql/dbcleaner.v2"
-	"gopkg.in/khaiql/dbcleaner.v2/engine"
 )
 
 type privacyTestSuite struct {
-	suite.Suite
-	cleaner dbcleaner.DbCleaner
+	testingutils.Suite
 }
 
 func (suite *privacyTestSuite) SetupSuite() {
-	suite.cleaner = dbcleaner.New()
-	postgres := engine.NewPostgresEngine(config.GetConnectionStr())
-	suite.cleaner.SetEngine(postgres)
-}
-
-func (suite *privacyTestSuite) SetupTest() {
-	suite.cleaner.Acquire("users")
-}
-
-func (suite *privacyTestSuite) TearDownTest() {
-	suite.cleaner.Clean("users")
+	suite.Tables = []string{
+		"users",
+		"events",
+		"user_events_edges",
+	}
+	suite.Suite.SetupSuite()
 }
 
 func (suite *privacyTestSuite) TestGeneratedLoadNode() {

@@ -8,14 +8,13 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/khaiql/dbcleaner"
-	"github.com/khaiql/dbcleaner/engine"
-	"github.com/lolopinto/ent/config"
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -741,26 +740,18 @@ func testConstants(t *testing.T, info *schema.NodeDataInfo, constMap map[string]
 }
 
 type edgeTestSuite struct {
-	suite.Suite
+	testingutils.Suite
 }
-
-var Cleaner = dbcleaner.New()
 
 func (suite *edgeTestSuite) SetupSuite() {
-	postgres := engine.NewPostgresEngine(config.GetConnectionStr())
-	Cleaner.SetEngine(postgres)
-}
-
-func (suite *edgeTestSuite) SetupTest() {
+	suite.Tables = []string{
+		"assoc_edge_config",
+	}
 	// this depends on "jarvis_test" having the table pre-configured but empty.
 	// ran this command: "pg_dump -t assoc_edge_config ent_test | psql jarvis_test"
 	// and then "delete from assoc_edge_config;" in psql to delete the rows to be clean
 	// TODO fix this to be done correctly
-	Cleaner.Acquire("assoc_edge_config")
-}
-
-func (suite *edgeTestSuite) TearDownTest() {
-	Cleaner.Clean("assoc_edge_config")
+	suite.Suite.SetupSuite()
 }
 
 // TODO use github.com/lolopinto/ent/cmd/gent/configs.AssocEdgeConfig
@@ -787,7 +778,7 @@ func (suite *edgeTestSuite) TestNewVsExistingEdges() {
 func (suite *edgeTestSuite) validateSchema(s *schema.Schema, expectedEdges, expectedNewEdges int) {
 	assert.Equal(suite.T(), len(s.GetNewEdges()), expectedNewEdges)
 	for _, edge := range s.GetNewEdges() {
-		err := ent.CreateNode(edge, &assocEdgeConfig{})
+		err := createEdge(edge)
 		assert.Nil(suite.T(), err)
 	}
 
@@ -795,6 +786,36 @@ func (suite *edgeTestSuite) validateSchema(s *schema.Schema, expectedEdges, expe
 	var dbEdges []*ent.AssocEdgeData
 	assert.Nil(suite.T(), ent.GenLoadAssocEdges(&dbEdges))
 	assert.Equal(suite.T(), len(s.GetEdges()), len(dbEdges))
+}
+
+func createEdge(edge *ent.AssocEdgeData) error {
+	fields := make(map[string]interface{})
+	fields["edge_type"] = edge.EdgeType
+	fields["inverse_edge_type"] = edge.InverseEdgeType
+	fields["edge_table"] = edge.EdgeTable
+	fields["edge_name"] = edge.EdgeName
+	fields["symmetric_edge"] = edge.SymmetricEdge
+
+	return ent.CreateNodeFromActionMap(
+		&ent.EditedNodeInfo{
+			Entity:         edge,
+			EntConfig:      &assocEdgeConfig{},
+			Fields:         fields,
+			EditableFields: getFieldMapFromFields(fields),
+		},
+	)
+}
+
+func getFieldMapFromFields(fields map[string]interface{}) ent.ActionFieldMap {
+	// copied from getFieldMapFromFields in ent_test
+	ret := make(ent.ActionFieldMap)
+	for k := range fields {
+		ret[k] = &ent.MutatingFieldInfo{
+			DB:       strcase.ToSnake(k),
+			Required: true,
+		}
+	}
+	return ret
 }
 
 func TestEdgeSuite(t *testing.T) {
