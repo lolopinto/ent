@@ -30,7 +30,7 @@ func (suite *modelsTestSuite) SetupSuite() {
 }
 
 func (suite *modelsTestSuite) TestLoadNodeFromParts() {
-	user := createTestUser(suite.T())
+	user := testingutils.CreateTestUser(suite.T())
 
 	var testCases = []struct {
 		parts       []interface{}
@@ -85,7 +85,7 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 }
 
 func (suite *modelsTestSuite) TestLoadNodeFromID() {
-	user := createTestUser(suite.T())
+	user := testingutils.CreateTestUser(suite.T())
 
 	var testCases = []struct {
 		id          string
@@ -144,9 +144,9 @@ func (suite *modelsTestSuite) TestGetEdgeInfo() {
 }
 
 func (suite *modelsTestSuite) TestLoadEdgesByType() {
-	user := createTestUser(suite.T())
-	event := createTestEvent(suite.T(), user)
-	event2 := createTestEvent(suite.T(), user)
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+	event2 := testingutils.CreateTestEvent(suite.T(), user)
 
 	var testCases = []struct {
 		id1         string
@@ -198,9 +198,9 @@ func (suite *modelsTestSuite) TestLoadAssocEdges() {
 }
 
 func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
-	user := createTestUser(suite.T())
-	contact := createTestContact(suite.T(), user)
-	contact2 := createTestContact(suite.T(), user)
+	user := testingutils.CreateTestUser(suite.T())
+	contact := testingutils.CreateTestContact(suite.T(), user)
+	contact2 := testingutils.CreateTestContact(suite.T(), user)
 
 	var testCases = []struct {
 		id          string
@@ -236,9 +236,9 @@ func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
 }
 
 func (suite *modelsTestSuite) TestLoadNodesByType() {
-	user := createTestUser(suite.T())
-	event := createTestEvent(suite.T(), user)
-	event2 := createTestEvent(suite.T(), user)
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+	event2 := testingutils.CreateTestEvent(suite.T(), user)
 
 	var testCases = []struct {
 		id1         string

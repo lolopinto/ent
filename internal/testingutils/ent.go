@@ -1,4 +1,4 @@
-package ent_test
+package testingutils
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createTestUser(t *testing.T) *models.User {
+func CreateTestUser(t *testing.T) *models.User {
 	var user models.User
 
 	fields := map[string]interface{}{
@@ -34,7 +34,7 @@ func createTestUser(t *testing.T) *models.User {
 	return &user
 }
 
-func createTestEvent(t *testing.T, user *models.User) *models.Event {
+func CreateTestEvent(t *testing.T, user *models.User) *models.Event {
 	var event models.Event
 
 	fields := map[string]interface{}{
@@ -64,7 +64,7 @@ func createTestEvent(t *testing.T, user *models.User) *models.Event {
 	return &event
 }
 
-func createTestContact(t *testing.T, user *models.User) *models.Contact {
+func CreateTestContact(t *testing.T, user *models.User) *models.Contact {
 	var contact models.Contact
 
 	fields := map[string]interface{}{
@@ -83,6 +83,30 @@ func createTestContact(t *testing.T, user *models.User) *models.Contact {
 	)
 	assert.Nil(t, err)
 	return &contact
+}
+
+func AddFamilyMember(t *testing.T, user1, user2 *models.User) {
+	var user models.User
+
+	fields := make(map[string]interface{})
+	err := ent.EditNodeFromActionMap(
+		&ent.EditedNodeInfo{
+			Entity:         &user,
+			ExistingEnt:    user1,
+			EntConfig:      &configs.UserConfig{},
+			Fields:         fields,
+			EditableFields: getFieldMapFromFields(fields),
+			OutboundEdges: []*ent.EditedEdgeInfo{
+				&ent.EditedEdgeInfo{
+					EdgeType: models.UserToFamilyMembersEdge,
+					Id:       user2.ID,
+					NodeType: user1.GetType(),
+				},
+			},
+		},
+	)
+
+	assert.Nil(t, err)
 }
 
 func getFieldMapFromFields(fields map[string]interface{}) ent.ActionFieldMap {

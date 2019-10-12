@@ -80,7 +80,6 @@ func (rule AllowIfViewerRule) Eval(viewer viewer.ViewerContext, entity ent.Entit
 }
 
 type AllowIfClosureRule struct {
-	// TODO this should be Entity when this is typed to Entity correctly
 	Func func(viewer viewer.ViewerContext, ent ent.Entity) bool
 }
 
@@ -89,23 +88,4 @@ func (rule AllowIfClosureRule) Eval(viewer viewer.ViewerContext, entity ent.Enti
 		return ent.Allow()
 	}
 	return ent.Skip()
-}
-
-type AllowIfEdgeExistsRule struct {
-	Func func(viewer viewer.ViewerContext, entity ent.Entity) (*ent.Edge, error)
-
-	// ID1 string
-	// ID2 string
-	// EdgeType EdgeType
-}
-
-func (rule AllowIfEdgeExistsRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	edge, err := rule.Func(viewer, entity)
-	if err != nil {
-		return ent.Skip()
-	} else if edge == nil || edge.ID1 == "" {
-		return ent.Skip()
-	} else {
-		return ent.Allow()
-	}
 }

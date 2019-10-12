@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/ent/privacy"
 	"github.com/lolopinto/ent/ent/test_schema/models"
 	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 	"github.com/lolopinto/ent/ent/viewer"
@@ -69,8 +68,8 @@ func (suite *privacyTestSuite) TestManualGenLoadNode() {
 }
 
 func (suite *privacyTestSuite) TestWaitForMultiple() {
-	dbUser := createTestUser(suite.T())
-	dbEvent := createTestEvent(suite.T(), dbUser)
+	dbUser := testingutils.CreateTestUser(suite.T())
+	dbEvent := testingutils.CreateTestEvent(suite.T(), dbUser)
 
 	var userResult models.UserResult
 	var eventResult models.EventResult
@@ -89,8 +88,8 @@ func (suite *privacyTestSuite) TestWaitForMultiple() {
 }
 
 func (suite *privacyTestSuite) TestLoadFieldEdges() {
-	dbUser := createTestUser(suite.T())
-	dbEvent := createTestEvent(suite.T(), dbUser)
+	dbUser := testingutils.CreateTestUser(suite.T())
+	dbEvent := testingutils.CreateTestEvent(suite.T(), dbUser)
 
 	v := viewertesting.OmniViewerContext{}
 	event, err := models.LoadEvent(v, dbEvent.ID)
@@ -117,14 +116,10 @@ func (suite *privacyTestSuite) TestAllowIfViewerCanSeeEntRule() {
 		// done in this format to reuse the omni, logged in user, logged out logic from testLoadNode
 		err := ent.ApplyPrivacyPolicy(
 			v,
-			privacy.InlinePrivacyPolicy{
-				privacy.Rules(
-					privacy.AllowIfOmniscientRule{},
-					models.AllowIfViewerCanSeeUserRule{UserID: id},
-					privacy.AlwaysDenyRule{},
-				),
+			testingutils.AllowOneInlinePrivacyPolicy(
+				models.AllowIfViewerCanSeeUserRule{UserID: id},
 				nil,
-			},
+			),
 			nil,
 		)
 		var user models.User
@@ -142,7 +137,7 @@ func TestPrivacySuite(t *testing.T) {
 }
 
 func testLoadNode(suite *privacyTestSuite, f func(viewer.ViewerContext, string) (*models.User, error)) {
-	dbUser := createTestUser(suite.T())
+	dbUser := testingutils.CreateTestUser(suite.T())
 
 	var testCases = []struct {
 		viewer   viewer.ViewerContext
@@ -152,7 +147,7 @@ func testLoadNode(suite *privacyTestSuite, f func(viewer.ViewerContext, string) 
 		{
 			viewertesting.OmniViewerContext{},
 			true,
-			"logged in viewer",
+			"omni viewer",
 		},
 		{
 			viewer.LoggedOutViewer(),
