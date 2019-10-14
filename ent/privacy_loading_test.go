@@ -1,6 +1,7 @@
 package ent_test
 
 import (
+	"sort"
 	"sync"
 	"testing"
 
@@ -132,6 +133,73 @@ func (suite *privacyTestSuite) TestAllowIfViewerCanSeeEntRule() {
 	})
 }
 
+func (suite *privacyTestSuite) TestManualLoadForeignKeyNodes() {
+	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
+		var contacts []*models.Contact
+		err := ent.LoadForeignKeyNodes(v, id, &contacts, "user_id", &configs.ContactConfig{})
+		return contacts, err
+	})
+}
+
+func (suite *privacyTestSuite) TestManualGenLoadForeignKeyNodes() {
+	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
+		var contacts []*models.Contact
+		chanErr := make(chan error)
+		go ent.GenLoadForeignKeyNodes(v, id, &contacts, "user_id", &configs.ContactConfig{}, chanErr)
+		err := <-chanErr
+		return contacts, err
+	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedForeignKeyNodes() {
+	user := testingutils.CreateTestUser(suite.T())
+	contact := testingutils.CreateTestContact(suite.T(), user)
+	contact2 := testingutils.CreateTestContact(suite.T(), user)
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	entreflect.SetViewerInEnt(v, user)
+	verifyLoadedForeignKeyNodes(
+		suite,
+		v,
+		user.ID,
+		func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
+			return user.LoadContacts()
+		},
+		[]string{
+			contact.ID,
+			contact2.ID,
+		},
+		"generated synchronous API",
+	)
+}
+
+func (suite *privacyTestSuite) TestGeneratedGenForeignKeyNodes() {
+	user := testingutils.CreateTestUser(suite.T())
+	contact := testingutils.CreateTestContact(suite.T(), user)
+	contact2 := testingutils.CreateTestContact(suite.T(), user)
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	entreflect.SetViewerInEnt(v, user)
+	verifyLoadedForeignKeyNodes(
+		suite,
+		v,
+		user.ID,
+		func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
+			var wg sync.WaitGroup
+			var result models.ContactsResult
+			wg.Add(1)
+			go user.GenContacts(&result, &wg)
+			wg.Wait()
+			return result.Contacts, result.Error
+		},
+		[]string{
+			contact.ID,
+			contact2.ID,
+		},
+		"generated synchronous API",
+	)
+}
+
 func TestPrivacySuite(t *testing.T) {
 	suite.Run(t, new(privacyTestSuite))
 }
@@ -178,4 +246,105 @@ func testLoadNode(suite *privacyTestSuite, f func(viewer.ViewerContext, string) 
 			assert.Zero(suite.T(), *user, tt.testCase)
 		}
 	}
+}
+
+func testLoadForeignKeyNodes(suite *privacyTestSuite, f func(viewer.ViewerContext, string) ([]*models.Contact, error)) {
+	user := testingutils.CreateTestUser(suite.T())
+	user2 := testingutils.CreateTestUser(suite.T())
+	user3 := testingutils.CreateTestUser(suite.T())
+	user4 := testingutils.CreateTestUser(suite.T())
+
+	// only owner can see this contact
+	contact := testingutils.CreateTestContact(suite.T(), user)
+
+	// owner and user2 can see this contact
+	contact2 := testingutils.CreateTestContact(suite.T(), user, user2)
+
+	// owner, user2, and user3 can see this contact
+	contact3 := testingutils.CreateTestContact(suite.T(), user, user2, user3)
+
+	var testCases = []struct {
+		viewer    viewer.ViewerContext
+		loadedIds []string
+		testCase  string
+	}{
+		{
+			viewertesting.OmniViewerContext{},
+			[]string{
+				contact.ID,
+				contact2.ID,
+				contact3.ID,
+			},
+			"omni viewer",
+		},
+		{
+			viewer.LoggedOutViewer(),
+			[]string{},
+			"logged out viewer",
+		},
+		{
+			viewertesting.LoggedinViewerContext{ViewerID: user.ID},
+			[]string{
+				contact.ID,
+				contact2.ID,
+				contact3.ID,
+			},
+			"viewer who owns contacts",
+		},
+		{
+			viewertesting.LoggedinViewerContext{ViewerID: user2.ID},
+			[]string{
+				contact2.ID,
+				contact3.ID,
+			},
+			"viewer who has access to 2 contacts",
+		},
+		{
+			viewertesting.LoggedinViewerContext{ViewerID: user3.ID},
+			[]string{
+				contact3.ID,
+			},
+			"viewer who has access to 1 contact",
+		},
+		{
+			viewertesting.LoggedinViewerContext{ViewerID: user4.ID},
+			[]string{},
+			"viewer who has access to no contacts",
+		},
+	}
+
+	for _, tt := range testCases {
+		verifyLoadedForeignKeyNodes(
+			suite,
+			tt.viewer,
+			user.ID,
+			f,
+			tt.loadedIds,
+			tt.testCase,
+		)
+	}
+}
+
+func verifyLoadedForeignKeyNodes(
+	suite *privacyTestSuite,
+	v viewer.ViewerContext,
+	id string,
+	f func(viewer.ViewerContext, string) ([]*models.Contact, error),
+	expectedIds []string,
+	testCase string,
+) {
+	contacts, err := f(v, id)
+	assert.Nil(suite.T(), err, testCase)
+	assert.Equal(suite.T(), len(contacts), len(expectedIds), testCase)
+
+	actualIds := []string{}
+	for _, contact := range contacts {
+		assert.NotZero(suite.T(), contact, testCase)
+		assert.Equal(suite.T(), contact.Viewer, v, testCase)
+		assert.Equal(suite.T(), id, contact.UserID, testCase)
+		actualIds = append(actualIds, contact.ID)
+	}
+	sort.Strings(expectedIds)
+	sort.Strings(actualIds)
+	assert.Equal(suite.T(), expectedIds, actualIds, testCase)
 }

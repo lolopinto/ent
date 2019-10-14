@@ -93,15 +93,14 @@ func GenLoadUser(viewer viewer.ViewerContext, id string, result *UserResult, wg 
 }
 
 // GenContacts returns the Contacts associated with the User instance
-func (user *User) GenContacts(chanContactsResult chan<- ContactsResult) {
+func (user *User) GenContacts(result *ContactsResult, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var contacts []*Contact
 	chanErr := make(chan error)
 	go ent.GenLoadForeignKeyNodes(user.Viewer, user.ID, &contacts, "user_id", &configs.ContactConfig{}, chanErr)
 	err := <-chanErr
-	chanContactsResult <- ContactsResult{
-		Contacts: contacts,
-		Error:    err,
-	}
+	result.Contacts = contacts
+	result.Error = err
 }
 
 // LoadContacts returns the Contacts associated with the User instance

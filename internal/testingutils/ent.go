@@ -64,7 +64,7 @@ func CreateTestEvent(t *testing.T, user *models.User) *models.Event {
 	return &event
 }
 
-func CreateTestContact(t *testing.T, user *models.User) *models.Contact {
+func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.User) *models.Contact {
 	var contact models.Contact
 
 	fields := map[string]interface{}{
@@ -73,12 +73,21 @@ func CreateTestContact(t *testing.T, user *models.User) *models.Contact {
 		"FirstName":    "first-name",
 		"LastName":     "last-name",
 	}
+	outboundEdges := []*ent.EditedEdgeInfo{}
+	for _, user := range allowList {
+		outboundEdges = append(outboundEdges, &ent.EditedEdgeInfo{
+			EdgeType: models.ContactToAllowListEdge,
+			Id:       user.ID,
+			NodeType: user.GetType(),
+		})
+	}
 	err := ent.CreateNodeFromActionMap(
 		&ent.EditedNodeInfo{
 			Entity:         &contact,
 			EntConfig:      &configs.ContactConfig{},
 			Fields:         fields,
 			EditableFields: getFieldMapFromFields(fields),
+			OutboundEdges:  outboundEdges,
 		},
 	)
 	assert.Nil(t, err)

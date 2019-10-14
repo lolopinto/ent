@@ -20,9 +20,14 @@ func (policy ContactPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 		privacy.AllowIfOmniscientRule{},
 		// BEGIN MANUAL SECTION: Add custom privacy rules below
 		privacy.AllowIfViewerIsOwnerRule{OwnerID: policy.Contact.UserID},
-		// privacy.AllowIfEdgeExistsRule{
-
-		// }
+		privacy.AllowIfViewerOutboundEdgeExistsRule{
+			Policy: policy,
+			// stuff like this is why this current model of manual rules doesn't work and why I have to change it
+			// this is models.ContactToAllowListEdge
+			EdgeType: ent.EdgeType(
+				"f6ecacb9-1d4f-47bb-8f18-f7d544450ea2",
+			),
+		},
 		// END MANUAL SECTION of privacy rules
 		privacy.AlwaysDenyRule{},
 	}

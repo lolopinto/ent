@@ -21,7 +21,6 @@ func SetZeroVal(i interface{}) {
 	v := reflect.ValueOf(i)
 
 	v.Elem().Set(reflect.Zero(v.Elem().Type()))
-	//	spew.Dump(i)
 }
 
 func SetViewerInEnt(v, ent interface{}) {

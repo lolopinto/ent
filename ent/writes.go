@@ -227,7 +227,7 @@ func handleReturnedEnt(op dataOperation, ent Entity) (Entity, error) {
 	createOp, ok := op.(dataOperationWithEnt)
 
 	if !ok {
-		return nil, nil
+		return ent, nil
 	}
 
 	// existing object
