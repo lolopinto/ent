@@ -10,6 +10,9 @@ import (
 
 type Resolver struct{}
 
+func (r *Resolver) Contact() ContactResolver {
+	return &contactResolver{r}
+}
 func (r *Resolver) Event() EventResolver {
 	return &eventResolver{r}
 }
@@ -18,6 +21,12 @@ func (r *Resolver) Query() QueryResolver {
 }
 func (r *Resolver) User() UserResolver {
 	return &userResolver{r}
+}
+
+type contactResolver struct{ *Resolver }
+
+func (r *contactResolver) AllowList(ctx context.Context, obj *models.Contact) ([]*models.User, error) {
+	return obj.LoadAllowList()
 }
 
 type eventResolver struct{ *Resolver }

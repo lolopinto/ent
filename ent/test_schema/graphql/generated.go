@@ -37,6 +37,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Contact() ContactResolver
 	Event() EventResolver
 	Query() QueryResolver
 	User() UserResolver
@@ -47,6 +48,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Contact struct {
+		AllowList    func(childComplexity int) int
 		EmailAddress func(childComplexity int) int
 		FirstName    func(childComplexity int) int
 		ID           func(childComplexity int) int
@@ -98,6 +100,9 @@ type ComplexityRoot struct {
 	}
 }
 
+type ContactResolver interface {
+	AllowList(ctx context.Context, obj *models.Contact) ([]*models.User, error)
+}
 type EventResolver interface {
 	User(ctx context.Context, obj *models.Event) (*models.User, error)
 }
@@ -127,6 +132,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Contact.allowList":
+		if e.complexity.Contact.AllowList == nil {
+			break
+		}
+
+		return e.complexity.Contact.AllowList(childComplexity), true
 
 	case "Contact.emailAddress":
 		if e.complexity.Contact.EmailAddress == nil {
@@ -390,6 +402,7 @@ interface Connection {
 }
 
 type Contact implements Node {
+    allowList: [User!]!
     emailAddress: String!
     firstName: String!
     id: ID!
@@ -548,6 +561,43 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Contact_allowList(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Contact",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Contact().AllowList(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _Contact_emailAddress(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
@@ -2845,30 +2895,44 @@ func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, 
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Contact")
+		case "allowList":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Contact_allowList(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "emailAddress":
 			out.Values[i] = ec._Contact_emailAddress(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "firstName":
 			out.Values[i] = ec._Contact_firstName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "id":
 			out.Values[i] = ec._Contact_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "lastName":
 			out.Values[i] = ec._Contact_lastName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "userID":
 			out.Values[i] = ec._Contact_userID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))

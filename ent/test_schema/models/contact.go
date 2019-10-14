@@ -16,6 +16,9 @@ import (
 const (
 	// ContactType is the node type for the Contact object. Used to identify this node in edges and other places.
 	ContactType ent.NodeType = "contact"
+
+	// ContactToAllowListEdge is the edgeType for the contact to allowlist edge.
+	ContactToAllowListEdge ent.EdgeType = "f6ecacb9-1d4f-47bb-8f18-f7d544450ea2"
 )
 
 // Contact represents the `Contact` model
@@ -86,6 +89,34 @@ func GenLoadContact(viewer viewer.ViewerContext, id string, result *ContactResul
 	err := <-chanErr
 	result.Contact = &contact
 	result.Error = err
+}
+
+// GenAllowListEdges returns the User edges associated with the Contact instance
+func (contact *Contact) GenAllowListEdges(chanEdgesResult chan<- ent.EdgesResult) {
+	go ent.GenLoadEdgesByTypeResult(contact.ID, ContactToAllowListEdge, chanEdgesResult)
+}
+
+func (contact *Contact) LoadAllowListByType(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(contact.ID, ContactToAllowListEdge, id2)
+}
+
+// GenAllowList returns the Users associated with the Contact instance
+func (contact *Contact) GenAllowList(chanUsersResult chan<- UsersResult) {
+	var users []*User
+	chanErr := make(chan error)
+	go ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &users, &configs.UserConfig{}, chanErr)
+	err := <-chanErr
+	chanUsersResult <- UsersResult{
+		Users: users,
+		Error: err,
+	}
+}
+
+// LoadAllowList returns the Users associated with the Contact instance
+func (contact *Contact) LoadAllowList() ([]*User, error) {
+	var users []*User
+	err := ent.LoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &users, &configs.UserConfig{})
+	return users, err
 }
 
 func (contact *Contact) DBFields() ent.DBFields {
