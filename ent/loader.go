@@ -67,6 +67,12 @@ type multiInputLoader interface {
 	GetCacheKeyForID(id string) string
 }
 
+// terrible name
+type abortEarlyLoader interface {
+	loader
+	AbortEarly() bool
+}
+
 type loaderConfig struct {
 	tx *sqlx.Tx
 	// TODO disable
@@ -91,6 +97,13 @@ func loadData(l loader, options ...func(*loaderConfig)) error {
 		if err := validator.Validate(); err != nil {
 			return err
 		}
+	}
+
+	// if the loader gets something like an empty string and we don't want to send an error,
+	// we can save load on the db by not wasting a query and we don't wanna return an error
+	abortEarly, ok := l.(abortEarlyLoader)
+	if ok && abortEarly.AbortEarly() {
+		return nil
 	}
 
 	// handle loaders that have multiple items that can be cached
@@ -367,6 +380,10 @@ type loadEdgesByType struct {
 	edgeType   EdgeType
 	edges      []*Edge
 	outputID2s bool
+}
+
+func (l *loadEdgesByType) AbortEarly() bool {
+	return l.id == ""
 }
 
 func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {

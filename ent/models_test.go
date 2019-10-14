@@ -160,6 +160,10 @@ func (suite *modelsTestSuite) TestLoadEdgesByType() {
 			event.ID,
 			false,
 		},
+		{
+			"",
+			false,
+		},
 	}
 
 	for _, tt := range testCases {

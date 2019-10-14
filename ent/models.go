@@ -72,10 +72,6 @@ func getKeyForNode(id, tableName string) string {
 }
 
 func getKeyForEdge(id string, edgeType EdgeType) string {
-	if id == "" {
-		debug.PrintStack()
-		panic(errors.WithStack(errors.New("empty id passed")))
-	}
 	return remember.CreateKey(false, "_", "edge_id", edgeType, id)
 }
 
