@@ -17,6 +17,9 @@ import (
 const (
 	// EventType is the node type for the Event object. Used to identify this node in edges and other places.
 	EventType ent.NodeType = "event"
+
+	// EventToInvitedEdge is the edgeType for the event to invited edge.
+	EventToInvitedEdge ent.EdgeType = "12a5ac62-1f9a-4fd7-b38f-a6d229ace12c"
 )
 
 // Event represents the `Event` model
@@ -98,6 +101,33 @@ func (event *Event) GenUser(result *UserResult, wg *sync.WaitGroup) {
 // LoadUser returns the User associated with the Event instance
 func (event *Event) LoadUser() (*User, error) {
 	return LoadUser(event.Viewer, event.UserID)
+}
+
+// GenInvitedEdges returns the User edges associated with the Event instance
+func (event *Event) GenInvitedEdges(chanEdgesResult chan<- ent.EdgesResult) {
+	go ent.GenLoadEdgesByTypeResult(event.ID, EventToInvitedEdge, chanEdgesResult)
+}
+
+func (event *Event) LoadInvitedByType(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(event.ID, EventToInvitedEdge, id2)
+}
+
+// GenInvited returns the Users associated with the Event instance
+func (event *Event) GenInvited(result *UsersResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var users []*User
+	chanErr := make(chan error)
+	go ent.GenLoadNodesByType(event.Viewer, event.ID, EventToInvitedEdge, &users, &configs.UserConfig{}, chanErr)
+	err := <-chanErr
+	result.Users = users
+	result.Error = err
+}
+
+// LoadInvited returns the Users associated with the Event instance
+func (event *Event) LoadInvited() ([]*User, error) {
+	var users []*User
+	err := ent.LoadNodesByType(event.Viewer, event.ID, EventToInvitedEdge, &users, &configs.UserConfig{})
+	return users, err
 }
 
 func (event *Event) DBFields() ent.DBFields {

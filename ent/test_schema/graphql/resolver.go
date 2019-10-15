@@ -31,6 +31,10 @@ func (r *contactResolver) AllowList(ctx context.Context, obj *models.Contact) ([
 
 type eventResolver struct{ *Resolver }
 
+func (r *eventResolver) Invited(ctx context.Context, obj *models.Event) ([]*models.User, error) {
+	return obj.LoadInvited()
+}
+
 func (r *eventResolver) User(ctx context.Context, obj *models.Event) (*models.User, error) {
 	return obj.LoadUser()
 }

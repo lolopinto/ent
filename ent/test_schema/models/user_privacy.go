@@ -20,6 +20,13 @@ func (policy UserPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 		privacy.AllowIfOmniscientRule{},
 		// BEGIN MANUAL SECTION: Add custom privacy rules below
 		privacy.AllowIfViewerIsOwnerRule{OwnerID: policy.User.ID},
+		privacy.AllowIfViewerInboundEdgeExistsRule{
+			Policy: policy,
+			// UserToFamilyMembersEdge
+			EdgeType: ent.EdgeType(
+				"38176101-6adc-4e0d-bd36-08cdc45f5ed2",
+			),
+		},
 		// END MANUAL SECTION of privacy rules
 		privacy.AlwaysDenyRule{},
 	}

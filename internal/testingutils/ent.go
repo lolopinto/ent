@@ -34,7 +34,7 @@ func CreateTestUser(t *testing.T) *models.User {
 	return &user
 }
 
-func CreateTestEvent(t *testing.T, user *models.User) *models.Event {
+func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.User) *models.Event {
 	var event models.Event
 
 	fields := map[string]interface{}{
@@ -43,6 +43,14 @@ func CreateTestEvent(t *testing.T, user *models.User) *models.Event {
 		"StartTime": time.Now(),
 		"EndTime":   time.Now().Add(time.Hour * 24 * 3),
 		"Location":  "fun location",
+	}
+	outboundEdges := []*ent.EditedEdgeInfo{}
+	for _, user := range invitedUsers {
+		outboundEdges = append(outboundEdges, &ent.EditedEdgeInfo{
+			EdgeType: models.EventToInvitedEdge,
+			Id:       user.ID,
+			NodeType: user.GetType(),
+		})
 	}
 	err := ent.CreateNodeFromActionMap(
 		&ent.EditedNodeInfo{
@@ -57,6 +65,7 @@ func CreateTestEvent(t *testing.T, user *models.User) *models.Event {
 					NodeType: user.GetType(),
 				},
 			},
+			OutboundEdges: outboundEdges,
 		},
 	)
 	assert.Nil(t, err)

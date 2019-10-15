@@ -101,15 +101,14 @@ func (contact *Contact) LoadAllowListByType(id2 string) (*ent.Edge, error) {
 }
 
 // GenAllowList returns the Users associated with the Contact instance
-func (contact *Contact) GenAllowList(chanUsersResult chan<- UsersResult) {
+func (contact *Contact) GenAllowList(result *UsersResult, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var users []*User
 	chanErr := make(chan error)
 	go ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &users, &configs.UserConfig{}, chanErr)
 	err := <-chanErr
-	chanUsersResult <- UsersResult{
-		Users: users,
-		Error: err,
-	}
+	result.Users = users
+	result.Error = err
 }
 
 // LoadAllowList returns the Users associated with the Contact instance

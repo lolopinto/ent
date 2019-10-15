@@ -19,6 +19,16 @@ func (policy EventPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 	return []ent.PrivacyPolicyRule{
 		privacy.AllowIfOmniscientRule{},
 		// BEGIN MANUAL SECTION: Add custom privacy rules below
+		privacy.AllowIfViewerIsOwnerRule{
+			OwnerID: policy.Event.UserID,
+		},
+		privacy.AllowIfViewerOutboundEdgeExistsRule{
+			Policy: policy,
+			EdgeType: ent.EdgeType(
+				// EventToInvitedEdge
+				"12a5ac62-1f9a-4fd7-b38f-a6d229ace12c",
+			),
+		},
 		// END MANUAL SECTION of privacy rules
 		privacy.AlwaysDenyRule{},
 	}

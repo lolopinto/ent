@@ -200,6 +200,75 @@ func (suite *privacyTestSuite) TestGeneratedGenForeignKeyNodes() {
 	)
 }
 
+func (suite *privacyTestSuite) TestLoadNodesByType() {
+	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+		var events []*models.Event
+		err := ent.LoadNodesByType(v, id, models.UserToEventsEdge, &events, &configs.EventConfig{})
+		return events, err
+	})
+}
+
+func (suite *privacyTestSuite) TestGenLoadNodesByType() {
+	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+		var events []*models.Event
+		chanErr := make(chan error)
+		go ent.GenLoadNodesByType(v, id, models.UserToEventsEdge, &events, &configs.EventConfig{}, chanErr)
+		err := <-chanErr
+		return events, err
+	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedLoadNodesByType() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+	event2 := testingutils.CreateTestEvent(suite.T(), user)
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	entreflect.SetViewerInEnt(v, user)
+
+	verifyLoadedNodesByType(
+		suite,
+		v,
+		user.ID,
+		func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+			return user.LoadEvents()
+		},
+		[]string{
+			event.ID,
+			event2.ID,
+		},
+		"generated loaded nodes",
+	)
+}
+
+func (suite *privacyTestSuite) TestGeneratedGenLoadNodesByType() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+	event2 := testingutils.CreateTestEvent(suite.T(), user)
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	entreflect.SetViewerInEnt(v, user)
+
+	verifyLoadedNodesByType(
+		suite,
+		v,
+		user.ID,
+		func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+			var wg sync.WaitGroup
+			var result models.EventsResult
+			wg.Add(1)
+			go user.GenEvents(&result, &wg)
+			wg.Wait()
+			return result.Events, result.Error
+		},
+		[]string{
+			event.ID,
+			event2.ID,
+		},
+		"generated loaded nodes",
+	)
+}
+
 func TestPrivacySuite(t *testing.T) {
 	suite.Run(t, new(privacyTestSuite))
 }
@@ -334,17 +403,142 @@ func verifyLoadedForeignKeyNodes(
 	testCase string,
 ) {
 	contacts, err := f(v, id)
-	assert.Nil(suite.T(), err, testCase)
-	assert.Equal(suite.T(), len(contacts), len(expectedIds), testCase)
+	verifyLoadedMultiNodes(
+		suite,
+		v,
+		id,
+		func() []string {
+			actualIds := []string{}
+			for _, contact := range contacts {
+				assert.NotZero(suite.T(), contact, testCase)
+				assert.Equal(suite.T(), contact.Viewer, v, testCase)
+				assert.Equal(suite.T(), id, contact.UserID, testCase)
+				actualIds = append(actualIds, contact.ID)
+			}
+			return actualIds
+		},
+		err,
+		expectedIds,
+		testCase,
+	)
+}
 
-	actualIds := []string{}
-	for _, contact := range contacts {
-		assert.NotZero(suite.T(), contact, testCase)
-		assert.Equal(suite.T(), contact.Viewer, v, testCase)
-		assert.Equal(suite.T(), id, contact.UserID, testCase)
-		actualIds = append(actualIds, contact.ID)
-	}
+func verifyLoadedNodesByType(
+	suite *privacyTestSuite,
+	v viewer.ViewerContext,
+	id string,
+	f func(viewer.ViewerContext, string) ([]*models.Event, error),
+	expectedIds []string,
+	testCase string,
+) {
+	events, err := f(v, id)
+
+	verifyLoadedMultiNodes(
+		suite,
+		v,
+		id,
+		func() []string {
+			actualIds := []string{}
+			for _, event := range events {
+				assert.NotZero(suite.T(), event, testCase)
+				assert.Equal(suite.T(), event.Viewer, v, testCase)
+				assert.Equal(suite.T(), id, event.UserID, testCase)
+				actualIds = append(actualIds, event.ID)
+			}
+			return actualIds
+		},
+		err,
+		expectedIds,
+		testCase,
+	)
+}
+
+func verifyLoadedMultiNodes(
+	suite *privacyTestSuite,
+	v viewer.ViewerContext,
+	id string,
+	buildIds func() []string,
+	err error,
+	expectedIds []string,
+	testCase string,
+) {
+	assert.Nil(suite.T(), err, testCase)
+	actualIds := buildIds()
+	assert.Equal(suite.T(), len(actualIds), len(expectedIds), testCase)
+
 	sort.Strings(expectedIds)
 	sort.Strings(actualIds)
 	assert.Equal(suite.T(), expectedIds, actualIds, testCase)
+}
+
+func testLoadNodesByType(suite *privacyTestSuite, f func(v viewer.ViewerContext, id string) ([]*models.Event, error)) {
+	user := testingutils.CreateTestUser(suite.T())
+	user2 := testingutils.CreateTestUser(suite.T())
+	user3 := testingutils.CreateTestUser(suite.T())
+	user4 := testingutils.CreateTestUser(suite.T())
+
+	event := testingutils.CreateTestEvent(suite.T(), user)
+	event2 := testingutils.CreateTestEvent(suite.T(), user, user2)
+	event3 := testingutils.CreateTestEvent(suite.T(), user, user2, user3)
+
+	var testCases = []struct {
+		viewer    viewer.ViewerContext
+		loadedIds []string
+		testCase  string
+	}{
+		{
+			viewertesting.OmniViewerContext{},
+			[]string{
+				event.ID,
+				event2.ID,
+				event3.ID,
+			},
+			"omni viewer",
+		},
+		{
+			viewer.LoggedOutViewer(),
+			[]string{},
+			"logged out viewer",
+		},
+		{
+			viewertesting.LoggedinViewerContext{ViewerID: user.ID},
+			[]string{
+				event.ID,
+				event2.ID,
+				event3.ID,
+			},
+			"viewer who owns events",
+		},
+		{
+			viewertesting.LoggedinViewerContext{ViewerID: user2.ID},
+			[]string{
+				event2.ID,
+				event3.ID,
+			},
+			"viewer who was invited to 2 events",
+		},
+		{
+			viewertesting.LoggedinViewerContext{ViewerID: user3.ID},
+			[]string{
+				event3.ID,
+			},
+			"viewer who was invited to 1 event",
+		},
+		{
+			viewertesting.LoggedinViewerContext{ViewerID: user4.ID},
+			[]string{},
+			"viewer who was invited to no event",
+		},
+	}
+
+	for _, tt := range testCases {
+		verifyLoadedNodesByType(
+			suite,
+			tt.viewer,
+			user.ID,
+			f,
+			tt.loadedIds,
+			tt.testCase,
+		)
+	}
 }
