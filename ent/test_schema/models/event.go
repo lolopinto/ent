@@ -55,6 +55,7 @@ func (event *Event) GetType() ent.NodeType {
 	return EventType
 }
 
+// GetViewer returns the viewer for this entity.
 func (event *Event) GetViewer() viewer.ViewerContext {
 	return event.Viewer
 }
@@ -116,8 +117,17 @@ func (event *Event) GenInvitedEdges(result *ent.EdgesResult, wg *sync.WaitGroup)
 	*result = <-edgesResultChan
 }
 
-func (event *Event) LoadInvitedByType(id2 string) (*ent.Edge, error) {
-	return ent.LoadEdgeByType(event.ID, EventToInvitedEdge, id2)
+// LoadInvitedEdgeFor loads the ent.Edge between the current node and the given id2 for the Invited edge.
+func (event *Event) LoadInvitedEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(event.ID, id2, EventToInvitedEdge)
+}
+
+// GenInvitedEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the Invited edge.
+func (event *Event) GenLoadInvitedEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(event.ID, id2, EventToInvitedEdge, edgeResultChan)
+	*result = <-edgeResultChan
 }
 
 // GenInvited returns the Users associated with the Event instance
@@ -138,6 +148,7 @@ func (event *Event) LoadInvited() ([]*User, error) {
 	return users, err
 }
 
+// DBFields is used by the ent framework to load the ent from the underlying database
 func (event *Event) DBFields() ent.DBFields {
 	return ent.DBFields{
 		"id": func(v interface{}) error {

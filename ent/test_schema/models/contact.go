@@ -53,6 +53,7 @@ func (contact *Contact) GetType() ent.NodeType {
 	return ContactType
 }
 
+// GetViewer returns the viewer for this entity.
 func (contact *Contact) GetViewer() viewer.ViewerContext {
 	return contact.Viewer
 }
@@ -104,8 +105,17 @@ func (contact *Contact) GenAllowListEdges(result *ent.EdgesResult, wg *sync.Wait
 	*result = <-edgesResultChan
 }
 
-func (contact *Contact) LoadAllowListByType(id2 string) (*ent.Edge, error) {
-	return ent.LoadEdgeByType(contact.ID, ContactToAllowListEdge, id2)
+// LoadAllowListEdgeFor loads the ent.Edge between the current node and the given id2 for the AllowList edge.
+func (contact *Contact) LoadAllowListEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(contact.ID, id2, ContactToAllowListEdge)
+}
+
+// GenAllowListEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the AllowList edge.
+func (contact *Contact) GenLoadAllowListEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(contact.ID, id2, ContactToAllowListEdge, edgeResultChan)
+	*result = <-edgeResultChan
 }
 
 // GenAllowList returns the Users associated with the Contact instance
@@ -126,6 +136,7 @@ func (contact *Contact) LoadAllowList() ([]*User, error) {
 	return users, err
 }
 
+// DBFields is used by the ent framework to load the ent from the underlying database
 func (contact *Contact) DBFields() ent.DBFields {
 	return ent.DBFields{
 		"id": func(v interface{}) error {

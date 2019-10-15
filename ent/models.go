@@ -641,8 +641,17 @@ func GenLoadEdgesByType(id string, edgeType EdgeType, chanEdgesResult chan<- Edg
 	}
 }
 
-// checks if an edge exists between 2 ids
-func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
+// GenLoadEdgeByType is the concurrent version of LoadEdgeByType
+func GenLoadEdgeByType(id1, id2 string, edgeType EdgeType, chanEdgeResult chan<- EdgeResult) {
+	edge, err := LoadEdgeByType(id1, id2, edgeType)
+	chanEdgeResult <- EdgeResult{
+		Edge:  edge,
+		Error: err,
+	}
+}
+
+// LoadEdgeByType checks if an edge exists between 2 ids
+func LoadEdgeByType(id string, id2 string, edgeType EdgeType) (*Edge, error) {
 	// check if we can use the standard id1->edgeType cache
 	edges, err := LoadEdgesByType(id, edgeType)
 	if err != nil {

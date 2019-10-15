@@ -90,7 +90,7 @@ func denyIfEdgeRule(id1, id2 string, edgeType ent.EdgeType) ent.PrivacyResult {
 }
 
 func evalEdgeRule(id1, id2 string, edgeType ent.EdgeType, validEdgeResult ent.PrivacyResult) ent.PrivacyResult {
-	edge, err := ent.LoadEdgeByType(id1, edgeType, id2)
+	edge, err := ent.LoadEdgeByType(id1, id2, edgeType)
 	if err != nil {
 		return ent.Skip()
 	} else if edge == nil || edge.ID1 == "" {

@@ -267,6 +267,108 @@ func verifyEdges(
 	}
 }
 
+func (suite *modelsTestSuite) TestLoadEdgeByType() {
+	testLoadEdgeByType(suite, func(id1, id2 string) (*ent.Edge, error) {
+		return ent.LoadEdgeByType(id1, id2, models.UserToEventsEdge)
+	})
+}
+
+func (suite *modelsTestSuite) TestGenLoadEdgeByType() {
+	testLoadEdgeByType(suite, func(id1, id2 string) (*ent.Edge, error) {
+		chanResult := make(chan ent.EdgeResult)
+		go ent.GenLoadEdgeByType(id1, id2, models.UserToEventsEdge, chanResult)
+		result := <-chanResult
+		return result.Edge, result.Error
+	})
+}
+
+func (suite *modelsTestSuite) TestGeneratedLoadEdgeByType() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+
+	verifyEdgeByType(
+		suite,
+		func() (*ent.Edge, error) {
+			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+			user, err := models.LoadUser(v, user.ID)
+			util.Die(err)
+			return user.LoadEventsEdgeFor(event.ID)
+		},
+		user.ID,
+		event.ID,
+	)
+}
+
+func (suite *modelsTestSuite) TestGeneratedGenLoadEdgeByType() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+
+	verifyEdgeByType(
+		suite,
+		func() (*ent.Edge, error) {
+			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+			user, err := models.LoadUser(v, user.ID)
+			util.Die(err)
+
+			var wg sync.WaitGroup
+			var result ent.EdgeResult
+			wg.Add(1)
+			go user.GenLoadEventsEdgeFor(event.ID, &result, &wg)
+			wg.Wait()
+			return result.Edge, result.Error
+		},
+		user.ID,
+		event.ID,
+	)
+}
+
+func (suite *modelsTestSuite) TestInvalidLoadEdgeByType() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+
+	edge, err := ent.LoadEdgeByType(event.ID, user.ID, models.UserToEventsEdge)
+	assert.Nil(suite.T(), err)
+	assert.Zero(suite.T(), *edge)
+}
+
+func (suite *modelsTestSuite) TestLoadEdgeByTypeEmptyID1() {
+	user := testingutils.CreateTestUser(suite.T())
+	edge, err := ent.LoadEdgeByType("", user.ID, models.UserToEventsEdge)
+	assert.Nil(suite.T(), err)
+	assert.Zero(suite.T(), *edge)
+}
+
+func (suite *modelsTestSuite) TestLoadEdgeByTypeEmptyID2() {
+	user := testingutils.CreateTestUser(suite.T())
+	edge, err := ent.LoadEdgeByType(user.ID, "", models.UserToEventsEdge)
+	assert.Nil(suite.T(), err)
+	assert.Zero(suite.T(), *edge)
+}
+
+func testLoadEdgeByType(suite *modelsTestSuite, f func(id, id2 string) (*ent.Edge, error)) {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+
+	verifyEdgeByType(
+		suite,
+		func() (*ent.Edge, error) {
+			return f(user.ID, event.ID)
+		},
+		user.ID,
+		event.ID,
+	)
+}
+
+func verifyEdgeByType(suite *modelsTestSuite, f func() (*ent.Edge, error), id1, id2 string) {
+	edge, err := f()
+	assert.Nil(suite.T(), err)
+	assert.NotZero(suite.T(), edge)
+	assert.Equal(suite.T(), edge.ID1, id1)
+	assert.Equal(suite.T(), edge.ID2, id2)
+}
+
 func (suite *modelsTestSuite) TestLoadAssocEdges() {
 	// This is dependent on 2 things:
 	// 1/ table already existing so first pass of chained loader works

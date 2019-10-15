@@ -67,7 +67,7 @@ func (edge *Edge) DBFields() DBFields {
 
 // EdgeResult stores the result of loading an Edge concurrently
 type EdgeResult struct {
-	Edge  Edge
+	Edge  *Edge
 	Error error
 }
 

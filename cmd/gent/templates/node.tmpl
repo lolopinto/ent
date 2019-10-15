@@ -76,6 +76,7 @@ func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
 	return {{.NodeType}}
 }
 
+// GetViewer returns the viewer for this entity.
 func ({{.NodeInstance}} *{{.Node}}) GetViewer() viewer.ViewerContext {
   return {{.NodeInstance}}.Viewer
 }
@@ -173,8 +174,17 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeRes
           *result = <- edgesResultChan
         }
 
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}ByType(id2 string) (*ent.Edge, error) {
-          return ent.LoadEdgeByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, id2)
+        // Load{{$edgeName}}EdgeFor loads the ent.Edge between the current node and the given id2 for the {{$edgeName}} edge.
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}EdgeFor(id2 string) (*ent.Edge, error) {
+          return ent.LoadEdgeByType({{$currentNodeInstance}}.ID, id2, {{$edge.EdgeConst}})
+        }
+
+        // Gen{{$edgeName}}EdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the {{$edgeName}} edge.
+        func ({{$currentNodeInstance}} *{{$currentNode}}) GenLoad{{$edgeName}}EdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+          defer wg.Done()
+          edgeResultChan := make(chan ent.EdgeResult)
+          go ent.GenLoadEdgeByType({{$currentNodeInstance}}.ID, id2, {{$edge.EdgeConst}}, edgeResultChan)
+          *result = <- edgeResultChan
         }
 
         // Gen{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
@@ -211,7 +221,7 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeRes
         errs := make(map[string]error)
         for key, data := range statusMap {
           // TODO concurrent versions
-          edges[key], errs[key] = ent.LoadEdgeByType({{$currentNodeInstance}}.ID, data.Edge, {{$currentNodeInstance}}.Viewer.GetViewerID())
+          edges[key], errs[key] = ent.LoadEdgeByType({{$currentNodeInstance}}.ID, {{$currentNodeInstance}}.Viewer.GetViewerID(), data.Edge)
         }
         for _, err := range errs {
           if err != nil {
@@ -262,6 +272,7 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeRes
     {{ end -}}
   {{end}}
 
+// DBFields is used by the ent framework to load the ent from the underlying database
 func ({{$currentNodeInstance}} *{{$currentNode}}) DBFields() ent.DBFields {
   return ent.DBFields {
     "id": func(v interface{}) error {

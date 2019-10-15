@@ -54,6 +54,7 @@ func (user *User) GetType() ent.NodeType {
 	return UserType
 }
 
+// GetViewer returns the viewer for this entity.
 func (user *User) GetViewer() viewer.ViewerContext {
 	return user.Viewer
 }
@@ -123,8 +124,17 @@ func (user *User) GenEventsEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
 	*result = <-edgesResultChan
 }
 
-func (user *User) LoadEventsByType(id2 string) (*ent.Edge, error) {
-	return ent.LoadEdgeByType(user.ID, UserToEventsEdge, id2)
+// LoadEventsEdgeFor loads the ent.Edge between the current node and the given id2 for the Events edge.
+func (user *User) LoadEventsEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(user.ID, id2, UserToEventsEdge)
+}
+
+// GenEventsEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the Events edge.
+func (user *User) GenLoadEventsEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(user.ID, id2, UserToEventsEdge, edgeResultChan)
+	*result = <-edgeResultChan
 }
 
 // GenEvents returns the Events associated with the User instance
@@ -158,8 +168,17 @@ func (user *User) GenFamilyMembersEdges(result *ent.EdgesResult, wg *sync.WaitGr
 	*result = <-edgesResultChan
 }
 
-func (user *User) LoadFamilyMembersByType(id2 string) (*ent.Edge, error) {
-	return ent.LoadEdgeByType(user.ID, UserToFamilyMembersEdge, id2)
+// LoadFamilyMembersEdgeFor loads the ent.Edge between the current node and the given id2 for the FamilyMembers edge.
+func (user *User) LoadFamilyMembersEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(user.ID, id2, UserToFamilyMembersEdge)
+}
+
+// GenFamilyMembersEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the FamilyMembers edge.
+func (user *User) GenLoadFamilyMembersEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(user.ID, id2, UserToFamilyMembersEdge, edgeResultChan)
+	*result = <-edgeResultChan
 }
 
 // GenFamilyMembers returns the Users associated with the User instance
@@ -180,6 +199,7 @@ func (user *User) LoadFamilyMembers() ([]*User, error) {
 	return users, err
 }
 
+// DBFields is used by the ent framework to load the ent from the underlying database
 func (user *User) DBFields() ent.DBFields {
 	return ent.DBFields{
 		"id": func(v interface{}) error {
