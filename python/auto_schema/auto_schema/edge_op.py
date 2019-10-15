@@ -82,22 +82,25 @@ class ModifyEdgeOp(MigrateOperation):
     return "modify edge %s" % (self.old_edge['edge_name'])
 
 
+def add_edges_from(connection, edges):
+  t = datetime.datetime.now()
+  table = _get_table(connection)
+
+  edges_to_write = []
+  for edge in edges:
+    edge['created_at'] = t
+    edge['updated_at'] = t
+    edges_to_write.append(edge)
+
+  connection.execute(
+    table.insert().values(edges_to_write)
+  )
+
 
 @Operations.implementation_for(AddEdgesOp)
 def add_edges(operations, operation):
-  t = datetime.datetime.now()
   connection = operations.get_bind()
-  table = _get_table(connection)
-
-  edges = []
-  for edge in operation.edges:
-    edge['created_at'] = t
-    edge['updated_at'] = t
-    edges.append(edge)
-
-  connection.execute(
-    table.insert().values(edges)
-  )
+  add_edges_from(connection, operation.edges)
 
 
 @Operations.implementation_for(RemoveEdgesOp)

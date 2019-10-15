@@ -79,9 +79,19 @@ func (op *insertNodeOp) getInitColsAndVals() ([]string, []interface{}) {
 	newUUID := uuid.New().String()
 	t := time.Now()
 
-	// initialize id, created_at and updated_at times
-	columns := []string{"id", "created_at", "updated_at"}
-	values := []interface{}{newUUID, t, t}
+	// TODO: break this down into something not hardcoded in here
+	var columns []string
+	var values []interface{}
+	_, ok := op.info.Entity.(dataEntityWithDiffPKey)
+	if ok {
+		columns = []string{"created_at", "updated_at"}
+		values = []interface{}{t, t}
+	} else {
+		// initialize id, created_at and updated_at times
+		columns = []string{"id", "created_at", "updated_at"}
+		values = []interface{}{newUUID, t, t}
+
+	}
 	return columns, values
 }
 
@@ -217,7 +227,7 @@ func handleReturnedEnt(op dataOperation, ent Entity) (Entity, error) {
 	createOp, ok := op.(dataOperationWithEnt)
 
 	if !ok {
-		return nil, nil
+		return ent, nil
 	}
 
 	// existing object

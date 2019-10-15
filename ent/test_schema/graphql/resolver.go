@@ -10,6 +10,9 @@ import (
 
 type Resolver struct{}
 
+func (r *Resolver) Contact() ContactResolver {
+	return &contactResolver{r}
+}
 func (r *Resolver) Event() EventResolver {
 	return &eventResolver{r}
 }
@@ -20,7 +23,17 @@ func (r *Resolver) User() UserResolver {
 	return &userResolver{r}
 }
 
+type contactResolver struct{ *Resolver }
+
+func (r *contactResolver) AllowList(ctx context.Context, obj *models.Contact) ([]*models.User, error) {
+	return obj.LoadAllowList()
+}
+
 type eventResolver struct{ *Resolver }
+
+func (r *eventResolver) Invited(ctx context.Context, obj *models.Event) ([]*models.User, error) {
+	return obj.LoadInvited()
+}
 
 func (r *eventResolver) User(ctx context.Context, obj *models.Event) (*models.User, error) {
 	return obj.LoadUser()
@@ -42,6 +55,14 @@ func (r *queryResolver) User(ctx context.Context, id string) (*models.User, erro
 
 type userResolver struct{ *Resolver }
 
+func (r *userResolver) Contacts(ctx context.Context, obj *models.User) ([]*models.Contact, error) {
+	return obj.LoadContacts()
+}
+
 func (r *userResolver) Events(ctx context.Context, obj *models.User) ([]*models.Event, error) {
 	return obj.LoadEvents()
+}
+
+func (r *userResolver) FamilyMembers(ctx context.Context, obj *models.User) ([]*models.User, error) {
+	return obj.LoadFamilyMembers()
 }

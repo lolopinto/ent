@@ -72,10 +72,6 @@ func getKeyForNode(id, tableName string) string {
 }
 
 func getKeyForEdge(id string, edgeType EdgeType) string {
-	if id == "" {
-		debug.PrintStack()
-		panic(errors.WithStack(errors.New("empty id passed")))
-	}
 	return remember.CreateKey(false, "_", "edge_id", edgeType, id)
 }
 
@@ -97,21 +93,9 @@ func LoadNodeRawData(id string, entity dataEntity, entConfig Config) error {
 	)
 }
 
-// EntityResult is the result of a call to LoadNodeConc which returns an object
-// and the channel. TODO: This is just a test
-type EntityResult struct {
-	Entity interface{}
-	Error  error
-}
-
 func genLoadRawData(id string, entity dataEntity, entConfig Config, errChan chan<- error) {
 	err := LoadNodeRawData(id, entity, entConfig)
-	// result := EntityResult{
-	// 	Entity: entity,
-	// 	Err:    err,
-	// }
 	errChan <- err
-	//chanResult <- result
 }
 
 func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, error) {
@@ -642,29 +626,32 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]*Edge, error) {
 	return l.LoadData()
 }
 
-func GenLoadEdgesByType(id string, edgeType EdgeType, edges *[]*Edge, errChan chan<- error) {
-	var err error
-	*edges, err = LoadEdgesByType(id, edgeType)
-	fmt.Println("GenLoadEdgesByType result", err, edges)
-	errChan <- err
-}
-
-// GenLoadEdgesByTypeResult is a helper function that handles the loading of edges
-// concurrently since we get the strong typing across all edges since it's the
-// same Edge object being returned
-func GenLoadEdgesByTypeResult(id string, edgeType EdgeType, chanEdgesResult chan<- EdgesResult) {
-	var edges []*Edge
-	chanErr := make(chan error)
-	go GenLoadEdgesByType(id, edgeType, &edges, chanErr)
-	err := <-chanErr
+// GenLoadEdgesByType handles loading of edges concurrently.
+// Because we get strong typing across all edges and for a consistent API with loading Nodes,
+// we use the EdgesResult struct here
+func GenLoadEdgesByType(id string, edgeType EdgeType, chanEdgesResult chan<- EdgesResult) {
+	edges, err := LoadEdgesByType(id, edgeType)
+	// var edges []*Edge
+	// chanErr := make(chan error)
+	// go GenLoadEdgesByType(id, edgeType, &edges, chanErr)
+	//	err := <-chanErr
 	chanEdgesResult <- EdgesResult{
 		Edges: edges,
 		Error: err,
 	}
 }
 
-// checks if an edge exists between 2 ids
-func LoadEdgeByType(id string, edgeType EdgeType, id2 string) (*Edge, error) {
+// GenLoadEdgeByType is the concurrent version of LoadEdgeByType
+func GenLoadEdgeByType(id1, id2 string, edgeType EdgeType, chanEdgeResult chan<- EdgeResult) {
+	edge, err := LoadEdgeByType(id1, id2, edgeType)
+	chanEdgeResult <- EdgeResult{
+		Edge:  edge,
+		Error: err,
+	}
+}
+
+// LoadEdgeByType checks if an edge exists between 2 ids
+func LoadEdgeByType(id string, id2 string, edgeType EdgeType) (*Edge, error) {
 	// check if we can use the standard id1->edgeType cache
 	edges, err := LoadEdgesByType(id, edgeType)
 	if err != nil {

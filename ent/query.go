@@ -108,7 +108,6 @@ func (q *dbQuery) MapScanAndFillRows(l multiInputLoader) error {
 }
 
 func (q *dbQuery) query(processor *processRawData) error {
-	//	processRow func(*sqlx.Row) error) error {
 	builder, err := q.l.GetSQLBuilder()
 	if err != nil {
 		return err

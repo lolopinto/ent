@@ -9,11 +9,11 @@ import (
 func TestBuildGraphQLSchema(t *testing.T) {
 	schema := getTestGraphQLSchema(t)
 
-	if len(schema.Types) != 3 {
+	if len(schema.Types) != 10 {
 		// Account from AccountConfig
 		// Todo from TodoConfig
 		// Query
-		t.Errorf("expected 3 types created, got %d instead", len(schema.Types))
+		t.Errorf("expected 10 types created, got %d instead", len(schema.Types))
 	}
 }
 

@@ -2,6 +2,7 @@ package ent_test
 
 import (
 	"database/sql"
+	"sync"
 
 	"testing"
 
@@ -9,41 +10,30 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/lolopinto/ent/config"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/test_schema/models"
 	"github.com/lolopinto/ent/ent/test_schema/models/configs"
-	"gopkg.in/khaiql/dbcleaner.v2"
-	"gopkg.in/khaiql/dbcleaner.v2/engine"
+	"github.com/lolopinto/ent/ent/viewertesting"
+	"github.com/lolopinto/ent/internal/testingutils"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 type modelsTestSuite struct {
-	suite.Suite
-	cleaner dbcleaner.DbCleaner
+	testingutils.Suite
 }
 
 func (suite *modelsTestSuite) SetupSuite() {
-	suite.cleaner = dbcleaner.New()
-	postgres := engine.NewPostgresEngine(config.GetConnectionStr())
-	suite.cleaner.SetEngine(postgres)
-}
-
-// TODO make this automatic based on db
-// TODO make this a base class for all future tests that operate on the db
-func (suite *modelsTestSuite) SetupTest() {
-	suite.cleaner.Acquire("users")
-	suite.cleaner.Acquire("user_events_edges")
-	suite.cleaner.Acquire("events")
-}
-
-func (suite *modelsTestSuite) TearDownTest() {
-	suite.cleaner.Clean("users")
-	suite.cleaner.Clean("user_events_edges")
-	suite.cleaner.Clean("events")
+	// TODO make this automatic based on db
+	suite.Tables = []string{
+		"users",
+		"events",
+		"user_events_edges",
+	}
+	suite.Suite.SetupSuite()
 }
 
 func (suite *modelsTestSuite) TestLoadNodeFromParts() {
-	createTestUser(suite.T())
+	user := testingutils.CreateTestUser(suite.T())
 
 	var testCases = []struct {
 		parts       []interface{}
@@ -68,7 +58,7 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 		{
 			[]interface{}{
 				"email_address",
-				"test@email.com",
+				user.EmailAddress,
 				"last_name",
 				"Okelola",
 			},
@@ -98,7 +88,7 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 }
 
 func (suite *modelsTestSuite) TestLoadNodeFromID() {
-	user := createTestUser(suite.T())
+	user := testingutils.CreateTestUser(suite.T())
 
 	var testCases = []struct {
 		id          string
@@ -157,9 +147,73 @@ func (suite *modelsTestSuite) TestGetEdgeInfo() {
 }
 
 func (suite *modelsTestSuite) TestLoadEdgesByType() {
-	user := createTestUser(suite.T())
-	event := createTestEvent(suite.T(), user)
-	event2 := createTestEvent(suite.T(), user)
+	testLoadEdgesByType(suite, func(id string) ([]*ent.Edge, error) {
+		return ent.LoadEdgesByType(id, models.UserToEventsEdge)
+	})
+}
+
+func (suite *modelsTestSuite) TestGenLoadEdgesByType() {
+	testLoadEdgesByType(suite, func(id string) ([]*ent.Edge, error) {
+		chanResult := make(chan ent.EdgesResult)
+		go ent.GenLoadEdgesByType(id, models.UserToEventsEdge, chanResult)
+		result := <-chanResult
+		return result.Edges, result.Error
+	})
+}
+
+func (suite *modelsTestSuite) TestGeneratedLoadEdgesByType() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+	event2 := testingutils.CreateTestEvent(suite.T(), user)
+
+	verifyEdges(
+		suite,
+		func() ([]*ent.Edge, error) {
+			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+			user, err := models.LoadUser(v, user.ID)
+			util.Die(err)
+			return user.LoadEventsEdges()
+		},
+		[]string{
+			event.ID,
+			event2.ID,
+		},
+		true,
+	)
+}
+
+func (suite *modelsTestSuite) TestGeneratedGenLoadEdgesByType() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+	event2 := testingutils.CreateTestEvent(suite.T(), user)
+
+	verifyEdges(
+		suite,
+		func() ([]*ent.Edge, error) {
+			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+			user, err := models.LoadUser(v, user.ID)
+			util.Die(err)
+
+			var result ent.EdgesResult
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go user.GenEventsEdges(&result, &wg)
+			wg.Wait()
+			return result.Edges, result.Error
+		},
+		[]string{
+			event.ID,
+			event2.ID,
+		},
+		true,
+	)
+}
+
+func testLoadEdgesByType(suite *modelsTestSuite, f func(id string) ([]*ent.Edge, error)) {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+	event2 := testingutils.CreateTestEvent(suite.T(), user)
 
 	var testCases = []struct {
 		id1         string
@@ -173,24 +227,146 @@ func (suite *modelsTestSuite) TestLoadEdgesByType() {
 			event.ID,
 			false,
 		},
+		{
+			"",
+			false,
+		},
 	}
 
 	for _, tt := range testCases {
-		edges, err := ent.LoadEdgesByType(tt.id1, models.UserToEventsEdge)
-		assert.Nil(suite.T(), err)
-		if tt.foundResult {
-			assert.NotEmpty(suite.T(), edges)
-
-			assert.Len(suite.T(), edges, 2)
-			for _, edge := range edges {
-				assert.NotZero(suite.T(), edge)
-				assert.Contains(suite.T(), []string{event.ID, event2.ID}, edge.ID2)
-			}
-		} else {
-			assert.Len(suite.T(), edges, 0)
-			assert.Empty(suite.T(), edges)
-		}
+		verifyEdges(
+			suite,
+			func() ([]*ent.Edge, error) {
+				return f(tt.id1)
+			},
+			[]string{event.ID, event2.ID},
+			tt.foundResult,
+		)
 	}
+}
+
+func verifyEdges(
+	suite *modelsTestSuite,
+	f func() ([]*ent.Edge, error),
+	expectedIds []string,
+	foundResult bool,
+) {
+	edges, err := f()
+	assert.Nil(suite.T(), err)
+	if foundResult {
+		assert.NotEmpty(suite.T(), edges)
+
+		assert.Len(suite.T(), edges, len(expectedIds))
+		for _, edge := range edges {
+			assert.NotZero(suite.T(), edge)
+			assert.Contains(suite.T(), expectedIds, edge.ID2)
+		}
+	} else {
+		assert.Len(suite.T(), edges, 0)
+		assert.Empty(suite.T(), edges)
+	}
+}
+
+func (suite *modelsTestSuite) TestLoadEdgeByType() {
+	testLoadEdgeByType(suite, func(id1, id2 string) (*ent.Edge, error) {
+		return ent.LoadEdgeByType(id1, id2, models.UserToEventsEdge)
+	})
+}
+
+func (suite *modelsTestSuite) TestGenLoadEdgeByType() {
+	testLoadEdgeByType(suite, func(id1, id2 string) (*ent.Edge, error) {
+		chanResult := make(chan ent.EdgeResult)
+		go ent.GenLoadEdgeByType(id1, id2, models.UserToEventsEdge, chanResult)
+		result := <-chanResult
+		return result.Edge, result.Error
+	})
+}
+
+func (suite *modelsTestSuite) TestGeneratedLoadEdgeByType() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+
+	verifyEdgeByType(
+		suite,
+		func() (*ent.Edge, error) {
+			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+			user, err := models.LoadUser(v, user.ID)
+			util.Die(err)
+			return user.LoadEventsEdgeFor(event.ID)
+		},
+		user.ID,
+		event.ID,
+	)
+}
+
+func (suite *modelsTestSuite) TestGeneratedGenLoadEdgeByType() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+
+	verifyEdgeByType(
+		suite,
+		func() (*ent.Edge, error) {
+			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+			user, err := models.LoadUser(v, user.ID)
+			util.Die(err)
+
+			var wg sync.WaitGroup
+			var result ent.EdgeResult
+			wg.Add(1)
+			go user.GenLoadEventsEdgeFor(event.ID, &result, &wg)
+			wg.Wait()
+			return result.Edge, result.Error
+		},
+		user.ID,
+		event.ID,
+	)
+}
+
+func (suite *modelsTestSuite) TestInvalidLoadEdgeByType() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+
+	edge, err := ent.LoadEdgeByType(event.ID, user.ID, models.UserToEventsEdge)
+	assert.Nil(suite.T(), err)
+	assert.Zero(suite.T(), *edge)
+}
+
+func (suite *modelsTestSuite) TestLoadEdgeByTypeEmptyID1() {
+	user := testingutils.CreateTestUser(suite.T())
+	edge, err := ent.LoadEdgeByType("", user.ID, models.UserToEventsEdge)
+	assert.Nil(suite.T(), err)
+	assert.Zero(suite.T(), *edge)
+}
+
+func (suite *modelsTestSuite) TestLoadEdgeByTypeEmptyID2() {
+	user := testingutils.CreateTestUser(suite.T())
+	edge, err := ent.LoadEdgeByType(user.ID, "", models.UserToEventsEdge)
+	assert.Nil(suite.T(), err)
+	assert.Zero(suite.T(), *edge)
+}
+
+func testLoadEdgeByType(suite *modelsTestSuite, f func(id, id2 string) (*ent.Edge, error)) {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+
+	verifyEdgeByType(
+		suite,
+		func() (*ent.Edge, error) {
+			return f(user.ID, event.ID)
+		},
+		user.ID,
+		event.ID,
+	)
+}
+
+func verifyEdgeByType(suite *modelsTestSuite, f func() (*ent.Edge, error), id1, id2 string) {
+	edge, err := f()
+	assert.Nil(suite.T(), err)
+	assert.NotZero(suite.T(), edge)
+	assert.Equal(suite.T(), edge.ID1, id1)
+	assert.Equal(suite.T(), edge.ID2, id2)
 }
 
 func (suite *modelsTestSuite) TestLoadAssocEdges() {
@@ -207,9 +383,9 @@ func (suite *modelsTestSuite) TestLoadAssocEdges() {
 }
 
 func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
-	user := createTestUser(suite.T())
-	contact := createTestContact(suite.T(), user)
-	contact2 := createTestContact(suite.T(), user)
+	user := testingutils.CreateTestUser(suite.T())
+	contact := testingutils.CreateTestContact(suite.T(), user)
+	contact2 := testingutils.CreateTestContact(suite.T(), user)
 
 	var testCases = []struct {
 		id          string
@@ -245,9 +421,9 @@ func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
 }
 
 func (suite *modelsTestSuite) TestLoadNodesByType() {
-	user := createTestUser(suite.T())
-	event := createTestEvent(suite.T(), user)
-	event2 := createTestEvent(suite.T(), user)
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+	event2 := testingutils.CreateTestEvent(suite.T(), user)
 
 	var testCases = []struct {
 		id1         string

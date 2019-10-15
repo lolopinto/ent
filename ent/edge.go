@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/viewer"
 )
 
 // Edge is the information about an edge between two Nodes
@@ -66,7 +67,7 @@ func (edge *Edge) DBFields() DBFields {
 
 // EdgeResult stores the result of loading an Edge concurrently
 type EdgeResult struct {
-	Edge  Edge
+	Edge  *Edge
 	Error error
 }
 
@@ -126,4 +127,23 @@ func (edgeData *AssocEdgeData) DBFields() DBFields {
 
 func (edgeData *AssocEdgeData) GetPrimaryKey() string {
 	return "edge_type"
+}
+
+// TODO.... all of these exist just to write the ent
+// we need to break this up for tests
+// or worst case translate AssocEdgeData to a fake object that is an ent for use by node_map_test.go
+func (edgeData *AssocEdgeData) GetID() string {
+	panic("ss")
+}
+
+func (edgeData *AssocEdgeData) GetPrivacyPolicy() PrivacyPolicy {
+	panic("ss")
+}
+
+func (edgeData *AssocEdgeData) GetType() NodeType {
+	panic("ss")
+}
+
+func (edgeData *AssocEdgeData) GetViewer() viewer.ViewerContext {
+	panic("ss")
 }

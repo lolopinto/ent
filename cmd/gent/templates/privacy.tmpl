@@ -24,6 +24,11 @@ func (policy {{.Node}}PrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 	}
 }
 
+// Ent returns the underlying ent whose privacy policy this is.
+func (policy {{.Node}}PrivacyPolicy) Ent() ent.Entity {
+	return policy.{{.Node}}
+}
+
 // AllowIfViewerCanSee{{.Node}}Rule is a reusable rule that can be called by different ents to see if the contact can be visible
 type AllowIfViewerCanSee{{.Node}}Rule struct {
 	{{.Node}}ID string
@@ -31,12 +36,9 @@ type AllowIfViewerCanSee{{.Node}}Rule struct {
 
 // Eval evaluates that the ent is visible to the user 
 func (rule AllowIfViewerCanSee{{.Node}}Rule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	entResultChan := make(chan {{.NodeResult}})
-	go GenLoad{{.Node}}(viewer, rule.{{.Node}}ID, entResultChan)
-	entResult := <-entResultChan
-
-	if entResult.Error != nil {
+	_, err := Load{{.Node}}(viewer, rule.{{.Node}}ID)
+	if err != nil {
 		return ent.Skip()
-	} 
+	}
 	return ent.Allow()
 }

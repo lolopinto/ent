@@ -7,6 +7,7 @@ interface Connection {
 }
 
 type Contact implements Node {
+    allowList: [User!]!
     emailAddress: String!
     firstName: String!
     id: ID!
@@ -21,6 +22,7 @@ interface Edge {
 type Event implements Node {
     endTime: Time!
     id: ID!
+    invited: [User!]!
     location: String!
     name: String!
     startTime: Time!
@@ -47,11 +49,22 @@ type Query {
 }
 
 type User implements Node {
+    contacts: [Contact!]!
     emailAddress: String!
     events: [Event!]!
+    familyMembers: [User!]!
     firstName: String!
     id: ID!
     lastName: String!
+}
+
+type UsersConnection implements Connection {
+    edges: [UsersEdge!]
+    nodes: [User!]
+}
+
+type UsersEdge implements Edge {
+    node: User!
 }
 
 

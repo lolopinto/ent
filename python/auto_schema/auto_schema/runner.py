@@ -8,6 +8,7 @@ from alembic.autogenerate import render_python_code
 
 from . import command
 from . import config
+from . import edge_op
 
 class Runner(object):
 
@@ -30,10 +31,20 @@ class Runner(object):
 
 
   @classmethod
-  def runner_from_command_line(cls, metadata, args):
+  def from_command_line(cls, metadata, args):
     engine = sa.create_engine(args.engine)
     connection = engine.connect()
+    metadata.bind = connection
     return Runner(metadata, connection, args.schema)
+
+
+  @classmethod
+  def fix_edges(cls, metadata, args):
+    engine = sa.create_engine(args.engine)
+    connection = engine.connect()
+
+    edges_map = metadata.info.setdefault("edges", {})
+    edge_op.add_edges_from(connection, list(edges_map['public'].values()))
 
 
   @classmethod

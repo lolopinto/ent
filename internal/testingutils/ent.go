@@ -1,4 +1,4 @@
-package ent_test
+package testingutils
 
 import (
 	"fmt"
@@ -13,11 +13,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createTestUser(t *testing.T) *models.User {
+func CreateTestUser(t *testing.T) *models.User {
 	var user models.User
 
 	fields := map[string]interface{}{
-		"EmailAddress": "test@email.com",
+		"EmailAddress": fmt.Sprintf("test-%s@email.com", util.GenerateRandCode(9)),
 		"FirstName":    "Ola",
 		"LastName":     "Okelola",
 	}
@@ -34,7 +34,7 @@ func createTestUser(t *testing.T) *models.User {
 	return &user
 }
 
-func createTestEvent(t *testing.T, user *models.User) *models.Event {
+func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.User) *models.Event {
 	var event models.Event
 
 	fields := map[string]interface{}{
@@ -43,6 +43,14 @@ func createTestEvent(t *testing.T, user *models.User) *models.Event {
 		"StartTime": time.Now(),
 		"EndTime":   time.Now().Add(time.Hour * 24 * 3),
 		"Location":  "fun location",
+	}
+	outboundEdges := []*ent.EditedEdgeInfo{}
+	for _, user := range invitedUsers {
+		outboundEdges = append(outboundEdges, &ent.EditedEdgeInfo{
+			EdgeType: models.EventToInvitedEdge,
+			Id:       user.ID,
+			NodeType: user.GetType(),
+		})
 	}
 	err := ent.CreateNodeFromActionMap(
 		&ent.EditedNodeInfo{
@@ -57,6 +65,7 @@ func createTestEvent(t *testing.T, user *models.User) *models.Event {
 					NodeType: user.GetType(),
 				},
 			},
+			OutboundEdges: outboundEdges,
 		},
 	)
 	assert.Nil(t, err)
@@ -64,7 +73,7 @@ func createTestEvent(t *testing.T, user *models.User) *models.Event {
 	return &event
 }
 
-func createTestContact(t *testing.T, user *models.User) *models.Contact {
+func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.User) *models.Contact {
 	var contact models.Contact
 
 	fields := map[string]interface{}{
@@ -73,16 +82,49 @@ func createTestContact(t *testing.T, user *models.User) *models.Contact {
 		"FirstName":    "first-name",
 		"LastName":     "last-name",
 	}
+	outboundEdges := []*ent.EditedEdgeInfo{}
+	for _, user := range allowList {
+		outboundEdges = append(outboundEdges, &ent.EditedEdgeInfo{
+			EdgeType: models.ContactToAllowListEdge,
+			Id:       user.ID,
+			NodeType: user.GetType(),
+		})
+	}
 	err := ent.CreateNodeFromActionMap(
 		&ent.EditedNodeInfo{
 			Entity:         &contact,
 			EntConfig:      &configs.ContactConfig{},
 			Fields:         fields,
 			EditableFields: getFieldMapFromFields(fields),
+			OutboundEdges:  outboundEdges,
 		},
 	)
 	assert.Nil(t, err)
 	return &contact
+}
+
+func AddFamilyMember(t *testing.T, user1, user2 *models.User) {
+	var user models.User
+
+	fields := make(map[string]interface{})
+	err := ent.EditNodeFromActionMap(
+		&ent.EditedNodeInfo{
+			Entity:         &user,
+			ExistingEnt:    user1,
+			EntConfig:      &configs.UserConfig{},
+			Fields:         fields,
+			EditableFields: getFieldMapFromFields(fields),
+			OutboundEdges: []*ent.EditedEdgeInfo{
+				&ent.EditedEdgeInfo{
+					EdgeType: models.UserToFamilyMembersEdge,
+					Id:       user2.ID,
+					NodeType: user1.GetType(),
+				},
+			},
+		},
+	)
+
+	assert.Nil(t, err)
 }
 
 func getFieldMapFromFields(fields map[string]interface{}) ent.ActionFieldMap {

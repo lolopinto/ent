@@ -4,6 +4,7 @@ package models
 
 import (
 	"context"
+	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -18,6 +19,8 @@ const (
 
 	// UserToEventsEdge is the edgeType for the user to events edge.
 	UserToEventsEdge ent.EdgeType = "41bddf81-0c26-432c-9133-2f093af2c07c"
+	// UserToFamilyMembersEdge is the edgeType for the user to familymembers edge.
+	UserToFamilyMembersEdge ent.EdgeType = "38176101-6adc-4e0d-bd36-08cdc45f5ed2"
 )
 
 // User represents the `User` model
@@ -51,6 +54,11 @@ func (user *User) GetType() ent.NodeType {
 	return UserType
 }
 
+// GetViewer returns the viewer for this entity.
+func (user *User) GetViewer() viewer.ViewerContext {
+	return user.Viewer
+}
+
 // GetPrivacyPolicy returns the PrivacyPolicy of this entity.
 func (user *User) GetPrivacyPolicy() ent.PrivacyPolicy {
 	return UserPrivacyPolicy{
@@ -75,36 +83,69 @@ func LoadUser(viewer viewer.ViewerContext, id string) (*User, error) {
 }
 
 // GenLoadUser loads the given User given the id
-func GenLoadUser(viewer viewer.ViewerContext, id string, chanUserResult chan<- UserResult) {
+func GenLoadUser(viewer viewer.ViewerContext, id string, result *UserResult, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var user User
 	chanErr := make(chan error)
 	go ent.GenLoadNode(viewer, id, &user, &configs.UserConfig{}, chanErr)
 	err := <-chanErr
-	chanUserResult <- UserResult{
-		User:  &user,
-		Error: err,
-	}
+	result.User = &user
+	result.Error = err
+}
+
+// GenContacts returns the Contacts associated with the User instance
+func (user *User) GenContacts(result *ContactsResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var contacts []*Contact
+	chanErr := make(chan error)
+	go ent.GenLoadForeignKeyNodes(user.Viewer, user.ID, &contacts, "user_id", &configs.ContactConfig{}, chanErr)
+	err := <-chanErr
+	result.Contacts = contacts
+	result.Error = err
+}
+
+// LoadContacts returns the Contacts associated with the User instance
+func (user *User) LoadContacts() ([]*Contact, error) {
+	var contacts []*Contact
+	err := ent.LoadForeignKeyNodes(user.Viewer, user.ID, &contacts, "user_id", &configs.ContactConfig{})
+	return contacts, err
+}
+
+// LoadEventsEdges returns the Event edges associated with the User instance
+func (user *User) LoadEventsEdges() ([]*ent.Edge, error) {
+	return ent.LoadEdgesByType(user.ID, UserToEventsEdge)
 }
 
 // GenEventsEdges returns the Event edges associated with the User instance
-func (user *User) GenEventsEdges(chanEdgesResult chan<- ent.EdgesResult) {
-	go ent.GenLoadEdgesByTypeResult(user.ID, UserToEventsEdge, chanEdgesResult)
+func (user *User) GenEventsEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgesResultChan := make(chan ent.EdgesResult)
+	go ent.GenLoadEdgesByType(user.ID, UserToEventsEdge, edgesResultChan)
+	*result = <-edgesResultChan
 }
 
-func (user *User) LoadEventsByType(id2 string) (*ent.Edge, error) {
-	return ent.LoadEdgeByType(user.ID, UserToEventsEdge, id2)
+// LoadEventsEdgeFor loads the ent.Edge between the current node and the given id2 for the Events edge.
+func (user *User) LoadEventsEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(user.ID, id2, UserToEventsEdge)
+}
+
+// GenEventsEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the Events edge.
+func (user *User) GenLoadEventsEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(user.ID, id2, UserToEventsEdge, edgeResultChan)
+	*result = <-edgeResultChan
 }
 
 // GenEvents returns the Events associated with the User instance
-func (user *User) GenEvents(chanEventsResult chan<- EventsResult) {
+func (user *User) GenEvents(result *EventsResult, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var events []*Event
 	chanErr := make(chan error)
 	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToEventsEdge, &events, &configs.EventConfig{}, chanErr)
 	err := <-chanErr
-	chanEventsResult <- EventsResult{
-		Events: events,
-		Error:  err,
-	}
+	result.Events = events
+	result.Error = err
 }
 
 // LoadEvents returns the Events associated with the User instance
@@ -114,6 +155,51 @@ func (user *User) LoadEvents() ([]*Event, error) {
 	return events, err
 }
 
+// LoadFamilyMembersEdges returns the User edges associated with the User instance
+func (user *User) LoadFamilyMembersEdges() ([]*ent.Edge, error) {
+	return ent.LoadEdgesByType(user.ID, UserToFamilyMembersEdge)
+}
+
+// GenFamilyMembersEdges returns the User edges associated with the User instance
+func (user *User) GenFamilyMembersEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgesResultChan := make(chan ent.EdgesResult)
+	go ent.GenLoadEdgesByType(user.ID, UserToFamilyMembersEdge, edgesResultChan)
+	*result = <-edgesResultChan
+}
+
+// LoadFamilyMembersEdgeFor loads the ent.Edge between the current node and the given id2 for the FamilyMembers edge.
+func (user *User) LoadFamilyMembersEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(user.ID, id2, UserToFamilyMembersEdge)
+}
+
+// GenFamilyMembersEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the FamilyMembers edge.
+func (user *User) GenLoadFamilyMembersEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(user.ID, id2, UserToFamilyMembersEdge, edgeResultChan)
+	*result = <-edgeResultChan
+}
+
+// GenFamilyMembers returns the Users associated with the User instance
+func (user *User) GenFamilyMembers(result *UsersResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var users []*User
+	chanErr := make(chan error)
+	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, &users, &configs.UserConfig{}, chanErr)
+	err := <-chanErr
+	result.Users = users
+	result.Error = err
+}
+
+// LoadFamilyMembers returns the Users associated with the User instance
+func (user *User) LoadFamilyMembers() ([]*User, error) {
+	var users []*User
+	err := ent.LoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, &users, &configs.UserConfig{})
+	return users, err
+}
+
+// DBFields is used by the ent framework to load the ent from the underlying database
 func (user *User) DBFields() ent.DBFields {
 	return ent.DBFields{
 		"id": func(v interface{}) error {

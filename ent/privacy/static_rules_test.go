@@ -152,7 +152,6 @@ func TestRules(t *testing.T) {
 		},
 
 		// TODO AllowIfClosureRule
-		// TODO AllowIfEdgeExistsRule
 	}
 
 	user := models.User{EmailAddress: "ola@test.com"}

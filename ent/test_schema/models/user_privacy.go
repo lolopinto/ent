@@ -20,9 +20,21 @@ func (policy UserPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 		privacy.AllowIfOmniscientRule{},
 		// BEGIN MANUAL SECTION: Add custom privacy rules below
 		privacy.AllowIfViewerIsOwnerRule{OwnerID: policy.User.ID},
+		privacy.AllowIfViewerInboundEdgeExistsRule{
+			Policy: policy,
+			// UserToFamilyMembersEdge
+			EdgeType: ent.EdgeType(
+				"38176101-6adc-4e0d-bd36-08cdc45f5ed2",
+			),
+		},
 		// END MANUAL SECTION of privacy rules
 		privacy.AlwaysDenyRule{},
 	}
+}
+
+// Ent returns the underlying ent whose privacy policy this is.
+func (policy UserPrivacyPolicy) Ent() ent.Entity {
+	return policy.User
 }
 
 // AllowIfViewerCanSeeUserRule is a reusable rule that can be called by different ents to see if the contact can be visible
@@ -32,11 +44,8 @@ type AllowIfViewerCanSeeUserRule struct {
 
 // Eval evaluates that the ent is visible to the user
 func (rule AllowIfViewerCanSeeUserRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	entResultChan := make(chan UserResult)
-	go GenLoadUser(viewer, rule.UserID, entResultChan)
-	entResult := <-entResultChan
-
-	if entResult.Error != nil {
+	_, err := LoadUser(viewer, rule.UserID)
+	if err != nil {
 		return ent.Skip()
 	}
 	return ent.Allow()

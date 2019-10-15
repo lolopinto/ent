@@ -7,6 +7,7 @@ import (
   "context"
   "errors"
   "strings"
+  "sync"
 
 	"github.com/google/uuid"
 
@@ -75,6 +76,11 @@ func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
 	return {{.NodeType}}
 }
 
+// GetViewer returns the viewer for this entity.
+func ({{.NodeInstance}} *{{.Node}}) GetViewer() viewer.ViewerContext {
+  return {{.NodeInstance}}.Viewer
+}
+
 // GetPrivacyPolicy returns the PrivacyPolicy of this entity. 
 func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy() ent.PrivacyPolicy {
   return {{.Node}}PrivacyPolicy{
@@ -99,15 +105,14 @@ func Load{{.Node}}(viewer viewer.ViewerContext, id string) (*{{.Node}}, error) {
 }
 
 // GenLoad{{.Node}} loads the given {{.Node}} given the id
-func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}} chan<- {{.NodeResult}}) {
+func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeResult}}, wg *sync.WaitGroup) {
+  defer wg.Done()
   var {{.NodeInstance}} {{.Node}}
   chanErr := make(chan error)
   go ent.GenLoadNode(viewer, id, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
   err := <-chanErr
-  chan{{.NodeResult}} <- {{.NodeResult}}{
-    {{.Node}}: &{{.NodeInstance}},
-    Error: err,
-  }
+  result.{{.Node}} = &{{.NodeInstance}}
+  result.Error = err
 }
 
 {{/* todo: deal with importing right packages above and circular dependency all that jazz*/}}
@@ -121,8 +126,8 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
       {{$edgeName := .EdgeName -}}
       {{with .NodeInfo -}}
         // Gen{{$edgeName}} returns the {{$edgeName}} associated with the {{$currentNode}} instance
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodeResult}} chan<- {{.NodeResult}}) {
-          go GenLoad{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edge.FieldName}}, chan{{.NodeResult}} )
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(result *{{.NodeResult}}, wg *sync.WaitGroup) {
+          go GenLoad{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edge.FieldName}}, result, wg )
         }
 
         // Load{{$edgeName}} returns the {{$edgeName}} associated with the {{$currentNode}} instance
@@ -135,15 +140,14 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
       {{$edgeName := .EdgeName -}}
       {{with .NodeInfo -}}
         // Gen{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(result *{{.NodesResult}}, wg *sync.WaitGroup) {
+          defer wg.Done()
           var {{.NodeInstance}}s {{.NodesSlice}}
           chanErr := make(chan error)
           go ent.GenLoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", {{.EntConfig}}, chanErr)
           err := <-chanErr
-          chan{{.NodesResult}} <- {{.NodesResult}}{
-            {{.Nodes}}: {{.NodeInstance}}s,
-            Error: err,
-          }
+          result.{{.Nodes}} = {{.NodeInstance}}s
+          result.Error = err
         }
 
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
@@ -157,25 +161,41 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
     {{range $edge := .Associations -}}
       {{$edgeName := .EdgeName -}}
       {{with .NodeInfo -}}
-        // Gen{{$edgeName}}Edges returns the {{.Node}} edges associated with the {{$currentNode}} instance
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edges(chanEdgesResult chan<- ent.EdgesResult) {
-          go ent.GenLoadEdgesByTypeResult({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, chanEdgesResult)
+        // Load{{$edgeName}}Edges returns the {{.Node}} edges associated with the {{$currentNode}} instance
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}Edges() ([]*ent.Edge, error) {
+          return ent.LoadEdgesByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}})
         }
 
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}ByType(id2 string) (*ent.Edge, error) {
-          return ent.LoadEdgeByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, id2)
+        // Gen{{$edgeName}}Edges returns the {{.Node}} edges associated with the {{$currentNode}} instance
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+          defer wg.Done()
+          edgesResultChan := make(chan ent.EdgesResult)
+          go ent.GenLoadEdgesByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, edgesResultChan)
+          *result = <- edgesResultChan
+        }
+
+        // Load{{$edgeName}}EdgeFor loads the ent.Edge between the current node and the given id2 for the {{$edgeName}} edge.
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}EdgeFor(id2 string) (*ent.Edge, error) {
+          return ent.LoadEdgeByType({{$currentNodeInstance}}.ID, id2, {{$edge.EdgeConst}})
+        }
+
+        // Gen{{$edgeName}}EdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the {{$edgeName}} edge.
+        func ({{$currentNodeInstance}} *{{$currentNode}}) GenLoad{{$edgeName}}EdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+          defer wg.Done()
+          edgeResultChan := make(chan ent.EdgeResult)
+          go ent.GenLoadEdgeByType({{$currentNodeInstance}}.ID, id2, {{$edge.EdgeConst}}, edgeResultChan)
+          *result = <- edgeResultChan
         }
 
         // Gen{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(chan{{.NodesResult}} chan<- {{.NodesResult}}) {
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(result *{{.NodesResult}}, wg *sync.WaitGroup) {
+          defer wg.Done()
           var {{.NodeInstance}}s {{.NodesSlice}}
           chanErr := make(chan error)
           go ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s, {{.EntConfig}}, chanErr)
           err := <-chanErr
-          chan{{.NodesResult}} <- {{.NodesResult}}{
-            {{.Nodes}}: {{.NodeInstance}}s,
-            Error: err,
-          }
+          result.{{.Nodes}} = {{.NodeInstance}}s
+          result.Error = err
         }
 
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
@@ -201,7 +221,7 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
         errs := make(map[string]error)
         for key, data := range statusMap {
           // TODO concurrent versions
-          edges[key], errs[key] = ent.LoadEdgeByType({{$currentNodeInstance}}.ID, data.Edge, {{$currentNodeInstance}}.Viewer.GetViewerID())
+          edges[key], errs[key] = ent.LoadEdgeByType({{$currentNodeInstance}}.ID, {{$currentNodeInstance}}.Viewer.GetViewerID(), data.Edge)
         }
         for _, err := range errs {
           if err != nil {
@@ -252,6 +272,7 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, chan{{.NodeResult}
     {{ end -}}
   {{end}}
 
+// DBFields is used by the ent framework to load the ent from the underlying database
 func ({{$currentNodeInstance}} *{{$currentNode}}) DBFields() ent.DBFields {
   return ent.DBFields {
     "id": func(v interface{}) error {

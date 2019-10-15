@@ -4,6 +4,7 @@ package models
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/lolopinto/ent/ent"
@@ -16,6 +17,9 @@ import (
 const (
 	// EventType is the node type for the Event object. Used to identify this node in edges and other places.
 	EventType ent.NodeType = "event"
+
+	// EventToInvitedEdge is the edgeType for the event to invited edge.
+	EventToInvitedEdge ent.EdgeType = "12a5ac62-1f9a-4fd7-b38f-a6d229ace12c"
 )
 
 // Event represents the `Event` model
@@ -51,6 +55,11 @@ func (event *Event) GetType() ent.NodeType {
 	return EventType
 }
 
+// GetViewer returns the viewer for this entity.
+func (event *Event) GetViewer() viewer.ViewerContext {
+	return event.Viewer
+}
+
 // GetPrivacyPolicy returns the PrivacyPolicy of this entity.
 func (event *Event) GetPrivacyPolicy() ent.PrivacyPolicy {
 	return EventPrivacyPolicy{
@@ -75,20 +84,19 @@ func LoadEvent(viewer viewer.ViewerContext, id string) (*Event, error) {
 }
 
 // GenLoadEvent loads the given Event given the id
-func GenLoadEvent(viewer viewer.ViewerContext, id string, chanEventResult chan<- EventResult) {
+func GenLoadEvent(viewer viewer.ViewerContext, id string, result *EventResult, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var event Event
 	chanErr := make(chan error)
 	go ent.GenLoadNode(viewer, id, &event, &configs.EventConfig{}, chanErr)
 	err := <-chanErr
-	chanEventResult <- EventResult{
-		Event: &event,
-		Error: err,
-	}
+	result.Event = &event
+	result.Error = err
 }
 
 // GenUser returns the User associated with the Event instance
-func (event *Event) GenUser(chanUserResult chan<- UserResult) {
-	go GenLoadUser(event.Viewer, event.UserID, chanUserResult)
+func (event *Event) GenUser(result *UserResult, wg *sync.WaitGroup) {
+	go GenLoadUser(event.Viewer, event.UserID, result, wg)
 }
 
 // LoadUser returns the User associated with the Event instance
@@ -96,6 +104,51 @@ func (event *Event) LoadUser() (*User, error) {
 	return LoadUser(event.Viewer, event.UserID)
 }
 
+// LoadInvitedEdges returns the User edges associated with the Event instance
+func (event *Event) LoadInvitedEdges() ([]*ent.Edge, error) {
+	return ent.LoadEdgesByType(event.ID, EventToInvitedEdge)
+}
+
+// GenInvitedEdges returns the User edges associated with the Event instance
+func (event *Event) GenInvitedEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgesResultChan := make(chan ent.EdgesResult)
+	go ent.GenLoadEdgesByType(event.ID, EventToInvitedEdge, edgesResultChan)
+	*result = <-edgesResultChan
+}
+
+// LoadInvitedEdgeFor loads the ent.Edge between the current node and the given id2 for the Invited edge.
+func (event *Event) LoadInvitedEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(event.ID, id2, EventToInvitedEdge)
+}
+
+// GenInvitedEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the Invited edge.
+func (event *Event) GenLoadInvitedEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(event.ID, id2, EventToInvitedEdge, edgeResultChan)
+	*result = <-edgeResultChan
+}
+
+// GenInvited returns the Users associated with the Event instance
+func (event *Event) GenInvited(result *UsersResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var users []*User
+	chanErr := make(chan error)
+	go ent.GenLoadNodesByType(event.Viewer, event.ID, EventToInvitedEdge, &users, &configs.UserConfig{}, chanErr)
+	err := <-chanErr
+	result.Users = users
+	result.Error = err
+}
+
+// LoadInvited returns the Users associated with the Event instance
+func (event *Event) LoadInvited() ([]*User, error) {
+	var users []*User
+	err := ent.LoadNodesByType(event.Viewer, event.ID, EventToInvitedEdge, &users, &configs.UserConfig{})
+	return users, err
+}
+
+// DBFields is used by the ent framework to load the ent from the underlying database
 func (event *Event) DBFields() ent.DBFields {
 	return ent.DBFields{
 		"id": func(v interface{}) error {
