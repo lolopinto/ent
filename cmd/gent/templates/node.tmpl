@@ -160,9 +160,17 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeRes
     {{range $edge := .Associations -}}
       {{$edgeName := .EdgeName -}}
       {{with .NodeInfo -}}
+        // Load{{$edgeName}}Edges returns the {{.Node}} edges associated with the {{$currentNode}} instance
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}Edges() ([]*ent.Edge, error) {
+          return ent.LoadEdgesByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}})
+        }
+
         // Gen{{$edgeName}}Edges returns the {{.Node}} edges associated with the {{$currentNode}} instance
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edges(chanEdgesResult chan<- ent.EdgesResult) {
-          go ent.GenLoadEdgesByTypeResult({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, chanEdgesResult)
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+          defer wg.Done()
+          edgesResultChan := make(chan ent.EdgesResult)
+          go ent.GenLoadEdgesByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, edgesResultChan)
+          *result = <- edgesResultChan
         }
 
         func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}ByType(id2 string) (*ent.Edge, error) {

@@ -103,9 +103,17 @@ func (event *Event) LoadUser() (*User, error) {
 	return LoadUser(event.Viewer, event.UserID)
 }
 
+// LoadInvitedEdges returns the User edges associated with the Event instance
+func (event *Event) LoadInvitedEdges() ([]*ent.Edge, error) {
+	return ent.LoadEdgesByType(event.ID, EventToInvitedEdge)
+}
+
 // GenInvitedEdges returns the User edges associated with the Event instance
-func (event *Event) GenInvitedEdges(chanEdgesResult chan<- ent.EdgesResult) {
-	go ent.GenLoadEdgesByTypeResult(event.ID, EventToInvitedEdge, chanEdgesResult)
+func (event *Event) GenInvitedEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgesResultChan := make(chan ent.EdgesResult)
+	go ent.GenLoadEdgesByType(event.ID, EventToInvitedEdge, edgesResultChan)
+	*result = <-edgesResultChan
 }
 
 func (event *Event) LoadInvitedByType(id2 string) (*ent.Edge, error) {

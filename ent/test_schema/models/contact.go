@@ -91,9 +91,17 @@ func GenLoadContact(viewer viewer.ViewerContext, id string, result *ContactResul
 	result.Error = err
 }
 
+// LoadAllowListEdges returns the User edges associated with the Contact instance
+func (contact *Contact) LoadAllowListEdges() ([]*ent.Edge, error) {
+	return ent.LoadEdgesByType(contact.ID, ContactToAllowListEdge)
+}
+
 // GenAllowListEdges returns the User edges associated with the Contact instance
-func (contact *Contact) GenAllowListEdges(chanEdgesResult chan<- ent.EdgesResult) {
-	go ent.GenLoadEdgesByTypeResult(contact.ID, ContactToAllowListEdge, chanEdgesResult)
+func (contact *Contact) GenAllowListEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgesResultChan := make(chan ent.EdgesResult)
+	go ent.GenLoadEdgesByType(contact.ID, ContactToAllowListEdge, edgesResultChan)
+	*result = <-edgesResultChan
 }
 
 func (contact *Contact) LoadAllowListByType(id2 string) (*ent.Edge, error) {
