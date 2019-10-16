@@ -531,60 +531,7 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 	fmt.Println(query)
 
 	deleteKey(getKeyForEdge(id1, edgeType))
-	err = performWrite(query, vals, tx, nil)
-	if err != nil {
-		return err
-	}
-
-	// TODO should look into combining these into same QUERY similarly to what we need to do in CreateNodes()
-	// need to re-write and test all of this
-
-	// write symmetric edge
-	if edgeData.SymmetricEdge {
-		vals = []interface{}{
-			id2,
-			id2Type,
-			edgeType,
-			id1,
-			id1Ttype,
-			t,
-			edgeOptions.Data,
-		}
-
-		query = fmt.Sprintf(
-			"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
-			edgeData.EdgeTable,
-			getColumnsString(cols),
-			getValsString(vals),
-		)
-		deleteKey(getKeyForEdge(id2, edgeType))
-		return performWrite(query, vals, tx, nil)
-	}
-
-	// write inverse edge
-	if edgeData.InverseEdgeType != nil && edgeData.InverseEdgeType.Valid {
-		// write an edge from id2 to id2 with new edge type
-		vals = []interface{}{
-			id2,
-			id2Type,
-			edgeData.InverseEdgeType.String,
-			id1,
-			id1Ttype,
-			t,
-			edgeOptions.Data,
-		}
-
-		query = fmt.Sprintf(
-			"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
-			edgeData.EdgeTable,
-			getColumnsString(cols),
-			getValsString(vals),
-		)
-		deleteKey(getKeyForEdge(id2, EdgeType(edgeData.InverseEdgeType.String)))
-		return performWrite(query, vals, tx, nil)
-	}
-
-	return nil
+	return performWrite(query, vals, tx, nil)
 }
 
 func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions) error {
@@ -623,33 +570,7 @@ func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx)
 	//fmt.Println(query)
 	deleteKey(getKeyForEdge(id1, edgeType))
 
-	err = performWrite(query, vals, tx, nil)
-	if err != nil {
-		return err
-	}
-
-	// TODO move this up a layer
-	// should not be in addEdge and deleteEdge
-	if edgeData.InverseEdgeType != nil && edgeData.InverseEdgeType.Valid {
-		vals = []interface{}{
-			id2,
-			edgeData.InverseEdgeType.String,
-			id1,
-		}
-		deleteKey(getKeyForEdge(id2, EdgeType(edgeData.InverseEdgeType.String)))
-		return performWrite(query, vals, tx, nil)
-	}
-
-	if edgeData.SymmetricEdge {
-		vals = []interface{}{
-			id2,
-			edgeType,
-			id1,
-		}
-		deleteKey(getKeyForEdge(id2, edgeType))
-		return performWrite(query, vals, tx, nil)
-	}
-	return nil
+	return performWrite(query, vals, tx, nil)
 }
 
 func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) error {
