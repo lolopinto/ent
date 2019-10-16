@@ -308,11 +308,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 	// 8 write edge config to db (this should really be a separate step since this needs to run in production every time)
 
 	for _, assocEdge := range nodeData.EdgeInfo.Associations {
-		// handled by the "main edge". we're assuming for now that you won't add an inverse edge after the fact
-		// would need to deal with this later when that changes/becomes more complicated
-		// need to change a bunch of logic to support this.
-		// info.ShouldCodegen should change after this is set. we need to go generate every single assoc
-		// easiest thing is to remove the info.ShouldCodegen flag here probably
+		// handled by the "main edge".
 		if assocEdge.IsInverseEdge {
 			continue
 		}
@@ -330,9 +326,8 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 		if inverseEdge != nil {
 			inverseConstName, inverseConstValue, newInverseEdge = m.getInverseEdgeType(assocEdge, inverseEdge, edgeData)
 		}
-
-		// new edge
-		if constValue == "" {
+		isNewEdge := constValue == ""
+		if isNewEdge {
 			constValue = uuid.New().String()
 			// keep track of new edges that we need to do things with
 			newEdge := &ent.AssocEdgeData{
@@ -362,6 +357,13 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 				EdgeTable:       assocEdge.TableName,
 				InverseEdgeType: ns,
 			})
+
+			// if the inverse edge already existed in the db, we need to update that edge to let it know of its new inverse
+			if !isNewEdge {
+				// potential improvement: we can do it automatically in addNewEdge
+				edgeData.updateInverseEdgeTypeForEdge(
+					constName, inverseConstValue)
+			}
 		}
 
 		m.addNewEdgeType(nodeData, constName, constValue, assocEdge)

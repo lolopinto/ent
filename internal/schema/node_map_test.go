@@ -51,7 +51,7 @@ type AccountConfig struct {
 
 type TodoConfig struct {
 	Text      string
-	AccountID string 
+	AccountID string
 }
 
 	func (config *TodoConfig) GetTableName() string {
@@ -100,35 +100,7 @@ type TodoConfig struct {
 	}
 }
 
-func TestInverseAssocEdgeSameEnt(t *testing.T) {
-	sources := make(map[string]string)
-
-	sources["account_config.go"] = `
-	package configs
-
-	import "github.com/lolopinto/ent/ent"
-
-type AccountConfig struct {
-	FirstName string
-}
-
-	func (config *AccountConfig) GetTableName() string {
-		return "accounts"
-	}
-
-	func (config *AccountConfig) GetEdges() map[string]interface{} {
-		return map[string]interface{}{
-			"FriendRequests": ent.AssociationEdge{
-				EntConfig:   AccountConfig{},
-				InverseEdge: &ent.InverseAssocEdge{
-					EdgeName: "FriendRequestsReceived",
-				},
-			},
-		}
-	}
-	`
-
-	s := parseSchema(t, sources, "InverseAssocEdgeSameEnt")
+func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
 	friendRequests := getEdgeFromSchema(t, s, "AccountConfig", "FriendRequests")
 
 	if friendRequests == nil {
@@ -577,6 +549,52 @@ func (config *TodoConfig) GetTableName() string {
 	return sources
 }
 
+func getSourceForInverseAssocEdgeSameEnt(t *testing.T) string {
+	return `
+	package configs
+
+	import "github.com/lolopinto/ent/ent"
+
+type AccountConfig struct {
+	FirstName string
+}
+
+	func (config *AccountConfig) GetTableName() string {
+		return "accounts"
+	}
+
+	func (config *AccountConfig) GetEdges() map[string]interface{} {
+		return map[string]interface{}{
+			"FriendRequests": ent.AssociationEdge{
+				EntConfig:   AccountConfig{},
+				InverseEdge: &ent.InverseAssocEdge{
+					EdgeName: "FriendRequestsReceived",
+				},
+			},
+		}
+	}
+	`
+}
+
+func getSourceForEdgeWithoutInverse(t *testing.T) string {
+	source := getSourceForInverseAssocEdgeSameEnt(t)
+
+	// strip out InverseEdge: ... }.
+
+	inverseEdgeIdx := strings.Index(source, "InverseEdge")
+	assert.NotEqual(t, inverseEdgeIdx, -1)
+
+	prefix := source[:inverseEdgeIdx]
+	suffix := source[inverseEdgeIdx:]
+
+	// find }, after InverseEdge and strip out the entire InverseEdge
+
+	endIdx := strings.Index(suffix, "},")
+	assert.NotEqual(t, endIdx, -1)
+
+	return prefix + string(suffix[endIdx+2:])
+}
+
 func getSources2ForNewConstsAndEdges(t *testing.T) map[string]string {
 	sources := getSourcesForNewConstsAndEdges()
 
@@ -767,22 +785,99 @@ func (suite *edgeTestSuite) TestNewVsExistingEdges() {
 	testEdgesFromConstsAndEdges(t, s)
 
 	// 1 new edge added. 1 edge total
-	suite.validateSchema(s, 1, 1)
+	suite.validateSchema(s, 1, 1, 0)
 
 	s2 := getSchemaForNewConstsAndEdges2(t)
 
 	// 1 new edge added. 2 edges total
-	suite.validateSchema(s2, 2, 1)
+	suite.validateSchema(s2, 2, 1, 0)
 }
 
-func (suite *edgeTestSuite) validateSchema(s *schema.Schema, expectedEdges, expectedNewEdges int) {
-	assert.Equal(suite.T(), len(s.GetNewEdges()), expectedNewEdges)
+func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
+	sources := make(map[string]string)
+	sources["account_config.go"] = getSourceForEdgeWithoutInverse(suite.T())
+
+	s := parseSchema(suite.T(), sources, "InverseAssocEdgeFirstTry")
+	friendRequests := getEdgeFromSchema(suite.T(), s, "AccountConfig", "FriendRequests")
+
+	if friendRequests == nil {
+		suite.T().Error(
+			"expected the friend requests edge to not be nil",
+		)
+	}
+
+	if friendRequests.InverseEdge != nil {
+		suite.T().Error("expected the friend requests edge to have an inverse edge")
+	}
+
+	edges := s.GetEdges()
+
+	if len(edges) != 1 {
+		suite.T().Errorf("Expected 1 edge generated in schema, got %d instead", len(edges))
+	}
+	friendRequestsEdge := edges["AccountToFriendRequestsEdge"]
+
+	expectedEdge := &ent.AssocEdgeData{
+		EdgeName:        "AccountToFriendRequestsEdge",
+		SymmetricEdge:   false,
+		InverseEdgeType: &sql.NullString{},
+		EdgeTable:       "account_friend_requests_edges",
+	}
+
+	testEdge(suite.T(), friendRequestsEdge, expectedEdge)
+
+	accountInfo := s.Nodes["AccountConfig"]
+
+	testConstants(
+		suite.T(),
+		accountInfo,
+		map[string]map[string]string{
+			"ent.NodeType": map[string]string{
+				"AccountType": "account",
+			},
+			"ent.EdgeType": map[string]string{
+				"AccountToFriendRequestsEdge": "",
+			},
+		},
+	)
+	// 1 new edge added. 1 edge total
+	// validate with db
+	suite.validateSchema(s, 1, 1, 0)
+
+	sources2 := make(map[string]string)
+	sources2["account_config.go"] = getSourceForInverseAssocEdgeSameEnt(suite.T())
+	s2 := parseSchema(suite.T(), sources2, "InverseAssocEdgeAddedAfter")
+	verifyInverseAssocEdgeSameEnt(suite.T(), s2)
+
+	// 1 new edge added. 2 edge total
+	suite.validateSchema(s2, 2, 1, 1)
+}
+
+func (suite *edgeTestSuite) TestInverseAssocEdgeSameEnt() {
+	sources := make(map[string]string)
+
+	sources["account_config.go"] = getSourceForInverseAssocEdgeSameEnt(suite.T())
+
+	s := parseSchema(suite.T(), sources, "InverseAssocEdgeSameEnt")
+	verifyInverseAssocEdgeSameEnt(suite.T(), s)
+}
+
+func (suite *edgeTestSuite) validateSchema(
+	s *schema.Schema,
+	expectedEdges, expectedNewEdges, expectedEdgesToUpdate int) {
+	assert.Equal(suite.T(), expectedNewEdges, len(s.GetNewEdges()))
 	for _, edge := range s.GetNewEdges() {
 		err := createEdge(edge)
 		assert.Nil(suite.T(), err)
 	}
+	assert.Equal(suite.T(), expectedEdgesToUpdate, len(s.GetEdgesToUpdate()))
+	// need to update existing edges also
+	for _, edge := range s.GetEdgesToUpdate() {
+		err := editEdge(edge)
+		assert.Nil(suite.T(), err)
+	}
 
-	assert.Equal(suite.T(), len(s.GetEdges()), expectedEdges)
+	assert.Equal(suite.T(), expectedEdges, len(s.GetEdges()))
 	var dbEdges []*ent.AssocEdgeData
 	assert.Nil(suite.T(), ent.GenLoadAssocEdges(&dbEdges))
 	assert.Equal(suite.T(), len(s.GetEdges()), len(dbEdges))
@@ -798,6 +893,25 @@ func createEdge(edge *ent.AssocEdgeData) error {
 
 	return ent.CreateNodeFromActionMap(
 		&ent.EditedNodeInfo{
+			Entity:         edge,
+			EntConfig:      &assocEdgeConfig{},
+			Fields:         fields,
+			EditableFields: getFieldMapFromFields(fields),
+		},
+	)
+}
+
+func editEdge(edge *ent.AssocEdgeData) error {
+	fields := make(map[string]interface{})
+	fields["edge_type"] = edge.EdgeType
+	fields["inverse_edge_type"] = edge.InverseEdgeType
+	fields["edge_table"] = edge.EdgeTable
+	fields["edge_name"] = edge.EdgeName
+	fields["symmetric_edge"] = edge.SymmetricEdge
+
+	return ent.EditNodeFromActionMap(
+		&ent.EditedNodeInfo{
+			ExistingEnt:    edge,
 			Entity:         edge,
 			EntConfig:      &assocEdgeConfig{},
 			Fields:         fields,

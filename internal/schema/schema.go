@@ -13,9 +13,10 @@ import (
 
 // Schema is the representation of the parsed schema. Has everything needed to
 type Schema struct {
-	Nodes    NodeMapInfo
-	edges    map[string]*ent.AssocEdgeData
-	newEdges []*ent.AssocEdgeData
+	Nodes         NodeMapInfo
+	edges         map[string]*ent.AssocEdgeData
+	newEdges      []*ent.AssocEdgeData
+	edgesToUpdate []*ent.AssocEdgeData
 }
 
 // Given a schema file parser, Parse parses the schema to return the completely
@@ -38,6 +39,7 @@ func parse(parseFn func(*Schema) *assocEdgeData) *Schema {
 	edgeData := parseFn(s)
 	s.edges = edgeData.edgeMap
 	s.newEdges = edgeData.newEdges
+	s.edgesToUpdate = edgeData.edgesToUpdate
 	return s
 }
 
@@ -86,4 +88,9 @@ func (s *Schema) GetNewEdges() []*ent.AssocEdgeData {
 // GetEdges returns all the edges in the schema
 func (s *Schema) GetEdges() map[string]*ent.AssocEdgeData {
 	return s.edges
+}
+
+// GetEdgesToUpdate returns edges in the schema that have changed which need to be updated
+func (s *Schema) GetEdgesToUpdate() []*ent.AssocEdgeData {
+	return s.edgesToUpdate
 }

@@ -133,7 +133,7 @@ func (edgeData *AssocEdgeData) GetPrimaryKey() string {
 // we need to break this up for tests
 // or worst case translate AssocEdgeData to a fake object that is an ent for use by node_map_test.go
 func (edgeData *AssocEdgeData) GetID() string {
-	panic("ss")
+	return edgeData.EdgeType
 }
 
 func (edgeData *AssocEdgeData) GetPrivacyPolicy() PrivacyPolicy {

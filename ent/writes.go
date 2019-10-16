@@ -130,9 +130,10 @@ func (op *updateNodeOp) getSQLQuery(columns []string, values []interface{}) stri
 	valsString := getValuesDataForUpdate(columns, values)
 
 	computedQuery := fmt.Sprintf(
-		"UPDATE %s SET %s WHERE ID = '%s' RETURNING *",
+		"UPDATE %s SET %s WHERE %s = '%s' RETURNING *",
 		op.info.EntConfig.GetTableName(),
 		valsString,
+		getPrimaryKeyForObj(op.info.ExistingEnt),
 		op.info.ExistingEnt.GetID(),
 	)
 
