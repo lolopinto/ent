@@ -27,12 +27,12 @@ type dataOperationWithPlaceHolder interface {
 	AugmentWithPlaceHolder(createdObj Entity, t time.Time)
 }
 
-type writeOperation string
+type WriteOperation string
 
 const (
-	insertOperation writeOperation = "insert"
-	updateOperation writeOperation = "update"
-	deleteOperation writeOperation = "delete"
+	InsertOperation WriteOperation = "insert"
+	EditOperation   WriteOperation = "edit"
+	DeleteOperation WriteOperation = "delete"
 )
 
 type nodeWithActionMapOperation struct {
@@ -143,63 +143,63 @@ func (op *updateNodeOp) getSQLQuery(columns []string, values []interface{}) stri
 	return computedQuery
 }
 
-type edgeOperation struct {
-	edgeType  EdgeType
-	id1       string
-	id1Type   NodeType
-	id2       string
-	id2Type   NodeType
-	time      time.Time
-	data      string
-	operation writeOperation
+type EdgeOperation struct {
+	EdgeType  EdgeType
+	ID1       string
+	ID1Type   NodeType
+	ID2       string
+	ID2Type   NodeType
+	Time      time.Time
+	Data      string
+	Operation WriteOperation
 }
 
-func (op *edgeOperation) PerformWrite(tx *sqlx.Tx) error {
-	if op.id1 == idPlaceHolder || op.id2 == idPlaceHolder {
+func (op *EdgeOperation) PerformWrite(tx *sqlx.Tx) error {
+	if op.ID1 == idPlaceHolder || op.ID2 == idPlaceHolder {
 		return errors.New("error performing write. failed to replace placeholder in ent edge operation")
 	}
 
-	if op.time.IsZero() {
+	if op.Time.IsZero() {
 		// log warning here?
-		op.time = time.Now()
+		op.Time = time.Now()
 	}
-	edgeOptions := EdgeOptions{Time: op.time, Data: op.data}
+	edgeOptions := EdgeOptions{Time: op.Time, Data: op.Data}
 
-	switch op.operation {
-	case insertOperation:
+	switch op.Operation {
+	case InsertOperation:
 		return addEdgeInTransactionRaw(
-			op.edgeType,
-			op.id1,
-			op.id2,
-			op.id1Type,
-			op.id2Type,
+			op.EdgeType,
+			op.ID1,
+			op.ID2,
+			op.ID1Type,
+			op.ID2Type,
 			edgeOptions,
 			tx,
 		)
-	case deleteOperation:
-		return deleteEdgeInTransactionRaw(op.edgeType, op.id1, op.id2, tx)
+	case DeleteOperation:
+		return deleteEdgeInTransactionRaw(op.EdgeType, op.ID1, op.ID2, tx)
 	default:
 		return fmt.Errorf("unsupported edge operation %v passed to edgeOperation.PerformWrite", op)
 	}
 }
 
-func (op *edgeOperation) HasPlaceholder() bool {
-	return op.id1 == idPlaceHolder || op.id2 == idPlaceHolder
+func (op *EdgeOperation) HasPlaceholder() bool {
+	return op.ID1 == idPlaceHolder || op.ID2 == idPlaceHolder
 }
 
-func (op *edgeOperation) AugmentWithPlaceHolder(createdObj Entity, t time.Time) {
-	if op.id1 == idPlaceHolder {
-		op.id1 = createdObj.GetID()
-		op.id1Type = createdObj.GetType()
+func (op *EdgeOperation) AugmentWithPlaceHolder(createdObj Entity, t time.Time) {
+	if op.ID1 == idPlaceHolder {
+		op.ID1 = createdObj.GetID()
+		op.ID1Type = createdObj.GetType()
 	}
 
-	if op.id2 == idPlaceHolder {
-		op.id2 = createdObj.GetID()
-		op.id2Type = createdObj.GetType()
+	if op.ID2 == idPlaceHolder {
+		op.ID2 = createdObj.GetID()
+		op.ID2Type = createdObj.GetType()
 	}
 
-	if op.time.IsZero() {
-		op.time = t
+	if op.Time.IsZero() {
+		op.Time = t
 	}
 }
 

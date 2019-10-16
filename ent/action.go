@@ -63,3 +63,12 @@ func (err *ActionValidationError) Error() string {
 		err.Errors,
 	)
 }
+
+type Changeset interface {
+	GetFields() map[string]interface{}
+	GetEdges() []*EdgeOperation
+	GetPlaceholderID() string
+	GetOperation() WriteOperation
+	ExistingEnt() Entity //existing ent // hmm we just need ID!
+	EntConfig() Config
+}

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iancoleman/strcase"
 	"github.com/jmoiron/sqlx"
 	"github.com/rocketlaunchr/remember-go"
 
@@ -194,6 +195,43 @@ func EditNodeFromActionMap(info *EditedNodeInfo) error {
 	return performAllOperations(ops)
 }
 
+func getFieldMapFromFields(fields map[string]interface{}) ActionFieldMap {
+	// copied from getFieldMapFromFields in ent_test
+	ret := make(ActionFieldMap)
+	for k := range fields {
+		ret[k] = &MutatingFieldInfo{
+			DB:       strcase.ToSnake(k),
+			Required: true,
+		}
+	}
+	return ret
+}
+
+// TODO
+// Ent should return EntConfig really!
+// instead of passing it around all over the place. problem is it doesn't work when this is nil...
+func SaveChangeset(changeset Changeset, entity Entity) error {
+	// TODO change EditedNodeInfo
+	info := &EditedNodeInfo{
+		ExistingEnt:    changeset.ExistingEnt(),
+		Entity:         entity,
+		EntConfig:      changeset.EntConfig(),
+		Fields:         changeset.GetFields(),
+		EditableFields: getFieldMapFromFields(changeset.GetFields()),
+		// TODO this needs to be removed because if we get here it's confirmed good since it's coming from changeset
+	}
+	ops := []dataOperation{
+		&nodeWithActionMapOperation{info},
+	}
+	for _, edge := range changeset.GetEdges() {
+		ops = append(ops, edge)
+	}
+	// TODO critical observers!
+	// create more operations in here
+	// this should be enough to start deleting stuff
+	return performAllOperations(ops)
+}
+
 func buildOperations(info *EditedNodeInfo) []dataOperation {
 	// build up operations as needed
 	// 1/ operation to create the ent as needed
@@ -204,71 +242,71 @@ func buildOperations(info *EditedNodeInfo) []dataOperation {
 
 	// 2 all inbound edges with id2 placeholder for newly created ent
 	for _, edge := range info.InboundEdges {
-		edgeOp := &edgeOperation{
-			edgeType:  edge.EdgeType,
-			id1:       edge.Id,
-			id1Type:   edge.NodeType,
-			operation: insertOperation,
-			time:      edge.Time,
-			data:      edge.Data,
+		edgeOp := &EdgeOperation{
+			EdgeType:  edge.EdgeType,
+			ID1:       edge.Id,
+			ID1Type:   edge.NodeType,
+			Operation: InsertOperation,
+			Time:      edge.Time,
+			Data:      edge.Data,
 		}
 		if info.ExistingEnt == nil {
-			edgeOp.id2 = idPlaceHolder
+			edgeOp.ID2 = idPlaceHolder
 		} else {
-			edgeOp.id2 = info.ExistingEnt.GetID()
-			edgeOp.id2Type = info.ExistingEnt.GetType()
+			edgeOp.ID2 = info.ExistingEnt.GetID()
+			edgeOp.ID2Type = info.ExistingEnt.GetType()
 		}
 		ops = append(ops, edgeOp)
 	}
 
 	// 3 all outbound edges with id1 placeholder for newly created ent
 	for _, edge := range info.OutboundEdges {
-		edgeOp := &edgeOperation{
-			edgeType:  edge.EdgeType,
-			id2:       edge.Id,
-			id2Type:   edge.NodeType,
-			operation: insertOperation,
-			time:      edge.Time,
-			data:      edge.Data,
+		edgeOp := &EdgeOperation{
+			EdgeType:  edge.EdgeType,
+			ID2:       edge.Id,
+			ID2Type:   edge.NodeType,
+			Operation: InsertOperation,
+			Time:      edge.Time,
+			Data:      edge.Data,
 		}
 		if info.ExistingEnt == nil {
-			edgeOp.id1 = idPlaceHolder
+			edgeOp.ID1 = idPlaceHolder
 		} else {
-			edgeOp.id1 = info.ExistingEnt.GetID()
-			edgeOp.id1Type = info.ExistingEnt.GetType()
+			edgeOp.ID1 = info.ExistingEnt.GetID()
+			edgeOp.ID1Type = info.ExistingEnt.GetType()
 		}
 		ops = append(ops, edgeOp)
 	}
 
 	// verbose but prefer operation private to ent
 	for _, edge := range info.RemovedInboundEdges {
-		edgeOp := &edgeOperation{
-			edgeType:  edge.EdgeType,
-			id1:       edge.Id,
-			id1Type:   edge.NodeType,
-			operation: deleteOperation,
+		edgeOp := &EdgeOperation{
+			EdgeType:  edge.EdgeType,
+			ID1:       edge.Id,
+			ID1Type:   edge.NodeType,
+			Operation: DeleteOperation,
 		}
 		if info.ExistingEnt == nil {
 			panic("invalid. cannot remove edge when there's no existing ent")
 		} else {
-			edgeOp.id2 = info.ExistingEnt.GetID()
-			edgeOp.id2Type = info.ExistingEnt.GetType()
+			edgeOp.ID2 = info.ExistingEnt.GetID()
+			edgeOp.ID2Type = info.ExistingEnt.GetType()
 		}
 		ops = append(ops, edgeOp)
 	}
 
 	for _, edge := range info.RemovedOutboundEdges {
-		edgeOp := &edgeOperation{
-			edgeType:  edge.EdgeType,
-			id2:       edge.Id,
-			id2Type:   edge.NodeType,
-			operation: deleteOperation,
+		edgeOp := &EdgeOperation{
+			EdgeType:  edge.EdgeType,
+			ID2:       edge.Id,
+			ID2Type:   edge.NodeType,
+			Operation: DeleteOperation,
 		}
 		if info.ExistingEnt == nil {
 			panic("invalid. cannot remove edge when there's no existing ent")
 		} else {
-			edgeOp.id1 = info.ExistingEnt.GetID()
-			edgeOp.id1Type = info.ExistingEnt.GetType()
+			edgeOp.ID1 = info.ExistingEnt.GetID()
+			edgeOp.ID1Type = info.ExistingEnt.GetType()
 		}
 		ops = append(ops, edgeOp)
 	}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/privacy"
 	"github.com/lolopinto/ent/ent/test_schema/models"
@@ -18,28 +17,15 @@ import (
 )
 
 type userAction struct {
-	viewer viewer.ViewerContext
-	//fields       map[string]interface{}
+	viewer       viewer.ViewerContext
 	emailAddress string
 	firstName    string
 	lastName     string
+	user         models.User
 }
 
 func (a *userAction) GetViewer() viewer.ViewerContext {
 	return a.viewer
-}
-
-func (a *userAction) GetFieldMap() ent.ActionFieldMap {
-	// copied from getFieldMapFromFields in ent_test
-	ret := make(ent.ActionFieldMap)
-	fields := a.getFields()
-	for k := range fields {
-		ret[k] = &ent.MutatingFieldInfo{
-			DB:       strcase.ToSnake(k),
-			Required: true,
-		}
-	}
-	return ret
 }
 
 func (a *userAction) getFields() map[string]interface{} {
@@ -50,20 +36,35 @@ func (a *userAction) getFields() map[string]interface{} {
 	return m
 }
 
-type createUserAction struct {
-	userAction
-	user models.User
+func (a *userAction) Entity() ent.Entity {
+	return &a.user
 }
 
-func (a *createUserAction) PerformAction() error {
-	return ent.CreateNodeFromActionMap(
-		&ent.EditedNodeInfo{
-			Entity:         &a.user,
-			EntConfig:      &configs.UserConfig{},
-			Fields:         a.getFields(),
-			EditableFields: a.GetFieldMap(),
-		},
+func (a *userAction) GetBuilder(
+	operation ent.WriteOperation,
+	existingEnt ent.Entity,
+) EntMutationBuilder {
+	return EntMutationBuilder{
+		Viewer:      a.viewer,
+		ExistingEnt: existingEnt,
+		Operation:   operation,
+		EntConfig:   &configs.UserConfig{},
+	}
+}
+
+type createUserAction struct {
+	userAction
+}
+
+func (a *createUserAction) GetChangeset() (ent.Changeset, error) {
+	builder := a.GetBuilder(
+		ent.InsertOperation,
+		nil,
 	)
+	for k, v := range a.getFields() {
+		builder.SetField(k, v)
+	}
+	return builder.GetChangeset()
 }
 
 func (a *createUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
@@ -75,28 +76,22 @@ func (a *createUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 	}
 }
 
-func (a *createUserAction) GetUnderlyingEnt() ent.Entity {
-	return nil
-}
-
 var _ ActionWithPermissions = &createUserAction{}
 
 type editUserAction struct {
 	userAction
 	existingEnt models.User
-	user        models.User
 }
 
-func (a *editUserAction) PerformAction() error {
-	return ent.EditNodeFromActionMap(
-		&ent.EditedNodeInfo{
-			Entity:         &a.user,
-			EntConfig:      &configs.UserConfig{},
-			Fields:         a.getFields(),
-			EditableFields: a.GetFieldMap(),
-			ExistingEnt:    &a.existingEnt,
-		},
+func (a *editUserAction) GetChangeset() (ent.Changeset, error) {
+	builder := a.GetBuilder(
+		ent.InsertOperation,
+		&a.existingEnt,
 	)
+	for k, v := range a.getFields() {
+		builder.SetField(k, v)
+	}
+	return builder.GetChangeset()
 }
 
 func (a *editUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
@@ -107,10 +102,6 @@ func (a *editUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 		),
 		&a.user,
 	}
-}
-
-func (a *editUserAction) GetUnderlyingEnt() ent.Entity {
-	return &a.user
 }
 
 var _ ActionWithPermissions = &editUserAction{}
@@ -223,6 +214,6 @@ func (suite *actionsPermissionsSuite) TestEditPrivacy() {
 	}
 }
 
-func TestPrivacySuite(t *testing.T) {
+func TestActionPermissions(t *testing.T) {
 	suite.Run(t, new(actionsPermissionsSuite))
 }
