@@ -9,6 +9,8 @@ from alembic.autogenerate import render_python_code
 from . import command
 from . import config
 from . import edge_op
+from . import edge_comparator
+from . import edge_renderer
 
 class Runner(object):
 

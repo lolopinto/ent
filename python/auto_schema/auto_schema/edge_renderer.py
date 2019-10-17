@@ -18,7 +18,7 @@ def render_remove_edges(autogen_context, op):
 def render_modify_edge(autogen_context, op):
   return (
     "op.modify_edge(\n"
-    "%(indent)s%(edge_type)s,\n"
+    "%(indent)s'%(edge_type)s',\n"
     "%(indent)s%(edge)s\n"
     ")" % {
       "indent": "  ",
