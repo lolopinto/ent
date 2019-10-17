@@ -23,5 +23,9 @@ func (config *UserConfig) GetEdges() ent.EdgeMap {
 		"FamilyMembers": &ent.AssociationEdge{
 			EntConfig: UserConfig{},
 		},
+		"Friends": &ent.AssociationEdge{
+			EntConfig: UserConfig{},
+			Symmetric: true,
+		},
 	}
 }

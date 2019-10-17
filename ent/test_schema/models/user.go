@@ -21,6 +21,8 @@ const (
 	UserToEventsEdge ent.EdgeType = "41bddf81-0c26-432c-9133-2f093af2c07c"
 	// UserToFamilyMembersEdge is the edgeType for the user to familymembers edge.
 	UserToFamilyMembersEdge ent.EdgeType = "38176101-6adc-4e0d-bd36-08cdc45f5ed2"
+	// UserToFriendsEdge is the edgeType for the user to friends edge.
+	UserToFriendsEdge ent.EdgeType = "d78d13dc-85d6-4f55-a72d-5dbcdc36131d"
 	// UserToInvitedEventsEdge is the edgeType for the user to invitedevents edge.
 	UserToInvitedEventsEdge ent.EdgeType = "e89302ca-c76b-41ad-a823-9e3964b821dd"
 )
@@ -198,6 +200,50 @@ func (user *User) GenFamilyMembers(result *UsersResult, wg *sync.WaitGroup) {
 func (user *User) LoadFamilyMembers() ([]*User, error) {
 	var users []*User
 	err := ent.LoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, &users, &configs.UserConfig{})
+	return users, err
+}
+
+// LoadFriendsEdges returns the User edges associated with the User instance
+func (user *User) LoadFriendsEdges() ([]*ent.Edge, error) {
+	return ent.LoadEdgesByType(user.ID, UserToFriendsEdge)
+}
+
+// GenFriendsEdges returns the User edges associated with the User instance
+func (user *User) GenFriendsEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgesResultChan := make(chan ent.EdgesResult)
+	go ent.GenLoadEdgesByType(user.ID, UserToFriendsEdge, edgesResultChan)
+	*result = <-edgesResultChan
+}
+
+// LoadFriendsEdgeFor loads the ent.Edge between the current node and the given id2 for the Friends edge.
+func (user *User) LoadFriendsEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(user.ID, id2, UserToFriendsEdge)
+}
+
+// GenFriendsEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the Friends edge.
+func (user *User) GenLoadFriendsEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(user.ID, id2, UserToFriendsEdge, edgeResultChan)
+	*result = <-edgeResultChan
+}
+
+// GenFriends returns the Users associated with the User instance
+func (user *User) GenFriends(result *UsersResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var users []*User
+	chanErr := make(chan error)
+	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFriendsEdge, &users, &configs.UserConfig{}, chanErr)
+	err := <-chanErr
+	result.Users = users
+	result.Error = err
+}
+
+// LoadFriends returns the Users associated with the User instance
+func (user *User) LoadFriends() ([]*User, error) {
+	var users []*User
+	err := ent.LoadNodesByType(user.Viewer, user.ID, UserToFriendsEdge, &users, &configs.UserConfig{})
 	return users, err
 }
 
