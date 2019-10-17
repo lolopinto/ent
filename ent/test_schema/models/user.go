@@ -21,6 +21,8 @@ const (
 	UserToEventsEdge ent.EdgeType = "41bddf81-0c26-432c-9133-2f093af2c07c"
 	// UserToFamilyMembersEdge is the edgeType for the user to familymembers edge.
 	UserToFamilyMembersEdge ent.EdgeType = "38176101-6adc-4e0d-bd36-08cdc45f5ed2"
+	// UserToInvitedEventsEdge is the edgeType for the user to invitedevents edge.
+	UserToInvitedEventsEdge ent.EdgeType = "e89302ca-c76b-41ad-a823-9e3964b821dd"
 )
 
 // User represents the `User` model
@@ -197,6 +199,50 @@ func (user *User) LoadFamilyMembers() ([]*User, error) {
 	var users []*User
 	err := ent.LoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, &users, &configs.UserConfig{})
 	return users, err
+}
+
+// LoadInvitedEventsEdges returns the Event edges associated with the User instance
+func (user *User) LoadInvitedEventsEdges() ([]*ent.Edge, error) {
+	return ent.LoadEdgesByType(user.ID, UserToInvitedEventsEdge)
+}
+
+// GenInvitedEventsEdges returns the Event edges associated with the User instance
+func (user *User) GenInvitedEventsEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgesResultChan := make(chan ent.EdgesResult)
+	go ent.GenLoadEdgesByType(user.ID, UserToInvitedEventsEdge, edgesResultChan)
+	*result = <-edgesResultChan
+}
+
+// LoadInvitedEventsEdgeFor loads the ent.Edge between the current node and the given id2 for the InvitedEvents edge.
+func (user *User) LoadInvitedEventsEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(user.ID, id2, UserToInvitedEventsEdge)
+}
+
+// GenInvitedEventsEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the InvitedEvents edge.
+func (user *User) GenLoadInvitedEventsEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(user.ID, id2, UserToInvitedEventsEdge, edgeResultChan)
+	*result = <-edgeResultChan
+}
+
+// GenInvitedEvents returns the Events associated with the User instance
+func (user *User) GenInvitedEvents(result *EventsResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var events []*Event
+	chanErr := make(chan error)
+	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToInvitedEventsEdge, &events, &configs.EventConfig{}, chanErr)
+	err := <-chanErr
+	result.Events = events
+	result.Error = err
+}
+
+// LoadInvitedEvents returns the Events associated with the User instance
+func (user *User) LoadInvitedEvents() ([]*Event, error) {
+	var events []*Event
+	err := ent.LoadNodesByType(user.Viewer, user.ID, UserToInvitedEventsEdge, &events, &configs.EventConfig{})
+	return events, err
 }
 
 // DBFields is used by the ent framework to load the ent from the underlying database

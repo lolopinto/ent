@@ -103,9 +103,10 @@ sa.Table("users", metadata,
 edges = {
   'public': {
     'ContactToAllowListEdge': {"edge_name":"ContactToAllowListEdge", "edge_type":"f6ecacb9-1d4f-47bb-8f18-f7d544450ea2", "edge_table":"contact_allow_list_edges", "symmetric_edge":False, "inverse_edge_type":None},
-    'EventToInvitedEdge': {"edge_name":"EventToInvitedEdge", "edge_type":"12a5ac62-1f9a-4fd7-b38f-a6d229ace12c", "edge_table":"event_invited_edges", "symmetric_edge":False, "inverse_edge_type":None},
+    'EventToInvitedEdge': {"edge_name":"EventToInvitedEdge", "edge_type":"12a5ac62-1f9a-4fd7-b38f-a6d229ace12c", "edge_table":"event_invited_edges", "symmetric_edge":False, "inverse_edge_type":"e89302ca-c76b-41ad-a823-9e3964b821dd"},
     'UserToEventsEdge': {"edge_name":"UserToEventsEdge", "edge_type":"41bddf81-0c26-432c-9133-2f093af2c07c", "edge_table":"user_events_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'UserToFamilyMembersEdge': {"edge_name":"UserToFamilyMembersEdge", "edge_type":"38176101-6adc-4e0d-bd36-08cdc45f5ed2", "edge_table":"user_family_members_edges", "symmetric_edge":False, "inverse_edge_type":None},
+    'UserToInvitedEventsEdge': {"edge_name":"UserToInvitedEventsEdge", "edge_type":"e89302ca-c76b-41ad-a823-9e3964b821dd", "edge_table":"event_invited_edges", "symmetric_edge":False, "inverse_edge_type":"12a5ac62-1f9a-4fd7-b38f-a6d229ace12c"},
   }
 }
 

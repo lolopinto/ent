@@ -55,6 +55,7 @@ type User implements Node {
     familyMembers: [User!]!
     firstName: String!
     id: ID!
+    invitedEvents: [Event!]!
     lastName: String!
 }
 

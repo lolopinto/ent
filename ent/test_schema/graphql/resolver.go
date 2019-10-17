@@ -66,3 +66,7 @@ func (r *userResolver) Events(ctx context.Context, obj *models.User) ([]*models.
 func (r *userResolver) FamilyMembers(ctx context.Context, obj *models.User) ([]*models.User, error) {
 	return obj.LoadFamilyMembers()
 }
+
+func (r *userResolver) InvitedEvents(ctx context.Context, obj *models.User) ([]*models.Event, error) {
+	return obj.LoadInvitedEvents()
+}
