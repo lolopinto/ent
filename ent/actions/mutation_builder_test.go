@@ -75,9 +75,9 @@ func (suite *mutationBuilderSuite) getEventBuilderwithFields(
 }
 
 func (suite *mutationBuilderSuite) saveBuilder(b actions.EntMutationBuilder, entity ent.Entity) {
-	c, err := b.GetChangeset()
+	c, err := b.GetChangeset(entity)
 	assert.Nil(suite.T(), err)
-	err = ent.SaveChangeset(c, entity)
+	err = ent.SaveChangeset(c)
 	assert.Nil(suite.T(), err)
 }
 

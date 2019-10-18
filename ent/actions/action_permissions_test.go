@@ -63,7 +63,7 @@ func (a *createUserAction) GetChangeset() (ent.Changeset, error) {
 	for k, v := range a.getFields() {
 		builder.SetField(k, v)
 	}
-	return builder.GetChangeset()
+	return builder.GetChangeset(&a.user)
 }
 
 func (a *createUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
@@ -90,7 +90,7 @@ func (a *editUserAction) GetChangeset() (ent.Changeset, error) {
 	for k, v := range a.getFields() {
 		builder.SetField(k, v)
 	}
-	return builder.GetChangeset()
+	return builder.GetChangeset(&a.user)
 }
 
 func (a *editUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {

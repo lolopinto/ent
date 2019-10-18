@@ -58,7 +58,7 @@ func Save(action Action) error {
 	if err != nil {
 		return err
 	}
-	return ent.SaveChangeset(changeset, action.Entity())
+	return ent.SaveChangeset(changeset)
 }
 
 func applyActionPermissions(action ActionWithPermissions) error {

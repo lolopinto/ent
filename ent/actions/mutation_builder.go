@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
 )
@@ -19,7 +20,7 @@ type MutationBuilder interface {
 	//	GetPlaceholderID() string
 	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions
 	Entity() ent.Entity // expected to be null for create operations. entity being mutated
-	GetChangeset() (ent.Changeset, error)
+	GetChangeset(ent.Entity) (ent.Changeset, error)
 }
 
 // Action will have a changeset. should the mutation builder care about that?
@@ -145,14 +146,36 @@ func (b *EntMutationBuilder) RemoveOutboundEdge(edgeType ent.EdgeType, id2 strin
 	return nil
 }
 
-func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
+func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, error) {
 	edgeData, err := b.loadEdges()
 	if err != nil {
 		return nil, err
 	}
 
-	var newEdges []*ent.EdgeOperation
+	var ops []ent.DataOperation
+	if b.Operation == ent.DeleteOperation {
+		ops = append(ops, &ent.DeleteNodeOperation{
+			ExistingEnt: b.ExistingEnt,
+			EntConfig:   b.EntConfig,
+		})
+	} else {
+		info := &ent.EditedNodeInfo{
+			ExistingEnt:    b.ExistingEnt,
+			Entity:         entity,
+			EntConfig:      b.EntConfig,
+			Fields:         b.fields,
+			EditableFields: getFieldMapFromFields(b.fields),
+			// TODO this needs to be removed because if we get here it's confirmed good since it's coming from changeset
+		}
+		ops = append(ops,
+			&ent.NodeWithActionMapOperation{
+				info,
+				b.Operation,
+			},
+		)
+	}
 	for _, edge := range b.edges {
+		ops = append(ops, edge)
 		edgeInfo := edgeData[edge.EdgeType]
 		if edgeInfo.SymmetricEdge ||
 			(edgeInfo.InverseEdgeType != nil && edgeInfo.InverseEdgeType.Valid) {
@@ -173,14 +196,14 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 				edgeOp.EdgeType = ent.EdgeType(edgeInfo.InverseEdgeType.String)
 			}
 
-			newEdges = append(newEdges, edgeOp)
+			ops = append(ops, edgeOp)
 		}
 	}
 	return &EntMutationChangeset{
-		edges:         append(b.edges, newEdges...),
-		fields:        b.fields,
+		executor: &ent.ListBasedExector{
+			Ops: ops,
+		},
 		placeholderId: idPlaceHolder,
-		operation:     b.Operation,
 		existingEnt:   b.ExistingEnt,
 		entConfig:     b.EntConfig,
 	}, nil
@@ -222,28 +245,19 @@ func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, e
 }
 
 type EntMutationChangeset struct {
-	edges         []*ent.EdgeOperation
+	executor      ent.Executor
 	fields        map[string]interface{}
 	placeholderId string
-	operation     ent.WriteOperation
 	existingEnt   ent.Entity
 	entConfig     ent.Config
 }
 
-func (c *EntMutationChangeset) GetEdges() []*ent.EdgeOperation {
-	return c.edges
-}
-
-func (c *EntMutationChangeset) GetFields() map[string]interface{} {
-	return c.fields
+func (c *EntMutationChangeset) GetExecutor() ent.Executor {
+	return c.executor
 }
 
 func (c *EntMutationChangeset) GetPlaceholderID() string {
 	return c.placeholderId
-}
-
-func (c *EntMutationChangeset) GetOperation() ent.WriteOperation {
-	return c.operation
 }
 
 func (c *EntMutationChangeset) ExistingEnt() ent.Entity {
@@ -252,4 +266,16 @@ func (c *EntMutationChangeset) ExistingEnt() ent.Entity {
 
 func (c *EntMutationChangeset) EntConfig() ent.Config {
 	return c.entConfig
+}
+
+func getFieldMapFromFields(fields map[string]interface{}) ent.ActionFieldMap {
+	// copied from getFieldMapFromFields in ent_test
+	ret := make(ent.ActionFieldMap)
+	for k := range fields {
+		ret[k] = &ent.MutatingFieldInfo{
+			DB:       strcase.ToSnake(k),
+			Required: true,
+		}
+	}
+	return ret
 }

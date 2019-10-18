@@ -1,6 +1,10 @@
 package ent
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+)
 
 type ActionOperation uint
 
@@ -65,10 +69,18 @@ func (err *ActionValidationError) Error() string {
 }
 
 type Changeset interface {
-	GetFields() map[string]interface{}
-	GetEdges() []*EdgeOperation
+	GetExecutor() Executor
 	GetPlaceholderID() string
-	GetOperation() WriteOperation
+	// keeping these 2 just in case...
 	ExistingEnt() Entity //existing ent // hmm we just need ID!
-	EntConfig() Config
+	EntConfig() Config   // just in case...
 }
+
+type Executor interface {
+	// Provides an io.Read() style API where the underlying dependency details are hidden
+	// away. works when it's one changeset with N operations or N changesets with operations across them.
+	// When we're done with operations, it returns AllOperations to signal EOF
+	Operation() (DataOperation, error)
+}
+
+var AllOperations = errors.New("All operation dependencies ")

@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iancoleman/strcase"
 	"github.com/jmoiron/sqlx"
 	"github.com/rocketlaunchr/remember-go"
 
@@ -195,58 +194,20 @@ func EditNodeFromActionMap(info *EditedNodeInfo) error {
 	return performAllOperations(ops)
 }
 
-func getFieldMapFromFields(fields map[string]interface{}) ActionFieldMap {
-	// copied from getFieldMapFromFields in ent_test
-	ret := make(ActionFieldMap)
-	for k := range fields {
-		ret[k] = &MutatingFieldInfo{
-			DB:       strcase.ToSnake(k),
-			Required: true,
-		}
-	}
-	return ret
-}
-
 // TODO
-// Ent should return EntConfig really!
 // instead of passing it around all over the place. problem is it doesn't work when this is nil...
-func SaveChangeset(changeset Changeset, entity Entity) error {
-	ops := []dataOperation{}
-	// TODO change EditedNodeInfo
-	info := &EditedNodeInfo{
-		ExistingEnt:    changeset.ExistingEnt(),
-		Entity:         entity,
-		EntConfig:      changeset.EntConfig(),
-		Fields:         changeset.GetFields(),
-		EditableFields: getFieldMapFromFields(changeset.GetFields()),
-		// TODO this needs to be removed because if we get here it's confirmed good since it's coming from changeset
-	}
-
-	if changeset.GetOperation() == DeleteOperation {
-		ops = append(ops, &deleteOp{info})
-	} else {
-		ops = append(ops,
-			&nodeWithActionMapOperation{
-				info,
-				changeset.GetOperation(),
-			},
-		)
-	}
-	for _, edge := range changeset.GetEdges() {
-		ops = append(ops, edge)
-	}
+func SaveChangeset(changeset Changeset) error {
 	// TODO critical observers!
 	// create more operations in here
-	// this should be enough to start deleting stuff
-	return performAllOperations(ops)
+	return executeOperations(changeset.GetExecutor())
 }
 
-func buildOperations(info *EditedNodeInfo, op WriteOperation) []dataOperation {
+func buildOperations(info *EditedNodeInfo, op WriteOperation) []DataOperation {
 	// build up operations as needed
 	// 1/ operation to create the ent as needed
 	// TODO check to see if any fields
-	ops := []dataOperation{
-		&nodeWithActionMapOperation{info: info, operation: op},
+	ops := []DataOperation{
+		&NodeWithActionMapOperation{Info: info, Operation: op},
 	}
 
 	// 2 all inbound edges with id2 placeholder for newly created ent

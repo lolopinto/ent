@@ -14,7 +14,7 @@ import (
 // the id of the newly created node
 const idPlaceHolder = "$ent.idPlaceholder$"
 
-type dataOperation interface {
+type DataOperation interface {
 	PerformWrite(tx *sqlx.Tx) error
 }
 
@@ -35,23 +35,25 @@ const (
 	DeleteOperation WriteOperation = "delete"
 )
 
-type nodeWithActionMapOperation struct {
-	info      *EditedNodeInfo
-	operation WriteOperation
+// TODO this is temporary until ent.CreateNodeFromActionMap and ent.EditNodeFromActionMap die
+// then rename and change...
+type NodeWithActionMapOperation struct {
+	Info      *EditedNodeInfo
+	Operation WriteOperation
 }
 
-func (op *nodeWithActionMapOperation) PerformWrite(tx *sqlx.Tx) error {
+func (op *NodeWithActionMapOperation) PerformWrite(tx *sqlx.Tx) error {
 	var queryOp nodeOp
-	if op.operation == InsertOperation {
+	if op.Operation == InsertOperation {
 		//	if entity == nil {
-		queryOp = &insertNodeOp{op.info}
+		queryOp = &insertNodeOp{op.Info}
 	} else {
-		queryOp = &updateNodeOp{op.info}
+		queryOp = &updateNodeOp{op.Info}
 	}
 
 	columns, values := queryOp.getInitColsAndVals()
-	for fieldName, value := range op.info.Fields {
-		fieldInfo, ok := op.info.EditableFields[fieldName]
+	for fieldName, value := range op.Info.Fields {
+		fieldInfo, ok := op.Info.EditableFields[fieldName]
 		if !ok {
 			return errors.New(fmt.Sprintf("invalid field %s passed to CreateNodeFromActionMap", fieldName))
 		}
@@ -61,11 +63,11 @@ func (op *nodeWithActionMapOperation) PerformWrite(tx *sqlx.Tx) error {
 
 	query := queryOp.getSQLQuery(columns, values)
 
-	return performWrite(query, values, tx, op.info.Entity)
+	return performWrite(query, values, tx, op.Info.Entity)
 }
 
-func (op *nodeWithActionMapOperation) ReturnedEnt() Entity {
-	return op.info.Entity
+func (op *NodeWithActionMapOperation) ReturnedEnt() Entity {
+	return op.Info.Entity
 }
 
 type nodeOp interface {
@@ -204,7 +206,7 @@ func (op *EdgeOperation) AugmentWithPlaceHolder(createdObj Entity, t time.Time) 
 	}
 }
 
-func handleAugment(op dataOperation, ent Entity, t time.Time) error {
+func handleAugment(op DataOperation, ent Entity, t time.Time) error {
 	augmentOp, ok := op.(dataOperationWithPlaceHolder)
 
 	if !ok {
@@ -224,7 +226,7 @@ func handleAugment(op dataOperation, ent Entity, t time.Time) error {
 	return err
 }
 
-func handleReturnedEnt(op dataOperation, ent Entity) (Entity, error) {
+func handleReturnedEnt(op DataOperation, ent Entity) (Entity, error) {
 	createOp, ok := op.(dataOperationWithEnt)
 
 	if !ok {
@@ -245,7 +247,13 @@ func handleReturnedEnt(op dataOperation, ent Entity) (Entity, error) {
 }
 
 // performAllOperations takes a list of operations to the database and wraps them in a transaction
-func performAllOperations(ops []dataOperation) error {
+func performAllOperations(ops []DataOperation) error {
+	return executeOperations(&ListBasedExector{
+		Ops: ops,
+	})
+}
+
+func executeOperations(exec Executor) error {
 	db := data.DBConn()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -256,7 +264,13 @@ func performAllOperations(ops []dataOperation) error {
 	var ent Entity
 	var t time.Time
 
-	for _, op := range ops {
+	for {
+		op, err := exec.Operation()
+		if err == AllOperations {
+			break
+		} else if err != nil {
+			return err
+		}
 		err = handleAugment(op, ent, t)
 
 		if err == nil {
@@ -281,14 +295,29 @@ func performAllOperations(ops []dataOperation) error {
 	return nil
 }
 
-type deleteOp struct {
-	info *EditedNodeInfo
+type ListBasedExector struct {
+	Ops []DataOperation
+	idx int
 }
 
-func (op *deleteOp) PerformWrite(tx *sqlx.Tx) error {
+func (l *ListBasedExector) Operation() (DataOperation, error) {
+	if l.idx == len(l.Ops) {
+		return nil, AllOperations
+	}
+	idx := l.idx
+	l.idx++
+	return l.Ops[idx], nil
+}
+
+type DeleteNodeOperation struct {
+	ExistingEnt Entity
+	EntConfig   Config
+}
+
+func (op *DeleteNodeOperation) PerformWrite(tx *sqlx.Tx) error {
 	return deleteNodeInTransaction(
-		op.info.ExistingEnt,
-		op.info.EntConfig,
+		op.ExistingEnt,
+		op.EntConfig,
 		tx,
 	)
 }
