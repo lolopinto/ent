@@ -102,7 +102,7 @@ func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, 
 
 	edgeOp := b.getPartialEdgeOp(edgeType, ent.InsertOperation, options...)
 	edgeOp.ID2 = id2
-	edgeOp.ID1Type = nodeType
+	edgeOp.ID2Type = nodeType
 	if b.ExistingEnt == nil {
 		edgeOp.ID1 = idPlaceHolder
 	} else {
@@ -172,6 +172,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 				// inverse edge
 				edgeOp.EdgeType = ent.EdgeType(edgeInfo.InverseEdgeType.String)
 			}
+
 			newEdges = append(newEdges, edgeOp)
 		}
 	}

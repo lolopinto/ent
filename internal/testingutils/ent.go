@@ -1,7 +1,6 @@
 package testingutils
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -17,7 +16,7 @@ func CreateTestUser(t *testing.T) *models.User {
 	var user models.User
 
 	fields := map[string]interface{}{
-		"EmailAddress": fmt.Sprintf("test-%s@email.com", util.GenerateRandCode(9)),
+		"EmailAddress": util.GenerateRandEmail(),
 		"FirstName":    "Ola",
 		"LastName":     "Okelola",
 	}
@@ -77,7 +76,7 @@ func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.Use
 	var contact models.Contact
 
 	fields := map[string]interface{}{
-		"EmailAddress": fmt.Sprintf("test-contact-%s@email.com", util.GenerateRandCode(9)),
+		"EmailAddress": util.GenerateRandEmail(),
 		"UserID":       user.ID,
 		"FirstName":    "first-name",
 		"LastName":     "last-name",

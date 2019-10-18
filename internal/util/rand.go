@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -15,4 +16,8 @@ func GenerateRandCode(n int) string {
 		sb.WriteString(strconv.Itoa(rand.Intn(9)))
 	}
 	return sb.String()
+}
+
+func GenerateRandEmail() string {
+	return fmt.Sprintf("test-%s@email.com", GenerateRandCode(9))
 }

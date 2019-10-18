@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
@@ -122,7 +121,7 @@ func createUser(v viewer.ViewerContext) (createUserAction, error) {
 	action.viewer = v
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
-	action.emailAddress = fmt.Sprintf("test-%s@email.com", util.GenerateRandCode(9))
+	action.emailAddress = util.GenerateRandEmail()
 
 	err := Save(&action)
 	return action, err

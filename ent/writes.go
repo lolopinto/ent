@@ -36,12 +36,14 @@ const (
 )
 
 type nodeWithActionMapOperation struct {
-	info *EditedNodeInfo
+	info      *EditedNodeInfo
+	operation WriteOperation
 }
 
 func (op *nodeWithActionMapOperation) PerformWrite(tx *sqlx.Tx) error {
 	var queryOp nodeOp
-	if op.info.ExistingEnt == nil {
+	if op.operation == InsertOperation {
+		//	if entity == nil {
 		queryOp = &insertNodeOp{op.info}
 	} else {
 		queryOp = &updateNodeOp{op.info}
@@ -97,7 +99,6 @@ func (op *insertNodeOp) getInitColsAndVals() ([]string, []interface{}) {
 
 func (op *insertNodeOp) getSQLQuery(columns []string, values []interface{}) string {
 	// TODO sql builder factory...
-
 	colsString := getColumnsString(columns)
 	valsString := getValsString(values)
 	//	fields := make(map[string]interface{})
@@ -109,7 +110,6 @@ func (op *insertNodeOp) getSQLQuery(columns []string, values []interface{}) stri
 		valsString,
 	)
 	//fmt.Println(computedQuery)
-	//spew.Dump(colsString, values, valsString)
 	return computedQuery
 }
 
@@ -279,4 +279,16 @@ func performAllOperations(ops []dataOperation) error {
 
 	tx.Commit()
 	return nil
+}
+
+type deleteOp struct {
+	info *EditedNodeInfo
+}
+
+func (op *deleteOp) PerformWrite(tx *sqlx.Tx) error {
+	return deleteNodeInTransaction(
+		op.info.ExistingEnt,
+		op.info.EntConfig,
+		tx,
+	)
 }

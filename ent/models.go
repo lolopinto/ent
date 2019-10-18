@@ -179,7 +179,7 @@ func CreateNodeFromActionMap(info *EditedNodeInfo) error {
 	}
 
 	// perform in a transaction as needed
-	ops := buildOperations(info)
+	ops := buildOperations(info, InsertOperation)
 	return performAllOperations(ops)
 }
 
@@ -191,7 +191,7 @@ func EditNodeFromActionMap(info *EditedNodeInfo) error {
 	}
 
 	// perform in a transaction as needed
-	ops := buildOperations(info)
+	ops := buildOperations(info, EditOperation)
 	return performAllOperations(ops)
 }
 
@@ -211,6 +211,7 @@ func getFieldMapFromFields(fields map[string]interface{}) ActionFieldMap {
 // Ent should return EntConfig really!
 // instead of passing it around all over the place. problem is it doesn't work when this is nil...
 func SaveChangeset(changeset Changeset, entity Entity) error {
+	ops := []dataOperation{}
 	// TODO change EditedNodeInfo
 	info := &EditedNodeInfo{
 		ExistingEnt:    changeset.ExistingEnt(),
@@ -220,8 +221,16 @@ func SaveChangeset(changeset Changeset, entity Entity) error {
 		EditableFields: getFieldMapFromFields(changeset.GetFields()),
 		// TODO this needs to be removed because if we get here it's confirmed good since it's coming from changeset
 	}
-	ops := []dataOperation{
-		&nodeWithActionMapOperation{info},
+
+	if changeset.GetOperation() == DeleteOperation {
+		ops = append(ops, &deleteOp{info})
+	} else {
+		ops = append(ops,
+			&nodeWithActionMapOperation{
+				info,
+				changeset.GetOperation(),
+			},
+		)
 	}
 	for _, edge := range changeset.GetEdges() {
 		ops = append(ops, edge)
@@ -232,12 +241,12 @@ func SaveChangeset(changeset Changeset, entity Entity) error {
 	return performAllOperations(ops)
 }
 
-func buildOperations(info *EditedNodeInfo) []dataOperation {
+func buildOperations(info *EditedNodeInfo, op WriteOperation) []dataOperation {
 	// build up operations as needed
 	// 1/ operation to create the ent as needed
 	// TODO check to see if any fields
 	ops := []dataOperation{
-		&nodeWithActionMapOperation{info},
+		&nodeWithActionMapOperation{info: info, operation: op},
 	}
 
 	// 2 all inbound edges with id2 placeholder for newly created ent

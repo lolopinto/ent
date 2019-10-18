@@ -111,6 +111,10 @@ func (edgeData *AssocEdgeData) DBFields() DBFields {
 			if err != nil {
 				return err
 			}
+			// empty string. nothing to do here since this is nullable
+			if id == "" {
+				return nil
+			}
 			edgeData.InverseEdgeType = &sql.NullString{
 				Valid:  true,
 				String: id,
