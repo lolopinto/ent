@@ -93,7 +93,11 @@ func (suite *mutationBuilderSuite) saveEvent(b actions.EntMutationBuilder) *mode
 }
 
 func (suite *mutationBuilderSuite) createUser(email string) *models.User {
-	b := suite.getUserBuilderWithFields(
+	return suite.saveUser(suite.getDefaultUserBuilder(email))
+}
+
+func (suite *mutationBuilderSuite) getDefaultUserBuilder(email string) actions.EntMutationBuilder {
+	return suite.getUserBuilderWithFields(
 		ent.InsertOperation,
 		nil,
 		map[string]interface{}{
@@ -102,7 +106,6 @@ func (suite *mutationBuilderSuite) createUser(email string) *models.User {
 			"LastName":     "Okelola",
 		},
 	)
-	return suite.saveUser(b)
 }
 
 func (suite *mutationBuilderSuite) createEvent(user *models.User) *models.Event {
@@ -337,6 +340,21 @@ func (suite *mutationBuilderSuite) TestAddInboudEdge() {
 
 	verifyEventObj(suite.T(), updatedEvent2, user)
 	verifyNoUserToEventEdge(suite.T(), user, event)
+}
+
+func (suite *mutationBuilderSuite) TestPlaceholderID() {
+	b := suite.getDefaultUserBuilder(util.GenerateRandEmail())
+	user := suite.saveUser(b)
+
+	b2 := suite.getDefaultUserBuilder(util.GenerateRandEmail())
+	b2.AddOutboundEdge(models.UserToFamilyMembersEdge, user.ID, user.GetType())
+	user2 := suite.saveUser(b2)
+
+	verifyFamilyEdge(suite.T(), user2, user)
+
+	// different place holder ids, different user objects, placeholder ids get resolved
+	assert.NotEqual(suite.T(), b.GetPlaceholderID(), b2.GetPlaceholderID())
+	assert.NotEqual(suite.T(), user.GetID(), user2.GetID())
 }
 
 func verifyUserObj(t *testing.T, user *models.User, email string) {

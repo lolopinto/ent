@@ -2,11 +2,13 @@ package actions
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 // Action will have a changeset. should the mutation builder care about that?
@@ -22,6 +24,7 @@ type EntMutationBuilder struct {
 	fields         map[string]interface{}
 	edges          []*ent.EdgeOperation
 	edgeTypes      map[ent.EdgeType]bool
+	placeholderID  string
 }
 
 func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
@@ -31,11 +34,11 @@ func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
 	b.fields[fieldName] = val
 }
 
-// TODO...
-const idPlaceHolder = "$ent.idPlaceholder$"
-
 func (b *EntMutationBuilder) GetPlaceholderID() string {
-	return idPlaceHolder
+	if b.placeholderID == "" {
+		b.placeholderID = fmt.Sprintf("$ent.idPlaceholder$ %s", util.GenerateRandCode(9))
+	}
+	return b.placeholderID
 }
 
 func (b *EntMutationBuilder) ExistingEnt() ent.Entity {
@@ -177,7 +180,7 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 	executor := ent.NewMutationExecutor(b.GetPlaceholderID(), ops)
 	return &EntMutationChangeset{
 		executor:      executor,
-		placeholderId: idPlaceHolder,
+		placeholderId: b.GetPlaceholderID(),
 		existingEnt:   b.ExistingEntity,
 		entConfig:     b.EntConfig,
 	}, nil
