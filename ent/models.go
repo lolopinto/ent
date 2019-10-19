@@ -138,6 +138,7 @@ func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entCon
 	errChan <- err
 }
 
+// TODO kill...
 type EditedNodeInfo struct {
 	ExistingEnt          Entity
 	Entity               Entity
@@ -195,10 +196,8 @@ func EditNodeFromActionMap(info *EditedNodeInfo) error {
 }
 
 // TODO
-// instead of passing it around all over the place. problem is it doesn't work when this is nil...
 func SaveChangeset(changeset Changeset) error {
 	// TODO critical observers!
-	// create more operations in here
 	return executeOperations(changeset.GetExecutor())
 }
 
@@ -213,18 +212,19 @@ func buildOperations(info *EditedNodeInfo, op WriteOperation) []DataOperation {
 	// 2 all inbound edges with id2 placeholder for newly created ent
 	for _, edge := range info.InboundEdges {
 		edgeOp := &EdgeOperation{
-			EdgeType:  edge.EdgeType,
-			ID1:       edge.Id,
-			ID1Type:   edge.NodeType,
-			Operation: InsertOperation,
-			Time:      edge.Time,
-			Data:      edge.Data,
+			edgeType:  edge.EdgeType,
+			id1:       edge.Id,
+			id1Type:   edge.NodeType,
+			operation: InsertOperation,
+			time:      edge.Time,
+			data:      edge.Data,
 		}
 		if info.ExistingEnt == nil {
-			edgeOp.ID2 = idPlaceHolder
+			edgeOp.id2 = idPlaceHolder
+			edgeOp.id2Placeholder = true
 		} else {
-			edgeOp.ID2 = info.ExistingEnt.GetID()
-			edgeOp.ID2Type = info.ExistingEnt.GetType()
+			edgeOp.id2 = info.ExistingEnt.GetID()
+			edgeOp.id2Type = info.ExistingEnt.GetType()
 		}
 		ops = append(ops, edgeOp)
 	}
@@ -232,18 +232,19 @@ func buildOperations(info *EditedNodeInfo, op WriteOperation) []DataOperation {
 	// 3 all outbound edges with id1 placeholder for newly created ent
 	for _, edge := range info.OutboundEdges {
 		edgeOp := &EdgeOperation{
-			EdgeType:  edge.EdgeType,
-			ID2:       edge.Id,
-			ID2Type:   edge.NodeType,
-			Operation: InsertOperation,
-			Time:      edge.Time,
-			Data:      edge.Data,
+			edgeType:  edge.EdgeType,
+			id2:       edge.Id,
+			id2Type:   edge.NodeType,
+			operation: InsertOperation,
+			time:      edge.Time,
+			data:      edge.Data,
 		}
 		if info.ExistingEnt == nil {
-			edgeOp.ID1 = idPlaceHolder
+			edgeOp.id1 = idPlaceHolder
+			edgeOp.id1Placeholder = true
 		} else {
-			edgeOp.ID1 = info.ExistingEnt.GetID()
-			edgeOp.ID1Type = info.ExistingEnt.GetType()
+			edgeOp.id1 = info.ExistingEnt.GetID()
+			edgeOp.id1Type = info.ExistingEnt.GetType()
 		}
 		ops = append(ops, edgeOp)
 	}
@@ -251,32 +252,32 @@ func buildOperations(info *EditedNodeInfo, op WriteOperation) []DataOperation {
 	// verbose but prefer operation private to ent
 	for _, edge := range info.RemovedInboundEdges {
 		edgeOp := &EdgeOperation{
-			EdgeType:  edge.EdgeType,
-			ID1:       edge.Id,
-			ID1Type:   edge.NodeType,
-			Operation: DeleteOperation,
+			edgeType:  edge.EdgeType,
+			id1:       edge.Id,
+			id1Type:   edge.NodeType,
+			operation: DeleteOperation,
 		}
 		if info.ExistingEnt == nil {
 			panic("invalid. cannot remove edge when there's no existing ent")
 		} else {
-			edgeOp.ID2 = info.ExistingEnt.GetID()
-			edgeOp.ID2Type = info.ExistingEnt.GetType()
+			edgeOp.id2 = info.ExistingEnt.GetID()
+			edgeOp.id2Type = info.ExistingEnt.GetType()
 		}
 		ops = append(ops, edgeOp)
 	}
 
 	for _, edge := range info.RemovedOutboundEdges {
 		edgeOp := &EdgeOperation{
-			EdgeType:  edge.EdgeType,
-			ID2:       edge.Id,
-			ID2Type:   edge.NodeType,
-			Operation: DeleteOperation,
+			edgeType:  edge.EdgeType,
+			id2:       edge.Id,
+			id2Type:   edge.NodeType,
+			operation: DeleteOperation,
 		}
 		if info.ExistingEnt == nil {
 			panic("invalid. cannot remove edge when there's no existing ent")
 		} else {
-			edgeOp.ID1 = info.ExistingEnt.GetID()
-			edgeOp.ID1Type = info.ExistingEnt.GetType()
+			edgeOp.id1 = info.ExistingEnt.GetID()
+			edgeOp.id1Type = info.ExistingEnt.GetType()
 		}
 		ops = append(ops, edgeOp)
 	}

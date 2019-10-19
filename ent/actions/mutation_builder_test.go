@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/test_schema/models"
@@ -39,10 +38,10 @@ func (suite *mutationBuilderSuite) getBaseBuilder(
 ) actions.EntMutationBuilder {
 	v := viewertesting.OmniViewerContext{}
 	return actions.EntMutationBuilder{
-		Viewer:      v,
-		EntConfig:   config,
-		Operation:   operation,
-		ExistingEnt: existingEnt,
+		Viewer:         v,
+		EntConfig:      config,
+		Operation:      operation,
+		ExistingEntity: existingEnt,
 	}
 }
 
@@ -186,7 +185,7 @@ func (suite *mutationBuilderSuite) TestDeletion() {
 }
 
 func (suite *mutationBuilderSuite) TestAddSimpleEdgeAtCreation() {
-	user2 := testingutils.CreateTestUser(suite.T())
+	user2 := suite.createUser(util.GenerateRandEmail())
 
 	email := util.GenerateRandEmail()
 	b := suite.getUserBuilderWithFields(
@@ -206,7 +205,7 @@ func (suite *mutationBuilderSuite) TestAddSimpleEdgeAtCreation() {
 }
 
 func (suite *mutationBuilderSuite) TestAddSimpleEdgeEditing() {
-	user2 := testingutils.CreateTestUser(suite.T())
+	user2 := suite.createUser(util.GenerateRandEmail())
 
 	email := util.GenerateRandEmail()
 	user := suite.createUser(email)
@@ -463,8 +462,6 @@ func verifyNoFriendsEdge(t *testing.T, user, user2 *models.User) {
 }
 
 func verifyEdge(t *testing.T, expectedEdge, edge *ent.Edge) {
-	spew.Dump(expectedEdge)
-	spew.Dump(edge)
 	assert.Equal(t, expectedEdge.EdgeType, edge.EdgeType)
 	assert.Equal(t, expectedEdge.ID1, edge.ID1)
 	assert.Equal(t, expectedEdge.ID2, edge.ID2)

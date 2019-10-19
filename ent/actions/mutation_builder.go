@@ -9,33 +9,19 @@ import (
 	"github.com/lolopinto/ent/ent/viewer"
 )
 
-type MutationBuilder interface {
-	// TODO this needs to be aware of validators
-	// triggers and observers
-	// observers need to be added to the changeset
-	// critical observers need to be added to the changeset
-	// regular observers done later
-
-	// placeholder id to be used by fields/values in the mutation and replaced after we have a created ent
-	//	GetPlaceholderID() string
-	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions
-	Entity() ent.Entity // expected to be null for create operations. entity being mutated
-	GetChangeset(ent.Entity) (ent.Changeset, error)
-}
-
 // Action will have a changeset. should the mutation builder care about that?
 // no, it builds everything and then passes it to
 // GetEdges() will
 // GenChangeset(wg *sync.WaitGroup) will return soemthing that can be taken from a different action and combined together with this
 
 type EntMutationBuilder struct {
-	Viewer      viewer.ViewerContext
-	ExistingEnt ent.Entity
-	Operation   ent.WriteOperation
-	EntConfig   ent.Config
-	fields      map[string]interface{}
-	edges       []*ent.EdgeOperation
-	edgeTypes   map[ent.EdgeType]bool
+	Viewer         viewer.ViewerContext
+	ExistingEntity ent.Entity
+	Operation      ent.WriteOperation
+	EntConfig      ent.Config
+	fields         map[string]interface{}
+	edges          []*ent.EdgeOperation
+	edgeTypes      map[ent.EdgeType]bool
 }
 
 func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
@@ -45,25 +31,16 @@ func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
 	b.fields[fieldName] = val
 }
 
-func (b *EntMutationBuilder) getPartialEdgeOp(
-	edgeType ent.EdgeType, op ent.WriteOperation, options ...func(*ent.EditedEdgeInfo)) *ent.EdgeOperation {
-	info := &ent.EditedEdgeInfo{}
-	for _, opt := range options {
-		opt(info)
-	}
-	// TODO kill EditedEdgeInfo. too many things...
-
-	edgeOp := &ent.EdgeOperation{
-		EdgeType:  edgeType,
-		Operation: op,
-		Time:      info.Time,
-		Data:      info.Data,
-	}
-	return edgeOp
-}
-
 // TODO...
 const idPlaceHolder = "$ent.idPlaceholder$"
+
+func (b *EntMutationBuilder) GetPlaceholderID() string {
+	return idPlaceHolder
+}
+
+func (b *EntMutationBuilder) ExistingEnt() ent.Entity {
+	return b.ExistingEntity
+}
 
 func (b *EntMutationBuilder) addEdgeType(edgeType ent.EdgeType) {
 	if b.edgeTypes == nil {
@@ -76,73 +53,80 @@ func (b *EntMutationBuilder) addEdge(edge *ent.EdgeOperation) {
 	b.edges = append(b.edges, edge)
 }
 
-func (b *EntMutationBuilder) AddInboundEdge(edgeType ent.EdgeType, id1 string, nodeType ent.NodeType, options ...func(*ent.EditedEdgeInfo)) error {
-	edgeOp := b.getPartialEdgeOp(edgeType, ent.InsertOperation, options...)
-	edgeOp.ID1 = id1
-	edgeOp.ID1Type = nodeType
-	if b.ExistingEnt == nil {
-		edgeOp.ID2 = idPlaceHolder
-	} else {
-		edgeOp.ID2 = b.ExistingEnt.GetID()
-		edgeOp.ID2Type = b.ExistingEnt.GetType()
-	}
+func (b *EntMutationBuilder) AddInboundEdge(
+	edgeType ent.EdgeType, id1 string, nodeType ent.NodeType, options ...func(*ent.EditedEdgeInfo)) error {
 
-	b.addEdge(edgeOp)
+	b.addEdge(
+		ent.NewInboundEdge(
+			edgeType,
+			ent.InsertOperation,
+			id1,
+			nodeType,
+			b,
+			options...,
+		),
+	)
 	b.addEdgeType(edgeType)
 	return nil
 }
 
 func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType, options ...func(*ent.EditedEdgeInfo)) error {
-	for _, edge := range b.edges {
-		if edge.EdgeType == edgeType && edge.ID2 == id2 && nodeType == edge.ID2Type {
-			// already been added ignore for now
-			// the hack in resolver_manual.go in ent-rsvp calls it before this...
-			return nil
-		}
-	}
+	// TODO figure out what I was tryign to do here...
+	// for _, edge := range b.edges {
+	// 	if edge.EdgeType == edgeType && edge.ID2 == id2 && nodeType == edge.ID2Type {
+	// 		// already been added ignore for now
+	// 		// the hack in resolver_manual.go in ent-rsvp calls it before this...
+	// 		return nil
+	// 	}
+	// }
 
-	edgeOp := b.getPartialEdgeOp(edgeType, ent.InsertOperation, options...)
-	edgeOp.ID2 = id2
-	edgeOp.ID2Type = nodeType
-	if b.ExistingEnt == nil {
-		edgeOp.ID1 = idPlaceHolder
-	} else {
-		edgeOp.ID1 = b.ExistingEnt.GetID()
-		edgeOp.ID1Type = b.ExistingEnt.GetType()
-	}
+	b.addEdge(
+		ent.NewOutboundEdge(
+			edgeType,
+			ent.InsertOperation,
+			id2,
+			nodeType,
+			b,
+			options...,
+		),
+	)
 	b.addEdgeType(edgeType)
-	b.addEdge(edgeOp)
 	return nil
 }
 
 func (b *EntMutationBuilder) RemoveInboundEdge(edgeType ent.EdgeType, id1 string, nodeType ent.NodeType) error {
-	if b.ExistingEnt == nil {
+	if b.ExistingEntity == nil {
 		return errors.New("invalid cannot remove edge when there's no existing ent")
 	}
-	edgeOp := b.getPartialEdgeOp(edgeType, ent.DeleteOperation)
-	edgeOp.ID1 = id1
-	edgeOp.ID1Type = nodeType
-	edgeOp.ID2 = b.ExistingEnt.GetID()
-	edgeOp.ID2Type = b.ExistingEnt.GetType()
-
+	b.addEdge(
+		ent.NewInboundEdge(
+			edgeType,
+			ent.DeleteOperation,
+			id1,
+			nodeType,
+			b,
+		),
+	)
 	b.addEdgeType(edgeType)
-	b.addEdge(edgeOp)
 	return nil
 }
 
 func (b *EntMutationBuilder) RemoveOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType) error {
-	if b.ExistingEnt == nil {
+	if b.ExistingEntity == nil {
 		return errors.New("invalid cannot remove edge when there's no existing ent")
 	}
 
-	edgeOp := b.getPartialEdgeOp(edgeType, ent.DeleteOperation)
-	edgeOp.ID2 = id2
-	edgeOp.ID2Type = nodeType
-	edgeOp.ID1 = b.ExistingEnt.GetID()
-	edgeOp.ID1Type = b.ExistingEnt.GetType()
+	b.addEdge(
+		ent.NewOutboundEdge(
+			edgeType,
+			ent.DeleteOperation,
+			id2,
+			nodeType,
+			b,
+		),
+	)
 
 	b.addEdgeType(edgeType)
-	b.addEdge(edgeOp)
 	return nil
 }
 
@@ -155,12 +139,12 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 	var ops []ent.DataOperation
 	if b.Operation == ent.DeleteOperation {
 		ops = append(ops, &ent.DeleteNodeOperation{
-			ExistingEnt: b.ExistingEnt,
+			ExistingEnt: b.ExistingEntity,
 			EntConfig:   b.EntConfig,
 		})
 	} else {
 		info := &ent.EditedNodeInfo{
-			ExistingEnt:    b.ExistingEnt,
+			ExistingEnt:    b.ExistingEntity,
 			Entity:         entity,
 			EntConfig:      b.EntConfig,
 			Fields:         b.fields,
@@ -176,35 +160,25 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 	}
 	for _, edge := range b.edges {
 		ops = append(ops, edge)
-		edgeInfo := edgeData[edge.EdgeType]
-		if edgeInfo.SymmetricEdge ||
-			(edgeInfo.InverseEdgeType != nil && edgeInfo.InverseEdgeType.Valid) {
-			edgeOp := &ent.EdgeOperation{
-				Operation: edge.Operation,
-				Time:      edge.Time,
-				Data:      edge.Data,
-				ID1:       edge.ID2,
-				ID1Type:   edge.ID2Type,
-				ID2:       edge.ID1,
-				ID2Type:   edge.ID1Type,
-			}
-			// symmetric edge. same edge type
-			if edgeInfo.SymmetricEdge {
-				edgeOp.EdgeType = edge.EdgeType
-			} else {
-				// inverse edge
-				edgeOp.EdgeType = ent.EdgeType(edgeInfo.InverseEdgeType.String)
-			}
+		edgeInfo := edgeData[edge.EdgeType()]
 
-			ops = append(ops, edgeOp)
+		// symmetric edge. same edge type
+		if edgeInfo.SymmetricEdge {
+			ops = append(ops, edge.SymmetricEdge())
+		}
+
+		// inverse edge
+		if edgeInfo.InverseEdgeType != nil && edgeInfo.InverseEdgeType.Valid {
+			ops = append(ops, edge.InverseEdge(
+				ent.EdgeType(edgeInfo.InverseEdgeType.String),
+			))
 		}
 	}
+	executor := ent.NewMutationExecutor(b.GetPlaceholderID(), ops)
 	return &EntMutationChangeset{
-		executor: &ent.ListBasedExector{
-			Ops: ops,
-		},
+		executor:      executor,
 		placeholderId: idPlaceHolder,
-		existingEnt:   b.ExistingEnt,
+		existingEnt:   b.ExistingEntity,
 		entConfig:     b.EntConfig,
 	}, nil
 }

@@ -44,10 +44,10 @@ func (a *userAction) GetBuilder(
 	existingEnt ent.Entity,
 ) EntMutationBuilder {
 	return EntMutationBuilder{
-		Viewer:      a.viewer,
-		ExistingEnt: existingEnt,
-		Operation:   operation,
-		EntConfig:   &configs.UserConfig{},
+		Viewer:         a.viewer,
+		ExistingEntity: existingEnt,
+		Operation:      operation,
+		EntConfig:      &configs.UserConfig{},
 	}
 }
 

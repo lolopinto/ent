@@ -68,6 +68,22 @@ func (err *ActionValidationError) Error() string {
 	)
 }
 
+type MutationBuilder interface {
+	// TODO this needs to be aware of validators
+	// triggers and observers
+	// observers need to be added to the changeset
+	// critical observers need to be added to the changeset
+	// regular observers done later
+
+	// placeholder id to be used by fields/values in the mutation and replaced after we have a created ent
+	//	GetPlaceholderID() string
+	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions
+	ExistingEnt() Entity
+	GetPlaceholderID() string
+	//Entity() Entity // expected to be null for create operations. entity being mutated
+	GetChangeset(Entity) (Changeset, error)
+}
+
 type Changeset interface {
 	GetExecutor() Executor
 	GetPlaceholderID() string
@@ -81,6 +97,9 @@ type Executor interface {
 	// away. works when it's one changeset with N operations or N changesets with operations across them.
 	// When we're done with operations, it returns AllOperations to signal EOF
 	Operation() (DataOperation, error)
+	// resolve placeholders from this mutation
+	ResolveValue(interface{}) interface{}
+	CreatedEnt() Entity
 }
 
 var AllOperations = errors.New("All operation dependencies ")
