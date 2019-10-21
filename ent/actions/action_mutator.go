@@ -25,14 +25,7 @@ import (
 // then run all observers
 // validators and observers not implemented yet
 
-type ActionMutator interface {
-	Action
-	//Validate() error
-	//	GetFieldMap() ent.ActionFieldMap
-}
-
 type editNodeActionMutator struct {
-	ActionMutator
 	Viewer               viewer.ViewerContext
 	editedFields         map[string]interface{}
 	inboundEdges         []*ent.EditedEdgeInfo
@@ -74,10 +67,6 @@ func (action *editExistingNodeActionMutator) SaveAction(entity ent.Entity, field
 	entreflect.SetViewerInEnt(action.Viewer, entity)
 	return nil
 }
-
-// func validateAction(actionMutator ActionMutator, entity ent.Entity, entConfig ent.Config) error {
-
-// }
 
 func (action *editNodeActionMutator) SetField(fieldName string, val interface{}) {
 	if action.editedFields == nil {
@@ -171,7 +160,6 @@ func (action *editNodeActionMutator) Validate(fieldMap ent.ActionFieldMap) error
 */
 
 type CreateEntActionMutator struct {
-	ActionMutator
 	editNodeActionMutator
 	Viewer    viewer.ViewerContext
 	EntConfig ent.Config

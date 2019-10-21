@@ -41,6 +41,10 @@ func (b *EntMutationBuilder) GetPlaceholderID() string {
 	return b.placeholderID
 }
 
+func (b *EntMutationBuilder) GetViewer() viewer.ViewerContext {
+	return b.Viewer
+}
+
 func (b *EntMutationBuilder) ExistingEnt() ent.Entity {
 	return b.ExistingEntity
 }

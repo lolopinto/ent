@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/lolopinto/ent/ent/test_schema/models"
+	"github.com/lolopinto/ent/ent/test_schema/models/user/action"
 )
 
 type Resolver struct{}
@@ -15,6 +16,9 @@ func (r *Resolver) Contact() ContactResolver {
 }
 func (r *Resolver) Event() EventResolver {
 	return &eventResolver{r}
+}
+func (r *Resolver) Mutation() MutationResolver {
+	return &mutationResolver{r}
 }
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
@@ -37,6 +41,24 @@ func (r *eventResolver) Invited(ctx context.Context, obj *models.Event) ([]*mode
 
 func (r *eventResolver) User(ctx context.Context, obj *models.Event) (*models.User, error) {
 	return obj.LoadUser()
+}
+
+type mutationResolver struct{ *Resolver }
+
+func (r *mutationResolver) UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error) {
+	node, err := action.CreateUserFromContext(ctx).
+		SetEmailAddress(input.EmailAddress).
+		SetFirstName(input.FirstName).
+		SetLastName(input.LastName).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserCreateResponse{
+		User: node,
+	}, nil
 }
 
 type queryResolver struct{ *Resolver }

@@ -130,8 +130,9 @@ type addEdgeActionType struct {
 }
 
 func (action *addEdgeActionType) getDefaultActionName(nodeName, edgeName string) string {
-	// EventAddInviteesAction
-	return strcase.ToLowerCamel(nodeName) + "Add" + edgeName + "Action"
+	// it's going to be in the node_name package..
+	// AddInviteesAction
+	return "Add" + edgeName + "Action"
 
 }
 
@@ -163,7 +164,7 @@ type removeEdgeActionType struct {
 }
 
 func (action *removeEdgeActionType) getDefaultActionName(nodeName, edgeName string) string {
-	return strcase.ToLowerCamel(nodeName) + "Remove" + edgeName + "Action"
+	return "Remove" + edgeName + "Action"
 }
 
 func (action *removeEdgeActionType) getDefaultGraphQLName(nodeName, edgeName string) string {

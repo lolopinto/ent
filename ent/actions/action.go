@@ -6,17 +6,10 @@ import (
 )
 
 type Action interface {
-	// GetFieldMap() should be a node based action thingy and not part of the top level action here
-	// this should be passed to mutationbuilder?
-	//	GetFieldMap() ent.ActionFieldMap
-
 	GetViewer() viewer.ViewerContext
 	GetChangeset() (ent.Changeset, error)
 	// where new ent should be stored.
 	Entity() ent.Entity
-
-	//	PerformAction() error // always calls Validate()
-	//	GetOperation()  todo we should probably know if create/edit/delete
 }
 
 type ActionWithValidator interface {

@@ -16,7 +16,6 @@ import (
 
 func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *codegen.CodePath) {
 	fileName := strcase.ToSnake(a.GetActionName())
-	//	pathToFile := fmt.Sprintf("models/%s/action/%s.go", nodeData.PackageName, fileName)
 
 	imps := imports.Imports{}
 	writeFile(
@@ -45,7 +44,9 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 				"nodeInfo":                getNodeInfo,
 				"returnsObjectInstance":   returnsObjectInstance,
 				"edgeGroupAction":         edgeGroupAction,
+				"removeEdgeAction":        removeEdgeAction,
 				"argsToViewerMethod":      getActionArgsFromContextToViewerMethod,
+				"writeOperation":          getWriteOperation,
 
 				// our own version of reserveImport similar to what gqlgen provides. TOOD rename
 				"reserveImport": imps.Reserve,
@@ -94,18 +95,31 @@ func getActionArgsFromContextToViewerMethod(action action.Action) string {
 	return strings.Join(args, ", ")
 }
 
-func getEmbeddedActionType(action action.Action) string {
+func getWriteOperation(action action.Action) string {
 	switch action.GetOperation() {
 	case ent.CreateAction:
-		return "actions.CreateEntActionMutator"
-	case ent.EditAction:
-		return "actions.EditEntActionMutator"
+		return "ent.InsertOperation"
+	case ent.EditAction, ent.AddEdgeAction, ent.RemoveEdgeAction, ent.EdgeGroupAction:
+		return "ent.EditOperation"
 	case ent.DeleteAction:
-		return "actions.DeleteEntActionMutator"
+		return "ent.DeleteOperation"
+	}
+	panic(fmt.Sprintf("invalid action %s not a supported type", action.GetActionName()))
+}
+
+func getEmbeddedActionType(action action.Action) string {
+	switch action.GetOperation() {
+	case ent.CreateAction, ent.EditAction, ent.DeleteAction:
+		// no embedded action type for these yet
+		// just use mutation builder
+		// may still add them because of GetFieldMap. todo!
+		return ""
 	case ent.AddEdgeAction:
-		return "actions.AddEdgeActionMutator"
+		return ""
+		//		return "actions.AddEdgeActionMutator"
 	case ent.RemoveEdgeAction:
-		return "actions.RemoveEdgeActionMutator"
+		return ""
+		//		return "actions.RemoveEdgeActionMutator"
 	case ent.EdgeGroupAction:
 		return "actions.EdgeGroupActionMutator"
 	}
@@ -130,4 +144,8 @@ func returnsObjectInstance(action action.Action) bool {
 
 func edgeGroupAction(action action.Action) bool {
 	return action.GetOperation() == ent.EdgeGroupAction
+}
+
+func removeEdgeAction(action action.Action) bool {
+	return action.GetOperation() == ent.RemoveEdgeAction
 }

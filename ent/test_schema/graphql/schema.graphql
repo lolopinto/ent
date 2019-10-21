@@ -38,6 +38,10 @@ type EventsEdge implements Edge {
     node: Event!
 }
 
+type Mutation {
+    userCreate(input: UserCreateInput!): UserCreateResponse
+}
+
 interface Node {
     id: ID!
 }
@@ -58,6 +62,16 @@ type User implements Node {
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
+}
+
+input UserCreateInput {
+    emailAddress: String!
+    firstName: String!
+    lastName: String!
+}
+
+type UserCreateResponse {
+    user: User
 }
 
 type UsersConnection implements Connection {

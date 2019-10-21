@@ -39,6 +39,7 @@ type Config struct {
 type ResolverRoot interface {
 	Contact() ContactResolver
 	Event() EventResolver
+	Mutation() MutationResolver
 	Query() QueryResolver
 	User() UserResolver
 }
@@ -75,6 +76,10 @@ type ComplexityRoot struct {
 		Node func(childComplexity int) int
 	}
 
+	Mutation struct {
+		UserCreate func(childComplexity int, input UserCreateInput) int
+	}
+
 	Query struct {
 		Contact func(childComplexity int, id string) int
 		Event   func(childComplexity int, id string) int
@@ -91,6 +96,10 @@ type ComplexityRoot struct {
 		ID            func(childComplexity int) int
 		InvitedEvents func(childComplexity int) int
 		LastName      func(childComplexity int) int
+	}
+
+	UserCreateResponse struct {
+		User func(childComplexity int) int
 	}
 
 	UsersConnection struct {
@@ -110,6 +119,9 @@ type EventResolver interface {
 	Invited(ctx context.Context, obj *models.Event) ([]*models.User, error)
 
 	User(ctx context.Context, obj *models.Event) (*models.User, error)
+}
+type MutationResolver interface {
+	UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error)
 }
 type QueryResolver interface {
 	Contact(ctx context.Context, id string) (*models.Contact, error)
@@ -254,6 +266,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.EventsEdge.Node(childComplexity), true
 
+	case "Mutation.userCreate":
+		if e.complexity.Mutation.UserCreate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_userCreate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UserCreate(childComplexity, args["input"].(UserCreateInput)), true
+
 	case "Query.contact":
 		if e.complexity.Query.Contact == nil {
 			break
@@ -353,6 +377,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.LastName(childComplexity), true
 
+	case "UserCreateResponse.user":
+		if e.complexity.UserCreateResponse.User == nil {
+			break
+		}
+
+		return e.complexity.UserCreateResponse.User(childComplexity), true
+
 	case "UsersConnection.edges":
 		if e.complexity.UsersConnection.Edges == nil {
 			break
@@ -396,7 +427,20 @@ func (e *executableSchema) Query(ctx context.Context, op *ast.OperationDefinitio
 }
 
 func (e *executableSchema) Mutation(ctx context.Context, op *ast.OperationDefinition) *graphql.Response {
-	return graphql.ErrorResponse(ctx, "mutations are not supported")
+	ec := executionContext{graphql.GetRequestContext(ctx), e}
+
+	buf := ec.RequestMiddleware(ctx, func(ctx context.Context) []byte {
+		data := ec._Mutation(ctx, op.SelectionSet)
+		var buf bytes.Buffer
+		data.MarshalGQL(&buf)
+		return buf.Bytes()
+	})
+
+	return &graphql.Response{
+		Data:       buf,
+		Errors:     ec.Errors,
+		Extensions: ec.Extensions,
+	}
 }
 
 func (e *executableSchema) Subscription(ctx context.Context, op *ast.OperationDefinition) func() *graphql.Response {
@@ -463,6 +507,10 @@ type EventsEdge implements Edge {
     node: Event!
 }
 
+type Mutation {
+    userCreate(input: UserCreateInput!): UserCreateResponse
+}
+
 interface Node {
     id: ID!
 }
@@ -485,6 +533,16 @@ type User implements Node {
     lastName: String!
 }
 
+input UserCreateInput {
+    emailAddress: String!
+    firstName: String!
+    lastName: String!
+}
+
+type UserCreateResponse {
+    user: User
+}
+
 type UsersConnection implements Connection {
     edges: [UsersEdge!]
     nodes: [User!]
@@ -502,6 +560,20 @@ scalar Time
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_userCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 UserCreateInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNUserCreateInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserCreateInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1178,6 +1250,47 @@ func (ec *executionContext) _EventsEdge_node(ctx context.Context, field graphql.
 	return ec.marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_userCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_userCreate_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UserCreate(rctx, args["input"].(UserCreateInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*UserCreateResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUserCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserCreateResponse(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_contact(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -1707,6 +1820,40 @@ func (ec *executionContext) _User_lastName(ctx context.Context, field graphql.Co
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserCreateResponse_user(ctx context.Context, field graphql.CollectedField, obj *UserCreateResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "UserCreateResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UsersConnection_edges(ctx context.Context, field graphql.CollectedField, obj *UsersConnection) (ret graphql.Marshaler) {
@@ -2965,6 +3112,36 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputUserCreateInput(ctx context.Context, obj interface{}) (UserCreateInput, error) {
+	var it UserCreateInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "emailAddress":
+			var err error
+			it.EmailAddress, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "firstName":
+			var err error
+			it.FirstName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "lastName":
+			var err error
+			it.LastName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -3214,6 +3391,34 @@ func (ec *executionContext) _EventsEdge(ctx context.Context, sel ast.SelectionSe
 	return out
 }
 
+var mutationImplementors = []string{"Mutation"}
+
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, mutationImplementors)
+
+	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+		Object: "Mutation",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Mutation")
+		case "userCreate":
+			out.Values[i] = ec._Mutation_userCreate(ctx, field)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -3378,6 +3583,30 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var userCreateResponseImplementors = []string{"UserCreateResponse"}
+
+func (ec *executionContext) _UserCreateResponse(ctx context.Context, sel ast.SelectionSet, obj *UserCreateResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, userCreateResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserCreateResponse")
+		case "user":
+			out.Values[i] = ec._UserCreateResponse_user(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3910,6 +4139,10 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋent
 	return ec._User(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNUserCreateInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserCreateInput(ctx context.Context, v interface{}) (UserCreateInput, error) {
+	return ec.unmarshalInputUserCreateInput(ctx, v)
+}
+
 func (ec *executionContext) marshalNUsersEdge2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx context.Context, sel ast.SelectionSet, v UsersEdge) graphql.Marshaler {
 	return ec._UsersEdge(ctx, sel, &v)
 }
@@ -4347,6 +4580,17 @@ func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋent
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUserCreateResponse2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserCreateResponse(ctx context.Context, sel ast.SelectionSet, v UserCreateResponse) graphql.Marshaler {
+	return ec._UserCreateResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOUserCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserCreateResponse(ctx context.Context, sel ast.SelectionSet, v *UserCreateResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._UserCreateResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOUsersEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx context.Context, sel ast.SelectionSet, v []*UsersEdge) graphql.Marshaler {

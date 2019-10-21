@@ -31,6 +31,16 @@ type EventsEdge struct {
 
 func (EventsEdge) IsEdge() {}
 
+type UserCreateInput struct {
+	EmailAddress string `json:"emailAddress"`
+	FirstName    string `json:"firstName"`
+	LastName     string `json:"lastName"`
+}
+
+type UserCreateResponse struct {
+	User *models.User `json:"user"`
+}
+
 type UsersConnection struct {
 	Edges []*UsersEdge   `json:"edges"`
 	Nodes []*models.User `json:"nodes"`
