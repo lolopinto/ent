@@ -183,6 +183,8 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 	}
 	executor := ent.NewMutationExecutor(b.GetPlaceholderID(), ops)
 	return &EntMutationChangeset{
+		entity:        entity,
+		viewer:        b.Viewer,
 		executor:      executor,
 		placeholderId: b.GetPlaceholderID(),
 		existingEnt:   b.ExistingEntity,
@@ -226,6 +228,8 @@ func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, e
 }
 
 type EntMutationChangeset struct {
+	viewer        viewer.ViewerContext
+	entity        ent.Entity
 	executor      ent.Executor
 	fields        map[string]interface{}
 	placeholderId string
@@ -247,6 +251,14 @@ func (c *EntMutationChangeset) ExistingEnt() ent.Entity {
 
 func (c *EntMutationChangeset) EntConfig() ent.Config {
 	return c.entConfig
+}
+
+func (c *EntMutationChangeset) GetViewer() viewer.ViewerContext {
+	return c.viewer
+}
+
+func (c *EntMutationChangeset) Entity() ent.Entity {
+	return c.entity
 }
 
 func getFieldMapFromFields(fields map[string]interface{}) ent.ActionFieldMap {

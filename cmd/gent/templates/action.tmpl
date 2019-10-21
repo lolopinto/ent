@@ -19,7 +19,9 @@
 type {{$actionName}} struct {
   {{$embeddedActionType}}
   builder *actions.EntMutationBuilder
-  {{$nodeInfo.NodeInstance}} models.{{$nodeInfo.Node}}
+  {{ if returnsObjectInstance $action -}}
+    {{$nodeInfo.NodeInstance}} models.{{$nodeInfo.Node}}
+  {{end -}}
 }
 
 {{$actionMethodName := actionMethodName $action}}
@@ -56,7 +58,11 @@ func (action *{{$actionName}}) GetChangeset() (ent.Changeset, error) {
 }
 
 func (action *{{$actionName}}) Entity() ent.Entity {
-  return &action.{{$nodeInfo.NodeInstance}}
+  {{ if returnsObjectInstance $action -}}
+    return &action.{{$nodeInfo.NodeInstance}}
+  {{ else -}}
+    return nil
+  {{end -}}
 }
 
 {{$fields := fields $action}}

@@ -11,8 +11,8 @@ import (
 	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/testingutils"
-	"github.com/lolopinto/ent/internal/util"
 	testhelpers "github.com/lolopinto/ent/internal/testschemautils"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -82,12 +82,20 @@ func (suite *mutationBuilderSuite) saveBuilder(b actions.EntMutationBuilder, ent
 }
 
 func (suite *mutationBuilderSuite) saveUser(b actions.EntMutationBuilder) *models.User {
+	if b.Operation == ent.DeleteOperation {
+		suite.saveBuilder(b, nil)
+		return nil
+	}
 	var user models.User
 	suite.saveBuilder(b, &user)
 	return &user
 }
 
 func (suite *mutationBuilderSuite) saveEvent(b actions.EntMutationBuilder) *models.Event {
+	if b.Operation == ent.DeleteOperation {
+		suite.saveBuilder(b, nil)
+		return nil
+	}
 	var event models.Event
 	suite.saveBuilder(b, &event)
 	return &event
@@ -179,7 +187,7 @@ func (suite *mutationBuilderSuite) TestDeletion() {
 	)
 	updatedUser := suite.saveUser(b)
 
-	assert.Zero(suite.T(), *updatedUser)
+	assert.Nil(suite.T(), updatedUser)
 
 	var loadedUser models.User
 	err := ent.LoadNodeRawData(user.ID, &loadedUser, &configs.UserConfig{})
@@ -287,7 +295,7 @@ func (suite *mutationBuilderSuite) TestComplexMutation() {
 	b2.RemoveInboundEdge(models.UserToEventsEdge, user.ID, user.GetType())
 	event2 := suite.saveEvent(b2)
 
-	assert.Zero(suite.T(), *event2)
+	assert.Nil(suite.T(), event2)
 	testhelpers.VerifyNoInvitedToEventEdge(suite.T(), user, event)
 	testhelpers.VerifyNoUserToEventEdge(suite.T(), user, event)
 }

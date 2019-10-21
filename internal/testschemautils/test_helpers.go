@@ -9,16 +9,14 @@ import (
 )
 
 func VerifyUserObj(t *testing.T, user *models.User, email string) {
-	// TODO we need to set viewer in response of new API
-	//assert.NotNil(suite.T(), user.Viewer)
+	assert.NotNil(t, user.Viewer)
 	assert.Equal(t, user.EmailAddress, email)
 	assert.Equal(t, user.FirstName, "Ola")
 	assert.Equal(t, user.LastName, "Okelola")
 }
 
 func VerifyEventObj(t *testing.T, event *models.Event, user *models.User) {
-	// TODO we need to set viewer in response of new API
-	//assert.NotNil(suite.T(), event.Viewer)
+	assert.NotNil(t, user.Viewer)
 	assert.Equal(t, event.Name, "Fun event")
 	assert.Equal(t, event.UserID, user.ID)
 	assert.NotNil(t, event.StartTime)

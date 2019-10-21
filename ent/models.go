@@ -15,6 +15,7 @@ import (
 
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lolopinto/ent/data"
+	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/pkg/errors"
 )
 
@@ -195,10 +196,17 @@ func EditNodeFromActionMap(info *EditedNodeInfo) error {
 	return performAllOperations(ops)
 }
 
-// TODO
 func SaveChangeset(changeset Changeset) error {
 	// TODO critical observers!
-	return executeOperations(changeset.GetExecutor())
+	err := executeOperations(changeset.GetExecutor())
+	if err != nil {
+		return err
+	}
+	entity := changeset.Entity()
+	if !isNil(entity) {
+		entreflect.SetViewerInEnt(changeset.GetViewer(), entity)
+	}
+	return err
 }
 
 func buildOperations(info *EditedNodeInfo, op WriteOperation) []DataOperation {

@@ -14,7 +14,6 @@ import (
 
 type DeleteUserAction struct {
 	builder *actions.EntMutationBuilder
-	user    models.User
 }
 
 // DeleteUserFromContext is the factory method to get an ...
@@ -47,7 +46,7 @@ func (action *DeleteUserAction) GetChangeset() (ent.Changeset, error) {
 }
 
 func (action *DeleteUserAction) Entity() ent.Entity {
-	return &action.user
+	return nil
 }
 
 // GetFields returns the fields that could be edited in this mutation

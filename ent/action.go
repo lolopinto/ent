@@ -3,6 +3,7 @@ package ent
 import (
 	"fmt"
 
+	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/pkg/errors"
 )
 
@@ -81,11 +82,14 @@ type MutationBuilder interface {
 	ExistingEnt() Entity
 	GetPlaceholderID() string
 	//Entity() Entity // expected to be null for create operations. entity being mutated
+	GetViewer() viewer.ViewerContext
 	GetChangeset(Entity) (Changeset, error)
 }
 
 type Changeset interface {
 	GetExecutor() Executor
+	GetViewer() viewer.ViewerContext
+	Entity() Entity
 	GetPlaceholderID() string
 	// keeping these 2 just in case...
 	ExistingEnt() Entity //existing ent // hmm we just need ID!
