@@ -166,10 +166,6 @@ type CreateEntActionMutator struct {
 	//	Ent      ent.Entity // TODO
 }
 
-// func SaveAction(action CreateEntActionMutator, entity ent.Entity) error {
-// 	validateAction(action, entity, action.EntConfig)
-// }
-
 func (action *CreateEntActionMutator) SaveAction(entity ent.Entity, fieldMap ent.ActionFieldMap) error {
 	//	spew.Dump(action.GetFieldMap())
 

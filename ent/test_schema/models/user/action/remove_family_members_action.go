@@ -62,9 +62,13 @@ func (action *RemoveFamilyMembersAction) AddUserID(userID string) *RemoveFamilyM
 	return action
 }
 
-// GetFields returns the fields that could be edited in this mutation
-func (action *RemoveFamilyMembersAction) GetFieldMap() ent.ActionFieldMap {
+// getFieldMap returns the fields that could be edited in this mutation
+func (action *RemoveFamilyMembersAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{}
+}
+
+func (action *RemoveFamilyMembersAction) Validate() error {
+	return action.builder.ValidateFieldMap(action.getFieldMap())
 }
 
 // Save is the method called to execute this action and save change

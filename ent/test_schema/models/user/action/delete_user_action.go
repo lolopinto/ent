@@ -49,9 +49,13 @@ func (action *DeleteUserAction) Entity() ent.Entity {
 	return nil
 }
 
-// GetFields returns the fields that could be edited in this mutation
-func (action *DeleteUserAction) GetFieldMap() ent.ActionFieldMap {
+// getFieldMap returns the fields that could be edited in this mutation
+func (action *DeleteUserAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{}
+}
+
+func (action *DeleteUserAction) Validate() error {
+	return action.builder.ValidateFieldMap(action.getFieldMap())
 }
 
 // Save is the method called to execute this action and save change

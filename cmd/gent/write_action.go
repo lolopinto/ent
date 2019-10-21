@@ -43,6 +43,7 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 				"saveActionType":          getSaveActionType,
 				"nodeInfo":                getNodeInfo,
 				"returnsObjectInstance":   returnsObjectInstance,
+				"createAction":            createAction,
 				"edgeGroupAction":         edgeGroupAction,
 				"removeEdgeAction":        removeEdgeAction,
 				"argsToViewerMethod":      getActionArgsFromContextToViewerMethod,
@@ -148,4 +149,8 @@ func edgeGroupAction(action action.Action) bool {
 
 func removeEdgeAction(action action.Action) bool {
 	return action.GetOperation() == ent.RemoveEdgeAction
+}
+
+func createAction(action action.Action) bool {
+	return action.GetOperation() == ent.CreateAction
 }

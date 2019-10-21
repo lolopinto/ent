@@ -62,9 +62,13 @@ func (action *AddFriendsAction) AddUserID(userID string) *AddFriendsAction {
 	return action
 }
 
-// GetFields returns the fields that could be edited in this mutation
-func (action *AddFriendsAction) GetFieldMap() ent.ActionFieldMap {
+// getFieldMap returns the fields that could be edited in this mutation
+func (action *AddFriendsAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{}
+}
+
+func (action *AddFriendsAction) Validate() error {
+	return action.builder.ValidateFieldMap(action.getFieldMap())
 }
 
 // Save is the method called to execute this action and save change

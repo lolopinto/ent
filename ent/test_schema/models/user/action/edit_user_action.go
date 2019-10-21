@@ -68,22 +68,26 @@ func (action *EditUserAction) SetLastName(lastName string) *EditUserAction {
 	return action
 }
 
-// GetFields returns the fields that could be edited in this mutation
-func (action *EditUserAction) GetFieldMap() ent.ActionFieldMap {
+// getFieldMap returns the fields that could be edited in this mutation
+func (action *EditUserAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{
 		"EmailAddress": &ent.MutatingFieldInfo{
 			DB:       "email_address",
-			Required: true,
+			Required: false,
 		},
 		"FirstName": &ent.MutatingFieldInfo{
 			DB:       "first_name",
-			Required: true,
+			Required: false,
 		},
 		"LastName": &ent.MutatingFieldInfo{
 			DB:       "last_name",
-			Required: true,
+			Required: false,
 		},
 	}
+}
+
+func (action *EditUserAction) Validate() error {
+	return action.builder.ValidateFieldMap(action.getFieldMap())
 }
 
 // Save is the method called to execute this action and save change

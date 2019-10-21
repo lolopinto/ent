@@ -52,6 +52,18 @@ func (suite *generatedActionSuite) TestCreation() {
 	suite.createUser()
 }
 
+func (suite *generatedActionSuite) TestCreationNotAllFields() {
+	v := viewer.LoggedOutViewer()
+
+	_, err := action.CreateUser(v).
+		SetFirstName("Ola").
+		SetLastName("Okelola").
+		Save()
+
+	assert.NotNil(suite.T(), err)
+	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
+}
+
 func (suite *generatedActionSuite) TestEditing() {
 	user := suite.createUser()
 

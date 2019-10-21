@@ -192,6 +192,29 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 	}, nil
 }
 
+func (b *EntMutationBuilder) ValidateFieldMap(fieldMap ent.ActionFieldMap) error {
+	var errors []*ent.ActionErrorInfo
+
+	for fieldName, item := range fieldMap {
+		_, ok := b.fields[fieldName]
+
+		// won't work because we have the wrong names in the setters right now
+		if item.Required && !ok {
+			errors = append(errors, &ent.ActionErrorInfo{
+				ErrorMsg: fmt.Sprintf("%s is required and was not set", fieldName),
+			})
+		}
+	}
+
+	if len(errors) == 0 {
+		return nil
+	}
+	return &ent.ActionValidationError{
+		Errors:     errors,
+		ActionName: "TODO",
+	}
+}
+
 func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, error) {
 	if b.edgeTypes == nil {
 		return nil, nil

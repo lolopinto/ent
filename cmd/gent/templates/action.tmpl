@@ -124,16 +124,25 @@ func (action *{{$actionName}}) {{$edge.MethodName}}ID({{$edge.InstanceName}}ID s
 {{end -}}
 
 
-// GetFields returns the fields that could be edited in this mutation
-func (action *{{$actionName}}) GetFieldMap() ent.ActionFieldMap {
+// getFieldMap returns the fields that could be edited in this mutation
+func (action *{{$actionName}}) getFieldMap() ent.ActionFieldMap {
+  {{/* TODO ActionFieldMap and MutatingFieldInfo should not be public in ent anymore? */ -}}
   return ent.ActionFieldMap {
     {{ range $field := $fields -}}
       {{$field.QuotedFieldName}}: &ent.MutatingFieldInfo {
         DB: {{$field.QuotedDBName}},
-        Required: true,
+        {{ if createAction $action -}}
+          Required: true,
+        {{ else -}}
+          Required: false,
+        {{end -}}
       },
     {{end -}}
   }
+}
+
+func (action *{{$actionName}}) Validate() error {
+  return action.builder.ValidateFieldMap(action.getFieldMap())
 }
 
 
