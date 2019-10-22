@@ -1,33 +1,23 @@
-package ent
+package actions
 
 import (
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/lolopinto/ent/ent"
 	"github.com/pkg/errors"
 )
 
-// TODO move this back to actions package
-// moved to ent package temporarily as things are being moved around
-// once CreateNodeFromActionMap and EditNodeFromActionMap are killed and everything converted to changeset, no longer needed
 type EntMutationExecutor struct {
 	placeholderId string //TODO this can be more complicated eventually since it's expected to only work for one changeset
-	ops           []DataOperation
+	ops           []ent.DataOperation
 	idx           int
-	lastOp        DataOperation
-	createdEnt    Entity
+	lastOp        ent.DataOperation
+	createdEnt    ent.Entity
 }
 
-func NewMutationExecutor(placeholderId string, ops []DataOperation) Executor {
-	return &EntMutationExecutor{
-		placeholderId: placeholderId,
-		ops:           ops,
-	}
-}
-
-func (exec *EntMutationExecutor) Operation() (DataOperation, error) {
+func (exec *EntMutationExecutor) Operation() (ent.DataOperation, error) {
 	if exec.idx == len(exec.ops) {
-		return nil, AllOperations
+		return nil, ent.AllOperations
 	}
 
 	if exec.lastOp != nil {
@@ -44,8 +34,8 @@ func (exec *EntMutationExecutor) Operation() (DataOperation, error) {
 	return op, nil
 }
 
-func (exec *EntMutationExecutor) handleCreatedEnt(op DataOperation, entity Entity) error {
-	createOp, ok := op.(DataOperationWithEnt)
+func (exec *EntMutationExecutor) handleCreatedEnt(op ent.DataOperation, entity ent.Entity) error {
+	createOp, ok := op.(ent.DataOperationWithEnt)
 
 	if !ok {
 		return nil
@@ -58,10 +48,7 @@ func (exec *EntMutationExecutor) handleCreatedEnt(op DataOperation, entity Entit
 		)
 	}
 
-	// lesigh golang and memory allocation for interfaces?
-	var createdEnt Entity
-	createdEnt = createOp.CreatedEnt()
-	spew.Dump("created ent", createdEnt)
+	createdEnt := createOp.CreatedEnt()
 	if createdEnt == nil {
 		return fmt.Errorf("op %v returned a nil returned ent", op)
 	}
@@ -71,14 +58,14 @@ func (exec *EntMutationExecutor) handleCreatedEnt(op DataOperation, entity Entit
 	return nil
 }
 
-func (exec *EntMutationExecutor) handleResolving(op DataOperation) {
-	resolvableOp, ok := op.(DataOperationWithResolver)
+func (exec *EntMutationExecutor) handleResolving(op ent.DataOperation) {
+	resolvableOp, ok := op.(ent.DataOperationWithResolver)
 	if ok {
 		resolvableOp.Resolve(exec)
 	}
 }
 
-func (exec *EntMutationExecutor) CreatedEnt() Entity {
+func (exec *EntMutationExecutor) CreatedEnt() ent.Entity {
 	return exec.createdEnt
 }
 

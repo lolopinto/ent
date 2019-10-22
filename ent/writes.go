@@ -312,13 +312,6 @@ func (op *EdgeOperation) Resolve(exec Executor) {
 	}
 }
 
-// performAllOperations takes a list of operations to the database and wraps them in a transaction
-func performAllOperations(ops []DataOperation) error {
-	return executeOperations(
-		NewMutationExecutor(idPlaceHolder, ops),
-	)
-}
-
 func executeOperations(exec Executor) error {
 	db := data.DBConn()
 	tx, err := db.Beginx()

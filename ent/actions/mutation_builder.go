@@ -185,11 +185,13 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 			))
 		}
 	}
-	executor := ent.NewMutationExecutor(b.GetPlaceholderID(), ops)
 	return &EntMutationChangeset{
-		entity:        entity,
-		viewer:        b.Viewer,
-		executor:      executor,
+		entity: entity,
+		viewer: b.Viewer,
+		executor: &EntMutationExecutor{
+			placeholderId: b.GetPlaceholderID(),
+			ops:           ops,
+		},
 		placeholderId: b.GetPlaceholderID(),
 		existingEnt:   b.ExistingEntity,
 		entConfig:     b.EntConfig,

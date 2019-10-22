@@ -172,30 +172,6 @@ func EdgeData(data string) func(*EditedEdgeInfo) {
 	}
 }
 
-// CreateNodeFromActionMap creates a new Node and returns it in Entity
-// This is the new API for mutations that's going to replace the old CreateNode API
-func CreateNodeFromActionMap(info *EditedNodeInfo) error {
-	if info.ExistingEnt != nil {
-		return fmt.Errorf("CreateNodeFromActionMap passed an existing ent when creating an ent")
-	}
-
-	// perform in a transaction as needed
-	ops := buildOperations(info, InsertOperation)
-	return performAllOperations(ops)
-}
-
-// EditNodeFromActionMap edits a Node and returns it in Entity
-// This is the new API for mutations that's going to replace the old UpdateNode API
-func EditNodeFromActionMap(info *EditedNodeInfo) error {
-	if info.ExistingEnt == nil {
-		return fmt.Errorf("EditNodeFromActionMap needs the entity that's being updated")
-	}
-
-	// perform in a transaction as needed
-	ops := buildOperations(info, EditOperation)
-	return performAllOperations(ops)
-}
-
 func SaveChangeset(changeset Changeset) error {
 	// TODO critical observers!
 	err := executeOperations(changeset.GetExecutor())
@@ -207,90 +183,6 @@ func SaveChangeset(changeset Changeset) error {
 		entreflect.SetViewerInEnt(changeset.GetViewer(), entity)
 	}
 	return err
-}
-
-func buildOperations(info *EditedNodeInfo, op WriteOperation) []DataOperation {
-	// build up operations as needed
-	// 1/ operation to create the ent as needed
-	// TODO check to see if any fields
-	ops := []DataOperation{
-		&NodeWithActionMapOperation{Info: info, Operation: op},
-	}
-
-	// 2 all inbound edges with id2 placeholder for newly created ent
-	for _, edge := range info.InboundEdges {
-		edgeOp := &EdgeOperation{
-			edgeType:  edge.EdgeType,
-			id1:       edge.Id,
-			id1Type:   edge.NodeType,
-			operation: InsertOperation,
-			time:      edge.Time,
-			data:      edge.Data,
-		}
-		if info.ExistingEnt == nil {
-			edgeOp.id2 = idPlaceHolder
-			edgeOp.id2Placeholder = true
-		} else {
-			edgeOp.id2 = info.ExistingEnt.GetID()
-			edgeOp.id2Type = info.ExistingEnt.GetType()
-		}
-		ops = append(ops, edgeOp)
-	}
-
-	// 3 all outbound edges with id1 placeholder for newly created ent
-	for _, edge := range info.OutboundEdges {
-		edgeOp := &EdgeOperation{
-			edgeType:  edge.EdgeType,
-			id2:       edge.Id,
-			id2Type:   edge.NodeType,
-			operation: InsertOperation,
-			time:      edge.Time,
-			data:      edge.Data,
-		}
-		if info.ExistingEnt == nil {
-			edgeOp.id1 = idPlaceHolder
-			edgeOp.id1Placeholder = true
-		} else {
-			edgeOp.id1 = info.ExistingEnt.GetID()
-			edgeOp.id1Type = info.ExistingEnt.GetType()
-		}
-		ops = append(ops, edgeOp)
-	}
-
-	// verbose but prefer operation private to ent
-	for _, edge := range info.RemovedInboundEdges {
-		edgeOp := &EdgeOperation{
-			edgeType:  edge.EdgeType,
-			id1:       edge.Id,
-			id1Type:   edge.NodeType,
-			operation: DeleteOperation,
-		}
-		if info.ExistingEnt == nil {
-			panic("invalid. cannot remove edge when there's no existing ent")
-		} else {
-			edgeOp.id2 = info.ExistingEnt.GetID()
-			edgeOp.id2Type = info.ExistingEnt.GetType()
-		}
-		ops = append(ops, edgeOp)
-	}
-
-	for _, edge := range info.RemovedOutboundEdges {
-		edgeOp := &EdgeOperation{
-			edgeType:  edge.EdgeType,
-			id2:       edge.Id,
-			id2Type:   edge.NodeType,
-			operation: DeleteOperation,
-		}
-		if info.ExistingEnt == nil {
-			panic("invalid. cannot remove edge when there's no existing ent")
-		} else {
-			edgeOp.id1 = info.ExistingEnt.GetID()
-			edgeOp.id1Type = info.ExistingEnt.GetType()
-		}
-		ops = append(ops, edgeOp)
-	}
-
-	return ops
 }
 
 func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
