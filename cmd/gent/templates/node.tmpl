@@ -212,11 +212,10 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeRes
       {{$funcName := $assocEdgeGroup.GetStatusFuncName -}}
       func ({{$currentNodeInstance}} *{{$currentNode}}) {{$funcName}}() (*{{$const}}, error) {
         if !{{$currentNodeInstance}}.Viewer.HasIdentity() {
-          // TODO add CANNOT_RSVP enum 
-          ret := EventInvitees
+          ret := {{$assocEdgeGroup.GetConstNameForUnknown}}
       		return &ret, nil
         }
-        statusMap := {{$currentNodeInstance}}.{{$funcName}}Map()
+        statusMap := {{$currentNodeInstance}}.{{$assocEdgeGroup.GroupStatusName}}Map()
         edges := make(map[string]*ent.Edge)
         errs := make(map[string]error)
         for key, data := range statusMap {
@@ -252,8 +251,7 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeRes
         return &str, nil
       }
 
-      // TODO remove ViewerFrom this
-      func ({{$currentNodeInstance}} *{{$currentNode}}) {{$funcName}}Map() ent.AssocStatusMap {
+      func ({{$currentNodeInstance}} *{{$currentNode}}) {{$assocEdgeGroup.GroupStatusName}}Map() ent.AssocStatusMap {
         {{ $constInfo := index $constGroup $const -}}
         return ent.AssocStatusMap {
         {{ range $assocEdge := $assocEdgeGroup.Edges -}}
@@ -264,7 +262,11 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeRes
             EdgeName: "{{$edgeName}}",
             Edge: {{$assocEdge.EdgeConst}},
             ConstName: {{$constName}},
-            UseInStatusMutation: true,
+            {{ if $assocEdgeGroup.UseEdgeInStatusAction $edgeName -}}
+              UseInStatusAction: true,
+            {{ else -}}
+              UseInStatusAction: false,
+            {{ end -}}
           },
         {{ end -}}
         }

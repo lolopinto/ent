@@ -241,7 +241,7 @@ func (action *EdgeGroupActionMutator) SaveAction(entity ent.Entity, fieldMap ent
 	action.Validate()
 	for key, value := range action.statusMap {
 		// todo don't hardcode this
-		if !value.UseInStatusMutation || key == "event_invitees" {
+		if !value.UseInStatusAction || key == "event_invitees" {
 			continue
 		}
 		if key == strings.ToLower(action.enumValue) {

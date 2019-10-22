@@ -83,6 +83,37 @@ func TestRunLoopNoDeps(t *testing.T) {
 	}
 }
 
+func verifyRunLoopSimpleDeps(t *testing.T, g *depgraphTest, runQueuePanics bool) {
+	if len(g.queue) != 5 {
+		t.Errorf("expected 5 items queued up. %d items were queued up instead", len(g.queue))
+	}
+
+	expectedSum := 1 + 3 + 5 + 7 + 9
+	if g.sum != expectedSum {
+		t.Errorf("expected sum for the items run so far is not as expected")
+	}
+
+	if runQueuePanics {
+		assert.Panics(t, g.RunQueuedUpItems)
+		return
+	}
+	g.RunQueuedUpItems()
+
+	if len(g.queue) != 0 {
+		t.Errorf("expected no items queued up. %d items were queued up instead", len(g.queue))
+	}
+
+	expectedSum = (10 * 9) / 2
+	if g.sum != expectedSum {
+		t.Errorf(
+			"expected the sum to be %d, it was %d instead implying every function wasn't called exactly once",
+			expectedSum,
+			g.sum,
+		)
+	}
+
+}
+
 func TestRunLoopWithSimpleDeps(t *testing.T) {
 	g := &depgraphTest{}
 
@@ -103,29 +134,56 @@ func TestRunLoopWithSimpleDeps(t *testing.T) {
 
 	g.RunLoop()
 
-	if len(g.queue) != 5 {
-		t.Errorf("expected 5 items queued up. %d items were queued up instead", len(g.queue))
+	verifyRunLoopSimpleDeps(t, g, false)
+}
+
+func TestRunLoopOptionalItemsNotCleared(t *testing.T) {
+	g := &depgraphTest{}
+	g.AddOptionalItem(getKey(11), g.sumFunc)
+
+	// same as above. except add a dependency on 11 from 8
+	for i := 0; i < 10; i++ {
+		key := getKey(i)
+		if i == 8 {
+			g.AddItem(key, g.sumFunc, getKey(11))
+		} else if i%2 == 0 {
+			g.AddItem(key, g.sumFunc, getKey(i+1))
+		} else {
+			g.AddItem(key, g.sumFunc)
+		}
 	}
 
-	expectedSum := 1 + 3 + 5 + 7 + 9
-	if g.sum != expectedSum {
-		t.Errorf("expected sum for the items run so far is not as expected")
+	if len(g.items) != 11 {
+		t.Errorf("expected 11 items to be added. got %d instead", len(g.items))
 	}
 
-	g.RunQueuedUpItems()
+	g.RunLoop()
+	verifyRunLoopSimpleDeps(t, g, true)
+}
 
-	if len(g.queue) != 0 {
-		t.Errorf("expected no items queued up. %d items were queued up instead", len(g.queue))
+func TestRunLoopOptionalItemsCleared(t *testing.T) {
+	g := &depgraphTest{}
+	g.AddOptionalItem(getKey(11), g.sumFunc)
+
+	// same as above. except add a dependency on 11 from 8
+	for i := 0; i < 10; i++ {
+		key := getKey(i)
+		if i == 8 {
+			g.AddItem(key, g.sumFunc, getKey(11))
+		} else if i%2 == 0 {
+			g.AddItem(key, g.sumFunc, getKey(i+1))
+		} else {
+			g.AddItem(key, g.sumFunc)
+		}
 	}
 
-	expectedSum = (10 * 9) / 2
-	if g.sum != expectedSum {
-		t.Errorf(
-			"expected the sum to be %d, it was %d instead implying every function wasn't called exactly once",
-			expectedSum,
-			g.sum,
-		)
+	if len(g.items) != 11 {
+		t.Errorf("expected 11 items to be added. got %d instead", len(g.items))
 	}
+
+	g.RunLoop()
+	g.ClearOptionalItems()
+	verifyRunLoopSimpleDeps(t, g, false)
 }
 
 func TestRunLoopTooManyDeps(t *testing.T) {

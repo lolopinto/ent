@@ -1,10 +1,12 @@
 package edge
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/parsehelper"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEdgeInfo(t *testing.T) {
@@ -175,7 +177,7 @@ func TestEdgeGroup(t *testing.T) {
 		ConstType:       "AccountFriendshipStatus",
 		Edges: map[string]*AssociationEdge{
 			"FriendRequests": friendRequestsEdge,
-			"Friends": friendsEdge,
+			"Friends":        friendsEdge,
 		},
 		EdgeAction: &EdgeAction{
 			Action:            "ent.AddEdgeAction",
@@ -185,7 +187,65 @@ func TestEdgeGroup(t *testing.T) {
 		},
 	}
 
-	testAssocEdgeGroup(t, edgeGroup, expectedAssocEdgeGroup)
+	testAssocEdgeGroup(
+		t,
+		edgeGroup,
+		expectedAssocEdgeGroup,
+		[]string{"FriendRequests", "Friends"},
+	)
+}
+
+func TestEdgeGroupWithCustomActionEdges(t *testing.T) {
+	edgeInfo := getTestEdgeInfo(t, "event")
+	edgeGroup := edgeInfo.GetAssociationEdgeGroupByStatusName("RsvpStatus")
+
+	invitedEdge := edgeInfo.GetAssociationEdgeByName("Invited")
+	attendingEdge := edgeInfo.GetAssociationEdgeByName("Attending")
+	declinedEdge := edgeInfo.GetAssociationEdgeByName("Declined")
+
+	expectedInvitedEdge := &AssociationEdge{
+		EdgeConst: "EventToInvitedEdge",
+		commonEdgeInfo: getCommonEdgeInfo(
+			"Invited",
+			codegen.GetEntConfigFromName("account"),
+		),
+		InverseEdge: &InverseAssocEdge{
+			EdgeConst: "AccountToInvitedEventsEdge",
+			commonEdgeInfo: getCommonEdgeInfo(
+				"InvitedEvents",
+				codegen.GetEntConfigFromName("event"),
+			),
+		},
+		// custom table name!
+		TableName: "event_rsvp_edges",
+	}
+
+	testAssocEdge(t, invitedEdge, expectedInvitedEdge)
+
+	expectedAssocEdgeGroup := &AssociationEdgeGroup{
+		GroupName:       "Rsvps",
+		GroupStatusName: "RsvpStatus",
+		ConstType:       "EventRsvpStatus",
+		Edges: map[string]*AssociationEdge{
+			"Invited":   invitedEdge,
+			"Attending": attendingEdge,
+			"Declined":  declinedEdge,
+		},
+		// TODO none of this is tested!
+		// EdgeAction: &EdgeAction{
+		// 	Action:          "ent.AddEdgeAction",
+		// 	ExposeToGraphQL: true,
+		// },
+	}
+
+	testAssocEdgeGroup(
+		t,
+		edgeGroup,
+		expectedAssocEdgeGroup,
+		[]string{
+			"Attending",
+			"Declined",
+		})
 }
 
 func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
@@ -372,7 +432,7 @@ func testNodeInfo(t *testing.T, nodeInfo codegen.NodeInfo, expectedNodename stri
 	}
 }
 
-func testAssocEdgeGroup(t *testing.T, edgeGroup, expectedAssocEdgeGroup *AssociationEdgeGroup) {
+func testAssocEdgeGroup(t *testing.T, edgeGroup, expectedAssocEdgeGroup *AssociationEdgeGroup, actionEdges []string) {
 	if edgeGroup.GroupName != expectedAssocEdgeGroup.GroupName {
 		t.Errorf(
 			"group name of edge group was not as expected, expected %s, got %s instead",
@@ -415,6 +475,11 @@ func testAssocEdgeGroup(t *testing.T, edgeGroup, expectedAssocEdgeGroup *Associa
 			)
 		}
 		testAssocEdge(t, assocEdge, expectedAssocEdge)
+
+		// confirm that edgeGroup.UseEdgeInStatusAction() is correct.
+		// sort.SearchStrings() returns the index we should insert into if not found, not -1 so checking for that...
+		idx := sort.SearchStrings(actionEdges, edgeName)
+		assert.Equal(t, edgeGroup.UseEdgeInStatusAction(edgeName), idx != len(actionEdges), edgeName)
 	}
 }
 

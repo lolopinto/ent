@@ -114,7 +114,11 @@ sa.Table("users", metadata,
 edges = {
   'public': {
     'ContactToAllowListEdge': {"edge_name":"ContactToAllowListEdge", "edge_type":"f6ecacb9-1d4f-47bb-8f18-f7d544450ea2", "edge_table":"contact_allow_list_edges", "symmetric_edge":False, "inverse_edge_type":None},
+    'EventToAttendingEdge': {"edge_name":"EventToAttendingEdge", "edge_type":"9f384bf7-af59-4a41-8b67-8ecc659524c6", "edge_table":"event_invited_edges", "symmetric_edge":False, "inverse_edge_type":"4afef8fc-f75a-406e-aafc-8b571980e6ef"},
+    'EventToDeclinedEdge': {"edge_name":"EventToDeclinedEdge", "edge_type":"d7b9e19a-4214-4376-927c-58b98913dbb7", "edge_table":"event_invited_edges", "symmetric_edge":False, "inverse_edge_type":"14f2d5b4-d0fd-4088-ba25-e417ab40307c"},
     'EventToInvitedEdge': {"edge_name":"EventToInvitedEdge", "edge_type":"12a5ac62-1f9a-4fd7-b38f-a6d229ace12c", "edge_table":"event_invited_edges", "symmetric_edge":False, "inverse_edge_type":"e89302ca-c76b-41ad-a823-9e3964b821dd"},
+    'UserToDeclinedEventsEdge': {"edge_name":"UserToDeclinedEventsEdge", "edge_type":"14f2d5b4-d0fd-4088-ba25-e417ab40307c", "edge_table":"event_invited_edges", "symmetric_edge":False, "inverse_edge_type":"d7b9e19a-4214-4376-927c-58b98913dbb7"},
+    'UserToEventsAttendingEdge': {"edge_name":"UserToEventsAttendingEdge", "edge_type":"4afef8fc-f75a-406e-aafc-8b571980e6ef", "edge_table":"event_invited_edges", "symmetric_edge":False, "inverse_edge_type":"9f384bf7-af59-4a41-8b67-8ecc659524c6"},
     'UserToEventsEdge': {"edge_name":"UserToEventsEdge", "edge_type":"41bddf81-0c26-432c-9133-2f093af2c07c", "edge_table":"user_events_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'UserToFamilyMembersEdge': {"edge_name":"UserToFamilyMembersEdge", "edge_type":"38176101-6adc-4e0d-bd36-08cdc45f5ed2", "edge_table":"user_family_members_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'UserToFriendsEdge': {"edge_name":"UserToFriendsEdge", "edge_type":"d78d13dc-85d6-4f55-a72d-5dbcdc36131d", "edge_table":"user_friends_edges", "symmetric_edge":True, "inverse_edge_type":None},

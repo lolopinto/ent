@@ -4,6 +4,7 @@ package models
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -14,12 +15,27 @@ import (
 	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 )
 
+type EventRsvpStatus string
+
 const (
 	// EventType is the node type for the Event object. Used to identify this node in edges and other places.
 	EventType ent.NodeType = "event"
 
+	// EventToAttendingEdge is the edgeType for the event to attending edge.
+	EventToAttendingEdge ent.EdgeType = "9f384bf7-af59-4a41-8b67-8ecc659524c6"
+	// EventToDeclinedEdge is the edgeType for the event to declined edge.
+	EventToDeclinedEdge ent.EdgeType = "d7b9e19a-4214-4376-927c-58b98913dbb7"
 	// EventToInvitedEdge is the edgeType for the event to invited edge.
 	EventToInvitedEdge ent.EdgeType = "12a5ac62-1f9a-4fd7-b38f-a6d229ace12c"
+
+	// EventAttending is the edge representing the status for the Attending edge.
+	EventAttending EventRsvpStatus = "event_attending"
+	// EventDeclined is the edge representing the status for the Declined edge.
+	EventDeclined EventRsvpStatus = "event_declined"
+	// EventInvited is the edge representing the status for the Invited edge.
+	EventInvited EventRsvpStatus = "event_invited"
+	// EventUnknown is the edge representing the unknown status for the RsvpStatus edgegroup.
+	EventUnknown EventRsvpStatus = "event_unknown"
 )
 
 // Event represents the `Event` model
@@ -146,6 +162,158 @@ func (event *Event) LoadInvited() ([]*User, error) {
 	var users []*User
 	err := ent.LoadNodesByType(event.Viewer, event.ID, EventToInvitedEdge, &users, &configs.UserConfig{})
 	return users, err
+}
+
+// LoadAttendingEdges returns the User edges associated with the Event instance
+func (event *Event) LoadAttendingEdges() ([]*ent.Edge, error) {
+	return ent.LoadEdgesByType(event.ID, EventToAttendingEdge)
+}
+
+// GenAttendingEdges returns the User edges associated with the Event instance
+func (event *Event) GenAttendingEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgesResultChan := make(chan ent.EdgesResult)
+	go ent.GenLoadEdgesByType(event.ID, EventToAttendingEdge, edgesResultChan)
+	*result = <-edgesResultChan
+}
+
+// LoadAttendingEdgeFor loads the ent.Edge between the current node and the given id2 for the Attending edge.
+func (event *Event) LoadAttendingEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(event.ID, id2, EventToAttendingEdge)
+}
+
+// GenAttendingEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the Attending edge.
+func (event *Event) GenLoadAttendingEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(event.ID, id2, EventToAttendingEdge, edgeResultChan)
+	*result = <-edgeResultChan
+}
+
+// GenAttending returns the Users associated with the Event instance
+func (event *Event) GenAttending(result *UsersResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var users []*User
+	chanErr := make(chan error)
+	go ent.GenLoadNodesByType(event.Viewer, event.ID, EventToAttendingEdge, &users, &configs.UserConfig{}, chanErr)
+	err := <-chanErr
+	result.Users = users
+	result.Error = err
+}
+
+// LoadAttending returns the Users associated with the Event instance
+func (event *Event) LoadAttending() ([]*User, error) {
+	var users []*User
+	err := ent.LoadNodesByType(event.Viewer, event.ID, EventToAttendingEdge, &users, &configs.UserConfig{})
+	return users, err
+}
+
+// LoadDeclinedEdges returns the User edges associated with the Event instance
+func (event *Event) LoadDeclinedEdges() ([]*ent.Edge, error) {
+	return ent.LoadEdgesByType(event.ID, EventToDeclinedEdge)
+}
+
+// GenDeclinedEdges returns the User edges associated with the Event instance
+func (event *Event) GenDeclinedEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgesResultChan := make(chan ent.EdgesResult)
+	go ent.GenLoadEdgesByType(event.ID, EventToDeclinedEdge, edgesResultChan)
+	*result = <-edgesResultChan
+}
+
+// LoadDeclinedEdgeFor loads the ent.Edge between the current node and the given id2 for the Declined edge.
+func (event *Event) LoadDeclinedEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(event.ID, id2, EventToDeclinedEdge)
+}
+
+// GenDeclinedEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the Declined edge.
+func (event *Event) GenLoadDeclinedEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(event.ID, id2, EventToDeclinedEdge, edgeResultChan)
+	*result = <-edgeResultChan
+}
+
+// GenDeclined returns the Users associated with the Event instance
+func (event *Event) GenDeclined(result *UsersResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var users []*User
+	chanErr := make(chan error)
+	go ent.GenLoadNodesByType(event.Viewer, event.ID, EventToDeclinedEdge, &users, &configs.UserConfig{}, chanErr)
+	err := <-chanErr
+	result.Users = users
+	result.Error = err
+}
+
+// LoadDeclined returns the Users associated with the Event instance
+func (event *Event) LoadDeclined() ([]*User, error) {
+	var users []*User
+	err := ent.LoadNodesByType(event.Viewer, event.ID, EventToDeclinedEdge, &users, &configs.UserConfig{})
+	return users, err
+}
+
+func (event *Event) ViewerRsvpStatus() (*EventRsvpStatus, error) {
+	if !event.Viewer.HasIdentity() {
+		ret := EventUnknown
+		return &ret, nil
+	}
+	statusMap := event.RsvpStatusMap()
+	edges := make(map[string]*ent.Edge)
+	errs := make(map[string]error)
+	for key, data := range statusMap {
+		// TODO concurrent versions
+		edges[key], errs[key] = ent.LoadEdgeByType(event.ID, event.Viewer.GetViewerID(), data.Edge)
+	}
+	for _, err := range errs {
+		if err != nil {
+			return nil, err
+		}
+	}
+	var ret EventRsvpStatus
+	for key, edge := range edges {
+		// TODO better zero value behavior at some point
+		if edge != nil && edge.ID1 != "" {
+			var ok bool
+			ret, ok = statusMap[key].ConstName.(EventRsvpStatus)
+			if !ok {
+				return nil, errors.New("error casting constant to EventRsvpStatus")
+			}
+			break
+		}
+	}
+	return &ret, nil
+}
+
+func (event *Event) ViewerRsvpStatusForGQL() (*string, error) {
+	enum, err := event.ViewerRsvpStatus()
+	if err != nil {
+		return nil, err
+	}
+	str := string(*enum)
+	return &str, nil
+}
+
+func (event *Event) RsvpStatusMap() ent.AssocStatusMap {
+	return ent.AssocStatusMap{
+		"event_attending": &ent.AssociationEdgeGroupStatusInfo{
+			EdgeName:          "Attending",
+			Edge:              EventToAttendingEdge,
+			ConstName:         EventAttending,
+			UseInStatusAction: true,
+		},
+		"event_declined": &ent.AssociationEdgeGroupStatusInfo{
+			EdgeName:          "Declined",
+			Edge:              EventToDeclinedEdge,
+			ConstName:         EventDeclined,
+			UseInStatusAction: true,
+		},
+		"event_invited": &ent.AssociationEdgeGroupStatusInfo{
+			EdgeName:          "Invited",
+			Edge:              EventToInvitedEdge,
+			ConstName:         EventInvited,
+			UseInStatusAction: false,
+		},
+	}
 }
 
 // DBFields is used by the ent framework to load the ent from the underlying database

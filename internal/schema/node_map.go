@@ -386,7 +386,6 @@ func (m NodeMapInfo) addConstsFromEdgeGroups(nodeData *NodeData) {
 					},
 				))
 
-			// TODO
 			nodeData.addConstInfo(
 				edgeGroup.ConstType,
 				constName,
@@ -400,22 +399,30 @@ func (m NodeMapInfo) addConstsFromEdgeGroups(nodeData *NodeData) {
 					),
 				},
 			)
+
 		}
 
-		// unknown. TODO
-		// nodeData.addConstInfo(
-		// 	constType,
-		// 	//Unknownæ,
-		// 	&ConstInfo{
-		// 		ConstName:  constName,
-		// 		ConstValue: strconv.Quote(constValue),
-		// 		Comment: fmt.Sprintf(
-		// 			"%s is the edge representing the status for the %s edge.",
-		// 			constName,
-		// 			edgeName,
-		// 		),
-		// 	},
-		// )
+		unknownConst := edgeGroup.GetConstNameForUnknown()
+		constValue := strings.ToLower(
+			getNameFromParts(
+				[]string{
+					nodeData.Node,
+					"Unknown",
+				},
+			))
+		nodeData.addConstInfo(
+			edgeGroup.ConstType,
+			unknownConst,
+			&ConstInfo{
+				ConstName:  unknownConst,
+				ConstValue: strconv.Quote(constValue),
+				Comment: fmt.Sprintf(
+					"%s is the edge representing the unknown status for the %s edgegroup.",
+					unknownConst,
+					edgeGroup.GroupStatusName,
+				),
+			},
+		)
 	}
 }
 
