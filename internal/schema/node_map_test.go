@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
@@ -772,13 +771,6 @@ func (suite *edgeTestSuite) SetupSuite() {
 	suite.Suite.SetupSuite()
 }
 
-// TODO use github.com/lolopinto/ent/cmd/gent/configs.AssocEdgeConfig
-type assocEdgeConfig struct{}
-
-func (config *assocEdgeConfig) GetTableName() string {
-	return "assoc_edge_config"
-}
-
 func (suite *edgeTestSuite) TestNewVsExistingEdges() {
 	t := suite.T()
 	s := getSchemaForNewConstsAndEdges(t)
@@ -867,69 +859,18 @@ func (suite *edgeTestSuite) validateSchema(
 	expectedEdges, expectedNewEdges, expectedEdgesToUpdate int) {
 	assert.Equal(suite.T(), expectedNewEdges, len(s.GetNewEdges()))
 	for _, edge := range s.GetNewEdges() {
-		err := createEdge(edge)
-		assert.Nil(suite.T(), err)
+		testingutils.CreateEdge(suite.T(), edge)
 	}
 	assert.Equal(suite.T(), expectedEdgesToUpdate, len(s.GetEdgesToUpdate()))
 	// need to update existing edges also
 	for _, edge := range s.GetEdgesToUpdate() {
-		err := editEdge(edge)
-		assert.Nil(suite.T(), err)
+		testingutils.EditEdge(suite.T(), edge)
 	}
 
 	assert.Equal(suite.T(), expectedEdges, len(s.GetEdges()))
 	var dbEdges []*ent.AssocEdgeData
 	assert.Nil(suite.T(), ent.GenLoadAssocEdges(&dbEdges))
 	assert.Equal(suite.T(), len(s.GetEdges()), len(dbEdges))
-}
-
-func createEdge(edge *ent.AssocEdgeData) error {
-	fields := make(map[string]interface{})
-	fields["edge_type"] = edge.EdgeType
-	fields["inverse_edge_type"] = edge.InverseEdgeType
-	fields["edge_table"] = edge.EdgeTable
-	fields["edge_name"] = edge.EdgeName
-	fields["symmetric_edge"] = edge.SymmetricEdge
-
-	return ent.CreateNodeFromActionMap(
-		&ent.EditedNodeInfo{
-			Entity:         edge,
-			EntConfig:      &assocEdgeConfig{},
-			Fields:         fields,
-			EditableFields: getFieldMapFromFields(fields),
-		},
-	)
-}
-
-func editEdge(edge *ent.AssocEdgeData) error {
-	fields := make(map[string]interface{})
-	fields["edge_type"] = edge.EdgeType
-	fields["inverse_edge_type"] = edge.InverseEdgeType
-	fields["edge_table"] = edge.EdgeTable
-	fields["edge_name"] = edge.EdgeName
-	fields["symmetric_edge"] = edge.SymmetricEdge
-
-	return ent.EditNodeFromActionMap(
-		&ent.EditedNodeInfo{
-			ExistingEnt:    edge,
-			Entity:         edge,
-			EntConfig:      &assocEdgeConfig{},
-			Fields:         fields,
-			EditableFields: getFieldMapFromFields(fields),
-		},
-	)
-}
-
-func getFieldMapFromFields(fields map[string]interface{}) ent.ActionFieldMap {
-	// copied from getFieldMapFromFields in ent_test
-	ret := make(ent.ActionFieldMap)
-	for k := range fields {
-		ret[k] = &ent.MutatingFieldInfo{
-			DB:       strcase.ToSnake(k),
-			Required: true,
-		}
-	}
-	return ret
 }
 
 func TestEdgeSuite(t *testing.T) {

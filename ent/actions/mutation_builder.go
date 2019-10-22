@@ -289,7 +289,6 @@ func (c *EntMutationChangeset) Entity() ent.Entity {
 }
 
 func getFieldMapFromFields(fields map[string]interface{}) ent.ActionFieldMap {
-	// copied from getFieldMapFromFields in ent_test
 	ret := make(ent.ActionFieldMap)
 	for k := range fields {
 		ret[k] = &ent.MutatingFieldInfo{

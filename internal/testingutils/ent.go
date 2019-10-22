@@ -82,6 +82,42 @@ func GetBaseBuilder(
 	}
 }
 
+func CreateEdge(t *testing.T, edge *ent.AssocEdgeData) {
+	b := GetBaseBuilder(
+		ent.InsertOperation,
+		&ent.AssocEdgeConfig{},
+		nil,
+	)
+	setFields(b, map[string]interface{}{
+		"edge_type":         edge.EdgeType,
+		"inverse_edge_type": edge.InverseEdgeType,
+		"edge_table":        edge.EdgeTable,
+		"edge_name":         edge.EdgeName,
+		"symmetric_edge":    edge.SymmetricEdge,
+	},
+	)
+	var newEdge ent.AssocEdgeData
+	SaveBuilder(t, b, &newEdge)
+}
+
+func EditEdge(t *testing.T, edge *ent.AssocEdgeData) {
+	b := GetBaseBuilder(
+		ent.EditOperation,
+		&ent.AssocEdgeConfig{},
+		edge,
+	)
+	setFields(b, map[string]interface{}{
+		"edge_type":         edge.EdgeType,
+		"inverse_edge_type": edge.InverseEdgeType,
+		"edge_table":        edge.EdgeTable,
+		"edge_name":         edge.EdgeName,
+		"symmetric_edge":    edge.SymmetricEdge,
+	},
+	)
+	var newEdge ent.AssocEdgeData
+	SaveBuilder(t, b, &newEdge)
+}
+
 func GetUserBuilderWithFields(
 	operation ent.WriteOperation,
 	existingEnt ent.Entity,
