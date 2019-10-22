@@ -84,6 +84,7 @@ type MutationBuilder interface {
 	//Entity() Entity // expected to be null for create operations. entity being mutated
 	GetViewer() viewer.ViewerContext
 	GetChangeset(Entity) (Changeset, error)
+	GetOperation() WriteOperation
 }
 
 type Changeset interface {

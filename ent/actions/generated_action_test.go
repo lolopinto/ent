@@ -12,7 +12,6 @@ import (
 	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 	"github.com/lolopinto/ent/ent/test_schema/models/user/action"
 	"github.com/lolopinto/ent/internal/testingutils"
-	testhelpers "github.com/lolopinto/ent/internal/testschemautils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -45,7 +44,7 @@ func (suite *generatedActionSuite) createUser() *models.User {
 		Save()
 
 	assert.Nil(suite.T(), err)
-	testhelpers.VerifyUserObj(suite.T(), user, email)
+	testingutils.VerifyUserObj(suite.T(), user, email)
 	return user
 }
 func (suite *generatedActionSuite) TestCreation() {
@@ -105,9 +104,9 @@ func (suite *generatedActionSuite) TestAddEdgeAction() {
 		Save()
 
 	assert.Nil(suite.T(), err)
-	testhelpers.VerifyUserObj(suite.T(), updatedUser, user.EmailAddress)
+	testingutils.VerifyUserObj(suite.T(), updatedUser, user.EmailAddress)
 
-	testhelpers.VerifyFriendsEdge(suite.T(), user, user2)
+	testingutils.VerifyFriendsEdge(suite.T(), user, user2)
 }
 
 func (suite *generatedActionSuite) addFamilyEdge(v viewer.ViewerContext, user, user2 *models.User) {
@@ -126,7 +125,7 @@ func (suite *generatedActionSuite) addFamilyEdge(v viewer.ViewerContext, user, u
 	err = ent.SaveChangeset(c)
 	assert.Nil(suite.T(), err)
 
-	testhelpers.VerifyFamilyEdge(suite.T(), user, user2)
+	testingutils.VerifyFamilyEdge(suite.T(), user, user2)
 }
 
 func (suite *generatedActionSuite) TestRemoveEdgeAction() {
@@ -144,8 +143,8 @@ func (suite *generatedActionSuite) TestRemoveEdgeAction() {
 		Save()
 
 	assert.Nil(suite.T(), err)
-	testhelpers.VerifyUserObj(suite.T(), updatedUser, user.EmailAddress)
-	testhelpers.VerifyNoFamilyEdge(suite.T(), user, user2)
+	testingutils.VerifyUserObj(suite.T(), updatedUser, user.EmailAddress)
+	testingutils.VerifyNoFamilyEdge(suite.T(), user, user2)
 }
 
 func TestGeneratedAction(t *testing.T) {

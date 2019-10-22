@@ -49,6 +49,10 @@ func (b *EntMutationBuilder) ExistingEnt() ent.Entity {
 	return b.ExistingEntity
 }
 
+func (b *EntMutationBuilder) GetOperation() ent.WriteOperation {
+	return b.Operation
+}
+
 func (b *EntMutationBuilder) addEdgeType(edgeType ent.EdgeType) {
 	if b.edgeTypes == nil {
 		b.edgeTypes = make(map[ent.EdgeType]bool)

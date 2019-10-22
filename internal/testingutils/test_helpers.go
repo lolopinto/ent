@@ -1,8 +1,9 @@
-package testschemautils
+package testingutils
 
 import (
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/test_schema/models"
 	"github.com/stretchr/testify/assert"
@@ -76,6 +77,72 @@ func VerifyNoInvitedToEventEdge(t *testing.T, user *models.User, event *models.E
 	assert.Zero(t, *userInvitedEdge)
 }
 
+func VerifyUserAttendingEventEdge(t *testing.T, user *models.User, event *models.Event) {
+	attendingEdge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToAttendingEdge)
+	assert.Nil(t, err)
+	VerifyEdge(t, &ent.Edge{
+		ID1:      event.ID,
+		ID1Type:  event.GetType(),
+		ID2:      user.ID,
+		ID2Type:  user.GetType(),
+		EdgeType: models.EventToAttendingEdge,
+		Data:     "",
+	}, attendingEdge)
+
+	userAttendingEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToEventsAttendingEdge)
+	assert.Nil(t, err)
+	VerifyEdge(t, &ent.Edge{
+		ID1:      user.ID,
+		ID1Type:  user.GetType(),
+		ID2:      event.ID,
+		ID2Type:  event.GetType(),
+		EdgeType: models.UserToEventsAttendingEdge,
+		Data:     "",
+	}, userAttendingEdge)
+}
+
+func VerifyNoUserAttendingEventEdge(t *testing.T, user *models.User, event *models.Event) {
+	attendingEdge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToAttendingEdge)
+	assert.Nil(t, err)
+	assert.Zero(t, *attendingEdge)
+	userAttendingEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToEventsAttendingEdge)
+	assert.Nil(t, err)
+	assert.Zero(t, *userAttendingEdge)
+}
+
+func VerifyUserDeclinedEventEdge(t *testing.T, user *models.User, event *models.Event) {
+	declinedEdge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToDeclinedEdge)
+	assert.Nil(t, err)
+	VerifyEdge(t, &ent.Edge{
+		ID1:      event.ID,
+		ID1Type:  event.GetType(),
+		ID2:      user.ID,
+		ID2Type:  user.GetType(),
+		EdgeType: models.EventToDeclinedEdge,
+		Data:     "",
+	}, declinedEdge)
+
+	userDeclinedEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToDeclinedEventsEdge)
+	assert.Nil(t, err)
+	VerifyEdge(t, &ent.Edge{
+		ID1:      user.ID,
+		ID1Type:  user.GetType(),
+		ID2:      event.ID,
+		ID2Type:  event.GetType(),
+		EdgeType: models.UserToDeclinedEventsEdge,
+		Data:     "",
+	}, userDeclinedEdge)
+}
+
+func VerifyNoUserDeclinedEventEdge(t *testing.T, user *models.User, event *models.Event) {
+	declinedEdge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToDeclinedEdge)
+	assert.Nil(t, err)
+	assert.Zero(t, *declinedEdge)
+	userDeclinedEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToDeclinedEventsEdge)
+	assert.Nil(t, err)
+	assert.Zero(t, *userDeclinedEdge)
+}
+
 func VerifyUserToEventEdge(t *testing.T, user *models.User, event *models.Event) {
 	userToEventEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToEventsEdge)
 	assert.Nil(t, err)
@@ -129,6 +196,7 @@ func VerifyNoFriendsEdge(t *testing.T, user, user2 *models.User) {
 }
 
 func VerifyEdge(t *testing.T, expectedEdge, edge *ent.Edge) {
+	spew.Dump(expectedEdge, edge)
 	assert.Equal(t, expectedEdge.EdgeType, edge.EdgeType)
 	assert.Equal(t, expectedEdge.ID1, edge.ID1)
 	assert.Equal(t, expectedEdge.ID2, edge.ID2)

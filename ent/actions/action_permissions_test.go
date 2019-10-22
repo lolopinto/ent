@@ -1,9 +1,10 @@
-package actions
+package actions_test
 
 import (
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/privacy"
 	"github.com/lolopinto/ent/ent/test_schema/models"
 	"github.com/lolopinto/ent/ent/test_schema/models/configs"
@@ -42,8 +43,8 @@ func (a *userAction) Entity() ent.Entity {
 func (a *userAction) GetBuilder(
 	operation ent.WriteOperation,
 	existingEnt ent.Entity,
-) EntMutationBuilder {
-	return EntMutationBuilder{
+) actions.EntMutationBuilder {
+	return actions.EntMutationBuilder{
 		Viewer:         a.viewer,
 		ExistingEntity: existingEnt,
 		Operation:      operation,
@@ -75,7 +76,7 @@ func (a *createUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 	}
 }
 
-var _ ActionWithPermissions = &createUserAction{}
+var _ actions.ActionWithPermissions = &createUserAction{}
 
 type editUserAction struct {
 	userAction
@@ -103,7 +104,7 @@ func (a *editUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 	}
 }
 
-var _ ActionWithPermissions = &editUserAction{}
+var _ actions.ActionWithPermissions = &editUserAction{}
 
 type actionsPermissionsSuite struct {
 	testingutils.Suite
@@ -123,7 +124,7 @@ func createUser(v viewer.ViewerContext) (createUserAction, error) {
 	action.lastName = "Okelola"
 	action.emailAddress = util.GenerateRandEmail()
 
-	err := Save(&action)
+	err := actions.Save(&action)
 	return action, err
 }
 
@@ -200,14 +201,14 @@ func (suite *actionsPermissionsSuite) TestEditPrivacy() {
 		action.existingEnt = user
 		action.viewer = tt.viewer
 		action.firstName = "Ola2"
-		err := Save(&action)
+		err := actions.Save(&action)
 		if tt.allowed {
 			assert.Nil(suite.T(), err, tt.testCase)
 			assert.NotZero(suite.T(), action.user, tt.testCase)
 			assert.Equal(suite.T(), action.user.FirstName, "Ola2", tt.testCase)
 		} else {
 			assert.NotNil(suite.T(), err, tt.testCase)
-			assert.IsType(suite.T(), &ActionPermissionsError{}, err, tt.testCase)
+			assert.IsType(suite.T(), &actions.ActionPermissionsError{}, err, tt.testCase)
 			assert.Zero(suite.T(), action.user, tt.testCase)
 		}
 	}
