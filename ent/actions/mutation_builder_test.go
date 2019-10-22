@@ -30,14 +30,14 @@ func (suite *mutationBuilderSuite) SetupSuite() {
 
 func (suite *mutationBuilderSuite) TestCreation() {
 	email := util.GenerateRandEmail()
-	user := testingutils.CreateUser(suite.T(), email)
+	user := testingutils.CreateTestUserWithEmail(suite.T(), email)
 
 	testingutils.VerifyUserObj(suite.T(), user, email)
 }
 
 func (suite *mutationBuilderSuite) TestEditing() {
 	email := util.GenerateRandEmail()
-	user := testingutils.CreateUser(suite.T(), email)
+	user := testingutils.CreateTestUserWithEmail(suite.T(), email)
 
 	testingutils.VerifyUserObj(suite.T(), user, email)
 
@@ -59,7 +59,7 @@ func (suite *mutationBuilderSuite) TestEditing() {
 
 func (suite *mutationBuilderSuite) TestDeletion() {
 	email := util.GenerateRandEmail()
-	user := testingutils.CreateUser(suite.T(), email)
+	user := testingutils.CreateTestUserWithEmail(suite.T(), email)
 
 	testingutils.VerifyUserObj(suite.T(), user, email)
 
@@ -80,7 +80,7 @@ func (suite *mutationBuilderSuite) TestDeletion() {
 }
 
 func (suite *mutationBuilderSuite) TestAddSimpleEdgeAtCreation() {
-	user2 := testingutils.CreateUser(suite.T(), util.GenerateRandEmail())
+	user2 := testingutils.CreateTestUserWithEmail(suite.T(), util.GenerateRandEmail())
 
 	email := util.GenerateRandEmail()
 	b := testingutils.GetUserBuilderWithFields(
@@ -100,10 +100,10 @@ func (suite *mutationBuilderSuite) TestAddSimpleEdgeAtCreation() {
 }
 
 func (suite *mutationBuilderSuite) TestAddSimpleEdgeEditing() {
-	user2 := testingutils.CreateUser(suite.T(), util.GenerateRandEmail())
+	user2 := testingutils.CreateTestUserWithEmail(suite.T(), util.GenerateRandEmail())
 
 	email := util.GenerateRandEmail()
-	user := testingutils.CreateUser(suite.T(), email)
+	user := testingutils.CreateTestUserWithEmail(suite.T(), email)
 	testingutils.VerifyUserObj(suite.T(), user, email)
 	testingutils.VerifyNoFamilyEdge(suite.T(), user, user2)
 
@@ -125,12 +125,15 @@ func (suite *mutationBuilderSuite) TestAddSimpleEdgeEditing() {
 
 func (suite *mutationBuilderSuite) TestAddInverseEdge() {
 	email := util.GenerateRandEmail()
-	user := testingutils.CreateUser(suite.T(), email)
-	event := testingutils.CreateEvent(suite.T(), user)
+	user := testingutils.CreateTestUserWithEmail(suite.T(), email)
+	event := testingutils.CreateTestEvent(suite.T(), user)
 
 	testingutils.VerifyUserObj(suite.T(), user, email)
 	testingutils.VerifyEventObj(suite.T(), event, user)
 	testingutils.VerifyNoInvitedToEventEdge(suite.T(), user, event)
+
+	// added automatically by CreateTestEvent since that'll be added by the generated builder
+	testingutils.VerifyUserToEventEdge(suite.T(), user, event)
 
 	// add inverse edge
 	b := testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event)
@@ -146,13 +149,11 @@ func (suite *mutationBuilderSuite) TestAddInverseEdge() {
 	updatedEvent2 := testingutils.SaveEvent(suite.T(), b2)
 	testingutils.VerifyEventObj(suite.T(), updatedEvent2, user)
 	testingutils.VerifyNoInvitedToEventEdge(suite.T(), user, event)
-
-	// we don't have user to event here but that should be in the generated action...
 }
 
 func (suite *mutationBuilderSuite) TestComplexMutation() {
 	email := util.GenerateRandEmail()
-	user := testingutils.CreateUser(suite.T(), email)
+	user := testingutils.CreateTestUserWithEmail(suite.T(), email)
 	testingutils.VerifyUserObj(suite.T(), user, email)
 
 	// create an event, add an inverse outbound edge and an inbound edge
@@ -185,9 +186,9 @@ func (suite *mutationBuilderSuite) TestComplexMutation() {
 
 func (suite *mutationBuilderSuite) TestAddSymmetricEdge() {
 	email := util.GenerateRandEmail()
-	user := testingutils.CreateUser(suite.T(), email)
+	user := testingutils.CreateTestUserWithEmail(suite.T(), email)
 	email2 := util.GenerateRandEmail()
-	user2 := testingutils.CreateUser(suite.T(), email2)
+	user2 := testingutils.CreateTestUserWithEmail(suite.T(), email2)
 
 	testingutils.VerifyUserObj(suite.T(), user, email)
 	testingutils.VerifyUserObj(suite.T(), user2, email2)
@@ -208,22 +209,15 @@ func (suite *mutationBuilderSuite) TestAddSymmetricEdge() {
 	testingutils.VerifyNoFriendsEdge(suite.T(), user, user2)
 }
 
-func (suite *mutationBuilderSuite) TestAddInboudEdge() {
+func (suite *mutationBuilderSuite) TestInboudEdge() {
 	email := util.GenerateRandEmail()
-	user := testingutils.CreateUser(suite.T(), email)
-	event := testingutils.CreateEvent(suite.T(), user)
+	user := testingutils.CreateTestUserWithEmail(suite.T(), email)
+	event := testingutils.CreateTestEvent(suite.T(), user)
 
-	testingutils.VerifyNoUserToEventEdge(suite.T(), user, event)
+	// edge automatically added by CreateTestEvent
+	testingutils.VerifyUserToEventEdge(suite.T(), user, event)
 	testingutils.VerifyUserObj(suite.T(), user, email)
 	testingutils.VerifyEventObj(suite.T(), event, user)
-
-	// add edge
-	b := testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event)
-	b.AddInboundEdge(models.UserToEventsEdge, user.ID, user.GetType())
-	updatedEvent := testingutils.SaveEvent(suite.T(), b)
-
-	testingutils.VerifyEventObj(suite.T(), updatedEvent, user)
-	testingutils.VerifyUserToEventEdge(suite.T(), user, event)
 
 	// remove edge
 	b2 := testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event)

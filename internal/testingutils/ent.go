@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/test_schema/models"
@@ -15,128 +14,58 @@ import (
 )
 
 func CreateTestUser(t *testing.T) *models.User {
-	var user models.User
+	return SaveUser(t, GetDefaultUserBuilder(util.GenerateRandEmail()))
+}
 
-	fields := map[string]interface{}{
-		"EmailAddress": util.GenerateRandEmail(),
-		"FirstName":    "Ola",
-		"LastName":     "Okelola",
-	}
-
-	err := ent.CreateNodeFromActionMap(
-		&ent.EditedNodeInfo{
-			Entity:         &user,
-			EntConfig:      &configs.UserConfig{},
-			Fields:         fields,
-			EditableFields: getFieldMapFromFields(fields),
-		},
-	)
-	assert.Nil(t, err)
-	return &user
+func CreateTestUserWithEmail(t *testing.T, email string) *models.User {
+	return SaveUser(t, GetDefaultUserBuilder(email))
 }
 
 func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.User) *models.Event {
-	var event models.Event
-
-	fields := map[string]interface{}{
-		"Name":      "Fun event",
-		"UserID":    user.ID,
-		"StartTime": time.Now(),
-		"EndTime":   time.Now().Add(time.Hour * 24 * 3),
-		"Location":  "fun location",
-	}
-	outboundEdges := []*ent.EditedEdgeInfo{}
-	for _, user := range invitedUsers {
-		outboundEdges = append(outboundEdges, &ent.EditedEdgeInfo{
-			EdgeType: models.EventToInvitedEdge,
-			Id:       user.ID,
-			NodeType: user.GetType(),
-		})
-	}
-	err := ent.CreateNodeFromActionMap(
-		&ent.EditedNodeInfo{
-			Entity:         &event,
-			EntConfig:      &configs.EventConfig{},
-			Fields:         fields,
-			EditableFields: getFieldMapFromFields(fields),
-			InboundEdges: []*ent.EditedEdgeInfo{
-				&ent.EditedEdgeInfo{
-					EdgeType: models.UserToEventsEdge,
-					Id:       user.ID,
-					NodeType: user.GetType(),
-				},
-			},
-			OutboundEdges: outboundEdges,
-		},
+	b := GetEventBuilderwithFields(
+		ent.InsertOperation,
+		nil,
+		GetDefaultEventFields(user),
 	)
-	assert.Nil(t, err)
-
-	return &event
+	for _, user := range invitedUsers {
+		b.AddOutboundEdge(models.EventToInvitedEdge, user.ID, user.GetType())
+	}
+	// this will be automatically added my generated builders
+	b.AddInboundEdge(models.UserToEventsEdge, user.ID, user.GetType())
+	return SaveEvent(t, b)
 }
 
 func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.User) *models.Contact {
 	var contact models.Contact
 
-	fields := map[string]interface{}{
+	b := GetBaseBuilder(
+		ent.InsertOperation,
+		&configs.ContactConfig{},
+		nil,
+	)
+	setFields(b, map[string]interface{}{
 		"EmailAddress": util.GenerateRandEmail(),
 		"UserID":       user.ID,
 		"FirstName":    "first-name",
 		"LastName":     "last-name",
-	}
-	outboundEdges := []*ent.EditedEdgeInfo{}
+	})
 	for _, user := range allowList {
-		outboundEdges = append(outboundEdges, &ent.EditedEdgeInfo{
-			EdgeType: models.ContactToAllowListEdge,
-			Id:       user.ID,
-			NodeType: user.GetType(),
-		})
+		b.AddOutboundEdge(models.ContactToAllowListEdge, user.ID, user.GetType())
 	}
-	err := ent.CreateNodeFromActionMap(
-		&ent.EditedNodeInfo{
-			Entity:         &contact,
-			EntConfig:      &configs.ContactConfig{},
-			Fields:         fields,
-			EditableFields: getFieldMapFromFields(fields),
-			OutboundEdges:  outboundEdges,
-		},
-	)
-	assert.Nil(t, err)
+	SaveBuilder(t, b, &contact)
 	return &contact
 }
 
 func AddFamilyMember(t *testing.T, user1, user2 *models.User) {
-	var user models.User
-
-	fields := make(map[string]interface{})
-	err := ent.EditNodeFromActionMap(
-		&ent.EditedNodeInfo{
-			Entity:         &user,
-			ExistingEnt:    user1,
-			EntConfig:      &configs.UserConfig{},
-			Fields:         fields,
-			EditableFields: getFieldMapFromFields(fields),
-			OutboundEdges: []*ent.EditedEdgeInfo{
-				&ent.EditedEdgeInfo{
-					EdgeType: models.UserToFamilyMembersEdge,
-					Id:       user2.ID,
-					NodeType: user1.GetType(),
-				},
-			},
-		},
+	b := GetUserBuilderWithFields(
+		ent.EditOperation,
+		user1,
+		make(map[string]interface{}),
 	)
+	b.AddOutboundEdge(models.UserToFamilyMembersEdge, user2.ID, user2.GetType())
+	SaveUser(t, b)
 
-	assert.Nil(t, err)
-}
-
-func getFieldMapFromFields(fields map[string]interface{}) ent.ActionFieldMap {
-	ret := make(ent.ActionFieldMap)
-	for k := range fields {
-		ret[k] = &ent.MutatingFieldInfo{
-			DB:       strcase.ToSnake(k),
-			Required: true,
-		}
-	}
-	return ret
+	VerifyFamilyEdge(t, user1, user2)
 }
 
 func GetBaseBuilder(
@@ -208,10 +137,6 @@ func SaveEvent(t *testing.T, b ent.MutationBuilder) *models.Event {
 	return &event
 }
 
-func CreateUser(t *testing.T, email string) *models.User {
-	return SaveUser(t, GetDefaultUserBuilder(email))
-}
-
 func GetDefaultUserBuilder(email string) *actions.EntMutationBuilder {
 	return GetUserBuilderWithFields(
 		ent.InsertOperation,
@@ -224,21 +149,12 @@ func GetDefaultUserBuilder(email string) *actions.EntMutationBuilder {
 	)
 }
 
-func CreateEvent(t *testing.T, user *models.User) *models.Event {
-	b := GetEventBuilderwithFields(
-		ent.InsertOperation,
-		nil,
-		GetDefaultEventFields(user),
-	)
-	return SaveEvent(t, b)
-}
-
 func GetDefaultEventFields(user *models.User) map[string]interface{} {
 	return map[string]interface{}{
 		"Name":      "Fun event",
 		"UserID":    user.ID,
 		"StartTime": time.Now(),
-		"EndTime":   time.Now(),
+		"EndTime":   time.Now().Add(time.Hour * 24 * 3),
 		"Location":  "fun location!",
 	}
 }

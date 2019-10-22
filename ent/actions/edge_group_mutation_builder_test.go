@@ -29,8 +29,8 @@ func (suite *edgeGroupMutationBuilderSuite) SetupSuite() {
 }
 
 func (suite *edgeGroupMutationBuilderSuite) TestEdgeGroupBuilder() {
-	user := testingutils.CreateUser(suite.T(), util.GenerateRandEmail())
-	event := testingutils.CreateEvent(suite.T(), user)
+	user := testingutils.CreateTestUserWithEmail(suite.T(), util.GenerateRandEmail())
+	event := testingutils.CreateTestEvent(suite.T(), user)
 
 	// add invited edge
 	b := testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event)
