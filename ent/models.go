@@ -139,26 +139,6 @@ func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entCon
 	errChan <- err
 }
 
-type EditedEdgeInfo struct {
-	EdgeType EdgeType
-	Id       string
-	NodeType NodeType
-	Data     string
-	Time     time.Time
-}
-
-func EdgeTime(t time.Time) func(*EditedEdgeInfo) {
-	return func(info *EditedEdgeInfo) {
-		info.Time = t
-	}
-}
-
-func EdgeData(data string) func(*EditedEdgeInfo) {
-	return func(info *EditedEdgeInfo) {
-		info.Data = data
-	}
-}
-
 func SaveChangeset(changeset Changeset) error {
 	// TODO critical observers!
 	err := executeOperations(changeset.GetExecutor())

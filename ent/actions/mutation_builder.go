@@ -69,7 +69,7 @@ func (b *EntMutationBuilder) addEdge(edge *ent.EdgeOperation) {
 }
 
 func (b *EntMutationBuilder) AddInboundEdge(
-	edgeType ent.EdgeType, id1 string, nodeType ent.NodeType, options ...func(*ent.EditedEdgeInfo)) error {
+	edgeType ent.EdgeType, id1 string, nodeType ent.NodeType, options ...func(*ent.EdgeOperation)) error {
 	b.flagWrite()
 
 	b.addEdge(
@@ -86,7 +86,7 @@ func (b *EntMutationBuilder) AddInboundEdge(
 	return nil
 }
 
-func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType, options ...func(*ent.EditedEdgeInfo)) error {
+func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType, options ...func(*ent.EdgeOperation)) error {
 	// TODO figure out what I was trying to do here...
 	// for _, edge := range b.edges {
 	// 	if edge.EdgeType == edgeType && edge.ID2 == id2 && nodeType == edge.ID2Type {

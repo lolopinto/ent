@@ -159,19 +159,13 @@ type EdgeOperation struct {
 func newEdgeOperation(
 	edgeType EdgeType,
 	op WriteOperation,
-	// TODO kill
-	options ...func(*EditedEdgeInfo)) *EdgeOperation {
-	info := &EditedEdgeInfo{}
-	for _, opt := range options {
-		opt(info)
-	}
-	// TODO kill EditedEdgeInfo. too many things...
-
+	options ...func(*EdgeOperation)) *EdgeOperation {
 	edgeOp := &EdgeOperation{
 		edgeType:  edgeType,
 		operation: op,
-		time:      info.Time,
-		data:      info.Data,
+	}
+	for _, opt := range options {
+		opt(edgeOp)
 	}
 	return edgeOp
 }
@@ -188,7 +182,7 @@ func NewInboundEdge(
 	id1 string,
 	nodeType NodeType,
 	mb MutationBuilder,
-	options ...func(*EditedEdgeInfo)) *EdgeOperation {
+	options ...func(*EdgeOperation)) *EdgeOperation {
 
 	edgeOp := newEdgeOperation(edgeType, op, options...)
 	edgeOp.id1 = id1
@@ -210,7 +204,7 @@ func NewOutboundEdge(
 	id2 string,
 	nodeType NodeType,
 	mb MutationBuilder,
-	options ...func(*EditedEdgeInfo)) *EdgeOperation {
+	options ...func(*EdgeOperation)) *EdgeOperation {
 
 	edgeOp := newEdgeOperation(edgeType, op, options...)
 	edgeOp.id2 = id2
@@ -307,6 +301,27 @@ func (op *EdgeOperation) Resolve(exec Executor) {
 	if op.time.IsZero() {
 		// todo do we want to have the time here to match exactly?
 		op.time = time.Now()
+	}
+}
+
+func EdgeTime(t time.Time) func(*EdgeOperation) {
+	return func(op *EdgeOperation) {
+		op.time = t
+	}
+}
+
+func EdgeTimeRawNumber(num int64) func(*EdgeOperation) {
+	// if we wanna store raw numbers, e.g. to keep track of an order, use this
+	return func(op *EdgeOperation) {
+		// does seconds from epoch...
+		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC).Add(time.Duration(num) * time.Second)
+		op.time = t
+	}
+}
+
+func EdgeData(data string) func(*EdgeOperation) {
+	return func(op *EdgeOperation) {
+		op.data = data
 	}
 }
 
