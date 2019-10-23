@@ -118,14 +118,14 @@ func (q *dbQuery) query(processor *processRawData) error {
 	db := data.DBConn()
 	if db == nil {
 		err := errors.New("error getting a valid db connection")
-		fmt.Println(err)
+		fmt.Println(query, err)
 		return err
 	}
 
 	stmt, err := getStmtFromTx(q.cfg.tx, db, query)
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(query, err)
 		return err
 	}
 	defer stmt.Close()
@@ -138,7 +138,7 @@ func (q *dbQuery) query(processor *processRawData) error {
 		panic("invalid processor passed")
 	}
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(query, err)
 	}
 	return err
 }

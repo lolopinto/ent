@@ -193,6 +193,8 @@ type AssociationEdgeGroup struct {
 	ConstType       string                      // and then this becomes EventRsvpStatus
 	Edges           map[string]*AssociationEdge // TODO...
 	EdgeAction      *EdgeAction
+	actionEdges     map[string]bool
+	NodeInfo        codegen.NodeInfo
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetAssociationByName(edgeName string) *AssociationEdge {
@@ -208,12 +210,34 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusFieldName() string {
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetConstNameForEdgeName(edgeName string) string {
-	// TODO need NodeData.Node
-	return "Event" + edgeName
+	return edgeGroup.NodeInfo.Node + edgeName
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetConstNameForUnknown() string {
+	// TODO don't hardcode to unknown. Allow this to be customizable
+	return edgeGroup.NodeInfo.Node + "Unknown"
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetQuotedConstNameForEdgeName(edgeName string) string {
 	return strconv.Quote(edgeGroup.GetConstNameForEdgeName(edgeName))
+}
+
+func (edgeGroup *AssociationEdgeGroup) AddActionEdges(list []string) {
+	if len(list) == 0 {
+		return
+	}
+	edgeGroup.actionEdges = make(map[string]bool)
+	for _, edge := range list {
+		edgeGroup.actionEdges[edge] = true
+	}
+}
+
+func (edgeGroup *AssociationEdgeGroup) UseEdgeInStatusAction(edgeName string) bool {
+	// no custom edges. nothing to do here
+	if edgeGroup.actionEdges == nil {
+		return true
+	}
+	return edgeGroup.actionEdges[edgeName]
 }
 
 // http://goast.yuroyoro.net/ is really helpful to see the tree
@@ -294,6 +318,7 @@ func (g *parseEdgeGraph) RunLoop() {
 			valueFunc(expr, keyValueExpr.Value)
 		})
 	}
+	g.ClearOptionalItems()
 	g.RunQueuedUpItems()
 }
 
@@ -434,6 +459,7 @@ func getParsedAssociationEdgeItem(containingPackageName, edgeName string, lit *a
 func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, groupKey string, lit *ast.CompositeLit) error {
 	edgeGroup := &AssociationEdgeGroup{
 		GroupName: groupKey,
+		NodeInfo:  codegen.GetNodeInfo(containingPackageName),
 	}
 	edgeGroup.Edges = make(map[string]*AssociationEdge)
 
@@ -445,6 +471,10 @@ func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, gr
 		"edges",
 	}
 	tableName := getNameFromParts(tableNameParts)
+
+	g.AddOptionalItem("CustomTableName", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		tableName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
+	})
 
 	g.AddItem("EdgeGroups", func(expr ast.Expr, keyValueExprValue ast.Expr) {
 		elts := astparser.GetExprToCompositeLit(keyValueExprValue).Elts
@@ -462,15 +492,20 @@ func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, gr
 
 			edgeGroup.Edges[edgeName] = assocEdge
 		}
-	})
+		// parse any custom table names before parsing the edge groups
+	}, "CustomTableName")
 
 	g.AddItem("GroupStatusName", func(expr ast.Expr, keyValueExprValue ast.Expr) {
 		edgeGroup.GroupStatusName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExprValue)
-		edgeGroup.ConstType = codegen.GetNodeInfo(containingPackageName).Node + edgeGroup.GroupStatusName
+		edgeGroup.ConstType = edgeGroup.NodeInfo.Node + edgeGroup.GroupStatusName
 	})
 
 	g.AddItem("EdgeAction", func(expr ast.Expr, keyValueExprValue ast.Expr) {
 		edgeGroup.EdgeAction = parseEdgeAction(keyValueExprValue)
+	})
+
+	g.AddItem("ActionEdges", func(expr ast.Expr, keyValueExpr ast.Expr) {
+		edgeGroup.AddActionEdges(astparser.GetStringListFromExpr(keyValueExpr))
 	})
 
 	g.RunLoop()

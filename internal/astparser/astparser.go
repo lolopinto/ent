@@ -160,3 +160,12 @@ func GetBooleanValueFromExpr(expr ast.Expr) bool {
 	ident := GetExprToIdent(expr)
 	return ident.Name == "true"
 }
+
+func GetStringListFromExpr(expr ast.Expr) []string {
+	var list []string
+	compositLit := GetExprToCompositeLit(expr)
+	for _, elt := range compositLit.Elts {
+		list = append(list, GetUnderylingStringFromLiteralExpr(elt))
+	}
+	return list
+}

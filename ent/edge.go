@@ -111,6 +111,10 @@ func (edgeData *AssocEdgeData) DBFields() DBFields {
 			if err != nil {
 				return err
 			}
+			// empty string. nothing to do here since this is nullable
+			if id == "" {
+				return nil
+			}
 			edgeData.InverseEdgeType = &sql.NullString{
 				Valid:  true,
 				String: id,
@@ -133,7 +137,7 @@ func (edgeData *AssocEdgeData) GetPrimaryKey() string {
 // we need to break this up for tests
 // or worst case translate AssocEdgeData to a fake object that is an ent for use by node_map_test.go
 func (edgeData *AssocEdgeData) GetID() string {
-	panic("ss")
+	return edgeData.EdgeType
 }
 
 func (edgeData *AssocEdgeData) GetPrivacyPolicy() PrivacyPolicy {
@@ -146,4 +150,18 @@ func (edgeData *AssocEdgeData) GetType() NodeType {
 
 func (edgeData *AssocEdgeData) GetViewer() viewer.ViewerContext {
 	panic("ss")
+}
+
+// AssocEdgeConfig is configuration used to configure edges in the ent-framework
+type AssocEdgeConfig struct {
+	EdgeType        string `db:"edge_type"`
+	EdgeName        string `db:"edge_type"`
+	SymmetricEdge   bool   `db:"symmetric_edge"`
+	InverseEdgeType string `db:"inverse_edge_type"`
+	EdgeTable       string `db:"edge_table"`
+}
+
+// GetTableName returns the underyling database table the model's data is stored
+func (config *AssocEdgeConfig) GetTableName() string {
+	return "assoc_edge_config"
 }

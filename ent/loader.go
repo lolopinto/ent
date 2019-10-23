@@ -351,17 +351,21 @@ type loadNodeFromPKey struct {
 	entity    dataEntity
 }
 
-func (l *loadNodeFromPKey) GetSQLBuilder() (*sqlBuilder, error) {
+func getPrimaryKeyForObj(entity dataEntity) string {
 	pKey := "id"
-	entityWithPkey, ok := l.entity.(dataEntityWithDiffPKey)
+	entityWithPkey, ok := entity.(dataEntityWithDiffPKey)
 	if ok {
 		pKey = entityWithPkey.GetPrimaryKey()
 	}
+	return pKey
+}
+
+func (l *loadNodeFromPKey) GetSQLBuilder() (*sqlBuilder, error) {
 	return &sqlBuilder{
 		entity:    l.entity,
 		tableName: l.tableName,
 		whereParts: []interface{}{
-			pKey,
+			getPrimaryKeyForObj(l.entity),
 			l.id,
 		},
 	}, nil

@@ -2,14 +2,14 @@ package depgraph
 
 import (
 	"fmt"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type data struct {
 	value     interface{}
 	completed bool
 	deps      []string // todo this can eventually be a graph but we're keeping this simple for now
+	optional  bool
+	flagged   bool
 }
 
 type Depgraph struct {
@@ -26,6 +26,11 @@ func (g *Depgraph) AddItem(key string, value interface{}, deps ...string) {
 		completed: false,
 		deps:      deps,
 	}
+}
+
+func (g *Depgraph) AddOptionalItem(key string, value interface{}) {
+	g.AddItem(key, value)
+	g.items[key].optional = true
 }
 
 // Run runs the dependency graph. takes a func that takes an interface{}, calls it exactly once for everything that has been added
@@ -75,6 +80,7 @@ func (g *Depgraph) CheckAndQueue(key string, exec func(interface{})) {
 	if !ok {
 		panic(fmt.Sprintf("no function exists for key item %s", key))
 	}
+	item.flagged = true
 	if g.checkDependenciesCompleted(item) {
 		exec(item.value)
 		item.completed = true
@@ -86,6 +92,14 @@ func (g *Depgraph) CheckAndQueue(key string, exec func(interface{})) {
 	}
 }
 
+func (g *Depgraph) ClearOptionalItems() {
+	for _, v := range g.items {
+		if v.optional && !v.flagged {
+			v.completed = true
+		}
+	}
+}
+
 func (g *Depgraph) RunQueuedUpItems() {
 	i := 1
 	queue := g.queue
@@ -94,7 +108,6 @@ func (g *Depgraph) RunQueuedUpItems() {
 			panic("dependency graph not resolving. halp!")
 		}
 		newQueue := g.runQueue(queue)
-		spew.Dump(newQueue, i)
 		queue = newQueue
 		i = i + 1
 	}

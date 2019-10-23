@@ -327,7 +327,8 @@ func GetEdges(action Action) []EdgeActionTemplateInfo {
 			EdgeConst:    edge.EdgeConst,
 			//AssocEdge:    edge,
 			NodeType: edge.NodeInfo.NodeType,
-			NodeID:   edge.NodeInfo.Node + "ID",
+			// matches what we do in processAction
+			NodeID: fmt.Sprintf("%sID", edge.EdgeName),
 		})
 	}
 

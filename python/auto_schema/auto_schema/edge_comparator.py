@@ -65,7 +65,8 @@ def process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mis
       else:
         # edge exists, let's confirm inverse_edge_type is the same
         # that's the only thing we think should change/support changing
-        if compare_edge.get('inverse_edge_type', None) != edge.get('inverse_edge_type', None) and edge_mismatch_fn is not None:
+        # convert to string to handle mismatch types e.g. str and UUID
+        if str(compare_edge.get('inverse_edge_type', None)) != str(edge.get('inverse_edge_type', None)) and edge_mismatch_fn is not None:
           alter_op = edge_mismatch_fn(edge, compare_edge, sch)
           alter_ops.append(alter_op)
           pass

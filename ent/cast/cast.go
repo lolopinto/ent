@@ -8,6 +8,10 @@ import (
 )
 
 func ToUUIDString(v interface{}) (string, error) {
+	// handle nil value as non-error
+	if v == nil {
+		return "", nil
+	}
 	id := uuid.UUID{}
 	if err := id.Scan(v); err != nil {
 		return "", err

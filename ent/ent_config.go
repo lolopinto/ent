@@ -65,15 +65,20 @@ type AssociationEdgeGroup struct {
 	EdgeGroups      EdgeMap
 	GroupStatusName string // Name of the group e.g. Rsvp. will be used to create a Node{GroupName}Status object and a bunch of other things
 	EdgeAction      *EdgeActionConfig
-	//	Edges []string // TODO: expand on this more. basically the edges that can be set. they should all have the same Config...
+	CustomTableName string
+
+	// Edges limits the edges that are used in the status action calculations. status map.
+	// If no edges are provided, all in the group are
+	ActionEdges []string
+	// TODO: expand on this more. basically the edges that can be set. they should all have the same Config...
 	// handle this later
 }
 
 type AssociationEdgeGroupStatusInfo struct {
-	EdgeName            string
-	Edge                EdgeType
-	ConstName           interface{}
-	UseInStatusMutation bool
+	EdgeName          string
+	Edge              EdgeType
+	ConstName         interface{}
+	UseInStatusAction bool
 }
 
 type AssocStatusMap map[string]*AssociationEdgeGroupStatusInfo

@@ -6,12 +6,10 @@ import (
 )
 
 type Action interface {
-	// GetFieldMap() should be a node based action thingy and not part of the top level action here
-	GetFieldMap() ent.ActionFieldMap
-
 	GetViewer() viewer.ViewerContext
-	PerformAction() error // always calls Validate()
-	//	GetOperation()  todo we should probably know if create/edit/delete
+	GetChangeset() (ent.Changeset, error)
+	// where new ent should be stored.
+	Entity() ent.Entity
 }
 
 type ActionWithValidator interface {
@@ -47,7 +45,13 @@ func Save(action Action) error {
 	// TODO observers and triggers
 	// TODO this will return a builder and triggers will return a builder instead of this
 	// so everything will be handled in here as opposed to having PerformAction be callable on its own
-	return action.PerformAction()
+	// triggers and dependencies!
+	// TODO need a concurrent API for these things...
+	changeset, err := action.GetChangeset()
+	if err != nil {
+		return err
+	}
+	return ent.SaveChangeset(changeset)
 }
 
 func applyActionPermissions(action ActionWithPermissions) error {

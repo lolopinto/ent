@@ -18,6 +18,10 @@
 
 type {{$actionName}} struct {
   {{$embeddedActionType}}
+  builder *actions.EntMutationBuilder
+  {{ if returnsObjectInstance $action -}}
+    {{$nodeInfo.NodeInstance}} models.{{$nodeInfo.Node}}
+  {{end -}}
 }
 
 {{$actionMethodName := actionMethodName $action}}
@@ -33,13 +37,35 @@ func {{$actionMethodName}}FromContext( {{actionMethodContextArgs $action}}) *{{$
 
 // {{$actionMethodName}} is the factory method to get an ...
 func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
+  builder := &actions.EntMutationBuilder{
+    Viewer: viewer,
+    EntConfig: {{$nodeInfo.EntConfig}},
+    Operation: {{writeOperation $action}},
+    {{ if $action.MutatingExistingObject -}}
+      ExistingEntity: {{$nodeInfo.NodeInstance}},
+    {{ end -}}
+  }
   action := &{{$actionName}}{}
-  action.Viewer = viewer
-  action.EntConfig = {{$nodeInfo.EntConfig}}
-  {{ if $action.MutatingExistingObject -}}
-  action.Ent = {{$nodeInfo.NodeInstance}}
-  {{ end -}}
+  builder.FieldMap = action.getFieldMap()
+  {{/* hmm */ -}}
+  action.builder = builder
   return action
+}
+
+func (action *{{$actionName}}) GetViewer() viewer.ViewerContext {
+  return action.builder.GetViewer()
+}
+
+func (action *{{$actionName}}) GetChangeset() (ent.Changeset, error) {
+  return action.builder.GetChangeset(action.Entity())
+}
+
+func (action *{{$actionName}}) Entity() ent.Entity {
+  {{ if returnsObjectInstance $action -}}
+    return &action.{{$nodeInfo.NodeInstance}}
+  {{ else -}}
+    return nil
+  {{end -}}
 }
 
 {{$fields := fields $action}}
@@ -47,7 +73,7 @@ func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
 {{ range $field := $fields -}}
 // {{$field.MethodName}} sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
 func (action *{{$actionName}}) {{$field.MethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$actionName}} {
-  action.SetField({{$field.QuotedFieldName}}, {{$field.InstanceName}})
+  action.builder.SetField({{$field.QuotedFieldName}}, {{$field.InstanceName}})
   {{$inverseEdge := $field.InverseEdge -}}
    {{ if $inverseEdge -}}
     {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
@@ -80,51 +106,66 @@ func (action *{{$actionName}}) {{$field.MethodName}}({{$field.InstanceName}} {{$
 // {{$edge.MethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
 func (action *{{$actionName}}) {{$edge.MethodName}}({{$edge.InstanceName}} {{$edge.InstanceType}}) *{{$actionName}} {
     {{/* TODO time and data support later */ -}}  
-  action.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}.ID, models.{{$edge.NodeType}})
+  {{ if removeEdgeAction $action -}}
+    action.builder.RemoveOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}.ID, models.{{$edge.NodeType}})
+  {{else -}}
+    action.builder.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}.ID, models.{{$edge.NodeType}})
+  {{end -}}
   return action
 }
 
 // {{$edge.MethodName}} adds an instance of {{$edge.Node}}Id to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
 func (action *{{$actionName}}) {{$edge.MethodName}}ID({{$edge.InstanceName}}ID string) *{{$actionName}} {
   {{/* TODO time and data support later */ -}}  
-  action.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}})
+  {{ if removeEdgeAction $action -}}
+    action.builder.RemoveOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}})
+  {{ else -}}
+    action.builder.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}})
+  {{end -}}
   return action
 }
 {{end -}}
 
 
-// GetFields returns the fields that could be edited in this mutation
-func (action *{{$actionName}}) GetFieldMap() ent.ActionFieldMap {
-  return ent.ActionFieldMap {
+// getFieldMap returns the fields that could be edited in this mutation
+func (action *{{$actionName}}) getFieldMap() ent.MutationFieldMap {
+  {{/* TODO MutationFieldMap and MutatingFieldInfo should not be public in ent anymore? */ -}}
+  return ent.MutationFieldMap {
     {{ range $field := $fields -}}
       {{$field.QuotedFieldName}}: &ent.MutatingFieldInfo {
         DB: {{$field.QuotedDBName}},
-        Required: true,
+        {{ if createAction $action -}}
+          Required: true,
+        {{ else -}}
+          Required: false,
+        {{end -}}
       },
     {{end -}}
   }
 }
 
+// Validate returns an error if the current state of the action is not valid
+func (action *{{$actionName}}) Validate() error {
+  return action.builder.Validate()
+}
 
 // Save is the method called to execute this action and save change
 func (action * {{$actionName}}) Save() {{saveActionType $action}} {
-  {{ if returnsObjectInstance $action -}}
-    var {{$nodeInfo.NodeInstance}} models.{{$nodeInfo.Node}}
-    {{ if edgeGroupAction $action -}}
-      {{ range $field := $nonEntFields -}} 
-        {{ if $field.IsStatusEnum -}}
-          action.SetStatusMap({{$nodeInfo.NodeInstance}}.Viewer{{$field.FieldName}}Map())
-        {{end -}}
+  {{ if edgeGroupAction $action -}}
+    {{ range $field := $nonEntFields -}} 
+      {{ if $field.IsStatusEnum -}}
+        action.SetStatusMap({{$nodeInfo.NodeInstance}}.Viewer{{$field.FieldName}}Map())
       {{end -}}
     {{end -}}
-    err := action.SaveAction(&{{$nodeInfo.NodeInstance}}, action.GetFieldMap())
-    return &{{$nodeInfo.NodeInstance}}, err
+  {{end -}}
+
+  {{ if returnsObjectInstance $action -}}
+    err := actions.Save(action)
+    return &action.{{$nodeInfo.NodeInstance}}, err
   {{else -}}
-    return action.SaveAction()
+    return actions.Save(action)
   {{end -}}
 }
 
-{{ if returnsObjectInstance $action -}}
-var _ actions.ActionMutator = &{{$actionName}}{}
-{{end -}}
+var _ actions.Action = &{{$actionName}}{}
 

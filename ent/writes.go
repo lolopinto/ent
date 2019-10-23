@@ -14,56 +14,55 @@ import (
 // the id of the newly created node
 const idPlaceHolder = "$ent.idPlaceholder$"
 
-type dataOperation interface {
+type DataOperation interface {
 	PerformWrite(tx *sqlx.Tx) error
 }
 
-type dataOperationWithEnt interface {
-	ReturnedEnt() Entity
+type DataOperationWithEnt interface {
+	CreatedEnt() Entity
 }
 
-type dataOperationWithPlaceHolder interface {
-	HasPlaceholder() bool
-	AugmentWithPlaceHolder(createdObj Entity, t time.Time)
+type DataOperationWithResolver interface {
+	Resolve(Executor)
 }
 
-type writeOperation string
+type WriteOperation string
 
 const (
-	insertOperation writeOperation = "insert"
-	updateOperation writeOperation = "update"
-	deleteOperation writeOperation = "delete"
+	InsertOperation WriteOperation = "insert"
+	EditOperation   WriteOperation = "edit"
+	DeleteOperation WriteOperation = "delete"
 )
 
-type nodeWithActionMapOperation struct {
-	info *EditedNodeInfo
+type EditNodeOperation struct {
+	ExistingEnt Entity
+	Entity      Entity
+	EntConfig   Config
+	Fields      map[string]interface{}
+	Operation   WriteOperation
 }
 
-func (op *nodeWithActionMapOperation) PerformWrite(tx *sqlx.Tx) error {
+func (op *EditNodeOperation) PerformWrite(tx *sqlx.Tx) error {
 	var queryOp nodeOp
-	if op.info.ExistingEnt == nil {
-		queryOp = &insertNodeOp{op.info}
+	if op.Operation == InsertOperation {
+		queryOp = &insertNodeOp{Entity: op.Entity, EntConfig: op.EntConfig}
 	} else {
-		queryOp = &updateNodeOp{op.info}
+		queryOp = &updateNodeOp{ExistingEnt: op.ExistingEnt, EntConfig: op.EntConfig}
 	}
 
 	columns, values := queryOp.getInitColsAndVals()
-	for fieldName, value := range op.info.Fields {
-		fieldInfo, ok := op.info.EditableFields[fieldName]
-		if !ok {
-			return errors.New(fmt.Sprintf("invalid field %s passed to CreateNodeFromActionMap", fieldName))
-		}
-		columns = append(columns, fieldInfo.DB)
-		values = append(values, value)
+	for k, v := range op.Fields {
+		columns = append(columns, k)
+		values = append(values, v)
 	}
 
 	query := queryOp.getSQLQuery(columns, values)
 
-	return performWrite(query, values, tx, op.info.Entity)
+	return performWrite(query, values, tx, op.Entity)
 }
 
-func (op *nodeWithActionMapOperation) ReturnedEnt() Entity {
-	return op.info.Entity
+func (op *EditNodeOperation) CreatedEnt() Entity {
+	return op.Entity
 }
 
 type nodeOp interface {
@@ -72,7 +71,8 @@ type nodeOp interface {
 }
 
 type insertNodeOp struct {
-	info *EditedNodeInfo
+	Entity    Entity
+	EntConfig Config
 }
 
 func (op *insertNodeOp) getInitColsAndVals() ([]string, []interface{}) {
@@ -82,7 +82,7 @@ func (op *insertNodeOp) getInitColsAndVals() ([]string, []interface{}) {
 	// TODO: break this down into something not hardcoded in here
 	var columns []string
 	var values []interface{}
-	_, ok := op.info.Entity.(dataEntityWithDiffPKey)
+	_, ok := op.Entity.(dataEntityWithDiffPKey)
 	if ok {
 		columns = []string{"created_at", "updated_at"}
 		values = []interface{}{t, t}
@@ -97,24 +97,23 @@ func (op *insertNodeOp) getInitColsAndVals() ([]string, []interface{}) {
 
 func (op *insertNodeOp) getSQLQuery(columns []string, values []interface{}) string {
 	// TODO sql builder factory...
-
 	colsString := getColumnsString(columns)
 	valsString := getValsString(values)
 	//	fields := make(map[string]interface{})
 
 	computedQuery := fmt.Sprintf(
 		"INSERT INTO %s (%s) VALUES(%s) RETURNING *",
-		op.info.EntConfig.GetTableName(),
+		op.EntConfig.GetTableName(),
 		colsString,
 		valsString,
 	)
 	//fmt.Println(computedQuery)
-	//spew.Dump(colsString, values, valsString)
 	return computedQuery
 }
 
 type updateNodeOp struct {
-	info *EditedNodeInfo
+	ExistingEnt Entity
+	EntConfig   Config
 }
 
 func (op *updateNodeOp) getInitColsAndVals() ([]string, []interface{}) {
@@ -130,32 +129,134 @@ func (op *updateNodeOp) getSQLQuery(columns []string, values []interface{}) stri
 	valsString := getValuesDataForUpdate(columns, values)
 
 	computedQuery := fmt.Sprintf(
-		"UPDATE %s SET %s WHERE ID = '%s' RETURNING *",
-		op.info.EntConfig.GetTableName(),
+		"UPDATE %s SET %s WHERE %s = '%s' RETURNING *",
+		op.EntConfig.GetTableName(),
 		valsString,
-		op.info.ExistingEnt.GetID(),
+		getPrimaryKeyForObj(op.ExistingEnt),
+		op.ExistingEnt.GetID(),
 	)
 
 	//fmt.Println(computedQuery)
 	//spew.Dump(colsString, values, valsString)
-	deleteKey(getKeyForNode(op.info.ExistingEnt.GetID(), op.info.EntConfig.GetTableName()))
+	deleteKey(getKeyForNode(op.ExistingEnt.GetID(), op.EntConfig.GetTableName()))
 
 	return computedQuery
 }
 
-type edgeOperation struct {
-	edgeType  EdgeType
-	id1       string
-	id1Type   NodeType
-	id2       string
-	id2Type   NodeType
-	time      time.Time
-	data      string
-	operation writeOperation
+type EdgeOperation struct {
+	edgeType       EdgeType
+	id1            string
+	id1Type        NodeType
+	id2            string
+	id2Type        NodeType
+	time           time.Time
+	data           string
+	operation      WriteOperation
+	id1Placeholder bool
+	id2Placeholder bool
 }
 
-func (op *edgeOperation) PerformWrite(tx *sqlx.Tx) error {
-	if op.id1 == idPlaceHolder || op.id2 == idPlaceHolder {
+func newEdgeOperation(
+	edgeType EdgeType,
+	op WriteOperation,
+	options ...func(*EdgeOperation)) *EdgeOperation {
+	edgeOp := &EdgeOperation{
+		edgeType:  edgeType,
+		operation: op,
+	}
+	for _, opt := range options {
+		opt(edgeOp)
+	}
+	return edgeOp
+}
+
+func isNil(ent Entity) bool {
+	// to handle go weirdness
+	// TODO convert everything
+	return ent == nil || ent == Entity(nil)
+}
+
+func NewInboundEdge(
+	edgeType EdgeType,
+	op WriteOperation,
+	id1 string,
+	nodeType NodeType,
+	mb MutationBuilder,
+	options ...func(*EdgeOperation)) *EdgeOperation {
+
+	edgeOp := newEdgeOperation(edgeType, op, options...)
+	edgeOp.id1 = id1
+	edgeOp.id1Type = nodeType
+	if isNil(mb.ExistingEnt()) {
+		edgeOp.id2 = mb.GetPlaceholderID()
+		edgeOp.id2Placeholder = true
+	} else {
+		edgeOp.id2 = mb.ExistingEnt().GetID()
+		edgeOp.id2Type = mb.ExistingEnt().GetType()
+	}
+
+	return edgeOp
+}
+
+func NewOutboundEdge(
+	edgeType EdgeType,
+	op WriteOperation,
+	id2 string,
+	nodeType NodeType,
+	mb MutationBuilder,
+	options ...func(*EdgeOperation)) *EdgeOperation {
+
+	edgeOp := newEdgeOperation(edgeType, op, options...)
+	edgeOp.id2 = id2
+	edgeOp.id2Type = nodeType
+
+	if isNil(mb.ExistingEnt()) {
+		edgeOp.id1 = mb.GetPlaceholderID()
+		edgeOp.id1Placeholder = true
+	} else {
+		edgeOp.id1 = mb.ExistingEnt().GetID()
+		edgeOp.id1Type = mb.ExistingEnt().GetType()
+	}
+	return edgeOp
+}
+
+func (op *EdgeOperation) InverseEdge(edgeType EdgeType) *EdgeOperation {
+	return &EdgeOperation{
+		operation:      op.operation,
+		time:           op.time,
+		data:           op.data,
+		id1:            op.id2,
+		id1Type:        op.id2Type,
+		id2:            op.id1,
+		id2Type:        op.id1Type,
+		id1Placeholder: op.id2Placeholder,
+		id2Placeholder: op.id1Placeholder,
+		edgeType:       edgeType,
+	}
+}
+
+func (op *EdgeOperation) SymmetricEdge() *EdgeOperation {
+	return &EdgeOperation{
+		operation:      op.operation,
+		time:           op.time,
+		data:           op.data,
+		id1:            op.id2,
+		id1Type:        op.id2Type,
+		id2:            op.id1,
+		id2Type:        op.id1Type,
+		id1Placeholder: op.id2Placeholder,
+		id2Placeholder: op.id1Placeholder,
+		edgeType:       op.edgeType,
+	}
+}
+
+func (op *EdgeOperation) EdgeType() EdgeType {
+	return op.edgeType
+}
+
+func (op *EdgeOperation) PerformWrite(tx *sqlx.Tx) error {
+	// check that they're valid uuids
+	if op.id1Placeholder || op.id2Placeholder {
 		return errors.New("error performing write. failed to replace placeholder in ent edge operation")
 	}
 
@@ -166,7 +267,7 @@ func (op *edgeOperation) PerformWrite(tx *sqlx.Tx) error {
 	edgeOptions := EdgeOptions{Time: op.time, Data: op.data}
 
 	switch op.operation {
-	case insertOperation:
+	case InsertOperation:
 		return addEdgeInTransactionRaw(
 			op.edgeType,
 			op.id1,
@@ -176,75 +277,55 @@ func (op *edgeOperation) PerformWrite(tx *sqlx.Tx) error {
 			edgeOptions,
 			tx,
 		)
-	case deleteOperation:
+	case DeleteOperation:
 		return deleteEdgeInTransactionRaw(op.edgeType, op.id1, op.id2, tx)
 	default:
 		return fmt.Errorf("unsupported edge operation %v passed to edgeOperation.PerformWrite", op)
 	}
 }
 
-func (op *edgeOperation) HasPlaceholder() bool {
-	return op.id1 == idPlaceHolder || op.id2 == idPlaceHolder
-}
+func (op *EdgeOperation) Resolve(exec Executor) {
+	createdEnt := exec.CreatedEnt()
 
-func (op *edgeOperation) AugmentWithPlaceHolder(createdObj Entity, t time.Time) {
-	if op.id1 == idPlaceHolder {
-		op.id1 = createdObj.GetID()
-		op.id1Type = createdObj.GetType()
+	if op.id1Placeholder {
+		op.id1 = createdEnt.GetID() // this or exec.ResolveValue(op.id1Placeholder)
+		op.id1Type = createdEnt.GetType()
+		op.id1Placeholder = false
 	}
-
-	if op.id2 == idPlaceHolder {
-		op.id2 = createdObj.GetID()
-		op.id2Type = createdObj.GetType()
+	if op.id2Placeholder {
+		op.id2 = createdEnt.GetID()
+		op.id2Type = createdEnt.GetType()
+		op.id2Placeholder = false
 	}
 
 	if op.time.IsZero() {
+		// todo do we want to have the time here to match exactly?
+		op.time = time.Now()
+	}
+}
+
+func EdgeTime(t time.Time) func(*EdgeOperation) {
+	return func(op *EdgeOperation) {
 		op.time = t
 	}
 }
 
-func handleAugment(op dataOperation, ent Entity, t time.Time) error {
-	augmentOp, ok := op.(dataOperationWithPlaceHolder)
-
-	if !ok {
-		return nil
+func EdgeTimeRawNumber(num int64) func(*EdgeOperation) {
+	// if we wanna store raw numbers, e.g. to keep track of an order, use this
+	return func(op *EdgeOperation) {
+		// does seconds from epoch...
+		t := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC).Add(time.Duration(num) * time.Second)
+		op.time = t
 	}
-
-	if !augmentOp.HasPlaceholder() {
-		return nil
-	}
-
-	var err error
-	if ent == nil || t.IsZero() {
-		err = fmt.Errorf("error performing op %v. tried to augment an operation before creating an object", op)
-	} else {
-		augmentOp.AugmentWithPlaceHolder(ent, t)
-	}
-	return err
 }
 
-func handleReturnedEnt(op dataOperation, ent Entity) (Entity, error) {
-	createOp, ok := op.(dataOperationWithEnt)
-
-	if !ok {
-		return ent, nil
+func EdgeData(data string) func(*EdgeOperation) {
+	return func(op *EdgeOperation) {
+		op.data = data
 	}
-
-	// existing object
-	if ent != nil {
-		return nil, errors.New("multiple operations in a pipeline trying to create an object. that's confusing with placeholders")
-	}
-
-	ent = createOp.ReturnedEnt()
-	if ent == nil {
-		return nil, fmt.Errorf("op %v returned a nil returned ent", op)
-	}
-	// yay!
-	return ent, nil
 }
 
-// performAllOperations takes a list of operations to the database and wraps them in a transaction
-func performAllOperations(ops []dataOperation) error {
+func executeOperations(exec Executor) error {
 	db := data.DBConn()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -252,24 +333,16 @@ func performAllOperations(ops []dataOperation) error {
 		return err
 	}
 
-	var ent Entity
-	var t time.Time
-
-	for _, op := range ops {
-		err = handleAugment(op, ent, t)
-
-		if err == nil {
-			// real thing we care about
-			err = op.PerformWrite(tx)
+	for {
+		op, err := exec.Operation()
+		if err == AllOperations {
+			break
+		} else if err != nil {
+			return err
 		}
 
-		if err == nil {
-			ent, err = handleReturnedEnt(op, ent)
-			// todo need a way to get created_at or updated_at...!!
-			t = time.Now()
-		}
-
-		if err != nil {
+		// perform the write as needed
+		if err = op.PerformWrite(tx); err != nil {
 			fmt.Println("error during transaction", err)
 			tx.Rollback()
 			return err
@@ -278,4 +351,17 @@ func performAllOperations(ops []dataOperation) error {
 
 	tx.Commit()
 	return nil
+}
+
+type DeleteNodeOperation struct {
+	ExistingEnt Entity
+	EntConfig   Config
+}
+
+func (op *DeleteNodeOperation) PerformWrite(tx *sqlx.Tx) error {
+	return deleteNodeInTransaction(
+		op.ExistingEnt,
+		op.EntConfig,
+		tx,
+	)
 }

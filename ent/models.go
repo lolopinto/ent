@@ -15,6 +15,7 @@ import (
 
 	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lolopinto/ent/data"
+	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/pkg/errors"
 )
 
@@ -138,142 +139,17 @@ func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entCon
 	errChan <- err
 }
 
-type EditedNodeInfo struct {
-	ExistingEnt          Entity
-	Entity               Entity
-	EntConfig            Config
-	EditableFields       ActionFieldMap
-	Fields               map[string]interface{}
-	InboundEdges         []*EditedEdgeInfo
-	OutboundEdges        []*EditedEdgeInfo
-	RemovedInboundEdges  []*EditedEdgeInfo
-	RemovedOutboundEdges []*EditedEdgeInfo
-}
-
-type EditedEdgeInfo struct {
-	EdgeType EdgeType
-	Id       string
-	NodeType NodeType
-	Data     string
-	Time     time.Time
-}
-
-func EdgeTime(t time.Time) func(*EditedEdgeInfo) {
-	return func(info *EditedEdgeInfo) {
-		info.Time = t
+func SaveChangeset(changeset Changeset) error {
+	// TODO critical observers!
+	err := executeOperations(changeset.GetExecutor())
+	if err != nil {
+		return err
 	}
-}
-
-func EdgeData(data string) func(*EditedEdgeInfo) {
-	return func(info *EditedEdgeInfo) {
-		info.Data = data
+	entity := changeset.Entity()
+	if !isNil(entity) {
+		entreflect.SetViewerInEnt(changeset.GetViewer(), entity)
 	}
-}
-
-// CreateNodeFromActionMap creates a new Node and returns it in Entity
-// This is the new API for mutations that's going to replace the old CreateNode API
-func CreateNodeFromActionMap(info *EditedNodeInfo) error {
-	if info.ExistingEnt != nil {
-		return fmt.Errorf("CreateNodeFromActionMap passed an existing ent when creating an ent")
-	}
-
-	// perform in a transaction as needed
-	ops := buildOperations(info)
-	return performAllOperations(ops)
-}
-
-// EditNodeFromActionMap edits a Node and returns it in Entity
-// This is the new API for mutations that's going to replace the old UpdateNode API
-func EditNodeFromActionMap(info *EditedNodeInfo) error {
-	if info.ExistingEnt == nil {
-		return fmt.Errorf("EditNodeFromActionMap needs the entity that's being updated")
-	}
-
-	// perform in a transaction as needed
-	ops := buildOperations(info)
-	return performAllOperations(ops)
-}
-
-func buildOperations(info *EditedNodeInfo) []dataOperation {
-	// build up operations as needed
-	// 1/ operation to create the ent as needed
-	// TODO check to see if any fields
-	ops := []dataOperation{
-		&nodeWithActionMapOperation{info},
-	}
-
-	// 2 all inbound edges with id2 placeholder for newly created ent
-	for _, edge := range info.InboundEdges {
-		edgeOp := &edgeOperation{
-			edgeType:  edge.EdgeType,
-			id1:       edge.Id,
-			id1Type:   edge.NodeType,
-			operation: insertOperation,
-			time:      edge.Time,
-			data:      edge.Data,
-		}
-		if info.ExistingEnt == nil {
-			edgeOp.id2 = idPlaceHolder
-		} else {
-			edgeOp.id2 = info.ExistingEnt.GetID()
-			edgeOp.id2Type = info.ExistingEnt.GetType()
-		}
-		ops = append(ops, edgeOp)
-	}
-
-	// 3 all outbound edges with id1 placeholder for newly created ent
-	for _, edge := range info.OutboundEdges {
-		edgeOp := &edgeOperation{
-			edgeType:  edge.EdgeType,
-			id2:       edge.Id,
-			id2Type:   edge.NodeType,
-			operation: insertOperation,
-			time:      edge.Time,
-			data:      edge.Data,
-		}
-		if info.ExistingEnt == nil {
-			edgeOp.id1 = idPlaceHolder
-		} else {
-			edgeOp.id1 = info.ExistingEnt.GetID()
-			edgeOp.id1Type = info.ExistingEnt.GetType()
-		}
-		ops = append(ops, edgeOp)
-	}
-
-	// verbose but prefer operation private to ent
-	for _, edge := range info.RemovedInboundEdges {
-		edgeOp := &edgeOperation{
-			edgeType:  edge.EdgeType,
-			id1:       edge.Id,
-			id1Type:   edge.NodeType,
-			operation: deleteOperation,
-		}
-		if info.ExistingEnt == nil {
-			panic("invalid. cannot remove edge when there's no existing ent")
-		} else {
-			edgeOp.id2 = info.ExistingEnt.GetID()
-			edgeOp.id2Type = info.ExistingEnt.GetType()
-		}
-		ops = append(ops, edgeOp)
-	}
-
-	for _, edge := range info.RemovedOutboundEdges {
-		edgeOp := &edgeOperation{
-			edgeType:  edge.EdgeType,
-			id2:       edge.Id,
-			id2Type:   edge.NodeType,
-			operation: deleteOperation,
-		}
-		if info.ExistingEnt == nil {
-			panic("invalid. cannot remove edge when there's no existing ent")
-		} else {
-			edgeOp.id1 = info.ExistingEnt.GetID()
-			edgeOp.id1Type = info.ExistingEnt.GetType()
-		}
-		ops = append(ops, edgeOp)
-	}
-
-	return ops
+	return err
 }
 
 func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
@@ -493,60 +369,7 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 	fmt.Println(query)
 
 	deleteKey(getKeyForEdge(id1, edgeType))
-	err = performWrite(query, vals, tx, nil)
-	if err != nil {
-		return err
-	}
-
-	// TODO should look into combining these into same QUERY similarly to what we need to do in CreateNodes()
-	// need to re-write and test all of this
-
-	// write symmetric edge
-	if edgeData.SymmetricEdge {
-		vals = []interface{}{
-			id2,
-			id2Type,
-			edgeType,
-			id1,
-			id1Ttype,
-			t,
-			edgeOptions.Data,
-		}
-
-		query = fmt.Sprintf(
-			"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
-			edgeData.EdgeTable,
-			getColumnsString(cols),
-			getValsString(vals),
-		)
-		deleteKey(getKeyForEdge(id2, edgeType))
-		return performWrite(query, vals, tx, nil)
-	}
-
-	// write inverse edge
-	if edgeData.InverseEdgeType != nil && edgeData.InverseEdgeType.Valid {
-		// write an edge from id2 to id2 with new edge type
-		vals = []interface{}{
-			id2,
-			id2Type,
-			edgeData.InverseEdgeType.String,
-			id1,
-			id1Ttype,
-			t,
-			edgeOptions.Data,
-		}
-
-		query = fmt.Sprintf(
-			"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
-			edgeData.EdgeTable,
-			getColumnsString(cols),
-			getValsString(vals),
-		)
-		deleteKey(getKeyForEdge(id2, EdgeType(edgeData.InverseEdgeType.String)))
-		return performWrite(query, vals, tx, nil)
-	}
-
-	return nil
+	return performWrite(query, vals, tx, nil)
 }
 
 func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions) error {
@@ -585,33 +408,7 @@ func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx)
 	//fmt.Println(query)
 	deleteKey(getKeyForEdge(id1, edgeType))
 
-	err = performWrite(query, vals, tx, nil)
-	if err != nil {
-		return err
-	}
-
-	// TODO move this up a layer
-	// should not be in addEdge and deleteEdge
-	if edgeData.InverseEdgeType != nil && edgeData.InverseEdgeType.Valid {
-		vals = []interface{}{
-			id2,
-			edgeData.InverseEdgeType.String,
-			id1,
-		}
-		deleteKey(getKeyForEdge(id2, EdgeType(edgeData.InverseEdgeType.String)))
-		return performWrite(query, vals, tx, nil)
-	}
-
-	if edgeData.SymmetricEdge {
-		vals = []interface{}{
-			id2,
-			edgeType,
-			id1,
-		}
-		deleteKey(getKeyForEdge(id2, edgeType))
-		return performWrite(query, vals, tx, nil)
-	}
-	return nil
+	return performWrite(query, vals, tx, nil)
 }
 
 func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) error {

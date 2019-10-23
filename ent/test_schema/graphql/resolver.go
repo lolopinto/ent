@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/lolopinto/ent/ent/test_schema/models"
+	"github.com/lolopinto/ent/ent/test_schema/models/user/action"
 )
 
 type Resolver struct{}
@@ -15,6 +16,9 @@ func (r *Resolver) Contact() ContactResolver {
 }
 func (r *Resolver) Event() EventResolver {
 	return &eventResolver{r}
+}
+func (r *Resolver) Mutation() MutationResolver {
+	return &mutationResolver{r}
 }
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
@@ -31,12 +35,125 @@ func (r *contactResolver) AllowList(ctx context.Context, obj *models.Contact) ([
 
 type eventResolver struct{ *Resolver }
 
+func (r *eventResolver) Attending(ctx context.Context, obj *models.Event) ([]*models.User, error) {
+	return obj.LoadAttending()
+}
+
+func (r *eventResolver) Declined(ctx context.Context, obj *models.Event) ([]*models.User, error) {
+	return obj.LoadDeclined()
+}
+
 func (r *eventResolver) Invited(ctx context.Context, obj *models.Event) ([]*models.User, error) {
 	return obj.LoadInvited()
 }
 
 func (r *eventResolver) User(ctx context.Context, obj *models.Event) (*models.User, error) {
 	return obj.LoadUser()
+}
+
+func (r *eventResolver) ViewerRsvpStatus(ctx context.Context, obj *models.Event) (*EventRsvpStatus, error) {
+	enum, err := obj.ViewerRsvpStatusForGQL()
+	if err != nil {
+		return nil, err
+	}
+	// cast to enum that graphql resolve would have generated
+	cast := EventRsvpStatus(*enum)
+	return &cast, err
+}
+
+type mutationResolver struct{ *Resolver }
+
+func (r *mutationResolver) UserAddFriends(ctx context.Context, input UserAddFriendsInput) (*UserAddFriendsResponse, error) {
+	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := action.AddFriendsFromContext(ctx, existingNode).
+		AddUserID(input.FriendsID).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserAddFriendsResponse{
+		User: node,
+	}, nil
+}
+
+func (r *mutationResolver) UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error) {
+	node, err := action.CreateUserFromContext(ctx).
+		SetEmailAddress(input.EmailAddress).
+		SetFirstName(input.FirstName).
+		SetLastName(input.LastName).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserCreateResponse{
+		User: node,
+	}, nil
+}
+
+func (r *mutationResolver) UserDelete(ctx context.Context, input UserDeleteInput) (*UserDeleteResponse, error) {
+	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = action.DeleteUserFromContext(ctx, existingNode).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserDeleteResponse{
+		DeletedUserID: &existingNode.ID,
+	}, nil
+}
+
+func (r *mutationResolver) UserEdit(ctx context.Context, input UserEditInput) (*UserEditResponse, error) {
+	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := action.EditUserFromContext(ctx, existingNode).
+		SetEmailAddress(input.EmailAddress).
+		SetFirstName(input.FirstName).
+		SetLastName(input.LastName).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserEditResponse{
+		User: node,
+	}, nil
+}
+
+func (r *mutationResolver) UserRemoveFamilyMembers(ctx context.Context, input UserRemoveFamilyMembersInput) (*UserRemoveFamilyMembersResponse, error) {
+	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := action.RemoveFamilyMembersFromContext(ctx, existingNode).
+		AddUserID(input.FamilyMembersID).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserRemoveFamilyMembersResponse{
+		User: node,
+	}, nil
 }
 
 type queryResolver struct{ *Resolver }
@@ -59,10 +176,26 @@ func (r *userResolver) Contacts(ctx context.Context, obj *models.User) ([]*model
 	return obj.LoadContacts()
 }
 
+func (r *userResolver) DeclinedEvents(ctx context.Context, obj *models.User) ([]*models.Event, error) {
+	return obj.LoadDeclinedEvents()
+}
+
 func (r *userResolver) Events(ctx context.Context, obj *models.User) ([]*models.Event, error) {
 	return obj.LoadEvents()
 }
 
+func (r *userResolver) EventsAttending(ctx context.Context, obj *models.User) ([]*models.Event, error) {
+	return obj.LoadEventsAttending()
+}
+
 func (r *userResolver) FamilyMembers(ctx context.Context, obj *models.User) ([]*models.User, error) {
 	return obj.LoadFamilyMembers()
+}
+
+func (r *userResolver) Friends(ctx context.Context, obj *models.User) ([]*models.User, error) {
+	return obj.LoadFriends()
+}
+
+func (r *userResolver) InvitedEvents(ctx context.Context, obj *models.User) ([]*models.Event, error) {
+	return obj.LoadInvitedEvents()
 }

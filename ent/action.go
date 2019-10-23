@@ -1,6 +1,11 @@
 package ent
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/pkg/errors"
+)
 
 type ActionOperation uint
 
@@ -44,7 +49,7 @@ type MutatingFieldInfo struct {
 	DB       string
 	Required bool
 }
-type ActionFieldMap map[string]*MutatingFieldInfo
+type MutationFieldMap map[string]*MutatingFieldInfo
 
 type ActionErrorInfo struct {
 	ErrorMsg string
@@ -63,3 +68,43 @@ func (err *ActionValidationError) Error() string {
 		err.Errors,
 	)
 }
+
+type MutationBuilder interface {
+	// TODO this needs to be aware of validators
+	// triggers and observers
+	// observers need to be added to the changeset
+	// critical observers need to be added to the changeset
+	// regular observers done later
+
+	// placeholder id to be used by fields/values in the mutation and replaced after we have a created ent
+	//	GetPlaceholderID() string
+	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions
+	ExistingEnt() Entity
+	GetPlaceholderID() string
+	//Entity() Entity // expected to be null for create operations. entity being mutated
+	GetViewer() viewer.ViewerContext
+	GetChangeset(Entity) (Changeset, error)
+	GetOperation() WriteOperation
+}
+
+type Changeset interface {
+	GetExecutor() Executor
+	GetViewer() viewer.ViewerContext
+	Entity() Entity
+	GetPlaceholderID() string
+	// keeping these 2 just in case...
+	ExistingEnt() Entity //existing ent // hmm we just need ID!
+	EntConfig() Config   // just in case...
+}
+
+type Executor interface {
+	// Provides an io.Read() style API where the underlying dependency details are hidden
+	// away. works when it's one changeset with N operations or N changesets with operations across them.
+	// When we're done with operations, it returns AllOperations to signal EOF
+	Operation() (DataOperation, error)
+	// resolve placeholders from this mutation
+	ResolveValue(interface{}) interface{}
+	CreatedEnt() Entity
+}
+
+var AllOperations = errors.New("All operation dependencies ")
