@@ -85,7 +85,7 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 	plugins := []codegenPlugin{
 		new(dbPlugin),
 		new(entCodegenPlugin),
-		//		new(graphqlPlugin),
+		new(graphqlPlugin),
 	}
 
 	for _, p := range plugins {

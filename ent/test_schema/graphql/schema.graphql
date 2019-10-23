@@ -20,6 +20,8 @@ interface Edge {
 }
 
 type Event implements Node {
+    attending: [User!]!
+    declined: [User!]!
     endTime: Time!
     id: ID!
     invited: [User!]!
@@ -27,6 +29,14 @@ type Event implements Node {
     name: String!
     startTime: Time!
     user: User
+    viewerRsvpStatus: EventRsvpStatus
+}
+
+enum EventRsvpStatus {
+    EVENT_ATTENDING
+    EVENT_DECLINED
+    EVENT_INVITED
+    EVENT_UNKNOWN
 }
 
 type EventsConnection implements Connection {
@@ -39,7 +49,11 @@ type EventsEdge implements Edge {
 }
 
 type Mutation {
+    userAddFriends(input: UserAddFriendsInput!): UserAddFriendsResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
+    userDelete(input: UserDeleteInput!): UserDeleteResponse
+    userEdit(input: UserEditInput!): UserEditResponse
+    userRemoveFamilyMembers(input: UserRemoveFamilyMembersInput!): UserRemoveFamilyMembersResponse
 }
 
 interface Node {
@@ -54,14 +68,25 @@ type Query {
 
 type User implements Node {
     contacts: [Contact!]!
+    declinedEvents: [Event!]!
     emailAddress: String!
     events: [Event!]!
+    eventsAttending: [Event!]!
     familyMembers: [User!]!
     firstName: String!
     friends: [User!]!
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
+}
+
+input UserAddFriendsInput {
+    friendsID: ID!
+    userID: ID!
+}
+
+type UserAddFriendsResponse {
+    user: User
 }
 
 input UserCreateInput {
@@ -71,6 +96,34 @@ input UserCreateInput {
 }
 
 type UserCreateResponse {
+    user: User
+}
+
+input UserDeleteInput {
+    userID: ID!
+}
+
+type UserDeleteResponse {
+    deletedUserId: ID
+}
+
+input UserEditInput {
+    emailAddress: String!
+    firstName: String!
+    lastName: String!
+    userID: ID!
+}
+
+type UserEditResponse {
+    user: User
+}
+
+input UserRemoveFamilyMembersInput {
+    familyMembersID: ID!
+    userID: ID!
+}
+
+type UserRemoveFamilyMembersResponse {
     user: User
 }
 

@@ -3,6 +3,10 @@
 package graphql
 
 import (
+	"fmt"
+	"io"
+	"strconv"
+
 	"github.com/lolopinto/ent/ent/test_schema/models"
 )
 
@@ -31,6 +35,15 @@ type EventsEdge struct {
 
 func (EventsEdge) IsEdge() {}
 
+type UserAddFriendsInput struct {
+	FriendsID string `json:"friendsID"`
+	UserID    string `json:"userID"`
+}
+
+type UserAddFriendsResponse struct {
+	User *models.User `json:"user"`
+}
+
 type UserCreateInput struct {
 	EmailAddress string `json:"emailAddress"`
 	FirstName    string `json:"firstName"`
@@ -38,6 +51,34 @@ type UserCreateInput struct {
 }
 
 type UserCreateResponse struct {
+	User *models.User `json:"user"`
+}
+
+type UserDeleteInput struct {
+	UserID string `json:"userID"`
+}
+
+type UserDeleteResponse struct {
+	DeletedUserID *string `json:"deletedUserId"`
+}
+
+type UserEditInput struct {
+	EmailAddress string `json:"emailAddress"`
+	FirstName    string `json:"firstName"`
+	LastName     string `json:"lastName"`
+	UserID       string `json:"userID"`
+}
+
+type UserEditResponse struct {
+	User *models.User `json:"user"`
+}
+
+type UserRemoveFamilyMembersInput struct {
+	FamilyMembersID string `json:"familyMembersID"`
+	UserID          string `json:"userID"`
+}
+
+type UserRemoveFamilyMembersResponse struct {
 	User *models.User `json:"user"`
 }
 
@@ -53,3 +94,48 @@ type UsersEdge struct {
 }
 
 func (UsersEdge) IsEdge() {}
+
+type EventRsvpStatus string
+
+const (
+	EventRsvpStatusEventAttending EventRsvpStatus = "EVENT_ATTENDING"
+	EventRsvpStatusEventDeclined  EventRsvpStatus = "EVENT_DECLINED"
+	EventRsvpStatusEventInvited   EventRsvpStatus = "EVENT_INVITED"
+	EventRsvpStatusEventUnknown   EventRsvpStatus = "EVENT_UNKNOWN"
+)
+
+var AllEventRsvpStatus = []EventRsvpStatus{
+	EventRsvpStatusEventAttending,
+	EventRsvpStatusEventDeclined,
+	EventRsvpStatusEventInvited,
+	EventRsvpStatusEventUnknown,
+}
+
+func (e EventRsvpStatus) IsValid() bool {
+	switch e {
+	case EventRsvpStatusEventAttending, EventRsvpStatusEventDeclined, EventRsvpStatusEventInvited, EventRsvpStatusEventUnknown:
+		return true
+	}
+	return false
+}
+
+func (e EventRsvpStatus) String() string {
+	return string(e)
+}
+
+func (e *EventRsvpStatus) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = EventRsvpStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid EventRsvpStatus", str)
+	}
+	return nil
+}
+
+func (e EventRsvpStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
