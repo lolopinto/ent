@@ -3,6 +3,7 @@ package actions_test
 import (
 	"testing"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/privacy"
@@ -40,6 +41,15 @@ func (a *userAction) Entity() ent.Entity {
 	return &a.user
 }
 
+func (a *userAction) getChangeset(operation ent.WriteOperation, existingEnt ent.Entity) (ent.Changeset, error) {
+	builder := a.GetBuilder(operation, existingEnt)
+	for k, v := range a.getFields() {
+		builder.SetField(k, v)
+	}
+	builder.FieldMap = getFieldMapFromFields(builder.Operation, a.getFields())
+	return builder.GetChangeset(&a.user)
+}
+
 func (a *userAction) GetBuilder(
 	operation ent.WriteOperation,
 	existingEnt ent.Entity,
@@ -57,14 +67,7 @@ type createUserAction struct {
 }
 
 func (a *createUserAction) GetChangeset() (ent.Changeset, error) {
-	builder := a.GetBuilder(
-		ent.InsertOperation,
-		nil,
-	)
-	for k, v := range a.getFields() {
-		builder.SetField(k, v)
-	}
-	return builder.GetChangeset(&a.user)
+	return a.getChangeset(ent.InsertOperation, nil)
 }
 
 func (a *createUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
@@ -84,14 +87,7 @@ type editUserAction struct {
 }
 
 func (a *editUserAction) GetChangeset() (ent.Changeset, error) {
-	builder := a.GetBuilder(
-		ent.InsertOperation,
-		&a.existingEnt,
-	)
-	for k, v := range a.getFields() {
-		builder.SetField(k, v)
-	}
-	return builder.GetChangeset(&a.user)
+	return a.getChangeset(ent.EditOperation, &a.existingEnt)
 }
 
 func (a *editUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
@@ -216,4 +212,16 @@ func (suite *actionsPermissionsSuite) TestEditPrivacy() {
 
 func TestActionPermissions(t *testing.T) {
 	suite.Run(t, new(actionsPermissionsSuite))
+}
+
+func getFieldMapFromFields(op ent.WriteOperation, fields map[string]interface{}) ent.MutationFieldMap {
+	// copied from testingutils/ent.go
+	ret := make(ent.MutationFieldMap)
+	for k := range fields {
+		ret[k] = &ent.MutatingFieldInfo{
+			DB:       strcase.ToSnake(k),
+			Required: op == ent.InsertOperation,
+		}
+	}
+	return ret
 }

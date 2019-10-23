@@ -34,39 +34,35 @@ const (
 	DeleteOperation WriteOperation = "delete"
 )
 
-// TODO this is temporary until ent.CreateNodeFromActionMap and ent.EditNodeFromActionMap die
-// then rename and change...
-type NodeWithActionMapOperation struct {
-	Info      *EditedNodeInfo
-	Operation WriteOperation
+type EditNodeOperation struct {
+	ExistingEnt Entity
+	Entity      Entity
+	EntConfig   Config
+	Fields      map[string]interface{}
+	Operation   WriteOperation
 }
 
-func (op *NodeWithActionMapOperation) PerformWrite(tx *sqlx.Tx) error {
+func (op *EditNodeOperation) PerformWrite(tx *sqlx.Tx) error {
 	var queryOp nodeOp
 	if op.Operation == InsertOperation {
-		//	if entity == nil {
-		queryOp = &insertNodeOp{op.Info}
+		queryOp = &insertNodeOp{Entity: op.Entity, EntConfig: op.EntConfig}
 	} else {
-		queryOp = &updateNodeOp{op.Info}
+		queryOp = &updateNodeOp{ExistingEnt: op.ExistingEnt, EntConfig: op.EntConfig}
 	}
 
 	columns, values := queryOp.getInitColsAndVals()
-	for fieldName, value := range op.Info.Fields {
-		fieldInfo, ok := op.Info.EditableFields[fieldName]
-		if !ok {
-			return errors.New(fmt.Sprintf("invalid field %s passed to CreateNodeFromActionMap", fieldName))
-		}
-		columns = append(columns, fieldInfo.DB)
-		values = append(values, value)
+	for k, v := range op.Fields {
+		columns = append(columns, k)
+		values = append(values, v)
 	}
 
 	query := queryOp.getSQLQuery(columns, values)
 
-	return performWrite(query, values, tx, op.Info.Entity)
+	return performWrite(query, values, tx, op.Entity)
 }
 
-func (op *NodeWithActionMapOperation) CreatedEnt() Entity {
-	return op.Info.Entity
+func (op *EditNodeOperation) CreatedEnt() Entity {
+	return op.Entity
 }
 
 type nodeOp interface {
@@ -75,7 +71,8 @@ type nodeOp interface {
 }
 
 type insertNodeOp struct {
-	info *EditedNodeInfo
+	Entity    Entity
+	EntConfig Config
 }
 
 func (op *insertNodeOp) getInitColsAndVals() ([]string, []interface{}) {
@@ -85,7 +82,7 @@ func (op *insertNodeOp) getInitColsAndVals() ([]string, []interface{}) {
 	// TODO: break this down into something not hardcoded in here
 	var columns []string
 	var values []interface{}
-	_, ok := op.info.Entity.(dataEntityWithDiffPKey)
+	_, ok := op.Entity.(dataEntityWithDiffPKey)
 	if ok {
 		columns = []string{"created_at", "updated_at"}
 		values = []interface{}{t, t}
@@ -106,7 +103,7 @@ func (op *insertNodeOp) getSQLQuery(columns []string, values []interface{}) stri
 
 	computedQuery := fmt.Sprintf(
 		"INSERT INTO %s (%s) VALUES(%s) RETURNING *",
-		op.info.EntConfig.GetTableName(),
+		op.EntConfig.GetTableName(),
 		colsString,
 		valsString,
 	)
@@ -115,7 +112,8 @@ func (op *insertNodeOp) getSQLQuery(columns []string, values []interface{}) stri
 }
 
 type updateNodeOp struct {
-	info *EditedNodeInfo
+	ExistingEnt Entity
+	EntConfig   Config
 }
 
 func (op *updateNodeOp) getInitColsAndVals() ([]string, []interface{}) {
@@ -132,15 +130,15 @@ func (op *updateNodeOp) getSQLQuery(columns []string, values []interface{}) stri
 
 	computedQuery := fmt.Sprintf(
 		"UPDATE %s SET %s WHERE %s = '%s' RETURNING *",
-		op.info.EntConfig.GetTableName(),
+		op.EntConfig.GetTableName(),
 		valsString,
-		getPrimaryKeyForObj(op.info.ExistingEnt),
-		op.info.ExistingEnt.GetID(),
+		getPrimaryKeyForObj(op.ExistingEnt),
+		op.ExistingEnt.GetID(),
 	)
 
 	//fmt.Println(computedQuery)
 	//spew.Dump(colsString, values, valsString)
-	deleteKey(getKeyForNode(op.info.ExistingEnt.GetID(), op.info.EntConfig.GetTableName()))
+	deleteKey(getKeyForNode(op.ExistingEnt.GetID(), op.EntConfig.GetTableName()))
 
 	return computedQuery
 }

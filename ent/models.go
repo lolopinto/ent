@@ -139,19 +139,6 @@ func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entCon
 	errChan <- err
 }
 
-// TODO kill...
-type EditedNodeInfo struct {
-	ExistingEnt          Entity
-	Entity               Entity
-	EntConfig            Config
-	EditableFields       ActionFieldMap
-	Fields               map[string]interface{}
-	InboundEdges         []*EditedEdgeInfo
-	OutboundEdges        []*EditedEdgeInfo
-	RemovedInboundEdges  []*EditedEdgeInfo
-	RemovedOutboundEdges []*EditedEdgeInfo
-}
-
 type EditedEdgeInfo struct {
 	EdgeType EdgeType
 	Id       string

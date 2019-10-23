@@ -28,14 +28,16 @@ func AddFriendsFromContext(ctx context.Context, user *models.User) *AddFriendsAc
 
 // AddFriends is the factory method to get an ...
 func AddFriends(viewer viewer.ViewerContext, user *models.User) *AddFriendsAction {
-	return &AddFriendsAction{
-		builder: &actions.EntMutationBuilder{
-			Viewer:         viewer,
-			EntConfig:      &configs.UserConfig{},
-			Operation:      ent.EditOperation,
-			ExistingEntity: user,
-		},
+	builder := &actions.EntMutationBuilder{
+		Viewer:         viewer,
+		EntConfig:      &configs.UserConfig{},
+		Operation:      ent.EditOperation,
+		ExistingEntity: user,
 	}
+	action := &AddFriendsAction{}
+	builder.FieldMap = action.getFieldMap()
+	action.builder = builder
+	return action
 }
 
 func (action *AddFriendsAction) GetViewer() viewer.ViewerContext {
@@ -63,12 +65,13 @@ func (action *AddFriendsAction) AddUserID(userID string) *AddFriendsAction {
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *AddFriendsAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
+func (action *AddFriendsAction) getFieldMap() ent.MutationFieldMap {
+	return ent.MutationFieldMap{}
 }
 
+// Validate returns an error if the current state of the action is not valid
 func (action *AddFriendsAction) Validate() error {
-	return action.builder.ValidateFieldMap(action.getFieldMap())
+	return action.builder.Validate()
 }
 
 // Save is the method called to execute this action and save change

@@ -37,16 +37,19 @@ func {{$actionMethodName}}FromContext( {{actionMethodContextArgs $action}}) *{{$
 
 // {{$actionMethodName}} is the factory method to get an ...
 func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
-  return &{{$actionName}}{
-    builder: &actions.EntMutationBuilder{
-      Viewer: viewer,
-      EntConfig: {{$nodeInfo.EntConfig}},
-      Operation: {{writeOperation $action}},
-      {{ if $action.MutatingExistingObject -}}
-        ExistingEntity: {{$nodeInfo.NodeInstance}},
-      {{ end -}}
-    },
+  builder := &actions.EntMutationBuilder{
+    Viewer: viewer,
+    EntConfig: {{$nodeInfo.EntConfig}},
+    Operation: {{writeOperation $action}},
+    {{ if $action.MutatingExistingObject -}}
+      ExistingEntity: {{$nodeInfo.NodeInstance}},
+    {{ end -}}
   }
+  action := &{{$actionName}}{}
+  builder.FieldMap = action.getFieldMap()
+  {{/* hmm */ -}}
+  action.builder = builder
+  return action
 }
 
 func (action *{{$actionName}}) GetViewer() viewer.ViewerContext {
@@ -125,9 +128,9 @@ func (action *{{$actionName}}) {{$edge.MethodName}}ID({{$edge.InstanceName}}ID s
 
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *{{$actionName}}) getFieldMap() ent.ActionFieldMap {
-  {{/* TODO ActionFieldMap and MutatingFieldInfo should not be public in ent anymore? */ -}}
-  return ent.ActionFieldMap {
+func (action *{{$actionName}}) getFieldMap() ent.MutationFieldMap {
+  {{/* TODO MutationFieldMap and MutatingFieldInfo should not be public in ent anymore? */ -}}
+  return ent.MutationFieldMap {
     {{ range $field := $fields -}}
       {{$field.QuotedFieldName}}: &ent.MutatingFieldInfo {
         DB: {{$field.QuotedDBName}},
@@ -141,10 +144,10 @@ func (action *{{$actionName}}) getFieldMap() ent.ActionFieldMap {
   }
 }
 
+// Validate returns an error if the current state of the action is not valid
 func (action *{{$actionName}}) Validate() error {
-  return action.builder.ValidateFieldMap(action.getFieldMap())
+  return action.builder.Validate()
 }
-
 
 // Save is the method called to execute this action and save change
 func (action * {{$actionName}}) Save() {{saveActionType $action}} {

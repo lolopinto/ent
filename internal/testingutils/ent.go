@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/test_schema/models"
@@ -147,6 +148,16 @@ func GetEventBuilderwithFields(
 }
 
 func SaveBuilder(t *testing.T, b ent.MutationBuilder, entity ent.Entity) {
+	// sad. todo come up with better long term approach for tests
+	emb, ok := b.(*actions.EntMutationBuilder)
+	if ok {
+		emb.FieldMap = getFieldMapFromFields(emb.Operation, emb.GetFields())
+	} else {
+		egmb, ok := b.(*actions.EdgeGroupMutationBuilder)
+		if ok {
+			egmb.FieldMap = getFieldMapFromFields(egmb.Operation, egmb.GetFields())
+		}
+	}
 	c, err := b.GetChangeset(entity)
 	assert.Nil(t, err)
 	err = ent.SaveChangeset(c)
@@ -202,4 +213,15 @@ func setFields(
 	for k, v := range fields {
 		b.SetField(k, v)
 	}
+}
+
+func getFieldMapFromFields(op ent.WriteOperation, fields map[string]interface{}) ent.MutationFieldMap {
+	ret := make(ent.MutationFieldMap)
+	for k := range fields {
+		ret[k] = &ent.MutatingFieldInfo{
+			DB:       strcase.ToSnake(k),
+			Required: op == ent.InsertOperation,
+		}
+	}
+	return ret
 }

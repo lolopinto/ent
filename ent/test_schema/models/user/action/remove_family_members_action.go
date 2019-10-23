@@ -28,14 +28,16 @@ func RemoveFamilyMembersFromContext(ctx context.Context, user *models.User) *Rem
 
 // RemoveFamilyMembers is the factory method to get an ...
 func RemoveFamilyMembers(viewer viewer.ViewerContext, user *models.User) *RemoveFamilyMembersAction {
-	return &RemoveFamilyMembersAction{
-		builder: &actions.EntMutationBuilder{
-			Viewer:         viewer,
-			EntConfig:      &configs.UserConfig{},
-			Operation:      ent.EditOperation,
-			ExistingEntity: user,
-		},
+	builder := &actions.EntMutationBuilder{
+		Viewer:         viewer,
+		EntConfig:      &configs.UserConfig{},
+		Operation:      ent.EditOperation,
+		ExistingEntity: user,
 	}
+	action := &RemoveFamilyMembersAction{}
+	builder.FieldMap = action.getFieldMap()
+	action.builder = builder
+	return action
 }
 
 func (action *RemoveFamilyMembersAction) GetViewer() viewer.ViewerContext {
@@ -63,12 +65,13 @@ func (action *RemoveFamilyMembersAction) AddUserID(userID string) *RemoveFamilyM
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *RemoveFamilyMembersAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
+func (action *RemoveFamilyMembersAction) getFieldMap() ent.MutationFieldMap {
+	return ent.MutationFieldMap{}
 }
 
+// Validate returns an error if the current state of the action is not valid
 func (action *RemoveFamilyMembersAction) Validate() error {
-	return action.builder.ValidateFieldMap(action.getFieldMap())
+	return action.builder.Validate()
 }
 
 // Save is the method called to execute this action and save change

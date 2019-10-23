@@ -28,14 +28,16 @@ func EditUserFromContext(ctx context.Context, user *models.User) *EditUserAction
 
 // EditUser is the factory method to get an ...
 func EditUser(viewer viewer.ViewerContext, user *models.User) *EditUserAction {
-	return &EditUserAction{
-		builder: &actions.EntMutationBuilder{
-			Viewer:         viewer,
-			EntConfig:      &configs.UserConfig{},
-			Operation:      ent.EditOperation,
-			ExistingEntity: user,
-		},
+	builder := &actions.EntMutationBuilder{
+		Viewer:         viewer,
+		EntConfig:      &configs.UserConfig{},
+		Operation:      ent.EditOperation,
+		ExistingEntity: user,
 	}
+	action := &EditUserAction{}
+	builder.FieldMap = action.getFieldMap()
+	action.builder = builder
+	return action
 }
 
 func (action *EditUserAction) GetViewer() viewer.ViewerContext {
@@ -69,8 +71,8 @@ func (action *EditUserAction) SetLastName(lastName string) *EditUserAction {
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *EditUserAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{
+func (action *EditUserAction) getFieldMap() ent.MutationFieldMap {
+	return ent.MutationFieldMap{
 		"EmailAddress": &ent.MutatingFieldInfo{
 			DB:       "email_address",
 			Required: false,
@@ -86,8 +88,9 @@ func (action *EditUserAction) getFieldMap() ent.ActionFieldMap {
 	}
 }
 
+// Validate returns an error if the current state of the action is not valid
 func (action *EditUserAction) Validate() error {
-	return action.builder.ValidateFieldMap(action.getFieldMap())
+	return action.builder.Validate()
 }
 
 // Save is the method called to execute this action and save change

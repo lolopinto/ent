@@ -63,6 +63,42 @@ func (suite *generatedActionSuite) TestCreationNotAllFields() {
 	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
 }
 
+func (suite *generatedActionSuite) TestValidate() {
+	v := viewer.LoggedOutViewer()
+
+	action := action.CreateUser(v).
+		SetFirstName("Ola").
+		SetLastName("Okelola")
+
+	err := action.Validate()
+	assert.NotNil(suite.T(), err)
+	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
+
+	action.SetEmailAddress(util.GenerateRandEmail())
+
+	err = action.Validate()
+	assert.Nil(suite.T(), err)
+}
+
+func (suite *generatedActionSuite) TestGetChangeset() {
+	v := viewer.LoggedOutViewer()
+
+	action := action.CreateUser(v).
+		SetFirstName("Ola").
+		SetLastName("Okelola")
+
+	// GetChangeset fails if invalid
+	_, err := action.GetChangeset()
+	assert.NotNil(suite.T(), err)
+	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
+
+	action.SetEmailAddress(util.GenerateRandEmail())
+
+	c, err := action.GetChangeset()
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), c)
+}
+
 func (suite *generatedActionSuite) TestEditing() {
 	user := suite.createUser()
 

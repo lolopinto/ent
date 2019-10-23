@@ -5,26 +5,29 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/util"
 )
-
-// Action will have a changeset. should the mutation builder care about that?
-// no, it builds everything and then passes it to
-// GetEdges() will
-// GenChangeset(wg *sync.WaitGroup) will return soemthing that can be taken from a different action and combined together with this
 
 type EntMutationBuilder struct {
 	Viewer         viewer.ViewerContext
 	ExistingEntity ent.Entity
 	Operation      ent.WriteOperation
 	EntConfig      ent.Config
-	fields         map[string]interface{}
-	edges          []*ent.EdgeOperation
-	edgeTypes      map[ent.EdgeType]bool
-	placeholderID  string
+	// for now, actions map to all the fields so it's fine. this will need to be changed when each EntMutationBuilder is generated
+	// At that point, probably makes sense to have each generated Builder handle this.
+	FieldMap      ent.MutationFieldMap
+	fields        map[string]interface{}
+	rawDBFields   map[string]interface{}
+	edges         []*ent.EdgeOperation
+	edgeTypes     map[ent.EdgeType]bool
+	placeholderID string
+	validated     bool
+}
+
+func (b *EntMutationBuilder) flagWrite() {
+	b.validated = false
 }
 
 func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
@@ -32,6 +35,7 @@ func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
 		b.fields = make(map[string]interface{})
 	}
 	b.fields[fieldName] = val
+	b.flagWrite()
 }
 
 func (b *EntMutationBuilder) GetPlaceholderID() string {
@@ -66,6 +70,7 @@ func (b *EntMutationBuilder) addEdge(edge *ent.EdgeOperation) {
 
 func (b *EntMutationBuilder) AddInboundEdge(
 	edgeType ent.EdgeType, id1 string, nodeType ent.NodeType, options ...func(*ent.EditedEdgeInfo)) error {
+	b.flagWrite()
 
 	b.addEdge(
 		ent.NewInboundEdge(
@@ -82,7 +87,7 @@ func (b *EntMutationBuilder) AddInboundEdge(
 }
 
 func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType, options ...func(*ent.EditedEdgeInfo)) error {
-	// TODO figure out what I was tryign to do here...
+	// TODO figure out what I was trying to do here...
 	// for _, edge := range b.edges {
 	// 	if edge.EdgeType == edgeType && edge.ID2 == id2 && nodeType == edge.ID2Type {
 	// 		// already been added ignore for now
@@ -90,7 +95,7 @@ func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, 
 	// 		return nil
 	// 	}
 	// }
-
+	b.flagWrite()
 	b.addEdge(
 		ent.NewOutboundEdge(
 			edgeType,
@@ -106,6 +111,7 @@ func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, 
 }
 
 func (b *EntMutationBuilder) RemoveInboundEdge(edgeType ent.EdgeType, id1 string, nodeType ent.NodeType) error {
+	b.flagWrite()
 	if b.ExistingEntity == nil {
 		return errors.New("invalid cannot remove edge when there's no existing ent")
 	}
@@ -123,6 +129,7 @@ func (b *EntMutationBuilder) RemoveInboundEdge(edgeType ent.EdgeType, id1 string
 }
 
 func (b *EntMutationBuilder) RemoveOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType) error {
+	b.flagWrite()
 	if b.ExistingEntity == nil {
 		return errors.New("invalid cannot remove edge when there's no existing ent")
 	}
@@ -142,6 +149,12 @@ func (b *EntMutationBuilder) RemoveOutboundEdge(edgeType ent.EdgeType, id2 strin
 }
 
 func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, error) {
+	// should not be able to get a changeset for an invlid builder
+	if !b.validated {
+		if err := b.Validate(); err != nil {
+			return nil, err
+		}
+	}
 	edgeData, err := b.loadEdges()
 	if err != nil {
 		return nil, err
@@ -154,18 +167,22 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 			EntConfig:   b.EntConfig,
 		})
 	} else {
-		info := &ent.EditedNodeInfo{
-			ExistingEnt:    b.ExistingEntity,
-			Entity:         entity,
-			EntConfig:      b.EntConfig,
-			Fields:         b.fields,
-			EditableFields: getFieldMapFromFields(b.fields),
-			// TODO this needs to be removed because if we get here it's confirmed good since it's coming from changeset
+		// take the fields and convert to db format!
+		fields := make(map[string]interface{})
+		for fieldName, value := range b.fields {
+			fieldInfo, ok := b.FieldMap[fieldName]
+			if !ok {
+				return nil, fmt.Errorf("invalid field %s passed ", fieldName)
+			}
+			fields[fieldInfo.DB] = value
 		}
 		ops = append(ops,
-			&ent.NodeWithActionMapOperation{
-				info,
-				b.Operation,
+			&ent.EditNodeOperation{
+				ExistingEnt: b.ExistingEntity,
+				Entity:      entity,
+				EntConfig:   b.EntConfig,
+				Fields:      fields,
+				Operation:   b.Operation,
 			},
 		)
 	}
@@ -192,16 +209,22 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 			placeholderId: b.GetPlaceholderID(),
 			ops:           ops,
 		},
-		placeholderId: b.GetPlaceholderID(),
+		placeholderID: b.GetPlaceholderID(),
 		existingEnt:   b.ExistingEntity,
 		entConfig:     b.EntConfig,
 	}, nil
 }
 
-func (b *EntMutationBuilder) ValidateFieldMap(fieldMap ent.ActionFieldMap) error {
+func (b *EntMutationBuilder) Validate() error {
+	if b.validated {
+		return nil
+	}
+	if b.FieldMap == nil && b.fields != nil {
+		return errors.New("MutationBuilder has no fieldMap")
+	}
 	var errors []*ent.ActionErrorInfo
 
-	for fieldName, item := range fieldMap {
+	for fieldName, item := range b.FieldMap {
 		_, ok := b.fields[fieldName]
 
 		// won't work because we have the wrong names in the setters right now
@@ -213,12 +236,18 @@ func (b *EntMutationBuilder) ValidateFieldMap(fieldMap ent.ActionFieldMap) error
 	}
 
 	if len(errors) == 0 {
+		b.validated = true
 		return nil
 	}
 	return &ent.ActionValidationError{
 		Errors:     errors,
 		ActionName: "TODO",
 	}
+}
+
+// TODO kill this eventually
+func (b *EntMutationBuilder) GetFields() map[string]interface{} {
+	return b.fields
 }
 
 func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, error) {
@@ -254,49 +283,4 @@ func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, e
 	}
 
 	return edges, nil
-}
-
-type EntMutationChangeset struct {
-	viewer        viewer.ViewerContext
-	entity        ent.Entity
-	executor      ent.Executor
-	fields        map[string]interface{}
-	placeholderId string
-	existingEnt   ent.Entity
-	entConfig     ent.Config
-}
-
-func (c *EntMutationChangeset) GetExecutor() ent.Executor {
-	return c.executor
-}
-
-func (c *EntMutationChangeset) GetPlaceholderID() string {
-	return c.placeholderId
-}
-
-func (c *EntMutationChangeset) ExistingEnt() ent.Entity {
-	return c.existingEnt
-}
-
-func (c *EntMutationChangeset) EntConfig() ent.Config {
-	return c.entConfig
-}
-
-func (c *EntMutationChangeset) GetViewer() viewer.ViewerContext {
-	return c.viewer
-}
-
-func (c *EntMutationChangeset) Entity() ent.Entity {
-	return c.entity
-}
-
-func getFieldMapFromFields(fields map[string]interface{}) ent.ActionFieldMap {
-	ret := make(ent.ActionFieldMap)
-	for k := range fields {
-		ret[k] = &ent.MutatingFieldInfo{
-			DB:       strcase.ToSnake(k),
-			Required: true,
-		}
-	}
-	return ret
 }

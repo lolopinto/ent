@@ -28,13 +28,15 @@ func CreateUserFromContext(ctx context.Context) *CreateUserAction {
 
 // CreateUser is the factory method to get an ...
 func CreateUser(viewer viewer.ViewerContext) *CreateUserAction {
-	return &CreateUserAction{
-		builder: &actions.EntMutationBuilder{
-			Viewer:    viewer,
-			EntConfig: &configs.UserConfig{},
-			Operation: ent.InsertOperation,
-		},
+	builder := &actions.EntMutationBuilder{
+		Viewer:    viewer,
+		EntConfig: &configs.UserConfig{},
+		Operation: ent.InsertOperation,
 	}
+	action := &CreateUserAction{}
+	builder.FieldMap = action.getFieldMap()
+	action.builder = builder
+	return action
 }
 
 func (action *CreateUserAction) GetViewer() viewer.ViewerContext {
@@ -68,8 +70,8 @@ func (action *CreateUserAction) SetLastName(lastName string) *CreateUserAction {
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *CreateUserAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{
+func (action *CreateUserAction) getFieldMap() ent.MutationFieldMap {
+	return ent.MutationFieldMap{
 		"EmailAddress": &ent.MutatingFieldInfo{
 			DB:       "email_address",
 			Required: true,
@@ -85,8 +87,9 @@ func (action *CreateUserAction) getFieldMap() ent.ActionFieldMap {
 	}
 }
 
+// Validate returns an error if the current state of the action is not valid
 func (action *CreateUserAction) Validate() error {
-	return action.builder.ValidateFieldMap(action.getFieldMap())
+	return action.builder.Validate()
 }
 
 // Save is the method called to execute this action and save change

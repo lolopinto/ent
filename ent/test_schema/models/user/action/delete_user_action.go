@@ -27,14 +27,16 @@ func DeleteUserFromContext(ctx context.Context, user *models.User) *DeleteUserAc
 
 // DeleteUser is the factory method to get an ...
 func DeleteUser(viewer viewer.ViewerContext, user *models.User) *DeleteUserAction {
-	return &DeleteUserAction{
-		builder: &actions.EntMutationBuilder{
-			Viewer:         viewer,
-			EntConfig:      &configs.UserConfig{},
-			Operation:      ent.DeleteOperation,
-			ExistingEntity: user,
-		},
+	builder := &actions.EntMutationBuilder{
+		Viewer:         viewer,
+		EntConfig:      &configs.UserConfig{},
+		Operation:      ent.DeleteOperation,
+		ExistingEntity: user,
 	}
+	action := &DeleteUserAction{}
+	builder.FieldMap = action.getFieldMap()
+	action.builder = builder
+	return action
 }
 
 func (action *DeleteUserAction) GetViewer() viewer.ViewerContext {
@@ -50,12 +52,13 @@ func (action *DeleteUserAction) Entity() ent.Entity {
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *DeleteUserAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
+func (action *DeleteUserAction) getFieldMap() ent.MutationFieldMap {
+	return ent.MutationFieldMap{}
 }
 
+// Validate returns an error if the current state of the action is not valid
 func (action *DeleteUserAction) Validate() error {
-	return action.builder.ValidateFieldMap(action.getFieldMap())
+	return action.builder.Validate()
 }
 
 // Save is the method called to execute this action and save change
