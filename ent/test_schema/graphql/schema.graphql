@@ -21,8 +21,10 @@ interface Edge {
 
 type Event implements Node {
     attending: [User!]!
+    creator: [User!]!
     declined: [User!]!
     endTime: Time!
+    hosts: [User!]!
     id: ID!
     invited: [User!]!
     location: String!

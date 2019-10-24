@@ -197,9 +197,13 @@ func GetDefaultUserBuilder(email string) *actions.EntMutationBuilder {
 }
 
 func GetDefaultEventFields(user *models.User) map[string]interface{} {
+	return GetDefaultEventFieldsUserID(user.ID)
+}
+
+func GetDefaultEventFieldsUserID(userID string) map[string]interface{} {
 	return map[string]interface{}{
 		"Name":      "Fun event",
-		"UserID":    user.ID,
+		"UserID":    userID,
 		"StartTime": time.Now(),
 		"EndTime":   time.Now().Add(time.Hour * 24 * 3),
 		"Location":  "fun location!",

@@ -29,9 +29,30 @@ func (err *ActionPermissionsError) Error() string {
 	return "viewer cannot perform the action"
 }
 
+type Trigger interface {
+	GetChangeset() (ent.Changeset, error)
+}
+
+type ActionWithTriggers interface {
+	Action
+	// TODO we need a dependency graph so this needs to be more complicated ASAP
+	GetTriggers() []Trigger
+	SetBuilderOnTriggers([]Trigger) error
+}
+
 func Save(action Action) error {
 	if actionWithPerms, ok := action.(ActionWithPermissions); ok {
 		if err := applyActionPermissions(actionWithPerms); err != nil {
+			return err
+		}
+	}
+
+	// permissions first check!
+	// then triggers
+	// then validate state
+	// then changeset which runs the whole damn thing
+	if actionWithTriggers, ok := action.(ActionWithTriggers); ok {
+		if err := setBuilderOnTriggers(actionWithTriggers); err != nil {
 			return err
 		}
 	}
@@ -42,7 +63,7 @@ func Save(action Action) error {
 		}
 	}
 
-	// TODO observers and triggers
+	// TODO observers
 	// TODO this will return a builder and triggers will return a builder instead of this
 	// so everything will be handled in here as opposed to having PerformAction be callable on its own
 	// triggers and dependencies!
@@ -63,4 +84,8 @@ func applyActionPermissions(action ActionWithPermissions) error {
 		return err
 	}
 	return nil
+}
+
+func setBuilderOnTriggers(action ActionWithTriggers) error {
+	return action.SetBuilderOnTriggers(action.GetTriggers())
 }

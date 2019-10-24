@@ -81,7 +81,6 @@ type MutationBuilder interface {
 	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions
 	ExistingEnt() Entity
 	GetPlaceholderID() string
-	//Entity() Entity // expected to be null for create operations. entity being mutated
 	GetViewer() viewer.ViewerContext
 	GetChangeset(Entity) (Changeset, error)
 	GetOperation() WriteOperation

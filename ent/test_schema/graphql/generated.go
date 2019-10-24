@@ -59,8 +59,10 @@ type ComplexityRoot struct {
 
 	Event struct {
 		Attending        func(childComplexity int) int
+		Creator          func(childComplexity int) int
 		Declined         func(childComplexity int) int
 		EndTime          func(childComplexity int) int
+		Hosts            func(childComplexity int) int
 		ID               func(childComplexity int) int
 		Invited          func(childComplexity int) int
 		Location         func(childComplexity int) int
@@ -142,7 +144,10 @@ type ContactResolver interface {
 }
 type EventResolver interface {
 	Attending(ctx context.Context, obj *models.Event) ([]*models.User, error)
+	Creator(ctx context.Context, obj *models.Event) ([]*models.User, error)
 	Declined(ctx context.Context, obj *models.Event) ([]*models.User, error)
+
+	Hosts(ctx context.Context, obj *models.Event) ([]*models.User, error)
 
 	Invited(ctx context.Context, obj *models.Event) ([]*models.User, error)
 
@@ -238,6 +243,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Event.Attending(childComplexity), true
 
+	case "Event.creator":
+		if e.complexity.Event.Creator == nil {
+			break
+		}
+
+		return e.complexity.Event.Creator(childComplexity), true
+
 	case "Event.declined":
 		if e.complexity.Event.Declined == nil {
 			break
@@ -251,6 +263,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Event.EndTime(childComplexity), true
+
+	case "Event.hosts":
+		if e.complexity.Event.Hosts == nil {
+			break
+		}
+
+		return e.complexity.Event.Hosts(childComplexity), true
 
 	case "Event.id":
 		if e.complexity.Event.ID == nil {
@@ -636,8 +655,10 @@ interface Edge {
 
 type Event implements Node {
     attending: [User!]!
+    creator: [User!]!
     declined: [User!]!
     endTime: Time!
+    hosts: [User!]!
     id: ID!
     invited: [User!]!
     location: String!
@@ -1181,6 +1202,43 @@ func (ec *executionContext) _Event_attending(ctx context.Context, field graphql.
 	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Event_creator(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Event",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Event().Creator(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Event_declined(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -1253,6 +1311,43 @@ func (ec *executionContext) _Event_endTime(ctx context.Context, field graphql.Co
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Event_hosts(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Event",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Event().Hosts(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Event_id(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
@@ -4130,6 +4225,20 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 				}
 				return res
 			})
+		case "creator":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Event_creator(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "declined":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -4149,6 +4258,20 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "hosts":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Event_hosts(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "id":
 			out.Values[i] = ec._Event_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

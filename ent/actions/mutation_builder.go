@@ -24,6 +24,8 @@ type EntMutationBuilder struct {
 	edgeTypes     map[ent.EdgeType]bool
 	placeholderID string
 	validated     bool
+	triggers      []Trigger
+	sync.RWMutex
 }
 
 func (b *EntMutationBuilder) flagWrite() {
@@ -57,21 +59,19 @@ func (b *EntMutationBuilder) GetOperation() ent.WriteOperation {
 	return b.Operation
 }
 
-func (b *EntMutationBuilder) addEdgeType(edgeType ent.EdgeType) {
+func (b *EntMutationBuilder) addEdge(edge *ent.EdgeOperation) {
+	b.Lock()
+	defer b.Unlock()
+	b.flagWrite()
+	b.edges = append(b.edges, edge)
 	if b.edgeTypes == nil {
 		b.edgeTypes = make(map[ent.EdgeType]bool)
 	}
-	b.edgeTypes[edgeType] = true
-}
-
-func (b *EntMutationBuilder) addEdge(edge *ent.EdgeOperation) {
-	b.edges = append(b.edges, edge)
+	b.edgeTypes[edge.EdgeType()] = true
 }
 
 func (b *EntMutationBuilder) AddInboundEdge(
 	edgeType ent.EdgeType, id1 string, nodeType ent.NodeType, options ...func(*ent.EdgeOperation)) error {
-	b.flagWrite()
-
 	b.addEdge(
 		ent.NewInboundEdge(
 			edgeType,
@@ -82,7 +82,6 @@ func (b *EntMutationBuilder) AddInboundEdge(
 			options...,
 		),
 	)
-	b.addEdgeType(edgeType)
 	return nil
 }
 
@@ -95,7 +94,6 @@ func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, 
 	// 		return nil
 	// 	}
 	// }
-	b.flagWrite()
 	b.addEdge(
 		ent.NewOutboundEdge(
 			edgeType,
@@ -106,12 +104,10 @@ func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, 
 			options...,
 		),
 	)
-	b.addEdgeType(edgeType)
 	return nil
 }
 
 func (b *EntMutationBuilder) RemoveInboundEdge(edgeType ent.EdgeType, id1 string, nodeType ent.NodeType) error {
-	b.flagWrite()
 	if b.ExistingEntity == nil {
 		return errors.New("invalid cannot remove edge when there's no existing ent")
 	}
@@ -124,12 +120,10 @@ func (b *EntMutationBuilder) RemoveInboundEdge(edgeType ent.EdgeType, id1 string
 			b,
 		),
 	)
-	b.addEdgeType(edgeType)
 	return nil
 }
 
 func (b *EntMutationBuilder) RemoveOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType) error {
-	b.flagWrite()
 	if b.ExistingEntity == nil {
 		return errors.New("invalid cannot remove edge when there's no existing ent")
 	}
@@ -144,17 +138,60 @@ func (b *EntMutationBuilder) RemoveOutboundEdge(edgeType ent.EdgeType, id2 strin
 		),
 	)
 
-	b.addEdgeType(edgeType)
+	return nil
+}
+
+func (b *EntMutationBuilder) SetTriggers(triggers []Trigger) {
+	b.triggers = triggers
+}
+
+func (b *EntMutationBuilder) runTriggers() error {
+	// nothing to do here
+	if len(b.triggers) == 0 {
+		return nil
+	}
+
+	var errs []error
+	var changesets []ent.Changeset
+
+	var wg sync.WaitGroup
+	wg.Add(len(b.triggers))
+	for idx := range b.triggers {
+		i := idx
+		trigger := b.triggers[i]
+		f := func(i int) {
+			defer wg.Done()
+			c, err := trigger.GetChangeset()
+			if err != nil {
+				errs = append(errs, err)
+			}
+			if c != nil {
+				changesets = append(changesets, c)
+			}
+		}
+		go f(i)
+	}
+	wg.Wait()
+	if len(errs) != 0 {
+		// TODO we need the list of errors abstraction
+		return errs[0]
+	}
+	// TODO handle extra changesets. for now, ignore
 	return nil
 }
 
 func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, error) {
+	//	debug.PrintStack()
+	b.runTriggers()
+
 	// should not be able to get a changeset for an invlid builder
 	if !b.validated {
+		// soulds like validate() needs to call runTriggers also...
 		if err := b.Validate(); err != nil {
 			return nil, err
 		}
 	}
+
 	edgeData, err := b.loadEdges()
 	if err != nil {
 		return nil, err
@@ -186,7 +223,8 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 			},
 		)
 	}
-	for _, edge := range b.edges {
+	edges := b.edges
+	for _, edge := range edges {
 		ops = append(ops, edge)
 		edgeInfo := edgeData[edge.EdgeType()]
 

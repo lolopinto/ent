@@ -39,8 +39,16 @@ func (r *eventResolver) Attending(ctx context.Context, obj *models.Event) ([]*mo
 	return obj.LoadAttending()
 }
 
+func (r *eventResolver) Creator(ctx context.Context, obj *models.Event) ([]*models.User, error) {
+	return obj.LoadCreator()
+}
+
 func (r *eventResolver) Declined(ctx context.Context, obj *models.Event) ([]*models.User, error) {
 	return obj.LoadDeclined()
+}
+
+func (r *eventResolver) Hosts(ctx context.Context, obj *models.Event) ([]*models.User, error) {
+	return obj.LoadHosts()
 }
 
 func (r *eventResolver) Invited(ctx context.Context, obj *models.Event) ([]*models.User, error) {
