@@ -8,9 +8,9 @@ import (
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 
-	"github.com/lolopinto/ent/ent/test_schema/models"
-	"github.com/lolopinto/ent/ent/test_schema/models/configs"
-	"github.com/lolopinto/ent/ent/test_schema/models/user/action"
+	"github.com/lolopinto/ent/internal/test_schema/models"
+	"github.com/lolopinto/ent/internal/test_schema/models/configs"
+	"github.com/lolopinto/ent/internal/test_schema/models/user/action"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"

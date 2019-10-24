@@ -5,8 +5,8 @@ package graphql
 import (
 	"context"
 
-	"github.com/lolopinto/ent/ent/test_schema/models"
-	"github.com/lolopinto/ent/ent/test_schema/models/user/action"
+	"github.com/lolopinto/ent/internal/test_schema/models"
+	"github.com/lolopinto/ent/internal/test_schema/models/user/action"
 )
 
 type Resolver struct{}

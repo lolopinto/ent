@@ -7,8 +7,8 @@ import (
 
 	"github.com/99designs/gqlgen/handler"
 	"github.com/gorilla/mux"
-	"github.com/lolopinto/ent/ent/test_schema/graphql"
 	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/internal/test_schema/graphql"
 )
 
 const defaultPort = "8080"

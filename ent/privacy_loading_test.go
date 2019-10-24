@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/ent/test_schema/models"
-	"github.com/lolopinto/ent/ent/test_schema/models/configs"
+	"github.com/lolopinto/ent/internal/test_schema/models"
+	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	entreflect "github.com/lolopinto/ent/internal/reflect"

@@ -5,7 +5,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/ent/test_schema/models"
+	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/stretchr/testify/assert"
 )
 

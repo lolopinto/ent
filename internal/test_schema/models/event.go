@@ -12,7 +12,7 @@ import (
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/viewer"
 
-	"github.com/lolopinto/ent/ent/test_schema/models/configs"
+	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 )
 
 type EventRsvpStatus string

@@ -7,7 +7,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/lolopinto/ent/ent/test_schema/models"
+	"github.com/lolopinto/ent/internal/test_schema/models"
 )
 
 type Connection interface {

@@ -14,7 +14,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/lolopinto/ent/ent/test_schema/models"
+	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
 )
@@ -786,7 +786,7 @@ func (ec *executionContext) field_Mutation_userAddFriends_args(ctx context.Conte
 	args := map[string]interface{}{}
 	var arg0 UserAddFriendsInput
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNUserAddFriendsInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserAddFriendsInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUserAddFriendsInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFriendsInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -800,7 +800,7 @@ func (ec *executionContext) field_Mutation_userCreate_args(ctx context.Context, 
 	args := map[string]interface{}{}
 	var arg0 UserCreateInput
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNUserCreateInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserCreateInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUserCreateInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserCreateInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -814,7 +814,7 @@ func (ec *executionContext) field_Mutation_userDelete_args(ctx context.Context, 
 	args := map[string]interface{}{}
 	var arg0 UserDeleteInput
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNUserDeleteInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserDeleteInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUserDeleteInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserDeleteInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -828,7 +828,7 @@ func (ec *executionContext) field_Mutation_userEdit_args(ctx context.Context, ra
 	args := map[string]interface{}{}
 	var arg0 UserEditInput
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNUserEditInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserEditInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUserEditInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserEditInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -842,7 +842,7 @@ func (ec *executionContext) field_Mutation_userRemoveFamilyMembers_args(ctx cont
 	args := map[string]interface{}{}
 	var arg0 UserRemoveFamilyMembersInput
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNUserRemoveFamilyMembersInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUserRemoveFamilyMembersInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -977,7 +977,7 @@ func (ec *executionContext) _Contact_allowList(ctx context.Context, field graphq
 	res := resTmp.([]*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Contact_emailAddress(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
@@ -1199,7 +1199,7 @@ func (ec *executionContext) _Event_attending(ctx context.Context, field graphql.
 	res := resTmp.([]*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Event_creator(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
@@ -1236,7 +1236,7 @@ func (ec *executionContext) _Event_creator(ctx context.Context, field graphql.Co
 	res := resTmp.([]*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Event_declined(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
@@ -1273,7 +1273,7 @@ func (ec *executionContext) _Event_declined(ctx context.Context, field graphql.C
 	res := resTmp.([]*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Event_endTime(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
@@ -1347,7 +1347,7 @@ func (ec *executionContext) _Event_hosts(ctx context.Context, field graphql.Coll
 	res := resTmp.([]*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Event_id(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
@@ -1421,7 +1421,7 @@ func (ec *executionContext) _Event_invited(ctx context.Context, field graphql.Co
 	res := resTmp.([]*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Event_location(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
@@ -1566,7 +1566,7 @@ func (ec *executionContext) _Event_user(ctx context.Context, field graphql.Colle
 	res := resTmp.(*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Event_viewerRsvpStatus(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
@@ -1600,7 +1600,7 @@ func (ec *executionContext) _Event_viewerRsvpStatus(ctx context.Context, field g
 	res := resTmp.(*EventRsvpStatus)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOEventRsvpStatus2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx, field.Selections, res)
+	return ec.marshalOEventRsvpStatus2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _EventsConnection_edges(ctx context.Context, field graphql.CollectedField, obj *EventsConnection) (ret graphql.Marshaler) {
@@ -1634,7 +1634,7 @@ func (ec *executionContext) _EventsConnection_edges(ctx context.Context, field g
 	res := resTmp.([]*EventsEdge)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOEventsEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx, field.Selections, res)
+	return ec.marshalOEventsEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _EventsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *EventsConnection) (ret graphql.Marshaler) {
@@ -1668,7 +1668,7 @@ func (ec *executionContext) _EventsConnection_nodes(ctx context.Context, field g
 	res := resTmp.([]*models.Event)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
+	return ec.marshalOEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _EventsEdge_node(ctx context.Context, field graphql.CollectedField, obj *EventsEdge) (ret graphql.Marshaler) {
@@ -1705,7 +1705,7 @@ func (ec *executionContext) _EventsEdge_node(ctx context.Context, field graphql.
 	res := resTmp.(*models.Event)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
+	return ec.marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_userAddFriends(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1746,7 +1746,7 @@ func (ec *executionContext) _Mutation_userAddFriends(ctx context.Context, field 
 	res := resTmp.(*UserAddFriendsResponse)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUserAddFriendsResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserAddFriendsResponse(ctx, field.Selections, res)
+	return ec.marshalOUserAddFriendsResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFriendsResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_userCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1787,7 +1787,7 @@ func (ec *executionContext) _Mutation_userCreate(ctx context.Context, field grap
 	res := resTmp.(*UserCreateResponse)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUserCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserCreateResponse(ctx, field.Selections, res)
+	return ec.marshalOUserCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserCreateResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_userDelete(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1828,7 +1828,7 @@ func (ec *executionContext) _Mutation_userDelete(ctx context.Context, field grap
 	res := resTmp.(*UserDeleteResponse)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUserDeleteResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserDeleteResponse(ctx, field.Selections, res)
+	return ec.marshalOUserDeleteResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserDeleteResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_userEdit(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1869,7 +1869,7 @@ func (ec *executionContext) _Mutation_userEdit(ctx context.Context, field graphq
 	res := resTmp.(*UserEditResponse)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUserEditResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserEditResponse(ctx, field.Selections, res)
+	return ec.marshalOUserEditResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserEditResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_userRemoveFamilyMembers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1910,7 +1910,7 @@ func (ec *executionContext) _Mutation_userRemoveFamilyMembers(ctx context.Contex
 	res := resTmp.(*UserRemoveFamilyMembersResponse)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUserRemoveFamilyMembersResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersResponse(ctx, field.Selections, res)
+	return ec.marshalOUserRemoveFamilyMembersResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_contact(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1951,7 +1951,7 @@ func (ec *executionContext) _Query_contact(ctx context.Context, field graphql.Co
 	res := resTmp.(*models.Contact)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐContact(ctx, field.Selections, res)
+	return ec.marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_event(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1992,7 +1992,7 @@ func (ec *executionContext) _Query_event(ctx context.Context, field graphql.Coll
 	res := resTmp.(*models.Event)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
+	return ec.marshalOEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2033,7 +2033,7 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	res := resTmp.(*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2145,7 +2145,7 @@ func (ec *executionContext) _User_contacts(ctx context.Context, field graphql.Co
 	res := resTmp.([]*models.Contact)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNContact2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐContact(ctx, field.Selections, res)
+	return ec.marshalNContact2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_declinedEvents(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -2182,7 +2182,7 @@ func (ec *executionContext) _User_declinedEvents(ctx context.Context, field grap
 	res := resTmp.([]*models.Event)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
+	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_emailAddress(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -2256,7 +2256,7 @@ func (ec *executionContext) _User_events(ctx context.Context, field graphql.Coll
 	res := resTmp.([]*models.Event)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
+	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_eventsAttending(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -2293,7 +2293,7 @@ func (ec *executionContext) _User_eventsAttending(ctx context.Context, field gra
 	res := resTmp.([]*models.Event)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
+	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_familyMembers(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -2330,7 +2330,7 @@ func (ec *executionContext) _User_familyMembers(ctx context.Context, field graph
 	res := resTmp.([]*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_firstName(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -2404,7 +2404,7 @@ func (ec *executionContext) _User_friends(ctx context.Context, field graphql.Col
 	res := resTmp.([]*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -2478,7 +2478,7 @@ func (ec *executionContext) _User_invitedEvents(ctx context.Context, field graph
 	res := resTmp.([]*models.Event)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
+	return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_lastName(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -2549,7 +2549,7 @@ func (ec *executionContext) _UserAddFriendsResponse_user(ctx context.Context, fi
 	res := resTmp.(*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UserCreateResponse_user(ctx context.Context, field graphql.CollectedField, obj *UserCreateResponse) (ret graphql.Marshaler) {
@@ -2583,7 +2583,7 @@ func (ec *executionContext) _UserCreateResponse_user(ctx context.Context, field 
 	res := resTmp.(*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UserDeleteResponse_deletedUserId(ctx context.Context, field graphql.CollectedField, obj *UserDeleteResponse) (ret graphql.Marshaler) {
@@ -2651,7 +2651,7 @@ func (ec *executionContext) _UserEditResponse_user(ctx context.Context, field gr
 	res := resTmp.(*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UserRemoveFamilyMembersResponse_user(ctx context.Context, field graphql.CollectedField, obj *UserRemoveFamilyMembersResponse) (ret graphql.Marshaler) {
@@ -2685,7 +2685,7 @@ func (ec *executionContext) _UserRemoveFamilyMembersResponse_user(ctx context.Co
 	res := resTmp.(*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UsersConnection_edges(ctx context.Context, field graphql.CollectedField, obj *UsersConnection) (ret graphql.Marshaler) {
@@ -2719,7 +2719,7 @@ func (ec *executionContext) _UsersConnection_edges(ctx context.Context, field gr
 	res := resTmp.([]*UsersEdge)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUsersEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx, field.Selections, res)
+	return ec.marshalOUsersEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UsersConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *UsersConnection) (ret graphql.Marshaler) {
@@ -2753,7 +2753,7 @@ func (ec *executionContext) _UsersConnection_nodes(ctx context.Context, field gr
 	res := resTmp.([]*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UsersEdge_node(ctx context.Context, field graphql.CollectedField, obj *UsersEdge) (ret graphql.Marshaler) {
@@ -2790,7 +2790,7 @@ func (ec *executionContext) _UsersEdge_node(ctx context.Context, field graphql.C
 	res := resTmp.(*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -5063,11 +5063,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNContact2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐContact(ctx context.Context, sel ast.SelectionSet, v models.Contact) graphql.Marshaler {
+func (ec *executionContext) marshalNContact2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx context.Context, sel ast.SelectionSet, v models.Contact) graphql.Marshaler {
 	return ec._Contact(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNContact2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐContact(ctx context.Context, sel ast.SelectionSet, v []*models.Contact) graphql.Marshaler {
+func (ec *executionContext) marshalNContact2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx context.Context, sel ast.SelectionSet, v []*models.Contact) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5091,7 +5091,7 @@ func (ec *executionContext) marshalNContact2ᚕᚖgithubᚗcomᚋlolopintoᚋent
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐContact(ctx, sel, v[i])
+			ret[i] = ec.marshalNContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5104,7 +5104,7 @@ func (ec *executionContext) marshalNContact2ᚕᚖgithubᚗcomᚋlolopintoᚋent
 	return ret
 }
 
-func (ec *executionContext) marshalNContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐContact(ctx context.Context, sel ast.SelectionSet, v *models.Contact) graphql.Marshaler {
+func (ec *executionContext) marshalNContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx context.Context, sel ast.SelectionSet, v *models.Contact) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5114,11 +5114,11 @@ func (ec *executionContext) marshalNContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋ
 	return ec._Contact(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNEvent2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v models.Event) graphql.Marshaler {
+func (ec *executionContext) marshalNEvent2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v models.Event) graphql.Marshaler {
 	return ec._Event(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v []*models.Event) graphql.Marshaler {
+func (ec *executionContext) marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v []*models.Event) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5142,7 +5142,7 @@ func (ec *executionContext) marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋent�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx, sel, v[i])
+			ret[i] = ec.marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5155,7 +5155,7 @@ func (ec *executionContext) marshalNEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋent�
 	return ret
 }
 
-func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v *models.Event) graphql.Marshaler {
+func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v *models.Event) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5165,11 +5165,11 @@ func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋen
 	return ec._Event(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNEventsEdge2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx context.Context, sel ast.SelectionSet, v EventsEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNEventsEdge2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx context.Context, sel ast.SelectionSet, v EventsEdge) graphql.Marshaler {
 	return ec._EventsEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNEventsEdge2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx context.Context, sel ast.SelectionSet, v *EventsEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNEventsEdge2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx context.Context, sel ast.SelectionSet, v *EventsEdge) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5221,11 +5221,11 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 	return res
 }
 
-func (ec *executionContext) marshalNUser2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v []*models.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v []*models.User) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5249,7 +5249,7 @@ func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, sel, v[i])
+			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5262,7 +5262,7 @@ func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v *models.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v *models.User) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5272,31 +5272,31 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋent
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNUserAddFriendsInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserAddFriendsInput(ctx context.Context, v interface{}) (UserAddFriendsInput, error) {
+func (ec *executionContext) unmarshalNUserAddFriendsInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFriendsInput(ctx context.Context, v interface{}) (UserAddFriendsInput, error) {
 	return ec.unmarshalInputUserAddFriendsInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNUserCreateInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserCreateInput(ctx context.Context, v interface{}) (UserCreateInput, error) {
+func (ec *executionContext) unmarshalNUserCreateInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserCreateInput(ctx context.Context, v interface{}) (UserCreateInput, error) {
 	return ec.unmarshalInputUserCreateInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNUserDeleteInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserDeleteInput(ctx context.Context, v interface{}) (UserDeleteInput, error) {
+func (ec *executionContext) unmarshalNUserDeleteInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserDeleteInput(ctx context.Context, v interface{}) (UserDeleteInput, error) {
 	return ec.unmarshalInputUserDeleteInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNUserEditInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserEditInput(ctx context.Context, v interface{}) (UserEditInput, error) {
+func (ec *executionContext) unmarshalNUserEditInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserEditInput(ctx context.Context, v interface{}) (UserEditInput, error) {
 	return ec.unmarshalInputUserEditInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNUserRemoveFamilyMembersInput2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersInput(ctx context.Context, v interface{}) (UserRemoveFamilyMembersInput, error) {
+func (ec *executionContext) unmarshalNUserRemoveFamilyMembersInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersInput(ctx context.Context, v interface{}) (UserRemoveFamilyMembersInput, error) {
 	return ec.unmarshalInputUserRemoveFamilyMembersInput(ctx, v)
 }
 
-func (ec *executionContext) marshalNUsersEdge2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx context.Context, sel ast.SelectionSet, v UsersEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNUsersEdge2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx context.Context, sel ast.SelectionSet, v UsersEdge) graphql.Marshaler {
 	return ec._UsersEdge(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUsersEdge2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx context.Context, sel ast.SelectionSet, v *UsersEdge) graphql.Marshaler {
+func (ec *executionContext) marshalNUsersEdge2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx context.Context, sel ast.SelectionSet, v *UsersEdge) graphql.Marshaler {
 	if v == nil {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5555,22 +5555,22 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
-func (ec *executionContext) marshalOContact2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐContact(ctx context.Context, sel ast.SelectionSet, v models.Contact) graphql.Marshaler {
+func (ec *executionContext) marshalOContact2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx context.Context, sel ast.SelectionSet, v models.Contact) graphql.Marshaler {
 	return ec._Contact(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐContact(ctx context.Context, sel ast.SelectionSet, v *models.Contact) graphql.Marshaler {
+func (ec *executionContext) marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx context.Context, sel ast.SelectionSet, v *models.Contact) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Contact(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOEvent2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v models.Event) graphql.Marshaler {
+func (ec *executionContext) marshalOEvent2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v models.Event) graphql.Marshaler {
 	return ec._Event(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v []*models.Event) graphql.Marshaler {
+func (ec *executionContext) marshalOEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v []*models.Event) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -5597,7 +5597,7 @@ func (ec *executionContext) marshalOEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋent�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx, sel, v[i])
+			ret[i] = ec.marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5610,38 +5610,38 @@ func (ec *executionContext) marshalOEvent2ᚕᚖgithubᚗcomᚋlolopintoᚋent�
 	return ret
 }
 
-func (ec *executionContext) marshalOEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v *models.Event) graphql.Marshaler {
+func (ec *executionContext) marshalOEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v *models.Event) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Event(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOEventRsvpStatus2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx context.Context, v interface{}) (EventRsvpStatus, error) {
+func (ec *executionContext) unmarshalOEventRsvpStatus2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx context.Context, v interface{}) (EventRsvpStatus, error) {
 	var res EventRsvpStatus
 	return res, res.UnmarshalGQL(v)
 }
 
-func (ec *executionContext) marshalOEventRsvpStatus2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx context.Context, sel ast.SelectionSet, v EventRsvpStatus) graphql.Marshaler {
+func (ec *executionContext) marshalOEventRsvpStatus2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx context.Context, sel ast.SelectionSet, v EventRsvpStatus) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) unmarshalOEventRsvpStatus2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx context.Context, v interface{}) (*EventRsvpStatus, error) {
+func (ec *executionContext) unmarshalOEventRsvpStatus2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx context.Context, v interface{}) (*EventRsvpStatus, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOEventRsvpStatus2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx, v)
+	res, err := ec.unmarshalOEventRsvpStatus2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx, v)
 	return &res, err
 }
 
-func (ec *executionContext) marshalOEventRsvpStatus2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx context.Context, sel ast.SelectionSet, v *EventRsvpStatus) graphql.Marshaler {
+func (ec *executionContext) marshalOEventRsvpStatus2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx context.Context, sel ast.SelectionSet, v *EventRsvpStatus) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return v
 }
 
-func (ec *executionContext) marshalOEventsEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx context.Context, sel ast.SelectionSet, v []*EventsEdge) graphql.Marshaler {
+func (ec *executionContext) marshalOEventsEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx context.Context, sel ast.SelectionSet, v []*EventsEdge) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -5668,7 +5668,7 @@ func (ec *executionContext) marshalOEventsEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNEventsEdge2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalNEventsEdge2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5727,11 +5727,11 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return ec.marshalOString2string(ctx, sel, *v)
 }
 
-func (ec *executionContext) marshalOUser2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {
+func (ec *executionContext) marshalOUser2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v []*models.User) graphql.Marshaler {
+func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v []*models.User) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -5758,7 +5758,7 @@ func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx, sel, v[i])
+			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5771,69 +5771,69 @@ func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v *models.User) graphql.Marshaler {
+func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v *models.User) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOUserAddFriendsResponse2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserAddFriendsResponse(ctx context.Context, sel ast.SelectionSet, v UserAddFriendsResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOUserAddFriendsResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFriendsResponse(ctx context.Context, sel ast.SelectionSet, v UserAddFriendsResponse) graphql.Marshaler {
 	return ec._UserAddFriendsResponse(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOUserAddFriendsResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserAddFriendsResponse(ctx context.Context, sel ast.SelectionSet, v *UserAddFriendsResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOUserAddFriendsResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFriendsResponse(ctx context.Context, sel ast.SelectionSet, v *UserAddFriendsResponse) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._UserAddFriendsResponse(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOUserCreateResponse2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserCreateResponse(ctx context.Context, sel ast.SelectionSet, v UserCreateResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOUserCreateResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserCreateResponse(ctx context.Context, sel ast.SelectionSet, v UserCreateResponse) graphql.Marshaler {
 	return ec._UserCreateResponse(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOUserCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserCreateResponse(ctx context.Context, sel ast.SelectionSet, v *UserCreateResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOUserCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserCreateResponse(ctx context.Context, sel ast.SelectionSet, v *UserCreateResponse) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._UserCreateResponse(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOUserDeleteResponse2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserDeleteResponse(ctx context.Context, sel ast.SelectionSet, v UserDeleteResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOUserDeleteResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserDeleteResponse(ctx context.Context, sel ast.SelectionSet, v UserDeleteResponse) graphql.Marshaler {
 	return ec._UserDeleteResponse(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOUserDeleteResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserDeleteResponse(ctx context.Context, sel ast.SelectionSet, v *UserDeleteResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOUserDeleteResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserDeleteResponse(ctx context.Context, sel ast.SelectionSet, v *UserDeleteResponse) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._UserDeleteResponse(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOUserEditResponse2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserEditResponse(ctx context.Context, sel ast.SelectionSet, v UserEditResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOUserEditResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserEditResponse(ctx context.Context, sel ast.SelectionSet, v UserEditResponse) graphql.Marshaler {
 	return ec._UserEditResponse(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOUserEditResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserEditResponse(ctx context.Context, sel ast.SelectionSet, v *UserEditResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOUserEditResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserEditResponse(ctx context.Context, sel ast.SelectionSet, v *UserEditResponse) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._UserEditResponse(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOUserRemoveFamilyMembersResponse2githubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersResponse(ctx context.Context, sel ast.SelectionSet, v UserRemoveFamilyMembersResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOUserRemoveFamilyMembersResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersResponse(ctx context.Context, sel ast.SelectionSet, v UserRemoveFamilyMembersResponse) graphql.Marshaler {
 	return ec._UserRemoveFamilyMembersResponse(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOUserRemoveFamilyMembersResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersResponse(ctx context.Context, sel ast.SelectionSet, v *UserRemoveFamilyMembersResponse) graphql.Marshaler {
+func (ec *executionContext) marshalOUserRemoveFamilyMembersResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersResponse(ctx context.Context, sel ast.SelectionSet, v *UserRemoveFamilyMembersResponse) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._UserRemoveFamilyMembersResponse(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOUsersEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx context.Context, sel ast.SelectionSet, v []*UsersEdge) graphql.Marshaler {
+func (ec *executionContext) marshalOUsersEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx context.Context, sel ast.SelectionSet, v []*UsersEdge) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -5860,7 +5860,7 @@ func (ec *executionContext) marshalOUsersEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋe
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNUsersEdge2ᚖgithubᚗcomᚋlolopintoᚋentᚋentᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx, sel, v[i])
+			ret[i] = ec.marshalNUsersEdge2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
