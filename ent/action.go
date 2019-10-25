@@ -69,6 +69,16 @@ func (err *ActionValidationError) Error() string {
 	)
 }
 
+// TODO
+// this simplifies the changeset and MutationBuilder interfaces since there's a lot of overlap
+// instead of each of them having these things separately, they can have the same object that they return
+// type MutationInfo/ActionInfo interface {
+// 	ExistingEnt() Entity
+// 	EntConfig() Config // just in case...
+// 	GetViewer() viewer.ViewerContext
+// 	Entity() Entity
+// }
+
 type MutationBuilder interface {
 	// TODO this needs to be aware of validators
 	// triggers and observers
@@ -80,20 +90,31 @@ type MutationBuilder interface {
 	//	GetPlaceholderID() string
 	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions
 	ExistingEnt() Entity
-	GetPlaceholderID() string
+	GetPlaceholderID() string // TODO GetMutationID()?
 	GetViewer() viewer.ViewerContext
 	GetChangeset(Entity) (Changeset, error)
 	GetOperation() WriteOperation
 }
 
 type Changeset interface {
+	// This should be expected to be called multiple times easily.
 	GetExecutor() Executor
 	GetViewer() viewer.ViewerContext
 	Entity() Entity
+	// This should match the PlaceholderID of the MutationBuilder that produced this changeset
 	GetPlaceholderID() string
 	// keeping these 2 just in case...
 	ExistingEnt() Entity //existing ent // hmm we just need ID!
 	EntConfig() Config   // just in case...
+	//	Dependencies() []Changeset
+	//	CreateOperation() Changeset // the list
+}
+
+type MutationBuilderMap map[string]MutationBuilder
+
+type ChangesetWithDependencies interface {
+	Dependencies() MutationBuilderMap
+	Changesets() []Changeset
 }
 
 type Executor interface {
@@ -105,5 +126,10 @@ type Executor interface {
 	ResolveValue(interface{}) interface{}
 	CreatedEnt() Entity
 }
+
+// type ExecutorWithDependencies interface {
+// 	Changesets() []Changeset
+// 	Depend
+// }
 
 var AllOperations = errors.New("All operation dependencies ")

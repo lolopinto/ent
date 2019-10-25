@@ -4,13 +4,15 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
-	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
+	"github.com/lolopinto/ent/internal/test_schema/models"
+	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -36,6 +38,26 @@ func (a *eventAction) getChangeset(operation ent.WriteOperation, existingEnt ent
 
 type createEventAction struct {
 	eventAction
+}
+
+func eventCreateAction(
+	viewer viewer.ViewerContext,
+) *createEventAction {
+	b := &actions.EntMutationBuilder{
+		Viewer:         viewer,
+		ExistingEntity: nil,
+		Operation:      ent.InsertOperation,
+		EntConfig:      &configs.EventConfig{},
+	}
+	action := createEventAction{}
+	action.viewer = viewer
+	fields := testingutils.GetDefaultEventFieldsUserID(viewer.GetViewerID())
+	for k, v := range fields {
+		b.SetField(k, v)
+	}
+	action.builder = b
+
+	return &action
 }
 
 // this will be auto-generated for actions
@@ -113,35 +135,17 @@ func (suite *actionsTriggersSuite) SetupSuite() {
 		"events",
 		"event_creator_edges",
 		"event_hosts_edges",
+		"users",
+		"contacts",
 	}
 	suite.Suite.SetupSuite()
 }
 
-func createAction(
-	viewer viewer.ViewerContext,
-) *createEventAction {
-	b := &actions.EntMutationBuilder{
-		Viewer:         viewer,
-		ExistingEntity: nil,
-		Operation:      ent.InsertOperation,
-		EntConfig:      &configs.EventConfig{},
-	}
-	action := createEventAction{}
-	action.viewer = viewer
-	fields := testingutils.GetDefaultEventFieldsUserID(viewer.GetViewerID())
-	for k, v := range fields {
-		b.SetField(k, v)
-	}
-	action.builder = b
-
-	return &action
-}
-
-func (suite *actionsTriggersSuite) TestCreateTrigger() {
+func (suite *actionsTriggersSuite) TestAddEdgesInCreationTrigger() {
 	user := testingutils.CreateTestUser(suite.T())
 	testingutils.VerifyUserObj(suite.T(), user, user.EmailAddress)
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
-	action := createAction(v)
+	action := eventCreateAction(v)
 
 	err := actions.Save(action)
 	assert.Nil(suite.T(), err)
@@ -149,6 +153,31 @@ func (suite *actionsTriggersSuite) TestCreateTrigger() {
 	testingutils.VerifyEventObj(suite.T(), &action.event, user)
 	testingutils.VerifyEventToHostEdge(suite.T(), &action.event, user)
 	testingutils.VerifyEventToCreatorEdge(suite.T(), &action.event, user)
+}
+
+func (suite *actionsTriggersSuite) TestCreateDependentObjectInTrigger() {
+	action := userCreateAction(viewer.LoggedOutViewer())
+	action.firstName = "Ola"
+	action.lastName = "Okelola"
+	action.emailAddress = util.GenerateRandEmail()
+	err := actions.Save(action)
+	assert.Nil(suite.T(), err)
+
+	user := &action.user
+
+	spew.Dump(user)
+	testingutils.VerifyUserObj(suite.T(), &action.user, user.EmailAddress)
+
+	// reload user
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	assert.Nil(suite.T(), err)
+
+	contacts, err := reloadedUser.LoadContacts()
+	assert.Nil(suite.T(), err)
+	spew.Dump(contacts)
+	assert.Len(suite.T(), contacts, 1)
+	assert.Equal(suite.T(), contacts[0].UserID, reloadedUser.ID)
 }
 
 func TestActionTriggers(t *testing.T) {

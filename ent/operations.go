@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/data"
 )
-
-// placeholder for an id in an edge or node operation. indicates that this should be replaced with
-// the id of the newly created node
-const idPlaceHolder = "$ent.idPlaceholder$"
 
 type DataOperation interface {
 	PerformWrite(tx *sqlx.Tx) error
@@ -42,7 +39,16 @@ type EditNodeOperation struct {
 	Operation   WriteOperation
 }
 
+func (op *EditNodeOperation) Resolve(exec Executor) {
+	//	resolve any placeholders before doing the write
+	for k, v := range op.Fields {
+		op.Fields[k] = exec.ResolveValue(v)
+	}
+}
+
 func (op *EditNodeOperation) PerformWrite(tx *sqlx.Tx) error {
+	spew.Dump("perform write", op.Fields)
+
 	var queryOp nodeOp
 	if op.Operation == InsertOperation {
 		queryOp = &insertNodeOp{Entity: op.Entity, EntConfig: op.EntConfig}

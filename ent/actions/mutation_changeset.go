@@ -13,6 +13,8 @@ type EntMutationChangeset struct {
 	placeholderID string
 	existingEnt   ent.Entity
 	entConfig     ent.Config
+	dependencies  ent.MutationBuilderMap
+	changesets    []ent.Changeset
 }
 
 func (c *EntMutationChangeset) GetExecutor() ent.Executor {
@@ -37,4 +39,12 @@ func (c *EntMutationChangeset) GetViewer() viewer.ViewerContext {
 
 func (c *EntMutationChangeset) Entity() ent.Entity {
 	return c.entity
+}
+
+func (c *EntMutationChangeset) Dependencies() ent.MutationBuilderMap {
+	return c.dependencies
+}
+
+func (c *EntMutationChangeset) Changesets() []ent.Changeset {
+	return c.changesets
 }
