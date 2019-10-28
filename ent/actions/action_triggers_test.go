@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
@@ -165,17 +164,16 @@ func (suite *actionsTriggersSuite) TestCreateDependentObjectInTrigger() {
 
 	user := &action.user
 
-	spew.Dump(user)
 	testingutils.VerifyUserObj(suite.T(), &action.user, user.EmailAddress)
 
-	// reload user
+	// reload user because of privacy reasons
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 	reloadedUser, err := models.LoadUser(v, user.ID)
 	assert.Nil(suite.T(), err)
+	testingutils.VerifyUserObj(suite.T(), reloadedUser, user.EmailAddress)
 
 	contacts, err := reloadedUser.LoadContacts()
 	assert.Nil(suite.T(), err)
-	spew.Dump(contacts)
 	assert.Len(suite.T(), contacts, 1)
 	assert.Equal(suite.T(), contacts[0].UserID, reloadedUser.ID)
 }

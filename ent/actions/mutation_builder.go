@@ -29,15 +29,16 @@ type EntMutationBuilder struct {
 	mu            sync.RWMutex
 	// what happens if there are circular dependencies?
 	// let's assume not possible for now but it's possible we want to store the ID in different places/
-	dependencies ent.MutationBuilderMap
-	changesets   []ent.Changeset
+	dependencies        ent.MutationBuilderMap
+	changesets          []ent.Changeset
+	fieldsWithResolvers map[string]bool
 }
 
 func (b *EntMutationBuilder) flagWrite() {
 	b.validated = false
 }
 
-func (b *EntMutationBuilder) resolveFieldValue(val interface{}) interface{} {
+func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}) interface{} {
 	// this is a tricky method. should only be called by places that have a Lock()/Unlock protection in it.
 	// RIght now that's done by SetField()
 	builder, ok := val.(ent.MutationBuilder)
@@ -51,6 +52,10 @@ func (b *EntMutationBuilder) resolveFieldValue(val interface{}) interface{} {
 		b.dependencies = make(ent.MutationBuilderMap)
 	}
 	b.dependencies[builder.GetPlaceholderID()] = builder
+	if b.fieldsWithResolvers == nil {
+		b.fieldsWithResolvers = make(map[string]bool)
+	}
+	b.fieldsWithResolvers[fieldName] = true
 	//	b.dependencies = append(b.dependencies, builder)
 	// TODO: keep track of keys that we care about resolving
 	// and pass that to EditNodeOperation
@@ -64,7 +69,7 @@ func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
 	if b.fields == nil {
 		b.fields = make(map[string]interface{})
 	}
-	b.fields[fieldName] = b.resolveFieldValue(val)
+	b.fields[fieldName] = b.resolveFieldValue(fieldName, val)
 	b.flagWrite()
 }
 
@@ -249,20 +254,26 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 	} else {
 		// take the fields and convert to db format!
 		fields := make(map[string]interface{})
+		var fieldsWithResolvers []string
 		for fieldName, value := range b.fields {
 			fieldInfo, ok := b.FieldMap[fieldName]
 			if !ok {
 				return nil, fmt.Errorf("invalid field %s passed ", fieldName)
 			}
 			fields[fieldInfo.DB] = value
+			_, ok = b.fieldsWithResolvers[fieldName]
+			if ok {
+				fieldsWithResolvers = append(fieldsWithResolvers, fieldInfo.DB)
+			}
 		}
 		ops = append(ops,
 			&ent.EditNodeOperation{
-				ExistingEnt: b.ExistingEntity,
-				Entity:      entity,
-				EntConfig:   b.EntConfig,
-				Fields:      fields,
-				Operation:   b.Operation,
+				ExistingEnt:         b.ExistingEntity,
+				Entity:              entity,
+				EntConfig:           b.EntConfig,
+				Fields:              fields,
+				FieldsWithResolvers: fieldsWithResolvers,
+				Operation:           b.Operation,
 			},
 		)
 	}

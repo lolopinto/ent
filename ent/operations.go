@@ -32,17 +32,19 @@ const (
 )
 
 type EditNodeOperation struct {
-	ExistingEnt Entity
-	Entity      Entity
-	EntConfig   Config
-	Fields      map[string]interface{}
-	Operation   WriteOperation
+	ExistingEnt         Entity
+	Entity              Entity
+	EntConfig           Config
+	Fields              map[string]interface{}
+	FieldsWithResolvers []string
+	Operation           WriteOperation
 }
 
 func (op *EditNodeOperation) Resolve(exec Executor) {
 	//	resolve any placeholders before doing the write
-	for k, v := range op.Fields {
-		op.Fields[k] = exec.ResolveValue(v)
+	// only do this for fields that need to be resolved to speed things up
+	for _, field := range op.FieldsWithResolvers {
+		op.Fields[field] = exec.ResolveValue(op.Fields[field])
 	}
 }
 
