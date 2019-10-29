@@ -14,7 +14,7 @@ import (
 // * changesets that depend on each other e.g. create contact while creating user √
 // * changesets with multiple that depend on each other e.g. create 1 contact, 1 event while creating user √
 // * changesets with complexity 1-level deep e.g. create user, create 1 contact, create event. create edge from user -> event (default now...) or edge from user -> self contact (to know user's contact) e.g. account/profile/organization √
-// * changesets with multiple level deep e.g. create user -> create contact, create contact_email
+// * changesets with multiple level deep e.g. create user -> create contact, create contact_email  √
 // changeset where dependencies are flipped e.g main changeset depends on inner one for something so inner needs to be created first
 
 // entListBasedExecutor is used for the simple case when there's one changeset
@@ -114,23 +114,22 @@ func (exec *entWithDependenciesExecutor) init() {
 		exec.addChangeset(exec.changesets...)
 		return
 	}
-	// let's do simple case first and then we come back and fix it
-	// this is the user one. it needs to run before the contact.
-	// the contact one has dependencies but no changesets so can just itself first...
 
-	// that one depends on this one
-	// this is the user one. contact depends on it. we want to run user first.
-
+	var earlyChangesets []ent.Changeset
 	var lateChangesets []ent.Changeset
 	for _, changeset := range exec.changesets {
 		_, ok := exec.dependencies[changeset.GetPlaceholderID()]
-		// this changeset is not a dependency of the main one that's running so we can run it first
-		if !ok {
-			exec.addChangeset(changeset)
+
+		// the default expectation is that we run current changeset, then dependent changesets
+		// if there are dependencies, we run the changesets that current one depends on before self and then subsequent
+		// again, this all assumes simple linear dependencies and no webs for now
+		if ok {
+			earlyChangesets = append(earlyChangesets, changeset)
 		} else {
 			lateChangesets = append(lateChangesets, changeset)
 		}
 	}
+	exec.addChangeset(earlyChangesets...)
 	exec.addExecForSelf()
 	exec.addChangeset(lateChangesets...)
 }
@@ -144,19 +143,12 @@ func (exec *entWithDependenciesExecutor) getOperation() (ent.DataOperation, erro
 
 func (exec *entWithDependenciesExecutor) Operation() (ent.DataOperation, error) {
 	exec.init()
-	//	spew.Dump("len execs", exec.executors)
 
 	op, err := exec.getOperation()
-	//	spew.Dump("operation", len(exec.executors), exec.idx, op, err)
 
 	if exec.idx == len(exec.executors) {
 		// we've gone around the world
 		return nil, ent.AllOperations
-		// if we are at the last item, depend on that executor to know what it's doing.
-		//		return exec.executors[exec.idx].Operation()
-		// TODO...
-		//		return exec.executors[exec.idx].Operation()
-		//		return op, err
 	}
 
 	if exec.lastOp != nil {
@@ -186,6 +178,14 @@ func (exec *entWithDependenciesExecutor) ResolveValue(val interface{}) ent.Entit
 	entity, ok := exec.mapper[str]
 	//	debug.PrintStack()
 	if !ok {
+		for _, executor := range exec.executors {
+			ent := executor.ResolveValue(val)
+			spew.Dump("executor resolve ", val, ent)
+			if ent != nil {
+				spew.Dump("was able to get dependent to resolve!!!")
+				return ent
+			}
+		}
 		spew.Dump("didn't resolve", str, exec.mapper)
 		return nil
 	}

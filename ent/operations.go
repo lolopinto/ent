@@ -44,7 +44,7 @@ func (op *EditNodeOperation) Resolve(exec Executor) error {
 	//	resolve any placeholders before doing the write
 	// only do this for fields that need to be resolved to speed things up
 	for _, field := range op.FieldsWithResolvers {
-		spew.Dump("resolve value", field, op.Fields[field])
+		spew.Dump("resolve value", op, field, op.Fields[field])
 		ent := exec.ResolveValue(op.Fields[field])
 		if ent == nil {
 			return fmt.Errorf("couldn't resolve placeholder for field %s", field)
@@ -52,6 +52,7 @@ func (op *EditNodeOperation) Resolve(exec Executor) error {
 		op.Fields[field] = ent.GetID()
 	}
 	return nil
+	// it should be user -> contact -> contact_email
 }
 
 func (op *EditNodeOperation) PerformWrite(tx *sqlx.Tx) error {
@@ -371,7 +372,7 @@ func executeOperations(exec Executor) error {
 
 	for {
 		op, err := exec.Operation()
-		spew.Dump("operation!", op)
+		//		spew.Dump("operation!", op)
 		if err == AllOperations {
 			break
 		} else if err != nil {
@@ -381,10 +382,10 @@ func executeOperations(exec Executor) error {
 		resolvableOp, ok := op.(DataOperationWithResolver)
 		if ok {
 			if err = resolvableOp.Resolve(exec); err != nil {
-				spew.Dump("errrr resolving", err)
+				//				spew.Dump("errrr resolving", err)
 				return handErrInTransaction(tx, err)
 			}
-			spew.Dump("post resolvee", op)
+			//			spew.Dump("post resolvee", op)
 		}
 
 		// perform the write as needed

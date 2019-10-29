@@ -1,7 +1,7 @@
 package cast
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,7 +24,7 @@ func ToUUIDString(v interface{}) (string, error) {
 func ToTime(v interface{}) (time.Time, error) {
 	t, ok := v.(time.Time)
 	if !ok {
-		return t, errors.New("could not convert time field to appropriate type")
+		return t, fmt.Errorf("could not convert time field %v to appropriate type", v)
 	}
 	return t, nil
 }
@@ -32,7 +32,11 @@ func ToTime(v interface{}) (time.Time, error) {
 func ToString(v interface{}) (string, error) {
 	str, ok := v.(string)
 	if !ok {
-		return "", errors.New("could not convert string field to appropriate type")
+		uuid, err := ToUUIDString(v)
+		if err == nil {
+			return uuid, nil
+		}
+		return "", fmt.Errorf("could not convert string field %v to appropriate type", v)
 	}
 	return str, nil
 }
@@ -40,7 +44,7 @@ func ToString(v interface{}) (string, error) {
 func ToBool(v interface{}) (bool, error) {
 	val, ok := v.(bool)
 	if !ok {
-		return false, errors.New("could not convert bool field to appropriate type")
+		return false, fmt.Errorf("could not convert bool field %v to appropriate type", v)
 	}
 	return val, nil
 }
@@ -55,7 +59,7 @@ func ToInt(v interface{}) (int, error) {
 	if ok {
 		return int(val2), nil
 	}
-	return 0, errors.New("could not convert int field to appropriate type")
+	return 0, fmt.Errorf("could not convert int field %v to appropriate type", v)
 }
 
 //func ToNullString

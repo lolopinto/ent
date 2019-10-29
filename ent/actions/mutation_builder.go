@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/util"
@@ -70,7 +69,7 @@ func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}
 	if !ok {
 		return val
 	}
-	spew.Dump("resolveBuilder")
+	//	spew.Dump("resolveBuilder")
 	// b.mu.Lock()
 	// defer b.mu.Unlock()
 	if b.dependencies == nil {
@@ -289,7 +288,6 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 				fieldsWithResolvers = append(fieldsWithResolvers, fieldInfo.DB)
 			}
 		}
-		spew.Dump("fieldssss", b.fields)
 		ops = append(ops,
 			&ent.EditNodeOperation{
 				ExistingEnt:         b.ExistingEntity,
@@ -331,13 +329,13 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 	// the issue is that we need to resolve the underlying dependency
 	// which is why we have a list based executor underneath anyways...
 	if len(b.changesets) == 0 {
-		spew.Dump("simple")
+		//		spew.Dump("simple", b.fields)
 		executor = &entListBasedExecutor{
 			placeholderID: b.GetPlaceholderID(),
 			ops:           ops,
 		}
 	} else {
-		spew.Dump("complex")
+		//		spew.Dump("complex", b.fields, b.changesets)
 		// TODO
 		// dependencies implies other changesets?
 		// if not

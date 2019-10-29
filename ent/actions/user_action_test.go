@@ -10,7 +10,6 @@ import (
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
-	"github.com/lolopinto/ent/internal/testingutils"
 )
 
 type userAction struct {
@@ -123,6 +122,16 @@ func (a *createUserAndEventAction) GetTriggers() []actions.Trigger {
 	}
 }
 
+type createUserContactAndEmailAction struct {
+	createUserAction
+}
+
+func (a *createUserContactAndEmailAction) GetTriggers() []actions.Trigger {
+	return []actions.Trigger{
+		&UserCreateContactAndEmailTrigger{},
+	}
+}
+
 type createUserAndAllTheThingsAction struct {
 	createUserAction
 }
@@ -130,7 +139,8 @@ type createUserAndAllTheThingsAction struct {
 func (a *createUserAndAllTheThingsAction) GetTriggers() []actions.Trigger {
 	return []actions.Trigger{
 		&UserCreateEventTrigger{},
-		&UserCreateContactTrigger{},
+		//		&UserCreateContactTrigger{},
+		&UserCreateContactAndEmailTrigger{},
 	}
 }
 
@@ -151,26 +161,40 @@ type UserCreateContactTrigger struct {
 }
 
 func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
-	b := testingutils.GetBaseBuilder(
-		ent.InsertOperation,
-		&configs.ContactConfig{},
-		nil,
+	// create a contact action and send changeset
+	a := &createContactAction{}
+	a.viewer = trigger.Builder.GetViewer()
+	a.builder = actions.NewMutationBuilder(
+		a.viewer, ent.InsertOperation, &configs.ContactConfig{},
 	)
 	fields := trigger.Builder.GetFields()
-	b.SetField("FirstName", fields["FirstName"])
-	b.SetField("LastName", fields["LastName"])
-	b.SetField("EmailAddress", fields["EmailAddress"])
-	// this should be GetMutationID() or soemthing which is better and hides this
-	//	b.SetField("UserID")
-	b.SetField("UserID", trigger.Builder)
-	//	spew.Dump("trigger builder", trigger.Builder)
+	a.firstName = fields["FirstName"]
+	a.lastName = fields["LastName"]
+	a.emailAddress = fields["EmailAddress"]
+	a.userID = trigger.Builder
 
-	var contact models.Contact
-	// set fieldmap.
-	// all this will be handled better by action
-	b.FieldMap = getFieldMapFromFields(b.Operation, b.GetFields())
+	return actions.GetChangeset(a)
+}
 
-	return b.GetChangeset(&contact)
+type UserCreateContactAndEmailTrigger struct {
+	UserMutationBuilderTrigger
+}
+
+func (trigger *UserCreateContactAndEmailTrigger) GetChangeset() (ent.Changeset, error) {
+	// create a contact action and send changeset
+	// same as above except for this line.
+	a := &createContactAndEmailAction{}
+	a.viewer = trigger.Builder.GetViewer()
+	a.builder = actions.NewMutationBuilder(
+		a.viewer, ent.InsertOperation, &configs.ContactConfig{},
+	)
+	fields := trigger.Builder.GetFields()
+	a.firstName = fields["FirstName"]
+	a.lastName = fields["LastName"]
+	a.emailAddress = fields["EmailAddress"]
+	a.userID = trigger.Builder
+
+	return actions.GetChangeset(a)
 }
 
 type UserCreateEventTrigger struct {
@@ -201,26 +225,6 @@ func userCreateAction(
 	viewer viewer.ViewerContext,
 ) *createUserAction {
 	action := &createUserAction{}
-	action.viewer = viewer
-	action.builder = getUserCreateBuilder(viewer)
-
-	return action
-}
-
-func userCreateEventAction(
-	viewer viewer.ViewerContext,
-) *createUserAndEventAction {
-	action := &createUserAndEventAction{}
-	action.viewer = viewer
-	action.builder = getUserCreateBuilder(viewer)
-
-	return action
-}
-
-func createAllTheThingsAction(
-	viewer viewer.ViewerContext,
-) *createUserAndAllTheThingsAction {
-	action := &createUserAndAllTheThingsAction{}
 	action.viewer = viewer
 	action.builder = getUserCreateBuilder(viewer)
 

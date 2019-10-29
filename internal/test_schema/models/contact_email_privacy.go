@@ -19,6 +19,8 @@ func (policy ContactEmailPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 	return []ent.PrivacyPolicyRule{
 		privacy.AllowIfOmniscientRule{},
 		// BEGIN MANUAL SECTION: Add custom privacy rules below
+		//		privacy.AlwaysAllowRule{},
+		AllowIfViewerCanSeeContactRule{ContactID: policy.ContactEmail.ContactID},
 		// END MANUAL SECTION of privacy rules
 		privacy.AlwaysDenyRule{},
 	}
