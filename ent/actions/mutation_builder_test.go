@@ -269,7 +269,6 @@ func (suite *mutationBuilderSuite) TestManualDataField() {
 }
 
 func (suite *mutationBuilderSuite) TestManualTimeField() {
-
 	t := time.Now()
 
 	var testCases = []struct {

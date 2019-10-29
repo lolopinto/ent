@@ -1,7 +1,6 @@
 package ent
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/data"
+	"github.com/pkg/errors"
 )
 
 type DataOperation interface {
@@ -20,7 +20,7 @@ type DataOperationWithEnt interface {
 }
 
 type DataOperationWithResolver interface {
-	Resolve(Executor)
+	Resolve(Executor) error
 }
 
 type WriteOperation string
@@ -40,16 +40,22 @@ type EditNodeOperation struct {
 	Operation           WriteOperation
 }
 
-func (op *EditNodeOperation) Resolve(exec Executor) {
+func (op *EditNodeOperation) Resolve(exec Executor) error {
 	//	resolve any placeholders before doing the write
 	// only do this for fields that need to be resolved to speed things up
 	for _, field := range op.FieldsWithResolvers {
-		op.Fields[field] = exec.ResolveValue(op.Fields[field])
+		spew.Dump("resolve value", field, op.Fields[field])
+		ent := exec.ResolveValue(op.Fields[field])
+		if ent == nil {
+			return fmt.Errorf("couldn't resolve placeholder for field %s", field)
+		}
+		op.Fields[field] = ent.GetID()
 	}
+	return nil
 }
 
 func (op *EditNodeOperation) PerformWrite(tx *sqlx.Tx) error {
-	spew.Dump("perform write", op.Fields)
+	//	spew.Dump("perform write", op.Fields)
 
 	var queryOp nodeOp
 	if op.Operation == InsertOperation {
@@ -187,13 +193,19 @@ func isNil(ent Entity) bool {
 func NewInboundEdge(
 	edgeType EdgeType,
 	op WriteOperation,
-	id1 string,
+	id1 interface{}, // TODO come up with an interface?
 	nodeType NodeType,
 	mb MutationBuilder,
 	options ...func(*EdgeOperation)) *EdgeOperation {
 
 	edgeOp := newEdgeOperation(edgeType, op, options...)
-	edgeOp.id1 = id1
+	builder, ok := id1.(MutationBuilder)
+	if ok {
+		edgeOp.id1 = builder.GetPlaceholderID()
+		edgeOp.id1Placeholder = true
+	} else {
+		edgeOp.id1 = fmt.Sprintf("%v", id1)
+	}
 	edgeOp.id1Type = nodeType
 	if isNil(mb.ExistingEnt()) {
 		edgeOp.id2 = mb.GetPlaceholderID()
@@ -209,13 +221,21 @@ func NewInboundEdge(
 func NewOutboundEdge(
 	edgeType EdgeType,
 	op WriteOperation,
-	id2 string,
+	id2 interface{},
 	nodeType NodeType,
 	mb MutationBuilder,
 	options ...func(*EdgeOperation)) *EdgeOperation {
 
 	edgeOp := newEdgeOperation(edgeType, op, options...)
-	edgeOp.id2 = id2
+
+	// if builder, setup placeholder...
+	builder, ok := id2.(MutationBuilder)
+	if ok {
+		edgeOp.id2 = builder.GetPlaceholderID()
+		edgeOp.id2Placeholder = true
+	} else {
+		edgeOp.id2 = fmt.Sprintf("%v", id2)
+	}
 	edgeOp.id2Type = nodeType
 
 	if isNil(mb.ExistingEnt()) {
@@ -292,17 +312,24 @@ func (op *EdgeOperation) PerformWrite(tx *sqlx.Tx) error {
 	}
 }
 
-func (op *EdgeOperation) Resolve(exec Executor) {
-	createdEnt := exec.CreatedEnt()
-
+func (op *EdgeOperation) Resolve(exec Executor) error {
 	if op.id1Placeholder {
-		op.id1 = createdEnt.GetID() // this or exec.ResolveValue(op.id1Placeholder)
-		op.id1Type = createdEnt.GetType()
+		ent := exec.ResolveValue(op.id1)
+		//		spew.Dump("resolve id1", op.id1, str, err)
+		if ent == nil {
+			return errors.New("placeholder value didn't get resolved")
+		}
+		op.id1 = ent.GetID()
+		op.id1Type = ent.GetType()
 		op.id1Placeholder = false
 	}
 	if op.id2Placeholder {
-		op.id2 = createdEnt.GetID()
-		op.id2Type = createdEnt.GetType()
+		ent := exec.ResolveValue(op.id2)
+		if ent == nil {
+			return errors.New("placeholder value didn't get resolved")
+		}
+		op.id2 = ent.GetID()
+		op.id2Type = ent.GetType()
 		op.id2Placeholder = false
 	}
 
@@ -310,6 +337,7 @@ func (op *EdgeOperation) Resolve(exec Executor) {
 		// todo do we want to have the time here to match exactly?
 		op.time = time.Now()
 	}
+	return nil
 }
 
 func EdgeTime(t time.Time) func(*EdgeOperation) {
@@ -343,22 +371,36 @@ func executeOperations(exec Executor) error {
 
 	for {
 		op, err := exec.Operation()
+		spew.Dump("operation!", op)
 		if err == AllOperations {
 			break
 		} else if err != nil {
-			return err
+			return handErrInTransaction(tx, err)
+		}
+
+		resolvableOp, ok := op.(DataOperationWithResolver)
+		if ok {
+			if err = resolvableOp.Resolve(exec); err != nil {
+				spew.Dump("errrr resolving", err)
+				return handErrInTransaction(tx, err)
+			}
+			spew.Dump("post resolvee", op)
 		}
 
 		// perform the write as needed
 		if err = op.PerformWrite(tx); err != nil {
-			fmt.Println("error during transaction", err)
-			tx.Rollback()
-			return err
+			return handErrInTransaction(tx, err)
 		}
 	}
 
 	tx.Commit()
 	return nil
+}
+
+func handErrInTransaction(tx *sqlx.Tx, err error) error {
+	fmt.Println("error during transaction", err)
+	tx.Rollback()
+	return err
 }
 
 type DeleteNodeOperation struct {

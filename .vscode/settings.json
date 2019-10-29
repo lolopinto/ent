@@ -4,5 +4,5 @@
     "DB_CONNECTION_STRING": "postgres://ola:@localhost/ent_test?sslmode=disable",
   } ,
   // use this to find bad tests quickly.
-  "go.testTimeout": "15s",
+  "go.testTimeout": "10s",
 }

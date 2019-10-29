@@ -28,12 +28,12 @@ func RemoveFamilyMembersFromContext(ctx context.Context, user *models.User) *Rem
 
 // RemoveFamilyMembers is the factory method to get an ...
 func RemoveFamilyMembers(viewer viewer.ViewerContext, user *models.User) *RemoveFamilyMembersAction {
-	builder := &actions.EntMutationBuilder{
-		Viewer:         viewer,
-		EntConfig:      &configs.UserConfig{},
-		Operation:      ent.EditOperation,
-		ExistingEntity: user,
-	}
+	builder := actions.NewMutationBuilder(
+		viewer,
+		ent.EditOperation,
+		&configs.UserConfig{},
+		actions.ExistingEnt(user),
+	)
 	action := &RemoveFamilyMembersAction{}
 	builder.FieldMap = action.getFieldMap()
 	action.builder = builder

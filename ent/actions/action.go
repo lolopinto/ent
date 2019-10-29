@@ -7,6 +7,7 @@ import (
 
 type Action interface {
 	GetViewer() viewer.ViewerContext
+	//	GetBuilder() ent.MutationBuilder
 	GetChangeset() (ent.Changeset, error)
 	// where new ent should be stored.
 	Entity() ent.Entity
@@ -40,10 +41,10 @@ type ActionWithTriggers interface {
 	SetBuilderOnTriggers([]Trigger) error
 }
 
-func Save(action Action) error {
+func GetChangeset(action Action) (ent.Changeset, error) {
 	if actionWithPerms, ok := action.(ActionWithPermissions); ok {
 		if err := applyActionPermissions(actionWithPerms); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -53,13 +54,13 @@ func Save(action Action) error {
 	// then changeset which runs the whole damn thing
 	if actionWithTriggers, ok := action.(ActionWithTriggers); ok {
 		if err := setBuilderOnTriggers(actionWithTriggers); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	if actionWithValidator, ok := action.(ActionWithValidator); ok {
 		if err := actionWithValidator.Validate(); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -68,10 +69,15 @@ func Save(action Action) error {
 	// so everything will be handled in here as opposed to having PerformAction be callable on its own
 	// triggers and dependencies!
 	// TODO need a concurrent API for these things...
-	changeset, err := action.GetChangeset()
+	return action.GetChangeset()
+}
+
+func Save(action Action) error {
+	changeset, err := GetChangeset(action)
 	if err != nil {
 		return err
 	}
+
 	return ent.SaveChangeset(changeset)
 }
 

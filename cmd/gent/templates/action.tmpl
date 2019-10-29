@@ -37,14 +37,14 @@ func {{$actionMethodName}}FromContext( {{actionMethodContextArgs $action}}) *{{$
 
 // {{$actionMethodName}} is the factory method to get an ...
 func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
-  builder := &actions.EntMutationBuilder{
-    Viewer: viewer,
-    EntConfig: {{$nodeInfo.EntConfig}},
-    Operation: {{writeOperation $action}},
+  builder := actions.NewMutationBuilder(
+    viewer,
+    {{writeOperation $action}},
+    {{$nodeInfo.EntConfig}},
     {{ if $action.MutatingExistingObject -}}
-      ExistingEntity: {{$nodeInfo.NodeInstance}},
+      actions.ExistingEnt({{$nodeInfo.NodeInstance}}),
     {{ end -}}
-  }
+  )
   action := &{{$actionName}}{}
   builder.FieldMap = action.getFieldMap()
   {{/* hmm */ -}}

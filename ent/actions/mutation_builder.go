@@ -29,9 +29,34 @@ type EntMutationBuilder struct {
 	mu            sync.RWMutex
 	// what happens if there are circular dependencies?
 	// let's assume not possible for now but it's possible we want to store the ID in different places/
-	dependencies        ent.MutationBuilderMap
-	changesets          []ent.Changeset
-	fieldsWithResolvers map[string]bool
+	dependencies ent.MutationBuilderMap
+	changesets   []ent.Changeset
+	//	fieldsWithResolvers map[string]bool
+}
+
+func ExistingEnt(existingEnt ent.Entity) func(*EntMutationBuilder) {
+	return func(mb *EntMutationBuilder) {
+		// TODO lowercase
+		mb.ExistingEntity = existingEnt
+	}
+}
+func NewMutationBuilder(
+	viewer viewer.ViewerContext,
+	operation ent.WriteOperation,
+	entConfig ent.Config,
+	opts ...func(*EntMutationBuilder),
+) *EntMutationBuilder {
+	b := &EntMutationBuilder{
+		Viewer:    viewer,
+		Operation: operation,
+		EntConfig: entConfig,
+	}
+	for _, opt := range opts {
+		opt(b)
+	}
+	// TODO init other things
+	b.placeholderID = fmt.Sprintf("$ent.idPlaceholder$ %s", util.GenerateRandCode(9))
+	return b
 }
 
 func (b *EntMutationBuilder) flagWrite() {
@@ -52,14 +77,12 @@ func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}
 		b.dependencies = make(ent.MutationBuilderMap)
 	}
 	b.dependencies[builder.GetPlaceholderID()] = builder
-	if b.fieldsWithResolvers == nil {
-		b.fieldsWithResolvers = make(map[string]bool)
-	}
-	b.fieldsWithResolvers[fieldName] = true
-	//	b.dependencies = append(b.dependencies, builder)
-	// TODO: keep track of keys that we care about resolving
-	// and pass that to EditNodeOperation
-	return builder.GetPlaceholderID()
+	// if b.fieldsWithResolvers == nil {
+	// 	b.fieldsWithResolvers = make(map[string]bool)
+	// }
+	// b.fieldsWithResolvers[fieldName] = true
+	//	return builder.GetPlaceholderID()
+	return val
 }
 
 func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
@@ -74,9 +97,6 @@ func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
 }
 
 func (b *EntMutationBuilder) GetPlaceholderID() string {
-	if b.placeholderID == "" {
-		b.placeholderID = fmt.Sprintf("$ent.idPlaceholder$ %s", util.GenerateRandCode(9))
-	}
 	return b.placeholderID
 }
 
@@ -104,7 +124,7 @@ func (b *EntMutationBuilder) addEdge(edge *ent.EdgeOperation) {
 }
 
 func (b *EntMutationBuilder) AddInboundEdge(
-	edgeType ent.EdgeType, id1 string, nodeType ent.NodeType, options ...func(*ent.EdgeOperation)) error {
+	edgeType ent.EdgeType, id1 interface{}, nodeType ent.NodeType, options ...func(*ent.EdgeOperation)) error {
 	b.addEdge(
 		ent.NewInboundEdge(
 			edgeType,
@@ -118,7 +138,7 @@ func (b *EntMutationBuilder) AddInboundEdge(
 	return nil
 }
 
-func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, nodeType ent.NodeType, options ...func(*ent.EdgeOperation)) error {
+func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 interface{}, nodeType ent.NodeType, options ...func(*ent.EdgeOperation)) error {
 	// TODO figure out what I was trying to do here...
 	// for _, edge := range b.edges {
 	// 	if edge.EdgeType == edgeType && edge.ID2 == id2 && nodeType == edge.ID2Type {
@@ -127,6 +147,7 @@ func (b *EntMutationBuilder) AddOutboundEdge(edgeType ent.EdgeType, id2 string, 
 	// 		return nil
 	// 	}
 	// }
+	// we need to keep track of mutation_builder
 	b.addEdge(
 		ent.NewOutboundEdge(
 			edgeType,
@@ -232,7 +253,7 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 		return nil, err
 	}
 
-	// should not be able to get a changeset for an invlid builder
+	// should not be able to get a changeset for an invalid builder
 	if !b.validated {
 		// soulds like validate() needs to call runTriggers also...
 		if err := b.Validate(); err != nil {
@@ -260,12 +281,15 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 			if !ok {
 				return nil, fmt.Errorf("invalid field %s passed ", fieldName)
 			}
+			builder, ok := value.(ent.MutationBuilder)
+
 			fields[fieldInfo.DB] = value
-			_, ok = b.fieldsWithResolvers[fieldName]
 			if ok {
+				fields[fieldInfo.DB] = builder.GetPlaceholderID()
 				fieldsWithResolvers = append(fieldsWithResolvers, fieldInfo.DB)
 			}
 		}
+		spew.Dump("fieldssss", b.fields)
 		ops = append(ops,
 			&ent.EditNodeOperation{
 				ExistingEnt:         b.ExistingEntity,
@@ -374,7 +398,6 @@ func (b *EntMutationBuilder) Validate() error {
 	}
 }
 
-// TODO kill this eventually
 func (b *EntMutationBuilder) GetFields() map[string]interface{} {
 	return b.fields
 }

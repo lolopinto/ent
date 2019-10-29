@@ -28,12 +28,12 @@ func AddFriendsFromContext(ctx context.Context, user *models.User) *AddFriendsAc
 
 // AddFriends is the factory method to get an ...
 func AddFriends(viewer viewer.ViewerContext, user *models.User) *AddFriendsAction {
-	builder := &actions.EntMutationBuilder{
-		Viewer:         viewer,
-		EntConfig:      &configs.UserConfig{},
-		Operation:      ent.EditOperation,
-		ExistingEntity: user,
-	}
+	builder := actions.NewMutationBuilder(
+		viewer,
+		ent.EditOperation,
+		&configs.UserConfig{},
+		actions.ExistingEnt(user),
+	)
 	action := &AddFriendsAction{}
 	builder.FieldMap = action.getFieldMap()
 	action.builder = builder

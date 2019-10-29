@@ -146,12 +146,12 @@ func (suite *generatedActionSuite) TestAddEdgeAction() {
 }
 
 func (suite *generatedActionSuite) addFamilyEdge(v viewer.ViewerContext, user, user2 *models.User) {
-	b := actions.EntMutationBuilder{
-		Viewer:         v,
-		EntConfig:      &configs.UserConfig{},
-		Operation:      ent.EditOperation,
-		ExistingEntity: user,
-	}
+	b := actions.NewMutationBuilder(
+		v,
+		ent.EditOperation,
+		&configs.UserConfig{},
+		actions.ExistingEnt(user),
+	)
 	// manually adding this until we fix the API and generating this correctly
 	b.AddOutboundEdge(models.UserToFamilyMembersEdge, user2.ID, user2.GetType())
 

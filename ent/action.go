@@ -78,6 +78,7 @@ func (err *ActionValidationError) Error() string {
 // 	GetViewer() viewer.ViewerContext
 // 	Entity() Entity
 // }
+// makes it easier to change Viewer because I can change it once and it gets changed everywhere...
 
 type MutationBuilder interface {
 	// TODO this needs to be aware of validators
@@ -123,8 +124,7 @@ type Executor interface {
 	// When we're done with operations, it returns AllOperations to signal EOF
 	Operation() (DataOperation, error)
 	// resolve placeholders from this mutation
-	ResolveValue(interface{}) interface{}
-	CreatedEnt() Entity
+	ResolveValue(interface{}) Entity
 }
 
 // type ExecutorWithDependencies interface {

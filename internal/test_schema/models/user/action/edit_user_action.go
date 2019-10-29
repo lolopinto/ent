@@ -28,12 +28,12 @@ func EditUserFromContext(ctx context.Context, user *models.User) *EditUserAction
 
 // EditUser is the factory method to get an ...
 func EditUser(viewer viewer.ViewerContext, user *models.User) *EditUserAction {
-	builder := &actions.EntMutationBuilder{
-		Viewer:         viewer,
-		EntConfig:      &configs.UserConfig{},
-		Operation:      ent.EditOperation,
-		ExistingEntity: user,
-	}
+	builder := actions.NewMutationBuilder(
+		viewer,
+		ent.EditOperation,
+		&configs.UserConfig{},
+		actions.ExistingEnt(user),
+	)
 	action := &EditUserAction{}
 	builder.FieldMap = action.getFieldMap()
 	action.builder = builder

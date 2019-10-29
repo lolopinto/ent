@@ -27,12 +27,12 @@ func DeleteUserFromContext(ctx context.Context, user *models.User) *DeleteUserAc
 
 // DeleteUser is the factory method to get an ...
 func DeleteUser(viewer viewer.ViewerContext, user *models.User) *DeleteUserAction {
-	builder := &actions.EntMutationBuilder{
-		Viewer:         viewer,
-		EntConfig:      &configs.UserConfig{},
-		Operation:      ent.DeleteOperation,
-		ExistingEntity: user,
-	}
+	builder := actions.NewMutationBuilder(
+		viewer,
+		ent.DeleteOperation,
+		&configs.UserConfig{},
+		actions.ExistingEnt(user),
+	)
 	action := &DeleteUserAction{}
 	builder.FieldMap = action.getFieldMap()
 	action.builder = builder

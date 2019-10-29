@@ -7,9 +7,9 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
+	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
-	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -75,12 +75,7 @@ func GetBaseBuilder(
 	existingEnt ent.Entity,
 ) *actions.EntMutationBuilder {
 	v := viewertesting.OmniViewerContext{}
-	return &actions.EntMutationBuilder{
-		Viewer:         v,
-		EntConfig:      config,
-		Operation:      operation,
-		ExistingEntity: existingEnt,
-	}
+	return actions.NewMutationBuilder(v, operation, config, actions.ExistingEnt(existingEnt))
 }
 
 func CreateEdge(t *testing.T, edge *ent.AssocEdgeData) {
