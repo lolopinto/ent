@@ -8,11 +8,19 @@ interface Connection {
 
 type Contact implements Node {
     allowList: [User!]!
+    contactEmails: [ContactEmail!]!
     emailAddress: String!
     firstName: String!
     id: ID!
     lastName: String!
     userID: String!
+}
+
+type ContactEmail implements Node {
+    contact: Contact
+    emailAddress: String!
+    id: ID!
+    label: String!
 }
 
 interface Edge {
@@ -64,6 +72,7 @@ interface Node {
 
 type Query {
     contact(id: ID!): Contact
+    contactEmail(id: ID!): ContactEmail
     event(id: ID!): Event
     user(id: ID!): User
 }

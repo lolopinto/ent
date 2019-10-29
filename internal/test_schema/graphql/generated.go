@@ -38,6 +38,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Contact() ContactResolver
+	ContactEmail() ContactEmailResolver
 	Event() EventResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
@@ -49,12 +50,20 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Contact struct {
-		AllowList    func(childComplexity int) int
+		AllowList     func(childComplexity int) int
+		ContactEmails func(childComplexity int) int
+		EmailAddress  func(childComplexity int) int
+		FirstName     func(childComplexity int) int
+		ID            func(childComplexity int) int
+		LastName      func(childComplexity int) int
+		UserID        func(childComplexity int) int
+	}
+
+	ContactEmail struct {
+		Contact      func(childComplexity int) int
 		EmailAddress func(childComplexity int) int
-		FirstName    func(childComplexity int) int
 		ID           func(childComplexity int) int
-		LastName     func(childComplexity int) int
-		UserID       func(childComplexity int) int
+		Label        func(childComplexity int) int
 	}
 
 	Event struct {
@@ -90,9 +99,10 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Contact func(childComplexity int, id string) int
-		Event   func(childComplexity int, id string) int
-		User    func(childComplexity int, id string) int
+		Contact      func(childComplexity int, id string) int
+		ContactEmail func(childComplexity int, id string) int
+		Event        func(childComplexity int, id string) int
+		User         func(childComplexity int, id string) int
 	}
 
 	User struct {
@@ -141,6 +151,10 @@ type ComplexityRoot struct {
 
 type ContactResolver interface {
 	AllowList(ctx context.Context, obj *models.Contact) ([]*models.User, error)
+	ContactEmails(ctx context.Context, obj *models.Contact) ([]*models.ContactEmail, error)
+}
+type ContactEmailResolver interface {
+	Contact(ctx context.Context, obj *models.ContactEmail) (*models.Contact, error)
 }
 type EventResolver interface {
 	Attending(ctx context.Context, obj *models.Event) ([]*models.User, error)
@@ -163,6 +177,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	Contact(ctx context.Context, id string) (*models.Contact, error)
+	ContactEmail(ctx context.Context, id string) (*models.ContactEmail, error)
 	Event(ctx context.Context, id string) (*models.Event, error)
 	User(ctx context.Context, id string) (*models.User, error)
 }
@@ -201,6 +216,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Contact.AllowList(childComplexity), true
 
+	case "Contact.contactEmails":
+		if e.complexity.Contact.ContactEmails == nil {
+			break
+		}
+
+		return e.complexity.Contact.ContactEmails(childComplexity), true
+
 	case "Contact.emailAddress":
 		if e.complexity.Contact.EmailAddress == nil {
 			break
@@ -235,6 +257,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Contact.UserID(childComplexity), true
+
+	case "ContactEmail.contact":
+		if e.complexity.ContactEmail.Contact == nil {
+			break
+		}
+
+		return e.complexity.ContactEmail.Contact(childComplexity), true
+
+	case "ContactEmail.emailAddress":
+		if e.complexity.ContactEmail.EmailAddress == nil {
+			break
+		}
+
+		return e.complexity.ContactEmail.EmailAddress(childComplexity), true
+
+	case "ContactEmail.id":
+		if e.complexity.ContactEmail.ID == nil {
+			break
+		}
+
+		return e.complexity.ContactEmail.ID(childComplexity), true
+
+	case "ContactEmail.label":
+		if e.complexity.ContactEmail.Label == nil {
+			break
+		}
+
+		return e.complexity.ContactEmail.Label(childComplexity), true
 
 	case "Event.attending":
 		if e.complexity.Event.Attending == nil {
@@ -412,6 +462,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Contact(childComplexity, args["id"].(string)), true
+
+	case "Query.contactEmail":
+		if e.complexity.Query.ContactEmail == nil {
+			break
+		}
+
+		args, err := ec.field_Query_contactEmail_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ContactEmail(childComplexity, args["id"].(string)), true
 
 	case "Query.event":
 		if e.complexity.Query.Event == nil {
@@ -642,11 +704,19 @@ interface Connection {
 
 type Contact implements Node {
     allowList: [User!]!
+    contactEmails: [ContactEmail!]!
     emailAddress: String!
     firstName: String!
     id: ID!
     lastName: String!
     userID: String!
+}
+
+type ContactEmail implements Node {
+    contact: Contact
+    emailAddress: String!
+    id: ID!
+    label: String!
 }
 
 interface Edge {
@@ -698,6 +768,7 @@ interface Node {
 
 type Query {
     contact(id: ID!): Contact
+    contactEmail(id: ID!): ContactEmail
     event(id: ID!): Event
     user(id: ID!): User
 }
@@ -865,6 +936,20 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_contactEmail_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_contact_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -978,6 +1063,43 @@ func (ec *executionContext) _Contact_allowList(ctx context.Context, field graphq
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Contact_contactEmails(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Contact",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Contact().ContactEmails(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.ContactEmail)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNContactEmail2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Contact_emailAddress(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
@@ -1148,6 +1270,151 @@ func (ec *executionContext) _Contact_userID(ctx context.Context, field graphql.C
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ContactEmail_contact(ctx context.Context, field graphql.CollectedField, obj *models.ContactEmail) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "ContactEmail",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ContactEmail().Contact(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Contact)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ContactEmail_emailAddress(ctx context.Context, field graphql.CollectedField, obj *models.ContactEmail) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "ContactEmail",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EmailAddress, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ContactEmail_id(ctx context.Context, field graphql.CollectedField, obj *models.ContactEmail) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "ContactEmail",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ContactEmail_label(ctx context.Context, field graphql.CollectedField, obj *models.ContactEmail) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "ContactEmail",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Label, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1952,6 +2219,47 @@ func (ec *executionContext) _Query_contact(ctx context.Context, field graphql.Co
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_contactEmail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_contactEmail_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().ContactEmail(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.ContactEmail)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOContactEmail2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_event(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4122,6 +4430,10 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 		return ec._Contact(ctx, sel, &obj)
 	case *models.Contact:
 		return ec._Contact(ctx, sel, obj)
+	case models.ContactEmail:
+		return ec._ContactEmail(ctx, sel, &obj)
+	case *models.ContactEmail:
+		return ec._ContactEmail(ctx, sel, obj)
 	case models.Event:
 		return ec._Event(ctx, sel, &obj)
 	case *models.Event:
@@ -4164,6 +4476,20 @@ func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, 
 				}
 				return res
 			})
+		case "contactEmails":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Contact_contactEmails(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "emailAddress":
 			out.Values[i] = ec._Contact_emailAddress(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4186,6 +4512,54 @@ func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "userID":
 			out.Values[i] = ec._Contact_userID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var contactEmailImplementors = []string{"ContactEmail", "Node"}
+
+func (ec *executionContext) _ContactEmail(ctx context.Context, sel ast.SelectionSet, obj *models.ContactEmail) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, contactEmailImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ContactEmail")
+		case "contact":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ContactEmail_contact(ctx, field, obj)
+				return res
+			})
+		case "emailAddress":
+			out.Values[i] = ec._ContactEmail_emailAddress(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "id":
+			out.Values[i] = ec._ContactEmail_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "label":
+			out.Values[i] = ec._ContactEmail_label(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -4452,6 +4826,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_contact(ctx, field)
+				return res
+			})
+		case "contactEmail":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_contactEmail(ctx, field)
 				return res
 			})
 		case "event":
@@ -5114,6 +5499,57 @@ func (ec *executionContext) marshalNContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋ
 	return ec._Contact(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNContactEmail2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx context.Context, sel ast.SelectionSet, v models.ContactEmail) graphql.Marshaler {
+	return ec._ContactEmail(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNContactEmail2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx context.Context, sel ast.SelectionSet, v []*models.ContactEmail) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		rctx := &graphql.ResolverContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNContactEmail2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNContactEmail2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx context.Context, sel ast.SelectionSet, v *models.ContactEmail) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._ContactEmail(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNEvent2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v models.Event) graphql.Marshaler {
 	return ec._Event(ctx, sel, &v)
 }
@@ -5564,6 +6000,17 @@ func (ec *executionContext) marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋ
 		return graphql.Null
 	}
 	return ec._Contact(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOContactEmail2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx context.Context, sel ast.SelectionSet, v models.ContactEmail) graphql.Marshaler {
+	return ec._ContactEmail(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOContactEmail2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx context.Context, sel ast.SelectionSet, v *models.ContactEmail) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ContactEmail(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOEvent2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx context.Context, sel ast.SelectionSet, v models.Event) graphql.Marshaler {

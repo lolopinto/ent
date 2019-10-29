@@ -92,6 +92,24 @@ func GenLoadContact(viewer viewer.ViewerContext, id string, result *ContactResul
 	result.Error = err
 }
 
+// GenContactEmails returns the ContactEmails associated with the Contact instance
+func (contact *Contact) GenContactEmails(result *ContactEmailsResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	var contactEmails []*ContactEmail
+	chanErr := make(chan error)
+	go ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, &contactEmails, "contact_id", &configs.ContactEmailConfig{}, chanErr)
+	err := <-chanErr
+	result.ContactEmails = contactEmails
+	result.Error = err
+}
+
+// LoadContactEmails returns the ContactEmails associated with the Contact instance
+func (contact *Contact) LoadContactEmails() ([]*ContactEmail, error) {
+	var contactEmails []*ContactEmail
+	err := ent.LoadForeignKeyNodes(contact.Viewer, contact.ID, &contactEmails, "contact_id", &configs.ContactEmailConfig{})
+	return contactEmails, err
+}
+
 // LoadAllowListEdges returns the User edges associated with the Contact instance
 func (contact *Contact) LoadAllowListEdges() ([]*ent.Edge, error) {
 	return ent.LoadEdgesByType(contact.ID, ContactToAllowListEdge)

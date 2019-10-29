@@ -18,5 +18,8 @@ func (config *ContactConfig) GetEdges() ent.EdgeMap {
 		"AllowList": &ent.AssociationEdge{
 			EntConfig: UserConfig{},
 		},
+		"ContactEmails": ent.ForeignKeyEdge{
+			EntConfig: ContactEmailConfig{},
+		},
 	}
 }

@@ -30,6 +30,17 @@ sa.Table("contact_allow_list_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="contact_allow_list_edges_id1_edge_type_id2_pkey"),
 )
    
+sa.Table("contact_emails", metadata,
+    sa.Column("id", UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("email_address", sa.Text(), nullable=False),
+    sa.Column("label", sa.Text(), nullable=False),
+    sa.Column("contact_id", UUID(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="contact_emails_id_pkey"),
+    sa.ForeignKeyConstraint(["contact_id"], ["contacts.id"], name="contact_emails_contact_id_fkey", ondelete="CASCADE"),
+)
+   
 sa.Table("contacts", metadata,
     sa.Column("id", UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),

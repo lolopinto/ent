@@ -14,6 +14,9 @@ type Resolver struct{}
 func (r *Resolver) Contact() ContactResolver {
 	return &contactResolver{r}
 }
+func (r *Resolver) ContactEmail() ContactEmailResolver {
+	return &contactEmailResolver{r}
+}
 func (r *Resolver) Event() EventResolver {
 	return &eventResolver{r}
 }
@@ -31,6 +34,16 @@ type contactResolver struct{ *Resolver }
 
 func (r *contactResolver) AllowList(ctx context.Context, obj *models.Contact) ([]*models.User, error) {
 	return obj.LoadAllowList()
+}
+
+func (r *contactResolver) ContactEmails(ctx context.Context, obj *models.Contact) ([]*models.ContactEmail, error) {
+	return obj.LoadContactEmails()
+}
+
+type contactEmailResolver struct{ *Resolver }
+
+func (r *contactEmailResolver) Contact(ctx context.Context, obj *models.ContactEmail) (*models.Contact, error) {
+	return obj.LoadContact()
 }
 
 type eventResolver struct{ *Resolver }
@@ -168,6 +181,10 @@ type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) Contact(ctx context.Context, id string) (*models.Contact, error) {
 	return models.LoadContactFromContext(ctx, id)
+}
+
+func (r *queryResolver) ContactEmail(ctx context.Context, id string) (*models.ContactEmail, error) {
+	return models.LoadContactEmailFromContext(ctx, id)
 }
 
 func (r *queryResolver) Event(ctx context.Context, id string) (*models.Event, error) {
