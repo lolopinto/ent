@@ -31,7 +31,7 @@ func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.Us
 	for _, user := range invitedUsers {
 		b.AddOutboundEdge(models.EventToInvitedEdge, user.ID, user.GetType())
 	}
-	// this will be automatically added my generated builders
+	// this will be automatically added by generated builders
 	b.AddInboundEdge(models.UserToEventsEdge, user.ID, user.GetType())
 	return SaveEvent(t, b)
 }
@@ -45,10 +45,13 @@ func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.Use
 		nil,
 	)
 	setFields(b, map[string]interface{}{
-		"EmailAddress": util.GenerateRandEmail(),
-		"UserID":       user.ID,
-		"FirstName":    "first-name",
-		"LastName":     "last-name",
+		"EmailAddress":  util.GenerateRandEmail(),
+		"UserID":        user.ID,
+		"FirstName":     "first-name",
+		"LastName":      "last-name",
+		"Favorite":      false,
+		"Pi":            3.14,
+		"NumberOfCalls": 5,
 	})
 	for _, user := range allowList {
 		b.AddOutboundEdge(models.ContactToAllowListEdge, user.ID, user.GetType())

@@ -24,11 +24,14 @@ const (
 // Contact represents the `Contact` model
 type Contact struct {
 	ent.Node
-	EmailAddress string `db:"email_address"`
-	FirstName    string `db:"first_name"`
-	LastName     string `db:"last_name"`
-	UserID       string `db:"user_id"`
-	Viewer       viewer.ViewerContext
+	EmailAddress  string  `db:"email_address"`
+	FirstName     string  `db:"first_name"`
+	LastName      string  `db:"last_name"`
+	UserID        string  `db:"user_id"`
+	Favorite      bool    `graphql:"_" db:"favorite"`
+	NumberOfCalls int     `graphql:"_" db:"number_of_calls"`
+	Pi            float64 `graphql:"_" db:"pi"`
+	Viewer        viewer.ViewerContext
 }
 
 // ContactResult stores the result of loading a Contact. It's a tuple type which has 2 fields:
@@ -180,6 +183,21 @@ func (contact *Contact) DBFields() ent.DBFields {
 		"user_id": func(v interface{}) error {
 			var err error
 			contact.UserID, err = cast.ToString(v)
+			return err
+		},
+		"favorite": func(v interface{}) error {
+			var err error
+			contact.Favorite, err = cast.ToBool(v)
+			return err
+		},
+		"number_of_calls": func(v interface{}) error {
+			var err error
+			contact.NumberOfCalls, err = cast.ToInt(v)
+			return err
+		},
+		"pi": func(v interface{}) error {
+			var err error
+			contact.Pi, err = cast.ToFloat(v)
 			return err
 		},
 	}

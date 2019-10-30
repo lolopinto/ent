@@ -115,8 +115,10 @@ func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig C
 	go genLoadRawData(id, ent, entConfig, chanErr)
 	err := <-chanErr
 	if err != nil {
+		entreflect.SetZeroVal(ent)
 		// there's an error, return the value here and we're done...
 		errChan <- err
+		return
 	}
 
 	// hmm todo need to wrap all of this in a new function or new else branch

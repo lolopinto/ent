@@ -86,7 +86,7 @@ func (t *FloatType) GetGraphQLType() string {
 }
 
 func (t *FloatType) GetCastToMethod() string {
-	panic("todo!")
+	return "cast.ToFloat"
 }
 
 type TimeType struct{}
