@@ -4,18 +4,17 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 )
 
 // we need to support the following:
 // * mutliple unrelated operations (add an edge) √
-// * multiple unrelated changesets
+// * multiple unrelated changesets √
 // * changesets that depend on each other e.g. create contact while creating user √
 // * changesets with multiple that depend on each other e.g. create 1 contact, 1 event while creating user √
 // * changesets with complexity 1-level deep e.g. create user, create 1 contact, create event. create edge from user -> event (default now...) or edge from user -> self contact (to know user's contact) e.g. account/profile/organization √
 // * changesets with multiple level deep e.g. create user -> create contact, create contact_email  √
-// changeset where dependencies are flipped e.g main changeset depends on inner one for something so inner needs to be created first
+// changeset where dependencies are flipped e.g main changeset depends on inner one for something so inner needs to be created first √ (done in tests)
 
 // entListBasedExecutor is used for the simple case when there's one changeset
 // with one or more operations which doesn't depend on other changesets
@@ -29,15 +28,11 @@ type entListBasedExecutor struct {
 }
 
 func (exec *entListBasedExecutor) Operation() (ent.DataOperation, error) {
-	//	spew.Dump("list based", exec.idx, exec.ops)
 	if exec.idx == len(exec.ops) {
 		return nil, ent.AllOperations
 	}
 
-	// spew.Dump("operation", exec.lastOp)
-	// spew.Dump(exec)
 	if exec.lastOp != nil {
-		//		spew.Dump("created ent", exec.createdEnt)
 		if err := exec.handleCreatedEnt(exec.lastOp); err != nil {
 			return nil, err
 		}
@@ -58,7 +53,6 @@ func (exec *entListBasedExecutor) handleCreatedEnt(op ent.DataOperation) error {
 	if createdEnt != nil {
 		exec.createdEnt = createdEnt
 	}
-	//	spew.Dump("exec.createdEnt", exec.createdEnt)
 	return nil
 }
 
@@ -146,25 +140,17 @@ func (exec *entWithDependenciesExecutor) Operation() (ent.DataOperation, error) 
 
 	op, err := exec.getOperation()
 
-	if exec.idx == len(exec.executors) {
-		// we've gone around the world
-		return nil, ent.AllOperations
-	}
-
 	if exec.lastOp != nil {
 		if err := exec.handleCreatedEnt(exec.lastOp); err != nil {
-			//			spew.Dump("handle created ent", err)
 			return nil, err
 		}
 	}
 
 	if err == ent.AllOperations {
-		spew.Dump("on to the next one")
 		// done with previous executor, let's move to the next
 		exec.idx++
 		// get new op and error to send
 		op, err = exec.getOperation()
-		spew.Dump(op, err)
 	}
 
 	// keep track of previous one
@@ -173,25 +159,18 @@ func (exec *entWithDependenciesExecutor) Operation() (ent.DataOperation, error) 
 }
 
 func (exec *entWithDependenciesExecutor) ResolveValue(val interface{}) ent.Entity {
-	//	spew.Dump("resolve", val)
 	str := fmt.Sprintf("%v", val)
 	entity, ok := exec.mapper[str]
 	//	debug.PrintStack()
 	if !ok {
 		for _, executor := range exec.executors {
 			ent := executor.ResolveValue(val)
-			spew.Dump("executor resolve ", val, ent)
 			if ent != nil {
-				spew.Dump("was able to get dependent to resolve!!!")
 				return ent
 			}
 		}
-		spew.Dump("didn't resolve", str, exec.mapper)
 		return nil
 	}
-	//	spew.Dump(exec)
-	spew.Dump("resolved!", val, entity.GetID())
-	//	debug.PrintStack()
 
 	return entity
 }
@@ -207,7 +186,6 @@ func (exec *entWithDependenciesExecutor) handleCreatedEnt(op ent.DataOperation) 
 	placeholder := exec.placeholders[exec.idx]
 	exec.mapper[placeholder] = createdEnt
 
-	//	spew.Dump("mapper", exec.mapper)
 	return nil
 }
 
@@ -229,7 +207,6 @@ func handleCreatedEnt(op ent.DataOperation, entity ent.Entity) (ent.Entity, erro
 	if createdEnt == nil {
 		return nil, fmt.Errorf("op %v returned a nil returned ent", op)
 	}
-	//	spew.Dump("Created ent", createdEnt)
 
 	return createdEnt, nil
 }

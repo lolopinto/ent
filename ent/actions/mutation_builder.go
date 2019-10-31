@@ -69,7 +69,6 @@ func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}
 	if !ok {
 		return val
 	}
-	//	spew.Dump("resolveBuilder")
 	// b.mu.Lock()
 	// defer b.mu.Unlock()
 	if b.dependencies == nil {
@@ -195,13 +194,11 @@ func (b *EntMutationBuilder) RemoveOutboundEdge(edgeType ent.EdgeType, id2 strin
 }
 
 func (b *EntMutationBuilder) SetTriggers(triggers []Trigger) {
-	//	spew.Dump("set triggers")
 	b.triggers = triggers
 }
 
 func (b *EntMutationBuilder) runTriggers() error {
 	// nothing to do here
-	//	spew.Dump("runTriggers")
 	if len(b.triggers) == 0 {
 		return nil
 	}
@@ -214,10 +211,8 @@ func (b *EntMutationBuilder) runTriggers() error {
 	for idx := range b.triggers {
 		i := idx
 		trigger := b.triggers[i]
-		//		spew.Dump(trigger)
 		f := func(i int) {
 			defer wg.Done()
-			//			spew.Dump("trigger", i)
 			c, err := trigger.GetChangeset()
 			if err != nil {
 				errs = append(errs, err)
@@ -225,29 +220,23 @@ func (b *EntMutationBuilder) runTriggers() error {
 			if c != nil {
 				changesets = append(changesets, c)
 			}
-			//			spew.Dump("post get changeset")
 		}
 		go f(i)
 	}
 	wg.Wait()
-	//	spew.Dump("after wait")
 	if len(errs) != 0 {
-		//		spew.Dump("error", errs)
 		// TODO we need the list of errors abstraction
 		return errs[0]
 	}
 	if len(changesets) != 0 {
 		b.mu.Lock()
 		defer b.mu.Unlock()
-		//		spew.Dump("changeset")
 		b.changesets = changesets
 	}
 	return nil
 }
 
 func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, error) {
-	//	spew.Dump("GetChangeset...")
-	//	debug.PrintStack()
 	if err := b.runTriggers(); err != nil {
 		return nil, err
 	}
@@ -317,7 +306,6 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 		}
 	}
 
-	//	spew.Dump(b.dependencies, b.changesets)
 	var executor ent.Executor
 	// this is simple.
 	// user has no dependencies but has changesets
@@ -329,14 +317,11 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 	// the issue is that we need to resolve the underlying dependency
 	// which is why we have a list based executor underneath anyways...
 	if len(b.changesets) == 0 {
-		//		spew.Dump("simple", b.fields)
 		executor = &entListBasedExecutor{
 			placeholderID: b.GetPlaceholderID(),
 			ops:           ops,
 		}
 	} else {
-		//		spew.Dump("complex", b.fields, b.changesets)
-		// TODO
 		// dependencies implies other changesets?
 		// if not
 		// there should either be dependencies or changesets
@@ -346,14 +331,8 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 			dependencies:  b.dependencies,
 			changesets:    b.changesets,
 		}
-		// executor = &entListBasedExecutor{
-		// 	placeholderID: b.GetPlaceholderID(),
-		// 	ops:           ops,
-		// }
 	}
 	// let's figure out craziness here
-	//	spew.Dump(executor)
-	// TODO need dependencies here also
 	return &EntMutationChangeset{
 		entity:        entity,
 		viewer:        b.Viewer,
