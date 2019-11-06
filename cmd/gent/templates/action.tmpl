@@ -24,11 +24,7 @@
 
 type {{$actionName}} struct {
   {{$embeddedActionType}}
-  builder *user.{{$builderName}}
-  // TODO....
-  {{ if returnsObjectInstance $action -}}
-//    {{$nodeInfo.NodeInstance}} models.{{$nodeInfo.Node}}
-  {{end -}}
+  builder {{printf "*builder.%s" $builderName}}
 }
 
 {{$actionMethodName := actionMethodName $action}}
@@ -62,8 +58,21 @@ func (action *{{$actionName}}) GetViewer() viewer.ViewerContext {
   return action.builder.GetViewer()
 }
 
+func (action *{{$actionName}}) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+	action.builder.SetTriggers(triggers)
+  {{$triggerInterface := printf "builder.%sTrigger" $nodeInfo.Node -}}
+	for _, t := range triggers {
+		trigger, ok := t.({{$triggerInterface}})
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(action.builder)
+	}
+	return nil
+}
+
 func (action *{{$actionName}}) GetChangeset() (ent.Changeset, error) {
-  return action.builder.GetChangeset()
+  return action.builder.GetChangeset(nil)
 }
 
 func (action *{{$actionName}}) Entity() ent.Entity {
@@ -82,6 +91,14 @@ func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName
   action.builder.{{$field.SetterMethodName}}({{$field.InstanceName}})
   return action
 }
+  {{ if $field.Field.IDField -}}
+  // {{$field.SetterMethodName}}Builder sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
+  func (action *{{$actionName}}) {{$field.SetterMethodName}}Builder(builder ent.MutationBuilder) *{{$actionName}} {
+    action.builder.{{$field.SetterMethodName}}Builder(builder)
+    return action
+  }
+
+  {{end -}}
 
 {{end -}}
 

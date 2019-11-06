@@ -22,6 +22,20 @@ type Node interface {
 	IsNode()
 }
 
+type ContactCreateInput struct {
+	EmailAddress  string  `json:"emailAddress"`
+	Favorite      bool    `json:"favorite"`
+	FirstName     string  `json:"firstName"`
+	LastName      string  `json:"lastName"`
+	NumberOfCalls int     `json:"numberOfCalls"`
+	Pi            float64 `json:"pi"`
+	UserID        string  `json:"userID"`
+}
+
+type ContactCreateResponse struct {
+	Contact *models.Contact `json:"contact"`
+}
+
 type EventsConnection struct {
 	Edges []*EventsEdge   `json:"edges"`
 	Nodes []*models.Event `json:"nodes"`

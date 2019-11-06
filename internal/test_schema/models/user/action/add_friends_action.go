@@ -4,19 +4,17 @@ package action
 
 import (
 	"context"
+	"errors"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/user"
 	builder "github.com/lolopinto/ent/internal/test_schema/models/user"
 )
 
 type AddFriendsAction struct {
-	builder *user.UserMutationBuilder
-	// TODO....
-	//    user models.User
+	builder *builder.UserMutationBuilder
 }
 
 // AddFriendsFromContext is the factory method to get an ...
@@ -45,8 +43,20 @@ func (action *AddFriendsAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
+func (action *AddFriendsAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+	action.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		trigger, ok := t.(builder.UserTrigger)
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(action.builder)
+	}
+	return nil
+}
+
 func (action *AddFriendsAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset()
+	return action.builder.GetChangeset(nil)
 }
 
 func (action *AddFriendsAction) Entity() ent.Entity {

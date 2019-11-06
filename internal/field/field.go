@@ -152,6 +152,14 @@ func (f *Field) SingleFieldPrimaryKey() bool {
 	return f.singleFieldPrimaryKey
 }
 
+func (f *Field) IDField() bool {
+	if !f.topLevelStructField {
+		return false
+	}
+	// TOOD this needs a better name
+	return strings.HasSuffix(f.FieldName, "ID")
+}
+
 func (f *Field) GetUnquotedKeyFromTag(key string) string {
 	val := f.tagMap[key]
 	if val == "" {

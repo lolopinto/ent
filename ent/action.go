@@ -93,7 +93,7 @@ type MutationBuilder interface {
 	ExistingEnt() Entity
 	GetPlaceholderID() string // TODO GetMutationID()?
 	GetViewer() viewer.ViewerContext
-	GetChangeset(Entity) (Changeset, error)
+	GetChangeset(Entity) (Changeset, error) // Damn!!
 	GetOperation() WriteOperation
 }
 

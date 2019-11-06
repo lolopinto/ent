@@ -267,10 +267,29 @@ func (b *UserMutationBuilder) GetUser() *models.User {
 	return &b.user
 }
 
-func (b *UserMutationBuilder) GetChangeset() (ent.Changeset, error) {
+func (b *UserMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+	b.builder.SetTriggers(triggers)
+}
+
+func (b *UserMutationBuilder) GetChangeset(_ ent.Entity) (ent.Changeset, error) {
+
 	b.setFields()
 	return b.builder.GetChangeset(&b.user)
 }
+
+func (b *UserMutationBuilder) ExistingEnt() ent.Entity {
+	return b.builder.ExistingEnt()
+}
+
+func (b *UserMutationBuilder) GetOperation() ent.WriteOperation {
+	return b.builder.GetOperation()
+}
+
+func (b *UserMutationBuilder) GetPlaceholderID() string {
+	return b.builder.GetPlaceholderID()
+}
+
+var _ ent.MutationBuilder = &UserMutationBuilder{}
 
 type UserTrigger interface {
 	SetBuilder(*UserMutationBuilder)

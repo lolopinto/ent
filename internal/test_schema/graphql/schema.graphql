@@ -16,6 +16,20 @@ type Contact implements Node {
     userID: String!
 }
 
+input ContactCreateInput {
+    emailAddress: String!
+    favorite: Boolean!
+    firstName: String!
+    lastName: String!
+    numberOfCalls: Int!
+    pi: Float!
+    userID: String!
+}
+
+type ContactCreateResponse {
+    contact: Contact
+}
+
 type ContactEmail implements Node {
     contact: Contact
     emailAddress: String!
@@ -59,6 +73,7 @@ type EventsEdge implements Edge {
 }
 
 type Mutation {
+    contactCreate(input: ContactCreateInput!): ContactCreateResponse
     userAddFriends(input: UserAddFriendsInput!): UserAddFriendsResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
     userDelete(input: UserDeleteInput!): UserDeleteResponse

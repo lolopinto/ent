@@ -59,6 +59,10 @@ type ComplexityRoot struct {
 		UserID        func(childComplexity int) int
 	}
 
+	ContactCreateResponse struct {
+		Contact func(childComplexity int) int
+	}
+
 	ContactEmail struct {
 		Contact      func(childComplexity int) int
 		EmailAddress func(childComplexity int) int
@@ -91,6 +95,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		ContactCreate           func(childComplexity int, input ContactCreateInput) int
 		UserAddFriends          func(childComplexity int, input UserAddFriendsInput) int
 		UserCreate              func(childComplexity int, input UserCreateInput) int
 		UserDelete              func(childComplexity int, input UserDeleteInput) int
@@ -169,6 +174,7 @@ type EventResolver interface {
 	ViewerRsvpStatus(ctx context.Context, obj *models.Event) (*EventRsvpStatus, error)
 }
 type MutationResolver interface {
+	ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error)
 	UserAddFriends(ctx context.Context, input UserAddFriendsInput) (*UserAddFriendsResponse, error)
 	UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error)
 	UserDelete(ctx context.Context, input UserDeleteInput) (*UserDeleteResponse, error)
@@ -257,6 +263,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Contact.UserID(childComplexity), true
+
+	case "ContactCreateResponse.contact":
+		if e.complexity.ContactCreateResponse.Contact == nil {
+			break
+		}
+
+		return e.complexity.ContactCreateResponse.Contact(childComplexity), true
 
 	case "ContactEmail.contact":
 		if e.complexity.ContactEmail.Contact == nil {
@@ -390,6 +403,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.EventsEdge.Node(childComplexity), true
+
+	case "Mutation.contactCreate":
+		if e.complexity.Mutation.ContactCreate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_contactCreate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ContactCreate(childComplexity, args["input"].(ContactCreateInput)), true
 
 	case "Mutation.userAddFriends":
 		if e.complexity.Mutation.UserAddFriends == nil {
@@ -712,6 +737,20 @@ type Contact implements Node {
     userID: String!
 }
 
+input ContactCreateInput {
+    emailAddress: String!
+    favorite: Boolean!
+    firstName: String!
+    lastName: String!
+    numberOfCalls: Int!
+    pi: Float!
+    userID: String!
+}
+
+type ContactCreateResponse {
+    contact: Contact
+}
+
 type ContactEmail implements Node {
     contact: Contact
     emailAddress: String!
@@ -755,6 +794,7 @@ type EventsEdge implements Edge {
 }
 
 type Mutation {
+    contactCreate(input: ContactCreateInput!): ContactCreateResponse
     userAddFriends(input: UserAddFriendsInput!): UserAddFriendsResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
     userDelete(input: UserDeleteInput!): UserDeleteResponse
@@ -851,6 +891,20 @@ scalar Time
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_contactCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 ContactCreateInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNContactCreateInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐContactCreateInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_userAddFriends_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1285,6 +1339,40 @@ func (ec *executionContext) _Contact_userID(ctx context.Context, field graphql.C
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ContactCreateResponse_contact(ctx context.Context, field graphql.CollectedField, obj *ContactCreateResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "ContactCreateResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Contact, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Contact)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ContactEmail_contact(ctx context.Context, field graphql.CollectedField, obj *models.ContactEmail) (ret graphql.Marshaler) {
@@ -1973,6 +2061,47 @@ func (ec *executionContext) _EventsEdge_node(ctx context.Context, field graphql.
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_contactCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_contactCreate_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ContactCreate(rctx, args["input"].(ContactCreateInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ContactCreateResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOContactCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐContactCreateResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_userAddFriends(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4252,6 +4381,60 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputContactCreateInput(ctx context.Context, obj interface{}) (ContactCreateInput, error) {
+	var it ContactCreateInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "emailAddress":
+			var err error
+			it.EmailAddress, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "favorite":
+			var err error
+			it.Favorite, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "firstName":
+			var err error
+			it.FirstName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "lastName":
+			var err error
+			it.LastName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "numberOfCalls":
+			var err error
+			it.NumberOfCalls, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "pi":
+			var err error
+			it.Pi, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userID":
+			var err error
+			it.UserID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUserAddFriendsInput(ctx context.Context, obj interface{}) (UserAddFriendsInput, error) {
 	var it UserAddFriendsInput
 	var asMap = obj.(map[string]interface{})
@@ -4526,6 +4709,30 @@ func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var contactCreateResponseImplementors = []string{"ContactCreateResponse"}
+
+func (ec *executionContext) _ContactCreateResponse(ctx context.Context, sel ast.SelectionSet, obj *ContactCreateResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, contactCreateResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ContactCreateResponse")
+		case "contact":
+			out.Values[i] = ec._ContactCreateResponse_contact(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var contactEmailImplementors = []string{"ContactEmail", "Node"}
 
 func (ec *executionContext) _ContactEmail(ctx context.Context, sel ast.SelectionSet, obj *models.ContactEmail) graphql.Marshaler {
@@ -4781,6 +4988,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "contactCreate":
+			out.Values[i] = ec._Mutation_contactCreate(ctx, field)
 		case "userAddFriends":
 			out.Values[i] = ec._Mutation_userAddFriends(ctx, field)
 		case "userCreate":
@@ -5499,6 +5708,10 @@ func (ec *executionContext) marshalNContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋ
 	return ec._Contact(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNContactCreateInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐContactCreateInput(ctx context.Context, v interface{}) (ContactCreateInput, error) {
+	return ec.unmarshalInputContactCreateInput(ctx, v)
+}
+
 func (ec *executionContext) marshalNContactEmail2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx context.Context, sel ast.SelectionSet, v models.ContactEmail) graphql.Marshaler {
 	return ec._ContactEmail(ctx, sel, &v)
 }
@@ -5615,12 +5828,40 @@ func (ec *executionContext) marshalNEventsEdge2ᚖgithubᚗcomᚋlolopintoᚋent
 	return ec._EventsEdge(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	return graphql.UnmarshalFloat(v)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloat(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalID(v)
 }
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	return graphql.UnmarshalInt(v)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -6000,6 +6241,17 @@ func (ec *executionContext) marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋ
 		return graphql.Null
 	}
 	return ec._Contact(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOContactCreateResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐContactCreateResponse(ctx context.Context, sel ast.SelectionSet, v ContactCreateResponse) graphql.Marshaler {
+	return ec._ContactCreateResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOContactCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐContactCreateResponse(ctx context.Context, sel ast.SelectionSet, v *ContactCreateResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ContactCreateResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOContactEmail2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx context.Context, sel ast.SelectionSet, v models.ContactEmail) graphql.Marshaler {

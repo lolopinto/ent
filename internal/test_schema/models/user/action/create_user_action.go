@@ -4,19 +4,17 @@ package action
 
 import (
 	"context"
+	"errors"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/user"
 	builder "github.com/lolopinto/ent/internal/test_schema/models/user"
 )
 
 type CreateUserAction struct {
-	builder *user.UserMutationBuilder
-	// TODO....
-	//    user models.User
+	builder *builder.UserMutationBuilder
 }
 
 // CreateUserFromContext is the factory method to get an ...
@@ -44,8 +42,20 @@ func (action *CreateUserAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
+func (action *CreateUserAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+	action.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		trigger, ok := t.(builder.UserTrigger)
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(action.builder)
+	}
+	return nil
+}
+
 func (action *CreateUserAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset()
+	return action.builder.GetChangeset(nil)
 }
 
 func (action *CreateUserAction) Entity() ent.Entity {

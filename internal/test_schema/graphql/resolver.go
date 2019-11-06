@@ -6,7 +6,8 @@ import (
 	"context"
 
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/user/action"
+	"github.com/lolopinto/ent/internal/test_schema/models/contact/action"
+	action1 "github.com/lolopinto/ent/internal/test_schema/models/user/action"
 )
 
 type Resolver struct{}
@@ -84,13 +85,33 @@ func (r *eventResolver) ViewerRsvpStatus(ctx context.Context, obj *models.Event)
 
 type mutationResolver struct{ *Resolver }
 
+func (r *mutationResolver) ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error) {
+	node, err := action.CreateContactFromContext(ctx).
+		SetEmailAddress(input.EmailAddress).
+		SetFirstName(input.FirstName).
+		SetLastName(input.LastName).
+		SetUserID(input.UserID).
+		SetFavorite(input.Favorite).
+		SetNumberOfCalls(input.NumberOfCalls).
+		SetPi(input.Pi).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &ContactCreateResponse{
+		Contact: node,
+	}, nil
+}
+
 func (r *mutationResolver) UserAddFriends(ctx context.Context, input UserAddFriendsInput) (*UserAddFriendsResponse, error) {
 	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	node, err := action.AddFriendsFromContext(ctx, existingNode).
+	node, err := action1.AddFriendsFromContext(ctx, existingNode).
 		AddFriendsID(input.FriendsID).
 		Save()
 
@@ -104,7 +125,7 @@ func (r *mutationResolver) UserAddFriends(ctx context.Context, input UserAddFrie
 }
 
 func (r *mutationResolver) UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error) {
-	node, err := action.CreateUserFromContext(ctx).
+	node, err := action1.CreateUserFromContext(ctx).
 		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
@@ -125,7 +146,7 @@ func (r *mutationResolver) UserDelete(ctx context.Context, input UserDeleteInput
 		return nil, err
 	}
 
-	err = action.DeleteUserFromContext(ctx, existingNode).
+	err = action1.DeleteUserFromContext(ctx, existingNode).
 		Save()
 
 	if err != nil {
@@ -143,7 +164,7 @@ func (r *mutationResolver) UserEdit(ctx context.Context, input UserEditInput) (*
 		return nil, err
 	}
 
-	node, err := action.EditUserFromContext(ctx, existingNode).
+	node, err := action1.EditUserFromContext(ctx, existingNode).
 		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
@@ -164,7 +185,7 @@ func (r *mutationResolver) UserRemoveFamilyMembers(ctx context.Context, input Us
 		return nil, err
 	}
 
-	node, err := action.RemoveFamilyMembersFromContext(ctx, existingNode).
+	node, err := action1.RemoveFamilyMembersFromContext(ctx, existingNode).
 		AddFamilyMembersID(input.FamilyMembersID).
 		Save()
 

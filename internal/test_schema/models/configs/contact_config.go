@@ -26,3 +26,11 @@ func (config *ContactConfig) GetEdges() ent.EdgeMap {
 		},
 	}
 }
+
+func (config *ContactConfig) GetActions() []*ent.ActionConfig {
+	return []*ent.ActionConfig{
+		&ent.ActionConfig{
+			Action: ent.CreateAction,
+		},
+	}
+}

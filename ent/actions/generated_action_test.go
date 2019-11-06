@@ -24,6 +24,7 @@ type generatedActionSuite struct {
 func (suite *generatedActionSuite) SetupSuite() {
 	suite.Tables = []string{
 		"users",
+		"contacts",
 		"event_invited_edges",
 		"events",
 		"user_family_members_edges",
@@ -47,8 +48,26 @@ func (suite *generatedActionSuite) createUser() *models.User {
 	testingutils.VerifyUserObj(suite.T(), user, email)
 	return user
 }
+
 func (suite *generatedActionSuite) TestCreation() {
-	suite.createUser()
+	user := suite.createUser()
+
+	// reload the user for privacy reasons.
+	// confirm that creating a user also creates the contact since UserCreateContactTrigger is part of this action
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	assert.Nil(suite.T(), err)
+
+	contacts, err := reloadedUser.LoadContacts()
+	assert.Nil(suite.T(), err)
+	assert.Len(suite.T(), contacts, 1)
+
+	contact := contacts[0]
+
+	assert.Equal(suite.T(), contact.UserID, reloadedUser.ID)
+	assert.Equal(suite.T(), contact.FirstName, reloadedUser.FirstName)
+	assert.Equal(suite.T(), contact.LastName, reloadedUser.LastName)
+	assert.Equal(suite.T(), contact.EmailAddress, reloadedUser.EmailAddress)
 }
 
 func (suite *generatedActionSuite) TestCreationNotAllFields() {
