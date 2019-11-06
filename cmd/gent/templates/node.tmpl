@@ -46,7 +46,7 @@ const (
 type {{.Node}} struct {
   ent.Node
   {{ range $field := .FieldInfo.Fields -}} 
-    {{if topLevelStructField $field -}}
+    {{if $field.TopLevelStructField -}}
       {{$field.FieldName}} {{fTypeString $field}} {{$field.FieldTag}}
     {{end -}}
   {{end -}}
@@ -283,7 +283,7 @@ func ({{$currentNodeInstance}} *{{$currentNode}}) DBFields() ent.DBFields {
       return err
     },
     {{ range $field := .FieldInfo.Fields -}}
-      {{if topLevelStructField $field -}}
+      {{if $field.TopLevelStructField -}}
         "{{$field.GetDbColName}}": func(v interface{}) error {
           var err error
           {{$currentNodeInstance}}.{{$field.FieldName}}, err = {{$field.GetCastToMethod}}(v)

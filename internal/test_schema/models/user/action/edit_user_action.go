@@ -9,12 +9,14 @@ import (
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
+	"github.com/lolopinto/ent/internal/test_schema/models/user"
+	builder "github.com/lolopinto/ent/internal/test_schema/models/user"
 )
 
 type EditUserAction struct {
-	builder *actions.EntMutationBuilder
-	user    models.User
+	builder *user.UserMutationBuilder
+	// TODO....
+	//    user models.User
 }
 
 // EditUserFromContext is the factory method to get an ...
@@ -28,14 +30,13 @@ func EditUserFromContext(ctx context.Context, user *models.User) *EditUserAction
 
 // EditUser is the factory method to get an ...
 func EditUser(viewer viewer.ViewerContext, user *models.User) *EditUserAction {
-	builder := actions.NewMutationBuilder(
+	action := &EditUserAction{}
+	builder := builder.NewMutationBuilder(
 		viewer,
 		ent.EditOperation,
-		&configs.UserConfig{},
+		action.getFieldMap(),
 		actions.ExistingEnt(user),
 	)
-	action := &EditUserAction{}
-	builder.FieldMap = action.getFieldMap()
 	action.builder = builder
 	return action
 }
@@ -45,34 +46,34 @@ func (action *EditUserAction) GetViewer() viewer.ViewerContext {
 }
 
 func (action *EditUserAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset(action.Entity())
+	return action.builder.GetChangeset()
 }
 
 func (action *EditUserAction) Entity() ent.Entity {
-	return &action.user
+	return action.builder.GetUser()
 }
 
 // SetEmailAddress sets the EmailAddress while editing the User ent
 func (action *EditUserAction) SetEmailAddress(emailAddress string) *EditUserAction {
-	action.builder.SetField("EmailAddress", emailAddress)
+	action.builder.SetEmailAddress(emailAddress)
 	return action
 }
 
 // SetFirstName sets the FirstName while editing the User ent
 func (action *EditUserAction) SetFirstName(firstName string) *EditUserAction {
-	action.builder.SetField("FirstName", firstName)
+	action.builder.SetFirstName(firstName)
 	return action
 }
 
 // SetLastName sets the LastName while editing the User ent
 func (action *EditUserAction) SetLastName(lastName string) *EditUserAction {
-	action.builder.SetField("LastName", lastName)
+	action.builder.SetLastName(lastName)
 	return action
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *EditUserAction) getFieldMap() ent.MutationFieldMap {
-	return ent.MutationFieldMap{
+func (action *EditUserAction) getFieldMap() ent.ActionFieldMap {
+	return ent.ActionFieldMap{
 		"EmailAddress": &ent.MutatingFieldInfo{
 			DB:       "email_address",
 			Required: false,
@@ -96,7 +97,7 @@ func (action *EditUserAction) Validate() error {
 // Save is the method called to execute this action and save change
 func (action *EditUserAction) Save() (*models.User, error) {
 	err := actions.Save(action)
-	return &action.user, err
+	return action.builder.GetUser(), err
 }
 
 var _ actions.Action = &EditUserAction{}

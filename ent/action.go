@@ -49,7 +49,7 @@ type MutatingFieldInfo struct {
 	DB       string
 	Required bool
 }
-type MutationFieldMap map[string]*MutatingFieldInfo
+type ActionFieldMap map[string]*MutatingFieldInfo
 
 type ActionErrorInfo struct {
 	ErrorMsg string

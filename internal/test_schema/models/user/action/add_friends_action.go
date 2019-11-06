@@ -9,12 +9,14 @@ import (
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
+	"github.com/lolopinto/ent/internal/test_schema/models/user"
+	builder "github.com/lolopinto/ent/internal/test_schema/models/user"
 )
 
 type AddFriendsAction struct {
-	builder *actions.EntMutationBuilder
-	user    models.User
+	builder *user.UserMutationBuilder
+	// TODO....
+	//    user models.User
 }
 
 // AddFriendsFromContext is the factory method to get an ...
@@ -28,14 +30,13 @@ func AddFriendsFromContext(ctx context.Context, user *models.User) *AddFriendsAc
 
 // AddFriends is the factory method to get an ...
 func AddFriends(viewer viewer.ViewerContext, user *models.User) *AddFriendsAction {
-	builder := actions.NewMutationBuilder(
+	action := &AddFriendsAction{}
+	builder := builder.NewMutationBuilder(
 		viewer,
 		ent.EditOperation,
-		&configs.UserConfig{},
+		action.getFieldMap(),
 		actions.ExistingEnt(user),
 	)
-	action := &AddFriendsAction{}
-	builder.FieldMap = action.getFieldMap()
 	action.builder = builder
 	return action
 }
@@ -45,28 +46,28 @@ func (action *AddFriendsAction) GetViewer() viewer.ViewerContext {
 }
 
 func (action *AddFriendsAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset(action.Entity())
+	return action.builder.GetChangeset()
 }
 
 func (action *AddFriendsAction) Entity() ent.Entity {
-	return &action.user
+	return action.builder.GetUser()
 }
 
-// AddUser adds an instance of User to the Friends edge while editing the User ent
-func (action *AddFriendsAction) AddUser(user *models.User) *AddFriendsAction {
-	action.builder.AddOutboundEdge(models.UserToFriendsEdge, user.ID, models.UserType)
+// AddFriends adds an instance of User to the Friends edge while editing the User ent
+func (action *AddFriendsAction) AddFriends(user *models.User) *AddFriendsAction {
+	action.builder.AddFriends(user)
 	return action
 }
 
-// AddUser adds an instance of UserId to the Friends edge while editing the User ent
-func (action *AddFriendsAction) AddUserID(userID string) *AddFriendsAction {
-	action.builder.AddOutboundEdge(models.UserToFriendsEdge, userID, models.UserType)
+// AddFriends adds an instance of UserId to the Friends edge while editing the User ent
+func (action *AddFriendsAction) AddFriendsID(userID string) *AddFriendsAction {
+	action.builder.AddFriendsID(userID)
 	return action
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *AddFriendsAction) getFieldMap() ent.MutationFieldMap {
-	return ent.MutationFieldMap{}
+func (action *AddFriendsAction) getFieldMap() ent.ActionFieldMap {
+	return ent.ActionFieldMap{}
 }
 
 // Validate returns an error if the current state of the action is not valid
@@ -77,7 +78,7 @@ func (action *AddFriendsAction) Validate() error {
 // Save is the method called to execute this action and save change
 func (action *AddFriendsAction) Save() (*models.User, error) {
 	err := actions.Save(action)
-	return &action.user, err
+	return action.builder.GetUser(), err
 }
 
 var _ actions.Action = &AddFriendsAction{}

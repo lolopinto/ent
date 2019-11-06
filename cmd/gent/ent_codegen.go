@@ -344,9 +344,6 @@ func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
 			funcMap: template.FuncMap{
 				"fTypeString": field.GetTypeInStructDefinition,
 				"quoteStr":    strconv.Quote,
-				"topLevelStructField": func(f *field.Field) bool {
-					return f.TopLevelStructField()
-				},
 			},
 		},
 	)

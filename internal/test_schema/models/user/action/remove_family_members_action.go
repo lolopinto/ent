@@ -9,12 +9,14 @@ import (
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
+	"github.com/lolopinto/ent/internal/test_schema/models/user"
+	builder "github.com/lolopinto/ent/internal/test_schema/models/user"
 )
 
 type RemoveFamilyMembersAction struct {
-	builder *actions.EntMutationBuilder
-	user    models.User
+	builder *user.UserMutationBuilder
+	// TODO....
+	//    user models.User
 }
 
 // RemoveFamilyMembersFromContext is the factory method to get an ...
@@ -28,14 +30,13 @@ func RemoveFamilyMembersFromContext(ctx context.Context, user *models.User) *Rem
 
 // RemoveFamilyMembers is the factory method to get an ...
 func RemoveFamilyMembers(viewer viewer.ViewerContext, user *models.User) *RemoveFamilyMembersAction {
-	builder := actions.NewMutationBuilder(
+	action := &RemoveFamilyMembersAction{}
+	builder := builder.NewMutationBuilder(
 		viewer,
 		ent.EditOperation,
-		&configs.UserConfig{},
+		action.getFieldMap(),
 		actions.ExistingEnt(user),
 	)
-	action := &RemoveFamilyMembersAction{}
-	builder.FieldMap = action.getFieldMap()
 	action.builder = builder
 	return action
 }
@@ -45,28 +46,28 @@ func (action *RemoveFamilyMembersAction) GetViewer() viewer.ViewerContext {
 }
 
 func (action *RemoveFamilyMembersAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset(action.Entity())
+	return action.builder.GetChangeset()
 }
 
 func (action *RemoveFamilyMembersAction) Entity() ent.Entity {
-	return &action.user
+	return action.builder.GetUser()
 }
 
-// AddUser adds an instance of User to the FamilyMembers edge while editing the User ent
-func (action *RemoveFamilyMembersAction) AddUser(user *models.User) *RemoveFamilyMembersAction {
-	action.builder.RemoveOutboundEdge(models.UserToFamilyMembersEdge, user.ID, models.UserType)
+// AddFamilyMembers adds an instance of User to the FamilyMembers edge while editing the User ent
+func (action *RemoveFamilyMembersAction) AddFamilyMembers(user *models.User) *RemoveFamilyMembersAction {
+	action.builder.RemoveFamilyMembers(user)
 	return action
 }
 
-// AddUser adds an instance of UserId to the FamilyMembers edge while editing the User ent
-func (action *RemoveFamilyMembersAction) AddUserID(userID string) *RemoveFamilyMembersAction {
-	action.builder.RemoveOutboundEdge(models.UserToFamilyMembersEdge, userID, models.UserType)
+// AddFamilyMembers adds an instance of UserId to the FamilyMembers edge while editing the User ent
+func (action *RemoveFamilyMembersAction) AddFamilyMembersID(userID string) *RemoveFamilyMembersAction {
+	action.builder.RemoveFamilyMembersID(userID)
 	return action
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *RemoveFamilyMembersAction) getFieldMap() ent.MutationFieldMap {
-	return ent.MutationFieldMap{}
+func (action *RemoveFamilyMembersAction) getFieldMap() ent.ActionFieldMap {
+	return ent.ActionFieldMap{}
 }
 
 // Validate returns an error if the current state of the action is not valid
@@ -77,7 +78,7 @@ func (action *RemoveFamilyMembersAction) Validate() error {
 // Save is the method called to execute this action and save change
 func (action *RemoveFamilyMembersAction) Save() (*models.User, error) {
 	err := actions.Save(action)
-	return &action.user, err
+	return action.builder.GetUser(), err
 }
 
 var _ actions.Action = &RemoveFamilyMembersAction{}

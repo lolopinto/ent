@@ -136,7 +136,7 @@ func (suite *generatedActionSuite) TestAddEdgeAction() {
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
 	updatedUser, err := action.AddFriends(v, user).
-		AddUser(user2).
+		AddFriends(user2).
 		Save()
 
 	assert.Nil(suite.T(), err)
@@ -175,7 +175,7 @@ func (suite *generatedActionSuite) TestRemoveEdgeAction() {
 	// hmm this API :(
 	// remove
 	updatedUser, err := action.RemoveFamilyMembers(v, user).
-		AddUser(user2).
+		AddFamilyMembers(user2).
 		Save()
 
 	assert.Nil(suite.T(), err)

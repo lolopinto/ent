@@ -91,7 +91,7 @@ func (r *mutationResolver) UserAddFriends(ctx context.Context, input UserAddFrie
 	}
 
 	node, err := action.AddFriendsFromContext(ctx, existingNode).
-		AddUserID(input.FriendsID).
+		AddFriendsID(input.FriendsID).
 		Save()
 
 	if err != nil {
@@ -165,7 +165,7 @@ func (r *mutationResolver) UserRemoveFamilyMembers(ctx context.Context, input Us
 	}
 
 	node, err := action.RemoveFamilyMembersFromContext(ctx, existingNode).
-		AddUserID(input.FamilyMembersID).
+		AddFamilyMembersID(input.FamilyMembersID).
 		Save()
 
 	if err != nil {

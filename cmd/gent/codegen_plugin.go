@@ -17,6 +17,7 @@ func (p *entCodegenPlugin) processData(data *codegenData) error {
 		if len(nodeData.PackageName) > 0 {
 			writeModelFile(nodeData, data.codePath)
 			writePrivacyFile(nodeData)
+			writeMutationBuilderFile(nodeData, data.codePath)
 
 			for _, action := range nodeData.ActionInfo.Actions {
 				writeActionFile(nodeData, action, data.codePath)

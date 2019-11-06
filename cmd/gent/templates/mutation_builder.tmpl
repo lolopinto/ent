@@ -1,0 +1,158 @@
+{{ reserveImport "context"}} 
+
+{{ reserveImport "github.com/lolopinto/ent/ent" }}
+{{ reserveImport "github.com/lolopinto/ent/ent/actions" }}
+{{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
+
+{{with .CodePath -}}
+	{{reserveImport .PathToModels}}
+  {{reserveImport .PathToConfigs}}
+
+{{end -}}
+
+{{with .NodeData -}}
+
+{{$builderName := printf "%sMutationBuilder" .Node }}
+
+type {{$builderName}} struct {
+  builder *actions.EntMutationBuilder
+  {{.NodeInstance}} models.{{.Node}}
+  {{/* TOOD change this to use TopLevelFields */ -}}
+  {{ range $field := .FieldInfo.Fields -}}
+    {{ if $field.TopLevelStructField -}}
+      {{fieldName $field }} *{{fTypeString $field}}
+    {{ end -}}
+  {{end -}}
+}
+
+func NewMutationBuilder(
+  viewer viewer.ViewerContext,
+  operation ent.WriteOperation,
+  fieldMap ent.ActionFieldMap,
+  opts ...func(*actions.EntMutationBuilder),
+) *{{$builderName}} {
+  b := actions.NewMutationBuilder(
+    viewer, 
+    operation,
+    {{.EntConfig}},
+    opts...,
+  )
+  b.FieldMap = fieldMap
+  return &{{$builderName}}{
+    builder: b,
+  }
+}
+
+{{ $fieldInfos := fieldInfos .FieldInfo.TopLevelFields }}
+
+{{ range $field := $fieldInfos -}}
+func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$builderName}} {
+  b.{{fieldName $field.Field}} = &{{$field.InstanceName}}
+  return b
+}
+{{/* TODO nillable fields... */}}
+
+{{end -}}
+
+{{ range $field := $fieldInfos -}}
+func (b *{{$builderName}}) {{$field.GetterMethodName}}() {{$field.InstanceType}} {
+  if b.{{fieldName $field.Field}} == nil {
+    return {{$field.Field.GetZeroValue}}
+  }
+  return *b.{{fieldName $field.Field}}
+}
+
+{{end -}}
+
+{{/* TODO singular version for the ID methods */}}
+
+{{ $edgeInfos := edgeInfos .EdgeInfo.Associations -}}
+
+{{ range $edge := $edgeInfos -}}
+// {{$edge.AddMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.AddMethodName}}({{$edge.InstanceName}}s ...{{$edge.InstanceType}}) *{{$builderName}} {
+  {{/* TODO time and data support later */ -}}  
+  for _, {{$edge.InstanceName}} := range {{$edge.InstanceName}}s {
+    b.{{$edge.AddMethodName}}ID({{$edge.InstanceName}}.ID)
+  }
+  return b
+}
+
+// {{$edge.AddMethodName}}ID adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.AddMethodName}}ID({{$edge.InstanceName}}ID string, options ...func(*ent.EdgeOperation)) *{{$builderName}} {
+  b.builder.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}}, options...)
+  return b
+}
+
+{{ end -}}
+
+{{ range $edge := $edgeInfos -}}
+// {{$edge.RemoveMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.RemoveMethodName}}({{$edge.InstanceName}}s ...{{$edge.InstanceType}}) *{{$builderName}} {
+  for _, {{$edge.InstanceName}} := range {{$edge.InstanceName}}s {
+    b.builder.RemoveOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}.ID, models.{{$edge.NodeType}})
+  }
+  return b
+}
+
+// {{$edge.RemoveMethodName}}ID adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.RemoveMethodName}}ID({{$edge.InstanceName}}ID string) *{{$builderName}} {
+  b.builder.RemoveOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}})
+  return b
+}
+
+{{ end -}}
+
+func (b *{{$builderName}}) setFields() {
+  // TODO set flag to prevent double writing
+  {{ range $field := $fieldInfos -}}
+    if b.{{fieldName $field.Field}} != nil {
+      b.builder.SetField("{{$field.FieldName}}", *b.{{fieldName $field.Field}})
+      {{$inverseEdge := $field.InverseEdge -}}
+      {{ if $inverseEdge -}} 
+        {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
+        {{/* TODO time and data support later? may not make sense for this... */ -}}  
+        b.builder.AddInboundEdge(models.{{$inverseEdge.EdgeConst}}, {{$field.InstanceName}}, models.{{$edgeNodeInfo.NodeType}})
+      {{ end -}}
+    }
+  {{ end -}}
+}
+
+func (b *{{$builderName}}) Validate() error {
+  b.setFields()
+  // TODO...
+  return b.builder.Validate()
+}
+
+func (b *{{$builderName}}) GetViewer() viewer.ViewerContext {
+  return b.builder.GetViewer()
+}
+
+func (b *{{$builderName}}) Get{{.Node}}() *models.{{.Node}} {
+  return &b.{{.NodeInstance}}
+}
+
+func (b *{{$builderName}}) GetChangeset() (ent.Changeset, error) {
+  b.setFields()
+  return b.builder.GetChangeset(&b.{{.NodeInstance}})
+}
+
+{{$triggerInterface := printf "%sTrigger" .Node }}
+
+type {{$triggerInterface}} interface {
+  SetBuilder(*{{$builderName}})
+}
+
+{{$triggerStruct := printf "%sMutationBuilderTrigger" .Node }}
+
+type {{$triggerStruct}} struct {
+  Builder *{{$builderName}}
+}
+
+func (trigger *{{$triggerStruct}}) SetBuilder(b *{{$builderName}}) {
+  trigger.Builder = b
+}
+
+{{end -}}
+
+

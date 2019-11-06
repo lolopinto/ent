@@ -29,15 +29,15 @@
 	{{end -}}
 	{{$fields := actionFields $action}}
 	{{range $field := $fields -}}	
-		{{$field.MethodName}}(input.{{$field.FieldName}}).
+		{{$field.SetterMethodName}}(input.{{$field.FieldName}}).
 	{{end -}}
 	{{$edges := actionEdges $action}}
 	{{range $edge := $edges -}}	
-		{{$edge.MethodName}}ID(input.{{$edge.NodeID}}).
+		{{$edge.AddMethodName}}ID(input.{{$edge.NodeID}}).
 	{{end -}}
 	{{$fields := actionNonEntFields $action}}
 	{{range $field := $fields -}}	
-		{{$field.MethodName}}(input.{{$field.FieldName}}).
+		{{$field.SetterMethodName}}(input.{{$field.FieldName}}).
 	{{end -}}
 		Save()
 	

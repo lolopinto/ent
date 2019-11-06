@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/util"
@@ -17,7 +18,7 @@ type EntMutationBuilder struct {
 	EntConfig      ent.Config
 	// for now, actions map to all the fields so it's fine. this will need to be changed when each EntMutationBuilder is generated
 	// At that point, probably makes sense to have each generated Builder handle this.
-	FieldMap      ent.MutationFieldMap
+	FieldMap      ent.ActionFieldMap
 	fields        map[string]interface{}
 	rawDBFields   map[string]interface{}
 	edges         []*ent.EdgeOperation
@@ -354,6 +355,7 @@ func (b *EntMutationBuilder) Validate() error {
 	}
 	var errors []*ent.ActionErrorInfo
 
+	spew.Dump(b.FieldMap, b.fields)
 	for fieldName, item := range b.FieldMap {
 		_, ok := b.fields[fieldName]
 

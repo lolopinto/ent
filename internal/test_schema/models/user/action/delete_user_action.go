@@ -9,11 +9,13 @@ import (
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
+	"github.com/lolopinto/ent/internal/test_schema/models/user"
+	builder "github.com/lolopinto/ent/internal/test_schema/models/user"
 )
 
 type DeleteUserAction struct {
-	builder *actions.EntMutationBuilder
+	builder *user.UserMutationBuilder
+	// TODO....
 }
 
 // DeleteUserFromContext is the factory method to get an ...
@@ -27,14 +29,13 @@ func DeleteUserFromContext(ctx context.Context, user *models.User) *DeleteUserAc
 
 // DeleteUser is the factory method to get an ...
 func DeleteUser(viewer viewer.ViewerContext, user *models.User) *DeleteUserAction {
-	builder := actions.NewMutationBuilder(
+	action := &DeleteUserAction{}
+	builder := builder.NewMutationBuilder(
 		viewer,
 		ent.DeleteOperation,
-		&configs.UserConfig{},
+		action.getFieldMap(),
 		actions.ExistingEnt(user),
 	)
-	action := &DeleteUserAction{}
-	builder.FieldMap = action.getFieldMap()
 	action.builder = builder
 	return action
 }
@@ -44,7 +45,7 @@ func (action *DeleteUserAction) GetViewer() viewer.ViewerContext {
 }
 
 func (action *DeleteUserAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset(action.Entity())
+	return action.builder.GetChangeset()
 }
 
 func (action *DeleteUserAction) Entity() ent.Entity {
@@ -52,8 +53,8 @@ func (action *DeleteUserAction) Entity() ent.Entity {
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *DeleteUserAction) getFieldMap() ent.MutationFieldMap {
-	return ent.MutationFieldMap{}
+func (action *DeleteUserAction) getFieldMap() ent.ActionFieldMap {
+	return ent.ActionFieldMap{}
 }
 
 // Validate returns an error if the current state of the action is not valid

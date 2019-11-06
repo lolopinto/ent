@@ -44,6 +44,17 @@ func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) {
 	f.exposeToGraphQL = false
 }
 
+func (fieldInfo *FieldInfo) TopLevelFields() []*Field {
+	var fields []*Field
+
+	for _, f := range fieldInfo.Fields {
+		if f.topLevelStructField {
+			fields = append(fields, f)
+		}
+	}
+	return fields
+}
+
 type Field struct {
 	// todo: abstract out these 2 also...
 	FieldName           string
@@ -92,6 +103,10 @@ func (f *Field) GetGraphQLTypeForField() string {
 
 func (f *Field) GetCastToMethod() string {
 	return f.fieldType.GetCastToMethod()
+}
+
+func (f *Field) GetZeroValue() string {
+	return f.fieldType.GetZeroValue()
 }
 
 func (f *Field) ExposeToGraphQL() bool {

@@ -249,9 +249,9 @@ func userEditAction(
 	return action
 }
 
-func getFieldMapFromFields(op ent.WriteOperation, fields map[string]interface{}) ent.MutationFieldMap {
+func getFieldMapFromFields(op ent.WriteOperation, fields map[string]interface{}) ent.ActionFieldMap {
 	// copied from testingutils/ent.go
-	ret := make(ent.MutationFieldMap)
+	ret := make(ent.ActionFieldMap)
 	for k := range fields {
 		ret[k] = &ent.MutatingFieldInfo{
 			DB:       strcase.ToSnake(k),
