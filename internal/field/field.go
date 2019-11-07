@@ -136,6 +136,10 @@ func (f *Field) GetGraphQLName() string {
 	return fieldName
 }
 
+func (f *Field) InstanceFieldName() string {
+	return strcase.ToLowerCamel(f.FieldName)
+}
+
 func (f *Field) ExposeToActions() bool {
 	return f.exposeToActions
 }

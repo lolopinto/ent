@@ -14,16 +14,16 @@
 
 {{$builderName := printf "%sMutationBuilder" .Node }}
 
+{{ $fieldInfos := fieldInfos .FieldInfo.TopLevelFields }}
+
 type {{$builderName}} struct {
   builder *actions.EntMutationBuilder
   {{.NodeInstance}} models.{{.Node}}
-  {{/* TOOD change this to use TopLevelFields */ -}}
-  {{ range $field := .FieldInfo.Fields -}}
-    {{ if $field.TopLevelStructField -}}
-      {{fieldName $field }} *{{fTypeString $field}}
-    {{ end -}}
-    {{ if $field.IDField -}}
-      {{fieldName $field}}Builder ent.MutationBuilder
+  {{ range $field := $fieldInfos -}}
+    {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
+    {{$fieldInstanceName}} *{{fTypeString $field.Field}}
+    {{ if $field.Field.IDField -}}
+      {{$fieldInstanceName}}Builder ent.MutationBuilder
     {{ end -}}
 
   {{end -}}
@@ -47,17 +47,16 @@ func NewMutationBuilder(
   }
 }
 
-{{ $fieldInfos := fieldInfos .FieldInfo.TopLevelFields }}
-
 {{ range $field := $fieldInfos -}}
 func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$builderName}} {
-  b.{{fieldName $field.Field}} = &{{$field.InstanceName}}
+  {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
+  b.{{$fieldInstanceName}} = &{{$field.InstanceName}}
   return b
 }
 {{/* TODO nillable fields... */}}
   {{ if $field.Field.IDField -}}
   func (b *{{$builderName}}) {{$field.SetterMethodName}}Builder(builder ent.MutationBuilder) *{{$builderName}} {
-    b.{{fieldName $field.Field}}Builder = builder
+    b.{{$fieldInstanceName}}Builder = builder
     return b
   }
 
@@ -66,16 +65,17 @@ func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {
 
 {{ range $field := $fieldInfos -}}
 func (b *{{$builderName}}) {{$field.GetterMethodName}}() {{$field.InstanceType}} {
-  if b.{{fieldName $field.Field}} == nil {
+  {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
+  if b.{{$fieldInstanceName}} == nil {
     return {{$field.Field.GetZeroValue}}
   }
   {{ if $field.Field.IDField -}}
   {{/* TODO probably want a GetPlaceholderValue also... */}}
-    if b.{{fieldName $field.Field}}Builder != nil {
-      return b.{{fieldName $field.Field}}Builder.GetPlaceholderID()
+    if b.{{$fieldInstanceName}}Builder != nil {
+      return b.{{$fieldInstanceName}}Builder.GetPlaceholderID()
     }
   {{end -}}
-  return *b.{{fieldName $field.Field}}
+  return *b.{{$fieldInstanceName}}
 }
 
 {{end -}}
@@ -122,8 +122,9 @@ func (b *{{$builderName}}) {{$edge.RemoveMethodName}}ID({{$edge.InstanceName}}ID
 func (b *{{$builderName}}) setFields() {
   // TODO set flag to prevent double writing
   {{ range $field := $fieldInfos -}}
-    if b.{{fieldName $field.Field}} != nil {
-      b.builder.SetField("{{$field.FieldName}}", *b.{{fieldName $field.Field}})
+    {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
+    if b.{{$fieldInstanceName}} != nil {
+      b.builder.SetField("{{$field.FieldName}}", *b.{{$fieldInstanceName}})
       {{$inverseEdge := $field.InverseEdge -}}
       {{ if $inverseEdge -}} 
         {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
@@ -132,8 +133,8 @@ func (b *{{$builderName}}) setFields() {
       {{ end -}}
     }
     {{ if $field.Field.IDField -}}
-      if b.{{fieldName $field.Field}}Builder != nil {
-        b.builder.SetField("{{$field.FieldName}}", b.{{fieldName $field.Field}}Builder)
+      if b.{{$fieldInstanceName}}Builder != nil {
+        b.builder.SetField("{{$field.FieldName}}", b.{{$fieldInstanceName}}Builder)
       }
     {{end -}}
   {{ end -}}
