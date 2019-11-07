@@ -39,6 +39,10 @@ func RemoveFamilyMembers(viewer viewer.ViewerContext, user *models.User) *Remove
 	return action
 }
 
+func (action *RemoveFamilyMembersAction) GetBuilder() *builder.UserMutationBuilder {
+	return action.builder
+}
+
 func (action *RemoveFamilyMembersAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }

@@ -39,6 +39,10 @@ func AddFriends(viewer viewer.ViewerContext, user *models.User) *AddFriendsActio
 	return action
 }
 
+func (action *AddFriendsAction) GetBuilder() *builder.UserMutationBuilder {
+	return action.builder
+}
+
 func (action *AddFriendsAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }

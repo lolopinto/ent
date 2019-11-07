@@ -243,19 +243,6 @@ func (b *UserMutationBuilder) RemoveDeclinedEventsID(eventID string) *UserMutati
 	return b
 }
 
-func (b *UserMutationBuilder) setFields() {
-	// TODO set flag to prevent double writing
-	if b.emailAddress != nil {
-		b.builder.SetField("EmailAddress", *b.emailAddress)
-	}
-	if b.firstName != nil {
-		b.builder.SetField("FirstName", *b.firstName)
-	}
-	if b.lastName != nil {
-		b.builder.SetField("LastName", *b.lastName)
-	}
-}
-
 func (b *UserMutationBuilder) Validate() error {
 	return b.builder.Validate()
 }

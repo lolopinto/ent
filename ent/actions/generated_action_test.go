@@ -228,6 +228,48 @@ func (suite *generatedActionSuite) TestInboundEdge() {
 	assert.Equal(suite.T(), events[0].ID, event.ID)
 }
 
+func (suite *generatedActionSuite) TestInboundEdgeBuilder() {
+	v := viewer.LoggedOutViewer()
+
+	userAction := action.CreateUser(v).
+		SetEmailAddress(util.GenerateRandEmail()).
+		SetFirstName("Ola").
+		SetLastName("Okelola")
+
+	eventAction := eventaction.CreateEvent(v).
+		SetLocation("home").
+		SetStartTime(time.Now()).
+		SetEndTime(time.Now().Add(3 * time.Hour)).
+		SetUserIDBuilder(userAction.GetBuilder()).
+		SetName("fun event")
+
+	// manually combine the changesets. this would normally be done in a trigger
+	changeset, err := eventAction.GetChangeset()
+	mutationChangeset, ok := changeset.(*actions.EntMutationChangeset)
+	assert.True(suite.T(), ok)
+
+	userChangeset, err := userAction.GetChangeset()
+	assert.Nil(suite.T(), err)
+	mutationChangeset.AddChangeset(userChangeset)
+	assert.Nil(suite.T(), err)
+
+	err = ent.SaveChangeset(changeset)
+	assert.Nil(suite.T(), err)
+
+	// confirm that right object was created and relationship is as expected
+	event := changeset.Entity()
+	user := userChangeset.Entity()
+
+	v = viewertesting.LoggedinViewerContext{ViewerID: user.GetID()}
+	reloadedUser, err := models.LoadUser(v, user.GetID())
+	assert.Nil(suite.T(), err)
+
+	events, err := reloadedUser.LoadEvents()
+	assert.Nil(suite.T(), err)
+	assert.Len(suite.T(), events, 1)
+	assert.Equal(suite.T(), events[0].ID, event.GetID())
+}
+
 func (suite *generatedActionSuite) TestDefaultValueTime() {
 	user := suite.createUser()
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}

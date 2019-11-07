@@ -39,6 +39,10 @@ func EditUser(viewer viewer.ViewerContext, user *models.User) *EditUserAction {
 	return action
 }
 
+func (action *EditUserAction) GetBuilder() *builder.UserMutationBuilder {
+	return action.builder
+}
+
 func (action *EditUserAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }

@@ -38,6 +38,10 @@ func CreateUser(viewer viewer.ViewerContext) *CreateUserAction {
 	return action
 }
 
+func (action *CreateUserAction) GetBuilder() *builder.UserMutationBuilder {
+	return action.builder
+}
+
 func (action *CreateUserAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }

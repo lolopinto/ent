@@ -39,6 +39,10 @@ func DeleteUser(viewer viewer.ViewerContext, user *models.User) *DeleteUserActio
 	return action
 }
 
+func (action *DeleteUserAction) GetBuilder() *builder.UserMutationBuilder {
+	return action.builder
+}
+
 func (action *DeleteUserAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }

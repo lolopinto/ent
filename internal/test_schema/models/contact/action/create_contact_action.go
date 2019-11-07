@@ -38,6 +38,10 @@ func CreateContact(viewer viewer.ViewerContext) *CreateContactAction {
 	return action
 }
 
+func (action *CreateContactAction) GetBuilder() *builder.ContactMutationBuilder {
+	return action.builder
+}
+
 func (action *CreateContactAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }

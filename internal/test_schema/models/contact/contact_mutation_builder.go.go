@@ -170,34 +170,6 @@ func (b *ContactMutationBuilder) RemoveAllowListID(userID string) *ContactMutati
 	return b
 }
 
-func (b *ContactMutationBuilder) setFields() {
-	// TODO set flag to prevent double writing
-	if b.emailAddress != nil {
-		b.builder.SetField("EmailAddress", *b.emailAddress)
-	}
-	if b.firstName != nil {
-		b.builder.SetField("FirstName", *b.firstName)
-	}
-	if b.lastName != nil {
-		b.builder.SetField("LastName", *b.lastName)
-	}
-	if b.userID != nil {
-		b.builder.SetField("UserID", *b.userID)
-	}
-	if b.userIDBuilder != nil {
-		b.builder.SetField("UserID", b.userIDBuilder)
-	}
-	if b.favorite != nil {
-		b.builder.SetField("Favorite", *b.favorite)
-	}
-	if b.numberOfCalls != nil {
-		b.builder.SetField("NumberOfCalls", *b.numberOfCalls)
-	}
-	if b.pi != nil {
-		b.builder.SetField("Pi", *b.pi)
-	}
-}
-
 func (b *ContactMutationBuilder) Validate() error {
 	return b.builder.Validate()
 }

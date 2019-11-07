@@ -29,7 +29,7 @@ type Contact struct {
 	LastName      string  `db:"last_name"`
 	UserID        string  `db:"user_id"`
 	Favorite      bool    `graphql:"_" db:"favorite"`
-	NumberOfCalls int     `graphql:"_" db:"number_of_calls"`
+	NumberOfCalls int     `db:"number_of_calls" graphql:"_"`
 	Pi            float64 `graphql:"_" db:"pi"`
 	Viewer        viewer.ViewerContext
 }

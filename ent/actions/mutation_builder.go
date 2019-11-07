@@ -307,37 +307,11 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 		}
 	}
 
-	var executor ent.Executor
-	// this is simple.
-	// user has no dependencies but has changesets
-	// so run ours, then run the others after
-
-	// when you have dependencies but no changesets
-	// simple also because something else will handle that
-	// so if len(b.changesets) == 0 just be done?
-	// the issue is that we need to resolve the underlying dependency
-	// which is why we have a list based executor underneath anyways...
-	if len(b.changesets) == 0 {
-		executor = &entListBasedExecutor{
-			placeholderID: b.GetPlaceholderID(),
-			ops:           ops,
-		}
-	} else {
-		// dependencies implies other changesets?
-		// if not
-		// there should either be dependencies or changesets
-		executor = &entWithDependenciesExecutor{
-			placeholderID: b.GetPlaceholderID(),
-			ops:           ops,
-			dependencies:  b.dependencies,
-			changesets:    b.changesets,
-		}
-	}
 	// let's figure out craziness here
 	return &EntMutationChangeset{
 		entity:        entity,
 		viewer:        b.Viewer,
-		executor:      executor,
+		ops:           ops,
 		placeholderID: b.GetPlaceholderID(),
 		existingEnt:   b.ExistingEntity,
 		entConfig:     b.EntConfig,

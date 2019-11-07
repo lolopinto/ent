@@ -8,6 +8,7 @@ import (
 type EntMutationChangeset struct {
 	viewer        viewer.ViewerContext
 	entity        ent.Entity
+	ops           []ent.DataOperation
 	executor      ent.Executor
 	fields        map[string]interface{}
 	placeholderID string
@@ -18,6 +19,33 @@ type EntMutationChangeset struct {
 }
 
 func (c *EntMutationChangeset) GetExecutor() ent.Executor {
+	if c.executor != nil {
+		return c.executor
+	}
+	var executor ent.Executor
+
+	// when you have dependencies but no changesets
+	// simple also because something else will handle that
+	// so if len(b.changesets) == 0 just be done?
+	// the issue is that we need to resolve the underlying dependency
+	// which is why we have a list based executor underneath anyways...
+	if len(c.changesets) == 0 {
+		executor = &entListBasedExecutor{
+			placeholderID: c.placeholderID,
+			ops:           c.ops,
+		}
+	} else {
+		// dependencies implies other changesets?
+		// if not
+		// there should either be dependencies or changesets
+		executor = &entWithDependenciesExecutor{
+			placeholderID: c.placeholderID,
+			ops:           c.ops,
+			dependencies:  c.dependencies,
+			changesets:    c.changesets,
+		}
+	}
+	c.executor = executor
 	return c.executor
 }
 
