@@ -51,12 +51,26 @@ func NewMutationBuilder(
 func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$builderName}} {
   {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
   b.{{$fieldInstanceName}} = &{{$field.InstanceName}}
+  b.builder.SetField("{{$field.FieldName}}", {{$field.InstanceName}})
+  {{$inverseEdge := $field.InverseEdge -}}
+  {{ if $inverseEdge -}} 
+    {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
+    {{/* TODO time and data support later? may not make sense for this... */ -}}  
+    b.builder.AddInboundEdge(models.{{$inverseEdge.EdgeConst}}, {{$field.InstanceName}}, models.{{$edgeNodeInfo.NodeType}})
+  {{ end -}}
   return b
 }
 {{/* TODO nillable fields... */}}
   {{ if $field.Field.IDField -}}
   func (b *{{$builderName}}) {{$field.SetterMethodName}}Builder(builder ent.MutationBuilder) *{{$builderName}} {
     b.{{$fieldInstanceName}}Builder = builder
+    b.builder.SetField("{{$field.FieldName}}", builder)
+    {{$inverseEdge := $field.InverseEdge -}}
+    {{ if $inverseEdge -}} 
+      {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
+      {{/* TODO time and data support later? may not make sense for this... */ -}}  
+      b.builder.AddInboundEdge(models.{{$inverseEdge.EdgeConst}}, builder, models.{{$edgeNodeInfo.NodeType}})
+    {{ end -}}
     return b
   }
 
@@ -119,30 +133,7 @@ func (b *{{$builderName}}) {{$edge.RemoveMethodName}}ID({{$edge.InstanceName}}ID
 
 {{ end -}}
 
-func (b *{{$builderName}}) setFields() {
-  // TODO set flag to prevent double writing
-  {{ range $field := $fieldInfos -}}
-    {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
-    if b.{{$fieldInstanceName}} != nil {
-      b.builder.SetField("{{$field.FieldName}}", *b.{{$fieldInstanceName}})
-      {{$inverseEdge := $field.InverseEdge -}}
-      {{ if $inverseEdge -}} 
-        {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
-        {{/* TODO time and data support later? may not make sense for this... */ -}}  
-        b.builder.AddInboundEdge(models.{{$inverseEdge.EdgeConst}}, {{$field.InstanceName}}, models.{{$edgeNodeInfo.NodeType}})
-      {{ end -}}
-    }
-    {{ if $field.Field.IDField -}}
-      if b.{{$fieldInstanceName}}Builder != nil {
-        b.builder.SetField("{{$field.FieldName}}", b.{{$fieldInstanceName}}Builder)
-      }
-    {{end -}}
-  {{ end -}}
-}
-
 func (b *{{$builderName}}) Validate() error {
-  b.setFields()
-  // TODO...
   return b.builder.Validate()
 }
 
@@ -162,7 +153,6 @@ func (b *{{$builderName}}) GetChangeset(_ ent.Entity) (ent.Changeset, error) {
   {{/* TODO fix this ignored param! */}}
   {{/* need to figure out which is better for API of GetChangeset() */}}
   {{/* Seems like it makes more sense to have the builder have no param since that is the common case */}}
-  b.setFields()
   return b.builder.GetChangeset(&b.{{.NodeInstance}})
 }
 

@@ -38,16 +38,19 @@ func NewMutationBuilder(
 
 func (b *UserMutationBuilder) SetEmailAddress(emailAddress string) *UserMutationBuilder {
 	b.emailAddress = &emailAddress
+	b.builder.SetField("EmailAddress", emailAddress)
 	return b
 }
 
 func (b *UserMutationBuilder) SetFirstName(firstName string) *UserMutationBuilder {
 	b.firstName = &firstName
+	b.builder.SetField("FirstName", firstName)
 	return b
 }
 
 func (b *UserMutationBuilder) SetLastName(lastName string) *UserMutationBuilder {
 	b.lastName = &lastName
+	b.builder.SetField("LastName", lastName)
 	return b
 }
 
@@ -254,8 +257,6 @@ func (b *UserMutationBuilder) setFields() {
 }
 
 func (b *UserMutationBuilder) Validate() error {
-	b.setFields()
-	// TODO...
 	return b.builder.Validate()
 }
 
@@ -273,7 +274,6 @@ func (b *UserMutationBuilder) SetTriggers(triggers []actions.Trigger) {
 
 func (b *UserMutationBuilder) GetChangeset(_ ent.Entity) (ent.Changeset, error) {
 
-	b.setFields()
 	return b.builder.GetChangeset(&b.user)
 }
 

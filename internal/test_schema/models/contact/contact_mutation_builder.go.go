@@ -43,41 +43,49 @@ func NewMutationBuilder(
 
 func (b *ContactMutationBuilder) SetEmailAddress(emailAddress string) *ContactMutationBuilder {
 	b.emailAddress = &emailAddress
+	b.builder.SetField("EmailAddress", emailAddress)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetFirstName(firstName string) *ContactMutationBuilder {
 	b.firstName = &firstName
+	b.builder.SetField("FirstName", firstName)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetLastName(lastName string) *ContactMutationBuilder {
 	b.lastName = &lastName
+	b.builder.SetField("LastName", lastName)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetUserID(userID string) *ContactMutationBuilder {
 	b.userID = &userID
+	b.builder.SetField("UserID", userID)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetUserIDBuilder(builder ent.MutationBuilder) *ContactMutationBuilder {
 	b.userIDBuilder = builder
+	b.builder.SetField("UserID", builder)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetFavorite(favorite bool) *ContactMutationBuilder {
 	b.favorite = &favorite
+	b.builder.SetField("Favorite", favorite)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetNumberOfCalls(numberOfCalls int) *ContactMutationBuilder {
 	b.numberOfCalls = &numberOfCalls
+	b.builder.SetField("NumberOfCalls", numberOfCalls)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetPi(pi float64) *ContactMutationBuilder {
 	b.pi = &pi
+	b.builder.SetField("Pi", pi)
 	return b
 }
 
@@ -191,8 +199,6 @@ func (b *ContactMutationBuilder) setFields() {
 }
 
 func (b *ContactMutationBuilder) Validate() error {
-	b.setFields()
-	// TODO...
 	return b.builder.Validate()
 }
 
@@ -210,7 +216,6 @@ func (b *ContactMutationBuilder) SetTriggers(triggers []actions.Trigger) {
 
 func (b *ContactMutationBuilder) GetChangeset(_ ent.Entity) (ent.Changeset, error) {
 
-	b.setFields()
 	return b.builder.GetChangeset(&b.contact)
 }
 
