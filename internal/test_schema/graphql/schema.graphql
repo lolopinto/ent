@@ -56,6 +56,18 @@ type Event implements Node {
     viewerRsvpStatus: EventRsvpStatus
 }
 
+input EventCreateInput {
+    endTime: Time!
+    location: String!
+    name: String!
+    startTime: Time!
+    userID: String!
+}
+
+type EventCreateResponse {
+    event: Event
+}
+
 enum EventRsvpStatus {
     EVENT_ATTENDING
     EVENT_DECLINED
@@ -74,6 +86,7 @@ type EventsEdge implements Edge {
 
 type Mutation {
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
+    eventCreate(input: EventCreateInput!): EventCreateResponse
     userAddFriends(input: UserAddFriendsInput!): UserAddFriendsResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
     userDelete(input: UserDeleteInput!): UserDeleteResponse

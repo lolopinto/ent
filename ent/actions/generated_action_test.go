@@ -2,6 +2,7 @@ package actions_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
+	eventaction "github.com/lolopinto/ent/internal/test_schema/models/event/action"
 	"github.com/lolopinto/ent/internal/test_schema/models/user/action"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
@@ -200,6 +202,47 @@ func (suite *generatedActionSuite) TestRemoveEdgeAction() {
 	assert.Nil(suite.T(), err)
 	testingutils.VerifyUserObj(suite.T(), updatedUser, user.EmailAddress)
 	testingutils.VerifyNoFamilyEdge(suite.T(), user, user2)
+}
+
+func (suite *generatedActionSuite) TestInboundEdge() {
+	user := suite.createUser()
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	event, err := eventaction.CreateEvent(v).
+		SetLocation("home").
+		SetStartTime(time.Now()).
+		SetEndTime(time.Now().Add(3 * time.Hour)).
+		SetUserID(user.ID).
+		SetName("fun event").
+		Save()
+
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), event.UserID, user.ID)
+
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	assert.Nil(suite.T(), err)
+
+	events, err := reloadedUser.LoadEvents()
+	assert.Nil(suite.T(), err)
+	assert.Len(suite.T(), events, 1)
+	assert.Equal(suite.T(), events[0].ID, event.ID)
+}
+
+func (suite *generatedActionSuite) TestDefaultValueTime() {
+	user := suite.createUser()
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	action := eventaction.CreateEvent(v).
+		SetLocation("home").
+		SetStartTime(time.Now()).
+		SetUserID(user.ID).
+		SetName("fun event")
+
+	t := action.GetBuilder().GetEndTime()
+	assert.True(suite.T(), t.IsZero())
+
+	t2 := action.GetBuilder().GetStartTime()
+	assert.False(suite.T(), t2.IsZero())
 }
 
 func TestGeneratedAction(t *testing.T) {

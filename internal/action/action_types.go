@@ -195,11 +195,11 @@ type groupEdgeActionType struct {
 }
 
 func (action *groupEdgeActionType) getDefaultActionName(nodeName, edgeName string) string {
-	panic("not supported for now")
+	return fmt.Sprintf("Edit%s%sAction", strcase.ToCamel(nodeName), edgeName)
 }
 
 func (action *groupEdgeActionType) getDefaultGraphQLName(nodeName, edgeName string) string {
-	panic("not supported for now")
+	return fmt.Sprintf("%s%sEdit", nodeName, edgeName)
 }
 
 func (action *groupEdgeActionType) getAction(commonInfo commonActionInfo) Action {

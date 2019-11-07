@@ -20,11 +20,12 @@
 {{$actionName := actionName $action}}
 {{$embeddedActionType := embeddedActionType $action}}
 
-{{$builderName := printf "%sMutationBuilder" $nodeInfo.Node }}
+{{$builderName := printf "%sMutationBuilder" $nodeInfo.Node -}}
+{{$builderType := printf "*builder.%s" $builderName -}}
 
 type {{$actionName}} struct {
   {{$embeddedActionType}}
-  builder {{printf "*builder.%s" $builderName}}
+  builder {{$builderType}}
 }
 
 {{$actionMethodName := actionMethodName $action}}
@@ -52,6 +53,10 @@ func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
   {{/* hmm */ -}}
   action.builder = builder
   return action
+}
+
+func (action *{{$actionName}}) GetBuilder() {{$builderType}} {
+  return action.builder
 }
 
 func (action *{{$actionName}}) GetViewer() viewer.ViewerContext {

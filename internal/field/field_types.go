@@ -127,7 +127,7 @@ func (t *TimeType) GetCastToMethod() string {
 }
 
 func (t *TimeType) GetZeroValue() string {
-	panic("GetZeroValue of TimeType not implemented yet!")
+	return "time.Time{}"
 }
 
 type NamedType struct {

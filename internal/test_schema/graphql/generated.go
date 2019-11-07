@@ -85,6 +85,10 @@ type ComplexityRoot struct {
 		ViewerRsvpStatus func(childComplexity int) int
 	}
 
+	EventCreateResponse struct {
+		Event func(childComplexity int) int
+	}
+
 	EventsConnection struct {
 		Edges func(childComplexity int) int
 		Nodes func(childComplexity int) int
@@ -96,6 +100,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		ContactCreate           func(childComplexity int, input ContactCreateInput) int
+		EventCreate             func(childComplexity int, input EventCreateInput) int
 		UserAddFriends          func(childComplexity int, input UserAddFriendsInput) int
 		UserCreate              func(childComplexity int, input UserCreateInput) int
 		UserDelete              func(childComplexity int, input UserDeleteInput) int
@@ -175,6 +180,7 @@ type EventResolver interface {
 }
 type MutationResolver interface {
 	ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error)
+	EventCreate(ctx context.Context, input EventCreateInput) (*EventCreateResponse, error)
 	UserAddFriends(ctx context.Context, input UserAddFriendsInput) (*UserAddFriendsResponse, error)
 	UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error)
 	UserDelete(ctx context.Context, input UserDeleteInput) (*UserDeleteResponse, error)
@@ -383,6 +389,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Event.ViewerRsvpStatus(childComplexity), true
 
+	case "EventCreateResponse.event":
+		if e.complexity.EventCreateResponse.Event == nil {
+			break
+		}
+
+		return e.complexity.EventCreateResponse.Event(childComplexity), true
+
 	case "EventsConnection.edges":
 		if e.complexity.EventsConnection.Edges == nil {
 			break
@@ -415,6 +428,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ContactCreate(childComplexity, args["input"].(ContactCreateInput)), true
+
+	case "Mutation.eventCreate":
+		if e.complexity.Mutation.EventCreate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_eventCreate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EventCreate(childComplexity, args["input"].(EventCreateInput)), true
 
 	case "Mutation.userAddFriends":
 		if e.complexity.Mutation.UserAddFriends == nil {
@@ -777,6 +802,18 @@ type Event implements Node {
     viewerRsvpStatus: EventRsvpStatus
 }
 
+input EventCreateInput {
+    endTime: Time!
+    location: String!
+    name: String!
+    startTime: Time!
+    userID: String!
+}
+
+type EventCreateResponse {
+    event: Event
+}
+
 enum EventRsvpStatus {
     EVENT_ATTENDING
     EVENT_DECLINED
@@ -795,6 +832,7 @@ type EventsEdge implements Edge {
 
 type Mutation {
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
+    eventCreate(input: EventCreateInput!): EventCreateResponse
     userAddFriends(input: UserAddFriendsInput!): UserAddFriendsResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
     userDelete(input: UserDeleteInput!): UserDeleteResponse
@@ -898,6 +936,20 @@ func (ec *executionContext) field_Mutation_contactCreate_args(ctx context.Contex
 	var arg0 ContactCreateInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNContactCreateInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐContactCreateInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_eventCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 EventCreateInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNEventCreateInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventCreateInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1958,6 +2010,40 @@ func (ec *executionContext) _Event_viewerRsvpStatus(ctx context.Context, field g
 	return ec.marshalOEventRsvpStatus2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _EventCreateResponse_event(ctx context.Context, field graphql.CollectedField, obj *EventCreateResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "EventCreateResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Event, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Event)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _EventsConnection_edges(ctx context.Context, field graphql.CollectedField, obj *EventsConnection) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -2102,6 +2188,47 @@ func (ec *executionContext) _Mutation_contactCreate(ctx context.Context, field g
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOContactCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐContactCreateResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_eventCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_eventCreate_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EventCreate(rctx, args["input"].(EventCreateInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*EventCreateResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOEventCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventCreateResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_userAddFriends(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4435,6 +4562,48 @@ func (ec *executionContext) unmarshalInputContactCreateInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputEventCreateInput(ctx context.Context, obj interface{}) (EventCreateInput, error) {
+	var it EventCreateInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "endTime":
+			var err error
+			it.EndTime, err = ec.unmarshalNTime2timeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "location":
+			var err error
+			it.Location, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "startTime":
+			var err error
+			it.StartTime, err = ec.unmarshalNTime2timeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userID":
+			var err error
+			it.UserID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUserAddFriendsInput(ctx context.Context, obj interface{}) (UserAddFriendsInput, error) {
 	var it UserAddFriendsInput
 	var asMap = obj.(map[string]interface{})
@@ -4920,6 +5089,30 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
+var eventCreateResponseImplementors = []string{"EventCreateResponse"}
+
+func (ec *executionContext) _EventCreateResponse(ctx context.Context, sel ast.SelectionSet, obj *EventCreateResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, eventCreateResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EventCreateResponse")
+		case "event":
+			out.Values[i] = ec._EventCreateResponse_event(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var eventsConnectionImplementors = []string{"EventsConnection", "Connection"}
 
 func (ec *executionContext) _EventsConnection(ctx context.Context, sel ast.SelectionSet, obj *EventsConnection) graphql.Marshaler {
@@ -4990,6 +5183,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = graphql.MarshalString("Mutation")
 		case "contactCreate":
 			out.Values[i] = ec._Mutation_contactCreate(ctx, field)
+		case "eventCreate":
+			out.Values[i] = ec._Mutation_eventCreate(ctx, field)
 		case "userAddFriends":
 			out.Values[i] = ec._Mutation_userAddFriends(ctx, field)
 		case "userCreate":
@@ -5814,6 +6009,10 @@ func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋin
 	return ec._Event(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNEventCreateInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventCreateInput(ctx context.Context, v interface{}) (EventCreateInput, error) {
+	return ec.unmarshalInputEventCreateInput(ctx, v)
+}
+
 func (ec *executionContext) marshalNEventsEdge2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventsEdge(ctx context.Context, sel ast.SelectionSet, v EventsEdge) graphql.Marshaler {
 	return ec._EventsEdge(ctx, sel, &v)
 }
@@ -6314,6 +6513,17 @@ func (ec *executionContext) marshalOEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋin
 		return graphql.Null
 	}
 	return ec._Event(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOEventCreateResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventCreateResponse(ctx context.Context, sel ast.SelectionSet, v EventCreateResponse) graphql.Marshaler {
+	return ec._EventCreateResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOEventCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventCreateResponse(ctx context.Context, sel ast.SelectionSet, v *EventCreateResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._EventCreateResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOEventRsvpStatus2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatus(ctx context.Context, v interface{}) (EventRsvpStatus, error) {

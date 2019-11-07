@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"time"
 
 	"github.com/lolopinto/ent/internal/test_schema/models"
 )
@@ -34,6 +35,18 @@ type ContactCreateInput struct {
 
 type ContactCreateResponse struct {
 	Contact *models.Contact `json:"contact"`
+}
+
+type EventCreateInput struct {
+	EndTime   time.Time `json:"endTime"`
+	Location  string    `json:"location"`
+	Name      string    `json:"name"`
+	StartTime time.Time `json:"startTime"`
+	UserID    string    `json:"userID"`
+}
+
+type EventCreateResponse struct {
+	Event *models.Event `json:"event"`
 }
 
 type EventsConnection struct {
