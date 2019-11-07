@@ -58,7 +58,7 @@ func (a *createContactAction) getChangeset() (ent.Changeset, error) {
 		a.builder.SetField(k, v)
 	}
 	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.getFields())
-	return a.builder.GetChangeset(&a.contact)
+	return a.builder.GetChangeset()
 }
 
 func (a *createContactAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
@@ -105,18 +105,18 @@ type ContactCreateEmailTrigger struct {
 }
 
 func (trigger *ContactCreateEmailTrigger) GetChangeset() (ent.Changeset, error) {
+	var contactEmail models.ContactEmail
 	builder := actions.NewMutationBuilder(
 		trigger.Builder.GetViewer(),
 		ent.InsertOperation,
+		&contactEmail,
 		&configs.ContactEmailConfig{},
 	)
 	builder.SetField("EmailAddress", util.GenerateRandEmail())
 	builder.SetField("Label", "main email")
 	builder.SetField("ContactID", trigger.Builder)
 
-	var contactEmail models.ContactEmail
-
 	builder.FieldMap = getFieldMapFromFields(builder.Operation, builder.GetFields())
 
-	return builder.GetChangeset(&contactEmail)
+	return builder.GetChangeset()
 }

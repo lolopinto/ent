@@ -60,7 +60,7 @@ func (action *CreateEventAction) SetBuilderOnTriggers(triggers []actions.Trigger
 }
 
 func (action *CreateEventAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset(nil)
+	return action.builder.GetChangeset()
 }
 
 func (action *CreateEventAction) Entity() ent.Entity {

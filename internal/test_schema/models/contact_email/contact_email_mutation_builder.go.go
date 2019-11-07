@@ -12,7 +12,7 @@ import (
 
 type ContactEmailMutationBuilder struct {
 	builder          *actions.EntMutationBuilder
-	contactEmail     models.ContactEmail
+	contactEmail     *models.ContactEmail
 	emailAddress     *string
 	label            *string
 	contactID        *string
@@ -25,15 +25,18 @@ func NewMutationBuilder(
 	fieldMap ent.ActionFieldMap,
 	opts ...func(*actions.EntMutationBuilder),
 ) *ContactEmailMutationBuilder {
+	var contactEmail models.ContactEmail
 	b := actions.NewMutationBuilder(
 		viewer,
 		operation,
+		&contactEmail,
 		&configs.ContactEmailConfig{},
 		opts...,
 	)
 	b.FieldMap = fieldMap
 	return &ContactEmailMutationBuilder{
-		builder: b,
+		builder:      b,
+		contactEmail: &contactEmail,
 	}
 }
 
@@ -95,20 +98,23 @@ func (b *ContactEmailMutationBuilder) GetViewer() viewer.ViewerContext {
 }
 
 func (b *ContactEmailMutationBuilder) GetContactEmail() *models.ContactEmail {
-	return &b.contactEmail
+	return b.contactEmail
 }
 
 func (b *ContactEmailMutationBuilder) SetTriggers(triggers []actions.Trigger) {
 	b.builder.SetTriggers(triggers)
 }
 
-func (b *ContactEmailMutationBuilder) GetChangeset(_ ent.Entity) (ent.Changeset, error) {
-
-	return b.builder.GetChangeset(&b.contactEmail)
+func (b *ContactEmailMutationBuilder) GetChangeset() (ent.Changeset, error) {
+	return b.builder.GetChangeset()
 }
 
 func (b *ContactEmailMutationBuilder) ExistingEnt() ent.Entity {
 	return b.builder.ExistingEnt()
+}
+
+func (b *ContactEmailMutationBuilder) Entity() ent.Entity {
+	return b.builder.Entity()
 }
 
 func (b *ContactEmailMutationBuilder) GetOperation() ent.WriteOperation {

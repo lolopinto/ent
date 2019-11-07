@@ -27,7 +27,7 @@ func (a *eventAction) Entity() ent.Entity {
 
 func (a *eventAction) getChangeset(operation ent.WriteOperation, existingEnt ent.Entity) (ent.Changeset, error) {
 	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.builder.GetFields())
-	return a.builder.GetChangeset(&a.event)
+	return a.builder.GetChangeset()
 }
 
 type createEventAction struct {
@@ -37,12 +37,13 @@ type createEventAction struct {
 func eventCreateAction(
 	viewer viewer.ViewerContext,
 ) *createEventAction {
+	action := createEventAction{}
 	b := actions.NewMutationBuilder(
 		viewer,
 		ent.InsertOperation,
+		&action.event,
 		&configs.EventConfig{},
 	)
-	action := createEventAction{}
 	action.viewer = viewer
 	fields := testingutils.GetDefaultEventFieldsUserID(viewer.GetViewerID())
 	for k, v := range fields {

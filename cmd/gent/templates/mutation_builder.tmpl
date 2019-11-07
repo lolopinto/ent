@@ -18,7 +18,7 @@
 
 type {{$builderName}} struct {
   builder *actions.EntMutationBuilder
-  {{.NodeInstance}} models.{{.Node}}
+  {{.NodeInstance}} *models.{{.Node}}
   {{ range $field := $fieldInfos -}}
     {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
     {{$fieldInstanceName}} *{{fTypeString $field.Field}}
@@ -35,15 +35,18 @@ func NewMutationBuilder(
   fieldMap ent.ActionFieldMap,
   opts ...func(*actions.EntMutationBuilder),
 ) *{{$builderName}} {
+  var {{.NodeInstance}} models.{{.Node}}
   b := actions.NewMutationBuilder(
     viewer, 
     operation,
+    &{{.NodeInstance}},
     {{.EntConfig}},
     opts...,
   )
   b.FieldMap = fieldMap
   return &{{$builderName}}{
     builder: b,
+    {{.NodeInstance}}: &{{.NodeInstance}},
   }
 }
 
@@ -142,22 +145,23 @@ func (b *{{$builderName}}) GetViewer() viewer.ViewerContext {
 }
 
 func (b *{{$builderName}}) Get{{.Node}}() *models.{{.Node}} {
-  return &b.{{.NodeInstance}}
+  return b.{{.NodeInstance}}
 }
 
 func (b *{{$builderName}}) SetTriggers(triggers []actions.Trigger) {
   b.builder.SetTriggers(triggers)
 }
 
-func (b *{{$builderName}}) GetChangeset(_ ent.Entity) (ent.Changeset, error) {
-  {{/* TODO fix this ignored param! */}}
-  {{/* need to figure out which is better for API of GetChangeset() */}}
-  {{/* Seems like it makes more sense to have the builder have no param since that is the common case */}}
-  return b.builder.GetChangeset(&b.{{.NodeInstance}})
+func (b *{{$builderName}}) GetChangeset() (ent.Changeset, error) {
+  return b.builder.GetChangeset()
 }
 
 func (b *{{$builderName}}) ExistingEnt() ent.Entity {
   return b.builder.ExistingEnt()
+}
+
+func (b *{{$builderName}}) Entity() ent.Entity {
+  return b.builder.Entity()
 }
 
 func (b *{{$builderName}}) GetOperation() ent.WriteOperation {

@@ -48,7 +48,7 @@ func (a *userAction) getChangeset(operation ent.WriteOperation, existingEnt ent.
 		a.builder.SetField(k, v)
 	}
 	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.getFields())
-	return a.builder.GetChangeset(&a.user)
+	return a.builder.GetChangeset()
 }
 
 type createUserAction struct {
@@ -165,7 +165,7 @@ func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
 	a := &createContactAction{}
 	a.viewer = trigger.Builder.GetViewer()
 	a.builder = actions.NewMutationBuilder(
-		a.viewer, ent.InsertOperation, &configs.ContactConfig{},
+		a.viewer, ent.InsertOperation, &a.contact, &configs.ContactConfig{},
 	)
 	fields := trigger.Builder.GetFields()
 	a.firstName = fields["FirstName"]
@@ -186,7 +186,7 @@ func (trigger *UserCreateContactAndEmailTrigger) GetChangeset() (ent.Changeset, 
 	a := &createContactAndEmailAction{}
 	a.viewer = trigger.Builder.GetViewer()
 	a.builder = actions.NewMutationBuilder(
-		a.viewer, ent.InsertOperation, &configs.ContactConfig{},
+		a.viewer, ent.InsertOperation, &a.contact, &configs.ContactConfig{},
 	)
 	fields := trigger.Builder.GetFields()
 	a.firstName = fields["FirstName"]
@@ -213,10 +213,11 @@ func (trigger *UserCreateEventTrigger) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(action)
 }
 
-func getUserCreateBuilder(viewer viewer.ViewerContext) *actions.EntMutationBuilder {
+func getUserCreateBuilder(viewer viewer.ViewerContext, user *models.User) *actions.EntMutationBuilder {
 	return actions.NewMutationBuilder(
 		viewer,
 		ent.InsertOperation,
+		user,
 		&configs.UserConfig{},
 	)
 }
@@ -226,7 +227,7 @@ func userCreateAction(
 ) *createUserAction {
 	action := &createUserAction{}
 	action.viewer = viewer
-	action.builder = getUserCreateBuilder(viewer)
+	action.builder = getUserCreateBuilder(viewer, &action.user)
 
 	return action
 }
@@ -235,13 +236,14 @@ func userEditAction(
 	viewer viewer.ViewerContext,
 	user *models.User,
 ) *editUserAction {
+	action := &editUserAction{}
 	b := actions.NewMutationBuilder(
 		viewer,
 		ent.EditOperation,
+		&action.user,
 		&configs.UserConfig{},
 		actions.ExistingEnt(user),
 	)
-	action := &editUserAction{}
 	action.existingEnt = *user
 	action.viewer = viewer
 	action.builder = b

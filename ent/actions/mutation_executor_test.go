@@ -361,8 +361,13 @@ func TestMultiLevelDependency(t *testing.T) {
 	assert.Nil(t, outerOuterExec.ResolveValue("13"))
 }
 
+func getBuilder() *EntMutationBuilder {
+	var user models.User
+	return NewMutationBuilder(viewer.LoggedOutViewer(), ent.InsertOperation, &user, &configs.UserConfig{})
+}
+
 func TestBuilderDependency(t *testing.T) {
-	builder := NewMutationBuilder(viewer.LoggedOutViewer(), ent.InsertOperation, &configs.UserConfig{})
+	builder := getBuilder()
 	changeset := newListBasedChangeset([]string{"ent1", "2", "3"}, builder.GetPlaceholderID())
 
 	resolvableOp := &resolvableSimpleOp{}
@@ -400,7 +405,7 @@ func TestBuilderDependency(t *testing.T) {
 }
 
 func TestMultiLevelBuilderDependency(t *testing.T) {
-	builder := NewMutationBuilder(viewer.LoggedOutViewer(), ent.InsertOperation, &configs.UserConfig{})
+	builder := getBuilder()
 
 	// 1 creates an ent, 2-6 don't
 	// anything that depends on this changeset gets 1 back
@@ -417,7 +422,7 @@ func TestMultiLevelBuilderDependency(t *testing.T) {
 	resolvableOp.id = "8"
 
 	// anything that depends on this changeset gets 8 back
-	builder2 := NewMutationBuilder(viewer.LoggedOutViewer(), ent.InsertOperation, &configs.UserConfig{})
+	builder2 := getBuilder()
 
 	innerExec := &entWithDependenciesExecutor{
 		// this needs to be a different placeholder...

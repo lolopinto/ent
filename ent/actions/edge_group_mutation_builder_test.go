@@ -5,9 +5,7 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
-
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/suite"
@@ -33,7 +31,7 @@ func (suite *edgeGroupMutationBuilderSuite) TestEdgeGroupBuilder() {
 	event := testingutils.CreateTestEvent(suite.T(), user)
 
 	// add invited edge
-	b := testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event)
+	b := testingutils.GetEventBuilder(ent.EditOperation, event)
 	b.AddOutboundEdge(models.EventToInvitedEdge, user.ID, user.GetType())
 	updatedEvent := testingutils.SaveEvent(suite.T(), b)
 
@@ -42,7 +40,7 @@ func (suite *edgeGroupMutationBuilderSuite) TestEdgeGroupBuilder() {
 
 	// add attending edge
 	b2 := &actions.EdgeGroupMutationBuilder{
-		EntMutationBuilder: *testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event),
+		EntMutationBuilder: *testingutils.GetEventBuilder(ent.EditOperation, event),
 	}
 	b2.SetEnumValue("EVENT_ATTENDING")
 	b2.SetIDValue(user.GetID(), user.GetType())
@@ -55,7 +53,7 @@ func (suite *edgeGroupMutationBuilderSuite) TestEdgeGroupBuilder() {
 
 	// add declined edge
 	b3 := &actions.EdgeGroupMutationBuilder{
-		EntMutationBuilder: *testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event),
+		EntMutationBuilder: *testingutils.GetEventBuilder(ent.EditOperation, event),
 	}
 	b3.SetEnumValue("EVENT_DECLINED")
 	b3.SetIDValue(user.GetID(), user.GetType())

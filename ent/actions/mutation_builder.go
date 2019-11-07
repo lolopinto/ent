@@ -13,6 +13,7 @@ import (
 type EntMutationBuilder struct {
 	Viewer         viewer.ViewerContext
 	ExistingEntity ent.Entity
+	entity         ent.Entity
 	Operation      ent.WriteOperation
 	EntConfig      ent.Config
 	// for now, actions map to all the fields so it's fine. this will need to be changed when each EntMutationBuilder is generated
@@ -38,9 +39,11 @@ func ExistingEnt(existingEnt ent.Entity) func(*EntMutationBuilder) {
 		mb.ExistingEntity = existingEnt
 	}
 }
+
 func NewMutationBuilder(
 	viewer viewer.ViewerContext,
 	operation ent.WriteOperation,
+	entity ent.Entity,
 	entConfig ent.Config,
 	opts ...func(*EntMutationBuilder),
 ) *EntMutationBuilder {
@@ -48,6 +51,7 @@ func NewMutationBuilder(
 		Viewer:    viewer,
 		Operation: operation,
 		EntConfig: entConfig,
+		entity:    entity,
 	}
 	for _, opt := range opts {
 		opt(b)
@@ -96,6 +100,10 @@ func (b *EntMutationBuilder) GetViewer() viewer.ViewerContext {
 
 func (b *EntMutationBuilder) ExistingEnt() ent.Entity {
 	return b.ExistingEntity
+}
+
+func (b *EntMutationBuilder) Entity() ent.Entity {
+	return b.entity
 }
 
 func (b *EntMutationBuilder) GetOperation() ent.WriteOperation {
@@ -231,7 +239,7 @@ func (b *EntMutationBuilder) runTriggers() error {
 	return nil
 }
 
-func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, error) {
+func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	if err := b.runTriggers(); err != nil {
 		return nil, err
 	}
@@ -275,7 +283,7 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 		ops = append(ops,
 			&ent.EditNodeOperation{
 				ExistingEnt:         b.ExistingEntity,
-				Entity:              entity,
+				Entity:              b.entity,
 				EntConfig:           b.EntConfig,
 				Fields:              fields,
 				FieldsWithResolvers: fieldsWithResolvers,
@@ -303,7 +311,7 @@ func (b *EntMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, err
 
 	// let's figure out craziness here
 	return &EntMutationChangeset{
-		entity:        entity,
+		entity:        b.entity,
 		viewer:        b.Viewer,
 		ops:           ops,
 		placeholderID: b.GetPlaceholderID(),

@@ -12,7 +12,7 @@ import (
 
 type ContactMutationBuilder struct {
 	builder       *actions.EntMutationBuilder
-	contact       models.Contact
+	contact       *models.Contact
 	emailAddress  *string
 	firstName     *string
 	lastName      *string
@@ -29,15 +29,18 @@ func NewMutationBuilder(
 	fieldMap ent.ActionFieldMap,
 	opts ...func(*actions.EntMutationBuilder),
 ) *ContactMutationBuilder {
+	var contact models.Contact
 	b := actions.NewMutationBuilder(
 		viewer,
 		operation,
+		&contact,
 		&configs.ContactConfig{},
 		opts...,
 	)
 	b.FieldMap = fieldMap
 	return &ContactMutationBuilder{
 		builder: b,
+		contact: &contact,
 	}
 }
 
@@ -179,20 +182,23 @@ func (b *ContactMutationBuilder) GetViewer() viewer.ViewerContext {
 }
 
 func (b *ContactMutationBuilder) GetContact() *models.Contact {
-	return &b.contact
+	return b.contact
 }
 
 func (b *ContactMutationBuilder) SetTriggers(triggers []actions.Trigger) {
 	b.builder.SetTriggers(triggers)
 }
 
-func (b *ContactMutationBuilder) GetChangeset(_ ent.Entity) (ent.Changeset, error) {
-
-	return b.builder.GetChangeset(&b.contact)
+func (b *ContactMutationBuilder) GetChangeset() (ent.Changeset, error) {
+	return b.builder.GetChangeset()
 }
 
 func (b *ContactMutationBuilder) ExistingEnt() ent.Entity {
 	return b.builder.ExistingEnt()
+}
+
+func (b *ContactMutationBuilder) Entity() ent.Entity {
+	return b.builder.Entity()
 }
 
 func (b *ContactMutationBuilder) GetOperation() ent.WriteOperation {

@@ -27,7 +27,7 @@ func (b *EdgeGroupMutationBuilder) SetStatusMap(statusMap ent.AssocStatusMap) {
 	b.statusMap = statusMap
 }
 
-func (b *EdgeGroupMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, error) {
+func (b *EdgeGroupMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	for key, value := range b.statusMap {
 		// TODO use enums here with generated types instead of this generated thing with strings
 		if !value.UseInStatusAction {
@@ -39,5 +39,5 @@ func (b *EdgeGroupMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changese
 			b.RemoveOutboundEdge(value.Edge, b.idValue, b.nodeType)
 		}
 	}
-	return b.EntMutationBuilder.GetChangeset(entity)
+	return b.EntMutationBuilder.GetChangeset()
 }

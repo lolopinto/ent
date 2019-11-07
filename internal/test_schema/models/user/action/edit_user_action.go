@@ -60,7 +60,7 @@ func (action *EditUserAction) SetBuilderOnTriggers(triggers []actions.Trigger) e
 }
 
 func (action *EditUserAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset(nil)
+	return action.builder.GetChangeset()
 }
 
 func (action *EditUserAction) Entity() ent.Entity {

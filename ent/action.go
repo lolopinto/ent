@@ -91,9 +91,10 @@ type MutationBuilder interface {
 	//	GetPlaceholderID() string
 	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions
 	ExistingEnt() Entity
+	Entity() Entity
 	GetPlaceholderID() string // TODO GetMutationID()?
 	GetViewer() viewer.ViewerContext
-	GetChangeset(Entity) (Changeset, error) // Damn!!
+	GetChangeset() (Changeset, error)
 	GetOperation() WriteOperation
 }
 

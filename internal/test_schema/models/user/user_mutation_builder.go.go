@@ -12,7 +12,7 @@ import (
 
 type UserMutationBuilder struct {
 	builder      *actions.EntMutationBuilder
-	user         models.User
+	user         *models.User
 	emailAddress *string
 	firstName    *string
 	lastName     *string
@@ -24,15 +24,18 @@ func NewMutationBuilder(
 	fieldMap ent.ActionFieldMap,
 	opts ...func(*actions.EntMutationBuilder),
 ) *UserMutationBuilder {
+	var user models.User
 	b := actions.NewMutationBuilder(
 		viewer,
 		operation,
+		&user,
 		&configs.UserConfig{},
 		opts...,
 	)
 	b.FieldMap = fieldMap
 	return &UserMutationBuilder{
 		builder: b,
+		user:    &user,
 	}
 }
 
@@ -252,20 +255,23 @@ func (b *UserMutationBuilder) GetViewer() viewer.ViewerContext {
 }
 
 func (b *UserMutationBuilder) GetUser() *models.User {
-	return &b.user
+	return b.user
 }
 
 func (b *UserMutationBuilder) SetTriggers(triggers []actions.Trigger) {
 	b.builder.SetTriggers(triggers)
 }
 
-func (b *UserMutationBuilder) GetChangeset(_ ent.Entity) (ent.Changeset, error) {
-
-	return b.builder.GetChangeset(&b.user)
+func (b *UserMutationBuilder) GetChangeset() (ent.Changeset, error) {
+	return b.builder.GetChangeset()
 }
 
 func (b *UserMutationBuilder) ExistingEnt() ent.Entity {
 	return b.builder.ExistingEnt()
+}
+
+func (b *UserMutationBuilder) Entity() ent.Entity {
+	return b.builder.Entity()
 }
 
 func (b *UserMutationBuilder) GetOperation() ent.WriteOperation {

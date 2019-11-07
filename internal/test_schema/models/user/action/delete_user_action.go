@@ -60,7 +60,7 @@ func (action *DeleteUserAction) SetBuilderOnTriggers(triggers []actions.Trigger)
 }
 
 func (action *DeleteUserAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset(nil)
+	return action.builder.GetChangeset()
 }
 
 func (action *DeleteUserAction) Entity() ent.Entity {

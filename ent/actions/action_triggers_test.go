@@ -108,7 +108,7 @@ func (suite *actionsTriggersSuite) TestCreateDependentObjectInTrigger2() {
 	action := &createContactAndEmailAction{}
 	action.viewer = v
 	action.builder = actions.NewMutationBuilder(
-		v, ent.InsertOperation, &configs.ContactConfig{},
+		v, ent.InsertOperation, &action.contact, &configs.ContactConfig{},
 	)
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
@@ -131,7 +131,7 @@ func (suite *actionsTriggersSuite) TestCreateDependentObjectAndEdgesTrigger() {
 	v := viewer.LoggedOutViewer()
 	action := &createUserAndEventAction{}
 	action.viewer = v
-	action.builder = getUserCreateBuilder(v)
+	action.builder = getUserCreateBuilder(v, &action.user)
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
 	action.emailAddress = util.GenerateRandEmail()
@@ -155,7 +155,7 @@ func (suite *actionsTriggersSuite) TestMultiLevelDeep() {
 	v := viewer.LoggedOutViewer()
 	action := &createUserContactAndEmailAction{}
 	action.viewer = v
-	action.builder = getUserCreateBuilder(v)
+	action.builder = getUserCreateBuilder(v, &action.user)
 
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
@@ -181,7 +181,7 @@ func (suite *actionsTriggersSuite) TestCreateAllTheThingsTrigger() {
 	v := viewer.LoggedOutViewer()
 	action := &createUserAndAllTheThingsAction{}
 	action.viewer = v
-	action.builder = getUserCreateBuilder(v)
+	action.builder = getUserCreateBuilder(v, &action.user)
 
 	action.firstName = "Ola"
 	action.lastName = "Okelola"

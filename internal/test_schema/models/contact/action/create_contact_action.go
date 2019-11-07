@@ -59,7 +59,7 @@ func (action *CreateContactAction) SetBuilderOnTriggers(triggers []actions.Trigg
 }
 
 func (action *CreateContactAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset(nil)
+	return action.builder.GetChangeset()
 }
 
 func (action *CreateContactAction) Entity() ent.Entity {

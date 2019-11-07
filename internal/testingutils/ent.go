@@ -41,6 +41,7 @@ func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.Use
 
 	b := GetBaseBuilder(
 		ent.InsertOperation,
+		&contact,
 		&configs.ContactConfig{},
 		nil,
 	)
@@ -56,7 +57,7 @@ func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.Use
 	for _, user := range allowList {
 		b.AddOutboundEdge(models.ContactToAllowListEdge, user.ID, user.GetType())
 	}
-	SaveBuilder(t, b, &contact)
+	SaveBuilder(t, b)
 	return &contact
 }
 
@@ -74,16 +75,19 @@ func AddFamilyMember(t *testing.T, user1, user2 *models.User) {
 
 func GetBaseBuilder(
 	operation ent.WriteOperation,
+	entity ent.Entity,
 	config ent.Config,
 	existingEnt ent.Entity,
 ) *actions.EntMutationBuilder {
 	v := viewertesting.OmniViewerContext{}
-	return actions.NewMutationBuilder(v, operation, config, actions.ExistingEnt(existingEnt))
+	return actions.NewMutationBuilder(v, operation, entity, config, actions.ExistingEnt(existingEnt))
 }
 
 func CreateEdge(t *testing.T, edge *ent.AssocEdgeData) {
+	var newEdge ent.AssocEdgeData
 	b := GetBaseBuilder(
 		ent.InsertOperation,
+		&newEdge,
 		&ent.AssocEdgeConfig{},
 		nil,
 	)
@@ -95,13 +99,14 @@ func CreateEdge(t *testing.T, edge *ent.AssocEdgeData) {
 		"symmetric_edge":    edge.SymmetricEdge,
 	},
 	)
-	var newEdge ent.AssocEdgeData
-	SaveBuilder(t, b, &newEdge)
+	SaveBuilder(t, b)
 }
 
 func EditEdge(t *testing.T, edge *ent.AssocEdgeData) {
+	var newEdge ent.AssocEdgeData
 	b := GetBaseBuilder(
 		ent.EditOperation,
+		&newEdge,
 		&ent.AssocEdgeConfig{},
 		edge,
 	)
@@ -113,8 +118,21 @@ func EditEdge(t *testing.T, edge *ent.AssocEdgeData) {
 		"symmetric_edge":    edge.SymmetricEdge,
 	},
 	)
-	var newEdge ent.AssocEdgeData
-	SaveBuilder(t, b, &newEdge)
+	SaveBuilder(t, b)
+}
+
+func GetUserBuilder(
+	operation ent.WriteOperation,
+	existingEnt ent.Entity,
+) *actions.EntMutationBuilder {
+	var user models.User
+	b := GetBaseBuilder(
+		operation,
+		&user,
+		&configs.UserConfig{},
+		existingEnt,
+	)
+	return b
 }
 
 func GetUserBuilderWithFields(
@@ -122,12 +140,22 @@ func GetUserBuilderWithFields(
 	existingEnt ent.Entity,
 	fields map[string]interface{},
 ) *actions.EntMutationBuilder {
+	b := GetUserBuilder(operation, existingEnt)
+	setFields(b, fields)
+	return b
+}
+
+func GetEventBuilder(
+	operation ent.WriteOperation,
+	existingEnt ent.Entity,
+) *actions.EntMutationBuilder {
+	var event models.Event
 	b := GetBaseBuilder(
 		operation,
-		&configs.UserConfig{},
+		&event,
+		&configs.EventConfig{},
 		existingEnt,
 	)
-	setFields(b, fields)
 	return b
 }
 
@@ -136,16 +164,12 @@ func GetEventBuilderwithFields(
 	existingEnt ent.Entity,
 	fields map[string]interface{},
 ) *actions.EntMutationBuilder {
-	b := GetBaseBuilder(
-		operation,
-		&configs.EventConfig{},
-		existingEnt,
-	)
+	b := GetEventBuilder(operation, existingEnt)
 	setFields(b, fields)
 	return b
 }
 
-func SaveBuilder(t *testing.T, b ent.MutationBuilder, entity ent.Entity) {
+func SaveBuilder(t *testing.T, b ent.MutationBuilder) {
 	// sad. todo come up with better long term approach for tests
 	emb, ok := b.(*actions.EntMutationBuilder)
 	if ok {
@@ -156,7 +180,7 @@ func SaveBuilder(t *testing.T, b ent.MutationBuilder, entity ent.Entity) {
 			egmb.FieldMap = getFieldMapFromFields(egmb.Operation, egmb.GetFields())
 		}
 	}
-	c, err := b.GetChangeset(entity)
+	c, err := b.GetChangeset()
 	assert.Nil(t, err)
 	err = ent.SaveChangeset(c)
 	assert.Nil(t, err)
@@ -164,22 +188,24 @@ func SaveBuilder(t *testing.T, b ent.MutationBuilder, entity ent.Entity) {
 
 func SaveUser(t *testing.T, b ent.MutationBuilder) *models.User {
 	if b.GetOperation() == ent.DeleteOperation {
-		SaveBuilder(t, b, nil)
+		SaveBuilder(t, b)
 		return nil
 	}
-	var user models.User
-	SaveBuilder(t, b, &user)
-	return &user
+	SaveBuilder(t, b)
+	user, ok := b.Entity().(*models.User)
+	assert.True(t, ok)
+	return user
 }
 
 func SaveEvent(t *testing.T, b ent.MutationBuilder) *models.Event {
 	if b.GetOperation() == ent.DeleteOperation {
-		SaveBuilder(t, b, nil)
+		SaveBuilder(t, b)
 		return nil
 	}
-	var event models.Event
-	SaveBuilder(t, b, &event)
-	return &event
+	SaveBuilder(t, b)
+	event, ok := b.Entity().(*models.Event)
+	assert.True(t, ok)
+	return event
 }
 
 func GetDefaultUserBuilder(email string) *actions.EntMutationBuilder {

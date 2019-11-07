@@ -60,7 +60,7 @@ func (action *RemoveFamilyMembersAction) SetBuilderOnTriggers(triggers []actions
 }
 
 func (action *RemoveFamilyMembersAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset(nil)
+	return action.builder.GetChangeset()
 }
 
 func (action *RemoveFamilyMembersAction) Entity() ent.Entity {

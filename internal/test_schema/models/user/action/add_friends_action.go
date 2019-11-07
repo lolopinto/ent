@@ -60,7 +60,7 @@ func (action *AddFriendsAction) SetBuilderOnTriggers(triggers []actions.Trigger)
 }
 
 func (action *AddFriendsAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset(nil)
+	return action.builder.GetChangeset()
 }
 
 func (action *AddFriendsAction) Entity() ent.Entity {

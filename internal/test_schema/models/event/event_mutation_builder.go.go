@@ -14,7 +14,7 @@ import (
 
 type EventMutationBuilder struct {
 	builder       *actions.EntMutationBuilder
-	event         models.Event
+	event         *models.Event
 	name          *string
 	userID        *string
 	userIDBuilder ent.MutationBuilder
@@ -29,15 +29,18 @@ func NewMutationBuilder(
 	fieldMap ent.ActionFieldMap,
 	opts ...func(*actions.EntMutationBuilder),
 ) *EventMutationBuilder {
+	var event models.Event
 	b := actions.NewMutationBuilder(
 		viewer,
 		operation,
+		&event,
 		&configs.EventConfig{},
 		opts...,
 	)
 	b.FieldMap = fieldMap
 	return &EventMutationBuilder{
 		builder: b,
+		event:   &event,
 	}
 }
 
@@ -267,20 +270,23 @@ func (b *EventMutationBuilder) GetViewer() viewer.ViewerContext {
 }
 
 func (b *EventMutationBuilder) GetEvent() *models.Event {
-	return &b.event
+	return b.event
 }
 
 func (b *EventMutationBuilder) SetTriggers(triggers []actions.Trigger) {
 	b.builder.SetTriggers(triggers)
 }
 
-func (b *EventMutationBuilder) GetChangeset(_ ent.Entity) (ent.Changeset, error) {
-
-	return b.builder.GetChangeset(&b.event)
+func (b *EventMutationBuilder) GetChangeset() (ent.Changeset, error) {
+	return b.builder.GetChangeset()
 }
 
 func (b *EventMutationBuilder) ExistingEnt() ent.Entity {
 	return b.builder.ExistingEnt()
+}
+
+func (b *EventMutationBuilder) Entity() ent.Entity {
+	return b.builder.Entity()
 }
 
 func (b *EventMutationBuilder) GetOperation() ent.WriteOperation {
