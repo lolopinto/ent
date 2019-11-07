@@ -3,7 +3,6 @@ package testingutils
 import (
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/stretchr/testify/assert"
@@ -222,7 +221,6 @@ func VerifyNoFriendsEdge(t *testing.T, user, user2 *models.User) {
 }
 
 func VerifyEdge(t *testing.T, expectedEdge, edge *ent.Edge) {
-	spew.Dump(expectedEdge, edge)
 	assert.Equal(t, expectedEdge.EdgeType, edge.EdgeType)
 	assert.Equal(t, expectedEdge.ID1, edge.ID1)
 	assert.Equal(t, expectedEdge.ID2, edge.ID2)

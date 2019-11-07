@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/util"
@@ -18,9 +17,9 @@ type EntMutationBuilder struct {
 	EntConfig      ent.Config
 	// for now, actions map to all the fields so it's fine. this will need to be changed when each EntMutationBuilder is generated
 	// At that point, probably makes sense to have each generated Builder handle this.
-	FieldMap      ent.ActionFieldMap
-	fields        map[string]interface{}
-	rawDBFields   map[string]interface{}
+	FieldMap ent.ActionFieldMap
+	fields   map[string]interface{}
+	//	rawDBFields   map[string]interface{}
 	edges         []*ent.EdgeOperation
 	edgeTypes     map[ent.EdgeType]bool
 	placeholderID string
@@ -31,7 +30,6 @@ type EntMutationBuilder struct {
 	// let's assume not possible for now but it's possible we want to store the ID in different places/
 	dependencies ent.MutationBuilderMap
 	changesets   []ent.Changeset
-	//	fieldsWithResolvers map[string]bool
 }
 
 func ExistingEnt(existingEnt ent.Entity) func(*EntMutationBuilder) {
@@ -65,22 +63,15 @@ func (b *EntMutationBuilder) flagWrite() {
 
 func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}) interface{} {
 	// this is a tricky method. should only be called by places that have a Lock()/Unlock protection in it.
-	// RIght now that's done by SetField()
+	// Right now that's done by SetField()
 	builder, ok := val.(ent.MutationBuilder)
 	if !ok {
 		return val
 	}
-	// b.mu.Lock()
-	// defer b.mu.Unlock()
 	if b.dependencies == nil {
 		b.dependencies = make(ent.MutationBuilderMap)
 	}
 	b.dependencies[builder.GetPlaceholderID()] = builder
-	// if b.fieldsWithResolvers == nil {
-	// 	b.fieldsWithResolvers = make(map[string]bool)
-	// }
-	// b.fieldsWithResolvers[fieldName] = true
-	//	return builder.GetPlaceholderID()
 	return val
 }
 
@@ -195,6 +186,8 @@ func (b *EntMutationBuilder) RemoveOutboundEdge(edgeType ent.EdgeType, id2 strin
 }
 
 func (b *EntMutationBuilder) SetTriggers(triggers []Trigger) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	b.triggers = triggers
 }
 
@@ -215,6 +208,7 @@ func (b *EntMutationBuilder) runTriggers() error {
 		f := func(i int) {
 			defer wg.Done()
 			c, err := trigger.GetChangeset()
+			// hmm this may not be the best way. is this safe?
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -329,7 +323,6 @@ func (b *EntMutationBuilder) Validate() error {
 	}
 	var errors []*ent.ActionErrorInfo
 
-	spew.Dump(b.FieldMap, b.fields)
 	for fieldName, item := range b.FieldMap {
 		_, ok := b.fields[fieldName]
 
