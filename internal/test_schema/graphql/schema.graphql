@@ -75,6 +75,16 @@ enum EventRsvpStatus {
     EVENT_UNKNOWN
 }
 
+input EventRsvpStatusEditInput {
+    eventID: ID!
+    rsvpStatus: String!
+    userID: String!
+}
+
+type EventRsvpStatusEditResponse {
+    event: Event
+}
+
 type EventsConnection implements Connection {
     edges: [EventsEdge!]
     nodes: [Event!]
@@ -87,6 +97,7 @@ type EventsEdge implements Edge {
 type Mutation {
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
     eventCreate(input: EventCreateInput!): EventCreateResponse
+    eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse
     userAddFriends(input: UserAddFriendsInput!): UserAddFriendsResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
     userDelete(input: UserDeleteInput!): UserDeleteResponse

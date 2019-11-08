@@ -245,24 +245,23 @@ func (suite *generatedActionSuite) TestInboundEdgeBuilder() {
 		SetName("fun event")
 
 	// manually combine the changesets. this would normally be done in a trigger
-	changeset, err := eventAction.GetChangeset()
-	mutationChangeset, ok := changeset.(*actions.EntMutationChangeset)
-	assert.True(suite.T(), ok)
-
-	userChangeset, err := userAction.GetChangeset()
-	assert.Nil(suite.T(), err)
-	mutationChangeset.AddChangeset(userChangeset)
+	changeset, err := actions.MultiChangesets(
+		eventAction.GetChangeset,
+		userAction.GetChangeset,
+	)
 	assert.Nil(suite.T(), err)
 
 	err = ent.SaveChangeset(changeset)
 	assert.Nil(suite.T(), err)
 
 	// confirm that right object was created and relationship is as expected
-	event := changeset.Entity()
-	user := userChangeset.Entity()
+	// depends on implementation detail from actions.MultiChangesets to get the Event.
+	createdEnt := changeset.Entity()
+	event, ok := createdEnt.(*models.Event)
+	assert.True(suite.T(), ok)
 
-	v = viewertesting.LoggedinViewerContext{ViewerID: user.GetID()}
-	reloadedUser, err := models.LoadUser(v, user.GetID())
+	v = viewertesting.LoggedinViewerContext{ViewerID: event.UserID}
+	reloadedUser, err := models.LoadUser(v, event.UserID)
 	assert.Nil(suite.T(), err)
 
 	events, err := reloadedUser.LoadEvents()
@@ -286,6 +285,24 @@ func (suite *generatedActionSuite) TestDefaultValueTime() {
 
 	t2 := action.GetBuilder().GetStartTime()
 	assert.False(suite.T(), t2.IsZero())
+}
+
+func (suite *generatedActionSuite) TestEventRSVP() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	testingutils.VerifyNoUserAttendingEventEdge(suite.T(), user, event)
+
+	_, err := eventaction.EditEventRsvpStatus(v, event).
+		// TODO this should be the enum...
+		AddRsvpStatus("event_attending").
+		AddUserID(user.ID).
+		Save()
+
+	assert.Nil(suite.T(), err)
+	testingutils.VerifyUserAttendingEventEdge(suite.T(), user, event)
 }
 
 func TestGeneratedAction(t *testing.T) {

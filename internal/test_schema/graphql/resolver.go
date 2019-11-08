@@ -124,6 +124,26 @@ func (r *mutationResolver) EventCreate(ctx context.Context, input EventCreateInp
 	}, nil
 }
 
+func (r *mutationResolver) EventRsvpStatusEdit(ctx context.Context, input EventRsvpStatusEditInput) (*EventRsvpStatusEditResponse, error) {
+	existingNode, err := models.LoadEventFromContext(ctx, input.EventID)
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := action1.EditEventRsvpStatusFromContext(ctx, existingNode).
+		AddRsvpStatus(input.RsvpStatus).
+		AddUserID(input.UserID).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &EventRsvpStatusEditResponse{
+		Event: node,
+	}, nil
+}
+
 func (r *mutationResolver) UserAddFriends(ctx context.Context, input UserAddFriendsInput) (*UserAddFriendsResponse, error) {
 	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
 	if err != nil {

@@ -35,7 +35,6 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 				"actionMethodName":        action.GetActionMethodName,
 				"actionMethodArgs":        getActionMethodArgs,
 				"actionMethodContextArgs": getActionMethodContextArgs,
-				"embeddedActionType":      getEmbeddedActionType,
 				"actionName":              getActionName,
 				"fields":                  action.GetFields,
 				"nonEntFields":            action.GetNonEntFields,
@@ -104,25 +103,6 @@ func getWriteOperation(action action.Action) string {
 		return "ent.EditOperation"
 	case ent.DeleteAction:
 		return "ent.DeleteOperation"
-	}
-	panic(fmt.Sprintf("invalid action %s not a supported type", action.GetActionName()))
-}
-
-func getEmbeddedActionType(action action.Action) string {
-	switch action.GetOperation() {
-	case ent.CreateAction, ent.EditAction, ent.DeleteAction:
-		// no embedded action type for these yet
-		// just use mutation builder
-		// may still add them because of GetFieldMap. todo!
-		return ""
-	case ent.AddEdgeAction:
-		return ""
-		//		return "actions.AddEdgeActionMutator"
-	case ent.RemoveEdgeAction:
-		return ""
-		//		return "actions.RemoveEdgeActionMutator"
-	case ent.EdgeGroupAction:
-		return "actions.EdgeGroupActionMutator"
 	}
 	panic(fmt.Sprintf("invalid action %s not a supported type", action.GetActionName()))
 }

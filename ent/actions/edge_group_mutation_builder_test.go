@@ -39,12 +39,12 @@ func (suite *edgeGroupMutationBuilderSuite) TestEdgeGroupBuilder() {
 	testingutils.VerifyInvitedToEventEdge(suite.T(), user, event)
 
 	// add attending edge
-	b2 := &actions.EdgeGroupMutationBuilder{
-		EntMutationBuilder: *testingutils.GetEventBuilder(ent.EditOperation, event),
-	}
+	b2 := actions.NewEdgeGroupMutationBuilder(
+		testingutils.GetEventBuilder(ent.EditOperation, event),
+		event.RsvpStatusMap(),
+	)
 	b2.SetEnumValue("EVENT_ATTENDING")
 	b2.SetIDValue(user.GetID(), user.GetType())
-	b2.SetStatusMap(event.RsvpStatusMap())
 	testingutils.SaveEvent(suite.T(), b2)
 
 	testingutils.VerifyUserAttendingEventEdge(suite.T(), user, event)
@@ -52,12 +52,12 @@ func (suite *edgeGroupMutationBuilderSuite) TestEdgeGroupBuilder() {
 	testingutils.VerifyInvitedToEventEdge(suite.T(), user, event)
 
 	// add declined edge
-	b3 := &actions.EdgeGroupMutationBuilder{
-		EntMutationBuilder: *testingutils.GetEventBuilder(ent.EditOperation, event),
-	}
+	b3 := actions.NewEdgeGroupMutationBuilder(
+		testingutils.GetEventBuilder(ent.EditOperation, event),
+		event.RsvpStatusMap(),
+	)
 	b3.SetEnumValue("EVENT_DECLINED")
 	b3.SetIDValue(user.GetID(), user.GetType())
-	b3.SetStatusMap(event.RsvpStatusMap())
 	testingutils.SaveEvent(suite.T(), b3)
 
 	// adding declined, removes attending.

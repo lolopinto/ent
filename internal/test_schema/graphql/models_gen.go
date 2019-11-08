@@ -49,6 +49,16 @@ type EventCreateResponse struct {
 	Event *models.Event `json:"event"`
 }
 
+type EventRsvpStatusEditInput struct {
+	EventID    string `json:"eventID"`
+	RsvpStatus string `json:"rsvpStatus"`
+	UserID     string `json:"userID"`
+}
+
+type EventRsvpStatusEditResponse struct {
+	Event *models.Event `json:"event"`
+}
+
 type EventsConnection struct {
 	Edges []*EventsEdge   `json:"edges"`
 	Nodes []*models.Event `json:"nodes"`

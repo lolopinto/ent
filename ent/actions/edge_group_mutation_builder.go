@@ -7,11 +7,23 @@ import (
 )
 
 type EdgeGroupMutationBuilder struct {
-	EntMutationBuilder
+	*EntMutationBuilder
 	enumValue string
 	idValue   string
 	nodeType  ent.NodeType
 	statusMap ent.AssocStatusMap
+}
+
+func NewEdgeGroupMutationBuilder(
+	b *EntMutationBuilder,
+	statusMap ent.AssocStatusMap,
+	//	opts ...func(*EntMutationBuilder),
+) *EdgeGroupMutationBuilder {
+	//	b := NewMutationBuilder(viewer, operation, entity, entConfig, opts...)
+	return &EdgeGroupMutationBuilder{
+		EntMutationBuilder: b,
+		statusMap:          statusMap,
+	}
 }
 
 func (b *EdgeGroupMutationBuilder) SetEnumValue(enumValue string) {
@@ -21,10 +33,6 @@ func (b *EdgeGroupMutationBuilder) SetEnumValue(enumValue string) {
 func (b *EdgeGroupMutationBuilder) SetIDValue(idValue string, nodeType ent.NodeType) {
 	b.idValue = idValue
 	b.nodeType = nodeType
-}
-
-func (b *EdgeGroupMutationBuilder) SetStatusMap(statusMap ent.AssocStatusMap) {
-	b.statusMap = statusMap
 }
 
 func (b *EdgeGroupMutationBuilder) GetChangeset() (ent.Changeset, error) {

@@ -205,32 +205,16 @@ func (b *EntMutationBuilder) runTriggers() error {
 		return nil
 	}
 
-	var errs []error
-	var changesets []ent.Changeset
+	var fns []func() (ent.Changeset, error)
+	for _, trigger := range b.triggers {
+		fns = append(fns, trigger.GetChangeset)
+	}
 
-	var wg sync.WaitGroup
-	wg.Add(len(b.triggers))
-	for idx := range b.triggers {
-		i := idx
-		trigger := b.triggers[i]
-		f := func(i int) {
-			defer wg.Done()
-			c, err := trigger.GetChangeset()
-			// hmm this may not be the best way. is this safe?
-			if err != nil {
-				errs = append(errs, err)
-			}
-			if c != nil {
-				changesets = append(changesets, c)
-			}
-		}
-		go f(i)
+	changesets, err := runChangesets(fns...)
+	if err != nil {
+		return err
 	}
-	wg.Wait()
-	if len(errs) != 0 {
-		// TODO we need the list of errors abstraction
-		return errs[0]
-	}
+
 	if len(changesets) != 0 {
 		b.mu.Lock()
 		defer b.mu.Unlock()
@@ -280,6 +264,9 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 				fieldsWithResolvers = append(fieldsWithResolvers, fieldInfo.DB)
 			}
 		}
+		// only worth doing it if there are fields
+		// TODO shouldn't do a write if len(fields) == 0
+		// need to change the code to always load the user after the write tho...
 		ops = append(ops,
 			&ent.EditNodeOperation{
 				ExistingEnt:         b.ExistingEntity,
@@ -291,6 +278,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 			},
 		)
 	}
+
 	edges := b.edges
 	for _, edge := range edges {
 		ops = append(ops, edge)
@@ -307,6 +295,10 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 				ent.EdgeType(edgeInfo.InverseEdgeType.String),
 			))
 		}
+	}
+
+	if len(ops) == 0 {
+		return nil, nil
 	}
 
 	// let's figure out craziness here

@@ -115,6 +115,7 @@ type Changeset interface {
 type MutationBuilderMap map[string]MutationBuilder
 
 type ChangesetWithDependencies interface {
+	Changeset
 	Dependencies() MutationBuilderMap
 	Changesets() []Changeset
 }

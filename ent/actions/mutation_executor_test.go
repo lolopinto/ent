@@ -1,121 +1,11 @@
 package actions
 
 import (
-	"errors"
-	"fmt"
-	"strings"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/ent/viewer"
-	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/stretchr/testify/assert"
 )
-
-type tesDatatOp interface {
-	ent.DataOperation
-	GetID() string
-}
-
-type simpleOp struct {
-	id string
-}
-
-func (s simpleOp) GetID() string {
-	return s.id
-}
-
-func (s simpleOp) PerformWrite(tx *sqlx.Tx) error {
-	return nil
-}
-
-type simpleOpWithEnt struct {
-	simpleOp
-	user models.User
-}
-
-func (s simpleOpWithEnt) CreatedEnt() ent.Entity {
-	s.user.ID = s.id
-	return &s.user
-}
-
-type resolvableSimpleOp struct {
-	simpleOp
-	placeholderID string
-	dependencyID  string
-}
-
-func (s *resolvableSimpleOp) Resolve(exec ent.Executor) error {
-	ent := exec.ResolveValue(s.placeholderID)
-	if ent == nil {
-		return errors.New("sadness")
-	}
-	s.dependencyID = ent.GetID()
-	return nil
-}
-
-func (s *resolvableSimpleOp) GetID() string {
-	return fmt.Sprintf("%s %s", s.dependencyID, s.id)
-}
-
-func execOperations(exec ent.Executor) ([]string, error) {
-	var result []string
-	for {
-		op, err := exec.Operation()
-		if err == ent.AllOperations {
-			break
-		} else if err != nil {
-			return nil, err
-		}
-
-		resolvableOp, ok := op.(ent.DataOperationWithResolver)
-		if ok {
-			if err = resolvableOp.Resolve(exec); err != nil {
-				return nil, err
-			}
-		}
-
-		idOp, ok := op.(tesDatatOp)
-		if !ok {
-			return nil, errors.New("invalid op")
-		}
-		result = append(result, idOp.GetID())
-	}
-	return result, nil
-}
-
-func newChangeset(placeholderID string, executor ent.Executor) ent.Changeset {
-	// executor/ dependencies/changesets are what we care about...
-	return &EntMutationChangeset{
-		viewer:        viewer.LoggedOutViewer(),
-		placeholderID: placeholderID,
-		executor:      executor,
-	}
-}
-
-func newListBasedExec(ids []string, placeholderID string) ent.Executor {
-	var ops []ent.DataOperation
-	for _, id := range ids {
-		if strings.HasPrefix(id, "ent") {
-			op := simpleOpWithEnt{}
-			op.id = strings.ReplaceAll(id, "ent", "")
-			ops = append(ops, op)
-		} else {
-			ops = append(ops, simpleOp{id})
-		}
-	}
-
-	return &entListBasedExecutor{
-		placeholderID: placeholderID,
-		ops:           ops,
-	}
-}
-
-func newListBasedChangeset(ids []string, placeholderID string) ent.Changeset {
-	return newChangeset(placeholderID, newListBasedExec(ids, placeholderID))
-}
 
 func TestListBased(t *testing.T) {
 	testCases := []string{
@@ -192,7 +82,7 @@ func TestSingleListDependency(t *testing.T) {
 		"3",
 	}
 	for _, placeholderID := range testCases {
-		changeset := newListBasedChangeset([]string{"1", "2", "3"}, placeholderID)
+		changeset := newChangesetWithListBasedExec([]string{"1", "2", "3"}, placeholderID)
 
 		exec := &entWithDependenciesExecutor{
 			// this needs to be a different placeholder...
@@ -229,8 +119,8 @@ func TestMultiListDependency(t *testing.T) {
 		"3",
 	}
 	for _, placeholderID := range testCases {
-		changeset1 := newListBasedChangeset([]string{"1", "2", "3"}, placeholderID)
-		changeset2 := newListBasedChangeset([]string{"4", "5", "6"}, placeholderID)
+		changeset1 := newChangesetWithListBasedExec([]string{"1", "2", "3"}, placeholderID)
+		changeset2 := newChangesetWithListBasedExec([]string{"4", "5", "6"}, placeholderID)
 
 		exec := &entWithDependenciesExecutor{
 			// this needs to be a different placeholder...
@@ -263,8 +153,8 @@ func TestMultiListDependency(t *testing.T) {
 }
 
 func TestMultiListDependencyCreatedEnt(t *testing.T) {
-	changeset1 := newListBasedChangeset([]string{"ent1", "2", "3"}, "1")
-	changeset2 := newListBasedChangeset([]string{"ent4", "5", "6"}, "4")
+	changeset1 := newChangesetWithListBasedExec([]string{"ent1", "2", "3"}, "1")
+	changeset2 := newChangesetWithListBasedExec([]string{"ent4", "5", "6"}, "4")
 
 	op := simpleOpWithEnt{}
 	op.id = "7"
@@ -297,8 +187,8 @@ func TestMultiListDependencyCreatedEnt(t *testing.T) {
 }
 
 func TestMultiLevelDependency(t *testing.T) {
-	changeset1 := newListBasedChangeset([]string{"ent1", "2", "3"}, "1")
-	changeset2 := newListBasedChangeset([]string{"ent4", "5", "6"}, "4")
+	changeset1 := newChangesetWithListBasedExec([]string{"ent1", "2", "3"}, "1")
+	changeset2 := newChangesetWithListBasedExec([]string{"ent4", "5", "6"}, "4")
 
 	op := simpleOpWithEnt{}
 	op.id = "7"
@@ -311,7 +201,7 @@ func TestMultiLevelDependency(t *testing.T) {
 		},
 		changesets: []ent.Changeset{changeset1, changeset2},
 	}
-	innerChangeset := newChangeset(innerExec.placeholderID, innerExec)
+	innerChangeset := newChangesetFromExec(innerExec.placeholderID, innerExec)
 
 	op2 := simpleOpWithEnt{}
 	op2.id = "9"
@@ -324,7 +214,7 @@ func TestMultiLevelDependency(t *testing.T) {
 		changesets: []ent.Changeset{innerChangeset},
 	}
 
-	outerChangeset := newChangeset(outerExec.placeholderID, outerExec)
+	outerChangeset := newChangesetFromExec(outerExec.placeholderID, outerExec)
 
 	op3 := simpleOpWithEnt{}
 	op3.id = "11"
@@ -361,14 +251,9 @@ func TestMultiLevelDependency(t *testing.T) {
 	assert.Nil(t, outerOuterExec.ResolveValue("13"))
 }
 
-func getBuilder() *EntMutationBuilder {
-	var user models.User
-	return NewMutationBuilder(viewer.LoggedOutViewer(), ent.InsertOperation, &user, &configs.UserConfig{})
-}
-
 func TestBuilderDependency(t *testing.T) {
 	builder := getBuilder()
-	changeset := newListBasedChangeset([]string{"ent1", "2", "3"}, builder.GetPlaceholderID())
+	changeset := newChangesetWithListBasedExec([]string{"ent1", "2", "3"}, builder.GetPlaceholderID())
 
 	resolvableOp := &resolvableSimpleOp{}
 	resolvableOp.placeholderID = builder.GetPlaceholderID()
@@ -409,8 +294,8 @@ func TestMultiLevelBuilderDependency(t *testing.T) {
 
 	// 1 creates an ent, 2-6 don't
 	// anything that depends on this changeset gets 1 back
-	changeset1 := newListBasedChangeset([]string{"ent1", "2", "3"}, builder.GetPlaceholderID())
-	changeset2 := newListBasedChangeset([]string{"4", "5", "6"}, "4")
+	changeset1 := newChangesetWithListBasedExec([]string{"ent1", "2", "3"}, builder.GetPlaceholderID())
+	changeset2 := newChangesetWithListBasedExec([]string{"4", "5", "6"}, "4")
 
 	// 7 creates an ent and something is going to depend on it later
 	opWithEnt := simpleOpWithEnt{}
@@ -436,7 +321,7 @@ func TestMultiLevelBuilderDependency(t *testing.T) {
 			builder.GetPlaceholderID(): builder,
 		},
 	}
-	innerChangeset := newChangeset(innerExec.placeholderID, innerExec)
+	innerChangeset := newChangesetFromExec(innerExec.placeholderID, innerExec)
 
 	// resolvableOp2 depends on builder2 so output should be "7 9"
 	// 7 is what's created by that changeset

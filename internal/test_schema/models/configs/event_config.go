@@ -35,9 +35,9 @@ func (config *EventConfig) GetEdges() ent.EdgeMap {
 		},
 		"Rsvps": ent.AssociationEdgeGroup{
 			GroupStatusName: "RsvpStatus",
-			// EdgeAction: &ent.EdgeActionConfig{
-			// 	Action: ent.EdgeGroupAction,
-			// },
+			EdgeAction: &ent.EdgeActionConfig{
+				Action: ent.EdgeGroupAction,
+			},
 			// re-use existing event_invited_edges table
 			CustomTableName: "event_invited_edges",
 			ActionEdges: []string{

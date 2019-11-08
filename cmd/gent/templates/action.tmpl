@@ -18,14 +18,19 @@
 {{end -}}
 
 {{$actionName := actionName $action}}
-{{$embeddedActionType := embeddedActionType $action}}
 
 {{$builderName := printf "%sMutationBuilder" $nodeInfo.Node -}}
 {{$builderType := printf "*builder.%s" $builderName -}}
 
+{{$edgeGroupAction := edgeGroupAction $action -}}
+
+{{$nonEntFields := nonEntFields $action}}
+
 type {{$actionName}} struct {
-  {{$embeddedActionType}}
   builder {{$builderType}}
+  {{ if $edgeGroupAction -}}
+  edgeGroupBuilder *actions.EdgeGroupMutationBuilder
+  {{ end -}}
 }
 
 {{$actionMethodName := actionMethodName $action}}
@@ -42,6 +47,7 @@ func {{$actionMethodName}}FromContext( {{actionMethodContextArgs $action}}) *{{$
 // {{$actionMethodName}} is the factory method to get an ...
 func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
   action := &{{$actionName}}{}
+  {{/* TODO the best long term thing here probably is to push this into the builder and have EventMutationBuilder use an EdgeGroupMutationBuilder for example instead of an EntMutationBuilder however need to make it work for multiple group statuses in the same mutation so doing it this way instead for now */ -}}
   builder := builder.NewMutationBuilder(
     viewer,
     {{writeOperation $action}},
@@ -50,8 +56,28 @@ func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
       actions.ExistingEnt({{$nodeInfo.NodeInstance}}),
     {{ end -}}
   )
-  {{/* hmm */ -}}
   action.builder = builder
+  {{if $edgeGroupAction -}}
+    edgeGroupBuilder := actions.NewEdgeGroupMutationBuilder(
+      {{/* instead of 2 underlying builders here, we could have the EntMutationBuilder be shared here but do not really wanna expose it */ -}}
+      actions.NewMutationBuilder(
+        viewer,
+        {{writeOperation $action}},
+        builder.Get{{$nodeInfo.Node}}(),
+        {{$nodeInfo.EntConfig}},
+        {{ if $action.MutatingExistingObject -}}
+        actions.ExistingEnt({{$nodeInfo.NodeInstance}}),
+        {{ end -}}
+      ),
+      {{ range $field := $nonEntFields -}} 
+      {{ if $field.IsStatusEnum -}}
+        {{/* TODO.. having to go through all the fields to pass this here is not good */ -}}
+        {{$nodeInfo.NodeInstance}}.{{$field.FieldName}}Map(),
+      {{end -}}
+    {{ end -}}
+  )
+  action.edgeGroupBuilder = edgeGroupBuilder
+  {{end -}}
   return action
 }
 
@@ -77,7 +103,14 @@ func (action *{{$actionName}}) SetBuilderOnTriggers(triggers []actions.Trigger) 
 }
 
 func (action *{{$actionName}}) GetChangeset() (ent.Changeset, error) {
+  {{if $edgeGroupAction -}}
+  return actions.MultiChangesets(
+    action.builder.GetChangeset,
+    action.edgeGroupBuilder.GetChangeset,
+  )
+  {{else -}}
   return action.builder.GetChangeset()
+  {{end -}}
 }
 
 func (action *{{$actionName}}) Entity() ent.Entity {
@@ -107,15 +140,14 @@ func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName
 
 {{end -}}
 
-{{$nonEntFields := nonEntFields $action}}
 {{ range $field := $nonEntFields -}}
 // {{$field.SetterMethodName}} sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
 func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$actionName}} {
   {{ if $field.IsStatusEnum -}}
-    action.SetEnumValue({{$field.InstanceName}})
+    action.edgeGroupBuilder.SetEnumValue({{$field.InstanceName}})
   {{ end -}}
   {{ if $field.IsGroupID -}}
-    action.SetIDValue({{$field.InstanceName}}, {{$field.NodeType}})
+    action.edgeGroupBuilder.SetIDValue({{$field.InstanceName}}, {{$field.NodeType}})
   {{ end -}}
   return action
 }
@@ -127,7 +159,7 @@ func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName
 {{ range $edge := $edges -}}
 // {{$edge.AddMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
 func (action *{{$actionName}}) {{$edge.AddMethodName}}({{$edge.InstanceName}} {{$edge.InstanceType}}) *{{$actionName}} {
-    {{/* TODO time and data support later */ -}}  
+  {{/* TODO time and data support later */ -}}  
   {{ if removeEdgeAction $action -}}
     action.builder.{{$edge.RemoveMethodName}}({{$edge.InstanceName}})
   {{else -}}
@@ -174,14 +206,6 @@ func (action *{{$actionName}}) Validate() error {
 
 // Save is the method called to execute this action and save change
 func (action * {{$actionName}}) Save() {{saveActionType $action}} {
-  {{ if edgeGroupAction $action -}}
-    {{ range $field := $nonEntFields -}} 
-      {{ if $field.IsStatusEnum -}}
-        action.SetStatusMap({{$nodeInfo.NodeInstance}}.Viewer{{$field.FieldName}}Map())
-      {{end -}}
-    {{end -}}
-  {{end -}}
-
   {{ if returnsObjectInstance $action -}}
     err := actions.Save(action)
     return action.builder.Get{{$nodeInfo.Node}}(), err
