@@ -52,7 +52,11 @@ func EditEventRsvpStatus(viewer viewer.ViewerContext, event *models.Event) *Edit
 	return action
 }
 
-func (action *EditEventRsvpStatusAction) GetBuilder() *builder.EventMutationBuilder {
+func (action *EditEventRsvpStatusAction) GetBuilder() ent.MutationBuilder {
+	return action.builder
+}
+
+func (action *EditEventRsvpStatusAction) GetTypedBuilder() *builder.EventMutationBuilder {
 	return action.builder
 }
 
@@ -73,6 +77,7 @@ func (action *EditEventRsvpStatusAction) SetBuilderOnTriggers(triggers []actions
 }
 
 func (action *EditEventRsvpStatusAction) GetChangeset() (ent.Changeset, error) {
+	// The builder needs to just contain the edgeGroupBuilder also and have GetChangeset() do things in there..
 	return actions.MultiChangesets(
 		action.builder.GetChangeset,
 		action.edgeGroupBuilder.GetChangeset,
@@ -81,6 +86,10 @@ func (action *EditEventRsvpStatusAction) GetChangeset() (ent.Changeset, error) {
 
 func (action *EditEventRsvpStatusAction) Entity() ent.Entity {
 	return action.builder.GetEvent()
+}
+
+func (action *EditEventRsvpStatusAction) ExistingEnt() ent.Entity {
+	return action.builder.ExistingEnt()
 }
 
 // AddRsvpStatus sets the RsvpStatus while editing the Event ent

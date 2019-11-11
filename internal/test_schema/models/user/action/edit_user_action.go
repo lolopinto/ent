@@ -39,7 +39,11 @@ func EditUser(viewer viewer.ViewerContext, user *models.User) *EditUserAction {
 	return action
 }
 
-func (action *EditUserAction) GetBuilder() *builder.UserMutationBuilder {
+func (action *EditUserAction) GetBuilder() ent.MutationBuilder {
+	return action.builder
+}
+
+func (action *EditUserAction) GetTypedBuilder() *builder.UserMutationBuilder {
 	return action.builder
 }
 
@@ -60,11 +64,15 @@ func (action *EditUserAction) SetBuilderOnTriggers(triggers []actions.Trigger) e
 }
 
 func (action *EditUserAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset()
+	return actions.GetChangeset(action)
 }
 
 func (action *EditUserAction) Entity() ent.Entity {
 	return action.builder.GetUser()
+}
+
+func (action *EditUserAction) ExistingEnt() ent.Entity {
+	return action.builder.ExistingEnt()
 }
 
 // SetEmailAddress sets the EmailAddress while editing the User ent

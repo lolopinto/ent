@@ -95,6 +95,14 @@ func (b *{{$builderName}}) {{$field.GetterMethodName}}() {{$field.InstanceType}}
   return *b.{{$fieldInstanceName}}
 }
 
+{{ if $field.Field.IDField -}}
+{{/* Do we still want placeholdervalue to be returned above? */}}
+func (b *{{$builderName}}) {{$field.GetterMethodName}}Builder() ent.MutationBuilder {
+  return b.{{$fieldInstanceName}}Builder
+}
+
+{{end -}}
+
 {{end -}}
 
 {{/* TODO singular version for the ID methods */}}

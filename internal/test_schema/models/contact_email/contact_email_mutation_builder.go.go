@@ -89,6 +89,10 @@ func (b *ContactEmailMutationBuilder) GetContactID() string {
 	return *b.contactID
 }
 
+func (b *ContactEmailMutationBuilder) GetContactIDBuilder() ent.MutationBuilder {
+	return b.contactIDBuilder
+}
+
 func (b *ContactEmailMutationBuilder) Validate() error {
 	return b.builder.Validate()
 }

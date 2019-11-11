@@ -39,7 +39,11 @@ func RemoveFamilyMembers(viewer viewer.ViewerContext, user *models.User) *Remove
 	return action
 }
 
-func (action *RemoveFamilyMembersAction) GetBuilder() *builder.UserMutationBuilder {
+func (action *RemoveFamilyMembersAction) GetBuilder() ent.MutationBuilder {
+	return action.builder
+}
+
+func (action *RemoveFamilyMembersAction) GetTypedBuilder() *builder.UserMutationBuilder {
 	return action.builder
 }
 
@@ -60,11 +64,15 @@ func (action *RemoveFamilyMembersAction) SetBuilderOnTriggers(triggers []actions
 }
 
 func (action *RemoveFamilyMembersAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset()
+	return actions.GetChangeset(action)
 }
 
 func (action *RemoveFamilyMembersAction) Entity() ent.Entity {
 	return action.builder.GetUser()
+}
+
+func (action *RemoveFamilyMembersAction) ExistingEnt() ent.Entity {
+	return action.builder.ExistingEnt()
 }
 
 // AddFamilyMembers adds an instance of User to the FamilyMembers edge while editing the User ent

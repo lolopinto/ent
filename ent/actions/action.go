@@ -8,9 +8,16 @@ import (
 type Action interface {
 	GetViewer() viewer.ViewerContext
 	//	GetBuilder() ent.MutationBuilder
+
+	// this exists and is just called by clients e.g. in triggers
+	// and the generated code calls actions.GetChangeset() which calls GetBuilder
 	GetChangeset() (ent.Changeset, error)
 	// where new ent should be stored.
 	Entity() ent.Entity
+
+	// what happens when we need multiple builders
+	// MultiBuilder?
+	GetBuilder() ent.MutationBuilder
 }
 
 type ActionWithValidator interface {
@@ -69,13 +76,18 @@ func GetChangeset(action Action) (ent.Changeset, error) {
 	// so everything will be handled in here as opposed to having PerformAction be callable on its own
 	// triggers and dependencies!
 	// TODO need a concurrent API for these things...
-	return action.GetChangeset()
+	return action.GetBuilder().GetChangeset()
 }
 
 func Save(action Action) error {
 	changeset, err := GetChangeset(action)
 	if err != nil {
 		return err
+	}
+
+	// nothing to save here
+	if changeset == nil {
+		return nil
 	}
 
 	return ent.SaveChangeset(changeset)

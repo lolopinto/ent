@@ -21,13 +21,13 @@ func (a *eventAction) GetViewer() viewer.ViewerContext {
 	return a.viewer
 }
 
-func (a *eventAction) Entity() ent.Entity {
-	return &a.event
+func (a *eventAction) GetBuilder() ent.MutationBuilder {
+	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.builder.GetFields())
+	return a.builder
 }
 
-func (a *eventAction) getChangeset(operation ent.WriteOperation, existingEnt ent.Entity) (ent.Changeset, error) {
-	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.builder.GetFields())
-	return a.builder.GetChangeset()
+func (a *eventAction) Entity() ent.Entity {
+	return &a.event
 }
 
 type createEventAction struct {
@@ -70,7 +70,7 @@ func (a *createEventAction) SetBuilderOnTriggers(triggers []actions.Trigger) err
 }
 
 func (a *createEventAction) GetChangeset() (ent.Changeset, error) {
-	return a.getChangeset(ent.InsertOperation, nil)
+	return actions.GetChangeset(a)
 }
 
 func (a *createEventAction) GetTriggers() []actions.Trigger {

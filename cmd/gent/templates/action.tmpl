@@ -81,7 +81,11 @@ func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
   return action
 }
 
-func (action *{{$actionName}}) GetBuilder() {{$builderType}} {
+func (action *{{$actionName}}) GetBuilder() ent.MutationBuilder {
+  return action.builder
+}
+
+func (action *{{$actionName}}) GetTypedBuilder() {{$builderType}} {
   return action.builder
 }
 
@@ -104,12 +108,13 @@ func (action *{{$actionName}}) SetBuilderOnTriggers(triggers []actions.Trigger) 
 
 func (action *{{$actionName}}) GetChangeset() (ent.Changeset, error) {
   {{if $edgeGroupAction -}}
+  // TODO...
   return actions.MultiChangesets(
     action.builder.GetChangeset,
     action.edgeGroupBuilder.GetChangeset,
   )
   {{else -}}
-  return action.builder.GetChangeset()
+  return actions.GetChangeset(action)
   {{end -}}
 }
 
@@ -119,6 +124,10 @@ func (action *{{$actionName}}) Entity() ent.Entity {
   {{ else -}}
     return nil
   {{end -}}
+}
+
+func (action *{{$actionName}}) ExistingEnt() ent.Entity {
+  return action.builder.ExistingEnt()
 }
 
 {{$fields := fields $action}}

@@ -38,7 +38,11 @@ func CreateContact(viewer viewer.ViewerContext) *CreateContactAction {
 	return action
 }
 
-func (action *CreateContactAction) GetBuilder() *builder.ContactMutationBuilder {
+func (action *CreateContactAction) GetBuilder() ent.MutationBuilder {
+	return action.builder
+}
+
+func (action *CreateContactAction) GetTypedBuilder() *builder.ContactMutationBuilder {
 	return action.builder
 }
 
@@ -59,11 +63,15 @@ func (action *CreateContactAction) SetBuilderOnTriggers(triggers []actions.Trigg
 }
 
 func (action *CreateContactAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset()
+	return actions.GetChangeset(action)
 }
 
 func (action *CreateContactAction) Entity() ent.Entity {
 	return action.builder.GetContact()
+}
+
+func (action *CreateContactAction) ExistingEnt() ent.Entity {
+	return action.builder.ExistingEnt()
 }
 
 // SetEmailAddress sets the EmailAddress while editing the Contact ent

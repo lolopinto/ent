@@ -100,6 +100,10 @@ func (b *EventMutationBuilder) GetUserID() string {
 	return *b.userID
 }
 
+func (b *EventMutationBuilder) GetUserIDBuilder() ent.MutationBuilder {
+	return b.userIDBuilder
+}
+
 func (b *EventMutationBuilder) GetStartTime() time.Time {
 	if b.startTime == nil {
 		return time.Time{}

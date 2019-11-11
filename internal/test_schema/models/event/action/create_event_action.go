@@ -39,7 +39,11 @@ func CreateEvent(viewer viewer.ViewerContext) *CreateEventAction {
 	return action
 }
 
-func (action *CreateEventAction) GetBuilder() *builder.EventMutationBuilder {
+func (action *CreateEventAction) GetBuilder() ent.MutationBuilder {
+	return action.builder
+}
+
+func (action *CreateEventAction) GetTypedBuilder() *builder.EventMutationBuilder {
 	return action.builder
 }
 
@@ -60,11 +64,15 @@ func (action *CreateEventAction) SetBuilderOnTriggers(triggers []actions.Trigger
 }
 
 func (action *CreateEventAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset()
+	return actions.GetChangeset(action)
 }
 
 func (action *CreateEventAction) Entity() ent.Entity {
 	return action.builder.GetEvent()
+}
+
+func (action *CreateEventAction) ExistingEnt() ent.Entity {
+	return action.builder.ExistingEnt()
 }
 
 // SetName sets the Name while editing the Event ent

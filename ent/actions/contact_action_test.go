@@ -26,6 +26,14 @@ func (a *createContactAction) GetViewer() viewer.ViewerContext {
 	return a.viewer
 }
 
+func (a *createContactAction) GetBuilder() ent.MutationBuilder {
+	for k, v := range a.getFields() {
+		a.builder.SetField(k, v)
+	}
+	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.getFields())
+	return a.builder
+}
+
 func (a *createContactAction) getFields() map[string]interface{} {
 	m := make(map[string]interface{})
 	if a.emailAddress != nil {
@@ -53,14 +61,6 @@ func (a *createContactAction) Entity() ent.Entity {
 	return &a.contact
 }
 
-func (a *createContactAction) getChangeset() (ent.Changeset, error) {
-	for k, v := range a.getFields() {
-		a.builder.SetField(k, v)
-	}
-	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.getFields())
-	return a.builder.GetChangeset()
-}
-
 func (a *createContactAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
 	// hmm
 	a.builder.SetTriggers(triggers)
@@ -75,7 +75,7 @@ func (a *createContactAction) SetBuilderOnTriggers(triggers []actions.Trigger) e
 }
 
 func (a *createContactAction) GetChangeset() (ent.Changeset, error) {
-	return a.getChangeset()
+	return actions.GetChangeset(a)
 }
 
 type ContactTrigger interface {

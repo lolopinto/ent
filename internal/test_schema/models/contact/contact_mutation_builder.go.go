@@ -124,6 +124,10 @@ func (b *ContactMutationBuilder) GetUserID() string {
 	return *b.userID
 }
 
+func (b *ContactMutationBuilder) GetUserIDBuilder() ent.MutationBuilder {
+	return b.userIDBuilder
+}
+
 func (b *ContactMutationBuilder) GetFavorite() bool {
 	if b.favorite == nil {
 		return false

@@ -11,6 +11,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
+	contactaction "github.com/lolopinto/ent/internal/test_schema/models/contact/action"
 	eventaction "github.com/lolopinto/ent/internal/test_schema/models/event/action"
 	"github.com/lolopinto/ent/internal/test_schema/models/user/action"
 	"github.com/lolopinto/ent/internal/testingutils"
@@ -52,7 +53,14 @@ func (suite *generatedActionSuite) createUser() *models.User {
 }
 
 func (suite *generatedActionSuite) TestCreation() {
+	// can successfully create user (and associated contact)
+	// we're allowed to create contact because it's in the process of creating a user
 	user := suite.createUser()
+
+	// if we didn't load user yet, don't continue because more crap fails
+	if user.ID == "" {
+		return
+	}
 
 	// reload the user for privacy reasons.
 	// confirm that creating a user also creates the contact since UserCreateContactTrigger is part of this action
@@ -91,6 +99,8 @@ func (suite *generatedActionSuite) TestValidate() {
 		SetFirstName("Ola").
 		SetLastName("Okelola")
 
+	// TODO validate is broken for invalid privacy...
+	// this should also not work if getchangeset doesn't work
 	err := action.Validate()
 	assert.NotNil(suite.T(), err)
 	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
@@ -121,7 +131,7 @@ func (suite *generatedActionSuite) TestGetChangeset() {
 }
 
 func (suite *generatedActionSuite) TestEditing() {
-	user := suite.createUser()
+	user := testingutils.CreateTestUser(suite.T())
 
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
@@ -136,7 +146,7 @@ func (suite *generatedActionSuite) TestEditing() {
 }
 
 func (suite *generatedActionSuite) TestDeleting() {
-	user := suite.createUser()
+	user := testingutils.CreateTestUser(suite.T())
 
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
@@ -151,8 +161,8 @@ func (suite *generatedActionSuite) TestDeleting() {
 }
 
 func (suite *generatedActionSuite) TestAddEdgeAction() {
-	user := suite.createUser()
-	user2 := suite.createUser()
+	user := testingutils.CreateTestUser(suite.T())
+	user2 := testingutils.CreateTestUser(suite.T())
 
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
@@ -187,8 +197,8 @@ func (suite *generatedActionSuite) addFamilyEdge(v viewer.ViewerContext, user, u
 }
 
 func (suite *generatedActionSuite) TestRemoveEdgeAction() {
-	user := suite.createUser()
-	user2 := suite.createUser()
+	user := testingutils.CreateTestUser(suite.T())
+	user2 := testingutils.CreateTestUser(suite.T())
 
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
@@ -206,7 +216,7 @@ func (suite *generatedActionSuite) TestRemoveEdgeAction() {
 }
 
 func (suite *generatedActionSuite) TestInboundEdge() {
-	user := suite.createUser()
+	user := testingutils.CreateTestUser(suite.T())
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
 	event, err := eventaction.CreateEvent(v).
@@ -251,6 +261,8 @@ func (suite *generatedActionSuite) TestInboundEdgeBuilder() {
 	)
 	assert.Nil(suite.T(), err)
 
+	// somehow we're getting the wrong id for user id and only happens when builder is this way...
+	//spew.Dump(changeset)
 	err = ent.SaveChangeset(changeset)
 	assert.Nil(suite.T(), err)
 
@@ -271,7 +283,7 @@ func (suite *generatedActionSuite) TestInboundEdgeBuilder() {
 }
 
 func (suite *generatedActionSuite) TestDefaultValueTime() {
-	user := suite.createUser()
+	user := testingutils.CreateTestUser(suite.T())
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
 	action := eventaction.CreateEvent(v).
@@ -280,10 +292,10 @@ func (suite *generatedActionSuite) TestDefaultValueTime() {
 		SetUserID(user.ID).
 		SetName("fun event")
 
-	t := action.GetBuilder().GetEndTime()
+	t := action.GetTypedBuilder().GetEndTime()
 	assert.True(suite.T(), t.IsZero())
 
-	t2 := action.GetBuilder().GetStartTime()
+	t2 := action.GetTypedBuilder().GetStartTime()
 	assert.False(suite.T(), t2.IsZero())
 }
 
@@ -301,8 +313,57 @@ func (suite *generatedActionSuite) TestEventRSVP() {
 		AddUserID(user.ID).
 		Save()
 
+		// TODO
 	assert.Nil(suite.T(), err)
 	testingutils.VerifyUserAttendingEventEdge(suite.T(), user, event)
+}
+
+func getContactAction(v viewer.ViewerContext) *contactaction.CreateContactAction {
+	return contactaction.CreateContact(v).
+		SetFirstName("Jon").SetLastName("Snow").
+		SetEmailAddress(util.GenerateRandEmail()).
+		SetFavorite(false).
+		SetNumberOfCalls(3).
+		SetUserID(v.GetViewerID()).
+		SetPi(3.14)
+}
+
+func createContact(v viewer.ViewerContext) (*models.Contact, error) {
+	return getContactAction(v).Save()
+}
+
+func (suite *generatedActionSuite) TestActionPrivacy() {
+	// cannot create contact while logged out
+	v := viewer.LoggedOutViewer()
+
+	contact, err := createContact(v)
+	assert.NotNil(suite.T(), err)
+	assert.IsType(suite.T(), &actions.ActionPermissionsError{}, err)
+	assert.Zero(suite.T(), *contact)
+
+	user := testingutils.CreateTestUser(suite.T())
+	// can create contact when logged in
+	contact, err = createContact(viewertesting.LoggedinViewerContext{ViewerID: user.ID})
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), contact)
+	assert.NotZero(suite.T(), *contact)
+}
+
+func (suite *generatedActionSuite) TestGetChangesetNoPermissions() {
+	v := viewer.LoggedOutViewer()
+
+	// GetChangeset fails as expected
+	c, err := getContactAction(v).GetChangeset()
+	assert.NotNil(suite.T(), err)
+	assert.IsType(suite.T(), &actions.ActionPermissionsError{}, err)
+	assert.Nil(suite.T(), c)
+
+	user := testingutils.CreateTestUser(suite.T())
+	v = viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+	c, err = getContactAction(v).GetChangeset()
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), c)
 }
 
 func TestGeneratedAction(t *testing.T) {

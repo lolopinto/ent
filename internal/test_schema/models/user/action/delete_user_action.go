@@ -39,7 +39,11 @@ func DeleteUser(viewer viewer.ViewerContext, user *models.User) *DeleteUserActio
 	return action
 }
 
-func (action *DeleteUserAction) GetBuilder() *builder.UserMutationBuilder {
+func (action *DeleteUserAction) GetBuilder() ent.MutationBuilder {
+	return action.builder
+}
+
+func (action *DeleteUserAction) GetTypedBuilder() *builder.UserMutationBuilder {
 	return action.builder
 }
 
@@ -60,11 +64,15 @@ func (action *DeleteUserAction) SetBuilderOnTriggers(triggers []actions.Trigger)
 }
 
 func (action *DeleteUserAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset()
+	return actions.GetChangeset(action)
 }
 
 func (action *DeleteUserAction) Entity() ent.Entity {
 	return nil
+}
+
+func (action *DeleteUserAction) ExistingEnt() ent.Entity {
+	return action.builder.ExistingEnt()
 }
 
 // getFieldMap returns the fields that could be edited in this mutation

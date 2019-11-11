@@ -39,7 +39,11 @@ func AddFriends(viewer viewer.ViewerContext, user *models.User) *AddFriendsActio
 	return action
 }
 
-func (action *AddFriendsAction) GetBuilder() *builder.UserMutationBuilder {
+func (action *AddFriendsAction) GetBuilder() ent.MutationBuilder {
+	return action.builder
+}
+
+func (action *AddFriendsAction) GetTypedBuilder() *builder.UserMutationBuilder {
 	return action.builder
 }
 
@@ -60,11 +64,15 @@ func (action *AddFriendsAction) SetBuilderOnTriggers(triggers []actions.Trigger)
 }
 
 func (action *AddFriendsAction) GetChangeset() (ent.Changeset, error) {
-	return action.builder.GetChangeset()
+	return actions.GetChangeset(action)
 }
 
 func (action *AddFriendsAction) Entity() ent.Entity {
 	return action.builder.GetUser()
+}
+
+func (action *AddFriendsAction) ExistingEnt() ent.Entity {
+	return action.builder.ExistingEnt()
 }
 
 // AddFriends adds an instance of User to the Friends edge while editing the User ent

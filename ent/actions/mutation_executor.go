@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 )
 
@@ -161,18 +162,19 @@ func (exec *entWithDependenciesExecutor) Operation() (ent.DataOperation, error) 
 func (exec *entWithDependenciesExecutor) ResolveValue(val interface{}) ent.Entity {
 	str := fmt.Sprintf("%v", val)
 	entity, ok := exec.mapper[str]
-	//	debug.PrintStack()
-	if !ok {
-		for _, executor := range exec.executors {
-			ent := executor.ResolveValue(val)
-			if ent != nil {
-				return ent
-			}
-		}
-		return nil
-	}
+	spew.Dump(str, ok, entity)
 
-	return entity
+	//	debug.PrintStack()
+	if ok {
+		return entity
+	}
+	for _, executor := range exec.executors {
+		ent := executor.ResolveValue(val)
+		if ent != nil {
+			return ent
+		}
+	}
+	return nil
 }
 
 func (exec *entWithDependenciesExecutor) handleCreatedEnt(op ent.DataOperation) error {
@@ -184,7 +186,11 @@ func (exec *entWithDependenciesExecutor) handleCreatedEnt(op ent.DataOperation) 
 
 	// after every creation, store a mapping from placeholder -> created ent
 	placeholder := exec.placeholders[exec.idx]
-	exec.mapper[placeholder] = createdEnt
+	if exec.mapper[placeholder] == nil {
+		// TODO come back and fix this. this is a hack but something about the multi-crazy-wrapping
+		// is broken and need to fix
+		exec.mapper[placeholder] = createdEnt
+	}
 
 	return nil
 }
