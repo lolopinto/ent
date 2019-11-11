@@ -137,3 +137,11 @@ func (nodeData *NodeData) GetSortedConstantGroups() []*ConstGroupInfo {
 
 	return sorted
 }
+
+func (nodeData *NodeData) HasAssocGroups() bool {
+	length := len(nodeData.EdgeInfo.AssocGroups)
+	if length > 1 {
+		panic("TODO: fix EdgeGroupMuationBuilder to work for more than 1 assoc group")
+	}
+	return length > 0
+}

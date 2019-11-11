@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 )
 
@@ -162,7 +161,6 @@ func (exec *entWithDependenciesExecutor) Operation() (ent.DataOperation, error) 
 func (exec *entWithDependenciesExecutor) ResolveValue(val interface{}) ent.Entity {
 	str := fmt.Sprintf("%v", val)
 	entity, ok := exec.mapper[str]
-	spew.Dump(str, ok, entity)
 
 	//	debug.PrintStack()
 	if ok {

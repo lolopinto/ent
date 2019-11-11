@@ -261,8 +261,6 @@ func (suite *generatedActionSuite) TestInboundEdgeBuilder() {
 	)
 	assert.Nil(suite.T(), err)
 
-	// somehow we're getting the wrong id for user id and only happens when builder is this way...
-	//spew.Dump(changeset)
 	err = ent.SaveChangeset(changeset)
 	assert.Nil(suite.T(), err)
 
@@ -313,7 +311,6 @@ func (suite *generatedActionSuite) TestEventRSVP() {
 		AddUserID(user.ID).
 		Save()
 
-		// TODO
 	assert.Nil(suite.T(), err)
 	testingutils.VerifyUserAttendingEventEdge(suite.T(), user, event)
 }

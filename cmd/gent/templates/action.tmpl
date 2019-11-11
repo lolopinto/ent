@@ -22,15 +22,10 @@
 {{$builderName := printf "%sMutationBuilder" $nodeInfo.Node -}}
 {{$builderType := printf "*builder.%s" $builderName -}}
 
-{{$edgeGroupAction := edgeGroupAction $action -}}
-
 {{$nonEntFields := nonEntFields $action}}
 
 type {{$actionName}} struct {
   builder {{$builderType}}
-  {{ if $edgeGroupAction -}}
-  edgeGroupBuilder *actions.EdgeGroupMutationBuilder
-  {{ end -}}
 }
 
 {{$actionMethodName := actionMethodName $action}}
@@ -57,27 +52,6 @@ func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
     {{ end -}}
   )
   action.builder = builder
-  {{if $edgeGroupAction -}}
-    edgeGroupBuilder := actions.NewEdgeGroupMutationBuilder(
-      {{/* instead of 2 underlying builders here, we could have the EntMutationBuilder be shared here but do not really wanna expose it */ -}}
-      actions.NewMutationBuilder(
-        viewer,
-        {{writeOperation $action}},
-        builder.Get{{$nodeInfo.Node}}(),
-        {{$nodeInfo.EntConfig}},
-        {{ if $action.MutatingExistingObject -}}
-        actions.ExistingEnt({{$nodeInfo.NodeInstance}}),
-        {{ end -}}
-      ),
-      {{ range $field := $nonEntFields -}} 
-      {{ if $field.IsStatusEnum -}}
-        {{/* TODO.. having to go through all the fields to pass this here is not good */ -}}
-        {{$nodeInfo.NodeInstance}}.{{$field.FieldName}}Map(),
-      {{end -}}
-    {{ end -}}
-  )
-  action.edgeGroupBuilder = edgeGroupBuilder
-  {{end -}}
   return action
 }
 
@@ -107,15 +81,7 @@ func (action *{{$actionName}}) SetBuilderOnTriggers(triggers []actions.Trigger) 
 }
 
 func (action *{{$actionName}}) GetChangeset() (ent.Changeset, error) {
-  {{if $edgeGroupAction -}}
-  // TODO...
-  return actions.MultiChangesets(
-    action.builder.GetChangeset,
-    action.edgeGroupBuilder.GetChangeset,
-  )
-  {{else -}}
   return actions.GetChangeset(action)
-  {{end -}}
 }
 
 func (action *{{$actionName}}) Entity() ent.Entity {
@@ -153,10 +119,10 @@ func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName
 // {{$field.SetterMethodName}} sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
 func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$actionName}} {
   {{ if $field.IsStatusEnum -}}
-    action.edgeGroupBuilder.SetEnumValue({{$field.InstanceName}})
+    action.builder.SetEnumValue({{$field.InstanceName}})
   {{ end -}}
   {{ if $field.IsGroupID -}}
-    action.edgeGroupBuilder.SetIDValue({{$field.InstanceName}}, {{$field.NodeType}})
+    action.builder.SetIDValue({{$field.InstanceName}}, {{$field.NodeType}})
   {{ end -}}
   return action
 }

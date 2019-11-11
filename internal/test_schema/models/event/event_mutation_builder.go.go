@@ -13,7 +13,7 @@ import (
 )
 
 type EventMutationBuilder struct {
-	builder       *actions.EntMutationBuilder
+	builder       *actions.EdgeGroupMutationBuilder
 	event         *models.Event
 	name          *string
 	userID        *string
@@ -38,8 +38,12 @@ func NewMutationBuilder(
 		opts...,
 	)
 	b.FieldMap = fieldMap
+	b2 := actions.NewEdgeGroupMutationBuilder(
+		b,
+		event.RsvpStatusMap(),
+	)
 	return &EventMutationBuilder{
-		builder: b,
+		builder: b2,
 		event:   &event,
 	}
 }
@@ -265,6 +269,15 @@ func (b *EventMutationBuilder) RemoveDeclinedID(userID string) *EventMutationBui
 	return b
 }
 
+func (b *EventMutationBuilder) SetEnumValue(enumValue string) *EventMutationBuilder {
+	b.builder.SetEnumValue(enumValue)
+	return b
+}
+
+func (b *EventMutationBuilder) SetIDValue(idValue string, nodeType ent.NodeType) *EventMutationBuilder {
+	b.builder.SetIDValue(idValue, nodeType)
+	return b
+}
 func (b *EventMutationBuilder) Validate() error {
 	return b.builder.Validate()
 }

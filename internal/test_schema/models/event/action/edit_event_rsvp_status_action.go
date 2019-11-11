@@ -10,13 +10,11 @@ import (
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	builder "github.com/lolopinto/ent/internal/test_schema/models/event"
 )
 
 type EditEventRsvpStatusAction struct {
-	builder          *builder.EventMutationBuilder
-	edgeGroupBuilder *actions.EdgeGroupMutationBuilder
+	builder *builder.EventMutationBuilder
 }
 
 // EditEventRsvpStatusFromContext is the factory method to get an ...
@@ -38,17 +36,6 @@ func EditEventRsvpStatus(viewer viewer.ViewerContext, event *models.Event) *Edit
 		actions.ExistingEnt(event),
 	)
 	action.builder = builder
-	edgeGroupBuilder := actions.NewEdgeGroupMutationBuilder(
-		actions.NewMutationBuilder(
-			viewer,
-			ent.EditOperation,
-			builder.GetEvent(),
-			&configs.EventConfig{},
-			actions.ExistingEnt(event),
-		),
-		event.RsvpStatusMap(),
-	)
-	action.edgeGroupBuilder = edgeGroupBuilder
 	return action
 }
 
@@ -77,11 +64,7 @@ func (action *EditEventRsvpStatusAction) SetBuilderOnTriggers(triggers []actions
 }
 
 func (action *EditEventRsvpStatusAction) GetChangeset() (ent.Changeset, error) {
-	// The builder needs to just contain the edgeGroupBuilder also and have GetChangeset() do things in there..
-	return actions.MultiChangesets(
-		action.builder.GetChangeset,
-		action.edgeGroupBuilder.GetChangeset,
-	)
+	return actions.GetChangeset(action)
 }
 
 func (action *EditEventRsvpStatusAction) Entity() ent.Entity {
@@ -94,13 +77,13 @@ func (action *EditEventRsvpStatusAction) ExistingEnt() ent.Entity {
 
 // AddRsvpStatus sets the RsvpStatus while editing the Event ent
 func (action *EditEventRsvpStatusAction) AddRsvpStatus(rsvpStatus string) *EditEventRsvpStatusAction {
-	action.edgeGroupBuilder.SetEnumValue(rsvpStatus)
+	action.builder.SetEnumValue(rsvpStatus)
 	return action
 }
 
 // AddUserID sets the UserID while editing the Event ent
 func (action *EditEventRsvpStatusAction) AddUserID(userID string) *EditEventRsvpStatusAction {
-	action.edgeGroupBuilder.SetIDValue(userID, models.UserType)
+	action.builder.SetIDValue(userID, models.UserType)
 	return action
 }
 

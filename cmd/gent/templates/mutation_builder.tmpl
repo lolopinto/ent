@@ -17,7 +17,11 @@
 {{ $fieldInfos := fieldInfos .FieldInfo.TopLevelFields }}
 
 type {{$builderName}} struct {
-  builder *actions.EntMutationBuilder
+  {{if .HasAssocGroups -}}
+    builder *actions.EdgeGroupMutationBuilder
+  {{ else -}}
+    builder *actions.EntMutationBuilder
+  {{ end -}}
   {{.NodeInstance}} *models.{{.Node}}
   {{ range $field := $fieldInfos -}}
     {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
@@ -44,8 +48,22 @@ func NewMutationBuilder(
     opts...,
   )
   b.FieldMap = fieldMap
+  {{ if .HasAssocGroups -}}
+   b2 := actions.NewEdgeGroupMutationBuilder(
+     b,
+     {{$nodeInstance := .NodeInstance -}}
+     {{range $edgeGroup := .EdgeInfo.AssocGroups -}}
+     {{/* TODO need to change this soon to support more than one possible status/grouping map */ -}}
+      {{$nodeInstance}}.{{$edgeGroup.GroupStatusName}}Map(),
+     {{end -}}
+   )
+  {{end -}}
   return &{{$builderName}}{
-    builder: b,
+    {{ if .HasAssocGroups -}}
+      builder: b2,
+    {{ else -}}
+      builder: b,
+    {{ end -}}
     {{.NodeInstance}}: &{{.NodeInstance}},
   }
 }
@@ -143,6 +161,20 @@ func (b *{{$builderName}}) {{$edge.RemoveMethodName}}ID({{$edge.InstanceName}}ID
 }
 
 {{ end -}}
+
+{{ if .HasAssocGroups -}}
+{{/* TODO need to change this soon to support more than one possible status/grouping map */ -}}
+{{/* TODO once we change this to support all this. we should change everything up till graphql to be strongly typed with enum instead of what we have here */ -}}
+func (b *{{$builderName}}) SetEnumValue(enumValue string) *{{$builderName}} {
+  b.builder.SetEnumValue(enumValue)
+  return b
+}
+
+func (b *{{$builderName}}) SetIDValue(idValue string, nodeType ent.NodeType) *{{$builderName}} {
+  b.builder.SetIDValue(idValue, nodeType)
+  return b
+}
+{{end -}}
 
 func (b *{{$builderName}}) Validate() error {
   return b.builder.Validate()

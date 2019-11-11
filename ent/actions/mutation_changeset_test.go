@@ -7,10 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getChangesetFn(c ent.Changeset) (ent.Changeset, error) {
-	return c, nil
-}
-
 func TestMultiChangesetNoChangeset(t *testing.T) {
 	c, err := MultiChangesets(func() (ent.Changeset, error) {
 		return nil, nil
