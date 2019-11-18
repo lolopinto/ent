@@ -162,7 +162,6 @@ func (exec *entWithDependenciesExecutor) ResolveValue(val interface{}) ent.Entit
 	str := fmt.Sprintf("%v", val)
 	entity, ok := exec.mapper[str]
 
-	//	debug.PrintStack()
 	if ok {
 		return entity
 	}
@@ -181,14 +180,18 @@ func (exec *entWithDependenciesExecutor) handleCreatedEnt(op ent.DataOperation) 
 	if createdEnt == nil || err != nil {
 		return err
 	}
+	// when there's multiple levels of nesting, this gets complicated
+	// e.g. a depends on b which depends on c
+	// so a's index doesn't change while b is doing a whole lot of of stuff
+	// so we only care about this when handling things we understand (e.g. we own the placeholder)
+	// probably, don't need the mapper anymore?
+	if exec.idx != exec.nativeIdx {
+		return nil
+	}
 
 	// after every creation, store a mapping from placeholder -> created ent
 	placeholder := exec.placeholders[exec.idx]
-	if exec.mapper[placeholder] == nil {
-		// TODO come back and fix this. this is a hack but something about the multi-crazy-wrapping
-		// is broken and need to fix
-		exec.mapper[placeholder] = createdEnt
-	}
+	exec.mapper[placeholder] = createdEnt
 
 	return nil
 }

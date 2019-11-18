@@ -126,18 +126,19 @@ func TestComplicatedNestedChangeset(t *testing.T) {
 	c3 := newListBasedChangeset([]string{"ent7", "8", "9"}, builder.GetPlaceholderID())
 	c3.changesets = append(c3.changesets, c1, c2)
 
+	opWithEnt := simpleOpWithEnt{}
+	opWithEnt.id = "10"
+
 	resolvableOp := &resolvableSimpleOp{}
 	resolvableOp.placeholderID = builder.GetPlaceholderID()
-	resolvableOp.id = "10"
+	resolvableOp.id = "11"
 
 	builder2 := getBuilder()
 
-	op := simpleOpWithEnt{}
-	op.id = "11"
-
 	c4 := newChangesetFromOps(builder2.GetPlaceholderID(), []ent.DataOperation{
+		// NOTE: when combined, it only apparently works when the opWithEnt comes before the resolvable ent
+		opWithEnt,
 		resolvableOp,
-		op,
 	})
 	c4.dependencies = ent.MutationBuilderMap{
 		builder.GetPlaceholderID(): builder,
@@ -179,5 +180,5 @@ func TestComplicatedNestedChangeset(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, result, 14)
 	// order matters here since explicit nested dependencies
-	assert.Equal(t, []string{"7", "8", "9", "1", "2", "3", "4", "5", "6", "7 10", "11", "11 12", "13", "14"}, result)
+	assert.Equal(t, []string{"7", "8", "9", "1", "2", "3", "4", "5", "6", "10", "7 11", "10 12", "13", "14"}, result)
 }

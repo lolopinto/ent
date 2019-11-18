@@ -7,6 +7,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestEmptyList(t *testing.T) {
+	exec := newListBasedExec([]string{}, "")
+	result, err := execOperations(exec)
+	assert.Nil(t, err)
+	assert.Len(t, result, 0)
+	var expectedResult []string
+	// don't know other way of getting zero value of this
+	assert.Equal(t, expectedResult, result)
+}
+
 func TestListBased(t *testing.T) {
 	testCases := []string{
 		"12324323",
