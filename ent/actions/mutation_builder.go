@@ -358,6 +358,7 @@ func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, e
 	// a multi-get version of the API
 	// this is too hard.
 	wg.Add(len(b.edgeTypes))
+	var m sync.Mutex
 	edges := make(map[ent.EdgeType]*ent.AssocEdgeData)
 	var errs []error
 	for edgeType := range b.edgeTypes {
@@ -365,6 +366,8 @@ func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, e
 		f := func(edgeType ent.EdgeType) {
 			defer wg.Done()
 			edge, err := ent.GetEdgeInfo(edgeType, nil)
+			m.Lock()
+			defer m.Unlock()
 			if err != nil {
 				errs = append(errs, err)
 			}

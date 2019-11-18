@@ -13,24 +13,29 @@ func runChangesets(changesetFn ...func() (ent.Changeset, error)) ([]ent.Changese
 	}
 
 	var errs []error
+	var m sync.Mutex
 	var changesets []ent.Changeset
 
 	var wg sync.WaitGroup
 	wg.Add(len(changesetFn))
 	for idx := range changesetFn {
-		fn := changesetFn[idx]
-		f := func(fn func() (ent.Changeset, error)) {
+		go func(idx int) {
+			fn := changesetFn[idx]
+
 			defer wg.Done()
 			c, err := fn()
-			// hmm this may not be the best way. is this safe?
+			if c == nil && err == nil {
+				return
+			}
+			m.Lock()
+			defer m.Unlock()
 			if err != nil {
 				errs = append(errs, err)
 			}
 			if c != nil {
 				changesets = append(changesets, c)
 			}
-		}
-		go f(fn)
+		}(idx)
 	}
 	wg.Wait()
 	if len(errs) != 0 {

@@ -43,7 +43,7 @@ type Trigger interface {
 
 type ActionWithTriggers interface {
 	Action
-	// TODO we need a dependency graph so this needs to be more complicated ASAP
+	// TODO: dependencies between triggers needed. we'll do dependencies by creating something similar to MultiChangesets that takes 2 or more triggers that depend on each other
 	GetTriggers() []Trigger
 	SetBuilderOnTriggers([]Trigger) error
 }
