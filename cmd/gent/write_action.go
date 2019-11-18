@@ -35,7 +35,6 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 				"actionMethodName":        action.GetActionMethodName,
 				"actionMethodArgs":        getActionMethodArgs,
 				"actionMethodContextArgs": getActionMethodContextArgs,
-				"embeddedActionType":      getEmbeddedActionType,
 				"actionName":              getActionName,
 				"fields":                  action.GetFields,
 				"nonEntFields":            action.GetNonEntFields,
@@ -44,7 +43,6 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 				"nodeInfo":                getNodeInfo,
 				"returnsObjectInstance":   returnsObjectInstance,
 				"createAction":            createAction,
-				"edgeGroupAction":         edgeGroupAction,
 				"removeEdgeAction":        removeEdgeAction,
 				"argsToViewerMethod":      getActionArgsFromContextToViewerMethod,
 				"writeOperation":          getWriteOperation,
@@ -108,25 +106,6 @@ func getWriteOperation(action action.Action) string {
 	panic(fmt.Sprintf("invalid action %s not a supported type", action.GetActionName()))
 }
 
-func getEmbeddedActionType(action action.Action) string {
-	switch action.GetOperation() {
-	case ent.CreateAction, ent.EditAction, ent.DeleteAction:
-		// no embedded action type for these yet
-		// just use mutation builder
-		// may still add them because of GetFieldMap. todo!
-		return ""
-	case ent.AddEdgeAction:
-		return ""
-		//		return "actions.AddEdgeActionMutator"
-	case ent.RemoveEdgeAction:
-		return ""
-		//		return "actions.RemoveEdgeActionMutator"
-	case ent.EdgeGroupAction:
-		return "actions.EdgeGroupActionMutator"
-	}
-	panic(fmt.Sprintf("invalid action %s not a supported type", action.GetActionName()))
-}
-
 func getSaveActionType(action action.Action) string {
 	// need to return changed object e.g.
 	if action.GetOperation() != ent.DeleteAction {
@@ -141,10 +120,6 @@ func getNodeInfo(action action.Action) codegen.NodeInfo {
 
 func returnsObjectInstance(action action.Action) bool {
 	return action.GetOperation() != ent.DeleteAction
-}
-
-func edgeGroupAction(action action.Action) bool {
-	return action.GetOperation() == ent.EdgeGroupAction
 }
 
 func removeEdgeAction(action action.Action) bool {

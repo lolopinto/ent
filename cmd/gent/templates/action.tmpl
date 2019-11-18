@@ -4,24 +4,28 @@
 {{ reserveImport "github.com/lolopinto/ent/ent/actions" }}
 {{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
 
+{{$action := .Action -}}
+{{$nodeInfo := nodeInfo $action -}}
+
 {{with .CodePath -}}
 
 	{{reserveImport .PathToModels}}
   {{reserveImport .PathToConfigs}}
 
+  {{$builderPath := .AppendPathToModels $nodeInfo.NodeInstance }}
+  {{reserveImport $builderPath "builder"}}
+
 {{end -}}
 
-{{$action := .Action -}}
 {{$actionName := actionName $action}}
-{{$embeddedActionType := embeddedActionType $action}}
-{{$nodeInfo := nodeInfo $action -}}
+
+{{$builderName := printf "%sMutationBuilder" $nodeInfo.Node -}}
+{{$builderType := printf "*builder.%s" $builderName -}}
+
+{{$nonEntFields := nonEntFields $action}}
 
 type {{$actionName}} struct {
-  {{$embeddedActionType}}
-  builder *actions.EntMutationBuilder
-  {{ if returnsObjectInstance $action -}}
-    {{$nodeInfo.NodeInstance}} models.{{$nodeInfo.Node}}
-  {{end -}}
+  builder {{$builderType}}
 }
 
 {{$actionMethodName := actionMethodName $action}}
@@ -37,63 +41,88 @@ func {{$actionMethodName}}FromContext( {{actionMethodContextArgs $action}}) *{{$
 
 // {{$actionMethodName}} is the factory method to get an ...
 func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
-  builder := &actions.EntMutationBuilder{
-    Viewer: viewer,
-    EntConfig: {{$nodeInfo.EntConfig}},
-    Operation: {{writeOperation $action}},
-    {{ if $action.MutatingExistingObject -}}
-      ExistingEntity: {{$nodeInfo.NodeInstance}},
-    {{ end -}}
-  }
   action := &{{$actionName}}{}
-  builder.FieldMap = action.getFieldMap()
-  {{/* hmm */ -}}
+  {{/* TODO the best long term thing here probably is to push this into the builder and have EventMutationBuilder use an EdgeGroupMutationBuilder for example instead of an EntMutationBuilder however need to make it work for multiple group statuses in the same mutation so doing it this way instead for now */ -}}
+  builder := builder.NewMutationBuilder(
+    viewer,
+    {{writeOperation $action}},
+    action.getFieldMap(),
+    {{ if $action.MutatingExistingObject -}}
+      actions.ExistingEnt({{$nodeInfo.NodeInstance}}),
+    {{ end -}}
+  )
   action.builder = builder
   return action
+}
+
+func (action *{{$actionName}}) GetBuilder() ent.MutationBuilder {
+  return action.builder
+}
+
+func (action *{{$actionName}}) GetTypedBuilder() {{$builderType}} {
+  return action.builder
 }
 
 func (action *{{$actionName}}) GetViewer() viewer.ViewerContext {
   return action.builder.GetViewer()
 }
 
+func (action *{{$actionName}}) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+	action.builder.SetTriggers(triggers)
+  {{$triggerInterface := printf "builder.%sTrigger" $nodeInfo.Node -}}
+	for _, t := range triggers {
+		trigger, ok := t.({{$triggerInterface}})
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(action.builder)
+	}
+	return nil
+}
+
 func (action *{{$actionName}}) GetChangeset() (ent.Changeset, error) {
-  return action.builder.GetChangeset(action.Entity())
+  return actions.GetChangeset(action)
 }
 
 func (action *{{$actionName}}) Entity() ent.Entity {
   {{ if returnsObjectInstance $action -}}
-    return &action.{{$nodeInfo.NodeInstance}}
+    return action.builder.Get{{$nodeInfo.Node}}()
   {{ else -}}
     return nil
   {{end -}}
 }
 
+func (action *{{$actionName}}) ExistingEnt() ent.Entity {
+  return action.builder.ExistingEnt()
+}
+
 {{$fields := fields $action}}
 
 {{ range $field := $fields -}}
-// {{$field.MethodName}} sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
-func (action *{{$actionName}}) {{$field.MethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$actionName}} {
-  action.builder.SetField({{$field.QuotedFieldName}}, {{$field.InstanceName}})
-  {{$inverseEdge := $field.InverseEdge -}}
-   {{ if $inverseEdge -}}
-    {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
-    {{/* TODO time and data support later */ -}}  
-    action.AddInboundEdge(models.{{$inverseEdge.EdgeConst}}, {{$field.InstanceName}}, models.{{$edgeNodeInfo.NodeType}})
-  {{ end -}}
+// {{$field.SetterMethodName}} sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
+func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$actionName}} {
+  action.builder.{{$field.SetterMethodName}}({{$field.InstanceName}})
   return action
 }
+  {{ if $field.Field.IDField -}}
+  // {{$field.SetterMethodName}}Builder sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
+  func (action *{{$actionName}}) {{$field.SetterMethodName}}Builder(builder ent.MutationBuilder) *{{$actionName}} {
+    action.builder.{{$field.SetterMethodName}}Builder(builder)
+    return action
+  }
+
+  {{end -}}
 
 {{end -}}
 
-{{$nonEntFields := nonEntFields $action}}
 {{ range $field := $nonEntFields -}}
-// {{$field.MethodName}} sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
-func (action *{{$actionName}}) {{$field.MethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$actionName}} {
+// {{$field.SetterMethodName}} sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
+func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$actionName}} {
   {{ if $field.IsStatusEnum -}}
-    action.SetEnumValue({{$field.InstanceName}})
+    action.builder.SetEnumValue({{$field.InstanceName}})
   {{ end -}}
   {{ if $field.IsGroupID -}}
-    action.SetIDValue({{$field.InstanceName}}, {{$field.NodeType}})
+    action.builder.SetIDValue({{$field.InstanceName}}, {{$field.NodeType}})
   {{ end -}}
   return action
 }
@@ -103,24 +132,25 @@ func (action *{{$actionName}}) {{$field.MethodName}}({{$field.InstanceName}} {{$
 {{ $edges := edges $action}}
 
 {{ range $edge := $edges -}}
-// {{$edge.MethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
-func (action *{{$actionName}}) {{$edge.MethodName}}({{$edge.InstanceName}} {{$edge.InstanceType}}) *{{$actionName}} {
-    {{/* TODO time and data support later */ -}}  
+// {{$edge.AddMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
+func (action *{{$actionName}}) {{$edge.AddMethodName}}({{$edge.InstanceName}} {{$edge.InstanceType}}) *{{$actionName}} {
+  {{/* TODO time and data support later */ -}}  
   {{ if removeEdgeAction $action -}}
-    action.builder.RemoveOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}.ID, models.{{$edge.NodeType}})
+    action.builder.{{$edge.RemoveMethodName}}({{$edge.InstanceName}})
   {{else -}}
-    action.builder.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}.ID, models.{{$edge.NodeType}})
+    action.builder.{{$edge.AddMethodName}}({{$edge.InstanceName}})
   {{end -}}
   return action
 }
 
-// {{$edge.MethodName}} adds an instance of {{$edge.Node}}Id to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
-func (action *{{$actionName}}) {{$edge.MethodName}}ID({{$edge.InstanceName}}ID string) *{{$actionName}} {
+{{/* TODO rename this correctly for different action types... */}}
+// {{$edge.AddMethodName}} adds an instance of {{$edge.Node}}Id to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
+func (action *{{$actionName}}) {{$edge.AddMethodName}}ID({{$edge.InstanceName}}ID string) *{{$actionName}} {
   {{/* TODO time and data support later */ -}}  
   {{ if removeEdgeAction $action -}}
-    action.builder.RemoveOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}})
+    action.builder.{{$edge.RemoveMethodName}}ID({{$edge.InstanceName}}ID)
   {{ else -}}
-    action.builder.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}})
+    action.builder.{{$edge.AddMethodName}}ID({{$edge.InstanceName}}ID)
   {{end -}}
   return action
 }
@@ -128,9 +158,9 @@ func (action *{{$actionName}}) {{$edge.MethodName}}ID({{$edge.InstanceName}}ID s
 
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *{{$actionName}}) getFieldMap() ent.MutationFieldMap {
-  {{/* TODO MutationFieldMap and MutatingFieldInfo should not be public in ent anymore? */ -}}
-  return ent.MutationFieldMap {
+func (action *{{$actionName}}) getFieldMap() ent.ActionFieldMap {
+  {{/* TODO ActionFieldMap and MutatingFieldInfo should not be public in ent anymore? */ -}}
+  return ent.ActionFieldMap {
     {{ range $field := $fields -}}
       {{$field.QuotedFieldName}}: &ent.MutatingFieldInfo {
         DB: {{$field.QuotedDBName}},
@@ -151,17 +181,9 @@ func (action *{{$actionName}}) Validate() error {
 
 // Save is the method called to execute this action and save change
 func (action * {{$actionName}}) Save() {{saveActionType $action}} {
-  {{ if edgeGroupAction $action -}}
-    {{ range $field := $nonEntFields -}} 
-      {{ if $field.IsStatusEnum -}}
-        action.SetStatusMap({{$nodeInfo.NodeInstance}}.Viewer{{$field.FieldName}}Map())
-      {{end -}}
-    {{end -}}
-  {{end -}}
-
   {{ if returnsObjectInstance $action -}}
     err := actions.Save(action)
-    return &action.{{$nodeInfo.NodeInstance}}, err
+    return action.builder.Get{{$nodeInfo.Node}}(), err
   {{else -}}
     return actions.Save(action)
   {{end -}}

@@ -7,9 +7,9 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
-	"github.com/lolopinto/ent/ent/test_schema/models"
-	"github.com/lolopinto/ent/ent/test_schema/models/configs"
 	"github.com/lolopinto/ent/ent/viewertesting"
+	"github.com/lolopinto/ent/internal/test_schema/models"
+	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +31,7 @@ func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.Us
 	for _, user := range invitedUsers {
 		b.AddOutboundEdge(models.EventToInvitedEdge, user.ID, user.GetType())
 	}
-	// this will be automatically added my generated builders
+	// this will be automatically added by generated builders
 	b.AddInboundEdge(models.UserToEventsEdge, user.ID, user.GetType())
 	return SaveEvent(t, b)
 }
@@ -41,19 +41,23 @@ func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.Use
 
 	b := GetBaseBuilder(
 		ent.InsertOperation,
+		&contact,
 		&configs.ContactConfig{},
 		nil,
 	)
 	setFields(b, map[string]interface{}{
-		"EmailAddress": util.GenerateRandEmail(),
-		"UserID":       user.ID,
-		"FirstName":    "first-name",
-		"LastName":     "last-name",
+		"EmailAddress":  util.GenerateRandEmail(),
+		"UserID":        user.ID,
+		"FirstName":     "first-name",
+		"LastName":      "last-name",
+		"Favorite":      false,
+		"Pi":            3.14,
+		"NumberOfCalls": 5,
 	})
 	for _, user := range allowList {
 		b.AddOutboundEdge(models.ContactToAllowListEdge, user.ID, user.GetType())
 	}
-	SaveBuilder(t, b, &contact)
+	SaveBuilder(t, b)
 	return &contact
 }
 
@@ -71,21 +75,19 @@ func AddFamilyMember(t *testing.T, user1, user2 *models.User) {
 
 func GetBaseBuilder(
 	operation ent.WriteOperation,
+	entity ent.Entity,
 	config ent.Config,
 	existingEnt ent.Entity,
 ) *actions.EntMutationBuilder {
 	v := viewertesting.OmniViewerContext{}
-	return &actions.EntMutationBuilder{
-		Viewer:         v,
-		EntConfig:      config,
-		Operation:      operation,
-		ExistingEntity: existingEnt,
-	}
+	return actions.NewMutationBuilder(v, operation, entity, config, actions.ExistingEnt(existingEnt))
 }
 
 func CreateEdge(t *testing.T, edge *ent.AssocEdgeData) {
+	var newEdge ent.AssocEdgeData
 	b := GetBaseBuilder(
 		ent.InsertOperation,
+		&newEdge,
 		&ent.AssocEdgeConfig{},
 		nil,
 	)
@@ -97,13 +99,14 @@ func CreateEdge(t *testing.T, edge *ent.AssocEdgeData) {
 		"symmetric_edge":    edge.SymmetricEdge,
 	},
 	)
-	var newEdge ent.AssocEdgeData
-	SaveBuilder(t, b, &newEdge)
+	SaveBuilder(t, b)
 }
 
 func EditEdge(t *testing.T, edge *ent.AssocEdgeData) {
+	var newEdge ent.AssocEdgeData
 	b := GetBaseBuilder(
 		ent.EditOperation,
+		&newEdge,
 		&ent.AssocEdgeConfig{},
 		edge,
 	)
@@ -115,8 +118,21 @@ func EditEdge(t *testing.T, edge *ent.AssocEdgeData) {
 		"symmetric_edge":    edge.SymmetricEdge,
 	},
 	)
-	var newEdge ent.AssocEdgeData
-	SaveBuilder(t, b, &newEdge)
+	SaveBuilder(t, b)
+}
+
+func GetUserBuilder(
+	operation ent.WriteOperation,
+	existingEnt ent.Entity,
+) *actions.EntMutationBuilder {
+	var user models.User
+	b := GetBaseBuilder(
+		operation,
+		&user,
+		&configs.UserConfig{},
+		existingEnt,
+	)
+	return b
 }
 
 func GetUserBuilderWithFields(
@@ -124,12 +140,22 @@ func GetUserBuilderWithFields(
 	existingEnt ent.Entity,
 	fields map[string]interface{},
 ) *actions.EntMutationBuilder {
+	b := GetUserBuilder(operation, existingEnt)
+	setFields(b, fields)
+	return b
+}
+
+func GetEventBuilder(
+	operation ent.WriteOperation,
+	existingEnt ent.Entity,
+) *actions.EntMutationBuilder {
+	var event models.Event
 	b := GetBaseBuilder(
 		operation,
-		&configs.UserConfig{},
+		&event,
+		&configs.EventConfig{},
 		existingEnt,
 	)
-	setFields(b, fields)
 	return b
 }
 
@@ -138,16 +164,12 @@ func GetEventBuilderwithFields(
 	existingEnt ent.Entity,
 	fields map[string]interface{},
 ) *actions.EntMutationBuilder {
-	b := GetBaseBuilder(
-		operation,
-		&configs.EventConfig{},
-		existingEnt,
-	)
+	b := GetEventBuilder(operation, existingEnt)
 	setFields(b, fields)
 	return b
 }
 
-func SaveBuilder(t *testing.T, b ent.MutationBuilder, entity ent.Entity) {
+func SaveBuilder(t *testing.T, b ent.MutationBuilder) {
 	// sad. todo come up with better long term approach for tests
 	emb, ok := b.(*actions.EntMutationBuilder)
 	if ok {
@@ -158,7 +180,7 @@ func SaveBuilder(t *testing.T, b ent.MutationBuilder, entity ent.Entity) {
 			egmb.FieldMap = getFieldMapFromFields(egmb.Operation, egmb.GetFields())
 		}
 	}
-	c, err := b.GetChangeset(entity)
+	c, err := b.GetChangeset()
 	assert.Nil(t, err)
 	err = ent.SaveChangeset(c)
 	assert.Nil(t, err)
@@ -166,22 +188,24 @@ func SaveBuilder(t *testing.T, b ent.MutationBuilder, entity ent.Entity) {
 
 func SaveUser(t *testing.T, b ent.MutationBuilder) *models.User {
 	if b.GetOperation() == ent.DeleteOperation {
-		SaveBuilder(t, b, nil)
+		SaveBuilder(t, b)
 		return nil
 	}
-	var user models.User
-	SaveBuilder(t, b, &user)
-	return &user
+	SaveBuilder(t, b)
+	user, ok := b.Entity().(*models.User)
+	assert.True(t, ok)
+	return user
 }
 
 func SaveEvent(t *testing.T, b ent.MutationBuilder) *models.Event {
 	if b.GetOperation() == ent.DeleteOperation {
-		SaveBuilder(t, b, nil)
+		SaveBuilder(t, b)
 		return nil
 	}
-	var event models.Event
-	SaveBuilder(t, b, &event)
-	return &event
+	SaveBuilder(t, b)
+	event, ok := b.Entity().(*models.Event)
+	assert.True(t, ok)
+	return event
 }
 
 func GetDefaultUserBuilder(email string) *actions.EntMutationBuilder {
@@ -197,9 +221,13 @@ func GetDefaultUserBuilder(email string) *actions.EntMutationBuilder {
 }
 
 func GetDefaultEventFields(user *models.User) map[string]interface{} {
+	return GetDefaultEventFieldsUserID(user.ID)
+}
+
+func GetDefaultEventFieldsUserID(userID string) map[string]interface{} {
 	return map[string]interface{}{
 		"Name":      "Fun event",
-		"UserID":    user.ID,
+		"UserID":    userID,
 		"StartTime": time.Now(),
 		"EndTime":   time.Now().Add(time.Hour * 24 * 3),
 		"Location":  "fun location!",
@@ -215,8 +243,8 @@ func setFields(
 	}
 }
 
-func getFieldMapFromFields(op ent.WriteOperation, fields map[string]interface{}) ent.MutationFieldMap {
-	ret := make(ent.MutationFieldMap)
+func getFieldMapFromFields(op ent.WriteOperation, fields map[string]interface{}) ent.ActionFieldMap {
+	ret := make(ent.ActionFieldMap)
 	for k := range fields {
 		ret[k] = &ent.MutatingFieldInfo{
 			DB:       strcase.ToSnake(k),

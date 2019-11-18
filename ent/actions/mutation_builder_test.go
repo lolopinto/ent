@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/ent/test_schema/models"
-	"github.com/lolopinto/ent/ent/test_schema/models/configs"
+	"github.com/lolopinto/ent/internal/test_schema/models"
+	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
@@ -64,9 +64,8 @@ func (suite *mutationBuilderSuite) TestDeletion() {
 
 	testingutils.VerifyUserObj(suite.T(), user, email)
 
-	b := testingutils.GetBaseBuilder(
+	b := testingutils.GetUserBuilder(
 		ent.DeleteOperation,
-		&configs.UserConfig{},
 		user,
 	)
 	updatedUser := testingutils.SaveUser(suite.T(), b)
@@ -109,7 +108,7 @@ func (suite *mutationBuilderSuite) TestAddSimpleEdgeEditing() {
 	testingutils.VerifyNoFamilyEdge(suite.T(), user, user2)
 
 	// add edge
-	b := testingutils.GetBaseBuilder(ent.EditOperation, &configs.UserConfig{}, user)
+	b := testingutils.GetUserBuilder(ent.EditOperation, user)
 	b.AddOutboundEdge(models.UserToFamilyMembersEdge, user2.ID, user2.GetType())
 	updatedUser := testingutils.SaveUser(suite.T(), b)
 
@@ -117,7 +116,7 @@ func (suite *mutationBuilderSuite) TestAddSimpleEdgeEditing() {
 	testingutils.VerifyFamilyEdge(suite.T(), user, user2)
 
 	// remove edge
-	b2 := testingutils.GetBaseBuilder(ent.EditOperation, &configs.UserConfig{}, user)
+	b2 := testingutils.GetUserBuilder(ent.EditOperation, user)
 	b2.RemoveOutboundEdge(models.UserToFamilyMembersEdge, user2.ID, user2.GetType())
 	updatedUser2 := testingutils.SaveUser(suite.T(), b2)
 	testingutils.VerifyUserObj(suite.T(), updatedUser2, email)
@@ -137,7 +136,7 @@ func (suite *mutationBuilderSuite) TestAddInverseEdge() {
 	testingutils.VerifyUserToEventEdge(suite.T(), user, event)
 
 	// add inverse edge
-	b := testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event)
+	b := testingutils.GetEventBuilder(ent.EditOperation, event)
 	b.AddOutboundEdge(models.EventToInvitedEdge, user.ID, user.GetType())
 	updatedEvent := testingutils.SaveEvent(suite.T(), b)
 
@@ -145,7 +144,7 @@ func (suite *mutationBuilderSuite) TestAddInverseEdge() {
 	testingutils.VerifyInvitedToEventEdge(suite.T(), user, event)
 
 	// remove edge
-	b2 := testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event)
+	b2 := testingutils.GetEventBuilder(ent.EditOperation, event)
 	b2.RemoveOutboundEdge(models.EventToInvitedEdge, user.ID, user.GetType())
 	updatedEvent2 := testingutils.SaveEvent(suite.T(), b2)
 	testingutils.VerifyEventObj(suite.T(), updatedEvent2, user)
@@ -195,7 +194,7 @@ func (suite *mutationBuilderSuite) TestAddSymmetricEdge() {
 	testingutils.VerifyUserObj(suite.T(), user2, email2)
 
 	// add friends edge (symmetric edge)
-	b := testingutils.GetBaseBuilder(ent.EditOperation, &configs.UserConfig{}, user)
+	b := testingutils.GetUserBuilder(ent.EditOperation, user)
 	b.AddOutboundEdge(models.UserToFriendsEdge, user2.ID, user2.GetType())
 	updatedUser := testingutils.SaveUser(suite.T(), b)
 	testingutils.VerifyUserObj(suite.T(), updatedUser, email)
@@ -203,7 +202,7 @@ func (suite *mutationBuilderSuite) TestAddSymmetricEdge() {
 	testingutils.VerifyFriendsEdge(suite.T(), user, user2)
 
 	// remove friends edge
-	b2 := testingutils.GetBaseBuilder(ent.EditOperation, &configs.UserConfig{}, user)
+	b2 := testingutils.GetUserBuilder(ent.EditOperation, user)
 	b2.RemoveOutboundEdge(models.UserToFriendsEdge, user2.ID, user2.GetType())
 	updatedUser2 := testingutils.SaveUser(suite.T(), b2)
 	testingutils.VerifyUserObj(suite.T(), updatedUser2, email)
@@ -221,7 +220,7 @@ func (suite *mutationBuilderSuite) TestInboudEdge() {
 	testingutils.VerifyEventObj(suite.T(), event, user)
 
 	// remove edge
-	b2 := testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event)
+	b2 := testingutils.GetEventBuilder(ent.EditOperation, event)
 	b2.RemoveInboundEdge(models.UserToEventsEdge, user.ID, user.GetType())
 	updatedEvent2 := testingutils.SaveEvent(suite.T(), b2)
 
@@ -269,7 +268,6 @@ func (suite *mutationBuilderSuite) TestManualDataField() {
 }
 
 func (suite *mutationBuilderSuite) TestManualTimeField() {
-
 	t := time.Now()
 
 	var testCases = []struct {

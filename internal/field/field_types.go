@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/types"
 	"path/filepath"
+	"strconv"
 )
 
 type FieldType interface {
@@ -11,6 +12,7 @@ type FieldType interface {
 	// for now we're going to assume every GraphQL Type is required
 	GetGraphQLType() string
 	GetCastToMethod() string // returns the method in cast.go (cast.To***) which casts from interface{} to strongly typed
+	GetZeroValue() string
 }
 
 type FieldWithOverridenStructType interface {
@@ -31,6 +33,10 @@ func (t *StringType) GetCastToMethod() string {
 	return "cast.ToString"
 }
 
+func (t *StringType) GetZeroValue() string {
+	return strconv.Quote("")
+}
+
 type BoolType struct{}
 
 func (t *BoolType) GetDBType() string {
@@ -43,6 +49,10 @@ func (t *BoolType) GetGraphQLType() string {
 
 func (t *BoolType) GetCastToMethod() string {
 	return "cast.ToBool"
+}
+
+func (t *BoolType) GetZeroValue() string {
+	return "false"
 }
 
 // TODO uuid support needed
@@ -61,6 +71,10 @@ func (t *IdType) GetCastToMethod() string {
 	return "cast.ToUUIDString"
 }
 
+func (t *IdType) GetZeroValue() string {
+	return ""
+}
+
 type IntegerType struct{}
 
 func (t *IntegerType) GetDBType() string {
@@ -75,6 +89,10 @@ func (t *IntegerType) GetCastToMethod() string {
 	return "cast.ToInt"
 }
 
+func (t *IntegerType) GetZeroValue() string {
+	return "0"
+}
+
 type FloatType struct{}
 
 func (t *FloatType) GetDBType() string {
@@ -86,7 +104,11 @@ func (t *FloatType) GetGraphQLType() string {
 }
 
 func (t *FloatType) GetCastToMethod() string {
-	panic("todo!")
+	return "cast.ToFloat"
+}
+
+func (t *FloatType) GetZeroValue() string {
+	return "0.0"
 }
 
 type TimeType struct{}
@@ -102,6 +124,10 @@ func (t *TimeType) GetGraphQLType() string {
 
 func (t *TimeType) GetCastToMethod() string {
 	return "cast.ToTime"
+}
+
+func (t *TimeType) GetZeroValue() string {
+	return "time.Time{}"
 }
 
 type NamedType struct {
@@ -121,7 +147,11 @@ func (t *NamedType) GetGraphQLType() string {
 }
 
 func (t *NamedType) GetCastToMethod() string {
-	panic("todo!")
+	panic("GetCastToMethod of NamedType not implemented yet!")
+}
+
+func (t *NamedType) GetZeroValue() string {
+	panic("GetZeroValue of NamedType not implemented yet!")
 }
 
 func (t *NamedType) GetStructType() string {

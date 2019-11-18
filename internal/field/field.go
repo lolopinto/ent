@@ -44,6 +44,17 @@ func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) {
 	f.exposeToGraphQL = false
 }
 
+func (fieldInfo *FieldInfo) TopLevelFields() []*Field {
+	var fields []*Field
+
+	for _, f := range fieldInfo.Fields {
+		if f.topLevelStructField {
+			fields = append(fields, f)
+		}
+	}
+	return fields
+}
+
 type Field struct {
 	// todo: abstract out these 2 also...
 	FieldName           string
@@ -94,6 +105,10 @@ func (f *Field) GetCastToMethod() string {
 	return f.fieldType.GetCastToMethod()
 }
 
+func (f *Field) GetZeroValue() string {
+	return f.fieldType.GetZeroValue()
+}
+
 func (f *Field) ExposeToGraphQL() bool {
 	if !f.exposeToGraphQL {
 		return false
@@ -121,6 +136,10 @@ func (f *Field) GetGraphQLName() string {
 	return fieldName
 }
 
+func (f *Field) InstanceFieldName() string {
+	return strcase.ToLowerCamel(f.FieldName)
+}
+
 func (f *Field) ExposeToActions() bool {
 	return f.exposeToActions
 }
@@ -135,6 +154,14 @@ func (f *Field) CreateDBColumn() bool {
 
 func (f *Field) SingleFieldPrimaryKey() bool {
 	return f.singleFieldPrimaryKey
+}
+
+func (f *Field) IDField() bool {
+	if !f.topLevelStructField {
+		return false
+	}
+	// TOOD this needs a better name
+	return strings.HasSuffix(f.FieldName, "ID")
 }
 
 func (f *Field) GetUnquotedKeyFromTag(key string) string {

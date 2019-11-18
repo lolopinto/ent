@@ -196,6 +196,7 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 	} else {
 		err = stmt.QueryRowx(values...).StructScan(entity)
 	}
+	fmt.Println(query)
 
 	if err != nil {
 		fmt.Println(err)

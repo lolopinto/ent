@@ -49,7 +49,7 @@ type MutatingFieldInfo struct {
 	DB       string
 	Required bool
 }
-type MutationFieldMap map[string]*MutatingFieldInfo
+type ActionFieldMap map[string]*MutatingFieldInfo
 
 type ActionErrorInfo struct {
 	ErrorMsg string
@@ -69,6 +69,17 @@ func (err *ActionValidationError) Error() string {
 	)
 }
 
+// TODO
+// this simplifies the changeset and MutationBuilder interfaces since there's a lot of overlap
+// instead of each of them having these things separately, they can have the same object that they return
+// type MutationInfo/ActionInfo interface {
+// 	ExistingEnt() Entity
+// 	EntConfig() Config // just in case...
+// 	GetViewer() viewer.ViewerContext
+// 	Entity() Entity
+// }
+// makes it easier to change Viewer because I can change it once and it gets changed everywhere...
+
 type MutationBuilder interface {
 	// TODO this needs to be aware of validators
 	// triggers and observers
@@ -80,21 +91,33 @@ type MutationBuilder interface {
 	//	GetPlaceholderID() string
 	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions
 	ExistingEnt() Entity
-	GetPlaceholderID() string
-	//Entity() Entity // expected to be null for create operations. entity being mutated
+	Entity() Entity
+	GetPlaceholderID() string // TODO GetMutationID()?
 	GetViewer() viewer.ViewerContext
-	GetChangeset(Entity) (Changeset, error)
+	GetChangeset() (Changeset, error)
 	GetOperation() WriteOperation
 }
 
 type Changeset interface {
+	// This should be expected to be called multiple times easily.
 	GetExecutor() Executor
 	GetViewer() viewer.ViewerContext
 	Entity() Entity
+	// This should match the PlaceholderID of the MutationBuilder that produced this changeset
 	GetPlaceholderID() string
 	// keeping these 2 just in case...
 	ExistingEnt() Entity //existing ent // hmm we just need ID!
 	EntConfig() Config   // just in case...
+	//	Dependencies() []Changeset
+	//	CreateOperation() Changeset // the list
+}
+
+type MutationBuilderMap map[string]MutationBuilder
+
+type ChangesetWithDependencies interface {
+	Changeset
+	Dependencies() MutationBuilderMap
+	Changesets() []Changeset
 }
 
 type Executor interface {
@@ -103,8 +126,12 @@ type Executor interface {
 	// When we're done with operations, it returns AllOperations to signal EOF
 	Operation() (DataOperation, error)
 	// resolve placeholders from this mutation
-	ResolveValue(interface{}) interface{}
-	CreatedEnt() Entity
+	ResolveValue(interface{}) Entity
 }
+
+// type ExecutorWithDependencies interface {
+// 	Changesets() []Changeset
+// 	Depend
+// }
 
 var AllOperations = errors.New("All operation dependencies ")

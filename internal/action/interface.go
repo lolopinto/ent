@@ -240,17 +240,19 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 // FieldActionTemplateInfo is passed to codegeneration template (both action and graphql) to generate
 // the code needed for actions
 type FieldActionTemplateInfo struct {
-	MethodName      string
-	InstanceName    string
-	InstanceType    string
-	FieldKey        string
-	FieldName       string
-	QuotedFieldName string
-	QuotedDBName    string
-	InverseEdge     *edge.AssociationEdge
-	IsStatusEnum    bool
-	IsGroupID       bool
-	NodeType        string
+	SetterMethodName string
+	GetterMethodName string
+	InstanceName     string
+	InstanceType     string
+	FieldKey         string
+	FieldName        string
+	QuotedFieldName  string
+	QuotedDBName     string
+	InverseEdge      *edge.AssociationEdge
+	IsStatusEnum     bool
+	IsGroupID        bool
+	NodeType         string
+	Field            *field.Field
 }
 
 func GetActionMethodName(action Action) string {
@@ -265,21 +267,31 @@ func GetActionMethodName(action Action) string {
 }
 
 func GetFields(action Action) []FieldActionTemplateInfo {
-	var fields []FieldActionTemplateInfo
+	return GetFieldsFromFields(action.GetFields())
+}
 
-	for _, f := range action.GetFields() {
+// TODO abstract this out somewhere else...
+func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
+	var result []FieldActionTemplateInfo
 
-		fields = append(fields, FieldActionTemplateInfo{
-			MethodName:      "Set" + f.FieldName,
-			InstanceName:    strcase.ToLowerCamel(f.FieldName),
-			InstanceType:    field.GetTypeInStructDefinition(f),
-			FieldName:       f.FieldName,
-			QuotedFieldName: strconv.Quote(f.FieldName),
-			QuotedDBName:    f.GetQuotedDBColName(),
-			InverseEdge:     f.InverseEdge,
+	for _, f := range fields {
+
+		// spew.Dump(f.FieldName)
+		//		spew.Dump(f.FieldName, field.GetTypeInStructDefinition(f))
+
+		result = append(result, FieldActionTemplateInfo{
+			SetterMethodName: "Set" + f.FieldName,
+			GetterMethodName: "Get" + f.FieldName,
+			InstanceName:     strcase.ToLowerCamel(f.FieldName),
+			InstanceType:     field.GetTypeInStructDefinition(f),
+			FieldName:        f.FieldName,
+			QuotedFieldName:  strconv.Quote(f.FieldName),
+			QuotedDBName:     f.GetQuotedDBColName(),
+			InverseEdge:      f.InverseEdge,
+			Field:            f,
 		})
 	}
-	return fields
+	return result
 }
 
 func GetNonEntFields(action Action) []FieldActionTemplateInfo {
@@ -288,23 +300,24 @@ func GetNonEntFields(action Action) []FieldActionTemplateInfo {
 	for _, f := range action.GetNonEntFields() {
 
 		fields = append(fields, FieldActionTemplateInfo{
-			MethodName:   "Add" + f.FieldName,
-			InstanceName: strcase.ToLowerCamel(f.FieldName),
-			InstanceType: "string", // TODO this needs to work for other
-			FieldName:    f.FieldName,
-			IsStatusEnum: f.Flag == "Enum", // TODO best way?
-			IsGroupID:    f.Flag == "ID",
-			NodeType:     f.NodeType,
+			SetterMethodName: "Add" + f.FieldName,
+			InstanceName:     strcase.ToLowerCamel(f.FieldName),
+			InstanceType:     "string", // TODO this needs to work for other
+			FieldName:        f.FieldName,
+			IsStatusEnum:     f.Flag == "Enum", // TODO best way?
+			IsGroupID:        f.Flag == "ID",
+			NodeType:         f.NodeType,
 		})
 	}
 	return fields
 }
 
 type EdgeActionTemplateInfo struct {
-	MethodName   string
-	EdgeName     string
-	InstanceName string
-	InstanceType string
+	AddMethodName    string
+	RemoveMethodName string
+	EdgeName         string
+	InstanceName     string
+	InstanceType     string
 	//	AssocEdge    *edge.AssociationEdge
 	EdgeConst string
 	NodeType  string
@@ -313,18 +326,25 @@ type EdgeActionTemplateInfo struct {
 }
 
 func GetEdges(action Action) []EdgeActionTemplateInfo {
-	var edges []EdgeActionTemplateInfo
+	return GetEdgesFromEdges(action.GetEdges())
+}
 
-	for _, edge := range action.GetEdges() {
+// ALso TODO...
+func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
+	var result []EdgeActionTemplateInfo
+
+	for _, edge := range edges {
 		edgeName := edge.GetEdgeName()
 
-		edges = append(edges, EdgeActionTemplateInfo{
-			Node:         edge.NodeInfo.Node,
-			MethodName:   "Add" + edge.NodeInfo.Node,
-			EdgeName:     edgeName,
-			InstanceName: edge.NodeInfo.NodeInstance,
-			InstanceType: fmt.Sprintf("*models.%s", edge.NodeInfo.Node),
-			EdgeConst:    edge.EdgeConst,
+		result = append(result, EdgeActionTemplateInfo{
+			Node: edge.NodeInfo.Node,
+			// TODO this needs to be updated for actions
+			AddMethodName:    "Add" + edge.EdgeName,
+			RemoveMethodName: "Remove" + edge.EdgeName,
+			EdgeName:         edgeName,
+			InstanceName:     edge.NodeInfo.NodeInstance,
+			InstanceType:     fmt.Sprintf("*models.%s", edge.NodeInfo.Node),
+			EdgeConst:        edge.EdgeConst,
 			//AssocEdge:    edge,
 			NodeType: edge.NodeInfo.NodeType,
 			// matches what we do in processAction
@@ -332,5 +352,5 @@ func GetEdges(action Action) []EdgeActionTemplateInfo {
 		})
 	}
 
-	return edges
+	return result
 }

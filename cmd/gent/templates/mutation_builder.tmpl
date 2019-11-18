@@ -1,0 +1,236 @@
+{{ reserveImport "context"}} 
+
+{{ reserveImport "github.com/lolopinto/ent/ent" }}
+{{ reserveImport "github.com/lolopinto/ent/ent/actions" }}
+{{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
+
+{{with .CodePath -}}
+	{{reserveImport .PathToModels}}
+  {{reserveImport .PathToConfigs}}
+
+{{end -}}
+
+{{with .NodeData -}}
+
+{{$builderName := printf "%sMutationBuilder" .Node }}
+
+{{ $fieldInfos := fieldInfos .FieldInfo.TopLevelFields }}
+
+type {{$builderName}} struct {
+  {{if .HasAssocGroups -}}
+    builder *actions.EdgeGroupMutationBuilder
+  {{ else -}}
+    builder *actions.EntMutationBuilder
+  {{ end -}}
+  {{.NodeInstance}} *models.{{.Node}}
+  {{ range $field := $fieldInfos -}}
+    {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
+    {{$fieldInstanceName}} *{{fTypeString $field.Field}}
+    {{ if $field.Field.IDField -}}
+      {{$fieldInstanceName}}Builder ent.MutationBuilder
+    {{ end -}}
+
+  {{end -}}
+}
+
+func NewMutationBuilder(
+  viewer viewer.ViewerContext,
+  operation ent.WriteOperation,
+  fieldMap ent.ActionFieldMap,
+  opts ...func(*actions.EntMutationBuilder),
+) *{{$builderName}} {
+  var {{.NodeInstance}} models.{{.Node}}
+  b := actions.NewMutationBuilder(
+    viewer, 
+    operation,
+    &{{.NodeInstance}},
+    {{.EntConfig}},
+    opts...,
+  )
+  b.FieldMap = fieldMap
+  {{ if .HasAssocGroups -}}
+   b2 := actions.NewEdgeGroupMutationBuilder(
+     b,
+     {{$nodeInstance := .NodeInstance -}}
+     {{range $edgeGroup := .EdgeInfo.AssocGroups -}}
+     {{/* TODO need to change this soon to support more than one possible status/grouping map */ -}}
+      {{$nodeInstance}}.{{$edgeGroup.GroupStatusName}}Map(),
+     {{end -}}
+   )
+  {{end -}}
+  return &{{$builderName}}{
+    {{ if .HasAssocGroups -}}
+      builder: b2,
+    {{ else -}}
+      builder: b,
+    {{ end -}}
+    {{.NodeInstance}}: &{{.NodeInstance}},
+  }
+}
+
+{{ range $field := $fieldInfos -}}
+func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$builderName}} {
+  {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
+  b.{{$fieldInstanceName}} = &{{$field.InstanceName}}
+  b.builder.SetField("{{$field.FieldName}}", {{$field.InstanceName}})
+  {{$inverseEdge := $field.InverseEdge -}}
+  {{ if $inverseEdge -}} 
+    {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
+    {{/* TODO time and data support later? may not make sense for this... */ -}}  
+    b.builder.AddInboundEdge(models.{{$inverseEdge.EdgeConst}}, {{$field.InstanceName}}, models.{{$edgeNodeInfo.NodeType}})
+  {{ end -}}
+  return b
+}
+{{/* TODO nillable fields... */}}
+  {{ if $field.Field.IDField -}}
+  func (b *{{$builderName}}) {{$field.SetterMethodName}}Builder(builder ent.MutationBuilder) *{{$builderName}} {
+    b.{{$fieldInstanceName}}Builder = builder
+    b.builder.SetField("{{$field.FieldName}}", builder)
+    {{$inverseEdge := $field.InverseEdge -}}
+    {{ if $inverseEdge -}} 
+      {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
+      {{/* TODO time and data support later? may not make sense for this... */ -}}  
+      b.builder.AddInboundEdge(models.{{$inverseEdge.EdgeConst}}, builder, models.{{$edgeNodeInfo.NodeType}})
+    {{ end -}}
+    return b
+  }
+
+  {{end -}}
+{{end -}}
+
+{{ range $field := $fieldInfos -}}
+func (b *{{$builderName}}) {{$field.GetterMethodName}}() {{$field.InstanceType}} {
+  {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
+  if b.{{$fieldInstanceName}} == nil {
+    return {{$field.Field.GetZeroValue}}
+  }
+  {{ if $field.Field.IDField -}}
+  {{/* TODO probably want a GetPlaceholderValue also... */}}
+    if b.{{$fieldInstanceName}}Builder != nil {
+      return b.{{$fieldInstanceName}}Builder.GetPlaceholderID()
+    }
+  {{end -}}
+  return *b.{{$fieldInstanceName}}
+}
+
+{{ if $field.Field.IDField -}}
+{{/* Do we still want placeholdervalue to be returned above? */}}
+func (b *{{$builderName}}) {{$field.GetterMethodName}}Builder() ent.MutationBuilder {
+  return b.{{$fieldInstanceName}}Builder
+}
+
+{{end -}}
+
+{{end -}}
+
+{{/* TODO singular version for the ID methods */}}
+
+{{ $edgeInfos := edgeInfos .EdgeInfo.Associations -}}
+
+{{ range $edge := $edgeInfos -}}
+// {{$edge.AddMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.AddMethodName}}({{$edge.InstanceName}}s ...{{$edge.InstanceType}}) *{{$builderName}} {
+  {{/* TODO time and data support later */ -}}  
+  for _, {{$edge.InstanceName}} := range {{$edge.InstanceName}}s {
+    b.{{$edge.AddMethodName}}ID({{$edge.InstanceName}}.ID)
+  }
+  return b
+}
+
+// {{$edge.AddMethodName}}ID adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.AddMethodName}}ID({{$edge.InstanceName}}ID string, options ...func(*ent.EdgeOperation)) *{{$builderName}} {
+  b.builder.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}}, options...)
+  return b
+}
+
+{{ end -}}
+
+{{ range $edge := $edgeInfos -}}
+// {{$edge.RemoveMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.RemoveMethodName}}({{$edge.InstanceName}}s ...{{$edge.InstanceType}}) *{{$builderName}} {
+  for _, {{$edge.InstanceName}} := range {{$edge.InstanceName}}s {
+    b.builder.RemoveOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}.ID, models.{{$edge.NodeType}})
+  }
+  return b
+}
+
+// {{$edge.RemoveMethodName}}ID adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.RemoveMethodName}}ID({{$edge.InstanceName}}ID string) *{{$builderName}} {
+  b.builder.RemoveOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}})
+  return b
+}
+
+{{ end -}}
+
+{{ if .HasAssocGroups -}}
+{{/* TODO need to change this soon to support more than one possible status/grouping map */ -}}
+{{/* TODO once we change this to support all this. we should change everything up till graphql to be strongly typed with enum instead of what we have here */ -}}
+func (b *{{$builderName}}) SetEnumValue(enumValue string) *{{$builderName}} {
+  b.builder.SetEnumValue(enumValue)
+  return b
+}
+
+func (b *{{$builderName}}) SetIDValue(idValue string, nodeType ent.NodeType) *{{$builderName}} {
+  b.builder.SetIDValue(idValue, nodeType)
+  return b
+}
+{{end -}}
+
+func (b *{{$builderName}}) Validate() error {
+  return b.builder.Validate()
+}
+
+func (b *{{$builderName}}) GetViewer() viewer.ViewerContext {
+  return b.builder.GetViewer()
+}
+
+func (b *{{$builderName}}) Get{{.Node}}() *models.{{.Node}} {
+  return b.{{.NodeInstance}}
+}
+
+func (b *{{$builderName}}) SetTriggers(triggers []actions.Trigger) {
+  b.builder.SetTriggers(triggers)
+}
+
+func (b *{{$builderName}}) GetChangeset() (ent.Changeset, error) {
+  return b.builder.GetChangeset()
+}
+
+func (b *{{$builderName}}) ExistingEnt() ent.Entity {
+  return b.builder.ExistingEnt()
+}
+
+func (b *{{$builderName}}) Entity() ent.Entity {
+  return b.builder.Entity()
+}
+
+func (b *{{$builderName}}) GetOperation() ent.WriteOperation {
+	return b.builder.GetOperation()
+}
+
+func (b *{{$builderName}}) GetPlaceholderID() string {
+	return b.builder.GetPlaceholderID()
+}
+
+var _ ent.MutationBuilder = &{{$builderName}}{}
+
+
+{{$triggerInterface := printf "%sTrigger" .Node }}
+
+type {{$triggerInterface}} interface {
+  SetBuilder(*{{$builderName}})
+}
+
+{{$triggerStruct := printf "%sMutationBuilderTrigger" .Node }}
+
+type {{$triggerStruct}} struct {
+  Builder *{{$builderName}}
+}
+
+func (trigger *{{$triggerStruct}}) SetBuilder(b *{{$builderName}}) {
+  trigger.Builder = b
+}
+
+{{end -}}
+
+

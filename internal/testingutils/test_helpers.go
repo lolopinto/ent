@@ -3,9 +3,8 @@ package testingutils
 import (
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/ent/test_schema/models"
+	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -162,6 +161,32 @@ func VerifyNoUserToEventEdge(t *testing.T, user *models.User, event *models.Even
 	assert.Zero(t, *userToEventEdge)
 }
 
+func VerifyEventToHostEdge(t *testing.T, event *models.Event, user *models.User) {
+	edge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToHostsEdge)
+	assert.Nil(t, err)
+	VerifyEdge(t, &ent.Edge{
+		ID1:      event.GetID(),
+		ID1Type:  event.GetType(),
+		ID2:      user.GetID(),
+		ID2Type:  user.GetType(),
+		EdgeType: models.EventToHostsEdge,
+		Data:     "",
+	}, edge)
+}
+
+func VerifyEventToCreatorEdge(t *testing.T, event *models.Event, user *models.User) {
+	edge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToCreatorEdge)
+	assert.Nil(t, err)
+	VerifyEdge(t, &ent.Edge{
+		ID1:      event.GetID(),
+		ID1Type:  event.GetType(),
+		ID2:      user.GetID(),
+		ID2Type:  user.GetType(),
+		EdgeType: models.EventToCreatorEdge,
+		Data:     "",
+	}, edge)
+}
+
 func VerifyFriendsEdge(t *testing.T, user, user2 *models.User) {
 	friends1Edge, err := ent.LoadEdgeByType(user.ID, user2.ID, models.UserToFriendsEdge)
 	assert.Nil(t, err)
@@ -196,7 +221,6 @@ func VerifyNoFriendsEdge(t *testing.T, user, user2 *models.User) {
 }
 
 func VerifyEdge(t *testing.T, expectedEdge, edge *ent.Edge) {
-	spew.Dump(expectedEdge, edge)
 	assert.Equal(t, expectedEdge.EdgeType, edge.EdgeType)
 	assert.Equal(t, expectedEdge.ID1, edge.ID1)
 	assert.Equal(t, expectedEdge.ID2, edge.ID2)

@@ -5,9 +5,7 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
-
-	"github.com/lolopinto/ent/ent/test_schema/models"
-	"github.com/lolopinto/ent/ent/test_schema/models/configs"
+	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/suite"
@@ -33,7 +31,7 @@ func (suite *edgeGroupMutationBuilderSuite) TestEdgeGroupBuilder() {
 	event := testingutils.CreateTestEvent(suite.T(), user)
 
 	// add invited edge
-	b := testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event)
+	b := testingutils.GetEventBuilder(ent.EditOperation, event)
 	b.AddOutboundEdge(models.EventToInvitedEdge, user.ID, user.GetType())
 	updatedEvent := testingutils.SaveEvent(suite.T(), b)
 
@@ -41,12 +39,12 @@ func (suite *edgeGroupMutationBuilderSuite) TestEdgeGroupBuilder() {
 	testingutils.VerifyInvitedToEventEdge(suite.T(), user, event)
 
 	// add attending edge
-	b2 := &actions.EdgeGroupMutationBuilder{
-		EntMutationBuilder: *testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event),
-	}
+	b2 := actions.NewEdgeGroupMutationBuilder(
+		testingutils.GetEventBuilder(ent.EditOperation, event),
+		event.RsvpStatusMap(),
+	)
 	b2.SetEnumValue("EVENT_ATTENDING")
 	b2.SetIDValue(user.GetID(), user.GetType())
-	b2.SetStatusMap(event.RsvpStatusMap())
 	testingutils.SaveEvent(suite.T(), b2)
 
 	testingutils.VerifyUserAttendingEventEdge(suite.T(), user, event)
@@ -54,12 +52,12 @@ func (suite *edgeGroupMutationBuilderSuite) TestEdgeGroupBuilder() {
 	testingutils.VerifyInvitedToEventEdge(suite.T(), user, event)
 
 	// add declined edge
-	b3 := &actions.EdgeGroupMutationBuilder{
-		EntMutationBuilder: *testingutils.GetBaseBuilder(ent.EditOperation, &configs.EventConfig{}, event),
-	}
+	b3 := actions.NewEdgeGroupMutationBuilder(
+		testingutils.GetEventBuilder(ent.EditOperation, event),
+		event.RsvpStatusMap(),
+	)
 	b3.SetEnumValue("EVENT_DECLINED")
 	b3.SetIDValue(user.GetID(), user.GetType())
-	b3.SetStatusMap(event.RsvpStatusMap())
 	testingutils.SaveEvent(suite.T(), b3)
 
 	// adding declined, removes attending.

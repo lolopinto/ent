@@ -89,3 +89,14 @@ func (rule AllowIfClosureRule) Eval(viewer viewer.ViewerContext, entity ent.Enti
 	}
 	return ent.Skip()
 }
+
+type AllowIfValidMutationBuilderRule struct {
+	Builder ent.MutationBuilder
+}
+
+func (rule AllowIfValidMutationBuilderRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	if rule.Builder != nil {
+		return ent.Allow()
+	}
+	return ent.Skip()
+}

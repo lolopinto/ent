@@ -7,11 +7,23 @@ import (
 )
 
 type EdgeGroupMutationBuilder struct {
-	EntMutationBuilder
+	*EntMutationBuilder
 	enumValue string
 	idValue   string
 	nodeType  ent.NodeType
 	statusMap ent.AssocStatusMap
+}
+
+func NewEdgeGroupMutationBuilder(
+	b *EntMutationBuilder,
+	statusMap ent.AssocStatusMap,
+	//	opts ...func(*EntMutationBuilder),
+) *EdgeGroupMutationBuilder {
+	//	b := NewMutationBuilder(viewer, operation, entity, entConfig, opts...)
+	return &EdgeGroupMutationBuilder{
+		EntMutationBuilder: b,
+		statusMap:          statusMap,
+	}
 }
 
 func (b *EdgeGroupMutationBuilder) SetEnumValue(enumValue string) {
@@ -23,11 +35,7 @@ func (b *EdgeGroupMutationBuilder) SetIDValue(idValue string, nodeType ent.NodeT
 	b.nodeType = nodeType
 }
 
-func (b *EdgeGroupMutationBuilder) SetStatusMap(statusMap ent.AssocStatusMap) {
-	b.statusMap = statusMap
-}
-
-func (b *EdgeGroupMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changeset, error) {
+func (b *EdgeGroupMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	for key, value := range b.statusMap {
 		// TODO use enums here with generated types instead of this generated thing with strings
 		if !value.UseInStatusAction {
@@ -39,5 +47,5 @@ func (b *EdgeGroupMutationBuilder) GetChangeset(entity ent.Entity) (ent.Changese
 			b.RemoveOutboundEdge(value.Edge, b.idValue, b.nodeType)
 		}
 	}
-	return b.EntMutationBuilder.GetChangeset(entity)
+	return b.EntMutationBuilder.GetChangeset()
 }
