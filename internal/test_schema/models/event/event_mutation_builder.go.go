@@ -3,6 +3,7 @@
 package event
 
 import (
+	"errors"
 	"time"
 
 	"github.com/lolopinto/ent/ent"
@@ -290,8 +291,16 @@ func (b *EventMutationBuilder) GetEvent() *models.Event {
 	return b.event
 }
 
-func (b *EventMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+func (b *EventMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
 	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		trigger, ok := t.(EventTrigger)
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(b)
+	}
+	return nil
 }
 
 func (b *EventMutationBuilder) GetChangeset() (ent.Changeset, error) {

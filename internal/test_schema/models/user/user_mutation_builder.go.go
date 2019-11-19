@@ -3,6 +3,8 @@
 package user
 
 import (
+	"errors"
+
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
@@ -258,8 +260,16 @@ func (b *UserMutationBuilder) GetUser() *models.User {
 	return b.user
 }
 
-func (b *UserMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+func (b *UserMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
 	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		trigger, ok := t.(UserTrigger)
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(b)
+	}
+	return nil
 }
 
 func (b *UserMutationBuilder) GetChangeset() (ent.Changeset, error) {

@@ -4,7 +4,6 @@ package action
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/lolopinto/ent/ent"
@@ -52,15 +51,7 @@ func (action *CreateEventAction) GetViewer() viewer.ViewerContext {
 }
 
 func (action *CreateEventAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	action.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(builder.EventTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(action.builder)
-	}
-	return nil
+	return action.builder.SetTriggers(triggers)
 }
 
 func (action *CreateEventAction) GetChangeset() (ent.Changeset, error) {

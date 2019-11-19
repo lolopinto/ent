@@ -3,6 +3,8 @@
 package contact
 
 import (
+	"errors"
+
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
@@ -189,8 +191,16 @@ func (b *ContactMutationBuilder) GetContact() *models.Contact {
 	return b.contact
 }
 
-func (b *ContactMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+func (b *ContactMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
 	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		trigger, ok := t.(ContactTrigger)
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(b)
+	}
+	return nil
 }
 
 func (b *ContactMutationBuilder) GetChangeset() (ent.Changeset, error) {

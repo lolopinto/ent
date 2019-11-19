@@ -188,8 +188,17 @@ func (b *{{$builderName}}) Get{{.Node}}() *models.{{.Node}} {
   return b.{{.NodeInstance}}
 }
 
-func (b *{{$builderName}}) SetTriggers(triggers []actions.Trigger) {
+func (b *{{$builderName}}) SetTriggers(triggers []actions.Trigger) error {
   b.builder.SetTriggers(triggers)
+  {{$triggerInterface := printf "%sTrigger" .Node -}}
+	for _, t := range triggers {
+		trigger, ok := t.({{$triggerInterface}})
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(b)
+	}
+	return nil
 }
 
 func (b *{{$builderName}}) GetChangeset() (ent.Changeset, error) {
