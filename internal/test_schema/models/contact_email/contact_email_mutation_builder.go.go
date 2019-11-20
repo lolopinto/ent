@@ -119,6 +119,19 @@ func (b *ContactEmailMutationBuilder) SetTriggers(triggers []actions.Trigger) er
 	return nil
 }
 
+// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the ContactEmailObserver
+// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
+func (b *ContactEmailMutationBuilder) SetObservers(observers []actions.Observer) error {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		observer, ok := o.(ContactEmailObserver)
+		if ok {
+			observer.SetBuilder(b)
+		}
+	}
+	return nil
+}
+
 func (b *ContactEmailMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	return b.builder.GetChangeset()
 }
@@ -151,4 +164,16 @@ type ContactEmailMutationBuilderTrigger struct {
 
 func (trigger *ContactEmailMutationBuilderTrigger) SetBuilder(b *ContactEmailMutationBuilder) {
 	trigger.Builder = b
+}
+
+type ContactEmailObserver interface {
+	SetBuilder(*ContactEmailMutationBuilder)
+}
+
+type ContactEmailMutationBuilderObserver struct {
+	Builder *ContactEmailMutationBuilder
+}
+
+func (observer *ContactEmailMutationBuilderObserver) SetBuilder(b *ContactEmailMutationBuilder) {
+	observer.Builder = b
 }

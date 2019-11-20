@@ -31,13 +31,6 @@ func (suite *actionsTriggersSuite) SetupSuite() {
 	suite.Suite.SetupSuite()
 }
 
-func verifyEventCreationState(t *testing.T, event *models.Event, user *models.User) {
-	testingutils.VerifyEventObj(t, event, user)
-	testingutils.VerifyEventToHostEdge(t, event, user)
-	testingutils.VerifyEventToCreatorEdge(t, event, user)
-	testingutils.VerifyUserToEventEdge(t, user, event)
-}
-
 func verifyLoadContacts(t *testing.T, user *models.User) {
 	contacts, err := user.LoadContacts()
 	assert.Nil(t, err)

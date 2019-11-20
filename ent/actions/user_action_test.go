@@ -2,6 +2,7 @@ package actions_test
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
@@ -10,6 +11,7 @@ import (
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
+	"github.com/lolopinto/ent/internal/testingutils"
 )
 
 type userAction struct {
@@ -31,6 +33,32 @@ func (a *userAction) GetBuilder() ent.MutationBuilder {
 	}
 	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.getFields())
 	return a.builder
+}
+
+// this will be auto-generated for actions
+// We need to do this because of how go's type system works
+func (a *userAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+	// hmm
+	a.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		trigger, ok := t.(UserTrigger)
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(a.builder)
+	}
+	return nil
+}
+
+func (a *userAction) SetBuilderOnObservers(observers []actions.Observer) error {
+	a.builder.SetObservers(observers)
+	for _, o := range observers {
+		observer, ok := o.(UserObserver)
+		if ok {
+			observer.SetBuilder(a.builder)
+		}
+	}
+	return nil
 }
 
 func (a *userAction) getFields() map[string]interface{} {
@@ -79,32 +107,21 @@ func (a *editUserAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(a)
 }
 
-func (a *editUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
+func getEditUserPrivacyPolicy(a userAction, existingEnt ent.Entity) ent.PrivacyPolicy {
 	return privacy.InlinePrivacyPolicy{
 		privacy.Rules(
-			privacy.AllowIfViewerIsOwnerRule{a.existingEnt.ID},
+			privacy.AllowIfViewerIsOwnerRule{existingEnt.GetID()},
 			privacy.AlwaysDenyRule{},
 		),
 		&a.user,
 	}
 }
 
-var _ actions.ActionWithPermissions = &editUserAction{}
-
-// this will be auto-generated for actions
-// We need to do this because of how go's type system works
-func (a *createUserAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	// hmm
-	a.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(UserTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(a.builder)
-	}
-	return nil
+func (a *editUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
+	return getEditUserPrivacyPolicy(a.userAction, &a.existingEnt)
 }
+
+var _ actions.ActionWithPermissions = &editUserAction{}
 
 func (a *createUserAction) GetTriggers() []actions.Trigger {
 	return []actions.Trigger{
@@ -139,10 +156,31 @@ type createUserAndAllTheThingsAction struct {
 func (a *createUserAndAllTheThingsAction) GetTriggers() []actions.Trigger {
 	return []actions.Trigger{
 		&UserCreateEventTrigger{},
-		//		&UserCreateContactTrigger{},
 		&UserCreateContactAndEmailTrigger{},
 	}
 }
+
+type deleteUserAction struct {
+	userAction
+	existingEnt models.User
+}
+
+func (a *deleteUserAction) GetChangeset() (ent.Changeset, error) {
+	return actions.GetChangeset(a)
+}
+
+func (a *deleteUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
+	return getEditUserPrivacyPolicy(a.userAction, &a.existingEnt)
+}
+
+func (a *deleteUserAction) GetObservers() []actions.Observer {
+	return []actions.Observer{
+		testingutils.SendMicroserviceObserver{},
+		&UserSendByeEmailObserver{},
+	}
+}
+
+var _ actions.ActionWithPermissions = &editUserAction{}
 
 type UserTrigger interface {
 	SetBuilder(*actions.EntMutationBuilder)
@@ -154,6 +192,18 @@ type UserMutationBuilderTrigger struct {
 
 func (trigger *UserMutationBuilderTrigger) SetBuilder(b *actions.EntMutationBuilder) {
 	trigger.Builder = b
+}
+
+type UserObserver interface {
+	SetBuilder(*actions.EntMutationBuilder)
+}
+
+type UserMutationBuilderObserver struct {
+	Builder *actions.EntMutationBuilder
+}
+
+func (observer *UserMutationBuilderObserver) SetBuilder(b *actions.EntMutationBuilder) {
+	observer.Builder = b
 }
 
 type UserCreateContactTrigger struct {
@@ -212,6 +262,21 @@ func (trigger *UserCreateEventTrigger) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(action)
 }
 
+type UserSendByeEmailObserver struct {
+	UserMutationBuilderObserver
+}
+
+func (observer *UserSendByeEmailObserver) Observe() error {
+	// dom't have strong typing here so need type assertion
+	user := observer.Builder.ExistingEnt().(*models.User)
+
+	emailHandler := &testingutils.SendEmailHandler{
+		Text:  fmt.Sprintf("Hello %s, we're sad to see you go from our magical website", user.FirstName),
+		Email: user.EmailAddress,
+	}
+	return emailHandler.SendEmail()
+}
+
 func getUserCreateBuilder(viewer viewer.ViewerContext, user *models.User) *actions.EntMutationBuilder {
 	return actions.NewMutationBuilder(
 		viewer,
@@ -239,6 +304,25 @@ func userEditAction(
 	b := actions.NewMutationBuilder(
 		viewer,
 		ent.EditOperation,
+		&action.user,
+		&configs.UserConfig{},
+		actions.ExistingEnt(user),
+	)
+	action.existingEnt = *user
+	action.viewer = viewer
+	action.builder = b
+
+	return action
+}
+
+func userDeleteAction(
+	viewer viewer.ViewerContext,
+	user *models.User,
+) *deleteUserAction {
+	action := &deleteUserAction{}
+	b := actions.NewMutationBuilder(
+		viewer,
+		ent.DeleteOperation,
 		&action.user,
 		&configs.UserConfig{},
 		actions.ExistingEnt(user),

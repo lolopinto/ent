@@ -2,6 +2,7 @@ package actions_test
 
 import (
 	"errors"
+	"testing"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
@@ -57,7 +58,6 @@ func eventCreateAction(
 // this will be auto-generated for actions
 // We need to do this because of how go's type system works
 func (a *createEventAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	// hmm
 	a.builder.SetTriggers(triggers)
 	for _, t := range triggers {
 		trigger, ok := t.(EventTrigger)
@@ -65,6 +65,17 @@ func (a *createEventAction) SetBuilderOnTriggers(triggers []actions.Trigger) err
 			return errors.New("invalid trigger")
 		}
 		trigger.SetBuilder(a.builder)
+	}
+	return nil
+}
+
+func (a *createEventAction) SetBuilderOnObservers(observers []actions.Observer) error {
+	a.builder.SetObservers(observers)
+	for _, o := range observers {
+		observer, ok := o.(EventObserver)
+		if ok {
+			observer.SetBuilder(a.builder)
+		}
 	}
 	return nil
 }
@@ -81,7 +92,23 @@ func (a *createEventAction) GetTriggers() []actions.Trigger {
 	}
 }
 
+func (a *createEventAction) GetObservers() []actions.Observer {
+	return []actions.Observer{
+		&testingutils.ActionLoggerObserver{Action: a},
+	}
+}
+
+// uhh we should combine these...
+// and the generated Trigger and Builder things
+// EventCallbackWithBuilder?
+// EventWithBuilder?
+// EventSideEffectWithBuilder?
+// EventActionWithBuilder?
 type EventTrigger interface {
+	SetBuilder(*actions.EntMutationBuilder)
+}
+
+type EventObserver interface {
 	SetBuilder(*actions.EntMutationBuilder)
 }
 
@@ -91,6 +118,14 @@ type EventMutationBuilderTrigger struct {
 
 func (trigger *EventMutationBuilderTrigger) SetBuilder(b *actions.EntMutationBuilder) {
 	trigger.Builder = b
+}
+
+type EventMutationBuilderObserver struct {
+	Builder *actions.EntMutationBuilder
+}
+
+func (observer *EventMutationBuilderObserver) SetBuilder(b *actions.EntMutationBuilder) {
+	observer.Builder = b
 }
 
 type EventSetUserToEventTrigger struct {
@@ -145,3 +180,11 @@ func (trigger *EventSetCreatorTrigger) GetChangeset() (ent.Changeset, error) {
 }
 
 var _ actions.ActionWithTriggers = &createEventAction{}
+var _ actions.ActionWithObservers = &createEventAction{}
+
+func verifyEventCreationState(t *testing.T, event *models.Event, user *models.User) {
+	testingutils.VerifyEventObj(t, event, user)
+	testingutils.VerifyEventToHostEdge(t, event, user)
+	testingutils.VerifyEventToCreatorEdge(t, event, user)
+	testingutils.VerifyUserToEventEdge(t, user, event)
+}

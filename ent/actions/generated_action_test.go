@@ -1,6 +1,7 @@
 package actions_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -78,6 +79,13 @@ func (suite *generatedActionSuite) TestCreation() {
 	assert.Equal(suite.T(), contact.FirstName, reloadedUser.FirstName)
 	assert.Equal(suite.T(), contact.LastName, reloadedUser.LastName)
 	assert.Equal(suite.T(), contact.EmailAddress, reloadedUser.EmailAddress)
+
+	// observers logged these!
+	testingutils.AssertEntLogged(suite.T(), user)
+	testingutils.AssertEmailSent(suite.T(), user.EmailAddress, fmt.Sprintf("Hello %s, welcome to our magical website", user.FirstName))
+
+	// even the nested contact object which was created via trigger was logged!
+	testingutils.AssertEntLogged(suite.T(), contact)
 }
 
 func (suite *generatedActionSuite) TestCreationNotAllFields() {

@@ -54,6 +54,10 @@ func (action *DeleteUserAction) SetBuilderOnTriggers(triggers []actions.Trigger)
 	return action.builder.SetTriggers(triggers)
 }
 
+func (action *DeleteUserAction) SetBuilderOnObservers(observers []actions.Observer) error {
+	return action.builder.SetObservers(observers)
+}
+
 func (action *DeleteUserAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(action)
 }

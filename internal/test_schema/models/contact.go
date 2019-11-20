@@ -28,9 +28,9 @@ type Contact struct {
 	FirstName     string  `db:"first_name"`
 	LastName      string  `db:"last_name"`
 	UserID        string  `db:"user_id"`
-	Favorite      bool    `graphql:"_" db:"favorite"`
-	NumberOfCalls int     `graphql:"_" db:"number_of_calls"`
-	Pi            float64 `db:"pi" graphql:"_"`
+	Favorite      bool    `db:"favorite" graphql:"_"`
+	NumberOfCalls int     `db:"number_of_calls" graphql:"_"`
+	Pi            float64 `graphql:"_" db:"pi"`
 	Viewer        viewer.ViewerContext
 }
 

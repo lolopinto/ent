@@ -53,6 +53,10 @@ func (action *CreateContactAction) SetBuilderOnTriggers(triggers []actions.Trigg
 	return action.builder.SetTriggers(triggers)
 }
 
+func (action *CreateContactAction) SetBuilderOnObservers(observers []actions.Observer) error {
+	return action.builder.SetObservers(observers)
+}
+
 func (action *CreateContactAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(action)
 }

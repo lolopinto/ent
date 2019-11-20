@@ -54,6 +54,10 @@ func (action *EditEventRsvpStatusAction) SetBuilderOnTriggers(triggers []actions
 	return action.builder.SetTriggers(triggers)
 }
 
+func (action *EditEventRsvpStatusAction) SetBuilderOnObservers(observers []actions.Observer) error {
+	return action.builder.SetObservers(observers)
+}
+
 func (action *EditEventRsvpStatusAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(action)
 }

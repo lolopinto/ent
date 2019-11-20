@@ -54,6 +54,10 @@ func (action *RemoveFamilyMembersAction) SetBuilderOnTriggers(triggers []actions
 	return action.builder.SetTriggers(triggers)
 }
 
+func (action *RemoveFamilyMembersAction) SetBuilderOnObservers(observers []actions.Observer) error {
+	return action.builder.SetObservers(observers)
+}
+
 func (action *RemoveFamilyMembersAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(action)
 }

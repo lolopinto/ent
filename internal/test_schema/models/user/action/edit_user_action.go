@@ -54,6 +54,10 @@ func (action *EditUserAction) SetBuilderOnTriggers(triggers []actions.Trigger) e
 	return action.builder.SetTriggers(triggers)
 }
 
+func (action *EditUserAction) SetBuilderOnObservers(observers []actions.Observer) error {
+	return action.builder.SetObservers(observers)
+}
+
 func (action *EditUserAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(action)
 }

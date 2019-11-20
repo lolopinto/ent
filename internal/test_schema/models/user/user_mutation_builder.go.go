@@ -272,6 +272,19 @@ func (b *UserMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
 	return nil
 }
 
+// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the UserObserver
+// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
+func (b *UserMutationBuilder) SetObservers(observers []actions.Observer) error {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		observer, ok := o.(UserObserver)
+		if ok {
+			observer.SetBuilder(b)
+		}
+	}
+	return nil
+}
+
 func (b *UserMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	return b.builder.GetChangeset()
 }
@@ -304,4 +317,16 @@ type UserMutationBuilderTrigger struct {
 
 func (trigger *UserMutationBuilderTrigger) SetBuilder(b *UserMutationBuilder) {
 	trigger.Builder = b
+}
+
+type UserObserver interface {
+	SetBuilder(*UserMutationBuilder)
+}
+
+type UserMutationBuilderObserver struct {
+	Builder *UserMutationBuilder
+}
+
+func (observer *UserMutationBuilderObserver) SetBuilder(b *UserMutationBuilder) {
+	observer.Builder = b
 }
