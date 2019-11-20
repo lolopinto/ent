@@ -3,6 +3,7 @@
 package event
 
 import (
+	"errors"
 	"time"
 
 	"github.com/lolopinto/ent/ent"
@@ -290,8 +291,29 @@ func (b *EventMutationBuilder) GetEvent() *models.Event {
 	return b.event
 }
 
-func (b *EventMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+func (b *EventMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
 	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		trigger, ok := t.(EventTrigger)
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(b)
+	}
+	return nil
+}
+
+// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the EventObserver
+// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
+func (b *EventMutationBuilder) SetObservers(observers []actions.Observer) error {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		observer, ok := o.(EventObserver)
+		if ok {
+			observer.SetBuilder(b)
+		}
+	}
+	return nil
 }
 
 func (b *EventMutationBuilder) GetChangeset() (ent.Changeset, error) {
@@ -326,4 +348,16 @@ type EventMutationBuilderTrigger struct {
 
 func (trigger *EventMutationBuilderTrigger) SetBuilder(b *EventMutationBuilder) {
 	trigger.Builder = b
+}
+
+type EventObserver interface {
+	SetBuilder(*EventMutationBuilder)
+}
+
+type EventMutationBuilderObserver struct {
+	Builder *EventMutationBuilder
+}
+
+func (observer *EventMutationBuilderObserver) SetBuilder(b *EventMutationBuilder) {
+	observer.Builder = b
 }

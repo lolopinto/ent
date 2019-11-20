@@ -2,7 +2,9 @@ package action
 
 import (
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/privacy"
+	"github.com/lolopinto/ent/internal/testingutils"
 )
 
 func (action *CreateContactAction) GetPrivacyPolicy() ent.PrivacyPolicy {
@@ -16,5 +18,11 @@ func (action *CreateContactAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 			privacy.AlwaysAllowRule{},
 		),
 		action.ExistingEnt(),
+	}
+}
+
+func (action *CreateContactAction) GetObservers() []actions.Observer {
+	return []actions.Observer{
+		&testingutils.ActionLoggerObserver{Action: action},
 	}
 }

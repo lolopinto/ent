@@ -68,16 +68,11 @@ func (action *{{$actionName}}) GetViewer() viewer.ViewerContext {
 }
 
 func (action *{{$actionName}}) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	action.builder.SetTriggers(triggers)
-  {{$triggerInterface := printf "builder.%sTrigger" $nodeInfo.Node -}}
-	for _, t := range triggers {
-		trigger, ok := t.({{$triggerInterface}})
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(action.builder)
-	}
-	return nil
+	return action.builder.SetTriggers(triggers)
+}
+
+func (action *{{$actionName}}) SetBuilderOnObservers(observers []actions.Observer) error {
+  return action.builder.SetObservers(observers)
 }
 
 func (action *{{$actionName}}) GetChangeset() (ent.Changeset, error) {

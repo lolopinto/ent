@@ -188,8 +188,31 @@ func (b *{{$builderName}}) Get{{.Node}}() *models.{{.Node}} {
   return b.{{.NodeInstance}}
 }
 
-func (b *{{$builderName}}) SetTriggers(triggers []actions.Trigger) {
+func (b *{{$builderName}}) SetTriggers(triggers []actions.Trigger) error {
   b.builder.SetTriggers(triggers)
+  {{$triggerInterface := printf "%sTrigger" .Node -}}
+	for _, t := range triggers {
+		trigger, ok := t.({{$triggerInterface}})
+		if !ok {
+			return errors.New("invalid trigger")
+		}
+		trigger.SetBuilder(b)
+	}
+	return nil
+}
+
+// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the {{.Node}}Observer 
+// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
+func (b *{{$builderName}}) SetObservers(observers []actions.Observer) error {
+  b.builder.SetObservers(observers)
+  {{$observerInterface := printf "%sObserver" .Node -}}
+	for _, o := range observers {
+		observer, ok := o.({{$observerInterface}})
+		if ok {
+      observer.SetBuilder(b)
+    }
+	}
+  return nil
 }
 
 func (b *{{$builderName}}) GetChangeset() (ent.Changeset, error) {
@@ -229,6 +252,22 @@ type {{$triggerStruct}} struct {
 
 func (trigger *{{$triggerStruct}}) SetBuilder(b *{{$builderName}}) {
   trigger.Builder = b
+}
+
+{{$observerInterface := printf "%sObserver" .Node }}
+
+type {{$observerInterface}} interface {
+  SetBuilder(*{{$builderName}})
+}
+
+{{$observerStruct := printf "%sMutationBuilderObserver" .Node }}
+
+type {{$observerStruct}} struct {
+  Builder *{{$builderName}}
+}
+
+func (observer *{{$observerStruct}}) SetBuilder(b *{{$builderName}}) {
+  observer.Builder = b
 }
 
 {{end -}}

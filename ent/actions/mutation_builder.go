@@ -26,6 +26,7 @@ type EntMutationBuilder struct {
 	placeholderID string
 	validated     bool
 	triggers      []Trigger
+	observers     []Observer
 	mu            sync.RWMutex
 	// what happens if there are circular dependencies?
 	// let's assume not possible for now but it's possible we want to store the ID in different places/
@@ -199,6 +200,14 @@ func (b *EntMutationBuilder) SetTriggers(triggers []Trigger) {
 	b.triggers = triggers
 }
 
+func (b *EntMutationBuilder) SetObservers(observers []Observer) {
+	// TODO this is where we'd handle critical observers...
+	// we'd also need to batch all the critical observers to be run at the end of all the other operations that are built on top of each other....
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.observers = observers
+}
+
 func (b *EntMutationBuilder) runTriggers() error {
 	// nothing to do here
 	if len(b.triggers) == 0 {
@@ -218,6 +227,13 @@ func (b *EntMutationBuilder) runTriggers() error {
 	if len(changesets) != 0 {
 		b.mu.Lock()
 		defer b.mu.Unlock()
+		// get all the observers from all the dependent changesets and keep track of them to be run at the end...
+		for _, c := range changesets {
+			cWithObservers, ok := c.(ChangesetWithObservers)
+			if ok {
+				b.observers = append(b.observers, cWithObservers.Observers()...)
+			}
+		}
 		b.changesets = changesets
 	}
 	return nil
@@ -311,6 +327,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		entConfig:     b.EntConfig,
 		dependencies:  b.dependencies,
 		changesets:    b.changesets,
+		observers:     b.observers,
 	}, nil
 }
 

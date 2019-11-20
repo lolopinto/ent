@@ -4,7 +4,6 @@ package action
 
 import (
 	"context"
-	"errors"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
@@ -52,15 +51,11 @@ func (action *RemoveFamilyMembersAction) GetViewer() viewer.ViewerContext {
 }
 
 func (action *RemoveFamilyMembersAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	action.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(builder.UserTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(action.builder)
-	}
-	return nil
+	return action.builder.SetTriggers(triggers)
+}
+
+func (action *RemoveFamilyMembersAction) SetBuilderOnObservers(observers []actions.Observer) error {
+	return action.builder.SetObservers(observers)
 }
 
 func (action *RemoveFamilyMembersAction) GetChangeset() (ent.Changeset, error) {

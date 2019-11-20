@@ -1,13 +1,14 @@
 package actions
 
 import (
+	"log"
+
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
 )
 
 type Action interface {
 	GetViewer() viewer.ViewerContext
-	//	GetBuilder() ent.MutationBuilder
 
 	// this exists and is just called by clients e.g. in triggers
 	// and the generated code calls actions.GetChangeset() which calls GetBuilder
@@ -15,8 +16,6 @@ type Action interface {
 	// where new ent should be stored.
 	Entity() ent.Entity
 
-	// what happens when we need multiple builders
-	// MultiBuilder?
 	GetBuilder() ent.MutationBuilder
 }
 
@@ -24,6 +23,16 @@ type ActionWithValidator interface {
 	Action
 	Validate() error
 }
+
+// TODO
+// type Validator interface {
+// 	Valid() bool
+// }
+
+// type ActionWithValidators interface {
+// Action
+// 	GetValidators() []Validator
+// }
 
 type ActionWithPermissions interface {
 	Action
@@ -46,6 +55,33 @@ type ActionWithTriggers interface {
 	// TODO: dependencies between triggers needed. we'll do dependencies by creating something similar to MultiChangesets that takes 2 or more triggers that depend on each other
 	GetTriggers() []Trigger
 	SetBuilderOnTriggers([]Trigger) error
+}
+
+// Observer is something that's run after an action has been run
+// This is where things like send email, send push notification etc are run
+// They are run IFF the action succeeds. They are not run within the transaction where the action, trigger, validator etc all runs
+type Observer interface {
+	Observe() error
+}
+
+// // hmmm come back is this what we want?
+// e.g. API call to do something and if something fails, call the Rollback method to try and revert the critical observer
+// Doesn't have eventual consistency built in here
+// You could imagine scheduling an async job or something here which eventually confirms that whatever was done in this critical observer is eventually fixed
+// type CriticalObserver interface {
+// 	Observer
+// 	Rollback() error
+// }
+
+type ActionWithObservers interface {
+	Action
+	GetObservers() []Observer
+	SetBuilderOnObservers([]Observer) error
+}
+
+type ChangesetWithObservers interface {
+	ent.Changeset
+	Observers() []Observer
 }
 
 func GetChangeset(action Action) (ent.Changeset, error) {
@@ -71,10 +107,12 @@ func GetChangeset(action Action) (ent.Changeset, error) {
 		}
 	}
 
-	// TODO observers
-	// TODO this will return a builder and triggers will return a builder instead of this
-	// so everything will be handled in here as opposed to having PerformAction be callable on its own
-	// triggers and dependencies!
+	if actionWithObservers, ok := action.(ActionWithObservers); ok {
+		if err := setBuilderOnObservers(actionWithObservers); err != nil {
+			return nil, err
+		}
+	}
+
 	// TODO need a concurrent API for these things...
 	return action.GetBuilder().GetChangeset()
 }
@@ -90,7 +128,22 @@ func Save(action Action) error {
 		return nil
 	}
 
-	return ent.SaveChangeset(changeset)
+	if err = ent.SaveChangeset(changeset); err != nil {
+		return err
+	}
+	cWithObservers, ok := changeset.(ChangesetWithObservers)
+	if !ok {
+		log.Print("no observers")
+		return nil
+	}
+	for _, observer := range cWithObservers.Observers() {
+		// observers don't break the action, we just log them
+		// TODO we need to hook this into a better framework that handles this
+		if err := observer.Observe(); err != nil {
+			log.Println("error from observer:", err)
+		}
+	}
+	return nil
 }
 
 func applyActionPermissions(action ActionWithPermissions) error {
@@ -106,4 +159,8 @@ func applyActionPermissions(action ActionWithPermissions) error {
 
 func setBuilderOnTriggers(action ActionWithTriggers) error {
 	return action.SetBuilderOnTriggers(action.GetTriggers())
+}
+
+func setBuilderOnObservers(action ActionWithObservers) error {
+	return action.SetBuilderOnObservers(action.GetObservers())
 }
