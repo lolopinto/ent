@@ -11,6 +11,7 @@ type FieldType interface {
 	GetDBType() string
 	// for now we're going to assume every GraphQL Type is required
 	GetGraphQLType() string
+	GetNullableGraphQLType() string
 	GetCastToMethod() string // returns the method in cast.go (cast.To***) which casts from interface{} to strongly typed
 	GetZeroValue() string
 }
@@ -29,6 +30,10 @@ func (t *StringType) GetGraphQLType() string {
 	return "String!"
 }
 
+func (t *StringType) GetNullableGraphQLType() string {
+	return "String"
+}
+
 func (t *StringType) GetCastToMethod() string {
 	return "cast.ToString"
 }
@@ -45,6 +50,10 @@ func (t *BoolType) GetDBType() string {
 
 func (t *BoolType) GetGraphQLType() string {
 	return "Boolean!"
+}
+
+func (t *BoolType) GetNullableGraphQLType() string {
+	return "Boolean"
 }
 
 func (t *BoolType) GetCastToMethod() string {
@@ -67,6 +76,10 @@ func (t *IdType) GetGraphQLType() string {
 	return "ID!"
 }
 
+func (t *IdType) GetNullableGraphQLType() string {
+	return "ID"
+}
+
 func (t *IdType) GetCastToMethod() string {
 	return "cast.ToUUIDString"
 }
@@ -83,6 +96,10 @@ func (t *IntegerType) GetDBType() string {
 
 func (t *IntegerType) GetGraphQLType() string {
 	return "Int!"
+}
+
+func (t *IntegerType) GetNullableGraphQLType() string {
+	return "Int"
 }
 
 func (t *IntegerType) GetCastToMethod() string {
@@ -103,6 +120,10 @@ func (t *FloatType) GetGraphQLType() string {
 	return "Float!"
 }
 
+func (t *FloatType) GetNullableGraphQLType() string {
+	return "Float"
+}
+
 func (t *FloatType) GetCastToMethod() string {
 	return "cast.ToFloat"
 }
@@ -120,6 +141,10 @@ func (t *TimeType) GetDBType() string {
 //use the built in graphql type
 func (t *TimeType) GetGraphQLType() string {
 	return "Time!"
+}
+
+func (t *TimeType) GetNullableGraphQLType() string {
+	return "Time"
 }
 
 func (t *TimeType) GetCastToMethod() string {
@@ -144,6 +169,10 @@ func (t *NamedType) GetDBType() string {
 
 func (t *NamedType) GetGraphQLType() string {
 	return t.getUnderlyingType().GetGraphQLType()
+}
+
+func (t *NamedType) GetNullableGraphQLType() string {
+	return t.getUnderlyingType().GetNullableGraphQLType()
 }
 
 func (t *NamedType) GetCastToMethod() string {

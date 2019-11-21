@@ -16,6 +16,10 @@ type AccountConfig struct {
 	PhoneNumber    string `unique:"true"`
 	NumberOfLogins int    // stupid thing to store in an account but needed for testing purposes...
 	LastLoginAt    time.Time
+	// TODO need to combine these things
+	Bio              string    `nullable:"true"`
+	DateOfBirth      time.Time `nullable:"true"`
+	ShowBioOnProfile bool      `nullable:"true"`
 }
 
 // GetTableName returns the underyling database table the account model's data is stored

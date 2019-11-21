@@ -65,6 +65,7 @@ type Field struct {
 	fieldType           FieldType  // this is the underlying type for the field for graphql, db, etc
 	dbColumn            bool
 	exposeToGraphQL     bool
+	nullable            bool
 	exposeToActions     bool // TODO: figure out a better way for this long term. this is to allow password be hidden from reads but allowed in writes
 	// once password is a top level configurable type, it can control this e.g. exposeToCreate mutation yes!,
 	// expose to edit mutation no! obviously no delete. but then can be added in custom mutations e.g. editPassword()
@@ -98,6 +99,9 @@ func (f *Field) GetDbTypeForField() string {
 }
 
 func (f *Field) GetGraphQLTypeForField() string {
+	if f.Nullable() {
+		return f.fieldType.GetNullableGraphQLType()
+	}
 	return f.fieldType.GetGraphQLType()
 }
 
@@ -174,6 +178,20 @@ func (f *Field) GetUnquotedKeyFromTag(key string) string {
 	return rawVal
 }
 
+func (f *Field) Nullable() bool {
+	return f.nullable
+	//	return f.GetUnquotedKeyFromTag("nullable") == "true"
+}
+
+func (f *Field) DefaultValue() interface{} {
+	// TODO. come back...
+	val := f.GetUnquotedKeyFromTag("default")
+	if val == "" {
+		return nil
+	}
+	return val
+}
+
 func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.Info) *FieldInfo {
 	fieldInfo := newFieldInfo()
 
@@ -233,6 +251,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 			dbColumn:            true,
 			exposeToGraphQL:     true,
 			exposeToActions:     true,
+			nullable:            tagMap["nullable"] == strconv.Quote("true"),
 		})
 	}
 

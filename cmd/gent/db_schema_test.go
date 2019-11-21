@@ -101,6 +101,7 @@ func TestEdgesFromSchema(t *testing.T) {
 }
 
 func TestStringUserDefinedColumn(t *testing.T) {
+	// TODO nullabllle
 	column := getTestColumn("AccountConfig", "FirstName", t)
 
 	parts := []string{
