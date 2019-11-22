@@ -1,6 +1,7 @@
 package parsehelper
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -10,13 +11,22 @@ import (
 
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/tools/go/packages"
-	//	"github.com/davecgh/go-spew/spew"
+)
+
+// files to parse...
+type PartsToParse uint
+
+const (
+	ParseStruct PartsToParse = 1 << iota
+	ParseEdges
+	ParseActions
 )
 
 type FileConfigData struct {
 	StructMap map[string]*ast.StructType
-	FuncMap   map[string]*ast.FuncDecl
+	funcMap   map[string]map[string]*ast.FuncDecl
 	Fset      *token.FileSet
 	Info      *types.Info
 	Pkg       *packages.Package
@@ -29,6 +39,7 @@ type Config struct {
 	rootPath            string
 	sources             map[string]string
 	uniqueKeyForSources string
+	parseFuncFlags      PartsToParse
 }
 
 // func DisableSyntax() func(*Config) {
@@ -50,6 +61,12 @@ func Sources(uniqueKeyForSources string, sources map[string]string) func(*Config
 	}
 }
 
+func ParseFuncs(parseFuncFlags PartsToParse) func(*Config) {
+	return func(cfg *Config) {
+		cfg.parseFuncFlags = parseFuncFlags
+	}
+}
+
 // save for reuse in tests
 var cachedConfigs map[string]*FileConfigData
 
@@ -58,13 +75,14 @@ func init() {
 }
 
 func getKey(cfg *Config) string {
+	parseFlags := fmt.Sprintf("%v", cfg.parseFuncFlags)
 	if cfg.uniqueKeyForSources != "" {
-		return cfg.uniqueKeyForSources
+		return cfg.uniqueKeyForSources + parseFlags
 	}
 	if cfg.rootPath != "" {
 		path, err := filepath.Abs(cfg.rootPath)
 		util.Die(err)
-		return path
+		return path + parseFlags
 	}
 	panic("invalid configuration")
 }
@@ -98,7 +116,7 @@ func ParseFilesForTest(t *testing.T, options ...func(*Config)) *FileConfigData {
 	pkg := schemaparser.LoadPackage(p)
 
 	structMap := make(map[string]*ast.StructType)
-	funcMap := make(map[string]*ast.FuncDecl)
+	funcMap := make(map[string]map[string]*ast.FuncDecl)
 	fileMap := make(map[string]*ast.File)
 
 	var files []*ast.File
@@ -112,18 +130,32 @@ func ParseFilesForTest(t *testing.T, options ...func(*Config)) *FileConfigData {
 
 	ret := &FileConfigData{
 		StructMap: structMap,
-		FuncMap:   funcMap,
+		funcMap:   funcMap,
 		Fset:      pkg.Fset,
 		Info:      pkg.TypesInfo,
 		Pkg:       pkg,
 		files:     files,
 		fileMap:   fileMap,
 	}
+	// parse edges, actions etc once and cache it so that we don't always
+	// have to parse it
+	// TODO rewrite this to go through every file once instead of what we're currently doing
+	if cfg.parseFuncFlags != 0 {
+		if cfg.parseFuncFlags&ParseStruct != 0 {
+			ret.parseStructs(t)
+		}
+		if cfg.parseFuncFlags&ParseEdges != 0 {
+			ret.parseEdgesFunc(t)
+		}
+		if cfg.parseFuncFlags&ParseActions != 0 {
+			ret.parseActionsFunc(t)
+		}
+	}
 	cachedConfigs[key] = ret
 	return ret
 }
 
-func (c *FileConfigData) ParseStructs(t *testing.T) {
+func (c *FileConfigData) parseStructs(t *testing.T) {
 	for _, file := range c.files {
 		var st *ast.StructType
 		var structName string
@@ -139,35 +171,67 @@ func (c *FileConfigData) ParseStructs(t *testing.T) {
 		})
 
 		if st == nil || structName == "" {
-			t.Errorf("count not parse a struct type for config file %s", file.Name.Name)
+			t.Errorf("could not parse a struct type for config file %s", file.Name.Name)
 		}
 		c.StructMap[structName] = st
 	}
 }
 
-func (c *FileConfigData) ParseEdgesFunc(t *testing.T) {
+func (c *FileConfigData) parseEdgesFunc(t *testing.T) {
+	c.parseFuncByName(t, "GetEdges", false)
+}
+
+func (c *FileConfigData) GetEdgesFn(packageName string) *ast.FuncDecl {
+	return c.funcMap[packageName]["GetEdges"]
+}
+
+func (c *FileConfigData) parseActionsFunc(t *testing.T) {
+	c.parseFuncByName(t, "GetActions", false)
+}
+
+func (c *FileConfigData) GetActionsFn(packageName string) *ast.FuncDecl {
+	return c.funcMap[packageName]["GetActions"]
+}
+
+func (c *FileConfigData) parseFuncByName(t *testing.T, fnName string, required bool) {
 	r := regexp.MustCompile(`(\w+)_config.go`)
 
 	for path, file := range c.fileMap {
-		var edgesFn *ast.FuncDecl
+		var matchedFn *ast.FuncDecl
 		ast.Inspect(file, func(node ast.Node) bool {
 
-			if fn, ok := node.(*ast.FuncDecl); ok && fn.Name.Name == "GetEdges" {
-				edgesFn = fn
+			if fn, ok := node.(*ast.FuncDecl); ok && fn.Name.Name == fnName {
+				matchedFn = fn
 			}
 			return true
 		})
-		//		file.Unresolved
-
-		fileName := file.Name.Name
-		if edgesFn == nil {
-			t.Errorf("couldn't find GetEdges func for config file %s", fileName)
-		}
 
 		match := r.FindStringSubmatch(path)
-		if len(match) != 2 {
-			t.Errorf("file name of file wasn't correctly structured. expected foo_config.go, got %s", fileName)
+		assert.Equal(
+			t,
+			2,
+			len(match),
+			"file name of file wasn't correctly structured. expected foo_config.go, got %s",
+			filepath.Base(path),
+		)
+
+		nodeType := match[1]
+
+		if required {
+			assert.NotNil(
+				t,
+				matchedFn,
+				"couldn't find %s func for config file %s",
+				fnName,
+				nodeType,
+			)
 		}
-		c.FuncMap[match[1]] = edgesFn
+
+		if matchedFn != nil {
+			if c.funcMap[nodeType] == nil {
+				c.funcMap[nodeType] = make(map[string]*ast.FuncDecl)
+			}
+			c.funcMap[match[1]][fnName] = matchedFn
+		}
 	}
 }

@@ -42,11 +42,6 @@ type Action interface {
 	IsDeletingNode() bool
 }
 
-//type ActionWithFields interface{}
-
-// type ActionWithGraphQLMutation interface {
-// }
-
 type ActionInfo struct {
 	Actions          []Action
 	graphQLActionMap map[string]Action
@@ -144,15 +139,6 @@ func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
 }
 
-// type mutateObjectActionInfo struct {
-// 	Fields []*field.Field
-// 	commonActionInfo
-// }
-
-// func (action *mutateObjectActionInfo) GetFields() []*field.Field {
-// 	return action.Fields
-// }
-
 type CreateAction struct {
 	commonActionInfo
 }
@@ -213,26 +199,25 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 		}
 
 		actionInfo.addActions(parseActions(nodeName, compositeLit, fieldInfo)...)
-
-		//		spew.Dump(expr)
 	}
 
-	for _, assocEdge := range edgeInfo.Associations {
-		if assocEdge.EdgeAction == nil {
-			continue
+	if edgeInfo != nil {
+		for _, assocEdge := range edgeInfo.Associations {
+			if assocEdge.EdgeAction == nil {
+				continue
+			}
+			actionInfo.addActions(processEdgeAction(nodeName, assocEdge))
+
 		}
-		actionInfo.addActions(processEdgeAction(nodeName, assocEdge))
 
-	}
+		for _, assocGroup := range edgeInfo.AssocGroups {
+			if assocGroup.EdgeAction == nil {
+				continue
+			}
+			actionInfo.addActions(processEdgeGroupAction(nodeName, assocGroup))
 
-	for _, assocGroup := range edgeInfo.AssocGroups {
-		if assocGroup.EdgeAction == nil {
-			continue
 		}
-		actionInfo.addActions(processEdgeGroupAction(nodeName, assocGroup))
-
 	}
-	// spew.Dump(actionInfo)
 
 	return actionInfo
 }
@@ -353,4 +338,12 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 	}
 
 	return result
+}
+
+func IsRequiredField(action Action, field *field.Field) bool {
+	// for non-create actions, not required
+	if action.GetOperation() != ent.CreateAction {
+		return false
+	}
+	return !field.Nullable()
 }
