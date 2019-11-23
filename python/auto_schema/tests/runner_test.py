@@ -81,13 +81,14 @@ def validate_metadata_after_change(r, old_metadata):
   new_metadata = get_new_metadata_for_runner(r)
   assert new_metadata != old_metadata
 
+  dialect = r.get_connection().dialect.name
   assert(len(old_metadata.sorted_tables)) != len(new_metadata.sorted_tables)
 
   for db_table in new_metadata.sorted_tables:
     schema_table = next((t for t in old_metadata.sorted_tables if db_table.name == t.name), None)
 
     if schema_table is not None:
-      validate_table(schema_table, db_table)
+      validate_table(schema_table, db_table, dialect)
     else:
       # no need to do too much testing on this since we'll just have to trust that alembic works. 
       assert db_table.name == 'alembic_version'
@@ -113,14 +114,14 @@ def recreate_with_new_metadata(r, new_test_runner, metadata_with_table, metadata
   return r2
 
 
-def validate_table(schema_table, db_table):
+def validate_table(schema_table, db_table, dialect):
   assert schema_table != db_table
   assert id(schema_table) != id(db_table)
 
   assert schema_table.name == db_table.name
 
   validate_columns(schema_table, db_table)
-  validate_constraints(schema_table, db_table)
+  validate_constraints(schema_table, db_table, dialect)
   validate_indexes(schema_table, db_table)
 
 
@@ -187,6 +188,10 @@ def validate_column_type(schema_column, db_column):
 
   if isinstance(schema_column.type, sa.TIMESTAMP):
     assert schema_column.type.timezone == db_column.type.timezone
+  elif isinstance(schema_column.type, sa.Numeric):
+    assert isinstance(db_column.type, sa.Numeric)
+    # precision is tricky so ignore this for now
+    #assert schema_column.type.precision == db_column.type.precision
   else:
     # compare types by using the string version of the types. 
     # seems to account for differences btw Integer and INTEGER, String(255) and VARCHAR(255) etc
@@ -197,7 +202,7 @@ def validate_column_type(schema_column, db_column):
 def sort_fn(item): 
   # if name is null, use type of object to sort
   if item.name is None:
-    return type(item).__name__ + id(item)
+    return type(item).__name__ + str(id(item))
   # otherwise, use name + class name
   return type(item).__name__ + item.name
 
@@ -218,25 +223,48 @@ def validate_indexes(schema_table, db_table):
       validate_column(schema_column, db_column)
 
 
-def validate_constraints(schema_table, db_table):
+def validate_constraints(schema_table, db_table, dialect):
   # sort constraints so that the order for both are the same
   schema_constraints = sorted(schema_table.constraints, key=sort_fn)
   db_constraints = sorted(db_table.constraints, key=sort_fn)
 
-  # print(schema_constraints)
-  # print(db_constraints)
+  bool_columns = []
+  # sqlite doesn't support native boolean datatype so it adds another constraint.
+  # This is us working around that...
+  if dialect == 'sqlite':
+    # remove the extra sqlite specific boolean constraints 
+    bool_columns = list(filter(lambda col: str(col.type) == 'BOOLEAN', db_table.columns))
+    bool_columns_set = set(bool_columns)
+    bool_column_names_set = set([col.name for col in bool_columns])
+    db_constraints_to_compare = []
+    for constraint in db_constraints:
+      if isinstance(constraint, sa.CheckConstraint) and len(constraint.columns) == 1 and len(bool_columns_set.intersection(constraint.columns)) > 0:
+        continue
+      db_constraints_to_compare.append(constraint)
+
+    db_constraints = db_constraints_to_compare
 
   assert len(schema_constraints) == len(db_constraints)
 
   for schema_constraint, db_constraint in zip(schema_constraints, db_constraints):
-    if isinstance(db_constraint, sa.CheckConstraint):
-      print(db_constraint.sqltext)
-  
     # constraint names should be equal
-    assert schema_constraint.name == db_constraint.name
+    if schema_constraint.name == '_unnamed_' and dialect == 'sqlite':
+      assert db_constraint.name == None
+    else:
+      assert schema_constraint.name == db_constraint.name
 
     schema_constraint_columns = schema_constraint.columns
     db_constraint_columns = db_constraint.columns
+
+    if (dialect == 'sqlite' and 
+        isinstance(db_constraint, sa.CheckConstraint) and 
+        len(schema_constraint_columns) == 1 and 
+        len(db_constraint_columns) == 0 and
+        # sqlalchemy's default check constraint adds an extra rule for dialects that don't natively
+        # support booleans, if we're in this case, check for it and don't do the rest of the checks
+        # see _should_create_constraint in sqltypes.py
+        len(bool_column_names_set.intersection([col.name for col in schema_constraint_columns])) == 1):
+      continue
 
     assert len(schema_constraint_columns) == len(db_constraint_columns)
     for schema_column, db_column in zip(schema_constraint_columns, db_constraint_columns):
@@ -576,7 +604,20 @@ class BaseTestRunner(object):
       num_files = 4,
       num_changes = 1,
     )
-    
+
+
+  @pytest.mark.usefixtures("metadata_with_nullable_fields")  
+  def test_new_table_with_nullable_fields(self, new_test_runner, metadata_with_nullable_fields):
+    r = new_test_runner(metadata_with_nullable_fields)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_nullable_fields)
+
+
+  @pytest.mark.usefixtures("metadata_with_foreign_key_to_same_table")
+  def test_with_foreign_key_to_same_table(self, new_test_runner, metadata_with_foreign_key_to_same_table):
+    r = new_test_runner(metadata_with_foreign_key_to_same_table)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_foreign_key_to_same_table, new_table_name="assoc_edge_config")
+
+
 
 class TestPostgresRunner(BaseTestRunner):
 
@@ -626,15 +667,7 @@ class TestPostgresRunner(BaseTestRunner):
     validate_metadata_after_change(r2, r2.get_metadata())
 
 
-  # SQLITE does not support BOOLEAN datatype and adds another constraint that 
-  # can't really test for.
-  @pytest.mark.usefixtures("metadata_with_foreign_key_to_same_table")
-  def test_with_foreign_key_to_same_table(self, new_test_runner, metadata_with_foreign_key_to_same_table):
-    r = new_test_runner(metadata_with_foreign_key_to_same_table)
-    run_and_validate_with_standard_metadata_table(r, metadata_with_foreign_key_to_same_table, new_table_name="assoc_edge_config")
-
 
   
 class TestSqliteRunner(BaseTestRunner):
   pass
-

@@ -88,6 +88,23 @@ def metadata_with_table():
     sa.UniqueConstraint("phone_number", name="accounts_unique_phone_number"), # support unique constraint as part of initial table creation
   )
   return metadata
+
+
+@pytest.fixture
+def metadata_with_nullable_fields():
+  metadata = sa.MetaData()
+  sa.Table("accounts", metadata,
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('phone_number', sa.String(255), nullable=False),
+    sa.Column('bio', sa.String(255), nullable=True),
+    sa.Column('date_of_birth', sa.TIMESTAMP(), nullable=True),
+    sa.Column('show_bio_on_profile', sa.Boolean(), nullable=True),
+    sa.Column('pi', sa.Float(), nullable=True),
+
+    sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'), 
+    sa.UniqueConstraint("phone_number", name="accounts_unique_phone_number"), 
+  )
+  return metadata
   
 
 def metadata_with_unique_constraint_added(metadata):
