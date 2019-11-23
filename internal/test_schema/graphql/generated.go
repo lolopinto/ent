@@ -121,6 +121,7 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		Bio             func(childComplexity int) int
 		Contacts        func(childComplexity int) int
 		DeclinedEvents  func(childComplexity int) int
 		EmailAddress    func(childComplexity int) int
@@ -574,6 +575,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.User(childComplexity, args["id"].(string)), true
 
+	case "User.bio":
+		if e.complexity.User.Bio == nil {
+			break
+		}
+
+		return e.complexity.User.Bio(childComplexity), true
+
 	case "User.contacts":
 		if e.complexity.User.Contacts == nil {
 			break
@@ -888,6 +896,7 @@ type Query {
 }
 
 type User implements Node {
+    bio: String
     contacts: [Contact!]!
     declinedEvents: [Event!]!
     emailAddress: String!
@@ -911,6 +920,7 @@ type UserAddFriendsResponse {
 }
 
 input UserCreateInput {
+    bio: String
     emailAddress: String!
     firstName: String!
     lastName: String!
@@ -929,6 +939,7 @@ type UserDeleteResponse {
 }
 
 input UserEditInput {
+    bio: String
     emailAddress: String!
     firstName: String!
     lastName: String!
@@ -2798,6 +2809,40 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_bio(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "User",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Bio, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_contacts(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -4789,6 +4834,12 @@ func (ec *executionContext) unmarshalInputUserCreateInput(ctx context.Context, o
 
 	for k, v := range asMap {
 		switch k {
+		case "bio":
+			var err error
+			it.Bio, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "emailAddress":
 			var err error
 			it.EmailAddress, err = ec.unmarshalNString2string(ctx, v)
@@ -4837,6 +4888,12 @@ func (ec *executionContext) unmarshalInputUserEditInput(ctx context.Context, obj
 
 	for k, v := range asMap {
 		switch k {
+		case "bio":
+			var err error
+			it.Bio, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "emailAddress":
 			var err error
 			it.EmailAddress, err = ec.unmarshalNString2string(ctx, v)
@@ -5472,6 +5529,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("User")
+		case "bio":
+			out.Values[i] = ec._User_bio(ctx, field, obj)
 		case "contacts":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {

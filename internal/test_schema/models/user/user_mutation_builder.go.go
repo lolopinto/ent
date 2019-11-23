@@ -18,6 +18,7 @@ type UserMutationBuilder struct {
 	emailAddress *string
 	firstName    *string
 	lastName     *string
+	bio          *string
 }
 
 func NewMutationBuilder(
@@ -59,6 +60,22 @@ func (b *UserMutationBuilder) SetLastName(lastName string) *UserMutationBuilder 
 	return b
 }
 
+func (b *UserMutationBuilder) SetBio(bio string) *UserMutationBuilder {
+	b.bio = &bio
+	b.builder.SetField("Bio", bio)
+	return b
+}
+
+func (b *UserMutationBuilder) SetNilableBio(bio *string) *UserMutationBuilder {
+	b.bio = bio
+	if bio == nil {
+		b.builder.SetField("Bio", nil)
+	} else {
+		b.builder.SetField("Bio", *bio)
+	}
+	return b
+}
+
 func (b *UserMutationBuilder) GetEmailAddress() string {
 	if b.emailAddress == nil {
 		return ""
@@ -78,6 +95,13 @@ func (b *UserMutationBuilder) GetLastName() string {
 		return ""
 	}
 	return *b.lastName
+}
+
+func (b *UserMutationBuilder) GetBio() *string {
+	if b.bio == nil {
+		return nil
+	}
+	return b.bio
 }
 
 // AddEvents adds an instance of Event to the Events edge while editing the Event ent

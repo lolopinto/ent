@@ -342,7 +342,7 @@ func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
 			pathToFile:     getFilePathForModelFile(nodeData),
 			formatSource:   true,
 			funcMap: template.FuncMap{
-				"fTypeString": field.GetTypeInStructDefinition,
+				"fTypeString": field.GetNilableTypeInStructDefinition,
 				"quoteStr":    strconv.Quote,
 			},
 		},

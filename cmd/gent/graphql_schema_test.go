@@ -9,10 +9,11 @@ import (
 func TestBuildGraphQLSchema(t *testing.T) {
 	schema := getTestGraphQLSchema(t)
 
-	if len(schema.Types) != 10 {
+	if len(schema.Types) != 15 {
 		// Account from AccountConfig
 		// Todo from TodoConfig
 		// Query
+		// Create/Edit (Input|Response)
 		t.Errorf("expected 10 types created, got %d instead", len(schema.Types))
 	}
 }
@@ -28,7 +29,7 @@ func TestGraphQLObjectFields(t *testing.T) {
 		t.Errorf("graphql object type name was not as expected. expected %s, got %s", "Account", s.TypeName)
 	}
 
-	if len(s.fields) != 6 {
+	if len(s.fields) != 9 {
 		t.Errorf("expected %d fields, got %d instead", 6, len(s.fields))
 	}
 

@@ -86,6 +86,37 @@ func (suite *castSuite) TestUUIDStringDBUUID() {
 	assert.Equal(suite.T(), userIDStr, userID)
 }
 
+func (suite *castSuite) TestToString() {
+	user := testingutils.CreateTestUser(suite.T())
+
+	dataMap := queryRow(suite.T(), user.ID, "users")
+	firstName, err := cast.ToString(dataMap["first_name"])
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), firstName)
+	assert.Equal(suite.T(), user.FirstName, firstName)
+}
+
+func (suite *castSuite) TestNullableToString() {
+	user := testingutils.CreateTestUser(suite.T())
+
+	dataMap := queryRow(suite.T(), user.ID, "users")
+	bio, err := cast.ToNullableString(dataMap["bio"])
+	assert.Nil(suite.T(), err)
+	assert.Nil(suite.T(), bio)
+
+	user = testingutils.EditUser(suite.T(),
+		user,
+		map[string]interface{}{
+			"bio": "awesome person",
+		})
+
+	dataMap = queryRow(suite.T(), user.ID, "users")
+	bio, err = cast.ToNullableString(dataMap["bio"])
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), bio)
+	assert.Equal(suite.T(), *bio, "awesome person")
+}
+
 func (suite *castSuite) TestToTime() {
 	user := testingutils.CreateTestUser(suite.T())
 	event := testingutils.CreateTestEvent(suite.T(), user)

@@ -22,6 +22,14 @@ func CreateTestUserWithEmail(t *testing.T, email string) *models.User {
 	return SaveUser(t, GetDefaultUserBuilder(email))
 }
 
+func EditUser(t *testing.T, user *models.User, fields map[string]interface{}) *models.User {
+	return SaveUser(t, GetUserBuilderWithFields(
+		ent.EditOperation,
+		user,
+		fields,
+	))
+}
+
 func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.User) *models.Event {
 	b := GetEventBuilderwithFields(
 		ent.InsertOperation,

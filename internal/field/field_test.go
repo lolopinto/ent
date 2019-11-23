@@ -158,8 +158,7 @@ func TestNullableStringField(t *testing.T) {
 	)
 	testDBType(t, f, "sa.Text()")
 	testGraphQLType(t, f, "String")
-	// TODO struct types...
-	//	testStructType(t, f, "string")
+	testStructType(t, f, "*string")
 }
 
 func TestTypesForIntegerField(t *testing.T) {
@@ -196,7 +195,7 @@ func TestNullableTimeField(t *testing.T) {
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time")
-	//testStructType(t, f, "time.Time")
+	testStructType(t, f, "*time.Time")
 }
 
 func TestTypesForBoolField(t *testing.T) {
@@ -225,7 +224,7 @@ func TestNullableBoolField(t *testing.T) {
 	)
 	testDBType(t, f, "sa.Boolean()")
 	testGraphQLType(t, f, "Boolean")
-	//	testStructType(t, f, "bool")
+	testStructType(t, f, "*bool")
 }
 
 func TestTypesForCustomStringField(t *testing.T) {
@@ -345,7 +344,7 @@ func testGraphQLType(t *testing.T, f *Field, expectedType string) {
 }
 
 func testStructType(t *testing.T, f *Field, expectedType string) {
-	typ := GetTypeInStructDefinition(f)
+	typ := GetNilableTypeInStructDefinition(f)
 	assert.Equal(
 		t,
 		expectedType,

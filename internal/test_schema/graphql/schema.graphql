@@ -117,6 +117,7 @@ type Query {
 }
 
 type User implements Node {
+    bio: String
     contacts: [Contact!]!
     declinedEvents: [Event!]!
     emailAddress: String!
@@ -140,6 +141,7 @@ type UserAddFriendsResponse {
 }
 
 input UserCreateInput {
+    bio: String
     emailAddress: String!
     firstName: String!
     lastName: String!
@@ -158,6 +160,7 @@ type UserDeleteResponse {
 }
 
 input UserEditInput {
+    bio: String
     emailAddress: String!
     firstName: String!
     lastName: String!

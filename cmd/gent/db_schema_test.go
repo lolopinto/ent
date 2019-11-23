@@ -60,8 +60,8 @@ func TestTableForNode(t *testing.T) {
 		t.Errorf("invalid table name for table. expected %s, got %s", "accounts", table.QuotedTableName)
 	}
 
-	if len(table.Columns) != 8 {
-		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 6, len(table.Columns))
+	if len(table.Columns) != 11 {
+		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 11, len(table.Columns))
 	}
 
 	// 1 primary key, 1 unique, 1 index constraints expected

@@ -63,3 +63,14 @@ func (config *AccountConfig) GetEdges() map[string]interface{} {
 		},
 	}
 }
+
+func (config *AccountConfig) GetActions() []*ent.ActionConfig {
+	return []*ent.ActionConfig{
+		&ent.ActionConfig{
+			Action: ent.CreateAction,
+		},
+		&ent.ActionConfig{
+			Action: ent.EditAction,
+		},
+	}
+}

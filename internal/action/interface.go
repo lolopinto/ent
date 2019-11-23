@@ -225,19 +225,20 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 // FieldActionTemplateInfo is passed to codegeneration template (both action and graphql) to generate
 // the code needed for actions
 type FieldActionTemplateInfo struct {
-	SetterMethodName string
-	GetterMethodName string
-	InstanceName     string
-	InstanceType     string
-	FieldKey         string
-	FieldName        string
-	QuotedFieldName  string
-	QuotedDBName     string
-	InverseEdge      *edge.AssociationEdge
-	IsStatusEnum     bool
-	IsGroupID        bool
-	NodeType         string
-	Field            *field.Field
+	SetterMethodName         string
+	NullableSetterMethodName string
+	GetterMethodName         string
+	InstanceName             string
+	InstanceType             string
+	FieldKey                 string
+	FieldName                string
+	QuotedFieldName          string
+	QuotedDBName             string
+	InverseEdge              *edge.AssociationEdge
+	IsStatusEnum             bool
+	IsGroupID                bool
+	NodeType                 string
+	Field                    *field.Field
 }
 
 func GetActionMethodName(action Action) string {
@@ -261,19 +262,17 @@ func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
 
 	for _, f := range fields {
 
-		// spew.Dump(f.FieldName)
-		//		spew.Dump(f.FieldName, field.GetTypeInStructDefinition(f))
-
 		result = append(result, FieldActionTemplateInfo{
-			SetterMethodName: "Set" + f.FieldName,
-			GetterMethodName: "Get" + f.FieldName,
-			InstanceName:     strcase.ToLowerCamel(f.FieldName),
-			InstanceType:     field.GetTypeInStructDefinition(f),
-			FieldName:        f.FieldName,
-			QuotedFieldName:  strconv.Quote(f.FieldName),
-			QuotedDBName:     f.GetQuotedDBColName(),
-			InverseEdge:      f.InverseEdge,
-			Field:            f,
+			SetterMethodName:         "Set" + f.FieldName,
+			NullableSetterMethodName: "SetNilable" + f.FieldName,
+			GetterMethodName:         "Get" + f.FieldName,
+			InstanceName:             strcase.ToLowerCamel(f.FieldName),
+			InstanceType:             field.GetNonNilableType(f),
+			FieldName:                f.FieldName,
+			QuotedFieldName:          strconv.Quote(f.FieldName),
+			QuotedDBName:             f.GetQuotedDBColName(),
+			InverseEdge:              f.InverseEdge,
+			Field:                    f,
 		})
 	}
 	return result

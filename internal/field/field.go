@@ -86,7 +86,15 @@ func (f *Field) GetQuotedDBColName() string {
 	return f.tagMap["db"]
 }
 
-func GetTypeInStructDefinition(f *Field) string {
+func GetNilableTypeInStructDefinition(f *Field) string {
+	structType := GetNonNilableType(f)
+	if !f.Nullable() {
+		return structType
+	}
+	return "*" + structType
+}
+
+func GetNonNilableType(f *Field) string {
 	override, ok := f.fieldType.(FieldWithOverridenStructType)
 	if ok {
 		return override.GetStructType()
@@ -106,6 +114,9 @@ func (f *Field) GetGraphQLTypeForField() string {
 }
 
 func (f *Field) GetCastToMethod() string {
+	if f.Nullable() {
+		return f.fieldType.GetNullableCastToMethod()
+	}
 	return f.fieldType.GetCastToMethod()
 }
 

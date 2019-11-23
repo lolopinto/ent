@@ -6,6 +6,7 @@ type UserConfig struct {
 	EmailAddress string `unique:"true"`
 	FirstName    string
 	LastName     string
+	Bio          string `nullable:"true"`
 }
 
 func (config *UserConfig) GetTableName() string {

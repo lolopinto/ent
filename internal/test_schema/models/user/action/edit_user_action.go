@@ -88,6 +88,18 @@ func (action *EditUserAction) SetLastName(lastName string) *EditUserAction {
 	return action
 }
 
+// SetBio sets the Bio while editing the User ent
+func (action *EditUserAction) SetBio(bio string) *EditUserAction {
+	action.builder.SetBio(bio)
+	return action
+}
+
+// SetNilableBio sets the Bio while editing the User ent
+func (action *EditUserAction) SetNilableBio(bio *string) *EditUserAction {
+	action.builder.SetNilableBio(bio)
+	return action
+}
+
 // getFieldMap returns the fields that could be edited in this mutation
 func (action *EditUserAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{
@@ -101,6 +113,10 @@ func (action *EditUserAction) getFieldMap() ent.ActionFieldMap {
 		},
 		"LastName": &ent.MutatingFieldInfo{
 			DB:       "last_name",
+			Required: false,
+		},
+		"Bio": &ent.MutatingFieldInfo{
+			DB:       "bio",
 			Required: false,
 		},
 	}
