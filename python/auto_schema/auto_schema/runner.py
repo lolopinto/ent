@@ -126,9 +126,11 @@ class Runner(object):
     
     def alter_column_op(op):
       if op.modify_type is not None:
-        return 'modify type from %s to %s' % (op.existing_type, op.modify_type)
+        return 'modify column %s type from %s to %s' % (op.column_name, op.existing_type, op.modify_type)
+      elif op.modify_nullable is not None:
+        return 'modify nullable value of column %s from %s to %s' % (op.column_name, op.existing_nullable, op.modify_nullable)
       else:
-        # TODO modify_nullable, modify_comment, modify_server_default, modify_name all valid options
+        # TODO modify_comment, modify_server_default, modify_name all valid options
         return None
     
     class_name_map = {

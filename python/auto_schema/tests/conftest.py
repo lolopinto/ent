@@ -124,6 +124,22 @@ def metadata_with_timestamp_changed(metadata):
   return _metadata_with_col_changed(metadata, 'created_at', 'accounts', sa.TIMESTAMP())
 
 
+# takes the account table and conversts the last_name table to nullable
+def metadata_with_nullable_changed(metadata):
+  return _metadata_with_nullable_changed(metadata, 'last_name', 'accounts', True)
+
+
+def _metadata_with_nullable_changed(metadata, col_name, table_name, nullable_value):
+  def change_nullable_type(col):
+    if col.name != col_name:
+      return col
+    
+    col.nullable = nullable_value
+    return col
+
+  return _apply_func_on_metadata(metadata, table_name, change_nullable_type)
+
+
 def _metadata_with_col_changed(metadata, col_name, table_name, new_type):
  # takes the tables and modifies the type of a specific column from current type to given type
   def change_col_type(col):
@@ -133,10 +149,14 @@ def _metadata_with_col_changed(metadata, col_name, table_name, new_type):
     col.type = new_type
     return col
 
+  return _apply_func_on_metadata(metadata, table_name, change_col_type)
+
+
+def _apply_func_on_metadata(metadata, table_name, fn):
   tables = [t for t in metadata.sorted_tables if t.name == table_name]
   if len(tables) > 0:
     table = tables[0]
-    table.columns = [change_col_type(col) for col in table.columns]
+    table.columns = [fn(col) for col in table.columns]
 
   return metadata
 

@@ -625,10 +625,11 @@ class TestPostgresRunner(BaseTestRunner):
   @pytest.mark.usefixtures("metadata_with_table")
   @pytest.mark.parametrize(
     "new_metadata_func, expected_message", 
-    [(conftest.metadata_with_table_text_changed, "modify type from VARCHAR(255) to TEXT" ),
-    (conftest.metadata_with_timestamp_changed, "modify type from DATE to TIMESTAMP")]
-    )
-  def test_column_type_change(self, new_test_runner, metadata_with_table, new_metadata_func, expected_message):
+    [(conftest.metadata_with_table_text_changed, "modify column email_address type from VARCHAR(255) to TEXT" ),
+    (conftest.metadata_with_timestamp_changed, "modify column created_at type from DATE to TIMESTAMP"),
+    (conftest.metadata_with_nullable_changed, "modify nullable value of column last_name from False to True"),
+    ])
+  def test_column_attr_change(self, new_test_runner, metadata_with_table, new_metadata_func, expected_message):
     r = new_test_runner(metadata_with_table)
     run_and_validate_with_standard_metadata_table(r, metadata_with_table)
 
