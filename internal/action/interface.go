@@ -344,5 +344,9 @@ func IsRequiredField(action Action, field *field.Field) bool {
 	if action.GetOperation() != ent.CreateAction {
 		return false
 	}
-	return !field.Nullable()
+	// for a nullable field or something with a default value, don't make it required...
+	if field.Nullable() || field.DefaultValue() != nil {
+		return false
+	}
+	return true
 }

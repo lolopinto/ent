@@ -159,7 +159,8 @@ func (suite *castSuite) TestToInt() {
 	dataMap := queryRow(suite.T(), contact.ID, "contacts")
 	numberOfCalls, err := cast.ToNullableInt(dataMap["number_of_calls"])
 	assert.Nil(suite.T(), err)
-	assert.True(suite.T(), numberOfCalls == nil)
+	// default value in db is 0 so doesn't actually return nil...
+	assert.Equal(suite.T(), *numberOfCalls, 0)
 
 	contact = testingutils.EditContact(suite.T(), contact, map[string]interface{}{"number_of_calls": 5})
 	dataMap = queryRow(suite.T(), contact.ID, "contacts")

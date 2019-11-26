@@ -115,6 +115,7 @@ func TestOverridenGraphQLField(t *testing.T) {
 }
 
 func TestHiddenGraphQLField(t *testing.T) {
+	// Also tests default value...
 	f := getTestFieldByName(t, "AccountConfig", "NumberOfLogins")
 
 	testField(
@@ -127,6 +128,7 @@ func TestHiddenGraphQLField(t *testing.T) {
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              false,
+			defaultValue:          "0",
 		},
 		"numberOfLogins",
 	)
@@ -294,8 +296,8 @@ func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName s
 		expFieldProps.topLevelStructField,
 		structField,
 		"expected top level struct field to be %v, got %v instead",
-		structField,
 		expFieldProps.topLevelStructField,
+		structField,
 	)
 
 	dbColumn := f.CreateDBColumn()
@@ -304,17 +306,26 @@ func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName s
 		expFieldProps.dbColumn,
 		dbColumn,
 		"expected create db column for field to be %v, got %v instead",
-		dbColumn,
 		expFieldProps.dbColumn,
+		dbColumn,
 	)
 
 	assert.Equal(
 		t,
 		expFieldProps.nullable,
 		f.Nullable(),
-		"expected nullable value for firled to be %v, got %v instead",
-		f.Nullable(),
+		"expected nullable value for field to be %v, got %v instead",
 		expFieldProps.nullable,
+		f.Nullable(),
+	)
+
+	assert.Equal(
+		t,
+		expFieldProps.defaultValue,
+		f.DefaultValue(),
+		"expected default value for field to be %v, got %v instead",
+		expFieldProps.DefaultValue(),
+		f.DefaultValue(),
 	)
 }
 

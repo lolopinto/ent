@@ -115,10 +115,12 @@ func TestStringUserDefinedColumn(t *testing.T) {
 func TestIntegerUserDefinedColumn(t *testing.T) {
 	column := getTestColumn("AccountConfig", "NumberOfLogins", t)
 
+	// also tests default values...
 	parts := []string{
 		strconv.Quote("number_of_logins"),
 		"sa.Integer()",
 		"nullable=False",
+		"server_default='0'",
 	}
 	testColumn(t, column, "number_of_logins", "NumberOfLogins", "number_of_logins", parts)
 }

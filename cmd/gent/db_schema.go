@@ -482,6 +482,9 @@ func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeDa
 	} else {
 		extraParts = append(extraParts, "nullable=False")
 	}
+	if f.DefaultValue() != nil {
+		extraParts = append(extraParts, fmt.Sprintf("server_default='%s'", f.DefaultValue()))
+	}
 	col := s.getColumn(f.FieldName, f.GetDbColName(), dbType, extraParts)
 
 	s.addPrimaryKeyConstraint(f, nodeData, col, constraints)

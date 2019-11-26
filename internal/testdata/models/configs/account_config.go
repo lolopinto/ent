@@ -11,7 +11,7 @@ type AccountConfig struct {
 	FirstName        string
 	LastName         string
 	PhoneNumber      string    `unique:"true"`
-	NumberOfLogins   int       `graphql:"_"`
+	NumberOfLogins   int       `default:"0" graphql:"_"`
 	LastLoginAt      time.Time `graphql:"lastLoginTime" db:"last_login_time"`
 	Bio              string    `nullable:"true"`
 	DateOfBirth      time.Time `nullable:"true"`

@@ -6,7 +6,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/viewer"
@@ -409,7 +408,6 @@ func (user *User) DBFields() ent.DBFields {
 			return err
 		},
 		"bio": func(v interface{}) error {
-			spew.Dump("bio", v)
 			var err error
 			user.Bio, err = cast.ToNullableString(v)
 			return err

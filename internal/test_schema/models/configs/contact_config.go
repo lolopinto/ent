@@ -8,7 +8,7 @@ type ContactConfig struct {
 	LastName      string
 	UserID        string  `fkey:"UserConfig.ID"`
 	Favorite      bool    `graphql:"_" nullable:"true"` // these 3 exist for testing casts...
-	NumberOfCalls int     `graphql:"_" nullable:"true"`
+	NumberOfCalls int     `graphql:"_" nullable:"true" default:"0"`
 	Pi            float64 `graphql:"_" nullable:"true"`
 }
 

@@ -11,10 +11,11 @@ import (
 
 // AccountConfig is the config for test accounts in test land
 type AccountConfig struct {
-	FirstName      string
-	LastName       string `index:"true"`
-	PhoneNumber    string `unique:"true"`
-	NumberOfLogins int    // stupid thing to store in an account but needed for testing purposes...
+	FirstName   string
+	LastName    string `index:"true"`
+	PhoneNumber string `unique:"true"`
+	// stupid thing to store in an account but needed for testing purposes...
+	NumberOfLogins int `default:"0"`
 	LastLoginAt    time.Time
 	// TODO need to combine these things
 	Bio              string    `nullable:"true"`
