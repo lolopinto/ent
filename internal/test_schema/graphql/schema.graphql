@@ -18,11 +18,11 @@ type Contact implements Node {
 
 input ContactCreateInput {
     emailAddress: String!
-    favorite: Boolean!
+    favorite: Boolean
     firstName: String!
     lastName: String!
-    numberOfCalls: Int!
-    pi: Float!
+    numberOfCalls: Int
+    pi: Float
     userID: String!
 }
 

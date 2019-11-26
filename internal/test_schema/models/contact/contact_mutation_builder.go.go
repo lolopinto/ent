@@ -82,15 +82,45 @@ func (b *ContactMutationBuilder) SetFavorite(favorite bool) *ContactMutationBuil
 	return b
 }
 
+func (b *ContactMutationBuilder) SetNilableFavorite(favorite *bool) *ContactMutationBuilder {
+	b.favorite = favorite
+	if favorite == nil {
+		b.builder.SetField("Favorite", nil)
+	} else {
+		b.builder.SetField("Favorite", *favorite)
+	}
+	return b
+}
+
 func (b *ContactMutationBuilder) SetNumberOfCalls(numberOfCalls int) *ContactMutationBuilder {
 	b.numberOfCalls = &numberOfCalls
 	b.builder.SetField("NumberOfCalls", numberOfCalls)
 	return b
 }
 
+func (b *ContactMutationBuilder) SetNilableNumberOfCalls(numberOfCalls *int) *ContactMutationBuilder {
+	b.numberOfCalls = numberOfCalls
+	if numberOfCalls == nil {
+		b.builder.SetField("NumberOfCalls", nil)
+	} else {
+		b.builder.SetField("NumberOfCalls", *numberOfCalls)
+	}
+	return b
+}
+
 func (b *ContactMutationBuilder) SetPi(pi float64) *ContactMutationBuilder {
 	b.pi = &pi
 	b.builder.SetField("Pi", pi)
+	return b
+}
+
+func (b *ContactMutationBuilder) SetNilablePi(pi *float64) *ContactMutationBuilder {
+	b.pi = pi
+	if pi == nil {
+		b.builder.SetField("Pi", nil)
+	} else {
+		b.builder.SetField("Pi", *pi)
+	}
 	return b
 }
 
@@ -130,25 +160,25 @@ func (b *ContactMutationBuilder) GetUserIDBuilder() ent.MutationBuilder {
 	return b.userIDBuilder
 }
 
-func (b *ContactMutationBuilder) GetFavorite() bool {
+func (b *ContactMutationBuilder) GetFavorite() *bool {
 	if b.favorite == nil {
-		return false
+		return nil
 	}
-	return *b.favorite
+	return b.favorite
 }
 
-func (b *ContactMutationBuilder) GetNumberOfCalls() int {
+func (b *ContactMutationBuilder) GetNumberOfCalls() *int {
 	if b.numberOfCalls == nil {
-		return 0
+		return nil
 	}
-	return *b.numberOfCalls
+	return b.numberOfCalls
 }
 
-func (b *ContactMutationBuilder) GetPi() float64 {
+func (b *ContactMutationBuilder) GetPi() *float64 {
 	if b.pi == nil {
-		return 0.0
+		return nil
 	}
-	return *b.pi
+	return b.pi
 }
 
 // AddAllowList adds an instance of User to the AllowList edge while editing the User ent

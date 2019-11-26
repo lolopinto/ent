@@ -24,13 +24,13 @@ type Node interface {
 }
 
 type ContactCreateInput struct {
-	EmailAddress  string  `json:"emailAddress"`
-	Favorite      bool    `json:"favorite"`
-	FirstName     string  `json:"firstName"`
-	LastName      string  `json:"lastName"`
-	NumberOfCalls int     `json:"numberOfCalls"`
-	Pi            float64 `json:"pi"`
-	UserID        string  `json:"userID"`
+	EmailAddress  string   `json:"emailAddress"`
+	Favorite      *bool    `json:"favorite"`
+	FirstName     string   `json:"firstName"`
+	LastName      string   `json:"lastName"`
+	NumberOfCalls *int     `json:"numberOfCalls"`
+	Pi            *float64 `json:"pi"`
+	UserID        string   `json:"userID"`
 }
 
 type ContactCreateResponse struct {

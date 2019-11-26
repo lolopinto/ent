@@ -7,9 +7,9 @@ type ContactConfig struct {
 	FirstName     string
 	LastName      string
 	UserID        string  `fkey:"UserConfig.ID"`
-	Favorite      bool    `graphql:"_"` // these 3 exist for testing casts...
-	NumberOfCalls int     `graphql:"_"`
-	Pi            float64 `graphql:"_"`
+	Favorite      bool    `graphql:"_" nullable:"true"` // these 3 exist for testing casts...
+	NumberOfCalls int     `graphql:"_" nullable:"true"`
+	Pi            float64 `graphql:"_" nullable:"true"`
 }
 
 func (config *ContactConfig) GetTableName() string {

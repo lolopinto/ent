@@ -24,13 +24,13 @@ const (
 // Contact represents the `Contact` model
 type Contact struct {
 	ent.Node
-	EmailAddress  string  `db:"email_address"`
-	FirstName     string  `db:"first_name"`
-	LastName      string  `db:"last_name"`
-	UserID        string  `db:"user_id"`
-	Favorite      bool    `db:"favorite" graphql:"_"`
-	NumberOfCalls int     `db:"number_of_calls" graphql:"_"`
-	Pi            float64 `graphql:"_" db:"pi"`
+	EmailAddress  string   `db:"email_address"`
+	FirstName     string   `db:"first_name"`
+	LastName      string   `db:"last_name"`
+	UserID        string   `db:"user_id"`
+	Favorite      *bool    `graphql:"_" db:"favorite"`
+	NumberOfCalls *int     `graphql:"_" db:"number_of_calls"`
+	Pi            *float64 `graphql:"_" db:"pi"`
 	Viewer        viewer.ViewerContext
 }
 
@@ -187,17 +187,17 @@ func (contact *Contact) DBFields() ent.DBFields {
 		},
 		"favorite": func(v interface{}) error {
 			var err error
-			contact.Favorite, err = cast.ToBool(v)
+			contact.Favorite, err = cast.ToNullableBool(v)
 			return err
 		},
 		"number_of_calls": func(v interface{}) error {
 			var err error
-			contact.NumberOfCalls, err = cast.ToInt(v)
+			contact.NumberOfCalls, err = cast.ToNullableInt(v)
 			return err
 		},
 		"pi": func(v interface{}) error {
 			var err error
-			contact.Pi, err = cast.ToFloat(v)
+			contact.Pi, err = cast.ToNullableFloat(v)
 			return err
 		},
 	}

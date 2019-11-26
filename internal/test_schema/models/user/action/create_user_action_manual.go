@@ -33,9 +33,6 @@ func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
 		SetLastName(trigger.Builder.GetLastName()).
 		SetEmailAddress(trigger.Builder.GetEmailAddress()).
 		SetUserIDBuilder(trigger.Builder).
-		SetFavorite(false).
-		SetPi(3.14).
-		SetNumberOfCalls(2).
 		GetChangeset()
 }
 

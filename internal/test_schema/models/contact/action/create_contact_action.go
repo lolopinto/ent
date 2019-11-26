@@ -105,15 +105,33 @@ func (action *CreateContactAction) SetFavorite(favorite bool) *CreateContactActi
 	return action
 }
 
+// SetNilableFavorite sets the Favorite while editing the Contact ent
+func (action *CreateContactAction) SetNilableFavorite(favorite *bool) *CreateContactAction {
+	action.builder.SetNilableFavorite(favorite)
+	return action
+}
+
 // SetNumberOfCalls sets the NumberOfCalls while editing the Contact ent
 func (action *CreateContactAction) SetNumberOfCalls(numberOfCalls int) *CreateContactAction {
 	action.builder.SetNumberOfCalls(numberOfCalls)
 	return action
 }
 
+// SetNilableNumberOfCalls sets the NumberOfCalls while editing the Contact ent
+func (action *CreateContactAction) SetNilableNumberOfCalls(numberOfCalls *int) *CreateContactAction {
+	action.builder.SetNilableNumberOfCalls(numberOfCalls)
+	return action
+}
+
 // SetPi sets the Pi while editing the Contact ent
 func (action *CreateContactAction) SetPi(pi float64) *CreateContactAction {
 	action.builder.SetPi(pi)
+	return action
+}
+
+// SetNilablePi sets the Pi while editing the Contact ent
+func (action *CreateContactAction) SetNilablePi(pi *float64) *CreateContactAction {
+	action.builder.SetNilablePi(pi)
 	return action
 }
 
@@ -138,15 +156,15 @@ func (action *CreateContactAction) getFieldMap() ent.ActionFieldMap {
 		},
 		"Favorite": &ent.MutatingFieldInfo{
 			DB:       "favorite",
-			Required: true,
+			Required: false,
 		},
 		"NumberOfCalls": &ent.MutatingFieldInfo{
 			DB:       "number_of_calls",
-			Required: true,
+			Required: false,
 		},
 		"Pi": &ent.MutatingFieldInfo{
 			DB:       "pi",
-			Required: true,
+			Required: false,
 		},
 	}
 }

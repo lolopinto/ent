@@ -45,28 +45,24 @@ func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.Us
 }
 
 func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.User) *models.Contact {
-	var contact models.Contact
+	b := GetContactBuilder(ent.InsertOperation, nil)
 
-	b := GetBaseBuilder(
-		ent.InsertOperation,
-		&contact,
-		&configs.ContactConfig{},
-		nil,
-	)
 	setFields(b, map[string]interface{}{
-		"EmailAddress":  util.GenerateRandEmail(),
-		"UserID":        user.ID,
-		"FirstName":     "first-name",
-		"LastName":      "last-name",
-		"Favorite":      false,
-		"Pi":            3.14,
-		"NumberOfCalls": 5,
+		"EmailAddress": util.GenerateRandEmail(),
+		"UserID":       user.ID,
+		"FirstName":    "first-name",
+		"LastName":     "last-name",
 	})
 	for _, user := range allowList {
 		b.AddOutboundEdge(models.ContactToAllowListEdge, user.ID, user.GetType())
 	}
-	SaveBuilder(t, b)
-	return &contact
+	return SaveContact(t, b)
+}
+
+func EditContact(t *testing.T, contact *models.Contact, fields map[string]interface{}) *models.Contact {
+	b := GetContactBuilder(ent.EditOperation, contact)
+	setFields(b, fields)
+	return SaveContact(t, b)
 }
 
 func AddFamilyMember(t *testing.T, user1, user2 *models.User) {
@@ -177,6 +173,20 @@ func GetEventBuilderwithFields(
 	return b
 }
 
+func GetContactBuilder(
+	operation ent.WriteOperation,
+	existingEnt ent.Entity,
+) *actions.EntMutationBuilder {
+	var contact models.Contact
+	b := GetBaseBuilder(
+		operation,
+		&contact,
+		&configs.ContactConfig{},
+		existingEnt,
+	)
+	return b
+}
+
 func SaveBuilder(t *testing.T, b ent.MutationBuilder) {
 	// sad. todo come up with better long term approach for tests
 	emb, ok := b.(*actions.EntMutationBuilder)
@@ -214,6 +224,17 @@ func SaveEvent(t *testing.T, b ent.MutationBuilder) *models.Event {
 	event, ok := b.Entity().(*models.Event)
 	assert.True(t, ok)
 	return event
+}
+
+func SaveContact(t *testing.T, b ent.MutationBuilder) *models.Contact {
+	if b.GetOperation() == ent.DeleteOperation {
+		SaveBuilder(t, b)
+		return nil
+	}
+	SaveBuilder(t, b)
+	contact, ok := b.Entity().(*models.Contact)
+	assert.True(t, ok)
+	return contact
 }
 
 func GetDefaultUserBuilder(email string) *actions.EntMutationBuilder {

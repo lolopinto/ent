@@ -383,10 +383,7 @@ func getContactAction(v viewer.ViewerContext) *contactaction.CreateContactAction
 	return contactaction.CreateContact(v).
 		SetFirstName("Jon").SetLastName("Snow").
 		SetEmailAddress(util.GenerateRandEmail()).
-		SetFavorite(false).
-		SetNumberOfCalls(3).
-		SetUserID(v.GetViewerID()).
-		SetPi(3.14)
+		SetUserID(v.GetViewerID())
 }
 
 func createContact(v viewer.ViewerContext) (*models.Contact, error) {
