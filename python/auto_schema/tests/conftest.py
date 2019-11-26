@@ -124,39 +124,56 @@ def metadata_with_timestamp_changed(metadata):
   return _metadata_with_col_changed(metadata, 'created_at', 'accounts', sa.TIMESTAMP())
 
 
-# takes the account table and conversts the last_name table to nullable
+# takes the account table and converts the last_name column to nullable
 def metadata_with_nullable_changed(metadata):
   return _metadata_with_nullable_changed(metadata, 'last_name', 'accounts', True)
 
 
+# takes the account table and converts the default value of meaning_of_life column from 42 to 35
+def metadata_with_server_default_changed(metadata):
+  return _metadata_with_server_default_changed(metadata, 'meaning_of_life', 'accounts', '35')
+
+
+def metadata_with_created_at_default_changed(metadata):
+  return _metadata_with_server_default_changed(metadata, 'created_at', 'accounts', sa.text('now()'))
+
+
 def _metadata_with_nullable_changed(metadata, col_name, table_name, nullable_value):
   def change_nullable_type(col):
-    if col.name != col_name:
-      return col
-    
     col.nullable = nullable_value
     return col
 
-  return _apply_func_on_metadata(metadata, table_name, change_nullable_type)
+  return _apply_func_on_metadata(metadata, col_name, table_name, change_nullable_type)
+
+
+def _metadata_with_server_default_changed(metadata, col_name, table_name, new_value):
+  def change_server_default(col):
+    print(col, col_name, new_value, repr(new_value))
+    col.server_default = new_value
+    return col
+      
+  return _apply_func_on_metadata(metadata, col_name, table_name, change_server_default)
 
 
 def _metadata_with_col_changed(metadata, col_name, table_name, new_type):
- # takes the tables and modifies the type of a specific column from current type to given type
   def change_col_type(col):
-    if col.name != col_name:
-      return col
-    
     col.type = new_type
     return col
 
-  return _apply_func_on_metadata(metadata, table_name, change_col_type)
+  return _apply_func_on_metadata(metadata, col_name, table_name, change_col_type)
 
 
-def _apply_func_on_metadata(metadata, table_name, fn):
+def _apply_func_on_metadata(metadata, col_name, table_name, fn):
   tables = [t for t in metadata.sorted_tables if t.name == table_name]
+  
+  def apply_fn(col):
+    if col.name != col_name:
+      return col
+    return fn(col)
+
   if len(tables) > 0:
     table = tables[0]
-    table.columns = [fn(col) for col in table.columns]
+    table.columns = [apply_fn(col) for col in table.columns]
 
   return metadata
 

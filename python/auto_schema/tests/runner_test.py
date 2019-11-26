@@ -3,10 +3,9 @@ import pytest
 import os
 
 import sqlalchemy as sa
-from sqlalchemy.sql.schema import DefaultClause
-from sqlalchemy.sql.elements import TextClause
 
 from . import conftest
+from auto_schema import runner
 
 def get_new_metadata_for_runner(r):
   #metadata = r.get_metadata()
@@ -157,23 +156,8 @@ def validate_column(schema_column, db_column):
 
 
 def validate_column_server_default(schema_column, db_column):
-  def get_clause_text(col):
-    if col.server_default is None:
-      return col.server_default
-    
-    assert isinstance(col.server_default, DefaultClause)
-
-    clause = col.server_default
-
-    clause_text = clause.arg
-    if isinstance(clause_text, TextClause):
-      clause_text = clause_text.text
-
-    # return the underlying string instead of quoted 
-    return str(clause_text).strip("'")
-
-  schema_clause_text = get_clause_text(schema_column)
-  db_clause_text = get_clause_text(db_column)
+  schema_clause_text = runner.Runner.get_clause_text(schema_column.server_default)
+  db_clause_text = runner.Runner.get_clause_text(db_column.server_default)
 
   if schema_clause_text is None and db_column.autoincrement == True:
     assert db_clause_text.startswith("nextval")
@@ -625,9 +609,12 @@ class TestPostgresRunner(BaseTestRunner):
   @pytest.mark.usefixtures("metadata_with_table")
   @pytest.mark.parametrize(
     "new_metadata_func, expected_message", 
-    [(conftest.metadata_with_table_text_changed, "modify column email_address type from VARCHAR(255) to TEXT" ),
-    (conftest.metadata_with_timestamp_changed, "modify column created_at type from DATE to TIMESTAMP"),
-    (conftest.metadata_with_nullable_changed, "modify nullable value of column last_name from False to True"),
+    [
+      (conftest.metadata_with_table_text_changed, "modify column email_address type from VARCHAR(255) to TEXT" ),
+      (conftest.metadata_with_timestamp_changed, "modify column created_at type from DATE to TIMESTAMP"),
+      (conftest.metadata_with_nullable_changed, "modify nullable value of column last_name from False to True"),
+      (conftest.metadata_with_server_default_changed, "modify server_default value of column meaning_of_life from 42 to 35"),
+      (conftest.metadata_with_created_at_default_changed, "modify server_default value of column created_at from None to now()"),
     ])
   def test_column_attr_change(self, new_test_runner, metadata_with_table, new_metadata_func, expected_message):
     r = new_test_runner(metadata_with_table)
@@ -643,7 +630,7 @@ class TestPostgresRunner(BaseTestRunner):
     assert len(diff) == 1
 
     assert r2.revision_message() == expected_message
-
+    
     r.run()
 
     validate_metadata_after_change(r, metadata_with_table)
