@@ -11,11 +11,16 @@ import (
 
 // AccountConfig is the config for test accounts in test land
 type AccountConfig struct {
-	FirstName      string
-	LastName       string `index:"true"`
-	PhoneNumber    string `unique:"true"`
-	NumberOfLogins int    // stupid thing to store in an account but needed for testing purposes...
+	FirstName   string
+	LastName    string `index:"true"`
+	PhoneNumber string `unique:"true"`
+	// stupid thing to store in an account but needed for testing purposes...
+	NumberOfLogins int `default:"0"`
 	LastLoginAt    time.Time
+	// TODO need to combine these things
+	Bio              string    `nullable:"true"`
+	DateOfBirth      time.Time `nullable:"true"`
+	ShowBioOnProfile bool      `nullable:"true"`
 }
 
 // GetTableName returns the underyling database table the account model's data is stored
@@ -42,6 +47,17 @@ func (config *AccountConfig) GetEdges() map[string]interface{} {
 		// just to have assoc version also
 		"TodosAssoc": ent.AssociationEdge{
 			EntConfig: TodoConfig{},
+		},
+	}
+}
+
+func (config *AccountConfig) GetActions() []*ent.ActionConfig {
+	return []*ent.ActionConfig{
+		&ent.ActionConfig{
+			Action: ent.CreateAction,
+		},
+		&ent.ActionConfig{
+			Action: ent.EditAction,
 		},
 	}
 }

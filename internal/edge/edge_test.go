@@ -2,10 +2,13 @@ package edge
 
 import (
 	"sort"
+	"sync"
 	"testing"
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/parsehelper"
+	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -483,17 +486,23 @@ func testAssocEdgeGroup(t *testing.T, edgeGroup, expectedAssocEdgeGroup *Associa
 	}
 }
 
-func getTestEdgeInfo(t *testing.T, packageName string) *EdgeInfo {
-	data := parseConfigFileForFunc(t)
-	edgeInfo := ParseEdgesFunc(packageName, data.FuncMap[packageName])
-	if edgeInfo == nil {
-		t.Errorf("invalid edgeInfo retrieved")
-	}
-	return edgeInfo
+var r *testsync.RunOnce
+var once sync.Once
+
+func getEdgeInfoMap() *testsync.RunOnce {
+	once.Do(func() {
+		r = testsync.NewRunOnce(func(t *testing.T, packageName string) interface{} {
+			data := parsehelper.ParseFilesForTest(t, parsehelper.ParseFuncs(parsehelper.ParseEdges))
+			fn := data.GetEdgesFn(packageName)
+			assert.NotNil(t, fn, "GetEdges fn was unexpectedly nil")
+			edgeInfo := ParseEdgesFunc(packageName, fn)
+			assert.NotNil(t, edgeInfo, "invalid edgeInfo retrieved")
+			return edgeInfo
+		})
+	})
+	return r
 }
 
-func parseConfigFileForFunc(t *testing.T) *parsehelper.FileConfigData {
-	data := parsehelper.ParseFilesForTest(t)
-	data.ParseEdgesFunc(t)
-	return data
+func getTestEdgeInfo(t *testing.T, packageName string) *EdgeInfo {
+	return getEdgeInfoMap().Get(t, packageName).(*EdgeInfo)
 }

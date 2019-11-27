@@ -99,6 +99,15 @@ func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName
   action.builder.{{$field.SetterMethodName}}({{$field.InstanceName}})
   return action
 }
+
+  {{if $field.Field.Nullable -}}
+  // {{$field.NullableSetterMethodName}} sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
+  func (action *{{$actionName}}) {{$field.NullableSetterMethodName}}({{$field.InstanceName}} *{{$field.InstanceType}}) *{{$actionName}} {
+    action.builder.{{$field.NullableSetterMethodName}}({{$field.InstanceName}})
+    return action
+  }
+  {{end -}}
+
   {{ if $field.Field.IDField -}}
   // {{$field.SetterMethodName}}Builder sets the {{$field.FieldName}} while editing the {{$nodeInfo.Node}} ent 
   func (action *{{$actionName}}) {{$field.SetterMethodName}}Builder(builder ent.MutationBuilder) *{{$actionName}} {
@@ -159,7 +168,7 @@ func (action *{{$actionName}}) getFieldMap() ent.ActionFieldMap {
     {{ range $field := $fields -}}
       {{$field.QuotedFieldName}}: &ent.MutatingFieldInfo {
         DB: {{$field.QuotedDBName}},
-        {{ if createAction $action -}}
+        {{ if requiredField $action $field.Field -}}
           Required: true,
         {{ else -}}
           Required: false,

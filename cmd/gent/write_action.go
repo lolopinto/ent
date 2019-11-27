@@ -42,7 +42,7 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 				"saveActionType":          getSaveActionType,
 				"nodeInfo":                getNodeInfo,
 				"returnsObjectInstance":   returnsObjectInstance,
-				"createAction":            createAction,
+				"requiredField":           action.IsRequiredField,
 				"removeEdgeAction":        removeEdgeAction,
 				"argsToViewerMethod":      getActionArgsFromContextToViewerMethod,
 				"writeOperation":          getWriteOperation,
@@ -124,8 +124,4 @@ func returnsObjectInstance(action action.Action) bool {
 
 func removeEdgeAction(action action.Action) bool {
 	return action.GetOperation() == ent.RemoveEdgeAction
-}
-
-func createAction(action action.Action) bool {
-	return action.GetOperation() == ent.CreateAction
 }

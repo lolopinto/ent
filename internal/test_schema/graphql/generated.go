@@ -121,6 +121,7 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		Bio             func(childComplexity int) int
 		Contacts        func(childComplexity int) int
 		DeclinedEvents  func(childComplexity int) int
 		EmailAddress    func(childComplexity int) int
@@ -574,6 +575,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.User(childComplexity, args["id"].(string)), true
 
+	case "User.bio":
+		if e.complexity.User.Bio == nil {
+			break
+		}
+
+		return e.complexity.User.Bio(childComplexity), true
+
 	case "User.contacts":
 		if e.complexity.User.Contacts == nil {
 			break
@@ -789,11 +797,11 @@ type Contact implements Node {
 
 input ContactCreateInput {
     emailAddress: String!
-    favorite: Boolean!
+    favorite: Boolean
     firstName: String!
     lastName: String!
-    numberOfCalls: Int!
-    pi: Float!
+    numberOfCalls: Int
+    pi: Float
     userID: String!
 }
 
@@ -888,6 +896,7 @@ type Query {
 }
 
 type User implements Node {
+    bio: String
     contacts: [Contact!]!
     declinedEvents: [Event!]!
     emailAddress: String!
@@ -911,6 +920,7 @@ type UserAddFriendsResponse {
 }
 
 input UserCreateInput {
+    bio: String
     emailAddress: String!
     firstName: String!
     lastName: String!
@@ -929,6 +939,7 @@ type UserDeleteResponse {
 }
 
 input UserEditInput {
+    bio: String
     emailAddress: String!
     firstName: String!
     lastName: String!
@@ -2800,6 +2811,40 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _User_bio(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "User",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Bio, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _User_contacts(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -4647,7 +4692,7 @@ func (ec *executionContext) unmarshalInputContactCreateInput(ctx context.Context
 			}
 		case "favorite":
 			var err error
-			it.Favorite, err = ec.unmarshalNBoolean2bool(ctx, v)
+			it.Favorite, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4665,13 +4710,13 @@ func (ec *executionContext) unmarshalInputContactCreateInput(ctx context.Context
 			}
 		case "numberOfCalls":
 			var err error
-			it.NumberOfCalls, err = ec.unmarshalNInt2int(ctx, v)
+			it.NumberOfCalls, err = ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "pi":
 			var err error
-			it.Pi, err = ec.unmarshalNFloat2float64(ctx, v)
+			it.Pi, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4789,6 +4834,12 @@ func (ec *executionContext) unmarshalInputUserCreateInput(ctx context.Context, o
 
 	for k, v := range asMap {
 		switch k {
+		case "bio":
+			var err error
+			it.Bio, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "emailAddress":
 			var err error
 			it.EmailAddress, err = ec.unmarshalNString2string(ctx, v)
@@ -4837,6 +4888,12 @@ func (ec *executionContext) unmarshalInputUserEditInput(ctx context.Context, obj
 
 	for k, v := range asMap {
 		switch k {
+		case "bio":
+			var err error
+			it.Bio, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "emailAddress":
 			var err error
 			it.EmailAddress, err = ec.unmarshalNString2string(ctx, v)
@@ -5472,6 +5529,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("User")
+		case "bio":
+			out.Values[i] = ec._User_bio(ctx, field, obj)
 		case "contacts":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -6212,40 +6271,12 @@ func (ec *executionContext) marshalNEventsEdge2ᚖgithubᚗcomᚋlolopintoᚋent
 	return ec._EventsEdge(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
-	return graphql.UnmarshalFloat(v)
-}
-
-func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
-	res := graphql.MarshalFloat(v)
-	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
-}
-
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalID(v)
 }
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalID(v)
-	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
-}
-
-func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
-	return graphql.UnmarshalInt(v)
-}
-
-func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
-	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -6786,6 +6817,29 @@ func (ec *executionContext) marshalOEventsEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋ
 	return ret
 }
 
+func (ec *executionContext) unmarshalOFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	return graphql.UnmarshalFloat(v)
+}
+
+func (ec *executionContext) marshalOFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	return graphql.MarshalFloat(v)
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOFloat2float64(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec.marshalOFloat2float64(ctx, sel, *v)
+}
+
 func (ec *executionContext) unmarshalOID2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalID(v)
 }
@@ -6807,6 +6861,29 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 		return graphql.Null
 	}
 	return ec.marshalOID2string(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {
+	return graphql.UnmarshalInt(v)
+}
+
+func (ec *executionContext) marshalOInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	return graphql.MarshalInt(v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOInt2int(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec.marshalOInt2int(ctx, sel, *v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

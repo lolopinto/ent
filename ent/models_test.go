@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
-	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 )
@@ -82,7 +82,9 @@ func (suite *modelsTestSuite) TestLoadNodeFromParts() {
 		} else {
 			assert.NotNil(suite.T(), err)
 			assert.Equal(suite.T(), err, sql.ErrNoRows)
-			assert.Zero(suite.T(), existingUser)
+			// TODO ugh... it's finally time to change this to return nil...
+			// can't do assert.Zero because (user.Bio returns (*string) instead of "")
+			assert.Equal(suite.T(), existingUser.ID, "")
 		}
 	}
 }

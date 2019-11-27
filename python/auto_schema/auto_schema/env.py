@@ -116,13 +116,14 @@ def run_migrations_online():
     # )
     #connectable = engine
 
-    #print(runner.Runner.compare_type)
     #with connectable.connect() as connection:
     context.configure(
         connection=connection, 
         target_metadata=target_metadata,
         compare_type=runner.Runner.compare_type,
-        include_object=runner.Runner.include_object
+        include_object=runner.Runner.include_object,
+        compare_server_default=runner.Runner.compare_server_default,
+        render_item=runner.Runner.render_server_default,
     )
 
     with context.begin_transaction():

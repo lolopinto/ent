@@ -476,9 +476,16 @@ func (s *dbSchema) createEdgeTable(nodeData *schema.NodeData, assocEdge *edge.As
 
 func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeData, constraints *[]dbConstraint) *dbColumn {
 	dbType := f.GetDbTypeForField()
-	col := s.getColumn(f.FieldName, f.GetDbColName(), dbType, []string{
-		"nullable=False",
-	})
+	var extraParts []string
+	if f.Nullable() {
+		extraParts = append(extraParts, "nullable=True")
+	} else {
+		extraParts = append(extraParts, "nullable=False")
+	}
+	if f.DefaultValue() != nil {
+		extraParts = append(extraParts, fmt.Sprintf("server_default='%s'", f.DefaultValue()))
+	}
+	col := s.getColumn(f.FieldName, f.GetDbColName(), dbType, extraParts)
 
 	s.addPrimaryKeyConstraint(f, nodeData, col, constraints)
 	s.addForeignKeyConstraint(f, nodeData, col, constraints)

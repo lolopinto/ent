@@ -11,7 +11,9 @@ type FieldType interface {
 	GetDBType() string
 	// for now we're going to assume every GraphQL Type is required
 	GetGraphQLType() string
+	GetNullableGraphQLType() string
 	GetCastToMethod() string // returns the method in cast.go (cast.To***) which casts from interface{} to strongly typed
+	GetNullableCastToMethod() string
 	GetZeroValue() string
 }
 
@@ -29,8 +31,16 @@ func (t *StringType) GetGraphQLType() string {
 	return "String!"
 }
 
+func (t *StringType) GetNullableGraphQLType() string {
+	return "String"
+}
+
 func (t *StringType) GetCastToMethod() string {
 	return "cast.ToString"
+}
+
+func (t *StringType) GetNullableCastToMethod() string {
+	return "cast.ToNullableString"
 }
 
 func (t *StringType) GetZeroValue() string {
@@ -47,8 +57,16 @@ func (t *BoolType) GetGraphQLType() string {
 	return "Boolean!"
 }
 
+func (t *BoolType) GetNullableGraphQLType() string {
+	return "Boolean"
+}
+
 func (t *BoolType) GetCastToMethod() string {
 	return "cast.ToBool"
+}
+
+func (t *BoolType) GetNullableCastToMethod() string {
+	return "cast.ToNullableBool"
 }
 
 func (t *BoolType) GetZeroValue() string {
@@ -67,8 +85,16 @@ func (t *IdType) GetGraphQLType() string {
 	return "ID!"
 }
 
+func (t *IdType) GetNullableGraphQLType() string {
+	return "ID"
+}
+
 func (t *IdType) GetCastToMethod() string {
 	return "cast.ToUUIDString"
+}
+
+func (t *IdType) GetNullableCastToMethod() string {
+	return "cast.ToNullableUUIDString"
 }
 
 func (t *IdType) GetZeroValue() string {
@@ -85,8 +111,16 @@ func (t *IntegerType) GetGraphQLType() string {
 	return "Int!"
 }
 
+func (t *IntegerType) GetNullableGraphQLType() string {
+	return "Int"
+}
+
 func (t *IntegerType) GetCastToMethod() string {
 	return "cast.ToInt"
+}
+
+func (t *IntegerType) GetNullableCastToMethod() string {
+	return "cast.ToNullableInt"
 }
 
 func (t *IntegerType) GetZeroValue() string {
@@ -103,8 +137,16 @@ func (t *FloatType) GetGraphQLType() string {
 	return "Float!"
 }
 
+func (t *FloatType) GetNullableGraphQLType() string {
+	return "Float"
+}
+
 func (t *FloatType) GetCastToMethod() string {
 	return "cast.ToFloat"
+}
+
+func (t *FloatType) GetNullableCastToMethod() string {
+	return "cast.ToNullableFloat"
 }
 
 func (t *FloatType) GetZeroValue() string {
@@ -122,8 +164,16 @@ func (t *TimeType) GetGraphQLType() string {
 	return "Time!"
 }
 
+func (t *TimeType) GetNullableGraphQLType() string {
+	return "Time"
+}
+
 func (t *TimeType) GetCastToMethod() string {
 	return "cast.ToTime"
+}
+
+func (t *TimeType) GetNullableCastToMethod() string {
+	return "cast.ToNullableTime"
 }
 
 func (t *TimeType) GetZeroValue() string {
@@ -146,8 +196,16 @@ func (t *NamedType) GetGraphQLType() string {
 	return t.getUnderlyingType().GetGraphQLType()
 }
 
+func (t *NamedType) GetNullableGraphQLType() string {
+	return t.getUnderlyingType().GetNullableGraphQLType()
+}
+
 func (t *NamedType) GetCastToMethod() string {
 	panic("GetCastToMethod of NamedType not implemented yet!")
+}
+
+func (t *NamedType) GetNullableCastToMethod() string {
+	panic("GetNullableCastToMethod of NamedType not implemented yet!")
 }
 
 func (t *NamedType) GetZeroValue() string {

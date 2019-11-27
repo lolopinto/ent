@@ -50,6 +50,7 @@ func (suite *generatedActionSuite) createUser() *models.User {
 
 	assert.Nil(suite.T(), err)
 	testingutils.VerifyUserObj(suite.T(), user, email)
+	assert.True(suite.T(), user.Bio == nil)
 	return user
 }
 
@@ -86,6 +87,23 @@ func (suite *generatedActionSuite) TestCreation() {
 
 	// even the nested contact object which was created via trigger was logged!
 	testingutils.AssertEntLogged(suite.T(), contact)
+}
+
+func (suite *generatedActionSuite) TestCreationNilField() {
+	v := viewer.LoggedOutViewer()
+
+	email := util.GenerateRandEmail()
+
+	user, err := action.CreateUser(v).
+		SetEmailAddress(email).
+		SetFirstName("Ola").
+		SetLastName("Okelola").
+		SetBio("long bio").
+		Save()
+
+	assert.Nil(suite.T(), err)
+	testingutils.VerifyUserObj(suite.T(), user, email)
+	assert.Equal(suite.T(), "long bio", *user.Bio)
 }
 
 func (suite *generatedActionSuite) TestCreationNotAllFields() {
@@ -151,6 +169,44 @@ func (suite *generatedActionSuite) TestEditing() {
 	assert.Equal(suite.T(), editedUser.EmailAddress, user.EmailAddress)
 	assert.Equal(suite.T(), editedUser.FirstName, "Ola2")
 	assert.Equal(suite.T(), editedUser.LastName, user.LastName)
+}
+
+func (suite *generatedActionSuite) TestEditingAddNilField() {
+	user := testingutils.CreateTestUser(suite.T())
+
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	editedUser, err := action.EditUser(v, user).
+		SetBio("long bio").
+		Save()
+
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), editedUser.EmailAddress, user.EmailAddress)
+	assert.Equal(suite.T(), editedUser.FirstName, user.FirstName)
+	assert.Equal(suite.T(), editedUser.LastName, user.LastName)
+	assert.Equal(suite.T(), *editedUser.Bio, "long bio")
+}
+
+func (suite *generatedActionSuite) TestEditingSetNillableFieldToNil() {
+	user := testingutils.CreateTestUser(suite.T())
+
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	editedUser, err := action.EditUser(v, user).
+		SetBio("long bio").
+		Save()
+
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), *editedUser.Bio, "long bio")
+	testingutils.VerifyUserObj(suite.T(), editedUser, user.EmailAddress)
+
+	editedUser2, err := action.EditUser(v, editedUser).
+		SetNilableBio(nil).
+		Save()
+
+	assert.Nil(suite.T(), err)
+	assert.True(suite.T(), editedUser2.Bio == nil)
+	testingutils.VerifyUserObj(suite.T(), editedUser2, user.EmailAddress)
 }
 
 func (suite *generatedActionSuite) TestDeleting() {
@@ -327,10 +383,7 @@ func getContactAction(v viewer.ViewerContext) *contactaction.CreateContactAction
 	return contactaction.CreateContact(v).
 		SetFirstName("Jon").SetLastName("Snow").
 		SetEmailAddress(util.GenerateRandEmail()).
-		SetFavorite(false).
-		SetNumberOfCalls(3).
-		SetUserID(v.GetViewerID()).
-		SetPi(3.14)
+		SetUserID(v.GetViewerID())
 }
 
 func createContact(v viewer.ViewerContext) (*models.Contact, error) {

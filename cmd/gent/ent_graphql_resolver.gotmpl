@@ -29,7 +29,11 @@
 	{{end -}}
 	{{$fields := actionFields $action}}
 	{{range $field := $fields -}}	
-		{{$field.SetterMethodName}}(input.{{$field.FieldName}}).
+		{{if $field.Field.Nullable -}}
+			{{$field.NullableSetterMethodName}}(input.{{$field.FieldName}}).
+		{{else -}}
+			{{$field.SetterMethodName}}(input.{{$field.FieldName}}).
+		{{end -}}
 	{{end -}}
 	{{$edges := actionEdges $action}}
 	{{range $edge := $edges -}}	

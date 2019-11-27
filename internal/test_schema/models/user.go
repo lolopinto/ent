@@ -34,9 +34,10 @@ const (
 // User represents the `User` model
 type User struct {
 	ent.Node
-	EmailAddress string `db:"email_address"`
-	FirstName    string `db:"first_name"`
-	LastName     string `db:"last_name"`
+	EmailAddress string  `db:"email_address"`
+	FirstName    string  `db:"first_name"`
+	LastName     string  `db:"last_name"`
+	Bio          *string `db:"bio"`
 	Viewer       viewer.ViewerContext
 }
 
@@ -404,6 +405,11 @@ func (user *User) DBFields() ent.DBFields {
 		"last_name": func(v interface{}) error {
 			var err error
 			user.LastName, err = cast.ToString(v)
+			return err
+		},
+		"bio": func(v interface{}) error {
+			var err error
+			user.Bio, err = cast.ToNullableString(v)
 			return err
 		},
 	}

@@ -42,11 +42,6 @@ type Action interface {
 	IsDeletingNode() bool
 }
 
-//type ActionWithFields interface{}
-
-// type ActionWithGraphQLMutation interface {
-// }
-
 type ActionInfo struct {
 	Actions          []Action
 	graphQLActionMap map[string]Action
@@ -144,15 +139,6 @@ func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
 }
 
-// type mutateObjectActionInfo struct {
-// 	Fields []*field.Field
-// 	commonActionInfo
-// }
-
-// func (action *mutateObjectActionInfo) GetFields() []*field.Field {
-// 	return action.Fields
-// }
-
 type CreateAction struct {
 	commonActionInfo
 }
@@ -213,26 +199,25 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 		}
 
 		actionInfo.addActions(parseActions(nodeName, compositeLit, fieldInfo)...)
-
-		//		spew.Dump(expr)
 	}
 
-	for _, assocEdge := range edgeInfo.Associations {
-		if assocEdge.EdgeAction == nil {
-			continue
+	if edgeInfo != nil {
+		for _, assocEdge := range edgeInfo.Associations {
+			if assocEdge.EdgeAction == nil {
+				continue
+			}
+			actionInfo.addActions(processEdgeAction(nodeName, assocEdge))
+
 		}
-		actionInfo.addActions(processEdgeAction(nodeName, assocEdge))
 
-	}
+		for _, assocGroup := range edgeInfo.AssocGroups {
+			if assocGroup.EdgeAction == nil {
+				continue
+			}
+			actionInfo.addActions(processEdgeGroupAction(nodeName, assocGroup))
 
-	for _, assocGroup := range edgeInfo.AssocGroups {
-		if assocGroup.EdgeAction == nil {
-			continue
 		}
-		actionInfo.addActions(processEdgeGroupAction(nodeName, assocGroup))
-
 	}
-	// spew.Dump(actionInfo)
 
 	return actionInfo
 }
@@ -240,19 +225,20 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 // FieldActionTemplateInfo is passed to codegeneration template (both action and graphql) to generate
 // the code needed for actions
 type FieldActionTemplateInfo struct {
-	SetterMethodName string
-	GetterMethodName string
-	InstanceName     string
-	InstanceType     string
-	FieldKey         string
-	FieldName        string
-	QuotedFieldName  string
-	QuotedDBName     string
-	InverseEdge      *edge.AssociationEdge
-	IsStatusEnum     bool
-	IsGroupID        bool
-	NodeType         string
-	Field            *field.Field
+	SetterMethodName         string
+	NullableSetterMethodName string
+	GetterMethodName         string
+	InstanceName             string
+	InstanceType             string
+	FieldKey                 string
+	FieldName                string
+	QuotedFieldName          string
+	QuotedDBName             string
+	InverseEdge              *edge.AssociationEdge
+	IsStatusEnum             bool
+	IsGroupID                bool
+	NodeType                 string
+	Field                    *field.Field
 }
 
 func GetActionMethodName(action Action) string {
@@ -276,19 +262,17 @@ func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
 
 	for _, f := range fields {
 
-		// spew.Dump(f.FieldName)
-		//		spew.Dump(f.FieldName, field.GetTypeInStructDefinition(f))
-
 		result = append(result, FieldActionTemplateInfo{
-			SetterMethodName: "Set" + f.FieldName,
-			GetterMethodName: "Get" + f.FieldName,
-			InstanceName:     strcase.ToLowerCamel(f.FieldName),
-			InstanceType:     field.GetTypeInStructDefinition(f),
-			FieldName:        f.FieldName,
-			QuotedFieldName:  strconv.Quote(f.FieldName),
-			QuotedDBName:     f.GetQuotedDBColName(),
-			InverseEdge:      f.InverseEdge,
-			Field:            f,
+			SetterMethodName:         "Set" + f.FieldName,
+			NullableSetterMethodName: "SetNilable" + f.FieldName,
+			GetterMethodName:         "Get" + f.FieldName,
+			InstanceName:             strcase.ToLowerCamel(f.FieldName),
+			InstanceType:             field.GetNonNilableType(f),
+			FieldName:                f.FieldName,
+			QuotedFieldName:          strconv.Quote(f.FieldName),
+			QuotedDBName:             f.GetQuotedDBColName(),
+			InverseEdge:              f.InverseEdge,
+			Field:                    f,
 		})
 	}
 	return result
@@ -353,4 +337,16 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 	}
 
 	return result
+}
+
+func IsRequiredField(action Action, field *field.Field) bool {
+	// for non-create actions, not required
+	if action.GetOperation() != ent.CreateAction {
+		return false
+	}
+	// for a nullable field or something with a default value, don't make it required...
+	if field.Nullable() || field.DefaultValue() != nil {
+		return false
+	}
+	return true
 }

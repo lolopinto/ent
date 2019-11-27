@@ -92,9 +92,9 @@ func (r *mutationResolver) ContactCreate(ctx context.Context, input ContactCreat
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
 		SetUserID(input.UserID).
-		SetFavorite(input.Favorite).
-		SetNumberOfCalls(input.NumberOfCalls).
-		SetPi(input.Pi).
+		SetNilableFavorite(input.Favorite).
+		SetNilableNumberOfCalls(input.NumberOfCalls).
+		SetNilablePi(input.Pi).
 		Save()
 
 	if err != nil {
@@ -168,6 +168,7 @@ func (r *mutationResolver) UserCreate(ctx context.Context, input UserCreateInput
 		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
+		SetNilableBio(input.Bio).
 		Save()
 
 	if err != nil {
@@ -207,6 +208,7 @@ func (r *mutationResolver) UserEdit(ctx context.Context, input UserEditInput) (*
 		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
+		SetNilableBio(input.Bio).
 		Save()
 
 	if err != nil {

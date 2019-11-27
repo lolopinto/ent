@@ -24,13 +24,13 @@ type Node interface {
 }
 
 type ContactCreateInput struct {
-	EmailAddress  string  `json:"emailAddress"`
-	Favorite      bool    `json:"favorite"`
-	FirstName     string  `json:"firstName"`
-	LastName      string  `json:"lastName"`
-	NumberOfCalls int     `json:"numberOfCalls"`
-	Pi            float64 `json:"pi"`
-	UserID        string  `json:"userID"`
+	EmailAddress  string   `json:"emailAddress"`
+	Favorite      *bool    `json:"favorite"`
+	FirstName     string   `json:"firstName"`
+	LastName      string   `json:"lastName"`
+	NumberOfCalls *int     `json:"numberOfCalls"`
+	Pi            *float64 `json:"pi"`
+	UserID        string   `json:"userID"`
 }
 
 type ContactCreateResponse struct {
@@ -82,9 +82,10 @@ type UserAddFriendsResponse struct {
 }
 
 type UserCreateInput struct {
-	EmailAddress string `json:"emailAddress"`
-	FirstName    string `json:"firstName"`
-	LastName     string `json:"lastName"`
+	Bio          *string `json:"bio"`
+	EmailAddress string  `json:"emailAddress"`
+	FirstName    string  `json:"firstName"`
+	LastName     string  `json:"lastName"`
 }
 
 type UserCreateResponse struct {
@@ -100,10 +101,11 @@ type UserDeleteResponse struct {
 }
 
 type UserEditInput struct {
-	EmailAddress string `json:"emailAddress"`
-	FirstName    string `json:"firstName"`
-	LastName     string `json:"lastName"`
-	UserID       string `json:"userID"`
+	Bio          *string `json:"bio"`
+	EmailAddress string  `json:"emailAddress"`
+	FirstName    string  `json:"firstName"`
+	LastName     string  `json:"lastName"`
+	UserID       string  `json:"userID"`
 }
 
 type UserEditResponse struct {

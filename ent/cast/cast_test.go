@@ -86,6 +86,37 @@ func (suite *castSuite) TestUUIDStringDBUUID() {
 	assert.Equal(suite.T(), userIDStr, userID)
 }
 
+func (suite *castSuite) TestToString() {
+	user := testingutils.CreateTestUser(suite.T())
+
+	dataMap := queryRow(suite.T(), user.ID, "users")
+	firstName, err := cast.ToString(dataMap["first_name"])
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), firstName)
+	assert.Equal(suite.T(), user.FirstName, firstName)
+}
+
+func (suite *castSuite) TestNullableToString() {
+	user := testingutils.CreateTestUser(suite.T())
+
+	dataMap := queryRow(suite.T(), user.ID, "users")
+	bio, err := cast.ToNullableString(dataMap["bio"])
+	assert.Nil(suite.T(), err)
+	assert.Nil(suite.T(), bio)
+
+	user = testingutils.EditUser(suite.T(),
+		user,
+		map[string]interface{}{
+			"bio": "awesome person",
+		})
+
+	dataMap = queryRow(suite.T(), user.ID, "users")
+	bio, err = cast.ToNullableString(dataMap["bio"])
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), bio)
+	assert.Equal(suite.T(), *bio, "awesome person")
+}
+
 func (suite *castSuite) TestToTime() {
 	user := testingutils.CreateTestUser(suite.T())
 	event := testingutils.CreateTestEvent(suite.T(), user)
@@ -104,9 +135,21 @@ func (suite *castSuite) TestToBool() {
 	contact := testingutils.CreateTestContact(suite.T(), user)
 
 	dataMap := queryRow(suite.T(), contact.ID, "contacts")
-	fave, err := cast.ToBool(dataMap["favorite"])
+	fave, err := cast.ToNullableBool(dataMap["favorite"])
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), fave, false)
+	assert.True(suite.T(), fave == nil)
+
+	contact = testingutils.EditContact(suite.T(), contact, map[string]interface{}{"favorite": true})
+	dataMap = queryRow(suite.T(), contact.ID, "contacts")
+	fave, err = cast.ToNullableBool(dataMap["favorite"])
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), *fave, true)
+
+	contact = testingutils.EditContact(suite.T(), contact, map[string]interface{}{"favorite": false})
+	dataMap = queryRow(suite.T(), contact.ID, "contacts")
+	fave, err = cast.ToNullableBool(dataMap["favorite"])
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), *fave, false)
 }
 
 func (suite *castSuite) TestToInt() {
@@ -114,9 +157,16 @@ func (suite *castSuite) TestToInt() {
 	contact := testingutils.CreateTestContact(suite.T(), user)
 
 	dataMap := queryRow(suite.T(), contact.ID, "contacts")
-	numberOfCalls, err := cast.ToInt(dataMap["number_of_calls"])
+	numberOfCalls, err := cast.ToNullableInt(dataMap["number_of_calls"])
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), numberOfCalls, 5)
+	// default value in db is 0 so doesn't actually return nil...
+	assert.Equal(suite.T(), *numberOfCalls, 0)
+
+	contact = testingutils.EditContact(suite.T(), contact, map[string]interface{}{"number_of_calls": 5})
+	dataMap = queryRow(suite.T(), contact.ID, "contacts")
+	numberOfCalls, err = cast.ToNullableInt(dataMap["number_of_calls"])
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), *numberOfCalls, 5)
 }
 
 func (suite *castSuite) TestToFloat() {
@@ -124,10 +174,15 @@ func (suite *castSuite) TestToFloat() {
 	contact := testingutils.CreateTestContact(suite.T(), user)
 
 	dataMap := queryRow(suite.T(), contact.ID, "contacts")
-	pi, err := cast.ToFloat(dataMap["pi"])
+	pi, err := cast.ToNullableFloat(dataMap["pi"])
 	assert.Nil(suite.T(), err)
-	// float64 default.
-	assert.Equal(suite.T(), pi, 3.14)
+	assert.True(suite.T(), pi == nil)
+
+	contact = testingutils.EditContact(suite.T(), contact, map[string]interface{}{"pi": 3.14})
+	dataMap = queryRow(suite.T(), contact.ID, "contacts")
+	pi, err = cast.ToNullableFloat(dataMap["pi"])
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), *pi, 3.14)
 }
 
 func TestGeneratedAction(t *testing.T) {

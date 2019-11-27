@@ -2,18 +2,20 @@ package field
 
 import (
 	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/lolopinto/ent/internal/parsehelper"
+	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFieldInfo(t *testing.T) {
 	fieldInfo := getTestFieldInfo(t, "AccountConfig")
 
 	length := len(fieldInfo.Fields)
-	if length != 8 {
-		t.Errorf("expected %d fields generated. got %d instead", 8, length)
-	}
+	expectedLength := 11
+	assert.Equal(t, expectedLength, len(fieldInfo.Fields), "expected %d fields generated. got %d instead", expectedLength, length)
 }
 
 func TestIDField(t *testing.T) {
@@ -28,6 +30,7 @@ func TestIDField(t *testing.T) {
 			exposeToGraphQL:       true,
 			topLevelStructField:   false,
 			dbColumn:              true,
+			nullable:              false,
 		},
 		"id",
 	)
@@ -47,6 +50,7 @@ func TestCreatedAtField(t *testing.T) {
 			exposeToGraphQL:       false,
 			topLevelStructField:   false,
 			dbColumn:              true,
+			nullable:              false,
 		},
 		"createdAt",
 	)
@@ -66,6 +70,7 @@ func TestUpdatedAtField(t *testing.T) {
 			exposeToGraphQL:       false,
 			topLevelStructField:   false,
 			dbColumn:              true,
+			nullable:              false,
 		},
 		"updatedAt",
 	)
@@ -85,6 +90,7 @@ func TestDefaultGraphQLField(t *testing.T) {
 			exposeToGraphQL:       true,
 			topLevelStructField:   true,
 			dbColumn:              true,
+			nullable:              false,
 		},
 		"firstName",
 	)
@@ -102,12 +108,14 @@ func TestOverridenGraphQLField(t *testing.T) {
 			exposeToGraphQL:       true,
 			topLevelStructField:   true,
 			dbColumn:              true,
+			nullable:              false,
 		},
 		"lastLoginTime",
 	)
 }
 
 func TestHiddenGraphQLField(t *testing.T) {
+	// Also tests default value...
 	f := getTestFieldByName(t, "AccountConfig", "NumberOfLogins")
 
 	testField(
@@ -119,6 +127,8 @@ func TestHiddenGraphQLField(t *testing.T) {
 			exposeToGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
+			nullable:              false,
+			defaultValue:          "0",
 		},
 		"numberOfLogins",
 	)
@@ -132,7 +142,28 @@ func TestTypesForStringField(t *testing.T) {
 	testStructType(t, f, "string")
 }
 
-func TestTypesForIntergerField(t *testing.T) {
+func TestNullableStringField(t *testing.T) {
+	f := getTestFieldByName(t, "AccountConfig", "Bio")
+
+	testField(
+		t,
+		f,
+		&Field{
+			FieldName:             "Bio",
+			singleFieldPrimaryKey: false,
+			exposeToGraphQL:       true,
+			topLevelStructField:   true,
+			dbColumn:              true,
+			nullable:              true,
+		},
+		"bio",
+	)
+	testDBType(t, f, "sa.Text()")
+	testGraphQLType(t, f, "String")
+	testStructType(t, f, "*string")
+}
+
+func TestTypesForIntegerField(t *testing.T) {
 	f := getTestFieldByName(t, "AccountConfig", "NumberOfLogins")
 
 	testDBType(t, f, "sa.Integer()")
@@ -148,12 +179,54 @@ func TestTypesForTimeField(t *testing.T) {
 	testStructType(t, f, "time.Time")
 }
 
+func TestNullableTimeField(t *testing.T) {
+	f := getTestFieldByName(t, "AccountConfig", "DateOfBirth")
+
+	testField(
+		t,
+		f,
+		&Field{
+			FieldName:             "DateOfBirth",
+			singleFieldPrimaryKey: false,
+			exposeToGraphQL:       true,
+			topLevelStructField:   true,
+			dbColumn:              true,
+			nullable:              true,
+		},
+		"dateOfBirth",
+	)
+	testDBType(t, f, "sa.TIMESTAMP()")
+	testGraphQLType(t, f, "Time")
+	testStructType(t, f, "*time.Time")
+}
+
 func TestTypesForBoolField(t *testing.T) {
 	f := getTestFieldByName(t, "TodoConfig", "Completed")
 
 	testDBType(t, f, "sa.Boolean()")
 	testGraphQLType(t, f, "Boolean!")
 	testStructType(t, f, "bool")
+}
+
+func TestNullableBoolField(t *testing.T) {
+	f := getTestFieldByName(t, "AccountConfig", "ShowBioOnProfile")
+
+	testField(
+		t,
+		f,
+		&Field{
+			FieldName:             "ShowBioOnProfile",
+			singleFieldPrimaryKey: false,
+			exposeToGraphQL:       true,
+			topLevelStructField:   true,
+			dbColumn:              true,
+			nullable:              true,
+		},
+		"showBioOnProfile",
+	)
+	testDBType(t, f, "sa.Boolean()")
+	testGraphQLType(t, f, "Boolean")
+	testStructType(t, f, "*bool")
 }
 
 func TestTypesForCustomStringField(t *testing.T) {
@@ -179,130 +252,169 @@ func TestOverridenDBField(t *testing.T) {
 //func TestDefaultStructType(t *testing.)
 
 func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName string) {
-	//	expectedFieldName string, primaryKey bool, dbColumn bool, structField bool) {
-	if f.FieldName != expFieldProps.FieldName {
-		t.Errorf(
-			"field name was not as expected, expected %s, got %s",
-			expFieldProps.FieldName,
-			f.FieldName,
-		)
-	}
+	assert.Equal(
+		t,
+		expFieldProps.FieldName,
+		f.FieldName,
+		"field name was not as expected, expected %s, got %s",
+		expFieldProps.FieldName,
+		f.FieldName,
+	)
 
-	if f.SingleFieldPrimaryKey() != expFieldProps.singleFieldPrimaryKey {
-		t.Errorf(
-			"expected primary key to be %v, got %v instead",
-			expFieldProps.singleFieldPrimaryKey,
-			f.SingleFieldPrimaryKey(),
-		)
-	}
+	assert.Equal(
+		t,
+		expFieldProps.singleFieldPrimaryKey,
+		f.SingleFieldPrimaryKey(),
+		"expected primary key to be %v, got %v instead",
+		expFieldProps.singleFieldPrimaryKey,
+		f.SingleFieldPrimaryKey(),
+	)
 
 	expose := f.ExposeToGraphQL()
-	if expose != expFieldProps.exposeToGraphQL {
-		t.Errorf(
-			"expected field exposed to graphql status to return %v, got %v instead",
-			expFieldProps.exposeToGraphQL,
-			expose,
-		)
-	}
+	assert.Equal(
+		t,
+		expFieldProps.exposeToGraphQL,
+		expose,
+		"expected field exposed to graphql status to return %v, got %v instead",
+		expFieldProps.exposeToGraphQL,
+		expose,
+	)
 
 	fieldName := f.GetGraphQLName()
-	if fieldName != expectedGraphQLFieldName {
-		t.Errorf(
-			"expected graphql field name to be %s, got %s instead",
-			expectedGraphQLFieldName,
-			fieldName,
-		)
-	}
+	assert.Equal(
+		t,
+		expectedGraphQLFieldName,
+		fieldName,
+		"expected graphql field name to be %s, got %s instead",
+		expectedGraphQLFieldName,
+		fieldName,
+	)
 
 	structField := f.TopLevelStructField()
-	if structField != expFieldProps.topLevelStructField {
-		t.Errorf(
-			"expected top level struct field to be %v, got %v instead",
-			structField,
-			expFieldProps.topLevelStructField,
-		)
-	}
+	assert.Equal(
+		t,
+		expFieldProps.topLevelStructField,
+		structField,
+		"expected top level struct field to be %v, got %v instead",
+		expFieldProps.topLevelStructField,
+		structField,
+	)
 
 	dbColumn := f.CreateDBColumn()
-	if dbColumn != expFieldProps.dbColumn {
-		t.Errorf(
-			"expected create db column for field to be %v, got %v instead",
-			dbColumn,
-			expFieldProps.dbColumn,
-		)
-	}
+	assert.Equal(
+		t,
+		expFieldProps.dbColumn,
+		dbColumn,
+		"expected create db column for field to be %v, got %v instead",
+		expFieldProps.dbColumn,
+		dbColumn,
+	)
+
+	assert.Equal(
+		t,
+		expFieldProps.nullable,
+		f.Nullable(),
+		"expected nullable value for field to be %v, got %v instead",
+		expFieldProps.nullable,
+		f.Nullable(),
+	)
+
+	assert.Equal(
+		t,
+		expFieldProps.defaultValue,
+		f.DefaultValue(),
+		"expected default value for field to be %v, got %v instead",
+		expFieldProps.DefaultValue(),
+		f.DefaultValue(),
+	)
 }
 
 func testDBType(t *testing.T, f *Field, expectedType string) {
-	if f.GetDbTypeForField() != expectedType {
-		t.Errorf(
-			"expected db type for field %s to be %s, got %s instead",
-			f.FieldName,
-			expectedType,
-			f.GetDbTypeForField(),
-		)
-	}
+	assert.Equal(
+		t,
+		expectedType,
+		f.GetDbTypeForField(),
+		"expected db type for field %s to be %s, got %s instead",
+		f.FieldName,
+		expectedType,
+		f.GetDbTypeForField(),
+	)
 }
 
 func testGraphQLType(t *testing.T, f *Field, expectedType string) {
-	if f.GetGraphQLTypeForField() != expectedType {
-		t.Errorf(
-			"expected graphql type for field %s to be %s, got %s instead",
-			f.FieldName,
-			expectedType,
-			f.GetGraphQLTypeForField(),
-		)
-	}
+	assert.Equal(
+		t,
+		expectedType,
+		f.GetGraphQLTypeForField(),
+
+		"expected graphql type for field %s to be %s, got %s instead",
+		f.FieldName,
+		expectedType,
+		f.GetGraphQLTypeForField(),
+	)
 }
 
 func testStructType(t *testing.T, f *Field, expectedType string) {
-	typ := GetTypeInStructDefinition(f)
-	if typ != expectedType {
-		t.Errorf(
-			"expected type in struct definition for field %s to be %s, got %s instead",
-			f.fieldType,
-			expectedType,
-			typ,
-		)
-	}
+	typ := GetNilableTypeInStructDefinition(f)
+	assert.Equal(
+		t,
+		expectedType,
+		typ,
+		"expected type in struct definition for field %s to be %s, got %s instead",
+		f.fieldType,
+		expectedType,
+		typ,
+	)
 }
 
 func testColName(t *testing.T, f *Field, expectedColName string) {
-	if f.GetDbColName() != expectedColName {
-		t.Errorf(
-			"expected col name for field %s to be %s, got %s instead",
-			f.FieldName,
-			expectedColName,
-			f.GetDbColName(),
-		)
-	}
-	if f.GetQuotedDBColName() != strconv.Quote(expectedColName) {
-		t.Errorf(
-			"expected quoted col name for field %s to be %s, got %s instead",
-			f.FieldName,
-			strconv.Quote(expectedColName),
-			f.GetQuotedDBColName(),
-		)
-	}
+	assert.Equal(
+		t,
+		expectedColName,
+		f.GetDbColName(),
+		"expected col name for field %s to be %s, got %s instead",
+		f.FieldName,
+		expectedColName,
+		f.GetDbColName(),
+	)
+
+	assert.Equal(
+		t,
+		strconv.Quote(expectedColName),
+		f.GetQuotedDBColName(),
+		"expected quoted col name for field %s to be %s, got %s instead",
+		f.FieldName,
+		strconv.Quote(expectedColName),
+		f.GetQuotedDBColName(),
+	)
 }
 
-func getTestFieldInfo(t *testing.T, configName string) *FieldInfo {
-	data := parseConfigFileForStruct(t)
-	fieldInfo := GetFieldInfoForStruct(data.StructMap[configName], data.Fset, data.Info)
+var r *testsync.RunOnce
+var once sync.Once
 
-	if fieldInfo == nil {
-		t.Errorf("invalid fieldInfo retrieved")
-	}
-	return fieldInfo
+func getFieldInfoMap() *testsync.RunOnce {
+	once.Do(func() {
+		r = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
+			data := parsehelper.ParseFilesForTest(t, parsehelper.ParseFuncs(parsehelper.ParseStruct))
+
+			fieldInfo := GetFieldInfoForStruct(data.StructMap[configName], data.Fset, data.Info)
+
+			assert.NotNil(t, fieldInfo, "invalid fieldInfo retrieved")
+			return fieldInfo
+		})
+	})
+	return r
+}
+
+// in an ideal world, this is also in asttester but code duplication here is fine for now
+// don't wanna deal with untangling the circular dependencies by making this package field_test
+// because I like using private field Info to indicate expected behavior...
+// these 2 copied into action_test.go for now...
+func getTestFieldInfo(t *testing.T, configName string) *FieldInfo {
+	return getFieldInfoMap().Get(t, configName).(*FieldInfo)
 }
 
 func getTestFieldByName(t *testing.T, configName string, fieldName string) *Field {
 	fieldInfo := getTestFieldInfo(t, configName)
 	return fieldInfo.GetFieldByName(fieldName)
-}
-
-func parseConfigFileForStruct(t *testing.T) *parsehelper.FileConfigData {
-	data := parsehelper.ParseFilesForTest(t)
-	data.ParseStructs(t)
-	return data
 }

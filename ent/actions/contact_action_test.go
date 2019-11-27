@@ -51,9 +51,9 @@ func (a *createContactAction) getFields() map[string]interface{} {
 		m["UserID"] = a.userID
 	}
 	// TODO default values...
-	m["Favorite"] = false
-	m["Pi"] = 3.14
-	m["NumberOfCalls"] = 5
+	// m["Favorite"] = false
+	// m["Pi"] = 3.14
+	// m["NumberOfCalls"] = 5
 	return m
 }
 

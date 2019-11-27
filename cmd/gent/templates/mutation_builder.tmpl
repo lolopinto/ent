@@ -4,6 +4,17 @@
 {{ reserveImport "github.com/lolopinto/ent/ent/actions" }}
 {{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
 
+{{define "idField"}}
+	{{ $field := . -}}
+  {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
+  {{ if $field.Field.IDField -}}
+  {{/* TODO probably want a GetPlaceholderValue also... */}}
+    if b.{{$fieldInstanceName}}Builder != nil {
+      return b.{{$fieldInstanceName}}Builder.GetPlaceholderID()
+    }
+  {{end -}}
+{{end}}
+
 {{with .CodePath -}}
 	{{reserveImport .PathToModels}}
   {{reserveImport .PathToConfigs}}
@@ -69,8 +80,8 @@ func NewMutationBuilder(
 }
 
 {{ range $field := $fieldInfos -}}
-func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$builderName}} {
   {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
+func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$builderName}} {
   b.{{$fieldInstanceName}} = &{{$field.InstanceName}}
   b.builder.SetField("{{$field.FieldName}}", {{$field.InstanceName}})
   {{$inverseEdge := $field.InverseEdge -}}
@@ -96,21 +107,45 @@ func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {
   }
 
   {{end -}}
+
+  {{ if $field.Field.Nullable -}}
+  func (b *{{$builderName}}) {{$field.NullableSetterMethodName}}({{$field.InstanceName}} *{{$field.InstanceType}}) *{{$builderName}} {
+    {{/* TODO need to eventually have the builder know if this was set to null */ -}}
+    b.{{$fieldInstanceName}} = {{$field.InstanceName}}
+    if {{$field.InstanceName}} == nil {
+      b.builder.SetField("{{$field.FieldName}}", nil)
+    } else {
+      b.builder.SetField("{{$field.FieldName}}", *{{$field.InstanceName}})
+    }
+    {{$inverseEdge := $field.InverseEdge -}}
+    {{ if $inverseEdge -}} 
+      {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
+      {{/* TODO time and data support later? may not make sense for this... */ -}}  
+      b.builder.AddInboundEdge(models.{{$inverseEdge.EdgeConst}}, *{{$field.InstanceName}}, models.{{$edgeNodeInfo.NodeType}})
+    {{ end -}}
+    return b
+  }
+
+  {{end -}}
 {{end -}}
 
 {{ range $field := $fieldInfos -}}
-func (b *{{$builderName}}) {{$field.GetterMethodName}}() {{$field.InstanceType}} {
-  {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
-  if b.{{$fieldInstanceName}} == nil {
-    return {{$field.Field.GetZeroValue}}
-  }
-  {{ if $field.Field.IDField -}}
-  {{/* TODO probably want a GetPlaceholderValue also... */}}
-    if b.{{$fieldInstanceName}}Builder != nil {
-      return b.{{$fieldInstanceName}}Builder.GetPlaceholderID()
+{{$fieldInstanceName := $field.Field.InstanceFieldName -}}
+{{ if $field.Field.Nullable -}}
+  func (b *{{$builderName}}) {{$field.GetterMethodName}}() *{{$field.InstanceType}} {
+    if b.{{$fieldInstanceName}} == nil {
+      return nil
     }
-  {{end -}}
-  return *b.{{$fieldInstanceName}}
+    {{- template "idField" $field -}}
+    return b.{{$fieldInstanceName}}
+{{ else -}}
+  func (b *{{$builderName}}) {{$field.GetterMethodName}}() {{$field.InstanceType}} {
+    if b.{{$fieldInstanceName}} == nil {
+      return {{$field.Field.GetZeroValue}}
+    }
+    {{- template "idField" $field -}}
+    return *b.{{$fieldInstanceName}}
+{{ end -}}
 }
 
 {{ if $field.Field.IDField -}}

@@ -65,6 +65,8 @@ type Field struct {
 	fieldType           FieldType  // this is the underlying type for the field for graphql, db, etc
 	dbColumn            bool
 	exposeToGraphQL     bool
+	nullable            bool
+	defaultValue        interface{}
 	exposeToActions     bool // TODO: figure out a better way for this long term. this is to allow password be hidden from reads but allowed in writes
 	// once password is a top level configurable type, it can control this e.g. exposeToCreate mutation yes!,
 	// expose to edit mutation no! obviously no delete. but then can be added in custom mutations e.g. editPassword()
@@ -85,7 +87,15 @@ func (f *Field) GetQuotedDBColName() string {
 	return f.tagMap["db"]
 }
 
-func GetTypeInStructDefinition(f *Field) string {
+func GetNilableTypeInStructDefinition(f *Field) string {
+	structType := GetNonNilableType(f)
+	if !f.Nullable() {
+		return structType
+	}
+	return "*" + structType
+}
+
+func GetNonNilableType(f *Field) string {
 	override, ok := f.fieldType.(FieldWithOverridenStructType)
 	if ok {
 		return override.GetStructType()
@@ -98,10 +108,16 @@ func (f *Field) GetDbTypeForField() string {
 }
 
 func (f *Field) GetGraphQLTypeForField() string {
+	if f.Nullable() {
+		return f.fieldType.GetNullableGraphQLType()
+	}
 	return f.fieldType.GetGraphQLType()
 }
 
 func (f *Field) GetCastToMethod() string {
+	if f.Nullable() {
+		return f.fieldType.GetNullableCastToMethod()
+	}
 	return f.fieldType.GetCastToMethod()
 }
 
@@ -174,6 +190,14 @@ func (f *Field) GetUnquotedKeyFromTag(key string) string {
 	return rawVal
 }
 
+func (f *Field) Nullable() bool {
+	return f.nullable
+}
+
+func (f *Field) DefaultValue() interface{} {
+	return f.defaultValue
+}
+
 func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.Info) *FieldInfo {
 	fieldInfo := newFieldInfo()
 
@@ -222,6 +246,12 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 
 		tagStr, tagMap := getTagInfo(fieldName, f.Tag)
 
+		var defaultValue interface{}
+		if tagMap["default"] != "" {
+			var err error
+			defaultValue, err = strconv.Unquote(tagMap["default"])
+			util.Die(err)
+		}
 		entType := info.TypeOf(f.Type)
 		fieldInfo.addField(&Field{
 			FieldName:           fieldName,
@@ -233,6 +263,8 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 			dbColumn:            true,
 			exposeToGraphQL:     true,
 			exposeToActions:     true,
+			nullable:            tagMap["nullable"] == strconv.Quote("true"),
+			defaultValue:        defaultValue,
 		})
 	}
 

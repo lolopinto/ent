@@ -6,6 +6,9 @@ from alembic.migration import MigrationContext
 from alembic.autogenerate import produce_migrations
 from alembic.autogenerate import render_python_code
 
+from sqlalchemy.sql.schema import DefaultClause
+from sqlalchemy.sql.elements import TextClause
+
 from . import command
 from . import config
 from . import edge_op
@@ -24,9 +27,11 @@ class Runner(object):
 
     self.mc = MigrationContext.configure(
       connection=self.connection, 
+      # note that any change here also needs a comparable change in env.py
       opts={
         "compare_type": Runner.compare_type,
         "include_object": Runner.include_object,
+        "compare_server_default": Runner.compare_server_default,
       },
     )
     self.cmd = command.Command(self.connection, self.schema_path)
@@ -86,14 +91,56 @@ class Runner(object):
         return True
 
 
+  @classmethod
+  def compare_server_default(cls, context, inspected_column, metadata_column, inspected_default, metadata_default, rendered_metadata_default):
+    # let's just do simple comparison for now. 
+    # Things may get more complicated in the future but this works for now
+    if cls.get_clause_text(inspected_default) != cls.get_clause_text(metadata_default):
+      return True
+    return False
+
+
+  @classmethod
+  def render_server_default(cls, type, server_default, autogen_context):
+    if type != 'server_default':
+      return False
+
+    # For some reason, the default rendering is not doing this correctly, so we need to 
+    # customize the rendering so that this is handled correctly and it adds the sa.text part
+    if isinstance(server_default, TextClause):
+      return "sa.text('%s')" % (server_default.text)
+    return False
+
+
+  @classmethod
+  def get_clause_text(cls, server_default):
+    if server_default is None:
+      return server_default
+    
+    def strip_default(arg):
+      # return the underlying string instead of quoted 
+      return str(arg).strip("'")
+
+    if isinstance(server_default, TextClause):
+      return strip_default(server_default.text)
+
+    if isinstance(server_default, DefaultClause):
+      return strip_default(server_default.arg)
+
+    return strip_default(server_default)
+
+
   def get_schema_path(self):
     return self.schema_path
+
 
   def get_metadata(self):
     return self.metadata
 
+
   def get_connection(self):
     return config.connection
+
 
   def compute_changes(self):
     migrations = produce_migrations(self.mc, config.metadata)
@@ -108,6 +155,7 @@ class Runner(object):
     else:
       self._apply_changes(diff)
 
+
   def _apply_changes(self, diff):
     #pprint.pprint(diff, indent=2, width=20)
 
@@ -119,6 +167,7 @@ class Runner(object):
     self.revision(diff)
     self.upgrade()
 
+
   def revision_message(self, diff=None):
     if diff is None:
       migrations = produce_migrations(self.mc, config.metadata)
@@ -126,9 +175,16 @@ class Runner(object):
     
     def alter_column_op(op):
       if op.modify_type is not None:
-        return 'modify type from %s to %s' % (op.existing_type, op.modify_type)
+        return 'modify column %s type from %s to %s' % (op.column_name, op.existing_type, op.modify_type)
+      elif op.modify_nullable is not None:
+        return 'modify nullable value of column %s from %s to %s' % (op.column_name, op.existing_nullable, op.modify_nullable)
+      elif op.modify_server_default is not None:
+        return 'modify server_default value of column %s from %s to %s' % (
+          op.column_name, 
+          Runner.get_clause_text(op.existing_server_default), 
+          Runner.get_clause_text(op.modify_server_default))
       else:
-        # TODO modify_nullable, modify_comment, modify_server_default, modify_name all valid options
+        # TODO modify_comment, modify_name all valid options
         return None
     
     class_name_map = {

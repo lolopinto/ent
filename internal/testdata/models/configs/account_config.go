@@ -8,11 +8,14 @@ import (
 
 // AccountConfig is the config for test accounts in test land
 type AccountConfig struct {
-	FirstName      string
-	LastName       string
-	PhoneNumber    string    `unique:"true"`
-	NumberOfLogins int       `graphql:"_"`
-	LastLoginAt    time.Time `graphql:"lastLoginTime" db:"last_login_time"`
+	FirstName        string
+	LastName         string
+	PhoneNumber      string    `unique:"true"`
+	NumberOfLogins   int       `default:"0" graphql:"_"`
+	LastLoginAt      time.Time `graphql:"lastLoginTime" db:"last_login_time"`
+	Bio              string    `nullable:"true"`
+	DateOfBirth      time.Time `nullable:"true"`
+	ShowBioOnProfile bool      `nullable:"true"`
 }
 
 // GetTableName returns the underyling database table the account model's data is stored
@@ -57,6 +60,17 @@ func (config *AccountConfig) GetEdges() map[string]interface{} {
 				CustomActionName:  "AccountAddFoldersAction", // EventAddInviteesAction is default
 				CustomGraphQLName: "accountFolderAdd",
 			},
+		},
+	}
+}
+
+func (config *AccountConfig) GetActions() []*ent.ActionConfig {
+	return []*ent.ActionConfig{
+		&ent.ActionConfig{
+			Action: ent.CreateAction,
+		},
+		&ent.ActionConfig{
+			Action: ent.EditAction,
 		},
 	}
 }
