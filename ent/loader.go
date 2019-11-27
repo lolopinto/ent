@@ -384,6 +384,7 @@ type loadEdgesByType struct {
 	edgeType   EdgeType
 	edges      []*Edge
 	outputID2s bool
+	options    []func(*LoadEdgeConfig)
 }
 
 func (l *loadEdgesByType) AbortEarly() bool {
@@ -401,6 +402,11 @@ func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
 	// ORDER BY time DESC default
 	// we need offset, limit eventuall
 
+	cfg := &LoadEdgeConfig{}
+	for _, opt := range l.options {
+		opt(cfg)
+	}
+
 	return &sqlBuilder{
 		colsString: "*",
 		tableName:  edgeData.EdgeTable,
@@ -411,6 +417,7 @@ func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
 			l.edgeType,
 		},
 		order: "time DESC",
+		limit: cfg.limit,
 	}, nil
 }
 

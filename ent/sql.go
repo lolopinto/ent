@@ -19,6 +19,7 @@ type sqlBuilder struct {
 	order      string
 	rawQuery   string
 	rawValues  []interface{}
+	limit      *int
 }
 
 func (s *sqlBuilder) in(field string, args []interface{}) *sqlBuilder {
@@ -92,6 +93,10 @@ func (s *sqlBuilder) getQuery() string {
 	if s.order != "" {
 		formatSb.WriteString(" ORDER BY {order}")
 		parts = append(parts, "{order}", s.order)
+	}
+	if s.limit != nil {
+		formatSb.WriteString(" LIMIT {limit}")
+		parts = append(parts, "{limit}", fmt.Sprintf("%d", *s.limit))
 	}
 
 	r := strings.NewReplacer(parts...)
