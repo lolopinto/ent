@@ -49,6 +49,8 @@ type AssociationEdge struct {
 	//InverseEdge *AssociationEdge
 	InverseEdge *InverseAssocEdge
 	Symmetric   bool
+	// Unique indicates that there's only one instance of this edge
+	Unique bool
 
 	// TODO custom table
 	// TODO generate the edge and other fun things later

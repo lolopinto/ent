@@ -140,6 +140,7 @@ type AssociationEdge struct {
 	commonEdgeInfo
 	EdgeConst     string
 	Symmetric     bool
+	Unique        bool
 	InverseEdge   *InverseAssocEdge
 	IsInverseEdge bool
 	TableName     string // TableName will be gotten from the GroupName if part of a group or derived from each edge
@@ -436,6 +437,10 @@ func getParsedAssociationEdgeItem(containingPackageName, edgeName string, lit *a
 
 	g.AddItem("Symmetric", func(expr ast.Expr, keyValueExprValue ast.Expr) {
 		assocEdge.Symmetric = astparser.GetBooleanValueFromExpr(keyValueExprValue)
+	})
+
+	g.AddItem("Unique", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		assocEdge.Unique = astparser.GetBooleanValueFromExpr(keyValueExprValue)
 	})
 
 	g.AddItem("InverseEdge", func(expr ast.Expr, keyValueExprValue ast.Expr) {

@@ -20,6 +20,10 @@ func (config *EventConfig) GetTableName() string {
 
 func (config *EventConfig) GetEdges() ent.EdgeMap {
 	return ent.EdgeMap{
+		"Creator": &ent.AssociationEdge{
+			EntConfig: AccountConfig{},
+			Unique:    true,
+		},
 		"Rsvps": ent.AssociationEdgeGroup{
 			GroupStatusName: "RsvpStatus",
 			EdgeAction: &ent.EdgeActionConfig{
