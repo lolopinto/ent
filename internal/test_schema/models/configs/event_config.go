@@ -29,9 +29,9 @@ func (config *EventConfig) GetEdges() ent.EdgeMap {
 		"Hosts": &ent.AssociationEdge{
 			EntConfig: UserConfig{},
 		},
-		// TODO singular edge
 		"Creator": &ent.AssociationEdge{
 			EntConfig: UserConfig{},
+			Unique:    true,
 		},
 		"Rsvps": ent.AssociationEdgeGroup{
 			GroupStatusName: "RsvpStatus",

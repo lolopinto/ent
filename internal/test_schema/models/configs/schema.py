@@ -66,6 +66,7 @@ sa.Table("event_creator_edges", metadata,
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="event_creator_edges_id1_edge_type_id2_pkey"),
+    sa.UniqueConstraint("id1", "edge_type", name="event_creator_edges_unique_id1_edge_type"),
 )
    
 sa.Table("event_hosts_edges", metadata,
