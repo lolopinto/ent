@@ -45,11 +45,11 @@ const (
 // Event represents the `Event` model
 type Event struct {
 	ent.Node
-	Name      string    `db:"name"`
-	UserID    string    `db:"user_id"`
-	StartTime time.Time `db:"start_time"`
-	EndTime   time.Time `db:"end_time"`
-	Location  string    `db:"location"`
+	Name      string     `db:"name"`
+	UserID    string     `db:"user_id"`
+	StartTime time.Time  `db:"start_time"`
+	EndTime   *time.Time `db:"end_time"`
+	Location  string     `db:"location"`
 	Viewer    viewer.ViewerContext
 }
 
@@ -433,7 +433,7 @@ func (event *Event) DBFields() ent.DBFields {
 		},
 		"end_time": func(v interface{}) error {
 			var err error
-			event.EndTime, err = cast.ToTime(v)
+			event.EndTime, err = cast.ToNullableTime(v)
 			return err
 		},
 		"location": func(v interface{}) error {

@@ -491,6 +491,7 @@ func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeDa
 	s.addForeignKeyConstraint(f, nodeData, col, constraints)
 	s.addUniqueConstraint(f, nodeData, col, constraints)
 	s.addIndexConstraint(f, nodeData, col, constraints)
+
 	return col
 }
 

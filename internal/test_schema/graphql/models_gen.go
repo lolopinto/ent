@@ -38,11 +38,11 @@ type ContactCreateResponse struct {
 }
 
 type EventCreateInput struct {
-	EndTime   time.Time `json:"endTime"`
-	Location  string    `json:"location"`
-	Name      string    `json:"name"`
-	StartTime time.Time `json:"startTime"`
-	UserID    string    `json:"userID"`
+	EndTime   *time.Time `json:"endTime"`
+	Location  string     `json:"location"`
+	Name      string     `json:"name"`
+	StartTime time.Time  `json:"startTime"`
+	UserID    string     `json:"userID"`
 }
 
 type EventCreateResponse struct {

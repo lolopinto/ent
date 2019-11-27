@@ -20,7 +20,7 @@ func VerifyEventObj(t *testing.T, event *models.Event, user *models.User) {
 	assert.Equal(t, event.Name, "Fun event")
 	assert.Equal(t, event.UserID, user.ID)
 	assert.NotNil(t, event.StartTime)
-	assert.NotNil(t, event.EndTime)
+	assert.Nil(t, event.EndTime)
 	assert.Equal(t, event.Location, "fun location!")
 }
 

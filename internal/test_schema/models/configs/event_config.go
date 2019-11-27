@@ -10,7 +10,7 @@ type EventConfig struct {
 	Name      string
 	UserID    string
 	StartTime time.Time
-	EndTime   time.Time // optional but we don't have that yet...
+	EndTime   time.Time `nullable:"true"`
 	Location  string
 }
 

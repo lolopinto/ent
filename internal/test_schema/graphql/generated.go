@@ -824,7 +824,7 @@ type Event implements Node {
     attending: [User!]!
     creator: [User!]!
     declined: [User!]!
-    endTime: Time!
+    endTime: Time
     hosts: [User!]!
     id: ID!
     invited: [User!]!
@@ -836,7 +836,7 @@ type Event implements Node {
 }
 
 input EventCreateInput {
-    endTime: Time!
+    endTime: Time
     location: String!
     name: String!
     startTime: Time!
@@ -1770,15 +1770,12 @@ func (ec *executionContext) _Event_endTime(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(time.Time)
+	res := resTmp.(*time.Time)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Event_hosts(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
@@ -4740,7 +4737,7 @@ func (ec *executionContext) unmarshalInputEventCreateInput(ctx context.Context, 
 		switch k {
 		case "endTime":
 			var err error
-			it.EndTime, err = ec.unmarshalNTime2timeᚐTime(ctx, v)
+			it.EndTime, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5217,9 +5214,6 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 			})
 		case "endTime":
 			out.Values[i] = ec._Event_endTime(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
 		case "hosts":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -6907,6 +6901,29 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return ec.marshalOString2string(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalOTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
+	return graphql.UnmarshalTime(v)
+}
+
+func (ec *executionContext) marshalOTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
+	return graphql.MarshalTime(v)
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOTime2timeᚐTime(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec.marshalOTime2timeᚐTime(ctx, sel, *v)
 }
 
 func (ec *executionContext) marshalOUser2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {

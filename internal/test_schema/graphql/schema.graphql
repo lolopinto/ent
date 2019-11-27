@@ -45,7 +45,7 @@ type Event implements Node {
     attending: [User!]!
     creator: [User!]!
     declined: [User!]!
-    endTime: Time!
+    endTime: Time
     hosts: [User!]!
     id: ID!
     invited: [User!]!
@@ -57,7 +57,7 @@ type Event implements Node {
 }
 
 input EventCreateInput {
-    endTime: Time!
+    endTime: Time
     location: String!
     name: String!
     startTime: Time!

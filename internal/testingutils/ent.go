@@ -44,6 +44,12 @@ func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.Us
 	return SaveEvent(t, b)
 }
 
+func EditEvent(t *testing.T, event *models.Event, fields map[string]interface{}) *models.Event {
+	b := GetEventBuilder(ent.EditOperation, event)
+	setFields(b, fields)
+	return SaveEvent(t, b)
+}
+
 func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.User) *models.Contact {
 	b := GetContactBuilder(ent.InsertOperation, nil)
 
@@ -258,7 +264,6 @@ func GetDefaultEventFieldsUserID(userID string) map[string]interface{} {
 		"Name":      "Fun event",
 		"UserID":    userID,
 		"StartTime": time.Now(),
-		"EndTime":   time.Now().Add(time.Hour * 24 * 3),
 		"Location":  "fun location!",
 	}
 }

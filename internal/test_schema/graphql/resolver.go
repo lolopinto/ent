@@ -111,7 +111,7 @@ func (r *mutationResolver) EventCreate(ctx context.Context, input EventCreateInp
 		SetName(input.Name).
 		SetUserID(input.UserID).
 		SetStartTime(input.StartTime).
-		SetEndTime(input.EndTime).
+		SetNilableEndTime(input.EndTime).
 		SetLocation(input.Location).
 		Save()
 

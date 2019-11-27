@@ -130,6 +130,28 @@ func (suite *castSuite) TestToTime() {
 	assert.False(suite.T(), t.After(time.Now().Add(-2*time.Second)))
 }
 
+func (suite *castSuite) TestNullableToTime() {
+	user := testingutils.CreateTestUser(suite.T())
+	event := testingutils.CreateTestEvent(suite.T(), user)
+
+	dataMap := queryRow(suite.T(), event.ID, "events")
+	t, err := cast.ToNullableTime(dataMap["end_time"])
+	assert.Nil(suite.T(), err)
+	assert.True(suite.T(), t == nil)
+
+	startTime, err := cast.ToTime(dataMap["start_time"])
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), startTime)
+	event = testingutils.EditEvent(suite.T(), event, map[string]interface{}{"end_time": startTime.Add(time.Hour * 24 * 3)})
+
+	dataMap = queryRow(suite.T(), event.ID, "events")
+
+	t, err = cast.ToNullableTime(dataMap["end_time"])
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), t)
+	assert.True(suite.T(), t.Equal(startTime.Add(time.Hour*24*3)))
+}
+
 func (suite *castSuite) TestToBool() {
 	user := testingutils.CreateTestUser(suite.T())
 	contact := testingutils.CreateTestContact(suite.T(), user)

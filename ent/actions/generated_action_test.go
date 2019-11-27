@@ -355,7 +355,7 @@ func (suite *generatedActionSuite) TestDefaultValueTime() {
 		SetName("fun event")
 
 	t := action.GetTypedBuilder().GetEndTime()
-	assert.True(suite.T(), t.IsZero())
+	assert.True(suite.T(), t == nil)
 
 	t2 := action.GetTypedBuilder().GetStartTime()
 	assert.False(suite.T(), t2.IsZero())

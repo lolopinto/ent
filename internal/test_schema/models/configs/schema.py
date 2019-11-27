@@ -97,7 +97,7 @@ sa.Table("events", metadata,
     sa.Column("name", sa.Text(), nullable=False),
     sa.Column("user_id", sa.Text(), nullable=False),
     sa.Column("start_time", sa.TIMESTAMP(), nullable=False),
-    sa.Column("end_time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("end_time", sa.TIMESTAMP(), nullable=True),
     sa.Column("location", sa.Text(), nullable=False),
     sa.PrimaryKeyConstraint("id", name="events_id_pkey"),
 )

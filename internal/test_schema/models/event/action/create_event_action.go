@@ -100,6 +100,12 @@ func (action *CreateEventAction) SetEndTime(endTime time.Time) *CreateEventActio
 	return action
 }
 
+// SetNilableEndTime sets the EndTime while editing the Event ent
+func (action *CreateEventAction) SetNilableEndTime(endTime *time.Time) *CreateEventAction {
+	action.builder.SetNilableEndTime(endTime)
+	return action
+}
+
 // SetLocation sets the Location while editing the Event ent
 func (action *CreateEventAction) SetLocation(location string) *CreateEventAction {
 	action.builder.SetLocation(location)
@@ -123,7 +129,7 @@ func (action *CreateEventAction) getFieldMap() ent.ActionFieldMap {
 		},
 		"EndTime": &ent.MutatingFieldInfo{
 			DB:       "end_time",
-			Required: true,
+			Required: false,
 		},
 		"Location": &ent.MutatingFieldInfo{
 			DB:       "location",

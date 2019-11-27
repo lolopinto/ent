@@ -81,6 +81,16 @@ func (b *EventMutationBuilder) SetEndTime(endTime time.Time) *EventMutationBuild
 	return b
 }
 
+func (b *EventMutationBuilder) SetNilableEndTime(endTime *time.Time) *EventMutationBuilder {
+	b.endTime = endTime
+	if endTime == nil {
+		b.builder.SetField("EndTime", nil)
+	} else {
+		b.builder.SetField("EndTime", *endTime)
+	}
+	return b
+}
+
 func (b *EventMutationBuilder) SetLocation(location string) *EventMutationBuilder {
 	b.location = &location
 	b.builder.SetField("Location", location)
@@ -116,11 +126,11 @@ func (b *EventMutationBuilder) GetStartTime() time.Time {
 	return *b.startTime
 }
 
-func (b *EventMutationBuilder) GetEndTime() time.Time {
+func (b *EventMutationBuilder) GetEndTime() *time.Time {
 	if b.endTime == nil {
-		return time.Time{}
+		return nil
 	}
-	return *b.endTime
+	return b.endTime
 }
 
 func (b *EventMutationBuilder) GetLocation() string {
