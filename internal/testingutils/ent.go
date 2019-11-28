@@ -39,8 +39,10 @@ func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.Us
 	for _, user := range invitedUsers {
 		b.AddOutboundEdge(models.EventToInvitedEdge, user.ID, user.GetType())
 	}
-	// this will be automatically added by generated builders
+	// these will be added in triggers for generated builders
 	b.AddInboundEdge(models.UserToEventsEdge, user.ID, user.GetType())
+	b.AddOutboundEdge(models.EventToCreatorEdge, user.ID, user.GetType())
+	b.AddOutboundEdge(models.EventToHostsEdge, user.ID, user.GetType())
 	return SaveEvent(t, b)
 }
 

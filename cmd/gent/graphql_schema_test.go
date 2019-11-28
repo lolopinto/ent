@@ -4,18 +4,27 @@ import (
 	"fmt"
 	"sort"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBuildGraphQLSchema(t *testing.T) {
 	schema := getTestGraphQLSchema(t)
+	// Account from AccountConfig
+	// Todo from TodoConfig
+	// Event from EventConfig
+	// Query
+	// Create/Edit (Input|Response)
+	expTypes := 16
 
-	if len(schema.Types) != 15 {
-		// Account from AccountConfig
-		// Todo from TodoConfig
-		// Query
-		// Create/Edit (Input|Response)
-		t.Errorf("expected 10 types created, got %d instead", len(schema.Types))
-	}
+	assert.Equal(
+		t,
+		expTypes,
+		len(schema.Types),
+		"expected %d types created, got %d instead",
+		expTypes,
+		len(schema.Types),
+	)
 }
 
 func TestGraphQLObjectFields(t *testing.T) {
@@ -150,8 +159,9 @@ func TestGraphQLQuery(t *testing.T) {
 		t.Errorf("expected %d fields, got %d instead", 0, len(s.fields))
 	}
 
-	if len(s.nonEntFields) != 2 {
-		t.Errorf("expected %d non ent fields, got %d instead", 2, len(s.nonEntFields))
+	// account, todo, event top level fields...
+	if len(s.nonEntFields) != 3 {
+		t.Errorf("expected %d non ent fields, got %d instead", 3, len(s.nonEntFields))
 	}
 
 	// to make sure account comes before todo
@@ -207,6 +217,12 @@ func TestGraphQLFieldEdge(t *testing.T) {
 	e := getTestGraphQLFieldEdge("Todo", "Account", t)
 
 	testEdge(t, e, "Account", "account: Account")
+}
+
+func TestGraphQLUniqueEdge(t *testing.T) {
+	e := getTestGraphQLFieldEdge("Event", "Creator", t)
+
+	testEdge(t, e, "Creator", "creator: Account")
 }
 
 func TestGraphQLForeignKeyEdge(t *testing.T) {

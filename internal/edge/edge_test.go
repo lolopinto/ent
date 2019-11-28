@@ -97,6 +97,23 @@ func TestSymmetricAssociationEdge(t *testing.T) {
 	testAssocEdge(t, edge, expectedAssocEdge)
 }
 
+func TestUniqueAssociationEdge(t *testing.T) {
+	edgeInfo := getTestEdgeInfo(t, "event")
+	edge := edgeInfo.GetAssociationEdgeByName("Creator")
+
+	expectedAssocEdge := &AssociationEdge{
+		EdgeConst: "EventToCreatorEdge",
+		commonEdgeInfo: getCommonEdgeInfo(
+			"Creator",
+			codegen.GetEntConfigFromName("account"),
+		),
+		Unique:    true,
+		TableName: "account_creator_edges",
+	}
+
+	testAssocEdge(t, edge, expectedAssocEdge)
+}
+
 func TestInverseAssociationEdge(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "folder")
 	edge := edgeInfo.GetAssociationEdgeByName("Todos")
@@ -273,6 +290,10 @@ func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
 
 	if edge.Symmetric != expectedAssocEdge.Symmetric {
 		t.Errorf("assoc edge with name %s symmetric value was not as expected", edgeName)
+	}
+
+	if edge.Unique != expectedAssocEdge.Unique {
+		t.Errorf("assoc edge with name %s unique value was not as expected", edgeName)
 	}
 
 	if edge.IsInverseEdge != expectedAssocEdge.IsInverseEdge {

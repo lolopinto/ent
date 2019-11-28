@@ -174,7 +174,7 @@ type ContactEmailResolver interface {
 }
 type EventResolver interface {
 	Attending(ctx context.Context, obj *models.Event) ([]*models.User, error)
-	Creator(ctx context.Context, obj *models.Event) ([]*models.User, error)
+	Creator(ctx context.Context, obj *models.Event) (*models.User, error)
 	Declined(ctx context.Context, obj *models.Event) ([]*models.User, error)
 
 	Hosts(ctx context.Context, obj *models.Event) ([]*models.User, error)
@@ -822,7 +822,7 @@ interface Edge {
 
 type Event implements Node {
     attending: [User!]!
-    creator: [User!]!
+    creator: User
     declined: [User!]!
     endTime: Time
     hosts: [User!]!
@@ -1696,15 +1696,12 @@ func (ec *executionContext) _Event_creator(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.([]*models.User)
+	res := resTmp.(*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Event_declined(ctx context.Context, field graphql.CollectedField, obj *models.Event) (ret graphql.Marshaler) {
@@ -5193,9 +5190,6 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 					}
 				}()
 				res = ec._Event_creator(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			})
 		case "declined":

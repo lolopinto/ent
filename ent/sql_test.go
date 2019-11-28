@@ -46,6 +46,7 @@ func (user *testUser2) DBFields() DBFields {
 }
 
 func TestSQLBuilder(t *testing.T) {
+	limit := 5
 	var testCases = []struct {
 		s              *sqlBuilder
 		expectedQuery  string
@@ -164,6 +165,21 @@ func TestSQLBuilder(t *testing.T) {
 				"1",
 				"2",
 				"3",
+			},
+		},
+		{
+			&sqlBuilder{
+				colsString: "id, foo, bar",
+				tableName:  "objects",
+				whereParts: []interface{}{
+					"id",
+					"7",
+				},
+				limit: &limit,
+			},
+			"SELECT id, foo, bar FROM objects WHERE id = %s LIMIT %s",
+			[]interface{}{
+				"7",
 			},
 		},
 	}

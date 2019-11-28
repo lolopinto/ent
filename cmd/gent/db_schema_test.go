@@ -81,23 +81,38 @@ func TestTablesFromSchema(t *testing.T) {
 	schema.generateShemaTables()
 
 	// accounts
+	// events
 	// todos
 	// edge_config
 	// account_friends_edge
 	// account_friend_requests_edge
 	// account_todos_assoc_edge
-	if len(schema.Tables) != 6 {
-		t.Errorf("invalid number of tables in schema. got %d, expected 4", len(schema.Tables))
-	}
+	// event_creator_edges
+
+	expTables := 8
+	assert.Equal(
+		t,
+		expTables,
+		len(schema.Tables),
+		"invalid number of tables in schema. got %d, expected %d",
+		expTables,
+		len(schema.Tables),
+	)
 }
 
 func TestEdgesFromSchema(t *testing.T) {
 	schema := getTestSchema(t)
 	template := schema.getSchemaForTemplate()
 
-	if len(template.Edges) != 4 {
-		t.Errorf("incorrect number of edges generated, expected %d got %d", 4, len(template.Edges))
-	}
+	expEdges := 5
+	assert.Equal(
+		t,
+		expEdges,
+		len(template.Edges),
+		"incorrect number of edges generated, expected %d got %d",
+		expEdges,
+		len(template.Edges),
+	)
 }
 
 func TestStringUserDefinedColumn(t *testing.T) {
@@ -346,14 +361,32 @@ func TestGeneratedTableForEdge(t *testing.T) {
 	// AccountConfig, edge called Friends,
 	table := getTestTableByName("account_friends_edges", t)
 
-	if len(table.Columns) != 7 {
-		t.Errorf("invalid number of columns for table generated. expected %d, got %d", 7, len(table.Columns))
-	}
+	testEdgeTable(t, table)
+}
 
-	// 1 primary key constraint for the id1, edge_type, id2 fields
-	if len(table.Constraints) != 1 {
-		t.Errorf("invalid number of constraint for table generated. expected %d, got %d", 1, len(table.Constraints))
+func TestGeneratedTableForUniqueEdge(t *testing.T) {
+	table := getTestTableByName("event_creator_edges", t)
+	testEdgeTable(t, table)
+
+	var foundConstraint bool
+	var uniq *uniqueConstraint
+	for _, constraint := range table.Constraints {
+		var ok bool
+		uniq, ok = constraint.(*uniqueConstraint)
+		if ok {
+			foundConstraint = true
+			break
+		}
 	}
+	assert.True(t, foundConstraint, "expected table to have a unique constraint")
+	if uniq != nil {
+		assert.Equal(t, 2, len(uniq.dbColumns))
+	}
+	var colNames []string
+	for _, col := range uniq.dbColumns {
+		colNames = append(colNames, col.DBColName)
+	}
+	assert.Equal(t, colNames, []string{"id1", "edge_type"})
 }
 
 func TestID1EdgeColumn(t *testing.T) {
@@ -497,6 +530,28 @@ func TestInverseEdge(t *testing.T) {
 		"inverse_edge_type": "1",
 	}
 	testEdgeInSchema(t, edge2, expectedParts2)
+}
+
+func testEdgeTable(t *testing.T, table *dbTable) {
+	assert.Equal(t, 7, len(table.Columns), "invalid number of columns for table generated. expected %d, got %d", 7, len(table.Columns))
+
+	// 1 primary key constraint for the id1, edge_type, id2 fields
+	assert.GreaterOrEqual(
+		t,
+		len(table.Constraints),
+		1,
+		"invalid number of constraints for table generated. expected at least %d, got %d", 1, len(table.Constraints),
+	)
+
+	var foundConstraint bool
+	for _, constraint := range table.Constraints {
+		_, ok := constraint.(*primaryKeyConstraint)
+		if ok {
+			foundConstraint = true
+			break
+		}
+	}
+	assert.True(t, foundConstraint, "expected table to have a primary key constraint")
 }
 
 func testColumn(t *testing.T, col *dbColumn, colName string, expectedFieldName, expectedDBColName string, colStringParts []string) {

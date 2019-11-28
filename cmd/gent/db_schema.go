@@ -462,15 +462,30 @@ func (s *dbSchema) createEdgeTable(nodeData *schema.NodeData, assocEdge *edge.As
 	columns = append(columns, s.getTimeColumn())
 	columns = append(columns, s.getDataColumn())
 
-	constraint := &primaryKeyConstraint{
-		dbColumns: []*dbColumn{id1Col, edgeTypeCol, id2Col},
-		tableName: tableName,
+	constraints := []dbConstraint{
+		&primaryKeyConstraint{
+			dbColumns: []*dbColumn{id1Col, edgeTypeCol, id2Col},
+			tableName: tableName,
+		},
+	}
+
+	// add unique constraint for edge
+	// TODO this only works when it's one table per edge
+	// we need to add logic to deal with this
+	if assocEdge.Unique {
+		constraints = append(constraints, &uniqueConstraint{
+			dbColumns: []*dbColumn{
+				id1Col,
+				edgeTypeCol,
+			},
+			tableName: tableName,
+		})
 	}
 
 	return &dbTable{
 		QuotedTableName: strconv.Quote(tableName),
 		Columns:         columns,
-		Constraints:     []dbConstraint{constraint},
+		Constraints:     constraints,
 	}
 }
 

@@ -416,7 +416,26 @@ func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) err
 	return deleteEdgeInTransaction(entity1, entity1, edgeType, nil)
 }
 
-func LoadEdgesByType(id string, edgeType EdgeType) ([]*Edge, error) {
+// LoadEdgeConfig configures the way to load edges
+// This will eventually be used in EntQuery but allows us to start testing and building some things...
+type LoadEdgeConfig struct {
+	limit *int
+}
+
+func (cfg *LoadEdgeConfig) getKey() string {
+	if cfg.limit == nil {
+		return ""
+	}
+	return fmt.Sprintf("limit:%d", cfg.limit)
+}
+
+func Limit(limit int) func(*LoadEdgeConfig) {
+	return func(cfg *LoadEdgeConfig) {
+		cfg.limit = &limit
+	}
+}
+
+func LoadEdgesByType(id string, edgeType EdgeType, options ...func(*LoadEdgeConfig)) ([]*Edge, error) {
 	l := &loadEdgesByType{
 		id:       id,
 		edgeType: edgeType,
@@ -424,17 +443,33 @@ func LoadEdgesByType(id string, edgeType EdgeType) ([]*Edge, error) {
 	return l.LoadData()
 }
 
+func LoadUniqueEdgeByType(id string, edgeType EdgeType) (*Edge, error) {
+	edges, err := LoadEdgesByType(id, edgeType, Limit(1))
+	if err != nil {
+		return nil, err
+	}
+	return edges[0], err
+}
+
 // GenLoadEdgesByType handles loading of edges concurrently.
 // Because we get strong typing across all edges and for a consistent API with loading Nodes,
 // we use the EdgesResult struct here
-func GenLoadEdgesByType(id string, edgeType EdgeType, chanEdgesResult chan<- EdgesResult) {
-	edges, err := LoadEdgesByType(id, edgeType)
+func GenLoadEdgesByType(id string, edgeType EdgeType, chanEdgesResult chan<- EdgesResult, options ...func(*LoadEdgeConfig)) {
+	edges, err := LoadEdgesByType(id, edgeType, options...)
 	// var edges []*Edge
 	// chanErr := make(chan error)
 	// go GenLoadEdgesByType(id, edgeType, &edges, chanErr)
 	//	err := <-chanErr
 	chanEdgesResult <- EdgesResult{
 		Edges: edges,
+		Error: err,
+	}
+}
+
+func GenLoadUniqueEdgeByType(id string, edgeType EdgeType, chanEdgeResult chan<- EdgeResult) {
+	edge, err := LoadUniqueEdgeByType(id, edgeType)
+	chanEdgeResult <- EdgeResult{
+		Edge:  edge,
 		Error: err,
 	}
 }
