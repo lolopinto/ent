@@ -28,8 +28,8 @@ type Contact struct {
 	FirstName     string   `db:"first_name"`
 	LastName      string   `db:"last_name"`
 	UserID        string   `db:"user_id"`
-	Favorite      *bool    `db:"favorite" graphql:"_"`
-	NumberOfCalls *int     `db:"number_of_calls" graphql:"_"`
+	Favorite      *bool    `graphql:"_" db:"favorite"`
+	NumberOfCalls *int     `graphql:"_" db:"number_of_calls"`
 	Pi            *float64 `graphql:"_" db:"pi"`
 	Viewer        viewer.ViewerContext
 }
@@ -113,7 +113,7 @@ func (contact *Contact) LoadContactEmails() ([]*ContactEmail, error) {
 	return contactEmails, err
 }
 
-// LoadAllowListEdges returns the User edges associated with the Contact instance
+// LoadAllowListEdges returns the AllowList edges associated with the Contact instance
 func (contact *Contact) LoadAllowListEdges() ([]*ent.Edge, error) {
 	return ent.LoadEdgesByType(contact.ID, ContactToAllowListEdge)
 }
@@ -124,19 +124,6 @@ func (contact *Contact) GenAllowListEdges(result *ent.EdgesResult, wg *sync.Wait
 	edgesResultChan := make(chan ent.EdgesResult)
 	go ent.GenLoadEdgesByType(contact.ID, ContactToAllowListEdge, edgesResultChan)
 	*result = <-edgesResultChan
-}
-
-// LoadAllowListEdgeFor loads the ent.Edge between the current node and the given id2 for the AllowList edge.
-func (contact *Contact) LoadAllowListEdgeFor(id2 string) (*ent.Edge, error) {
-	return ent.LoadEdgeByType(contact.ID, id2, ContactToAllowListEdge)
-}
-
-// GenAllowListEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the AllowList edge.
-func (contact *Contact) GenLoadAllowListEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgeResultChan := make(chan ent.EdgeResult)
-	go ent.GenLoadEdgeByType(contact.ID, id2, ContactToAllowListEdge, edgeResultChan)
-	*result = <-edgeResultChan
 }
 
 // GenAllowList returns the Users associated with the Contact instance
@@ -155,6 +142,19 @@ func (contact *Contact) LoadAllowList() ([]*User, error) {
 	var users []*User
 	err := ent.LoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &users, &configs.UserConfig{})
 	return users, err
+}
+
+// LoadAllowListEdgeFor loads the ent.Edge between the current node and the given id2 for the AllowList edge.
+func (contact *Contact) LoadAllowListEdgeFor(id2 string) (*ent.Edge, error) {
+	return ent.LoadEdgeByType(contact.ID, id2, ContactToAllowListEdge)
+}
+
+// GenAllowListEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the AllowList edge.
+func (contact *Contact) GenLoadAllowListEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	edgeResultChan := make(chan ent.EdgeResult)
+	go ent.GenLoadEdgeByType(contact.ID, id2, ContactToAllowListEdge, edgeResultChan)
+	*result = <-edgeResultChan
 }
 
 // DBFields is used by the ent framework to load the ent from the underlying database

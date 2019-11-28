@@ -267,6 +267,26 @@ func LoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, 
 	return err
 }
 
+func LoadUniqueNodeByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config) error {
+	edge, err := LoadUniqueEdgeByType(id, edgeType)
+	if err != nil {
+		return err
+	}
+	return LoadNode(viewer, edge.ID2, node, entConfig)
+}
+
+func GenLoadUniqueNodeByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config, errChan chan<- error) {
+	//	chanErr := make(chan error)
+	edgeResultChan := make(chan EdgeResult)
+	go GenLoadUniqueEdgeByType(id, edgeType, edgeResultChan)
+	edgeResult := <-edgeResultChan
+	if edgeResult.Error != nil {
+		errChan <- edgeResult.Error
+		return
+	}
+	go GenLoadNode(viewer, edgeResult.Edge.ID2, node, entConfig, errChan)
+}
+
 // function that does the actual work of loading the raw data when fetching a list of nodes
 type loadRawNodes func(chanErr chan<- error)
 
