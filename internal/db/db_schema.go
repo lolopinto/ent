@@ -48,6 +48,12 @@ type dbTable struct {
 	QuotedTableName string
 }
 
+func (t *dbTable) GetUnquotedTableName() string {
+	str, err := strconv.Unquote(t.QuotedTableName)
+	util.Die(err)
+	return str
+}
+
 type dbColumn struct {
 	EntFieldName string
 	DBColName    string
