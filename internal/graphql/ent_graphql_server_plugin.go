@@ -43,7 +43,7 @@ func (p *entGraphQLServerPlugin) GenerateCode(data *codegen.Data) error {
 		PackageName: "main",
 		Filename:    "server.go",
 		Data:        serverBuild,
-		Template:    readTemplateFile("ent_graphql_server.gotpl"),
+		Template:    readTemplateFile("ent_graphql_server.gotmpl"),
 	})
 }
 

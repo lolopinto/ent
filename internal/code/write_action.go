@@ -14,6 +14,7 @@ import (
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 type actionTemplate struct {
@@ -31,8 +32,8 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 				Action:   a,
 				CodePath: codePathInfo,
 			},
-			PathToTemplate:    "templates/action.tmpl",
-			TemplateName:      "action.tmpl",
+			AbsPathToTemplate: util.GetAbsolutePath("action.gotmpl"),
+			TemplateName:      "action.gotmpl",
 			PathToFile:        fmt.Sprintf("models/%s/action/%s.go", nodeData.PackageName, fileName),
 			CreateDirIfNeeded: true,
 			FormatSource:      true,

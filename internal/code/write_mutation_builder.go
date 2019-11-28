@@ -11,6 +11,7 @@ import (
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 func writeMutationBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
@@ -23,8 +24,8 @@ func writeMutationBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.C
 				NodeData: nodeData,
 				CodePath: codePathInfo,
 			},
-			PathToTemplate:    "templates/mutation_builder.tmpl",
-			TemplateName:      "mutation_builder.tmpl",
+			AbsPathToTemplate: util.GetAbsolutePath("mutation_builder.gotmpl"),
+			TemplateName:      "mutation_builder.gotmpl",
 			PathToFile:        fmt.Sprintf("models/%s/%s.go", nodeData.PackageName, fileName),
 			CreateDirIfNeeded: true,
 			FormatSource:      true,

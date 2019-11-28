@@ -315,9 +315,9 @@ func (s *dbSchema) generateDbSchema() {
 
 func (s *dbSchema) writeSchemaFile() {
 	file.Write(&file.TemplatedBasedFileWriter{
-		Data:           s.getSchemaForTemplate(),
-		PathToTemplate: "templates/db_schema.tmpl",
-		TemplateName:   "db_schema.tmpl",
+		Data:              s.getSchemaForTemplate(),
+		AbsPathToTemplate: util.GetAbsolutePath("db_schema.tmpl"),
+		TemplateName:      "db_schema.tmpl",
 		// TODO: this should be change to use path to configs
 		PathToFile: "models/configs/schema.py",
 	})

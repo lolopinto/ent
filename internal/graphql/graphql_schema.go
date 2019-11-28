@@ -415,7 +415,7 @@ func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 func (s *graphQLSchema) writeGraphQLSchema() {
 	file.Write(&file.TemplatedBasedFileWriter{
 		Data:              s.getSchemaForTemplate(),
-		PathToTemplate:    "templates/graphql/graphql_schema.tmpl",
+		AbsPathToTemplate: util.GetAbsolutePath("graphql_schema.tmpl"),
 		TemplateName:      "graphql_schema.tmpl",
 		PathToFile:        "graphql/schema.graphql",
 		CreateDirIfNeeded: true,

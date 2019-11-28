@@ -9,6 +9,7 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 type nodeTemplateCodePath struct {
@@ -26,10 +27,10 @@ func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
 			NodeData: nodeData,
 			CodePath: codePathInfo,
 		},
-		PathToTemplate: "templates/node.tmpl",
-		TemplateName:   "node.tmpl",
-		PathToFile:     getFilePathForModelFile(nodeData),
-		FormatSource:   true,
+		AbsPathToTemplate: util.GetAbsolutePath("node.gotmpl"),
+		TemplateName:      "node.gotmpl",
+		PathToFile:        getFilePathForModelFile(nodeData),
+		FormatSource:      true,
 		FuncMap: template.FuncMap{
 			"fTypeString": field.GetNilableTypeInStructDefinition,
 			"quoteStr":    strconv.Quote,
@@ -42,8 +43,8 @@ func writePrivacyFile(nodeData *schema.NodeData) {
 
 	file.Write(&file.TemplatedBasedFileWriter{
 		Data:               nodeData,
-		PathToTemplate:     "templates/privacy.tmpl",
-		TemplateName:       "privacy.tmpl",
+		AbsPathToTemplate:  util.GetAbsolutePath("privacy.gotmpl"),
+		TemplateName:       "privacy.gotmpl",
 		PathToFile:         pathToFile,
 		CheckForManualCode: true,
 		FormatSource:       true,

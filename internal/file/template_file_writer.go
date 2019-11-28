@@ -13,7 +13,7 @@ import (
 
 type TemplatedBasedFileWriter struct {
 	Data               interface{}
-	PathToTemplate     string
+	AbsPathToTemplate  string
 	TemplateName       string
 	PathToFile         string
 	CreateDirIfNeeded  bool
@@ -91,9 +91,7 @@ func (fw *TemplatedBasedFileWriter) generateBytes() []byte {
 // TODO rename this since this is just parse template that's non-AST
 // generate new AST for the given file from the template
 func (fw *TemplatedBasedFileWriter) generateNewAst() *bytes.Buffer {
-	templateAbsPath := util.GetAbsolutePath(fw.PathToTemplate)
-
-	path := []string{templateAbsPath}
+	path := []string{fw.AbsPathToTemplate}
 	t := template.New(fw.TemplateName).Funcs(fw.FuncMap)
 	t, err := t.ParseFiles(path...)
 	util.Die(err)
