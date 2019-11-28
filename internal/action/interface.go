@@ -9,7 +9,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 
-	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 
 	"github.com/lolopinto/ent/internal/astparser"
@@ -37,7 +37,7 @@ type Action interface {
 	ExposedToGraphQL() bool
 	GetGraphQLName() string
 	MutatingExistingObject() bool // whether to add User, Note etc params
-	GetNodeInfo() codegen.NodeInfo
+	GetNodeInfo() nodeinfo.NodeInfo
 	GetOperation() ent.ActionOperation
 	IsDeletingNode() bool
 }
@@ -100,7 +100,7 @@ type commonActionInfo struct {
 	NonEntFields    []*NonEntField
 	Edges           []*edge.AssociationEdge // for edge actions for now but eventually other actions
 	Operation       ent.ActionOperation
-	codegen.NodeInfo
+	nodeinfo.NodeInfo
 }
 
 func (action *commonActionInfo) GetActionName() string {
@@ -127,7 +127,7 @@ func (action *commonActionInfo) GetNonEntFields() []*NonEntField {
 	return action.NonEntFields
 }
 
-func (action *commonActionInfo) GetNodeInfo() codegen.NodeInfo {
+func (action *commonActionInfo) GetNodeInfo() nodeinfo.NodeInfo {
 	return action.NodeInfo
 }
 

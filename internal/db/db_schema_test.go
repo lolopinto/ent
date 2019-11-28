@@ -1,8 +1,9 @@
-package main
+package db
 
 import (
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -83,40 +84,44 @@ func TestTablesFromSchema(t *testing.T) {
 	// accounts
 	// events
 	// todos
+	// folders
 	// edge_config
-	// account_friends_edge
-	// account_friend_requests_edge
-	// account_todos_assoc_edge
+	// account_friendships_edges
+	// account_folders_edge
+	// account_todos__edge
 	// event_creator_edges
+	// event_rsvp_edges
+	// folder_todo_edge
 
-	expTables := 8
+	expTables := 11
 	assert.Equal(
 		t,
 		expTables,
 		len(schema.Tables),
-		"invalid number of tables in schema. got %d, expected %d",
+		"invalid number of tables in schema. expected %d, got %d",
 		expTables,
 		len(schema.Tables),
 	)
 }
 
-func TestEdgesFromSchema(t *testing.T) {
-	schema := getTestSchema(t)
-	template := schema.getSchemaForTemplate()
+// TODO this test is useless
+// for tests like this and the one above and in graphql, we need to change things to get the value from node_schema or something and then do math based on that
+// func TestEdgesFromSchema(t *testing.T) {
+// 	schema := getTestSchema(t)
+// 	template := schema.getSchemaForTemplate()
 
-	expEdges := 5
-	assert.Equal(
-		t,
-		expEdges,
-		len(template.Edges),
-		"incorrect number of edges generated, expected %d got %d",
-		expEdges,
-		len(template.Edges),
-	)
-}
+// 	expEdges := 22
+// 	assert.Equal(
+// 		t,
+// 		expEdges,
+// 		len(template.Edges),
+// 		"incorrect number of edges generated, expected %d got %d",
+// 		expEdges,
+// 		len(template.Edges),
+// 	)
+// }
 
 func TestStringUserDefinedColumn(t *testing.T) {
-	// TODO nullabllle
 	column := getTestColumn("AccountConfig", "FirstName", t)
 
 	parts := []string{
@@ -125,6 +130,17 @@ func TestStringUserDefinedColumn(t *testing.T) {
 		"nullable=False",
 	}
 	testColumn(t, column, "first_name", "FirstName", "first_name", parts)
+}
+
+func TestNullableStringUserDefinedColumn(t *testing.T) {
+	column := getTestColumn("AccountConfig", "Bio", t)
+
+	parts := []string{
+		strconv.Quote("bio"),
+		"sa.Text()",
+		"nullable=True",
+	}
+	testColumn(t, column, "bio", "Bio", "bio", parts)
 }
 
 func TestIntegerUserDefinedColumn(t *testing.T) {
@@ -143,12 +159,24 @@ func TestIntegerUserDefinedColumn(t *testing.T) {
 func TestTimeUserDefinedColumn(t *testing.T) {
 	column := getTestColumn("AccountConfig", "LastLoginAt", t)
 
+	// this also tests overriden files
 	parts := []string{
-		strconv.Quote("last_login_at"),
+		strconv.Quote("last_login_time"),
 		"sa.TIMESTAMP()",
 		"nullable=False",
 	}
-	testColumn(t, column, "last_login_at", "LastLoginAt", "last_login_at", parts)
+	testColumn(t, column, "last_login_time", "LastLoginAt", "last_login_time", parts)
+}
+
+func TestNullableTimeUserDefinedColumn(t *testing.T) {
+	column := getTestColumn("AccountConfig", "DateOfBirth", t)
+
+	parts := []string{
+		strconv.Quote("date_of_birth"),
+		"sa.TIMESTAMP()",
+		"nullable=True",
+	}
+	testColumn(t, column, "date_of_birth", "DateOfBirth", "date_of_birth", parts)
 }
 
 func TestUniqueColumn(t *testing.T) {
@@ -231,9 +259,13 @@ type TodoConfig struct {
 
 	schemas := getInMemoryTestSchemas(t, sources, "InvalidForeignKeyConfig")
 
-	defer expectPanic(t, "invalid EntConfig accounts set as ForeignKey of field AccountID on ent config TodoConfig")
-
-	getTestTableFromSchema("TodoConfig", schemas, t)
+	assert.Panics(
+		t,
+		func() {
+			getTestTableFromSchema("TodoConfig", schemas, t)
+		},
+		"invalid EntConfig accounts set as ForeignKey of field AccountID on ent config TodoConfig",
+	)
 }
 
 func TestInvalidForeignKeyColumn(t *testing.T) {
@@ -254,9 +286,13 @@ type TodoConfig struct {
 
 	schemas := getInMemoryTestSchemas(t, sources, "InvalidForeignKey")
 
-	defer expectPanic(t, "invalid Field Bar set as ForeignKey of field AccountID on ent config TodoConfig")
-
-	getTestTableFromSchema("TodoConfig", schemas, t)
+	assert.Panics(
+		t,
+		func() {
+			getTestTableFromSchema("TodoConfig", schemas, t)
+		},
+		"invalid Field Bar set as ForeignKey of field AccountID on ent config TodoConfig",
+	)
 }
 
 func TestGeneratedEdgeConfigTable(t *testing.T) {
@@ -358,8 +394,8 @@ func TestForeignKeyConstraintInEdgeConfigTable(t *testing.T) {
 }
 
 func TestGeneratedTableForEdge(t *testing.T) {
-	// AccountConfig, edge called Friends,
-	table := getTestTableByName("account_friends_edges", t)
+	// AccountConfig, edge called Folders
+	table := getTestTableByName("account_folders_edges", t)
 
 	testEdgeTable(t, table)
 }
@@ -467,7 +503,7 @@ func TestDataEdgeColumn(t *testing.T) {
 }
 
 func TestPrimaryKeyConstraintInEdgeTable(t *testing.T) {
-	table := getTestTableByName("account_friends_edges", t)
+	table := getTestTableByName("account_folders_edges", t)
 
 	if len(table.Constraints) != 1 {
 		t.Errorf("expected 1 constraint in edge table, got %d", len(table.Constraints))
@@ -481,7 +517,7 @@ func TestPrimaryKeyConstraintInEdgeTable(t *testing.T) {
 			strconv.Quote("id1"),
 			strconv.Quote("edge_type"),
 			strconv.Quote("id2"),
-			strconv.Quote("account_friends_edges_id1_edge_type_id2_pkey"),
+			strconv.Quote("account_folders_edges_id1_edge_type_id2_pkey"),
 		),
 	)
 }
@@ -501,9 +537,10 @@ func TestSimpleEdge(t *testing.T) {
 func TestSymmetricEdge(t *testing.T) {
 	edge := getEdgeByName("AccountToFriendsEdge", t)
 	expectedParts := map[string]string{
-		"edge_name":         strconv.Quote("AccountToFriendsEdge"),
-		"edge_type":         "1", // it checks that real uuid instead
-		"edge_table":        strconv.Quote("account_friends_edges"),
+		"edge_name": strconv.Quote("AccountToFriendsEdge"),
+		"edge_type": "1", // it checks that real uuid instead
+		// part of an assoc_group...
+		"edge_table":        strconv.Quote("account_friendships_edges"),
 		"symmetric_edge":    "True",
 		"inverse_edge_type": "None",
 	}
@@ -513,9 +550,10 @@ func TestSymmetricEdge(t *testing.T) {
 func TestInverseEdge(t *testing.T) {
 	edge := getEdgeByName("AccountToFriendRequestsEdge", t)
 	expectedParts := map[string]string{
-		"edge_name":         strconv.Quote("AccountToFriendRequestsEdge"),
-		"edge_type":         "1", // it checks that real uuid instead
-		"edge_table":        strconv.Quote("account_friend_requests_edges"),
+		"edge_name": strconv.Quote("AccountToFriendRequestsEdge"),
+		"edge_type": "1", // it checks that real uuid instead
+		// part of an assoc_group...
+		"edge_table":        strconv.Quote("account_friendships_edges"),
 		"symmetric_edge":    "False",
 		"inverse_edge_type": "1",
 	}
@@ -525,7 +563,7 @@ func TestInverseEdge(t *testing.T) {
 	expectedParts2 := map[string]string{
 		"edge_name":         strconv.Quote("AccountToFriendRequestsReceivedEdge"),
 		"edge_type":         "1", // it checks that real uuid instead
-		"edge_table":        strconv.Quote("account_friend_requests_edges"),
+		"edge_table":        strconv.Quote("account_friendships_edges"),
 		"symmetric_edge":    "False",
 		"inverse_edge_type": "1",
 	}
@@ -613,7 +651,7 @@ func getParsedTestSchema(t *testing.T) *schema.Schema {
 		t,
 		// this is using the testdata local to gent
 		// will be fixed and standardized at some point
-		parsehelper.RootPath("./testdata/models/configs/"),
+		//		parsehelper.RootPath("./testdata/models/configs/"),
 	)
 	return schema.ParsePackage(data.Pkg)
 }
@@ -724,10 +762,11 @@ func getTestIndexedConstraint(tableConfigName, colFieldName string, t *testing.T
 }
 
 func getAccountConfigContents(t *testing.T) string {
-	file, err := ioutil.ReadFile("./testdata/models/configs/account_config.go")
-	if err != nil {
-		t.Errorf("error loading account config")
-	}
+	// use a simple non-go file that we don't care about as it changes.
+	path, err := filepath.Abs("../testdata/models/configs/simple_account_config.go.file")
+	assert.Nil(t, err)
+	file, err := ioutil.ReadFile(path)
+	assert.Nil(t, err, "error loading account config")
 	return string(file)
 }
 
@@ -746,7 +785,7 @@ func getTestTableByName(tableName string, t *testing.T) *dbTable {
 }
 
 func getEdgeColumn(colDBName string, t *testing.T) *dbColumn {
-	return getColumnFromNamedTable(colDBName, "account_friends_edges", t)
+	return getColumnFromNamedTable(colDBName, "account_folders_edges", t)
 }
 
 func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColumn {
@@ -757,7 +796,7 @@ func getColumnFromNamedTable(colDBName, tableName string, t *testing.T) *dbColum
 			return col
 		}
 	}
-	t.Errorf("no db column %s for account_friends_edges table", colDBName)
+	t.Errorf("no db column %s for account_folders_edges table", colDBName)
 	return nil
 }
 
@@ -773,20 +812,6 @@ func getEdgeByName(edgeName string, t *testing.T) *dbEdgeInfo {
 	}
 	t.Errorf("no edge for %s found", edgeName)
 	return nil
-}
-
-func expectPanic(t *testing.T, expectedError string) {
-	err, ok := recover().(error)
-	if !ok {
-		t.Errorf("recover didn't return an error")
-	}
-	if err == nil {
-		t.Errorf("code did not panic")
-	} else {
-		if err.Error() != expectedError {
-			t.Errorf("error not as expected, was %s instead", err.Error())
-		}
-	}
 }
 
 // inlining this in a bunch of places to break the import cycle

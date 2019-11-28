@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"errors"
@@ -11,7 +11,9 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/file"
 
 	"github.com/lolopinto/ent/data"
 	"github.com/lolopinto/ent/internal/field"
@@ -19,23 +21,22 @@ import (
 	"github.com/lolopinto/ent/internal/util"
 )
 
-// TODO break this into its own package
-type dbPlugin struct {
+type Step struct {
 }
 
-func (p *dbPlugin) pluginName() string {
-	return "db_plugin"
+func (p *Step) Name() string {
+	return "db"
 }
 
-func (p *dbPlugin) processData(data *codegenData) error {
+func (p *Step) ProcessData(data *codegen.Data) error {
 	// generate python schema file and then make changes to underlying db
-	db := newDBSchema(data.schema)
+	db := newDBSchema(data.Schema)
 	db.generateSchema()
 	// right now it all panics but we have to change that lol
 	return nil
 }
 
-var _ codegenPlugin = &dbPlugin{}
+var _ codegen.Step = &Step{}
 
 func getNameFromParts(nameParts []string) string {
 	return strings.Join(nameParts, "_")
@@ -292,7 +293,7 @@ func (s *dbSchema) generateShemaTables() {
 func (s *dbSchema) generateDbSchema() {
 	cmd := exec.Command(
 		"python3",
-		getAbsolutePath("../../python/auto_schema/gen_db_schema.py"),
+		util.GetAbsolutePath("../../python/auto_schema/gen_db_schema.py"),
 		// TODO: this should be changed to use path to configs
 		"-s=models/configs",
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
@@ -307,15 +308,13 @@ func (s *dbSchema) generateDbSchema() {
 }
 
 func (s *dbSchema) writeSchemaFile() {
-	writeFile(
-		&templatedBasedFileWriter{
-			data:           s.getSchemaForTemplate(),
-			pathToTemplate: "templates/db_schema.tmpl",
-			templateName:   "db_schema.tmpl",
-			// TODO: this should be change to use path to configs
-			pathToFile: "models/configs/schema.py",
-		},
-	)
+	file.Write(&file.TemplatedBasedFileWriter{
+		Data:           s.getSchemaForTemplate(),
+		PathToTemplate: "templates/db_schema.tmpl",
+		TemplateName:   "db_schema.tmpl",
+		// TODO: this should be change to use path to configs
+		PathToFile: "models/configs/schema.py",
+	})
 }
 
 func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {

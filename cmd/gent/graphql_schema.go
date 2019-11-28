@@ -12,8 +12,10 @@ import (
 	"github.com/lolopinto/ent/ent"
 
 	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/util"
 
@@ -25,11 +27,11 @@ import (
 type graphqlPlugin struct {
 }
 
-func (p *graphqlPlugin) pluginName() string {
+func (p *graphqlPlugin) Name() string {
 	return "graphql_plugin"
 }
 
-func (p *graphqlPlugin) processData(data *codegenData) error {
+func (p *graphqlPlugin) ProcessData(data *codegen.Data) error {
 	// eventually make this configurable
 	graphql := newGraphQLSchema(data)
 	graphql.generateSchema()
@@ -38,17 +40,17 @@ func (p *graphqlPlugin) processData(data *codegenData) error {
 	return nil
 }
 
-var _ codegenPlugin = &graphqlPlugin{}
+var _ codegen.Step = &graphqlPlugin{}
 
 type graphQLSchema struct {
-	config         *codegenData
+	config         *codegen.Data
 	Types          map[string]*graphQLSchemaInfo
 	sortedTypes    []*graphQLSchemaInfo
 	queryFields    []*graphQLNonEntField
 	mutationFields []*graphQLNonEntField
 }
 
-func newGraphQLSchema(data *codegenData) *graphQLSchema {
+func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
 	types := make(map[string]*graphQLSchemaInfo)
 
 	return &graphQLSchema{
@@ -165,7 +167,7 @@ func (s *graphQLSchema) generateGraphQLSchemaData() {
 	s.addSchemaInfo(s.getNodeInterfaceType())
 	s.addSchemaInfo(s.getEdgeInterfaceType())
 	s.addSchemaInfo(s.getConnectionInterfaceType())
-	nodeMap := s.config.schema.Nodes
+	nodeMap := s.config.Schema.Nodes
 	for _, info := range nodeMap {
 		nodeData := info.NodeData
 
@@ -411,18 +413,16 @@ func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 }
 
 func (s *graphQLSchema) writeGraphQLSchema() {
-	writeFile(
-		&templatedBasedFileWriter{
-			data:              s.getSchemaForTemplate(),
-			pathToTemplate:    "templates/graphql/graphql_schema.tmpl",
-			templateName:      "graphql_schema.tmpl",
-			pathToFile:        "graphql/schema.graphql",
-			createDirIfNeeded: true,
-			funcMap: template.FuncMap{
-				"sortedTypes": getSortedTypes,
-			},
+	file.Write(&file.TemplatedBasedFileWriter{
+		Data:              s.getSchemaForTemplate(),
+		PathToTemplate:    "templates/graphql/graphql_schema.tmpl",
+		TemplateName:      "graphql_schema.tmpl",
+		PathToFile:        "graphql/schema.graphql",
+		CreateDirIfNeeded: true,
+		FuncMap: template.FuncMap{
+			"sortedTypes": getSortedTypes,
 		},
-	)
+	})
 }
 
 func (s *graphQLSchema) writeGQLGenYamlFile() {
@@ -435,13 +435,11 @@ func (s *graphQLSchema) writeGQLGenYamlFile() {
 	c.addModelConfig()
 	///c.addResolverConfig() // don't need this since we're handling this ourselves
 
-	writeFile(
-		&yamlFileWriter{
-			data:              c.m,
-			pathToFile:        "graphql/gqlgen.yml",
-			createDirIfNeeded: true,
-		},
-	)
+	file.Write(&file.YamlFileWriter{
+		Data:              c.m,
+		PathToFile:        "graphql/gqlgen.yml",
+		CreateDirIfNeeded: true,
+	})
 }
 
 func (s *graphQLSchema) generateGraphQLCode() {
@@ -673,9 +671,9 @@ func (c *graphQLYamlConfig) addModelsConfig(s *graphQLSchema) {
 	// this creates a nested models: User: path_to_model map in here
 	models := make(map[string]interface{})
 
-	pathToModels, err := strconv.Unquote(s.config.codePath.PathToModels)
+	pathToModels, err := strconv.Unquote(s.config.CodePath.PathToModels)
 	util.Die(err)
-	for _, info := range s.config.schema.Nodes {
+	for _, info := range s.config.Schema.Nodes {
 		nodeData := info.NodeData
 
 		if nodeData.HideFromGraphQL {

@@ -8,8 +8,9 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/astparser"
-	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/depgraph"
+	"github.com/lolopinto/ent/internal/schemaparser"
 )
 
 type EdgeInfo struct {
@@ -82,8 +83,8 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 
 type Edge interface {
 	GetEdgeName() string
-	GetNodeInfo() codegen.NodeInfo
-	GetEntConfig() codegen.EntConfigInfo
+	GetNodeInfo() nodeinfo.NodeInfo
+	GetEntConfig() schemaparser.EntConfigInfo
 }
 
 // marker interface
@@ -94,19 +95,19 @@ type PluralEdge interface {
 
 type commonEdgeInfo struct {
 	EdgeName  string
-	entConfig codegen.EntConfigInfo
-	NodeInfo  codegen.NodeInfo
+	entConfig schemaparser.EntConfigInfo
+	NodeInfo  nodeinfo.NodeInfo
 }
 
 func (e *commonEdgeInfo) GetEdgeName() string {
 	return e.EdgeName
 }
 
-func (e *commonEdgeInfo) GetNodeInfo() codegen.NodeInfo {
+func (e *commonEdgeInfo) GetNodeInfo() nodeinfo.NodeInfo {
 	return e.NodeInfo
 }
 
-func (e *commonEdgeInfo) GetEntConfig() codegen.EntConfigInfo {
+func (e *commonEdgeInfo) GetEntConfig() schemaparser.EntConfigInfo {
 	return e.entConfig
 }
 
@@ -195,7 +196,7 @@ type AssociationEdgeGroup struct {
 	Edges           map[string]*AssociationEdge // TODO...
 	EdgeAction      *EdgeAction
 	actionEdges     map[string]bool
-	NodeInfo        codegen.NodeInfo
+	NodeInfo        nodeinfo.NodeInfo
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetAssociationByName(edgeName string) *AssociationEdge {
@@ -296,11 +297,11 @@ type parseEdgeGraph struct {
 	lit *ast.CompositeLit
 }
 
-func initDepgraph(lit *ast.CompositeLit, entConfig *codegen.EntConfigInfo) *parseEdgeGraph {
+func initDepgraph(lit *ast.CompositeLit, entConfig *schemaparser.EntConfigInfo) *parseEdgeGraph {
 	//map[string]parseEdgeItemFunc {
 	g := &parseEdgeGraph{lit: lit}
 	g.AddItem("EntConfig", func(expr ast.Expr, keyValueExprValue ast.Expr) {
-		*entConfig = codegen.GetEntConfigFromExpr(keyValueExprValue)
+		*entConfig = schemaparser.GetEntConfigFromExpr(keyValueExprValue)
 	})
 	return g
 }
@@ -326,7 +327,7 @@ func (g *parseEdgeGraph) RunLoop() {
 func parseFieldEdgeItem(edgeInfo *EdgeInfo, lit *ast.CompositeLit, edgeName string) error {
 	var fieldName string
 	var inverseEdgeName string
-	var entConfig codegen.EntConfigInfo
+	var entConfig schemaparser.EntConfigInfo
 	g := initDepgraph(lit, &entConfig)
 
 	g.AddItem("FieldName", func(expr ast.Expr, keyValueExprValue ast.Expr) {
@@ -347,11 +348,11 @@ func parseFieldEdgeItem(edgeInfo *EdgeInfo, lit *ast.CompositeLit, edgeName stri
 	return nil
 }
 
-func getCommonEdgeInfo(edgeName string, entConfig codegen.EntConfigInfo) commonEdgeInfo {
+func getCommonEdgeInfo(edgeName string, entConfig schemaparser.EntConfigInfo) commonEdgeInfo {
 	return commonEdgeInfo{
 		EdgeName:  edgeName,
 		entConfig: entConfig,
-		NodeInfo:  codegen.GetNodeInfo(entConfig.PackageName),
+		NodeInfo:  nodeinfo.GetNodeInfo(entConfig.PackageName),
 	}
 }
 
@@ -379,7 +380,7 @@ func getEltsInEdge(keyValueExprValue ast.Expr, expectedType string) []ast.Expr {
 	return compositLit.Elts
 }
 
-func parseInverseAssocEdge(entConfig codegen.EntConfigInfo, containingPackageName string, keyValueExprValue ast.Expr) *InverseAssocEdge {
+func parseInverseAssocEdge(entConfig schemaparser.EntConfigInfo, containingPackageName string, keyValueExprValue ast.Expr) *InverseAssocEdge {
 	elts := getEltsInEdge(keyValueExprValue, "ent.InverseAssocEdge")
 
 	ret := &InverseAssocEdge{}
@@ -411,7 +412,7 @@ func parseInverseAssocEdge(entConfig codegen.EntConfigInfo, containingPackageNam
 		// take something like folder and create Folder and FolderConfig
 		// TODO: probably want to pass this down instead of magically configuring this
 
-		codegen.GetEntConfigFromName(containingPackageName),
+		schemaparser.GetEntConfigFromName(containingPackageName),
 	)
 	return ret
 }
@@ -430,7 +431,7 @@ func parseAssociationEdgeItem(edgeInfo *EdgeInfo, containingPackageName, edgeNam
 }
 
 func getParsedAssociationEdgeItem(containingPackageName, edgeName string, lit *ast.CompositeLit) *AssociationEdge {
-	var entConfig codegen.EntConfigInfo
+	var entConfig schemaparser.EntConfigInfo
 	g := initDepgraph(lit, &entConfig)
 
 	assocEdge := &AssociationEdge{}
@@ -464,7 +465,7 @@ func getParsedAssociationEdgeItem(containingPackageName, edgeName string, lit *a
 func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, groupKey string, lit *ast.CompositeLit) error {
 	edgeGroup := &AssociationEdgeGroup{
 		GroupName: groupKey,
-		NodeInfo:  codegen.GetNodeInfo(containingPackageName),
+		NodeInfo:  nodeinfo.GetNodeInfo(containingPackageName),
 	}
 	edgeGroup.Edges = make(map[string]*AssociationEdge)
 
@@ -551,8 +552,8 @@ func getEdgeCostName(packageName, edgeName string) string {
 	return strcase.ToCamel(packageName) + "To" + edgeName + "Edge"
 }
 
-func parseEntConfigOnlyFromEdgeItemHelper(lit *ast.CompositeLit) codegen.EntConfigInfo {
-	var entConfig codegen.EntConfigInfo
+func parseEntConfigOnlyFromEdgeItemHelper(lit *ast.CompositeLit) schemaparser.EntConfigInfo {
+	var entConfig schemaparser.EntConfigInfo
 
 	g := initDepgraph(lit, &entConfig)
 	g.RunLoop()
