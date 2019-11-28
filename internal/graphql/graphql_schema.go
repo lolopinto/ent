@@ -1,4 +1,4 @@
-package main
+package graphql
 
 import (
 	"fmt"
@@ -24,14 +24,14 @@ import (
 )
 
 // TODO break this into its own package
-type graphqlPlugin struct {
+type Step struct {
 }
 
-func (p *graphqlPlugin) Name() string {
+func (p *Step) Name() string {
 	return "graphql_plugin"
 }
 
-func (p *graphqlPlugin) ProcessData(data *codegen.Data) error {
+func (p *Step) ProcessData(data *codegen.Data) error {
 	// eventually make this configurable
 	graphql := newGraphQLSchema(data)
 	graphql.generateSchema()
@@ -40,7 +40,7 @@ func (p *graphqlPlugin) ProcessData(data *codegen.Data) error {
 	return nil
 }
 
-var _ codegen.Step = &graphqlPlugin{}
+var _ codegen.Step = &Step{}
 
 type graphQLSchema struct {
 	config         *codegen.Data

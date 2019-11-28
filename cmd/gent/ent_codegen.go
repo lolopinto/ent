@@ -11,6 +11,7 @@ import (
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schemaparser"
 )
@@ -54,7 +55,7 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 	steps := []codegen.Step{
 		new(db.Step),
 		new(entCodegenPlugin),
-		new(graphqlPlugin),
+		new(graphql.Step),
 	}
 
 	for _, s := range steps {

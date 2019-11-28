@@ -1,4 +1,4 @@
-package main
+package graphql
 
 import (
 	"io/ioutil"
