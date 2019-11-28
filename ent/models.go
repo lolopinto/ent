@@ -422,6 +422,13 @@ type LoadEdgeConfig struct {
 	limit *int
 }
 
+func (cfg *LoadEdgeConfig) getKey() string {
+	if cfg.limit == nil {
+		return ""
+	}
+	return fmt.Sprintf("limit:%d", cfg.limit)
+}
+
 func Limit(limit int) func(*LoadEdgeConfig) {
 	return func(cfg *LoadEdgeConfig) {
 		cfg.limit = &limit

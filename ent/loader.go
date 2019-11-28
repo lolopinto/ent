@@ -385,6 +385,7 @@ type loadEdgesByType struct {
 	edges      []*Edge
 	outputID2s bool
 	options    []func(*LoadEdgeConfig)
+	cfg        LoadEdgeConfig
 }
 
 func (l *loadEdgesByType) AbortEarly() bool {
@@ -400,11 +401,10 @@ func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
 
 	// TODO: eventually add support for complex queries
 	// ORDER BY time DESC default
-	// we need offset, limit eventuall
+	// we need offset, limit eventually
 
-	cfg := &LoadEdgeConfig{}
 	for _, opt := range l.options {
-		opt(cfg)
+		opt(&l.cfg)
 	}
 
 	return &sqlBuilder{
@@ -417,12 +417,12 @@ func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
 			l.edgeType,
 		},
 		order: "time DESC",
-		limit: cfg.limit,
+		limit: l.cfg.limit,
 	}, nil
 }
 
 func (l *loadEdgesByType) GetCacheKey() string {
-	return getKeyForEdge(l.id, l.edgeType)
+	return getKeyForEdge(l.id, l.edgeType) + l.cfg.getKey()
 }
 
 func (l *loadEdgesByType) GetNewInstance() interface{} {
