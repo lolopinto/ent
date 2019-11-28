@@ -219,6 +219,12 @@ func TestGraphQLFieldEdge(t *testing.T) {
 	testEdge(t, e, "Account", "account: Account")
 }
 
+func TestGraphQLUniqueEdge(t *testing.T) {
+	e := getTestGraphQLFieldEdge("Event", "Creator", t)
+
+	testEdge(t, e, "Creator", "creator: Account")
+}
+
 func TestGraphQLForeignKeyEdge(t *testing.T) {
 	e := getTestGraphqlPluralEdge("Account", "Todos", t)
 

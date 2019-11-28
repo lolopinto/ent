@@ -43,7 +43,7 @@ interface Edge {
 
 type Event implements Node {
     attending: [User!]!
-    creator: [User!]!
+    creator: User
     declined: [User!]!
     endTime: Time
     hosts: [User!]!

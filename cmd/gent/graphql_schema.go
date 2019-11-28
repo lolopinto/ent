@@ -96,15 +96,19 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 		if f != nil {
 			fieldInfo.InvalidateFieldForGraphQL(f)
 		}
-		schemaInfo.addFieldEdge(&graphqlFieldEdge{FieldEdge: edge})
+		schemaInfo.addFieldEdge(&graphqlFieldEdge{edge})
 	}
 
 	for _, edge := range nodeData.EdgeInfo.Associations {
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
-		s.addEdgeAndConnection(edge)
+		if edge.Unique {
+			schemaInfo.addFieldEdge(&graphqlFieldEdge{edge})
+		} else {
+			schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
+			s.addEdgeAndConnection(edge)
+		}
 	}
 
 	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
@@ -556,13 +560,13 @@ func (f *graphQLField) GetSchemaLine() string {
 }
 
 type graphqlFieldEdge struct {
-	*edge.FieldEdge
+	edge.Edge
 }
 
 func (e *graphqlFieldEdge) GetSchemaLine() string {
 	// TODO allow overrides of this
-	edgeName := strcase.ToLowerCamel(e.EdgeName)
-	nodeName := e.NodeInfo.Node
+	edgeName := strcase.ToLowerCamel(e.GetEdgeName())
+	nodeName := e.GetNodeInfo().Node
 
 	// allow nullable
 	return fmt.Sprintf("%s: %s", edgeName, nodeName)
@@ -619,8 +623,7 @@ func (s *graphQLSchemaInfo) addNonEntField(f *graphQLNonEntField) {
 
 func (s *graphQLSchemaInfo) addFieldEdge(e *graphqlFieldEdge) {
 	s.fieldEdges = append(s.fieldEdges, e)
-	//	spew.Dump(e.EdgeName)
-	s.fieldEdgeMap[e.EdgeName] = e
+	s.fieldEdgeMap[e.GetEdgeName()] = e
 }
 
 func (s *graphQLSchemaInfo) addPluralEdge(e *graphqlPluralEdge) {
