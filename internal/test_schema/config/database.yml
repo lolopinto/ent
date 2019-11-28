@@ -1,4 +1,4 @@
-# copied from gent. todo handle this generically
+# this has valid edge roles at all times and should not be messed with
 dialect: postgres
 database: ent_test
 user: ola
