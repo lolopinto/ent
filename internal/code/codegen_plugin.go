@@ -1,15 +1,15 @@
-package main
+package code
 
 import "github.com/lolopinto/ent/internal/codegen"
 
-type entCodegenPlugin struct {
+type Step struct {
 }
 
-func (p *entCodegenPlugin) Name() string {
+func (p *Step) Name() string {
 	return "ent_codegen"
 }
 
-func (p *entCodegenPlugin) ProcessData(data *codegen.Data) error {
+func (p *Step) ProcessData(data *codegen.Data) error {
 	for _, info := range data.Schema.Nodes {
 		if !info.ShouldCodegen {
 			continue
@@ -30,4 +30,4 @@ func (p *entCodegenPlugin) ProcessData(data *codegen.Data) error {
 	return nil
 }
 
-var _ codegen.Step = &entCodegenPlugin{}
+var _ codegen.Step = &Step{}

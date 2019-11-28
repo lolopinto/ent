@@ -1,16 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"strconv"
-
-	"text/template"
-
-	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/code"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
-	"github.com/lolopinto/ent/internal/field"
-	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schemaparser"
@@ -54,55 +47,11 @@ func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInf
 
 	steps := []codegen.Step{
 		new(db.Step),
-		new(entCodegenPlugin),
+		new(code.Step),
 		new(graphql.Step),
 	}
 
 	for _, s := range steps {
 		s.ProcessData(data)
 	}
-}
-
-func getFilePathForModelFile(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("models/%s.go", nodeData.PackageName)
-}
-
-type nodeTemplateCodePath struct {
-	NodeData *schema.NodeData
-	CodePath *codegen.CodePath
-}
-
-func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
-	file.Write(&file.TemplatedBasedFileWriter{
-		Data: nodeTemplateCodePath{
-			NodeData: nodeData,
-			CodePath: codePathInfo,
-		},
-		PathToTemplate: "templates/node.tmpl",
-		TemplateName:   "node.tmpl",
-		PathToFile:     getFilePathForModelFile(nodeData),
-		FormatSource:   true,
-		FuncMap: template.FuncMap{
-			"fTypeString": field.GetNilableTypeInStructDefinition,
-			"quoteStr":    strconv.Quote,
-		},
-	})
-}
-
-type actionTemplate struct {
-	Action   action.Action
-	CodePath *codegen.CodePath
-}
-
-func writePrivacyFile(nodeData *schema.NodeData) {
-	pathToFile := fmt.Sprintf("models/%s_privacy.go", nodeData.PackageName)
-
-	file.Write(&file.TemplatedBasedFileWriter{
-		Data:               nodeData,
-		PathToTemplate:     "templates/privacy.tmpl",
-		TemplateName:       "privacy.tmpl",
-		PathToFile:         pathToFile,
-		CheckForManualCode: true,
-		FormatSource:       true,
-	})
 }

@@ -1,4 +1,4 @@
-package main
+package code
 
 import (
 	"fmt"
@@ -15,6 +15,11 @@ import (
 	"github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/schema"
 )
+
+type actionTemplate struct {
+	Action   action.Action
+	CodePath *codegen.CodePath
+}
 
 func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *codegen.CodePath) {
 	fileName := strcase.ToSnake(a.GetActionName())
