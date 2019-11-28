@@ -298,7 +298,7 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 
 		fn := func() (map[string]interface{}, error) {
 			dataMap := make(map[string]interface{})
-			fmt.Println("cache miss for key", key)
+			//			fmt.Println("cache miss for key", key)
 
 			// query and scan into map. return data in format needed by cache function
 			err := q.MapScan(dataMap)

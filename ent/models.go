@@ -196,7 +196,7 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 	} else {
 		err = stmt.QueryRowx(values...).StructScan(entity)
 	}
-	fmt.Println(query)
+	//fmt.Println(query)
 
 	if err != nil {
 		fmt.Println(err)
@@ -366,8 +366,6 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 		getColumnsString(cols),
 		getValsString(vals),
 	)
-
-	fmt.Println(query)
 
 	deleteKey(getKeyForEdge(id1, edgeType))
 	return performWrite(query, vals, tx, nil)
