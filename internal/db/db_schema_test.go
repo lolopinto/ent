@@ -113,22 +113,23 @@ func TestTablesFromSchema(t *testing.T) {
 	)
 }
 
-// TODO this test is useless
-// for tests like this and the one above and in graphql, we need to change things to get the value from node_schema or something and then do math based on that
-// func TestEdgesFromSchema(t *testing.T) {
-// 	schema := getTestSchema(t)
-// 	template := schema.getSchemaForTemplate()
+func TestEdgesFromSchema(t *testing.T) {
+	//	TODO this test is useless
+	//for tests like this and the one above and in graphql, we need to change things to get the value from node_schema or something and then do math based on that
+	t.Skip()
+	schema := getTestSchema(t)
+	template := schema.getSchemaForTemplate()
 
-// 	expEdges := 22
-// 	assert.Equal(
-// 		t,
-// 		expEdges,
-// 		len(template.Edges),
-// 		"incorrect number of edges generated, expected %d got %d",
-// 		expEdges,
-// 		len(template.Edges),
-// 	)
-// }
+	expEdges := 22
+	assert.Equal(
+		t,
+		expEdges,
+		len(template.Edges),
+		"incorrect number of edges generated, expected %d got %d",
+		expEdges,
+		len(template.Edges),
+	)
+}
 
 func TestStringUserDefinedColumn(t *testing.T) {
 	column := getTestColumn("AccountConfig", "FirstName", t)
@@ -168,7 +169,7 @@ func TestIntegerUserDefinedColumn(t *testing.T) {
 func TestTimeUserDefinedColumn(t *testing.T) {
 	column := getTestColumn("AccountConfig", "LastLoginAt", t)
 
-	// this also tests overriden files
+	// this also tests overriden fields
 	parts := []string{
 		strconv.Quote("last_login_time"),
 		"sa.TIMESTAMP()",
@@ -642,12 +643,7 @@ func testConstraints(t *testing.T, table *dbTable, expConstraints int) {
 
 func getParsedTestSchema(t *testing.T) *schema.Schema {
 	// use parsehelper.ParseFilesForTest since that caches it
-	data := parsehelper.ParseFilesForTest(
-		t,
-		// this is using the testdata local to gent
-		// will be fixed and standardized at some point
-		//		parsehelper.RootPath("./testdata/models/configs/"),
-	)
+	data := parsehelper.ParseFilesForTest(t)
 	return schema.ParsePackage(data.Pkg)
 }
 
