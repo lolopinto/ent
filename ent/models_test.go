@@ -149,14 +149,14 @@ func (suite *modelsTestSuite) TestGetEdgeInfo() {
 }
 
 func (suite *modelsTestSuite) TestLoadEdgesByType() {
-	testLoadEdgesByType(suite, func(id string) ([]*ent.Edge, error) {
+	testLoadEdgesByType(suite, func(id string) ([]*ent.AssocEdge, error) {
 		return ent.LoadEdgesByType(id, models.UserToEventsEdge)
 	})
 }
 
 func (suite *modelsTestSuite) TestGenLoadEdgesByType() {
-	testLoadEdgesByType(suite, func(id string) ([]*ent.Edge, error) {
-		chanResult := make(chan ent.EdgesResult)
+	testLoadEdgesByType(suite, func(id string) ([]*ent.AssocEdge, error) {
+		chanResult := make(chan ent.AssocEdgesResult)
 		go ent.GenLoadEdgesByType(id, models.UserToEventsEdge, chanResult)
 		result := <-chanResult
 		return result.Edges, result.Error
@@ -170,7 +170,7 @@ func (suite *modelsTestSuite) TestGeneratedLoadEdgesByType() {
 
 	verifyEdges(
 		suite,
-		func() ([]*ent.Edge, error) {
+		func() ([]*ent.AssocEdge, error) {
 			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
 			user, err := models.LoadUser(v, user.ID)
@@ -192,12 +192,12 @@ func (suite *modelsTestSuite) TestGeneratedGenLoadEdgesByType() {
 
 	verifyEdges(
 		suite,
-		func() ([]*ent.Edge, error) {
+		func() ([]*ent.AssocEdge, error) {
 			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 			user, err := models.LoadUser(v, user.ID)
 			util.Die(err)
 
-			var result ent.EdgesResult
+			var result ent.AssocEdgesResult
 			var wg sync.WaitGroup
 			wg.Add(1)
 			go user.GenEventsEdges(&result, &wg)
@@ -212,7 +212,7 @@ func (suite *modelsTestSuite) TestGeneratedGenLoadEdgesByType() {
 	)
 }
 
-func testLoadEdgesByType(suite *modelsTestSuite, f func(id string) ([]*ent.Edge, error)) {
+func testLoadEdgesByType(suite *modelsTestSuite, f func(id string) ([]*ent.AssocEdge, error)) {
 	user := testingutils.CreateTestUser(suite.T())
 	event := testingutils.CreateTestEvent(suite.T(), user)
 	event2 := testingutils.CreateTestEvent(suite.T(), user)
@@ -238,7 +238,7 @@ func testLoadEdgesByType(suite *modelsTestSuite, f func(id string) ([]*ent.Edge,
 	for _, tt := range testCases {
 		verifyEdges(
 			suite,
-			func() ([]*ent.Edge, error) {
+			func() ([]*ent.AssocEdge, error) {
 				return f(tt.id1)
 			},
 			[]string{event.ID, event2.ID},
@@ -249,7 +249,7 @@ func testLoadEdgesByType(suite *modelsTestSuite, f func(id string) ([]*ent.Edge,
 
 func verifyEdges(
 	suite *modelsTestSuite,
-	f func() ([]*ent.Edge, error),
+	f func() ([]*ent.AssocEdge, error),
 	expectedIds []string,
 	foundResult bool,
 ) {
@@ -270,14 +270,14 @@ func verifyEdges(
 }
 
 func (suite *modelsTestSuite) TestLoadEdgeByType() {
-	testLoadEdgeByType(suite, func(id1, id2 string) (*ent.Edge, error) {
+	testLoadEdgeByType(suite, func(id1, id2 string) (*ent.AssocEdge, error) {
 		return ent.LoadEdgeByType(id1, id2, models.UserToEventsEdge)
 	})
 }
 
 func (suite *modelsTestSuite) TestGenLoadEdgeByType() {
-	testLoadEdgeByType(suite, func(id1, id2 string) (*ent.Edge, error) {
-		chanResult := make(chan ent.EdgeResult)
+	testLoadEdgeByType(suite, func(id1, id2 string) (*ent.AssocEdge, error) {
+		chanResult := make(chan ent.AssocEdgeResult)
 		go ent.GenLoadEdgeByType(id1, id2, models.UserToEventsEdge, chanResult)
 		result := <-chanResult
 		return result.Edge, result.Error
@@ -290,7 +290,7 @@ func (suite *modelsTestSuite) TestGeneratedLoadEdgeByType() {
 
 	verifyEdgeByType(
 		suite,
-		func() (*ent.Edge, error) {
+		func() (*ent.AssocEdge, error) {
 			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
 			user, err := models.LoadUser(v, user.ID)
@@ -303,14 +303,14 @@ func (suite *modelsTestSuite) TestGeneratedLoadEdgeByType() {
 }
 
 func (suite *modelsTestSuite) TestUniqueLoadEdgeByType() {
-	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.Edge, error) {
+	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.AssocEdge, error) {
 		return ent.LoadUniqueEdgeByType(id1, models.EventToCreatorEdge)
 	})
 }
 
 func (suite *modelsTestSuite) TestGenUniqueLoadEdgeByType() {
-	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.Edge, error) {
-		chanResult := make(chan ent.EdgeResult)
+	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.AssocEdge, error) {
+		chanResult := make(chan ent.AssocEdgeResult)
 		go ent.GenLoadUniqueEdgeByType(id1, models.EventToCreatorEdge, chanResult)
 		result := <-chanResult
 		return result.Edge, result.Error
@@ -318,7 +318,7 @@ func (suite *modelsTestSuite) TestGenUniqueLoadEdgeByType() {
 }
 
 func (suite *modelsTestSuite) TestGeneratedUniqueLoadEdgeByType() {
-	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.Edge, error) {
+	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.AssocEdge, error) {
 		v := viewertesting.OmniViewerContext{}
 		event, err := models.LoadEvent(v, id1)
 		util.Die(err)
@@ -327,12 +327,12 @@ func (suite *modelsTestSuite) TestGeneratedUniqueLoadEdgeByType() {
 }
 
 func (suite *modelsTestSuite) TestGeneratedGenUniqueLoadEdgeByType() {
-	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.Edge, error) {
+	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.AssocEdge, error) {
 		v := viewertesting.OmniViewerContext{}
 		event, err := models.LoadEvent(v, id1)
 		util.Die(err)
 		var wg sync.WaitGroup
-		var result ent.EdgeResult
+		var result ent.AssocEdgeResult
 		wg.Add(1)
 		go event.GenCreatorEdge(&result, &wg)
 		wg.Wait()
@@ -369,14 +369,14 @@ func (suite *modelsTestSuite) TestGeneratedGenLoadEdgeByType() {
 
 	verifyEdgeByType(
 		suite,
-		func() (*ent.Edge, error) {
+		func() (*ent.AssocEdge, error) {
 			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
 			user, err := models.LoadUser(v, user.ID)
 			util.Die(err)
 
 			var wg sync.WaitGroup
-			var result ent.EdgeResult
+			var result ent.AssocEdgeResult
 			wg.Add(1)
 			go user.GenLoadEventsEdgeFor(event.ID, &result, &wg)
 			wg.Wait()
@@ -410,13 +410,13 @@ func (suite *modelsTestSuite) TestLoadEdgeByTypeEmptyID2() {
 	assert.Zero(suite.T(), *edge)
 }
 
-func testLoadEdgeByType(suite *modelsTestSuite, f func(id, id2 string) (*ent.Edge, error)) {
+func testLoadEdgeByType(suite *modelsTestSuite, f func(id, id2 string) (*ent.AssocEdge, error)) {
 	user := testingutils.CreateTestUser(suite.T())
 	event := testingutils.CreateTestEvent(suite.T(), user)
 
 	verifyEdgeByType(
 		suite,
-		func() (*ent.Edge, error) {
+		func() (*ent.AssocEdge, error) {
 			return f(user.ID, event.ID)
 		},
 		user.ID,
@@ -424,13 +424,13 @@ func testLoadEdgeByType(suite *modelsTestSuite, f func(id, id2 string) (*ent.Edg
 	)
 }
 
-func testUniqueLoadEdgeByType(suite *modelsTestSuite, f func(id string) (*ent.Edge, error)) {
+func testUniqueLoadEdgeByType(suite *modelsTestSuite, f func(id string) (*ent.AssocEdge, error)) {
 	user := testingutils.CreateTestUser(suite.T())
 	event := testingutils.CreateTestEvent(suite.T(), user)
 
 	verifyEdgeByType(
 		suite,
-		func() (*ent.Edge, error) {
+		func() (*ent.AssocEdge, error) {
 			return f(event.ID)
 		},
 		event.ID,
@@ -448,7 +448,7 @@ func testUniqueLoadNodeByType(suite *modelsTestSuite, f func(id string) (*models
 	assert.Equal(suite.T(), user.ID, node.ID)
 }
 
-func verifyEdgeByType(suite *modelsTestSuite, f func() (*ent.Edge, error), id1, id2 string) {
+func verifyEdgeByType(suite *modelsTestSuite, f func() (*ent.AssocEdge, error), id1, id2 string) {
 	edge, err := f()
 	assert.Nil(suite.T(), err)
 	assert.NotZero(suite.T(), edge)
