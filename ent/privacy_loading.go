@@ -277,7 +277,7 @@ func LoadUniqueNodeByType(viewer viewer.ViewerContext, id string, edgeType EdgeT
 
 func GenLoadUniqueNodeByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config, errChan chan<- error) {
 	//	chanErr := make(chan error)
-	edgeResultChan := make(chan EdgeResult)
+	edgeResultChan := make(chan AssocEdgeResult)
 	go GenLoadUniqueEdgeByType(id, edgeType, edgeResultChan)
 	edgeResult := <-edgeResultChan
 	if edgeResult.Error != nil {

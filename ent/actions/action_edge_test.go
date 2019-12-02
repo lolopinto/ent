@@ -61,7 +61,7 @@ func (suite *actionEdgesSuite) TestUniqueEdges() {
 
 	edge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToCreatorEdge)
 	assert.Nil(suite.T(), err)
-	testingutils.VerifyEdge(suite.T(), &ent.Edge{
+	testingutils.VerifyEdge(suite.T(), &ent.AssocEdge{
 		ID1:      event.GetID(),
 		ID1Type:  event.GetType(),
 		ID2:      user.GetID(),
