@@ -90,8 +90,11 @@ func (AssociationEdge) marker() {
 	panic("do not call")
 }
 
+// AssocEdgeMap is a mapping of name of edge to EdgeType
+type AssocEdgeMap map[string]*AssociationEdge
+
 type AssociationEdgeGroup struct {
-	EdgeGroups      EdgeMap
+	EdgeGroups      AssocEdgeMap
 	GroupStatusName string // Name of the group e.g. Rsvp. will be used to create a Node{GroupName}Status object and a bunch of other things
 	EdgeAction      *EdgeActionConfig
 	CustomTableName string

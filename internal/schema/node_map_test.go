@@ -335,14 +335,14 @@ type EventConfig struct {
 		return ent.EdgeMap {
 			"Rsvps": ent.AssociationEdgeGroup {
 				GroupStatusName: "Rsvp",
-				EdgeGroups: ent.EdgeMap{
-					"AttendingUsers": ent.AssociationEdge{
+				EdgeGroups: ent.AssocEdgeMap{
+					"AttendingUsers": &ent.AssociationEdge{
 						EntConfig: AccountConfig{},
 						InverseEdge: &ent.InverseAssocEdge{
 							EdgeName: "EventsAttending",
 						},
 					},
-					"DeclinedUsers": ent.AssociationEdge{
+					"DeclinedUsers": &ent.AssociationEdge{
 						EntConfig: AccountConfig{},
 						InverseEdge: &ent.InverseAssocEdge{
 							EdgeName: "DeclinedEvents",

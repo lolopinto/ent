@@ -31,8 +31,8 @@ func (config *AccountConfig) GetEdges() ent.EdgeMap {
 			EntConfig: TodoConfig{},
 		},
 		"Friendships": ent.AssociationEdgeGroup{
-			EdgeGroups: ent.EdgeMap{
-				"FriendRequests": ent.AssociationEdge{
+			EdgeGroups: ent.AssocEdgeMap{
+				"FriendRequests": &ent.AssociationEdge{
 					EntConfig: AccountConfig{},
 					InverseEdge: &ent.InverseAssocEdge{
 						// inverse on the same edge need to be part of the same status
@@ -40,7 +40,7 @@ func (config *AccountConfig) GetEdges() ent.EdgeMap {
 						EdgeName: "FriendRequestsReceived",
 					},
 				},
-				"Friends": ent.AssociationEdge{
+				"Friends": &ent.AssociationEdge{
 					EntConfig: AccountConfig{},
 					Symmetric: true,
 				},
