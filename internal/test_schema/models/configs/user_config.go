@@ -23,9 +23,12 @@ func (config *UserConfig) GetEdges() ent.EdgeMap {
 		},
 		"FamilyMembers": &ent.AssociationEdge{
 			EntConfig: UserConfig{},
-			EdgeAction: &ent.EdgeActionConfig{
+			EdgeActions: ent.EdgeActions{
+				// TODO: add action
 				// can't add for now until I fix this API
-				Action: ent.RemoveEdgeAction,
+				&ent.EdgeActionConfig{
+					Action: ent.RemoveEdgeAction,
+				},
 			},
 		},
 		"Friends": &ent.AssociationEdge{
@@ -33,8 +36,11 @@ func (config *UserConfig) GetEdges() ent.EdgeMap {
 			Symmetric: true,
 			// uhh how do we remove this?
 			// lol such a broken API. Need add and remove here...
-			EdgeAction: &ent.EdgeActionConfig{
-				Action: ent.AddEdgeAction,
+			// TODO add remove...
+			EdgeActions: ent.EdgeActions{
+				&ent.EdgeActionConfig{
+					Action: ent.AddEdgeAction,
+				},
 			},
 		},
 	}
