@@ -47,19 +47,26 @@ func (config *AccountConfig) GetEdges() ent.EdgeMap {
 			},
 			// this makes more sense for events than this but for tests....
 			GroupStatusName: "FriendshipStatus",
-			EdgeAction: &ent.EdgeActionConfig{
-				Action:            ent.AddEdgeAction,
-				CustomActionName:  "AccountFriendshipStatusAction",
-				CustomGraphQLName: "accountSetFriendshipStatus",
+			EdgeActions: ent.EdgeActions{
+				&ent.EdgeActionConfig{
+					Action:            ent.AddEdgeAction,
+					CustomActionName:  "AccountFriendshipStatusAction",
+					CustomGraphQLName: "accountSetFriendshipStatus",
+				},
 			},
 		},
 		// edge from account -> folders. one-way edge with the inverse data being stored in the field
 		"Folders": ent.AssociationEdge{
 			EntConfig: FolderConfig{},
-			EdgeAction: &ent.EdgeActionConfig{
-				Action:            ent.AddEdgeAction,
-				CustomActionName:  "AccountAddFoldersAction", // EventAddInviteesAction is default
-				CustomGraphQLName: "accountFolderAdd",
+			EdgeActions: ent.EdgeActions{
+				&ent.EdgeActionConfig{
+					Action:            ent.AddEdgeAction,
+					CustomActionName:  "AccountAddFoldersAction", // AddFoldersAction is default
+					CustomGraphQLName: "accountFolderAdd",
+				},
+				&ent.EdgeActionConfig{
+					Action: ent.RemoveEdgeAction,
+				},
 			},
 		},
 		// just to have assoc version also

@@ -79,7 +79,7 @@ type AssociationEdge struct {
 
 	// TODO inverse and other fun things about edges
 	// same with foreign key edge
-	EdgeAction *EdgeActionConfig
+	EdgeActions EdgeActions
 }
 
 func (AssociationEdge) Name() string {
@@ -96,7 +96,7 @@ type AssocEdgeMap map[string]*AssociationEdge
 type AssociationEdgeGroup struct {
 	EdgeGroups      AssocEdgeMap
 	GroupStatusName string // Name of the group e.g. Rsvp. will be used to create a Node{GroupName}Status object and a bunch of other things
-	EdgeAction      *EdgeActionConfig
+	EdgeActions     EdgeActions
 	CustomTableName string
 
 	// Edges limits the edges that are used in the status action calculations. status map.

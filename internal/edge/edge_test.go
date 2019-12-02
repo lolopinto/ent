@@ -70,11 +70,17 @@ func TestAssociationEdge(t *testing.T) {
 			schemaparser.GetEntConfigFromName("folder"),
 		),
 		TableName: "account_folders_edges",
-		EdgeAction: &EdgeAction{
-			Action:            "ent.AddEdgeAction",
-			CustomActionName:  "AccountAddFoldersAction",
-			CustomGraphQLName: "accountFolderAdd",
-			ExposeToGraphQL:   true,
+		EdgeActions: []*EdgeAction{
+			&EdgeAction{
+				Action:            "ent.AddEdgeAction",
+				CustomActionName:  "AccountAddFoldersAction",
+				CustomGraphQLName: "accountFolderAdd",
+				ExposeToGraphQL:   true,
+			},
+			&EdgeAction{
+				Action:          "ent.RemoveEdgeAction",
+				ExposeToGraphQL: true,
+			},
 		},
 	}
 
@@ -200,11 +206,13 @@ func TestEdgeGroup(t *testing.T) {
 			"FriendRequests": friendRequestsEdge,
 			"Friends":        friendsEdge,
 		},
-		EdgeAction: &EdgeAction{
-			Action:            "ent.AddEdgeAction",
-			CustomActionName:  "AccountFriendshipStatusAction",
-			CustomGraphQLName: "accountSetFriendshipStatus",
-			ExposeToGraphQL:   true,
+		EdgeActions: []*EdgeAction{
+			&EdgeAction{
+				Action:            "ent.AddEdgeAction",
+				CustomActionName:  "AccountFriendshipStatusAction",
+				CustomGraphQLName: "accountSetFriendshipStatus",
+				ExposeToGraphQL:   true,
+			},
 		},
 	}
 
@@ -252,11 +260,14 @@ func TestEdgeGroupWithCustomActionEdges(t *testing.T) {
 			"Attending": attendingEdge,
 			"Declined":  declinedEdge,
 		},
-		// TODO none of this is tested!
-		// EdgeAction: &EdgeAction{
-		// 	Action:          "ent.AddEdgeAction",
-		// 	ExposeToGraphQL: true,
-		// },
+		EdgeActions: []*EdgeAction{
+			&EdgeAction{
+				Action:            "ent.EdgeGroupAction",
+				ExposeToGraphQL:   true,
+				CustomActionName:  "EventRsvpAction",
+				CustomGraphQLName: "eventRSVP",
+			},
+		},
 	}
 
 	testAssocEdgeGroup(
@@ -308,7 +319,7 @@ func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
 
 	testInverseAssociationEdge(t, edgeName, edge, expectedAssocEdge)
 
-	testEdgeAction(t, edgeName, edge, expectedAssocEdge)
+	testEdgeActions(t, edgeName, edge.EdgeActions, expectedAssocEdge.EdgeActions)
 
 	expectedPackageName := expectedAssocEdge.entConfig.PackageName
 	expectedConfigName := expectedAssocEdge.entConfig.ConfigName
@@ -360,53 +371,61 @@ func testInverseAssociationEdge(t *testing.T, edgeName string, edge, expectedAss
 	testNodeInfo(t, inverseEdge.NodeInfo, expectedInverseEdge.NodeInfo.Node)
 }
 
-func testEdgeAction(t *testing.T, edgeName string, edge, expectedAssocEdge *AssociationEdge) {
-	edgeAction := edge.EdgeAction
-	expectedEdgeAction := expectedAssocEdge.EdgeAction
+func testEdgeActions(t *testing.T, edgeName string, edgeActions, expectedEdgeActions []*EdgeAction) {
+	assert.Equal(t, len(expectedEdgeActions), len(edgeActions))
 
-	if expectedEdgeAction == nil && edgeAction != nil {
-		t.Errorf("expected edge action with edge name %s to be nil and it was not nil", edgeName)
-		return
-	}
+	// let's assume we go through them in order and don't need to sort.
+	for idx, expectedEdgeAction := range expectedEdgeActions {
+		edgeAction := edgeActions[idx]
 
-	if expectedEdgeAction != nil && edgeAction == nil {
-		t.Errorf("expected edge action with edge name %s to be non-nil and it was nil", edgeName)
-		return
-	}
+		if expectedEdgeAction == nil && edgeAction != nil {
+			t.Errorf("expected edge action with edge name %s to be nil and it was not nil", edgeName)
+			continue
+		}
 
-	if expectedEdgeAction == nil && edgeAction == nil {
-		return
-	}
+		if expectedEdgeAction != nil && edgeAction == nil {
+			t.Errorf("expected edge action with edge name %s to be non-nil and it was nil", edgeName)
+			continue
+		}
 
-	if expectedEdgeAction.Action != edgeAction.Action {
-		t.Errorf(
+		if expectedEdgeAction == nil && edgeAction == nil {
+			continue
+		}
+
+		assert.Equal(
+			t,
+			expectedEdgeAction.Action,
+			edgeAction.Action,
 			"action for edge action with edge name %s was not as expected, expected %s, got %s",
 			edgeName,
 			expectedEdgeAction.Action,
 			edgeAction.Action,
 		)
-	}
 
-	if expectedEdgeAction.CustomActionName != edgeAction.CustomActionName {
-		t.Errorf(
+		assert.Equal(
+			t,
+			expectedEdgeAction.CustomActionName,
+			edgeAction.CustomActionName,
 			"custom action for edge action with edge name %s was not as expected, expected %s, got %s",
 			edgeName,
 			expectedEdgeAction.CustomActionName,
 			edgeAction.CustomActionName,
 		)
-	}
 
-	if expectedEdgeAction.CustomGraphQLName != edgeAction.CustomGraphQLName {
-		t.Errorf(
+		assert.Equal(
+			t,
+			expectedEdgeAction.CustomGraphQLName,
+			edgeAction.CustomGraphQLName,
 			"custom graphql name for edge action with edge name %s was not as expected, expected %s, got %s",
 			edgeName,
 			expectedEdgeAction.CustomGraphQLName,
 			edgeAction.CustomGraphQLName,
 		)
-	}
 
-	if expectedEdgeAction.ExposeToGraphQL != edgeAction.ExposeToGraphQL {
-		t.Errorf(
+		assert.Equal(
+			t,
+			expectedEdgeAction.ExposeToGraphQL,
+			edgeAction.ExposeToGraphQL,
 			"expose to graphql value for edge action with edge name %s was not as expected. expected %v, got %v",
 			edgeName,
 			expectedEdgeAction.ExposeToGraphQL,
@@ -506,6 +525,8 @@ func testAssocEdgeGroup(t *testing.T, edgeGroup, expectedAssocEdgeGroup *Associa
 		idx := sort.SearchStrings(actionEdges, edgeName)
 		assert.Equal(t, edgeGroup.UseEdgeInStatusAction(edgeName), idx != len(actionEdges), edgeName)
 	}
+
+	testEdgeActions(t, edgeGroup.GroupName, edgeGroup.EdgeActions, expectedAssocEdgeGroup.EdgeActions)
 }
 
 var r *testsync.RunOnce

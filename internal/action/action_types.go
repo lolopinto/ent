@@ -241,16 +241,30 @@ func getActionTypeFromString(typ string) actionType {
 	panic(fmt.Errorf("invalid action type passed %s", typ))
 }
 
-func getActionNameForActionType(nodeName string, typ concreteNodeActionType, customName string) string {
+func getActionNameForNodeActionType(typ concreteNodeActionType, nodeName, customName string) string {
 	if customName != "" {
 		return customName
 	}
 	return typ.getDefaultActionName(nodeName)
 }
 
-func getGraphQLNameForActionType(nodeName string, typ concreteNodeActionType, customName string) string {
+func getGraphQLNameForNodeActionType(typ concreteNodeActionType, nodeName, customName string) string {
 	if customName != "" {
 		return customName
 	}
 	return typ.getDefaultGraphQLName(nodeName)
+}
+
+func getActionNameForEdgeActionType(typ concreteEdgeActionType, nodeName, edgeName, customName string) string {
+	if customName != "" {
+		return customName
+	}
+	return typ.getDefaultActionName(nodeName, edgeName)
+}
+
+func getGraphQLNameForEdgeActionType(typ concreteEdgeActionType, nodeName, edgeName, customName string) string {
+	if customName != "" {
+		return customName
+	}
+	return typ.getDefaultGraphQLName(nodeName, edgeName)
 }

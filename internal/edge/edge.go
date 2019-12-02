@@ -146,7 +146,7 @@ type AssociationEdge struct {
 	IsInverseEdge bool
 	TableName     string // TableName will be gotten from the GroupName if part of a group or derived from each edge
 	// will eventually be made configurable to the user
-	EdgeAction *EdgeAction
+	EdgeActions []*EdgeAction
 }
 
 // EdgeAction holds as little data as possible about the edge action
@@ -194,7 +194,7 @@ type AssociationEdgeGroup struct {
 	GroupStatusName string                      // should be something like RsvpStatus
 	ConstType       string                      // and then this becomes EventRsvpStatus
 	Edges           map[string]*AssociationEdge // TODO...
-	EdgeAction      *EdgeAction
+	EdgeActions     []*EdgeAction
 	actionEdges     map[string]bool
 	NodeInfo        nodeinfo.NodeInfo
 }
@@ -450,8 +450,8 @@ func getParsedAssociationEdgeItem(containingPackageName, edgeName string, lit *a
 		assocEdge.InverseEdge = parseInverseAssocEdge(entConfig, containingPackageName, keyValueExprValue)
 	}, "EntConfig")
 
-	g.AddItem("EdgeAction", func(expr ast.Expr, keyValueExprValue ast.Expr) {
-		assocEdge.EdgeAction = parseEdgeAction(keyValueExprValue)
+	g.AddItem("EdgeActions", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		assocEdge.EdgeActions = parseEdgeActions(keyValueExprValue)
 	})
 
 	g.RunLoop()
@@ -506,8 +506,8 @@ func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, gr
 		edgeGroup.ConstType = edgeGroup.NodeInfo.Node + edgeGroup.GroupStatusName
 	})
 
-	g.AddItem("EdgeAction", func(expr ast.Expr, keyValueExprValue ast.Expr) {
-		edgeGroup.EdgeAction = parseEdgeAction(keyValueExprValue)
+	g.AddItem("EdgeActions", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		edgeGroup.EdgeActions = parseEdgeActions(keyValueExprValue)
 	})
 
 	g.AddItem("ActionEdges", func(expr ast.Expr, keyValueExpr ast.Expr) {
@@ -517,6 +517,15 @@ func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, gr
 	g.RunLoop()
 	edgeInfo.addEdgeGroup(edgeGroup)
 	return nil
+}
+
+func parseEdgeActions(keyValueExprValue ast.Expr) []*EdgeAction {
+	compositLit := astparser.GetExprToCompositeLit(keyValueExprValue)
+	edgeActions := make([]*EdgeAction, len(compositLit.Elts))
+	for idx, elt := range compositLit.Elts {
+		edgeActions[idx] = parseEdgeAction(elt)
+	}
+	return edgeActions
 }
 
 func parseEdgeAction(keyValueExprValue ast.Expr) *EdgeAction {

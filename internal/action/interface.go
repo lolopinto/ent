@@ -203,19 +203,11 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 
 	if edgeInfo != nil {
 		for _, assocEdge := range edgeInfo.Associations {
-			if assocEdge.EdgeAction == nil {
-				continue
-			}
-			actionInfo.addActions(processEdgeAction(nodeName, assocEdge))
-
+			actionInfo.addActions(processEdgeActions(nodeName, assocEdge)...)
 		}
 
 		for _, assocGroup := range edgeInfo.AssocGroups {
-			if assocGroup.EdgeAction == nil {
-				continue
-			}
-			actionInfo.addActions(processEdgeGroupAction(nodeName, assocGroup))
-
+			actionInfo.addActions(processEdgeGroupActions(nodeName, assocGroup)...)
 		}
 	}
 

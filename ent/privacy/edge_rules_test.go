@@ -6,9 +6,9 @@ import (
 	"github.com/lolopinto/ent/ent"
 
 	"github.com/lolopinto/ent/ent/privacy"
-	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
+	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
