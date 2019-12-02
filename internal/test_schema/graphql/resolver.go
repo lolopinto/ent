@@ -258,6 +258,25 @@ func (r *mutationResolver) UserRemoveFamilyMembers(ctx context.Context, input Us
 	}, nil
 }
 
+func (r *mutationResolver) UserRemoveFriends(ctx context.Context, input UserRemoveFriendsInput) (*UserRemoveFriendsResponse, error) {
+	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := action2.RemoveFriendsFromContext(ctx, existingNode).
+		AddFriendsID(input.FriendsID).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserRemoveFriendsResponse{
+		User: node,
+	}, nil
+}
+
 type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) Contact(ctx context.Context, id string) (*models.Contact, error) {

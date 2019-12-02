@@ -104,6 +104,7 @@ type Mutation {
     userDelete(input: UserDeleteInput!): UserDeleteResponse
     userEdit(input: UserEditInput!): UserEditResponse
     userRemoveFamilyMembers(input: UserRemoveFamilyMembersInput!): UserRemoveFamilyMembersResponse
+    userRemoveFriends(input: UserRemoveFriendsInput!): UserRemoveFriendsResponse
 }
 
 interface Node {
@@ -187,6 +188,15 @@ input UserRemoveFamilyMembersInput {
 }
 
 type UserRemoveFamilyMembersResponse {
+    user: User
+}
+
+input UserRemoveFriendsInput {
+    friendsID: ID!
+    userID: ID!
+}
+
+type UserRemoveFriendsResponse {
     user: User
 }
 

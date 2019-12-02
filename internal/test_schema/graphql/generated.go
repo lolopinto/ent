@@ -112,6 +112,7 @@ type ComplexityRoot struct {
 		UserDelete              func(childComplexity int, input UserDeleteInput) int
 		UserEdit                func(childComplexity int, input UserEditInput) int
 		UserRemoveFamilyMembers func(childComplexity int, input UserRemoveFamilyMembersInput) int
+		UserRemoveFriends       func(childComplexity int, input UserRemoveFriendsInput) int
 	}
 
 	Query struct {
@@ -160,6 +161,10 @@ type ComplexityRoot struct {
 		User func(childComplexity int) int
 	}
 
+	UserRemoveFriendsResponse struct {
+		User func(childComplexity int) int
+	}
+
 	UsersConnection struct {
 		Edges func(childComplexity int) int
 		Nodes func(childComplexity int) int
@@ -199,6 +204,7 @@ type MutationResolver interface {
 	UserDelete(ctx context.Context, input UserDeleteInput) (*UserDeleteResponse, error)
 	UserEdit(ctx context.Context, input UserEditInput) (*UserEditResponse, error)
 	UserRemoveFamilyMembers(ctx context.Context, input UserRemoveFamilyMembersInput) (*UserRemoveFamilyMembersResponse, error)
+	UserRemoveFriends(ctx context.Context, input UserRemoveFriendsInput) (*UserRemoveFriendsResponse, error)
 }
 type QueryResolver interface {
 	Contact(ctx context.Context, id string) (*models.Contact, error)
@@ -545,6 +551,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UserRemoveFamilyMembers(childComplexity, args["input"].(UserRemoveFamilyMembersInput)), true
 
+	case "Mutation.userRemoveFriends":
+		if e.complexity.Mutation.UserRemoveFriends == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_userRemoveFriends_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UserRemoveFriends(childComplexity, args["input"].(UserRemoveFriendsInput)), true
+
 	case "Query.contact":
 		if e.complexity.Query.Contact == nil {
 			break
@@ -718,6 +736,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UserRemoveFamilyMembersResponse.User(childComplexity), true
+
+	case "UserRemoveFriendsResponse.user":
+		if e.complexity.UserRemoveFriendsResponse.User == nil {
+			break
+		}
+
+		return e.complexity.UserRemoveFriendsResponse.User(childComplexity), true
 
 	case "UsersConnection.edges":
 		if e.complexity.UsersConnection.Edges == nil {
@@ -908,6 +933,7 @@ type Mutation {
     userDelete(input: UserDeleteInput!): UserDeleteResponse
     userEdit(input: UserEditInput!): UserEditResponse
     userRemoveFamilyMembers(input: UserRemoveFamilyMembersInput!): UserRemoveFamilyMembersResponse
+    userRemoveFriends(input: UserRemoveFriendsInput!): UserRemoveFriendsResponse
 }
 
 interface Node {
@@ -991,6 +1017,15 @@ input UserRemoveFamilyMembersInput {
 }
 
 type UserRemoveFamilyMembersResponse {
+    user: User
+}
+
+input UserRemoveFriendsInput {
+    friendsID: ID!
+    userID: ID!
+}
+
+type UserRemoveFriendsResponse {
     user: User
 }
 
@@ -1130,6 +1165,20 @@ func (ec *executionContext) field_Mutation_userRemoveFamilyMembers_args(ctx cont
 	var arg0 UserRemoveFamilyMembersInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNUserRemoveFamilyMembersInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_userRemoveFriends_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 UserRemoveFriendsInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNUserRemoveFriendsInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFriendsInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2656,6 +2705,47 @@ func (ec *executionContext) _Mutation_userRemoveFamilyMembers(ctx context.Contex
 	return ec.marshalOUserRemoveFamilyMembersResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersResponse(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_userRemoveFriends(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_userRemoveFriends_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UserRemoveFriends(rctx, args["input"].(UserRemoveFriendsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*UserRemoveFriendsResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUserRemoveFriendsResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFriendsResponse(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_contact(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -3517,6 +3607,40 @@ func (ec *executionContext) _UserRemoveFamilyMembersResponse_user(ctx context.Co
 	}()
 	rctx := &graphql.ResolverContext{
 		Object:   "UserRemoveFamilyMembersResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserRemoveFriendsResponse_user(ctx context.Context, field graphql.CollectedField, obj *UserRemoveFriendsResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "UserRemoveFriendsResponse",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -5090,6 +5214,30 @@ func (ec *executionContext) unmarshalInputUserRemoveFamilyMembersInput(ctx conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUserRemoveFriendsInput(ctx context.Context, obj interface{}) (UserRemoveFriendsInput, error) {
+	var it UserRemoveFriendsInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "friendsID":
+			var err error
+			it.FriendsID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userID":
+			var err error
+			it.UserID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5571,6 +5719,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_userEdit(ctx, field)
 		case "userRemoveFamilyMembers":
 			out.Values[i] = ec._Mutation_userRemoveFamilyMembers(ctx, field)
+		case "userRemoveFriends":
+			out.Values[i] = ec._Mutation_userRemoveFriends(ctx, field)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5931,6 +6081,30 @@ func (ec *executionContext) _UserRemoveFamilyMembersResponse(ctx context.Context
 			out.Values[i] = graphql.MarshalString("UserRemoveFamilyMembersResponse")
 		case "user":
 			out.Values[i] = ec._UserRemoveFamilyMembersResponse_user(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var userRemoveFriendsResponseImplementors = []string{"UserRemoveFriendsResponse"}
+
+func (ec *executionContext) _UserRemoveFriendsResponse(ctx context.Context, sel ast.SelectionSet, obj *UserRemoveFriendsResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, userRemoveFriendsResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserRemoveFriendsResponse")
+		case "user":
+			out.Values[i] = ec._UserRemoveFriendsResponse_user(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6548,6 +6722,10 @@ func (ec *executionContext) unmarshalNUserEditInput2githubᚗcomᚋlolopintoᚋe
 
 func (ec *executionContext) unmarshalNUserRemoveFamilyMembersInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFamilyMembersInput(ctx context.Context, v interface{}) (UserRemoveFamilyMembersInput, error) {
 	return ec.unmarshalInputUserRemoveFamilyMembersInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNUserRemoveFriendsInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFriendsInput(ctx context.Context, v interface{}) (UserRemoveFriendsInput, error) {
+	return ec.unmarshalInputUserRemoveFriendsInput(ctx, v)
 }
 
 func (ec *executionContext) marshalNUsersEdge2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx context.Context, sel ast.SelectionSet, v UsersEdge) graphql.Marshaler {
@@ -7213,6 +7391,17 @@ func (ec *executionContext) marshalOUserRemoveFamilyMembersResponse2ᚖgithubᚗ
 		return graphql.Null
 	}
 	return ec._UserRemoveFamilyMembersResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUserRemoveFriendsResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFriendsResponse(ctx context.Context, sel ast.SelectionSet, v UserRemoveFriendsResponse) graphql.Marshaler {
+	return ec._UserRemoveFriendsResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOUserRemoveFriendsResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFriendsResponse(ctx context.Context, sel ast.SelectionSet, v *UserRemoveFriendsResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._UserRemoveFriendsResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOUsersEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUsersEdge(ctx context.Context, sel ast.SelectionSet, v []*UsersEdge) graphql.Marshaler {

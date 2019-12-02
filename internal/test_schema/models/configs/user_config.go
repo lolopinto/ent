@@ -35,12 +35,12 @@ func (config *UserConfig) GetEdges() ent.EdgeMap {
 		"Friends": &ent.AssociationEdge{
 			EntConfig: UserConfig{},
 			Symmetric: true,
-			// uhh how do we remove this?
-			// lol such a broken API. Need add and remove here...
-			// TODO add remove...
 			EdgeActions: ent.EdgeActions{
 				&ent.EdgeActionConfig{
 					Action: ent.AddEdgeAction,
+				},
+				&ent.EdgeActionConfig{
+					Action: ent.RemoveEdgeAction,
 				},
 			},
 		},

@@ -130,6 +130,15 @@ type UserRemoveFamilyMembersResponse struct {
 	User *models.User `json:"user"`
 }
 
+type UserRemoveFriendsInput struct {
+	FriendsID string `json:"friendsID"`
+	UserID    string `json:"userID"`
+}
+
+type UserRemoveFriendsResponse struct {
+	User *models.User `json:"user"`
+}
+
 type UsersConnection struct {
 	Edges []*UsersEdge   `json:"edges"`
 	Nodes []*models.User `json:"nodes"`
