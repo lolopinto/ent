@@ -5,8 +5,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/parsehelper"
+	"github.com/lolopinto/ent/internal/schemaparser"
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,7 @@ import (
 func TestEdgeInfo(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "account")
 
-	testEdgeInfo(t, edgeInfo, 0, 1, 3)
+	testEdgeInfo(t, edgeInfo, 0, 1, 4)
 
 	edgeInfo = getTestEdgeInfo(t, "todo")
 
@@ -66,7 +67,7 @@ func TestAssociationEdge(t *testing.T) {
 		EdgeConst: "AccountToFoldersEdge",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Folders",
-			codegen.GetEntConfigFromName("folder"),
+			schemaparser.GetEntConfigFromName("folder"),
 		),
 		TableName: "account_folders_edges",
 		EdgeAction: &EdgeAction{
@@ -88,7 +89,7 @@ func TestSymmetricAssociationEdge(t *testing.T) {
 		EdgeConst: "AccountToFriendsEdge",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Friends",
-			codegen.GetEntConfigFromName("account"),
+			schemaparser.GetEntConfigFromName("account"),
 		),
 		Symmetric: true,
 		TableName: "account_friends_edges",
@@ -105,7 +106,7 @@ func TestUniqueAssociationEdge(t *testing.T) {
 		EdgeConst: "EventToCreatorEdge",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Creator",
-			codegen.GetEntConfigFromName("account"),
+			schemaparser.GetEntConfigFromName("account"),
 		),
 		Unique:    true,
 		TableName: "account_creator_edges",
@@ -122,13 +123,13 @@ func TestInverseAssociationEdge(t *testing.T) {
 		EdgeConst: "FolderToTodosEdge",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Todos",
-			codegen.GetEntConfigFromName("todo"),
+			schemaparser.GetEntConfigFromName("todo"),
 		),
 		InverseEdge: &InverseAssocEdge{
 			EdgeConst: "TodoToFoldersEdge",
 			commonEdgeInfo: getCommonEdgeInfo(
 				"Folders",
-				codegen.GetEntConfigFromName("folder"),
+				schemaparser.GetEntConfigFromName("folder"),
 			),
 		},
 		TableName: "folder_todos_edges",
@@ -157,7 +158,7 @@ func TestAddingInverseEdge(t *testing.T) {
 		EdgeConst: "TodoToFoldersEdge",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Folders",
-			codegen.GetEntConfigFromName("folder"),
+			schemaparser.GetEntConfigFromName("folder"),
 		),
 		IsInverseEdge: true,
 		TableName:     "folder_tods_edges",
@@ -177,13 +178,13 @@ func TestEdgeGroup(t *testing.T) {
 		EdgeConst: "AccountToFriendRequestsEdge",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"FriendRequests",
-			codegen.GetEntConfigFromName("account"),
+			schemaparser.GetEntConfigFromName("account"),
 		),
 		InverseEdge: &InverseAssocEdge{
 			EdgeConst: "AccountToFriendRequestsReceivedEdge",
 			commonEdgeInfo: getCommonEdgeInfo(
 				"FriendRequestsReceived",
-				codegen.GetEntConfigFromName("account"),
+				schemaparser.GetEntConfigFromName("account"),
 			),
 		},
 		TableName: "account_friendships_edges",
@@ -227,13 +228,13 @@ func TestEdgeGroupWithCustomActionEdges(t *testing.T) {
 		EdgeConst: "EventToInvitedEdge",
 		commonEdgeInfo: getCommonEdgeInfo(
 			"Invited",
-			codegen.GetEntConfigFromName("account"),
+			schemaparser.GetEntConfigFromName("account"),
 		),
 		InverseEdge: &InverseAssocEdge{
 			EdgeConst: "AccountToInvitedEventsEdge",
 			commonEdgeInfo: getCommonEdgeInfo(
 				"InvitedEvents",
-				codegen.GetEntConfigFromName("event"),
+				schemaparser.GetEntConfigFromName("event"),
 			),
 		},
 		// custom table name!
@@ -428,7 +429,7 @@ func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expFieldEdges, expForeignKey
 	}
 }
 
-func testEntConfig(t *testing.T, entConfig codegen.EntConfigInfo, expectedPackageName, expectedConfigName string) {
+func testEntConfig(t *testing.T, entConfig schemaparser.EntConfigInfo, expectedPackageName, expectedConfigName string) {
 	// TODO PackageName is useless and we should fix it/remove it in this instance
 	if entConfig.PackageName != expectedPackageName {
 		t.Errorf(
@@ -446,7 +447,7 @@ func testEntConfig(t *testing.T, entConfig codegen.EntConfigInfo, expectedPackag
 	}
 }
 
-func testNodeInfo(t *testing.T, nodeInfo codegen.NodeInfo, expectedNodename string) {
+func testNodeInfo(t *testing.T, nodeInfo nodeinfo.NodeInfo, expectedNodename string) {
 	if nodeInfo.Node != expectedNodename {
 		t.Errorf(
 			"node info for ent config was not as expected, expected %s, got %s instead",

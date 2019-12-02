@@ -113,7 +113,7 @@ func (q *dbQuery) query(processor *processRawData) error {
 		return err
 	}
 	query := builder.getQuery()
-	fmt.Println(query)
+	//fmt.Println(query)
 
 	db := data.DBConn()
 	if db == nil {

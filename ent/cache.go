@@ -94,7 +94,7 @@ func cacheRetrieval(key string, cacheFunc cacheRetrievalFunc) (interface{}, erro
 	}
 	//	spew.Dump(result, found, err)
 	if found { // literally just means cache hit
-		fmt.Println("cache hit for key ", key)
+		//		fmt.Println("cache hit for key ", key)
 		//		spew.Dump(result)
 	}
 	// nothing in the cache
@@ -141,7 +141,7 @@ func setSingleCachedItem(key string, dataItem map[string]interface{}, err error)
 }
 
 func deleteKey(key string) {
-	fmt.Println("delete key", key)
+	//fmt.Println("delete key", key)
 	ms.Forget(key)
 }
 

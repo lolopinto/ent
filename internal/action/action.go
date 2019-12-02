@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"github.com/iancoleman/strcase"
-	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 
 	"github.com/lolopinto/ent/internal/field"
@@ -297,7 +297,7 @@ func getCommonInfo(nodeName string, typ concreteNodeActionType, customActionName
 		GraphQLName:     graphqlName,
 		ExposeToGraphQL: exposeToGraphQL,
 		Fields:          fields,
-		NodeInfo:        codegen.GetNodeInfo(nodeName),
+		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),
 		Operation:       typ.getOperation(),
 	}
 }
@@ -326,7 +326,7 @@ func getCommonInfoForEdgeAction(
 		GraphQLName:     graphqlName,
 		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
 		Edges:           edges,
-		NodeInfo:        codegen.GetNodeInfo(nodeName),
+		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),
 		Operation:       typ.getOperation(),
 	}
 }
@@ -355,7 +355,7 @@ func getCommonInfoForGroupEdgeAction(
 		GraphQLName:     graphqlName,
 		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
 		NonEntFields:    fields,
-		NodeInfo:        codegen.GetNodeInfo(nodeName),
+		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),
 		Operation:       typ.getOperation(),
 	}
 }

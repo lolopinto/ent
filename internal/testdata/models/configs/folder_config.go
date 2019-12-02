@@ -6,8 +6,9 @@ import (
 
 // FolderConfig is the config for test folders in todo land
 type FolderConfig struct {
-	Name      string
-	AccountID string
+	Name          string
+	AccountID     string
+	NumberOfFiles int
 }
 
 // GetTableName returns the underyling database table the account model's data is stored

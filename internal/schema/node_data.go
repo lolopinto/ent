@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/lolopinto/ent/internal/action"
-	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/util"
@@ -44,7 +44,7 @@ func (cg *ConstGroupInfo) CreateNewType() bool {
 }
 
 type NodeData struct {
-	codegen.NodeInfo
+	nodeinfo.NodeInfo
 	PackageName     string
 	FieldInfo       *field.FieldInfo
 	EdgeInfo        *edge.EdgeInfo
@@ -57,7 +57,7 @@ type NodeData struct {
 func newNodeData(packageName string) *NodeData {
 	nodeData := &NodeData{
 		PackageName: packageName,
-		NodeInfo:    codegen.GetNodeInfo(packageName),
+		NodeInfo:    nodeinfo.GetNodeInfo(packageName),
 		EdgeInfo:    edge.NewEdgeInfo(),
 		ActionInfo:  action.NewActionInfo(),
 	}

@@ -1,4 +1,4 @@
-package main
+package graphql
 
 import (
 	"io/ioutil"
@@ -24,7 +24,7 @@ func (p *entGraphQLServerPlugin) Name() string {
 }
 
 func readTemplateFile(fileName string) string {
-	path := getAbsolutePath(fileName)
+	path := util.GetAbsolutePath(fileName)
 
 	contents, err := ioutil.ReadFile(path)
 	util.Die(err)
@@ -43,7 +43,7 @@ func (p *entGraphQLServerPlugin) GenerateCode(data *codegen.Data) error {
 		PackageName: "main",
 		Filename:    "server.go",
 		Data:        serverBuild,
-		Template:    readTemplateFile("ent_graphql_server.gotpl"),
+		Template:    readTemplateFile("ent_graphql_server.gotmpl"),
 	})
 }
 
@@ -55,8 +55,8 @@ type ServerBuild struct {
 	ResolverPackageName string
 }
 
-func newGraphQLServerPlugin(data *codegenData) plugin.Plugin {
+func newGraphQLServerPlugin(data *intcodegen.Data) plugin.Plugin {
 	return &entGraphQLServerPlugin{
-		codePath: data.codePath,
+		codePath: data.CodePath,
 	}
 }

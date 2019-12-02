@@ -1,4 +1,4 @@
-package main
+package code
 
 import (
 	"fmt"
@@ -10,28 +10,36 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
+	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/util"
 )
+
+type actionTemplate struct {
+	Action   action.Action
+	CodePath *codegen.CodePath
+}
 
 func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *codegen.CodePath) {
 	fileName := strcase.ToSnake(a.GetActionName())
 
 	imps := imports.Imports{}
-	writeFile(
-		&templatedBasedFileWriter{
-			data: actionTemplate{
+	file.Write(
+		&file.TemplatedBasedFileWriter{
+			Data: actionTemplate{
 				Action:   a,
 				CodePath: codePathInfo,
 			},
-			pathToTemplate:    "templates/action.tmpl",
-			templateName:      "action.tmpl",
-			pathToFile:        fmt.Sprintf("models/%s/action/%s.go", nodeData.PackageName, fileName),
-			createDirIfNeeded: true,
-			formatSource:      true,
-			packageName:       "action",
-			imports:           &imps,
-			funcMap: template.FuncMap{
+			AbsPathToTemplate: util.GetAbsolutePath("action.gotmpl"),
+			TemplateName:      "action.gotmpl",
+			PathToFile:        fmt.Sprintf("models/%s/action/%s.go", nodeData.PackageName, fileName),
+			CreateDirIfNeeded: true,
+			FormatSource:      true,
+			PackageName:       "action",
+			Imports:           &imps,
+			FuncMap: template.FuncMap{
 				"actionMethodName":        action.GetActionMethodName,
 				"actionMethodArgs":        getActionMethodArgs,
 				"actionMethodContextArgs": getActionMethodContextArgs,
@@ -114,7 +122,7 @@ func getSaveActionType(action action.Action) string {
 	return "error"
 }
 
-func getNodeInfo(action action.Action) codegen.NodeInfo {
+func getNodeInfo(action action.Action) nodeinfo.NodeInfo {
 	return action.GetNodeInfo()
 }
 

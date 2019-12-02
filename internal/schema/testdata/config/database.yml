@@ -1,6 +1,5 @@
-# copied from gent. todo handle this generically
 dialect: postgres
-database: jarvis_test
+database: jarvis_test # todo rename this
 user: ola
 password: '' 
 host: localhost 

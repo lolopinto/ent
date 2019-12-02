@@ -4,9 +4,6 @@ import (
 	"github.com/lolopinto/ent/ent"
 )
 
-// TODO right now this is duplicated from internal/testdata.
-// need to figure out the best way to share across things
-
 // TodoConfig is the config for test todos in test land
 type TodoConfig struct {
 	Completed bool

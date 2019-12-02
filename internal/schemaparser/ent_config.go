@@ -1,4 +1,4 @@
-package codegen
+package schemaparser
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package main
+package file
 
 import (
 	"fmt"
@@ -10,17 +10,18 @@ import (
 	"github.com/lolopinto/ent/internal/util"
 )
 
-type fileWriter interface {
-	CreateDirIfNeeded() bool
-	GetPathToFile() string
-	GenerateBytes() []byte
+type Writer interface {
+	Write()
+	createDirIfNeeded() bool
+	getPathToFile() string
+	generateBytes() []byte
 }
 
-func writeFile(fw fileWriter) {
-	bytes := fw.GenerateBytes()
-	pathToFile := fw.GetPathToFile()
+func writeFile(w Writer) {
+	bytes := w.generateBytes()
+	pathToFile := w.getPathToFile()
 
-	if fw.CreateDirIfNeeded() {
+	if w.createDirIfNeeded() {
 		fullPath := filepath.Join(".", pathToFile)
 		directoryPath := path.Dir(fullPath)
 
@@ -40,4 +41,8 @@ func writeFile(fw fileWriter) {
 	err := ioutil.WriteFile(pathToFile, bytes, 0666)
 	util.Die(err)
 	fmt.Println("wrote to file ", pathToFile)
+}
+
+func Write(w Writer) {
+	w.Write()
 }

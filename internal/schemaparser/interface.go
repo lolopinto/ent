@@ -48,7 +48,10 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 	overlay := make(map[string][]byte)
 
 	var err error
-	p.tempDir, err = ioutil.TempDir("./testdata/", "test")
+	// TODO handle all these testdata things...
+	path, err := filepath.Abs("../testdata/")
+	util.Die(err)
+	p.tempDir, err = ioutil.TempDir(path, "test")
 	util.Die(err)
 
 	configDir := filepath.Join(p.tempDir, "configs")

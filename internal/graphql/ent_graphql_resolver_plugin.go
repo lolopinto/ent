@@ -1,4 +1,4 @@
-package main
+package graphql
 
 import (
 	"path/filepath"
@@ -181,9 +181,9 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 	})
 }
 
-func newGraphQLResolverPlugin(data *codegenData) plugin.Plugin {
+func newGraphQLResolverPlugin(data *intcodegen.Data) plugin.Plugin {
 	return &entGraphQLResolverPlugin{
-		schema:   data.schema,
-		codePath: data.codePath,
+		schema:   data.Schema,
+		codePath: data.CodePath,
 	}
 }
