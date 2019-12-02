@@ -44,7 +44,7 @@ func (config *EventConfig) GetEdges() ent.EdgeMap {
 				"Attending",
 				"Declined",
 			},
-			EdgeGroups: ent.EdgeMap{
+			EdgeGroups: ent.AssocEdgeMap{
 				"Invited": &ent.AssociationEdge{
 					EntConfig: UserConfig{},
 					InverseEdge: &ent.InverseAssocEdge{

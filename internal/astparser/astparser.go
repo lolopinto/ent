@@ -136,7 +136,7 @@ func GetTypeNameFromExpr(expr ast.Expr) string {
 
 // Takes an Expr and converts it to the underlying string without quotes
 // For example: in the GetEdges method below,
-// return map[string]interface{}{
+// return ent.EdgeMap{
 // 	"User": ent.FieldEdge{
 // 		FieldName: "UserID",
 // 		EntConfig: UserConfig{},

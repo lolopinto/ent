@@ -25,14 +25,14 @@ func (config *AccountConfig) GetTableName() string {
 }
 
 // GetEdges returns the edges that this account is mapped to
-func (config *AccountConfig) GetEdges() map[string]interface{} {
-	return map[string]interface{}{
+func (config *AccountConfig) GetEdges() ent.EdgeMap {
+	return ent.EdgeMap{
 		"Todos": ent.ForeignKeyEdge{
 			EntConfig: TodoConfig{},
 		},
 		"Friendships": ent.AssociationEdgeGroup{
-			EdgeGroups: ent.EdgeMap{
-				"FriendRequests": ent.AssociationEdge{
+			EdgeGroups: ent.AssocEdgeMap{
+				"FriendRequests": &ent.AssociationEdge{
 					EntConfig: AccountConfig{},
 					InverseEdge: &ent.InverseAssocEdge{
 						// inverse on the same edge need to be part of the same status
@@ -40,7 +40,7 @@ func (config *AccountConfig) GetEdges() map[string]interface{} {
 						EdgeName: "FriendRequestsReceived",
 					},
 				},
-				"Friends": ent.AssociationEdge{
+				"Friends": &ent.AssociationEdge{
 					EntConfig: AccountConfig{},
 					Symmetric: true,
 				},

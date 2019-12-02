@@ -14,8 +14,8 @@ func (config *ContactEmailConfig) GetTableName() string {
 }
 
 // GetEdges returns the Edges that the ContactEmail node supports
-func (config *ContactEmailConfig) GetEdges() map[string]interface{} {
-	return map[string]interface{}{
+func (config *ContactEmailConfig) GetEdges() ent.EdgeMap {
+	return ent.EdgeMap{
 		"Contact": ent.FieldEdge{
 			FieldName: "ContactID",
 			EntConfig: ContactConfig{},
