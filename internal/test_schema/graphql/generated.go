@@ -106,6 +106,7 @@ type ComplexityRoot struct {
 		ContactCreate           func(childComplexity int, input ContactCreateInput) int
 		EventCreate             func(childComplexity int, input EventCreateInput) int
 		EventRsvpStatusEdit     func(childComplexity int, input EventRsvpStatusEditInput) int
+		UserAddFamilyMembers    func(childComplexity int, input UserAddFamilyMembersInput) int
 		UserAddFriends          func(childComplexity int, input UserAddFriendsInput) int
 		UserCreate              func(childComplexity int, input UserCreateInput) int
 		UserDelete              func(childComplexity int, input UserDeleteInput) int
@@ -133,6 +134,10 @@ type ComplexityRoot struct {
 		ID              func(childComplexity int) int
 		InvitedEvents   func(childComplexity int) int
 		LastName        func(childComplexity int) int
+	}
+
+	UserAddFamilyMembersResponse struct {
+		User func(childComplexity int) int
 	}
 
 	UserAddFriendsResponse struct {
@@ -188,6 +193,7 @@ type MutationResolver interface {
 	ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error)
 	EventCreate(ctx context.Context, input EventCreateInput) (*EventCreateResponse, error)
 	EventRsvpStatusEdit(ctx context.Context, input EventRsvpStatusEditInput) (*EventRsvpStatusEditResponse, error)
+	UserAddFamilyMembers(ctx context.Context, input UserAddFamilyMembersInput) (*UserAddFamilyMembersResponse, error)
 	UserAddFriends(ctx context.Context, input UserAddFriendsInput) (*UserAddFriendsResponse, error)
 	UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error)
 	UserDelete(ctx context.Context, input UserDeleteInput) (*UserDeleteResponse, error)
@@ -467,6 +473,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.EventRsvpStatusEdit(childComplexity, args["input"].(EventRsvpStatusEditInput)), true
 
+	case "Mutation.userAddFamilyMembers":
+		if e.complexity.Mutation.UserAddFamilyMembers == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_userAddFamilyMembers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UserAddFamilyMembers(childComplexity, args["input"].(UserAddFamilyMembersInput)), true
+
 	case "Mutation.userAddFriends":
 		if e.complexity.Mutation.UserAddFriends == nil {
 			break
@@ -658,6 +676,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.LastName(childComplexity), true
+
+	case "UserAddFamilyMembersResponse.user":
+		if e.complexity.UserAddFamilyMembersResponse.User == nil {
+			break
+		}
+
+		return e.complexity.UserAddFamilyMembersResponse.User(childComplexity), true
 
 	case "UserAddFriendsResponse.user":
 		if e.complexity.UserAddFriendsResponse.User == nil {
@@ -877,6 +902,7 @@ type Mutation {
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
     eventCreate(input: EventCreateInput!): EventCreateResponse
     eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse
+    userAddFamilyMembers(input: UserAddFamilyMembersInput!): UserAddFamilyMembersResponse
     userAddFriends(input: UserAddFriendsInput!): UserAddFriendsResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
     userDelete(input: UserDeleteInput!): UserDeleteResponse
@@ -908,6 +934,15 @@ type User implements Node {
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
+}
+
+input UserAddFamilyMembersInput {
+    familyMembersID: ID!
+    userID: ID!
+}
+
+type UserAddFamilyMembersResponse {
+    user: User
 }
 
 input UserAddFriendsInput {
@@ -1011,6 +1046,20 @@ func (ec *executionContext) field_Mutation_eventRsvpStatusEdit_args(ctx context.
 	var arg0 EventRsvpStatusEditInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNEventRsvpStatusEditInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatusEditInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_userAddFamilyMembers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 UserAddFamilyMembersInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNUserAddFamilyMembersInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFamilyMembersInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2361,6 +2410,47 @@ func (ec *executionContext) _Mutation_eventRsvpStatusEdit(ctx context.Context, f
 	return ec.marshalOEventRsvpStatusEditResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatusEditResponse(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_userAddFamilyMembers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_userAddFamilyMembers_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UserAddFamilyMembers(rctx, args["input"].(UserAddFamilyMembersInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*UserAddFamilyMembersResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUserAddFamilyMembersResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFamilyMembersResponse(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_userAddFriends(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -3244,6 +3334,40 @@ func (ec *executionContext) _User_lastName(ctx context.Context, field graphql.Co
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserAddFamilyMembersResponse_user(ctx context.Context, field graphql.CollectedField, obj *UserAddFamilyMembersResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "UserAddFamilyMembersResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UserAddFriendsResponse_user(ctx context.Context, field graphql.CollectedField, obj *UserAddFriendsResponse) (ret graphql.Marshaler) {
@@ -4798,6 +4922,30 @@ func (ec *executionContext) unmarshalInputEventRsvpStatusEditInput(ctx context.C
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUserAddFamilyMembersInput(ctx context.Context, obj interface{}) (UserAddFamilyMembersInput, error) {
+	var it UserAddFamilyMembersInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "familyMembersID":
+			var err error
+			it.FamilyMembersID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userID":
+			var err error
+			it.UserID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUserAddFriendsInput(ctx context.Context, obj interface{}) (UserAddFriendsInput, error) {
 	var it UserAddFriendsInput
 	var asMap = obj.(map[string]interface{})
@@ -5411,6 +5559,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_eventCreate(ctx, field)
 		case "eventRsvpStatusEdit":
 			out.Values[i] = ec._Mutation_eventRsvpStatusEdit(ctx, field)
+		case "userAddFamilyMembers":
+			out.Values[i] = ec._Mutation_userAddFamilyMembers(ctx, field)
 		case "userAddFriends":
 			out.Values[i] = ec._Mutation_userAddFriends(ctx, field)
 		case "userCreate":
@@ -5637,6 +5787,30 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var userAddFamilyMembersResponseImplementors = []string{"UserAddFamilyMembersResponse"}
+
+func (ec *executionContext) _UserAddFamilyMembersResponse(ctx context.Context, sel ast.SelectionSet, obj *UserAddFamilyMembersResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, userAddFamilyMembersResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserAddFamilyMembersResponse")
+		case "user":
+			out.Values[i] = ec._UserAddFamilyMembersResponse_user(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6352,6 +6526,10 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋint
 	return ec._User(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNUserAddFamilyMembersInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFamilyMembersInput(ctx context.Context, v interface{}) (UserAddFamilyMembersInput, error) {
+	return ec.unmarshalInputUserAddFamilyMembersInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNUserAddFriendsInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFriendsInput(ctx context.Context, v interface{}) (UserAddFriendsInput, error) {
 	return ec.unmarshalInputUserAddFriendsInput(ctx, v)
 }
@@ -6969,6 +7147,17 @@ func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋint
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUserAddFamilyMembersResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFamilyMembersResponse(ctx context.Context, sel ast.SelectionSet, v UserAddFamilyMembersResponse) graphql.Marshaler {
+	return ec._UserAddFamilyMembersResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOUserAddFamilyMembersResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFamilyMembersResponse(ctx context.Context, sel ast.SelectionSet, v *UserAddFamilyMembersResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._UserAddFamilyMembersResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOUserAddFriendsResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserAddFriendsResponse(ctx context.Context, sel ast.SelectionSet, v UserAddFriendsResponse) graphql.Marshaler {

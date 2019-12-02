@@ -98,6 +98,7 @@ type Mutation {
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
     eventCreate(input: EventCreateInput!): EventCreateResponse
     eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse
+    userAddFamilyMembers(input: UserAddFamilyMembersInput!): UserAddFamilyMembersResponse
     userAddFriends(input: UserAddFriendsInput!): UserAddFriendsResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
     userDelete(input: UserDeleteInput!): UserDeleteResponse
@@ -129,6 +130,15 @@ type User implements Node {
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
+}
+
+input UserAddFamilyMembersInput {
+    familyMembersID: ID!
+    userID: ID!
+}
+
+type UserAddFamilyMembersResponse {
+    user: User
 }
 
 input UserAddFriendsInput {

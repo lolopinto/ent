@@ -24,10 +24,11 @@ func (config *UserConfig) GetEdges() ent.EdgeMap {
 		"FamilyMembers": &ent.AssociationEdge{
 			EntConfig: UserConfig{},
 			EdgeActions: ent.EdgeActions{
-				// TODO: add action
-				// can't add for now until I fix this API
 				&ent.EdgeActionConfig{
 					Action: ent.RemoveEdgeAction,
+				},
+				&ent.EdgeActionConfig{
+					Action: ent.AddEdgeAction,
 				},
 			},
 		},

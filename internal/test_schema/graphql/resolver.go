@@ -144,6 +144,25 @@ func (r *mutationResolver) EventRsvpStatusEdit(ctx context.Context, input EventR
 	}, nil
 }
 
+func (r *mutationResolver) UserAddFamilyMembers(ctx context.Context, input UserAddFamilyMembersInput) (*UserAddFamilyMembersResponse, error) {
+	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := action2.AddFamilyMembersFromContext(ctx, existingNode).
+		AddFamilyMembersID(input.FamilyMembersID).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserAddFamilyMembersResponse{
+		User: node,
+	}, nil
+}
+
 func (r *mutationResolver) UserAddFriends(ctx context.Context, input UserAddFriendsInput) (*UserAddFriendsResponse, error) {
 	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
 	if err != nil {
