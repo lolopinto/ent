@@ -61,7 +61,7 @@ func (config *AccountConfig) GetEdges() ent.EdgeMap {
 			EdgeActions: ent.EdgeActions{
 				&ent.EdgeActionConfig{
 					Action:            ent.AddEdgeAction,
-					CustomActionName:  "AccountAddFoldersAction", // EventAddInviteesAction is default
+					CustomActionName:  "AccountAddFoldersAction", // AddFoldersAction is default
 					CustomGraphQLName: "accountFolderAdd",
 				},
 				&ent.EdgeActionConfig{

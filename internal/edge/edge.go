@@ -146,7 +146,6 @@ type AssociationEdge struct {
 	IsInverseEdge bool
 	TableName     string // TableName will be gotten from the GroupName if part of a group or derived from each edge
 	// will eventually be made configurable to the user
-	EdgeAction  *EdgeAction // TODO kill
 	EdgeActions []*EdgeAction
 }
 
@@ -195,7 +194,6 @@ type AssociationEdgeGroup struct {
 	GroupStatusName string                      // should be something like RsvpStatus
 	ConstType       string                      // and then this becomes EventRsvpStatus
 	Edges           map[string]*AssociationEdge // TODO...
-	EdgeAction      *EdgeAction                 // TODO kill
 	EdgeActions     []*EdgeAction
 	actionEdges     map[string]bool
 	NodeInfo        nodeinfo.NodeInfo
