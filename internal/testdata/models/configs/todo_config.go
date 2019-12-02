@@ -19,8 +19,8 @@ func (config *TodoConfig) GetTableName() string {
 }
 
 // GetEdges returns the Edges that the Todo node supports
-func (config *TodoConfig) GetEdges() map[string]interface{} {
-	return map[string]interface{}{
+func (config *TodoConfig) GetEdges() ent.EdgeMap {
+	return ent.EdgeMap{
 		"Account": ent.FieldEdge{
 			FieldName: "AccountID",
 			EntConfig: AccountConfig{},

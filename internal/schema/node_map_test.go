@@ -34,8 +34,8 @@ type AccountConfig struct {
 		return "accounts"
 	}
 
-	func (config *AccountConfig) GetEdges() map[string]interface{} {
-		return map[string]interface{}{
+	func (config *AccountConfig) GetEdges() ent.EdgeMap{
+		return ent.EdgeMap{
 			"Todos": ent.AssociationEdge{
 				EntConfig:   TodoConfig{},
 			},
@@ -57,8 +57,8 @@ type TodoConfig struct {
 		return "todos"
 	}
 
-	func (config *TodoConfig) GetEdges() map[string]interface{} {
-		return map[string]interface{}{
+	func (config *TodoConfig) GetEdges() ent.EdgeMap{
+		return ent.EdgeMap{
 			"Account": ent.FieldEdge{
 				FieldName:   "AccountID",
 				EntConfig:   AccountConfig{},
@@ -191,8 +191,8 @@ type AccountConfig struct {
 		return "accounts"
 	}
 
-	func (config *AccountConfig) GetEdges() map[string]interface{} {
-		return map[string]interface{}{
+	func (config *AccountConfig) GetEdges() ent.EdgeMap{
+		return ent.EdgeMap{
 			"Todos": ent.AssociationEdge{
 				EntConfig:   TodoConfig{},
 				InverseEdge: &ent.InverseAssocEdge{
@@ -331,7 +331,7 @@ type EventConfig struct {
 		return "events"
 	}
 
-	func (config *EventConfig) GetEdges() map[string]interface{} {
+	func (config *EventConfig) GetEdges() ent.EdgeMap {
 		return ent.EdgeMap {
 			"Rsvps": ent.AssociationEdgeGroup {
 				GroupStatusName: "Rsvp",
@@ -524,8 +524,8 @@ func (config *AccountConfig) GetTableName() string {
 	return "accounts"
 }
 
-	func (config *AccountConfig) GetEdges() map[string]interface{} {
-		return map[string]interface{}{
+	func (config *AccountConfig) GetEdges() ent.EdgeMap{
+		return ent.EdgeMap{
 			"Friends": ent.AssociationEdge{
 				EntConfig:   AccountConfig{},
 			},
@@ -562,8 +562,8 @@ type AccountConfig struct {
 		return "accounts"
 	}
 
-	func (config *AccountConfig) GetEdges() map[string]interface{} {
-		return map[string]interface{}{
+	func (config *AccountConfig) GetEdges() ent.EdgeMap{
+		return ent.EdgeMap{
 			"FriendRequests": ent.AssociationEdge{
 				EntConfig:   AccountConfig{},
 				InverseEdge: &ent.InverseAssocEdge{
@@ -610,8 +610,8 @@ func getSources2ForNewConstsAndEdges(t *testing.T) map[string]string {
 	// add a new edge in a second PR
 	sources["todo_config.go"] = todoConfig +
 		`
-	func (config *TodoConfig) GetEdges() map[string]interface{} {
-		return map[string]interface{}{
+	func (config *TodoConfig) GetEdges() ent.EdgeMap{
+		return ent.EdgeMap{
 			"Account": ent.AssociationEdge{
 				EntConfig: AccountConfig{},
 			},

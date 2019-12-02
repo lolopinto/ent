@@ -17,8 +17,8 @@ func (config *FolderConfig) GetTableName() string {
 }
 
 // GetEdges returns the edges that this todo is mapped to
-func (config *FolderConfig) GetEdges() map[string]interface{} {
-	return map[string]interface{}{
+func (config *FolderConfig) GetEdges() ent.EdgeMap {
+	return ent.EdgeMap{
 		// inverse edge from a folder to the todos in that folder
 		"Todos": ent.AssociationEdge{
 			// intentionally written in this order to test depgraph until we write tests for that
