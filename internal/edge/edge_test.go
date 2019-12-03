@@ -73,7 +73,7 @@ func TestAssociationEdge(t *testing.T) {
 		EdgeActions: []*EdgeAction{
 			&EdgeAction{
 				Action:            "ent.AddEdgeAction",
-				CustomActionName:  "AccountAddFoldersAction",
+				CustomActionName:  "AccountAddFolderAction",
 				CustomGraphQLName: "accountFolderAdd",
 				ExposeToGraphQL:   true,
 			},
@@ -85,6 +85,9 @@ func TestAssociationEdge(t *testing.T) {
 	}
 
 	testAssocEdge(t, edge, expectedAssocEdge)
+
+	// singular version of edge
+	assert.Equal(t, "Folder", edge.Singular())
 }
 
 func TestSymmetricAssociationEdge(t *testing.T) {
@@ -102,6 +105,9 @@ func TestSymmetricAssociationEdge(t *testing.T) {
 	}
 
 	testAssocEdge(t, edge, expectedAssocEdge)
+
+	// singular version of edge
+	assert.Equal(t, "Friend", edge.Singular())
 }
 
 func TestUniqueAssociationEdge(t *testing.T) {
@@ -119,6 +125,9 @@ func TestUniqueAssociationEdge(t *testing.T) {
 	}
 
 	testAssocEdge(t, edge, expectedAssocEdge)
+
+	// singular version is same as plural when edge is singular
+	assert.Equal(t, "Creator", edge.Singular())
 }
 
 func TestInverseAssociationEdge(t *testing.T) {

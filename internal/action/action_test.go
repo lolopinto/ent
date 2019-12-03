@@ -36,28 +36,33 @@ func TestEdgeActions(t *testing.T) {
 	actionInfo := getTestActionInfo(t, "account")
 
 	var testCases = []struct {
-		actionName      string
-		exposeToGraphQL bool
-		graphQLName     string
+		actionName       string
+		exposeToGraphQL  bool
+		graphQLName      string
+		actionMethodName string
 	}{
 		{
 			// these 2 are custom
-			"AccountAddFoldersAction",
+			"AccountAddFolderAction",
 			true,
 			"accountFolderAdd",
+			"AccountAddFolder",
 		},
 		{
 			// these 2 are defaults
-			"RemoveFoldersAction",
+			"RemoveFolderAction",
 			true,
-			"accountRemoveFolders",
+			"accountRemoveFolder",
+			"RemoveFolder",
 		},
 	}
 
 	for _, tt := range testCases {
+		action := actionInfo.GetByName(tt.actionName)
+
 		assert.NotNil(
 			t,
-			actionInfo.GetByName(tt.actionName),
+			action,
 			"expected there to be an action with name %s ",
 			tt.actionName,
 		)
@@ -78,6 +83,12 @@ func TestEdgeActions(t *testing.T) {
 				tt.graphQLName,
 			)
 		}
+
+		assert.Equal(
+			t,
+			tt.actionMethodName,
+			GetActionMethodName(action),
+		)
 	}
 }
 

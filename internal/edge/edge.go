@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/depgraph"
@@ -81,6 +82,13 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
+// ActionableEdge indicates an edge that can be used in an action.
+// This provides the edge identifier that can be used in edge action
+// PS: why am I so bad at names?
+type ActionableEdge interface {
+	EdgeIdentifier() string
+}
+
 type Edge interface {
 	GetEdgeName() string
 	GetNodeInfo() nodeinfo.NodeInfo
@@ -91,6 +99,7 @@ type Edge interface {
 type PluralEdge interface {
 	Edge
 	PluralEdge() bool
+	Singular() string
 }
 
 type commonEdgeInfo struct {
@@ -129,6 +138,14 @@ func (e *ForeignKeyEdge) PluralEdge() bool {
 	return true
 }
 
+func (e *ForeignKeyEdge) Singular() string {
+	return inflection.Singular(e.EdgeName)
+}
+
+func (e *ForeignKeyEdge) EdgeIdentifier() string {
+	return e.Singular()
+}
+
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
 
@@ -149,18 +166,16 @@ type AssociationEdge struct {
 	EdgeActions []*EdgeAction
 }
 
-// EdgeAction holds as little data as possible about the edge action
-// and depends on action to take that information, process it and generate the
-// action specific metadata
-type EdgeAction struct {
-	Action            string
-	CustomActionName  string
-	CustomGraphQLName string
-	ExposeToGraphQL   bool
-}
-
 func (e *AssociationEdge) PluralEdge() bool {
 	return true
+}
+
+func (e *AssociationEdge) Singular() string {
+	return inflection.Singular(e.EdgeName)
+}
+
+func (e *AssociationEdge) EdgeIdentifier() string {
+	return e.Singular()
 }
 
 func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) {
@@ -189,6 +204,16 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) {
 var _ Edge = &AssociationEdge{}
 var _ PluralEdge = &AssociationEdge{}
 
+// EdgeAction holds as little data as possible about the edge action
+// and depends on action to take that information, process it and generate the
+// action specific metadata
+type EdgeAction struct {
+	Action            string
+	CustomActionName  string
+	CustomGraphQLName string
+	ExposeToGraphQL   bool
+}
+
 type AssociationEdgeGroup struct {
 	GroupName       string                      // this is the name of the edge which is different from the name of the status. confusing
 	GroupStatusName string                      // should be something like RsvpStatus
@@ -197,6 +222,10 @@ type AssociationEdgeGroup struct {
 	EdgeActions     []*EdgeAction
 	actionEdges     map[string]bool
 	NodeInfo        nodeinfo.NodeInfo
+}
+
+func (edgeGroup *AssociationEdgeGroup) EdgeIdentifier() string {
+	return edgeGroup.GroupStatusName
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetAssociationByName(edgeName string) *AssociationEdge {
