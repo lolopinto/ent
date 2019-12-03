@@ -32,7 +32,6 @@ type ActionConfig struct {
 	Action ActionOperation
 	Fields []string // restrict the fields that can be mutated in this action to the following fields
 	//	MutationOnlyFields ActionFieldTypeMap // TODO v2
-	// PrivacyPolicy
 	CustomActionName  string // different name for some reason
 	HideFromGraphQL   bool
 	CustomGraphQLName string // invalid for MutationsAction
@@ -44,6 +43,8 @@ type EdgeActionConfig struct {
 	HideFromGraphQL   bool
 	CustomGraphQLName string // invalid for MutationsAction
 }
+
+type EdgeActions []*EdgeActionConfig
 
 type MutatingFieldInfo struct {
 	DB       string

@@ -26,15 +26,19 @@ func (config *EventConfig) GetEdges() ent.EdgeMap {
 		},
 		"Rsvps": ent.AssociationEdgeGroup{
 			GroupStatusName: "RsvpStatus",
-			EdgeAction: &ent.EdgeActionConfig{
-				Action: ent.EdgeGroupAction,
+			EdgeActions: ent.EdgeActions{
+				&ent.EdgeActionConfig{
+					Action:            ent.EdgeGroupAction,
+					CustomActionName:  "EventRsvpAction",
+					CustomGraphQLName: "eventRSVP",
+				},
 			},
 			CustomTableName: "event_rsvp_edges",
 			ActionEdges: []string{
 				"Attending",
 				"Declined",
 			},
-			EdgeGroups: ent.EdgeMap{
+			EdgeGroups: ent.AssocEdgeMap{
 				"Invited": &ent.AssociationEdge{
 					EntConfig: AccountConfig{},
 					InverseEdge: &ent.InverseAssocEdge{

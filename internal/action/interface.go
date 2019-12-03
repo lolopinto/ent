@@ -203,19 +203,11 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 
 	if edgeInfo != nil {
 		for _, assocEdge := range edgeInfo.Associations {
-			if assocEdge.EdgeAction == nil {
-				continue
-			}
-			actionInfo.addActions(processEdgeAction(nodeName, assocEdge))
-
+			actionInfo.addActions(processEdgeActions(nodeName, assocEdge)...)
 		}
 
 		for _, assocGroup := range edgeInfo.AssocGroups {
-			if assocGroup.EdgeAction == nil {
-				continue
-			}
-			actionInfo.addActions(processEdgeGroupAction(nodeName, assocGroup))
-
+			actionInfo.addActions(processEdgeGroupActions(nodeName, assocGroup)...)
 		}
 	}
 
@@ -297,16 +289,20 @@ func GetNonEntFields(action Action) []FieldActionTemplateInfo {
 }
 
 type EdgeActionTemplateInfo struct {
-	AddMethodName    string
-	RemoveMethodName string
-	EdgeName         string
-	InstanceName     string
-	InstanceType     string
+	AddEntMethodName         string
+	AddSingleIDMethodName    string
+	AddMultiIDMethodName     string
+	RemoveEntMethodName      string
+	RemoveSingleIDMethodName string
+	RemoveMultiIDMethodName  string
+	EdgeName                 string
+	InstanceName             string
+	InstanceType             string
 	//	AssocEdge    *edge.AssociationEdge
-	EdgeConst string
-	NodeType  string
-	Node      string
-	NodeID    string
+	EdgeConst     string
+	NodeType      string
+	Node          string
+	GraphQLNodeID string
 }
 
 func GetEdges(action Action) []EdgeActionTemplateInfo {
@@ -321,18 +317,21 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 		edgeName := edge.GetEdgeName()
 
 		result = append(result, EdgeActionTemplateInfo{
-			Node: edge.NodeInfo.Node,
-			// TODO this needs to be updated for actions
-			AddMethodName:    "Add" + edge.EdgeName,
-			RemoveMethodName: "Remove" + edge.EdgeName,
-			EdgeName:         edgeName,
-			InstanceName:     edge.NodeInfo.NodeInstance,
-			InstanceType:     fmt.Sprintf("*models.%s", edge.NodeInfo.Node),
-			EdgeConst:        edge.EdgeConst,
+			Node:                     edge.NodeInfo.Node,
+			AddEntMethodName:         "Add" + edge.EdgeName,
+			AddSingleIDMethodName:    "Add" + edge.Singular() + "ID",
+			AddMultiIDMethodName:     "Add" + edge.Singular() + "IDs",
+			RemoveEntMethodName:      "Remove" + edge.EdgeName,
+			RemoveSingleIDMethodName: "Remove" + edge.Singular() + "ID",
+			RemoveMultiIDMethodName:  "Remove" + edge.Singular() + "IDs",
+			EdgeName:                 edgeName,
+			InstanceName:             edge.NodeInfo.NodeInstance,
+			InstanceType:             fmt.Sprintf("*models.%s", edge.NodeInfo.Node),
+			EdgeConst:                edge.EdgeConst,
 			//AssocEdge:    edge,
 			NodeType: edge.NodeInfo.NodeType,
-			// matches what we do in processAction
-			NodeID: fmt.Sprintf("%sID", edge.EdgeName),
+			// matches what we do in graphQLSchema.processAction
+			GraphQLNodeID: fmt.Sprintf("%sID", edge.Singular()),
 		})
 	}
 
@@ -349,4 +348,8 @@ func IsRequiredField(action Action, field *field.Field) bool {
 		return false
 	}
 	return true
+}
+
+func IsRemoveEdgeAction(action Action) bool {
+	return action.GetOperation() == ent.RemoveEdgeAction
 }

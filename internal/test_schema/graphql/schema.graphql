@@ -98,11 +98,13 @@ type Mutation {
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
     eventCreate(input: EventCreateInput!): EventCreateResponse
     eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse
-    userAddFriends(input: UserAddFriendsInput!): UserAddFriendsResponse
+    userAddFamilyMember(input: UserAddFamilyMemberInput!): UserAddFamilyMemberResponse
+    userAddFriend(input: UserAddFriendInput!): UserAddFriendResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
     userDelete(input: UserDeleteInput!): UserDeleteResponse
     userEdit(input: UserEditInput!): UserEditResponse
-    userRemoveFamilyMembers(input: UserRemoveFamilyMembersInput!): UserRemoveFamilyMembersResponse
+    userRemoveFamilyMember(input: UserRemoveFamilyMemberInput!): UserRemoveFamilyMemberResponse
+    userRemoveFriend(input: UserRemoveFriendInput!): UserRemoveFriendResponse
 }
 
 interface Node {
@@ -131,12 +133,21 @@ type User implements Node {
     lastName: String!
 }
 
-input UserAddFriendsInput {
-    friendsID: ID!
+input UserAddFamilyMemberInput {
+    familyMemberID: ID!
     userID: ID!
 }
 
-type UserAddFriendsResponse {
+type UserAddFamilyMemberResponse {
+    user: User
+}
+
+input UserAddFriendInput {
+    friendID: ID!
+    userID: ID!
+}
+
+type UserAddFriendResponse {
     user: User
 }
 
@@ -171,12 +182,21 @@ type UserEditResponse {
     user: User
 }
 
-input UserRemoveFamilyMembersInput {
-    familyMembersID: ID!
+input UserRemoveFamilyMemberInput {
+    familyMemberID: ID!
     userID: ID!
 }
 
-type UserRemoveFamilyMembersResponse {
+type UserRemoveFamilyMemberResponse {
+    user: User
+}
+
+input UserRemoveFriendInput {
+    friendID: ID!
+    userID: ID!
+}
+
+type UserRemoveFriendResponse {
     user: User
 }
 

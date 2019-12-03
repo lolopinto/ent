@@ -114,14 +114,14 @@ func (contact *Contact) LoadContactEmails() ([]*ContactEmail, error) {
 }
 
 // LoadAllowListEdges returns the AllowList edges associated with the Contact instance
-func (contact *Contact) LoadAllowListEdges() ([]*ent.Edge, error) {
+func (contact *Contact) LoadAllowListEdges() ([]*ent.AssocEdge, error) {
 	return ent.LoadEdgesByType(contact.ID, ContactToAllowListEdge)
 }
 
 // GenAllowListEdges returns the User edges associated with the Contact instance
-func (contact *Contact) GenAllowListEdges(result *ent.EdgesResult, wg *sync.WaitGroup) {
+func (contact *Contact) GenAllowListEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
 	defer wg.Done()
-	edgesResultChan := make(chan ent.EdgesResult)
+	edgesResultChan := make(chan ent.AssocEdgesResult)
 	go ent.GenLoadEdgesByType(contact.ID, ContactToAllowListEdge, edgesResultChan)
 	*result = <-edgesResultChan
 }
@@ -144,15 +144,15 @@ func (contact *Contact) LoadAllowList() ([]*User, error) {
 	return users, err
 }
 
-// LoadAllowListEdgeFor loads the ent.Edge between the current node and the given id2 for the AllowList edge.
-func (contact *Contact) LoadAllowListEdgeFor(id2 string) (*ent.Edge, error) {
+// LoadAllowListEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the AllowList edge.
+func (contact *Contact) LoadAllowListEdgeFor(id2 string) (*ent.AssocEdge, error) {
 	return ent.LoadEdgeByType(contact.ID, id2, ContactToAllowListEdge)
 }
 
-// GenAllowListEdgeFor provides a concurrent API to load the ent.Edge between the current node and the given id2 for the AllowList edge.
-func (contact *Contact) GenLoadAllowListEdgeFor(id2 string, result *ent.EdgeResult, wg *sync.WaitGroup) {
+// GenAllowListEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the AllowList edge.
+func (contact *Contact) GenLoadAllowListEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
 	defer wg.Done()
-	edgeResultChan := make(chan ent.EdgeResult)
+	edgeResultChan := make(chan ent.AssocEdgeResult)
 	go ent.GenLoadEdgeByType(contact.ID, id2, ContactToAllowListEdge, edgeResultChan)
 	*result = <-edgeResultChan
 }

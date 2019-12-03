@@ -8,14 +8,14 @@ import (
 	"github.com/lolopinto/ent/ent/viewer"
 )
 
-// Edge is the information about an edge between two Nodes
+// AssocEdge is the information about an edge between two Nodes
 // It's generic enough so that it applies across all types.
 // Doesn't care what table it's stored in.
 // TODO fix comment about where edges are stored.
 // By default, edges are stored in the `edges_info` table but we
 // can have custom edge tables for specific edges where we know
 // there'll be a lot of data
-type Edge struct {
+type AssocEdge struct {
 	ID1      string    `db:"id1"`
 	ID1Type  NodeType  `db:"id1_type"`
 	EdgeType EdgeType  `db:"edge_type"`
@@ -25,7 +25,7 @@ type Edge struct {
 	Data     string    `db:"data"` // nullable TODO nullable strings
 }
 
-func (edge *Edge) DBFields() DBFields {
+func (edge *AssocEdge) DBFields() DBFields {
 	return DBFields{
 		"id1": func(v interface{}) error {
 			var err error
@@ -65,15 +65,15 @@ func (edge *Edge) DBFields() DBFields {
 	}
 }
 
-// EdgeResult stores the result of loading an Edge concurrently
-type EdgeResult struct {
-	Edge  *Edge
+// AssocEdgeResult stores the result of loading an Edge concurrently
+type AssocEdgeResult struct {
+	Edge  *AssocEdge
 	Error error
 }
 
-// EdgesResult stores the result of loading a slice of edges concurrently
-type EdgesResult struct {
-	Edges []*Edge
+// AssocEdgesResult stores the result of loading a slice of edges concurrently
+type AssocEdgesResult struct {
+	Edges []*AssocEdge
 	Error error
 }
 

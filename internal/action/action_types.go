@@ -5,6 +5,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/edge"
 )
 
 type actionType interface {
@@ -26,8 +27,8 @@ type concreteNodeActionType interface {
 
 type concreteEdgeActionType interface {
 	concreteActionType
-	getDefaultActionName(nodeName string, edgeName string) string
-	getDefaultGraphQLName(nodeName string, edgeName string) string
+	getDefaultActionName(nodeName string, edge edge.ActionableEdge) string
+	getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string
 }
 
 type createActionType struct {
@@ -129,16 +130,15 @@ var _ actionType = &mutationsActionType{}
 type addEdgeActionType struct {
 }
 
-func (action *addEdgeActionType) getDefaultActionName(nodeName, edgeName string) string {
+func (action *addEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge) string {
 	// it's going to be in the node_name package..
-	// AddInviteesAction
-	return "Add" + edgeName + "Action"
-
+	// AddFriendAction
+	return "Add" + edge.EdgeIdentifier() + "Action"
 }
 
-func (action *addEdgeActionType) getDefaultGraphQLName(nodeName, edgeName string) string {
-	// eventAddInvitees
-	return strcase.ToLowerCamel(nodeName) + "Add" + edgeName
+func (action *addEdgeActionType) getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string {
+	// eventAddInvitee
+	return strcase.ToLowerCamel(nodeName) + "Add" + edge.EdgeIdentifier()
 }
 
 func (action *addEdgeActionType) getAction(commonInfo commonActionInfo) Action {
@@ -163,13 +163,13 @@ var _ concreteEdgeActionType = &addEdgeActionType{}
 type removeEdgeActionType struct {
 }
 
-func (action *removeEdgeActionType) getDefaultActionName(nodeName, edgeName string) string {
-	return "Remove" + edgeName + "Action"
+func (action *removeEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge) string {
+	return "Remove" + edge.EdgeIdentifier() + "Action"
 }
 
-func (action *removeEdgeActionType) getDefaultGraphQLName(nodeName, edgeName string) string {
+func (action *removeEdgeActionType) getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string {
 	// do we need the node?
-	return strcase.ToLowerCamel(nodeName) + "Remove" + edgeName
+	return strcase.ToLowerCamel(nodeName) + "Remove" + edge.EdgeIdentifier()
 }
 
 func (action *removeEdgeActionType) getAction(commonInfo commonActionInfo) Action {
@@ -194,12 +194,12 @@ var _ concreteEdgeActionType = &removeEdgeActionType{}
 type groupEdgeActionType struct {
 }
 
-func (action *groupEdgeActionType) getDefaultActionName(nodeName, edgeName string) string {
-	return fmt.Sprintf("Edit%s%sAction", strcase.ToCamel(nodeName), edgeName)
+func (action *groupEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge) string {
+	return fmt.Sprintf("Edit%s%sAction", strcase.ToCamel(nodeName), edge.EdgeIdentifier())
 }
 
-func (action *groupEdgeActionType) getDefaultGraphQLName(nodeName, edgeName string) string {
-	return fmt.Sprintf("%s%sEdit", nodeName, edgeName)
+func (action *groupEdgeActionType) getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string {
+	return fmt.Sprintf("%s%sEdit", nodeName, edge.EdgeIdentifier())
 }
 
 func (action *groupEdgeActionType) getAction(commonInfo commonActionInfo) Action {
@@ -241,16 +241,38 @@ func getActionTypeFromString(typ string) actionType {
 	panic(fmt.Errorf("invalid action type passed %s", typ))
 }
 
-func getActionNameForActionType(nodeName string, typ concreteNodeActionType, customName string) string {
+func getActionNameForNodeActionType(typ concreteNodeActionType, nodeName, customName string) string {
 	if customName != "" {
 		return customName
 	}
 	return typ.getDefaultActionName(nodeName)
 }
 
-func getGraphQLNameForActionType(nodeName string, typ concreteNodeActionType, customName string) string {
+func getGraphQLNameForNodeActionType(typ concreteNodeActionType, nodeName, customName string) string {
 	if customName != "" {
 		return customName
 	}
 	return typ.getDefaultGraphQLName(nodeName)
+}
+
+func getActionNameForEdgeActionType(
+	typ concreteEdgeActionType,
+	nodeName string,
+	assocEdge *edge.AssociationEdge,
+	customName string) string {
+	if customName != "" {
+		return customName
+	}
+	return typ.getDefaultActionName(nodeName, assocEdge)
+}
+
+func getGraphQLNameForEdgeActionType(
+	typ concreteEdgeActionType,
+	nodeName string,
+	assocEdge *edge.AssociationEdge,
+	customName string) string {
+	if customName != "" {
+		return customName
+	}
+	return typ.getDefaultGraphQLName(nodeName, assocEdge)
 }

@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.1.0
 	github.com/gorilla/mux v1.7.3
 	github.com/iancoleman/strcase v0.0.0-20190422225806-e506e3ef7365
+	github.com/jinzhu/inflection v1.0.0
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/joho/godotenv v1.3.0
 	github.com/khaiql/dbcleaner v2.3.0+incompatible

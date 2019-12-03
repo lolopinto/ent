@@ -227,9 +227,8 @@ func (s *graphQLSchema) processAction(action action.Action) {
 	// add each edge that's part of this mutation as an id
 	for _, edge := range action.GetEdges() {
 		inputSchemaInfo.addNonEntField(&graphQLNonEntField{
-			// TODO we need a singular version of this so this is friendID
-			// instead of friendsID (for input type of edge mutations)
-			fieldName: fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.EdgeName)),
+			// use singular version so that this is friendID instead of friendsID
+			fieldName: fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
 			fieldType: "ID!",
 		})
 	}

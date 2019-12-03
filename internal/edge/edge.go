@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/depgraph"
@@ -81,6 +82,13 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
+// ActionableEdge indicates an edge that can be used in an action.
+// This provides the edge identifier that can be used in edge action
+// PS: why am I so bad at names?
+type ActionableEdge interface {
+	EdgeIdentifier() string
+}
+
 type Edge interface {
 	GetEdgeName() string
 	GetNodeInfo() nodeinfo.NodeInfo
@@ -91,6 +99,7 @@ type Edge interface {
 type PluralEdge interface {
 	Edge
 	PluralEdge() bool
+	Singular() string
 }
 
 type commonEdgeInfo struct {
@@ -129,6 +138,14 @@ func (e *ForeignKeyEdge) PluralEdge() bool {
 	return true
 }
 
+func (e *ForeignKeyEdge) Singular() string {
+	return inflection.Singular(e.EdgeName)
+}
+
+func (e *ForeignKeyEdge) EdgeIdentifier() string {
+	return e.Singular()
+}
+
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
 
@@ -146,21 +163,19 @@ type AssociationEdge struct {
 	IsInverseEdge bool
 	TableName     string // TableName will be gotten from the GroupName if part of a group or derived from each edge
 	// will eventually be made configurable to the user
-	EdgeAction *EdgeAction
-}
-
-// EdgeAction holds as little data as possible about the edge action
-// and depends on action to take that information, process it and generate the
-// action specific metadata
-type EdgeAction struct {
-	Action            string
-	CustomActionName  string
-	CustomGraphQLName string
-	ExposeToGraphQL   bool
+	EdgeActions []*EdgeAction
 }
 
 func (e *AssociationEdge) PluralEdge() bool {
 	return true
+}
+
+func (e *AssociationEdge) Singular() string {
+	return inflection.Singular(e.EdgeName)
+}
+
+func (e *AssociationEdge) EdgeIdentifier() string {
+	return e.Singular()
 }
 
 func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) {
@@ -189,14 +204,28 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) {
 var _ Edge = &AssociationEdge{}
 var _ PluralEdge = &AssociationEdge{}
 
+// EdgeAction holds as little data as possible about the edge action
+// and depends on action to take that information, process it and generate the
+// action specific metadata
+type EdgeAction struct {
+	Action            string
+	CustomActionName  string
+	CustomGraphQLName string
+	ExposeToGraphQL   bool
+}
+
 type AssociationEdgeGroup struct {
 	GroupName       string                      // this is the name of the edge which is different from the name of the status. confusing
 	GroupStatusName string                      // should be something like RsvpStatus
 	ConstType       string                      // and then this becomes EventRsvpStatus
 	Edges           map[string]*AssociationEdge // TODO...
-	EdgeAction      *EdgeAction
+	EdgeActions     []*EdgeAction
 	actionEdges     map[string]bool
 	NodeInfo        nodeinfo.NodeInfo
+}
+
+func (edgeGroup *AssociationEdgeGroup) EdgeIdentifier() string {
+	return edgeGroup.GroupStatusName
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetAssociationByName(edgeName string) *AssociationEdge {
@@ -450,8 +479,8 @@ func getParsedAssociationEdgeItem(containingPackageName, edgeName string, lit *a
 		assocEdge.InverseEdge = parseInverseAssocEdge(entConfig, containingPackageName, keyValueExprValue)
 	}, "EntConfig")
 
-	g.AddItem("EdgeAction", func(expr ast.Expr, keyValueExprValue ast.Expr) {
-		assocEdge.EdgeAction = parseEdgeAction(keyValueExprValue)
+	g.AddItem("EdgeActions", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		assocEdge.EdgeActions = parseEdgeActions(keyValueExprValue)
 	})
 
 	g.RunLoop()
@@ -506,8 +535,8 @@ func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, gr
 		edgeGroup.ConstType = edgeGroup.NodeInfo.Node + edgeGroup.GroupStatusName
 	})
 
-	g.AddItem("EdgeAction", func(expr ast.Expr, keyValueExprValue ast.Expr) {
-		edgeGroup.EdgeAction = parseEdgeAction(keyValueExprValue)
+	g.AddItem("EdgeActions", func(expr ast.Expr, keyValueExprValue ast.Expr) {
+		edgeGroup.EdgeActions = parseEdgeActions(keyValueExprValue)
 	})
 
 	g.AddItem("ActionEdges", func(expr ast.Expr, keyValueExpr ast.Expr) {
@@ -517,6 +546,15 @@ func parseAssociationEdgeGroupItem(edgeInfo *EdgeInfo, containingPackageName, gr
 	g.RunLoop()
 	edgeInfo.addEdgeGroup(edgeGroup)
 	return nil
+}
+
+func parseEdgeActions(keyValueExprValue ast.Expr) []*EdgeAction {
+	compositLit := astparser.GetExprToCompositeLit(keyValueExprValue)
+	edgeActions := make([]*EdgeAction, len(compositLit.Elts))
+	for idx, elt := range compositLit.Elts {
+		edgeActions[idx] = parseEdgeAction(elt)
+	}
+	return edgeActions
 }
 
 func parseEdgeAction(keyValueExprValue ast.Expr) *EdgeAction {

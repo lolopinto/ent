@@ -433,7 +433,7 @@ func Limit(limit int) func(*LoadEdgeConfig) {
 	}
 }
 
-func LoadEdgesByType(id string, edgeType EdgeType, options ...func(*LoadEdgeConfig)) ([]*Edge, error) {
+func LoadEdgesByType(id string, edgeType EdgeType, options ...func(*LoadEdgeConfig)) ([]*AssocEdge, error) {
 	l := &loadEdgesByType{
 		id:       id,
 		edgeType: edgeType,
@@ -441,7 +441,7 @@ func LoadEdgesByType(id string, edgeType EdgeType, options ...func(*LoadEdgeConf
 	return l.LoadData()
 }
 
-func LoadUniqueEdgeByType(id string, edgeType EdgeType) (*Edge, error) {
+func LoadUniqueEdgeByType(id string, edgeType EdgeType) (*AssocEdge, error) {
 	edges, err := LoadEdgesByType(id, edgeType, Limit(1))
 	if err != nil {
 		return nil, err
@@ -452,37 +452,37 @@ func LoadUniqueEdgeByType(id string, edgeType EdgeType) (*Edge, error) {
 // GenLoadEdgesByType handles loading of edges concurrently.
 // Because we get strong typing across all edges and for a consistent API with loading Nodes,
 // we use the EdgesResult struct here
-func GenLoadEdgesByType(id string, edgeType EdgeType, chanEdgesResult chan<- EdgesResult, options ...func(*LoadEdgeConfig)) {
+func GenLoadEdgesByType(id string, edgeType EdgeType, chanEdgesResult chan<- AssocEdgesResult, options ...func(*LoadEdgeConfig)) {
 	edges, err := LoadEdgesByType(id, edgeType, options...)
 	// var edges []*Edge
 	// chanErr := make(chan error)
 	// go GenLoadEdgesByType(id, edgeType, &edges, chanErr)
 	//	err := <-chanErr
-	chanEdgesResult <- EdgesResult{
+	chanEdgesResult <- AssocEdgesResult{
 		Edges: edges,
 		Error: err,
 	}
 }
 
-func GenLoadUniqueEdgeByType(id string, edgeType EdgeType, chanEdgeResult chan<- EdgeResult) {
+func GenLoadUniqueEdgeByType(id string, edgeType EdgeType, chanEdgeResult chan<- AssocEdgeResult) {
 	edge, err := LoadUniqueEdgeByType(id, edgeType)
-	chanEdgeResult <- EdgeResult{
+	chanEdgeResult <- AssocEdgeResult{
 		Edge:  edge,
 		Error: err,
 	}
 }
 
 // GenLoadEdgeByType is the concurrent version of LoadEdgeByType
-func GenLoadEdgeByType(id1, id2 string, edgeType EdgeType, chanEdgeResult chan<- EdgeResult) {
+func GenLoadEdgeByType(id1, id2 string, edgeType EdgeType, chanEdgeResult chan<- AssocEdgeResult) {
 	edge, err := LoadEdgeByType(id1, id2, edgeType)
-	chanEdgeResult <- EdgeResult{
+	chanEdgeResult <- AssocEdgeResult{
 		Edge:  edge,
 		Error: err,
 	}
 }
 
 // LoadEdgeByType checks if an edge exists between 2 ids
-func LoadEdgeByType(id string, id2 string, edgeType EdgeType) (*Edge, error) {
+func LoadEdgeByType(id string, id2 string, edgeType EdgeType) (*AssocEdge, error) {
 	// check if we can use the standard id1->edgeType cache
 	edges, err := LoadEdgesByType(id, edgeType)
 	if err != nil {
@@ -494,7 +494,7 @@ func LoadEdgeByType(id string, id2 string, edgeType EdgeType) (*Edge, error) {
 		}
 	}
 	// no edge
-	return &Edge{}, nil
+	return &AssocEdge{}, nil
 
 	// this checks if the edge exists based on the cache key and then does nothing about it
 	// I think this approach is the best longterm approach but we don't have the way to delete

@@ -382,7 +382,7 @@ func (l *loadNodeFromPKey) GetCacheKey() string {
 type loadEdgesByType struct {
 	id         string
 	edgeType   EdgeType
-	edges      []*Edge
+	edges      []*AssocEdge
 	outputID2s bool
 	options    []func(*LoadEdgeConfig)
 	cfg        LoadEdgeConfig
@@ -426,7 +426,7 @@ func (l *loadEdgesByType) GetCacheKey() string {
 }
 
 func (l *loadEdgesByType) GetNewInstance() interface{} {
-	var edge Edge
+	var edge AssocEdge
 	l.edges = append(l.edges, &edge)
 	return &edge
 }
@@ -447,7 +447,7 @@ func (l *loadEdgesByType) GetOutput() interface{} {
 	return l.edges
 }
 
-func (l *loadEdgesByType) LoadData() ([]*Edge, error) {
+func (l *loadEdgesByType) LoadData() ([]*AssocEdge, error) {
 	err := loadData(l)
 	if err != nil {
 		return nil, err

@@ -181,73 +181,89 @@ func getEdgeActionType(actionStr string) concreteEdgeActionType {
 	return typ
 }
 
-func processEdgeAction(nodeName string, assocEdge *edge.AssociationEdge) Action {
-	edgeAction := assocEdge.EdgeAction
-	typ := getEdgeActionType(edgeAction.Action)
+func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge) []Action {
+	edgeActions := assocEdge.EdgeActions
+	if len(edgeActions) == 0 {
+		return nil
+	}
+	actions := make([]Action, len(edgeActions))
 
-	return typ.getAction(
-		getCommonInfoForEdgeAction(
-			nodeName,
-			assocEdge.EdgeName,
-			typ,
-			edgeAction,
-			[]*edge.AssociationEdge{
+	for idx, edgeAction := range edgeActions {
+		typ := getEdgeActionType(edgeAction.Action)
+
+		actions[idx] = typ.getAction(
+			getCommonInfoForEdgeAction(
+				nodeName,
 				assocEdge,
-			},
-		),
-	)
+				typ,
+				edgeAction,
+				[]*edge.AssociationEdge{
+					assocEdge,
+				},
+			),
+		)
+	}
+	return actions
 }
 
-func processEdgeGroupAction(nodeName string, assocGroup *edge.AssociationEdgeGroup) Action {
-	edgeAction := assocGroup.EdgeAction
-	typ := getEdgeActionType(edgeAction.Action)
+func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGroup) []Action {
+	edgeActions := assocGroup.EdgeActions
+	if len(edgeActions) == 0 {
+		return nil
+	}
+	actions := make([]Action, len(edgeActions))
 
-	countGroupInfo := make(map[string]int)
-	for _, edge := range assocGroup.Edges {
-		nodeName := edge.NodeInfo.Node
-		currentVal, ok := countGroupInfo[nodeName]
-		if !ok {
-			countGroupInfo[nodeName] = 1
-		} else {
-			countGroupInfo[nodeName] = currentVal + 1
+	for idx, edgeAction := range edgeActions {
+		typ := getEdgeActionType(edgeAction.Action)
+
+		countGroupInfo := make(map[string]int)
+		for _, edge := range assocGroup.Edges {
+			nodeName := edge.NodeInfo.Node
+			currentVal, ok := countGroupInfo[nodeName]
+			if !ok {
+				countGroupInfo[nodeName] = 1
+			} else {
+				countGroupInfo[nodeName] = currentVal + 1
+			}
 		}
-	}
-	maxInt := math.MinInt64
-	var node string
+		maxInt := math.MinInt64
+		var node string
 
-	for nodeName, count := range countGroupInfo {
-		if count > maxInt {
-			maxInt = count
-			node = nodeName
+		for nodeName, count := range countGroupInfo {
+			if count > maxInt {
+				maxInt = count
+				node = nodeName
+			}
 		}
-	}
 
-	if node == "" {
-		panic("invalid edge") // TODO
-	}
+		if node == "" {
+			panic("invalid edge") // TODO
+		}
 
-	// how do I pass rsvp status??
-	return typ.getAction(
-		getCommonInfoForGroupEdgeAction(
-			nodeName,
-			assocGroup.GroupStatusName, // TODO rename from e
-			typ,
-			edgeAction,
-			[]*NonEntField{
-				&NonEntField{
-					FieldName: assocGroup.GroupStatusName,
-					FieldType: &field.StringType{},
-					Flag:      "Enum",
+		// how do I pass rsvp status??
+		actions[idx] = typ.getAction(
+			getCommonInfoForGroupEdgeAction(
+				nodeName,
+				assocGroup,
+				typ,
+				edgeAction,
+				[]*NonEntField{
+					&NonEntField{
+						FieldName: assocGroup.GroupStatusName,
+						FieldType: &field.StringType{},
+						Flag:      "Enum",
+					},
+					&NonEntField{
+						FieldName: strcase.ToCamel(node + "ID"),
+						FieldType: &field.StringType{},
+						Flag:      "ID",
+						NodeType:  fmt.Sprintf("models.%sType", node), // TODO should take it from codegenInfo
+					},
 				},
-				&NonEntField{
-					FieldName: strcase.ToCamel(node + "ID"),
-					FieldType: &field.StringType{},
-					Flag:      "ID",
-					NodeType:  fmt.Sprintf("models.%sType", node), // TODO should take it from codegenInfo
-				},
-			},
-		),
-	)
+			),
+		)
+	}
+	return actions
 }
 
 // todo
@@ -290,10 +306,10 @@ func getGroupEdgeAction(commonInfo commonActionInfo) *EdgeGroupAction {
 func getCommonInfo(nodeName string, typ concreteNodeActionType, customActionName, customGraphQLName string, exposeToGraphQL bool, fields []*field.Field) commonActionInfo {
 	var graphqlName string
 	if exposeToGraphQL {
-		graphqlName = getGraphQLNameForActionType(nodeName, typ, customGraphQLName)
+		graphqlName = getGraphQLNameForNodeActionType(typ, nodeName, customGraphQLName)
 	}
 	return commonActionInfo{
-		ActionName:      getActionNameForActionType(nodeName, typ, customActionName),
+		ActionName:      getActionNameForNodeActionType(typ, nodeName, customActionName),
 		GraphQLName:     graphqlName,
 		ExposeToGraphQL: exposeToGraphQL,
 		Fields:          fields,
@@ -303,26 +319,17 @@ func getCommonInfo(nodeName string, typ concreteNodeActionType, customActionName
 }
 
 func getCommonInfoForEdgeAction(
-	nodeName,
-	edgeName string,
+	nodeName string,
+	assocEdge *edge.AssociationEdge,
 	typ concreteEdgeActionType,
 	edgeAction *edge.EdgeAction,
 	edges []*edge.AssociationEdge) commonActionInfo {
-	var graphqlName, actionName string
+	var graphqlName string
 	if edgeAction.ExposeToGraphQL {
-		if edgeAction.CustomGraphQLName == "" {
-			graphqlName = typ.getDefaultGraphQLName(nodeName, edgeName)
-		} else {
-			graphqlName = edgeAction.CustomGraphQLName
-		}
-	}
-	if edgeAction.CustomActionName == "" {
-		actionName = typ.getDefaultActionName(nodeName, edgeName)
-	} else {
-		actionName = edgeAction.CustomActionName
+		graphqlName = getGraphQLNameForEdgeActionType(typ, nodeName, assocEdge, edgeAction.CustomGraphQLName)
 	}
 	return commonActionInfo{
-		ActionName:      actionName,
+		ActionName:      getActionNameForEdgeActionType(typ, nodeName, assocEdge, edgeAction.CustomActionName),
 		GraphQLName:     graphqlName,
 		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
 		Edges:           edges,
@@ -332,21 +339,21 @@ func getCommonInfoForEdgeAction(
 }
 
 func getCommonInfoForGroupEdgeAction(
-	nodeName,
-	groupName string,
+	nodeName string,
+	assocEdgeGroup *edge.AssociationEdgeGroup,
 	typ concreteEdgeActionType,
 	edgeAction *edge.EdgeAction,
 	fields []*NonEntField) commonActionInfo {
 	var graphqlName, actionName string
 	if edgeAction.ExposeToGraphQL {
 		if edgeAction.CustomGraphQLName == "" {
-			graphqlName = typ.getDefaultGraphQLName(nodeName, groupName)
+			graphqlName = typ.getDefaultGraphQLName(nodeName, assocEdgeGroup)
 		} else {
 			graphqlName = edgeAction.CustomGraphQLName
 		}
 	}
 	if edgeAction.CustomActionName == "" {
-		actionName = typ.getDefaultActionName(nodeName, groupName)
+		actionName = typ.getDefaultActionName(nodeName, assocEdgeGroup)
 	} else {
 		actionName = edgeAction.CustomActionName
 	}

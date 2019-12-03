@@ -136,28 +136,32 @@ func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName
 {{ $edges := edges $action}}
 
 {{ range $edge := $edges -}}
-// {{$edge.AddMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
-func (action *{{$actionName}}) {{$edge.AddMethodName}}({{$edge.InstanceName}} {{$edge.InstanceType}}) *{{$actionName}} {
-  {{/* TODO time and data support later */ -}}  
   {{ if removeEdgeAction $action -}}
-    action.builder.{{$edge.RemoveMethodName}}({{$edge.InstanceName}})
-  {{else -}}
-    action.builder.{{$edge.AddMethodName}}({{$edge.InstanceName}})
-  {{end -}}
-  return action
-}
+  // {{$edge.RemoveEntMethodName}} removes an instance of {{$edge.Node}} from the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
+  func (action *{{$actionName}}) {{$edge.RemoveEntMethodName}}({{$edge.InstanceName}}s ...{{$edge.InstanceType}}) *{{$actionName}} {
+    action.builder.{{$edge.RemoveEntMethodName}}({{$edge.InstanceName}}s...)
+    return action
+  }
 
-{{/* TODO rename this correctly for different action types... */}}
-// {{$edge.AddMethodName}} adds an instance of {{$edge.Node}}Id to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
-func (action *{{$actionName}}) {{$edge.AddMethodName}}ID({{$edge.InstanceName}}ID string) *{{$actionName}} {
-  {{/* TODO time and data support later */ -}}  
-  {{ if removeEdgeAction $action -}}
-    action.builder.{{$edge.RemoveMethodName}}ID({{$edge.InstanceName}}ID)
+  // {{$edge.RemoveSingleIDMethodName}} removes an instance of {{$edge.Node}}ID from the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
+  func (action *{{$actionName}}) {{$edge.RemoveSingleIDMethodName}}({{$edge.InstanceName}}ID string) *{{$actionName}} {
+    action.builder.{{$edge.RemoveSingleIDMethodName}}({{$edge.InstanceName}}ID)
+    return action
+  }
+
   {{ else -}}
-    action.builder.{{$edge.AddMethodName}}ID({{$edge.InstanceName}}ID)
+  // {{$edge.AddEntMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
+  func (action *{{$actionName}}) {{$edge.AddEntMethodName}}({{$edge.InstanceName}}s ...{{$edge.InstanceType}}) *{{$actionName}} {
+    action.builder.{{$edge.AddEntMethodName}}({{$edge.InstanceName}}s...)
+    return action
+  }
+
+  // {{$edge.AddSingleIDMethodName}} adds an instance of {{$edge.Node}}ID to the {{$edge.EdgeName}} edge while editing the {{$nodeInfo.Node}} ent 
+  func (action *{{$actionName}}) {{$edge.AddSingleIDMethodName}}({{$edge.InstanceName}}ID string, options ...func(*ent.EdgeOperation)) *{{$actionName}} {
+    action.builder.{{$edge.AddSingleIDMethodName}}({{$edge.InstanceName}}ID, options...)
+    return action
+  }
   {{end -}}
-  return action
-}
 {{end -}}
 
 

@@ -181,10 +181,18 @@ func (b *ContactMutationBuilder) GetPi() *float64 {
 	return b.pi
 }
 
-// AddAllowList adds an instance of User to the AllowList edge while editing the User ent
+// AddAllowList adds one or more instances of User to the AllowList edge while editing the User ent
 func (b *ContactMutationBuilder) AddAllowList(users ...*models.User) *ContactMutationBuilder {
 	for _, user := range users {
 		b.AddAllowListID(user.ID)
+	}
+	return b
+}
+
+// AddAllowListIDs adds an instance of User to the AllowList edge while editing the User ent
+func (b *ContactMutationBuilder) AddAllowListIDs(userIDs ...string) *ContactMutationBuilder {
+	for _, userID := range userIDs {
+		b.AddAllowListID(userID)
 	}
 	return b
 }
@@ -195,15 +203,23 @@ func (b *ContactMutationBuilder) AddAllowListID(userID string, options ...func(*
 	return b
 }
 
-// RemoveAllowList adds an instance of User to the AllowList edge while editing the User ent
+// RemoveAllowList removes an instance of User from the AllowList edge while editing the User ent
 func (b *ContactMutationBuilder) RemoveAllowList(users ...*models.User) *ContactMutationBuilder {
 	for _, user := range users {
-		b.builder.RemoveOutboundEdge(models.ContactToAllowListEdge, user.ID, models.UserType)
+		b.RemoveAllowListID(user.ID)
 	}
 	return b
 }
 
-// RemoveAllowListID adds an instance of User to the AllowList edge while editing the User ent
+// RemoveAllowListIDs removes an instance of User from the AllowList edge while editing the User ent
+func (b *ContactMutationBuilder) RemoveAllowListIDs(userIDs ...string) *ContactMutationBuilder {
+	for _, userID := range userIDs {
+		b.RemoveAllowListID(userID)
+	}
+	return b
+}
+
+// RemoveAllowListID removes an instance of User from the AllowList edge while editing the User ent
 func (b *ContactMutationBuilder) RemoveAllowListID(userID string) *ContactMutationBuilder {
 	b.builder.RemoveOutboundEdge(models.ContactToAllowListEdge, userID, models.UserType)
 	return b

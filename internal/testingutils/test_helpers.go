@@ -27,7 +27,7 @@ func VerifyEventObj(t *testing.T, event *models.Event, user *models.User) {
 func VerifyFamilyEdge(t *testing.T, user, user2 *models.User) {
 	edge, err := ent.LoadEdgeByType(user.ID, user2.ID, models.UserToFamilyMembersEdge)
 	assert.Nil(t, err)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      user.ID,
 		ID2:      user2.ID,
 		EdgeType: models.UserToFamilyMembersEdge,
@@ -46,7 +46,7 @@ func VerifyNoFamilyEdge(t *testing.T, user, user2 *models.User) {
 func VerifyInvitedToEventEdge(t *testing.T, user *models.User, event *models.Event) {
 	invitedEdge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToInvitedEdge)
 	assert.Nil(t, err)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      event.ID,
 		ID1Type:  event.GetType(),
 		ID2:      user.ID,
@@ -57,7 +57,7 @@ func VerifyInvitedToEventEdge(t *testing.T, user *models.User, event *models.Eve
 
 	userInvitedEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToInvitedEventsEdge)
 	assert.Nil(t, err)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      user.ID,
 		ID1Type:  user.GetType(),
 		ID2:      event.ID,
@@ -79,7 +79,7 @@ func VerifyNoInvitedToEventEdge(t *testing.T, user *models.User, event *models.E
 func VerifyUserAttendingEventEdge(t *testing.T, user *models.User, event *models.Event) {
 	attendingEdge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToAttendingEdge)
 	assert.Nil(t, err)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      event.ID,
 		ID1Type:  event.GetType(),
 		ID2:      user.ID,
@@ -90,7 +90,7 @@ func VerifyUserAttendingEventEdge(t *testing.T, user *models.User, event *models
 
 	userAttendingEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToEventsAttendingEdge)
 	assert.Nil(t, err)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      user.ID,
 		ID1Type:  user.GetType(),
 		ID2:      event.ID,
@@ -112,7 +112,7 @@ func VerifyNoUserAttendingEventEdge(t *testing.T, user *models.User, event *mode
 func VerifyUserDeclinedEventEdge(t *testing.T, user *models.User, event *models.Event) {
 	declinedEdge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToDeclinedEdge)
 	assert.Nil(t, err)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      event.ID,
 		ID1Type:  event.GetType(),
 		ID2:      user.ID,
@@ -123,7 +123,7 @@ func VerifyUserDeclinedEventEdge(t *testing.T, user *models.User, event *models.
 
 	userDeclinedEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToDeclinedEventsEdge)
 	assert.Nil(t, err)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      user.ID,
 		ID1Type:  user.GetType(),
 		ID2:      event.ID,
@@ -145,7 +145,7 @@ func VerifyNoUserDeclinedEventEdge(t *testing.T, user *models.User, event *model
 func VerifyUserToEventEdge(t *testing.T, user *models.User, event *models.Event) {
 	userToEventEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToEventsEdge)
 	assert.Nil(t, err)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      user.ID,
 		ID1Type:  user.GetType(),
 		ID2:      event.ID,
@@ -164,7 +164,7 @@ func VerifyNoUserToEventEdge(t *testing.T, user *models.User, event *models.Even
 func VerifyEventToHostEdge(t *testing.T, event *models.Event, user *models.User) {
 	edge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToHostsEdge)
 	assert.Nil(t, err)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      event.GetID(),
 		ID1Type:  event.GetType(),
 		ID2:      user.GetID(),
@@ -177,7 +177,7 @@ func VerifyEventToHostEdge(t *testing.T, event *models.Event, user *models.User)
 func VerifyEventToCreatorEdge(t *testing.T, event *models.Event, user *models.User) {
 	edge, err := ent.LoadEdgeByType(event.ID, user.ID, models.EventToCreatorEdge)
 	assert.Nil(t, err)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      event.GetID(),
 		ID1Type:  event.GetType(),
 		ID2:      user.GetID(),
@@ -193,7 +193,7 @@ func VerifyFriendsEdge(t *testing.T, user, user2 *models.User) {
 	friends2Edge, err := ent.LoadEdgeByType(user2.ID, user.ID, models.UserToFriendsEdge)
 	assert.Nil(t, err)
 
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      user.ID,
 		ID1Type:  user.GetType(),
 		ID2:      user2.ID,
@@ -201,7 +201,7 @@ func VerifyFriendsEdge(t *testing.T, user, user2 *models.User) {
 		EdgeType: models.UserToFriendsEdge,
 		Data:     "",
 	}, friends1Edge)
-	VerifyEdge(t, &ent.Edge{
+	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      user2.ID,
 		ID1Type:  user2.GetType(),
 		ID2:      user.ID,
@@ -220,7 +220,7 @@ func VerifyNoFriendsEdge(t *testing.T, user, user2 *models.User) {
 	assert.Zero(t, *friends2Edge)
 }
 
-func VerifyEdge(t *testing.T, expectedEdge, edge *ent.Edge) {
+func VerifyEdge(t *testing.T, expectedEdge, edge *ent.AssocEdge) {
 	assert.Equal(t, expectedEdge.EdgeType, edge.EdgeType)
 	assert.Equal(t, expectedEdge.ID1, edge.ID1)
 	assert.Equal(t, expectedEdge.ID2, edge.ID2)

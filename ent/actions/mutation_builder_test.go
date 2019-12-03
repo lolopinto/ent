@@ -257,7 +257,7 @@ func (suite *mutationBuilderSuite) TestManualDataField() {
 
 	edge, err := ent.LoadEdgeByType(user.ID, user2.ID, models.UserToFamilyMembersEdge)
 	assert.Nil(suite.T(), err)
-	testingutils.VerifyEdge(suite.T(), &ent.Edge{
+	testingutils.VerifyEdge(suite.T(), &ent.AssocEdge{
 		ID1:      user.ID,
 		ID2:      user2.ID,
 		EdgeType: models.UserToFamilyMembersEdge,
@@ -301,7 +301,7 @@ func (suite *mutationBuilderSuite) TestManualTimeField() {
 
 		edge, err := ent.LoadEdgeByType(user.ID, user2.ID, models.UserToFamilyMembersEdge)
 		assert.Nil(suite.T(), err)
-		testingutils.VerifyEdge(suite.T(), &ent.Edge{
+		testingutils.VerifyEdge(suite.T(), &ent.AssocEdge{
 			ID1:      user.ID,
 			ID2:      user2.ID,
 			EdgeType: models.UserToFamilyMembersEdge,

@@ -177,6 +177,7 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 			"actionPath":            p.getActionPath,
 			"groupEdgeEnum":         p.groupEdgeEnum,
 			"groupEdgeEnumConst":    p.groupEdgeEnumConst,
+			"removeEdgeAction":      action.IsRemoveEdgeAction,
 		},
 	})
 }

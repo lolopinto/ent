@@ -8,12 +8,21 @@ type Config interface {
 	GetTableName() string
 }
 
+// Edge indicates a relationship/connection between 2 or more nodes
+// This interface isn't fully fleshed out yet but it allows the API to be clearer
+type Edge interface {
+	Name() string
+	marker()
+}
+
+// EdgeMap is a mapping of name of edge to EdgeType
+type EdgeMap map[string]Edge
+
 // ConfigWithEdges is the interface that EntConfigs which have edges implements
 type ConfigWithEdges interface {
 	Config
-	// GetEdges returns the Edges that the ent supports
-	// TODO: change from map[string]inteface{}
-	GetEdges() map[string]interface{}
+	// GetEdges returns the edges that the ent supports
+	GetEdges() EdgeMap
 }
 
 // ConfigWithActions is the interface that EntConfig which have actions implements
@@ -21,9 +30,6 @@ type ConfigWithActions interface {
 	Config
 	GetActions() []*ActionConfig
 }
-
-// TODO change everywhere from ent.
-type EdgeMap map[string]interface{}
 
 // FieldEdge refers to when the Edge being loaded from an ent is a field on the same node/ent
 type FieldEdge struct {
@@ -33,11 +39,27 @@ type FieldEdge struct {
 	// can specify it on the other side also. e.g. InverseField NoteID so that we know what field to write
 }
 
+func (FieldEdge) Name() string {
+	return "fieldEdge"
+}
+
+func (FieldEdge) marker() {
+	panic("do not call")
+}
+
 // ForeignKeyEdge is when the edge is handled by having a foreign key in the other table
 // So contacts -> contact_emails with the ContactID being a field stored in ContactEmail table
 // There'll be a ForeignKey edge from Contact -> ContactEmails and then a FieldEdge from ContactEmail to Contact
 type ForeignKeyEdge struct {
 	EntConfig interface{} // zero-value of the struct
+}
+
+func (ForeignKeyEdge) Name() string {
+	return "foreignKeyEdge"
+}
+
+func (ForeignKeyEdge) marker() {
+	panic("do not call")
 }
 
 // AssociationEdge is the fb-style edge where the information is stored in the edges_info table.
@@ -46,7 +68,6 @@ type AssociationEdge struct {
 	EntConfig interface{} // zero-value of the struct
 	//CustomTableName string      // TODO come back
 	// have to pick one or the other
-	//InverseEdge *AssociationEdge
 	InverseEdge *InverseAssocEdge
 	Symmetric   bool
 	// Unique indicates that there's only one instance of this edge
@@ -58,15 +79,24 @@ type AssociationEdge struct {
 
 	// TODO inverse and other fun things about edges
 	// same with foreign key edge
-	EdgeAction *EdgeActionConfig
+	EdgeActions EdgeActions
 }
 
-//type EdgeGroup map[string]*AssociationEdge
+func (AssociationEdge) Name() string {
+	return "associationEdge"
+}
+
+func (AssociationEdge) marker() {
+	panic("do not call")
+}
+
+// AssocEdgeMap is a mapping of name of edge to EdgeType
+type AssocEdgeMap map[string]*AssociationEdge
 
 type AssociationEdgeGroup struct {
-	EdgeGroups      EdgeMap
+	EdgeGroups      AssocEdgeMap
 	GroupStatusName string // Name of the group e.g. Rsvp. will be used to create a Node{GroupName}Status object and a bunch of other things
-	EdgeAction      *EdgeActionConfig
+	EdgeActions     EdgeActions
 	CustomTableName string
 
 	// Edges limits the edges that are used in the status action calculations. status map.
@@ -74,6 +104,14 @@ type AssociationEdgeGroup struct {
 	ActionEdges []string
 	// TODO: expand on this more. basically the edges that can be set. they should all have the same Config...
 	// handle this later
+}
+
+func (AssociationEdgeGroup) Name() string {
+	return "associationEdgeGroup"
+}
+
+func (AssociationEdgeGroup) marker() {
+	panic("do not call")
 }
 
 type AssociationEdgeGroupStatusInfo struct {
