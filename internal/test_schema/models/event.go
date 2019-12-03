@@ -155,13 +155,13 @@ func (event *Event) LoadHosts() ([]*User, error) {
 	return users, err
 }
 
-// LoadHostsEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Hosts edge.
-func (event *Event) LoadHostsEdgeFor(id2 string) (*ent.AssocEdge, error) {
+// LoadHostEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Hosts edge.
+func (event *Event) LoadHostEdgeFor(id2 string) (*ent.AssocEdge, error) {
 	return ent.LoadEdgeByType(event.ID, id2, EventToHostsEdge)
 }
 
-// GenHostsEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Hosts edge.
-func (event *Event) GenLoadHostsEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
+// GenHostEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Hosts edge.
+func (event *Event) GenLoadHostEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	edgeResultChan := make(chan ent.AssocEdgeResult)
 	go ent.GenLoadEdgeByType(event.ID, id2, EventToHostsEdge, edgeResultChan)

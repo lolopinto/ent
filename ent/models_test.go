@@ -295,7 +295,7 @@ func (suite *modelsTestSuite) TestGeneratedLoadEdgeByType() {
 
 			user, err := models.LoadUser(v, user.ID)
 			util.Die(err)
-			return user.LoadEventsEdgeFor(event.ID)
+			return user.LoadEventEdgeFor(event.ID)
 		},
 		user.ID,
 		event.ID,
@@ -378,7 +378,7 @@ func (suite *modelsTestSuite) TestGeneratedGenLoadEdgeByType() {
 			var wg sync.WaitGroup
 			var result ent.AssocEdgeResult
 			wg.Add(1)
-			go user.GenLoadEventsEdgeFor(event.ID, &result, &wg)
+			go user.GenLoadEventEdgeFor(event.ID, &result, &wg)
 			wg.Wait()
 			return result.Edge, result.Error
 		},
