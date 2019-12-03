@@ -73,8 +73,8 @@ type EventsEdge struct {
 func (EventsEdge) IsEdge() {}
 
 type UserAddFamilyMemberInput struct {
-	FamilyMembersID string `json:"familyMembersID"`
-	UserID          string `json:"userID"`
+	FamilyMemberID string `json:"familyMemberID"`
+	UserID         string `json:"userID"`
 }
 
 type UserAddFamilyMemberResponse struct {
@@ -82,8 +82,8 @@ type UserAddFamilyMemberResponse struct {
 }
 
 type UserAddFriendInput struct {
-	FriendsID string `json:"friendsID"`
-	UserID    string `json:"userID"`
+	FriendID string `json:"friendID"`
+	UserID   string `json:"userID"`
 }
 
 type UserAddFriendResponse struct {
@@ -122,8 +122,8 @@ type UserEditResponse struct {
 }
 
 type UserRemoveFamilyMemberInput struct {
-	FamilyMembersID string `json:"familyMembersID"`
-	UserID          string `json:"userID"`
+	FamilyMemberID string `json:"familyMemberID"`
+	UserID         string `json:"userID"`
 }
 
 type UserRemoveFamilyMemberResponse struct {
@@ -131,8 +131,8 @@ type UserRemoveFamilyMemberResponse struct {
 }
 
 type UserRemoveFriendInput struct {
-	FriendsID string `json:"friendsID"`
-	UserID    string `json:"userID"`
+	FriendID string `json:"friendID"`
+	UserID   string `json:"userID"`
 }
 
 type UserRemoveFriendResponse struct {

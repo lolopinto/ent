@@ -289,11 +289,9 @@ func GetNonEntFields(action Action) []FieldActionTemplateInfo {
 }
 
 type EdgeActionTemplateInfo struct {
-	AddMethodName            string
 	AddEntMethodName         string
 	AddSingleIDMethodName    string
 	AddMultiIDMethodName     string
-	RemoveMethodName         string
 	RemoveEntMethodName      string
 	RemoveSingleIDMethodName string
 	RemoveMultiIDMethodName  string
@@ -301,10 +299,10 @@ type EdgeActionTemplateInfo struct {
 	InstanceName             string
 	InstanceType             string
 	//	AssocEdge    *edge.AssociationEdge
-	EdgeConst string
-	NodeType  string
-	Node      string
-	NodeID    string
+	EdgeConst     string
+	NodeType      string
+	Node          string
+	GraphQLNodeID string
 }
 
 func GetEdges(action Action) []EdgeActionTemplateInfo {
@@ -319,14 +317,10 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 		edgeName := edge.GetEdgeName()
 
 		result = append(result, EdgeActionTemplateInfo{
-			Node: edge.NodeInfo.Node,
-			// TODO kill
-			AddMethodName:         "Add" + edge.EdgeName,
-			AddEntMethodName:      "Add" + edge.EdgeName,
-			AddSingleIDMethodName: "Add" + edge.Singular() + "ID",
-			AddMultiIDMethodName:  "Add" + edge.Singular() + "IDs",
-			// TODO kill
-			RemoveMethodName:         "Remove" + edge.EdgeName,
+			Node:                     edge.NodeInfo.Node,
+			AddEntMethodName:         "Add" + edge.EdgeName,
+			AddSingleIDMethodName:    "Add" + edge.Singular() + "ID",
+			AddMultiIDMethodName:     "Add" + edge.Singular() + "IDs",
 			RemoveEntMethodName:      "Remove" + edge.EdgeName,
 			RemoveSingleIDMethodName: "Remove" + edge.Singular() + "ID",
 			RemoveMultiIDMethodName:  "Remove" + edge.Singular() + "IDs",
@@ -336,8 +330,8 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 			EdgeConst:                edge.EdgeConst,
 			//AssocEdge:    edge,
 			NodeType: edge.NodeInfo.NodeType,
-			// matches what we do in processAction
-			NodeID: fmt.Sprintf("%sID", edge.EdgeName),
+			// matches what we do in graphQLSchema.processAction
+			GraphQLNodeID: fmt.Sprintf("%sID", edge.Singular()),
 		})
 	}
 
@@ -354,4 +348,8 @@ func IsRequiredField(action Action, field *field.Field) bool {
 		return false
 	}
 	return true
+}
+
+func IsRemoveEdgeAction(action Action) bool {
+	return action.GetOperation() == ent.RemoveEdgeAction
 }

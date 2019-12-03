@@ -37,7 +37,11 @@
 	{{end -}}
 	{{$edges := actionEdges $action}}
 	{{range $edge := $edges -}}	
-		{{$edge.AddMethodName}}ID(input.{{$edge.NodeID}}).
+			{{if removeEdgeAction $action -}}
+				{{$edge.RemoveSingleIDMethodName}}(input.{{$edge.GraphQLNodeID}}).
+			{{ else -}}
+				{{$edge.AddSingleIDMethodName}}(input.{{$edge.GraphQLNodeID}}).
+			{{end -}}
 	{{end -}}
 	{{$fields := actionNonEntFields $action}}
 	{{range $field := $fields -}}	

@@ -963,7 +963,7 @@ type User implements Node {
 }
 
 input UserAddFamilyMemberInput {
-    familyMembersID: ID!
+    familyMemberID: ID!
     userID: ID!
 }
 
@@ -972,7 +972,7 @@ type UserAddFamilyMemberResponse {
 }
 
 input UserAddFriendInput {
-    friendsID: ID!
+    friendID: ID!
     userID: ID!
 }
 
@@ -1012,7 +1012,7 @@ type UserEditResponse {
 }
 
 input UserRemoveFamilyMemberInput {
-    familyMembersID: ID!
+    familyMemberID: ID!
     userID: ID!
 }
 
@@ -1021,7 +1021,7 @@ type UserRemoveFamilyMemberResponse {
 }
 
 input UserRemoveFriendInput {
-    friendsID: ID!
+    friendID: ID!
     userID: ID!
 }
 
@@ -5052,9 +5052,9 @@ func (ec *executionContext) unmarshalInputUserAddFamilyMemberInput(ctx context.C
 
 	for k, v := range asMap {
 		switch k {
-		case "familyMembersID":
+		case "familyMemberID":
 			var err error
-			it.FamilyMembersID, err = ec.unmarshalNID2string(ctx, v)
+			it.FamilyMemberID, err = ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5076,9 +5076,9 @@ func (ec *executionContext) unmarshalInputUserAddFriendInput(ctx context.Context
 
 	for k, v := range asMap {
 		switch k {
-		case "friendsID":
+		case "friendID":
 			var err error
-			it.FriendsID, err = ec.unmarshalNID2string(ctx, v)
+			it.FriendID, err = ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5196,9 +5196,9 @@ func (ec *executionContext) unmarshalInputUserRemoveFamilyMemberInput(ctx contex
 
 	for k, v := range asMap {
 		switch k {
-		case "familyMembersID":
+		case "familyMemberID":
 			var err error
-			it.FamilyMembersID, err = ec.unmarshalNID2string(ctx, v)
+			it.FamilyMemberID, err = ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5220,9 +5220,9 @@ func (ec *executionContext) unmarshalInputUserRemoveFriendInput(ctx context.Cont
 
 	for k, v := range asMap {
 		switch k {
-		case "friendsID":
+		case "friendID":
 			var err error
-			it.FriendsID, err = ec.unmarshalNID2string(ctx, v)
+			it.FriendID, err = ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
