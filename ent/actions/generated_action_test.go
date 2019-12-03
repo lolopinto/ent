@@ -11,7 +11,6 @@ import (
 	"github.com/lolopinto/ent/ent/viewertesting"
 
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	contactaction "github.com/lolopinto/ent/internal/test_schema/models/contact/action"
 	eventaction "github.com/lolopinto/ent/internal/test_schema/models/event/action"
 	"github.com/lolopinto/ent/internal/test_schema/models/user/action"
@@ -230,8 +229,8 @@ func (suite *generatedActionSuite) TestAddEdgeAction() {
 
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
-	updatedUser, err := action.AddFriends(v, user).
-		AddFriends(user2).
+	updatedUser, err := action.AddFriend(v, user).
+		AddFriendID(user2.ID).
 		Save()
 
 	assert.Nil(suite.T(), err)
@@ -241,20 +240,10 @@ func (suite *generatedActionSuite) TestAddEdgeAction() {
 }
 
 func (suite *generatedActionSuite) addFamilyEdge(v viewer.ViewerContext, user, user2 *models.User) {
-	var updatedUser models.User
-	b := actions.NewMutationBuilder(
-		v,
-		ent.EditOperation,
-		&updatedUser,
-		&configs.UserConfig{},
-		actions.ExistingEnt(user),
-	)
-	// manually adding this until we fix the API and generating this correctly
-	b.AddOutboundEdge(models.UserToFamilyMembersEdge, user2.ID, user2.GetType())
+	_, err := action.AddFamilyMember(v, user).
+		AddFamilyMemberID(user2.ID).
+		Save()
 
-	c, err := b.GetChangeset()
-	assert.Nil(suite.T(), err)
-	err = ent.SaveChangeset(c)
 	assert.Nil(suite.T(), err)
 
 	testingutils.VerifyFamilyEdge(suite.T(), user, user2)
@@ -268,10 +257,8 @@ func (suite *generatedActionSuite) TestRemoveEdgeAction() {
 
 	suite.addFamilyEdge(v, user, user2)
 
-	// hmm this API :(
-	// remove
-	updatedUser, err := action.RemoveFamilyMembers(v, user).
-		AddFamilyMembers(user2).
+	updatedUser, err := action.RemoveFamilyMember(v, user).
+		RemoveFamilyMemberID(user2.ID).
 		Save()
 
 	assert.Nil(suite.T(), err)

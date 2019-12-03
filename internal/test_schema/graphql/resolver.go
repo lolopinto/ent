@@ -144,40 +144,40 @@ func (r *mutationResolver) EventRsvpStatusEdit(ctx context.Context, input EventR
 	}, nil
 }
 
-func (r *mutationResolver) UserAddFamilyMembers(ctx context.Context, input UserAddFamilyMembersInput) (*UserAddFamilyMembersResponse, error) {
+func (r *mutationResolver) UserAddFamilyMember(ctx context.Context, input UserAddFamilyMemberInput) (*UserAddFamilyMemberResponse, error) {
 	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	node, err := action2.AddFamilyMembersFromContext(ctx, existingNode).
-		AddFamilyMembersID(input.FamilyMembersID).
+	node, err := action2.AddFamilyMemberFromContext(ctx, existingNode).
+		AddFamilyMemberID(input.FamilyMemberID).
 		Save()
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &UserAddFamilyMembersResponse{
+	return &UserAddFamilyMemberResponse{
 		User: node,
 	}, nil
 }
 
-func (r *mutationResolver) UserAddFriends(ctx context.Context, input UserAddFriendsInput) (*UserAddFriendsResponse, error) {
+func (r *mutationResolver) UserAddFriend(ctx context.Context, input UserAddFriendInput) (*UserAddFriendResponse, error) {
 	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	node, err := action2.AddFriendsFromContext(ctx, existingNode).
-		AddFriendsID(input.FriendsID).
+	node, err := action2.AddFriendFromContext(ctx, existingNode).
+		AddFriendID(input.FriendID).
 		Save()
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &UserAddFriendsResponse{
+	return &UserAddFriendResponse{
 		User: node,
 	}, nil
 }
@@ -239,40 +239,40 @@ func (r *mutationResolver) UserEdit(ctx context.Context, input UserEditInput) (*
 	}, nil
 }
 
-func (r *mutationResolver) UserRemoveFamilyMembers(ctx context.Context, input UserRemoveFamilyMembersInput) (*UserRemoveFamilyMembersResponse, error) {
+func (r *mutationResolver) UserRemoveFamilyMember(ctx context.Context, input UserRemoveFamilyMemberInput) (*UserRemoveFamilyMemberResponse, error) {
 	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	node, err := action2.RemoveFamilyMembersFromContext(ctx, existingNode).
-		AddFamilyMembersID(input.FamilyMembersID).
+	node, err := action2.RemoveFamilyMemberFromContext(ctx, existingNode).
+		RemoveFamilyMemberID(input.FamilyMemberID).
 		Save()
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &UserRemoveFamilyMembersResponse{
+	return &UserRemoveFamilyMemberResponse{
 		User: node,
 	}, nil
 }
 
-func (r *mutationResolver) UserRemoveFriends(ctx context.Context, input UserRemoveFriendsInput) (*UserRemoveFriendsResponse, error) {
+func (r *mutationResolver) UserRemoveFriend(ctx context.Context, input UserRemoveFriendInput) (*UserRemoveFriendResponse, error) {
 	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	node, err := action2.RemoveFriendsFromContext(ctx, existingNode).
-		AddFriendsID(input.FriendsID).
+	node, err := action2.RemoveFriendFromContext(ctx, existingNode).
+		RemoveFriendID(input.FriendID).
 		Save()
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &UserRemoveFriendsResponse{
+	return &UserRemoveFriendResponse{
 		User: node,
 	}, nil
 }

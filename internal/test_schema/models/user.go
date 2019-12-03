@@ -151,13 +151,13 @@ func (user *User) LoadEvents() ([]*Event, error) {
 	return events, err
 }
 
-// LoadEventsEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Events edge.
-func (user *User) LoadEventsEdgeFor(id2 string) (*ent.AssocEdge, error) {
+// LoadEventEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Events edge.
+func (user *User) LoadEventEdgeFor(id2 string) (*ent.AssocEdge, error) {
 	return ent.LoadEdgeByType(user.ID, id2, UserToEventsEdge)
 }
 
-// GenEventsEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Events edge.
-func (user *User) GenLoadEventsEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
+// GenEventEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Events edge.
+func (user *User) GenLoadEventEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	edgeResultChan := make(chan ent.AssocEdgeResult)
 	go ent.GenLoadEdgeByType(user.ID, id2, UserToEventsEdge, edgeResultChan)
@@ -195,13 +195,13 @@ func (user *User) LoadFamilyMembers() ([]*User, error) {
 	return users, err
 }
 
-// LoadFamilyMembersEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the FamilyMembers edge.
-func (user *User) LoadFamilyMembersEdgeFor(id2 string) (*ent.AssocEdge, error) {
+// LoadFamilyMemberEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the FamilyMembers edge.
+func (user *User) LoadFamilyMemberEdgeFor(id2 string) (*ent.AssocEdge, error) {
 	return ent.LoadEdgeByType(user.ID, id2, UserToFamilyMembersEdge)
 }
 
-// GenFamilyMembersEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the FamilyMembers edge.
-func (user *User) GenLoadFamilyMembersEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
+// GenFamilyMemberEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the FamilyMembers edge.
+func (user *User) GenLoadFamilyMemberEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	edgeResultChan := make(chan ent.AssocEdgeResult)
 	go ent.GenLoadEdgeByType(user.ID, id2, UserToFamilyMembersEdge, edgeResultChan)
@@ -239,13 +239,13 @@ func (user *User) LoadFriends() ([]*User, error) {
 	return users, err
 }
 
-// LoadFriendsEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Friends edge.
-func (user *User) LoadFriendsEdgeFor(id2 string) (*ent.AssocEdge, error) {
+// LoadFriendEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the Friends edge.
+func (user *User) LoadFriendEdgeFor(id2 string) (*ent.AssocEdge, error) {
 	return ent.LoadEdgeByType(user.ID, id2, UserToFriendsEdge)
 }
 
-// GenFriendsEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Friends edge.
-func (user *User) GenLoadFriendsEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
+// GenFriendEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Friends edge.
+func (user *User) GenLoadFriendEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	edgeResultChan := make(chan ent.AssocEdgeResult)
 	go ent.GenLoadEdgeByType(user.ID, id2, UserToFriendsEdge, edgeResultChan)
@@ -283,13 +283,13 @@ func (user *User) LoadInvitedEvents() ([]*Event, error) {
 	return events, err
 }
 
-// LoadInvitedEventsEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the InvitedEvents edge.
-func (user *User) LoadInvitedEventsEdgeFor(id2 string) (*ent.AssocEdge, error) {
+// LoadInvitedEventEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the InvitedEvents edge.
+func (user *User) LoadInvitedEventEdgeFor(id2 string) (*ent.AssocEdge, error) {
 	return ent.LoadEdgeByType(user.ID, id2, UserToInvitedEventsEdge)
 }
 
-// GenInvitedEventsEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the InvitedEvents edge.
-func (user *User) GenLoadInvitedEventsEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
+// GenInvitedEventEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the InvitedEvents edge.
+func (user *User) GenLoadInvitedEventEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	edgeResultChan := make(chan ent.AssocEdgeResult)
 	go ent.GenLoadEdgeByType(user.ID, id2, UserToInvitedEventsEdge, edgeResultChan)
@@ -371,13 +371,13 @@ func (user *User) LoadDeclinedEvents() ([]*Event, error) {
 	return events, err
 }
 
-// LoadDeclinedEventsEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the DeclinedEvents edge.
-func (user *User) LoadDeclinedEventsEdgeFor(id2 string) (*ent.AssocEdge, error) {
+// LoadDeclinedEventEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the DeclinedEvents edge.
+func (user *User) LoadDeclinedEventEdgeFor(id2 string) (*ent.AssocEdge, error) {
 	return ent.LoadEdgeByType(user.ID, id2, UserToDeclinedEventsEdge)
 }
 
-// GenDeclinedEventsEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the DeclinedEvents edge.
-func (user *User) GenLoadDeclinedEventsEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
+// GenDeclinedEventEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the DeclinedEvents edge.
+func (user *User) GenLoadDeclinedEventEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	edgeResultChan := make(chan ent.AssocEdgeResult)
 	go ent.GenLoadEdgeByType(user.ID, id2, UserToDeclinedEventsEdge, edgeResultChan)
