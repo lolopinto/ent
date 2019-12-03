@@ -36,17 +36,17 @@ type createEventAction struct {
 }
 
 func eventCreateAction(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 ) *createEventAction {
 	action := createEventAction{}
 	b := actions.NewMutationBuilder(
-		viewer,
+		v,
 		ent.InsertOperation,
 		&action.event,
 		&configs.EventConfig{},
 	)
-	action.viewer = viewer
-	fields := testingutils.GetDefaultEventFieldsUserID(viewer.GetViewerID())
+	action.viewer = v
+	fields := testingutils.GetDefaultEventFieldsUserID(v.GetViewerID())
 	for k, v := range fields {
 		b.SetField(k, v)
 	}

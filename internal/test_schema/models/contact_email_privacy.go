@@ -37,8 +37,8 @@ type AllowIfViewerCanSeeContactEmailRule struct {
 }
 
 // Eval evaluates that the ent is visible to the user
-func (rule AllowIfViewerCanSeeContactEmailRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	_, err := LoadContactEmail(viewer, rule.ContactEmailID)
+func (rule AllowIfViewerCanSeeContactEmailRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	_, err := LoadContactEmail(v, rule.ContactEmailID)
 	if err != nil {
 		return ent.Skip()
 	}

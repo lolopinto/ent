@@ -44,7 +44,7 @@ func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
   action := &{{$actionName}}{}
   {{/* TODO the best long term thing here probably is to push this into the builder and have EventMutationBuilder use an EdgeGroupMutationBuilder for example instead of an EntMutationBuilder however need to make it work for multiple group statuses in the same mutation so doing it this way instead for now */ -}}
   builder := builder.NewMutationBuilder(
-    viewer,
+    v,
     {{writeOperation $action}},
     action.getFieldMap(),
     {{ if $action.MutatingExistingObject -}}

@@ -28,8 +28,8 @@ type Contact struct {
 	FirstName     string   `db:"first_name"`
 	LastName      string   `db:"last_name"`
 	UserID        string   `db:"user_id"`
-	Favorite      *bool    `graphql:"_" db:"favorite"`
-	NumberOfCalls *int     `db:"number_of_calls" graphql:"_"`
+	Favorite      *bool    `db:"favorite" graphql:"_"`
+	NumberOfCalls *int     `graphql:"_" db:"number_of_calls"`
 	Pi            *float64 `graphql:"_" db:"pi"`
 	Viewer        viewer.ViewerContext
 }
@@ -78,18 +78,18 @@ func LoadContactFromContext(ctx context.Context, id string) (*Contact, error) {
 }
 
 // LoadContact loads the given Contact given the viewer and id
-func LoadContact(viewer viewer.ViewerContext, id string) (*Contact, error) {
+func LoadContact(v viewer.ViewerContext, id string) (*Contact, error) {
 	var contact Contact
-	err := ent.LoadNode(viewer, id, &contact, &configs.ContactConfig{})
+	err := ent.LoadNode(v, id, &contact, &configs.ContactConfig{})
 	return &contact, err
 }
 
 // GenLoadContact loads the given Contact given the id
-func GenLoadContact(viewer viewer.ViewerContext, id string, result *ContactResult, wg *sync.WaitGroup) {
+func GenLoadContact(v viewer.ViewerContext, id string, result *ContactResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var contact Contact
 	chanErr := make(chan error)
-	go ent.GenLoadNode(viewer, id, &contact, &configs.ContactConfig{}, chanErr)
+	go ent.GenLoadNode(v, id, &contact, &configs.ContactConfig{}, chanErr)
 	err := <-chanErr
 	result.Contact = &contact
 	result.Error = err

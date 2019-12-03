@@ -98,18 +98,18 @@ func Load{{.Node}}FromContext(ctx context.Context, id string) (*{{.Node}}, error
 }
 
 // Load{{.Node}} loads the given {{.Node}} given the viewer and id
-func Load{{.Node}}(viewer viewer.ViewerContext, id string) (*{{.Node}}, error) {
+func Load{{.Node}}(v viewer.ViewerContext, id string) (*{{.Node}}, error) {
   var {{.NodeInstance}} {{.Node}}
-  err := ent.LoadNode(viewer, id, &{{.NodeInstance}}, {{.EntConfig}})
+  err := ent.LoadNode(v, id, &{{.NodeInstance}}, {{.EntConfig}})
   return &{{.NodeInstance}}, err
 }
 
 // GenLoad{{.Node}} loads the given {{.Node}} given the id
-func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeResult}}, wg *sync.WaitGroup) {
+func GenLoad{{.Node}}(v viewer.ViewerContext, id string, result *{{.NodeResult}}, wg *sync.WaitGroup) {
   defer wg.Done()
   var {{.NodeInstance}} {{.Node}}
   chanErr := make(chan error)
-  go ent.GenLoadNode(viewer, id, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
+  go ent.GenLoadNode(v, id, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
   err := <-chanErr
   result.{{.Node}} = &{{.NodeInstance}}
   result.Error = err
@@ -247,7 +247,7 @@ func GenLoad{{.Node}}(viewer viewer.ViewerContext, id string, result *{{.NodeRes
       {{- $const := $assocEdgeGroup.ConstType -}}
       {{$funcName := $assocEdgeGroup.GetStatusFuncName -}}
       func ({{$currentNodeInstance}} *{{$currentNode}}) {{$funcName}}() (*{{$const}}, error) {
-        if !{{$currentNodeInstance}}.Viewer.HasIdentity() {
+        if !viewer.HasIdentity({{$currentNodeInstance}}.Viewer) {
           ret := {{$assocEdgeGroup.GetConstNameForUnknown}}
       		return &ret, nil
         }

@@ -44,8 +44,8 @@ type AllowIfViewerCanSeeContactRule struct {
 }
 
 // Eval evaluates that the ent is visible to the user
-func (rule AllowIfViewerCanSeeContactRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	_, err := LoadContact(viewer, rule.ContactID)
+func (rule AllowIfViewerCanSeeContactRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	_, err := LoadContact(v, rule.ContactID)
 	if err != nil {
 		return ent.Skip()
 	}

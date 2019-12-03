@@ -25,59 +25,69 @@ func NewRequestWithContext(r *http.Request, viewer ViewerContext) *http.Request 
 	return r.WithContext(ctx)
 }
 
+// LoggedInEntity returns the identity of the logged in viewer
+type LoggedInEntity interface {
+	GetID() string
+}
+
 // ViewerContext interface is to be implemented by clients to indicate
 // who's trying to view the ent
 type ViewerContext interface {
 
-	// returns the logged in user. should return nil if logged out
-	// Can't have a generic User object to return because Go is hard
+	// GetViewer returns the identity of the logged in viewer. should return nil if logged out
+	// TODO this should probably be (LoggedInEntity, error). hmm
+	GetViewer() LoggedInEntity
 
-	// TODO rename to LoggedInEntity() that returns Entity instead of GetUser() that returns interface{}
-	// would need to reorganize a few things
-	GetUser() interface{}
-
-	// returns the ID of the logged in viewer
-	// LoggedInViewerID()?
+	// GetViewerID returns the id of the logged in viewer.
+	// It's provided as a convenience method and in case GetViewer() is expensive to compute
 	GetViewerID() string
-
-	// Boolean indicating that the viewer is logged in or not
-	// TODO kill this from interface. imply it from viewerID
-	HasIdentity() bool // this is implied from above
-
-	// Returns a boolean indicating if this user can see everything
-	// Needed for places without actual privacy checks or for admin tools
-	// or other such things
-	// rename to CanSeeAllContent()? OverridePrivacyChecks()?
-	// Or just have a second interface that's not necessary to mandate and do a typecheck on that
-	// ViewerContextWhichOverridesPrivacy
-	IsOmniscient() bool
 }
 
-// LoggedOutViewerContext struct is the default ViewerContext provided by ent framework
+// LoggedOutViewerContext struct is the default ViewerContext provided by the ent framework
+// It represents a viewer with no logged in identity
 type LoggedOutViewerContext struct{}
 
-// GetUser returns the Logged in User. For the LoggedOutViewerContext, this is nil
-// TODO make the pointer implement the interface instead
-func (viewer LoggedOutViewerContext) GetUser() interface{} {
+// GetViewer returns the Logged in Viewer. For the LoggedOutViewerContext, this is nil
+func (LoggedOutViewerContext) GetViewer() LoggedInEntity {
 	return nil
 }
 
 // GetViewerID returns the ID of the logged in viewer
-func (viewer LoggedOutViewerContext) GetViewerID() string {
+func (LoggedOutViewerContext) GetViewerID() string {
 	return ""
-}
-
-// HasIdentity returns a boolean indicating that there's no identity associated with this viewer
-func (viewer LoggedOutViewerContext) HasIdentity() bool {
-	return false
-}
-
-// IsOmniscient returns a boolean indicating that the LoggedOutViewerContext cannot see most things by default
-func (viewer LoggedOutViewerContext) IsOmniscient() bool {
-	return false
 }
 
 // LoggedOutViewer returns an instance of LoggedOutViewerContext as the default Viewer in the ent framework
 func LoggedOutViewer() ViewerContext {
 	return LoggedOutViewerContext{}
+}
+
+// HasIdentity returns a boolean indicating if the viewer has an identity
+func HasIdentity(v ViewerContext) bool {
+	return v.GetViewerID() != ""
+	// user := v.GetUser()
+	// if user == nil {
+	// 	return false
+	// }
+	// return user.GetID() != ""
+}
+
+// TODO kill this. This isn't generic enough
+// Returns a boolean indicating if this user can see everything
+// Needed for places without actual privacy checks or for admin tools
+// or other such things
+// rename to CanSeeAllContent()? OverridePrivacyChecks()?
+// Or just have a second interface that's not necessary to mandate and do a typecheck on that
+// ViewerContextWhichOverridesPrivacy
+type OmniscientViewerContext interface {
+	IsOmniscient() bool
+}
+
+// IsOmniscient is a convenient method indicating that
+func IsOmniscient(v ViewerContext) bool {
+	omni, ok := v.(OmniscientViewerContext)
+	if !ok {
+		return false
+	}
+	return omni.IsOmniscient()
 }

@@ -26,10 +26,10 @@ func AddFamilyMemberFromContext(ctx context.Context, user *models.User) *AddFami
 }
 
 // AddFamilyMember is the factory method to get an ...
-func AddFamilyMember(viewer viewer.ViewerContext, user *models.User) *AddFamilyMemberAction {
+func AddFamilyMember(v viewer.ViewerContext, user *models.User) *AddFamilyMemberAction {
 	action := &AddFamilyMemberAction{}
 	builder := builder.NewMutationBuilder(
-		viewer,
+		v,
 		ent.EditOperation,
 		action.getFieldMap(),
 		actions.ExistingEnt(user),

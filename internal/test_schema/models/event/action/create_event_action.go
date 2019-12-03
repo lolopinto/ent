@@ -27,10 +27,10 @@ func CreateEventFromContext(ctx context.Context) *CreateEventAction {
 }
 
 // CreateEvent is the factory method to get an ...
-func CreateEvent(viewer viewer.ViewerContext) *CreateEventAction {
+func CreateEvent(v viewer.ViewerContext) *CreateEventAction {
 	action := &CreateEventAction{}
 	builder := builder.NewMutationBuilder(
-		viewer,
+		v,
 		ent.InsertOperation,
 		action.getFieldMap(),
 	)

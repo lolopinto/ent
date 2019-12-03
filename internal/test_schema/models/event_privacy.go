@@ -45,8 +45,8 @@ type AllowIfViewerCanSeeEventRule struct {
 }
 
 // Eval evaluates that the ent is visible to the user
-func (rule AllowIfViewerCanSeeEventRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	_, err := LoadEvent(viewer, rule.EventID)
+func (rule AllowIfViewerCanSeeEventRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	_, err := LoadEvent(v, rule.EventID)
 	if err != nil {
 		return ent.Skip()
 	}

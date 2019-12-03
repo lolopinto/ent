@@ -85,18 +85,18 @@ func LoadUserFromContext(ctx context.Context, id string) (*User, error) {
 }
 
 // LoadUser loads the given User given the viewer and id
-func LoadUser(viewer viewer.ViewerContext, id string) (*User, error) {
+func LoadUser(v viewer.ViewerContext, id string) (*User, error) {
 	var user User
-	err := ent.LoadNode(viewer, id, &user, &configs.UserConfig{})
+	err := ent.LoadNode(v, id, &user, &configs.UserConfig{})
 	return &user, err
 }
 
 // GenLoadUser loads the given User given the id
-func GenLoadUser(viewer viewer.ViewerContext, id string, result *UserResult, wg *sync.WaitGroup) {
+func GenLoadUser(v viewer.ViewerContext, id string, result *UserResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var user User
 	chanErr := make(chan error)
-	go ent.GenLoadNode(viewer, id, &user, &configs.UserConfig{}, chanErr)
+	go ent.GenLoadNode(v, id, &user, &configs.UserConfig{}, chanErr)
 	err := <-chanErr
 	result.User = &user
 	result.Error = err

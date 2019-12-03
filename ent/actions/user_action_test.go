@@ -277,9 +277,9 @@ func (observer *UserSendByeEmailObserver) Observe() error {
 	return emailHandler.SendEmail()
 }
 
-func getUserCreateBuilder(viewer viewer.ViewerContext, user *models.User) *actions.EntMutationBuilder {
+func getUserCreateBuilder(v viewer.ViewerContext, user *models.User) *actions.EntMutationBuilder {
 	return actions.NewMutationBuilder(
-		viewer,
+		v,
 		ent.InsertOperation,
 		user,
 		&configs.UserConfig{},
@@ -287,48 +287,48 @@ func getUserCreateBuilder(viewer viewer.ViewerContext, user *models.User) *actio
 }
 
 func userCreateAction(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 ) *createUserAction {
 	action := &createUserAction{}
-	action.viewer = viewer
-	action.builder = getUserCreateBuilder(viewer, &action.user)
+	action.viewer = v
+	action.builder = getUserCreateBuilder(v, &action.user)
 
 	return action
 }
 
 func userEditAction(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 	user *models.User,
 ) *editUserAction {
 	action := &editUserAction{}
 	b := actions.NewMutationBuilder(
-		viewer,
+		v,
 		ent.EditOperation,
 		&action.user,
 		&configs.UserConfig{},
 		actions.ExistingEnt(user),
 	)
 	action.existingEnt = *user
-	action.viewer = viewer
+	action.viewer = v
 	action.builder = b
 
 	return action
 }
 
 func userDeleteAction(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 	user *models.User,
 ) *deleteUserAction {
 	action := &deleteUserAction{}
 	b := actions.NewMutationBuilder(
-		viewer,
+		v,
 		ent.DeleteOperation,
 		&action.user,
 		&configs.UserConfig{},
 		actions.ExistingEnt(user),
 	)
 	action.existingEnt = *user
-	action.viewer = viewer
+	action.viewer = v
 	action.builder = b
 
 	return action

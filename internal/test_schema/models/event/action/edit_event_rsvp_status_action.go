@@ -26,10 +26,10 @@ func EditEventRsvpStatusFromContext(ctx context.Context, event *models.Event) *E
 }
 
 // EditEventRsvpStatus is the factory method to get an ...
-func EditEventRsvpStatus(viewer viewer.ViewerContext, event *models.Event) *EditEventRsvpStatusAction {
+func EditEventRsvpStatus(v viewer.ViewerContext, event *models.Event) *EditEventRsvpStatusAction {
 	action := &EditEventRsvpStatusAction{}
 	builder := builder.NewMutationBuilder(
-		viewer,
+		v,
 		ent.EditOperation,
 		action.getFieldMap(),
 		actions.ExistingEnt(event),

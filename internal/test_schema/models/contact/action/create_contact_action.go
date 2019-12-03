@@ -26,10 +26,10 @@ func CreateContactFromContext(ctx context.Context) *CreateContactAction {
 }
 
 // CreateContact is the factory method to get an ...
-func CreateContact(viewer viewer.ViewerContext) *CreateContactAction {
+func CreateContact(v viewer.ViewerContext) *CreateContactAction {
 	action := &CreateContactAction{}
 	builder := builder.NewMutationBuilder(
-		viewer,
+		v,
 		ent.InsertOperation,
 		action.getFieldMap(),
 	)

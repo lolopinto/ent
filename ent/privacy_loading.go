@@ -81,15 +81,15 @@ func getTypeName(ent Entity) string {
 }
 
 // TODO same issues as below
-func LoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig Config) error {
+func LoadNode(v viewer.ViewerContext, id string, ent Entity, entConfig Config) error {
 	chanErr := make(chan error)
-	go GenLoadNode(viewer, id, ent, entConfig, chanErr)
+	go GenLoadNode(v, id, ent, entConfig, chanErr)
 	err := <-chanErr
 	return err
 }
 
 // TODO...
-func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig Config, errChan chan<- error) {
+func GenLoadNode(v viewer.ViewerContext, id string, ent Entity, entConfig Config, errChan chan<- error) {
 	if id == "" {
 		debug.PrintStack()
 	}
@@ -126,7 +126,7 @@ func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig C
 
 	// check privacy policy...
 	privacyResultChan := make(chan privacyResult)
-	go genApplyPrivacyPolicy(viewer, ent, privacyResultChan)
+	go genApplyPrivacyPolicy(v, ent, privacyResultChan)
 	result := <-privacyResultChan
 
 	//fmt.Println("result", result, getTypeName(result.err))
@@ -171,7 +171,7 @@ type privacyResult struct {
 	err     error
 }
 
-func genApplyPrivacyPolicyUnsure(viewer viewer.ViewerContext, maybeEnt interface{}, privacyResultChan chan<- privacyResult) {
+func genApplyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt interface{}, privacyResultChan chan<- privacyResult) {
 	ent, ok := maybeEnt.(Entity)
 	//fmt.Println("genApplyPrivacyPolicy", maybeEnt, ent, ok)
 	if !ok {
@@ -183,11 +183,11 @@ func genApplyPrivacyPolicyUnsure(viewer viewer.ViewerContext, maybeEnt interface
 			},
 		}
 	} else {
-		go genApplyPrivacyPolicy(viewer, ent, privacyResultChan)
+		go genApplyPrivacyPolicy(v, ent, privacyResultChan)
 	}
 }
 
-func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPrivacyPolicy, ent Entity) error {
+func ApplyPrivacyPolicy(v viewer.ViewerContext, objWithPolicy ObjectWithPrivacyPolicy, ent Entity) error {
 	rules := objWithPolicy.GetPrivacyPolicy().Rules()
 
 	// TODO this is all done in parallel.
@@ -205,7 +205,7 @@ func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPri
 		rule := rules[idx]
 		f := func(i int) {
 			defer wg.Done()
-			results[i] = rule.Eval(viewer, ent)
+			results[i] = rule.Eval(v, ent)
 		}
 		go f(idx)
 	}
@@ -228,12 +228,12 @@ func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPri
 }
 
 // apply the privacy policy and determine if the ent is visible
-func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyResult) {
+func genApplyPrivacyPolicy(v viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyResult) {
 	// TODO do this programmatically without reflection later
 	// set viewer at the beginning because it's needed in GetPrivacyPolicy sometimes
-	entreflect.SetViewerInEnt(viewer, ent)
+	entreflect.SetViewerInEnt(v, ent)
 
-	err := ApplyPrivacyPolicy(viewer, ent, ent)
+	err := ApplyPrivacyPolicy(v, ent, ent)
 	result := privacyResult{
 		visible: err == nil,
 		err:     err,
@@ -241,41 +241,41 @@ func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResul
 	privacyResultChan <- result
 }
 
-func GenLoadForeignKeyNodes(viewer viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
-	go genLoadNodesImpl(viewer, nodes, errChan, func(chanErr chan<- error) {
+func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
+	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
 		go genLoadForeignKeyNodes(id, nodes, colName, entConfig, chanErr)
 	})
 }
 
-func LoadForeignKeyNodes(viewer viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) error {
+func LoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) error {
 	errChan := make(chan error)
-	go GenLoadForeignKeyNodes(viewer, id, nodes, colName, entConfig, errChan)
+	go GenLoadForeignKeyNodes(v, id, nodes, colName, entConfig, errChan)
 	err := <-errChan
 	return err
 }
 
-func GenLoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
-	go genLoadNodesImpl(viewer, nodes, errChan, func(chanErr chan<- error) {
+func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
+	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
 		go genLoadNodesByType(id, edgeType, nodes, entConfig, chanErr)
 	})
 }
 
-func LoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
+func LoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
 	errChan := make(chan error)
-	go GenLoadNodesByType(viewer, id, edgeType, nodes, entConfig, errChan)
+	go GenLoadNodesByType(v, id, edgeType, nodes, entConfig, errChan)
 	err := <-errChan
 	return err
 }
 
-func LoadUniqueNodeByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config) error {
+func LoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config) error {
 	edge, err := LoadUniqueEdgeByType(id, edgeType)
 	if err != nil {
 		return err
 	}
-	return LoadNode(viewer, edge.ID2, node, entConfig)
+	return LoadNode(v, edge.ID2, node, entConfig)
 }
 
-func GenLoadUniqueNodeByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config, errChan chan<- error) {
+func GenLoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config, errChan chan<- error) {
 	//	chanErr := make(chan error)
 	edgeResultChan := make(chan AssocEdgeResult)
 	go GenLoadUniqueEdgeByType(id, edgeType, edgeResultChan)
@@ -284,7 +284,7 @@ func GenLoadUniqueNodeByType(viewer viewer.ViewerContext, id string, edgeType Ed
 		errChan <- edgeResult.Error
 		return
 	}
-	go GenLoadNode(viewer, edgeResult.Edge.ID2, node, entConfig, errChan)
+	go GenLoadNode(v, edgeResult.Edge.ID2, node, entConfig, errChan)
 }
 
 // function that does the actual work of loading the raw data when fetching a list of nodes
@@ -293,7 +293,7 @@ type loadRawNodes func(chanErr chan<- error)
 // genLoadNodesImpl takes the raw nodes fetched by whatever means we need to fetch data and applies a privacy check to
 // make sure that only the nodes which should be visible are returned to the viewer
 // params:...
-func genLoadNodesImpl(viewer viewer.ViewerContext, nodes interface{}, errChan chan<- error, nodesLoader loadRawNodes) {
+func genLoadNodesImpl(v viewer.ViewerContext, nodes interface{}, errChan chan<- error, nodesLoader loadRawNodes) {
 	chanErr := make(chan error)
 	go nodesLoader(chanErr)
 	err := <-chanErr
@@ -301,7 +301,7 @@ func genLoadNodesImpl(viewer viewer.ViewerContext, nodes interface{}, errChan ch
 		errChan <- err
 	} else {
 		doneChan := make(chan bool)
-		go genApplyPrivacyPolicyForEnts(viewer, nodes, doneChan)
+		go genApplyPrivacyPolicyForEnts(v, nodes, doneChan)
 		<-doneChan
 		errChan <- nil
 	}
@@ -309,7 +309,7 @@ func genLoadNodesImpl(viewer viewer.ViewerContext, nodes interface{}, errChan ch
 
 // TODO change eveywhere using interface{}
 // TODO figure out go slice polymorphism in a sensible way :/
-func genApplyPrivacyPolicyForEnts(viewer viewer.ViewerContext, nodes interface{}, doneChan chan<- bool) {
+func genApplyPrivacyPolicyForEnts(v viewer.ViewerContext, nodes interface{}, doneChan chan<- bool) {
 	// we know it's a slice since loadNodesHelper in data fetching code has already handled this so no need
 	// to do the checking again
 	// TODO figure out if we can do this without this much reflection
@@ -323,7 +323,7 @@ func genApplyPrivacyPolicyForEnts(viewer viewer.ViewerContext, nodes interface{}
 	for idx := 0; idx < slice.Len(); idx++ {
 		node := slice.Index(idx).Interface()
 		c := make(chan privacyResult)
-		go genApplyPrivacyPolicyUnsure(viewer, node, c)
+		go genApplyPrivacyPolicyUnsure(v, node, c)
 		resSlice[idx] = <-c
 	}
 

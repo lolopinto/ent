@@ -26,10 +26,10 @@ func RemoveFriendFromContext(ctx context.Context, user *models.User) *RemoveFrie
 }
 
 // RemoveFriend is the factory method to get an ...
-func RemoveFriend(viewer viewer.ViewerContext, user *models.User) *RemoveFriendAction {
+func RemoveFriend(v viewer.ViewerContext, user *models.User) *RemoveFriendAction {
 	action := &RemoveFriendAction{}
 	builder := builder.NewMutationBuilder(
-		viewer,
+		v,
 		ent.EditOperation,
 		action.getFieldMap(),
 		actions.ExistingEnt(user),

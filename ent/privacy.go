@@ -53,11 +53,11 @@ type PrivacyPolicy interface {
 // // TODO...
 // type PrivacyPolicySimple interface {
 // 	// Eval is the method called to evaluate the visibility of the ent
-// 	Eval(viewer viewer.ViewerContext, ent Entity) bool
+// 	Eval(v viewer.ViewerContext, ent Entity) bool
 // }
 
 // PrivacyPolicyRule is an independent PrivacyRule that evaluates an ent and determines if it's visible or not
 type PrivacyPolicyRule interface {
 	// Eval is the method called to evaluate the visibility of the ent
-	Eval(viewer viewer.ViewerContext, ent Entity) PrivacyResult
+	Eval(v viewer.ViewerContext, ent Entity) PrivacyResult
 }

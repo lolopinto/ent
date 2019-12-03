@@ -43,8 +43,8 @@ type AllowIfViewerCanSeeUserRule struct {
 }
 
 // Eval evaluates that the ent is visible to the user
-func (rule AllowIfViewerCanSeeUserRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	_, err := LoadUser(viewer, rule.UserID)
+func (rule AllowIfViewerCanSeeUserRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	_, err := LoadUser(v, rule.UserID)
 	if err != nil {
 		return ent.Skip()
 	}

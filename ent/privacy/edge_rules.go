@@ -13,7 +13,7 @@ type AllowIfViewerInboundEdgeExistsRule struct {
 }
 
 // Eval evaluates the AllowIfViewerInboundEdgeExistsRule privacy rule
-func (rule AllowIfViewerInboundEdgeExistsRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+func (rule AllowIfViewerInboundEdgeExistsRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	ent := rule.Policy.Ent()
 	return allowIfEdgeRule(ent.GetViewer().GetViewerID(), ent.GetID(), rule.EdgeType)
 }
@@ -26,7 +26,7 @@ type AllowIfViewerOutboundEdgeExistsRule struct {
 }
 
 // Eval evaluates the AllowIfViewerOutboundEdgeExistsRule privacy rule
-func (rule AllowIfViewerOutboundEdgeExistsRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+func (rule AllowIfViewerOutboundEdgeExistsRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	ent := rule.Policy.Ent()
 	return allowIfEdgeRule(ent.GetID(), ent.GetViewer().GetViewerID(), rule.EdgeType)
 }
@@ -39,7 +39,7 @@ type AllowIfEdgeExistsRule struct {
 }
 
 // Eval evaluates the AllowIfEdgeExistsRule privacy rule
-func (rule AllowIfEdgeExistsRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+func (rule AllowIfEdgeExistsRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	return allowIfEdgeRule(rule.ID1, rule.ID2, rule.EdgeType)
 }
 
@@ -51,7 +51,7 @@ type DenyIfViewerInboundEdgeExistsRule struct {
 }
 
 // Eval evaluates the DenyIfViewerInboundEdgeExistsRule privacy rule
-func (rule DenyIfViewerInboundEdgeExistsRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+func (rule DenyIfViewerInboundEdgeExistsRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	ent := rule.Policy.Ent()
 	return denyIfEdgeRule(ent.GetViewer().GetViewerID(), ent.GetID(), rule.EdgeType)
 }
@@ -64,7 +64,7 @@ type DenyIfViewerOutboundEdgeExistsRule struct {
 }
 
 // Eval evaluates the DenyIfViewerOutboundEdgeExistsRule privacy rule
-func (rule DenyIfViewerOutboundEdgeExistsRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+func (rule DenyIfViewerOutboundEdgeExistsRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	ent := rule.Policy.Ent()
 	return denyIfEdgeRule(ent.GetID(), ent.GetViewer().GetViewerID(), rule.EdgeType)
 }
@@ -77,7 +77,7 @@ type DenyIfEdgeExistsRule struct {
 }
 
 // Eval evaluates the AllowIfEdgeExistsRule privacy rule
-func (rule DenyIfEdgeExistsRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+func (rule DenyIfEdgeExistsRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	return denyIfEdgeRule(rule.ID1, rule.ID2, rule.EdgeType)
 }
 

@@ -97,18 +97,18 @@ func LoadEventFromContext(ctx context.Context, id string) (*Event, error) {
 }
 
 // LoadEvent loads the given Event given the viewer and id
-func LoadEvent(viewer viewer.ViewerContext, id string) (*Event, error) {
+func LoadEvent(v viewer.ViewerContext, id string) (*Event, error) {
 	var event Event
-	err := ent.LoadNode(viewer, id, &event, &configs.EventConfig{})
+	err := ent.LoadNode(v, id, &event, &configs.EventConfig{})
 	return &event, err
 }
 
 // GenLoadEvent loads the given Event given the id
-func GenLoadEvent(viewer viewer.ViewerContext, id string, result *EventResult, wg *sync.WaitGroup) {
+func GenLoadEvent(v viewer.ViewerContext, id string, result *EventResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var event Event
 	chanErr := make(chan error)
-	go ent.GenLoadNode(viewer, id, &event, &configs.EventConfig{}, chanErr)
+	go ent.GenLoadNode(v, id, &event, &configs.EventConfig{}, chanErr)
 	err := <-chanErr
 	result.Event = &event
 	result.Error = err
@@ -345,7 +345,7 @@ func (event *Event) GenLoadDeclinedEdgeFor(id2 string, result *ent.AssocEdgeResu
 }
 
 func (event *Event) ViewerRsvpStatus() (*EventRsvpStatus, error) {
-	if !event.Viewer.HasIdentity() {
+	if !viewer.HasIdentity(event.Viewer) {
 		ret := EventUnknown
 		return &ret, nil
 	}

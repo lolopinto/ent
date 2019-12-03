@@ -9,7 +9,7 @@ import (
 type AlwaysAllowRule struct{}
 
 // Eval is the method called to evaluate the visibility of the ent and always returns AllowResult
-func (rule AlwaysAllowRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+func (rule AlwaysAllowRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	return ent.Allow()
 }
 
@@ -17,7 +17,7 @@ func (rule AlwaysAllowRule) Eval(viewer viewer.ViewerContext, entity ent.Entity)
 type AlwaysDenyRule struct{}
 
 // Eval is the method called to evaluate the visibility of the ent and always returns DenyResult
-func (rule AlwaysDenyRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+func (rule AlwaysDenyRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	return ent.Deny()
 }
 
@@ -27,8 +27,8 @@ type AllowIfOmniscientRule struct{}
 
 // Eval is the method called to evaluate the visibility of the ent and always returns AllowResult if viewer is omniscient.
 // Otherwise, returns SkipResult
-func (rule AllowIfOmniscientRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	if viewer.IsOmniscient() {
+func (rule AllowIfOmniscientRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	if viewer.IsOmniscient(v) {
 		return ent.Allow()
 	}
 	return ent.Skip()
@@ -40,8 +40,8 @@ type DenyIfLoggedOutRule struct{}
 
 // Eval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
 // Otherwise, returns SkipResult
-func (rule DenyIfLoggedOutRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	if viewer.HasIdentity() {
+func (rule DenyIfLoggedOutRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	if viewer.HasIdentity(v) {
 		return ent.Skip()
 	}
 	return ent.Deny()
@@ -55,8 +55,8 @@ type AllowIfViewerIsOwnerRule struct {
 
 // Eval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
 // Otherwise, returns SkipResult
-func (rule AllowIfViewerIsOwnerRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	if viewer.GetViewerID() == rule.OwnerID {
+func (rule AllowIfViewerIsOwnerRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	if v.GetViewerID() == rule.OwnerID {
 		return ent.Allow()
 	}
 	return ent.Skip()
@@ -70,21 +70,21 @@ type AllowIfViewerRule struct {
 
 // Eval is the method called to evaluate the visibility of the ent and always returns DenyResult if viewer is logged out.
 // Otherwise, returns SkipResult
-func (rule AllowIfViewerRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+func (rule AllowIfViewerRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	// TODO. need to be able to cast to Entity here and not take a parameter here is best...
 	// so need to break up privacy constants vs reusable rules
-	if viewer.GetViewerID() == rule.EntID {
+	if v.GetViewerID() == rule.EntID {
 		return ent.Allow()
 	}
 	return ent.Skip()
 }
 
 type AllowIfClosureRule struct {
-	Func func(viewer viewer.ViewerContext, ent ent.Entity) bool
+	Func func(v viewer.ViewerContext, ent ent.Entity) bool
 }
 
-func (rule AllowIfClosureRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	if rule.Func(viewer, entity) {
+func (rule AllowIfClosureRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	if rule.Func(v, entity) {
 		return ent.Allow()
 	}
 	return ent.Skip()
@@ -94,7 +94,7 @@ type AllowIfValidMutationBuilderRule struct {
 	Builder ent.MutationBuilder
 }
 
-func (rule AllowIfValidMutationBuilderRule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+func (rule AllowIfValidMutationBuilderRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
 	if rule.Builder != nil {
 		return ent.Allow()
 	}

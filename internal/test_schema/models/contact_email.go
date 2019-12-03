@@ -71,18 +71,18 @@ func LoadContactEmailFromContext(ctx context.Context, id string) (*ContactEmail,
 }
 
 // LoadContactEmail loads the given ContactEmail given the viewer and id
-func LoadContactEmail(viewer viewer.ViewerContext, id string) (*ContactEmail, error) {
+func LoadContactEmail(v viewer.ViewerContext, id string) (*ContactEmail, error) {
 	var contactEmail ContactEmail
-	err := ent.LoadNode(viewer, id, &contactEmail, &configs.ContactEmailConfig{})
+	err := ent.LoadNode(v, id, &contactEmail, &configs.ContactEmailConfig{})
 	return &contactEmail, err
 }
 
 // GenLoadContactEmail loads the given ContactEmail given the id
-func GenLoadContactEmail(viewer viewer.ViewerContext, id string, result *ContactEmailResult, wg *sync.WaitGroup) {
+func GenLoadContactEmail(v viewer.ViewerContext, id string, result *ContactEmailResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var contactEmail ContactEmail
 	chanErr := make(chan error)
-	go ent.GenLoadNode(viewer, id, &contactEmail, &configs.ContactEmailConfig{}, chanErr)
+	go ent.GenLoadNode(v, id, &contactEmail, &configs.ContactEmailConfig{}, chanErr)
 	err := <-chanErr
 	result.ContactEmail = &contactEmail
 	result.Error = err

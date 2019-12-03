@@ -26,14 +26,14 @@ type ContactMutationBuilder struct {
 }
 
 func NewMutationBuilder(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 	operation ent.WriteOperation,
 	fieldMap ent.ActionFieldMap,
 	opts ...func(*actions.EntMutationBuilder),
 ) *ContactMutationBuilder {
 	var contact models.Contact
 	b := actions.NewMutationBuilder(
-		viewer,
+		v,
 		operation,
 		&contact,
 		&configs.ContactConfig{},
