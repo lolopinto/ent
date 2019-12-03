@@ -289,11 +289,17 @@ func GetNonEntFields(action Action) []FieldActionTemplateInfo {
 }
 
 type EdgeActionTemplateInfo struct {
-	AddMethodName    string
-	RemoveMethodName string
-	EdgeName         string
-	InstanceName     string
-	InstanceType     string
+	AddMethodName            string
+	AddEntMethodName         string
+	AddSingleIDMethodName    string
+	AddMultiIDMethodName     string
+	RemoveMethodName         string
+	RemoveEntMethodName      string
+	RemoveSingleIDMethodName string
+	RemoveMultiIDMethodName  string
+	EdgeName                 string
+	InstanceName             string
+	InstanceType             string
 	//	AssocEdge    *edge.AssociationEdge
 	EdgeConst string
 	NodeType  string
@@ -314,13 +320,20 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 
 		result = append(result, EdgeActionTemplateInfo{
 			Node: edge.NodeInfo.Node,
-			// TODO this needs to be updated for actions
-			AddMethodName:    "Add" + edge.EdgeName,
-			RemoveMethodName: "Remove" + edge.EdgeName,
-			EdgeName:         edgeName,
-			InstanceName:     edge.NodeInfo.NodeInstance,
-			InstanceType:     fmt.Sprintf("*models.%s", edge.NodeInfo.Node),
-			EdgeConst:        edge.EdgeConst,
+			// TODO kill
+			AddMethodName:         "Add" + edge.EdgeName,
+			AddEntMethodName:      "Add" + edge.EdgeName,
+			AddSingleIDMethodName: "Add" + edge.Singular() + "ID",
+			AddMultiIDMethodName:  "Add" + edge.Singular() + "IDs",
+			// TODO kill
+			RemoveMethodName:         "Remove" + edge.EdgeName,
+			RemoveEntMethodName:      "Remove" + edge.EdgeName,
+			RemoveSingleIDMethodName: "Remove" + edge.Singular() + "ID",
+			RemoveMultiIDMethodName:  "Remove" + edge.Singular() + "IDs",
+			EdgeName:                 edgeName,
+			InstanceName:             edge.NodeInfo.NodeInstance,
+			InstanceType:             fmt.Sprintf("*models.%s", edge.NodeInfo.Node),
+			EdgeConst:                edge.EdgeConst,
 			//AssocEdge:    edge,
 			NodeType: edge.NodeInfo.NodeType,
 			// matches what we do in processAction

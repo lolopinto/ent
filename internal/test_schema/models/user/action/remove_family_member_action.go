@@ -70,15 +70,15 @@ func (action *RemoveFamilyMemberAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// AddFamilyMembers adds an instance of User to the FamilyMembers edge while editing the User ent
-func (action *RemoveFamilyMemberAction) AddFamilyMembers(user *models.User) *RemoveFamilyMemberAction {
-	action.builder.RemoveFamilyMembers(user)
+// RemoveFamilyMembers removes an instance of User from the FamilyMembers edge while editing the User ent
+func (action *RemoveFamilyMemberAction) RemoveFamilyMembers(users ...*models.User) *RemoveFamilyMemberAction {
+	action.builder.RemoveFamilyMembers(users...)
 	return action
 }
 
-// AddFamilyMembers adds an instance of UserId to the FamilyMembers edge while editing the User ent
-func (action *RemoveFamilyMemberAction) AddFamilyMembersID(userID string) *RemoveFamilyMemberAction {
-	action.builder.RemoveFamilyMembersID(userID)
+// RemoveFamilyMemberID removes an instance of UserID from the FamilyMembers edge while editing the User ent
+func (action *RemoveFamilyMemberAction) RemoveFamilyMemberID(userID string) *RemoveFamilyMemberAction {
+	action.builder.RemoveFamilyMemberID(userID)
 	return action
 }
 

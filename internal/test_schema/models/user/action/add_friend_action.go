@@ -71,14 +71,14 @@ func (action *AddFriendAction) ExistingEnt() ent.Entity {
 }
 
 // AddFriends adds an instance of User to the Friends edge while editing the User ent
-func (action *AddFriendAction) AddFriends(user *models.User) *AddFriendAction {
-	action.builder.AddFriends(user)
+func (action *AddFriendAction) AddFriends(users ...*models.User) *AddFriendAction {
+	action.builder.AddFriends(users...)
 	return action
 }
 
-// AddFriends adds an instance of UserId to the Friends edge while editing the User ent
-func (action *AddFriendAction) AddFriendsID(userID string) *AddFriendAction {
-	action.builder.AddFriendsID(userID)
+// AddFriendID adds an instance of UserID to the Friends edge while editing the User ent
+func (action *AddFriendAction) AddFriendID(userID string, options ...func(*ent.EdgeOperation)) *AddFriendAction {
+	action.builder.AddFriendID(userID, options...)
 	return action
 }
 

@@ -158,22 +158,28 @@ func (b *{{$builderName}}) {{$field.GetterMethodName}}Builder() ent.MutationBuil
 
 {{end -}}
 
-{{/* TODO singular version for the ID methods */}}
-
 {{ $edgeInfos := edgeInfos .EdgeInfo.Associations -}}
 
 {{ range $edge := $edgeInfos -}}
-// {{$edge.AddMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
-func (b *{{$builderName}}) {{$edge.AddMethodName}}({{$edge.InstanceName}}s ...{{$edge.InstanceType}}) *{{$builderName}} {
-  {{/* TODO time and data support later */ -}}  
+// {{$edge.AddEntMethodName}} adds one or more instances of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.AddEntMethodName}}({{$edge.InstanceName}}s ...{{$edge.InstanceType}}) *{{$builderName}} {
   for _, {{$edge.InstanceName}} := range {{$edge.InstanceName}}s {
-    b.{{$edge.AddMethodName}}ID({{$edge.InstanceName}}.ID)
+    b.{{$edge.AddSingleIDMethodName}}({{$edge.InstanceName}}.ID)
   }
   return b
 }
 
-// {{$edge.AddMethodName}}ID adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
-func (b *{{$builderName}}) {{$edge.AddMethodName}}ID({{$edge.InstanceName}}ID string, options ...func(*ent.EdgeOperation)) *{{$builderName}} {
+// {{$edge.AddMultiIDMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.AddMultiIDMethodName}}({{$edge.InstanceName}}IDs ...string) *{{$builderName}} {
+  for _, {{$edge.InstanceName}}ID := range {{$edge.InstanceName}}IDs {
+    b.{{$edge.AddSingleIDMethodName}}({{$edge.InstanceName}}ID)
+  }
+  return b
+}
+
+
+// {{$edge.AddSingleIDMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.AddSingleIDMethodName}}({{$edge.InstanceName}}ID string, options ...func(*ent.EdgeOperation)) *{{$builderName}} {
   b.builder.AddOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}}, options...)
   return b
 }
@@ -181,16 +187,25 @@ func (b *{{$builderName}}) {{$edge.AddMethodName}}ID({{$edge.InstanceName}}ID st
 {{ end -}}
 
 {{ range $edge := $edgeInfos -}}
-// {{$edge.RemoveMethodName}} adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
-func (b *{{$builderName}}) {{$edge.RemoveMethodName}}({{$edge.InstanceName}}s ...{{$edge.InstanceType}}) *{{$builderName}} {
+// {{$edge.RemoveEntMethodName}} removes an instance of {{$edge.Node}} from the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.RemoveEntMethodName}}({{$edge.InstanceName}}s ...{{$edge.InstanceType}}) *{{$builderName}} {
   for _, {{$edge.InstanceName}} := range {{$edge.InstanceName}}s {
-    b.builder.RemoveOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}.ID, models.{{$edge.NodeType}})
+    b.{{$edge.RemoveSingleIDMethodName}}({{$edge.InstanceName}}.ID)
   }
   return b
 }
 
-// {{$edge.RemoveMethodName}}ID adds an instance of {{$edge.Node}} to the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
-func (b *{{$builderName}}) {{$edge.RemoveMethodName}}ID({{$edge.InstanceName}}ID string) *{{$builderName}} {
+// {{$edge.RemoveMultiIDMethodName}} removes an instance of {{$edge.Node}} from the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.RemoveMultiIDMethodName}}({{$edge.InstanceName}}IDs ...string) *{{$builderName}} {
+  for _, {{$edge.InstanceName}}ID := range {{$edge.InstanceName}}IDs {
+    b.{{$edge.RemoveSingleIDMethodName}}({{$edge.InstanceName}}ID)
+  }
+  return b
+}
+
+
+// {{$edge.RemoveSingleIDMethodName}} removes an instance of {{$edge.Node}} from the {{$edge.EdgeName}} edge while editing the {{.Node}} ent 
+func (b *{{$builderName}}) {{$edge.RemoveSingleIDMethodName}}({{$edge.InstanceName}}ID string) *{{$builderName}} {
   b.builder.RemoveOutboundEdge(models.{{$edge.EdgeConst}}, {{$edge.InstanceName}}ID, models.{{$edge.NodeType}})
   return b
 }

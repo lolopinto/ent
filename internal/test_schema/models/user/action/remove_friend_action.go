@@ -70,15 +70,15 @@ func (action *RemoveFriendAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// AddFriends adds an instance of User to the Friends edge while editing the User ent
-func (action *RemoveFriendAction) AddFriends(user *models.User) *RemoveFriendAction {
-	action.builder.RemoveFriends(user)
+// RemoveFriends removes an instance of User from the Friends edge while editing the User ent
+func (action *RemoveFriendAction) RemoveFriends(users ...*models.User) *RemoveFriendAction {
+	action.builder.RemoveFriends(users...)
 	return action
 }
 
-// AddFriends adds an instance of UserId to the Friends edge while editing the User ent
-func (action *RemoveFriendAction) AddFriendsID(userID string) *RemoveFriendAction {
-	action.builder.RemoveFriendsID(userID)
+// RemoveFriendID removes an instance of UserID from the Friends edge while editing the User ent
+func (action *RemoveFriendAction) RemoveFriendID(userID string) *RemoveFriendAction {
+	action.builder.RemoveFriendID(userID)
 	return action
 }
 

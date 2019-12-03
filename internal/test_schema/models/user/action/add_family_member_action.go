@@ -71,14 +71,14 @@ func (action *AddFamilyMemberAction) ExistingEnt() ent.Entity {
 }
 
 // AddFamilyMembers adds an instance of User to the FamilyMembers edge while editing the User ent
-func (action *AddFamilyMemberAction) AddFamilyMembers(user *models.User) *AddFamilyMemberAction {
-	action.builder.AddFamilyMembers(user)
+func (action *AddFamilyMemberAction) AddFamilyMembers(users ...*models.User) *AddFamilyMemberAction {
+	action.builder.AddFamilyMembers(users...)
 	return action
 }
 
-// AddFamilyMembers adds an instance of UserId to the FamilyMembers edge while editing the User ent
-func (action *AddFamilyMemberAction) AddFamilyMembersID(userID string) *AddFamilyMemberAction {
-	action.builder.AddFamilyMembersID(userID)
+// AddFamilyMemberID adds an instance of UserID to the FamilyMembers edge while editing the User ent
+func (action *AddFamilyMemberAction) AddFamilyMemberID(userID string, options ...func(*ent.EdgeOperation)) *AddFamilyMemberAction {
+	action.builder.AddFamilyMemberID(userID, options...)
 	return action
 }
 
