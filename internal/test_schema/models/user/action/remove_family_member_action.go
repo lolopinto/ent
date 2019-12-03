@@ -12,22 +12,22 @@ import (
 	builder "github.com/lolopinto/ent/internal/test_schema/models/user"
 )
 
-type RemoveFamilyMembersAction struct {
+type RemoveFamilyMemberAction struct {
 	builder *builder.UserMutationBuilder
 }
 
-// RemoveFamilyMembersFromContext is the factory method to get an ...
-func RemoveFamilyMembersFromContext(ctx context.Context, user *models.User) *RemoveFamilyMembersAction {
+// RemoveFamilyMemberFromContext is the factory method to get an ...
+func RemoveFamilyMemberFromContext(ctx context.Context, user *models.User) *RemoveFamilyMemberAction {
 	v, err := viewer.ForContext(ctx)
 	if err != nil {
 		panic("tried to perform mutation without a viewer")
 	}
-	return RemoveFamilyMembers(v, user)
+	return RemoveFamilyMember(v, user)
 }
 
-// RemoveFamilyMembers is the factory method to get an ...
-func RemoveFamilyMembers(viewer viewer.ViewerContext, user *models.User) *RemoveFamilyMembersAction {
-	action := &RemoveFamilyMembersAction{}
+// RemoveFamilyMember is the factory method to get an ...
+func RemoveFamilyMember(viewer viewer.ViewerContext, user *models.User) *RemoveFamilyMemberAction {
+	action := &RemoveFamilyMemberAction{}
 	builder := builder.NewMutationBuilder(
 		viewer,
 		ent.EditOperation,
@@ -38,64 +38,64 @@ func RemoveFamilyMembers(viewer viewer.ViewerContext, user *models.User) *Remove
 	return action
 }
 
-func (action *RemoveFamilyMembersAction) GetBuilder() ent.MutationBuilder {
+func (action *RemoveFamilyMemberAction) GetBuilder() ent.MutationBuilder {
 	return action.builder
 }
 
-func (action *RemoveFamilyMembersAction) GetTypedBuilder() *builder.UserMutationBuilder {
+func (action *RemoveFamilyMemberAction) GetTypedBuilder() *builder.UserMutationBuilder {
 	return action.builder
 }
 
-func (action *RemoveFamilyMembersAction) GetViewer() viewer.ViewerContext {
+func (action *RemoveFamilyMemberAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *RemoveFamilyMembersAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+func (action *RemoveFamilyMemberAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
 	return action.builder.SetTriggers(triggers)
 }
 
-func (action *RemoveFamilyMembersAction) SetBuilderOnObservers(observers []actions.Observer) error {
+func (action *RemoveFamilyMemberAction) SetBuilderOnObservers(observers []actions.Observer) error {
 	return action.builder.SetObservers(observers)
 }
 
-func (action *RemoveFamilyMembersAction) GetChangeset() (ent.Changeset, error) {
+func (action *RemoveFamilyMemberAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(action)
 }
 
-func (action *RemoveFamilyMembersAction) Entity() ent.Entity {
+func (action *RemoveFamilyMemberAction) Entity() ent.Entity {
 	return action.builder.GetUser()
 }
 
-func (action *RemoveFamilyMembersAction) ExistingEnt() ent.Entity {
+func (action *RemoveFamilyMemberAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
 // AddFamilyMembers adds an instance of User to the FamilyMembers edge while editing the User ent
-func (action *RemoveFamilyMembersAction) AddFamilyMembers(user *models.User) *RemoveFamilyMembersAction {
+func (action *RemoveFamilyMemberAction) AddFamilyMembers(user *models.User) *RemoveFamilyMemberAction {
 	action.builder.RemoveFamilyMembers(user)
 	return action
 }
 
 // AddFamilyMembers adds an instance of UserId to the FamilyMembers edge while editing the User ent
-func (action *RemoveFamilyMembersAction) AddFamilyMembersID(userID string) *RemoveFamilyMembersAction {
+func (action *RemoveFamilyMemberAction) AddFamilyMembersID(userID string) *RemoveFamilyMemberAction {
 	action.builder.RemoveFamilyMembersID(userID)
 	return action
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *RemoveFamilyMembersAction) getFieldMap() ent.ActionFieldMap {
+func (action *RemoveFamilyMemberAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{}
 }
 
 // Validate returns an error if the current state of the action is not valid
-func (action *RemoveFamilyMembersAction) Validate() error {
+func (action *RemoveFamilyMemberAction) Validate() error {
 	return action.builder.Validate()
 }
 
 // Save is the method called to execute this action and save change
-func (action *RemoveFamilyMembersAction) Save() (*models.User, error) {
+func (action *RemoveFamilyMemberAction) Save() (*models.User, error) {
 	err := actions.Save(action)
 	return action.builder.GetUser(), err
 }
 
-var _ actions.Action = &RemoveFamilyMembersAction{}
+var _ actions.Action = &RemoveFamilyMemberAction{}

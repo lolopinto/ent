@@ -12,22 +12,22 @@ import (
 	builder "github.com/lolopinto/ent/internal/test_schema/models/user"
 )
 
-type RemoveFriendsAction struct {
+type AddFriendAction struct {
 	builder *builder.UserMutationBuilder
 }
 
-// RemoveFriendsFromContext is the factory method to get an ...
-func RemoveFriendsFromContext(ctx context.Context, user *models.User) *RemoveFriendsAction {
+// AddFriendFromContext is the factory method to get an ...
+func AddFriendFromContext(ctx context.Context, user *models.User) *AddFriendAction {
 	v, err := viewer.ForContext(ctx)
 	if err != nil {
 		panic("tried to perform mutation without a viewer")
 	}
-	return RemoveFriends(v, user)
+	return AddFriend(v, user)
 }
 
-// RemoveFriends is the factory method to get an ...
-func RemoveFriends(viewer viewer.ViewerContext, user *models.User) *RemoveFriendsAction {
-	action := &RemoveFriendsAction{}
+// AddFriend is the factory method to get an ...
+func AddFriend(viewer viewer.ViewerContext, user *models.User) *AddFriendAction {
+	action := &AddFriendAction{}
 	builder := builder.NewMutationBuilder(
 		viewer,
 		ent.EditOperation,
@@ -38,64 +38,64 @@ func RemoveFriends(viewer viewer.ViewerContext, user *models.User) *RemoveFriend
 	return action
 }
 
-func (action *RemoveFriendsAction) GetBuilder() ent.MutationBuilder {
+func (action *AddFriendAction) GetBuilder() ent.MutationBuilder {
 	return action.builder
 }
 
-func (action *RemoveFriendsAction) GetTypedBuilder() *builder.UserMutationBuilder {
+func (action *AddFriendAction) GetTypedBuilder() *builder.UserMutationBuilder {
 	return action.builder
 }
 
-func (action *RemoveFriendsAction) GetViewer() viewer.ViewerContext {
+func (action *AddFriendAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *RemoveFriendsAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+func (action *AddFriendAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
 	return action.builder.SetTriggers(triggers)
 }
 
-func (action *RemoveFriendsAction) SetBuilderOnObservers(observers []actions.Observer) error {
+func (action *AddFriendAction) SetBuilderOnObservers(observers []actions.Observer) error {
 	return action.builder.SetObservers(observers)
 }
 
-func (action *RemoveFriendsAction) GetChangeset() (ent.Changeset, error) {
+func (action *AddFriendAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(action)
 }
 
-func (action *RemoveFriendsAction) Entity() ent.Entity {
+func (action *AddFriendAction) Entity() ent.Entity {
 	return action.builder.GetUser()
 }
 
-func (action *RemoveFriendsAction) ExistingEnt() ent.Entity {
+func (action *AddFriendAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
 // AddFriends adds an instance of User to the Friends edge while editing the User ent
-func (action *RemoveFriendsAction) AddFriends(user *models.User) *RemoveFriendsAction {
-	action.builder.RemoveFriends(user)
+func (action *AddFriendAction) AddFriends(user *models.User) *AddFriendAction {
+	action.builder.AddFriends(user)
 	return action
 }
 
 // AddFriends adds an instance of UserId to the Friends edge while editing the User ent
-func (action *RemoveFriendsAction) AddFriendsID(userID string) *RemoveFriendsAction {
-	action.builder.RemoveFriendsID(userID)
+func (action *AddFriendAction) AddFriendsID(userID string) *AddFriendAction {
+	action.builder.AddFriendsID(userID)
 	return action
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *RemoveFriendsAction) getFieldMap() ent.ActionFieldMap {
+func (action *AddFriendAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{}
 }
 
 // Validate returns an error if the current state of the action is not valid
-func (action *RemoveFriendsAction) Validate() error {
+func (action *AddFriendAction) Validate() error {
 	return action.builder.Validate()
 }
 
 // Save is the method called to execute this action and save change
-func (action *RemoveFriendsAction) Save() (*models.User, error) {
+func (action *AddFriendAction) Save() (*models.User, error) {
 	err := actions.Save(action)
 	return action.builder.GetUser(), err
 }
 
-var _ actions.Action = &RemoveFriendsAction{}
+var _ actions.Action = &AddFriendAction{}

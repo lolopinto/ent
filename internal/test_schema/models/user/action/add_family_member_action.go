@@ -12,22 +12,22 @@ import (
 	builder "github.com/lolopinto/ent/internal/test_schema/models/user"
 )
 
-type AddFamilyMembersAction struct {
+type AddFamilyMemberAction struct {
 	builder *builder.UserMutationBuilder
 }
 
-// AddFamilyMembersFromContext is the factory method to get an ...
-func AddFamilyMembersFromContext(ctx context.Context, user *models.User) *AddFamilyMembersAction {
+// AddFamilyMemberFromContext is the factory method to get an ...
+func AddFamilyMemberFromContext(ctx context.Context, user *models.User) *AddFamilyMemberAction {
 	v, err := viewer.ForContext(ctx)
 	if err != nil {
 		panic("tried to perform mutation without a viewer")
 	}
-	return AddFamilyMembers(v, user)
+	return AddFamilyMember(v, user)
 }
 
-// AddFamilyMembers is the factory method to get an ...
-func AddFamilyMembers(viewer viewer.ViewerContext, user *models.User) *AddFamilyMembersAction {
-	action := &AddFamilyMembersAction{}
+// AddFamilyMember is the factory method to get an ...
+func AddFamilyMember(viewer viewer.ViewerContext, user *models.User) *AddFamilyMemberAction {
+	action := &AddFamilyMemberAction{}
 	builder := builder.NewMutationBuilder(
 		viewer,
 		ent.EditOperation,
@@ -38,64 +38,64 @@ func AddFamilyMembers(viewer viewer.ViewerContext, user *models.User) *AddFamily
 	return action
 }
 
-func (action *AddFamilyMembersAction) GetBuilder() ent.MutationBuilder {
+func (action *AddFamilyMemberAction) GetBuilder() ent.MutationBuilder {
 	return action.builder
 }
 
-func (action *AddFamilyMembersAction) GetTypedBuilder() *builder.UserMutationBuilder {
+func (action *AddFamilyMemberAction) GetTypedBuilder() *builder.UserMutationBuilder {
 	return action.builder
 }
 
-func (action *AddFamilyMembersAction) GetViewer() viewer.ViewerContext {
+func (action *AddFamilyMemberAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *AddFamilyMembersAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+func (action *AddFamilyMemberAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
 	return action.builder.SetTriggers(triggers)
 }
 
-func (action *AddFamilyMembersAction) SetBuilderOnObservers(observers []actions.Observer) error {
+func (action *AddFamilyMemberAction) SetBuilderOnObservers(observers []actions.Observer) error {
 	return action.builder.SetObservers(observers)
 }
 
-func (action *AddFamilyMembersAction) GetChangeset() (ent.Changeset, error) {
+func (action *AddFamilyMemberAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(action)
 }
 
-func (action *AddFamilyMembersAction) Entity() ent.Entity {
+func (action *AddFamilyMemberAction) Entity() ent.Entity {
 	return action.builder.GetUser()
 }
 
-func (action *AddFamilyMembersAction) ExistingEnt() ent.Entity {
+func (action *AddFamilyMemberAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
 // AddFamilyMembers adds an instance of User to the FamilyMembers edge while editing the User ent
-func (action *AddFamilyMembersAction) AddFamilyMembers(user *models.User) *AddFamilyMembersAction {
+func (action *AddFamilyMemberAction) AddFamilyMembers(user *models.User) *AddFamilyMemberAction {
 	action.builder.AddFamilyMembers(user)
 	return action
 }
 
 // AddFamilyMembers adds an instance of UserId to the FamilyMembers edge while editing the User ent
-func (action *AddFamilyMembersAction) AddFamilyMembersID(userID string) *AddFamilyMembersAction {
+func (action *AddFamilyMemberAction) AddFamilyMembersID(userID string) *AddFamilyMemberAction {
 	action.builder.AddFamilyMembersID(userID)
 	return action
 }
 
 // getFieldMap returns the fields that could be edited in this mutation
-func (action *AddFamilyMembersAction) getFieldMap() ent.ActionFieldMap {
+func (action *AddFamilyMemberAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{}
 }
 
 // Validate returns an error if the current state of the action is not valid
-func (action *AddFamilyMembersAction) Validate() error {
+func (action *AddFamilyMemberAction) Validate() error {
 	return action.builder.Validate()
 }
 
 // Save is the method called to execute this action and save change
-func (action *AddFamilyMembersAction) Save() (*models.User, error) {
+func (action *AddFamilyMemberAction) Save() (*models.User, error) {
 	err := actions.Save(action)
 	return action.builder.GetUser(), err
 }
 
-var _ actions.Action = &AddFamilyMembersAction{}
+var _ actions.Action = &AddFamilyMemberAction{}
