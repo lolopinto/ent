@@ -2,6 +2,7 @@ package ent
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"runtime/debug"
 	"sync"
@@ -204,7 +205,20 @@ func ApplyPrivacyPolicy(v viewer.ViewerContext, objWithPolicy ObjectWithPrivacyP
 		idx := idx
 		rule := rules[idx]
 		f := func(i int) {
+			// hmm the "correct" thing here is to switch these 2 lines because of LIFO
+			// but TestAlwaysPanicPolicy doesn't work when flipped
 			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					// TODO this should be DenyWithReason or something like that
+					// so that we can encode information/reasons here
+					// This is also helpful for things like IsBlocked etc and wanting to know
+					// why something isn't visible
+					// so need to change Allow()|Deny()|Skip() to something that returns interface...
+					results[i] = Deny()
+					log.Print(r)
+				}
+			}()
 			results[i] = rule.Eval(v, ent)
 		}
 		go f(idx)

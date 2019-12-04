@@ -1,15 +1,12 @@
 package actions_test
 
 import (
-	"bytes"
 	"fmt"
-	"log"
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewertesting"
+	"github.com/lolopinto/ent/internal/logutil"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
@@ -48,27 +45,18 @@ func (suite *actionsObserversSuite) TestObserverReturnsError() {
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
 	// capture log
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer func() {
-		log.SetOutput(os.Stderr)
-	}()
+	l := logutil.CaptureLogger{}
+	l.Capture()
+	defer l.Reset()
 	action := userDeleteAction(v, user)
 	err := actions.Save(action)
 	assert.Nil(suite.T(), err)
 
 	testingutils.AssertEmailSent(suite.T(), user.EmailAddress, fmt.Sprintf("Hello %s, we're sad to see you go from our magical website", user.FirstName))
 
-	lines := strings.Split(buf.String(), "\n")
-	found := false
-	for _, line := range lines {
-		if strings.Contains(line, "error from observer: microservice down") {
-			found = true
-		}
-	}
 	// assert that microservice error was logged
 	// and that email was still sent and action was successful despite an error in an observer
-	assert.True(suite.T(), found)
+	assert.True(suite.T(), l.Contains("error from observer: microservice down"))
 
 	reloadedUser, err := models.LoadUser(v, user.ID)
 	assert.Zero(suite.T(), *reloadedUser)
