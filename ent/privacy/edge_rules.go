@@ -8,7 +8,6 @@ import (
 // AllowIfViewerInboundEdgeExistsRule is a privacy rule that passes if an edge exists between the viewer
 // and the ent
 type AllowIfViewerInboundEdgeExistsRule struct {
-	Policy   ent.PrivacyPolicy
 	EdgeType ent.EdgeType
 }
 
@@ -20,7 +19,6 @@ func (rule AllowIfViewerInboundEdgeExistsRule) Eval(v viewer.ViewerContext, enti
 // AllowIfViewerOutboundEdgeExistsRule is a privacy rule that passes if an edge exists between the viewer
 // and the ent
 type AllowIfViewerOutboundEdgeExistsRule struct {
-	Policy   ent.PrivacyPolicy
 	EdgeType ent.EdgeType
 }
 

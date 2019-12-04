@@ -23,7 +23,6 @@ func (policy EventPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 			OwnerID: policy.Event.UserID,
 		},
 		privacy.AllowIfViewerOutboundEdgeExistsRule{
-			Policy: policy,
 			EdgeType: ent.EdgeType(
 				// EventToInvitedEdge
 				"12a5ac62-1f9a-4fd7-b38f-a6d229ace12c",

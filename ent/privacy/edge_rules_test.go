@@ -61,7 +61,6 @@ func (suite *edgeRulesTestSuite) TestAllowIfViewerInboundEdgeExistsRule() {
 		// viewer (user) to ent (events)
 		testingutils.AllowOneInlinePrivacyPolicy(
 			privacy.AllowIfViewerInboundEdgeExistsRule{
-				Policy:   event.GetPrivacyPolicy(),
 				EdgeType: models.UserToEventsEdge,
 			},
 		),
@@ -95,7 +94,6 @@ func (suite *edgeRulesTestSuite) TestAllowIfViewerOutboundEdgeExistsRule() {
 		// ent (user2) to viewer (user)
 		testingutils.AllowOneInlinePrivacyPolicy(
 			privacy.AllowIfViewerInboundEdgeExistsRule{
-				Policy:   user2.GetPrivacyPolicy(),
 				EdgeType: models.UserToFamilyMembersEdge,
 			},
 		),
@@ -193,7 +191,6 @@ func (suite *edgeRulesTestSuite) TestDenyIfViewerInboundEdgeExistsRule() {
 		// viewer (user) to ent (events)
 		testingutils.DenyOneInlinePrivacyPolicy(
 			privacy.DenyIfViewerInboundEdgeExistsRule{
-				Policy:   event.GetPrivacyPolicy(),
 				EdgeType: models.UserToEventsEdge,
 			},
 		),
@@ -227,7 +224,6 @@ func (suite *edgeRulesTestSuite) TestDenyIfViewerOutboundEdgeExistsRule() {
 		// ent (user2) to viewer (user)
 		testingutils.DenyOneInlinePrivacyPolicy(
 			privacy.DenyIfViewerInboundEdgeExistsRule{
-				Policy:   user2.GetPrivacyPolicy(),
 				EdgeType: models.UserToFamilyMembersEdge,
 			},
 		),

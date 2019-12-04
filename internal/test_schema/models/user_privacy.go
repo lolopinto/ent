@@ -21,7 +21,6 @@ func (policy UserPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 		// BEGIN MANUAL SECTION: Add custom privacy rules below
 		privacy.AllowIfViewerIsOwnerRule{OwnerID: policy.User.ID},
 		privacy.AllowIfViewerInboundEdgeExistsRule{
-			Policy:   policy,
 			EdgeType: UserToFamilyMembersEdge,
 		},
 		// END MANUAL SECTION of privacy rules

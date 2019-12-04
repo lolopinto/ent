@@ -21,7 +21,6 @@ func (policy ContactPrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
 		// BEGIN MANUAL SECTION: Add custom privacy rules below
 		privacy.AllowIfViewerIsOwnerRule{OwnerID: policy.Contact.UserID},
 		privacy.AllowIfViewerOutboundEdgeExistsRule{
-			Policy: policy,
 			// stuff like this is why this current model of manual rules doesn't work and why I have to change it
 			// this is models.ContactToAllowListEdge
 			EdgeType: ent.EdgeType(
