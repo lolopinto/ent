@@ -22,14 +22,14 @@ type ContactEmailMutationBuilder struct {
 }
 
 func NewMutationBuilder(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 	operation ent.WriteOperation,
 	fieldMap ent.ActionFieldMap,
 	opts ...func(*actions.EntMutationBuilder),
 ) *ContactEmailMutationBuilder {
 	var contactEmail models.ContactEmail
 	b := actions.NewMutationBuilder(
-		viewer,
+		v,
 		operation,
 		&contactEmail,
 		&configs.ContactEmailConfig{},

@@ -2,6 +2,8 @@ package viewertesting
 
 import "github.com/lolopinto/ent/ent/viewer"
 
+import "github.com/lolopinto/ent/internal/test_schema/models"
+
 type OmniViewerContext struct {
 	viewer.LoggedOutViewerContext
 }
@@ -11,8 +13,13 @@ func (OmniViewerContext) IsOmniscient() bool {
 }
 
 type LoggedinViewerContext struct {
-	viewer.LoggedOutViewerContext
 	ViewerID string
+}
+
+func (v LoggedinViewerContext) GetViewer() viewer.LoggedInEntity {
+	user := &models.User{}
+	user.ID = v.GetViewerID()
+	return user
 }
 
 func (v LoggedinViewerContext) GetViewerID() string {
@@ -20,8 +27,4 @@ func (v LoggedinViewerContext) GetViewerID() string {
 		return v.ViewerID
 	}
 	return "1"
-}
-
-func (LoggedinViewerContext) HasIdentity() bool {
-	return true
 }

@@ -2,13 +2,23 @@ package ent
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"runtime/debug"
 	"sync"
 
 	"github.com/lolopinto/ent/ent/viewer"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
+	"github.com/pkg/errors"
 )
+
+// hmm this should be an interface...
+// and ideally DenyWithReasonResult uses this?
+// or vice versa?
+// we want the information of what ent is not visible to also be encoded...
+// type PrivacyError interface {
+
+// }
 
 // PrivacyError is the error type returned when an ent is not visible due to privacy reasons
 type PrivacyError struct {
@@ -81,15 +91,15 @@ func getTypeName(ent Entity) string {
 }
 
 // TODO same issues as below
-func LoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig Config) error {
+func LoadNode(v viewer.ViewerContext, id string, ent Entity, entConfig Config) error {
 	chanErr := make(chan error)
-	go GenLoadNode(viewer, id, ent, entConfig, chanErr)
+	go GenLoadNode(v, id, ent, entConfig, chanErr)
 	err := <-chanErr
 	return err
 }
 
 // TODO...
-func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig Config, errChan chan<- error) {
+func GenLoadNode(v viewer.ViewerContext, id string, ent Entity, entConfig Config, errChan chan<- error) {
 	if id == "" {
 		debug.PrintStack()
 	}
@@ -125,8 +135,8 @@ func GenLoadNode(viewer viewer.ViewerContext, id string, ent Entity, entConfig C
 	//fmt.Println("successfully loaded ent from data", ent)
 
 	// check privacy policy...
-	privacyResultChan := make(chan privacyResult)
-	go genApplyPrivacyPolicy(viewer, ent, privacyResultChan)
+	privacyResultChan := make(chan privacyPolicyResult)
+	go genApplyPrivacyPolicy(v, ent, privacyResultChan)
 	result := <-privacyResultChan
 
 	//fmt.Println("result", result, getTypeName(result.err))
@@ -166,29 +176,39 @@ func logEntResult(ent interface{}, err error) {
 	// )
 }
 
-type privacyResult struct {
+type privacyPolicyResult struct {
 	visible bool
 	err     error
 }
 
-func genApplyPrivacyPolicyUnsure(viewer viewer.ViewerContext, maybeEnt interface{}, privacyResultChan chan<- privacyResult) {
+func genApplyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt interface{}, privacyResultChan chan<- privacyPolicyResult) {
 	ent, ok := maybeEnt.(Entity)
 	//fmt.Println("genApplyPrivacyPolicy", maybeEnt, ent, ok)
 	if !ok {
 		fmt.Println("invalid ent", ent)
-		privacyResultChan <- privacyResult{
+		privacyResultChan <- privacyPolicyResult{
 			visible: false,
 			err: &InvalidEntPrivacyError{
 				entType: getTypeName(ent),
 			},
 		}
 	} else {
-		go genApplyPrivacyPolicy(viewer, ent, privacyResultChan)
+		go genApplyPrivacyPolicy(v, ent, privacyResultChan)
 	}
 }
 
-func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPrivacyPolicy, ent Entity) error {
-	rules := objWithPolicy.GetPrivacyPolicy().Rules()
+// ApplyPrivacyForEnt takes an ent and evaluates whether the ent is visible or not
+func ApplyPrivacyForEnt(v viewer.ViewerContext, entity Entity) error {
+	return ApplyPrivacyPolicy(v, entity.GetPrivacyPolicy(), entity)
+}
+
+// ApplyPrivacyPolicy takes a viewer, a privacy policy and the underlying ent
+// that the privacy will be applied to
+// This is useful for things like actions or per-field privacy where the privacy policy is
+// different than the privacy for the ent but we still need the ent
+// because that's what's passed to each PrivacyPolicyRule
+func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity) error {
+	rules := policy.Rules()
 
 	// TODO this is all done in parallel.
 	// will eventually be worth having different modes and testing it per ent
@@ -204,19 +224,34 @@ func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPri
 		idx := idx
 		rule := rules[idx]
 		f := func(i int) {
+			// hmm the "correct" thing here is to switch these 2 lines because of LIFO
+			// but TestAlwaysPanicPolicy doesn't work when flipped
 			defer wg.Done()
-			results[i] = rule.Eval(viewer, ent)
+			defer func() {
+				if r := recover(); r != nil {
+					// set result to indicate that the test panicked and encode what happened
+					results[i] = DenyWithReason(errors.Errorf("privacyResult panicked: %s", r))
+				}
+			}()
+			results[i] = rule.Eval(v, ent)
 		}
 		go f(idx)
 	}
 	wg.Wait()
 
 	// go through results of privacyRules and see what the privacy policy returns
-	for _, res := range results {
-		//fmt.Println("res from privacy rule", res)
-		if res == AllowPrivacyResult {
+	for idx, res := range results {
+		if res == nil {
+			log.Printf("invalid result. nil return value for Privacy Result at idx %d", idx)
+			return DenyWithReason(errors.New("nil result :("))
+		}
+		if res.Result() == AllowPrivacyResult {
 			return nil
-		} else if res == DenyPrivacyResult {
+		} else if res.Result() == DenyPrivacyResult {
+			denyReason, ok := res.(DenyWithReasonResult)
+			if ok {
+				return denyReason
+			}
 			return getPrivacyError(ent)
 		}
 	}
@@ -228,54 +263,54 @@ func ApplyPrivacyPolicy(viewer viewer.ViewerContext, objWithPolicy ObjectWithPri
 }
 
 // apply the privacy policy and determine if the ent is visible
-func genApplyPrivacyPolicy(viewer viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyResult) {
+func genApplyPrivacyPolicy(v viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyPolicyResult) {
 	// TODO do this programmatically without reflection later
 	// set viewer at the beginning because it's needed in GetPrivacyPolicy sometimes
-	entreflect.SetViewerInEnt(viewer, ent)
+	entreflect.SetViewerInEnt(v, ent)
 
-	err := ApplyPrivacyPolicy(viewer, ent, ent)
-	result := privacyResult{
+	err := ApplyPrivacyForEnt(v, ent)
+	result := privacyPolicyResult{
 		visible: err == nil,
 		err:     err,
 	}
 	privacyResultChan <- result
 }
 
-func GenLoadForeignKeyNodes(viewer viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
-	go genLoadNodesImpl(viewer, nodes, errChan, func(chanErr chan<- error) {
+func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
+	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
 		go genLoadForeignKeyNodes(id, nodes, colName, entConfig, chanErr)
 	})
 }
 
-func LoadForeignKeyNodes(viewer viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) error {
+func LoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) error {
 	errChan := make(chan error)
-	go GenLoadForeignKeyNodes(viewer, id, nodes, colName, entConfig, errChan)
+	go GenLoadForeignKeyNodes(v, id, nodes, colName, entConfig, errChan)
 	err := <-errChan
 	return err
 }
 
-func GenLoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
-	go genLoadNodesImpl(viewer, nodes, errChan, func(chanErr chan<- error) {
+func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
+	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
 		go genLoadNodesByType(id, edgeType, nodes, entConfig, chanErr)
 	})
 }
 
-func LoadNodesByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
+func LoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
 	errChan := make(chan error)
-	go GenLoadNodesByType(viewer, id, edgeType, nodes, entConfig, errChan)
+	go GenLoadNodesByType(v, id, edgeType, nodes, entConfig, errChan)
 	err := <-errChan
 	return err
 }
 
-func LoadUniqueNodeByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config) error {
+func LoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config) error {
 	edge, err := LoadUniqueEdgeByType(id, edgeType)
 	if err != nil {
 		return err
 	}
-	return LoadNode(viewer, edge.ID2, node, entConfig)
+	return LoadNode(v, edge.ID2, node, entConfig)
 }
 
-func GenLoadUniqueNodeByType(viewer viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config, errChan chan<- error) {
+func GenLoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config, errChan chan<- error) {
 	//	chanErr := make(chan error)
 	edgeResultChan := make(chan AssocEdgeResult)
 	go GenLoadUniqueEdgeByType(id, edgeType, edgeResultChan)
@@ -284,7 +319,7 @@ func GenLoadUniqueNodeByType(viewer viewer.ViewerContext, id string, edgeType Ed
 		errChan <- edgeResult.Error
 		return
 	}
-	go GenLoadNode(viewer, edgeResult.Edge.ID2, node, entConfig, errChan)
+	go GenLoadNode(v, edgeResult.Edge.ID2, node, entConfig, errChan)
 }
 
 // function that does the actual work of loading the raw data when fetching a list of nodes
@@ -293,7 +328,7 @@ type loadRawNodes func(chanErr chan<- error)
 // genLoadNodesImpl takes the raw nodes fetched by whatever means we need to fetch data and applies a privacy check to
 // make sure that only the nodes which should be visible are returned to the viewer
 // params:...
-func genLoadNodesImpl(viewer viewer.ViewerContext, nodes interface{}, errChan chan<- error, nodesLoader loadRawNodes) {
+func genLoadNodesImpl(v viewer.ViewerContext, nodes interface{}, errChan chan<- error, nodesLoader loadRawNodes) {
 	chanErr := make(chan error)
 	go nodesLoader(chanErr)
 	err := <-chanErr
@@ -301,7 +336,7 @@ func genLoadNodesImpl(viewer viewer.ViewerContext, nodes interface{}, errChan ch
 		errChan <- err
 	} else {
 		doneChan := make(chan bool)
-		go genApplyPrivacyPolicyForEnts(viewer, nodes, doneChan)
+		go genApplyPrivacyPolicyForEnts(v, nodes, doneChan)
 		<-doneChan
 		errChan <- nil
 	}
@@ -309,7 +344,7 @@ func genLoadNodesImpl(viewer viewer.ViewerContext, nodes interface{}, errChan ch
 
 // TODO change eveywhere using interface{}
 // TODO figure out go slice polymorphism in a sensible way :/
-func genApplyPrivacyPolicyForEnts(viewer viewer.ViewerContext, nodes interface{}, doneChan chan<- bool) {
+func genApplyPrivacyPolicyForEnts(v viewer.ViewerContext, nodes interface{}, doneChan chan<- bool) {
 	// we know it's a slice since loadNodesHelper in data fetching code has already handled this so no need
 	// to do the checking again
 	// TODO figure out if we can do this without this much reflection
@@ -319,11 +354,11 @@ func genApplyPrivacyPolicyForEnts(viewer viewer.ViewerContext, nodes interface{}
 	direct := reflect.Indirect(value)
 
 	// check privacy policy for each of the nodes
-	resSlice := make([]privacyResult, slice.Len())
+	resSlice := make([]privacyPolicyResult, slice.Len())
 	for idx := 0; idx < slice.Len(); idx++ {
 		node := slice.Index(idx).Interface()
-		c := make(chan privacyResult)
-		go genApplyPrivacyPolicyUnsure(viewer, node, c)
+		c := make(chan privacyPolicyResult)
+		go genApplyPrivacyPolicyUnsure(v, node, c)
 		resSlice[idx] = <-c
 	}
 

@@ -42,14 +42,14 @@ func ExistingEnt(existingEnt ent.Entity) func(*EntMutationBuilder) {
 }
 
 func NewMutationBuilder(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 	operation ent.WriteOperation,
 	entity ent.Entity,
 	entConfig ent.Config,
 	opts ...func(*EntMutationBuilder),
 ) *EntMutationBuilder {
 	b := &EntMutationBuilder{
-		Viewer:    viewer,
+		Viewer:    v,
 		Operation: operation,
 		EntConfig: entConfig,
 		entity:    entity,

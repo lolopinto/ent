@@ -6,9 +6,9 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/privacy"
 
-	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
+	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,19 +23,19 @@ func TestRules(t *testing.T) {
 		{
 			privacy.AlwaysAllowRule{},
 			viewer.LoggedOutViewer(),
-			ent.AllowPrivacyResult,
+			ent.Allow(),
 			"AlwaysAllowRule with logged out viewer",
 		},
 		{
 			privacy.AlwaysAllowRule{},
 			viewertesting.OmniViewerContext{},
-			ent.AllowPrivacyResult,
+			ent.Allow(),
 			"AlwaysAllowRule with omni viewer",
 		},
 		{
 			privacy.AlwaysAllowRule{},
 			viewertesting.LoggedinViewerContext{},
-			ent.AllowPrivacyResult,
+			ent.Allow(),
 			"AlwaysAllowRule with logged in viewer",
 		},
 
@@ -43,19 +43,19 @@ func TestRules(t *testing.T) {
 		{
 			privacy.AlwaysDenyRule{},
 			viewer.LoggedOutViewer(),
-			ent.DenyPrivacyResult,
+			ent.Deny(),
 			"AlwaysDenyRule with logged out viewer",
 		},
 		{
 			privacy.AlwaysDenyRule{},
 			viewertesting.OmniViewerContext{},
-			ent.DenyPrivacyResult,
+			ent.Deny(),
 			"AlwaysDenyRule with omni viewer",
 		},
 		{
 			privacy.AlwaysDenyRule{},
 			viewertesting.LoggedinViewerContext{},
-			ent.DenyPrivacyResult,
+			ent.Deny(),
 			"AlwaysDenyRule with logged in viewer",
 		},
 
@@ -63,19 +63,19 @@ func TestRules(t *testing.T) {
 		{
 			privacy.AllowIfOmniscientRule{},
 			viewer.LoggedOutViewer(),
-			ent.SkipPrivacyResult,
+			ent.Skip(),
 			"AllowIfOmniscientRule with logged out viewer",
 		},
 		{
 			privacy.AllowIfOmniscientRule{},
 			viewertesting.OmniViewerContext{},
-			ent.AllowPrivacyResult,
+			ent.Allow(),
 			"AllowIfOmniscientRule with omni viewer",
 		},
 		{
 			privacy.AllowIfOmniscientRule{},
 			viewertesting.LoggedinViewerContext{},
-			ent.SkipPrivacyResult,
+			ent.Skip(),
 			"AllowIfOmniscientRule with logged in viewer",
 		},
 
@@ -83,19 +83,19 @@ func TestRules(t *testing.T) {
 		{
 			privacy.DenyIfLoggedOutRule{},
 			viewer.LoggedOutViewer(),
-			ent.DenyPrivacyResult,
+			ent.Deny(),
 			"DenyIfLoggedOutRule with logged out viewer",
 		},
 		{
 			privacy.DenyIfLoggedOutRule{},
 			viewertesting.OmniViewerContext{},
-			ent.DenyPrivacyResult,
+			ent.Deny(),
 			"DenyIfLoggedOutRule with omni viewer",
 		},
 		{
 			privacy.DenyIfLoggedOutRule{},
 			viewertesting.LoggedinViewerContext{},
-			ent.SkipPrivacyResult,
+			ent.Skip(),
 			"DenyIfLoggedOutRule with logged in viewer",
 		},
 
@@ -103,25 +103,25 @@ func TestRules(t *testing.T) {
 		{
 			privacy.AllowIfViewerIsOwnerRule{OwnerID: "1"},
 			viewer.LoggedOutViewer(),
-			ent.SkipPrivacyResult,
+			ent.Skip(),
 			"AllowIfViewerIsOwnerRule with out logged out viewer",
 		},
 		{
 			privacy.AllowIfViewerIsOwnerRule{OwnerID: "1"},
 			viewertesting.OmniViewerContext{},
-			ent.SkipPrivacyResult,
+			ent.Skip(),
 			"AllowIfViewerIsOwnerRule with omni viewer",
 		},
 		{
 			privacy.AllowIfViewerIsOwnerRule{OwnerID: "1"},
 			viewertesting.LoggedinViewerContext{},
-			ent.AllowPrivacyResult,
+			ent.Allow(),
 			"AllowIfViewerIsOwnerRule with logged in viewer",
 		},
 		{
 			privacy.AllowIfViewerIsOwnerRule{OwnerID: "1"},
 			viewertesting.LoggedinViewerContext{ViewerID: "3"},
-			ent.SkipPrivacyResult,
+			ent.Skip(),
 			"AllowIfViewerIsOwnerRule with different logged in viewer",
 		},
 
@@ -129,25 +129,25 @@ func TestRules(t *testing.T) {
 		{
 			privacy.AllowIfViewerRule{EntID: "1"},
 			viewer.LoggedOutViewer(),
-			ent.SkipPrivacyResult,
+			ent.Skip(),
 			"AllowIfViewerRule with out logged out viewer",
 		},
 		{
 			privacy.AllowIfViewerRule{EntID: "1"},
 			viewertesting.OmniViewerContext{},
-			ent.SkipPrivacyResult,
+			ent.Skip(),
 			"AllowIfViewerRule with omni viewer",
 		},
 		{
 			privacy.AllowIfViewerRule{EntID: "1"},
 			viewertesting.LoggedinViewerContext{},
-			ent.AllowPrivacyResult,
+			ent.Allow(),
 			"AllowIfViewerRule with logged in viewer",
 		},
 		{
 			privacy.AllowIfViewerRule{EntID: "1"},
 			viewertesting.LoggedinViewerContext{ViewerID: "3"},
-			ent.SkipPrivacyResult,
+			ent.Skip(),
 			"AllowIfViewerRule with different logged in viewer",
 		},
 

@@ -26,10 +26,10 @@ func CreateUserFromContext(ctx context.Context) *CreateUserAction {
 }
 
 // CreateUser is the factory method to get an ...
-func CreateUser(viewer viewer.ViewerContext) *CreateUserAction {
+func CreateUser(v viewer.ViewerContext) *CreateUserAction {
 	action := &CreateUserAction{}
 	builder := builder.NewMutationBuilder(
-		viewer,
+		v,
 		ent.InsertOperation,
 		action.getFieldMap(),
 	)

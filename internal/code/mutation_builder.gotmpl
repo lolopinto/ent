@@ -45,14 +45,14 @@ type {{$builderName}} struct {
 }
 
 func NewMutationBuilder(
-  viewer viewer.ViewerContext,
+  v viewer.ViewerContext,
   operation ent.WriteOperation,
   fieldMap ent.ActionFieldMap,
   opts ...func(*actions.EntMutationBuilder),
 ) *{{$builderName}} {
   var {{.NodeInstance}} models.{{.Node}}
   b := actions.NewMutationBuilder(
-    viewer, 
+    v, 
     operation,
     &{{.NodeInstance}},
     {{.EntConfig}},

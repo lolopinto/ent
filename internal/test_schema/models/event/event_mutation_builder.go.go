@@ -25,14 +25,14 @@ type EventMutationBuilder struct {
 }
 
 func NewMutationBuilder(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 	operation ent.WriteOperation,
 	fieldMap ent.ActionFieldMap,
 	opts ...func(*actions.EntMutationBuilder),
 ) *EventMutationBuilder {
 	var event models.Event
 	b := actions.NewMutationBuilder(
-		viewer,
+		v,
 		operation,
 		&event,
 		&configs.EventConfig{},

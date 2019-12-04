@@ -4,30 +4,8 @@ package models
 
 import (
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/ent/privacy"
   "github.com/lolopinto/ent/ent/viewer"
 )
-
-// {{.Node}}PrivacyPolicy is the privacy policy for the {{.Node}} ent which helps decides if it's 
-// visible to the viewer
-type {{.Node}}PrivacyPolicy struct {
-  {{.Node}} *{{.Node}}
-}
-
-// Rules is the list of rules that decides the visibility of the {{.Node}} ent to the viewer
-func (policy {{.Node}}PrivacyPolicy) Rules() []ent.PrivacyPolicyRule {
-	return []ent.PrivacyPolicyRule{
-		privacy.AllowIfOmniscientRule{},
-    // BEGIN MANUAL SECTION: Add custom privacy rules below
-    // END MANUAL SECTION of privacy rules
-		privacy.AlwaysDenyRule{},
-	}
-}
-
-// Ent returns the underlying ent whose privacy policy this is.
-func (policy {{.Node}}PrivacyPolicy) Ent() ent.Entity {
-	return policy.{{.Node}}
-}
 
 // AllowIfViewerCanSee{{.Node}}Rule is a reusable rule that can be called by different ents to see if the contact can be visible
 type AllowIfViewerCanSee{{.Node}}Rule struct {
@@ -35,8 +13,8 @@ type AllowIfViewerCanSee{{.Node}}Rule struct {
 }
 
 // Eval evaluates that the ent is visible to the user 
-func (rule AllowIfViewerCanSee{{.Node}}Rule) Eval(viewer viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	_, err := Load{{.Node}}(viewer, rule.{{.Node}}ID)
+func (rule AllowIfViewerCanSee{{.Node}}Rule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
+	_, err := Load{{.Node}}(v, rule.{{.Node}}ID)
 	if err != nil {
 		return ent.Skip()
 	}

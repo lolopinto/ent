@@ -68,7 +68,7 @@ func getActionName(action action.Action) string {
 }
 
 func getActionMethodArgs(action action.Action) string {
-	args := []string{"viewer viewer.ViewerContext"}
+	args := []string{"v viewer.ViewerContext"}
 
 	if action.MutatingExistingObject() {
 		// if we're editing an existing object, e.g. EditUser

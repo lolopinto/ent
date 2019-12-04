@@ -92,7 +92,6 @@ func (a *createUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 		privacy.Rules(
 			privacy.AlwaysAllowRule{},
 		),
-		&a.user,
 	}
 }
 
@@ -107,18 +106,17 @@ func (a *editUserAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(a)
 }
 
-func getEditUserPrivacyPolicy(a userAction, existingEnt ent.Entity) ent.PrivacyPolicy {
+func getEditUserPrivacyPolicy(existingEnt ent.Entity) ent.PrivacyPolicy {
 	return privacy.InlinePrivacyPolicy{
 		privacy.Rules(
 			privacy.AllowIfViewerIsOwnerRule{existingEnt.GetID()},
 			privacy.AlwaysDenyRule{},
 		),
-		&a.user,
 	}
 }
 
 func (a *editUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
-	return getEditUserPrivacyPolicy(a.userAction, &a.existingEnt)
+	return getEditUserPrivacyPolicy(&a.existingEnt)
 }
 
 var _ actions.ActionWithPermissions = &editUserAction{}
@@ -170,7 +168,7 @@ func (a *deleteUserAction) GetChangeset() (ent.Changeset, error) {
 }
 
 func (a *deleteUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
-	return getEditUserPrivacyPolicy(a.userAction, &a.existingEnt)
+	return getEditUserPrivacyPolicy(&a.existingEnt)
 }
 
 func (a *deleteUserAction) GetObservers() []actions.Observer {
@@ -277,9 +275,9 @@ func (observer *UserSendByeEmailObserver) Observe() error {
 	return emailHandler.SendEmail()
 }
 
-func getUserCreateBuilder(viewer viewer.ViewerContext, user *models.User) *actions.EntMutationBuilder {
+func getUserCreateBuilder(v viewer.ViewerContext, user *models.User) *actions.EntMutationBuilder {
 	return actions.NewMutationBuilder(
-		viewer,
+		v,
 		ent.InsertOperation,
 		user,
 		&configs.UserConfig{},
@@ -287,48 +285,48 @@ func getUserCreateBuilder(viewer viewer.ViewerContext, user *models.User) *actio
 }
 
 func userCreateAction(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 ) *createUserAction {
 	action := &createUserAction{}
-	action.viewer = viewer
-	action.builder = getUserCreateBuilder(viewer, &action.user)
+	action.viewer = v
+	action.builder = getUserCreateBuilder(v, &action.user)
 
 	return action
 }
 
 func userEditAction(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 	user *models.User,
 ) *editUserAction {
 	action := &editUserAction{}
 	b := actions.NewMutationBuilder(
-		viewer,
+		v,
 		ent.EditOperation,
 		&action.user,
 		&configs.UserConfig{},
 		actions.ExistingEnt(user),
 	)
 	action.existingEnt = *user
-	action.viewer = viewer
+	action.viewer = v
 	action.builder = b
 
 	return action
 }
 
 func userDeleteAction(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 	user *models.User,
 ) *deleteUserAction {
 	action := &deleteUserAction{}
 	b := actions.NewMutationBuilder(
-		viewer,
+		v,
 		ent.DeleteOperation,
 		&action.user,
 		&configs.UserConfig{},
 		actions.ExistingEnt(user),
 	)
 	action.existingEnt = *user
-	action.viewer = viewer
+	action.viewer = v
 	action.builder = b
 
 	return action

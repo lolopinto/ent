@@ -22,14 +22,14 @@ type UserMutationBuilder struct {
 }
 
 func NewMutationBuilder(
-	viewer viewer.ViewerContext,
+	v viewer.ViewerContext,
 	operation ent.WriteOperation,
 	fieldMap ent.ActionFieldMap,
 	opts ...func(*actions.EntMutationBuilder),
 ) *UserMutationBuilder {
 	var user models.User
 	b := actions.NewMutationBuilder(
-		viewer,
+		v,
 		operation,
 		&user,
 		&configs.UserConfig{},

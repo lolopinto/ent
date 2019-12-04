@@ -6,18 +6,12 @@ import "github.com/lolopinto/ent/ent"
 // determine what the access control for an ent or action is
 type InlinePrivacyPolicy struct {
 	PolicyRules []ent.PrivacyPolicyRule
-	PolicyEnt   ent.Entity
 }
 
 // GetPrivacyPolicy returns the inline privacy policy as a privacy policy
 // This enables InlinePrivacyPolicy to implement the interface ObjectWithPrivacyPolicy
 func (p InlinePrivacyPolicy) GetPrivacyPolicy() ent.PrivacyPolicy {
 	return p
-}
-
-// Ent returns the ent this policy is being applied on
-func (p InlinePrivacyPolicy) Ent() ent.Entity {
-	return p.PolicyEnt
 }
 
 // Rules returns the given list of rules

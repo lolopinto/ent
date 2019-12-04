@@ -61,10 +61,8 @@ func (suite *edgeRulesTestSuite) TestAllowIfViewerInboundEdgeExistsRule() {
 		// viewer (user) to ent (events)
 		testingutils.AllowOneInlinePrivacyPolicy(
 			privacy.AllowIfViewerInboundEdgeExistsRule{
-				Policy:   event.GetPrivacyPolicy(),
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
@@ -96,10 +94,8 @@ func (suite *edgeRulesTestSuite) TestAllowIfViewerOutboundEdgeExistsRule() {
 		// ent (user2) to viewer (user)
 		testingutils.AllowOneInlinePrivacyPolicy(
 			privacy.AllowIfViewerInboundEdgeExistsRule{
-				Policy:   user2.GetPrivacyPolicy(),
 				EdgeType: models.UserToFamilyMembersEdge,
 			},
-			user2,
 		),
 		user2,
 	)
@@ -135,7 +131,6 @@ func (suite *edgeRulesTestSuite) TestAllowIfEdgeExistsRule() {
 				ID2:      event.ID,
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
@@ -165,7 +160,6 @@ func (suite *edgeRulesTestSuite) TestAllowIfEdgeExistsRule() {
 				ID2:      event.ID,
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
@@ -197,10 +191,8 @@ func (suite *edgeRulesTestSuite) TestDenyIfViewerInboundEdgeExistsRule() {
 		// viewer (user) to ent (events)
 		testingutils.DenyOneInlinePrivacyPolicy(
 			privacy.DenyIfViewerInboundEdgeExistsRule{
-				Policy:   event.GetPrivacyPolicy(),
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
@@ -232,10 +224,8 @@ func (suite *edgeRulesTestSuite) TestDenyIfViewerOutboundEdgeExistsRule() {
 		// ent (user2) to viewer (user)
 		testingutils.DenyOneInlinePrivacyPolicy(
 			privacy.DenyIfViewerInboundEdgeExistsRule{
-				Policy:   user2.GetPrivacyPolicy(),
 				EdgeType: models.UserToFamilyMembersEdge,
 			},
-			user2,
 		),
 		user2,
 	)
@@ -271,7 +261,6 @@ func (suite *edgeRulesTestSuite) TestDenyIfEdgeExistsRule() {
 				ID2:      event.ID,
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
@@ -301,13 +290,12 @@ func (suite *edgeRulesTestSuite) TestDenyIfEdgeExistsRule() {
 				ID2:      event.ID,
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
 }
 
-func testEdge(suite *edgeRulesTestSuite, extraTestCases []testCase, policy ent.ObjectWithPrivacyPolicy, entity ent.Entity) {
+func testEdge(suite *edgeRulesTestSuite, extraTestCases []testCase, policy ent.PrivacyPolicy, entity ent.Entity) {
 	// omniscient always true
 	// logged out true/false depending on the case (passed in)
 	// edge exists and edge doesn't exist expected to be passed along
