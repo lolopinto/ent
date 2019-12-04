@@ -14,8 +14,7 @@ type AllowIfViewerInboundEdgeExistsRule struct {
 
 // Eval evaluates the AllowIfViewerInboundEdgeExistsRule privacy rule
 func (rule AllowIfViewerInboundEdgeExistsRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	ent := rule.Policy.Ent()
-	return allowIfEdgeRule(ent.GetViewer().GetViewerID(), ent.GetID(), rule.EdgeType)
+	return allowIfEdgeRule(entity.GetViewer().GetViewerID(), entity.GetID(), rule.EdgeType)
 }
 
 // AllowIfViewerOutboundEdgeExistsRule is a privacy rule that passes if an edge exists between the viewer
@@ -27,8 +26,7 @@ type AllowIfViewerOutboundEdgeExistsRule struct {
 
 // Eval evaluates the AllowIfViewerOutboundEdgeExistsRule privacy rule
 func (rule AllowIfViewerOutboundEdgeExistsRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	ent := rule.Policy.Ent()
-	return allowIfEdgeRule(ent.GetID(), ent.GetViewer().GetViewerID(), rule.EdgeType)
+	return allowIfEdgeRule(entity.GetID(), entity.GetViewer().GetViewerID(), rule.EdgeType)
 }
 
 // AllowIfEdgeExistsRule is a privacy rule that passes if an edge exists between the given IDs
@@ -52,8 +50,7 @@ type DenyIfViewerInboundEdgeExistsRule struct {
 
 // Eval evaluates the DenyIfViewerInboundEdgeExistsRule privacy rule
 func (rule DenyIfViewerInboundEdgeExistsRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	ent := rule.Policy.Ent()
-	return denyIfEdgeRule(ent.GetViewer().GetViewerID(), ent.GetID(), rule.EdgeType)
+	return denyIfEdgeRule(entity.GetViewer().GetViewerID(), entity.GetID(), rule.EdgeType)
 }
 
 // DenyIfViewerOutboundEdgeExistsRule is a privacy rule that passes if an edge exists between the viewer
@@ -65,8 +62,7 @@ type DenyIfViewerOutboundEdgeExistsRule struct {
 
 // Eval evaluates the DenyIfViewerOutboundEdgeExistsRule privacy rule
 func (rule DenyIfViewerOutboundEdgeExistsRule) Eval(v viewer.ViewerContext, entity ent.Entity) ent.PrivacyResult {
-	ent := rule.Policy.Ent()
-	return denyIfEdgeRule(ent.GetID(), ent.GetViewer().GetViewerID(), rule.EdgeType)
+	return denyIfEdgeRule(entity.GetID(), entity.GetViewer().GetViewerID(), rule.EdgeType)
 }
 
 // DenyIfEdgeExistsRule is a privacy rule that passes if an edge exists between the given IDs

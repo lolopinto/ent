@@ -92,7 +92,6 @@ func (a *createUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 		privacy.Rules(
 			privacy.AlwaysAllowRule{},
 		),
-		&a.user,
 	}
 }
 
@@ -107,18 +106,17 @@ func (a *editUserAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(a)
 }
 
-func getEditUserPrivacyPolicy(a userAction, existingEnt ent.Entity) ent.PrivacyPolicy {
+func getEditUserPrivacyPolicy(existingEnt ent.Entity) ent.PrivacyPolicy {
 	return privacy.InlinePrivacyPolicy{
 		privacy.Rules(
 			privacy.AllowIfViewerIsOwnerRule{existingEnt.GetID()},
 			privacy.AlwaysDenyRule{},
 		),
-		&a.user,
 	}
 }
 
 func (a *editUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
-	return getEditUserPrivacyPolicy(a.userAction, &a.existingEnt)
+	return getEditUserPrivacyPolicy(&a.existingEnt)
 }
 
 var _ actions.ActionWithPermissions = &editUserAction{}
@@ -170,7 +168,7 @@ func (a *deleteUserAction) GetChangeset() (ent.Changeset, error) {
 }
 
 func (a *deleteUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
-	return getEditUserPrivacyPolicy(a.userAction, &a.existingEnt)
+	return getEditUserPrivacyPolicy(&a.existingEnt)
 }
 
 func (a *deleteUserAction) GetObservers() []actions.Observer {

@@ -14,7 +14,6 @@ func (p AlwaysAllowPrivacyPolicy) GetPrivacyPolicy() ent.PrivacyPolicy {
 		PolicyRules: []ent.PrivacyPolicyRule{
 			AlwaysAllowRule{},
 		},
-		PolicyEnt: p.Entity,
 	}
 }
 
@@ -27,7 +26,6 @@ func (p AlwaysDenyPrivacyPolicy) GetPrivacyPolicy() ent.PrivacyPolicy {
 		PolicyRules: []ent.PrivacyPolicyRule{
 			AlwaysDenyRule{},
 		},
-		PolicyEnt: p.Entity,
 	}
 }
 
@@ -40,7 +38,6 @@ func (p AlwaysPanicPrivacyPolicy) GetPrivacyPolicy() ent.PrivacyPolicy {
 		PolicyRules: []ent.PrivacyPolicyRule{
 			alwaysPanicRule{},
 		},
-		PolicyEnt: p.Entity,
 	}
 }
 

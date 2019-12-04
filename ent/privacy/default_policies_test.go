@@ -68,15 +68,6 @@ func (user *userWithCustomPrivacy) GetPrivacyPolicy() ent.PrivacyPolicy {
 			privacy.DenyIfLoggedOutRule{},
 			privacy.AlwaysAllowRule{},
 		},
-		PolicyEnt: user,
-	}
-}
-
-func getDefaultUsers() []ent.Entity {
-	return []ent.Entity{
-		&alwaysAllowUser{},
-		&alwaysDenyUser{},
-		&alwaysPanicUser{},
 	}
 }
 
@@ -99,15 +90,6 @@ func getDefaultPolicyTestCases() []policyTestCase {
 			viewertesting.LoggedinViewerContext{},
 			"logged in viewer",
 		},
-	}
-}
-
-func TestPrivacyPolicyEnt(t *testing.T) {
-	// this only exists for default behavior and shouldn't be used for lots of major things
-	// TODO in an ideal world, we can have the ent not be nil here
-	// will also be helpful when we have complex default privacy polciies for organizations/projects etc
-	for _, user := range getDefaultUsers() {
-		assert.Nil(t, user.GetPrivacyPolicy().Ent())
 	}
 }
 

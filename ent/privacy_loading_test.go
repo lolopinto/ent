@@ -119,7 +119,6 @@ func (suite *privacyTestSuite) TestAllowIfViewerCanSeeEntRule() {
 			v,
 			testingutils.AllowOneInlinePrivacyPolicy(
 				models.AllowIfViewerCanSeeUserRule{UserID: id},
-				nil,
 			),
 			nil,
 		)

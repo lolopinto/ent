@@ -147,7 +147,7 @@ func Save(action Action) error {
 }
 
 func applyActionPermissions(action ActionWithPermissions) error {
-	err := ent.ApplyPrivacyPolicy(action.GetViewer(), action, action.GetPrivacyPolicy().Ent())
+	err := ent.ApplyPrivacyPolicy(action.GetViewer(), action, action.GetBuilder().ExistingEnt())
 	if ent.IsPrivacyError(err) {
 		return &ActionPermissionsError{}
 	}

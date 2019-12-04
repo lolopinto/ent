@@ -24,17 +24,15 @@ func DenyOneRule(p ent.PrivacyPolicyRule) []ent.PrivacyPolicyRule {
 }
 
 // AllowOneInlinePrivacyPolicy wraps AllowOneRule() by an InlinePrivacyPolicy
-func AllowOneInlinePrivacyPolicy(p ent.PrivacyPolicyRule, ent ent.Entity) privacy.InlinePrivacyPolicy {
+func AllowOneInlinePrivacyPolicy(p ent.PrivacyPolicyRule) privacy.InlinePrivacyPolicy {
 	return privacy.InlinePrivacyPolicy{
 		AllowOneRule(p),
-		ent,
 	}
 }
 
 // DenyOneInlinePrivacyPolicy wraps DenyOneRule() by an InlinePrivacyPolicy
-func DenyOneInlinePrivacyPolicy(p ent.PrivacyPolicyRule, ent ent.Entity) privacy.InlinePrivacyPolicy {
+func DenyOneInlinePrivacyPolicy(p ent.PrivacyPolicyRule) privacy.InlinePrivacyPolicy {
 	return privacy.InlinePrivacyPolicy{
 		DenyOneRule(p),
-		ent,
 	}
 }

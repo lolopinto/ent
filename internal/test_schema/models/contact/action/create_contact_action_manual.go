@@ -17,7 +17,6 @@ func (action *CreateContactAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 			privacy.DenyIfLoggedOutRule{},
 			privacy.AlwaysAllowRule{},
 		),
-		action.ExistingEnt(),
 	}
 }
 

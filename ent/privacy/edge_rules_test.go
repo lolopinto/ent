@@ -64,7 +64,6 @@ func (suite *edgeRulesTestSuite) TestAllowIfViewerInboundEdgeExistsRule() {
 				Policy:   event.GetPrivacyPolicy(),
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
@@ -99,7 +98,6 @@ func (suite *edgeRulesTestSuite) TestAllowIfViewerOutboundEdgeExistsRule() {
 				Policy:   user2.GetPrivacyPolicy(),
 				EdgeType: models.UserToFamilyMembersEdge,
 			},
-			user2,
 		),
 		user2,
 	)
@@ -135,7 +133,6 @@ func (suite *edgeRulesTestSuite) TestAllowIfEdgeExistsRule() {
 				ID2:      event.ID,
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
@@ -165,7 +162,6 @@ func (suite *edgeRulesTestSuite) TestAllowIfEdgeExistsRule() {
 				ID2:      event.ID,
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
@@ -200,7 +196,6 @@ func (suite *edgeRulesTestSuite) TestDenyIfViewerInboundEdgeExistsRule() {
 				Policy:   event.GetPrivacyPolicy(),
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
@@ -235,7 +230,6 @@ func (suite *edgeRulesTestSuite) TestDenyIfViewerOutboundEdgeExistsRule() {
 				Policy:   user2.GetPrivacyPolicy(),
 				EdgeType: models.UserToFamilyMembersEdge,
 			},
-			user2,
 		),
 		user2,
 	)
@@ -271,7 +265,6 @@ func (suite *edgeRulesTestSuite) TestDenyIfEdgeExistsRule() {
 				ID2:      event.ID,
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)
@@ -301,7 +294,6 @@ func (suite *edgeRulesTestSuite) TestDenyIfEdgeExistsRule() {
 				ID2:      event.ID,
 				EdgeType: models.UserToEventsEdge,
 			},
-			event,
 		),
 		event,
 	)

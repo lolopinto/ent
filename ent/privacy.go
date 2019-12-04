@@ -44,7 +44,6 @@ func Skip() PrivacyResult {
 // to end up with a decision on if this ent is visible to the viewer
 type PrivacyPolicy interface {
 	Rules() []PrivacyPolicyRule
-	Ent() Entity
 }
 
 // // PolicySimple defines a single method to be evaluated to determine if an ent is visible
