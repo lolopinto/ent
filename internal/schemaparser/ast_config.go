@@ -2,7 +2,6 @@ package schemaparser
 
 import (
 	"bytes"
-	"errors"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -168,9 +167,9 @@ func RewriteAstWithConfig(config *AstConfig, b []byte) []byte {
 		comments = append(comments, cg)
 	}
 
-	// something weird happened, bad...
+	// nothing to do here
 	if len(comments) == 0 {
-		util.Die(errors.New("did not find comments to be rewritten in generated file"))
+		return b
 	}
 
 	// create decorator for file before it was changed

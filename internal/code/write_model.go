@@ -18,7 +18,7 @@ type nodeTemplateCodePath struct {
 }
 
 func getFilePathForModelFile(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("models/%s.go", nodeData.PackageName)
+	return fmt.Sprintf("models/%s_gen.go", nodeData.PackageName)
 }
 
 func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
@@ -39,7 +39,7 @@ func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
 }
 
 func writePrivacyFile(nodeData *schema.NodeData) {
-	pathToFile := fmt.Sprintf("models/%s_privacy.go", nodeData.PackageName)
+	pathToFile := fmt.Sprintf("models/%s_privacy_gen.go", nodeData.PackageName)
 
 	file.Write(&file.TemplatedBasedFileWriter{
 		Data:               nodeData,

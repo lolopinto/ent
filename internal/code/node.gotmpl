@@ -13,6 +13,7 @@ import (
 
   "github.com/lolopinto/ent/ent"
   "github.com/lolopinto/ent/ent/cast"
+  "github.com/lolopinto/ent/ent/privacy"
   "github.com/lolopinto/ent/ent/viewer"
 
   {{.PathToConfigs}}
@@ -45,6 +46,8 @@ const (
 // {{.Node}} represents the `{{.Node}}` model 
 type {{.Node}} struct {
   ent.Node
+  {{/* TODO, this needs to be configurable but this is fine for now */ -}}
+  privacy.AlwaysDenyPrivacyPolicy
   {{ range $field := .FieldInfo.Fields -}} 
     {{if $field.TopLevelStructField -}}
       {{$field.FieldName}} {{fTypeString $field}} {{$field.FieldTag}}
@@ -79,13 +82,6 @@ func ({{.NodeInstance}} *{{.Node}}) GetType() ent.NodeType {
 // GetViewer returns the viewer for this entity.
 func ({{.NodeInstance}} *{{.Node}}) GetViewer() viewer.ViewerContext {
   return {{.NodeInstance}}.Viewer
-}
-
-// GetPrivacyPolicy returns the PrivacyPolicy of this entity. 
-func ({{.NodeInstance}} *{{.Node}}) GetPrivacyPolicy() ent.PrivacyPolicy {
-  return {{.Node}}PrivacyPolicy{
-    {{.Node}}: {{.NodeInstance}},
-  }
 }
 
 // Load{{.Node}}FromContext loads the given {{.Node}} given the context and id
