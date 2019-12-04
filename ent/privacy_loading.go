@@ -9,7 +9,16 @@ import (
 
 	"github.com/lolopinto/ent/ent/viewer"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
+	"github.com/pkg/errors"
 )
+
+// hmm this should be an interface...
+// and ideally DenyWithReasonResult uses this?
+// or vice versa?
+// we want the information of what ent is not visible to also be encoded...
+// type PrivacyError interface {
+
+// }
 
 // PrivacyError is the error type returned when an ent is not visible due to privacy reasons
 type PrivacyError struct {
@@ -126,7 +135,7 @@ func GenLoadNode(v viewer.ViewerContext, id string, ent Entity, entConfig Config
 	//fmt.Println("successfully loaded ent from data", ent)
 
 	// check privacy policy...
-	privacyResultChan := make(chan privacyResult)
+	privacyResultChan := make(chan privacyPolicyResult)
 	go genApplyPrivacyPolicy(v, ent, privacyResultChan)
 	result := <-privacyResultChan
 
@@ -167,17 +176,17 @@ func logEntResult(ent interface{}, err error) {
 	// )
 }
 
-type privacyResult struct {
+type privacyPolicyResult struct {
 	visible bool
 	err     error
 }
 
-func genApplyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt interface{}, privacyResultChan chan<- privacyResult) {
+func genApplyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt interface{}, privacyResultChan chan<- privacyPolicyResult) {
 	ent, ok := maybeEnt.(Entity)
 	//fmt.Println("genApplyPrivacyPolicy", maybeEnt, ent, ok)
 	if !ok {
 		fmt.Println("invalid ent", ent)
-		privacyResultChan <- privacyResult{
+		privacyResultChan <- privacyPolicyResult{
 			visible: false,
 			err: &InvalidEntPrivacyError{
 				entType: getTypeName(ent),
@@ -220,13 +229,8 @@ func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity
 			defer wg.Done()
 			defer func() {
 				if r := recover(); r != nil {
-					// TODO this should be DenyWithReason or something like that
-					// so that we can encode information/reasons here
-					// This is also helpful for things like IsBlocked etc and wanting to know
-					// why something isn't visible
-					// so need to change Allow()|Deny()|Skip() to something that returns interface...
-					results[i] = Deny()
-					log.Print(r)
+					// set result to indicate that the test panicked and encode what happened
+					results[i] = DenyWithReason(errors.Errorf("privacyResult panicked: %s", r))
 				}
 			}()
 			results[i] = rule.Eval(v, ent)
@@ -236,11 +240,18 @@ func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity
 	wg.Wait()
 
 	// go through results of privacyRules and see what the privacy policy returns
-	for _, res := range results {
-		//fmt.Println("res from privacy rule", res)
-		if res == AllowPrivacyResult {
+	for idx, res := range results {
+		if res == nil {
+			log.Printf("invalid result. nil return value for Privacy Result at idx %d", idx)
+			return DenyWithReason(errors.New("nil result :("))
+		}
+		if res.Result() == AllowPrivacyResult {
 			return nil
-		} else if res == DenyPrivacyResult {
+		} else if res.Result() == DenyPrivacyResult {
+			denyReason, ok := res.(DenyWithReasonResult)
+			if ok {
+				return denyReason
+			}
 			return getPrivacyError(ent)
 		}
 	}
@@ -252,13 +263,13 @@ func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity
 }
 
 // apply the privacy policy and determine if the ent is visible
-func genApplyPrivacyPolicy(v viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyResult) {
+func genApplyPrivacyPolicy(v viewer.ViewerContext, ent Entity, privacyResultChan chan<- privacyPolicyResult) {
 	// TODO do this programmatically without reflection later
 	// set viewer at the beginning because it's needed in GetPrivacyPolicy sometimes
 	entreflect.SetViewerInEnt(v, ent)
 
 	err := ApplyPrivacyForEnt(v, ent)
-	result := privacyResult{
+	result := privacyPolicyResult{
 		visible: err == nil,
 		err:     err,
 	}
@@ -343,10 +354,10 @@ func genApplyPrivacyPolicyForEnts(v viewer.ViewerContext, nodes interface{}, don
 	direct := reflect.Indirect(value)
 
 	// check privacy policy for each of the nodes
-	resSlice := make([]privacyResult, slice.Len())
+	resSlice := make([]privacyPolicyResult, slice.Len())
 	for idx := 0; idx < slice.Len(); idx++ {
 		node := slice.Index(idx).Interface()
-		c := make(chan privacyResult)
+		c := make(chan privacyPolicyResult)
 		go genApplyPrivacyPolicyUnsure(v, node, c)
 		resSlice[idx] = <-c
 	}

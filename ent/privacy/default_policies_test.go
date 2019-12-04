@@ -7,7 +7,6 @@ import (
 	"github.com/lolopinto/ent/ent/privacy"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
-	"github.com/lolopinto/ent/internal/logutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -121,15 +120,9 @@ func TestAlwaysPanicPolicy(t *testing.T) {
 }
 
 func testAlwaysPanic(t *testing.T, tt policyTestCase, user *alwaysPanicUser) {
-	l := logutil.CaptureLogger{}
-	l.Capture()
-	defer l.Reset()
-
 	err := ent.ApplyPrivacyForEnt(tt.viewer, user)
 	assert.NotNil(t, err, tt.testCase)
-	assert.IsType(t, &ent.PrivacyError{}, err)
-
-	assert.True(t, l.Contains("default implementation that should be overriden"))
+	assert.IsType(t, ent.DenyWithReasonResult{}, err)
 }
 
 func TestOverridenPrivacyPolicy(t *testing.T) {
