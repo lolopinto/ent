@@ -188,8 +188,18 @@ func genApplyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt interface{}, p
 	}
 }
 
-func ApplyPrivacyPolicy(v viewer.ViewerContext, objWithPolicy ObjectWithPrivacyPolicy, ent Entity) error {
-	rules := objWithPolicy.GetPrivacyPolicy().Rules()
+// ApplyPrivacyForEnt takes an ent and evaluates whether the ent is visible or not
+func ApplyPrivacyForEnt(v viewer.ViewerContext, entity Entity) error {
+	return ApplyPrivacyPolicy(v, entity.GetPrivacyPolicy(), entity)
+}
+
+// ApplyPrivacyPolicy takes a viewer, a privacy policy and the underlying ent
+// that the privacy will be applied to
+// This is useful for things like actions or per-field privacy where the privacy policy is
+// different than the privacy for the ent but we still need the ent
+// because that's what's passed to each PrivacyPolicyRule
+func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity) error {
+	rules := policy.Rules()
 
 	// TODO this is all done in parallel.
 	// will eventually be worth having different modes and testing it per ent
@@ -247,7 +257,7 @@ func genApplyPrivacyPolicy(v viewer.ViewerContext, ent Entity, privacyResultChan
 	// set viewer at the beginning because it's needed in GetPrivacyPolicy sometimes
 	entreflect.SetViewerInEnt(v, ent)
 
-	err := ApplyPrivacyPolicy(v, ent, ent)
+	err := ApplyPrivacyForEnt(v, ent)
 	result := privacyResult{
 		visible: err == nil,
 		err:     err,

@@ -299,7 +299,7 @@ func (suite *edgeRulesTestSuite) TestDenyIfEdgeExistsRule() {
 	)
 }
 
-func testEdge(suite *edgeRulesTestSuite, extraTestCases []testCase, policy ent.ObjectWithPrivacyPolicy, entity ent.Entity) {
+func testEdge(suite *edgeRulesTestSuite, extraTestCases []testCase, policy ent.PrivacyPolicy, entity ent.Entity) {
 	// omniscient always true
 	// logged out true/false depending on the case (passed in)
 	// edge exists and edge doesn't exist expected to be passed along

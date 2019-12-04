@@ -97,7 +97,7 @@ func TestAlwaysAllowPolicy(t *testing.T) {
 	user := &alwaysAllowUser{}
 
 	for _, tt := range getDefaultPolicyTestCases() {
-		err := ent.ApplyPrivacyPolicy(tt.viewer, user, user)
+		err := ent.ApplyPrivacyForEnt(tt.viewer, user)
 		assert.Nil(t, err, tt.testCase)
 	}
 }
@@ -106,7 +106,7 @@ func TestAlwaysDenyPolicy(t *testing.T) {
 	user := &alwaysDenyUser{}
 
 	for _, tt := range getDefaultPolicyTestCases() {
-		err := ent.ApplyPrivacyPolicy(tt.viewer, user, user)
+		err := ent.ApplyPrivacyForEnt(tt.viewer, user)
 		assert.NotNil(t, err, tt.testCase)
 		assert.IsType(t, &ent.PrivacyError{}, err)
 	}
@@ -125,7 +125,7 @@ func testAlwaysPanic(t *testing.T, tt policyTestCase, user *alwaysPanicUser) {
 	l.Capture()
 	defer l.Reset()
 
-	err := ent.ApplyPrivacyPolicy(tt.viewer, user, user)
+	err := ent.ApplyPrivacyForEnt(tt.viewer, user)
 	assert.NotNil(t, err, tt.testCase)
 	assert.IsType(t, &ent.PrivacyError{}, err)
 
@@ -157,7 +157,7 @@ func TestOverridenPrivacyPolicy(t *testing.T) {
 
 	for _, tt := range testCases {
 		user := &userWithCustomPrivacy{}
-		err := ent.ApplyPrivacyPolicy(tt.viewer, user, user)
+		err := ent.ApplyPrivacyForEnt(tt.viewer, user)
 		if tt.visible {
 			assert.Nil(t, err, tt.testCase)
 		} else {
