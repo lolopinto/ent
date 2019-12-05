@@ -56,7 +56,6 @@ func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
 	return &graphQLSchema{
 		config: data,
 		Types:  types,
-		//		Mutations:
 	}
 }
 
@@ -675,8 +674,8 @@ func (c *graphQLYamlConfig) addModelsConfig(s *graphQLSchema) {
 	// this creates a nested models: User: path_to_model map in here
 	models := make(map[string]interface{})
 
-	pathToModels, err := strconv.Unquote(s.config.CodePath.PathToModels)
-	util.Die(err)
+	pathToModels := s.config.CodePath.GetImportPathToModels()
+
 	for _, info := range s.config.Schema.Nodes {
 		nodeData := info.NodeData
 

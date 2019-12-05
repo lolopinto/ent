@@ -107,8 +107,10 @@ func ParseFilesForTest(t *testing.T, options ...func(*Config)) *FileConfigData {
 			Sources: cfg.sources,
 		}
 	} else {
+		absRootPath, err := filepath.Abs(cfg.rootPath)
+		util.Die(err)
 		p = &schemaparser.ConfigSchemaParser{
-			RootPath: cfg.rootPath,
+			AbsRootPath: absRootPath,
 			//		DisableSyntax: cfg.disableSyntax,
 		}
 	}

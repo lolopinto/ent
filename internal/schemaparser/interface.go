@@ -20,8 +20,8 @@ type ParserNeedsCleanup interface {
 }
 
 type ConfigSchemaParser struct {
-	RootPath      string
-	DisableSyntax bool
+	AbsRootPath string
+	//DisableSyntax bool
 }
 
 func (p *ConfigSchemaParser) GetConfig() (*packages.Config, string, error) {
@@ -35,8 +35,7 @@ func (p *ConfigSchemaParser) GetConfig() (*packages.Config, string, error) {
 		// this is a lot slower than the old thing. what am I doing wrong or differently?
 		Mode: mode,
 	}
-	absPath, err := filepath.Abs(p.RootPath)
-	return cfg, absPath, err
+	return cfg, p.AbsRootPath, nil
 }
 
 type SourceSchemaParser struct {

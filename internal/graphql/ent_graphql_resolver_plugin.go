@@ -1,9 +1,7 @@
 package graphql
 
 import (
-	"path/filepath"
 	"regexp"
-	"strconv"
 	"text/template"
 
 	"github.com/99designs/gqlgen/codegen"
@@ -14,8 +12,6 @@ import (
 	intcodegen "github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/schema"
-
-	"github.com/pkg/errors"
 )
 
 // inspired by resolvergen from gqlgen
@@ -130,18 +126,12 @@ func (p *entGraphQLResolverPlugin) groupEdgeEnumConst(field *codegen.Field) stri
 }
 
 func (p *entGraphQLResolverPlugin) getActionPath(a action.Action) string {
-	path, err := strconv.Unquote(p.codePath.PathToModels)
-	if err != nil {
-		panic(errors.Wrap(err, "could not unquote path"))
-	}
-
 	// TODO these names are broken. fix it
 	// this is equivalent to nodeData.PackageName which is what we're using when
 	// generating the file
 	// need to make sure we support contact_date etc
 	// to be consistent with writeActionFile
-	actionPath := filepath.Join(path, strcase.ToSnake(a.GetNodeInfo().Node), "action")
-	return actionPath
+	return p.codePath.AppendPathToModels(strcase.ToSnake(a.GetNodeInfo().Node), "action")
 }
 
 // ResolverBuild is the object passed to the template to generate the graphql code

@@ -2,7 +2,6 @@
 
 package models
 
-{{with .CodePath -}}
 import (
   "context"
   "errors"
@@ -16,9 +15,8 @@ import (
   "github.com/lolopinto/ent/ent/privacy"
   "github.com/lolopinto/ent/ent/viewer"
 
-  {{.PathToConfigs}}
+  {{.CodePath.GetQuotedImportPathToConfigs}}
 )
-{{end -}}
 
 {{with .NodeData -}}
 {{ $constGroup := .ConstantGroups -}}

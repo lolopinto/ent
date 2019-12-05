@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/lolopinto/ent/internal/codegen"
@@ -45,16 +44,7 @@ func main() {
 		db.UpgradeDB()
 	} else {
 		codePathInfo := getPathToCode(pathToConfig)
-		parseSchemasAndGenerate(pathToConfig, specificConfig, codePathInfo)
-
-	}
-}
-
-func getPathToCodeObj(path string) *codegen.CodePath {
-	return &codegen.CodePath{
-		PathToRoot:    path,
-		PathToConfigs: strconv.Quote(filepath.Join(path, pathToConfig)),
-		PathToModels:  strconv.Quote(filepath.Join(path, "models")),
+		parseSchemasAndGenerate(codePathInfo, specificConfig)
 	}
 }
 
@@ -76,7 +66,7 @@ func getPathToCode(pathToConfig string) *codegen.CodePath {
 			contents := string(b)
 
 			match := r.FindStringSubmatch(contents)
-			return getPathToCodeObj(match[1] + suffix)
+			return codegen.NewCodePath(pathToConfig, match[1]+suffix)
 		}
 
 		suffix = "/" + filepath.Base(curDir) + suffix
@@ -109,7 +99,7 @@ func getPathToCode(pathToConfig string) *codegen.CodePath {
 		}
 	}
 	path := strings.Join(pathParts[idx:], string(filepath.Separator))
-	return getPathToCodeObj(path)
+	return codegen.NewCodePath(pathToConfig, path)
 }
 
 func printUsageIfNecessary() {
