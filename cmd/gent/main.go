@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/util"
 
 	flag "github.com/ogier/pflag"
@@ -19,11 +20,13 @@ import (
 var (
 	pathToConfig   string
 	specificConfig string
+	upgrade        bool
 )
 
 func init() {
 	flag.StringVarP(&pathToConfig, "path", "p", "", "Path of config files")
 	flag.StringVarP(&specificConfig, "config", "c", "", "Specific EntConfig to codegen")
+	flag.BoolVar(&upgrade, "upgrade", false, "upgrade db")
 }
 
 func main() {
@@ -38,8 +41,13 @@ func main() {
 	// }
 	// fmt.Println(dir)
 
-	codePathInfo := getPathToCode(pathToConfig)
-	parseSchemasAndGenerate(pathToConfig, specificConfig, codePathInfo)
+	if upgrade {
+		db.UpgradeDB()
+	} else {
+		codePathInfo := getPathToCode(pathToConfig)
+		parseSchemasAndGenerate(pathToConfig, specificConfig, codePathInfo)
+
+	}
 }
 
 func getPathToCodeObj(path string) *codegen.CodePath {
