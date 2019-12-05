@@ -165,9 +165,14 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 
 func (s *graphQLSchema) generateGraphQLSchemaData() {
 	s.addSchemaInfo(s.getNodeInterfaceType())
-	s.addSchemaInfo(s.getEdgeInterfaceType())
-	s.addSchemaInfo(s.getConnectionInterfaceType())
-	nodeMap := s.config.Schema.Nodes
+
+	schema := s.config.Schema
+	if len(schema.GetEdges()) > 0 {
+		s.addSchemaInfo(s.getEdgeInterfaceType())
+		s.addSchemaInfo(s.getConnectionInterfaceType())
+	}
+
+	nodeMap := schema.Nodes
 	for _, info := range nodeMap {
 		nodeData := info.NodeData
 
