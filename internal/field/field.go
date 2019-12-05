@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -309,6 +310,7 @@ func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string)
 			tags = append(tags, key+":"+value)
 		}
 	}
+	sort.Strings(tags)
 	return "`" + strings.Join(tags, " ") + "`", tagsMap
 }
 
