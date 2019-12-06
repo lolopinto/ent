@@ -428,18 +428,56 @@ func (s *graphQLSchema) writeGraphQLSchema() {
 	})
 }
 
+func (s *graphQLSchema) buildYmlConfig() config.Config {
+	cfg := config.Config{
+		SchemaFilename: []string{
+			"graphql/schema.graphql",
+		},
+		Exec: config.PackageConfig{
+			Filename: "graphql/generated.go",
+			Package:  "graphql",
+		},
+		Model: config.PackageConfig{
+			Filename: "graphql/models_gen.go",
+			Package:  "graphql",
+		},
+		// don't need this since we're handling this ourselves
+		// Resolver: config.PackageConfig{
+		// 	Filename: "graphql/resolver.go",
+		// 	Package:  "graphql",
+		// 	Type:     "Resolver",
+		// },
+	}
+
+	pathToModels := s.config.CodePath.GetImportPathToModels()
+
+	models := make(config.TypeMap)
+
+	for _, info := range s.config.Schema.Nodes {
+		nodeData := info.NodeData
+
+		if nodeData.HideFromGraphQL {
+			continue
+		}
+
+		models[nodeData.Node] = config.TypeMapEntry{
+			Model: []string{
+				fmt.Sprintf(
+					// e.g. github.com/lolopinto/jarvis/models.User
+					"%s.%s",
+					pathToModels,
+					nodeData.Node,
+				),
+			},
+		}
+	}
+	cfg.Models = models
+	return cfg
+}
+
 func (s *graphQLSchema) writeGQLGenYamlFile() {
-	// TODO use 	"github.com/99designs/gqlgen/codegen/config
-	c := newGraphQLYamlConfig()
-
-	c.addSchema()
-	c.addModelsConfig(s)
-	c.addExecConfig()
-	c.addModelConfig()
-	///c.addResolverConfig() // don't need this since we're handling this ourselves
-
 	file.Write(&file.YamlFileWriter{
-		Data:              c.m,
+		Data:              s.buildYmlConfig(),
 		PathToFile:        "graphql/gqlgen.yml",
 		CreateDirIfNeeded: true,
 	})
@@ -649,77 +687,6 @@ func (s *graphQLSchemaInfo) GetOpeningSchemaLine() string {
 		return fmt.Sprintf("%s %s {", s.Type, s.TypeName)
 	}
 	return fmt.Sprintf("%s %s implements %s {", s.Type, s.TypeName, strings.Join(s.interfaces, "&"))
-}
-
-type graphQLYamlConfig struct {
-	m map[interface{}]interface{}
-}
-
-func newGraphQLYamlConfig() *graphQLYamlConfig {
-	m := make(map[interface{}]interface{})
-	return &graphQLYamlConfig{
-		m: m,
-	}
-}
-
-func (c *graphQLYamlConfig) addEntry(key, value interface{}) {
-	c.m[key] = value
-}
-
-func (c *graphQLYamlConfig) addSchema() {
-	c.addEntry("schema", []string{"graphql/schema.graphql"})
-}
-
-func (c *graphQLYamlConfig) addModelsConfig(s *graphQLSchema) {
-	// this creates a nested models: User: path_to_model map in here
-	models := make(map[string]interface{})
-
-	pathToModels := s.config.CodePath.GetImportPathToModels()
-
-	for _, info := range s.config.Schema.Nodes {
-		nodeData := info.NodeData
-
-		if nodeData.HideFromGraphQL {
-			continue
-		}
-
-		model := make(map[string]string)
-
-		model["model"] = fmt.Sprintf(
-			// e.g. github.com/lolopinto/jarvis/models.User
-			"%s.%s",
-			pathToModels,
-			nodeData.Node,
-		)
-		models[nodeData.Node] = model
-	}
-
-	c.addEntry("models", models)
-}
-
-func (c *graphQLYamlConfig) addExecConfig() {
-	exec := make(map[string]string)
-	exec["filename"] = "graphql/generated.go"
-	exec["package"] = "graphql"
-
-	c.addEntry("exec", exec)
-}
-
-func (c *graphQLYamlConfig) addModelConfig() {
-	model := make(map[string]string)
-	model["filename"] = "graphql/models_gen.go"
-	model["package"] = "graphql"
-
-	c.addEntry("model", model)
-}
-
-func (c *graphQLYamlConfig) addResolverConfig() {
-	resolver := make(map[string]string)
-	resolver["filename"] = "graphql/resolver.go"
-	resolver["type"] = "Resolver"
-	resolver["package"] = "graphql"
-
-	c.addEntry("resolver", resolver)
 }
 
 // wrapper object to represent the list of schema types that will be passed to a schema template file

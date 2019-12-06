@@ -6,7 +6,7 @@ import (
 )
 
 type YamlFileWriter struct {
-	Data              map[interface{}]interface{}
+	Data              interface{}
 	PathToFile        string
 	CreateDirIfNeeded bool
 }

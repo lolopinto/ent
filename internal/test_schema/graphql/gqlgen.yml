@@ -1,17 +1,22 @@
+schema:
+  - graphql/schema.graphql
 exec:
     filename: graphql/generated.go
     package: graphql
 model:
     filename: graphql/models_gen.go
     package: graphql
+autobind: []
 models:
     Contact:
-        model: github.com/lolopinto/ent/internal/test_schema/models.Contact
+        model:
+          - github.com/lolopinto/ent/internal/test_schema/models.Contact
     ContactEmail:
-        model: github.com/lolopinto/ent/internal/test_schema/models.ContactEmail
+        model:
+          - github.com/lolopinto/ent/internal/test_schema/models.ContactEmail
     Event:
-        model: github.com/lolopinto/ent/internal/test_schema/models.Event
+        model:
+          - github.com/lolopinto/ent/internal/test_schema/models.Event
     User:
-        model: github.com/lolopinto/ent/internal/test_schema/models.User
-schema:
-  - graphql/schema.graphql
+        model:
+          - github.com/lolopinto/ent/internal/test_schema/models.User
