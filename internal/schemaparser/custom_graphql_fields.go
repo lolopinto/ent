@@ -30,16 +30,19 @@ type Argument struct {
 
 type parsedList struct {
 	m     sync.RWMutex
-	items []ParsedItem
+	items map[string][]ParsedItem
 }
 
 func (l *parsedList) AddItem(item ParsedItem) {
 	l.m.Lock()
 	defer l.m.Unlock()
-	l.items = append(l.items, item)
+	if l.items == nil {
+		l.items = make(map[string][]ParsedItem)
+	}
+	l.items[item.NodeName] = append(l.items[item.NodeName], item)
 }
 
-func ParseCustomGraphQLDefinitions(path string, validTypes map[string]bool) ([]ParsedItem, error) {
+func ParseCustomGraphQLDefinitions(path string, validTypes map[string]bool) (map[string][]ParsedItem, error) {
 	r := regexp.MustCompile(`(\w+)_gen.go`)
 
 	mode := packages.LoadTypes | packages.LoadSyntax

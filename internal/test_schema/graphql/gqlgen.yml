@@ -11,6 +11,13 @@ models:
     Contact:
         model:
           - github.com/lolopinto/ent/internal/test_schema/models.Contact
+        fields:
+            contactBar:
+                resolver: false
+                fieldName: GetContactBar
+            contactFoo:
+                resolver: false
+                fieldName: GetContactFoo
     ContactEmail:
         model:
           - github.com/lolopinto/ent/internal/test_schema/models.ContactEmail
@@ -20,3 +27,7 @@ models:
     User:
         model:
           - github.com/lolopinto/ent/internal/test_schema/models.User
+        fields:
+            userFoo:
+                resolver: false
+                fieldName: GetUserFoo

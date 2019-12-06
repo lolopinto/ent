@@ -54,6 +54,8 @@ type ComplexityRoot struct {
 		ContactEmails func(childComplexity int) int
 		EmailAddress  func(childComplexity int) int
 		FirstName     func(childComplexity int) int
+		GetContactBar func(childComplexity int, foo int) int
+		GetContactFoo func(childComplexity int) int
 		ID            func(childComplexity int) int
 		LastName      func(childComplexity int) int
 		UserID        func(childComplexity int) int
@@ -123,6 +125,7 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		Baz             func(childComplexity int) int
 		Bio             func(childComplexity int) int
 		Contacts        func(childComplexity int) int
 		DeclinedEvents  func(childComplexity int) int
@@ -132,6 +135,7 @@ type ComplexityRoot struct {
 		FamilyMembers   func(childComplexity int) int
 		FirstName       func(childComplexity int) int
 		Friends         func(childComplexity int) int
+		GetUserFoo      func(childComplexity int) int
 		ID              func(childComplexity int) int
 		InvitedEvents   func(childComplexity int) int
 		LastName        func(childComplexity int) int
@@ -177,6 +181,7 @@ type ComplexityRoot struct {
 
 type ContactResolver interface {
 	AllowList(ctx context.Context, obj *models.Contact) ([]*models.User, error)
+
 	ContactEmails(ctx context.Context, obj *models.Contact) ([]*models.ContactEmail, error)
 }
 type ContactEmailResolver interface {
@@ -267,6 +272,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Contact.FirstName(childComplexity), true
+
+	case "Contact.contactBar":
+		if e.complexity.Contact.GetContactBar == nil {
+			break
+		}
+
+		args, err := ec.field_Contact_contactBar_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Contact.GetContactBar(childComplexity, args["foo"].(int)), true
+
+	case "Contact.contactFoo":
+		if e.complexity.Contact.GetContactFoo == nil {
+			break
+		}
+
+		return e.complexity.Contact.GetContactFoo(childComplexity), true
 
 	case "Contact.id":
 		if e.complexity.Contact.ID == nil {
@@ -611,6 +635,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.User(childComplexity, args["id"].(string)), true
 
+	case "User.baz":
+		if e.complexity.User.Baz == nil {
+			break
+		}
+
+		return e.complexity.User.Baz(childComplexity), true
+
 	case "User.bio":
 		if e.complexity.User.Bio == nil {
 			break
@@ -673,6 +704,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Friends(childComplexity), true
+
+	case "User.userFoo":
+		if e.complexity.User.GetUserFoo == nil {
+			break
+		}
+
+		return e.complexity.User.GetUserFoo(childComplexity), true
 
 	case "User.id":
 		if e.complexity.User.ID == nil {
@@ -837,7 +875,9 @@ interface Connection {
 
 type Contact implements Node {
     allowList: [User!]!
+    contactBar(foo: Int): Int
     contactEmails: [ContactEmail!]!
+    contactFoo: String
     emailAddress: String!
     firstName: String!
     id: ID!
@@ -948,6 +988,7 @@ type Query {
 }
 
 type User implements Node {
+    baz: Float
     bio: String
     contacts: [Contact!]!
     declinedEvents: [Event!]!
@@ -960,6 +1001,7 @@ type User implements Node {
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
+    userFoo: String
 }
 
 input UserAddFamilyMemberInput {
@@ -1046,6 +1088,20 @@ scalar Time
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Contact_contactBar_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["foo"]; ok {
+		arg0, err = ec.unmarshalOInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["foo"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_contactCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1330,6 +1386,47 @@ func (ec *executionContext) _Contact_allowList(ctx context.Context, field graphq
 	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Contact_contactBar(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Contact",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Contact_contactBar_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GetContactBar(args["foo"].(int)), nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOInt2int(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Contact_contactEmails(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -1365,6 +1462,40 @@ func (ec *executionContext) _Contact_contactEmails(ctx context.Context, field gr
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNContactEmail2ᚕᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContactEmail(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Contact_contactFoo(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Contact",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GetContactFoo(), nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Contact_emailAddress(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
@@ -2985,6 +3116,40 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _User_baz(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "User",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Baz(), nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*float64)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOFloat2ᚖfloat64(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _User_bio(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -3424,6 +3589,40 @@ func (ec *executionContext) _User_lastName(ctx context.Context, field graphql.Co
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_userFoo(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "User",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GetUserFoo(), nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UserAddFamilyMemberResponse_user(ctx context.Context, field graphql.CollectedField, obj *UserAddFamilyMemberResponse) (ret graphql.Marshaler) {
@@ -5330,6 +5529,8 @@ func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, 
 				}
 				return res
 			})
+		case "contactBar":
+			out.Values[i] = ec._Contact_contactBar(ctx, field, obj)
 		case "contactEmails":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5344,6 +5545,8 @@ func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, 
 				}
 				return res
 			})
+		case "contactFoo":
+			out.Values[i] = ec._Contact_contactFoo(ctx, field, obj)
 		case "emailAddress":
 			out.Values[i] = ec._Contact_emailAddress(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -5817,6 +6020,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("User")
+		case "baz":
+			out.Values[i] = ec._User_baz(ctx, field, obj)
 		case "bio":
 			out.Values[i] = ec._User_bio(ctx, field, obj)
 		case "contacts":
@@ -5937,6 +6142,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "userFoo":
+			out.Values[i] = ec._User_userFoo(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

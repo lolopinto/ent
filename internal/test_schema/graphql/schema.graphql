@@ -8,7 +8,9 @@ interface Connection {
 
 type Contact implements Node {
     allowList: [User!]!
+    contactBar(foo: Int): Int
     contactEmails: [ContactEmail!]!
+    contactFoo: String
     emailAddress: String!
     firstName: String!
     id: ID!
@@ -119,6 +121,7 @@ type Query {
 }
 
 type User implements Node {
+    baz: Float
     bio: String
     contacts: [Contact!]!
     declinedEvents: [Event!]!
@@ -131,6 +134,7 @@ type User implements Node {
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
+    userFoo: String
 }
 
 input UserAddFamilyMemberInput {

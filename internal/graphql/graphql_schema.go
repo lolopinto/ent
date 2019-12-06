@@ -64,19 +64,58 @@ func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
 func (schema *graphQLSchema) generateSchema() {
 	validTypes := schema.generateGraphQLSchemaData()
 
-	schema.checkCustomDefinitions(validTypes)
+	itemMap, err := schemaparser.ParseCustomGraphQLDefinitions(schema.config.CodePath.GetAbsPathToModels(), validTypes)
+	util.Die(err)
+	spew.Dump(itemMap)
 
-	// schema.writeGraphQLSchema()
+	if len(itemMap) != 0 {
+		schema.handleCustomDefinitions(itemMap)
+	}
 
-	// schema.writeGQLGenYamlFile()
+	schema.writeGraphQLSchema()
 
-	// schema.generateGraphQLCode()
+	schema.writeGQLGenYamlFile(itemMap)
+
+	schema.generateGraphQLCode()
 }
 
-func (schema *graphQLSchema) checkCustomDefinitions(validTypes map[string]bool) {
-	items, err := schemaparser.ParseCustomGraphQLDefinitions(schema.config.CodePath.GetAbsPathToModels(), validTypes)
-	util.Die(err)
-	spew.Dump(items)
+func (schema *graphQLSchema) handleCustomDefinitions(
+	itemMap map[string][]schemaparser.ParsedItem,
+) {
+
+	getType := func(typ string) string {
+		// TODO this doesn't work. we need to actually do type conversions here
+		if typ == "float64" {
+			typ = "float"
+		}
+		return strcase.ToCamel(typ)
+	}
+
+	for nodeName, items := range itemMap {
+		schemaInfo, ok := schema.Types[nodeName]
+		if !ok {
+			util.Die(fmt.Errorf("invalid schema info %s retrieved", nodeName))
+		}
+
+		for _, item := range items {
+			field := &graphQLNonEntField{
+				fieldName: item.GraphQLName,
+				fieldType: getType(item.Type),
+			}
+			if len(item.Args) > 0 {
+				args := make([]*graphQLArg, len(item.Args))
+				for idx, arg := range item.Args {
+					args[idx] = &graphQLArg{
+						fieldName: arg.Name,
+						fieldType: getType(arg.Type),
+						// TODO need to come back and handle optional vs not for both...
+					}
+				}
+				field.args = args
+			}
+			schemaInfo.addNonEntField(field)
+		}
+	}
 }
 
 func (schema *graphQLSchema) addQueryField(f *graphQLNonEntField) {
@@ -441,7 +480,9 @@ func (s *graphQLSchema) writeGraphQLSchema() {
 	})
 }
 
-func (s *graphQLSchema) buildYmlConfig() config.Config {
+func (s *graphQLSchema) buildYmlConfig(
+	itemMap map[string][]schemaparser.ParsedItem,
+) config.Config {
 	cfg := config.Config{
 		SchemaFilename: []string{
 			"graphql/schema.graphql",
@@ -473,7 +514,7 @@ func (s *graphQLSchema) buildYmlConfig() config.Config {
 			continue
 		}
 
-		models[nodeData.Node] = config.TypeMapEntry{
+		entry := config.TypeMapEntry{
 			Model: []string{
 				fmt.Sprintf(
 					// e.g. github.com/lolopinto/jarvis/models.User
@@ -483,14 +524,32 @@ func (s *graphQLSchema) buildYmlConfig() config.Config {
 				),
 			},
 		}
+
+		items, ok := itemMap[nodeData.Node]
+		if ok {
+			entry.Fields = make(map[string]config.TypeMapField)
+			for _, item := range items {
+				// should only need this if GraphQLName != FunctionName
+				if strings.ToLower(item.GraphQLName) == strings.ToLower(item.FunctionName) {
+					continue
+				}
+				entry.Fields[item.GraphQLName] = config.TypeMapField{
+					FieldName: item.FunctionName,
+				}
+			}
+		}
+
+		models[nodeData.Node] = entry
 	}
 	cfg.Models = models
 	return cfg
 }
 
-func (s *graphQLSchema) writeGQLGenYamlFile() {
+func (s *graphQLSchema) writeGQLGenYamlFile(
+	itemMap map[string][]schemaparser.ParsedItem,
+) {
 	file.Write(&file.YamlFileWriter{
-		Data:              s.buildYmlConfig(),
+		Data:              s.buildYmlConfig(itemMap),
 		PathToFile:        "graphql/gqlgen.yml",
 		CreateDirIfNeeded: true,
 	})

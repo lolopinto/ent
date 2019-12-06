@@ -25,6 +25,11 @@ func (user *User) GetUserFoo() string {
 	return "foo"
 }
 
+// @graphql
+func (user *User) Baz() *float64 {
+	return nil
+}
+
 type Bar struct {
 }
 
