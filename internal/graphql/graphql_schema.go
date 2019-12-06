@@ -7,6 +7,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 
 	"github.com/lolopinto/ent/ent"
@@ -17,13 +18,14 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schemaparser"
+
 	"github.com/lolopinto/ent/internal/util"
 
 	"github.com/99designs/gqlgen/api"
 	"github.com/99designs/gqlgen/codegen/config"
 )
 
-// TODO break this into its own package
 type Step struct {
 }
 
@@ -60,13 +62,21 @@ func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
 }
 
 func (schema *graphQLSchema) generateSchema() {
-	schema.generateGraphQLSchemaData()
+	validTypes := schema.generateGraphQLSchemaData()
 
-	schema.writeGraphQLSchema()
+	schema.checkCustomDefinitions(validTypes)
 
-	schema.writeGQLGenYamlFile()
+	// schema.writeGraphQLSchema()
 
-	schema.generateGraphQLCode()
+	// schema.writeGQLGenYamlFile()
+
+	// schema.generateGraphQLCode()
+}
+
+func (schema *graphQLSchema) checkCustomDefinitions(validTypes map[string]bool) {
+	items, err := schemaparser.ParseCustomGraphQLDefinitions(schema.config.CodePath.GetAbsPathToModels(), validTypes)
+	util.Die(err)
+	spew.Dump(items)
 }
 
 func (schema *graphQLSchema) addQueryField(f *graphQLNonEntField) {
@@ -162,7 +172,7 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 	s.addSchemaInfo(schemaInfo)
 }
 
-func (s *graphQLSchema) generateGraphQLSchemaData() {
+func (s *graphQLSchema) generateGraphQLSchemaData() map[string]bool {
 	s.addSchemaInfo(s.getNodeInterfaceType())
 
 	schema := s.config.Schema
@@ -171,6 +181,7 @@ func (s *graphQLSchema) generateGraphQLSchemaData() {
 		s.addSchemaInfo(s.getConnectionInterfaceType())
 	}
 
+	validTypes := make(map[string]bool)
 	nodeMap := schema.Nodes
 	for _, info := range nodeMap {
 		nodeData := info.NodeData
@@ -179,6 +190,7 @@ func (s *graphQLSchema) generateGraphQLSchemaData() {
 			continue
 		}
 
+		validTypes[nodeData.Node] = true
 		// add the GraphQL type e.g. User, Contact etc
 		s.addGraphQLInfoForType(nodeMap, nodeData)
 
@@ -190,6 +202,7 @@ func (s *graphQLSchema) generateGraphQLSchemaData() {
 	if mutationsType != nil {
 		s.addSchemaInfo(mutationsType)
 	}
+	return validTypes
 }
 
 func (s *graphQLSchema) processActions(actionInfo *action.ActionInfo) {

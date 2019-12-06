@@ -18,3 +18,18 @@ func (user *User) GetPrivacyPolicy() ent.PrivacyPolicy {
 		},
 	}
 }
+
+// GetUserFoo blah blah blah
+// @graphql
+func (user *User) GetUserFoo() string {
+	return "foo"
+}
+
+type Bar struct {
+}
+
+// GetFoo does crap
+// @graphql
+func (b Bar) GetFoo() string {
+	return "foo 2.0"
+}

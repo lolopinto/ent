@@ -169,3 +169,23 @@ func GetStringListFromExpr(expr ast.Expr) []string {
 	}
 	return list
 }
+
+func GetFieldTypeName(field *ast.Field) string {
+	identName := func(expr ast.Expr) string {
+		ident, ok := expr.(*ast.Ident)
+		if ok {
+			return ident.Name
+		}
+		return ""
+	}
+	if name := identName(field.Type); name != "" {
+		return name
+	}
+	star, ok := field.Type.(*ast.StarExpr)
+	if ok {
+		if name := identName(star.X); name != "" {
+			return name
+		}
+	}
+	panic("invalid field receiver type")
+}
