@@ -8,9 +8,9 @@ interface Connection {
 
 type Contact implements Node {
     allowList: [User!]!
-    contactBar(foo: Int): Int
+    contactBar(foo: Int!): Int!
     contactEmails: [ContactEmail!]!
-    contactFoo: String
+    contactFoo: String!
     emailAddress: String!
     firstName: String!
     id: ID!
@@ -134,7 +134,7 @@ type User implements Node {
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
-    userFoo: String
+    userFoo: String!
 }
 
 input UserAddFamilyMemberInput {

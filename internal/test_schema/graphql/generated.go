@@ -875,9 +875,9 @@ interface Connection {
 
 type Contact implements Node {
     allowList: [User!]!
-    contactBar(foo: Int): Int
+    contactBar(foo: Int!): Int!
     contactEmails: [ContactEmail!]!
-    contactFoo: String
+    contactFoo: String!
     emailAddress: String!
     firstName: String!
     id: ID!
@@ -1001,7 +1001,7 @@ type User implements Node {
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
-    userFoo: String
+    userFoo: String!
 }
 
 input UserAddFamilyMemberInput {
@@ -1094,7 +1094,7 @@ func (ec *executionContext) field_Contact_contactBar_args(ctx context.Context, r
 	args := map[string]interface{}{}
 	var arg0 int
 	if tmp, ok := rawArgs["foo"]; ok {
-		arg0, err = ec.unmarshalOInt2int(ctx, tmp)
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1419,12 +1419,15 @@ func (ec *executionContext) _Contact_contactBar(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(int)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOInt2int(ctx, field.Selections, res)
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Contact_contactEmails(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
@@ -1490,12 +1493,15 @@ func (ec *executionContext) _Contact_contactFoo(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOString2string(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Contact_emailAddress(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
@@ -3617,12 +3623,15 @@ func (ec *executionContext) _User_userFoo(ctx context.Context, field graphql.Col
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOString2string(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UserAddFamilyMemberResponse_user(ctx context.Context, field graphql.CollectedField, obj *UserAddFamilyMemberResponse) (ret graphql.Marshaler) {
@@ -5531,6 +5540,9 @@ func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, 
 			})
 		case "contactBar":
 			out.Values[i] = ec._Contact_contactBar(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "contactEmails":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5547,6 +5559,9 @@ func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, 
 			})
 		case "contactFoo":
 			out.Values[i] = ec._Contact_contactFoo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "emailAddress":
 			out.Values[i] = ec._Contact_emailAddress(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -6144,6 +6159,9 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "userFoo":
 			out.Values[i] = ec._User_userFoo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6820,6 +6838,20 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	return graphql.UnmarshalInt(v)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")

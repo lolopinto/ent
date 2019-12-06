@@ -83,12 +83,16 @@ func (schema *graphQLSchema) handleCustomDefinitions(
 	itemMap map[string][]schemaparser.ParsedItem,
 ) {
 
-	getType := func(typ string) string {
+	getType := func(typ string, nullable bool) string {
 		// TODO this doesn't work. we need to actually do type conversions here
 		if typ == "float64" {
 			typ = "float"
 		}
-		return strcase.ToCamel(typ)
+		typ = strcase.ToCamel(typ)
+		if nullable {
+			return typ
+		}
+		return typ + "!"
 	}
 
 	for nodeName, items := range itemMap {
@@ -100,15 +104,14 @@ func (schema *graphQLSchema) handleCustomDefinitions(
 		for _, item := range items {
 			field := &graphQLNonEntField{
 				fieldName: item.GraphQLName,
-				fieldType: getType(item.Type),
+				fieldType: getType(item.Type, item.Nullable),
 			}
 			if len(item.Args) > 0 {
 				args := make([]*graphQLArg, len(item.Args))
 				for idx, arg := range item.Args {
 					args[idx] = &graphQLArg{
 						fieldName: arg.Name,
-						fieldType: getType(arg.Type),
-						// TODO need to come back and handle optional vs not for both...
+						fieldType: getType(arg.Type, arg.Nullable),
 					}
 				}
 				field.args = args

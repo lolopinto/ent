@@ -170,7 +170,15 @@ func GetStringListFromExpr(expr ast.Expr) []string {
 	return list
 }
 
-func GetFieldTypeName(field *ast.Field) string {
+// FieldTypeInfo struct contains information about the type of a field:
+// name and nullable value
+type FieldTypeInfo struct {
+	Name     string
+	Nullable bool
+}
+
+// GetFieldTypeInfo returns info about type of field
+func GetFieldTypeInfo(field *ast.Field) FieldTypeInfo {
 	identName := func(expr ast.Expr) string {
 		ident, ok := expr.(*ast.Ident)
 		if ok {
@@ -179,12 +187,12 @@ func GetFieldTypeName(field *ast.Field) string {
 		return ""
 	}
 	if name := identName(field.Type); name != "" {
-		return name
+		return FieldTypeInfo{Name: name, Nullable: false}
 	}
 	star, ok := field.Type.(*ast.StarExpr)
 	if ok {
 		if name := identName(star.X); name != "" {
-			return name
+			return FieldTypeInfo{Name: name, Nullable: true}
 		}
 	}
 	panic("invalid field receiver type")

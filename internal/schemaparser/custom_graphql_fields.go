@@ -16,16 +16,18 @@ import (
 
 // TODO rename?
 type ParsedItem struct {
-	NodeName     string     // e.g. User/Contact etc
-	GraphQLName  string     // GraphQLName
-	FunctionName string     // FunctionName
-	Type         string     // GraphQL return type
+	NodeName     string // e.g. User/Contact etc
+	GraphQLName  string // GraphQLName
+	FunctionName string // FunctionName
+	Type         string // GraphQL return type
+	Nullable     bool
 	Args         []Argument // input arguments
 }
 
 type Argument struct {
-	Name string
-	Type string // for now we should only support scalar arguments
+	Name     string
+	Type     string // for now we should only support scalar arguments
+	Nullable bool
 }
 
 type parsedList struct {
@@ -43,8 +45,6 @@ func (l *parsedList) AddItem(item ParsedItem) {
 }
 
 func ParseCustomGraphQLDefinitions(path string, validTypes map[string]bool) (map[string][]ParsedItem, error) {
-	r := regexp.MustCompile(`(\w+)_gen.go`)
-
 	mode := packages.LoadTypes | packages.LoadSyntax
 	cfg := &packages.Config{Mode: mode}
 
@@ -71,6 +71,7 @@ func ParseCustomGraphQLDefinitions(path string, validTypes map[string]bool) (map
 	l := &parsedList{}
 	var wg sync.WaitGroup
 
+	r := regexp.MustCompile(`(\w+)_gen.go`)
 	var errr error
 	for _, pkg := range pkgs {
 
@@ -110,7 +111,6 @@ func checkForCustom(filename string, file *ast.File, validTypes map[string]bool,
 		splits := strings.Split(cg.Text(), "\n")
 		for _, s := range splits {
 			if strings.HasPrefix(s, "@graphql") {
-				//				spew.Dump(cg.Text(), cg.Pos(), cg.End())
 				graphqlComments = append(graphqlComments, cg)
 				break
 			}
@@ -126,17 +126,13 @@ func checkForCustom(filename string, file *ast.File, validTypes map[string]bool,
 		if !ok {
 			continue
 		}
-		// fn is not a method we don't care
-		if fn.Recv == nil {
-			return fmt.Errorf("graphql function %s is not on a valid receiver", fn.Name.Name)
-		}
 
 		graphqlNode := ""
 		for _, field := range fn.Recv.List {
-			name := astparser.GetFieldTypeName(field)
+			info := astparser.GetFieldTypeInfo(field)
 			// TODO Bar not valid and we should eventually throw an error here
-			if validTypes[name] {
-				graphqlNode = name
+			if validTypes[info.Name] {
+				graphqlNode = info.Name
 				break
 			}
 		}
@@ -158,6 +154,11 @@ func checkForCustom(filename string, file *ast.File, validTypes map[string]bool,
 				if !fn.Name.IsExported() {
 					return fmt.Errorf("graphql function %s is not exported", fn.Name.Name)
 				}
+				// fn is not a method, return an error
+				if fn.Recv == nil {
+					return fmt.Errorf("graphql function %s is not on a valid receiver", fn.Name.Name)
+				}
+
 				if err := addItem(fn, cg, l, graphqlNode); err != nil {
 					return err
 				}
@@ -175,21 +176,25 @@ func addItem(fn *ast.FuncDecl, cg *ast.CommentGroup, l *parsedList, graphqlNode 
 	}
 	fnName := fn.Name.Name
 
+	resultTypeInfo := astparser.GetFieldTypeInfo(results[0])
 	item := ParsedItem{
 		NodeName:     graphqlNode,
 		FunctionName: fnName,
 		// remove Get prefix if it exists
 		GraphQLName: strcase.ToLowerCamel(strings.TrimPrefix(fnName, "Get")),
-		Type:        astparser.GetFieldTypeName(results[0]),
+		Type:        resultTypeInfo.Name,
+		Nullable:    resultTypeInfo.Nullable,
 	}
 
 	for _, param := range fn.Type.Params.List {
 		if len(param.Names) != 1 {
 			return errors.New("invalid number of names for param")
 		}
+		paramTypeInfo := astparser.GetFieldTypeInfo(param)
 		arg := Argument{
-			Name: param.Names[0].Name,
-			Type: astparser.GetFieldTypeName(param),
+			Name:     param.Names[0].Name,
+			Type:     paramTypeInfo.Name,
+			Nullable: paramTypeInfo.Nullable,
 		}
 		item.Args = append(item.Args, arg)
 	}
