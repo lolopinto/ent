@@ -7,7 +7,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 
 	"github.com/lolopinto/ent/ent"
@@ -66,7 +65,7 @@ func (schema *graphQLSchema) generateSchema() {
 
 	itemMap, err := schemaparser.ParseCustomGraphQLDefinitions(schema.config.CodePath.GetAbsPathToModels(), validTypes)
 	util.Die(err)
-	spew.Dump(itemMap)
+	//	spew.Dump(itemMap)
 
 	if len(itemMap) != 0 {
 		schema.handleCustomDefinitions(itemMap)
@@ -83,18 +82,6 @@ func (schema *graphQLSchema) handleCustomDefinitions(
 	itemMap map[string][]schemaparser.ParsedItem,
 ) {
 
-	getType := func(typ string, nullable bool) string {
-		// TODO this doesn't work. we need to actually do type conversions here
-		if typ == "float64" {
-			typ = "float"
-		}
-		typ = strcase.ToCamel(typ)
-		if nullable {
-			return typ
-		}
-		return typ + "!"
-	}
-
 	for nodeName, items := range itemMap {
 		schemaInfo, ok := schema.Types[nodeName]
 		if !ok {
@@ -104,14 +91,14 @@ func (schema *graphQLSchema) handleCustomDefinitions(
 		for _, item := range items {
 			field := &graphQLNonEntField{
 				fieldName: item.GraphQLName,
-				fieldType: getType(item.Type, item.Nullable),
+				fieldType: item.Type.GetGraphQLType(),
 			}
 			if len(item.Args) > 0 {
 				args := make([]*graphQLArg, len(item.Args))
 				for idx, arg := range item.Args {
 					args[idx] = &graphQLArg{
 						fieldName: arg.Name,
-						fieldType: getType(arg.Type, arg.Nullable),
+						fieldType: arg.Type.GetGraphQLType(),
 					}
 				}
 				field.args = args

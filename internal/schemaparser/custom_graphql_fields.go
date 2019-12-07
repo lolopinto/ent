@@ -11,6 +11,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/astparser"
+	"github.com/lolopinto/ent/internal/enttype"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -19,15 +20,13 @@ type ParsedItem struct {
 	NodeName     string // e.g. User/Contact etc
 	GraphQLName  string // GraphQLName
 	FunctionName string // FunctionName
-	Type         string // GraphQL return type
-	Nullable     bool
+	Type         enttype.FieldType
 	Args         []Argument // input arguments
 }
 
 type Argument struct {
-	Name     string
-	Type     string // for now we should only support scalar arguments
-	Nullable bool
+	Name string
+	Type enttype.FieldType
 }
 
 type parsedList struct {
@@ -87,7 +86,7 @@ func ParseCustomGraphQLDefinitions(path string, validTypes map[string]bool) (map
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				err := checkForCustom(filename, pkg.Syntax[idx], validTypes, l)
+				err := checkForCustom(filename, pkg, pkg.Syntax[idx], validTypes, l)
 				if err != nil {
 					errr = err
 				}
@@ -101,7 +100,13 @@ func ParseCustomGraphQLDefinitions(path string, validTypes map[string]bool) (map
 	return l.items, nil
 }
 
-func checkForCustom(filename string, file *ast.File, validTypes map[string]bool, l *parsedList) error {
+func checkForCustom(
+	filename string,
+	pkg *packages.Package,
+	file *ast.File,
+	validTypes map[string]bool,
+	l *parsedList,
+) error {
 	expectedFnNames := map[string]bool{
 		"GetPrivacyPolicy": true,
 	}
@@ -159,7 +164,7 @@ func checkForCustom(filename string, file *ast.File, validTypes map[string]bool,
 					return fmt.Errorf("graphql function %s is not on a valid receiver", fn.Name.Name)
 				}
 
-				if err := addItem(fn, cg, l, graphqlNode); err != nil {
+				if err := addItem(fn, pkg, cg, l, graphqlNode); err != nil {
 					return err
 				}
 				break
@@ -169,32 +174,36 @@ func checkForCustom(filename string, file *ast.File, validTypes map[string]bool,
 	return nil
 }
 
-func addItem(fn *ast.FuncDecl, cg *ast.CommentGroup, l *parsedList, graphqlNode string) error {
+func addItem(
+	fn *ast.FuncDecl,
+	pkg *packages.Package,
+	cg *ast.CommentGroup,
+	l *parsedList,
+	graphqlNode string,
+) error {
 	results := fn.Type.Results.List
 	if len(results) != 1 {
 		return errors.New("TODO: need to handle objects with more than one result")
 	}
 	fnName := fn.Name.Name
 
-	resultTypeInfo := astparser.GetFieldTypeInfo(results[0])
+	resultType := pkg.TypesInfo.TypeOf(results[0].Type)
 	item := ParsedItem{
 		NodeName:     graphqlNode,
 		FunctionName: fnName,
 		// remove Get prefix if it exists
 		GraphQLName: strcase.ToLowerCamel(strings.TrimPrefix(fnName, "Get")),
-		Type:        resultTypeInfo.Name,
-		Nullable:    resultTypeInfo.Nullable,
+		Type:        enttype.GetType(resultType),
 	}
 
 	for _, param := range fn.Type.Params.List {
 		if len(param.Names) != 1 {
 			return errors.New("invalid number of names for param")
 		}
-		paramTypeInfo := astparser.GetFieldTypeInfo(param)
+		paramType := pkg.TypesInfo.TypeOf(param.Type)
 		arg := Argument{
-			Name:     param.Names[0].Name,
-			Type:     paramTypeInfo.Name,
-			Nullable: paramTypeInfo.Nullable,
+			Name: param.Names[0].Name,
+			Type: enttype.GetType(paramType),
 		}
 		item.Args = append(item.Args, arg)
 	}
