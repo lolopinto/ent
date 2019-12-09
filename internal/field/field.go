@@ -10,6 +10,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/util"
 )
 
@@ -61,9 +62,9 @@ type Field struct {
 	FieldName           string
 	FieldTag            string
 	tagMap              map[string]string
-	topLevelStructField bool       // id, updated_at, created_at no...
-	entType             types.Type // not all fields will have an entType. probably don't need this...
-	fieldType           FieldType  // this is the underlying type for the field for graphql, db, etc
+	topLevelStructField bool              // id, updated_at, created_at no...
+	entType             types.Type        // not all fields will have an entType. probably don't need this...
+	fieldType           enttype.FieldType // this is the underlying type for the field for graphql, db, etc
 	dbColumn            bool
 	exposeToGraphQL     bool
 	nullable            bool
@@ -89,6 +90,8 @@ func (f *Field) GetQuotedDBColName() string {
 }
 
 func GetNilableTypeInStructDefinition(f *Field) string {
+	// See comment in GetNonNilableType
+	// In cases, where we want a Nillable type, we need to explicitly add it here
 	structType := GetNonNilableType(f)
 	if !f.Nullable() {
 		return structType
@@ -97,10 +100,14 @@ func GetNilableTypeInStructDefinition(f *Field) string {
 }
 
 func GetNonNilableType(f *Field) string {
-	override, ok := f.fieldType.(FieldWithOverridenStructType)
+	override, ok := f.fieldType.(enttype.FieldWithOverridenStructType)
 	if ok {
 		return override.GetStructType()
 	}
+	// Because of the current API for Fields, the underlying type
+	// is always "string", "int", "float64", etc so this is never nullable
+	// and we can just return the string representation here
+	// since nullable is currently encoded as a struct tag
 	return f.entType.String()
 }
 
@@ -109,16 +116,10 @@ func (f *Field) GetDbTypeForField() string {
 }
 
 func (f *Field) GetGraphQLTypeForField() string {
-	if f.Nullable() {
-		return f.fieldType.GetNullableGraphQLType()
-	}
 	return f.fieldType.GetGraphQLType()
 }
 
 func (f *Field) GetCastToMethod() string {
-	if f.Nullable() {
-		return f.fieldType.GetNullableCastToMethod()
-	}
 	return f.fieldType.GetCastToMethod()
 }
 
@@ -212,7 +213,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 		topLevelStructField:   false,
 		dbColumn:              true,
 		singleFieldPrimaryKey: true,
-		fieldType:             &IdType{},
+		fieldType:             &enttype.IDType{},
 	})
 
 	// going to assume we don't want created at and updated at in graphql
@@ -227,7 +228,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 		exposeToActions:     false,
 		topLevelStructField: false,
 		dbColumn:            true,
-		fieldType:           &TimeType{},
+		fieldType:           &enttype.TimeType{},
 	})
 	fieldInfo.addField(&Field{
 		FieldName:           "UpdatedAt",
@@ -236,7 +237,7 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 		exposeToActions:     false,
 		topLevelStructField: false,
 		dbColumn:            true,
-		fieldType:           &TimeType{},
+		fieldType:           &enttype.TimeType{},
 	})
 
 	for _, f := range s.Fields.List {
@@ -254,17 +255,18 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 			util.Die(err)
 		}
 		entType := info.TypeOf(f.Type)
+		nullable := tagMap["nullable"] == strconv.Quote("true")
 		fieldInfo.addField(&Field{
 			FieldName:           fieldName,
 			entType:             entType,
-			fieldType:           getTypeForEntType(entType),
+			fieldType:           enttype.GetNullableType(entType, nullable),
 			FieldTag:            tagStr,
 			tagMap:              tagMap,
 			topLevelStructField: true,
 			dbColumn:            true,
 			exposeToGraphQL:     true,
 			exposeToActions:     true,
-			nullable:            tagMap["nullable"] == strconv.Quote("true"),
+			nullable:            nullable,
 			defaultValue:        defaultValue,
 		})
 	}
