@@ -70,7 +70,6 @@ func (schema *graphQLSchema) generateSchema() {
 		validTypes,
 	)
 	util.Die(err)
-	//	spew.Dump(itemMap)
 
 	if len(itemMap) != 0 {
 		schema.handleCustomDefinitions(itemMap)
