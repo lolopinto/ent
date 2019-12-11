@@ -3,11 +3,15 @@ package graphql
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"testing"
 
+	"github.com/99designs/gqlgen/codegen/config"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -255,6 +259,123 @@ func TestGraphQLAssociationKeyEdge(t *testing.T) {
 	e := getTestGraphqlPluralEdge("Account", "Friends", t)
 
 	testEdge(t, e, "Friends", "friends: [Account!]!")
+}
+
+func TestGraphQLCustomFunctions(t *testing.T) {
+	sources := make(map[string]string)
+	sources["account_gen.go"] = getFakeGeneratedFile()
+	sources["account.go"] = `
+	package models
+
+	// GetFoo blah blah blah
+  // @graphql
+func (account *Account) GetFoo(baz int) string {
+	return "foo"
+}`
+
+	s := newGraphQLSchema(&codegen.Data{
+		// don't need real values here since we're not testing this
+		// can do lazy schema for now since we're not testing the loaded schema path
+		// probably fragile and needs to change
+		CodePath: codegen.NewCodePath("", ""),
+		Schema: &schema.Schema{
+			Nodes: map[string]*schema.NodeDataInfo{
+				"Account": &schema.NodeDataInfo{
+					NodeData: &schema.NodeData{
+						NodeInfo:    nodeinfo.GetNodeInfo("account"),
+						PackageName: "account",
+					},
+				},
+			},
+		},
+	})
+
+	// do the minimum and add Account as a schemaInfo item.
+	accountSchemaInfo := newGraphQLSchemaInfo("type", "Account")
+	s.addSchemaInfo(accountSchemaInfo)
+
+	itemMap, err := schemaparser.ParseCustomGraphQLDefinitions(
+		&schemaparser.SourceSchemaParser{
+			PackageName: "models",
+			Sources:     sources,
+		},
+		map[string]bool{
+			"Account": true,
+		},
+	)
+	assert.Nil(t, err)
+	assert.NotNil(t, itemMap)
+
+	parsedItems := itemMap["Account"]
+
+	s.handleCustomDefinitions(itemMap)
+	testCustomDefinitions(t, accountSchemaInfo, parsedItems)
+
+	ymlConfig := s.buildYmlConfig(itemMap)
+	testCustomYmlConfig(t, ymlConfig, accountSchemaInfo, parsedItems)
+}
+
+func testCustomDefinitions(
+	t *testing.T,
+	schemaInfo *graphQLSchemaInfo,
+	parsedItems []schemaparser.ParsedItem,
+) {
+
+	assert.Equal(t, len(schemaInfo.nonEntFields), len(parsedItems))
+
+	for idx, field := range schemaInfo.nonEntFields {
+		item := parsedItems[idx]
+
+		assert.Equal(t, field.fieldName, item.GraphQLName)
+		assert.Equal(t, field.fieldType, item.Type.GetGraphQLType())
+		assert.Equal(t, len(field.args), len(item.Args))
+
+		for idx, arg := range field.args {
+			parsedArg := item.Args[idx]
+
+			assert.Equal(t, arg.fieldName, parsedArg.Name)
+			assert.Equal(t, arg.fieldType, parsedArg.Type.GetGraphQLType())
+		}
+	}
+}
+
+func testCustomYmlConfig(
+	t *testing.T,
+	cfg config.Config,
+	schemaInfo *graphQLSchemaInfo,
+	parsedItems []schemaparser.ParsedItem,
+) {
+
+	model := cfg.Models[schemaInfo.TypeName]
+	assert.NotNil(t, model)
+
+	for _, item := range parsedItems {
+		if strings.ToLower(item.GraphQLName) == strings.ToLower(item.FunctionName) {
+			continue
+		}
+
+		expEntry := config.TypeMapField{
+			FieldName: item.FunctionName,
+		}
+
+		assert.Equal(t, expEntry, model.Fields[item.GraphQLName])
+	}
+}
+
+func getFakeGeneratedFile() string {
+	return `
+	package models
+
+	import (
+		"github.com/lolopinto/ent/ent"
+		"github.com/lolopinto/ent/ent/privacy"
+	)
+
+	type Account struct {
+		ent.Node
+		privacy.AlwaysDenyPrivacyPolicy
+	}
+`
 }
 
 func testLine(t *testing.T, lineItem graphqlLineItem, expectedSchemaLine, itemName string) {

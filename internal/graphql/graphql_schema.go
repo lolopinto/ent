@@ -17,13 +17,14 @@ import (
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schemaparser"
+
 	"github.com/lolopinto/ent/internal/util"
 
 	"github.com/99designs/gqlgen/api"
 	"github.com/99designs/gqlgen/codegen/config"
 )
 
-// TODO break this into its own package
 type Step struct {
 }
 
@@ -56,18 +57,59 @@ func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
 	return &graphQLSchema{
 		config: data,
 		Types:  types,
-		//		Mutations:
 	}
 }
 
 func (schema *graphQLSchema) generateSchema() {
-	schema.generateGraphQLSchemaData()
+	validTypes := schema.generateGraphQLSchemaData()
+
+	itemMap, err := schemaparser.ParseCustomGraphQLDefinitions(
+		&schemaparser.ConfigSchemaParser{
+			AbsRootPath: schema.config.CodePath.GetAbsPathToModels(),
+		},
+		validTypes,
+	)
+	util.Die(err)
+
+	if len(itemMap) != 0 {
+		schema.handleCustomDefinitions(itemMap)
+	}
 
 	schema.writeGraphQLSchema()
 
-	schema.writeGQLGenYamlFile()
+	schema.writeGQLGenYamlFile(itemMap)
 
 	schema.generateGraphQLCode()
+}
+
+func (schema *graphQLSchema) handleCustomDefinitions(
+	itemMap map[string][]schemaparser.ParsedItem,
+) {
+
+	for nodeName, items := range itemMap {
+		schemaInfo, ok := schema.Types[nodeName]
+		if !ok {
+			util.Die(fmt.Errorf("invalid schema info %s retrieved", nodeName))
+		}
+
+		for _, item := range items {
+			field := &graphQLNonEntField{
+				fieldName: item.GraphQLName,
+				fieldType: item.Type.GetGraphQLType(),
+			}
+			if len(item.Args) > 0 {
+				args := make([]*graphQLArg, len(item.Args))
+				for idx, arg := range item.Args {
+					args[idx] = &graphQLArg{
+						fieldName: arg.Name,
+						fieldType: arg.Type.GetGraphQLType(),
+					}
+				}
+				field.args = args
+			}
+			schemaInfo.addNonEntField(field)
+		}
+	}
 }
 
 func (schema *graphQLSchema) addQueryField(f *graphQLNonEntField) {
@@ -163,7 +205,7 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 	s.addSchemaInfo(schemaInfo)
 }
 
-func (s *graphQLSchema) generateGraphQLSchemaData() {
+func (s *graphQLSchema) generateGraphQLSchemaData() map[string]bool {
 	s.addSchemaInfo(s.getNodeInterfaceType())
 
 	schema := s.config.Schema
@@ -172,6 +214,7 @@ func (s *graphQLSchema) generateGraphQLSchemaData() {
 		s.addSchemaInfo(s.getConnectionInterfaceType())
 	}
 
+	validTypes := make(map[string]bool)
 	nodeMap := schema.Nodes
 	for _, info := range nodeMap {
 		nodeData := info.NodeData
@@ -180,6 +223,7 @@ func (s *graphQLSchema) generateGraphQLSchemaData() {
 			continue
 		}
 
+		validTypes[nodeData.Node] = true
 		// add the GraphQL type e.g. User, Contact etc
 		s.addGraphQLInfoForType(nodeMap, nodeData)
 
@@ -191,6 +235,7 @@ func (s *graphQLSchema) generateGraphQLSchemaData() {
 	if mutationsType != nil {
 		s.addSchemaInfo(mutationsType)
 	}
+	return validTypes
 }
 
 func (s *graphQLSchema) processActions(actionInfo *action.ActionInfo) {
@@ -429,18 +474,76 @@ func (s *graphQLSchema) writeGraphQLSchema() {
 	})
 }
 
-func (s *graphQLSchema) writeGQLGenYamlFile() {
-	// TODO use 	"github.com/99designs/gqlgen/codegen/config
-	c := newGraphQLYamlConfig()
+func (s *graphQLSchema) buildYmlConfig(
+	itemMap map[string][]schemaparser.ParsedItem,
+) config.Config {
+	cfg := config.Config{
+		SchemaFilename: []string{
+			"graphql/schema.graphql",
+		},
+		Exec: config.PackageConfig{
+			Filename: "graphql/generated.go",
+			Package:  "graphql",
+		},
+		Model: config.PackageConfig{
+			Filename: "graphql/models_gen.go",
+			Package:  "graphql",
+		},
+		// don't need this since we're handling this ourselves
+		// Resolver: config.PackageConfig{
+		// 	Filename: "graphql/resolver.go",
+		// 	Package:  "graphql",
+		// 	Type:     "Resolver",
+		// },
+	}
 
-	c.addSchema()
-	c.addModelsConfig(s)
-	c.addExecConfig()
-	c.addModelConfig()
-	///c.addResolverConfig() // don't need this since we're handling this ourselves
+	pathToModels := s.config.CodePath.GetImportPathToModels()
 
+	models := make(config.TypeMap)
+
+	for _, info := range s.config.Schema.Nodes {
+		nodeData := info.NodeData
+
+		if nodeData.HideFromGraphQL {
+			continue
+		}
+
+		entry := config.TypeMapEntry{
+			Model: []string{
+				fmt.Sprintf(
+					// e.g. github.com/lolopinto/jarvis/models.User
+					"%s.%s",
+					pathToModels,
+					nodeData.Node,
+				),
+			},
+		}
+
+		items, ok := itemMap[nodeData.Node]
+		if ok {
+			entry.Fields = make(map[string]config.TypeMapField)
+			for _, item := range items {
+				// should only need this if GraphQLName != FunctionName
+				if strings.ToLower(item.GraphQLName) == strings.ToLower(item.FunctionName) {
+					continue
+				}
+				entry.Fields[item.GraphQLName] = config.TypeMapField{
+					FieldName: item.FunctionName,
+				}
+			}
+		}
+
+		models[nodeData.Node] = entry
+	}
+	cfg.Models = models
+	return cfg
+}
+
+func (s *graphQLSchema) writeGQLGenYamlFile(
+	itemMap map[string][]schemaparser.ParsedItem,
+) {
 	file.Write(&file.YamlFileWriter{
-		Data:              c.m,
+		Data:              s.buildYmlConfig(itemMap),
 		PathToFile:        "graphql/gqlgen.yml",
 		CreateDirIfNeeded: true,
 	})
@@ -650,77 +753,6 @@ func (s *graphQLSchemaInfo) GetOpeningSchemaLine() string {
 		return fmt.Sprintf("%s %s {", s.Type, s.TypeName)
 	}
 	return fmt.Sprintf("%s %s implements %s {", s.Type, s.TypeName, strings.Join(s.interfaces, "&"))
-}
-
-type graphQLYamlConfig struct {
-	m map[interface{}]interface{}
-}
-
-func newGraphQLYamlConfig() *graphQLYamlConfig {
-	m := make(map[interface{}]interface{})
-	return &graphQLYamlConfig{
-		m: m,
-	}
-}
-
-func (c *graphQLYamlConfig) addEntry(key, value interface{}) {
-	c.m[key] = value
-}
-
-func (c *graphQLYamlConfig) addSchema() {
-	c.addEntry("schema", []string{"graphql/schema.graphql"})
-}
-
-func (c *graphQLYamlConfig) addModelsConfig(s *graphQLSchema) {
-	// this creates a nested models: User: path_to_model map in here
-	models := make(map[string]interface{})
-
-	pathToModels, err := strconv.Unquote(s.config.CodePath.PathToModels)
-	util.Die(err)
-	for _, info := range s.config.Schema.Nodes {
-		nodeData := info.NodeData
-
-		if nodeData.HideFromGraphQL {
-			continue
-		}
-
-		model := make(map[string]string)
-
-		model["model"] = fmt.Sprintf(
-			// e.g. github.com/lolopinto/jarvis/models.User
-			"%s.%s",
-			pathToModels,
-			nodeData.Node,
-		)
-		models[nodeData.Node] = model
-	}
-
-	c.addEntry("models", models)
-}
-
-func (c *graphQLYamlConfig) addExecConfig() {
-	exec := make(map[string]string)
-	exec["filename"] = "graphql/generated.go"
-	exec["package"] = "graphql"
-
-	c.addEntry("exec", exec)
-}
-
-func (c *graphQLYamlConfig) addModelConfig() {
-	model := make(map[string]string)
-	model["filename"] = "graphql/models_gen.go"
-	model["package"] = "graphql"
-
-	c.addEntry("model", model)
-}
-
-func (c *graphQLYamlConfig) addResolverConfig() {
-	resolver := make(map[string]string)
-	resolver["filename"] = "graphql/resolver.go"
-	resolver["type"] = "Resolver"
-	resolver["package"] = "graphql"
-
-	c.addEntry("resolver", resolver)
 }
 
 // wrapper object to represent the list of schema types that will be passed to a schema template file

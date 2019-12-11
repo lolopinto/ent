@@ -16,8 +16,8 @@
 {{end}}
 
 {{with .CodePath -}}
-	{{reserveImport .PathToModels}}
-  {{reserveImport .PathToConfigs}}
+	{{reserveImport .GetQuotedImportPathToModels}}
+  {{reserveImport .GetQuotedImportPathToConfigs}}
 
 {{end -}}
 

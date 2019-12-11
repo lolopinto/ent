@@ -18,3 +18,14 @@ func (user *User) GetPrivacyPolicy() ent.PrivacyPolicy {
 		},
 	}
 }
+
+// GetUserFoo blah blah blah
+// @graphql
+func (user *User) GetUserFoo() string {
+	return "foo"
+}
+
+// @graphql
+func (user *User) Baz() *float64 {
+	return nil
+}

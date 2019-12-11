@@ -18,3 +18,19 @@ func (contact *Contact) GetPrivacyPolicy() ent.PrivacyPolicy {
 		},
 	}
 }
+
+// GetContactFoo blah blah blah
+// @graphql
+func (contact *Contact) GetContactFoo() string {
+	return "foo"
+}
+
+// @graphql
+
+func (contact *Contact) GetContactBar(foo int) int {
+	return foo + 1
+}
+
+func (contact *Contact) GetBaz() float64 {
+	return 0
+}

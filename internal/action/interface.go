@@ -11,6 +11,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/field"
@@ -19,7 +20,7 @@ import (
 
 type NonEntField struct {
 	FieldName string
-	FieldType field.FieldType
+	FieldType enttype.FieldType
 	Flag      string
 	NodeType  string
 }

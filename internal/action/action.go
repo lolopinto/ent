@@ -8,6 +8,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 
 	"github.com/lolopinto/ent/internal/field"
 
@@ -250,12 +251,12 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 				[]*NonEntField{
 					&NonEntField{
 						FieldName: assocGroup.GroupStatusName,
-						FieldType: &field.StringType{},
+						FieldType: &enttype.StringType{},
 						Flag:      "Enum",
 					},
 					&NonEntField{
 						FieldName: strcase.ToCamel(node + "ID"),
-						FieldType: &field.StringType{},
+						FieldType: &enttype.StringType{},
 						Flag:      "ID",
 						NodeType:  fmt.Sprintf("models.%sType", node), // TODO should take it from codegenInfo
 					},

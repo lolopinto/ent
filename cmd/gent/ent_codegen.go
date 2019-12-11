@@ -11,22 +11,14 @@ import (
 
 func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Schema {
 	p := &schemaparser.ConfigSchemaParser{
-		RootPath: rootPath,
+		AbsRootPath: rootPath,
 	}
 
 	return schema.Parse(p, specificConfigs...)
 }
 
-// parseSchemasFromSource is mostly used by tests to test quick one-off scenarios
-func parseSchemasFromSource(sources map[string]string, specificConfigs ...string) *schema.Schema {
-	p := &schemaparser.SourceSchemaParser{
-		Sources: sources,
-	}
-	return schema.Parse(p, specificConfigs...)
-}
-
-func parseSchemasAndGenerate(rootPath string, specificConfig string, codePathInfo *codegen.CodePath) {
-	schema := parseAllSchemaFiles(rootPath, specificConfig)
+func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig string) {
+	schema := parseAllSchemaFiles(codePathInfo.GetRootPathToConfigs(), specificConfig)
 
 	if len(schema.Nodes) == 0 {
 		return

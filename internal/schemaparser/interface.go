@@ -20,8 +20,8 @@ type ParserNeedsCleanup interface {
 }
 
 type ConfigSchemaParser struct {
-	RootPath      string
-	DisableSyntax bool
+	AbsRootPath string
+	//DisableSyntax bool
 }
 
 func (p *ConfigSchemaParser) GetConfig() (*packages.Config, string, error) {
@@ -35,13 +35,13 @@ func (p *ConfigSchemaParser) GetConfig() (*packages.Config, string, error) {
 		// this is a lot slower than the old thing. what am I doing wrong or differently?
 		Mode: mode,
 	}
-	absPath, err := filepath.Abs(p.RootPath)
-	return cfg, absPath, err
+	return cfg, p.AbsRootPath, nil
 }
 
 type SourceSchemaParser struct {
-	Sources map[string]string
-	tempDir string
+	Sources     map[string]string
+	PackageName string // defaults to configs if not passed
+	tempDir     string
 }
 
 func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
@@ -54,7 +54,10 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 	p.tempDir, err = ioutil.TempDir(path, "test")
 	util.Die(err)
 
-	configDir := filepath.Join(p.tempDir, "configs")
+	if p.PackageName == "" {
+		p.PackageName = "configs"
+	}
+	configDir := filepath.Join(p.tempDir, p.PackageName)
 	err = os.MkdirAll(configDir, 0666)
 	util.Die(err)
 
