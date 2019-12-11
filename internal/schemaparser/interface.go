@@ -39,8 +39,9 @@ func (p *ConfigSchemaParser) GetConfig() (*packages.Config, string, error) {
 }
 
 type SourceSchemaParser struct {
-	Sources map[string]string
-	tempDir string
+	Sources     map[string]string
+	PackageName string // defaults to configs if not passed
+	tempDir     string
 }
 
 func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
@@ -53,7 +54,10 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 	p.tempDir, err = ioutil.TempDir(path, "test")
 	util.Die(err)
 
-	configDir := filepath.Join(p.tempDir, "configs")
+	if p.PackageName == "" {
+		p.PackageName = "configs"
+	}
+	configDir := filepath.Join(p.tempDir, p.PackageName)
 	err = os.MkdirAll(configDir, 0666)
 	util.Die(err)
 

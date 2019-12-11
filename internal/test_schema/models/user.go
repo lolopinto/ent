@@ -29,12 +29,3 @@ func (user *User) GetUserFoo() string {
 func (user *User) Baz() *float64 {
 	return nil
 }
-
-type Bar struct {
-}
-
-// GetFoo does crap
-// @graphql
-func (b Bar) GetFoo() string {
-	return "foo 2.0"
-}

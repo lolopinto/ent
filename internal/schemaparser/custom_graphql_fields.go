@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/enttype"
@@ -43,56 +42,36 @@ func (l *parsedList) AddItem(item ParsedItem) {
 	l.items[item.NodeName] = append(l.items[item.NodeName], item)
 }
 
-func ParseCustomGraphQLDefinitions(path string, validTypes map[string]bool) (map[string][]ParsedItem, error) {
-	mode := packages.LoadTypes | packages.LoadSyntax
-	cfg := &packages.Config{Mode: mode}
-
-	pkgs, err := packages.Load(cfg, path)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO error list type again...
-	hasErrors := false
-	for _, pkg := range pkgs {
-		if len(pkg.Errors) > 0 {
-			for _, err := range pkg.Errors {
-				spew.Dump("err: ", err)
-				hasErrors = true
-			}
-		}
-	}
-
-	if hasErrors {
-		return nil, errors.New("error parsing package")
-	}
+func ParseCustomGraphQLDefinitions(parser Parser, validTypes map[string]bool) (map[string][]ParsedItem, error) {
+	// LoadPackage enforces only 1 package returned and that files are the same.
+	// if that changes in the future, we need to change this
+	pkg := LoadPackage(parser)
 
 	l := &parsedList{}
 	var wg sync.WaitGroup
 
 	r := regexp.MustCompile(`(\w+)_gen.go`)
 	var errr error
-	for _, pkg := range pkgs {
 
-		for idx := range pkg.CompiledGoFiles {
-			idx := idx
-			filename := pkg.CompiledGoFiles[idx]
-			match := r.FindStringSubmatch(filename)
-			// we don't want generated files
-			if len(match) == 2 {
-				continue
-			}
-
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				err := checkForCustom(filename, pkg, pkg.Syntax[idx], validTypes, l)
-				if err != nil {
-					errr = err
-				}
-			}()
+	for idx := range pkg.CompiledGoFiles {
+		idx := idx
+		filename := pkg.CompiledGoFiles[idx]
+		match := r.FindStringSubmatch(filename)
+		// we don't want generated files
+		if len(match) == 2 {
+			continue
 		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := checkForCustom(filename, pkg, pkg.Syntax[idx], validTypes, l)
+			if err != nil {
+				errr = err
+			}
+		}()
 	}
+
 	wg.Wait()
 	if errr != nil {
 		return nil, errr
@@ -135,11 +114,12 @@ func checkForCustom(
 		graphqlNode := ""
 		for _, field := range fn.Recv.List {
 			info := astparser.GetFieldTypeInfo(field)
-			// TODO Bar not valid and we should eventually throw an error here
-			if validTypes[info.Name] {
-				graphqlNode = info.Name
-				break
+			if !validTypes[info.Name] {
+				return fmt.Errorf("invalid type %s should not have @graphql decoration", info.Name)
 			}
+
+			graphqlNode = info.Name
+			break
 		}
 		if graphqlNode == "" {
 			continue

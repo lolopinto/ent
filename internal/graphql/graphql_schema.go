@@ -63,7 +63,12 @@ func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
 func (schema *graphQLSchema) generateSchema() {
 	validTypes := schema.generateGraphQLSchemaData()
 
-	itemMap, err := schemaparser.ParseCustomGraphQLDefinitions(schema.config.CodePath.GetAbsPathToModels(), validTypes)
+	itemMap, err := schemaparser.ParseCustomGraphQLDefinitions(
+		&schemaparser.ConfigSchemaParser{
+			AbsRootPath: schema.config.CodePath.GetAbsPathToModels(),
+		},
+		validTypes,
+	)
 	util.Die(err)
 	//	spew.Dump(itemMap)
 

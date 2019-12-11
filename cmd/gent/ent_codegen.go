@@ -17,14 +17,6 @@ func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Sch
 	return schema.Parse(p, specificConfigs...)
 }
 
-// parseSchemasFromSource is mostly used by tests to test quick one-off scenarios
-func parseSchemasFromSource(sources map[string]string, specificConfigs ...string) *schema.Schema {
-	p := &schemaparser.SourceSchemaParser{
-		Sources: sources,
-	}
-	return schema.Parse(p, specificConfigs...)
-}
-
 func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig string) {
 	schema := parseAllSchemaFiles(codePathInfo.GetRootPathToConfigs(), specificConfig)
 
