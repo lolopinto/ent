@@ -12,6 +12,8 @@ required.add_argument('-s', '--schema', help='path to the folder the generated s
 required.add_argument('-e', '--engine', help='URL to connect to the database', required=True)
 parser.add_argument('-f', '--fix_edges', help='fix edges in schema into db')
 parser.add_argument('-u', '--upgrade', help='upgrade')
+# this is getting bad and needs to be changed soon to something that's more extensible and makes more sense
+parser.add_argument('-d', '--downgrade', help='downgrade')
 
 if __name__ == "__main__" :
   # TODO we need to support running each of the alembic commands directly e.g. upgrade head, upgrade +1, downgrade -1, current, history, etc
@@ -29,6 +31,8 @@ if __name__ == "__main__" :
     r = runner.Runner.from_command_line(metadata, args)
     if args.upgrade:
       r.upgrade()
+    elif args.downgrade is not None:
+      r.downgrade(args.downgrade)
     else:
       r.run()
   

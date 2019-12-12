@@ -20,12 +20,14 @@ var (
 	pathToConfig   string
 	specificConfig string
 	upgrade        bool
+	downgrade      string
 )
 
 func init() {
 	flag.StringVarP(&pathToConfig, "path", "p", "", "Path of config files")
 	flag.StringVarP(&specificConfig, "config", "c", "", "Specific EntConfig to codegen")
 	flag.BoolVar(&upgrade, "upgrade", false, "upgrade db")
+	flag.StringVarP(&downgrade, "downgrade", "d", "", "downgrade db")
 }
 
 func main() {
@@ -33,15 +35,10 @@ func main() {
 
 	printUsageIfNecessary()
 
-	// absolute path
-	// dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println(dir)
-
 	if upgrade {
 		db.UpgradeDB()
+	} else if downgrade != "" {
+		db.DowngradeDB(downgrade)
 	} else {
 		codePathInfo := getPathToCode(pathToConfig)
 		parseSchemasAndGenerate(codePathInfo, specificConfig)
@@ -106,6 +103,8 @@ func printUsageIfNecessary() {
 	if flag.NFlag() == 0 {
 		printOptions()
 		os.Exit(1)
+	} else if upgrade || downgrade != "" {
+		return
 	} else if pathToConfig == "" {
 		printOptions()
 		fmt.Println("Need to pass in path to config files")

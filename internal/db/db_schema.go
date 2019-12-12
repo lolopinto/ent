@@ -296,15 +296,15 @@ func (s *dbSchema) generateShemaTables() {
 	})
 }
 
-func runPythonCommand(upgrade bool) {
+func runPythonCommand(extraArgs ...string) {
 	args := []string{
 		util.GetAbsolutePath("../../python/auto_schema/gen_db_schema.py"),
 		// TODO: this should be changed to use path to configs
 		"-s=models/configs",
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	}
-	if upgrade {
-		args = append(args, "-u=True")
+	if len(extraArgs) > 0 {
+		args = append(args, extraArgs...)
 	}
 	cmd := exec.Command("python3", args...)
 	cmd.Stdout = os.Stdout
@@ -316,11 +316,15 @@ func runPythonCommand(upgrade bool) {
 }
 
 func (s *dbSchema) generateDbSchema() {
-	runPythonCommand(false)
+	runPythonCommand()
 }
 
 func UpgradeDB() {
-	runPythonCommand(true)
+	runPythonCommand("-u=True")
+}
+
+func DowngradeDB(revision string) {
+	runPythonCommand(fmt.Sprintf("-d=%s", revision))
 }
 
 func (s *dbSchema) writeSchemaFile() {

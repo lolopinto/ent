@@ -220,4 +220,7 @@ class Runner(object):
 
   def upgrade(self):
     self.cmd.upgrade()
-    
+
+
+  def downgrade(self, revision):
+    self.cmd.downgrade(revision)    
