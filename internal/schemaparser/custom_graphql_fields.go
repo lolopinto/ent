@@ -21,6 +21,8 @@ type ParsedItem struct {
 	FunctionName string // FunctionName
 	Type         enttype.FieldType
 	Args         []Argument // input arguments
+	// TODO rename Argument to Field or something similar to Ast
+	Results []Argument // results when there's more than one result // Type should be null at that point...
 }
 
 type Argument struct {
@@ -42,7 +44,28 @@ func (l *parsedList) AddItem(item ParsedItem) {
 	l.items[item.NodeName] = append(l.items[item.NodeName], item)
 }
 
-func ParseCustomGraphQLDefinitions(parser Parser, validTypes map[string]bool) (map[string][]ParsedItem, error) {
+type CustomCodeParser interface {
+	ReceiverRequired() bool
+}
+
+type CustomCodeParserWithReceiver interface {
+	CustomCodeParser
+	ValidateFnReceiver(name string) error
+}
+
+type ParseCustomGQLResult struct {
+	// TODO add a type def for this
+	ParsedItems map[string][]ParsedItem
+	Error       error
+}
+
+func ParseCustomGraphQLDefinitions(parser Parser, codeParser CustomCodeParser) chan ParseCustomGQLResult {
+	result := make(chan ParseCustomGQLResult)
+	go parseCustomGQL(parser, codeParser, result)
+	return result
+}
+
+func parseCustomGQL(parser Parser, codeParser CustomCodeParser, out chan ParseCustomGQLResult) {
 	// LoadPackage enforces only 1 package returned and that files are the same.
 	// if that changes in the future, we need to change this
 	pkg := LoadPackage(parser)
@@ -65,7 +88,7 @@ func ParseCustomGraphQLDefinitions(parser Parser, validTypes map[string]bool) (m
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := checkForCustom(filename, pkg, pkg.Syntax[idx], validTypes, l)
+			err := checkForCustom(filename, pkg, pkg.Syntax[idx], codeParser, l)
 			if err != nil {
 				errr = err
 			}
@@ -73,17 +96,20 @@ func ParseCustomGraphQLDefinitions(parser Parser, validTypes map[string]bool) (m
 	}
 
 	wg.Wait()
+	var result ParseCustomGQLResult
 	if errr != nil {
-		return nil, errr
+		result.Error = errr
+	} else {
+		result.ParsedItems = l.items
 	}
-	return l.items, nil
+	out <- result
 }
 
 func checkForCustom(
 	filename string,
 	pkg *packages.Package,
 	file *ast.File,
-	validTypes map[string]bool,
+	codeParser CustomCodeParser,
 	l *parsedList,
 ) error {
 	expectedFnNames := map[string]bool{
@@ -112,19 +138,22 @@ func checkForCustom(
 		}
 
 		graphqlNode := ""
-		for _, field := range fn.Recv.List {
-			info := astparser.GetFieldTypeInfo(field)
-			if !validTypes[info.Name] {
-				return fmt.Errorf("invalid type %s should not have @graphql decoration", info.Name)
+
+		validateFnParser, ok := codeParser.(CustomCodeParserWithReceiver)
+		if ok {
+			for _, field := range fn.Recv.List {
+				info := astparser.GetFieldTypeInfo(field)
+				if err := validateFnParser.ValidateFnReceiver(info.Name); err != nil {
+					return err
+				}
+
+				graphqlNode = info.Name
+				break
 			}
-
-			graphqlNode = info.Name
-			break
-		}
-		if graphqlNode == "" {
-			continue
 		}
 
+		// hmm GetPrivacyPolicy and other overriden methods here
+		// where should this logic be?
 		if expectedFnNames[fn.Name.Name] {
 			continue
 		}
@@ -136,12 +165,17 @@ func checkForCustom(
 			diff := cg.End() + 2 - fn.Pos()
 			if diff >= 0 && diff <= 1 {
 
-				if !fn.Name.IsExported() {
-					return fmt.Errorf("graphql function %s is not exported", fn.Name.Name)
-				}
-				// fn is not a method, return an error
-				if fn.Recv == nil {
-					return fmt.Errorf("graphql function %s is not on a valid receiver", fn.Name.Name)
+				// fn is not a method and this is required return an error
+				// TODO this is conflating multiple things as of right now.
+				// Let's see how this changes and if we can come up with a generic term for this
+				if codeParser.ReceiverRequired() {
+					if fn.Recv == nil {
+						return fmt.Errorf("graphql function %s is not on a valid receiver", fn.Name.Name)
+					}
+
+					if !fn.Name.IsExported() {
+						return fmt.Errorf("graphql function %s is not exported", fn.Name.Name)
+					}
 				}
 
 				if err := addItem(fn, pkg, cg, l, graphqlNode); err != nil {
@@ -161,32 +195,88 @@ func addItem(
 	l *parsedList,
 	graphqlNode string,
 ) error {
-	results := fn.Type.Results.List
-	if len(results) != 1 {
-		return errors.New("TODO: need to handle objects with more than one result")
-	}
 	fnName := fn.Name.Name
 
-	resultType := pkg.TypesInfo.TypeOf(results[0].Type)
+	// TODO: or mutation
+	if graphqlNode == "" {
+		graphqlNode = "Query"
+	}
+
 	item := ParsedItem{
 		NodeName:     graphqlNode,
 		FunctionName: fnName,
 		// remove Get prefix if it exists
 		GraphQLName: strcase.ToLowerCamel(strings.TrimPrefix(fnName, "Get")),
-		Type:        enttype.GetType(resultType),
 	}
 
-	for _, param := range fn.Type.Params.List {
-		if len(param.Names) != 1 {
-			return errors.New("invalid number of names for param")
+	if err := modifyItemFromCG(cg, &item); err != nil {
+		return err
+	}
+
+	results := fn.Type.Results.List
+	// TODO need to handle objects with no result...
+
+	if len(results) == 1 {
+		resultType := pkg.TypesInfo.TypeOf(results[0].Type)
+		item.Type = enttype.GetType(resultType)
+	} else {
+
+		args, err := getArgs(pkg, results)
+		if err != nil {
+			return err
 		}
-		paramType := pkg.TypesInfo.TypeOf(param.Type)
+		item.Results = args
+	}
+	// next step, awareness of context in argument, last result including error?
+	// or that's a different layer?
+
+	args, err := getArgs(pkg, fn.Type.Params.List)
+	if err != nil {
+		return err
+	}
+	item.Args = args
+	l.AddItem(item)
+	return nil
+}
+
+func getArgs(pkg *packages.Package, list []*ast.Field) ([]Argument, error) {
+	args := make([]Argument, len(list))
+	for idx, item := range list {
+		// name required for now. TODO...
+
+		if len(item.Names) != 1 {
+			return nil, errors.New("invalid number of names for param")
+		}
+		paramType := pkg.TypesInfo.TypeOf(item.Type)
 		arg := Argument{
-			Name: param.Names[0].Name,
+			Name: item.Names[0].Name,
 			Type: enttype.GetType(paramType),
 		}
-		item.Args = append(item.Args, arg)
+		args[idx] = arg
 	}
-	l.AddItem(item)
+	return args, nil
+}
+
+func modifyItemFromCG(cg *ast.CommentGroup, item *ParsedItem) error {
+	splits := strings.Split(cg.Text(), "\n")
+	for _, s := range splits {
+		if strings.HasPrefix(s, "@graphql") {
+			parts := strings.Split(s, " ")
+			if len(parts) == 1 {
+				// nothing to do here
+				return nil
+			}
+			// override the name we should use
+			item.GraphQLName = parts[1]
+
+			if len(parts) > 2 {
+				if parts[2] != "Query" && parts[2] != "Mutation" {
+					return errors.New("invalid query/Mutation syntax")
+				}
+				item.NodeName = parts[2]
+			}
+			return nil
+		}
+	}
 	return nil
 }

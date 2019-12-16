@@ -294,24 +294,27 @@ func (account *Account) GetFoo(baz int) string {
 	accountSchemaInfo := newGraphQLSchemaInfo("type", "Account")
 	s.addSchemaInfo(accountSchemaInfo)
 
-	itemMap, err := schemaparser.ParseCustomGraphQLDefinitions(
+	resultChan := schemaparser.ParseCustomGraphQLDefinitions(
 		&schemaparser.SourceSchemaParser{
 			PackageName: "models",
 			Sources:     sources,
 		},
-		map[string]bool{
-			"Account": true,
+		&customEntParser{
+			validTypes: map[string]bool{
+				"Account": true,
+			},
 		},
 	)
-	assert.Nil(t, err)
-	assert.NotNil(t, itemMap)
+	result := <-resultChan
+	assert.Nil(t, result.Error)
+	assert.NotNil(t, result.ParsedItems)
 
-	parsedItems := itemMap["Account"]
+	parsedItems := result.ParsedItems["Account"]
 
-	s.handleCustomDefinitions(itemMap)
+	s.handleCustomDefinitions(result.ParsedItems)
 	testCustomDefinitions(t, accountSchemaInfo, parsedItems)
 
-	ymlConfig := s.buildYmlConfig(itemMap)
+	ymlConfig := s.buildYmlConfig(result.ParsedItems)
 	testCustomYmlConfig(t, ymlConfig, accountSchemaInfo, parsedItems)
 }
 

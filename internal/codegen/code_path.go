@@ -55,3 +55,7 @@ func (cp *CodePath) AppendPathToModels(paths ...string) string {
 func (cp *CodePath) GetAbsPathToModels() string {
 	return filepath.Join(cp.absPathToConfigs, "..")
 }
+
+func (cp *CodePath) GetAbsPathToGraphQL() string {
+	return filepath.Join(cp.importPathToRoot, "graphql")
+}

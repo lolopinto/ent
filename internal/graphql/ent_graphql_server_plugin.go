@@ -2,7 +2,6 @@ package graphql
 
 import (
 	"io/ioutil"
-	"path/filepath"
 
 	"github.com/99designs/gqlgen/codegen"
 	"github.com/99designs/gqlgen/codegen/templates"
@@ -32,7 +31,7 @@ func readTemplateFile(fileName string) string {
 }
 
 func (p *entGraphQLServerPlugin) GenerateCode(data *codegen.Data) error {
-	graphqlPath := filepath.Join(p.codePath.GetImportPathToRoot(), "graphql")
+	graphqlPath := p.codePath.GetAbsPathToGraphQL()
 	serverBuild := &ServerBuild{
 		ExecPackageName:     graphqlPath,
 		ResolverPackageName: graphqlPath,

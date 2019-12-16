@@ -24,6 +24,11 @@ type FieldWithOverridenStructType interface {
 	GetStructType() string
 }
 
+type FieldWithUnderlyingType interface {
+	GetUnderlyingType() types.Type
+	getTypeName() string
+}
+
 type StringType struct{}
 
 func (t *StringType) GetDBType() string {
@@ -231,37 +236,58 @@ func (t *NullableTimeType) GetGraphQLType() string {
 	return "Time"
 }
 
-type NamedType struct {
+type fieldWithUnderlyingType struct {
 	actualType types.Type
+	FieldWithUnderlyingType
 }
 
-func (t *NamedType) getUnderlyingType() FieldType {
+func (t *fieldWithUnderlyingType) GetUnderlyingType() types.Type {
+	return t.actualType
+}
+
+func (t *fieldWithUnderlyingType) getUnderlyingType() FieldType {
 	return GetType(t.actualType.Underlying())
 }
 
-func (t *NamedType) GetDBType() string {
+func (t *fieldWithUnderlyingType) GetDBType() string {
 	return t.getUnderlyingType().GetDBType()
 }
 
-func (t *NamedType) GetGraphQLType() string {
+func (t *fieldWithUnderlyingType) GetGraphQLType() string {
 	return t.getUnderlyingType().GetGraphQLType()
 }
 
-func (t *NamedType) GetCastToMethod() string {
-	panic("GetCastToMethod of NamedType not implemented yet!")
+func (t *fieldWithUnderlyingType) GetCastToMethod() string {
+	panic(fmt.Errorf("GetCastToMethod of %s not implemented yet!", t.getTypeName()))
 }
 
-func (t *NamedType) GetZeroValue() string {
-	panic("GetZeroValue of NamedType not implemented yet!")
+func (t *fieldWithUnderlyingType) GetZeroValue() string {
+	panic(fmt.Errorf("GetZeroValue of %s not implemented yet!", t.getTypeName()))
 }
 
-func (t *NamedType) GetStructType() string {
+func (t *fieldWithUnderlyingType) GetStructType() string {
 	// get the string version of the type and return the filepath
 	// we can eventually use this to gather import paths...
 	// This converts something like "github.com/lolopinto/ent/ent.NodeType" to "ent.NodeType"
 	ret := t.actualType.String()
 	_, fp := filepath.Split(ret)
 	return fp
+}
+
+type NamedType struct {
+	fieldWithUnderlyingType
+}
+
+func (t *NamedType) getTypeName() string {
+	return "NamedType"
+}
+
+type PointerType struct {
+	fieldWithUnderlyingType
+}
+
+func (t *PointerType) getTypeName() string {
+	return "PointerType"
 }
 
 func GetType(typ types.Type) FieldType {
@@ -289,10 +315,16 @@ func GetType(typ types.Type) FieldType {
 	default:
 		switch typ.(type) {
 		case *types.Named:
-			return &NamedType{typ}
+			t := &NamedType{}
+			t.actualType = typ
+			return t
+		case *types.Pointer:
+			t := &PointerType{}
+			t.actualType = typ
+			return t
 		}
 	}
-	panic(fmt.Errorf("unsupported type %s for now", typ.String()))
+	panic(fmt.Errorf("unsupported type %s %T for now", typ.String(), typ))
 }
 
 // GetNullableType takes a type where the nullable-ness is not encoded in the type but alas
@@ -307,4 +339,20 @@ func GetNullableType(typ types.Type, nullable bool) FieldType {
 		return nullableType.GetNullableType()
 	}
 	panic(fmt.Errorf("couldn't find nullable version of type %s", types.TypeString(typ, nil)))
+}
+
+func IsErrorType(typ FieldType) bool {
+	namedType, ok := typ.(*NamedType)
+	if !ok {
+		return false
+	}
+	return namedType.actualType.String() == "error"
+}
+
+func IsContextType(typ FieldType) bool {
+	namedType, ok := typ.(*NamedType)
+	if !ok {
+		return false
+	}
+	return namedType.actualType.String() == "context.Context"
 }
