@@ -67,26 +67,29 @@
 	{{ $field := . -}}
 	{{ $fn := customQueryFn $field -}}
 
-	{{ reserveImport $fn.Function.ImportPath -}}
+	{{ if ne $fn.Function.ImportPath "" -}}
+		{{ reserveImport $fn.Function.ImportPath -}}
+	{{end -}}
 	
 	{{ $fnStr := $fn.GetFnCallDefinition -}}
 
-	{{if not $fn.ReturnsComplexType -}}
+	{{if $fn.ReturnsComplexType -}}
+		{{$fnStr}}
+		{{if $fn.ReturnsError -}}
+			if err != nil {
+				return nil, err
+			}
+		{{end }}
+
+		return &{{$field.TypeReference.Definition.Name}}{
+			{{range $result := $fn.GetResults -}}
+				{{$result.Key}}: {{$result.Variable}},
+			{{end -}}
+		}, nil
+	{{else -}}
 		return {{$fnStr}}
 	{{end -}}
 
-	{{$fnStr}}
-	{{if $fn.ReturnsError -}}
-		if err != nil {
-			return nil, err
-		}
-	{{end }}
-
-	return &{{$field.TypeReference.Definition.Name}}{
-		{{range $result := $fn.GetResults -}}
-			{{$result.Key}}: {{$result.Variable}},
-		{{end -}}
-	}, nil
 {{end -}}
 
 type {{.ResolverType}} struct {}

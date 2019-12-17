@@ -4,6 +4,7 @@ package graphql
 
 import (
 	"context"
+	"time"
 
 	"github.com/lolopinto/ent/internal/test_schema/graphql/auth"
 	"github.com/lolopinto/ent/internal/test_schema/models"
@@ -302,6 +303,10 @@ func (r *queryResolver) ContactEmail(ctx context.Context, id string) (*models.Co
 
 func (r *queryResolver) Event(ctx context.Context, id string) (*models.Event, error) {
 	return models.LoadEventFromContext(ctx, id)
+}
+
+func (r *queryResolver) ServerTime(ctx context.Context) (*time.Time, error) {
+	return serverTime()
 }
 
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {

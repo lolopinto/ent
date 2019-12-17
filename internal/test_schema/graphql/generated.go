@@ -127,6 +127,7 @@ type ComplexityRoot struct {
 		Contact      func(childComplexity int, id string) int
 		ContactEmail func(childComplexity int, id string) int
 		Event        func(childComplexity int, id string) int
+		ServerTime   func(childComplexity int) int
 		User         func(childComplexity int, id string) int
 	}
 
@@ -222,6 +223,7 @@ type QueryResolver interface {
 	Contact(ctx context.Context, id string) (*models.Contact, error)
 	ContactEmail(ctx context.Context, id string) (*models.ContactEmail, error)
 	Event(ctx context.Context, id string) (*models.Event, error)
+	ServerTime(ctx context.Context) (*time.Time, error)
 	User(ctx context.Context, id string) (*models.User, error)
 }
 type UserResolver interface {
@@ -656,6 +658,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Event(childComplexity, args["id"].(string)), true
 
+	case "Query.serverTime":
+		if e.complexity.Query.ServerTime == nil {
+			break
+		}
+
+		return e.complexity.Query.ServerTime(childComplexity), true
+
 	case "Query.user":
 		if e.complexity.Query.User == nil {
 			break
@@ -1023,6 +1032,7 @@ type Query {
     contact(id: ID!): Contact
     contactEmail(id: ID!): ContactEmail
     event(id: ID!): Event
+    serverTime: Time!
     user(id: ID!): User
 }
 
@@ -3177,6 +3187,43 @@ func (ec *executionContext) _Query_event(ctx context.Context, field graphql.Coll
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_serverTime(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().ServerTime(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6211,6 +6258,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_event(ctx, field)
 				return res
 			})
+		case "serverTime":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_serverTime(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "user":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -7099,6 +7160,24 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalNTime2timeᚐTime(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalNTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec.marshalNTime2timeᚐTime(ctx, sel, *v)
 }
 
 func (ec *executionContext) marshalNUser2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {

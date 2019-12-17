@@ -123,6 +123,7 @@ type Query {
     contact(id: ID!): Contact
     contactEmail(id: ID!): ContactEmail
     event(id: ID!): Event
+    serverTime: Time!
     user(id: ID!): User
 }
 
