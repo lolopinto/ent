@@ -6,7 +6,7 @@ type Step struct {
 }
 
 func (p *Step) Name() string {
-	return "ent_codegen"
+	return "codegen"
 }
 
 func (p *Step) ProcessData(data *codegen.Data) error {

@@ -31,7 +31,7 @@ type Step struct {
 }
 
 func (p *Step) Name() string {
-	return "graphql_plugin"
+	return "graphql"
 }
 
 func (p *Step) ProcessData(data *codegen.Data) error {
