@@ -5,6 +5,7 @@ package graphql
 import (
 	"context"
 
+	"github.com/lolopinto/ent/internal/test_schema/graphql/auth"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/contact/action"
 	action1 "github.com/lolopinto/ent/internal/test_schema/models/event/action"
@@ -280,7 +281,7 @@ func (r *mutationResolver) UserRemoveFriend(ctx context.Context, input UserRemov
 type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) AuthUser(ctx context.Context, email string, password string) (*AuthUserResult, error) {
-	user, token, err := authenticate(ctx, email, password)
+	user, token, err := auth.Authenticate(ctx, email, password)
 	if err != nil {
 		return nil, err
 	}

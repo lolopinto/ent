@@ -86,7 +86,9 @@ func (schema *graphQLSchema) generateSchema() {
 	// top level parser
 	topLevelChan := schemaparser.ParseCustomGraphQLDefinitions(
 		&schemaparser.ConfigSchemaParser{
-			AbsRootPath: schema.config.CodePath.GetAbsPathToGraphQL(),
+			AbsRootPath: schema.config.CodePath.GetAbsPathToGraphQL() + "...",
+			// To support changing other things that resolver.go  depends on and not have this fail on us
+			FilesToIgnore: []string{"resolver.go"},
 		},
 		&customTopLevelParser{},
 	)

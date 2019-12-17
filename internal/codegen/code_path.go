@@ -35,6 +35,10 @@ func (cp *CodePath) GetImportPathToModels() string {
 	return cp.importPathToModels
 }
 
+func (cp *CodePath) GetImportPathToGraphQL() string {
+	return filepath.Join(cp.importPathToRoot, "graphql")
+}
+
 func (cp *CodePath) GetQuotedImportPathToModels() string {
 	return strconv.Quote(cp.importPathToModels)
 }
@@ -57,5 +61,5 @@ func (cp *CodePath) GetAbsPathToModels() string {
 }
 
 func (cp *CodePath) GetAbsPathToGraphQL() string {
-	return filepath.Join(cp.importPathToRoot, "graphql")
+	return filepath.Join(cp.absPathToConfigs, "../..", "graphql")
 }

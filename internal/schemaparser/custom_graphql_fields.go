@@ -21,7 +21,8 @@ type ParsedItem struct {
 	Type         enttype.FieldType
 	Args         []Argument // input arguments
 	// TODO rename Argument to Field or something similar to Ast
-	Results []Argument // results when there's more than one result // Type should be null at that point...
+	Results    []Argument // results when there's more than one result // Type should be null at that point...
+	ImportPath string
 }
 
 type Argument struct {
@@ -66,30 +67,32 @@ func ParseCustomGraphQLDefinitions(parser Parser, codeParser CustomCodeParser) c
 }
 
 func parseCustomGQL(parser Parser, codeParser CustomCodeParser, out chan ParseCustomGQLResult) {
-	// LoadPackage enforces only 1 package returned and that files are the same.
-	// if that changes in the future, we need to change this
-	pkg := LoadPackage(parser)
+	pkgs := LoadPackages(parser)
 
 	l := &parsedList{}
 	var wg sync.WaitGroup
 
 	var errr error
 
-	for idx := range pkg.CompiledGoFiles {
+	for idx := range pkgs {
 		idx := idx
-		filename := pkg.CompiledGoFiles[idx]
-		if !codeParser.ProcessFileName(filename) {
-			continue
-		}
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			err := checkForCustom(filename, pkg, pkg.Syntax[idx], codeParser, l)
-			if err != nil {
-				errr = err
+		pkg := pkgs[idx]
+		for idx := range pkg.CompiledGoFiles {
+			idx := idx
+			filename := pkg.CompiledGoFiles[idx]
+			if !codeParser.ProcessFileName(filename) {
+				continue
 			}
-		}()
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				err := checkForCustom(parser, filename, pkg, pkg.Syntax[idx], codeParser, l)
+				if err != nil {
+					errr = err
+				}
+			}()
+		}
 	}
 
 	wg.Wait()
@@ -103,6 +106,7 @@ func parseCustomGQL(parser Parser, codeParser CustomCodeParser, out chan ParseCu
 }
 
 func checkForCustom(
+	parser Parser,
 	filename string,
 	pkg *packages.Package,
 	file *ast.File,
@@ -175,7 +179,7 @@ func checkForCustom(
 					}
 				}
 
-				if err := addItem(fn, pkg, cg, l, graphqlNode); err != nil {
+				if err := addItem(parser, fn, pkg, cg, l, graphqlNode); err != nil {
 					return err
 				}
 				break
@@ -186,6 +190,7 @@ func checkForCustom(
 }
 
 func addItem(
+	parser Parser,
 	fn *ast.FuncDecl,
 	pkg *packages.Package,
 	cg *ast.CommentGroup,
@@ -204,6 +209,12 @@ func addItem(
 		FunctionName: fnName,
 		// remove Get prefix if it exists
 		GraphQLName: strcase.ToLowerCamel(strings.TrimPrefix(fnName, "Get")),
+	}
+
+	if parser.GetPackageName() != pkg.Name {
+		item.FunctionName = pkg.Name + "." + item.FunctionName
+
+		item.ImportPath = pkg.PkgPath
 	}
 
 	if err := modifyItemFromCG(cg, &item); err != nil {

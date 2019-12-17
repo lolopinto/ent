@@ -31,7 +31,7 @@ func readTemplateFile(fileName string) string {
 }
 
 func (p *entGraphQLServerPlugin) GenerateCode(data *codegen.Data) error {
-	graphqlPath := p.codePath.GetAbsPathToGraphQL()
+	graphqlPath := p.codePath.GetImportPathToGraphQL()
 	serverBuild := &ServerBuild{
 		ExecPackageName:     graphqlPath,
 		ResolverPackageName: graphqlPath,

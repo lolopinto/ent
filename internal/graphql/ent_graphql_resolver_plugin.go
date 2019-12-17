@@ -192,7 +192,6 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 
 func newGraphQLResolverPlugin(s *graphQLSchema) plugin.Plugin {
 	return &entGraphQLResolverPlugin{
-		// TODO pass custom graphql functions here
 		schema:    s.config.Schema,
 		codePath:  s.config.CodePath,
 		gqlSchema: s,
