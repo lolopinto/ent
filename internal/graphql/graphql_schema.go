@@ -8,7 +8,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 
 	"github.com/lolopinto/ent/ent"
@@ -53,6 +52,8 @@ type graphQLSchema struct {
 	queryFields           []*graphQLNonEntField
 	mutationFields        []*graphQLNonEntField
 	pathsToGraphQLObjects map[string]string
+	queryCustomImpls      map[string]*customFunction
+	mutationCustomImpls   map[string]*customFunction
 }
 
 func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
@@ -60,11 +61,15 @@ func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
 	// TODO this is initially going to be just the ents but will eventually be used for
 	// config.TypeMapEntry in buildYmlConfig as it gets more complicated and we add other objects
 	pathsToGraphQLObjects := make(map[string]string)
+	queryCustomImpls := make(map[string]*customFunction)
+	mutationCustomImpls := make(map[string]*customFunction)
 
 	return &graphQLSchema{
 		config:                data,
 		Types:                 types,
 		pathsToGraphQLObjects: pathsToGraphQLObjects,
+		mutationCustomImpls:   mutationCustomImpls,
+		queryCustomImpls:      queryCustomImpls,
 	}
 }
 
@@ -118,13 +123,11 @@ func (schema *graphQLSchema) generateSchema() {
 	schema.handleCustomEntDefinitions(customEntResult)
 	util.Die(schema.handleCustomTopLevelDefinitions(topLevelResult))
 
-	spew.Dump(topLevelResult.ParsedItems)
-
 	schema.writeGraphQLSchema()
 
 	schema.writeGQLGenYamlFile(customEntResult)
 
-	//	schema.generateGraphQLCode()
+	schema.generateGraphQLCode()
 }
 
 func (schema *graphQLSchema) handleCustomEntDefinitions(
@@ -145,7 +148,7 @@ func (schema *graphQLSchema) handleCustomEntDefinitions(
 				fieldName: item.GraphQLName,
 				fieldType: item.Type.GetGraphQLType(),
 			}
-			schema.processArgsOfItem(item, field)
+			schema.processArgsOfItem(item, field, nil)
 			schemaInfo.addNonEntField(field)
 		}
 	}
@@ -164,11 +167,18 @@ func (schema *graphQLSchema) handleCustomTopLevelDefinitions(
 			return fmt.Errorf("invalid schema info %s retrieved", key)
 		}
 
+		if key != "Query" && key != "Mutation" {
+			return errors.New("invalid key")
+		}
+
 		for _, item := range items {
+
+			fn := &customFunction{Item: &item}
+
 			var itemType string
 			if item.Type == nil {
 				// need to make a new type
-				newSchemaInfo, err := schema.newSchemaFromResult(item, key)
+				newSchemaInfo, err := schema.newSchemaFromResult(item, key, fn)
 				if err != nil {
 					return err
 				}
@@ -180,36 +190,48 @@ func (schema *graphQLSchema) handleCustomTopLevelDefinitions(
 				fieldName: item.GraphQLName,
 				fieldType: itemType,
 			}
-			schema.processArgsOfItem(item, field)
+			schema.processArgsOfItem(item, field, fn)
 			schemaInfo.addNonEntField(field)
+
+			if key == "Query" {
+				schema.queryCustomImpls[item.GraphQLName] = fn
+			} else if key == "Mutation" {
+				schema.mutationCustomImpls[item.GraphQLName] = fn
+			}
 		}
 	}
 	return nil
 }
 
-func (schema *graphQLSchema) newSchemaFromResult(item schemaparser.ParsedItem, key string) (*graphQLSchemaInfo, error) {
+func (schema *graphQLSchema) newSchemaFromResult(
+	item schemaparser.ParsedItem,
+	key string,
+	customFn *customFunction,
+) (*graphQLSchemaInfo, error) {
 	if len(item.Results) == 0 {
 		return nil, errors.New("need results if type is nil")
 	}
+
+	customFn.ReturnsComplexType = true
+
 	var typeName string
 	if key == "Query" {
 		typeName = item.GraphQLName + "Result"
-	} else {
+	} else if key == "Mutation" {
 		typeName = item.GraphQLName + "Response"
 	}
 	newSchemaInfo := newGraphQLSchemaInfo("type", strcase.ToCamel(typeName))
 
 	for idx, result := range item.Results {
 		// if the last item is an error type don't add to graphql
-		// TODO need to flag this for the codegeneration step also
 		if idx == len(item.Results)-1 && enttype.IsErrorType(result.Type) {
+			customFn.ReturnsError = true
 			continue
 		}
 
 		// add each item as a result type...
 		newSchemaInfo.addNonEntField(&graphQLNonEntField{
 			fieldName: result.Name,
-			// TODO this is going to panic
 			fieldType: schema.getComplexGraphQLType(result.Type),
 		})
 	}
@@ -239,15 +261,21 @@ func (schema *graphQLSchema) getComplexGraphQLType(typ enttype.FieldType) string
 	panic(fmt.Errorf("couldn't find graphql type for %s", goPath))
 }
 
-func (schema *graphQLSchema) processArgsOfItem(item schemaparser.ParsedItem, field *graphQLNonEntField) {
+func (schema *graphQLSchema) processArgsOfItem(
+	item schemaparser.ParsedItem,
+	field *graphQLNonEntField,
+	customFn *customFunction,
+) {
 	if len(item.Args) == 0 {
 		return
 	}
 	var args []*graphQLArg
 	for idx, arg := range item.Args {
 		// don't add context type here.
-		// TODO need to track this for codegen
 		if idx == 0 && enttype.IsContextType(arg.Type) {
+			if customFn != nil {
+				customFn.SupportsContext = true
+			}
 			continue
 		}
 		args = append(args, &graphQLArg{
@@ -716,7 +744,7 @@ func (s *graphQLSchema) generateGraphQLCode() {
 	// We build on the default implementation they support and go from there.
 	err = api.Generate(
 		cfg,
-		api.AddPlugin(newGraphQLResolverPlugin(s.config)),
+		api.AddPlugin(newGraphQLResolverPlugin(s)),
 		api.AddPlugin(newGraphQLServerPlugin(s.config)),
 	)
 	util.Die(err)

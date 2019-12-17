@@ -6,9 +6,9 @@
 {{ reserveImport "errors"  }}
 {{ reserveImport "bytes"  }}
 
-{{define "action"}}
+{{define "action" -}}
 	{{ $field := . -}}
-	{{ $action := mutation $field -}}
+	{{ $action := action $field -}}
 	{{ $actionMethodName := actionMethodName $action -}}
 	{{ $nodeInfo := $action.GetNodeInfo -}}
 	{{ $node := $nodeInfo.Node -}}
@@ -61,7 +61,31 @@
 			{{$nodeInfo.Node}}: node,
 		{{end -}}
 	}, nil
-{{end}}
+{{end -}}
+
+{{define "customQueryFn" -}}
+	{{ $field := . -}}
+	{{ $fn := customQueryFn $field -}}
+
+	{{ $fnStr := $fn.GetFnCallDefinition -}}
+
+	{{if not $fn.ReturnsComplexType -}}
+		return {{$fnStr}}
+	{{end -}}
+
+	{{$fnStr}}
+	{{if $fn.ReturnsError -}}
+		if err != nil {
+			return nil, err
+		}
+	{{end }}
+
+	return &{{$field.TypeReference.Definition.Name}}{
+		{{range $result := $fn.GetResults -}}
+			{{$result.Key}}: {{$result.Variable}},
+		{{end -}}
+	}, nil
+{{end -}}
 
 type {{.ResolverType}} struct {}
 
@@ -89,8 +113,10 @@ type {{.ResolverType}} struct {}
 					return obj.Load{{$field.GoFieldName}}()
 				{{- else if pluralEdge $field -}}
 					return obj.Load{{$field.GoFieldName}}()
-				{{- else if mutation $field -}}
+				{{- else if action $field -}}
 					{{- template "action" $field -}}
+				{{- else if customQueryFn $field -}}
+					{{- template "customQueryFn" $field -}}
 				{{- else if groupEdgeEnum $field -}}
 					enum, err := obj.{{$field.GoFieldName}}ForGQL()
 					if err != nil {

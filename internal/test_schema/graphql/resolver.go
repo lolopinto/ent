@@ -279,6 +279,18 @@ func (r *mutationResolver) UserRemoveFriend(ctx context.Context, input UserRemov
 
 type queryResolver struct{ *Resolver }
 
+func (r *queryResolver) AuthUser(ctx context.Context, email string, password string) (*AuthUserResult, error) {
+	user, token, err := authenticate(ctx, email, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthUserResult{
+		User:  user,
+		Token: token,
+	}, nil
+}
+
 func (r *queryResolver) Contact(ctx context.Context, id string) (*models.Contact, error) {
 	return models.LoadContactFromContext(ctx, id)
 }

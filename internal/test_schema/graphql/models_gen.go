@@ -23,6 +23,11 @@ type Node interface {
 	IsNode()
 }
 
+type AuthUserResult struct {
+	Token string       `json:"token"`
+	User  *models.User `json:"user"`
+}
+
 type ContactCreateInput struct {
 	EmailAddress  string   `json:"emailAddress"`
 	Favorite      *bool    `json:"favorite"`

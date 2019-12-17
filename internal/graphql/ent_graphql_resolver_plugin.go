@@ -16,8 +16,9 @@ import (
 
 // inspired by resolvergen from gqlgen
 type entGraphQLResolverPlugin struct {
-	schema   *schema.Schema
-	codePath *intcodegen.CodePath
+	schema    *schema.Schema
+	codePath  *intcodegen.CodePath
+	gqlSchema *graphQLSchema
 }
 
 var _ plugin.CodeGenerator = &entGraphQLResolverPlugin{}
@@ -92,7 +93,7 @@ func (p *entGraphQLResolverPlugin) pluralEdge(field *codegen.Field) bool {
 	return assocEdge != nil
 }
 
-func (p *entGraphQLResolverPlugin) mutation(field *codegen.Field) action.Action {
+func (p *entGraphQLResolverPlugin) action(field *codegen.Field) action.Action {
 	if field.Object.Name != "Mutation" {
 		return nil
 	}
@@ -134,6 +135,21 @@ func (p *entGraphQLResolverPlugin) getActionPath(a action.Action) string {
 	return p.codePath.AppendPathToModels(strcase.ToSnake(a.GetNodeInfo().Node), "action")
 }
 
+func (p *entGraphQLResolverPlugin) customQueryFn(field *codegen.Field) *customFunction {
+	if field.Object.Name != "Query" {
+		return nil
+	}
+
+	return p.gqlSchema.queryCustomImpls[field.Name]
+}
+
+func (p *entGraphQLResolverPlugin) customMutationFn(field *codegen.Field) *customFunction {
+	if field.Object.Name != "Mutation" {
+		return nil
+	}
+	return p.gqlSchema.mutationCustomImpls[field.Name]
+}
+
 // ResolverBuild is the object passed to the template to generate the graphql code
 type ResolverBuild struct {
 	*codegen.Data
@@ -159,7 +175,7 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 			"loadObjectFromContext": p.loadObjectFromContext,
 			"fieldEdge":             p.fieldEdge,
 			"pluralEdge":            p.pluralEdge,
-			"mutation":              p.mutation,
+			"action":                p.action,
 			"actionMethodName":      action.GetActionMethodName,
 			"actionFields":          action.GetFields,
 			"actionEdges":           action.GetEdges,
@@ -168,14 +184,17 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 			"groupEdgeEnum":         p.groupEdgeEnum,
 			"groupEdgeEnumConst":    p.groupEdgeEnumConst,
 			"removeEdgeAction":      action.IsRemoveEdgeAction,
+			"customQueryFn":         p.customQueryFn,
+			"customMutationFn":      p.customMutationFn,
 		},
 	})
 }
 
-func newGraphQLResolverPlugin(data *intcodegen.Data) plugin.Plugin {
+func newGraphQLResolverPlugin(s *graphQLSchema) plugin.Plugin {
 	return &entGraphQLResolverPlugin{
 		// TODO pass custom graphql functions here
-		schema:   data.Schema,
-		codePath: data.CodePath,
+		schema:    s.config.Schema,
+		codePath:  s.config.CodePath,
+		gqlSchema: s,
 	}
 }
