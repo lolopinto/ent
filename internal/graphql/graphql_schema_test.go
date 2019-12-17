@@ -299,11 +299,11 @@ func (account *Account) GetFoo(baz int) string {
 			PackageName: "models",
 			Sources:     sources,
 		},
-		&customEntParser{
-			validTypes: map[string]bool{
+		newCustomEntParser(
+			map[string]bool{
 				"Account": true,
 			},
-		},
+		),
 	)
 	result := <-resultChan
 	assert.Nil(t, result.Error)

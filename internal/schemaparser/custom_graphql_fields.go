@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -46,6 +45,7 @@ func (l *parsedList) AddItem(item ParsedItem) {
 
 type CustomCodeParser interface {
 	ReceiverRequired() bool
+	ProcessFileName(string) bool
 }
 
 type CustomCodeParserWithReceiver interface {
@@ -73,15 +73,12 @@ func parseCustomGQL(parser Parser, codeParser CustomCodeParser, out chan ParseCu
 	l := &parsedList{}
 	var wg sync.WaitGroup
 
-	r := regexp.MustCompile(`(\w+)_gen.go`)
 	var errr error
 
 	for idx := range pkg.CompiledGoFiles {
 		idx := idx
 		filename := pkg.CompiledGoFiles[idx]
-		match := r.FindStringSubmatch(filename)
-		// we don't want generated files
-		if len(match) == 2 {
+		if !codeParser.ProcessFileName(filename) {
 			continue
 		}
 

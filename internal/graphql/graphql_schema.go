@@ -73,31 +73,6 @@ func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
 	}
 }
 
-type customEntParser struct {
-	// todo eliminate this and just use what's in this class
-	//schema *graphQLSchema
-	validTypes map[string]bool
-}
-
-func (p *customEntParser) ValidateFnReceiver(name string) error {
-	//	if p.schema.Types[name] == nil {
-	if !p.validTypes[name] {
-		return fmt.Errorf("invalid type %s should not have @graphql decoration", name)
-	}
-	return nil
-}
-
-func (p *customEntParser) ReceiverRequired() bool {
-	return true
-}
-
-type customTopLevelParser struct {
-}
-
-func (p *customTopLevelParser) ReceiverRequired() bool {
-	return false
-}
-
 func (schema *graphQLSchema) generateSchema() {
 	validTypes := schema.generateGraphQLSchemaData()
 
@@ -106,7 +81,7 @@ func (schema *graphQLSchema) generateSchema() {
 		&schemaparser.ConfigSchemaParser{
 			AbsRootPath: schema.config.CodePath.GetAbsPathToModels(),
 		},
-		&customEntParser{validTypes},
+		newCustomEntParser(validTypes),
 	)
 	// top level parser
 	topLevelChan := schemaparser.ParseCustomGraphQLDefinitions(
