@@ -1,6 +1,8 @@
 package schemaparser_test
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 	"testing"
 
@@ -15,6 +17,25 @@ func validTypes() map[string]bool {
 		"Contact": true,
 		"User":    true,
 	}
+}
+
+// custom_ent_parser for test
+type customEntParser struct {
+}
+
+func (p *customEntParser) ValidateFnReceiver(name string) error {
+	if !validTypes()[name] {
+		return fmt.Errorf("invalid type %s should not have @graphql decoration", name)
+	}
+	return nil
+}
+
+func (p *customEntParser) ProcessFileName(filename string) bool {
+	return !strings.HasSuffix(filename, "_gen.go")
+}
+
+func (p *customEntParser) ReceiverRequired() bool {
+	return true
 }
 
 func TestCustomFields(t *testing.T) {
@@ -167,7 +188,7 @@ func getFakeGeneratedFile() string {
 `
 }
 
-func validateExpectedItems(t *testing.T, expectedItems []testParsedItem, items []schemaparser.ParsedItem) {
+func validateExpectedItems(t *testing.T, expectedItems []testParsedItem, items []*schemaparser.Function) {
 	assert.Equal(t, len(expectedItems), len(items))
 
 	for idx, expItem := range expectedItems {
@@ -195,31 +216,34 @@ var once sync.Once
 func getRunOnce() *testsync.RunOnce {
 	once.Do(func() {
 		r = testsync.NewRunOnce(func(t *testing.T, _ string) interface{} {
-			result, err := schemaparser.ParseCustomGraphQLDefinitions(
+			resultChan := schemaparser.ParseCustomGraphQLDefinitions(
 				&schemaparser.ConfigSchemaParser{
 					AbsRootPath: "../test_schema/models",
 				},
-				validTypes(),
+				&customEntParser{},
 			)
 
+			result := <-resultChan
 			// verifies we have results and that the results are expected
-			assert.Nil(t, err)
-			return result
+			assert.Nil(t, result.Error)
+			return result.ParsedItems
 		})
 	})
 	return r
 }
 
-func getCustomGraphQLDefinitions(t *testing.T) map[string][]schemaparser.ParsedItem {
-	return getRunOnce().Get(t, "").(map[string][]schemaparser.ParsedItem)
+func getCustomGraphQLDefinitions(t *testing.T) schemaparser.FunctionMap {
+	return getRunOnce().Get(t, "").(schemaparser.FunctionMap)
 }
 
-func getCustomGraphQLDefinitionsWithOverlays(t *testing.T, sources map[string]string) (map[string][]schemaparser.ParsedItem, error) {
-	return schemaparser.ParseCustomGraphQLDefinitions(
+func getCustomGraphQLDefinitionsWithOverlays(t *testing.T, sources map[string]string) (schemaparser.FunctionMap, error) {
+	resultChan := schemaparser.ParseCustomGraphQLDefinitions(
 		&schemaparser.SourceSchemaParser{
 			Sources:     sources,
 			PackageName: "models",
 		},
-		validTypes(),
+		&customEntParser{},
 	)
+	result := <-resultChan
+	return result.ParsedItems, result.Error
 }

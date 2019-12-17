@@ -13,53 +13,79 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// TODO rename?
-type ParsedItem struct {
-	NodeName     string // e.g. User/Contact etc
-	GraphQLName  string // GraphQLName
-	FunctionName string // FunctionName
-	Type         enttype.FieldType
-	Args         []Argument // input arguments
-	// TODO rename Argument to Field or something similar to Ast
-	Results    []Argument // results when there's more than one result // Type should be null at that point...
+// Function represents a function that's parsed and needs to be represented in GraphQL
+type Function struct {
+	// e.g. User/Contact etc
+	NodeName string
+	// GraphQLName is the name of the Field in GraphQL
+	GraphQLName string
+	// FunctionName is the function that should be called in codegen. It includes the package if not in the "graphql"
+	FunctionName string
+	// Type represents the Type of the result when there's one return item. If it's nil, see Results for list of results
+	Type enttype.FieldType
+	// Args are the arguments to the function
+	Args []*Field
+	// Results shows the list of return values of the function. It should either have 2 or more items or be an empty slice. See Type
+	Results []*Field
+	// ImportPath, when null indicates path that needs to be imported for this to work
 	ImportPath string
 }
 
-type Argument struct {
+// Field represents an item in an argument list or return list for a function
+type Field struct {
+	// Name of the field in argument or return list
 	Name string
 	Type enttype.FieldType
 }
 
-type parsedList struct {
-	m     sync.RWMutex
-	items map[string][]ParsedItem
+// FunctionMap is a Map of GraphQL Type to list of Functions that need to be added to GQL
+type FunctionMap map[string][]*Function
+
+// ParseCustomGQLResult is the result object of parsing the code path given
+type ParseCustomGQLResult struct {
+	ParsedItems FunctionMap
+	Error       error
 }
 
-func (l *parsedList) AddItem(item ParsedItem) {
+// this is used to make concurrent changes to the map
+type parsedList struct {
+	m   sync.RWMutex
+	fns FunctionMap
+}
+
+func (l *parsedList) AddFunction(fn *Function) {
 	l.m.Lock()
 	defer l.m.Unlock()
-	if l.items == nil {
-		l.items = make(map[string][]ParsedItem)
+	if l.fns == nil {
+		l.fns = make(FunctionMap)
 	}
-	l.items[item.NodeName] = append(l.items[item.NodeName], item)
+	l.fns[fn.NodeName] = append(l.fns[fn.NodeName], fn)
 }
 
+// CustomCodeParser is used to configure the parsing process
 type CustomCodeParser interface {
+	// ReceiverRequired validates if the receiver of a function is required or not
+	// e.g. can the function be a standalone function or does it have to be a method?
+	// To further process if the method is of a valid struct, see CustomCodeParserWithReceiver
+	// where we can evaluate to see that only methods of acceptable structs are parsed
+	// A return value of true indicates it's a method and not a function
 	ReceiverRequired() bool
+
+	// ProcessFileName is used to indicate if the filename should be evaluated.
+	// eg.. don't process these generated files since there wouldn't be any custom functions there
+	// A return value of true indicates the file will be processed
 	ProcessFileName(string) bool
 }
 
+// CustomCodeParserWithReceiver is for extra validation of the method
+// see CustomCodeParser.ReceiverRequired
 type CustomCodeParserWithReceiver interface {
 	CustomCodeParser
 	ValidateFnReceiver(name string) error
 }
 
-type ParseCustomGQLResult struct {
-	// TODO add a type def for this
-	ParsedItems map[string][]ParsedItem
-	Error       error
-}
-
+// ParseCustomGraphQLDefinitions takes a file Parser and a custom code Parser and returns
+// a channel to the result
 func ParseCustomGraphQLDefinitions(parser Parser, codeParser CustomCodeParser) chan ParseCustomGQLResult {
 	result := make(chan ParseCustomGQLResult)
 	go parseCustomGQL(parser, codeParser, result)
@@ -100,7 +126,7 @@ func parseCustomGQL(parser Parser, codeParser CustomCodeParser, out chan ParseCu
 	if errr != nil {
 		result.Error = errr
 	} else {
-		result.ParsedItems = l.items
+		result.ParsedItems = l.fns
 	}
 	out <- result
 }
@@ -113,6 +139,7 @@ func checkForCustom(
 	codeParser CustomCodeParser,
 	l *parsedList,
 ) error {
+	// TODO this shouldn't be here. should be in CustomCodeParser
 	expectedFnNames := map[string]bool{
 		"GetPrivacyPolicy": true,
 	}
@@ -179,7 +206,7 @@ func checkForCustom(
 					}
 				}
 
-				if err := addItem(parser, fn, pkg, cg, l, graphqlNode); err != nil {
+				if err := addFunction(parser, fn, pkg, cg, l, graphqlNode); err != nil {
 					return err
 				}
 				break
@@ -189,7 +216,7 @@ func checkForCustom(
 	return nil
 }
 
-func addItem(
+func addFunction(
 	parser Parser,
 	fn *ast.FuncDecl,
 	pkg *packages.Package,
@@ -199,12 +226,7 @@ func addItem(
 ) error {
 	fnName := fn.Name.Name
 
-	// TODO: or mutation
-	if graphqlNode == "" {
-		graphqlNode = "Query"
-	}
-
-	item := ParsedItem{
+	parsedFn := &Function{
 		NodeName:     graphqlNode,
 		FunctionName: fnName,
 		// remove Get prefix if it exists
@@ -212,12 +234,12 @@ func addItem(
 	}
 
 	if parser.GetPackageName() != pkg.Name {
-		item.FunctionName = pkg.Name + "." + item.FunctionName
+		parsedFn.FunctionName = pkg.Name + "." + parsedFn.FunctionName
 
-		item.ImportPath = pkg.PkgPath
+		parsedFn.ImportPath = pkg.PkgPath
 	}
 
-	if err := modifyItemFromCG(cg, &item); err != nil {
+	if err := modifyFunctionFromCG(cg, parsedFn); err != nil {
 		return err
 	}
 
@@ -226,29 +248,27 @@ func addItem(
 
 	if len(results) == 1 {
 		resultType := pkg.TypesInfo.TypeOf(results[0].Type)
-		item.Type = enttype.GetType(resultType)
+		parsedFn.Type = enttype.GetType(resultType)
 	} else {
 
-		args, err := getArgs(pkg, results)
+		fields, err := getFields(pkg, results)
 		if err != nil {
 			return err
 		}
-		item.Results = args
+		parsedFn.Results = fields
 	}
-	// next step, awareness of context in argument, last result including error?
-	// or that's a different layer?
 
-	args, err := getArgs(pkg, fn.Type.Params.List)
+	fields, err := getFields(pkg, fn.Type.Params.List)
 	if err != nil {
 		return err
 	}
-	item.Args = args
-	l.AddItem(item)
+	parsedFn.Args = fields
+	l.AddFunction(parsedFn)
 	return nil
 }
 
-func getArgs(pkg *packages.Package, list []*ast.Field) ([]Argument, error) {
-	args := make([]Argument, len(list))
+func getFields(pkg *packages.Package, list []*ast.Field) ([]*Field, error) {
+	fields := make([]*Field, len(list))
 	for idx, item := range list {
 		// name required for now. TODO...
 
@@ -256,16 +276,15 @@ func getArgs(pkg *packages.Package, list []*ast.Field) ([]Argument, error) {
 			return nil, errors.New("invalid number of names for param")
 		}
 		paramType := pkg.TypesInfo.TypeOf(item.Type)
-		arg := Argument{
+		fields[idx] = &Field{
 			Name: item.Names[0].Name,
 			Type: enttype.GetType(paramType),
 		}
-		args[idx] = arg
 	}
-	return args, nil
+	return fields, nil
 }
 
-func modifyItemFromCG(cg *ast.CommentGroup, item *ParsedItem) error {
+func modifyFunctionFromCG(cg *ast.CommentGroup, fn *Function) error {
 	splits := strings.Split(cg.Text(), "\n")
 	for _, s := range splits {
 		if strings.HasPrefix(s, "@graphql") {
@@ -275,13 +294,16 @@ func modifyItemFromCG(cg *ast.CommentGroup, item *ParsedItem) error {
 				return nil
 			}
 			// override the name we should use
-			item.GraphQLName = parts[1]
+			fn.GraphQLName = parts[1]
 
 			if len(parts) > 2 {
 				if parts[2] != "Query" && parts[2] != "Mutation" {
 					return errors.New("invalid query/Mutation syntax")
 				}
-				item.NodeName = parts[2]
+				fn.NodeName = parts[2]
+			} else if fn.NodeName == "" {
+				// default to Query over mutation
+				fn.NodeName = "Query"
 			}
 			return nil
 		}

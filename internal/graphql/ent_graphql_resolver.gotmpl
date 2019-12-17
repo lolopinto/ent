@@ -67,7 +67,7 @@
 	{{ $field := . -}}
 	{{ $fn := customQueryFn $field -}}
 
-	{{ reserveImport $fn.Item.ImportPath -}}
+	{{ reserveImport $fn.Function.ImportPath -}}
 	
 	{{ $fnStr := $fn.GetFnCallDefinition -}}
 

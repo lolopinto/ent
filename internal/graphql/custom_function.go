@@ -11,15 +11,15 @@ type customFunction struct {
 	SupportsContext    bool
 	ReturnsError       bool
 	ReturnsComplexType bool
-	Item               *schemaparser.ParsedItem
+	Function           *schemaparser.Function
 }
 
 func (fn *customFunction) GetFnCallDefinition() string {
 	var sb strings.Builder
 	// write results in the form a, b, err
-	for idx, result := range fn.Item.Results {
+	for idx, result := range fn.Function.Results {
 		sb.WriteString(result.Name)
-		if idx+1 != len(fn.Item.Results) {
+		if idx+1 != len(fn.Function.Results) {
 			sb.WriteString(", ")
 		}
 	}
@@ -28,17 +28,18 @@ func (fn *customFunction) GetFnCallDefinition() string {
 	sb.WriteString(" := ")
 
 	// write function call
-	sb.WriteString(fn.Item.FunctionName)
+	sb.WriteString(fn.Function.FunctionName)
 
 	sb.WriteString("(")
-	for idx, arg := range fn.Item.Args {
+	for idx, arg := range fn.Function.Args {
 		// always use ctx name since that's what it's called in resolver.go
+		// and may be different in generated code
 		if idx == 0 && fn.SupportsContext {
 			sb.WriteString("ctx")
 		} else {
 			sb.WriteString(arg.Name)
 		}
-		if idx+1 != len(fn.Item.Args) {
+		if idx+1 != len(fn.Function.Args) {
 			sb.WriteString(", ")
 		}
 	}
@@ -54,8 +55,8 @@ type result struct {
 
 func (fn *customFunction) GetResults() []result {
 	var results []result
-	for idx, res := range fn.Item.Results {
-		if fn.ReturnsError && idx == len(fn.Item.Results)-1 {
+	for idx, res := range fn.Function.Results {
+		if fn.ReturnsError && idx == len(fn.Function.Results)-1 {
 			continue
 		}
 		results = append(results, result{
