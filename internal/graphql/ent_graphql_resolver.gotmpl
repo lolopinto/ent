@@ -5,6 +5,7 @@
 {{ reserveImport "sync"  }}
 {{ reserveImport "errors"  }}
 {{ reserveImport "bytes"  }}
+{{ reserveImport 	"github.com/lolopinto/ent/ent/cast"}}
 
 {{define "action" -}}
 	{{ $field := . -}}
@@ -63,9 +64,9 @@
 	}, nil
 {{end -}}
 
-{{define "customQueryFn" -}}
+{{define "customFn" -}}
 	{{ $field := . -}}
-	{{ $fn := customQueryFn $field -}}
+	{{ $fn := customFn $field -}}
 
 	{{ if ne $fn.Function.ImportPath "" -}}
 		{{ reserveImport $fn.Function.ImportPath -}}
@@ -73,7 +74,9 @@
 	
 	{{ $fnStr := $fn.GetFnCallDefinition -}}
 
-	{{if $fn.ReturnsComplexType -}}
+	{{if $fn.ReturnDirectly -}}
+		return {{$fnStr}}
+	{{ else if $fn.ReturnsComplexType}}
 		{{$fnStr}}
 		{{if $fn.ReturnsError -}}
 			if err != nil {
@@ -87,7 +90,8 @@
 			{{end -}}
 		}, nil
 	{{else -}}
-		return {{$fnStr}}
+		ret := {{$fnStr}}
+		return &ret, nil
 	{{end -}}
 
 {{end -}}
@@ -120,8 +124,8 @@ type {{.ResolverType}} struct {}
 					return obj.Load{{$field.GoFieldName}}()
 				{{- else if action $field -}}
 					{{- template "action" $field -}}
-				{{- else if customQueryFn $field -}}
-					{{- template "customQueryFn" $field -}}
+				{{- else if customFn $field -}}
+					{{- template "customFn" $field -}}
 				{{- else if groupEdgeEnum $field -}}
 					enum, err := obj.{{$field.GoFieldName}}ForGQL()
 					if err != nil {

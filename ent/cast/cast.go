@@ -98,6 +98,10 @@ func ToNullableBool(v interface{}) (*bool, error) {
 	return &b, nil
 }
 
+func ConvertToNullableBool(b bool) *bool {
+	return &b
+}
+
 func ToInt(v interface{}) (int, error) {
 	// losing some data
 	val, ok := v.(int64)

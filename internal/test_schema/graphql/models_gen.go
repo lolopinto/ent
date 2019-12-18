@@ -77,6 +77,10 @@ type EventsEdge struct {
 
 func (EventsEdge) IsEdge() {}
 
+type LogEventResponse struct {
+	Success *bool `json:"success"`
+}
+
 type UserAddFamilyMemberInput struct {
 	FamilyMemberID string `json:"familyMemberID"`
 	UserID         string `json:"userID"`

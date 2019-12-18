@@ -14,6 +14,12 @@ type customFunction struct {
 	Function           *schemaparser.Function
 }
 
+func (fn *customFunction) ReturnDirectly() bool {
+	// TODO this may not always work because of the nullable here imposed by GQL
+	// deal with this later
+	return !fn.ReturnsComplexType && fn.ReturnsError
+}
+
 func (fn *customFunction) GetFnCallDefinition() string {
 	var sb strings.Builder
 	// only this the return if we're returning a complex type and need to build it
@@ -26,8 +32,10 @@ func (fn *customFunction) GetFnCallDefinition() string {
 			}
 		}
 
-		// write :=
-		sb.WriteString(" := ")
+		if len(fn.Function.Results) > 0 {
+			// write :=
+			sb.WriteString(" := ")
+		}
 	}
 
 	// write function call
@@ -65,6 +73,14 @@ func (fn *customFunction) GetResults() []result {
 		results = append(results, result{
 			Key:      strcase.ToCamel(res.Name),
 			Variable: res.Name,
+		})
+	}
+
+	// GraphQL doesn't support empty return values so if there's no result, we'll return success: true here
+	if len(results) == 0 {
+		results = append(results, result{
+			Key:      "Success",
+			Variable: "cast.ConvertToNullableBool(true)",
 		})
 	}
 	return results

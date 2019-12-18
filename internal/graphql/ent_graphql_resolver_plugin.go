@@ -135,19 +135,13 @@ func (p *entGraphQLResolverPlugin) getActionPath(a action.Action) string {
 	return p.codePath.AppendPathToModels(strcase.ToSnake(a.GetNodeInfo().Node), "action")
 }
 
-func (p *entGraphQLResolverPlugin) customQueryFn(field *codegen.Field) *customFunction {
-	if field.Object.Name != "Query" {
-		return nil
+func (p *entGraphQLResolverPlugin) customFn(field *codegen.Field) *customFunction {
+	if field.Object.Name == "Query" {
+		return p.gqlSchema.queryCustomImpls[field.Name]
+	} else if field.Object.Name == "Mutation" {
+		return p.gqlSchema.mutationCustomImpls[field.Name]
 	}
-
-	return p.gqlSchema.queryCustomImpls[field.Name]
-}
-
-func (p *entGraphQLResolverPlugin) customMutationFn(field *codegen.Field) *customFunction {
-	if field.Object.Name != "Mutation" {
-		return nil
-	}
-	return p.gqlSchema.mutationCustomImpls[field.Name]
+	return nil
 }
 
 // ResolverBuild is the object passed to the template to generate the graphql code
@@ -184,8 +178,7 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 			"groupEdgeEnum":         p.groupEdgeEnum,
 			"groupEdgeEnumConst":    p.groupEdgeEnumConst,
 			"removeEdgeAction":      action.IsRemoveEdgeAction,
-			"customQueryFn":         p.customQueryFn,
-			"customMutationFn":      p.customMutationFn,
+			"customFn":              p.customFn,
 		},
 	})
 }

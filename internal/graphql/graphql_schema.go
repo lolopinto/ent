@@ -153,15 +153,15 @@ func (schema *graphQLSchema) handleCustomTopLevelDefinitions(
 			customFn := &customFunction{Function: fn}
 
 			var itemType string
-			if fn.Type == nil {
+			if fn.Type != nil {
+				itemType = fn.Type.GetGraphQLType()
+			} else {
 				// need to make a new type
 				newSchemaInfo, err := schema.newSchemaFromResult(fn, key, customFn)
 				if err != nil {
 					return err
 				}
 				itemType = newSchemaInfo.TypeName
-			} else {
-				itemType = fn.Type.GetGraphQLType()
 			}
 			field := &graphQLNonEntField{
 				fieldName: fn.GraphQLName,
@@ -185,10 +185,6 @@ func (schema *graphQLSchema) newSchemaFromResult(
 	key string,
 	customFn *customFunction,
 ) (*graphQLSchemaInfo, error) {
-	if len(fn.Results) == 0 {
-		return nil, errors.New("need results if type is nil")
-	}
-
 	customFn.ReturnsComplexType = true
 
 	var typeName string
@@ -199,18 +195,32 @@ func (schema *graphQLSchema) newSchemaFromResult(
 	}
 	newSchemaInfo := newGraphQLSchemaInfo("type", strcase.ToCamel(typeName))
 
-	for idx, result := range fn.Results {
-		// if the last item is an error type don't add to graphql
-		if idx == len(fn.Results)-1 && enttype.IsErrorType(result.Type) {
-			customFn.ReturnsError = true
-			continue
-		}
+	if len(fn.Results) == 0 {
+		// we want something here for extensibility since graphql doesn't have void types
+		// so if we decide to add something in the future it works...
+		// but if we have success: true or something, how do we know about it in the future?
+		// hmm...
+		// but how do we even send the success: true flag?
+		// if it doesn't throw an error or something
 
-		// add each item as a result type...
 		newSchemaInfo.addNonEntField(&graphQLNonEntField{
-			fieldName: result.Name,
-			fieldType: schema.getComplexGraphQLType(result.Type),
+			fieldName: "success",
+			fieldType: (&enttype.NullableBoolType{}).GetGraphQLType(),
 		})
+	} else {
+		for idx, result := range fn.Results {
+			// if the last item is an error type don't add to graphql
+			if idx == len(fn.Results)-1 && enttype.IsErrorType(result.Type) {
+				customFn.ReturnsError = true
+				continue
+			}
+
+			// add each item as a result type...
+			newSchemaInfo.addNonEntField(&graphQLNonEntField{
+				fieldName: result.Name,
+				fieldType: schema.getComplexGraphQLType(result.Type),
+			})
+		}
 	}
 	schema.addSchemaInfo(newSchemaInfo)
 	return newSchemaInfo, nil

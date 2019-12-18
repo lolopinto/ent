@@ -101,10 +101,15 @@ type EventsEdge implements Edge {
     node: Event!
 }
 
+type LogEventResponse {
+    success: Boolean
+}
+
 type Mutation {
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
     eventCreate(input: EventCreateInput!): EventCreateResponse
     eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse
+    logEvent(event: String!): LogEventResponse
     userAddFamilyMember(input: UserAddFamilyMemberInput!): UserAddFamilyMemberResponse
     userAddFriend(input: UserAddFriendInput!): UserAddFriendResponse
     userCreate(input: UserCreateInput!): UserCreateResponse

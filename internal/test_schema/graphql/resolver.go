@@ -6,7 +6,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/internal/test_schema/graphql/auth"
+	"github.com/lolopinto/ent/internal/test_schema/graphql/log"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/contact/action"
 	action1 "github.com/lolopinto/ent/internal/test_schema/models/event/action"
@@ -143,6 +145,14 @@ func (r *mutationResolver) EventRsvpStatusEdit(ctx context.Context, input EventR
 
 	return &EventRsvpStatusEditResponse{
 		Event: node,
+	}, nil
+}
+
+func (r *mutationResolver) LogEvent(ctx context.Context, event string) (*LogEventResponse, error) {
+	log.Log(ctx, event)
+
+	return &LogEventResponse{
+		Success: cast.ConvertToNullableBool(true),
 	}, nil
 }
 
@@ -306,7 +316,8 @@ func (r *queryResolver) Event(ctx context.Context, id string) (*models.Event, er
 }
 
 func (r *queryResolver) ServerTime(ctx context.Context) (*time.Time, error) {
-	return serverTime()
+	ret := serverTime()
+	return &ret, nil
 }
 
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {

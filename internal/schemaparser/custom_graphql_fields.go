@@ -243,19 +243,18 @@ func addFunction(
 		return err
 	}
 
-	results := fn.Type.Results.List
-	// TODO need to handle objects with no result...
-
-	if len(results) == 1 {
-		resultType := pkg.TypesInfo.TypeOf(results[0].Type)
-		parsedFn.Type = enttype.GetType(resultType)
-	} else {
-
-		fields, err := getFields(pkg, results)
-		if err != nil {
-			return err
+	results := fn.Type.Results
+	if results != nil {
+		if len(results.List) == 1 {
+			resultType := pkg.TypesInfo.TypeOf(results.List[0].Type)
+			parsedFn.Type = enttype.GetType(resultType)
+		} else {
+			fields, err := getFields(pkg, results.List)
+			if err != nil {
+				return err
+			}
+			parsedFn.Results = fields
 		}
-		parsedFn.Results = fields
 	}
 
 	fields, err := getFields(pkg, fn.Type.Params.List)
