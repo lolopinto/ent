@@ -77,6 +77,10 @@ type EventsEdge struct {
 
 func (EventsEdge) IsEdge() {}
 
+type LogEvent2Response struct {
+	Success *bool `json:"success"`
+}
+
 type LogEventResponse struct {
 	Success *bool `json:"success"`
 }

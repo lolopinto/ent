@@ -2,6 +2,7 @@ package enttype
 
 import (
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"go/types"
 	"path/filepath"
 	"strconv"
@@ -290,6 +291,31 @@ func (t *PointerType) getTypeName() string {
 	return "PointerType"
 }
 
+type InterfaceType struct {
+	typ *types.Interface
+}
+
+func (t *InterfaceType) getTypeName() string {
+	return "InterfaceType"
+}
+
+// TODO make this easier for not implemented yet contexts...
+func (t *InterfaceType) GetDBType() string {
+	panic("GetDBType of InterfaceType not implemented yet!")
+}
+
+func (t *InterfaceType) GetGraphQLType() string {
+	panic("GetGraphQLType of InterfaceType not implemented yet!")
+}
+
+func (t *InterfaceType) GetCastToMethod() string {
+	panic("GetCastToMethod of InterfaceType not implemented yet!")
+}
+
+func (t *InterfaceType) GetZeroValue() string {
+	panic("GetZeroValue of InterfaceType not implemented yet!")
+}
+
 func GetType(typ types.Type) FieldType {
 	switch types.TypeString(typ, nil) {
 	case "string":
@@ -313,7 +339,7 @@ func GetType(typ types.Type) FieldType {
 	case "*time.Time":
 		return &NullableTimeType{}
 	default:
-		switch typ.(type) {
+		switch typ2 := typ.(type) {
 		case *types.Named:
 			t := &NamedType{}
 			t.actualType = typ
@@ -322,6 +348,10 @@ func GetType(typ types.Type) FieldType {
 			t := &PointerType{}
 			t.actualType = typ
 			return t
+
+		case *types.Interface:
+			spew.Dump("interface type...", typ2)
+			return &InterfaceType{typ2}
 		}
 	}
 	panic(fmt.Errorf("unsupported type %s %T for now", typ.String(), typ))
@@ -342,11 +372,16 @@ func GetNullableType(typ types.Type, nullable bool) FieldType {
 }
 
 func IsErrorType(typ FieldType) bool {
+	// This is all not great but working on figuring out all of this....
 	namedType, ok := typ.(*NamedType)
-	if !ok {
-		return false
+	if ok {
+		return namedType.actualType.String() == "error"
 	}
-	return namedType.actualType.String() == "error"
+	intType, ok2 := typ.(*InterfaceType)
+	if ok2 {
+		return intType.typ.NumMethods() == 1 && intType.typ.Method(0).Name() == "Error"
+	}
+	return false
 }
 
 func IsContextType(typ FieldType) bool {

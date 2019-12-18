@@ -21,13 +21,11 @@ type Function struct {
 	GraphQLName string
 	// FunctionName is the function that should be called in codegen. It includes the package if not in the "graphql"
 	FunctionName string
-	// Type represents the Type of the result when there's one return item. If it's nil, see Results for list of results
-	Type enttype.FieldType
 	// Args are the arguments to the function
 	Args []*Field
-	// Results shows the list of return values of the function. It should either have 2 or more items or be an empty slice. See Type
+	// Results shows the list of return values of the function.
 	Results []*Field
-	// ImportPath, when null indicates path that needs to be imported for this to work
+	// ImportPath, when not-empty indicates path that needs to be imported for this to work
 	ImportPath string
 }
 
@@ -245,16 +243,11 @@ func addFunction(
 
 	results := fn.Type.Results
 	if results != nil {
-		if len(results.List) == 1 {
-			resultType := pkg.TypesInfo.TypeOf(results.List[0].Type)
-			parsedFn.Type = enttype.GetType(resultType)
-		} else {
-			fields, err := getFields(pkg, results.List)
-			if err != nil {
-				return err
-			}
-			parsedFn.Results = fields
+		fields, err := getFields(pkg, results.List)
+		if err != nil {
+			return err
 		}
+		parsedFn.Results = fields
 	}
 
 	fields, err := getFields(pkg, fn.Type.Params.List)
@@ -269,14 +262,16 @@ func addFunction(
 func getFields(pkg *packages.Package, list []*ast.Field) ([]*Field, error) {
 	fields := make([]*Field, len(list))
 	for idx, item := range list {
-		// name required for now. TODO...
 
-		if len(item.Names) != 1 {
-			return nil, errors.New("invalid number of names for param")
+		// for fields without return values, names not required
+		// TODO provide option to enforce names or not.
+		var name string
+		if len(item.Names) == 1 {
+			name = item.Names[0].Name
 		}
 		paramType := pkg.TypesInfo.TypeOf(item.Type)
 		fields[idx] = &Field{
-			Name: item.Names[0].Name,
+			Name: name,
 			Type: enttype.GetType(paramType),
 		}
 	}

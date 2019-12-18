@@ -101,6 +101,10 @@ type EventsEdge implements Edge {
     node: Event!
 }
 
+type LogEvent2Response {
+    success: Boolean
+}
+
 type LogEventResponse {
     success: Boolean
 }
@@ -110,6 +114,7 @@ type Mutation {
     eventCreate(input: EventCreateInput!): EventCreateResponse
     eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse
     logEvent(event: String!): LogEventResponse
+    logEvent2(event: String!): LogEvent2Response
     userAddFamilyMember(input: UserAddFamilyMemberInput!): UserAddFamilyMemberResponse
     userAddFriend(input: UserAddFriendInput!): UserAddFriendResponse
     userCreate(input: UserCreateInput!): UserCreateResponse

@@ -121,9 +121,14 @@ func (schema *graphQLSchema) handleCustomEntDefinitions(
 		}
 
 		for _, item := range items {
+			// TODO make ent results work correctly too
+			// should be very similar logic to customFn below
+			if len(item.Results) != 1 {
+				panic("expected 1 item")
+			}
 			field := &graphQLNonEntField{
 				fieldName: item.GraphQLName,
-				fieldType: item.Type.GetGraphQLType(),
+				fieldType: item.Results[0].Type.GetGraphQLType(),
 			}
 			schema.processArgsOfFunction(item, field, nil)
 			schemaInfo.addNonEntField(field)
@@ -152,21 +157,11 @@ func (schema *graphQLSchema) handleCustomTopLevelDefinitions(
 
 			customFn := &customFunction{Function: fn}
 
-			var itemType string
-			if fn.Type != nil {
-				itemType = fn.Type.GetGraphQLType()
-			} else {
-				// need to make a new type
-				newSchemaInfo, err := schema.newSchemaFromResult(fn, key, customFn)
-				if err != nil {
-					return err
-				}
-				itemType = newSchemaInfo.TypeName
-			}
 			field := &graphQLNonEntField{
 				fieldName: fn.GraphQLName,
-				fieldType: itemType,
+				fieldType: schema.getSchemaType(fn, key, customFn),
 			}
+
 			schema.processArgsOfFunction(fn, field, customFn)
 			schemaInfo.addNonEntField(field)
 
@@ -180,11 +175,17 @@ func (schema *graphQLSchema) handleCustomTopLevelDefinitions(
 	return nil
 }
 
-func (schema *graphQLSchema) newSchemaFromResult(
+func (schema *graphQLSchema) getSchemaType(
 	fn *schemaparser.Function,
 	key string,
 	customFn *customFunction,
-) (*graphQLSchemaInfo, error) {
+) string {
+
+	results := fn.Results
+	// returns 1 item which isn't an error, return that ype
+	if len(results) == 1 && !enttype.IsErrorType(results[0].Type) {
+		return schema.getComplexGraphQLType(results[0].Type)
+	}
 	customFn.ReturnsComplexType = true
 
 	var typeName string
@@ -195,7 +196,21 @@ func (schema *graphQLSchema) newSchemaFromResult(
 	}
 	newSchemaInfo := newGraphQLSchemaInfo("type", strcase.ToCamel(typeName))
 
-	if len(fn.Results) == 0 {
+	for idx, result := range results {
+		// if the last item is an error type don't add to graphql
+		if idx == len(fn.Results)-1 && enttype.IsErrorType(result.Type) {
+			customFn.ReturnsError = true
+			continue
+		}
+
+		// add each item as a result type...
+		newSchemaInfo.addNonEntField(&graphQLNonEntField{
+			fieldName: result.Name,
+			fieldType: schema.getComplexGraphQLType(result.Type),
+		})
+	}
+
+	if len(newSchemaInfo.nonEntFields) == 0 {
 		// we want something here for extensibility since graphql doesn't have void types
 		// so if we decide to add something in the future it works...
 		// but if we have success: true or something, how do we know about it in the future?
@@ -207,23 +222,10 @@ func (schema *graphQLSchema) newSchemaFromResult(
 			fieldName: "success",
 			fieldType: (&enttype.NullableBoolType{}).GetGraphQLType(),
 		})
-	} else {
-		for idx, result := range fn.Results {
-			// if the last item is an error type don't add to graphql
-			if idx == len(fn.Results)-1 && enttype.IsErrorType(result.Type) {
-				customFn.ReturnsError = true
-				continue
-			}
-
-			// add each item as a result type...
-			newSchemaInfo.addNonEntField(&graphQLNonEntField{
-				fieldName: result.Name,
-				fieldType: schema.getComplexGraphQLType(result.Type),
-			})
-		}
 	}
 	schema.addSchemaInfo(newSchemaInfo)
-	return newSchemaInfo, nil
+
+	return newSchemaInfo.TypeName
 }
 
 func (schema *graphQLSchema) getComplexGraphQLType(typ enttype.FieldType) string {

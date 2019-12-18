@@ -197,7 +197,7 @@ func validateExpectedItems(t *testing.T, expectedItems []testParsedItem, items [
 		assert.Equal(t, expItem.graphqlName, item.GraphQLName)
 		assert.Equal(t, expItem.functionName, item.FunctionName)
 
-		assert.Equal(t, expItem.typ, item.Type)
+		assert.Equal(t, expItem.typ, item.Results[0].Type)
 
 		assert.Len(t, item.Args, len(expItem.args))
 

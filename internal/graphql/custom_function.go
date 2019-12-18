@@ -25,14 +25,20 @@ func (fn *customFunction) GetFnCallDefinition() string {
 	// only this the return if we're returning a complex type and need to build it
 	if fn.ReturnsComplexType {
 		// write results in the form a, b, err
-		for idx, result := range fn.Function.Results {
-			sb.WriteString(result.Name)
-			if idx+1 != len(fn.Function.Results) {
-				sb.WriteString(", ")
-			}
-		}
 
 		if len(fn.Function.Results) > 0 {
+			for idx, result := range fn.Function.Results {
+				if result.Name == "" {
+					// TODO this should never be empty but come back to this
+					sb.WriteString("err")
+				} else {
+					sb.WriteString(result.Name)
+				}
+				if idx+1 != len(fn.Function.Results) {
+					sb.WriteString(", ")
+				}
+			}
+
 			// write :=
 			sb.WriteString(" := ")
 		}

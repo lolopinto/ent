@@ -156,6 +156,17 @@ func (r *mutationResolver) LogEvent(ctx context.Context, event string) (*LogEven
 	}, nil
 }
 
+func (r *mutationResolver) LogEvent2(ctx context.Context, event string) (*LogEvent2Response, error) {
+	err := log.Log2(ctx, event)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LogEvent2Response{
+		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
+
 func (r *mutationResolver) UserAddFamilyMember(ctx context.Context, input UserAddFamilyMemberInput) (*UserAddFamilyMemberResponse, error) {
 	existingNode, err := models.LoadUserFromContext(ctx, input.UserID)
 	if err != nil {
