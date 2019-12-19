@@ -118,6 +118,8 @@ type TodoConfig struct {
 
 	s := newGraphQLSchema(&codegen.Data{
 		Schema: parseSchema(t, sources, "GraphQLOtherIDWithNoEdge"),
+		// TODO fix this. shouldn't need to be manual...
+		CodePath: codegen.NewCodePath("../testdata/models/configs", ""),
 	})
 
 	s.generateGraphQLSchemaData()
@@ -309,28 +311,28 @@ func (account *Account) GetFoo(baz int) string {
 	assert.Nil(t, result.Error)
 	assert.NotNil(t, result.ParsedItems)
 
-	parsedItems := result.ParsedItems["Account"]
+	parsedFunctions := result.ParsedItems["Account"]
 
-	s.handleCustomDefinitions(result.ParsedItems)
-	testCustomDefinitions(t, accountSchemaInfo, parsedItems)
+	s.handleCustomEntDefinitions(result)
+	testCustomDefinitions(t, accountSchemaInfo, parsedFunctions)
 
-	ymlConfig := s.buildYmlConfig(result.ParsedItems)
-	testCustomYmlConfig(t, ymlConfig, accountSchemaInfo, parsedItems)
+	ymlConfig := s.buildYmlConfig(result)
+	testCustomYmlConfig(t, ymlConfig, accountSchemaInfo, parsedFunctions)
 }
 
 func testCustomDefinitions(
 	t *testing.T,
 	schemaInfo *graphQLSchemaInfo,
-	parsedItems []schemaparser.ParsedItem,
+	parsedFunctions []*schemaparser.Function,
 ) {
 
-	assert.Equal(t, len(schemaInfo.nonEntFields), len(parsedItems))
+	assert.Equal(t, len(schemaInfo.nonEntFields), len(parsedFunctions))
 
 	for idx, field := range schemaInfo.nonEntFields {
-		item := parsedItems[idx]
+		item := parsedFunctions[idx]
 
 		assert.Equal(t, field.fieldName, item.GraphQLName)
-		assert.Equal(t, field.fieldType, item.Type.GetGraphQLType())
+		assert.Equal(t, field.fieldType, item.Results[0].Type.GetGraphQLType())
 		assert.Equal(t, len(field.args), len(item.Args))
 
 		for idx, arg := range field.args {
@@ -346,13 +348,13 @@ func testCustomYmlConfig(
 	t *testing.T,
 	cfg config.Config,
 	schemaInfo *graphQLSchemaInfo,
-	parsedItems []schemaparser.ParsedItem,
+	parsedFunctions []*schemaparser.Function,
 ) {
 
 	model := cfg.Models[schemaInfo.TypeName]
 	assert.NotNil(t, model)
 
-	for _, item := range parsedItems {
+	for _, item := range parsedFunctions {
 		if strings.ToLower(item.GraphQLName) == strings.ToLower(item.FunctionName) {
 			continue
 		}
@@ -457,6 +459,8 @@ func getTestGraphQLFieldFromTemplate(typeName, fieldName string, schema *graphQL
 func getTestGraphQLSchema(t *testing.T) *graphQLSchema {
 	data := &codegen.Data{
 		Schema: getParsedTestSchema(t),
+		// TODO fix this. shouldn't need to be manual...
+		CodePath: codegen.NewCodePath("../testdata/models/configs", ""),
 	}
 	schema := newGraphQLSchema(data)
 	schema.generateGraphQLSchemaData()
