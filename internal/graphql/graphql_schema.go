@@ -8,7 +8,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 
 	"github.com/lolopinto/ent/ent"
@@ -185,7 +184,7 @@ func (schema *graphQLSchema) getSchemaType(
 	results := fn.Results
 	// returns 1 item which isn't an error, return that ype
 	if len(results) == 1 && !enttype.IsErrorType(results[0].Type) {
-		return schema.getComplexGraphQLType(results[0].Type)
+		return results[0].Type.GetGraphQLType()
 	}
 	customFn.ReturnsComplexType = true
 
@@ -207,7 +206,7 @@ func (schema *graphQLSchema) getSchemaType(
 		// add each item as a result type...
 		newSchemaInfo.addNonEntField(&graphQLNonEntField{
 			fieldName: result.Name,
-			fieldType: schema.getComplexGraphQLType(result.Type),
+			fieldType: result.Type.GetGraphQLType(),
 		})
 	}
 
@@ -229,30 +228,6 @@ func (schema *graphQLSchema) getSchemaType(
 	return newSchemaInfo.TypeName
 }
 
-func (schema *graphQLSchema) getComplexGraphQLType(typ enttype.FieldType) string {
-	underlyingType, ok := typ.(enttype.FieldWithUnderlyingType)
-	if !ok {
-		return typ.GetGraphQLType()
-	}
-	goPath := underlyingType.GetUnderlyingType().String()
-
-	spew.Dump("goPath...", goPath)
-
-	var nullable bool
-	if strings.HasPrefix(goPath, "*") {
-		nullable = true
-		goPath = strings.TrimPrefix(goPath, "*")
-	}
-	graphQLType, ok := schema.pathsToGraphQLObjects[goPath]
-	if ok {
-		if nullable {
-			return graphQLType
-		}
-		return graphQLType + "!"
-	}
-	panic(fmt.Errorf("couldn't find graphql type for %s", goPath))
-}
-
 func (schema *graphQLSchema) processArgsOfFunction(
 	fn *schemaparser.Function,
 	field *graphQLNonEntField,
@@ -271,7 +246,7 @@ func (schema *graphQLSchema) processArgsOfFunction(
 			continue
 		}
 		fieldName := arg.Name
-		fieldType := schema.getComplexGraphQLType(arg.Type)
+		fieldType := arg.Type.GetGraphQLType()
 
 		// ent is an input field so handle it
 		if schema.config.Schema.GetNodeDataFromGraphQLName(fieldType) != nil {

@@ -50,13 +50,13 @@ func TestCustomFields(t *testing.T) {
 type testParsedItem struct {
 	graphqlName  string
 	functionName string
-	typ          enttype.FieldType
+	typ          enttype.Type
 	args         []testArg
 }
 
 type testArg struct {
 	name string
-	typ  enttype.FieldType
+	typ  enttype.Type
 }
 
 func TestCustomUserFields(t *testing.T) {

@@ -5,28 +5,33 @@ import (
 	"go/types"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // NOTE: a lot of the tests for this file are in internal/field/field_test.go
 
-type FieldType interface {
-	GetDBType() string
+// Type represents a Type that's expressed in the framework
+// The only initial requirement is GraphQL since that's exposed everywhere
+type Type interface {
 	GetGraphQLType() string
+}
+
+// EntType interface is for fields exposed to Ents (stored in the DB) etc
+type EntType interface {
+	Type
+	GetDBType() string
 	GetCastToMethod() string // returns the method in cast.go (cast.To***) which casts from interface{} to strongly typed
 	GetZeroValue() string
 }
 
-type NullableFieldType interface {
-	GetNullableType() FieldType
+// NullableType refers to a Type that has the nullable version of the same type
+type NullableType interface {
+	Type
+	GetNullableType() Type
 }
 
 type FieldWithOverridenStructType interface {
 	GetStructType() string
-}
-
-type FieldWithUnderlyingType interface {
-	GetUnderlyingType() types.Type
-	getTypeName() string
 }
 
 type StringType struct{}
@@ -47,7 +52,7 @@ func (t *StringType) GetZeroValue() string {
 	return strconv.Quote("")
 }
 
-func (t *StringType) GetNullableType() FieldType {
+func (t *StringType) GetNullableType() Type {
 	return &NullableStringType{}
 }
 
@@ -81,7 +86,7 @@ func (t *BoolType) GetZeroValue() string {
 	return "false"
 }
 
-func (t *BoolType) GetNullableType() FieldType {
+func (t *BoolType) GetNullableType() Type {
 	return &NullableBoolType{}
 }
 
@@ -117,7 +122,7 @@ func (t *IDType) GetZeroValue() string {
 	return ""
 }
 
-func (t *IDType) GetNullableType() FieldType {
+func (t *IDType) GetNullableType() Type {
 	return &NullableIDType{}
 }
 
@@ -151,7 +156,7 @@ func (t *IntegerType) GetZeroValue() string {
 	return "0"
 }
 
-func (t *IntegerType) GetNullableType() FieldType {
+func (t *IntegerType) GetNullableType() Type {
 	return &NullableIntegerType{}
 }
 
@@ -185,7 +190,7 @@ func (t *FloatType) GetZeroValue() string {
 	return "0.0"
 }
 
-func (t *FloatType) GetNullableType() FieldType {
+func (t *FloatType) GetNullableType() Type {
 	return &NullableFloatType{}
 }
 
@@ -220,7 +225,7 @@ func (t *TimeType) GetZeroValue() string {
 	return "time.Time{}"
 }
 
-func (t *TimeType) GetNullableType() FieldType {
+func (t *TimeType) GetNullableType() Type {
 	return &NullableTimeType{}
 }
 
@@ -236,39 +241,42 @@ func (t *NullableTimeType) GetGraphQLType() string {
 	return "Time"
 }
 
-type fieldWithUnderlyingType struct {
+type fActualType interface {
+	getTypeName() string
+}
+
+type fieldWithActualType struct {
+	fActualType
 	actualType types.Type
-	FieldWithUnderlyingType
+	//	pathMap    map[string]string
 }
 
-func (t *fieldWithUnderlyingType) GetUnderlyingType() types.Type {
-	// TODO pointer not supposed to do this?
-	return t.actualType.Underlying()
+func (t *fieldWithActualType) GetGraphQLType() string {
+	goPath := t.actualType.String()
+
+	var nullable bool
+	if strings.HasPrefix(goPath, "*") {
+		nullable = true
+		goPath = strings.TrimPrefix(goPath, "*")
+	}
+
+	// TODO correct mappings is better...
+	//graphQLType, ok := t.pathMap[goPath]
+
+	_, fp := filepath.Split(goPath)
+	parts := strings.Split(fp, ".")
+	graphQLType := parts[1]
+
+	if nullable {
+		return graphQLType
+	}
+	return graphQLType + "!"
+
+	//	panic(fmt.Errorf("couldn't find graphql type for %s", goPath))
 }
 
-func (t *fieldWithUnderlyingType) getUnderlyingType() FieldType {
-	return GetType(t.actualType.Underlying())
-}
-
-func (t *fieldWithUnderlyingType) GetDBType() string {
-	return t.getUnderlyingType().GetDBType()
-}
-
-func (t *fieldWithUnderlyingType) GetGraphQLType() string {
-	return t.getUnderlyingType().GetGraphQLType()
-}
-
-func (t *fieldWithUnderlyingType) GetCastToMethod() string {
-	panic(fmt.Errorf("GetCastToMethod of %s not implemented yet!", t.getTypeName()))
-}
-
-func (t *fieldWithUnderlyingType) GetZeroValue() string {
-	panic(fmt.Errorf("GetZeroValue of %s not implemented yet!", t.getTypeName()))
-}
-
-func (t *fieldWithUnderlyingType) GetStructType() string {
+func (t *fieldWithActualType) GetStructType() string {
 	// get the string version of the type and return the filepath
-	// we can eventually use this to gather import paths...
 	// This converts something like "github.com/lolopinto/ent/ent.NodeType" to "ent.NodeType"
 	ret := t.actualType.String()
 	_, fp := filepath.Split(ret)
@@ -276,7 +284,7 @@ func (t *fieldWithUnderlyingType) GetStructType() string {
 }
 
 type NamedType struct {
-	fieldWithUnderlyingType
+	fieldWithActualType
 }
 
 func (t *NamedType) getTypeName() string {
@@ -284,47 +292,14 @@ func (t *NamedType) getTypeName() string {
 }
 
 type PointerType struct {
-	fieldWithUnderlyingType
+	fieldWithActualType
 }
 
 func (t *PointerType) getTypeName() string {
 	return "PointerType"
 }
 
-// handled by complex type in GraphQL
-// func (t *PointerType) GetGraphQLType() string {
-// 	ret := t.actualType.String()
-// 	_, fp := filepath.Split(ret)
-// 	parts := strings.Split(fp, ".")
-// 	return parts[1]
-// }
-
-type InterfaceType struct {
-	typ *types.Interface
-}
-
-func (t *InterfaceType) getTypeName() string {
-	return "InterfaceType"
-}
-
-// TODO make this easier for not implemented yet contexts...
-func (t *InterfaceType) GetDBType() string {
-	panic("GetDBType of InterfaceType not implemented yet!")
-}
-
-func (t *InterfaceType) GetGraphQLType() string {
-	panic("GetGraphQLType of InterfaceType not implemented yet!")
-}
-
-func (t *InterfaceType) GetCastToMethod() string {
-	panic("GetCastToMethod of InterfaceType not implemented yet!")
-}
-
-func (t *InterfaceType) GetZeroValue() string {
-	panic("GetZeroValue of InterfaceType not implemented yet!")
-}
-
-func getBasicType(typ types.Type) FieldType {
+func getBasicType(typ types.Type) Type {
 	typeStr := types.TypeString(typ, nil)
 	switch typeStr {
 	case "string":
@@ -352,7 +327,7 @@ func getBasicType(typ types.Type) FieldType {
 	}
 }
 
-func GetType(typ types.Type) FieldType {
+func GetType(typ types.Type) Type {
 	if ret := getBasicType(typ); ret != nil {
 		return ret
 	}
@@ -360,38 +335,42 @@ func GetType(typ types.Type) FieldType {
 	case *types.Basic:
 		panic("unsupported basic type")
 	case *types.Named:
-		//		spew.Dump("named type...", typ, typ2)
 
+		// if the underlying type is a basic type, let that go through for now
+		// ent.NodeType etc
+		if basicType := getBasicType(typ2.Underlying()); basicType != nil {
+			return basicType
+		}
+		// context.Context, error, etc
 		t := &NamedType{}
 		t.actualType = typ
 		return t
 	case *types.Pointer:
-		//		spew.Dump("pointer type...", typ, typ2)
+		// e.g. *github.com/lolopinto/ent/internal/test_schema/models.User
 		t := &PointerType{}
 		t.actualType = typ2
 		return t
 
 	case *types.Interface:
-		//			spew.Dump("interface type...", typ2)
-		return &InterfaceType{typ2}
+		panic("todo interface unsupported for now")
 
 	case *types.Struct:
-		panic("todo struct unsupported")
+		panic("todo struct unsupported for now")
 
 	case *types.Chan:
-		panic("todo chan unsupported")
+		panic("todo chan unsupported for now")
 
 	case *types.Map:
-		panic("todo map unsupported")
+		panic("todo map unsupported for now")
 
 	case *types.Signature:
-		panic("todo signature unsupported")
+		panic("todo signature unsupported for now")
 
 	case *types.Tuple:
-		panic("todo tuple unsupported")
+		panic("todo tuple unsupported for now")
 
 	case *types.Slice, *types.Array:
-		panic("todo slice/array unsupported")
+		panic("todo slice/array unsupported for now")
 
 	default:
 		panic(fmt.Errorf("unsupported type %s for now", typ2.String()))
@@ -400,32 +379,27 @@ func GetType(typ types.Type) FieldType {
 
 // GetNullableType takes a type where the nullable-ness is not encoded in the type but alas
 // somewhere else so we need to get the nullable type from a different place
-func GetNullableType(typ types.Type, nullable bool) FieldType {
+func GetNullableType(typ types.Type, nullable bool) Type {
 	fieldType := GetType(typ)
 	if !nullable {
 		return fieldType
 	}
-	nullableType, ok := fieldType.(NullableFieldType)
+	nullableType, ok := fieldType.(NullableType)
 	if ok {
 		return nullableType.GetNullableType()
 	}
 	panic(fmt.Errorf("couldn't find nullable version of type %s", types.TypeString(typ, nil)))
 }
 
-func IsErrorType(typ FieldType) bool {
-	// This is all not great but working on figuring out all of this....
+func IsErrorType(typ Type) bool {
 	namedType, ok := typ.(*NamedType)
 	if ok {
 		return namedType.actualType.String() == "error"
 	}
-	intType, ok2 := typ.(*InterfaceType)
-	if ok2 {
-		return intType.typ.NumMethods() == 1 && intType.typ.Method(0).Name() == "Error"
-	}
 	return false
 }
 
-func IsContextType(typ FieldType) bool {
+func IsContextType(typ Type) bool {
 	namedType, ok := typ.(*NamedType)
 	if !ok {
 		return false

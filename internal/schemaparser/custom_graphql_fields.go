@@ -33,7 +33,7 @@ type Function struct {
 type Field struct {
 	// Name of the field in argument or return list
 	Name string
-	Type enttype.FieldType
+	Type enttype.Type
 }
 
 // FunctionMap is a Map of GraphQL Type to list of Functions that need to be added to GQL

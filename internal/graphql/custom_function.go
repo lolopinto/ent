@@ -1,6 +1,7 @@
 package graphql
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -129,5 +130,7 @@ func (fn *customFunction) LoadedFields() string {
 	for name := range fn.IDFields {
 		ret = append(ret, "&"+name+"Result")
 	}
+	// sort these so that we have a stable list of variables
+	sort.Strings(ret)
 	return strings.Join(ret, ", ")
 }

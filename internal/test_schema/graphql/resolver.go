@@ -106,7 +106,7 @@ func (r *mutationResolver) AdminBlock(ctx context.Context, blockerID string, blo
 	go models.GenLoadUser(v, blockeeID, &blockeeResult, &wg)
 	go models.GenLoadUser(v, blockerID, &blockerResult, &wg)
 	wg.Wait()
-	if entErr := ent.CoalesceErr(&blockerResult, &blockeeResult); entErr != nil {
+	if entErr := ent.CoalesceErr(&blockeeResult, &blockerResult); entErr != nil {
 		return nil, entErr
 	}
 
