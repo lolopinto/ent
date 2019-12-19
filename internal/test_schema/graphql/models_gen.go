@@ -23,6 +23,10 @@ type Node interface {
 	IsNode()
 }
 
+type AdminBlockResponse struct {
+	Success *bool `json:"success"`
+}
+
 type AuthUserResult struct {
 	Token string       `json:"token"`
 	User  *models.User `json:"user"`
@@ -164,6 +168,10 @@ type UsersEdge struct {
 }
 
 func (UsersEdge) IsEdge() {}
+
+type ViewerBlockResponse struct {
+	Success *bool `json:"success"`
+}
 
 type EventRsvpStatus string
 

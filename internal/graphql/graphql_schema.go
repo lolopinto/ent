@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 
 	"github.com/lolopinto/ent/ent"
@@ -235,6 +236,8 @@ func (schema *graphQLSchema) getComplexGraphQLType(typ enttype.FieldType) string
 	}
 	goPath := underlyingType.GetUnderlyingType().String()
 
+	spew.Dump("goPath...", goPath)
+
 	var nullable bool
 	if strings.HasPrefix(goPath, "*") {
 		nullable = true
@@ -267,9 +270,22 @@ func (schema *graphQLSchema) processArgsOfFunction(
 			}
 			continue
 		}
+		fieldName := arg.Name
+		fieldType := schema.getComplexGraphQLType(arg.Type)
+
+		// ent is an input field so handle it
+		if schema.config.Schema.GetNodeDataFromGraphQLName(fieldType) != nil {
+			customFn.FlagIDField(arg, fieldType)
+
+			// TODO input objects mutation?
+			// assume for now that it's always a required ID
+			fieldName = fieldName + "ID"
+			fieldType = "ID!"
+		}
+
 		args = append(args, &graphQLArg{
-			fieldName: arg.Name,
-			fieldType: arg.Type.GetGraphQLType(),
+			fieldName: fieldName,
+			fieldType: fieldType,
 		})
 	}
 	field.args = args

@@ -260,19 +260,26 @@ func addFunction(
 }
 
 func getFields(pkg *packages.Package, list []*ast.Field) ([]*Field, error) {
-	fields := make([]*Field, len(list))
-	for idx, item := range list {
+	var fields []*Field
+	for _, item := range list {
+
+		paramType := pkg.TypesInfo.TypeOf(item.Type)
 
 		// for fields without return values, names not required
 		// TODO provide option to enforce names or not.
-		var name string
-		if len(item.Names) == 1 {
-			name = item.Names[0].Name
-		}
-		paramType := pkg.TypesInfo.TypeOf(item.Type)
-		fields[idx] = &Field{
-			Name: name,
-			Type: enttype.GetType(paramType),
+		if len(item.Names) == 0 {
+			fields = append(fields, &Field{
+				Name: "",
+				Type: enttype.GetType(paramType),
+			})
+		} else {
+			// same type, we need to break this up as different fields if there's more than one
+			for _, name := range item.Names {
+				fields = append(fields, &Field{
+					Name: name.Name,
+					Type: enttype.GetType(paramType),
+				})
+			}
 		}
 	}
 	return fields, nil

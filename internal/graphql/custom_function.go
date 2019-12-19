@@ -12,6 +12,26 @@ type customFunction struct {
 	ReturnsError       bool
 	ReturnsComplexType bool
 	Function           *schemaparser.Function
+	IDFields           map[string]*idField
+}
+
+type idField struct {
+	Field     *schemaparser.Field
+	FieldType string
+}
+
+func (fn *customFunction) FlagIDField(field *schemaparser.Field, fieldType string) {
+	if fn.IDFields == nil {
+		fn.IDFields = make(map[string]*idField)
+	}
+	fn.IDFields[field.Name] = &idField{
+		Field:     field,
+		FieldType: fieldType,
+	}
+}
+
+func (fn *customFunction) HasIDFields() bool {
+	return len(fn.IDFields) != 0
 }
 
 func (fn *customFunction) ReturnDirectly() bool {
@@ -53,7 +73,19 @@ func (fn *customFunction) GetFnCallDefinition() string {
 		// and may be different in generated code
 		if idx == 0 && fn.SupportsContext {
 			sb.WriteString("ctx")
+		} else if len(fn.IDFields) > 1 {
+			idField := fn.IDFields[arg.Name]
+			// in the case where we loaded an object first, use the loaded variable here...
+			if idField != nil {
+				// blockerResult.User
+				sb.WriteString(arg.Name)
+				sb.WriteString("Result.")
+				sb.WriteString(idField.FieldType)
+			} else {
+				sb.WriteString(arg.Name)
+			}
 		} else {
+			// we loaded sequentially for simplicity sake so don't care about idField
 			sb.WriteString(arg.Name)
 		}
 		if idx+1 != len(fn.Function.Args) {

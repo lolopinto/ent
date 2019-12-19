@@ -4,10 +4,13 @@ package graphql
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/graphql/auth"
+	"github.com/lolopinto/ent/internal/test_schema/graphql/block"
 	"github.com/lolopinto/ent/internal/test_schema/graphql/log"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/contact/action"
@@ -89,6 +92,35 @@ func (r *eventResolver) ViewerRsvpStatus(ctx context.Context, obj *models.Event)
 }
 
 type mutationResolver struct{ *Resolver }
+
+func (r *mutationResolver) AdminBlock(ctx context.Context, blockerID string, blockeeID string) (*AdminBlockResponse, error) {
+	v, ctxErr := viewer.ForContext(ctx)
+	if ctxErr != nil {
+		return nil, ctxErr
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	var blockeeResult models.UserResult
+	var blockerResult models.UserResult
+	go models.GenLoadUser(v, blockeeID, &blockeeResult, &wg)
+	go models.GenLoadUser(v, blockerID, &blockerResult, &wg)
+	wg.Wait()
+	if blockeeResult.Error != nil {
+		return nil, blockeeResult.Error
+	}
+	if blockerResult.Error != nil {
+		return nil, blockerResult.Error
+	}
+
+	err := block.AdminBlock(ctx, blockerResult.User, blockeeResult.User)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AdminBlockResponse{
+		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
 
 func (r *mutationResolver) ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error) {
 	node, err := action.CreateContactFromContext(ctx).
@@ -297,6 +329,22 @@ func (r *mutationResolver) UserRemoveFriend(ctx context.Context, input UserRemov
 
 	return &UserRemoveFriendResponse{
 		User: node,
+	}, nil
+}
+
+func (r *mutationResolver) ViewerBlock(ctx context.Context, userID string) (*ViewerBlockResponse, error) {
+	user, userErr := models.LoadUserFromContext(ctx, userID)
+	if userErr != nil {
+		return nil, userErr
+	}
+
+	err := block.Block(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ViewerBlockResponse{
+		Success: cast.ConvertToNullableBool(true),
 	}, nil
 }
 

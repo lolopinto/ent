@@ -5,7 +5,8 @@
 {{ reserveImport "sync"  }}
 {{ reserveImport "errors"  }}
 {{ reserveImport "bytes"  }}
-{{ reserveImport 	"github.com/lolopinto/ent/ent/cast"}}
+{{ reserveImport "github.com/lolopinto/ent/ent/cast"}}
+{{ reserveImport "github.com/lolopinto/ent/ent/viewer"}}
 
 {{define "action" -}}
 	{{ $field := . -}}
@@ -64,6 +65,42 @@
 	}, nil
 {{end -}}
 
+{{ define "loadCustomFnFields" -}}
+	{{$fn := .}}
+	{{ if eq (len $fn.IDFields) 1 -}}
+		{{range $arg := $fn.IDFields -}}
+			{{$name := $arg.Field.Name -}}
+			{{$name}}, {{$name}}Err := models.Load{{$arg.FieldType}}FromContext(ctx, {{$name}}ID)
+			if {{$name}}Err != nil {
+				return nil, {{$name}}Err
+			}
+		{{end -}}
+	{{ else -}}
+		v, ctxErr := viewer.ForContext(ctx)
+		if ctxErr != nil {
+			return nil, ctxErr
+		}
+		{{/* TODO something like this is too complicated maybe. another reason to try different API? */ -}}
+		var wg sync.WaitGroup
+		wg.Add({{len $fn.IDFields}})
+		{{range $arg := $fn.IDFields -}}
+			{{$name := $arg.Field.Name -}}
+			var {{$name}}Result models.{{$arg.FieldType}}Result
+		{{end -}}
+		{{range $arg := $fn.IDFields -}}
+			{{$name := $arg.Field.Name -}}
+			go models.GenLoad{{$arg.FieldType}}(v, {{$name}}ID, &{{$name}}Result, &wg)
+		{{end -}}
+		wg.Wait()
+		{{range $arg := $fn.IDFields -}}
+			{{$name := $arg.Field.Name -}}
+			if {{$name}}Result.Error != nil {
+				return nil, {{$name}}Result.Error
+			}
+		{{end -}}
+	{{end -}}
+{{end -}}
+
 {{define "customFn" -}}
 	{{ $field := . -}}
 	{{ $fn := customFn $field -}}
@@ -72,6 +109,10 @@
 		{{ reserveImport $fn.Function.ImportPath -}}
 	{{end -}}
 	
+	{{ if $fn.HasIDFields -}}
+		{{ template "loadCustomFnFields" $fn -}}
+	{{end -}}
+
 	{{ $fnStr := $fn.GetFnCallDefinition -}}
 
 	{{if $fn.ReturnDirectly -}}

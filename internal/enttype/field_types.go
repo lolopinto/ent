@@ -2,7 +2,6 @@ package enttype
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"go/types"
 	"path/filepath"
 	"strconv"
@@ -243,7 +242,8 @@ type fieldWithUnderlyingType struct {
 }
 
 func (t *fieldWithUnderlyingType) GetUnderlyingType() types.Type {
-	return t.actualType
+	// TODO pointer not supposed to do this?
+	return t.actualType.Underlying()
 }
 
 func (t *fieldWithUnderlyingType) getUnderlyingType() FieldType {
@@ -291,6 +291,14 @@ func (t *PointerType) getTypeName() string {
 	return "PointerType"
 }
 
+// handled by complex type in GraphQL
+// func (t *PointerType) GetGraphQLType() string {
+// 	ret := t.actualType.String()
+// 	_, fp := filepath.Split(ret)
+// 	parts := strings.Split(fp, ".")
+// 	return parts[1]
+// }
+
 type InterfaceType struct {
 	typ *types.Interface
 }
@@ -316,8 +324,9 @@ func (t *InterfaceType) GetZeroValue() string {
 	panic("GetZeroValue of InterfaceType not implemented yet!")
 }
 
-func GetType(typ types.Type) FieldType {
-	switch types.TypeString(typ, nil) {
+func getBasicType(typ types.Type) FieldType {
+	typeStr := types.TypeString(typ, nil)
+	switch typeStr {
 	case "string":
 		return &StringType{}
 	case "*string":
@@ -339,22 +348,54 @@ func GetType(typ types.Type) FieldType {
 	case "*time.Time":
 		return &NullableTimeType{}
 	default:
-		switch typ2 := typ.(type) {
-		case *types.Named:
-			t := &NamedType{}
-			t.actualType = typ
-			return t
-		case *types.Pointer:
-			t := &PointerType{}
-			t.actualType = typ
-			return t
-
-		case *types.Interface:
-			spew.Dump("interface type...", typ2)
-			return &InterfaceType{typ2}
-		}
+		return nil
 	}
-	panic(fmt.Errorf("unsupported type %s %T for now", typ.String(), typ))
+}
+
+func GetType(typ types.Type) FieldType {
+	if ret := getBasicType(typ); ret != nil {
+		return ret
+	}
+	switch typ2 := typ.(type) {
+	case *types.Basic:
+		panic("unsupported basic type")
+	case *types.Named:
+		//		spew.Dump("named type...", typ, typ2)
+
+		t := &NamedType{}
+		t.actualType = typ
+		return t
+	case *types.Pointer:
+		//		spew.Dump("pointer type...", typ, typ2)
+		t := &PointerType{}
+		t.actualType = typ2
+		return t
+
+	case *types.Interface:
+		//			spew.Dump("interface type...", typ2)
+		return &InterfaceType{typ2}
+
+	case *types.Struct:
+		panic("todo struct unsupported")
+
+	case *types.Chan:
+		panic("todo chan unsupported")
+
+	case *types.Map:
+		panic("todo map unsupported")
+
+	case *types.Signature:
+		panic("todo signature unsupported")
+
+	case *types.Tuple:
+		panic("todo tuple unsupported")
+
+	case *types.Slice, *types.Array:
+		panic("todo slice/array unsupported")
+
+	default:
+		panic(fmt.Errorf("unsupported type %s for now", typ2.String()))
+	}
 }
 
 // GetNullableType takes a type where the nullable-ness is not encoded in the type but alas
