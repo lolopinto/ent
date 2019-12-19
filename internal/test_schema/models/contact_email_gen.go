@@ -33,14 +33,22 @@ type ContactEmail struct {
 // a ContactEmail and an error
 type ContactEmailResult struct {
 	ContactEmail *ContactEmail
-	Error        error
+	Err          error
+}
+
+func (res *ContactEmailResult) Error() string {
+	return res.Err.Error()
 }
 
 // ContactEmailsResult stores the result of loading a slice of ContactEmails. It's a tuple type which has 2 fields:
 // a []*ContactEmail and an error
 type ContactEmailsResult struct {
 	ContactEmails []*ContactEmail
-	Error         error
+	Err           error
+}
+
+func (res *ContactEmailsResult) Error() string {
+	return res.Err.Error()
 }
 
 // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
@@ -80,7 +88,7 @@ func GenLoadContactEmail(v viewer.ViewerContext, id string, result *ContactEmail
 	go ent.GenLoadNode(v, id, &contactEmail, &configs.ContactEmailConfig{}, chanErr)
 	err := <-chanErr
 	result.ContactEmail = &contactEmail
-	result.Error = err
+	result.Err = err
 }
 
 // GenContact returns the Contact associated with the ContactEmail instance

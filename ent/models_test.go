@@ -159,7 +159,7 @@ func (suite *modelsTestSuite) TestGenLoadEdgesByType() {
 		chanResult := make(chan ent.AssocEdgesResult)
 		go ent.GenLoadEdgesByType(id, models.UserToEventsEdge, chanResult)
 		result := <-chanResult
-		return result.Edges, result.Error
+		return result.Edges, result.Err
 	})
 }
 
@@ -202,7 +202,7 @@ func (suite *modelsTestSuite) TestGeneratedGenLoadEdgesByType() {
 			wg.Add(1)
 			go user.GenEventsEdges(&result, &wg)
 			wg.Wait()
-			return result.Edges, result.Error
+			return result.Edges, result.Err
 		},
 		[]string{
 			event.ID,
@@ -280,7 +280,7 @@ func (suite *modelsTestSuite) TestGenLoadEdgeByType() {
 		chanResult := make(chan ent.AssocEdgeResult)
 		go ent.GenLoadEdgeByType(id1, id2, models.UserToEventsEdge, chanResult)
 		result := <-chanResult
-		return result.Edge, result.Error
+		return result.Edge, result.Err
 	})
 }
 
@@ -313,7 +313,7 @@ func (suite *modelsTestSuite) TestGenUniqueLoadEdgeByType() {
 		chanResult := make(chan ent.AssocEdgeResult)
 		go ent.GenLoadUniqueEdgeByType(id1, models.EventToCreatorEdge, chanResult)
 		result := <-chanResult
-		return result.Edge, result.Error
+		return result.Edge, result.Err
 	})
 }
 
@@ -336,7 +336,7 @@ func (suite *modelsTestSuite) TestGeneratedGenUniqueLoadEdgeByType() {
 		wg.Add(1)
 		go event.GenCreatorEdge(&result, &wg)
 		wg.Wait()
-		return result.Edge, result.Error
+		return result.Edge, result.Err
 	})
 }
 
@@ -359,7 +359,7 @@ func (suite *modelsTestSuite) TestGeneratedGenUniqueLoadNodeByType() {
 		wg.Add(1)
 		go event.GenCreator(&result, &wg)
 		wg.Wait()
-		return result.User, result.Error
+		return result.User, result.Err
 	})
 }
 
@@ -380,7 +380,7 @@ func (suite *modelsTestSuite) TestGeneratedGenLoadEdgeByType() {
 			wg.Add(1)
 			go user.GenLoadEventEdgeFor(event.ID, &result, &wg)
 			wg.Wait()
-			return result.Edge, result.Error
+			return result.Edge, result.Err
 		},
 		user.ID,
 		event.ID,

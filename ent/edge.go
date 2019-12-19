@@ -67,14 +67,22 @@ func (edge *AssocEdge) DBFields() DBFields {
 
 // AssocEdgeResult stores the result of loading an Edge concurrently
 type AssocEdgeResult struct {
-	Edge  *AssocEdge
-	Error error
+	Edge *AssocEdge
+	Err  error
+}
+
+func (res *AssocEdgeResult) Error() string {
+	return res.Err.Error()
 }
 
 // AssocEdgesResult stores the result of loading a slice of edges concurrently
 type AssocEdgesResult struct {
 	Edges []*AssocEdge
-	Error error
+	Err   error
+}
+
+func (res *AssocEdgesResult) Error() string {
+	return res.Err.Error()
 }
 
 // AssocEdgeData is corresponding ent for AssocEdgeConfig

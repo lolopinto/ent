@@ -40,14 +40,22 @@ type Contact struct {
 // a Contact and an error
 type ContactResult struct {
 	Contact *Contact
-	Error   error
+	Err     error
+}
+
+func (res *ContactResult) Error() string {
+	return res.Err.Error()
 }
 
 // ContactsResult stores the result of loading a slice of Contacts. It's a tuple type which has 2 fields:
 // a []*Contact and an error
 type ContactsResult struct {
 	Contacts []*Contact
-	Error    error
+	Err      error
+}
+
+func (res *ContactsResult) Error() string {
+	return res.Err.Error()
 }
 
 // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
@@ -87,7 +95,7 @@ func GenLoadContact(v viewer.ViewerContext, id string, result *ContactResult, wg
 	go ent.GenLoadNode(v, id, &contact, &configs.ContactConfig{}, chanErr)
 	err := <-chanErr
 	result.Contact = &contact
-	result.Error = err
+	result.Err = err
 }
 
 // GenContactEmails returns the ContactEmails associated with the Contact instance
@@ -98,7 +106,7 @@ func (contact *Contact) GenContactEmails(result *ContactEmailsResult, wg *sync.W
 	go ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, &contactEmails, "contact_id", &configs.ContactEmailConfig{}, chanErr)
 	err := <-chanErr
 	result.ContactEmails = contactEmails
-	result.Error = err
+	result.Err = err
 }
 
 // LoadContactEmails returns the ContactEmails associated with the Contact instance
@@ -129,7 +137,7 @@ func (contact *Contact) GenAllowList(result *UsersResult, wg *sync.WaitGroup) {
 	go ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &users, &configs.UserConfig{}, chanErr)
 	err := <-chanErr
 	result.Users = users
-	result.Error = err
+	result.Err = err
 }
 
 // LoadAllowList returns the Users associated with the Contact instance

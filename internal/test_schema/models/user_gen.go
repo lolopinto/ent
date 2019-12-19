@@ -46,15 +46,23 @@ type User struct {
 // UserResult stores the result of loading a User. It's a tuple type which has 2 fields:
 // a User and an error
 type UserResult struct {
-	User  *User
-	Error error
+	User *User
+	Err  error
+}
+
+func (res *UserResult) Error() string {
+	return res.Err.Error()
 }
 
 // UsersResult stores the result of loading a slice of Users. It's a tuple type which has 2 fields:
 // a []*User and an error
 type UsersResult struct {
 	Users []*User
-	Error error
+	Err   error
+}
+
+func (res *UsersResult) Error() string {
+	return res.Err.Error()
 }
 
 // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
@@ -94,7 +102,7 @@ func GenLoadUser(v viewer.ViewerContext, id string, result *UserResult, wg *sync
 	go ent.GenLoadNode(v, id, &user, &configs.UserConfig{}, chanErr)
 	err := <-chanErr
 	result.User = &user
-	result.Error = err
+	result.Err = err
 }
 
 // GenContacts returns the Contacts associated with the User instance
@@ -105,7 +113,7 @@ func (user *User) GenContacts(result *ContactsResult, wg *sync.WaitGroup) {
 	go ent.GenLoadForeignKeyNodes(user.Viewer, user.ID, &contacts, "user_id", &configs.ContactConfig{}, chanErr)
 	err := <-chanErr
 	result.Contacts = contacts
-	result.Error = err
+	result.Err = err
 }
 
 // LoadContacts returns the Contacts associated with the User instance
@@ -136,7 +144,7 @@ func (user *User) GenEvents(result *EventsResult, wg *sync.WaitGroup) {
 	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToEventsEdge, &events, &configs.EventConfig{}, chanErr)
 	err := <-chanErr
 	result.Events = events
-	result.Error = err
+	result.Err = err
 }
 
 // LoadEvents returns the Events associated with the User instance
@@ -180,7 +188,7 @@ func (user *User) GenFamilyMembers(result *UsersResult, wg *sync.WaitGroup) {
 	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, &users, &configs.UserConfig{}, chanErr)
 	err := <-chanErr
 	result.Users = users
-	result.Error = err
+	result.Err = err
 }
 
 // LoadFamilyMembers returns the Users associated with the User instance
@@ -224,7 +232,7 @@ func (user *User) GenFriends(result *UsersResult, wg *sync.WaitGroup) {
 	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFriendsEdge, &users, &configs.UserConfig{}, chanErr)
 	err := <-chanErr
 	result.Users = users
-	result.Error = err
+	result.Err = err
 }
 
 // LoadFriends returns the Users associated with the User instance
@@ -268,7 +276,7 @@ func (user *User) GenInvitedEvents(result *EventsResult, wg *sync.WaitGroup) {
 	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToInvitedEventsEdge, &events, &configs.EventConfig{}, chanErr)
 	err := <-chanErr
 	result.Events = events
-	result.Error = err
+	result.Err = err
 }
 
 // LoadInvitedEvents returns the Events associated with the User instance
@@ -312,7 +320,7 @@ func (user *User) GenEventsAttending(result *EventsResult, wg *sync.WaitGroup) {
 	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToEventsAttendingEdge, &events, &configs.EventConfig{}, chanErr)
 	err := <-chanErr
 	result.Events = events
-	result.Error = err
+	result.Err = err
 }
 
 // LoadEventsAttending returns the Events associated with the User instance
@@ -356,7 +364,7 @@ func (user *User) GenDeclinedEvents(result *EventsResult, wg *sync.WaitGroup) {
 	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToDeclinedEventsEdge, &events, &configs.EventConfig{}, chanErr)
 	err := <-chanErr
 	result.Events = events
-	result.Error = err
+	result.Err = err
 }
 
 // LoadDeclinedEvents returns the Events associated with the User instance
