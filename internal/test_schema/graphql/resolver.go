@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/graphql/auth"
@@ -105,11 +106,8 @@ func (r *mutationResolver) AdminBlock(ctx context.Context, blockerID string, blo
 	go models.GenLoadUser(v, blockeeID, &blockeeResult, &wg)
 	go models.GenLoadUser(v, blockerID, &blockerResult, &wg)
 	wg.Wait()
-	if blockeeResult.Error != nil {
-		return nil, blockeeResult.Error
-	}
-	if blockerResult.Error != nil {
-		return nil, blockerResult.Error
+	if entErr := ent.CoalesceErr(&blockerResult, &blockeeResult); entErr != nil {
+		return nil, entErr
 	}
 
 	err := block.AdminBlock(ctx, blockerResult.User, blockeeResult.User)

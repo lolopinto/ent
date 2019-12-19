@@ -123,3 +123,11 @@ func (fn *customFunction) GetResults() []result {
 	}
 	return results
 }
+
+func (fn *customFunction) LoadedFields() string {
+	var ret []string
+	for name := range fn.IDFields {
+		ret = append(ret, "&"+name+"Result")
+	}
+	return strings.Join(ret, ", ")
+}

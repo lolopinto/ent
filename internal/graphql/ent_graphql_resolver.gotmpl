@@ -5,6 +5,7 @@
 {{ reserveImport "sync"  }}
 {{ reserveImport "errors"  }}
 {{ reserveImport "bytes"  }}
+{{ reserveImport "github.com/lolopinto/ent/ent"}}
 {{ reserveImport "github.com/lolopinto/ent/ent/cast"}}
 {{ reserveImport "github.com/lolopinto/ent/ent/viewer"}}
 
@@ -92,12 +93,9 @@
 			go models.GenLoad{{$arg.FieldType}}(v, {{$name}}ID, &{{$name}}Result, &wg)
 		{{end -}}
 		wg.Wait()
-		{{range $arg := $fn.IDFields -}}
-			{{$name := $arg.Field.Name -}}
-			if {{$name}}Result.Error != nil {
-				return nil, {{$name}}Result.Error
-			}
-		{{end -}}
+		if entErr := ent.CoalesceErr({{$fn.LoadedFields}}); entErr != nil {
+			return nil, entErr
+		}
 	{{end -}}
 {{end -}}
 
