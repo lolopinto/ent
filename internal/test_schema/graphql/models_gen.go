@@ -169,12 +169,16 @@ type UsersEdge struct {
 
 func (UsersEdge) IsEdge() {}
 
+type ViewerBlockMultipleIDsResponse struct {
+	Success *bool `json:"success"`
+}
+
 type ViewerBlockMultipleResponse struct {
 	Success *bool `json:"success"`
 }
 
 type ViewerBlockResponse struct {
-	Success *bool `json:"success"`
+	Viewerr *models.User `json:"viewerr"`
 }
 
 type EventRsvpStatus string

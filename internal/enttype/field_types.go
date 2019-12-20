@@ -24,6 +24,11 @@ type EntType interface {
 	GetZeroValue() string
 }
 
+type ListType interface {
+	Type
+	GetElemGraphQLType() string
+}
+
 // NullableType refers to a Type that has the nullable version of the same type
 type NullableType interface {
 	Type
@@ -251,35 +256,49 @@ type fieldWithActualType struct {
 	//	pathMap    map[string]string
 }
 
-func (t *fieldWithActualType) GetGraphQLType() string {
-	goPath := t.actualType.String()
+func getGraphQLType(typ types.Type) string {
+	// handle string, *string and other "basic types" etc
+	if basicType := getBasicType(typ); basicType != nil {
+		return basicType.GetGraphQLType()
+	}
 
-	var slice, nullable bool
-	if strings.HasPrefix(goPath, "[]") {
-		slice = true
-		goPath = strings.TrimPrefix(goPath, "[]")
-	}
-	if strings.HasPrefix(goPath, "*") {
+	var nullable bool
+	var graphQLType string
+	typeStr := typ.String()
+	if strings.HasPrefix(typeStr, "*") {
 		nullable = true
-		goPath = strings.TrimPrefix(goPath, "*")
+		typeStr = strings.TrimPrefix(typeStr, "*")
 	}
+
+	_, fp := filepath.Split(typeStr)
+	parts := strings.Split(fp, ".")
+	if len(parts) != 2 {
+		panic(fmt.Errorf("invalid type string. expected a complex type of the form package.Type got %s instead", typeStr))
+	}
+	graphQLType = parts[1]
 
 	// TODO correct mappings is better...
 	//graphQLType, ok := t.pathMap[goPath]
 
-	_, fp := filepath.Split(goPath)
-	parts := strings.Split(fp, ".")
-	graphQLType := parts[1]
-
 	if !nullable {
 		graphQLType = graphQLType + "!"
-	}
-	if slice {
-		graphQLType = "[" + graphQLType + "]"
 	}
 
 	return graphQLType
 	//	panic(fmt.Errorf("couldn't find graphql type for %s", goPath))
+}
+
+func getSliceGraphQLType(typ, elemType types.Type) string {
+	graphQLType := "[" + getGraphQLType(elemType) + "]"
+	// not nullable
+	if strings.HasPrefix(typ.String(), "*") {
+		return graphQLType
+	}
+	return graphQLType + "!"
+}
+
+func (t *fieldWithActualType) GetGraphQLType() string {
+	return getGraphQLType(t.actualType)
 }
 
 func (t *fieldWithActualType) GetStructType() string {
@@ -307,11 +326,27 @@ func (t *PointerType) getTypeName() string {
 }
 
 type SliceType struct {
-	fieldWithActualType
+	typ *types.Slice
 }
 
-func (t *SliceType) getTypeName() string {
-	return "SliceType"
+func (t *SliceType) GetGraphQLType() string {
+	return getSliceGraphQLType(t.typ, t.typ.Elem())
+}
+
+func (t *SliceType) GetElemGraphQLType() string {
+	return getGraphQLType(t.typ.Elem())
+}
+
+type ArrayType struct {
+	typ *types.Array
+}
+
+func (t *ArrayType) GetGraphQLType() string {
+	return getGraphQLType(t.typ.Elem())
+}
+
+func (t *ArrayType) GetElemType() Type {
+	return nil
 }
 
 func getBasicType(typ types.Type) Type {
@@ -384,11 +419,11 @@ func GetType(typ types.Type) Type {
 	case *types.Tuple:
 		panic("todo tuple unsupported for now")
 
-	case *types.Slice, *types.Array:
-		// e.g. []*github.com/lolopinto/ent/internal/test_schema/models.User
-		t := &SliceType{}
-		t.actualType = typ2
-		return t
+	case *types.Slice:
+		return &SliceType{typ2}
+
+	case *types.Array:
+		return &ArrayType{typ2}
 
 	default:
 		panic(fmt.Errorf("unsupported type %s for now", typ2.String()))

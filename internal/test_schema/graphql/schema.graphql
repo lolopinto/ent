@@ -129,6 +129,7 @@ type Mutation {
     userRemoveFriend(input: UserRemoveFriendInput!): UserRemoveFriendResponse
     viewerBlock(userID: ID!): ViewerBlockResponse
     viewerBlockMultiple(userIDs: [ID!]!): ViewerBlockMultipleResponse
+    viewerBlockMultipleIDs(userIDs: [String!]!): ViewerBlockMultipleIDsResponse
 }
 
 interface Node {
@@ -237,12 +238,16 @@ type UsersEdge implements Edge {
     node: User!
 }
 
+type ViewerBlockMultipleIDsResponse {
+    success: Boolean
+}
+
 type ViewerBlockMultipleResponse {
     success: Boolean
 }
 
 type ViewerBlockResponse {
-    success: Boolean
+    viewerr: User
 }
 
 

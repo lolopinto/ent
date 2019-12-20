@@ -336,13 +336,13 @@ func (r *mutationResolver) ViewerBlock(ctx context.Context, userID string) (*Vie
 		return nil, userErr
 	}
 
-	err := block.Block(ctx, user)
+	viewerr, err := block.Block(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ViewerBlockResponse{
-		Success: cast.ConvertToNullableBool(true),
+		Viewerr: viewerr,
 	}, nil
 }
 
@@ -379,6 +379,17 @@ func (r *mutationResolver) ViewerBlockMultiple(ctx context.Context, userIDs []st
 	}
 
 	return &ViewerBlockMultipleResponse{
+		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
+
+func (r *mutationResolver) ViewerBlockMultipleIDs(ctx context.Context, userIDs []string) (*ViewerBlockMultipleIDsResponse, error) {
+	err := block.BlockMultipleIDs(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ViewerBlockMultipleIDsResponse{
 		Success: cast.ConvertToNullableBool(true),
 	}, nil
 }

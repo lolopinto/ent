@@ -250,9 +250,8 @@ func (schema *graphQLSchema) processArgsOfFunction(
 		fieldType := arg.Type.GetGraphQLType()
 
 		// ent is an input field so handle it
-		input, slice, simplifiedFieldType := schema.isIDInputField(fieldType)
+		input, slice, simplifiedFieldType := schema.isIDInputField(arg.Type)
 		if input {
-
 			if slice {
 				// there's a singular version use it
 				singular := inflection.Singular(fieldName)
@@ -280,11 +279,12 @@ func (schema *graphQLSchema) processArgsOfFunction(
 	field.args = args
 }
 
-func (schema *graphQLSchema) isIDInputField(fieldType string) (bool, bool, string) {
+func (schema *graphQLSchema) isIDInputField(typ enttype.Type) (bool, bool, string) {
 	var slice bool
-	if strings.HasPrefix(fieldType, "[") {
-		fieldType = strings.TrimPrefix(fieldType, "[")
-		fieldType = strings.TrimSuffix(fieldType, "]")
+	fieldType := typ.GetGraphQLType()
+	listType, ok := typ.(enttype.ListType)
+	if ok {
+		fieldType = strings.TrimSuffix(listType.GetElemGraphQLType(), "!")
 		slice = true
 	}
 
