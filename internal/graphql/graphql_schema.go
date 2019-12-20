@@ -9,6 +9,7 @@ import (
 	"text/template"
 
 	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 
 	"github.com/lolopinto/ent/ent"
 
@@ -249,13 +250,26 @@ func (schema *graphQLSchema) processArgsOfFunction(
 		fieldType := arg.Type.GetGraphQLType()
 
 		// ent is an input field so handle it
-		if schema.config.Schema.GetNodeDataFromGraphQLName(fieldType) != nil {
-			customFn.FlagIDField(arg, fieldType)
+		input, slice, simplifiedFieldType := schema.isIDInputField(fieldType)
+		if input {
 
-			// TODO input objects mutation?
-			// assume for now that it's always a required ID
-			fieldName = fieldName + "ID"
-			fieldType = "ID!"
+			if slice {
+				// there's a singular version use it
+				singular := inflection.Singular(fieldName)
+				if singular != fieldName {
+					fieldName = singular + "IDs"
+				} else {
+					fieldName = fieldName + "IDs"
+				}
+				fieldType = "[ID!]!"
+			} else {
+				// TODO input objects mutation?
+				// assume for now that it's always a required ID
+				fieldName = fieldName + "ID"
+				fieldType = "ID!"
+			}
+			customFn.FlagIDField(arg, simplifiedFieldType, fieldName, slice)
+
 		}
 
 		args = append(args, &graphQLArg{
@@ -264,6 +278,18 @@ func (schema *graphQLSchema) processArgsOfFunction(
 		})
 	}
 	field.args = args
+}
+
+func (schema *graphQLSchema) isIDInputField(fieldType string) (bool, bool, string) {
+	var slice bool
+	if strings.HasPrefix(fieldType, "[") {
+		fieldType = strings.TrimPrefix(fieldType, "[")
+		fieldType = strings.TrimSuffix(fieldType, "]")
+		slice = true
+	}
+
+	nodeData := schema.config.Schema.GetNodeDataFromGraphQLName(fieldType)
+	return nodeData != nil, slice, fieldType
 }
 
 func (schema *graphQLSchema) addQueryField(f *graphQLNonEntField) {

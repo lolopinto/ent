@@ -128,6 +128,7 @@ type Mutation {
     userRemoveFamilyMember(input: UserRemoveFamilyMemberInput!): UserRemoveFamilyMemberResponse
     userRemoveFriend(input: UserRemoveFriendInput!): UserRemoveFriendResponse
     viewerBlock(userID: ID!): ViewerBlockResponse
+    viewerBlockMultiple(userIDs: [ID!]!): ViewerBlockMultipleResponse
 }
 
 interface Node {
@@ -234,6 +235,10 @@ type UsersConnection implements Connection {
 
 type UsersEdge implements Edge {
     node: User!
+}
+
+type ViewerBlockMultipleResponse {
+    success: Boolean
 }
 
 type ViewerBlockResponse {

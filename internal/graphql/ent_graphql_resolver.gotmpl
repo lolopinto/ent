@@ -69,9 +69,36 @@
 {{ define "loadCustomFnFields" -}}
 	{{$fn := .}}
 	{{ if eq (len $fn.IDFields) 1 -}}
-		{{range $arg := $fn.IDFields -}}
+		{{$arg := $fn.GetFirstFnField -}}
+		{{if $arg.Slice -}}
+			// TODO need an API for loading multi-ids
+			v, ctxErr := viewer.ForContext(ctx)
+			if ctxErr != nil {
+				return nil, ctxErr
+			}
+			var wg sync.WaitGroup
+			results := make([]*models.{{$arg.FieldType}}Result, len({{$arg.GoFieldName}}))
+			wg.Add(len({{$arg.GoFieldName}}))
+			for idx, id := range {{$arg.GoFieldName}} {
+				go models.GenLoad{{$arg.FieldType}}(v, id, results[idx], &wg)
+			}
+			wg.Wait()
+			{{$name := $arg.Field.Name}}
+			var errs []error
+			var {{$name}} []*models.{{$arg.FieldType}}
+			for _, res := range results {
+				if res.Err != nil {
+					errs = append(errs, res.Err)
+				} else {
+					{{$name}} = append({{$name}}, res.{{$arg.FieldType}})
+				}				
+			}
+			if err := ent.CoalesceErr(errs...); err != nil {
+				return nil, err
+			}
+		{{else -}}
 			{{$name := $arg.Field.Name -}}
-			{{$name}}, {{$name}}Err := models.Load{{$arg.FieldType}}FromContext(ctx, {{$name}}ID)
+			{{$name}}, {{$name}}Err := models.Load{{$arg.FieldType}}FromContext(ctx, {{$arg.GoFieldName}})
 			if {{$name}}Err != nil {
 				return nil, {{$name}}Err
 			}

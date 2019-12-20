@@ -17,18 +17,33 @@ type customFunction struct {
 }
 
 type idField struct {
-	Field     *schemaparser.Field
-	FieldType string
+	Field       *schemaparser.Field
+	FieldType   string
+	Slice       bool
+	GoFieldName string
 }
 
-func (fn *customFunction) FlagIDField(field *schemaparser.Field, fieldType string) {
+func (fn *customFunction) FlagIDField(
+	field *schemaparser.Field,
+	fieldType, fieldName string,
+	slice bool,
+) {
 	if fn.IDFields == nil {
 		fn.IDFields = make(map[string]*idField)
 	}
 	fn.IDFields[field.Name] = &idField{
-		Field:     field,
-		FieldType: fieldType,
+		Field:       field,
+		FieldType:   fieldType,
+		GoFieldName: fieldName,
+		Slice:       slice,
 	}
+}
+
+func (fn *customFunction) GetFirstFnField() *idField {
+	for _, arg := range fn.IDFields {
+		return arg
+	}
+	panic("should not get here")
 }
 
 func (fn *customFunction) HasIDFields() bool {

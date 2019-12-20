@@ -254,7 +254,11 @@ type fieldWithActualType struct {
 func (t *fieldWithActualType) GetGraphQLType() string {
 	goPath := t.actualType.String()
 
-	var nullable bool
+	var slice, nullable bool
+	if strings.HasPrefix(goPath, "[]") {
+		slice = true
+		goPath = strings.TrimPrefix(goPath, "[]")
+	}
 	if strings.HasPrefix(goPath, "*") {
 		nullable = true
 		goPath = strings.TrimPrefix(goPath, "*")
@@ -267,11 +271,14 @@ func (t *fieldWithActualType) GetGraphQLType() string {
 	parts := strings.Split(fp, ".")
 	graphQLType := parts[1]
 
-	if nullable {
-		return graphQLType
+	if !nullable {
+		graphQLType = graphQLType + "!"
 	}
-	return graphQLType + "!"
+	if slice {
+		graphQLType = "[" + graphQLType + "]"
+	}
 
+	return graphQLType
 	//	panic(fmt.Errorf("couldn't find graphql type for %s", goPath))
 }
 
@@ -297,6 +304,14 @@ type PointerType struct {
 
 func (t *PointerType) getTypeName() string {
 	return "PointerType"
+}
+
+type SliceType struct {
+	fieldWithActualType
+}
+
+func (t *SliceType) getTypeName() string {
+	return "SliceType"
 }
 
 func getBasicType(typ types.Type) Type {
@@ -370,7 +385,10 @@ func GetType(typ types.Type) Type {
 		panic("todo tuple unsupported for now")
 
 	case *types.Slice, *types.Array:
-		panic("todo slice/array unsupported for now")
+		// e.g. []*github.com/lolopinto/ent/internal/test_schema/models.User
+		t := &SliceType{}
+		t.actualType = typ2
+		return t
 
 	default:
 		panic(fmt.Errorf("unsupported type %s for now", typ2.String()))

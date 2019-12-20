@@ -346,6 +346,43 @@ func (r *mutationResolver) ViewerBlock(ctx context.Context, userID string) (*Vie
 	}, nil
 }
 
+func (r *mutationResolver) ViewerBlockMultiple(ctx context.Context, userIDs []string) (*ViewerBlockMultipleResponse, error) {
+	// TODO need an API for loading multi-ids
+	v, ctxErr := viewer.ForContext(ctx)
+	if ctxErr != nil {
+		return nil, ctxErr
+	}
+	var wg sync.WaitGroup
+	results := make([]*models.UserResult, len(userIDs))
+	wg.Add(len(userIDs))
+	for idx, id := range userIDs {
+		go models.GenLoadUser(v, id, results[idx], &wg)
+	}
+	wg.Wait()
+
+	var errs []error
+	var users []*models.User
+	for _, res := range results {
+		if res.Err != nil {
+			errs = append(errs, res.Err)
+		} else {
+			users = append(users, res.User)
+		}
+	}
+	if err := ent.CoalesceErr(errs...); err != nil {
+		return nil, err
+	}
+
+	err := block.BlockMultiple(ctx, users)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ViewerBlockMultipleResponse{
+		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
+
 type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) AuthUser(ctx context.Context, email string, password string) (*AuthUserResult, error) {
