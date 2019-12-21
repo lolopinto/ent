@@ -1,7 +1,6 @@
 package graphql
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -98,64 +97,26 @@ func (schema *graphQLSchema) generateSchema() {
 	util.Die(customEntResult.Error)
 	util.Die(topLevelResult.Error)
 
-	schema.handleCustomEntDefinitions(customEntResult)
+	util.Die(schema.handleCustomEntDefinitions(customEntResult))
 	util.Die(schema.handleCustomTopLevelDefinitions(topLevelResult))
 
 	schema.writeGraphQLSchema()
 
-	schema.writeGQLGenYamlFile(customEntResult)
+	schema.writeGQLGenYamlFile(customEntResult, topLevelResult)
 
 	schema.generateGraphQLCode()
 }
 
-func (schema *graphQLSchema) handleCustomEntDefinitions(
-	customResult schemaparser.ParseCustomGQLResult,
-) {
-	if len(customResult.ParsedItems) == 0 {
-		return
-	}
-
-	for nodeName, items := range customResult.ParsedItems {
-		schemaInfo, ok := schema.Types[nodeName]
-		if !ok {
-			util.Die(fmt.Errorf("invalid schema info %s retrieved", nodeName))
-		}
-
-		for _, item := range items {
-			// TODO make ent results work correctly too
-			// should be very similar logic to customFn below
-			if len(item.Results) != 1 {
-				panic("expected 1 item")
-			}
-			field := &graphQLNonEntField{
-				fieldName: item.GraphQLName,
-				fieldType: item.Results[0].Type.GetGraphQLType(),
-			}
-			schema.processArgsOfFunction(item, field, nil)
-			schemaInfo.addNonEntField(field)
-		}
-	}
-}
-
-func (schema *graphQLSchema) handleCustomTopLevelDefinitions(
-	topLevelResult schemaparser.ParseCustomGQLResult,
+func (schema *graphQLSchema) handleCustomFunctions(
+	funcMap schemaparser.FunctionMap,
 ) error {
-	if len(topLevelResult.ParsedItems) == 0 {
-		return nil
-	}
-
-	for key, functions := range topLevelResult.ParsedItems {
+	for key, functions := range funcMap {
 		schemaInfo, ok := schema.Types[key]
 		if !ok {
 			return fmt.Errorf("invalid schema info %s retrieved", key)
 		}
 
-		if key != "Query" && key != "Mutation" {
-			return errors.New("invalid key")
-		}
-
 		for _, fn := range functions {
-
 			customFn := &customFunction{Function: fn}
 
 			field := &graphQLNonEntField{
@@ -176,6 +137,40 @@ func (schema *graphQLSchema) handleCustomTopLevelDefinitions(
 	return nil
 }
 
+func (schema *graphQLSchema) handleCustomEntDefinitions(
+	customResult schemaparser.ParseCustomGQLResult,
+) error {
+
+	return schema.handleCustomFunctions(
+		customResult.Functions,
+	)
+}
+
+func (schema *graphQLSchema) handleCustomTopLevelDefinitions(
+	topLevelResult schemaparser.ParseCustomGQLResult,
+) error {
+
+	// get all the new parsed types and add it to the schema
+	for _, obj := range topLevelResult.Objects {
+		schema.addPathToObj(obj.ImportPath, obj.GraphQLName)
+
+		schemaInfo := newGraphQLSchemaInfo("type", obj.GraphQLName)
+
+		for _, f := range obj.Fields {
+			schemaInfo.addNonEntField(&graphQLNonEntField{
+				fieldName: f.Name,
+				fieldType: f.Type.GetGraphQLType(),
+			})
+		}
+
+		schema.addSchemaInfo(schemaInfo)
+	}
+
+	return schema.handleCustomFunctions(
+		topLevelResult.Functions,
+	)
+}
+
 func (schema *graphQLSchema) getSchemaType(
 	fn *schemaparser.Function,
 	key string,
@@ -183,9 +178,19 @@ func (schema *graphQLSchema) getSchemaType(
 ) string {
 
 	results := fn.Results
-	// returns 1 item which isn't an error, return that ype
-	if len(results) == 1 && !enttype.IsErrorType(results[0].Type) {
-		return results[0].Type.GetGraphQLType()
+	if key != "Mutation" {
+		// returns 1 item which isn't an error, return that type
+		// mutations should always be in Response objects so don't do for those
+		if len(results) == 1 && !enttype.IsErrorType(results[0].Type) {
+			//customFn.ReturnsDirectly = true
+			return results[0].Type.GetGraphQLType()
+		}
+		// if 2 items and 2nd is error, return just the first item as expected type
+		// no need for result type
+		if len(results) == 2 && enttype.IsErrorType(results[1].Type) {
+			customFn.ReturnsDirectly = true
+			return results[0].Type.GetGraphQLType()
+		}
 	}
 	customFn.ReturnsComplexType = true
 
@@ -241,9 +246,7 @@ func (schema *graphQLSchema) processArgsOfFunction(
 	for idx, arg := range fn.Args {
 		// don't add context type here.
 		if idx == 0 && enttype.IsContextType(arg.Type) {
-			if customFn != nil {
-				customFn.SupportsContext = true
-			}
+			customFn.SupportsContext = true
 			continue
 		}
 		fieldName := arg.Name
@@ -385,6 +388,12 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 	s.addSchemaInfo(schemaInfo)
 }
 
+func (s *graphQLSchema) addPathToObj(importPath, nodeName string) {
+	// add path so we can use it to map from path to GraphQLtype
+	// e.g. github.com/lolopinto/jarvis/models.User
+	s.pathsToGraphQLObjects[fmt.Sprintf("%s.%s", importPath, nodeName)] = nodeName
+}
+
 func (s *graphQLSchema) generateGraphQLSchemaData() map[string]bool {
 	s.addSchemaInfo(s.getNodeInterfaceType())
 
@@ -407,13 +416,8 @@ func (s *graphQLSchema) generateGraphQLSchemaData() map[string]bool {
 
 		validTypes[nodeData.Node] = true
 
-		// add the path as valid so we can use it to map from path to GraphQLtype...
-		s.pathsToGraphQLObjects[fmt.Sprintf(
-			// e.g. github.com/lolopinto/jarvis/models.User
-			"%s.%s",
-			pathToModels,
-			nodeData.Node,
-		)] = nodeData.Node
+		// add graphql path
+		s.addPathToObj(pathToModels, nodeData.Node)
 
 		// add the GraphQL type e.g. User, Contact etc
 		s.addGraphQLInfoForType(nodeMap, nodeData)
@@ -652,9 +656,9 @@ func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 	return t.Types
 }
 
-func (s *graphQLSchema) writeGraphQLSchema() {
+func (schema *graphQLSchema) writeGraphQLSchema() {
 	file.Write(&file.TemplatedBasedFileWriter{
-		Data:              s.getSchemaForTemplate(),
+		Data:              schema.getSchemaForTemplate(),
 		AbsPathToTemplate: util.GetAbsolutePath("graphql_schema.tmpl"),
 		TemplateName:      "graphql_schema.tmpl",
 		PathToFile:        "graphql/schema.graphql",
@@ -667,6 +671,7 @@ func (s *graphQLSchema) writeGraphQLSchema() {
 
 func (s *graphQLSchema) buildYmlConfig(
 	customResult schemaparser.ParseCustomGQLResult,
+	topLevelResult schemaparser.ParseCustomGQLResult,
 ) config.Config {
 	cfg := config.Config{
 		SchemaFilename: []string{
@@ -688,54 +693,47 @@ func (s *graphQLSchema) buildYmlConfig(
 		// },
 	}
 
-	pathToModels := s.config.CodePath.GetImportPathToModels()
-
 	models := make(config.TypeMap)
 
-	itemMap := customResult.ParsedItems
-	for _, info := range s.config.Schema.Nodes {
-		nodeData := info.NodeData
+	customFns := customResult.Functions
+	topLevelFns := topLevelResult.Functions
 
-		if nodeData.HideFromGraphQL {
-			continue
-		}
-
+	for path, nodeName := range s.pathsToGraphQLObjects {
 		entry := config.TypeMapEntry{
-			Model: []string{
-				fmt.Sprintf(
-					// e.g. github.com/lolopinto/jarvis/models.User
-					"%s.%s",
-					pathToModels,
-					nodeData.Node,
-				),
-			},
+			Model: []string{path},
 		}
 
-		items, ok := itemMap[nodeData.Node]
+		functions, ok := customFns[nodeName]
+		if !ok {
+			functions, ok = topLevelFns[nodeName]
+		}
+
 		if ok {
+			//			spew.Dump(functions)
 			entry.Fields = make(map[string]config.TypeMapField)
-			for _, item := range items {
+			for _, fn := range functions {
 				// should only need this if GraphQLName != FunctionName
-				if strings.ToLower(item.GraphQLName) == strings.ToLower(item.FunctionName) {
+				if strings.ToLower(fn.GraphQLName) == strings.ToLower(fn.FunctionName) {
 					continue
 				}
-				entry.Fields[item.GraphQLName] = config.TypeMapField{
-					FieldName: item.FunctionName,
+				entry.Fields[fn.GraphQLName] = config.TypeMapField{
+					FieldName: fn.FunctionName,
 				}
 			}
 		}
-
-		models[nodeData.Node] = entry
+		models[nodeName] = entry
 	}
+
 	cfg.Models = models
 	return cfg
 }
 
 func (s *graphQLSchema) writeGQLGenYamlFile(
 	customResult schemaparser.ParseCustomGQLResult,
+	topLevelResult schemaparser.ParseCustomGQLResult,
 ) {
 	file.Write(&file.YamlFileWriter{
-		Data:              s.buildYmlConfig(customResult),
+		Data:              s.buildYmlConfig(customResult, topLevelResult),
 		PathToFile:        "graphql/gqlgen.yml",
 		CreateDirIfNeeded: true,
 	})

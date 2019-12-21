@@ -429,6 +429,10 @@ func (r *queryResolver) User(ctx context.Context, id string) (*models.User, erro
 	return models.LoadUserFromContext(ctx, id)
 }
 
+func (r *queryResolver) Viewer(ctx context.Context) (*Viewer, error) {
+	return ViewerResolver(ctx)
+}
+
 type userResolver struct{ *Resolver }
 
 func (r *userResolver) Contacts(ctx context.Context, obj *models.User) ([]*models.Contact, error) {

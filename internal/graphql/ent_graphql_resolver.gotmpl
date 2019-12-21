@@ -140,7 +140,7 @@
 
 	{{ $fnStr := $fn.GetFnCallDefinition -}}
 
-	{{if $fn.ReturnDirectly -}}
+	{{if $fn.ReturnsDirectly -}}
 		return {{$fnStr}}
 	{{ else if $fn.ReturnsComplexType}}
 		{{$fnStr}}
@@ -157,6 +157,7 @@
 		}, nil
 	{{else -}}
 		ret := {{$fnStr}}
+		{{/* TODO not always gonna need to */ -}}
 		return &ret, nil
 	{{end -}}
 

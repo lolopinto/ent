@@ -226,7 +226,7 @@ func getRunOnce() *testsync.RunOnce {
 			result := <-resultChan
 			// verifies we have results and that the results are expected
 			assert.Nil(t, result.Error)
-			return result.ParsedItems
+			return result.Functions
 		})
 	})
 	return r
@@ -245,5 +245,5 @@ func getCustomGraphQLDefinitionsWithOverlays(t *testing.T, sources map[string]st
 		&customEntParser{},
 	)
 	result := <-resultChan
-	return result.ParsedItems, result.Error
+	return result.Functions, result.Error
 }

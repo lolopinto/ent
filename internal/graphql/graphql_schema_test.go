@@ -295,6 +295,7 @@ func (account *Account) GetFoo(baz int) string {
 	// do the minimum and add Account as a schemaInfo item.
 	accountSchemaInfo := newGraphQLSchemaInfo("type", "Account")
 	s.addSchemaInfo(accountSchemaInfo)
+	s.addPathToObj("foo/account", "Account") // TODO this is not the best place
 
 	resultChan := schemaparser.ParseCustomGraphQLDefinitions(
 		&schemaparser.SourceSchemaParser{
@@ -309,14 +310,14 @@ func (account *Account) GetFoo(baz int) string {
 	)
 	result := <-resultChan
 	assert.Nil(t, result.Error)
-	assert.NotNil(t, result.ParsedItems)
+	assert.NotNil(t, result.Functions)
 
-	parsedFunctions := result.ParsedItems["Account"]
+	parsedFunctions := result.Functions["Account"]
 
 	s.handleCustomEntDefinitions(result)
 	testCustomDefinitions(t, accountSchemaInfo, parsedFunctions)
 
-	ymlConfig := s.buildYmlConfig(result)
+	ymlConfig := s.buildYmlConfig(result, schemaparser.ParseCustomGQLResult{})
 	testCustomYmlConfig(t, ymlConfig, accountSchemaInfo, parsedFunctions)
 }
 

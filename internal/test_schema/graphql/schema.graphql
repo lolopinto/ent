@@ -143,6 +143,7 @@ type Query {
     event(id: ID!): Event
     serverTime: Time!
     user(id: ID!): User
+    viewer: Viewer
 }
 
 type User implements Node {
@@ -236,6 +237,11 @@ type UsersConnection implements Connection {
 
 type UsersEdge implements Edge {
     node: User!
+}
+
+type Viewer {
+    contact: Contact
+    user: User
 }
 
 type ViewerBlockMultipleIDsResponse {

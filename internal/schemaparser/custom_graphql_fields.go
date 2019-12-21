@@ -10,6 +10,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/util"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -41,14 +42,24 @@ type FunctionMap map[string][]*Function
 
 // ParseCustomGQLResult is the result object of parsing the code path given
 type ParseCustomGQLResult struct {
-	ParsedItems FunctionMap
-	Error       error
+	Functions FunctionMap
+	Error     error
+	Objects   []*Object
+}
+
+type Object struct {
+	Name        string
+	GraphQLName string
+	ImportPath  string
+	Fields      []*Field
 }
 
 // this is used to make concurrent changes to the map
+// TODO rename this...
 type parsedList struct {
-	m   sync.RWMutex
-	fns FunctionMap
+	m    sync.RWMutex
+	fns  FunctionMap
+	objs []*Object
 }
 
 func (l *parsedList) AddFunction(fn *Function) {
@@ -58,6 +69,12 @@ func (l *parsedList) AddFunction(fn *Function) {
 		l.fns = make(FunctionMap)
 	}
 	l.fns[fn.NodeName] = append(l.fns[fn.NodeName], fn)
+}
+
+func (l *parsedList) AddObject(obj *Object) {
+	l.m.Lock()
+	defer l.m.Unlock()
+	l.objs = append(l.objs, obj)
 }
 
 // CustomCodeParser is used to configure the parsing process
@@ -124,7 +141,8 @@ func parseCustomGQL(parser Parser, codeParser CustomCodeParser, out chan ParseCu
 	if errr != nil {
 		result.Error = errr
 	} else {
-		result.ParsedItems = l.fns
+		result.Functions = l.fns
+		result.Objects = l.objs
 	}
 	out <- result
 }
@@ -137,78 +155,141 @@ func checkForCustom(
 	codeParser CustomCodeParser,
 	l *parsedList,
 ) error {
-	// TODO this shouldn't be here. should be in CustomCodeParser
-	expectedFnNames := map[string]bool{
-		"GetPrivacyPolicy": true,
-	}
 
 	var graphqlComments []*ast.CommentGroup
 	for _, cg := range file.Comments {
-		splits := strings.Split(cg.Text(), "\n")
-		for _, s := range splits {
-			if strings.HasPrefix(s, "@graphql") {
-				graphqlComments = append(graphqlComments, cg)
-				break
-			}
+		if doc := graphQLDoc(cg); doc != nil {
+			graphqlComments = append(graphqlComments, cg)
 		}
 	}
 
 	if len(graphqlComments) == 0 {
 		return nil
 	}
-	for _, decl := range file.Decls {
-		fn, ok := decl.(*ast.FuncDecl)
 
-		if !ok {
-			continue
+	ast.Inspect(file, func(node ast.Node) bool {
+
+		// this gets custom types. logic for getting custom functions in those types is the same
+		// This gets struct, and public/exported fields
+		// For now, we only go find things in the "current" package path
+		// so graphql/* and models/
+		// Eventually, need to support traversing the import path and finding new structs as we see them
+		if t, ok := node.(*ast.TypeSpec); ok && t.Type != nil {
+			s, ok := t.Type.(*ast.StructType)
+			if ok {
+				inspectStruct(l, t, s, graphqlComments, pkg)
+			}
 		}
 
-		graphqlNode := ""
+		if fn, ok := node.(*ast.FuncDecl); ok {
+			if err := inspectFunc(
+				fn, parser, pkg, file, codeParser, l, graphqlComments,
+			); err != nil {
+				util.Die(err)
+				// TODO handle this error
+				return false
+			}
+		}
+		return true
+	})
 
-		validateFnParser, ok := codeParser.(CustomCodeParserWithReceiver)
-		if ok {
-			for _, field := range fn.Recv.List {
-				info := astparser.GetFieldTypeInfo(field)
+	return nil
+}
+
+func inspectStruct(
+	l *parsedList,
+	t *ast.TypeSpec,
+	s *ast.StructType,
+	graphqlComments []*ast.CommentGroup,
+	pkg *packages.Package,
+) {
+	if cg := commentAssociatedWithType(graphqlComments, t); cg != nil {
+		doc := graphQLDoc(cg)
+		if doc == nil {
+			panic("should not get here")
+		}
+
+		obj := &Object{
+			Name:        t.Name.Name,
+			GraphQLName: doc.getGraphQLType(),
+			ImportPath:  pkg.PkgPath,
+		}
+		for _, f := range s.Fields.List {
+			fieldName := f.Names[0]
+			if !fieldName.IsExported() {
+				continue
+			}
+
+			// not a graphql comment bye
+			doc := graphQLDoc(f.Doc)
+			if doc == nil {
+				continue
+			}
+			obj.Fields = append(obj.Fields, &Field{
+				// TODO take the name from the doc if it's there...
+				Name: strcase.ToLowerCamel(f.Names[0].Name),
+				Type: enttype.GetType(pkg.TypesInfo.TypeOf(f.Type)),
+			})
+		}
+		l.AddObject(obj)
+	}
+}
+
+func inspectFunc(
+	fn *ast.FuncDecl,
+	parser Parser,
+	pkg *packages.Package,
+	file *ast.File,
+	codeParser CustomCodeParser,
+	l *parsedList,
+	graphqlComments []*ast.CommentGroup,
+) error {
+	graphqlNode := ""
+
+	validateFnParser, ok := codeParser.(CustomCodeParserWithReceiver)
+	if fn.Recv != nil {
+		for _, field := range fn.Recv.List {
+			info := astparser.GetFieldTypeInfo(field)
+
+			graphqlNode = info.Name
+			// TODO validate that this is not allowed if the type isn't valid...
+			if ok {
 				if err := validateFnParser.ValidateFnReceiver(info.Name); err != nil {
 					return err
 				}
+			}
+			break
+		}
+	}
 
-				graphqlNode = info.Name
-				break
+	// TODO this shouldn't be here. should be in CustomCodeParser
+	expectedFnNames := map[string]bool{
+		"GetPrivacyPolicy": true,
+	}
+
+	// hmm GetPrivacyPolicy and other overriden methods here
+	// where should this logic be?
+	if expectedFnNames[fn.Name.Name] {
+		return nil
+	}
+
+	if cg := commentAssociatedWithFn(graphqlComments, fn); cg != nil {
+
+		// fn is not a method and this is required return an error
+		// TODO this is conflating multiple things as of right now.
+		// Let's see how this changes and if we can come up with a generic term for this
+		if codeParser.ReceiverRequired() {
+			if fn.Recv == nil {
+				return fmt.Errorf("graphql function %s is not on a valid receiver", fn.Name.Name)
+			}
+
+			if !fn.Name.IsExported() {
+				return fmt.Errorf("graphql function %s is not exported", fn.Name.Name)
 			}
 		}
 
-		// hmm GetPrivacyPolicy and other overriden methods here
-		// where should this logic be?
-		if expectedFnNames[fn.Name.Name] {
-			continue
-		}
-		// allow one blank line there
-		// this is not the most efficient since we're doing a for loop
-		// TODO: optimize this and go through each comment one at a time?
-		// Decls not guaranteed to be sorted so we should sort both and go through each in order...
-		for _, cg := range graphqlComments {
-			diff := cg.End() + 2 - fn.Pos()
-			if diff >= 0 && diff <= 1 {
-
-				// fn is not a method and this is required return an error
-				// TODO this is conflating multiple things as of right now.
-				// Let's see how this changes and if we can come up with a generic term for this
-				if codeParser.ReceiverRequired() {
-					if fn.Recv == nil {
-						return fmt.Errorf("graphql function %s is not on a valid receiver", fn.Name.Name)
-					}
-
-					if !fn.Name.IsExported() {
-						return fmt.Errorf("graphql function %s is not exported", fn.Name.Name)
-					}
-				}
-
-				if err := addFunction(parser, fn, pkg, cg, l, graphqlNode); err != nil {
-					return err
-				}
-				break
-			}
+		if err := addFunction(parser, fn, pkg, cg, l, graphqlNode); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -231,6 +312,7 @@ func addFunction(
 		GraphQLName: strcase.ToLowerCamel(strings.TrimPrefix(fnName, "Get")),
 	}
 
+	// TODO this is terrible. we need full PkgPath...
 	if parser.GetPackageName() != pkg.Name {
 		parsedFn.FunctionName = pkg.Name + "." + parsedFn.FunctionName
 
@@ -285,29 +367,84 @@ func getFields(pkg *packages.Package, list []*ast.Field) ([]*Field, error) {
 	return fields, nil
 }
 
-func modifyFunctionFromCG(cg *ast.CommentGroup, fn *Function) error {
+type graphQLCommentGroup struct {
+	cg    *ast.CommentGroup
+	lines []string
+	line  string // line that the graphql comment is on
+}
+
+func (doc *graphQLCommentGroup) getGraphQLType() string {
+	parts := strings.Split(doc.line, " ")
+	if len(parts) != 2 {
+		return ""
+	}
+	if parts[0] != "@graphqltype" {
+		return ""
+	}
+	return parts[1]
+}
+
+func graphQLDoc(cg *ast.CommentGroup) *graphQLCommentGroup {
 	splits := strings.Split(cg.Text(), "\n")
+
 	for _, s := range splits {
 		if strings.HasPrefix(s, "@graphql") {
-			parts := strings.Split(s, " ")
-			if len(parts) == 1 {
-				// nothing to do here
-				return nil
+			return &graphQLCommentGroup{
+				cg:    cg,
+				lines: splits,
+				line:  s,
 			}
-			// override the name we should use
-			fn.GraphQLName = parts[1]
-
-			if len(parts) > 2 {
-				if parts[2] != "Query" && parts[2] != "Mutation" {
-					return errors.New("invalid query/Mutation syntax")
-				}
-				fn.NodeName = parts[2]
-			} else if fn.NodeName == "" {
-				// default to Query over mutation
-				fn.NodeName = "Query"
-			}
-			return nil
 		}
+	}
+	return nil
+}
+
+func commentAssociatedWithFn(graphqlComments []*ast.CommentGroup, fn *ast.FuncDecl) *ast.CommentGroup {
+	// allow one blank line there
+	// this is not the most efficient since we're doing a for loop
+	// TODO: optimize this and go through each comment one at a time?
+	// Decls not guaranteed to be sorted so we should sort both and go through each in order...
+	for _, cg := range graphqlComments {
+		diff := cg.End() + 2 - fn.Pos()
+		if diff >= 0 && diff <= 1 {
+			return cg
+		}
+	}
+	return nil
+}
+
+func commentAssociatedWithType(graphqlComments []*ast.CommentGroup, t *ast.TypeSpec) *ast.CommentGroup {
+	// TODO same issues as commentAssociatedWithFn
+	// TODO these comment issues may be why I need dst again.
+	for _, cg := range graphqlComments {
+		if cg.End()+6 == t.Pos() {
+			return cg
+		}
+	}
+	return nil
+}
+
+func modifyFunctionFromCG(cg *ast.CommentGroup, fn *Function) error {
+	doc := graphQLDoc(cg)
+	if doc == nil {
+		return nil
+	}
+	parts := strings.Split(doc.line, " ")
+	if len(parts) == 1 {
+		// nothing to do here
+		return nil
+	}
+	// override the name we should use
+	fn.GraphQLName = strcase.ToLowerCamel(parts[1])
+
+	if len(parts) > 2 {
+		if parts[2] != "Query" && parts[2] != "Mutation" {
+			return errors.New("invalid query/Mutation syntax")
+		}
+		fn.NodeName = parts[2]
+	} else if fn.NodeName == "" {
+		// default to Query over mutation
+		fn.NodeName = "Query"
 	}
 	return nil
 }

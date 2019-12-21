@@ -31,3 +31,10 @@ models:
             userFoo:
                 resolver: false
                 fieldName: GetUserFoo
+    Viewer:
+        model:
+          - github.com/lolopinto/ent/internal/test_schema/graphql.Viewer
+        fields:
+            contact:
+                resolver: false
+                fieldName: LoadViewerContact

@@ -12,6 +12,7 @@ type customFunction struct {
 	SupportsContext    bool
 	ReturnsError       bool
 	ReturnsComplexType bool
+	ReturnsDirectly    bool
 	Function           *schemaparser.Function
 	IDFields           map[string]*idField
 }
@@ -48,12 +49,6 @@ func (fn *customFunction) GetFirstFnField() *idField {
 
 func (fn *customFunction) HasIDFields() bool {
 	return len(fn.IDFields) != 0
-}
-
-func (fn *customFunction) ReturnDirectly() bool {
-	// TODO this may not always work because of the nullable here imposed by GQL
-	// deal with this later
-	return !fn.ReturnsComplexType && fn.ReturnsError
 }
 
 func (fn *customFunction) GetFnCallDefinition() string {

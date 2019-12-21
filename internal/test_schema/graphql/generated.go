@@ -147,6 +147,7 @@ type ComplexityRoot struct {
 		Event        func(childComplexity int, id string) int
 		ServerTime   func(childComplexity int) int
 		User         func(childComplexity int, id string) int
+		Viewer       func(childComplexity int) int
 	}
 
 	User struct {
@@ -201,6 +202,11 @@ type ComplexityRoot struct {
 
 	UsersEdge struct {
 		Node func(childComplexity int) int
+	}
+
+	Viewer struct {
+		LoadViewerContact func(childComplexity int) int
+		User              func(childComplexity int) int
 	}
 
 	ViewerBlockMultipleIDsResponse struct {
@@ -261,6 +267,7 @@ type QueryResolver interface {
 	Event(ctx context.Context, id string) (*models.Event, error)
 	ServerTime(ctx context.Context) (*time.Time, error)
 	User(ctx context.Context, id string) (*models.User, error)
+	Viewer(ctx context.Context) (*Viewer, error)
 }
 type UserResolver interface {
 	Contacts(ctx context.Context, obj *models.User) ([]*models.Contact, error)
@@ -806,6 +813,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.User(childComplexity, args["id"].(string)), true
 
+	case "Query.viewer":
+		if e.complexity.Query.Viewer == nil {
+			break
+		}
+
+		return e.complexity.Query.Viewer(childComplexity), true
+
 	case "User.baz":
 		if e.complexity.User.Baz == nil {
 			break
@@ -973,6 +987,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UsersEdge.Node(childComplexity), true
+
+	case "Viewer.contact":
+		if e.complexity.Viewer.LoadViewerContact == nil {
+			break
+		}
+
+		return e.complexity.Viewer.LoadViewerContact(childComplexity), true
+
+	case "Viewer.user":
+		if e.complexity.Viewer.User == nil {
+			break
+		}
+
+		return e.complexity.Viewer.User(childComplexity), true
 
 	case "ViewerBlockMultipleIDsResponse.success":
 		if e.complexity.ViewerBlockMultipleIDsResponse.Success == nil {
@@ -1202,6 +1230,7 @@ type Query {
     event(id: ID!): Event
     serverTime: Time!
     user(id: ID!): User
+    viewer: Viewer
 }
 
 type User implements Node {
@@ -1295,6 +1324,11 @@ type UsersConnection implements Connection {
 
 type UsersEdge implements Edge {
     node: User!
+}
+
+type Viewer {
+    contact: Contact
+    user: User
 }
 
 type ViewerBlockMultipleIDsResponse {
@@ -3887,6 +3921,40 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Viewer(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*Viewer)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewer(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -4815,6 +4883,74 @@ func (ec *executionContext) _UsersEdge_node(ctx context.Context, field graphql.C
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Viewer_contact(ctx context.Context, field graphql.CollectedField, obj *Viewer) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Viewer",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LoadViewerContact()
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Contact)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Viewer_user(ctx context.Context, field graphql.CollectedField, obj *Viewer) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Viewer",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ViewerBlockMultipleIDsResponse_success(ctx context.Context, field graphql.CollectedField, obj *ViewerBlockMultipleIDsResponse) (ret graphql.Marshaler) {
@@ -7089,6 +7225,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_user(ctx, field)
 				return res
 			})
+		case "viewer":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_viewer(ctx, field)
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -7463,6 +7610,32 @@ func (ec *executionContext) _UsersEdge(ctx context.Context, sel ast.SelectionSet
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var viewerImplementors = []string{"Viewer"}
+
+func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, obj *Viewer) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, viewerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Viewer")
+		case "contact":
+			out.Values[i] = ec._Viewer_contact(ctx, field, obj)
+		case "user":
+			out.Values[i] = ec._Viewer_user(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8953,6 +9126,17 @@ func (ec *executionContext) marshalOUsersEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋe
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) marshalOViewer2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewer(ctx context.Context, sel ast.SelectionSet, v Viewer) graphql.Marshaler {
+	return ec._Viewer(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewer(ctx context.Context, sel ast.SelectionSet, v *Viewer) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Viewer(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOViewerBlockMultipleIDsResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleIDsResponse(ctx context.Context, sel ast.SelectionSet, v ViewerBlockMultipleIDsResponse) graphql.Marshaler {
