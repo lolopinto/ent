@@ -122,12 +122,12 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AdminBlock             func(childComplexity int, blockerID string, blockeeID string) int
+		AdminBlock             func(childComplexity int, input AdminBlockInput) int
 		ContactCreate          func(childComplexity int, input ContactCreateInput) int
 		EventCreate            func(childComplexity int, input EventCreateInput) int
 		EventRsvpStatusEdit    func(childComplexity int, input EventRsvpStatusEditInput) int
-		LogEvent               func(childComplexity int, event string) int
-		LogEvent2              func(childComplexity int, event string) int
+		LogEvent               func(childComplexity int, input LogEventInput) int
+		LogEvent2              func(childComplexity int, input LogEvent2Input) int
 		UserAddFamilyMember    func(childComplexity int, input UserAddFamilyMemberInput) int
 		UserAddFriend          func(childComplexity int, input UserAddFriendInput) int
 		UserCreate             func(childComplexity int, input UserCreateInput) int
@@ -135,9 +135,10 @@ type ComplexityRoot struct {
 		UserEdit               func(childComplexity int, input UserEditInput) int
 		UserRemoveFamilyMember func(childComplexity int, input UserRemoveFamilyMemberInput) int
 		UserRemoveFriend       func(childComplexity int, input UserRemoveFriendInput) int
-		ViewerBlock            func(childComplexity int, userID string) int
-		ViewerBlockMultiple    func(childComplexity int, userIDs []string) int
-		ViewerBlockMultipleIDs func(childComplexity int, userIDs []string) int
+		ViewerBlock            func(childComplexity int, input ViewerBlockInput) int
+		ViewerBlockMultiple    func(childComplexity int, input ViewerBlockMultipleInput) int
+		ViewerBlockMultipleIDs func(childComplexity int, input ViewerBlockMultipleIDsInput) int
+		ViewerBlockParam       func(childComplexity int, userID string) int
 	}
 
 	Query struct {
@@ -217,6 +218,10 @@ type ComplexityRoot struct {
 		Success func(childComplexity int) int
 	}
 
+	ViewerBlockParamResponse struct {
+		Viewerr func(childComplexity int) int
+	}
+
 	ViewerBlockResponse struct {
 		Viewerr func(childComplexity int) int
 	}
@@ -243,12 +248,12 @@ type EventResolver interface {
 	ViewerRsvpStatus(ctx context.Context, obj *models.Event) (*EventRsvpStatus, error)
 }
 type MutationResolver interface {
-	AdminBlock(ctx context.Context, blockerID string, blockeeID string) (*AdminBlockResponse, error)
+	AdminBlock(ctx context.Context, input AdminBlockInput) (*AdminBlockResponse, error)
 	ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error)
 	EventCreate(ctx context.Context, input EventCreateInput) (*EventCreateResponse, error)
 	EventRsvpStatusEdit(ctx context.Context, input EventRsvpStatusEditInput) (*EventRsvpStatusEditResponse, error)
-	LogEvent(ctx context.Context, event string) (*LogEventResponse, error)
-	LogEvent2(ctx context.Context, event string) (*LogEvent2Response, error)
+	LogEvent(ctx context.Context, input LogEventInput) (*LogEventResponse, error)
+	LogEvent2(ctx context.Context, input LogEvent2Input) (*LogEvent2Response, error)
 	UserAddFamilyMember(ctx context.Context, input UserAddFamilyMemberInput) (*UserAddFamilyMemberResponse, error)
 	UserAddFriend(ctx context.Context, input UserAddFriendInput) (*UserAddFriendResponse, error)
 	UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error)
@@ -256,9 +261,10 @@ type MutationResolver interface {
 	UserEdit(ctx context.Context, input UserEditInput) (*UserEditResponse, error)
 	UserRemoveFamilyMember(ctx context.Context, input UserRemoveFamilyMemberInput) (*UserRemoveFamilyMemberResponse, error)
 	UserRemoveFriend(ctx context.Context, input UserRemoveFriendInput) (*UserRemoveFriendResponse, error)
-	ViewerBlock(ctx context.Context, userID string) (*ViewerBlockResponse, error)
-	ViewerBlockMultiple(ctx context.Context, userIDs []string) (*ViewerBlockMultipleResponse, error)
-	ViewerBlockMultipleIDs(ctx context.Context, userIDs []string) (*ViewerBlockMultipleIDsResponse, error)
+	ViewerBlock(ctx context.Context, input ViewerBlockInput) (*ViewerBlockResponse, error)
+	ViewerBlockMultiple(ctx context.Context, input ViewerBlockMultipleInput) (*ViewerBlockMultipleResponse, error)
+	ViewerBlockMultipleIDs(ctx context.Context, input ViewerBlockMultipleIDsInput) (*ViewerBlockMultipleIDsResponse, error)
+	ViewerBlockParam(ctx context.Context, userID string) (*ViewerBlockParamResponse, error)
 }
 type QueryResolver interface {
 	AuthUser(ctx context.Context, email string, password string) (*AuthUserResult, error)
@@ -564,7 +570,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AdminBlock(childComplexity, args["blockerID"].(string), args["blockeeID"].(string)), true
+		return e.complexity.Mutation.AdminBlock(childComplexity, args["input"].(AdminBlockInput)), true
 
 	case "Mutation.contactCreate":
 		if e.complexity.Mutation.ContactCreate == nil {
@@ -612,7 +618,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.LogEvent(childComplexity, args["event"].(string)), true
+		return e.complexity.Mutation.LogEvent(childComplexity, args["input"].(LogEventInput)), true
 
 	case "Mutation.logEvent2":
 		if e.complexity.Mutation.LogEvent2 == nil {
@@ -624,7 +630,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.LogEvent2(childComplexity, args["event"].(string)), true
+		return e.complexity.Mutation.LogEvent2(childComplexity, args["input"].(LogEvent2Input)), true
 
 	case "Mutation.userAddFamilyMember":
 		if e.complexity.Mutation.UserAddFamilyMember == nil {
@@ -720,7 +726,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ViewerBlock(childComplexity, args["userID"].(string)), true
+		return e.complexity.Mutation.ViewerBlock(childComplexity, args["input"].(ViewerBlockInput)), true
 
 	case "Mutation.viewerBlockMultiple":
 		if e.complexity.Mutation.ViewerBlockMultiple == nil {
@@ -732,7 +738,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ViewerBlockMultiple(childComplexity, args["userIDs"].([]string)), true
+		return e.complexity.Mutation.ViewerBlockMultiple(childComplexity, args["input"].(ViewerBlockMultipleInput)), true
 
 	case "Mutation.viewerBlockMultipleIDs":
 		if e.complexity.Mutation.ViewerBlockMultipleIDs == nil {
@@ -744,7 +750,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ViewerBlockMultipleIDs(childComplexity, args["userIDs"].([]string)), true
+		return e.complexity.Mutation.ViewerBlockMultipleIDs(childComplexity, args["input"].(ViewerBlockMultipleIDsInput)), true
+
+	case "Mutation.viewerBlockParam":
+		if e.complexity.Mutation.ViewerBlockParam == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_viewerBlockParam_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ViewerBlockParam(childComplexity, args["userID"].(string)), true
 
 	case "Query.authUser":
 		if e.complexity.Query.AuthUser == nil {
@@ -1016,6 +1034,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ViewerBlockMultipleResponse.Success(childComplexity), true
 
+	case "ViewerBlockParamResponse.viewerr":
+		if e.complexity.ViewerBlockParamResponse.Viewerr == nil {
+			break
+		}
+
+		return e.complexity.ViewerBlockParamResponse.Viewerr(childComplexity), true
+
 	case "ViewerBlockResponse.viewerr":
 		if e.complexity.ViewerBlockResponse.Viewerr == nil {
 			break
@@ -1087,6 +1112,11 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var parsedSchema = gqlparser.MustLoadSchema(
 	&ast.Source{Name: "graphql/schema.graphql", Input: `# Code generated by github.com/lolopinto/ent/ent, DO NOT edit. 
 
+
+input AdminBlockInput {
+    blockeeID: ID!
+    blockerID: ID!
+}
 
 type AdminBlockResponse {
     success: Boolean
@@ -1192,8 +1222,16 @@ type EventsEdge implements Edge {
     node: Event!
 }
 
+input LogEvent2Input {
+    event: String!
+}
+
 type LogEvent2Response {
     success: Boolean
+}
+
+input LogEventInput {
+    event: String!
 }
 
 type LogEventResponse {
@@ -1201,12 +1239,12 @@ type LogEventResponse {
 }
 
 type Mutation {
-    adminBlock(blockerID: ID!, blockeeID: ID!): AdminBlockResponse
+    adminBlock(input: AdminBlockInput!): AdminBlockResponse
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
     eventCreate(input: EventCreateInput!): EventCreateResponse
     eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse
-    logEvent(event: String!): LogEventResponse
-    logEvent2(event: String!): LogEvent2Response
+    logEvent(input: LogEventInput!): LogEventResponse
+    logEvent2(input: LogEvent2Input!): LogEvent2Response
     userAddFamilyMember(input: UserAddFamilyMemberInput!): UserAddFamilyMemberResponse
     userAddFriend(input: UserAddFriendInput!): UserAddFriendResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
@@ -1214,9 +1252,10 @@ type Mutation {
     userEdit(input: UserEditInput!): UserEditResponse
     userRemoveFamilyMember(input: UserRemoveFamilyMemberInput!): UserRemoveFamilyMemberResponse
     userRemoveFriend(input: UserRemoveFriendInput!): UserRemoveFriendResponse
-    viewerBlock(userID: ID!): ViewerBlockResponse
-    viewerBlockMultiple(userIDs: [ID!]!): ViewerBlockMultipleResponse
-    viewerBlockMultipleIDs(userIDs: [String!]!): ViewerBlockMultipleIDsResponse
+    viewerBlock(input: ViewerBlockInput!): ViewerBlockResponse
+    viewerBlockMultiple(input: ViewerBlockMultipleInput!): ViewerBlockMultipleResponse
+    viewerBlockMultipleIDs(input: ViewerBlockMultipleIDsInput!): ViewerBlockMultipleIDsResponse
+    viewerBlockParam(userID: ID!): ViewerBlockParamResponse
 }
 
 interface Node {
@@ -1331,12 +1370,28 @@ type Viewer {
     user: User
 }
 
+input ViewerBlockInput {
+    userID: ID!
+}
+
+input ViewerBlockMultipleIDsInput {
+    userIDs: [String!]!
+}
+
 type ViewerBlockMultipleIDsResponse {
     success: Boolean
 }
 
+input ViewerBlockMultipleInput {
+    userIDs: [ID!]!
+}
+
 type ViewerBlockMultipleResponse {
     success: Boolean
+}
+
+type ViewerBlockParamResponse {
+    viewerr: User
 }
 
 type ViewerBlockResponse {
@@ -1369,22 +1424,14 @@ func (ec *executionContext) field_Contact_contactBar_args(ctx context.Context, r
 func (ec *executionContext) field_Mutation_adminBlock_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["blockerID"]; ok {
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+	var arg0 AdminBlockInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAdminBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["blockerID"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["blockeeID"]; ok {
-		arg1, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["blockeeID"] = arg1
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1433,28 +1480,28 @@ func (ec *executionContext) field_Mutation_eventRsvpStatusEdit_args(ctx context.
 func (ec *executionContext) field_Mutation_logEvent2_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["event"]; ok {
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg0 LogEvent2Input
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNLogEvent2Input2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEvent2Input(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["event"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_logEvent_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["event"]; ok {
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg0 LogEventInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNLogEventInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEventInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["event"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1559,32 +1606,32 @@ func (ec *executionContext) field_Mutation_userRemoveFriend_args(ctx context.Con
 func (ec *executionContext) field_Mutation_viewerBlockMultipleIDs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []string
-	if tmp, ok := rawArgs["userIDs"]; ok {
-		arg0, err = ec.unmarshalNString2ᚕstring(ctx, tmp)
+	var arg0 ViewerBlockMultipleIDsInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNViewerBlockMultipleIDsInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleIDsInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["userIDs"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_viewerBlockMultiple_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []string
-	if tmp, ok := rawArgs["userIDs"]; ok {
-		arg0, err = ec.unmarshalNID2ᚕstring(ctx, tmp)
+	var arg0 ViewerBlockMultipleInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNViewerBlockMultipleInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["userIDs"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_viewerBlock_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_viewerBlockParam_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1595,6 +1642,20 @@ func (ec *executionContext) field_Mutation_viewerBlock_args(ctx context.Context,
 		}
 	}
 	args["userID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_viewerBlock_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 ViewerBlockInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNViewerBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -3049,7 +3110,7 @@ func (ec *executionContext) _Mutation_adminBlock(ctx context.Context, field grap
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AdminBlock(rctx, args["blockerID"].(string), args["blockeeID"].(string))
+		return ec.resolvers.Mutation().AdminBlock(rctx, args["input"].(AdminBlockInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3213,7 +3274,7 @@ func (ec *executionContext) _Mutation_logEvent(ctx context.Context, field graphq
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().LogEvent(rctx, args["event"].(string))
+		return ec.resolvers.Mutation().LogEvent(rctx, args["input"].(LogEventInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3254,7 +3315,7 @@ func (ec *executionContext) _Mutation_logEvent2(ctx context.Context, field graph
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().LogEvent2(rctx, args["event"].(string))
+		return ec.resolvers.Mutation().LogEvent2(rctx, args["input"].(LogEvent2Input))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3582,7 +3643,7 @@ func (ec *executionContext) _Mutation_viewerBlock(ctx context.Context, field gra
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ViewerBlock(rctx, args["userID"].(string))
+		return ec.resolvers.Mutation().ViewerBlock(rctx, args["input"].(ViewerBlockInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3623,7 +3684,7 @@ func (ec *executionContext) _Mutation_viewerBlockMultiple(ctx context.Context, f
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ViewerBlockMultiple(rctx, args["userIDs"].([]string))
+		return ec.resolvers.Mutation().ViewerBlockMultiple(rctx, args["input"].(ViewerBlockMultipleInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3664,7 +3725,7 @@ func (ec *executionContext) _Mutation_viewerBlockMultipleIDs(ctx context.Context
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ViewerBlockMultipleIDs(rctx, args["userIDs"].([]string))
+		return ec.resolvers.Mutation().ViewerBlockMultipleIDs(rctx, args["input"].(ViewerBlockMultipleIDsInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3677,6 +3738,47 @@ func (ec *executionContext) _Mutation_viewerBlockMultipleIDs(ctx context.Context
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOViewerBlockMultipleIDsResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleIDsResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_viewerBlockParam(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_viewerBlockParam_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ViewerBlockParam(rctx, args["userID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ViewerBlockParamResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOViewerBlockParamResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockParamResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_authUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5021,6 +5123,40 @@ func (ec *executionContext) _ViewerBlockMultipleResponse_success(ctx context.Con
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ViewerBlockParamResponse_viewerr(ctx context.Context, field graphql.CollectedField, obj *ViewerBlockParamResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "ViewerBlockParamResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Viewerr, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _ViewerBlockResponse_viewerr(ctx context.Context, field graphql.CollectedField, obj *ViewerBlockResponse) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -6206,6 +6342,30 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAdminBlockInput(ctx context.Context, obj interface{}) (AdminBlockInput, error) {
+	var it AdminBlockInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "blockeeID":
+			var err error
+			it.BlockeeID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "blockerID":
+			var err error
+			it.BlockerID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputContactCreateInput(ctx context.Context, obj interface{}) (ContactCreateInput, error) {
 	var it ContactCreateInput
 	var asMap = obj.(map[string]interface{})
@@ -6323,6 +6483,42 @@ func (ec *executionContext) unmarshalInputEventRsvpStatusEditInput(ctx context.C
 		case "userID":
 			var err error
 			it.UserID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputLogEvent2Input(ctx context.Context, obj interface{}) (LogEvent2Input, error) {
+	var it LogEvent2Input
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "event":
+			var err error
+			it.Event, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputLogEventInput(ctx context.Context, obj interface{}) (LogEventInput, error) {
+	var it LogEventInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "event":
+			var err error
+			it.Event, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6515,6 +6711,60 @@ func (ec *executionContext) unmarshalInputUserRemoveFriendInput(ctx context.Cont
 		case "userID":
 			var err error
 			it.UserID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputViewerBlockInput(ctx context.Context, obj interface{}) (ViewerBlockInput, error) {
+	var it ViewerBlockInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "userID":
+			var err error
+			it.UserID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputViewerBlockMultipleIDsInput(ctx context.Context, obj interface{}) (ViewerBlockMultipleIDsInput, error) {
+	var it ViewerBlockMultipleIDsInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "userIDs":
+			var err error
+			it.UserIDs, err = ec.unmarshalNString2ᚕstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputViewerBlockMultipleInput(ctx context.Context, obj interface{}) (ViewerBlockMultipleInput, error) {
+	var it ViewerBlockMultipleInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "userIDs":
+			var err error
+			it.UserIDs, err = ec.unmarshalNID2ᚕstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7130,6 +7380,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_viewerBlockMultiple(ctx, field)
 		case "viewerBlockMultipleIDs":
 			out.Values[i] = ec._Mutation_viewerBlockMultipleIDs(ctx, field)
+		case "viewerBlockParam":
+			out.Values[i] = ec._Mutation_viewerBlockParam(ctx, field)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7695,6 +7947,30 @@ func (ec *executionContext) _ViewerBlockMultipleResponse(ctx context.Context, se
 	return out
 }
 
+var viewerBlockParamResponseImplementors = []string{"ViewerBlockParamResponse"}
+
+func (ec *executionContext) _ViewerBlockParamResponse(ctx context.Context, sel ast.SelectionSet, obj *ViewerBlockParamResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, viewerBlockParamResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ViewerBlockParamResponse")
+		case "viewerr":
+			out.Values[i] = ec._ViewerBlockParamResponse_viewerr(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var viewerBlockResponseImplementors = []string{"ViewerBlockResponse"}
 
 func (ec *executionContext) _ViewerBlockResponse(ctx context.Context, sel ast.SelectionSet, obj *ViewerBlockResponse) graphql.Marshaler {
@@ -7964,6 +8240,10 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAdminBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockInput(ctx context.Context, v interface{}) (AdminBlockInput, error) {
+	return ec.unmarshalInputAdminBlockInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	return graphql.UnmarshalBoolean(v)
 }
@@ -8214,6 +8494,14 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) unmarshalNLogEvent2Input2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEvent2Input(ctx context.Context, v interface{}) (LogEvent2Input, error) {
+	return ec.unmarshalInputLogEvent2Input(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNLogEventInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEventInput(ctx context.Context, v interface{}) (LogEventInput, error) {
+	return ec.unmarshalInputLogEventInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalString(v)
 }
@@ -8380,6 +8668,18 @@ func (ec *executionContext) marshalNUsersEdge2ᚖgithubᚗcomᚋlolopintoᚋent�
 		return graphql.Null
 	}
 	return ec._UsersEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNViewerBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockInput(ctx context.Context, v interface{}) (ViewerBlockInput, error) {
+	return ec.unmarshalInputViewerBlockInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNViewerBlockMultipleIDsInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleIDsInput(ctx context.Context, v interface{}) (ViewerBlockMultipleIDsInput, error) {
+	return ec.unmarshalInputViewerBlockMultipleIDsInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNViewerBlockMultipleInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleInput(ctx context.Context, v interface{}) (ViewerBlockMultipleInput, error) {
+	return ec.unmarshalInputViewerBlockMultipleInput(ctx, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -9159,6 +9459,17 @@ func (ec *executionContext) marshalOViewerBlockMultipleResponse2ᚖgithubᚗcom�
 		return graphql.Null
 	}
 	return ec._ViewerBlockMultipleResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOViewerBlockParamResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockParamResponse(ctx context.Context, sel ast.SelectionSet, v ViewerBlockParamResponse) graphql.Marshaler {
+	return ec._ViewerBlockParamResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOViewerBlockParamResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockParamResponse(ctx context.Context, sel ast.SelectionSet, v *ViewerBlockParamResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ViewerBlockParamResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOViewerBlockResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockResponse(ctx context.Context, sel ast.SelectionSet, v ViewerBlockResponse) graphql.Marshaler {

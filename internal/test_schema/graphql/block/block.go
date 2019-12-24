@@ -12,6 +12,15 @@ func Block(ctx context.Context, user *models.User) (viewerr *models.User, err er
 	return user, nil
 }
 
+// BlockParam takes a user and blocks that user for the viewer
+// @graphql viewerBlockParam Mutation
+// @graphqlinputtype false
+func BlockParam(ctx context.Context, user *models.User) (viewerr *models.User, err error) {
+	// function that takes a user and has the viewer block the other user
+	// make block return a "user". in an ideal world this will return the viewer. TODO
+	return user, nil
+}
+
 // BlockMultiple takes a list of users and blocks those users for the viewer
 // @graphql viewerBlockMultiple Mutation
 func BlockMultiple(ctx context.Context, users []*models.User) error {

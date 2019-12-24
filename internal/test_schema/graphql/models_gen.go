@@ -23,6 +23,11 @@ type Node interface {
 	IsNode()
 }
 
+type AdminBlockInput struct {
+	BlockeeID string `json:"blockeeID"`
+	BlockerID string `json:"blockerID"`
+}
+
 type AdminBlockResponse struct {
 	Success *bool `json:"success"`
 }
@@ -81,8 +86,16 @@ type EventsEdge struct {
 
 func (EventsEdge) IsEdge() {}
 
+type LogEvent2Input struct {
+	Event string `json:"event"`
+}
+
 type LogEvent2Response struct {
 	Success *bool `json:"success"`
+}
+
+type LogEventInput struct {
+	Event string `json:"event"`
 }
 
 type LogEventResponse struct {
@@ -169,12 +182,28 @@ type UsersEdge struct {
 
 func (UsersEdge) IsEdge() {}
 
+type ViewerBlockInput struct {
+	UserID string `json:"userID"`
+}
+
+type ViewerBlockMultipleIDsInput struct {
+	UserIDs []string `json:"userIDs"`
+}
+
 type ViewerBlockMultipleIDsResponse struct {
 	Success *bool `json:"success"`
 }
 
+type ViewerBlockMultipleInput struct {
+	UserIDs []string `json:"userIDs"`
+}
+
 type ViewerBlockMultipleResponse struct {
 	Success *bool `json:"success"`
+}
+
+type ViewerBlockParamResponse struct {
+	Viewerr *models.User `json:"viewerr"`
 }
 
 type ViewerBlockResponse struct {

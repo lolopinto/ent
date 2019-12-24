@@ -117,7 +117,7 @@
 		{{end -}}
 		{{range $arg := $fn.IDFields -}}
 			{{$name := $arg.Field.Name -}}
-			go models.GenLoad{{$arg.FieldType}}(v, {{$name}}ID, &{{$name}}Result, &wg)
+			go models.GenLoad{{$arg.FieldType}}(v, {{$arg.IDName}}, &{{$name}}Result, &wg)
 		{{end -}}
 		wg.Wait()
 		if entErr := ent.CoalesceErr({{$fn.LoadedFields}}); entErr != nil {

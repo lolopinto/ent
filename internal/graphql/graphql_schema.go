@@ -271,7 +271,6 @@ func (schema *graphQLSchema) processArgsOfFunction(
 				fieldType = "ID!"
 			}
 			customFn.FlagIDField(arg, simplifiedFieldType, fieldName, slice)
-
 		}
 
 		args = append(args, &graphQLArg{
@@ -279,7 +278,27 @@ func (schema *graphQLSchema) processArgsOfFunction(
 			fieldType: fieldType,
 		})
 	}
-	field.args = args
+	// by default mutation objects should be input types
+	// we're are creating an input type to be consistent
+	if fn.NodeName == "Mutation" && !fn.CommentGroup.DisableGraphQLInputType() {
+		customFn.FlagInputObject()
+		inputTypeName := strcase.ToCamel(fn.GraphQLName + "Input")
+		inputSchemaInfo := newGraphQLSchemaInfo("input", inputTypeName)
+
+		for _, arg := range args {
+			inputSchemaInfo.addNonEntField(&graphQLNonEntField{
+				fieldName: arg.fieldName,
+				fieldType: arg.fieldType,
+			})
+		}
+		schema.addSchemaInfo(inputSchemaInfo)
+		field.args = append(field.args, &graphQLArg{
+			fieldName: "input",
+			fieldType: fmt.Sprintf("%s!", inputTypeName),
+		})
+	} else {
+		field.args = args
+	}
 }
 
 func (schema *graphQLSchema) isIDInputField(typ enttype.Type) (bool, bool, string) {

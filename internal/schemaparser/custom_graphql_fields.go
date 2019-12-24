@@ -28,6 +28,8 @@ type Function struct {
 	Results []*Field
 	// ImportPath, when not-empty indicates path that needs to be imported for this to work
 	ImportPath string
+	// CommentGroup return the comments associated with this function
+	CommentGroup *GraphQLCommentGroup
 }
 
 // Field represents an item in an argument list or return list for a function
@@ -211,7 +213,7 @@ func inspectStruct(
 
 		obj := &Object{
 			Name:        t.Name.Name,
-			GraphQLName: doc.getGraphQLType(),
+			GraphQLName: doc.GetGraphQLType(),
 			ImportPath:  pkg.PkgPath,
 		}
 		for _, f := range s.Fields.List {
@@ -305,11 +307,13 @@ func addFunction(
 ) error {
 	fnName := fn.Name.Name
 
+	doc := graphQLDoc(cg)
 	parsedFn := &Function{
 		NodeName:     graphqlNode,
 		FunctionName: fnName,
 		// remove Get prefix if it exists
-		GraphQLName: strcase.ToLowerCamel(strings.TrimPrefix(fnName, "Get")),
+		GraphQLName:  strcase.ToLowerCamel(strings.TrimPrefix(fnName, "Get")),
+		CommentGroup: doc,
 	}
 
 	// TODO this is terrible. we need full PkgPath...
@@ -319,7 +323,7 @@ func addFunction(
 		parsedFn.ImportPath = pkg.PkgPath
 	}
 
-	if err := modifyFunctionFromCG(cg, parsedFn); err != nil {
+	if err := modifyFunctionFromDoc(doc, parsedFn); err != nil {
 		return err
 	}
 
@@ -367,13 +371,13 @@ func getFields(pkg *packages.Package, list []*ast.Field) ([]*Field, error) {
 	return fields, nil
 }
 
-type graphQLCommentGroup struct {
+type GraphQLCommentGroup struct {
 	cg    *ast.CommentGroup
 	lines []string
 	line  string // line that the graphql comment is on
 }
 
-func (doc *graphQLCommentGroup) getGraphQLType() string {
+func (doc *GraphQLCommentGroup) GetGraphQLType() string {
 	parts := strings.Split(doc.line, " ")
 	if len(parts) != 2 {
 		return ""
@@ -384,12 +388,25 @@ func (doc *graphQLCommentGroup) getGraphQLType() string {
 	return parts[1]
 }
 
-func graphQLDoc(cg *ast.CommentGroup) *graphQLCommentGroup {
+func (doc *GraphQLCommentGroup) DisableGraphQLInputType() bool {
+	for _, line := range doc.lines {
+		if strings.HasPrefix(line, "@graphqlinputtype") {
+			parts := strings.Split(line, " ")
+			if len(parts) == 2 && parts[1] == "false" {
+				return true
+			}
+			return false
+		}
+	}
+	return false
+}
+
+func graphQLDoc(cg *ast.CommentGroup) *GraphQLCommentGroup {
 	splits := strings.Split(cg.Text(), "\n")
 
 	for _, s := range splits {
 		if strings.HasPrefix(s, "@graphql") {
-			return &graphQLCommentGroup{
+			return &GraphQLCommentGroup{
 				cg:    cg,
 				lines: splits,
 				line:  s,
@@ -424,11 +441,7 @@ func commentAssociatedWithType(graphqlComments []*ast.CommentGroup, t *ast.TypeS
 	return nil
 }
 
-func modifyFunctionFromCG(cg *ast.CommentGroup, fn *Function) error {
-	doc := graphQLDoc(cg)
-	if doc == nil {
-		return nil
-	}
+func modifyFunctionFromDoc(doc *GraphQLCommentGroup, fn *Function) error {
 	parts := strings.Split(doc.line, " ")
 	if len(parts) == 1 {
 		// nothing to do here

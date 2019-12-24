@@ -15,13 +15,29 @@ type customFunction struct {
 	ReturnsDirectly    bool
 	Function           *schemaparser.Function
 	IDFields           map[string]*idField
+	hasInputObject     bool
 }
 
 type idField struct {
 	Field       *schemaparser.Field
 	FieldType   string
 	Slice       bool
-	GoFieldName string
+	goFieldName string
+	fn          *customFunction
+}
+
+func (f *idField) GoFieldName() string {
+	if f.fn.hasInputObject {
+		return "input." + strcase.ToCamel(f.goFieldName)
+	}
+	return f.goFieldName
+}
+
+func (f *idField) IDName() string {
+	if f.fn.hasInputObject {
+		return "input." + strcase.ToCamel(f.Field.Name) + "ID"
+	}
+	return f.Field.Name + "ID"
 }
 
 func (fn *customFunction) FlagIDField(
@@ -35,8 +51,9 @@ func (fn *customFunction) FlagIDField(
 	fn.IDFields[field.Name] = &idField{
 		Field:       field,
 		FieldType:   fieldType,
-		GoFieldName: fieldName,
+		goFieldName: fieldName,
 		Slice:       slice,
+		fn:          fn,
 	}
 }
 
@@ -47,8 +64,38 @@ func (fn *customFunction) GetFirstFnField() *idField {
 	panic("should not get here")
 }
 
+func (fn *customFunction) FlagInputObject() {
+	fn.hasInputObject = true
+}
+
 func (fn *customFunction) HasIDFields() bool {
 	return len(fn.IDFields) != 0
+}
+
+func (fn *customFunction) writeArgName(idx int, arg *schemaparser.Field, sb *strings.Builder) {
+	// always use ctx name since that's what it's called in resolver.go
+	// and may be different in generated code
+	if idx == 0 && fn.SupportsContext {
+		sb.WriteString("ctx")
+		return
+	}
+	var field *idField
+	if len(fn.IDFields) > 1 {
+		field = fn.IDFields[arg.Name]
+	}
+	// in the case where we loaded an object first, use the loaded variable here...
+	if field != nil {
+		// blockerResult.User
+		sb.WriteString(arg.Name)
+		sb.WriteString("Result.")
+		sb.WriteString(field.FieldType)
+	} else if fn.hasInputObject && !fn.HasIDFields() {
+		// has an input object
+		// e.g. input.Event
+		sb.WriteString("input." + strcase.ToCamel(arg.Name))
+	} else {
+		sb.WriteString(arg.Name)
+	}
 }
 
 func (fn *customFunction) GetFnCallDefinition() string {
@@ -80,25 +127,7 @@ func (fn *customFunction) GetFnCallDefinition() string {
 
 	sb.WriteString("(")
 	for idx, arg := range fn.Function.Args {
-		// always use ctx name since that's what it's called in resolver.go
-		// and may be different in generated code
-		if idx == 0 && fn.SupportsContext {
-			sb.WriteString("ctx")
-		} else if len(fn.IDFields) > 1 {
-			idField := fn.IDFields[arg.Name]
-			// in the case where we loaded an object first, use the loaded variable here...
-			if idField != nil {
-				// blockerResult.User
-				sb.WriteString(arg.Name)
-				sb.WriteString("Result.")
-				sb.WriteString(idField.FieldType)
-			} else {
-				sb.WriteString(arg.Name)
-			}
-		} else {
-			// we loaded sequentially for simplicity sake so don't care about idField
-			sb.WriteString(arg.Name)
-		}
+		fn.writeArgName(idx, arg, &sb)
 		if idx+1 != len(fn.Function.Args) {
 			sb.WriteString(", ")
 		}

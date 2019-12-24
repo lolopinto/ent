@@ -94,7 +94,7 @@ func (r *eventResolver) ViewerRsvpStatus(ctx context.Context, obj *models.Event)
 
 type mutationResolver struct{ *Resolver }
 
-func (r *mutationResolver) AdminBlock(ctx context.Context, blockerID string, blockeeID string) (*AdminBlockResponse, error) {
+func (r *mutationResolver) AdminBlock(ctx context.Context, input AdminBlockInput) (*AdminBlockResponse, error) {
 	v, ctxErr := viewer.ForContext(ctx)
 	if ctxErr != nil {
 		return nil, ctxErr
@@ -103,8 +103,8 @@ func (r *mutationResolver) AdminBlock(ctx context.Context, blockerID string, blo
 	wg.Add(2)
 	var blockeeResult models.UserResult
 	var blockerResult models.UserResult
-	go models.GenLoadUser(v, blockeeID, &blockeeResult, &wg)
-	go models.GenLoadUser(v, blockerID, &blockerResult, &wg)
+	go models.GenLoadUser(v, input.BlockeeID, &blockeeResult, &wg)
+	go models.GenLoadUser(v, input.BlockerID, &blockerResult, &wg)
 	wg.Wait()
 	if entErr := ent.CoalesceErr(&blockeeResult, &blockerResult); entErr != nil {
 		return nil, entErr
@@ -178,16 +178,16 @@ func (r *mutationResolver) EventRsvpStatusEdit(ctx context.Context, input EventR
 	}, nil
 }
 
-func (r *mutationResolver) LogEvent(ctx context.Context, event string) (*LogEventResponse, error) {
-	log.Log(ctx, event)
+func (r *mutationResolver) LogEvent(ctx context.Context, input LogEventInput) (*LogEventResponse, error) {
+	log.Log(ctx, input.Event)
 
 	return &LogEventResponse{
 		Success: cast.ConvertToNullableBool(true),
 	}, nil
 }
 
-func (r *mutationResolver) LogEvent2(ctx context.Context, event string) (*LogEvent2Response, error) {
-	err := log.Log2(ctx, event)
+func (r *mutationResolver) LogEvent2(ctx context.Context, input LogEvent2Input) (*LogEvent2Response, error) {
+	err := log.Log2(ctx, input.Event)
 	if err != nil {
 		return nil, err
 	}
@@ -330,8 +330,8 @@ func (r *mutationResolver) UserRemoveFriend(ctx context.Context, input UserRemov
 	}, nil
 }
 
-func (r *mutationResolver) ViewerBlock(ctx context.Context, userID string) (*ViewerBlockResponse, error) {
-	user, userErr := models.LoadUserFromContext(ctx, userID)
+func (r *mutationResolver) ViewerBlock(ctx context.Context, input ViewerBlockInput) (*ViewerBlockResponse, error) {
+	user, userErr := models.LoadUserFromContext(ctx, input.UserID)
 	if userErr != nil {
 		return nil, userErr
 	}
@@ -346,16 +346,16 @@ func (r *mutationResolver) ViewerBlock(ctx context.Context, userID string) (*Vie
 	}, nil
 }
 
-func (r *mutationResolver) ViewerBlockMultiple(ctx context.Context, userIDs []string) (*ViewerBlockMultipleResponse, error) {
+func (r *mutationResolver) ViewerBlockMultiple(ctx context.Context, input ViewerBlockMultipleInput) (*ViewerBlockMultipleResponse, error) {
 	// TODO need an API for loading multi-ids
 	v, ctxErr := viewer.ForContext(ctx)
 	if ctxErr != nil {
 		return nil, ctxErr
 	}
 	var wg sync.WaitGroup
-	results := make([]*models.UserResult, len(userIDs))
-	wg.Add(len(userIDs))
-	for idx, id := range userIDs {
+	results := make([]*models.UserResult, len(input.UserIDs))
+	wg.Add(len(input.UserIDs))
+	for idx, id := range input.UserIDs {
 		go models.GenLoadUser(v, id, results[idx], &wg)
 	}
 	wg.Wait()
@@ -383,14 +383,30 @@ func (r *mutationResolver) ViewerBlockMultiple(ctx context.Context, userIDs []st
 	}, nil
 }
 
-func (r *mutationResolver) ViewerBlockMultipleIDs(ctx context.Context, userIDs []string) (*ViewerBlockMultipleIDsResponse, error) {
-	err := block.BlockMultipleIDs(ctx, userIDs)
+func (r *mutationResolver) ViewerBlockMultipleIDs(ctx context.Context, input ViewerBlockMultipleIDsInput) (*ViewerBlockMultipleIDsResponse, error) {
+	err := block.BlockMultipleIDs(ctx, input.UserIDs)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ViewerBlockMultipleIDsResponse{
 		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
+
+func (r *mutationResolver) ViewerBlockParam(ctx context.Context, userID string) (*ViewerBlockParamResponse, error) {
+	user, userErr := models.LoadUserFromContext(ctx, userID)
+	if userErr != nil {
+		return nil, userErr
+	}
+
+	viewerr, err := block.BlockParam(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ViewerBlockParamResponse{
+		Viewerr: viewerr,
 	}, nil
 }
 
