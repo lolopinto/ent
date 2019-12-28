@@ -26,8 +26,9 @@ type Function struct {
 	Args []*Field
 	// Results shows the list of return values of the function.
 	Results []*Field
-	// ImportPath, when not-empty indicates path that needs to be imported for this to work
-	ImportPath string
+	// PackagePath is the package path as used by the go/types package.
+	PackagePath string
+
 	// CommentGroup return the comments associated with this function
 	CommentGroup *GraphQLCommentGroup
 }
@@ -52,7 +53,7 @@ type ParseCustomGQLResult struct {
 type Object struct {
 	Name        string
 	GraphQLName string
-	ImportPath  string
+	PackagePath string
 	Fields      []*Field
 }
 
@@ -214,7 +215,7 @@ func inspectStruct(
 		obj := &Object{
 			Name:        t.Name.Name,
 			GraphQLName: doc.GetGraphQLType(),
-			ImportPath:  pkg.PkgPath,
+			PackagePath: pkg.PkgPath,
 		}
 		for _, f := range s.Fields.List {
 			fieldName := f.Names[0]
@@ -316,12 +317,7 @@ func addFunction(
 		CommentGroup: doc,
 	}
 
-	// TODO this is terrible. we need full PkgPath...
-	if parser.GetPackageName() != pkg.Name {
-		parsedFn.FunctionName = pkg.Name + "." + parsedFn.FunctionName
-
-		parsedFn.ImportPath = pkg.PkgPath
-	}
+	parsedFn.PackagePath = pkg.PkgPath
 
 	if err := modifyFunctionFromDoc(doc, parsedFn); err != nil {
 		return err

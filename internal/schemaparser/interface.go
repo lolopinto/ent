@@ -13,7 +13,6 @@ import (
 
 type Parser interface {
 	GetConfig() (*packages.Config, string, error)
-	GetPackageName() string
 }
 
 type ParserNeedsCleanup interface {
@@ -24,17 +23,13 @@ type ParserNeedsCleanup interface {
 type ConfigSchemaParser struct {
 	AbsRootPath   string
 	FilesToIgnore []string
-	packageName   string
-	rootPath      string
 }
 
-func (p *ConfigSchemaParser) GetPackageName() string {
-	if p.packageName == "" {
-		dir, packageName := filepath.Split(p.AbsRootPath)
-		p.packageName = strings.TrimSuffix(packageName, "...")
-		p.rootPath = filepath.Join(dir, p.packageName)
-	}
-	return p.packageName
+func (p *ConfigSchemaParser) getRootPath() (string, string) {
+	dir, packageName := filepath.Split(p.AbsRootPath)
+	packageName = strings.TrimSuffix(packageName, "...")
+	rootPath := filepath.Join(dir, packageName)
+	return rootPath, packageName
 }
 
 func (p *ConfigSchemaParser) GetConfig() (*packages.Config, string, error) {
@@ -50,14 +45,11 @@ func (p *ConfigSchemaParser) GetConfig() (*packages.Config, string, error) {
 	if len(p.FilesToIgnore) != 0 {
 		overlay := make(map[string][]byte)
 
-		// init this using p.GetPackageName()
-		if p.rootPath == "" {
-			p.GetPackageName()
-		}
+		rootPath, packageName := p.getRootPath()
 		for _, path := range p.FilesToIgnore {
-			fullPath := filepath.Join(p.rootPath, path)
+			fullPath := filepath.Join(rootPath, path)
 
-			overlay[fullPath] = []byte(fmt.Sprintf("package %s \n\n", p.GetPackageName()))
+			overlay[fullPath] = []byte(fmt.Sprintf("package %s \n\n", packageName))
 		}
 
 		cfg.Overlay = overlay
@@ -71,13 +63,6 @@ type SourceSchemaParser struct {
 	tempDir     string
 }
 
-func (p *SourceSchemaParser) GetPackageName() string {
-	if p.PackageName == "" {
-		return "configs"
-	}
-	return p.PackageName
-}
-
 func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 	overlay := make(map[string][]byte)
 
@@ -88,7 +73,10 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 	p.tempDir, err = ioutil.TempDir(path, "test")
 	util.Die(err)
 
-	configDir := filepath.Join(p.tempDir, p.GetPackageName())
+	if p.PackageName == "" {
+		p.PackageName = "configs"
+	}
+	configDir := filepath.Join(p.tempDir, p.PackageName)
 	err = os.MkdirAll(configDir, 0666)
 	util.Die(err)
 

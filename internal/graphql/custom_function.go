@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/99designs/gqlgen/codegen/templates"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/schemaparser"
 )
@@ -122,7 +123,14 @@ func (fn *customFunction) GetFnCallDefinition() string {
 		}
 	}
 
+	// use lookupImport that comes with gqlgen.
+	// When we eventually convert everything to local reserveImport/lookupImport, we need to change this
+	// this is fragile because it depends on the implementation detail that reserveImport/lookupImport is currently a singleton
 	// write function call
+	if path := templates.CurrentImports.Lookup(fn.Function.PackagePath); path != "" {
+		sb.WriteString(path)
+		sb.WriteString(".")
+	}
 	sb.WriteString(fn.Function.FunctionName)
 
 	sb.WriteString("(")

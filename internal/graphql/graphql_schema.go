@@ -152,7 +152,7 @@ func (schema *graphQLSchema) handleCustomTopLevelDefinitions(
 
 	// get all the new parsed types and add it to the schema
 	for _, obj := range topLevelResult.Objects {
-		schema.addPathToObj(obj.ImportPath, obj.GraphQLName)
+		schema.addPathToObj(obj.PackagePath, obj.GraphQLName)
 
 		schemaInfo := newGraphQLSchemaInfo("type", obj.GraphQLName)
 
@@ -407,10 +407,10 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 	s.addSchemaInfo(schemaInfo)
 }
 
-func (s *graphQLSchema) addPathToObj(importPath, nodeName string) {
+func (s *graphQLSchema) addPathToObj(packagePath, nodeName string) {
 	// add path so we can use it to map from path to GraphQLtype
 	// e.g. github.com/lolopinto/jarvis/models.User
-	s.pathsToGraphQLObjects[fmt.Sprintf("%s.%s", importPath, nodeName)] = nodeName
+	s.pathsToGraphQLObjects[fmt.Sprintf("%s.%s", packagePath, nodeName)] = nodeName
 }
 
 func (s *graphQLSchema) generateGraphQLSchemaData() map[string]bool {
