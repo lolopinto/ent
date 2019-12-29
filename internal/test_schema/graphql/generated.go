@@ -1314,7 +1314,7 @@ type Query {
     event(id: ID!): Event
     serverTime: Time!
     user(id: ID!): User
-    viewer: Viewer
+    viewer: Viewer!
 }
 
 type User implements Node {
@@ -1412,7 +1412,7 @@ type UsersEdge implements Edge {
 
 type Viewer {
     contact: Contact
-    user: User
+    user: User!
 }
 
 input ViewerBlockInput {
@@ -4220,12 +4220,15 @@ func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.Col
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*viewer.Viewer)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx, field.Selections, res)
+	return ec.marshalNViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5218,12 +5221,15 @@ func (ec *executionContext) _Viewer_user(ctx context.Context, field graphql.Coll
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ViewerBlockMultipleIDsResponse_viewer(ctx context.Context, field graphql.CollectedField, obj *ViewerBlockMultipleIDsResponse) (ret graphql.Marshaler) {
@@ -7712,6 +7718,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_viewer(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "__type":
@@ -8114,6 +8123,9 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Viewer_contact(ctx, field, obj)
 		case "user":
 			out.Values[i] = ec._Viewer_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8898,6 +8910,20 @@ func (ec *executionContext) marshalNUsersEdge2ᚖgithubᚗcomᚋlolopintoᚋent�
 		return graphql.Null
 	}
 	return ec._UsersEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNViewer2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx context.Context, sel ast.SelectionSet, v viewer.Viewer) graphql.Marshaler {
+	return ec._Viewer(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx context.Context, sel ast.SelectionSet, v *viewer.Viewer) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Viewer(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNViewerBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockInput(ctx context.Context, v interface{}) (ViewerBlockInput, error) {

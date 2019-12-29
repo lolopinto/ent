@@ -37,6 +37,11 @@ type NullableType interface {
 	GetNullableType() Type
 }
 
+type NonNullableType interface {
+	Type
+	GetNonNullableType() Type
+}
+
 type FieldWithOverridenStructType interface {
 	GetStructType() string
 }
@@ -79,6 +84,10 @@ func (t *NullableStringType) GetCastToMethod() string {
 	return "cast.ToNullableString"
 }
 
+func (t *NullableStringType) GetNonNullableType() Type {
+	return &StringType{}
+}
+
 type BoolType struct{}
 
 func (t *BoolType) GetDBType() string {
@@ -111,6 +120,10 @@ func (t *NullableBoolType) GetGraphQLType() string {
 
 func (t *NullableBoolType) GetCastToMethod() string {
 	return "cast.ToNullableBool"
+}
+
+func (t *NullableBoolType) GetNonNullableType() Type {
+	return &BoolType{}
 }
 
 // TODO uuid support needed
@@ -149,6 +162,10 @@ func (t *NullableIDType) GetCastToMethod() string {
 	return "cast.ToNullableUUIDString"
 }
 
+func (t *NullableIDType) GetNonNullableType() Type {
+	return &IDType{}
+}
+
 type IntegerType struct{}
 
 func (t *IntegerType) GetDBType() string {
@@ -183,6 +200,10 @@ func (t *NullableIntegerType) GetCastToMethod() string {
 	return "cast.ToNullableInt"
 }
 
+func (t *NullableIntegerType) GetNonNullableType() Type {
+	return &IntegerType{}
+}
+
 type FloatType struct{}
 
 func (t *FloatType) GetDBType() string {
@@ -215,6 +236,10 @@ func (t *NullableFloatType) GetGraphQLType() string {
 
 func (t *NullableFloatType) GetCastToMethod() string {
 	return "cast.ToNullableFloat"
+}
+
+func (t *NullableFloatType) GetNonNullableType() Type {
+	return &FloatType{}
 }
 
 type TimeType struct{}
@@ -256,17 +281,28 @@ func (t *NullableTimeType) GetGraphQLType() string {
 	return "Time"
 }
 
-type fActualType interface {
-	getTypeName() string
+func (t *NullableTimeType) GetNonNullableType() Type {
+	return &TimeType{}
 }
 
-type fieldWithActualType struct {
-	fActualType
-	actualType types.Type
-	//	pathMap    map[string]string
+type typeConfig struct {
+	forceNullable    bool
+	forceNonNullable bool
 }
 
-func getGraphQLType(typ types.Type) string {
+func forceNullable() func(*typeConfig) {
+	return func(cfg *typeConfig) {
+		cfg.forceNullable = true
+	}
+}
+
+func forceNonNullable() func(*typeConfig) {
+	return func(cfg *typeConfig) {
+		cfg.forceNonNullable = true
+	}
+}
+
+func getGraphQLType(typ types.Type, opts ...func(*typeConfig)) string {
 	// handle string, *string and other "basic types" etc
 	if basicType := getBasicType(typ); basicType != nil {
 		return basicType.GetGraphQLType()
@@ -278,6 +314,20 @@ func getGraphQLType(typ types.Type) string {
 	if strings.HasPrefix(typeStr, "*") {
 		nullable = true
 		typeStr = strings.TrimPrefix(typeStr, "*")
+	}
+	cfg := &typeConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	// TODO support this for basic types...
+	if cfg.forceNullable && cfg.forceNonNullable {
+		panic("cannot force nullable and non-nullable at the same time")
+	}
+	if cfg.forceNullable {
+		nullable = true
+	}
+	if cfg.forceNonNullable {
+		nullable = false
 	}
 
 	_, fp := filepath.Split(typeStr)
@@ -322,8 +372,27 @@ func getDefaultSliceGraphQLFieldName(typ types.Type) string {
 	return inflection.Plural(getDefaultGraphQLFieldName(typ))
 }
 
+type fActualType interface {
+	getTypeName() string
+}
+
+type fieldWithActualType struct {
+	fActualType
+	actualType       types.Type
+	forceNullable    bool
+	forceNonNullable bool
+	//	pathMap    map[string]string
+}
+
 func (t *fieldWithActualType) GetGraphQLType() string {
-	return getGraphQLType(t.actualType)
+	var opts []func(*typeConfig)
+	if t.forceNullable {
+		opts = append(opts, forceNullable())
+	}
+	if t.forceNonNullable {
+		opts = append(opts, forceNonNullable())
+	}
+	return getGraphQLType(t.actualType, opts...)
 }
 
 func (t *fieldWithActualType) GetStructType() string {
@@ -334,6 +403,24 @@ func (t *fieldWithActualType) GetStructType() string {
 	return fp
 }
 
+func (t *fieldWithActualType) DefaultGraphQLFieldName() string {
+	return getDefaultGraphQLFieldName(t.actualType)
+}
+
+func (t *fieldWithActualType) getNullableType() fieldWithActualType {
+	return fieldWithActualType{
+		actualType:    t.actualType,
+		forceNullable: true,
+	}
+}
+
+func (t *fieldWithActualType) getNonNullableType() fieldWithActualType {
+	return fieldWithActualType{
+		actualType:       t.actualType,
+		forceNonNullable: true,
+	}
+}
+
 type NamedType struct {
 	fieldWithActualType
 }
@@ -342,8 +429,12 @@ func (t *NamedType) getTypeName() string {
 	return "NamedType"
 }
 
-func (t *NamedType) DefaultGraphQLFieldName() string {
-	return getDefaultGraphQLFieldName(t.actualType)
+func (t *NamedType) GetNullableType() Type {
+	return &NamedType{t.getNullableType()}
+}
+
+func (t *NamedType) GetNonNullableType() Type {
+	return &NamedType{t.getNonNullableType()}
 }
 
 type PointerType struct {
@@ -354,8 +445,12 @@ func (t *PointerType) getTypeName() string {
 	return "PointerType"
 }
 
-func (t *PointerType) DefaultGraphQLFieldName() string {
-	return getDefaultGraphQLFieldName(t.actualType)
+func (t *PointerType) GetNullableType() Type {
+	return &PointerType{t.getNullableType()}
+}
+
+func (t *PointerType) GetNonNullableType() Type {
+	return &PointerType{t.getNonNullableType()}
 }
 
 type SliceType struct {
@@ -483,6 +578,18 @@ func GetNullableType(typ types.Type, nullable bool) Type {
 		return nullableType.GetNullableType()
 	}
 	panic(fmt.Errorf("couldn't find nullable version of type %s", types.TypeString(typ, nil)))
+}
+
+func GetNonNullableType(typ types.Type, forceRequired bool) Type {
+	fieldType := GetType(typ)
+	if !forceRequired {
+		return fieldType
+	}
+	nonNullableType, ok := fieldType.(NonNullableType)
+	if ok {
+		return nonNullableType.GetNonNullableType()
+	}
+	panic(fmt.Errorf("couldn't find non-nullable version of type %s", types.TypeString(typ, nil)))
 }
 
 func IsErrorType(typ Type) bool {

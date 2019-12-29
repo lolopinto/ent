@@ -231,11 +231,18 @@ func inspectStruct(
 			if doc == nil {
 				continue
 			}
-			obj.Fields = append(obj.Fields, &Field{
-				// TODO take the name from the doc if it's there...
+			field := &Field{
 				Name: strcase.ToLowerCamel(f.Names[0].Name),
-				Type: enttype.GetType(pkg.TypesInfo.TypeOf(f.Type)),
-			})
+			}
+			val := doc.customValueFromLine()
+			// get overriden name if there's one
+			if val.name != "" {
+				field.Name = val.name
+			}
+			// set type
+			field.Type = enttype.GetNonNullableType(pkg.TypesInfo.TypeOf(f.Type), val.forceRequired)
+
+			obj.Fields = append(obj.Fields, field)
 		}
 		l.AddObject(obj)
 	}
@@ -329,13 +336,13 @@ func addFunction(
 
 	results := fn.Type.Results
 	if results != nil {
-		returnNames, err := doc.returnNames()
+		returnValues, err := doc.returnValues()
 		if err != nil {
 			return err
 		}
 		c := &configureResults{
-			returnNames: returnNames,
-			codeParser:  codeParser,
+			returnValues: returnValues,
+			codeParser:   codeParser,
 		}
 
 		fields, err := getFields(pkg, results.List, c)
@@ -363,8 +370,8 @@ type configureFields interface {
 	fieldOverride(name string) string
 }
 
-type configureFieldsWithNames interface {
-	fieldNames() []string
+type configureFieldsWithReturnValues interface {
+	fieldValues() []*customReturnValue
 }
 
 type configureArgs struct {
@@ -380,8 +387,8 @@ func (c *configureArgs) fieldOverride(name string) string {
 }
 
 type configureResults struct {
-	returnNames []string
-	codeParser  CustomCodeParser
+	returnValues []*customReturnValue
+	codeParser   CustomCodeParser
 }
 
 func (c *configureResults) fieldOverride(name string) string {
@@ -394,8 +401,8 @@ func (c *configureResults) nameRequired() bool {
 	return c.codeParser.CreatesComplexTypeForSingleResult()
 }
 
-func (c *configureResults) fieldNames() []string {
-	return c.returnNames
+func (c *configureResults) fieldValues() []*customReturnValue {
+	return c.returnValues
 }
 
 func fieldName(c configureFields, name string) string {
@@ -409,40 +416,41 @@ func fieldName(c configureFields, name string) string {
 }
 
 // returns a function that gets the next field name
-func getNextFieldWithNames(c configureFields) func() (string, error) {
-	cWithNames, ok := c.(configureFieldsWithNames)
+func getNextCustomField(c configureFields) func() (*customReturnValue, error) {
+	cWithValues, ok := c.(configureFieldsWithReturnValues)
 	if !ok {
 		return nil
 	}
-	names := cWithNames.fieldNames()
-	if len(names) == 0 {
+	values := cWithValues.fieldValues()
+	if len(values) == 0 {
 		return nil
 	}
 	var i int
-	return func() (string, error) {
-		if i == len(names) {
-			return "", errors.New("not enough @graphqlreturn names specified")
+	return func() (*customReturnValue, error) {
+		if i == len(values) {
+			return nil, errors.New("not enough @graphqlreturn names specified")
 		}
 		i++
-		return names[i-1], nil
+		return values[i-1], nil
 	}
 }
 
 func getFields(pkg *packages.Package, list []*ast.Field, c configureFields) ([]*Field, error) {
 	var fields []*Field
 
-	nextFieldName := getNextFieldWithNames(c)
+	nextField := getNextCustomField(c)
 
 	for idx, item := range list {
 
 		paramType := pkg.TypesInfo.TypeOf(item.Type)
 
 		if len(item.Names) == 0 {
-			var name string
-			var err error
-			var expectedErrorType bool
-
 			entType := enttype.GetType(paramType)
+
+			f := &Field{Type: entType}
+
+			var name string
+			var expectedErrorType bool
 
 			if idx+1 == len(list) && enttype.IsErrorType(entType) {
 				expectedErrorType = true
@@ -450,10 +458,14 @@ func getFields(pkg *packages.Package, list []*ast.Field, c configureFields) ([]*
 
 			// first see if we have a @graphqlreturn name (expected in the right order)
 			// don't do for last item since we don't send it to GraphQL and it shouldn't be exepcted to be there
-			if nextFieldName != nil && !expectedErrorType {
-				name, err = nextFieldName()
+			if nextField != nil && !expectedErrorType {
+				val, err := nextField()
 				if err != nil {
 					return nil, err
+				}
+				name = val.name
+				if val.forceRequired {
+					f.Type = enttype.GetNonNullableType(paramType, val.forceRequired)
 				}
 			}
 
@@ -470,12 +482,11 @@ func getFields(pkg *packages.Package, list []*ast.Field, c configureFields) ([]*
 				return nil, fmt.Errorf("found field %T with no name", entType)
 			}
 
-			fields = append(fields, &Field{
-				Name: fieldName(c, name),
-				Type: entType,
-			})
+			// append fields
+			f.Name = fieldName(c, name)
+			fields = append(fields, f)
 		} else {
-			if nextFieldName != nil {
+			if nextField != nil {
 				return nil, errors.New("cannot use both named return types and graphql comments")
 			}
 
@@ -558,21 +569,50 @@ func (doc *GraphQLCommentGroup) fieldOverrides() (map[string]string, error) {
 	return m, nil
 }
 
-func (doc *GraphQLCommentGroup) returnNames() ([]string, error) {
-	var names []string
+func (doc *GraphQLCommentGroup) customValueFromLine() *customReturnValue {
+	parts := strings.Split(doc.line, " ")
+
+	ret := &customReturnValue{}
+	if len(parts) == 1 {
+		return ret
+	}
+	if len(parts) > 2 {
+		ret.name = parts[1]
+	}
+	for _, part := range parts {
+		if part == "@required" {
+			ret.forceRequired = true
+		}
+	}
+	return ret
+}
+
+type customReturnValue struct {
+	name          string
+	forceRequired bool
+}
+
+func (doc *GraphQLCommentGroup) returnValues() ([]*customReturnValue, error) {
+	var results []*customReturnValue
 	err := doc.parseLines("@graphqlreturn", func(line string, parts []string) (bool, error) {
 		var err error
-		if len(parts) != 2 {
+		if len(parts) < 2 {
 			err = fmt.Errorf("invalid @graphqlreturn line %s", line)
 		} else {
-			names = append(names, parts[1])
+			val := &customReturnValue{
+				name: parts[1],
+			}
+			if len(parts) == 3 && parts[2] == "@required" {
+				val.forceRequired = true
+			}
+			results = append(results, val)
 		}
 		return true, err
 	})
 	if err != nil {
 		return nil, err
 	}
-	return names, nil
+	return results, nil
 }
 
 func graphQLDoc(cg *ast.CommentGroup) *GraphQLCommentGroup {

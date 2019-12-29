@@ -9,6 +9,7 @@ import (
 
 // ViewerResolver takes the context and returns the logged in viewer
 // @graphql viewer Query
+// @graphqlreturn viewer @required
 func ViewerResolver(ctx context.Context) (*Viewer, error) {
 	return newViewer(ctx)
 }
@@ -22,7 +23,7 @@ type foo struct {
 type Viewer struct {
 	viewer viewer.ViewerContext
 
-	// @graphql
+	// @graphql @required
 	User *models.User
 }
 

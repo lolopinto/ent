@@ -168,7 +168,7 @@ type Query {
     event(id: ID!): Event
     serverTime: Time!
     user(id: ID!): User
-    viewer: Viewer
+    viewer: Viewer!
 }
 
 type User implements Node {
@@ -266,7 +266,7 @@ type UsersEdge implements Edge {
 
 type Viewer {
     contact: Contact
-    user: User
+    user: User!
 }
 
 input ViewerBlockInput {
