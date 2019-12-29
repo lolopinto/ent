@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/lolopinto/ent/internal/test_schema/graphql/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 )
 
@@ -191,7 +192,7 @@ type ViewerBlockMultipleIDsInput struct {
 }
 
 type ViewerBlockMultipleIDsResponse struct {
-	Success *bool `json:"success"`
+	Viewer *viewer.Viewer `json:"viewer"`
 }
 
 type ViewerBlockMultipleInput struct {
@@ -199,15 +200,15 @@ type ViewerBlockMultipleInput struct {
 }
 
 type ViewerBlockMultipleResponse struct {
-	Success *bool `json:"success"`
+	Viewer *viewer.Viewer `json:"viewer"`
 }
 
 type ViewerBlockParamResponse struct {
-	Viewerr *models.User `json:"viewerr"`
+	Viewer *viewer.Viewer `json:"viewer"`
 }
 
 type ViewerBlockResponse struct {
-	Viewerr *models.User `json:"viewerr"`
+	Viewer *viewer.Viewer `json:"viewer"`
 }
 
 type EventRsvpStatus string

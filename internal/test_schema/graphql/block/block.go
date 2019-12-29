@@ -1,36 +1,39 @@
 package block
 
-import "github.com/lolopinto/ent/internal/test_schema/models"
+import (
+	"github.com/lolopinto/ent/internal/test_schema/graphql/viewer"
+	"github.com/lolopinto/ent/internal/test_schema/models"
+)
 
 import "context"
 
 // Block takes a user and blocks that user for the viewer
+// mutation returns the viewer
 // @graphql viewerBlock Mutation
-func Block(ctx context.Context, user *models.User) (viewerr *models.User, err error) {
+func Block(ctx context.Context, user *models.User) (*viewer.Viewer, error) {
 	// function that takes a user and has the viewer block the other user
-	// make block return a "user". in an ideal world this will return the viewer. TODO
-	return user, nil
+	return viewer.ViewerResolver(ctx)
 }
 
 // BlockParam takes a user and blocks that user for the viewer
+// mutation returns the viewer
 // @graphql viewerBlockParam Mutation
 // @graphqlinputtype false
-func BlockParam(ctx context.Context, user *models.User) (viewerr *models.User, err error) {
+func BlockParam(ctx context.Context, user *models.User) (*viewer.Viewer, error) {
 	// function that takes a user and has the viewer block the other user
-	// make block return a "user". in an ideal world this will return the viewer. TODO
-	return user, nil
+	return viewer.ViewerResolver(ctx)
 }
 
 // BlockMultiple takes a list of users and blocks those users for the viewer
 // @graphql viewerBlockMultiple Mutation
-func BlockMultiple(ctx context.Context, users []*models.User) error {
-	return nil
+func BlockMultiple(ctx context.Context, users []*models.User) (*viewer.Viewer, error) {
+	return viewer.ViewerResolver(ctx)
 }
 
 // BlockMultipleID takes a list of user ids and blocks those users for the viewer
 // @graphql viewerBlockMultipleIDs Mutation
-func BlockMultipleIDs(ctx context.Context, userIDs []string) error {
-	return nil
+func BlockMultipleIDs(ctx context.Context, userIDs []string) (*viewer.Viewer, error) {
+	return viewer.ViewerResolver(ctx)
 }
 
 // AdminBlock takes 2 users and blocks those users

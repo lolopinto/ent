@@ -13,6 +13,7 @@ import (
 	"github.com/lolopinto/ent/internal/test_schema/graphql/auth"
 	"github.com/lolopinto/ent/internal/test_schema/graphql/block"
 	"github.com/lolopinto/ent/internal/test_schema/graphql/log"
+	viewer1 "github.com/lolopinto/ent/internal/test_schema/graphql/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/contact/action"
 	action1 "github.com/lolopinto/ent/internal/test_schema/models/event/action"
@@ -336,13 +337,13 @@ func (r *mutationResolver) ViewerBlock(ctx context.Context, input ViewerBlockInp
 		return nil, userErr
 	}
 
-	viewerr, err := block.Block(ctx, user)
+	viewer, err := block.Block(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ViewerBlockResponse{
-		Viewerr: viewerr,
+		Viewer: viewer,
 	}, nil
 }
 
@@ -373,24 +374,24 @@ func (r *mutationResolver) ViewerBlockMultiple(ctx context.Context, input Viewer
 		return nil, err
 	}
 
-	err := block.BlockMultiple(ctx, users)
+	viewer, err := block.BlockMultiple(ctx, users)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ViewerBlockMultipleResponse{
-		Success: cast.ConvertToNullableBool(true),
+		Viewer: viewer,
 	}, nil
 }
 
 func (r *mutationResolver) ViewerBlockMultipleIDs(ctx context.Context, input ViewerBlockMultipleIDsInput) (*ViewerBlockMultipleIDsResponse, error) {
-	err := block.BlockMultipleIDs(ctx, input.UserIDs)
+	viewer, err := block.BlockMultipleIDs(ctx, input.UserIDs)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ViewerBlockMultipleIDsResponse{
-		Success: cast.ConvertToNullableBool(true),
+		Viewer: viewer,
 	}, nil
 }
 
@@ -400,13 +401,13 @@ func (r *mutationResolver) ViewerBlockParam(ctx context.Context, userID string) 
 		return nil, userErr
 	}
 
-	viewerr, err := block.BlockParam(ctx, user)
+	viewer, err := block.BlockParam(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ViewerBlockParamResponse{
-		Viewerr: viewerr,
+		Viewer: viewer,
 	}, nil
 }
 
@@ -445,8 +446,8 @@ func (r *queryResolver) User(ctx context.Context, id string) (*models.User, erro
 	return models.LoadUserFromContext(ctx, id)
 }
 
-func (r *queryResolver) Viewer(ctx context.Context) (*Viewer, error) {
-	return ViewerResolver(ctx)
+func (r *queryResolver) Viewer(ctx context.Context) (*viewer1.Viewer, error) {
+	return viewer1.ViewerResolver(ctx)
 }
 
 type userResolver struct{ *Resolver }

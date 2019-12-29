@@ -267,7 +267,7 @@ input ViewerBlockMultipleIDsInput {
 }
 
 type ViewerBlockMultipleIDsResponse {
-    success: Boolean
+    viewer: Viewer
 }
 
 input ViewerBlockMultipleInput {
@@ -275,15 +275,15 @@ input ViewerBlockMultipleInput {
 }
 
 type ViewerBlockMultipleResponse {
-    success: Boolean
+    viewer: Viewer
 }
 
 type ViewerBlockParamResponse {
-    viewerr: User
+    viewer: Viewer
 }
 
 type ViewerBlockResponse {
-    viewerr: User
+    viewer: Viewer
 }
 
 

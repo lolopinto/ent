@@ -350,9 +350,15 @@ func getFields(pkg *packages.Package, list []*ast.Field) ([]*Field, error) {
 		// for fields without return values, names not required
 		// TODO provide option to enforce names or not.
 		if len(item.Names) == 0 {
+			entType := enttype.GetType(paramType)
+			var name string
+			defaultTyp, ok := entType.(enttype.DefaulFieldNameType)
+			if ok {
+				name = defaultTyp.DefaultGraphQLFieldName()
+			}
 			fields = append(fields, &Field{
-				Name: "",
-				Type: enttype.GetType(paramType),
+				Name: name,
+				Type: entType,
 			})
 		} else {
 			// same type, we need to break this up as different fields if there's more than one

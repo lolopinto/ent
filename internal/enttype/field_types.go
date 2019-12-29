@@ -2,6 +2,8 @@ package enttype
 
 import (
 	"fmt"
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"go/types"
 	"path/filepath"
 	"strconv"
@@ -37,6 +39,10 @@ type NullableType interface {
 
 type FieldWithOverridenStructType interface {
 	GetStructType() string
+}
+
+type DefaulFieldNameType interface {
+	DefaultGraphQLFieldName() string
 }
 
 type StringType struct{}
@@ -297,6 +303,21 @@ func getSliceGraphQLType(typ, elemType types.Type) string {
 	return graphQLType + "!"
 }
 
+func getDefaultGraphQLFieldName(typ types.Type) string {
+	typeStr := typ.String()
+
+	_, fp := filepath.Split(typeStr)
+	parts := strings.Split(fp, ".")
+	if len(parts) != 2 {
+		return ""
+	}
+	return strcase.ToLowerCamel(parts[1])
+}
+
+func getDefaultSliceGraphQLFieldName(typ types.Type) string {
+	return inflection.Plural(getDefaultGraphQLFieldName(typ))
+}
+
 func (t *fieldWithActualType) GetGraphQLType() string {
 	return getGraphQLType(t.actualType)
 }
@@ -317,6 +338,10 @@ func (t *NamedType) getTypeName() string {
 	return "NamedType"
 }
 
+func (t *NamedType) DefaultGraphQLFieldName() string {
+	return getDefaultGraphQLFieldName(t.actualType)
+}
+
 type PointerType struct {
 	fieldWithActualType
 }
@@ -325,12 +350,20 @@ func (t *PointerType) getTypeName() string {
 	return "PointerType"
 }
 
+func (t *PointerType) DefaultGraphQLFieldName() string {
+	return getDefaultGraphQLFieldName(t.actualType)
+}
+
 type SliceType struct {
 	typ *types.Slice
 }
 
 func (t *SliceType) GetGraphQLType() string {
 	return getSliceGraphQLType(t.typ, t.typ.Elem())
+}
+
+func (t *SliceType) DefaultGraphQLFieldName() string {
+	return getDefaultSliceGraphQLFieldName(t.typ.Elem())
 }
 
 func (t *SliceType) GetElemGraphQLType() string {
@@ -342,11 +375,15 @@ type ArrayType struct {
 }
 
 func (t *ArrayType) GetGraphQLType() string {
+	return getSliceGraphQLType(t.typ, t.typ.Elem())
+}
+
+func (t *ArrayType) GetElemGraphQLType() string {
 	return getGraphQLType(t.typ.Elem())
 }
 
-func (t *ArrayType) GetElemType() Type {
-	return nil
+func (t *ArrayType) DefaultGraphQLFieldName() string {
+	return getDefaultSliceGraphQLFieldName(t.typ.Elem())
 }
 
 func getBasicType(typ types.Type) Type {

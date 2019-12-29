@@ -87,8 +87,9 @@ func (schema *graphQLSchema) generateSchema() {
 	topLevelChan := schemaparser.ParseCustomGraphQLDefinitions(
 		&schemaparser.ConfigSchemaParser{
 			AbsRootPath: schema.config.CodePath.GetAbsPathToGraphQL() + "...",
-			// To support changing other things that resolver.go  depends on and not have this fail on us
-			FilesToIgnore: []string{"resolver.go"},
+			// for default generated files, don't parse them and treat them as basically empty files
+			// errors in there shouldn't affect this process since if everything succeeds now, we are fine
+			FilesToIgnore: defaultGraphQLFiles,
 		},
 		&customTopLevelParser{},
 	)

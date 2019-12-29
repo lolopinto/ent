@@ -130,8 +130,6 @@
 	{{ $field := . -}}
 	{{ $fn := customFn $field -}}
 
-	{{ reserveImport $fn.Function.PackagePath -}}
-	
 	{{ if $fn.HasIDFields -}}
 		{{ template "loadCustomFnFields" $fn -}}
 	{{end -}}

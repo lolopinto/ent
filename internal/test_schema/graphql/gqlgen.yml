@@ -33,7 +33,7 @@ models:
                 fieldName: GetUserFoo
     Viewer:
         model:
-          - github.com/lolopinto/ent/internal/test_schema/graphql.Viewer
+          - github.com/lolopinto/ent/internal/test_schema/graphql/viewer.Viewer
         fields:
             contact:
                 resolver: false
