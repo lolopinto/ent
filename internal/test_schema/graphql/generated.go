@@ -1372,7 +1372,7 @@ type Viewer {
 }
 
 input ViewerBlockInput {
-    userID: ID!
+    blockeeID: ID!
 }
 
 input ViewerBlockMultipleIDsInput {
@@ -6727,9 +6727,9 @@ func (ec *executionContext) unmarshalInputViewerBlockInput(ctx context.Context, 
 
 	for k, v := range asMap {
 		switch k {
-		case "userID":
+		case "blockeeID":
 			var err error
-			it.UserID, err = ec.unmarshalNID2string(ctx, v)
+			it.BlockeeID, err = ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}

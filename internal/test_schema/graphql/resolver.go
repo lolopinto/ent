@@ -332,12 +332,12 @@ func (r *mutationResolver) UserRemoveFriend(ctx context.Context, input UserRemov
 }
 
 func (r *mutationResolver) ViewerBlock(ctx context.Context, input ViewerBlockInput) (*ViewerBlockResponse, error) {
-	user, userErr := models.LoadUserFromContext(ctx, input.UserID)
-	if userErr != nil {
-		return nil, userErr
+	blockee, blockeeErr := models.LoadUserFromContext(ctx, input.BlockeeID)
+	if blockeeErr != nil {
+		return nil, blockeeErr
 	}
 
-	viewer, err := block.Block(ctx, user)
+	viewer, err := block.Block(ctx, blockee)
 	if err != nil {
 		return nil, err
 	}

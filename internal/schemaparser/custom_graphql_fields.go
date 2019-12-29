@@ -325,14 +325,18 @@ func addFunction(
 
 	results := fn.Type.Results
 	if results != nil {
-		fields, err := getFields(pkg, results.List)
+		fields, err := getFields(pkg, results.List, nil)
 		if err != nil {
 			return err
 		}
 		parsedFn.Results = fields
 	}
 
-	fields, err := getFields(pkg, fn.Type.Params.List)
+	fieldOverrides, err := doc.fieldOverrides()
+	if err != nil {
+		return err
+	}
+	fields, err := getFields(pkg, fn.Type.Params.List, &configureArgs{fieldOverrides: fieldOverrides})
 	if err != nil {
 		return err
 	}
@@ -341,7 +345,41 @@ func addFunction(
 	return nil
 }
 
-func getFields(pkg *packages.Package, list []*ast.Field) ([]*Field, error) {
+type configureFields interface {
+	nameRequired() bool
+	fieldOverride(name string) string
+}
+
+type configureArgs struct {
+	fieldOverrides map[string]string
+}
+
+func (c *configureArgs) nameRequired() bool {
+	return true
+}
+
+func (c *configureArgs) fieldOverride(name string) string {
+	return c.fieldOverrides[name]
+}
+
+func nameRequired(c configureFields) bool {
+	if c == nil {
+		return false
+	}
+	return c.nameRequired()
+}
+
+func fieldName(c configureFields, name string) string {
+	if c == nil {
+		return name
+	}
+	if n := c.fieldOverride(name); n != "" {
+		return n
+	}
+	return name
+}
+
+func getFields(pkg *packages.Package, list []*ast.Field, c configureFields) ([]*Field, error) {
 	var fields []*Field
 	for _, item := range list {
 
@@ -357,14 +395,14 @@ func getFields(pkg *packages.Package, list []*ast.Field) ([]*Field, error) {
 				name = defaultTyp.DefaultGraphQLFieldName()
 			}
 			fields = append(fields, &Field{
-				Name: name,
+				Name: fieldName(c, name),
 				Type: entType,
 			})
 		} else {
 			// same type, we need to break this up as different fields if there's more than one
 			for _, name := range item.Names {
 				fields = append(fields, &Field{
-					Name: name.Name,
+					Name: fieldName(c, name.Name),
 					Type: enttype.GetType(paramType),
 				})
 			}
@@ -390,17 +428,48 @@ func (doc *GraphQLCommentGroup) GetGraphQLType() string {
 	return parts[1]
 }
 
-func (doc *GraphQLCommentGroup) DisableGraphQLInputType() bool {
+// parseLines takes a prefix and a function that's called with line that matches prefix and lines separated by space
+// function should returns a boolean to indicate if we should continue looking for more
+func (doc *GraphQLCommentGroup) parseLines(prefix string, fn func(string, []string) bool) {
 	for _, line := range doc.lines {
-		if strings.HasPrefix(line, "@graphqlinputtype") {
+		if strings.HasPrefix(line, prefix) {
 			parts := strings.Split(line, " ")
-			if len(parts) == 2 && parts[1] == "false" {
-				return true
+			if fn(line, parts) {
+				break
 			}
-			return false
 		}
 	}
-	return false
+}
+
+func (doc *GraphQLCommentGroup) DisableGraphQLInputType() bool {
+	var ret bool
+	doc.parseLines("@graphqlinputtype", func(line string, parts []string) bool {
+		// disable input type if line is "@graphqlinputtype false"
+		if len(parts) == 2 && parts[1] == "false" {
+			ret = true
+		}
+		// assume there's only one line ¯\_(ツ)_/¯
+		return false
+	})
+	return ret
+}
+
+func (doc *GraphQLCommentGroup) fieldOverrides() (map[string]string, error) {
+	m := make(map[string]string)
+	var errs []error
+	doc.parseLines("@graphqlparam", func(line string, parts []string) bool {
+		if len(parts) != 3 {
+			errs = append(errs, fmt.Errorf("invalid @graphqlparam line %s", line))
+		} else {
+			m[parts[1]] = parts[2]
+		}
+		// we want all of them!
+		return true
+	})
+	if len(errs) != 0 {
+		return nil, util.CoalesceErr(errs...)
+	}
+	return m, nil
 }
 
 func graphQLDoc(cg *ast.CommentGroup) *GraphQLCommentGroup {

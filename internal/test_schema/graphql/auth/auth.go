@@ -10,7 +10,6 @@ import "errors"
 // @graphql authUser Query
 // TODO come back to support javadoc style things. for now depend on the return list of items
 // only support returning existing ents/ or simple types...
-// @graphqlparam
 // @graphqlresult
 func Authenticate(ctx context.Context, email string, password string) (user *models.User, token string, err error) {
 	// all fake for now...

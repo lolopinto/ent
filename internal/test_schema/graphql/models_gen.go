@@ -184,7 +184,7 @@ type UsersEdge struct {
 func (UsersEdge) IsEdge() {}
 
 type ViewerBlockInput struct {
-	UserID string `json:"userID"`
+	BlockeeID string `json:"blockeeID"`
 }
 
 type ViewerBlockMultipleIDsInput struct {

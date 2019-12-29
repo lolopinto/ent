@@ -259,7 +259,7 @@ type Viewer {
 }
 
 input ViewerBlockInput {
-    userID: ID!
+    blockeeID: ID!
 }
 
 input ViewerBlockMultipleIDsInput {

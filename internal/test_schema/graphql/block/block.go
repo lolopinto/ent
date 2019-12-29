@@ -10,7 +10,7 @@ import "context"
 // Block takes a user and blocks that user for the viewer
 // mutation returns the viewer
 // @graphql viewerBlock Mutation
-func Block(ctx context.Context, user *models.User) (*viewer.Viewer, error) {
+func Block(ctx context.Context, blockee *models.User) (*viewer.Viewer, error) {
 	// function that takes a user and has the viewer block the other user
 	return viewer.ViewerResolver(ctx)
 }
@@ -19,7 +19,9 @@ func Block(ctx context.Context, user *models.User) (*viewer.Viewer, error) {
 // mutation returns the viewer
 // @graphql viewerBlockParam Mutation
 // @graphqlinputtype false
-func BlockParam(ctx context.Context, user *models.User) (*viewer.Viewer, error) {
+// @graphqlparam blockee user
+// this shows it's possible to refactor the name here in GoLand from user -> blockee but keep the graphql field the same so as to not break clients
+func BlockParam(ctx context.Context, blockee *models.User) (*viewer.Viewer, error) {
 	// function that takes a user and has the viewer block the other user
 	return viewer.ViewerResolver(ctx)
 }
