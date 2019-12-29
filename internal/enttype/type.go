@@ -2,15 +2,14 @@ package enttype
 
 import (
 	"fmt"
-	"github.com/iancoleman/strcase"
-	"github.com/jinzhu/inflection"
 	"go/types"
 	"path/filepath"
 	"strconv"
 	"strings"
-)
 
-// NOTE: a lot of the tests for this file are in internal/field/field_test.go
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
+)
 
 // Type represents a Type that's expressed in the framework
 // The only initial requirement is GraphQL since that's exposed everywhere
@@ -50,10 +49,19 @@ type DefaulFieldNameType interface {
 	DefaultGraphQLFieldName() string
 }
 
-type StringType struct{}
+type stringType struct{}
 
-func (t *StringType) GetDBType() string {
+func (t *stringType) GetDBType() string {
 	return "sa.Text()"
+}
+
+// hmm we don't use these for the nullable types right now. unclear if right thing...
+func (t *stringType) GetZeroValue() string {
+	return strconv.Quote("")
+}
+
+type StringType struct {
+	stringType
 }
 
 func (t *StringType) GetGraphQLType() string {
@@ -64,16 +72,12 @@ func (t *StringType) GetCastToMethod() string {
 	return "cast.ToString"
 }
 
-func (t *StringType) GetZeroValue() string {
-	return strconv.Quote("")
-}
-
 func (t *StringType) GetNullableType() Type {
 	return &NullableStringType{}
 }
 
 type NullableStringType struct {
-	StringType
+	stringType
 }
 
 func (t *NullableStringType) GetGraphQLType() string {
@@ -88,10 +92,18 @@ func (t *NullableStringType) GetNonNullableType() Type {
 	return &StringType{}
 }
 
-type BoolType struct{}
+type boolType struct{}
 
-func (t *BoolType) GetDBType() string {
+func (t *boolType) GetDBType() string {
 	return "sa.Boolean()"
+}
+
+func (t *boolType) GetZeroValue() string {
+	return "false"
+}
+
+type BoolType struct {
+	boolType
 }
 
 func (t *BoolType) GetGraphQLType() string {
@@ -102,16 +114,12 @@ func (t *BoolType) GetCastToMethod() string {
 	return "cast.ToBool"
 }
 
-func (t *BoolType) GetZeroValue() string {
-	return "false"
-}
-
 func (t *BoolType) GetNullableType() Type {
 	return &NullableBoolType{}
 }
 
 type NullableBoolType struct {
-	BoolType
+	boolType
 }
 
 func (t *NullableBoolType) GetGraphQLType() string {
@@ -128,10 +136,19 @@ func (t *NullableBoolType) GetNonNullableType() Type {
 
 // TODO uuid support needed
 // and eventually need to work for non uuid types...
-type IDType struct{}
 
-func (t *IDType) GetDBType() string {
+type idType struct{}
+
+func (t *idType) GetDBType() string {
 	return "UUID()"
+}
+
+func (t *idType) GetZeroValue() string {
+	return ""
+}
+
+type IDType struct {
+	idType
 }
 
 func (t *IDType) GetGraphQLType() string {
@@ -142,16 +159,12 @@ func (t *IDType) GetCastToMethod() string {
 	return "cast.ToUUIDString"
 }
 
-func (t *IDType) GetZeroValue() string {
-	return ""
-}
-
 func (t *IDType) GetNullableType() Type {
 	return &NullableIDType{}
 }
 
 type NullableIDType struct {
-	IDType
+	idType
 }
 
 func (t *NullableIDType) GetGraphQLType() string {
@@ -166,10 +179,17 @@ func (t *NullableIDType) GetNonNullableType() Type {
 	return &IDType{}
 }
 
-type IntegerType struct{}
+type intType struct{}
 
-func (t *IntegerType) GetDBType() string {
+func (t *intType) GetDBType() string {
 	return "sa.Integer()"
+}
+func (t *intType) GetZeroValue() string {
+	return "0"
+}
+
+type IntegerType struct {
+	intType
 }
 
 func (t *IntegerType) GetGraphQLType() string {
@@ -180,16 +200,12 @@ func (t *IntegerType) GetCastToMethod() string {
 	return "cast.ToInt"
 }
 
-func (t *IntegerType) GetZeroValue() string {
-	return "0"
-}
-
 func (t *IntegerType) GetNullableType() Type {
 	return &NullableIntegerType{}
 }
 
 type NullableIntegerType struct {
-	IntegerType
+	intType
 }
 
 func (t *NullableIntegerType) GetGraphQLType() string {
@@ -204,10 +220,18 @@ func (t *NullableIntegerType) GetNonNullableType() Type {
 	return &IntegerType{}
 }
 
-type FloatType struct{}
+type floatType struct{}
 
-func (t *FloatType) GetDBType() string {
+func (t *floatType) GetDBType() string {
 	return "sa.Float()"
+}
+
+func (t *floatType) GetZeroValue() string {
+	return "0.0"
+}
+
+type FloatType struct {
+	floatType
 }
 
 func (t *FloatType) GetGraphQLType() string {
@@ -218,16 +242,12 @@ func (t *FloatType) GetCastToMethod() string {
 	return "cast.ToFloat"
 }
 
-func (t *FloatType) GetZeroValue() string {
-	return "0.0"
-}
-
 func (t *FloatType) GetNullableType() Type {
 	return &NullableFloatType{}
 }
 
 type NullableFloatType struct {
-	FloatType
+	floatType
 }
 
 func (t *NullableFloatType) GetGraphQLType() string {
@@ -242,13 +262,25 @@ func (t *NullableFloatType) GetNonNullableType() Type {
 	return &FloatType{}
 }
 
-type TimeType struct{}
+type timeType struct{}
 
-func (t *TimeType) GetDBType() string {
+func (t *timeType) GetDBType() string {
 	return "sa.TIMESTAMP()"
 }
 
-//use the built in graphql type
+func (t *timeType) GetZeroValue() string {
+	return "time.Time{}"
+}
+
+func (t *timeType) DefaultGraphQLFieldName() string {
+	return "time"
+}
+
+type TimeType struct {
+	timeType
+}
+
+// use the built in graphql type
 func (t *TimeType) GetGraphQLType() string {
 	return "Time!"
 }
@@ -257,20 +289,12 @@ func (t *TimeType) GetCastToMethod() string {
 	return "cast.ToTime"
 }
 
-func (t *TimeType) GetZeroValue() string {
-	return "time.Time{}"
-}
-
 func (t *TimeType) GetNullableType() Type {
 	return &NullableTimeType{}
 }
 
-func (t *TimeType) DefaultGraphQLFieldName() string {
-	return "time"
-}
-
 type NullableTimeType struct {
-	TimeType
+	timeType
 }
 
 func (t *NullableTimeType) GetCastToMethod() string {
@@ -372,12 +396,7 @@ func getDefaultSliceGraphQLFieldName(typ types.Type) string {
 	return inflection.Plural(getDefaultGraphQLFieldName(typ))
 }
 
-type fActualType interface {
-	getTypeName() string
-}
-
 type fieldWithActualType struct {
-	fActualType
 	actualType       types.Type
 	forceNullable    bool
 	forceNonNullable bool
@@ -425,10 +444,6 @@ type NamedType struct {
 	fieldWithActualType
 }
 
-func (t *NamedType) getTypeName() string {
-	return "NamedType"
-}
-
 func (t *NamedType) GetNullableType() Type {
 	return &NamedType{t.getNullableType()}
 }
@@ -438,19 +453,38 @@ func (t *NamedType) GetNonNullableType() Type {
 }
 
 type PointerType struct {
+	ptrType *types.Pointer
 	fieldWithActualType
 }
 
-func (t *PointerType) getTypeName() string {
-	return "PointerType"
-}
-
 func (t *PointerType) GetNullableType() Type {
-	return &PointerType{t.getNullableType()}
+	return &PointerType{t.ptrType, t.getNullableType()}
 }
 
 func (t *PointerType) GetNonNullableType() Type {
-	return &PointerType{t.getNonNullableType()}
+	//	types.Named
+	return &PointerType{t.ptrType, t.getNonNullableType()}
+}
+
+func (t *PointerType) GetGraphQLType() string {
+	// get type of base element
+	typ := GetType(t.ptrType.Elem())
+
+	graphqlType := typ.GetGraphQLType()
+
+	if t.forceNullable || !t.forceNonNullable {
+		// pointer type and named type should return different versions of themselves?
+		return strings.TrimSuffix(graphqlType, "!")
+	}
+	return graphqlType
+}
+
+func (t *PointerType) DefaultGraphQLFieldName() string {
+	switch t.ptrType.Elem().(type) {
+	case *types.Array, *types.Slice:
+		return getDefaultSliceGraphQLFieldName(t.actualType)
+	}
+	return getDefaultGraphQLFieldName(t.actualType)
 }
 
 type SliceType struct {
@@ -534,6 +568,7 @@ func GetType(typ types.Type) Type {
 	case *types.Pointer:
 		// e.g. *github.com/lolopinto/ent/internal/test_schema/models.User
 		t := &PointerType{}
+		t.ptrType = typ2
 		t.actualType = typ2
 		return t
 
