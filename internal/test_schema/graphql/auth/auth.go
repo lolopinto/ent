@@ -8,9 +8,6 @@ import "errors"
 
 // Authenticate authenticates a user/password combo
 // @graphql authUser Query
-// TODO come back to support javadoc style things. for now depend on the return list of items
-// only support returning existing ents/ or simple types...
-// @graphqlresult
 func Authenticate(ctx context.Context, email string, password string) (user *models.User, token string, err error) {
 	// all fake for now...
 	if email == "test@email.com" && password == "123" {
@@ -21,4 +18,13 @@ func Authenticate(ctx context.Context, email string, password string) (user *mod
 		return user, user.GetID(), nil
 	}
 	return nil, "", errors.New("logged out user")
+}
+
+// AuthMutation authenticates a user/password combo
+// Assume we want a mutation for this
+// @graphql authUser Mutation
+// @graphqlreturn user
+// @graphqlreturn token
+func AuthMutation(ctx context.Context, email string, password string) (*models.User, string, error) {
+	return Authenticate(ctx, email, password)
 }

@@ -93,6 +93,9 @@ type CustomCodeParser interface {
 	// eg.. don't process these generated files since there wouldn't be any custom functions there
 	// A return value of true indicates the file will be processed
 	ProcessFileName(string) bool
+
+	// TODO document
+	CreatesComplexTypeForSingleResult() bool
 }
 
 // CustomCodeParserWithReceiver is for extra validation of the method
@@ -291,7 +294,7 @@ func inspectFunc(
 			}
 		}
 
-		if err := addFunction(parser, fn, pkg, cg, l, graphqlNode); err != nil {
+		if err := addFunction(parser, codeParser, fn, pkg, cg, l, graphqlNode); err != nil {
 			return err
 		}
 	}
@@ -300,6 +303,7 @@ func inspectFunc(
 
 func addFunction(
 	parser Parser,
+	codeParser CustomCodeParser,
 	fn *ast.FuncDecl,
 	pkg *packages.Package,
 	cg *ast.CommentGroup,
@@ -325,7 +329,16 @@ func addFunction(
 
 	results := fn.Type.Results
 	if results != nil {
-		fields, err := getFields(pkg, results.List, nil)
+		returnNames, err := doc.returnNames()
+		if err != nil {
+			return err
+		}
+		c := &configureResults{
+			returnNames: returnNames,
+			codeParser:  codeParser,
+		}
+
+		fields, err := getFields(pkg, results.List, c)
 		if err != nil {
 			return err
 		}
@@ -350,6 +363,10 @@ type configureFields interface {
 	fieldOverride(name string) string
 }
 
+type configureFieldsWithNames interface {
+	fieldNames() []string
+}
+
 type configureArgs struct {
 	fieldOverrides map[string]string
 }
@@ -362,11 +379,23 @@ func (c *configureArgs) fieldOverride(name string) string {
 	return c.fieldOverrides[name]
 }
 
-func nameRequired(c configureFields) bool {
-	if c == nil {
-		return false
-	}
-	return c.nameRequired()
+type configureResults struct {
+	returnNames []string
+	codeParser  CustomCodeParser
+}
+
+func (c *configureResults) fieldOverride(name string) string {
+	return ""
+}
+
+func (c *configureResults) nameRequired() bool {
+	// name required if we're creating a complex type for the return value e.g. an ent object that returns one item, don't need this
+	// if we're creating a complex type, e.g. an ent function that returns multiple items or a top level custom function, we need a name
+	return c.codeParser.CreatesComplexTypeForSingleResult()
+}
+
+func (c *configureResults) fieldNames() []string {
+	return c.returnNames
 }
 
 func fieldName(c configureFields, name string) string {
@@ -379,26 +408,77 @@ func fieldName(c configureFields, name string) string {
 	return name
 }
 
+// returns a function that gets the next field name
+func getNextFieldWithNames(c configureFields) func() (string, error) {
+	cWithNames, ok := c.(configureFieldsWithNames)
+	if !ok {
+		return nil
+	}
+	names := cWithNames.fieldNames()
+	if len(names) == 0 {
+		return nil
+	}
+	var i int
+	return func() (string, error) {
+		if i == len(names) {
+			return "", errors.New("not enough @graphqlreturn names specified")
+		}
+		i++
+		return names[i-1], nil
+	}
+}
+
 func getFields(pkg *packages.Package, list []*ast.Field, c configureFields) ([]*Field, error) {
 	var fields []*Field
-	for _, item := range list {
+
+	nextFieldName := getNextFieldWithNames(c)
+
+	for idx, item := range list {
 
 		paramType := pkg.TypesInfo.TypeOf(item.Type)
 
-		// for fields without return values, names not required
-		// TODO provide option to enforce names or not.
 		if len(item.Names) == 0 {
-			entType := enttype.GetType(paramType)
 			var name string
-			defaultTyp, ok := entType.(enttype.DefaulFieldNameType)
-			if ok {
-				name = defaultTyp.DefaultGraphQLFieldName()
+			var err error
+			var expectedErrorType bool
+
+			entType := enttype.GetType(paramType)
+
+			if idx+1 == len(list) && enttype.IsErrorType(entType) {
+				expectedErrorType = true
 			}
+
+			// first see if we have a @graphqlreturn name (expected in the right order)
+			// don't do for last item since we don't send it to GraphQL and it shouldn't be exepcted to be there
+			if nextFieldName != nil && !expectedErrorType {
+				name, err = nextFieldName()
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			// then check default names
+			if name == "" {
+				defaultTyp, ok := entType.(enttype.DefaulFieldNameType)
+				if ok {
+					name = defaultTyp.DefaultGraphQLFieldName()
+				}
+			}
+
+			// only field with no name allowed is error type when last item in list
+			if name == "" && c.nameRequired() && !expectedErrorType {
+				return nil, fmt.Errorf("found field %T with no name", entType)
+			}
+
 			fields = append(fields, &Field{
 				Name: fieldName(c, name),
 				Type: entType,
 			})
 		} else {
+			if nextFieldName != nil {
+				return nil, errors.New("cannot use both named return types and graphql comments")
+			}
+
 			// same type, we need to break this up as different fields if there's more than one
 			for _, name := range item.Names {
 				fields = append(fields, &Field{
@@ -430,46 +510,69 @@ func (doc *GraphQLCommentGroup) GetGraphQLType() string {
 
 // parseLines takes a prefix and a function that's called with line that matches prefix and lines separated by space
 // function should returns a boolean to indicate if we should continue looking for more
-func (doc *GraphQLCommentGroup) parseLines(prefix string, fn func(string, []string) bool) {
+func (doc *GraphQLCommentGroup) parseLines(prefix string, fn func(string, []string) (bool, error)) error {
+	var errs []error
 	for _, line := range doc.lines {
 		if strings.HasPrefix(line, prefix) {
 			parts := strings.Split(line, " ")
-			if fn(line, parts) {
+			ret, err := fn(line, parts)
+			if err != nil {
+				errs = append(errs, err)
+			}
+			if !ret {
 				break
 			}
 		}
 	}
+	return util.CoalesceErr(errs...)
 }
 
 func (doc *GraphQLCommentGroup) DisableGraphQLInputType() bool {
 	var ret bool
-	doc.parseLines("@graphqlinputtype", func(line string, parts []string) bool {
+	doc.parseLines("@graphqlinputtype", func(line string, parts []string) (bool, error) {
 		// disable input type if line is "@graphqlinputtype false"
 		if len(parts) == 2 && parts[1] == "false" {
 			ret = true
 		}
 		// assume there's only one line ¯\_(ツ)_/¯
-		return false
+		return false, nil
 	})
 	return ret
 }
 
 func (doc *GraphQLCommentGroup) fieldOverrides() (map[string]string, error) {
 	m := make(map[string]string)
-	var errs []error
-	doc.parseLines("@graphqlparam", func(line string, parts []string) bool {
+	err := doc.parseLines("@graphqlparam", func(line string, parts []string) (bool, error) {
+		var err error
 		if len(parts) != 3 {
-			errs = append(errs, fmt.Errorf("invalid @graphqlparam line %s", line))
+			err = fmt.Errorf("invalid @graphqlparam line %s", line)
 		} else {
 			m[parts[1]] = parts[2]
 		}
 		// we want all of them!
-		return true
+		return true, err
 	})
-	if len(errs) != 0 {
-		return nil, util.CoalesceErr(errs...)
+	if err != nil {
+		return nil, err
 	}
 	return m, nil
+}
+
+func (doc *GraphQLCommentGroup) returnNames() ([]string, error) {
+	var names []string
+	err := doc.parseLines("@graphqlreturn", func(line string, parts []string) (bool, error) {
+		var err error
+		if len(parts) != 2 {
+			err = fmt.Errorf("invalid @graphqlreturn line %s", line)
+		} else {
+			names = append(names, parts[1])
+		}
+		return true, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return names, nil
 }
 
 func graphQLDoc(cg *ast.CommentGroup) *GraphQLCommentGroup {

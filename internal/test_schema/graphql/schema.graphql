@@ -10,6 +10,16 @@ type AdminBlockResponse {
     success: Boolean
 }
 
+input AuthUserInput {
+    email: String!
+    password: String!
+}
+
+type AuthUserResponse {
+    token: String!
+    user: User
+}
+
 type AuthUserResult {
     token: String!
     user: User
@@ -128,6 +138,7 @@ type LogEventResponse {
 
 type Mutation {
     adminBlock(input: AdminBlockInput!): AdminBlockResponse
+    authUser(input: AuthUserInput!): AuthUserResponse
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
     eventCreate(input: EventCreateInput!): EventCreateResponse
     eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse

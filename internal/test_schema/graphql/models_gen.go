@@ -33,6 +33,16 @@ type AdminBlockResponse struct {
 	Success *bool `json:"success"`
 }
 
+type AuthUserInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type AuthUserResponse struct {
+	Token string       `json:"token"`
+	User  *models.User `json:"user"`
+}
+
 type AuthUserResult struct {
 	Token string       `json:"token"`
 	User  *models.User `json:"user"`

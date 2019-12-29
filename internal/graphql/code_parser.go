@@ -38,6 +38,10 @@ func (p *customEntParser) ReceiverRequired() bool {
 	return true
 }
 
+func (p *customEntParser) CreatesComplexTypeForSingleResult() bool {
+	return false
+}
+
 type customTopLevelParser struct {
 }
 
@@ -58,5 +62,10 @@ func (p *customTopLevelParser) ProcessFileName(filename string) bool {
 			return false
 		}
 	}
+	return true
+}
+
+func (p *customTopLevelParser) CreatesComplexTypeForSingleResult() bool {
+	// not true, only does this for Mutation, not Query...
 	return true
 }

@@ -121,6 +121,18 @@ func (r *mutationResolver) AdminBlock(ctx context.Context, input AdminBlockInput
 	}, nil
 }
 
+func (r *mutationResolver) AuthUser(ctx context.Context, input AuthUserInput) (*AuthUserResponse, error) {
+	user, token, err := auth.AuthMutation(ctx, input.Email, input.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthUserResponse{
+		User:  user,
+		Token: token,
+	}, nil
+}
+
 func (r *mutationResolver) ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error) {
 	node, err := action.CreateContactFromContext(ctx).
 		SetEmailAddress(input.EmailAddress).

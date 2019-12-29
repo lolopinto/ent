@@ -240,6 +240,10 @@ func (t *TimeType) GetNullableType() Type {
 	return &NullableTimeType{}
 }
 
+func (t *TimeType) DefaultGraphQLFieldName() string {
+	return "time"
+}
+
 type NullableTimeType struct {
 	TimeType
 }

@@ -54,6 +54,11 @@ type ComplexityRoot struct {
 		Success func(childComplexity int) int
 	}
 
+	AuthUserResponse struct {
+		Token func(childComplexity int) int
+		User  func(childComplexity int) int
+	}
+
 	AuthUserResult struct {
 		Token func(childComplexity int) int
 		User  func(childComplexity int) int
@@ -124,6 +129,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AdminBlock             func(childComplexity int, input AdminBlockInput) int
+		AuthUser               func(childComplexity int, input AuthUserInput) int
 		ContactCreate          func(childComplexity int, input ContactCreateInput) int
 		EventCreate            func(childComplexity int, input EventCreateInput) int
 		EventRsvpStatusEdit    func(childComplexity int, input EventRsvpStatusEditInput) int
@@ -250,6 +256,7 @@ type EventResolver interface {
 }
 type MutationResolver interface {
 	AdminBlock(ctx context.Context, input AdminBlockInput) (*AdminBlockResponse, error)
+	AuthUser(ctx context.Context, input AuthUserInput) (*AuthUserResponse, error)
 	ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error)
 	EventCreate(ctx context.Context, input EventCreateInput) (*EventCreateResponse, error)
 	EventRsvpStatusEdit(ctx context.Context, input EventRsvpStatusEditInput) (*EventRsvpStatusEditResponse, error)
@@ -310,6 +317,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AdminBlockResponse.Success(childComplexity), true
+
+	case "AuthUserResponse.token":
+		if e.complexity.AuthUserResponse.Token == nil {
+			break
+		}
+
+		return e.complexity.AuthUserResponse.Token(childComplexity), true
+
+	case "AuthUserResponse.user":
+		if e.complexity.AuthUserResponse.User == nil {
+			break
+		}
+
+		return e.complexity.AuthUserResponse.User(childComplexity), true
 
 	case "AuthUserResult.token":
 		if e.complexity.AuthUserResult.Token == nil {
@@ -572,6 +593,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.AdminBlock(childComplexity, args["input"].(AdminBlockInput)), true
+
+	case "Mutation.authUser":
+		if e.complexity.Mutation.AuthUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_authUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AuthUser(childComplexity, args["input"].(AuthUserInput)), true
 
 	case "Mutation.contactCreate":
 		if e.complexity.Mutation.ContactCreate == nil {
@@ -1123,6 +1156,16 @@ type AdminBlockResponse {
     success: Boolean
 }
 
+input AuthUserInput {
+    email: String!
+    password: String!
+}
+
+type AuthUserResponse {
+    token: String!
+    user: User
+}
+
 type AuthUserResult {
     token: String!
     user: User
@@ -1241,6 +1284,7 @@ type LogEventResponse {
 
 type Mutation {
     adminBlock(input: AdminBlockInput!): AdminBlockResponse
+    authUser(input: AuthUserInput!): AuthUserResponse
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
     eventCreate(input: EventCreateInput!): EventCreateResponse
     eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse
@@ -1428,6 +1472,20 @@ func (ec *executionContext) field_Mutation_adminBlock_args(ctx context.Context, 
 	var arg0 AdminBlockInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNAdminBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_authUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 AuthUserInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAuthUserInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1820,6 +1878,77 @@ func (ec *executionContext) _AdminBlockResponse_success(ctx context.Context, fie
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AuthUserResponse_token(ctx context.Context, field graphql.CollectedField, obj *AuthUserResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthUserResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AuthUserResponse_user(ctx context.Context, field graphql.CollectedField, obj *AuthUserResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthUserResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AuthUserResult_token(ctx context.Context, field graphql.CollectedField, obj *AuthUserResult) (ret graphql.Marshaler) {
@@ -3124,6 +3253,47 @@ func (ec *executionContext) _Mutation_adminBlock(ctx context.Context, field grap
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOAdminBlockResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_authUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_authUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AuthUser(rctx, args["input"].(AuthUserInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AuthUserResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAuthUserResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_contactCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6367,6 +6537,30 @@ func (ec *executionContext) unmarshalInputAdminBlockInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAuthUserInput(ctx context.Context, obj interface{}) (AuthUserInput, error) {
+	var it AuthUserInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "email":
+			var err error
+			it.Email, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "password":
+			var err error
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputContactCreateInput(ctx context.Context, obj interface{}) (ContactCreateInput, error) {
 	var it ContactCreateInput
 	var asMap = obj.(map[string]interface{})
@@ -6866,6 +7060,35 @@ func (ec *executionContext) _AdminBlockResponse(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var authUserResponseImplementors = []string{"AuthUserResponse"}
+
+func (ec *executionContext) _AuthUserResponse(ctx context.Context, sel ast.SelectionSet, obj *AuthUserResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, authUserResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AuthUserResponse")
+		case "token":
+			out.Values[i] = ec._AuthUserResponse_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "user":
+			out.Values[i] = ec._AuthUserResponse_user(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var authUserResultImplementors = []string{"AuthUserResult"}
 
 func (ec *executionContext) _AuthUserResult(ctx context.Context, sel ast.SelectionSet, obj *AuthUserResult) graphql.Marshaler {
@@ -7351,6 +7574,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = graphql.MarshalString("Mutation")
 		case "adminBlock":
 			out.Values[i] = ec._Mutation_adminBlock(ctx, field)
+		case "authUser":
+			out.Values[i] = ec._Mutation_authUser(ctx, field)
 		case "contactCreate":
 			out.Values[i] = ec._Mutation_contactCreate(ctx, field)
 		case "eventCreate":
@@ -8245,6 +8470,10 @@ func (ec *executionContext) unmarshalNAdminBlockInput2githubᚗcomᚋlolopinto�
 	return ec.unmarshalInputAdminBlockInput(ctx, v)
 }
 
+func (ec *executionContext) unmarshalNAuthUserInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserInput(ctx context.Context, v interface{}) (AuthUserInput, error) {
+	return ec.unmarshalInputAuthUserInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	return graphql.UnmarshalBoolean(v)
 }
@@ -8918,6 +9147,17 @@ func (ec *executionContext) marshalOAdminBlockResponse2ᚖgithubᚗcomᚋlolopin
 		return graphql.Null
 	}
 	return ec._AdminBlockResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAuthUserResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserResponse(ctx context.Context, sel ast.SelectionSet, v AuthUserResponse) graphql.Marshaler {
+	return ec._AuthUserResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAuthUserResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserResponse(ctx context.Context, sel ast.SelectionSet, v *AuthUserResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AuthUserResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAuthUserResult2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserResult(ctx context.Context, sel ast.SelectionSet, v AuthUserResult) graphql.Marshaler {
