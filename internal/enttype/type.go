@@ -452,6 +452,36 @@ func (t *NamedType) GetNonNullableType() Type {
 	return &NamedType{t.getNonNullableType()}
 }
 
+func newFieldWithActualType(typ types.Type, forceNullable, forceNonNullable bool) *fieldWithActualType {
+	return &fieldWithActualType{
+		actualType:       typ,
+		forceNullable:    forceNullable,
+		forceNonNullable: forceNonNullable,
+	}
+}
+
+func NewNamedType(typ types.Type, forceNullable, forceNonNullable bool) *NamedType {
+	return &NamedType{
+		fieldWithActualType{
+			actualType:       typ,
+			forceNullable:    forceNullable,
+			forceNonNullable: forceNonNullable,
+		},
+	}
+}
+
+func NewPointerType(typ types.Type, forceNullable, forceNonNullable bool) *PointerType {
+	ptrType := typ.(*types.Pointer)
+	return &PointerType{
+		ptrType,
+		fieldWithActualType{
+			actualType:       typ,
+			forceNullable:    forceNullable,
+			forceNonNullable: forceNonNullable,
+		},
+	}
+}
+
 type PointerType struct {
 	ptrType *types.Pointer
 	fieldWithActualType
@@ -501,6 +531,10 @@ func (t *SliceType) DefaultGraphQLFieldName() string {
 
 func (t *SliceType) GetElemGraphQLType() string {
 	return getGraphQLType(t.typ.Elem())
+}
+
+func NewSliceType(typ *types.Slice) *SliceType {
+	return &SliceType{typ}
 }
 
 type ArrayType struct {

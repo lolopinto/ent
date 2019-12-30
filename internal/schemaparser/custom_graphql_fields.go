@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/types"
 	"strings"
 	"sync"
 
@@ -36,8 +37,9 @@ type Function struct {
 // Field represents an item in an argument list or return list for a function
 type Field struct {
 	// Name of the field in argument or return list
-	Name string
-	Type enttype.Type
+	Name   string
+	Type   enttype.Type
+	goType types.Type
 }
 
 // FunctionMap is a Map of GraphQL Type to list of Functions that need to be added to GQL
@@ -173,6 +175,7 @@ func checkForCustom(
 		return nil
 	}
 
+	var inspectErr error
 	ast.Inspect(file, func(node ast.Node) bool {
 
 		// this gets custom types. logic for getting custom functions in those types is the same
@@ -191,15 +194,13 @@ func checkForCustom(
 			if err := inspectFunc(
 				fn, parser, pkg, file, codeParser, l, graphqlComments,
 			); err != nil {
-				util.Die(err)
-				// TODO handle this error
-				return false
+				inspectErr = err
 			}
 		}
 		return true
 	})
 
-	return nil
+	return inspectErr
 }
 
 func inspectStruct(
@@ -447,7 +448,7 @@ func getFields(pkg *packages.Package, list []*ast.Field, c configureFields) ([]*
 		if len(item.Names) == 0 {
 			entType := enttype.GetType(paramType)
 
-			f := &Field{Type: entType}
+			f := &Field{Type: entType, goType: paramType}
 
 			var name string
 			var expectedErrorType bool
@@ -493,8 +494,9 @@ func getFields(pkg *packages.Package, list []*ast.Field, c configureFields) ([]*
 			// same type, we need to break this up as different fields if there's more than one
 			for _, name := range item.Names {
 				fields = append(fields, &Field{
-					Name: fieldName(c, name.Name),
-					Type: enttype.GetType(paramType),
+					Name:   fieldName(c, name.Name),
+					Type:   enttype.GetType(paramType),
+					goType: paramType,
 				})
 			}
 		}
