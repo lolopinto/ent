@@ -67,7 +67,7 @@ type parsedList struct {
 	objs []*Object
 }
 
-func (l *parsedList) AddFunction(fn *Function) {
+func (l *parsedList) addFunction(fn *Function) {
 	l.m.Lock()
 	defer l.m.Unlock()
 	if l.fns == nil {
@@ -76,7 +76,7 @@ func (l *parsedList) AddFunction(fn *Function) {
 	l.fns[fn.NodeName] = append(l.fns[fn.NodeName], fn)
 }
 
-func (l *parsedList) AddObject(obj *Object) {
+func (l *parsedList) addObject(obj *Object) {
 	l.m.Lock()
 	defer l.m.Unlock()
 	l.objs = append(l.objs, obj)
@@ -241,11 +241,12 @@ func inspectStruct(
 				field.Name = val.name
 			}
 			// set type
-			field.Type = enttype.GetNonNullableType(pkg.TypesInfo.TypeOf(f.Type), val.forceRequired)
+			field.goType = pkg.TypesInfo.TypeOf(f.Type)
+			field.Type = enttype.GetNonNullableType(field.goType, val.forceRequired)
 
 			obj.Fields = append(obj.Fields, field)
 		}
-		l.AddObject(obj)
+		l.addObject(obj)
 	}
 }
 
@@ -362,7 +363,7 @@ func addFunction(
 		return err
 	}
 	parsedFn.Args = fields
-	l.AddFunction(parsedFn)
+	l.addFunction(parsedFn)
 	return nil
 }
 
@@ -578,13 +579,18 @@ func (doc *GraphQLCommentGroup) customValueFromLine() *customReturnValue {
 	if len(parts) == 1 {
 		return ret
 	}
-	if len(parts) > 2 {
-		ret.name = parts[1]
-	}
+
 	for _, part := range parts {
 		if part == "@required" {
 			ret.forceRequired = true
+			break
 		}
+	}
+	// @graphql name @required
+	if (ret.forceRequired && len(parts) > 2) ||
+		// @graphql name
+		(!ret.forceRequired && len(parts) == 2) {
+		ret.name = parts[1]
 	}
 	return ret
 }

@@ -3,6 +3,9 @@ package schemaparser_test
 import (
 	"fmt"
 	"strings"
+	"testing"
+
+	"github.com/lolopinto/ent/internal/schemaparser"
 )
 
 func validTypes() map[string]bool {
@@ -49,4 +52,22 @@ func (p *customTopLevelParser) ProcessFileName(filename string) bool {
 func (p *customTopLevelParser) CreatesComplexTypeForSingleResult() bool {
 	// not true, only does this for Mutation, not Query...
 	return true
+}
+
+func getParsedCustomGQLResult(t *testing.T, code string) schemaparser.ParseCustomGQLResult {
+	overlay := make(map[string]string)
+	overlay["code.go"] = code
+
+	parser := &schemaparser.SourceSchemaParser{
+		Sources:     overlay,
+		PackageName: "graphql",
+	}
+
+	resultChan := schemaparser.ParseCustomGraphQLDefinitions(
+		parser,
+		&customTopLevelParser{},
+	)
+
+	result := <-resultChan
+	return result
 }

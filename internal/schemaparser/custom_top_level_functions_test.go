@@ -9,36 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getFieldFromArg(t *testing.T, functions []*schemaparser.Function, graphqlName, argName string) *schemaparser.Field {
-	for _, f := range functions {
-		if f.GraphQLName == graphqlName {
-			for _, arg := range f.Args {
-				if arg.Name == argName {
-					return arg
-				}
-			}
-			break
-		}
-	}
-	assert.FailNow(t, "couldn't find field")
-	return nil
-}
-
-func getFieldFromResult(t *testing.T, functions []*schemaparser.Function, graphqlName, name string) *schemaparser.Field {
-	for _, f := range functions {
-		if f.GraphQLName == graphqlName {
-			for _, result := range f.Results {
-				if result.Name == name {
-					return result
-				}
-			}
-			break
-		}
-	}
-	assert.FailNow(t, "couldn't find field")
-	return nil
-}
-
 func testFunc(t *testing.T, nodeName, code string, fn func([]*schemaparser.Function) expectedFunction) {
 	fns := getParsedFuncs(t, code)
 
@@ -600,26 +570,8 @@ func TestFuncThatReturnsNonNullItem(t *testing.T) {
 	)
 }
 
-func getParsedFuncResult(t *testing.T, code string) schemaparser.ParseCustomGQLResult {
-	overlay := make(map[string]string)
-	overlay["code.go"] = code
-
-	parser := &schemaparser.SourceSchemaParser{
-		Sources:     overlay,
-		PackageName: "graphql",
-	}
-
-	resultChan := schemaparser.ParseCustomGraphQLDefinitions(
-		parser,
-		&customTopLevelParser{},
-	)
-
-	result := <-resultChan
-	return result
-}
-
 func getParsedFuncs(t *testing.T, code string) schemaparser.FunctionMap {
-	result := getParsedFuncResult(t, code)
+	result := getParsedCustomGQLResult(t, code)
 	assert.Nil(t, result.Error)
 
 	assert.Len(t, result.Objects, 0)
