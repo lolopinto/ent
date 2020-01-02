@@ -6,21 +6,19 @@ import (
 	"text/template"
 
 	intimports "github.com/lolopinto/ent/internal/imports"
-	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
 	"golang.org/x/tools/imports"
 )
 
 type TemplatedBasedFileWriter struct {
-	Data               interface{}
-	AbsPathToTemplate  string
-	TemplateName       string
-	PathToFile         string
-	CreateDirIfNeeded  bool
-	CheckForManualCode bool
-	FormatSource       bool
-	FuncMap            template.FuncMap
-	PackageName        string
+	Data              interface{}
+	AbsPathToTemplate string
+	TemplateName      string
+	PathToFile        string
+	CreateDirIfNeeded bool
+	FormatSource      bool
+	FuncMap           template.FuncMap
+	PackageName       string
 	//	manualImports      bool
 	Imports *intimports.Imports
 }
@@ -34,15 +32,6 @@ func (fw *TemplatedBasedFileWriter) getPathToFile() string {
 }
 
 func (fw *TemplatedBasedFileWriter) generateBytes() []byte {
-	// parse existing file to see what we need to keep in the rewrite
-	var config *schemaparser.AstConfig
-
-	// no real reason this only applies for just privacy.tmpl
-	// but it's the only one where we care about this for now so limiting to just that
-	// in the future, this should apply for all
-	if fw.CheckForManualCode {
-		config = schemaparser.ParseFileForManualCode(fw.PathToFile)
-	}
 
 	// generate the new AST we want for the file
 	buf := fw.generateNewAst()
@@ -73,18 +62,6 @@ func (fw *TemplatedBasedFileWriter) generateBytes() []byte {
 		util.Die(err)
 	}
 
-	// if fw.formatSource {
-	// 	b, err = format.Source(buf.Bytes())
-
-	// 	if err != nil {
-	// 		fmt.Println(buf.String())
-	// 	}
-	// 	util.Die(err)
-	// }
-
-	if config != nil {
-		b = schemaparser.RewriteAstWithConfig(config, b)
-	}
 	return b
 }
 

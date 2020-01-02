@@ -42,11 +42,10 @@ func writePrivacyFile(nodeData *schema.NodeData) {
 	pathToFile := fmt.Sprintf("models/%s_privacy_gen.go", nodeData.PackageName)
 
 	file.Write(&file.TemplatedBasedFileWriter{
-		Data:               nodeData,
-		AbsPathToTemplate:  util.GetAbsolutePath("privacy.gotmpl"),
-		TemplateName:       "privacy.gotmpl",
-		PathToFile:         pathToFile,
-		CheckForManualCode: true,
-		FormatSource:       true,
+		Data:              nodeData,
+		AbsPathToTemplate: util.GetAbsolutePath("privacy.gotmpl"),
+		TemplateName:      "privacy.gotmpl",
+		PathToFile:        pathToFile,
+		FormatSource:      true,
 	})
 }
