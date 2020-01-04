@@ -677,7 +677,7 @@ func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 }
 
 func (schema *graphQLSchema) writeGraphQLSchema() {
-	file.Write(&file.TemplatedBasedFileWriter{
+	util.Die(file.Write(&file.TemplatedBasedFileWriter{
 		Data:              schema.getSchemaForTemplate(),
 		AbsPathToTemplate: util.GetAbsolutePath("graphql_schema.tmpl"),
 		TemplateName:      "graphql_schema.tmpl",
@@ -686,7 +686,7 @@ func (schema *graphQLSchema) writeGraphQLSchema() {
 		FuncMap: template.FuncMap{
 			"sortedTypes": getSortedTypes,
 		},
-	})
+	}))
 }
 
 func (s *graphQLSchema) buildYmlConfig(
@@ -752,11 +752,11 @@ func (s *graphQLSchema) writeGQLGenYamlFile(
 	customResult schemaparser.ParseCustomGQLResult,
 	topLevelResult schemaparser.ParseCustomGQLResult,
 ) {
-	file.Write(&file.YamlFileWriter{
+	util.Die(file.Write(&file.YamlFileWriter{
 		Data:              s.buildYmlConfig(customResult, topLevelResult),
 		PathToFile:        "graphql/gqlgen.yml",
 		CreateDirIfNeeded: true,
-	})
+	}))
 }
 
 func (s *graphQLSchema) generateGraphQLCode() {

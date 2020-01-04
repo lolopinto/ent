@@ -3,22 +3,24 @@ package file
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
-
-	"github.com/lolopinto/ent/internal/util"
 )
 
 type Writer interface {
-	Write()
+	Write() error
 	createDirIfNeeded() bool
 	getPathToFile() string
-	generateBytes() []byte
+	generateBytes() ([]byte, error)
 }
 
-func writeFile(w Writer) {
-	bytes := w.generateBytes()
+func writeFile(w Writer) error {
+	bytes, err := w.generateBytes()
+	if err != nil {
+		return err
+	}
 	pathToFile := w.getPathToFile()
 
 	if w.createDirIfNeeded() {
@@ -34,15 +36,17 @@ func writeFile(w Writer) {
 			}
 		}
 		if os.IsNotExist(err) {
-			util.Die(err)
+			return err
 		}
 	}
 
-	err := ioutil.WriteFile(pathToFile, bytes, 0666)
-	util.Die(err)
-	fmt.Println("wrote to file ", pathToFile)
+	err = ioutil.WriteFile(pathToFile, bytes, 0666)
+	if err != nil {
+		log.Println("wrote to file ", pathToFile)
+	}
+	return err
 }
 
-func Write(w Writer) {
-	w.Write()
+func Write(w Writer) error {
+	return w.Write()
 }

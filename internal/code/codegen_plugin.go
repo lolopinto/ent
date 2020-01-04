@@ -1,6 +1,8 @@
 package code
 
-import "github.com/lolopinto/ent/internal/codegen"
+import (
+	"github.com/lolopinto/ent/internal/codegen"
+)
 
 type Step struct {
 }
@@ -17,12 +19,20 @@ func (p *Step) ProcessData(data *codegen.Data) error {
 		nodeData := info.NodeData
 		//fmt.Println(specificConfig, structName)
 		if len(nodeData.PackageName) > 0 {
-			writeModelFile(nodeData, data.CodePath)
-			writePrivacyFile(nodeData)
-			writeMutationBuilderFile(nodeData, data.CodePath)
+			if err := writeModelFile(nodeData, data.CodePath); err != nil {
+				return err
+			}
+			if err := writePrivacyFile(nodeData); err != nil {
+				return err
+			}
+			if err := writeMutationBuilderFile(nodeData, data.CodePath); err != nil {
+				return err
+			}
 
 			for _, action := range nodeData.ActionInfo.Actions {
-				writeActionFile(nodeData, action, data.CodePath)
+				if err := writeActionFile(nodeData, action, data.CodePath); err != nil {
+					return err
+				}
 			}
 		}
 	}

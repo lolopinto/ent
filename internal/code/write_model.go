@@ -21,8 +21,8 @@ func getFilePathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("models/%s_gen.go", nodeData.PackageName)
 }
 
-func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
-	file.Write(&file.TemplatedBasedFileWriter{
+func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
 			CodePath: codePathInfo,
@@ -38,10 +38,10 @@ func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) {
 	})
 }
 
-func writePrivacyFile(nodeData *schema.NodeData) {
+func writePrivacyFile(nodeData *schema.NodeData) error {
 	pathToFile := fmt.Sprintf("models/%s_privacy_gen.go", nodeData.PackageName)
 
-	file.Write(&file.TemplatedBasedFileWriter{
+	return file.Write(&file.TemplatedBasedFileWriter{
 		Data:              nodeData,
 		AbsPathToTemplate: util.GetAbsolutePath("privacy.gotmpl"),
 		TemplateName:      "privacy.gotmpl",
