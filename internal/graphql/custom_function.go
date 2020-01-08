@@ -1,7 +1,6 @@
 package graphql
 
 import (
-	"sort"
 	"strings"
 
 	"github.com/99designs/gqlgen/codegen/templates"
@@ -58,6 +57,19 @@ func (fn *customFunction) FlagIDField(
 	}
 }
 
+func (fn *customFunction) OrderedIDFields() []*idField {
+	fields := make([]*idField, len(fn.IDFields))
+	idx := 0
+	for _, arg := range fn.Function.Args {
+		field := fn.IDFields[arg.Name]
+		if field != nil {
+			fields[idx] = field
+			idx++
+		}
+	}
+	return fields
+}
+
 func (fn *customFunction) GetFirstFnField() *idField {
 	for _, arg := range fn.IDFields {
 		return arg
@@ -99,20 +111,36 @@ func (fn *customFunction) writeArgName(idx int, arg *schemaparser.Field, sb *str
 	}
 }
 
+func (fn *customFunction) writeResultName(idx int, result *schemaparser.Field, sb *strings.Builder) {
+	if result.Name == "" {
+		// TODO this should never be empty but come back to this
+		sb.WriteString("err")
+		return
+	}
+
+	// if there's only one result item (for a non-complex type to keep it simple)
+	// or there's 2 and the second returns an error, be consistent and just use "ret"
+	if idx == 0 && !fn.ReturnsComplexType {
+		if len(fn.Function.Results) == 1 ||
+			(len(fn.Function.Results) == 2 && fn.ReturnsError) {
+			sb.WriteString("ret")
+			return
+		}
+	}
+
+	sb.WriteString(result.Name)
+}
+
 func (fn *customFunction) GetFnCallDefinition() string {
 	var sb strings.Builder
-	// only this the return if we're returning a complex type and need to build it
-	if fn.ReturnsComplexType {
+	// only this the return if we're not returning directly
+	if !fn.ReturnsDirectly {
 		// write results in the form a, b, err
 
 		if len(fn.Function.Results) > 0 {
 			for idx, result := range fn.Function.Results {
-				if result.Name == "" {
-					// TODO this should never be empty but come back to this
-					sb.WriteString("err")
-				} else {
-					sb.WriteString(result.Name)
-				}
+				fn.writeResultName(idx, result, &sb)
+
 				if idx+1 != len(fn.Function.Results) {
 					sb.WriteString(", ")
 				}
@@ -174,10 +202,8 @@ func (fn *customFunction) GetResults() []result {
 
 func (fn *customFunction) LoadedFields() string {
 	var ret []string
-	for name := range fn.IDFields {
-		ret = append(ret, "&"+name+"Result")
+	for _, field := range fn.OrderedIDFields() {
+		ret = append(ret, "&"+field.Field.Name+"Result")
 	}
-	// sort these so that we have a stable list of variables
-	sort.Strings(ret)
 	return strings.Join(ret, ", ")
 }

@@ -14,6 +14,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/test_schema/graphql/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/vektah/gqlparser"
@@ -7013,24 +7014,16 @@ func (ec *executionContext) _Edge(ctx context.Context, sel ast.SelectionSet, obj
 	}
 }
 
-func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj *Node) graphql.Marshaler {
+func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj *ent.Entity) graphql.Marshaler {
 	switch obj := (*obj).(type) {
 	case nil:
 		return graphql.Null
-	case models.Contact:
-		return ec._Contact(ctx, sel, &obj)
 	case *models.Contact:
 		return ec._Contact(ctx, sel, obj)
-	case models.ContactEmail:
-		return ec._ContactEmail(ctx, sel, &obj)
 	case *models.ContactEmail:
 		return ec._ContactEmail(ctx, sel, obj)
-	case models.Event:
-		return ec._Event(ctx, sel, &obj)
 	case *models.Event:
 		return ec._Event(ctx, sel, obj)
-	case models.User:
-		return ec._User(ctx, sel, &obj)
 	case *models.User:
 		return ec._User(ctx, sel, obj)
 	default:

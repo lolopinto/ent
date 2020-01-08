@@ -27,6 +27,10 @@ func NewCodePath(configPath, modulePath string) *CodePath {
 	}
 }
 
+func (cp *CodePath) OverrideImportPathToModels(importPath string) {
+	cp.importPathToModels = importPath
+}
+
 func (cp *CodePath) GetQuotedImportPathToConfigs() string {
 	return strconv.Quote(cp.importPathToConfigs)
 }

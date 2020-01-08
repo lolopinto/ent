@@ -100,14 +100,15 @@ func (r *mutationResolver) AdminBlock(ctx context.Context, input AdminBlockInput
 	if ctxErr != nil {
 		return nil, ctxErr
 	}
+
 	var wg sync.WaitGroup
 	wg.Add(2)
-	var blockeeResult models.UserResult
 	var blockerResult models.UserResult
-	go models.GenLoadUser(v, input.BlockeeID, &blockeeResult, &wg)
+	var blockeeResult models.UserResult
 	go models.GenLoadUser(v, input.BlockerID, &blockerResult, &wg)
+	go models.GenLoadUser(v, input.BlockeeID, &blockeeResult, &wg)
 	wg.Wait()
-	if entErr := ent.CoalesceErr(&blockeeResult, &blockerResult); entErr != nil {
+	if entErr := ent.CoalesceErr(&blockerResult, &blockeeResult); entErr != nil {
 		return nil, entErr
 	}
 
@@ -360,7 +361,6 @@ func (r *mutationResolver) ViewerBlock(ctx context.Context, input ViewerBlockInp
 }
 
 func (r *mutationResolver) ViewerBlockMultiple(ctx context.Context, input ViewerBlockMultipleInput) (*ViewerBlockMultipleResponse, error) {
-	// TODO need an API for loading multi-ids
 	v, ctxErr := viewer.ForContext(ctx)
 	if ctxErr != nil {
 		return nil, ctxErr

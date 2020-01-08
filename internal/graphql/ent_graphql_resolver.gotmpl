@@ -8,6 +8,7 @@
 {{ reserveImport "github.com/lolopinto/ent/ent"}}
 {{ reserveImport "github.com/lolopinto/ent/ent/cast"}}
 {{ reserveImport "github.com/lolopinto/ent/ent/viewer"}}
+{{ reserveImport .CodePath.GetImportPathToModels}}
 
 {{define "action" -}}
 	{{ $field := . -}}
@@ -71,7 +72,7 @@
 	{{ if eq (len $fn.IDFields) 1 -}}
 		{{$arg := $fn.GetFirstFnField -}}
 		{{if $arg.Slice -}}
-			// TODO need an API for loading multi-ids
+			{{/* TODO need an API for loading multi-ids */ -}}
 			v, ctxErr := viewer.ForContext(ctx)
 			if ctxErr != nil {
 				return nil, ctxErr
@@ -96,26 +97,30 @@
 			if err := ent.CoalesceErr(errs...); err != nil {
 				return nil, err
 			}
+
 		{{else -}}
 			{{$name := $arg.Field.Name -}}
 			{{$name}}, {{$name}}Err := models.Load{{$arg.FieldType}}FromContext(ctx, {{$arg.GoFieldName}})
 			if {{$name}}Err != nil {
 				return nil, {{$name}}Err
 			}
+
 		{{end -}}
 	{{ else -}}
 		v, ctxErr := viewer.ForContext(ctx)
 		if ctxErr != nil {
 			return nil, ctxErr
 		}
+
 		{{/* TODO something like this is too complicated maybe. another reason to try different API? */ -}}
 		var wg sync.WaitGroup
-		wg.Add({{len $fn.IDFields}})
-		{{range $arg := $fn.IDFields -}}
+		{{$orderedFields := $fn.OrderedIDFields -}}
+		wg.Add({{len $orderedFields}})
+		{{range $arg := $orderedFields -}}
 			{{$name := $arg.Field.Name -}}
 			var {{$name}}Result models.{{$arg.FieldType}}Result
 		{{end -}}
-		{{range $arg := $fn.IDFields -}}
+		{{range $arg := $orderedFields -}}
 			{{$name := $arg.Field.Name -}}
 			go models.GenLoad{{$arg.FieldType}}(v, {{$arg.IDName}}, &{{$name}}Result, &wg)
 		{{end -}}
@@ -123,6 +128,7 @@
 		if entErr := ent.CoalesceErr({{$fn.LoadedFields}}); entErr != nil {
 			return nil, entErr
 		}
+
 	{{end -}}
 {{end -}}
 
@@ -138,23 +144,23 @@
 
 	{{if $fn.ReturnsDirectly -}}
 		return {{$fnStr}}
-	{{ else if $fn.ReturnsComplexType}}
+	{{else -}}
 		{{$fnStr}}
 		{{if $fn.ReturnsError -}}
 			if err != nil {
 				return nil, err
 			}
-		{{end }}
+		{{end -}}
+		{{ if $fn.ReturnsComplexType }}
 
-		return &{{$field.TypeReference.Definition.Name}}{
-			{{range $result := $fn.GetResults -}}
-				{{$result.Key}}: {{$result.Variable}},
-			{{end -}}
-		}, nil
-	{{else -}}
-		ret := {{$fnStr}}
-		{{/* TODO not always gonna need to */ -}}
-		return &ret, nil
+			return &{{$field.TypeReference.Definition.Name}}{
+				{{range $result := $fn.GetResults -}}
+					{{$result.Key}}: {{$result.Variable}},
+				{{end -}}
+			}, nil
+		{{ else -}}
+			return &ret, nil
+		{{end -}}
 	{{end -}}
 
 {{end -}}

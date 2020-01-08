@@ -78,22 +78,38 @@ func (nodeData *NodeData) GetQuotedTableName() string {
 }
 
 func (nodeData *NodeData) GetFieldByName(fieldName string) *field.Field {
+	// all these extra checks needed from places (tests) which create objects on their own
+	if nodeData.FieldInfo == nil {
+		return nil
+	}
 	return nodeData.FieldInfo.GetFieldByName(fieldName)
 }
 
 func (nodeData *NodeData) GetFieldEdgeByName(edgeName string) *edge.FieldEdge {
+	if nodeData.EdgeInfo == nil {
+		return nil
+	}
 	return nodeData.EdgeInfo.GetFieldEdgeByName(edgeName)
 }
 
 func (nodeData *NodeData) GetForeignKeyEdgeByName(edgeName string) *edge.ForeignKeyEdge {
+	if nodeData.EdgeInfo == nil {
+		return nil
+	}
 	return nodeData.EdgeInfo.GetForeignKeyEdgeByName(edgeName)
 }
 
 func (nodeData *NodeData) GetAssociationEdgeByName(edgeName string) *edge.AssociationEdge {
+	if nodeData.EdgeInfo == nil {
+		return nil
+	}
 	return nodeData.EdgeInfo.GetAssociationEdgeByName(edgeName)
 }
 
 func (nodeData *NodeData) GetActionByGraphQLName(graphQLName string) action.Action {
+	if nodeData.ActionInfo == nil {
+		return nil
+	}
 	return nodeData.ActionInfo.GetByGraphQLName(graphQLName)
 }
 

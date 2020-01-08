@@ -67,18 +67,26 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 	overlay := make(map[string][]byte)
 
 	var err error
+	var tempDir string
 	// TODO handle all these testdata things...
 	path, err := filepath.Abs("../testdata/")
-	util.Die(err)
+	if err != nil {
+		return nil, "", err
+	}
 	p.tempDir, err = ioutil.TempDir(path, "test")
-	util.Die(err)
+	if err != nil {
+		return nil, "", err
+	}
+	tempDir = p.tempDir
 
 	if p.PackageName == "" {
 		p.PackageName = "configs"
 	}
-	configDir := filepath.Join(p.tempDir, p.PackageName)
-	err = os.MkdirAll(configDir, 0666)
-	util.Die(err)
+	configDir := filepath.Join(tempDir, p.PackageName)
+	err = os.MkdirAll(configDir, 0755)
+	if err != nil {
+		return nil, "", err
+	}
 
 	for key, source := range p.Sources {
 		// create overlays of path to source for data to be read from disk
@@ -97,7 +105,7 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 }
 
 func (p *SourceSchemaParser) Cleanup() {
-	os.RemoveAll(p.tempDir)
+	util.Die(os.RemoveAll(p.tempDir))
 }
 
 func LoadPackage(p Parser) *packages.Package {
@@ -109,6 +117,9 @@ func LoadPackage(p Parser) *packages.Package {
 }
 
 func LoadPackages(p Parser) []*packages.Package {
+	if p == nil {
+		return []*packages.Package{}
+	}
 	cfg, dir, err := p.GetConfig()
 
 	parserWithCleanup, ok := p.(ParserNeedsCleanup)

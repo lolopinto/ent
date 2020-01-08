@@ -24,6 +24,8 @@ func newFieldInfo() *FieldInfo {
 type FieldInfo struct {
 	Fields   []*Field
 	fieldMap map[string]*Field
+	// really only used in tests
+	NonEntFields []*NonEntField
 }
 
 func (fieldInfo *FieldInfo) addField(f *Field) {
@@ -324,4 +326,13 @@ func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string)
 func getTagMapFromJustFieldName(fieldName string) map[string]string {
 	_, tagMap := getTagInfo(fieldName, nil)
 	return tagMap
+}
+
+type NonEntField struct {
+	FieldName string
+	FieldType enttype.Type
+}
+
+func (f *NonEntField) GetGraphQLName() string {
+	return strcase.ToLowerCamel(f.FieldName)
 }

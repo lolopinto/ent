@@ -1,7 +1,9 @@
 package graphql
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -34,8 +36,20 @@ func (p *Step) Name() string {
 	return "graphql"
 }
 
+type gqlStep string
+
+// steps that need to be run in order to generate graphql schema
+// dependencies are handed by storing values in graphQLSchema
+// each step should assume it can run independently of the other (for test purposes)
+var sortedGQLlSteps = []gqlStep{
+	"schema",
+	"custom_functions",
+	"schema.graphql",
+	"yml_file",
+	"generate_code",
+}
+
 func (p *Step) ProcessData(data *codegen.Data) error {
-	// eventually make this configurable
 	graphql := newGraphQLSchema(data)
 	graphql.generateSchema()
 
@@ -45,15 +59,28 @@ func (p *Step) ProcessData(data *codegen.Data) error {
 
 var _ codegen.Step = &Step{}
 
+var defaultGraphQLFolder = "graphql"
+
 type graphQLSchema struct {
 	config                *codegen.Data
 	Types                 map[string]*graphQLSchemaInfo
 	sortedTypes           []*graphQLSchemaInfo
-	queryFields           []*graphQLNonEntField
-	mutationFields        []*graphQLNonEntField
 	pathsToGraphQLObjects map[string]string
 	queryCustomImpls      map[string]*customFunction
 	mutationCustomImpls   map[string]*customFunction
+
+	customEntResult schemaparser.ParseCustomGQLResult
+	topLevelResult  schemaparser.ParseCustomGQLResult
+	gqlConfig       *config.Config
+
+	customEntParser     schemaparser.Parser
+	customEntCodeParser schemaparser.CustomCodeParser
+
+	topLevelParser     schemaparser.Parser
+	topLevelCodeParser schemaparser.CustomCodeParser
+
+	graphqlFolder   string
+	disableServerGO bool
 }
 
 func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
@@ -64,48 +91,119 @@ func newGraphQLSchema(data *codegen.Data) *graphQLSchema {
 	queryCustomImpls := make(map[string]*customFunction)
 	mutationCustomImpls := make(map[string]*customFunction)
 
-	return &graphQLSchema{
+	schema := &graphQLSchema{
 		config:                data,
 		Types:                 types,
 		pathsToGraphQLObjects: pathsToGraphQLObjects,
 		mutationCustomImpls:   mutationCustomImpls,
 		queryCustomImpls:      queryCustomImpls,
-	}
-}
 
-func (schema *graphQLSchema) generateSchema() {
-	validTypes := schema.generateGraphQLSchemaData()
-
-	// custom ent parser
-	customEntChan := schemaparser.ParseCustomGraphQLDefinitions(
-		&schemaparser.ConfigSchemaParser{
-			AbsRootPath: schema.config.CodePath.GetAbsPathToModels(),
+		// parsing custom ent code
+		customEntParser: &schemaparser.ConfigSchemaParser{
+			AbsRootPath: data.CodePath.GetAbsPathToModels(),
 		},
-		newCustomEntParser(validTypes),
-	)
-	// top level parser
-	topLevelChan := schemaparser.ParseCustomGraphQLDefinitions(
-		&schemaparser.ConfigSchemaParser{
-			AbsRootPath: schema.config.CodePath.GetAbsPathToGraphQL() + "...",
+
+		// parsing top level functions
+		topLevelParser: &schemaparser.ConfigSchemaParser{
+			AbsRootPath: data.CodePath.GetAbsPathToGraphQL() + "...",
 			// for default generated files, don't parse them and treat them as basically empty files
 			// errors in there shouldn't affect this process since if everything succeeds now, we are fine
 			FilesToIgnore: defaultGraphQLFiles,
 		},
-		&customTopLevelParser{},
+		topLevelCodeParser: &customTopLevelParser{},
+	}
+
+	schema.customEntCodeParser = newCustomEntParser(schema)
+	return schema
+}
+
+func (schema *graphQLSchema) getPath(filename string) string {
+	if schema.graphqlFolder == "" {
+		schema.graphqlFolder = defaultGraphQLFolder
+	}
+	return filepath.Join(schema.graphqlFolder, filename)
+}
+
+func (schema *graphQLSchema) getFuncMap(steps []gqlStep) ([]func() error, error) {
+	m := map[gqlStep]func() error{
+		"schema": func() error {
+			schema.generateGraphQLSchemaData()
+			return nil
+		},
+		"custom_functions": schema.parseCustomFunctions,
+		"schema.graphql":   schema.writeGraphQLSchema,
+		"yml_file":         schema.writeGQLGenYamlFile,
+		"generate_code":    schema.generateGraphQLCode,
+	}
+
+	fns := make([]func() error, len(steps))
+
+	for idx, step := range steps {
+		fn, ok := m[step]
+		if !ok {
+			return nil, errors.New("invalid step passed")
+		}
+		fns[idx] = fn
+	}
+	return fns, nil
+}
+
+func (schema *graphQLSchema) overrideCustomEntSchemaParser(
+	parser schemaparser.Parser,
+	codeParser schemaparser.CustomCodeParser,
+) {
+	schema.customEntParser = parser
+	schema.customEntCodeParser = codeParser
+}
+
+func (schema *graphQLSchema) overrideTopLevelEntSchemaParser(
+	parser schemaparser.Parser,
+	codeParser schemaparser.CustomCodeParser,
+) {
+	schema.topLevelParser = parser
+	schema.topLevelCodeParser = codeParser
+}
+
+func (schema *graphQLSchema) parseCustomFunctions() error {
+	// custom ent parser
+	customEntChan := schemaparser.ParseCustomGraphQLDefinitions(
+		schema.customEntParser,
+		schema.customEntCodeParser,
 	)
-	customEntResult, topLevelResult := <-customEntChan, <-topLevelChan
+	// top level parser
+	topLevelChan := schemaparser.ParseCustomGraphQLDefinitions(
+		schema.topLevelParser,
+		schema.topLevelCodeParser,
+	)
+	schema.customEntResult, schema.topLevelResult = <-customEntChan, <-topLevelChan
 
-	util.Die(customEntResult.Error)
-	util.Die(topLevelResult.Error)
+	err := util.CoalesceErr(schema.customEntResult.Error, schema.topLevelResult.Error)
+	if err != nil {
+		return err
+	}
+	err = schema.handleCustomEntDefinitions(schema.customEntResult)
+	if err != nil {
+		return err
+	}
+	return schema.handleCustomTopLevelDefinitions(schema.topLevelResult)
+}
 
-	util.Die(schema.handleCustomEntDefinitions(customEntResult))
-	util.Die(schema.handleCustomTopLevelDefinitions(topLevelResult))
+func (schema *graphQLSchema) generateSchema() {
+	schema.runSpecificSteps(sortedGQLlSteps)
+}
 
-	schema.writeGraphQLSchema()
+func (schema *graphQLSchema) runSpecificSteps(steps []gqlStep) {
+	fns, err := schema.getFuncMap(steps)
 
-	schema.writeGQLGenYamlFile(customEntResult, topLevelResult)
-
-	schema.generateGraphQLCode()
+	// TOOD make sure they are run in the correct order
+	if err != nil {
+		util.Die(err)
+	}
+	for _, fn := range fns {
+		if err := fn(); err != nil {
+			util.Die(err)
+		}
+	}
 }
 
 func (schema *graphQLSchema) handleCustomFunctions(
@@ -183,13 +281,20 @@ func (schema *graphQLSchema) getSchemaType(
 		// returns 1 item which isn't an error, return that type
 		// mutations should always be in Response objects so don't do for those
 		if len(results) == 1 && !enttype.IsErrorType(results[0].Type) {
-			//customFn.ReturnsDirectly = true
 			return results[0].Type.GetGraphQLType()
 		}
 		// if 2 items and 2nd is error, return just the first item as expected type
 		// no need for result type
 		if len(results) == 2 && enttype.IsErrorType(results[1].Type) {
-			customFn.ReturnsDirectly = true
+			// only returns directly if  results[0] is pointer/null type
+			// if not pointer type, we still don't have complex type and should return the
+			// object directly but need to differentiate these 2
+
+			if enttype.IsNullType(results[0].Type) {
+				customFn.ReturnsDirectly = true
+			} else {
+				customFn.ReturnsError = true
+			}
 			return results[0].Type.GetGraphQLType()
 		}
 	}
@@ -316,11 +421,11 @@ func (schema *graphQLSchema) isIDInputField(typ enttype.Type) (bool, bool, strin
 }
 
 func (schema *graphQLSchema) addQueryField(f *graphQLNonEntField) {
-	schema.queryFields = append(schema.queryFields, f)
+	schema.Types["Query"].addNonEntField(f)
 }
 
 func (schema *graphQLSchema) addMutationField(f *graphQLNonEntField) {
-	schema.mutationFields = append(schema.mutationFields, f)
+	schema.Types["Mutation"].addNonEntField(f)
 }
 
 func (schema *graphQLSchema) addSchemaInfo(info *graphQLSchemaInfo) {
@@ -338,48 +443,60 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 	// for any edge fields that reference an existing ID field, invalidate the id field so that it's not exposed to GraphQL
 	// TODO allow client to override this :(
 	// TODO probably cleaner to be passed into field generation so that each part is siloed so an orchestrator handles this
-	for _, edge := range nodeData.EdgeInfo.FieldEdges {
-		f := fieldInfo.GetFieldByName(edge.FieldName)
-		if f != nil {
-			fieldInfo.InvalidateFieldForGraphQL(f)
-		}
-		schemaInfo.addFieldEdge(&graphqlFieldEdge{edge})
-	}
-
-	for _, edge := range nodeData.EdgeInfo.Associations {
-		if nodeMap.HideFromGraphQL(edge) {
-			continue
-		}
-		if edge.Unique {
+	if nodeData.EdgeInfo != nil {
+		for _, edge := range nodeData.EdgeInfo.FieldEdges {
+			f := fieldInfo.GetFieldByName(edge.FieldName)
+			if f != nil {
+				fieldInfo.InvalidateFieldForGraphQL(f)
+			}
 			schemaInfo.addFieldEdge(&graphqlFieldEdge{edge})
-		} else {
+		}
+
+		for _, edge := range nodeData.EdgeInfo.Associations {
+			if nodeMap.HideFromGraphQL(edge) {
+				continue
+			}
+			if edge.Unique {
+				schemaInfo.addFieldEdge(&graphqlFieldEdge{edge})
+			} else {
+				schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
+				s.addEdgeAndConnection(edge)
+			}
+		}
+
+		for _, edge := range nodeData.EdgeInfo.ForeignKeys {
+			if nodeMap.HideFromGraphQL(edge) {
+				continue
+			}
 			schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
-			s.addEdgeAndConnection(edge)
 		}
-	}
 
-	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
-		if nodeMap.HideFromGraphQL(edge) {
-			continue
+		for _, edgeGroup := range nodeData.EdgeInfo.AssocGroups {
+			schemaInfo.addNonEntField(&graphQLNonEntField{
+				fieldName: edgeGroup.GetStatusFieldName(),
+				fieldType: edgeGroup.ConstType,
+			})
 		}
-		schemaInfo.addPluralEdge(&graphqlPluralEdge{PluralEdge: edge})
-	}
-
-	for _, edgeGroup := range nodeData.EdgeInfo.AssocGroups {
-		schemaInfo.addNonEntField(&graphQLNonEntField{
-			fieldName: edgeGroup.GetStatusFieldName(),
-			fieldType: edgeGroup.ConstType,
-		})
 	}
 
 	// very simple, just get fields and create types. no nodes, edges, return ID fields etc
 	// and then we go from there...
-
-	for _, f := range nodeData.FieldInfo.Fields {
-		if !f.ExposeToGraphQL() {
-			continue
+	if fieldInfo != nil {
+		for _, f := range fieldInfo.Fields {
+			if !f.ExposeToGraphQL() {
+				continue
+			}
+			schemaInfo.addField(&graphQLField{Field: f})
 		}
-		schemaInfo.addField(&graphQLField{Field: f})
+
+		for _, f := range fieldInfo.NonEntFields {
+			schemaInfo.addNonEntField(
+				&graphQLNonEntField{
+					fieldName: f.GetGraphQLName(),
+					fieldType: f.FieldType.GetGraphQLType(),
+				},
+			)
+		}
 	}
 
 	// add any enums
@@ -414,10 +531,17 @@ func (s *graphQLSchema) addPathToObj(packagePath, nodeName string) {
 	s.pathsToGraphQLObjects[fmt.Sprintf("%s.%s", packagePath, nodeName)] = nodeName
 }
 
-func (s *graphQLSchema) generateGraphQLSchemaData() map[string]bool {
-	s.addSchemaInfo(s.getNodeInterfaceType())
-
+func (s *graphQLSchema) generateGraphQLSchemaData() {
 	schema := s.config.Schema
+
+	if len(schema.Nodes) > 0 {
+		s.addSchemaInfo(s.getNodeInterfaceType())
+	}
+
+	// potentially add Query and Mutation type
+	s.addSchemaInfo(s.getQuerySchemaType())
+	s.addSchemaInfo(s.getMutationSchemaType())
+
 	if len(schema.GetEdges()) > 0 {
 		s.addSchemaInfo(s.getEdgeInterfaceType())
 		s.addSchemaInfo(s.getConnectionInterfaceType())
@@ -425,7 +549,6 @@ func (s *graphQLSchema) generateGraphQLSchemaData() map[string]bool {
 
 	pathToModels := s.config.CodePath.GetImportPathToModels()
 
-	validTypes := make(map[string]bool)
 	nodeMap := schema.Nodes
 	for _, info := range nodeMap {
 		nodeData := info.NodeData
@@ -433,8 +556,6 @@ func (s *graphQLSchema) generateGraphQLSchemaData() map[string]bool {
 		if nodeData.HideFromGraphQL {
 			continue
 		}
-
-		validTypes[nodeData.Node] = true
 
 		// add graphql path
 		s.addPathToObj(pathToModels, nodeData.Node)
@@ -444,13 +565,6 @@ func (s *graphQLSchema) generateGraphQLSchemaData() map[string]bool {
 
 		s.processActions(nodeData.ActionInfo)
 	}
-
-	s.addSchemaInfo(s.getQuerySchemaType())
-	mutationsType := s.getMutationSchemaType()
-	if mutationsType != nil {
-		s.addSchemaInfo(mutationsType)
-	}
-	return validTypes
 }
 
 func (s *graphQLSchema) processActions(actionInfo *action.ActionInfo) {
@@ -461,7 +575,6 @@ func (s *graphQLSchema) processActions(actionInfo *action.ActionInfo) {
 		if !action.ExposedToGraphQL() {
 			continue
 		}
-		//		spew.Dump(action)
 
 		s.processAction(action)
 	}
@@ -567,20 +680,15 @@ func (s *graphQLSchema) getQuerySchemaType() *graphQLSchemaInfo {
 	// add everything as top level query for now
 
 	return &graphQLSchemaInfo{
-		Type:         "type",
-		TypeName:     "Query",
-		nonEntFields: s.queryFields,
+		Type:     "type",
+		TypeName: "Query",
 	}
 }
 
 func (s *graphQLSchema) getMutationSchemaType() *graphQLSchemaInfo {
-	if len(s.mutationFields) == 0 {
-		return nil
-	}
 	return &graphQLSchemaInfo{
-		Type:         "type",
-		TypeName:     "Mutation",
-		nonEntFields: s.mutationFields,
+		Type:     "type",
+		TypeName: "Mutation",
 	}
 }
 
@@ -676,42 +784,43 @@ func getSortedTypes(t *graphqlSchemaTemplate) []*graphqlSchemaTypeInfo {
 	return t.Types
 }
 
-func (schema *graphQLSchema) writeGraphQLSchema() {
-	util.Die(file.Write(&file.TemplatedBasedFileWriter{
+func (schema *graphQLSchema) writeGraphQLSchema() error {
+	return file.Write(&file.TemplatedBasedFileWriter{
 		Data:              schema.getSchemaForTemplate(),
 		AbsPathToTemplate: util.GetAbsolutePath("graphql_schema.tmpl"),
 		TemplateName:      "graphql_schema.tmpl",
-		PathToFile:        "graphql/schema.graphql",
+		PathToFile:        schema.getPath("schema.graphql"),
 		CreateDirIfNeeded: true,
 		FuncMap: template.FuncMap{
 			"sortedTypes": getSortedTypes,
 		},
-	}))
+	})
 }
 
 func (s *graphQLSchema) buildYmlConfig(
 	customResult schemaparser.ParseCustomGQLResult,
 	topLevelResult schemaparser.ParseCustomGQLResult,
-) config.Config {
-	cfg := config.Config{
-		SchemaFilename: []string{
-			"graphql/schema.graphql",
-		},
-		Exec: config.PackageConfig{
-			Filename: "graphql/generated.go",
-			Package:  "graphql",
-		},
-		Model: config.PackageConfig{
-			Filename: "graphql/models_gen.go",
-			Package:  "graphql",
-		},
-		// don't need this since we're handling this ourselves
-		// Resolver: config.PackageConfig{
-		// 	Filename: "graphql/resolver.go",
-		// 	Package:  "graphql",
-		// 	Type:     "Resolver",
-		// },
+) *config.Config {
+	// init with DefaultConfig then override as needed
+	// This inits a default value for Directives for example
+	cfg := config.DefaultConfig()
+	cfg.SchemaFilename = []string{
+		s.getPath("schema.graphql"),
 	}
+	cfg.Exec = config.PackageConfig{
+		Filename: s.getPath("generated.go"),
+		Package:  "graphql",
+	}
+	cfg.Model = config.PackageConfig{
+		Filename: s.getPath("models_gen.go"),
+		Package:  "graphql",
+	}
+	// don't need this since we're handling this ourselves
+	// cfg. Resolver = config.PackageConfig{
+	// 	Filename: s.getPath("resolver.go"),
+	// 	Package:  "graphql",
+	// 	Type:     "Resolver",
+	// }
 
 	models := make(config.TypeMap)
 
@@ -744,34 +853,58 @@ func (s *graphQLSchema) buildYmlConfig(
 		models[nodeName] = entry
 	}
 
+	// add Node to TypeMapEntry
+	// Have historically dependend on an autogenerated interface being added here
+	// but models_gen.go is not generated if we don't have any new Nodes or Enums and then this fails
+	// see https://github.com/99designs/gqlgen/blob/master/plugin/modelgen/models.go#L241
+	// This is needed to make TestFunctionThatReturnsObjDirectly work
+	if s.Types["Node"] != nil {
+		entry := config.TypeMapEntry{
+			Model: []string{"github.com/lolopinto/ent/ent.Entity"},
+		}
+		models["Node"] = entry
+	}
+
 	cfg.Models = models
 	return cfg
 }
 
-func (s *graphQLSchema) writeGQLGenYamlFile(
-	customResult schemaparser.ParseCustomGQLResult,
-	topLevelResult schemaparser.ParseCustomGQLResult,
-) {
-	util.Die(file.Write(&file.YamlFileWriter{
-		Data:              s.buildYmlConfig(customResult, topLevelResult),
-		PathToFile:        "graphql/gqlgen.yml",
-		CreateDirIfNeeded: true,
-	}))
+func (s *graphQLSchema) getYmlConfig() *config.Config {
+	if s.gqlConfig == nil {
+		s.gqlConfig = s.buildYmlConfig(s.customEntResult, s.topLevelResult)
+	}
+	return s.gqlConfig
 }
 
-func (s *graphQLSchema) generateGraphQLCode() {
-	cfg, err := config.LoadConfig("graphql/gqlgen.yml")
-	// TODO
-	util.Die(err)
+func (s *graphQLSchema) writeGQLGenYamlFile() error {
+	return file.Write(&file.YamlFileWriter{
+		Data:              s.getYmlConfig(),
+		PathToFile:        s.getPath("gqlgen.yml"),
+		CreateDirIfNeeded: true,
+	})
+}
 
+func (s *graphQLSchema) disableServerPlugin() {
+	s.disableServerGO = true
+}
+
+func (s *graphQLSchema) overrideGraphQLFolder(folder string) {
+	s.graphqlFolder = folder
+}
+
+func (s *graphQLSchema) generateGraphQLCode() error {
 	// We're handling the Resolver generation instead of using the stub graphqlgen produces.
 	// We build on the default implementation they support and go from there.
-	err = api.Generate(
-		cfg,
-		api.AddPlugin(newGraphQLResolverPlugin(s)),
-		api.AddPlugin(newGraphQLServerPlugin(s.config)),
+	options := []api.Option{
+		api.AddPlugin(newGraphQLResolverPlugin(s, s.getPath("resolver.go"))),
+	}
+	if !s.disableServerGO {
+		options = append(options, api.AddPlugin(newGraphQLServerPlugin(s.config)))
+	}
+	return api.Generate(
+		s.getYmlConfig(),
+		options...,
 	)
-	util.Die(err)
 }
 
 // get the schema that will be passed to the template for rendering in a schema file
@@ -779,6 +912,22 @@ func (s *graphQLSchema) getSchemaForTemplate() *graphqlSchemaTemplate {
 	ret := &graphqlSchemaTemplate{}
 
 	for _, typ := range s.Types {
+
+		if len(typ.nonEntFields) == 0 {
+			// special case since we want the objects to exist ASAP but only render in schema.graphql if they have fields
+			if typ.TypeName == "Query" {
+				// TODO query is required so put a dummy thing that requires a resolver to be implemented. This doesn't work long term and we should throw an error
+				typ.addNonEntField(&graphQLNonEntField{
+					fieldName: "foo",
+					fieldType: "String",
+				})
+			} else if typ.TypeName == "Mutation" {
+				// nothing to do here, don't render anything
+				continue
+			} else {
+				// probably throw an error here?
+			}
+		}
 
 		var lines []string
 		for _, f := range typ.fields {

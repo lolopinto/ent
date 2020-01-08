@@ -19,6 +19,7 @@ type entGraphQLResolverPlugin struct {
 	schema    *schema.Schema
 	codePath  *intcodegen.CodePath
 	gqlSchema *graphQLSchema
+	fileName  string
 }
 
 var _ plugin.CodeGenerator = &entGraphQLResolverPlugin{}
@@ -150,17 +151,19 @@ type ResolverBuild struct {
 
 	PackageName  string
 	ResolverType string
+	CodePath     *intcodegen.CodePath
 }
 
 func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 	resolverBuild := &ResolverBuild{
 		Data:         data,
 		ResolverType: "Resolver",
+		CodePath:     p.codePath,
 	}
 
 	return templates.Render(templates.Options{
 		PackageName:     "graphql",
-		Filename:        "graphql/resolver.go",
+		Filename:        p.fileName,
 		Data:            resolverBuild,
 		GeneratedHeader: true,
 		Template:        readTemplateFile("ent_graphql_resolver.gotmpl"),
@@ -183,10 +186,12 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 	})
 }
 
-func newGraphQLResolverPlugin(s *graphQLSchema) plugin.Plugin {
-	return &entGraphQLResolverPlugin{
+func newGraphQLResolverPlugin(s *graphQLSchema, filename string) plugin.Plugin {
+	plugin := &entGraphQLResolverPlugin{
 		schema:    s.config.Schema,
 		codePath:  s.config.CodePath,
 		gqlSchema: s,
+		fileName:  filename,
 	}
+	return plugin
 }

@@ -9,20 +9,17 @@ import (
 var entFileRegex = regexp.MustCompile(`(\w+)_gen.go`)
 
 type customEntParser struct {
-	// todo eliminate this and just use what's in this class
-	//schema *graphQLSchema
-	validTypes map[string]bool
+	schema *graphQLSchema
 }
 
-func newCustomEntParser(validTypes map[string]bool) *customEntParser {
+func newCustomEntParser(schema *graphQLSchema) *customEntParser {
 	return &customEntParser{
-		validTypes: validTypes,
+		schema: schema,
 	}
 }
 
 func (p *customEntParser) ValidateFnReceiver(name string) error {
-	//	if p.schema.Types[name] == nil {
-	if !p.validTypes[name] {
+	if p.schema.Types[name] == nil {
 		return fmt.Errorf("invalid type %s should not have @graphql decoration", name)
 	}
 	return nil

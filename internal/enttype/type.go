@@ -676,3 +676,12 @@ func IsContextType(typ Type) bool {
 	}
 	return namedType.actualType.String() == "context.Context"
 }
+
+func IsNullType(typ Type) bool {
+	_, ok := typ.(*PointerType)
+	if ok {
+		return true
+	}
+	gqlType := typ.GetGraphQLType()
+	return !strings.HasSuffix(gqlType, "!")
+}

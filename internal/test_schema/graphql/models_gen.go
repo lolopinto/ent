@@ -20,10 +20,6 @@ type Edge interface {
 	IsEdge()
 }
 
-type Node interface {
-	IsNode()
-}
-
 type AdminBlockInput struct {
 	BlockeeID string `json:"blockeeID"`
 	BlockerID string `json:"blockerID"`
