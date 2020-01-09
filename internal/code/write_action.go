@@ -34,7 +34,7 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 			},
 			AbsPathToTemplate: util.GetAbsolutePath("action.gotmpl"),
 			TemplateName:      "action.gotmpl",
-			PathToFile:        fmt.Sprintf("models/%s/action/%s.go", nodeData.PackageName, fileName),
+			PathToFile:        fmt.Sprintf("models/%s/action/%s_gen.go", nodeData.PackageName, fileName),
 			CreateDirIfNeeded: true,
 			FormatSource:      true,
 			PackageName:       "action",

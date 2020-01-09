@@ -15,7 +15,7 @@ import (
 )
 
 func writeMutationBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
-	fileName := strcase.ToSnake(fmt.Sprintf("%s_mutation_builder.go", nodeData.PackageName))
+	fileName := strcase.ToSnake(fmt.Sprintf("%s_mutation_builder_gen.go", nodeData.PackageName))
 
 	imps := imports.Imports{}
 	return file.Write(
@@ -26,7 +26,7 @@ func writeMutationBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.C
 			},
 			AbsPathToTemplate: util.GetAbsolutePath("mutation_builder.gotmpl"),
 			TemplateName:      "mutation_builder.gotmpl",
-			PathToFile:        fmt.Sprintf("models/%s/%s.go", nodeData.PackageName, fileName),
+			PathToFile:        fmt.Sprintf("models/%s/%s", nodeData.PackageName, fileName),
 			CreateDirIfNeeded: true,
 			FormatSource:      true,
 			PackageName:       nodeData.PackageName, // TODO
