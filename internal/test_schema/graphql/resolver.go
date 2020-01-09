@@ -4,7 +4,16 @@ package graphql
 
 import (
 	"context"
+	"sync"
+	"time"
 
+	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/internal/test_schema/graphql/auth"
+	"github.com/lolopinto/ent/internal/test_schema/graphql/block"
+	"github.com/lolopinto/ent/internal/test_schema/graphql/log"
+	viewer1 "github.com/lolopinto/ent/internal/test_schema/graphql/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/contact/action"
 	action1 "github.com/lolopinto/ent/internal/test_schema/models/event/action"
@@ -86,6 +95,45 @@ func (r *eventResolver) ViewerRsvpStatus(ctx context.Context, obj *models.Event)
 
 type mutationResolver struct{ *Resolver }
 
+func (r *mutationResolver) AdminBlock(ctx context.Context, input AdminBlockInput) (*AdminBlockResponse, error) {
+	v, ctxErr := viewer.ForContext(ctx)
+	if ctxErr != nil {
+		return nil, ctxErr
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	var blockerResult models.UserResult
+	var blockeeResult models.UserResult
+	go models.GenLoadUser(v, input.BlockerID, &blockerResult, &wg)
+	go models.GenLoadUser(v, input.BlockeeID, &blockeeResult, &wg)
+	wg.Wait()
+	if entErr := ent.CoalesceErr(&blockerResult, &blockeeResult); entErr != nil {
+		return nil, entErr
+	}
+
+	err := block.AdminBlock(ctx, blockerResult.User, blockeeResult.User)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AdminBlockResponse{
+		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
+
+func (r *mutationResolver) AuthUser(ctx context.Context, input AuthUserInput) (*AuthUserResponse, error) {
+	user, token, err := auth.AuthMutation(ctx, input.Email, input.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthUserResponse{
+		User:  user,
+		Token: token,
+	}, nil
+}
+
 func (r *mutationResolver) ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error) {
 	node, err := action.CreateContactFromContext(ctx).
 		SetEmailAddress(input.EmailAddress).
@@ -141,6 +189,25 @@ func (r *mutationResolver) EventRsvpStatusEdit(ctx context.Context, input EventR
 
 	return &EventRsvpStatusEditResponse{
 		Event: node,
+	}, nil
+}
+
+func (r *mutationResolver) LogEvent(ctx context.Context, input LogEventInput) (*LogEventResponse, error) {
+	log.Log(ctx, input.Event)
+
+	return &LogEventResponse{
+		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
+
+func (r *mutationResolver) LogEvent2(ctx context.Context, input LogEvent2Input) (*LogEvent2Response, error) {
+	err := log.Log2(ctx, input.Event)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LogEvent2Response{
+		Success: cast.ConvertToNullableBool(true),
 	}, nil
 }
 
@@ -277,7 +344,98 @@ func (r *mutationResolver) UserRemoveFriend(ctx context.Context, input UserRemov
 	}, nil
 }
 
+func (r *mutationResolver) ViewerBlock(ctx context.Context, input ViewerBlockInput) (*ViewerBlockResponse, error) {
+	blockee, blockeeErr := models.LoadUserFromContext(ctx, input.BlockeeID)
+	if blockeeErr != nil {
+		return nil, blockeeErr
+	}
+
+	viewer, err := block.Block(ctx, blockee)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ViewerBlockResponse{
+		Viewer: viewer,
+	}, nil
+}
+
+func (r *mutationResolver) ViewerBlockMultiple(ctx context.Context, input ViewerBlockMultipleInput) (*ViewerBlockMultipleResponse, error) {
+	v, ctxErr := viewer.ForContext(ctx)
+	if ctxErr != nil {
+		return nil, ctxErr
+	}
+	var wg sync.WaitGroup
+	results := make([]*models.UserResult, len(input.UserIDs))
+	wg.Add(len(input.UserIDs))
+	for idx, id := range input.UserIDs {
+		go models.GenLoadUser(v, id, results[idx], &wg)
+	}
+	wg.Wait()
+
+	var errs []error
+	var users []*models.User
+	for _, res := range results {
+		if res.Err != nil {
+			errs = append(errs, res.Err)
+		} else {
+			users = append(users, res.User)
+		}
+	}
+	if err := ent.CoalesceErr(errs...); err != nil {
+		return nil, err
+	}
+
+	viewer, err := block.BlockMultiple(ctx, users)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ViewerBlockMultipleResponse{
+		Viewer: viewer,
+	}, nil
+}
+
+func (r *mutationResolver) ViewerBlockMultipleIDs(ctx context.Context, input ViewerBlockMultipleIDsInput) (*ViewerBlockMultipleIDsResponse, error) {
+	viewer, err := block.BlockMultipleIDs(ctx, input.UserIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ViewerBlockMultipleIDsResponse{
+		Viewer: viewer,
+	}, nil
+}
+
+func (r *mutationResolver) ViewerBlockParam(ctx context.Context, userID string) (*ViewerBlockParamResponse, error) {
+	user, userErr := models.LoadUserFromContext(ctx, userID)
+	if userErr != nil {
+		return nil, userErr
+	}
+
+	viewer, err := block.BlockParam(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ViewerBlockParamResponse{
+		Viewer: viewer,
+	}, nil
+}
+
 type queryResolver struct{ *Resolver }
+
+func (r *queryResolver) AuthUser(ctx context.Context, email string, password string) (*AuthUserResult, error) {
+	user, token, err := auth.Authenticate(ctx, email, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthUserResult{
+		User:  user,
+		Token: token,
+	}, nil
+}
 
 func (r *queryResolver) Contact(ctx context.Context, id string) (*models.Contact, error) {
 	return models.LoadContactFromContext(ctx, id)
@@ -291,8 +449,17 @@ func (r *queryResolver) Event(ctx context.Context, id string) (*models.Event, er
 	return models.LoadEventFromContext(ctx, id)
 }
 
+func (r *queryResolver) ServerTime(ctx context.Context) (*time.Time, error) {
+	ret := serverTime()
+	return &ret, nil
+}
+
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {
 	return models.LoadUserFromContext(ctx, id)
+}
+
+func (r *queryResolver) Viewer(ctx context.Context) (*viewer1.Viewer, error) {
+	return viewer1.ViewerResolver(ctx)
 }
 
 type userResolver struct{ *Resolver }

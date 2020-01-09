@@ -328,13 +328,13 @@ func DowngradeDB(revision string) {
 }
 
 func (s *dbSchema) writeSchemaFile() {
-	file.Write(&file.TemplatedBasedFileWriter{
+	util.Die(file.Write(&file.TemplatedBasedFileWriter{
 		Data:              s.getSchemaForTemplate(),
 		AbsPathToTemplate: util.GetAbsolutePath("db_schema.tmpl"),
 		TemplateName:      "db_schema.tmpl",
 		// TODO: this should be change to use path to configs
 		PathToFile: "models/configs/schema.py",
-	})
+	}))
 }
 
 func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {

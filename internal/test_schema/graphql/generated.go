@@ -14,6 +14,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/test_schema/graphql/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
@@ -49,6 +51,20 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AdminBlockResponse struct {
+		Success func(childComplexity int) int
+	}
+
+	AuthUserResponse struct {
+		Token func(childComplexity int) int
+		User  func(childComplexity int) int
+	}
+
+	AuthUserResult struct {
+		Token func(childComplexity int) int
+		User  func(childComplexity int) int
+	}
+
 	Contact struct {
 		AllowList     func(childComplexity int) int
 		ContactEmails func(childComplexity int) int
@@ -104,10 +120,22 @@ type ComplexityRoot struct {
 		Node func(childComplexity int) int
 	}
 
+	LogEvent2Response struct {
+		Success func(childComplexity int) int
+	}
+
+	LogEventResponse struct {
+		Success func(childComplexity int) int
+	}
+
 	Mutation struct {
+		AdminBlock             func(childComplexity int, input AdminBlockInput) int
+		AuthUser               func(childComplexity int, input AuthUserInput) int
 		ContactCreate          func(childComplexity int, input ContactCreateInput) int
 		EventCreate            func(childComplexity int, input EventCreateInput) int
 		EventRsvpStatusEdit    func(childComplexity int, input EventRsvpStatusEditInput) int
+		LogEvent               func(childComplexity int, input LogEventInput) int
+		LogEvent2              func(childComplexity int, input LogEvent2Input) int
 		UserAddFamilyMember    func(childComplexity int, input UserAddFamilyMemberInput) int
 		UserAddFriend          func(childComplexity int, input UserAddFriendInput) int
 		UserCreate             func(childComplexity int, input UserCreateInput) int
@@ -115,13 +143,20 @@ type ComplexityRoot struct {
 		UserEdit               func(childComplexity int, input UserEditInput) int
 		UserRemoveFamilyMember func(childComplexity int, input UserRemoveFamilyMemberInput) int
 		UserRemoveFriend       func(childComplexity int, input UserRemoveFriendInput) int
+		ViewerBlock            func(childComplexity int, input ViewerBlockInput) int
+		ViewerBlockMultiple    func(childComplexity int, input ViewerBlockMultipleInput) int
+		ViewerBlockMultipleIDs func(childComplexity int, input ViewerBlockMultipleIDsInput) int
+		ViewerBlockParam       func(childComplexity int, userID string) int
 	}
 
 	Query struct {
+		AuthUser     func(childComplexity int, email string, password string) int
 		Contact      func(childComplexity int, id string) int
 		ContactEmail func(childComplexity int, id string) int
 		Event        func(childComplexity int, id string) int
+		ServerTime   func(childComplexity int) int
 		User         func(childComplexity int, id string) int
+		Viewer       func(childComplexity int) int
 	}
 
 	User struct {
@@ -177,6 +212,27 @@ type ComplexityRoot struct {
 	UsersEdge struct {
 		Node func(childComplexity int) int
 	}
+
+	Viewer struct {
+		LoadViewerContact func(childComplexity int) int
+		User              func(childComplexity int) int
+	}
+
+	ViewerBlockMultipleIDsResponse struct {
+		Viewer func(childComplexity int) int
+	}
+
+	ViewerBlockMultipleResponse struct {
+		Viewer func(childComplexity int) int
+	}
+
+	ViewerBlockParamResponse struct {
+		Viewer func(childComplexity int) int
+	}
+
+	ViewerBlockResponse struct {
+		Viewer func(childComplexity int) int
+	}
 }
 
 type ContactResolver interface {
@@ -200,9 +256,13 @@ type EventResolver interface {
 	ViewerRsvpStatus(ctx context.Context, obj *models.Event) (*EventRsvpStatus, error)
 }
 type MutationResolver interface {
+	AdminBlock(ctx context.Context, input AdminBlockInput) (*AdminBlockResponse, error)
+	AuthUser(ctx context.Context, input AuthUserInput) (*AuthUserResponse, error)
 	ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error)
 	EventCreate(ctx context.Context, input EventCreateInput) (*EventCreateResponse, error)
 	EventRsvpStatusEdit(ctx context.Context, input EventRsvpStatusEditInput) (*EventRsvpStatusEditResponse, error)
+	LogEvent(ctx context.Context, input LogEventInput) (*LogEventResponse, error)
+	LogEvent2(ctx context.Context, input LogEvent2Input) (*LogEvent2Response, error)
 	UserAddFamilyMember(ctx context.Context, input UserAddFamilyMemberInput) (*UserAddFamilyMemberResponse, error)
 	UserAddFriend(ctx context.Context, input UserAddFriendInput) (*UserAddFriendResponse, error)
 	UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error)
@@ -210,12 +270,19 @@ type MutationResolver interface {
 	UserEdit(ctx context.Context, input UserEditInput) (*UserEditResponse, error)
 	UserRemoveFamilyMember(ctx context.Context, input UserRemoveFamilyMemberInput) (*UserRemoveFamilyMemberResponse, error)
 	UserRemoveFriend(ctx context.Context, input UserRemoveFriendInput) (*UserRemoveFriendResponse, error)
+	ViewerBlock(ctx context.Context, input ViewerBlockInput) (*ViewerBlockResponse, error)
+	ViewerBlockMultiple(ctx context.Context, input ViewerBlockMultipleInput) (*ViewerBlockMultipleResponse, error)
+	ViewerBlockMultipleIDs(ctx context.Context, input ViewerBlockMultipleIDsInput) (*ViewerBlockMultipleIDsResponse, error)
+	ViewerBlockParam(ctx context.Context, userID string) (*ViewerBlockParamResponse, error)
 }
 type QueryResolver interface {
+	AuthUser(ctx context.Context, email string, password string) (*AuthUserResult, error)
 	Contact(ctx context.Context, id string) (*models.Contact, error)
 	ContactEmail(ctx context.Context, id string) (*models.ContactEmail, error)
 	Event(ctx context.Context, id string) (*models.Event, error)
+	ServerTime(ctx context.Context) (*time.Time, error)
 	User(ctx context.Context, id string) (*models.User, error)
+	Viewer(ctx context.Context) (*viewer.Viewer, error)
 }
 type UserResolver interface {
 	Contacts(ctx context.Context, obj *models.User) ([]*models.Contact, error)
@@ -244,6 +311,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AdminBlockResponse.success":
+		if e.complexity.AdminBlockResponse.Success == nil {
+			break
+		}
+
+		return e.complexity.AdminBlockResponse.Success(childComplexity), true
+
+	case "AuthUserResponse.token":
+		if e.complexity.AuthUserResponse.Token == nil {
+			break
+		}
+
+		return e.complexity.AuthUserResponse.Token(childComplexity), true
+
+	case "AuthUserResponse.user":
+		if e.complexity.AuthUserResponse.User == nil {
+			break
+		}
+
+		return e.complexity.AuthUserResponse.User(childComplexity), true
+
+	case "AuthUserResult.token":
+		if e.complexity.AuthUserResult.Token == nil {
+			break
+		}
+
+		return e.complexity.AuthUserResult.Token(childComplexity), true
+
+	case "AuthUserResult.user":
+		if e.complexity.AuthUserResult.User == nil {
+			break
+		}
+
+		return e.complexity.AuthUserResult.User(childComplexity), true
 
 	case "Contact.allowList":
 		if e.complexity.Contact.AllowList == nil {
@@ -467,6 +569,44 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.EventsEdge.Node(childComplexity), true
 
+	case "LogEvent2Response.success":
+		if e.complexity.LogEvent2Response.Success == nil {
+			break
+		}
+
+		return e.complexity.LogEvent2Response.Success(childComplexity), true
+
+	case "LogEventResponse.success":
+		if e.complexity.LogEventResponse.Success == nil {
+			break
+		}
+
+		return e.complexity.LogEventResponse.Success(childComplexity), true
+
+	case "Mutation.adminBlock":
+		if e.complexity.Mutation.AdminBlock == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_adminBlock_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AdminBlock(childComplexity, args["input"].(AdminBlockInput)), true
+
+	case "Mutation.authUser":
+		if e.complexity.Mutation.AuthUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_authUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AuthUser(childComplexity, args["input"].(AuthUserInput)), true
+
 	case "Mutation.contactCreate":
 		if e.complexity.Mutation.ContactCreate == nil {
 			break
@@ -502,6 +642,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.EventRsvpStatusEdit(childComplexity, args["input"].(EventRsvpStatusEditInput)), true
+
+	case "Mutation.logEvent":
+		if e.complexity.Mutation.LogEvent == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_logEvent_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LogEvent(childComplexity, args["input"].(LogEventInput)), true
+
+	case "Mutation.logEvent2":
+		if e.complexity.Mutation.LogEvent2 == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_logEvent2_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LogEvent2(childComplexity, args["input"].(LogEvent2Input)), true
 
 	case "Mutation.userAddFamilyMember":
 		if e.complexity.Mutation.UserAddFamilyMember == nil {
@@ -587,6 +751,66 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UserRemoveFriend(childComplexity, args["input"].(UserRemoveFriendInput)), true
 
+	case "Mutation.viewerBlock":
+		if e.complexity.Mutation.ViewerBlock == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_viewerBlock_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ViewerBlock(childComplexity, args["input"].(ViewerBlockInput)), true
+
+	case "Mutation.viewerBlockMultiple":
+		if e.complexity.Mutation.ViewerBlockMultiple == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_viewerBlockMultiple_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ViewerBlockMultiple(childComplexity, args["input"].(ViewerBlockMultipleInput)), true
+
+	case "Mutation.viewerBlockMultipleIDs":
+		if e.complexity.Mutation.ViewerBlockMultipleIDs == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_viewerBlockMultipleIDs_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ViewerBlockMultipleIDs(childComplexity, args["input"].(ViewerBlockMultipleIDsInput)), true
+
+	case "Mutation.viewerBlockParam":
+		if e.complexity.Mutation.ViewerBlockParam == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_viewerBlockParam_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ViewerBlockParam(childComplexity, args["userID"].(string)), true
+
+	case "Query.authUser":
+		if e.complexity.Query.AuthUser == nil {
+			break
+		}
+
+		args, err := ec.field_Query_authUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AuthUser(childComplexity, args["email"].(string), args["password"].(string)), true
+
 	case "Query.contact":
 		if e.complexity.Query.Contact == nil {
 			break
@@ -623,6 +847,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Event(childComplexity, args["id"].(string)), true
 
+	case "Query.serverTime":
+		if e.complexity.Query.ServerTime == nil {
+			break
+		}
+
+		return e.complexity.Query.ServerTime(childComplexity), true
+
 	case "Query.user":
 		if e.complexity.Query.User == nil {
 			break
@@ -634,6 +865,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.User(childComplexity, args["id"].(string)), true
+
+	case "Query.viewer":
+		if e.complexity.Query.Viewer == nil {
+			break
+		}
+
+		return e.complexity.Query.Viewer(childComplexity), true
 
 	case "User.baz":
 		if e.complexity.User.Baz == nil {
@@ -803,6 +1041,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UsersEdge.Node(childComplexity), true
 
+	case "Viewer.contact":
+		if e.complexity.Viewer.LoadViewerContact == nil {
+			break
+		}
+
+		return e.complexity.Viewer.LoadViewerContact(childComplexity), true
+
+	case "Viewer.user":
+		if e.complexity.Viewer.User == nil {
+			break
+		}
+
+		return e.complexity.Viewer.User(childComplexity), true
+
+	case "ViewerBlockMultipleIDsResponse.viewer":
+		if e.complexity.ViewerBlockMultipleIDsResponse.Viewer == nil {
+			break
+		}
+
+		return e.complexity.ViewerBlockMultipleIDsResponse.Viewer(childComplexity), true
+
+	case "ViewerBlockMultipleResponse.viewer":
+		if e.complexity.ViewerBlockMultipleResponse.Viewer == nil {
+			break
+		}
+
+		return e.complexity.ViewerBlockMultipleResponse.Viewer(childComplexity), true
+
+	case "ViewerBlockParamResponse.viewer":
+		if e.complexity.ViewerBlockParamResponse.Viewer == nil {
+			break
+		}
+
+		return e.complexity.ViewerBlockParamResponse.Viewer(childComplexity), true
+
+	case "ViewerBlockResponse.viewer":
+		if e.complexity.ViewerBlockResponse.Viewer == nil {
+			break
+		}
+
+		return e.complexity.ViewerBlockResponse.Viewer(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -867,6 +1147,30 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var parsedSchema = gqlparser.MustLoadSchema(
 	&ast.Source{Name: "graphql/schema.graphql", Input: `# Code generated by github.com/lolopinto/ent/ent, DO NOT edit. 
 
+
+input AdminBlockInput {
+    blockeeID: ID!
+    blockerID: ID!
+}
+
+type AdminBlockResponse {
+    success: Boolean
+}
+
+input AuthUserInput {
+    email: String!
+    password: String!
+}
+
+type AuthUserResponse {
+    token: String!
+    user: User
+}
+
+type AuthUserResult {
+    token: String!
+    user: User
+}
 
 interface Connection {
     edges: [Edge!]
@@ -963,10 +1267,30 @@ type EventsEdge implements Edge {
     node: Event!
 }
 
+input LogEvent2Input {
+    event: String!
+}
+
+type LogEvent2Response {
+    success: Boolean
+}
+
+input LogEventInput {
+    event: String!
+}
+
+type LogEventResponse {
+    success: Boolean
+}
+
 type Mutation {
+    adminBlock(input: AdminBlockInput!): AdminBlockResponse
+    authUser(input: AuthUserInput!): AuthUserResponse
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
     eventCreate(input: EventCreateInput!): EventCreateResponse
     eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse
+    logEvent(input: LogEventInput!): LogEventResponse
+    logEvent2(input: LogEvent2Input!): LogEvent2Response
     userAddFamilyMember(input: UserAddFamilyMemberInput!): UserAddFamilyMemberResponse
     userAddFriend(input: UserAddFriendInput!): UserAddFriendResponse
     userCreate(input: UserCreateInput!): UserCreateResponse
@@ -974,6 +1298,10 @@ type Mutation {
     userEdit(input: UserEditInput!): UserEditResponse
     userRemoveFamilyMember(input: UserRemoveFamilyMemberInput!): UserRemoveFamilyMemberResponse
     userRemoveFriend(input: UserRemoveFriendInput!): UserRemoveFriendResponse
+    viewerBlock(input: ViewerBlockInput!): ViewerBlockResponse
+    viewerBlockMultiple(input: ViewerBlockMultipleInput!): ViewerBlockMultipleResponse
+    viewerBlockMultipleIDs(input: ViewerBlockMultipleIDsInput!): ViewerBlockMultipleIDsResponse
+    viewerBlockParam(userID: ID!): ViewerBlockParamResponse
 }
 
 interface Node {
@@ -981,10 +1309,13 @@ interface Node {
 }
 
 type Query {
+    authUser(email: String!, password: String!): AuthUserResult
     contact(id: ID!): Contact
     contactEmail(id: ID!): ContactEmail
     event(id: ID!): Event
+    serverTime: Time!
     user(id: ID!): User
+    viewer: Viewer!
 }
 
 type User implements Node {
@@ -1080,6 +1411,39 @@ type UsersEdge implements Edge {
     node: User!
 }
 
+type Viewer {
+    contact: Contact
+    user: User!
+}
+
+input ViewerBlockInput {
+    blockeeID: ID!
+}
+
+input ViewerBlockMultipleIDsInput {
+    userIDs: [String!]!
+}
+
+type ViewerBlockMultipleIDsResponse {
+    viewer: Viewer
+}
+
+input ViewerBlockMultipleInput {
+    userIDs: [ID!]!
+}
+
+type ViewerBlockMultipleResponse {
+    viewer: Viewer
+}
+
+type ViewerBlockParamResponse {
+    viewer: Viewer
+}
+
+type ViewerBlockResponse {
+    viewer: Viewer
+}
+
 
 scalar Time
 `},
@@ -1100,6 +1464,34 @@ func (ec *executionContext) field_Contact_contactBar_args(ctx context.Context, r
 		}
 	}
 	args["foo"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_adminBlock_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 AdminBlockInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAdminBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_authUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 AuthUserInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAuthUserInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1137,6 +1529,34 @@ func (ec *executionContext) field_Mutation_eventRsvpStatusEdit_args(ctx context.
 	var arg0 EventRsvpStatusEditInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNEventRsvpStatusEditInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatusEditInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_logEvent2_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 LogEvent2Input
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNLogEvent2Input2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEvent2Input(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_logEvent_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 LogEventInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNLogEventInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEventInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1243,6 +1663,62 @@ func (ec *executionContext) field_Mutation_userRemoveFriend_args(ctx context.Con
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_viewerBlockMultipleIDs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 ViewerBlockMultipleIDsInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNViewerBlockMultipleIDsInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleIDsInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_viewerBlockMultiple_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 ViewerBlockMultipleInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNViewerBlockMultipleInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_viewerBlockParam_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["userID"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_viewerBlock_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 ViewerBlockInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNViewerBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1254,6 +1730,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_authUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["email"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["email"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["password"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["password"] = arg1
 	return args, nil
 }
 
@@ -1348,6 +1846,182 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AdminBlockResponse_success(ctx context.Context, field graphql.CollectedField, obj *AdminBlockResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AdminBlockResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AuthUserResponse_token(ctx context.Context, field graphql.CollectedField, obj *AuthUserResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthUserResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AuthUserResponse_user(ctx context.Context, field graphql.CollectedField, obj *AuthUserResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthUserResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AuthUserResult_token(ctx context.Context, field graphql.CollectedField, obj *AuthUserResult) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthUserResult",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AuthUserResult_user(ctx context.Context, field graphql.CollectedField, obj *AuthUserResult) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthUserResult",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _Contact_allowList(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
@@ -2473,6 +3147,156 @@ func (ec *executionContext) _EventsEdge_node(ctx context.Context, field graphql.
 	return ec.marshalNEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _LogEvent2Response_success(ctx context.Context, field graphql.CollectedField, obj *LogEvent2Response) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "LogEvent2Response",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _LogEventResponse_success(ctx context.Context, field graphql.CollectedField, obj *LogEventResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "LogEventResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_adminBlock(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_adminBlock_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AdminBlock(rctx, args["input"].(AdminBlockInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AdminBlockResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAdminBlockResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_authUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_authUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AuthUser(rctx, args["input"].(AuthUserInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AuthUserResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAuthUserResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserResponse(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_contactCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -2594,6 +3418,88 @@ func (ec *executionContext) _Mutation_eventRsvpStatusEdit(ctx context.Context, f
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOEventRsvpStatusEditResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐEventRsvpStatusEditResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_logEvent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_logEvent_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().LogEvent(rctx, args["input"].(LogEventInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*LogEventResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOLogEventResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEventResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_logEvent2(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_logEvent2_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().LogEvent2(rctx, args["input"].(LogEvent2Input))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*LogEvent2Response)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOLogEvent2Response2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEvent2Response(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_userAddFamilyMember(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2883,6 +3789,211 @@ func (ec *executionContext) _Mutation_userRemoveFriend(ctx context.Context, fiel
 	return ec.marshalOUserRemoveFriendResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐUserRemoveFriendResponse(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_viewerBlock(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_viewerBlock_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ViewerBlock(rctx, args["input"].(ViewerBlockInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ViewerBlockResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOViewerBlockResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_viewerBlockMultiple(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_viewerBlockMultiple_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ViewerBlockMultiple(rctx, args["input"].(ViewerBlockMultipleInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ViewerBlockMultipleResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOViewerBlockMultipleResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_viewerBlockMultipleIDs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_viewerBlockMultipleIDs_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ViewerBlockMultipleIDs(rctx, args["input"].(ViewerBlockMultipleIDsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ViewerBlockMultipleIDsResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOViewerBlockMultipleIDsResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleIDsResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_viewerBlockParam(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_viewerBlockParam_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ViewerBlockParam(rctx, args["userID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ViewerBlockParamResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOViewerBlockParamResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockParamResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_authUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_authUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().AuthUser(rctx, args["email"].(string), args["password"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AuthUserResult)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAuthUserResult2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserResult(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_contact(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -3006,6 +4117,43 @@ func (ec *executionContext) _Query_event(ctx context.Context, field graphql.Coll
 	return ec.marshalOEvent2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐEvent(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_serverTime(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().ServerTime(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -3045,6 +4193,43 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Viewer(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*viewer.Viewer)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3975,6 +5160,213 @@ func (ec *executionContext) _UsersEdge_node(ctx context.Context, field graphql.C
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Viewer_contact(ctx context.Context, field graphql.CollectedField, obj *viewer.Viewer) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Viewer",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LoadViewerContact()
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Contact)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOContact2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐContact(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Viewer_user(ctx context.Context, field graphql.CollectedField, obj *viewer.Viewer) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Viewer",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ViewerBlockMultipleIDsResponse_viewer(ctx context.Context, field graphql.CollectedField, obj *ViewerBlockMultipleIDsResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "ViewerBlockMultipleIDsResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Viewer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*viewer.Viewer)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ViewerBlockMultipleResponse_viewer(ctx context.Context, field graphql.CollectedField, obj *ViewerBlockMultipleResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "ViewerBlockMultipleResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Viewer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*viewer.Viewer)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ViewerBlockParamResponse_viewer(ctx context.Context, field graphql.CollectedField, obj *ViewerBlockParamResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "ViewerBlockParamResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Viewer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*viewer.Viewer)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ViewerBlockResponse_viewer(ctx context.Context, field graphql.CollectedField, obj *ViewerBlockResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "ViewerBlockResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Viewer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*viewer.Viewer)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -5128,6 +6520,54 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAdminBlockInput(ctx context.Context, obj interface{}) (AdminBlockInput, error) {
+	var it AdminBlockInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "blockeeID":
+			var err error
+			it.BlockeeID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "blockerID":
+			var err error
+			it.BlockerID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAuthUserInput(ctx context.Context, obj interface{}) (AuthUserInput, error) {
+	var it AuthUserInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "email":
+			var err error
+			it.Email, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "password":
+			var err error
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputContactCreateInput(ctx context.Context, obj interface{}) (ContactCreateInput, error) {
 	var it ContactCreateInput
 	var asMap = obj.(map[string]interface{})
@@ -5245,6 +6685,42 @@ func (ec *executionContext) unmarshalInputEventRsvpStatusEditInput(ctx context.C
 		case "userID":
 			var err error
 			it.UserID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputLogEvent2Input(ctx context.Context, obj interface{}) (LogEvent2Input, error) {
+	var it LogEvent2Input
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "event":
+			var err error
+			it.Event, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputLogEventInput(ctx context.Context, obj interface{}) (LogEventInput, error) {
+	var it LogEventInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "event":
+			var err error
+			it.Event, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5446,6 +6922,60 @@ func (ec *executionContext) unmarshalInputUserRemoveFriendInput(ctx context.Cont
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputViewerBlockInput(ctx context.Context, obj interface{}) (ViewerBlockInput, error) {
+	var it ViewerBlockInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "blockeeID":
+			var err error
+			it.BlockeeID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputViewerBlockMultipleIDsInput(ctx context.Context, obj interface{}) (ViewerBlockMultipleIDsInput, error) {
+	var it ViewerBlockMultipleIDsInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "userIDs":
+			var err error
+			it.UserIDs, err = ec.unmarshalNString2ᚕstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputViewerBlockMultipleInput(ctx context.Context, obj interface{}) (ViewerBlockMultipleInput, error) {
+	var it ViewerBlockMultipleInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "userIDs":
+			var err error
+			it.UserIDs, err = ec.unmarshalNID2ᚕstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5484,24 +7014,16 @@ func (ec *executionContext) _Edge(ctx context.Context, sel ast.SelectionSet, obj
 	}
 }
 
-func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj *Node) graphql.Marshaler {
+func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj *ent.Entity) graphql.Marshaler {
 	switch obj := (*obj).(type) {
 	case nil:
 		return graphql.Null
-	case models.Contact:
-		return ec._Contact(ctx, sel, &obj)
 	case *models.Contact:
 		return ec._Contact(ctx, sel, obj)
-	case models.ContactEmail:
-		return ec._ContactEmail(ctx, sel, &obj)
 	case *models.ContactEmail:
 		return ec._ContactEmail(ctx, sel, obj)
-	case models.Event:
-		return ec._Event(ctx, sel, &obj)
 	case *models.Event:
 		return ec._Event(ctx, sel, obj)
-	case models.User:
-		return ec._User(ctx, sel, &obj)
 	case *models.User:
 		return ec._User(ctx, sel, obj)
 	default:
@@ -5512,6 +7034,88 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var adminBlockResponseImplementors = []string{"AdminBlockResponse"}
+
+func (ec *executionContext) _AdminBlockResponse(ctx context.Context, sel ast.SelectionSet, obj *AdminBlockResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, adminBlockResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminBlockResponse")
+		case "success":
+			out.Values[i] = ec._AdminBlockResponse_success(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var authUserResponseImplementors = []string{"AuthUserResponse"}
+
+func (ec *executionContext) _AuthUserResponse(ctx context.Context, sel ast.SelectionSet, obj *AuthUserResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, authUserResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AuthUserResponse")
+		case "token":
+			out.Values[i] = ec._AuthUserResponse_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "user":
+			out.Values[i] = ec._AuthUserResponse_user(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var authUserResultImplementors = []string{"AuthUserResult"}
+
+func (ec *executionContext) _AuthUserResult(ctx context.Context, sel ast.SelectionSet, obj *AuthUserResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, authUserResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AuthUserResult")
+		case "token":
+			out.Values[i] = ec._AuthUserResult_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "user":
+			out.Values[i] = ec._AuthUserResult_user(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var contactImplementors = []string{"Contact", "Node"}
 
@@ -5904,6 +7508,54 @@ func (ec *executionContext) _EventsEdge(ctx context.Context, sel ast.SelectionSe
 	return out
 }
 
+var logEvent2ResponseImplementors = []string{"LogEvent2Response"}
+
+func (ec *executionContext) _LogEvent2Response(ctx context.Context, sel ast.SelectionSet, obj *LogEvent2Response) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, logEvent2ResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LogEvent2Response")
+		case "success":
+			out.Values[i] = ec._LogEvent2Response_success(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var logEventResponseImplementors = []string{"LogEventResponse"}
+
+func (ec *executionContext) _LogEventResponse(ctx context.Context, sel ast.SelectionSet, obj *LogEventResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, logEventResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LogEventResponse")
+		case "success":
+			out.Values[i] = ec._LogEventResponse_success(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -5919,12 +7571,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "adminBlock":
+			out.Values[i] = ec._Mutation_adminBlock(ctx, field)
+		case "authUser":
+			out.Values[i] = ec._Mutation_authUser(ctx, field)
 		case "contactCreate":
 			out.Values[i] = ec._Mutation_contactCreate(ctx, field)
 		case "eventCreate":
 			out.Values[i] = ec._Mutation_eventCreate(ctx, field)
 		case "eventRsvpStatusEdit":
 			out.Values[i] = ec._Mutation_eventRsvpStatusEdit(ctx, field)
+		case "logEvent":
+			out.Values[i] = ec._Mutation_logEvent(ctx, field)
+		case "logEvent2":
+			out.Values[i] = ec._Mutation_logEvent2(ctx, field)
 		case "userAddFamilyMember":
 			out.Values[i] = ec._Mutation_userAddFamilyMember(ctx, field)
 		case "userAddFriend":
@@ -5939,6 +7599,14 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_userRemoveFamilyMember(ctx, field)
 		case "userRemoveFriend":
 			out.Values[i] = ec._Mutation_userRemoveFriend(ctx, field)
+		case "viewerBlock":
+			out.Values[i] = ec._Mutation_viewerBlock(ctx, field)
+		case "viewerBlockMultiple":
+			out.Values[i] = ec._Mutation_viewerBlockMultiple(ctx, field)
+		case "viewerBlockMultipleIDs":
+			out.Values[i] = ec._Mutation_viewerBlockMultipleIDs(ctx, field)
+		case "viewerBlockParam":
+			out.Values[i] = ec._Mutation_viewerBlockParam(ctx, field)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5965,6 +7633,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "authUser":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_authUser(ctx, field)
+				return res
+			})
 		case "contact":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5998,6 +7677,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_event(ctx, field)
 				return res
 			})
+		case "serverTime":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_serverTime(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "user":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -6007,6 +7700,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_user(ctx, field)
+				return res
+			})
+		case "viewer":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_viewer(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "__type":
@@ -6394,6 +8101,131 @@ func (ec *executionContext) _UsersEdge(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
+var viewerImplementors = []string{"Viewer"}
+
+func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, obj *viewer.Viewer) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, viewerImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Viewer")
+		case "contact":
+			out.Values[i] = ec._Viewer_contact(ctx, field, obj)
+		case "user":
+			out.Values[i] = ec._Viewer_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var viewerBlockMultipleIDsResponseImplementors = []string{"ViewerBlockMultipleIDsResponse"}
+
+func (ec *executionContext) _ViewerBlockMultipleIDsResponse(ctx context.Context, sel ast.SelectionSet, obj *ViewerBlockMultipleIDsResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, viewerBlockMultipleIDsResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ViewerBlockMultipleIDsResponse")
+		case "viewer":
+			out.Values[i] = ec._ViewerBlockMultipleIDsResponse_viewer(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var viewerBlockMultipleResponseImplementors = []string{"ViewerBlockMultipleResponse"}
+
+func (ec *executionContext) _ViewerBlockMultipleResponse(ctx context.Context, sel ast.SelectionSet, obj *ViewerBlockMultipleResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, viewerBlockMultipleResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ViewerBlockMultipleResponse")
+		case "viewer":
+			out.Values[i] = ec._ViewerBlockMultipleResponse_viewer(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var viewerBlockParamResponseImplementors = []string{"ViewerBlockParamResponse"}
+
+func (ec *executionContext) _ViewerBlockParamResponse(ctx context.Context, sel ast.SelectionSet, obj *ViewerBlockParamResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, viewerBlockParamResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ViewerBlockParamResponse")
+		case "viewer":
+			out.Values[i] = ec._ViewerBlockParamResponse_viewer(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var viewerBlockResponseImplementors = []string{"ViewerBlockResponse"}
+
+func (ec *executionContext) _ViewerBlockResponse(ctx context.Context, sel ast.SelectionSet, obj *ViewerBlockResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, viewerBlockResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ViewerBlockResponse")
+		case "viewer":
+			out.Values[i] = ec._ViewerBlockResponse_viewer(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var __DirectiveImplementors = []string{"__Directive"}
 
 func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
@@ -6639,6 +8471,14 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAdminBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockInput(ctx context.Context, v interface{}) (AdminBlockInput, error) {
+	return ec.unmarshalInputAdminBlockInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNAuthUserInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserInput(ctx context.Context, v interface{}) (AuthUserInput, error) {
+	return ec.unmarshalInputAuthUserInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	return graphql.UnmarshalBoolean(v)
 }
@@ -6846,6 +8686,35 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalNID2ᚕstring(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNID2ᚕstring(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
 	return graphql.UnmarshalInt(v)
 }
@@ -6858,6 +8727,14 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNLogEvent2Input2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEvent2Input(ctx context.Context, v interface{}) (LogEvent2Input, error) {
+	return ec.unmarshalInputLogEvent2Input(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNLogEventInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEventInput(ctx context.Context, v interface{}) (LogEventInput, error) {
+	return ec.unmarshalInputLogEventInput(ctx, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -6874,6 +8751,35 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNString2ᚕstring(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstring(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
 	return graphql.UnmarshalTime(v)
 }
@@ -6886,6 +8792,24 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalNTime2timeᚐTime(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalNTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec.marshalNTime2timeᚐTime(ctx, sel, *v)
 }
 
 func (ec *executionContext) marshalNUser2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {
@@ -6979,6 +8903,32 @@ func (ec *executionContext) marshalNUsersEdge2ᚖgithubᚗcomᚋlolopintoᚋent�
 		return graphql.Null
 	}
 	return ec._UsersEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNViewer2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx context.Context, sel ast.SelectionSet, v viewer.Viewer) graphql.Marshaler {
+	return ec._Viewer(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx context.Context, sel ast.SelectionSet, v *viewer.Viewer) graphql.Marshaler {
+	if v == nil {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Viewer(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNViewerBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockInput(ctx context.Context, v interface{}) (ViewerBlockInput, error) {
+	return ec.unmarshalInputViewerBlockInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNViewerBlockMultipleIDsInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleIDsInput(ctx context.Context, v interface{}) (ViewerBlockMultipleIDsInput, error) {
+	return ec.unmarshalInputViewerBlockMultipleIDsInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNViewerBlockMultipleInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleInput(ctx context.Context, v interface{}) (ViewerBlockMultipleInput, error) {
+	return ec.unmarshalInputViewerBlockMultipleInput(ctx, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -7205,6 +9155,39 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalOAdminBlockResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockResponse(ctx context.Context, sel ast.SelectionSet, v AdminBlockResponse) graphql.Marshaler {
+	return ec._AdminBlockResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAdminBlockResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockResponse(ctx context.Context, sel ast.SelectionSet, v *AdminBlockResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminBlockResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAuthUserResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserResponse(ctx context.Context, sel ast.SelectionSet, v AuthUserResponse) graphql.Marshaler {
+	return ec._AuthUserResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAuthUserResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserResponse(ctx context.Context, sel ast.SelectionSet, v *AuthUserResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AuthUserResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAuthUserResult2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserResult(ctx context.Context, sel ast.SelectionSet, v AuthUserResult) graphql.Marshaler {
+	return ec._AuthUserResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAuthUserResult2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthUserResult(ctx context.Context, sel ast.SelectionSet, v *AuthUserResult) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AuthUserResult(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
@@ -7469,6 +9452,28 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	return ec.marshalOInt2int(ctx, sel, *v)
 }
 
+func (ec *executionContext) marshalOLogEvent2Response2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEvent2Response(ctx context.Context, sel ast.SelectionSet, v LogEvent2Response) graphql.Marshaler {
+	return ec._LogEvent2Response(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOLogEvent2Response2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEvent2Response(ctx context.Context, sel ast.SelectionSet, v *LogEvent2Response) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._LogEvent2Response(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOLogEventResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEventResponse(ctx context.Context, sel ast.SelectionSet, v LogEventResponse) graphql.Marshaler {
+	return ec._LogEventResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOLogEventResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐLogEventResponse(ctx context.Context, sel ast.SelectionSet, v *LogEventResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._LogEventResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalString(v)
 }
@@ -7681,6 +9686,61 @@ func (ec *executionContext) marshalOUsersEdge2ᚕᚖgithubᚗcomᚋlolopintoᚋe
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) marshalOViewer2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx context.Context, sel ast.SelectionSet, v viewer.Viewer) graphql.Marshaler {
+	return ec._Viewer(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOViewer2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚋviewerᚐViewer(ctx context.Context, sel ast.SelectionSet, v *viewer.Viewer) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Viewer(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOViewerBlockMultipleIDsResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleIDsResponse(ctx context.Context, sel ast.SelectionSet, v ViewerBlockMultipleIDsResponse) graphql.Marshaler {
+	return ec._ViewerBlockMultipleIDsResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOViewerBlockMultipleIDsResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleIDsResponse(ctx context.Context, sel ast.SelectionSet, v *ViewerBlockMultipleIDsResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ViewerBlockMultipleIDsResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOViewerBlockMultipleResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleResponse(ctx context.Context, sel ast.SelectionSet, v ViewerBlockMultipleResponse) graphql.Marshaler {
+	return ec._ViewerBlockMultipleResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOViewerBlockMultipleResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockMultipleResponse(ctx context.Context, sel ast.SelectionSet, v *ViewerBlockMultipleResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ViewerBlockMultipleResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOViewerBlockParamResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockParamResponse(ctx context.Context, sel ast.SelectionSet, v ViewerBlockParamResponse) graphql.Marshaler {
+	return ec._ViewerBlockParamResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOViewerBlockParamResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockParamResponse(ctx context.Context, sel ast.SelectionSet, v *ViewerBlockParamResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ViewerBlockParamResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOViewerBlockResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockResponse(ctx context.Context, sel ast.SelectionSet, v ViewerBlockResponse) graphql.Marshaler {
+	return ec._ViewerBlockResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOViewerBlockResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockResponse(ctx context.Context, sel ast.SelectionSet, v *ViewerBlockResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ViewerBlockResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

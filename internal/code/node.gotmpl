@@ -59,14 +59,22 @@ type {{.Node}} struct {
 // a {{.Node}} and an error
 type {{.NodeResult}} struct {
   {{.Node}} *{{.Node}}
-  Error error
+  Err error
+}
+
+func (res *{{.NodeResult}}) Error() string {
+  return res.Err.Error()
 }
 
 // {{.NodesResult}} stores the result of loading a slice of {{.Node}}s. It's a tuple type which has 2 fields: 
 // a {{.NodesSlice}} and an error
 type {{.NodesResult}} struct {
   {{.Nodes}} {{.NodesSlice}}
-  Error error
+  Err error
+}
+
+func (res *{{.NodesResult}}) Error() string {
+  return res.Err.Error()
 }
 
 // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
@@ -106,7 +114,7 @@ func GenLoad{{.Node}}(v viewer.ViewerContext, id string, result *{{.NodeResult}}
   go ent.GenLoadNode(v, id, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
   err := <-chanErr
   result.{{.Node}} = &{{.NodeInstance}}
-  result.Error = err
+  result.Err = err
 }
 
 {{/* todo: deal with importing right packages above and circular dependency all that jazz*/}}
@@ -141,7 +149,7 @@ func GenLoad{{.Node}}(v viewer.ViewerContext, id string, result *{{.NodeResult}}
           go ent.GenLoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", {{.EntConfig}}, chanErr)
           err := <-chanErr
           result.{{.Nodes}} = {{.NodeInstance}}s
-          result.Error = err
+          result.Err = err
         }
 
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
@@ -179,7 +187,7 @@ func GenLoad{{.Node}}(v viewer.ViewerContext, id string, result *{{.NodeResult}}
             go ent.GenLoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
             err := <-chanErr
             result.{{.Node}} = &{{.NodeInstance}}
-            result.Error = err
+            result.Err = err
           }
 
           // Load{{$edgeName}} returns the {{.Node}} associated with the {{$currentNode}} instance
@@ -210,7 +218,7 @@ func GenLoad{{.Node}}(v viewer.ViewerContext, id string, result *{{.NodeResult}}
             go ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s, {{.EntConfig}}, chanErr)
             err := <-chanErr
             result.{{.Nodes}} = {{.NodeInstance}}s
-            result.Error = err
+            result.Err = err
           }
 
           // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance

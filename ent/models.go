@@ -460,15 +460,15 @@ func GenLoadEdgesByType(id string, edgeType EdgeType, chanEdgesResult chan<- Ass
 	//	err := <-chanErr
 	chanEdgesResult <- AssocEdgesResult{
 		Edges: edges,
-		Error: err,
+		Err:   err,
 	}
 }
 
 func GenLoadUniqueEdgeByType(id string, edgeType EdgeType, chanEdgeResult chan<- AssocEdgeResult) {
 	edge, err := LoadUniqueEdgeByType(id, edgeType)
 	chanEdgeResult <- AssocEdgeResult{
-		Edge:  edge,
-		Error: err,
+		Edge: edge,
+		Err:  err,
 	}
 }
 
@@ -476,8 +476,8 @@ func GenLoadUniqueEdgeByType(id string, edgeType EdgeType, chanEdgeResult chan<-
 func GenLoadEdgeByType(id1, id2 string, edgeType EdgeType, chanEdgeResult chan<- AssocEdgeResult) {
 	edge, err := LoadEdgeByType(id1, id2, edgeType)
 	chanEdgeResult <- AssocEdgeResult{
-		Edge:  edge,
-		Error: err,
+		Edge: edge,
+		Err:  err,
 	}
 }
 

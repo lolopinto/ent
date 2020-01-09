@@ -24,6 +24,8 @@ func newFieldInfo() *FieldInfo {
 type FieldInfo struct {
 	Fields   []*Field
 	fieldMap map[string]*Field
+	// really only used in tests
+	NonEntFields []*NonEntField
 }
 
 func (fieldInfo *FieldInfo) addField(f *Field) {
@@ -62,9 +64,9 @@ type Field struct {
 	FieldName           string
 	FieldTag            string
 	tagMap              map[string]string
-	topLevelStructField bool              // id, updated_at, created_at no...
-	entType             types.Type        // not all fields will have an entType. probably don't need this...
-	fieldType           enttype.FieldType // this is the underlying type for the field for graphql, db, etc
+	topLevelStructField bool            // id, updated_at, created_at no...
+	entType             types.Type      // not all fields will have an entType. probably don't need this...
+	fieldType           enttype.EntType // this is the underlying type for the field for graphql, db, etc
 	dbColumn            bool
 	exposeToGraphQL     bool
 	nullable            bool
@@ -256,10 +258,15 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 		}
 		entType := info.TypeOf(f.Type)
 		nullable := tagMap["nullable"] == strconv.Quote("true")
+		fieldType := enttype.GetNullableType(entType, nullable)
+		fieldEntType, ok := fieldType.(enttype.EntType)
+		if !ok {
+			panic("invalid type that cannot be stored in db etc")
+		}
 		fieldInfo.addField(&Field{
 			FieldName:           fieldName,
 			entType:             entType,
-			fieldType:           enttype.GetNullableType(entType, nullable),
+			fieldType:           fieldEntType,
 			FieldTag:            tagStr,
 			tagMap:              tagMap,
 			topLevelStructField: true,
@@ -319,4 +326,13 @@ func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string)
 func getTagMapFromJustFieldName(fieldName string) map[string]string {
 	_, tagMap := getTagInfo(fieldName, nil)
 	return tagMap
+}
+
+type NonEntField struct {
+	FieldName string
+	FieldType enttype.Type
+}
+
+func (f *NonEntField) GetGraphQLName() string {
+	return strcase.ToLowerCamel(f.FieldName)
 }

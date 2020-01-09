@@ -22,11 +22,11 @@ type actionTemplate struct {
 	CodePath *codegen.CodePath
 }
 
-func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *codegen.CodePath) {
+func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *codegen.CodePath) error {
 	fileName := strcase.ToSnake(a.GetActionName())
 
 	imps := imports.Imports{}
-	file.Write(
+	return file.Write(
 		&file.TemplatedBasedFileWriter{
 			Data: actionTemplate{
 				Action:   a,

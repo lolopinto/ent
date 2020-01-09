@@ -39,22 +39,14 @@ func TestBuildGraphQLSchema(t *testing.T) {
 func TestGraphQLObjectFields(t *testing.T) {
 	s := getTestGraphQLObject("Account", t)
 
-	if s.Type != "type" {
-		t.Errorf("expected the Account GraphQL object's type to be %s, got %s instead", "type", s.Type)
-	}
+	assert.Equal(t, "type", s.Type, "expected the Account GraphQL object's type to be %s, got %s instead", "type", s.Type)
 
-	if s.TypeName != "Account" {
-		t.Errorf("graphql object type name was not as expected. expected %s, got %s", "Account", s.TypeName)
-	}
+	assert.Equal(t, "Account", s.TypeName, "graphql object type name was not as expected. expected %s, got %s", "Account", s.TypeName)
 
-	if len(s.fields) != 8 {
-		t.Errorf("expected %d fields, got %d instead", 8, len(s.fields))
-	}
+	assert.Len(t, s.fields, 8, "expected %d fields, got %d instead", 8, len(s.fields))
 
 	// friendship status
-	if len(s.nonEntFields) != 1 {
-		t.Errorf("expected %d non ent fields, got %d instead", 0, len(s.nonEntFields))
-	}
+	assert.Len(t, s.nonEntFields, 1, "expected %d non ent fields, got %d instead", 0, len(s.nonEntFields))
 }
 
 func TestGraphQLIDField(t *testing.T) {
@@ -118,6 +110,8 @@ type TodoConfig struct {
 
 	s := newGraphQLSchema(&codegen.Data{
 		Schema: parseSchema(t, sources, "GraphQLOtherIDWithNoEdge"),
+		// TODO fix this. shouldn't need to be manual...
+		CodePath: codegen.NewCodePath("../testdata/models/configs", ""),
 	})
 
 	s.generateGraphQLSchemaData()
@@ -146,7 +140,8 @@ type HiddenObjConfig struct {
 	`
 
 	s := newGraphQLSchema(&codegen.Data{
-		Schema: parseSchema(t, sources, "GraphQLHiddenObj"),
+		Schema:   parseSchema(t, sources, "GraphQLHiddenObj"),
+		CodePath: codegen.NewCodePath("", ""),
 	})
 
 	assert.Panics(
@@ -171,22 +166,14 @@ func TestNonExistentField(t *testing.T) {
 func TestGraphQLQuery(t *testing.T) {
 	s := getTestGraphQLObject("Query", t)
 
-	if s.Type != "type" {
-		t.Errorf("expected the Query GraphQL object's type to be %s, got %s instead", "type", s.Type)
-	}
+	assert.Equal(t, "type", s.Type, "expected the Query GraphQL object's type to be %s, got %s instead", "type", s.Type)
 
-	if s.TypeName != "Query" {
-		t.Errorf("graphql object type name was not as expected. expected %s, got %s", "Query", s.TypeName)
-	}
+	assert.Equal(t, "Query", s.TypeName, "graphql object type name was not as expected. expected %s, got %s", "Query", s.TypeName)
 
-	if len(s.fields) != 0 {
-		t.Errorf("expected %d fields, got %d instead", 0, len(s.fields))
-	}
+	assert.Len(t, s.fields, 0, "expected %d fields, got %d instead", 0, len(s.fields))
 
 	// account, folder, todo, event top level fields...
-	if len(s.nonEntFields) != 4 {
-		t.Errorf("expected %d non ent fields, got %d instead", 4, len(s.nonEntFields))
-	}
+	assert.Len(t, s.nonEntFields, 4, "expected %d non ent fields, got %d instead", 4, len(s.nonEntFields))
 
 	// to make sure account comes before todo
 	sort.Slice(s.nonEntFields, func(i, j int) bool {
@@ -194,45 +181,51 @@ func TestGraphQLQuery(t *testing.T) {
 	})
 
 	account := s.nonEntFields[0]
-	if account.fieldName != "account" {
-		t.Errorf(
-			"graphql non-ent field for account has incorrect fieldName. expected %s, got %s instead",
-			"account",
-			account.fieldName,
-		)
-	}
+	assert.Equal(
+		t,
+		"account",
+		account.fieldName,
+		"graphql non-ent field for account has incorrect fieldName. expected %s, got %s instead",
+		"account",
+		account.fieldName,
+	)
 
-	if account.fieldType != "Account" {
-		t.Errorf(
-			"graphql non-ent field for account has incorrect fieldType. expected %s, got %s instead",
-			"Account",
-			account.fieldType,
-		)
-	}
+	assert.Equal(
+		t,
+		"Account",
+		account.fieldType,
+		"graphql non-ent field for account has incorrect fieldType. expected %s, got %s instead",
+		"Account",
+		account.fieldType,
+	)
 
-	if len(account.args) != 1 {
-		t.Errorf(
-			"graphql non-ent field for account has incorrect number of arguments. expected %d, got %d instead",
-			1,
-			len(account.args),
-		)
-	}
+	assert.Len(
+		t,
+		account.args,
+		1,
+		"graphql non-ent field for account has incorrect number of arguments. expected %d, got %d instead",
+		1,
+		len(account.args),
+	)
+
 	arg := account.args[0]
-	if arg.fieldName != "id" {
-		t.Errorf(
-			"fieldName for arg passed to account top level field invalid. expected %s, got %s instead",
-			"id",
-			arg.fieldName,
-		)
-	}
+	assert.Equal(
+		t,
+		"id",
+		arg.fieldName,
+		"fieldName for arg passed to account top level field invalid. expected %s, got %s instead",
+		"id",
+		arg.fieldName,
+	)
 
-	if arg.fieldType != "ID!" {
-		t.Errorf(
-			"fieldType for arg passed to account top level field invalid. expected %s, got %s instead",
-			"ID!",
-			arg.fieldType,
-		)
-	}
+	assert.Equal(
+		t,
+		"ID!",
+		arg.fieldType,
+		"fieldType for arg passed to account top level field invalid. expected %s, got %s instead",
+		"ID!",
+		arg.fieldType,
+	)
 
 	testLine(t, account, "account(id: ID!): Account", "accountField")
 }
@@ -290,44 +283,47 @@ func (account *Account) GetFoo(baz int) string {
 		},
 	})
 
-	// do the minimum and add Account as a schemaInfo item.
-	accountSchemaInfo := newGraphQLSchemaInfo("type", "Account")
-	s.addSchemaInfo(accountSchemaInfo)
-
-	itemMap, err := schemaparser.ParseCustomGraphQLDefinitions(
+	s.overrideCustomEntSchemaParser(
 		&schemaparser.SourceSchemaParser{
 			PackageName: "models",
 			Sources:     sources,
 		},
-		map[string]bool{
-			"Account": true,
-		},
+		newCustomEntParser(s),
 	)
-	assert.Nil(t, err)
-	assert.NotNil(t, itemMap)
+	s.overrideTopLevelEntSchemaParser(nil, nil)
 
-	parsedItems := itemMap["Account"]
+	s.runSpecificSteps([]gqlStep{
+		"schema",
+		"custom_functions",
+	})
+	accountSchemaInfo := s.Types["Account"]
+	assert.NotNil(t, accountSchemaInfo)
 
-	s.handleCustomDefinitions(itemMap)
-	testCustomDefinitions(t, accountSchemaInfo, parsedItems)
+	result := s.customEntResult
+	assert.Nil(t, result.Error)
+	assert.NotNil(t, result.Functions)
 
-	ymlConfig := s.buildYmlConfig(itemMap)
-	testCustomYmlConfig(t, ymlConfig, accountSchemaInfo, parsedItems)
+	parsedFunctions := result.Functions["Account"]
+
+	testCustomDefinitions(t, accountSchemaInfo, parsedFunctions)
+
+	ymlConfig := s.buildYmlConfig(result, schemaparser.ParseCustomGQLResult{})
+	testCustomYmlConfig(t, ymlConfig, accountSchemaInfo, parsedFunctions)
 }
 
 func testCustomDefinitions(
 	t *testing.T,
 	schemaInfo *graphQLSchemaInfo,
-	parsedItems []schemaparser.ParsedItem,
+	parsedFunctions []*schemaparser.Function,
 ) {
 
-	assert.Equal(t, len(schemaInfo.nonEntFields), len(parsedItems))
+	assert.Equal(t, len(schemaInfo.nonEntFields), len(parsedFunctions))
 
 	for idx, field := range schemaInfo.nonEntFields {
-		item := parsedItems[idx]
+		item := parsedFunctions[idx]
 
 		assert.Equal(t, field.fieldName, item.GraphQLName)
-		assert.Equal(t, field.fieldType, item.Type.GetGraphQLType())
+		assert.Equal(t, field.fieldType, item.Results[0].Type.GetGraphQLType())
 		assert.Equal(t, len(field.args), len(item.Args))
 
 		for idx, arg := range field.args {
@@ -341,15 +337,15 @@ func testCustomDefinitions(
 
 func testCustomYmlConfig(
 	t *testing.T,
-	cfg config.Config,
+	cfg *config.Config,
 	schemaInfo *graphQLSchemaInfo,
-	parsedItems []schemaparser.ParsedItem,
+	parsedFunctions []*schemaparser.Function,
 ) {
 
 	model := cfg.Models[schemaInfo.TypeName]
 	assert.NotNil(t, model)
 
-	for _, item := range parsedItems {
+	for _, item := range parsedFunctions {
 		if strings.ToLower(item.GraphQLName) == strings.ToLower(item.FunctionName) {
 			continue
 		}
@@ -454,6 +450,8 @@ func getTestGraphQLFieldFromTemplate(typeName, fieldName string, schema *graphQL
 func getTestGraphQLSchema(t *testing.T) *graphQLSchema {
 	data := &codegen.Data{
 		Schema: getParsedTestSchema(t),
+		// TODO fix this. shouldn't need to be manual...
+		CodePath: codegen.NewCodePath("../testdata/models/configs", ""),
 	}
 	schema := newGraphQLSchema(data)
 	schema.generateGraphQLSchemaData()

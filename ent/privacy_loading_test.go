@@ -53,7 +53,7 @@ func (suite *privacyTestSuite) TestGeneratedGenLoadNode() {
 		wg.Add(1)
 		go models.GenLoadUser(v, id, &userResult, &wg)
 		wg.Wait()
-		return userResult.User, userResult.Error
+		return userResult.User, userResult.Err
 	})
 }
 
@@ -81,8 +81,8 @@ func (suite *privacyTestSuite) TestWaitForMultiple() {
 	go models.GenLoadUser(v, dbUser.ID, &userResult, &wg)
 	wg.Wait()
 
-	assert.Nil(suite.T(), userResult.Error)
-	assert.Nil(suite.T(), eventResult.Error)
+	assert.Nil(suite.T(), userResult.Err)
+	assert.Nil(suite.T(), eventResult.Err)
 
 	assert.Equal(suite.T(), dbEvent.ID, eventResult.Event.ID)
 	assert.Equal(suite.T(), dbUser.ID, userResult.User.ID)
@@ -106,7 +106,7 @@ func (suite *privacyTestSuite) TestLoadFieldEdges() {
 	go event.GenUser(&userResult, &wg)
 	wg.Wait()
 
-	assert.Nil(suite.T(), userResult.Error)
+	assert.Nil(suite.T(), userResult.Err)
 	assert.Equal(suite.T(), dbUser.ID, user.ID)
 }
 
@@ -189,7 +189,7 @@ func (suite *privacyTestSuite) TestGeneratedGenForeignKeyNodes() {
 			wg.Add(1)
 			go user.GenContacts(&result, &wg)
 			wg.Wait()
-			return result.Contacts, result.Error
+			return result.Contacts, result.Err
 		},
 		[]string{
 			contact.ID,
@@ -258,7 +258,7 @@ func (suite *privacyTestSuite) TestGeneratedGenLoadNodesByType() {
 			wg.Add(1)
 			go user.GenEvents(&result, &wg)
 			wg.Wait()
-			return result.Events, result.Error
+			return result.Events, result.Err
 		},
 		[]string{
 			event.ID,

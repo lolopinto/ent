@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/lolopinto/ent/internal/util"
 	"golang.org/x/tools/go/packages"
@@ -20,20 +21,38 @@ type ParserNeedsCleanup interface {
 }
 
 type ConfigSchemaParser struct {
-	AbsRootPath string
-	//DisableSyntax bool
+	AbsRootPath   string
+	FilesToIgnore []string
+}
+
+func (p *ConfigSchemaParser) getRootPath() (string, string) {
+	dir, packageName := filepath.Split(p.AbsRootPath)
+	packageName = strings.TrimSuffix(packageName, "...")
+	rootPath := filepath.Join(dir, packageName)
+	return rootPath, packageName
 }
 
 func (p *ConfigSchemaParser) GetConfig() (*packages.Config, string, error) {
 	mode := packages.LoadTypes | packages.LoadSyntax
-	// if p.DisableSyntax {
-	// 	mode = packages.LoadTypes
-	// }
 
 	cfg := &packages.Config{
 		// the more I load, the slower this is...
 		// this is a lot slower than the old thing. what am I doing wrong or differently?
 		Mode: mode,
+	}
+
+	// override with overlay not working...
+	if len(p.FilesToIgnore) != 0 {
+		overlay := make(map[string][]byte)
+
+		rootPath, packageName := p.getRootPath()
+		for _, path := range p.FilesToIgnore {
+			fullPath := filepath.Join(rootPath, path)
+
+			overlay[fullPath] = []byte(fmt.Sprintf("package %s \n\n", packageName))
+		}
+
+		cfg.Overlay = overlay
 	}
 	return cfg, p.AbsRootPath, nil
 }
@@ -48,18 +67,26 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 	overlay := make(map[string][]byte)
 
 	var err error
+	var tempDir string
 	// TODO handle all these testdata things...
 	path, err := filepath.Abs("../testdata/")
-	util.Die(err)
+	if err != nil {
+		return nil, "", err
+	}
 	p.tempDir, err = ioutil.TempDir(path, "test")
-	util.Die(err)
+	if err != nil {
+		return nil, "", err
+	}
+	tempDir = p.tempDir
 
 	if p.PackageName == "" {
 		p.PackageName = "configs"
 	}
-	configDir := filepath.Join(p.tempDir, p.PackageName)
-	err = os.MkdirAll(configDir, 0666)
-	util.Die(err)
+	configDir := filepath.Join(tempDir, p.PackageName)
+	err = os.MkdirAll(configDir, 0755)
+	if err != nil {
+		return nil, "", err
+	}
 
 	for key, source := range p.Sources {
 		// create overlays of path to source for data to be read from disk
@@ -78,10 +105,21 @@ func (p *SourceSchemaParser) GetConfig() (*packages.Config, string, error) {
 }
 
 func (p *SourceSchemaParser) Cleanup() {
-	os.RemoveAll(p.tempDir)
+	util.Die(os.RemoveAll(p.tempDir))
 }
 
 func LoadPackage(p Parser) *packages.Package {
+	pkgs := LoadPackages(p)
+	if len(pkgs) != 1 {
+		panic("invalid number of packages. TODO ola figure out why there's more than one package in a folder")
+	}
+	return pkgs[0]
+}
+
+func LoadPackages(p Parser) []*packages.Package {
+	if p == nil {
+		return []*packages.Package{}
+	}
 	cfg, dir, err := p.GetConfig()
 
 	parserWithCleanup, ok := p.(ParserNeedsCleanup)
@@ -93,23 +131,22 @@ func LoadPackage(p Parser) *packages.Package {
 	pkgs, err := packages.Load(cfg, dir)
 	util.Die(err)
 
-	if len(pkgs) != 1 {
-		panic("invalid number of packages. TODO ola figure out why there's more than one package in a folder")
-	}
-	pkg := pkgs[0]
+	for _, pkg := range pkgs {
+		if len(pkg.Errors) > 0 {
+			// If we run into issues with this in the future, inspect err.Pos
+			// some strings.Split tells us what we're doing...
+			util.ErrSlice(pkg.Errors)
+		}
 
-	if len(pkg.Errors) > 0 {
-		util.ErrSlice(pkg.Errors)
+		if len(pkg.GoFiles) != len(pkg.Syntax) {
+			panic(
+				fmt.Errorf(
+					"don't have the same number of named files and parsed files. %d filenames %d files",
+					len(pkg.GoFiles),
+					len(pkg.Syntax),
+				),
+			)
+		}
 	}
-
-	if len(pkg.GoFiles) != len(pkg.Syntax) {
-		panic(
-			fmt.Errorf(
-				"don't have the same number of named files and parsed files. %d filenames %d files",
-				len(pkg.GoFiles),
-				len(pkg.Syntax),
-			),
-		)
-	}
-	return pkg
+	return pkgs
 }

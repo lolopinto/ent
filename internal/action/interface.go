@@ -20,7 +20,7 @@ import (
 
 type NonEntField struct {
 	FieldName string
-	FieldType enttype.FieldType
+	FieldType enttype.Type
 	Flag      string
 	NodeType  string
 }

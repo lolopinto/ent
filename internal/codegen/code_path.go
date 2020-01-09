@@ -27,12 +27,20 @@ func NewCodePath(configPath, modulePath string) *CodePath {
 	}
 }
 
+func (cp *CodePath) OverrideImportPathToModels(importPath string) {
+	cp.importPathToModels = importPath
+}
+
 func (cp *CodePath) GetQuotedImportPathToConfigs() string {
 	return strconv.Quote(cp.importPathToConfigs)
 }
 
 func (cp *CodePath) GetImportPathToModels() string {
 	return cp.importPathToModels
+}
+
+func (cp *CodePath) GetImportPathToGraphQL() string {
+	return filepath.Join(cp.importPathToRoot, "graphql")
 }
 
 func (cp *CodePath) GetQuotedImportPathToModels() string {
@@ -54,4 +62,8 @@ func (cp *CodePath) AppendPathToModels(paths ...string) string {
 
 func (cp *CodePath) GetAbsPathToModels() string {
 	return filepath.Join(cp.absPathToConfigs, "..")
+}
+
+func (cp *CodePath) GetAbsPathToGraphQL() string {
+	return filepath.Join(cp.absPathToConfigs, "../..", "graphql")
 }

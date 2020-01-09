@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/lolopinto/ent/internal/test_schema/graphql/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 )
 
@@ -19,8 +20,28 @@ type Edge interface {
 	IsEdge()
 }
 
-type Node interface {
-	IsNode()
+type AdminBlockInput struct {
+	BlockeeID string `json:"blockeeID"`
+	BlockerID string `json:"blockerID"`
+}
+
+type AdminBlockResponse struct {
+	Success *bool `json:"success"`
+}
+
+type AuthUserInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type AuthUserResponse struct {
+	Token string       `json:"token"`
+	User  *models.User `json:"user"`
+}
+
+type AuthUserResult struct {
+	Token string       `json:"token"`
+	User  *models.User `json:"user"`
 }
 
 type ContactCreateInput struct {
@@ -71,6 +92,22 @@ type EventsEdge struct {
 }
 
 func (EventsEdge) IsEdge() {}
+
+type LogEvent2Input struct {
+	Event string `json:"event"`
+}
+
+type LogEvent2Response struct {
+	Success *bool `json:"success"`
+}
+
+type LogEventInput struct {
+	Event string `json:"event"`
+}
+
+type LogEventResponse struct {
+	Success *bool `json:"success"`
+}
 
 type UserAddFamilyMemberInput struct {
 	FamilyMemberID string `json:"familyMemberID"`
@@ -151,6 +188,34 @@ type UsersEdge struct {
 }
 
 func (UsersEdge) IsEdge() {}
+
+type ViewerBlockInput struct {
+	BlockeeID string `json:"blockeeID"`
+}
+
+type ViewerBlockMultipleIDsInput struct {
+	UserIDs []string `json:"userIDs"`
+}
+
+type ViewerBlockMultipleIDsResponse struct {
+	Viewer *viewer.Viewer `json:"viewer"`
+}
+
+type ViewerBlockMultipleInput struct {
+	UserIDs []string `json:"userIDs"`
+}
+
+type ViewerBlockMultipleResponse struct {
+	Viewer *viewer.Viewer `json:"viewer"`
+}
+
+type ViewerBlockParamResponse struct {
+	Viewer *viewer.Viewer `json:"viewer"`
+}
+
+type ViewerBlockResponse struct {
+	Viewer *viewer.Viewer `json:"viewer"`
+}
 
 type EventRsvpStatus string
 

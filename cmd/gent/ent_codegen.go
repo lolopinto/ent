@@ -1,12 +1,15 @@
 package main
 
 import (
+	"errors"
+
 	"github.com/lolopinto/ent/internal/code"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schemaparser"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Schema {
@@ -17,7 +20,7 @@ func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Sch
 	return schema.Parse(p, specificConfigs...)
 }
 
-func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig string) {
+func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, step string) {
 	schema := parseAllSchemaFiles(codePathInfo.GetRootPathToConfigs(), specificConfig)
 
 	if len(schema.Nodes) == 0 {
@@ -41,6 +44,18 @@ func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig stri
 		new(db.Step),
 		new(code.Step),
 		new(graphql.Step),
+	}
+
+	if step != "" {
+		for _, s := range steps {
+			if s.Name() == step {
+				steps = []codegen.Step{s}
+				break
+			}
+		}
+		if len(steps) != 1 {
+			util.Die(errors.New("invalid step passed"))
+		}
 	}
 
 	for _, s := range steps {

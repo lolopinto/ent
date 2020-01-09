@@ -24,6 +24,9 @@ models:
     Event:
         model:
           - github.com/lolopinto/ent/internal/test_schema/models.Event
+    Node:
+        model:
+          - github.com/lolopinto/ent/ent.Entity
     User:
         model:
           - github.com/lolopinto/ent/internal/test_schema/models.User
@@ -31,3 +34,17 @@ models:
             userFoo:
                 resolver: false
                 fieldName: GetUserFoo
+    Viewer:
+        model:
+          - github.com/lolopinto/ent/internal/test_schema/graphql/viewer.Viewer
+        fields:
+            contact:
+                resolver: false
+                fieldName: LoadViewerContact
+directives:
+    deprecated:
+        skip_runtime: true
+    include:
+        skip_runtime: true
+    skip:
+        skip_runtime: true

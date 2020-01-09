@@ -1,7 +1,6 @@
 package file
 
 import (
-	"github.com/lolopinto/ent/internal/util"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -19,14 +18,10 @@ func (fw *YamlFileWriter) getPathToFile() string {
 	return fw.PathToFile
 }
 
-func (fw *YamlFileWriter) generateBytes() []byte {
-	d, err := yaml.Marshal(fw.Data)
-	util.Die(err)
-	//fmt.Println(string(d))
-
-	return d
+func (fw *YamlFileWriter) generateBytes() ([]byte, error) {
+	return yaml.Marshal(fw.Data)
 }
 
-func (fw *YamlFileWriter) Write() {
-	writeFile(fw)
+func (fw *YamlFileWriter) Write() error {
+	return writeFile(fw)
 }

@@ -21,6 +21,7 @@ var (
 	specificConfig string
 	upgrade        bool
 	downgrade      string
+	step           string
 )
 
 func init() {
@@ -28,6 +29,7 @@ func init() {
 	flag.StringVarP(&specificConfig, "config", "c", "", "Specific EntConfig to codegen")
 	flag.BoolVar(&upgrade, "upgrade", false, "upgrade db")
 	flag.StringVarP(&downgrade, "downgrade", "d", "", "downgrade db")
+	flag.StringVarP(&step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, code")
 }
 
 func main() {
@@ -41,7 +43,7 @@ func main() {
 		db.DowngradeDB(downgrade)
 	} else {
 		codePathInfo := getPathToCode(pathToConfig)
-		parseSchemasAndGenerate(codePathInfo, specificConfig)
+		parseSchemasAndGenerate(codePathInfo, specificConfig, step)
 	}
 }
 

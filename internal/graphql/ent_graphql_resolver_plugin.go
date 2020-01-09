@@ -16,8 +16,10 @@ import (
 
 // inspired by resolvergen from gqlgen
 type entGraphQLResolverPlugin struct {
-	schema   *schema.Schema
-	codePath *intcodegen.CodePath
+	schema    *schema.Schema
+	codePath  *intcodegen.CodePath
+	gqlSchema *graphQLSchema
+	fileName  string
 }
 
 var _ plugin.CodeGenerator = &entGraphQLResolverPlugin{}
@@ -92,7 +94,7 @@ func (p *entGraphQLResolverPlugin) pluralEdge(field *codegen.Field) bool {
 	return assocEdge != nil
 }
 
-func (p *entGraphQLResolverPlugin) mutation(field *codegen.Field) action.Action {
+func (p *entGraphQLResolverPlugin) action(field *codegen.Field) action.Action {
 	if field.Object.Name != "Mutation" {
 		return nil
 	}
@@ -134,23 +136,34 @@ func (p *entGraphQLResolverPlugin) getActionPath(a action.Action) string {
 	return p.codePath.AppendPathToModels(strcase.ToSnake(a.GetNodeInfo().Node), "action")
 }
 
+func (p *entGraphQLResolverPlugin) customFn(field *codegen.Field) *customFunction {
+	if field.Object.Name == "Query" {
+		return p.gqlSchema.queryCustomImpls[field.Name]
+	} else if field.Object.Name == "Mutation" {
+		return p.gqlSchema.mutationCustomImpls[field.Name]
+	}
+	return nil
+}
+
 // ResolverBuild is the object passed to the template to generate the graphql code
 type ResolverBuild struct {
 	*codegen.Data
 
 	PackageName  string
 	ResolverType string
+	CodePath     *intcodegen.CodePath
 }
 
 func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 	resolverBuild := &ResolverBuild{
 		Data:         data,
 		ResolverType: "Resolver",
+		CodePath:     p.codePath,
 	}
 
 	return templates.Render(templates.Options{
 		PackageName:     "graphql",
-		Filename:        "graphql/resolver.go",
+		Filename:        p.fileName,
 		Data:            resolverBuild,
 		GeneratedHeader: true,
 		Template:        readTemplateFile("ent_graphql_resolver.gotmpl"),
@@ -159,7 +172,7 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 			"loadObjectFromContext": p.loadObjectFromContext,
 			"fieldEdge":             p.fieldEdge,
 			"pluralEdge":            p.pluralEdge,
-			"mutation":              p.mutation,
+			"action":                p.action,
 			"actionMethodName":      action.GetActionMethodName,
 			"actionFields":          action.GetFields,
 			"actionEdges":           action.GetEdges,
@@ -168,13 +181,17 @@ func (p *entGraphQLResolverPlugin) GenerateCode(data *codegen.Data) error {
 			"groupEdgeEnum":         p.groupEdgeEnum,
 			"groupEdgeEnumConst":    p.groupEdgeEnumConst,
 			"removeEdgeAction":      action.IsRemoveEdgeAction,
+			"customFn":              p.customFn,
 		},
 	})
 }
 
-func newGraphQLResolverPlugin(data *intcodegen.Data) plugin.Plugin {
-	return &entGraphQLResolverPlugin{
-		schema:   data.Schema,
-		codePath: data.CodePath,
+func newGraphQLResolverPlugin(s *graphQLSchema, filename string) plugin.Plugin {
+	plugin := &entGraphQLResolverPlugin{
+		schema:    s.config.Schema,
+		codePath:  s.config.CodePath,
+		gqlSchema: s,
+		fileName:  filename,
 	}
+	return plugin
 }
