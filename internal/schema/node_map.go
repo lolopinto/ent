@@ -155,7 +155,7 @@ func (m NodeMapInfo) parseFile(
 		if s, ok := node.(*ast.StructType); ok {
 
 			g.AddItem("ParseFields", func(nodeData *NodeData) {
-				nodeData.FieldInfo = field.GetFieldInfoForStruct(s, fset, typeInfo)
+				nodeData.FieldInfo = field.GetFieldInfoForStruct(s, typeInfo)
 			})
 		}
 

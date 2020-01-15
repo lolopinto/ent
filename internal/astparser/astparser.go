@@ -29,7 +29,7 @@ func GetLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
 	return GetLastExpr(returnStmt.Results)
 }
 
-func GetCompositeStmtsInFunc(fn *ast.FuncDecl) *ast.CompositeLit {
+func GetCompositeStmtInFunc(fn *ast.FuncDecl) *ast.CompositeLit {
 	lastExpr := GetLastReturnStmtExpr(fn)
 	compositeListStmt := GetExprToCompositeLit(lastExpr)
 	return compositeListStmt
@@ -38,7 +38,7 @@ func GetCompositeStmtsInFunc(fn *ast.FuncDecl) *ast.CompositeLit {
 // given a function node, it gets the list of elts in the func
 // works for both edges in GetEdges() func and list of privacy rules in Rules
 func GetEltsInFunc(fn *ast.FuncDecl) []ast.Expr {
-	return GetCompositeStmtsInFunc(fn).Elts
+	return GetCompositeStmtInFunc(fn).Elts
 }
 
 func GetLastStatement(stmts []ast.Stmt) ast.Stmt {
@@ -173,8 +173,9 @@ func GetStringListFromExpr(expr ast.Expr) []string {
 // FieldTypeInfo struct contains information about the type of a field:
 // name and nullable value
 type FieldTypeInfo struct {
-	Name     string
-	Nullable bool
+	Name        string
+	PackageName string
+	Nullable    bool
 }
 
 // GetFieldTypeInfo returns info about type of field
@@ -194,6 +195,14 @@ func GetFieldTypeInfo(field *ast.Field) FieldTypeInfo {
 		if name := identName(star.X); name != "" {
 			return FieldTypeInfo{Name: name, Nullable: true}
 		}
+	}
+	sel, ok := field.Type.(*ast.SelectorExpr)
+	if ok {
+		info := FieldTypeInfo{Name: sel.Sel.Name}
+		if name := identName(sel.X); name != "" {
+			info.PackageName = name
+		}
+		return info
 	}
 	panic("invalid field receiver type")
 }

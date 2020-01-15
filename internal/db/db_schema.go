@@ -544,18 +544,14 @@ func (s *dbSchema) addPrimaryKeyConstraint(f *field.Field, nodeData *schema.Node
 // adds a foreignKeyConstraint to the array of constraints
 // also returns new dbType of column
 func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
-	fkey := f.ForeignKey()
-	if fkey == "" {
+	fkey := f.ForeignKeyInfo()
+	if fkey == nil {
 		return
 	}
 	// get unquoted table name
 	tableName := nodeData.GetTableName()
 
-	fkeyParts := strings.Split(fkey, ".")
-	fkeyConfigName := fkeyParts[0]
-	fkeyField := fkeyParts[1]
-
-	fkeyConfig := s.schema.Nodes[fkeyConfigName]
+	fkeyConfig := s.schema.Nodes[fkey.Config]
 	if fkeyConfig == nil {
 		util.Die(fmt.Errorf("invalid EntConfig %s set as ForeignKey of field %s on ent config %s", fkey.Config, f.FieldName, nodeData.EntConfigName))
 	}
@@ -566,7 +562,7 @@ func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.Node
 
 	var fkeyColumn *dbColumn
 	for _, fkeyCol := range fkeyTable.Columns {
-		if fkeyCol.EntFieldName == fkeyField {
+		if fkeyCol.EntFieldName == fkey.Field {
 			fkeyColumn = fkeyCol
 
 			// if the foreign key is a uuid and we have it as string, convert the type we

@@ -327,6 +327,13 @@ func testField(t *testing.T, f, expFieldProps *Field) {
 		expFieldProps.DefaultValue(),
 		f.DefaultValue(),
 	)
+
+	assert.Equal(
+		t,
+		expFieldProps.fkey,
+		f.fkey,
+		"expect fkey values were not equal",
+	)
 }
 
 func testDBType(t *testing.T, f *Field, expectedType string) {
@@ -397,7 +404,7 @@ func getFieldInfoMap() *testsync.RunOnce {
 		r = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
 			data := parsehelper.ParseFilesForTest(t, parsehelper.ParseFuncs(parsehelper.ParseStruct))
 
-			fieldInfo := GetFieldInfoForStruct(data.StructMap[configName], data.Fset, data.Info)
+			fieldInfo := GetFieldInfoForStruct(data.StructMap[configName], data.Info)
 
 			assert.NotNil(t, fieldInfo, "invalid fieldInfo retrieved")
 			return fieldInfo
