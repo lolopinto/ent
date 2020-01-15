@@ -40,6 +40,7 @@ func f() string {
 		graphql:      "String!",
 		zeroValue:    strconv.Quote(""),
 		castToMethod: "cast.ToString",
+		structType:   "string",
 		nullableType: &enttype.NullableStringType{},
 	}, ret)
 }
@@ -61,6 +62,7 @@ func f() ent.NodeType {
 		// this probably doesn't work correctly in practice because strong types broken?
 		// would need castToMethod plus special enum cast
 		castToMethod: "cast.ToString",
+		structType:   "ent.NodeType",
 		nullableType: &enttype.NullableStringType{},
 	}, ret)
 }
@@ -74,10 +76,12 @@ func f() *string {
 
 	assert.IsType(t, &enttype.NullableStringType{}, ret.entType)
 	testType(t, expType{
-		db:              "sa.Text()",
-		graphql:         "String",
-		zeroValue:       strconv.Quote(""),
-		castToMethod:    "cast.ToNullableString",
+		db:           "sa.Text()",
+		graphql:      "String",
+		zeroValue:    strconv.Quote(""),
+		castToMethod: "cast.ToNullableString",
+		// this API is sad. it gets converted in field. TODO fix...
+		structType:      "string",
 		nonNullableType: &enttype.StringType{},
 	}, ret)
 }

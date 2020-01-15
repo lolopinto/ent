@@ -49,7 +49,9 @@ type DefaulFieldNameType interface {
 	DefaultGraphQLFieldName() string
 }
 
-type stringType struct{}
+type stringType struct {
+	underlyingType types.Type
+}
 
 func (t *stringType) GetDBType() string {
 	return "sa.Text()"
@@ -58,6 +60,17 @@ func (t *stringType) GetDBType() string {
 // hmm we don't use these for the nullable types right now. unclear if right thing...
 func (t *stringType) GetZeroValue() string {
 	return strconv.Quote("")
+}
+
+func (t *stringType) GetStructType() string {
+	// get the string version of the type and return the filepath
+	// This converts something like "github.com/lolopinto/ent/ent.NodeType" to "ent.NodeType"
+	if t.underlyingType == nil {
+		return "string"
+	}
+	ret := t.underlyingType.String()
+	_, fp := filepath.Split(ret)
+	return fp
 }
 
 type StringType struct {
@@ -593,6 +606,9 @@ func GetType(typ types.Type) Type {
 		// if the underlying type is a basic type, let that go through for now
 		// ent.NodeType etc
 		if basicType := getBasicType(typ2.Underlying()); basicType != nil {
+			if stringType, ok := basicType.(*StringType); ok {
+				stringType.underlyingType = typ2
+			}
 			return basicType
 		}
 		// context.Context, error, etc
