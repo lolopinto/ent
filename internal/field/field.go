@@ -45,7 +45,7 @@ func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) {
 	if fByName != f {
 		panic("invalid field passed to InvalidateFieldForGraphQL")
 	}
-	f.exposeToGraphQL = false
+	f.hideFromGraphQL = true
 }
 
 func (fieldInfo *FieldInfo) TopLevelFields() []*Field {
@@ -68,9 +68,14 @@ type Field struct {
 	entType             types.Type      // not all fields will have an entType. probably don't need this...
 	fieldType           enttype.EntType // this is the underlying type for the field for graphql, db, etc
 	dbColumn            bool
-	exposeToGraphQL     bool
+	hideFromGraphQL     bool
 	nullable            bool
 	defaultValue        interface{}
+	unique              bool
+	fkey                string
+	index               bool
+	dbName              string // storage key/column name for the field
+	graphQLName         string
 	exposeToActions     bool // TODO: figure out a better way for this long term. this is to allow password be hidden from reads but allowed in writes
 	// once password is a top level configurable type, it can control this e.g. exposeToCreate mutation yes!,
 	// expose to edit mutation no! obviously no delete. but then can be added in custom mutations e.g. editPassword()
@@ -81,13 +86,11 @@ type Field struct {
 }
 
 func (f *Field) GetDbColName() string {
-	colName, err := strconv.Unquote(f.tagMap["db"])
-	util.Die(err)
-
-	return colName
+	return f.dbName
 }
 
 func (f *Field) GetQuotedDBColName() string {
+	// this works because there's enough places that need to quote this so easier to just get this from tagMap as long as we keep it there
 	return f.tagMap["db"]
 }
 
@@ -130,30 +133,23 @@ func (f *Field) GetZeroValue() string {
 }
 
 func (f *Field) ExposeToGraphQL() bool {
-	if !f.exposeToGraphQL {
-		return false
-	}
-	fieldName := f.GetUnquotedKeyFromTag("graphql")
+	return !f.hideFromGraphQL
+}
 
-	return fieldName != "_"
+func (f *Field) Unique() bool {
+	return f.unique
+}
+
+func (f *Field) Index() bool {
+	return f.index
+}
+
+func (f *Field) ForeignKey() string {
+	return f.fkey
 }
 
 func (f *Field) GetGraphQLName() string {
-	fieldName := f.GetUnquotedKeyFromTag("graphql")
-
-	// field that should not be exposed to graphql e.g. passwords etc
-
-	// TODO come up with a better way of handling this
-	if f.FieldName == "ID" {
-		fieldName = "id"
-	}
-
-	// no fieldName so generate one
-	// _ is when we're returning a fieldName for actions
-	if fieldName == "" || fieldName == "_" {
-		fieldName = strcase.ToLowerCamel(f.FieldName)
-	}
-	return fieldName
+	return f.graphQLName
 }
 
 func (f *Field) InstanceFieldName() string {
@@ -184,16 +180,6 @@ func (f *Field) IDField() bool {
 	return strings.HasSuffix(f.FieldName, "ID")
 }
 
-func (f *Field) GetUnquotedKeyFromTag(key string) string {
-	val := f.tagMap[key]
-	if val == "" {
-		return ""
-	}
-	rawVal, err := strconv.Unquote(val)
-	util.Die(err)
-	return rawVal
-}
-
 func (f *Field) Nullable() bool {
 	return f.nullable
 }
@@ -210,12 +196,13 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 	fieldInfo.addField(&Field{
 		FieldName:             "ID",
 		tagMap:                getTagMapFromJustFieldName("ID"),
-		exposeToGraphQL:       true,
 		exposeToActions:       false,
 		topLevelStructField:   false,
 		dbColumn:              true,
 		singleFieldPrimaryKey: true,
 		fieldType:             &enttype.IDType{},
+		graphQLName:           "id",
+		dbName:                "id",
 	})
 
 	// going to assume we don't want created at and updated at in graphql
@@ -226,21 +213,39 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 	fieldInfo.addField(&Field{
 		FieldName:           "CreatedAt",
 		tagMap:              getTagMapFromJustFieldName("CreatedAt"),
-		exposeToGraphQL:     false,
+		hideFromGraphQL:     true,
 		exposeToActions:     false,
 		topLevelStructField: false,
 		dbColumn:            true,
 		fieldType:           &enttype.TimeType{},
+		graphQLName:         "createdAt",
+		dbName:              "created_at",
 	})
 	fieldInfo.addField(&Field{
 		FieldName:           "UpdatedAt",
 		tagMap:              getTagMapFromJustFieldName("UpdatedAt"),
-		exposeToGraphQL:     false,
+		hideFromGraphQL:     true,
 		exposeToActions:     false,
 		topLevelStructField: false,
 		dbColumn:            true,
 		fieldType:           &enttype.TimeType{},
+		graphQLName:         "updatedAt",
+		dbName:              "updated_at",
 	})
+
+	getUnquotedKeyFromTag := func(tagMap map[string]string, key string) string {
+		val := tagMap[key]
+		if val == "" {
+			return ""
+		}
+		rawVal, err := strconv.Unquote(val)
+		util.Die(err)
+		return rawVal
+	}
+
+	isKeyTrue := func(tagMap map[string]string, key string) bool {
+		return getUnquotedKeyFromTag(tagMap, key) == "true"
+	}
 
 	for _, f := range s.Fields.List {
 		fieldName := f.Names[0].Name
@@ -248,21 +253,43 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 		// otherwise by default it passes this down
 		//fmt.Printf("Field: %s Type: %s Tag: %v \n", fieldName, f.Type, f.Tag)
 
-		tagStr, tagMap := getTagInfo(fieldName, f.Tag)
-
+		// we're not even putting new graphql tags there :/
+		defaultDBName := strcase.ToSnake(fieldName)
+		tagStr, tagMap := getTagInfo(fieldName, f.Tag, defaultDBName)
+		dbName := getUnquotedKeyFromTag(tagMap, "db")
+		if dbName == "" {
+			dbName = defaultDBName
+		}
 		var defaultValue interface{}
 		if tagMap["default"] != "" {
-			var err error
-			defaultValue, err = strconv.Unquote(tagMap["default"])
-			util.Die(err)
+			defaultValue = getUnquotedKeyFromTag(tagMap, "default")
 		}
+
 		entType := info.TypeOf(f.Type)
-		nullable := tagMap["nullable"] == strconv.Quote("true")
+		nullable := isKeyTrue(tagMap, "nullable")
 		fieldType := enttype.GetNullableType(entType, nullable)
 		fieldEntType, ok := fieldType.(enttype.EntType)
 		if !ok {
 			panic("invalid type that cannot be stored in db etc")
 		}
+
+		unique := isKeyTrue(tagMap, "unique")
+		index := isKeyTrue(tagMap, "index")
+		fkey := getUnquotedKeyFromTag(tagMap, "fkey")
+
+		// graphql
+		hideFromGraphQL := false
+		graphQLName := getUnquotedKeyFromTag(tagMap, "graphql")
+		// field that should not be exposed to graphql e.g. passwords etc
+		if graphQLName == "_" {
+			hideFromGraphQL = true
+		}
+		// no graphqlName so generate one
+		// _ is when we're returning a graphqlName for actions??
+		if graphQLName == "" || graphQLName == "_" {
+			graphQLName = strcase.ToLowerCamel(fieldName)
+		}
+
 		fieldInfo.addField(&Field{
 			FieldName:           fieldName,
 			entType:             entType,
@@ -271,17 +298,22 @@ func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.I
 			tagMap:              tagMap,
 			topLevelStructField: true,
 			dbColumn:            true,
-			exposeToGraphQL:     true,
+			hideFromGraphQL:     hideFromGraphQL,
+			unique:              unique,
 			exposeToActions:     true,
 			nullable:            nullable,
 			defaultValue:        defaultValue,
+			fkey:                fkey,
+			index:               index,
+			graphQLName:         graphQLName,
+			dbName:              dbName,
 		})
 	}
 
 	return fieldInfo
 }
 
-func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string) {
+func getTagInfo(fieldName string, tag *ast.BasicLit, defaultDBName string) (string, map[string]string) {
 	tagsMap := make(map[string]string)
 	if t := tag; t != nil {
 		// struct tag format should be something like `graphql:"firstName" db:"first_name"`
@@ -306,7 +338,7 @@ func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string)
 	// add the db tag it it doesn't exist
 	_, ok := tagsMap["db"]
 	if !ok {
-		tagsMap["db"] = strconv.Quote(strcase.ToSnake(fieldName))
+		tagsMap["db"] = strconv.Quote(defaultDBName)
 	}
 
 	//fmt.Println(len(tagsMap))
@@ -324,7 +356,7 @@ func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string)
 }
 
 func getTagMapFromJustFieldName(fieldName string) map[string]string {
-	_, tagMap := getTagInfo(fieldName, nil)
+	_, tagMap := getTagInfo(fieldName, nil, strcase.ToCamel(fieldName))
 	return tagMap
 }
 

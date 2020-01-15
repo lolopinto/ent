@@ -544,7 +544,7 @@ func (s *dbSchema) addPrimaryKeyConstraint(f *field.Field, nodeData *schema.Node
 // adds a foreignKeyConstraint to the array of constraints
 // also returns new dbType of column
 func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
-	fkey := f.GetUnquotedKeyFromTag("fkey")
+	fkey := f.ForeignKey()
 	if fkey == "" {
 		return
 	}
@@ -557,7 +557,7 @@ func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.Node
 
 	fkeyConfig := s.schema.Nodes[fkeyConfigName]
 	if fkeyConfig == nil {
-		util.Die(fmt.Errorf("invalid EntConfig %s set as ForeignKey of field %s on ent config %s", fkeyConfigName, f.FieldName, nodeData.EntConfigName))
+		util.Die(fmt.Errorf("invalid EntConfig %s set as ForeignKey of field %s on ent config %s", fkey.Config, f.FieldName, nodeData.EntConfigName))
 	}
 
 	fkeyTable := s.getTableForNode(fkeyConfig.NodeData)
@@ -581,7 +581,7 @@ func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.Node
 	}
 
 	if fkeyColumn == nil {
-		util.Die(fmt.Errorf("invalid Field %s set as ForeignKey of field %s on ent config %s", fkeyField, f.FieldName, nodeData.EntConfigName))
+		util.Die(fmt.Errorf("invalid Field %s set as ForeignKey of field %s on ent config %s", fkey.Field, f.FieldName, nodeData.EntConfigName))
 	}
 
 	constraint := &foreignKeyConstraint{
@@ -594,12 +594,8 @@ func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.Node
 }
 
 func (s *dbSchema) addUniqueConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
-	unique := f.GetUnquotedKeyFromTag("unique")
-	if unique == "" {
+	if !f.Unique() {
 		return
-	}
-	if unique != "true" {
-		util.Die(fmt.Errorf("Invalid struct tag unique was not configured correctly"))
 	}
 	constraint := &uniqueConstraint{
 		dbColumns: []*dbColumn{col},
@@ -609,12 +605,8 @@ func (s *dbSchema) addUniqueConstraint(f *field.Field, nodeData *schema.NodeData
 }
 
 func (s *dbSchema) addIndexConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
-	index := f.GetUnquotedKeyFromTag("index")
-	if index == "" {
+	if !f.Index() {
 		return
-	}
-	if index != "true" {
-		util.Die(fmt.Errorf("Invalid struct tag index was not configured correctly"))
 	}
 	constraint := &indexConstraint{
 		dbColumns: []*dbColumn{col},

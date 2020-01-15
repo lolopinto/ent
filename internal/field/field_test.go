@@ -27,12 +27,12 @@ func TestIDField(t *testing.T) {
 		&Field{
 			FieldName:             "ID",
 			singleFieldPrimaryKey: true,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   false,
 			dbColumn:              true,
 			nullable:              false,
+			graphQLName:           "id",
 		},
-		"id",
 	)
 	testDBType(t, f, "UUID()")
 	testGraphQLType(t, f, "ID!")
@@ -47,12 +47,12 @@ func TestCreatedAtField(t *testing.T) {
 		&Field{
 			FieldName:             "CreatedAt",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       false,
+			hideFromGraphQL:       true,
 			topLevelStructField:   false,
 			dbColumn:              true,
 			nullable:              false,
+			graphQLName:           "createdAt",
 		},
-		"createdAt",
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time!")
@@ -67,12 +67,12 @@ func TestUpdatedAtField(t *testing.T) {
 		&Field{
 			FieldName:             "UpdatedAt",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       false,
+			hideFromGraphQL:       true,
 			topLevelStructField:   false,
 			dbColumn:              true,
 			nullable:              false,
+			graphQLName:           "updatedAt",
 		},
-		"updatedAt",
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time!")
@@ -87,12 +87,12 @@ func TestDefaultGraphQLField(t *testing.T) {
 		&Field{
 			FieldName:             "FirstName",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              false,
+			graphQLName:           "firstName",
 		},
-		"firstName",
 	)
 }
 
@@ -105,12 +105,12 @@ func TestOverridenGraphQLField(t *testing.T) {
 		&Field{
 			FieldName:             "LastLoginAt",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              false,
+			graphQLName:           "lastLoginTime",
 		},
-		"lastLoginTime",
 	)
 }
 
@@ -124,13 +124,13 @@ func TestHiddenGraphQLField(t *testing.T) {
 		&Field{
 			FieldName:             "NumberOfLogins",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       false,
+			hideFromGraphQL:       true,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              false,
 			defaultValue:          "0",
+			graphQLName:           "numberOfLogins",
 		},
-		"numberOfLogins",
 	)
 }
 
@@ -151,12 +151,12 @@ func TestNullableStringField(t *testing.T) {
 		&Field{
 			FieldName:             "Bio",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              true,
+			graphQLName:           "bio",
 		},
-		"bio",
 	)
 	testDBType(t, f, "sa.Text()")
 	testGraphQLType(t, f, "String")
@@ -188,12 +188,12 @@ func TestNullableTimeField(t *testing.T) {
 		&Field{
 			FieldName:             "DateOfBirth",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              true,
+			graphQLName:           "dateOfBirth",
 		},
-		"dateOfBirth",
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time")
@@ -217,12 +217,12 @@ func TestNullableBoolField(t *testing.T) {
 		&Field{
 			FieldName:             "ShowBioOnProfile",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              true,
+			graphQLName:           "showBioOnProfile",
 		},
-		"showBioOnProfile",
 	)
 	testDBType(t, f, "sa.Boolean()")
 	testGraphQLType(t, f, "Boolean")
@@ -251,7 +251,7 @@ func TestOverridenDBField(t *testing.T) {
 
 //func TestDefaultStructType(t *testing.)
 
-func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName string) {
+func testField(t *testing.T, f, expFieldProps *Field) {
 	assert.Equal(
 		t,
 		expFieldProps.FieldName,
@@ -273,20 +273,20 @@ func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName s
 	expose := f.ExposeToGraphQL()
 	assert.Equal(
 		t,
-		expFieldProps.exposeToGraphQL,
+		!expFieldProps.hideFromGraphQL,
 		expose,
-		"expected field exposed to graphql status to return %v, got %v instead",
-		expFieldProps.exposeToGraphQL,
+		"expected field exposed to graphql status to return !(%v), got %v instead",
+		!expFieldProps.hideFromGraphQL,
 		expose,
 	)
 
 	fieldName := f.GetGraphQLName()
 	assert.Equal(
 		t,
-		expectedGraphQLFieldName,
+		expFieldProps.graphQLName,
 		fieldName,
 		"expected graphql field name to be %s, got %s instead",
-		expectedGraphQLFieldName,
+		expFieldProps.graphQLName,
 		fieldName,
 	)
 
