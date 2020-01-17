@@ -221,10 +221,10 @@ func TestCustomType(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"ProfileURL": field.F(
-						url.Field().RestrictToDomain("https://www.facebook.com"),
-						field.HideFromGraphQL(),
-						field.Nullable(),
-					),
+					url.Field().RestrictToDomain("https://www.facebook.com"),
+					field.HideFromGraphQL(),
+					field.Nullable(),
+				),
 			}
 		}`,
 		&Field{
@@ -256,9 +256,9 @@ func TestForeignKey(t *testing.T) {
 		func (config *EventConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"UserID": field.F(
-						field.String(), // TODO need to support uuid here
-						field.ForeignKey("UserConfig", "ID"),
-					),
+					field.String(), // TODO need to support uuid here
+					field.ForeignKey("UserConfig", "ID"),
+				),
 			}
 		}`,
 		&Field{
@@ -272,6 +272,66 @@ func TestForeignKey(t *testing.T) {
 				Config: "UserConfig",
 				Field:  "ID",
 			},
+		},
+	)
+}
+
+func TestDataTypeDirectly(t *testing.T) {
+	verifyField(
+		t,
+		`package configs
+
+		import "github.com/lolopinto/ent/ent"
+		import "github.com/lolopinto/ent/ent/field"
+
+		type EventConfig struct {}
+		
+		func (config *EventConfig) GetFields() ent.FieldMap {
+			return ent.FieldMap {
+				"Bio": field.F(
+					&field.StringType{},
+					field.Nullable(),
+				),
+			}
+		}`,
+		&Field{
+			FieldName:           "Bio",
+			dbName:              "bio",
+			graphQLName:         "bio",
+			topLevelStructField: true,
+			exposeToActions:     true,
+			dbColumn:            true,
+			nullable:            true,
+		},
+	)
+}
+
+func TestDirectDataTypeWithCalls(t *testing.T) {
+	verifyField(
+		t,
+		`package configs
+
+		import "github.com/lolopinto/ent/ent"
+		import "github.com/lolopinto/ent/ent/field"
+
+		type EventConfig struct {}
+		
+		func (config *EventConfig) GetFields() ent.FieldMap {
+			return ent.FieldMap {
+				"Bio": field.F(
+					(&field.StringType{}).NotEmpty().ToLower(),
+					field.Nullable(),
+				),
+			}
+		}`,
+		&Field{
+			FieldName:           "Bio",
+			dbName:              "bio",
+			graphQLName:         "bio",
+			topLevelStructField: true,
+			exposeToActions:     true,
+			dbColumn:            true,
+			nullable:            true,
 		},
 	)
 }

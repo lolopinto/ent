@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/astparser"
 	"golang.org/x/tools/go/packages"
 )
@@ -27,18 +28,20 @@ type packageExplorer struct {
 }
 
 // public API
-func (explorer *packageExplorer) getTypeForFunction(
-	pkgBase, fnName string,
+func (explorer *packageExplorer) getTypeForInfo(
 	pkg *packages.Package,
+	info *argInfo,
+
 ) chan typeResult {
 	chanRes := make(chan typeResult)
 	go func() {
-		importedPkg := getImportedPackageThatMatchesIdent(pkg, pkgBase, fnName)
+		spew.Dump(info)
+		importedPkg := getImportedPackageThatMatchesIdent(pkg, info.pkgName, info.identName)
 		chanPkg := explorer.explorePackage(importedPkg)
 
 		parsedPkg := <-chanPkg
 
-		typ, err := explorer.getEntFromPkg(parsedPkg, pkgBase, fnName)
+		typ, err := explorer.getEntFromPkg(parsedPkg, info)
 		chanRes <- typeResult{
 			err:     err,
 			entType: typ,
@@ -216,16 +219,29 @@ func (explorer *packageExplorer) buildStruct(
 
 // this gets a parsed Package, function and figures out the entType
 func (explorer *packageExplorer) getEntFromPkg(
-	parsedPkg *packageType, pkgBase, fnName string,
+	parsedPkg *packageType,
+	info *argInfo,
 ) (types.Type, error) {
-	structName := parsedPkg.funcMap[fnName]
-	if structName == "" {
-		return nil, fmt.Errorf("couldn't find type in package for function %s.%s", pkgBase, fnName)
+	var structName string
+
+	switch info.fmt {
+	case typFormat:
+		// type, get the structName from the identifier
+		structName = info.identName
+		break
+
+	case functionFormat:
+		// func get the structName from the map
+		structName = parsedPkg.funcMap[info.identName]
+		if structName == "" {
+			return nil, fmt.Errorf("couldn't find type in package for function %s.%s", info.pkgName, info.identName)
+		}
+		break
 	}
 
 	s := parsedPkg.structMap[structName]
 	if s == nil {
-		return nil, fmt.Errorf("couldn't find struct %s in package for function %s.%s", pkgBase, fnName, structName)
+		return nil, fmt.Errorf("couldn't find struct %s in package for type %s.%s", structName, info.pkgName, info.identName)
 	}
 
 	return explorer.getEntType(s)

@@ -2,6 +2,7 @@ package field
 
 import (
 	"errors"
+	"fmt"
 	"go/ast"
 	"sync"
 
@@ -53,45 +54,83 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 	return fieldInfo, sErr.Err()
 }
 
+type argFormat string
+
+const (
+	// field.Int
+	functionFormat argFormat = "func"
+
+	// &field.StringType{}
+	typFormat argFormat = "type"
+)
+
+type argInfo struct {
+	pkgName   string
+	identName string
+	fmt       argFormat
+}
+
+func parseArg(arg ast.Expr) *argInfo {
+	argCallExpr, ok := arg.(*ast.CallExpr)
+	unaryExpr, ok2 := arg.(*ast.UnaryExpr)
+	var sel *ast.SelectorExpr
+	ret := &argInfo{}
+	if ok {
+		sel = astparser.GetExprToSelectorExpr(argCallExpr.Fun)
+
+		// field.Int
+		ret.fmt = functionFormat
+	}
+	if ok2 {
+		compLit := astparser.GetExprToCompositeLit(unaryExpr.X)
+		sel = astparser.GetExprToSelectorExpr(compLit.Type)
+
+		// &field.StringType{]}
+		ret.fmt = typFormat
+	}
+
+	if sel == nil {
+		return nil
+	}
+
+	// hmm combine with astparser.GetTypeNameFromExpr?
+	return parseTypeInfo(sel, ret)
+}
+
 func parseField(f *Field, pkg *packages.Package, callExpr *ast.CallExpr, explorer *packageExplorer) chan error {
 	chanErr := make(chan error)
 	go func() {
 		var err error
 		for idx, arg := range callExpr.Args {
-			argCallExpr, ok := arg.(*ast.CallExpr)
-			if !ok {
-				chanErr <- errors.New("invalid arg")
-				return
+			info := parseArg(arg)
+			if info == nil {
+				err = errors.New("invalid arg")
+				break
 			}
-
-			// TODO should also work for not function calls
-			//			e.g.  field.StringType{name:}?
-			// doesn't work for things with private types anyways
-			argSel := astparser.GetExprToSelectorExpr(argCallExpr.Fun)
 
 			if idx == 0 {
 				// this is the real thing we're waiting for
-				errChan := modifyFieldForDataType(f, pkg, explorer, argSel)
+				errChan := modifyFieldForDataType(f, pkg, explorer, info)
 				err = <-errChan
 				// don't continue parsing other things here
 				if err != nil {
 					break
 				}
 			} else {
-				//			sel := astparser.GetExprToSelectorExpr(argCallExpr.Fun)
-				// TODO this and the other one don't work if aliased...
-				typeName := astparser.GetTypeNameFromExpr(argSel)
+				argCallExpr, ok := arg.(*ast.CallExpr)
+				if !ok {
+					err = errors.New("invalid arg")
+					break
+				}
+				typeName := info.pkgName + "." + info.identName
 
-				//			spew.Dump(argSel)
 				fn, ok := m[typeName]
-				//		spew.Dump(typeName, fn)
 				if ok {
 					fn(f, argCallExpr.Args)
 				} else {
-					err = errors.New("unsupported ")
+					err = fmt.Errorf("unsupported configuration for field %s", typeName)
 					break
 				}
-				//			spew.Dump(arg)
 			}
 		}
 		// got here, we're done. succeeds if no error
@@ -102,17 +141,25 @@ func parseField(f *Field, pkg *packages.Package, callExpr *ast.CallExpr, explore
 
 // todo this needs to also work for local packages
 // combine with astparser.GetFieldTypeInfo
-func functionName(sel *ast.SelectorExpr) (string, string) {
+func parseTypeInfo(sel *ast.SelectorExpr, info *argInfo) *argInfo {
 	if ident, ok := sel.X.(*ast.Ident); ok {
-		pkg := ident.Name
-		methodName := sel.Sel.Name
-		return pkg, methodName
+		info.pkgName = ident.Name
+		info.identName = sel.Sel.Name
+		return info
 	}
 
 	if callExpr, ok := sel.X.(*ast.CallExpr); ok {
 		if sel2, ok := callExpr.Fun.(*ast.SelectorExpr); ok {
-			return functionName(sel2)
+			return parseTypeInfo(sel2, info)
 		}
+	}
+
+	if parenExpr, ok := sel.X.(*ast.ParenExpr); ok {
+		compLit := astparser.GetExprToCompositeLitAllowUnaryExpr(parenExpr.X)
+		// has a type part involved, encode this
+		// TODO: need to go nuts with astparser to handle these things if I’m going to keep using AST
+		info.fmt = typFormat
+		return parseTypeInfo(astparser.GetExprToSelectorExpr(compLit.Type), info)
 	}
 	panic("unsupported type for now")
 }
@@ -121,13 +168,11 @@ func modifyFieldForDataType(
 	f *Field,
 	pkg *packages.Package,
 	explorer *packageExplorer,
-	dataTypeSelector *ast.SelectorExpr,
+	info *argInfo,
 ) chan error {
 	errChan := make(chan error)
 	go func() {
-		pkgBase, fnName := functionName(dataTypeSelector)
-
-		resChan := explorer.getTypeForFunction(pkgBase, fnName, pkg)
+		resChan := explorer.getTypeForInfo(pkg, info)
 		res := <-resChan
 
 		if res.entType != nil {

@@ -1,6 +1,12 @@
 package field
 
-import "time"
+import (
+	"errors"
+	"fmt"
+	"regexp"
+	"strings"
+	"time"
+)
 
 // String returns a new Datatype with type String
 func String() *StringType {
@@ -51,11 +57,53 @@ type ImportableDataType interface {
 }
 
 // StringType is the datatype for string fields
-type StringType struct{}
+type StringType struct {
+	validators []func(string) error
+	processors []func(string) string
+}
 
 // Type returns the empty string to satisfy the DataType interface
 func (t *StringType) Type() interface{} {
 	return ""
+}
+
+// NotEmpty ensures that the string is not empty
+func (t *StringType) NotEmpty() *StringType {
+	return t.Validate(func(s string) error {
+		if len(s) == 0 {
+			return errors.New("not empty")
+		}
+		return nil
+	})
+}
+
+// Match ensures that the string matches a regular expression
+func (t *StringType) Match(r *regexp.Regexp) *StringType {
+	return t.Validate(func(s string) error {
+		if !r.MatchString(s) {
+			return fmt.Errorf("value does not match passed in regex %s", r.String())
+		}
+		return nil
+	})
+}
+
+// ToLower returns string with all Unicode letters mapped to their lower case.
+func (t *StringType) ToLower() *StringType {
+	return t.Process(func(s string) string {
+		return strings.ToLower(s)
+	})
+}
+
+// Validate takes a function that Validates the value of the string
+func (t *StringType) Validate(fn func(string) error) *StringType {
+	t.validators = append(t.validators, fn)
+	return t
+}
+
+// Process takes a function that takes the value of the string and re-formats it
+func (t *StringType) Process(fn func(string) string) *StringType {
+	t.processors = append(t.processors, fn)
+	return t
 }
 
 var _ DataType = &StringType{}
