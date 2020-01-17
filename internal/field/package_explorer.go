@@ -386,6 +386,12 @@ func getImportedPackageThatMatchesIdent(
 	pkg *packages.Package,
 	pkgBase, fnName string,
 ) *packages.Package {
+
+	// current package
+	if pkgBase == "" {
+		return pkg
+	}
+
 	for path, importedPkg := range pkg.Imports {
 		base := filepath.Base(path)
 

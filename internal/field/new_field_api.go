@@ -73,20 +73,46 @@ type argInfo struct {
 func parseArg(arg ast.Expr) *argInfo {
 	argCallExpr, ok := arg.(*ast.CallExpr)
 	unaryExpr, ok2 := arg.(*ast.UnaryExpr)
+	compLit, ok3 := arg.(*ast.CompositeLit)
 	var sel *ast.SelectorExpr
 	ret := &argInfo{}
 	if ok {
-		sel = astparser.GetExprToSelectorExpr(argCallExpr.Fun)
-
 		// field.Int
 		ret.fmt = functionFormat
+
+		if ident, ok := argCallExpr.Fun.(*ast.Ident); ok {
+			ret.identName = ident.Name
+			return ret
+		}
+		sel = astparser.GetExprToSelectorExpr(argCallExpr.Fun)
+
 	}
+
 	if ok2 {
 		compLit := astparser.GetExprToCompositeLit(unaryExpr.X)
+		ident, ok := compLit.Type.(*ast.Ident)
+		// copied from below. need to super nest this and handle these things
+		//	compLitToIdent
+		if ok {
+			return &argInfo{
+				pkgName:   "",
+				identName: ident.Name,
+				fmt:       typFormat,
+			}
+		}
 		sel = astparser.GetExprToSelectorExpr(compLit.Type)
 
 		// &field.StringType{]}
 		ret.fmt = typFormat
+	}
+
+	if ok3 {
+		// local type localStringType{}
+		return &argInfo{
+			pkgName:   "",
+			identName: astparser.GetExprToIdent(compLit.Type).Name,
+			fmt:       typFormat,
+		}
 	}
 
 	if sel == nil {
