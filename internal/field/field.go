@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/edge"
@@ -26,9 +27,12 @@ type FieldInfo struct {
 	fieldMap map[string]*Field
 	// really only used in tests
 	NonEntFields []*NonEntField
+	m            sync.Mutex
 }
 
 func (fieldInfo *FieldInfo) addField(f *Field) {
+	fieldInfo.m.Lock()
+	defer fieldInfo.m.Unlock()
 	fieldInfo.Fields = append(fieldInfo.Fields, f)
 	fieldInfo.fieldMap[f.FieldName] = f
 }

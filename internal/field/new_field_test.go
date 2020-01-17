@@ -216,7 +216,6 @@ func TestCustomType(t *testing.T) {
 		import "github.com/lolopinto/ent/ent/field"
 		import "github.com/lolopinto/ent/ent/field/url"
 
-
 		type UserConfig struct {}
 		
 		func (config *UserConfig) GetFields() ent.FieldMap {
@@ -275,6 +274,48 @@ func TestForeignKey(t *testing.T) {
 			},
 		},
 	)
+}
+
+func TestMultipleFields(t *testing.T) {
+	// tests multiple fields with at least one repeated *and* one with a dependency
+	// TODO need even more strenuous stress tests?
+	fields := loadFields(
+		t,
+		`package configs
+
+		import "github.com/lolopinto/ent/ent"
+		import "github.com/lolopinto/ent/ent/field"
+		import "github.com/lolopinto/ent/ent/field/url"
+
+		type UserConfig struct {}
+		
+		func (config *UserConfig) GetFields() ent.FieldMap {
+			return ent.FieldMap {
+				"InvitesLeft": field.F(
+					field.Int(),
+					field.GraphQL("numInvitesLeft"),
+				),
+				"EmailAddress": field.F(
+					field.String(),
+					field.Unique(), 
+					field.DB("email"),
+				),
+				"StartTime": field.F(
+					field.Time(),
+					field.Index(),
+				),
+				"LastName": field.F(
+					field.String(),
+					field.ServerDefault("Ola"),
+					field.Nullable(),
+				),
+				"ProfileURL": field.F(
+					url.Field(),
+				),
+			}
+		}`,
+	)
+	assert.Len(t, fields, 5)
 }
 
 func loadFields(t *testing.T, code string) []*Field {
