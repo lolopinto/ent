@@ -1,7 +1,6 @@
 package field
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -47,6 +46,17 @@ type DataType interface {
 	Type() interface{}
 }
 
+// Validator ensures that a DataType is valid
+type Validator interface {
+	Valid(interface{}) error
+}
+
+// Formatter formats the DataType to make sure that it's formatted in the preferred way before
+// storing
+type Formatter interface {
+	Format(interface{}) interface{}
+}
+
 // ImportableDataType interface represents data that need to import a package to
 // be referenced
 // e.g. "time" for time datatype
@@ -59,7 +69,7 @@ type ImportableDataType interface {
 // StringType is the datatype for string fields
 type StringType struct {
 	validators []func(string) error
-	processors []func(string) string
+	formatters []func(string) string
 }
 
 // Type returns the empty string to satisfy the DataType interface
@@ -69,9 +79,34 @@ func (t *StringType) Type() interface{} {
 
 // NotEmpty ensures that the string is not empty
 func (t *StringType) NotEmpty() *StringType {
+	return t.MinLen(1)
+}
+
+// MinLen ensures the minimum length of a string is
+func (t *StringType) MinLen(n int) *StringType {
 	return t.Validate(func(s string) error {
-		if len(s) == 0 {
-			return errors.New("not empty")
+		if len(s) < n {
+			return fmt.Errorf("length of string did not meet the minimum length requirement of %d", n)
+		}
+		return nil
+	})
+}
+
+// MaxLen ensures the max length of a string
+func (t *StringType) MaxLen(n int) *StringType {
+	return t.Validate(func(s string) error {
+		if len(s) > n {
+			return fmt.Errorf("length of string did not meet the maximum length requirement of %d", n)
+		}
+		return nil
+	})
+}
+
+// Length ensures the length of a string is equal to the given number
+func (t *StringType) Length(n int) *StringType {
+	return t.Validate(func(s string) error {
+		if len(s) != n {
+			return fmt.Errorf("length of string was not equal to the required length %d", n)
 		}
 		return nil
 	})
@@ -87,10 +122,41 @@ func (t *StringType) Match(r *regexp.Regexp) *StringType {
 	})
 }
 
+// DoesNotMatch ensures that the string does not match a regular expression
+func (t *StringType) DoesNotMatch(r *regexp.Regexp) *StringType {
+	return t.Validate(func(s string) error {
+		if r.MatchString(s) {
+			return fmt.Errorf("value matches passed in regex %s", r.String())
+		}
+		return nil
+	})
+}
+
 // ToLower returns string with all Unicode letters mapped to their lower case.
 func (t *StringType) ToLower() *StringType {
-	return t.Process(func(s string) string {
+	return t.Formatter(func(s string) string {
 		return strings.ToLower(s)
+	})
+}
+
+// ToUpper returns string with all Unicode letters mapped to their upper case.
+func (t *StringType) ToUpper() *StringType {
+	return t.Formatter(func(s string) string {
+		return strings.ToUpper(s)
+	})
+}
+
+// Title returns string with all Unicode letters mapped to their Unicode title case.
+func (t *StringType) Title() *StringType {
+	return t.Formatter(func(s string) string {
+		return strings.Title(s)
+	})
+}
+
+// TrimSpace returns string with all leading and trailing white space removed, as defined by Unicode.
+func (t *StringType) TrimSpace() *StringType {
+	return t.Formatter(func(s string) string {
+		return strings.TrimSpace(s)
 	})
 }
 
@@ -100,10 +166,31 @@ func (t *StringType) Validate(fn func(string) error) *StringType {
 	return t
 }
 
-// Process takes a function that takes the value of the string and re-formats it
-func (t *StringType) Process(fn func(string) string) *StringType {
-	t.processors = append(t.processors, fn)
+// Formatter takes a function that takes the value of the string and re-formats it
+// The order in which functions are passed in here should not matter ala the associative property in math
+func (t *StringType) Formatter(fn func(string) string) *StringType {
+	t.formatters = append(t.formatters, fn)
 	return t
+}
+
+// Valid implements the Validator interface to validate the string input
+func (t *StringType) Valid(val interface{}) error {
+	s := val.(string)
+	for _, val := range t.validators {
+		if err := val(s); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Format implements the Formatter interface to format the string input before storing
+func (t *StringType) Format(val interface{}) interface{} {
+	s := val.(string)
+	for _, format := range t.formatters {
+		s = format(s)
+	}
+	return s
 }
 
 var _ DataType = &StringType{}
