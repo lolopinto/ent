@@ -14,7 +14,6 @@ type testCase struct {
 	value  interface{}
 	result interface{}
 	err    error
-	typ    interface{}
 }
 
 func TestString(t *testing.T) {
@@ -210,22 +209,142 @@ func TestString(t *testing.T) {
 
 	for key, tt := range testCases {
 		dt := field.String()
-		t.Run(key, func(t *testing.T) {
-			expRes := tt(dt)
+		expRes := tt(dt)
+		testDataType(t, key, dt, expRes, "")
+	}
+}
 
-			err := dt.Valid(expRes.value)
+func TestInt(t *testing.T) {
+	testCases := map[string]func(dt *field.IntegerType) testCase{
+		"base_case": func(dt *field.IntegerType) testCase {
+			return testCase{
+				value:  4,
+				result: 4,
+			}
+		},
+		"Positive": func(dt *field.IntegerType) testCase {
+			dt.Positive()
+			return testCase{
+				value:  -1,
+				result: -1,
+				err:    errors.New("minimum"),
+			}
+		},
+		"PositiveValid": func(dt *field.IntegerType) testCase {
+			dt.Positive()
+			return testCase{
+				value:  1,
+				result: 1,
+			}
+		},
+		"Negative": func(dt *field.IntegerType) testCase {
+			dt.Negative()
+			return testCase{
+				value:  10,
+				result: 10,
+				err:    errors.New("maximum"),
+			}
+		},
+		"NegativeValid": func(dt *field.IntegerType) testCase {
+			dt.Negative()
+			return testCase{
+				value:  -15,
+				result: -15,
+			}
+		},
+		"Min": func(dt *field.IntegerType) testCase {
+			dt.Min(50)
+			return testCase{
+				value:  10,
+				result: 10,
+				err:    errors.New("minimum"),
+			}
+		},
+		"MinValid": func(dt *field.IntegerType) testCase {
+			dt.Min(50)
+			return testCase{
+				value:  50,
+				result: 50,
+			}
+		},
+		"Max": func(dt *field.IntegerType) testCase {
+			dt.Max(15)
+			return testCase{
+				value:  30,
+				result: 30,
+				err:    errors.New("maximum"),
+			}
+		},
+		"MaxValid": func(dt *field.IntegerType) testCase {
+			dt.Max(10)
+			return testCase{
+				value:  -15,
+				result: -15,
+			}
+		},
+		"RangeMinIncorrect": func(dt *field.IntegerType) testCase {
+			dt.Min(10).Max(20)
+			return testCase{
+				value:  9,
+				result: 9,
+				err:    errors.New("minimum"),
+			}
+		},
+		"RangeMaxIncorrect": func(dt *field.IntegerType) testCase {
+			dt.Min(10).Max(20)
+			return testCase{
+				value:  30,
+				result: 30,
+				err:    errors.New("maximum"),
+			}
+		},
+		"RangeValid": func(dt *field.IntegerType) testCase {
+			dt.Min(10).Max(20)
+			return testCase{
+				value:  15,
+				result: 15,
+			}
+		},
+	}
+
+	for key, tt := range testCases {
+		dt := field.Int()
+		expRes := tt(dt)
+		testDataType(t, key, dt, expRes, 0)
+	}
+}
+
+func testDataType(
+	t *testing.T,
+	key string,
+	dt field.DataType,
+	expRes testCase,
+	typ interface{},
+) {
+	t.Run(key, func(t *testing.T) {
+
+		validator, ok := dt.(field.Validator)
+		if ok {
+			err := validator.Valid(expRes.value)
 			if expRes.err == nil {
 				assert.Nil(t, err)
 			} else {
 				assert.NotNil(t, err)
 
+				if err == nil {
+					t.Fatal("failing here to prevent nil pointer dereference below")
+				}
 				assert.Condition(t, func() bool {
 					return strings.Contains(err.Error(), expRes.err.Error())
 				})
 			}
-			assert.Equal(t, dt.Format(expRes.value), expRes.result)
+		}
 
-			assert.Equal(t, "", dt.Type())
-		})
-	}
+		formatter, ok := dt.(field.Formatter)
+		if ok {
+			assert.Equal(t, formatter.Format(expRes.value), expRes.result)
+		}
+
+		assert.Equal(t, typ, dt.Type())
+	})
 }

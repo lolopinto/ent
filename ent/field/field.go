@@ -82,7 +82,7 @@ func (t *StringType) NotEmpty() *StringType {
 	return t.MinLen(1)
 }
 
-// MinLen ensures the minimum length of a string is
+// MinLen ensures the minimum length of a string
 func (t *StringType) MinLen(n int) *StringType {
 	return t.Validate(func(s string) error {
 		if len(s) < n {
@@ -197,11 +197,59 @@ var _ DataType = &StringType{}
 
 // IntegerType is the datatype for int fields
 type IntegerType struct {
+	validators []func(int) error
 }
 
 // Type returns 0 to satisfy the DataType interface
 func (t *IntegerType) Type() interface{} {
 	return 0
+}
+
+// Validate takes a function that Validates the value of the int
+func (t *IntegerType) Validate(fn func(int) error) *IntegerType {
+	t.validators = append(t.validators, fn)
+	return t
+}
+
+// Positive validates that the integer is positive
+func (t *IntegerType) Positive() *IntegerType {
+	return t.Min(1)
+}
+
+// Negative validates that the integer is negative
+func (t *IntegerType) Negative() *IntegerType {
+	return t.Max(-1)
+}
+
+// Min validates the minimum value of the integer
+func (t *IntegerType) Min(min int) *IntegerType {
+	return t.Validate(func(val int) error {
+		if val < min {
+			return fmt.Errorf("value of integer did not meet the minimum requirement of %d", min)
+		}
+		return nil
+	})
+}
+
+// Max validates the maximum value of the integer
+func (t *IntegerType) Max(max int) *IntegerType {
+	return t.Validate(func(val int) error {
+		if val > max {
+			return fmt.Errorf("value of integer did not meet the maximum requirement of %d", max)
+		}
+		return nil
+	})
+}
+
+// Valid implements the Validator interface to validate the int input
+func (t *IntegerType) Valid(val interface{}) error {
+	i := val.(int)
+	for _, val := range t.validators {
+		if err := val(i); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 var _ DataType = &IntegerType{}
