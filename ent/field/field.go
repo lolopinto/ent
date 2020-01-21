@@ -2,6 +2,7 @@ package field
 
 import (
 	"fmt"
+	"github.com/lolopinto/ent/ent/cast"
 	"regexp"
 	"strings"
 	"time"
@@ -34,6 +35,10 @@ func Time() *TimeType {
 
 // TODO Ints, Floats, Strings, Enum, Map, complex objects
 // come back for that
+// TODO int64 for when we support integer autoincrement ids
+// how do we differentiate between types based on default values. probably need override of type?
+// TODO float32 vs float64. we default to float64 right now
+// theoretically need to also support every possible type but no rush to support int8, int16, etc.
 
 // DataType interface represents a piece of datum stored in any field
 // in any of the nodes in the graph
@@ -265,11 +270,63 @@ func (t *BoolType) Type() interface{} {
 var _ DataType = &BoolType{}
 
 // FloatType is the datatype for float fields
-type FloatType struct{}
+type FloatType struct {
+	validators []func(float64) error
+}
 
 // Type returns 0.0 to satisfy the DataType interface
 func (t *FloatType) Type() interface{} {
 	return 0.0
+}
+
+// Validate takes a function that Validates the value of the float64
+func (t *FloatType) Validate(fn func(float64) error) *FloatType {
+	t.validators = append(t.validators, fn)
+	return t
+}
+
+// Positive validates that the float64 is "positive". Uses a minimum value of 0.0000000001
+func (t *FloatType) Positive() *FloatType {
+	return t.Min(1e-10)
+}
+
+// Negative validates that the float64 is "negative". Uses a maximum value of 0.0000000001
+func (t *FloatType) Negative() *FloatType {
+	return t.Max(1e-10)
+}
+
+// Min validates the minimum value of the float64
+func (t *FloatType) Min(min float64) *FloatType {
+	return t.Validate(func(val float64) error {
+		if val < min {
+			return fmt.Errorf("value of integer did not meet the minimum requirement of %f", min)
+		}
+		return nil
+	})
+}
+
+// Max validates the maximum value of the float64
+func (t *FloatType) Max(max float64) *FloatType {
+	return t.Validate(func(val float64) error {
+		if val > max {
+			return fmt.Errorf("value of float did not meet the maximum requirement of %f", max)
+		}
+		return nil
+	})
+}
+
+// Valid implements the Validator interface to validate the float64 input
+func (t *FloatType) Valid(val interface{}) error {
+	f, err := cast.ToFloat(val)
+	if err != nil {
+		return err
+	}
+	for _, val := range t.validators {
+		if err := val(f); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 var _ DataType = &FloatType{}

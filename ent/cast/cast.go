@@ -129,14 +129,19 @@ func ToNullableInt(v interface{}) (*int, error) {
 // We need both a float64 and float32 in the long run. Just always use float64 until API changes
 // db returns float64 so we should just do that.
 func ToFloat(v interface{}) (float64, error) {
-	val, ok := v.(float64)
+	f, ok := v.(float64)
 	if ok {
-		return float64(val), nil
+		return float64(f), nil
 	}
-	val2, ok := v.(float32)
+	f32, ok := v.(float32)
 	if ok {
-		return float64(val2), nil
+		return float64(f32), nil
 	}
+	i, ok := v.(int)
+	if ok {
+		return float64(i), nil
+	}
+
 	return 0, fmt.Errorf("could not convert float field %v to appropriate type", v)
 }
 

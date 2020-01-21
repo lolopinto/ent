@@ -314,6 +314,106 @@ func TestInt(t *testing.T) {
 	}
 }
 
+func TestFloat(t *testing.T) {
+	testCases := map[string]func(dt *field.FloatType) testCase{
+		"base_case": func(dt *field.FloatType) testCase {
+			return testCase{
+				value:  4.0,
+				result: 4.0,
+			}
+		},
+		"Positive": func(dt *field.FloatType) testCase {
+			dt.Positive()
+			return testCase{
+				value:  -1,
+				result: -1,
+				err:    errors.New("minimum"),
+			}
+		},
+		"PositiveValid": func(dt *field.FloatType) testCase {
+			dt.Positive()
+			return testCase{
+				value:  1.0,
+				result: 1.0,
+			}
+		},
+		"Negative": func(dt *field.FloatType) testCase {
+			dt.Negative()
+			return testCase{
+				value:  10.0,
+				result: 10.0,
+				err:    errors.New("maximum"),
+			}
+		},
+		"NegativeValid": func(dt *field.FloatType) testCase {
+			dt.Negative()
+			return testCase{
+				value:  -15.0,
+				result: -15.0,
+			}
+		},
+		"Min": func(dt *field.FloatType) testCase {
+			dt.Min(50.0)
+			return testCase{
+				value:  10.3,
+				result: 10.3,
+				err:    errors.New("minimum"),
+			}
+		},
+		"MinValid": func(dt *field.FloatType) testCase {
+			dt.Min(50.23)
+			return testCase{
+				value:  50.23,
+				result: 50.23,
+			}
+		},
+		"Max": func(dt *field.FloatType) testCase {
+			dt.Max(15.42)
+			return testCase{
+				value:  30.2,
+				result: 30.2,
+				err:    errors.New("maximum"),
+			}
+		},
+		"MaxValid": func(dt *field.FloatType) testCase {
+			dt.Max(10.23)
+			return testCase{
+				value:  -15.2323,
+				result: -15.2323,
+			}
+		},
+		"RangeMinIncorrect": func(dt *field.FloatType) testCase {
+			dt.Min(10.12).Max(20.21)
+			return testCase{
+				value:  9.24,
+				result: 9.24,
+				err:    errors.New("minimum"),
+			}
+		},
+		"RangeMaxIncorrect": func(dt *field.FloatType) testCase {
+			dt.Min(10.23).Max(20.23)
+			return testCase{
+				value:  30.12,
+				result: 30.12,
+				err:    errors.New("maximum"),
+			}
+		},
+		"RangeValid": func(dt *field.FloatType) testCase {
+			dt.Min(10.23).Max(20.23)
+			return testCase{
+				value:  15,
+				result: 15,
+			}
+		},
+	}
+
+	for key, tt := range testCases {
+		dt := field.Float()
+		expRes := tt(dt)
+		testDataType(t, key, dt, expRes, 0.0)
+	}
+}
+
 func testDataType(
 	t *testing.T,
 	key string,
