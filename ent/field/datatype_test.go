@@ -1,7 +1,9 @@
 package field_test
 
 import (
+	"encoding/json"
 	"errors"
+	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -16,6 +18,7 @@ type testCase struct {
 	result       interface{}
 	err          error
 	validationFn func(*testCase)
+	pkgPath      string
 }
 
 func TestString(t *testing.T) {
@@ -439,6 +442,7 @@ func TestTime(t *testing.T) {
 				value:        tv,
 				result:       tv.UTC(),
 				validationFn: timesEqualFn,
+				pkgPath:      "time",
 			}
 		},
 		"base_caseDifferentTimezone": func() (field.DataType, testCase) {
@@ -452,6 +456,7 @@ func TestTime(t *testing.T) {
 				value:        tv,
 				result:       tv.UTC(),
 				validationFn: timesEqualFn,
+				pkgPath:      "time",
 			}
 		},
 		"Add": func() (field.DataType, testCase) {
@@ -460,8 +465,9 @@ func TestTime(t *testing.T) {
 			now := time.Now()
 
 			return dt, testCase{
-				value:  now,
-				result: now.Add(3 * time.Hour).UTC(),
+				value:   now,
+				result:  now.Add(3 * time.Hour).UTC(),
+				pkgPath: "time",
 				validationFn: func(expRes *testCase) {
 					res := expRes.result.(time.Time)
 					assert.True(t, now.Before(res))
@@ -474,8 +480,9 @@ func TestTime(t *testing.T) {
 			now := time.Now()
 
 			return dt, testCase{
-				value:  now,
-				result: now.Add(-3 * time.Hour).UTC(),
+				value:   now,
+				result:  now.Add(-3 * time.Hour).UTC(),
+				pkgPath: "time",
 				validationFn: func(expRes *testCase) {
 					res := expRes.result.(time.Time)
 					assert.True(t, now.After(res))
@@ -491,8 +498,9 @@ func TestTime(t *testing.T) {
 			tv := time.Date(2020, time.January, 1, 9, 30, 0, 0, loc)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.Round(time.Hour).UTC(),
+				value:   tv,
+				result:  tv.Round(time.Hour).UTC(),
+				pkgPath: "time",
 				validationFn: func(expRes *testCase) {
 					res := expRes.result.(time.Time)
 					// rounds up to 10AM local
@@ -511,8 +519,9 @@ func TestTime(t *testing.T) {
 			tv := time.Date(2020, time.January, 1, 9, 29, 0, 0, loc)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.Round(time.Hour).UTC(),
+				value:   tv,
+				result:  tv.Round(time.Hour).UTC(),
+				pkgPath: "time",
 				validationFn: func(expRes *testCase) {
 					res := expRes.result.(time.Time)
 					// truncates down to 9AM local
@@ -529,9 +538,10 @@ func TestTime(t *testing.T) {
 			tv := time.Date(2020, time.January, 1, 1, 0, 0, 0, time.UTC)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
-				err:    errors.New("after"),
+				value:   tv,
+				result:  tv.UTC(),
+				pkgPath: "time",
+				err:     errors.New("after"),
 			}
 		},
 		"FutureDateValid": func() (field.DataType, testCase) {
@@ -540,8 +550,9 @@ func TestTime(t *testing.T) {
 			tv := time.Now().Add(5 * time.Hour)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
+				value:   tv,
+				pkgPath: "time",
+				result:  tv.UTC(),
 			}
 		},
 		"PastDate": func() (field.DataType, testCase) {
@@ -550,9 +561,10 @@ func TestTime(t *testing.T) {
 			tv := time.Now().Add(5 * time.Hour)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
-				err:    errors.New("before"),
+				value:   tv,
+				result:  tv.UTC(),
+				pkgPath: "time",
+				err:     errors.New("before"),
 			}
 		},
 		"PastDateValid": func() (field.DataType, testCase) {
@@ -561,8 +573,9 @@ func TestTime(t *testing.T) {
 			tv := time.Now().Add(-5 * time.Hour)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
+				value:   tv,
+				result:  tv.UTC(),
+				pkgPath: "time",
 			}
 		},
 		"WithinFuture": func() (field.DataType, testCase) {
@@ -572,9 +585,10 @@ func TestTime(t *testing.T) {
 			tv := time.Now().Add(41 * 24 * time.Hour)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
-				err:    errors.New("within"),
+				value:   tv,
+				result:  tv.UTC(),
+				pkgPath: "time",
+				err:     errors.New("within"),
 			}
 		},
 		"WithinFutureValid": func() (field.DataType, testCase) {
@@ -584,8 +598,9 @@ func TestTime(t *testing.T) {
 			tv := time.Now().Add(5 * time.Hour)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
+				value:   tv,
+				result:  tv.UTC(),
+				pkgPath: "time",
 			}
 		},
 		"WithinPast": func() (field.DataType, testCase) {
@@ -595,9 +610,10 @@ func TestTime(t *testing.T) {
 			tv := time.Now().Add(-10 * 24 * time.Hour)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
-				err:    errors.New("within"),
+				value:   tv,
+				result:  tv.UTC(),
+				pkgPath: "time",
+				err:     errors.New("within"),
 			}
 		},
 		"WithinPastValid": func() (field.DataType, testCase) {
@@ -607,8 +623,9 @@ func TestTime(t *testing.T) {
 			tv := time.Now().Add(-5 * 24 * time.Hour)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
+				value:   tv,
+				pkgPath: "time",
+				result:  tv.UTC(),
 			}
 		},
 		"WithinRangePastIncorrect": func() (field.DataType, testCase) {
@@ -618,9 +635,10 @@ func TestTime(t *testing.T) {
 			tv := time.Now().Add(-15 * 24 * time.Hour)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
-				err:    errors.New("within"),
+				value:   tv,
+				result:  tv.UTC(),
+				pkgPath: "time",
+				err:     errors.New("within"),
 			}
 		},
 		"WithinRangeFutureIncorrect": func() (field.DataType, testCase) {
@@ -630,9 +648,10 @@ func TestTime(t *testing.T) {
 			tv := time.Now().Add(15 * 24 * time.Hour)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
-				err:    errors.New("within"),
+				value:   tv,
+				result:  tv.UTC(),
+				pkgPath: "time",
+				err:     errors.New("within"),
 			}
 		},
 		"WithinRangeValid": func() (field.DataType, testCase) {
@@ -642,8 +661,9 @@ func TestTime(t *testing.T) {
 			tv := time.Now().Add(1 * 24 * time.Hour)
 
 			return dt, testCase{
-				value:  tv,
-				result: tv.UTC(),
+				value:   tv,
+				result:  tv.UTC(),
+				pkgPath: "time",
 			}
 		},
 		"LocalTimezone": func() (field.DataType, testCase) {
@@ -655,8 +675,9 @@ func TestTime(t *testing.T) {
 			now := time.Now()
 
 			return dt, testCase{
-				value:  now,
-				result: now.Local(),
+				value:   now,
+				result:  now.Local(),
+				pkgPath: "time",
 				validationFn: func(expRes *testCase) {
 					res := expRes.result.(time.Time)
 					assert.Equal(t, res.Location(), time.Local)
@@ -668,6 +689,193 @@ func TestTime(t *testing.T) {
 	for key, tt := range testCases {
 		dt, expRes := tt()
 		testDataType(t, key, dt, expRes, time.Time{})
+	}
+}
+
+func TestJSON(t *testing.T) {
+	testCases := map[string]func() (field.DataType, testCase){
+		"ints": func() (field.DataType, testCase) {
+			dt := field.Ints()
+
+			val := []int{1, 2, 3, 4, 5}
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+			return dt, testCase{
+				value:  val,
+				result: res,
+			}
+		},
+		"intsTypeNotEnforced": func() (field.DataType, testCase) {
+			dt := field.Ints()
+
+			val := []string{"1", "2", "3", "4", "5"}
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+			return dt, testCase{
+				value:  val,
+				result: res,
+			}
+		},
+		"intsTypeEnforced": func() (field.DataType, testCase) {
+			dt := field.Ints().EnforceType()
+
+			val := []string{"1", "2", "3", "4", "5"}
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+			return dt, testCase{
+				value:  val,
+				result: res,
+				err:    errors.New("type"),
+			}
+		},
+		"intsTypeEnforcedValid": func() (field.DataType, testCase) {
+			dt := field.Ints().EnforceType()
+
+			val := []int{1, 2, 3, 4, 5}
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+			return dt, testCase{
+				value:  val,
+				result: res,
+			}
+		},
+		"strings": func() (field.DataType, testCase) {
+			dt := field.Strings()
+
+			val := []string{"1", "2", "3", "4", "5"}
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+			return dt, testCase{
+				value:  val,
+				result: res,
+			}
+		},
+		"floats": func() (field.DataType, testCase) {
+			dt := field.Floats()
+
+			val := []float64{1, 2, 3, 4, 5}
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+			return dt, testCase{
+				value:  val,
+				result: res,
+			}
+		},
+		"scalar": func() (field.DataType, testCase) {
+			// works for scalars even when there's no reason to do so
+			dt := field.JSON("")
+
+			val := "mango"
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+			return dt, testCase{
+				value:  val,
+				result: res,
+			}
+		},
+		"obj": func() (field.DataType, testCase) {
+			dt := field.JSON(json.RawMessage{}).EnforceType()
+
+			val := json.RawMessage(`{"precomputed": true}`)
+
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+			return dt, testCase{
+				value:   val,
+				result:  res,
+				pkgPath: "encoding/json",
+			}
+		},
+		"objPointer": func() (field.DataType, testCase) {
+			dt := field.JSON(&json.RawMessage{}).EnforceType()
+
+			val := json.RawMessage(`{"precomputed": true}`)
+
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+			return dt, testCase{
+				value:   &val,
+				result:  res,
+				pkgPath: "encoding/json",
+			}
+		},
+		"listofObject": func() (field.DataType, testCase) {
+			dt := field.JSON([]json.RawMessage{}).EnforceType()
+
+			val := []json.RawMessage{
+				json.RawMessage(`{"precomputed": true}`),
+			}
+
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+			return dt, testCase{
+				value:   val,
+				result:  res,
+				pkgPath: "encoding/json",
+			}
+		},
+		"map": func() (field.DataType, testCase) {
+			dt := field.JSON(map[string]string{}).EnforceType()
+
+			val := map[string]string{
+				"dog": "puppy",
+				"cat": "kitten",
+			}
+
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+
+			return dt, testCase{
+				value:  val,
+				result: res,
+			}
+		},
+		"mapToObj": func() (field.DataType, testCase) {
+			dt := field.JSON(map[string]*url.URL{}).EnforceType()
+
+			wiki, err := url.Parse("https://www.wikipedia.org/")
+			assert.Nil(t, err)
+			github, err := url.Parse("https://github.com/")
+			assert.Nil(t, err)
+			val := map[string]*url.URL{
+				"wikipedia": wiki,
+				"github":    github,
+			}
+
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+
+			return dt, testCase{
+				value:   val,
+				result:  res,
+				pkgPath: "net/url",
+			}
+		},
+		"listOfObjPointers": func() (field.DataType, testCase) {
+			// honestly better to store []strings and decode at runtime for this because it's more compact
+			// this is why Url will not use JSON but do things in goland as needed
+			dt := field.JSON([]*url.URL{}).EnforceType()
+
+			wiki, err := url.Parse("https://www.wikipedia.org/")
+			assert.Nil(t, err)
+			github, err := url.Parse("https://github.com/")
+			assert.Nil(t, err)
+			val := []*url.URL{wiki, github}
+
+			res, err := json.Marshal(val)
+			assert.Nil(t, err)
+
+			return dt, testCase{
+				value:   val,
+				result:  res,
+				pkgPath: "net/url",
+			}
+		},
+	}
+
+	for key, tt := range testCases {
+		dt, expRes := tt()
+		testDataType(t, key, dt, expRes, "")
 	}
 }
 
@@ -699,13 +907,21 @@ func testDataType(
 
 		formatter, ok := dt.(field.Formatter)
 		if ok {
-			assert.Equal(t, formatter.Format(expRes.value), expRes.result)
+			result, err := formatter.Format(expRes.value)
+			assert.Nil(t, err)
+			assert.Equal(t, expRes.result, result)
 		}
 
 		assert.Equal(t, typ, dt.Type())
 
 		if expRes.validationFn != nil {
 			expRes.validationFn(&expRes)
+		}
+
+		importable, ok := dt.(field.ImportableDataType)
+		if ok {
+			pkgPath := importable.PkgPath()
+			assert.Equal(t, expRes.pkgPath, pkgPath)
 		}
 	})
 }

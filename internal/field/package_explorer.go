@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/internal/astparser"
 	"golang.org/x/tools/go/packages"
 )
@@ -35,7 +34,6 @@ func (explorer *packageExplorer) getTypeForInfo(
 ) chan typeResult {
 	chanRes := make(chan typeResult)
 	go func() {
-		spew.Dump(info)
 		importedPkg := getImportedPackageThatMatchesIdent(pkg, info.pkgName, info.identName)
 		chanPkg := explorer.explorePackage(importedPkg)
 
@@ -161,7 +159,7 @@ func (explorer *packageExplorer) annotateFuncs(
 					continue
 				}
 
-				// Find Type, PackagePath etc methods
+				// Find Type, PkgPath etc methods
 				recv := astparser.GetFieldTypeInfo(fn.Recv.List[0])
 
 				s, ok := parsedPkg.structMap[recv.Name]
@@ -374,7 +372,18 @@ var dataTypeMethods = map[string]func(*packages.Package, *structType, *ast.FuncD
 		retStmt := astparser.GetLastReturnStmtExpr(fn)
 		s.typeFromMethod = pkg.TypesInfo.TypeOf(retStmt)
 	},
-	"PackagePath": func(_ *packages.Package, s *structType, fn *ast.FuncDecl) {
+	"PkgPath": func(_ *packages.Package, s *structType, fn *ast.FuncDecl) {
+		retStmt := astparser.GetLastReturnStmtExpr(fn)
+
+		// not a basic lit. this is a complicated case e.g. field.JSON
+		// we'll specially handle that but need to figure out something else
+		// for other cases.
+		// Here's another scenario where AST parsing is a liability instead of just running the code
+		_, ok := retStmt.(*ast.BasicLit)
+		if !ok {
+			return
+		}
+
 		s.packagePath = astparser.GetUnderylingStringFromLiteralExpr(
 			astparser.GetLastReturnStmtExpr(fn),
 		)
