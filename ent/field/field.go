@@ -2,10 +2,11 @@ package field
 
 import (
 	"fmt"
-	"github.com/lolopinto/ent/ent/cast"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/lolopinto/ent/ent/cast"
 )
 
 // String returns a new Datatype with type String
@@ -29,8 +30,18 @@ func Float() *FloatType {
 }
 
 // Time returns a new DataType with type Time
-func Time() *TimeType {
-	return &TimeType{}
+// Because the default value for time we store in the db is without timezone, we automatically format to UTC
+// To change this, can use Formatter e.g.
+// 	field.Time().Formatter(func(t time.Time) time.Time {
+//		return t.Local()
+//	})
+// or use a different time format field
+func Time() *timeType {
+	t := &timeType{}
+	t.Formatter(func(t time.Time) time.Time {
+		return t.UTC()
+	})
+	return t
 }
 
 // TODO Ints, Floats, Strings, Enum, Map, complex objects
@@ -331,20 +342,132 @@ func (t *FloatType) Valid(val interface{}) error {
 
 var _ DataType = &FloatType{}
 
-// TimeType is the datatype for time fields
-type TimeType struct{}
+// timeType is the datatype for time fields
+type timeType struct {
+	validators []func(time.Time) error
+	formatters []func(time.Time) time.Time
+}
 
 // Type returns zero-value of time to satisfy the DataType interface
-func (t *TimeType) Type() interface{} {
+func (t *timeType) Type() interface{} {
 	return time.Time{}
 }
 
 // PackagePath returns package that should be imported when this datatype is defined
-func (t *TimeType) PackagePath() string {
+func (t *timeType) PackagePath() string {
 	return "time"
 }
 
-var _ ImportableDataType = &TimeType{}
+func (t *timeType) Validate(fn func(time.Time) error) *timeType {
+	t.validators = append(t.validators, fn)
+	return t
+}
+
+func (t *timeType) Formatter(fn func(time.Time) time.Time) *timeType {
+	t.formatters = append(t.formatters, fn)
+	return t
+}
+
+// FutureDate validates that the time is of a date in the future
+func (t *timeType) FutureDate() *timeType {
+	// this will get lazily re-evaluated at beginning of request so should be fine?
+	return t.After(time.Now())
+}
+
+// PastDate validates that the time is of a date in the past
+func (t *timeType) PastDate() *timeType {
+	// this will get lazily re-evaluated at beginning of request so should be fine?
+	return t.Before(time.Now())
+}
+
+// After validates that the time is after a given time
+func (t *timeType) After(after time.Time) *timeType {
+	return t.Validate(func(t time.Time) error {
+		if t.After(after) {
+			return nil
+		}
+		return fmt.Errorf("time was not after %s", after.Format(time.RFC3339))
+	})
+}
+
+// Before validates that the time is after a given time
+func (t *timeType) Before(after time.Time) *timeType {
+	return t.Validate(func(t time.Time) error {
+		if t.Before(after) {
+			return nil
+		}
+		return fmt.Errorf("time was not before %s", after.Format(time.RFC3339))
+	})
+}
+
+// Within validates that the time is within the passed-in duration
+// TODO: this may not be the best name
+// Used to validate things like within the next 30 days or past 7 days
+// Easier to calculate than exact date in the future/past
+func (t *timeType) Within(d time.Duration) *timeType {
+	return t.Validate(func(t time.Time) error {
+		// within 30 days or whatever
+		// say something that shoulkd
+		now := time.Now()
+		expect := now.Add(d)
+
+		// negative time period
+		if d < 0 {
+			// 3 days ago expectation
+			if t.Before(expect) {
+				return fmt.Errorf("time is not within expected range %s...%s", expect.Format(time.RFC3339), now.Format(time.RFC3339))
+			}
+		} else {
+			if t.After(expect) {
+				return fmt.Errorf("time is not within expected range %s...%s", now.Format(time.RFC3339), expect.Format(time.RFC3339))
+			}
+		}
+		return nil
+	})
+}
+
+// Round rounds the time up to the nearest multiple of d. See Time.Round for implementation details
+func (t *timeType) Round(d time.Duration) *timeType {
+	return t.Formatter(func(t time.Time) time.Time {
+		return t.Round(d)
+	})
+}
+
+// Add adds the duration of d to the value of the time. See Time.Add
+func (t *timeType) Add(d time.Duration) *timeType {
+	return t.Formatter(func(t time.Time) time.Time {
+		return t.Add(d)
+	})
+}
+
+// Truncate rounds the time down to the nearest multiple of d. See Time.Truncate for implementation details
+func (t *timeType) Truncate(d time.Duration) *timeType {
+	return t.Formatter(func(t time.Time) time.Time {
+		return t.Truncate(d)
+	})
+}
+
+// Valid implements the Validator interface to validate the time input
+func (t *timeType) Valid(val interface{}) error {
+	tVal := val.(time.Time)
+	for _, val := range t.validators {
+		if err := val(tVal); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Format implements the Formatter interface to format the time input before storing
+func (t *timeType) Format(val interface{}) interface{} {
+	tVal := val.(time.Time)
+	for _, format := range t.formatters {
+		tVal = format(tVal)
+	}
+	return tVal
+}
+
+var _ ImportableDataType = &timeType{}
 
 // Field represents a field that's available on an ent
 // Field exists separate from DataType to store information that's common

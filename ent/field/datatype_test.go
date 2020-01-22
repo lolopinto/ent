@@ -5,15 +5,17 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lolopinto/ent/ent/field"
 	"github.com/stretchr/testify/assert"
 )
 
 type testCase struct {
-	value  interface{}
-	result interface{}
-	err    error
+	value        interface{}
+	result       interface{}
+	err          error
+	validationFn func(*testCase)
 }
 
 func TestString(t *testing.T) {
@@ -134,7 +136,7 @@ func TestString(t *testing.T) {
 			}
 		},
 		"Length": func(dt *field.StringType) testCase {
-			dt.MaxLen(5)
+			dt.Length(5)
 			return testCase{
 				value:  "94114-2324",
 				result: "94114-2324",
@@ -414,6 +416,261 @@ func TestFloat(t *testing.T) {
 	}
 }
 
+func TestTime(t *testing.T) {
+	timesEqualFn := func(expRes *testCase) {
+		val := expRes.value.(time.Time)
+		res := expRes.result.(time.Time)
+
+		assert.NotNil(t, val.Location())
+		assert.NotNil(t, res.Location())
+
+		assert.Equal(t, time.UTC, res.Location())
+
+		// validate times are equal even though timezones may not be because of UTC vs local
+		assert.True(t, val.Equal(res))
+	}
+
+	testCases := map[string]func() (field.DataType, testCase){
+		"base_case": func() (field.DataType, testCase) {
+			dt := field.Time()
+
+			tv := time.Now()
+			return dt, testCase{
+				value:        tv,
+				result:       tv.UTC(),
+				validationFn: timesEqualFn,
+			}
+		},
+		"base_caseDifferentTimezone": func() (field.DataType, testCase) {
+			dt := field.Time()
+
+			loc, err := time.LoadLocation("America/New_York")
+			assert.Nil(t, err)
+			tv := time.Date(2020, time.January, 1, 0, 0, 0, 0, loc)
+
+			return dt, testCase{
+				value:        tv,
+				result:       tv.UTC(),
+				validationFn: timesEqualFn,
+			}
+		},
+		"Add": func() (field.DataType, testCase) {
+			dt := field.Time().Add(3 * time.Hour)
+
+			now := time.Now()
+
+			return dt, testCase{
+				value:  now,
+				result: now.Add(3 * time.Hour).UTC(),
+				validationFn: func(expRes *testCase) {
+					res := expRes.result.(time.Time)
+					assert.True(t, now.Before(res))
+				},
+			}
+		},
+		"AddNegative": func() (field.DataType, testCase) {
+			dt := field.Time().Add(-3 * time.Hour)
+
+			now := time.Now()
+
+			return dt, testCase{
+				value:  now,
+				result: now.Add(-3 * time.Hour).UTC(),
+				validationFn: func(expRes *testCase) {
+					res := expRes.result.(time.Time)
+					assert.True(t, now.After(res))
+				},
+			}
+		},
+		"Round": func() (field.DataType, testCase) {
+			dt := field.Time().Round(1 * time.Hour)
+
+			loc, err := time.LoadLocation("America/New_York")
+			assert.Nil(t, err)
+			// 9:30AM
+			tv := time.Date(2020, time.January, 1, 9, 30, 0, 0, loc)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.Round(time.Hour).UTC(),
+				validationFn: func(expRes *testCase) {
+					res := expRes.result.(time.Time)
+					// rounds up to 10AM local
+					assert.True(t, res.Equal(time.Date(2020, time.January, 1, 10, 0, 0, 0, loc)))
+
+					assert.Equal(t, time.UTC, res.Location())
+				},
+			}
+		},
+		"Truncate": func() (field.DataType, testCase) {
+			dt := field.Time().Truncate(1 * time.Hour)
+
+			loc, err := time.LoadLocation("America/New_York")
+			assert.Nil(t, err)
+			// 9:30AM
+			tv := time.Date(2020, time.January, 1, 9, 29, 0, 0, loc)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.Round(time.Hour).UTC(),
+				validationFn: func(expRes *testCase) {
+					res := expRes.result.(time.Time)
+					// truncates down to 9AM local
+					assert.True(t, res.Equal(time.Date(2020, time.January, 1, 9, 0, 0, 0, loc)))
+
+					assert.Equal(t, time.UTC, res.Location())
+				},
+			}
+		},
+		"FutureDate": func() (field.DataType, testCase) {
+			dt := field.Time().FutureDate()
+
+			// 1/1/2020
+			tv := time.Date(2020, time.January, 1, 1, 0, 0, 0, time.UTC)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+				err:    errors.New("after"),
+			}
+		},
+		"FutureDateValid": func() (field.DataType, testCase) {
+			dt := field.Time().FutureDate()
+
+			tv := time.Now().Add(5 * time.Hour)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+			}
+		},
+		"PastDate": func() (field.DataType, testCase) {
+			dt := field.Time().PastDate()
+
+			tv := time.Now().Add(5 * time.Hour)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+				err:    errors.New("before"),
+			}
+		},
+		"PastDateValid": func() (field.DataType, testCase) {
+			dt := field.Time().PastDate()
+
+			tv := time.Now().Add(-5 * time.Hour)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+			}
+		},
+		"WithinFuture": func() (field.DataType, testCase) {
+			// time needs to be within the next 30 days
+			dt := field.Time().Within(30 * 24 * time.Hour)
+
+			tv := time.Now().Add(41 * 24 * time.Hour)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+				err:    errors.New("within"),
+			}
+		},
+		"WithinFutureValid": func() (field.DataType, testCase) {
+			// time needs to be within the next 30 days
+			dt := field.Time().Within(30 * 24 * time.Hour)
+
+			tv := time.Now().Add(5 * time.Hour)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+			}
+		},
+		"WithinPast": func() (field.DataType, testCase) {
+			// time needs to be within the past 7 days
+			dt := field.Time().Within(-7 * 24 * time.Hour)
+
+			tv := time.Now().Add(-10 * 24 * time.Hour)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+				err:    errors.New("within"),
+			}
+		},
+		"WithinPastValid": func() (field.DataType, testCase) {
+			// time needs to be within the past 7 days
+			dt := field.Time().Within(-7 * 24 * time.Hour)
+
+			tv := time.Now().Add(-5 * 24 * time.Hour)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+			}
+		},
+		"WithinRangePastIncorrect": func() (field.DataType, testCase) {
+			// time needs to be within +/- 2 weeks
+			dt := field.Time().Within(-14 * 24 * time.Hour).Within(14 * 24 * time.Hour)
+
+			tv := time.Now().Add(-15 * 24 * time.Hour)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+				err:    errors.New("within"),
+			}
+		},
+		"WithinRangeFutureIncorrect": func() (field.DataType, testCase) {
+			// time needs to be within +/- 2 weeks
+			dt := field.Time().Within(-14 * 24 * time.Hour).Within(14 * 24 * time.Hour)
+
+			tv := time.Now().Add(15 * 24 * time.Hour)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+				err:    errors.New("within"),
+			}
+		},
+		"WithinRangeValid": func() (field.DataType, testCase) {
+			// time needs to be within +/- 2 weeks
+			dt := field.Time().Within(-14 * 24 * time.Hour).Within(14 * 24 * time.Hour)
+
+			tv := time.Now().Add(1 * 24 * time.Hour)
+
+			return dt, testCase{
+				value:  tv,
+				result: tv.UTC(),
+			}
+		},
+		"LocalTimezone": func() (field.DataType, testCase) {
+			// we want local time for some reason
+			dt := field.Time().Formatter(func(t time.Time) time.Time {
+				return t.Local()
+			})
+
+			now := time.Now()
+
+			return dt, testCase{
+				value:  now,
+				result: now.Local(),
+				validationFn: func(expRes *testCase) {
+					res := expRes.result.(time.Time)
+					assert.Equal(t, res.Location(), time.Local)
+				},
+			}
+		},
+	}
+
+	for key, tt := range testCases {
+		dt, expRes := tt()
+		testDataType(t, key, dt, expRes, time.Time{})
+	}
+}
+
 func testDataType(
 	t *testing.T,
 	key string,
@@ -446,5 +703,9 @@ func testDataType(
 		}
 
 		assert.Equal(t, typ, dt.Type())
+
+		if expRes.validationFn != nil {
+			expRes.validationFn(&expRes)
+		}
 	})
 }
