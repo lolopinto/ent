@@ -371,12 +371,12 @@ func testGraphQLType(t *testing.T, f *Field, expectedType string) {
 }
 
 func testStructType(t *testing.T, f *Field, expectedType string) {
-	typ := GetNilableTypeInStructDefinition(f)
+	typ := GetNilableGoType(f)
 	assert.Equal(
 		t,
 		expectedType,
 		typ,
-		"expected type in struct definition for field %s to be %s, got %s instead",
+		"expected type in struct definition for field %T to be %s, got %s instead",
 		f.fieldType,
 		expectedType,
 		typ,

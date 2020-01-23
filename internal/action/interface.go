@@ -260,7 +260,7 @@ func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
 			NullableSetterMethodName: "SetNilable" + f.FieldName,
 			GetterMethodName:         "Get" + f.FieldName,
 			InstanceName:             strcase.ToLowerCamel(f.FieldName),
-			InstanceType:             field.GetNonNilableType(f),
+			InstanceType:             field.GetNonNilableGoType(f),
 			FieldName:                f.FieldName,
 			QuotedFieldName:          strconv.Quote(f.FieldName),
 			QuotedDBName:             f.GetQuotedDBColName(),

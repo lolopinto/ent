@@ -2,6 +2,7 @@ package field
 
 import (
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/types"
 	"sort"
@@ -122,26 +123,27 @@ func (f *Field) GetQuotedDBColName() string {
 	return f.tagMap["db"]
 }
 
-func GetNilableTypeInStructDefinition(f *Field) string {
-	// See comment in GetNonNilableType
+func GetNilableGoType(f *Field) string {
+	// See comment in GetNonNilableGoType
 	// In cases, where we want a Nillable type, we need to explicitly add it here
-	structType := GetNonNilableType(f)
+	structType := GetNonNilableGoType(f)
 	if !f.Nullable() {
 		return structType
 	}
-	return "*" + structType
+	// we want a nillable type and the default declaration doesn't have it, include the *
+	if structType[0] != '*' {
+		structType = "*" + structType
+	}
+	return structType
 }
 
-func GetNonNilableType(f *Field) string {
-	override, ok := f.fieldType.(enttype.FieldWithOverridenStructType)
-	if ok {
-		return override.GetStructType()
-	}
+func GetNonNilableGoType(f *Field) string {
 	// Because of the current API for Fields, the underlying type
-	// is always "string", "int", "float64", etc so this is never nullable
+	// is "string", "int", "float64", etc so this is never quite nullable
 	// and we can just return the string representation here
-	// since nullable is currently encoded as a struct tag
-	return f.entType.String()
+	// since nullable is currently encoded as a struct tag or a different flag
+	// To enforce nullable value, see above
+	return enttype.GetGoType(f.entType)
 }
 
 func (f *Field) GetDbTypeForField() string {
@@ -223,7 +225,7 @@ func (f *Field) PkgPath() string {
 func (f *Field) setFieldType(fieldType enttype.Type) {
 	fieldEntType, ok := fieldType.(enttype.EntType)
 	if !ok {
-		panic("invalid type that cannot be stored in db etc")
+		panic(fmt.Errorf("invalid type %T that cannot be stored in db etc", fieldType))
 	}
 	f.fieldType = fieldEntType
 }
