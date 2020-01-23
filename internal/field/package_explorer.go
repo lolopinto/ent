@@ -1,10 +1,12 @@
 package field
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/types"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/lolopinto/ent/internal/astparser"
@@ -39,7 +41,7 @@ func (explorer *packageExplorer) getTypeForInfo(
 
 		parsedPkg := <-chanPkg
 
-		chanRes <- explorer.getResultFromPkg(parsedPkg, info)
+		chanRes <- explorer.getResultFromPkg(parsedPkg, info, pkg)
 	}()
 
 	return chanRes
@@ -147,9 +149,27 @@ func (explorer *packageExplorer) annotateFuncs(
 							panic("do not currently support functions that return Types in a different package")
 						}
 
-						// only do this if this is one of the types we care about
-						if parsedPkg.structMap[result.Name] != nil {
-							parsedPkg.addFuncToMap(fn.Name.Name, result.Name)
+						// if this is not one of the functions we care about, bye
+						if parsedPkg.structMap[result.Name] == nil {
+							continue
+						}
+						parsedPkg.addFuncToStructMap(fn.Name.Name, result.Name)
+
+						retStmt := astparser.GetLastReturnStmtExpr(fn)
+						argInfo := parseArg(retStmt)
+
+						if argInfo == nil {
+							continue
+						}
+						// TODO validate that it's field.JSON
+						// right now we assume just JSON but will break if something else does this that's not expected
+						if argInfo.fmt != functionFormat ||
+							argInfo.identName != "JSON" {
+							continue
+						}
+
+						if typ, _ := explorer.parseFieldJSON(pkg, retStmt); typ != nil {
+							parsedPkg.addFuncTypeOverride(fn.Name.Name, typ)
 						}
 					}
 					continue
@@ -211,10 +231,45 @@ func (explorer *packageExplorer) buildStruct(
 	return ret
 }
 
+func (explorer *packageExplorer) parseFieldJSON(
+	pkg *packages.Package,
+	expr ast.Expr, // field.JSON() line
+) (types.Type, string) {
+	callExpr, ok := expr.(*ast.CallExpr)
+
+	if !ok {
+		return nil, ""
+	}
+	// boo all this is broken
+	firstArg := callExpr.Args[0]
+	typ := pkg.TypesInfo.TypeOf(callExpr.Args[0])
+	compLit, ok := firstArg.(*ast.CompositeLit)
+
+	if !ok {
+		return typ, ""
+	}
+	sel, ok := compLit.Type.(*ast.SelectorExpr)
+	if !ok {
+		return typ, ""
+	}
+
+	parts := strings.Split(astparser.GetTypeNameFromExpr(sel), ".")
+	var pkgBase, fnName string
+	if len(parts) == 2 {
+		pkgBase, fnName = parts[0], parts[1]
+	} else {
+		fnName = parts[1]
+	}
+	importedPkg := getImportedPackageThatMatchesIdent(pkg, pkgBase, fnName)
+
+	return typ, importedPkg.PkgPath
+}
+
 // this gets a parsed Package, function and figures out the entType and packagePath
 func (explorer *packageExplorer) getResultFromPkg(
 	parsedPkg *packageType,
 	info *argInfo,
+	callingPkg *packages.Package,
 ) *parseResult {
 	var structName string
 
@@ -225,6 +280,35 @@ func (explorer *packageExplorer) getResultFromPkg(
 		break
 
 	case functionFormat:
+		// field.JSON called directly. handle this case specifically
+		// we need to check the expr and get it from there since we need that from runtime information
+		if info.identName == "JSON" && info.pkgName == "field" {
+			if info.expr == nil {
+				return &parseResult{
+					err: errors.New("couldn't get the type info from json field because nil expr"),
+				}
+			}
+
+			typ, pkgPath := explorer.parseFieldJSON(callingPkg, info.expr)
+			if typ == nil {
+				return &parseResult{
+					err: errors.New("couldn't get type info from json field because we couldn't parse expr"),
+				}
+			}
+			return &parseResult{
+				entType: typ,
+				pkgPath: pkgPath,
+			}
+		}
+
+		// this is for things like field.Ints(), field.Strings etc that call field.JSON
+		typeOverride := parsedPkg.funcTypeOverride[info.identName]
+		if typeOverride != nil {
+			return &parseResult{
+				entType: typeOverride,
+			}
+		}
+
 		// func get the structName from the map
 		structName = parsedPkg.funcMap[info.identName]
 		if structName == "" {
@@ -288,13 +372,15 @@ func newPackageType(pkg *packages.Package) *packageType {
 	ret := &packageType{pkg: pkg}
 	ret.structMap = make(map[string]*structType)
 	ret.funcMap = make(map[string]string)
+	ret.funcTypeOverride = make(map[string]types.Type)
 	return ret
 }
 
 type packageType struct {
-	pkg       *packages.Package
-	structMap map[string]*structType
-	funcMap   map[string]string
+	pkg              *packages.Package
+	structMap        map[string]*structType
+	funcMap          map[string]string
+	funcTypeOverride map[string]types.Type
 
 	rw sync.RWMutex
 	// keep track of channels we need to broadcast information when multiple
@@ -339,8 +425,15 @@ func (t *packageType) addStruct(s *structType) {
 
 // add a mapping from function name to struct return type
 // e.g. so that we know that field.Int -> returns IntegerType
-func (t *packageType) addFuncToMap(funcName, structName string) {
+func (t *packageType) addFuncToStructMap(funcName, structName string) {
 	t.funcMap[funcName] = structName
+}
+
+// add a mapping from function name to type override
+// this currently only applies for JSON types so we know what type to generate
+// in golang, graphql, etc
+func (t *packageType) addFuncTypeOverride(funcName string, typ types.Type) {
+	t.funcTypeOverride[funcName] = typ
 }
 
 // pkgPath + ident which are dependencies of a struct

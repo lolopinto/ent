@@ -68,6 +68,7 @@ type argInfo struct {
 	pkgName   string
 	identName string
 	fmt       argFormat
+	expr      ast.Expr
 }
 
 func parseArg(arg ast.Expr) *argInfo {
@@ -75,7 +76,7 @@ func parseArg(arg ast.Expr) *argInfo {
 	unaryExpr, ok2 := arg.(*ast.UnaryExpr)
 	compLit, ok3 := arg.(*ast.CompositeLit)
 	var sel *ast.SelectorExpr
-	ret := &argInfo{}
+	ret := &argInfo{expr: arg}
 	if ok {
 		// field.Int
 		ret.fmt = functionFormat
