@@ -205,6 +205,9 @@ func modifyFieldForDataType(
 			f.entType = res.entType
 			f.setFieldType(enttype.GetType(f.entType))
 		}
+		if res.pkgPath != "" {
+			f.pkgPath = res.pkgPath
+		}
 		// return error or lack thereof from result
 		errChan <- res.err
 	}()

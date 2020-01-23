@@ -166,6 +166,7 @@ func TestTimeField(t *testing.T) {
 			exposeToActions:     true,
 			dbColumn:            true,
 			index:               true,
+			pkgPath:             "time",
 		},
 	)
 	testDBType(t, field, "sa.TIMESTAMP()")

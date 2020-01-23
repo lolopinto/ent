@@ -11,8 +11,9 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-type typeResult struct {
+type parseResult struct {
 	entType types.Type
+	pkgPath string
 	err     error
 }
 
@@ -21,7 +22,7 @@ type packageExplorer struct {
 
 	// having a map from function type to result could speed things up a bit
 	// caches results from getEntFromPkg instead of re-running that multiple times
-	//	functionMap map[string]*typeResult?
+	//	functionMap map[string]*parseResult?
 
 	pkgMap map[string]*packageType
 }
@@ -30,20 +31,15 @@ type packageExplorer struct {
 func (explorer *packageExplorer) getTypeForInfo(
 	pkg *packages.Package,
 	info *argInfo,
-
-) chan typeResult {
-	chanRes := make(chan typeResult)
+) chan *parseResult {
+	chanRes := make(chan *parseResult)
 	go func() {
 		importedPkg := getImportedPackageThatMatchesIdent(pkg, info.pkgName, info.identName)
 		chanPkg := explorer.explorePackage(importedPkg)
 
 		parsedPkg := <-chanPkg
 
-		typ, err := explorer.getEntFromPkg(parsedPkg, info)
-		chanRes <- typeResult{
-			err:     err,
-			entType: typ,
-		}
+		chanRes <- explorer.getResultFromPkg(parsedPkg, info)
 	}()
 
 	return chanRes
@@ -215,11 +211,11 @@ func (explorer *packageExplorer) buildStruct(
 	return ret
 }
 
-// this gets a parsed Package, function and figures out the entType
-func (explorer *packageExplorer) getEntFromPkg(
+// this gets a parsed Package, function and figures out the entType and packagePath
+func (explorer *packageExplorer) getResultFromPkg(
 	parsedPkg *packageType,
 	info *argInfo,
-) (types.Type, error) {
+) *parseResult {
 	var structName string
 
 	switch info.fmt {
@@ -232,23 +228,30 @@ func (explorer *packageExplorer) getEntFromPkg(
 		// func get the structName from the map
 		structName = parsedPkg.funcMap[info.identName]
 		if structName == "" {
-			return nil, fmt.Errorf("couldn't find type in package for function %s.%s", info.pkgName, info.identName)
+			return &parseResult{
+				err: fmt.Errorf("couldn't find type in package for function %s.%s", info.pkgName, info.identName),
+			}
 		}
 		break
 	}
 
 	s := parsedPkg.structMap[structName]
 	if s == nil {
-		return nil, fmt.Errorf("couldn't find struct %s in package for type %s.%s", structName, info.pkgName, info.identName)
+		return &parseResult{
+			err: fmt.Errorf("couldn't find struct %s in package for type %s.%s", structName, info.pkgName, info.identName),
+		}
 	}
 
-	return explorer.getEntType(s)
+	return explorer.getResultFromStruct(s)
 }
 
-// helper function for getEntFromPkg. called recursively
-func (explorer *packageExplorer) getEntType(s *structType) (types.Type, error) {
+// helper function for getResultFromPkg. called recursively
+func (explorer *packageExplorer) getResultFromStruct(s *structType) *parseResult {
 	if s.typeFromMethod != nil {
-		return s.typeFromMethod, nil
+		return &parseResult{
+			entType: s.typeFromMethod,
+			pkgPath: s.packagePath,
+		}
 	}
 
 	for _, dep := range s.dependencies {
@@ -256,24 +259,29 @@ func (explorer *packageExplorer) getEntType(s *structType) (types.Type, error) {
 		pkg := explorer.pkgMap[pkgPath]
 		if pkg == nil {
 			// TODO would be nice to have package this struct belongs in here
-			return nil, fmt.Errorf("couldn't find package %s even though it's a dependency for %s", pkgPath, s.name)
+			return &parseResult{
+				err: fmt.Errorf("couldn't find package %s even though it's a dependency for %s", pkgPath, s.name),
+			}
 		}
 
 		depStruct := pkg.structMap[structName]
 		if depStruct == nil {
 			// TODO would be nice to have package this stuct belongs in here
-			return nil, fmt.Errorf("couldn't find struct %s in package %s", structName, pkgPath)
+			return &parseResult{
+				err: fmt.Errorf("couldn't find struct %s in package %s", structName, pkgPath),
+			}
 		}
 
 		// call this function recursively for this dependency
 		// return value if we found typ or err
-		typ, err := explorer.getEntType(depStruct)
-		if err != nil || typ != nil {
-			return typ, err
+		if res := explorer.getResultFromStruct(depStruct); res != nil {
+			return res
 		}
 	}
 	// another place where pkgName would be useful
-	return nil, fmt.Errorf("couldn't figure out typ for %s", s.name)
+	return &parseResult{
+		err: fmt.Errorf("couldn't figure out typ for %s", s.name),
+	}
 }
 
 func newPackageType(pkg *packages.Package) *packageType {

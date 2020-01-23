@@ -93,6 +93,7 @@ type Field struct {
 	singleFieldPrimaryKey bool
 	//	LinkedEdge            edge.Edge
 	InverseEdge *edge.AssociationEdge
+	pkgPath     string
 }
 
 func newField(fieldName string) *Field {
@@ -213,6 +214,10 @@ func (f *Field) Nullable() bool {
 
 func (f *Field) DefaultValue() interface{} {
 	return f.defaultValue
+}
+
+func (f *Field) PkgPath() string {
+	return f.pkgPath
 }
 
 func (f *Field) setFieldType(fieldType enttype.Type) {

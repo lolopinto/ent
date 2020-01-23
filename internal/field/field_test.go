@@ -332,7 +332,16 @@ func testField(t *testing.T, f, expFieldProps *Field) {
 		t,
 		expFieldProps.fkey,
 		f.fkey,
-		"expect fkey values were not equal",
+		"expected fkey values were not equal",
+	)
+
+	assert.Equal(
+		t,
+		expFieldProps.pkgPath,
+		f.pkgPath,
+		"expected package path values were not equal. expected %s got %s",
+		expFieldProps.pkgPath,
+		f.pkgPath,
 	)
 }
 
