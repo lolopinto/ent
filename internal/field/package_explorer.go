@@ -144,7 +144,7 @@ func (explorer *packageExplorer) annotateFuncs(
 					// right now it's assuming part of a package
 					// not worth fixing right now since this should be a super edge case
 					if len(results.List) == 1 {
-						result, err := astparser.Parse(results.List[0].Type)
+						result, err := astparser.ParseFieldType(results.List[0])
 						if err != nil {
 							panic(err)
 						}
@@ -177,10 +177,12 @@ func (explorer *packageExplorer) annotateFuncs(
 					continue
 				}
 
-				// Find Type, PkgPath etc methods
-				recv := astparser.GetFieldTypeInfo(fn.Recv.List[0])
+				recv, err := astparser.ParseFieldType(fn.Recv.List[0])
+				if err != nil {
+					panic(err)
+				}
 
-				s, ok := parsedPkg.structMap[recv.Name]
+				s, ok := parsedPkg.structMap[recv.IdentName]
 				// this isn't one of the methods we care about
 				if !ok {
 					continue
@@ -208,17 +210,20 @@ func (explorer *packageExplorer) buildStruct(
 			continue
 		}
 		// todo we need to get the imports and get full path etc
-		fieldTypeInfo := astparser.GetFieldTypeInfo(f)
+		info, err := astparser.ParseFieldType(f)
+		if err != nil {
+			panic(err)
+		}
 
 		var depPkg *packages.Package
 		// current package
-		if fieldTypeInfo.PackageName == "" {
+		if info.PkgName == "" {
 			depPkg = pkg
 		} else {
 			depPkg = getImportedPackageThatMatchesIdent(
 				pkg,
-				fieldTypeInfo.PackageName,
-				fieldTypeInfo.Name,
+				info.PkgName,
+				info.IdentName,
 			)
 
 			// found a new package. need to explore that also...
@@ -227,7 +232,7 @@ func (explorer *packageExplorer) buildStruct(
 			<-newPkg
 		}
 
-		ret.addDepdendency(depPkg, fieldTypeInfo.Name)
+		ret.addDepdendency(depPkg, info.IdentName)
 	}
 
 	return ret

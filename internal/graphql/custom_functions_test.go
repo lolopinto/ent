@@ -633,8 +633,9 @@ func verifyGeneratedCode(t *testing.T, userCode, fnName, receiverName, expectedG
 	ast.Inspect(file, func(node ast.Node) bool {
 		if fn, ok := node.(*ast.FuncDecl); ok {
 			if fn.Name.Name == fnName && fn.Recv != nil {
-				fTypeInfo := astparser.GetFieldTypeInfo(fn.Recv.List[0])
-				if fTypeInfo.Name == receiverName {
+				info, err := astparser.ParseFieldType(fn.Recv.List[0])
+				assert.NotNil(t, err)
+				if info.IdentName == receiverName {
 					userFn = fn
 					return false
 				}

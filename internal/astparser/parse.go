@@ -61,6 +61,11 @@ func Parse(expr ast.Expr) (*Result, error) {
 	return ret, err
 }
 
+// ParseFieldType is a helper function to parse the type of a field
+func ParseFieldType(field *ast.Field) (*Result, error) {
+	return Parse(field.Type)
+}
+
 func parse(expr ast.Expr, ret *Result, parent ast.Expr) error {
 	compLit, ok := expr.(*ast.CompositeLit)
 	if ok {

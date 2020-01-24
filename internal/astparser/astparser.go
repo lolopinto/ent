@@ -12,15 +12,12 @@ func GetLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
 	// fn.Body is an instance of *ast.BlockStmt
 	lastStmt := GetLastStatement(fn.Body.List)
 
-	//fmt.Println(length)
 	// to handle the case where we have variables used to return something
 	// not really a valid case but handle it anyways
 	returnStmt, ok := lastStmt.(*ast.ReturnStmt)
 	if !ok {
 		panic("last statement in function was not a return statement. ")
 	}
-
-	//fmt.Println(len(returnStmt.Results))
 
 	if len(returnStmt.Results) != 1 {
 		panic("invalid number or format of return statement")
@@ -168,41 +165,4 @@ func GetStringListFromExpr(expr ast.Expr) []string {
 		list = append(list, GetUnderylingStringFromLiteralExpr(elt))
 	}
 	return list
-}
-
-// FieldTypeInfo struct contains information about the type of a field:
-// name and nullable value
-type FieldTypeInfo struct {
-	Name        string
-	PackageName string
-	Nullable    bool
-}
-
-// GetFieldTypeInfo returns info about type of field
-func GetFieldTypeInfo(field *ast.Field) FieldTypeInfo {
-	identName := func(expr ast.Expr) string {
-		ident, ok := expr.(*ast.Ident)
-		if ok {
-			return ident.Name
-		}
-		return ""
-	}
-	if name := identName(field.Type); name != "" {
-		return FieldTypeInfo{Name: name, Nullable: false}
-	}
-	star, ok := field.Type.(*ast.StarExpr)
-	if ok {
-		if name := identName(star.X); name != "" {
-			return FieldTypeInfo{Name: name, Nullable: true}
-		}
-	}
-	sel, ok := field.Type.(*ast.SelectorExpr)
-	if ok {
-		info := FieldTypeInfo{Name: sel.Sel.Name}
-		if name := identName(sel.X); name != "" {
-			info.PackageName = name
-		}
-		return info
-	}
-	panic("invalid field receiver type")
 }
