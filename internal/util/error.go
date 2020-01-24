@@ -28,6 +28,14 @@ func ErrSlice(err []packages.Error) {
 	panic(str)
 }
 
+func CoalesceErrSlice(err []packages.Error) error {
+	var errs = make([]error, len(err))
+	for idx, e := range err {
+		err[idx] = e
+	}
+	return CoalesceErr(errs...)
+}
+
 // CoalesceErr a variable numbers of errors and returns an error
 // for now, it returns the first element
 // TODO: return something that handles all the errors together

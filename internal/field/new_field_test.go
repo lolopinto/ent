@@ -1,7 +1,6 @@
 package field
 
 import (
-	"go/ast"
 	"testing"
 
 	"github.com/lolopinto/ent/internal/schemaparser"
@@ -500,29 +499,12 @@ func TestMultipleFields(t *testing.T) {
 }
 
 func loadFields(t *testing.T, code string) []*Field {
-	m2 := make(map[string]string)
-	m2["code.go"] = code
+	pkg, fn, err := schemaparser.FindFunction(code, "configs", "GetFields")
+	assert.Nil(t, err)
+	assert.NotNil(t, fn)
+	assert.NotNil(t, pkg)
 
-	pkg := schemaparser.LoadPackage(
-		&schemaparser.SourceSchemaParser{
-			Sources: m2,
-		},
-	)
-
-	file := pkg.Syntax[0]
-	var fieldsFn *ast.FuncDecl
-	ast.Inspect(file, func(node ast.Node) bool {
-		if fn, ok := node.(*ast.FuncDecl); ok &&
-			fn.Name.Name == "GetFields" {
-
-			fieldsFn = fn
-			return false
-		}
-		return true
-	})
-	assert.NotNil(t, fieldsFn)
-
-	fieldInfo, err := ParseFieldsFunc(pkg, fieldsFn)
+	fieldInfo, err := ParseFieldsFunc(pkg, fn)
 	assert.Nil(t, err)
 	return fieldInfo.Fields
 }

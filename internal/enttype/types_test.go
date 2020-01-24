@@ -1,7 +1,6 @@
 package enttype_test
 
 import (
-	"go/ast"
 	"go/types"
 	"strconv"
 	"strings"
@@ -765,39 +764,20 @@ type returnType struct {
 }
 
 func getTestReturnType(t *testing.T, code string) returnType {
-	overlay := make(map[string]string)
-	overlay["code.go"] = code
+	pkg, fn, err := schemaparser.FindFunction(code, "main", "f")
+	assert.Nil(t, err)
+	assert.NotNil(t, fn)
+	assert.NotNil(t, pkg)
 
-	parser := &schemaparser.SourceSchemaParser{
-		Sources:     overlay,
-		PackageName: "main",
+	assert.NotNil(t, fn.Type.Results)
+	results := fn.Type.Results
+	assert.Len(t, results.List, 1)
+
+	goType := pkg.TypesInfo.TypeOf(results.List[0].Type)
+	return returnType{
+		goType:  goType,
+		entType: enttype.GetType(goType),
 	}
-	pkg := schemaparser.LoadPackage(parser)
-	assert.Len(t, pkg.Errors, 0)
-
-	assert.Len(t, pkg.GoFiles, 1)
-
-	var ret returnType
-	ast.Inspect(pkg.Syntax[0], func(node ast.Node) bool {
-		if fn, ok := node.(*ast.FuncDecl); ok {
-			if fn.Name.Name != "f" {
-				return false
-			}
-
-			assert.NotNil(t, fn.Type.Results)
-			results := fn.Type.Results
-			assert.Len(t, results.List, 1)
-
-			goType := pkg.TypesInfo.TypeOf(results.List[0].Type)
-			ret = returnType{
-				goType:  goType,
-				entType: enttype.GetType(goType),
-			}
-		}
-		return true
-	})
-	assert.NotZero(t, ret)
-	return ret
 }
 
 func testTestCases(t *testing.T, expType enttype.Type, testCases map[string]testCase) {
@@ -884,7 +864,7 @@ func testType(t *testing.T, exp expType, ret returnType) {
 	}
 
 	if ret.goType != nil {
-		assert.Equal(t, exp.goType, enttype.GetString(ret.goType))
+		assert.Equal(t, exp.goType, enttype.GetGoType(ret.goType))
 	}
 
 	assert.Equal(t, exp.errorType, enttype.IsErrorType(typ))

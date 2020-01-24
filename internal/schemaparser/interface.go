@@ -1,7 +1,9 @@
 package schemaparser
 
 import (
+	"errors"
 	"fmt"
+	"go/ast"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -149,4 +151,31 @@ func LoadPackages(p Parser) []*packages.Package {
 		}
 	}
 	return pkgs
+}
+
+func FindFunction(code, pkgName, fnName string) (*packages.Package, *ast.FuncDecl, error) {
+	overlay := make(map[string]string)
+	overlay["code.go"] = code
+
+	parser := &SourceSchemaParser{
+		Sources:     overlay,
+		PackageName: pkgName,
+	}
+	pkg := LoadPackage(parser)
+	if len(pkg.Errors) != 0 {
+		return nil, nil, util.CoalesceErrSlice(pkg.Errors)
+	}
+
+	if len(pkg.GoFiles) != 1 {
+		return nil, nil, errors.New("expected 1 go file")
+	}
+
+	for _, decl := range pkg.Syntax[0].Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok &&
+			fn.Name.Name == fnName {
+			return pkg, fn, nil
+		}
+	}
+
+	return nil, nil, fmt.Errorf("couldn't find function named %s", fnName)
 }
