@@ -18,9 +18,11 @@ import (
 
 func newFieldInfo() *FieldInfo {
 	fieldMap := make(map[string]*Field)
-	return &FieldInfo{
+	fieldInfo := &FieldInfo{
 		fieldMap: fieldMap,
 	}
+	addBaseFields(fieldInfo)
+	return fieldInfo
 }
 
 type FieldInfo struct {
@@ -244,9 +246,7 @@ func (f *Field) setForeignKeyInfoFromString(fkey string) error {
 	return nil
 }
 
-func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) *FieldInfo {
-	fieldInfo := newFieldInfo()
-
+func addBaseFields(fieldInfo *FieldInfo) {
 	// TODO eventually get these from ent.Node instead of doing this manually
 	// add id field
 	idField := newField("ID")
@@ -273,11 +273,15 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) *FieldInfo {
 	updatedAtField := newField("UpdatedAt")
 	updatedAtField.tagMap = getTagMapFromJustFieldName("UpdatedAt")
 	updatedAtField.hideFromGraphQL = true
-	// immutable instead...
+	// immutable instead...?
 	updatedAtField.exposeToActions = false
 	updatedAtField.topLevelStructField = false
 	updatedAtField.fieldType = &enttype.TimeType{}
 	fieldInfo.addField(updatedAtField)
+}
+
+func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) *FieldInfo {
+	fieldInfo := newFieldInfo()
 
 	getUnquotedKeyFromTag := func(tagMap map[string]string, key string) string {
 		val := tagMap[key]
@@ -293,7 +297,12 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) *FieldInfo {
 		return getUnquotedKeyFromTag(tagMap, key) == "true"
 	}
 
+	fieldCount := 0
 	for _, f := range s.Fields.List {
+		// embedded things
+		if len(f.Names) == 0 {
+			continue
+		}
 		fieldName := f.Names[0].Name
 
 		field := newField(fieldName)
@@ -335,7 +344,13 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) *FieldInfo {
 				field.graphQLName = graphQLName
 			}
 		}
+		fieldCount++
 		fieldInfo.addField(field)
+	}
+
+	// no fields
+	if fieldCount == 0 {
+		return nil
 	}
 
 	return fieldInfo

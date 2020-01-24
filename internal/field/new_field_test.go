@@ -427,7 +427,8 @@ func TestMultipleFields(t *testing.T) {
 			}
 		}`,
 	)
-	assert.Len(t, fields, 5)
+	// need to include the 3 that are currently automatically added
+	assert.Len(t, fields, 8)
 }
 
 func loadFields(t *testing.T, code string) []*Field {
@@ -444,9 +445,30 @@ func loadFields(t *testing.T, code string) []*Field {
 func verifyField(t *testing.T, code string, expectedField *Field) *Field {
 	fields := loadFields(t, code)
 
-	assert.Len(t, fields, 1)
+	// we get id, created_at, updated_at as part of the framework
+	assert.Len(t, fields, 4)
 
-	testField(t, fields[0], expectedField)
+	field := getNonDefaultField(t, fields)
+	testField(t, field, expectedField)
 
-	return fields[0]
+	return field
+}
+
+func isDefaultField(field *Field) bool {
+	switch field.FieldName {
+	case "ID", "CreatedAt", "UpdatedAt":
+		return true
+	}
+	return false
+}
+
+func getNonDefaultField(t *testing.T, fields []*Field) *Field {
+	for _, f := range fields {
+		if !isDefaultField(f) {
+			return f
+		}
+	}
+
+	assert.FailNow(t, "couldn't find a non-default field")
+	return nil
 }
