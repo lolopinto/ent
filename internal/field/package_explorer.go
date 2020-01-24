@@ -6,7 +6,7 @@ import (
 	"go/ast"
 	"go/types"
 	"path/filepath"
-	"strings"
+
 	"sync"
 
 	"github.com/lolopinto/ent/internal/astparser"
@@ -32,11 +32,11 @@ type packageExplorer struct {
 // public API
 func (explorer *packageExplorer) getTypeForInfo(
 	pkg *packages.Package,
-	info *argInfo,
+	info *astparser.Result,
 ) chan *parseResult {
 	chanRes := make(chan *parseResult)
 	go func() {
-		importedPkg := getImportedPackageThatMatchesIdent(pkg, info.pkgName, info.identName)
+		importedPkg := getImportedPackageThatMatchesIdent(pkg, info.PkgName, info.IdentName)
 		chanPkg := explorer.explorePackage(importedPkg)
 
 		parsedPkg := <-chanPkg
@@ -144,31 +144,33 @@ func (explorer *packageExplorer) annotateFuncs(
 					// right now it's assuming part of a package
 					// not worth fixing right now since this should be a super edge case
 					if len(results.List) == 1 {
-						result := astparser.GetFieldTypeInfo(results.List[0])
-						if result.PackageName != "" {
+						result, err := astparser.Parse(results.List[0].Type)
+						if err != nil {
+							panic(err)
+						}
+						if result.PkgName != "" {
 							panic("do not currently support functions that return Types in a different package")
 						}
 
 						// if this is not one of the functions we care about, bye
-						if parsedPkg.structMap[result.Name] == nil {
+						if parsedPkg.structMap[result.IdentName] == nil {
 							continue
 						}
-						parsedPkg.addFuncToStructMap(fn.Name.Name, result.Name)
+						parsedPkg.addFuncToStructMap(fn.Name.Name, result.IdentName)
 
 						retStmt := astparser.GetLastReturnStmtExpr(fn)
-						argInfo := parseArg(retStmt)
-
-						if argInfo == nil {
-							continue
+						retResult, err := astparser.Parse(retStmt)
+						if err != nil {
+							panic(err)
 						}
 						// TODO validate that it's field.JSON
 						// right now we assume just JSON but will break if something else does this that's not expected
-						if argInfo.fmt != functionFormat ||
-							argInfo.identName != "JSON" {
+						if retResult.Format != astparser.FunctionFormat ||
+							retResult.IdentName != "JSON" {
 							continue
 						}
 
-						if typ, _ := explorer.parseFieldJSON(pkg, retStmt); typ != nil {
+						if typ, _ := explorer.parseFieldJSON(pkg, retResult); typ != nil {
 							parsedPkg.addFuncTypeOverride(fn.Name.Name, typ)
 						}
 					}
@@ -233,34 +235,20 @@ func (explorer *packageExplorer) buildStruct(
 
 func (explorer *packageExplorer) parseFieldJSON(
 	pkg *packages.Package,
-	expr ast.Expr, // field.JSON() line
+	result *astparser.Result, // field.JSON() line
 ) (types.Type, string) {
-	callExpr, ok := expr.(*ast.CallExpr)
-
-	if !ok {
+	if len(result.Args) == 0 {
 		return nil, ""
 	}
-	// boo all this is broken
-	firstArg := callExpr.Args[0]
-	typ := pkg.TypesInfo.TypeOf(callExpr.Args[0])
-	compLit, ok := firstArg.(*ast.CompositeLit)
+	arg := result.Args[0]
+	typ := pkg.TypesInfo.TypeOf(arg.Expr)
 
-	if !ok {
-		return typ, ""
-	}
-	sel, ok := compLit.Type.(*ast.SelectorExpr)
-	if !ok {
+	// nothing to do here. not importing anything
+	if arg.PkgName == "" && arg.IdentName == "" {
 		return typ, ""
 	}
 
-	parts := strings.Split(astparser.GetTypeNameFromExpr(sel), ".")
-	var pkgBase, fnName string
-	if len(parts) == 2 {
-		pkgBase, fnName = parts[0], parts[1]
-	} else {
-		fnName = parts[1]
-	}
-	importedPkg := getImportedPackageThatMatchesIdent(pkg, pkgBase, fnName)
+	importedPkg := getImportedPackageThatMatchesIdent(pkg, arg.PkgName, arg.IdentName)
 
 	return typ, importedPkg.PkgPath
 }
@@ -268,28 +256,28 @@ func (explorer *packageExplorer) parseFieldJSON(
 // this gets a parsed Package, function and figures out the entType and packagePath
 func (explorer *packageExplorer) getResultFromPkg(
 	parsedPkg *packageType,
-	info *argInfo,
+	info *astparser.Result,
 	callingPkg *packages.Package,
 ) *parseResult {
 	var structName string
 
-	switch info.fmt {
-	case typFormat:
+	switch info.Format {
+	case astparser.TypFormat:
 		// type, get the structName from the identifier
-		structName = info.identName
+		structName = info.IdentName
 		break
 
-	case functionFormat:
+	case astparser.FunctionFormat:
 		// field.JSON called directly. handle this case specifically
 		// we need to check the expr and get it from there since we need that from runtime information
-		if info.identName == "JSON" && info.pkgName == "field" {
-			if info.expr == nil {
+		if info.IdentName == "JSON" && info.PkgName == "field" {
+			if info.Expr == nil {
 				return &parseResult{
 					err: errors.New("couldn't get the type info from json field because nil expr"),
 				}
 			}
 
-			typ, pkgPath := explorer.parseFieldJSON(callingPkg, info.expr)
+			typ, pkgPath := explorer.parseFieldJSON(callingPkg, info)
 			if typ == nil {
 				return &parseResult{
 					err: errors.New("couldn't get type info from json field because we couldn't parse expr"),
@@ -302,7 +290,7 @@ func (explorer *packageExplorer) getResultFromPkg(
 		}
 
 		// this is for things like field.Ints(), field.Strings etc that call field.JSON
-		typeOverride := parsedPkg.funcTypeOverride[info.identName]
+		typeOverride := parsedPkg.funcTypeOverride[info.IdentName]
 		if typeOverride != nil {
 			return &parseResult{
 				entType: typeOverride,
@@ -310,10 +298,10 @@ func (explorer *packageExplorer) getResultFromPkg(
 		}
 
 		// func get the structName from the map
-		structName = parsedPkg.funcMap[info.identName]
+		structName = parsedPkg.funcMap[info.IdentName]
 		if structName == "" {
 			return &parseResult{
-				err: fmt.Errorf("couldn't find type in package for function %s.%s", info.pkgName, info.identName),
+				err: fmt.Errorf("couldn't find type in package for function %s.%s", info.PkgName, info.IdentName),
 			}
 		}
 		break
@@ -322,7 +310,7 @@ func (explorer *packageExplorer) getResultFromPkg(
 	s := parsedPkg.structMap[structName]
 	if s == nil {
 		return &parseResult{
-			err: fmt.Errorf("couldn't find struct %s in package for type %s.%s", structName, info.pkgName, info.identName),
+			err: fmt.Errorf("couldn't find struct %s in package for type %s.%s", structName, info.PkgName, info.IdentName),
 		}
 	}
 

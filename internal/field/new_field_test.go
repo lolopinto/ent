@@ -276,39 +276,7 @@ func TestForeignKey(t *testing.T) {
 	)
 }
 
-func TestDataTypeDirectly(t *testing.T) {
-	field := verifyField(
-		t,
-		`package configs
-
-		import "github.com/lolopinto/ent/ent"
-		import "github.com/lolopinto/ent/ent/field"
-
-		type UserConfig struct {}
-		
-		func (config *UserConfig) GetFields() ent.FieldMap {
-			return ent.FieldMap {
-				"Bio": field.F(
-					&field.StringType{},
-					field.Nullable(),
-				),
-			}
-		}`,
-		&Field{
-			FieldName:           "Bio",
-			dbName:              "bio",
-			graphQLName:         "bio",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			nullable:            true,
-		},
-	)
-	testDBType(t, field, "sa.Text()")
-	testGraphQLType(t, field, "String")
-}
-
-func TestDirectDataTypeWithCalls(t *testing.T) {
+func TestDataTypeWithCalls(t *testing.T) {
 	field := verifyField(
 		t,
 		`package configs
@@ -340,7 +308,7 @@ func TestDirectDataTypeWithCalls(t *testing.T) {
 	testGraphQLType(t, field, "String")
 }
 
-func TestLocalInlineType(t *testing.T) {
+func TestLocalInlineTypeWithCall(t *testing.T) {
 	field := verifyField(
 		t,
 		`package configs
@@ -354,44 +322,8 @@ func TestLocalInlineType(t *testing.T) {
 			return ""
 		}
 
-		type UserConfig struct {}
-		
-		func (config *UserConfig) GetFields() ent.FieldMap {
-			return ent.FieldMap {
-				"Bio": field.F(
-					localStringType{},
-				),
-			}
-		}`,
-		&Field{
-			FieldName:           "Bio",
-			dbName:              "bio",
-			graphQLName:         "bio",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-		},
-	)
-	testDBType(t, field, "sa.Text()")
-	testGraphQLType(t, field, "String!")
-}
-
-func TestLocalInlineType2(t *testing.T) {
-	// TODO move all these complications into a generic astparser library
-	// we don't support things like (&localStringType{}).Foo().Bar("sdsdsd", 2) yet
-	// and this file (+package) now spends too much time on parsing edge cases instead of dealing with just getting the information we care about
-
-	field := verifyField(
-		t,
-		`package configs
-
-		import "github.com/lolopinto/ent/ent"
-		import "github.com/lolopinto/ent/ent/field"
-
-		type localStringType struct {}
-
-		func (*localStringType) Type() interface{} {
-			return ""
+		func (t localStringType) Foo() localStringType {
+			return t
 		}
 
 		type UserConfig struct {}
@@ -399,7 +331,7 @@ func TestLocalInlineType2(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"Bio": field.F(
-					&localStringType{},
+					(localStringType{}).Foo(),
 				),
 			}
 		}`,

@@ -2,8 +2,6 @@ package field
 
 import "testing"
 
-import "github.com/davecgh/go-spew/spew"
-
 func TestIntsField(t *testing.T) {
 	field := verifyField(
 		t,
@@ -196,8 +194,7 @@ func TestJSONObjectPointer(t *testing.T) {
 			topLevelStructField: true,
 			exposeToActions:     true,
 			dbColumn:            true,
-			// TODO need to fix AST parsing
-			//			pkgPath:             "encoding/json",
+			pkgPath:             "encoding/json",
 		},
 	)
 	testDBType(t, field, "sa.Text()")
@@ -231,14 +228,12 @@ func TestJSONObjectList(t *testing.T) {
 			topLevelStructField: true,
 			exposeToActions:     true,
 			dbColumn:            true,
-			// TODO need to fix AST parsing
-			//			pkgPath:             "encoding/json",
+			pkgPath:             "encoding/json",
 		},
 	)
 	testDBType(t, field, "sa.Text()")
 	// TODO this isn't right. we need to differentiate between things that expose GraphQL vs not and have this return string vs this
 	testGraphQLType(t, field, "[RawMessage!]!")
-	spew.Dump(field.entType)
 	testStructType(t, field, "[]json.RawMessage")
 }
 
@@ -267,14 +262,12 @@ func TestJSONObjectPointerList(t *testing.T) {
 			topLevelStructField: true,
 			exposeToActions:     true,
 			dbColumn:            true,
-			// TODO need to fix AST parsing
-			//			pkgPath:             "encoding/json",
+			pkgPath:             "encoding/json",
 		},
 	)
 	testDBType(t, field, "sa.Text()")
 	// TODO this isn't right. we need to differentiate between things that expose GraphQL vs not and have this return string vs this
 	testGraphQLType(t, field, "[RawMessage]!")
-	spew.Dump(field.entType)
 	testStructType(t, field, "[]*json.RawMessage")
 }
 

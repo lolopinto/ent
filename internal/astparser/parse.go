@@ -17,6 +17,9 @@ const (
 	TypFormat Format = "type"
 )
 
+// Results is a named type for a list of Results
+type Results []*Result
+
 // Result is returned by Parse after parsing an AST. It encodes the tree in a more-friendly way
 // It's not exhaustive and only supports what has currently been tested
 type Result struct {
@@ -32,18 +35,24 @@ type Result struct {
 	Key   string  // key if Result is a Map
 	Value *Result // Value if Result is a Map
 
-	Elems      []*Result // Sub-elements in a slice or map
-	Args       []*Result // Arguments to a function
-	Attributes []*Result // Attributes/configurations on the object.
+	Elems      Results // Sub-elements in a slice or map
+	Args       Results // Arguments to a function
+	Attributes Results // Attributes/configurations on the object.
+
+	Expr ast.Expr
 	// e.g. (&field.StringType{}).MaxLen(5)
 	// or field.String().MaxLen(5)
 	selectParent *ast.SelectorExpr
 	parent       ast.Expr
 }
 
+func newResult(expr ast.Expr) *Result {
+	return &Result{Expr: expr}
+}
+
 // Parse takes an element received from an AST tree and parses it into a more-friendly format
 func Parse(expr ast.Expr) (*Result, error) {
-	ret := &Result{}
+	ret := newResult(expr)
 	err := parse(expr, ret, nil)
 	if err != nil {
 		return nil, err
@@ -59,7 +68,7 @@ func parse(expr ast.Expr, ret *Result, parent ast.Expr) error {
 		if len(compLit.Elts) != 0 {
 			for idx, elt := range compLit.Elts {
 
-				elem := &Result{}
+				elem := newResult(elt)
 				if err := parse(elt, elem, expr); err != nil {
 					return err
 				}
@@ -103,19 +112,14 @@ func parse(expr ast.Expr, ret *Result, parent ast.Expr) error {
 
 	kve, ok := expr.(*ast.KeyValueExpr)
 	if ok {
-		//		ret.containsMap = true
-
-		key := &Result{}
+		key := newResult(kve.Key)
 		if err := parse(kve.Key, key, expr); err != nil {
 			return err
 		}
 		// get the key from the string literal
 		ret.Key = key.Literal
-		if key.LiteralKind != token.STRING {
-			panic("expected key to be a string")
-		}
 
-		ret.Value = &Result{}
+		ret.Value = newResult(kve.Value)
 		if err := parse(kve.Value, ret.Value, expr); err != nil {
 			return err
 		}
@@ -126,21 +130,20 @@ func parse(expr ast.Expr, ret *Result, parent ast.Expr) error {
 		sel, ok := callExpr.Fun.(*ast.SelectorExpr)
 
 		// if child is a selectorExpr
+		// chained e.g. foo().bar().baz("1")
 		if ok {
 			_, ok := sel.X.(*ast.Ident)
 			if !ok {
-				// chained e.g.
-				//				spew.Dump(expr)
-				elem := &Result{}
+				elem := newResult(sel.X)
 				if err := parse(sel.X, elem, callExpr); err != nil {
 					return err
 				}
 
-				attr := &Result{}
+				attr := newResult(sel.Sel)
 				attr.IdentName = sel.Sel.Name
 				attr.Format = FunctionFormat
 				for _, arg := range callExpr.Args {
-					argElem := &Result{}
+					argElem := newResult(arg)
 					if err := parse(arg, argElem, callExpr); err != nil {
 						return err
 					}
@@ -160,7 +163,7 @@ func parse(expr ast.Expr, ret *Result, parent ast.Expr) error {
 
 		// this needs to somehow go on attributes of child object in some scenarios
 		for _, arg := range callExpr.Args {
-			elem := &Result{}
+			elem := newResult(arg)
 			if err := parse(arg, elem, expr); err != nil {
 				return err
 			}
@@ -203,6 +206,15 @@ func parse(expr ast.Expr, ret *Result, parent ast.Expr) error {
 	paren, ok := expr.(*ast.ParenExpr)
 	if ok {
 		if err := parse(paren.X, ret, expr); err != nil {
+			return err
+		}
+	}
+
+	star, ok := expr.(*ast.StarExpr)
+	if ok {
+		ret.Pointer = true
+		ret.Format = TypFormat
+		if err := parse(star.X, ret, expr); err != nil {
 			return err
 		}
 	}

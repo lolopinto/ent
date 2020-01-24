@@ -29,19 +29,20 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 		go func(idx int) {
 			defer wg.Done()
 			expr := elts[idx]
-			keyValueExpr := astparser.GetExprToKeyValueExpr(expr)
-
-			f := newField(
-				astparser.GetUnderylingStringFromLiteralExpr(keyValueExpr.Key),
-			)
-
-			callExpr, err := getCallExprFromKV(keyValueExpr.Value)
+			result, err := astparser.Parse(expr)
 			if err != nil {
 				sErr.Append(err)
 				return
 			}
 
-			chanErr := parseField(f, pkg, callExpr, explorer)
+			if err := validateFieldResult(result); err != nil {
+				sErr.Append(err)
+				return
+			}
+
+			f := newField(result.Key)
+
+			chanErr := parseField(f, pkg, result.Value, explorer)
 			err = <-chanErr
 			if err != nil {
 				sErr.Append(err)
@@ -54,106 +55,26 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 	return fieldInfo, sErr.Err()
 }
 
-type argFormat string
-
-const (
-	// field.Int
-	functionFormat argFormat = "func"
-
-	// &field.StringType{}
-	typFormat argFormat = "type"
-)
-
-type argInfo struct {
-	pkgName   string
-	identName string
-	fmt       argFormat
-	expr      ast.Expr
-}
-
-func parseArg(arg ast.Expr) *argInfo {
-	argCallExpr, ok := arg.(*ast.CallExpr)
-	unaryExpr, ok2 := arg.(*ast.UnaryExpr)
-	compLit, ok3 := arg.(*ast.CompositeLit)
-	var sel *ast.SelectorExpr
-	ret := &argInfo{expr: arg}
-	if ok {
-		// field.Int
-		ret.fmt = functionFormat
-
-		if ident, ok := argCallExpr.Fun.(*ast.Ident); ok {
-			ret.identName = ident.Name
-			return ret
-		}
-		sel = astparser.GetExprToSelectorExpr(argCallExpr.Fun)
-
-	}
-
-	if ok2 {
-		compLit := astparser.GetExprToCompositeLit(unaryExpr.X)
-		ident, ok := compLit.Type.(*ast.Ident)
-		// copied from below. need to super nest this and handle these things
-		//	compLitToIdent
-		if ok {
-			return &argInfo{
-				pkgName:   "",
-				identName: ident.Name,
-				fmt:       typFormat,
-			}
-		}
-		sel = astparser.GetExprToSelectorExpr(compLit.Type)
-
-		// &field.StringType{]}
-		ret.fmt = typFormat
-	}
-
-	if ok3 {
-		// local type localStringType{}
-		return &argInfo{
-			pkgName:   "",
-			identName: astparser.GetExprToIdent(compLit.Type).Name,
-			fmt:       typFormat,
-		}
-	}
-
-	if sel == nil {
-		return nil
-	}
-
-	// hmm combine with astparser.GetTypeNameFromExpr?
-	return parseTypeInfo(sel, ret)
-}
-
-func parseField(f *Field, pkg *packages.Package, callExpr *ast.CallExpr, explorer *packageExplorer) chan error {
+func parseField(f *Field, pkg *packages.Package, result *astparser.Result, explorer *packageExplorer) chan error {
 	chanErr := make(chan error)
 	go func() {
 		var err error
-		for idx, arg := range callExpr.Args {
-			info := parseArg(arg)
-			if info == nil {
-				err = errors.New("invalid arg")
-				break
-			}
+		for idx, arg := range result.Args {
 
 			if idx == 0 {
 				// this is the real thing we're waiting for
-				errChan := modifyFieldForDataType(f, pkg, explorer, info)
+				errChan := modifyFieldForDataType(f, pkg, explorer, arg)
 				err = <-errChan
 				// don't continue parsing other things here
 				if err != nil {
 					break
 				}
 			} else {
-				argCallExpr, ok := arg.(*ast.CallExpr)
-				if !ok {
-					err = errors.New("invalid arg")
-					break
-				}
-				typeName := info.pkgName + "." + info.identName
+				typeName := arg.PkgName + "." + arg.IdentName
 
 				fn, ok := m[typeName]
 				if ok {
-					fn(f, argCallExpr.Args)
+					fn(f, arg.Args)
 				} else {
 					err = fmt.Errorf("unsupported configuration for field %s", typeName)
 					break
@@ -166,36 +87,11 @@ func parseField(f *Field, pkg *packages.Package, callExpr *ast.CallExpr, explore
 	return chanErr
 }
 
-// todo this needs to also work for local packages
-// combine with astparser.GetFieldTypeInfo
-func parseTypeInfo(sel *ast.SelectorExpr, info *argInfo) *argInfo {
-	if ident, ok := sel.X.(*ast.Ident); ok {
-		info.pkgName = ident.Name
-		info.identName = sel.Sel.Name
-		return info
-	}
-
-	if callExpr, ok := sel.X.(*ast.CallExpr); ok {
-		if sel2, ok := callExpr.Fun.(*ast.SelectorExpr); ok {
-			return parseTypeInfo(sel2, info)
-		}
-	}
-
-	if parenExpr, ok := sel.X.(*ast.ParenExpr); ok {
-		compLit := astparser.GetExprToCompositeLitAllowUnaryExpr(parenExpr.X)
-		// has a type part involved, encode this
-		// TODO: need to go nuts with astparser to handle these things if I’m going to keep using AST
-		info.fmt = typFormat
-		return parseTypeInfo(astparser.GetExprToSelectorExpr(compLit.Type), info)
-	}
-	panic("unsupported type for now")
-}
-
 func modifyFieldForDataType(
 	f *Field,
 	pkg *packages.Package,
 	explorer *packageExplorer,
-	info *argInfo,
+	info *astparser.Result,
 ) chan error {
 	errChan := make(chan error)
 	go func() {
@@ -215,24 +111,25 @@ func modifyFieldForDataType(
 	return errChan
 }
 
-func getCallExprFromKV(expr ast.Expr) (*ast.CallExpr, error) {
-	callExpr, ok := expr.(*ast.CallExpr)
-	if !ok {
-		return nil, errors.New("invalid expr")
-	}
-	sel := astparser.GetExprToSelectorExpr(callExpr.Fun)
-	typeName := astparser.GetTypeNameFromExpr(sel)
-
-	if typeName != "field.F" {
-		return nil, errors.New("unsupported field type for now")
+func validateFieldResult(result *astparser.Result) error {
+	if result.Key == "" {
+		return errors.New("expected a non-empty, didn't get one")
 	}
 
-	return callExpr, nil
+	if result.Value == nil {
+		return errors.New("expected parsed result to have a non-nil value")
+	}
+
+	if result.Value.PkgName != "field" || result.Value.IdentName != "F" {
+		return fmt.Errorf("unsupported field type for now. expected field.F, got %s.%s instead", result.PkgName, result.IdentName)
+	}
+
+	return nil
 }
 
-type fn func(f *Field, args []ast.Expr) error
+type fn func(f *Field, args astparser.Results) error
 
-func verifyArgs(args []ast.Expr, expectedCount int, fn func()) error {
+func verifyArgs(args []*astparser.Result, expectedCount int, fn func()) error {
 	if len(args) != expectedCount {
 		return errors.New("invalid number of args")
 	}
@@ -241,49 +138,48 @@ func verifyArgs(args []ast.Expr, expectedCount int, fn func()) error {
 }
 
 var m = map[string]fn{
-	"field.DB": func(f *Field, args []ast.Expr) error {
+	"field.DB": func(f *Field, args astparser.Results) error {
 		return verifyArgs(args, 1, func() {
-			f.dbName = astparser.GetUnderylingStringFromLiteralExpr(args[0])
+			f.dbName = args[0].Literal
 		})
 	},
-	"field.GraphQL": func(f *Field, args []ast.Expr) error {
+	"field.GraphQL": func(f *Field, args astparser.Results) error {
 		return verifyArgs(args, 1, func() {
-			f.graphQLName = astparser.GetUnderylingStringFromLiteralExpr(args[0])
+			f.graphQLName = args[0].Literal
 		})
 	},
-	"field.Nullable": func(f *Field, args []ast.Expr) error {
+	"field.Nullable": func(f *Field, args astparser.Results) error {
 		return verifyArgs(args, 0, func() {
 			f.nullable = true
 			f.setFieldType(enttype.GetNullableType(f.entType, f.nullable))
 		})
 	},
-	"field.Unique": func(f *Field, args []ast.Expr) error {
+	"field.Unique": func(f *Field, args astparser.Results) error {
 		return verifyArgs(args, 0, func() {
 			f.unique = true
 			f.setFieldType(enttype.GetNullableType(f.entType, f.nullable))
 		})
 	},
-	"field.Index": func(f *Field, args []ast.Expr) error {
+	"field.Index": func(f *Field, args astparser.Results) error {
 		return verifyArgs(args, 0, func() {
 			f.index = true
 		})
 	},
-	"field.ServerDefault": func(f *Field, args []ast.Expr) error {
+	"field.ServerDefault": func(f *Field, args astparser.Results) error {
 		return verifyArgs(args, 1, func() {
-			// TODO this shouldn't only be string...
 			// TODO compare types with f.type
-			f.defaultValue = astparser.GetUnderylingStringFromLiteralExpr(args[0])
+			f.defaultValue = args[0].Literal
 		})
 	},
-	"field.HideFromGraphQL": func(f *Field, args []ast.Expr) error {
+	"field.HideFromGraphQL": func(f *Field, args astparser.Results) error {
 		return verifyArgs(args, 0, func() {
 			f.hideFromGraphQL = true
 		})
 	},
-	"field.ForeignKey": func(f *Field, args []ast.Expr) error {
+	"field.ForeignKey": func(f *Field, args astparser.Results) error {
 		return verifyArgs(args, 2, func() {
-			configName := astparser.GetUnderylingStringFromLiteralExpr(args[0])
-			fieldName := astparser.GetUnderylingStringFromLiteralExpr(args[1])
+			configName := args[0].Literal
+			fieldName := args[1].Literal
 
 			f.setForeignKeyInfoFromString(configName + "." + fieldName)
 		})
