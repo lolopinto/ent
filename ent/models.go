@@ -94,6 +94,16 @@ func LoadNodeRawData(id string, entity dataEntity, entConfig Config) error {
 	)
 }
 
+// LoadNodesRawData loads raw data for multiple objects
+func LoadNodesRawData(ids []string, nodes interface{}, entConfig Config) error {
+	l := &loadNodesLoader{
+		ids:       ids,
+		entConfig: entConfig,
+	}
+	l.nodes = nodes
+	return loadData(l)
+}
+
 func genLoadRawData(id string, entity dataEntity, entConfig Config, errChan chan<- error) {
 	err := LoadNodeRawData(id, entity, entConfig)
 	errChan <- err
@@ -194,7 +204,8 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 		checkRows = true
 		res, err = stmt.Exec(values...)
 	} else {
-		err = stmt.QueryRowx(values...).StructScan(entity)
+		row := stmt.QueryRowx(values...)
+		err = queryRow(row, entity)
 	}
 	//fmt.Println(query)
 
@@ -606,4 +617,13 @@ func GenLoadAssocEdges(nodes *[]*AssocEdgeData) error {
 			},
 		},
 	)
+}
+
+func LoadRawQuery(query string, nodes interface{}) error {
+	return loadData(&loadMultipleNodesFromQuery{
+		sqlBuilder: &sqlBuilder{
+			rawQuery: query,
+		},
+		nodes: nodes,
+	})
 }

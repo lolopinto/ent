@@ -51,6 +51,28 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Address struct {
+		City          func(childComplexity int) int
+		Country       func(childComplexity int) int
+		ID            func(childComplexity int) int
+		ResidentNames func(childComplexity int) int
+		State         func(childComplexity int) int
+		StreetAddress func(childComplexity int) int
+		Zip           func(childComplexity int) int
+	}
+
+	AddressCreateResponse struct {
+		Address func(childComplexity int) int
+	}
+
+	AddressDeleteResponse struct {
+		DeletedAddressID func(childComplexity int) int
+	}
+
+	AddressEditResponse struct {
+		Address func(childComplexity int) int
+	}
+
 	AdminBlockResponse struct {
 		Success func(childComplexity int) int
 	}
@@ -129,6 +151,9 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		AddressCreate          func(childComplexity int, input AddressCreateInput) int
+		AddressDelete          func(childComplexity int, input AddressDeleteInput) int
+		AddressEdit            func(childComplexity int, input AddressEditInput) int
 		AdminBlock             func(childComplexity int, input AdminBlockInput) int
 		AuthUser               func(childComplexity int, input AuthUserInput) int
 		ContactCreate          func(childComplexity int, input ContactCreateInput) int
@@ -150,6 +175,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Address      func(childComplexity int, id string) int
 		AuthUser     func(childComplexity int, email string, password string) int
 		Contact      func(childComplexity int, id string) int
 		ContactEmail func(childComplexity int, id string) int
@@ -256,6 +282,9 @@ type EventResolver interface {
 	ViewerRsvpStatus(ctx context.Context, obj *models.Event) (*EventRsvpStatus, error)
 }
 type MutationResolver interface {
+	AddressCreate(ctx context.Context, input AddressCreateInput) (*AddressCreateResponse, error)
+	AddressDelete(ctx context.Context, input AddressDeleteInput) (*AddressDeleteResponse, error)
+	AddressEdit(ctx context.Context, input AddressEditInput) (*AddressEditResponse, error)
 	AdminBlock(ctx context.Context, input AdminBlockInput) (*AdminBlockResponse, error)
 	AuthUser(ctx context.Context, input AuthUserInput) (*AuthUserResponse, error)
 	ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error)
@@ -276,6 +305,7 @@ type MutationResolver interface {
 	ViewerBlockParam(ctx context.Context, userID string) (*ViewerBlockParamResponse, error)
 }
 type QueryResolver interface {
+	Address(ctx context.Context, id string) (*models.Address, error)
 	AuthUser(ctx context.Context, email string, password string) (*AuthUserResult, error)
 	Contact(ctx context.Context, id string) (*models.Contact, error)
 	ContactEmail(ctx context.Context, id string) (*models.ContactEmail, error)
@@ -311,6 +341,76 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Address.city":
+		if e.complexity.Address.City == nil {
+			break
+		}
+
+		return e.complexity.Address.City(childComplexity), true
+
+	case "Address.country":
+		if e.complexity.Address.Country == nil {
+			break
+		}
+
+		return e.complexity.Address.Country(childComplexity), true
+
+	case "Address.id":
+		if e.complexity.Address.ID == nil {
+			break
+		}
+
+		return e.complexity.Address.ID(childComplexity), true
+
+	case "Address.residentNames":
+		if e.complexity.Address.ResidentNames == nil {
+			break
+		}
+
+		return e.complexity.Address.ResidentNames(childComplexity), true
+
+	case "Address.state":
+		if e.complexity.Address.State == nil {
+			break
+		}
+
+		return e.complexity.Address.State(childComplexity), true
+
+	case "Address.streetAddress":
+		if e.complexity.Address.StreetAddress == nil {
+			break
+		}
+
+		return e.complexity.Address.StreetAddress(childComplexity), true
+
+	case "Address.zip":
+		if e.complexity.Address.Zip == nil {
+			break
+		}
+
+		return e.complexity.Address.Zip(childComplexity), true
+
+	case "AddressCreateResponse.address":
+		if e.complexity.AddressCreateResponse.Address == nil {
+			break
+		}
+
+		return e.complexity.AddressCreateResponse.Address(childComplexity), true
+
+	case "AddressDeleteResponse.deletedAddressId":
+		if e.complexity.AddressDeleteResponse.DeletedAddressID == nil {
+			break
+		}
+
+		return e.complexity.AddressDeleteResponse.DeletedAddressID(childComplexity), true
+
+	case "AddressEditResponse.address":
+		if e.complexity.AddressEditResponse.Address == nil {
+			break
+		}
+
+		return e.complexity.AddressEditResponse.Address(childComplexity), true
 
 	case "AdminBlockResponse.success":
 		if e.complexity.AdminBlockResponse.Success == nil {
@@ -583,6 +683,42 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.LogEventResponse.Success(childComplexity), true
 
+	case "Mutation.addressCreate":
+		if e.complexity.Mutation.AddressCreate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addressCreate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddressCreate(childComplexity, args["input"].(AddressCreateInput)), true
+
+	case "Mutation.addressDelete":
+		if e.complexity.Mutation.AddressDelete == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addressDelete_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddressDelete(childComplexity, args["input"].(AddressDeleteInput)), true
+
+	case "Mutation.addressEdit":
+		if e.complexity.Mutation.AddressEdit == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addressEdit_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddressEdit(childComplexity, args["input"].(AddressEditInput)), true
+
 	case "Mutation.adminBlock":
 		if e.complexity.Mutation.AdminBlock == nil {
 			break
@@ -798,6 +934,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ViewerBlockParam(childComplexity, args["userID"].(string)), true
+
+	case "Query.address":
+		if e.complexity.Query.Address == nil {
+			break
+		}
+
+		args, err := ec.field_Query_address_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Address(childComplexity, args["id"].(string)), true
 
 	case "Query.authUser":
 		if e.complexity.Query.AuthUser == nil {
@@ -1148,6 +1296,51 @@ var parsedSchema = gqlparser.MustLoadSchema(
 	&ast.Source{Name: "graphql/schema.graphql", Input: `# Code generated by github.com/lolopinto/ent/ent, DO NOT edit. 
 
 
+type Address implements Node {
+    city: String!
+    country: String!
+    id: ID!
+    residentNames: [String!]!
+    state: String!
+    streetAddress: String!
+    zip: String!
+}
+
+input AddressCreateInput {
+    city: String!
+    country: String!
+    residentNames: [String!]!
+    state: String!
+    streetAddress: String!
+    zip: String!
+}
+
+type AddressCreateResponse {
+    address: Address
+}
+
+input AddressDeleteInput {
+    addressID: ID!
+}
+
+type AddressDeleteResponse {
+    deletedAddressId: ID
+}
+
+input AddressEditInput {
+    addressID: ID!
+    city: String!
+    country: String!
+    residentNames: [String!]!
+    state: String!
+    streetAddress: String!
+    zip: String!
+}
+
+type AddressEditResponse {
+    address: Address
+}
+
 input AdminBlockInput {
     blockeeID: ID!
     blockerID: ID!
@@ -1284,6 +1477,9 @@ type LogEventResponse {
 }
 
 type Mutation {
+    addressCreate(input: AddressCreateInput!): AddressCreateResponse
+    addressDelete(input: AddressDeleteInput!): AddressDeleteResponse
+    addressEdit(input: AddressEditInput!): AddressEditResponse
     adminBlock(input: AdminBlockInput!): AdminBlockResponse
     authUser(input: AuthUserInput!): AuthUserResponse
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
@@ -1309,6 +1505,7 @@ interface Node {
 }
 
 type Query {
+    address(id: ID!): Address
     authUser(email: String!, password: String!): AuthUserResult
     contact(id: ID!): Contact
     contactEmail(id: ID!): ContactEmail
@@ -1464,6 +1661,48 @@ func (ec *executionContext) field_Contact_contactBar_args(ctx context.Context, r
 		}
 	}
 	args["foo"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addressCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 AddressCreateInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAddressCreateInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressCreateInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addressDelete_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 AddressDeleteInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAddressDeleteInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressDeleteInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addressEdit_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 AddressEditInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAddressEditInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressEditInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1733,6 +1972,20 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_address_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_authUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1846,6 +2099,367 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Address_city(ctx context.Context, field graphql.CollectedField, obj *models.Address) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Address",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.City, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Address_country(ctx context.Context, field graphql.CollectedField, obj *models.Address) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Address",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Country, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Address_id(ctx context.Context, field graphql.CollectedField, obj *models.Address) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Address",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Address_residentNames(ctx context.Context, field graphql.CollectedField, obj *models.Address) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Address",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResidentNames, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2ᚕstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Address_state(ctx context.Context, field graphql.CollectedField, obj *models.Address) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Address",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Address_streetAddress(ctx context.Context, field graphql.CollectedField, obj *models.Address) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Address",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StreetAddress, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Address_zip(ctx context.Context, field graphql.CollectedField, obj *models.Address) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Address",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Zip, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AddressCreateResponse_address(ctx context.Context, field graphql.CollectedField, obj *AddressCreateResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AddressCreateResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Address, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Address)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAddress2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐAddress(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AddressDeleteResponse_deletedAddressId(ctx context.Context, field graphql.CollectedField, obj *AddressDeleteResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AddressDeleteResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeletedAddressID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AddressEditResponse_address(ctx context.Context, field graphql.CollectedField, obj *AddressEditResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AddressEditResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Address, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Address)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAddress2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐAddress(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _AdminBlockResponse_success(ctx context.Context, field graphql.CollectedField, obj *AdminBlockResponse) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
@@ -3215,6 +3829,129 @@ func (ec *executionContext) _LogEventResponse_success(ctx context.Context, field
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_addressCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_addressCreate_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddressCreate(rctx, args["input"].(AddressCreateInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AddressCreateResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAddressCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressCreateResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_addressDelete(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_addressDelete_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddressDelete(rctx, args["input"].(AddressDeleteInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AddressDeleteResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAddressDeleteResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressDeleteResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_addressEdit(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_addressEdit_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddressEdit(rctx, args["input"].(AddressEditInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AddressEditResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAddressEditResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressEditResponse(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_adminBlock(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -3951,6 +4688,47 @@ func (ec *executionContext) _Mutation_viewerBlockParam(ctx context.Context, fiel
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOViewerBlockParamResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐViewerBlockParamResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_address(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_address_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Address(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.Address)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAddress2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐAddress(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_authUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6520,6 +7298,126 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAddressCreateInput(ctx context.Context, obj interface{}) (AddressCreateInput, error) {
+	var it AddressCreateInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "city":
+			var err error
+			it.City, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "country":
+			var err error
+			it.Country, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "residentNames":
+			var err error
+			it.ResidentNames, err = ec.unmarshalNString2ᚕstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "state":
+			var err error
+			it.State, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "streetAddress":
+			var err error
+			it.StreetAddress, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "zip":
+			var err error
+			it.Zip, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAddressDeleteInput(ctx context.Context, obj interface{}) (AddressDeleteInput, error) {
+	var it AddressDeleteInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "addressID":
+			var err error
+			it.AddressID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAddressEditInput(ctx context.Context, obj interface{}) (AddressEditInput, error) {
+	var it AddressEditInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "addressID":
+			var err error
+			it.AddressID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "city":
+			var err error
+			it.City, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "country":
+			var err error
+			it.Country, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "residentNames":
+			var err error
+			it.ResidentNames, err = ec.unmarshalNString2ᚕstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "state":
+			var err error
+			it.State, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "streetAddress":
+			var err error
+			it.StreetAddress, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "zip":
+			var err error
+			it.Zip, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAdminBlockInput(ctx context.Context, obj interface{}) (AdminBlockInput, error) {
 	var it AdminBlockInput
 	var asMap = obj.(map[string]interface{})
@@ -7018,6 +7916,8 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 	switch obj := (*obj).(type) {
 	case nil:
 		return graphql.Null
+	case *models.Address:
+		return ec._Address(ctx, sel, obj)
 	case *models.Contact:
 		return ec._Contact(ctx, sel, obj)
 	case *models.ContactEmail:
@@ -7034,6 +7934,135 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var addressImplementors = []string{"Address", "Node"}
+
+func (ec *executionContext) _Address(ctx context.Context, sel ast.SelectionSet, obj *models.Address) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, addressImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Address")
+		case "city":
+			out.Values[i] = ec._Address_city(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "country":
+			out.Values[i] = ec._Address_country(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "id":
+			out.Values[i] = ec._Address_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "residentNames":
+			out.Values[i] = ec._Address_residentNames(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "state":
+			out.Values[i] = ec._Address_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "streetAddress":
+			out.Values[i] = ec._Address_streetAddress(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "zip":
+			out.Values[i] = ec._Address_zip(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var addressCreateResponseImplementors = []string{"AddressCreateResponse"}
+
+func (ec *executionContext) _AddressCreateResponse(ctx context.Context, sel ast.SelectionSet, obj *AddressCreateResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, addressCreateResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AddressCreateResponse")
+		case "address":
+			out.Values[i] = ec._AddressCreateResponse_address(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var addressDeleteResponseImplementors = []string{"AddressDeleteResponse"}
+
+func (ec *executionContext) _AddressDeleteResponse(ctx context.Context, sel ast.SelectionSet, obj *AddressDeleteResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, addressDeleteResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AddressDeleteResponse")
+		case "deletedAddressId":
+			out.Values[i] = ec._AddressDeleteResponse_deletedAddressId(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var addressEditResponseImplementors = []string{"AddressEditResponse"}
+
+func (ec *executionContext) _AddressEditResponse(ctx context.Context, sel ast.SelectionSet, obj *AddressEditResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, addressEditResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AddressEditResponse")
+		case "address":
+			out.Values[i] = ec._AddressEditResponse_address(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var adminBlockResponseImplementors = []string{"AdminBlockResponse"}
 
@@ -7571,6 +8600,12 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
+		case "addressCreate":
+			out.Values[i] = ec._Mutation_addressCreate(ctx, field)
+		case "addressDelete":
+			out.Values[i] = ec._Mutation_addressDelete(ctx, field)
+		case "addressEdit":
+			out.Values[i] = ec._Mutation_addressEdit(ctx, field)
 		case "adminBlock":
 			out.Values[i] = ec._Mutation_adminBlock(ctx, field)
 		case "authUser":
@@ -7633,6 +8668,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "address":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_address(ctx, field)
+				return res
+			})
 		case "authUser":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -8471,6 +9517,18 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAddressCreateInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressCreateInput(ctx context.Context, v interface{}) (AddressCreateInput, error) {
+	return ec.unmarshalInputAddressCreateInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNAddressDeleteInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressDeleteInput(ctx context.Context, v interface{}) (AddressDeleteInput, error) {
+	return ec.unmarshalInputAddressDeleteInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNAddressEditInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressEditInput(ctx context.Context, v interface{}) (AddressEditInput, error) {
+	return ec.unmarshalInputAddressEditInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNAdminBlockInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockInput(ctx context.Context, v interface{}) (AdminBlockInput, error) {
 	return ec.unmarshalInputAdminBlockInput(ctx, v)
 }
@@ -9155,6 +10213,50 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalOAddress2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐAddress(ctx context.Context, sel ast.SelectionSet, v models.Address) graphql.Marshaler {
+	return ec._Address(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAddress2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐAddress(ctx context.Context, sel ast.SelectionSet, v *models.Address) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Address(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAddressCreateResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressCreateResponse(ctx context.Context, sel ast.SelectionSet, v AddressCreateResponse) graphql.Marshaler {
+	return ec._AddressCreateResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAddressCreateResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressCreateResponse(ctx context.Context, sel ast.SelectionSet, v *AddressCreateResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AddressCreateResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAddressDeleteResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressDeleteResponse(ctx context.Context, sel ast.SelectionSet, v AddressDeleteResponse) graphql.Marshaler {
+	return ec._AddressDeleteResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAddressDeleteResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressDeleteResponse(ctx context.Context, sel ast.SelectionSet, v *AddressDeleteResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AddressDeleteResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAddressEditResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressEditResponse(ctx context.Context, sel ast.SelectionSet, v AddressEditResponse) graphql.Marshaler {
+	return ec._AddressEditResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAddressEditResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAddressEditResponse(ctx context.Context, sel ast.SelectionSet, v *AddressEditResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AddressEditResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminBlockResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockResponse(ctx context.Context, sel ast.SelectionSet, v AdminBlockResponse) graphql.Marshaler {

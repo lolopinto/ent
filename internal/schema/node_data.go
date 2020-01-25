@@ -113,6 +113,18 @@ func (nodeData *NodeData) GetActionByGraphQLName(graphQLName string) action.Acti
 	return nodeData.ActionInfo.GetByGraphQLName(graphQLName)
 }
 
+// HasJSONField returns a boolean indicating if this Node has any JSON fields
+// If so, we disable StructScan because we don't implement driver.Value and calling row.StructScan()
+// will fail since the datatype in the db doesn't map to what's in the struct
+func (nodeData *NodeData) HasJSONField() bool {
+	for _, field := range nodeData.FieldInfo.Fields {
+		if field.GetCastToMethod() == "cast.UnmarshallJSON" {
+			return true
+		}
+	}
+	return false
+}
+
 func (nodeData *NodeData) addConstInfo(constType string, constName string, constInfo *ConstInfo) {
 	constGroup := nodeData.ConstantGroups[constType]
 	if constGroup == nil {

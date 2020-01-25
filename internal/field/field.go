@@ -75,7 +75,6 @@ type ForeignKeyInfo struct {
 type Field struct {
 	// todo: abstract out these 2 also...
 	FieldName           string
-	FieldTag            string
 	tagMap              map[string]string
 	topLevelStructField bool            // id, updated_at, created_at no...
 	entType             types.Type      // not all fields will have an entType. probably don't need this...
@@ -106,14 +105,22 @@ func newField(fieldName string) *Field {
 		graphQLName = "id"
 	}
 
-	return &Field{
+	f := &Field{
 		FieldName:           fieldName,
 		topLevelStructField: true,
 		dbColumn:            true,
 		exposeToActions:     true,
 		dbName:              strcase.ToSnake(fieldName),
 		graphQLName:         graphQLName,
+		tagMap:              make(map[string]string),
 	}
+	// seed with default db name
+	f.addTag("db", strconv.Quote(f.dbName))
+	return f
+}
+
+func (f *Field) addTag(key, value string) {
+	f.tagMap[key] = value
 }
 
 func (f *Field) GetDbColName() string {
@@ -224,12 +231,33 @@ func (f *Field) PkgPath() string {
 	return f.pkgPath
 }
 
+func (f *Field) GetFieldTag() string {
+	// convert the map back to the struct tag string format
+	var tags []string
+	for key, value := range f.tagMap {
+		// TODO: abstract this out better. only specific tags should we written to the ent
+		if key == "db" || key == "graphql" {
+			tags = append(tags, key+":"+value)
+		}
+	}
+	if len(tags) == 0 {
+		return ""
+	}
+	sort.Strings(tags)
+	return "`" + strings.Join(tags, " ") + "`"
+}
+
 func (f *Field) setFieldType(fieldType enttype.Type) {
 	fieldEntType, ok := fieldType.(enttype.EntType)
 	if !ok {
 		panic(fmt.Errorf("invalid type %T that cannot be stored in db etc", fieldType))
 	}
 	f.fieldType = fieldEntType
+}
+
+func (f *Field) setDBName(dbName string) {
+	f.dbName = dbName
+	f.addTag("db", f.dbName)
 }
 
 func (f *Field) setForeignKeyInfoFromString(fkey string) error {
@@ -308,10 +336,9 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) *FieldInfo {
 		field := newField(fieldName)
 		// use this to rename GraphQL, db fields, etc
 		// otherwise by default it passes this down
-		//fmt.Printf("Field: %s Type: %s Tag: %v \n", fieldName, f.Type, f.Tag)
 
 		// we're not even putting new graphql tags there :/
-		field.FieldTag, field.tagMap = getTagInfo(fieldName, f.Tag, field.dbName)
+		field.tagMap = parseFieldTag(fieldName, f.Tag, field.dbName)
 
 		tagMap := field.tagMap
 
@@ -356,7 +383,7 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) *FieldInfo {
 	return fieldInfo
 }
 
-func getTagInfo(fieldName string, tag *ast.BasicLit, defaultDBName string) (string, map[string]string) {
+func parseFieldTag(fieldName string, tag *ast.BasicLit, defaultDBName string) map[string]string {
 	tagsMap := make(map[string]string)
 	if t := tag; t != nil {
 		// struct tag format should be something like `graphql:"firstName" db:"first_name"`
@@ -384,23 +411,11 @@ func getTagInfo(fieldName string, tag *ast.BasicLit, defaultDBName string) (stri
 		tagsMap["db"] = strconv.Quote(defaultDBName)
 	}
 
-	//fmt.Println(len(tagsMap))
-	//fmt.Println(tagsMap)
-	// convert the map back to the struct tag string format
-	var tags []string
-	for key, value := range tagsMap {
-		// TODO: abstract this out better. only specific tags should we written to the ent
-		if key == "db" || key == "graphql" {
-			tags = append(tags, key+":"+value)
-		}
-	}
-	sort.Strings(tags)
-	return "`" + strings.Join(tags, " ") + "`", tagsMap
+	return tagsMap
 }
 
 func getTagMapFromJustFieldName(fieldName string) map[string]string {
-	_, tagMap := getTagInfo(fieldName, nil, strcase.ToCamel(fieldName))
-	return tagMap
+	return parseFieldTag(fieldName, nil, strcase.ToSnake(fieldName))
 }
 
 type NonEntField struct {

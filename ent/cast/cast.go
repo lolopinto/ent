@@ -1,6 +1,7 @@
 package cast
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -154,4 +155,20 @@ func ToNullableFloat(v interface{}) (*float64, error) {
 		return nil, err
 	}
 	return &f, nil
+}
+
+func UnmarshallJSON(src interface{}, dest interface{}) error {
+	switch s := src.(type) {
+	case string:
+		return json.Unmarshal([]byte(s), dest)
+	case []byte:
+		return json.Unmarshal(s, dest)
+	default:
+		str, err := ToString(src)
+		if err != nil {
+			return err
+		}
+		b := []byte(str)
+		return json.Unmarshal(b, dest)
+	}
 }

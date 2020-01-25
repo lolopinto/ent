@@ -15,9 +15,10 @@ import (
 	"github.com/lolopinto/ent/internal/test_schema/graphql/log"
 	viewer1 "github.com/lolopinto/ent/internal/test_schema/graphql/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/contact/action"
-	action1 "github.com/lolopinto/ent/internal/test_schema/models/event/action"
-	action2 "github.com/lolopinto/ent/internal/test_schema/models/user/action"
+	"github.com/lolopinto/ent/internal/test_schema/models/address/action"
+	action1 "github.com/lolopinto/ent/internal/test_schema/models/contact/action"
+	action2 "github.com/lolopinto/ent/internal/test_schema/models/event/action"
+	action3 "github.com/lolopinto/ent/internal/test_schema/models/user/action"
 )
 
 type Resolver struct{}
@@ -95,6 +96,67 @@ func (r *eventResolver) ViewerRsvpStatus(ctx context.Context, obj *models.Event)
 
 type mutationResolver struct{ *Resolver }
 
+func (r *mutationResolver) AddressCreate(ctx context.Context, input AddressCreateInput) (*AddressCreateResponse, error) {
+	node, err := action.CreateAddressFromContext(ctx).
+		SetCity(input.City).
+		SetResidentNames(input.ResidentNames).
+		SetState(input.State).
+		SetZip(input.Zip).
+		SetStreetAddress(input.StreetAddress).
+		SetCountry(input.Country).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &AddressCreateResponse{
+		Address: node,
+	}, nil
+}
+
+func (r *mutationResolver) AddressDelete(ctx context.Context, input AddressDeleteInput) (*AddressDeleteResponse, error) {
+	existingNode, err := models.LoadAddressFromContext(ctx, input.AddressID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = action.DeleteAddressFromContext(ctx, existingNode).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &AddressDeleteResponse{
+		DeletedAddressID: &existingNode.ID,
+	}, nil
+}
+
+func (r *mutationResolver) AddressEdit(ctx context.Context, input AddressEditInput) (*AddressEditResponse, error) {
+	existingNode, err := models.LoadAddressFromContext(ctx, input.AddressID)
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := action.EditAddressFromContext(ctx, existingNode).
+		SetCity(input.City).
+		SetResidentNames(input.ResidentNames).
+		SetState(input.State).
+		SetZip(input.Zip).
+		SetStreetAddress(input.StreetAddress).
+		SetCountry(input.Country).
+		Save()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &AddressEditResponse{
+		Address: node,
+	}, nil
+}
+
 func (r *mutationResolver) AdminBlock(ctx context.Context, input AdminBlockInput) (*AdminBlockResponse, error) {
 	v, ctxErr := viewer.ForContext(ctx)
 	if ctxErr != nil {
@@ -135,7 +197,7 @@ func (r *mutationResolver) AuthUser(ctx context.Context, input AuthUserInput) (*
 }
 
 func (r *mutationResolver) ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error) {
-	node, err := action.CreateContactFromContext(ctx).
+	node, err := action1.CreateContactFromContext(ctx).
 		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
@@ -155,7 +217,7 @@ func (r *mutationResolver) ContactCreate(ctx context.Context, input ContactCreat
 }
 
 func (r *mutationResolver) EventCreate(ctx context.Context, input EventCreateInput) (*EventCreateResponse, error) {
-	node, err := action1.CreateEventFromContext(ctx).
+	node, err := action2.CreateEventFromContext(ctx).
 		SetName(input.Name).
 		SetUserID(input.UserID).
 		SetStartTime(input.StartTime).
@@ -178,7 +240,7 @@ func (r *mutationResolver) EventRsvpStatusEdit(ctx context.Context, input EventR
 		return nil, err
 	}
 
-	node, err := action1.EditEventRsvpStatusFromContext(ctx, existingNode).
+	node, err := action2.EditEventRsvpStatusFromContext(ctx, existingNode).
 		AddRsvpStatus(input.RsvpStatus).
 		AddUserID(input.UserID).
 		Save()
@@ -217,7 +279,7 @@ func (r *mutationResolver) UserAddFamilyMember(ctx context.Context, input UserAd
 		return nil, err
 	}
 
-	node, err := action2.AddFamilyMemberFromContext(ctx, existingNode).
+	node, err := action3.AddFamilyMemberFromContext(ctx, existingNode).
 		AddFamilyMemberID(input.FamilyMemberID).
 		Save()
 
@@ -236,7 +298,7 @@ func (r *mutationResolver) UserAddFriend(ctx context.Context, input UserAddFrien
 		return nil, err
 	}
 
-	node, err := action2.AddFriendFromContext(ctx, existingNode).
+	node, err := action3.AddFriendFromContext(ctx, existingNode).
 		AddFriendID(input.FriendID).
 		Save()
 
@@ -250,7 +312,7 @@ func (r *mutationResolver) UserAddFriend(ctx context.Context, input UserAddFrien
 }
 
 func (r *mutationResolver) UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error) {
-	node, err := action2.CreateUserFromContext(ctx).
+	node, err := action3.CreateUserFromContext(ctx).
 		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
@@ -272,7 +334,7 @@ func (r *mutationResolver) UserDelete(ctx context.Context, input UserDeleteInput
 		return nil, err
 	}
 
-	err = action2.DeleteUserFromContext(ctx, existingNode).
+	err = action3.DeleteUserFromContext(ctx, existingNode).
 		Save()
 
 	if err != nil {
@@ -290,7 +352,7 @@ func (r *mutationResolver) UserEdit(ctx context.Context, input UserEditInput) (*
 		return nil, err
 	}
 
-	node, err := action2.EditUserFromContext(ctx, existingNode).
+	node, err := action3.EditUserFromContext(ctx, existingNode).
 		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
@@ -312,7 +374,7 @@ func (r *mutationResolver) UserRemoveFamilyMember(ctx context.Context, input Use
 		return nil, err
 	}
 
-	node, err := action2.RemoveFamilyMemberFromContext(ctx, existingNode).
+	node, err := action3.RemoveFamilyMemberFromContext(ctx, existingNode).
 		RemoveFamilyMemberID(input.FamilyMemberID).
 		Save()
 
@@ -331,7 +393,7 @@ func (r *mutationResolver) UserRemoveFriend(ctx context.Context, input UserRemov
 		return nil, err
 	}
 
-	node, err := action2.RemoveFriendFromContext(ctx, existingNode).
+	node, err := action3.RemoveFriendFromContext(ctx, existingNode).
 		RemoveFriendID(input.FriendID).
 		Save()
 
@@ -424,6 +486,10 @@ func (r *mutationResolver) ViewerBlockParam(ctx context.Context, userID string) 
 }
 
 type queryResolver struct{ *Resolver }
+
+func (r *queryResolver) Address(ctx context.Context, id string) (*models.Address, error) {
+	return models.LoadAddressFromContext(ctx, id)
+}
 
 func (r *queryResolver) AuthUser(ctx context.Context, email string, password string) (*AuthUserResult, error) {
 	user, token, err := auth.Authenticate(ctx, email, password)

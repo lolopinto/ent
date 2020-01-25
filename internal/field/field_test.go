@@ -31,6 +31,7 @@ func TestIDField(t *testing.T) {
 			topLevelStructField:   false,
 			dbColumn:              true,
 			nullable:              false,
+			dbName:                "id",
 			graphQLName:           "id",
 		},
 	)
@@ -51,6 +52,7 @@ func TestCreatedAtField(t *testing.T) {
 			topLevelStructField:   false,
 			dbColumn:              true,
 			nullable:              false,
+			dbName:                "created_at",
 			graphQLName:           "createdAt",
 		},
 	)
@@ -71,6 +73,7 @@ func TestUpdatedAtField(t *testing.T) {
 			topLevelStructField:   false,
 			dbColumn:              true,
 			nullable:              false,
+			dbName:                "updated_at",
 			graphQLName:           "updatedAt",
 		},
 	)
@@ -91,6 +94,7 @@ func TestDefaultGraphQLField(t *testing.T) {
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              false,
+			dbName:                "first_name",
 			graphQLName:           "firstName",
 		},
 	)
@@ -109,6 +113,7 @@ func TestOverridenGraphQLField(t *testing.T) {
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              false,
+			dbName:                "last_login_time",
 			graphQLName:           "lastLoginTime",
 		},
 	)
@@ -129,6 +134,7 @@ func TestHiddenGraphQLField(t *testing.T) {
 			dbColumn:              true,
 			nullable:              false,
 			defaultValue:          "0",
+			dbName:                "number_of_logins",
 			graphQLName:           "numberOfLogins",
 		},
 	)
@@ -155,6 +161,7 @@ func TestNullableStringField(t *testing.T) {
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              true,
+			dbName:                "bio",
 			graphQLName:           "bio",
 		},
 	)
@@ -192,6 +199,7 @@ func TestNullableTimeField(t *testing.T) {
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              true,
+			dbName:                "date_of_birth",
 			graphQLName:           "dateOfBirth",
 		},
 	)
@@ -221,6 +229,7 @@ func TestNullableBoolField(t *testing.T) {
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              true,
+			dbName:                "show_bio_on_profile",
 			graphQLName:           "showBioOnProfile",
 		},
 	)
@@ -248,8 +257,6 @@ func TestOverridenDBField(t *testing.T) {
 
 	testColName(t, f, "last_login_time")
 }
-
-//func TestDefaultStructType(t *testing.)
 
 func testField(t *testing.T, f, expFieldProps *Field) {
 	assert.Equal(
@@ -288,6 +295,15 @@ func testField(t *testing.T, f, expFieldProps *Field) {
 		"expected graphql field name to be %s, got %s instead",
 		expFieldProps.graphQLName,
 		fieldName,
+	)
+
+	assert.Equal(
+		t,
+		expFieldProps.dbName,
+		f.dbName,
+		"expected db field to be %s, got %s instead",
+		expFieldProps.dbName,
+		f.dbName,
 	)
 
 	structField := f.TopLevelStructField()

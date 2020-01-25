@@ -17,6 +17,12 @@ type Entity interface {
 	dataEntity
 }
 
+// flag that we can't structScan and have to mapScan from db
+// TODO figure this out if there's a better way of doing this
+type dataEntityNotScannable interface {
+	UnsupportedScan() bool
+}
+
 type DBFields map[string]func(interface{}) error
 
 type dataEntity interface {

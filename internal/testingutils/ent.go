@@ -1,6 +1,7 @@
 package testingutils
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func CreateTestUser(t *testing.T) *models.User {
@@ -65,6 +67,23 @@ func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.Use
 		b.AddOutboundEdge(models.ContactToAllowListEdge, user.ID, user.GetType())
 	}
 	return SaveContact(t, b)
+}
+
+func CreateTestAddress(t *testing.T, residentNames []string) *models.Address {
+	b := GetAddressBuilder(ent.InsertOperation, nil)
+
+	// have to manually marshall it because it's not going through ent framework
+	byt, err := json.Marshal(residentNames)
+	require.Nil(t, err)
+	setFields(b, map[string]interface{}{
+		"StreetAddress": "",
+		"City":          "Westminster",
+		"State":         "London",
+		"Zip":           "SW1A 1AA",
+		"Country":       "UK",
+		"ResidentNames": byt,
+	})
+	return SaveAddress(t, b)
 }
 
 func EditContact(t *testing.T, contact *models.Contact, fields map[string]interface{}) *models.Contact {
@@ -195,6 +214,20 @@ func GetContactBuilder(
 	return b
 }
 
+func GetAddressBuilder(
+	operation ent.WriteOperation,
+	existingEnt ent.Entity,
+) *actions.EntMutationBuilder {
+	var address models.Address
+	b := GetBaseBuilder(
+		operation,
+		&address,
+		&configs.AddressConfig{},
+		existingEnt,
+	)
+	return b
+}
+
 func SaveBuilder(t *testing.T, b ent.MutationBuilder) {
 	// sad. todo come up with better long term approach for tests
 	emb, ok := b.(*actions.EntMutationBuilder)
@@ -243,6 +276,17 @@ func SaveContact(t *testing.T, b ent.MutationBuilder) *models.Contact {
 	contact, ok := b.Entity().(*models.Contact)
 	assert.True(t, ok)
 	return contact
+}
+
+func SaveAddress(t *testing.T, b ent.MutationBuilder) *models.Address {
+	if b.GetOperation() == ent.DeleteOperation {
+		SaveBuilder(t, b)
+		return nil
+	}
+	SaveBuilder(t, b)
+	address, ok := b.Entity().(*models.Address)
+	assert.True(t, ok)
+	return address
 }
 
 func GetDefaultUserBuilder(email string) *actions.EntMutationBuilder {

@@ -21,10 +21,10 @@ type dbQuery struct {
 	singleRow bool
 }
 
-func (q *dbQuery) StructScan(l singleRowLoader) error {
+func (q *dbQuery) StructScan(dest interface{}) error {
 	return q.query(&processRawData{
 		singleRow: func(row *sqlx.Row) error {
-			return row.StructScan(l.GetEntity())
+			return row.StructScan(dest)
 		}})
 }
 
@@ -164,4 +164,35 @@ func (q *dbQuery) processMultiRows(builder *sqlBuilder, stmt *sqlx.Stmt, process
 		fmt.Println(err)
 	}
 	return err
+}
+
+type rowQueryer interface {
+	MapScan(map[string]interface{}) error
+	StructScan(dest interface{}) error
+}
+
+func mapScan(query rowQueryer) (map[string]interface{}, error) {
+	dataMap := make(map[string]interface{})
+	//			fmt.Println("cache miss for key", key)
+
+	// query and scan into map. return data in format needed by cache function
+	err := query.MapScan(dataMap)
+	return dataMap, err
+}
+
+// This handles StructScan vs MapScan descisions that need to be made when querying a single row
+// (that's not going to cache)
+// at some point we should change this to handle data going into cache
+func queryRow(query rowQueryer, entity dataEntity) error {
+	notScannable, ok := entity.(dataEntityNotScannable)
+
+	if !(ok && notScannable.UnsupportedScan()) {
+		return query.StructScan(entity)
+	}
+
+	dataMap, err := mapScan(query)
+	if err != nil {
+		return err
+	}
+	return fillEntityFromMap(entity, dataMap)
 }

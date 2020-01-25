@@ -140,7 +140,7 @@ func verifyArgs(args []*astparser.Result, expectedCount int, fn func()) error {
 var m = map[string]fn{
 	"field.DB": func(f *Field, args astparser.Results) error {
 		return verifyArgs(args, 1, func() {
-			f.dbName = args[0].Literal
+			f.setDBName(args[0].Literal)
 		})
 	},
 	"field.GraphQL": func(f *Field, args astparser.Results) error {

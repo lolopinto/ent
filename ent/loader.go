@@ -228,6 +228,7 @@ func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 	if ok {
 		return q.MapScanAndFillRows(multiCacheable)
 	}
+	// TODO fix TestLoadingRawMultiNodesWithJSON in models_test
 	return q.StructScanRows(l)
 }
 
@@ -240,7 +241,7 @@ func fillEntityFromFields(fields DBFields, dataMap map[string]interface{}) error
 		fieldFunc, ok := fields[k]
 		if !ok {
 			// todo throw an exception eventually. for now this exists for created_at and updadted_at which may not be there
-			fmt.Println("field retrieved from database which has no func")
+			fmt.Printf("field %s retrieved from database which has no func \n", k)
 			continue
 		}
 		err := fieldFunc(v)
@@ -290,20 +291,15 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 		return errors.New("nil entity passed to loadData")
 	}
 
+	fn := func() (map[string]interface{}, error) {
+		return mapScan(q)
+	}
+
 	// loader supports a cache. check it out
 	cacheable, ok := l.(cachedLoader)
 	if ok {
 		// handle cache access
 		key := cacheable.GetCacheKey()
-
-		fn := func() (map[string]interface{}, error) {
-			dataMap := make(map[string]interface{})
-			//			fmt.Println("cache miss for key", key)
-
-			// query and scan into map. return data in format needed by cache function
-			err := q.MapScan(dataMap)
-			return dataMap, err
-		}
 
 		actual, err := getItemFromCacheMaybe(key, fn)
 		if err != nil {
@@ -312,7 +308,7 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 		return fillEntityFromMap(l.GetEntity(), actual)
 	}
 
-	return q.StructScan(l)
+	return queryRow(q, l.GetEntity())
 }
 
 // TODO figure out if this is the right long term API

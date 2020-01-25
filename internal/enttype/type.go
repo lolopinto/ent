@@ -541,9 +541,8 @@ func (t *jsonTypeImpl) GetZeroValue() string {
 	return "nil"
 }
 
-// TODO we need something better here that indicates we're going to need to json.Unmarshall this...
 func (t *jsonTypeImpl) GetCastToMethod() string {
-	return ""
+	return "cast.UnmarshallJSON"
 }
 
 type SliceType struct {
