@@ -5,17 +5,22 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/util"
 )
 
+// fields in generated builder not in actions
+// bug in in having it in actions now because if we set something in actions that's not there, there'll be an issue
 type EntMutationBuilder struct {
 	Viewer         viewer.ViewerContext
 	ExistingEntity ent.Entity
 	entity         ent.Entity
 	Operation      ent.WriteOperation
 	EntConfig      ent.Config
+	buildFieldsFn  func() ent.ActionFieldMap2
 	// for now, actions map to all the fields so it's fine. this will need to be changed when each EntMutationBuilder is generated
 	// At that point, probably makes sense to have each generated Builder handle this.
 	FieldMap ent.ActionFieldMap
@@ -38,6 +43,12 @@ func ExistingEnt(existingEnt ent.Entity) func(*EntMutationBuilder) {
 	return func(mb *EntMutationBuilder) {
 		// TODO lowercase
 		mb.ExistingEntity = existingEnt
+	}
+}
+
+func BuildFields(buildFieldsFn func() ent.ActionFieldMap2) func(*EntMutationBuilder) {
+	return func(mb *EntMutationBuilder) {
+		mb.buildFieldsFn = buildFieldsFn
 	}
 }
 
@@ -80,6 +91,10 @@ func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}
 	return val
 }
 
+// does this still need to be concurrent?
+// TODO this may need to be private...
+// There needs to be a raw fields API where there's no fanciness
+// SetRawFields vs API with fields/builders/and the works
 func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -240,16 +255,34 @@ func (b *EntMutationBuilder) runTriggers() error {
 }
 
 func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
+	// move from here to just before format into Validate()?
 	if err := b.runTriggers(); err != nil {
 		return nil, err
 	}
 
+	// this is the gather fields method function
+	// we validate (if needed)
+	// run any extra validators
+	// tranform and save as needed
+
+	// everything being done here, ignoring Validate() for now!
+
+	fieldInfos, err := b.validate()
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO more validators run here
+
+	b.formatFields(fieldInfos)
+
 	// should not be able to get a changeset for an invalid builder
 	if !b.validated {
+		// TODO
 		// soulds like validate() needs to call runTriggers also...
-		if err := b.Validate(); err != nil {
-			return nil, err
-		}
+		// if err := b.Validate(); err != nil {
+		// 	return nil, err
+		// }
 	}
 
 	edgeData, err := b.loadEdges()
@@ -264,20 +297,23 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 			EntConfig:   b.EntConfig,
 		})
 	} else {
+		// TODO how do we format placeholders??
+
 		// take the fields and convert to db format!
 		fields := make(map[string]interface{})
 		var fieldsWithResolvers []string
-		for fieldName, value := range b.fields {
-			fieldInfo, ok := b.FieldMap[fieldName]
-			if !ok {
-				return nil, fmt.Errorf("invalid field %s passed ", fieldName)
-			}
+		for dbKey, value := range b.fields {
+
+			// fieldInfo, ok := b.FieldMap[fieldName]
+			// if !ok {
+			// 	return nil, fmt.Errorf("invalid field %s passed ", fieldName)
+			// }
 			builder, ok := value.(ent.MutationBuilder)
 
-			fields[fieldInfo.DB] = value
+			fields[dbKey] = value
 			if ok {
-				fields[fieldInfo.DB] = builder.GetPlaceholderID()
-				fieldsWithResolvers = append(fieldsWithResolvers, fieldInfo.DB)
+				fields[dbKey] = builder.GetPlaceholderID()
+				fieldsWithResolvers = append(fieldsWithResolvers, dbKey)
 			}
 		}
 		// only worth doing it if there are fields
@@ -331,10 +367,57 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	}, nil
 }
 
+func (b *EntMutationBuilder) validate() (ent.ActionFieldMap2, error) {
+	if b.buildFieldsFn == nil {
+		return nil, nil
+	}
+	// gather fieldInfos, validate as needed and then return
+	fieldInfos := b.buildFieldsFn()
+	for fieldName, fieldInfo := range fieldInfos {
+		if err := fieldInfo.Field.Valid(fieldName, fieldInfo.Value); err != nil {
+			return nil, err
+		}
+	}
+	return fieldInfos, nil
+}
+
+// this is just done before writing
+func (b *EntMutationBuilder) formatFields(fieldInfos ent.ActionFieldMap2) error {
+	//	var fieldsWithResolvers []string
+
+	// this is also where default values will be set eventually
+	for fieldName, fieldInfo := range fieldInfos {
+		dbKey := fieldInfo.Field.DBKey(fieldName)
+		//		builder, ok := fieldInfo.Value.(ent.MutationBuilder)
+
+		// if ok {
+		// 	fieldsWithResolvers = append(fieldsWithResolvers, dbKey)
+		// } else {
+		// TODO builders
+		val, err := fieldInfo.Field.Format(fieldInfo.Value)
+		spew.Dump(val, err)
+		if err != nil {
+			return err
+		}
+		b.SetField(dbKey, val)
+
+		//		}
+
+	}
+	return nil
+}
+
 func (b *EntMutationBuilder) Validate() error {
+	// TODO...
+	return nil
+	// this isn't being called at alll
+	// TODO...
+	// This will be handled above and eliminated from here...
+	// It doesn't handle calling things on its own
 	if b.validated {
 		return nil
 	}
+
 	if b.FieldMap == nil && b.fields != nil {
 		return errors.New("MutationBuilder has no fieldMap")
 	}
@@ -375,29 +458,22 @@ func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, e
 	// a multi-get version of the API
 	// this is too hard.
 	wg.Add(len(b.edgeTypes))
-	var m sync.Mutex
 	edges := make(map[ent.EdgeType]*ent.AssocEdgeData)
-	var errs []error
+	var sErr syncerr.Error
 	for edgeType := range b.edgeTypes {
 		edgeType := edgeType
 		f := func(edgeType ent.EdgeType) {
 			defer wg.Done()
 			edge, err := ent.GetEdgeInfo(edgeType, nil)
-			m.Lock()
-			defer m.Unlock()
-			if err != nil {
-				errs = append(errs, err)
-			}
+			sErr.Append(err)
 			edges[edgeType] = edge
 		}
 		go f(edgeType)
 	}
 	wg.Wait()
 
-	if len(errs) != 0 {
-		// TODO return more than one. we need an errSlice that's an error
-		// maybe use same logic in privacy API to store PrivacyErrors that are expected but we don't wanna discard or treat as the main error
-		return nil, errs[0]
+	if err := sErr.Err(); err != nil {
+		return nil, err
 	}
 
 	return edges, nil

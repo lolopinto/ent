@@ -47,6 +47,7 @@ func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
     v,
     {{writeOperation $action}},
     action.getFieldMap(),
+    action.requiredFields(),
     {{ if $action.MutatingExistingObject -}}
       actions.ExistingEnt({{$nodeInfo.NodeInstance}}),
     {{ end -}}
@@ -179,6 +180,16 @@ func (action *{{$actionName}}) getFieldMap() ent.ActionFieldMap {
         {{end -}}
       },
     {{end -}}
+  }
+}
+
+func (action *{{$actionName}}) requiredFields() []string {
+  return []string{
+  {{ range $field := $fields -}}
+    {{ if requiredField $action $field.Field -}}
+      {{$field.QuotedFieldName}},
+    {{ end -}}
+  {{end -}}  
   }
 }
 

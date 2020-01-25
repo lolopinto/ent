@@ -28,6 +28,7 @@
 {{ $fieldInfos := fieldInfos .FieldInfo.TopLevelFields }}
 
 type {{$builderName}} struct {
+  requiredFields []string 
   {{if .HasAssocGroups -}}
     builder *actions.EdgeGroupMutationBuilder
   {{ else -}}
@@ -47,10 +48,18 @@ type {{$builderName}} struct {
 func NewMutationBuilder(
   v viewer.ViewerContext,
   operation ent.WriteOperation,
+  // TODO kill fieldMap
   fieldMap ent.ActionFieldMap,
+  requiredFields []string, 
   opts ...func(*actions.EntMutationBuilder),
 ) *{{$builderName}} {
   var {{.NodeInstance}} models.{{.Node}}
+
+  ret := &{{$builderName}}{
+    requiredFields: requiredFields,
+    {{.NodeInstance}}: &{{.NodeInstance}},
+  }
+  opts = append(opts, actions.BuildFields(ret.buildFields))
   b := actions.NewMutationBuilder(
     v, 
     operation,
@@ -58,6 +67,7 @@ func NewMutationBuilder(
     {{.EntConfig}},
     opts...,
   )
+  // TODO kill when this is all done
   b.FieldMap = fieldMap
   {{ if .HasAssocGroups -}}
    b2 := actions.NewEdgeGroupMutationBuilder(
@@ -69,21 +79,20 @@ func NewMutationBuilder(
      {{end -}}
    )
   {{end -}}
-  return &{{$builderName}}{
-    {{ if .HasAssocGroups -}}
-      builder: b2,
-    {{ else -}}
-      builder: b,
-    {{ end -}}
-    {{.NodeInstance}}: &{{.NodeInstance}},
-  }
+
+  {{ if .HasAssocGroups -}}
+    ret.builder = b2
+  {{ else -}}
+    ret.builder = b
+  {{ end -}}
+  return ret
 }
 
 {{ range $field := $fieldInfos -}}
   {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
 func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$builderName}} {
   b.{{$fieldInstanceName}} = &{{$field.InstanceName}}
-  b.builder.SetField("{{$field.FieldName}}", {{$field.InstanceName}})
+{{/* TODO sort fields */ -}}
   {{$inverseEdge := $field.InverseEdge -}}
   {{ if $inverseEdge -}} 
     {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
@@ -96,7 +105,8 @@ func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {
   {{ if $field.Field.IDField -}}
   func (b *{{$builderName}}) {{$field.SetterMethodName}}Builder(builder ent.MutationBuilder) *{{$builderName}} {
     b.{{$fieldInstanceName}}Builder = builder
-    b.builder.SetField("{{$field.FieldName}}", builder)
+    // this line not needed anymore
+//    b.builder.SetField("{{$field.FieldName}}", builder)
     {{$inverseEdge := $field.InverseEdge -}}
     {{ if $inverseEdge -}} 
       {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
@@ -111,6 +121,10 @@ func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {
   {{ if $field.Field.Nullable -}}
   func (b *{{$builderName}}) {{$field.NullableSetterMethodName}}({{$field.InstanceName}} *{{$field.InstanceType}}) *{{$builderName}} {
     {{/* TODO need to eventually have the builder know if this was set to null */ -}}
+    // TODO need to handle all this
+    // Not part of address so can deal with this later
+    // make address field nullable!
+    // Address 2!
     b.{{$fieldInstanceName}} = {{$field.InstanceName}}
     if {{$field.InstanceName}} == nil {
       b.builder.SetField("{{$field.FieldName}}", nil)
@@ -226,10 +240,6 @@ func (b *{{$builderName}}) SetIDValue(idValue string, nodeType ent.NodeType) *{{
 }
 {{end -}}
 
-func (b *{{$builderName}}) Validate() error {
-  return b.builder.Validate()
-}
-
 func (b *{{$builderName}}) GetViewer() viewer.ViewerContext {
   return b.builder.GetViewer()
 }
@@ -265,8 +275,53 @@ func (b *{{$builderName}}) SetObservers(observers []actions.Observer) error {
   return nil
 }
 
+// TODO rename from GetChangeset to Build()
+// A Builder builds.
 func (b *{{$builderName}}) GetChangeset() (ent.Changeset, error) {
   return b.builder.GetChangeset()
+}
+
+// Call Validate (should be Valid) at any point to validate that builder is valid
+func (b *{{$builderName}}) Validate() error {
+  return b.builder.Validate()
+}
+
+func (b *{{$builderName}}) buildFields() ent.ActionFieldMap2 {
+  m := make(map[string]bool)
+  for _, f := range b.requiredFields {
+    m[f] = true
+  }
+  
+  fieldMap := b.GetFields()
+  fields := make(ent.ActionFieldMap2)
+  addField := func(key string, val interface{}) {
+    fields[key] = &ent.FieldInfo{
+      Field: fieldMap[key],
+      Value: val,
+    }
+  }
+
+  //  SetField is done at the end after transform
+  // TODO no way to clear anymore 
+  // map[FieldName] => Field | value
+  // that's what we're passing down 
+  
+  // TODO nillable fields
+  // TODO builder fields
+  // Need to have Id fields be fine with Builder 
+
+  // if required or field is nil, always add the field 
+  {{ range $field := $fieldInfos -}}
+    if b.{{$field.InstanceName}} != nil {
+      addField("{{$field.FieldName}}", *b.{{$field.InstanceName}})
+    } else if m["{{$field.FieldName}}"] { // nil but required
+      {{/*passing nil here to handle go wierdness with nil comparisons */ -}}
+      addField("{{$field.FieldName}}", nil)
+    }
+
+  {{end -}}
+
+  return fields
 }
 
 func (b *{{$builderName}}) ExistingEnt() ent.Entity {
@@ -285,8 +340,25 @@ func (b *{{$builderName}}) GetPlaceholderID() string {
 	return b.builder.GetPlaceholderID()
 }
 
-var _ ent.MutationBuilder = &{{$builderName}}{}
+// GetFields returns the field configuration for this mutation builder
+// For now, always take it from config because we assume it's always from there
+// TODO do for things using old API
+func (b *{{$builderName}}) GetFields() ent.FieldMap {
+  // config supports GetFields use it
+  // TODO flag
+  return ({{.EntConfig}}).GetFields()
 
+  // we need to eventually know difference between set to nil vs nil value
+  // set to nil is when we care about passing nil to Field.Format() 
+  // TODO
+  // so for now, we go through each field, if not null, we call Valid() and Format() and everything else on them
+  // if nil, leave as-is
+  // we need a list of required fields...
+}
+
+
+
+var _ ent.MutationBuilder = &{{$builderName}}{}
 
 {{$triggerInterface := printf "%sTrigger" .Node }}
 

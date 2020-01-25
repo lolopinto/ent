@@ -32,6 +32,7 @@ func DeleteAddress(v viewer.ViewerContext, address *models.Address) *DeleteAddre
 		v,
 		ent.DeleteOperation,
 		action.getFieldMap(),
+		action.requiredFields(),
 		actions.ExistingEnt(address),
 	)
 	action.builder = builder
@@ -73,6 +74,10 @@ func (action *DeleteAddressAction) ExistingEnt() ent.Entity {
 // getFieldMap returns the fields that could be edited in this mutation
 func (action *DeleteAddressAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{}
+}
+
+func (action *DeleteAddressAction) requiredFields() []string {
+	return []string{}
 }
 
 // Validate returns an error if the current state of the action is not valid

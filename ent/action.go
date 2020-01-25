@@ -3,6 +3,7 @@ package ent
 import (
 	"fmt"
 
+	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/pkg/errors"
 )
@@ -46,11 +47,20 @@ type EdgeActionConfig struct {
 
 type EdgeActions []*EdgeActionConfig
 
+// TODO kill
 type MutatingFieldInfo struct {
 	DB       string
 	Required bool
 }
+
+// TODO kill
 type ActionFieldMap map[string]*MutatingFieldInfo
+
+type ActionFieldMap2 map[string]*FieldInfo
+type FieldInfo struct {
+	Field *field.Field
+	Value interface{}
+}
 
 type ActionErrorInfo struct {
 	ErrorMsg string

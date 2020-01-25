@@ -11,12 +11,14 @@ import (
 	"github.com/lolopinto/ent/ent/viewertesting"
 
 	"github.com/lolopinto/ent/internal/test_schema/models"
+	addressaction "github.com/lolopinto/ent/internal/test_schema/models/address/action"
 	contactaction "github.com/lolopinto/ent/internal/test_schema/models/contact/action"
 	eventaction "github.com/lolopinto/ent/internal/test_schema/models/event/action"
 	"github.com/lolopinto/ent/internal/test_schema/models/user/action"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -409,6 +411,64 @@ func (suite *generatedActionSuite) TestGetChangesetNoPermissions() {
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), c)
+}
+
+func (suite *generatedActionSuite) createAddress(v viewer.ViewerContext) *models.Address {
+	address, err := addressaction.CreateAddress(v).
+		SetStreetAddress("").
+		SetCity("Westminster").
+		SetState("London").
+		SetZip("Sw1A 1AA").
+		SetCountry("UK").
+		SetResidentNames([]string{
+			"The Queen",
+			"Prince Phillip",
+		}).Save()
+
+	require.Nil(suite.T(), err)
+
+	return address
+}
+
+func (suite *generatedActionSuite) TestActionWithFieldsMethod() {
+	v := viewer.LoggedOutViewer()
+
+	address := suite.createAddress(v)
+	// TODO nil vs zero!
+	assert.NotEqual(suite.T(), address.ID, "")
+	assert.Equal(suite.T(), "London", address.State)
+	assert.Len(suite.T(), address.ResidentNames, 2)
+}
+
+func (suite *generatedActionSuite) TestActionWithFieldsMethodMissingField() {
+	v := viewer.LoggedOutViewer()
+
+	_, err := addressaction.CreateAddress(v).
+		SetStreetAddress("").
+		SetCity("Westminster").
+		SetState("London").
+		SetZip("Sw1A 1AA").
+		SetResidentNames([]string{
+			"The Queen",
+			"Prince Phillip",
+		}).Save()
+
+	require.Error(suite.T(), err)
+}
+
+func (suite *generatedActionSuite) TestEditActionWithFieldsMethod() {
+	v := viewer.LoggedOutViewer()
+
+	address := suite.createAddress(v)
+	assert.Equal(suite.T(), address.StreetAddress, "")
+
+	address, err := addressaction.EditAddress(v, address).
+		SetStreetAddress("Buckingham Palace Road").
+		Save()
+
+	require.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), address.StreetAddress, "Buckingham Palace Road")
 }
 
 func TestGeneratedAction(t *testing.T) {
