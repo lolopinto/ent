@@ -28,6 +28,7 @@ type generatedActionSuite struct {
 
 func (suite *generatedActionSuite) SetupSuite() {
 	suite.Tables = []string{
+		"addresses",
 		"users",
 		"contacts",
 		"event_invited_edges",
@@ -60,10 +61,8 @@ func (suite *generatedActionSuite) TestCreation() {
 	// we're allowed to create contact because it's in the process of creating a user
 	user := suite.createUser()
 
-	// if we didn't load user yet, don't continue because more crap fails
-	if user.ID == "" {
-		return
-	}
+	// TODO zero vs nil
+	require.NotEqual(suite.T(), user.ID, "")
 
 	// reload the user for privacy reasons.
 	// confirm that creating a user also creates the contact since UserCreateContactTrigger is part of this action

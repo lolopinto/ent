@@ -32,6 +32,7 @@ func CreateContact(v viewer.ViewerContext) *CreateContactAction {
 		v,
 		ent.InsertOperation,
 		action.getFieldMap(),
+		action.requiredFields(),
 	)
 	action.builder = builder
 	return action
@@ -166,6 +167,15 @@ func (action *CreateContactAction) getFieldMap() ent.ActionFieldMap {
 			DB:       "pi",
 			Required: false,
 		},
+	}
+}
+
+func (action *CreateContactAction) requiredFields() []string {
+	return []string{
+		"EmailAddress",
+		"FirstName",
+		"LastName",
+		"UserID",
 	}
 }
 

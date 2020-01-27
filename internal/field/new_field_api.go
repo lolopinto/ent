@@ -16,6 +16,7 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 	elts := astparser.GetEltsInFunc(fn)
 
 	fieldInfo := newFieldInfo()
+	fieldInfo.getFieldsFn = true
 
 	var wg sync.WaitGroup
 	wg.Add(len(elts))

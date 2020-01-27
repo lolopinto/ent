@@ -32,6 +32,7 @@ func CreateUser(v viewer.ViewerContext) *CreateUserAction {
 		v,
 		ent.InsertOperation,
 		action.getFieldMap(),
+		action.requiredFields(),
 	)
 	action.builder = builder
 	return action
@@ -118,6 +119,14 @@ func (action *CreateUserAction) getFieldMap() ent.ActionFieldMap {
 			DB:       "bio",
 			Required: false,
 		},
+	}
+}
+
+func (action *CreateUserAction) requiredFields() []string {
+	return []string{
+		"EmailAddress",
+		"FirstName",
+		"LastName",
 	}
 }
 

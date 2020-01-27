@@ -31,6 +31,7 @@ type FieldInfo struct {
 	// really only used in tests
 	NonEntFields []*NonEntField
 	m            sync.Mutex
+	getFieldsFn  bool
 }
 
 func (fieldInfo *FieldInfo) addField(f *Field) {
@@ -38,6 +39,13 @@ func (fieldInfo *FieldInfo) addField(f *Field) {
 	defer fieldInfo.m.Unlock()
 	fieldInfo.Fields = append(fieldInfo.Fields, f)
 	fieldInfo.fieldMap[f.FieldName] = f
+}
+
+// GetFieldsFn returns a boolean which when returns true indicates that
+// the Node used the GetFields() API in the config to define fields as
+// opposed to fields in a struct
+func (fieldInfo *FieldInfo) GetFieldsFn() bool {
+	return fieldInfo.getFieldsFn
 }
 
 func (fieldInfo *FieldInfo) GetFieldByName(fieldName string) *Field {

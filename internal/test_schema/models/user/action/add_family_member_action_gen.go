@@ -32,6 +32,7 @@ func AddFamilyMember(v viewer.ViewerContext, user *models.User) *AddFamilyMember
 		v,
 		ent.EditOperation,
 		action.getFieldMap(),
+		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
 	action.builder = builder
@@ -85,6 +86,10 @@ func (action *AddFamilyMemberAction) AddFamilyMemberID(userID string, options ..
 // getFieldMap returns the fields that could be edited in this mutation
 func (action *AddFamilyMemberAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{}
+}
+
+func (action *AddFamilyMemberAction) requiredFields() []string {
+	return []string{}
 }
 
 // Validate returns an error if the current state of the action is not valid

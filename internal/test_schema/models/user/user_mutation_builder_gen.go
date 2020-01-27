@@ -7,27 +7,38 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
+	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 )
 
 type UserMutationBuilder struct {
-	builder      *actions.EntMutationBuilder
-	user         *models.User
-	emailAddress *string
-	firstName    *string
-	lastName     *string
-	bio          *string
+	requiredFields []string
+	builder        *actions.EntMutationBuilder
+	user           *models.User
+	emailAddress   *string
+	firstName      *string
+	lastName       *string
+	bio            *string
+	clearbio       bool
 }
 
 func NewMutationBuilder(
 	v viewer.ViewerContext,
 	operation ent.WriteOperation,
+	// TODO kill fieldMap
 	fieldMap ent.ActionFieldMap,
+	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *UserMutationBuilder {
 	var user models.User
+
+	ret := &UserMutationBuilder{
+		requiredFields: requiredFields,
+		user:           &user,
+	}
+	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
@@ -35,44 +46,35 @@ func NewMutationBuilder(
 		&configs.UserConfig{},
 		opts...,
 	)
+	// TODO kill when this is all done
 	b.FieldMap = fieldMap
-	return &UserMutationBuilder{
-		builder: b,
-		user:    &user,
-	}
+	ret.builder = b
+	return ret
 }
 
 func (b *UserMutationBuilder) SetEmailAddress(emailAddress string) *UserMutationBuilder {
 	b.emailAddress = &emailAddress
-	b.builder.SetField("EmailAddress", emailAddress)
 	return b
 }
 
 func (b *UserMutationBuilder) SetFirstName(firstName string) *UserMutationBuilder {
 	b.firstName = &firstName
-	b.builder.SetField("FirstName", firstName)
 	return b
 }
 
 func (b *UserMutationBuilder) SetLastName(lastName string) *UserMutationBuilder {
 	b.lastName = &lastName
-	b.builder.SetField("LastName", lastName)
 	return b
 }
 
 func (b *UserMutationBuilder) SetBio(bio string) *UserMutationBuilder {
 	b.bio = &bio
-	b.builder.SetField("Bio", bio)
 	return b
 }
 
 func (b *UserMutationBuilder) SetNilableBio(bio *string) *UserMutationBuilder {
 	b.bio = bio
-	if bio == nil {
-		b.builder.SetField("Bio", nil)
-	} else {
-		b.builder.SetField("Bio", *bio)
-	}
+	b.clearbio = (bio == nil)
 	return b
 }
 
@@ -368,10 +370,6 @@ func (b *UserMutationBuilder) RemoveDeclinedEventID(eventID string) *UserMutatio
 	return b
 }
 
-func (b *UserMutationBuilder) Validate() error {
-	return b.builder.Validate()
-}
-
 func (b *UserMutationBuilder) GetViewer() viewer.ViewerContext {
 	return b.builder.GetViewer()
 }
@@ -405,8 +403,60 @@ func (b *UserMutationBuilder) SetObservers(observers []actions.Observer) error {
 	return nil
 }
 
+// TODO rename from GetChangeset to Build()
+// A Builder builds.
 func (b *UserMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	return b.builder.GetChangeset()
+}
+
+// Call Validate (should be Valid) at any point to validate that builder is valid
+func (b *UserMutationBuilder) Validate() error {
+	return b.builder.Validate()
+}
+
+func (b *UserMutationBuilder) buildFields() ent.ActionFieldMap2 {
+	m := make(map[string]bool)
+	for _, f := range b.requiredFields {
+		m[f] = true
+	}
+
+	fieldMap := b.GetFields()
+	fields := make(ent.ActionFieldMap2)
+	addField := func(key string, val interface{}) {
+		fields[key] = &ent.FieldInfo{
+			Field: fieldMap[key],
+			Value: val,
+		}
+	}
+
+	//  SetField is done at the end after transform
+	// map[FieldName] => Field | value
+	// that's what we're passing down
+
+	// Need to have Id fields be fine with Builder
+
+	// if required or field is nil, always add the field
+	if b.emailAddress != nil {
+		addField("EmailAddress", *b.emailAddress)
+	} else if m["EmailAddress"] { // nil but required
+		addField("EmailAddress", nil)
+	}
+	if b.firstName != nil {
+		addField("FirstName", *b.firstName)
+	} else if m["FirstName"] { // nil but required
+		addField("FirstName", nil)
+	}
+	if b.lastName != nil {
+		addField("LastName", *b.lastName)
+	} else if m["LastName"] { // nil but required
+		addField("LastName", nil)
+	}
+	if b.bio != nil {
+		addField("Bio", *b.bio)
+	} else if m["Bio"] || b.clearbio { // required or value cleared
+		addField("Bio", nil)
+	}
+	return fields
 }
 
 func (b *UserMutationBuilder) ExistingEnt() ent.Entity {
@@ -423,6 +473,24 @@ func (b *UserMutationBuilder) GetOperation() ent.WriteOperation {
 
 func (b *UserMutationBuilder) GetPlaceholderID() string {
 	return b.builder.GetPlaceholderID()
+}
+
+// GetFields returns the field configuration for this mutation builder
+// For now, always take it from config because we assume it's always from there
+// TODO do for things using old API
+func (b *UserMutationBuilder) GetFields() ent.FieldMap {
+	return ent.FieldMap{
+		"EmailAddress": field.F(field.Noop(), field.DB("email_address")),
+		"FirstName":    field.F(field.Noop(), field.DB("first_name")),
+		"LastName":     field.F(field.Noop(), field.DB("last_name")),
+		"Bio":          field.F(field.Noop(), field.DB("bio"), field.Nullable()),
+	}
+	// we need to eventually know difference between set to nil vs nil value
+	// set to nil is when we care about passing nil to Field.Format()
+	// TODO
+	// so for now, we go through each field, if not null, we call Valid() and Format() and everything else on them
+	// if nil, leave as-is
+	// we need a list of required fields...
 }
 
 var _ ent.MutationBuilder = &UserMutationBuilder{}

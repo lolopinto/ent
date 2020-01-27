@@ -20,6 +20,7 @@ type castSuite struct {
 
 func (suite *castSuite) SetupSuite() {
 	suite.Tables = []string{
+		"addresses",
 		"users",
 		"event_invited_edges",
 		"events",
@@ -209,6 +210,7 @@ func (suite *castSuite) TestToFloat() {
 }
 
 func (suite *castSuite) TestJSONStrings() {
+	// TODO broke cast with buildFieldsFn changes
 	residentNames := []string{"The Queen"}
 	address := testingutils.CreateTestAddress(suite.T(), residentNames)
 

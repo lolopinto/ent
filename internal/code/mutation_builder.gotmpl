@@ -2,6 +2,7 @@
 
 {{ reserveImport "github.com/lolopinto/ent/ent" }}
 {{ reserveImport "github.com/lolopinto/ent/ent/actions" }}
+{{ reserveImport "github.com/lolopinto/ent/ent/field" }}
 {{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
 
 {{define "idField"}}
@@ -41,6 +42,9 @@ type {{$builderName}} struct {
     {{ if $field.Field.IDField -}}
       {{$fieldInstanceName}}Builder ent.MutationBuilder
     {{ end -}}
+    {{ if $field.Field.Nullable -}}
+      clear{{$fieldInstanceName}} bool
+    {{end -}}
 
   {{end -}}
 }
@@ -120,17 +124,8 @@ func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {
 
   {{ if $field.Field.Nullable -}}
   func (b *{{$builderName}}) {{$field.NullableSetterMethodName}}({{$field.InstanceName}} *{{$field.InstanceType}}) *{{$builderName}} {
-    {{/* TODO need to eventually have the builder know if this was set to null */ -}}
-    // TODO need to handle all this
-    // Not part of address so can deal with this later
-    // make address field nullable!
-    // Address 2!
     b.{{$fieldInstanceName}} = {{$field.InstanceName}}
-    if {{$field.InstanceName}} == nil {
-      b.builder.SetField("{{$field.FieldName}}", nil)
-    } else {
-      b.builder.SetField("{{$field.FieldName}}", *{{$field.InstanceName}})
-    }
+    b.clear{{$field.InstanceName}} = ({{$field.InstanceName}} == nil)
     {{$inverseEdge := $field.InverseEdge -}}
     {{ if $inverseEdge -}} 
       {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
@@ -302,22 +297,30 @@ func (b *{{$builderName}}) buildFields() ent.ActionFieldMap2 {
   }
 
   //  SetField is done at the end after transform
-  // TODO no way to clear anymore 
   // map[FieldName] => Field | value
   // that's what we're passing down 
   
-  // TODO nillable fields
-  // TODO builder fields
   // Need to have Id fields be fine with Builder 
 
   // if required or field is nil, always add the field 
   {{ range $field := $fieldInfos -}}
     if b.{{$field.InstanceName}} != nil {
       addField("{{$field.FieldName}}", *b.{{$field.InstanceName}})
-    } else if m["{{$field.FieldName}}"] { // nil but required
+      {{if $field.Field.Nullable -}}
+        } else if m["{{$field.FieldName}}"] || b.clear{{$field.InstanceName}}{ // required or value cleared
+      {{else -}}
+        } else if m["{{$field.FieldName}}"] { // nil but required
+      {{ end -}}
       {{/*passing nil here to handle go wierdness with nil comparisons */ -}}
       addField("{{$field.FieldName}}", nil)
     }
+    {{if $field.Field.IDField -}}
+    {{/* doing this after because we can have this override the nil above while keeping this simple... */ -}}
+    if b.{{$field.InstanceName}}Builder != nil {
+      addField("{{$field.FieldName}}", b.{{$field.InstanceName}}Builder)
+    }
+    {{end -}}
+      
 
   {{end -}}
 
@@ -344,9 +347,19 @@ func (b *{{$builderName}}) GetPlaceholderID() string {
 // For now, always take it from config because we assume it's always from there
 // TODO do for things using old API
 func (b *{{$builderName}}) GetFields() ent.FieldMap {
-  // config supports GetFields use it
-  // TODO flag
-  return ({{.EntConfig}}).GetFields()
+  {{ if .FieldInfo.GetFieldsFn -}}
+    return ({{.EntConfig}}).GetFields()
+  {{ else -}}
+    return ent.FieldMap{
+    {{ range $field := $fieldInfos -}}
+      {{if $field.Field.Nullable -}}
+        {{$field.QuotedFieldName}}: field.F(field.Noop(), field.DB({{$field.QuotedDBName}}), field.Nullable()),
+      {{else -}}
+        {{$field.QuotedFieldName}}: field.F(field.Noop(), field.DB({{$field.QuotedDBName}})),
+      {{end -}}
+    {{end -}}
+    }
+  {{ end -}}
 
   // we need to eventually know difference between set to nil vs nil value
   // set to nil is when we care about passing nil to Field.Format() 

@@ -275,6 +275,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	// TODO more validators run here
 
 	b.formatFields(fieldInfos)
+	spew.Dump("sss")
 
 	// should not be able to get a changeset for an invalid builder
 	if !b.validated {
@@ -316,6 +317,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 				fieldsWithResolvers = append(fieldsWithResolvers, dbKey)
 			}
 		}
+		spew.Dump(fields)
 		// only worth doing it if there are fields
 		// TODO shouldn't do a write if len(fields) == 0
 		// need to change the code to always load the user after the write tho...
@@ -368,16 +370,22 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 }
 
 func (b *EntMutationBuilder) validate() (ent.ActionFieldMap2, error) {
+	spew.Dump(b.buildFieldsFn)
 	if b.buildFieldsFn == nil {
 		return nil, nil
 	}
+	// hmm, can't run validators until we get everything because we need
+
 	// gather fieldInfos, validate as needed and then return
 	fieldInfos := b.buildFieldsFn()
 	for fieldName, fieldInfo := range fieldInfos {
+		spew.Dump(fieldName, fieldInfo.Value)
 		if err := fieldInfo.Field.Valid(fieldName, fieldInfo.Value); err != nil {
+			spew.Dump("error", err)
 			return nil, err
 		}
 	}
+	spew.Dump("end")
 	return fieldInfos, nil
 }
 
@@ -386,8 +394,11 @@ func (b *EntMutationBuilder) formatFields(fieldInfos ent.ActionFieldMap2) error 
 	//	var fieldsWithResolvers []string
 
 	// this is also where default values will be set eventually
+	spew.Dump(fieldInfos)
 	for fieldName, fieldInfo := range fieldInfos {
 		dbKey := fieldInfo.Field.DBKey(fieldName)
+		spew.Dump(dbKey)
+		// need builder resolving and nillable resolving at the same time because of user!!
 		//		builder, ok := fieldInfo.Value.(ent.MutationBuilder)
 
 		// if ok {

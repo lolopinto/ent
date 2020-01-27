@@ -32,6 +32,7 @@ func EditUser(v viewer.ViewerContext, user *models.User) *EditUserAction {
 		v,
 		ent.EditOperation,
 		action.getFieldMap(),
+		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
 	action.builder = builder
@@ -120,6 +121,10 @@ func (action *EditUserAction) getFieldMap() ent.ActionFieldMap {
 			Required: false,
 		},
 	}
+}
+
+func (action *EditUserAction) requiredFields() []string {
+	return []string{}
 }
 
 // Validate returns an error if the current state of the action is not valid
