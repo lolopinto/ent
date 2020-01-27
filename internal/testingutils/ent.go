@@ -50,18 +50,18 @@ func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.Us
 
 func EditEvent(t *testing.T, event *models.Event, fields map[string]interface{}) *models.Event {
 	b := GetEventBuilder(ent.EditOperation, event)
-	setFields(b, fields)
+	// TODO
+	b.SetRawFields(fields)
 	return SaveEvent(t, b)
 }
 
 func CreateTestContact(t *testing.T, user *models.User, allowList ...*models.User) *models.Contact {
 	b := GetContactBuilder(ent.InsertOperation, nil)
-
-	setFields(b, map[string]interface{}{
-		"EmailAddress": util.GenerateRandEmail(),
-		"UserID":       user.ID,
-		"FirstName":    "first-name",
-		"LastName":     "last-name",
+	b.SetRawFields(map[string]interface{}{
+		"email_address": util.GenerateRandEmail(),
+		"user_id":       user.ID,
+		"first_name":    "first-name",
+		"last_name":     "last-name",
 	})
 	for _, user := range allowList {
 		b.AddOutboundEdge(models.ContactToAllowListEdge, user.ID, user.GetType())
@@ -75,20 +75,20 @@ func CreateTestAddress(t *testing.T, residentNames []string) *models.Address {
 	// have to manually marshall it because it's not going through ent framework
 	byt, err := json.Marshal(residentNames)
 	require.Nil(t, err)
-	setFields(b, map[string]interface{}{
-		"StreetAddress": "",
-		"City":          "Westminster",
-		"State":         "London",
-		"Zip":           "SW1A 1AA",
-		"Country":       "UK",
-		"ResidentNames": byt,
+	b.SetRawFields(map[string]interface{}{
+		"street_address": "",
+		"city":           "Westminster",
+		"State":          "London",
+		"zip":            "SW1A 1AA",
+		"country":        "UK",
+		"resident_names": byt,
 	})
 	return SaveAddress(t, b)
 }
 
 func EditContact(t *testing.T, contact *models.Contact, fields map[string]interface{}) *models.Contact {
 	b := GetContactBuilder(ent.EditOperation, contact)
-	setFields(b, fields)
+	b.SetRawFields(fields)
 	return SaveContact(t, b)
 }
 
@@ -122,7 +122,7 @@ func CreateEdge(t *testing.T, edge *ent.AssocEdgeData) {
 		&ent.AssocEdgeConfig{},
 		nil,
 	)
-	setFields(b, map[string]interface{}{
+	b.SetRawFields(map[string]interface{}{
 		"edge_type":         edge.EdgeType,
 		"inverse_edge_type": edge.InverseEdgeType,
 		"edge_table":        edge.EdgeTable,
@@ -141,14 +141,13 @@ func EditEdge(t *testing.T, edge *ent.AssocEdgeData) {
 		&ent.AssocEdgeConfig{},
 		edge,
 	)
-	setFields(b, map[string]interface{}{
+	b.SetRawFields(map[string]interface{}{
 		"edge_type":         edge.EdgeType,
 		"inverse_edge_type": edge.InverseEdgeType,
 		"edge_table":        edge.EdgeTable,
 		"edge_name":         edge.EdgeName,
 		"symmetric_edge":    edge.SymmetricEdge,
-	},
-	)
+	})
 	SaveBuilder(t, b)
 }
 
@@ -172,7 +171,7 @@ func GetUserBuilderWithFields(
 	fields map[string]interface{},
 ) *actions.EntMutationBuilder {
 	b := GetUserBuilder(operation, existingEnt)
-	setFields(b, fields)
+	b.SetRawFields(fields)
 	return b
 }
 
@@ -196,7 +195,7 @@ func GetEventBuilderwithFields(
 	fields map[string]interface{},
 ) *actions.EntMutationBuilder {
 	b := GetEventBuilder(operation, existingEnt)
-	setFields(b, fields)
+	b.SetRawFields(fields)
 	return b
 }
 
@@ -230,15 +229,16 @@ func GetAddressBuilder(
 
 func SaveBuilder(t *testing.T, b ent.MutationBuilder) {
 	// sad. todo come up with better long term approach for tests
-	emb, ok := b.(*actions.EntMutationBuilder)
-	if ok {
-		emb.FieldMap = getFieldMapFromFields(emb.Operation, emb.GetFields())
-	} else {
-		egmb, ok := b.(*actions.EdgeGroupMutationBuilder)
-		if ok {
-			egmb.FieldMap = getFieldMapFromFields(egmb.Operation, egmb.GetFields())
-		}
-	}
+	// TODO kill this
+	// emb, ok := b.(*actions.EntMutationBuilder)
+	// if ok {
+	// 	emb.FieldMap = getFieldMapFromFields(emb.Operation, emb.GetFields())
+	// } else {
+	// 	egmb, ok := b.(*actions.EdgeGroupMutationBuilder)
+	// 	if ok {
+	// 		egmb.FieldMap = getFieldMapFromFields(egmb.Operation, egmb.GetFields())
+	// 	}
+	// }
 	c, err := b.GetChangeset()
 	assert.Nil(t, err)
 	err = ent.SaveChangeset(c)
@@ -246,44 +246,40 @@ func SaveBuilder(t *testing.T, b ent.MutationBuilder) {
 }
 
 func SaveUser(t *testing.T, b ent.MutationBuilder) *models.User {
+	SaveBuilder(t, b)
 	if b.GetOperation() == ent.DeleteOperation {
-		SaveBuilder(t, b)
 		return nil
 	}
-	SaveBuilder(t, b)
 	user, ok := b.Entity().(*models.User)
 	assert.True(t, ok)
 	return user
 }
 
 func SaveEvent(t *testing.T, b ent.MutationBuilder) *models.Event {
+	SaveBuilder(t, b)
 	if b.GetOperation() == ent.DeleteOperation {
-		SaveBuilder(t, b)
 		return nil
 	}
-	SaveBuilder(t, b)
 	event, ok := b.Entity().(*models.Event)
 	assert.True(t, ok)
 	return event
 }
 
 func SaveContact(t *testing.T, b ent.MutationBuilder) *models.Contact {
+	SaveBuilder(t, b)
 	if b.GetOperation() == ent.DeleteOperation {
-		SaveBuilder(t, b)
 		return nil
 	}
-	SaveBuilder(t, b)
 	contact, ok := b.Entity().(*models.Contact)
 	assert.True(t, ok)
 	return contact
 }
 
 func SaveAddress(t *testing.T, b ent.MutationBuilder) *models.Address {
+	SaveBuilder(t, b)
 	if b.GetOperation() == ent.DeleteOperation {
-		SaveBuilder(t, b)
 		return nil
 	}
-	SaveBuilder(t, b)
 	address, ok := b.Entity().(*models.Address)
 	assert.True(t, ok)
 	return address
@@ -294,9 +290,9 @@ func GetDefaultUserBuilder(email string) *actions.EntMutationBuilder {
 		ent.InsertOperation,
 		nil,
 		map[string]interface{}{
-			"EmailAddress": email,
-			"FirstName":    "Ola",
-			"LastName":     "Okelola",
+			"email_address": email,
+			"first_name":    "Ola",
+			"last_name":     "Okelola",
 		},
 	)
 }
@@ -307,19 +303,10 @@ func GetDefaultEventFields(user *models.User) map[string]interface{} {
 
 func GetDefaultEventFieldsUserID(userID string) map[string]interface{} {
 	return map[string]interface{}{
-		"Name":      "Fun event",
-		"UserID":    userID,
-		"StartTime": time.Now(),
-		"Location":  "fun location!",
-	}
-}
-
-func setFields(
-	b *actions.EntMutationBuilder,
-	fields map[string]interface{},
-) {
-	for k, v := range fields {
-		b.SetField(k, v)
+		"name":       "Fun event",
+		"user_id":    userID,
+		"start_time": time.Now(),
+		"location":   "fun location!",
 	}
 }
 

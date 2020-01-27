@@ -210,7 +210,6 @@ func (suite *castSuite) TestToFloat() {
 }
 
 func (suite *castSuite) TestJSONStrings() {
-	// TODO broke cast with buildFieldsFn changes
 	residentNames := []string{"The Queen"}
 	address := testingutils.CreateTestAddress(suite.T(), residentNames)
 

@@ -25,7 +25,8 @@ type EntMutationBuilder struct {
 	// At that point, probably makes sense to have each generated Builder handle this.
 	FieldMap ent.ActionFieldMap
 	fields   map[string]interface{}
-	//	rawDBFields   map[string]interface{}
+	// TODO one of rawFields vs buildFieldsFn needed
+	rawDBFields   map[string]interface{}
 	edges         []*ent.EdgeOperation
 	edgeTypes     map[ent.EdgeType]bool
 	placeholderID string
@@ -95,7 +96,7 @@ func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}
 // TODO this may need to be private...
 // There needs to be a raw fields API where there's no fanciness
 // SetRawFields vs API with fields/builders/and the works
-func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
+func (b *EntMutationBuilder) setField(fieldName string, val interface{}) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -104,6 +105,13 @@ func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
 	}
 	b.fields[fieldName] = b.resolveFieldValue(fieldName, val)
 	b.flagWrite()
+}
+
+func (b *EntMutationBuilder) SetRawFields(m map[string]interface{}) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.rawDBFields = m
 }
 
 func (b *EntMutationBuilder) GetPlaceholderID() string {
@@ -274,7 +282,9 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 
 	// TODO more validators run here
 
-	b.formatFields(fieldInfos)
+	if err := b.formatFields(fieldInfos); err != nil {
+		return nil, err
+	}
 	spew.Dump("sss")
 
 	// should not be able to get a changeset for an invalid builder
@@ -301,20 +311,20 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		// TODO how do we format placeholders??
 
 		// take the fields and convert to db format!
-		fields := make(map[string]interface{})
+		fields := b.rawDBFields
 		var fieldsWithResolvers []string
-		for dbKey, value := range b.fields {
+		if fields == nil {
+			// TODO consolidate with format fields so we're only running this logic once...
+			fields = make(map[string]interface{})
+			for dbKey, value := range b.fields {
 
-			// fieldInfo, ok := b.FieldMap[fieldName]
-			// if !ok {
-			// 	return nil, fmt.Errorf("invalid field %s passed ", fieldName)
-			// }
-			builder, ok := value.(ent.MutationBuilder)
+				builder, ok := value.(ent.MutationBuilder)
 
-			fields[dbKey] = value
-			if ok {
-				fields[dbKey] = builder.GetPlaceholderID()
-				fieldsWithResolvers = append(fieldsWithResolvers, dbKey)
+				fields[dbKey] = value
+				if ok {
+					fields[dbKey] = builder.GetPlaceholderID()
+					fieldsWithResolvers = append(fieldsWithResolvers, dbKey)
+				}
 			}
 		}
 		spew.Dump(fields)
@@ -410,7 +420,7 @@ func (b *EntMutationBuilder) formatFields(fieldInfos ent.ActionFieldMap2) error 
 		if err != nil {
 			return err
 		}
-		b.SetField(dbKey, val)
+		b.setField(dbKey, val)
 
 		//		}
 
@@ -469,6 +479,7 @@ func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, e
 	// a multi-get version of the API
 	// this is too hard.
 	wg.Add(len(b.edgeTypes))
+	var m sync.Mutex
 	edges := make(map[ent.EdgeType]*ent.AssocEdgeData)
 	var sErr syncerr.Error
 	for edgeType := range b.edgeTypes {
@@ -477,6 +488,8 @@ func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, e
 			defer wg.Done()
 			edge, err := ent.GetEdgeInfo(edgeType, nil)
 			sErr.Append(err)
+			m.Lock()
+			defer m.Unlock()
 			edges[edgeType] = edge
 		}
 		go f(edgeType)
