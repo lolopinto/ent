@@ -27,10 +27,7 @@ func (a *createContactAction) GetViewer() viewer.ViewerContext {
 }
 
 func (a *createContactAction) GetBuilder() ent.MutationBuilder {
-	for k, v := range a.getFields() {
-		a.builder.SetField(k, v)
-	}
-	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.getFields())
+	a.builder.SetRawFields(a.getFields())
 	return a.builder
 }
 
@@ -112,11 +109,13 @@ func (trigger *ContactCreateEmailTrigger) GetChangeset() (ent.Changeset, error) 
 		&contactEmail,
 		&configs.ContactEmailConfig{},
 	)
-	builder.SetField("EmailAddress", util.GenerateRandEmail())
-	builder.SetField("Label", "main email")
-	builder.SetField("ContactID", trigger.Builder)
-
-	builder.FieldMap = getFieldMapFromFields(builder.Operation, builder.GetFields())
+	builder.SetRawFields(map[string]interface{}{
+		"email_address": util.GenerateRandEmail(),
+		"label":         "main email",
+		"contact_id":    trigger.Builder,
+		// now this is where we need to combine things
+		// TODO for dependencies and other things
+	})
 
 	return builder.GetChangeset()
 }

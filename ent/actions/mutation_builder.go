@@ -114,6 +114,16 @@ func (b *EntMutationBuilder) SetRawFields(m map[string]interface{}) {
 	b.rawDBFields = m
 }
 
+func (b *EntMutationBuilder) OverrideRawField(key string, val interface{}) {
+	if b.rawDBFields == nil {
+		panic("cannot call OverideRawField without having already previouslyset it")
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.rawDBFields[key] = val
+}
+
 func (b *EntMutationBuilder) GetPlaceholderID() string {
 	return b.placeholderID
 }

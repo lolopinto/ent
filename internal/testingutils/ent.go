@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewertesting"
@@ -228,17 +227,6 @@ func GetAddressBuilder(
 }
 
 func SaveBuilder(t *testing.T, b ent.MutationBuilder) {
-	// sad. todo come up with better long term approach for tests
-	// TODO kill this
-	// emb, ok := b.(*actions.EntMutationBuilder)
-	// if ok {
-	// 	emb.FieldMap = getFieldMapFromFields(emb.Operation, emb.GetFields())
-	// } else {
-	// 	egmb, ok := b.(*actions.EdgeGroupMutationBuilder)
-	// 	if ok {
-	// 		egmb.FieldMap = getFieldMapFromFields(egmb.Operation, egmb.GetFields())
-	// 	}
-	// }
 	c, err := b.GetChangeset()
 	assert.Nil(t, err)
 	err = ent.SaveChangeset(c)
@@ -308,15 +296,4 @@ func GetDefaultEventFieldsUserID(userID string) map[string]interface{} {
 		"start_time": time.Now(),
 		"location":   "fun location!",
 	}
-}
-
-func getFieldMapFromFields(op ent.WriteOperation, fields map[string]interface{}) ent.ActionFieldMap {
-	ret := make(ent.ActionFieldMap)
-	for k := range fields {
-		ret[k] = &ent.MutatingFieldInfo{
-			DB:       strcase.ToSnake(k),
-			Required: op == ent.InsertOperation,
-		}
-	}
-	return ret
 }

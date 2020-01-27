@@ -7,12 +7,14 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
+	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 )
 
 type ContactEmailMutationBuilder struct {
+	requiredFields   []string
 	builder          *actions.EntMutationBuilder
 	contactEmail     *models.ContactEmail
 	emailAddress     *string
@@ -24,10 +26,18 @@ type ContactEmailMutationBuilder struct {
 func NewMutationBuilder(
 	v viewer.ViewerContext,
 	operation ent.WriteOperation,
+	// TODO kill fieldMap
 	fieldMap ent.ActionFieldMap,
+	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *ContactEmailMutationBuilder {
 	var contactEmail models.ContactEmail
+
+	ret := &ContactEmailMutationBuilder{
+		requiredFields: requiredFields,
+		contactEmail:   &contactEmail,
+	}
+	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
@@ -35,34 +45,31 @@ func NewMutationBuilder(
 		&configs.ContactEmailConfig{},
 		opts...,
 	)
+	// TODO kill when this is all done
 	b.FieldMap = fieldMap
-	return &ContactEmailMutationBuilder{
-		builder:      b,
-		contactEmail: &contactEmail,
-	}
+	ret.builder = b
+	return ret
 }
 
 func (b *ContactEmailMutationBuilder) SetEmailAddress(emailAddress string) *ContactEmailMutationBuilder {
 	b.emailAddress = &emailAddress
-	b.builder.SetField("EmailAddress", emailAddress)
 	return b
 }
 
 func (b *ContactEmailMutationBuilder) SetLabel(label string) *ContactEmailMutationBuilder {
 	b.label = &label
-	b.builder.SetField("Label", label)
 	return b
 }
 
 func (b *ContactEmailMutationBuilder) SetContactID(contactID string) *ContactEmailMutationBuilder {
 	b.contactID = &contactID
-	b.builder.SetField("ContactID", contactID)
 	return b
 }
 
 func (b *ContactEmailMutationBuilder) SetContactIDBuilder(builder ent.MutationBuilder) *ContactEmailMutationBuilder {
 	b.contactIDBuilder = builder
-	b.builder.SetField("ContactID", builder)
+	// this line not needed anymore
+	//    b.builder.SetField("ContactID", builder)
 	return b
 }
 
@@ -93,10 +100,6 @@ func (b *ContactEmailMutationBuilder) GetContactID() string {
 
 func (b *ContactEmailMutationBuilder) GetContactIDBuilder() ent.MutationBuilder {
 	return b.contactIDBuilder
-}
-
-func (b *ContactEmailMutationBuilder) Validate() error {
-	return b.builder.Validate()
 }
 
 func (b *ContactEmailMutationBuilder) GetViewer() viewer.ViewerContext {
@@ -132,8 +135,58 @@ func (b *ContactEmailMutationBuilder) SetObservers(observers []actions.Observer)
 	return nil
 }
 
+// TODO rename from GetChangeset to Build()
+// A Builder builds.
 func (b *ContactEmailMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	return b.builder.GetChangeset()
+}
+
+// Call Validate (should be Valid) at any point to validate that builder is valid
+func (b *ContactEmailMutationBuilder) Validate() error {
+	return b.builder.Validate()
+}
+
+func (b *ContactEmailMutationBuilder) buildFields() ent.ActionFieldMap2 {
+	m := make(map[string]bool)
+	for _, f := range b.requiredFields {
+		m[f] = true
+	}
+
+	fieldMap := b.GetFields()
+	fields := make(ent.ActionFieldMap2)
+	addField := func(key string, val interface{}) {
+		fields[key] = &ent.FieldInfo{
+			Field: fieldMap[key],
+			Value: val,
+		}
+	}
+
+	//  SetField is done at the end after transform
+	// map[FieldName] => Field | value
+	// that's what we're passing down
+
+	// Need to have Id fields be fine with Builder
+
+	// if required or field is nil, always add the field
+	if b.emailAddress != nil {
+		addField("EmailAddress", *b.emailAddress)
+	} else if m["EmailAddress"] { // nil but required
+		addField("EmailAddress", nil)
+	}
+	if b.label != nil {
+		addField("Label", *b.label)
+	} else if m["Label"] { // nil but required
+		addField("Label", nil)
+	}
+	if b.contactID != nil {
+		addField("ContactID", *b.contactID)
+	} else if m["ContactID"] { // nil but required
+		addField("ContactID", nil)
+	}
+	if b.contactIDBuilder != nil {
+		addField("ContactID", b.contactIDBuilder)
+	}
+	return fields
 }
 
 func (b *ContactEmailMutationBuilder) ExistingEnt() ent.Entity {
@@ -150,6 +203,23 @@ func (b *ContactEmailMutationBuilder) GetOperation() ent.WriteOperation {
 
 func (b *ContactEmailMutationBuilder) GetPlaceholderID() string {
 	return b.builder.GetPlaceholderID()
+}
+
+// GetFields returns the field configuration for this mutation builder
+// For now, always take it from config because we assume it's always from there
+// TODO do for things using old API
+func (b *ContactEmailMutationBuilder) GetFields() ent.FieldMap {
+	return ent.FieldMap{
+		"EmailAddress": field.F(field.Noop(), field.DB("email_address")),
+		"Label":        field.F(field.Noop(), field.DB("label")),
+		"ContactID":    field.F(field.Noop(), field.DB("contact_id")),
+	}
+	// we need to eventually know difference between set to nil vs nil value
+	// set to nil is when we care about passing nil to Field.Format()
+	// TODO
+	// so for now, we go through each field, if not null, we call Valid() and Format() and everything else on them
+	// if nil, leave as-is
+	// we need a list of required fields...
 }
 
 var _ ent.MutationBuilder = &ContactEmailMutationBuilder{}

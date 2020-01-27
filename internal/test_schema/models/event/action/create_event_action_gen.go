@@ -33,6 +33,7 @@ func CreateEvent(v viewer.ViewerContext) *CreateEventAction {
 		v,
 		ent.InsertOperation,
 		action.getFieldMap(),
+		action.requiredFields(),
 	)
 	action.builder = builder
 	return action
@@ -135,6 +136,15 @@ func (action *CreateEventAction) getFieldMap() ent.ActionFieldMap {
 			DB:       "location",
 			Required: true,
 		},
+	}
+}
+
+func (action *CreateEventAction) requiredFields() []string {
+	return []string{
+		"Name",
+		"UserID",
+		"StartTime",
+		"Location",
 	}
 }
 

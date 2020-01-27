@@ -23,7 +23,6 @@ func (a *eventAction) GetViewer() viewer.ViewerContext {
 }
 
 func (a *eventAction) GetBuilder() ent.MutationBuilder {
-	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.builder.GetFields())
 	return a.builder
 }
 
@@ -47,9 +46,7 @@ func eventCreateAction(
 	)
 	action.viewer = v
 	fields := testingutils.GetDefaultEventFieldsUserID(v.GetViewerID())
-	for k, v := range fields {
-		b.SetField(k, v)
-	}
+	b.SetRawFields(fields)
 	action.builder = b
 
 	return &action

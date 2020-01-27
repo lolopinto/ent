@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/privacy"
@@ -28,10 +27,7 @@ func (a *userAction) GetViewer() viewer.ViewerContext {
 }
 
 func (a *userAction) GetBuilder() ent.MutationBuilder {
-	for k, v := range a.getFields() {
-		a.builder.SetField(k, v)
-	}
-	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.getFields())
+	a.builder.SetRawFields(a.getFields())
 	return a.builder
 }
 
@@ -255,7 +251,7 @@ func (trigger *UserCreateEventTrigger) GetChangeset() (ent.Changeset, error) {
 		trigger.Builder.GetViewer(),
 	)
 	// override this from the default provided by eventCreateAction and make the UserID dependent on this builder
-	action.builder.SetField("UserID", trigger.Builder)
+	action.builder.OverrideRawField("user_id", trigger.Builder)
 
 	return actions.GetChangeset(action)
 }
@@ -330,16 +326,4 @@ func userDeleteAction(
 	action.builder = b
 
 	return action
-}
-
-func getFieldMapFromFields(op ent.WriteOperation, fields map[string]interface{}) ent.ActionFieldMap {
-	// copied from testingutils/ent.go
-	ret := make(ent.ActionFieldMap)
-	for k := range fields {
-		ret[k] = &ent.MutatingFieldInfo{
-			DB:       strcase.ToSnake(k),
-			Required: op == ent.InsertOperation,
-		}
-	}
-	return ret
 }

@@ -70,9 +70,15 @@ func (action *CreateAddressAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// SetZip sets the Zip while editing the Address ent
-func (action *CreateAddressAction) SetZip(zip string) *CreateAddressAction {
-	action.builder.SetZip(zip)
+// SetCity sets the City while editing the Address ent
+func (action *CreateAddressAction) SetCity(city string) *CreateAddressAction {
+	action.builder.SetCity(city)
+	return action
+}
+
+// SetResidentNames sets the ResidentNames while editing the Address ent
+func (action *CreateAddressAction) SetResidentNames(residentNames []string) *CreateAddressAction {
+	action.builder.SetResidentNames(residentNames)
 	return action
 }
 
@@ -82,9 +88,9 @@ func (action *CreateAddressAction) SetState(state string) *CreateAddressAction {
 	return action
 }
 
-// SetCity sets the City while editing the Address ent
-func (action *CreateAddressAction) SetCity(city string) *CreateAddressAction {
-	action.builder.SetCity(city)
+// SetZip sets the Zip while editing the Address ent
+func (action *CreateAddressAction) SetZip(zip string) *CreateAddressAction {
+	action.builder.SetZip(zip)
 	return action
 }
 
@@ -100,25 +106,23 @@ func (action *CreateAddressAction) SetCountry(country string) *CreateAddressActi
 	return action
 }
 
-// SetResidentNames sets the ResidentNames while editing the Address ent
-func (action *CreateAddressAction) SetResidentNames(residentNames []string) *CreateAddressAction {
-	action.builder.SetResidentNames(residentNames)
-	return action
-}
-
 // getFieldMap returns the fields that could be edited in this mutation
 func (action *CreateAddressAction) getFieldMap() ent.ActionFieldMap {
 	return ent.ActionFieldMap{
-		"Zip": &ent.MutatingFieldInfo{
-			DB:       "zip",
+		"City": &ent.MutatingFieldInfo{
+			DB:       "city",
+			Required: true,
+		},
+		"ResidentNames": &ent.MutatingFieldInfo{
+			DB:       "resident_names",
 			Required: true,
 		},
 		"State": &ent.MutatingFieldInfo{
 			DB:       "state",
 			Required: true,
 		},
-		"City": &ent.MutatingFieldInfo{
-			DB:       "city",
+		"Zip": &ent.MutatingFieldInfo{
+			DB:       "zip",
 			Required: true,
 		},
 		"StreetAddress": &ent.MutatingFieldInfo{
@@ -129,21 +133,17 @@ func (action *CreateAddressAction) getFieldMap() ent.ActionFieldMap {
 			DB:       "country",
 			Required: true,
 		},
-		"ResidentNames": &ent.MutatingFieldInfo{
-			DB:       "resident_names",
-			Required: true,
-		},
 	}
 }
 
 func (action *CreateAddressAction) requiredFields() []string {
 	return []string{
-		"Zip",
-		"State",
 		"City",
+		"ResidentNames",
+		"State",
+		"Zip",
 		"StreetAddress",
 		"Country",
-		"ResidentNames",
 	}
 }
 
