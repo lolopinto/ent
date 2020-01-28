@@ -44,7 +44,7 @@ type ActionWithTriggers interface {
 	Action
 	// TODO: dependencies between triggers needed. we'll do dependencies by creating something similar to MultiChangesets that takes 2 or more triggers that depend on each other
 	GetTriggers() []Trigger
-	SetBuilderOnTriggers([]Trigger) error
+	SetBuilderOnTriggers([]Trigger)
 }
 
 // Observer is something that's run after an action has been run
@@ -66,7 +66,7 @@ type Observer interface {
 type ActionWithObservers interface {
 	Action
 	GetObservers() []Observer
-	SetBuilderOnObservers([]Observer) error
+	SetBuilderOnObservers([]Observer)
 }
 
 type ChangesetWithObservers interface {
@@ -86,7 +86,7 @@ type Validator interface {
 type ActionWithValidators interface {
 	Action
 	GetValidators() []Validator
-	SetBuilderOnValidators([]Validator) error
+	SetBuilderOnValidators([]Validator)
 }
 
 func GetChangeset(action Action) (ent.Changeset, error) {
@@ -101,21 +101,15 @@ func GetChangeset(action Action) (ent.Changeset, error) {
 	// then validate state
 	// then changeset which runs the whole damn thing
 	if actionWithTriggers, ok := action.(ActionWithTriggers); ok {
-		if err := setBuilderOnTriggers(actionWithTriggers); err != nil {
-			return nil, err
-		}
+		setBuilderOnTriggers(actionWithTriggers)
 	}
 
 	if actionWithObservers, ok := action.(ActionWithObservers); ok {
-		if err := setBuilderOnObservers(actionWithObservers); err != nil {
-			return nil, err
-		}
+		setBuilderOnObservers(actionWithObservers)
 	}
 
 	if actionWithValidators, ok := action.(ActionWithValidators); ok {
-		if err := setBuilderOnValidators(actionWithValidators); err != nil {
-			return nil, err
-		}
+		setBuilderOnValidators(actionWithValidators)
 	}
 
 	if actionWithValidator, ok := action.(ActionWithValidator); ok {
@@ -168,14 +162,14 @@ func applyActionPermissions(action ActionWithPermissions) error {
 	return nil
 }
 
-func setBuilderOnTriggers(action ActionWithTriggers) error {
-	return action.SetBuilderOnTriggers(action.GetTriggers())
+func setBuilderOnTriggers(action ActionWithTriggers) {
+	action.SetBuilderOnTriggers(action.GetTriggers())
 }
 
-func setBuilderOnObservers(action ActionWithObservers) error {
-	return action.SetBuilderOnObservers(action.GetObservers())
+func setBuilderOnObservers(action ActionWithObservers) {
+	action.SetBuilderOnObservers(action.GetObservers())
 }
 
-func setBuilderOnValidators(action ActionWithValidators) error {
-	return action.SetBuilderOnValidators(action.GetValidators())
+func setBuilderOnValidators(action ActionWithValidators) {
+	action.SetBuilderOnValidators(action.GetValidators())
 }

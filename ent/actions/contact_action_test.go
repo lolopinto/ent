@@ -1,8 +1,6 @@
 package actions_test
 
 import (
-	"errors"
-
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
@@ -54,16 +52,32 @@ func (a *createContactAction) Entity() ent.Entity {
 	return &a.contact
 }
 
-func (a *createContactAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+func (a *createContactAction) setBuilder(v interface{}) {
+	callback, ok := v.(ContactCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(a.builder)
+	}
+}
+
+func (a *createContactAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
 	a.builder.SetTriggers(triggers)
 	for _, t := range triggers {
-		trigger, ok := t.(ContactCallbackWithBuilder)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(a.builder)
+		a.setBuilder(t)
 	}
-	return nil
+}
+
+func (a *createContactAction) SetBuilderOnObservers(observers []actions.Observer) {
+	a.builder.SetObservers(observers)
+	for _, o := range observers {
+		a.setBuilder(o)
+	}
+}
+
+func (a *createContactAction) SetBuilderOnValidators(validators []actions.Validator) {
+	a.builder.SetValidators(validators)
+	for _, v := range validators {
+		a.setBuilder(v)
+	}
 }
 
 func (a *createContactAction) GetChangeset() (ent.Changeset, error) {

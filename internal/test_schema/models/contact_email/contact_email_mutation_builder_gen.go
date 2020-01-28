@@ -3,8 +3,6 @@
 package contact_email
 
 import (
-	"errors"
-
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/field"
@@ -106,31 +104,6 @@ func (b *ContactEmailMutationBuilder) GetContactEmail() *models.ContactEmail {
 	return b.contactEmail
 }
 
-func (b *ContactEmailMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
-	b.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(ContactEmailTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(b)
-	}
-	return nil
-}
-
-// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the ContactEmailObserver
-// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
-func (b *ContactEmailMutationBuilder) SetObservers(observers []actions.Observer) error {
-	b.builder.SetObservers(observers)
-	for _, o := range observers {
-		observer, ok := o.(ContactEmailObserver)
-		if ok {
-			observer.SetBuilder(b)
-		}
-	}
-	return nil
-}
-
 // TODO rename from GetChangeset to Build()
 // A Builder builds.
 func (b *ContactEmailMutationBuilder) GetChangeset() (ent.Changeset, error) {
@@ -220,26 +193,45 @@ func (b *ContactEmailMutationBuilder) GetFields() ent.FieldMap {
 
 var _ ent.MutationBuilder = &ContactEmailMutationBuilder{}
 
-type ContactEmailTrigger interface {
+func (b *ContactEmailMutationBuilder) setBuilder(v interface{}) {
+	callback, ok := v.(ContactEmailCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(b)
+	}
+}
+
+// SetTriggers sets the builder on the triggers.
+func (b *ContactEmailMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		b.setBuilder(t)
+	}
+}
+
+// SetObservers sets the builder on the observers.
+func (b *ContactEmailMutationBuilder) SetObservers(observers []actions.Observer) {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		b.setBuilder(o)
+	}
+}
+
+// SetValidators sets the builder on validators.
+func (b *ContactEmailMutationBuilder) SetValidators(validators []actions.Validator) {
+	b.builder.SetValidators(validators)
+	for _, v := range validators {
+		b.setBuilder(v)
+	}
+}
+
+type ContactEmailCallbackWithBuilder interface {
 	SetBuilder(*ContactEmailMutationBuilder)
 }
 
-type ContactEmailMutationBuilderTrigger struct {
+type ContactEmailMutationCallback struct {
 	Builder *ContactEmailMutationBuilder
 }
 
-func (trigger *ContactEmailMutationBuilderTrigger) SetBuilder(b *ContactEmailMutationBuilder) {
-	trigger.Builder = b
-}
-
-type ContactEmailObserver interface {
-	SetBuilder(*ContactEmailMutationBuilder)
-}
-
-type ContactEmailMutationBuilderObserver struct {
-	Builder *ContactEmailMutationBuilder
-}
-
-func (observer *ContactEmailMutationBuilderObserver) SetBuilder(b *ContactEmailMutationBuilder) {
-	observer.Builder = b
+func (callback *ContactEmailMutationCallback) SetBuilder(b *ContactEmailMutationBuilder) {
+	callback.Builder = b
 }

@@ -347,6 +347,38 @@ func (suite *generatedActionSuite) TestDefaultValueTime() {
 	assert.False(suite.T(), t2.IsZero())
 }
 
+func (suite *generatedActionSuite) TestValidator() {
+	user := testingutils.CreateTestUser(suite.T())
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	event, err := eventaction.CreateEvent(v).
+		SetLocation("home").
+		SetStartTime(time.Now()).
+		SetEndTime(time.Now().Add(1 * time.Hour)).
+		SetUserID(user.ID).
+		SetName("fun event").
+		Save()
+
+	assert.NoError(suite.T(), err)
+
+	assert.False(suite.T(), event.EndTime == nil)
+}
+
+func (suite *generatedActionSuite) TestValidatorEndTimeInvalid() {
+	user := testingutils.CreateTestUser(suite.T())
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	_, err := eventaction.CreateEvent(v).
+		SetLocation("home").
+		SetStartTime(time.Now()).
+		SetEndTime(time.Now().Add(-1 * time.Hour)).
+		SetUserID(user.ID).
+		SetName("fun event").
+		Save()
+
+	assert.Error(suite.T(), err)
+}
+
 func (suite *generatedActionSuite) TestEventRSVP() {
 	user := testingutils.CreateTestUser(suite.T())
 	event := testingutils.CreateTestEvent(suite.T(), user)

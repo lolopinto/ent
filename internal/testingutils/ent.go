@@ -49,7 +49,6 @@ func CreateTestEvent(t *testing.T, user *models.User, invitedUsers ...*models.Us
 
 func EditEvent(t *testing.T, event *models.Event, fields map[string]interface{}) *models.Event {
 	b := GetEventBuilder(ent.EditOperation, event)
-	// TODO
 	b.SetRawFields(fields)
 	return SaveEvent(t, b)
 }

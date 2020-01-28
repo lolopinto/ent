@@ -3,8 +3,6 @@
 package address
 
 import (
-	"errors"
-
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
@@ -16,11 +14,11 @@ type AddressMutationBuilder struct {
 	requiredFields []string
 	builder        *actions.EntMutationBuilder
 	address        *models.Address
-	country        *string
-	streetAddress  *string
-	state          *string
 	residentNames  *[]string
+	streetAddress  *string
+	country        *string
 	zip            *string
+	state          *string
 	city           *string
 }
 
@@ -48,8 +46,8 @@ func NewMutationBuilder(
 	return ret
 }
 
-func (b *AddressMutationBuilder) SetCountry(country string) *AddressMutationBuilder {
-	b.country = &country
+func (b *AddressMutationBuilder) SetResidentNames(residentNames []string) *AddressMutationBuilder {
+	b.residentNames = &residentNames
 	return b
 }
 
@@ -58,13 +56,8 @@ func (b *AddressMutationBuilder) SetStreetAddress(streetAddress string) *Address
 	return b
 }
 
-func (b *AddressMutationBuilder) SetState(state string) *AddressMutationBuilder {
-	b.state = &state
-	return b
-}
-
-func (b *AddressMutationBuilder) SetResidentNames(residentNames []string) *AddressMutationBuilder {
-	b.residentNames = &residentNames
+func (b *AddressMutationBuilder) SetCountry(country string) *AddressMutationBuilder {
+	b.country = &country
 	return b
 }
 
@@ -73,30 +66,14 @@ func (b *AddressMutationBuilder) SetZip(zip string) *AddressMutationBuilder {
 	return b
 }
 
-func (b *AddressMutationBuilder) SetCity(city string) *AddressMutationBuilder {
-	b.city = &city
+func (b *AddressMutationBuilder) SetState(state string) *AddressMutationBuilder {
+	b.state = &state
 	return b
 }
 
-func (b *AddressMutationBuilder) GetCountry() string {
-	if b.country == nil {
-		return ""
-	}
-	return *b.country
-}
-
-func (b *AddressMutationBuilder) GetStreetAddress() string {
-	if b.streetAddress == nil {
-		return ""
-	}
-	return *b.streetAddress
-}
-
-func (b *AddressMutationBuilder) GetState() string {
-	if b.state == nil {
-		return ""
-	}
-	return *b.state
+func (b *AddressMutationBuilder) SetCity(city string) *AddressMutationBuilder {
+	b.city = &city
+	return b
 }
 
 func (b *AddressMutationBuilder) GetResidentNames() []string {
@@ -106,11 +83,32 @@ func (b *AddressMutationBuilder) GetResidentNames() []string {
 	return *b.residentNames
 }
 
+func (b *AddressMutationBuilder) GetStreetAddress() string {
+	if b.streetAddress == nil {
+		return ""
+	}
+	return *b.streetAddress
+}
+
+func (b *AddressMutationBuilder) GetCountry() string {
+	if b.country == nil {
+		return ""
+	}
+	return *b.country
+}
+
 func (b *AddressMutationBuilder) GetZip() string {
 	if b.zip == nil {
 		return ""
 	}
 	return *b.zip
+}
+
+func (b *AddressMutationBuilder) GetState() string {
+	if b.state == nil {
+		return ""
+	}
+	return *b.state
 }
 
 func (b *AddressMutationBuilder) GetCity() string {
@@ -126,31 +124,6 @@ func (b *AddressMutationBuilder) GetViewer() viewer.ViewerContext {
 
 func (b *AddressMutationBuilder) GetAddress() *models.Address {
 	return b.address
-}
-
-func (b *AddressMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
-	b.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(AddressTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(b)
-	}
-	return nil
-}
-
-// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the AddressObserver
-// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
-func (b *AddressMutationBuilder) SetObservers(observers []actions.Observer) error {
-	b.builder.SetObservers(observers)
-	for _, o := range observers {
-		observer, ok := o.(AddressObserver)
-		if ok {
-			observer.SetBuilder(b)
-		}
-	}
-	return nil
 }
 
 // TODO rename from GetChangeset to Build()
@@ -186,30 +159,30 @@ func (b *AddressMutationBuilder) buildFields() ent.ActionFieldMap {
 	// Need to have Id fields be fine with Builder
 
 	// if required or field is nil, always add the field
-	if b.country != nil {
-		addField("Country", *b.country)
-	} else if m["Country"] { // nil but required
-		addField("Country", nil)
+	if b.residentNames != nil {
+		addField("ResidentNames", *b.residentNames)
+	} else if m["ResidentNames"] { // nil but required
+		addField("ResidentNames", nil)
 	}
 	if b.streetAddress != nil {
 		addField("StreetAddress", *b.streetAddress)
 	} else if m["StreetAddress"] { // nil but required
 		addField("StreetAddress", nil)
 	}
-	if b.state != nil {
-		addField("State", *b.state)
-	} else if m["State"] { // nil but required
-		addField("State", nil)
-	}
-	if b.residentNames != nil {
-		addField("ResidentNames", *b.residentNames)
-	} else if m["ResidentNames"] { // nil but required
-		addField("ResidentNames", nil)
+	if b.country != nil {
+		addField("Country", *b.country)
+	} else if m["Country"] { // nil but required
+		addField("Country", nil)
 	}
 	if b.zip != nil {
 		addField("Zip", *b.zip)
 	} else if m["Zip"] { // nil but required
 		addField("Zip", nil)
+	}
+	if b.state != nil {
+		addField("State", *b.state)
+	} else if m["State"] { // nil but required
+		addField("State", nil)
 	}
 	if b.city != nil {
 		addField("City", *b.city)
@@ -250,26 +223,45 @@ func (b *AddressMutationBuilder) GetFields() ent.FieldMap {
 
 var _ ent.MutationBuilder = &AddressMutationBuilder{}
 
-type AddressTrigger interface {
+func (b *AddressMutationBuilder) setBuilder(v interface{}) {
+	callback, ok := v.(AddressCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(b)
+	}
+}
+
+// SetTriggers sets the builder on the triggers.
+func (b *AddressMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		b.setBuilder(t)
+	}
+}
+
+// SetObservers sets the builder on the observers.
+func (b *AddressMutationBuilder) SetObservers(observers []actions.Observer) {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		b.setBuilder(o)
+	}
+}
+
+// SetValidators sets the builder on validators.
+func (b *AddressMutationBuilder) SetValidators(validators []actions.Validator) {
+	b.builder.SetValidators(validators)
+	for _, v := range validators {
+		b.setBuilder(v)
+	}
+}
+
+type AddressCallbackWithBuilder interface {
 	SetBuilder(*AddressMutationBuilder)
 }
 
-type AddressMutationBuilderTrigger struct {
+type AddressMutationCallback struct {
 	Builder *AddressMutationBuilder
 }
 
-func (trigger *AddressMutationBuilderTrigger) SetBuilder(b *AddressMutationBuilder) {
-	trigger.Builder = b
-}
-
-type AddressObserver interface {
-	SetBuilder(*AddressMutationBuilder)
-}
-
-type AddressMutationBuilderObserver struct {
-	Builder *AddressMutationBuilder
-}
-
-func (observer *AddressMutationBuilderObserver) SetBuilder(b *AddressMutationBuilder) {
-	observer.Builder = b
+func (callback *AddressMutationCallback) SetBuilder(b *AddressMutationBuilder) {
+	callback.Builder = b
 }

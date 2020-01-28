@@ -24,7 +24,7 @@ func (action *CreateUserAction) GetObservers() []actions.Observer {
 }
 
 type UserCreateContactTrigger struct {
-	builder.UserMutationBuilderTrigger
+	builder.UserMutationCallback
 }
 
 func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
@@ -37,7 +37,7 @@ func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
 }
 
 type UserSendWelcomeEmailObserver struct {
-	builder.UserMutationBuilderObserver
+	builder.UserMutationCallback
 }
 
 func (observer *UserSendWelcomeEmailObserver) Observe() error {

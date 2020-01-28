@@ -67,12 +67,16 @@ func (action *{{$actionName}}) GetViewer() viewer.ViewerContext {
   return action.builder.GetViewer()
 }
 
-func (action *{{$actionName}}) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *{{$actionName}}) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *{{$actionName}}) SetBuilderOnObservers(observers []actions.Observer) error {
-  return action.builder.SetObservers(observers)
+func (action *{{$actionName}}) SetBuilderOnObservers(observers []actions.Observer) {
+  action.builder.SetObservers(observers)
+}
+
+func (action *{{$actionName}}) SetBuilderOnValidators(validators []actions.Validator) {
+  action.builder.SetValidators(validators)
 }
 
 func (action *{{$actionName}}) GetChangeset() (ent.Changeset, error) {

@@ -1,7 +1,6 @@
 package actions_test
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/lolopinto/ent/ent"
@@ -31,40 +30,34 @@ func (a *userAction) GetBuilder() ent.MutationBuilder {
 	return a.builder
 }
 
+func (a *userAction) setBuilder(v interface{}) {
+	callback, ok := v.(UserCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(a.builder)
+	}
+}
+
 // this will be auto-generated for actions
 // We need to do this because of how go's type system works
-func (a *userAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+func (a *userAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
 	a.builder.SetTriggers(triggers)
 	for _, t := range triggers {
-		trigger, ok := t.(UserCallbackWithBuilder)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(a.builder)
+		a.setBuilder(t)
 	}
-	return nil
 }
 
-func (a *userAction) SetBuilderOnObservers(observers []actions.Observer) error {
+func (a *userAction) SetBuilderOnObservers(observers []actions.Observer) {
 	a.builder.SetObservers(observers)
 	for _, o := range observers {
-		observer, ok := o.(UserCallbackWithBuilder)
-		if ok {
-			observer.SetBuilder(a.builder)
-		}
+		a.setBuilder(o)
 	}
-	return nil
 }
 
-func (a *userAction) SetBuilderOnValidators(validators []actions.Validator) error {
+func (a *userAction) SetBuilderOnValidators(validators []actions.Validator) {
 	a.builder.SetValidators(validators)
 	for _, v := range validators {
-		validator, ok := v.(UserCallbackWithBuilder)
-		if ok {
-			validator.SetBuilder(a.builder)
-		}
+		a.setBuilder(v)
 	}
-	return nil
 }
 
 func (a *userAction) getFields() map[string]interface{} {

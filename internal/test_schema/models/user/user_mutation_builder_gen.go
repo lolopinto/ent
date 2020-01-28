@@ -3,8 +3,6 @@
 package user
 
 import (
-	"errors"
-
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/field"
@@ -374,31 +372,6 @@ func (b *UserMutationBuilder) GetUser() *models.User {
 	return b.user
 }
 
-func (b *UserMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
-	b.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(UserTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(b)
-	}
-	return nil
-}
-
-// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the UserObserver
-// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
-func (b *UserMutationBuilder) SetObservers(observers []actions.Observer) error {
-	b.builder.SetObservers(observers)
-	for _, o := range observers {
-		observer, ok := o.(UserObserver)
-		if ok {
-			observer.SetBuilder(b)
-		}
-	}
-	return nil
-}
-
 // TODO rename from GetChangeset to Build()
 // A Builder builds.
 func (b *UserMutationBuilder) GetChangeset() (ent.Changeset, error) {
@@ -491,26 +464,45 @@ func (b *UserMutationBuilder) GetFields() ent.FieldMap {
 
 var _ ent.MutationBuilder = &UserMutationBuilder{}
 
-type UserTrigger interface {
+func (b *UserMutationBuilder) setBuilder(v interface{}) {
+	callback, ok := v.(UserCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(b)
+	}
+}
+
+// SetTriggers sets the builder on the triggers.
+func (b *UserMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		b.setBuilder(t)
+	}
+}
+
+// SetObservers sets the builder on the observers.
+func (b *UserMutationBuilder) SetObservers(observers []actions.Observer) {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		b.setBuilder(o)
+	}
+}
+
+// SetValidators sets the builder on validators.
+func (b *UserMutationBuilder) SetValidators(validators []actions.Validator) {
+	b.builder.SetValidators(validators)
+	for _, v := range validators {
+		b.setBuilder(v)
+	}
+}
+
+type UserCallbackWithBuilder interface {
 	SetBuilder(*UserMutationBuilder)
 }
 
-type UserMutationBuilderTrigger struct {
+type UserMutationCallback struct {
 	Builder *UserMutationBuilder
 }
 
-func (trigger *UserMutationBuilderTrigger) SetBuilder(b *UserMutationBuilder) {
-	trigger.Builder = b
-}
-
-type UserObserver interface {
-	SetBuilder(*UserMutationBuilder)
-}
-
-type UserMutationBuilderObserver struct {
-	Builder *UserMutationBuilder
-}
-
-func (observer *UserMutationBuilderObserver) SetBuilder(b *UserMutationBuilder) {
-	observer.Builder = b
+func (callback *UserMutationCallback) SetBuilder(b *UserMutationBuilder) {
+	callback.Builder = b
 }

@@ -1,7 +1,6 @@
 package actions_test
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -58,40 +57,34 @@ func eventCreateAction(
 	return &action
 }
 
+func (a *createEventAction) setBuilder(v interface{}) {
+	callback, ok := v.(EventCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(a.builder)
+	}
+}
+
 // these will be auto-generated for actions
 // We need to do this because of how go's type system works
-func (a *createEventAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
+func (a *createEventAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
 	a.builder.SetTriggers(triggers)
 	for _, t := range triggers {
-		trigger, ok := t.(EventCallbackWithBuilder)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(a.builder)
+		a.setBuilder(t)
 	}
-	return nil
 }
 
-func (a *createEventAction) SetBuilderOnObservers(observers []actions.Observer) error {
+func (a *createEventAction) SetBuilderOnObservers(observers []actions.Observer) {
 	a.builder.SetObservers(observers)
 	for _, o := range observers {
-		observer, ok := o.(EventCallbackWithBuilder)
-		if ok {
-			observer.SetBuilder(a.builder)
-		}
+		a.setBuilder(o)
 	}
-	return nil
 }
 
-func (a *createEventAction) SetBuilderOnValidators(validators []actions.Validator) error {
+func (a *createEventAction) SetBuilderOnValidators(validators []actions.Validator) {
 	a.builder.SetValidators(validators)
-	for _, o := range validators {
-		observer, ok := o.(EventCallbackWithBuilder)
-		if ok {
-			observer.SetBuilder(a.builder)
-		}
+	for _, v := range validators {
+		a.setBuilder(v)
 	}
-	return nil
 }
 
 func (a *createEventAction) GetChangeset() (ent.Changeset, error) {

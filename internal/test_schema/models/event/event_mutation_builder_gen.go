@@ -3,7 +3,6 @@
 package event
 
 import (
-	"errors"
 	"time"
 
 	"github.com/lolopinto/ent/ent"
@@ -375,31 +374,6 @@ func (b *EventMutationBuilder) GetEvent() *models.Event {
 	return b.event
 }
 
-func (b *EventMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
-	b.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(EventTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(b)
-	}
-	return nil
-}
-
-// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the EventObserver
-// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
-func (b *EventMutationBuilder) SetObservers(observers []actions.Observer) error {
-	b.builder.SetObservers(observers)
-	for _, o := range observers {
-		observer, ok := o.(EventObserver)
-		if ok {
-			observer.SetBuilder(b)
-		}
-	}
-	return nil
-}
-
 // TODO rename from GetChangeset to Build()
 // A Builder builds.
 func (b *EventMutationBuilder) GetChangeset() (ent.Changeset, error) {
@@ -501,26 +475,45 @@ func (b *EventMutationBuilder) GetFields() ent.FieldMap {
 
 var _ ent.MutationBuilder = &EventMutationBuilder{}
 
-type EventTrigger interface {
+func (b *EventMutationBuilder) setBuilder(v interface{}) {
+	callback, ok := v.(EventCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(b)
+	}
+}
+
+// SetTriggers sets the builder on the triggers.
+func (b *EventMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		b.setBuilder(t)
+	}
+}
+
+// SetObservers sets the builder on the observers.
+func (b *EventMutationBuilder) SetObservers(observers []actions.Observer) {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		b.setBuilder(o)
+	}
+}
+
+// SetValidators sets the builder on validators.
+func (b *EventMutationBuilder) SetValidators(validators []actions.Validator) {
+	b.builder.SetValidators(validators)
+	for _, v := range validators {
+		b.setBuilder(v)
+	}
+}
+
+type EventCallbackWithBuilder interface {
 	SetBuilder(*EventMutationBuilder)
 }
 
-type EventMutationBuilderTrigger struct {
+type EventMutationCallback struct {
 	Builder *EventMutationBuilder
 }
 
-func (trigger *EventMutationBuilderTrigger) SetBuilder(b *EventMutationBuilder) {
-	trigger.Builder = b
-}
-
-type EventObserver interface {
-	SetBuilder(*EventMutationBuilder)
-}
-
-type EventMutationBuilderObserver struct {
-	Builder *EventMutationBuilder
-}
-
-func (observer *EventMutationBuilderObserver) SetBuilder(b *EventMutationBuilder) {
-	observer.Builder = b
+func (callback *EventMutationCallback) SetBuilder(b *EventMutationBuilder) {
+	callback.Builder = b
 }

@@ -49,12 +49,16 @@ func (action *CreateAddressAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *CreateAddressAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *CreateAddressAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *CreateAddressAction) SetBuilderOnObservers(observers []actions.Observer) error {
-	return action.builder.SetObservers(observers)
+func (action *CreateAddressAction) SetBuilderOnObservers(observers []actions.Observer) {
+	action.builder.SetObservers(observers)
+}
+
+func (action *CreateAddressAction) SetBuilderOnValidators(validators []actions.Validator) {
+	action.builder.SetValidators(validators)
 }
 
 func (action *CreateAddressAction) GetChangeset() (ent.Changeset, error) {
@@ -69,9 +73,9 @@ func (action *CreateAddressAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// SetCountry sets the Country while editing the Address ent
-func (action *CreateAddressAction) SetCountry(country string) *CreateAddressAction {
-	action.builder.SetCountry(country)
+// SetResidentNames sets the ResidentNames while editing the Address ent
+func (action *CreateAddressAction) SetResidentNames(residentNames []string) *CreateAddressAction {
+	action.builder.SetResidentNames(residentNames)
 	return action
 }
 
@@ -81,21 +85,21 @@ func (action *CreateAddressAction) SetStreetAddress(streetAddress string) *Creat
 	return action
 }
 
-// SetState sets the State while editing the Address ent
-func (action *CreateAddressAction) SetState(state string) *CreateAddressAction {
-	action.builder.SetState(state)
-	return action
-}
-
-// SetResidentNames sets the ResidentNames while editing the Address ent
-func (action *CreateAddressAction) SetResidentNames(residentNames []string) *CreateAddressAction {
-	action.builder.SetResidentNames(residentNames)
+// SetCountry sets the Country while editing the Address ent
+func (action *CreateAddressAction) SetCountry(country string) *CreateAddressAction {
+	action.builder.SetCountry(country)
 	return action
 }
 
 // SetZip sets the Zip while editing the Address ent
 func (action *CreateAddressAction) SetZip(zip string) *CreateAddressAction {
 	action.builder.SetZip(zip)
+	return action
+}
+
+// SetState sets the State while editing the Address ent
+func (action *CreateAddressAction) SetState(state string) *CreateAddressAction {
+	action.builder.SetState(state)
 	return action
 }
 
@@ -107,11 +111,11 @@ func (action *CreateAddressAction) SetCity(city string) *CreateAddressAction {
 
 func (action *CreateAddressAction) requiredFields() []string {
 	return []string{
-		"Country",
-		"StreetAddress",
-		"State",
 		"ResidentNames",
+		"StreetAddress",
+		"Country",
 		"Zip",
+		"State",
 		"City",
 	}
 }

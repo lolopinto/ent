@@ -3,8 +3,6 @@
 package contact
 
 import (
-	"errors"
-
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/field"
@@ -223,31 +221,6 @@ func (b *ContactMutationBuilder) GetContact() *models.Contact {
 	return b.contact
 }
 
-func (b *ContactMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
-	b.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(ContactTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(b)
-	}
-	return nil
-}
-
-// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the ContactObserver
-// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
-func (b *ContactMutationBuilder) SetObservers(observers []actions.Observer) error {
-	b.builder.SetObservers(observers)
-	for _, o := range observers {
-		observer, ok := o.(ContactObserver)
-		if ok {
-			observer.SetBuilder(b)
-		}
-	}
-	return nil
-}
-
 // TODO rename from GetChangeset to Build()
 // A Builder builds.
 func (b *ContactMutationBuilder) GetChangeset() (ent.Changeset, error) {
@@ -361,26 +334,45 @@ func (b *ContactMutationBuilder) GetFields() ent.FieldMap {
 
 var _ ent.MutationBuilder = &ContactMutationBuilder{}
 
-type ContactTrigger interface {
+func (b *ContactMutationBuilder) setBuilder(v interface{}) {
+	callback, ok := v.(ContactCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(b)
+	}
+}
+
+// SetTriggers sets the builder on the triggers.
+func (b *ContactMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		b.setBuilder(t)
+	}
+}
+
+// SetObservers sets the builder on the observers.
+func (b *ContactMutationBuilder) SetObservers(observers []actions.Observer) {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		b.setBuilder(o)
+	}
+}
+
+// SetValidators sets the builder on validators.
+func (b *ContactMutationBuilder) SetValidators(validators []actions.Validator) {
+	b.builder.SetValidators(validators)
+	for _, v := range validators {
+		b.setBuilder(v)
+	}
+}
+
+type ContactCallbackWithBuilder interface {
 	SetBuilder(*ContactMutationBuilder)
 }
 
-type ContactMutationBuilderTrigger struct {
+type ContactMutationCallback struct {
 	Builder *ContactMutationBuilder
 }
 
-func (trigger *ContactMutationBuilderTrigger) SetBuilder(b *ContactMutationBuilder) {
-	trigger.Builder = b
-}
-
-type ContactObserver interface {
-	SetBuilder(*ContactMutationBuilder)
-}
-
-type ContactMutationBuilderObserver struct {
-	Builder *ContactMutationBuilder
-}
-
-func (observer *ContactMutationBuilderObserver) SetBuilder(b *ContactMutationBuilder) {
-	observer.Builder = b
+func (callback *ContactMutationCallback) SetBuilder(b *ContactMutationBuilder) {
+	callback.Builder = b
 }
