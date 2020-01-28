@@ -74,21 +74,9 @@ func (action *EditAddressAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// SetResidentNames sets the ResidentNames while editing the Address ent
-func (action *EditAddressAction) SetResidentNames(residentNames []string) *EditAddressAction {
-	action.builder.SetResidentNames(residentNames)
-	return action
-}
-
 // SetStreetAddress sets the StreetAddress while editing the Address ent
 func (action *EditAddressAction) SetStreetAddress(streetAddress string) *EditAddressAction {
 	action.builder.SetStreetAddress(streetAddress)
-	return action
-}
-
-// SetCountry sets the Country while editing the Address ent
-func (action *EditAddressAction) SetCountry(country string) *EditAddressAction {
-	action.builder.SetCountry(country)
 	return action
 }
 
@@ -98,15 +86,27 @@ func (action *EditAddressAction) SetZip(zip string) *EditAddressAction {
 	return action
 }
 
+// SetCity sets the City while editing the Address ent
+func (action *EditAddressAction) SetCity(city string) *EditAddressAction {
+	action.builder.SetCity(city)
+	return action
+}
+
+// SetCountry sets the Country while editing the Address ent
+func (action *EditAddressAction) SetCountry(country string) *EditAddressAction {
+	action.builder.SetCountry(country)
+	return action
+}
+
 // SetState sets the State while editing the Address ent
 func (action *EditAddressAction) SetState(state string) *EditAddressAction {
 	action.builder.SetState(state)
 	return action
 }
 
-// SetCity sets the City while editing the Address ent
-func (action *EditAddressAction) SetCity(city string) *EditAddressAction {
-	action.builder.SetCity(city)
+// SetResidentNames sets the ResidentNames while editing the Address ent
+func (action *EditAddressAction) SetResidentNames(residentNames []string) *EditAddressAction {
+	action.builder.SetResidentNames(residentNames)
 	return action
 }
 

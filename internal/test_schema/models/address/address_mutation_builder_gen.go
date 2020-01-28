@@ -14,12 +14,12 @@ type AddressMutationBuilder struct {
 	requiredFields []string
 	builder        *actions.EntMutationBuilder
 	address        *models.Address
-	residentNames  *[]string
 	streetAddress  *string
-	country        *string
 	zip            *string
-	state          *string
 	city           *string
+	country        *string
+	state          *string
+	residentNames  *[]string
 }
 
 func NewMutationBuilder(
@@ -46,18 +46,8 @@ func NewMutationBuilder(
 	return ret
 }
 
-func (b *AddressMutationBuilder) SetResidentNames(residentNames []string) *AddressMutationBuilder {
-	b.residentNames = &residentNames
-	return b
-}
-
 func (b *AddressMutationBuilder) SetStreetAddress(streetAddress string) *AddressMutationBuilder {
 	b.streetAddress = &streetAddress
-	return b
-}
-
-func (b *AddressMutationBuilder) SetCountry(country string) *AddressMutationBuilder {
-	b.country = &country
 	return b
 }
 
@@ -66,21 +56,24 @@ func (b *AddressMutationBuilder) SetZip(zip string) *AddressMutationBuilder {
 	return b
 }
 
-func (b *AddressMutationBuilder) SetState(state string) *AddressMutationBuilder {
-	b.state = &state
-	return b
-}
-
 func (b *AddressMutationBuilder) SetCity(city string) *AddressMutationBuilder {
 	b.city = &city
 	return b
 }
 
-func (b *AddressMutationBuilder) GetResidentNames() []string {
-	if b.residentNames == nil {
-		return nil
-	}
-	return *b.residentNames
+func (b *AddressMutationBuilder) SetCountry(country string) *AddressMutationBuilder {
+	b.country = &country
+	return b
+}
+
+func (b *AddressMutationBuilder) SetState(state string) *AddressMutationBuilder {
+	b.state = &state
+	return b
+}
+
+func (b *AddressMutationBuilder) SetResidentNames(residentNames []string) *AddressMutationBuilder {
+	b.residentNames = &residentNames
+	return b
 }
 
 func (b *AddressMutationBuilder) GetStreetAddress() string {
@@ -90,18 +83,25 @@ func (b *AddressMutationBuilder) GetStreetAddress() string {
 	return *b.streetAddress
 }
 
-func (b *AddressMutationBuilder) GetCountry() string {
-	if b.country == nil {
-		return ""
-	}
-	return *b.country
-}
-
 func (b *AddressMutationBuilder) GetZip() string {
 	if b.zip == nil {
 		return ""
 	}
 	return *b.zip
+}
+
+func (b *AddressMutationBuilder) GetCity() string {
+	if b.city == nil {
+		return ""
+	}
+	return *b.city
+}
+
+func (b *AddressMutationBuilder) GetCountry() string {
+	if b.country == nil {
+		return ""
+	}
+	return *b.country
 }
 
 func (b *AddressMutationBuilder) GetState() string {
@@ -111,11 +111,11 @@ func (b *AddressMutationBuilder) GetState() string {
 	return *b.state
 }
 
-func (b *AddressMutationBuilder) GetCity() string {
-	if b.city == nil {
-		return ""
+func (b *AddressMutationBuilder) GetResidentNames() []string {
+	if b.residentNames == nil {
+		return nil
 	}
-	return *b.city
+	return *b.residentNames
 }
 
 func (b *AddressMutationBuilder) GetViewer() viewer.ViewerContext {
@@ -152,42 +152,38 @@ func (b *AddressMutationBuilder) buildFields() ent.ActionFieldMap {
 		}
 	}
 
-	//  SetField is done at the end after transform
-	// map[FieldName] => Field | value
-	// that's what we're passing down
-
 	// Need to have Id fields be fine with Builder
 
-	// if required or field is nil, always add the field
-	if b.residentNames != nil {
-		addField("ResidentNames", *b.residentNames)
-	} else if m["ResidentNames"] { // nil but required
-		addField("ResidentNames", nil)
-	}
+	// if required, field is not nil or field explicitly set to nil, add the field
 	if b.streetAddress != nil {
 		addField("StreetAddress", *b.streetAddress)
 	} else if m["StreetAddress"] { // nil but required
 		addField("StreetAddress", nil)
-	}
-	if b.country != nil {
-		addField("Country", *b.country)
-	} else if m["Country"] { // nil but required
-		addField("Country", nil)
 	}
 	if b.zip != nil {
 		addField("Zip", *b.zip)
 	} else if m["Zip"] { // nil but required
 		addField("Zip", nil)
 	}
+	if b.city != nil {
+		addField("City", *b.city)
+	} else if m["City"] { // nil but required
+		addField("City", nil)
+	}
+	if b.country != nil {
+		addField("Country", *b.country)
+	} else if m["Country"] { // nil but required
+		addField("Country", nil)
+	}
 	if b.state != nil {
 		addField("State", *b.state)
 	} else if m["State"] { // nil but required
 		addField("State", nil)
 	}
-	if b.city != nil {
-		addField("City", *b.city)
-	} else if m["City"] { // nil but required
-		addField("City", nil)
+	if b.residentNames != nil {
+		addField("ResidentNames", *b.residentNames)
+	} else if m["ResidentNames"] { // nil but required
+		addField("ResidentNames", nil)
 	}
 	return fields
 }
@@ -209,16 +205,8 @@ func (b *AddressMutationBuilder) GetPlaceholderID() string {
 }
 
 // GetFields returns the field configuration for this mutation builder
-// For now, always take it from config because we assume it's always from there
-// TODO do for things using old API
 func (b *AddressMutationBuilder) GetFields() ent.FieldMap {
 	return (&configs.AddressConfig{}).GetFields()
-	// we need to eventually know difference between set to nil vs nil value
-	// set to nil is when we care about passing nil to Field.Format()
-	// TODO
-	// so for now, we go through each field, if not null, we call Valid() and Format() and everything else on them
-	// if nil, leave as-is
-	// we need a list of required fields...
 }
 
 var _ ent.MutationBuilder = &AddressMutationBuilder{}

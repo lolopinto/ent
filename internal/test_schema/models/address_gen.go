@@ -23,12 +23,12 @@ const (
 type Address struct {
 	ent.Node
 	privacy.AlwaysDenyPrivacyPolicy
-	ResidentNames []string `db:"resident_names"`
 	StreetAddress string   `db:"street_address"`
-	Country       string   `db:"country"`
 	Zip           string   `db:"zip"`
-	State         string   `db:"state"`
 	City          string   `db:"city"`
+	Country       string   `db:"country"`
+	State         string   `db:"state"`
+	ResidentNames []string `db:"resident_names"`
 	Viewer        viewer.ViewerContext
 }
 
@@ -102,17 +102,9 @@ func (address *Address) DBFields() ent.DBFields {
 			address.ID, err = cast.ToUUIDString(v)
 			return err
 		},
-		"resident_names": func(v interface{}) error {
-			return cast.UnmarshallJSON(v, &address.ResidentNames)
-		},
 		"street_address": func(v interface{}) error {
 			var err error
 			address.StreetAddress, err = cast.ToString(v)
-			return err
-		},
-		"country": func(v interface{}) error {
-			var err error
-			address.Country, err = cast.ToString(v)
 			return err
 		},
 		"zip": func(v interface{}) error {
@@ -120,15 +112,23 @@ func (address *Address) DBFields() ent.DBFields {
 			address.Zip, err = cast.ToString(v)
 			return err
 		},
+		"city": func(v interface{}) error {
+			var err error
+			address.City, err = cast.ToString(v)
+			return err
+		},
+		"country": func(v interface{}) error {
+			var err error
+			address.Country, err = cast.ToString(v)
+			return err
+		},
 		"state": func(v interface{}) error {
 			var err error
 			address.State, err = cast.ToString(v)
 			return err
 		},
-		"city": func(v interface{}) error {
-			var err error
-			address.City, err = cast.ToString(v)
-			return err
+		"resident_names": func(v interface{}) error {
+			return cast.UnmarshallJSON(v, &address.ResidentNames)
 		},
 	}
 }

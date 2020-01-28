@@ -105,8 +105,6 @@ func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {
   {{ if $field.Field.IDField -}}
   func (b *{{$builderName}}) {{$field.SetterMethodName}}Builder(builder ent.MutationBuilder) *{{$builderName}} {
     b.{{$fieldInstanceName}}Builder = builder
-    // this line not needed anymore
-//    b.builder.SetField("{{$field.FieldName}}", builder)
     {{$inverseEdge := $field.InverseEdge -}}
     {{ if $inverseEdge -}} 
       {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
@@ -264,14 +262,10 @@ func (b *{{$builderName}}) buildFields() ent.ActionFieldMap {
       Value: val,
     }
   }
-
-  //  SetField is done at the end after transform
-  // map[FieldName] => Field | value
-  // that's what we're passing down 
   
   // Need to have Id fields be fine with Builder 
 
-  // if required or field is nil, always add the field 
+  // if required, field is not nil or field explicitly set to nil, add the field 
   {{ range $field := $fieldInfos -}}
     if b.{{$field.InstanceName}} != nil {
       addField("{{$field.FieldName}}", *b.{{$field.InstanceName}})
@@ -285,12 +279,10 @@ func (b *{{$builderName}}) buildFields() ent.ActionFieldMap {
     }
     {{if $field.Field.IDField -}}
     {{/* doing this after because we can have this override the nil above while keeping this simple... */ -}}
-    if b.{{$field.InstanceName}}Builder != nil {
+    if b.{{$field.InstanceName}}Builder != nil { // builder not nil, override userID
       addField("{{$field.FieldName}}", b.{{$field.InstanceName}}Builder)
     }
     {{end -}}
-      
-
   {{end -}}
 
   return fields
@@ -313,8 +305,6 @@ func (b *{{$builderName}}) GetPlaceholderID() string {
 }
 
 // GetFields returns the field configuration for this mutation builder
-// For now, always take it from config because we assume it's always from there
-// TODO do for things using old API
 func (b *{{$builderName}}) GetFields() ent.FieldMap {
   {{ if .FieldInfo.GetFieldsFn -}}
     return ({{.EntConfig}}).GetFields()
@@ -329,13 +319,6 @@ func (b *{{$builderName}}) GetFields() ent.FieldMap {
     {{end -}}
     }
   {{ end -}}
-
-  // we need to eventually know difference between set to nil vs nil value
-  // set to nil is when we care about passing nil to Field.Format() 
-  // TODO
-  // so for now, we go through each field, if not null, we call Valid() and Format() and everything else on them
-  // if nil, leave as-is
-  // we need a list of required fields...
 }
 
 var _ ent.MutationBuilder = &{{$builderName}}{}
@@ -388,5 +371,3 @@ func (callback *{{$builderStruct}}) SetBuilder(b *{{$builderName}}) {
 }
 
 {{end -}}
-
-

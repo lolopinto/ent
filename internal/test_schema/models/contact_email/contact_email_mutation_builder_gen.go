@@ -62,8 +62,6 @@ func (b *ContactEmailMutationBuilder) SetContactID(contactID string) *ContactEma
 
 func (b *ContactEmailMutationBuilder) SetContactIDBuilder(builder ent.MutationBuilder) *ContactEmailMutationBuilder {
 	b.contactIDBuilder = builder
-	// this line not needed anymore
-	//    b.builder.SetField("ContactID", builder)
 	return b
 }
 
@@ -130,13 +128,9 @@ func (b *ContactEmailMutationBuilder) buildFields() ent.ActionFieldMap {
 		}
 	}
 
-	//  SetField is done at the end after transform
-	// map[FieldName] => Field | value
-	// that's what we're passing down
-
 	// Need to have Id fields be fine with Builder
 
-	// if required or field is nil, always add the field
+	// if required, field is not nil or field explicitly set to nil, add the field
 	if b.emailAddress != nil {
 		addField("EmailAddress", *b.emailAddress)
 	} else if m["EmailAddress"] { // nil but required
@@ -152,7 +146,7 @@ func (b *ContactEmailMutationBuilder) buildFields() ent.ActionFieldMap {
 	} else if m["ContactID"] { // nil but required
 		addField("ContactID", nil)
 	}
-	if b.contactIDBuilder != nil {
+	if b.contactIDBuilder != nil { // builder not nil, override userID
 		addField("ContactID", b.contactIDBuilder)
 	}
 	return fields
@@ -175,20 +169,12 @@ func (b *ContactEmailMutationBuilder) GetPlaceholderID() string {
 }
 
 // GetFields returns the field configuration for this mutation builder
-// For now, always take it from config because we assume it's always from there
-// TODO do for things using old API
 func (b *ContactEmailMutationBuilder) GetFields() ent.FieldMap {
 	return ent.FieldMap{
 		"EmailAddress": field.F(field.Noop(), field.DB("email_address")),
 		"Label":        field.F(field.Noop(), field.DB("label")),
 		"ContactID":    field.F(field.Noop(), field.DB("contact_id")),
 	}
-	// we need to eventually know difference between set to nil vs nil value
-	// set to nil is when we care about passing nil to Field.Format()
-	// TODO
-	// so for now, we go through each field, if not null, we call Valid() and Format() and everything else on them
-	// if nil, leave as-is
-	// we need a list of required fields...
 }
 
 var _ ent.MutationBuilder = &ContactEmailMutationBuilder{}

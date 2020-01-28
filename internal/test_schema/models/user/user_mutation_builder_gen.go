@@ -398,13 +398,9 @@ func (b *UserMutationBuilder) buildFields() ent.ActionFieldMap {
 		}
 	}
 
-	//  SetField is done at the end after transform
-	// map[FieldName] => Field | value
-	// that's what we're passing down
-
 	// Need to have Id fields be fine with Builder
 
-	// if required or field is nil, always add the field
+	// if required, field is not nil or field explicitly set to nil, add the field
 	if b.emailAddress != nil {
 		addField("EmailAddress", *b.emailAddress)
 	} else if m["EmailAddress"] { // nil but required
@@ -445,8 +441,6 @@ func (b *UserMutationBuilder) GetPlaceholderID() string {
 }
 
 // GetFields returns the field configuration for this mutation builder
-// For now, always take it from config because we assume it's always from there
-// TODO do for things using old API
 func (b *UserMutationBuilder) GetFields() ent.FieldMap {
 	return ent.FieldMap{
 		"EmailAddress": field.F(field.Noop(), field.DB("email_address")),
@@ -454,12 +448,6 @@ func (b *UserMutationBuilder) GetFields() ent.FieldMap {
 		"LastName":     field.F(field.Noop(), field.DB("last_name")),
 		"Bio":          field.F(field.Noop(), field.DB("bio"), field.Nullable()),
 	}
-	// we need to eventually know difference between set to nil vs nil value
-	// set to nil is when we care about passing nil to Field.Format()
-	// TODO
-	// so for now, we go through each field, if not null, we call Valid() and Format() and everything else on them
-	// if nil, leave as-is
-	// we need a list of required fields...
 }
 
 var _ ent.MutationBuilder = &UserMutationBuilder{}

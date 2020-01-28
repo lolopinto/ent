@@ -67,8 +67,6 @@ func (b *EventMutationBuilder) SetUserID(userID string) *EventMutationBuilder {
 
 func (b *EventMutationBuilder) SetUserIDBuilder(builder ent.MutationBuilder) *EventMutationBuilder {
 	b.userIDBuilder = builder
-	// this line not needed anymore
-	//    b.builder.SetField("UserID", builder)
 	b.builder.AddInboundEdge(models.UserToEventsEdge, builder, models.EventType)
 	return b
 }
@@ -400,13 +398,9 @@ func (b *EventMutationBuilder) buildFields() ent.ActionFieldMap {
 		}
 	}
 
-	//  SetField is done at the end after transform
-	// map[FieldName] => Field | value
-	// that's what we're passing down
-
 	// Need to have Id fields be fine with Builder
 
-	// if required or field is nil, always add the field
+	// if required, field is not nil or field explicitly set to nil, add the field
 	if b.name != nil {
 		addField("Name", *b.name)
 	} else if m["Name"] { // nil but required
@@ -417,7 +411,7 @@ func (b *EventMutationBuilder) buildFields() ent.ActionFieldMap {
 	} else if m["UserID"] { // nil but required
 		addField("UserID", nil)
 	}
-	if b.userIDBuilder != nil {
+	if b.userIDBuilder != nil { // builder not nil, override userID
 		addField("UserID", b.userIDBuilder)
 	}
 	if b.startTime != nil {
@@ -455,8 +449,6 @@ func (b *EventMutationBuilder) GetPlaceholderID() string {
 }
 
 // GetFields returns the field configuration for this mutation builder
-// For now, always take it from config because we assume it's always from there
-// TODO do for things using old API
 func (b *EventMutationBuilder) GetFields() ent.FieldMap {
 	return ent.FieldMap{
 		"Name":      field.F(field.Noop(), field.DB("name")),
@@ -465,12 +457,6 @@ func (b *EventMutationBuilder) GetFields() ent.FieldMap {
 		"EndTime":   field.F(field.Noop(), field.DB("end_time"), field.Nullable()),
 		"Location":  field.F(field.Noop(), field.DB("location")),
 	}
-	// we need to eventually know difference between set to nil vs nil value
-	// set to nil is when we care about passing nil to Field.Format()
-	// TODO
-	// so for now, we go through each field, if not null, we call Valid() and Format() and everything else on them
-	// if nil, leave as-is
-	// we need a list of required fields...
 }
 
 var _ ent.MutationBuilder = &EventMutationBuilder{}

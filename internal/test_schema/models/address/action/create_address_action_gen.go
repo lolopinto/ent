@@ -73,21 +73,9 @@ func (action *CreateAddressAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// SetResidentNames sets the ResidentNames while editing the Address ent
-func (action *CreateAddressAction) SetResidentNames(residentNames []string) *CreateAddressAction {
-	action.builder.SetResidentNames(residentNames)
-	return action
-}
-
 // SetStreetAddress sets the StreetAddress while editing the Address ent
 func (action *CreateAddressAction) SetStreetAddress(streetAddress string) *CreateAddressAction {
 	action.builder.SetStreetAddress(streetAddress)
-	return action
-}
-
-// SetCountry sets the Country while editing the Address ent
-func (action *CreateAddressAction) SetCountry(country string) *CreateAddressAction {
-	action.builder.SetCountry(country)
 	return action
 }
 
@@ -97,26 +85,38 @@ func (action *CreateAddressAction) SetZip(zip string) *CreateAddressAction {
 	return action
 }
 
-// SetState sets the State while editing the Address ent
-func (action *CreateAddressAction) SetState(state string) *CreateAddressAction {
-	action.builder.SetState(state)
-	return action
-}
-
 // SetCity sets the City while editing the Address ent
 func (action *CreateAddressAction) SetCity(city string) *CreateAddressAction {
 	action.builder.SetCity(city)
 	return action
 }
 
+// SetCountry sets the Country while editing the Address ent
+func (action *CreateAddressAction) SetCountry(country string) *CreateAddressAction {
+	action.builder.SetCountry(country)
+	return action
+}
+
+// SetState sets the State while editing the Address ent
+func (action *CreateAddressAction) SetState(state string) *CreateAddressAction {
+	action.builder.SetState(state)
+	return action
+}
+
+// SetResidentNames sets the ResidentNames while editing the Address ent
+func (action *CreateAddressAction) SetResidentNames(residentNames []string) *CreateAddressAction {
+	action.builder.SetResidentNames(residentNames)
+	return action
+}
+
 func (action *CreateAddressAction) requiredFields() []string {
 	return []string{
-		"ResidentNames",
 		"StreetAddress",
-		"Country",
 		"Zip",
-		"State",
 		"City",
+		"Country",
+		"State",
+		"ResidentNames",
 	}
 }
 
