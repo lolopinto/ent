@@ -11,6 +11,7 @@ import (
 
 	"github.com/lolopinto/ent/ent/field"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testCase struct {
@@ -892,14 +893,11 @@ func testDataType(
 		if ok {
 			err := validator.Valid(expRes.value)
 			if expRes.err == nil {
-				assert.Nil(t, err)
+				require.Nil(t, err)
 			} else {
-				assert.NotNil(t, err)
+				require.NotNil(t, err)
 
-				if err == nil {
-					t.Fatal("failing here to prevent nil pointer dereference below")
-				}
-				assert.Condition(t, func() bool {
+				require.Condition(t, func() bool {
 					return strings.Contains(err.Error(), expRes.err.Error())
 				})
 			}

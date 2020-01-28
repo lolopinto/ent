@@ -207,7 +207,7 @@ func TestStringWithMoreCustomizationsField(t *testing.T) {
 	testGraphQLType(t, field, "String")
 }
 
-func TestCustomType(t *testing.T) {
+func TestCustomURLType(t *testing.T) {
 	field := verifyField(
 		t,
 		`package configs
@@ -241,6 +241,41 @@ func TestCustomType(t *testing.T) {
 
 	testDBType(t, field, "sa.Text()")
 	testGraphQLType(t, field, "String")
+}
+
+func TestCustomEmailType(t *testing.T) {
+	field := verifyField(
+		t,
+		`package configs
+
+		import "github.com/lolopinto/ent/ent"
+		import "github.com/lolopinto/ent/ent/field"
+		import "github.com/lolopinto/ent/ent/field/email"
+
+		type UserConfig struct {}
+		
+		func (config *UserConfig) GetFields() ent.FieldMap {
+			return ent.FieldMap {
+				"EmailAddress": field.F(
+					email.Field(),
+					field.Unique(), 
+					field.DB("email"),
+				),
+			}
+		}`,
+		&Field{
+			FieldName:           "EmailAddress",
+			dbName:              "email",
+			graphQLName:         "emailAddress",
+			unique:              true,
+			topLevelStructField: true,
+			exposeToActions:     true,
+			dbColumn:            true,
+		},
+	)
+
+	testDBType(t, field, "sa.Text()")
+	testGraphQLType(t, field, "String!")
 }
 
 func TestForeignKey(t *testing.T) {
@@ -397,6 +432,7 @@ func TestMultipleFields(t *testing.T) {
 
 		import "github.com/lolopinto/ent/ent"
 		import "github.com/lolopinto/ent/ent/field"
+		import "github.com/lolopinto/ent/ent/field/email"
 		import "github.com/lolopinto/ent/ent/field/url"
 
 		type UserConfig struct {}
@@ -408,7 +444,7 @@ func TestMultipleFields(t *testing.T) {
 					field.GraphQL("numInvitesLeft"),
 				),
 				"EmailAddress": field.F(
-					field.String(),
+					email.Field(),
 					field.Unique(), 
 					field.DB("email"),
 				),
