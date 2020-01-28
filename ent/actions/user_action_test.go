@@ -58,17 +58,11 @@ func (a *userAction) SetBuilderOnObservers(observers []actions.Observer) error {
 }
 
 func (a *userAction) getFields() map[string]interface{} {
-	m := make(map[string]interface{})
-	if a.emailAddress != "" {
-		m["EmailAddress"] = a.emailAddress
+	return map[string]interface{}{
+		"email_address": a.emailAddress,
+		"first_name":    a.firstName,
+		"last_name":     a.lastName,
 	}
-	if a.firstName != "" {
-		m["FirstName"] = a.firstName
-	}
-	if a.lastName != "" {
-		m["LastName"] = a.lastName
-	}
-	return m
 }
 
 func (a *userAction) Entity() ent.Entity {
@@ -211,10 +205,10 @@ func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
 	a.builder = actions.NewMutationBuilder(
 		a.viewer, ent.InsertOperation, &a.contact, &configs.ContactConfig{},
 	)
-	fields := trigger.Builder.GetFields()
-	a.firstName = fields["FirstName"]
-	a.lastName = fields["LastName"]
-	a.emailAddress = fields["EmailAddress"]
+	fields := trigger.Builder.GetRawFields()
+	a.firstName = fields["first_name"]
+	a.lastName = fields["last_name"]
+	a.emailAddress = fields["email_address"]
 	a.userID = trigger.Builder
 
 	return actions.GetChangeset(a)
@@ -232,10 +226,10 @@ func (trigger *UserCreateContactAndEmailTrigger) GetChangeset() (ent.Changeset, 
 	a.builder = actions.NewMutationBuilder(
 		a.viewer, ent.InsertOperation, &a.contact, &configs.ContactConfig{},
 	)
-	fields := trigger.Builder.GetFields()
-	a.firstName = fields["FirstName"]
-	a.lastName = fields["LastName"]
-	a.emailAddress = fields["EmailAddress"]
+	fields := trigger.Builder.GetRawFields()
+	a.firstName = fields["first_name"]
+	a.lastName = fields["last_name"]
+	a.emailAddress = fields["email_address"]
 	a.userID = trigger.Builder
 
 	return actions.GetChangeset(a)

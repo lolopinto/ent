@@ -34,23 +34,19 @@ func (a *createContactAction) GetBuilder() ent.MutationBuilder {
 func (a *createContactAction) getFields() map[string]interface{} {
 	m := make(map[string]interface{})
 	if a.emailAddress != nil {
-		m["EmailAddress"] = a.emailAddress
+		m["email_address"] = a.emailAddress
 	}
 	if a.firstName != nil {
-		m["FirstName"] = a.firstName
+		m["first_name"] = a.firstName
 	}
 	if a.lastName != nil {
-		m["LastName"] = a.lastName
+		m["last_name"] = a.lastName
 	}
 	if a.user != nil {
-		m["UserID"] = a.user.ID
+		m["user_id"] = a.user.ID
 	} else if a.userID != nil {
-		m["UserID"] = a.userID
+		m["user_id"] = a.userID
 	}
-	// TODO default values...
-	// m["Favorite"] = false
-	// m["Pi"] = 3.14
-	// m["NumberOfCalls"] = 5
 	return m
 }
 

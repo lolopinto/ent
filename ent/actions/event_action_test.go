@@ -132,7 +132,7 @@ type EventSetUserToEventTrigger struct {
 func (trigger *EventSetUserToEventTrigger) GetChangeset() (ent.Changeset, error) {
 	// instead of using viewer which may not be correct when embedded in other mutations, let's use UserID field
 	// TODO still need to solve the embedded viewer issue later...
-	userID := trigger.Builder.GetFields()["UserID"]
+	userID := trigger.Builder.GetRawFields()["user_id"]
 
 	trigger.Builder.AddInboundEdge(
 		models.UserToEventsEdge,
@@ -150,7 +150,7 @@ func (trigger *EventSetHostTrigger) GetChangeset() (ent.Changeset, error) {
 	// hmm viewer is logged out so can't really do this one
 	// when doing user -> event since there's no viewer...
 
-	userID := trigger.Builder.GetFields()["UserID"]
+	userID := trigger.Builder.GetRawFields()["user_id"]
 	trigger.Builder.AddOutboundEdge(
 		models.EventToHostsEdge,
 		userID,
@@ -166,7 +166,7 @@ type EventSetCreatorTrigger struct {
 func (trigger *EventSetCreatorTrigger) GetChangeset() (ent.Changeset, error) {
 	// instead of using viewer which may not be correct when embedded in other mutations, let's use UserID field
 	// TODO still need to solve the embedded viewer issue later...
-	userID := trigger.Builder.GetFields()["UserID"]
+	userID := trigger.Builder.GetRawFields()["user_id"]
 
 	trigger.Builder.AddOutboundEdge(
 		models.EventToCreatorEdge,

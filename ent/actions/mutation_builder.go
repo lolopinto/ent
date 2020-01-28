@@ -23,9 +23,7 @@ type EntMutationBuilder struct {
 	buildFieldsFn  func() ent.ActionFieldMap2
 	// for now, actions map to all the fields so it's fine. this will need to be changed when each EntMutationBuilder is generated
 	// At that point, probably makes sense to have each generated Builder handle this.
-	FieldMap ent.ActionFieldMap
-	fields   map[string]interface{}
-	// TODO one of rawFields vs buildFieldsFn needed
+	FieldMap      ent.ActionFieldMap
 	rawDBFields   map[string]interface{}
 	edges         []*ent.EdgeOperation
 	edgeTypes     map[ent.EdgeType]bool
@@ -36,8 +34,9 @@ type EntMutationBuilder struct {
 	mu            sync.RWMutex
 	// what happens if there are circular dependencies?
 	// let's assume not possible for now but it's possible we want to store the ID in different places/
-	dependencies ent.MutationBuilderMap
-	changesets   []ent.Changeset
+	fieldsWithResolvers []string
+	dependencies        ent.MutationBuilderMap
+	changesets          []ent.Changeset
 }
 
 func ExistingEnt(existingEnt ent.Entity) func(*EntMutationBuilder) {
@@ -81,30 +80,29 @@ func (b *EntMutationBuilder) flagWrite() {
 func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}) interface{} {
 	// this is a tricky method. should only be called by places that have a Lock()/Unlock protection in it.
 	// Right now that's done by SetField()
+	// changing things up and seeing if putting this lock in here breaks things....
 	builder, ok := val.(ent.MutationBuilder)
 	if !ok {
 		return val
 	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	//	spew.Dump(fieldName, builder)
 	if b.dependencies == nil {
 		b.dependencies = make(ent.MutationBuilderMap)
 	}
 	b.dependencies[builder.GetPlaceholderID()] = builder
-	return val
+	b.fieldsWithResolvers = append(b.fieldsWithResolvers, fieldName)
+	return builder.GetPlaceholderID()
 }
 
-// does this still need to be concurrent?
-// TODO this may need to be private...
-// There needs to be a raw fields API where there's no fanciness
-// SetRawFields vs API with fields/builders/and the works
-func (b *EntMutationBuilder) setField(fieldName string, val interface{}) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	if b.fields == nil {
-		b.fields = make(map[string]interface{})
+func (b *EntMutationBuilder) processRawFields() map[string]interface{} {
+	fields := make(map[string]interface{})
+	for dbKey, value := range b.rawDBFields {
+		fields[dbKey] = b.resolveFieldValue(dbKey, value)
 	}
-	b.fields[fieldName] = b.resolveFieldValue(fieldName, val)
-	b.flagWrite()
+	return fields
 }
 
 func (b *EntMutationBuilder) SetRawFields(m map[string]interface{}) {
@@ -278,6 +276,8 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		return nil, err
 	}
 
+	//	if b.rawFields !=
+
 	// this is the gather fields method function
 	// we validate (if needed)
 	// run any extra validators
@@ -292,10 +292,15 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 
 	// TODO more validators run here
 
-	if err := b.formatFields(fieldInfos); err != nil {
-		return nil, err
+	var fields map[string]interface{}
+	if fieldInfos != nil {
+		fields, err = b.formatFields(fieldInfos)
+		if err != nil {
+			return nil, err
+		}
+	} else if b.rawDBFields != nil {
+		fields = b.processRawFields()
 	}
-	spew.Dump("sss")
 
 	// should not be able to get a changeset for an invalid builder
 	if !b.validated {
@@ -320,24 +325,8 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	} else {
 		// TODO how do we format placeholders??
 
-		// take the fields and convert to db format!
-		fields := b.rawDBFields
-		var fieldsWithResolvers []string
-		if fields == nil {
-			// TODO consolidate with format fields so we're only running this logic once...
-			fields = make(map[string]interface{})
-			for dbKey, value := range b.fields {
-
-				builder, ok := value.(ent.MutationBuilder)
-
-				fields[dbKey] = value
-				if ok {
-					fields[dbKey] = builder.GetPlaceholderID()
-					fieldsWithResolvers = append(fieldsWithResolvers, dbKey)
-				}
-			}
-		}
-		spew.Dump(fields)
+		//		spew.Dump(fields)
+		//spew.Dump(b.fieldsWithResolvers)
 		// only worth doing it if there are fields
 		// TODO shouldn't do a write if len(fields) == 0
 		// need to change the code to always load the user after the write tho...
@@ -347,7 +336,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 				Entity:              b.entity,
 				EntConfig:           b.EntConfig,
 				Fields:              fields,
-				FieldsWithResolvers: fieldsWithResolvers,
+				FieldsWithResolvers: b.fieldsWithResolvers,
 				Operation:           b.Operation,
 			},
 		)
@@ -390,7 +379,6 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 }
 
 func (b *EntMutationBuilder) validate() (ent.ActionFieldMap2, error) {
-	spew.Dump(b.buildFieldsFn)
 	if b.buildFieldsFn == nil {
 		return nil, nil
 	}
@@ -399,43 +387,29 @@ func (b *EntMutationBuilder) validate() (ent.ActionFieldMap2, error) {
 	// gather fieldInfos, validate as needed and then return
 	fieldInfos := b.buildFieldsFn()
 	for fieldName, fieldInfo := range fieldInfos {
-		spew.Dump(fieldName, fieldInfo.Value)
 		if err := fieldInfo.Field.Valid(fieldName, fieldInfo.Value); err != nil {
 			spew.Dump("error", err)
 			return nil, err
 		}
 	}
-	spew.Dump("end")
 	return fieldInfos, nil
 }
 
 // this is just done before writing
-func (b *EntMutationBuilder) formatFields(fieldInfos ent.ActionFieldMap2) error {
-	//	var fieldsWithResolvers []string
+func (b *EntMutationBuilder) formatFields(fieldInfos ent.ActionFieldMap2) (map[string]interface{}, error) {
+	fields := make(map[string]interface{})
 
 	// this is also where default values will be set eventually
-	spew.Dump(fieldInfos)
 	for fieldName, fieldInfo := range fieldInfos {
 		dbKey := fieldInfo.Field.DBKey(fieldName)
-		spew.Dump(dbKey)
-		// need builder resolving and nillable resolving at the same time because of user!!
-		//		builder, ok := fieldInfo.Value.(ent.MutationBuilder)
 
-		// if ok {
-		// 	fieldsWithResolvers = append(fieldsWithResolvers, dbKey)
-		// } else {
-		// TODO builders
 		val, err := fieldInfo.Field.Format(fieldInfo.Value)
-		spew.Dump(val, err)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		b.setField(dbKey, val)
-
-		//		}
-
+		fields[dbKey] = b.resolveFieldValue(dbKey, val)
 	}
-	return nil
+	return fields, nil
 }
 
 func (b *EntMutationBuilder) Validate() error {
@@ -448,22 +422,22 @@ func (b *EntMutationBuilder) Validate() error {
 	if b.validated {
 		return nil
 	}
-
-	if b.FieldMap == nil && b.fields != nil {
-		return errors.New("MutationBuilder has no fieldMap")
-	}
 	var errors []*ent.ActionErrorInfo
 
-	for fieldName, item := range b.FieldMap {
-		_, ok := b.fields[fieldName]
+	// if b.FieldMap == nil && b.fields != nil {
+	// 	return errors.New("MutationBuilder has no fieldMap")
+	// }
 
-		// won't work because we have the wrong names in the setters right now
-		if item.Required && !ok {
-			errors = append(errors, &ent.ActionErrorInfo{
-				ErrorMsg: fmt.Sprintf("%s is required and was not set", fieldName),
-			})
-		}
-	}
+	// for fieldName, item := range b.FieldMap {
+	// 	_, ok := b.fields[fieldName]
+
+	// 	// won't work because we have the wrong names in the setters right now
+	// 	if item.Required && !ok {
+	// 		errors = append(errors, &ent.ActionErrorInfo{
+	// 			ErrorMsg: fmt.Sprintf("%s is required and was not set", fieldName),
+	// 		})
+	// 	}
+	// }
 
 	if len(errors) == 0 {
 		b.validated = true
@@ -475,8 +449,8 @@ func (b *EntMutationBuilder) Validate() error {
 	}
 }
 
-func (b *EntMutationBuilder) GetFields() map[string]interface{} {
-	return b.fields
+func (b *EntMutationBuilder) GetRawFields() map[string]interface{} {
+	return b.rawDBFields
 }
 
 func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, error) {
