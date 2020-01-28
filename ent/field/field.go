@@ -25,11 +25,6 @@ type Field struct {
 	fkeyField       string
 }
 
-// ent.FieldMap
-// built in validators
-// then format before storing?
-// then other validators? (what if these validators want raw vs not-raw format?)
-
 func (f *Field) Valid(name string, val interface{}) error {
 	if val == nil {
 		// nothing to do here

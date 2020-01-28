@@ -92,7 +92,6 @@ func NewMutationBuilder(
   {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
 func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$builderName}} {
   b.{{$fieldInstanceName}} = &{{$field.InstanceName}}
-{{/* TODO sort fields */ -}}
   {{$inverseEdge := $field.InverseEdge -}}
   {{ if $inverseEdge -}} 
     {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
