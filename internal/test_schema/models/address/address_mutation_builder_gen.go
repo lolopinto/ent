@@ -14,12 +14,12 @@ type AddressMutationBuilder struct {
 	requiredFields []string
 	builder        *actions.EntMutationBuilder
 	address        *models.Address
-	streetAddress  *string
-	zip            *string
 	city           *string
 	country        *string
-	state          *string
 	residentNames  *[]string
+	state          *string
+	streetAddress  *string
+	zip            *string
 }
 
 func NewMutationBuilder(
@@ -46,16 +46,6 @@ func NewMutationBuilder(
 	return ret
 }
 
-func (b *AddressMutationBuilder) SetStreetAddress(streetAddress string) *AddressMutationBuilder {
-	b.streetAddress = &streetAddress
-	return b
-}
-
-func (b *AddressMutationBuilder) SetZip(zip string) *AddressMutationBuilder {
-	b.zip = &zip
-	return b
-}
-
 func (b *AddressMutationBuilder) SetCity(city string) *AddressMutationBuilder {
 	b.city = &city
 	return b
@@ -66,28 +56,24 @@ func (b *AddressMutationBuilder) SetCountry(country string) *AddressMutationBuil
 	return b
 }
 
-func (b *AddressMutationBuilder) SetState(state string) *AddressMutationBuilder {
-	b.state = &state
-	return b
-}
-
 func (b *AddressMutationBuilder) SetResidentNames(residentNames []string) *AddressMutationBuilder {
 	b.residentNames = &residentNames
 	return b
 }
 
-func (b *AddressMutationBuilder) GetStreetAddress() string {
-	if b.streetAddress == nil {
-		return ""
-	}
-	return *b.streetAddress
+func (b *AddressMutationBuilder) SetState(state string) *AddressMutationBuilder {
+	b.state = &state
+	return b
 }
 
-func (b *AddressMutationBuilder) GetZip() string {
-	if b.zip == nil {
-		return ""
-	}
-	return *b.zip
+func (b *AddressMutationBuilder) SetStreetAddress(streetAddress string) *AddressMutationBuilder {
+	b.streetAddress = &streetAddress
+	return b
+}
+
+func (b *AddressMutationBuilder) SetZip(zip string) *AddressMutationBuilder {
+	b.zip = &zip
+	return b
 }
 
 func (b *AddressMutationBuilder) GetCity() string {
@@ -104,6 +90,13 @@ func (b *AddressMutationBuilder) GetCountry() string {
 	return *b.country
 }
 
+func (b *AddressMutationBuilder) GetResidentNames() []string {
+	if b.residentNames == nil {
+		return nil
+	}
+	return *b.residentNames
+}
+
 func (b *AddressMutationBuilder) GetState() string {
 	if b.state == nil {
 		return ""
@@ -111,11 +104,18 @@ func (b *AddressMutationBuilder) GetState() string {
 	return *b.state
 }
 
-func (b *AddressMutationBuilder) GetResidentNames() []string {
-	if b.residentNames == nil {
-		return nil
+func (b *AddressMutationBuilder) GetStreetAddress() string {
+	if b.streetAddress == nil {
+		return ""
 	}
-	return *b.residentNames
+	return *b.streetAddress
+}
+
+func (b *AddressMutationBuilder) GetZip() string {
+	if b.zip == nil {
+		return ""
+	}
+	return *b.zip
 }
 
 func (b *AddressMutationBuilder) GetViewer() viewer.ViewerContext {
@@ -155,16 +155,6 @@ func (b *AddressMutationBuilder) buildFields() ent.ActionFieldMap {
 	// Need to have Id fields be fine with Builder
 
 	// if required, field is not nil or field explicitly set to nil, add the field
-	if b.streetAddress != nil {
-		addField("StreetAddress", *b.streetAddress)
-	} else if m["StreetAddress"] { // nil but required
-		addField("StreetAddress", nil)
-	}
-	if b.zip != nil {
-		addField("Zip", *b.zip)
-	} else if m["Zip"] { // nil but required
-		addField("Zip", nil)
-	}
 	if b.city != nil {
 		addField("City", *b.city)
 	} else if m["City"] { // nil but required
@@ -175,15 +165,25 @@ func (b *AddressMutationBuilder) buildFields() ent.ActionFieldMap {
 	} else if m["Country"] { // nil but required
 		addField("Country", nil)
 	}
+	if b.residentNames != nil {
+		addField("ResidentNames", *b.residentNames)
+	} else if m["ResidentNames"] { // nil but required
+		addField("ResidentNames", nil)
+	}
 	if b.state != nil {
 		addField("State", *b.state)
 	} else if m["State"] { // nil but required
 		addField("State", nil)
 	}
-	if b.residentNames != nil {
-		addField("ResidentNames", *b.residentNames)
-	} else if m["ResidentNames"] { // nil but required
-		addField("ResidentNames", nil)
+	if b.streetAddress != nil {
+		addField("StreetAddress", *b.streetAddress)
+	} else if m["StreetAddress"] { // nil but required
+		addField("StreetAddress", nil)
+	}
+	if b.zip != nil {
+		addField("Zip", *b.zip)
+	} else if m["Zip"] { // nil but required
+		addField("Zip", nil)
 	}
 	return fields
 }

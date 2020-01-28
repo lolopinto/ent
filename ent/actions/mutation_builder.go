@@ -77,8 +77,6 @@ func (b *EntMutationBuilder) flagWrite() {
 }
 
 func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}) interface{} {
-	// this is a tricky method. should only be called by places that have a Lock()/Unlock protection in it.
-	// Right now that's done by SetField()
 	// changing things up and seeing if putting this lock in here breaks things....
 	builder, ok := val.(ent.MutationBuilder)
 	if !ok {

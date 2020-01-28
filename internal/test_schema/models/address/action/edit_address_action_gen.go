@@ -74,18 +74,6 @@ func (action *EditAddressAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// SetStreetAddress sets the StreetAddress while editing the Address ent
-func (action *EditAddressAction) SetStreetAddress(streetAddress string) *EditAddressAction {
-	action.builder.SetStreetAddress(streetAddress)
-	return action
-}
-
-// SetZip sets the Zip while editing the Address ent
-func (action *EditAddressAction) SetZip(zip string) *EditAddressAction {
-	action.builder.SetZip(zip)
-	return action
-}
-
 // SetCity sets the City while editing the Address ent
 func (action *EditAddressAction) SetCity(city string) *EditAddressAction {
 	action.builder.SetCity(city)
@@ -98,15 +86,27 @@ func (action *EditAddressAction) SetCountry(country string) *EditAddressAction {
 	return action
 }
 
+// SetResidentNames sets the ResidentNames while editing the Address ent
+func (action *EditAddressAction) SetResidentNames(residentNames []string) *EditAddressAction {
+	action.builder.SetResidentNames(residentNames)
+	return action
+}
+
 // SetState sets the State while editing the Address ent
 func (action *EditAddressAction) SetState(state string) *EditAddressAction {
 	action.builder.SetState(state)
 	return action
 }
 
-// SetResidentNames sets the ResidentNames while editing the Address ent
-func (action *EditAddressAction) SetResidentNames(residentNames []string) *EditAddressAction {
-	action.builder.SetResidentNames(residentNames)
+// SetStreetAddress sets the StreetAddress while editing the Address ent
+func (action *EditAddressAction) SetStreetAddress(streetAddress string) *EditAddressAction {
+	action.builder.SetStreetAddress(streetAddress)
+	return action
+}
+
+// SetZip sets the Zip while editing the Address ent
+func (action *EditAddressAction) SetZip(zip string) *EditAddressAction {
+	action.builder.SetZip(zip)
 	return action
 }
 

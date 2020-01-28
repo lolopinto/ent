@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"sort"
 	"sync"
 
 	"github.com/lolopinto/ent/internal/astparser"
@@ -53,6 +54,20 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 		}(idx)
 	}
 	wg.Wait()
+
+	// sort fields
+	sort.Slice(fieldInfo.Fields, func(i, j int) bool {
+		// sort lexicographically but put ID first
+		if fieldInfo.Fields[i].FieldName == "ID" {
+			return true
+		}
+		if fieldInfo.Fields[j].FieldName == "ID" {
+			return false
+		}
+
+		return fieldInfo.Fields[i].FieldName < fieldInfo.Fields[j].FieldName
+	})
+
 	return fieldInfo, sErr.Err()
 }
 

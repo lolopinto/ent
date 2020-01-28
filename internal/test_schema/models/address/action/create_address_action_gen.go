@@ -73,18 +73,6 @@ func (action *CreateAddressAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// SetStreetAddress sets the StreetAddress while editing the Address ent
-func (action *CreateAddressAction) SetStreetAddress(streetAddress string) *CreateAddressAction {
-	action.builder.SetStreetAddress(streetAddress)
-	return action
-}
-
-// SetZip sets the Zip while editing the Address ent
-func (action *CreateAddressAction) SetZip(zip string) *CreateAddressAction {
-	action.builder.SetZip(zip)
-	return action
-}
-
 // SetCity sets the City while editing the Address ent
 func (action *CreateAddressAction) SetCity(city string) *CreateAddressAction {
 	action.builder.SetCity(city)
@@ -97,26 +85,38 @@ func (action *CreateAddressAction) SetCountry(country string) *CreateAddressActi
 	return action
 }
 
-// SetState sets the State while editing the Address ent
-func (action *CreateAddressAction) SetState(state string) *CreateAddressAction {
-	action.builder.SetState(state)
-	return action
-}
-
 // SetResidentNames sets the ResidentNames while editing the Address ent
 func (action *CreateAddressAction) SetResidentNames(residentNames []string) *CreateAddressAction {
 	action.builder.SetResidentNames(residentNames)
 	return action
 }
 
+// SetState sets the State while editing the Address ent
+func (action *CreateAddressAction) SetState(state string) *CreateAddressAction {
+	action.builder.SetState(state)
+	return action
+}
+
+// SetStreetAddress sets the StreetAddress while editing the Address ent
+func (action *CreateAddressAction) SetStreetAddress(streetAddress string) *CreateAddressAction {
+	action.builder.SetStreetAddress(streetAddress)
+	return action
+}
+
+// SetZip sets the Zip while editing the Address ent
+func (action *CreateAddressAction) SetZip(zip string) *CreateAddressAction {
+	action.builder.SetZip(zip)
+	return action
+}
+
 func (action *CreateAddressAction) requiredFields() []string {
 	return []string{
-		"StreetAddress",
-		"Zip",
 		"City",
 		"Country",
-		"State",
 		"ResidentNames",
+		"State",
+		"StreetAddress",
+		"Zip",
 	}
 }
 
