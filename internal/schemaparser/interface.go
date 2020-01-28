@@ -153,6 +153,12 @@ func LoadPackages(p Parser) []*packages.Package {
 	return pkgs
 }
 
+type FunctionSearch struct {
+	PkgName  string
+	FnName   string
+	FileName string
+}
+
 func FindFunction(code, pkgName, fnName string) (*packages.Package, *ast.FuncDecl, error) {
 	overlay := make(map[string]string)
 	overlay["code.go"] = code
@@ -161,21 +167,43 @@ func FindFunction(code, pkgName, fnName string) (*packages.Package, *ast.FuncDec
 		Sources:     overlay,
 		PackageName: pkgName,
 	}
+	fns := FunctionSearch{
+		PkgName: pkgName,
+		FnName:  fnName,
+	}
+	return FindFunctionFromParser(parser, fns)
+}
+
+func FindFunctionFromParser(parser Parser, fns FunctionSearch) (*packages.Package, *ast.FuncDecl, error) {
 	pkg := LoadPackage(parser)
 	if len(pkg.Errors) != 0 {
 		return nil, nil, util.CoalesceErrSlice(pkg.Errors)
 	}
 
-	if len(pkg.GoFiles) != 1 {
-		return nil, nil, errors.New("expected 1 go file")
+	var file *ast.File
+	if fns.FileName == "" {
+		if len(pkg.GoFiles) != 1 {
+			return nil, nil, errors.New("expected 1 go file")
+		}
+		file = pkg.Syntax[0]
+	} else {
+		for idx, filename := range pkg.GoFiles {
+			if strings.HasSuffix(filename, fns.FileName) {
+				file = pkg.Syntax[idx]
+				break
+			}
+		}
+	}
+	if file == nil {
+		return nil, nil, errors.New("couldn't find any file")
 	}
 
-	for _, decl := range pkg.Syntax[0].Decls {
+	for _, decl := range file.Decls {
 		if fn, ok := decl.(*ast.FuncDecl); ok &&
-			fn.Name.Name == fnName {
+			fn.Name.Name == fns.FnName {
 			return pkg, fn, nil
 		}
 	}
 
-	return nil, nil, fmt.Errorf("couldn't find function named %s", fnName)
+	return nil, nil, fmt.Errorf("couldn't find function named %s", fns.FnName)
 }

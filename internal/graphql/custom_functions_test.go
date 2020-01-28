@@ -2,7 +2,6 @@ package graphql
 
 import (
 	"bytes"
-	"go/ast"
 	"go/format"
 	"go/printer"
 	"io/ioutil"
@@ -12,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/iancoleman/strcase"
-	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/enttype"
@@ -20,7 +18,11 @@ import (
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+// TODO: this entire file is slow. figure out how to make it faster
+// and break into integration test framework since we don't necessarily need to run that often
 
 func TestFunctionThatReturns(t *testing.T) {
 	verifyGeneratedCode(t, `package graphql
@@ -614,41 +616,23 @@ func verifyGeneratedCode(t *testing.T, userCode, fnName, receiverName, expectedG
 
 	parse(t, userCode, dirPath, packageDir, nodes)
 
-	pkg := schemaparser.LoadPackage(
+	pkg, fn, err := schemaparser.FindFunctionFromParser(
 		&schemaparser.ConfigSchemaParser{
 			AbsRootPath: packageDir,
 		},
+		schemaparser.FunctionSearch{
+			FnName:   fnName,
+			FileName: "resolver.go",
+		},
 	)
-	var file *ast.File
-	for idx, filename := range pkg.GoFiles {
-		if strings.HasSuffix(filename, "resolver.go") {
-			file = pkg.Syntax[idx]
-			break
-		}
-	}
-	assert.NotNil(t, file)
-
-	// find function
-	var userFn *ast.FuncDecl
-	ast.Inspect(file, func(node ast.Node) bool {
-		if fn, ok := node.(*ast.FuncDecl); ok {
-			if fn.Name.Name == fnName && fn.Recv != nil {
-				info, err := astparser.ParseFieldType(fn.Recv.List[0])
-				assert.NotNil(t, err)
-				if info.IdentName == receiverName {
-					userFn = fn
-					return false
-				}
-			}
-		}
-		return true
-	})
-
-	assert.NotNil(t, userFn)
+	require.Nil(t, err)
+	require.NotNil(t, pkg)
+	require.NotNil(t, fn)
+	require.NotNil(t, fn.Recv)
 
 	// confirm that generated code is same as expected code
 	var buffer bytes.Buffer
-	printer.Fprint(&buffer, pkg.Fset, userFn)
+	printer.Fprint(&buffer, pkg.Fset, fn)
 
 	expFormattedCode, err := format.Source([]byte(expectedGeneratedFnCode))
 	if err != nil {
@@ -669,9 +653,7 @@ func parse(t *testing.T, code, dirPath, packagePath string, nodes []string) {
 		0666,
 	)
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.Nil(t, err)
 
 	basePath := filepath.Base(dirPath)
 

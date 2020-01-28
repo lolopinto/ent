@@ -57,7 +57,6 @@ func Parse(expr ast.Expr) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	//	spew.Dump(expr)
 	return ret, err
 }
 
