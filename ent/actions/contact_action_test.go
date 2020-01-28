@@ -55,10 +55,9 @@ func (a *createContactAction) Entity() ent.Entity {
 }
 
 func (a *createContactAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	// hmm
 	a.builder.SetTriggers(triggers)
 	for _, t := range triggers {
-		trigger, ok := t.(ContactTrigger)
+		trigger, ok := t.(ContactCallbackWithBuilder)
 		if !ok {
 			return errors.New("invalid trigger")
 		}
@@ -71,16 +70,16 @@ func (a *createContactAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(a)
 }
 
-type ContactTrigger interface {
+type ContactCallbackWithBuilder interface {
 	SetBuilder(*actions.EntMutationBuilder)
 }
 
-type ContactMutationBuilderTrigger struct {
+type ContactMutationCallback struct {
 	Builder *actions.EntMutationBuilder
 }
 
-func (trigger *ContactMutationBuilderTrigger) SetBuilder(b *actions.EntMutationBuilder) {
-	trigger.Builder = b
+func (callback *ContactMutationCallback) SetBuilder(b *actions.EntMutationBuilder) {
+	callback.Builder = b
 }
 
 type createContactAndEmailAction struct {
@@ -94,7 +93,7 @@ func (action *createContactAndEmailAction) GetTriggers() []actions.Trigger {
 }
 
 type ContactCreateEmailTrigger struct {
-	ContactMutationBuilderTrigger
+	ContactMutationCallback
 }
 
 func (trigger *ContactCreateEmailTrigger) GetChangeset() (ent.Changeset, error) {
@@ -109,8 +108,6 @@ func (trigger *ContactCreateEmailTrigger) GetChangeset() (ent.Changeset, error) 
 		"email_address": util.GenerateRandEmail(),
 		"label":         "main email",
 		"contact_id":    trigger.Builder,
-		// now this is where we need to combine things
-		// TODO for dependencies and other things
 	})
 
 	return builder.GetChangeset()

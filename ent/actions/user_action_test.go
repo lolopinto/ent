@@ -34,10 +34,9 @@ func (a *userAction) GetBuilder() ent.MutationBuilder {
 // this will be auto-generated for actions
 // We need to do this because of how go's type system works
 func (a *userAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	// hmm
 	a.builder.SetTriggers(triggers)
 	for _, t := range triggers {
-		trigger, ok := t.(UserTrigger)
+		trigger, ok := t.(UserCallbackWithBuilder)
 		if !ok {
 			return errors.New("invalid trigger")
 		}
@@ -49,9 +48,20 @@ func (a *userAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
 func (a *userAction) SetBuilderOnObservers(observers []actions.Observer) error {
 	a.builder.SetObservers(observers)
 	for _, o := range observers {
-		observer, ok := o.(UserObserver)
+		observer, ok := o.(UserCallbackWithBuilder)
 		if ok {
 			observer.SetBuilder(a.builder)
+		}
+	}
+	return nil
+}
+
+func (a *userAction) SetBuilderOnValidators(validators []actions.Validator) error {
+	a.builder.SetValidators(validators)
+	for _, v := range validators {
+		validator, ok := v.(UserCallbackWithBuilder)
+		if ok {
+			validator.SetBuilder(a.builder)
 		}
 	}
 	return nil
@@ -170,32 +180,20 @@ func (a *deleteUserAction) GetObservers() []actions.Observer {
 
 var _ actions.ActionWithPermissions = &editUserAction{}
 
-type UserTrigger interface {
+type UserCallbackWithBuilder interface {
 	SetBuilder(*actions.EntMutationBuilder)
 }
 
-type UserMutationBuilderTrigger struct {
+type UserMutationCallback struct {
 	Builder *actions.EntMutationBuilder
 }
 
-func (trigger *UserMutationBuilderTrigger) SetBuilder(b *actions.EntMutationBuilder) {
-	trigger.Builder = b
-}
-
-type UserObserver interface {
-	SetBuilder(*actions.EntMutationBuilder)
-}
-
-type UserMutationBuilderObserver struct {
-	Builder *actions.EntMutationBuilder
-}
-
-func (observer *UserMutationBuilderObserver) SetBuilder(b *actions.EntMutationBuilder) {
-	observer.Builder = b
+func (callback *UserMutationCallback) SetBuilder(b *actions.EntMutationBuilder) {
+	callback.Builder = b
 }
 
 type UserCreateContactTrigger struct {
-	UserMutationBuilderTrigger
+	UserMutationCallback
 }
 
 func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
@@ -215,7 +213,7 @@ func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
 }
 
 type UserCreateContactAndEmailTrigger struct {
-	UserMutationBuilderTrigger
+	UserMutationCallback
 }
 
 func (trigger *UserCreateContactAndEmailTrigger) GetChangeset() (ent.Changeset, error) {
@@ -236,7 +234,7 @@ func (trigger *UserCreateContactAndEmailTrigger) GetChangeset() (ent.Changeset, 
 }
 
 type UserCreateEventTrigger struct {
-	UserMutationBuilderTrigger
+	UserMutationCallback
 }
 
 func (trigger *UserCreateEventTrigger) GetChangeset() (ent.Changeset, error) {
@@ -251,7 +249,7 @@ func (trigger *UserCreateEventTrigger) GetChangeset() (ent.Changeset, error) {
 }
 
 type UserSendByeEmailObserver struct {
-	UserMutationBuilderObserver
+	UserMutationCallback
 }
 
 func (observer *UserSendByeEmailObserver) Observe() error {

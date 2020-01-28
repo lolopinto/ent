@@ -21,18 +21,8 @@ type Action interface {
 
 type ActionWithValidator interface {
 	Action
-	Validate() error
+	Validate() error // TODO move this into Action. If we're going to have a Validate() method
 }
-
-// TODO
-// type Validator interface {
-// 	Valid() bool
-// }
-
-// type ActionWithValidators interface {
-// Action
-// 	GetValidators() []Validator
-// }
 
 type ActionWithPermissions interface {
 	Action
@@ -84,6 +74,21 @@ type ChangesetWithObservers interface {
 	Observers() []Observer
 }
 
+type ChangesetWithValidators interface {
+	ent.Changeset
+	Validators() []Validator
+}
+
+type Validator interface {
+	Validate() error
+}
+
+type ActionWithValidators interface {
+	Action
+	GetValidators() []Validator
+	SetBuilderOnValidators([]Validator) error
+}
+
 func GetChangeset(action Action) (ent.Changeset, error) {
 	if actionWithPerms, ok := action.(ActionWithPermissions); ok {
 		if err := applyActionPermissions(actionWithPerms); err != nil {
@@ -103,6 +108,12 @@ func GetChangeset(action Action) (ent.Changeset, error) {
 
 	if actionWithObservers, ok := action.(ActionWithObservers); ok {
 		if err := setBuilderOnObservers(actionWithObservers); err != nil {
+			return nil, err
+		}
+	}
+
+	if actionWithValidators, ok := action.(ActionWithValidators); ok {
+		if err := setBuilderOnValidators(actionWithValidators); err != nil {
 			return nil, err
 		}
 	}
@@ -163,4 +174,8 @@ func setBuilderOnTriggers(action ActionWithTriggers) error {
 
 func setBuilderOnObservers(action ActionWithObservers) error {
 	return action.SetBuilderOnObservers(action.GetObservers())
+}
+
+func setBuilderOnValidators(action ActionWithValidators) error {
+	return action.SetBuilderOnValidators(action.GetValidators())
 }

@@ -13,6 +13,7 @@ import (
 
 // fields in generated builder not in actions
 // bug in in having it in actions now because if we set something in actions that's not there, there'll be an issue
+// TODO rename to [Base|Abstract]MutationBuilder or something like that
 type EntMutationBuilder struct {
 	Viewer          viewer.ViewerContext
 	ExistingEntity  ent.Entity
@@ -28,6 +29,7 @@ type EntMutationBuilder struct {
 	validated       bool
 	triggers        []Trigger
 	observers       []Observer
+	validators      []Validator
 	mu              sync.RWMutex
 	// what happens if there are circular dependencies?
 	// let's assume not possible for now but it's possible we want to store the ID in different places/
@@ -93,12 +95,18 @@ func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}
 	return builder.GetPlaceholderID()
 }
 
-func (b *EntMutationBuilder) processRawFields() map[string]interface{} {
-	fields := make(map[string]interface{})
-	for dbKey, value := range b.rawDBFields {
-		fields[dbKey] = b.resolveFieldValue(dbKey, value)
-	}
-	return fields
+func (b *EntMutationBuilder) processRawFields() chan fieldsResult {
+	result := make(chan fieldsResult)
+	go func() {
+		fields := make(map[string]interface{})
+		for dbKey, value := range b.rawDBFields {
+			fields[dbKey] = b.resolveFieldValue(dbKey, value)
+		}
+		result <- fieldsResult{
+			fields: fields,
+		}
+	}()
+	return result
 }
 
 func (b *EntMutationBuilder) SetRawFields(m map[string]interface{}) {
@@ -235,6 +243,12 @@ func (b *EntMutationBuilder) SetObservers(observers []Observer) {
 	b.observers = observers
 }
 
+func (b *EntMutationBuilder) SetValidators(validators []Validator) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.validators = validators
+}
+
 func (b *EntMutationBuilder) runTriggers() error {
 	// nothing to do here
 	if len(b.triggers) == 0 {
@@ -261,12 +275,22 @@ func (b *EntMutationBuilder) runTriggers() error {
 			if ok {
 				b.observers = append(b.observers, cWithObservers.Observers()...)
 			}
+
+			cWithValidators, ok := c.(ChangesetWithValidators)
+			if ok {
+				b.validators = append(b.validators, cWithValidators.Validators()...)
+			}
 		}
 		b.changesets = changesets
 	}
 	return nil
 }
 
+// Note that this shouldn't be called directly
+// Need to pass things to it to work correctly
+// all of these should be passed in constructor?
+// TODO refactor this and construction so that calling action.Validate() works
+// shouldn't need the workarounds we did for GetChangeset e.g ent.Save()
 func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	// should not be able to get a changeset for an invalid builder
 	if !b.validated {
@@ -337,69 +361,108 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		dependencies:  b.dependencies,
 		changesets:    b.changesets,
 		observers:     b.observers,
+		validators:    b.validators,
 	}, nil
 }
 
-func (b *EntMutationBuilder) validateFieldInfos() (ent.ActionFieldMap, error) {
-	if b.buildFieldsFn == nil {
-		return nil, nil
-	}
-
-	// gather fieldInfos, validate as needed and then return
-	fieldInfos := b.buildFieldsFn()
-	for fieldName, fieldInfo := range fieldInfos {
-		if err := fieldInfo.Field.Valid(fieldName, fieldInfo.Value); err != nil {
-			return nil, err
-		}
-	}
-	return fieldInfos, nil
+type fieldsResult struct {
+	fields map[string]interface{}
+	err    error
 }
 
-// this is just done before writing
-func (b *EntMutationBuilder) formatFieldInfos(fieldInfos ent.ActionFieldMap) (map[string]interface{}, error) {
-	fields := make(map[string]interface{})
-
-	// this is also where default values will be set eventually
-	for fieldName, fieldInfo := range fieldInfos {
-		dbKey := fieldInfo.Field.DBKey(fieldName)
-
-		val, err := fieldInfo.Field.Format(fieldInfo.Value)
-		if err != nil {
-			return nil, err
+func (b *EntMutationBuilder) validateFieldInfos() chan fieldsResult {
+	result := make(chan fieldsResult)
+	go func() {
+		if b.buildFieldsFn == nil {
+			result <- fieldsResult{}
+			return
 		}
-		fields[dbKey] = b.resolveFieldValue(dbKey, val)
-	}
-	return fields, nil
+		// gather fieldInfos, validate as needed and then return
+		fieldInfos := b.buildFieldsFn()
+
+		fields := make(map[string]interface{})
+		var serr syncerr.Error
+		var wg sync.WaitGroup
+		var m sync.Mutex
+		wg.Add(len(fieldInfos))
+
+		for fieldName := range fieldInfos {
+			go func(fieldName string) {
+				defer wg.Done()
+				fieldInfo := fieldInfos[fieldName]
+
+				// validate field
+				if err := fieldInfo.Field.Valid(fieldName, fieldInfo.Value); err != nil {
+					serr.Append(err)
+					return
+				}
+
+				dbKey := fieldInfo.Field.DBKey(fieldName)
+
+				// this is also where default values will be set eventually
+				// format as needed
+				val, err := fieldInfo.Field.Format(fieldInfo.Value)
+				if err != nil {
+					serr.Append(err)
+					return
+				}
+				m.Lock()
+				defer m.Unlock()
+				fields[dbKey] = b.resolveFieldValue(dbKey, val)
+			}(fieldName)
+		}
+		wg.Wait()
+
+		result <- fieldsResult{
+			err:    serr.Err(),
+			fields: fields,
+		}
+	}()
+	return result
+}
+
+func (b *EntMutationBuilder) runExtraValidators() chan error {
+	errChan := make(chan error)
+
+	go func() {
+		var serr syncerr.Error
+		var wg sync.WaitGroup
+		wg.Add(len(b.validators))
+		for idx := range b.validators {
+			go func(idx int) {
+				defer wg.Done()
+				val := b.validators[idx]
+				if err := val.Validate(); err != nil {
+					serr.Append(err)
+				}
+			}(idx)
+		}
+		wg.Wait()
+		errChan <- serr.Err()
+	}()
+	return errChan
 }
 
 func (b *EntMutationBuilder) validate() error {
-	// move from here to just before format into Validate()?
 	if err := b.runTriggers(); err != nil {
 		return err
 	}
 
-	// this is the gather fields method function
-	// we validate (if needed)
-	// run any extra validators
-	// tranform and save as needed
+	// validators that come from fields
+	var resultChan chan fieldsResult
+	if b.rawDBFields != nil {
+		resultChan = b.processRawFields()
+	} else {
+		resultChan = b.validateFieldInfos()
+	}
+	// extra user-defined validators
+	validatorChan := b.runExtraValidators()
 
-	fieldInfos, err := b.validateFieldInfos()
-	if err != nil {
+	validatorErr, result := <-validatorChan, <-resultChan
+	if err := util.CoalesceErr(validatorErr, result.err); err != nil {
 		return err
 	}
-
-	// TODO more validators run here
-
-	var fields map[string]interface{}
-	if fieldInfos != nil {
-		fields, err = b.formatFieldInfos(fieldInfos)
-		if err != nil {
-			return err
-		}
-	} else if b.rawDBFields != nil {
-		fields = b.processRawFields()
-	}
-	b.validatedFields = fields
+	b.validatedFields = result.fields
 
 	return nil
 }

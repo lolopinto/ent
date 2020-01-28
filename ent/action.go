@@ -63,12 +63,6 @@ type FieldInfo struct {
 // makes it easier to change Viewer because I can change it once and it gets changed everywhere...
 
 type MutationBuilder interface {
-	// TODO this needs to be aware of validators
-	// triggers and observers
-	// observers need to be added to the changeset
-	// critical observers need to be added to the changeset
-	// regular observers done later
-
 	// placeholder id to be used by fields/values in the mutation and replaced after we have a created ent
 	//	GetPlaceholderID() string
 	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions
