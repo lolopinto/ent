@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/syncerr"
@@ -23,15 +22,16 @@ type EntMutationBuilder struct {
 	buildFieldsFn  func() ent.ActionFieldMap2
 	// for now, actions map to all the fields so it's fine. this will need to be changed when each EntMutationBuilder is generated
 	// At that point, probably makes sense to have each generated Builder handle this.
-	FieldMap      ent.ActionFieldMap
-	rawDBFields   map[string]interface{}
-	edges         []*ent.EdgeOperation
-	edgeTypes     map[ent.EdgeType]bool
-	placeholderID string
-	validated     bool
-	triggers      []Trigger
-	observers     []Observer
-	mu            sync.RWMutex
+	FieldMap        ent.ActionFieldMap
+	rawDBFields     map[string]interface{}
+	validatedFields map[string]interface{}
+	edges           []*ent.EdgeOperation
+	edgeTypes       map[ent.EdgeType]bool
+	placeholderID   string
+	validated       bool
+	triggers        []Trigger
+	observers       []Observer
+	mu              sync.RWMutex
 	// what happens if there are circular dependencies?
 	// let's assume not possible for now but it's possible we want to store the ID in different places/
 	fieldsWithResolvers []string
@@ -88,7 +88,6 @@ func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	//	spew.Dump(fieldName, builder)
 	if b.dependencies == nil {
 		b.dependencies = make(ent.MutationBuilderMap)
 	}
@@ -258,6 +257,7 @@ func (b *EntMutationBuilder) runTriggers() error {
 	if len(changesets) != 0 {
 		b.mu.Lock()
 		defer b.mu.Unlock()
+
 		// get all the observers from all the dependent changesets and keep track of them to be run at the end...
 		for _, c := range changesets {
 			cWithObservers, ok := c.(ChangesetWithObservers)
@@ -271,44 +271,11 @@ func (b *EntMutationBuilder) runTriggers() error {
 }
 
 func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
-	// move from here to just before format into Validate()?
-	if err := b.runTriggers(); err != nil {
-		return nil, err
-	}
-
-	//	if b.rawFields !=
-
-	// this is the gather fields method function
-	// we validate (if needed)
-	// run any extra validators
-	// tranform and save as needed
-
-	// everything being done here, ignoring Validate() for now!
-
-	fieldInfos, err := b.validate()
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO more validators run here
-
-	var fields map[string]interface{}
-	if fieldInfos != nil {
-		fields, err = b.formatFields(fieldInfos)
-		if err != nil {
-			return nil, err
-		}
-	} else if b.rawDBFields != nil {
-		fields = b.processRawFields()
-	}
-
 	// should not be able to get a changeset for an invalid builder
 	if !b.validated {
-		// TODO
-		// soulds like validate() needs to call runTriggers also...
-		// if err := b.Validate(); err != nil {
-		// 	return nil, err
-		// }
+		if err := b.validate(); err != nil {
+			return nil, err
+		}
 	}
 
 	edgeData, err := b.loadEdges()
@@ -325,8 +292,6 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	} else {
 		// TODO how do we format placeholders??
 
-		//		spew.Dump(fields)
-		//spew.Dump(b.fieldsWithResolvers)
 		// only worth doing it if there are fields
 		// TODO shouldn't do a write if len(fields) == 0
 		// need to change the code to always load the user after the write tho...
@@ -335,7 +300,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 				ExistingEnt:         b.ExistingEntity,
 				Entity:              b.entity,
 				EntConfig:           b.EntConfig,
-				Fields:              fields,
+				Fields:              b.validatedFields,
 				FieldsWithResolvers: b.fieldsWithResolvers,
 				Operation:           b.Operation,
 			},
@@ -378,17 +343,15 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	}, nil
 }
 
-func (b *EntMutationBuilder) validate() (ent.ActionFieldMap2, error) {
+func (b *EntMutationBuilder) validateFieldInfos() (ent.ActionFieldMap2, error) {
 	if b.buildFieldsFn == nil {
 		return nil, nil
 	}
-	// hmm, can't run validators until we get everything because we need
 
 	// gather fieldInfos, validate as needed and then return
 	fieldInfos := b.buildFieldsFn()
 	for fieldName, fieldInfo := range fieldInfos {
 		if err := fieldInfo.Field.Valid(fieldName, fieldInfo.Value); err != nil {
-			spew.Dump("error", err)
 			return nil, err
 		}
 	}
@@ -396,7 +359,7 @@ func (b *EntMutationBuilder) validate() (ent.ActionFieldMap2, error) {
 }
 
 // this is just done before writing
-func (b *EntMutationBuilder) formatFields(fieldInfos ent.ActionFieldMap2) (map[string]interface{}, error) {
+func (b *EntMutationBuilder) formatFieldInfos(fieldInfos ent.ActionFieldMap2) (map[string]interface{}, error) {
 	fields := make(map[string]interface{})
 
 	// this is also where default values will be set eventually
@@ -412,41 +375,49 @@ func (b *EntMutationBuilder) formatFields(fieldInfos ent.ActionFieldMap2) (map[s
 	return fields, nil
 }
 
-func (b *EntMutationBuilder) Validate() error {
-	// TODO...
+func (b *EntMutationBuilder) validate() error {
+	// move from here to just before format into Validate()?
+	if err := b.runTriggers(); err != nil {
+		return err
+	}
+
+	// this is the gather fields method function
+	// we validate (if needed)
+	// run any extra validators
+	// tranform and save as needed
+
+	fieldInfos, err := b.validateFieldInfos()
+	if err != nil {
+		return err
+	}
+
+	// TODO more validators run here
+
+	var fields map[string]interface{}
+	if fieldInfos != nil {
+		fields, err = b.formatFieldInfos(fieldInfos)
+		if err != nil {
+			return err
+		}
+	} else if b.rawDBFields != nil {
+		fields = b.processRawFields()
+	}
+	b.validatedFields = fields
+
 	return nil
-	// this isn't being called at alll
-	// TODO...
-	// This will be handled above and eliminated from here...
-	// It doesn't handle calling things on its own
+}
+
+func (b *EntMutationBuilder) Validate() error {
+	// already validated
 	if b.validated {
 		return nil
 	}
-	var errors []*ent.ActionErrorInfo
 
-	// if b.FieldMap == nil && b.fields != nil {
-	// 	return errors.New("MutationBuilder has no fieldMap")
-	// }
-
-	// for fieldName, item := range b.FieldMap {
-	// 	_, ok := b.fields[fieldName]
-
-	// 	// won't work because we have the wrong names in the setters right now
-	// 	if item.Required && !ok {
-	// 		errors = append(errors, &ent.ActionErrorInfo{
-	// 			ErrorMsg: fmt.Sprintf("%s is required and was not set", fieldName),
-	// 		})
-	// 	}
-	// }
-
-	if len(errors) == 0 {
+	err := b.validate()
+	if err == nil {
 		b.validated = true
-		return nil
 	}
-	return &ent.ActionValidationError{
-		Errors:     errors,
-		ActionName: "TODO",
-	}
+	return err
 }
 
 func (b *EntMutationBuilder) GetRawFields() map[string]interface{} {

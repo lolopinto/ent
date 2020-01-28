@@ -101,14 +101,14 @@ func GetChangeset(action Action) (ent.Changeset, error) {
 		}
 	}
 
-	if actionWithValidator, ok := action.(ActionWithValidator); ok {
-		if err := actionWithValidator.Validate(); err != nil {
+	if actionWithObservers, ok := action.(ActionWithObservers); ok {
+		if err := setBuilderOnObservers(actionWithObservers); err != nil {
 			return nil, err
 		}
 	}
 
-	if actionWithObservers, ok := action.(ActionWithObservers); ok {
-		if err := setBuilderOnObservers(actionWithObservers); err != nil {
+	if actionWithValidator, ok := action.(ActionWithValidator); ok {
+		if err := actionWithValidator.Validate(); err != nil {
 			return nil, err
 		}
 	}

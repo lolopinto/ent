@@ -1,8 +1,6 @@
 package ent
 
 import (
-	"fmt"
-
 	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/pkg/errors"
@@ -60,24 +58,6 @@ type ActionFieldMap2 map[string]*FieldInfo
 type FieldInfo struct {
 	Field *field.Field
 	Value interface{}
-}
-
-type ActionErrorInfo struct {
-	ErrorMsg string
-}
-
-type ActionValidationError struct {
-	Errors     []*ActionErrorInfo
-	ActionName string
-}
-
-func (err *ActionValidationError) Error() string {
-	return fmt.Sprintf(
-		"error validating action %s, encountered %d errors validating, errors %v",
-		err.ActionName,
-		len(err.Errors),
-		err.Errors,
-	)
 }
 
 // TODO

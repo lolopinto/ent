@@ -115,7 +115,7 @@ func (suite *generatedActionSuite) TestCreationNotAllFields() {
 		Save()
 
 	assert.NotNil(suite.T(), err)
-	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
+	assert.Error(suite.T(), err)
 }
 
 func (suite *generatedActionSuite) TestValidate() {
@@ -128,8 +128,7 @@ func (suite *generatedActionSuite) TestValidate() {
 	// TODO validate is broken for invalid privacy...
 	// this should also not work if getchangeset doesn't work
 	err := action.Validate()
-	assert.NotNil(suite.T(), err)
-	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
+	assert.Error(suite.T(), err)
 
 	action.SetEmailAddress(util.GenerateRandEmail())
 
@@ -146,8 +145,7 @@ func (suite *generatedActionSuite) TestGetChangeset() {
 
 	// GetChangeset fails if invalid
 	_, err := action.GetChangeset()
-	assert.NotNil(suite.T(), err)
-	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
+	assert.Error(suite.T(), err)
 
 	action.SetEmailAddress(util.GenerateRandEmail())
 
