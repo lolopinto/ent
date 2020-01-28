@@ -14,15 +14,12 @@ import (
 // fields in generated builder not in actions
 // bug in in having it in actions now because if we set something in actions that's not there, there'll be an issue
 type EntMutationBuilder struct {
-	Viewer         viewer.ViewerContext
-	ExistingEntity ent.Entity
-	entity         ent.Entity
-	Operation      ent.WriteOperation
-	EntConfig      ent.Config
-	buildFieldsFn  func() ent.ActionFieldMap2
-	// for now, actions map to all the fields so it's fine. this will need to be changed when each EntMutationBuilder is generated
-	// At that point, probably makes sense to have each generated Builder handle this.
-	FieldMap        ent.ActionFieldMap
+	Viewer          viewer.ViewerContext
+	ExistingEntity  ent.Entity
+	entity          ent.Entity
+	Operation       ent.WriteOperation
+	EntConfig       ent.Config
+	buildFieldsFn   func() ent.ActionFieldMap
 	rawDBFields     map[string]interface{}
 	validatedFields map[string]interface{}
 	edges           []*ent.EdgeOperation
@@ -46,7 +43,7 @@ func ExistingEnt(existingEnt ent.Entity) func(*EntMutationBuilder) {
 	}
 }
 
-func BuildFields(buildFieldsFn func() ent.ActionFieldMap2) func(*EntMutationBuilder) {
+func BuildFields(buildFieldsFn func() ent.ActionFieldMap) func(*EntMutationBuilder) {
 	return func(mb *EntMutationBuilder) {
 		mb.buildFieldsFn = buildFieldsFn
 	}
@@ -343,7 +340,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	}, nil
 }
 
-func (b *EntMutationBuilder) validateFieldInfos() (ent.ActionFieldMap2, error) {
+func (b *EntMutationBuilder) validateFieldInfos() (ent.ActionFieldMap, error) {
 	if b.buildFieldsFn == nil {
 		return nil, nil
 	}
@@ -359,7 +356,7 @@ func (b *EntMutationBuilder) validateFieldInfos() (ent.ActionFieldMap2, error) {
 }
 
 // this is just done before writing
-func (b *EntMutationBuilder) formatFieldInfos(fieldInfos ent.ActionFieldMap2) (map[string]interface{}, error) {
+func (b *EntMutationBuilder) formatFieldInfos(fieldInfos ent.ActionFieldMap) (map[string]interface{}, error) {
 	fields := make(map[string]interface{})
 
 	// this is also where default values will be set eventually

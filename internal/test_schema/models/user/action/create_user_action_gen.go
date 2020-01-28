@@ -31,7 +31,6 @@ func CreateUser(v viewer.ViewerContext) *CreateUserAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.InsertOperation,
-		action.getFieldMap(),
 		action.requiredFields(),
 	)
 	action.builder = builder
@@ -98,28 +97,6 @@ func (action *CreateUserAction) SetBio(bio string) *CreateUserAction {
 func (action *CreateUserAction) SetNilableBio(bio *string) *CreateUserAction {
 	action.builder.SetNilableBio(bio)
 	return action
-}
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *CreateUserAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{
-		"EmailAddress": &ent.MutatingFieldInfo{
-			DB:       "email_address",
-			Required: true,
-		},
-		"FirstName": &ent.MutatingFieldInfo{
-			DB:       "first_name",
-			Required: true,
-		},
-		"LastName": &ent.MutatingFieldInfo{
-			DB:       "last_name",
-			Required: true,
-		},
-		"Bio": &ent.MutatingFieldInfo{
-			DB:       "bio",
-			Required: false,
-		},
-	}
 }
 
 func (action *CreateUserAction) requiredFields() []string {

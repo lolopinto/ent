@@ -32,7 +32,6 @@ func CreateEvent(v viewer.ViewerContext) *CreateEventAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.InsertOperation,
-		action.getFieldMap(),
 		action.requiredFields(),
 	)
 	action.builder = builder
@@ -111,32 +110,6 @@ func (action *CreateEventAction) SetNilableEndTime(endTime *time.Time) *CreateEv
 func (action *CreateEventAction) SetLocation(location string) *CreateEventAction {
 	action.builder.SetLocation(location)
 	return action
-}
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *CreateEventAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{
-		"Name": &ent.MutatingFieldInfo{
-			DB:       "name",
-			Required: true,
-		},
-		"UserID": &ent.MutatingFieldInfo{
-			DB:       "user_id",
-			Required: true,
-		},
-		"StartTime": &ent.MutatingFieldInfo{
-			DB:       "start_time",
-			Required: true,
-		},
-		"EndTime": &ent.MutatingFieldInfo{
-			DB:       "end_time",
-			Required: false,
-		},
-		"Location": &ent.MutatingFieldInfo{
-			DB:       "location",
-			Required: true,
-		},
-	}
 }
 
 func (action *CreateEventAction) requiredFields() []string {

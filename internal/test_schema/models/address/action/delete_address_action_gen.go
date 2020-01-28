@@ -31,7 +31,6 @@ func DeleteAddress(v viewer.ViewerContext, address *models.Address) *DeleteAddre
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.DeleteOperation,
-		action.getFieldMap(),
 		action.requiredFields(),
 		actions.ExistingEnt(address),
 	)
@@ -69,11 +68,6 @@ func (action *DeleteAddressAction) Entity() ent.Entity {
 
 func (action *DeleteAddressAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
-}
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *DeleteAddressAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
 }
 
 func (action *DeleteAddressAction) requiredFields() []string {

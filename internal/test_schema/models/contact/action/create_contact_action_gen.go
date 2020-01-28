@@ -31,7 +31,6 @@ func CreateContact(v viewer.ViewerContext) *CreateContactAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.InsertOperation,
-		action.getFieldMap(),
 		action.requiredFields(),
 	)
 	action.builder = builder
@@ -134,40 +133,6 @@ func (action *CreateContactAction) SetPi(pi float64) *CreateContactAction {
 func (action *CreateContactAction) SetNilablePi(pi *float64) *CreateContactAction {
 	action.builder.SetNilablePi(pi)
 	return action
-}
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *CreateContactAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{
-		"EmailAddress": &ent.MutatingFieldInfo{
-			DB:       "email_address",
-			Required: true,
-		},
-		"FirstName": &ent.MutatingFieldInfo{
-			DB:       "first_name",
-			Required: true,
-		},
-		"LastName": &ent.MutatingFieldInfo{
-			DB:       "last_name",
-			Required: true,
-		},
-		"UserID": &ent.MutatingFieldInfo{
-			DB:       "user_id",
-			Required: true,
-		},
-		"Favorite": &ent.MutatingFieldInfo{
-			DB:       "favorite",
-			Required: false,
-		},
-		"NumberOfCalls": &ent.MutatingFieldInfo{
-			DB:       "number_of_calls",
-			Required: false,
-		},
-		"Pi": &ent.MutatingFieldInfo{
-			DB:       "pi",
-			Required: false,
-		},
-	}
 }
 
 func (action *CreateContactAction) requiredFields() []string {

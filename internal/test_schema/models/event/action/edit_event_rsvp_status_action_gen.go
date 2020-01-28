@@ -31,7 +31,6 @@ func EditEventRsvpStatus(v viewer.ViewerContext, event *models.Event) *EditEvent
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.EditOperation,
-		action.getFieldMap(),
 		action.requiredFields(),
 		actions.ExistingEnt(event),
 	)
@@ -81,11 +80,6 @@ func (action *EditEventRsvpStatusAction) AddRsvpStatus(rsvpStatus string) *EditE
 func (action *EditEventRsvpStatusAction) AddUserID(userID string) *EditEventRsvpStatusAction {
 	action.builder.SetIDValue(userID, models.UserType)
 	return action
-}
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *EditEventRsvpStatusAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
 }
 
 func (action *EditEventRsvpStatusAction) requiredFields() []string {

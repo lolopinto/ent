@@ -31,7 +31,6 @@ func DeleteUser(v viewer.ViewerContext, user *models.User) *DeleteUserAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.DeleteOperation,
-		action.getFieldMap(),
 		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
@@ -69,11 +68,6 @@ func (action *DeleteUserAction) Entity() ent.Entity {
 
 func (action *DeleteUserAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
-}
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *DeleteUserAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
 }
 
 func (action *DeleteUserAction) requiredFields() []string {

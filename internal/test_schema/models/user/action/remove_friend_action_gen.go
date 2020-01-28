@@ -31,7 +31,6 @@ func RemoveFriend(v viewer.ViewerContext, user *models.User) *RemoveFriendAction
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.EditOperation,
-		action.getFieldMap(),
 		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
@@ -81,11 +80,6 @@ func (action *RemoveFriendAction) RemoveFriends(users ...*models.User) *RemoveFr
 func (action *RemoveFriendAction) RemoveFriendID(userID string) *RemoveFriendAction {
 	action.builder.RemoveFriendID(userID)
 	return action
-}
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *RemoveFriendAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
 }
 
 func (action *RemoveFriendAction) requiredFields() []string {

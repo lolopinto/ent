@@ -31,7 +31,6 @@ func AddFriend(v viewer.ViewerContext, user *models.User) *AddFriendAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.EditOperation,
-		action.getFieldMap(),
 		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
@@ -82,12 +81,6 @@ func (action *AddFriendAction) AddFriendID(userID string, options ...func(*ent.E
 	action.builder.AddFriendID(userID, options...)
 	return action
 }
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *AddFriendAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
-}
-
 func (action *AddFriendAction) requiredFields() []string {
 	return []string{}
 }

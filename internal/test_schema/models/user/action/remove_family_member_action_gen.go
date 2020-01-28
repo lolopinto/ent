@@ -31,7 +31,6 @@ func RemoveFamilyMember(v viewer.ViewerContext, user *models.User) *RemoveFamily
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.EditOperation,
-		action.getFieldMap(),
 		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
@@ -81,11 +80,6 @@ func (action *RemoveFamilyMemberAction) RemoveFamilyMembers(users ...*models.Use
 func (action *RemoveFamilyMemberAction) RemoveFamilyMemberID(userID string) *RemoveFamilyMemberAction {
 	action.builder.RemoveFamilyMemberID(userID)
 	return action
-}
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *RemoveFamilyMemberAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
 }
 
 func (action *RemoveFamilyMemberAction) requiredFields() []string {

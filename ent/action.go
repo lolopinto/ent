@@ -45,16 +45,7 @@ type EdgeActionConfig struct {
 
 type EdgeActions []*EdgeActionConfig
 
-// TODO kill
-type MutatingFieldInfo struct {
-	DB       string
-	Required bool
-}
-
-// TODO kill
-type ActionFieldMap map[string]*MutatingFieldInfo
-
-type ActionFieldMap2 map[string]*FieldInfo
+type ActionFieldMap map[string]*FieldInfo
 type FieldInfo struct {
 	Field *field.Field
 	Value interface{}

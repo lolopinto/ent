@@ -46,7 +46,6 @@ func {{$actionMethodName}}( {{actionMethodArgs $action}}) *{{$actionName}} {
   builder := builder.NewMutationBuilder(
     v,
     {{writeOperation $action}},
-    action.getFieldMap(),
     action.requiredFields(),
     {{ if $action.MutatingExistingObject -}}
       actions.ExistingEnt({{$nodeInfo.NodeInstance}}),
@@ -164,24 +163,6 @@ func (action *{{$actionName}}) {{$field.SetterMethodName}}({{$field.InstanceName
   }
   {{end -}}
 {{end -}}
-
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *{{$actionName}}) getFieldMap() ent.ActionFieldMap {
-  {{/* TODO ActionFieldMap and MutatingFieldInfo should not be public in ent anymore? */ -}}
-  return ent.ActionFieldMap {
-    {{ range $field := $fields -}}
-      {{$field.QuotedFieldName}}: &ent.MutatingFieldInfo {
-        DB: {{$field.QuotedDBName}},
-        {{ if requiredField $action $field.Field -}}
-          Required: true,
-        {{ else -}}
-          Required: false,
-        {{end -}}
-      },
-    {{end -}}
-  }
-}
 
 func (action *{{$actionName}}) requiredFields() []string {
   return []string{

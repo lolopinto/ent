@@ -27,8 +27,6 @@ type UserMutationBuilder struct {
 func NewMutationBuilder(
 	v viewer.ViewerContext,
 	operation ent.WriteOperation,
-	// TODO kill fieldMap
-	fieldMap ent.ActionFieldMap,
 	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *UserMutationBuilder {
@@ -46,8 +44,6 @@ func NewMutationBuilder(
 		&configs.UserConfig{},
 		opts...,
 	)
-	// TODO kill when this is all done
-	b.FieldMap = fieldMap
 	ret.builder = b
 	return ret
 }
@@ -414,14 +410,14 @@ func (b *UserMutationBuilder) Validate() error {
 	return b.builder.Validate()
 }
 
-func (b *UserMutationBuilder) buildFields() ent.ActionFieldMap2 {
+func (b *UserMutationBuilder) buildFields() ent.ActionFieldMap {
 	m := make(map[string]bool)
 	for _, f := range b.requiredFields {
 		m[f] = true
 	}
 
 	fieldMap := b.GetFields()
-	fields := make(ent.ActionFieldMap2)
+	fields := make(ent.ActionFieldMap)
 	addField := func(key string, val interface{}) {
 		fields[key] = &ent.FieldInfo{
 			Field: fieldMap[key],

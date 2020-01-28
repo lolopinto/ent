@@ -26,8 +26,6 @@ type ContactEmailMutationBuilder struct {
 func NewMutationBuilder(
 	v viewer.ViewerContext,
 	operation ent.WriteOperation,
-	// TODO kill fieldMap
-	fieldMap ent.ActionFieldMap,
 	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *ContactEmailMutationBuilder {
@@ -45,8 +43,6 @@ func NewMutationBuilder(
 		&configs.ContactEmailConfig{},
 		opts...,
 	)
-	// TODO kill when this is all done
-	b.FieldMap = fieldMap
 	ret.builder = b
 	return ret
 }
@@ -146,14 +142,14 @@ func (b *ContactEmailMutationBuilder) Validate() error {
 	return b.builder.Validate()
 }
 
-func (b *ContactEmailMutationBuilder) buildFields() ent.ActionFieldMap2 {
+func (b *ContactEmailMutationBuilder) buildFields() ent.ActionFieldMap {
 	m := make(map[string]bool)
 	for _, f := range b.requiredFields {
 		m[f] = true
 	}
 
 	fieldMap := b.GetFields()
-	fields := make(ent.ActionFieldMap2)
+	fields := make(ent.ActionFieldMap)
 	addField := func(key string, val interface{}) {
 		fields[key] = &ent.FieldInfo{
 			Field: fieldMap[key],
