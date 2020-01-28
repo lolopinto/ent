@@ -31,7 +31,7 @@ func CreateAddress(v viewer.ViewerContext) *CreateAddressAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.InsertOperation,
-		action.getFieldMap(),
+		action.requiredFields(),
 	)
 	action.builder = builder
 	return action
@@ -49,12 +49,16 @@ func (action *CreateAddressAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *CreateAddressAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *CreateAddressAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *CreateAddressAction) SetBuilderOnObservers(observers []actions.Observer) error {
-	return action.builder.SetObservers(observers)
+func (action *CreateAddressAction) SetBuilderOnObservers(observers []actions.Observer) {
+	action.builder.SetObservers(observers)
+}
+
+func (action *CreateAddressAction) SetBuilderOnValidators(validators []actions.Validator) {
+	action.builder.SetValidators(validators)
 }
 
 func (action *CreateAddressAction) GetChangeset() (ent.Changeset, error) {
@@ -75,6 +79,12 @@ func (action *CreateAddressAction) SetCity(city string) *CreateAddressAction {
 	return action
 }
 
+// SetCountry sets the Country while editing the Address ent
+func (action *CreateAddressAction) SetCountry(country string) *CreateAddressAction {
+	action.builder.SetCountry(country)
+	return action
+}
+
 // SetResidentNames sets the ResidentNames while editing the Address ent
 func (action *CreateAddressAction) SetResidentNames(residentNames []string) *CreateAddressAction {
 	action.builder.SetResidentNames(residentNames)
@@ -87,51 +97,26 @@ func (action *CreateAddressAction) SetState(state string) *CreateAddressAction {
 	return action
 }
 
-// SetZip sets the Zip while editing the Address ent
-func (action *CreateAddressAction) SetZip(zip string) *CreateAddressAction {
-	action.builder.SetZip(zip)
-	return action
-}
-
 // SetStreetAddress sets the StreetAddress while editing the Address ent
 func (action *CreateAddressAction) SetStreetAddress(streetAddress string) *CreateAddressAction {
 	action.builder.SetStreetAddress(streetAddress)
 	return action
 }
 
-// SetCountry sets the Country while editing the Address ent
-func (action *CreateAddressAction) SetCountry(country string) *CreateAddressAction {
-	action.builder.SetCountry(country)
+// SetZip sets the Zip while editing the Address ent
+func (action *CreateAddressAction) SetZip(zip string) *CreateAddressAction {
+	action.builder.SetZip(zip)
 	return action
 }
 
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *CreateAddressAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{
-		"City": &ent.MutatingFieldInfo{
-			DB:       "city",
-			Required: true,
-		},
-		"ResidentNames": &ent.MutatingFieldInfo{
-			DB:       "resident_names",
-			Required: true,
-		},
-		"State": &ent.MutatingFieldInfo{
-			DB:       "state",
-			Required: true,
-		},
-		"Zip": &ent.MutatingFieldInfo{
-			DB:       "zip",
-			Required: true,
-		},
-		"StreetAddress": &ent.MutatingFieldInfo{
-			DB:       "street_address",
-			Required: true,
-		},
-		"Country": &ent.MutatingFieldInfo{
-			DB:       "country",
-			Required: true,
-		},
+func (action *CreateAddressAction) requiredFields() []string {
+	return []string{
+		"City",
+		"Country",
+		"ResidentNames",
+		"State",
+		"StreetAddress",
+		"Zip",
 	}
 }
 

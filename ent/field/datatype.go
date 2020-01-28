@@ -69,6 +69,19 @@ func JSON(base interface{}) *jsonType {
 	return &jsonType{base: base, typ: typ}
 }
 
+// Noop returns a type which implemente the DataType interface but doesn't do
+// anything. Shouldn't be used in declaration of fields in GetFields() in an EntConfig.
+// Behavior is undefined
+func Noop() *noopType {
+	return &noopType{}
+}
+
+type noopType struct{}
+
+func (noopType) Type() interface{} {
+	return nil
+}
+
 // TODO Enum
 // TODO int64 for when we support integer autoincrement ids
 // how do we differentiate between types based on default values. probably need override of type?

@@ -31,7 +31,7 @@ func EditUser(v viewer.ViewerContext, user *models.User) *EditUserAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.EditOperation,
-		action.getFieldMap(),
+		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
 	action.builder = builder
@@ -50,12 +50,16 @@ func (action *EditUserAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *EditUserAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *EditUserAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *EditUserAction) SetBuilderOnObservers(observers []actions.Observer) error {
-	return action.builder.SetObservers(observers)
+func (action *EditUserAction) SetBuilderOnObservers(observers []actions.Observer) {
+	action.builder.SetObservers(observers)
+}
+
+func (action *EditUserAction) SetBuilderOnValidators(validators []actions.Validator) {
+	action.builder.SetValidators(validators)
 }
 
 func (action *EditUserAction) GetChangeset() (ent.Changeset, error) {
@@ -100,26 +104,8 @@ func (action *EditUserAction) SetNilableBio(bio *string) *EditUserAction {
 	return action
 }
 
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *EditUserAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{
-		"EmailAddress": &ent.MutatingFieldInfo{
-			DB:       "email_address",
-			Required: false,
-		},
-		"FirstName": &ent.MutatingFieldInfo{
-			DB:       "first_name",
-			Required: false,
-		},
-		"LastName": &ent.MutatingFieldInfo{
-			DB:       "last_name",
-			Required: false,
-		},
-		"Bio": &ent.MutatingFieldInfo{
-			DB:       "bio",
-			Required: false,
-		},
-	}
+func (action *EditUserAction) requiredFields() []string {
+	return []string{}
 }
 
 // Validate returns an error if the current state of the action is not valid

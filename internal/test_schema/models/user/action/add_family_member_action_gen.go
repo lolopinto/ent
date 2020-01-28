@@ -31,7 +31,7 @@ func AddFamilyMember(v viewer.ViewerContext, user *models.User) *AddFamilyMember
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.EditOperation,
-		action.getFieldMap(),
+		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
 	action.builder = builder
@@ -50,12 +50,16 @@ func (action *AddFamilyMemberAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *AddFamilyMemberAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *AddFamilyMemberAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *AddFamilyMemberAction) SetBuilderOnObservers(observers []actions.Observer) error {
-	return action.builder.SetObservers(observers)
+func (action *AddFamilyMemberAction) SetBuilderOnObservers(observers []actions.Observer) {
+	action.builder.SetObservers(observers)
+}
+
+func (action *AddFamilyMemberAction) SetBuilderOnValidators(validators []actions.Validator) {
+	action.builder.SetValidators(validators)
 }
 
 func (action *AddFamilyMemberAction) GetChangeset() (ent.Changeset, error) {
@@ -81,10 +85,8 @@ func (action *AddFamilyMemberAction) AddFamilyMemberID(userID string, options ..
 	action.builder.AddFamilyMemberID(userID, options...)
 	return action
 }
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *AddFamilyMemberAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
+func (action *AddFamilyMemberAction) requiredFields() []string {
+	return []string{}
 }
 
 // Validate returns an error if the current state of the action is not valid

@@ -1,8 +1,9 @@
 package actions_test
 
 import (
-	"errors"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
@@ -23,8 +24,11 @@ func (a *eventAction) GetViewer() viewer.ViewerContext {
 }
 
 func (a *eventAction) GetBuilder() ent.MutationBuilder {
-	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.builder.GetFields())
 	return a.builder
+}
+
+func (a *eventAction) Validate() error {
+	return a.builder.Validate()
 }
 
 func (a *eventAction) Entity() ent.Entity {
@@ -47,37 +51,40 @@ func eventCreateAction(
 	)
 	action.viewer = v
 	fields := testingutils.GetDefaultEventFieldsUserID(v.GetViewerID())
-	for k, v := range fields {
-		b.SetField(k, v)
-	}
+	b.SetRawFields(fields)
 	action.builder = b
 
 	return &action
 }
 
-// this will be auto-generated for actions
-// We need to do this because of how go's type system works
-func (a *createEventAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	a.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(EventTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(a.builder)
+func (a *createEventAction) setBuilder(v interface{}) {
+	callback, ok := v.(EventCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(a.builder)
 	}
-	return nil
 }
 
-func (a *createEventAction) SetBuilderOnObservers(observers []actions.Observer) error {
+// these will be auto-generated for actions
+// We need to do this because of how go's type system works
+func (a *createEventAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	a.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		a.setBuilder(t)
+	}
+}
+
+func (a *createEventAction) SetBuilderOnObservers(observers []actions.Observer) {
 	a.builder.SetObservers(observers)
 	for _, o := range observers {
-		observer, ok := o.(EventObserver)
-		if ok {
-			observer.SetBuilder(a.builder)
-		}
+		a.setBuilder(o)
 	}
-	return nil
+}
+
+func (a *createEventAction) SetBuilderOnValidators(validators []actions.Validator) {
+	a.builder.SetValidators(validators)
+	for _, v := range validators {
+		a.setBuilder(v)
+	}
 }
 
 func (a *createEventAction) GetChangeset() (ent.Changeset, error) {
@@ -98,44 +105,32 @@ func (a *createEventAction) GetObservers() []actions.Observer {
 	}
 }
 
-// uhh we should combine these...
-// and the generated Trigger and Builder things
-// EventCallbackWithBuilder?
-// EventWithBuilder?
-// EventSideEffectWithBuilder?
-// EventActionWithBuilder?
-type EventTrigger interface {
+func (a *createEventAction) GetValidators() []actions.Validator {
+	return []actions.Validator{
+		&EventTimeValidator{},
+	}
+}
+
+type EventCallbackWithBuilder interface {
 	SetBuilder(*actions.EntMutationBuilder)
 }
 
-type EventObserver interface {
-	SetBuilder(*actions.EntMutationBuilder)
-}
-
-type EventMutationBuilderTrigger struct {
+type EventMutationCallback struct {
 	Builder *actions.EntMutationBuilder
 }
 
-func (trigger *EventMutationBuilderTrigger) SetBuilder(b *actions.EntMutationBuilder) {
-	trigger.Builder = b
-}
-
-type EventMutationBuilderObserver struct {
-	Builder *actions.EntMutationBuilder
-}
-
-func (observer *EventMutationBuilderObserver) SetBuilder(b *actions.EntMutationBuilder) {
-	observer.Builder = b
+func (callback *EventMutationCallback) SetBuilder(b *actions.EntMutationBuilder) {
+	callback.Builder = b
 }
 
 type EventSetUserToEventTrigger struct {
-	EventMutationBuilderTrigger
+	EventMutationCallback
 }
 
 func (trigger *EventSetUserToEventTrigger) GetChangeset() (ent.Changeset, error) {
 	// instead of using viewer which may not be correct when embedded in other mutations, let's use UserID field
 	// TODO still need to solve the embedded viewer issue later...
-	userID := trigger.Builder.GetFields()["UserID"]
+	userID := trigger.Builder.GetRawFields()["user_id"]
 
 	trigger.Builder.AddInboundEdge(
 		models.UserToEventsEdge,
@@ -146,14 +141,14 @@ func (trigger *EventSetUserToEventTrigger) GetChangeset() (ent.Changeset, error)
 }
 
 type EventSetHostTrigger struct {
-	EventMutationBuilderTrigger
+	EventMutationCallback
 }
 
 func (trigger *EventSetHostTrigger) GetChangeset() (ent.Changeset, error) {
 	// hmm viewer is logged out so can't really do this one
 	// when doing user -> event since there's no viewer...
 
-	userID := trigger.Builder.GetFields()["UserID"]
+	userID := trigger.Builder.GetRawFields()["user_id"]
 	trigger.Builder.AddOutboundEdge(
 		models.EventToHostsEdge,
 		userID,
@@ -163,13 +158,13 @@ func (trigger *EventSetHostTrigger) GetChangeset() (ent.Changeset, error) {
 }
 
 type EventSetCreatorTrigger struct {
-	EventMutationBuilderTrigger
+	EventMutationCallback
 }
 
 func (trigger *EventSetCreatorTrigger) GetChangeset() (ent.Changeset, error) {
 	// instead of using viewer which may not be correct when embedded in other mutations, let's use UserID field
 	// TODO still need to solve the embedded viewer issue later...
-	userID := trigger.Builder.GetFields()["UserID"]
+	userID := trigger.Builder.GetRawFields()["user_id"]
 
 	trigger.Builder.AddOutboundEdge(
 		models.EventToCreatorEdge,
@@ -179,8 +174,28 @@ func (trigger *EventSetCreatorTrigger) GetChangeset() (ent.Changeset, error) {
 	return nil, nil
 }
 
+type EventTimeValidator struct {
+	EventMutationCallback
+}
+
+func (validator *EventTimeValidator) Validate() error {
+	fields := validator.Builder.GetRawFields()
+	startTime := fields["start_time"].(time.Time)
+	end := fields["end_time"]
+
+	if end == nil {
+		return nil
+	}
+	endTime := end.(time.Time)
+	if startTime.Before(endTime) {
+		return nil
+	}
+	return fmt.Errorf("start time is not before end time %T %T", startTime, endTime)
+}
+
 var _ actions.ActionWithTriggers = &createEventAction{}
 var _ actions.ActionWithObservers = &createEventAction{}
+var _ actions.ActionWithValidators = &createEventAction{}
 
 func verifyEventCreationState(t *testing.T, event *models.Event, user *models.User) {
 	testingutils.VerifyEventObj(t, event, user)

@@ -3,34 +3,42 @@
 package event
 
 import (
-	"errors"
 	"time"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
+	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 )
 
 type EventMutationBuilder struct {
-	builder       *actions.EdgeGroupMutationBuilder
-	event         *models.Event
-	name          *string
-	userID        *string
-	userIDBuilder ent.MutationBuilder
-	startTime     *time.Time
-	endTime       *time.Time
-	location      *string
+	requiredFields []string
+	builder        *actions.EdgeGroupMutationBuilder
+	event          *models.Event
+	name           *string
+	userID         *string
+	userIDBuilder  ent.MutationBuilder
+	startTime      *time.Time
+	endTime        *time.Time
+	clearendTime   bool
+	location       *string
 }
 
 func NewMutationBuilder(
 	v viewer.ViewerContext,
 	operation ent.WriteOperation,
-	fieldMap ent.ActionFieldMap,
+	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *EventMutationBuilder {
 	var event models.Event
+
+	ret := &EventMutationBuilder{
+		requiredFields: requiredFields,
+		event:          &event,
+	}
+	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
@@ -38,62 +46,49 @@ func NewMutationBuilder(
 		&configs.EventConfig{},
 		opts...,
 	)
-	b.FieldMap = fieldMap
 	b2 := actions.NewEdgeGroupMutationBuilder(
 		b,
 		event.RsvpStatusMap(),
 	)
-	return &EventMutationBuilder{
-		builder: b2,
-		event:   &event,
-	}
+	ret.builder = b2
+	return ret
 }
 
 func (b *EventMutationBuilder) SetName(name string) *EventMutationBuilder {
 	b.name = &name
-	b.builder.SetField("Name", name)
 	return b
 }
 
 func (b *EventMutationBuilder) SetUserID(userID string) *EventMutationBuilder {
 	b.userID = &userID
-	b.builder.SetField("UserID", userID)
 	b.builder.AddInboundEdge(models.UserToEventsEdge, userID, models.EventType)
 	return b
 }
 
 func (b *EventMutationBuilder) SetUserIDBuilder(builder ent.MutationBuilder) *EventMutationBuilder {
 	b.userIDBuilder = builder
-	b.builder.SetField("UserID", builder)
 	b.builder.AddInboundEdge(models.UserToEventsEdge, builder, models.EventType)
 	return b
 }
 
 func (b *EventMutationBuilder) SetStartTime(startTime time.Time) *EventMutationBuilder {
 	b.startTime = &startTime
-	b.builder.SetField("StartTime", startTime)
 	return b
 }
 
 func (b *EventMutationBuilder) SetEndTime(endTime time.Time) *EventMutationBuilder {
 	b.endTime = &endTime
-	b.builder.SetField("EndTime", endTime)
 	return b
 }
 
 func (b *EventMutationBuilder) SetNilableEndTime(endTime *time.Time) *EventMutationBuilder {
 	b.endTime = endTime
-	if endTime == nil {
-		b.builder.SetField("EndTime", nil)
-	} else {
-		b.builder.SetField("EndTime", *endTime)
-	}
+	b.clearendTime = (endTime == nil)
 	return b
 }
 
 func (b *EventMutationBuilder) SetLocation(location string) *EventMutationBuilder {
 	b.location = &location
-	b.builder.SetField("Location", location)
 	return b
 }
 
@@ -369,10 +364,6 @@ func (b *EventMutationBuilder) SetIDValue(idValue string, nodeType ent.NodeType)
 	b.builder.SetIDValue(idValue, nodeType)
 	return b
 }
-func (b *EventMutationBuilder) Validate() error {
-	return b.builder.Validate()
-}
-
 func (b *EventMutationBuilder) GetViewer() viewer.ViewerContext {
 	return b.builder.GetViewer()
 }
@@ -381,33 +372,64 @@ func (b *EventMutationBuilder) GetEvent() *models.Event {
 	return b.event
 }
 
-func (b *EventMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
-	b.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(EventTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(b)
-	}
-	return nil
-}
-
-// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the EventObserver
-// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
-func (b *EventMutationBuilder) SetObservers(observers []actions.Observer) error {
-	b.builder.SetObservers(observers)
-	for _, o := range observers {
-		observer, ok := o.(EventObserver)
-		if ok {
-			observer.SetBuilder(b)
-		}
-	}
-	return nil
-}
-
+// TODO rename from GetChangeset to Build()
+// A Builder builds.
 func (b *EventMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	return b.builder.GetChangeset()
+}
+
+// Call Validate (should be Valid) at any point to validate that builder is valid
+func (b *EventMutationBuilder) Validate() error {
+	return b.builder.Validate()
+}
+
+func (b *EventMutationBuilder) buildFields() ent.ActionFieldMap {
+	m := make(map[string]bool)
+	for _, f := range b.requiredFields {
+		m[f] = true
+	}
+
+	fieldMap := b.GetFields()
+	fields := make(ent.ActionFieldMap)
+	addField := func(key string, val interface{}) {
+		fields[key] = &ent.FieldInfo{
+			Field: fieldMap[key],
+			Value: val,
+		}
+	}
+
+	// Need to have Id fields be fine with Builder
+
+	// if required, field is not nil or field explicitly set to nil, add the field
+	if b.name != nil {
+		addField("Name", *b.name)
+	} else if m["Name"] { // nil but required
+		addField("Name", nil)
+	}
+	if b.userID != nil {
+		addField("UserID", *b.userID)
+	} else if m["UserID"] { // nil but required
+		addField("UserID", nil)
+	}
+	if b.userIDBuilder != nil { // builder not nil, override userID
+		addField("UserID", b.userIDBuilder)
+	}
+	if b.startTime != nil {
+		addField("StartTime", *b.startTime)
+	} else if m["StartTime"] { // nil but required
+		addField("StartTime", nil)
+	}
+	if b.endTime != nil {
+		addField("EndTime", *b.endTime)
+	} else if m["EndTime"] || b.clearendTime { // required or value cleared
+		addField("EndTime", nil)
+	}
+	if b.location != nil {
+		addField("Location", *b.location)
+	} else if m["Location"] { // nil but required
+		addField("Location", nil)
+	}
+	return fields
 }
 
 func (b *EventMutationBuilder) ExistingEnt() ent.Entity {
@@ -426,28 +448,58 @@ func (b *EventMutationBuilder) GetPlaceholderID() string {
 	return b.builder.GetPlaceholderID()
 }
 
+// GetFields returns the field configuration for this mutation builder
+func (b *EventMutationBuilder) GetFields() ent.FieldMap {
+	return ent.FieldMap{
+		"Name":      field.F(field.Noop(), field.DB("name")),
+		"UserID":    field.F(field.Noop(), field.DB("user_id")),
+		"StartTime": field.F(field.Noop(), field.DB("start_time")),
+		"EndTime":   field.F(field.Noop(), field.DB("end_time"), field.Nullable()),
+		"Location":  field.F(field.Noop(), field.DB("location")),
+	}
+}
+
 var _ ent.MutationBuilder = &EventMutationBuilder{}
 
-type EventTrigger interface {
+func (b *EventMutationBuilder) setBuilder(v interface{}) {
+	callback, ok := v.(EventCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(b)
+	}
+}
+
+// SetTriggers sets the builder on the triggers.
+func (b *EventMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		b.setBuilder(t)
+	}
+}
+
+// SetObservers sets the builder on the observers.
+func (b *EventMutationBuilder) SetObservers(observers []actions.Observer) {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		b.setBuilder(o)
+	}
+}
+
+// SetValidators sets the builder on validators.
+func (b *EventMutationBuilder) SetValidators(validators []actions.Validator) {
+	b.builder.SetValidators(validators)
+	for _, v := range validators {
+		b.setBuilder(v)
+	}
+}
+
+type EventCallbackWithBuilder interface {
 	SetBuilder(*EventMutationBuilder)
 }
 
-type EventMutationBuilderTrigger struct {
+type EventMutationCallback struct {
 	Builder *EventMutationBuilder
 }
 
-func (trigger *EventMutationBuilderTrigger) SetBuilder(b *EventMutationBuilder) {
-	trigger.Builder = b
-}
-
-type EventObserver interface {
-	SetBuilder(*EventMutationBuilder)
-}
-
-type EventMutationBuilderObserver struct {
-	Builder *EventMutationBuilder
-}
-
-func (observer *EventMutationBuilderObserver) SetBuilder(b *EventMutationBuilder) {
-	observer.Builder = b
+func (callback *EventMutationCallback) SetBuilder(b *EventMutationBuilder) {
+	callback.Builder = b
 }

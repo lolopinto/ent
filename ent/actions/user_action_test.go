@@ -1,10 +1,8 @@
 package actions_test
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/privacy"
@@ -28,51 +26,46 @@ func (a *userAction) GetViewer() viewer.ViewerContext {
 }
 
 func (a *userAction) GetBuilder() ent.MutationBuilder {
-	for k, v := range a.getFields() {
-		a.builder.SetField(k, v)
-	}
-	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.getFields())
+	a.builder.SetRawFields(a.getFields())
 	return a.builder
+}
+
+func (a *userAction) setBuilder(v interface{}) {
+	callback, ok := v.(UserCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(a.builder)
+	}
 }
 
 // this will be auto-generated for actions
 // We need to do this because of how go's type system works
-func (a *userAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	// hmm
+func (a *userAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
 	a.builder.SetTriggers(triggers)
 	for _, t := range triggers {
-		trigger, ok := t.(UserTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(a.builder)
+		a.setBuilder(t)
 	}
-	return nil
 }
 
-func (a *userAction) SetBuilderOnObservers(observers []actions.Observer) error {
+func (a *userAction) SetBuilderOnObservers(observers []actions.Observer) {
 	a.builder.SetObservers(observers)
 	for _, o := range observers {
-		observer, ok := o.(UserObserver)
-		if ok {
-			observer.SetBuilder(a.builder)
-		}
+		a.setBuilder(o)
 	}
-	return nil
+}
+
+func (a *userAction) SetBuilderOnValidators(validators []actions.Validator) {
+	a.builder.SetValidators(validators)
+	for _, v := range validators {
+		a.setBuilder(v)
+	}
 }
 
 func (a *userAction) getFields() map[string]interface{} {
-	m := make(map[string]interface{})
-	if a.emailAddress != "" {
-		m["EmailAddress"] = a.emailAddress
+	return map[string]interface{}{
+		"email_address": a.emailAddress,
+		"first_name":    a.firstName,
+		"last_name":     a.lastName,
 	}
-	if a.firstName != "" {
-		m["FirstName"] = a.firstName
-	}
-	if a.lastName != "" {
-		m["LastName"] = a.lastName
-	}
-	return m
 }
 
 func (a *userAction) Entity() ent.Entity {
@@ -180,32 +173,20 @@ func (a *deleteUserAction) GetObservers() []actions.Observer {
 
 var _ actions.ActionWithPermissions = &editUserAction{}
 
-type UserTrigger interface {
+type UserCallbackWithBuilder interface {
 	SetBuilder(*actions.EntMutationBuilder)
 }
 
-type UserMutationBuilderTrigger struct {
+type UserMutationCallback struct {
 	Builder *actions.EntMutationBuilder
 }
 
-func (trigger *UserMutationBuilderTrigger) SetBuilder(b *actions.EntMutationBuilder) {
-	trigger.Builder = b
-}
-
-type UserObserver interface {
-	SetBuilder(*actions.EntMutationBuilder)
-}
-
-type UserMutationBuilderObserver struct {
-	Builder *actions.EntMutationBuilder
-}
-
-func (observer *UserMutationBuilderObserver) SetBuilder(b *actions.EntMutationBuilder) {
-	observer.Builder = b
+func (callback *UserMutationCallback) SetBuilder(b *actions.EntMutationBuilder) {
+	callback.Builder = b
 }
 
 type UserCreateContactTrigger struct {
-	UserMutationBuilderTrigger
+	UserMutationCallback
 }
 
 func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
@@ -215,17 +196,17 @@ func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
 	a.builder = actions.NewMutationBuilder(
 		a.viewer, ent.InsertOperation, &a.contact, &configs.ContactConfig{},
 	)
-	fields := trigger.Builder.GetFields()
-	a.firstName = fields["FirstName"]
-	a.lastName = fields["LastName"]
-	a.emailAddress = fields["EmailAddress"]
+	fields := trigger.Builder.GetRawFields()
+	a.firstName = fields["first_name"]
+	a.lastName = fields["last_name"]
+	a.emailAddress = fields["email_address"]
 	a.userID = trigger.Builder
 
 	return actions.GetChangeset(a)
 }
 
 type UserCreateContactAndEmailTrigger struct {
-	UserMutationBuilderTrigger
+	UserMutationCallback
 }
 
 func (trigger *UserCreateContactAndEmailTrigger) GetChangeset() (ent.Changeset, error) {
@@ -236,17 +217,17 @@ func (trigger *UserCreateContactAndEmailTrigger) GetChangeset() (ent.Changeset, 
 	a.builder = actions.NewMutationBuilder(
 		a.viewer, ent.InsertOperation, &a.contact, &configs.ContactConfig{},
 	)
-	fields := trigger.Builder.GetFields()
-	a.firstName = fields["FirstName"]
-	a.lastName = fields["LastName"]
-	a.emailAddress = fields["EmailAddress"]
+	fields := trigger.Builder.GetRawFields()
+	a.firstName = fields["first_name"]
+	a.lastName = fields["last_name"]
+	a.emailAddress = fields["email_address"]
 	a.userID = trigger.Builder
 
 	return actions.GetChangeset(a)
 }
 
 type UserCreateEventTrigger struct {
-	UserMutationBuilderTrigger
+	UserMutationCallback
 }
 
 func (trigger *UserCreateEventTrigger) GetChangeset() (ent.Changeset, error) {
@@ -255,13 +236,13 @@ func (trigger *UserCreateEventTrigger) GetChangeset() (ent.Changeset, error) {
 		trigger.Builder.GetViewer(),
 	)
 	// override this from the default provided by eventCreateAction and make the UserID dependent on this builder
-	action.builder.SetField("UserID", trigger.Builder)
+	action.builder.OverrideRawField("user_id", trigger.Builder)
 
 	return actions.GetChangeset(action)
 }
 
 type UserSendByeEmailObserver struct {
-	UserMutationBuilderObserver
+	UserMutationCallback
 }
 
 func (observer *UserSendByeEmailObserver) Observe() error {
@@ -330,16 +311,4 @@ func userDeleteAction(
 	action.builder = b
 
 	return action
-}
-
-func getFieldMapFromFields(op ent.WriteOperation, fields map[string]interface{}) ent.ActionFieldMap {
-	// copied from testingutils/ent.go
-	ret := make(ent.ActionFieldMap)
-	for k := range fields {
-		ret[k] = &ent.MutatingFieldInfo{
-			DB:       strcase.ToSnake(k),
-			Required: op == ent.InsertOperation,
-		}
-	}
-	return ret
 }

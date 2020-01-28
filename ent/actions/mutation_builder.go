@@ -7,37 +7,47 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/util"
 )
 
+// fields in generated builder not in actions
+// bug in in having it in actions now because if we set something in actions that's not there, there'll be an issue
+// TODO rename to [Base|Abstract]MutationBuilder or something like that
 type EntMutationBuilder struct {
-	Viewer         viewer.ViewerContext
-	ExistingEntity ent.Entity
-	entity         ent.Entity
-	Operation      ent.WriteOperation
-	EntConfig      ent.Config
-	// for now, actions map to all the fields so it's fine. this will need to be changed when each EntMutationBuilder is generated
-	// At that point, probably makes sense to have each generated Builder handle this.
-	FieldMap ent.ActionFieldMap
-	fields   map[string]interface{}
-	//	rawDBFields   map[string]interface{}
-	edges         []*ent.EdgeOperation
-	edgeTypes     map[ent.EdgeType]bool
-	placeholderID string
-	validated     bool
-	triggers      []Trigger
-	observers     []Observer
-	mu            sync.RWMutex
+	Viewer          viewer.ViewerContext
+	ExistingEntity  ent.Entity
+	entity          ent.Entity
+	Operation       ent.WriteOperation
+	EntConfig       ent.Config
+	buildFieldsFn   func() ent.ActionFieldMap
+	rawDBFields     map[string]interface{}
+	validatedFields map[string]interface{}
+	edges           []*ent.EdgeOperation
+	edgeTypes       map[ent.EdgeType]bool
+	placeholderID   string
+	validated       bool
+	triggers        []Trigger
+	observers       []Observer
+	validators      []Validator
+	mu              sync.RWMutex
 	// what happens if there are circular dependencies?
 	// let's assume not possible for now but it's possible we want to store the ID in different places/
-	dependencies ent.MutationBuilderMap
-	changesets   []ent.Changeset
+	fieldsWithResolvers []string
+	dependencies        ent.MutationBuilderMap
+	changesets          []ent.Changeset
 }
 
 func ExistingEnt(existingEnt ent.Entity) func(*EntMutationBuilder) {
 	return func(mb *EntMutationBuilder) {
 		// TODO lowercase
 		mb.ExistingEntity = existingEnt
+	}
+}
+
+func BuildFields(buildFieldsFn func() ent.ActionFieldMap) func(*EntMutationBuilder) {
+	return func(mb *EntMutationBuilder) {
+		mb.buildFieldsFn = buildFieldsFn
 	}
 }
 
@@ -67,28 +77,51 @@ func (b *EntMutationBuilder) flagWrite() {
 }
 
 func (b *EntMutationBuilder) resolveFieldValue(fieldName string, val interface{}) interface{} {
-	// this is a tricky method. should only be called by places that have a Lock()/Unlock protection in it.
-	// Right now that's done by SetField()
+	// changing things up and seeing if putting this lock in here breaks things....
 	builder, ok := val.(ent.MutationBuilder)
 	if !ok {
 		return val
 	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	if b.dependencies == nil {
 		b.dependencies = make(ent.MutationBuilderMap)
 	}
 	b.dependencies[builder.GetPlaceholderID()] = builder
-	return val
+	b.fieldsWithResolvers = append(b.fieldsWithResolvers, fieldName)
+	return builder.GetPlaceholderID()
 }
 
-func (b *EntMutationBuilder) SetField(fieldName string, val interface{}) {
+func (b *EntMutationBuilder) processRawFields() chan fieldsResult {
+	result := make(chan fieldsResult)
+	go func() {
+		fields := make(map[string]interface{})
+		for dbKey, value := range b.rawDBFields {
+			fields[dbKey] = b.resolveFieldValue(dbKey, value)
+		}
+		result <- fieldsResult{
+			fields: fields,
+		}
+	}()
+	return result
+}
+
+func (b *EntMutationBuilder) SetRawFields(m map[string]interface{}) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if b.fields == nil {
-		b.fields = make(map[string]interface{})
+	b.rawDBFields = m
+}
+
+func (b *EntMutationBuilder) OverrideRawField(key string, val interface{}) {
+	if b.rawDBFields == nil {
+		panic("cannot call OverideRawField without having already previouslyset it")
 	}
-	b.fields[fieldName] = b.resolveFieldValue(fieldName, val)
-	b.flagWrite()
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.rawDBFields[key] = val
 }
 
 func (b *EntMutationBuilder) GetPlaceholderID() string {
@@ -208,6 +241,12 @@ func (b *EntMutationBuilder) SetObservers(observers []Observer) {
 	b.observers = observers
 }
 
+func (b *EntMutationBuilder) SetValidators(validators []Validator) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.validators = validators
+}
+
 func (b *EntMutationBuilder) runTriggers() error {
 	// nothing to do here
 	if len(b.triggers) == 0 {
@@ -227,11 +266,17 @@ func (b *EntMutationBuilder) runTriggers() error {
 	if len(changesets) != 0 {
 		b.mu.Lock()
 		defer b.mu.Unlock()
+
 		// get all the observers from all the dependent changesets and keep track of them to be run at the end...
 		for _, c := range changesets {
 			cWithObservers, ok := c.(ChangesetWithObservers)
 			if ok {
 				b.observers = append(b.observers, cWithObservers.Observers()...)
+			}
+
+			cWithValidators, ok := c.(ChangesetWithValidators)
+			if ok {
+				b.validators = append(b.validators, cWithValidators.Validators()...)
 			}
 		}
 		b.changesets = changesets
@@ -239,15 +284,15 @@ func (b *EntMutationBuilder) runTriggers() error {
 	return nil
 }
 
+// Note that this shouldn't be called directly
+// Need to pass things to it to work correctly
+// all of these should be passed in constructor?
+// TODO refactor this and construction so that calling action.Validate() works
+// shouldn't need the workarounds we did for GetChangeset e.g ent.Save()
 func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
-	if err := b.runTriggers(); err != nil {
-		return nil, err
-	}
-
 	// should not be able to get a changeset for an invalid builder
 	if !b.validated {
-		// soulds like validate() needs to call runTriggers also...
-		if err := b.Validate(); err != nil {
+		if err := b.validate(); err != nil {
 			return nil, err
 		}
 	}
@@ -264,22 +309,8 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 			EntConfig:   b.EntConfig,
 		})
 	} else {
-		// take the fields and convert to db format!
-		fields := make(map[string]interface{})
-		var fieldsWithResolvers []string
-		for fieldName, value := range b.fields {
-			fieldInfo, ok := b.FieldMap[fieldName]
-			if !ok {
-				return nil, fmt.Errorf("invalid field %s passed ", fieldName)
-			}
-			builder, ok := value.(ent.MutationBuilder)
+		// TODO how do we format placeholders??
 
-			fields[fieldInfo.DB] = value
-			if ok {
-				fields[fieldInfo.DB] = builder.GetPlaceholderID()
-				fieldsWithResolvers = append(fieldsWithResolvers, fieldInfo.DB)
-			}
-		}
 		// only worth doing it if there are fields
 		// TODO shouldn't do a write if len(fields) == 0
 		// need to change the code to always load the user after the write tho...
@@ -288,8 +319,8 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 				ExistingEnt:         b.ExistingEntity,
 				Entity:              b.entity,
 				EntConfig:           b.EntConfig,
-				Fields:              fields,
-				FieldsWithResolvers: fieldsWithResolvers,
+				Fields:              b.validatedFields,
+				FieldsWithResolvers: b.fieldsWithResolvers,
 				Operation:           b.Operation,
 			},
 		)
@@ -328,41 +359,127 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		dependencies:  b.dependencies,
 		changesets:    b.changesets,
 		observers:     b.observers,
+		validators:    b.validators,
 	}, nil
 }
 
+type fieldsResult struct {
+	fields map[string]interface{}
+	err    error
+}
+
+func (b *EntMutationBuilder) validateFieldInfos() chan fieldsResult {
+	result := make(chan fieldsResult)
+	go func() {
+		if b.buildFieldsFn == nil {
+			result <- fieldsResult{}
+			return
+		}
+		// gather fieldInfos, validate as needed and then return
+		fieldInfos := b.buildFieldsFn()
+
+		fields := make(map[string]interface{})
+		var serr syncerr.Error
+		var wg sync.WaitGroup
+		var m sync.Mutex
+		wg.Add(len(fieldInfos))
+
+		for fieldName := range fieldInfos {
+			go func(fieldName string) {
+				defer wg.Done()
+				fieldInfo := fieldInfos[fieldName]
+
+				// validate field
+				if err := fieldInfo.Field.Valid(fieldName, fieldInfo.Value); err != nil {
+					serr.Append(err)
+					return
+				}
+
+				dbKey := fieldInfo.Field.DBKey(fieldName)
+
+				// this is also where default values will be set eventually
+				// format as needed
+				val, err := fieldInfo.Field.Format(fieldInfo.Value)
+				if err != nil {
+					serr.Append(err)
+					return
+				}
+				m.Lock()
+				defer m.Unlock()
+				fields[dbKey] = b.resolveFieldValue(dbKey, val)
+			}(fieldName)
+		}
+		wg.Wait()
+
+		result <- fieldsResult{
+			err:    serr.Err(),
+			fields: fields,
+		}
+	}()
+	return result
+}
+
+func (b *EntMutationBuilder) runExtraValidators() chan error {
+	errChan := make(chan error)
+
+	go func() {
+		var serr syncerr.Error
+		var wg sync.WaitGroup
+		wg.Add(len(b.validators))
+		for idx := range b.validators {
+			go func(idx int) {
+				defer wg.Done()
+				val := b.validators[idx]
+				if err := val.Validate(); err != nil {
+					serr.Append(err)
+				}
+			}(idx)
+		}
+		wg.Wait()
+		errChan <- serr.Err()
+	}()
+	return errChan
+}
+
+func (b *EntMutationBuilder) validate() error {
+	if err := b.runTriggers(); err != nil {
+		return err
+	}
+
+	// validators that come from fields
+	var resultChan chan fieldsResult
+	if b.rawDBFields != nil {
+		resultChan = b.processRawFields()
+	} else {
+		resultChan = b.validateFieldInfos()
+	}
+	// extra user-defined validators
+	validatorChan := b.runExtraValidators()
+
+	validatorErr, result := <-validatorChan, <-resultChan
+	if err := util.CoalesceErr(validatorErr, result.err); err != nil {
+		return err
+	}
+	b.validatedFields = result.fields
+
+	return nil
+}
+
 func (b *EntMutationBuilder) Validate() error {
+	// already validated
 	if b.validated {
 		return nil
 	}
-	if b.FieldMap == nil && b.fields != nil {
-		return errors.New("MutationBuilder has no fieldMap")
-	}
-	var errors []*ent.ActionErrorInfo
 
-	for fieldName, item := range b.FieldMap {
-		_, ok := b.fields[fieldName]
-
-		// won't work because we have the wrong names in the setters right now
-		if item.Required && !ok {
-			errors = append(errors, &ent.ActionErrorInfo{
-				ErrorMsg: fmt.Sprintf("%s is required and was not set", fieldName),
-			})
-		}
-	}
-
-	if len(errors) == 0 {
+	err := b.validate()
+	if err == nil {
 		b.validated = true
-		return nil
 	}
-	return &ent.ActionValidationError{
-		Errors:     errors,
-		ActionName: "TODO",
-	}
+	return err
 }
 
-func (b *EntMutationBuilder) GetFields() map[string]interface{} {
-	return b.fields
+func (b *EntMutationBuilder) GetRawFields() map[string]interface{} {
+	return b.rawDBFields
 }
 
 func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, error) {
@@ -377,27 +494,23 @@ func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, e
 	wg.Add(len(b.edgeTypes))
 	var m sync.Mutex
 	edges := make(map[ent.EdgeType]*ent.AssocEdgeData)
-	var errs []error
+	var sErr syncerr.Error
 	for edgeType := range b.edgeTypes {
 		edgeType := edgeType
 		f := func(edgeType ent.EdgeType) {
 			defer wg.Done()
 			edge, err := ent.GetEdgeInfo(edgeType, nil)
+			sErr.Append(err)
 			m.Lock()
 			defer m.Unlock()
-			if err != nil {
-				errs = append(errs, err)
-			}
 			edges[edgeType] = edge
 		}
 		go f(edgeType)
 	}
 	wg.Wait()
 
-	if len(errs) != 0 {
-		// TODO return more than one. we need an errSlice that's an error
-		// maybe use same logic in privacy API to store PrivacyErrors that are expected but we don't wanna discard or treat as the main error
-		return nil, errs[0]
+	if err := sErr.Err(); err != nil {
+		return nil, err
 	}
 
 	return edges, nil

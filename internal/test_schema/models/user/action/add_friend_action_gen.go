@@ -31,7 +31,7 @@ func AddFriend(v viewer.ViewerContext, user *models.User) *AddFriendAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.EditOperation,
-		action.getFieldMap(),
+		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
 	action.builder = builder
@@ -50,12 +50,16 @@ func (action *AddFriendAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *AddFriendAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *AddFriendAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *AddFriendAction) SetBuilderOnObservers(observers []actions.Observer) error {
-	return action.builder.SetObservers(observers)
+func (action *AddFriendAction) SetBuilderOnObservers(observers []actions.Observer) {
+	action.builder.SetObservers(observers)
+}
+
+func (action *AddFriendAction) SetBuilderOnValidators(validators []actions.Validator) {
+	action.builder.SetValidators(validators)
 }
 
 func (action *AddFriendAction) GetChangeset() (ent.Changeset, error) {
@@ -81,10 +85,8 @@ func (action *AddFriendAction) AddFriendID(userID string, options ...func(*ent.E
 	action.builder.AddFriendID(userID, options...)
 	return action
 }
-
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *AddFriendAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
+func (action *AddFriendAction) requiredFields() []string {
+	return []string{}
 }
 
 // Validate returns an error if the current state of the action is not valid

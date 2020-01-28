@@ -21,18 +21,8 @@ type Action interface {
 
 type ActionWithValidator interface {
 	Action
-	Validate() error
+	Validate() error // TODO move this into Action. If we're going to have a Validate() method
 }
-
-// TODO
-// type Validator interface {
-// 	Valid() bool
-// }
-
-// type ActionWithValidators interface {
-// Action
-// 	GetValidators() []Validator
-// }
 
 type ActionWithPermissions interface {
 	Action
@@ -54,7 +44,7 @@ type ActionWithTriggers interface {
 	Action
 	// TODO: dependencies between triggers needed. we'll do dependencies by creating something similar to MultiChangesets that takes 2 or more triggers that depend on each other
 	GetTriggers() []Trigger
-	SetBuilderOnTriggers([]Trigger) error
+	SetBuilderOnTriggers([]Trigger)
 }
 
 // Observer is something that's run after an action has been run
@@ -76,12 +66,27 @@ type Observer interface {
 type ActionWithObservers interface {
 	Action
 	GetObservers() []Observer
-	SetBuilderOnObservers([]Observer) error
+	SetBuilderOnObservers([]Observer)
 }
 
 type ChangesetWithObservers interface {
 	ent.Changeset
 	Observers() []Observer
+}
+
+type ChangesetWithValidators interface {
+	ent.Changeset
+	Validators() []Validator
+}
+
+type Validator interface {
+	Validate() error
+}
+
+type ActionWithValidators interface {
+	Action
+	GetValidators() []Validator
+	SetBuilderOnValidators([]Validator)
 }
 
 func GetChangeset(action Action) (ent.Changeset, error) {
@@ -96,19 +101,19 @@ func GetChangeset(action Action) (ent.Changeset, error) {
 	// then validate state
 	// then changeset which runs the whole damn thing
 	if actionWithTriggers, ok := action.(ActionWithTriggers); ok {
-		if err := setBuilderOnTriggers(actionWithTriggers); err != nil {
-			return nil, err
-		}
+		setBuilderOnTriggers(actionWithTriggers)
+	}
+
+	if actionWithObservers, ok := action.(ActionWithObservers); ok {
+		setBuilderOnObservers(actionWithObservers)
+	}
+
+	if actionWithValidators, ok := action.(ActionWithValidators); ok {
+		setBuilderOnValidators(actionWithValidators)
 	}
 
 	if actionWithValidator, ok := action.(ActionWithValidator); ok {
 		if err := actionWithValidator.Validate(); err != nil {
-			return nil, err
-		}
-	}
-
-	if actionWithObservers, ok := action.(ActionWithObservers); ok {
-		if err := setBuilderOnObservers(actionWithObservers); err != nil {
 			return nil, err
 		}
 	}
@@ -157,10 +162,14 @@ func applyActionPermissions(action ActionWithPermissions) error {
 	return nil
 }
 
-func setBuilderOnTriggers(action ActionWithTriggers) error {
-	return action.SetBuilderOnTriggers(action.GetTriggers())
+func setBuilderOnTriggers(action ActionWithTriggers) {
+	action.SetBuilderOnTriggers(action.GetTriggers())
 }
 
-func setBuilderOnObservers(action ActionWithObservers) error {
-	return action.SetBuilderOnObservers(action.GetObservers())
+func setBuilderOnObservers(action ActionWithObservers) {
+	action.SetBuilderOnObservers(action.GetObservers())
+}
+
+func setBuilderOnValidators(action ActionWithValidators) {
+	action.SetBuilderOnValidators(action.GetValidators())
 }

@@ -11,12 +11,14 @@ import (
 	"github.com/lolopinto/ent/ent/viewertesting"
 
 	"github.com/lolopinto/ent/internal/test_schema/models"
+	addressaction "github.com/lolopinto/ent/internal/test_schema/models/address/action"
 	contactaction "github.com/lolopinto/ent/internal/test_schema/models/contact/action"
 	eventaction "github.com/lolopinto/ent/internal/test_schema/models/event/action"
 	"github.com/lolopinto/ent/internal/test_schema/models/user/action"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -26,6 +28,7 @@ type generatedActionSuite struct {
 
 func (suite *generatedActionSuite) SetupSuite() {
 	suite.Tables = []string{
+		"addresses",
 		"users",
 		"contacts",
 		"event_invited_edges",
@@ -58,10 +61,8 @@ func (suite *generatedActionSuite) TestCreation() {
 	// we're allowed to create contact because it's in the process of creating a user
 	user := suite.createUser()
 
-	// if we didn't load user yet, don't continue because more crap fails
-	if user.ID == "" {
-		return
-	}
+	// TODO zero vs nil
+	require.NotEqual(suite.T(), user.ID, "")
 
 	// reload the user for privacy reasons.
 	// confirm that creating a user also creates the contact since UserCreateContactTrigger is part of this action
@@ -114,7 +115,7 @@ func (suite *generatedActionSuite) TestCreationNotAllFields() {
 		Save()
 
 	assert.NotNil(suite.T(), err)
-	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
+	assert.Error(suite.T(), err)
 }
 
 func (suite *generatedActionSuite) TestValidate() {
@@ -127,8 +128,7 @@ func (suite *generatedActionSuite) TestValidate() {
 	// TODO validate is broken for invalid privacy...
 	// this should also not work if getchangeset doesn't work
 	err := action.Validate()
-	assert.NotNil(suite.T(), err)
-	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
+	assert.Error(suite.T(), err)
 
 	action.SetEmailAddress(util.GenerateRandEmail())
 
@@ -145,8 +145,7 @@ func (suite *generatedActionSuite) TestGetChangeset() {
 
 	// GetChangeset fails if invalid
 	_, err := action.GetChangeset()
-	assert.NotNil(suite.T(), err)
-	assert.IsType(suite.T(), &ent.ActionValidationError{}, err)
+	assert.Error(suite.T(), err)
 
 	action.SetEmailAddress(util.GenerateRandEmail())
 
@@ -348,6 +347,38 @@ func (suite *generatedActionSuite) TestDefaultValueTime() {
 	assert.False(suite.T(), t2.IsZero())
 }
 
+func (suite *generatedActionSuite) TestValidator() {
+	user := testingutils.CreateTestUser(suite.T())
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	event, err := eventaction.CreateEvent(v).
+		SetLocation("home").
+		SetStartTime(time.Now()).
+		SetEndTime(time.Now().Add(1 * time.Hour)).
+		SetUserID(user.ID).
+		SetName("fun event").
+		Save()
+
+	assert.NoError(suite.T(), err)
+
+	assert.False(suite.T(), event.EndTime == nil)
+}
+
+func (suite *generatedActionSuite) TestValidatorEndTimeInvalid() {
+	user := testingutils.CreateTestUser(suite.T())
+	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
+
+	_, err := eventaction.CreateEvent(v).
+		SetLocation("home").
+		SetStartTime(time.Now()).
+		SetEndTime(time.Now().Add(-1 * time.Hour)).
+		SetUserID(user.ID).
+		SetName("fun event").
+		Save()
+
+	assert.Error(suite.T(), err)
+}
+
 func (suite *generatedActionSuite) TestEventRSVP() {
 	user := testingutils.CreateTestUser(suite.T())
 	event := testingutils.CreateTestEvent(suite.T(), user)
@@ -409,6 +440,64 @@ func (suite *generatedActionSuite) TestGetChangesetNoPermissions() {
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), c)
+}
+
+func (suite *generatedActionSuite) createAddress(v viewer.ViewerContext) *models.Address {
+	address, err := addressaction.CreateAddress(v).
+		SetStreetAddress("").
+		SetCity("Westminster").
+		SetState("London").
+		SetZip("Sw1A 1AA").
+		SetCountry("UK").
+		SetResidentNames([]string{
+			"The Queen",
+			"Prince Phillip",
+		}).Save()
+
+	require.Nil(suite.T(), err)
+
+	return address
+}
+
+func (suite *generatedActionSuite) TestActionWithFieldsMethod() {
+	v := viewer.LoggedOutViewer()
+
+	address := suite.createAddress(v)
+	// TODO nil vs zero!
+	assert.NotEqual(suite.T(), address.ID, "")
+	assert.Equal(suite.T(), "London", address.State)
+	assert.Len(suite.T(), address.ResidentNames, 2)
+}
+
+func (suite *generatedActionSuite) TestActionWithFieldsMethodMissingField() {
+	v := viewer.LoggedOutViewer()
+
+	_, err := addressaction.CreateAddress(v).
+		SetStreetAddress("").
+		SetCity("Westminster").
+		SetState("London").
+		SetZip("Sw1A 1AA").
+		SetResidentNames([]string{
+			"The Queen",
+			"Prince Phillip",
+		}).Save()
+
+	require.Error(suite.T(), err)
+}
+
+func (suite *generatedActionSuite) TestEditActionWithFieldsMethod() {
+	v := viewer.LoggedOutViewer()
+
+	address := suite.createAddress(v)
+	assert.Equal(suite.T(), address.StreetAddress, "")
+
+	address, err := addressaction.EditAddress(v, address).
+		SetStreetAddress("Buckingham Palace Road").
+		Save()
+
+	require.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), address.StreetAddress, "Buckingham Palace Road")
 }
 
 func TestGeneratedAction(t *testing.T) {

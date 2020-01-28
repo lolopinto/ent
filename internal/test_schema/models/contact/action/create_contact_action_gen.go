@@ -31,7 +31,7 @@ func CreateContact(v viewer.ViewerContext) *CreateContactAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.InsertOperation,
-		action.getFieldMap(),
+		action.requiredFields(),
 	)
 	action.builder = builder
 	return action
@@ -49,12 +49,16 @@ func (action *CreateContactAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *CreateContactAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *CreateContactAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *CreateContactAction) SetBuilderOnObservers(observers []actions.Observer) error {
-	return action.builder.SetObservers(observers)
+func (action *CreateContactAction) SetBuilderOnObservers(observers []actions.Observer) {
+	action.builder.SetObservers(observers)
+}
+
+func (action *CreateContactAction) SetBuilderOnValidators(validators []actions.Validator) {
+	action.builder.SetValidators(validators)
 }
 
 func (action *CreateContactAction) GetChangeset() (ent.Changeset, error) {
@@ -135,37 +139,12 @@ func (action *CreateContactAction) SetNilablePi(pi *float64) *CreateContactActio
 	return action
 }
 
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *CreateContactAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{
-		"EmailAddress": &ent.MutatingFieldInfo{
-			DB:       "email_address",
-			Required: true,
-		},
-		"FirstName": &ent.MutatingFieldInfo{
-			DB:       "first_name",
-			Required: true,
-		},
-		"LastName": &ent.MutatingFieldInfo{
-			DB:       "last_name",
-			Required: true,
-		},
-		"UserID": &ent.MutatingFieldInfo{
-			DB:       "user_id",
-			Required: true,
-		},
-		"Favorite": &ent.MutatingFieldInfo{
-			DB:       "favorite",
-			Required: false,
-		},
-		"NumberOfCalls": &ent.MutatingFieldInfo{
-			DB:       "number_of_calls",
-			Required: false,
-		},
-		"Pi": &ent.MutatingFieldInfo{
-			DB:       "pi",
-			Required: false,
-		},
+func (action *CreateContactAction) requiredFields() []string {
+	return []string{
+		"EmailAddress",
+		"FirstName",
+		"LastName",
+		"UserID",
 	}
 }
 

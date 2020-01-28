@@ -26,6 +26,7 @@ type modelsTestSuite struct {
 func (suite *modelsTestSuite) SetupSuite() {
 	// TODO make this automatic based on db
 	suite.Tables = []string{
+		"addresses",
 		"users",
 		"events",
 		"user_events_edges",

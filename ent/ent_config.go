@@ -21,7 +21,7 @@ type Edge interface {
 type EdgeMap map[string]Edge
 
 // FieldMap is a mapping of name of field to Field
-type FieldMap map[string]field.Field
+type FieldMap map[string]*field.Field
 
 // ConfigWithFields is the interface that EntConfigs which have fields implement
 type ConfigWithFields interface {

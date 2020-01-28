@@ -46,8 +46,8 @@ func (suite *mutationBuilderSuite) TestEditing() {
 		ent.EditOperation,
 		user,
 		map[string]interface{}{
-			"FirstName": "Ola2",
-			"LastName":  "Okelola2",
+			"first_name": "Ola2",
+			"last_name":  "Okelola2",
 		},
 	)
 	updatedUser := testingutils.SaveUser(suite.T(), b)
@@ -87,9 +87,9 @@ func (suite *mutationBuilderSuite) TestAddSimpleEdgeAtCreation() {
 		ent.InsertOperation,
 		nil,
 		map[string]interface{}{
-			"EmailAddress": email,
-			"FirstName":    "Ola",
-			"LastName":     "Okelola",
+			"email_address": email,
+			"first_name":    "Ola",
+			"last_name":     "Okelola",
 		},
 	)
 	b.AddOutboundEdge(models.UserToFamilyMembersEdge, user2.ID, user2.GetType())

@@ -1,8 +1,7 @@
 package ent
 
 import (
-	"fmt"
-
+	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/pkg/errors"
 )
@@ -46,28 +45,10 @@ type EdgeActionConfig struct {
 
 type EdgeActions []*EdgeActionConfig
 
-type MutatingFieldInfo struct {
-	DB       string
-	Required bool
-}
-type ActionFieldMap map[string]*MutatingFieldInfo
-
-type ActionErrorInfo struct {
-	ErrorMsg string
-}
-
-type ActionValidationError struct {
-	Errors     []*ActionErrorInfo
-	ActionName string
-}
-
-func (err *ActionValidationError) Error() string {
-	return fmt.Sprintf(
-		"error validating action %s, encountered %d errors validating, errors %v",
-		err.ActionName,
-		len(err.Errors),
-		err.Errors,
-	)
+type ActionFieldMap map[string]*FieldInfo
+type FieldInfo struct {
+	Field *field.Field
+	Value interface{}
 }
 
 // TODO
@@ -82,12 +63,6 @@ func (err *ActionValidationError) Error() string {
 // makes it easier to change Viewer because I can change it once and it gets changed everywhere...
 
 type MutationBuilder interface {
-	// TODO this needs to be aware of validators
-	// triggers and observers
-	// observers need to be added to the changeset
-	// critical observers need to be added to the changeset
-	// regular observers done later
-
 	// placeholder id to be used by fields/values in the mutation and replaced after we have a created ent
 	//	GetPlaceholderID() string
 	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions

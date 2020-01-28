@@ -1,5 +1,11 @@
 package field
 
+import (
+	"fmt"
+
+	"github.com/iancoleman/strcase"
+)
+
 // Field represents a field that's available on an ent
 // Field exists separate from DataType to store information that's common
 // across different datatypes and to make it easy to add new datatypes that
@@ -17,6 +23,49 @@ type Field struct {
 	index           bool
 	fkeyConfig      string
 	fkeyField       string
+}
+
+func (f *Field) Valid(name string, val interface{}) error {
+	if val == nil {
+		// nothing to do here
+		if f.nullable {
+			return nil
+		}
+		return fmt.Errorf("got a nil value for non-nillable field %s", name)
+	}
+	// TODO allow-blank check to skip validators
+	// if allow blank or optional or whatever we end up calling this,
+	// we allow this come through if the value is equal to the blank value
+	if false && val == f.dataType.Type() {
+		return nil
+	}
+
+	validator, ok := f.dataType.(Validator)
+	if !ok {
+		return nil
+	}
+	return validator.Valid(val)
+}
+
+func (f *Field) Format(val interface{}) (interface{}, error) {
+	// can't format a nil value so nothing to do here.
+	// Valid() will handle it as needed
+	if val == nil {
+		return val, nil
+	}
+	formatter, ok := f.dataType.(Formatter)
+	if !ok {
+		return val, nil
+	}
+	return formatter.Format(val)
+}
+
+func (f *Field) DBKey(fieldName string) string {
+	if f.db != "" {
+		return f.db
+	}
+	// this API doesn't seem as fun here...
+	return strcase.ToSnake(fieldName)
 }
 
 // Option is a function that takes a Field and modifies it in any way.
@@ -103,10 +152,10 @@ func ForeignKey(configName, fieldName string) Option {
 //  	},
 //  }
 //
-func F(d DataType, opts ...Option) Field {
-	f := Field{dataType: d}
+func F(d DataType, opts ...Option) *Field {
+	f := &Field{dataType: d}
 	for _, opt := range opts {
-		opt(&f)
+		opt(f)
 	}
 	return f
 }

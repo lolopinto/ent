@@ -32,7 +32,7 @@ func CreateEvent(v viewer.ViewerContext) *CreateEventAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.InsertOperation,
-		action.getFieldMap(),
+		action.requiredFields(),
 	)
 	action.builder = builder
 	return action
@@ -50,12 +50,16 @@ func (action *CreateEventAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *CreateEventAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *CreateEventAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *CreateEventAction) SetBuilderOnObservers(observers []actions.Observer) error {
-	return action.builder.SetObservers(observers)
+func (action *CreateEventAction) SetBuilderOnObservers(observers []actions.Observer) {
+	action.builder.SetObservers(observers)
+}
+
+func (action *CreateEventAction) SetBuilderOnValidators(validators []actions.Validator) {
+	action.builder.SetValidators(validators)
 }
 
 func (action *CreateEventAction) GetChangeset() (ent.Changeset, error) {
@@ -112,29 +116,12 @@ func (action *CreateEventAction) SetLocation(location string) *CreateEventAction
 	return action
 }
 
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *CreateEventAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{
-		"Name": &ent.MutatingFieldInfo{
-			DB:       "name",
-			Required: true,
-		},
-		"UserID": &ent.MutatingFieldInfo{
-			DB:       "user_id",
-			Required: true,
-		},
-		"StartTime": &ent.MutatingFieldInfo{
-			DB:       "start_time",
-			Required: true,
-		},
-		"EndTime": &ent.MutatingFieldInfo{
-			DB:       "end_time",
-			Required: false,
-		},
-		"Location": &ent.MutatingFieldInfo{
-			DB:       "location",
-			Required: true,
-		},
+func (action *CreateEventAction) requiredFields() []string {
+	return []string{
+		"Name",
+		"UserID",
+		"StartTime",
+		"Location",
 	}
 }
 

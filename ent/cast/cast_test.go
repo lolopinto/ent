@@ -20,6 +20,7 @@ type castSuite struct {
 
 func (suite *castSuite) SetupSuite() {
 	suite.Tables = []string{
+		"addresses",
 		"users",
 		"event_invited_edges",
 		"events",

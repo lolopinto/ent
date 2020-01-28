@@ -24,11 +24,11 @@ type Address struct {
 	ent.Node
 	privacy.AlwaysDenyPrivacyPolicy
 	City          string   `db:"city"`
+	Country       string   `db:"country"`
 	ResidentNames []string `db:"resident_names"`
 	State         string   `db:"state"`
-	Zip           string   `db:"zip"`
 	StreetAddress string   `db:"street_address"`
-	Country       string   `db:"country"`
+	Zip           string   `db:"zip"`
 	Viewer        viewer.ViewerContext
 }
 
@@ -107,6 +107,11 @@ func (address *Address) DBFields() ent.DBFields {
 			address.City, err = cast.ToString(v)
 			return err
 		},
+		"country": func(v interface{}) error {
+			var err error
+			address.Country, err = cast.ToString(v)
+			return err
+		},
 		"resident_names": func(v interface{}) error {
 			return cast.UnmarshallJSON(v, &address.ResidentNames)
 		},
@@ -115,19 +120,14 @@ func (address *Address) DBFields() ent.DBFields {
 			address.State, err = cast.ToString(v)
 			return err
 		},
-		"zip": func(v interface{}) error {
-			var err error
-			address.Zip, err = cast.ToString(v)
-			return err
-		},
 		"street_address": func(v interface{}) error {
 			var err error
 			address.StreetAddress, err = cast.ToString(v)
 			return err
 		},
-		"country": func(v interface{}) error {
+		"zip": func(v interface{}) error {
 			var err error
-			address.Country, err = cast.ToString(v)
+			address.Zip, err = cast.ToString(v)
 			return err
 		},
 	}

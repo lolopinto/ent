@@ -98,12 +98,12 @@ type mutationResolver struct{ *Resolver }
 
 func (r *mutationResolver) AddressCreate(ctx context.Context, input AddressCreateInput) (*AddressCreateResponse, error) {
 	node, err := action.CreateAddressFromContext(ctx).
-		SetCity(input.City).
-		SetResidentNames(input.ResidentNames).
-		SetState(input.State).
-		SetZip(input.Zip).
-		SetStreetAddress(input.StreetAddress).
 		SetCountry(input.Country).
+		SetCity(input.City).
+		SetZip(input.Zip).
+		SetState(input.State).
+		SetStreetAddress(input.StreetAddress).
+		SetResidentNames(input.ResidentNames).
 		Save()
 
 	if err != nil {
@@ -140,12 +140,12 @@ func (r *mutationResolver) AddressEdit(ctx context.Context, input AddressEditInp
 	}
 
 	node, err := action.EditAddressFromContext(ctx, existingNode).
-		SetCity(input.City).
-		SetResidentNames(input.ResidentNames).
-		SetState(input.State).
-		SetZip(input.Zip).
-		SetStreetAddress(input.StreetAddress).
 		SetCountry(input.Country).
+		SetCity(input.City).
+		SetZip(input.Zip).
+		SetState(input.State).
+		SetStreetAddress(input.StreetAddress).
+		SetResidentNames(input.ResidentNames).
 		Save()
 
 	if err != nil {

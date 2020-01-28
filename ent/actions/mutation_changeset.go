@@ -20,6 +20,7 @@ type EntMutationChangeset struct {
 	dependencies  ent.MutationBuilderMap
 	changesets    []ent.Changeset
 	observers     []Observer
+	validators    []Validator
 }
 
 func (c *EntMutationChangeset) GetExecutor() ent.Executor {
@@ -83,6 +84,10 @@ func (c *EntMutationChangeset) Changesets() []ent.Changeset {
 
 func (c *EntMutationChangeset) Observers() []Observer {
 	return c.observers
+}
+
+func (c *EntMutationChangeset) Validators() []Validator {
+	return c.validators
 }
 
 func MultiChangesets(changesetFn ...func() (ent.Changeset, error)) (ent.Changeset, error) {
