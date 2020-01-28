@@ -307,8 +307,8 @@ func TestSlice(t *testing.T) {
 
 	import "github.com/lolopinto/ent/ent/field"
 
-	func f() []field.Field {
-		return []field.Field {
+	func f() []*field.Field {
+		return []*field.Field {
 			field.F(
 				field.String().MinLen(5).ToLower().TrimSpace(),
 				field.GraphQL("username"),
@@ -322,6 +322,7 @@ func TestSlice(t *testing.T) {
 		&astparser.Result{
 			PkgName:   "field",
 			IdentName: "Field",
+			Pointer:   true,
 			Format:    astparser.TypFormat,
 			Slice:     true,
 			Elems: []*astparser.Result{
@@ -637,12 +638,12 @@ func loadCode(t *testing.T, code string, expResult *astparser.Result) {
 }
 
 func validateResult(t *testing.T, expResult, result *astparser.Result) {
-	assert.Equal(t, expResult.PkgName, result.PkgName)
-	assert.Equal(t, expResult.IdentName, result.IdentName)
-	assert.Equal(t, expResult.Pointer, result.Pointer)
-	assert.Equal(t, expResult.Literal, result.Literal)
-	assert.Equal(t, expResult.LiteralKind, result.LiteralKind)
-	assert.Equal(t, expResult.Format, result.Format)
+	assert.Equal(t, expResult.PkgName, result.PkgName, "pkg name")
+	assert.Equal(t, expResult.IdentName, result.IdentName, "ident name")
+	assert.Equal(t, expResult.Pointer, result.Pointer, "pointer")
+	assert.Equal(t, expResult.Literal, result.Literal, "literal")
+	assert.Equal(t, expResult.LiteralKind, result.LiteralKind, "literal kind")
+	assert.Equal(t, expResult.Format, result.Format, "format")
 
 	validateMap(t, expResult, result)
 
