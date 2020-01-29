@@ -13,6 +13,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/khaiql/dbcleaner v2.3.0+incompatible
 	github.com/lib/pq v1.0.0
+	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/ogier/pflag v0.0.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pkg/errors v0.8.1

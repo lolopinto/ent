@@ -22,7 +22,7 @@ func Field() *DataType {
 type DataType struct {
 }
 
-// Type returns string to satisfy the DataType interface
+// Type returns string to satisfy the field.DataType interface
 func (t *DataType) Type() interface{} {
 	return ""
 }
