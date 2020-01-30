@@ -7,7 +7,7 @@ import (
 	"github.com/lolopinto/ent/ent/field"
 )
 
-// Field returns a datatype that implements the DataType interface
+// Field returns a datatype that implements the field.DataType interface
 func Field() *DataType {
 	return &DataType{}
 }

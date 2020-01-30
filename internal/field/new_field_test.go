@@ -221,7 +221,7 @@ func TestCustomURLType(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"ProfileURL": field.F(
-					url.Field().RestrictToDomain("https://www.facebook.com"),
+					url.Field().RestrictToDomain("www.facebook.com"),
 					field.HideFromGraphQL(),
 					field.Nullable(),
 				),
