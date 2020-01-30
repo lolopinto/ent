@@ -22,6 +22,7 @@ require (
 	github.com/urfave/cli v1.20.0
 	github.com/vektah/dataloaden v0.3.0 // indirect
 	github.com/vektah/gqlparser v1.1.2
+	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d
 	golang.org/x/tools v0.0.0-20190515012406-7d7faa4812bd
 	gopkg.in/khaiql/dbcleaner.v2 v2.3.0
 	gopkg.in/yaml.v2 v2.2.2

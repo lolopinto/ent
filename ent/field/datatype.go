@@ -110,6 +110,14 @@ type Formatter interface {
 	Format(interface{}) (interface{}, error)
 }
 
+// FullDataType represents a DataType that has a Validator and Formatter
+// Not the best name :/
+type FullDataType interface {
+	DataType
+	Validator
+	Formatter
+}
+
 // ImportableDataType interface represents data that need to import a package to
 // be referenced
 // e.g. "time" for time datatype
