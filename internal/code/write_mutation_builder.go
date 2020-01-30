@@ -35,7 +35,7 @@ func writeMutationBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.C
 				// our own version of reserveImport similar to what gqlgen provides. TOOD rename
 				"reserveImport": imps.Reserve,
 				"lookupImport":  imps.Lookup,
-				"fTypeString":   field.GetNonNilableType,
+				"fTypeString":   field.GetNonNilableGoType,
 				"fieldInfos":    action.GetFieldsFromFields,
 				"edgeInfos":     action.GetEdgesFromEdges,
 			},

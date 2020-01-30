@@ -1,12 +1,14 @@
 package field
 
 import (
+	"errors"
+	"fmt"
 	"go/ast"
-	"go/token"
 	"go/types"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/edge"
@@ -16,9 +18,11 @@ import (
 
 func newFieldInfo() *FieldInfo {
 	fieldMap := make(map[string]*Field)
-	return &FieldInfo{
+	fieldInfo := &FieldInfo{
 		fieldMap: fieldMap,
 	}
+	addBaseFields(fieldInfo)
+	return fieldInfo
 }
 
 type FieldInfo struct {
@@ -26,11 +30,22 @@ type FieldInfo struct {
 	fieldMap map[string]*Field
 	// really only used in tests
 	NonEntFields []*NonEntField
+	m            sync.Mutex
+	getFieldsFn  bool
 }
 
 func (fieldInfo *FieldInfo) addField(f *Field) {
+	fieldInfo.m.Lock()
+	defer fieldInfo.m.Unlock()
 	fieldInfo.Fields = append(fieldInfo.Fields, f)
 	fieldInfo.fieldMap[f.FieldName] = f
+}
+
+// GetFieldsFn returns a boolean which when returns true indicates that
+// the Node used the GetFields() API in the config to define fields as
+// opposed to fields in a struct
+func (fieldInfo *FieldInfo) GetFieldsFn() bool {
+	return fieldInfo.getFieldsFn
 }
 
 func (fieldInfo *FieldInfo) GetFieldByName(fieldName string) *Field {
@@ -45,7 +60,7 @@ func (fieldInfo *FieldInfo) InvalidateFieldForGraphQL(f *Field) {
 	if fByName != f {
 		panic("invalid field passed to InvalidateFieldForGraphQL")
 	}
-	f.exposeToGraphQL = false
+	f.hideFromGraphQL = true
 }
 
 func (fieldInfo *FieldInfo) TopLevelFields() []*Field {
@@ -59,18 +74,28 @@ func (fieldInfo *FieldInfo) TopLevelFields() []*Field {
 	return fields
 }
 
+// ForeignKeyInfo stores config and field name of the foreign key object
+type ForeignKeyInfo struct {
+	Config string
+	Field  string
+}
+
 type Field struct {
 	// todo: abstract out these 2 also...
 	FieldName           string
-	FieldTag            string
 	tagMap              map[string]string
 	topLevelStructField bool            // id, updated_at, created_at no...
 	entType             types.Type      // not all fields will have an entType. probably don't need this...
 	fieldType           enttype.EntType // this is the underlying type for the field for graphql, db, etc
 	dbColumn            bool
-	exposeToGraphQL     bool
+	hideFromGraphQL     bool
 	nullable            bool
 	defaultValue        interface{}
+	unique              bool
+	fkey                *ForeignKeyInfo
+	index               bool
+	dbName              string // storage key/column name for the field
+	graphQLName         string
 	exposeToActions     bool // TODO: figure out a better way for this long term. this is to allow password be hidden from reads but allowed in writes
 	// once password is a top level configurable type, it can control this e.g. exposeToCreate mutation yes!,
 	// expose to edit mutation no! obviously no delete. but then can be added in custom mutations e.g. editPassword()
@@ -78,39 +103,64 @@ type Field struct {
 	singleFieldPrimaryKey bool
 	//	LinkedEdge            edge.Edge
 	InverseEdge *edge.AssociationEdge
+	pkgPath     string
+}
+
+func newField(fieldName string) *Field {
+	graphQLName := strcase.ToLowerCamel(fieldName)
+	// TODO come up with a better way of handling this
+	if fieldName == "ID" {
+		graphQLName = "id"
+	}
+
+	f := &Field{
+		FieldName:           fieldName,
+		topLevelStructField: true,
+		dbColumn:            true,
+		exposeToActions:     true,
+		dbName:              strcase.ToSnake(fieldName),
+		graphQLName:         graphQLName,
+		tagMap:              make(map[string]string),
+	}
+	// seed with default db name
+	f.addTag("db", strconv.Quote(f.dbName))
+	return f
+}
+
+func (f *Field) addTag(key, value string) {
+	f.tagMap[key] = value
 }
 
 func (f *Field) GetDbColName() string {
-	colName, err := strconv.Unquote(f.tagMap["db"])
-	util.Die(err)
-
-	return colName
+	return f.dbName
 }
 
 func (f *Field) GetQuotedDBColName() string {
+	// this works because there's enough places that need to quote this so easier to just get this from tagMap as long as we keep it there
 	return f.tagMap["db"]
 }
 
-func GetNilableTypeInStructDefinition(f *Field) string {
-	// See comment in GetNonNilableType
+func GetNilableGoType(f *Field) string {
+	// See comment in GetNonNilableGoType
 	// In cases, where we want a Nillable type, we need to explicitly add it here
-	structType := GetNonNilableType(f)
+	structType := GetNonNilableGoType(f)
 	if !f.Nullable() {
 		return structType
 	}
-	return "*" + structType
+	// we want a nillable type and the default declaration doesn't have it, include the *
+	if structType[0] != '*' {
+		structType = "*" + structType
+	}
+	return structType
 }
 
-func GetNonNilableType(f *Field) string {
-	override, ok := f.fieldType.(enttype.FieldWithOverridenStructType)
-	if ok {
-		return override.GetStructType()
-	}
+func GetNonNilableGoType(f *Field) string {
 	// Because of the current API for Fields, the underlying type
-	// is always "string", "int", "float64", etc so this is never nullable
+	// is "string", "int", "float64", etc so this is never quite nullable
 	// and we can just return the string representation here
-	// since nullable is currently encoded as a struct tag
-	return f.entType.String()
+	// since nullable is currently encoded as a struct tag or a different flag
+	// To enforce nullable value, see above
+	return enttype.GetGoType(f.entType)
 }
 
 func (f *Field) GetDbTypeForField() string {
@@ -130,30 +180,23 @@ func (f *Field) GetZeroValue() string {
 }
 
 func (f *Field) ExposeToGraphQL() bool {
-	if !f.exposeToGraphQL {
-		return false
-	}
-	fieldName := f.GetUnquotedKeyFromTag("graphql")
+	return !f.hideFromGraphQL
+}
 
-	return fieldName != "_"
+func (f *Field) Unique() bool {
+	return f.unique
+}
+
+func (f *Field) Index() bool {
+	return f.index
+}
+
+func (f *Field) ForeignKeyInfo() *ForeignKeyInfo {
+	return f.fkey
 }
 
 func (f *Field) GetGraphQLName() string {
-	fieldName := f.GetUnquotedKeyFromTag("graphql")
-
-	// field that should not be exposed to graphql e.g. passwords etc
-
-	// TODO come up with a better way of handling this
-	if f.FieldName == "ID" {
-		fieldName = "id"
-	}
-
-	// no fieldName so generate one
-	// _ is when we're returning a fieldName for actions
-	if fieldName == "" || fieldName == "_" {
-		fieldName = strcase.ToLowerCamel(f.FieldName)
-	}
-	return fieldName
+	return f.graphQLName
 }
 
 func (f *Field) InstanceFieldName() string {
@@ -184,16 +227,6 @@ func (f *Field) IDField() bool {
 	return strings.HasSuffix(f.FieldName, "ID")
 }
 
-func (f *Field) GetUnquotedKeyFromTag(key string) string {
-	val := f.tagMap[key]
-	if val == "" {
-		return ""
-	}
-	rawVal, err := strconv.Unquote(val)
-	util.Die(err)
-	return rawVal
-}
-
 func (f *Field) Nullable() bool {
 	return f.nullable
 }
@@ -202,86 +235,163 @@ func (f *Field) DefaultValue() interface{} {
 	return f.defaultValue
 }
 
-func GetFieldInfoForStruct(s *ast.StructType, fset *token.FileSet, info *types.Info) *FieldInfo {
-	fieldInfo := newFieldInfo()
+func (f *Field) PkgPath() string {
+	return f.pkgPath
+}
 
+func (f *Field) GetFieldTag() string {
+	// convert the map back to the struct tag string format
+	var tags []string
+	for key, value := range f.tagMap {
+		// TODO: abstract this out better. only specific tags should we written to the ent
+		if key == "db" || key == "graphql" {
+			tags = append(tags, key+":"+value)
+		}
+	}
+	if len(tags) == 0 {
+		return ""
+	}
+	sort.Strings(tags)
+	return "`" + strings.Join(tags, " ") + "`"
+}
+
+func (f *Field) setFieldType(fieldType enttype.Type) {
+	fieldEntType, ok := fieldType.(enttype.EntType)
+	if !ok {
+		panic(fmt.Errorf("invalid type %T that cannot be stored in db etc", fieldType))
+	}
+	f.fieldType = fieldEntType
+}
+
+func (f *Field) setDBName(dbName string) {
+	f.dbName = dbName
+	f.addTag("db", f.dbName)
+}
+
+func (f *Field) setForeignKeyInfoFromString(fkey string) error {
+	parts := strings.Split(fkey, ".")
+	if len(parts) != 2 {
+		return errors.New("invalid foreign key struct tag format")
+	}
+	configName := parts[0]
+	field := parts[1]
+	f.fkey = &ForeignKeyInfo{
+		Config: configName,
+		Field:  field,
+	}
+	return nil
+}
+
+func addBaseFields(fieldInfo *FieldInfo) {
 	// TODO eventually get these from ent.Node instead of doing this manually
 	// add id field
-	fieldInfo.addField(&Field{
-		FieldName:             "ID",
-		tagMap:                getTagMapFromJustFieldName("ID"),
-		exposeToGraphQL:       true,
-		exposeToActions:       false,
-		topLevelStructField:   false,
-		dbColumn:              true,
-		singleFieldPrimaryKey: true,
-		fieldType:             &enttype.IDType{},
-	})
+	idField := newField("ID")
+	idField.tagMap = getTagMapFromJustFieldName("ID")
+	idField.exposeToActions = false
+	idField.topLevelStructField = false
+	idField.singleFieldPrimaryKey = true
+	idField.fieldType = &enttype.IDType{}
+	fieldInfo.addField(idField)
 
 	// going to assume we don't want created at and updated at in graphql
 	// TODO when we get this from ent.Node, use struct tag graphql: "_"
 	// need to stop all this hardcoding going on
 
 	// add created_at and updated_at fields
-	fieldInfo.addField(&Field{
-		FieldName:           "CreatedAt",
-		tagMap:              getTagMapFromJustFieldName("CreatedAt"),
-		exposeToGraphQL:     false,
-		exposeToActions:     false,
-		topLevelStructField: false,
-		dbColumn:            true,
-		fieldType:           &enttype.TimeType{},
-	})
-	fieldInfo.addField(&Field{
-		FieldName:           "UpdatedAt",
-		tagMap:              getTagMapFromJustFieldName("UpdatedAt"),
-		exposeToGraphQL:     false,
-		exposeToActions:     false,
-		topLevelStructField: false,
-		dbColumn:            true,
-		fieldType:           &enttype.TimeType{},
-	})
+	createdAtField := newField("CreatedAt")
+	createdAtField.tagMap = getTagMapFromJustFieldName("CreatedAt")
+	createdAtField.hideFromGraphQL = true
+	createdAtField.exposeToActions = false
+	createdAtField.topLevelStructField = false
+	createdAtField.fieldType = &enttype.TimeType{}
+	fieldInfo.addField(createdAtField)
 
+	updatedAtField := newField("UpdatedAt")
+	updatedAtField.tagMap = getTagMapFromJustFieldName("UpdatedAt")
+	updatedAtField.hideFromGraphQL = true
+	// immutable instead...?
+	updatedAtField.exposeToActions = false
+	updatedAtField.topLevelStructField = false
+	updatedAtField.fieldType = &enttype.TimeType{}
+	fieldInfo.addField(updatedAtField)
+}
+
+func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) *FieldInfo {
+	fieldInfo := newFieldInfo()
+
+	getUnquotedKeyFromTag := func(tagMap map[string]string, key string) string {
+		val := tagMap[key]
+		if val == "" {
+			return ""
+		}
+		rawVal, err := strconv.Unquote(val)
+		util.Die(err)
+		return rawVal
+	}
+
+	isKeyTrue := func(tagMap map[string]string, key string) bool {
+		return getUnquotedKeyFromTag(tagMap, key) == "true"
+	}
+
+	fieldCount := 0
 	for _, f := range s.Fields.List {
+		// embedded things
+		if len(f.Names) == 0 {
+			continue
+		}
 		fieldName := f.Names[0].Name
+
+		field := newField(fieldName)
 		// use this to rename GraphQL, db fields, etc
 		// otherwise by default it passes this down
-		//fmt.Printf("Field: %s Type: %s Tag: %v \n", fieldName, f.Type, f.Tag)
 
-		tagStr, tagMap := getTagInfo(fieldName, f.Tag)
+		// we're not even putting new graphql tags there :/
+		field.tagMap = parseFieldTag(fieldName, f.Tag, field.dbName)
 
-		var defaultValue interface{}
+		tagMap := field.tagMap
+
+		// override dbName
+		if tagMap["db"] != "" {
+			field.dbName = getUnquotedKeyFromTag(tagMap, "db")
+		}
+
 		if tagMap["default"] != "" {
-			var err error
-			defaultValue, err = strconv.Unquote(tagMap["default"])
-			util.Die(err)
+			field.defaultValue = getUnquotedKeyFromTag(tagMap, "default")
 		}
-		entType := info.TypeOf(f.Type)
-		nullable := tagMap["nullable"] == strconv.Quote("true")
-		fieldType := enttype.GetNullableType(entType, nullable)
-		fieldEntType, ok := fieldType.(enttype.EntType)
-		if !ok {
-			panic("invalid type that cannot be stored in db etc")
+		field.nullable = isKeyTrue(tagMap, "nullable")
+
+		field.entType = info.TypeOf(f.Type)
+		field.setFieldType(enttype.GetNullableType(field.entType, field.nullable))
+
+		field.unique = isKeyTrue(tagMap, "unique")
+		field.index = isKeyTrue(tagMap, "index")
+		field.setForeignKeyInfoFromString(getUnquotedKeyFromTag(tagMap, "fkey"))
+
+		// only care when there's something here
+		if tagMap["graphql"] != "" {
+			graphQLName := getUnquotedKeyFromTag(tagMap, "graphql")
+
+			// even when the tab says hide, we're keeping the name because actions needs a graphqlName returned??
+			if graphQLName == "_" {
+				field.hideFromGraphQL = true
+			} else {
+				// overriden name
+				field.graphQLName = graphQLName
+			}
 		}
-		fieldInfo.addField(&Field{
-			FieldName:           fieldName,
-			entType:             entType,
-			fieldType:           fieldEntType,
-			FieldTag:            tagStr,
-			tagMap:              tagMap,
-			topLevelStructField: true,
-			dbColumn:            true,
-			exposeToGraphQL:     true,
-			exposeToActions:     true,
-			nullable:            nullable,
-			defaultValue:        defaultValue,
-		})
+		fieldCount++
+		fieldInfo.addField(field)
+	}
+
+	// no fields
+	if fieldCount == 0 {
+		return nil
 	}
 
 	return fieldInfo
 }
 
-func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string) {
+func parseFieldTag(fieldName string, tag *ast.BasicLit, defaultDBName string) map[string]string {
 	tagsMap := make(map[string]string)
 	if t := tag; t != nil {
 		// struct tag format should be something like `graphql:"firstName" db:"first_name"`
@@ -306,26 +416,14 @@ func getTagInfo(fieldName string, tag *ast.BasicLit) (string, map[string]string)
 	// add the db tag it it doesn't exist
 	_, ok := tagsMap["db"]
 	if !ok {
-		tagsMap["db"] = strconv.Quote(strcase.ToSnake(fieldName))
+		tagsMap["db"] = strconv.Quote(defaultDBName)
 	}
 
-	//fmt.Println(len(tagsMap))
-	//fmt.Println(tagsMap)
-	// convert the map back to the struct tag string format
-	var tags []string
-	for key, value := range tagsMap {
-		// TODO: abstract this out better. only specific tags should we written to the ent
-		if key == "db" || key == "graphql" {
-			tags = append(tags, key+":"+value)
-		}
-	}
-	sort.Strings(tags)
-	return "`" + strings.Join(tags, " ") + "`", tagsMap
+	return tagsMap
 }
 
 func getTagMapFromJustFieldName(fieldName string) map[string]string {
-	_, tagMap := getTagInfo(fieldName, nil)
-	return tagMap
+	return parseFieldTag(fieldName, nil, strcase.ToSnake(fieldName))
 }
 
 type NonEntField struct {

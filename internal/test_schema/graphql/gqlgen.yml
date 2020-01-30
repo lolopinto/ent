@@ -8,6 +8,9 @@ model:
     package: graphql
 autobind: []
 models:
+    Address:
+        model:
+          - github.com/lolopinto/ent/internal/test_schema/models.Address
     Contact:
         model:
           - github.com/lolopinto/ent/internal/test_schema/models.Contact

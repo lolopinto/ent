@@ -12,15 +12,12 @@ func GetLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
 	// fn.Body is an instance of *ast.BlockStmt
 	lastStmt := GetLastStatement(fn.Body.List)
 
-	//fmt.Println(length)
 	// to handle the case where we have variables used to return something
 	// not really a valid case but handle it anyways
 	returnStmt, ok := lastStmt.(*ast.ReturnStmt)
 	if !ok {
 		panic("last statement in function was not a return statement. ")
 	}
-
-	//fmt.Println(len(returnStmt.Results))
 
 	if len(returnStmt.Results) != 1 {
 		panic("invalid number or format of return statement")
@@ -29,7 +26,7 @@ func GetLastReturnStmtExpr(fn *ast.FuncDecl) ast.Expr {
 	return GetLastExpr(returnStmt.Results)
 }
 
-func GetCompositeStmtsInFunc(fn *ast.FuncDecl) *ast.CompositeLit {
+func GetCompositeStmtInFunc(fn *ast.FuncDecl) *ast.CompositeLit {
 	lastExpr := GetLastReturnStmtExpr(fn)
 	compositeListStmt := GetExprToCompositeLit(lastExpr)
 	return compositeListStmt
@@ -38,7 +35,7 @@ func GetCompositeStmtsInFunc(fn *ast.FuncDecl) *ast.CompositeLit {
 // given a function node, it gets the list of elts in the func
 // works for both edges in GetEdges() func and list of privacy rules in Rules
 func GetEltsInFunc(fn *ast.FuncDecl) []ast.Expr {
-	return GetCompositeStmtsInFunc(fn).Elts
+	return GetCompositeStmtInFunc(fn).Elts
 }
 
 func GetLastStatement(stmts []ast.Stmt) ast.Stmt {
@@ -168,32 +165,4 @@ func GetStringListFromExpr(expr ast.Expr) []string {
 		list = append(list, GetUnderylingStringFromLiteralExpr(elt))
 	}
 	return list
-}
-
-// FieldTypeInfo struct contains information about the type of a field:
-// name and nullable value
-type FieldTypeInfo struct {
-	Name     string
-	Nullable bool
-}
-
-// GetFieldTypeInfo returns info about type of field
-func GetFieldTypeInfo(field *ast.Field) FieldTypeInfo {
-	identName := func(expr ast.Expr) string {
-		ident, ok := expr.(*ast.Ident)
-		if ok {
-			return ident.Name
-		}
-		return ""
-	}
-	if name := identName(field.Type); name != "" {
-		return FieldTypeInfo{Name: name, Nullable: false}
-	}
-	star, ok := field.Type.(*ast.StarExpr)
-	if ok {
-		if name := identName(star.X); name != "" {
-			return FieldTypeInfo{Name: name, Nullable: true}
-		}
-	}
-	panic("invalid field receiver type")
 }

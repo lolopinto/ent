@@ -1,6 +1,8 @@
 package configs
 
-import "github.com/lolopinto/ent/ent"
+import (
+	"github.com/lolopinto/ent/ent"
+)
 
 type UserConfig struct {
 	EmailAddress string `unique:"true"`

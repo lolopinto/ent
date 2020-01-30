@@ -1,5 +1,7 @@
 package ent
 
+import "github.com/lolopinto/ent/ent/field"
+
 // Config interface that configurations for different ents should implement.
 type Config interface {
 	// GetTableName returns the underyling database table the model's data is stored
@@ -18,7 +20,16 @@ type Edge interface {
 // EdgeMap is a mapping of name of edge to EdgeType
 type EdgeMap map[string]Edge
 
-// ConfigWithEdges is the interface that EntConfigs which have edges implements
+// FieldMap is a mapping of name of field to Field
+type FieldMap map[string]*field.Field
+
+// ConfigWithFields is the interface that EntConfigs which have fields implement
+type ConfigWithFields interface {
+	Config
+	GetFields() FieldMap
+}
+
+// ConfigWithEdges is the interface that EntConfigs which have edges implement
 type ConfigWithEdges interface {
 	Config
 	// GetEdges returns the edges that the ent supports

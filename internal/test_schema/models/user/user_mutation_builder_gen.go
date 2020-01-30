@@ -3,31 +3,38 @@
 package user
 
 import (
-	"errors"
-
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
+	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 )
 
 type UserMutationBuilder struct {
-	builder      *actions.EntMutationBuilder
-	user         *models.User
-	emailAddress *string
-	firstName    *string
-	lastName     *string
-	bio          *string
+	requiredFields []string
+	builder        *actions.EntMutationBuilder
+	user           *models.User
+	emailAddress   *string
+	firstName      *string
+	lastName       *string
+	bio            *string
+	clearbio       bool
 }
 
 func NewMutationBuilder(
 	v viewer.ViewerContext,
 	operation ent.WriteOperation,
-	fieldMap ent.ActionFieldMap,
+	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *UserMutationBuilder {
 	var user models.User
+
+	ret := &UserMutationBuilder{
+		requiredFields: requiredFields,
+		user:           &user,
+	}
+	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
@@ -35,44 +42,33 @@ func NewMutationBuilder(
 		&configs.UserConfig{},
 		opts...,
 	)
-	b.FieldMap = fieldMap
-	return &UserMutationBuilder{
-		builder: b,
-		user:    &user,
-	}
+	ret.builder = b
+	return ret
 }
 
 func (b *UserMutationBuilder) SetEmailAddress(emailAddress string) *UserMutationBuilder {
 	b.emailAddress = &emailAddress
-	b.builder.SetField("EmailAddress", emailAddress)
 	return b
 }
 
 func (b *UserMutationBuilder) SetFirstName(firstName string) *UserMutationBuilder {
 	b.firstName = &firstName
-	b.builder.SetField("FirstName", firstName)
 	return b
 }
 
 func (b *UserMutationBuilder) SetLastName(lastName string) *UserMutationBuilder {
 	b.lastName = &lastName
-	b.builder.SetField("LastName", lastName)
 	return b
 }
 
 func (b *UserMutationBuilder) SetBio(bio string) *UserMutationBuilder {
 	b.bio = &bio
-	b.builder.SetField("Bio", bio)
 	return b
 }
 
 func (b *UserMutationBuilder) SetNilableBio(bio *string) *UserMutationBuilder {
 	b.bio = bio
-	if bio == nil {
-		b.builder.SetField("Bio", nil)
-	} else {
-		b.builder.SetField("Bio", *bio)
-	}
+	b.clearbio = (bio == nil)
 	return b
 }
 
@@ -368,10 +364,6 @@ func (b *UserMutationBuilder) RemoveDeclinedEventID(eventID string) *UserMutatio
 	return b
 }
 
-func (b *UserMutationBuilder) Validate() error {
-	return b.builder.Validate()
-}
-
 func (b *UserMutationBuilder) GetViewer() viewer.ViewerContext {
 	return b.builder.GetViewer()
 }
@@ -380,33 +372,56 @@ func (b *UserMutationBuilder) GetUser() *models.User {
 	return b.user
 }
 
-func (b *UserMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
-	b.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(UserTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(b)
-	}
-	return nil
-}
-
-// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the UserObserver
-// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
-func (b *UserMutationBuilder) SetObservers(observers []actions.Observer) error {
-	b.builder.SetObservers(observers)
-	for _, o := range observers {
-		observer, ok := o.(UserObserver)
-		if ok {
-			observer.SetBuilder(b)
-		}
-	}
-	return nil
-}
-
+// TODO rename from GetChangeset to Build()
+// A Builder builds.
 func (b *UserMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	return b.builder.GetChangeset()
+}
+
+// Call Validate (should be Valid) at any point to validate that builder is valid
+func (b *UserMutationBuilder) Validate() error {
+	return b.builder.Validate()
+}
+
+func (b *UserMutationBuilder) buildFields() ent.ActionFieldMap {
+	m := make(map[string]bool)
+	for _, f := range b.requiredFields {
+		m[f] = true
+	}
+
+	fieldMap := b.GetFields()
+	fields := make(ent.ActionFieldMap)
+	addField := func(key string, val interface{}) {
+		fields[key] = &ent.FieldInfo{
+			Field: fieldMap[key],
+			Value: val,
+		}
+	}
+
+	// Need to have Id fields be fine with Builder
+
+	// if required, field is not nil or field explicitly set to nil, add the field
+	if b.emailAddress != nil {
+		addField("EmailAddress", *b.emailAddress)
+	} else if m["EmailAddress"] { // nil but required
+		addField("EmailAddress", nil)
+	}
+	if b.firstName != nil {
+		addField("FirstName", *b.firstName)
+	} else if m["FirstName"] { // nil but required
+		addField("FirstName", nil)
+	}
+	if b.lastName != nil {
+		addField("LastName", *b.lastName)
+	} else if m["LastName"] { // nil but required
+		addField("LastName", nil)
+	}
+	if b.bio != nil {
+		addField("Bio", *b.bio)
+	} else if m["Bio"] || b.clearbio { // required or value cleared
+		addField("Bio", nil)
+	}
+	return fields
 }
 
 func (b *UserMutationBuilder) ExistingEnt() ent.Entity {
@@ -425,28 +440,57 @@ func (b *UserMutationBuilder) GetPlaceholderID() string {
 	return b.builder.GetPlaceholderID()
 }
 
+// GetFields returns the field configuration for this mutation builder
+func (b *UserMutationBuilder) GetFields() ent.FieldMap {
+	return ent.FieldMap{
+		"EmailAddress": field.F(field.Noop(), field.DB("email_address")),
+		"FirstName":    field.F(field.Noop(), field.DB("first_name")),
+		"LastName":     field.F(field.Noop(), field.DB("last_name")),
+		"Bio":          field.F(field.Noop(), field.DB("bio"), field.Nullable()),
+	}
+}
+
 var _ ent.MutationBuilder = &UserMutationBuilder{}
 
-type UserTrigger interface {
+func (b *UserMutationBuilder) setBuilder(v interface{}) {
+	callback, ok := v.(UserCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(b)
+	}
+}
+
+// SetTriggers sets the builder on the triggers.
+func (b *UserMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		b.setBuilder(t)
+	}
+}
+
+// SetObservers sets the builder on the observers.
+func (b *UserMutationBuilder) SetObservers(observers []actions.Observer) {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		b.setBuilder(o)
+	}
+}
+
+// SetValidators sets the builder on validators.
+func (b *UserMutationBuilder) SetValidators(validators []actions.Validator) {
+	b.builder.SetValidators(validators)
+	for _, v := range validators {
+		b.setBuilder(v)
+	}
+}
+
+type UserCallbackWithBuilder interface {
 	SetBuilder(*UserMutationBuilder)
 }
 
-type UserMutationBuilderTrigger struct {
+type UserMutationCallback struct {
 	Builder *UserMutationBuilder
 }
 
-func (trigger *UserMutationBuilderTrigger) SetBuilder(b *UserMutationBuilder) {
-	trigger.Builder = b
-}
-
-type UserObserver interface {
-	SetBuilder(*UserMutationBuilder)
-}
-
-type UserMutationBuilderObserver struct {
-	Builder *UserMutationBuilder
-}
-
-func (observer *UserMutationBuilderObserver) SetBuilder(b *UserMutationBuilder) {
-	observer.Builder = b
+func (callback *UserMutationCallback) SetBuilder(b *UserMutationBuilder) {
+	callback.Builder = b
 }

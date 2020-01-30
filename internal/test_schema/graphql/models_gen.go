@@ -20,6 +20,41 @@ type Edge interface {
 	IsEdge()
 }
 
+type AddressCreateInput struct {
+	City          string   `json:"city"`
+	Country       string   `json:"country"`
+	ResidentNames []string `json:"residentNames"`
+	State         string   `json:"state"`
+	StreetAddress string   `json:"streetAddress"`
+	Zip           string   `json:"zip"`
+}
+
+type AddressCreateResponse struct {
+	Address *models.Address `json:"address"`
+}
+
+type AddressDeleteInput struct {
+	AddressID string `json:"addressID"`
+}
+
+type AddressDeleteResponse struct {
+	DeletedAddressID *string `json:"deletedAddressId"`
+}
+
+type AddressEditInput struct {
+	AddressID     string   `json:"addressID"`
+	City          string   `json:"city"`
+	Country       string   `json:"country"`
+	ResidentNames []string `json:"residentNames"`
+	State         string   `json:"state"`
+	StreetAddress string   `json:"streetAddress"`
+	Zip           string   `json:"zip"`
+}
+
+type AddressEditResponse struct {
+	Address *models.Address `json:"address"`
+}
+
 type AdminBlockInput struct {
 	BlockeeID string `json:"blockeeID"`
 	BlockerID string `json:"blockerID"`

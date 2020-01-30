@@ -24,10 +24,9 @@ import (
 
 // NodeDataInfo stores information related to a particular Node
 type NodeDataInfo struct {
-	NodeData                *NodeData
-	ShouldCodegen           bool
-	ShouldParseExistingFile bool
-	depgraph                *depgraph.Depgraph
+	NodeData      *NodeData
+	ShouldCodegen bool
+	depgraph      *depgraph.Depgraph
 }
 
 // NodeMapInfo holds all the information about the schema
@@ -60,9 +59,10 @@ func (m NodeMapInfo) getActionFromGraphQLName(graphQLName string) action.Action 
 	return nil
 }
 
-func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...string) *assocEdgeData {
-	r := regexp.MustCompile(`(\w+)_config.go`)
+var fileRegex = regexp.MustCompile(`(\w+)_config.go`)
+var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
 
+func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...string) *assocEdgeData {
 	typeInfo := pkg.TypesInfo
 	fset := pkg.Fset
 
@@ -70,7 +70,7 @@ func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...stri
 
 	// first pass to parse the files and do as much as we can
 	for idx, filePath := range pkg.GoFiles {
-		match := r.FindStringSubmatch(filePath)
+		match := fileRegex.FindStringSubmatch(filePath)
 		if len(match) != 2 {
 			panic(fmt.Errorf("invalid filename match, expected length 2, have length %d", len(match)))
 		}
@@ -80,7 +80,7 @@ func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...stri
 
 		file := pkg.Syntax[idx]
 
-		codegenInfo := m.parseFile(packageName, file, fset, specificConfigs, typeInfo, edgeData)
+		codegenInfo := m.parseFile(packageName, pkg, file, fset, specificConfigs, typeInfo, edgeData)
 		m.addConfig(codegenInfo)
 	}
 
@@ -112,15 +112,13 @@ func (m NodeMapInfo) parseFiles(p schemaparser.Parser, specificConfigs ...string
 // TODO this is ugly but it's private...
 func (m NodeMapInfo) parseFile(
 	packageName string,
+	pkg *packages.Package,
 	file *ast.File,
 	fset *token.FileSet,
 	specificConfigs []string,
 	typeInfo *types.Info,
 	edgeData *assocEdgeData,
 ) *NodeDataInfo {
-	//ast.Print(fset, node)
-	//ast.NewObj(fset, "file")
-	//fmt.Println("Struct:")
 
 	// initial parsing
 	g := &depgraph.Depgraph{}
@@ -130,33 +128,36 @@ func (m NodeMapInfo) parseFile(
 
 	var shouldCodegen bool
 
+	var fieldInfoFields, fieldInfoMethod *field.FieldInfo
+
 	ast.Inspect(file, func(node ast.Node) bool {
-
-		// TODO verification
-		// for now, we're assuming one struct which maps to what we want which isn't necessarily true
 		if t, ok := node.(*ast.TypeSpec); ok && t.Type != nil {
-			structName := t.Name.Name
+			if s, ok := t.Type.(*ast.StructType); ok {
 
-			// can eventually make this better but doing it this way to make the public API better
-			if len(specificConfigs) == 0 ||
-				(len(specificConfigs) == 1 && specificConfigs[0] == "") {
-				shouldCodegen = true
-			} else {
-				for _, specificConfig := range specificConfigs {
-					if specificConfig == structName {
-						shouldCodegen = true
-						break
+				// confirm the struct matches what we expect
+				structName := t.Name.Name
+				if !structNameRegex.MatchString(structName) {
+					return true
+				}
+
+				// can eventually make this better but doing it this way to make the public API better
+				if len(specificConfigs) == 0 ||
+					(len(specificConfigs) == 1 && specificConfigs[0] == "") {
+					shouldCodegen = true
+				} else {
+					for _, specificConfig := range specificConfigs {
+						if specificConfig == structName {
+							shouldCodegen = true
+							break
+						}
 					}
 				}
+
+				// pass the structtype to get the config
+				g.AddItem("ParseFields", func(nodeData *NodeData) {
+					fieldInfoFields = field.GetFieldInfoForStruct(s, typeInfo)
+				})
 			}
-		}
-
-		// pass the structtype to get the config
-		if s, ok := node.(*ast.StructType); ok {
-
-			g.AddItem("ParseFields", func(nodeData *NodeData) {
-				nodeData.FieldInfo = field.GetFieldInfoForStruct(s, fset, typeInfo)
-			})
 		}
 
 		if fn, ok := node.(*ast.FuncDecl); ok {
@@ -167,6 +168,13 @@ func (m NodeMapInfo) parseFile(
 					nodeData.EdgeInfo = edge.ParseEdgesFunc(packageName, fn)
 
 					m.addConstsFromEdgeGroups(nodeData)
+				})
+
+			case "GetFields":
+				g.AddItem("GetFields", func(nodeData *NodeData) {
+					var err error
+					fieldInfoMethod, err = field.ParseFieldsFunc(pkg, fn)
+					util.Die(err)
 				})
 
 			case "GetActions":
@@ -201,6 +209,16 @@ func (m NodeMapInfo) parseFile(
 		execFn(nodeData)
 	})
 
+	if fieldInfoFields != nil && fieldInfoMethod != nil {
+		panic("don't support both fields in struct and GetFields method")
+	} else if fieldInfoFields != nil {
+		nodeData.FieldInfo = fieldInfoFields
+	} else if fieldInfoMethod != nil {
+		nodeData.FieldInfo = fieldInfoMethod
+	} else {
+		panic("no fields why??")
+	}
+
 	// queue up linking edges
 	g2.AddItem(
 		// want all configs loaded for this.
@@ -222,10 +240,9 @@ func (m NodeMapInfo) parseFile(
 	}, "LinkedEdges", "InverseEdges")
 
 	return &NodeDataInfo{
-		depgraph:                g2,
-		NodeData:                nodeData,
-		ShouldCodegen:           shouldCodegen,
-		ShouldParseExistingFile: nodeData.EdgeInfo.HasAssociationEdges(),
+		depgraph:      g2,
+		NodeData:      nodeData,
+		ShouldCodegen: shouldCodegen,
 	}
 }
 

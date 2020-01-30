@@ -1,8 +1,6 @@
 package actions_test
 
 import (
-	"errors"
-
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
@@ -27,33 +25,26 @@ func (a *createContactAction) GetViewer() viewer.ViewerContext {
 }
 
 func (a *createContactAction) GetBuilder() ent.MutationBuilder {
-	for k, v := range a.getFields() {
-		a.builder.SetField(k, v)
-	}
-	a.builder.FieldMap = getFieldMapFromFields(a.builder.Operation, a.getFields())
+	a.builder.SetRawFields(a.getFields())
 	return a.builder
 }
 
 func (a *createContactAction) getFields() map[string]interface{} {
 	m := make(map[string]interface{})
 	if a.emailAddress != nil {
-		m["EmailAddress"] = a.emailAddress
+		m["email_address"] = a.emailAddress
 	}
 	if a.firstName != nil {
-		m["FirstName"] = a.firstName
+		m["first_name"] = a.firstName
 	}
 	if a.lastName != nil {
-		m["LastName"] = a.lastName
+		m["last_name"] = a.lastName
 	}
 	if a.user != nil {
-		m["UserID"] = a.user.ID
+		m["user_id"] = a.user.ID
 	} else if a.userID != nil {
-		m["UserID"] = a.userID
+		m["user_id"] = a.userID
 	}
-	// TODO default values...
-	// m["Favorite"] = false
-	// m["Pi"] = 3.14
-	// m["NumberOfCalls"] = 5
 	return m
 }
 
@@ -61,33 +52,48 @@ func (a *createContactAction) Entity() ent.Entity {
 	return &a.contact
 }
 
-func (a *createContactAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	// hmm
+func (a *createContactAction) setBuilder(v interface{}) {
+	callback, ok := v.(ContactCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(a.builder)
+	}
+}
+
+func (a *createContactAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
 	a.builder.SetTriggers(triggers)
 	for _, t := range triggers {
-		trigger, ok := t.(ContactTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(a.builder)
+		a.setBuilder(t)
 	}
-	return nil
+}
+
+func (a *createContactAction) SetBuilderOnObservers(observers []actions.Observer) {
+	a.builder.SetObservers(observers)
+	for _, o := range observers {
+		a.setBuilder(o)
+	}
+}
+
+func (a *createContactAction) SetBuilderOnValidators(validators []actions.Validator) {
+	a.builder.SetValidators(validators)
+	for _, v := range validators {
+		a.setBuilder(v)
+	}
 }
 
 func (a *createContactAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(a)
 }
 
-type ContactTrigger interface {
+type ContactCallbackWithBuilder interface {
 	SetBuilder(*actions.EntMutationBuilder)
 }
 
-type ContactMutationBuilderTrigger struct {
+type ContactMutationCallback struct {
 	Builder *actions.EntMutationBuilder
 }
 
-func (trigger *ContactMutationBuilderTrigger) SetBuilder(b *actions.EntMutationBuilder) {
-	trigger.Builder = b
+func (callback *ContactMutationCallback) SetBuilder(b *actions.EntMutationBuilder) {
+	callback.Builder = b
 }
 
 type createContactAndEmailAction struct {
@@ -101,7 +107,7 @@ func (action *createContactAndEmailAction) GetTriggers() []actions.Trigger {
 }
 
 type ContactCreateEmailTrigger struct {
-	ContactMutationBuilderTrigger
+	ContactMutationCallback
 }
 
 func (trigger *ContactCreateEmailTrigger) GetChangeset() (ent.Changeset, error) {
@@ -112,11 +118,11 @@ func (trigger *ContactCreateEmailTrigger) GetChangeset() (ent.Changeset, error) 
 		&contactEmail,
 		&configs.ContactEmailConfig{},
 	)
-	builder.SetField("EmailAddress", util.GenerateRandEmail())
-	builder.SetField("Label", "main email")
-	builder.SetField("ContactID", trigger.Builder)
-
-	builder.FieldMap = getFieldMapFromFields(builder.Operation, builder.GetFields())
+	builder.SetRawFields(map[string]interface{}{
+		"email_address": util.GenerateRandEmail(),
+		"label":         "main email",
+		"contact_id":    trigger.Builder,
+	})
 
 	return builder.GetChangeset()
 }

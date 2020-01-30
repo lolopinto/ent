@@ -1,6 +1,7 @@
 package cast
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -129,14 +130,19 @@ func ToNullableInt(v interface{}) (*int, error) {
 // We need both a float64 and float32 in the long run. Just always use float64 until API changes
 // db returns float64 so we should just do that.
 func ToFloat(v interface{}) (float64, error) {
-	val, ok := v.(float64)
+	f, ok := v.(float64)
 	if ok {
-		return float64(val), nil
+		return float64(f), nil
 	}
-	val2, ok := v.(float32)
+	f32, ok := v.(float32)
 	if ok {
-		return float64(val2), nil
+		return float64(f32), nil
 	}
+	i, ok := v.(int)
+	if ok {
+		return float64(i), nil
+	}
+
 	return 0, fmt.Errorf("could not convert float field %v to appropriate type", v)
 }
 
@@ -149,4 +155,20 @@ func ToNullableFloat(v interface{}) (*float64, error) {
 		return nil, err
 	}
 	return &f, nil
+}
+
+func UnmarshallJSON(src interface{}, dest interface{}) error {
+	switch s := src.(type) {
+	case string:
+		return json.Unmarshal([]byte(s), dest)
+	case []byte:
+		return json.Unmarshal(s, dest)
+	default:
+		str, err := ToString(src)
+		if err != nil {
+			return err
+		}
+		b := []byte(str)
+		return json.Unmarshal(b, dest)
+	}
 }

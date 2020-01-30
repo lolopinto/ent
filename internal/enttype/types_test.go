@@ -1,7 +1,6 @@
 package enttype_test
 
 import (
-	"go/ast"
 	"go/types"
 	"strconv"
 	"strings"
@@ -24,7 +23,7 @@ type expType struct {
 	elemGraphql         string
 	errorType           bool
 	contextType         bool
-	structType          string
+	goType              string
 }
 
 func TestStringType(t *testing.T) {
@@ -40,7 +39,7 @@ func f() string {
 		graphql:      "String!",
 		zeroValue:    strconv.Quote(""),
 		castToMethod: "cast.ToString",
-		structType:   "string",
+		goType:       "string",
 		nullableType: &enttype.NullableStringType{},
 	}, ret)
 }
@@ -62,7 +61,7 @@ func f() ent.NodeType {
 		// this probably doesn't work correctly in practice because strong types broken?
 		// would need castToMethod plus special enum cast
 		castToMethod: "cast.ToString",
-		structType:   "ent.NodeType",
+		goType:       "ent.NodeType",
 		nullableType: &enttype.NullableStringType{},
 	}, ret)
 }
@@ -76,12 +75,11 @@ func f() *string {
 
 	assert.IsType(t, &enttype.NullableStringType{}, ret.entType)
 	testType(t, expType{
-		db:           "sa.Text()",
-		graphql:      "String",
-		zeroValue:    strconv.Quote(""),
-		castToMethod: "cast.ToNullableString",
-		// this API is sad. it gets converted in field. TODO fix...
-		structType:      "string",
+		db:              "sa.Text()",
+		graphql:         "String",
+		zeroValue:       strconv.Quote(""),
+		castToMethod:    "cast.ToNullableString",
+		goType:          "*string",
 		nonNullableType: &enttype.StringType{},
 	}, ret)
 }
@@ -99,6 +97,7 @@ func f() bool {
 		graphql:      "Boolean!",
 		zeroValue:    "false",
 		castToMethod: "cast.ToBool",
+		goType:       "bool",
 		nullableType: &enttype.NullableBoolType{},
 	}, ret)
 }
@@ -117,6 +116,7 @@ func f() *bool {
 		zeroValue:       "false",
 		castToMethod:    "cast.ToNullableBool",
 		nonNullableType: &enttype.BoolType{},
+		goType:          "*bool",
 	}, ret)
 }
 
@@ -157,6 +157,7 @@ func f() int {
 		graphql:      "Int!",
 		zeroValue:    "0",
 		castToMethod: "cast.ToInt",
+		goType:       "int",
 		nullableType: &enttype.NullableIntegerType{},
 	}, ret)
 }
@@ -175,6 +176,7 @@ func f() *int {
 		zeroValue:       "0",
 		castToMethod:    "cast.ToNullableInt",
 		nonNullableType: &enttype.IntegerType{},
+		goType:          "*int",
 	}, ret)
 }
 
@@ -184,7 +186,7 @@ func TestFloat64Type(t *testing.T) {
 func f() float64 {
 	return 1.0
 	}`)
-	testFloatType(t, ret)
+	testFloatType(t, ret, "float64")
 }
 
 func TestFloat32Type(t *testing.T) {
@@ -193,16 +195,17 @@ func TestFloat32Type(t *testing.T) {
 func f() float32 {
 	return 1.0
 	}`)
-	testFloatType(t, ret)
+	testFloatType(t, ret, "float32")
 }
 
-func testFloatType(t *testing.T, ret returnType) {
+func testFloatType(t *testing.T, ret returnType, goType string) {
 	assert.IsType(t, &enttype.FloatType{}, ret.entType)
 	testType(t, expType{
 		db:           "sa.Float()",
 		graphql:      "Float!",
 		zeroValue:    "0.0",
 		castToMethod: "cast.ToFloat",
+		goType:       goType,
 		nullableType: &enttype.NullableFloatType{},
 	}, ret)
 }
@@ -213,7 +216,7 @@ func TestNullableFloat64Type(t *testing.T) {
 func f() *float64 {
 	return nil
 	}`)
-	testNullableFloatType(t, ret)
+	testNullableFloatType(t, ret, "*float64")
 }
 
 func TestNullableFloat32Type(t *testing.T) {
@@ -222,16 +225,17 @@ func TestNullableFloat32Type(t *testing.T) {
 func f() *float32 {
 	return nil
 	}`)
-	testNullableFloatType(t, ret)
+	testNullableFloatType(t, ret, "*float32")
 }
 
-func testNullableFloatType(t *testing.T, ret returnType) {
+func testNullableFloatType(t *testing.T, ret returnType, goType string) {
 	assert.IsType(t, &enttype.NullableFloatType{}, ret.entType)
 	testType(t, expType{
 		db:              "sa.Float()",
 		graphql:         "Float",
 		zeroValue:       "0.0",
 		castToMethod:    "cast.ToNullableFloat",
+		goType:          goType,
 		nonNullableType: &enttype.FloatType{},
 	}, ret)
 }
@@ -253,6 +257,7 @@ func f() time.Time {
 		castToMethod:        "cast.ToTime",
 		nullableType:        &enttype.NullableTimeType{},
 		defaultGQLFieldName: "time",
+		goType:              "time.Time",
 	}, ret)
 }
 
@@ -273,6 +278,7 @@ func f() *time.Time {
 		castToMethod:        "cast.ToNullableTime",
 		nonNullableType:     &enttype.TimeType{},
 		defaultGQLFieldName: "time",
+		goType:              "*time.Time",
 	}, ret)
 }
 
@@ -297,57 +303,66 @@ func TestNamedType(t *testing.T) {
 		)
 	}
 
-	testCases := []testCase{
-		testCase{
-			`package main
-
-		import "context"
-
-		func f() context.Context {
-			return context.TODO()
-		}`,
-			expType{
-				graphql:             "Context!",
-				defaultGQLFieldName: "context",
-				contextType:         true,
-				structType:          "context.Context",
+	testTestCases(
+		t,
+		&enttype.NamedType{},
+		map[string]testCase{
+			"context": testCase{
+				`package main
+	
+			import "context"
+	
+			func f() context.Context {
+				return context.TODO()
+			}`,
+				expType{
+					db:                  "sa.Text()",
+					graphql:             "Context!",
+					defaultGQLFieldName: "context",
+					contextType:         true,
+					goType:              "context.Context",
+					zeroValue:           "nil",
+					castToMethod:        "cast.UnmarshallJSON",
+				},
+				defaultFn,
 			},
-			defaultFn,
-		},
-
-		testCase{
-			`package main
-
-		func f() error {
-			return nil
-		}`,
-			expType{
-				graphqlPanics: true,
-				errorType:     true,
-				structType:    "error",
+			"error": testCase{
+				`package main
+	
+			func f() error {
+				return nil
+			}`,
+				expType{
+					db:            "sa.Text()",
+					graphqlPanics: true,
+					errorType:     true,
+					goType:        "error",
+					zeroValue:     "nil",
+					castToMethod:  "cast.UnmarshallJSON",
+				},
+				defaultFn,
 			},
-			defaultFn,
-		},
-
-		testCase{
-			`package main
-
-			import "github.com/lolopinto/ent/internal/test_schema/models"
-
-			func f() models.User {
-				// we have no reason to do this but test that default behavior does the right thing
-			return models.User{}
-		}`,
-			expType{
-				graphql:             "User!",
-				defaultGQLFieldName: "user",
-				structType:          "models.User",
+			"models.User": testCase{
+				`package main
+	
+				import "github.com/lolopinto/ent/internal/test_schema/models"
+	
+				func f() models.User {
+					// we have no reason to do this but test that default behavior does the right thing
+				return models.User{}
+			}`,
+				expType{
+					db:                  "sa.Text()",
+					graphql:             "User!",
+					defaultGQLFieldName: "user",
+					goType:              "models.User",
+					zeroValue:           "models.User{}",
+					castToMethod:        "cast.UnmarshallJSON",
+				},
+				defaultFn,
 			},
-			defaultFn,
 		},
-	}
-
-	testTestCases(t, testCases, &enttype.NamedType{})
+	)
 }
 
 func TestPointerType(t *testing.T) {
@@ -365,286 +380,407 @@ func TestPointerType(t *testing.T) {
 		)
 	}
 
-	testCases := []testCase{
-		testCase{
-			`package main
+	testTestCases(
+		t, &enttype.PointerType{},
+		map[string]testCase{
+			"models.User": testCase{
+				`package main
 
-			import "github.com/lolopinto/ent/internal/test_schema/models"
+	import "github.com/lolopinto/ent/internal/test_schema/models"
 
-			func f() *models.User {
-			return nil
-		}`,
-			expType{
-				graphql:             "User",
-				defaultGQLFieldName: "user",
-				structType:          "models.User",
+	func f() *models.User {
+	return nil
+}`,
+				expType{
+					db:                  "sa.Text()",
+					graphql:             "User",
+					defaultGQLFieldName: "user",
+					goType:              "*models.User",
+					zeroValue:           "nil",
+					castToMethod:        "cast.UnmarshallJSON",
+				},
+				defaultFn,
 			},
-			defaultFn,
-		},
-
-		testCase{
-			`package main
-
-			func f() *[]string {
-				return &[]string{}
-		}`,
-			expType{
-				graphql:    "[String!]",
-				structType: "*[]string",
+			"stringSlice": testCase{
+				`package main
+	
+				func f() *[]string {
+					return &[]string{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					graphql:      "[String!]",
+					goType:       "*[]string",
+					zeroValue:    "nil",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				defaultFn,
 			},
-			defaultFn,
-		},
-
-		testCase{
-			`package main
-
-			func f() *[]*string {
-				return &[]*string{}
-		}`,
-			expType{
-				graphql:    "[String]",
-				structType: "*[]*string",
+			"stringPointerSlice": testCase{
+				`package main
+	
+				func f() *[]*string {
+					return &[]*string{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					graphql:      "[String]",
+					goType:       "*[]*string",
+					zeroValue:    "nil",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				defaultFn,
 			},
-			defaultFn,
-		},
-
-		testCase{
-			`package main
-
-			import "github.com/lolopinto/ent/internal/test_schema/models"
-
-			func f() *[]*models.User {
-			return nil
-		}`,
-			expType{
-				graphql:             "[User]",
-				defaultGQLFieldName: "users",
-				structType:          "models.User",
+			"models.UserPointer": testCase{
+				`package main
+	
+				import "github.com/lolopinto/ent/internal/test_schema/models"
+	
+				func f() *[]*models.User {
+				return nil
+			}`,
+				expType{
+					db:                  "sa.Text()",
+					graphql:             "[User]",
+					defaultGQLFieldName: "users",
+					goType:              "*[]*models.User",
+					zeroValue:           "nil",
+					castToMethod:        "cast.UnmarshallJSON",
+				},
+				defaultFn,
 			},
-			defaultFn,
 		},
-	}
-
-	testTestCases(t, testCases, &enttype.PointerType{})
+	)
 }
 
 func TestSliceType(t *testing.T) {
-	testCases := []testCase{
-		testCase{
-			`package main
-
-			func f() []string {
-				return []string{}
-		}`,
-			expType{
-				graphql:     "[String!]!",
-				elemGraphql: "String!",
+	testTestCases(
+		t,
+		&enttype.SliceType{},
+		map[string]testCase{
+			"string": testCase{
+				`package main
+	
+				func f() []string {
+					return []string{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					graphql:      "[String!]!",
+					elemGraphql:  "String!",
+					zeroValue:    "nil",
+					goType:       "[]string",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			func f() []*string {
-				return []*string{}
-		}`,
-			expType{
-				graphql:     "[String]!",
-				elemGraphql: "String",
+			"stringPointer": testCase{
+				`package main
+	
+				func f() []*string {
+					return []*string{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					graphql:      "[String]!",
+					elemGraphql:  "String",
+					zeroValue:    "nil",
+					goType:       "[]*string",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			func f() []bool {
-				return []bool{}
-		}`,
-			expType{
-				graphql:     "[Boolean!]!",
-				elemGraphql: "Boolean!",
+			"bool": testCase{
+				`package main
+	
+				func f() []bool {
+					return []bool{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					graphql:      "[Boolean!]!",
+					elemGraphql:  "Boolean!",
+					zeroValue:    "nil",
+					goType:       "[]bool",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			func f() []*bool {
-				return []*bool{}
-		}`,
-			expType{
-				graphql:     "[Boolean]!",
-				elemGraphql: "Boolean",
+			"boolPointer": testCase{
+				`package main
+	
+				func f() []*bool {
+					return []*bool{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					graphql:      "[Boolean]!",
+					elemGraphql:  "Boolean",
+					zeroValue:    "nil",
+					goType:       "[]*bool",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			func f() []int {
-				return []int{}
-		}`,
-			expType{
-				graphql:     "[Int!]!",
-				elemGraphql: "Int!",
+			"int": testCase{
+				`package main
+	
+				func f() []int {
+					return []int{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					graphql:      "[Int!]!",
+					elemGraphql:  "Int!",
+					zeroValue:    "nil",
+					goType:       "[]int",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
+			"intPointer": testCase{
+				`package main
+	
+				func f() []*int {
+					return []*int{}
+			}`,
+				expType{
+					db: "sa.Text()",
 
-		testCase{
-			`package main
-
-			func f() []*int {
-				return []*int{}
-		}`,
-			expType{
-				graphql:     "[Int]!",
-				elemGraphql: "Int"},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			func f() []float64 {
-				return []float64{}
-		}`,
-			expType{
-				graphql:     "[Float!]!",
-				elemGraphql: "Float!",
+					graphql:      "[Int]!",
+					elemGraphql:  "Int",
+					zeroValue:    "nil",
+					goType:       "[]*int",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			func f() []*float64 {
-				return []*float64{}
-		}`,
-			expType{
-				graphql:     "[Float]!",
-				elemGraphql: "Float",
+			"float64": testCase{
+				`package main
+	
+				func f() []float64 {
+					return []float64{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					zeroValue:    "nil",
+					graphql:      "[Float!]!",
+					elemGraphql:  "Float!",
+					goType:       "[]float64",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			func f() []float32 {
-				return []float32{}
-		}`,
-			expType{
-				graphql:     "[Float!]!",
-				elemGraphql: "Float!",
+			"float64Pointer": testCase{
+				`package main
+	
+				func f() []*float64 {
+					return []*float64{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					graphql:      "[Float]!",
+					elemGraphql:  "Float",
+					zeroValue:    "nil",
+					goType:       "[]*float64",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			func f() []*float32 {
-				return []*float32{}
-		}`,
-			expType{
-				graphql:     "[Float]!",
-				elemGraphql: "Float",
+			"float32": testCase{
+				`package main
+	
+				func f() []float32 {
+					return []float32{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					graphql:      "[Float!]!",
+					elemGraphql:  "Float!",
+					zeroValue:    "nil",
+					goType:       "[]float32",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			import "time"
-
-			func f() []time.Time {
-				return []time.Time{}
-		}`,
-			expType{
-				graphql:             "[Time!]!",
-				defaultGQLFieldName: "times",
-				elemGraphql:         "Time!",
+			"float32Pointer": testCase{
+				`package main
+	
+				func f() []*float32 {
+					return []*float32{}
+			}`,
+				expType{
+					db:           "sa.Text()",
+					graphql:      "[Float]!",
+					elemGraphql:  "Float",
+					zeroValue:    "nil",
+					goType:       "[]*float32",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			import "time"
-
-			func f() []*time.Time {
-				return []*time.Time{}
-		}`,
-			expType{
-				graphql:             "[Time]!",
-				defaultGQLFieldName: "times",
-				elemGraphql:         "Time",
+			"time": testCase{
+				`package main
+	
+				import "time"
+	
+				func f() []time.Time {
+					return []time.Time{}
+			}`,
+				expType{
+					db:                  "sa.Text()",
+					graphql:             "[Time!]!",
+					defaultGQLFieldName: "times",
+					elemGraphql:         "Time!",
+					zeroValue:           "nil",
+					goType:              "[]time.Time",
+					castToMethod:        "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			import "github.com/lolopinto/ent/internal/test_schema/models"
-
-			func f() []models.User {
-				return []models.User{}
-		}`,
-			expType{
-				graphql:             "[User!]!",
-				defaultGQLFieldName: "users",
-				elemGraphql:         "User!",
+			"timePointer": testCase{
+				`package main
+	
+				import "time"
+	
+				func f() []*time.Time {
+					return []*time.Time{}
+			}`,
+				expType{
+					db:                  "sa.Text()",
+					graphql:             "[Time]!",
+					defaultGQLFieldName: "times",
+					elemGraphql:         "Time",
+					zeroValue:           "nil",
+					goType:              "[]*time.Time",
+					castToMethod:        "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
-		},
-
-		testCase{
-			`package main
-
-			import "github.com/lolopinto/ent/internal/test_schema/models"
-
-			func f() []*models.User {
-				return []*models.User{}
-		}`,
-			expType{
-				graphql:             "[User]!",
-				defaultGQLFieldName: "users",
-				elemGraphql:         "User",
+			"models.User": testCase{
+				`package main
+	
+				import "github.com/lolopinto/ent/internal/test_schema/models"
+	
+				func f() []models.User {
+					return []models.User{}
+			}`,
+				expType{
+					db:                  "sa.Text()",
+					graphql:             "[User!]!",
+					defaultGQLFieldName: "users",
+					elemGraphql:         "User!",
+					zeroValue:           "nil",
+					goType:              "[]models.User",
+					castToMethod:        "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
+			"models.UserPointer": testCase{
+				`package main
+	
+				import "github.com/lolopinto/ent/internal/test_schema/models"
+	
+				func f() []*models.User {
+					return []*models.User{}
+			}`,
+				expType{
+					db:                  "sa.Text()",
+					graphql:             "[User]!",
+					defaultGQLFieldName: "users",
+					elemGraphql:         "User",
+					zeroValue:           "nil",
+					goType:              "[]*models.User",
+					castToMethod:        "cast.UnmarshallJSON",
+				},
+				nil,
+			},
 		},
-	}
-
-	testTestCases(t, testCases, &enttype.SliceType{})
+	)
 }
 
 func TestArrayType(t *testing.T) {
 	// I assume no need to test every single case ala slices
 	// if we run into issues, revisit.
-	testCases := []testCase{
-		testCase{
-			`package main
+	testTestCases(
+		t,
+		&enttype.ArrayType{},
+		map[string]testCase{
+			"string": testCase{
+				`package main
 
-			func f() [2]string {
-				return [2]string{}
-			}`,
-			expType{
-				graphql:     "[String!]!",
-				elemGraphql: "String!",
+	func f() [2]string {
+		return [2]string{}
+	}`,
+				expType{
+					graphql:      "[String!]!",
+					elemGraphql:  "String!",
+					db:           "sa.Text()",
+					zeroValue:    "nil",
+					goType:       "[2]string",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
 			},
-			nil,
+			"stringPointer": testCase{
+				`package main
+	
+				func f() [2]*string {
+					return [2]*string{}
+				}`,
+				expType{
+					graphql:      "[String]!",
+					elemGraphql:  "String",
+					db:           "sa.Text()",
+					zeroValue:    "nil",
+					goType:       "[2]*string",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
+			},
 		},
-	}
-	testTestCases(t, testCases, &enttype.ArrayType{})
+	)
+}
+
+func TestMapType(t *testing.T) {
+	// I assume no need to test every single case ala slices
+	// if we run into issues, revisit.
+	testTestCases(
+		t,
+		&enttype.MapType{},
+		map[string]testCase{
+			"string": testCase{
+				`package main
+
+	func f() map[string]string {
+		return map[string]string{}
+	}`,
+				expType{
+					graphql:      "Map",
+					db:           "sa.Text()",
+					zeroValue:    "nil",
+					goType:       "map[string]string",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
+			},
+			"stringPointer": testCase{
+				`package main
+	
+				func f() map[string]*bool {
+					return map[string]*bool{}
+				}`,
+				expType{
+					graphql:      "Map",
+					db:           "sa.Text()",
+					zeroValue:    "nil",
+					goType:       "map[string]*bool",
+					castToMethod: "cast.UnmarshallJSON",
+				},
+				nil,
+			},
+		},
+	)
 }
 
 type returnType struct {
@@ -653,50 +789,33 @@ type returnType struct {
 }
 
 func getTestReturnType(t *testing.T, code string) returnType {
-	overlay := make(map[string]string)
-	overlay["code.go"] = code
+	pkg, fn, err := schemaparser.FindFunction(code, "main", "f")
+	assert.Nil(t, err)
+	assert.NotNil(t, fn)
+	assert.NotNil(t, pkg)
 
-	parser := &schemaparser.SourceSchemaParser{
-		Sources:     overlay,
-		PackageName: "main",
+	assert.NotNil(t, fn.Type.Results)
+	results := fn.Type.Results
+	assert.Len(t, results.List, 1)
+
+	goType := pkg.TypesInfo.TypeOf(results.List[0].Type)
+	return returnType{
+		goType:  goType,
+		entType: enttype.GetType(goType),
 	}
-	pkg := schemaparser.LoadPackage(parser)
-	assert.Len(t, pkg.Errors, 0)
-
-	assert.Len(t, pkg.GoFiles, 1)
-
-	var ret returnType
-	ast.Inspect(pkg.Syntax[0], func(node ast.Node) bool {
-		if fn, ok := node.(*ast.FuncDecl); ok {
-			if fn.Name.Name != "f" {
-				return false
-			}
-
-			assert.NotNil(t, fn.Type.Results)
-			results := fn.Type.Results
-			assert.Len(t, results.List, 1)
-
-			goType := pkg.TypesInfo.TypeOf(results.List[0].Type)
-			ret = returnType{
-				goType:  goType,
-				entType: enttype.GetType(goType),
-			}
-		}
-		return true
-	})
-	assert.NotZero(t, ret)
-	return ret
 }
 
-func testTestCases(t *testing.T, testCases []testCase, expType enttype.Type) {
-	for _, tt := range testCases {
-		ret := getTestReturnType(t, tt.code)
-		assert.IsType(t, expType, ret.entType)
+func testTestCases(t *testing.T, expType enttype.Type, testCases map[string]testCase) {
+	for name, tt := range testCases {
+		t.Run(name, func(t *testing.T) {
+			ret := getTestReturnType(t, tt.code)
+			assert.IsType(t, expType, ret.entType)
 
-		if tt.fn != nil {
-			tt.fn(&ret, &tt.exp)
-		}
-		testType(t, tt.exp, ret)
+			if tt.fn != nil {
+				tt.fn(&ret, &tt.exp)
+			}
+			testType(t, tt.exp, ret)
+		})
 	}
 }
 
@@ -769,11 +888,8 @@ func testType(t *testing.T, exp expType, ret returnType) {
 		assert.Equal(t, exp.elemGraphql, listType.GetElemGraphQLType())
 	}
 
-	// hmm this isn't always as expected. revisit in future maybe?
-	// works for ent types so it's fine
-	structType, ok := typ.(enttype.FieldWithOverridenStructType)
-	if ok {
-		assert.Equal(t, exp.structType, structType.GetStructType())
+	if ret.goType != nil {
+		assert.Equal(t, exp.goType, enttype.GetGoType(ret.goType))
 	}
 
 	assert.Equal(t, exp.errorType, enttype.IsErrorType(typ))

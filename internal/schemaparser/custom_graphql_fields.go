@@ -264,12 +264,15 @@ func inspectFunc(
 	validateFnParser, ok := codeParser.(CustomCodeParserWithReceiver)
 	if fn.Recv != nil {
 		for _, field := range fn.Recv.List {
-			info := astparser.GetFieldTypeInfo(field)
+			info, err := astparser.ParseFieldType(field)
+			if err != nil {
+				return err
+			}
 
-			graphqlNode = info.Name
+			graphqlNode = info.IdentName
 			// TODO validate that this is not allowed if the type isn't valid...
 			if ok {
-				if err := validateFnParser.ValidateFnReceiver(info.Name); err != nil {
+				if err := validateFnParser.ValidateFnReceiver(info.IdentName); err != nil {
 					return err
 				}
 			}

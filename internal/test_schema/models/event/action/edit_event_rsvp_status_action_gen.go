@@ -31,7 +31,7 @@ func EditEventRsvpStatus(v viewer.ViewerContext, event *models.Event) *EditEvent
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.EditOperation,
-		action.getFieldMap(),
+		action.requiredFields(),
 		actions.ExistingEnt(event),
 	)
 	action.builder = builder
@@ -50,12 +50,16 @@ func (action *EditEventRsvpStatusAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *EditEventRsvpStatusAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *EditEventRsvpStatusAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *EditEventRsvpStatusAction) SetBuilderOnObservers(observers []actions.Observer) error {
-	return action.builder.SetObservers(observers)
+func (action *EditEventRsvpStatusAction) SetBuilderOnObservers(observers []actions.Observer) {
+	action.builder.SetObservers(observers)
+}
+
+func (action *EditEventRsvpStatusAction) SetBuilderOnValidators(validators []actions.Validator) {
+	action.builder.SetValidators(validators)
 }
 
 func (action *EditEventRsvpStatusAction) GetChangeset() (ent.Changeset, error) {
@@ -82,9 +86,8 @@ func (action *EditEventRsvpStatusAction) AddUserID(userID string) *EditEventRsvp
 	return action
 }
 
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *EditEventRsvpStatusAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
+func (action *EditEventRsvpStatusAction) requiredFields() []string {
+	return []string{}
 }
 
 // Validate returns an error if the current state of the action is not valid

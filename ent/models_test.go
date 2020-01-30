@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/lolopinto/ent/ent"
@@ -25,6 +26,7 @@ type modelsTestSuite struct {
 func (suite *modelsTestSuite) SetupSuite() {
 	// TODO make this automatic based on db
 	suite.Tables = []string{
+		"addresses",
 		"users",
 		"events",
 		"user_events_edges",
@@ -542,6 +544,68 @@ func (suite *modelsTestSuite) TestLoadNodesByType() {
 			assert.Len(suite.T(), events, 0)
 			assert.Empty(suite.T(), events)
 		}
+	}
+}
+
+func (suite *modelsTestSuite) TestLoadNodeWithJSON() {
+	// successfully
+	residentNames := []string{"The Queen"}
+	address := testingutils.CreateTestAddress(suite.T(), residentNames)
+
+	var loadedAddress models.Address
+	err := ent.LoadNodeRawData(address.ID, &loadedAddress, &configs.AddressConfig{})
+	require.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), residentNames, loadedAddress.ResidentNames)
+}
+
+func (suite *modelsTestSuite) TestLoadingMultiNodesWithJSON() {
+	// This is to test that we can load multiple objects that have JSON where we can't StructScan
+	// so we have to MapScan and then fill the nodes
+	residentNames := []string{"The Queen", "Prince Phillip"}
+	address := testingutils.CreateTestAddress(suite.T(), residentNames)
+	address2 := testingutils.CreateTestAddress(suite.T(), residentNames)
+	address3 := testingutils.CreateTestAddress(suite.T(), residentNames)
+
+	ids := []string{
+		address.ID,
+		address2.ID,
+		address3.ID,
+	}
+	var addresses []*models.Address
+	err := ent.LoadNodesRawData(ids, &addresses, &configs.AddressConfig{})
+	require.NoError(suite.T(), err)
+
+	assert.Len(suite.T(), addresses, 3)
+
+	for _, loadedAddress := range addresses {
+		assert.Equal(suite.T(), residentNames, loadedAddress.ResidentNames)
+	}
+}
+
+func (suite *modelsTestSuite) TestLoadingRawMultiNodesWithJSON() {
+	// This case is different from above. We're not going through any caching layer
+	// that would have needed MapScan previously. we StructScan directly so what would have been expected here
+	suite.T().Skip("need to come back to this edge case")
+	residentNames := []string{"The Queen", "Prince Phillip"}
+	address := testingutils.CreateTestAddress(suite.T(), residentNames)
+	address2 := testingutils.CreateTestAddress(suite.T(), residentNames)
+	address3 := testingutils.CreateTestAddress(suite.T(), residentNames)
+
+	ids := map[string]bool{
+		address.ID:  true,
+		address2.ID: true,
+		address3.ID: true,
+	}
+	var addresses []*models.Address
+	err := ent.LoadRawQuery("SELECT * FROM addresses", &addresses)
+	require.NoError(suite.T(), err)
+
+	assert.Len(suite.T(), addresses, 1)
+
+	for _, loadedAddress := range addresses {
+		assert.NotNil(suite.T(), ids[loadedAddress.ID])
+		assert.Equal(suite.T(), residentNames, loadedAddress.ResidentNames)
 	}
 }
 

@@ -48,7 +48,7 @@ type {{.Node}} struct {
   privacy.AlwaysDenyPrivacyPolicy
   {{ range $field := .FieldInfo.Fields -}} 
     {{if $field.TopLevelStructField -}}
-      {{$field.FieldName}} {{fTypeString $field}} {{$field.FieldTag}}
+      {{$field.FieldName}} {{fTypeString $field}} {{$field.GetFieldTag}}
     {{end -}}
   {{end -}}
   Viewer viewer.ViewerContext
@@ -323,14 +323,25 @@ func ({{$currentNodeInstance}} *{{$currentNode}}) DBFields() ent.DBFields {
     {{ range $field := .FieldInfo.Fields -}}
       {{if $field.TopLevelStructField -}}
         "{{$field.GetDbColName}}": func(v interface{}) error {
-          var err error
-          {{$currentNodeInstance}}.{{$field.FieldName}}, err = {{$field.GetCastToMethod}}(v)
-          return err
+          {{if ne $field.GetCastToMethod "cast.UnmarshallJSON" -}}
+            var err error
+            {{$currentNodeInstance}}.{{$field.FieldName}}, err = {{$field.GetCastToMethod}}(v)
+            return err
+          {{else -}}
+            return cast.UnmarshallJSON(v, &{{$currentNodeInstance}}.{{$field.FieldName}})
+          {{end -}}
         },
       {{end -}}
     {{end -}}
   }
 }
+
+{{if .HasJSONField -}}
+  // UnsupportedScan flags that we can't call StructScan() on the ent to get data out of the db, have to always use MapScan() and DBFields() method above
+  func ({{$currentNodeInstance}} *{{$currentNode}}) UnsupportedScan() bool {
+    return true
+  }
+{{end -}}
 
 {{end}}
 

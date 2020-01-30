@@ -2,6 +2,7 @@
 
 {{ reserveImport "github.com/lolopinto/ent/ent" }}
 {{ reserveImport "github.com/lolopinto/ent/ent/actions" }}
+{{ reserveImport "github.com/lolopinto/ent/ent/field" }}
 {{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
 
 {{define "idField"}}
@@ -28,6 +29,7 @@
 {{ $fieldInfos := fieldInfos .FieldInfo.TopLevelFields }}
 
 type {{$builderName}} struct {
+  requiredFields []string 
   {{if .HasAssocGroups -}}
     builder *actions.EdgeGroupMutationBuilder
   {{ else -}}
@@ -40,6 +42,9 @@ type {{$builderName}} struct {
     {{ if $field.Field.IDField -}}
       {{$fieldInstanceName}}Builder ent.MutationBuilder
     {{ end -}}
+    {{ if $field.Field.Nullable -}}
+      clear{{$fieldInstanceName}} bool
+    {{end -}}
 
   {{end -}}
 }
@@ -47,10 +52,16 @@ type {{$builderName}} struct {
 func NewMutationBuilder(
   v viewer.ViewerContext,
   operation ent.WriteOperation,
-  fieldMap ent.ActionFieldMap,
+  requiredFields []string, 
   opts ...func(*actions.EntMutationBuilder),
 ) *{{$builderName}} {
   var {{.NodeInstance}} models.{{.Node}}
+
+  ret := &{{$builderName}}{
+    requiredFields: requiredFields,
+    {{.NodeInstance}}: &{{.NodeInstance}},
+  }
+  opts = append(opts, actions.BuildFields(ret.buildFields))
   b := actions.NewMutationBuilder(
     v, 
     operation,
@@ -58,7 +69,6 @@ func NewMutationBuilder(
     {{.EntConfig}},
     opts...,
   )
-  b.FieldMap = fieldMap
   {{ if .HasAssocGroups -}}
    b2 := actions.NewEdgeGroupMutationBuilder(
      b,
@@ -69,21 +79,19 @@ func NewMutationBuilder(
      {{end -}}
    )
   {{end -}}
-  return &{{$builderName}}{
-    {{ if .HasAssocGroups -}}
-      builder: b2,
-    {{ else -}}
-      builder: b,
-    {{ end -}}
-    {{.NodeInstance}}: &{{.NodeInstance}},
-  }
+
+  {{ if .HasAssocGroups -}}
+    ret.builder = b2
+  {{ else -}}
+    ret.builder = b
+  {{ end -}}
+  return ret
 }
 
 {{ range $field := $fieldInfos -}}
   {{$fieldInstanceName := $field.Field.InstanceFieldName -}}
 func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {{$field.InstanceType}}) *{{$builderName}} {
   b.{{$fieldInstanceName}} = &{{$field.InstanceName}}
-  b.builder.SetField("{{$field.FieldName}}", {{$field.InstanceName}})
   {{$inverseEdge := $field.InverseEdge -}}
   {{ if $inverseEdge -}} 
     {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
@@ -96,7 +104,6 @@ func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {
   {{ if $field.Field.IDField -}}
   func (b *{{$builderName}}) {{$field.SetterMethodName}}Builder(builder ent.MutationBuilder) *{{$builderName}} {
     b.{{$fieldInstanceName}}Builder = builder
-    b.builder.SetField("{{$field.FieldName}}", builder)
     {{$inverseEdge := $field.InverseEdge -}}
     {{ if $inverseEdge -}} 
       {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
@@ -110,13 +117,8 @@ func (b *{{$builderName}}) {{$field.SetterMethodName}}({{$field.InstanceName}} {
 
   {{ if $field.Field.Nullable -}}
   func (b *{{$builderName}}) {{$field.NullableSetterMethodName}}({{$field.InstanceName}} *{{$field.InstanceType}}) *{{$builderName}} {
-    {{/* TODO need to eventually have the builder know if this was set to null */ -}}
     b.{{$fieldInstanceName}} = {{$field.InstanceName}}
-    if {{$field.InstanceName}} == nil {
-      b.builder.SetField("{{$field.FieldName}}", nil)
-    } else {
-      b.builder.SetField("{{$field.FieldName}}", *{{$field.InstanceName}})
-    }
+    b.clear{{$field.InstanceName}} = ({{$field.InstanceName}} == nil)
     {{$inverseEdge := $field.InverseEdge -}}
     {{ if $inverseEdge -}} 
       {{$edgeNodeInfo := $inverseEdge.NodeInfo -}}
@@ -226,10 +228,6 @@ func (b *{{$builderName}}) SetIDValue(idValue string, nodeType ent.NodeType) *{{
 }
 {{end -}}
 
-func (b *{{$builderName}}) Validate() error {
-  return b.builder.Validate()
-}
-
 func (b *{{$builderName}}) GetViewer() viewer.ViewerContext {
   return b.builder.GetViewer()
 }
@@ -238,35 +236,55 @@ func (b *{{$builderName}}) Get{{.Node}}() *models.{{.Node}} {
   return b.{{.NodeInstance}}
 }
 
-func (b *{{$builderName}}) SetTriggers(triggers []actions.Trigger) error {
-  b.builder.SetTriggers(triggers)
-  {{$triggerInterface := printf "%sTrigger" .Node -}}
-	for _, t := range triggers {
-		trigger, ok := t.({{$triggerInterface}})
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(b)
-	}
-	return nil
-}
-
-// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the {{.Node}}Observer 
-// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
-func (b *{{$builderName}}) SetObservers(observers []actions.Observer) error {
-  b.builder.SetObservers(observers)
-  {{$observerInterface := printf "%sObserver" .Node -}}
-	for _, o := range observers {
-		observer, ok := o.({{$observerInterface}})
-		if ok {
-      observer.SetBuilder(b)
-    }
-	}
-  return nil
-}
-
+// TODO rename from GetChangeset to Build()
+// A Builder builds.
 func (b *{{$builderName}}) GetChangeset() (ent.Changeset, error) {
   return b.builder.GetChangeset()
+}
+
+// Call Validate (should be Valid) at any point to validate that builder is valid
+func (b *{{$builderName}}) Validate() error {
+  return b.builder.Validate()
+}
+
+func (b *{{$builderName}}) buildFields() ent.ActionFieldMap {
+  m := make(map[string]bool)
+  for _, f := range b.requiredFields {
+    m[f] = true
+  }
+  
+  fieldMap := b.GetFields()
+  fields := make(ent.ActionFieldMap)
+  addField := func(key string, val interface{}) {
+    fields[key] = &ent.FieldInfo{
+      Field: fieldMap[key],
+      Value: val,
+    }
+  }
+  
+  // Need to have Id fields be fine with Builder 
+
+  // if required, field is not nil or field explicitly set to nil, add the field 
+  {{ range $field := $fieldInfos -}}
+    if b.{{$field.InstanceName}} != nil {
+      addField("{{$field.FieldName}}", *b.{{$field.InstanceName}})
+      {{if $field.Field.Nullable -}}
+        } else if m["{{$field.FieldName}}"] || b.clear{{$field.InstanceName}}{ // required or value cleared
+      {{else -}}
+        } else if m["{{$field.FieldName}}"] { // nil but required
+      {{ end -}}
+      {{/*passing nil here to handle go wierdness with nil comparisons */ -}}
+      addField("{{$field.FieldName}}", nil)
+    }
+    {{if $field.Field.IDField -}}
+    {{/* doing this after because we can have this override the nil above while keeping this simple... */ -}}
+    if b.{{$field.InstanceName}}Builder != nil { // builder not nil, override userID
+      addField("{{$field.FieldName}}", b.{{$field.InstanceName}}Builder)
+    }
+    {{end -}}
+  {{end -}}
+
+  return fields
 }
 
 func (b *{{$builderName}}) ExistingEnt() ent.Entity {
@@ -285,41 +303,70 @@ func (b *{{$builderName}}) GetPlaceholderID() string {
 	return b.builder.GetPlaceholderID()
 }
 
+// GetFields returns the field configuration for this mutation builder
+func (b *{{$builderName}}) GetFields() ent.FieldMap {
+  {{ if .FieldInfo.GetFieldsFn -}}
+    return ({{.EntConfig}}).GetFields()
+  {{ else -}}
+    return ent.FieldMap{
+    {{ range $field := $fieldInfos -}}
+      {{if $field.Field.Nullable -}}
+        {{$field.QuotedFieldName}}: field.F(field.Noop(), field.DB({{$field.QuotedDBName}}), field.Nullable()),
+      {{else -}}
+        {{$field.QuotedFieldName}}: field.F(field.Noop(), field.DB({{$field.QuotedDBName}})),
+      {{end -}}
+    {{end -}}
+    }
+  {{ end -}}
+}
+
 var _ ent.MutationBuilder = &{{$builderName}}{}
 
+{{$builderInterface := printf "%sCallbackWithBuilder" .Node }}
 
-{{$triggerInterface := printf "%sTrigger" .Node }}
+func (b *{{$builderName}}) setBuilder(v interface{}) {
+  callback, ok := v.({{$builderInterface}})
+  if ok {
+    callback.SetBuilder(b)
+  }
+}
 
-type {{$triggerInterface}} interface {
+// SetTriggers sets the builder on the triggers. 
+func (b *{{$builderName}}) SetTriggers(triggers []actions.Trigger) {
+  b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+    b.setBuilder(t)
+	}
+}
+
+// SetObservers sets the builder on the observers.
+func (b *{{$builderName}}) SetObservers(observers []actions.Observer) {
+  b.builder.SetObservers(observers)
+	for _, o := range observers {
+    b.setBuilder(o)
+	}
+}
+
+// SetValidators sets the builder on validators.
+func (b *{{$builderName}}) SetValidators(validators []actions.Validator) {
+  b.builder.SetValidators(validators)
+	for _, v := range validators {
+    b.setBuilder(v)
+	}
+}
+
+type {{$builderInterface}} interface {
   SetBuilder(*{{$builderName}})
 }
 
-{{$triggerStruct := printf "%sMutationBuilderTrigger" .Node }}
+{{$builderStruct := printf "%sMutationCallback" .Node }}
 
-type {{$triggerStruct}} struct {
+type {{$builderStruct}} struct {
   Builder *{{$builderName}}
 }
 
-func (trigger *{{$triggerStruct}}) SetBuilder(b *{{$builderName}}) {
-  trigger.Builder = b
-}
-
-{{$observerInterface := printf "%sObserver" .Node }}
-
-type {{$observerInterface}} interface {
-  SetBuilder(*{{$builderName}})
-}
-
-{{$observerStruct := printf "%sMutationBuilderObserver" .Node }}
-
-type {{$observerStruct}} struct {
-  Builder *{{$builderName}}
-}
-
-func (observer *{{$observerStruct}}) SetBuilder(b *{{$builderName}}) {
-  observer.Builder = b
+func (callback *{{$builderStruct}}) SetBuilder(b *{{$builderName}}) {
+  callback.Builder = b
 }
 
 {{end -}}
-
-

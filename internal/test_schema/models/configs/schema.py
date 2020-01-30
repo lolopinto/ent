@@ -6,6 +6,19 @@ from sqlalchemy.dialects.postgresql import UUID
 metadata = sa.MetaData()
 
  
+sa.Table("addresses", metadata,
+    sa.Column("id", UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("country", sa.Text(), nullable=False),
+    sa.Column("city", sa.Text(), nullable=False),
+    sa.Column("zip", sa.Text(), nullable=False),
+    sa.Column("state", sa.Text(), nullable=False),
+    sa.Column("street_address", sa.Text(), nullable=False),
+    sa.Column("resident_names", sa.Text(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="addresses_id_pkey"),
+)
+   
 sa.Table("assoc_edge_config", metadata,
     sa.Column("edge_type", UUID(), nullable=False),
     sa.Column("edge_name", sa.Text(), nullable=False),

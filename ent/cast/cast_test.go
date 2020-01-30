@@ -10,6 +10,7 @@ import (
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -19,6 +20,7 @@ type castSuite struct {
 
 func (suite *castSuite) SetupSuite() {
 	suite.Tables = []string{
+		"addresses",
 		"users",
 		"event_invited_edges",
 		"events",
@@ -207,6 +209,17 @@ func (suite *castSuite) TestToFloat() {
 	assert.Equal(suite.T(), *pi, 3.14)
 }
 
-func TestGeneratedAction(t *testing.T) {
+func (suite *castSuite) TestJSONStrings() {
+	residentNames := []string{"The Queen"}
+	address := testingutils.CreateTestAddress(suite.T(), residentNames)
+
+	dataMap := queryRow(suite.T(), address.ID, "addresses")
+	var queriedValue []string
+	require.Nil(suite.T(), cast.UnmarshallJSON(dataMap["resident_names"], &queriedValue))
+
+	assert.Equal(suite.T(), residentNames, queriedValue)
+}
+
+func TestCasts(t *testing.T) {
 	suite.Run(t, new(castSuite))
 }

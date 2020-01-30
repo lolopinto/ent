@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
@@ -41,10 +42,6 @@ type NonNullableType interface {
 	GetNonNullableType() Type
 }
 
-type FieldWithOverridenStructType interface {
-	GetStructType() string
-}
-
 type DefaulFieldNameType interface {
 	DefaultGraphQLFieldName() string
 }
@@ -60,17 +57,6 @@ func (t *stringType) GetDBType() string {
 // hmm we don't use these for the nullable types right now. unclear if right thing...
 func (t *stringType) GetZeroValue() string {
 	return strconv.Quote("")
-}
-
-func (t *stringType) GetStructType() string {
-	// get the string version of the type and return the filepath
-	// This converts something like "github.com/lolopinto/ent/ent.NodeType" to "ent.NodeType"
-	if t.underlyingType == nil {
-		return "string"
-	}
-	ret := t.underlyingType.String()
-	_, fp := filepath.Split(ret)
-	return fp
 }
 
 type StringType struct {
@@ -409,6 +395,7 @@ func getDefaultSliceGraphQLFieldName(typ types.Type) string {
 	return inflection.Plural(getDefaultGraphQLFieldName(typ))
 }
 
+// hmm do I still need this?
 type fieldWithActualType struct {
 	actualType       types.Type
 	forceNullable    bool
@@ -425,14 +412,6 @@ func (t *fieldWithActualType) GetGraphQLType() string {
 		opts = append(opts, forceNonNullable())
 	}
 	return getGraphQLType(t.actualType, opts...)
-}
-
-func (t *fieldWithActualType) GetStructType() string {
-	// get the string version of the type and return the filepath
-	// This converts something like "github.com/lolopinto/ent/ent.NodeType" to "ent.NodeType"
-	ret := t.actualType.String()
-	_, fp := filepath.Split(ret)
-	return fp
 }
 
 func (t *fieldWithActualType) DefaultGraphQLFieldName() string {
@@ -455,14 +434,28 @@ func (t *fieldWithActualType) getNonNullableType() fieldWithActualType {
 
 type NamedType struct {
 	fieldWithActualType
+	jsonTypeImpl
+}
+
+func (t *NamedType) GetZeroValue() string {
+	if types.IsInterface(t.actualType) {
+		return "nil"
+	}
+	str := GetGoType(t.actualType)
+	// remove leading *
+	if str[0] == '*' {
+		str = str[1:]
+	}
+	// This doesn't guarantee a fully functioning zero value because no constructor being called
+	return str + "{}"
 }
 
 func (t *NamedType) GetNullableType() Type {
-	return &NamedType{t.getNullableType()}
+	return &NamedType{fieldWithActualType: t.getNullableType()}
 }
 
 func (t *NamedType) GetNonNullableType() Type {
-	return &NamedType{t.getNonNullableType()}
+	return &NamedType{fieldWithActualType: t.getNonNullableType()}
 }
 
 func newFieldWithActualType(typ types.Type, forceNullable, forceNonNullable bool) *fieldWithActualType {
@@ -475,7 +468,7 @@ func newFieldWithActualType(typ types.Type, forceNullable, forceNonNullable bool
 
 func NewNamedType(typ types.Type, forceNullable, forceNonNullable bool) *NamedType {
 	return &NamedType{
-		fieldWithActualType{
+		fieldWithActualType: fieldWithActualType{
 			actualType:       typ,
 			forceNullable:    forceNullable,
 			forceNonNullable: forceNonNullable,
@@ -486,8 +479,8 @@ func NewNamedType(typ types.Type, forceNullable, forceNonNullable bool) *NamedTy
 func NewPointerType(typ types.Type, forceNullable, forceNonNullable bool) *PointerType {
 	ptrType := typ.(*types.Pointer)
 	return &PointerType{
-		ptrType,
-		fieldWithActualType{
+		ptrType: ptrType,
+		fieldWithActualType: fieldWithActualType{
 			actualType:       typ,
 			forceNullable:    forceNullable,
 			forceNonNullable: forceNonNullable,
@@ -498,15 +491,21 @@ func NewPointerType(typ types.Type, forceNullable, forceNonNullable bool) *Point
 type PointerType struct {
 	ptrType *types.Pointer
 	fieldWithActualType
+	jsonTypeImpl
 }
 
 func (t *PointerType) GetNullableType() Type {
-	return &PointerType{t.ptrType, t.getNullableType()}
+	return &PointerType{
+		ptrType:             t.ptrType,
+		fieldWithActualType: t.getNullableType(),
+	}
 }
 
 func (t *PointerType) GetNonNullableType() Type {
-	//	types.Named
-	return &PointerType{t.ptrType, t.getNonNullableType()}
+	return &PointerType{
+		ptrType:             t.ptrType,
+		fieldWithActualType: t.getNonNullableType(),
+	}
 }
 
 func (t *PointerType) GetGraphQLType() string {
@@ -530,8 +529,25 @@ func (t *PointerType) DefaultGraphQLFieldName() string {
 	return getDefaultGraphQLFieldName(t.actualType)
 }
 
+type jsonTypeImpl struct {
+}
+
+// json fields are stored as strings in the db
+func (t *jsonTypeImpl) GetDBType() string {
+	return "sa.Text()"
+}
+
+func (t *jsonTypeImpl) GetZeroValue() string {
+	return "nil"
+}
+
+func (t *jsonTypeImpl) GetCastToMethod() string {
+	return "cast.UnmarshallJSON"
+}
+
 type SliceType struct {
 	typ *types.Slice
+	jsonTypeImpl
 }
 
 func (t *SliceType) GetGraphQLType() string {
@@ -547,11 +563,12 @@ func (t *SliceType) GetElemGraphQLType() string {
 }
 
 func NewSliceType(typ *types.Slice) *SliceType {
-	return &SliceType{typ}
+	return &SliceType{typ: typ}
 }
 
 type ArrayType struct {
 	typ *types.Array
+	jsonTypeImpl
 }
 
 func (t *ArrayType) GetGraphQLType() string {
@@ -564,6 +581,19 @@ func (t *ArrayType) GetElemGraphQLType() string {
 
 func (t *ArrayType) DefaultGraphQLFieldName() string {
 	return getDefaultSliceGraphQLFieldName(t.typ.Elem())
+}
+
+type MapType struct {
+	typ *types.Map
+	jsonTypeImpl
+}
+
+func (t *MapType) GetGraphQLType() string {
+	return "Map" // this is fine for now
+	// TODO nullable vs not. it's a map which can be nil.
+	// this is sadly not consistent with behavior of slices
+	// TODO: need to add Map scalar to schema.graphql if we encounter this
+	// TODO need to convert to/from map[string]interface{} to return in gql
 }
 
 func getBasicType(typ types.Type) Type {
@@ -606,9 +636,6 @@ func GetType(typ types.Type) Type {
 		// if the underlying type is a basic type, let that go through for now
 		// ent.NodeType etc
 		if basicType := getBasicType(typ2.Underlying()); basicType != nil {
-			if stringType, ok := basicType.(*StringType); ok {
-				stringType.underlyingType = typ2
-			}
 			return basicType
 		}
 		// context.Context, error, etc
@@ -632,7 +659,9 @@ func GetType(typ types.Type) Type {
 		panic("todo chan unsupported for now")
 
 	case *types.Map:
-		panic("todo map unsupported for now")
+		t := &MapType{}
+		t.typ = typ2
+		return t
 
 	case *types.Signature:
 		panic("todo signature unsupported for now")
@@ -641,10 +670,10 @@ func GetType(typ types.Type) Type {
 		panic("todo tuple unsupported for now")
 
 	case *types.Slice:
-		return &SliceType{typ2}
+		return &SliceType{typ: typ2}
 
 	case *types.Array:
-		return &ArrayType{typ2}
+		return &ArrayType{typ: typ2}
 
 	default:
 		panic(fmt.Errorf("unsupported type %s for now", typ2.String()))
@@ -700,4 +729,24 @@ func IsNullType(typ Type) bool {
 	}
 	gqlType := typ.GetGraphQLType()
 	return !strings.HasSuffix(gqlType, "!")
+}
+
+// GetGoType returns the type that should be put in a golang-declaration
+// for the type e.g. in structs, in generated graphql code, etc
+func GetGoType(typ types.Type) string {
+	str := typ.String()
+
+	var letterIdx int
+	for idx, c := range str {
+		if unicode.IsLetter(c) {
+			letterIdx = idx
+			break
+		}
+	}
+
+	_, fp := filepath.Split(str[letterIdx:])
+	if letterIdx == 0 {
+		return fp
+	}
+	return str[:letterIdx] + fp
 }

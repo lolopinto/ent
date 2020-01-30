@@ -3,35 +3,44 @@
 package contact
 
 import (
-	"errors"
-
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
+	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 )
 
 type ContactMutationBuilder struct {
-	builder       *actions.EntMutationBuilder
-	contact       *models.Contact
-	emailAddress  *string
-	firstName     *string
-	lastName      *string
-	userID        *string
-	userIDBuilder ent.MutationBuilder
-	favorite      *bool
-	numberOfCalls *int
-	pi            *float64
+	requiredFields     []string
+	builder            *actions.EntMutationBuilder
+	contact            *models.Contact
+	emailAddress       *string
+	firstName          *string
+	lastName           *string
+	userID             *string
+	userIDBuilder      ent.MutationBuilder
+	favorite           *bool
+	clearfavorite      bool
+	numberOfCalls      *int
+	clearnumberOfCalls bool
+	pi                 *float64
+	clearpi            bool
 }
 
 func NewMutationBuilder(
 	v viewer.ViewerContext,
 	operation ent.WriteOperation,
-	fieldMap ent.ActionFieldMap,
+	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *ContactMutationBuilder {
 	var contact models.Contact
+
+	ret := &ContactMutationBuilder{
+		requiredFields: requiredFields,
+		contact:        &contact,
+	}
+	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
@@ -39,88 +48,65 @@ func NewMutationBuilder(
 		&configs.ContactConfig{},
 		opts...,
 	)
-	b.FieldMap = fieldMap
-	return &ContactMutationBuilder{
-		builder: b,
-		contact: &contact,
-	}
+	ret.builder = b
+	return ret
 }
 
 func (b *ContactMutationBuilder) SetEmailAddress(emailAddress string) *ContactMutationBuilder {
 	b.emailAddress = &emailAddress
-	b.builder.SetField("EmailAddress", emailAddress)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetFirstName(firstName string) *ContactMutationBuilder {
 	b.firstName = &firstName
-	b.builder.SetField("FirstName", firstName)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetLastName(lastName string) *ContactMutationBuilder {
 	b.lastName = &lastName
-	b.builder.SetField("LastName", lastName)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetUserID(userID string) *ContactMutationBuilder {
 	b.userID = &userID
-	b.builder.SetField("UserID", userID)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetUserIDBuilder(builder ent.MutationBuilder) *ContactMutationBuilder {
 	b.userIDBuilder = builder
-	b.builder.SetField("UserID", builder)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetFavorite(favorite bool) *ContactMutationBuilder {
 	b.favorite = &favorite
-	b.builder.SetField("Favorite", favorite)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetNilableFavorite(favorite *bool) *ContactMutationBuilder {
 	b.favorite = favorite
-	if favorite == nil {
-		b.builder.SetField("Favorite", nil)
-	} else {
-		b.builder.SetField("Favorite", *favorite)
-	}
+	b.clearfavorite = (favorite == nil)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetNumberOfCalls(numberOfCalls int) *ContactMutationBuilder {
 	b.numberOfCalls = &numberOfCalls
-	b.builder.SetField("NumberOfCalls", numberOfCalls)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetNilableNumberOfCalls(numberOfCalls *int) *ContactMutationBuilder {
 	b.numberOfCalls = numberOfCalls
-	if numberOfCalls == nil {
-		b.builder.SetField("NumberOfCalls", nil)
-	} else {
-		b.builder.SetField("NumberOfCalls", *numberOfCalls)
-	}
+	b.clearnumberOfCalls = (numberOfCalls == nil)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetPi(pi float64) *ContactMutationBuilder {
 	b.pi = &pi
-	b.builder.SetField("Pi", pi)
 	return b
 }
 
 func (b *ContactMutationBuilder) SetNilablePi(pi *float64) *ContactMutationBuilder {
 	b.pi = pi
-	if pi == nil {
-		b.builder.SetField("Pi", nil)
-	} else {
-		b.builder.SetField("Pi", *pi)
-	}
+	b.clearpi = (pi == nil)
 	return b
 }
 
@@ -225,10 +211,6 @@ func (b *ContactMutationBuilder) RemoveAllowListID(userID string) *ContactMutati
 	return b
 }
 
-func (b *ContactMutationBuilder) Validate() error {
-	return b.builder.Validate()
-}
-
 func (b *ContactMutationBuilder) GetViewer() viewer.ViewerContext {
 	return b.builder.GetViewer()
 }
@@ -237,33 +219,74 @@ func (b *ContactMutationBuilder) GetContact() *models.Contact {
 	return b.contact
 }
 
-func (b *ContactMutationBuilder) SetTriggers(triggers []actions.Trigger) error {
-	b.builder.SetTriggers(triggers)
-	for _, t := range triggers {
-		trigger, ok := t.(ContactTrigger)
-		if !ok {
-			return errors.New("invalid trigger")
-		}
-		trigger.SetBuilder(b)
-	}
-	return nil
-}
-
-// SetObservers sets the builder on an observer. Unlike SetTriggers, it's not required that observers implement the ContactObserver
-// interface since there's expected to be more reusability here e.g. generic logging, generic send text observer etc
-func (b *ContactMutationBuilder) SetObservers(observers []actions.Observer) error {
-	b.builder.SetObservers(observers)
-	for _, o := range observers {
-		observer, ok := o.(ContactObserver)
-		if ok {
-			observer.SetBuilder(b)
-		}
-	}
-	return nil
-}
-
+// TODO rename from GetChangeset to Build()
+// A Builder builds.
 func (b *ContactMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	return b.builder.GetChangeset()
+}
+
+// Call Validate (should be Valid) at any point to validate that builder is valid
+func (b *ContactMutationBuilder) Validate() error {
+	return b.builder.Validate()
+}
+
+func (b *ContactMutationBuilder) buildFields() ent.ActionFieldMap {
+	m := make(map[string]bool)
+	for _, f := range b.requiredFields {
+		m[f] = true
+	}
+
+	fieldMap := b.GetFields()
+	fields := make(ent.ActionFieldMap)
+	addField := func(key string, val interface{}) {
+		fields[key] = &ent.FieldInfo{
+			Field: fieldMap[key],
+			Value: val,
+		}
+	}
+
+	// Need to have Id fields be fine with Builder
+
+	// if required, field is not nil or field explicitly set to nil, add the field
+	if b.emailAddress != nil {
+		addField("EmailAddress", *b.emailAddress)
+	} else if m["EmailAddress"] { // nil but required
+		addField("EmailAddress", nil)
+	}
+	if b.firstName != nil {
+		addField("FirstName", *b.firstName)
+	} else if m["FirstName"] { // nil but required
+		addField("FirstName", nil)
+	}
+	if b.lastName != nil {
+		addField("LastName", *b.lastName)
+	} else if m["LastName"] { // nil but required
+		addField("LastName", nil)
+	}
+	if b.userID != nil {
+		addField("UserID", *b.userID)
+	} else if m["UserID"] { // nil but required
+		addField("UserID", nil)
+	}
+	if b.userIDBuilder != nil { // builder not nil, override userID
+		addField("UserID", b.userIDBuilder)
+	}
+	if b.favorite != nil {
+		addField("Favorite", *b.favorite)
+	} else if m["Favorite"] || b.clearfavorite { // required or value cleared
+		addField("Favorite", nil)
+	}
+	if b.numberOfCalls != nil {
+		addField("NumberOfCalls", *b.numberOfCalls)
+	} else if m["NumberOfCalls"] || b.clearnumberOfCalls { // required or value cleared
+		addField("NumberOfCalls", nil)
+	}
+	if b.pi != nil {
+		addField("Pi", *b.pi)
+	} else if m["Pi"] || b.clearpi { // required or value cleared
+		addField("Pi", nil)
+	}
+	return fields
 }
 
 func (b *ContactMutationBuilder) ExistingEnt() ent.Entity {
@@ -282,28 +305,60 @@ func (b *ContactMutationBuilder) GetPlaceholderID() string {
 	return b.builder.GetPlaceholderID()
 }
 
+// GetFields returns the field configuration for this mutation builder
+func (b *ContactMutationBuilder) GetFields() ent.FieldMap {
+	return ent.FieldMap{
+		"EmailAddress":  field.F(field.Noop(), field.DB("email_address")),
+		"FirstName":     field.F(field.Noop(), field.DB("first_name")),
+		"LastName":      field.F(field.Noop(), field.DB("last_name")),
+		"UserID":        field.F(field.Noop(), field.DB("user_id")),
+		"Favorite":      field.F(field.Noop(), field.DB("favorite"), field.Nullable()),
+		"NumberOfCalls": field.F(field.Noop(), field.DB("number_of_calls"), field.Nullable()),
+		"Pi":            field.F(field.Noop(), field.DB("pi"), field.Nullable()),
+	}
+}
+
 var _ ent.MutationBuilder = &ContactMutationBuilder{}
 
-type ContactTrigger interface {
+func (b *ContactMutationBuilder) setBuilder(v interface{}) {
+	callback, ok := v.(ContactCallbackWithBuilder)
+	if ok {
+		callback.SetBuilder(b)
+	}
+}
+
+// SetTriggers sets the builder on the triggers.
+func (b *ContactMutationBuilder) SetTriggers(triggers []actions.Trigger) {
+	b.builder.SetTriggers(triggers)
+	for _, t := range triggers {
+		b.setBuilder(t)
+	}
+}
+
+// SetObservers sets the builder on the observers.
+func (b *ContactMutationBuilder) SetObservers(observers []actions.Observer) {
+	b.builder.SetObservers(observers)
+	for _, o := range observers {
+		b.setBuilder(o)
+	}
+}
+
+// SetValidators sets the builder on validators.
+func (b *ContactMutationBuilder) SetValidators(validators []actions.Validator) {
+	b.builder.SetValidators(validators)
+	for _, v := range validators {
+		b.setBuilder(v)
+	}
+}
+
+type ContactCallbackWithBuilder interface {
 	SetBuilder(*ContactMutationBuilder)
 }
 
-type ContactMutationBuilderTrigger struct {
+type ContactMutationCallback struct {
 	Builder *ContactMutationBuilder
 }
 
-func (trigger *ContactMutationBuilderTrigger) SetBuilder(b *ContactMutationBuilder) {
-	trigger.Builder = b
-}
-
-type ContactObserver interface {
-	SetBuilder(*ContactMutationBuilder)
-}
-
-type ContactMutationBuilderObserver struct {
-	Builder *ContactMutationBuilder
-}
-
-func (observer *ContactMutationBuilderObserver) SetBuilder(b *ContactMutationBuilder) {
-	observer.Builder = b
+func (callback *ContactMutationCallback) SetBuilder(b *ContactMutationBuilder) {
+	callback.Builder = b
 }

@@ -31,7 +31,7 @@ func RemoveFamilyMember(v viewer.ViewerContext, user *models.User) *RemoveFamily
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.EditOperation,
-		action.getFieldMap(),
+		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
 	action.builder = builder
@@ -50,12 +50,16 @@ func (action *RemoveFamilyMemberAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *RemoveFamilyMemberAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *RemoveFamilyMemberAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *RemoveFamilyMemberAction) SetBuilderOnObservers(observers []actions.Observer) error {
-	return action.builder.SetObservers(observers)
+func (action *RemoveFamilyMemberAction) SetBuilderOnObservers(observers []actions.Observer) {
+	action.builder.SetObservers(observers)
+}
+
+func (action *RemoveFamilyMemberAction) SetBuilderOnValidators(validators []actions.Validator) {
+	action.builder.SetValidators(validators)
 }
 
 func (action *RemoveFamilyMemberAction) GetChangeset() (ent.Changeset, error) {
@@ -82,9 +86,8 @@ func (action *RemoveFamilyMemberAction) RemoveFamilyMemberID(userID string) *Rem
 	return action
 }
 
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *RemoveFamilyMemberAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
+func (action *RemoveFamilyMemberAction) requiredFields() []string {
+	return []string{}
 }
 
 // Validate returns an error if the current state of the action is not valid

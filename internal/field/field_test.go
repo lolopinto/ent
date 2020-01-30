@@ -27,12 +27,13 @@ func TestIDField(t *testing.T) {
 		&Field{
 			FieldName:             "ID",
 			singleFieldPrimaryKey: true,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   false,
 			dbColumn:              true,
 			nullable:              false,
+			dbName:                "id",
+			graphQLName:           "id",
 		},
-		"id",
 	)
 	testDBType(t, f, "UUID()")
 	testGraphQLType(t, f, "ID!")
@@ -47,12 +48,13 @@ func TestCreatedAtField(t *testing.T) {
 		&Field{
 			FieldName:             "CreatedAt",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       false,
+			hideFromGraphQL:       true,
 			topLevelStructField:   false,
 			dbColumn:              true,
 			nullable:              false,
+			dbName:                "created_at",
+			graphQLName:           "createdAt",
 		},
-		"createdAt",
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time!")
@@ -67,12 +69,13 @@ func TestUpdatedAtField(t *testing.T) {
 		&Field{
 			FieldName:             "UpdatedAt",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       false,
+			hideFromGraphQL:       true,
 			topLevelStructField:   false,
 			dbColumn:              true,
 			nullable:              false,
+			dbName:                "updated_at",
+			graphQLName:           "updatedAt",
 		},
-		"updatedAt",
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time!")
@@ -87,12 +90,13 @@ func TestDefaultGraphQLField(t *testing.T) {
 		&Field{
 			FieldName:             "FirstName",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              false,
+			dbName:                "first_name",
+			graphQLName:           "firstName",
 		},
-		"firstName",
 	)
 }
 
@@ -105,12 +109,13 @@ func TestOverridenGraphQLField(t *testing.T) {
 		&Field{
 			FieldName:             "LastLoginAt",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              false,
+			dbName:                "last_login_time",
+			graphQLName:           "lastLoginTime",
 		},
-		"lastLoginTime",
 	)
 }
 
@@ -124,13 +129,14 @@ func TestHiddenGraphQLField(t *testing.T) {
 		&Field{
 			FieldName:             "NumberOfLogins",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       false,
+			hideFromGraphQL:       true,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              false,
 			defaultValue:          "0",
+			dbName:                "number_of_logins",
+			graphQLName:           "numberOfLogins",
 		},
-		"numberOfLogins",
 	)
 }
 
@@ -151,12 +157,13 @@ func TestNullableStringField(t *testing.T) {
 		&Field{
 			FieldName:             "Bio",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              true,
+			dbName:                "bio",
+			graphQLName:           "bio",
 		},
-		"bio",
 	)
 	testDBType(t, f, "sa.Text()")
 	testGraphQLType(t, f, "String")
@@ -188,12 +195,13 @@ func TestNullableTimeField(t *testing.T) {
 		&Field{
 			FieldName:             "DateOfBirth",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              true,
+			dbName:                "date_of_birth",
+			graphQLName:           "dateOfBirth",
 		},
-		"dateOfBirth",
 	)
 	testDBType(t, f, "sa.TIMESTAMP()")
 	testGraphQLType(t, f, "Time")
@@ -217,12 +225,13 @@ func TestNullableBoolField(t *testing.T) {
 		&Field{
 			FieldName:             "ShowBioOnProfile",
 			singleFieldPrimaryKey: false,
-			exposeToGraphQL:       true,
+			hideFromGraphQL:       false,
 			topLevelStructField:   true,
 			dbColumn:              true,
 			nullable:              true,
+			dbName:                "show_bio_on_profile",
+			graphQLName:           "showBioOnProfile",
 		},
-		"showBioOnProfile",
 	)
 	testDBType(t, f, "sa.Boolean()")
 	testGraphQLType(t, f, "Boolean")
@@ -249,9 +258,7 @@ func TestOverridenDBField(t *testing.T) {
 	testColName(t, f, "last_login_time")
 }
 
-//func TestDefaultStructType(t *testing.)
-
-func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName string) {
+func testField(t *testing.T, f, expFieldProps *Field) {
 	assert.Equal(
 		t,
 		expFieldProps.FieldName,
@@ -273,21 +280,30 @@ func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName s
 	expose := f.ExposeToGraphQL()
 	assert.Equal(
 		t,
-		expFieldProps.exposeToGraphQL,
+		!expFieldProps.hideFromGraphQL,
 		expose,
-		"expected field exposed to graphql status to return %v, got %v instead",
-		expFieldProps.exposeToGraphQL,
+		"expected field exposed to graphql status to return !(%v), got %v instead",
+		!expFieldProps.hideFromGraphQL,
 		expose,
 	)
 
 	fieldName := f.GetGraphQLName()
 	assert.Equal(
 		t,
-		expectedGraphQLFieldName,
+		expFieldProps.graphQLName,
 		fieldName,
 		"expected graphql field name to be %s, got %s instead",
-		expectedGraphQLFieldName,
+		expFieldProps.graphQLName,
 		fieldName,
+	)
+
+	assert.Equal(
+		t,
+		expFieldProps.dbName,
+		f.dbName,
+		"expected db field to be %s, got %s instead",
+		expFieldProps.dbName,
+		f.dbName,
 	)
 
 	structField := f.TopLevelStructField()
@@ -327,6 +343,22 @@ func testField(t *testing.T, f, expFieldProps *Field, expectedGraphQLFieldName s
 		expFieldProps.DefaultValue(),
 		f.DefaultValue(),
 	)
+
+	assert.Equal(
+		t,
+		expFieldProps.fkey,
+		f.fkey,
+		"expected fkey values were not equal",
+	)
+
+	assert.Equal(
+		t,
+		expFieldProps.pkgPath,
+		f.pkgPath,
+		"expected package path values were not equal. expected %s got %s",
+		expFieldProps.pkgPath,
+		f.pkgPath,
+	)
 }
 
 func testDBType(t *testing.T, f *Field, expectedType string) {
@@ -355,12 +387,12 @@ func testGraphQLType(t *testing.T, f *Field, expectedType string) {
 }
 
 func testStructType(t *testing.T, f *Field, expectedType string) {
-	typ := GetNilableTypeInStructDefinition(f)
+	typ := GetNilableGoType(f)
 	assert.Equal(
 		t,
 		expectedType,
 		typ,
-		"expected type in struct definition for field %s to be %s, got %s instead",
+		"expected type in struct definition for field %T to be %s, got %s instead",
 		f.fieldType,
 		expectedType,
 		typ,
@@ -397,7 +429,7 @@ func getFieldInfoMap() *testsync.RunOnce {
 		r = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
 			data := parsehelper.ParseFilesForTest(t, parsehelper.ParseFuncs(parsehelper.ParseStruct))
 
-			fieldInfo := GetFieldInfoForStruct(data.StructMap[configName], data.Fset, data.Info)
+			fieldInfo := GetFieldInfoForStruct(data.StructMap[configName], data.Info)
 
 			assert.NotNil(t, fieldInfo, "invalid fieldInfo retrieved")
 			return fieldInfo

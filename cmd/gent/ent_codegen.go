@@ -59,6 +59,8 @@ func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, ste
 	}
 
 	for _, s := range steps {
-		s.ProcessData(data)
+		if err := s.ProcessData(data); err != nil {
+			util.Die(err)
+		}
 	}
 }

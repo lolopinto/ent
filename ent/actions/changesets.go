@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/syncerr"
 )
 
 func runChangesets(changesetFn ...func() (ent.Changeset, error)) ([]ent.Changeset, error) {
@@ -12,7 +13,7 @@ func runChangesets(changesetFn ...func() (ent.Changeset, error)) ([]ent.Changese
 		return []ent.Changeset{c}, err
 	}
 
-	var errs []error
+	var serr syncerr.Error
 	var m sync.Mutex
 	var changesets []ent.Changeset
 
@@ -27,20 +28,17 @@ func runChangesets(changesetFn ...func() (ent.Changeset, error)) ([]ent.Changese
 			if c == nil && err == nil {
 				return
 			}
+			serr.Append(err)
 			m.Lock()
 			defer m.Unlock()
-			if err != nil {
-				errs = append(errs, err)
-			}
 			if c != nil {
 				changesets = append(changesets, c)
 			}
 		}(idx)
 	}
 	wg.Wait()
-	if len(errs) != 0 {
-		// TODO we need the list of errors abstraction
-		return nil, errs[0]
+	if err := serr.Err(); err != nil {
+		return nil, err
 	}
 	return changesets, nil
 }

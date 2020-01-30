@@ -31,7 +31,7 @@ func DeleteUser(v viewer.ViewerContext, user *models.User) *DeleteUserAction {
 	builder := builder.NewMutationBuilder(
 		v,
 		ent.DeleteOperation,
-		action.getFieldMap(),
+		action.requiredFields(),
 		actions.ExistingEnt(user),
 	)
 	action.builder = builder
@@ -50,12 +50,16 @@ func (action *DeleteUserAction) GetViewer() viewer.ViewerContext {
 	return action.builder.GetViewer()
 }
 
-func (action *DeleteUserAction) SetBuilderOnTriggers(triggers []actions.Trigger) error {
-	return action.builder.SetTriggers(triggers)
+func (action *DeleteUserAction) SetBuilderOnTriggers(triggers []actions.Trigger) {
+	action.builder.SetTriggers(triggers)
 }
 
-func (action *DeleteUserAction) SetBuilderOnObservers(observers []actions.Observer) error {
-	return action.builder.SetObservers(observers)
+func (action *DeleteUserAction) SetBuilderOnObservers(observers []actions.Observer) {
+	action.builder.SetObservers(observers)
+}
+
+func (action *DeleteUserAction) SetBuilderOnValidators(validators []actions.Validator) {
+	action.builder.SetValidators(validators)
 }
 
 func (action *DeleteUserAction) GetChangeset() (ent.Changeset, error) {
@@ -70,9 +74,8 @@ func (action *DeleteUserAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// getFieldMap returns the fields that could be edited in this mutation
-func (action *DeleteUserAction) getFieldMap() ent.ActionFieldMap {
-	return ent.ActionFieldMap{}
+func (action *DeleteUserAction) requiredFields() []string {
+	return []string{}
 }
 
 // Validate returns an error if the current state of the action is not valid
