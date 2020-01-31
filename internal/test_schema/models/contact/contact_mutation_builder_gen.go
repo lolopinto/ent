@@ -308,13 +308,13 @@ func (b *ContactMutationBuilder) GetPlaceholderID() string {
 // GetFields returns the field configuration for this mutation builder
 func (b *ContactMutationBuilder) GetFields() ent.FieldMap {
 	return ent.FieldMap{
-		"EmailAddress":  field.F(field.Noop(), field.DB("email_address")),
-		"FirstName":     field.F(field.Noop(), field.DB("first_name")),
-		"LastName":      field.F(field.Noop(), field.DB("last_name")),
-		"UserID":        field.F(field.Noop(), field.DB("user_id")),
-		"Favorite":      field.F(field.Noop(), field.DB("favorite"), field.Nullable()),
-		"NumberOfCalls": field.F(field.Noop(), field.DB("number_of_calls"), field.Nullable()),
-		"Pi":            field.F(field.Noop(), field.DB("pi"), field.Nullable()),
+		"EmailAddress":  field.F(field.NoopType(), field.DB("email_address")),
+		"FirstName":     field.F(field.NoopType(), field.DB("first_name")),
+		"LastName":      field.F(field.NoopType(), field.DB("last_name")),
+		"UserID":        field.F(field.NoopType(), field.DB("user_id")),
+		"Favorite":      field.F(field.NoopType(), field.DB("favorite"), field.Nullable()),
+		"NumberOfCalls": field.F(field.NoopType(), field.DB("number_of_calls"), field.Nullable()),
+		"Pi":            field.F(field.NoopType(), field.DB("pi"), field.Nullable()),
 	}
 }
 

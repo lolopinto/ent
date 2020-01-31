@@ -311,9 +311,9 @@ func (b *{{$builderName}}) GetFields() ent.FieldMap {
     return ent.FieldMap{
     {{ range $field := $fieldInfos -}}
       {{if $field.Field.Nullable -}}
-        {{$field.QuotedFieldName}}: field.F(field.Noop(), field.DB({{$field.QuotedDBName}}), field.Nullable()),
+        {{$field.QuotedFieldName}}: field.F(field.NoopType(), field.DB({{$field.QuotedDBName}}), field.Nullable()),
       {{else -}}
-        {{$field.QuotedFieldName}}: field.F(field.Noop(), field.DB({{$field.QuotedDBName}})),
+        {{$field.QuotedFieldName}}: field.F(field.NoopType(), field.DB({{$field.QuotedDBName}})),
       {{end -}}
     {{end -}}
     }

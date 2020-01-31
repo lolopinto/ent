@@ -451,11 +451,11 @@ func (b *EventMutationBuilder) GetPlaceholderID() string {
 // GetFields returns the field configuration for this mutation builder
 func (b *EventMutationBuilder) GetFields() ent.FieldMap {
 	return ent.FieldMap{
-		"Name":      field.F(field.Noop(), field.DB("name")),
-		"UserID":    field.F(field.Noop(), field.DB("user_id")),
-		"StartTime": field.F(field.Noop(), field.DB("start_time")),
-		"EndTime":   field.F(field.Noop(), field.DB("end_time"), field.Nullable()),
-		"Location":  field.F(field.Noop(), field.DB("location")),
+		"Name":      field.F(field.NoopType(), field.DB("name")),
+		"UserID":    field.F(field.NoopType(), field.DB("user_id")),
+		"StartTime": field.F(field.NoopType(), field.DB("start_time")),
+		"EndTime":   field.F(field.NoopType(), field.DB("end_time"), field.Nullable()),
+		"Location":  field.F(field.NoopType(), field.DB("location")),
 	}
 }
 

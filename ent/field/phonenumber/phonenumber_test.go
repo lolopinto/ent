@@ -124,7 +124,7 @@ func TestDataType(t *testing.T) {
 	// *just* similar enough with datatype_test and email_test
 	for key, fn := range testCases {
 		t.Run(key, func(t *testing.T) {
-			dt := phonenumber.Field()
+			dt := phonenumber.Type()
 
 			expRes := fn(dt)
 

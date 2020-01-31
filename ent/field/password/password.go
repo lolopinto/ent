@@ -10,14 +10,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Field returns a datatype that represents a password
-func Field() *dataType {
-	return &dataType{str: field.String()}
+// Type returns a datatype that represents a password
+func Type() *dataType {
+	return &dataType{str: field.StringType()}
 }
 
 type dataType struct {
 	cost *int
-	str  *field.StringType
+	str  *field.StringDataType
 }
 
 // Cost specifies the cost to use to pass to bcrypt.GenerateFromPassword()

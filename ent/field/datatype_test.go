@@ -23,70 +23,70 @@ type testCase struct {
 }
 
 func TestString(t *testing.T) {
-	testCases := map[string]func(dt *field.StringType) testCase{
-		"base_case": func(dt *field.StringType) testCase {
+	testCases := map[string]func(dt *field.StringDataType) testCase{
+		"base_case": func(dt *field.StringDataType) testCase {
 			return testCase{
 				value:  "test",
 				result: "test",
 			}
 		},
-		"ToLower": func(dt *field.StringType) testCase {
+		"ToLower": func(dt *field.StringDataType) testCase {
 			dt.ToLower()
 			return testCase{
 				value:  "UPPER CASE",
 				result: "upper case",
 			}
 		},
-		"ToLowerNoChange": func(dt *field.StringType) testCase {
+		"ToLowerNoChange": func(dt *field.StringDataType) testCase {
 			dt.ToLower()
 			return testCase{
 				value:  "lower case",
 				result: "lower case",
 			}
 		},
-		"ToUpper": func(dt *field.StringType) testCase {
+		"ToUpper": func(dt *field.StringDataType) testCase {
 			dt.ToUpper()
 			return testCase{
 				value:  "upper case",
 				result: "UPPER CASE",
 			}
 		},
-		"ToUpperNoChange": func(dt *field.StringType) testCase {
+		"ToUpperNoChange": func(dt *field.StringDataType) testCase {
 			dt.ToUpper()
 			return testCase{
 				value:  "UPPER CASE",
 				result: "UPPER CASE",
 			}
 		},
-		"Title": func(dt *field.StringType) testCase {
+		"Title": func(dt *field.StringDataType) testCase {
 			dt.Title()
 			return testCase{
 				value:  "hello, world",
 				result: "Hello, World",
 			}
 		},
-		"TitleNoChange": func(dt *field.StringType) testCase {
+		"TitleNoChange": func(dt *field.StringDataType) testCase {
 			dt.Title()
 			return testCase{
 				value:  "Hello, WORLD",
 				result: "Hello, WORLD",
 			}
 		},
-		"TrimSpace": func(dt *field.StringType) testCase {
+		"TrimSpace": func(dt *field.StringDataType) testCase {
 			dt.TrimSpace()
 			return testCase{
 				value:  " test@email.com ",
 				result: "test@email.com",
 			}
 		},
-		"TrimSpaceNoChange": func(dt *field.StringType) testCase {
+		"TrimSpaceNoChange": func(dt *field.StringDataType) testCase {
 			dt.ToLower()
 			return testCase{
 				value:  "no space",
 				result: "no space",
 			}
 		},
-		"TrimAndLower": func(dt *field.StringType) testCase {
+		"TrimAndLower": func(dt *field.StringDataType) testCase {
 			// shows combination of formats
 			dt.ToLower().TrimSpace()
 			return testCase{
@@ -94,7 +94,7 @@ func TestString(t *testing.T) {
 				result: "test@email.com",
 			}
 		},
-		"NotEmpty": func(dt *field.StringType) testCase {
+		"NotEmpty": func(dt *field.StringDataType) testCase {
 			dt.NotEmpty()
 			return testCase{
 				value:  "",
@@ -102,14 +102,14 @@ func TestString(t *testing.T) {
 				err:    errors.New("minimum"),
 			}
 		},
-		"NotEmptyValid": func(dt *field.StringType) testCase {
+		"NotEmptyValid": func(dt *field.StringDataType) testCase {
 			dt.NotEmpty()
 			return testCase{
 				value:  "test",
 				result: "test",
 			}
 		},
-		"MinLen": func(dt *field.StringType) testCase {
+		"MinLen": func(dt *field.StringDataType) testCase {
 			dt.MinLen(6)
 			return testCase{
 				value:  "seven",
@@ -117,14 +117,14 @@ func TestString(t *testing.T) {
 				err:    errors.New("minimum"),
 			}
 		},
-		"MinLenValid": func(dt *field.StringType) testCase {
+		"MinLenValid": func(dt *field.StringDataType) testCase {
 			dt.MinLen(6)
 			return testCase{
 				value:  "more than six",
 				result: "more than six",
 			}
 		},
-		"MaxLen": func(dt *field.StringType) testCase {
+		"MaxLen": func(dt *field.StringDataType) testCase {
 			dt.MaxLen(20)
 			return testCase{
 				value:  "this sentence is too long and will result in error",
@@ -132,14 +132,14 @@ func TestString(t *testing.T) {
 				err:    errors.New("maximum"),
 			}
 		},
-		"MaxLenValid": func(dt *field.StringType) testCase {
+		"MaxLenValid": func(dt *field.StringDataType) testCase {
 			dt.MaxLen(20)
 			return testCase{
 				value:  "valid",
 				result: "valid",
 			}
 		},
-		"Length": func(dt *field.StringType) testCase {
+		"Length": func(dt *field.StringDataType) testCase {
 			dt.Length(5)
 			return testCase{
 				value:  "94114-2324",
@@ -147,21 +147,21 @@ func TestString(t *testing.T) {
 				err:    errors.New("length"),
 			}
 		},
-		"LegnthValid": func(dt *field.StringType) testCase {
+		"LegnthValid": func(dt *field.StringDataType) testCase {
 			dt.Length(5)
 			return testCase{
 				value:  "94114",
 				result: "94114",
 			}
 		},
-		"MinLenMaxLen": func(dt *field.StringType) testCase {
+		"MinLenMaxLen": func(dt *field.StringDataType) testCase {
 			dt.MinLen(8).MaxLen(20)
 			return testCase{
 				value:  "bad password",
 				result: "bad password",
 			}
 		},
-		"MinLenMaxLenShort": func(dt *field.StringType) testCase {
+		"MinLenMaxLenShort": func(dt *field.StringDataType) testCase {
 			dt.MinLen(8).MaxLen(20)
 			return testCase{
 				value:  "94114",
@@ -169,7 +169,7 @@ func TestString(t *testing.T) {
 				err:    errors.New("minimum"),
 			}
 		},
-		"MinLenMaxLenLong": func(dt *field.StringType) testCase {
+		"MinLenMaxLenLong": func(dt *field.StringDataType) testCase {
 			dt.MinLen(8).MaxLen(20)
 			return testCase{
 				value:  "this sentence is too long",
@@ -177,7 +177,7 @@ func TestString(t *testing.T) {
 				err:    errors.New("maximum"),
 			}
 		},
-		"Match": func(dt *field.StringType) testCase {
+		"Match": func(dt *field.StringDataType) testCase {
 			r := regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`)
 			dt.Match(r)
 			return testCase{
@@ -186,7 +186,7 @@ func TestString(t *testing.T) {
 				err:    errors.New("match"),
 			}
 		},
-		"MatchValid": func(dt *field.StringType) testCase {
+		"MatchValid": func(dt *field.StringDataType) testCase {
 			r := regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`)
 			dt.Match(r)
 			return testCase{
@@ -194,7 +194,7 @@ func TestString(t *testing.T) {
 				result: "username",
 			}
 		},
-		"DoesNotMatch": func(dt *field.StringType) testCase {
+		"DoesNotMatch": func(dt *field.StringDataType) testCase {
 			r := regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`)
 			dt.DoesNotMatch(r)
 			return testCase{
@@ -203,7 +203,7 @@ func TestString(t *testing.T) {
 				err:    errors.New("matches"),
 			}
 		},
-		"DoesNotMatchValid": func(dt *field.StringType) testCase {
+		"DoesNotMatchValid": func(dt *field.StringDataType) testCase {
 			r := regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`)
 			dt.DoesNotMatch(r)
 			return testCase{
@@ -214,21 +214,21 @@ func TestString(t *testing.T) {
 	}
 
 	for key, tt := range testCases {
-		dt := field.String()
+		dt := field.StringType()
 		expRes := tt(dt)
 		testDataType(t, key, dt, expRes, "")
 	}
 }
 
 func TestInt(t *testing.T) {
-	testCases := map[string]func(dt *field.IntegerType) testCase{
-		"base_case": func(dt *field.IntegerType) testCase {
+	testCases := map[string]func(dt *field.IntDataType) testCase{
+		"base_case": func(dt *field.IntDataType) testCase {
 			return testCase{
 				value:  4,
 				result: 4,
 			}
 		},
-		"Positive": func(dt *field.IntegerType) testCase {
+		"Positive": func(dt *field.IntDataType) testCase {
 			dt.Positive()
 			return testCase{
 				value:  -1,
@@ -236,14 +236,14 @@ func TestInt(t *testing.T) {
 				err:    errors.New("minimum"),
 			}
 		},
-		"PositiveValid": func(dt *field.IntegerType) testCase {
+		"PositiveValid": func(dt *field.IntDataType) testCase {
 			dt.Positive()
 			return testCase{
 				value:  1,
 				result: 1,
 			}
 		},
-		"Negative": func(dt *field.IntegerType) testCase {
+		"Negative": func(dt *field.IntDataType) testCase {
 			dt.Negative()
 			return testCase{
 				value:  10,
@@ -251,14 +251,14 @@ func TestInt(t *testing.T) {
 				err:    errors.New("maximum"),
 			}
 		},
-		"NegativeValid": func(dt *field.IntegerType) testCase {
+		"NegativeValid": func(dt *field.IntDataType) testCase {
 			dt.Negative()
 			return testCase{
 				value:  -15,
 				result: -15,
 			}
 		},
-		"Min": func(dt *field.IntegerType) testCase {
+		"Min": func(dt *field.IntDataType) testCase {
 			dt.Min(50)
 			return testCase{
 				value:  10,
@@ -266,14 +266,14 @@ func TestInt(t *testing.T) {
 				err:    errors.New("minimum"),
 			}
 		},
-		"MinValid": func(dt *field.IntegerType) testCase {
+		"MinValid": func(dt *field.IntDataType) testCase {
 			dt.Min(50)
 			return testCase{
 				value:  50,
 				result: 50,
 			}
 		},
-		"Max": func(dt *field.IntegerType) testCase {
+		"Max": func(dt *field.IntDataType) testCase {
 			dt.Max(15)
 			return testCase{
 				value:  30,
@@ -281,14 +281,14 @@ func TestInt(t *testing.T) {
 				err:    errors.New("maximum"),
 			}
 		},
-		"MaxValid": func(dt *field.IntegerType) testCase {
+		"MaxValid": func(dt *field.IntDataType) testCase {
 			dt.Max(10)
 			return testCase{
 				value:  -15,
 				result: -15,
 			}
 		},
-		"RangeMinIncorrect": func(dt *field.IntegerType) testCase {
+		"RangeMinIncorrect": func(dt *field.IntDataType) testCase {
 			dt.Min(10).Max(20)
 			return testCase{
 				value:  9,
@@ -296,7 +296,7 @@ func TestInt(t *testing.T) {
 				err:    errors.New("minimum"),
 			}
 		},
-		"RangeMaxIncorrect": func(dt *field.IntegerType) testCase {
+		"RangeMaxIncorrect": func(dt *field.IntDataType) testCase {
 			dt.Min(10).Max(20)
 			return testCase{
 				value:  30,
@@ -304,7 +304,7 @@ func TestInt(t *testing.T) {
 				err:    errors.New("maximum"),
 			}
 		},
-		"RangeValid": func(dt *field.IntegerType) testCase {
+		"RangeValid": func(dt *field.IntDataType) testCase {
 			dt.Min(10).Max(20)
 			return testCase{
 				value:  15,
@@ -314,21 +314,21 @@ func TestInt(t *testing.T) {
 	}
 
 	for key, tt := range testCases {
-		dt := field.Int()
+		dt := field.IntType()
 		expRes := tt(dt)
 		testDataType(t, key, dt, expRes, 0)
 	}
 }
 
 func TestFloat(t *testing.T) {
-	testCases := map[string]func(dt *field.FloatType) testCase{
-		"base_case": func(dt *field.FloatType) testCase {
+	testCases := map[string]func(dt *field.FloatDataType) testCase{
+		"base_case": func(dt *field.FloatDataType) testCase {
 			return testCase{
 				value:  4.0,
 				result: 4.0,
 			}
 		},
-		"Positive": func(dt *field.FloatType) testCase {
+		"Positive": func(dt *field.FloatDataType) testCase {
 			dt.Positive()
 			return testCase{
 				value:  -1,
@@ -336,14 +336,14 @@ func TestFloat(t *testing.T) {
 				err:    errors.New("minimum"),
 			}
 		},
-		"PositiveValid": func(dt *field.FloatType) testCase {
+		"PositiveValid": func(dt *field.FloatDataType) testCase {
 			dt.Positive()
 			return testCase{
 				value:  1.0,
 				result: 1.0,
 			}
 		},
-		"Negative": func(dt *field.FloatType) testCase {
+		"Negative": func(dt *field.FloatDataType) testCase {
 			dt.Negative()
 			return testCase{
 				value:  10.0,
@@ -351,14 +351,14 @@ func TestFloat(t *testing.T) {
 				err:    errors.New("maximum"),
 			}
 		},
-		"NegativeValid": func(dt *field.FloatType) testCase {
+		"NegativeValid": func(dt *field.FloatDataType) testCase {
 			dt.Negative()
 			return testCase{
 				value:  -15.0,
 				result: -15.0,
 			}
 		},
-		"Min": func(dt *field.FloatType) testCase {
+		"Min": func(dt *field.FloatDataType) testCase {
 			dt.Min(50.0)
 			return testCase{
 				value:  10.3,
@@ -366,14 +366,14 @@ func TestFloat(t *testing.T) {
 				err:    errors.New("minimum"),
 			}
 		},
-		"MinValid": func(dt *field.FloatType) testCase {
+		"MinValid": func(dt *field.FloatDataType) testCase {
 			dt.Min(50.23)
 			return testCase{
 				value:  50.23,
 				result: 50.23,
 			}
 		},
-		"Max": func(dt *field.FloatType) testCase {
+		"Max": func(dt *field.FloatDataType) testCase {
 			dt.Max(15.42)
 			return testCase{
 				value:  30.2,
@@ -381,14 +381,14 @@ func TestFloat(t *testing.T) {
 				err:    errors.New("maximum"),
 			}
 		},
-		"MaxValid": func(dt *field.FloatType) testCase {
+		"MaxValid": func(dt *field.FloatDataType) testCase {
 			dt.Max(10.23)
 			return testCase{
 				value:  -15.2323,
 				result: -15.2323,
 			}
 		},
-		"RangeMinIncorrect": func(dt *field.FloatType) testCase {
+		"RangeMinIncorrect": func(dt *field.FloatDataType) testCase {
 			dt.Min(10.12).Max(20.21)
 			return testCase{
 				value:  9.24,
@@ -396,7 +396,7 @@ func TestFloat(t *testing.T) {
 				err:    errors.New("minimum"),
 			}
 		},
-		"RangeMaxIncorrect": func(dt *field.FloatType) testCase {
+		"RangeMaxIncorrect": func(dt *field.FloatDataType) testCase {
 			dt.Min(10.23).Max(20.23)
 			return testCase{
 				value:  30.12,
@@ -404,7 +404,7 @@ func TestFloat(t *testing.T) {
 				err:    errors.New("maximum"),
 			}
 		},
-		"RangeValid": func(dt *field.FloatType) testCase {
+		"RangeValid": func(dt *field.FloatDataType) testCase {
 			dt.Min(10.23).Max(20.23)
 			return testCase{
 				value:  15,
@@ -414,7 +414,7 @@ func TestFloat(t *testing.T) {
 	}
 
 	for key, tt := range testCases {
-		dt := field.Float()
+		dt := field.FloatType()
 		expRes := tt(dt)
 		testDataType(t, key, dt, expRes, 0.0)
 	}
@@ -436,7 +436,7 @@ func TestTime(t *testing.T) {
 
 	testCases := map[string]func() (field.DataType, testCase){
 		"base_case": func() (field.DataType, testCase) {
-			dt := field.Time()
+			dt := field.TimeType()
 
 			tv := time.Now()
 			return dt, testCase{
@@ -447,7 +447,7 @@ func TestTime(t *testing.T) {
 			}
 		},
 		"base_caseDifferentTimezone": func() (field.DataType, testCase) {
-			dt := field.Time()
+			dt := field.TimeType()
 
 			loc, err := time.LoadLocation("America/New_York")
 			assert.Nil(t, err)
@@ -461,7 +461,7 @@ func TestTime(t *testing.T) {
 			}
 		},
 		"Add": func() (field.DataType, testCase) {
-			dt := field.Time().Add(3 * time.Hour)
+			dt := field.TimeType().Add(3 * time.Hour)
 
 			now := time.Now()
 
@@ -476,7 +476,7 @@ func TestTime(t *testing.T) {
 			}
 		},
 		"AddNegative": func() (field.DataType, testCase) {
-			dt := field.Time().Add(-3 * time.Hour)
+			dt := field.TimeType().Add(-3 * time.Hour)
 
 			now := time.Now()
 
@@ -491,7 +491,7 @@ func TestTime(t *testing.T) {
 			}
 		},
 		"Round": func() (field.DataType, testCase) {
-			dt := field.Time().Round(1 * time.Hour)
+			dt := field.TimeType().Round(1 * time.Hour)
 
 			loc, err := time.LoadLocation("America/New_York")
 			assert.Nil(t, err)
@@ -512,7 +512,7 @@ func TestTime(t *testing.T) {
 			}
 		},
 		"Truncate": func() (field.DataType, testCase) {
-			dt := field.Time().Truncate(1 * time.Hour)
+			dt := field.TimeType().Truncate(1 * time.Hour)
 
 			loc, err := time.LoadLocation("America/New_York")
 			assert.Nil(t, err)
@@ -533,7 +533,7 @@ func TestTime(t *testing.T) {
 			}
 		},
 		"FutureDate": func() (field.DataType, testCase) {
-			dt := field.Time().FutureDate()
+			dt := field.TimeType().FutureDate()
 
 			// 1/1/2020
 			tv := time.Date(2020, time.January, 1, 1, 0, 0, 0, time.UTC)
@@ -546,7 +546,7 @@ func TestTime(t *testing.T) {
 			}
 		},
 		"FutureDateValid": func() (field.DataType, testCase) {
-			dt := field.Time().FutureDate()
+			dt := field.TimeType().FutureDate()
 
 			tv := time.Now().Add(5 * time.Hour)
 
@@ -557,7 +557,7 @@ func TestTime(t *testing.T) {
 			}
 		},
 		"PastDate": func() (field.DataType, testCase) {
-			dt := field.Time().PastDate()
+			dt := field.TimeType().PastDate()
 
 			tv := time.Now().Add(5 * time.Hour)
 
@@ -569,7 +569,7 @@ func TestTime(t *testing.T) {
 			}
 		},
 		"PastDateValid": func() (field.DataType, testCase) {
-			dt := field.Time().PastDate()
+			dt := field.TimeType().PastDate()
 
 			tv := time.Now().Add(-5 * time.Hour)
 
@@ -581,7 +581,7 @@ func TestTime(t *testing.T) {
 		},
 		"WithinFuture": func() (field.DataType, testCase) {
 			// time needs to be within the next 30 days
-			dt := field.Time().Within(30 * 24 * time.Hour)
+			dt := field.TimeType().Within(30 * 24 * time.Hour)
 
 			tv := time.Now().Add(41 * 24 * time.Hour)
 
@@ -594,7 +594,7 @@ func TestTime(t *testing.T) {
 		},
 		"WithinFutureValid": func() (field.DataType, testCase) {
 			// time needs to be within the next 30 days
-			dt := field.Time().Within(30 * 24 * time.Hour)
+			dt := field.TimeType().Within(30 * 24 * time.Hour)
 
 			tv := time.Now().Add(5 * time.Hour)
 
@@ -606,7 +606,7 @@ func TestTime(t *testing.T) {
 		},
 		"WithinPast": func() (field.DataType, testCase) {
 			// time needs to be within the past 7 days
-			dt := field.Time().Within(-7 * 24 * time.Hour)
+			dt := field.TimeType().Within(-7 * 24 * time.Hour)
 
 			tv := time.Now().Add(-10 * 24 * time.Hour)
 
@@ -619,7 +619,7 @@ func TestTime(t *testing.T) {
 		},
 		"WithinPastValid": func() (field.DataType, testCase) {
 			// time needs to be within the past 7 days
-			dt := field.Time().Within(-7 * 24 * time.Hour)
+			dt := field.TimeType().Within(-7 * 24 * time.Hour)
 
 			tv := time.Now().Add(-5 * 24 * time.Hour)
 
@@ -631,7 +631,7 @@ func TestTime(t *testing.T) {
 		},
 		"WithinRangePastIncorrect": func() (field.DataType, testCase) {
 			// time needs to be within +/- 2 weeks
-			dt := field.Time().Within(-14 * 24 * time.Hour).Within(14 * 24 * time.Hour)
+			dt := field.TimeType().Within(-14 * 24 * time.Hour).Within(14 * 24 * time.Hour)
 
 			tv := time.Now().Add(-15 * 24 * time.Hour)
 
@@ -644,7 +644,7 @@ func TestTime(t *testing.T) {
 		},
 		"WithinRangeFutureIncorrect": func() (field.DataType, testCase) {
 			// time needs to be within +/- 2 weeks
-			dt := field.Time().Within(-14 * 24 * time.Hour).Within(14 * 24 * time.Hour)
+			dt := field.TimeType().Within(-14 * 24 * time.Hour).Within(14 * 24 * time.Hour)
 
 			tv := time.Now().Add(15 * 24 * time.Hour)
 
@@ -657,7 +657,7 @@ func TestTime(t *testing.T) {
 		},
 		"WithinRangeValid": func() (field.DataType, testCase) {
 			// time needs to be within +/- 2 weeks
-			dt := field.Time().Within(-14 * 24 * time.Hour).Within(14 * 24 * time.Hour)
+			dt := field.TimeType().Within(-14 * 24 * time.Hour).Within(14 * 24 * time.Hour)
 
 			tv := time.Now().Add(1 * 24 * time.Hour)
 
@@ -669,7 +669,7 @@ func TestTime(t *testing.T) {
 		},
 		"LocalTimezone": func() (field.DataType, testCase) {
 			// we want local time for some reason
-			dt := field.Time().Formatter(func(t time.Time) time.Time {
+			dt := field.TimeType().Formatter(func(t time.Time) time.Time {
 				return t.Local()
 			})
 
@@ -696,7 +696,7 @@ func TestTime(t *testing.T) {
 func TestJSON(t *testing.T) {
 	testCases := map[string]func() (field.DataType, testCase){
 		"ints": func() (field.DataType, testCase) {
-			dt := field.Ints()
+			dt := field.IntsType()
 
 			val := []int{1, 2, 3, 4, 5}
 			res, err := json.Marshal(val)
@@ -707,7 +707,7 @@ func TestJSON(t *testing.T) {
 			}
 		},
 		"intsTypeNotEnforced": func() (field.DataType, testCase) {
-			dt := field.Ints()
+			dt := field.IntsType()
 
 			val := []string{"1", "2", "3", "4", "5"}
 			res, err := json.Marshal(val)
@@ -718,7 +718,7 @@ func TestJSON(t *testing.T) {
 			}
 		},
 		"intsTypeEnforced": func() (field.DataType, testCase) {
-			dt := field.Ints().EnforceType()
+			dt := field.IntsType().EnforceType()
 
 			val := []string{"1", "2", "3", "4", "5"}
 			res, err := json.Marshal(val)
@@ -730,7 +730,7 @@ func TestJSON(t *testing.T) {
 			}
 		},
 		"intsTypeEnforcedValid": func() (field.DataType, testCase) {
-			dt := field.Ints().EnforceType()
+			dt := field.IntsType().EnforceType()
 
 			val := []int{1, 2, 3, 4, 5}
 			res, err := json.Marshal(val)
@@ -741,7 +741,7 @@ func TestJSON(t *testing.T) {
 			}
 		},
 		"strings": func() (field.DataType, testCase) {
-			dt := field.Strings()
+			dt := field.StringsType()
 
 			val := []string{"1", "2", "3", "4", "5"}
 			res, err := json.Marshal(val)
@@ -752,7 +752,7 @@ func TestJSON(t *testing.T) {
 			}
 		},
 		"floats": func() (field.DataType, testCase) {
-			dt := field.Floats()
+			dt := field.FloatsType()
 
 			val := []float64{1, 2, 3, 4, 5}
 			res, err := json.Marshal(val)
@@ -764,7 +764,7 @@ func TestJSON(t *testing.T) {
 		},
 		"scalar": func() (field.DataType, testCase) {
 			// works for scalars even when there's no reason to do so
-			dt := field.JSON("")
+			dt := field.JSONType("")
 
 			val := "mango"
 			res, err := json.Marshal(val)
@@ -775,7 +775,7 @@ func TestJSON(t *testing.T) {
 			}
 		},
 		"obj": func() (field.DataType, testCase) {
-			dt := field.JSON(json.RawMessage{}).EnforceType()
+			dt := field.JSONType(json.RawMessage{}).EnforceType()
 
 			val := json.RawMessage(`{"precomputed": true}`)
 
@@ -788,7 +788,7 @@ func TestJSON(t *testing.T) {
 			}
 		},
 		"objPointer": func() (field.DataType, testCase) {
-			dt := field.JSON(&json.RawMessage{}).EnforceType()
+			dt := field.JSONType(&json.RawMessage{}).EnforceType()
 
 			val := json.RawMessage(`{"precomputed": true}`)
 
@@ -801,7 +801,7 @@ func TestJSON(t *testing.T) {
 			}
 		},
 		"listofObject": func() (field.DataType, testCase) {
-			dt := field.JSON([]json.RawMessage{}).EnforceType()
+			dt := field.JSONType([]json.RawMessage{}).EnforceType()
 
 			val := []json.RawMessage{
 				json.RawMessage(`{"precomputed": true}`),
@@ -816,7 +816,7 @@ func TestJSON(t *testing.T) {
 			}
 		},
 		"map": func() (field.DataType, testCase) {
-			dt := field.JSON(map[string]string{}).EnforceType()
+			dt := field.JSONType(map[string]string{}).EnforceType()
 
 			val := map[string]string{
 				"dog": "puppy",
@@ -832,7 +832,7 @@ func TestJSON(t *testing.T) {
 			}
 		},
 		"mapToObj": func() (field.DataType, testCase) {
-			dt := field.JSON(map[string]*url.URL{}).EnforceType()
+			dt := field.JSONType(map[string]*url.URL{}).EnforceType()
 
 			wiki, err := url.Parse("https://www.wikipedia.org/")
 			assert.Nil(t, err)
@@ -855,7 +855,7 @@ func TestJSON(t *testing.T) {
 		"listOfObjPointers": func() (field.DataType, testCase) {
 			// honestly better to store []strings and decode at runtime for this because it's more compact
 			// this is why Url will not use JSON but do things in goland as needed
-			dt := field.JSON([]*url.URL{}).EnforceType()
+			dt := field.JSONType([]*url.URL{}).EnforceType()
 
 			wiki, err := url.Parse("https://www.wikipedia.org/")
 			assert.Nil(t, err)

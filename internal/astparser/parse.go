@@ -10,10 +10,10 @@ import (
 type Format string
 
 const (
-	// FunctionFormat is for declarations like field.Int()
+	// FunctionFormat is for declarations like field.IntType()
 	FunctionFormat Format = "func"
 
-	// TypFormat is for declarations like &field.StringType{}
+	// TypFormat is for declarations like &field.StringDataType{}
 	TypFormat Format = "type"
 )
 
@@ -40,8 +40,8 @@ type Result struct {
 	Attributes Results // Attributes/configurations on the object.
 
 	Expr ast.Expr
-	// e.g. (&field.StringType{}).MaxLen(5)
-	// or field.String().MaxLen(5)
+	// e.g. (&field.StringDataType{}).MaxLen(5)
+	// or field.StringType().MaxLen(5)
 	selectParent *ast.SelectorExpr
 	parent       ast.Expr
 }

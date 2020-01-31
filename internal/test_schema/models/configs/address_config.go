@@ -15,22 +15,22 @@ func (config *AddressConfig) GetTableName() string {
 func (config *AddressConfig) GetFields() ent.FieldMap {
 	return ent.FieldMap{
 		"StreetAddress": field.F(
-			field.String(),
+			field.StringType(),
 		),
 		"City": field.F(
-			field.String(),
+			field.StringType(),
 		),
 		"State": field.F(
-			field.String(),
+			field.StringType(),
 		),
 		"Zip": field.F(
-			field.String(),
+			field.StringType(),
 		),
 		"Country": field.F(
-			field.String(),
+			field.StringType(),
 		),
 		"ResidentNames": field.F(
-			field.Strings(),
+			field.StringsType(),
 		),
 	}
 }

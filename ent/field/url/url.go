@@ -14,12 +14,12 @@ var DefaultSchemes = []string{
 	"https",
 }
 
-// Field returns a datatype that implements the field.DataType interface
+// Type returns a datatype that implements the field.DataType interface
 // representing urls
 // By default, it validates that the input is a valid url with either http or https scheme
 // since that's common in urls stored in web databases
 // It provides the ability to change this as needed
-func Field() *dataType {
+func Type() *dataType {
 	dt := &dataType{}
 	dt.Validate(func(url *url.URL) error {
 		validSchemes := dt.validSchemes

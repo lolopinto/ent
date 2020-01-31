@@ -22,97 +22,97 @@ type testCase struct {
 func TestDataType(t *testing.T) {
 	testCases := map[string]func() (field.FullDataType, testCase){
 		"base": func() (field.FullDataType, testCase) {
-			dt := password.Field()
+			dt := password.Type()
 			return dt, testCase{"password", bcrypt.DefaultCost, nil}
 		},
 		"password-with-min-cost": func() (field.FullDataType, testCase) {
-			dt := password.Field().Cost(bcrypt.MinCost)
+			dt := password.Type().Cost(bcrypt.MinCost)
 			return dt, testCase{"password", bcrypt.MinCost, nil}
 		},
 		"password-with-low-cost": func() (field.FullDataType, testCase) {
-			dt := password.Field().Cost(1)
+			dt := password.Type().Cost(1)
 			return dt, testCase{"password", bcrypt.DefaultCost, nil}
 		},
 		"password-with-cost": func() (field.FullDataType, testCase) {
-			dt := password.Field().Cost(12)
+			dt := password.Type().Cost(12)
 			return dt, testCase{"password", 12, nil}
 		},
 		// we don't test MaxCost cause it takes too long (which is a good thing)
 		"password-with-too-high-cost": func() (field.FullDataType, testCase) {
-			dt := password.Field().Cost(40)
+			dt := password.Type().Cost(40)
 			return dt, testCase{"password", 0, errors.New("cost 40 is outside allowed range (4,31)")}
 		},
 		"password-not-empty": func() (field.FullDataType, testCase) {
-			dt := password.Field().NotEmpty()
+			dt := password.Type().NotEmpty()
 			return dt, testCase{"", bcrypt.DefaultCost, errors.New("length")}
 		},
 		"password-not-empty-valid": func() (field.FullDataType, testCase) {
-			dt := password.Field().NotEmpty()
+			dt := password.Type().NotEmpty()
 			return dt, testCase{"password", bcrypt.DefaultCost, nil}
 		},
 		"password-min-len": func() (field.FullDataType, testCase) {
-			dt := password.Field().MinLen(8)
+			dt := password.Type().MinLen(8)
 			return dt, testCase{"pass", bcrypt.DefaultCost, errors.New("length")}
 		},
 		"password-min-len-valid": func() (field.FullDataType, testCase) {
-			dt := password.Field().MinLen(8)
+			dt := password.Type().MinLen(8)
 			return dt, testCase{"password", bcrypt.DefaultCost, nil}
 		},
 		"password-max-len": func() (field.FullDataType, testCase) {
-			dt := password.Field().MaxLen(20)
+			dt := password.Type().MaxLen(20)
 			return dt, testCase{"passwordpasswordpassword", bcrypt.DefaultCost, errors.New("length")}
 		},
 		"password-max-len-valid": func() (field.FullDataType, testCase) {
-			dt := password.Field().MaxLen(20)
+			dt := password.Type().MaxLen(20)
 			return dt, testCase{"password", bcrypt.DefaultCost, nil}
 		},
 		"password-does-not-match": func() (field.FullDataType, testCase) {
-			dt := password.Field().DoesNotMatch(regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`))
+			dt := password.Type().DoesNotMatch(regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`))
 			return dt, testCase{"password", bcrypt.DefaultCost, errors.New("match")}
 		},
 		"password-does-not-match-valid": func() (field.FullDataType, testCase) {
-			dt := password.Field().DoesNotMatch(regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`))
+			dt := password.Type().DoesNotMatch(regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`))
 			return dt, testCase{"Pa$$w0rd", bcrypt.DefaultCost, nil}
 		},
 		"password-match": func() (field.FullDataType, testCase) {
-			dt := password.Field().Match(regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`))
+			dt := password.Type().Match(regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`))
 			return dt, testCase{"password", bcrypt.DefaultCost, nil}
 		},
 		"password-match-valid": func() (field.FullDataType, testCase) {
-			dt := password.Field().Match(regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`))
+			dt := password.Type().Match(regexp.MustCompile(`^[a-zA-Z0-9_-]{5,20}$`))
 			return dt, testCase{"Pa$$w0rd", bcrypt.DefaultCost, errors.New("match")}
 		},
 		"password-matcher-number": func() (field.FullDataType, testCase) {
-			dt := password.Field().Validate(password.StereoTypicalMatcher().Match)
+			dt := password.Type().Validate(password.StereoTypicalMatcher().Match)
 			return dt, testCase{"password$A", bcrypt.DefaultCost, errors.New("minimum number length")}
 		},
 		"password-matcher-upper": func() (field.FullDataType, testCase) {
-			dt := password.Field().Validate(password.StereoTypicalMatcher().Match)
+			dt := password.Type().Validate(password.StereoTypicalMatcher().Match)
 			return dt, testCase{"password$4", bcrypt.DefaultCost, errors.New("minimum upper length")}
 		},
 		"password-matcher-special": func() (field.FullDataType, testCase) {
-			dt := password.Field().Validate(password.StereoTypicalMatcher().Match)
+			dt := password.Type().Validate(password.StereoTypicalMatcher().Match)
 			return dt, testCase{"password4U", bcrypt.DefaultCost, errors.New("minimum special characters")}
 		},
 		"password-matcher-lower": func() (field.FullDataType, testCase) {
-			dt := password.Field().Validate(password.StereoTypicalMatcher().Match)
+			dt := password.Type().Validate(password.StereoTypicalMatcher().Match)
 			return dt, testCase{"1234567890$A", bcrypt.DefaultCost, errors.New("minimum lower length")}
 		},
 		"password-matcher-valid": func() (field.FullDataType, testCase) {
-			dt := password.Field().Validate(password.StereoTypicalMatcher().Match)
+			dt := password.Type().Validate(password.StereoTypicalMatcher().Match)
 			// 1password generated :)
 			return dt, testCase{"wpyi6KQqiwRfENUJob&q", bcrypt.DefaultCost, nil}
 		},
 		"password-matcher-min-len": func() (field.FullDataType, testCase) {
-			dt := password.Field().Validate(password.StereoTypicalMatcher().Match)
+			dt := password.Type().Validate(password.StereoTypicalMatcher().Match)
 			return dt, testCase{"a1A&q", bcrypt.DefaultCost, errors.New("min length")}
 		},
 		"password-matcher-max-len": func() (field.FullDataType, testCase) {
-			dt := password.Field().Validate(password.StereoTypicalMatcher().Match)
+			dt := password.Type().Validate(password.StereoTypicalMatcher().Match)
 			return dt, testCase{"wpyi6KQqiwRfENUJob&qwpyi6KQqiwRfENUJob&q", bcrypt.DefaultCost, errors.New("max length")}
 		},
 		"password-matcher-base": func() (field.FullDataType, testCase) {
-			dt := password.Field().Validate((&password.PasswordMatcher{}).Match)
+			dt := password.Type().Validate((&password.PasswordMatcher{}).Match)
 			return dt, testCase{"a", bcrypt.DefaultCost, nil}
 		},
 	}

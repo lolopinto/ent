@@ -37,7 +37,7 @@ func TestDataType(t *testing.T) {
 
 	for key, tt := range testCases {
 		t.Run(key, func(t *testing.T) {
-			dt := email.Field()
+			dt := email.Type()
 
 			err := dt.Valid(tt.input)
 			if tt.err == nil {

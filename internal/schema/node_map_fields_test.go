@@ -36,7 +36,7 @@ func TestSchemaWithFieldsFunc(t *testing.T) {
 	func (config *UserConfig) GetFields() ent.FieldMap {
 		return ent.FieldMap {
 			"Username": field.F(
-				&field.StringType{},
+				&field.StringDataType{},
 				field.Unique(),
 			),
 		}
@@ -64,7 +64,7 @@ func TestSchemaWithBoth(t *testing.T) {
 	func (config *UserConfig) GetFields() ent.FieldMap {
 		return ent.FieldMap {
 			"Username": field.F(
-				&field.StringType{},
+				&field.StringDataType{},
 				field.Unique(),
 			),
 		}

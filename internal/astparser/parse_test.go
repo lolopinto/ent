@@ -21,7 +21,7 @@ func TestInlineType(t *testing.T) {
 	func f() ent.FieldMap {
 		return ent.FieldMap {
 			"Username": field.F(
-				&field.StringType{},
+				&field.StringDataType{},
 				field.GraphQL("username"),
 			),
 		}
@@ -42,7 +42,7 @@ func TestInlineType(t *testing.T) {
 							&astparser.Result{
 								Pointer:   true,
 								PkgName:   "field",
-								IdentName: "StringType",
+								IdentName: "StringDataType",
 								Format:    astparser.TypFormat,
 							},
 							&astparser.Result{
@@ -75,7 +75,7 @@ func TestInlineTypeWithSingleCall(t *testing.T) {
 	func f() ent.FieldMap {
 		return ent.FieldMap {
 			"Username": field.F(
-				(&field.StringType{}).MinLen(5), 
+				(&field.StringDataType{}).MinLen(5), 
 				field.GraphQL("username"),
 			),
 		}
@@ -96,7 +96,7 @@ func TestInlineTypeWithSingleCall(t *testing.T) {
 							&astparser.Result{
 								Pointer:   true,
 								PkgName:   "field",
-								IdentName: "StringType",
+								IdentName: "StringDataType",
 								Format:    astparser.TypFormat,
 								Attributes: []*astparser.Result{
 									&astparser.Result{
@@ -142,7 +142,7 @@ func TestInlineTypeWithMultiCall(t *testing.T) {
 	func f() ent.FieldMap {
 		return ent.FieldMap {
 			"Username": field.F(
-				(&field.StringType{}).MinLen(5).ToLower().TrimSpace().Match(regexp.MustCompile("^[a-zA-Z0-9_-]{5,20}$")), 
+				(&field.StringDataType{}).MinLen(5).ToLower().TrimSpace().Match(regexp.MustCompile("^[a-zA-Z0-9_-]{5,20}$")), 
 				field.GraphQL("username"),
 			),
 		}
@@ -163,7 +163,7 @@ func TestInlineTypeWithMultiCall(t *testing.T) {
 							&astparser.Result{
 								Pointer:   true,
 								PkgName:   "field",
-								IdentName: "StringType",
+								IdentName: "StringDataType",
 								Format:    astparser.TypFormat,
 								Attributes: []*astparser.Result{
 									&astparser.Result{
@@ -233,7 +233,7 @@ func TestFuncCall(t *testing.T) {
 	func f() ent.FieldMap {
 		return ent.FieldMap {
 			"Username": field.F(
-				field.String().MinLen(5).ToLower().TrimSpace(),
+				field.StringType().MinLen(5).ToLower().TrimSpace(),
 				field.GraphQL("username"),
 				field.Unique(),
 			),
@@ -254,7 +254,7 @@ func TestFuncCall(t *testing.T) {
 						Args: []*astparser.Result{
 							&astparser.Result{
 								PkgName:   "field",
-								IdentName: "String",
+								IdentName: "StringType",
 								Format:    astparser.FunctionFormat,
 								Attributes: []*astparser.Result{
 									&astparser.Result{
@@ -310,12 +310,12 @@ func TestSlice(t *testing.T) {
 	func f() []*field.Field {
 		return []*field.Field {
 			field.F(
-				field.String().MinLen(5).ToLower().TrimSpace(),
+				field.StringType().MinLen(5).ToLower().TrimSpace(),
 				field.GraphQL("username"),
 				field.Unique(),
 			),
 			field.F(
-				field.Int(),
+				field.IntType(),
 			),
 		}
 	}`,
@@ -333,7 +333,7 @@ func TestSlice(t *testing.T) {
 					Args: []*astparser.Result{
 						&astparser.Result{
 							PkgName:   "field",
-							IdentName: "String",
+							IdentName: "StringType",
 							Format:    astparser.FunctionFormat,
 							Attributes: []*astparser.Result{
 								&astparser.Result{
@@ -381,7 +381,7 @@ func TestSlice(t *testing.T) {
 					Args: []*astparser.Result{
 						&astparser.Result{
 							PkgName:   "field",
-							IdentName: "Int",
+							IdentName: "IntType",
 							Format:    astparser.FunctionFormat,
 						},
 					},

@@ -171,9 +171,9 @@ func (b *ContactEmailMutationBuilder) GetPlaceholderID() string {
 // GetFields returns the field configuration for this mutation builder
 func (b *ContactEmailMutationBuilder) GetFields() ent.FieldMap {
 	return ent.FieldMap{
-		"EmailAddress": field.F(field.Noop(), field.DB("email_address")),
-		"Label":        field.F(field.Noop(), field.DB("label")),
-		"ContactID":    field.F(field.Noop(), field.DB("contact_id")),
+		"EmailAddress": field.F(field.NoopType(), field.DB("email_address")),
+		"Label":        field.F(field.NoopType(), field.DB("label")),
+		"ContactID":    field.F(field.NoopType(), field.DB("contact_id")),
 	}
 }
 

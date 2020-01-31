@@ -142,10 +142,10 @@ func ForeignKey(configName, fieldName string) Option {
 //  func (config *UserConfig) GetFields() ent.FieldMap {
 //	  return ent.FieldMap {
 //	  	"FirstName": field.F(
-//	 	 		field.String(),
+//	 	 		field.StringType(),
 // 	  	),
 // 			"EmailAddress": field.F(
-//				field.String(),
+//				field.StringType(),
 //				field.Unique(),
 //				field.DB("email"),
 //      ),

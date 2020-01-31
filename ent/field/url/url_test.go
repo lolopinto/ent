@@ -19,62 +19,62 @@ type testCase struct {
 func TestDataType(t *testing.T) {
 	testCases := map[string]func() (field.FullDataType, testCase){
 		"base": func() (field.FullDataType, testCase) {
-			dt := url.Field()
+			dt := url.Type()
 
 			return dt, testCase{"https://google.com", "https://google.com", nil}
 		},
 		"hostname-shared-domain": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToHostname("google.com")
+			dt := url.Type().RestrictToHostname("google.com")
 
 			return dt, testCase{"https://www.google.com", "https://www.google.com", errors.New("invalid hostname")}
 		},
 		"hostname-different-subdomain": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToHostname("news.google.com")
+			dt := url.Type().RestrictToHostname("news.google.com")
 
 			return dt, testCase{"https://www.google.com", "https://www.google.com", errors.New("invalid hostname")}
 		},
 		"hostname-valid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToHostname("www.google.com")
+			dt := url.Type().RestrictToHostname("www.google.com")
 
 			return dt, testCase{"https://www.google.com", "https://www.google.com", nil}
 		},
 		"domain": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToDomain("wikipedia.org")
+			dt := url.Type().RestrictToDomain("wikipedia.org")
 
 			return dt, testCase{"https://www.google.com", "https://www.google.com", errors.New("invalid domain")}
 		},
 		"domain-valid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToDomain("wikipedia.org")
+			dt := url.Type().RestrictToDomain("wikipedia.org")
 
 			return dt, testCase{"https://en.wikipedia.org", "https://en.wikipedia.org", nil}
 		},
 		"domain-subdomain-invalid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToDomain("wikipedia.org", "en")
+			dt := url.Type().RestrictToDomain("wikipedia.org", "en")
 
 			return dt, testCase{"https://fr.wikipedia.org", "https://fr.wikipedia.org", errors.New("invalid subdomain")}
 		},
 		"domain-subdomain-valid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToDomain("wikipedia.org", "en", "fr")
+			dt := url.Type().RestrictToDomain("wikipedia.org", "en", "fr")
 
 			return dt, testCase{"https://fr.wikipedia.org", "https://fr.wikipedia.org", nil}
 		},
 		"long-domain-invalid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToDomain("aws.amazon.com")
+			dt := url.Type().RestrictToDomain("aws.amazon.com")
 
 			return dt, testCase{"https://amazon.com", "", errors.New("invalid domain")}
 		},
 		"long-domain-valid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToDomain("aws.amazon.com")
+			dt := url.Type().RestrictToDomain("aws.amazon.com")
 
 			return dt, testCase{"https://docs.aws.amazon.com", "https://docs.aws.amazon.com", nil}
 		},
 		"s3-invalid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToDomain("amazonaws.com")
+			dt := url.Type().RestrictToDomain("amazonaws.com")
 
 			return dt, testCase{"https://docs.aws.amazon.com", "https://docs.aws.amazon.com", errors.New("invalid domain")}
 		},
 		"s3-valid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToDomain("amazonaws.com")
+			dt := url.Type().RestrictToDomain("amazonaws.com")
 
 			return dt, testCase{
 				"https://MyAWSbucket.s3.us-east-1.amazonaws.com/yourobject",
@@ -83,7 +83,7 @@ func TestDataType(t *testing.T) {
 			}
 		},
 		"ftp-scheme": func() (field.FullDataType, testCase) {
-			dt := url.Field()
+			dt := url.Type()
 
 			return dt, testCase{
 				"ftp://ftp.funet.fi/pub/standards/RFC/rfc959.txt",
@@ -92,7 +92,7 @@ func TestDataType(t *testing.T) {
 			}
 		},
 		"ftp-scheme-valid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToSchemes([]string{"ftp"})
+			dt := url.Type().RestrictToSchemes([]string{"ftp"})
 
 			return dt, testCase{
 				"ftp://ftp.funet.fi/pub/standards/RFC/rfc959.txt",
@@ -101,7 +101,7 @@ func TestDataType(t *testing.T) {
 			}
 		},
 		"ftp-no-scheme-valid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToSchemes([]string{})
+			dt := url.Type().RestrictToSchemes([]string{})
 
 			return dt, testCase{
 				"ftp://ftp.funet.fi/pub/standards/RFC/rfc959.txt",
@@ -110,7 +110,7 @@ func TestDataType(t *testing.T) {
 			}
 		},
 		"tel-no-scheme-valid": func() (field.FullDataType, testCase) {
-			dt := url.Field().RestrictToSchemes([]string{})
+			dt := url.Type().RestrictToSchemes([]string{})
 
 			return dt, testCase{
 				"tel:+16501234567",
@@ -119,7 +119,7 @@ func TestDataType(t *testing.T) {
 			}
 		},
 		"path-invalid": func() (field.FullDataType, testCase) {
-			dt := url.Field().Path("/profile.php")
+			dt := url.Type().Path("/profile.php")
 
 			return dt, testCase{
 				"https://www.facebook.com/home.php",
@@ -128,7 +128,7 @@ func TestDataType(t *testing.T) {
 			}
 		},
 		"path-valid": func() (field.FullDataType, testCase) {
-			dt := url.Field().Path("/profile.php")
+			dt := url.Type().Path("/profile.php")
 
 			return dt, testCase{
 				"https://www.facebook.com/profile.php?id=4",
@@ -137,7 +137,7 @@ func TestDataType(t *testing.T) {
 			}
 		},
 		"query-invalid": func() (field.FullDataType, testCase) {
-			dt := url.Field().Path("/profile.php").QueryStringExists("foo")
+			dt := url.Type().Path("/profile.php").QueryStringExists("foo")
 
 			return dt, testCase{
 				"https://www.facebook.com/profile.php?id=4",
@@ -146,7 +146,7 @@ func TestDataType(t *testing.T) {
 			}
 		},
 		"query-valid": func() (field.FullDataType, testCase) {
-			dt := url.Field().Path("/profile.php").QueryStringExists("id")
+			dt := url.Type().Path("/profile.php").QueryStringExists("id")
 
 			return dt, testCase{
 				"https://www.facebook.com/profile.php?id=4",

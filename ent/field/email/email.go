@@ -7,8 +7,8 @@ import (
 	"github.com/lolopinto/ent/ent/field"
 )
 
-// Field returns a datatype that implements the field.DataType interface
-func Field() *DataType {
+// Type returns a datatype that implements the field.DataType interface
+func Type() *DataType {
 	return &DataType{}
 }
 
@@ -43,7 +43,7 @@ func (t *DataType) Valid(val interface{}) error {
 
 // Format ensures that the datatype is stored in a consistent format at rest
 func (t *DataType) Format(val interface{}) (interface{}, error) {
-	dt := field.String().ToLower().TrimSpace()
+	dt := field.StringType().ToLower().TrimSpace()
 
 	return dt.Format(val)
 }

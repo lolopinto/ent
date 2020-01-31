@@ -7,8 +7,8 @@ import (
 	"github.com/nyaruka/phonenumbers"
 )
 
-// Field returns a datatype that represents a phonenumber
-func Field() *DataType {
+// Type returns a datatype that represents a phonenumber
+func Type() *DataType {
 	return &DataType{}
 }
 

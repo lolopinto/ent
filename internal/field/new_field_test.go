@@ -20,7 +20,7 @@ func TestSimpleIntField(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"InvitesLeft": field.F(
-					field.Int(),
+					field.IntType(),
 					field.GraphQL("numInvitesLeft"),
 				),
 			}
@@ -51,7 +51,7 @@ func TestStringField(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"EmailAddress": field.F(
-					field.String(),
+					field.StringType(),
 					field.Unique(), 
 					field.DB("email"),
 				),
@@ -85,7 +85,7 @@ func TestFloatField(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"Balance": field.F(
-					field.Float(),
+					field.FloatType(),
 					field.Nullable(),
 				),
 			}
@@ -117,7 +117,7 @@ func TestBoolField(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"ShowBioOnProfile": field.F(
-					field.Bool(),
+					field.BoolType(),
 					field.Nullable(),
 					field.ServerDefault("true"), // TODO should support true
 					field.DB("show_bio"),
@@ -152,7 +152,7 @@ func TestTimeField(t *testing.T) {
 		func (config *EventConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"StartTime": field.F(
-					field.Time(),
+					field.TimeType(),
 					field.Index(),
 				),
 			}
@@ -185,7 +185,7 @@ func TestStringWithMoreCustomizationsField(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"LastName": field.F(
-					field.String(),
+					field.StringType(),
 					field.ServerDefault("Ola"),
 					field.Nullable(),
 				),
@@ -221,7 +221,7 @@ func TestCustomURLType(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"ProfileURL": field.F(
-					url.Field().RestrictToDomain("www.facebook.com"),
+					url.Type().RestrictToDomain("www.facebook.com"),
 					field.HideFromGraphQL(),
 					field.Nullable(),
 				),
@@ -257,7 +257,7 @@ func TestCustomEmailType(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"EmailAddress": field.F(
-					email.Field(),
+					email.Type(),
 					field.Unique(), 
 					field.DB("email"),
 				),
@@ -291,7 +291,7 @@ func TestForeignKey(t *testing.T) {
 		func (config *EventConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"UserID": field.F(
-					field.String(), // TODO need to support uuid here
+					field.StringType(), // TODO need to support uuid here
 					field.ForeignKey("UserConfig", "ID"),
 				),
 			}
@@ -324,7 +324,7 @@ func TestDataTypeWithCalls(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"Bio": field.F(
-					(&field.StringType{}).NotEmpty().ToLower(),
+					(&field.StringDataType{}).NotEmpty().ToLower(),
 					field.Nullable(),
 				),
 			}
@@ -440,25 +440,25 @@ func TestMultipleFields(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"InvitesLeft": field.F(
-					field.Int(),
+					field.IntType(),
 					field.GraphQL("numInvitesLeft"),
 				),
 				"EmailAddress": field.F(
-					email.Field(),
+					email.Type(),
 					field.Unique(), 
 					field.DB("email"),
 				),
 				"StartTime": field.F(
-					field.Time(),
+					field.TimeType(),
 					field.Index(),
 				),
 				"LastName": field.F(
-					field.String(),
+					field.StringType(),
 					field.ServerDefault("Ola"),
 					field.Nullable(),
 				),
 				"ProfileURL": field.F(
-					url.Field(),
+					url.Type(),
 				),
 			}
 		}`,

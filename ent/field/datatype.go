@@ -12,73 +12,73 @@ import (
 	"github.com/lolopinto/ent/ent/cast"
 )
 
-// String returns a new Datatype with type String
-func String() *StringType {
-	return &StringType{}
+// StringType returns a new Datatype with type StringType
+func StringType() *StringDataType {
+	return &StringDataType{}
 }
 
-// Int returns a new DataType with type Int
-func Int() *IntegerType {
-	return &IntegerType{}
+// IntType returns a new DataType with type IntType
+func IntType() *IntDataType {
+	return &IntDataType{}
 }
 
-// Bool returns a new DataType with type Bool
-func Bool() *BoolType {
-	return &BoolType{}
+// BoolType returns a new DataType with type BoolType
+func BoolType() *BoolDataType {
+	return &BoolDataType{}
 }
 
-// Float returns a new DataType with type Float
-func Float() *FloatType {
-	return &FloatType{}
+// FloatType returns a new DataType with type FloatType
+func FloatType() *FloatDataType {
+	return &FloatDataType{}
 }
 
-// Time returns a new DataType with type Time
+// TimeType returns a new DataType with type TimeType
 // Because the default value for time we store in the db is without timezone, we automatically format to UTC
 // To change this, can use Formatter e.g.
-// 	field.Time().Formatter(func(t time.Time) time.Time {
+// 	field.TimeType().Formatter(func(t time.TimeType) time.TimeType {
 //		return t.Local()
 //	})
 // or use a different time format field
-func Time() *timeType {
-	t := &timeType{}
+func TimeType() *timeDataType {
+	t := &timeDataType{}
 	t.Formatter(func(t time.Time) time.Time {
 		return t.UTC()
 	})
 	return t
 }
 
-// Ints returns a new Datatype with type []int. It doesn't enforce that the type saved is of that type without calling EnforceType()
-func Ints() *jsonType {
-	return JSON([]int{})
+// IntsType returns a new Datatype with type []int. It doesn't enforce that the type saved is of that type without calling EnforceType()
+func IntsType() *jsonDataType {
+	return JSONType([]int{})
 }
 
-// Strings returns a new Datatype with type []string. It doesn't enforce that the type saved is of that type without calling EnforceType()
-func Strings() *jsonType {
-	return JSON([]string{})
+// StringsType returns a new Datatype with type []string. It doesn't enforce that the type saved is of that type without calling EnforceType()
+func StringsType() *jsonDataType {
+	return JSONType([]string{})
 }
 
-// Floats returns a new Datatype with type []float64. It doesn't enforce that the type saved is of that type without calling EnforceType()
-func Floats() *jsonType {
-	return JSON([]float64{})
+// FloatsType returns a new Datatype with type []float64. It doesn't enforce that the type saved is of that type without calling EnforceType()
+func FloatsType() *jsonDataType {
+	return JSONType([]float64{})
 }
 
-// JSON returns a new DataType where the value is stored in a text column in the db that's json encoded
+// JSONType returns a new DataType where the value is stored in a text column in the db that's json encoded
 // Provides a base type for type enforcement (optional) and to get any package that needs to be included in the generated code
-func JSON(base interface{}) *jsonType {
+func JSONType(base interface{}) *jsonDataType {
 	typ := reflect.TypeOf(base)
-	return &jsonType{base: base, typ: typ}
+	return &jsonDataType{base: base, typ: typ}
 }
 
-// Noop returns a type which implemente the DataType interface but doesn't do
+// NoopType returns a type which implemente the DataType interface but doesn't do
 // anything. Shouldn't be used in declaration of fields in GetFields() in an EntConfig.
 // Behavior is undefined
-func Noop() *noopType {
-	return &noopType{}
+func NoopType() *noopDataType {
+	return &noopDataType{}
 }
 
-type noopType struct{}
+type noopDataType struct{}
 
-func (noopType) Type() interface{} {
+func (noopDataType) Type() interface{} {
 	return nil
 }
 
@@ -127,24 +127,24 @@ type ImportableDataType interface {
 	PkgPath() string
 }
 
-// StringType is the datatype for string fields
-type StringType struct {
+// StringDataType is the datatype for string fields
+type StringDataType struct {
 	validators []func(string) error
 	formatters []func(string) string
 }
 
 // Type returns the empty string to satisfy the DataType interface
-func (t *StringType) Type() interface{} {
+func (t *StringDataType) Type() interface{} {
 	return ""
 }
 
 // NotEmpty ensures that the string is not empty
-func (t *StringType) NotEmpty() *StringType {
+func (t *StringDataType) NotEmpty() *StringDataType {
 	return t.MinLen(1)
 }
 
 // MinLen ensures the minimum length of a string
-func (t *StringType) MinLen(n int) *StringType {
+func (t *StringDataType) MinLen(n int) *StringDataType {
 	return t.Validate(func(s string) error {
 		if len(s) < n {
 			return fmt.Errorf("length of string did not meet the minimum length requirement of %d", n)
@@ -154,7 +154,7 @@ func (t *StringType) MinLen(n int) *StringType {
 }
 
 // MaxLen ensures the max length of a string
-func (t *StringType) MaxLen(n int) *StringType {
+func (t *StringDataType) MaxLen(n int) *StringDataType {
 	return t.Validate(func(s string) error {
 		if len(s) > n {
 			return fmt.Errorf("length of string did not meet the maximum length requirement of %d", n)
@@ -164,7 +164,7 @@ func (t *StringType) MaxLen(n int) *StringType {
 }
 
 // Length ensures the length of a string is equal to the given number
-func (t *StringType) Length(n int) *StringType {
+func (t *StringDataType) Length(n int) *StringDataType {
 	return t.Validate(func(s string) error {
 		if len(s) != n {
 			return fmt.Errorf("length of string was not equal to the required length %d", n)
@@ -174,7 +174,7 @@ func (t *StringType) Length(n int) *StringType {
 }
 
 // Match ensures that the string matches a regular expression
-func (t *StringType) Match(r *regexp.Regexp) *StringType {
+func (t *StringDataType) Match(r *regexp.Regexp) *StringDataType {
 	return t.Validate(func(s string) error {
 		if !r.MatchString(s) {
 			return fmt.Errorf("value does not match passed in regex %s", r.String())
@@ -184,7 +184,7 @@ func (t *StringType) Match(r *regexp.Regexp) *StringType {
 }
 
 // DoesNotMatch ensures that the string does not match a regular expression
-func (t *StringType) DoesNotMatch(r *regexp.Regexp) *StringType {
+func (t *StringDataType) DoesNotMatch(r *regexp.Regexp) *StringDataType {
 	return t.Validate(func(s string) error {
 		if r.MatchString(s) {
 			return fmt.Errorf("value matches passed in regex %s", r.String())
@@ -194,48 +194,48 @@ func (t *StringType) DoesNotMatch(r *regexp.Regexp) *StringType {
 }
 
 // ToLower returns string with all Unicode letters mapped to their lower case.
-func (t *StringType) ToLower() *StringType {
+func (t *StringDataType) ToLower() *StringDataType {
 	return t.Formatter(func(s string) string {
 		return strings.ToLower(s)
 	})
 }
 
 // ToUpper returns string with all Unicode letters mapped to their upper case.
-func (t *StringType) ToUpper() *StringType {
+func (t *StringDataType) ToUpper() *StringDataType {
 	return t.Formatter(func(s string) string {
 		return strings.ToUpper(s)
 	})
 }
 
 // Title returns string with all Unicode letters mapped to their Unicode title case.
-func (t *StringType) Title() *StringType {
+func (t *StringDataType) Title() *StringDataType {
 	return t.Formatter(func(s string) string {
 		return strings.Title(s)
 	})
 }
 
 // TrimSpace returns string with all leading and trailing white space removed, as defined by Unicode.
-func (t *StringType) TrimSpace() *StringType {
+func (t *StringDataType) TrimSpace() *StringDataType {
 	return t.Formatter(func(s string) string {
 		return strings.TrimSpace(s)
 	})
 }
 
 // Validate takes a function that Validates the value of the string
-func (t *StringType) Validate(fn func(string) error) *StringType {
+func (t *StringDataType) Validate(fn func(string) error) *StringDataType {
 	t.validators = append(t.validators, fn)
 	return t
 }
 
 // Formatter takes a function that takes the value of the string and re-formats it
 // The order in which functions are passed in here should not matter ala the associative property in math
-func (t *StringType) Formatter(fn func(string) string) *StringType {
+func (t *StringDataType) Formatter(fn func(string) string) *StringDataType {
 	t.formatters = append(t.formatters, fn)
 	return t
 }
 
 // Valid implements the Validator interface to validate the string input
-func (t *StringType) Valid(val interface{}) error {
+func (t *StringDataType) Valid(val interface{}) error {
 	s := val.(string)
 	for _, val := range t.validators {
 		if err := val(s); err != nil {
@@ -246,7 +246,7 @@ func (t *StringType) Valid(val interface{}) error {
 }
 
 // Format implements the Formatter interface to format the string input before storing
-func (t *StringType) Format(val interface{}) (interface{}, error) {
+func (t *StringDataType) Format(val interface{}) (interface{}, error) {
 	s := val.(string)
 	for _, format := range t.formatters {
 		s = format(s)
@@ -254,36 +254,36 @@ func (t *StringType) Format(val interface{}) (interface{}, error) {
 	return s, nil
 }
 
-var _ DataType = &StringType{}
+var _ DataType = &StringDataType{}
 
-// IntegerType is the datatype for int fields
-type IntegerType struct {
+// IntDataType is the datatype for int fields
+type IntDataType struct {
 	validators []func(int) error
 }
 
 // Type returns 0 to satisfy the DataType interface
-func (t *IntegerType) Type() interface{} {
+func (t *IntDataType) Type() interface{} {
 	return 0
 }
 
 // Validate takes a function that Validates the value of the int
-func (t *IntegerType) Validate(fn func(int) error) *IntegerType {
+func (t *IntDataType) Validate(fn func(int) error) *IntDataType {
 	t.validators = append(t.validators, fn)
 	return t
 }
 
 // Positive validates that the integer is positive
-func (t *IntegerType) Positive() *IntegerType {
+func (t *IntDataType) Positive() *IntDataType {
 	return t.Min(1)
 }
 
 // Negative validates that the integer is negative
-func (t *IntegerType) Negative() *IntegerType {
+func (t *IntDataType) Negative() *IntDataType {
 	return t.Max(-1)
 }
 
 // Min validates the minimum value of the integer
-func (t *IntegerType) Min(min int) *IntegerType {
+func (t *IntDataType) Min(min int) *IntDataType {
 	return t.Validate(func(val int) error {
 		if val < min {
 			return fmt.Errorf("value of integer did not meet the minimum requirement of %d", min)
@@ -293,7 +293,7 @@ func (t *IntegerType) Min(min int) *IntegerType {
 }
 
 // Max validates the maximum value of the integer
-func (t *IntegerType) Max(max int) *IntegerType {
+func (t *IntDataType) Max(max int) *IntDataType {
 	return t.Validate(func(val int) error {
 		if val > max {
 			return fmt.Errorf("value of integer did not meet the maximum requirement of %d", max)
@@ -303,7 +303,7 @@ func (t *IntegerType) Max(max int) *IntegerType {
 }
 
 // Valid implements the Validator interface to validate the int input
-func (t *IntegerType) Valid(val interface{}) error {
+func (t *IntDataType) Valid(val interface{}) error {
 	i := val.(int)
 	for _, val := range t.validators {
 		if err := val(i); err != nil {
@@ -313,46 +313,46 @@ func (t *IntegerType) Valid(val interface{}) error {
 	return nil
 }
 
-var _ DataType = &IntegerType{}
+var _ DataType = &IntDataType{}
 
-// BoolType is the datatype for boolean fields
-type BoolType struct{}
+// BoolDataType is the datatype for boolean fields
+type BoolDataType struct{}
 
 // Type returns false to satisfy the DataType interface
-func (t *BoolType) Type() interface{} {
+func (t *BoolDataType) Type() interface{} {
 	return false
 }
 
-var _ DataType = &BoolType{}
+var _ DataType = &BoolDataType{}
 
-// FloatType is the datatype for float fields
-type FloatType struct {
+// FloatDataType is the datatype for float fields
+type FloatDataType struct {
 	validators []func(float64) error
 }
 
 // Type returns 0.0 to satisfy the DataType interface
-func (t *FloatType) Type() interface{} {
+func (t *FloatDataType) Type() interface{} {
 	return 0.0
 }
 
 // Validate takes a function that Validates the value of the float64
-func (t *FloatType) Validate(fn func(float64) error) *FloatType {
+func (t *FloatDataType) Validate(fn func(float64) error) *FloatDataType {
 	t.validators = append(t.validators, fn)
 	return t
 }
 
 // Positive validates that the float64 is "positive". Uses a minimum value of 0.0000000001
-func (t *FloatType) Positive() *FloatType {
+func (t *FloatDataType) Positive() *FloatDataType {
 	return t.Min(1e-10)
 }
 
 // Negative validates that the float64 is "negative". Uses a maximum value of 0.0000000001
-func (t *FloatType) Negative() *FloatType {
+func (t *FloatDataType) Negative() *FloatDataType {
 	return t.Max(1e-10)
 }
 
 // Min validates the minimum value of the float64
-func (t *FloatType) Min(min float64) *FloatType {
+func (t *FloatDataType) Min(min float64) *FloatDataType {
 	return t.Validate(func(val float64) error {
 		if val < min {
 			return fmt.Errorf("value of integer did not meet the minimum requirement of %f", min)
@@ -362,7 +362,7 @@ func (t *FloatType) Min(min float64) *FloatType {
 }
 
 // Max validates the maximum value of the float64
-func (t *FloatType) Max(max float64) *FloatType {
+func (t *FloatDataType) Max(max float64) *FloatDataType {
 	return t.Validate(func(val float64) error {
 		if val > max {
 			return fmt.Errorf("value of float did not meet the maximum requirement of %f", max)
@@ -372,7 +372,7 @@ func (t *FloatType) Max(max float64) *FloatType {
 }
 
 // Valid implements the Validator interface to validate the float64 input
-func (t *FloatType) Valid(val interface{}) error {
+func (t *FloatDataType) Valid(val interface{}) error {
 	f, err := cast.ToFloat(val)
 	if err != nil {
 		return err
@@ -385,48 +385,48 @@ func (t *FloatType) Valid(val interface{}) error {
 	return nil
 }
 
-var _ DataType = &FloatType{}
+var _ DataType = &FloatDataType{}
 
-// timeType is the datatype for time fields
-type timeType struct {
+// timeDataType is the datatype for time fields
+type timeDataType struct {
 	validators []func(time.Time) error
 	formatters []func(time.Time) time.Time
 }
 
 // Type returns zero-value of time to satisfy the DataType interface
-func (t *timeType) Type() interface{} {
+func (t *timeDataType) Type() interface{} {
 	return time.Time{}
 }
 
 // PkgPath returns package that should be imported when this datatype is defined
-func (t *timeType) PkgPath() string {
+func (t *timeDataType) PkgPath() string {
 	return "time"
 }
 
-func (t *timeType) Validate(fn func(time.Time) error) *timeType {
+func (t *timeDataType) Validate(fn func(time.Time) error) *timeDataType {
 	t.validators = append(t.validators, fn)
 	return t
 }
 
-func (t *timeType) Formatter(fn func(time.Time) time.Time) *timeType {
+func (t *timeDataType) Formatter(fn func(time.Time) time.Time) *timeDataType {
 	t.formatters = append(t.formatters, fn)
 	return t
 }
 
 // FutureDate validates that the time is of a date in the future
-func (t *timeType) FutureDate() *timeType {
+func (t *timeDataType) FutureDate() *timeDataType {
 	// this will get lazily re-evaluated at beginning of request so should be fine?
 	return t.After(time.Now())
 }
 
 // PastDate validates that the time is of a date in the past
-func (t *timeType) PastDate() *timeType {
+func (t *timeDataType) PastDate() *timeDataType {
 	// this will get lazily re-evaluated at beginning of request so should be fine?
 	return t.Before(time.Now())
 }
 
 // After validates that the time is after a given time
-func (t *timeType) After(after time.Time) *timeType {
+func (t *timeDataType) After(after time.Time) *timeDataType {
 	return t.Validate(func(t time.Time) error {
 		if t.After(after) {
 			return nil
@@ -436,7 +436,7 @@ func (t *timeType) After(after time.Time) *timeType {
 }
 
 // Before validates that the time is after a given time
-func (t *timeType) Before(after time.Time) *timeType {
+func (t *timeDataType) Before(after time.Time) *timeDataType {
 	return t.Validate(func(t time.Time) error {
 		if t.Before(after) {
 			return nil
@@ -449,7 +449,7 @@ func (t *timeType) Before(after time.Time) *timeType {
 // TODO: this may not be the best name
 // Used to validate things like within the next 30 days or past 7 days
 // Easier to calculate than exact date in the future/past
-func (t *timeType) Within(d time.Duration) *timeType {
+func (t *timeDataType) Within(d time.Duration) *timeDataType {
 	return t.Validate(func(t time.Time) error {
 		// within 30 days or whatever
 		// say something that shoulkd
@@ -472,28 +472,28 @@ func (t *timeType) Within(d time.Duration) *timeType {
 }
 
 // Round rounds the time up to the nearest multiple of d. See Time.Round for implementation details
-func (t *timeType) Round(d time.Duration) *timeType {
+func (t *timeDataType) Round(d time.Duration) *timeDataType {
 	return t.Formatter(func(t time.Time) time.Time {
 		return t.Round(d)
 	})
 }
 
 // Add adds the duration of d to the value of the time. See Time.Add
-func (t *timeType) Add(d time.Duration) *timeType {
+func (t *timeDataType) Add(d time.Duration) *timeDataType {
 	return t.Formatter(func(t time.Time) time.Time {
 		return t.Add(d)
 	})
 }
 
 // Truncate rounds the time down to the nearest multiple of d. See Time.Truncate for implementation details
-func (t *timeType) Truncate(d time.Duration) *timeType {
+func (t *timeDataType) Truncate(d time.Duration) *timeDataType {
 	return t.Formatter(func(t time.Time) time.Time {
 		return t.Truncate(d)
 	})
 }
 
 // Valid implements the Validator interface to validate the time input
-func (t *timeType) Valid(val interface{}) error {
+func (t *timeDataType) Valid(val interface{}) error {
 	tVal := val.(time.Time)
 	for _, val := range t.validators {
 		if err := val(tVal); err != nil {
@@ -504,7 +504,7 @@ func (t *timeType) Valid(val interface{}) error {
 }
 
 // Format implements the Formatter interface to format the time input before storing
-func (t *timeType) Format(val interface{}) (interface{}, error) {
+func (t *timeDataType) Format(val interface{}) (interface{}, error) {
 	tVal := val.(time.Time)
 	for _, format := range t.formatters {
 		tVal = format(tVal)
@@ -512,9 +512,9 @@ func (t *timeType) Format(val interface{}) (interface{}, error) {
 	return tVal, nil
 }
 
-var _ ImportableDataType = &timeType{}
+var _ ImportableDataType = &timeDataType{}
 
-type jsonType struct {
+type jsonDataType struct {
 	formatters []func(interface{}) interface{}
 	validators []func(interface{}) error
 	base       interface{}
@@ -522,12 +522,12 @@ type jsonType struct {
 }
 
 // Type returns the empty string to satisfy the DataType interface
-func (t *jsonType) Type() interface{} {
+func (t *jsonDataType) Type() interface{} {
 	return ""
 }
 
 // EnforceType enforces that the stored value of the field is the same as the expected type
-func (t *jsonType) EnforceType() *jsonType {
+func (t *jsonDataType) EnforceType() *jsonDataType {
 	return t.Validate(func(val interface{}) error {
 		if t.base == nil {
 			return errors.New("don't have a base type to compare against")
@@ -542,20 +542,20 @@ func (t *jsonType) EnforceType() *jsonType {
 
 // Formatter takes a function that takes the value passed in and re-formats it
 // The order in which functions are passed in here should not matter ala the associative property in math
-func (t *jsonType) Formatter(fn func(interface{}) interface{}) *jsonType {
+func (t *jsonDataType) Formatter(fn func(interface{}) interface{}) *jsonDataType {
 	t.formatters = append(t.formatters, fn)
 	return t
 }
 
 // Validate takes a function that Validates the passed in value
-func (t *jsonType) Validate(fn func(interface{}) error) *jsonType {
+func (t *jsonDataType) Validate(fn func(interface{}) error) *jsonDataType {
 	t.validators = append(t.validators, fn)
 	return t
 }
 
 // Format implements the Formatter interface to format the input before storing
 // Calls all formatters and then marshals the json field as the last step
-func (t *jsonType) Format(val interface{}) (interface{}, error) {
+func (t *jsonDataType) Format(val interface{}) (interface{}, error) {
 	for _, format := range t.formatters {
 		val = format(val)
 	}
@@ -569,7 +569,7 @@ func (t *jsonType) Format(val interface{}) (interface{}, error) {
 }
 
 // Valid implements the Validator interface to validate the input
-func (t *jsonType) Valid(val interface{}) error {
+func (t *jsonDataType) Valid(val interface{}) error {
 	for _, validator := range t.validators {
 		if err := validator(val); err != nil {
 			return err
@@ -579,11 +579,11 @@ func (t *jsonType) Valid(val interface{}) error {
 }
 
 // PkgPath returns package that should be imported when this datatype is defined
-func (t *jsonType) PkgPath() string {
+func (t *jsonDataType) PkgPath() string {
 	return PkgPath(t.typ)
 }
 
-var _ ImportableDataType = &jsonType{}
+var _ ImportableDataType = &jsonDataType{}
 
 // PkgPath is a recursive function that's called to get the underlying package that should be included
 // to use this type

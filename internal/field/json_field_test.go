@@ -15,7 +15,7 @@ func TestIntsField(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"Ints": field.F(
-					field.Ints(),
+					field.IntsType(),
 				),
 			}
 		}`,
@@ -49,7 +49,7 @@ func TestStringsField(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"Strings": field.F(
-					field.Strings(),
+					field.StringsType(),
 				),
 			}
 		}`,
@@ -83,7 +83,7 @@ func TestFloatsField(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"Floats": field.F(
-					field.Floats(),
+					field.FloatsType(),
 				),
 			}
 		}`,
@@ -117,7 +117,7 @@ func TestScalarJSON(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"ScalarJSON": field.F(
-					field.JSON(""),
+					field.JSONType(""),
 				),
 			}
 		}`,
@@ -149,7 +149,7 @@ func TestJSONObject(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"JSONObject": field.F(
-					field.JSON(json.RawMessage{}),
+					field.JSONType(json.RawMessage{}),
 				),
 			}
 		}`,
@@ -183,7 +183,7 @@ func TestJSONObjectPointer(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"JSONObject": field.F(
-					field.JSON(&json.RawMessage{}),
+					field.JSONType(&json.RawMessage{}),
 				),
 			}
 		}`,
@@ -217,7 +217,7 @@ func TestJSONObjectList(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"JSONObjects": field.F(
-					field.JSON([]json.RawMessage{}),
+					field.JSONType([]json.RawMessage{}),
 				),
 			}
 		}`,
@@ -251,7 +251,7 @@ func TestJSONObjectPointerList(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"JSONObjects": field.F(
-					field.JSON([]*json.RawMessage{}),
+					field.JSONType([]*json.RawMessage{}),
 				),
 			}
 		}`,
@@ -284,7 +284,7 @@ func TestJSONMap(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"Map": field.F(
-					field.JSON(map[string]string{}),
+					field.JSONType(map[string]string{}),
 				),
 			}
 		}`,
@@ -315,7 +315,7 @@ func TestJSONPointerToMap(t *testing.T) {
 		func (config *UserConfig) GetFields() ent.FieldMap {
 			return ent.FieldMap {
 				"Map": field.F(
-					field.JSON(&map[string]string{}),
+					field.JSONType(&map[string]string{}),
 				),
 			}
 		}`,

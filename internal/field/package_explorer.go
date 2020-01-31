@@ -163,10 +163,10 @@ func (explorer *packageExplorer) annotateFuncs(
 						if err != nil {
 							panic(err)
 						}
-						// TODO validate that it's field.JSON
+						// TODO validate that it's field.JSONTypeType
 						// right now we assume just JSON but will break if something else does this that's not expected
 						if retResult.Format != astparser.FunctionFormat ||
-							retResult.IdentName != "JSON" {
+							retResult.IdentName != "JSONType" {
 							continue
 						}
 
@@ -240,7 +240,7 @@ func (explorer *packageExplorer) buildStruct(
 
 func (explorer *packageExplorer) parseFieldJSON(
 	pkg *packages.Package,
-	result *astparser.Result, // field.JSON() line
+	result *astparser.Result, // field.JSONTypeType() line
 ) (types.Type, string) {
 	if len(result.Args) == 0 {
 		return nil, ""
@@ -273,9 +273,9 @@ func (explorer *packageExplorer) getResultFromPkg(
 		break
 
 	case astparser.FunctionFormat:
-		// field.JSON called directly. handle this case specifically
+		// field.JSONType called directly. handle this case specifically
 		// we need to check the expr and get it from there since we need that from runtime information
-		if info.IdentName == "JSON" && info.PkgName == "field" {
+		if info.IdentName == "JSONType" && info.PkgName == "field" {
 			if info.Expr == nil {
 				return &parseResult{
 					err: errors.New("couldn't get the type info from json field because nil expr"),
@@ -294,7 +294,7 @@ func (explorer *packageExplorer) getResultFromPkg(
 			}
 		}
 
-		// this is for things like field.Ints(), field.Strings etc that call field.JSON
+		// this is for things like field.IntsType(), field.Strings etc that call field.JSONType
 		typeOverride := parsedPkg.funcTypeOverride[info.IdentName]
 		if typeOverride != nil {
 			return &parseResult{
@@ -469,7 +469,7 @@ var dataTypeMethods = map[string]func(*packages.Package, *structType, *ast.FuncD
 	"PkgPath": func(_ *packages.Package, s *structType, fn *ast.FuncDecl) {
 		retStmt := astparser.GetLastReturnStmtExpr(fn)
 
-		// not a basic lit. this is a complicated case e.g. field.JSON
+		// not a basic lit. this is a complicated case e.g. field.JSONType
 		// we'll specially handle that but need to figure out something else
 		// for other cases.
 		// Here's another scenario where AST parsing is a liability instead of just running the code

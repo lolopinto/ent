@@ -443,10 +443,10 @@ func (b *UserMutationBuilder) GetPlaceholderID() string {
 // GetFields returns the field configuration for this mutation builder
 func (b *UserMutationBuilder) GetFields() ent.FieldMap {
 	return ent.FieldMap{
-		"EmailAddress": field.F(field.Noop(), field.DB("email_address")),
-		"FirstName":    field.F(field.Noop(), field.DB("first_name")),
-		"LastName":     field.F(field.Noop(), field.DB("last_name")),
-		"Bio":          field.F(field.Noop(), field.DB("bio"), field.Nullable()),
+		"EmailAddress": field.F(field.NoopType(), field.DB("email_address")),
+		"FirstName":    field.F(field.NoopType(), field.DB("first_name")),
+		"LastName":     field.F(field.NoopType(), field.DB("last_name")),
+		"Bio":          field.F(field.NoopType(), field.DB("bio"), field.Nullable()),
 	}
 }
 
