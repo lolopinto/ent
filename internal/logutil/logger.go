@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -29,4 +30,23 @@ func (l *CaptureLogger) Contains(str string) bool {
 		}
 	}
 	return false
+}
+
+func (l *CaptureLogger) ContainsInOrder(strs []string) bool {
+	indices := make([]int, len(strs))
+	lines := strings.Split(l.buf.String(), "\n")
+	for j, str := range strs {
+		foundIdx := -1
+		for i, line := range lines {
+			if strings.Contains(line, str) {
+				foundIdx = i
+				indices[j] = i
+				break
+			}
+		}
+		if foundIdx == -1 {
+			return false
+		}
+	}
+	return sort.IntsAreSorted(indices)
 }
