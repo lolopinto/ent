@@ -36,37 +36,23 @@ type authTestsSuite struct {
 	suite.Suite
 }
 
-type queryHandler struct {
-	v viewer.ViewerContext
-	t *testing.T
-}
-
-func (h *queryHandler) handlerFunc(w http.ResponseWriter, r *http.Request) {
-	v, err := viewer.ForContext(r.Context())
-
-	assert.Nil(h.t, err)
-	h.v = v
-
-	w.Write([]byte("auth response!"))
-}
-
 func (suite *authTestsSuite) SetupTest() {
-	unregisterAllMiddlewares()
+	Clear()
 }
 
 func (suite *authTestsSuite) TestNoRegister() {
 	h := suite.testServer("no auth handler returned viewer")
 
-	assert.IsType(suite.T(), viewer.LoggedOutViewerContext{}, h.v)
-	assert.Equal(suite.T(), h.v.GetViewerID(), "")
+	assert.IsType(suite.T(), viewer.LoggedOutViewerContext{}, h.V)
+	assert.Equal(suite.T(), h.V.GetViewerID(), "")
 }
 
 func (suite *authTestsSuite) TestRegister() {
 	Register("auth", authGuestViewer{ViewerID: "1"})
 	h := suite.testServer("authenticated user 1")
 
-	assert.IsType(suite.T(), viewertesting.LoggedinViewerContext{}, h.v)
-	assert.Equal(suite.T(), h.v.GetViewerID(), "1")
+	assert.IsType(suite.T(), viewertesting.LoggedinViewerContext{}, h.V)
+	assert.Equal(suite.T(), h.V.GetViewerID(), "1")
 }
 
 func (suite *authTestsSuite) TestRegisterHeaderDependentLoggedIn() {
@@ -75,8 +61,8 @@ func (suite *authTestsSuite) TestRegisterHeaderDependentLoggedIn() {
 		req.Header.Add("Authorization", "1")
 	})
 
-	assert.IsType(suite.T(), viewertesting.LoggedinViewerContext{}, h.v)
-	assert.Equal(suite.T(), h.v.GetViewerID(), "1")
+	assert.IsType(suite.T(), viewertesting.LoggedinViewerContext{}, h.V)
+	assert.Equal(suite.T(), h.V.GetViewerID(), "1")
 }
 
 func (suite *authTestsSuite) TestRegisterHeaderDependentLoggedOut() {
@@ -84,8 +70,8 @@ func (suite *authTestsSuite) TestRegisterHeaderDependentLoggedOut() {
 	Register("auth", authViewerFromHeader{})
 	h := suite.testServer("no auth handler returned viewer")
 
-	assert.IsType(suite.T(), viewer.LoggedOutViewerContext{}, h.v)
-	assert.Equal(suite.T(), h.v.GetViewerID(), "")
+	assert.IsType(suite.T(), viewer.LoggedOutViewerContext{}, h.V)
+	assert.Equal(suite.T(), h.V.GetViewerID(), "")
 }
 
 func (suite *authTestsSuite) TestRegisterSequenceHeaderDependentLoggedOut() {
@@ -93,8 +79,8 @@ func (suite *authTestsSuite) TestRegisterSequenceHeaderDependentLoggedOut() {
 	Register("auth", authViewerFromHeader{}, authGuestViewer{ViewerID: "0"})
 	h := suite.testServer("authenticated user 0")
 
-	assert.IsType(suite.T(), viewertesting.LoggedinViewerContext{}, h.v)
-	assert.Equal(suite.T(), h.v.GetViewerID(), "0")
+	assert.IsType(suite.T(), viewertesting.LoggedinViewerContext{}, h.V)
+	assert.Equal(suite.T(), h.V.GetViewerID(), "0")
 }
 
 func (suite *authTestsSuite) TestRegisterSequenceHeaderDependentLoggedIn() {
@@ -104,19 +90,22 @@ func (suite *authTestsSuite) TestRegisterSequenceHeaderDependentLoggedIn() {
 		req.Header.Add("Authorization", "1")
 	})
 
-	assert.IsType(suite.T(), viewertesting.LoggedinViewerContext{}, h.v)
-	assert.Equal(suite.T(), h.v.GetViewerID(), "1")
+	assert.IsType(suite.T(), viewertesting.LoggedinViewerContext{}, h.V)
+	assert.Equal(suite.T(), h.V.GetViewerID(), "1")
 }
 
 func (suite *authTestsSuite) testServer(
 	log string,
-	fns ...func(*http.Request)) *queryHandler {
+	fns ...func(*http.Request)) *httptest.QueryHandler {
 
-	h := queryHandler{t: suite.T()}
+	h := httptest.QueryHandler{
+		T:        suite.T(),
+		Response: []byte("auth response!"),
+	}
 
 	httptest.TestServer(
 		suite.T(),
-		h.handlerFunc,
+		h.HandlerFunc,
 		"auth response!",
 		func(r *mux.Router, req *http.Request) {
 			// take every registered handler and make sure it's used by the router

@@ -1,8 +1,9 @@
 package viewertesting
 
-import "github.com/lolopinto/ent/ent/viewer"
-
-import "github.com/lolopinto/ent/internal/test_schema/models"
+import (
+	"github.com/lolopinto/ent/ent/viewer"
+	"github.com/lolopinto/ent/internal/test_schema/models"
+)
 
 type OmniViewerContext struct {
 	viewer.LoggedOutViewerContext
@@ -27,4 +28,8 @@ func (v LoggedinViewerContext) GetViewerID() string {
 		return v.ViewerID
 	}
 	return "1"
+}
+
+func GetLoggedInViewer(viewerID string) (viewer.ViewerContext, error) {
+	return LoggedinViewerContext{ViewerID: viewerID}, nil
 }

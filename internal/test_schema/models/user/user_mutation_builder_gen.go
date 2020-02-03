@@ -5,21 +5,22 @@ package user
 import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
-	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 )
 
 type UserMutationBuilder struct {
-	requiredFields []string
-	builder        *actions.EntMutationBuilder
-	user           *models.User
-	emailAddress   *string
-	firstName      *string
-	lastName       *string
-	bio            *string
-	clearbio       bool
+	requiredFields   []string
+	builder          *actions.EntMutationBuilder
+	user             *models.User
+	bio              *string
+	clearbio         bool
+	emailAddress     *string
+	firstName        *string
+	lastName         *string
+	phoneNumber      *string
+	clearphoneNumber bool
 }
 
 func NewMutationBuilder(
@@ -46,6 +47,17 @@ func NewMutationBuilder(
 	return ret
 }
 
+func (b *UserMutationBuilder) SetBio(bio string) *UserMutationBuilder {
+	b.bio = &bio
+	return b
+}
+
+func (b *UserMutationBuilder) SetNilableBio(bio *string) *UserMutationBuilder {
+	b.bio = bio
+	b.clearbio = (bio == nil)
+	return b
+}
+
 func (b *UserMutationBuilder) SetEmailAddress(emailAddress string) *UserMutationBuilder {
 	b.emailAddress = &emailAddress
 	return b
@@ -61,15 +73,22 @@ func (b *UserMutationBuilder) SetLastName(lastName string) *UserMutationBuilder 
 	return b
 }
 
-func (b *UserMutationBuilder) SetBio(bio string) *UserMutationBuilder {
-	b.bio = &bio
+func (b *UserMutationBuilder) SetPhoneNumber(phoneNumber string) *UserMutationBuilder {
+	b.phoneNumber = &phoneNumber
 	return b
 }
 
-func (b *UserMutationBuilder) SetNilableBio(bio *string) *UserMutationBuilder {
-	b.bio = bio
-	b.clearbio = (bio == nil)
+func (b *UserMutationBuilder) SetNilablePhoneNumber(phoneNumber *string) *UserMutationBuilder {
+	b.phoneNumber = phoneNumber
+	b.clearphoneNumber = (phoneNumber == nil)
 	return b
+}
+
+func (b *UserMutationBuilder) GetBio() *string {
+	if b.bio == nil {
+		return nil
+	}
+	return b.bio
 }
 
 func (b *UserMutationBuilder) GetEmailAddress() string {
@@ -93,11 +112,11 @@ func (b *UserMutationBuilder) GetLastName() string {
 	return *b.lastName
 }
 
-func (b *UserMutationBuilder) GetBio() *string {
-	if b.bio == nil {
+func (b *UserMutationBuilder) GetPhoneNumber() *string {
+	if b.phoneNumber == nil {
 		return nil
 	}
-	return b.bio
+	return b.phoneNumber
 }
 
 // AddEvents adds one or more instances of Event to the Events edge while editing the Event ent
@@ -401,6 +420,11 @@ func (b *UserMutationBuilder) buildFields() ent.ActionFieldMap {
 	// Need to have Id fields be fine with Builder
 
 	// if required, field is not nil or field explicitly set to nil, add the field
+	if b.bio != nil {
+		addField("Bio", *b.bio)
+	} else if m["Bio"] || b.clearbio { // required or value cleared
+		addField("Bio", nil)
+	}
 	if b.emailAddress != nil {
 		addField("EmailAddress", *b.emailAddress)
 	} else if m["EmailAddress"] { // nil but required
@@ -416,10 +440,10 @@ func (b *UserMutationBuilder) buildFields() ent.ActionFieldMap {
 	} else if m["LastName"] { // nil but required
 		addField("LastName", nil)
 	}
-	if b.bio != nil {
-		addField("Bio", *b.bio)
-	} else if m["Bio"] || b.clearbio { // required or value cleared
-		addField("Bio", nil)
+	if b.phoneNumber != nil {
+		addField("PhoneNumber", *b.phoneNumber)
+	} else if m["PhoneNumber"] || b.clearphoneNumber { // required or value cleared
+		addField("PhoneNumber", nil)
 	}
 	return fields
 }
@@ -442,12 +466,7 @@ func (b *UserMutationBuilder) GetPlaceholderID() string {
 
 // GetFields returns the field configuration for this mutation builder
 func (b *UserMutationBuilder) GetFields() ent.FieldMap {
-	return ent.FieldMap{
-		"EmailAddress": field.F(field.NoopType(), field.DB("email_address")),
-		"FirstName":    field.F(field.NoopType(), field.DB("first_name")),
-		"LastName":     field.F(field.NoopType(), field.DB("last_name")),
-		"Bio":          field.F(field.NoopType(), field.DB("bio"), field.Nullable()),
-	}
+	return (&configs.UserConfig{}).GetFields()
 }
 
 var _ ent.MutationBuilder = &UserMutationBuilder{}

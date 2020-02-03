@@ -234,6 +234,7 @@ type User implements Node {
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
+    phoneNumber: String
     userFoo: String!
 }
 
@@ -260,6 +261,7 @@ input UserCreateInput {
     emailAddress: String!
     firstName: String!
     lastName: String!
+    phoneNumber: String
 }
 
 type UserCreateResponse {
@@ -279,6 +281,7 @@ input UserEditInput {
     emailAddress: String!
     firstName: String!
     lastName: String!
+    phoneNumber: String
     userID: ID!
 }
 

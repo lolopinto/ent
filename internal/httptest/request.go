@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
+	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/logutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,4 +50,19 @@ func TestServer(
 	for _, lines := range orderedLogs {
 		assert.True(t, l.ContainsInOrder(lines))
 	}
+}
+
+type QueryHandler struct {
+	V        viewer.ViewerContext
+	T        *testing.T
+	Response []byte
+}
+
+func (h *QueryHandler) HandlerFunc(w http.ResponseWriter, r *http.Request) {
+	v, err := viewer.ForContext(r.Context())
+
+	assert.Nil(h.T, err)
+	h.V = v
+
+	w.Write(h.Response)
 }

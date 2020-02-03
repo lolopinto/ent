@@ -42,8 +42,10 @@ func Register(name string, handlers ...Auth) {
 	authHandlers[name] = handlers
 }
 
-// There's currently no public API for this. TBD on if this will be provided
-func unregisterAllMiddlewares() {
+// Clear is provided to be used in tests
+// It unregiseters all Auth handlers.
+// Use in production at your own risk...
+func Clear() {
 	authMutex.Lock()
 	defer authMutex.Unlock()
 	// used in tests

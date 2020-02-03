@@ -200,6 +200,7 @@ type ComplexityRoot struct {
 		ID              func(childComplexity int) int
 		InvitedEvents   func(childComplexity int) int
 		LastName        func(childComplexity int) int
+		PhoneNumber     func(childComplexity int) int
 	}
 
 	UserAddFamilyMemberResponse struct {
@@ -1119,6 +1120,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.LastName(childComplexity), true
 
+	case "User.phoneNumber":
+		if e.complexity.User.PhoneNumber == nil {
+			break
+		}
+
+		return e.complexity.User.PhoneNumber(childComplexity), true
+
 	case "UserAddFamilyMemberResponse.user":
 		if e.complexity.UserAddFamilyMemberResponse.User == nil {
 			break
@@ -1529,6 +1537,7 @@ type User implements Node {
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
+    phoneNumber: String
     userFoo: String!
 }
 
@@ -1555,6 +1564,7 @@ input UserCreateInput {
     emailAddress: String!
     firstName: String!
     lastName: String!
+    phoneNumber: String
 }
 
 type UserCreateResponse {
@@ -1574,6 +1584,7 @@ input UserEditInput {
     emailAddress: String!
     firstName: String!
     lastName: String!
+    phoneNumber: String
     userID: ID!
 }
 
@@ -5560,6 +5571,40 @@ func (ec *executionContext) _User_lastName(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _User_phoneNumber(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "User",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PhoneNumber, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _User_userFoo(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -7706,6 +7751,12 @@ func (ec *executionContext) unmarshalInputUserCreateInput(ctx context.Context, o
 			if err != nil {
 				return it, err
 			}
+		case "phoneNumber":
+			var err error
+			it.PhoneNumber, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -7757,6 +7808,12 @@ func (ec *executionContext) unmarshalInputUserEditInput(ctx context.Context, obj
 		case "lastName":
 			var err error
 			it.LastName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "phoneNumber":
+			var err error
+			it.PhoneNumber, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8910,6 +8967,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "phoneNumber":
+			out.Values[i] = ec._User_phoneNumber(ctx, field, obj)
 		case "userFoo":
 			out.Values[i] = ec._User_userFoo(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

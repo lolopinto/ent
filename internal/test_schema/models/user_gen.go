@@ -36,10 +36,11 @@ const (
 type User struct {
 	ent.Node
 	privacy.AlwaysDenyPrivacyPolicy
+	Bio          *string `db:"bio"`
 	EmailAddress string  `db:"email_address"`
 	FirstName    string  `db:"first_name"`
 	LastName     string  `db:"last_name"`
-	Bio          *string `db:"bio"`
+	PhoneNumber  *string `db:"phone_number"`
 	Viewer       viewer.ViewerContext
 }
 
@@ -103,6 +104,30 @@ func GenLoadUser(v viewer.ViewerContext, id string, result *UserResult, wg *sync
 	err := <-chanErr
 	result.User = &user
 	result.Err = err
+}
+
+func LoadUserIDFromEmailAddress(emailAddress string) (string, error) {
+	// TODO this is a short term API that needs to be killed
+	// since it shouldn't be possible to get an ent without privacy
+	// change the underlying API to only return a map[string]interface{} or something else
+	var user User
+	err := ent.LoadNodeFromParts(&user, &configs.UserConfig{}, "email_address", emailAddress)
+	if err != nil {
+		return "", err
+	}
+	return user.ID, nil
+}
+
+func LoadUserIDFromPhoneNumber(phoneNumber string) (string, error) {
+	// TODO this is a short term API that needs to be killed
+	// since it shouldn't be possible to get an ent without privacy
+	// change the underlying API to only return a map[string]interface{} or something else
+	var user User
+	err := ent.LoadNodeFromParts(&user, &configs.UserConfig{}, "phone_number", phoneNumber)
+	if err != nil {
+		return "", err
+	}
+	return user.ID, nil
 }
 
 // GenContacts returns the Contacts associated with the User instance
@@ -395,6 +420,11 @@ func (user *User) DBFields() ent.DBFields {
 			user.ID, err = cast.ToUUIDString(v)
 			return err
 		},
+		"bio": func(v interface{}) error {
+			var err error
+			user.Bio, err = cast.ToNullableString(v)
+			return err
+		},
 		"email_address": func(v interface{}) error {
 			var err error
 			user.EmailAddress, err = cast.ToString(v)
@@ -410,9 +440,9 @@ func (user *User) DBFields() ent.DBFields {
 			user.LastName, err = cast.ToString(v)
 			return err
 		},
-		"bio": func(v interface{}) error {
+		"phone_number": func(v interface{}) error {
 			var err error
-			user.Bio, err = cast.ToNullableString(v)
+			user.PhoneNumber, err = cast.ToNullableString(v)
 			return err
 		},
 	}
