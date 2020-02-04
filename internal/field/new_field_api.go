@@ -121,6 +121,10 @@ func modifyFieldForDataType(
 		if res.pkgPath != "" {
 			f.pkgPath = res.pkgPath
 		}
+		// if the datatype specifically hides from graphql, field hides it
+		if res.hideFromGraphQL {
+			f.hideFromGraphQL = true
+		}
 
 		f.dataTypePkgPath = getImportedPackageThatMatchesIdent(pkg, info.PkgName, info.IdentName).PkgPath
 

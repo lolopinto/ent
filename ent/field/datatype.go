@@ -127,6 +127,12 @@ type ImportableDataType interface {
 	PkgPath() string
 }
 
+// HiddenDataType indicates that the DataType is hidden from GraphQL
+type HiddenDataType interface {
+	DataType
+	HideFromGraphQL() bool
+}
+
 // StringDataType is the datatype for string fields
 type StringDataType struct {
 	validators []func(string) error

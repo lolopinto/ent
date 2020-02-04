@@ -13,7 +13,7 @@ type UserConfig struct{}
 func (config *UserConfig) GetFields() ent.FieldMap {
 	return ent.FieldMap{
 		"EmailAddress": field.F(email.Type(), field.Unique()),
-		"Password":     field.F(password.Type(), field.HideFromGraphQL()),
+		"Password":     field.F(password.Type()),
 		"FirstName":    field.F(field.StringType()),
 		"LastName":     field.F(field.StringType()),
 		"Bio":          field.F(field.StringType(), field.Nullable()),

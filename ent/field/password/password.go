@@ -15,7 +15,8 @@ func Type() *dataType {
 	return &dataType{str: field.StringType()}
 }
 
-// TODO this should automatically be hidden from graphql, private (not exposed outside package) and sensitive
+// hide from graphql √
+// TODO this should automatically be private (not exposed outside package) and sensitive
 // we don't have sensitive yet
 // we don't have private fields yet either...
 // by default, private fields are hidden from default actions except explicitly included in the field list.
@@ -24,6 +25,11 @@ func Type() *dataType {
 type dataType struct {
 	cost *int
 	str  *field.StringDataType
+}
+
+// HideFromGraphQL indicates that the DataType is hidden from GraphQL
+func (t *dataType) HideFromGraphQL() bool {
+	return true
 }
 
 // Cost specifies the cost to use to pass to bcrypt.GenerateFromPassword()

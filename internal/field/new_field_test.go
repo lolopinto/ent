@@ -278,6 +278,40 @@ func TestCustomEmailType(t *testing.T) {
 	testGraphQLType(t, field, "String!")
 }
 
+func TestCustomPasswordType(t *testing.T) {
+	field := verifyField(
+		t,
+		`package configs
+
+		import "github.com/lolopinto/ent/ent"
+		import "github.com/lolopinto/ent/ent/field"
+		import "github.com/lolopinto/ent/ent/field/password"
+
+		type UserConfig struct {}
+		
+		func (config *UserConfig) GetFields() ent.FieldMap {
+			return ent.FieldMap {
+				"Password": field.F(
+					password.Type(),
+				),
+			}
+		}`,
+		&Field{
+			FieldName:           "Password",
+			dbName:              "password",
+			graphQLName:         "password",
+			topLevelStructField: true,
+			exposeToActions:     true,
+			dbColumn:            true,
+			// password fields are automatically hidden from graphql
+			hideFromGraphQL: true,
+		},
+	)
+
+	testDBType(t, field, "sa.Text()")
+	testGraphQLType(t, field, "String!")
+}
+
 func TestForeignKey(t *testing.T) {
 	verifyField(
 		t,
