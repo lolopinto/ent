@@ -317,6 +317,7 @@ func (r *mutationResolver) UserCreate(ctx context.Context, input UserCreateInput
 		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
+		SetPassword(input.Password).
 		SetNilablePhoneNumber(input.PhoneNumber).
 		Save()
 
@@ -358,6 +359,7 @@ func (r *mutationResolver) UserEdit(ctx context.Context, input UserEditInput) (*
 		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
+		SetPassword(input.Password).
 		SetNilablePhoneNumber(input.PhoneNumber).
 		Save()
 

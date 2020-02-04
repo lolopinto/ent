@@ -121,6 +121,9 @@ func modifyFieldForDataType(
 		if res.pkgPath != "" {
 			f.pkgPath = res.pkgPath
 		}
+
+		f.dataTypePkgPath = getImportedPackageThatMatchesIdent(pkg, info.PkgName, info.IdentName).PkgPath
+
 		// return error or lack thereof from result
 		errChan <- res.err
 	}()

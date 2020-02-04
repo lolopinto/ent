@@ -261,6 +261,7 @@ input UserCreateInput {
     emailAddress: String!
     firstName: String!
     lastName: String!
+    password: String!
     phoneNumber: String
 }
 
@@ -281,6 +282,7 @@ input UserEditInput {
     emailAddress: String!
     firstName: String!
     lastName: String!
+    password: String!
     phoneNumber: String
     userID: ID!
 }

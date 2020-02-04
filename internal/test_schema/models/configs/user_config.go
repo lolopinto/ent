@@ -4,6 +4,7 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/field/email"
+	"github.com/lolopinto/ent/ent/field/password"
 	"github.com/lolopinto/ent/ent/field/phonenumber"
 )
 
@@ -12,6 +13,7 @@ type UserConfig struct{}
 func (config *UserConfig) GetFields() ent.FieldMap {
 	return ent.FieldMap{
 		"EmailAddress": field.F(email.Type(), field.Unique()),
+		"Password":     field.F(password.Type(), field.HideFromGraphQL()),
 		"FirstName":    field.F(field.StringType()),
 		"LastName":     field.F(field.StringType()),
 		"Bio":          field.F(field.StringType(), field.Nullable()),

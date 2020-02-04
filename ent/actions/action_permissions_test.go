@@ -29,6 +29,7 @@ func createUser(v viewer.ViewerContext) (*createUserAction, error) {
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
 	action.emailAddress = util.GenerateRandEmail()
+	action.password = util.GenerateRandPassword()
 
 	err := actions.Save(action)
 	return action, err

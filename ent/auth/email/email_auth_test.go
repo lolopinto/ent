@@ -1,9 +1,10 @@
-package phonenumber_test
+package email_test
 
 import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,28 +12,28 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/lolopinto/ent/ent/auth"
+	"github.com/lolopinto/ent/ent/auth/email"
 	entjwt "github.com/lolopinto/ent/ent/auth/jwt"
-	"github.com/lolopinto/ent/ent/auth/phonenumber"
 	"github.com/lolopinto/ent/ent/request"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/httptest"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/user/action"
-	"github.com/lolopinto/ent/internal/util"
-
 	"github.com/lolopinto/ent/internal/testingutils"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-var signingKey = []byte("phone_auth_signing_key")
+var signingKey = []byte("email_auth_signing_key")
 
+// lots of similarities between this and phone_auth_test.go...
 func TestNoSigningKey(t *testing.T) {
-	auth := phonenumber.NewPhonePinAuth(
+	auth := email.NewEmailPasswordAuth(
 		nil,
-		models.LoadUserIDFromPhoneNumber,
+		models.ValidateEmailPassword,
 		viewertesting.GetLoggedInViewer,
 	)
 
@@ -42,8 +43,8 @@ func TestNoSigningKey(t *testing.T) {
 	require.Contains(t, err.Error(), "signing key")
 }
 
-func TestNoIDFromPhoneNumber(t *testing.T) {
-	auth := phonenumber.NewPhonePinAuth(
+func TestNoIDFromEmailPassword(t *testing.T) {
+	auth := email.NewEmailPasswordAuth(
 		signingKey,
 		nil,
 		viewertesting.GetLoggedInViewer,
@@ -52,13 +53,13 @@ func TestNoIDFromPhoneNumber(t *testing.T) {
 	identity, err := auth.Authenticate(context.TODO(), "1", "1")
 	require.Nil(t, identity)
 	require.NotNil(t, err)
-	require.Contains(t, err.Error(), "IDFromPhoneNumber")
+	require.Contains(t, err.Error(), "IDFromEmailPassword")
 }
 
 func TestNoVCFromID(t *testing.T) {
-	auth := phonenumber.NewPhonePinAuth(
+	auth := email.NewEmailPasswordAuth(
 		signingKey,
-		models.LoadUserIDFromPhoneNumber,
+		models.ValidateEmailPassword,
 		nil,
 	)
 
@@ -68,27 +69,27 @@ func TestNoVCFromID(t *testing.T) {
 	require.Contains(t, err.Error(), "VCFromID")
 }
 
-func TestNotPhoneNumber(t *testing.T) {
-	identity, err := authPhoneNumberPin("1", "1")
+func TestNotEmailAddress(t *testing.T) {
+	identity, err := authEmailPassword("1", "1")
 
 	require.Nil(t, identity)
 	require.NotNil(t, err)
-	require.Contains(t, err.Error(), "invalid phone number")
+	require.Contains(t, err.Error(), "missing '@' or angle-addr")
 }
 
-func TestMissingPhoneNumber(t *testing.T) {
-	identity, err := authPhoneNumberPin("6501234567", "1")
+func TestMissingEmailAddress(t *testing.T) {
+	identity, err := authEmailPassword("foo@baz.com", "1")
 
 	require.Nil(t, identity)
 	require.NotNil(t, err)
 	require.Contains(t, err.Error(), "no rows in result set")
 }
 
-type phoneAuthTestSuite struct {
+type emailAuthTestSuite struct {
 	testingutils.Suite
 }
 
-func (suite *phoneAuthTestSuite) SetupSuite() {
+func (suite *emailAuthTestSuite) SetupSuite() {
 	suite.Tables = []string{
 		"users",
 		"contacts",
@@ -96,16 +97,22 @@ func (suite *phoneAuthTestSuite) SetupSuite() {
 	suite.Suite.SetupSuite()
 }
 
-func (suite *phoneAuthTestSuite) SetupTest() {
+func (suite *emailAuthTestSuite) SetupTest() {
 	auth.Clear()
 }
 
-func (suite *phoneAuthTestSuite) createUser() *models.User {
+func (suite *emailAuthTestSuite) createUser(passwords ...string) *models.User {
+	var password string
+	if len(passwords) == 1 {
+		password = passwords[0]
+	} else {
+		password = util.GenerateRandPassword()
+	}
 	user, err := action.CreateUser(viewer.LoggedOutViewer()).
 		SetFirstName("Jon").
 		SetLastName("Snow").
 		SetEmailAddress("test@email.com").
-		SetPassword(util.GenerateRandPassword()).
+		SetPassword(password).
 		SetPhoneNumber("4159876543").Save()
 
 	require.NoError(suite.T(), err)
@@ -114,48 +121,51 @@ func (suite *phoneAuthTestSuite) createUser() *models.User {
 	return user
 }
 
-func (suite *phoneAuthTestSuite) TestTooShortPIN() {
-	suite.createUser()
-
-	identity, err := authPhoneNumberPin("4159876543", "1")
-	require.Nil(suite.T(), identity)
-	require.NotNil(suite.T(), err)
-	require.Contains(suite.T(), err.Error(), "invalid PIN")
-}
-
-func (suite *phoneAuthTestSuite) TestValidAuth() {
-	testCases := map[string]string{
-		"all-numbers":          "4159876543",
-		"national-format":      "(415) 987-6543",
-		"international format": "+14159876543",
-	}
+func (suite *emailAuthTestSuite) TestInvalidPassword() {
 	user := suite.createUser()
 
-	for key, number := range testCases {
+	identity, err := authEmailPassword(user.EmailAddress, util.GenerateRandPassword())
+	require.Nil(suite.T(), identity)
+	require.NotNil(suite.T(), err)
+	require.Contains(suite.T(), err.Error(), "hashedPassword is not the hash")
+}
+
+func (suite *emailAuthTestSuite) TestValidAuth() {
+	pwd := util.GenerateRandPassword()
+	user := suite.createUser(pwd)
+
+	testCases := map[string]string{
+		"standard": user.EmailAddress,
+		"caps":     strings.ToUpper(user.EmailAddress),
+	}
+
+	for key, email := range testCases {
 		suite.T().Run(key, func(t *testing.T) {
 			auth := getDefaultAuth()
 
-			suite.testValidAuthWithDuration(auth, entjwt.DefaultDuration, user, number)
+			suite.testValidAuthWithDuration(auth, entjwt.DefaultDuration, user, email, pwd)
 		})
 	}
 }
 
-func (suite *phoneAuthTestSuite) TestCustomDuration() {
-	user := suite.createUser()
+func (suite *emailAuthTestSuite) TestCustomDuration() {
+	pwd := util.GenerateRandPassword()
+	user := suite.createUser(pwd)
 
 	auth := getDefaultAuth()
 	auth.Duration = 5 * time.Minute
 
-	suite.testValidAuthWithDuration(auth, 5*time.Minute, user, "4159876543")
+	suite.testValidAuthWithDuration(auth, 5*time.Minute, user, user.EmailAddress, pwd)
 }
 
-func (suite *phoneAuthTestSuite) TestCustomSigningMethod() {
-	user := suite.createUser()
+func (suite *emailAuthTestSuite) TestCustomSigningMethod() {
+	pwd := util.GenerateRandPassword()
+	user := suite.createUser(pwd)
 
 	auth := getDefaultAuth()
 	auth.SigningMethod = jwt.SigningMethodHS256
 
-	identity := suite.verifyValidAuth(auth, user, "4159876543")
+	identity := suite.verifyValidAuth(auth, user, user.EmailAddress, pwd)
 
 	token, err := jwt.ParseWithClaims(identity.Token, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return auth.SigningKey, nil
@@ -174,8 +184,9 @@ func (c *claims) ID() string {
 	return c.Id
 }
 
-func (suite *phoneAuthTestSuite) TestCustomClaims() {
-	user := suite.createUser()
+func (suite *emailAuthTestSuite) TestCustomClaims() {
+	pwd := util.GenerateRandPassword()
+	user := suite.createUser(pwd)
 
 	auth := getDefaultAuth()
 	auth.ClaimFunc = func(id string) entjwt.Claims {
@@ -191,12 +202,12 @@ func (suite *phoneAuthTestSuite) TestCustomClaims() {
 		return &claims{}
 	}
 
-	suite.verifyValidAuth(auth, user, "4159876543")
+	suite.verifyValidAuth(auth, user, user.EmailAddress, pwd)
 }
 
-func (suite *phoneAuthTestSuite) TestAuthFromRequestNoHeader() {
+func (suite *emailAuthTestSuite) TestAuthFromRequestNoHeader() {
 	// no header so logged out viewer
-	auth.Register("phone_pin_auth", getDefaultAuth())
+	auth.Register("email_password_auth", getDefaultAuth())
 
 	h := suite.testServer()
 
@@ -204,14 +215,15 @@ func (suite *phoneAuthTestSuite) TestAuthFromRequestNoHeader() {
 	assert.Equal(suite.T(), h.V.GetViewerID(), "")
 }
 
-func (suite *phoneAuthTestSuite) TestAuthFromRequestWithHeader() {
-	user := suite.createUser()
+func (suite *emailAuthTestSuite) TestAuthFromRequestWithHeader() {
+	pwd := util.GenerateRandPassword()
+	user := suite.createUser(pwd)
 
-	auth.Register("phone_pin_auth", getDefaultAuth())
+	auth.Register("email_password_auth", getDefaultAuth())
 
 	h := suite.testServer(func(req *http.Request) {
 		auth := getDefaultAuth()
-		identity, err := auth.Authenticate(context.TODO(), "4159876543", "123456")
+		identity, err := auth.Authenticate(context.TODO(), user.EmailAddress, pwd)
 		require.Nil(suite.T(), err)
 		require.NotNil(suite.T(), identity)
 
@@ -222,8 +234,8 @@ func (suite *phoneAuthTestSuite) TestAuthFromRequestWithHeader() {
 	assert.Equal(suite.T(), h.V.GetViewerID(), user.ID)
 }
 
-func (suite *phoneAuthTestSuite) TestInvalidAuthorizationHeader() {
-	auth.Register("phone_pin_auth", getDefaultAuth())
+func (suite *emailAuthTestSuite) TestInvalidAuthorizationHeader() {
+	auth.Register("email_address_auth", getDefaultAuth())
 
 	h := suite.testServer(func(req *http.Request) {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", uuid.New().String()))
@@ -233,7 +245,7 @@ func (suite *phoneAuthTestSuite) TestInvalidAuthorizationHeader() {
 	assert.Equal(suite.T(), h.V.GetViewerID(), "")
 }
 
-func (suite *phoneAuthTestSuite) testServer(fns ...func(*http.Request)) *httptest.QueryHandler {
+func (suite *emailAuthTestSuite) testServer(fns ...func(*http.Request)) *httptest.QueryHandler {
 	h := &httptest.QueryHandler{
 		T:        suite.T(),
 		Response: []byte("auth response!"),
@@ -258,12 +270,13 @@ func (suite *phoneAuthTestSuite) testServer(fns ...func(*http.Request)) *httptes
 	return h
 }
 
-func (suite *phoneAuthTestSuite) verifyValidAuth(
-	auth *phonenumber.PhonePinAuth,
+func (suite *emailAuthTestSuite) verifyValidAuth(
+	auth *email.EmailPasswordAuth,
 	user *models.User,
-	number string,
+	email string,
+	password string,
 ) *entjwt.AuthedIdentity {
-	identity, err := auth.Authenticate(context.TODO(), number, "123456")
+	identity, err := auth.Authenticate(context.TODO(), email, password)
 	require.Nil(suite.T(), err)
 	require.NotNil(suite.T(), identity)
 
@@ -280,14 +293,15 @@ func (suite *phoneAuthTestSuite) verifyValidAuth(
 	return identity
 }
 
-func (suite *phoneAuthTestSuite) testValidAuthWithDuration(
-	auth *phonenumber.PhonePinAuth,
+func (suite *emailAuthTestSuite) testValidAuthWithDuration(
+	auth *email.EmailPasswordAuth,
 	duration time.Duration,
 	user *models.User,
-	number string,
+	email string,
+	password string,
 ) {
 
-	identity := suite.verifyValidAuth(auth, user, number)
+	identity := suite.verifyValidAuth(auth, user, email, password)
 
 	// check if valid after the fact
 	jwt.TimeFunc = func() time.Time {
@@ -301,19 +315,19 @@ func (suite *phoneAuthTestSuite) testValidAuthWithDuration(
 	jwt.TimeFunc = time.Now
 }
 
-func TestPhoneAuth(t *testing.T) {
-	suite.Run(t, new(phoneAuthTestSuite))
+func TestEmailAuth(t *testing.T) {
+	suite.Run(t, new(emailAuthTestSuite))
 }
 
-func getDefaultAuth() *phonenumber.PhonePinAuth {
-	return phonenumber.NewPhonePinAuth(
+func getDefaultAuth() *email.EmailPasswordAuth {
+	return email.NewEmailPasswordAuth(
 		signingKey,
-		models.LoadUserIDFromPhoneNumber,
+		models.ValidateEmailPassword,
 		viewertesting.GetLoggedInViewer,
 	)
 }
 
-func authPhoneNumberPin(phoneNumber, pin string) (*entjwt.AuthedIdentity, error) {
+func authEmailPassword(email, password string) (*entjwt.AuthedIdentity, error) {
 	auth := getDefaultAuth()
-	return auth.Authenticate(context.TODO(), phoneNumber, pin)
+	return auth.Authenticate(context.TODO(), email, password)
 }

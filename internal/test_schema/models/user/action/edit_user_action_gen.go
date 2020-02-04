@@ -104,6 +104,12 @@ func (action *EditUserAction) SetLastName(lastName string) *EditUserAction {
 	return action
 }
 
+// SetPassword sets the Password while editing the User ent
+func (action *EditUserAction) SetPassword(password string) *EditUserAction {
+	action.builder.SetPassword(password)
+	return action
+}
+
 // SetPhoneNumber sets the PhoneNumber while editing the User ent
 func (action *EditUserAction) SetPhoneNumber(phoneNumber string) *EditUserAction {
 	action.builder.SetPhoneNumber(phoneNumber)

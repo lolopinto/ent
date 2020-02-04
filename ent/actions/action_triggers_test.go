@@ -75,6 +75,7 @@ func (suite *actionsTriggersSuite) TestCreateDependentObjectInTrigger() {
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
 	action.emailAddress = util.GenerateRandEmail()
+	action.password = util.GenerateRandPassword()
 	err := actions.Save(action)
 	assert.Nil(suite.T(), err)
 
@@ -128,6 +129,7 @@ func (suite *actionsTriggersSuite) TestCreateDependentObjectAndEdgesTrigger() {
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
 	action.emailAddress = util.GenerateRandEmail()
+	action.password = util.GenerateRandPassword()
 	err := actions.Save(action)
 	assert.Nil(suite.T(), err)
 
@@ -153,6 +155,7 @@ func (suite *actionsTriggersSuite) TestMultiLevelDeep() {
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
 	action.emailAddress = util.GenerateRandEmail()
+	action.password = util.GenerateRandPassword()
 	err := actions.Save(action)
 	assert.Nil(suite.T(), err)
 
@@ -179,6 +182,7 @@ func (suite *actionsTriggersSuite) TestCreateAllTheThingsTrigger() {
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
 	action.emailAddress = util.GenerateRandEmail()
+	action.password = util.GenerateRandPassword()
 	err := actions.Save(action)
 	assert.Nil(suite.T(), err)
 

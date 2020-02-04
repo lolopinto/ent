@@ -1564,6 +1564,7 @@ input UserCreateInput {
     emailAddress: String!
     firstName: String!
     lastName: String!
+    password: String!
     phoneNumber: String
 }
 
@@ -1584,6 +1585,7 @@ input UserEditInput {
     emailAddress: String!
     firstName: String!
     lastName: String!
+    password: String!
     phoneNumber: String
     userID: ID!
 }
@@ -7751,6 +7753,12 @@ func (ec *executionContext) unmarshalInputUserCreateInput(ctx context.Context, o
 			if err != nil {
 				return it, err
 			}
+		case "password":
+			var err error
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "phoneNumber":
 			var err error
 			it.PhoneNumber, err = ec.unmarshalOString2ᚖstring(ctx, v)
@@ -7808,6 +7816,12 @@ func (ec *executionContext) unmarshalInputUserEditInput(ctx context.Context, obj
 		case "lastName":
 			var err error
 			it.LastName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "password":
+			var err error
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}

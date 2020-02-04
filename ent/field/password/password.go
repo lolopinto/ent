@@ -15,6 +15,12 @@ func Type() *dataType {
 	return &dataType{str: field.StringType()}
 }
 
+// TODO this should automatically be hidden from graphql, private (not exposed outside package) and sensitive
+// we don't have sensitive yet
+// we don't have private fields yet either...
+// by default, private fields are hidden from default actions except explicitly included in the field list.
+// which means CreateUser becomes even more complicated since you don't necessarily want everything...
+
 type dataType struct {
 	cost *int
 	str  *field.StringDataType

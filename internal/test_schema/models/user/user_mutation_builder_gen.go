@@ -19,6 +19,7 @@ type UserMutationBuilder struct {
 	emailAddress     *string
 	firstName        *string
 	lastName         *string
+	password         *string
 	phoneNumber      *string
 	clearphoneNumber bool
 }
@@ -73,6 +74,11 @@ func (b *UserMutationBuilder) SetLastName(lastName string) *UserMutationBuilder 
 	return b
 }
 
+func (b *UserMutationBuilder) SetPassword(password string) *UserMutationBuilder {
+	b.password = &password
+	return b
+}
+
 func (b *UserMutationBuilder) SetPhoneNumber(phoneNumber string) *UserMutationBuilder {
 	b.phoneNumber = &phoneNumber
 	return b
@@ -110,6 +116,13 @@ func (b *UserMutationBuilder) GetLastName() string {
 		return ""
 	}
 	return *b.lastName
+}
+
+func (b *UserMutationBuilder) GetPassword() string {
+	if b.password == nil {
+		return ""
+	}
+	return *b.password
 }
 
 func (b *UserMutationBuilder) GetPhoneNumber() *string {
@@ -439,6 +452,11 @@ func (b *UserMutationBuilder) buildFields() ent.ActionFieldMap {
 		addField("LastName", *b.lastName)
 	} else if m["LastName"] { // nil but required
 		addField("LastName", nil)
+	}
+	if b.password != nil {
+		addField("Password", *b.password)
+	} else if m["Password"] { // nil but required
+		addField("Password", nil)
 	}
 	if b.phoneNumber != nil {
 		addField("PhoneNumber", *b.phoneNumber)

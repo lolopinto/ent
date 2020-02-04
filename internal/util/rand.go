@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	generate "github.com/sethvargo/go-password/password"
 )
 
 func GenerateRandCode(n int) string {
@@ -20,4 +22,11 @@ func GenerateRandCode(n int) string {
 
 func GenerateRandEmail() string {
 	return fmt.Sprintf("test-%s@email.com", GenerateRandCode(9))
+}
+
+func GenerateRandPassword() string {
+	// generate a random password
+	password, err := generate.Generate(30, 3, 3, true, false)
+	Die(err)
+	return password
 }

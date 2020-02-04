@@ -167,6 +167,7 @@ type UserCreateInput struct {
 	EmailAddress string  `json:"emailAddress"`
 	FirstName    string  `json:"firstName"`
 	LastName     string  `json:"lastName"`
+	Password     string  `json:"password"`
 	PhoneNumber  *string `json:"phoneNumber"`
 }
 
@@ -187,6 +188,7 @@ type UserEditInput struct {
 	EmailAddress string  `json:"emailAddress"`
 	FirstName    string  `json:"firstName"`
 	LastName     string  `json:"lastName"`
+	Password     string  `json:"password"`
 	PhoneNumber  *string `json:"phoneNumber"`
 	UserID       string  `json:"userID"`
 }

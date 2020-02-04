@@ -15,6 +15,7 @@ import (
 type userAction struct {
 	viewer       viewer.ViewerContext
 	emailAddress string
+	password     string
 	firstName    string
 	lastName     string
 	user         models.User
@@ -63,6 +64,7 @@ func (a *userAction) SetBuilderOnValidators(validators []actions.Validator) {
 func (a *userAction) getFields() map[string]interface{} {
 	return map[string]interface{}{
 		"email_address": a.emailAddress,
+		"password":      a.password,
 		"first_name":    a.firstName,
 		"last_name":     a.lastName,
 	}
