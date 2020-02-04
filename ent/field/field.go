@@ -20,6 +20,7 @@ type Field struct {
 	graphQL         string
 	unique          bool
 	hideFromGraphQL bool
+	private         bool
 	index           bool
 	fkeyConfig      string
 	fkeyField       string
@@ -101,6 +102,19 @@ func Unique() Option {
 // HideFromGraphQL does not expose this Field to GraphQL
 func HideFromGraphQL() Option {
 	return func(f *Field) {
+		f.hideFromGraphQL = true
+	}
+}
+
+// Private does not expose this Field outside the package
+// It *also* automatically hides this from GraphQL.
+// It *also* automatically doesn't expose this to actions by default except when an action explicitly includes that field
+// Had to choose a default and we're choosing this default. The assumption is that
+// any field that's private doesn't get default behavior and it's up to the developer to
+// explicitly override this
+func Private() Option {
+	return func(f *Field) {
+		f.private = true
 		f.hideFromGraphQL = true
 	}
 }

@@ -48,7 +48,7 @@ const (
     privacy.AlwaysDenyPrivacyPolicy
     {{ range $field := .FieldInfo.Fields -}} 
       {{if $field.TopLevelStructField -}}
-        {{$field.FieldName}} {{fTypeString $field}} {{$field.GetFieldTag}}
+        {{$field.GetFieldNameInStruct}} {{fTypeString $field}} {{$field.GetFieldTag}}
       {{end -}}
     {{end -}}
     Viewer viewer.ViewerContext
@@ -149,8 +149,7 @@ const (
         return "", err
       }
 
-      // this should be lower when private fields exist...
-      if err := bcrypt.CompareHashAndPassword([]byte({{$currentNodeInstance}}.{{$passwordField.FieldName}}), []byte(password)); err != nil {
+      if err := bcrypt.CompareHashAndPassword([]byte({{$currentNodeInstance}}.{{$passwordField.GetFieldNameInStruct}}), []byte(password)); err != nil {
         return "", err
       }
       
@@ -362,10 +361,10 @@ func ({{$currentNodeInstance}} *{{$currentNode}}) DBFields() ent.DBFields {
         "{{$field.GetDbColName}}": func(v interface{}) error {
           {{if ne $field.GetCastToMethod "cast.UnmarshallJSON" -}}
             var err error
-            {{$currentNodeInstance}}.{{$field.FieldName}}, err = {{$field.GetCastToMethod}}(v)
+            {{$currentNodeInstance}}.{{$field.GetFieldNameInStruct}}, err = {{$field.GetCastToMethod}}(v)
             return err
           {{else -}}
-            return cast.UnmarshallJSON(v, &{{$currentNodeInstance}}.{{$field.FieldName}})
+            return cast.UnmarshallJSON(v, &{{$currentNodeInstance}}.{{$field.GetFieldNameInStruct}})
           {{end -}}
         },
       {{end -}}

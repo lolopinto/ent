@@ -16,6 +16,9 @@ func Type() *dataType {
 }
 
 // hide from graphql √
+// private √
+// TODO sensitive
+
 // TODO this should automatically be private (not exposed outside package) and sensitive
 // we don't have sensitive yet
 // we don't have private fields yet either...
@@ -27,8 +30,9 @@ type dataType struct {
 	str  *field.StringDataType
 }
 
-// HideFromGraphQL indicates that the DataType is hidden from GraphQL
-func (t *dataType) HideFromGraphQL() bool {
+// Private indicates that the DataType is private and shouldn't be exposed to graphql, exposed out of the package
+// or by default exposed in actions
+func (t *dataType) Private() bool {
 	return true
 }
 

@@ -303,8 +303,9 @@ func TestCustomPasswordType(t *testing.T) {
 			topLevelStructField: true,
 			exposeToActions:     true,
 			dbColumn:            true,
-			// password fields are automatically hidden from graphql
+			// password fields are automatically private and hidden from graphql
 			hideFromGraphQL: true,
+			private:         true,
 		},
 	)
 

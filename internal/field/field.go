@@ -136,6 +136,7 @@ type Field struct {
 	fieldType           enttype.EntType // this is the underlying type for the field for graphql, db, etc
 	dbColumn            bool
 	hideFromGraphQL     bool
+	private             bool
 	nullable            bool
 	defaultValue        interface{}
 	unique              bool
@@ -143,7 +144,8 @@ type Field struct {
 	index               bool
 	dbName              string // storage key/column name for the field
 	graphQLName         string
-	exposeToActions     bool // TODO: figure out a better way for this long term. this is to allow password be hidden from reads but allowed in writes
+	exposeToActions     bool
+	// TODO: figure out a better way for this long term. this is to allow password be hidden from reads but allowed in writes
 	// once password is a top level configurable type, it can control this e.g. exposeToCreate mutation yes!,
 	// expose to edit mutation no! obviously no delete. but then can be added in custom mutations e.g. editPassword()
 	// same with email address. shouldn't just be available to willy/nilly edit
@@ -249,6 +251,16 @@ func (f *Field) ForeignKeyInfo() *ForeignKeyInfo {
 
 func (f *Field) GetGraphQLName() string {
 	return f.graphQLName
+}
+
+// GetFieldNameInStruct returns the name of the field in the struct definition
+// with capital letter for public fields. lowercase letter for package-private
+func (f *Field) GetFieldNameInStruct() string {
+	// private fields are package-private so we lowercase the name returned here
+	if f.private {
+		return strcase.ToLowerCamel(f.FieldName)
+	}
+	return f.FieldName
 }
 
 func (f *Field) InstanceFieldName() string {
@@ -362,6 +374,7 @@ func addBaseFields(fieldInfo *FieldInfo) {
 	updatedAtField.tagMap = getTagMapFromJustFieldName("UpdatedAt")
 	updatedAtField.hideFromGraphQL = true
 	// immutable instead...?
+	// exposeToActionsByDefault should be what we use here
 	updatedAtField.exposeToActions = false
 	updatedAtField.topLevelStructField = false
 	updatedAtField.fieldType = &enttype.TimeType{}

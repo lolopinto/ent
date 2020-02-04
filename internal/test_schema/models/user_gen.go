@@ -40,7 +40,7 @@ type User struct {
 	EmailAddress string  `db:"email_address"`
 	FirstName    string  `db:"first_name"`
 	LastName     string  `db:"last_name"`
-	Password     string  `db:"password"`
+	password     string  `db:"password"`
 	PhoneNumber  *string `db:"phone_number"`
 	Viewer       viewer.ViewerContext
 }
@@ -138,8 +138,7 @@ func ValidateEmailPassword(emailAddress, password string) (string, error) {
 		return "", err
 	}
 
-	// this should be lower when private fields exist...
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.password), []byte(password)); err != nil {
 		return "", err
 	}
 
@@ -458,7 +457,7 @@ func (user *User) DBFields() ent.DBFields {
 		},
 		"password": func(v interface{}) error {
 			var err error
-			user.Password, err = cast.ToString(v)
+			user.password, err = cast.ToString(v)
 			return err
 		},
 		"phone_number": func(v interface{}) error {

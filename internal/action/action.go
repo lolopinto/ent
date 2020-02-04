@@ -153,6 +153,7 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, actionT
 			}
 		}
 	} else {
+		// hmm explicit fieldNames should be fine...
 		for _, fieldName := range fieldNames {
 			f := fieldInfo.GetFieldByName(fieldName)
 			if f == nil {

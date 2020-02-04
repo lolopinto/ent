@@ -127,10 +127,11 @@ type ImportableDataType interface {
 	PkgPath() string
 }
 
-// HiddenDataType indicates that the DataType is hidden from GraphQL
-type HiddenDataType interface {
+// PrivateDataType indicates that the DataType is private and shouldn't be exposed to graphql, exposed out of the package
+// or by default exposed in actions
+type PrivateDataType interface {
 	DataType
-	HideFromGraphQL() bool
+	Private() bool
 }
 
 // StringDataType is the datatype for string fields

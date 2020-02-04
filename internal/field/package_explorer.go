@@ -14,10 +14,10 @@ import (
 )
 
 type parseResult struct {
-	entType         types.Type
-	pkgPath         string
-	err             error
-	hideFromGraphQL bool
+	entType types.Type
+	pkgPath string
+	err     error
+	private bool
 }
 
 type packageExplorer struct {
@@ -327,9 +327,9 @@ func (explorer *packageExplorer) getResultFromPkg(
 func (explorer *packageExplorer) getResultFromStruct(s *structType) *parseResult {
 	if s.typeFromMethod != nil {
 		return &parseResult{
-			entType:         s.typeFromMethod,
-			pkgPath:         s.packagePath,
-			hideFromGraphQL: s.hideFromGraphQL,
+			entType: s.typeFromMethod,
+			pkgPath: s.packagePath,
+			private: s.private,
 		}
 	}
 
@@ -448,8 +448,8 @@ type structType struct {
 	typeFromMethod types.Type
 	packagePath    string
 
-	// does the dataType hide From GraphQL directly
-	hideFromGraphQL bool
+	// is the dataType private directly?
+	private bool
 }
 
 func (s *structType) addDepdendency(pkg *packages.Package, ident string) {
@@ -487,12 +487,15 @@ var dataTypeMethods = map[string]func(*packages.Package, *structType, *ast.FuncD
 			astparser.GetLastReturnStmtExpr(fn),
 		)
 	},
-	// optional. dataType hides from graphql, field hides also
-	"HideFromGraphQL": func(pkg *packages.Package, s *structType, fn *ast.FuncDecl) {
+	// optional. dataType is private, field is private
+	"Private": func(pkg *packages.Package, s *structType, fn *ast.FuncDecl) {
 		// This only works for literal "return true"
-		s.hideFromGraphQL = astparser.GetBooleanValueFromExpr(
+		val := astparser.GetBooleanValueFromExpr(
 			astparser.GetLastReturnStmtExpr(fn),
 		)
+		if val {
+			s.private = true
+		}
 	},
 }
 
