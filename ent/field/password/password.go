@@ -17,13 +17,8 @@ func Type() *dataType {
 
 // hide from graphql √
 // private √
+// not included in actions by default √
 // TODO sensitive
-
-// TODO this should automatically be private (not exposed outside package) and sensitive
-// we don't have sensitive yet
-// we don't have private fields yet either...
-// by default, private fields are hidden from default actions except explicitly included in the field list.
-// which means CreateUser becomes even more complicated since you don't necessarily want everything...
 
 type dataType struct {
 	cost *int

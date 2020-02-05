@@ -154,7 +154,6 @@ func LoadPackages(p Parser) []*packages.Package {
 }
 
 type FunctionSearch struct {
-	PkgName  string
 	FnName   string
 	FileName string
 }
@@ -167,43 +166,83 @@ func FindFunction(code, pkgName, fnName string) (*packages.Package, *ast.FuncDec
 		Sources:     overlay,
 		PackageName: pkgName,
 	}
-	fns := FunctionSearch{
-		PkgName: pkgName,
-		FnName:  fnName,
+	fs := FunctionSearch{
+		FnName: fnName,
 	}
-	return FindFunctionFromParser(parser, fns)
+	pkg, fnMap, err := FindFunctionFromParser(parser, fs)
+	if err != nil {
+		return nil, nil, err
+	}
+	fn := fnMap[fnName]
+	if fn == nil {
+		return nil, nil, errors.New("couldn't find function")
+	}
+	return pkg, fn, nil
 }
 
-func FindFunctionFromParser(parser Parser, fns FunctionSearch) (*packages.Package, *ast.FuncDecl, error) {
+func FindFunctions(code, pkgName string, fnNames ...string) (*packages.Package, map[string]*ast.FuncDecl, error) {
+	overlay := make(map[string]string)
+	overlay["code.go"] = code
+
+	parser := &SourceSchemaParser{
+		Sources:     overlay,
+		PackageName: pkgName,
+	}
+	fss := make([]FunctionSearch, len(fnNames))
+	for idx, fnName := range fnNames {
+		fss[idx] = FunctionSearch{
+			FnName: fnName,
+		}
+	}
+	return FindFunctionFromParser(parser, fss...)
+}
+
+func FindFunctionFromParser(parser Parser, fss ...FunctionSearch) (*packages.Package, map[string]*ast.FuncDecl, error) {
 	pkg := LoadPackage(parser)
 	if len(pkg.Errors) != 0 {
 		return nil, nil, util.CoalesceErrSlice(pkg.Errors)
 	}
 
+	// TODO: right now it's assuming the same file or we end up with one file
 	var file *ast.File
-	if fns.FileName == "" {
-		if len(pkg.GoFiles) != 1 {
-			return nil, nil, errors.New("expected 1 go file")
-		}
-		file = pkg.Syntax[0]
-	} else {
-		for idx, filename := range pkg.GoFiles {
-			if strings.HasSuffix(filename, fns.FileName) {
-				file = pkg.Syntax[idx]
-				break
+	functions := make(map[string]*ast.FuncDecl, len(fss))
+	fnNameMap := make(map[string]bool)
+	for _, fs := range fss {
+		fnNameMap[fs.FnName] = true
+
+		// only do this until we find a file
+		if file == nil {
+			if fs.FileName == "" {
+				if len(pkg.GoFiles) != 1 {
+					return nil, nil, errors.New("expected 1 go file")
+				}
+				file = pkg.Syntax[0]
+			} else {
+				for idx, filename := range pkg.GoFiles {
+					if strings.HasSuffix(filename, fs.FileName) {
+						file = pkg.Syntax[idx]
+						break
+					}
+				}
 			}
 		}
 	}
+
 	if file == nil {
 		return nil, nil, errors.New("couldn't find any file")
 	}
 
 	for _, decl := range file.Decls {
-		if fn, ok := decl.(*ast.FuncDecl); ok &&
-			fn.Name.Name == fns.FnName {
-			return pkg, fn, nil
+		if fn, ok := decl.(*ast.FuncDecl); ok {
+			if fnNameMap[fn.Name.Name] {
+				functions[fn.Name.Name] = fn
+			}
 		}
 	}
 
-	return nil, nil, fmt.Errorf("couldn't find function named %s", fns.FnName)
+	if len(functions) == 0 {
+		return nil, nil, fmt.Errorf("couldn't find any of the named functions")
+	}
+
+	return pkg, functions, nil
 }

@@ -184,13 +184,10 @@ type UserDeleteResponse struct {
 }
 
 type UserEditInput struct {
-	Bio          *string `json:"bio"`
-	EmailAddress string  `json:"emailAddress"`
-	FirstName    string  `json:"firstName"`
-	LastName     string  `json:"lastName"`
-	Password     string  `json:"password"`
-	PhoneNumber  *string `json:"phoneNumber"`
-	UserID       string  `json:"userID"`
+	Bio       *string `json:"bio"`
+	FirstName string  `json:"firstName"`
+	LastName  string  `json:"lastName"`
+	UserID    string  `json:"userID"`
 }
 
 type UserEditResponse struct {

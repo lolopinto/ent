@@ -63,9 +63,26 @@ func (config *UserConfig) GetActions() []*ent.ActionConfig {
 	return []*ent.ActionConfig{
 		&ent.ActionConfig{
 			Action: ent.CreateAction,
+			Fields: []string{
+				// TODO maybe provide an edit-all-fields flag which *overwrites* the private by default nature of this
+				"EmailAddress",
+				"Password",
+				"FirstName",
+				"LastName",
+				"Bio",
+				"PhoneNumber",
+			},
 		},
 		&ent.ActionConfig{
 			Action: ent.EditAction,
+			Fields: []string{
+				// can't edit email address, password and phone number since
+				// those are special fields that require extra permissions/checks so they'll
+				// be broken up into their own action (and graphql mutation)
+				"FirstName",
+				"LastName",
+				"Bio",
+			},
 		},
 		&ent.ActionConfig{
 			Action: ent.DeleteAction,

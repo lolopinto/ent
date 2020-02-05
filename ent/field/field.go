@@ -116,6 +116,7 @@ func Private() Option {
 	return func(f *Field) {
 		f.private = true
 		f.hideFromGraphQL = true
+		// bonus: should eventually show an error if GraphQL() also called
 	}
 }
 

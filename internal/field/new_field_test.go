@@ -26,12 +26,12 @@ func TestSimpleIntField(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "InvitesLeft",
-			dbName:              "invites_left",
-			graphQLName:         "numInvitesLeft",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "InvitesLeft",
+			dbName:                   "invites_left",
+			graphQLName:              "numInvitesLeft",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 	testDBType(t, field, "sa.Integer()")
@@ -58,13 +58,13 @@ func TestStringField(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "EmailAddress",
-			dbName:              "email",
-			graphQLName:         "emailAddress",
-			unique:              true,
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "EmailAddress",
+			dbName:                   "email",
+			graphQLName:              "emailAddress",
+			unique:                   true,
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 
@@ -91,13 +91,13 @@ func TestFloatField(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "Balance",
-			dbName:              "balance",
-			graphQLName:         "balance",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			nullable:            true,
+			FieldName:                "Balance",
+			dbName:                   "balance",
+			graphQLName:              "balance",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			nullable:                 true,
 		},
 	)
 	testDBType(t, field, "sa.Float()")
@@ -125,14 +125,14 @@ func TestBoolField(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "ShowBioOnProfile",
-			dbName:              "show_bio",
-			graphQLName:         "showBioOnProfile",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			nullable:            true,
-			defaultValue:        "true",
+			FieldName:                "ShowBioOnProfile",
+			dbName:                   "show_bio",
+			graphQLName:              "showBioOnProfile",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			nullable:                 true,
+			defaultValue:             "true",
 		},
 	)
 	testDBType(t, field, "sa.Boolean()")
@@ -158,14 +158,14 @@ func TestTimeField(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "StartTime",
-			dbName:              "start_time",
-			graphQLName:         "startTime",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			index:               true,
-			pkgPath:             "time",
+			FieldName:                "StartTime",
+			dbName:                   "start_time",
+			graphQLName:              "startTime",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			index:                    true,
+			pkgPath:                  "time",
 		},
 	)
 	testDBType(t, field, "sa.TIMESTAMP()")
@@ -192,14 +192,14 @@ func TestStringWithMoreCustomizationsField(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "LastName",
-			dbName:              "last_name",
-			graphQLName:         "lastName",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			nullable:            true,
-			defaultValue:        "Ola",
+			FieldName:                "LastName",
+			dbName:                   "last_name",
+			graphQLName:              "lastName",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			nullable:                 true,
+			defaultValue:             "Ola",
 		},
 	)
 
@@ -228,14 +228,14 @@ func TestCustomURLType(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "ProfileURL",
-			dbName:              "profile_url",
-			graphQLName:         "profileURL",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			nullable:            true,
-			hideFromGraphQL:     true,
+			FieldName:                "ProfileURL",
+			dbName:                   "profile_url",
+			graphQLName:              "profileURL",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			nullable:                 true,
+			hideFromGraphQL:          true,
 		},
 	)
 
@@ -264,13 +264,13 @@ func TestCustomEmailType(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "EmailAddress",
-			dbName:              "email",
-			graphQLName:         "emailAddress",
-			unique:              true,
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "EmailAddress",
+			dbName:                   "email",
+			graphQLName:              "emailAddress",
+			unique:                   true,
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 
@@ -301,11 +301,11 @@ func TestCustomPasswordType(t *testing.T) {
 			dbName:              "password",
 			graphQLName:         "password",
 			topLevelStructField: true,
-			exposeToActions:     true,
 			dbColumn:            true,
 			// password fields are automatically private and hidden from graphql
-			hideFromGraphQL: true,
-			private:         true,
+			hideFromGraphQL:          true,
+			private:                  true,
+			exposeToActionsByDefault: false,
 		},
 	)
 
@@ -332,12 +332,12 @@ func TestForeignKey(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "UserID",
-			dbName:              "user_id",
-			graphQLName:         "userID", // probably not exposed to gql
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "UserID",
+			dbName:                   "user_id",
+			graphQLName:              "userID", // probably not exposed to gql
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 			fkey: &ForeignKeyInfo{
 				Config: "UserConfig",
 				Field:  "ID",
@@ -365,13 +365,13 @@ func TestDataTypeWithCalls(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "Bio",
-			dbName:              "bio",
-			graphQLName:         "bio",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			nullable:            true,
+			FieldName:                "Bio",
+			dbName:                   "bio",
+			graphQLName:              "bio",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			nullable:                 true,
 		},
 	)
 	testDBType(t, field, "sa.Text()")
@@ -406,12 +406,12 @@ func TestLocalInlineTypeWithCall(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "Bio",
-			dbName:              "bio",
-			graphQLName:         "bio",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "Bio",
+			dbName:                   "bio",
+			graphQLName:              "bio",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 	testDBType(t, field, "sa.Text()")
@@ -446,12 +446,12 @@ func TestLocalInlineFuncCall(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "Bio",
-			dbName:              "bio",
-			graphQLName:         "bio",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "Bio",
+			dbName:                   "bio",
+			graphQLName:              "bio",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 	testDBType(t, field, "sa.Text()")

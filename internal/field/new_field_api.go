@@ -121,10 +121,9 @@ func modifyFieldForDataType(
 		if res.pkgPath != "" {
 			f.pkgPath = res.pkgPath
 		}
-		// if the datatype is specifically private, field hides it and is private
+		// if the datatype is specifically private, field makes it private
 		if res.private {
-			f.hideFromGraphQL = true
-			f.private = true
+			f.setPrivate()
 		}
 
 		f.dataTypePkgPath = getImportedPackageThatMatchesIdent(pkg, info.PkgName, info.IdentName).PkgPath

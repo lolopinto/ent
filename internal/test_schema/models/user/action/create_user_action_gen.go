@@ -73,21 +73,15 @@ func (action *CreateUserAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// SetBio sets the Bio while editing the User ent
-func (action *CreateUserAction) SetBio(bio string) *CreateUserAction {
-	action.builder.SetBio(bio)
-	return action
-}
-
-// SetNilableBio sets the Bio while editing the User ent
-func (action *CreateUserAction) SetNilableBio(bio *string) *CreateUserAction {
-	action.builder.SetNilableBio(bio)
-	return action
-}
-
 // SetEmailAddress sets the EmailAddress while editing the User ent
 func (action *CreateUserAction) SetEmailAddress(emailAddress string) *CreateUserAction {
 	action.builder.SetEmailAddress(emailAddress)
+	return action
+}
+
+// SetPassword sets the Password while editing the User ent
+func (action *CreateUserAction) SetPassword(password string) *CreateUserAction {
+	action.builder.SetPassword(password)
 	return action
 }
 
@@ -103,9 +97,15 @@ func (action *CreateUserAction) SetLastName(lastName string) *CreateUserAction {
 	return action
 }
 
-// SetPassword sets the Password while editing the User ent
-func (action *CreateUserAction) SetPassword(password string) *CreateUserAction {
-	action.builder.SetPassword(password)
+// SetBio sets the Bio while editing the User ent
+func (action *CreateUserAction) SetBio(bio string) *CreateUserAction {
+	action.builder.SetBio(bio)
+	return action
+}
+
+// SetNilableBio sets the Bio while editing the User ent
+func (action *CreateUserAction) SetNilableBio(bio *string) *CreateUserAction {
+	action.builder.SetNilableBio(bio)
 	return action
 }
 
@@ -124,9 +124,9 @@ func (action *CreateUserAction) SetNilablePhoneNumber(phoneNumber *string) *Crea
 func (action *CreateUserAction) requiredFields() []string {
 	return []string{
 		"EmailAddress",
+		"Password",
 		"FirstName",
 		"LastName",
-		"Password",
 	}
 }
 

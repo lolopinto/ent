@@ -313,11 +313,11 @@ func (r *mutationResolver) UserAddFriend(ctx context.Context, input UserAddFrien
 
 func (r *mutationResolver) UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error) {
 	node, err := action3.CreateUserFromContext(ctx).
-		SetNilableBio(input.Bio).
 		SetEmailAddress(input.EmailAddress).
+		SetPassword(input.Password).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
-		SetPassword(input.Password).
+		SetNilableBio(input.Bio).
 		SetNilablePhoneNumber(input.PhoneNumber).
 		Save()
 
@@ -355,12 +355,9 @@ func (r *mutationResolver) UserEdit(ctx context.Context, input UserEditInput) (*
 	}
 
 	node, err := action3.EditUserFromContext(ctx, existingNode).
-		SetNilableBio(input.Bio).
-		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
-		SetPassword(input.Password).
-		SetNilablePhoneNumber(input.PhoneNumber).
+		SetNilableBio(input.Bio).
 		Save()
 
 	if err != nil {

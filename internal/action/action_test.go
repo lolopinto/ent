@@ -8,9 +8,11 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/parsehelper"
+	"github.com/lolopinto/ent/internal/schemaparser"
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRequiredField(t *testing.T) {
@@ -112,6 +114,219 @@ func TestEdgeGroupActions(t *testing.T) {
 		actionInfo.GetByGraphQLName("accountSetFriendshipStatus"),
 		"expected there to be an action with graphql name accountSetFriendshipStatus",
 	)
+}
+
+type expectedAction struct {
+	name   string
+	fields []string
+}
+
+func TestActionFields(t *testing.T) {
+	verifyExpectedFields(
+		t,
+		`package configs
+
+	import "github.com/lolopinto/ent/ent"
+	import "github.com/lolopinto/ent/ent/field"
+	import "github.com/lolopinto/ent/ent/field/email"
+	import "github.com/lolopinto/ent/ent/field/phonenumber"
+
+	type ContactConfig struct {}
+	
+	func (config *ContactConfig) GetFields() ent.FieldMap {
+		return ent.FieldMap {
+			"EmailAddress": field.F(
+				email.Type(),
+			),
+			"FirstName": field.F(field.StringType()),
+			"LastName": field.F(field.StringType()),
+			"PhoneNumber": field.F(phonenumber.Type()),
+		}
+	}
+	
+	func (config *ContactConfig) GetActions() []*ent.ActionConfig {
+		return []*ent.ActionConfig{
+			&ent.ActionConfig{
+				Action: ent.MutationsAction,
+			},
+		}
+	}`,
+		"contact",
+		[]expectedAction{
+			expectedAction{
+				name: "CreateContactAction",
+				fields: []string{
+					"EmailAddress",
+					"FirstName",
+					"LastName",
+					"PhoneNumber",
+				},
+			},
+			expectedAction{
+				name: "EditContactAction",
+				fields: []string{
+					"EmailAddress",
+					"FirstName",
+					"LastName",
+					"PhoneNumber",
+				},
+			},
+			expectedAction{
+				name:   "DeleteContactAction",
+				fields: []string{},
+			},
+		},
+	)
+}
+
+func TestActionFieldsWithPrivateFields(t *testing.T) {
+	verifyExpectedFields(
+		t,
+		`package configs
+
+	import "github.com/lolopinto/ent/ent"
+	import "github.com/lolopinto/ent/ent/field"
+	import "github.com/lolopinto/ent/ent/field/email"
+	import "github.com/lolopinto/ent/ent/field/password"
+
+	type UserConfig struct {}
+	
+	func (config *UserConfig) GetFields() ent.FieldMap {
+		return ent.FieldMap {
+			"EmailAddress": field.F(
+				email.Type(),
+				field.Unique(), 
+			),
+			"Password": field.F(
+				password.Type(),
+			),
+			"FirstName": field.F(field.StringType()),
+		}
+	}
+	
+	func (config *UserConfig) GetActions() []*ent.ActionConfig {
+		return []*ent.ActionConfig{
+			&ent.ActionConfig{
+				Action: ent.CreateAction,
+				Fields: []string{
+					"FirstName",
+					"EmailAddress",
+					"Password",
+				},
+			},
+			&ent.ActionConfig{
+				Action: ent.EditAction,
+				Fields: []string{
+					"FirstName",
+				},
+			},
+		}
+	}`,
+		"user",
+		[]expectedAction{
+			expectedAction{
+				name: "CreateUserAction",
+				fields: []string{
+					"FirstName",
+					"EmailAddress",
+					"Password",
+				},
+			},
+			expectedAction{
+				name: "EditUserAction",
+				fields: []string{
+					"FirstName",
+				},
+			},
+		},
+	)
+}
+
+func TestDefaultActionFieldsWithPrivateFields(t *testing.T) {
+	verifyExpectedFields(
+		t,
+		`package configs
+
+	import "github.com/lolopinto/ent/ent"
+	import "github.com/lolopinto/ent/ent/field"
+	import "github.com/lolopinto/ent/ent/field/email"
+	import "github.com/lolopinto/ent/ent/field/password"
+
+	type UserConfig struct {}
+	
+	func (config *UserConfig) GetFields() ent.FieldMap {
+		return ent.FieldMap {
+			"EmailAddress": field.F(
+				email.Type(),
+				field.Unique(), 
+			),
+			"Password": field.F(
+				password.Type(),
+			),
+			"FirstName": field.F(field.StringType()),
+		}
+	}
+	
+	func (config *UserConfig) GetActions() []*ent.ActionConfig {
+		return []*ent.ActionConfig{
+			&ent.ActionConfig{
+				Action: ent.CreateAction,
+			},
+			&ent.ActionConfig{
+				Action: ent.EditAction,
+			},
+		}
+	}`,
+		"user",
+		// Password not show up here by default since private
+		[]expectedAction{
+			expectedAction{
+				name: "CreateUserAction",
+				fields: []string{
+					"EmailAddress",
+					"FirstName",
+				},
+			},
+			expectedAction{
+				name: "EditUserAction",
+				fields: []string{
+					"EmailAddress",
+					"FirstName",
+				},
+			},
+		},
+	)
+}
+
+func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expectedAction) {
+	pkg, fnMap, err := schemaparser.FindFunctions(code, "configs", "GetFields", "GetActions")
+	require.Nil(t, err)
+	require.Len(t, fnMap, 2)
+	require.NotNil(t, pkg)
+	require.NotNil(t, fnMap["GetFields"])
+
+	fieldInfo, err := field.ParseFieldsFunc(pkg, fnMap["GetFields"])
+	require.NotNil(t, fieldInfo)
+	require.Nil(t, err)
+
+	require.NotNil(t, fnMap["GetActions"])
+
+	actionInfo := ParseActions(nodeName, fnMap["GetActions"], fieldInfo, nil)
+
+	require.Len(t, actionInfo.Actions, len(expActions))
+
+	for _, expAction := range expActions {
+		action := actionInfo.GetByName(expAction.name)
+		require.NotNil(t, action, "action by name %s is nil", expAction.name)
+
+		fields := action.GetFields()
+
+		require.Equal(t, len(expAction.fields), len(fields), "length of fields")
+
+		for idx, field := range fields {
+			require.Equal(t, expAction.fields[idx], field.FieldName, "fieldname %s not equal", field.FieldName)
+		}
+	}
 }
 
 func getParsedConfig(t *testing.T) *parsehelper.FileConfigData {

@@ -279,11 +279,8 @@ type UserDeleteResponse {
 
 input UserEditInput {
     bio: String
-    emailAddress: String!
     firstName: String!
     lastName: String!
-    password: String!
-    phoneNumber: String
     userID: ID!
 }
 

@@ -74,24 +74,6 @@ func (action *EditUserAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// SetBio sets the Bio while editing the User ent
-func (action *EditUserAction) SetBio(bio string) *EditUserAction {
-	action.builder.SetBio(bio)
-	return action
-}
-
-// SetNilableBio sets the Bio while editing the User ent
-func (action *EditUserAction) SetNilableBio(bio *string) *EditUserAction {
-	action.builder.SetNilableBio(bio)
-	return action
-}
-
-// SetEmailAddress sets the EmailAddress while editing the User ent
-func (action *EditUserAction) SetEmailAddress(emailAddress string) *EditUserAction {
-	action.builder.SetEmailAddress(emailAddress)
-	return action
-}
-
 // SetFirstName sets the FirstName while editing the User ent
 func (action *EditUserAction) SetFirstName(firstName string) *EditUserAction {
 	action.builder.SetFirstName(firstName)
@@ -104,21 +86,15 @@ func (action *EditUserAction) SetLastName(lastName string) *EditUserAction {
 	return action
 }
 
-// SetPassword sets the Password while editing the User ent
-func (action *EditUserAction) SetPassword(password string) *EditUserAction {
-	action.builder.SetPassword(password)
+// SetBio sets the Bio while editing the User ent
+func (action *EditUserAction) SetBio(bio string) *EditUserAction {
+	action.builder.SetBio(bio)
 	return action
 }
 
-// SetPhoneNumber sets the PhoneNumber while editing the User ent
-func (action *EditUserAction) SetPhoneNumber(phoneNumber string) *EditUserAction {
-	action.builder.SetPhoneNumber(phoneNumber)
-	return action
-}
-
-// SetNilablePhoneNumber sets the PhoneNumber while editing the User ent
-func (action *EditUserAction) SetNilablePhoneNumber(phoneNumber *string) *EditUserAction {
-	action.builder.SetNilablePhoneNumber(phoneNumber)
+// SetNilableBio sets the Bio while editing the User ent
+func (action *EditUserAction) SetNilableBio(bio *string) *EditUserAction {
+	action.builder.SetNilableBio(bio)
 	return action
 }
 
