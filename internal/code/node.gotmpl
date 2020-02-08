@@ -372,7 +372,7 @@ func ({{$currentNodeInstance}} *{{$currentNode}}) DBFields() ent.DBFields {
   }
 }
 
-{{if .HasJSONField -}}
+{{if or .HasJSONField .HasPrivateField -}}
   // UnsupportedScan flags that we can't call StructScan() on the ent to get data out of the db, have to always use MapScan() and DBFields() method above
   func ({{$currentNodeInstance}} *{{$currentNode}}) UnsupportedScan() bool {
     return true

@@ -257,6 +257,10 @@ func (f *Field) GetGraphQLName() string {
 	return f.graphQLName
 }
 
+func (f *Field) Private() bool {
+	return f.private
+}
+
 // GetFieldNameInStruct returns the name of the field in the struct definition
 // with capital letter for public fields. lowercase letter for package-private
 func (f *Field) GetFieldNameInStruct() string {

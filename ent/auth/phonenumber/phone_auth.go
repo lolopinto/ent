@@ -34,7 +34,7 @@ type PhonePinAuth struct {
 	// What algorithm method should be used to sign this token. Default is jwt.DefaultSigningMethod
 	SigningMethod jwt.SigningMethod
 
-	// ClaimFunc is used to return a new instance of jwt.Claims to be used instead of jwt.StandardClaims
+	// ClaimFunc is used to return a new instance of jwt.Claims to be used instead of jwt.MapClaims
 	// when generating token. It's passed to jwt.NewWithClaims
 	ClaimFunc func(string) entjwt.Claims
 	// This pairs well with ClaimFunc to generate a new empty claims instance which is passed to jwt.ParseWithClaims

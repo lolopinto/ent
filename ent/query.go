@@ -186,6 +186,7 @@ func mapScan(query rowQueryer) (map[string]interface{}, error) {
 func queryRow(query rowQueryer, entity dataEntity) error {
 	notScannable, ok := entity.(dataEntityNotScannable)
 
+	// if private field, need UnsupportedScan
 	if !(ok && notScannable.UnsupportedScan()) {
 		return query.StructScan(entity)
 	}

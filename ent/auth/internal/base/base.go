@@ -30,7 +30,7 @@ type SharedJwtAuth struct {
 	// What algorithm method should be used to sign this token. Default is DefaultSigningMethod
 	SigningMethod jwt.SigningMethod
 
-	// ClaimFunc is used to return a new instance of jwt.Claims to be used instead of jwt.StandardClaims
+	// ClaimFunc is used to return a new instance of jwt.Claims to be used instead of jwt.MapClaims
 	// when generating token. It's passed to jwt.NewWithClaims
 	ClaimFunc func(string) entjwt.Claims
 	// This pairs well with ClaimFunc to generate a new empty claims instance which is passed to jwt.ParseWithClaims
@@ -79,38 +79,51 @@ func (auth *SharedJwtAuth) getClaims(viewerID string) jwt.Claims {
 		// we can more easily test this and can't test time.Now
 		expirationTime := jwt.TimeFunc().Add(duration)
 
-		return jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-			Id:        viewerID,
-		}
+		m := make(jwt.MapClaims)
+		m["exp"] = expirationTime.Unix()
+		m["jti"] = viewerID
+		return m
 	}
 
 	return auth.ClaimFunc(viewerID)
 }
 
-func (auth *SharedJwtAuth) getBaseClaims() jwt.Claims {
+func (auth *SharedJwtAuth) GetBaseClaims() jwt.Claims {
 	if auth.BaseClaimFunc == nil {
-		return &jwt.StandardClaims{}
+		return make(jwt.MapClaims)
 	}
 	return auth.BaseClaimFunc()
 }
 
-// AuthViewer takes the authorization token from the request and verifies if valid and then returns a ViewerContext
-// which maps to user encoded in the token
-func (auth *SharedJwtAuth) AuthViewer(w http.ResponseWriter, r *http.Request) viewer.ViewerContext {
+func TokenFromRequest(w http.ResponseWriter, r *http.Request) (string, error) {
 	header := r.Header.Get("Authorization")
 	if header == "" {
-		return nil
+		// no error and no token
+		return "", nil
 	}
 
 	parts := strings.Split(header, " ")
 
 	if len(parts) != 2 || parts[0] != "Bearer" {
-		log.Println("Invalid authorization header")
+		return "", fmt.Errorf("Invalid authorization header %s, format should be 'Bearer token'", header)
+	}
+
+	return parts[1], nil
+}
+
+// AuthViewer takes the authorization token from the request and verifies if valid and then returns a ViewerContext
+// which maps to user encoded in the token
+func (auth *SharedJwtAuth) AuthViewer(w http.ResponseWriter, r *http.Request) viewer.ViewerContext {
+	token, err := TokenFromRequest(w, r)
+	if err != nil || token == "" {
+		if err != nil {
+			// log for now
+			log.Println(err)
+		}
 		return nil
 	}
 
-	v, err := auth.ViewerFromToken(parts[1])
+	v, err := auth.ViewerFromToken(token)
 	if err != nil {
 		log.Printf("error %s grabbing viewer from token \n", err)
 	}
@@ -120,7 +133,7 @@ func (auth *SharedJwtAuth) AuthViewer(w http.ResponseWriter, r *http.Request) vi
 // ViewerFromToken takes the token string and verifies if valid and then returns a ViewerContext
 // which maps to user encoded in the token
 func (auth *SharedJwtAuth) ViewerFromToken(tokenStr string) (viewer.ViewerContext, error) {
-	claims := auth.getBaseClaims()
+	claims := auth.GetBaseClaims()
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return auth.SigningKey, nil
 	})
@@ -137,22 +150,9 @@ func (auth *SharedJwtAuth) ViewerFromToken(tokenStr string) (viewer.ViewerContex
 		return nil, fmt.Errorf("invalid signing method")
 	}
 
-	id, err := auth.getIDFromClaim(claims)
+	id, err := entjwt.GetIDFromClaims(claims)
 	if err != nil {
 		return nil, err
 	}
 	return auth.VCFromID(id)
-}
-
-func (auth *SharedJwtAuth) getIDFromClaim(claims jwt.Claims) (string, error) {
-	customClaims, ok := claims.(entjwt.Claims)
-	if ok {
-		return customClaims.ID(), nil
-	}
-
-	standardClaims, ok := claims.(*jwt.StandardClaims)
-	if ok {
-		return standardClaims.Id, nil
-	}
-	return "", errors.New("invalid claims")
 }

@@ -468,4 +468,9 @@ func (user *User) DBFields() ent.DBFields {
 	}
 }
 
+// UnsupportedScan flags that we can't call StructScan() on the ent to get data out of the db, have to always use MapScan() and DBFields() method above
+func (user *User) UnsupportedScan() bool {
+	return true
+}
+
 var _ ent.Entity = &User{}

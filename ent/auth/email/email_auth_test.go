@@ -167,7 +167,7 @@ func (suite *emailAuthTestSuite) TestCustomSigningMethod() {
 
 	identity := suite.verifyValidAuth(auth, user, user.EmailAddress, pwd)
 
-	token, err := jwt.ParseWithClaims(identity.Token, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(identity.Token, func(token *jwt.Token) (interface{}, error) {
 		return auth.SigningKey, nil
 	})
 
