@@ -6,6 +6,7 @@ require (
 	github.com/dave/dst v0.23.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/google/uuid v1.1.0
 	github.com/gorilla/mux v1.7.3
 	github.com/iancoleman/strcase v0.0.0-20190422225806-e506e3ef7365
@@ -16,7 +17,7 @@ require (
 	github.com/lib/pq v1.0.0
 	github.com/nyaruka/phonenumbers v1.0.54
 	github.com/ogier/pflag v0.0.1
-	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/rocketlaunchr/remember-go v1.0.0
 	github.com/sethvargo/go-password v0.1.3

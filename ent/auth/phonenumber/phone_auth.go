@@ -48,6 +48,9 @@ type PhonePinAuth struct {
 	// the phonenumber field which is how the phone number is probably stored
 	Format phonenumbers.PhoneNumberFormat
 
+	// TOOD document
+	Validator Validator
+
 	shared *base.SharedJwtAuth
 }
 
@@ -57,11 +60,13 @@ func NewPhonePinAuth(
 	signingKey interface{},
 	idFromPhoneNumber func(string) (string, error),
 	vcFromID func(string) (viewer.ViewerContext, error),
+	validator Validator,
 ) *PhonePinAuth {
 	return &PhonePinAuth{
 		IDFromPhoneNumber: idFromPhoneNumber,
 		SigningKey:        signingKey,
 		VCFromID:          vcFromID,
+		Validator:         validator,
 	}
 }
 
@@ -94,6 +99,9 @@ func (auth *PhonePinAuth) Authenticate(ctx context.Context, phoneNumber, pin str
 	if auth.VCFromID == nil {
 		return nil, fmt.Errorf("need to provide VCFromID to Authenticate")
 	}
+	if auth.Validator == nil {
+		return nil, fmt.Errorf("need to provide Validator to Authenticate")
+	}
 
 	var err error
 	phoneNumber, err = auth.getFormattedNumber(phoneNumber)
@@ -106,20 +114,16 @@ func (auth *PhonePinAuth) Authenticate(ctx context.Context, phoneNumber, pin str
 		return nil, errors.Wrap(err, "error confirming phoneNumber exists")
 	}
 
-	if err := auth.validatePIN(pin); err != nil {
+	if err := auth.Validator.Valid(phoneNumber, pin); err != nil {
 		return nil, errors.Wrap(err, "error validating pin")
 	}
 
-	return auth.newShared().AuthFromID(viewerID)
-}
-
-// TODO provide a different way to validate this
-// TODO redis/memory/custom function
-func (auth *PhonePinAuth) validatePIN(pin string) error {
-	if len(pin) != 6 {
-		return errors.New("invalid PIN")
+	clearer, ok := auth.Validator.(Clearer)
+	if ok {
+		defer clearer.Clear(phoneNumber)
 	}
-	return nil
+
+	return auth.newShared().AuthFromID(viewerID)
 }
 
 // AuthViewer takes the authorization token from the request and verifies if valid and then returns a ViewerContext
