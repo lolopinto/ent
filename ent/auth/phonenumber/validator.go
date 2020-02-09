@@ -7,6 +7,11 @@ import (
 	"github.com/lolopinto/ent/ent/cache"
 )
 
+// DefaultKey is the default key for the phone number|pin combo stored in the cache
+func DefaultKey(phoneNumber string) string {
+	return fmt.Sprintf("phone_number:%s", phoneNumber)
+}
+
 // Validator takes a phonenumber/pin combo and validates that it's a valid
 // Note that this already assumes a valid phone number via the IDFromPhoneNumber function
 // passed to PhonePinAuth
@@ -30,7 +35,7 @@ type MemoryValidator struct {
 	// Required. Instance of Memory responsible for storing phone number
 	Memory *cache.Memory
 
-	// function that takes a phonenumber and returns the key. Defaults to TODO when not provided
+	// function that takes a phonenumber and returns the key. Defaults to DefaultKey when not provided
 	KeyFunc func(string) string
 }
 
@@ -60,7 +65,7 @@ func (v *MemoryValidator) Clear(phoneNumber string) {
 
 func (v *MemoryValidator) getKey(phoneNumber string) string {
 	if v.KeyFunc == nil {
-		return fmt.Sprintf("phone_number:%s", phoneNumber)
+		return DefaultKey(phoneNumber)
 	}
 	return v.KeyFunc(phoneNumber)
 }
@@ -82,4 +87,48 @@ func (v *OneTimePINValidator) Valid(phoneNumber, pin string) error {
 		defer clearer.Clear(phoneNumber)
 	}
 	return err
+}
+
+// RedisValidator is used to store the PIN in redis and then
+// checking that there was previously a mapping from phone number to pin stored
+type RedisValidator struct {
+	// Required. Instance of Redis responsible for storing phone number
+	Redis *cache.Redis
+
+	// function that takes a phonenumber and returns the key. Defaults to DefaultKey when not provided
+	KeyFunc func(string) string
+}
+
+// Valid returns error if the pin stored for phone number doesn't match the provided pin
+func (v *RedisValidator) Valid(phoneNumber, pin string) error {
+	if v.Redis == nil {
+		return errors.New("Redis field is required")
+	}
+
+	key := v.getKey(phoneNumber)
+
+	val, found, err := v.Redis.Get(key)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return errors.New("No PIN exists")
+	}
+
+	if val == pin {
+		return nil
+	}
+	return errors.New("PIN not as expected")
+}
+
+// Clear clears the key mapping phone number to pin in memory
+func (v *RedisValidator) Clear(phoneNumber string) {
+	v.Redis.Delete(v.getKey(phoneNumber))
+}
+
+func (v *RedisValidator) getKey(phoneNumber string) string {
+	if v.KeyFunc == nil {
+		return DefaultKey(phoneNumber)
+	}
+	return v.KeyFunc(phoneNumber)
 }

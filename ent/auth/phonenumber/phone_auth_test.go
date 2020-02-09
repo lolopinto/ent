@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-redis/redis"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/lolopinto/ent/ent/auth"
@@ -30,64 +31,6 @@ import (
 
 var signingKey = []byte("phone_auth_signing_key")
 
-func TestNoSigningKey(t *testing.T) {
-	auth := phonenumber.NewPhonePinAuth(
-		nil,
-		models.LoadUserIDFromPhoneNumber,
-		viewertesting.GetLoggedInViewer,
-		&phonenumber.MemoryValidator{},
-	)
-
-	identity, err := auth.Authenticate(context.TODO(), "1", "1")
-	require.Nil(t, identity)
-	require.NotNil(t, err)
-	require.Contains(t, err.Error(), "signing key")
-}
-
-func TestNoIDFromPhoneNumber(t *testing.T) {
-	auth := phonenumber.NewPhonePinAuth(
-		signingKey,
-		nil,
-		viewertesting.GetLoggedInViewer,
-		&phonenumber.MemoryValidator{},
-	)
-
-	identity, err := auth.Authenticate(context.TODO(), "1", "1")
-	require.Nil(t, identity)
-	require.NotNil(t, err)
-	require.Contains(t, err.Error(), "IDFromPhoneNumber")
-}
-
-func TestNoVCFromID(t *testing.T) {
-	auth := phonenumber.NewPhonePinAuth(
-		signingKey,
-		models.LoadUserIDFromPhoneNumber,
-		nil,
-		&phonenumber.MemoryValidator{},
-	)
-
-	identity, err := auth.Authenticate(context.TODO(), "1", "1")
-	require.Nil(t, identity)
-	require.NotNil(t, err)
-	require.Contains(t, err.Error(), "VCFromID")
-}
-
-func TestNotPhoneNumber(t *testing.T) {
-	identity, err := authPhoneNumberPin("1", "1")
-
-	require.Nil(t, identity)
-	require.NotNil(t, err)
-	require.Contains(t, err.Error(), "invalid phone number")
-}
-
-func TestMissingPhoneNumber(t *testing.T) {
-	identity, err := authPhoneNumberPin("6501234567", "1")
-
-	require.Nil(t, identity)
-	require.NotNil(t, err)
-	require.Contains(t, err.Error(), "no rows in result set")
-}
-
 type phoneAuthTestSuite struct {
 	testingutils.Suite
 }
@@ -102,13 +45,18 @@ func (suite *phoneAuthTestSuite) SetupSuite() {
 
 func (suite *phoneAuthTestSuite) SetupTest() {
 	auth.Clear()
+	// clear redis in between each test
+	redis := cache.NewRedis(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	redis.Clear()
 }
 
 func (suite *phoneAuthTestSuite) createUser() *models.User {
 	user, err := action.CreateUser(viewer.LoggedOutViewer()).
 		SetFirstName("Jon").
 		SetLastName("Snow").
-		SetEmailAddress("test@email.com").
+		SetEmailAddress(util.GenerateRandEmail()).
 		SetPassword(util.GenerateRandPassword()).
 		SetPhoneNumber("4159876543").Save()
 
@@ -118,24 +66,129 @@ func (suite *phoneAuthTestSuite) createUser() *models.User {
 	return user
 }
 
+func (suite *phoneAuthTestSuite) getValidators() map[string]phonenumber.Validator {
+	memory := cache.NewMemory(10*time.Minute, 10*time.Minute)
+	redis := cache.NewRedis(&redis.Options{
+		Addr: "localhost:6379",
+	})
+
+	return map[string]phonenumber.Validator{
+		"memory": &phonenumber.MemoryValidator{
+			Memory: memory,
+		},
+		"redis": &phonenumber.RedisValidator{
+			Redis: redis,
+		},
+	}
+}
+
+func (suite *phoneAuthTestSuite) runFuncWithValidator(fn func(t *testing.T, validator phonenumber.Validator)) {
+	validators := suite.getValidators()
+
+	for key, validator := range validators {
+		suite.T().Run(key, func(t *testing.T) {
+			fn(t, validator)
+		})
+	}
+}
+
+func (suite *phoneAuthTestSuite) runFuncWithDefaultAuth(fn func(t *testing.T, auth *phonenumber.PhonePinAuth)) {
+	validators := suite.getValidators()
+
+	for key, validator := range validators {
+		suite.T().Run(key, func(t *testing.T) {
+			auth := getDefaultAuth(validator)
+			fn(t, auth)
+		})
+		auth.Clear()
+	}
+}
+
+func (suite *phoneAuthTestSuite) TestNoSigningKey() {
+	auth := phonenumber.NewPhonePinAuth(
+		nil,
+		models.LoadUserIDFromPhoneNumber,
+		viewertesting.GetLoggedInViewer,
+		&phonenumber.MemoryValidator{},
+	)
+
+	identity, err := auth.Authenticate(context.TODO(), "1", "1")
+	require.Nil(suite.T(), identity)
+	require.NotNil(suite.T(), err)
+	require.Contains(suite.T(), err.Error(), "signing key")
+}
+
+func (suite *phoneAuthTestSuite) TestNoIDFromPhoneNumber() {
+	auth := phonenumber.NewPhonePinAuth(
+		signingKey,
+		nil,
+		viewertesting.GetLoggedInViewer,
+		&phonenumber.MemoryValidator{},
+	)
+
+	identity, err := auth.Authenticate(context.TODO(), "1", "1")
+	require.Nil(suite.T(), identity)
+	require.NotNil(suite.T(), err)
+	require.Contains(suite.T(), err.Error(), "IDFromPhoneNumber")
+}
+
+func (suite *phoneAuthTestSuite) TestNoVCFromID() {
+	auth := phonenumber.NewPhonePinAuth(
+		signingKey,
+		models.LoadUserIDFromPhoneNumber,
+		nil,
+		&phonenumber.MemoryValidator{},
+	)
+
+	identity, err := auth.Authenticate(context.TODO(), "1", "1")
+	require.Nil(suite.T(), identity)
+	require.NotNil(suite.T(), err)
+	require.Contains(suite.T(), err.Error(), "VCFromID")
+}
+
+func (suite *phoneAuthTestSuite) TestNotPhoneNumber() {
+
+	suite.runFuncWithValidator(func(t *testing.T, validator phonenumber.Validator) {
+		identity, err := authPhoneNumberPin("1", "1", validator)
+
+		require.Nil(t, identity)
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "invalid phone number")
+	})
+}
+
+func (suite *phoneAuthTestSuite) TestMissingPhoneNumber() {
+	suite.runFuncWithValidator(func(t *testing.T, validator phonenumber.Validator) {
+		identity, err := authPhoneNumberPin("6501234567", "1", validator)
+
+		require.Nil(t, identity)
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "no rows in result set")
+	})
+}
+
 func (suite *phoneAuthTestSuite) TestInvalidPIN() {
 	suite.createUser()
 
-	identity, err := authPhoneNumberPin("4159876543", "1")
-	require.Nil(suite.T(), identity)
-	require.NotNil(suite.T(), err)
-	require.Contains(suite.T(), err.Error(), "No PIN exists")
+	suite.runFuncWithValidator(func(t *testing.T, validator phonenumber.Validator) {
+		identity, err := authPhoneNumberPin("4159876543", "1", validator)
+		require.Nil(t, identity)
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "No PIN exists")
+	})
 }
 
 func (suite *phoneAuthTestSuite) TestIncorrectPIN() {
 	suite.createUser()
 
-	auth := getDefaultAuth()
-	setPinInCache(auth)
-	identity, err := auth.Authenticate(context.TODO(), "4159876543", "234832")
-	require.Nil(suite.T(), identity)
-	require.NotNil(suite.T(), err)
-	require.Contains(suite.T(), err.Error(), "PIN not as expected")
+	suite.runFuncWithDefaultAuth(func(t *testing.T, auth *phonenumber.PhonePinAuth) {
+		setPinInCache(auth)
+
+		identity, err := auth.Authenticate(context.TODO(), "4159876543", "234832")
+		require.Nil(t, identity)
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "PIN not as expected")
+	})
 }
 
 func (suite *phoneAuthTestSuite) TestValidAuth() {
@@ -148,9 +201,10 @@ func (suite *phoneAuthTestSuite) TestValidAuth() {
 
 	for key, number := range testCases {
 		suite.T().Run(key, func(t *testing.T) {
-			auth := getDefaultAuth()
 
-			suite.testValidAuthWithDuration(auth, entjwt.DefaultDuration, user, number)
+			suite.runFuncWithDefaultAuth(func(t *testing.T, auth *phonenumber.PhonePinAuth) {
+				testValidAuthWithDuration(t, auth, entjwt.DefaultDuration, user, number)
+			})
 		})
 	}
 }
@@ -158,97 +212,102 @@ func (suite *phoneAuthTestSuite) TestValidAuth() {
 func (suite *phoneAuthTestSuite) TestConsecutiveAuthsFirstCorrect() {
 	user := suite.createUser()
 
-	auth := getDefaultAuth()
+	suite.runFuncWithDefaultAuth(func(t *testing.T, auth *phonenumber.PhonePinAuth) {
+		testValidAuthWithDuration(t, auth, entjwt.DefaultDuration, user, "4159876543")
 
-	suite.testValidAuthWithDuration(auth, entjwt.DefaultDuration, user, "4159876543")
-
-	// trying immediately after shouldn't work since we should
-	// have cleared this
-	identity, err := auth.Authenticate(context.TODO(), "4159876543", "123456")
-	require.Nil(suite.T(), identity)
-	require.NotNil(suite.T(), err)
-	require.Contains(suite.T(), err.Error(), "No PIN exists")
+		// trying immediately after shouldn't work since we should
+		// have cleared this
+		identity, err := auth.Authenticate(context.TODO(), "4159876543", "123456")
+		require.Nil(t, identity)
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "No PIN exists")
+	})
 }
 
 func (suite *phoneAuthTestSuite) TestConsecutiveAuthsFirstInCorrect() {
 	user := suite.createUser()
 
-	auth := getDefaultAuth()
-	setPinInCache(auth)
-	// incorrect PIN
-	identity, err := auth.Authenticate(context.TODO(), "4159876543", "232343")
-	require.Nil(suite.T(), identity)
-	require.NotNil(suite.T(), err)
-	require.Contains(suite.T(), err.Error(), "PIN not as expected")
+	suite.runFuncWithDefaultAuth(func(t *testing.T, auth *phonenumber.PhonePinAuth) {
+		setPinInCache(auth)
+		// incorrect PIN
+		identity, err := auth.Authenticate(context.TODO(), "4159876543", "232343")
+		require.Nil(t, identity)
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "PIN not as expected")
 
-	// try again with correct PIN
-	suite.verifyValidAuth(auth, user, "4159876543")
+		// try again with correct PIN
+		verifyValidAuth(t, auth, user, "4159876543")
+	})
 }
 
 func (suite *phoneAuthTestSuite) TestOneTimeValidatorConsecutiveAuthsFirstCorrect() {
 	user := suite.createUser()
 
-	auth := getDefaultAuth()
-	auth.Validator = &phonenumber.OneTimePINValidator{
-		Validator: auth.Validator,
-	}
+	suite.runFuncWithDefaultAuth(func(t *testing.T, auth *phonenumber.PhonePinAuth) {
+		auth.Validator = &phonenumber.OneTimePINValidator{
+			Validator: auth.Validator,
+		}
 
-	suite.testValidAuthWithDuration(auth, entjwt.DefaultDuration, user, "4159876543")
+		testValidAuthWithDuration(t, auth, entjwt.DefaultDuration, user, "4159876543")
 
-	// trying immediately after shouldn't work since we should
-	// have cleared this
-	// This is same behavior as "regular" validator
-	identity, err := auth.Authenticate(context.TODO(), "4159876543", "123456")
-	require.Nil(suite.T(), identity)
-	require.NotNil(suite.T(), err)
-	require.Contains(suite.T(), err.Error(), "No PIN exists")
+		// trying immediately after shouldn't work since we should
+		// have cleared this
+		// This is same behavior as "regular" validator
+		identity, err := auth.Authenticate(context.TODO(), "4159876543", "123456")
+		require.Nil(t, identity)
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "No PIN exists")
+	})
 }
 
 func (suite *phoneAuthTestSuite) TestOneTimeValidatorConsecutiveAuthsFirstInCorrect() {
 	suite.createUser()
 
-	auth := getDefaultAuth()
-	auth.Validator = &phonenumber.OneTimePINValidator{
-		Validator: auth.Validator,
-	}
-	setPinInCache(auth)
-	// incorrect PIN
-	identity, err := auth.Authenticate(context.TODO(), "4159876543", "232343")
-	require.Nil(suite.T(), identity)
-	require.NotNil(suite.T(), err)
-	require.Contains(suite.T(), err.Error(), "PIN not as expected")
+	suite.runFuncWithDefaultAuth(func(t *testing.T, auth *phonenumber.PhonePinAuth) {
+		auth.Validator = &phonenumber.OneTimePINValidator{
+			Validator: auth.Validator,
+		}
+		setPinInCache(auth)
+		// incorrect PIN
+		identity, err := auth.Authenticate(context.TODO(), "4159876543", "232343")
+		require.Nil(t, identity)
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "PIN not as expected")
 
-	// try again with correct PIN will fail because it's only allowed to be used once
-	// regardless of success or failure
-	identity, err = auth.Authenticate(context.TODO(), "4159876543", "123456")
-	require.Nil(suite.T(), identity)
-	require.NotNil(suite.T(), err)
-	require.Contains(suite.T(), err.Error(), "No PIN exists")
+		// try again with correct PIN will fail because it's only allowed to be used once
+		// regardless of success or failure
+		identity, err = auth.Authenticate(context.TODO(), "4159876543", "123456")
+		require.Nil(t, identity)
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "No PIN exists")
+	})
 }
 
 func (suite *phoneAuthTestSuite) TestCustomDuration() {
 	user := suite.createUser()
 
-	auth := getDefaultAuth()
-	auth.Duration = 5 * time.Minute
+	suite.runFuncWithDefaultAuth(func(t *testing.T, auth *phonenumber.PhonePinAuth) {
+		auth.Duration = 5 * time.Minute
 
-	suite.testValidAuthWithDuration(auth, 5*time.Minute, user, "4159876543")
+		testValidAuthWithDuration(suite.T(), auth, 5*time.Minute, user, "4159876543")
+	})
 }
 
 func (suite *phoneAuthTestSuite) TestCustomSigningMethod() {
 	user := suite.createUser()
 
-	auth := getDefaultAuth()
-	auth.SigningMethod = jwt.SigningMethodHS256
+	suite.runFuncWithDefaultAuth(func(t *testing.T, auth *phonenumber.PhonePinAuth) {
+		auth.SigningMethod = jwt.SigningMethodHS256
 
-	identity := suite.setPINAndVerifyValidAuth(auth, user, "4159876543")
+		identity := setPINAndVerifyValidAuth(t, auth, user, "4159876543")
 
-	token, err := jwt.Parse(identity.Token, func(token *jwt.Token) (interface{}, error) {
-		return auth.SigningKey, nil
+		token, err := jwt.Parse(identity.Token, func(token *jwt.Token) (interface{}, error) {
+			return auth.SigningKey, nil
+		})
+
+		require.Nil(t, err)
+		require.Equal(t, jwt.SigningMethodHS256, token.Method)
 	})
-
-	require.Nil(suite.T(), err)
-	require.Equal(suite.T(), jwt.SigningMethodHS256, token.Method)
 }
 
 type claims struct {
@@ -263,70 +322,77 @@ func (c *claims) ID() string {
 func (suite *phoneAuthTestSuite) TestCustomClaims() {
 	user := suite.createUser()
 
-	auth := getDefaultAuth()
-	auth.ClaimFunc = func(id string) entjwt.Claims {
-		return &claims{
-			Admin: true,
-			StandardClaims: jwt.StandardClaims{
-				Id:        id,
-				ExpiresAt: jwt.TimeFunc().Add(1 * time.Minute).Unix(),
-			},
+	suite.runFuncWithDefaultAuth(func(t *testing.T, auth *phonenumber.PhonePinAuth) {
+
+		auth.ClaimFunc = func(id string) entjwt.Claims {
+			return &claims{
+				Admin: true,
+				StandardClaims: jwt.StandardClaims{
+					Id:        id,
+					ExpiresAt: jwt.TimeFunc().Add(1 * time.Minute).Unix(),
+				},
+			}
 		}
-	}
-	auth.BaseClaimFunc = func() entjwt.Claims {
-		return &claims{}
-	}
-	suite.setPINAndVerifyValidAuth(auth, user, "4159876543")
+		auth.BaseClaimFunc = func() entjwt.Claims {
+			return &claims{}
+		}
+		setPINAndVerifyValidAuth(t, auth, user, "4159876543")
+	})
 }
 
 func (suite *phoneAuthTestSuite) TestAuthFromRequestNoHeader() {
 	// no header so logged out viewer
-	auth.Register("phone_pin_auth", getDefaultAuth())
+	suite.runFuncWithDefaultAuth(func(t *testing.T, phoneAuth *phonenumber.PhonePinAuth) {
+		auth.Register("phone_pin_auth", phoneAuth)
 
-	h := suite.testServer()
+		h := testServer(t)
 
-	assert.IsType(suite.T(), viewer.LoggedOutViewerContext{}, h.V)
-	assert.Equal(suite.T(), h.V.GetViewerID(), "")
+		assert.IsType(t, viewer.LoggedOutViewerContext{}, h.V)
+		assert.Equal(t, h.V.GetViewerID(), "")
+	})
 }
 
 func (suite *phoneAuthTestSuite) TestAuthFromRequestWithHeader() {
 	user := suite.createUser()
 
-	auth.Register("phone_pin_auth", getDefaultAuth())
+	suite.runFuncWithDefaultAuth(func(t *testing.T, phoneAuth *phonenumber.PhonePinAuth) {
+		auth.Register("phone_pin_auth", phoneAuth)
 
-	h := suite.testServer(func(req *http.Request) {
-		auth := getDefaultAuth()
-		setPinInCache(auth)
-		identity, err := auth.Authenticate(context.TODO(), "4159876543", "123456")
-		require.Nil(suite.T(), err)
-		require.NotNil(suite.T(), identity)
+		h := testServer(t, func(req *http.Request) {
+			setPinInCache(phoneAuth)
+			identity, err := phoneAuth.Authenticate(context.TODO(), "4159876543", "123456")
+			require.Nil(t, err)
+			require.NotNil(t, identity)
 
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", identity.Token))
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", identity.Token))
+		})
+
+		assert.IsType(t, viewertesting.LoggedinViewerContext{}, h.V)
+		assert.Equal(t, h.V.GetViewerID(), user.ID)
 	})
-
-	assert.IsType(suite.T(), viewertesting.LoggedinViewerContext{}, h.V)
-	assert.Equal(suite.T(), h.V.GetViewerID(), user.ID)
 }
 
 func (suite *phoneAuthTestSuite) TestInvalidAuthorizationHeader() {
-	auth.Register("phone_pin_auth", getDefaultAuth())
+	suite.runFuncWithDefaultAuth(func(t *testing.T, phoneAuth *phonenumber.PhonePinAuth) {
+		auth.Register("phone_pin_auth", phoneAuth)
 
-	h := suite.testServer(func(req *http.Request) {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", uuid.New().String()))
+		h := testServer(t, func(req *http.Request) {
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", uuid.New().String()))
+		})
+
+		assert.IsType(t, viewer.LoggedOutViewerContext{}, h.V)
+		assert.Equal(t, h.V.GetViewerID(), "")
 	})
-
-	assert.IsType(suite.T(), viewer.LoggedOutViewerContext{}, h.V)
-	assert.Equal(suite.T(), h.V.GetViewerID(), "")
 }
 
-func (suite *phoneAuthTestSuite) testServer(fns ...func(*http.Request)) *httptest.QueryHandler {
+func testServer(t *testing.T, fns ...func(*http.Request)) *httptest.QueryHandler {
 	h := &httptest.QueryHandler{
-		T:        suite.T(),
+		T:        t,
 		Response: []byte("auth response!"),
 	}
 
 	httptest.TestServer(
-		suite.T(),
+		t,
 		h.HandlerFunc,
 		"auth response!",
 		func(r *mux.Router, req *http.Request) {
@@ -344,54 +410,57 @@ func (suite *phoneAuthTestSuite) testServer(fns ...func(*http.Request)) *httptes
 	return h
 }
 
-func (suite *phoneAuthTestSuite) setPINAndVerifyValidAuth(
+func setPINAndVerifyValidAuth(
+	t *testing.T,
 	auth *phonenumber.PhonePinAuth,
 	user *models.User,
 	number string,
 ) *entjwt.AuthedIdentity {
 	setPinInCache(auth)
-	return suite.verifyValidAuth(auth, user, number)
+	return verifyValidAuth(t, auth, user, number)
 }
 
-func (suite *phoneAuthTestSuite) verifyValidAuth(
+func verifyValidAuth(
+	t *testing.T,
 	auth *phonenumber.PhonePinAuth,
 	user *models.User,
 	number string,
 ) *entjwt.AuthedIdentity {
 
 	identity, err := auth.Authenticate(context.TODO(), number, "123456")
-	require.Nil(suite.T(), err)
-	require.NotNil(suite.T(), identity)
+	require.Nil(t, err)
+	require.NotNil(t, identity)
 
-	require.Equal(suite.T(), user.ID, identity.Viewer.GetViewerID())
+	require.Equal(t, user.ID, identity.Viewer.GetViewerID())
 
 	// validate the token
 	viewer, err := auth.ViewerFromToken(identity.Token)
-	require.Nil(suite.T(), err)
-	require.NotNil(suite.T(), viewer)
-	require.Equal(suite.T(), user.ID, viewer.GetViewerID())
+	require.Nil(t, err)
+	require.NotNil(t, viewer)
+	require.Equal(t, user.ID, viewer.GetViewerID())
 
-	require.Equal(suite.T(), viewer, identity.Viewer)
+	require.Equal(t, viewer, identity.Viewer)
 
 	return identity
 }
 
-func (suite *phoneAuthTestSuite) testValidAuthWithDuration(
+func testValidAuthWithDuration(
+	t *testing.T,
 	auth *phonenumber.PhonePinAuth,
 	duration time.Duration,
 	user *models.User,
 	number string,
 ) {
 
-	identity := suite.setPINAndVerifyValidAuth(auth, user, number)
+	identity := setPINAndVerifyValidAuth(t, auth, user, number)
 
 	// check if valid after the fact
 	jwt.TimeFunc = func() time.Time {
 		return time.Now().Add(duration + 1*time.Second)
 	}
 	viewer, err := auth.ViewerFromToken(identity.Token)
-	require.NotNil(suite.T(), err)
-	require.Nil(suite.T(), viewer)
+	require.NotNil(t, err)
+	require.Nil(t, viewer)
 
 	// reset the time
 	jwt.TimeFunc = time.Now
@@ -412,26 +481,28 @@ func setPinInCacheVal(validator phonenumber.Validator) {
 		memoryValidator.Memory.Set("phone_number:+14159876543", "123456", time.Minute*10)
 	}
 
+	redisValidator, ok := validator.(*phonenumber.RedisValidator)
+
+	if ok {
+		redisValidator.Redis.Set("phone_number:+14159876543", "123456", time.Minute*10)
+	}
+
 	oneTimeValidator, ok := validator.(*phonenumber.OneTimePINValidator)
 	if ok {
 		setPinInCacheVal(oneTimeValidator.Validator)
 	}
 }
 
-func getDefaultAuth() *phonenumber.PhonePinAuth {
-	memory := cache.NewMemory(10*time.Minute, 10*time.Minute)
-
+func getDefaultAuth(validator phonenumber.Validator) *phonenumber.PhonePinAuth {
 	return phonenumber.NewPhonePinAuth(
 		signingKey,
 		models.LoadUserIDFromPhoneNumber,
 		viewertesting.GetLoggedInViewer,
-		&phonenumber.MemoryValidator{
-			Memory: memory,
-		},
+		validator,
 	)
 }
 
-func authPhoneNumberPin(phoneNumber, pin string) (*entjwt.AuthedIdentity, error) {
-	auth := getDefaultAuth()
+func authPhoneNumberPin(phoneNumber, pin string, validator phonenumber.Validator) (*entjwt.AuthedIdentity, error) {
+	auth := getDefaultAuth(validator)
 	return auth.Authenticate(context.TODO(), phoneNumber, pin)
 }

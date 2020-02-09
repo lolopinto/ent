@@ -6,6 +6,7 @@ require (
 	github.com/dave/dst v0.23.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/go-redis/redis v6.15.7+incompatible
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/google/uuid v1.1.0
 	github.com/gorilla/mux v1.7.3
