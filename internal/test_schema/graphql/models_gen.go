@@ -64,6 +64,35 @@ type AdminBlockResponse struct {
 	Success *bool `json:"success"`
 }
 
+type AuthCheckAvailablePhoneNumberInput struct {
+	PhoneNumber string `json:"phoneNumber"`
+}
+
+type AuthCheckAvailablePhoneNumberResponse struct {
+	Available bool `json:"available"`
+}
+
+type AuthPhoneNumberInput struct {
+	PhoneNumber string `json:"phoneNumber"`
+	Pin         string `json:"pin"`
+}
+
+type AuthPhoneNumberResponse struct {
+	Token string `json:"token"`
+}
+
+type AuthSendSMSInput struct {
+	PhoneNumber string `json:"phoneNumber"`
+}
+
+type AuthSendSMSResponse struct {
+	Pin string `json:"pin"`
+}
+
+type AuthSignoutResponse struct {
+	Success *bool `json:"success"`
+}
+
 type AuthUserInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -77,6 +106,15 @@ type AuthUserResponse struct {
 type AuthUserResult struct {
 	Token string       `json:"token"`
 	User  *models.User `json:"user"`
+}
+
+type AuthValidCredentialsInput struct {
+	PhoneNumber string `json:"phoneNumber"`
+	Pin         string `json:"pin"`
+}
+
+type AuthValidCredentialsResponse struct {
+	Available bool `json:"available"`
 }
 
 type ContactCreateInput struct {

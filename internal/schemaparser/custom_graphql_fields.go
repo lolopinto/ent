@@ -116,7 +116,7 @@ func ParseCustomGraphQLDefinitions(parser Parser, codeParser CustomCodeParser) c
 }
 
 func parseCustomGQL(parser Parser, codeParser CustomCodeParser, out chan ParseCustomGQLResult) {
-	pkgs := LoadPackages(parser)
+	pkgs := LoadPackagesX(parser)
 
 	l := &parsedList{}
 	var wg sync.WaitGroup

@@ -1,7 +1,6 @@
 package file
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,13 +9,20 @@ import (
 )
 
 type Writer interface {
-	Write() error
+	Write(opts ...func(opt *Options)) error
 	createDirIfNeeded() bool
 	getPathToFile() string
 	generateBytes() ([]byte, error)
 }
 
-func writeFile(w Writer) error {
+func writeFile(w Writer, opts ...func(opt *Options)) error {
+	option := &Options{}
+	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
+		opt(option)
+	}
 	bytes, err := w.generateBytes()
 	if err != nil {
 		return err
@@ -32,7 +38,7 @@ func writeFile(w Writer) error {
 		if os.IsNotExist(err) {
 			err = os.MkdirAll(directoryPath, os.ModePerm)
 			if err == nil {
-				fmt.Println("created directory ", directoryPath)
+				log.Println("created directory ", directoryPath)
 			}
 		}
 		if os.IsNotExist(err) {
@@ -40,13 +46,47 @@ func writeFile(w Writer) error {
 		}
 	}
 
+	if option.writeOnce {
+		_, err := os.Stat(pathToFile)
+		if err == nil {
+			log.Printf("file %s already exists so not writing\n", pathToFile)
+			return nil
+		}
+		if !os.IsNotExist(err) {
+			log.Printf("error checking to see if path %s exists \n", pathToFile)
+			return err
+		}
+	}
 	err = ioutil.WriteFile(pathToFile, bytes, 0666)
-	if err != nil {
+	if err == nil {
 		log.Println("wrote to file ", pathToFile)
 	}
 	return err
 }
 
-func Write(w Writer) error {
-	return w.Write()
+// Options provides a way to configure the file writing process as needed
+// TODO: maybe move things like createDirIfNeeded to here?
+type Options struct {
+	writeOnce bool
+}
+
+// WriteOnce specifes that writing to path provided should not occur if the file already exists
+// This is usually configured via code
+func WriteOnce() func(opt *Options) {
+	return func(opt *Options) {
+		opt.writeOnce = true
+	}
+}
+
+// WriteOnceMaybe takes a flag (usually provided via user action) and determines if we should add
+// the writeOnce flag to Options
+func WriteOnceMaybe(forceOverwrite bool) func(opt *Options) {
+	if forceOverwrite {
+		return nil
+	}
+	return WriteOnce()
+}
+
+func Write(w Writer, opts ...func(opt *Options)) error {
+	return w.Write(opts...)
 }

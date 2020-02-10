@@ -2,6 +2,7 @@ package phonenumber
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"time"
@@ -90,19 +91,9 @@ func (auth *PhonePinAuth) newShared() *base.SharedJwtAuth {
 // Authenticate takes credentials from the request and authenticates the user.
 // Can be called from your GraphQL mutation, REST API, etc.
 func (auth *PhonePinAuth) Authenticate(ctx context.Context, phoneNumber, pin string) (*entjwt.AuthedIdentity, error) {
-	if auth.SigningKey == nil {
-		return nil, fmt.Errorf("need to provide signing key to Authenticate")
+	if err := auth.validateArgs(); err != nil {
+		return nil, err
 	}
-	if auth.IDFromPhoneNumber == nil {
-		return nil, fmt.Errorf("need to provide IDFromPhoneNumber to Authenticate")
-	}
-	if auth.VCFromID == nil {
-		return nil, fmt.Errorf("need to provide VCFromID to Authenticate")
-	}
-	if auth.Validator == nil {
-		return nil, fmt.Errorf("need to provide Validator to Authenticate")
-	}
-
 	var err error
 	phoneNumber, err = auth.getFormattedNumber(phoneNumber)
 	if err != nil {
@@ -124,6 +115,37 @@ func (auth *PhonePinAuth) Authenticate(ctx context.Context, phoneNumber, pin str
 	}
 
 	return auth.newShared().AuthFromID(viewerID)
+}
+
+// AvailableAndValid returns a boolean indicating that the phoneNumber/pin combo can be used to sign-in or register
+// Dpoesn't clear the PIN because it could eventually be used in the corresponding account create mutation
+// If this is a OneTimePINValidator or anything that clears when Validate is called, beware!
+func (auth *PhonePinAuth) AvailableAndValid(ctx context.Context, phoneNumber, pin string) (bool, error) {
+	if err := auth.validateArgs(); err != nil {
+		return false, err
+	}
+
+	var err error
+	phoneNumber, err = auth.getFormattedNumber(phoneNumber)
+	if err != nil {
+		return false, err
+	}
+
+	viewerID, err := auth.IDFromPhoneNumber(phoneNumber)
+	// sql.ErrNoRows is fine!
+	// TODO we need redis.Nil etc support
+	if err != nil && err != sql.ErrNoRows {
+		return false, errors.Wrap(err, "error confirming phoneNumber exists")
+	}
+	if viewerID != "" {
+		return false, errors.New("phoneNumber already maps to an existing user")
+	}
+
+	if err := auth.Validator.Valid(phoneNumber, pin); err != nil {
+		return false, errors.Wrap(err, "error validating pin")
+	}
+
+	return true, nil
 }
 
 // AuthViewer takes the authorization token from the request and verifies if valid and then returns a ViewerContext
@@ -148,4 +170,21 @@ func (auth *PhonePinAuth) getFormattedNumber(phoneNumber string) (string, error)
 		return "", errors.Wrap(err, "invalid phone number")
 	}
 	return phonenumbers.Format(number, auth.Format), nil
+}
+
+func (auth *PhonePinAuth) validateArgs() error {
+	if auth.SigningKey == nil {
+		return fmt.Errorf("need to provide signing key to Authenticate")
+	}
+	if auth.IDFromPhoneNumber == nil {
+		return fmt.Errorf("need to provide IDFromPhoneNumber to Authenticate")
+	}
+	if auth.VCFromID == nil {
+		return fmt.Errorf("need to provide VCFromID to Authenticate")
+	}
+	if auth.Validator == nil {
+		return fmt.Errorf("need to provide Validator to Authenticate")
+	}
+
+	return nil
 }

@@ -32,7 +32,7 @@ func ErrSlice(err []packages.Error) {
 func CoalesceErrSlice(err []packages.Error) error {
 	var errs = make([]error, len(err))
 	for idx, e := range err {
-		err[idx] = e
+		errs[idx] = e
 	}
 	return CoalesceErr(errs...)
 }

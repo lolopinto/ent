@@ -115,7 +115,7 @@ func ParseFilesForTest(t *testing.T, options ...func(*Config)) *FileConfigData {
 		}
 	}
 
-	pkg := schemaparser.LoadPackage(p)
+	pkg := schemaparser.LoadPackageX(p)
 
 	structMap := make(map[string]*ast.StructType)
 	funcMap := make(map[string]map[string]*ast.FuncDecl)

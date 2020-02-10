@@ -22,6 +22,6 @@ func (fw *YamlFileWriter) generateBytes() ([]byte, error) {
 	return yaml.Marshal(fw.Data)
 }
 
-func (fw *YamlFileWriter) Write() error {
-	return writeFile(fw)
+func (fw *YamlFileWriter) Write(opts ...func(opt *Options)) error {
+	return writeFile(fw, opts...)
 }

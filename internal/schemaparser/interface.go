@@ -1,7 +1,6 @@
 package schemaparser
 
 import (
-	"errors"
 	"fmt"
 	"go/ast"
 	"io/ioutil"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/internal/util"
+	"github.com/pkg/errors"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -110,17 +110,36 @@ func (p *SourceSchemaParser) Cleanup() {
 	util.Die(os.RemoveAll(p.tempDir))
 }
 
-func LoadPackage(p Parser) *packages.Package {
-	pkgs := LoadPackages(p)
-	if len(pkgs) != 1 {
-		panic("invalid number of packages. TODO ola figure out why there's more than one package in a folder")
+func LoadPackageX(p Parser) *packages.Package {
+	pkg, err := LoadPackage(p)
+	if err != nil {
+		panic(err)
 	}
-	return pkgs[0]
+	return pkg
 }
 
-func LoadPackages(p Parser) []*packages.Package {
+func LoadPackage(p Parser) (*packages.Package, error) {
+	pkgs, err := LoadPackages(p)
+	if err != nil {
+		return nil, err
+	}
+	if len(pkgs) != 1 {
+		return nil, errors.New("invalid number of packages. TODO ola figure out why there's more than one package in a folder")
+	}
+	return pkgs[0], nil
+}
+
+func LoadPackagesX(p Parser) []*packages.Package {
+	pkgs, err := LoadPackages(p)
+	if err != nil {
+		panic(err)
+	}
+	return pkgs
+}
+
+func LoadPackages(p Parser) ([]*packages.Package, error) {
 	if p == nil {
-		return []*packages.Package{}
+		return []*packages.Package{}, nil
 	}
 	cfg, dir, err := p.GetConfig()
 
@@ -128,29 +147,37 @@ func LoadPackages(p Parser) []*packages.Package {
 	if ok {
 		defer parserWithCleanup.Cleanup()
 	}
-	util.Die(err)
+	if err != nil {
+		return nil, err
+	}
 
 	pkgs, err := packages.Load(cfg, dir)
-	util.Die(err)
+	if err != nil {
+		return nil, err
+	}
 
+	var errs []error
 	for _, pkg := range pkgs {
 		if len(pkg.Errors) > 0 {
 			// If we run into issues with this in the future, inspect err.Pos
 			// some strings.Split tells us what we're doing...
-			util.ErrSlice(pkg.Errors)
+			if err := util.CoalesceErrSlice(pkg.Errors); err != nil {
+				errs = append(errs, errors.Wrap(err, fmt.Sprintf("package %s", pkg.PkgPath)))
+			}
 		}
 
 		if len(pkg.GoFiles) != len(pkg.Syntax) {
-			panic(
-				fmt.Errorf(
-					"don't have the same number of named files and parsed files. %d filenames %d files",
-					len(pkg.GoFiles),
-					len(pkg.Syntax),
-				),
-			)
+			errs = append(errs, fmt.Errorf(
+				"don't have the same number of named files and parsed files. %d filenames %d files",
+				len(pkg.GoFiles),
+				len(pkg.Syntax),
+			))
 		}
 	}
-	return pkgs
+	if len(errs) != 0 {
+		return nil, util.CoalesceErr(errs...)
+	}
+	return pkgs, nil
 }
 
 type FunctionSearch struct {
@@ -198,9 +225,9 @@ func FindFunctions(code, pkgName string, fnNames ...string) (*packages.Package, 
 }
 
 func FindFunctionFromParser(parser Parser, fss ...FunctionSearch) (*packages.Package, map[string]*ast.FuncDecl, error) {
-	pkg := LoadPackage(parser)
-	if len(pkg.Errors) != 0 {
-		return nil, nil, util.CoalesceErrSlice(pkg.Errors)
+	pkg, err := LoadPackage(parser)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// TODO: right now it's assuming the same file or we end up with one file

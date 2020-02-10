@@ -85,3 +85,11 @@ func (t *DataType) Format(val interface{}) (interface{}, error) {
 	res := phonenumbers.Format(t.number, t.format)
 	return res, nil
 }
+
+// ValidateAndFormat calls Valid and then Format if valid
+func (t *DataType) ValidateAndFormat(val interface{}) (interface{}, error) {
+	if err := t.Valid(val); err != nil {
+		return nil, err
+	}
+	return t.Format(val)
+}

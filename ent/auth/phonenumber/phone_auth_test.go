@@ -146,6 +146,20 @@ func (suite *phoneAuthTestSuite) TestNoVCFromID() {
 	require.Contains(suite.T(), err.Error(), "VCFromID")
 }
 
+func (suite *phoneAuthTestSuite) TestNoValidator() {
+	auth := phonenumber.NewPhonePinAuth(
+		signingKey,
+		models.LoadUserIDFromPhoneNumber,
+		viewertesting.GetLoggedInViewer,
+		nil,
+	)
+
+	identity, err := auth.Authenticate(context.TODO(), "1", "1")
+	require.Nil(suite.T(), identity)
+	require.NotNil(suite.T(), err)
+	require.Contains(suite.T(), err.Error(), "Validator")
+}
+
 func (suite *phoneAuthTestSuite) TestNotPhoneNumber() {
 
 	suite.runFuncWithValidator(func(t *testing.T, validator phonenumber.Validator) {
@@ -382,6 +396,49 @@ func (suite *phoneAuthTestSuite) TestInvalidAuthorizationHeader() {
 
 		assert.IsType(t, viewer.LoggedOutViewerContext{}, h.V)
 		assert.Equal(t, h.V.GetViewerID(), "")
+	})
+}
+
+func (suite *phoneAuthTestSuite) TestAvailableAndValid() {
+	suite.runFuncWithDefaultAuth(func(t *testing.T, phoneAuth *phonenumber.PhonePinAuth) {
+		auth.Register("phone_pin_auth", phoneAuth)
+
+		setPinInCache(phoneAuth)
+
+		valid, err := phoneAuth.AvailableAndValid(context.TODO(), "4159876543", "123456")
+		require.NoError(t, err)
+		require.True(t, valid)
+
+		// calling again immediately still fine because we don't clear from cache
+		valid, err = phoneAuth.AvailableAndValid(context.TODO(), "4159876543", "123456")
+		require.NoError(t, err)
+		require.True(t, valid)
+	})
+}
+
+func (suite *phoneAuthTestSuite) TestAvailableAndValidUserExists() {
+	suite.createUser()
+
+	suite.runFuncWithDefaultAuth(func(t *testing.T, phoneAuth *phonenumber.PhonePinAuth) {
+		auth.Register("phone_pin_auth", phoneAuth)
+
+		setPinInCache(phoneAuth)
+
+		valid, err := phoneAuth.AvailableAndValid(context.TODO(), "4159876543", "123456")
+		require.Error(t, err)
+		require.False(t, valid)
+	})
+}
+
+func (suite *phoneAuthTestSuite) TestAvailableAndValidWrongPIN() {
+	suite.runFuncWithDefaultAuth(func(t *testing.T, phoneAuth *phonenumber.PhonePinAuth) {
+		auth.Register("phone_pin_auth", phoneAuth)
+
+		setPinInCache(phoneAuth)
+
+		valid, err := phoneAuth.AvailableAndValid(context.TODO(), "4159876543", "654321")
+		require.Error(t, err)
+		require.False(t, valid)
 	})
 }
 

@@ -184,6 +184,47 @@ func (r *mutationResolver) AdminBlock(ctx context.Context, input AdminBlockInput
 	}, nil
 }
 
+func (r *mutationResolver) AuthCheckAvailablePhoneNumber(ctx context.Context, input AuthCheckAvailablePhoneNumberInput) (*AuthCheckAvailablePhoneNumberResponse, error) {
+	available, err := CheckCanSigninWithPhoneNumber(ctx, input.PhoneNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthCheckAvailablePhoneNumberResponse{
+		Available: available,
+	}, nil
+}
+
+func (r *mutationResolver) AuthPhoneNumber(ctx context.Context, input AuthPhoneNumberInput) (*AuthPhoneNumberResponse, error) {
+	token, err := AuthPhoneNumber(ctx, input.PhoneNumber, input.Pin)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthPhoneNumberResponse{
+		Token: token,
+	}, nil
+}
+
+func (r *mutationResolver) AuthSendSms(ctx context.Context, input AuthSendSMSInput) (*AuthSendSMSResponse, error) {
+	pin, err := SendSMS(ctx, input.PhoneNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthSendSMSResponse{
+		Pin: pin,
+	}, nil
+}
+
+func (r *mutationResolver) AuthSignout(ctx context.Context) (*AuthSignoutResponse, error) {
+	AuthLogout(ctx)
+
+	return &AuthSignoutResponse{
+		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
+
 func (r *mutationResolver) AuthUser(ctx context.Context, input AuthUserInput) (*AuthUserResponse, error) {
 	user, token, err := auth.AuthMutation(ctx, input.Email, input.Password)
 	if err != nil {
@@ -193,6 +234,17 @@ func (r *mutationResolver) AuthUser(ctx context.Context, input AuthUserInput) (*
 	return &AuthUserResponse{
 		User:  user,
 		Token: token,
+	}, nil
+}
+
+func (r *mutationResolver) AuthValidCredentials(ctx context.Context, input AuthValidCredentialsInput) (*AuthValidCredentialsResponse, error) {
+	available, err := ValidAuthCredentials(ctx, input.PhoneNumber, input.Pin)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthValidCredentialsResponse{
+		Available: available,
 	}, nil
 }
 

@@ -2,10 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"io/ioutil"
-	"path/filepath"
-	"regexp"
-	"strings"
 
 	"github.com/lolopinto/ent/internal/code"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -19,7 +15,6 @@ import (
 
 // flags
 var (
-	pathToConfig   string
 	specificConfig string
 	step           string
 )
@@ -28,70 +23,11 @@ var codegenCmd = &cobra.Command{
 	Use:   "codegen", // TODO is there a better name here?
 	Short: "runs the codegen (and db schema) migration",
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if pathToConfig == "" {
-			return errors.New("path required")
-		}
-		return nil
-	},
+	Args:  configRequired,
 	Run: func(cmd *cobra.Command, args []string) {
 		codePathInfo := getPathToCode(pathToConfig)
 		parseSchemasAndGenerate(codePathInfo, specificConfig, step)
 	},
-}
-
-func getPathToCode(pathToConfig string) *codegen.CodePath {
-	dir, err := filepath.Abs(".")
-	util.Die(err)
-	dir = filepath.ToSlash(dir)
-
-	r := regexp.MustCompile(`module (.*)\n`)
-
-	// walk up the tree until we find a go.mod file
-	// and build the suffix that needs to be added to the end of the module found in a go.mod file
-	curDir := dir
-	suffix := ""
-
-	for {
-		b, err := ioutil.ReadFile(filepath.Join(curDir, "/", "go.mod"))
-		if err == nil {
-			contents := string(b)
-
-			match := r.FindStringSubmatch(contents)
-			return codegen.NewCodePath(pathToConfig, match[1]+suffix)
-		}
-
-		suffix = "/" + filepath.Base(curDir) + suffix
-		// go up one directory
-		curDir, err = filepath.Abs(filepath.Join(curDir, ".."))
-		util.Die(err)
-
-		// got all the way to the top. bye felicia
-		if curDir == "/" {
-			break
-		}
-	}
-
-	// no go.mod in the path
-	// I can't even remember the exact logic I was doing here.
-	// probably manually going up to find paths in gopaths that had . e.g. "github.com/lolopinto"
-	// TODO fix this for non-module users
-	abs, err := filepath.Abs(".")
-	util.Die(err)
-	pathPastSymlinks, err := filepath.EvalSymlinks(abs)
-	// TODO: probably better to put this in some yml file but we're not there yet so reading from the filesystem instead...
-	pathParts := strings.Split(pathPastSymlinks, string(filepath.Separator))
-
-	var idx int
-	for i := len(pathParts) - 1; i > 0; i-- {
-		part := pathParts[i]
-		if len(strings.Split(part, ".")) > 1 {
-			idx = i
-			break
-		}
-	}
-	path := strings.Join(pathParts[idx:], string(filepath.Separator))
-	return codegen.NewCodePath(pathToConfig, path)
 }
 
 func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Schema {
