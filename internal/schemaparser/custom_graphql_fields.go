@@ -677,7 +677,7 @@ func modifyFunctionFromDoc(doc *GraphQLCommentGroup, fn *Function) error {
 
 	if len(parts) > 2 {
 		if parts[2] != "Query" && parts[2] != "Mutation" {
-			return errors.New("invalid query/Mutation syntax")
+			return fmt.Errorf("invalid query/Mutation syntax %s", parts[2])
 		}
 		fn.NodeName = parts[2]
 	} else if fn.NodeName == "" {

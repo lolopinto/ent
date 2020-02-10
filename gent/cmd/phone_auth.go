@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/lolopinto/ent/internal/code/auth"
-	"github.com/lolopinto/ent/internal/util"
 	"github.com/spf13/cobra"
 )
 
@@ -39,14 +38,14 @@ var initPhoneAuthCmd = &cobra.Command{
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		codePathInfo := getPathToCode(pathToConfig)
 
-		util.Die(auth.WriteAuthFile(codePathInfo, &auth.Options{
+		return auth.WriteAuthFile(codePathInfo, &auth.Options{
 			Node:           node,
 			Field:          field,
 			ViewerFunc:     viewerFunc,
 			ForceOverwrite: forceOverwrite,
-		}))
+		})
 	},
 }

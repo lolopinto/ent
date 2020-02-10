@@ -64,14 +64,14 @@ func WriteAuthFile(codePathInfo *codegen.CodePath, options *Options) error {
 	}
 
 	writer := &file.TemplatedBasedFileWriter{
-		Data:                 data,
-		AbsPathToTemplate:    util.GetAbsolutePath("phone_auth.gotmpl"),
-		TemplateName:         "phone_auth.gotmpl",
-		PathToFile:           getFilePath(),
-		FormatSource:         true,
-		PackageName:          "graphql", // TODO auth?
-		Imports:              &imps,
-		DisableDoNotEditFlag: true,
+		Data:              data,
+		AbsPathToTemplate: util.GetAbsolutePath("phone_auth.gotmpl"),
+		TemplateName:      "phone_auth.gotmpl",
+		PathToFile:        getFilePath(),
+		FormatSource:      true,
+		PackageName:       "graphql", // TODO auth?
+		Imports:           &imps,
+		EditableCode:      true,
 		FuncMap: template.FuncMap{
 			// our own version of reserveImport similar to what gqlgen provides. TOOD rename
 			"reserveImport": imps.Reserve,

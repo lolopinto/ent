@@ -23,7 +23,7 @@ var rootCmd = &cobra.Command{
 var pathToConfig string
 
 func init() {
-	// needed across multiple command
+	// needed across multiple commands
 	rootCmd.PersistentFlags().StringVarP(&pathToConfig, "path", "p", "", "Path of config files")
 
 	codegenCmd.Flags().StringVarP(&specificConfig, "config", "c", "", "Specific EntConfig to codegen")
@@ -34,11 +34,15 @@ func init() {
 	initPhoneAuthCmd.Flags().StringVarP(&viewerFunc, "viewerFunc", "v", "", "Optional. (Local) path to function which takes a viewer ID and returns a (ViewerContext, error) tuple. This is generated via `gent initViewer ...`.")
 	initPhoneAuthCmd.Flags().BoolVar(&forceOverwrite, "force", false, "to force file rewriting existing file")
 
+	initViewerCmd.Flags().StringVarP(&app, "app", "a", "", "Name of App e.g. `jarvis`")
+	initViewerCmd.Flags().StringVarP(&userObject, "node", "n", "", "Name of object which maps to user e.g. `User` or `Account`")
+	initViewerCmd.Flags().BoolVar(&forceViewerOverwrite, "force", false, "to force file rewriting existing file")
+
 	rootCmd.AddCommand(upgradeCmd)
 	rootCmd.AddCommand(downgradeCmd)
 	rootCmd.AddCommand(codegenCmd)
 	rootCmd.AddCommand(initPhoneAuthCmd)
-
+	rootCmd.AddCommand(initViewerCmd)
 }
 
 func Execute() {

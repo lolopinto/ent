@@ -266,8 +266,8 @@ type ComplexityRoot struct {
 	}
 
 	Viewer struct {
+		GetUser           func(childComplexity int) int
 		LoadViewerContact func(childComplexity int) int
-		User              func(childComplexity int) int
 	}
 
 	ViewerBlockMultipleIDsResponse struct {
@@ -1317,19 +1317,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UsersEdge.Node(childComplexity), true
 
+	case "Viewer.user":
+		if e.complexity.Viewer.GetUser == nil {
+			break
+		}
+
+		return e.complexity.Viewer.GetUser(childComplexity), true
+
 	case "Viewer.contact":
 		if e.complexity.Viewer.LoadViewerContact == nil {
 			break
 		}
 
 		return e.complexity.Viewer.LoadViewerContact(childComplexity), true
-
-	case "Viewer.user":
-		if e.complexity.Viewer.User == nil {
-			break
-		}
-
-		return e.complexity.Viewer.User(childComplexity), true
 
 	case "ViewerBlockMultipleIDsResponse.viewer":
 		if e.complexity.ViewerBlockMultipleIDsResponse.Viewer == nil {
@@ -6630,13 +6630,13 @@ func (ec *executionContext) _Viewer_user(ctx context.Context, field graphql.Coll
 		Object:   "Viewer",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		return obj.GetUser(), nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
