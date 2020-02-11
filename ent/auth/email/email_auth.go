@@ -116,16 +116,5 @@ func (auth *EmailPasswordAuth) ViewerFromToken(tokenStr string) (viewer.ViewerCo
 func (auth *EmailPasswordAuth) getFormattedEmail(emailAddress string) (string, error) {
 	// use the default email formatting here so we're consistent
 	emailType := email.Type()
-	if err := emailType.Valid(emailAddress); err != nil {
-		return "", err
-	}
-	val, err := emailType.Format(emailAddress)
-	if err != nil {
-		return "", err
-	}
-	str, ok := val.(string)
-	if !ok {
-		return "", fmt.Errorf("couldn't format %v as string", val)
-	}
-	return str, nil
+	return emailType.ValidateAndFormat(emailAddress)
 }

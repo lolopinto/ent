@@ -26,23 +26,29 @@ func init() {
 	// needed across multiple commands
 	rootCmd.PersistentFlags().StringVarP(&pathToConfig, "path", "p", "", "Path of config files")
 
-	codegenCmd.Flags().StringVarP(&specificConfig, "config", "c", "", "Specific EntConfig to codegen")
-	codegenCmd.Flags().StringVarP(&step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
+	codegenCmd.Flags().StringVarP(&codegenInfo.specificConfig, "config", "c", "", "Specific EntConfig to codegen")
+	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
 
-	initPhoneAuthCmd.Flags().StringVarP(&node, "node", "n", "", "Required. Name of Node e.g. `User`")
-	initPhoneAuthCmd.Flags().StringVarP(&field, "field", "f", "", "Required. Name of Field e.g. `PhoneNumber`")
-	initPhoneAuthCmd.Flags().StringVarP(&viewerFunc, "viewerFunc", "v", "", "Optional. (Local) path to function which takes a viewer ID and returns a (ViewerContext, error) tuple. This is generated via `gent initViewer ...`.")
-	initPhoneAuthCmd.Flags().BoolVar(&forceOverwrite, "force", false, "to force file rewriting existing file")
+	initPhoneAuthCmd.Flags().StringVarP(&phoneAuth.node, "node", "n", "", "Required. Name of Node e.g. `User`")
+	initPhoneAuthCmd.Flags().StringVarP(&phoneAuth.field, "field", "f", "", "Required. Name of Field e.g. `PhoneNumber`")
+	initPhoneAuthCmd.Flags().StringVarP(&phoneAuth.viewerFunc, "viewerFunc", "v", "", "Optional. (Local) path to function which takes a viewer ID and returns a (ViewerContext, error) tuple. This is generated via `gent initViewer ...`.")
+	initPhoneAuthCmd.Flags().BoolVar(&phoneAuth.forceOverwrite, "force", false, "to force file rewriting existing file. Note that it regenerates the existing key so be careful of this...")
 
-	initViewerCmd.Flags().StringVarP(&app, "app", "a", "", "Name of App e.g. `jarvis`")
-	initViewerCmd.Flags().StringVarP(&userObject, "node", "n", "", "Name of object which maps to user e.g. `User` or `Account`")
-	initViewerCmd.Flags().BoolVar(&forceViewerOverwrite, "force", false, "to force file rewriting existing file")
+	initViewerCmd.Flags().StringVarP(&viewerInfo.app, "app", "a", "", "Name of App e.g. `jarvis`")
+	initViewerCmd.Flags().StringVarP(&viewerInfo.node, "node", "n", "", "Name of object which maps to user e.g. `User` or `Account`")
+	initViewerCmd.Flags().BoolVar(&viewerInfo.forceViewerOverwrite, "force", false, "to force file rewriting existing file")
+
+	initEmailAuthCmd.Flags().StringVarP(&emailAuth.node, "node", "n", "", "Required. Name of Node e.g. `User`")
+	initEmailAuthCmd.Flags().StringVarP(&emailAuth.field, "field", "f", "", "Required. Name of Field e.g. `EmailAddress`")
+	initEmailAuthCmd.Flags().StringVarP(&emailAuth.viewerFunc, "viewerFunc", "v", "", "Optional. (Local) path to function which takes a viewer ID and returns a (ViewerContext, error) tuple. This is generated via `gent initViewer ...`.")
+	initEmailAuthCmd.Flags().BoolVar(&emailAuth.forceOverwrite, "force", false, "to force file rewriting existing file. Note that it regenerates the existing key so be careful of this...")
 
 	rootCmd.AddCommand(upgradeCmd)
 	rootCmd.AddCommand(downgradeCmd)
 	rootCmd.AddCommand(codegenCmd)
 	rootCmd.AddCommand(initPhoneAuthCmd)
 	rootCmd.AddCommand(initViewerCmd)
+	rootCmd.AddCommand(initEmailAuthCmd)
 }
 
 func Execute() {

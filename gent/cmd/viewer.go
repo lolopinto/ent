@@ -7,15 +7,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// flags
-var (
+type viewerArgs struct {
 	// used to create AppViewerContext in appviewer/viewer_context.go
 	app                  string
-	userObject           string // e.g. User|Account
+	node                 string // e.g. User|Account
 	forceViewerOverwrite bool
 	// extra credit options: packagename, viewer_context name etc
 	// defaults are fine for now
-)
+}
+
+var viewerInfo viewerArgs
 
 // this could (should?) all be part of a big init but for now, we're breaking it up into a different command
 var initViewerCmd = &cobra.Command{
@@ -27,7 +28,7 @@ var initViewerCmd = &cobra.Command{
 			return err
 		}
 
-		if app == "" || userObject == "" {
+		if viewerInfo.app == "" || viewerInfo.node == "" {
 			return errors.New("app and node required")
 		}
 		return nil
@@ -35,6 +36,6 @@ var initViewerCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		codePathInfo := getPathToCode(pathToConfig)
 
-		return viewer.WriteViewerFiles(codePathInfo, userObject, app, forceViewerOverwrite)
+		return viewer.WriteViewerFiles(codePathInfo, viewerInfo.node, viewerInfo.app, viewerInfo.forceViewerOverwrite)
 	},
 }

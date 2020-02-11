@@ -184,6 +184,17 @@ func (r *mutationResolver) AdminBlock(ctx context.Context, input AdminBlockInput
 	}, nil
 }
 
+func (r *mutationResolver) AuthCheckAvailableEmailAddress(ctx context.Context, input AuthCheckAvailableEmailAddressInput) (*AuthCheckAvailableEmailAddressResponse, error) {
+	available, err := CheckCanSigninWithEmailAddress(ctx, input.EmailAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthCheckAvailableEmailAddressResponse{
+		Available: available,
+	}, nil
+}
+
 func (r *mutationResolver) AuthCheckAvailablePhoneNumber(ctx context.Context, input AuthCheckAvailablePhoneNumberInput) (*AuthCheckAvailablePhoneNumberResponse, error) {
 	available, err := CheckCanSigninWithPhoneNumber(ctx, input.PhoneNumber)
 	if err != nil {
@@ -192,6 +203,17 @@ func (r *mutationResolver) AuthCheckAvailablePhoneNumber(ctx context.Context, in
 
 	return &AuthCheckAvailablePhoneNumberResponse{
 		Available: available,
+	}, nil
+}
+
+func (r *mutationResolver) AuthEmailPassword(ctx context.Context, input AuthEmailPasswordInput) (*AuthEmailPasswordResponse, error) {
+	token, err := AuthEmailPassword(ctx, input.Email, input.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthEmailPasswordResponse{
+		Token: token,
 	}, nil
 }
 
@@ -218,9 +240,17 @@ func (r *mutationResolver) AuthSendSms(ctx context.Context, input AuthSendSMSInp
 }
 
 func (r *mutationResolver) AuthSignout(ctx context.Context) (*AuthSignoutResponse, error) {
-	AuthLogout(ctx)
+	AuthPhoneLogout(ctx)
 
 	return &AuthSignoutResponse{
+		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
+
+func (r *mutationResolver) AuthSignoutEmail(ctx context.Context) (*AuthSignoutEmailResponse, error) {
+	AuthEmailLogout(ctx)
+
+	return &AuthSignoutEmailResponse{
 		Success: cast.ConvertToNullableBool(true),
 	}, nil
 }

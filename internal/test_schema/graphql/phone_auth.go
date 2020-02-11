@@ -18,12 +18,12 @@ import (
 )
 
 // TODO (developer): this should be stored in an environment variable instead
-var signingKey = []byte("fooooo")
+var phoneSigningKey = []byte("8G4xY4mxVBM62hwic7Jryv5fbhx4PBGhxHPg9npxsETEww53PAS4jzvjQlGc643")
 
 // TODO (developer): we default to storing in memory. feel free to change to redis or provide a different validator
 var memory = cache.NewMemory(10*time.Minute, 10*time.Minute)
 var phoneAuthHandler = &phonenumber.PhonePinAuth{
-	SigningKey:        signingKey,
+	SigningKey:        phoneSigningKey,
 	IDFromPhoneNumber: models.LoadUserIDFromPhoneNumber,
 	VCFromID:          testschemaviewer.NewViewerContext,
 	Validator: &phonenumber.MemoryValidator{ // can change validator here
@@ -37,6 +37,7 @@ var phoneAuthHandler = &phonenumber.PhonePinAuth{
 // Copy this line and move to an init() function in root.go or other file in graphql/ folder
 // We can't automatically generate this so onus on the developer
 // Also need: import "github.com/lolopinto/ent/ent/auth"
+// auth.Register("phone_auth", phoneAuthHandler)
 
 // AuthPhoneNumber takes a phone number and pin and logs the user in if valid
 // @graphql authPhoneNumber Mutation
@@ -91,9 +92,10 @@ func ValidAuthCredentials(ctx context.Context, phoneNumber, pin string) (bool, e
 	return phoneAuthHandler.AvailableAndValid(ctx, phoneNumber, pin)
 }
 
-// AuthLogout logs the user out.
+// AuthPhoneLogout logs the user out.
 // @graphql authSignout Mutation
-func AuthLogout(ctx context.Context) {
+// TODO (developer): rename if you don't have conflicts?
+func AuthPhoneLogout(ctx context.Context) {
 	// nothing to do here since stateless session
 	// needs to be handled on the client
 	// when there's a refresh token, we'll kill it
@@ -112,9 +114,5 @@ func generateRandCode() string {
 }
 
 func formattedNumber(phoneNumber string) (string, error) {
-	val, err := field.Type().ValidateAndFormat(phoneNumber)
-	if err != nil {
-		return "", err
-	}
-	return val.(string), err
+	return field.Type().ValidateAndFormat(phoneNumber)
 }

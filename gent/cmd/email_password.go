@@ -7,22 +7,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type phoneAuthArgs struct {
+type emailAuthArgs struct {
 	node           string
 	field          string
 	viewerFunc     string
 	forceOverwrite bool
 }
 
-var phoneAuth phoneAuthArgs
+var emailAuth emailAuthArgs
 
-var initPhoneAuthCmd = &cobra.Command{
-	Use:   "initPhoneAuth",
-	Short: "generates code to give default implementations for phone/pin auth",
-	Long: `Provides a way to get quick defaults for phone number/pin account create and/or login.
+var initEmailAuthCmd = &cobra.Command{
+	Use:   "initEmailAuth",
+	Short: "generates code to give default implementations for email/password auth",
+	Long: `Provides a way to get quick defaults for email/password account login.
 	It doesn't handle the account creation step (yet) because of what fields may be needed via actions.
-	It still depends on the user creating a manual function to create the user (and validate the pin) or adding
-	a mutation only field to the action and checking it there. Will eventually have better support here.
+	It still depends on the user creating a manual function to create the user and depends on using the password.Type() 
+	when defining the password. Will eventually have better support here.
 	Required flags are -p, -f, -n. It assumes this is only called once so subsequent calls to this without --force 
 	don't do anything.
 	The -v flag provides a way to pass a function path e.g. appviewer.NewViewerContext of a function f(string) (viewer.ViewerContext, error)
@@ -34,7 +34,7 @@ var initPhoneAuthCmd = &cobra.Command{
 			return err
 		}
 
-		if phoneAuth.node == "" || phoneAuth.field == "" {
+		if emailAuth.node == "" || emailAuth.field == "" {
 			return errors.New("node and field required")
 		}
 		return nil
@@ -42,11 +42,11 @@ var initPhoneAuthCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		codePathInfo := getPathToCode(pathToConfig)
 
-		return auth.WritePhoneAuthFile(codePathInfo, &auth.Options{
-			Node:           phoneAuth.node,
-			Field:          phoneAuth.field,
-			ViewerFunc:     phoneAuth.viewerFunc,
-			ForceOverwrite: phoneAuth.forceOverwrite,
+		return auth.WriteEmailAuthFile(codePathInfo, &auth.Options{
+			Node:           emailAuth.node,
+			Field:          emailAuth.field,
+			ViewerFunc:     emailAuth.viewerFunc,
+			ForceOverwrite: emailAuth.forceOverwrite,
 		})
 	},
 }

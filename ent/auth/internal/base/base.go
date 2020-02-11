@@ -73,6 +73,10 @@ func (auth *SharedJwtAuth) getSigningMethod() jwt.SigningMethod {
 }
 
 func (auth *SharedJwtAuth) getClaims(viewerID string) jwt.Claims {
+	// TODO see internal/test_schema/graphql/root.go.
+	// worth having something in here (or in auth.go?) passed from different handlers
+	// which adds something to the claim/payload so that ViewerFromToken doesn't have
+	// an error and logspew when multiple handlers exist
 	if auth.ClaimFunc == nil {
 		duration := auth.getDuration()
 		// use jwt.TimeFunc because that's what's used for verification

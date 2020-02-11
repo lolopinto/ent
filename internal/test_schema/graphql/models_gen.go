@@ -64,12 +64,29 @@ type AdminBlockResponse struct {
 	Success *bool `json:"success"`
 }
 
+type AuthCheckAvailableEmailAddressInput struct {
+	EmailAddress string `json:"emailAddress"`
+}
+
+type AuthCheckAvailableEmailAddressResponse struct {
+	Available bool `json:"available"`
+}
+
 type AuthCheckAvailablePhoneNumberInput struct {
 	PhoneNumber string `json:"phoneNumber"`
 }
 
 type AuthCheckAvailablePhoneNumberResponse struct {
 	Available bool `json:"available"`
+}
+
+type AuthEmailPasswordInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type AuthEmailPasswordResponse struct {
+	Token string `json:"token"`
 }
 
 type AuthPhoneNumberInput struct {
@@ -87,6 +104,10 @@ type AuthSendSMSInput struct {
 
 type AuthSendSMSResponse struct {
 	Pin string `json:"pin"`
+}
+
+type AuthSignoutEmailResponse struct {
+	Success *bool `json:"success"`
 }
 
 type AuthSignoutResponse struct {

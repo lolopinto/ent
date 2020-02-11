@@ -13,11 +13,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// flags
-var (
+type codegenArgs struct {
 	specificConfig string
 	step           string
-)
+}
+
+var codegenInfo codegenArgs
 
 var codegenCmd = &cobra.Command{
 	Use:   "codegen", // TODO is there a better name here?
@@ -26,7 +27,7 @@ var codegenCmd = &cobra.Command{
 	Args:  configRequired,
 	Run: func(cmd *cobra.Command, args []string) {
 		codePathInfo := getPathToCode(pathToConfig)
-		parseSchemasAndGenerate(codePathInfo, specificConfig, step)
+		parseSchemasAndGenerate(codePathInfo, codegenInfo.specificConfig, codegenInfo.step)
 	},
 }
 

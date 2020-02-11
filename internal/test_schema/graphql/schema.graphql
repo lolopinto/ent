@@ -55,12 +55,29 @@ type AdminBlockResponse {
     success: Boolean
 }
 
+input AuthCheckAvailableEmailAddressInput {
+    emailAddress: String!
+}
+
+type AuthCheckAvailableEmailAddressResponse {
+    available: Boolean!
+}
+
 input AuthCheckAvailablePhoneNumberInput {
     phoneNumber: String!
 }
 
 type AuthCheckAvailablePhoneNumberResponse {
     available: Boolean!
+}
+
+input AuthEmailPasswordInput {
+    email: String!
+    password: String!
+}
+
+type AuthEmailPasswordResponse {
+    token: String!
 }
 
 input AuthPhoneNumberInput {
@@ -78,6 +95,10 @@ input AuthSendSMSInput {
 
 type AuthSendSMSResponse {
     pin: String!
+}
+
+type AuthSignoutEmailResponse {
+    success: Boolean
 }
 
 type AuthSignoutResponse {
@@ -224,10 +245,13 @@ type Mutation {
     addressDelete(input: AddressDeleteInput!): AddressDeleteResponse
     addressEdit(input: AddressEditInput!): AddressEditResponse
     adminBlock(input: AdminBlockInput!): AdminBlockResponse
+    authCheckAvailableEmailAddress(input: AuthCheckAvailableEmailAddressInput!): AuthCheckAvailableEmailAddressResponse
     authCheckAvailablePhoneNumber(input: AuthCheckAvailablePhoneNumberInput!): AuthCheckAvailablePhoneNumberResponse
+    authEmailPassword(input: AuthEmailPasswordInput!): AuthEmailPasswordResponse
     authPhoneNumber(input: AuthPhoneNumberInput!): AuthPhoneNumberResponse
     authSendSMS(input: AuthSendSMSInput!): AuthSendSMSResponse
     authSignout: AuthSignoutResponse
+    authSignoutEmail: AuthSignoutEmailResponse
     authUser(input: AuthUserInput!): AuthUserResponse
     authValidCredentials(input: AuthValidCredentialsInput!): AuthValidCredentialsResponse
     contactCreate(input: ContactCreateInput!): ContactCreateResponse

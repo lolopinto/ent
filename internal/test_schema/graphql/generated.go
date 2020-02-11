@@ -77,8 +77,16 @@ type ComplexityRoot struct {
 		Success func(childComplexity int) int
 	}
 
+	AuthCheckAvailableEmailAddressResponse struct {
+		Available func(childComplexity int) int
+	}
+
 	AuthCheckAvailablePhoneNumberResponse struct {
 		Available func(childComplexity int) int
+	}
+
+	AuthEmailPasswordResponse struct {
+		Token func(childComplexity int) int
 	}
 
 	AuthPhoneNumberResponse struct {
@@ -87,6 +95,10 @@ type ComplexityRoot struct {
 
 	AuthSendSMSResponse struct {
 		Pin func(childComplexity int) int
+	}
+
+	AuthSignoutEmailResponse struct {
+		Success func(childComplexity int) int
 	}
 
 	AuthSignoutResponse struct {
@@ -171,32 +183,35 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddressCreate                 func(childComplexity int, input AddressCreateInput) int
-		AddressDelete                 func(childComplexity int, input AddressDeleteInput) int
-		AddressEdit                   func(childComplexity int, input AddressEditInput) int
-		AdminBlock                    func(childComplexity int, input AdminBlockInput) int
-		AuthCheckAvailablePhoneNumber func(childComplexity int, input AuthCheckAvailablePhoneNumberInput) int
-		AuthPhoneNumber               func(childComplexity int, input AuthPhoneNumberInput) int
-		AuthSendSms                   func(childComplexity int, input AuthSendSMSInput) int
-		AuthSignout                   func(childComplexity int) int
-		AuthUser                      func(childComplexity int, input AuthUserInput) int
-		AuthValidCredentials          func(childComplexity int, input AuthValidCredentialsInput) int
-		ContactCreate                 func(childComplexity int, input ContactCreateInput) int
-		EventCreate                   func(childComplexity int, input EventCreateInput) int
-		EventRsvpStatusEdit           func(childComplexity int, input EventRsvpStatusEditInput) int
-		LogEvent                      func(childComplexity int, input LogEventInput) int
-		LogEvent2                     func(childComplexity int, input LogEvent2Input) int
-		UserAddFamilyMember           func(childComplexity int, input UserAddFamilyMemberInput) int
-		UserAddFriend                 func(childComplexity int, input UserAddFriendInput) int
-		UserCreate                    func(childComplexity int, input UserCreateInput) int
-		UserDelete                    func(childComplexity int, input UserDeleteInput) int
-		UserEdit                      func(childComplexity int, input UserEditInput) int
-		UserRemoveFamilyMember        func(childComplexity int, input UserRemoveFamilyMemberInput) int
-		UserRemoveFriend              func(childComplexity int, input UserRemoveFriendInput) int
-		ViewerBlock                   func(childComplexity int, input ViewerBlockInput) int
-		ViewerBlockMultiple           func(childComplexity int, input ViewerBlockMultipleInput) int
-		ViewerBlockMultipleIDs        func(childComplexity int, input ViewerBlockMultipleIDsInput) int
-		ViewerBlockParam              func(childComplexity int, userID string) int
+		AddressCreate                  func(childComplexity int, input AddressCreateInput) int
+		AddressDelete                  func(childComplexity int, input AddressDeleteInput) int
+		AddressEdit                    func(childComplexity int, input AddressEditInput) int
+		AdminBlock                     func(childComplexity int, input AdminBlockInput) int
+		AuthCheckAvailableEmailAddress func(childComplexity int, input AuthCheckAvailableEmailAddressInput) int
+		AuthCheckAvailablePhoneNumber  func(childComplexity int, input AuthCheckAvailablePhoneNumberInput) int
+		AuthEmailPassword              func(childComplexity int, input AuthEmailPasswordInput) int
+		AuthPhoneNumber                func(childComplexity int, input AuthPhoneNumberInput) int
+		AuthSendSms                    func(childComplexity int, input AuthSendSMSInput) int
+		AuthSignout                    func(childComplexity int) int
+		AuthSignoutEmail               func(childComplexity int) int
+		AuthUser                       func(childComplexity int, input AuthUserInput) int
+		AuthValidCredentials           func(childComplexity int, input AuthValidCredentialsInput) int
+		ContactCreate                  func(childComplexity int, input ContactCreateInput) int
+		EventCreate                    func(childComplexity int, input EventCreateInput) int
+		EventRsvpStatusEdit            func(childComplexity int, input EventRsvpStatusEditInput) int
+		LogEvent                       func(childComplexity int, input LogEventInput) int
+		LogEvent2                      func(childComplexity int, input LogEvent2Input) int
+		UserAddFamilyMember            func(childComplexity int, input UserAddFamilyMemberInput) int
+		UserAddFriend                  func(childComplexity int, input UserAddFriendInput) int
+		UserCreate                     func(childComplexity int, input UserCreateInput) int
+		UserDelete                     func(childComplexity int, input UserDeleteInput) int
+		UserEdit                       func(childComplexity int, input UserEditInput) int
+		UserRemoveFamilyMember         func(childComplexity int, input UserRemoveFamilyMemberInput) int
+		UserRemoveFriend               func(childComplexity int, input UserRemoveFriendInput) int
+		ViewerBlock                    func(childComplexity int, input ViewerBlockInput) int
+		ViewerBlockMultiple            func(childComplexity int, input ViewerBlockMultipleInput) int
+		ViewerBlockMultipleIDs         func(childComplexity int, input ViewerBlockMultipleIDsInput) int
+		ViewerBlockParam               func(childComplexity int, userID string) int
 	}
 
 	Query struct {
@@ -312,10 +327,13 @@ type MutationResolver interface {
 	AddressDelete(ctx context.Context, input AddressDeleteInput) (*AddressDeleteResponse, error)
 	AddressEdit(ctx context.Context, input AddressEditInput) (*AddressEditResponse, error)
 	AdminBlock(ctx context.Context, input AdminBlockInput) (*AdminBlockResponse, error)
+	AuthCheckAvailableEmailAddress(ctx context.Context, input AuthCheckAvailableEmailAddressInput) (*AuthCheckAvailableEmailAddressResponse, error)
 	AuthCheckAvailablePhoneNumber(ctx context.Context, input AuthCheckAvailablePhoneNumberInput) (*AuthCheckAvailablePhoneNumberResponse, error)
+	AuthEmailPassword(ctx context.Context, input AuthEmailPasswordInput) (*AuthEmailPasswordResponse, error)
 	AuthPhoneNumber(ctx context.Context, input AuthPhoneNumberInput) (*AuthPhoneNumberResponse, error)
 	AuthSendSms(ctx context.Context, input AuthSendSMSInput) (*AuthSendSMSResponse, error)
 	AuthSignout(ctx context.Context) (*AuthSignoutResponse, error)
+	AuthSignoutEmail(ctx context.Context) (*AuthSignoutEmailResponse, error)
 	AuthUser(ctx context.Context, input AuthUserInput) (*AuthUserResponse, error)
 	AuthValidCredentials(ctx context.Context, input AuthValidCredentialsInput) (*AuthValidCredentialsResponse, error)
 	ContactCreate(ctx context.Context, input ContactCreateInput) (*ContactCreateResponse, error)
@@ -450,12 +468,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.AdminBlockResponse.Success(childComplexity), true
 
+	case "AuthCheckAvailableEmailAddressResponse.available":
+		if e.complexity.AuthCheckAvailableEmailAddressResponse.Available == nil {
+			break
+		}
+
+		return e.complexity.AuthCheckAvailableEmailAddressResponse.Available(childComplexity), true
+
 	case "AuthCheckAvailablePhoneNumberResponse.available":
 		if e.complexity.AuthCheckAvailablePhoneNumberResponse.Available == nil {
 			break
 		}
 
 		return e.complexity.AuthCheckAvailablePhoneNumberResponse.Available(childComplexity), true
+
+	case "AuthEmailPasswordResponse.token":
+		if e.complexity.AuthEmailPasswordResponse.Token == nil {
+			break
+		}
+
+		return e.complexity.AuthEmailPasswordResponse.Token(childComplexity), true
 
 	case "AuthPhoneNumberResponse.token":
 		if e.complexity.AuthPhoneNumberResponse.Token == nil {
@@ -470,6 +502,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AuthSendSMSResponse.Pin(childComplexity), true
+
+	case "AuthSignoutEmailResponse.success":
+		if e.complexity.AuthSignoutEmailResponse.Success == nil {
+			break
+		}
+
+		return e.complexity.AuthSignoutEmailResponse.Success(childComplexity), true
 
 	case "AuthSignoutResponse.success":
 		if e.complexity.AuthSignoutResponse.Success == nil {
@@ -797,6 +836,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.AdminBlock(childComplexity, args["input"].(AdminBlockInput)), true
 
+	case "Mutation.authCheckAvailableEmailAddress":
+		if e.complexity.Mutation.AuthCheckAvailableEmailAddress == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_authCheckAvailableEmailAddress_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AuthCheckAvailableEmailAddress(childComplexity, args["input"].(AuthCheckAvailableEmailAddressInput)), true
+
 	case "Mutation.authCheckAvailablePhoneNumber":
 		if e.complexity.Mutation.AuthCheckAvailablePhoneNumber == nil {
 			break
@@ -808,6 +859,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.AuthCheckAvailablePhoneNumber(childComplexity, args["input"].(AuthCheckAvailablePhoneNumberInput)), true
+
+	case "Mutation.authEmailPassword":
+		if e.complexity.Mutation.AuthEmailPassword == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_authEmailPassword_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AuthEmailPassword(childComplexity, args["input"].(AuthEmailPasswordInput)), true
 
 	case "Mutation.authPhoneNumber":
 		if e.complexity.Mutation.AuthPhoneNumber == nil {
@@ -839,6 +902,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.AuthSignout(childComplexity), true
+
+	case "Mutation.authSignoutEmail":
+		if e.complexity.Mutation.AuthSignoutEmail == nil {
+			break
+		}
+
+		return e.complexity.Mutation.AuthSignoutEmail(childComplexity), true
 
 	case "Mutation.authUser":
 		if e.complexity.Mutation.AuthUser == nil {
@@ -1478,12 +1548,29 @@ type AdminBlockResponse {
     success: Boolean
 }
 
+input AuthCheckAvailableEmailAddressInput {
+    emailAddress: String!
+}
+
+type AuthCheckAvailableEmailAddressResponse {
+    available: Boolean!
+}
+
 input AuthCheckAvailablePhoneNumberInput {
     phoneNumber: String!
 }
 
 type AuthCheckAvailablePhoneNumberResponse {
     available: Boolean!
+}
+
+input AuthEmailPasswordInput {
+    email: String!
+    password: String!
+}
+
+type AuthEmailPasswordResponse {
+    token: String!
 }
 
 input AuthPhoneNumberInput {
@@ -1501,6 +1588,10 @@ input AuthSendSMSInput {
 
 type AuthSendSMSResponse {
     pin: String!
+}
+
+type AuthSignoutEmailResponse {
+    success: Boolean
 }
 
 type AuthSignoutResponse {
@@ -1647,10 +1738,13 @@ type Mutation {
     addressDelete(input: AddressDeleteInput!): AddressDeleteResponse
     addressEdit(input: AddressEditInput!): AddressEditResponse
     adminBlock(input: AdminBlockInput!): AdminBlockResponse
+    authCheckAvailableEmailAddress(input: AuthCheckAvailableEmailAddressInput!): AuthCheckAvailableEmailAddressResponse
     authCheckAvailablePhoneNumber(input: AuthCheckAvailablePhoneNumberInput!): AuthCheckAvailablePhoneNumberResponse
+    authEmailPassword(input: AuthEmailPasswordInput!): AuthEmailPasswordResponse
     authPhoneNumber(input: AuthPhoneNumberInput!): AuthPhoneNumberResponse
     authSendSMS(input: AuthSendSMSInput!): AuthSendSMSResponse
     authSignout: AuthSignoutResponse
+    authSignoutEmail: AuthSignoutEmailResponse
     authUser(input: AuthUserInput!): AuthUserResponse
     authValidCredentials(input: AuthValidCredentialsInput!): AuthValidCredentialsResponse
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
@@ -1893,12 +1987,40 @@ func (ec *executionContext) field_Mutation_adminBlock_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_authCheckAvailableEmailAddress_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 AuthCheckAvailableEmailAddressInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAuthCheckAvailableEmailAddressInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthCheckAvailableEmailAddressInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_authCheckAvailablePhoneNumber_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 AuthCheckAvailablePhoneNumberInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNAuthCheckAvailablePhoneNumberInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthCheckAvailablePhoneNumberInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_authEmailPassword_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 AuthEmailPasswordInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAuthEmailPasswordInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailPasswordInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2724,6 +2846,43 @@ func (ec *executionContext) _AdminBlockResponse_success(ctx context.Context, fie
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _AuthCheckAvailableEmailAddressResponse_available(ctx context.Context, field graphql.CollectedField, obj *AuthCheckAvailableEmailAddressResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthCheckAvailableEmailAddressResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Available, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _AuthCheckAvailablePhoneNumberResponse_available(ctx context.Context, field graphql.CollectedField, obj *AuthCheckAvailablePhoneNumberResponse) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -2759,6 +2918,43 @@ func (ec *executionContext) _AuthCheckAvailablePhoneNumberResponse_available(ctx
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AuthEmailPasswordResponse_token(ctx context.Context, field graphql.CollectedField, obj *AuthEmailPasswordResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthEmailPasswordResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AuthPhoneNumberResponse_token(ctx context.Context, field graphql.CollectedField, obj *AuthPhoneNumberResponse) (ret graphql.Marshaler) {
@@ -2833,6 +3029,40 @@ func (ec *executionContext) _AuthSendSMSResponse_pin(ctx context.Context, field 
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AuthSignoutEmailResponse_success(ctx context.Context, field graphql.CollectedField, obj *AuthSignoutEmailResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthSignoutEmailResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AuthSignoutResponse_success(ctx context.Context, field graphql.CollectedField, obj *AuthSignoutResponse) (ret graphql.Marshaler) {
@@ -4404,6 +4634,47 @@ func (ec *executionContext) _Mutation_adminBlock(ctx context.Context, field grap
 	return ec.marshalOAdminBlockResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAdminBlockResponse(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_authCheckAvailableEmailAddress(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_authCheckAvailableEmailAddress_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AuthCheckAvailableEmailAddress(rctx, args["input"].(AuthCheckAvailableEmailAddressInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AuthCheckAvailableEmailAddressResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAuthCheckAvailableEmailAddressResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthCheckAvailableEmailAddressResponse(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_authCheckAvailablePhoneNumber(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -4443,6 +4714,47 @@ func (ec *executionContext) _Mutation_authCheckAvailablePhoneNumber(ctx context.
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOAuthCheckAvailablePhoneNumberResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthCheckAvailablePhoneNumberResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_authEmailPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_authEmailPassword_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AuthEmailPassword(rctx, args["input"].(AuthEmailPasswordInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AuthEmailPasswordResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAuthEmailPasswordResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailPasswordResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_authPhoneNumber(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4559,6 +4871,40 @@ func (ec *executionContext) _Mutation_authSignout(ctx context.Context, field gra
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOAuthSignoutResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthSignoutResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_authSignoutEmail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AuthSignoutEmail(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AuthSignoutEmailResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAuthSignoutEmailResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthSignoutEmailResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_authUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -8085,6 +8431,24 @@ func (ec *executionContext) unmarshalInputAdminBlockInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAuthCheckAvailableEmailAddressInput(ctx context.Context, obj interface{}) (AuthCheckAvailableEmailAddressInput, error) {
+	var it AuthCheckAvailableEmailAddressInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "emailAddress":
+			var err error
+			it.EmailAddress, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAuthCheckAvailablePhoneNumberInput(ctx context.Context, obj interface{}) (AuthCheckAvailablePhoneNumberInput, error) {
 	var it AuthCheckAvailablePhoneNumberInput
 	var asMap = obj.(map[string]interface{})
@@ -8094,6 +8458,30 @@ func (ec *executionContext) unmarshalInputAuthCheckAvailablePhoneNumberInput(ctx
 		case "phoneNumber":
 			var err error
 			it.PhoneNumber, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAuthEmailPasswordInput(ctx context.Context, obj interface{}) (AuthEmailPasswordInput, error) {
+	var it AuthEmailPasswordInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "email":
+			var err error
+			it.Email, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "password":
+			var err error
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8821,6 +9209,33 @@ func (ec *executionContext) _AdminBlockResponse(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var authCheckAvailableEmailAddressResponseImplementors = []string{"AuthCheckAvailableEmailAddressResponse"}
+
+func (ec *executionContext) _AuthCheckAvailableEmailAddressResponse(ctx context.Context, sel ast.SelectionSet, obj *AuthCheckAvailableEmailAddressResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, authCheckAvailableEmailAddressResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AuthCheckAvailableEmailAddressResponse")
+		case "available":
+			out.Values[i] = ec._AuthCheckAvailableEmailAddressResponse_available(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var authCheckAvailablePhoneNumberResponseImplementors = []string{"AuthCheckAvailablePhoneNumberResponse"}
 
 func (ec *executionContext) _AuthCheckAvailablePhoneNumberResponse(ctx context.Context, sel ast.SelectionSet, obj *AuthCheckAvailablePhoneNumberResponse) graphql.Marshaler {
@@ -8834,6 +9249,33 @@ func (ec *executionContext) _AuthCheckAvailablePhoneNumberResponse(ctx context.C
 			out.Values[i] = graphql.MarshalString("AuthCheckAvailablePhoneNumberResponse")
 		case "available":
 			out.Values[i] = ec._AuthCheckAvailablePhoneNumberResponse_available(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var authEmailPasswordResponseImplementors = []string{"AuthEmailPasswordResponse"}
+
+func (ec *executionContext) _AuthEmailPasswordResponse(ctx context.Context, sel ast.SelectionSet, obj *AuthEmailPasswordResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, authEmailPasswordResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AuthEmailPasswordResponse")
+		case "token":
+			out.Values[i] = ec._AuthEmailPasswordResponse_token(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -8891,6 +9333,30 @@ func (ec *executionContext) _AuthSendSMSResponse(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var authSignoutEmailResponseImplementors = []string{"AuthSignoutEmailResponse"}
+
+func (ec *executionContext) _AuthSignoutEmailResponse(ctx context.Context, sel ast.SelectionSet, obj *AuthSignoutEmailResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, authSignoutEmailResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AuthSignoutEmailResponse")
+		case "success":
+			out.Values[i] = ec._AuthSignoutEmailResponse_success(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9473,14 +9939,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_addressEdit(ctx, field)
 		case "adminBlock":
 			out.Values[i] = ec._Mutation_adminBlock(ctx, field)
+		case "authCheckAvailableEmailAddress":
+			out.Values[i] = ec._Mutation_authCheckAvailableEmailAddress(ctx, field)
 		case "authCheckAvailablePhoneNumber":
 			out.Values[i] = ec._Mutation_authCheckAvailablePhoneNumber(ctx, field)
+		case "authEmailPassword":
+			out.Values[i] = ec._Mutation_authEmailPassword(ctx, field)
 		case "authPhoneNumber":
 			out.Values[i] = ec._Mutation_authPhoneNumber(ctx, field)
 		case "authSendSMS":
 			out.Values[i] = ec._Mutation_authSendSMS(ctx, field)
 		case "authSignout":
 			out.Values[i] = ec._Mutation_authSignout(ctx, field)
+		case "authSignoutEmail":
+			out.Values[i] = ec._Mutation_authSignoutEmail(ctx, field)
 		case "authUser":
 			out.Values[i] = ec._Mutation_authUser(ctx, field)
 		case "authValidCredentials":
@@ -10410,8 +10882,16 @@ func (ec *executionContext) unmarshalNAdminBlockInput2githubᚗcomᚋlolopinto�
 	return ec.unmarshalInputAdminBlockInput(ctx, v)
 }
 
+func (ec *executionContext) unmarshalNAuthCheckAvailableEmailAddressInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthCheckAvailableEmailAddressInput(ctx context.Context, v interface{}) (AuthCheckAvailableEmailAddressInput, error) {
+	return ec.unmarshalInputAuthCheckAvailableEmailAddressInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNAuthCheckAvailablePhoneNumberInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthCheckAvailablePhoneNumberInput(ctx context.Context, v interface{}) (AuthCheckAvailablePhoneNumberInput, error) {
 	return ec.unmarshalInputAuthCheckAvailablePhoneNumberInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNAuthEmailPasswordInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailPasswordInput(ctx context.Context, v interface{}) (AuthEmailPasswordInput, error) {
+	return ec.unmarshalInputAuthEmailPasswordInput(ctx, v)
 }
 
 func (ec *executionContext) unmarshalNAuthPhoneNumberInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneNumberInput(ctx context.Context, v interface{}) (AuthPhoneNumberInput, error) {
@@ -11163,6 +11643,17 @@ func (ec *executionContext) marshalOAdminBlockResponse2ᚖgithubᚗcomᚋlolopin
 	return ec._AdminBlockResponse(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOAuthCheckAvailableEmailAddressResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthCheckAvailableEmailAddressResponse(ctx context.Context, sel ast.SelectionSet, v AuthCheckAvailableEmailAddressResponse) graphql.Marshaler {
+	return ec._AuthCheckAvailableEmailAddressResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAuthCheckAvailableEmailAddressResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthCheckAvailableEmailAddressResponse(ctx context.Context, sel ast.SelectionSet, v *AuthCheckAvailableEmailAddressResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AuthCheckAvailableEmailAddressResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOAuthCheckAvailablePhoneNumberResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthCheckAvailablePhoneNumberResponse(ctx context.Context, sel ast.SelectionSet, v AuthCheckAvailablePhoneNumberResponse) graphql.Marshaler {
 	return ec._AuthCheckAvailablePhoneNumberResponse(ctx, sel, &v)
 }
@@ -11172,6 +11663,17 @@ func (ec *executionContext) marshalOAuthCheckAvailablePhoneNumberResponse2ᚖgit
 		return graphql.Null
 	}
 	return ec._AuthCheckAvailablePhoneNumberResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAuthEmailPasswordResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailPasswordResponse(ctx context.Context, sel ast.SelectionSet, v AuthEmailPasswordResponse) graphql.Marshaler {
+	return ec._AuthEmailPasswordResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAuthEmailPasswordResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailPasswordResponse(ctx context.Context, sel ast.SelectionSet, v *AuthEmailPasswordResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AuthEmailPasswordResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAuthPhoneNumberResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneNumberResponse(ctx context.Context, sel ast.SelectionSet, v AuthPhoneNumberResponse) graphql.Marshaler {
@@ -11194,6 +11696,17 @@ func (ec *executionContext) marshalOAuthSendSMSResponse2ᚖgithubᚗcomᚋlolopi
 		return graphql.Null
 	}
 	return ec._AuthSendSMSResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAuthSignoutEmailResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthSignoutEmailResponse(ctx context.Context, sel ast.SelectionSet, v AuthSignoutEmailResponse) graphql.Marshaler {
+	return ec._AuthSignoutEmailResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAuthSignoutEmailResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthSignoutEmailResponse(ctx context.Context, sel ast.SelectionSet, v *AuthSignoutEmailResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AuthSignoutEmailResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAuthSignoutResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthSignoutResponse(ctx context.Context, sel ast.SelectionSet, v AuthSignoutResponse) graphql.Marshaler {

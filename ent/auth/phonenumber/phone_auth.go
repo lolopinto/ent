@@ -10,6 +10,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/lolopinto/ent/ent/auth/internal/base"
 	entjwt "github.com/lolopinto/ent/ent/auth/jwt"
+	"github.com/lolopinto/ent/ent/field/phonenumber"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/nyaruka/phonenumbers"
 	"github.com/pkg/errors"
@@ -165,11 +166,9 @@ func (auth *PhonePinAuth) getFormattedNumber(phoneNumber string) (string, error)
 	if defaultRegion == "" {
 		defaultRegion = DefaultRegion
 	}
-	number, err := phonenumbers.Parse(phoneNumber, defaultRegion)
-	if err != nil {
-		return "", errors.Wrap(err, "invalid phone number")
-	}
-	return phonenumbers.Format(number, auth.Format), nil
+	// use field phone number formatting
+	typ := phonenumber.Type().WithFormat(auth.Format).WithDefaultRegion(defaultRegion)
+	return typ.ValidateAndFormat(phoneNumber)
 }
 
 func (auth *PhonePinAuth) validateArgs() error {
