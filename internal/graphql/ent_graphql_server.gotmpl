@@ -4,6 +4,9 @@
 {{ reserveImport "os" }}
 {{ reserveImport "github.com/99designs/gqlgen/handler" }}
 {{ reserveImport "github.com/gorilla/mux" }}
+// including auth to have its init() method run by default so it can register as a middleware
+// to have the default logged out viewer set if no auth handlers registered
+{{ reserveImport "github.com/lolopinto/ent/ent/auth" "_" }}
 {{ reserveImport "github.com/lolopinto/ent/ent/request" }}
 {{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
 

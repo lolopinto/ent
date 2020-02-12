@@ -7,9 +7,13 @@ import (
 
 	"github.com/99designs/gqlgen/handler"
 	"github.com/gorilla/mux"
+	_ "github.com/lolopinto/ent/ent/auth"
 	"github.com/lolopinto/ent/ent/request"
 	"github.com/lolopinto/ent/internal/test_schema/graphql"
 )
+
+// including auth to have its init() method run by default so it can register as a middleware
+// to have the default logged out viewer set if no auth handlers registered
 
 const defaultPort = "8080"
 

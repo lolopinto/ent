@@ -79,7 +79,5 @@ func authMiddleware(next http.Handler) http.Handler {
 }
 
 func init() {
-	// TODO: we need to get server.go to include auth
-	// 	_ "github.com/lolopinto/ent/ent/auth"
 	request.Register("auth", authMiddleware)
 }
