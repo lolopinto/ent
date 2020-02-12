@@ -56,6 +56,7 @@ type QueryHandler struct {
 	V        viewer.ViewerContext
 	T        *testing.T
 	Response []byte
+	Callback func(http.ResponseWriter, *http.Request)
 }
 
 func (h *QueryHandler) HandlerFunc(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +64,10 @@ func (h *QueryHandler) HandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	assert.Nil(h.T, err)
 	h.V = v
+
+	if h.Callback != nil {
+		h.Callback(w, r)
+	}
 
 	w.Write(h.Response)
 }

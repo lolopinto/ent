@@ -3,6 +3,7 @@ package jwt
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -74,15 +75,55 @@ func GetSubjectFromClaims(claims jwt.Claims) (string, error) {
 		if typ["sub"] != nil {
 			return typ["sub"].(string), nil
 		}
+		return "", errors.New("invalid claims")
 	}
 	return GetKeyFromClaims(claims, "sub")
 }
 
+func GetExpiryTimeFromClaims(claims jwt.Claims) (int64, error) {
+	fn := func(val interface{}) (int64, error) {
+		switch typ := val.(type) {
+		case int64:
+			return typ, nil
+		case float64:
+			return int64(typ), nil
+		case json.Number:
+			return typ.Int64()
+		default:
+			return 0, fmt.Errorf("invalid number %v %T", val, typ)
+		}
+	}
+	switch typ := claims.(type) {
+	case *jwt.StandardClaims:
+		return typ.ExpiresAt, nil
+	case jwt.StandardClaims:
+		return typ.ExpiresAt, nil
+	case jwt.MapClaims:
+		if typ["exp"] != nil {
+			return fn(typ["exp"])
+		}
+		return 0, errors.New("invalid claims")
+	}
+	val, err := getKeyFromClaims(claims, "exp")
+	if err != nil {
+		return 0, err
+	}
+	return fn(val)
+}
+
 func GetKeyFromClaims(claims jwt.Claims, key string) (string, error) {
-	fn := func(m jwt.MapClaims) (string, error) {
+	val, err := getKeyFromClaims(claims, key)
+	if err != nil {
+		return "", err
+	}
+	return val.(string), nil
+}
+
+func getKeyFromClaims(claims jwt.Claims, key string) (interface{}, error) {
+	fn := func(m jwt.MapClaims) (interface{}, error) {
 		val, ok := m[key]
 		if ok {
-			return val.(string), nil
+			return val, nil
 		}
 		return "", errors.New("invalid claims")
 	}

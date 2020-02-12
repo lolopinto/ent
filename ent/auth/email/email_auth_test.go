@@ -99,6 +99,7 @@ func (suite *emailAuthTestSuite) SetupSuite() {
 
 func (suite *emailAuthTestSuite) SetupTest() {
 	auth.Clear()
+	jwt.TimeFunc = time.Now
 }
 
 func (suite *emailAuthTestSuite) createUser(passwords ...string) *models.User {
@@ -143,7 +144,7 @@ func (suite *emailAuthTestSuite) TestValidAuth() {
 		suite.T().Run(key, func(t *testing.T) {
 			auth := getDefaultAuth()
 
-			suite.testValidAuthWithDuration(auth, entjwt.DefaultDuration, user, email, pwd)
+			testValidAuthWithDuration(t, auth, entjwt.DefaultDuration, user, email, pwd)
 		})
 	}
 }
@@ -155,7 +156,7 @@ func (suite *emailAuthTestSuite) TestCustomDuration() {
 	auth := getDefaultAuth()
 	auth.Duration = 5 * time.Minute
 
-	suite.testValidAuthWithDuration(auth, 5*time.Minute, user, user.EmailAddress, pwd)
+	testValidAuthWithDuration(suite.T(), auth, 5*time.Minute, user, user.EmailAddress, pwd)
 }
 
 func (suite *emailAuthTestSuite) TestCustomSigningMethod() {
@@ -165,7 +166,7 @@ func (suite *emailAuthTestSuite) TestCustomSigningMethod() {
 	auth := getDefaultAuth()
 	auth.SigningMethod = jwt.SigningMethodHS256
 
-	identity := suite.verifyValidAuth(auth, user, user.EmailAddress, pwd)
+	identity := verifyValidAuth(suite.T(), auth, user, user.EmailAddress, pwd)
 
 	token, err := jwt.Parse(identity.Token, func(token *jwt.Token) (interface{}, error) {
 		return auth.SigningKey, nil
@@ -202,7 +203,7 @@ func (suite *emailAuthTestSuite) TestCustomClaims() {
 		return &claims{}
 	}
 
-	suite.verifyValidAuth(auth, user, user.EmailAddress, pwd)
+	verifyValidAuth(suite.T(), auth, user, user.EmailAddress, pwd)
 }
 
 func (suite *emailAuthTestSuite) TestAuthFromRequestNoHeader() {
@@ -245,6 +246,23 @@ func (suite *emailAuthTestSuite) TestInvalidAuthorizationHeader() {
 	assert.Equal(suite.T(), h.V.GetViewerID(), "")
 }
 
+func (suite *emailAuthTestSuite) TestExtendTokenExpiration() {
+	// just testing that it works.
+	pwd := util.GenerateRandPassword()
+	user := suite.createUser(pwd)
+
+	auth := getDefaultAuth()
+	identity := verifyValidAuth(suite.T(), auth, user, user.EmailAddress, pwd)
+
+	jwt.TimeFunc = func() time.Time {
+		return time.Now().Add(30 * time.Minute)
+	}
+	newToken, err := auth.ExtendTokenExpiration(identity.Token)
+	require.NoError(suite.T(), err)
+	require.NotEqual(suite.T(), newToken, identity.Token)
+	require.NotEqual(suite.T(), newToken, "")
+}
+
 func (suite *emailAuthTestSuite) testServer(fns ...func(*http.Request)) *httptest.QueryHandler {
 	h := &httptest.QueryHandler{
 		T:        suite.T(),
@@ -270,30 +288,32 @@ func (suite *emailAuthTestSuite) testServer(fns ...func(*http.Request)) *httptes
 	return h
 }
 
-func (suite *emailAuthTestSuite) verifyValidAuth(
+func verifyValidAuth(
+	t *testing.T,
 	auth *email.EmailPasswordAuth,
 	user *models.User,
 	email string,
 	password string,
 ) *entjwt.AuthedIdentity {
 	identity, err := auth.Authenticate(context.TODO(), email, password)
-	require.Nil(suite.T(), err)
-	require.NotNil(suite.T(), identity)
+	require.Nil(t, err)
+	require.NotNil(t, identity)
 
-	require.Equal(suite.T(), user.ID, identity.Viewer.GetViewerID())
+	require.Equal(t, user.ID, identity.Viewer.GetViewerID())
 
 	// validate the token
 	viewer, err := auth.ViewerFromToken(identity.Token)
-	require.Nil(suite.T(), err)
-	require.NotNil(suite.T(), viewer)
-	require.Equal(suite.T(), user.ID, viewer.GetViewerID())
+	require.Nil(t, err)
+	require.NotNil(t, viewer)
+	require.Equal(t, user.ID, viewer.GetViewerID())
 
-	require.Equal(suite.T(), viewer, identity.Viewer)
+	require.Equal(t, viewer, identity.Viewer)
 
 	return identity
 }
 
-func (suite *emailAuthTestSuite) testValidAuthWithDuration(
+func testValidAuthWithDuration(
+	t *testing.T,
 	auth *email.EmailPasswordAuth,
 	duration time.Duration,
 	user *models.User,
@@ -301,15 +321,15 @@ func (suite *emailAuthTestSuite) testValidAuthWithDuration(
 	password string,
 ) {
 
-	identity := suite.verifyValidAuth(auth, user, email, password)
+	identity := verifyValidAuth(t, auth, user, email, password)
 
 	// check if valid after the fact
 	jwt.TimeFunc = func() time.Time {
 		return time.Now().Add(duration + 1*time.Second)
 	}
 	viewer, err := auth.ViewerFromToken(identity.Token)
-	require.NotNil(suite.T(), err)
-	require.Nil(suite.T(), viewer)
+	require.NotNil(t, err)
+	require.Nil(t, viewer)
 
 	// reset the time
 	jwt.TimeFunc = time.Now

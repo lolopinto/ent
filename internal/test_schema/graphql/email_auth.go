@@ -5,6 +5,7 @@ package graphql
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/lolopinto/ent/ent/auth/email"
 	field "github.com/lolopinto/ent/ent/field/email"
@@ -13,12 +14,14 @@ import (
 )
 
 // TODO (developer): this should be stored in an environment variable instead
-var emailSigningKey = []byte("ivrwqCmTGuiQ9W0BYg1YeIj83tMcL5Svk5Lkea4Ps9o5XOqSPrZBJdwXTt8TmJV")
+var emailSigningKey = []byte("LUSzO8xFGGPaR1Sy1eR2l5YP331Xw29ZOZTmIHSVpwTlckGystIId8XnRnByjT3")
 
 var emailAuthHandler = &email.EmailPasswordAuth{
 	SigningKey:          emailSigningKey,
 	IDFromEmailPassword: models.ValidateEmailPassword,
 	VCFromID:            testschemaviewer.NewViewerContext,
+	// only allow tokens to be extended in last 10 minutes.
+	ExtendTokenDuration: 10 * time.Minute,
 	// can provide more options here. e.g. change Duration or custom claims method
 }
 
@@ -67,7 +70,13 @@ func AuthEmailLogout(ctx context.Context) {
 	// when there's a refresh token, we'll kill it
 }
 
-// TODO extend token....
+// AuthEmailExtendToken takes the current auth token and returns a new token
+// if current token is valid
+// @graphql authEmailToken Mutation
+// @graphqlreturn token
+func AuthEmailExtendToken(ctx context.Context, token string) (string, error) {
+	return emailAuthHandler.ExtendTokenExpiration(token)
+}
 
 func formattedEmail(emailAddress string) (string, error) {
 	return field.Type().ValidateAndFormat(emailAddress)

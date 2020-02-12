@@ -89,12 +89,28 @@ type AuthEmailPasswordResponse struct {
 	Token string `json:"token"`
 }
 
+type AuthEmailTokenInput struct {
+	Token string `json:"token"`
+}
+
+type AuthEmailTokenResponse struct {
+	Token string `json:"token"`
+}
+
 type AuthPhoneNumberInput struct {
 	PhoneNumber string `json:"phoneNumber"`
 	Pin         string `json:"pin"`
 }
 
 type AuthPhoneNumberResponse struct {
+	Token string `json:"token"`
+}
+
+type AuthPhoneTokenInput struct {
+	Token string `json:"token"`
+}
+
+type AuthPhoneTokenResponse struct {
 	Token string `json:"token"`
 }
 

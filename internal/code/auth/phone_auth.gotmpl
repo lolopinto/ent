@@ -31,6 +31,9 @@ var phoneAuthHandler = &phonenumber.PhonePinAuth{
   Validator: &phonenumber.MemoryValidator{ // can change validator here
 		Memory: memory,
 	},
+  // only allow tokens to be extended in last 10 minutes. 
+  {{/* TODO ola do more research here. esp with no refresh tokens yet */ -}}
+  ExtendTokenDuration: 10 * time.Minute,
   // can provide more options here. e.g. change Duration or custom claims method
 }
 
@@ -117,7 +120,13 @@ func AuthPhoneLogout(ctx context.Context) {
   // when there's a refresh token, we'll kill it
 }
 
-// TODO extend token....
+// AuthPhoneExtendToken takes the current auth token and returns a new token 
+// if current token is valid
+// @graphql authPhoneToken Mutation
+// @graphqlreturn token
+func AuthPhoneExtendToken(ctx context.Context, token string) (string, error) {
+  return phoneAuthHandler.ExtendTokenExpiration(token)
+}
 
 func generateRandCode() string {
   rand.Seed(time.Now().UnixNano())

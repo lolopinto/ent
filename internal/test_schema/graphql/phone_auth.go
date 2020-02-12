@@ -18,7 +18,7 @@ import (
 )
 
 // TODO (developer): this should be stored in an environment variable instead
-var phoneSigningKey = []byte("8G4xY4mxVBM62hwic7Jryv5fbhx4PBGhxHPg9npxsETEww53PAS4jzvjQlGc643")
+var phoneSigningKey = []byte("TqJHUXC3222L4UFaSoMdo6UxwOZKs76ReYgPhLmI2Dwff6Vig6h3WGieSc8RgTs")
 
 // TODO (developer): we default to storing in memory. feel free to change to redis or provide a different validator
 var memory = cache.NewMemory(10*time.Minute, 10*time.Minute)
@@ -29,6 +29,8 @@ var phoneAuthHandler = &phonenumber.PhonePinAuth{
 	Validator: &phonenumber.MemoryValidator{ // can change validator here
 		Memory: memory,
 	},
+	// only allow tokens to be extended in last 10 minutes.
+	ExtendTokenDuration: 10 * time.Minute,
 	// can provide more options here. e.g. change Duration or custom claims method
 }
 
@@ -101,7 +103,13 @@ func AuthPhoneLogout(ctx context.Context) {
 	// when there's a refresh token, we'll kill it
 }
 
-// TODO extend token....
+// AuthPhoneExtendToken takes the current auth token and returns a new token
+// if current token is valid
+// @graphql authPhoneToken Mutation
+// @graphqlreturn token
+func AuthPhoneExtendToken(ctx context.Context, token string) (string, error) {
+	return phoneAuthHandler.ExtendTokenExpiration(token)
+}
 
 func generateRandCode() string {
 	rand.Seed(time.Now().UnixNano())

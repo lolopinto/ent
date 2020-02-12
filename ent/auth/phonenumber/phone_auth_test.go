@@ -50,6 +50,7 @@ func (suite *phoneAuthTestSuite) SetupTest() {
 		Addr: "localhost:6379",
 	})
 	redis.Clear()
+	jwt.TimeFunc = time.Now
 }
 
 func (suite *phoneAuthTestSuite) createUser() *models.User {
@@ -100,6 +101,7 @@ func (suite *phoneAuthTestSuite) runFuncWithDefaultAuth(fn func(t *testing.T, au
 			auth := getDefaultAuth(validator)
 			fn(t, auth)
 		})
+		jwt.TimeFunc = time.Now
 		auth.Clear()
 	}
 }
@@ -167,7 +169,7 @@ func (suite *phoneAuthTestSuite) TestNotPhoneNumber() {
 
 		require.Nil(t, identity)
 		require.NotNil(t, err)
-		require.Contains(t, err.Error(), "invalid phone number")
+		require.Contains(t, err.Error(), "is not a number")
 	})
 }
 
@@ -439,6 +441,22 @@ func (suite *phoneAuthTestSuite) TestAvailableAndValidWrongPIN() {
 		valid, err := phoneAuth.AvailableAndValid(context.TODO(), "4159876543", "654321")
 		require.Error(t, err)
 		require.False(t, valid)
+	})
+}
+
+func (suite *phoneAuthTestSuite) TestExtendTokenExpiration() {
+	user := suite.createUser()
+	suite.runFuncWithDefaultAuth(func(t *testing.T, phoneAuth *phonenumber.PhonePinAuth) {
+
+		identity := setPINAndVerifyValidAuth(t, phoneAuth, user, *user.PhoneNumber)
+
+		jwt.TimeFunc = func() time.Time {
+			return time.Now().Add(30 * time.Minute)
+		}
+		newToken, err := phoneAuth.ExtendTokenExpiration(identity.Token)
+		require.NoError(t, err)
+		require.NotEqual(t, newToken, "")
+		require.NotEqual(t, newToken, identity.Token)
 	})
 }
 

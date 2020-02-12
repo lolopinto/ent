@@ -80,12 +80,28 @@ type AuthEmailPasswordResponse {
     token: String!
 }
 
+input AuthEmailTokenInput {
+    token: String!
+}
+
+type AuthEmailTokenResponse {
+    token: String!
+}
+
 input AuthPhoneNumberInput {
     phoneNumber: String!
     pin: String!
 }
 
 type AuthPhoneNumberResponse {
+    token: String!
+}
+
+input AuthPhoneTokenInput {
+    token: String!
+}
+
+type AuthPhoneTokenResponse {
     token: String!
 }
 
@@ -248,7 +264,9 @@ type Mutation {
     authCheckAvailableEmailAddress(input: AuthCheckAvailableEmailAddressInput!): AuthCheckAvailableEmailAddressResponse
     authCheckAvailablePhoneNumber(input: AuthCheckAvailablePhoneNumberInput!): AuthCheckAvailablePhoneNumberResponse
     authEmailPassword(input: AuthEmailPasswordInput!): AuthEmailPasswordResponse
+    authEmailToken(input: AuthEmailTokenInput!): AuthEmailTokenResponse
     authPhoneNumber(input: AuthPhoneNumberInput!): AuthPhoneNumberResponse
+    authPhoneToken(input: AuthPhoneTokenInput!): AuthPhoneTokenResponse
     authSendSMS(input: AuthSendSMSInput!): AuthSendSMSResponse
     authSignout: AuthSignoutResponse
     authSignoutEmail: AuthSignoutEmailResponse

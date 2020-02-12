@@ -12,11 +12,12 @@ import (
 )
 
 type testCase struct {
-	claims jwt.Claims
-	err    error
-	id     string
-	subj   string
-	email  string
+	claims  jwt.Claims
+	err     error
+	id      string
+	subj    string
+	email   string
+	expTime int64
 }
 
 type customClaims struct {
@@ -185,6 +186,50 @@ func TestKeyFromClaims(t *testing.T) {
 				require.Equal(t, tt.err, err)
 			}
 
+		})
+	}
+}
+
+func TestExpiryTimeFromClaims(t *testing.T) {
+	future := time.Now().Add(1 * time.Hour).Unix()
+	testCases := map[string]testCase{
+		"mapClaims": testCase{
+			claims: jwt.MapClaims{
+				"jti": "1",
+				"exp": future,
+			},
+			expTime: future,
+		},
+		"standardclaims": testCase{
+			claims: jwt.StandardClaims{
+				Id:        "1",
+				ExpiresAt: future,
+			},
+			expTime: future,
+		},
+		"standardclaimsPtr": testCase{
+			claims: &jwt.StandardClaims{
+				Id:        "1",
+				ExpiresAt: future,
+			},
+			expTime: future,
+		},
+		"customClaims": testCase{
+			claims: customClaims{
+				StandardClaims: jwt.StandardClaims{
+					ExpiresAt: future,
+				},
+			},
+			expTime: future,
+		},
+	}
+
+	for key, tt := range testCases {
+		t.Run(key, func(t *testing.T) {
+			expTime, err := entjwt.GetExpiryTimeFromClaims(tt.claims)
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.expTime, expTime)
 		})
 	}
 }

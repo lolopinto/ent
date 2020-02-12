@@ -217,6 +217,17 @@ func (r *mutationResolver) AuthEmailPassword(ctx context.Context, input AuthEmai
 	}, nil
 }
 
+func (r *mutationResolver) AuthEmailToken(ctx context.Context, input AuthEmailTokenInput) (*AuthEmailTokenResponse, error) {
+	token, err := AuthEmailExtendToken(ctx, input.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthEmailTokenResponse{
+		Token: token,
+	}, nil
+}
+
 func (r *mutationResolver) AuthPhoneNumber(ctx context.Context, input AuthPhoneNumberInput) (*AuthPhoneNumberResponse, error) {
 	token, err := AuthPhoneNumber(ctx, input.PhoneNumber, input.Pin)
 	if err != nil {
@@ -224,6 +235,17 @@ func (r *mutationResolver) AuthPhoneNumber(ctx context.Context, input AuthPhoneN
 	}
 
 	return &AuthPhoneNumberResponse{
+		Token: token,
+	}, nil
+}
+
+func (r *mutationResolver) AuthPhoneToken(ctx context.Context, input AuthPhoneTokenInput) (*AuthPhoneTokenResponse, error) {
+	token, err := AuthPhoneExtendToken(ctx, input.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthPhoneTokenResponse{
 		Token: token,
 	}, nil
 }

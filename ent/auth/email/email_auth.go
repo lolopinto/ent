@@ -41,6 +41,16 @@ type EmailPasswordAuth struct {
 	// This pairs well with ClaimFunc to generate a new empty claims instance which is passed to jwt.ParseWithClaims
 	BaseClaimFunc func() entjwt.Claims
 
+	// ExtendTokenDuration defines the window for which the token can be extended
+	// (with a valid existing token and without a refresh token)
+	// If not set (default), token can be extended whenever e.g. sliding window every 10 minutes, every request, etc.
+	// If set, token can only be extended within that window e.g. if set to 5 minutes, will be 5 minutes
+	// before token expires
+	// By default, auth handler doesn't do anything and since DefaultDuration is currently 1 hour,
+	// developer needs to pick *something* to do to extend tokens or provide a
+	// longer duration
+	ExtendTokenDuration time.Duration
+
 	shared *base.SharedJwtAuth
 
 	// TODO is this needed? just to verify the cost?
@@ -64,12 +74,13 @@ func NewEmailPasswordAuth(
 func (auth *EmailPasswordAuth) newShared() *base.SharedJwtAuth {
 	if auth.shared == nil {
 		auth.shared = &base.SharedJwtAuth{
-			VCFromID:      auth.VCFromID,
-			SigningKey:    auth.SigningKey,
-			Duration:      auth.Duration,
-			SigningMethod: auth.SigningMethod,
-			ClaimFunc:     auth.ClaimFunc,
-			BaseClaimFunc: auth.BaseClaimFunc,
+			VCFromID:            auth.VCFromID,
+			SigningKey:          auth.SigningKey,
+			Duration:            auth.Duration,
+			SigningMethod:       auth.SigningMethod,
+			ClaimFunc:           auth.ClaimFunc,
+			BaseClaimFunc:       auth.BaseClaimFunc,
+			ExtendTokenDuration: auth.ExtendTokenDuration,
 		}
 	}
 	return auth.shared
@@ -111,6 +122,12 @@ func (auth *EmailPasswordAuth) AuthViewer(w http.ResponseWriter, r *http.Request
 // which maps to user encoded in the token
 func (auth *EmailPasswordAuth) ViewerFromToken(tokenStr string) (viewer.ViewerContext, error) {
 	return auth.newShared().ViewerFromToken(tokenStr)
+}
+
+// ExtendTokenExpiration takes the current token and gets a new auth token for the user
+// See ExtendTokenDuration for more information
+func (auth *EmailPasswordAuth) ExtendTokenExpiration(tokenStr string) (string, error) {
+	return auth.newShared().ExtendTokenExpiration(tokenStr)
 }
 
 func (auth *EmailPasswordAuth) getFormattedEmail(emailAddress string) (string, error) {

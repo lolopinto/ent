@@ -89,7 +89,15 @@ type ComplexityRoot struct {
 		Token func(childComplexity int) int
 	}
 
+	AuthEmailTokenResponse struct {
+		Token func(childComplexity int) int
+	}
+
 	AuthPhoneNumberResponse struct {
+		Token func(childComplexity int) int
+	}
+
+	AuthPhoneTokenResponse struct {
 		Token func(childComplexity int) int
 	}
 
@@ -190,7 +198,9 @@ type ComplexityRoot struct {
 		AuthCheckAvailableEmailAddress func(childComplexity int, input AuthCheckAvailableEmailAddressInput) int
 		AuthCheckAvailablePhoneNumber  func(childComplexity int, input AuthCheckAvailablePhoneNumberInput) int
 		AuthEmailPassword              func(childComplexity int, input AuthEmailPasswordInput) int
+		AuthEmailToken                 func(childComplexity int, input AuthEmailTokenInput) int
 		AuthPhoneNumber                func(childComplexity int, input AuthPhoneNumberInput) int
+		AuthPhoneToken                 func(childComplexity int, input AuthPhoneTokenInput) int
 		AuthSendSms                    func(childComplexity int, input AuthSendSMSInput) int
 		AuthSignout                    func(childComplexity int) int
 		AuthSignoutEmail               func(childComplexity int) int
@@ -330,7 +340,9 @@ type MutationResolver interface {
 	AuthCheckAvailableEmailAddress(ctx context.Context, input AuthCheckAvailableEmailAddressInput) (*AuthCheckAvailableEmailAddressResponse, error)
 	AuthCheckAvailablePhoneNumber(ctx context.Context, input AuthCheckAvailablePhoneNumberInput) (*AuthCheckAvailablePhoneNumberResponse, error)
 	AuthEmailPassword(ctx context.Context, input AuthEmailPasswordInput) (*AuthEmailPasswordResponse, error)
+	AuthEmailToken(ctx context.Context, input AuthEmailTokenInput) (*AuthEmailTokenResponse, error)
 	AuthPhoneNumber(ctx context.Context, input AuthPhoneNumberInput) (*AuthPhoneNumberResponse, error)
+	AuthPhoneToken(ctx context.Context, input AuthPhoneTokenInput) (*AuthPhoneTokenResponse, error)
 	AuthSendSms(ctx context.Context, input AuthSendSMSInput) (*AuthSendSMSResponse, error)
 	AuthSignout(ctx context.Context) (*AuthSignoutResponse, error)
 	AuthSignoutEmail(ctx context.Context) (*AuthSignoutEmailResponse, error)
@@ -489,12 +501,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.AuthEmailPasswordResponse.Token(childComplexity), true
 
+	case "AuthEmailTokenResponse.token":
+		if e.complexity.AuthEmailTokenResponse.Token == nil {
+			break
+		}
+
+		return e.complexity.AuthEmailTokenResponse.Token(childComplexity), true
+
 	case "AuthPhoneNumberResponse.token":
 		if e.complexity.AuthPhoneNumberResponse.Token == nil {
 			break
 		}
 
 		return e.complexity.AuthPhoneNumberResponse.Token(childComplexity), true
+
+	case "AuthPhoneTokenResponse.token":
+		if e.complexity.AuthPhoneTokenResponse.Token == nil {
+			break
+		}
+
+		return e.complexity.AuthPhoneTokenResponse.Token(childComplexity), true
 
 	case "AuthSendSMSResponse.pin":
 		if e.complexity.AuthSendSMSResponse.Pin == nil {
@@ -872,6 +898,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.AuthEmailPassword(childComplexity, args["input"].(AuthEmailPasswordInput)), true
 
+	case "Mutation.authEmailToken":
+		if e.complexity.Mutation.AuthEmailToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_authEmailToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AuthEmailToken(childComplexity, args["input"].(AuthEmailTokenInput)), true
+
 	case "Mutation.authPhoneNumber":
 		if e.complexity.Mutation.AuthPhoneNumber == nil {
 			break
@@ -883,6 +921,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.AuthPhoneNumber(childComplexity, args["input"].(AuthPhoneNumberInput)), true
+
+	case "Mutation.authPhoneToken":
+		if e.complexity.Mutation.AuthPhoneToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_authPhoneToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AuthPhoneToken(childComplexity, args["input"].(AuthPhoneTokenInput)), true
 
 	case "Mutation.authSendSMS":
 		if e.complexity.Mutation.AuthSendSms == nil {
@@ -1573,12 +1623,28 @@ type AuthEmailPasswordResponse {
     token: String!
 }
 
+input AuthEmailTokenInput {
+    token: String!
+}
+
+type AuthEmailTokenResponse {
+    token: String!
+}
+
 input AuthPhoneNumberInput {
     phoneNumber: String!
     pin: String!
 }
 
 type AuthPhoneNumberResponse {
+    token: String!
+}
+
+input AuthPhoneTokenInput {
+    token: String!
+}
+
+type AuthPhoneTokenResponse {
     token: String!
 }
 
@@ -1741,7 +1807,9 @@ type Mutation {
     authCheckAvailableEmailAddress(input: AuthCheckAvailableEmailAddressInput!): AuthCheckAvailableEmailAddressResponse
     authCheckAvailablePhoneNumber(input: AuthCheckAvailablePhoneNumberInput!): AuthCheckAvailablePhoneNumberResponse
     authEmailPassword(input: AuthEmailPasswordInput!): AuthEmailPasswordResponse
+    authEmailToken(input: AuthEmailTokenInput!): AuthEmailTokenResponse
     authPhoneNumber(input: AuthPhoneNumberInput!): AuthPhoneNumberResponse
+    authPhoneToken(input: AuthPhoneTokenInput!): AuthPhoneTokenResponse
     authSendSMS(input: AuthSendSMSInput!): AuthSendSMSResponse
     authSignout: AuthSignoutResponse
     authSignoutEmail: AuthSignoutEmailResponse
@@ -2029,12 +2097,40 @@ func (ec *executionContext) field_Mutation_authEmailPassword_args(ctx context.Co
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_authEmailToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 AuthEmailTokenInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAuthEmailTokenInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailTokenInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_authPhoneNumber_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 AuthPhoneNumberInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNAuthPhoneNumberInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneNumberInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_authPhoneToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 AuthPhoneTokenInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalNAuthPhoneTokenInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneTokenInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2957,6 +3053,43 @@ func (ec *executionContext) _AuthEmailPasswordResponse_token(ctx context.Context
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _AuthEmailTokenResponse_token(ctx context.Context, field graphql.CollectedField, obj *AuthEmailTokenResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthEmailTokenResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _AuthPhoneNumberResponse_token(ctx context.Context, field graphql.CollectedField, obj *AuthPhoneNumberResponse) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -2968,6 +3101,43 @@ func (ec *executionContext) _AuthPhoneNumberResponse_token(ctx context.Context, 
 	}()
 	rctx := &graphql.ResolverContext{
 		Object:   "AuthPhoneNumberResponse",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AuthPhoneTokenResponse_token(ctx context.Context, field graphql.CollectedField, obj *AuthPhoneTokenResponse) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "AuthPhoneTokenResponse",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -4757,6 +4927,47 @@ func (ec *executionContext) _Mutation_authEmailPassword(ctx context.Context, fie
 	return ec.marshalOAuthEmailPasswordResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailPasswordResponse(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_authEmailToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_authEmailToken_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AuthEmailToken(rctx, args["input"].(AuthEmailTokenInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AuthEmailTokenResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAuthEmailTokenResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailTokenResponse(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_authPhoneNumber(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
@@ -4796,6 +5007,47 @@ func (ec *executionContext) _Mutation_authPhoneNumber(ctx context.Context, field
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOAuthPhoneNumberResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneNumberResponse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_authPhoneToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_authPhoneToken_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AuthPhoneToken(rctx, args["input"].(AuthPhoneTokenInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*AuthPhoneTokenResponse)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOAuthPhoneTokenResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneTokenResponse(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_authSendSMS(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -8491,6 +8743,24 @@ func (ec *executionContext) unmarshalInputAuthEmailPasswordInput(ctx context.Con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAuthEmailTokenInput(ctx context.Context, obj interface{}) (AuthEmailTokenInput, error) {
+	var it AuthEmailTokenInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "token":
+			var err error
+			it.Token, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAuthPhoneNumberInput(ctx context.Context, obj interface{}) (AuthPhoneNumberInput, error) {
 	var it AuthPhoneNumberInput
 	var asMap = obj.(map[string]interface{})
@@ -8506,6 +8776,24 @@ func (ec *executionContext) unmarshalInputAuthPhoneNumberInput(ctx context.Conte
 		case "pin":
 			var err error
 			it.Pin, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAuthPhoneTokenInput(ctx context.Context, obj interface{}) (AuthPhoneTokenInput, error) {
+	var it AuthPhoneTokenInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "token":
+			var err error
+			it.Token, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -9290,6 +9578,33 @@ func (ec *executionContext) _AuthEmailPasswordResponse(ctx context.Context, sel 
 	return out
 }
 
+var authEmailTokenResponseImplementors = []string{"AuthEmailTokenResponse"}
+
+func (ec *executionContext) _AuthEmailTokenResponse(ctx context.Context, sel ast.SelectionSet, obj *AuthEmailTokenResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, authEmailTokenResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AuthEmailTokenResponse")
+		case "token":
+			out.Values[i] = ec._AuthEmailTokenResponse_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var authPhoneNumberResponseImplementors = []string{"AuthPhoneNumberResponse"}
 
 func (ec *executionContext) _AuthPhoneNumberResponse(ctx context.Context, sel ast.SelectionSet, obj *AuthPhoneNumberResponse) graphql.Marshaler {
@@ -9303,6 +9618,33 @@ func (ec *executionContext) _AuthPhoneNumberResponse(ctx context.Context, sel as
 			out.Values[i] = graphql.MarshalString("AuthPhoneNumberResponse")
 		case "token":
 			out.Values[i] = ec._AuthPhoneNumberResponse_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var authPhoneTokenResponseImplementors = []string{"AuthPhoneTokenResponse"}
+
+func (ec *executionContext) _AuthPhoneTokenResponse(ctx context.Context, sel ast.SelectionSet, obj *AuthPhoneTokenResponse) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.RequestContext, sel, authPhoneTokenResponseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AuthPhoneTokenResponse")
+		case "token":
+			out.Values[i] = ec._AuthPhoneTokenResponse_token(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -9945,8 +10287,12 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_authCheckAvailablePhoneNumber(ctx, field)
 		case "authEmailPassword":
 			out.Values[i] = ec._Mutation_authEmailPassword(ctx, field)
+		case "authEmailToken":
+			out.Values[i] = ec._Mutation_authEmailToken(ctx, field)
 		case "authPhoneNumber":
 			out.Values[i] = ec._Mutation_authPhoneNumber(ctx, field)
+		case "authPhoneToken":
+			out.Values[i] = ec._Mutation_authPhoneToken(ctx, field)
 		case "authSendSMS":
 			out.Values[i] = ec._Mutation_authSendSMS(ctx, field)
 		case "authSignout":
@@ -10894,8 +11240,16 @@ func (ec *executionContext) unmarshalNAuthEmailPasswordInput2githubᚗcomᚋlolo
 	return ec.unmarshalInputAuthEmailPasswordInput(ctx, v)
 }
 
+func (ec *executionContext) unmarshalNAuthEmailTokenInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailTokenInput(ctx context.Context, v interface{}) (AuthEmailTokenInput, error) {
+	return ec.unmarshalInputAuthEmailTokenInput(ctx, v)
+}
+
 func (ec *executionContext) unmarshalNAuthPhoneNumberInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneNumberInput(ctx context.Context, v interface{}) (AuthPhoneNumberInput, error) {
 	return ec.unmarshalInputAuthPhoneNumberInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalNAuthPhoneTokenInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneTokenInput(ctx context.Context, v interface{}) (AuthPhoneTokenInput, error) {
+	return ec.unmarshalInputAuthPhoneTokenInput(ctx, v)
 }
 
 func (ec *executionContext) unmarshalNAuthSendSMSInput2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthSendSMSInput(ctx context.Context, v interface{}) (AuthSendSMSInput, error) {
@@ -11676,6 +12030,17 @@ func (ec *executionContext) marshalOAuthEmailPasswordResponse2ᚖgithubᚗcomᚋ
 	return ec._AuthEmailPasswordResponse(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOAuthEmailTokenResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailTokenResponse(ctx context.Context, sel ast.SelectionSet, v AuthEmailTokenResponse) graphql.Marshaler {
+	return ec._AuthEmailTokenResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAuthEmailTokenResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthEmailTokenResponse(ctx context.Context, sel ast.SelectionSet, v *AuthEmailTokenResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AuthEmailTokenResponse(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOAuthPhoneNumberResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneNumberResponse(ctx context.Context, sel ast.SelectionSet, v AuthPhoneNumberResponse) graphql.Marshaler {
 	return ec._AuthPhoneNumberResponse(ctx, sel, &v)
 }
@@ -11685,6 +12050,17 @@ func (ec *executionContext) marshalOAuthPhoneNumberResponse2ᚖgithubᚗcomᚋlo
 		return graphql.Null
 	}
 	return ec._AuthPhoneNumberResponse(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAuthPhoneTokenResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneTokenResponse(ctx context.Context, sel ast.SelectionSet, v AuthPhoneTokenResponse) graphql.Marshaler {
+	return ec._AuthPhoneTokenResponse(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAuthPhoneTokenResponse2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthPhoneTokenResponse(ctx context.Context, sel ast.SelectionSet, v *AuthPhoneTokenResponse) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AuthPhoneTokenResponse(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAuthSendSMSResponse2githubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋgraphqlᚐAuthSendSMSResponse(ctx context.Context, sel ast.SelectionSet, v AuthSendSMSResponse) graphql.Marshaler {

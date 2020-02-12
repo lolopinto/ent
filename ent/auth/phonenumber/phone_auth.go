@@ -16,6 +16,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TODO rename from PhonePinAuth to PasswordlessAuth and "support" emails
+// most functionality is the same. Few things will change: validation, nomenclature etc
+
 // PhonePinAuth is an implementation of the auth.Auth interface that
 // verifies that a phone number/PIN combination is valid
 type PhonePinAuth struct {
@@ -50,8 +53,19 @@ type PhonePinAuth struct {
 	// the phonenumber field which is how the phone number is probably stored
 	Format phonenumbers.PhoneNumberFormat
 
-	// TOOD document
+	// Required to validate the phone number/pin combo as valid
+	// Can use default Memory or Redis Validator if need be
 	Validator Validator
+
+	// ExtendTokenDuration defines the window for which the token can be extended
+	// (with a valid existing token and without a refresh token)
+	// If not set (default), token can be extended whenever e.g. sliding window every 10 minutes, every request, etc.
+	// If set, token can only be extended within that window e.g. if set to 5 minutes, will be 5 minutes
+	// before token expires
+	// By default, auth handler doesn't do anything and since DefaultDuration is currently 1 hour,
+	// developer needs to pick *something* to do to extend tokens or provide a
+	// longer duration
+	ExtendTokenDuration time.Duration
 
 	shared *base.SharedJwtAuth
 }
@@ -78,12 +92,13 @@ var DefaultRegion = "US"
 func (auth *PhonePinAuth) newShared() *base.SharedJwtAuth {
 	if auth.shared == nil {
 		auth.shared = &base.SharedJwtAuth{
-			VCFromID:      auth.VCFromID,
-			SigningKey:    auth.SigningKey,
-			Duration:      auth.Duration,
-			SigningMethod: auth.SigningMethod,
-			ClaimFunc:     auth.ClaimFunc,
-			BaseClaimFunc: auth.BaseClaimFunc,
+			VCFromID:            auth.VCFromID,
+			SigningKey:          auth.SigningKey,
+			Duration:            auth.Duration,
+			SigningMethod:       auth.SigningMethod,
+			ClaimFunc:           auth.ClaimFunc,
+			BaseClaimFunc:       auth.BaseClaimFunc,
+			ExtendTokenDuration: auth.ExtendTokenDuration,
 		}
 	}
 	return auth.shared
@@ -159,6 +174,12 @@ func (auth *PhonePinAuth) AuthViewer(w http.ResponseWriter, r *http.Request) vie
 // which maps to user encoded in the token
 func (auth *PhonePinAuth) ViewerFromToken(tokenStr string) (viewer.ViewerContext, error) {
 	return auth.newShared().ViewerFromToken(tokenStr)
+}
+
+// ExtendTokenExpiration takes the current token and gets a new auth token for the user
+// See ExtendTokenDuration for more information
+func (auth *PhonePinAuth) ExtendTokenExpiration(tokenStr string) (string, error) {
+	return auth.newShared().ExtendTokenExpiration(tokenStr)
 }
 
 func (auth *PhonePinAuth) getFormattedNumber(phoneNumber string) (string, error) {

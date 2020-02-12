@@ -35,6 +35,16 @@ type SharedJwtAuth struct {
 	ClaimFunc func(string) entjwt.Claims
 	// This pairs well with ClaimFunc to generate a new empty claims instance which is passed to jwt.ParseWithClaims
 	BaseClaimFunc func() entjwt.Claims
+
+	// ExtendTokenDuration defines the window for which the token can be extended
+	// (with a valid existing token and without a refresh token)
+	// If not set (default), token can be extended whenever e.g. sliding window every 10 minutes, every request, etc.
+	// If set, token can only be extended within that window e.g. if set to 5 minutes, will be 5 minutes
+	// before token expires
+	// By default, auth handler doesn't do anything and since DefaultDuration is currently 1 hour,
+	// developer needs to pick *something* to do to extend tokens or provide a
+	// longer duration
+	ExtendTokenDuration time.Duration
 }
 
 // AuthFromID returns an AuthedIdentity that's shared across
@@ -45,11 +55,9 @@ func (auth *SharedJwtAuth) AuthFromID(viewerID string) (*entjwt.AuthedIdentity, 
 		return nil, errors.Wrap(err, "error loading viewercontext")
 	}
 
-	claims := auth.getClaims(viewerID)
-	token := jwt.NewWithClaims(auth.getSigningMethod(), claims)
-	tokenStr, err := token.SignedString(auth.SigningKey)
+	tokenStr, err := auth.getTokenFromID(viewerID)
 	if err != nil {
-		return nil, errors.Wrap(err, "error signing token ")
+		return nil, err
 	}
 
 	return &entjwt.AuthedIdentity{
@@ -137,6 +145,18 @@ func (auth *SharedJwtAuth) AuthViewer(w http.ResponseWriter, r *http.Request) vi
 // ViewerFromToken takes the token string and verifies if valid and then returns a ViewerContext
 // which maps to user encoded in the token
 func (auth *SharedJwtAuth) ViewerFromToken(tokenStr string) (viewer.ViewerContext, error) {
+	claims, err := auth.validateToken(tokenStr)
+	if err != nil {
+		return nil, err
+	}
+	id, err := entjwt.GetIDFromClaims(claims)
+	if err != nil {
+		return nil, err
+	}
+	return auth.VCFromID(id)
+}
+
+func (auth *SharedJwtAuth) validateToken(tokenStr string) (jwt.Claims, error) {
 	claims := auth.GetBaseClaims()
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return auth.SigningKey, nil
@@ -153,10 +173,43 @@ func (auth *SharedJwtAuth) ViewerFromToken(tokenStr string) (viewer.ViewerContex
 	if token.Method != auth.getSigningMethod() {
 		return nil, fmt.Errorf("invalid signing method")
 	}
+	return claims, nil
+}
 
+// ExtendTokenExpiration takes the current token and gets a new auth token for the user
+// See ExtendTokenDuration for more information
+func (auth *SharedJwtAuth) ExtendTokenExpiration(tokenStr string) (string, error) {
+	claims, err := auth.validateToken(tokenStr)
+	if err != nil {
+		return "", err
+	}
+	if auth.ExtendTokenDuration != 0 {
+		t, err := entjwt.GetExpiryTimeFromClaims(claims)
+		if err != nil {
+			return "", err
+		}
+
+		earliestTime := time.Unix(t, 0).Add(auth.ExtendTokenDuration * -1)
+		now := jwt.TimeFunc()
+
+		if now.Before(earliestTime) {
+			return "", fmt.Errorf("can't extend token since not within the extend token window")
+		}
+	}
 	id, err := entjwt.GetIDFromClaims(claims)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return auth.VCFromID(id)
+
+	return auth.getTokenFromID(id)
+}
+
+func (auth *SharedJwtAuth) getTokenFromID(viewerID string) (string, error) {
+	claims := auth.getClaims(viewerID)
+	token := jwt.NewWithClaims(auth.getSigningMethod(), claims)
+	tokenStr, err := token.SignedString(auth.SigningKey)
+	if err != nil {
+		return "", errors.Wrap(err, "error signing token ")
+	}
+	return tokenStr, nil
 }
