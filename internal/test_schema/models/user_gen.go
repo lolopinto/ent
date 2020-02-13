@@ -94,7 +94,7 @@ func LoadUserFromContext(ctx context.Context, id string) (*User, error) {
 }
 
 // GenLoadUserFromContext loads the given User given the context and id
-func GenLoadUserFromContext(ctx context.Context, id string) chan *UserResult {
+func GenLoadUserFromContext(ctx context.Context, id string) <-chan *UserResult {
 	res := make(chan *UserResult)
 	go func() {
 		v, err := viewer.ForContext(ctx)
@@ -117,7 +117,7 @@ func LoadUser(v viewer.ViewerContext, id string) (*User, error) {
 }
 
 // GenLoadUser loads the given User given the id
-func GenLoadUser(v viewer.ViewerContext, id string) chan *UserResult {
+func GenLoadUser(v viewer.ViewerContext, id string) <-chan *UserResult {
 	res := make(chan *UserResult)
 	go func() {
 		var result UserResult
@@ -137,7 +137,7 @@ func LoadUsers(v viewer.ViewerContext, ids ...string) ([]*User, error) {
 }
 
 // GenLoadUsers loads multiple Users given the ids
-func GenLoadUsers(v viewer.ViewerContext, ids ...string) chan *UsersResult {
+func GenLoadUsers(v viewer.ViewerContext, ids ...string) <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		var result UsersResult
@@ -188,7 +188,7 @@ func ValidateEmailPassword(emailAddress, password string) (string, error) {
 }
 
 // GenContacts returns the Contacts associated with the User instance
-func (user *User) GenContacts() chan *ContactsResult {
+func (user *User) GenContacts() <-chan *ContactsResult {
 	res := make(chan *ContactsResult)
 	go func() {
 		var result ContactsResult
@@ -213,12 +213,12 @@ func (user *User) LoadEventsEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenEventsEdges returns the Event edges associated with the User instance
-func (user *User) GenEventsEdges() chan *ent.AssocEdgesResult {
+func (user *User) GenEventsEdges() <-chan *ent.AssocEdgesResult {
 	return ent.GenLoadEdgesByType(user.ID, UserToEventsEdge)
 }
 
 // GenEvents returns the Events associated with the User instance
-func (user *User) GenEvents() chan *EventsResult {
+func (user *User) GenEvents() <-chan *EventsResult {
 	res := make(chan *EventsResult)
 	go func() {
 		var result EventsResult
@@ -253,12 +253,12 @@ func (user *User) LoadFamilyMembersEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenFamilyMembersEdges returns the User edges associated with the User instance
-func (user *User) GenFamilyMembersEdges() chan *ent.AssocEdgesResult {
+func (user *User) GenFamilyMembersEdges() <-chan *ent.AssocEdgesResult {
 	return ent.GenLoadEdgesByType(user.ID, UserToFamilyMembersEdge)
 }
 
 // GenFamilyMembers returns the Users associated with the User instance
-func (user *User) GenFamilyMembers() chan *UsersResult {
+func (user *User) GenFamilyMembers() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		var result UsersResult
@@ -293,12 +293,12 @@ func (user *User) LoadFriendsEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenFriendsEdges returns the User edges associated with the User instance
-func (user *User) GenFriendsEdges() chan *ent.AssocEdgesResult {
+func (user *User) GenFriendsEdges() <-chan *ent.AssocEdgesResult {
 	return ent.GenLoadEdgesByType(user.ID, UserToFriendsEdge)
 }
 
 // GenFriends returns the Users associated with the User instance
-func (user *User) GenFriends() chan *UsersResult {
+func (user *User) GenFriends() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		var result UsersResult
@@ -333,12 +333,12 @@ func (user *User) LoadInvitedEventsEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenInvitedEventsEdges returns the Event edges associated with the User instance
-func (user *User) GenInvitedEventsEdges() chan *ent.AssocEdgesResult {
+func (user *User) GenInvitedEventsEdges() <-chan *ent.AssocEdgesResult {
 	return ent.GenLoadEdgesByType(user.ID, UserToInvitedEventsEdge)
 }
 
 // GenInvitedEvents returns the Events associated with the User instance
-func (user *User) GenInvitedEvents() chan *EventsResult {
+func (user *User) GenInvitedEvents() <-chan *EventsResult {
 	res := make(chan *EventsResult)
 	go func() {
 		var result EventsResult
@@ -373,12 +373,12 @@ func (user *User) LoadEventsAttendingEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenEventsAttendingEdges returns the Event edges associated with the User instance
-func (user *User) GenEventsAttendingEdges() chan *ent.AssocEdgesResult {
+func (user *User) GenEventsAttendingEdges() <-chan *ent.AssocEdgesResult {
 	return ent.GenLoadEdgesByType(user.ID, UserToEventsAttendingEdge)
 }
 
 // GenEventsAttending returns the Events associated with the User instance
-func (user *User) GenEventsAttending() chan *EventsResult {
+func (user *User) GenEventsAttending() <-chan *EventsResult {
 	res := make(chan *EventsResult)
 	go func() {
 		var result EventsResult
@@ -413,12 +413,12 @@ func (user *User) LoadDeclinedEventsEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenDeclinedEventsEdges returns the Event edges associated with the User instance
-func (user *User) GenDeclinedEventsEdges() chan *ent.AssocEdgesResult {
+func (user *User) GenDeclinedEventsEdges() <-chan *ent.AssocEdgesResult {
 	return ent.GenLoadEdgesByType(user.ID, UserToDeclinedEventsEdge)
 }
 
 // GenDeclinedEvents returns the Events associated with the User instance
-func (user *User) GenDeclinedEvents() chan *EventsResult {
+func (user *User) GenDeclinedEvents() <-chan *EventsResult {
 	res := make(chan *EventsResult)
 	go func() {
 		var result EventsResult

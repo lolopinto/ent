@@ -84,7 +84,7 @@ func LoadContactFromContext(ctx context.Context, id string) (*Contact, error) {
 }
 
 // GenLoadContactFromContext loads the given Contact given the context and id
-func GenLoadContactFromContext(ctx context.Context, id string) chan *ContactResult {
+func GenLoadContactFromContext(ctx context.Context, id string) <-chan *ContactResult {
 	res := make(chan *ContactResult)
 	go func() {
 		v, err := viewer.ForContext(ctx)
@@ -107,7 +107,7 @@ func LoadContact(v viewer.ViewerContext, id string) (*Contact, error) {
 }
 
 // GenLoadContact loads the given Contact given the id
-func GenLoadContact(v viewer.ViewerContext, id string) chan *ContactResult {
+func GenLoadContact(v viewer.ViewerContext, id string) <-chan *ContactResult {
 	res := make(chan *ContactResult)
 	go func() {
 		var result ContactResult
@@ -127,7 +127,7 @@ func LoadContacts(v viewer.ViewerContext, ids ...string) ([]*Contact, error) {
 }
 
 // GenLoadContacts loads multiple Contacts given the ids
-func GenLoadContacts(v viewer.ViewerContext, ids ...string) chan *ContactsResult {
+func GenLoadContacts(v viewer.ViewerContext, ids ...string) <-chan *ContactsResult {
 	res := make(chan *ContactsResult)
 	go func() {
 		var result ContactsResult
@@ -152,7 +152,7 @@ func LoadContactIDFromEmailAddress(emailAddress string) (string, error) {
 }
 
 // GenContactEmails returns the ContactEmails associated with the Contact instance
-func (contact *Contact) GenContactEmails() chan *ContactEmailsResult {
+func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
 		var result ContactEmailsResult
@@ -177,12 +177,12 @@ func (contact *Contact) LoadAllowListEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenAllowListEdges returns the User edges associated with the Contact instance
-func (contact *Contact) GenAllowListEdges() chan *ent.AssocEdgesResult {
+func (contact *Contact) GenAllowListEdges() <-chan *ent.AssocEdgesResult {
 	return ent.GenLoadEdgesByType(contact.ID, ContactToAllowListEdge)
 }
 
 // GenAllowList returns the Users associated with the Contact instance
-func (contact *Contact) GenAllowList() chan *UsersResult {
+func (contact *Contact) GenAllowList() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		var result UsersResult

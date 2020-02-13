@@ -105,7 +105,7 @@ const (
   }
 
   // GenLoad{{.Node}}FromContext loads the given {{.Node}} given the context and id
-  func GenLoad{{.Node}}FromContext(ctx context.Context, id string) chan *{{.NodeResult}} {
+  func GenLoad{{.Node}}FromContext(ctx context.Context, id string) <-chan *{{.NodeResult}} {
     res := make(chan *{{.NodeResult}})
     go func() {
       v, err := viewer.ForContext(ctx)
@@ -128,7 +128,7 @@ const (
   }
 
   // GenLoad{{.Node}} loads the given {{.Node}} given the id
-  func GenLoad{{.Node}}(v viewer.ViewerContext, id string) chan *{{.NodeResult}}{
+  func GenLoad{{.Node}}(v viewer.ViewerContext, id string) <-chan *{{.NodeResult}}{
     res := make(chan *{{.NodeResult}})
     go func() {
       var result {{.NodeResult}}
@@ -148,7 +148,7 @@ const (
   }
 
   // GenLoad{{.Nodes}} loads multiple {{.Nodes}} given the ids
-  func GenLoad{{.Nodes}}(v viewer.ViewerContext, ids ...string) chan *{{.NodesResult}} {
+  func GenLoad{{.Nodes}}(v viewer.ViewerContext, ids ...string) <-chan *{{.NodesResult}} {
     res := make(chan *{{.NodesResult}})
     go func() {
       var result {{.NodesResult}}
@@ -207,7 +207,7 @@ const (
       {{$edgeName := .EdgeName -}}
       {{with .NodeInfo -}}
         // Gen{{$edgeName}} returns the {{$edgeName}} associated with the {{$currentNode}} instance
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() chan *{{.NodeResult}}{
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodeResult}}{
           return GenLoad{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edge.FieldName}})
         }
 
@@ -221,7 +221,7 @@ const (
       {{$edgeName := .EdgeName -}}
       {{with .NodeInfo -}}
         // Gen{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() chan *{{.NodesResult}} {
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodesResult}} {
           res := make(chan *{{.NodesResult}})
           go func() {
             var result {{.NodesResult}}
@@ -253,12 +253,12 @@ const (
           }
 
           // Gen{{$edgeName}}Edge returns the {{$edgeName}} edge associated with the {{$currentNode}} instance
-          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edge() chan *ent.AssocEdgeResult {
+          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edge() <-chan *ent.AssocEdgeResult {
             return ent.GenLoadUniqueEdgeByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}})
           }
 
           // Gen{{$edgeName}} returns the {{.Node}} associated with the {{$currentNode}} instance
-          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() chan *{{.NodeResult}} {
+          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodeResult}} {
             res := make(chan *{{.NodeResult}})
             go func() {
               var result {{.NodeResult}}
@@ -283,12 +283,12 @@ const (
           }
 
           // Gen{{$edgeName}}Edges returns the {{.Node}} edges associated with the {{$currentNode}} instance
-          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edges() chan *ent.AssocEdgesResult {
+          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edges() <-chan *ent.AssocEdgesResult {
             return ent.GenLoadEdgesByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}})
           }
 
           // Gen{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
-          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() chan *{{.NodesResult}} {
+          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodesResult}} {
             res := make(chan *{{.NodesResult}})
             go func() {
               var result {{.NodesResult}}

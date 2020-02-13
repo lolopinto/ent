@@ -77,7 +77,7 @@ func LoadContactEmailFromContext(ctx context.Context, id string) (*ContactEmail,
 }
 
 // GenLoadContactEmailFromContext loads the given ContactEmail given the context and id
-func GenLoadContactEmailFromContext(ctx context.Context, id string) chan *ContactEmailResult {
+func GenLoadContactEmailFromContext(ctx context.Context, id string) <-chan *ContactEmailResult {
 	res := make(chan *ContactEmailResult)
 	go func() {
 		v, err := viewer.ForContext(ctx)
@@ -100,7 +100,7 @@ func LoadContactEmail(v viewer.ViewerContext, id string) (*ContactEmail, error) 
 }
 
 // GenLoadContactEmail loads the given ContactEmail given the id
-func GenLoadContactEmail(v viewer.ViewerContext, id string) chan *ContactEmailResult {
+func GenLoadContactEmail(v viewer.ViewerContext, id string) <-chan *ContactEmailResult {
 	res := make(chan *ContactEmailResult)
 	go func() {
 		var result ContactEmailResult
@@ -120,7 +120,7 @@ func LoadContactEmails(v viewer.ViewerContext, ids ...string) ([]*ContactEmail, 
 }
 
 // GenLoadContactEmails loads multiple ContactEmails given the ids
-func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) chan *ContactEmailsResult {
+func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
 		var result ContactEmailsResult
@@ -133,7 +133,7 @@ func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) chan *ContactEm
 }
 
 // GenContact returns the Contact associated with the ContactEmail instance
-func (contactEmail *ContactEmail) GenContact() chan *ContactResult {
+func (contactEmail *ContactEmail) GenContact() <-chan *ContactResult {
 	return GenLoadContact(contactEmail.Viewer, contactEmail.ContactID)
 }
 

@@ -80,7 +80,7 @@ func LoadAddressFromContext(ctx context.Context, id string) (*Address, error) {
 }
 
 // GenLoadAddressFromContext loads the given Address given the context and id
-func GenLoadAddressFromContext(ctx context.Context, id string) chan *AddressResult {
+func GenLoadAddressFromContext(ctx context.Context, id string) <-chan *AddressResult {
 	res := make(chan *AddressResult)
 	go func() {
 		v, err := viewer.ForContext(ctx)
@@ -103,7 +103,7 @@ func LoadAddress(v viewer.ViewerContext, id string) (*Address, error) {
 }
 
 // GenLoadAddress loads the given Address given the id
-func GenLoadAddress(v viewer.ViewerContext, id string) chan *AddressResult {
+func GenLoadAddress(v viewer.ViewerContext, id string) <-chan *AddressResult {
 	res := make(chan *AddressResult)
 	go func() {
 		var result AddressResult
@@ -123,7 +123,7 @@ func LoadAddresss(v viewer.ViewerContext, ids ...string) ([]*Address, error) {
 }
 
 // GenLoadAddresss loads multiple Addresss given the ids
-func GenLoadAddresss(v viewer.ViewerContext, ids ...string) chan *AddressesResult {
+func GenLoadAddresss(v viewer.ViewerContext, ids ...string) <-chan *AddressesResult {
 	res := make(chan *AddressesResult)
 	go func() {
 		var result AddressesResult
