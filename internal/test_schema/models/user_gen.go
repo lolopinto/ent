@@ -189,14 +189,16 @@ func ValidateEmailPassword(emailAddress, password string) (string, error) {
 }
 
 // GenContacts returns the Contacts associated with the User instance
-func (user *User) GenContacts(result *ContactsResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var contacts []*Contact
-	chanErr := make(chan error)
-	go ent.GenLoadForeignKeyNodes(user.Viewer, user.ID, &contacts, "user_id", &configs.ContactConfig{}, chanErr)
-	err := <-chanErr
-	result.Contacts = contacts
-	result.Err = err
+func (user *User) GenContacts() chan *ContactsResult {
+	res := make(chan *ContactsResult)
+	go func() {
+		var result ContactsResult
+		chanErr := make(chan error)
+		go ent.GenLoadForeignKeyNodes(user.Viewer, user.ID, &result.Contacts, "user_id", &configs.ContactConfig{}, chanErr)
+		result.Err = <-chanErr
+		res <- &result
+	}()
+	return res
 }
 
 // LoadContacts returns the Contacts associated with the User instance

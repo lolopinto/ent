@@ -221,14 +221,16 @@ const (
       {{$edgeName := .EdgeName -}}
       {{with .NodeInfo -}}
         // Gen{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(result *{{.NodesResult}}, wg *sync.WaitGroup) {
-          defer wg.Done()
-          var {{.NodeInstance}}s {{.NodesSlice}}
-          chanErr := make(chan error)
-          go ent.GenLoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", {{.EntConfig}}, chanErr)
-          err := <-chanErr
-          result.{{.Nodes}} = {{.NodeInstance}}s
-          result.Err = err
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() chan *{{.NodesResult}} {
+          res := make(chan *{{.NodesResult}})
+          go func() {
+            var result {{.NodesResult}}
+            chanErr := make(chan error)
+            go ent.GenLoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, &result.{{.Nodes}}, "{{$currentPackageName}}_id", {{.EntConfig}}, chanErr)
+            result.Err = <-chanErr
+            res <- &result
+          }()
+          return res
         }
 
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance

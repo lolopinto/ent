@@ -190,18 +190,14 @@ func (suite *privacyTestSuite) TestGeneratedGenForeignKeyNodes() {
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-			var wg sync.WaitGroup
-			var result models.ContactsResult
-			wg.Add(1)
-			go user.GenContacts(&result, &wg)
-			wg.Wait()
+			result := <-user.GenContacts()
 			return result.Contacts, result.Err
 		},
 		[]string{
 			contact.ID,
 			contact2.ID,
 		},
-		"generated synchronous API",
+		"generated asynchronous API",
 	)
 }
 

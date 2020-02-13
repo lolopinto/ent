@@ -153,14 +153,16 @@ func LoadContactIDFromEmailAddress(emailAddress string) (string, error) {
 }
 
 // GenContactEmails returns the ContactEmails associated with the Contact instance
-func (contact *Contact) GenContactEmails(result *ContactEmailsResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var contactEmails []*ContactEmail
-	chanErr := make(chan error)
-	go ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, &contactEmails, "contact_id", &configs.ContactEmailConfig{}, chanErr)
-	err := <-chanErr
-	result.ContactEmails = contactEmails
-	result.Err = err
+func (contact *Contact) GenContactEmails() chan *ContactEmailsResult {
+	res := make(chan *ContactEmailsResult)
+	go func() {
+		var result ContactEmailsResult
+		chanErr := make(chan error)
+		go ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, &result.ContactEmails, "contact_id", &configs.ContactEmailConfig{}, chanErr)
+		result.Err = <-chanErr
+		res <- &result
+	}()
+	return res
 }
 
 // LoadContactEmails returns the ContactEmails associated with the Contact instance
