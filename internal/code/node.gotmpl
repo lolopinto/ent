@@ -213,11 +213,8 @@ const (
           }
 
           // Gen{{$edgeName}}Edge returns the {{$edgeName}} edge associated with the {{$currentNode}} instance
-          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edge(result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
-            defer wg.Done()
-            edgeResultChan := make(chan ent.AssocEdgeResult)
-            go ent.GenLoadUniqueEdgeByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, edgeResultChan)
-            *result = <- edgeResultChan
+          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}Edge() chan *ent.AssocEdgeResult {
+            return ent.GenLoadUniqueEdgeByType({{$currentNodeInstance}}.ID, {{$edge.EdgeConst}})
           }
 
           // Gen{{$edgeName}} returns the {{.Node}} associated with the {{$currentNode}} instance

@@ -475,12 +475,16 @@ func GenLoadEdgesByType(id string, edgeType EdgeType, options ...func(*LoadEdgeC
 	return res
 }
 
-func GenLoadUniqueEdgeByType(id string, edgeType EdgeType, chanEdgeResult chan<- AssocEdgeResult) {
-	edge, err := LoadUniqueEdgeByType(id, edgeType)
-	chanEdgeResult <- AssocEdgeResult{
-		Edge: edge,
-		Err:  err,
-	}
+func GenLoadUniqueEdgeByType(id string, edgeType EdgeType) chan *AssocEdgeResult {
+	res := make(chan *AssocEdgeResult)
+	go func() {
+		edge, err := LoadUniqueEdgeByType(id, edgeType)
+		res <- &AssocEdgeResult{
+			Edge: edge,
+			Err:  err,
+		}
+	}()
+	return res
 }
 
 // GenLoadEdgeByType is the concurrent version of LoadEdgeByType

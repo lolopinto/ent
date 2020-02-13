@@ -178,11 +178,8 @@ func (event *Event) LoadCreatorEdge() (*ent.AssocEdge, error) {
 }
 
 // GenCreatorEdge returns the Creator edge associated with the Event instance
-func (event *Event) GenCreatorEdge(result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgeResultChan := make(chan ent.AssocEdgeResult)
-	go ent.GenLoadUniqueEdgeByType(event.ID, EventToCreatorEdge, edgeResultChan)
-	*result = <-edgeResultChan
+func (event *Event) GenCreatorEdge() chan *ent.AssocEdgeResult {
+	return ent.GenLoadUniqueEdgeByType(event.ID, EventToCreatorEdge)
 }
 
 // GenCreator returns the User associated with the Event instance

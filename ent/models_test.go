@@ -307,9 +307,7 @@ func (suite *modelsTestSuite) TestUniqueLoadEdgeByType() {
 
 func (suite *modelsTestSuite) TestGenUniqueLoadEdgeByType() {
 	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.AssocEdge, error) {
-		chanResult := make(chan ent.AssocEdgeResult)
-		go ent.GenLoadUniqueEdgeByType(id1, models.EventToCreatorEdge, chanResult)
-		result := <-chanResult
+		result := <-ent.GenLoadUniqueEdgeByType(id1, models.EventToCreatorEdge)
 		return result.Edge, result.Err
 	})
 }
@@ -328,11 +326,7 @@ func (suite *modelsTestSuite) TestGeneratedGenUniqueLoadEdgeByType() {
 		v := viewertesting.OmniViewerContext{}
 		event, err := models.LoadEvent(v, id1)
 		util.Die(err)
-		var wg sync.WaitGroup
-		var result ent.AssocEdgeResult
-		wg.Add(1)
-		go event.GenCreatorEdge(&result, &wg)
-		wg.Wait()
+		result := <-event.GenCreatorEdge()
 		return result.Edge, result.Err
 	})
 }
