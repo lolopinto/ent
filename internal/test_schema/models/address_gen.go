@@ -41,14 +41,14 @@ func (res *AddressResult) Error() string {
 	return res.Err.Error()
 }
 
-// AddresssResult stores the result of loading a slice of Addresss. It's a tuple type which has 2 fields:
+// AddressesResult stores the result of loading a slice of Addresss. It's a tuple type which has 2 fields:
 // a []*Address and an error
-type AddresssResult struct {
+type AddressesResult struct {
 	Addresss []*Address
 	Err      error
 }
 
-func (res *AddresssResult) Error() string {
+func (res *AddressesResult) Error() string {
 	return res.Err.Error()
 }
 
@@ -110,6 +110,26 @@ func GenLoadAddress(v viewer.ViewerContext, id string) chan *AddressResult {
 		var address Address
 		result.Err = <-ent.GenLoadNode(v, id, &address)
 		result.Address = &address
+		res <- &result
+	}()
+	return res
+}
+
+// LoadAddresss loads multiple Addresss given the ids
+func LoadAddresss(v viewer.ViewerContext, ids ...string) ([]*Address, error) {
+	var addresss []*Address
+	err := ent.LoadNodes(v, ids, &addresss, &configs.AddressConfig{})
+	return addresss, err
+}
+
+// GenLoadAddresss loads multiple Addresss given the ids
+func GenLoadAddresss(v viewer.ViewerContext, ids ...string) chan *AddressesResult {
+	res := make(chan *AddressesResult)
+	go func() {
+		var result AddressesResult
+		errChan := make(chan error)
+		go ent.GenLoadNodes(v, ids, &result.Addresss, &configs.AddressConfig{}, errChan)
+		result.Err = <-errChan
 		res <- &result
 	}()
 	return res

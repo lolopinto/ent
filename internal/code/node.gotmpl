@@ -140,6 +140,26 @@ const (
     return res
   }
 
+  // Load{{.Nodes}} loads multiple {{.Nodes}} given the ids
+  func Load{{.Nodes}}(v viewer.ViewerContext, ids ...string) ({{.NodesSlice}}, error) {
+    var {{.NodeInstance}}s {{.NodesSlice}}
+    err := ent.LoadNodes(v, ids, &{{.NodeInstance}}s, {{.EntConfig}})
+    return {{.NodeInstance}}s, err
+  }
+
+  // GenLoad{{.Nodes}} loads multiple {{.Nodes}} given the ids
+  func GenLoad{{.Nodes}}(v viewer.ViewerContext, ids ...string) chan *{{.NodesResult}} {
+    res := make(chan *{{.NodesResult}})
+    go func() {
+      var result {{.NodesResult}}
+      errChan := make(chan error)
+      go ent.GenLoadNodes(v, ids, &result.{{.Nodes}}, {{.EntConfig}}, errChan)
+      result.Err = <-errChan
+      res <- &result
+    }()
+    return res
+  }
+
   {{ range $field := .FieldInfo.Fields -}} 
     {{if or $field.Index $field.Unique -}}
       func Load{{$currentNode}}IDFrom{{$field.FieldName}}({{$field.InstanceFieldName}}  {{notNullableTypeString $field}}) ({{notNullableTypeString $field}}, error) {

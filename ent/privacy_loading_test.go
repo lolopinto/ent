@@ -223,6 +223,45 @@ func (suite *privacyTestSuite) TestGenLoadNodesByType() {
 	})
 }
 
+func (suite *privacyTestSuite) TestLoadNodes() {
+	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+		var events []*models.Event
+		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), &events, &configs.EventConfig{})
+		return events, err
+	})
+}
+
+func (suite *privacyTestSuite) TestGenLoadNodes() {
+	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+		var events []*models.Event
+		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), &events, &configs.EventConfig{})
+		return events, err
+	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedLoadNodes() {
+	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+		return models.LoadEvents(v, suite.getID2sForEdge(id, models.UserToEventsEdge)...)
+	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedGenLoadNodes() {
+	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+		res := <-models.GenLoadEvents(v, suite.getID2sForEdge(id, models.UserToEventsEdge)...)
+		return res.Events, res.Err
+	})
+}
+
+func (suite *privacyTestSuite) getID2sForEdge(id string, edge ent.EdgeType) []string {
+	edges, err := ent.LoadEdgesByType(id, edge)
+	require.Nil(suite.T(), err)
+	ids := make([]string, len(edges))
+	for idx, edge := range edges {
+		ids[idx] = edge.ID2
+	}
+	return ids
+}
+
 func (suite *privacyTestSuite) TestGeneratedLoadNodesByType() {
 	user := testingutils.CreateTestUser(suite.T())
 	event := testingutils.CreateTestEvent(suite.T(), user)

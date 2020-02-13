@@ -112,6 +112,26 @@ func GenLoadContactEmail(v viewer.ViewerContext, id string) chan *ContactEmailRe
 	return res
 }
 
+// LoadContactEmails loads multiple ContactEmails given the ids
+func LoadContactEmails(v viewer.ViewerContext, ids ...string) ([]*ContactEmail, error) {
+	var contactEmails []*ContactEmail
+	err := ent.LoadNodes(v, ids, &contactEmails, &configs.ContactEmailConfig{})
+	return contactEmails, err
+}
+
+// GenLoadContactEmails loads multiple ContactEmails given the ids
+func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) chan *ContactEmailsResult {
+	res := make(chan *ContactEmailsResult)
+	go func() {
+		var result ContactEmailsResult
+		errChan := make(chan error)
+		go ent.GenLoadNodes(v, ids, &result.ContactEmails, &configs.ContactEmailConfig{}, errChan)
+		result.Err = <-errChan
+		res <- &result
+	}()
+	return res
+}
+
 // GenContact returns the Contact associated with the ContactEmail instance
 func (contactEmail *ContactEmail) GenContact() chan *ContactResult {
 	return GenLoadContact(contactEmail.Viewer, contactEmail.ContactID)

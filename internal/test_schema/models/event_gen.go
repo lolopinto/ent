@@ -139,6 +139,26 @@ func GenLoadEvent(v viewer.ViewerContext, id string) chan *EventResult {
 	return res
 }
 
+// LoadEvents loads multiple Events given the ids
+func LoadEvents(v viewer.ViewerContext, ids ...string) ([]*Event, error) {
+	var events []*Event
+	err := ent.LoadNodes(v, ids, &events, &configs.EventConfig{})
+	return events, err
+}
+
+// GenLoadEvents loads multiple Events given the ids
+func GenLoadEvents(v viewer.ViewerContext, ids ...string) chan *EventsResult {
+	res := make(chan *EventsResult)
+	go func() {
+		var result EventsResult
+		errChan := make(chan error)
+		go ent.GenLoadNodes(v, ids, &result.Events, &configs.EventConfig{}, errChan)
+		result.Err = <-errChan
+		res <- &result
+	}()
+	return res
+}
+
 // GenUser returns the User associated with the Event instance
 func (event *Event) GenUser() chan *UserResult {
 	return GenLoadUser(event.Viewer, event.UserID)

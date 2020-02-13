@@ -608,6 +608,16 @@ func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConf
 	errChan <- err
 }
 
+func genLoadNodes(ids []string, nodes interface{}, entConfig Config, errChan chan<- error) {
+	l := &loadNodesLoader{
+		ids: ids,
+	}
+	l.nodes = nodes
+	l.entConfig = entConfig
+	err := loadData(l)
+	errChan <- err
+}
+
 func GenLoadAssocEdges(nodes *[]*AssocEdgeData) error {
 	return chainLoaders(
 		[]loader{

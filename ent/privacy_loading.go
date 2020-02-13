@@ -290,6 +290,20 @@ func LoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, c
 	return err
 }
 
+// TODO this needs to actually return an error chan
+func GenLoadNodes(v viewer.ViewerContext, ids []string, nodes interface{}, entConfig Config, errChan chan<- error) {
+	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
+		go genLoadNodes(ids, nodes, entConfig, chanErr)
+	})
+}
+
+func LoadNodes(v viewer.ViewerContext, ids []string, nodes interface{}, entConfig Config) error {
+	errChan := make(chan error)
+	go GenLoadNodes(v, ids, nodes, entConfig, errChan)
+	err := <-errChan
+	return err
+}
+
 func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
 	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
 		go genLoadNodesByType(id, edgeType, nodes, entConfig, chanErr)

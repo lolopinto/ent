@@ -120,6 +120,26 @@ func GenLoadContact(v viewer.ViewerContext, id string) chan *ContactResult {
 	return res
 }
 
+// LoadContacts loads multiple Contacts given the ids
+func LoadContacts(v viewer.ViewerContext, ids ...string) ([]*Contact, error) {
+	var contacts []*Contact
+	err := ent.LoadNodes(v, ids, &contacts, &configs.ContactConfig{})
+	return contacts, err
+}
+
+// GenLoadContacts loads multiple Contacts given the ids
+func GenLoadContacts(v viewer.ViewerContext, ids ...string) chan *ContactsResult {
+	res := make(chan *ContactsResult)
+	go func() {
+		var result ContactsResult
+		errChan := make(chan error)
+		go ent.GenLoadNodes(v, ids, &result.Contacts, &configs.ContactConfig{}, errChan)
+		result.Err = <-errChan
+		res <- &result
+	}()
+	return res
+}
+
 func LoadContactIDFromEmailAddress(emailAddress string) (string, error) {
 	// TODO this is a short term API that needs to be killed
 	// since it shouldn't be possible to get an ent without privacy

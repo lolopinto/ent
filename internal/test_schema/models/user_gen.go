@@ -130,6 +130,26 @@ func GenLoadUser(v viewer.ViewerContext, id string) chan *UserResult {
 	return res
 }
 
+// LoadUsers loads multiple Users given the ids
+func LoadUsers(v viewer.ViewerContext, ids ...string) ([]*User, error) {
+	var users []*User
+	err := ent.LoadNodes(v, ids, &users, &configs.UserConfig{})
+	return users, err
+}
+
+// GenLoadUsers loads multiple Users given the ids
+func GenLoadUsers(v viewer.ViewerContext, ids ...string) chan *UsersResult {
+	res := make(chan *UsersResult)
+	go func() {
+		var result UsersResult
+		errChan := make(chan error)
+		go ent.GenLoadNodes(v, ids, &result.Users, &configs.UserConfig{}, errChan)
+		result.Err = <-errChan
+		res <- &result
+	}()
+	return res
+}
+
 func LoadUserIDFromEmailAddress(emailAddress string) (string, error) {
 	// TODO this is a short term API that needs to be killed
 	// since it shouldn't be possible to get an ent without privacy
