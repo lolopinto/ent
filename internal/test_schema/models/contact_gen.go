@@ -138,11 +138,8 @@ func (contact *Contact) LoadAllowListEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenAllowListEdges returns the User edges associated with the Contact instance
-func (contact *Contact) GenAllowListEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(contact.ID, ContactToAllowListEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (contact *Contact) GenAllowListEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(contact.ID, ContactToAllowListEdge)
 }
 
 // GenAllowList returns the Users associated with the Contact instance

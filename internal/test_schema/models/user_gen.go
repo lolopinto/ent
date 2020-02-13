@@ -174,11 +174,8 @@ func (user *User) LoadEventsEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenEventsEdges returns the Event edges associated with the User instance
-func (user *User) GenEventsEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(user.ID, UserToEventsEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (user *User) GenEventsEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(user.ID, UserToEventsEdge)
 }
 
 // GenEvents returns the Events associated with the User instance
@@ -218,11 +215,8 @@ func (user *User) LoadFamilyMembersEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenFamilyMembersEdges returns the User edges associated with the User instance
-func (user *User) GenFamilyMembersEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(user.ID, UserToFamilyMembersEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (user *User) GenFamilyMembersEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(user.ID, UserToFamilyMembersEdge)
 }
 
 // GenFamilyMembers returns the Users associated with the User instance
@@ -262,11 +256,8 @@ func (user *User) LoadFriendsEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenFriendsEdges returns the User edges associated with the User instance
-func (user *User) GenFriendsEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(user.ID, UserToFriendsEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (user *User) GenFriendsEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(user.ID, UserToFriendsEdge)
 }
 
 // GenFriends returns the Users associated with the User instance
@@ -306,11 +297,8 @@ func (user *User) LoadInvitedEventsEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenInvitedEventsEdges returns the Event edges associated with the User instance
-func (user *User) GenInvitedEventsEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(user.ID, UserToInvitedEventsEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (user *User) GenInvitedEventsEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(user.ID, UserToInvitedEventsEdge)
 }
 
 // GenInvitedEvents returns the Events associated with the User instance
@@ -350,11 +338,8 @@ func (user *User) LoadEventsAttendingEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenEventsAttendingEdges returns the Event edges associated with the User instance
-func (user *User) GenEventsAttendingEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(user.ID, UserToEventsAttendingEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (user *User) GenEventsAttendingEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(user.ID, UserToEventsAttendingEdge)
 }
 
 // GenEventsAttending returns the Events associated with the User instance
@@ -394,11 +379,8 @@ func (user *User) LoadDeclinedEventsEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenDeclinedEventsEdges returns the Event edges associated with the User instance
-func (user *User) GenDeclinedEventsEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(user.ID, UserToDeclinedEventsEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (user *User) GenDeclinedEventsEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(user.ID, UserToDeclinedEventsEdge)
 }
 
 // GenDeclinedEvents returns the Events associated with the User instance

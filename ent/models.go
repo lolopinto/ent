@@ -463,16 +463,16 @@ func LoadUniqueEdgeByType(id string, edgeType EdgeType) (*AssocEdge, error) {
 // GenLoadEdgesByType handles loading of edges concurrently.
 // Because we get strong typing across all edges and for a consistent API with loading Nodes,
 // we use the EdgesResult struct here
-func GenLoadEdgesByType(id string, edgeType EdgeType, chanEdgesResult chan<- AssocEdgesResult, options ...func(*LoadEdgeConfig)) {
-	edges, err := LoadEdgesByType(id, edgeType, options...)
-	// var edges []*Edge
-	// chanErr := make(chan error)
-	// go GenLoadEdgesByType(id, edgeType, &edges, chanErr)
-	//	err := <-chanErr
-	chanEdgesResult <- AssocEdgesResult{
-		Edges: edges,
-		Err:   err,
-	}
+func GenLoadEdgesByType(id string, edgeType EdgeType, options ...func(*LoadEdgeConfig)) chan *AssocEdgesResult {
+	res := make(chan *AssocEdgesResult)
+	go func() {
+		edges, err := LoadEdgesByType(id, edgeType, options...)
+		res <- &AssocEdgesResult{
+			Edges: edges,
+			Err:   err,
+		}
+	}()
+	return res
 }
 
 func GenLoadUniqueEdgeByType(id string, edgeType EdgeType, chanEdgeResult chan<- AssocEdgeResult) {
@@ -601,7 +601,6 @@ func LoadRawNodesByType(id string, edgeType EdgeType, nodes interface{}, entConf
 
 func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
 	err := LoadRawNodesByType(id, edgeType, nodes, entConfig)
-	//fmt.Println("GenLoadEdgesByType result", err, nodes)
 	errChan <- err
 }
 

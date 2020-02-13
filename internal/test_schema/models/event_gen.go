@@ -137,11 +137,8 @@ func (event *Event) LoadHostsEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenHostsEdges returns the User edges associated with the Event instance
-func (event *Event) GenHostsEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(event.ID, EventToHostsEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (event *Event) GenHostsEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(event.ID, EventToHostsEdge)
 }
 
 // GenHosts returns the Users associated with the Event instance
@@ -225,11 +222,8 @@ func (event *Event) LoadInvitedEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenInvitedEdges returns the User edges associated with the Event instance
-func (event *Event) GenInvitedEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(event.ID, EventToInvitedEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (event *Event) GenInvitedEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(event.ID, EventToInvitedEdge)
 }
 
 // GenInvited returns the Users associated with the Event instance
@@ -269,11 +263,8 @@ func (event *Event) LoadAttendingEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenAttendingEdges returns the User edges associated with the Event instance
-func (event *Event) GenAttendingEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(event.ID, EventToAttendingEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (event *Event) GenAttendingEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(event.ID, EventToAttendingEdge)
 }
 
 // GenAttending returns the Users associated with the Event instance
@@ -313,11 +304,8 @@ func (event *Event) LoadDeclinedEdges() ([]*ent.AssocEdge, error) {
 }
 
 // GenDeclinedEdges returns the User edges associated with the Event instance
-func (event *Event) GenDeclinedEdges(result *ent.AssocEdgesResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgesResultChan := make(chan ent.AssocEdgesResult)
-	go ent.GenLoadEdgesByType(event.ID, EventToDeclinedEdge, edgesResultChan)
-	*result = <-edgesResultChan
+func (event *Event) GenDeclinedEdges() chan *ent.AssocEdgesResult {
+	return ent.GenLoadEdgesByType(event.ID, EventToDeclinedEdge)
 }
 
 // GenDeclined returns the Users associated with the Event instance

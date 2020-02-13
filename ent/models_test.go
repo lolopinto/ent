@@ -158,8 +158,7 @@ func (suite *modelsTestSuite) TestLoadEdgesByType() {
 
 func (suite *modelsTestSuite) TestGenLoadEdgesByType() {
 	testLoadEdgesByType(suite, func(id string) ([]*ent.AssocEdge, error) {
-		chanResult := make(chan ent.AssocEdgesResult)
-		go ent.GenLoadEdgesByType(id, models.UserToEventsEdge, chanResult)
+		chanResult := ent.GenLoadEdgesByType(id, models.UserToEventsEdge)
 		result := <-chanResult
 		return result.Edges, result.Err
 	})
@@ -199,11 +198,7 @@ func (suite *modelsTestSuite) TestGeneratedGenLoadEdgesByType() {
 			user, err := models.LoadUser(v, user.ID)
 			util.Die(err)
 
-			var result ent.AssocEdgesResult
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go user.GenEventsEdges(&result, &wg)
-			wg.Wait()
+			result := <-user.GenEventsEdges()
 			return result.Edges, result.Err
 		},
 		[]string{
