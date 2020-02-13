@@ -79,6 +79,12 @@ func (action *CreateUserAction) SetEmailAddress(emailAddress string) *CreateUser
 	return action
 }
 
+// SetPassword sets the Password while editing the User ent
+func (action *CreateUserAction) SetPassword(password string) *CreateUserAction {
+	action.builder.SetPassword(password)
+	return action
+}
+
 // SetFirstName sets the FirstName while editing the User ent
 func (action *CreateUserAction) SetFirstName(firstName string) *CreateUserAction {
 	action.builder.SetFirstName(firstName)
@@ -103,9 +109,22 @@ func (action *CreateUserAction) SetNilableBio(bio *string) *CreateUserAction {
 	return action
 }
 
+// SetPhoneNumber sets the PhoneNumber while editing the User ent
+func (action *CreateUserAction) SetPhoneNumber(phoneNumber string) *CreateUserAction {
+	action.builder.SetPhoneNumber(phoneNumber)
+	return action
+}
+
+// SetNilablePhoneNumber sets the PhoneNumber while editing the User ent
+func (action *CreateUserAction) SetNilablePhoneNumber(phoneNumber *string) *CreateUserAction {
+	action.builder.SetNilablePhoneNumber(phoneNumber)
+	return action
+}
+
 func (action *CreateUserAction) requiredFields() []string {
 	return []string{
 		"EmailAddress",
+		"Password",
 		"FirstName",
 		"LastName",
 	}

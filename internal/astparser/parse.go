@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 	"strconv"
+	"strings"
 )
 
 // Format indicates whether identName in Result is a function or type
@@ -44,6 +45,35 @@ type Result struct {
 	// or field.StringType().MaxLen(5)
 	selectParent *ast.SelectorExpr
 	parent       ast.Expr
+}
+
+func (result *Result) IsScalarType(name string) bool {
+	parts := strings.Split(name, ".")
+	var identName, pkgName string
+	if len(parts) == 2 {
+		pkgName = parts[0]
+		identName = parts[1]
+	} else {
+		// we assume one and fail liberally otherwise
+		identName = parts[0]
+	}
+	if result.IdentName != identName {
+		return false
+	}
+	if result.PkgName != pkgName {
+		return false
+	}
+	return (result.ContainsMap == false &&
+		!result.Slice &&
+		!result.Pointer &&
+		result.Format == "" &&
+		result.Literal == "" &&
+		result.Key == "" &&
+		result.Value == nil &&
+		len(result.Elems) == 0 &&
+		len(result.Attributes) == 0 &&
+		result.selectParent == nil &&
+		result.parent == nil)
 }
 
 func newResult(expr ast.Expr) *Result {

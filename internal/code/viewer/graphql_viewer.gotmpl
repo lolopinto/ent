@@ -1,0 +1,36 @@
+{{ reserveImport "context" }}
+{{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
+{{ reserveImport .CodePath.GetQuotedImportPathToModels }}
+{{ reserveImport .AppViewerPackageName }}
+
+// ViewerResolver takes the context and returns the logged in viewer
+// @graphql viewer Query
+// @graphqlreturn viewer @required
+func ViewerResolver(ctx context.Context) (*Viewer, error) {
+  v, err := viewer.ForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+  ret := &Viewer{viewer:v}
+  v2, ok := v.({{.AppViewer}})
+  if ok {
+    ret.{{.InstanceName}} = v2.Get{{.NodeName}}()
+  }
+
+  return ret, nil
+}
+
+// Viewer is the object returned to GraphQL to encode the viewer
+// @graphqltype Viewer
+type Viewer struct {
+	viewer viewer.ViewerContext
+  {{.InstanceName}} *models.{{.NodeName}}
+}
+
+// Get{{.NodeName}} returns the node representing the logged in {{.NodeName}}
+// @graphql {{.NodeName}} 
+// @graphqlreturn user @required
+func (v *Viewer) Get{{.NodeName}}() *models.{{.NodeName}} {
+  return v.{{.InstanceName}}
+}

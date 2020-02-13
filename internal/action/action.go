@@ -148,19 +148,18 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, actionT
 	// no override of fields so we should get default fields
 	if len(fieldNames) == 0 {
 		for _, f := range fieldInfo.Fields {
-			if f.ExposeToActions() {
+			if f.ExposeToActionsByDefault() {
 				fields = append(fields, f)
 			}
 		}
 	} else {
+		// if a field is explicitly referenced, we want to automatically add it
 		for _, fieldName := range fieldNames {
 			f := fieldInfo.GetFieldByName(fieldName)
 			if f == nil {
 				panic(fmt.Errorf("invalid field name passed to %s", actionTypeStr))
 			}
-			if f.ExposeToActions() {
-				fields = append(fields, f)
-			}
+			fields = append(fields, f)
 		}
 
 	}

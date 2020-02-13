@@ -44,6 +44,9 @@ models:
             contact:
                 resolver: false
                 fieldName: LoadViewerContact
+            user:
+                resolver: false
+                fieldName: GetUser
 directives:
     deprecated:
         skip_runtime: true

@@ -17,6 +17,7 @@ type parseResult struct {
 	entType types.Type
 	pkgPath string
 	err     error
+	private bool
 }
 
 type packageExplorer struct {
@@ -328,6 +329,7 @@ func (explorer *packageExplorer) getResultFromStruct(s *structType) *parseResult
 		return &parseResult{
 			entType: s.typeFromMethod,
 			pkgPath: s.packagePath,
+			private: s.private,
 		}
 	}
 
@@ -445,6 +447,9 @@ type structType struct {
 	dependencies   []*structDep
 	typeFromMethod types.Type
 	packagePath    string
+
+	// is the dataType private directly?
+	private bool
 }
 
 func (s *structType) addDepdendency(pkg *packages.Package, ident string) {
@@ -481,6 +486,16 @@ var dataTypeMethods = map[string]func(*packages.Package, *structType, *ast.FuncD
 		s.packagePath = astparser.GetUnderylingStringFromLiteralExpr(
 			astparser.GetLastReturnStmtExpr(fn),
 		)
+	},
+	// optional. dataType is private, field is private
+	"Private": func(pkg *packages.Package, s *structType, fn *ast.FuncDecl) {
+		// This only works for literal "return true"
+		val := astparser.GetBooleanValueFromExpr(
+			astparser.GetLastReturnStmtExpr(fn),
+		)
+		if val {
+			s.private = true
+		}
 	},
 }
 

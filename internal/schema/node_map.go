@@ -104,7 +104,7 @@ func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...stri
 }
 
 func (m NodeMapInfo) parseFiles(p schemaparser.Parser, specificConfigs ...string) *assocEdgeData {
-	pkg := schemaparser.LoadPackage(p)
+	pkg := schemaparser.LoadPackageX(p)
 
 	return m.parsePackage(pkg, specificConfigs...)
 }

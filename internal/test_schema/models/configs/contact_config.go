@@ -3,6 +3,7 @@ package configs
 import "github.com/lolopinto/ent/ent"
 
 type ContactConfig struct {
+	// TODO: this is wrong. it should be possible to have multiple people storing the same user as a contact
 	EmailAddress  string `unique:"true"`
 	FirstName     string
 	LastName      string

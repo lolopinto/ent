@@ -125,6 +125,15 @@ func (nodeData *NodeData) HasJSONField() bool {
 	return false
 }
 
+func (nodeData *NodeData) HasPrivateField() bool {
+	for _, field := range nodeData.FieldInfo.Fields {
+		if field.Private() {
+			return true
+		}
+	}
+	return false
+}
+
 func (nodeData *NodeData) addConstInfo(constType string, constName string, constInfo *ConstInfo) {
 	constGroup := nodeData.ConstantGroups[constType]
 	if constGroup == nil {

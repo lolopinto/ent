@@ -88,6 +88,7 @@ func (suite *mutationBuilderSuite) TestAddSimpleEdgeAtCreation() {
 		nil,
 		map[string]interface{}{
 			"email_address": email,
+			"password":      util.GenerateRandPassword(),
 			"first_name":    "Ola",
 			"last_name":     "Okelola",
 		},

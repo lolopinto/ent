@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: this entire file is slow. figure out how to make it faster
+// TODO: this entire file is *really really* slow. figure out how to make it faster
 // and break into integration test framework since we don't necessarily need to run that often
 
 func TestFunctionThatReturns(t *testing.T) {
@@ -616,7 +616,7 @@ func verifyGeneratedCode(t *testing.T, userCode, fnName, receiverName, expectedG
 
 	parse(t, userCode, dirPath, packageDir, nodes)
 
-	pkg, fn, err := schemaparser.FindFunctionFromParser(
+	pkg, fns, err := schemaparser.FindFunctionFromParser(
 		&schemaparser.ConfigSchemaParser{
 			AbsRootPath: packageDir,
 		},
@@ -625,6 +625,7 @@ func verifyGeneratedCode(t *testing.T, userCode, fnName, receiverName, expectedG
 			FileName: "resolver.go",
 		},
 	)
+	fn := fns[fnName]
 	require.Nil(t, err)
 	require.NotNil(t, pkg)
 	require.NotNil(t, fn)

@@ -18,8 +18,12 @@ import (
 
 func newFieldInfo() *FieldInfo {
 	fieldMap := make(map[string]*Field)
+	emailFields := make(map[string]bool)
+	passwordFields := make(map[string]bool)
 	fieldInfo := &FieldInfo{
-		fieldMap: fieldMap,
+		fieldMap:       fieldMap,
+		emailFields:    emailFields,
+		passwordFields: passwordFields,
 	}
 	addBaseFields(fieldInfo)
 	return fieldInfo
@@ -32,13 +36,56 @@ type FieldInfo struct {
 	NonEntFields []*NonEntField
 	m            sync.Mutex
 	getFieldsFn  bool
+
+	emailFields    map[string]bool
+	passwordFields map[string]bool
 }
+
+const (
+	// EmailPkgPath is the package path for the built-in email datatype
+	EmailPkgPath = "github.com/lolopinto/ent/ent/field/email"
+
+	// PasswordPkgPath is the package path for the built-in password datatype
+	PasswordPkgPath = "github.com/lolopinto/ent/ent/field/password"
+)
 
 func (fieldInfo *FieldInfo) addField(f *Field) {
 	fieldInfo.m.Lock()
 	defer fieldInfo.m.Unlock()
 	fieldInfo.Fields = append(fieldInfo.Fields, f)
 	fieldInfo.fieldMap[f.FieldName] = f
+
+	if f.dataTypePkgPath == EmailPkgPath {
+		fieldInfo.emailFields[f.FieldName] = true
+	}
+	if f.dataTypePkgPath == PasswordPkgPath {
+		fieldInfo.passwordFields[f.FieldName] = true
+	}
+}
+
+// EmailPasswordCombo holds a Pair of EmailPassword field used for validation
+type EmailPasswordCombo struct {
+	Email    *Field
+	Password *Field
+}
+
+// GetEmailPasswordCombo returns an instance of EmailPasswordCombo if we should have
+// the ValidateEmailPassword method for email/password validation
+func (fieldInfo *FieldInfo) GetEmailPasswordCombo() *EmailPasswordCombo {
+	// what happens if there's more than one?
+	// deal with that in the future
+	if len(fieldInfo.passwordFields) != 1 || len(fieldInfo.emailFields) != 1 {
+		return nil
+	}
+
+	ret := &EmailPasswordCombo{}
+	for key := range fieldInfo.emailFields {
+		ret.Email = fieldInfo.fieldMap[key]
+	}
+	for key := range fieldInfo.passwordFields {
+		ret.Password = fieldInfo.fieldMap[key]
+	}
+	return ret
 }
 
 // GetFieldsFn returns a boolean which when returns true indicates that
@@ -82,28 +129,39 @@ type ForeignKeyInfo struct {
 
 type Field struct {
 	// todo: abstract out these 2 also...
-	FieldName           string
-	tagMap              map[string]string
-	topLevelStructField bool            // id, updated_at, created_at no...
-	entType             types.Type      // not all fields will have an entType. probably don't need this...
-	fieldType           enttype.EntType // this is the underlying type for the field for graphql, db, etc
-	dbColumn            bool
-	hideFromGraphQL     bool
-	nullable            bool
-	defaultValue        interface{}
-	unique              bool
-	fkey                *ForeignKeyInfo
-	index               bool
-	dbName              string // storage key/column name for the field
-	graphQLName         string
-	exposeToActions     bool // TODO: figure out a better way for this long term. this is to allow password be hidden from reads but allowed in writes
-	// once password is a top level configurable type, it can control this e.g. exposeToCreate mutation yes!,
-	// expose to edit mutation no! obviously no delete. but then can be added in custom mutations e.g. editPassword()
-	// same with email address. shouldn't just be available to willy/nilly edit
+	FieldName                string
+	tagMap                   map[string]string
+	topLevelStructField      bool            // id, updated_at, created_at no...
+	entType                  types.Type      // not all fields will have an entType. probably don't need this...
+	fieldType                enttype.EntType // this is the underlying type for the field for graphql, db, etc
+	dbColumn                 bool
+	hideFromGraphQL          bool
+	private                  bool
+	nullable                 bool
+	defaultValue             interface{}
+	unique                   bool
+	fkey                     *ForeignKeyInfo
+	index                    bool
+	dbName                   string // storage key/column name for the field
+	graphQLName              string
+	exposeToActionsByDefault bool
+	// right now, it's blanket across all actions. probably want a way to make creations simpler
+	// because often we may want to give the user a way to set a value for this field at creation and then not expose it
+	// in default edit
+	// so we could have exposeToActionsByDefault which is set to false by Private() and overrideExposeToCreate or something like that
+	// which overrides that behavor for the create action
+	// and also we need a way to restrict some fields to not even be set in triggers e.g. password can only be set by top-level-actions API
+	// (e.g. graphql mutation/rest/worker job) and not via a trigger
+
 	singleFieldPrimaryKey bool
 	//	LinkedEdge            edge.Edge
 	InverseEdge *edge.AssociationEdge
-	pkgPath     string
+	// this is the package path that should be imported when the field is rendered in the ent
+	// TODO use it
+	pkgPath string
+
+	// this is the package path of the datatype that referenced this field
+	dataTypePkgPath string
 }
 
 func newField(fieldName string) *Field {
@@ -114,13 +172,13 @@ func newField(fieldName string) *Field {
 	}
 
 	f := &Field{
-		FieldName:           fieldName,
-		topLevelStructField: true,
-		dbColumn:            true,
-		exposeToActions:     true,
-		dbName:              strcase.ToSnake(fieldName),
-		graphQLName:         graphQLName,
-		tagMap:              make(map[string]string),
+		FieldName:                fieldName,
+		topLevelStructField:      true,
+		dbColumn:                 true,
+		exposeToActionsByDefault: true,
+		dbName:                   strcase.ToSnake(fieldName),
+		graphQLName:              graphQLName,
+		tagMap:                   make(map[string]string),
 	}
 	// seed with default db name
 	f.addTag("db", strconv.Quote(f.dbName))
@@ -199,12 +257,26 @@ func (f *Field) GetGraphQLName() string {
 	return f.graphQLName
 }
 
+func (f *Field) Private() bool {
+	return f.private
+}
+
+// GetFieldNameInStruct returns the name of the field in the struct definition
+// with capital letter for public fields. lowercase letter for package-private
+func (f *Field) GetFieldNameInStruct() string {
+	// private fields are package-private so we lowercase the name returned here
+	if f.private {
+		return strcase.ToLowerCamel(f.FieldName)
+	}
+	return f.FieldName
+}
+
 func (f *Field) InstanceFieldName() string {
 	return strcase.ToLowerCamel(f.FieldName)
 }
 
-func (f *Field) ExposeToActions() bool {
-	return f.exposeToActions
+func (f *Field) ExposeToActionsByDefault() bool {
+	return f.exposeToActionsByDefault
 }
 
 func (f *Field) TopLevelStructField() bool {
@@ -282,12 +354,18 @@ func (f *Field) setForeignKeyInfoFromString(fkey string) error {
 	return nil
 }
 
+func (f *Field) setPrivate() {
+	f.private = true
+	f.hideFromGraphQL = true
+	f.exposeToActionsByDefault = false
+}
+
 func addBaseFields(fieldInfo *FieldInfo) {
 	// TODO eventually get these from ent.Node instead of doing this manually
 	// add id field
 	idField := newField("ID")
 	idField.tagMap = getTagMapFromJustFieldName("ID")
-	idField.exposeToActions = false
+	idField.exposeToActionsByDefault = false
 	idField.topLevelStructField = false
 	idField.singleFieldPrimaryKey = true
 	idField.fieldType = &enttype.IDType{}
@@ -301,7 +379,7 @@ func addBaseFields(fieldInfo *FieldInfo) {
 	createdAtField := newField("CreatedAt")
 	createdAtField.tagMap = getTagMapFromJustFieldName("CreatedAt")
 	createdAtField.hideFromGraphQL = true
-	createdAtField.exposeToActions = false
+	createdAtField.exposeToActionsByDefault = false
 	createdAtField.topLevelStructField = false
 	createdAtField.fieldType = &enttype.TimeType{}
 	fieldInfo.addField(createdAtField)
@@ -310,7 +388,7 @@ func addBaseFields(fieldInfo *FieldInfo) {
 	updatedAtField.tagMap = getTagMapFromJustFieldName("UpdatedAt")
 	updatedAtField.hideFromGraphQL = true
 	// immutable instead...?
-	updatedAtField.exposeToActions = false
+	updatedAtField.exposeToActionsByDefault = false
 	updatedAtField.topLevelStructField = false
 	updatedAtField.fieldType = &enttype.TimeType{}
 	fieldInfo.addField(updatedAtField)

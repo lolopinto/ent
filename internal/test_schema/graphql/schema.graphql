@@ -55,6 +55,72 @@ type AdminBlockResponse {
     success: Boolean
 }
 
+input AuthCheckAvailableEmailAddressInput {
+    emailAddress: String!
+}
+
+type AuthCheckAvailableEmailAddressResponse {
+    available: Boolean!
+}
+
+input AuthCheckAvailablePhoneNumberInput {
+    phoneNumber: String!
+}
+
+type AuthCheckAvailablePhoneNumberResponse {
+    available: Boolean!
+}
+
+input AuthEmailPasswordInput {
+    email: String!
+    password: String!
+}
+
+type AuthEmailPasswordResponse {
+    token: String!
+}
+
+input AuthEmailTokenInput {
+    token: String!
+}
+
+type AuthEmailTokenResponse {
+    token: String!
+}
+
+input AuthPhoneNumberInput {
+    phoneNumber: String!
+    pin: String!
+}
+
+type AuthPhoneNumberResponse {
+    token: String!
+}
+
+input AuthPhoneTokenInput {
+    token: String!
+}
+
+type AuthPhoneTokenResponse {
+    token: String!
+}
+
+input AuthSendSMSInput {
+    phoneNumber: String!
+}
+
+type AuthSendSMSResponse {
+    pin: String!
+}
+
+type AuthSignoutEmailResponse {
+    success: Boolean
+}
+
+type AuthSignoutResponse {
+    success: Boolean
+}
+
 input AuthUserInput {
     email: String!
     password: String!
@@ -68,6 +134,15 @@ type AuthUserResponse {
 type AuthUserResult {
     token: String!
     user: User
+}
+
+input AuthValidCredentialsInput {
+    phoneNumber: String!
+    pin: String!
+}
+
+type AuthValidCredentialsResponse {
+    available: Boolean!
 }
 
 interface Connection {
@@ -186,7 +261,17 @@ type Mutation {
     addressDelete(input: AddressDeleteInput!): AddressDeleteResponse
     addressEdit(input: AddressEditInput!): AddressEditResponse
     adminBlock(input: AdminBlockInput!): AdminBlockResponse
+    authCheckAvailableEmailAddress(input: AuthCheckAvailableEmailAddressInput!): AuthCheckAvailableEmailAddressResponse
+    authCheckAvailablePhoneNumber(input: AuthCheckAvailablePhoneNumberInput!): AuthCheckAvailablePhoneNumberResponse
+    authEmailPassword(input: AuthEmailPasswordInput!): AuthEmailPasswordResponse
+    authEmailToken(input: AuthEmailTokenInput!): AuthEmailTokenResponse
+    authPhoneNumber(input: AuthPhoneNumberInput!): AuthPhoneNumberResponse
+    authPhoneToken(input: AuthPhoneTokenInput!): AuthPhoneTokenResponse
+    authSendSMS(input: AuthSendSMSInput!): AuthSendSMSResponse
+    authSignout: AuthSignoutResponse
+    authSignoutEmail: AuthSignoutEmailResponse
     authUser(input: AuthUserInput!): AuthUserResponse
+    authValidCredentials(input: AuthValidCredentialsInput!): AuthValidCredentialsResponse
     contactCreate(input: ContactCreateInput!): ContactCreateResponse
     eventCreate(input: EventCreateInput!): EventCreateResponse
     eventRsvpStatusEdit(input: EventRsvpStatusEditInput!): EventRsvpStatusEditResponse
@@ -234,6 +319,7 @@ type User implements Node {
     id: ID!
     invitedEvents: [Event!]!
     lastName: String!
+    phoneNumber: String
     userFoo: String!
 }
 
@@ -260,6 +346,8 @@ input UserCreateInput {
     emailAddress: String!
     firstName: String!
     lastName: String!
+    password: String!
+    phoneNumber: String
 }
 
 type UserCreateResponse {
@@ -276,7 +364,6 @@ type UserDeleteResponse {
 
 input UserEditInput {
     bio: String
-    emailAddress: String!
     firstName: String!
     lastName: String!
     userID: ID!

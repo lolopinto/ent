@@ -127,6 +127,13 @@ type ImportableDataType interface {
 	PkgPath() string
 }
 
+// PrivateDataType indicates that the DataType is private and shouldn't be exposed to graphql, exposed out of the package
+// or by default exposed in actions
+type PrivateDataType interface {
+	DataType
+	Private() bool
+}
+
 // StringDataType is the datatype for string fields
 type StringDataType struct {
 	validators []func(string) error

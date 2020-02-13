@@ -184,6 +184,99 @@ func (r *mutationResolver) AdminBlock(ctx context.Context, input AdminBlockInput
 	}, nil
 }
 
+func (r *mutationResolver) AuthCheckAvailableEmailAddress(ctx context.Context, input AuthCheckAvailableEmailAddressInput) (*AuthCheckAvailableEmailAddressResponse, error) {
+	available, err := CheckCanSigninWithEmailAddress(ctx, input.EmailAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthCheckAvailableEmailAddressResponse{
+		Available: available,
+	}, nil
+}
+
+func (r *mutationResolver) AuthCheckAvailablePhoneNumber(ctx context.Context, input AuthCheckAvailablePhoneNumberInput) (*AuthCheckAvailablePhoneNumberResponse, error) {
+	available, err := CheckCanSigninWithPhoneNumber(ctx, input.PhoneNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthCheckAvailablePhoneNumberResponse{
+		Available: available,
+	}, nil
+}
+
+func (r *mutationResolver) AuthEmailPassword(ctx context.Context, input AuthEmailPasswordInput) (*AuthEmailPasswordResponse, error) {
+	token, err := AuthEmailPassword(ctx, input.Email, input.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthEmailPasswordResponse{
+		Token: token,
+	}, nil
+}
+
+func (r *mutationResolver) AuthEmailToken(ctx context.Context, input AuthEmailTokenInput) (*AuthEmailTokenResponse, error) {
+	token, err := AuthEmailExtendToken(ctx, input.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthEmailTokenResponse{
+		Token: token,
+	}, nil
+}
+
+func (r *mutationResolver) AuthPhoneNumber(ctx context.Context, input AuthPhoneNumberInput) (*AuthPhoneNumberResponse, error) {
+	token, err := AuthPhoneNumber(ctx, input.PhoneNumber, input.Pin)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthPhoneNumberResponse{
+		Token: token,
+	}, nil
+}
+
+func (r *mutationResolver) AuthPhoneToken(ctx context.Context, input AuthPhoneTokenInput) (*AuthPhoneTokenResponse, error) {
+	token, err := AuthPhoneExtendToken(ctx, input.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthPhoneTokenResponse{
+		Token: token,
+	}, nil
+}
+
+func (r *mutationResolver) AuthSendSms(ctx context.Context, input AuthSendSMSInput) (*AuthSendSMSResponse, error) {
+	pin, err := SendSMS(ctx, input.PhoneNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthSendSMSResponse{
+		Pin: pin,
+	}, nil
+}
+
+func (r *mutationResolver) AuthSignout(ctx context.Context) (*AuthSignoutResponse, error) {
+	AuthPhoneLogout(ctx)
+
+	return &AuthSignoutResponse{
+		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
+
+func (r *mutationResolver) AuthSignoutEmail(ctx context.Context) (*AuthSignoutEmailResponse, error) {
+	AuthEmailLogout(ctx)
+
+	return &AuthSignoutEmailResponse{
+		Success: cast.ConvertToNullableBool(true),
+	}, nil
+}
+
 func (r *mutationResolver) AuthUser(ctx context.Context, input AuthUserInput) (*AuthUserResponse, error) {
 	user, token, err := auth.AuthMutation(ctx, input.Email, input.Password)
 	if err != nil {
@@ -193,6 +286,17 @@ func (r *mutationResolver) AuthUser(ctx context.Context, input AuthUserInput) (*
 	return &AuthUserResponse{
 		User:  user,
 		Token: token,
+	}, nil
+}
+
+func (r *mutationResolver) AuthValidCredentials(ctx context.Context, input AuthValidCredentialsInput) (*AuthValidCredentialsResponse, error) {
+	available, err := ValidAuthCredentials(ctx, input.PhoneNumber, input.Pin)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthValidCredentialsResponse{
+		Available: available,
 	}, nil
 }
 
@@ -314,9 +418,11 @@ func (r *mutationResolver) UserAddFriend(ctx context.Context, input UserAddFrien
 func (r *mutationResolver) UserCreate(ctx context.Context, input UserCreateInput) (*UserCreateResponse, error) {
 	node, err := action3.CreateUserFromContext(ctx).
 		SetEmailAddress(input.EmailAddress).
+		SetPassword(input.Password).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
 		SetNilableBio(input.Bio).
+		SetNilablePhoneNumber(input.PhoneNumber).
 		Save()
 
 	if err != nil {
@@ -353,7 +459,6 @@ func (r *mutationResolver) UserEdit(ctx context.Context, input UserEditInput) (*
 	}
 
 	node, err := action3.EditUserFromContext(ctx, existingNode).
-		SetEmailAddress(input.EmailAddress).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
 		SetNilableBio(input.Bio).

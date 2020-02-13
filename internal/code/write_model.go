@@ -8,6 +8,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/imports"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/util"
 )
@@ -22,6 +23,8 @@ func getFilePathForModelFile(nodeData *schema.NodeData) string {
 }
 
 func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	imps := imports.Imports{}
+
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
@@ -31,9 +34,15 @@ func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) e
 		TemplateName:      "node.gotmpl",
 		PathToFile:        getFilePathForModelFile(nodeData),
 		FormatSource:      true,
+		PackageName:       "models",
+		Imports:           &imps,
 		FuncMap: template.FuncMap{
-			"fTypeString": field.GetNilableGoType,
-			"quoteStr":    strconv.Quote,
+			"fTypeString":           field.GetNilableGoType,
+			"notNullableTypeString": field.GetNonNilableGoType,
+			"quoteStr":              strconv.Quote,
+			// our own version of reserveImport similar to what gqlgen provides. TOOD rename
+			"reserveImport": imps.Reserve,
+			"lookupImport":  imps.Lookup,
 		},
 	})
 }

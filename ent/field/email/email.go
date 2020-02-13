@@ -47,3 +47,15 @@ func (t *DataType) Format(val interface{}) (interface{}, error) {
 
 	return dt.Format(val)
 }
+
+// ValidateAndFormat calls Valid and then Format if valid
+func (t *DataType) ValidateAndFormat(val interface{}) (string, error) {
+	if err := t.Valid(val); err != nil {
+		return "", err
+	}
+	res, err := t.Format(val)
+	if err != nil {
+		return "", err
+	}
+	return res.(string), nil
+}

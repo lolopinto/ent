@@ -15,6 +15,7 @@ type CodePath struct {
 }
 
 func NewCodePath(configPath, modulePath string) *CodePath {
+	// TODO all this logic is dependent on passing "models/configs". TODO fix it
 	rootPath, err := filepath.Abs(configPath)
 
 	// TODO we need to store absPathToRoot at some point
@@ -62,6 +63,10 @@ func (cp *CodePath) AppendPathToModels(paths ...string) string {
 
 func (cp *CodePath) GetAbsPathToModels() string {
 	return filepath.Join(cp.absPathToConfigs, "..")
+}
+
+func (cp *CodePath) GetAbsPathToRoot() string {
+	return filepath.Join(cp.absPathToConfigs, "../..")
 }
 
 func (cp *CodePath) GetAbsPathToGraphQL() string {

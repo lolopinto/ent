@@ -64,6 +64,72 @@ type AdminBlockResponse struct {
 	Success *bool `json:"success"`
 }
 
+type AuthCheckAvailableEmailAddressInput struct {
+	EmailAddress string `json:"emailAddress"`
+}
+
+type AuthCheckAvailableEmailAddressResponse struct {
+	Available bool `json:"available"`
+}
+
+type AuthCheckAvailablePhoneNumberInput struct {
+	PhoneNumber string `json:"phoneNumber"`
+}
+
+type AuthCheckAvailablePhoneNumberResponse struct {
+	Available bool `json:"available"`
+}
+
+type AuthEmailPasswordInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type AuthEmailPasswordResponse struct {
+	Token string `json:"token"`
+}
+
+type AuthEmailTokenInput struct {
+	Token string `json:"token"`
+}
+
+type AuthEmailTokenResponse struct {
+	Token string `json:"token"`
+}
+
+type AuthPhoneNumberInput struct {
+	PhoneNumber string `json:"phoneNumber"`
+	Pin         string `json:"pin"`
+}
+
+type AuthPhoneNumberResponse struct {
+	Token string `json:"token"`
+}
+
+type AuthPhoneTokenInput struct {
+	Token string `json:"token"`
+}
+
+type AuthPhoneTokenResponse struct {
+	Token string `json:"token"`
+}
+
+type AuthSendSMSInput struct {
+	PhoneNumber string `json:"phoneNumber"`
+}
+
+type AuthSendSMSResponse struct {
+	Pin string `json:"pin"`
+}
+
+type AuthSignoutEmailResponse struct {
+	Success *bool `json:"success"`
+}
+
+type AuthSignoutResponse struct {
+	Success *bool `json:"success"`
+}
+
 type AuthUserInput struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -77,6 +143,15 @@ type AuthUserResponse struct {
 type AuthUserResult struct {
 	Token string       `json:"token"`
 	User  *models.User `json:"user"`
+}
+
+type AuthValidCredentialsInput struct {
+	PhoneNumber string `json:"phoneNumber"`
+	Pin         string `json:"pin"`
+}
+
+type AuthValidCredentialsResponse struct {
+	Available bool `json:"available"`
 }
 
 type ContactCreateInput struct {
@@ -167,6 +242,8 @@ type UserCreateInput struct {
 	EmailAddress string  `json:"emailAddress"`
 	FirstName    string  `json:"firstName"`
 	LastName     string  `json:"lastName"`
+	Password     string  `json:"password"`
+	PhoneNumber  *string `json:"phoneNumber"`
 }
 
 type UserCreateResponse struct {
@@ -182,11 +259,10 @@ type UserDeleteResponse struct {
 }
 
 type UserEditInput struct {
-	Bio          *string `json:"bio"`
-	EmailAddress string  `json:"emailAddress"`
-	FirstName    string  `json:"firstName"`
-	LastName     string  `json:"lastName"`
-	UserID       string  `json:"userID"`
+	Bio       *string `json:"bio"`
+	FirstName string  `json:"firstName"`
+	LastName  string  `json:"lastName"`
+	UserID    string  `json:"userID"`
 }
 
 type UserEditResponse struct {

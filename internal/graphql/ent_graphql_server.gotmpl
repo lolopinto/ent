@@ -4,19 +4,13 @@
 {{ reserveImport "os" }}
 {{ reserveImport "github.com/99designs/gqlgen/handler" }}
 {{ reserveImport "github.com/gorilla/mux" }}
+// including auth to have its init() method run by default so it can register as a middleware
+// to have the default logged out viewer set if no auth handlers registered
+{{ reserveImport "github.com/lolopinto/ent/ent/auth" "_" }}
+{{ reserveImport "github.com/lolopinto/ent/ent/request" }}
 {{ reserveImport "github.com/lolopinto/ent/ent/viewer" }}
 
 const defaultPort = "8080"
-
-func authMiddleware(next http.Handler) http.Handler {
-  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    // by default this works with a logged out viewer.
-    // TODO provide a way to inject a different viewer
-    v := viewer.LoggedOutViewer()
-    r = viewer.NewRequestWithContext(r, v)
-    next.ServeHTTP(w, r)
-  })
-}
 
 func main() {
 	port := os.Getenv("PORT")
@@ -25,7 +19,11 @@ func main() {
 	}
 
   r := mux.NewRouter()
-  r.Use(authMiddleware)
+  for _, v := range request.GetAllMiddlewares() {
+		r.Use(v)
+	}
+  {{/* sad. an iterator will be better */ -}}
+  {{/*	request.ApplyAllMiddlewares(r.Use) */ -}}
 
 	r.Handle("/", handler.Playground("GraphQL playground", "/query"))
 	r.Handle("/query", handler.GraphQL({{ lookupImport .ExecPackageName }}.NewExecutableSchema({{ lookupImport .ExecPackageName}}.Config{Resolvers: &{{ lookupImport .ResolverPackageName}}.Resolver{}})))

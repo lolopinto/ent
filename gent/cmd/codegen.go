@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"errors"
@@ -10,7 +10,26 @@ import (
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
+	"github.com/spf13/cobra"
 )
+
+type codegenArgs struct {
+	specificConfig string
+	step           string
+}
+
+var codegenInfo codegenArgs
+
+var codegenCmd = &cobra.Command{
+	Use:   "codegen", // TODO is there a better name here?
+	Short: "runs the codegen (and db schema) migration",
+	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
+	Args:  configRequired,
+	Run: func(cmd *cobra.Command, args []string) {
+		codePathInfo := getPathToCode(pathToConfig)
+		parseSchemasAndGenerate(codePathInfo, codegenInfo.specificConfig, codegenInfo.step)
+	},
+}
 
 func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Schema {
 	p := &schemaparser.ConfigSchemaParser{

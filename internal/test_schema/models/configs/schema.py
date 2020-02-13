@@ -151,14 +151,17 @@ sa.Table("user_friends_edges", metadata,
    
 sa.Table("users", metadata,
     sa.Column("id", UUID(), nullable=False),
+    sa.Column("bio", sa.Text(), nullable=True),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
-    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
     sa.Column("email_address", sa.Text(), nullable=False),
     sa.Column("first_name", sa.Text(), nullable=False),
     sa.Column("last_name", sa.Text(), nullable=False),
-    sa.Column("bio", sa.Text(), nullable=True),
+    sa.Column("password", sa.Text(), nullable=False),
+    sa.Column("phone_number", sa.Text(), nullable=True),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
     sa.PrimaryKeyConstraint("id", name="users_id_pkey"),
     sa.UniqueConstraint("email_address", name="users_unique_email_address"),
+    sa.UniqueConstraint("phone_number", name="users_unique_phone_number"),
 )
   
 

@@ -20,12 +20,12 @@ func TestIntsField(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "Ints",
-			dbName:              "ints",
-			graphQLName:         "ints",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "Ints",
+			dbName:                   "ints",
+			graphQLName:              "ints",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 	// stored as string because it'll be json encoded
@@ -54,12 +54,12 @@ func TestStringsField(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "Strings",
-			dbName:              "strings",
-			graphQLName:         "strings",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "Strings",
+			dbName:                   "strings",
+			graphQLName:              "strings",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 	// stored as string because it'll be json encoded
@@ -88,12 +88,12 @@ func TestFloatsField(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "Floats",
-			dbName:              "floats",
-			graphQLName:         "floats",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "Floats",
+			dbName:                   "floats",
+			graphQLName:              "floats",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 	// stored as string because it'll be json encoded
@@ -122,12 +122,12 @@ func TestScalarJSON(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "ScalarJSON",
-			dbName:              "scalar_json",
-			graphQLName:         "scalarJSON",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "ScalarJSON",
+			dbName:                   "scalar_json",
+			graphQLName:              "scalarJSON",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 	testDBType(t, field, "sa.Text()")
@@ -154,13 +154,13 @@ func TestJSONObject(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "JSONObject",
-			dbName:              "json_object",
-			graphQLName:         "jSONObject", // lol
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			pkgPath:             "encoding/json",
+			FieldName:                "JSONObject",
+			dbName:                   "json_object",
+			graphQLName:              "jSONObject", // lol
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			pkgPath:                  "encoding/json",
 		},
 	)
 	testDBType(t, field, "sa.Text()")
@@ -188,13 +188,13 @@ func TestJSONObjectPointer(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "JSONObject",
-			dbName:              "json_object",
-			graphQLName:         "jSONObject", // lol
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			pkgPath:             "encoding/json",
+			FieldName:                "JSONObject",
+			dbName:                   "json_object",
+			graphQLName:              "jSONObject", // lol
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			pkgPath:                  "encoding/json",
 		},
 	)
 	testDBType(t, field, "sa.Text()")
@@ -222,13 +222,13 @@ func TestJSONObjectList(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "JSONObjects",
-			dbName:              "json_objects",
-			graphQLName:         "jSONObjects", // lol
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			pkgPath:             "encoding/json",
+			FieldName:                "JSONObjects",
+			dbName:                   "json_objects",
+			graphQLName:              "jSONObjects", // lol
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			pkgPath:                  "encoding/json",
 		},
 	)
 	testDBType(t, field, "sa.Text()")
@@ -256,13 +256,13 @@ func TestJSONObjectPointerList(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "JSONObjects",
-			dbName:              "json_objects",
-			graphQLName:         "jSONObjects", // lol
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
-			pkgPath:             "encoding/json",
+			FieldName:                "JSONObjects",
+			dbName:                   "json_objects",
+			graphQLName:              "jSONObjects", // lol
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+			pkgPath:                  "encoding/json",
 		},
 	)
 	testDBType(t, field, "sa.Text()")
@@ -289,12 +289,12 @@ func TestJSONMap(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "Map",
-			dbName:              "map",
-			graphQLName:         "map",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "Map",
+			dbName:                   "map",
+			graphQLName:              "map",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 	testDBType(t, field, "sa.Text()")
@@ -320,12 +320,12 @@ func TestJSONPointerToMap(t *testing.T) {
 			}
 		}`,
 		&Field{
-			FieldName:           "Map",
-			dbName:              "map",
-			graphQLName:         "map",
-			topLevelStructField: true,
-			exposeToActions:     true,
-			dbColumn:            true,
+			FieldName:                "Map",
+			dbName:                   "map",
+			graphQLName:              "map",
+			topLevelStructField:      true,
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
 		},
 	)
 	testDBType(t, field, "sa.Text()")

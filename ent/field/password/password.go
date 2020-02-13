@@ -15,9 +15,20 @@ func Type() *dataType {
 	return &dataType{str: field.StringType()}
 }
 
+// hide from graphql √
+// private √
+// not included in actions by default √
+// TODO sensitive
+
 type dataType struct {
 	cost *int
 	str  *field.StringDataType
+}
+
+// Private indicates that the DataType is private and shouldn't be exposed to graphql, exposed out of the package
+// or by default exposed in actions
+func (t *dataType) Private() bool {
+	return true
 }
 
 // Cost specifies the cost to use to pass to bcrypt.GenerateFromPassword()

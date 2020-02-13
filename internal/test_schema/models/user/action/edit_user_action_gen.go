@@ -74,12 +74,6 @@ func (action *EditUserAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// SetEmailAddress sets the EmailAddress while editing the User ent
-func (action *EditUserAction) SetEmailAddress(emailAddress string) *EditUserAction {
-	action.builder.SetEmailAddress(emailAddress)
-	return action
-}
-
 // SetFirstName sets the FirstName while editing the User ent
 func (action *EditUserAction) SetFirstName(firstName string) *EditUserAction {
 	action.builder.SetFirstName(firstName)

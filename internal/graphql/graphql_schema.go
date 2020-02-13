@@ -348,6 +348,10 @@ func (schema *graphQLSchema) processArgsOfFunction(
 	if len(fn.Args) == 0 {
 		return
 	}
+	// if only a context arg, nothing to do here
+	if len(fn.Args) == 1 && enttype.IsContextType(fn.Args[0].Type) {
+		return
+	}
 	var args []*graphQLArg
 	for idx, arg := range fn.Args {
 		// don't add context type here.
