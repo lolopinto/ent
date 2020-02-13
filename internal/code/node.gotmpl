@@ -218,14 +218,19 @@ const (
           }
 
           // Gen{{$edgeName}} returns the {{.Node}} associated with the {{$currentNode}} instance
-          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(result *{{.NodeResult}}, wg *sync.WaitGroup) {
-            defer wg.Done()
-            var {{.NodeInstance}} {{.Node}}
-            chanErr := make(chan error)
-            go ent.GenLoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}, chanErr)
-            err := <-chanErr
-            result.{{.Node}} = &{{.NodeInstance}}
-            result.Err = err
+          func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() chan *{{.NodeResult}} {
+            res := make(chan *{{.NodeResult}})
+            go func() {
+              var {{.NodeInstance}} {{.Node}}
+              chanErr := make(chan error)
+              go ent.GenLoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}, chanErr)
+              err := <-chanErr
+              res <- &{{.NodeResult}}{
+                {{.Node}}: &{{.NodeInstance}},
+                Err: err,
+              }
+            }()
+            return res
           }
 
           // Load{{$edgeName}} returns the {{.Node}} associated with the {{$currentNode}} instance

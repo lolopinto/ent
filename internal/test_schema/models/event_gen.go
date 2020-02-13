@@ -183,14 +183,19 @@ func (event *Event) GenCreatorEdge() chan *ent.AssocEdgeResult {
 }
 
 // GenCreator returns the User associated with the Event instance
-func (event *Event) GenCreator(result *UserResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var user User
-	chanErr := make(chan error)
-	go ent.GenLoadUniqueNodeByType(event.Viewer, event.ID, EventToCreatorEdge, &user, chanErr)
-	err := <-chanErr
-	result.User = &user
-	result.Err = err
+func (event *Event) GenCreator() chan *UserResult {
+	res := make(chan *UserResult)
+	go func() {
+		var user User
+		chanErr := make(chan error)
+		go ent.GenLoadUniqueNodeByType(event.Viewer, event.ID, EventToCreatorEdge, &user, chanErr)
+		err := <-chanErr
+		res <- &UserResult{
+			User: &user,
+			Err:  err,
+		}
+	}()
+	return res
 }
 
 // LoadCreator returns the User associated with the Event instance
