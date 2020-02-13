@@ -91,15 +91,15 @@ func getTypeName(ent Entity) string {
 }
 
 // TODO same issues as below
-func LoadNode(v viewer.ViewerContext, id string, ent Entity, entConfig Config) error {
+func LoadNode(v viewer.ViewerContext, id string, ent Entity) error {
 	chanErr := make(chan error)
-	go GenLoadNode(v, id, ent, entConfig, chanErr)
+	go GenLoadNode(v, id, ent, chanErr)
 	err := <-chanErr
 	return err
 }
 
 // TODO...
-func GenLoadNode(v viewer.ViewerContext, id string, ent Entity, entConfig Config, errChan chan<- error) {
+func GenLoadNode(v viewer.ViewerContext, id string, ent Entity, errChan chan<- error) {
 	if id == "" {
 		debug.PrintStack()
 	}
@@ -122,7 +122,7 @@ func GenLoadNode(v viewer.ViewerContext, id string, ent Entity, entConfig Config
 	// TODO rename these things..
 	// GenLoadNode should be the public facing one
 	// and GenLoadRawData or somethong along those lines should be what does the data fetching.
-	go genLoadRawData(id, ent, entConfig, chanErr)
+	go genLoadRawData(id, ent, ent.GetConfig(), chanErr)
 	err := <-chanErr
 	if err != nil {
 		entreflect.SetZeroVal(ent)
@@ -302,15 +302,15 @@ func LoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes
 	return err
 }
 
-func LoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config) error {
+func LoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity) error {
 	edge, err := LoadUniqueEdgeByType(id, edgeType)
 	if err != nil {
 		return err
 	}
-	return LoadNode(v, edge.ID2, node, entConfig)
+	return LoadNode(v, edge.ID2, node)
 }
 
-func GenLoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config, errChan chan<- error) {
+func GenLoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity, errChan chan<- error) {
 	//	chanErr := make(chan error)
 	edgeResultChan := make(chan AssocEdgeResult)
 	go GenLoadUniqueEdgeByType(id, edgeType, edgeResultChan)
@@ -319,7 +319,7 @@ func GenLoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeTyp
 		errChan <- edgeResult.Err
 		return
 	}
-	go GenLoadNode(v, edgeResult.Edge.ID2, node, entConfig, errChan)
+	go GenLoadNode(v, edgeResult.Edge.ID2, node, errChan)
 }
 
 // function that does the actual work of loading the raw data when fetching a list of nodes

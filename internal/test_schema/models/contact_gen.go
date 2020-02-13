@@ -70,6 +70,11 @@ func (contact *Contact) GetViewer() viewer.ViewerContext {
 	return contact.Viewer
 }
 
+// GetConfig returns the config for this entity.
+func (contact *Contact) GetConfig() ent.Config {
+	return &configs.ContactConfig{}
+}
+
 // LoadContactFromContext loads the given Contact given the context and id
 func LoadContactFromContext(ctx context.Context, id string) (*Contact, error) {
 	v, err := viewer.ForContext(ctx)
@@ -82,7 +87,7 @@ func LoadContactFromContext(ctx context.Context, id string) (*Contact, error) {
 // LoadContact loads the given Contact given the viewer and id
 func LoadContact(v viewer.ViewerContext, id string) (*Contact, error) {
 	var contact Contact
-	err := ent.LoadNode(v, id, &contact, &configs.ContactConfig{})
+	err := ent.LoadNode(v, id, &contact)
 	return &contact, err
 }
 
@@ -91,7 +96,7 @@ func GenLoadContact(v viewer.ViewerContext, id string, result *ContactResult, wg
 	defer wg.Done()
 	var contact Contact
 	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &contact, &configs.ContactConfig{}, chanErr)
+	go ent.GenLoadNode(v, id, &contact, chanErr)
 	err := <-chanErr
 	result.Contact = &contact
 	result.Err = err

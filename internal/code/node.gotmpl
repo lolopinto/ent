@@ -90,6 +90,11 @@ const (
     return {{.NodeInstance}}.Viewer
   }
 
+  // GetConfig returns the config for this entity.
+  func ({{.NodeInstance}} *{{.Node}}) GetConfig() ent.Config {
+    return {{.EntConfig}}
+  }
+
   // Load{{.Node}}FromContext loads the given {{.Node}} given the context and id
   func Load{{.Node}}FromContext(ctx context.Context, id string) (*{{.Node}}, error) {
     v, err := viewer.ForContext(ctx)
@@ -102,7 +107,7 @@ const (
   // Load{{.Node}} loads the given {{.Node}} given the viewer and id
   func Load{{.Node}}(v viewer.ViewerContext, id string) (*{{.Node}}, error) {
     var {{.NodeInstance}} {{.Node}}
-    err := ent.LoadNode(v, id, &{{.NodeInstance}}, {{.EntConfig}})
+    err := ent.LoadNode(v, id, &{{.NodeInstance}})
     return &{{.NodeInstance}}, err
   }
 
@@ -111,7 +116,7 @@ const (
     defer wg.Done()
     var {{.NodeInstance}} {{.Node}}
     chanErr := make(chan error)
-    go ent.GenLoadNode(v, id, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
+    go ent.GenLoadNode(v, id, &{{.NodeInstance}}, chanErr)
     err := <-chanErr
     result.{{.Node}} = &{{.NodeInstance}}
     result.Err = err
@@ -220,7 +225,7 @@ const (
             defer wg.Done()
             var {{.NodeInstance}} {{.Node}}
             chanErr := make(chan error)
-            go ent.GenLoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}, {{.EntConfig}}, chanErr)
+            go ent.GenLoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}, chanErr)
             err := <-chanErr
             result.{{.Node}} = &{{.NodeInstance}}
             result.Err = err
@@ -229,7 +234,7 @@ const (
           // Load{{$edgeName}} returns the {{.Node}} associated with the {{$currentNode}} instance
           func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() (*{{.Node}}, error) {
             var {{.NodeInstance}} {{.Node}}
-            err := ent.LoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}, {{.EntConfig}})
+            err := ent.LoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}})
             return &{{.NodeInstance}}, err
           }
         {{else -}}

@@ -40,7 +40,7 @@ func (suite *privacyTestSuite) TestManualLoadNode() {
 	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
 		// call the method manually based on public APIs
 		var user models.User
-		err := ent.LoadNode(v, id, &user, &configs.UserConfig{})
+		err := ent.LoadNode(v, id, &user)
 		return &user, err
 	})
 }
@@ -62,7 +62,7 @@ func (suite *privacyTestSuite) TestManualGenLoadNode() {
 		// call the method manually based on public APIs
 		var user models.User
 		errChan := make(chan error)
-		go ent.GenLoadNode(v, id, &user, &configs.UserConfig{}, errChan)
+		go ent.GenLoadNode(v, id, &user, errChan)
 		err := <-errChan
 		return &user, err
 	})

@@ -66,6 +66,11 @@ func (address *Address) GetViewer() viewer.ViewerContext {
 	return address.Viewer
 }
 
+// GetConfig returns the config for this entity.
+func (address *Address) GetConfig() ent.Config {
+	return &configs.AddressConfig{}
+}
+
 // LoadAddressFromContext loads the given Address given the context and id
 func LoadAddressFromContext(ctx context.Context, id string) (*Address, error) {
 	v, err := viewer.ForContext(ctx)
@@ -78,7 +83,7 @@ func LoadAddressFromContext(ctx context.Context, id string) (*Address, error) {
 // LoadAddress loads the given Address given the viewer and id
 func LoadAddress(v viewer.ViewerContext, id string) (*Address, error) {
 	var address Address
-	err := ent.LoadNode(v, id, &address, &configs.AddressConfig{})
+	err := ent.LoadNode(v, id, &address)
 	return &address, err
 }
 
@@ -87,7 +92,7 @@ func GenLoadAddress(v viewer.ViewerContext, id string, result *AddressResult, wg
 	defer wg.Done()
 	var address Address
 	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &address, &configs.AddressConfig{}, chanErr)
+	go ent.GenLoadNode(v, id, &address, chanErr)
 	err := <-chanErr
 	result.Address = &address
 	result.Err = err

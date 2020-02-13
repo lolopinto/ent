@@ -89,6 +89,11 @@ func (event *Event) GetViewer() viewer.ViewerContext {
 	return event.Viewer
 }
 
+// GetConfig returns the config for this entity.
+func (event *Event) GetConfig() ent.Config {
+	return &configs.EventConfig{}
+}
+
 // LoadEventFromContext loads the given Event given the context and id
 func LoadEventFromContext(ctx context.Context, id string) (*Event, error) {
 	v, err := viewer.ForContext(ctx)
@@ -101,7 +106,7 @@ func LoadEventFromContext(ctx context.Context, id string) (*Event, error) {
 // LoadEvent loads the given Event given the viewer and id
 func LoadEvent(v viewer.ViewerContext, id string) (*Event, error) {
 	var event Event
-	err := ent.LoadNode(v, id, &event, &configs.EventConfig{})
+	err := ent.LoadNode(v, id, &event)
 	return &event, err
 }
 
@@ -110,7 +115,7 @@ func GenLoadEvent(v viewer.ViewerContext, id string, result *EventResult, wg *sy
 	defer wg.Done()
 	var event Event
 	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &event, &configs.EventConfig{}, chanErr)
+	go ent.GenLoadNode(v, id, &event, chanErr)
 	err := <-chanErr
 	result.Event = &event
 	result.Err = err
@@ -188,7 +193,7 @@ func (event *Event) GenCreator(result *UserResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var user User
 	chanErr := make(chan error)
-	go ent.GenLoadUniqueNodeByType(event.Viewer, event.ID, EventToCreatorEdge, &user, &configs.UserConfig{}, chanErr)
+	go ent.GenLoadUniqueNodeByType(event.Viewer, event.ID, EventToCreatorEdge, &user, chanErr)
 	err := <-chanErr
 	result.User = &user
 	result.Err = err
@@ -197,7 +202,7 @@ func (event *Event) GenCreator(result *UserResult, wg *sync.WaitGroup) {
 // LoadCreator returns the User associated with the Event instance
 func (event *Event) LoadCreator() (*User, error) {
 	var user User
-	err := ent.LoadUniqueNodeByType(event.Viewer, event.ID, EventToCreatorEdge, &user, &configs.UserConfig{})
+	err := ent.LoadUniqueNodeByType(event.Viewer, event.ID, EventToCreatorEdge, &user)
 	return &user, err
 }
 

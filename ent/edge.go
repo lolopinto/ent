@@ -160,6 +160,10 @@ func (edgeData *AssocEdgeData) GetViewer() viewer.ViewerContext {
 	panic("ss")
 }
 
+func (edgeData *AssocEdgeData) GetConfig() Config {
+	return &AssocEdgeConfig{}
+}
+
 // AssocEdgeConfig is configuration used to configure edges in the ent-framework
 type AssocEdgeConfig struct {
 	EdgeType        string `db:"edge_type"`

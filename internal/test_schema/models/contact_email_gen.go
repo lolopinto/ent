@@ -63,6 +63,11 @@ func (contactEmail *ContactEmail) GetViewer() viewer.ViewerContext {
 	return contactEmail.Viewer
 }
 
+// GetConfig returns the config for this entity.
+func (contactEmail *ContactEmail) GetConfig() ent.Config {
+	return &configs.ContactEmailConfig{}
+}
+
 // LoadContactEmailFromContext loads the given ContactEmail given the context and id
 func LoadContactEmailFromContext(ctx context.Context, id string) (*ContactEmail, error) {
 	v, err := viewer.ForContext(ctx)
@@ -75,7 +80,7 @@ func LoadContactEmailFromContext(ctx context.Context, id string) (*ContactEmail,
 // LoadContactEmail loads the given ContactEmail given the viewer and id
 func LoadContactEmail(v viewer.ViewerContext, id string) (*ContactEmail, error) {
 	var contactEmail ContactEmail
-	err := ent.LoadNode(v, id, &contactEmail, &configs.ContactEmailConfig{})
+	err := ent.LoadNode(v, id, &contactEmail)
 	return &contactEmail, err
 }
 
@@ -84,7 +89,7 @@ func GenLoadContactEmail(v viewer.ViewerContext, id string, result *ContactEmail
 	defer wg.Done()
 	var contactEmail ContactEmail
 	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &contactEmail, &configs.ContactEmailConfig{}, chanErr)
+	go ent.GenLoadNode(v, id, &contactEmail, chanErr)
 	err := <-chanErr
 	result.ContactEmail = &contactEmail
 	result.Err = err

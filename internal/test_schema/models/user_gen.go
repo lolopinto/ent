@@ -80,6 +80,11 @@ func (user *User) GetViewer() viewer.ViewerContext {
 	return user.Viewer
 }
 
+// GetConfig returns the config for this entity.
+func (user *User) GetConfig() ent.Config {
+	return &configs.UserConfig{}
+}
+
 // LoadUserFromContext loads the given User given the context and id
 func LoadUserFromContext(ctx context.Context, id string) (*User, error) {
 	v, err := viewer.ForContext(ctx)
@@ -92,7 +97,7 @@ func LoadUserFromContext(ctx context.Context, id string) (*User, error) {
 // LoadUser loads the given User given the viewer and id
 func LoadUser(v viewer.ViewerContext, id string) (*User, error) {
 	var user User
-	err := ent.LoadNode(v, id, &user, &configs.UserConfig{})
+	err := ent.LoadNode(v, id, &user)
 	return &user, err
 }
 
@@ -101,7 +106,7 @@ func GenLoadUser(v viewer.ViewerContext, id string, result *UserResult, wg *sync
 	defer wg.Done()
 	var user User
 	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &user, &configs.UserConfig{}, chanErr)
+	go ent.GenLoadNode(v, id, &user, chanErr)
 	err := <-chanErr
 	result.User = &user
 	result.Err = err
