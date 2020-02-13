@@ -2,7 +2,6 @@ package ent_test
 
 import (
 	"database/sql"
-	"sync"
 
 	"testing"
 
@@ -273,9 +272,7 @@ func (suite *modelsTestSuite) TestLoadEdgeByType() {
 
 func (suite *modelsTestSuite) TestGenLoadEdgeByType() {
 	testLoadEdgeByType(suite, func(id1, id2 string) (*ent.AssocEdge, error) {
-		chanResult := make(chan ent.AssocEdgeResult)
-		go ent.GenLoadEdgeByType(id1, id2, models.UserToEventsEdge, chanResult)
-		result := <-chanResult
+		result := <-ent.GenLoadEdgeByType(id1, id2, models.UserToEventsEdge)
 		return result.Edge, result.Err
 	})
 }
@@ -361,11 +358,7 @@ func (suite *modelsTestSuite) TestGeneratedGenLoadEdgeByType() {
 			user, err := models.LoadUser(v, user.ID)
 			require.NoError(suite.T(), err)
 
-			var wg sync.WaitGroup
-			var result ent.AssocEdgeResult
-			wg.Add(1)
-			go user.GenLoadEventEdgeFor(event.ID, &result, &wg)
-			wg.Wait()
+			result := <-user.GenLoadEventEdgeFor(event.ID)
 			return result.Edge, result.Err
 		},
 		user.ID,

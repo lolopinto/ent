@@ -5,7 +5,6 @@ package models
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/lolopinto/ent/ent"
@@ -205,11 +204,8 @@ func (event *Event) LoadHostEdgeFor(id2 string) (*ent.AssocEdge, error) {
 }
 
 // GenHostEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Hosts edge.
-func (event *Event) GenLoadHostEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgeResultChan := make(chan ent.AssocEdgeResult)
-	go ent.GenLoadEdgeByType(event.ID, id2, EventToHostsEdge, edgeResultChan)
-	*result = <-edgeResultChan
+func (event *Event) GenLoadHostEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(event.ID, id2, EventToHostsEdge)
 }
 
 // LoadCreatorEdge returns the Creator edge associated with the Event instance
@@ -248,11 +244,8 @@ func (event *Event) LoadCreatorEdgeFor(id2 string) (*ent.AssocEdge, error) {
 }
 
 // GenCreatorEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Creator edge.
-func (event *Event) GenLoadCreatorEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgeResultChan := make(chan ent.AssocEdgeResult)
-	go ent.GenLoadEdgeByType(event.ID, id2, EventToCreatorEdge, edgeResultChan)
-	*result = <-edgeResultChan
+func (event *Event) GenLoadCreatorEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(event.ID, id2, EventToCreatorEdge)
 }
 
 // LoadInvitedEdges returns the Invited edges associated with the Event instance
@@ -291,11 +284,8 @@ func (event *Event) LoadInvitedEdgeFor(id2 string) (*ent.AssocEdge, error) {
 }
 
 // GenInvitedEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Invited edge.
-func (event *Event) GenLoadInvitedEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgeResultChan := make(chan ent.AssocEdgeResult)
-	go ent.GenLoadEdgeByType(event.ID, id2, EventToInvitedEdge, edgeResultChan)
-	*result = <-edgeResultChan
+func (event *Event) GenLoadInvitedEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(event.ID, id2, EventToInvitedEdge)
 }
 
 // LoadAttendingEdges returns the Attending edges associated with the Event instance
@@ -334,11 +324,8 @@ func (event *Event) LoadAttendingEdgeFor(id2 string) (*ent.AssocEdge, error) {
 }
 
 // GenAttendingEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Attending edge.
-func (event *Event) GenLoadAttendingEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgeResultChan := make(chan ent.AssocEdgeResult)
-	go ent.GenLoadEdgeByType(event.ID, id2, EventToAttendingEdge, edgeResultChan)
-	*result = <-edgeResultChan
+func (event *Event) GenLoadAttendingEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(event.ID, id2, EventToAttendingEdge)
 }
 
 // LoadDeclinedEdges returns the Declined edges associated with the Event instance
@@ -377,11 +364,8 @@ func (event *Event) LoadDeclinedEdgeFor(id2 string) (*ent.AssocEdge, error) {
 }
 
 // GenDeclinedEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the Declined edge.
-func (event *Event) GenLoadDeclinedEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgeResultChan := make(chan ent.AssocEdgeResult)
-	go ent.GenLoadEdgeByType(event.ID, id2, EventToDeclinedEdge, edgeResultChan)
-	*result = <-edgeResultChan
+func (event *Event) GenLoadDeclinedEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(event.ID, id2, EventToDeclinedEdge)
 }
 
 func (event *Event) ViewerRsvpStatus() (*EventRsvpStatus, error) {

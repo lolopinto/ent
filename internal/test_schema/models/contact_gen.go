@@ -4,7 +4,6 @@ package models
 
 import (
 	"context"
-	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -208,11 +207,8 @@ func (contact *Contact) LoadAllowListEdgeFor(id2 string) (*ent.AssocEdge, error)
 }
 
 // GenAllowListEdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the AllowList edge.
-func (contact *Contact) GenLoadAllowListEdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	edgeResultChan := make(chan ent.AssocEdgeResult)
-	go ent.GenLoadEdgeByType(contact.ID, id2, ContactToAllowListEdge, edgeResultChan)
-	*result = <-edgeResultChan
+func (contact *Contact) GenLoadAllowListEdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+	return ent.GenLoadEdgeByType(contact.ID, id2, ContactToAllowListEdge)
 }
 
 // DBFields is used by the ent framework to load the ent from the underlying database

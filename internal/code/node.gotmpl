@@ -315,11 +315,8 @@ const (
         }
 
         // Gen{{$edge.Singular}}EdgeFor provides a concurrent API to load the ent.AssocEdge between the current node and the given id2 for the {{$edgeName}} edge.
-        func ({{$currentNodeInstance}} *{{$currentNode}}) GenLoad{{$edge.Singular}}EdgeFor(id2 string, result *ent.AssocEdgeResult, wg *sync.WaitGroup) {
-          defer wg.Done()
-          edgeResultChan := make(chan ent.AssocEdgeResult)
-          go ent.GenLoadEdgeByType({{$currentNodeInstance}}.ID, id2, {{$edge.EdgeConst}}, edgeResultChan)
-          *result = <- edgeResultChan
+        func ({{$currentNodeInstance}} *{{$currentNode}}) GenLoad{{$edge.Singular}}EdgeFor(id2 string) <-chan *ent.AssocEdgeResult {
+          return ent.GenLoadEdgeByType({{$currentNodeInstance}}.ID, id2, {{$edge.EdgeConst}})
         }
       {{end}}
     {{end }}

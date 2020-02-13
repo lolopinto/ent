@@ -488,12 +488,17 @@ func GenLoadUniqueEdgeByType(id string, edgeType EdgeType) chan *AssocEdgeResult
 }
 
 // GenLoadEdgeByType is the concurrent version of LoadEdgeByType
-func GenLoadEdgeByType(id1, id2 string, edgeType EdgeType, chanEdgeResult chan<- AssocEdgeResult) {
-	edge, err := LoadEdgeByType(id1, id2, edgeType)
-	chanEdgeResult <- AssocEdgeResult{
-		Edge: edge,
-		Err:  err,
-	}
+func GenLoadEdgeByType(id1, id2 string, edgeType EdgeType) <-chan *AssocEdgeResult {
+	res := make(chan *AssocEdgeResult)
+	go func() {
+		edge, err := LoadEdgeByType(id1, id2, edgeType)
+		res <- &AssocEdgeResult{
+			Edge: edge,
+			Err:  err,
+		}
+
+	}()
+	return res
 }
 
 // LoadEdgeByType checks if an edge exists between 2 ids
