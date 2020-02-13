@@ -94,12 +94,11 @@ func LoadNodeRawData(id string, entity DBObject, entConfig Config) error {
 }
 
 // LoadNodesRawData loads raw data for multiple objects
-func LoadNodesRawData(ids []string, nodes interface{}, entConfig Config) error {
+func LoadNodesRawData(ids []string, entLoader MultiEntLoader) error {
 	l := &loadNodesLoader{
 		ids:       ids,
-		entConfig: entConfig,
+		entLoader: entLoader,
 	}
-	l.nodes = nodes
 	return loadData(l)
 }
 
@@ -129,25 +128,23 @@ func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, erro
 }
 
 // TODO also move to lower level loader/data package
-func LoadRawForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) error {
-	// build loader to use
-	l := &loadMultipleNodesFromQueryNodeDependent{}
-	l.sqlBuilder = &sqlBuilder{
-		tableName: entConfig.GetTableName(),
-		whereParts: []interface{}{
-			colName,
-			id,
-		},
-	}
-	l.nodes = nodes
-	return loadData(l)
+func LoadRawForeignKeyNodes(id string, colName string, entLoader MultiEntLoader) error {
+	res := <-genLoadForeignKeyNodes(id, colName, entLoader)
+	return res.err
 }
 
-func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) <-chan error {
-	res := make(chan error)
+func genLoadForeignKeyNodes(id string, colName string, entLoader MultiEntLoader) <-chan multiEntResult {
+	res := make(chan multiEntResult)
 	go func() {
-		err := LoadRawForeignKeyNodes(id, nodes, colName, entConfig)
-		res <- err
+		l := &loadNodesLoader{
+			entLoader: entLoader,
+			whereParts: []interface{}{
+				colName,
+				id,
+			},
+		}
+		err := loadData(l)
+		res <- getMultiEntResult(entLoader, l, err)
 	}()
 	return res
 }
@@ -594,65 +591,77 @@ func LoadEdgeByType(id string, id2 string, edgeType EdgeType) (*AssocEdge, error
 	// return &edge, nil
 }
 
-func LoadRawNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
-	l := &loadNodesLoader{
-		entConfig: entConfig,
-	}
-	l.nodes = nodes
-	return chainLoaders(
-		[]loader{
-			&loadEdgesByType{
-				id:         id,
-				edgeType:   edgeType,
-				outputID2s: true,
-			},
-			l,
-		},
-	)
+func LoadRawNodesByType(id string, edgeType EdgeType, entLoader MultiEntLoader) error {
+	res := <-genLoadNodesByType(id, edgeType, entLoader)
+	return res.err
 }
 
-func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config) <-chan error {
-	res := make(chan error)
+func getMultiEntResult(entLoader MultiEntLoader, l *loadNodesLoader, err error) multiEntResult {
+	if err != nil {
+		return multiEntResult{
+			err: err,
+		}
+	}
+	return multiEntResult{
+		ents:   l.dbobjects,
+		loader: entLoader,
+	}
+}
+
+func genLoadNodesByType(id string, edgeType EdgeType, entLoader MultiEntLoader) <-chan multiEntResult {
+	res := make(chan multiEntResult)
 	go func() {
-		err := LoadRawNodesByType(id, edgeType, nodes, entConfig)
-		res <- err
+		l := &loadNodesLoader{
+			entLoader: entLoader,
+		}
+		err := chainLoaders(
+			[]loader{
+				&loadEdgesByType{
+					id:         id,
+					edgeType:   edgeType,
+					outputID2s: true,
+				},
+				l,
+			},
+		)
+		res <- getMultiEntResult(entLoader, l, err)
 	}()
 	return res
 }
 
-func genLoadNodes(ids []string, nodes interface{}, entConfig Config) <-chan error {
-	res := make(chan error)
+func genLoadNodes(ids []string, entLoader MultiEntLoader) <-chan multiEntResult {
+	res := make(chan multiEntResult)
 	go func() {
 		l := &loadNodesLoader{
-			ids: ids,
+			ids:       ids,
+			entLoader: entLoader,
 		}
-		l.nodes = nodes
-		l.entConfig = entConfig
 		err := loadData(l)
-		res <- err
+		res <- getMultiEntResult(entLoader, l, err)
 	}()
 	return res
 }
 
 func GenLoadAssocEdges(nodes *[]*AssocEdgeData) error {
+	// TODO....
 	return chainLoaders(
 		[]loader{
 			&loadAssocEdgeConfigExists{},
-			&loadMultipleNodesFromQuery{
-				sqlBuilder: &sqlBuilder{
-					rawQuery: "SELECT * FROM assoc_edge_config",
-				},
-				nodes: nodes,
+			&loadNodesLoader{
+				rawQuery: "SELECT * FROM assoc_edge_config",
+				//				nodes:    nodes,
 			},
 		},
 	)
 }
 
 func LoadRawQuery(query string, nodes interface{}) error {
-	return loadData(&loadMultipleNodesFromQuery{
-		sqlBuilder: &sqlBuilder{
-			rawQuery: query,
-		},
-		nodes: nodes,
-	})
+	// TODO
+	return nil
+	// return loadData(&loadMultipleNodesFromQuery{
+	// 	sqlBuilder: &sqlBuilder{
+	// 		rawQuery: query,
+	// 	},
+	// 	nodes: nodes,
+	// })
 }

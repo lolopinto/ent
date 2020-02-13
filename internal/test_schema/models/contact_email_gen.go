@@ -27,6 +27,8 @@ type ContactEmail struct {
 	Viewer       viewer.ViewerContext
 }
 
+//  type ContactEmails map[string]ContactEmail
+
 // ContactEmailResult stores the result of loading a ContactEmail. It's a tuple type which has 2 fields:
 // a ContactEmail and an error
 type ContactEmailResult struct {
@@ -47,6 +49,39 @@ type ContactEmailsResult struct {
 
 func (res *ContactEmailsResult) Error() string {
 	return res.Err.Error()
+}
+
+// TODO this is going to be used to load a new object
+type contactEmailsLoader struct {
+	//    nodes map[string]ContactEmail
+	results []*ContactEmail
+}
+
+// we need SetPrivacyResult for fetching from ent and dealing with result...
+// and that will be where the map will be
+
+func (res *contactEmailsLoader) GetNewInstance() ent.DBObject {
+	var contactEmail ContactEmail
+	return &contactEmail
+}
+
+func (res *contactEmailsLoader) GetConfig() ent.Config {
+	return &configs.ContactEmailConfig{}
+}
+
+func (res *contactEmailsLoader) SetResult(ents []ent.DBObject) {
+	res.results = make([]*ContactEmail, len(ents))
+	for idx, ent := range ents {
+		res.results[idx] = ent.(*ContactEmail)
+	}
+}
+
+// now we need a way privacy aware way of dealing with this...
+// TODO fix this name...
+func newcontactEmailsLoader() *contactEmailsLoader {
+	return &contactEmailsLoader{
+		//      nodes: make(map[string]ContactEmail),
+	}
 }
 
 // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
@@ -114,17 +149,19 @@ func GenLoadContactEmail(v viewer.ViewerContext, id string) <-chan *ContactEmail
 
 // LoadContactEmails loads multiple ContactEmails given the ids
 func LoadContactEmails(v viewer.ViewerContext, ids ...string) ([]*ContactEmail, error) {
-	var contactEmails []*ContactEmail
-	err := ent.LoadNodes(v, ids, &contactEmails, &configs.ContactEmailConfig{})
-	return contactEmails, err
+	loader := newcontactEmailsLoader()
+	err := ent.LoadNodes(v, ids, loader)
+	return loader.results, err
 }
 
 // GenLoadContactEmails loads multiple ContactEmails given the ids
 func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
+		loader := newcontactEmailsLoader()
 		var result ContactEmailsResult
-		result.Err = <-ent.GenLoadNodes(v, ids, &result.ContactEmails, &configs.ContactEmailConfig{})
+		result.Err = <-ent.GenLoadNodes(v, ids, loader)
+		result.ContactEmails = loader.results
 		res <- &result
 	}()
 	return res

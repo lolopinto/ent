@@ -14,6 +14,7 @@ type NodeInfo struct {
 	Nodes         string
 	NodeResult    string
 	NodesResult   string
+	NodesLoader   string
 	NodeInstance  string
 	NodesSlice    string
 	NodeType      string
@@ -27,14 +28,15 @@ func GetNodeInfo(packageName string) NodeInfo {
 	nodeName := strcase.ToCamel(packageName)
 
 	return NodeInfo{
-		Node:          nodeName,                                             // Contact
-		Nodes:         fmt.Sprintf("%ss", nodeName),                         // Contacts
-		NodeResult:    fmt.Sprintf("%sResult", nodeName),                    // ContactResult
-		NodesResult:   fmt.Sprintf("%sResult", inflection.Plural(nodeName)), // ContactsResult
-		NodeInstance:  strcase.ToLowerCamel(nodeName),                       // contact
-		NodesSlice:    fmt.Sprintf("[]*%s", nodeName),                       // []*Contact
-		NodeType:      fmt.Sprintf("%sType", nodeName),                      // ContactType
-		EntConfig:     fmt.Sprintf("&configs.%sConfig{}", nodeName),         // &configs.ContactConfig{}
-		EntConfigName: fmt.Sprintf("%sConfig", nodeName),                    // ContactConfig
+		Node:          nodeName,                                                                     // Contact
+		Nodes:         inflection.Plural(nodeName),                                                  // Contacts
+		NodeResult:    fmt.Sprintf("%sResult", nodeName),                                            // ContactResult
+		NodesResult:   fmt.Sprintf("%sResult", inflection.Plural(nodeName)),                         // ContactsResult
+		NodesLoader:   fmt.Sprintf("%sLoader", inflection.Plural(strcase.ToLowerCamel((nodeName)))), // contactsLoader
+		NodeInstance:  strcase.ToLowerCamel(nodeName),                                               // contact
+		NodesSlice:    fmt.Sprintf("[]*%s", nodeName),                                               // []*Contact
+		NodeType:      fmt.Sprintf("%sType", nodeName),                                              // ContactType
+		EntConfig:     fmt.Sprintf("&configs.%sConfig{}", nodeName),                                 // &configs.ContactConfig{}
+		EntConfigName: fmt.Sprintf("%sConfig", nodeName),                                            // ContactConfig
 	}
 }

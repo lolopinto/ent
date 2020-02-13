@@ -54,6 +54,8 @@ const (
     Viewer viewer.ViewerContext
   }
 
+//  type {{.Nodes}} map[string]{{.Node}}
+
 
   // {{.NodeResult}} stores the result of loading a {{.Node}}. It's a tuple type which has 2 fields: 
   // a {{.Node}} and an error
@@ -76,6 +78,40 @@ const (
   func (res *{{.NodesResult}}) Error() string {
     return res.Err.Error()
   }
+
+  // TODO this is going to be used to load a new object 
+  type {{.NodesLoader}} struct {
+//    nodes map[string]{{.Node}}
+    results {{.NodesSlice}}
+  }
+
+  // we need SetPrivacyResult for fetching from ent and dealing with result...
+  // and that will be where the map will be
+
+  func (res *{{.NodesLoader}}) GetNewInstance() ent.DBObject {
+    var {{.NodeInstance}} {{.Node}}
+    return &{{.NodeInstance}}
+  }
+
+  func (res *{{.NodesLoader}}) GetConfig() ent.Config {
+    return {{.EntConfig}}
+  }
+
+  func (res *{{.NodesLoader}}) SetResult(ents []ent.DBObject) {
+    res.results = make({{.NodesSlice}}, len(ents))
+    for idx, ent := range ents {
+      res.results[idx] = ent.(*{{.Node}})
+    }
+  }
+
+  // now we need a way privacy aware way of dealing with this...
+  // TODO fix this name...
+  func new{{.NodesLoader}}() *{{.NodesLoader}} {
+    return &{{.NodesLoader}}{
+//      nodes: make(map[string]{{.Node}}),
+    }
+  }
+
 
   // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
   func ({{.NodeInstance}} {{.Node}}) IsNode() {}
@@ -142,17 +178,19 @@ const (
 
   // Load{{.Nodes}} loads multiple {{.Nodes}} given the ids
   func Load{{.Nodes}}(v viewer.ViewerContext, ids ...string) ({{.NodesSlice}}, error) {
-    var {{.NodeInstance}}s {{.NodesSlice}}
-    err := ent.LoadNodes(v, ids, &{{.NodeInstance}}s, {{.EntConfig}})
-    return {{.NodeInstance}}s, err
+    loader := new{{.NodesLoader}}()
+    err := ent.LoadNodes(v, ids, loader)
+    return loader.results, err
   }
 
   // GenLoad{{.Nodes}} loads multiple {{.Nodes}} given the ids
   func GenLoad{{.Nodes}}(v viewer.ViewerContext, ids ...string) <-chan *{{.NodesResult}} {
     res := make(chan *{{.NodesResult}})
     go func() {
+      loader := new{{.NodesLoader}}()
       var result {{.NodesResult}}
-      result.Err = <-ent.GenLoadNodes(v, ids, &result.{{.Nodes}}, {{.EntConfig}})
+      result.Err = <-ent.GenLoadNodes(v, ids, loader)
+      result.{{.Nodes}} = loader.results
       res <- &result
     }()
     return res
@@ -222,8 +260,10 @@ const (
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodesResult}} {
           res := make(chan *{{.NodesResult}})
           go func() {
+            loader := new{{.NodesLoader}}()
             var result {{.NodesResult}}
-            result.Err = <- ent.GenLoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, &result.{{.Nodes}}, "{{$currentPackageName}}_id", {{.EntConfig}})
+            result.Err = <- ent.GenLoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, "{{$currentPackageName}}_id", loader)
+            result.{{.Nodes}} = loader.results
             res <- &result
           }()
           return res
@@ -231,9 +271,9 @@ const (
 
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() ({{.NodesSlice}}, error) {
-          var {{.NodeInstance}}s {{.NodesSlice}}
-          err := ent.LoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, &{{.NodeInstance}}s, "{{$currentPackageName}}_id", {{.EntConfig}})
-          return {{.NodeInstance}}s, err
+          loader := new{{.NodesLoader}}()
+          err := ent.LoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, "{{$currentPackageName}}_id", loader)
+          return loader.results, err
         }
       {{end}}
     {{end}}
@@ -287,8 +327,10 @@ const (
           func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodesResult}} {
             res := make(chan *{{.NodesResult}})
             go func() {
+              loader := new{{.NodesLoader}}()
               var result {{.NodesResult}}
-              result.Err = <-ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &result.{{.Nodes}}, {{.EntConfig}})
+              result.Err = <-ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
+              result.{{.Nodes}} = loader.results
               res <- &result
             }()
             return res
@@ -296,9 +338,9 @@ const (
 
           // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
           func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() ({{.NodesSlice}}, error) {
-            var {{.NodeInstance}}s {{.NodesSlice}}
-            err := ent.LoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}s, {{.EntConfig}})
-            return {{.NodeInstance}}s, err
+            loader := new{{.NodesLoader}}()
+            err := ent.LoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
+            return loader.results, err
           }
         {{end -}}
 

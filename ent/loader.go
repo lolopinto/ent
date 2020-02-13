@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/pkg/errors"
 )
 
@@ -78,6 +77,7 @@ type multiInputLoader interface {
 	// GetCacheKeyForID assumes the key is dependent on the id
 	// Called For each inputID to see if we can hit the cache for that id and then called for each id retrieved from the database to store in cache
 	GetCacheKeyForID(id string) string
+	IsMultiInputLoader() bool
 }
 
 // terrible name
@@ -122,7 +122,7 @@ func loadData(l loader, options ...func(*loaderConfig)) error {
 	// handle loaders that have multiple items that can be cached
 	// and check to see if we need to hit db
 	multiInputLoader, ok := l.(multiInputLoader)
-	if ok {
+	if ok && multiInputLoader.IsMultiInputLoader() {
 		ids, err := checkCacheForMultiInputLoader(multiInputLoader)
 		if err != nil {
 			return err
@@ -499,69 +499,24 @@ func (l *loadAssocEdgeConfigExists) GetOutput() interface{} {
 	return nil
 }
 
-type loadMultipleNodesFromQuery struct {
-	sqlBuilder *sqlBuilder
-	nodes      interface{}
-	// private...
-	base   reflect.Type
-	direct *reflect.Value
-}
-
-func (l *loadMultipleNodesFromQuery) GetSQLBuilder() (*sqlBuilder, error) {
-	return l.sqlBuilder, nil
-}
-
-func (l *loadMultipleNodesFromQuery) Validate() error {
-	slice, direct, err := validateSliceOfNodes(l.nodes)
-	if err != nil {
-		return err
-	}
-	l.direct = direct
-	l.base = reflectx.Deref(slice.Elem())
-	return err
-}
-
-func (l *loadMultipleNodesFromQuery) GetNewInstance() interface{} {
-	entity := reflect.New(l.base)
-
-	l.direct.Set(reflect.Append(*l.direct, entity))
-
-	return entity
-}
-
-type loadMultipleNodesFromQueryNodeDependent struct {
-	loadMultipleNodesFromQuery
-}
-
-func (l *loadMultipleNodesFromQueryNodeDependent) GetSQLBuilder() (*sqlBuilder, error) {
-	if l.base == nil {
-		return nil, errors.New("validate wasn't called or don't have the right data")
-	}
-	if l.sqlBuilder == nil {
-		return nil, errors.New("sqlbuilder required")
-	}
-	value := reflect.New(l.base)
-	fields := getFieldsFromReflectValue(value)
-	// pass fields to determine which columns to query
-	l.sqlBuilder.fields = fields
-	return l.sqlBuilder, nil
-}
-
+// TODO collapse this into same loader as above
+// kill fromPartsLoader collapse into this and have a limit 1
 type loadNodesLoader struct {
-	ids []string
-	//	edgeType  EdgeType
-	//	nodes     interface{}
-	entConfig Config
-	loadMultipleNodesFromQueryNodeDependent
+	// todo combine these 3 (and others) into sqlBuilder options of some sort
+	whereParts []interface{}
+	ids        []string
+	rawQuery   string
+	entLoader  MultiEntLoader
+	dbobjects  []DBObject
 }
 
 func (l *loadNodesLoader) Validate() error {
-	err := l.loadMultipleNodesFromQueryNodeDependent.Validate()
-	if err != nil {
-		return err
+	if l.entLoader == nil {
+		return errors.New("loader required")
 	}
-	if len(l.ids) == 0 {
-		return errors.New("chainable loader didn't pass any ids")
+
+	if len(l.ids) == 0 && len(l.whereParts) == 0 && l.rawQuery == "" {
+		return errors.New("no ids passed to loadNodesLoader or no way to query as needed")
 	}
 	return nil
 }
@@ -583,32 +538,44 @@ func (l *loadNodesLoader) LimitQueryTo(ids []string) {
 	l.ids = ids
 }
 
+func (l *loadNodesLoader) GetNewInstance() interface{} {
+	node := l.entLoader.GetNewInstance()
+	l.dbobjects = append(l.dbobjects, node)
+	return node
+}
+
 func (l *loadNodesLoader) GetSQLBuilder() (*sqlBuilder, error) {
-	// TODO handle this better
-	if l.sqlBuilder == nil {
-		l.sqlBuilder = &sqlBuilder{
-			tableName: l.entConfig.GetTableName(),
+	builder := &sqlBuilder{
+		tableName: l.entLoader.GetConfig().GetTableName(),
+	}
+
+	// TODO we should just set as needed and leave it to builder
+	// to determine if valid or not
+	if len(l.ids) != 0 {
+		inArgs := make([]interface{}, len(l.ids))
+		for idx, id := range l.ids {
+			inArgs[idx] = id
 		}
-	}
-	if len(l.ids) == 0 {
-		return nil, errors.New("shouldn't call GetSQLBuilder() if there are no ids")
-	}
-
-	// get the sql builder from composited object and then override it to pass i
-	builder, err := l.loadMultipleNodesFromQueryNodeDependent.GetSQLBuilder()
-
-	if err != nil {
-		return nil, err
+		builder.in("id", inArgs)
+	} else if len(l.whereParts) != 0 {
+		builder.whereParts = l.whereParts
+	} else if l.rawQuery != "" {
+		builder.rawQuery = l.rawQuery
+	} else {
+		return nil, errors.New("shouldn't call GetSQLBuilder() if there are no ids or parts")
 	}
 
-	inArgs := make([]interface{}, len(l.ids))
-	for idx, id := range l.ids {
-		inArgs[idx] = id
-	}
-	builder.in("id", inArgs)
 	return builder, nil
 }
 
 func (l *loadNodesLoader) GetCacheKeyForID(id string) string {
-	return getKeyForNode(id, l.entConfig.GetTableName())
+	return getKeyForNode(id, l.entLoader.GetConfig().GetTableName())
+}
+
+func (l *loadNodesLoader) IsMultiInputLoader() bool {
+	// if either of these flags were set, not the case we care about
+	if len(l.whereParts) != 0 || l.rawQuery != "" {
+		return false
+	}
+	return true
 }

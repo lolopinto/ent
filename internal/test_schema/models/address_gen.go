@@ -30,6 +30,8 @@ type Address struct {
 	Viewer        viewer.ViewerContext
 }
 
+//  type Addresss map[string]Address
+
 // AddressResult stores the result of loading a Address. It's a tuple type which has 2 fields:
 // a Address and an error
 type AddressResult struct {
@@ -50,6 +52,39 @@ type AddressesResult struct {
 
 func (res *AddressesResult) Error() string {
 	return res.Err.Error()
+}
+
+// TODO this is going to be used to load a new object
+type addressesLoader struct {
+	//    nodes map[string]Address
+	results []*Address
+}
+
+// we need SetPrivacyResult for fetching from ent and dealing with result...
+// and that will be where the map will be
+
+func (res *addressesLoader) GetNewInstance() ent.DBObject {
+	var address Address
+	return &address
+}
+
+func (res *addressesLoader) GetConfig() ent.Config {
+	return &configs.AddressConfig{}
+}
+
+func (res *addressesLoader) SetResult(ents []ent.DBObject) {
+	res.results = make([]*Address, len(ents))
+	for idx, ent := range ents {
+		res.results[idx] = ent.(*Address)
+	}
+}
+
+// now we need a way privacy aware way of dealing with this...
+// TODO fix this name...
+func newaddressesLoader() *addressesLoader {
+	return &addressesLoader{
+		//      nodes: make(map[string]Address),
+	}
 }
 
 // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
@@ -117,17 +152,19 @@ func GenLoadAddress(v viewer.ViewerContext, id string) <-chan *AddressResult {
 
 // LoadAddresss loads multiple Addresss given the ids
 func LoadAddresss(v viewer.ViewerContext, ids ...string) ([]*Address, error) {
-	var addresss []*Address
-	err := ent.LoadNodes(v, ids, &addresss, &configs.AddressConfig{})
-	return addresss, err
+	loader := newaddressesLoader()
+	err := ent.LoadNodes(v, ids, loader)
+	return loader.results, err
 }
 
 // GenLoadAddresss loads multiple Addresss given the ids
 func GenLoadAddresss(v viewer.ViewerContext, ids ...string) <-chan *AddressesResult {
 	res := make(chan *AddressesResult)
 	go func() {
+		loader := newaddressesLoader()
 		var result AddressesResult
-		result.Err = <-ent.GenLoadNodes(v, ids, &result.Addresss, &configs.AddressConfig{})
+		result.Err = <-ent.GenLoadNodes(v, ids, loader)
+		result.Addresss = loader.results
 		res <- &result
 	}()
 	return res

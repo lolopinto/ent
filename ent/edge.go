@@ -85,6 +85,11 @@ func (res *AssocEdgesResult) Error() string {
 	return res.Err.Error()
 }
 
+func (res *AssocEdgesResult) GetNewInstance() *AssocEdge {
+	var edge AssocEdge
+	return &edge
+}
+
 // AssocEdgeData is corresponding ent for AssocEdgeConfig
 type AssocEdgeData struct {
 	EdgeType        string          `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...

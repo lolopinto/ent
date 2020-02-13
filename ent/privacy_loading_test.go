@@ -139,17 +139,17 @@ func (suite *privacyTestSuite) TestAllowIfViewerCanSeeEntRule() {
 
 func (suite *privacyTestSuite) TestManualLoadForeignKeyNodes() {
 	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-		var contacts []*models.Contact
-		err := ent.LoadForeignKeyNodes(v, id, &contacts, "user_id", &configs.ContactConfig{})
-		return contacts, err
+		loader := &contactsLoader{}
+		err := ent.LoadForeignKeyNodes(v, id, "user_id", loader)
+		return loader.results, err
 	})
 }
 
 func (suite *privacyTestSuite) TestManualGenLoadForeignKeyNodes() {
 	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-		var contacts []*models.Contact
-		err := <-ent.GenLoadForeignKeyNodes(v, id, &contacts, "user_id", &configs.ContactConfig{})
-		return contacts, err
+		loader := &contactsLoader{}
+		err := <-ent.GenLoadForeignKeyNodes(v, id, "user_id", loader)
+		return loader.results, err
 	})
 }
 
@@ -200,33 +200,33 @@ func (suite *privacyTestSuite) TestGeneratedGenForeignKeyNodes() {
 
 func (suite *privacyTestSuite) TestLoadNodesByType() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		var events []*models.Event
-		err := ent.LoadNodesByType(v, id, models.UserToEventsEdge, &events, &configs.EventConfig{})
-		return events, err
+		loader := &eventsLoader{}
+		err := ent.LoadNodesByType(v, id, models.UserToEventsEdge, loader)
+		return loader.results, err
 	})
 }
 
 func (suite *privacyTestSuite) TestGenLoadNodesByType() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		var events []*models.Event
-		err := <-ent.GenLoadNodesByType(v, id, models.UserToEventsEdge, &events, &configs.EventConfig{})
-		return events, err
+		loader := &eventsLoader{}
+		err := <-ent.GenLoadNodesByType(v, id, models.UserToEventsEdge, loader)
+		return loader.results, err
 	})
 }
 
 func (suite *privacyTestSuite) TestLoadNodes() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		var events []*models.Event
-		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), &events, &configs.EventConfig{})
-		return events, err
+		loader := &eventsLoader{}
+		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), loader)
+		return loader.results, err
 	})
 }
 
 func (suite *privacyTestSuite) TestGenLoadNodes() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		var events []*models.Event
-		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), &events, &configs.EventConfig{})
-		return events, err
+		loader := &eventsLoader{}
+		err := <-ent.GenLoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), loader)
+		return loader.results, err
 	})
 }
 
@@ -493,13 +493,15 @@ func verifyLoadedMultiNodes(
 	expectedIds []string,
 	testCase string,
 ) {
-	assert.Nil(suite.T(), err, testCase)
-	actualIds := buildIds()
-	assert.Equal(suite.T(), len(actualIds), len(expectedIds), testCase)
+	suite.T().Run(testCase, func(t *testing.T) {
+		assert.Nil(t, err)
+		actualIds := buildIds()
+		assert.Equal(t, len(actualIds), len(expectedIds))
 
-	sort.Strings(expectedIds)
-	sort.Strings(actualIds)
-	assert.Equal(suite.T(), expectedIds, actualIds, testCase)
+		sort.Strings(expectedIds)
+		sort.Strings(actualIds)
+		assert.Equal(t, expectedIds, actualIds)
+	})
 }
 
 func testLoadNodesByType(suite *privacyTestSuite, f func(v viewer.ViewerContext, id string) ([]*models.Event, error)) {

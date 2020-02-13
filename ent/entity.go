@@ -22,6 +22,26 @@ type dataEntityNotScannable interface {
 	UnsupportedScan() bool
 }
 
+// MultiEntLoader is for loading multiple ents at the same time.
+// It generates a new instance as needed and ensures that the code to load
+// these from the db end up being typesafe and use a lot less reflection
+type MultiEntLoader interface {
+	GetNewInstance() DBObject
+	GetConfig() Config
+	// TODO
+	SetResult([]DBObject)
+	// hmm TODO
+	//	Err() error
+}
+
+// PrivacyBackedMultiEntLoader
+type PrivacyBackedMultiEntLoader interface {
+	MultiEntLoader
+	// TODO
+	// this can keep track of the internal map?
+	SetPrivacyResult(DBObject, error)
+}
+
 type DBFields map[string]func(interface{}) error
 
 // DBObject references an item fetched from the database

@@ -34,6 +34,8 @@ type Contact struct {
 	Viewer        viewer.ViewerContext
 }
 
+//  type Contacts map[string]Contact
+
 // ContactResult stores the result of loading a Contact. It's a tuple type which has 2 fields:
 // a Contact and an error
 type ContactResult struct {
@@ -54,6 +56,39 @@ type ContactsResult struct {
 
 func (res *ContactsResult) Error() string {
 	return res.Err.Error()
+}
+
+// TODO this is going to be used to load a new object
+type contactsLoader struct {
+	//    nodes map[string]Contact
+	results []*Contact
+}
+
+// we need SetPrivacyResult for fetching from ent and dealing with result...
+// and that will be where the map will be
+
+func (res *contactsLoader) GetNewInstance() ent.DBObject {
+	var contact Contact
+	return &contact
+}
+
+func (res *contactsLoader) GetConfig() ent.Config {
+	return &configs.ContactConfig{}
+}
+
+func (res *contactsLoader) SetResult(ents []ent.DBObject) {
+	res.results = make([]*Contact, len(ents))
+	for idx, ent := range ents {
+		res.results[idx] = ent.(*Contact)
+	}
+}
+
+// now we need a way privacy aware way of dealing with this...
+// TODO fix this name...
+func newcontactsLoader() *contactsLoader {
+	return &contactsLoader{
+		//      nodes: make(map[string]Contact),
+	}
 }
 
 // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
@@ -121,17 +156,19 @@ func GenLoadContact(v viewer.ViewerContext, id string) <-chan *ContactResult {
 
 // LoadContacts loads multiple Contacts given the ids
 func LoadContacts(v viewer.ViewerContext, ids ...string) ([]*Contact, error) {
-	var contacts []*Contact
-	err := ent.LoadNodes(v, ids, &contacts, &configs.ContactConfig{})
-	return contacts, err
+	loader := newcontactsLoader()
+	err := ent.LoadNodes(v, ids, loader)
+	return loader.results, err
 }
 
 // GenLoadContacts loads multiple Contacts given the ids
 func GenLoadContacts(v viewer.ViewerContext, ids ...string) <-chan *ContactsResult {
 	res := make(chan *ContactsResult)
 	go func() {
+		loader := newcontactsLoader()
 		var result ContactsResult
-		result.Err = <-ent.GenLoadNodes(v, ids, &result.Contacts, &configs.ContactConfig{})
+		result.Err = <-ent.GenLoadNodes(v, ids, loader)
+		result.Contacts = loader.results
 		res <- &result
 	}()
 	return res
@@ -153,8 +190,10 @@ func LoadContactIDFromEmailAddress(emailAddress string) (string, error) {
 func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
+		loader := newcontactEmailsLoader()
 		var result ContactEmailsResult
-		result.Err = <-ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, &result.ContactEmails, "contact_id", &configs.ContactEmailConfig{})
+		result.Err = <-ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, "contact_id", loader)
+		result.ContactEmails = loader.results
 		res <- &result
 	}()
 	return res
@@ -162,9 +201,9 @@ func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 
 // LoadContactEmails returns the ContactEmails associated with the Contact instance
 func (contact *Contact) LoadContactEmails() ([]*ContactEmail, error) {
-	var contactEmails []*ContactEmail
-	err := ent.LoadForeignKeyNodes(contact.Viewer, contact.ID, &contactEmails, "contact_id", &configs.ContactEmailConfig{})
-	return contactEmails, err
+	loader := newcontactEmailsLoader()
+	err := ent.LoadForeignKeyNodes(contact.Viewer, contact.ID, "contact_id", loader)
+	return loader.results, err
 }
 
 // LoadAllowListEdges returns the AllowList edges associated with the Contact instance
@@ -181,8 +220,10 @@ func (contact *Contact) GenAllowListEdges() <-chan *ent.AssocEdgesResult {
 func (contact *Contact) GenAllowList() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
+		loader := newusersLoader()
 		var result UsersResult
-		result.Err = <-ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &result.Users, &configs.UserConfig{})
+		result.Err = <-ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, loader)
+		result.Users = loader.results
 		res <- &result
 	}()
 	return res
@@ -190,9 +231,9 @@ func (contact *Contact) GenAllowList() <-chan *UsersResult {
 
 // LoadAllowList returns the Users associated with the Contact instance
 func (contact *Contact) LoadAllowList() ([]*User, error) {
-	var users []*User
-	err := ent.LoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &users, &configs.UserConfig{})
-	return users, err
+	loader := newusersLoader()
+	err := ent.LoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, loader)
+	return loader.results, err
 }
 
 // LoadAllowListEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the AllowList edge.

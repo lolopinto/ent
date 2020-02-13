@@ -277,34 +277,34 @@ func genApplyPrivacyPolicy(v viewer.ViewerContext, ent Entity, privacyResultChan
 	privacyResultChan <- result
 }
 
-func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) <-chan error {
-	return genLoadNodesImpl(v, nodes, func() <-chan error {
-		return genLoadForeignKeyNodes(id, nodes, colName, entConfig)
+func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, colName string, entLoader MultiEntLoader) <-chan error {
+	return genLoadNodesImpl(v, func() <-chan multiEntResult {
+		return genLoadForeignKeyNodes(id, colName, entLoader)
 	})
 }
 
-func LoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) error {
-	return <-GenLoadForeignKeyNodes(v, id, nodes, colName, entConfig)
+func LoadForeignKeyNodes(v viewer.ViewerContext, id string, colName string, entLoader MultiEntLoader) error {
+	return <-GenLoadForeignKeyNodes(v, id, colName, entLoader)
 }
 
-func GenLoadNodes(v viewer.ViewerContext, ids []string, nodes interface{}, entConfig Config) <-chan error {
-	return genLoadNodesImpl(v, nodes, func() <-chan error {
-		return genLoadNodes(ids, nodes, entConfig)
+func GenLoadNodes(v viewer.ViewerContext, ids []string, entLoader MultiEntLoader) <-chan error {
+	return genLoadNodesImpl(v, func() <-chan multiEntResult {
+		return genLoadNodes(ids, entLoader)
 	})
 }
 
-func LoadNodes(v viewer.ViewerContext, ids []string, nodes interface{}, entConfig Config) error {
-	return <-GenLoadNodes(v, ids, nodes, entConfig)
+func LoadNodes(v viewer.ViewerContext, ids []string, entLoader MultiEntLoader) error {
+	return <-GenLoadNodes(v, ids, entLoader)
 }
 
-func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) <-chan error {
-	return genLoadNodesImpl(v, nodes, func() <-chan error {
-		return genLoadNodesByType(id, edgeType, nodes, entConfig)
+func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, entLoader MultiEntLoader) <-chan error {
+	return genLoadNodesImpl(v, func() <-chan multiEntResult {
+		return genLoadNodesByType(id, edgeType, entLoader)
 	})
 }
 
-func LoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
-	return <-GenLoadNodesByType(v, id, edgeType, nodes, entConfig)
+func LoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, entLoader MultiEntLoader) error {
+	return <-GenLoadNodesByType(v, id, edgeType, entLoader)
 }
 
 func LoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity) error {
@@ -329,21 +329,32 @@ func GenLoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeTyp
 }
 
 // function that does the actual work of loading the raw data when fetching a list of nodes
-type loadRawNodes func() <-chan error
+type loadRawNodes func() <-chan multiEntResult
+
+type multiEntResult struct {
+	loader MultiEntLoader
+	ents   []DBObject
+	err    error
+}
 
 // genLoadNodesImpl takes the raw nodes fetched by whatever means we need to fetch data and applies a privacy check to
 // make sure that only the nodes which should be visible are returned to the viewer
-// params:...
-func genLoadNodesImpl(v viewer.ViewerContext, nodes interface{}, nodesLoader loadRawNodes) <-chan error {
+func genLoadNodesImpl(v viewer.ViewerContext, nodesLoader loadRawNodes) <-chan error {
 	res := make(chan error)
 	go func() {
-		err := <-nodesLoader()
-		if err != nil {
-			res <- err
+		loaderResult := <-nodesLoader()
+		if loaderResult.err != nil {
+			res <- loaderResult.err
 		} else {
 			doneChan := make(chan bool)
-			go genApplyPrivacyPolicyForEnts(v, nodes, doneChan)
+			go genApplyPrivacyPolicyForEnts(v, &loaderResult.ents, doneChan)
 			<-doneChan
+			// set ents here...
+			//			loaderResult.loader
+			// TODO need a better way and something that keeps track of errors
+			// why things are not visible...
+			//			spew.Dump(loaderResult)
+			loaderResult.loader.SetResult(loaderResult.ents)
 			res <- nil
 		}
 	}()
