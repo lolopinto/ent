@@ -84,6 +84,22 @@ func LoadContactFromContext(ctx context.Context, id string) (*Contact, error) {
 	return LoadContact(v, id)
 }
 
+// GenLoadContactFromContext loads the given Contact given the context and id
+func GenLoadContactFromContext(ctx context.Context, id string) chan *ContactResult {
+	res := make(chan *ContactResult)
+	go func() {
+		v, err := viewer.ForContext(ctx)
+		if err != nil {
+			res <- &ContactResult{
+				Err: err,
+			}
+			return
+		}
+		res <- <-(GenLoadContact(v, id))
+	}()
+	return res
+}
+
 // LoadContact loads the given Contact given the viewer and id
 func LoadContact(v viewer.ViewerContext, id string) (*Contact, error) {
 	var contact Contact
@@ -92,14 +108,16 @@ func LoadContact(v viewer.ViewerContext, id string) (*Contact, error) {
 }
 
 // GenLoadContact loads the given Contact given the id
-func GenLoadContact(v viewer.ViewerContext, id string, result *ContactResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var contact Contact
-	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &contact, chanErr)
-	err := <-chanErr
-	result.Contact = &contact
-	result.Err = err
+func GenLoadContact(v viewer.ViewerContext, id string) chan *ContactResult {
+	res := make(chan *ContactResult)
+	go func() {
+		var result ContactResult
+		var contact Contact
+		result.Err = <-ent.GenLoadNode(v, id, &contact)
+		result.Contact = &contact
+		res <- &result
+	}()
+	return res
 }
 
 func LoadContactIDFromEmailAddress(emailAddress string) (string, error) {

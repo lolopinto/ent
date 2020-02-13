@@ -1,6 +1,8 @@
 package ent_test
 
 import (
+	"context"
+	"net/http"
 	"sort"
 	"sync"
 	"testing"
@@ -13,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -48,22 +51,35 @@ func (suite *privacyTestSuite) TestManualLoadNode() {
 func (suite *privacyTestSuite) TestGeneratedGenLoadNode() {
 	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
 		// use generated GenLoadUser method
-		var wg sync.WaitGroup
-		var userResult models.UserResult
-		wg.Add(1)
-		go models.GenLoadUser(v, id, &userResult, &wg)
-		wg.Wait()
+		userResult := <-models.GenLoadUser(v, id)
 		return userResult.User, userResult.Err
 	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedGenLoadContextNode() {
+	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
+		req, err := http.NewRequest("GET", "bar", nil)
+		require.NoError(suite.T(), err)
+
+		ctx := viewer.NewRequestWithContext(req, v).Context()
+		// use generated GenLoadUserFromContext method
+		userResult := <-models.GenLoadUserFromContext(ctx, id)
+		return userResult.User, userResult.Err
+	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedGenLoadContextNoViewer() {
+	dbUser := testingutils.CreateTestUser(suite.T())
+
+	userResult := <-models.GenLoadUserFromContext(context.TODO(), dbUser.GetID())
+	require.Error(suite.T(), userResult.Err)
 }
 
 func (suite *privacyTestSuite) TestManualGenLoadNode() {
 	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
 		// call the method manually based on public APIs
 		var user models.User
-		errChan := make(chan error)
-		go ent.GenLoadNode(v, id, &user, errChan)
-		err := <-errChan
+		err := <-ent.GenLoadNode(v, id, &user)
 		return &user, err
 	})
 }
@@ -72,14 +88,8 @@ func (suite *privacyTestSuite) TestWaitForMultiple() {
 	dbUser := testingutils.CreateTestUser(suite.T())
 	dbEvent := testingutils.CreateTestEvent(suite.T(), dbUser)
 
-	var userResult models.UserResult
-	var eventResult models.EventResult
-	var wg sync.WaitGroup
 	v := viewertesting.OmniViewerContext{}
-	wg.Add(2)
-	go models.GenLoadEvent(v, dbEvent.ID, &eventResult, &wg)
-	go models.GenLoadUser(v, dbUser.ID, &userResult, &wg)
-	wg.Wait()
+	eventResult, userResult := <-models.GenLoadEvent(v, dbEvent.ID), <-models.GenLoadUser(v, dbUser.ID)
 
 	assert.Nil(suite.T(), userResult.Err)
 	assert.Nil(suite.T(), eventResult.Err)
@@ -100,11 +110,7 @@ func (suite *privacyTestSuite) TestLoadFieldEdges() {
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), dbUser.ID, user.ID)
 
-	var userResult models.UserResult
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go event.GenUser(&userResult, &wg)
-	wg.Wait()
+	userResult := <-event.GenUser()
 
 	assert.Nil(suite.T(), userResult.Err)
 	assert.Equal(suite.T(), dbUser.ID, user.ID)

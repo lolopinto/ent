@@ -4,7 +4,6 @@ package models
 
 import (
 	"context"
-	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -80,6 +79,22 @@ func LoadAddressFromContext(ctx context.Context, id string) (*Address, error) {
 	return LoadAddress(v, id)
 }
 
+// GenLoadAddressFromContext loads the given Address given the context and id
+func GenLoadAddressFromContext(ctx context.Context, id string) chan *AddressResult {
+	res := make(chan *AddressResult)
+	go func() {
+		v, err := viewer.ForContext(ctx)
+		if err != nil {
+			res <- &AddressResult{
+				Err: err,
+			}
+			return
+		}
+		res <- <-(GenLoadAddress(v, id))
+	}()
+	return res
+}
+
 // LoadAddress loads the given Address given the viewer and id
 func LoadAddress(v viewer.ViewerContext, id string) (*Address, error) {
 	var address Address
@@ -88,14 +103,16 @@ func LoadAddress(v viewer.ViewerContext, id string) (*Address, error) {
 }
 
 // GenLoadAddress loads the given Address given the id
-func GenLoadAddress(v viewer.ViewerContext, id string, result *AddressResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var address Address
-	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &address, chanErr)
-	err := <-chanErr
-	result.Address = &address
-	result.Err = err
+func GenLoadAddress(v viewer.ViewerContext, id string) chan *AddressResult {
+	res := make(chan *AddressResult)
+	go func() {
+		var result AddressResult
+		var address Address
+		result.Err = <-ent.GenLoadNode(v, id, &address)
+		result.Address = &address
+		res <- &result
+	}()
+	return res
 }
 
 // DBFields is used by the ent framework to load the ent from the underlying database

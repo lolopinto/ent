@@ -103,6 +103,22 @@ func LoadEventFromContext(ctx context.Context, id string) (*Event, error) {
 	return LoadEvent(v, id)
 }
 
+// GenLoadEventFromContext loads the given Event given the context and id
+func GenLoadEventFromContext(ctx context.Context, id string) chan *EventResult {
+	res := make(chan *EventResult)
+	go func() {
+		v, err := viewer.ForContext(ctx)
+		if err != nil {
+			res <- &EventResult{
+				Err: err,
+			}
+			return
+		}
+		res <- <-(GenLoadEvent(v, id))
+	}()
+	return res
+}
+
 // LoadEvent loads the given Event given the viewer and id
 func LoadEvent(v viewer.ViewerContext, id string) (*Event, error) {
 	var event Event
@@ -111,19 +127,21 @@ func LoadEvent(v viewer.ViewerContext, id string) (*Event, error) {
 }
 
 // GenLoadEvent loads the given Event given the id
-func GenLoadEvent(v viewer.ViewerContext, id string, result *EventResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var event Event
-	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &event, chanErr)
-	err := <-chanErr
-	result.Event = &event
-	result.Err = err
+func GenLoadEvent(v viewer.ViewerContext, id string) chan *EventResult {
+	res := make(chan *EventResult)
+	go func() {
+		var result EventResult
+		var event Event
+		result.Err = <-ent.GenLoadNode(v, id, &event)
+		result.Event = &event
+		res <- &result
+	}()
+	return res
 }
 
 // GenUser returns the User associated with the Event instance
-func (event *Event) GenUser(result *UserResult, wg *sync.WaitGroup) {
-	go GenLoadUser(event.Viewer, event.UserID, result, wg)
+func (event *Event) GenUser() chan *UserResult {
+	return GenLoadUser(event.Viewer, event.UserID)
 }
 
 // LoadUser returns the User associated with the Event instance
@@ -186,14 +204,11 @@ func (event *Event) GenCreatorEdge() chan *ent.AssocEdgeResult {
 func (event *Event) GenCreator() chan *UserResult {
 	res := make(chan *UserResult)
 	go func() {
+		var result UserResult
 		var user User
-		chanErr := make(chan error)
-		go ent.GenLoadUniqueNodeByType(event.Viewer, event.ID, EventToCreatorEdge, &user, chanErr)
-		err := <-chanErr
-		res <- &UserResult{
-			User: &user,
-			Err:  err,
-		}
+		result.Err = <-ent.GenLoadUniqueNodeByType(event.Viewer, event.ID, EventToCreatorEdge, &user)
+		result.User = &user
+		res <- &result
 	}()
 	return res
 }

@@ -94,6 +94,22 @@ func LoadUserFromContext(ctx context.Context, id string) (*User, error) {
 	return LoadUser(v, id)
 }
 
+// GenLoadUserFromContext loads the given User given the context and id
+func GenLoadUserFromContext(ctx context.Context, id string) chan *UserResult {
+	res := make(chan *UserResult)
+	go func() {
+		v, err := viewer.ForContext(ctx)
+		if err != nil {
+			res <- &UserResult{
+				Err: err,
+			}
+			return
+		}
+		res <- <-(GenLoadUser(v, id))
+	}()
+	return res
+}
+
 // LoadUser loads the given User given the viewer and id
 func LoadUser(v viewer.ViewerContext, id string) (*User, error) {
 	var user User
@@ -102,14 +118,16 @@ func LoadUser(v viewer.ViewerContext, id string) (*User, error) {
 }
 
 // GenLoadUser loads the given User given the id
-func GenLoadUser(v viewer.ViewerContext, id string, result *UserResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var user User
-	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &user, chanErr)
-	err := <-chanErr
-	result.User = &user
-	result.Err = err
+func GenLoadUser(v viewer.ViewerContext, id string) chan *UserResult {
+	res := make(chan *UserResult)
+	go func() {
+		var result UserResult
+		var user User
+		result.Err = <-ent.GenLoadNode(v, id, &user)
+		result.User = &user
+		res <- &result
+	}()
+	return res
 }
 
 func LoadUserIDFromEmailAddress(emailAddress string) (string, error) {

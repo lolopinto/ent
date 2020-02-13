@@ -104,6 +104,22 @@ const (
     return Load{{.Node}}(v, id)
   }
 
+  // GenLoad{{.Node}}FromContext loads the given {{.Node}} given the context and id
+  func GenLoad{{.Node}}FromContext(ctx context.Context, id string) chan *{{.NodeResult}} {
+    res := make(chan *{{.NodeResult}})
+    go func() {
+      v, err := viewer.ForContext(ctx)
+      if err != nil {
+        res <- &{{.NodeResult}}{
+          Err: err,
+        }
+        return
+      }
+      res <- <- (GenLoad{{.Node}}(v, id))
+    }()
+    return res
+  }
+
   // Load{{.Node}} loads the given {{.Node}} given the viewer and id
   func Load{{.Node}}(v viewer.ViewerContext, id string) (*{{.Node}}, error) {
     var {{.NodeInstance}} {{.Node}}
@@ -112,14 +128,16 @@ const (
   }
 
   // GenLoad{{.Node}} loads the given {{.Node}} given the id
-  func GenLoad{{.Node}}(v viewer.ViewerContext, id string, result *{{.NodeResult}}, wg *sync.WaitGroup) {
-    defer wg.Done()
-    var {{.NodeInstance}} {{.Node}}
-    chanErr := make(chan error)
-    go ent.GenLoadNode(v, id, &{{.NodeInstance}}, chanErr)
-    err := <-chanErr
-    result.{{.Node}} = &{{.NodeInstance}}
-    result.Err = err
+  func GenLoad{{.Node}}(v viewer.ViewerContext, id string) chan *{{.NodeResult}}{
+    res := make(chan *{{.NodeResult}})
+    go func() {
+      var result {{.NodeResult}}
+      var {{.NodeInstance}} {{.Node}}
+      result.Err = <- ent.GenLoadNode(v, id, &{{.NodeInstance}})
+      result.{{.Node}} = &{{.NodeInstance}}
+      res <- &result
+    }()
+    return res
   }
 
   {{ range $field := .FieldInfo.Fields -}} 
@@ -169,8 +187,8 @@ const (
       {{$edgeName := .EdgeName -}}
       {{with .NodeInfo -}}
         // Gen{{$edgeName}} returns the {{$edgeName}} associated with the {{$currentNode}} instance
-        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}(result *{{.NodeResult}}, wg *sync.WaitGroup) {
-          go GenLoad{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edge.FieldName}}, result, wg )
+        func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() chan *{{.NodeResult}}{
+          return GenLoad{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edge.FieldName}})
         }
 
         // Load{{$edgeName}} returns the {{$edgeName}} associated with the {{$currentNode}} instance
@@ -221,14 +239,11 @@ const (
           func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() chan *{{.NodeResult}} {
             res := make(chan *{{.NodeResult}})
             go func() {
+              var result {{.NodeResult}}
               var {{.NodeInstance}} {{.Node}}
-              chanErr := make(chan error)
-              go ent.GenLoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}}, chanErr)
-              err := <-chanErr
-              res <- &{{.NodeResult}}{
-                {{.Node}}: &{{.NodeInstance}},
-                Err: err,
-              }
+              result.Err = <-ent.GenLoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &{{.NodeInstance}})
+              result.{{.Node}} = &{{.NodeInstance}}
+              res <- &result
             }()
             return res
           }

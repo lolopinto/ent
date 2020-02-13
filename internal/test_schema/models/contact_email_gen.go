@@ -4,7 +4,6 @@ package models
 
 import (
 	"context"
-	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -77,6 +76,22 @@ func LoadContactEmailFromContext(ctx context.Context, id string) (*ContactEmail,
 	return LoadContactEmail(v, id)
 }
 
+// GenLoadContactEmailFromContext loads the given ContactEmail given the context and id
+func GenLoadContactEmailFromContext(ctx context.Context, id string) chan *ContactEmailResult {
+	res := make(chan *ContactEmailResult)
+	go func() {
+		v, err := viewer.ForContext(ctx)
+		if err != nil {
+			res <- &ContactEmailResult{
+				Err: err,
+			}
+			return
+		}
+		res <- <-(GenLoadContactEmail(v, id))
+	}()
+	return res
+}
+
 // LoadContactEmail loads the given ContactEmail given the viewer and id
 func LoadContactEmail(v viewer.ViewerContext, id string) (*ContactEmail, error) {
 	var contactEmail ContactEmail
@@ -85,19 +100,21 @@ func LoadContactEmail(v viewer.ViewerContext, id string) (*ContactEmail, error) 
 }
 
 // GenLoadContactEmail loads the given ContactEmail given the id
-func GenLoadContactEmail(v viewer.ViewerContext, id string, result *ContactEmailResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var contactEmail ContactEmail
-	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &contactEmail, chanErr)
-	err := <-chanErr
-	result.ContactEmail = &contactEmail
-	result.Err = err
+func GenLoadContactEmail(v viewer.ViewerContext, id string) chan *ContactEmailResult {
+	res := make(chan *ContactEmailResult)
+	go func() {
+		var result ContactEmailResult
+		var contactEmail ContactEmail
+		result.Err = <-ent.GenLoadNode(v, id, &contactEmail)
+		result.ContactEmail = &contactEmail
+		res <- &result
+	}()
+	return res
 }
 
 // GenContact returns the Contact associated with the ContactEmail instance
-func (contactEmail *ContactEmail) GenContact(result *ContactResult, wg *sync.WaitGroup) {
-	go GenLoadContact(contactEmail.Viewer, contactEmail.ContactID, result, wg)
+func (contactEmail *ContactEmail) GenContact() chan *ContactResult {
+	return GenLoadContact(contactEmail.Viewer, contactEmail.ContactID)
 }
 
 // LoadContact returns the Contact associated with the ContactEmail instance
