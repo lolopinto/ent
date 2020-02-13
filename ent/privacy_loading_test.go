@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"sort"
-	"sync"
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
@@ -294,11 +293,7 @@ func (suite *privacyTestSuite) TestGeneratedGenLoadNodesByType() {
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-			var wg sync.WaitGroup
-			var result models.EventsResult
-			wg.Add(1)
-			go user.GenEvents(&result, &wg)
-			wg.Wait()
+			result := <-user.GenEvents()
 			return result.Events, result.Err
 		},
 		[]string{

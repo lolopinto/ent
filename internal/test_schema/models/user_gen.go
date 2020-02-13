@@ -219,14 +219,16 @@ func (user *User) GenEventsEdges() chan *ent.AssocEdgesResult {
 }
 
 // GenEvents returns the Events associated with the User instance
-func (user *User) GenEvents(result *EventsResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var events []*Event
-	chanErr := make(chan error)
-	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToEventsEdge, &events, &configs.EventConfig{}, chanErr)
-	err := <-chanErr
-	result.Events = events
-	result.Err = err
+func (user *User) GenEvents() chan *EventsResult {
+	res := make(chan *EventsResult)
+	go func() {
+		var result EventsResult
+		chanErr := make(chan error)
+		go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToEventsEdge, &result.Events, &configs.EventConfig{}, chanErr)
+		result.Err = <-chanErr
+		res <- &result
+	}()
+	return res
 }
 
 // LoadEvents returns the Events associated with the User instance
@@ -260,14 +262,16 @@ func (user *User) GenFamilyMembersEdges() chan *ent.AssocEdgesResult {
 }
 
 // GenFamilyMembers returns the Users associated with the User instance
-func (user *User) GenFamilyMembers(result *UsersResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var users []*User
-	chanErr := make(chan error)
-	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, &users, &configs.UserConfig{}, chanErr)
-	err := <-chanErr
-	result.Users = users
-	result.Err = err
+func (user *User) GenFamilyMembers() chan *UsersResult {
+	res := make(chan *UsersResult)
+	go func() {
+		var result UsersResult
+		chanErr := make(chan error)
+		go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, &result.Users, &configs.UserConfig{}, chanErr)
+		result.Err = <-chanErr
+		res <- &result
+	}()
+	return res
 }
 
 // LoadFamilyMembers returns the Users associated with the User instance
@@ -301,14 +305,16 @@ func (user *User) GenFriendsEdges() chan *ent.AssocEdgesResult {
 }
 
 // GenFriends returns the Users associated with the User instance
-func (user *User) GenFriends(result *UsersResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var users []*User
-	chanErr := make(chan error)
-	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFriendsEdge, &users, &configs.UserConfig{}, chanErr)
-	err := <-chanErr
-	result.Users = users
-	result.Err = err
+func (user *User) GenFriends() chan *UsersResult {
+	res := make(chan *UsersResult)
+	go func() {
+		var result UsersResult
+		chanErr := make(chan error)
+		go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFriendsEdge, &result.Users, &configs.UserConfig{}, chanErr)
+		result.Err = <-chanErr
+		res <- &result
+	}()
+	return res
 }
 
 // LoadFriends returns the Users associated with the User instance
@@ -342,14 +348,16 @@ func (user *User) GenInvitedEventsEdges() chan *ent.AssocEdgesResult {
 }
 
 // GenInvitedEvents returns the Events associated with the User instance
-func (user *User) GenInvitedEvents(result *EventsResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var events []*Event
-	chanErr := make(chan error)
-	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToInvitedEventsEdge, &events, &configs.EventConfig{}, chanErr)
-	err := <-chanErr
-	result.Events = events
-	result.Err = err
+func (user *User) GenInvitedEvents() chan *EventsResult {
+	res := make(chan *EventsResult)
+	go func() {
+		var result EventsResult
+		chanErr := make(chan error)
+		go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToInvitedEventsEdge, &result.Events, &configs.EventConfig{}, chanErr)
+		result.Err = <-chanErr
+		res <- &result
+	}()
+	return res
 }
 
 // LoadInvitedEvents returns the Events associated with the User instance
@@ -383,14 +391,16 @@ func (user *User) GenEventsAttendingEdges() chan *ent.AssocEdgesResult {
 }
 
 // GenEventsAttending returns the Events associated with the User instance
-func (user *User) GenEventsAttending(result *EventsResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var events []*Event
-	chanErr := make(chan error)
-	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToEventsAttendingEdge, &events, &configs.EventConfig{}, chanErr)
-	err := <-chanErr
-	result.Events = events
-	result.Err = err
+func (user *User) GenEventsAttending() chan *EventsResult {
+	res := make(chan *EventsResult)
+	go func() {
+		var result EventsResult
+		chanErr := make(chan error)
+		go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToEventsAttendingEdge, &result.Events, &configs.EventConfig{}, chanErr)
+		result.Err = <-chanErr
+		res <- &result
+	}()
+	return res
 }
 
 // LoadEventsAttending returns the Events associated with the User instance
@@ -424,14 +434,16 @@ func (user *User) GenDeclinedEventsEdges() chan *ent.AssocEdgesResult {
 }
 
 // GenDeclinedEvents returns the Events associated with the User instance
-func (user *User) GenDeclinedEvents(result *EventsResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var events []*Event
-	chanErr := make(chan error)
-	go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToDeclinedEventsEdge, &events, &configs.EventConfig{}, chanErr)
-	err := <-chanErr
-	result.Events = events
-	result.Err = err
+func (user *User) GenDeclinedEvents() chan *EventsResult {
+	res := make(chan *EventsResult)
+	go func() {
+		var result EventsResult
+		chanErr := make(chan error)
+		go ent.GenLoadNodesByType(user.Viewer, user.ID, UserToDeclinedEventsEdge, &result.Events, &configs.EventConfig{}, chanErr)
+		result.Err = <-chanErr
+		res <- &result
+	}()
+	return res
 }
 
 // LoadDeclinedEvents returns the Events associated with the User instance

@@ -183,14 +183,16 @@ func (contact *Contact) GenAllowListEdges() chan *ent.AssocEdgesResult {
 }
 
 // GenAllowList returns the Users associated with the Contact instance
-func (contact *Contact) GenAllowList(result *UsersResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var users []*User
-	chanErr := make(chan error)
-	go ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &users, &configs.UserConfig{}, chanErr)
-	err := <-chanErr
-	result.Users = users
-	result.Err = err
+func (contact *Contact) GenAllowList() chan *UsersResult {
+	res := make(chan *UsersResult)
+	go func() {
+		var result UsersResult
+		chanErr := make(chan error)
+		go ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &result.Users, &configs.UserConfig{}, chanErr)
+		result.Err = <-chanErr
+		res <- &result
+	}()
+	return res
 }
 
 // LoadAllowList returns the Users associated with the Contact instance
