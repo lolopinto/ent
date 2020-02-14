@@ -148,9 +148,7 @@ func (suite *privacyTestSuite) TestManualLoadForeignKeyNodes() {
 func (suite *privacyTestSuite) TestManualGenLoadForeignKeyNodes() {
 	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
 		var contacts []*models.Contact
-		chanErr := make(chan error)
-		go ent.GenLoadForeignKeyNodes(v, id, &contacts, "user_id", &configs.ContactConfig{}, chanErr)
-		err := <-chanErr
+		err := <-ent.GenLoadForeignKeyNodes(v, id, &contacts, "user_id", &configs.ContactConfig{})
 		return contacts, err
 	})
 }
@@ -211,9 +209,7 @@ func (suite *privacyTestSuite) TestLoadNodesByType() {
 func (suite *privacyTestSuite) TestGenLoadNodesByType() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
 		var events []*models.Event
-		chanErr := make(chan error)
-		go ent.GenLoadNodesByType(v, id, models.UserToEventsEdge, &events, &configs.EventConfig{}, chanErr)
-		err := <-chanErr
+		err := <-ent.GenLoadNodesByType(v, id, models.UserToEventsEdge, &events, &configs.EventConfig{})
 		return events, err
 	})
 }

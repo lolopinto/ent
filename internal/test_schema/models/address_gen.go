@@ -127,9 +127,7 @@ func GenLoadAddresss(v viewer.ViewerContext, ids ...string) <-chan *AddressesRes
 	res := make(chan *AddressesResult)
 	go func() {
 		var result AddressesResult
-		errChan := make(chan error)
-		go ent.GenLoadNodes(v, ids, &result.Addresss, &configs.AddressConfig{}, errChan)
-		result.Err = <-errChan
+		result.Err = <-ent.GenLoadNodes(v, ids, &result.Addresss, &configs.AddressConfig{})
 		res <- &result
 	}()
 	return res

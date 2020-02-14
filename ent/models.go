@@ -3,7 +3,6 @@ package ent
 import (
 	"database/sql"
 
-	//	"errors"
 	"fmt"
 	"reflect"
 	"runtime/debug"
@@ -144,9 +143,13 @@ func LoadRawForeignKeyNodes(id string, nodes interface{}, colName string, entCon
 	return loadData(l)
 }
 
-func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
-	err := LoadRawForeignKeyNodes(id, nodes, colName, entConfig)
-	errChan <- err
+func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) <-chan error {
+	res := make(chan error)
+	go func() {
+		err := LoadRawForeignKeyNodes(id, nodes, colName, entConfig)
+		res <- err
+	}()
+	return res
 }
 
 func SaveChangeset(changeset Changeset) error {
@@ -608,19 +611,27 @@ func LoadRawNodesByType(id string, edgeType EdgeType, nodes interface{}, entConf
 	)
 }
 
-func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
-	err := LoadRawNodesByType(id, edgeType, nodes, entConfig)
-	errChan <- err
+func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config) <-chan error {
+	res := make(chan error)
+	go func() {
+		err := LoadRawNodesByType(id, edgeType, nodes, entConfig)
+		res <- err
+	}()
+	return res
 }
 
-func genLoadNodes(ids []string, nodes interface{}, entConfig Config, errChan chan<- error) {
-	l := &loadNodesLoader{
-		ids: ids,
-	}
-	l.nodes = nodes
-	l.entConfig = entConfig
-	err := loadData(l)
-	errChan <- err
+func genLoadNodes(ids []string, nodes interface{}, entConfig Config) <-chan error {
+	res := make(chan error)
+	go func() {
+		l := &loadNodesLoader{
+			ids: ids,
+		}
+		l.nodes = nodes
+		l.entConfig = entConfig
+		err := loadData(l)
+		res <- err
+	}()
+	return res
 }
 
 func GenLoadAssocEdges(nodes *[]*AssocEdgeData) error {

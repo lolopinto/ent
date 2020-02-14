@@ -277,44 +277,34 @@ func genApplyPrivacyPolicy(v viewer.ViewerContext, ent Entity, privacyResultChan
 	privacyResultChan <- result
 }
 
-func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
-	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
-		go genLoadForeignKeyNodes(id, nodes, colName, entConfig, chanErr)
+func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) <-chan error {
+	return genLoadNodesImpl(v, nodes, func() <-chan error {
+		return genLoadForeignKeyNodes(id, nodes, colName, entConfig)
 	})
 }
 
 func LoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) error {
-	errChan := make(chan error)
-	go GenLoadForeignKeyNodes(v, id, nodes, colName, entConfig, errChan)
-	err := <-errChan
-	return err
+	return <-GenLoadForeignKeyNodes(v, id, nodes, colName, entConfig)
 }
 
-// TODO this needs to actually return an error chan
-func GenLoadNodes(v viewer.ViewerContext, ids []string, nodes interface{}, entConfig Config, errChan chan<- error) {
-	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
-		go genLoadNodes(ids, nodes, entConfig, chanErr)
+func GenLoadNodes(v viewer.ViewerContext, ids []string, nodes interface{}, entConfig Config) <-chan error {
+	return genLoadNodesImpl(v, nodes, func() <-chan error {
+		return genLoadNodes(ids, nodes, entConfig)
 	})
 }
 
 func LoadNodes(v viewer.ViewerContext, ids []string, nodes interface{}, entConfig Config) error {
-	errChan := make(chan error)
-	go GenLoadNodes(v, ids, nodes, entConfig, errChan)
-	err := <-errChan
-	return err
+	return <-GenLoadNodes(v, ids, nodes, entConfig)
 }
 
-func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
-	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
-		go genLoadNodesByType(id, edgeType, nodes, entConfig, chanErr)
+func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) <-chan error {
+	return genLoadNodesImpl(v, nodes, func() <-chan error {
+		return genLoadNodesByType(id, edgeType, nodes, entConfig)
 	})
 }
 
 func LoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
-	errChan := make(chan error)
-	go GenLoadNodesByType(v, id, edgeType, nodes, entConfig, errChan)
-	err := <-errChan
-	return err
+	return <-GenLoadNodesByType(v, id, edgeType, nodes, entConfig)
 }
 
 func LoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity) error {
@@ -339,23 +329,25 @@ func GenLoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeTyp
 }
 
 // function that does the actual work of loading the raw data when fetching a list of nodes
-type loadRawNodes func(chanErr chan<- error)
+type loadRawNodes func() <-chan error
 
 // genLoadNodesImpl takes the raw nodes fetched by whatever means we need to fetch data and applies a privacy check to
 // make sure that only the nodes which should be visible are returned to the viewer
 // params:...
-func genLoadNodesImpl(v viewer.ViewerContext, nodes interface{}, errChan chan<- error, nodesLoader loadRawNodes) {
-	chanErr := make(chan error)
-	go nodesLoader(chanErr)
-	err := <-chanErr
-	if err != nil {
-		errChan <- err
-	} else {
-		doneChan := make(chan bool)
-		go genApplyPrivacyPolicyForEnts(v, nodes, doneChan)
-		<-doneChan
-		errChan <- nil
-	}
+func genLoadNodesImpl(v viewer.ViewerContext, nodes interface{}, nodesLoader loadRawNodes) <-chan error {
+	res := make(chan error)
+	go func() {
+		err := <-nodesLoader()
+		if err != nil {
+			res <- err
+		} else {
+			doneChan := make(chan bool)
+			go genApplyPrivacyPolicyForEnts(v, nodes, doneChan)
+			<-doneChan
+			res <- nil
+		}
+	}()
+	return res
 }
 
 // TODO change eveywhere using interface{}

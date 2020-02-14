@@ -152,9 +152,7 @@ const (
     res := make(chan *{{.NodesResult}})
     go func() {
       var result {{.NodesResult}}
-      errChan := make(chan error)
-      go ent.GenLoadNodes(v, ids, &result.{{.Nodes}}, {{.EntConfig}}, errChan)
-      result.Err = <-errChan
+      result.Err = <-ent.GenLoadNodes(v, ids, &result.{{.Nodes}}, {{.EntConfig}})
       res <- &result
     }()
     return res
@@ -225,9 +223,7 @@ const (
           res := make(chan *{{.NodesResult}})
           go func() {
             var result {{.NodesResult}}
-            chanErr := make(chan error)
-            go ent.GenLoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, &result.{{.Nodes}}, "{{$currentPackageName}}_id", {{.EntConfig}}, chanErr)
-            result.Err = <-chanErr
+            result.Err = <- ent.GenLoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, &result.{{.Nodes}}, "{{$currentPackageName}}_id", {{.EntConfig}})
             res <- &result
           }()
           return res
@@ -292,9 +288,7 @@ const (
             res := make(chan *{{.NodesResult}})
             go func() {
               var result {{.NodesResult}}
-              chanErr := make(chan error)
-              go ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &result.{{.Nodes}}, {{.EntConfig}}, chanErr)
-              result.Err = <-chanErr
+              result.Err = <-ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, &result.{{.Nodes}}, {{.EntConfig}})
               res <- &result
             }()
             return res

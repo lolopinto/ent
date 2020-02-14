@@ -150,9 +150,7 @@ func GenLoadEvents(v viewer.ViewerContext, ids ...string) <-chan *EventsResult {
 	res := make(chan *EventsResult)
 	go func() {
 		var result EventsResult
-		errChan := make(chan error)
-		go ent.GenLoadNodes(v, ids, &result.Events, &configs.EventConfig{}, errChan)
-		result.Err = <-errChan
+		result.Err = <-ent.GenLoadNodes(v, ids, &result.Events, &configs.EventConfig{})
 		res <- &result
 	}()
 	return res
@@ -183,9 +181,7 @@ func (event *Event) GenHosts() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		var result UsersResult
-		chanErr := make(chan error)
-		go ent.GenLoadNodesByType(event.Viewer, event.ID, EventToHostsEdge, &result.Users, &configs.UserConfig{}, chanErr)
-		result.Err = <-chanErr
+		result.Err = <-ent.GenLoadNodesByType(event.Viewer, event.ID, EventToHostsEdge, &result.Users, &configs.UserConfig{})
 		res <- &result
 	}()
 	return res
@@ -263,9 +259,7 @@ func (event *Event) GenInvited() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		var result UsersResult
-		chanErr := make(chan error)
-		go ent.GenLoadNodesByType(event.Viewer, event.ID, EventToInvitedEdge, &result.Users, &configs.UserConfig{}, chanErr)
-		result.Err = <-chanErr
+		result.Err = <-ent.GenLoadNodesByType(event.Viewer, event.ID, EventToInvitedEdge, &result.Users, &configs.UserConfig{})
 		res <- &result
 	}()
 	return res
@@ -303,9 +297,7 @@ func (event *Event) GenAttending() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		var result UsersResult
-		chanErr := make(chan error)
-		go ent.GenLoadNodesByType(event.Viewer, event.ID, EventToAttendingEdge, &result.Users, &configs.UserConfig{}, chanErr)
-		result.Err = <-chanErr
+		result.Err = <-ent.GenLoadNodesByType(event.Viewer, event.ID, EventToAttendingEdge, &result.Users, &configs.UserConfig{})
 		res <- &result
 	}()
 	return res
@@ -343,9 +335,7 @@ func (event *Event) GenDeclined() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		var result UsersResult
-		chanErr := make(chan error)
-		go ent.GenLoadNodesByType(event.Viewer, event.ID, EventToDeclinedEdge, &result.Users, &configs.UserConfig{}, chanErr)
-		result.Err = <-chanErr
+		result.Err = <-ent.GenLoadNodesByType(event.Viewer, event.ID, EventToDeclinedEdge, &result.Users, &configs.UserConfig{})
 		res <- &result
 	}()
 	return res

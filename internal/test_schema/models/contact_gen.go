@@ -131,9 +131,7 @@ func GenLoadContacts(v viewer.ViewerContext, ids ...string) <-chan *ContactsResu
 	res := make(chan *ContactsResult)
 	go func() {
 		var result ContactsResult
-		errChan := make(chan error)
-		go ent.GenLoadNodes(v, ids, &result.Contacts, &configs.ContactConfig{}, errChan)
-		result.Err = <-errChan
+		result.Err = <-ent.GenLoadNodes(v, ids, &result.Contacts, &configs.ContactConfig{})
 		res <- &result
 	}()
 	return res
@@ -156,9 +154,7 @@ func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
 		var result ContactEmailsResult
-		chanErr := make(chan error)
-		go ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, &result.ContactEmails, "contact_id", &configs.ContactEmailConfig{}, chanErr)
-		result.Err = <-chanErr
+		result.Err = <-ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, &result.ContactEmails, "contact_id", &configs.ContactEmailConfig{})
 		res <- &result
 	}()
 	return res
@@ -186,9 +182,7 @@ func (contact *Contact) GenAllowList() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		var result UsersResult
-		chanErr := make(chan error)
-		go ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &result.Users, &configs.UserConfig{}, chanErr)
-		result.Err = <-chanErr
+		result.Err = <-ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &result.Users, &configs.UserConfig{})
 		res <- &result
 	}()
 	return res

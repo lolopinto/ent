@@ -124,9 +124,7 @@ func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) <-chan *Contact
 	res := make(chan *ContactEmailsResult)
 	go func() {
 		var result ContactEmailsResult
-		errChan := make(chan error)
-		go ent.GenLoadNodes(v, ids, &result.ContactEmails, &configs.ContactEmailConfig{}, errChan)
-		result.Err = <-errChan
+		result.Err = <-ent.GenLoadNodes(v, ids, &result.ContactEmails, &configs.ContactEmailConfig{})
 		res <- &result
 	}()
 	return res
