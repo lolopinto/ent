@@ -1,10 +1,12 @@
 package graphql
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/99designs/gqlgen/codegen/templates"
 	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/schemaparser"
 )
 
@@ -40,6 +42,12 @@ func (f *idField) IDName() string {
 	return f.Field.Name + "ID"
 }
 
+// returns the plural version of field in Result
+// e.g UserResult.Users
+func (f *idField) pluraFieldInResult() string {
+	return inflection.Plural(f.FieldType)
+}
+
 func (fn *customFunction) FlagIDField(
 	field *schemaparser.Field,
 	fieldType, fieldName string,
@@ -57,17 +65,31 @@ func (fn *customFunction) FlagIDField(
 	}
 }
 
-func (fn *customFunction) OrderedIDFields() []*idField {
-	fields := make([]*idField, len(fn.IDFields))
+type idFieldsAssignment struct {
+	LHS string
+	RHS string
+}
+
+func (fn *customFunction) OrderedIDFields() idFieldsAssignment {
+	lhs := make([]string, len(fn.IDFields))
+	rhs := make([]string, len(fn.IDFields))
+
 	idx := 0
 	for _, arg := range fn.Function.Args {
 		field := fn.IDFields[arg.Name]
-		if field != nil {
-			fields[idx] = field
-			idx++
+		if field == nil {
+			continue
 		}
+
+		lhs[idx] = fmt.Sprintf("%sResult", field.Field.Name)
+		// TODO this could be too long and putting it on each line seems better...
+		rhs[idx] = fmt.Sprintf("<-models.GenLoad%sFromContext(ctx, %s)", field.FieldType, field.IDName())
+		idx++
 	}
-	return fields
+	return idFieldsAssignment{
+		LHS: strings.Join(lhs, ", "),
+		RHS: strings.Join(rhs, ","),
+	}
 }
 
 func (fn *customFunction) GetFirstFnField() *idField {
@@ -93,15 +115,23 @@ func (fn *customFunction) writeArgName(idx int, arg *schemaparser.Field, sb *str
 		return
 	}
 	var field *idField
-	if len(fn.IDFields) > 1 {
-		field = fn.IDFields[arg.Name]
+	field = fn.IDFields[arg.Name]
+	if field != nil && !(field.Slice || len(fn.IDFields) > 1) {
+		field = nil
 	}
-	// in the case where we loaded an object first, use the loaded variable here...
+
 	if field != nil {
-		// blockerResult.User
-		sb.WriteString(arg.Name)
-		sb.WriteString("Result.")
-		sb.WriteString(field.FieldType)
+		if field.Slice {
+			// slice result
+			sb.WriteString("result.")
+			sb.WriteString(field.pluraFieldInResult())
+		} else {
+			// in the case where we loaded an object first, use the loaded variable here...
+			// blockerResult.User
+			sb.WriteString(arg.Name)
+			sb.WriteString("Result.")
+			sb.WriteString(field.FieldType)
+		}
 	} else if fn.hasInputObject && !fn.HasIDFields() {
 		// has an input object
 		// e.g. input.Event
@@ -198,12 +228,4 @@ func (fn *customFunction) GetResults() []result {
 		})
 	}
 	return results
-}
-
-func (fn *customFunction) LoadedFields() string {
-	var ret []string
-	for _, field := range fn.OrderedIDFields() {
-		ret = append(ret, "&"+field.Field.Name+"Result")
-	}
-	return strings.Join(ret, ", ")
 }

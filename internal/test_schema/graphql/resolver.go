@@ -4,7 +4,6 @@ package graphql
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/lolopinto/ent/ent"
@@ -158,20 +157,9 @@ func (r *mutationResolver) AddressEdit(ctx context.Context, input AddressEditInp
 }
 
 func (r *mutationResolver) AdminBlock(ctx context.Context, input AdminBlockInput) (*AdminBlockResponse, error) {
-	v, ctxErr := viewer.ForContext(ctx)
-	if ctxErr != nil {
-		return nil, ctxErr
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	var blockerResult models.UserResult
-	var blockeeResult models.UserResult
-	go models.GenLoadUser(v, input.BlockerID, &blockerResult, &wg)
-	go models.GenLoadUser(v, input.BlockeeID, &blockeeResult, &wg)
-	wg.Wait()
-	if entErr := ent.CoalesceErr(&blockerResult, &blockeeResult); entErr != nil {
-		return nil, entErr
+	blockerResult, blockeeResult := <-models.GenLoadUserFromContext(ctx, input.BlockerID), <-models.GenLoadUserFromContext(ctx, input.BlockeeID)
+	if err := ent.CoalesceErr(blockerResult, blockeeResult); err != nil {
+		return nil, err
 	}
 
 	err := block.AdminBlock(ctx, blockerResult.User, blockeeResult.User)
@@ -532,28 +520,12 @@ func (r *mutationResolver) ViewerBlockMultiple(ctx context.Context, input Viewer
 	if ctxErr != nil {
 		return nil, ctxErr
 	}
-	var wg sync.WaitGroup
-	results := make([]*models.UserResult, len(input.UserIDs))
-	wg.Add(len(input.UserIDs))
-	for idx, id := range input.UserIDs {
-		go models.GenLoadUser(v, id, results[idx], &wg)
-	}
-	wg.Wait()
-
-	var errs []error
-	var users []*models.User
-	for _, res := range results {
-		if res.Err != nil {
-			errs = append(errs, res.Err)
-		} else {
-			users = append(users, res.User)
-		}
-	}
-	if err := ent.CoalesceErr(errs...); err != nil {
+	result := <-models.GenLoadUsers(v, input.UserIDs...)
+	if err := ent.CoalesceErr(result); err != nil {
 		return nil, err
 	}
 
-	viewer, err := block.BlockMultiple(ctx, users)
+	viewer, err := block.BlockMultiple(ctx, result.Users)
 	if err != nil {
 		return nil, err
 	}
