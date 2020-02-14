@@ -3,7 +3,6 @@ package ent
 import (
 	"database/sql"
 
-	//	"errors"
 	"fmt"
 	"reflect"
 	"runtime/debug"
@@ -144,9 +143,13 @@ func LoadRawForeignKeyNodes(id string, nodes interface{}, colName string, entCon
 	return loadData(l)
 }
 
-func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
-	err := LoadRawForeignKeyNodes(id, nodes, colName, entConfig)
-	errChan <- err
+func genLoadForeignKeyNodes(id string, nodes interface{}, colName string, entConfig Config) <-chan error {
+	res := make(chan error)
+	go func() {
+		err := LoadRawForeignKeyNodes(id, nodes, colName, entConfig)
+		res <- err
+	}()
+	return res
 }
 
 func SaveChangeset(changeset Changeset) error {
@@ -463,33 +466,42 @@ func LoadUniqueEdgeByType(id string, edgeType EdgeType) (*AssocEdge, error) {
 // GenLoadEdgesByType handles loading of edges concurrently.
 // Because we get strong typing across all edges and for a consistent API with loading Nodes,
 // we use the EdgesResult struct here
-func GenLoadEdgesByType(id string, edgeType EdgeType, chanEdgesResult chan<- AssocEdgesResult, options ...func(*LoadEdgeConfig)) {
-	edges, err := LoadEdgesByType(id, edgeType, options...)
-	// var edges []*Edge
-	// chanErr := make(chan error)
-	// go GenLoadEdgesByType(id, edgeType, &edges, chanErr)
-	//	err := <-chanErr
-	chanEdgesResult <- AssocEdgesResult{
-		Edges: edges,
-		Err:   err,
-	}
+func GenLoadEdgesByType(id string, edgeType EdgeType, options ...func(*LoadEdgeConfig)) <-chan *AssocEdgesResult {
+	res := make(chan *AssocEdgesResult)
+	go func() {
+		edges, err := LoadEdgesByType(id, edgeType, options...)
+		res <- &AssocEdgesResult{
+			Edges: edges,
+			Err:   err,
+		}
+	}()
+	return res
 }
 
-func GenLoadUniqueEdgeByType(id string, edgeType EdgeType, chanEdgeResult chan<- AssocEdgeResult) {
-	edge, err := LoadUniqueEdgeByType(id, edgeType)
-	chanEdgeResult <- AssocEdgeResult{
-		Edge: edge,
-		Err:  err,
-	}
+func GenLoadUniqueEdgeByType(id string, edgeType EdgeType) <-chan *AssocEdgeResult {
+	res := make(chan *AssocEdgeResult)
+	go func() {
+		edge, err := LoadUniqueEdgeByType(id, edgeType)
+		res <- &AssocEdgeResult{
+			Edge: edge,
+			Err:  err,
+		}
+	}()
+	return res
 }
 
 // GenLoadEdgeByType is the concurrent version of LoadEdgeByType
-func GenLoadEdgeByType(id1, id2 string, edgeType EdgeType, chanEdgeResult chan<- AssocEdgeResult) {
-	edge, err := LoadEdgeByType(id1, id2, edgeType)
-	chanEdgeResult <- AssocEdgeResult{
-		Edge: edge,
-		Err:  err,
-	}
+func GenLoadEdgeByType(id1, id2 string, edgeType EdgeType) <-chan *AssocEdgeResult {
+	res := make(chan *AssocEdgeResult)
+	go func() {
+		edge, err := LoadEdgeByType(id1, id2, edgeType)
+		res <- &AssocEdgeResult{
+			Edge: edge,
+			Err:  err,
+		}
+
+	}()
+	return res
 }
 
 // LoadEdgeByType checks if an edge exists between 2 ids
@@ -599,10 +611,27 @@ func LoadRawNodesByType(id string, edgeType EdgeType, nodes interface{}, entConf
 	)
 }
 
-func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
-	err := LoadRawNodesByType(id, edgeType, nodes, entConfig)
-	//fmt.Println("GenLoadEdgesByType result", err, nodes)
-	errChan <- err
+func genLoadNodesByType(id string, edgeType EdgeType, nodes interface{}, entConfig Config) <-chan error {
+	res := make(chan error)
+	go func() {
+		err := LoadRawNodesByType(id, edgeType, nodes, entConfig)
+		res <- err
+	}()
+	return res
+}
+
+func genLoadNodes(ids []string, nodes interface{}, entConfig Config) <-chan error {
+	res := make(chan error)
+	go func() {
+		l := &loadNodesLoader{
+			ids: ids,
+		}
+		l.nodes = nodes
+		l.entConfig = entConfig
+		err := loadData(l)
+		res <- err
+	}()
+	return res
 }
 
 func GenLoadAssocEdges(nodes *[]*AssocEdgeData) error {

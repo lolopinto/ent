@@ -91,78 +91,79 @@ func getTypeName(ent Entity) string {
 }
 
 // TODO same issues as below
-func LoadNode(v viewer.ViewerContext, id string, ent Entity, entConfig Config) error {
-	chanErr := make(chan error)
-	go GenLoadNode(v, id, ent, entConfig, chanErr)
-	err := <-chanErr
-	return err
+func LoadNode(v viewer.ViewerContext, id string, ent Entity) error {
+	return <-GenLoadNode(v, id, ent)
 }
 
 // TODO...
-func GenLoadNode(v viewer.ViewerContext, id string, ent Entity, entConfig Config, errChan chan<- error) {
-	if id == "" {
-		debug.PrintStack()
-	}
-	// working solutions so far:
-	// use reflection to create a copy like below (need ent2 var)
-	// use reflection to set to zero-value.
-	// creating a new variable and setting it is useless since copy-by-reference
-	// I guess we cannot set this to null. only zero-value of it once we create the variable...
-
-	// fmt.Println("ent before anything", ent)
-	// typ := reflect.TypeOf(ent)
-	// if typ.Kind() == reflect.Ptr {
-	// 	typ = typ.Elem()
-	// }
-	// value := reflect.New(typ)
-	// ent2 := value.Interface()
-
-	chanErr := make(chan error)
-	// this is raw data fetching...
-	// TODO rename these things..
-	// GenLoadNode should be the public facing one
-	// and GenLoadRawData or somethong along those lines should be what does the data fetching.
-	go genLoadRawData(id, ent, entConfig, chanErr)
-	err := <-chanErr
-	if err != nil {
-		entreflect.SetZeroVal(ent)
-		// there's an error, return the value here and we're done...
-		errChan <- err
-		return
-	}
-
-	// hmm todo need to wrap all of this in a new function or new else branch
-	//fmt.Println("successfully loaded ent from data", ent)
-
-	// check privacy policy...
-	privacyResultChan := make(chan privacyPolicyResult)
-	go genApplyPrivacyPolicy(v, ent, privacyResultChan)
-	result := <-privacyResultChan
-
-	//fmt.Println("result", result, getTypeName(result.err))
-
-	// error in privacy loading
-	if result.err != nil {
-		entreflect.SetZeroVal(ent)
-		logEntResult(ent, result.err)
-		errChan <- result.err
-	} else if result.visible {
-		// only when it's visible do we set it so that we can return nil
-		// success. return that value?
-		// result is visible
-		// no privacy error
-		logEntResult(ent, nil)
-		errChan <- nil
-	} else {
-		entData := ent
-		entreflect.SetZeroVal(ent)
-		err = &PrivacyError{
-			entType: getTypeName(entData),
-			id:      id,
+func GenLoadNode(v viewer.ViewerContext, id string, ent Entity) chan error {
+	res := make(chan error)
+	go func() {
+		if id == "" {
+			debug.PrintStack()
 		}
-		logEntResult(ent, err)
-		errChan <- err
-	}
+		// working solutions so far:
+		// use reflection to create a copy like below (need ent2 var)
+		// use reflection to set to zero-value.
+		// creating a new variable and setting it is useless since copy-by-reference
+		// I guess we cannot set this to null. only zero-value of it once we create the variable...
+
+		// fmt.Println("ent before anything", ent)
+		// typ := reflect.TypeOf(ent)
+		// if typ.Kind() == reflect.Ptr {
+		// 	typ = typ.Elem()
+		// }
+		// value := reflect.New(typ)
+		// ent2 := value.Interface()
+
+		chanErr := make(chan error)
+		// this is raw data fetching...
+		// TODO rename these things..
+		// GenLoadNode should be the public facing one
+		// and GenLoadRawData or somethong along those lines should be what does the data fetching.
+		go genLoadRawData(id, ent, ent.GetConfig(), chanErr)
+		err := <-chanErr
+		if err != nil {
+			entreflect.SetZeroVal(ent)
+			// there's an error, return the value here and we're done...
+			res <- err
+			return
+		}
+
+		// hmm todo need to wrap all of this in a new function or new else branch
+		//fmt.Println("successfully loaded ent from data", ent)
+
+		// check privacy policy...
+		privacyResultChan := make(chan privacyPolicyResult)
+		go genApplyPrivacyPolicy(v, ent, privacyResultChan)
+		result := <-privacyResultChan
+
+		//fmt.Println("result", result, getTypeName(result.err))
+
+		// error in privacy loading
+		if result.err != nil {
+			entreflect.SetZeroVal(ent)
+			logEntResult(ent, result.err)
+			res <- result.err
+		} else if result.visible {
+			// only when it's visible do we set it so that we can return nil
+			// success. return that value?
+			// result is visible
+			// no privacy error
+			logEntResult(ent, nil)
+			res <- nil
+		} else {
+			entData := ent
+			entreflect.SetZeroVal(ent)
+			err = &PrivacyError{
+				entType: getTypeName(entData),
+				id:      id,
+			}
+			logEntResult(ent, err)
+			res <- err
+		}
+	}()
+	return res
 }
 
 func logEntResult(ent interface{}, err error) {
@@ -276,70 +277,77 @@ func genApplyPrivacyPolicy(v viewer.ViewerContext, ent Entity, privacyResultChan
 	privacyResultChan <- result
 }
 
-func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config, errChan chan<- error) {
-	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
-		go genLoadForeignKeyNodes(id, nodes, colName, entConfig, chanErr)
+func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) <-chan error {
+	return genLoadNodesImpl(v, nodes, func() <-chan error {
+		return genLoadForeignKeyNodes(id, nodes, colName, entConfig)
 	})
 }
 
 func LoadForeignKeyNodes(v viewer.ViewerContext, id string, nodes interface{}, colName string, entConfig Config) error {
-	errChan := make(chan error)
-	go GenLoadForeignKeyNodes(v, id, nodes, colName, entConfig, errChan)
-	err := <-errChan
-	return err
+	return <-GenLoadForeignKeyNodes(v, id, nodes, colName, entConfig)
 }
 
-func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config, errChan chan<- error) {
-	go genLoadNodesImpl(v, nodes, errChan, func(chanErr chan<- error) {
-		go genLoadNodesByType(id, edgeType, nodes, entConfig, chanErr)
+func GenLoadNodes(v viewer.ViewerContext, ids []string, nodes interface{}, entConfig Config) <-chan error {
+	return genLoadNodesImpl(v, nodes, func() <-chan error {
+		return genLoadNodes(ids, nodes, entConfig)
+	})
+}
+
+func LoadNodes(v viewer.ViewerContext, ids []string, nodes interface{}, entConfig Config) error {
+	return <-GenLoadNodes(v, ids, nodes, entConfig)
+}
+
+func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) <-chan error {
+	return genLoadNodesImpl(v, nodes, func() <-chan error {
+		return genLoadNodesByType(id, edgeType, nodes, entConfig)
 	})
 }
 
 func LoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, nodes interface{}, entConfig Config) error {
-	errChan := make(chan error)
-	go GenLoadNodesByType(v, id, edgeType, nodes, entConfig, errChan)
-	err := <-errChan
-	return err
+	return <-GenLoadNodesByType(v, id, edgeType, nodes, entConfig)
 }
 
-func LoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config) error {
+func LoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity) error {
 	edge, err := LoadUniqueEdgeByType(id, edgeType)
 	if err != nil {
 		return err
 	}
-	return LoadNode(v, edge.ID2, node, entConfig)
+	return LoadNode(v, edge.ID2, node)
 }
 
-func GenLoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity, entConfig Config, errChan chan<- error) {
-	//	chanErr := make(chan error)
-	edgeResultChan := make(chan AssocEdgeResult)
-	go GenLoadUniqueEdgeByType(id, edgeType, edgeResultChan)
-	edgeResult := <-edgeResultChan
-	if edgeResult.Err != nil {
-		errChan <- edgeResult.Err
-		return
-	}
-	go GenLoadNode(v, edgeResult.Edge.ID2, node, entConfig, errChan)
+func GenLoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, node Entity) chan error {
+	ret := make(chan error)
+	go func() {
+		edgeResult := <-GenLoadUniqueEdgeByType(id, edgeType)
+		if edgeResult.Err != nil {
+			ret <- edgeResult.Err
+			return
+		}
+		ret <- <-GenLoadNode(v, edgeResult.Edge.ID2, node)
+	}()
+	return ret
 }
 
 // function that does the actual work of loading the raw data when fetching a list of nodes
-type loadRawNodes func(chanErr chan<- error)
+type loadRawNodes func() <-chan error
 
 // genLoadNodesImpl takes the raw nodes fetched by whatever means we need to fetch data and applies a privacy check to
 // make sure that only the nodes which should be visible are returned to the viewer
 // params:...
-func genLoadNodesImpl(v viewer.ViewerContext, nodes interface{}, errChan chan<- error, nodesLoader loadRawNodes) {
-	chanErr := make(chan error)
-	go nodesLoader(chanErr)
-	err := <-chanErr
-	if err != nil {
-		errChan <- err
-	} else {
-		doneChan := make(chan bool)
-		go genApplyPrivacyPolicyForEnts(v, nodes, doneChan)
-		<-doneChan
-		errChan <- nil
-	}
+func genLoadNodesImpl(v viewer.ViewerContext, nodes interface{}, nodesLoader loadRawNodes) <-chan error {
+	res := make(chan error)
+	go func() {
+		err := <-nodesLoader()
+		if err != nil {
+			res <- err
+		} else {
+			doneChan := make(chan bool)
+			go genApplyPrivacyPolicyForEnts(v, nodes, doneChan)
+			<-doneChan
+			res <- nil
+		}
+	}()
+	return res
 }
 
 // TODO change eveywhere using interface{}

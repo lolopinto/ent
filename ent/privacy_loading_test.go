@@ -1,8 +1,9 @@
 package ent_test
 
 import (
+	"context"
+	"net/http"
 	"sort"
-	"sync"
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
@@ -13,6 +14,7 @@ import (
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -40,7 +42,7 @@ func (suite *privacyTestSuite) TestManualLoadNode() {
 	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
 		// call the method manually based on public APIs
 		var user models.User
-		err := ent.LoadNode(v, id, &user, &configs.UserConfig{})
+		err := ent.LoadNode(v, id, &user)
 		return &user, err
 	})
 }
@@ -48,22 +50,35 @@ func (suite *privacyTestSuite) TestManualLoadNode() {
 func (suite *privacyTestSuite) TestGeneratedGenLoadNode() {
 	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
 		// use generated GenLoadUser method
-		var wg sync.WaitGroup
-		var userResult models.UserResult
-		wg.Add(1)
-		go models.GenLoadUser(v, id, &userResult, &wg)
-		wg.Wait()
+		userResult := <-models.GenLoadUser(v, id)
 		return userResult.User, userResult.Err
 	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedGenLoadContextNode() {
+	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
+		req, err := http.NewRequest("GET", "bar", nil)
+		require.NoError(suite.T(), err)
+
+		ctx := viewer.NewRequestWithContext(req, v).Context()
+		// use generated GenLoadUserFromContext method
+		userResult := <-models.GenLoadUserFromContext(ctx, id)
+		return userResult.User, userResult.Err
+	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedGenLoadContextNoViewer() {
+	dbUser := testingutils.CreateTestUser(suite.T())
+
+	userResult := <-models.GenLoadUserFromContext(context.TODO(), dbUser.GetID())
+	require.Error(suite.T(), userResult.Err)
 }
 
 func (suite *privacyTestSuite) TestManualGenLoadNode() {
 	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
 		// call the method manually based on public APIs
 		var user models.User
-		errChan := make(chan error)
-		go ent.GenLoadNode(v, id, &user, &configs.UserConfig{}, errChan)
-		err := <-errChan
+		err := <-ent.GenLoadNode(v, id, &user)
 		return &user, err
 	})
 }
@@ -72,14 +87,8 @@ func (suite *privacyTestSuite) TestWaitForMultiple() {
 	dbUser := testingutils.CreateTestUser(suite.T())
 	dbEvent := testingutils.CreateTestEvent(suite.T(), dbUser)
 
-	var userResult models.UserResult
-	var eventResult models.EventResult
-	var wg sync.WaitGroup
 	v := viewertesting.OmniViewerContext{}
-	wg.Add(2)
-	go models.GenLoadEvent(v, dbEvent.ID, &eventResult, &wg)
-	go models.GenLoadUser(v, dbUser.ID, &userResult, &wg)
-	wg.Wait()
+	eventResult, userResult := <-models.GenLoadEvent(v, dbEvent.ID), <-models.GenLoadUser(v, dbUser.ID)
 
 	assert.Nil(suite.T(), userResult.Err)
 	assert.Nil(suite.T(), eventResult.Err)
@@ -100,11 +109,7 @@ func (suite *privacyTestSuite) TestLoadFieldEdges() {
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), dbUser.ID, user.ID)
 
-	var userResult models.UserResult
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go event.GenUser(&userResult, &wg)
-	wg.Wait()
+	userResult := <-event.GenUser()
 
 	assert.Nil(suite.T(), userResult.Err)
 	assert.Equal(suite.T(), dbUser.ID, user.ID)
@@ -143,9 +148,7 @@ func (suite *privacyTestSuite) TestManualLoadForeignKeyNodes() {
 func (suite *privacyTestSuite) TestManualGenLoadForeignKeyNodes() {
 	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
 		var contacts []*models.Contact
-		chanErr := make(chan error)
-		go ent.GenLoadForeignKeyNodes(v, id, &contacts, "user_id", &configs.ContactConfig{}, chanErr)
-		err := <-chanErr
+		err := <-ent.GenLoadForeignKeyNodes(v, id, &contacts, "user_id", &configs.ContactConfig{})
 		return contacts, err
 	})
 }
@@ -184,18 +187,14 @@ func (suite *privacyTestSuite) TestGeneratedGenForeignKeyNodes() {
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-			var wg sync.WaitGroup
-			var result models.ContactsResult
-			wg.Add(1)
-			go user.GenContacts(&result, &wg)
-			wg.Wait()
+			result := <-user.GenContacts()
 			return result.Contacts, result.Err
 		},
 		[]string{
 			contact.ID,
 			contact2.ID,
 		},
-		"generated synchronous API",
+		"generated asynchronous API",
 	)
 }
 
@@ -210,11 +209,48 @@ func (suite *privacyTestSuite) TestLoadNodesByType() {
 func (suite *privacyTestSuite) TestGenLoadNodesByType() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
 		var events []*models.Event
-		chanErr := make(chan error)
-		go ent.GenLoadNodesByType(v, id, models.UserToEventsEdge, &events, &configs.EventConfig{}, chanErr)
-		err := <-chanErr
+		err := <-ent.GenLoadNodesByType(v, id, models.UserToEventsEdge, &events, &configs.EventConfig{})
 		return events, err
 	})
+}
+
+func (suite *privacyTestSuite) TestLoadNodes() {
+	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+		var events []*models.Event
+		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), &events, &configs.EventConfig{})
+		return events, err
+	})
+}
+
+func (suite *privacyTestSuite) TestGenLoadNodes() {
+	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+		var events []*models.Event
+		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), &events, &configs.EventConfig{})
+		return events, err
+	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedLoadNodes() {
+	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+		return models.LoadEvents(v, suite.getID2sForEdge(id, models.UserToEventsEdge)...)
+	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedGenLoadNodes() {
+	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
+		res := <-models.GenLoadEvents(v, suite.getID2sForEdge(id, models.UserToEventsEdge)...)
+		return res.Events, res.Err
+	})
+}
+
+func (suite *privacyTestSuite) getID2sForEdge(id string, edge ent.EdgeType) []string {
+	edges, err := ent.LoadEdgesByType(id, edge)
+	require.Nil(suite.T(), err)
+	ids := make([]string, len(edges))
+	for idx, edge := range edges {
+		ids[idx] = edge.ID2
+	}
+	return ids
 }
 
 func (suite *privacyTestSuite) TestGeneratedLoadNodesByType() {
@@ -253,11 +289,7 @@ func (suite *privacyTestSuite) TestGeneratedGenLoadNodesByType() {
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-			var wg sync.WaitGroup
-			var result models.EventsResult
-			wg.Add(1)
-			go user.GenEvents(&result, &wg)
-			wg.Wait()
+			result := <-user.GenEvents()
 			return result.Events, result.Err
 		},
 		[]string{

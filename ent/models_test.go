@@ -2,7 +2,6 @@ package ent_test
 
 import (
 	"database/sql"
-	"sync"
 
 	"testing"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
-	"github.com/lolopinto/ent/internal/util"
 )
 
 type modelsTestSuite struct {
@@ -158,8 +156,7 @@ func (suite *modelsTestSuite) TestLoadEdgesByType() {
 
 func (suite *modelsTestSuite) TestGenLoadEdgesByType() {
 	testLoadEdgesByType(suite, func(id string) ([]*ent.AssocEdge, error) {
-		chanResult := make(chan ent.AssocEdgesResult)
-		go ent.GenLoadEdgesByType(id, models.UserToEventsEdge, chanResult)
+		chanResult := ent.GenLoadEdgesByType(id, models.UserToEventsEdge)
 		result := <-chanResult
 		return result.Edges, result.Err
 	})
@@ -176,7 +173,7 @@ func (suite *modelsTestSuite) TestGeneratedLoadEdgesByType() {
 			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
 			user, err := models.LoadUser(v, user.ID)
-			util.Die(err)
+			require.NoError(suite.T(), err)
 			return user.LoadEventsEdges()
 		},
 		[]string{
@@ -197,13 +194,9 @@ func (suite *modelsTestSuite) TestGeneratedGenLoadEdgesByType() {
 		func() ([]*ent.AssocEdge, error) {
 			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 			user, err := models.LoadUser(v, user.ID)
-			util.Die(err)
+			require.NoError(suite.T(), err)
 
-			var result ent.AssocEdgesResult
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go user.GenEventsEdges(&result, &wg)
-			wg.Wait()
+			result := <-user.GenEventsEdges()
 			return result.Edges, result.Err
 		},
 		[]string{
@@ -279,9 +272,7 @@ func (suite *modelsTestSuite) TestLoadEdgeByType() {
 
 func (suite *modelsTestSuite) TestGenLoadEdgeByType() {
 	testLoadEdgeByType(suite, func(id1, id2 string) (*ent.AssocEdge, error) {
-		chanResult := make(chan ent.AssocEdgeResult)
-		go ent.GenLoadEdgeByType(id1, id2, models.UserToEventsEdge, chanResult)
-		result := <-chanResult
+		result := <-ent.GenLoadEdgeByType(id1, id2, models.UserToEventsEdge)
 		return result.Edge, result.Err
 	})
 }
@@ -296,7 +287,7 @@ func (suite *modelsTestSuite) TestGeneratedLoadEdgeByType() {
 			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
 			user, err := models.LoadUser(v, user.ID)
-			util.Die(err)
+			require.NoError(suite.T(), err)
 			return user.LoadEventEdgeFor(event.ID)
 		},
 		user.ID,
@@ -312,9 +303,7 @@ func (suite *modelsTestSuite) TestUniqueLoadEdgeByType() {
 
 func (suite *modelsTestSuite) TestGenUniqueLoadEdgeByType() {
 	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.AssocEdge, error) {
-		chanResult := make(chan ent.AssocEdgeResult)
-		go ent.GenLoadUniqueEdgeByType(id1, models.EventToCreatorEdge, chanResult)
-		result := <-chanResult
+		result := <-ent.GenLoadUniqueEdgeByType(id1, models.EventToCreatorEdge)
 		return result.Edge, result.Err
 	})
 }
@@ -323,7 +312,7 @@ func (suite *modelsTestSuite) TestGeneratedUniqueLoadEdgeByType() {
 	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.AssocEdge, error) {
 		v := viewertesting.OmniViewerContext{}
 		event, err := models.LoadEvent(v, id1)
-		util.Die(err)
+		require.NoError(suite.T(), err)
 		return event.LoadCreatorEdge()
 	})
 }
@@ -332,12 +321,8 @@ func (suite *modelsTestSuite) TestGeneratedGenUniqueLoadEdgeByType() {
 	testUniqueLoadEdgeByType(suite, func(id1 string) (*ent.AssocEdge, error) {
 		v := viewertesting.OmniViewerContext{}
 		event, err := models.LoadEvent(v, id1)
-		util.Die(err)
-		var wg sync.WaitGroup
-		var result ent.AssocEdgeResult
-		wg.Add(1)
-		go event.GenCreatorEdge(&result, &wg)
-		wg.Wait()
+		require.NoError(suite.T(), err)
+		result := <-event.GenCreatorEdge()
 		return result.Edge, result.Err
 	})
 }
@@ -346,7 +331,7 @@ func (suite *modelsTestSuite) TestGeneratedLoadUniqueNode() {
 	testUniqueLoadNodeByType(suite, func(id1 string) (*models.User, error) {
 		v := viewertesting.OmniViewerContext{}
 		event, err := models.LoadEvent(v, id1)
-		util.Die(err)
+		require.NoError(suite.T(), err)
 		return event.LoadCreator()
 	})
 }
@@ -355,12 +340,8 @@ func (suite *modelsTestSuite) TestGeneratedGenUniqueLoadNodeByType() {
 	testUniqueLoadNodeByType(suite, func(id1 string) (*models.User, error) {
 		v := viewertesting.OmniViewerContext{}
 		event, err := models.LoadEvent(v, id1)
-		util.Die(err)
-		var wg sync.WaitGroup
-		var result models.UserResult
-		wg.Add(1)
-		go event.GenCreator(&result, &wg)
-		wg.Wait()
+		require.NoError(suite.T(), err)
+		result := <-event.GenCreator()
 		return result.User, result.Err
 	})
 }
@@ -375,13 +356,9 @@ func (suite *modelsTestSuite) TestGeneratedGenLoadEdgeByType() {
 			v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
 			user, err := models.LoadUser(v, user.ID)
-			util.Die(err)
+			require.NoError(suite.T(), err)
 
-			var wg sync.WaitGroup
-			var result ent.AssocEdgeResult
-			wg.Add(1)
-			go user.GenLoadEventEdgeFor(event.ID, &result, &wg)
-			wg.Wait()
+			result := <-user.GenLoadEventEdgeFor(event.ID)
 			return result.Edge, result.Err
 		},
 		user.ID,

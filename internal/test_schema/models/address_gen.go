@@ -4,7 +4,6 @@ package models
 
 import (
 	"context"
-	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -42,14 +41,14 @@ func (res *AddressResult) Error() string {
 	return res.Err.Error()
 }
 
-// AddresssResult stores the result of loading a slice of Addresss. It's a tuple type which has 2 fields:
+// AddressesResult stores the result of loading a slice of Addresss. It's a tuple type which has 2 fields:
 // a []*Address and an error
-type AddresssResult struct {
+type AddressesResult struct {
 	Addresss []*Address
 	Err      error
 }
 
-func (res *AddresssResult) Error() string {
+func (res *AddressesResult) Error() string {
 	return res.Err.Error()
 }
 
@@ -66,6 +65,11 @@ func (address *Address) GetViewer() viewer.ViewerContext {
 	return address.Viewer
 }
 
+// GetConfig returns the config for this entity.
+func (address *Address) GetConfig() ent.Config {
+	return &configs.AddressConfig{}
+}
+
 // LoadAddressFromContext loads the given Address given the context and id
 func LoadAddressFromContext(ctx context.Context, id string) (*Address, error) {
 	v, err := viewer.ForContext(ctx)
@@ -75,22 +79,58 @@ func LoadAddressFromContext(ctx context.Context, id string) (*Address, error) {
 	return LoadAddress(v, id)
 }
 
+// GenLoadAddressFromContext loads the given Address given the context and id
+func GenLoadAddressFromContext(ctx context.Context, id string) <-chan *AddressResult {
+	res := make(chan *AddressResult)
+	go func() {
+		v, err := viewer.ForContext(ctx)
+		if err != nil {
+			res <- &AddressResult{
+				Err: err,
+			}
+			return
+		}
+		res <- <-(GenLoadAddress(v, id))
+	}()
+	return res
+}
+
 // LoadAddress loads the given Address given the viewer and id
 func LoadAddress(v viewer.ViewerContext, id string) (*Address, error) {
 	var address Address
-	err := ent.LoadNode(v, id, &address, &configs.AddressConfig{})
+	err := ent.LoadNode(v, id, &address)
 	return &address, err
 }
 
 // GenLoadAddress loads the given Address given the id
-func GenLoadAddress(v viewer.ViewerContext, id string, result *AddressResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var address Address
-	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &address, &configs.AddressConfig{}, chanErr)
-	err := <-chanErr
-	result.Address = &address
-	result.Err = err
+func GenLoadAddress(v viewer.ViewerContext, id string) <-chan *AddressResult {
+	res := make(chan *AddressResult)
+	go func() {
+		var result AddressResult
+		var address Address
+		result.Err = <-ent.GenLoadNode(v, id, &address)
+		result.Address = &address
+		res <- &result
+	}()
+	return res
+}
+
+// LoadAddresss loads multiple Addresss given the ids
+func LoadAddresss(v viewer.ViewerContext, ids ...string) ([]*Address, error) {
+	var addresss []*Address
+	err := ent.LoadNodes(v, ids, &addresss, &configs.AddressConfig{})
+	return addresss, err
+}
+
+// GenLoadAddresss loads multiple Addresss given the ids
+func GenLoadAddresss(v viewer.ViewerContext, ids ...string) <-chan *AddressesResult {
+	res := make(chan *AddressesResult)
+	go func() {
+		var result AddressesResult
+		result.Err = <-ent.GenLoadNodes(v, ids, &result.Addresss, &configs.AddressConfig{})
+		res <- &result
+	}()
+	return res
 }
 
 // DBFields is used by the ent framework to load the ent from the underlying database

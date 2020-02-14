@@ -105,6 +105,7 @@ return nil, nil
 	)
 }
 
+// TODO: they're all slow but including models makes it *super* slow
 func TestFunctionThatReturnsObjInMutation(t *testing.T) {
 	verifyGeneratedCode(t, `package graphql
 	
@@ -299,20 +300,9 @@ func AdminAddFriend(ctx context.Context, friender, friendee *models.User) error 
 		"AdminAddFriend",
 		"mutationResolver",
 		`func (r *mutationResolver) AdminAddFriend(ctx context.Context, input AdminAddFriendInput) (*AdminAddFriendResponse, error) {
-	v, ctxErr := viewer.ForContext(ctx)
-	if ctxErr != nil {
-		return nil, ctxErr
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	var frienderResult models.UserResult
-	var friendeeResult models.UserResult
-	go models.GenLoadUser(v, input.FrienderID, &frienderResult, &wg)
-	go models.GenLoadUser(v, input.FriendeeID, &friendeeResult, &wg)
-	wg.Wait() 
-	if entErr := ent.CoalesceErr(&frienderResult, &friendeeResult); entErr != nil {
-		return nil, entErr
+	frienderResult, friendeeResult := <- models.GenLoadUserFromContext(ctx, input.FrienderID), <- models.GenLoadUserFromContext(ctx, input.FriendeeID)
+	if err := ent.CoalesceErr(frienderResult, friendeeResult); err != nil {
+		return nil, err
 	}
 
 	err := AdminAddFriend(ctx, frienderResult.User, friendeeResult.User)
@@ -345,21 +335,10 @@ func AdminAddFriend(ctx context.Context, friender, friendee *models.User) error 
 		"AdminAddFriend",
 		"mutationResolver",
 		`func (r *mutationResolver) AdminAddFriend(ctx context.Context, frienderID string, friendeeID string) (*AdminAddFriendResponse, error) {
-	v, ctxErr := viewer.ForContext(ctx)
-	if ctxErr != nil {
-		return nil, ctxErr
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	var frienderResult models.UserResult
-	var friendeeResult models.UserResult
-	go models.GenLoadUser(v, frienderID, &frienderResult, &wg)
-	go models.GenLoadUser(v, friendeeID, &friendeeResult, &wg)
-	wg.Wait() 
-	if entErr := ent.CoalesceErr(&frienderResult, &friendeeResult); entErr != nil {
-		return nil, entErr
-	}
+	frienderResult, friendeeResult := <- models.GenLoadUserFromContext(ctx, frienderID), <- models.GenLoadUserFromContext(ctx, friendeeID)
+	if err := ent.CoalesceErr(frienderResult, friendeeResult); err != nil {
+		return nil, err
+	}			
 
 	err := AdminAddFriend(ctx, frienderResult.User, friendeeResult.User)
 	if err != nil {
@@ -394,28 +373,12 @@ func AdminAddFriends(ctx context.Context, friends []*models.User) error {
 	if ctxErr != nil {
 		return nil, ctxErr
 	}
-	var wg sync.WaitGroup
-	results := make([]*models.UserResult, len(input.FriendIDs))
-	wg.Add(len(input.FriendIDs))
-	for idx, id := range input.FriendIDs {
-		go models.GenLoadUser(v, id, results[idx], &wg)
-	}
-	wg.Wait() 
-
-	var errs []error
-	var friends []*models.User
-	for _, res := range results {
-		if res.Err != nil {
-			errs = append(errs, res.Err)
-		} else {
-			friends = append(friends, res.User)
-		}
-	}
-	if err := ent.CoalesceErr(errs...); err != nil {
+	result := <-models.GenLoadUsers(v, input.FriendIDs...)
+	if err := ent.CoalesceErr(result); err != nil {
 		return nil, err
 	}
 
-	err := AdminAddFriends(ctx, friends)
+	err := AdminAddFriends(ctx, result.Users)
 	if err != nil {
 		return nil, err
 	}
@@ -449,28 +412,12 @@ func AdminAddFriends(ctx context.Context, friends []*models.User) error {
 	if ctxErr != nil {
 		return nil, ctxErr
 	}
-	var wg sync.WaitGroup
-	results := make([]*models.UserResult, len(friendIDs))
-	wg.Add(len(friendIDs))
-	for idx, id := range friendIDs {
-		go models.GenLoadUser(v, id, results[idx], &wg)
-	}
-	wg.Wait() 
-
-	var errs []error
-	var friends []*models.User
-	for _, res := range results {
-		if res.Err != nil {
-			errs = append(errs, res.Err)
-		} else {
-			friends = append(friends, res.User)
-		}
-	}
-	if err := ent.CoalesceErr(errs...); err != nil {
+	result := <-models.GenLoadUsers(v, friendIDs...)
+	if err := ent.CoalesceErr(result); err != nil {
 		return nil, err
 	}
 
-	err := AdminAddFriends(ctx, friends)
+	err := AdminAddFriends(ctx, result.Users)
 	if err != nil {
 		return nil, err
 	}

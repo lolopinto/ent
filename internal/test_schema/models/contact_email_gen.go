@@ -4,7 +4,6 @@ package models
 
 import (
 	"context"
-	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -63,6 +62,11 @@ func (contactEmail *ContactEmail) GetViewer() viewer.ViewerContext {
 	return contactEmail.Viewer
 }
 
+// GetConfig returns the config for this entity.
+func (contactEmail *ContactEmail) GetConfig() ent.Config {
+	return &configs.ContactEmailConfig{}
+}
+
 // LoadContactEmailFromContext loads the given ContactEmail given the context and id
 func LoadContactEmailFromContext(ctx context.Context, id string) (*ContactEmail, error) {
 	v, err := viewer.ForContext(ctx)
@@ -72,27 +76,63 @@ func LoadContactEmailFromContext(ctx context.Context, id string) (*ContactEmail,
 	return LoadContactEmail(v, id)
 }
 
+// GenLoadContactEmailFromContext loads the given ContactEmail given the context and id
+func GenLoadContactEmailFromContext(ctx context.Context, id string) <-chan *ContactEmailResult {
+	res := make(chan *ContactEmailResult)
+	go func() {
+		v, err := viewer.ForContext(ctx)
+		if err != nil {
+			res <- &ContactEmailResult{
+				Err: err,
+			}
+			return
+		}
+		res <- <-(GenLoadContactEmail(v, id))
+	}()
+	return res
+}
+
 // LoadContactEmail loads the given ContactEmail given the viewer and id
 func LoadContactEmail(v viewer.ViewerContext, id string) (*ContactEmail, error) {
 	var contactEmail ContactEmail
-	err := ent.LoadNode(v, id, &contactEmail, &configs.ContactEmailConfig{})
+	err := ent.LoadNode(v, id, &contactEmail)
 	return &contactEmail, err
 }
 
 // GenLoadContactEmail loads the given ContactEmail given the id
-func GenLoadContactEmail(v viewer.ViewerContext, id string, result *ContactEmailResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var contactEmail ContactEmail
-	chanErr := make(chan error)
-	go ent.GenLoadNode(v, id, &contactEmail, &configs.ContactEmailConfig{}, chanErr)
-	err := <-chanErr
-	result.ContactEmail = &contactEmail
-	result.Err = err
+func GenLoadContactEmail(v viewer.ViewerContext, id string) <-chan *ContactEmailResult {
+	res := make(chan *ContactEmailResult)
+	go func() {
+		var result ContactEmailResult
+		var contactEmail ContactEmail
+		result.Err = <-ent.GenLoadNode(v, id, &contactEmail)
+		result.ContactEmail = &contactEmail
+		res <- &result
+	}()
+	return res
+}
+
+// LoadContactEmails loads multiple ContactEmails given the ids
+func LoadContactEmails(v viewer.ViewerContext, ids ...string) ([]*ContactEmail, error) {
+	var contactEmails []*ContactEmail
+	err := ent.LoadNodes(v, ids, &contactEmails, &configs.ContactEmailConfig{})
+	return contactEmails, err
+}
+
+// GenLoadContactEmails loads multiple ContactEmails given the ids
+func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) <-chan *ContactEmailsResult {
+	res := make(chan *ContactEmailsResult)
+	go func() {
+		var result ContactEmailsResult
+		result.Err = <-ent.GenLoadNodes(v, ids, &result.ContactEmails, &configs.ContactEmailConfig{})
+		res <- &result
+	}()
+	return res
 }
 
 // GenContact returns the Contact associated with the ContactEmail instance
-func (contactEmail *ContactEmail) GenContact(result *ContactResult, wg *sync.WaitGroup) {
-	go GenLoadContact(contactEmail.Viewer, contactEmail.ContactID, result, wg)
+func (contactEmail *ContactEmail) GenContact() <-chan *ContactResult {
+	return GenLoadContact(contactEmail.Viewer, contactEmail.ContactID)
 }
 
 // LoadContact returns the Contact associated with the ContactEmail instance
