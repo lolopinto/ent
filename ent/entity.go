@@ -13,8 +13,7 @@ type Entity interface {
 	GetType() NodeType
 	GetViewer() viewer.ViewerContext
 	GetConfig() Config
-	// TODO break this into EntityBackedByDB or something
-	dataEntity
+	DBObject
 }
 
 // flag that we can't structScan and have to mapScan from db
@@ -25,7 +24,10 @@ type dataEntityNotScannable interface {
 
 type DBFields map[string]func(interface{}) error
 
-type dataEntity interface {
+// DBObject references an item fetched from the database
+// All ents are DBObjects but not all DBOjects are necessarily ents
+// e.g. AssocEdge
+type DBObject interface {
 	DBFields() DBFields
 }
 
@@ -33,6 +35,6 @@ type dataEntity interface {
 // in the table isn't "id" but a different field.
 // For now only supports single primary key so not exposing it publicly
 type dataEntityWithDiffPKey interface {
-	dataEntity
+	DBObject
 	GetPrimaryKey() string // for now only do single primary key
 }

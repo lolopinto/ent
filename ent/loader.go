@@ -38,7 +38,7 @@ type validatedLoader interface {
 
 type singleRowLoader interface {
 	loader
-	GetEntity() dataEntity
+	GetEntity() DBObject
 }
 
 // a loader that can be chained with other loaders and receives input from other loaders
@@ -57,8 +57,8 @@ type multiRowLoader interface {
 	loader
 	// GetNewInstance returns a new instance of the item being read from the database
 	// Two supported types:
-	// 1 dataEntity
-	// 2 reflect.Value in which underlying element is a dataEntity, specifically has a DBFields() method which can be called via reflection
+	// 1 DBObject
+	// 2 reflect.Value in which underlying element is a DBObject, specifically has a DBFields() method which can be called via reflection
 	// when it's a reflect.Value(), StructScan() will be called with the underlying Interface() method
 	// we want reflect.Value to know when to use reflection vs not
 	// It's expected that the item is also appended to the internal slice which is used to keep track
@@ -245,7 +245,7 @@ func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 	return q.StructScanRows(l)
 }
 
-func fillEntityFromMap(entity dataEntity, dataMap map[string]interface{}) error {
+func fillEntityFromMap(entity DBObject, dataMap map[string]interface{}) error {
 	return fillEntityFromFields(entity.DBFields(), dataMap)
 }
 
@@ -267,7 +267,7 @@ func fillEntityFromFields(fields DBFields, dataMap map[string]interface{}) error
 
 func fillInstance(l multiRowLoader, dataMap map[string]interface{}) error {
 	instance := l.GetNewInstance()
-	entity, ok := instance.(dataEntity)
+	entity, ok := instance.(DBObject)
 	if ok {
 		return fillEntityFromMap(entity, dataMap)
 	}
@@ -328,7 +328,7 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 type loadNodeFromPartsLoader struct {
 	config Config
 	parts  []interface{}
-	entity dataEntity
+	entity DBObject
 }
 
 func (l *loadNodeFromPartsLoader) Validate() error {
@@ -342,7 +342,7 @@ func (l *loadNodeFromPartsLoader) Validate() error {
 	return nil
 }
 
-func (l *loadNodeFromPartsLoader) GetEntity() dataEntity {
+func (l *loadNodeFromPartsLoader) GetEntity() DBObject {
 	return l.entity
 }
 
@@ -357,10 +357,10 @@ func (l *loadNodeFromPartsLoader) GetSQLBuilder() (*sqlBuilder, error) {
 type loadNodeFromPKey struct {
 	id        string
 	tableName string
-	entity    dataEntity
+	entity    DBObject
 }
 
-func getPrimaryKeyForObj(entity dataEntity) string {
+func getPrimaryKeyForObj(entity DBObject) string {
 	pKey := "id"
 	entityWithPkey, ok := entity.(dataEntityWithDiffPKey)
 	if ok {
@@ -380,7 +380,7 @@ func (l *loadNodeFromPKey) GetSQLBuilder() (*sqlBuilder, error) {
 	}, nil
 }
 
-func (l *loadNodeFromPKey) GetEntity() dataEntity {
+func (l *loadNodeFromPKey) GetEntity() DBObject {
 	return l.entity
 }
 
@@ -485,7 +485,7 @@ func (l *loadAssocEdgeConfigExists) GetSQLBuilder() (*sqlBuilder, error) {
 	}, nil
 }
 
-func (l *loadAssocEdgeConfigExists) GetEntity() dataEntity {
+func (l *loadAssocEdgeConfigExists) GetEntity() DBObject {
 	return &l.n
 }
 

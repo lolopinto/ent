@@ -183,7 +183,7 @@ func mapScan(query rowQueryer) (map[string]interface{}, error) {
 // This handles StructScan vs MapScan descisions that need to be made when querying a single row
 // (that's not going to cache)
 // at some point we should change this to handle data going into cache
-func queryRow(query rowQueryer, entity dataEntity) error {
+func queryRow(query rowQueryer, entity DBObject) error {
 	notScannable, ok := entity.(dataEntityNotScannable)
 
 	if !(ok && notScannable.UnsupportedScan()) {

@@ -53,7 +53,7 @@ func getColumnsString(columns []string) string {
 
 // LoadNode loads a single node given the id, node object and entConfig
 // LoadNodeFromParts loads a node given different strings
-func LoadNodeFromParts(entity dataEntity, config Config, parts ...interface{}) error {
+func LoadNodeFromParts(entity DBObject, config Config, parts ...interface{}) error {
 	return loadData(
 		&loadNodeFromPartsLoader{
 			config: config,
@@ -83,7 +83,7 @@ func getKeyForEdge(id string, edgeType EdgeType) string {
 // }
 
 // TODO move this and other raw data access pattern methods to a lower level API below ent
-func LoadNodeRawData(id string, entity dataEntity, entConfig Config) error {
+func LoadNodeRawData(id string, entity DBObject, entConfig Config) error {
 	return loadData(
 		&loadNodeFromPKey{
 			id:        id,
@@ -103,7 +103,7 @@ func LoadNodesRawData(ids []string, nodes interface{}, entConfig Config) error {
 	return loadData(l)
 }
 
-func genLoadRawData(id string, entity dataEntity, entConfig Config, errChan chan<- error) {
+func genLoadRawData(id string, entity DBObject, entConfig Config, errChan chan<- error) {
 	err := LoadNodeRawData(id, entity, entConfig)
 	errChan <- err
 }

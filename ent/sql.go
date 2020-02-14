@@ -9,7 +9,7 @@ import (
 
 // first simple version of sql builder
 type sqlBuilder struct {
-	entity     dataEntity
+	entity     DBObject
 	fields     DBFields
 	colsString string // not long term value of course
 	tableName  string
