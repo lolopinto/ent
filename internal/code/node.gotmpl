@@ -81,12 +81,11 @@ const (
 
   // TODO this is going to be used to load a new object 
   type {{.NodesLoader}} struct {
-//    nodes map[string]{{.Node}}
+    nodes map[string]*{{.Node}}
+    errs map[string]error
     results {{.NodesSlice}}
+    m sync.Mutex
   }
-
-  // we need SetPrivacyResult for fetching from ent and dealing with result...
-  // and that will be where the map will be
 
   func (res *{{.NodesLoader}}) GetNewInstance() ent.DBObject {
     var {{.NodeInstance}} {{.Node}}
@@ -97,18 +96,28 @@ const (
     return {{.EntConfig}}
   }
 
-  func (res *{{.NodesLoader}}) SetResult(ents []ent.DBObject) {
-    res.results = make({{.NodesSlice}}, len(ents))
-    for idx, ent := range ents {
-      res.results[idx] = ent.(*{{.Node}})
+  func (res *{{.NodesLoader}}) SetPrivacyResult(id string, obj ent.DBObject, err error) {
+    res.m.Lock()
+    defer res.m.Unlock()
+    if err != nil {
+      res.errs[id] = err
+    } else if obj != nil {
+      // TODO kill results?
+      ent := obj.(*{{.Node}})
+      res.nodes[id] = ent
+      res.results = append(res.results, ent)
     }
   }
 
-  // now we need a way privacy aware way of dealing with this...
-  // TODO fix this name...
-  func new{{.NodesLoader}}() *{{.NodesLoader}} {
+  // TODO???
+  func (res *{{.NodesLoader}}) List() {{.NodesSlice}} {
+    return res.results
+  }
+
+  func {{.NewNodesLoader}}() *{{.NodesLoader}} {
     return &{{.NodesLoader}}{
-//      nodes: make(map[string]{{.Node}}),
+      nodes: make(map[string]*{{.Node}}),
+      errs: make(map[string]error),
     }
   }
 
@@ -178,7 +187,7 @@ const (
 
   // Load{{.Nodes}} loads multiple {{.Nodes}} given the ids
   func Load{{.Nodes}}(v viewer.ViewerContext, ids ...string) ({{.NodesSlice}}, error) {
-    loader := new{{.NodesLoader}}()
+    loader := {{.NewNodesLoader}}()
     err := ent.LoadNodes(v, ids, loader)
     return loader.results, err
   }
@@ -187,7 +196,7 @@ const (
   func GenLoad{{.Nodes}}(v viewer.ViewerContext, ids ...string) <-chan *{{.NodesResult}} {
     res := make(chan *{{.NodesResult}})
     go func() {
-      loader := new{{.NodesLoader}}()
+      loader := {{.NewNodesLoader}}()
       var result {{.NodesResult}}
       result.Err = <-ent.GenLoadNodes(v, ids, loader)
       result.{{.Nodes}} = loader.results
@@ -260,7 +269,7 @@ const (
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodesResult}} {
           res := make(chan *{{.NodesResult}})
           go func() {
-            loader := new{{.NodesLoader}}()
+            loader := {{.NewNodesLoader}}()
             var result {{.NodesResult}}
             result.Err = <- ent.GenLoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, "{{$currentPackageName}}_id", loader)
             result.{{.Nodes}} = loader.results
@@ -271,7 +280,7 @@ const (
 
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() ({{.NodesSlice}}, error) {
-          loader := new{{.NodesLoader}}()
+          loader := {{.NewNodesLoader}}()
           err := ent.LoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, "{{$currentPackageName}}_id", loader)
           return loader.results, err
         }
@@ -327,7 +336,7 @@ const (
           func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodesResult}} {
             res := make(chan *{{.NodesResult}})
             go func() {
-              loader := new{{.NodesLoader}}()
+              loader := {{.NewNodesLoader}}()
               var result {{.NodesResult}}
               result.Err = <-ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
               result.{{.Nodes}} = loader.results
@@ -338,7 +347,7 @@ const (
 
           // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
           func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() ({{.NodesSlice}}, error) {
-            loader := new{{.NodesLoader}}()
+            loader := {{.NewNodesLoader}}()
             err := ent.LoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
             return loader.results, err
           }

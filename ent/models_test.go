@@ -470,9 +470,9 @@ func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
 	}
 
 	for _, tt := range testCases {
-		loader := &contactsLoader{}
+		loader := models.NewContactsLoader()
 		err := ent.LoadRawForeignKeyNodes(tt.id, "user_id", loader)
-		contacts := loader.results
+		contacts := loader.List()
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
 			assert.NotEmpty(suite.T(), contacts)
@@ -511,12 +511,12 @@ func (suite *modelsTestSuite) TestLoadNodesByType() {
 	}
 
 	for _, tt := range testCases {
-		loader := &eventsLoader{}
+		loader := models.NewEventsLoader()
 		err := ent.LoadRawNodesByType(tt.id1, models.UserToEventsEdge, loader)
 		assert.Nil(suite.T(), err)
-		events := loader.results
+		events := loader.List()
 		if tt.foundResult {
-			assert.NotEmpty(suite.T(), loader.results)
+			assert.NotEmpty(suite.T(), events)
 
 			assert.Len(suite.T(), events, 2)
 			for _, loadedEvent := range events {
@@ -556,9 +556,9 @@ func (suite *modelsTestSuite) TestLoadingMultiNodesWithJSON() {
 		address2.ID,
 		address3.ID,
 	}
-	loader := &addressLoader{}
+	loader := models.NewAddressesLoader()
 	err := ent.LoadNodesRawData(ids, loader)
-	addresses := loader.results
+	addresses := loader.List()
 	require.NoError(suite.T(), err)
 
 	assert.Len(suite.T(), addresses, 3)

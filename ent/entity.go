@@ -9,7 +9,7 @@ type ObjectWithPrivacyPolicy interface {
 type Entity interface {
 	ObjectWithPrivacyPolicy
 	// GetType returns the NodeType of this entity
-	GetID() string // TODO uuid
+	//	GetID() string // TODO uuid
 	GetType() NodeType
 	GetViewer() viewer.ViewerContext
 	GetConfig() Config
@@ -28,8 +28,9 @@ type dataEntityNotScannable interface {
 type MultiEntLoader interface {
 	GetNewInstance() DBObject
 	GetConfig() Config
-	// TODO
-	SetResult([]DBObject)
+	// TODO kill now
+	//	SetResult([]DBObject)
+	//	Set
 	// hmm TODO
 	//	Err() error
 }
@@ -39,7 +40,7 @@ type PrivacyBackedMultiEntLoader interface {
 	MultiEntLoader
 	// TODO
 	// this can keep track of the internal map?
-	SetPrivacyResult(DBObject, error)
+	SetPrivacyResult(string, DBObject, error)
 }
 
 type DBFields map[string]func(interface{}) error
@@ -48,6 +49,8 @@ type DBFields map[string]func(interface{}) error
 // All ents are DBObjects but not all DBOjects are necessarily ents
 // e.g. AssocEdge
 type DBObject interface {
+	// TODO what happens for tables with composite primary keys??
+	GetID() string
 	DBFields() DBFields
 }
 

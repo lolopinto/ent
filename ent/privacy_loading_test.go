@@ -139,17 +139,17 @@ func (suite *privacyTestSuite) TestAllowIfViewerCanSeeEntRule() {
 
 func (suite *privacyTestSuite) TestManualLoadForeignKeyNodes() {
 	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-		loader := &contactsLoader{}
+		loader := models.NewContactsLoader()
 		err := ent.LoadForeignKeyNodes(v, id, "user_id", loader)
-		return loader.results, err
+		return loader.List(), err
 	})
 }
 
 func (suite *privacyTestSuite) TestManualGenLoadForeignKeyNodes() {
 	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-		loader := &contactsLoader{}
+		loader := models.NewContactsLoader()
 		err := <-ent.GenLoadForeignKeyNodes(v, id, "user_id", loader)
-		return loader.results, err
+		return loader.List(), err
 	})
 }
 
@@ -200,33 +200,33 @@ func (suite *privacyTestSuite) TestGeneratedGenForeignKeyNodes() {
 
 func (suite *privacyTestSuite) TestLoadNodesByType() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		loader := &eventsLoader{}
+		loader := models.NewEventsLoader()
 		err := ent.LoadNodesByType(v, id, models.UserToEventsEdge, loader)
-		return loader.results, err
+		return loader.List(), err
 	})
 }
 
 func (suite *privacyTestSuite) TestGenLoadNodesByType() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		loader := &eventsLoader{}
+		loader := models.NewEventsLoader()
 		err := <-ent.GenLoadNodesByType(v, id, models.UserToEventsEdge, loader)
-		return loader.results, err
+		return loader.List(), err
 	})
 }
 
 func (suite *privacyTestSuite) TestLoadNodes() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		loader := &eventsLoader{}
+		loader := models.NewEventsLoader()
 		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), loader)
-		return loader.results, err
+		return loader.List(), err
 	})
 }
 
 func (suite *privacyTestSuite) TestGenLoadNodes() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		loader := &eventsLoader{}
+		loader := models.NewEventsLoader()
 		err := <-ent.GenLoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), loader)
-		return loader.results, err
+		return loader.List(), err
 	})
 }
 

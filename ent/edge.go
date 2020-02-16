@@ -65,6 +65,11 @@ func (edge *AssocEdge) DBFields() DBFields {
 	}
 }
 
+// TODO...
+func (edge *AssocEdge) GetID() string {
+	return edge.ID1
+}
+
 // AssocEdgeResult stores the result of loading an Edge concurrently
 type AssocEdgeResult struct {
 	Edge *AssocEdge

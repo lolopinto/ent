@@ -4,6 +4,7 @@ package models
 
 import (
 	"context"
+	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -30,7 +31,7 @@ type Address struct {
 	Viewer        viewer.ViewerContext
 }
 
-//  type Addresss map[string]Address
+//  type Addresses map[string]Address
 
 // AddressResult stores the result of loading a Address. It's a tuple type which has 2 fields:
 // a Address and an error
@@ -46,8 +47,8 @@ func (res *AddressResult) Error() string {
 // AddressesResult stores the result of loading a slice of Addresss. It's a tuple type which has 2 fields:
 // a []*Address and an error
 type AddressesResult struct {
-	Addresss []*Address
-	Err      error
+	Addresses []*Address
+	Err       error
 }
 
 func (res *AddressesResult) Error() string {
@@ -56,12 +57,11 @@ func (res *AddressesResult) Error() string {
 
 // TODO this is going to be used to load a new object
 type addressesLoader struct {
-	//    nodes map[string]Address
+	nodes   map[string]*Address
+	errs    map[string]error
 	results []*Address
+	m       sync.Mutex
 }
-
-// we need SetPrivacyResult for fetching from ent and dealing with result...
-// and that will be where the map will be
 
 func (res *addressesLoader) GetNewInstance() ent.DBObject {
 	var address Address
@@ -72,18 +72,28 @@ func (res *addressesLoader) GetConfig() ent.Config {
 	return &configs.AddressConfig{}
 }
 
-func (res *addressesLoader) SetResult(ents []ent.DBObject) {
-	res.results = make([]*Address, len(ents))
-	for idx, ent := range ents {
-		res.results[idx] = ent.(*Address)
+func (res *addressesLoader) SetPrivacyResult(id string, obj ent.DBObject, err error) {
+	res.m.Lock()
+	defer res.m.Unlock()
+	if err != nil {
+		res.errs[id] = err
+	} else if obj != nil {
+		// TODO kill results?
+		ent := obj.(*Address)
+		res.nodes[id] = ent
+		res.results = append(res.results, ent)
 	}
 }
 
-// now we need a way privacy aware way of dealing with this...
-// TODO fix this name...
-func newaddressesLoader() *addressesLoader {
+// TODO???
+func (res *addressesLoader) List() []*Address {
+	return res.results
+}
+
+func NewAddressesLoader() *addressesLoader {
 	return &addressesLoader{
-		//      nodes: make(map[string]Address),
+		nodes: make(map[string]*Address),
+		errs:  make(map[string]error),
 	}
 }
 
@@ -150,21 +160,21 @@ func GenLoadAddress(v viewer.ViewerContext, id string) <-chan *AddressResult {
 	return res
 }
 
-// LoadAddresss loads multiple Addresss given the ids
-func LoadAddresss(v viewer.ViewerContext, ids ...string) ([]*Address, error) {
-	loader := newaddressesLoader()
+// LoadAddresses loads multiple Addresses given the ids
+func LoadAddresses(v viewer.ViewerContext, ids ...string) ([]*Address, error) {
+	loader := NewAddressesLoader()
 	err := ent.LoadNodes(v, ids, loader)
 	return loader.results, err
 }
 
-// GenLoadAddresss loads multiple Addresss given the ids
-func GenLoadAddresss(v viewer.ViewerContext, ids ...string) <-chan *AddressesResult {
+// GenLoadAddresses loads multiple Addresses given the ids
+func GenLoadAddresses(v viewer.ViewerContext, ids ...string) <-chan *AddressesResult {
 	res := make(chan *AddressesResult)
 	go func() {
-		loader := newaddressesLoader()
+		loader := NewAddressesLoader()
 		var result AddressesResult
 		result.Err = <-ent.GenLoadNodes(v, ids, loader)
-		result.Addresss = loader.results
+		result.Addresses = loader.results
 		res <- &result
 	}()
 	return res

@@ -182,7 +182,7 @@ type privacyPolicyResult struct {
 	err     error
 }
 
-func genApplyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt interface{}, privacyResultChan chan<- privacyPolicyResult) {
+func genApplyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt DBObject, privacyResultChan chan<- privacyPolicyResult) {
 	ent, ok := maybeEnt.(Entity)
 	//fmt.Println("genApplyPrivacyPolicy", maybeEnt, ent, ok)
 	if !ok {
@@ -277,33 +277,33 @@ func genApplyPrivacyPolicy(v viewer.ViewerContext, ent Entity, privacyResultChan
 	privacyResultChan <- result
 }
 
-func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, colName string, entLoader MultiEntLoader) <-chan error {
+func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, colName string, entLoader PrivacyBackedMultiEntLoader) <-chan error {
 	return genLoadNodesImpl(v, func() <-chan multiEntResult {
 		return genLoadForeignKeyNodes(id, colName, entLoader)
 	})
 }
 
-func LoadForeignKeyNodes(v viewer.ViewerContext, id string, colName string, entLoader MultiEntLoader) error {
+func LoadForeignKeyNodes(v viewer.ViewerContext, id string, colName string, entLoader PrivacyBackedMultiEntLoader) error {
 	return <-GenLoadForeignKeyNodes(v, id, colName, entLoader)
 }
 
-func GenLoadNodes(v viewer.ViewerContext, ids []string, entLoader MultiEntLoader) <-chan error {
+func GenLoadNodes(v viewer.ViewerContext, ids []string, entLoader PrivacyBackedMultiEntLoader) <-chan error {
 	return genLoadNodesImpl(v, func() <-chan multiEntResult {
 		return genLoadNodes(ids, entLoader)
 	})
 }
 
-func LoadNodes(v viewer.ViewerContext, ids []string, entLoader MultiEntLoader) error {
+func LoadNodes(v viewer.ViewerContext, ids []string, entLoader PrivacyBackedMultiEntLoader) error {
 	return <-GenLoadNodes(v, ids, entLoader)
 }
 
-func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, entLoader MultiEntLoader) <-chan error {
+func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, entLoader PrivacyBackedMultiEntLoader) <-chan error {
 	return genLoadNodesImpl(v, func() <-chan multiEntResult {
 		return genLoadNodesByType(id, edgeType, entLoader)
 	})
 }
 
-func LoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, entLoader MultiEntLoader) error {
+func LoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, entLoader PrivacyBackedMultiEntLoader) error {
 	return <-GenLoadNodesByType(v, id, edgeType, entLoader)
 }
 
@@ -339,6 +339,8 @@ type multiEntResult struct {
 
 // genLoadNodesImpl takes the raw nodes fetched by whatever means we need to fetch data and applies a privacy check to
 // make sure that only the nodes which should be visible are returned to the viewer
+// TODO change API of genLoadNodesImpl to use this: PrivacyBackedMultiEntLoader
+// and then it'll be clear what the API to loadNodesLoader is: returning ents or map[string]interface{}
 func genLoadNodesImpl(v viewer.ViewerContext, nodesLoader loadRawNodes) <-chan error {
 	res := make(chan error)
 	go func() {
@@ -346,61 +348,42 @@ func genLoadNodesImpl(v viewer.ViewerContext, nodesLoader loadRawNodes) <-chan e
 		if loaderResult.err != nil {
 			res <- loaderResult.err
 		} else {
-			doneChan := make(chan bool)
-			go genApplyPrivacyPolicyForEnts(v, &loaderResult.ents, doneChan)
-			<-doneChan
-			// set ents here...
-			//			loaderResult.loader
-			// TODO need a better way and something that keeps track of errors
-			// why things are not visible...
-			//			spew.Dump(loaderResult)
-			loaderResult.loader.SetResult(loaderResult.ents)
+			entLoader := loaderResult.loader
+			privacyLoader, ok := entLoader.(PrivacyBackedMultiEntLoader)
+			if !ok {
+				res <- errors.New("invalid loader passed here. need a PrivacyBackedMultiEntLoader")
+				return
+			}
+			<-genApplyPrivacyPolicyForEnts(v, privacyLoader, loaderResult.ents)
 			res <- nil
 		}
 	}()
 	return res
 }
 
-// TODO change eveywhere using interface{}
-// TODO figure out go slice polymorphism in a sensible way :/
-func genApplyPrivacyPolicyForEnts(v viewer.ViewerContext, nodes interface{}, doneChan chan<- bool) {
-	// we know it's a slice since loadNodesHelper in data fetching code has already handled this so no need
-	// to do the checking again
-	// TODO figure out if we can do this without this much reflection
-	// OR at least reuse the reflection from lower level in the stack?
-	value := reflect.ValueOf(nodes)
-	slice := value.Elem()
-	direct := reflect.Indirect(value)
+func genApplyPrivacyPolicyForEnts(v viewer.ViewerContext, entLoader PrivacyBackedMultiEntLoader, ents []DBObject) <-chan bool {
+	done := make(chan bool)
+	go func() {
+		var wg sync.WaitGroup
+		wg.Add(len(ents))
+		for idx := range ents {
+			go func(idx int) {
+				defer wg.Done()
+				obj := ents[idx]
 
-	// check privacy policy for each of the nodes
-	resSlice := make([]privacyPolicyResult, slice.Len())
-	for idx := 0; idx < slice.Len(); idx++ {
-		node := slice.Index(idx).Interface()
-		c := make(chan privacyPolicyResult)
-		go genApplyPrivacyPolicyUnsure(v, node, c)
-		resSlice[idx] = <-c
-	}
+				c := make(chan privacyPolicyResult)
+				go genApplyPrivacyPolicyUnsure(v, obj, c)
+				result := <-c
+				if result.visible {
+					entLoader.SetPrivacyResult(obj.GetID(), obj, nil)
+				} else {
+					entLoader.SetPrivacyResult(obj.GetID(), nil, result.err)
+				}
 
-	sliceType := slice.Type()
-	resNodes := reflect.MakeSlice(sliceType, 0, slice.Cap())
-
-	for idx, res := range resSlice {
-		//	fmt.Println("result.....", res)
-
-		// visible and no err yay!
-		if res.visible && res.err == nil {
-			resNodes = reflect.Append(resNodes, slice.Index(idx))
-		} else if res.err != nil {
-			// TODO doesn't make sense to send this to the client since it could be
-			// lots of different ents not visible for whatever reason but maybe provide a way to
-			// see it.
-			// Maybe map instead of slice should be returned here?
+			}(idx)
 		}
-	}
-	// return privacy aware ents here
-	direct.Set(resNodes)
-
-	// we done, we out of here...
-
-	doneChan <- true
+		wg.Wait()
+		done <- true
+	}()
+	return done
 }

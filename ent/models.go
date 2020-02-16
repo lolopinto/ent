@@ -12,7 +12,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rocketlaunchr/remember-go"
 
-	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/lolopinto/ent/data"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/pkg/errors"
@@ -105,26 +104,6 @@ func LoadNodesRawData(ids []string, entLoader MultiEntLoader) error {
 func genLoadRawData(id string, entity DBObject, entConfig Config, errChan chan<- error) {
 	err := LoadNodeRawData(id, entity, entConfig)
 	errChan <- err
-}
-
-func validateSliceOfNodes(nodes interface{}) (reflect.Type, *reflect.Value, error) {
-	value := reflect.ValueOf(nodes)
-	direct := reflect.Indirect(value)
-
-	if value.Kind() != reflect.Ptr {
-		return nil, nil, errors.New("must pass a pointer to method")
-	}
-	if value.IsNil() {
-		return nil, nil, errors.New("nil pointer passed to method")
-	}
-
-	// get the slice from the pointer
-	slice := reflectx.Deref(value.Type())
-	if slice.Kind() != reflect.Slice {
-		fmt.Printf("slice kind is not a slice. it's a %v \n", slice.Kind())
-		return nil, nil, errors.New("format passed to method is unexpected")
-	}
-	return slice, &direct, nil
 }
 
 // TODO also move to lower level loader/data package

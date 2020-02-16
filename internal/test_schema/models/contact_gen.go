@@ -4,6 +4,7 @@ package models
 
 import (
 	"context"
+	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -60,12 +61,11 @@ func (res *ContactsResult) Error() string {
 
 // TODO this is going to be used to load a new object
 type contactsLoader struct {
-	//    nodes map[string]Contact
+	nodes   map[string]*Contact
+	errs    map[string]error
 	results []*Contact
+	m       sync.Mutex
 }
-
-// we need SetPrivacyResult for fetching from ent and dealing with result...
-// and that will be where the map will be
 
 func (res *contactsLoader) GetNewInstance() ent.DBObject {
 	var contact Contact
@@ -76,18 +76,28 @@ func (res *contactsLoader) GetConfig() ent.Config {
 	return &configs.ContactConfig{}
 }
 
-func (res *contactsLoader) SetResult(ents []ent.DBObject) {
-	res.results = make([]*Contact, len(ents))
-	for idx, ent := range ents {
-		res.results[idx] = ent.(*Contact)
+func (res *contactsLoader) SetPrivacyResult(id string, obj ent.DBObject, err error) {
+	res.m.Lock()
+	defer res.m.Unlock()
+	if err != nil {
+		res.errs[id] = err
+	} else if obj != nil {
+		// TODO kill results?
+		ent := obj.(*Contact)
+		res.nodes[id] = ent
+		res.results = append(res.results, ent)
 	}
 }
 
-// now we need a way privacy aware way of dealing with this...
-// TODO fix this name...
-func newcontactsLoader() *contactsLoader {
+// TODO???
+func (res *contactsLoader) List() []*Contact {
+	return res.results
+}
+
+func NewContactsLoader() *contactsLoader {
 	return &contactsLoader{
-		//      nodes: make(map[string]Contact),
+		nodes: make(map[string]*Contact),
+		errs:  make(map[string]error),
 	}
 }
 
@@ -156,7 +166,7 @@ func GenLoadContact(v viewer.ViewerContext, id string) <-chan *ContactResult {
 
 // LoadContacts loads multiple Contacts given the ids
 func LoadContacts(v viewer.ViewerContext, ids ...string) ([]*Contact, error) {
-	loader := newcontactsLoader()
+	loader := NewContactsLoader()
 	err := ent.LoadNodes(v, ids, loader)
 	return loader.results, err
 }
@@ -165,7 +175,7 @@ func LoadContacts(v viewer.ViewerContext, ids ...string) ([]*Contact, error) {
 func GenLoadContacts(v viewer.ViewerContext, ids ...string) <-chan *ContactsResult {
 	res := make(chan *ContactsResult)
 	go func() {
-		loader := newcontactsLoader()
+		loader := NewContactsLoader()
 		var result ContactsResult
 		result.Err = <-ent.GenLoadNodes(v, ids, loader)
 		result.Contacts = loader.results
@@ -190,7 +200,7 @@ func LoadContactIDFromEmailAddress(emailAddress string) (string, error) {
 func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
-		loader := newcontactEmailsLoader()
+		loader := NewContactEmailsLoader()
 		var result ContactEmailsResult
 		result.Err = <-ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, "contact_id", loader)
 		result.ContactEmails = loader.results
@@ -201,7 +211,7 @@ func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 
 // LoadContactEmails returns the ContactEmails associated with the Contact instance
 func (contact *Contact) LoadContactEmails() ([]*ContactEmail, error) {
-	loader := newcontactEmailsLoader()
+	loader := NewContactEmailsLoader()
 	err := ent.LoadForeignKeyNodes(contact.Viewer, contact.ID, "contact_id", loader)
 	return loader.results, err
 }
@@ -220,7 +230,7 @@ func (contact *Contact) GenAllowListEdges() <-chan *ent.AssocEdgesResult {
 func (contact *Contact) GenAllowList() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
-		loader := newusersLoader()
+		loader := NewUsersLoader()
 		var result UsersResult
 		result.Err = <-ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, loader)
 		result.Users = loader.results
@@ -231,7 +241,7 @@ func (contact *Contact) GenAllowList() <-chan *UsersResult {
 
 // LoadAllowList returns the Users associated with the Contact instance
 func (contact *Contact) LoadAllowList() ([]*User, error) {
-	loader := newusersLoader()
+	loader := NewUsersLoader()
 	err := ent.LoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, loader)
 	return loader.results, err
 }

@@ -2,7 +2,6 @@ package ent
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -55,15 +54,7 @@ type chainableOutputLoader interface {
 type multiRowLoader interface {
 	loader
 	// GetNewInstance returns a new instance of the item being read from the database
-	// Two supported types:
-	// 1 DBObject
-	// 2 reflect.Value in which underlying element is a DBObject, specifically has a DBFields() method which can be called via reflection
-	// when it's a reflect.Value(), StructScan() will be called with the underlying Interface() method
-	// we want reflect.Value to know when to use reflection vs not
-	// It's expected that the item is also appended to the internal slice which is used to keep track
-	// of the items retrieved when returned.
-
-	GetNewInstance() interface{}
+	GetNewInstance() DBObject
 }
 
 // hmm.
@@ -161,7 +152,7 @@ func checkCacheForMultiInputLoader(l multiInputLoader) ([]string, error) {
 		}
 		if cachedItem != nil {
 			// TODO we need to care about correct order but for now whatever
-			fillInstance(l, cachedItem)
+			fillFromCacheItem(l, cachedItem)
 		} else {
 			ids = append(ids, inputID)
 		}
@@ -230,7 +221,7 @@ func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 			return err
 		}
 		for idx := range actual {
-			err := fillInstance(l, actual[idx])
+			err := fillFromCacheItem(l, actual[idx])
 			if err != nil {
 				return err
 			}
@@ -246,10 +237,7 @@ func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 }
 
 func fillEntityFromMap(entity DBObject, dataMap map[string]interface{}) error {
-	return fillEntityFromFields(entity.DBFields(), dataMap)
-}
-
-func fillEntityFromFields(fields DBFields, dataMap map[string]interface{}) error {
+	fields := entity.DBFields()
 	for k, v := range dataMap {
 		fieldFunc, ok := fields[k]
 		if !ok {
@@ -265,38 +253,9 @@ func fillEntityFromFields(fields DBFields, dataMap map[string]interface{}) error
 	return nil
 }
 
-func fillInstance(l multiRowLoader, dataMap map[string]interface{}) error {
+func fillFromCacheItem(l multiRowLoader, dataMap map[string]interface{}) error {
 	instance := l.GetNewInstance()
-	entity, ok := instance.(DBObject)
-	if ok {
-		return fillEntityFromMap(entity, dataMap)
-	}
-
-	value, ok := instance.(reflect.Value)
-	if !ok {
-		panic("invalid item returned from loader.GetNewInstance()")
-	}
-
-	fields := getFieldsFromReflectValue(value)
-	return fillEntityFromFields(fields, dataMap)
-}
-
-func getFieldsFromReflectValue(value reflect.Value) DBFields {
-	// DBFields reflection time
-	method := reflect.ValueOf(value.Interface()).MethodByName("DBFields")
-	if !method.IsValid() {
-		panic("method DBFields doesn't exist on passed in item")
-	}
-	res := method.Call([]reflect.Value{})
-	if len(res) != 1 {
-		panic("invalid number of results. DBFields should have returned 1 item")
-	}
-	val := res[0].Interface()
-	fields, ok := val.(DBFields)
-	if !ok {
-		panic("invalid value returned from DBFields")
-	}
-	return fields
+	return fillEntityFromMap(instance, dataMap)
 }
 
 func loadRowData(l singleRowLoader, q *dbQuery) error {
@@ -434,7 +393,7 @@ func (l *loadEdgesByType) GetCacheKey() string {
 	return getKeyForEdge(l.id, l.edgeType) + l.cfg.getKey()
 }
 
-func (l *loadEdgesByType) GetNewInstance() interface{} {
+func (l *loadEdgesByType) GetNewInstance() DBObject {
 	var edge AssocEdge
 	l.edges = append(l.edges, &edge)
 	return &edge
@@ -466,6 +425,10 @@ func (l *loadEdgesByType) LoadData() ([]*AssocEdge, error) {
 
 type nodeExists struct {
 	Exists bool `db:"exists"`
+}
+
+func (n *nodeExists) GetID() string {
+	panic("whaa")
 }
 
 func (n *nodeExists) DBFields() DBFields {
@@ -538,7 +501,7 @@ func (l *loadNodesLoader) LimitQueryTo(ids []string) {
 	l.ids = ids
 }
 
-func (l *loadNodesLoader) GetNewInstance() interface{} {
+func (l *loadNodesLoader) GetNewInstance() DBObject {
 	node := l.entLoader.GetNewInstance()
 	l.dbobjects = append(l.dbobjects, node)
 	return node

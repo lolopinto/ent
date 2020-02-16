@@ -4,6 +4,7 @@ package models
 
 import (
 	"context"
+	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
@@ -53,12 +54,11 @@ func (res *ContactEmailsResult) Error() string {
 
 // TODO this is going to be used to load a new object
 type contactEmailsLoader struct {
-	//    nodes map[string]ContactEmail
+	nodes   map[string]*ContactEmail
+	errs    map[string]error
 	results []*ContactEmail
+	m       sync.Mutex
 }
-
-// we need SetPrivacyResult for fetching from ent and dealing with result...
-// and that will be where the map will be
 
 func (res *contactEmailsLoader) GetNewInstance() ent.DBObject {
 	var contactEmail ContactEmail
@@ -69,18 +69,28 @@ func (res *contactEmailsLoader) GetConfig() ent.Config {
 	return &configs.ContactEmailConfig{}
 }
 
-func (res *contactEmailsLoader) SetResult(ents []ent.DBObject) {
-	res.results = make([]*ContactEmail, len(ents))
-	for idx, ent := range ents {
-		res.results[idx] = ent.(*ContactEmail)
+func (res *contactEmailsLoader) SetPrivacyResult(id string, obj ent.DBObject, err error) {
+	res.m.Lock()
+	defer res.m.Unlock()
+	if err != nil {
+		res.errs[id] = err
+	} else if obj != nil {
+		// TODO kill results?
+		ent := obj.(*ContactEmail)
+		res.nodes[id] = ent
+		res.results = append(res.results, ent)
 	}
 }
 
-// now we need a way privacy aware way of dealing with this...
-// TODO fix this name...
-func newcontactEmailsLoader() *contactEmailsLoader {
+// TODO???
+func (res *contactEmailsLoader) List() []*ContactEmail {
+	return res.results
+}
+
+func NewContactEmailsLoader() *contactEmailsLoader {
 	return &contactEmailsLoader{
-		//      nodes: make(map[string]ContactEmail),
+		nodes: make(map[string]*ContactEmail),
+		errs:  make(map[string]error),
 	}
 }
 
@@ -149,7 +159,7 @@ func GenLoadContactEmail(v viewer.ViewerContext, id string) <-chan *ContactEmail
 
 // LoadContactEmails loads multiple ContactEmails given the ids
 func LoadContactEmails(v viewer.ViewerContext, ids ...string) ([]*ContactEmail, error) {
-	loader := newcontactEmailsLoader()
+	loader := NewContactEmailsLoader()
 	err := ent.LoadNodes(v, ids, loader)
 	return loader.results, err
 }
@@ -158,7 +168,7 @@ func LoadContactEmails(v viewer.ViewerContext, ids ...string) ([]*ContactEmail, 
 func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
-		loader := newcontactEmailsLoader()
+		loader := NewContactEmailsLoader()
 		var result ContactEmailsResult
 		result.Err = <-ent.GenLoadNodes(v, ids, loader)
 		result.ContactEmails = loader.results

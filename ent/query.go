@@ -2,7 +2,6 @@ package ent
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/data"
@@ -42,13 +41,8 @@ func (q *dbQuery) StructScanRows(l multiRowLoader) error {
 			for rows.Next() {
 				var err error
 				instance := l.GetNewInstance()
-				value, ok := instance.(reflect.Value)
-				if ok {
-					err = rows.StructScan(value.Interface())
-				} else {
-					// otherwise assume it implements Scan interface
-					err = rows.StructScan(instance)
-				}
+				err = rows.StructScan(instance)
+
 				if err != nil {
 					fmt.Println(err)
 					return err
@@ -101,7 +95,7 @@ func (q *dbQuery) MapScanAndFillRows(l multiInputLoader) error {
 				setSingleCachedItem(key, dataMap, nil)
 
 				// call GetInstance() and DBFields on that instance
-				fillInstance(l, dataMap)
+				fillFromCacheItem(l, dataMap)
 			}
 			return nil
 		}})
