@@ -5,7 +5,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/data"
-	"github.com/lolopinto/ent/ent/cast"
 	"github.com/pkg/errors"
 )
 
@@ -36,75 +35,24 @@ func (q *dbQuery) MapScan(dataMap map[string]interface{}) error {
 
 func (q *dbQuery) StructScanRows(l multiRowLoader) error {
 	return q.query(&processRawData{
-		multiRows: func(rows *sqlx.Rows) error {
-
-			for rows.Next() {
-				var err error
-				instance := l.GetNewInstance()
-				err = rows.StructScan(instance)
-
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-			}
-			return nil
-		}})
+		multiRows: structScanRows(l),
+	})
 }
 
 func (q *dbQuery) MapScanRows() ([]map[string]interface{}, error) {
 	var dataRows []map[string]interface{}
 
 	err := q.query(&processRawData{
-		multiRows: func(rows *sqlx.Rows) error {
-
-			for rows.Next() {
-				dataMap := make(map[string]interface{})
-				err := rows.MapScan(dataMap)
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-				dataRows = append(dataRows, dataMap)
-			}
-			return nil
-		}})
+		multiRows: mapScanRows(&dataRows),
+	})
 
 	return dataRows, err
 }
 
-func (q *dbQuery) MapScanAndFillRows(l multiInputLoader) error {
+func (q *dbQuery) customProcessRows(fn func(*sqlx.Rows) error) error {
 	return q.query(&processRawData{
-		multiRows: func(rows *sqlx.Rows) error {
-
-			for rows.Next() {
-				dataMap := make(map[string]interface{})
-				err := rows.MapScan(dataMap)
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-
-				instance := l.GetNewInstance()
-				pkey := getPrimaryKeyForObj(instance)
-
-				// for now we assume always uuid, not always gonna work
-				idStr, err := cast.ToUUIDString(dataMap[pkey])
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-				key := l.GetCacheKeyForID(idStr)
-				// set in cache
-				setSingleCachedItem(key, dataMap, nil)
-
-				if err := fillEntityFromMap(instance, dataMap); err != nil {
-					fmt.Println(err)
-					return err
-				}
-			}
-			return nil
-		}})
+		multiRows: fn,
+	})
 }
 
 func (q *dbQuery) query(processor *processRawData) error {
@@ -155,12 +103,10 @@ func (q *dbQuery) processMultiRows(builder *sqlBuilder, stmt *sqlx.Stmt, process
 		return err
 	}
 	defer rows.Close()
-	err = processRows(rows)
-	if err != nil {
+	if err = processRows(rows); err != nil {
 		fmt.Println(err)
 	}
-	err = rows.Err()
-	if err != nil {
+	if err = rows.Err(); err != nil {
 		fmt.Println(err)
 	}
 	return err
@@ -195,4 +141,31 @@ func queryRow(query rowQueryer, entity DBObject) error {
 		return err
 	}
 	return fillEntityFromMap(entity, dataMap)
+}
+
+func mapScanRows(dataRows *[]map[string]interface{}) func(*sqlx.Rows) error {
+	return func(rows *sqlx.Rows) error {
+		for rows.Next() {
+			dataMap := make(map[string]interface{})
+			if err := rows.MapScan(dataMap); err != nil {
+				fmt.Println(err)
+				return err
+			}
+			*dataRows = append(*dataRows, dataMap)
+		}
+		return nil
+	}
+}
+
+func structScanRows(l multiRowLoader) func(*sqlx.Rows) error {
+	return func(rows *sqlx.Rows) error {
+		for rows.Next() {
+			instance := l.GetNewInstance()
+			if err := rows.StructScan(instance); err != nil {
+				fmt.Println(err)
+				return err
+			}
+		}
+		return nil
+	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
@@ -447,8 +448,7 @@ func (suite *modelsTestSuite) TestLoadAssocEdges() {
 	assert.Nil(suite.T(), result.Err)
 }
 
-func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
-	suite.T().SkipNow()
+func (suite *modelsTestSuite) TestLoadRawForeignKeyNodes() {
 	user := testingutils.CreateTestUser(suite.T())
 	contact := testingutils.CreateTestContact(suite.T(), user)
 	contact2 := testingutils.CreateTestContact(suite.T(), user)
@@ -469,16 +469,17 @@ func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
 
 	for _, tt := range testCases {
 		loader := models.NewContactsLoader()
-		err := ent.LoadRawForeignKeyNodes(tt.id, "user_id", loader)
-		contacts := loader.List()
+		contacts, err := ent.LoadRawForeignKeyNodes(tt.id, "user_id", loader)
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
 			assert.NotEmpty(suite.T(), contacts)
 
 			assert.Len(suite.T(), contacts, 2)
-			for _, loadedContact := range contacts {
-				assert.NotZero(suite.T(), loadedContact)
-				assert.Contains(suite.T(), []string{contact.ID, contact2.ID}, loadedContact.ID)
+			for _, contactData := range contacts {
+				assert.NotZero(suite.T(), contactData)
+				id, err := cast.ToUUIDString(contactData["id"])
+				assert.Nil(suite.T(), err)
+				assert.Contains(suite.T(), []string{contact.ID, contact2.ID}, id)
 			}
 		} else {
 			assert.Len(suite.T(), contacts, 0)
@@ -487,9 +488,7 @@ func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
 	}
 }
 
-func (suite *modelsTestSuite) TestLoadNodesByType() {
-	// we don't want list of not-privacy checked ents getting out of here so have to handle this...
-	suite.T().Skip("skipping for now until we provide an API to get list of maps here")
+func (suite *modelsTestSuite) TestLoadRawNodesByType() {
 	user := testingutils.CreateTestUser(suite.T())
 	event := testingutils.CreateTestEvent(suite.T(), user)
 	event2 := testingutils.CreateTestEvent(suite.T(), user)
@@ -510,16 +509,17 @@ func (suite *modelsTestSuite) TestLoadNodesByType() {
 
 	for _, tt := range testCases {
 		loader := models.NewEventsLoader()
-		err := ent.LoadRawNodesByType(tt.id1, models.UserToEventsEdge, loader)
+		events, err := ent.LoadRawNodesByType(tt.id1, models.UserToEventsEdge, loader)
 		assert.Nil(suite.T(), err)
-		events := loader.List()
 		if tt.foundResult {
 			assert.NotEmpty(suite.T(), events)
 
 			assert.Len(suite.T(), events, 2)
-			for _, loadedEvent := range events {
-				assert.NotZero(suite.T(), loadedEvent)
-				assert.Contains(suite.T(), []string{event.ID, event2.ID}, loadedEvent.ID)
+			for _, eventData := range events {
+				assert.NotZero(suite.T(), eventData)
+				id, err := cast.ToUUIDString(eventData["id"])
+				assert.Nil(suite.T(), err)
+				assert.Contains(suite.T(), []string{event.ID, event2.ID}, id)
 			}
 		} else {
 			assert.Len(suite.T(), events, 0)
@@ -541,7 +541,6 @@ func (suite *modelsTestSuite) TestLoadNodeWithJSON() {
 }
 
 func (suite *modelsTestSuite) TestLoadingMultiNodesWithJSON() {
-	suite.T().SkipNow()
 	// This is to test that we can load multiple objects that have JSON where we can't StructScan
 	// so we have to MapScan and then fill the nodes
 	residentNames := []string{"The Queen", "Prince Phillip"}
@@ -555,21 +554,22 @@ func (suite *modelsTestSuite) TestLoadingMultiNodesWithJSON() {
 		address3.ID,
 	}
 	loader := models.NewAddressesLoader()
-	err := ent.LoadNodesRawData(ids, loader)
-	addresses := loader.List()
+	addresses, err := ent.LoadNodesRawData(ids, loader)
 	require.NoError(suite.T(), err)
 
 	assert.Len(suite.T(), addresses, 3)
 
-	for _, loadedAddress := range addresses {
-		assert.Equal(suite.T(), residentNames, loadedAddress.ResidentNames)
+	for _, addressData := range addresses {
+		var loadedResidentNames []string
+		err := cast.UnmarshallJSON(addressData["resident_names"], &loadedResidentNames)
+		assert.Nil(suite.T(), err)
+		assert.Equal(suite.T(), residentNames, loadedResidentNames)
 	}
 }
 
-func (suite *modelsTestSuite) TestLoadingRawMultiNodesWithJSON() {
-	// This case is different from above. We're not going through any caching layer
-	// that would have needed MapScan previously. we StructScan directly so what would have been expected here
-	suite.T().Skip("need to come back to this edge case")
+func (suite *modelsTestSuite) TestLoadRawQueryWithJSON() {
+	// This tests the raw_data mode
+	// We still don't have a way to test StructScan that loader orchestrates on its own since we go through caching layer as expected
 	residentNames := []string{"The Queen", "Prince Phillip"}
 	address := testingutils.CreateTestAddress(suite.T(), residentNames)
 	address2 := testingutils.CreateTestAddress(suite.T(), residentNames)
@@ -580,15 +580,20 @@ func (suite *modelsTestSuite) TestLoadingRawMultiNodesWithJSON() {
 		address2.ID: true,
 		address3.ID: true,
 	}
-	var addresses []*models.Address
-	err := ent.LoadRawQuery("SELECT * FROM addresses", &addresses)
+	loader := models.NewAddressesLoader()
+	addresses, err := ent.LoadRawQuery("SELECT * FROM addresses", loader)
 	require.NoError(suite.T(), err)
 
-	assert.Len(suite.T(), addresses, 1)
+	assert.Len(suite.T(), addresses, 3)
 
-	for _, loadedAddress := range addresses {
-		assert.NotNil(suite.T(), ids[loadedAddress.ID])
-		assert.Equal(suite.T(), residentNames, loadedAddress.ResidentNames)
+	for _, addressData := range addresses {
+		id, err := cast.ToUUIDString(addressData["id"])
+		assert.Nil(suite.T(), err)
+		assert.NotNil(suite.T(), ids[id])
+		var loadedResidentNames []string
+		err = cast.UnmarshallJSON(addressData["resident_names"], &loadedResidentNames)
+		assert.Nil(suite.T(), err)
+		assert.Equal(suite.T(), residentNames, loadedResidentNames)
 	}
 }
 

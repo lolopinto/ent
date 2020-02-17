@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lolopinto/ent/ent/cast"
 	"github.com/pkg/errors"
 )
 
@@ -24,6 +25,7 @@ type loader interface {
 	GetSQLBuilder() (*sqlBuilder, error)
 }
 
+// works for both 1-N and 1-1 queries depending on context
 type cachedLoader interface {
 	loader
 	GetCacheKey() string
@@ -57,18 +59,31 @@ type multiRowLoader interface {
 	GetNewInstance() DBObject
 }
 
-// hmm.
-// for now coupling this but this may not always be true...
-type multiInputLoader interface {
-	// this handles going through the inputs, figuring out what's cached first and then limiting the query to only those that are not in the cache and
-	// then after fetching from the db, storing cached item based on the CacheKey returned
-	multiRowLoader
-	GetInputIDs() []string
-	LimitQueryTo(ids []string)
-	// GetCacheKeyForID assumes the key is dependent on the id
-	// Called For each inputID to see if we can hit the cache for that id and then called for each id retrieved from the database to store in cache
-	GetCacheKeyForID(id string) string
-	IsMultiInputLoader() bool
+type configureQueryResult struct {
+	config configureQuery
+	errs   []error
+}
+
+type configureQuery int
+
+const (
+	continueQuery configureQuery = 1
+	cancelQuery   configureQuery = 2
+	errorQuery    configureQuery = 3
+)
+
+func configureWith(config configureQuery, errs ...error) configureQueryResult {
+	res := configureQueryResult{config: config}
+	res.errs = errs
+	return res
+}
+
+type customMultiLoader interface {
+	ProcessRows() func(rows *sqlx.Rows) error
+}
+
+type configurableLoader interface {
+	Configure() configureQueryResult
 }
 
 // terrible name
@@ -103,24 +118,24 @@ func loadData(l loader, options ...func(*loaderConfig)) error {
 		}
 	}
 
-	// if the loader gets something like an empty string and we don't want to send an error,
-	// we can save load on the db by not wasting a query and we don't wanna return an error
-	abortEarly, ok := l.(abortEarlyLoader)
-	if ok && abortEarly.AbortEarly() {
-		return nil
-	}
+	// any configurations (not best name) or anything (cache, wrong id etc) that'll
+	// prevent us from hitting the db?
+	configurable, ok := l.(configurableLoader)
+	if ok {
+		res := configurable.Configure()
 
-	// handle loaders that have multiple items that can be cached
-	// and check to see if we need to hit db
-	multiInputLoader, ok := l.(multiInputLoader)
-	if ok && multiInputLoader.IsMultiInputLoader() {
-		ids, err := checkCacheForMultiInputLoader(multiInputLoader)
-		if err != nil {
-			return err
-		}
-		// nothing to do here
-		if len(ids) == 0 {
+		switch res.config {
+		case cancelQuery:
 			return nil
+		case errorQuery:
+			if len(res.errs) == 0 {
+				panic("errorQuery returned without specifying errors")
+			}
+			// get error and return it
+			return CoalesceErr(res.errs...)
+
+		default:
+			// continue and move on...
 		}
 	}
 
@@ -138,30 +153,6 @@ func loadData(l loader, options ...func(*loaderConfig)) error {
 		return loadRowData(singleRowLoader, q)
 	}
 	panic("invalid loader passed")
-}
-
-func checkCacheForMultiInputLoader(l multiInputLoader) ([]string, error) {
-	var ids []string
-	for _, inputID := range l.GetInputIDs() {
-		cachedItem, err := getItemInCache(
-			l.GetCacheKeyForID(inputID),
-		)
-		if err != nil {
-			fmt.Println("error getting cached item", err)
-			return nil, err
-		}
-		if cachedItem != nil {
-			// TODO we need to care about correct order but for now whatever
-			fillFromCacheItem(l, cachedItem)
-		} else {
-			ids = append(ids, inputID)
-		}
-	}
-
-	if len(ids) != 0 {
-		l.LimitQueryTo(ids)
-	}
-	return ids, nil
 }
 
 func chainLoaders(loaders []loader, options ...func(*loaderConfig)) error {
@@ -210,6 +201,8 @@ func chainLoaders(loaders []loader, options ...func(*loaderConfig)) error {
 func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 	cacheable, ok := l.(cachedLoader)
 	if ok && cacheEnabled {
+		// 1 key -> N items e.g. edge?
+		// this is generic enough that we can support
 		key := cacheable.GetCacheKey()
 
 		fn := func() ([]map[string]interface{}, error) {
@@ -228,11 +221,15 @@ func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 		}
 		return nil
 	}
-	multiCacheable, ok := l.(multiInputLoader)
+
+	custom, ok := l.(customMultiLoader)
 	if ok {
-		return q.MapScanAndFillRows(multiCacheable)
+		return q.customProcessRows(custom.ProcessRows())
 	}
-	// TODO fix TestLoadingRawMultiNodesWithJSON in models_test
+
+	// we still need to fix this edge case where it's an object with json and we shouldn't
+	// struct scan. we need a way to say we should mapscan instead
+	// UnsupportedScan for generated loader eventually needed
 	return q.StructScanRows(l)
 }
 
@@ -263,15 +260,15 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 		return errors.New("nil entity passed to loadData")
 	}
 
-	fn := func() (map[string]interface{}, error) {
-		return mapScan(q)
-	}
-
 	// loader supports a cache. check it out
 	cacheable, ok := l.(cachedLoader)
 	if ok && cacheEnabled {
 		// handle cache access
 		key := cacheable.GetCacheKey()
+
+		fn := func() (map[string]interface{}, error) {
+			return mapScan(q)
+		}
 
 		actual, err := getItemFromCacheMaybe(key, fn)
 		if err != nil {
@@ -356,8 +353,13 @@ type loadEdgesByType struct {
 	cfg        LoadEdgeConfig
 }
 
-func (l *loadEdgesByType) AbortEarly() bool {
-	return l.id == ""
+func (l *loadEdgesByType) Configure() configureQueryResult {
+	// If no id, no need to actually hit the database.
+	if l.id == "" {
+		return configureWith(cancelQuery)
+	}
+	// continue on
+	return configureWith(continueQuery)
 }
 
 func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
@@ -462,7 +464,6 @@ func (l *loadAssocEdgeConfigExists) GetOutput() interface{} {
 	return nil
 }
 
-// TODO collapse this into same loader as above
 // kill fromPartsLoader collapse into this and have a limit 1
 type loadNodesLoader struct {
 	// todo combine these 3 (and others) into sqlBuilder options of some sort
@@ -471,6 +472,13 @@ type loadNodesLoader struct {
 	rawQuery   string
 	entLoader  MultiEntLoader
 	dbobjects  []DBObject
+	queryIDs   []string // ids we're fetching from db
+	rawData    bool     // flat that indicates we're fetching raw data and not going through
+	// privacy layer. we'll never struct scan and data will be in dataRows
+	// use if you want rawData for built in ents or have custom loaders where you're accumulating each
+	// call to loader.GetNewInstance() and storing that yourself
+	// We don't do that in the generated loaders because we want privacy aware data eventually
+	dataRows []map[string]interface{}
 }
 
 func (l *loadNodesLoader) Validate() error {
@@ -491,14 +499,6 @@ func (l *loadNodesLoader) SetInput(val interface{}) error {
 	}
 	l.ids = ids
 	return nil
-}
-
-func (l *loadNodesLoader) GetInputIDs() []string {
-	return l.ids
-}
-
-func (l *loadNodesLoader) LimitQueryTo(ids []string) {
-	l.ids = ids
 }
 
 func (l *loadNodesLoader) GetNewInstance() DBObject {
@@ -535,10 +535,80 @@ func (l *loadNodesLoader) GetCacheKeyForID(id string) string {
 	return getKeyForNode(id, l.entLoader.GetConfig().GetTableName())
 }
 
-func (l *loadNodesLoader) IsMultiInputLoader() bool {
-	// if either of these flags were set, not the case we care about
+func (l *loadNodesLoader) Configure() configureQueryResult {
+	// not loading a bunch of ids which may have a cache and all that complex stuff. simplify
 	if len(l.whereParts) != 0 || l.rawQuery != "" {
-		return false
+		return configureWith(continueQuery)
 	}
-	return true
+
+	// if we ever need this logic reused. we can break this up
+	// with composition instead of trying to handle all the complex cases
+	// generically in main path
+
+	var queryIDs []string
+	for _, inputID := range l.ids {
+		cachedItem, err := getItemInCache(
+			l.GetCacheKeyForID(inputID),
+		)
+		if err != nil {
+			fmt.Println("error getting cached item", err)
+			return configureWith(errorQuery, err)
+		}
+
+		if cachedItem != nil {
+			// TODO we need to care about correct order but for now whatever
+			fillFromCacheItem(l, cachedItem)
+		} else {
+			queryIDs = append(queryIDs, inputID)
+		}
+	}
+	l.queryIDs = queryIDs
+
+	// nothing to fetch, we're done
+	if len(queryIDs) == 0 {
+		return configureWith(cancelQuery)
+	}
+	return configureWith(continueQuery)
+}
+
+func (l *loadNodesLoader) ProcessRows() func(rows *sqlx.Rows) error {
+	if l.rawData {
+		return mapScanRows(&l.dataRows)
+	}
+
+	// whereParts or rawQuery structScan
+	// not quite accurate since we need unsupportedscan logic here
+	if len(l.queryIDs) == 0 || !cacheEnabled {
+		return structScanRows(l)
+	}
+
+	// multi-ids and cache enabled, check for cache.
+	return func(rows *sqlx.Rows) error {
+		for rows.Next() {
+			dataMap := make(map[string]interface{})
+			if err := rows.MapScan(dataMap); err != nil {
+				fmt.Println(err)
+				return err
+			}
+
+			instance := l.GetNewInstance()
+			pkey := getPrimaryKeyForObj(instance)
+
+			// for now we assume always uuid, not always gonna work
+			idStr, err := cast.ToUUIDString(dataMap[pkey])
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			key := l.GetCacheKeyForID(idStr)
+			// set in cache
+			setSingleCachedItem(key, dataMap, nil)
+
+			if err := fillEntityFromMap(instance, dataMap); err != nil {
+				fmt.Println(err)
+				return err
+			}
+		}
+		return nil
+	}
 }

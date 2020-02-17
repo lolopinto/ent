@@ -82,6 +82,7 @@ func getKeyForEdge(id string, edgeType EdgeType) string {
 // }
 
 // TODO move this and other raw data access pattern methods to a lower level API below ent
+// TODO kill this API since we want map[string]interface{} returned
 func LoadNodeRawData(id string, entity DBObject, entConfig Config) error {
 	return loadData(
 		&loadNodeFromPKey{
@@ -93,12 +94,14 @@ func LoadNodeRawData(id string, entity DBObject, entConfig Config) error {
 }
 
 // LoadNodesRawData loads raw data for multiple objects
-func LoadNodesRawData(ids []string, entLoader MultiEntLoader) error {
+func LoadNodesRawData(ids []string, entLoader MultiEntLoader) ([]map[string]interface{}, error) {
 	l := &loadNodesLoader{
 		ids:       ids,
 		entLoader: entLoader,
+		rawData:   true,
 	}
-	return loadData(l)
+	err := loadData(l)
+	return l.dataRows, err
 }
 
 func genLoadRawData(id string, entity DBObject, entConfig Config, errChan chan<- error) {
@@ -107,9 +110,17 @@ func genLoadRawData(id string, entity DBObject, entConfig Config, errChan chan<-
 }
 
 // TODO also move to lower level loader/data package
-func LoadRawForeignKeyNodes(id string, colName string, entLoader MultiEntLoader) error {
-	res := <-genLoadForeignKeyNodes(id, colName, entLoader)
-	return res.err
+func LoadRawForeignKeyNodes(id string, colName string, entLoader MultiEntLoader) ([]map[string]interface{}, error) {
+	l := &loadNodesLoader{
+		entLoader: entLoader,
+		whereParts: []interface{}{
+			colName,
+			id,
+		},
+		rawData: true,
+	}
+	err := loadData(l)
+	return l.dataRows, err
 }
 
 func genLoadForeignKeyNodes(id string, colName string, entLoader MultiEntLoader) <-chan multiEntResult {
@@ -570,9 +581,22 @@ func LoadEdgeByType(id string, id2 string, edgeType EdgeType) (*AssocEdge, error
 	// return &edge, nil
 }
 
-func LoadRawNodesByType(id string, edgeType EdgeType, entLoader MultiEntLoader) error {
-	res := <-genLoadNodesByType(id, edgeType, entLoader)
-	return res.err
+func LoadRawNodesByType(id string, edgeType EdgeType, entLoader MultiEntLoader) ([]map[string]interface{}, error) {
+	l := &loadNodesLoader{
+		entLoader: entLoader,
+		rawData:   true,
+	}
+	err := chainLoaders(
+		[]loader{
+			&loadEdgesByType{
+				id:         id,
+				edgeType:   edgeType,
+				outputID2s: true,
+			},
+			l,
+		},
+	)
+	return l.dataRows, err
 }
 
 func getMultiEntResult(entLoader MultiEntLoader, l *loadNodesLoader, err error) multiEntResult {
@@ -650,13 +674,23 @@ func GenLoadAssocEdges() <-chan AssocEdgeDatasResult {
 	return res
 }
 
-func LoadRawQuery(query string, nodes interface{}) error {
-	// TODO
-	return nil
-	// return loadData(&loadMultipleNodesFromQuery{
-	// 	sqlBuilder: &sqlBuilder{
-	// 		rawQuery: query,
-	// 	},
-	// 	nodes: nodes,
-	// })
+func GenLoadRawQuery(query string, loader MultiEntLoader) <-chan error {
+	res := make(chan error)
+	go func() {
+		res <- loadData(&loadNodesLoader{
+			rawQuery:  query,
+			entLoader: loader,
+		})
+	}()
+	return res
+}
+
+func LoadRawQuery(query string, loader MultiEntLoader) ([]map[string]interface{}, error) {
+	l := &loadNodesLoader{
+		rawQuery:  query,
+		entLoader: loader,
+		rawData:   true,
+	}
+	err := loadData(l)
+	return l.dataRows, err
 }
