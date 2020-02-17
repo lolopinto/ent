@@ -187,3 +187,37 @@ type AssocEdgeConfig struct {
 func (config *AssocEdgeConfig) GetTableName() string {
 	return "assoc_edge_config"
 }
+
+type assocEdgeLoader struct {
+	results []*AssocEdgeData
+}
+
+func (res *assocEdgeLoader) GetNewInstance() DBObject {
+	var edge AssocEdgeData
+	res.results = append(res.results, &edge)
+	return &edge
+}
+
+func (res *assocEdgeLoader) GetConfig() Config {
+	return &AssocEdgeConfig{}
+}
+
+// AssocEdgeDataResult stores the result of loading AssocEdgeData
+type AssocEdgeDataResult struct {
+	EdgeData *AssocEdgeData
+	Err      error
+}
+
+func (res *AssocEdgeDataResult) Error() string {
+	return res.Err.Error()
+}
+
+// AssocEdgeDatasResult stores the result of loading all assoc edges concurrently
+type AssocEdgeDatasResult struct {
+	Edges []*AssocEdgeData
+	Err   error
+}
+
+func (res *AssocEdgeDatasResult) Error() string {
+	return res.Err.Error()
+}

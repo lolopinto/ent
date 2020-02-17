@@ -868,9 +868,9 @@ func (suite *edgeTestSuite) validateSchema(
 	}
 
 	assert.Equal(suite.T(), expectedEdges, len(s.GetEdges()))
-	var dbEdges []*ent.AssocEdgeData
-	assert.Nil(suite.T(), ent.GenLoadAssocEdges(&dbEdges))
-	assert.Equal(suite.T(), len(s.GetEdges()), len(dbEdges))
+	dbEdges := <-ent.GenLoadAssocEdges()
+	assert.Nil(suite.T(), dbEdges.Err)
+	assert.Equal(suite.T(), len(s.GetEdges()), len(dbEdges.Edges))
 }
 
 func TestEdgeSuite(t *testing.T) {

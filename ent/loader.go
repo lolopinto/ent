@@ -321,7 +321,7 @@ type loadNodeFromPKey struct {
 
 func getPrimaryKeyForObj(entity DBObject) string {
 	pKey := "id"
-	entityWithPkey, ok := entity.(dataEntityWithDiffPKey)
+	entityWithPkey, ok := entity.(DBObjectWithDiffKey)
 	if ok {
 		pKey = entityWithPkey.GetPrimaryKey()
 	}

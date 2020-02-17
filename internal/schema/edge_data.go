@@ -10,15 +10,14 @@ import (
 
 func (m NodeMapInfo) loadExistingEdges() *assocEdgeData {
 	// load all edges in db
-	var existingEdges []*ent.AssocEdgeData
-	err := ent.GenLoadAssocEdges(&existingEdges)
-	if err != nil {
-		fmt.Println("error loading data. assoc_edge_config related", err)
+	result := <-ent.GenLoadAssocEdges()
+	if result.Err != nil {
+		fmt.Println("error loading data. assoc_edge_config related", result.Err)
 	}
-	util.Die(err)
+	util.Die(result.Err)
 
 	edgeMap := make(map[string]*ent.AssocEdgeData)
-	for _, assocEdgeData := range existingEdges {
+	for _, assocEdgeData := range result.Edges {
 		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
 	}
 	return &assocEdgeData{

@@ -436,17 +436,15 @@ func verifyEdgeByType(suite *modelsTestSuite, f func() (*ent.AssocEdge, error), 
 }
 
 func (suite *modelsTestSuite) TestLoadAssocEdges() {
-	suite.T().SkipNow()
 	// This is dependent on 2 things:
 	// 1/ table already existing so first pass of chained loader works
 	// 2/ table not being empty and full of valid data
 	// we can't remove and re-add fresh data because of how dbcleaner works
 	// we can't validate the number of edges here because that's subject to change
-	var existingEdges []*ent.AssocEdgeData
-	err := ent.GenLoadAssocEdges(&existingEdges)
+	result := <-ent.GenLoadAssocEdges()
 
-	assert.NotEmpty(suite.T(), existingEdges)
-	assert.Nil(suite.T(), err)
+	assert.NotEmpty(suite.T(), result.Edges)
+	assert.Nil(suite.T(), result.Err)
 }
 
 func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {

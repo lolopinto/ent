@@ -57,7 +57,7 @@ type DBObject interface {
 // implement this interface to indicate that the primary key
 // in the table isn't "id" but a different field.
 // For now only supports single primary key so not exposing it publicly
-type dataEntityWithDiffPKey interface {
+type DBObjectWithDiffKey interface {
 	DBObject
 	GetPrimaryKey() string // for now only do single primary key
 }

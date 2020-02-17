@@ -85,7 +85,11 @@ func (q *dbQuery) MapScanAndFillRows(l multiInputLoader) error {
 					return err
 				}
 
-				idStr, err := cast.ToUUIDString(dataMap["id"])
+				instance := l.GetNewInstance()
+				pkey := getPrimaryKeyForObj(instance)
+
+				// for now we assume always uuid, not always gonna work
+				idStr, err := cast.ToUUIDString(dataMap[pkey])
 				if err != nil {
 					fmt.Println(err)
 					return err
@@ -94,8 +98,10 @@ func (q *dbQuery) MapScanAndFillRows(l multiInputLoader) error {
 				// set in cache
 				setSingleCachedItem(key, dataMap, nil)
 
-				// call GetInstance() and DBFields on that instance
-				fillFromCacheItem(l, dataMap)
+				if err := fillEntityFromMap(instance, dataMap); err != nil {
+					fmt.Println(err)
+					return err
+				}
 			}
 			return nil
 		}})

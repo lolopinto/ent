@@ -92,7 +92,7 @@ func (op *insertNodeOp) getInitColsAndVals() ([]string, []interface{}) {
 	// TODO: break this down into something not hardcoded in here
 	var columns []string
 	var values []interface{}
-	_, ok := op.Entity.(dataEntityWithDiffPKey)
+	_, ok := op.Entity.(DBObjectWithDiffKey)
 	if ok {
 		columns = []string{"created_at", "updated_at"}
 		values = []interface{}{t, t}

@@ -621,17 +621,33 @@ func genLoadNodes(ids []string, entLoader MultiEntLoader) <-chan multiEntResult 
 	return res
 }
 
-func GenLoadAssocEdges(nodes *[]*AssocEdgeData) error {
-	// TODO....
-	return chainLoaders(
-		[]loader{
-			&loadAssocEdgeConfigExists{},
-			&loadNodesLoader{
-				rawQuery: "SELECT * FROM assoc_edge_config",
-				//				nodes:    nodes,
+// GenLoadAssocEdges loads all assoc edges from the db
+// TODO correct cache for this. we should load this once per request or have this
+// be in a central cache easily available
+func GenLoadAssocEdges() <-chan AssocEdgeDatasResult {
+	res := make(chan AssocEdgeDatasResult)
+	go func() {
+		entLoader := &assocEdgeLoader{}
+		err := chainLoaders(
+			[]loader{
+				&loadAssocEdgeConfigExists{},
+				&loadNodesLoader{
+					rawQuery:  "SELECT * FROM assoc_edge_config",
+					entLoader: entLoader,
+				},
 			},
-		},
-	)
+		)
+		if err != nil {
+			res <- AssocEdgeDatasResult{
+				Err: err,
+			}
+		} else {
+			res <- AssocEdgeDatasResult{
+				Edges: entLoader.results,
+			}
+		}
+	}()
+	return res
 }
 
 func LoadRawQuery(query string, nodes interface{}) error {
