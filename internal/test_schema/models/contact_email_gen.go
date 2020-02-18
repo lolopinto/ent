@@ -28,7 +28,7 @@ type ContactEmail struct {
 	Viewer       viewer.ViewerContext
 }
 
-//  type ContactEmails map[string]ContactEmail
+type ContactEmails map[string]*ContactEmail
 
 // ContactEmailResult stores the result of loading a ContactEmail. It's a tuple type which has 2 fields:
 // a ContactEmail and an error
@@ -53,23 +53,26 @@ func (res *ContactEmailsResult) Error() string {
 }
 
 // TODO this is going to be used to load a new object
-type contactEmailsLoader struct {
+// Rename to UserLoader and NewUserLoader....
+type contactEmailLoader struct {
 	nodes   map[string]*ContactEmail
 	errs    map[string]error
 	results []*ContactEmail
+	v       viewer.ViewerContext
 	m       sync.Mutex
 }
 
-func (res *contactEmailsLoader) GetNewInstance() ent.DBObject {
+func (res *contactEmailLoader) GetNewInstance() ent.DBObject {
 	var contactEmail ContactEmail
+	contactEmail.Viewer = res.v
 	return &contactEmail
 }
 
-func (res *contactEmailsLoader) GetConfig() ent.Config {
+func (res *contactEmailLoader) GetConfig() ent.Config {
 	return &configs.ContactEmailConfig{}
 }
 
-func (res *contactEmailsLoader) SetPrivacyResult(id string, obj ent.DBObject, err error) {
+func (res *contactEmailLoader) SetPrivacyResult(id string, obj ent.DBObject, err error) {
 	res.m.Lock()
 	defer res.m.Unlock()
 	if err != nil {
@@ -82,15 +85,27 @@ func (res *contactEmailsLoader) SetPrivacyResult(id string, obj ent.DBObject, er
 	}
 }
 
+func (res *contactEmailLoader) GetEntForID(id string) *ContactEmail {
+	return res.nodes[id]
+}
+
 // TODO???
-func (res *contactEmailsLoader) List() []*ContactEmail {
+func (res *contactEmailLoader) List() []*ContactEmail {
 	return res.results
 }
 
-func NewContactEmailsLoader() *contactEmailsLoader {
-	return &contactEmailsLoader{
+func (res *contactEmailLoader) getFirstInstance() *ContactEmail {
+	if len(res.results) == 0 {
+		return nil
+	}
+	return res.results[0]
+}
+
+func NewContactEmailLoader(v viewer.ViewerContext) *contactEmailLoader {
+	return &contactEmailLoader{
 		nodes: make(map[string]*ContactEmail),
 		errs:  make(map[string]error),
+		v:     v,
 	}
 }
 
@@ -139,9 +154,9 @@ func GenLoadContactEmailFromContext(ctx context.Context, id string) <-chan *Cont
 
 // LoadContactEmail loads the given ContactEmail given the viewer and id
 func LoadContactEmail(v viewer.ViewerContext, id string) (*ContactEmail, error) {
-	var contactEmail ContactEmail
-	err := ent.LoadNode(v, id, &contactEmail)
-	return &contactEmail, err
+	loader := NewContactEmailLoader(v)
+	err := ent.LoadNode(v, id, loader)
+	return loader.nodes[id], err
 }
 
 // GenLoadContactEmail loads the given ContactEmail given the id
@@ -149,9 +164,9 @@ func GenLoadContactEmail(v viewer.ViewerContext, id string) <-chan *ContactEmail
 	res := make(chan *ContactEmailResult)
 	go func() {
 		var result ContactEmailResult
-		var contactEmail ContactEmail
-		result.Err = <-ent.GenLoadNode(v, id, &contactEmail)
-		result.ContactEmail = &contactEmail
+		loader := NewContactEmailLoader(v)
+		result.Err = <-ent.GenLoadNode(v, id, loader)
+		result.ContactEmail = loader.nodes[id]
 		res <- &result
 	}()
 	return res
@@ -159,7 +174,7 @@ func GenLoadContactEmail(v viewer.ViewerContext, id string) <-chan *ContactEmail
 
 // LoadContactEmails loads multiple ContactEmails given the ids
 func LoadContactEmails(v viewer.ViewerContext, ids ...string) ([]*ContactEmail, error) {
-	loader := NewContactEmailsLoader()
+	loader := NewContactEmailLoader(v)
 	err := ent.LoadNodes(v, ids, loader)
 	return loader.results, err
 }
@@ -168,7 +183,7 @@ func LoadContactEmails(v viewer.ViewerContext, ids ...string) ([]*ContactEmail, 
 func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
-		loader := NewContactEmailsLoader()
+		loader := NewContactEmailLoader(v)
 		var result ContactEmailsResult
 		result.Err = <-ent.GenLoadNodes(v, ids, loader)
 		result.ContactEmails = loader.results

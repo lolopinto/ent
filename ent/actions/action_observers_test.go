@@ -59,7 +59,7 @@ func (suite *actionsObserversSuite) TestObserverReturnsError() {
 	assert.True(suite.T(), l.Contains("error from observer: microservice down"))
 
 	reloadedUser, err := models.LoadUser(v, user.ID)
-	assert.Zero(suite.T(), *reloadedUser)
+	assert.Nil(suite.T(), reloadedUser)
 	assert.NotNil(suite.T(), err)
 }
 

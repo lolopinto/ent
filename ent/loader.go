@@ -21,6 +21,7 @@ func EnableCache() {
 	cacheEnabled = true
 }
 
+// TODO rename to dataLoader or something to differentiate from (Ent)Loader
 type loader interface {
 	GetSQLBuilder() (*sqlBuilder, error)
 }
@@ -470,7 +471,7 @@ type loadNodesLoader struct {
 	whereParts []interface{}
 	ids        []string
 	rawQuery   string
-	entLoader  MultiEntLoader
+	entLoader  Loader
 	dbobjects  []DBObject
 	queryIDs   []string // ids we're fetching from db
 	rawData    bool     // flat that indicates we're fetching raw data and not going through

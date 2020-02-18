@@ -18,6 +18,7 @@ type edgeGroupMutationBuilderSuite struct {
 func (suite *edgeGroupMutationBuilderSuite) SetupSuite() {
 	suite.Tables = []string{
 		"users",
+		"event_creator_edges",
 		"event_invited_edges",
 		"events",
 		"user_family_members_edges",

@@ -94,7 +94,7 @@ func LoadNodeRawData(id string, entity DBObject, entConfig Config) error {
 }
 
 // LoadNodesRawData loads raw data for multiple objects
-func LoadNodesRawData(ids []string, entLoader MultiEntLoader) ([]map[string]interface{}, error) {
+func LoadNodesRawData(ids []string, entLoader Loader) ([]map[string]interface{}, error) {
 	l := &loadNodesLoader{
 		ids:       ids,
 		entLoader: entLoader,
@@ -104,13 +104,16 @@ func LoadNodesRawData(ids []string, entLoader MultiEntLoader) ([]map[string]inte
 	return l.dataRows, err
 }
 
-func genLoadRawData(id string, entity DBObject, entConfig Config, errChan chan<- error) {
-	err := LoadNodeRawData(id, entity, entConfig)
-	errChan <- err
+func genLoadRawData(id string, entity DBObject, entConfig Config) <-chan error {
+	res := make(chan error)
+	go func() {
+		res <- LoadNodeRawData(id, entity, entConfig)
+	}()
+	return res
 }
 
 // TODO also move to lower level loader/data package
-func LoadRawForeignKeyNodes(id string, colName string, entLoader MultiEntLoader) ([]map[string]interface{}, error) {
+func LoadRawForeignKeyNodes(id string, colName string, entLoader Loader) ([]map[string]interface{}, error) {
 	l := &loadNodesLoader{
 		entLoader: entLoader,
 		whereParts: []interface{}{
@@ -123,7 +126,7 @@ func LoadRawForeignKeyNodes(id string, colName string, entLoader MultiEntLoader)
 	return l.dataRows, err
 }
 
-func genLoadForeignKeyNodes(id string, colName string, entLoader MultiEntLoader) <-chan multiEntResult {
+func genLoadForeignKeyNodes(id string, colName string, entLoader Loader) <-chan multiEntResult {
 	res := make(chan multiEntResult)
 	go func() {
 		l := &loadNodesLoader{
@@ -146,6 +149,9 @@ func SaveChangeset(changeset Changeset) error {
 		return err
 	}
 	entity := changeset.Entity()
+	// TODO fix this.
+	// This should be set beforehand
+	// anything which doesn't have this needs to be fixed...
 	if !isNil(entity) {
 		entreflect.SetViewerInEnt(changeset.GetViewer(), entity)
 	}
@@ -581,7 +587,7 @@ func LoadEdgeByType(id string, id2 string, edgeType EdgeType) (*AssocEdge, error
 	// return &edge, nil
 }
 
-func LoadRawNodesByType(id string, edgeType EdgeType, entLoader MultiEntLoader) ([]map[string]interface{}, error) {
+func LoadRawNodesByType(id string, edgeType EdgeType, entLoader Loader) ([]map[string]interface{}, error) {
 	l := &loadNodesLoader{
 		entLoader: entLoader,
 		rawData:   true,
@@ -599,7 +605,7 @@ func LoadRawNodesByType(id string, edgeType EdgeType, entLoader MultiEntLoader) 
 	return l.dataRows, err
 }
 
-func getMultiEntResult(entLoader MultiEntLoader, l *loadNodesLoader, err error) multiEntResult {
+func getMultiEntResult(entLoader Loader, l *loadNodesLoader, err error) multiEntResult {
 	if err != nil {
 		return multiEntResult{
 			err: err,
@@ -611,7 +617,7 @@ func getMultiEntResult(entLoader MultiEntLoader, l *loadNodesLoader, err error) 
 	}
 }
 
-func genLoadNodesByType(id string, edgeType EdgeType, entLoader MultiEntLoader) <-chan multiEntResult {
+func genLoadNodesByType(id string, edgeType EdgeType, entLoader Loader) <-chan multiEntResult {
 	res := make(chan multiEntResult)
 	go func() {
 		l := &loadNodesLoader{
@@ -632,7 +638,7 @@ func genLoadNodesByType(id string, edgeType EdgeType, entLoader MultiEntLoader) 
 	return res
 }
 
-func genLoadNodes(ids []string, entLoader MultiEntLoader) <-chan multiEntResult {
+func genLoadNodes(ids []string, entLoader Loader) <-chan multiEntResult {
 	res := make(chan multiEntResult)
 	go func() {
 		l := &loadNodesLoader{
@@ -674,7 +680,7 @@ func GenLoadAssocEdges() <-chan AssocEdgeDatasResult {
 	return res
 }
 
-func GenLoadRawQuery(query string, loader MultiEntLoader) <-chan error {
+func GenLoadRawQuery(query string, loader Loader) <-chan error {
 	res := make(chan error)
 	go func() {
 		res <- loadData(&loadNodesLoader{
@@ -685,7 +691,7 @@ func GenLoadRawQuery(query string, loader MultiEntLoader) <-chan error {
 	return res
 }
 
-func LoadRawQuery(query string, loader MultiEntLoader) ([]map[string]interface{}, error) {
+func LoadRawQuery(query string, loader Loader) ([]map[string]interface{}, error) {
 	l := &loadNodesLoader{
 		rawQuery:  query,
 		entLoader: loader,

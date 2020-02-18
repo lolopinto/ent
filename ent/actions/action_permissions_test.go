@@ -20,6 +20,7 @@ func (suite *actionsPermissionsSuite) SetupSuite() {
 	suite.Tables = []string{
 		"users",
 		"contacts",
+		"event_creator_edges",
 	}
 	suite.Suite.SetupSuite()
 }

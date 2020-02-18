@@ -35,7 +35,7 @@ type Contact struct {
 	Viewer        viewer.ViewerContext
 }
 
-//  type Contacts map[string]Contact
+type Contacts map[string]*Contact
 
 // ContactResult stores the result of loading a Contact. It's a tuple type which has 2 fields:
 // a Contact and an error
@@ -60,23 +60,26 @@ func (res *ContactsResult) Error() string {
 }
 
 // TODO this is going to be used to load a new object
-type contactsLoader struct {
+// Rename to UserLoader and NewUserLoader....
+type contactLoader struct {
 	nodes   map[string]*Contact
 	errs    map[string]error
 	results []*Contact
+	v       viewer.ViewerContext
 	m       sync.Mutex
 }
 
-func (res *contactsLoader) GetNewInstance() ent.DBObject {
+func (res *contactLoader) GetNewInstance() ent.DBObject {
 	var contact Contact
+	contact.Viewer = res.v
 	return &contact
 }
 
-func (res *contactsLoader) GetConfig() ent.Config {
+func (res *contactLoader) GetConfig() ent.Config {
 	return &configs.ContactConfig{}
 }
 
-func (res *contactsLoader) SetPrivacyResult(id string, obj ent.DBObject, err error) {
+func (res *contactLoader) SetPrivacyResult(id string, obj ent.DBObject, err error) {
 	res.m.Lock()
 	defer res.m.Unlock()
 	if err != nil {
@@ -89,15 +92,27 @@ func (res *contactsLoader) SetPrivacyResult(id string, obj ent.DBObject, err err
 	}
 }
 
+func (res *contactLoader) GetEntForID(id string) *Contact {
+	return res.nodes[id]
+}
+
 // TODO???
-func (res *contactsLoader) List() []*Contact {
+func (res *contactLoader) List() []*Contact {
 	return res.results
 }
 
-func NewContactsLoader() *contactsLoader {
-	return &contactsLoader{
+func (res *contactLoader) getFirstInstance() *Contact {
+	if len(res.results) == 0 {
+		return nil
+	}
+	return res.results[0]
+}
+
+func NewContactLoader(v viewer.ViewerContext) *contactLoader {
+	return &contactLoader{
 		nodes: make(map[string]*Contact),
 		errs:  make(map[string]error),
+		v:     v,
 	}
 }
 
@@ -146,9 +161,9 @@ func GenLoadContactFromContext(ctx context.Context, id string) <-chan *ContactRe
 
 // LoadContact loads the given Contact given the viewer and id
 func LoadContact(v viewer.ViewerContext, id string) (*Contact, error) {
-	var contact Contact
-	err := ent.LoadNode(v, id, &contact)
-	return &contact, err
+	loader := NewContactLoader(v)
+	err := ent.LoadNode(v, id, loader)
+	return loader.nodes[id], err
 }
 
 // GenLoadContact loads the given Contact given the id
@@ -156,9 +171,9 @@ func GenLoadContact(v viewer.ViewerContext, id string) <-chan *ContactResult {
 	res := make(chan *ContactResult)
 	go func() {
 		var result ContactResult
-		var contact Contact
-		result.Err = <-ent.GenLoadNode(v, id, &contact)
-		result.Contact = &contact
+		loader := NewContactLoader(v)
+		result.Err = <-ent.GenLoadNode(v, id, loader)
+		result.Contact = loader.nodes[id]
 		res <- &result
 	}()
 	return res
@@ -166,7 +181,7 @@ func GenLoadContact(v viewer.ViewerContext, id string) <-chan *ContactResult {
 
 // LoadContacts loads multiple Contacts given the ids
 func LoadContacts(v viewer.ViewerContext, ids ...string) ([]*Contact, error) {
-	loader := NewContactsLoader()
+	loader := NewContactLoader(v)
 	err := ent.LoadNodes(v, ids, loader)
 	return loader.results, err
 }
@@ -175,7 +190,7 @@ func LoadContacts(v viewer.ViewerContext, ids ...string) ([]*Contact, error) {
 func GenLoadContacts(v viewer.ViewerContext, ids ...string) <-chan *ContactsResult {
 	res := make(chan *ContactsResult)
 	go func() {
-		loader := NewContactsLoader()
+		loader := NewContactLoader(v)
 		var result ContactsResult
 		result.Err = <-ent.GenLoadNodes(v, ids, loader)
 		result.Contacts = loader.results
@@ -200,7 +215,7 @@ func LoadContactIDFromEmailAddress(emailAddress string) (string, error) {
 func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
-		loader := NewContactEmailsLoader()
+		loader := NewContactEmailLoader(contact.Viewer)
 		var result ContactEmailsResult
 		result.Err = <-ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, "contact_id", loader)
 		result.ContactEmails = loader.results
@@ -211,7 +226,7 @@ func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 
 // LoadContactEmails returns the ContactEmails associated with the Contact instance
 func (contact *Contact) LoadContactEmails() ([]*ContactEmail, error) {
-	loader := NewContactEmailsLoader()
+	loader := NewContactEmailLoader(contact.Viewer)
 	err := ent.LoadForeignKeyNodes(contact.Viewer, contact.ID, "contact_id", loader)
 	return loader.results, err
 }
@@ -230,7 +245,7 @@ func (contact *Contact) GenAllowListEdges() <-chan *ent.AssocEdgesResult {
 func (contact *Contact) GenAllowList() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
-		loader := NewUsersLoader()
+		loader := NewUserLoader(contact.Viewer)
 		var result UsersResult
 		result.Err = <-ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, loader)
 		result.Users = loader.results
@@ -241,7 +256,7 @@ func (contact *Contact) GenAllowList() <-chan *UsersResult {
 
 // LoadAllowList returns the Users associated with the Contact instance
 func (contact *Contact) LoadAllowList() ([]*User, error) {
-	loader := NewUsersLoader()
+	loader := NewUserLoader(contact.Viewer)
 	err := ent.LoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, loader)
 	return loader.results, err
 }

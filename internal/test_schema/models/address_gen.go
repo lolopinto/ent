@@ -31,7 +31,7 @@ type Address struct {
 	Viewer        viewer.ViewerContext
 }
 
-//  type Addresses map[string]Address
+type Addresses map[string]*Address
 
 // AddressResult stores the result of loading a Address. It's a tuple type which has 2 fields:
 // a Address and an error
@@ -56,23 +56,26 @@ func (res *AddressesResult) Error() string {
 }
 
 // TODO this is going to be used to load a new object
-type addressesLoader struct {
+// Rename to UserLoader and NewUserLoader....
+type addressLoader struct {
 	nodes   map[string]*Address
 	errs    map[string]error
 	results []*Address
+	v       viewer.ViewerContext
 	m       sync.Mutex
 }
 
-func (res *addressesLoader) GetNewInstance() ent.DBObject {
+func (res *addressLoader) GetNewInstance() ent.DBObject {
 	var address Address
+	address.Viewer = res.v
 	return &address
 }
 
-func (res *addressesLoader) GetConfig() ent.Config {
+func (res *addressLoader) GetConfig() ent.Config {
 	return &configs.AddressConfig{}
 }
 
-func (res *addressesLoader) SetPrivacyResult(id string, obj ent.DBObject, err error) {
+func (res *addressLoader) SetPrivacyResult(id string, obj ent.DBObject, err error) {
 	res.m.Lock()
 	defer res.m.Unlock()
 	if err != nil {
@@ -85,15 +88,27 @@ func (res *addressesLoader) SetPrivacyResult(id string, obj ent.DBObject, err er
 	}
 }
 
+func (res *addressLoader) GetEntForID(id string) *Address {
+	return res.nodes[id]
+}
+
 // TODO???
-func (res *addressesLoader) List() []*Address {
+func (res *addressLoader) List() []*Address {
 	return res.results
 }
 
-func NewAddressesLoader() *addressesLoader {
-	return &addressesLoader{
+func (res *addressLoader) getFirstInstance() *Address {
+	if len(res.results) == 0 {
+		return nil
+	}
+	return res.results[0]
+}
+
+func NewAddressLoader(v viewer.ViewerContext) *addressLoader {
+	return &addressLoader{
 		nodes: make(map[string]*Address),
 		errs:  make(map[string]error),
+		v:     v,
 	}
 }
 
@@ -142,9 +157,9 @@ func GenLoadAddressFromContext(ctx context.Context, id string) <-chan *AddressRe
 
 // LoadAddress loads the given Address given the viewer and id
 func LoadAddress(v viewer.ViewerContext, id string) (*Address, error) {
-	var address Address
-	err := ent.LoadNode(v, id, &address)
-	return &address, err
+	loader := NewAddressLoader(v)
+	err := ent.LoadNode(v, id, loader)
+	return loader.nodes[id], err
 }
 
 // GenLoadAddress loads the given Address given the id
@@ -152,9 +167,9 @@ func GenLoadAddress(v viewer.ViewerContext, id string) <-chan *AddressResult {
 	res := make(chan *AddressResult)
 	go func() {
 		var result AddressResult
-		var address Address
-		result.Err = <-ent.GenLoadNode(v, id, &address)
-		result.Address = &address
+		loader := NewAddressLoader(v)
+		result.Err = <-ent.GenLoadNode(v, id, loader)
+		result.Address = loader.nodes[id]
 		res <- &result
 	}()
 	return res
@@ -162,7 +177,7 @@ func GenLoadAddress(v viewer.ViewerContext, id string) <-chan *AddressResult {
 
 // LoadAddresses loads multiple Addresses given the ids
 func LoadAddresses(v viewer.ViewerContext, ids ...string) ([]*Address, error) {
-	loader := NewAddressesLoader()
+	loader := NewAddressLoader(v)
 	err := ent.LoadNodes(v, ids, loader)
 	return loader.results, err
 }
@@ -171,7 +186,7 @@ func LoadAddresses(v viewer.ViewerContext, ids ...string) ([]*Address, error) {
 func GenLoadAddresses(v viewer.ViewerContext, ids ...string) <-chan *AddressesResult {
 	res := make(chan *AddressesResult)
 	go func() {
-		loader := NewAddressesLoader()
+		loader := NewAddressLoader(v)
 		var result AddressesResult
 		result.Err = <-ent.GenLoadNodes(v, ids, loader)
 		result.Addresses = loader.results

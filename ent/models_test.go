@@ -12,6 +12,7 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
@@ -468,7 +469,7 @@ func (suite *modelsTestSuite) TestLoadRawForeignKeyNodes() {
 	}
 
 	for _, tt := range testCases {
-		loader := models.NewContactsLoader()
+		loader := models.NewContactLoader(viewer.LoggedOutViewer())
 		contacts, err := ent.LoadRawForeignKeyNodes(tt.id, "user_id", loader)
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
@@ -508,7 +509,7 @@ func (suite *modelsTestSuite) TestLoadRawNodesByType() {
 	}
 
 	for _, tt := range testCases {
-		loader := models.NewEventsLoader()
+		loader := models.NewEventLoader(viewer.LoggedOutViewer())
 		events, err := ent.LoadRawNodesByType(tt.id1, models.UserToEventsEdge, loader)
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
@@ -553,7 +554,7 @@ func (suite *modelsTestSuite) TestLoadingMultiNodesWithJSON() {
 		address2.ID,
 		address3.ID,
 	}
-	loader := models.NewAddressesLoader()
+	loader := models.NewAddressLoader(viewer.LoggedOutViewer())
 	addresses, err := ent.LoadNodesRawData(ids, loader)
 	require.NoError(suite.T(), err)
 
@@ -580,7 +581,7 @@ func (suite *modelsTestSuite) TestLoadRawQueryWithJSON() {
 		address2.ID: true,
 		address3.ID: true,
 	}
-	loader := models.NewAddressesLoader()
+	loader := models.NewAddressLoader(viewer.LoggedOutViewer())
 	addresses, err := ent.LoadRawQuery("SELECT * FROM addresses", loader)
 	require.NoError(suite.T(), err)
 

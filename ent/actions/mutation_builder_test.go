@@ -23,6 +23,7 @@ func (suite *mutationBuilderSuite) SetupSuite() {
 		"users",
 		"event_invited_edges",
 		"events",
+		"event_creator_edges",
 		"user_family_members_edges",
 		"user_friends_edges",
 	}
