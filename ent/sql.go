@@ -5,14 +5,19 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lolopinto/ent/ent/sql"
 )
 
 // first simple version of sql builder
 type sqlBuilder struct {
-	entity     DBObject
-	fields     DBFields
-	colsString string // not long term value of course
-	tableName  string
+	entity       DBObject
+	fields       DBFields
+	colsString   string // not long term value of course
+	tableName    string
+	clause       sql.QueryClause
+	argsOverride []interface{}
+	// keeping these so as to not kill existing use cases
+	// TODO kill whereParts, inField, inArgs
 	whereParts []interface{}
 	inField    string
 	inArgs     []interface{}
@@ -56,6 +61,7 @@ func (s *sqlBuilder) getColsString() string {
 	return strings.Join(columns, ", ")
 }
 
+// This should be a Build()-> (string, []interface{}, error)
 func (s *sqlBuilder) getQuery() string {
 	if s.rawQuery != "" {
 		return s.rawQuery
@@ -63,19 +69,8 @@ func (s *sqlBuilder) getQuery() string {
 
 	var whereClause string
 
-	if len(s.whereParts) != 0 {
-		var whereParts []string
-		pos := 1
-		for idx, val := range s.whereParts {
-			if idx%2 == 1 {
-				continue
-			}
-			whereParts = append(whereParts, fmt.Sprintf("%s = $%d", val, pos))
-			pos++
-		}
-		whereClause = strings.Join(whereParts, " AND ")
-	} else if s.inField != "" {
-		whereClause = fmt.Sprintf("%s IN (?)", s.inField)
+	if s.clause != nil {
+		whereClause = s.clause.GetClause()
 	}
 
 	var formatSb strings.Builder
@@ -103,33 +98,32 @@ func (s *sqlBuilder) getQuery() string {
 	query := r.Replace(formatSb.String())
 
 	// rebind for IN query using sqlx.In
-	if len(s.inArgs) != 0 {
-		var err error
-		query, s.inArgs, err = sqlx.In(query, s.inArgs)
-		if err != nil {
-			// TODO make this return an error correctly
-			panic(err)
+	if s.clause != nil {
+		inClause, ok := s.clause.(sql.InClause)
+		if ok && inClause.RebindInClause() {
+			var err error
+			query, s.argsOverride, err = sqlx.In(query, s.clause.GetValues())
+			if err != nil {
+				// TODO make this return an error correctly
+				panic(err)
+			}
 		}
 	}
 	return query
 }
 
 func (s *sqlBuilder) getValues() []interface{} {
+	if len(s.argsOverride) != 0 {
+		return s.argsOverride
+	}
 	// TODO validate that rawQuery and rawValues are passed together
 	if len(s.rawValues) != 0 {
 		return s.rawValues
 	}
-	// IN query
-	if len(s.inArgs) != 0 {
-		return s.inArgs
+
+	if s.clause != nil {
+		return s.clause.GetValues()
 	}
 
-	var ret []interface{}
-	for idx, val := range s.whereParts {
-		if idx%2 == 0 {
-			continue
-		}
-		ret = append(ret, val)
-	}
-	return ret
+	return nil
 }

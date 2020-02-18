@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/stretchr/testify/assert"
 )
@@ -56,10 +57,7 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				entity:    &testUser2{},
 				tableName: "users",
-				whereParts: []interface{}{
-					"id",
-					"1",
-				},
+				clause:    sql.Eq("id", "1"),
 			},
 			"SELECT id, email_address, first_name, last_name FROM users WHERE id = $1",
 			[]interface{}{
@@ -70,10 +68,7 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				colsString: "id, foo, bar",
 				tableName:  "objects",
-				whereParts: []interface{}{
-					"foo",
-					1,
-				},
+				clause:     sql.Eq("foo", 1),
 			},
 			"SELECT id, foo, bar FROM objects WHERE foo = $1",
 			[]interface{}{
@@ -84,12 +79,7 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				colsString: "id, foo, bar",
 				tableName:  "objects",
-				whereParts: []interface{}{
-					"foo",
-					1,
-					"bar",
-					"ola@ola.com",
-				},
+				clause:     sql.And(sql.Eq("foo", 1), sql.Eq("bar", "ola@ola.com")),
 			},
 			"SELECT id, foo, bar FROM objects WHERE foo = $1 AND bar = $2",
 			[]interface{}{
@@ -101,14 +91,7 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				colsString: "id, foo, bar",
 				tableName:  "objects",
-				whereParts: []interface{}{
-					"foo",
-					1,
-					"bar",
-					"ola@ola.com",
-					"baz",
-					"whelp",
-				},
+				clause:     sql.And(sql.Eq("foo", 1), sql.Eq("bar", "ola@ola.com"), sql.Eq("baz", "whelp")),
 			},
 			"SELECT id, foo, bar FROM objects WHERE foo = $1 AND bar = $2 AND baz = $3",
 			[]interface{}{
@@ -121,13 +104,8 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				colsString: "*",
 				tableName:  "objects",
-				whereParts: []interface{}{
-					"foo",
-					1,
-					"bar",
-					"ola@ola.com",
-				},
-				order: "time DESC",
+				clause:     sql.And(sql.Eq("foo", 1), sql.Eq("bar", "ola@ola.com")),
+				order:      "time DESC",
 			},
 			"SELECT * FROM objects WHERE foo = $1 AND bar = $2 ORDER BY time DESC",
 			[]interface{}{
@@ -153,12 +131,7 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				colsString: "id, foo, bar",
 				tableName:  "objects",
-				inField:    "id",
-				inArgs: []interface{}{
-					"1",
-					"2",
-					"3",
-				},
+				clause:     sql.In("id", "1", "2", "3"),
 			},
 			"SELECT id, foo, bar FROM objects WHERE id IN (?, ?, ?)",
 			[]interface{}{
@@ -171,11 +144,8 @@ func TestSQLBuilder(t *testing.T) {
 			&sqlBuilder{
 				colsString: "id, foo, bar",
 				tableName:  "objects",
-				whereParts: []interface{}{
-					"id",
-					"7",
-				},
-				limit: &limit,
+				clause:     sql.Eq("id", "7"),
+				limit:      &limit,
 			},
 			"SELECT id, foo, bar FROM objects WHERE id = %s LIMIT %s",
 			[]interface{}{
@@ -184,11 +154,12 @@ func TestSQLBuilder(t *testing.T) {
 		},
 	}
 
+	// map returned by DbFields is not deterministic so we need this to check that even if the columns aren't in the exact same order, the expected columns are retrieved
+	r := regexp.MustCompile(`SELECT (.+) FROM`)
+
 	for _, tt := range testCases {
 		actualQuery := tt.s.getQuery()
 		if actualQuery != tt.expectedQuery {
-			// map returned by DbFields is not deterministic so we need this to check that even if the columns aren't in the exact same order, the expected columns are retrieved
-			r := regexp.MustCompile(`SELECT (.+) FROM`)
 
 			actualMatch := r.FindStringSubmatch(actualQuery)
 			expectedMatch := r.FindStringSubmatch(tt.expectedQuery)
