@@ -1,7 +1,7 @@
 package ent
 
 import (
-	"database/sql"
+	dbsql "database/sql"
 
 	"fmt"
 	"reflect"
@@ -13,6 +13,8 @@ import (
 	"github.com/rocketlaunchr/remember-go"
 
 	"github.com/lolopinto/ent/data"
+	"github.com/lolopinto/ent/ent/sql"
+
 	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/pkg/errors"
 )
@@ -48,18 +50,6 @@ func getValsString(values []interface{}) string {
  */
 func getColumnsString(columns []string) string {
 	return strings.Join(columns, ", ")
-}
-
-// LoadNode loads a single node given the id, node object and entConfig
-// LoadNodeFromParts loads a node given different strings
-func LoadNodeFromParts(entity DBObject, config Config, parts ...interface{}) error {
-	return loadData(
-		&loadNodeFromPartsLoader{
-			config: config,
-			parts:  parts,
-			entity: entity,
-		},
-	)
 }
 
 func getKeyForNode(id, tableName string) string {
@@ -112,29 +102,42 @@ func genLoadRawData(id string, entity DBObject, entConfig Config) <-chan error {
 	return res
 }
 
-// TODO also move to lower level loader/data package
-func LoadRawForeignKeyNodes(id string, colName string, entLoader Loader) ([]map[string]interface{}, error) {
+// TODO comments everything
+func LoadNodesRawDataViaQueryClause(entLoader Loader, clause sql.QueryClause) ([]map[string]interface{}, error) {
 	l := &loadNodesLoader{
 		entLoader: entLoader,
-		whereParts: []interface{}{
-			colName,
-			id,
-		},
-		rawData: true,
+		clause:    clause,
+		rawData:   true,
 	}
 	err := loadData(l)
 	return l.dataRows, err
 }
 
-func genLoadForeignKeyNodes(id string, colName string, entLoader Loader) <-chan multiEntResult {
+func LoadNodeRawDataViaQueryClause(entLoader Loader, clause sql.QueryClause) (map[string]interface{}, error) {
+	l := &loadNodesLoader{
+		entLoader: entLoader,
+		clause:    clause,
+		rawData:   true,
+		limit:     1,
+	}
+	err := loadData(l)
+	if len(l.dataRows) == 0 {
+		// if err == nil {
+		// 	// for consistent API and to know no data
+		// 	// TODO is there a better way to do this?
+		// 	return nil, dbsql.ErrNoRows
+		// }
+		return nil, err
+	}
+	return l.dataRows[0], err
+}
+
+func genLoadNodesViaClause(entLoader Loader, clause sql.QueryClause) <-chan multiEntResult {
 	res := make(chan multiEntResult)
 	go func() {
 		l := &loadNodesLoader{
 			entLoader: entLoader,
-			whereParts: []interface{}{
-				colName,
-				id,
-			},
+			clause:    clause,
 		}
 		err := loadData(l)
 		res <- getMultiEntResult(entLoader, l, err)
@@ -165,6 +168,8 @@ func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
 	// handle if in transcation or not.
 	if tx == nil {
 		// automatically rebinding now but we need to handle this better later
+		// TODO this is the only place i'm rebinding
+		// change everything to stop using $ and now use "?"
 		query = db.Rebind(query)
 		stmt, err = db.Preparex(query)
 	} else {
@@ -193,7 +198,7 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 		return err
 	}
 
-	var res sql.Result
+	var res dbsql.Result
 
 	checkRows := false
 	if entity == nil {
@@ -573,7 +578,7 @@ func LoadEdgeByType(id string, id2 string, edgeType EdgeType) (*AssocEdge, error
 
 	// // nil state. return zero value of Edge for now. maybe come up with better
 	// // way of doing this in the future
-	// if err == sql.ErrNoRows {
+	// if err == dbsql.ErrNoRows {
 	// 	//fmt.Println("no rows", err)
 	// 	// don't mark this as an error. just no data
 	// 	return &Edge{}, nil

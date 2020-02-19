@@ -9,6 +9,7 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/privacy"
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"golang.org/x/crypto/bcrypt"
@@ -69,8 +70,8 @@ func (res *UsersResult) Error() string {
 	return res.Err.Error()
 }
 
-// TODO this is going to be used to load a new object
-// Rename to UserLoader and NewUserLoader....
+// userLoader is an ent.PrivacyBackedLoader which is used to
+// load User
 type userLoader struct {
 	nodes   map[string]*User
 	errs    map[string]error
@@ -106,7 +107,7 @@ func (res *userLoader) GetEntForID(id string) *User {
 	return res.nodes[id]
 }
 
-// TODO???
+// hmm make private...
 func (res *userLoader) List() []*User {
 	return res.results
 }
@@ -118,6 +119,14 @@ func (res *userLoader) getFirstInstance() *User {
 	return res.results[0]
 }
 
+func (res *userLoader) getFirstErr() error {
+	for _, err := range res.errs {
+		return err
+	}
+	return nil
+}
+
+// NewUserLoader returns a new userLoader which is used to load one or more Users
 func NewUserLoader(v viewer.ViewerContext) *userLoader {
 	return &userLoader{
 		nodes: make(map[string]*User),
@@ -210,41 +219,66 @@ func GenLoadUsers(v viewer.ViewerContext, ids ...string) <-chan *UsersResult {
 }
 
 func LoadUserIDFromEmailAddress(emailAddress string) (string, error) {
-	// TODO this is a short term API that needs to be killed
-	// since it shouldn't be possible to get an ent without privacy
-	// change the underlying API to only return a map[string]interface{} or something else
-	var user User
-	err := ent.LoadNodeFromParts(&user, &configs.UserConfig{}, "email_address", emailAddress)
+	loader := NewUserLoader(viewer.LoggedOutViewer())
+	data, err := ent.LoadNodeRawDataViaQueryClause(
+		loader,
+		sql.Eq("email_address", emailAddress),
+	)
 	if err != nil {
 		return "", err
 	}
-	return user.ID, nil
+	return cast.ToUUIDString(data["id"])
+}
+
+func LoadUserFromEmailAddress(v viewer.ViewerContext, emailAddress string) (*User, error) {
+	loader := NewUserLoader(v)
+	err := ent.LoadNodesViaQueryClause(v, loader, sql.Eq("email_address", emailAddress))
+	if err != nil {
+		return nil, err
+	}
+	return loader.getFirstInstance(), loader.getFirstErr()
 }
 
 func LoadUserIDFromPhoneNumber(phoneNumber string) (string, error) {
-	// TODO this is a short term API that needs to be killed
-	// since it shouldn't be possible to get an ent without privacy
-	// change the underlying API to only return a map[string]interface{} or something else
-	var user User
-	err := ent.LoadNodeFromParts(&user, &configs.UserConfig{}, "phone_number", phoneNumber)
+	loader := NewUserLoader(viewer.LoggedOutViewer())
+	data, err := ent.LoadNodeRawDataViaQueryClause(
+		loader,
+		sql.Eq("phone_number", phoneNumber),
+	)
 	if err != nil {
 		return "", err
 	}
-	return user.ID, nil
+	return cast.ToUUIDString(data["id"])
+}
+
+func LoadUserFromPhoneNumber(v viewer.ViewerContext, phoneNumber string) (*User, error) {
+	loader := NewUserLoader(v)
+	err := ent.LoadNodesViaQueryClause(v, loader, sql.Eq("phone_number", phoneNumber))
+	if err != nil {
+		return nil, err
+	}
+	return loader.getFirstInstance(), loader.getFirstErr()
 }
 
 func ValidateEmailPassword(emailAddress, password string) (string, error) {
-	var user User
-	err := ent.LoadNodeFromParts(&user, &configs.UserConfig{}, "email_address", emailAddress)
+	loader := NewUserLoader(viewer.LoggedOutViewer())
+	data, err := ent.LoadNodeRawDataViaQueryClause(
+		loader,
+		sql.Eq("email_address", emailAddress),
+	)
+	if err != nil {
+		return "", err
+	}
+	storedHashedPassword, err := cast.ToString(data["password"])
 	if err != nil {
 		return "", err
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.password), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(storedHashedPassword), []byte(password)); err != nil {
 		return "", err
 	}
 
-	return user.ID, nil
+	return cast.ToUUIDString(data["id"])
 }
 
 // GenContacts returns the Contacts associated with the User instance
@@ -253,7 +287,7 @@ func (user *User) GenContacts() <-chan *ContactsResult {
 	go func() {
 		loader := NewContactLoader(user.Viewer)
 		var result ContactsResult
-		result.Err = <-ent.GenLoadForeignKeyNodes(user.Viewer, user.ID, "user_id", loader)
+		result.Err = <-ent.GenLoadNodesViaQueryClause(user.Viewer, loader, sql.Eq("user_id", user.ID))
 		result.Contacts = loader.results
 		res <- &result
 	}()
@@ -263,7 +297,7 @@ func (user *User) GenContacts() <-chan *ContactsResult {
 // LoadContacts returns the Contacts associated with the User instance
 func (user *User) LoadContacts() ([]*Contact, error) {
 	loader := NewContactLoader(user.Viewer)
-	err := ent.LoadForeignKeyNodes(user.Viewer, user.ID, "user_id", loader)
+	err := ent.LoadNodesViaQueryClause(user.Viewer, loader, sql.Eq("user_id", user.ID))
 	return loader.results, err
 }
 

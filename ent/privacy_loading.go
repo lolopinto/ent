@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	"sync"
 
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/pkg/errors"
 )
@@ -194,7 +195,7 @@ func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity
 	for idx := range rules {
 		idx := idx
 		rule := rules[idx]
-		f := func(i int) {
+		go func(i int) {
 			// hmm the "correct" thing here is to switch these 2 lines because of LIFO
 			// but TestAlwaysPanicPolicy doesn't work when flipped
 			defer wg.Done()
@@ -205,8 +206,7 @@ func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity
 				}
 			}()
 			results[i] = rule.Eval(v, ent)
-		}
-		go f(idx)
+		}(idx)
 	}
 	wg.Wait()
 
@@ -233,14 +233,14 @@ func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity
 	return &InvalidPrivacyRule{}
 }
 
-func GenLoadForeignKeyNodes(v viewer.ViewerContext, id string, colName string, entLoader PrivacyBackedLoader) <-chan error {
+func GenLoadNodesViaQueryClause(v viewer.ViewerContext, entLoader PrivacyBackedLoader, clause sql.QueryClause) <-chan error {
 	return genLoadNodesImpl(v, func() <-chan multiEntResult {
-		return genLoadForeignKeyNodes(id, colName, entLoader)
+		return genLoadNodesViaClause(entLoader, clause)
 	})
 }
 
-func LoadForeignKeyNodes(v viewer.ViewerContext, id string, colName string, entLoader PrivacyBackedLoader) error {
-	return <-GenLoadForeignKeyNodes(v, id, colName, entLoader)
+func LoadNodesViaQueryClause(v viewer.ViewerContext, entLoader PrivacyBackedLoader, clause sql.QueryClause) error {
+	return <-GenLoadNodesViaQueryClause(v, entLoader, clause)
 }
 
 func GenLoadNodes(v viewer.ViewerContext, ids []string, entLoader PrivacyBackedLoader) <-chan error {

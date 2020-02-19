@@ -55,8 +55,8 @@ func (res *AddressesResult) Error() string {
 	return res.Err.Error()
 }
 
-// TODO this is going to be used to load a new object
-// Rename to UserLoader and NewUserLoader....
+// addressLoader is an ent.PrivacyBackedLoader which is used to
+// load Address
 type addressLoader struct {
 	nodes   map[string]*Address
 	errs    map[string]error
@@ -92,7 +92,7 @@ func (res *addressLoader) GetEntForID(id string) *Address {
 	return res.nodes[id]
 }
 
-// TODO???
+// hmm make private...
 func (res *addressLoader) List() []*Address {
 	return res.results
 }
@@ -104,6 +104,14 @@ func (res *addressLoader) getFirstInstance() *Address {
 	return res.results[0]
 }
 
+func (res *addressLoader) getFirstErr() error {
+	for _, err := range res.errs {
+		return err
+	}
+	return nil
+}
+
+// NewAddressLoader returns a new addressLoader which is used to load one or more Addresses
 func NewAddressLoader(v viewer.ViewerContext) *addressLoader {
 	return &addressLoader{
 		nodes: make(map[string]*Address),

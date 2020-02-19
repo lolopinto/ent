@@ -18,8 +18,8 @@ const (
 	AllowPrivacyResult privacyResult = 200
 
 	// DenyPrivacyResult returns a value indicating that the ent should should not be visible to the viewer.
-	// We use HTTP status code 400 for the lols
-	DenyPrivacyResult privacyResult = 400
+	// We use HTTP status code 401 for the lols
+	DenyPrivacyResult privacyResult = 401
 
 	// SkipPrivacyResult returns a value indicating that the ent should not be visible to the viewer.
 	// We use HTTP status code 307 for the lols

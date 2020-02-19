@@ -52,8 +52,8 @@ func (res *ContactEmailsResult) Error() string {
 	return res.Err.Error()
 }
 
-// TODO this is going to be used to load a new object
-// Rename to UserLoader and NewUserLoader....
+// contactEmailLoader is an ent.PrivacyBackedLoader which is used to
+// load ContactEmail
 type contactEmailLoader struct {
 	nodes   map[string]*ContactEmail
 	errs    map[string]error
@@ -89,7 +89,7 @@ func (res *contactEmailLoader) GetEntForID(id string) *ContactEmail {
 	return res.nodes[id]
 }
 
-// TODO???
+// hmm make private...
 func (res *contactEmailLoader) List() []*ContactEmail {
 	return res.results
 }
@@ -101,6 +101,14 @@ func (res *contactEmailLoader) getFirstInstance() *ContactEmail {
 	return res.results[0]
 }
 
+func (res *contactEmailLoader) getFirstErr() error {
+	for _, err := range res.errs {
+		return err
+	}
+	return nil
+}
+
+// NewContactEmailLoader returns a new contactEmailLoader which is used to load one or more ContactEmails
 func NewContactEmailLoader(v viewer.ViewerContext) *contactEmailLoader {
 	return &contactEmailLoader{
 		nodes: make(map[string]*ContactEmail),

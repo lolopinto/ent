@@ -17,14 +17,13 @@ type sqlBuilder struct {
 	clause       sql.QueryClause
 	argsOverride []interface{}
 	// keeping these so as to not kill existing use cases
-	// TODO kill whereParts, inField, inArgs
-	whereParts []interface{}
-	inField    string
-	inArgs     []interface{}
-	order      string
-	rawQuery   string
-	rawValues  []interface{}
-	limit      *int
+	// TODO kill inField, inArgs
+	inField   string
+	inArgs    []interface{}
+	order     string
+	rawQuery  string
+	rawValues []interface{}
+	limit     *int
 }
 
 func (s *sqlBuilder) in(field string, args []interface{}) *sqlBuilder {

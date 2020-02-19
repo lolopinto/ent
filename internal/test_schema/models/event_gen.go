@@ -78,8 +78,8 @@ func (res *EventsResult) Error() string {
 	return res.Err.Error()
 }
 
-// TODO this is going to be used to load a new object
-// Rename to UserLoader and NewUserLoader....
+// eventLoader is an ent.PrivacyBackedLoader which is used to
+// load Event
 type eventLoader struct {
 	nodes   map[string]*Event
 	errs    map[string]error
@@ -115,7 +115,7 @@ func (res *eventLoader) GetEntForID(id string) *Event {
 	return res.nodes[id]
 }
 
-// TODO???
+// hmm make private...
 func (res *eventLoader) List() []*Event {
 	return res.results
 }
@@ -127,6 +127,14 @@ func (res *eventLoader) getFirstInstance() *Event {
 	return res.results[0]
 }
 
+func (res *eventLoader) getFirstErr() error {
+	for _, err := range res.errs {
+		return err
+	}
+	return nil
+}
+
+// NewEventLoader returns a new eventLoader which is used to load one or more Events
 func NewEventLoader(v viewer.ViewerContext) *eventLoader {
 	return &eventLoader{
 		nodes: make(map[string]*Event),

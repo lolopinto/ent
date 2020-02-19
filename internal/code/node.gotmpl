@@ -7,6 +7,7 @@
 {{reserveImport	"github.com/lolopinto/ent/ent" }}
 {{reserveImport	"github.com/lolopinto/ent/ent/cast" }}
 {{reserveImport	"github.com/lolopinto/ent/ent/privacy" }}
+{{reserveImport	"github.com/lolopinto/ent/ent/sql" }}
 {{reserveImport	"github.com/lolopinto/ent/ent/viewer" }}
 {{reserveImport "golang.org/x/crypto/bcrypt" }}
 
@@ -40,6 +41,7 @@ const (
   {{$currentNode := .Node}}
   {{$currentPackageName := .PackageName}}
   {{$currentConfig := .EntConfig}}
+  {{$currentLoader := .NewNodeLoader}}
 
   // {{.Node}} represents the `{{.Node}}` model 
   type {{.Node}} struct {
@@ -79,8 +81,8 @@ const (
     return res.Err.Error()
   }
 
-  // TODO this is going to be used to load a new object 
-  // Rename to UserLoader and NewUserLoader....
+  // {{.NodeLoader}} is an ent.PrivacyBackedLoader which is used to 
+  // load {{.Node}}
   type {{.NodeLoader}} struct {
     nodes map[string]*{{.Node}}
     errs map[string]error
@@ -116,7 +118,7 @@ const (
     return res.nodes[id]
   }
 
-  // TODO???
+  // hmm make private...
   func (res *{{.NodeLoader}}) List() {{.NodesSlice}} {
     return res.results
   }
@@ -128,6 +130,14 @@ const (
     return res.results[0]
   }
 
+  func (res *{{.NodeLoader}}) getFirstErr() error {
+    for _, err := range res.errs {
+      return err
+    }
+	  return nil
+  }
+
+  // {{.NewNodeLoader}} returns a new {{.NodeLoader}} which is used to load one or more {{.Nodes}}
   func {{.NewNodeLoader}}(v viewer.ViewerContext) *{{.NodeLoader}} {
     return &{{.NodeLoader}}{
       nodes: make(map[string]*{{.Node}}),
@@ -135,7 +145,6 @@ const (
       v: v,
     }
   }
-
 
   // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
   func ({{.NodeInstance}} {{.Node}}) IsNode() {}
@@ -223,22 +232,26 @@ const (
   {{ range $field := .FieldInfo.Fields -}} 
     {{if or $field.Index $field.Unique -}}
       func Load{{$currentNode}}IDFrom{{$field.FieldName}}({{$field.InstanceFieldName}}  {{notNullableTypeString $field}}) ({{notNullableTypeString $field}}, error) {
-        // TODO this is a short term API that needs to be killed
-        // since it shouldn't be possible to get an ent without privacy
-        // change the underlying API to only return a map[string]interface{} or something else
-        var {{$currentNodeInstance}} {{$currentNode}}
-        err := ent.LoadNodeFromParts(&{{$currentNodeInstance}}, {{$currentConfig}}, {{$field.GetQuotedDBColName}}, {{$field.InstanceFieldName}})
+        loader := {{$currentLoader}}(viewer.LoggedOutViewer())
+        data, err := ent.LoadNodeRawDataViaQueryClause(
+          loader,
+          sql.Eq({{$field.GetQuotedDBColName}}, {{$field.InstanceFieldName}}),
+        )
         if err != nil {
           return "", err
         }
-        return {{$currentNodeInstance}}.ID, nil
+        return cast.ToUUIDString(data["id"])
       }
 
-      {{/* func Load{{.Node}}From{{$field.FieldName}}(viewer viewer.ViewerContext, {{$field.FieldInstanceName}} {{fTypeString $field}}) ({{.Node}} error) {
-        var {{.NodeInstance}} {{.Node}}
-        err := ent.LoadNodeFromParts(&{{.NodeInstance}}, {{.EntConfig}}, {{$field.GetQuotedDBColName}}, {{.NodeInstance}})
-        return {{.NodeInstance}}}, err
-      } */}}
+      func Load{{$currentNode}}From{{$field.FieldName}}(v viewer.ViewerContext, {{$field.InstanceFieldName}} {{notNullableTypeString $field}}) (*{{$currentNode}}, error) {
+        loader := {{$currentLoader}}(v)
+        err := ent.LoadNodesViaQueryClause(v, loader, sql.Eq({{$field.GetQuotedDBColName}}, {{$field.InstanceFieldName}}))
+        if err != nil {
+          return nil, err
+        }
+        return loader.getFirstInstance(), loader.getFirstErr()
+      } 
+
     {{end -}}
   {{end -}}
 
@@ -246,17 +259,24 @@ const (
     {{$emailField := $combo.Email -}}
     {{$passwordField := $combo.Password -}}
     func ValidateEmailPassword(emailAddress, password string) (string, error) {
-      var {{$currentNodeInstance}} {{$currentNode}}
-      err := ent.LoadNodeFromParts(&{{$currentNodeInstance}}, {{$currentConfig}}, "{{$emailField.GetDbColName}}", emailAddress)
+      loader := {{$currentLoader}}(viewer.LoggedOutViewer())
+      data, err := ent.LoadNodeRawDataViaQueryClause(
+        loader,
+        sql.Eq({{$emailField.GetQuotedDBColName}}, emailAddress),
+      )
+      if err != nil {
+        return "", err
+      }
+      storedHashedPassword, err := cast.ToString(data[{{$passwordField.GetQuotedDBColName}}])
       if err != nil {
         return "", err
       }
 
-      if err := bcrypt.CompareHashAndPassword([]byte({{$currentNodeInstance}}.{{$passwordField.GetFieldNameInStruct}}), []byte(password)); err != nil {
+      if err := bcrypt.CompareHashAndPassword([]byte(storedHashedPassword), []byte(password)); err != nil {
         return "", err
       }
       
-      return {{$currentNodeInstance}}.ID, nil
+      return cast.ToUUIDString(data["id"])
     }
   {{ end -}}
 
@@ -286,7 +306,7 @@ const (
           go func() {
             loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
             var result {{.NodesResult}}
-            result.Err = <- ent.GenLoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, "{{$currentPackageName}}_id", loader)
+            result.Err = <- ent.GenLoadNodesViaQueryClause({{$currentNodeInstance}}.Viewer, loader, sql.Eq("{{$currentPackageName}}_id", {{$currentNodeInstance}}.ID))
             result.{{.Nodes}} = loader.results
             res <- &result
           }()
@@ -296,7 +316,7 @@ const (
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() ({{.NodesSlice}}, error) {
           loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-          err := ent.LoadForeignKeyNodes({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, "{{$currentPackageName}}_id", loader)
+          err := ent.LoadNodesViaQueryClause({{$currentNodeInstance}}.Viewer, loader, sql.Eq("{{$currentPackageName}}_id", {{$currentNodeInstance}}.ID))
           return loader.results, err
         }
       {{end}}

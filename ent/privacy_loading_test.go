@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
@@ -164,7 +165,7 @@ func (suite *privacyTestSuite) TestAllowIfViewerCanSeeEntRule() {
 func (suite *privacyTestSuite) TestManualLoadForeignKeyNodes() {
 	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
 		loader := models.NewContactLoader(v)
-		err := ent.LoadForeignKeyNodes(v, id, "user_id", loader)
+		err := ent.LoadNodesViaQueryClause(v, loader, sql.Eq("user_id", id))
 		return loader.List(), err
 	})
 }
@@ -172,7 +173,7 @@ func (suite *privacyTestSuite) TestManualLoadForeignKeyNodes() {
 func (suite *privacyTestSuite) TestManualGenLoadForeignKeyNodes() {
 	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
 		loader := models.NewContactLoader(v)
-		err := <-ent.GenLoadForeignKeyNodes(v, id, "user_id", loader)
+		err := <-ent.GenLoadNodesViaQueryClause(v, loader, sql.Eq("user_id", id))
 		return loader.List(), err
 	})
 }

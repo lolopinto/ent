@@ -39,6 +39,12 @@ func (q *dbQuery) StructScanRows(l multiRowLoader) error {
 	})
 }
 
+func (q *dbQuery) QueryRows(l multiRowLoader) error {
+	return q.query(&processRawData{
+		multiRows: queryRows(l),
+	})
+}
+
 func (q *dbQuery) MapScanRows() ([]map[string]interface{}, error) {
 	var dataRows []map[string]interface{}
 
@@ -72,6 +78,9 @@ func (q *dbQuery) query(processor *processRawData) error {
 
 	stmt, err := getStmtFromTx(q.cfg.tx, db, query)
 
+	// rebind the query for the db
+	query = db.Rebind(query)
+
 	if err != nil {
 		fmt.Println(query, err)
 		return err
@@ -99,17 +108,16 @@ func (q *dbQuery) processSingleRow(builder *sqlBuilder, stmt *sqlx.Stmt, process
 func (q *dbQuery) processMultiRows(builder *sqlBuilder, stmt *sqlx.Stmt, processRows func(rows *sqlx.Rows) error) error {
 	rows, err := stmt.Queryx(builder.getValues()...)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer rows.Close()
-	if err = processRows(rows); err != nil {
-		fmt.Println(err)
+	if err := processRows(rows); err != nil {
+		return err
 	}
-	if err = rows.Err(); err != nil {
-		fmt.Println(err)
+	if err := rows.Err(); err != nil {
+		return err
 	}
-	return err
+	return nil
 }
 
 type rowQueryer interface {
@@ -138,34 +146,63 @@ func queryRow(query rowQueryer, entity DBObject) error {
 
 	dataMap, err := mapScan(query)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 	return fillEntityFromMap(entity, dataMap)
 }
 
-func mapScanRows(dataRows *[]map[string]interface{}) func(*sqlx.Rows) error {
+func processError(err error, handleErrs []func(error) error) error {
+	if len(handleErrs) == 0 {
+		return err
+	}
+	for _, handler := range handleErrs {
+		if err := handler(err); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func mapScanRows(dataRows *[]map[string]interface{}, handleErrs ...func(error) error) func(*sqlx.Rows) error {
 	return func(rows *sqlx.Rows) error {
 		for rows.Next() {
 			dataMap := make(map[string]interface{})
 			if err := rows.MapScan(dataMap); err != nil {
 				fmt.Println(err)
-				return err
+				return processError(err, handleErrs)
 			}
 			*dataRows = append(*dataRows, dataMap)
 		}
-		return nil
+		return processError(nil, handleErrs)
 	}
 }
 
-func structScanRows(l multiRowLoader) func(*sqlx.Rows) error {
+func structScanRows(l multiRowLoader, handleErrs ...func(error) error) func(*sqlx.Rows) error {
 	return func(rows *sqlx.Rows) error {
 		for rows.Next() {
 			instance := l.GetNewInstance()
 			if err := rows.StructScan(instance); err != nil {
 				fmt.Println(err)
-				return err
+				return processError(err, handleErrs)
 			}
 		}
-		return nil
+		return processError(nil, handleErrs)
+	}
+}
+
+// This handles structScan vs MapScan decisions that need to be made when querying multiple
+// rows that are not going to cache
+// see queryRow
+func queryRows(l multiRowLoader, handleErrs ...func(error) error) func(*sqlx.Rows) error {
+	return func(rows *sqlx.Rows) error {
+		for rows.Next() {
+			instance := l.GetNewInstance()
+			if err := queryRow(rows, instance); err != nil {
+				fmt.Println(err)
+				return processError(err, handleErrs)
+			}
+		}
+		return processError(nil, handleErrs)
 	}
 }

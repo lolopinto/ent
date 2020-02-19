@@ -9,6 +9,7 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/privacy"
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 )
@@ -59,8 +60,8 @@ func (res *ContactsResult) Error() string {
 	return res.Err.Error()
 }
 
-// TODO this is going to be used to load a new object
-// Rename to UserLoader and NewUserLoader....
+// contactLoader is an ent.PrivacyBackedLoader which is used to
+// load Contact
 type contactLoader struct {
 	nodes   map[string]*Contact
 	errs    map[string]error
@@ -96,7 +97,7 @@ func (res *contactLoader) GetEntForID(id string) *Contact {
 	return res.nodes[id]
 }
 
-// TODO???
+// hmm make private...
 func (res *contactLoader) List() []*Contact {
 	return res.results
 }
@@ -108,6 +109,14 @@ func (res *contactLoader) getFirstInstance() *Contact {
 	return res.results[0]
 }
 
+func (res *contactLoader) getFirstErr() error {
+	for _, err := range res.errs {
+		return err
+	}
+	return nil
+}
+
+// NewContactLoader returns a new contactLoader which is used to load one or more Contacts
 func NewContactLoader(v viewer.ViewerContext) *contactLoader {
 	return &contactLoader{
 		nodes: make(map[string]*Contact),
@@ -200,15 +209,24 @@ func GenLoadContacts(v viewer.ViewerContext, ids ...string) <-chan *ContactsResu
 }
 
 func LoadContactIDFromEmailAddress(emailAddress string) (string, error) {
-	// TODO this is a short term API that needs to be killed
-	// since it shouldn't be possible to get an ent without privacy
-	// change the underlying API to only return a map[string]interface{} or something else
-	var contact Contact
-	err := ent.LoadNodeFromParts(&contact, &configs.ContactConfig{}, "email_address", emailAddress)
+	loader := NewContactLoader(viewer.LoggedOutViewer())
+	data, err := ent.LoadNodeRawDataViaQueryClause(
+		loader,
+		sql.Eq("email_address", emailAddress),
+	)
 	if err != nil {
 		return "", err
 	}
-	return contact.ID, nil
+	return cast.ToUUIDString(data["id"])
+}
+
+func LoadContactFromEmailAddress(v viewer.ViewerContext, emailAddress string) (*Contact, error) {
+	loader := NewContactLoader(v)
+	err := ent.LoadNodesViaQueryClause(v, loader, sql.Eq("email_address", emailAddress))
+	if err != nil {
+		return nil, err
+	}
+	return loader.getFirstInstance(), loader.getFirstErr()
 }
 
 // GenContactEmails returns the ContactEmails associated with the Contact instance
@@ -217,7 +235,7 @@ func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 	go func() {
 		loader := NewContactEmailLoader(contact.Viewer)
 		var result ContactEmailsResult
-		result.Err = <-ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, "contact_id", loader)
+		result.Err = <-ent.GenLoadNodesViaQueryClause(contact.Viewer, loader, sql.Eq("contact_id", contact.ID))
 		result.ContactEmails = loader.results
 		res <- &result
 	}()
@@ -227,7 +245,7 @@ func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 // LoadContactEmails returns the ContactEmails associated with the Contact instance
 func (contact *Contact) LoadContactEmails() ([]*ContactEmail, error) {
 	loader := NewContactEmailLoader(contact.Viewer)
-	err := ent.LoadForeignKeyNodes(contact.Viewer, contact.ID, "contact_id", loader)
+	err := ent.LoadNodesViaQueryClause(contact.Viewer, loader, sql.Eq("contact_id", contact.ID))
 	return loader.results, err
 }
 

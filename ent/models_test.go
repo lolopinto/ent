@@ -1,8 +1,7 @@
 package ent_test
 
 import (
-	"database/sql"
-
+	dbsql "database/sql"
 	"testing"
 
 	"github.com/google/uuid"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
@@ -34,60 +34,57 @@ func (suite *modelsTestSuite) SetupSuite() {
 	suite.Suite.SetupSuite()
 }
 
-func (suite *modelsTestSuite) TestLoadNodeFromParts() {
+func (suite *modelsTestSuite) TestLoadNodeRawDataViaQueryClause() {
 	user := testingutils.CreateTestUser(suite.T())
 
-	var testCases = []struct {
-		parts       []interface{}
+	var testCases = map[string]struct {
+		clause      sql.QueryClause
 		foundResult bool
 	}{
-		{
-			[]interface{}{
-				"first_name",
-				"Ola",
-			},
+		"first_name": {
+			sql.Eq("first_name", "Ola"),
 			true,
 		},
-		{
-			[]interface{}{
-				"first_name",
-				"Ola",
-				"last_name",
-				"Okelola",
-			},
+		"first and last_name": {
+			sql.And(
+				sql.Eq("first_name", "Ola"),
+				sql.Eq("last_name", "Okelola"),
+			),
 			true,
 		},
-		{
-			[]interface{}{
-				"email_address",
-				user.EmailAddress,
-				"last_name",
-				"Okelola",
-			},
+		"email and last name": {
+			sql.And(
+				sql.Eq("email_address", user.EmailAddress),
+				sql.Eq("last_name", "Okelola"),
+			),
 			true,
 		},
-		{
-			[]interface{}{
-				"email_address",
-				"Okelola",
-			},
+		"wrong email": {
+			sql.Eq("email_address", "Okelola"),
 			false,
 		},
 	}
 
-	for _, tt := range testCases {
-		var existingUser models.User
-		err := ent.LoadNodeFromParts(&existingUser, &configs.UserConfig{}, tt.parts...)
-		if tt.foundResult {
-			assert.Nil(suite.T(), err)
-			assert.NotZero(suite.T(), existingUser)
-		} else {
-			assert.NotNil(suite.T(), err)
-			assert.Equal(suite.T(), err, sql.ErrNoRows)
-			// TODO ugh... it's finally time to change this to return nil...
-			// can't do assert.Zero because (user.Bio returns (*string) instead of "")
-			assert.Equal(suite.T(), existingUser.ID, "")
-		}
+	for key, tt := range testCases {
+		suite.T().Run(key, func(t *testing.T) {
+			userData, err := ent.LoadNodeRawDataViaQueryClause(
+				models.NewUserLoader(viewer.LoggedOutViewer()),
+				tt.clause,
+			)
+			if tt.foundResult {
+				assert.Nil(t, err)
+				assert.NotNil(t, userData)
+
+				// confirm id is same as user we are fetching about
+				id, err := cast.ToUUIDString(userData["id"])
+				require.Nil(t, err)
+				assert.Equal(t, user.ID, id)
+			} else {
+				assert.NotNil(t, err)
+				assert.Equal(t, err, dbsql.ErrNoRows)
+				assert.Nil(t, userData)
+			}
+		})
 	}
 }
 
@@ -116,7 +113,7 @@ func (suite *modelsTestSuite) TestLoadNodeFromID() {
 			assert.NotZero(suite.T(), existingUser)
 		} else {
 			assert.NotNil(suite.T(), err)
-			assert.Equal(suite.T(), err, sql.ErrNoRows)
+			assert.Equal(suite.T(), err, dbsql.ErrNoRows)
 			assert.Zero(suite.T(), existingUser)
 		}
 	}
@@ -144,7 +141,7 @@ func (suite *modelsTestSuite) TestGetEdgeInfo() {
 			assert.NotZero(suite.T(), edgeData)
 		} else {
 			assert.NotNil(suite.T(), err)
-			assert.Equal(suite.T(), err, sql.ErrNoRows)
+			assert.Equal(suite.T(), err, dbsql.ErrNoRows)
 			assert.Zero(suite.T(), *edgeData)
 		}
 	}
@@ -470,9 +467,9 @@ func (suite *modelsTestSuite) TestLoadRawForeignKeyNodes() {
 
 	for _, tt := range testCases {
 		loader := models.NewContactLoader(viewer.LoggedOutViewer())
-		contacts, err := ent.LoadRawForeignKeyNodes(tt.id, "user_id", loader)
-		assert.Nil(suite.T(), err)
+		contacts, err := ent.LoadNodesRawDataViaQueryClause(loader, sql.Eq("user_id", tt.id))
 		if tt.foundResult {
+			assert.Nil(suite.T(), err)
 			assert.NotEmpty(suite.T(), contacts)
 
 			assert.Len(suite.T(), contacts, 2)
@@ -483,6 +480,7 @@ func (suite *modelsTestSuite) TestLoadRawForeignKeyNodes() {
 				assert.Contains(suite.T(), []string{contact.ID, contact2.ID}, id)
 			}
 		} else {
+			assert.NotNil(suite.T(), err)
 			assert.Len(suite.T(), contacts, 0)
 			assert.Empty(suite.T(), contacts)
 		}

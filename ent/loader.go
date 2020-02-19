@@ -1,10 +1,12 @@
 package ent
 
 import (
+	dbsql "database/sql"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/pkg/errors"
 )
 
@@ -228,10 +230,7 @@ func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 		return q.customProcessRows(custom.ProcessRows())
 	}
 
-	// we still need to fix this edge case where it's an object with json and we shouldn't
-	// struct scan. we need a way to say we should mapscan instead
-	// UnsupportedScan for generated loader eventually needed
-	return q.StructScanRows(l)
+	return q.QueryRows(l)
 }
 
 func fillEntityFromMap(entity DBObject, dataMap map[string]interface{}) error {
@@ -281,36 +280,6 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 	return queryRow(q, l.GetEntity())
 }
 
-// TODO figure out if this is the right long term API
-type loadNodeFromPartsLoader struct {
-	config Config
-	parts  []interface{}
-	entity DBObject
-}
-
-func (l *loadNodeFromPartsLoader) Validate() error {
-	if len(l.parts) < 2 {
-		return errors.New("invalid number of parts passed")
-	}
-
-	if len(l.parts)%2 != 0 {
-		return errors.New("expected even number of parts, got and odd number")
-	}
-	return nil
-}
-
-func (l *loadNodeFromPartsLoader) GetEntity() DBObject {
-	return l.entity
-}
-
-func (l *loadNodeFromPartsLoader) GetSQLBuilder() (*sqlBuilder, error) {
-	return &sqlBuilder{
-		entity:     l.entity,
-		tableName:  l.config.GetTableName(),
-		whereParts: l.parts,
-	}, nil
-}
-
 type loadNodeFromPKey struct {
 	id        string
 	tableName string
@@ -330,10 +299,7 @@ func (l *loadNodeFromPKey) GetSQLBuilder() (*sqlBuilder, error) {
 	return &sqlBuilder{
 		entity:    l.entity,
 		tableName: l.tableName,
-		whereParts: []interface{}{
-			getPrimaryKeyForObj(l.entity),
-			l.id,
-		},
+		clause:    sql.Eq(getPrimaryKeyForObj(l.entity), l.id),
 	}, nil
 }
 
@@ -381,14 +347,9 @@ func (l *loadEdgesByType) GetSQLBuilder() (*sqlBuilder, error) {
 	return &sqlBuilder{
 		colsString: "*",
 		tableName:  edgeData.EdgeTable,
-		whereParts: []interface{}{
-			"id1",
-			l.id,
-			"edge_type",
-			l.edgeType,
-		},
-		order: "time DESC",
-		limit: l.cfg.limit,
+		clause:     sql.And(sql.Eq("id1", l.id), sql.Eq("edge_type", l.edgeType)),
+		order:      "time DESC",
+		limit:      l.cfg.limit,
 	}, nil
 }
 
@@ -465,16 +426,16 @@ func (l *loadAssocEdgeConfigExists) GetOutput() interface{} {
 	return nil
 }
 
-// kill fromPartsLoader collapse into this and have a limit 1
 type loadNodesLoader struct {
-	// todo combine these 3 (and others) into sqlBuilder options of some sort
-	whereParts []interface{}
-	ids        []string
-	rawQuery   string
-	entLoader  Loader
-	dbobjects  []DBObject
-	queryIDs   []string // ids we're fetching from db
-	rawData    bool     // flat that indicates we're fetching raw data and not going through
+	clause sql.QueryClause
+	limit  int
+	// keeping ids as first class citizen here because of cache logic
+	ids       []string
+	rawQuery  string
+	entLoader Loader
+	dbobjects []DBObject
+	queryIDs  []string // ids we're fetching from db
+	rawData   bool     // flat that indicates we're fetching raw data and not going through
 	// privacy layer. we'll never struct scan and data will be in dataRows
 	// use if you want rawData for built in ents or have custom loaders where you're accumulating each
 	// call to loader.GetNewInstance() and storing that yourself
@@ -487,7 +448,7 @@ func (l *loadNodesLoader) Validate() error {
 		return errors.New("loader required")
 	}
 
-	if len(l.ids) == 0 && len(l.whereParts) == 0 && l.rawQuery == "" {
+	if len(l.ids) == 0 && l.rawQuery == "" && l.clause == nil {
 		return errors.New("no ids passed to loadNodesLoader or no way to query as needed")
 	}
 	return nil
@@ -521,12 +482,16 @@ func (l *loadNodesLoader) GetSQLBuilder() (*sqlBuilder, error) {
 			inArgs[idx] = id
 		}
 		builder.in("id", inArgs)
-	} else if len(l.whereParts) != 0 {
-		builder.whereParts = l.whereParts
+	} else if l.clause != nil {
+		builder.clause = l.clause
 	} else if l.rawQuery != "" {
 		builder.rawQuery = l.rawQuery
 	} else {
 		return nil, errors.New("shouldn't call GetSQLBuilder() if there are no ids or parts")
+	}
+
+	if l.limit != 0 {
+		builder.limit = &l.limit
 	}
 
 	return builder, nil
@@ -538,7 +503,7 @@ func (l *loadNodesLoader) GetCacheKeyForID(id string) string {
 
 func (l *loadNodesLoader) Configure() configureQueryResult {
 	// not loading a bunch of ids which may have a cache and all that complex stuff. simplify
-	if len(l.whereParts) != 0 || l.rawQuery != "" {
+	if l.clause != nil || l.rawQuery != "" {
 		return configureWith(continueQuery)
 	}
 
@@ -572,15 +537,37 @@ func (l *loadNodesLoader) Configure() configureQueryResult {
 	return configureWith(continueQuery)
 }
 
+func (l *loadNodesLoader) handleNoRows(err error) error {
+	// for consistent API and to know no data
+	// TODO is there a better way to do this?
+	// TODO this and inline function to mapScanRows is because of inconsistent API
+	// when it's limit 1 we should really just single row scan and I think that
+	// behavior is clearer. we only need dbsql.ErrNoRows when querying 1 row similar to what
+	// standard library provides
+	if err == nil && len(l.dbobjects) == 0 {
+		// TODO handle this better in the future?
+		return dbsql.ErrNoRows
+	}
+	return err
+}
+
 func (l *loadNodesLoader) ProcessRows() func(rows *sqlx.Rows) error {
+	// TODO this should also be from the cache if we are fetching id queries
+	// need all kinds of cache testing
 	if l.rawData {
-		return mapScanRows(&l.dataRows)
+		return mapScanRows(&l.dataRows, func(err error) error {
+			if err == nil && len(l.dataRows) == 0 {
+				// TODO handle this better in the future?
+				return dbsql.ErrNoRows
+			}
+			return nil
+		})
 	}
 
-	// whereParts or rawQuery structScan
-	// not quite accurate since we need unsupportedscan logic here
+	// cache not enabled OR
+	// clause or rawQuery. we know these don't need to be cached (yet)
 	if len(l.queryIDs) == 0 || !cacheEnabled {
-		return structScanRows(l)
+		return queryRows(l, l.handleNoRows)
 	}
 
 	// multi-ids and cache enabled, check for cache.
@@ -610,6 +597,6 @@ func (l *loadNodesLoader) ProcessRows() func(rows *sqlx.Rows) error {
 				return err
 			}
 		}
-		return nil
+		return l.handleNoRows(nil)
 	}
 }
