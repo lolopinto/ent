@@ -72,15 +72,14 @@ func getKeyForEdge(id string, edgeType EdgeType) string {
 // }
 
 // TODO move this and other raw data access pattern methods to a lower level API below ent
-// TODO kill this API since we want map[string]interface{} returned
-func LoadNodeRawData(id string, entity DBObject, entConfig Config) error {
-	return loadData(
-		&loadNodeFromPKey{
-			id:        id,
-			tableName: entConfig.GetTableName(),
-			entity:    entity,
-		},
-	)
+func LoadNodeRawData(id string, entLoader Loader) (map[string]interface{}, error) {
+	l := &loadNodeLoader{
+		id:        id,
+		entLoader: entLoader,
+		rawData:   true,
+	}
+	err := loadData(l)
+	return l.dataRow, err
 }
 
 // LoadNodesRawData loads raw data for multiple objects
@@ -92,14 +91,6 @@ func LoadNodesRawData(ids []string, entLoader Loader) ([]map[string]interface{},
 	}
 	err := loadData(l)
 	return l.dataRows, err
-}
-
-func genLoadRawData(id string, entity DBObject, entConfig Config) <-chan error {
-	res := make(chan error)
-	go func() {
-		res <- LoadNodeRawData(id, entity, entConfig)
-	}()
-	return res
 }
 
 // TODO comments everything
@@ -644,17 +635,15 @@ func genLoadNodes(ids []string, entLoader Loader) <-chan multiEntResult {
 // TODO figure out correct long-term API here
 // this is the single get of GenLoadAssocEdges so shouldn't be too hard
 func GetEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
-	edgeData := &AssocEdgeData{}
-	err := loadData(
-		// TODO: convert to loader...
-		&loadNodeFromPKey{
-			id:        string(edgeType),
-			tableName: "assoc_edge_config",
-			entity:    edgeData,
-		},
-		cfgtx(tx),
-	)
-	return edgeData, err
+	l := &loadNodeLoader{
+		id:        string(edgeType),
+		entLoader: &assocEdgeLoader{},
+	}
+	err := loadData(l, cfgtx(tx))
+	if err != nil {
+		return nil, err
+	}
+	return l.GetEntity().(*AssocEdgeData), nil
 }
 
 func GetEdgeInfos(edgeTypes []string) (map[EdgeType]*AssocEdgeData, error) {

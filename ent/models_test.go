@@ -15,7 +15,6 @@ import (
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 )
 
@@ -106,15 +105,19 @@ func (suite *modelsTestSuite) TestLoadNodeFromID() {
 	}
 
 	for _, tt := range testCases {
-		var existingUser models.User
-		err := ent.LoadNodeRawData(tt.id, &existingUser, &configs.UserConfig{})
+		loader := models.NewUserLoader(viewer.LoggedOutViewer())
+		userData, err := ent.LoadNodeRawData(tt.id, loader)
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
-			assert.NotZero(suite.T(), existingUser)
+			assert.NotNil(suite.T(), userData)
+
+			id, err := cast.ToUUIDString(userData["id"])
+			assert.Nil(suite.T(), err)
+			assert.Equal(suite.T(), id, user.ID)
 		} else {
 			assert.NotNil(suite.T(), err)
 			assert.Equal(suite.T(), err, dbsql.ErrNoRows)
-			assert.Zero(suite.T(), existingUser)
+			assert.Nil(suite.T(), userData)
 		}
 	}
 }
@@ -138,11 +141,11 @@ func (suite *modelsTestSuite) TestGetEdgeInfo() {
 		edgeData, err := ent.GetEdgeInfo(tt.edgeType, nil)
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
-			assert.NotZero(suite.T(), edgeData)
+			assert.NotNil(suite.T(), edgeData)
 		} else {
 			assert.NotNil(suite.T(), err)
 			assert.Equal(suite.T(), err, dbsql.ErrNoRows)
-			assert.Zero(suite.T(), *edgeData)
+			assert.Nil(suite.T(), edgeData)
 		}
 	}
 }
@@ -474,7 +477,7 @@ func (suite *modelsTestSuite) TestLoadRawForeignKeyNodes() {
 
 			assert.Len(suite.T(), contacts, 2)
 			for _, contactData := range contacts {
-				assert.NotZero(suite.T(), contactData)
+				assert.NotNil(suite.T(), contactData)
 				id, err := cast.ToUUIDString(contactData["id"])
 				assert.Nil(suite.T(), err)
 				assert.Contains(suite.T(), []string{contact.ID, contact2.ID}, id)
@@ -532,11 +535,13 @@ func (suite *modelsTestSuite) TestLoadNodeWithJSON() {
 	residentNames := []string{"The Queen"}
 	address := testingutils.CreateTestAddress(suite.T(), residentNames)
 
-	var loadedAddress models.Address
-	err := ent.LoadNodeRawData(address.ID, &loadedAddress, &configs.AddressConfig{})
+	loader := models.NewAddressLoader(viewer.LoggedOutViewer())
+	addressData, err := ent.LoadNodeRawData(address.ID, loader)
 	require.NoError(suite.T(), err)
-
-	assert.Equal(suite.T(), residentNames, loadedAddress.ResidentNames)
+	require.NotNil(suite.T(), addressData)
+	var loadedResidentNames []string
+	cast.UnmarshallJSON(addressData["resident_names"], &loadedResidentNames)
+	assert.Equal(suite.T(), residentNames, loadedResidentNames)
 }
 
 func (suite *modelsTestSuite) TestLoadingMultiNodesWithJSON() {

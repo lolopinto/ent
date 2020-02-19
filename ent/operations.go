@@ -135,6 +135,15 @@ func (op *updateNodeOp) getInitColsAndVals() ([]string, []interface{}) {
 	return columns, values
 }
 
+func getPrimaryKeyForObj(entity DBObject) string {
+	pKey := "id"
+	entityWithPkey, ok := entity.(DBObjectWithDiffKey)
+	if ok {
+		pKey = entityWithPkey.GetPrimaryKey()
+	}
+	return pKey
+}
+
 func (op *updateNodeOp) getSQLQuery(columns []string, values []interface{}) string {
 	valsString := getValuesDataForUpdate(columns, values)
 

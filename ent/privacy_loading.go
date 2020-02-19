@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/pkg/errors"
@@ -103,10 +104,12 @@ func GenLoadNode(v viewer.ViewerContext, id string, loader PrivacyBackedLoader) 
 		if id == "" {
 			debug.PrintStack()
 		}
-		ent := loader.GetNewInstance()
-		entConfig := loader.GetConfig()
-
-		err := <-genLoadRawData(id, ent, entConfig)
+		l := &loadNodeLoader{
+			id:        id,
+			entLoader: loader,
+		}
+		err := loadData(l)
+		ent := l.GetEntity()
 		// there's an error loading raw data, return the value here and we're done.
 		if err != nil {
 			loader.SetPrivacyResult(id, nil, err)
@@ -161,6 +164,7 @@ func genApplyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt DBObject, load
 			logEntResult(ent, nil)
 		} else {
 			logEntResult(nil, err)
+			spew.Dump(ent)
 			loader.SetPrivacyResult(ent.GetID(), nil, err)
 		}
 

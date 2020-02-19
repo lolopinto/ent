@@ -12,7 +12,6 @@ import (
 	"github.com/lolopinto/ent/ent/viewertesting"
 	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -115,8 +114,10 @@ func (suite *privacyTestSuite) TestWaitForMultiple() {
 	v := viewertesting.OmniViewerContext{}
 	eventResult, userResult := <-models.GenLoadEvent(v, dbEvent.ID), <-models.GenLoadUser(v, dbUser.ID)
 
-	assert.Nil(suite.T(), userResult.Err)
-	assert.Nil(suite.T(), eventResult.Err)
+	require.Nil(suite.T(), userResult.Err)
+	require.Nil(suite.T(), eventResult.Err)
+	require.NotNil(suite.T(), userResult)
+	require.NotNil(suite.T(), eventResult)
 
 	assert.Equal(suite.T(), dbEvent.ID, eventResult.Event.ID)
 	assert.Equal(suite.T(), dbUser.ID, userResult.User.ID)
@@ -155,10 +156,19 @@ func (suite *privacyTestSuite) TestAllowIfViewerCanSeeEntRule() {
 		if err != nil {
 			return nil, err
 		}
-		var user models.User
-		entreflect.SetViewerInEnt(v, &user)
-		err = ent.LoadNodeRawData(id, &user, &configs.UserConfig{})
-		return &user, err
+		// 🤦🏿‍♂️figure out what this test buys us again...
+		loader := models.NewUserLoader(v)
+		data, err := ent.LoadNodeRawData(id, loader)
+		if err != nil {
+			return nil, err
+		}
+		user := loader.GetNewInstance()
+		for key, fn := range user.DBFields() {
+			if err := fn(data[key]); err != nil {
+				return nil, err
+			}
+		}
+		return user.(*models.User), err
 	})
 }
 

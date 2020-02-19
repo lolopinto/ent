@@ -75,9 +75,8 @@ type DBObject interface {
 // DBObjectWithDiffKey should be implemented to indicate that the primary key
 // in the table isn't "id" but a different field.
 // For now only supports single primary key so not exposing it publicly
+// Only used for update at the moment
 type DBObjectWithDiffKey interface {
 	DBObject
 	GetPrimaryKey() string // for now only do single primary key
 }
-
-// TODO move ^ to loader...

@@ -4,6 +4,7 @@ import (
 	dbsql "database/sql"
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/sql"
@@ -26,6 +27,10 @@ func EnableCache() {
 // TODO rename to dataLoader or something to differentiate from (Ent)Loader
 type loader interface {
 	GetSQLBuilder() (*sqlBuilder, error)
+}
+
+type processRawLoader interface {
+	ProcessRaw(map[string]interface{}) error
 }
 
 // works for both 1-N and 1-1 queries depending on context
@@ -274,40 +279,82 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 		if err != nil {
 			return err
 		}
-		return fillEntityFromMap(l.GetEntity(), actual)
+		// if not in cache, return raw data
+		if err := fillEntityFromMap(l.GetEntity(), actual); err != nil {
+			return err
+		}
+		processRaw, ok := l.(processRawLoader)
+		if ok {
+			return processRaw.ProcessRaw(actual)
+		}
+		return nil
 	}
 
 	return queryRow(q, l.GetEntity())
 }
 
-type loadNodeFromPKey struct {
+func getPrimaryKeyForLoader(loader Loader) string {
+	pkey := "id"
+	loaderWithPkey, ok := loader.(LoaderWithDiffPrimaryKey)
+	if ok {
+		pkey = loaderWithPkey.GetPrimaryKey()
+	}
+	return pkey
+}
+
+type loadNodeLoader struct {
 	id        string
+	entLoader Loader
+	rawData   bool
+
+	// private
+	dataRow   map[string]interface{}
+	pkey      string
 	tableName string
 	entity    DBObject
 }
 
-func getPrimaryKeyForObj(entity DBObject) string {
-	pKey := "id"
-	entityWithPkey, ok := entity.(DBObjectWithDiffKey)
-	if ok {
-		pKey = entityWithPkey.GetPrimaryKey()
+func (l *loadNodeLoader) Validate() error {
+	if l.entLoader == nil {
+		spew.Dump(l)
+		return errors.New("loader required")
 	}
-	return pKey
+	if l.id == "" {
+		return errors.New("id required")
+	}
+	return nil
 }
 
-func (l *loadNodeFromPKey) GetSQLBuilder() (*sqlBuilder, error) {
+func (l *loadNodeLoader) Configure() configureQueryResult {
+	l.pkey = getPrimaryKeyForLoader(l.entLoader)
+	l.entity = l.entLoader.GetNewInstance()
+	l.tableName = l.entLoader.GetConfig().GetTableName()
+
+	return configureWith(continueQuery)
+}
+
+func (l *loadNodeLoader) ProcessRaw(dataRow map[string]interface{}) error {
+	// right now this replaces. We can have thi also do
+	if l.rawData {
+		l.dataRow = dataRow
+		l.entity = nil
+	}
+	return nil
+}
+
+func (l *loadNodeLoader) GetSQLBuilder() (*sqlBuilder, error) {
 	return &sqlBuilder{
 		entity:    l.entity,
 		tableName: l.tableName,
-		clause:    sql.Eq(getPrimaryKeyForObj(l.entity), l.id),
+		clause:    sql.Eq(l.pkey, l.id),
 	}, nil
 }
 
-func (l *loadNodeFromPKey) GetEntity() DBObject {
+func (l *loadNodeLoader) GetEntity() DBObject {
 	return l.entity
 }
 
-func (l *loadNodeFromPKey) GetCacheKey() string {
+func (l *loadNodeLoader) GetCacheKey() string {
 	return getKeyForNode(l.id, l.tableName)
 }
 
@@ -535,11 +582,7 @@ func (l *loadNodesLoader) Configure() configureQueryResult {
 	if len(queryIDs) == 0 {
 		return configureWith(cancelQuery)
 	}
-	l.pkey = "id"
-	loaderWithPkey, ok := l.entLoader.(LoaderWithDiffPrimaryKey)
-	if ok {
-		l.pkey = loaderWithPkey.GetPrimaryKey()
-	}
+	l.pkey = getPrimaryKeyForLoader(l.entLoader)
 
 	return configureWith(continueQuery)
 }

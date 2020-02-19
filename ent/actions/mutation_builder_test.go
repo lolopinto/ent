@@ -7,7 +7,6 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
@@ -73,11 +72,10 @@ func (suite *mutationBuilderSuite) TestDeletion() {
 
 	assert.Nil(suite.T(), updatedUser)
 
-	var loadedUser models.User
-	err := ent.LoadNodeRawData(user.ID, &loadedUser, &configs.UserConfig{})
+	userData, err := ent.LoadNodeRawData(user.ID, models.NewUserLoader(b.Viewer))
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), err, sql.ErrNoRows)
-	assert.Zero(suite.T(), loadedUser)
+	assert.Nil(suite.T(), userData)
 }
 
 func (suite *mutationBuilderSuite) TestAddSimpleEdgeAtCreation() {
