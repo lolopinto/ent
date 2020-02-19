@@ -300,21 +300,6 @@ func getEdgeEntities(entity1 interface{}, entity2 interface{}) (Entity, Entity, 
 	return ent1, ent2, nil
 }
 
-// TODO figure out correct long-term API here
-// this is the single get of GenLoadAssocEdges so shouldn't be too hard
-func GetEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
-	edgeData := &AssocEdgeData{}
-	err := loadData(
-		&loadNodeFromPKey{
-			id:        string(edgeType),
-			tableName: "assoc_edge_config",
-			entity:    edgeData,
-		},
-		cfgtx(tx),
-	)
-	return edgeData, err
-}
-
 func addEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions, tx *sqlx.Tx) error {
 	ent1, ent2, err := getEdgeEntities(entity1, entity2)
 	if err != nil {
@@ -654,6 +639,32 @@ func genLoadNodes(ids []string, entLoader Loader) <-chan multiEntResult {
 		res <- getMultiEntResult(entLoader, l, err)
 	}()
 	return res
+}
+
+// TODO figure out correct long-term API here
+// this is the single get of GenLoadAssocEdges so shouldn't be too hard
+func GetEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
+	edgeData := &AssocEdgeData{}
+	err := loadData(
+		// TODO: convert to loader...
+		&loadNodeFromPKey{
+			id:        string(edgeType),
+			tableName: "assoc_edge_config",
+			entity:    edgeData,
+		},
+		cfgtx(tx),
+	)
+	return edgeData, err
+}
+
+func GetEdgeInfos(edgeTypes []string) (map[EdgeType]*AssocEdgeData, error) {
+	entLoader := &assocEdgeLoader{}
+	l := &loadNodesLoader{
+		entLoader: entLoader,
+		ids:       edgeTypes,
+	}
+	err := loadData(l)
+	return entLoader.GetMap(), err
 }
 
 // GenLoadAssocEdges loads all assoc edges from the db

@@ -348,7 +348,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 			constValue = uuid.New().String()
 			// keep track of new edges that we need to do things with
 			newEdge := &ent.AssocEdgeData{
-				EdgeType:        constValue,
+				EdgeType:        ent.EdgeType(constValue),
 				EdgeName:        constName,
 				SymmetricEdge:   assocEdge.Symmetric,
 				EdgeTable:       assocEdge.TableName,
@@ -368,7 +368,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 
 			// add inverse edge to list of new edges
 			edgeData.addNewEdge(&ent.AssocEdgeData{
-				EdgeType:        inverseConstValue,
+				EdgeType:        ent.EdgeType(inverseConstValue),
 				EdgeName:        inverseConstName,
 				SymmetricEdge:   false, // we know for sure that we can't be symmetric and have an inverse edge
 				EdgeTable:       assocEdge.TableName,

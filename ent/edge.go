@@ -97,7 +97,7 @@ func (res *AssocEdgesResult) GetNewInstance() *AssocEdge {
 
 // AssocEdgeData is corresponding ent for AssocEdgeConfig
 type AssocEdgeData struct {
-	EdgeType        string          `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
+	EdgeType        EdgeType        `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
 	EdgeName        string          `db:"edge_name"`
 	SymmetricEdge   bool            `db:"symmetric_edge"`
 	InverseEdgeType *sql.NullString `db:"inverse_edge_type"`
@@ -110,8 +110,8 @@ func (edgeData *AssocEdgeData) DBFields() DBFields {
 	// however leaving as-is because probably better for when this comes from a different cache
 	return DBFields{
 		"edge_type": func(v interface{}) error {
-			var err error
-			edgeData.EdgeType, err = cast.ToUUIDString(v)
+			edgeType, err := cast.ToUUIDString(v)
+			edgeData.EdgeType = EdgeType(edgeType)
 			return err
 		},
 		"edge_name": func(v interface{}) error {
@@ -155,7 +155,7 @@ func (edgeData *AssocEdgeData) GetPrimaryKey() string {
 // we need to break this up for tests
 // or worst case translate AssocEdgeData to a fake object that is an ent for use by node_map_test.go
 func (edgeData *AssocEdgeData) GetID() string {
-	return edgeData.EdgeType
+	return string(edgeData.EdgeType)
 }
 
 func (edgeData *AssocEdgeData) GetPrivacyPolicy() PrivacyPolicy {
@@ -196,6 +196,18 @@ func (res *assocEdgeLoader) GetNewInstance() DBObject {
 	var edge AssocEdgeData
 	res.results = append(res.results, &edge)
 	return &edge
+}
+
+func (res *assocEdgeLoader) GetMap() map[EdgeType]*AssocEdgeData {
+	m := make(map[EdgeType]*AssocEdgeData, len(res.results))
+	for _, edge := range res.results {
+		m[edge.EdgeType] = edge
+	}
+	return m
+}
+
+func (edgeData *assocEdgeLoader) GetPrimaryKey() string {
+	return "edge_type"
 }
 
 func (res *assocEdgeLoader) GetConfig() Config {

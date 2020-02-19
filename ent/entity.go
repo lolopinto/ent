@@ -55,6 +55,11 @@ type PrivacyBackedLoader interface {
 	SetPrivacyResult(string, DBObject, error)
 }
 
+type LoaderWithDiffPrimaryKey interface {
+	Loader
+	GetPrimaryKey() string // for now only do single primary key
+}
+
 type DBFields map[string]func(interface{}) error
 
 // DBObject references an item fetched from the database
@@ -74,3 +79,5 @@ type DBObjectWithDiffKey interface {
 	DBObject
 	GetPrimaryKey() string // for now only do single primary key
 }
+
+// TODO move ^ to loader...

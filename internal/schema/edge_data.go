@@ -41,7 +41,7 @@ func (edgeData *assocEdgeData) edgeTypeOfEdge(constName string) string {
 	if !edgeData.existingEdge(constName) {
 		return ""
 	}
-	return edgeData.edgeMap[constName].EdgeType
+	return string(edgeData.edgeMap[constName].EdgeType)
 }
 
 func (edgeData *assocEdgeData) addNewEdge(newEdge *ent.AssocEdgeData) {

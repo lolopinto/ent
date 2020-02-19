@@ -139,7 +139,7 @@ func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
 		EdgeName:      "AccountToFriendRequestsEdge",
 		SymmetricEdge: false,
 		InverseEdgeType: &sql.NullString{
-			String: friendRequestsReceivedEdge.EdgeType,
+			String: string(friendRequestsReceivedEdge.EdgeType),
 			Valid:  true,
 		},
 		EdgeTable: "account_friend_requests_edges",
@@ -151,7 +151,7 @@ func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
 		EdgeName:      "AccountToFriendRequestsReceivedEdge",
 		SymmetricEdge: false,
 		InverseEdgeType: &sql.NullString{
-			String: friendRequestsEdge.EdgeType,
+			String: string(friendRequestsEdge.EdgeType),
 			Valid:  true,
 		},
 		EdgeTable: "account_friend_requests_edges",
@@ -254,7 +254,7 @@ type TodoConfig struct {
 		EdgeName:      "AccountToTodosEdge",
 		SymmetricEdge: false,
 		InverseEdgeType: &sql.NullString{
-			String: todoAccountsEdge.EdgeType,
+			String: string(todoAccountsEdge.EdgeType),
 			Valid:  true,
 		},
 		EdgeTable: "account_todos_edges",
@@ -266,7 +266,7 @@ type TodoConfig struct {
 		EdgeName:      "TodoToAccountsEdge",
 		SymmetricEdge: false,
 		InverseEdgeType: &sql.NullString{
-			String: accountTodosEdge.EdgeType,
+			String: string(accountTodosEdge.EdgeType),
 			Valid:  true,
 		},
 		EdgeTable: "account_todos_edges",
@@ -410,7 +410,7 @@ type EventConfig struct {
 			EdgeName:      edgeName,
 			SymmetricEdge: false,
 			InverseEdgeType: &sql.NullString{
-				String: inverseEdge.EdgeType,
+				String: string(inverseEdge.EdgeType),
 				Valid:  true,
 			},
 			EdgeTable: "event_rsvps_edges",
@@ -651,7 +651,7 @@ func testEdgesFromConstsAndEdges(t *testing.T, s *schema.Schema) {
 }
 
 func testEdge(t *testing.T, edge, expectedEdge *ent.AssocEdgeData) {
-	_, err := uuid.Parse(edge.EdgeType)
+	_, err := uuid.Parse(string(edge.EdgeType))
 	if err != nil {
 		t.Errorf("Expected an edge type of uuid. didn't get it, got %s instead", edge.EdgeType)
 	}

@@ -375,7 +375,7 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 func (s *dbSchema) getEdgeLine(edge *ent.AssocEdgeData) string {
 	kvPairs := []string{
 		s.getEdgeKVPair("edge_name", strconv.Quote(edge.EdgeName)),
-		s.getEdgeKVPair("edge_type", strconv.Quote(edge.EdgeType)),
+		s.getEdgeKVPair("edge_type", strconv.Quote(string(edge.EdgeType))),
 		s.getEdgeKVPair("edge_table", strconv.Quote(edge.EdgeTable)),
 		s.getEdgeKVPair("symmetric_edge", s.getSymmetricEdgeValInEdge(edge)),
 		s.getEdgeKVPair("inverse_edge_type", s.getInverseEdgeValInEdge(edge)),

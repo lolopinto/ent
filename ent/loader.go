@@ -431,6 +431,7 @@ type loadNodesLoader struct {
 	limit  int
 	// keeping ids as first class citizen here because of cache logic
 	ids       []string
+	pkey      string // field we're querying from when doing ids query
 	rawQuery  string
 	entLoader Loader
 	dbobjects []DBObject
@@ -481,7 +482,7 @@ func (l *loadNodesLoader) GetSQLBuilder() (*sqlBuilder, error) {
 		for idx, id := range l.ids {
 			inArgs[idx] = id
 		}
-		builder.in("id", inArgs)
+		builder.in(l.pkey, inArgs)
 	} else if l.clause != nil {
 		builder.clause = l.clause
 	} else if l.rawQuery != "" {
@@ -534,6 +535,12 @@ func (l *loadNodesLoader) Configure() configureQueryResult {
 	if len(queryIDs) == 0 {
 		return configureWith(cancelQuery)
 	}
+	l.pkey = "id"
+	loaderWithPkey, ok := l.entLoader.(LoaderWithDiffPrimaryKey)
+	if ok {
+		l.pkey = loaderWithPkey.GetPrimaryKey()
+	}
+
 	return configureWith(continueQuery)
 }
 
@@ -580,10 +587,9 @@ func (l *loadNodesLoader) ProcessRows() func(rows *sqlx.Rows) error {
 			}
 
 			instance := l.GetNewInstance()
-			pkey := getPrimaryKeyForObj(instance)
 
 			// for now we assume always uuid, not always gonna work
-			idStr, err := cast.ToUUIDString(dataMap[pkey])
+			idStr, err := cast.ToUUIDString(dataMap[l.pkey])
 			if err != nil {
 				fmt.Println(err)
 				return err
