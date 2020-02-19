@@ -144,6 +144,16 @@ func (edgeData *AssocEdgeData) DBFields() DBFields {
 			edgeData.EdgeTable, err = cast.ToString(v)
 			return err
 		},
+		"created_at": func(v interface{}) error {
+			var err error
+			edgeData.CreatedAt, err = cast.ToTime(v)
+			return err
+		},
+		"updated_at": func(v interface{}) error {
+			var err error
+			edgeData.UpdatedAt, err = cast.ToTime(v)
+			return err
+		},
 	}
 }
 

@@ -213,9 +213,20 @@ func (contactEmail *ContactEmail) LoadContact() (*Contact, error) {
 // DBFields is used by the ent framework to load the ent from the underlying database
 func (contactEmail *ContactEmail) DBFields() ent.DBFields {
 	return ent.DBFields{
+
 		"id": func(v interface{}) error {
 			var err error
 			contactEmail.ID, err = cast.ToUUIDString(v)
+			return err
+		},
+		"created_at": func(v interface{}) error {
+			var err error
+			contactEmail.CreatedAt, err = cast.ToTime(v)
+			return err
+		},
+		"updated_at": func(v interface{}) error {
+			var err error
+			contactEmail.UpdatedAt, err = cast.ToTime(v)
 			return err
 		},
 		"email_address": func(v interface{}) error {

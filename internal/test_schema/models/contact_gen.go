@@ -292,9 +292,20 @@ func (contact *Contact) GenLoadAllowListEdgeFor(id2 string) <-chan *ent.AssocEdg
 // DBFields is used by the ent framework to load the ent from the underlying database
 func (contact *Contact) DBFields() ent.DBFields {
 	return ent.DBFields{
+
 		"id": func(v interface{}) error {
 			var err error
 			contact.ID, err = cast.ToUUIDString(v)
+			return err
+		},
+		"created_at": func(v interface{}) error {
+			var err error
+			contact.CreatedAt, err = cast.ToTime(v)
+			return err
+		},
+		"updated_at": func(v interface{}) error {
+			var err error
+			contact.UpdatedAt, err = cast.ToTime(v)
 			return err
 		},
 		"email_address": func(v interface{}) error {

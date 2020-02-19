@@ -243,9 +243,7 @@ func fillEntityFromMap(entity DBObject, dataMap map[string]interface{}) error {
 	for k, v := range dataMap {
 		fieldFunc, ok := fields[k]
 		if !ok {
-			// todo throw an exception eventually. for now this exists for created_at and updadted_at which may not be there
-			//			fmt.Printf("field %s retrieved from database which has no func \n", k)
-			continue
+			return fmt.Errorf("field %s retrieved from database which has no func", k)
 		}
 		err := fieldFunc(v)
 		if err != nil {

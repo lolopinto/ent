@@ -544,9 +544,20 @@ func (user *User) GenLoadDeclinedEventEdgeFor(id2 string) <-chan *ent.AssocEdgeR
 // DBFields is used by the ent framework to load the ent from the underlying database
 func (user *User) DBFields() ent.DBFields {
 	return ent.DBFields{
+
 		"id": func(v interface{}) error {
 			var err error
 			user.ID, err = cast.ToUUIDString(v)
+			return err
+		},
+		"created_at": func(v interface{}) error {
+			var err error
+			user.CreatedAt, err = cast.ToTime(v)
+			return err
+		},
+		"updated_at": func(v interface{}) error {
+			var err error
+			user.UpdatedAt, err = cast.ToTime(v)
 			return err
 		},
 		"bio": func(v interface{}) error {
