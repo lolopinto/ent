@@ -4,7 +4,6 @@ import (
 	dbsql "database/sql"
 
 	"fmt"
-	"reflect"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -222,50 +221,16 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 	return nil
 }
 
-// this is a hack because i'm lazy and don't want to go update getFieldsAndValuesOfStruct()
-// to do the right thing for now. now that I know what's going on here, can update everything
-func findID(entity interface{}, pkeyFieldName ...string) string {
-	name := "ID"
-	if len(pkeyFieldName) != 0 {
-		name = pkeyFieldName[0]
-	}
-	value := reflect.ValueOf(entity).Elem()
-	valueType := value.Type()
-	for i := 0; i < value.NumField(); i++ {
-		field := value.Field(i)
-		typeOfField := valueType.Field(i)
-		fieldType := field.Type()
-
-		if typeOfField.Name == name {
-			return field.Interface().(string)
-		}
-		if field.Kind() == reflect.Struct {
-			for j := 0; j < field.NumField(); j++ {
-				field2 := field.Field(j)
-				if fieldType.Field(j).Name == name {
-					return field2.Interface().(string)
-				}
-			}
-		}
-	}
-	panic("Could not find ID field")
-}
-
-func deleteNodeInTransaction(entity interface{}, entConfig Config, tx *sqlx.Tx) error {
+func deleteNodeInTransaction(entity DBObject, entConfig Config, tx *sqlx.Tx) error {
 	if entity == nil {
-		return errors.New("nil pointer passed to DeleteNode")
+		return errors.New("nil pointer passed to deleteNodeInTransaction")
 	}
 
 	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", entConfig.GetTableName())
-	id := findID(entity)
+	id := entity.GetID()
 
 	deleteKey(getKeyForNode(id, entConfig.GetTableName()))
 	return performWrite(query, []interface{}{id}, tx, nil)
-}
-
-// DeleteNode deletes a node given the node object
-func DeleteNode(entity interface{}, entConfig Config) error {
-	return deleteNodeInTransaction(entity, entConfig, nil)
 }
 
 // EdgeOptions is a struct that can be used to configure an edge.
@@ -275,40 +240,6 @@ func DeleteNode(entity interface{}, entConfig Config) error {
 type EdgeOptions struct {
 	Time time.Time
 	Data string
-}
-
-func getEdgeEntities(entity1 interface{}, entity2 interface{}) (Entity, Entity, error) {
-	var ok bool
-	var ent1, ent2 Entity
-	ent1, ok = entity1.(Entity)
-	if !ok {
-		return nil, nil, errors.New("entity1 is not an entity")
-	}
-	ent2, ok = entity2.(Entity)
-	if !ok {
-		return nil, nil, errors.New("entity2 is not an entity")
-	}
-	return ent1, ent2, nil
-}
-
-func addEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions, tx *sqlx.Tx) error {
-	ent1, ent2, err := getEdgeEntities(entity1, entity2)
-	if err != nil {
-		return err
-	}
-
-	id1 := findID(entity1)
-	id2 := findID(entity2)
-
-	return addEdgeInTransactionRaw(
-		edgeType,
-		id1,
-		id2,
-		ent1.GetType(),
-		ent2.GetType(),
-		edgeOptions,
-		tx,
-	)
 }
 
 func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Type NodeType, edgeOptions EdgeOptions, tx *sqlx.Tx) error {
@@ -359,22 +290,6 @@ func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Ty
 	return performWrite(query, vals, tx, nil)
 }
 
-func addEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType, edgeOptions EdgeOptions) error {
-	return addEdgeInTransaction(entity1, entity1, edgeType, edgeOptions, nil)
-}
-
-func deleteEdgeInTransaction(entity1 interface{}, entity2 interface{}, edgeType EdgeType, tx *sqlx.Tx) error {
-	_, _, err := getEdgeEntities(entity1, entity2)
-	if err != nil {
-		return err
-	}
-
-	id1 := findID(entity1)
-	id2 := findID(entity2)
-
-	return deleteEdgeInTransactionRaw(edgeType, id1, id2, tx)
-}
-
 func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx) error {
 	edgeData, err := GetEdgeInfo(edgeType, tx)
 	if err != nil {
@@ -396,10 +311,6 @@ func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx)
 	deleteKey(getKeyForEdge(id1, edgeType))
 
 	return performWrite(query, vals, tx, nil)
-}
-
-func deleteEdge(entity1 interface{}, entity2 interface{}, edgeType EdgeType) error {
-	return deleteEdgeInTransaction(entity1, entity1, edgeType, nil)
 }
 
 // LoadEdgeConfig configures the way to load edges
