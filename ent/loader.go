@@ -9,6 +9,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+var cacheEnabled = true
+
+// DisableCache disables the default in-memory cache. this is not thread safe
+// TODO: provide better options for this and ways to configure memory/redis/etc
+func DisableCache() {
+	cacheEnabled = false
+}
+
+// EnableCache enables the in-memory cache. inverse of EnableCache
+func EnableCache() {
+	cacheEnabled = true
+}
+
 type loader interface {
 	GetSQLBuilder() (*sqlBuilder, error)
 }
@@ -205,7 +218,7 @@ func chainLoaders(loaders []loader, options ...func(*loaderConfig)) error {
 
 func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
 	cacheable, ok := l.(cachedLoader)
-	if ok {
+	if ok && cacheEnabled {
 		key := cacheable.GetCacheKey()
 
 		fn := func() ([]map[string]interface{}, error) {
@@ -241,7 +254,7 @@ func fillEntityFromFields(fields DBFields, dataMap map[string]interface{}) error
 		fieldFunc, ok := fields[k]
 		if !ok {
 			// todo throw an exception eventually. for now this exists for created_at and updadted_at which may not be there
-			fmt.Printf("field %s retrieved from database which has no func \n", k)
+			//			fmt.Printf("field %s retrieved from database which has no func \n", k)
 			continue
 		}
 		err := fieldFunc(v)
@@ -297,7 +310,7 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 
 	// loader supports a cache. check it out
 	cacheable, ok := l.(cachedLoader)
-	if ok {
+	if ok && cacheEnabled {
 		// handle cache access
 		key := cacheable.GetCacheKey()
 
