@@ -130,11 +130,6 @@ func (contactEmail *ContactEmail) GetViewer() viewer.ViewerContext {
 	return contactEmail.Viewer
 }
 
-// GetConfig returns the config for this entity.
-func (contactEmail *ContactEmail) GetConfig() ent.Config {
-	return &configs.ContactEmailConfig{}
-}
-
 // LoadContactEmailFromContext loads the given ContactEmail given the context and id
 func LoadContactEmailFromContext(ctx context.Context, id string) (*ContactEmail, error) {
 	v, err := viewer.ForContext(ctx)

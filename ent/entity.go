@@ -12,7 +12,6 @@ type Entity interface {
 	//	GetID() string // TODO uuid
 	GetType() NodeType
 	GetViewer() viewer.ViewerContext
-	GetConfig() Config
 	DBObject
 }
 

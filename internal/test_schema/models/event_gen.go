@@ -156,11 +156,6 @@ func (event *Event) GetViewer() viewer.ViewerContext {
 	return event.Viewer
 }
 
-// GetConfig returns the config for this entity.
-func (event *Event) GetConfig() ent.Config {
-	return &configs.EventConfig{}
-}
-
 // LoadEventFromContext loads the given Event given the context and id
 func LoadEventFromContext(ctx context.Context, id string) (*Event, error) {
 	v, err := viewer.ForContext(ctx)

@@ -133,11 +133,6 @@ func (address *Address) GetViewer() viewer.ViewerContext {
 	return address.Viewer
 }
 
-// GetConfig returns the config for this entity.
-func (address *Address) GetConfig() ent.Config {
-	return &configs.AddressConfig{}
-}
-
 // LoadAddressFromContext loads the given Address given the context and id
 func LoadAddressFromContext(ctx context.Context, id string) (*Address, error) {
 	v, err := viewer.ForContext(ctx)

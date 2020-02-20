@@ -148,11 +148,6 @@ func (user *User) GetViewer() viewer.ViewerContext {
 	return user.Viewer
 }
 
-// GetConfig returns the config for this entity.
-func (user *User) GetConfig() ent.Config {
-	return &configs.UserConfig{}
-}
-
 // LoadUserFromContext loads the given User given the context and id
 func LoadUserFromContext(ctx context.Context, id string) (*User, error) {
 	v, err := viewer.ForContext(ctx)

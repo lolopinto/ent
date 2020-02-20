@@ -159,11 +159,6 @@ const (
     return {{.NodeInstance}}.Viewer
   }
 
-  // GetConfig returns the config for this entity.
-  func ({{.NodeInstance}} *{{.Node}}) GetConfig() ent.Config {
-    return {{.EntConfig}}
-  }
-
   // Load{{.Node}}FromContext loads the given {{.Node}} given the context and id
   func Load{{.Node}}FromContext(ctx context.Context, id string) (*{{.Node}}, error) {
     v, err := viewer.ForContext(ctx)

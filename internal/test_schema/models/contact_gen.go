@@ -138,11 +138,6 @@ func (contact *Contact) GetViewer() viewer.ViewerContext {
 	return contact.Viewer
 }
 
-// GetConfig returns the config for this entity.
-func (contact *Contact) GetConfig() ent.Config {
-	return &configs.ContactConfig{}
-}
-
 // LoadContactFromContext loads the given Contact given the context and id
 func LoadContactFromContext(ctx context.Context, id string) (*Contact, error) {
 	v, err := viewer.ForContext(ctx)
