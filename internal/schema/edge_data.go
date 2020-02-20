@@ -14,11 +14,7 @@ func (m NodeMapInfo) loadExistingEdges() *assocEdgeData {
 	if result.Err != nil {
 		fmt.Println("error loading data. assoc_edge_config related", result.Err)
 	}
-	// TODO loadNodesLoader issue
-	// more proof I need to fix the sql.ErrNoRows thing
-	if result.Err != sql.ErrNoRows {
-		util.Die(result.Err)
-	}
+	util.Die(result.Err)
 
 	edgeMap := make(map[string]*ent.AssocEdgeData)
 	for _, assocEdgeData := range result.Edges {

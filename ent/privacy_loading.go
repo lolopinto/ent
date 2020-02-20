@@ -7,7 +7,6 @@ import (
 	"runtime/debug"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/pkg/errors"
@@ -97,22 +96,13 @@ func LoadNode(v viewer.ViewerContext, id string, loader PrivacyBackedLoader) err
 	return <-GenLoadNode(v, id, loader)
 }
 
-// TODO...
-func GenLoadNode(v viewer.ViewerContext, id string, loader PrivacyBackedLoader) chan error {
+func genLoadNodeFromLoader(v viewer.ViewerContext, loader PrivacyBackedLoader, l *loadNodeLoader) <-chan error {
 	res := make(chan error)
 	go func() {
-		if id == "" {
-			debug.PrintStack()
-		}
-		l := &loadNodeLoader{
-			id:        id,
-			entLoader: loader,
-		}
 		err := loadData(l)
 		ent := l.GetEntity()
 		// there's an error loading raw data, return the value here and we're done.
 		if err != nil {
-			loader.SetPrivacyResult(id, nil, err)
 			res <- err
 			return
 		}
@@ -124,6 +114,19 @@ func GenLoadNode(v viewer.ViewerContext, id string, loader PrivacyBackedLoader) 
 		res <- <-genApplyPrivacyPolicyUnsure(v, ent, loader)
 	}()
 	return res
+}
+
+// TODO...
+func GenLoadNode(v viewer.ViewerContext, id string, loader PrivacyBackedLoader) <-chan error {
+	if id == "" {
+		debug.PrintStack()
+	}
+	l := &loadNodeLoader{
+		id:        id,
+		entLoader: loader,
+	}
+
+	return genLoadNodeFromLoader(v, loader, l)
 }
 
 func logEntResult(ent interface{}, err error) {
@@ -164,7 +167,6 @@ func genApplyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt DBObject, load
 			logEntResult(ent, nil)
 		} else {
 			logEntResult(nil, err)
-			spew.Dump(ent)
 			loader.SetPrivacyResult(ent.GetID(), nil, err)
 		}
 
@@ -235,6 +237,14 @@ func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity
 	// would be preferable to detect this at compile time instead of runtime
 	// or with a test
 	return &InvalidPrivacyRule{}
+}
+
+func LoadNodeViaQueryClause(v viewer.ViewerContext, entLoader PrivacyBackedLoader, clause sql.QueryClause) error {
+	l := &loadNodeLoader{
+		entLoader: entLoader,
+		clause:    clause,
+	}
+	return <-genLoadNodeFromLoader(v, entLoader, l)
 }
 
 func GenLoadNodesViaQueryClause(v viewer.ViewerContext, entLoader PrivacyBackedLoader, clause sql.QueryClause) <-chan error {

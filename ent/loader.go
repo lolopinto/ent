@@ -1,10 +1,8 @@
 package ent
 
 import (
-	dbsql "database/sql"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/sql"
@@ -207,12 +205,10 @@ func chainLoaders(loaders []loader, options ...func(*loaderConfig)) error {
 }
 
 func loadMultiRowData(l multiRowLoader, q *dbQuery) error {
-	cacheable, ok := l.(cachedLoader)
-	if ok && cacheEnabled {
-		// 1 key -> N items e.g. edge?
-		// this is generic enough that we can support
-		key := cacheable.GetCacheKey()
-
+	// 1 key -> N items e.g. edge
+	key := getCacheKeyFromLoader(l)
+	// cachekey and valid keys
+	if key != "" {
 		fn := func() ([]map[string]interface{}, error) {
 			return q.MapScanRows()
 		}
@@ -258,17 +254,26 @@ func fillFromCacheItem(l multiRowLoader, dataMap map[string]interface{}) error {
 	return fillEntityFromMap(instance, dataMap)
 }
 
+func getCacheKeyFromLoader(l loader) string {
+	if !cacheEnabled {
+		return ""
+	}
+	// loader supports a cache. check it out
+	cacheable, ok := l.(cachedLoader)
+	if ok {
+		return cacheable.GetCacheKey()
+	}
+	return ""
+}
+
 func loadRowData(l singleRowLoader, q *dbQuery) error {
 	if l.GetEntity() == nil {
 		return errors.New("nil entity passed to loadData")
 	}
 
-	// loader supports a cache. check it out
-	cacheable, ok := l.(cachedLoader)
-	if ok && cacheEnabled {
-		// handle cache access
-		key := cacheable.GetCacheKey()
-
+	key := getCacheKeyFromLoader(l)
+	// handle cache access with valid cache key
+	if key != "" {
 		fn := func() (map[string]interface{}, error) {
 			return mapScan(q)
 		}
@@ -288,6 +293,15 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 		return nil
 	}
 
+	processRaw, ok := l.(processRawLoader)
+	if ok {
+		dataMap, err := queryRowRetMap(q, l.GetEntity())
+		if err != nil {
+			return err
+		}
+		return processRaw.ProcessRaw(dataMap)
+	}
+
 	return queryRow(q, l.GetEntity())
 }
 
@@ -304,6 +318,7 @@ type loadNodeLoader struct {
 	id        string
 	entLoader Loader
 	rawData   bool
+	clause    sql.QueryClause
 
 	// private
 	dataRow   map[string]interface{}
@@ -314,11 +329,10 @@ type loadNodeLoader struct {
 
 func (l *loadNodeLoader) Validate() error {
 	if l.entLoader == nil {
-		spew.Dump(l)
 		return errors.New("loader required")
 	}
-	if l.id == "" {
-		return errors.New("id required")
+	if l.id == "" && l.clause == nil {
+		return errors.New("id or clause required")
 	}
 	return nil
 }
@@ -341,11 +355,17 @@ func (l *loadNodeLoader) ProcessRaw(dataRow map[string]interface{}) error {
 }
 
 func (l *loadNodeLoader) GetSQLBuilder() (*sqlBuilder, error) {
-	return &sqlBuilder{
+	builder := &sqlBuilder{
 		entity:    l.entity,
 		tableName: l.tableName,
-		clause:    sql.Eq(l.pkey, l.id),
-	}, nil
+	}
+
+	if l.clause == nil {
+		builder.clause = sql.Eq(l.pkey, l.id)
+	} else {
+		builder.clause = l.clause
+	}
+	return builder, nil
 }
 
 func (l *loadNodeLoader) GetEntity() DBObject {
@@ -353,6 +373,9 @@ func (l *loadNodeLoader) GetEntity() DBObject {
 }
 
 func (l *loadNodeLoader) GetCacheKey() string {
+	if l.id == "" {
+		return ""
+	}
 	return getKeyForNode(l.id, l.tableName)
 }
 
@@ -473,7 +496,9 @@ func (l *loadAssocEdgeConfigExists) GetOutput() interface{} {
 
 type loadNodesLoader struct {
 	clause sql.QueryClause
-	limit  int
+	// limit 1 should just use loadNodeLoader. one good reason is dbsql.ErrNoRows being returned when QueryRow() is called but nothing of the sort
+	// for querying for multiple rows
+	limit int
 	// keeping ids as first class citizen here because of cache logic
 	ids       []string
 	pkey      string // field we're querying from when doing ids query
@@ -585,37 +610,17 @@ func (l *loadNodesLoader) Configure() configureQueryResult {
 	return configureWith(continueQuery)
 }
 
-func (l *loadNodesLoader) handleNoRows(err error) error {
-	// for consistent API and to know no data
-	// TODO is there a better way to do this?
-	// TODO this and inline function to mapScanRows is because of inconsistent API
-	// when it's limit 1 we should really just single row scan and I think that
-	// behavior is clearer. we only need dbsql.ErrNoRows when querying 1 row similar to what
-	// standard library provides
-	if err == nil && len(l.dbobjects) == 0 {
-		// TODO handle this better in the future?
-		return dbsql.ErrNoRows
-	}
-	return err
-}
-
 func (l *loadNodesLoader) ProcessRows() func(rows *sqlx.Rows) error {
 	// TODO this should also be from the cache if we are fetching id queries
 	// need all kinds of cache testing
 	if l.rawData {
-		return mapScanRows(&l.dataRows, func(err error) error {
-			if err == nil && len(l.dataRows) == 0 {
-				// TODO handle this better in the future?
-				return dbsql.ErrNoRows
-			}
-			return nil
-		})
+		return mapScanRows(&l.dataRows)
 	}
 
 	// cache not enabled OR
 	// clause or rawQuery. we know these don't need to be cached (yet)
 	if len(l.queryIDs) == 0 || !cacheEnabled {
-		return queryRows(l, l.handleNoRows)
+		return queryRows(l)
 	}
 
 	// multi-ids and cache enabled, check for cache.
@@ -644,6 +649,6 @@ func (l *loadNodesLoader) ProcessRows() func(rows *sqlx.Rows) error {
 				return err
 			}
 		}
-		return l.handleNoRows(nil)
+		return nil
 	}
 }

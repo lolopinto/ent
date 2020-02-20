@@ -222,7 +222,7 @@ func LoadContactIDFromEmailAddress(emailAddress string) (string, error) {
 
 func LoadContactFromEmailAddress(v viewer.ViewerContext, emailAddress string) (*Contact, error) {
 	loader := NewContactLoader(v)
-	err := ent.LoadNodesViaQueryClause(v, loader, sql.Eq("email_address", emailAddress))
+	err := ent.LoadNodeViaQueryClause(v, loader, sql.Eq("email_address", emailAddress))
 	if err != nil {
 		return nil, err
 	}

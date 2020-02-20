@@ -127,7 +127,6 @@ type rowQueryer interface {
 
 func mapScan(query rowQueryer) (map[string]interface{}, error) {
 	dataMap := make(map[string]interface{})
-	//			fmt.Println("cache miss for key", key)
 
 	// query and scan into map. return data in format needed by cache function
 	err := query.MapScan(dataMap)
@@ -152,57 +151,55 @@ func queryRow(query rowQueryer, entity DBObject) error {
 	return fillEntityFromMap(entity, dataMap)
 }
 
-func processError(err error, handleErrs []func(error) error) error {
-	if len(handleErrs) == 0 {
-		return err
+func queryRowRetMap(query rowQueryer, entity DBObject) (map[string]interface{}, error) {
+	dataMap, err := mapScan(query)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
 	}
-	for _, handler := range handleErrs {
-		if err := handler(err); err != nil {
-			return err
-		}
-	}
-	return nil
+	err = fillEntityFromMap(entity, dataMap)
+	return dataMap, err
 }
 
-func mapScanRows(dataRows *[]map[string]interface{}, handleErrs ...func(error) error) func(*sqlx.Rows) error {
+func mapScanRows(dataRows *[]map[string]interface{}) func(*sqlx.Rows) error {
 	return func(rows *sqlx.Rows) error {
 		for rows.Next() {
 			dataMap := make(map[string]interface{})
 			if err := rows.MapScan(dataMap); err != nil {
 				fmt.Println(err)
-				return processError(err, handleErrs)
+				return err
 			}
 			*dataRows = append(*dataRows, dataMap)
 		}
-		return processError(nil, handleErrs)
+		return nil
 	}
 }
 
-func structScanRows(l multiRowLoader, handleErrs ...func(error) error) func(*sqlx.Rows) error {
+func structScanRows(l multiRowLoader) func(*sqlx.Rows) error {
 	return func(rows *sqlx.Rows) error {
 		for rows.Next() {
 			instance := l.GetNewInstance()
 			if err := rows.StructScan(instance); err != nil {
 				fmt.Println(err)
-				return processError(err, handleErrs)
+				return err
 			}
 		}
-		return processError(nil, handleErrs)
+		return nil
 	}
 }
 
 // This handles structScan vs MapScan decisions that need to be made when querying multiple
 // rows that are not going to cache
 // see queryRow
-func queryRows(l multiRowLoader, handleErrs ...func(error) error) func(*sqlx.Rows) error {
+func queryRows(l multiRowLoader) func(*sqlx.Rows) error {
 	return func(rows *sqlx.Rows) error {
 		for rows.Next() {
 			instance := l.GetNewInstance()
 			if err := queryRow(rows, instance); err != nil {
 				fmt.Println(err)
-				return processError(err, handleErrs)
+				return err
 			}
 		}
-		return processError(nil, handleErrs)
+		return nil
 	}
 }

@@ -483,7 +483,8 @@ func (suite *modelsTestSuite) TestLoadRawForeignKeyNodes() {
 				assert.Contains(suite.T(), []string{contact.ID, contact2.ID}, id)
 			}
 		} else {
-			assert.NotNil(suite.T(), err)
+			// no results is standard and no error
+			assert.Nil(suite.T(), err)
 			assert.Len(suite.T(), contacts, 0)
 			assert.Empty(suite.T(), contacts)
 		}

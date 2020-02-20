@@ -245,7 +245,7 @@ const (
 
       func Load{{$currentNode}}From{{$field.FieldName}}(v viewer.ViewerContext, {{$field.InstanceFieldName}} {{notNullableTypeString $field}}) (*{{$currentNode}}, error) {
         loader := {{$currentLoader}}(v)
-        err := ent.LoadNodesViaQueryClause(v, loader, sql.Eq({{$field.GetQuotedDBColName}}, {{$field.InstanceFieldName}}))
+        err := ent.LoadNodeViaQueryClause(v, loader, sql.Eq({{$field.GetQuotedDBColName}}, {{$field.InstanceFieldName}}))
         if err != nil {
           return nil, err
         }

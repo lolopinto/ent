@@ -104,22 +104,13 @@ func LoadNodesRawDataViaQueryClause(entLoader Loader, clause sql.QueryClause) ([
 }
 
 func LoadNodeRawDataViaQueryClause(entLoader Loader, clause sql.QueryClause) (map[string]interface{}, error) {
-	l := &loadNodesLoader{
+	l := &loadNodeLoader{
 		entLoader: entLoader,
 		clause:    clause,
 		rawData:   true,
-		limit:     1,
 	}
 	err := loadData(l)
-	if len(l.dataRows) == 0 {
-		// if err == nil {
-		// 	// for consistent API and to know no data
-		// 	// TODO is there a better way to do this?
-		// 	return nil, dbsql.ErrNoRows
-		// }
-		return nil, err
-	}
-	return l.dataRows[0], err
+	return l.dataRow, err
 }
 
 func genLoadNodesViaClause(entLoader Loader, clause sql.QueryClause) <-chan multiEntResult {

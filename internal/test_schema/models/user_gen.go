@@ -232,7 +232,7 @@ func LoadUserIDFromEmailAddress(emailAddress string) (string, error) {
 
 func LoadUserFromEmailAddress(v viewer.ViewerContext, emailAddress string) (*User, error) {
 	loader := NewUserLoader(v)
-	err := ent.LoadNodesViaQueryClause(v, loader, sql.Eq("email_address", emailAddress))
+	err := ent.LoadNodeViaQueryClause(v, loader, sql.Eq("email_address", emailAddress))
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +253,7 @@ func LoadUserIDFromPhoneNumber(phoneNumber string) (string, error) {
 
 func LoadUserFromPhoneNumber(v viewer.ViewerContext, phoneNumber string) (*User, error) {
 	loader := NewUserLoader(v)
-	err := ent.LoadNodesViaQueryClause(v, loader, sql.Eq("phone_number", phoneNumber))
+	err := ent.LoadNodeViaQueryClause(v, loader, sql.Eq("phone_number", phoneNumber))
 	if err != nil {
 		return nil, err
 	}
