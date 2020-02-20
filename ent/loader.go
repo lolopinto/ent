@@ -283,6 +283,8 @@ func loadRowData(l singleRowLoader, q *dbQuery) error {
 			return err
 		}
 		// if not in cache, return raw data
+		// TODO in the only instance we have of a processRawLoader
+		// this line is not needed...
 		if err := fillEntityFromMap(l.GetEntity(), actual); err != nil {
 			return err
 		}
@@ -611,9 +613,7 @@ func (l *loadNodesLoader) Configure() configureQueryResult {
 }
 
 func (l *loadNodesLoader) ProcessRows() func(rows *sqlx.Rows) error {
-	// TODO this should also be from the cache if we are fetching id queries
-	// need all kinds of cache testing
-	if l.rawData {
+	if !cacheEnabled && l.rawData {
 		return mapScanRows(&l.dataRows)
 	}
 
@@ -632,8 +632,6 @@ func (l *loadNodesLoader) ProcessRows() func(rows *sqlx.Rows) error {
 				return err
 			}
 
-			instance := l.GetNewInstance()
-
 			// for now we assume always uuid, not always gonna work
 			idStr, err := cast.ToUUIDString(dataMap[l.pkey])
 			if err != nil {
@@ -643,6 +641,14 @@ func (l *loadNodesLoader) ProcessRows() func(rows *sqlx.Rows) error {
 			key := l.GetCacheKeyForID(idStr)
 			// set in cache
 			setSingleCachedItem(key, dataMap, nil)
+
+			// querying raw data, we're done here...
+			if l.rawData {
+				l.dataRows = append(l.dataRows, dataMap)
+				continue
+			}
+
+			instance := l.GetNewInstance()
 
 			if err := fillEntityFromMap(instance, dataMap); err != nil {
 				fmt.Println(err)

@@ -78,9 +78,6 @@ func BenchmarkDelete(b *testing.B) {
 	}
 }
 
-// TODO need read/raw and read-multi raw
-// will get that later
-
 func BenchmarkReadCacheDisabled(b *testing.B) {
 	v, user := createUser(b)
 	ent.DisableCache()
@@ -137,7 +134,7 @@ func BenchmarkReadCachePrimedAndEnabled(b *testing.B) {
 	v, user := createUser(b)
 	ent.EnableCache()
 	_, err := models.LoadUser(v, user.ID)
-	// prime the load first?
+	// prime the load first
 	if err != nil {
 		b.FailNow()
 	}
@@ -145,6 +142,34 @@ func BenchmarkReadCachePrimedAndEnabled(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, err := models.LoadUser(v, user.ID)
+		if err != nil {
+			b.FailNow()
+		}
+	}
+}
+
+func BenchmarkRawReadCacheDisabled(b *testing.B) {
+	v, user := createUser(b)
+	ent.DisableCache()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		loader := models.NewUserLoader(v)
+		_, err := ent.LoadNodeRawData(user.ID, loader)
+		if err != nil {
+			b.FailNow()
+		}
+	}
+}
+
+func BenchmarkRawReadCacheEnabled(b *testing.B) {
+	v, user := createUser(b)
+	ent.EnableCache()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		loader := models.NewUserLoader(v)
+		_, err := ent.LoadNodeRawData(user.ID, loader)
 		if err != nil {
 			b.FailNow()
 		}
@@ -212,6 +237,46 @@ func BenchmarkGenMultiReadCacheDisabled(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		res := <-models.GenLoadUsers(v, ids...)
 		if res.Err != nil {
+			b.FailNow()
+		}
+	}
+}
+
+func BenchmarkMultiReadRawCacheDisabled(b *testing.B) {
+	// some large enough number but not too large is what we care about
+	ids := make([]string, 30)
+	for i := 0; i < 30; i++ {
+		_, user := createUser(b)
+		ids[i] = user.ID
+	}
+	v := viewertesting.OmniViewerContext{}
+	ent.DisableCache()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		loader := models.NewUserLoader(v)
+		_, err := ent.LoadNodesRawData(ids, loader)
+		if err != nil {
+			b.FailNow()
+		}
+	}
+}
+
+func BenchmarkMultiReadRawCacheEnabled(b *testing.B) {
+	// some large enough number but not too large is what we care about
+	ids := make([]string, 30)
+	for i := 0; i < 30; i++ {
+		_, user := createUser(b)
+		ids[i] = user.ID
+	}
+	v := viewertesting.OmniViewerContext{}
+	ent.EnableCache()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		loader := models.NewUserLoader(v)
+		_, err := ent.LoadNodesRawData(ids, loader)
+		if err != nil {
 			b.FailNow()
 		}
 	}
