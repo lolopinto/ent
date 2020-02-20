@@ -169,14 +169,11 @@ func LoadEventFromContext(ctx context.Context, id string) (*Event, error) {
 func GenLoadEventFromContext(ctx context.Context, id string) <-chan *EventResult {
 	res := make(chan *EventResult)
 	go func() {
-		v, err := viewer.ForContext(ctx)
-		if err != nil {
-			res <- &EventResult{
-				Err: err,
-			}
-			return
+		event, err := LoadEventFromContext(ctx, id)
+		res <- &EventResult{
+			Err:   err,
+			Event: event,
 		}
-		res <- <-(GenLoadEvent(v, id))
 	}()
 	return res
 }
@@ -192,11 +189,11 @@ func LoadEvent(v viewer.ViewerContext, id string) (*Event, error) {
 func GenLoadEvent(v viewer.ViewerContext, id string) <-chan *EventResult {
 	res := make(chan *EventResult)
 	go func() {
-		var result EventResult
-		loader := NewEventLoader(v)
-		result.Err = <-ent.GenLoadNode(v, id, loader)
-		result.Event = loader.nodes[id]
-		res <- &result
+		event, err := LoadEvent(v, id)
+		res <- &EventResult{
+			Err:   err,
+			Event: event,
+		}
 	}()
 	return res
 }
@@ -212,11 +209,11 @@ func LoadEvents(v viewer.ViewerContext, ids ...string) ([]*Event, error) {
 func GenLoadEvents(v viewer.ViewerContext, ids ...string) <-chan *EventsResult {
 	res := make(chan *EventsResult)
 	go func() {
-		loader := NewEventLoader(v)
-		var result EventsResult
-		result.Err = <-ent.GenLoadNodes(v, ids, loader)
-		result.Events = loader.results
-		res <- &result
+		results, err := LoadEvents(v, ids...)
+		res <- &EventsResult{
+			Err:    err,
+			Events: results,
+		}
 	}()
 	return res
 }
@@ -246,10 +243,11 @@ func (event *Event) GenHosts() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		loader := NewUserLoader(event.Viewer)
-		var result UsersResult
-		result.Err = <-ent.GenLoadNodesByType(event.Viewer, event.ID, EventToHostsEdge, loader)
-		result.Users = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(event.Viewer, event.ID, EventToHostsEdge, loader)
+		res <- &UsersResult{
+			Err:   err,
+			Users: loader.results,
+		}
 	}()
 	return res
 }
@@ -285,11 +283,12 @@ func (event *Event) GenCreatorEdge() <-chan *ent.AssocEdgeResult {
 func (event *Event) GenCreator() <-chan *UserResult {
 	res := make(chan *UserResult)
 	go func() {
-		var result UserResult
 		loader := NewUserLoader(event.Viewer)
-		result.Err = <-ent.GenLoadUniqueNodeByType(event.Viewer, event.ID, EventToCreatorEdge, loader)
-		result.User = loader.getFirstInstance()
-		res <- &result
+		err := ent.LoadUniqueNodeByType(event.Viewer, event.ID, EventToCreatorEdge, loader)
+		res <- &UserResult{
+			Err:  err,
+			User: loader.getFirstInstance(),
+		}
 	}()
 	return res
 }
@@ -326,10 +325,11 @@ func (event *Event) GenInvited() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		loader := NewUserLoader(event.Viewer)
-		var result UsersResult
-		result.Err = <-ent.GenLoadNodesByType(event.Viewer, event.ID, EventToInvitedEdge, loader)
-		result.Users = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(event.Viewer, event.ID, EventToInvitedEdge, loader)
+		res <- &UsersResult{
+			Err:   err,
+			Users: loader.results,
+		}
 	}()
 	return res
 }
@@ -366,10 +366,11 @@ func (event *Event) GenAttending() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		loader := NewUserLoader(event.Viewer)
-		var result UsersResult
-		result.Err = <-ent.GenLoadNodesByType(event.Viewer, event.ID, EventToAttendingEdge, loader)
-		result.Users = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(event.Viewer, event.ID, EventToAttendingEdge, loader)
+		res <- &UsersResult{
+			Err:   err,
+			Users: loader.results,
+		}
 	}()
 	return res
 }
@@ -406,10 +407,11 @@ func (event *Event) GenDeclined() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		loader := NewUserLoader(event.Viewer)
-		var result UsersResult
-		result.Err = <-ent.GenLoadNodesByType(event.Viewer, event.ID, EventToDeclinedEdge, loader)
-		result.Users = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(event.Viewer, event.ID, EventToDeclinedEdge, loader)
+		res <- &UsersResult{
+			Err:   err,
+			Users: loader.results,
+		}
 	}()
 	return res
 }

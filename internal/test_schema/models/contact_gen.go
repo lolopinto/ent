@@ -151,14 +151,11 @@ func LoadContactFromContext(ctx context.Context, id string) (*Contact, error) {
 func GenLoadContactFromContext(ctx context.Context, id string) <-chan *ContactResult {
 	res := make(chan *ContactResult)
 	go func() {
-		v, err := viewer.ForContext(ctx)
-		if err != nil {
-			res <- &ContactResult{
-				Err: err,
-			}
-			return
+		contact, err := LoadContactFromContext(ctx, id)
+		res <- &ContactResult{
+			Err:     err,
+			Contact: contact,
 		}
-		res <- <-(GenLoadContact(v, id))
 	}()
 	return res
 }
@@ -174,11 +171,11 @@ func LoadContact(v viewer.ViewerContext, id string) (*Contact, error) {
 func GenLoadContact(v viewer.ViewerContext, id string) <-chan *ContactResult {
 	res := make(chan *ContactResult)
 	go func() {
-		var result ContactResult
-		loader := NewContactLoader(v)
-		result.Err = <-ent.GenLoadNode(v, id, loader)
-		result.Contact = loader.nodes[id]
-		res <- &result
+		contact, err := LoadContact(v, id)
+		res <- &ContactResult{
+			Err:     err,
+			Contact: contact,
+		}
 	}()
 	return res
 }
@@ -194,11 +191,11 @@ func LoadContacts(v viewer.ViewerContext, ids ...string) ([]*Contact, error) {
 func GenLoadContacts(v viewer.ViewerContext, ids ...string) <-chan *ContactsResult {
 	res := make(chan *ContactsResult)
 	go func() {
-		loader := NewContactLoader(v)
-		var result ContactsResult
-		result.Err = <-ent.GenLoadNodes(v, ids, loader)
-		result.Contacts = loader.results
-		res <- &result
+		results, err := LoadContacts(v, ids...)
+		res <- &ContactsResult{
+			Err:      err,
+			Contacts: results,
+		}
 	}()
 	return res
 }
@@ -239,10 +236,11 @@ func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
 		loader := NewContactEmailLoader(contact.Viewer)
-		var result ContactEmailsResult
-		result.Err = <-ent.GenLoadNodesViaQueryClause(contact.Viewer, loader, sql.Eq("contact_id", contact.ID))
-		result.ContactEmails = loader.results
-		res <- &result
+		err := ent.LoadNodesViaQueryClause(contact.Viewer, loader, sql.Eq("contact_id", contact.ID))
+		res <- &ContactEmailsResult{
+			Err:           err,
+			ContactEmails: loader.results,
+		}
 	}()
 	return res
 }
@@ -269,10 +267,11 @@ func (contact *Contact) GenAllowList() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		loader := NewUserLoader(contact.Viewer)
-		var result UsersResult
-		result.Err = <-ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, loader)
-		result.Users = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, loader)
+		res <- &UsersResult{
+			Err:   err,
+			Users: loader.results,
+		}
 	}()
 	return res
 }

@@ -161,14 +161,11 @@ func LoadUserFromContext(ctx context.Context, id string) (*User, error) {
 func GenLoadUserFromContext(ctx context.Context, id string) <-chan *UserResult {
 	res := make(chan *UserResult)
 	go func() {
-		v, err := viewer.ForContext(ctx)
-		if err != nil {
-			res <- &UserResult{
-				Err: err,
-			}
-			return
+		user, err := LoadUserFromContext(ctx, id)
+		res <- &UserResult{
+			Err:  err,
+			User: user,
 		}
-		res <- <-(GenLoadUser(v, id))
 	}()
 	return res
 }
@@ -184,11 +181,11 @@ func LoadUser(v viewer.ViewerContext, id string) (*User, error) {
 func GenLoadUser(v viewer.ViewerContext, id string) <-chan *UserResult {
 	res := make(chan *UserResult)
 	go func() {
-		var result UserResult
-		loader := NewUserLoader(v)
-		result.Err = <-ent.GenLoadNode(v, id, loader)
-		result.User = loader.nodes[id]
-		res <- &result
+		user, err := LoadUser(v, id)
+		res <- &UserResult{
+			Err:  err,
+			User: user,
+		}
 	}()
 	return res
 }
@@ -204,11 +201,11 @@ func LoadUsers(v viewer.ViewerContext, ids ...string) ([]*User, error) {
 func GenLoadUsers(v viewer.ViewerContext, ids ...string) <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
-		loader := NewUserLoader(v)
-		var result UsersResult
-		result.Err = <-ent.GenLoadNodes(v, ids, loader)
-		result.Users = loader.results
-		res <- &result
+		results, err := LoadUsers(v, ids...)
+		res <- &UsersResult{
+			Err:   err,
+			Users: results,
+		}
 	}()
 	return res
 }
@@ -281,10 +278,11 @@ func (user *User) GenContacts() <-chan *ContactsResult {
 	res := make(chan *ContactsResult)
 	go func() {
 		loader := NewContactLoader(user.Viewer)
-		var result ContactsResult
-		result.Err = <-ent.GenLoadNodesViaQueryClause(user.Viewer, loader, sql.Eq("user_id", user.ID))
-		result.Contacts = loader.results
-		res <- &result
+		err := ent.LoadNodesViaQueryClause(user.Viewer, loader, sql.Eq("user_id", user.ID))
+		res <- &ContactsResult{
+			Err:      err,
+			Contacts: loader.results,
+		}
 	}()
 	return res
 }
@@ -311,10 +309,11 @@ func (user *User) GenEvents() <-chan *EventsResult {
 	res := make(chan *EventsResult)
 	go func() {
 		loader := NewEventLoader(user.Viewer)
-		var result EventsResult
-		result.Err = <-ent.GenLoadNodesByType(user.Viewer, user.ID, UserToEventsEdge, loader)
-		result.Events = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(user.Viewer, user.ID, UserToEventsEdge, loader)
+		res <- &EventsResult{
+			Err:    err,
+			Events: loader.results,
+		}
 	}()
 	return res
 }
@@ -351,10 +350,11 @@ func (user *User) GenFamilyMembers() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		loader := NewUserLoader(user.Viewer)
-		var result UsersResult
-		result.Err = <-ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, loader)
-		result.Users = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(user.Viewer, user.ID, UserToFamilyMembersEdge, loader)
+		res <- &UsersResult{
+			Err:   err,
+			Users: loader.results,
+		}
 	}()
 	return res
 }
@@ -391,10 +391,11 @@ func (user *User) GenFriends() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
 		loader := NewUserLoader(user.Viewer)
-		var result UsersResult
-		result.Err = <-ent.GenLoadNodesByType(user.Viewer, user.ID, UserToFriendsEdge, loader)
-		result.Users = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(user.Viewer, user.ID, UserToFriendsEdge, loader)
+		res <- &UsersResult{
+			Err:   err,
+			Users: loader.results,
+		}
 	}()
 	return res
 }
@@ -431,10 +432,11 @@ func (user *User) GenInvitedEvents() <-chan *EventsResult {
 	res := make(chan *EventsResult)
 	go func() {
 		loader := NewEventLoader(user.Viewer)
-		var result EventsResult
-		result.Err = <-ent.GenLoadNodesByType(user.Viewer, user.ID, UserToInvitedEventsEdge, loader)
-		result.Events = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(user.Viewer, user.ID, UserToInvitedEventsEdge, loader)
+		res <- &EventsResult{
+			Err:    err,
+			Events: loader.results,
+		}
 	}()
 	return res
 }
@@ -471,10 +473,11 @@ func (user *User) GenEventsAttending() <-chan *EventsResult {
 	res := make(chan *EventsResult)
 	go func() {
 		loader := NewEventLoader(user.Viewer)
-		var result EventsResult
-		result.Err = <-ent.GenLoadNodesByType(user.Viewer, user.ID, UserToEventsAttendingEdge, loader)
-		result.Events = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(user.Viewer, user.ID, UserToEventsAttendingEdge, loader)
+		res <- &EventsResult{
+			Err:    err,
+			Events: loader.results,
+		}
 	}()
 	return res
 }
@@ -511,10 +514,11 @@ func (user *User) GenDeclinedEvents() <-chan *EventsResult {
 	res := make(chan *EventsResult)
 	go func() {
 		loader := NewEventLoader(user.Viewer)
-		var result EventsResult
-		result.Err = <-ent.GenLoadNodesByType(user.Viewer, user.ID, UserToDeclinedEventsEdge, loader)
-		result.Events = loader.results
-		res <- &result
+		err := ent.LoadNodesByType(user.Viewer, user.ID, UserToDeclinedEventsEdge, loader)
+		res <- &EventsResult{
+			Err:    err,
+			Events: loader.results,
+		}
 	}()
 	return res
 }

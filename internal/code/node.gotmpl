@@ -172,14 +172,11 @@ const (
   func GenLoad{{.Node}}FromContext(ctx context.Context, id string) <-chan *{{.NodeResult}} {
     res := make(chan *{{.NodeResult}})
     go func() {
-      v, err := viewer.ForContext(ctx)
-      if err != nil {
-        res <- &{{.NodeResult}}{
-          Err: err,
-        }
-        return
+      {{.NodeInstance}}, err := Load{{.Node}}FromContext(ctx, id)
+      res <- &{{.NodeResult}}{
+        Err: err,
+        {{.Node}}: {{.NodeInstance}},
       }
-      res <- <- (GenLoad{{.Node}}(v, id))
     }()
     return res
   }
@@ -195,11 +192,11 @@ const (
   func GenLoad{{.Node}}(v viewer.ViewerContext, id string) <-chan *{{.NodeResult}}{
     res := make(chan *{{.NodeResult}})
     go func() {
-      var result {{.NodeResult}}
-      loader := {{.NewNodeLoader}}(v)
-      result.Err = <- ent.GenLoadNode(v, id, loader)
-      result.{{.Node}} = loader.nodes[id]
-      res <- &result
+      {{.NodeInstance}}, err := Load{{.Node}}(v, id)
+      res <- &{{.NodeResult}}{
+        Err: err,
+        {{.Node}}: {{.NodeInstance}},
+      }
     }()
     return res
   }
@@ -215,11 +212,11 @@ const (
   func GenLoad{{.Nodes}}(v viewer.ViewerContext, ids ...string) <-chan *{{.NodesResult}} {
     res := make(chan *{{.NodesResult}})
     go func() {
-      loader := {{.NewNodeLoader}}(v)
-      var result {{.NodesResult}}
-      result.Err = <-ent.GenLoadNodes(v, ids, loader)
-      result.{{.Nodes}} = loader.results
-      res <- &result
+      results, err := Load{{.Nodes}}(v, ids...)
+      res <- &{{.NodesResult}}{
+        Err: err,
+        {{.Nodes}}: results,
+      }
     }()
     return res
   }
@@ -300,10 +297,11 @@ const (
           res := make(chan *{{.NodesResult}})
           go func() {
             loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-            var result {{.NodesResult}}
-            result.Err = <- ent.GenLoadNodesViaQueryClause({{$currentNodeInstance}}.Viewer, loader, sql.Eq({{$edge.QuotedDBColName}}, {{$currentNodeInstance}}.ID))
-            result.{{.Nodes}} = loader.results
-            res <- &result
+            err := ent.LoadNodesViaQueryClause({{$currentNodeInstance}}.Viewer, loader, sql.Eq({{$edge.QuotedDBColName}}, {{$currentNodeInstance}}.ID))
+            res <- &{{.NodesResult}}{
+              Err: err,
+              {{.Nodes}}: loader.results,
+            }
           }()
           return res
         }
@@ -336,11 +334,12 @@ const (
           func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodeResult}} {
             res := make(chan *{{.NodeResult}})
             go func() {
-              var result {{.NodeResult}}
               loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-              result.Err = <-ent.GenLoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
-              result.{{.Node}} = loader.getFirstInstance()
-              res <- &result
+              err := ent.LoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
+              res <- &{{.NodeResult}}{
+                Err: err,
+                {{.Node}}: loader.getFirstInstance(),
+              }
             }()
             return res
           }
@@ -367,10 +366,11 @@ const (
             res := make(chan *{{.NodesResult}})
             go func() {
               loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-              var result {{.NodesResult}}
-              result.Err = <-ent.GenLoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
-              result.{{.Nodes}} = loader.results
-              res <- &result
+              err := ent.LoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
+              res <- &{{.NodesResult}}{
+                Err: err,
+                {{.Nodes}}: loader.results,
+              }
             }()
             return res
           }

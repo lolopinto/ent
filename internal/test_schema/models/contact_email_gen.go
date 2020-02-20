@@ -143,14 +143,11 @@ func LoadContactEmailFromContext(ctx context.Context, id string) (*ContactEmail,
 func GenLoadContactEmailFromContext(ctx context.Context, id string) <-chan *ContactEmailResult {
 	res := make(chan *ContactEmailResult)
 	go func() {
-		v, err := viewer.ForContext(ctx)
-		if err != nil {
-			res <- &ContactEmailResult{
-				Err: err,
-			}
-			return
+		contactEmail, err := LoadContactEmailFromContext(ctx, id)
+		res <- &ContactEmailResult{
+			Err:          err,
+			ContactEmail: contactEmail,
 		}
-		res <- <-(GenLoadContactEmail(v, id))
 	}()
 	return res
 }
@@ -166,11 +163,11 @@ func LoadContactEmail(v viewer.ViewerContext, id string) (*ContactEmail, error) 
 func GenLoadContactEmail(v viewer.ViewerContext, id string) <-chan *ContactEmailResult {
 	res := make(chan *ContactEmailResult)
 	go func() {
-		var result ContactEmailResult
-		loader := NewContactEmailLoader(v)
-		result.Err = <-ent.GenLoadNode(v, id, loader)
-		result.ContactEmail = loader.nodes[id]
-		res <- &result
+		contactEmail, err := LoadContactEmail(v, id)
+		res <- &ContactEmailResult{
+			Err:          err,
+			ContactEmail: contactEmail,
+		}
 	}()
 	return res
 }
@@ -186,11 +183,11 @@ func LoadContactEmails(v viewer.ViewerContext, ids ...string) ([]*ContactEmail, 
 func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
-		loader := NewContactEmailLoader(v)
-		var result ContactEmailsResult
-		result.Err = <-ent.GenLoadNodes(v, ids, loader)
-		result.ContactEmails = loader.results
-		res <- &result
+		results, err := LoadContactEmails(v, ids...)
+		res <- &ContactEmailsResult{
+			Err:           err,
+			ContactEmails: results,
+		}
 	}()
 	return res
 }

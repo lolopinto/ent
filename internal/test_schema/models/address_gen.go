@@ -146,14 +146,11 @@ func LoadAddressFromContext(ctx context.Context, id string) (*Address, error) {
 func GenLoadAddressFromContext(ctx context.Context, id string) <-chan *AddressResult {
 	res := make(chan *AddressResult)
 	go func() {
-		v, err := viewer.ForContext(ctx)
-		if err != nil {
-			res <- &AddressResult{
-				Err: err,
-			}
-			return
+		address, err := LoadAddressFromContext(ctx, id)
+		res <- &AddressResult{
+			Err:     err,
+			Address: address,
 		}
-		res <- <-(GenLoadAddress(v, id))
 	}()
 	return res
 }
@@ -169,11 +166,11 @@ func LoadAddress(v viewer.ViewerContext, id string) (*Address, error) {
 func GenLoadAddress(v viewer.ViewerContext, id string) <-chan *AddressResult {
 	res := make(chan *AddressResult)
 	go func() {
-		var result AddressResult
-		loader := NewAddressLoader(v)
-		result.Err = <-ent.GenLoadNode(v, id, loader)
-		result.Address = loader.nodes[id]
-		res <- &result
+		address, err := LoadAddress(v, id)
+		res <- &AddressResult{
+			Err:     err,
+			Address: address,
+		}
 	}()
 	return res
 }
@@ -189,11 +186,11 @@ func LoadAddresses(v viewer.ViewerContext, ids ...string) ([]*Address, error) {
 func GenLoadAddresses(v viewer.ViewerContext, ids ...string) <-chan *AddressesResult {
 	res := make(chan *AddressesResult)
 	go func() {
-		loader := NewAddressLoader(v)
-		var result AddressesResult
-		result.Err = <-ent.GenLoadNodes(v, ids, loader)
-		result.Addresses = loader.results
-		res <- &result
+		results, err := LoadAddresses(v, ids...)
+		res <- &AddressesResult{
+			Err:       err,
+			Addresses: results,
+		}
 	}()
 	return res
 }
