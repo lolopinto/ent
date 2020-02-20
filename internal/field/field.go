@@ -154,8 +154,7 @@ type Field struct {
 	// (e.g. graphql mutation/rest/worker job) and not via a trigger
 
 	singleFieldPrimaryKey bool
-	//	LinkedEdge            edge.Edge
-	InverseEdge *edge.AssociationEdge
+	InverseEdge           *edge.AssociationEdge
 	// this is the package path that should be imported when the field is rendered in the ent
 	// TODO use it
 	pkgPath string
@@ -196,6 +195,28 @@ func (f *Field) GetDbColName() string {
 func (f *Field) GetQuotedDBColName() string {
 	// this works because there's enough places that need to quote this so easier to just get this from tagMap as long as we keep it there
 	return f.tagMap["db"]
+}
+
+// We're going from field -> edge to be consistent and
+// not have circular dependencies
+func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
+	fkeyInfo := f.ForeignKeyInfo()
+	if fkeyInfo == nil {
+		panic(fmt.Errorf("invalid field %s added", f.FieldName))
+	}
+
+	edgeInfo.AddFieldEdgeFromFieldInfo(f.FieldName, fkeyInfo.Config)
+}
+
+func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, nodeName string) {
+	fkeyInfo := f.ForeignKeyInfo()
+	if fkeyInfo == nil {
+		panic(fmt.Errorf("invalid field %s added", f.FieldName))
+	}
+	edgeInfo.AddForeignKeyEdgeFromInverseFieldInfo(
+		f.GetQuotedDBColName(),
+		nodeName,
+	)
 }
 
 func GetNilableGoType(f *Field) string {

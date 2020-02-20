@@ -229,6 +229,16 @@ func LoadContactFromEmailAddress(v viewer.ViewerContext, emailAddress string) (*
 	return loader.getFirstInstance(), loader.getFirstErr()
 }
 
+// GenUser returns the User associated with the Contact instance
+func (contact *Contact) GenUser() <-chan *UserResult {
+	return GenLoadUser(contact.Viewer, contact.UserID)
+}
+
+// LoadUser returns the User associated with the Contact instance
+func (contact *Contact) LoadUser() (*User, error) {
+	return LoadUser(contact.Viewer, contact.UserID)
+}
+
 // GenContactEmails returns the ContactEmails associated with the Contact instance
 func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
@@ -292,7 +302,6 @@ func (contact *Contact) GenLoadAllowListEdgeFor(id2 string) <-chan *ent.AssocEdg
 // DBFields is used by the ent framework to load the ent from the underlying database
 func (contact *Contact) DBFields() ent.DBFields {
 	return ent.DBFields{
-
 		"id": func(v interface{}) error {
 			var err error
 			contact.ID, err = cast.ToUUIDString(v)

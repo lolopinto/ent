@@ -3,6 +3,7 @@ package edge
 import (
 	"fmt"
 	"go/ast"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -25,6 +26,9 @@ type EdgeInfo struct {
 	assocMap       map[string]*AssociationEdge
 	AssocGroups    []*AssociationEdgeGroup
 	assocGroupsMap map[string]*AssociationEdgeGroup
+
+	// don't want name overlap even when being added programmatically because we use those names in all kinds of places even graphql
+	keys map[string]bool
 }
 
 func NewEdgeInfo() *EdgeInfo {
@@ -33,6 +37,7 @@ func NewEdgeInfo() *EdgeInfo {
 	ret.foreignKeyMap = make(map[string]*ForeignKeyEdge)
 	ret.assocMap = make(map[string]*AssociationEdge)
 	ret.assocGroupsMap = make(map[string]*AssociationEdgeGroup)
+	ret.keys = make(map[string]bool)
 	return ret
 }
 
@@ -41,6 +46,10 @@ func (e *EdgeInfo) HasAssociationEdges() bool {
 }
 
 func (e *EdgeInfo) addEdge(edge Edge) {
+	if e.keys[edge.GetEdgeName()] {
+		panic(fmt.Errorf("tried to add a new edge named %s when name already taken", edge.GetEdgeName()))
+	}
+	e.keys[edge.GetEdgeName()] = true
 	fieldEdge, ok := edge.(*FieldEdge)
 	if ok {
 		e.FieldEdges = append(e.FieldEdges, fieldEdge)
@@ -80,6 +89,38 @@ func (e *EdgeInfo) GetAssociationEdgeByName(edgeName string) *AssociationEdge {
 
 func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *AssociationEdgeGroup {
 	return e.assocGroupsMap[groupStatusName]
+}
+
+func (e *EdgeInfo) AddFieldEdgeFromFieldInfo(fieldName, configName string) {
+	r := regexp.MustCompile("([A-Za-z]+)ID")
+	match := r.FindStringSubmatch(fieldName)
+
+	if len(match) != 2 {
+		// TODO make this more flexible...
+		panic("expected field name to end with ID")
+	}
+
+	edge := &FieldEdge{
+		FieldName: fieldName,
+		// Edge name: User from UserID field
+		commonEdgeInfo: getCommonEdgeInfo(
+			match[1],
+			schemaparser.GetEntConfigFromEntConfig(configName),
+		),
+	}
+
+	e.addEdge(edge)
+}
+
+func (e *EdgeInfo) AddForeignKeyEdgeFromInverseFieldInfo(dbColName, nodeName string) {
+	edge := &ForeignKeyEdge{
+		QuotedDBColName: dbColName,
+		commonEdgeInfo: getCommonEdgeInfo(
+			inflection.Plural(nodeName),
+			schemaparser.GetEntConfigFromName(nodeName),
+		),
+	}
+	e.addEdge(edge)
 }
 
 // ActionableEdge indicates an edge that can be used in an action.
@@ -128,9 +169,8 @@ type FieldEdge struct {
 
 var _ Edge = &FieldEdge{}
 
-// TODO we need a FieldName in ent.ForeignKeyEdge and a sensible way to pass the field
-// down. Right now, it's depending on the fact that it aligns with the "package name"
 type ForeignKeyEdge struct {
+	QuotedDBColName string
 	commonEdgeInfo
 }
 
@@ -304,9 +344,6 @@ func parseEdgeItem(edgeInfo *EdgeInfo, containingPackageName string, keyValueExp
 	case "ent.FieldEdge":
 		return parseFieldEdgeItem(edgeInfo, value, edgeName)
 
-	case "ent.ForeignKeyEdge":
-		return parseForeignKeyEdgeItem(edgeInfo, value, edgeName)
-
 	case "ent.AssociationEdge":
 		return parseAssociationEdgeItem(edgeInfo, containingPackageName, edgeName, value)
 
@@ -315,7 +352,6 @@ func parseEdgeItem(edgeInfo *EdgeInfo, containingPackageName string, keyValueExp
 
 	default:
 		panic("unsupported edge type")
-
 	}
 }
 
@@ -383,15 +419,6 @@ func getCommonEdgeInfo(edgeName string, entConfig schemaparser.EntConfigInfo) co
 		entConfig: entConfig,
 		NodeInfo:  nodeinfo.GetNodeInfo(entConfig.PackageName),
 	}
-}
-
-func parseForeignKeyEdgeItem(edgeInfo *EdgeInfo, lit *ast.CompositeLit, edgeName string) error {
-	entConfig := parseEntConfigOnlyFromEdgeItemHelper(lit)
-
-	edgeInfo.addEdge(&ForeignKeyEdge{
-		commonEdgeInfo: getCommonEdgeInfo(edgeName, entConfig),
-	})
-	return nil
 }
 
 func getEltsInEdge(keyValueExprValue ast.Expr, expectedType string) []ast.Expr {

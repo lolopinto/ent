@@ -159,7 +159,7 @@ type Contact implements Node {
     firstName: String!
     id: ID!
     lastName: String!
-    userID: String!
+    user: User
 }
 
 input ContactCreateInput {

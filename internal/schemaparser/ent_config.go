@@ -62,3 +62,12 @@ func GetEntConfigFromName(packageName string) EntConfigInfo {
 		ConfigName:  fmt.Sprintf("%sConfig", name),
 	}
 }
+
+func GetEntConfigFromEntConfig(configName string) EntConfigInfo {
+	nodeName, err := getNodeNameFromEntConfig(configName)
+	util.Die(err)
+	return EntConfigInfo{
+		PackageName: nodeName,
+		ConfigName:  configName,
+	}
+}

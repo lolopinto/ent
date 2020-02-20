@@ -306,7 +306,7 @@ const (
           go func() {
             loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
             var result {{.NodesResult}}
-            result.Err = <- ent.GenLoadNodesViaQueryClause({{$currentNodeInstance}}.Viewer, loader, sql.Eq("{{$currentPackageName}}_id", {{$currentNodeInstance}}.ID))
+            result.Err = <- ent.GenLoadNodesViaQueryClause({{$currentNodeInstance}}.Viewer, loader, sql.Eq({{$edge.QuotedDBColName}}, {{$currentNodeInstance}}.ID))
             result.{{.Nodes}} = loader.results
             res <- &result
           }()
@@ -316,7 +316,7 @@ const (
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() ({{.NodesSlice}}, error) {
           loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-          err := ent.LoadNodesViaQueryClause({{$currentNodeInstance}}.Viewer, loader, sql.Eq("{{$currentPackageName}}_id", {{$currentNodeInstance}}.ID))
+          err := ent.LoadNodesViaQueryClause({{$currentNodeInstance}}.Viewer, loader, sql.Eq({{$edge.QuotedDBColName}}, {{$currentNodeInstance}}.ID))
           return loader.results, err
         }
       {{end}}
@@ -471,7 +471,7 @@ const (
 // DBFields is used by the ent framework to load the ent from the underlying database
 func ({{$currentNodeInstance}} *{{$currentNode}}) DBFields() ent.DBFields {
   return ent.DBFields {
-    {{/* TODO don't hardcode these three when we make this flexible*/}}
+    {{/* TODO don't hardcode these three when we make this flexible*/ -}}
     "id": func(v interface{}) error {
       var err error
       {{$currentNodeInstance}}.ID, err = cast.ToUUIDString(v)

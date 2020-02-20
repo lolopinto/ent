@@ -51,6 +51,10 @@ func (r *contactResolver) ContactEmails(ctx context.Context, obj *models.Contact
 	return obj.LoadContactEmails()
 }
 
+func (r *contactResolver) User(ctx context.Context, obj *models.Contact) (*models.User, error) {
+	return obj.LoadUser()
+}
+
 type contactEmailResolver struct{ *Resolver }
 
 func (r *contactEmailResolver) Contact(ctx context.Context, obj *models.ContactEmail) (*models.Contact, error) {

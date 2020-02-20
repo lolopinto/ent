@@ -27,9 +27,6 @@ func (config *AccountConfig) GetTableName() string {
 // GetEdges returns the edges that this account is mapped to
 func (config *AccountConfig) GetEdges() ent.EdgeMap {
 	return ent.EdgeMap{
-		"Todos": ent.ForeignKeyEdge{
-			EntConfig: TodoConfig{},
-		},
 		"Friendships": ent.AssociationEdgeGroup{
 			EdgeGroups: ent.AssocEdgeMap{
 				"FriendRequests": &ent.AssociationEdge{

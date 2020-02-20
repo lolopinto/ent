@@ -206,7 +206,6 @@ func GenLoadAddresses(v viewer.ViewerContext, ids ...string) <-chan *AddressesRe
 // DBFields is used by the ent framework to load the ent from the underlying database
 func (address *Address) DBFields() ent.DBFields {
 	return ent.DBFields{
-
 		"id": func(v interface{}) error {
 			var err error
 			address.ID, err = cast.ToUUIDString(v)

@@ -17,13 +17,3 @@ type TodoConfig struct {
 func (config *TodoConfig) GetTableName() string {
 	return "todos"
 }
-
-// GetEdges returns the Edges that the Todo node supports
-func (config *TodoConfig) GetEdges() ent.EdgeMap {
-	return ent.EdgeMap{
-		"Account": ent.FieldEdge{
-			FieldName: "AccountID",
-			EntConfig: AccountConfig{},
-		},
-	}
-}

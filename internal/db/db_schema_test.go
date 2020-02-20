@@ -267,12 +267,10 @@ type TodoConfig struct {
 	}
 	`
 
-	schemas := getInMemoryTestSchemas(t, sources, "InvalidForeignKeyConfig")
-
 	assert.Panics(
 		t,
 		func() {
-			getTestTableFromSchema("TodoConfig", schemas, t)
+			getInMemoryTestSchemas(t, sources, "InvalidForeignKeyConfig")
 		},
 		"invalid EntConfig accounts set as ForeignKey of field AccountID on ent config TodoConfig",
 	)

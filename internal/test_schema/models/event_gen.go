@@ -503,7 +503,6 @@ func (event *Event) RsvpStatusMap() ent.AssocStatusMap {
 // DBFields is used by the ent framework to load the ent from the underlying database
 func (event *Event) DBFields() ent.DBFields {
 	return ent.DBFields{
-
 		"id": func(v interface{}) error {
 			var err error
 			event.ID, err = cast.ToUUIDString(v)

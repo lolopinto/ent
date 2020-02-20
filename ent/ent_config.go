@@ -58,21 +58,6 @@ func (FieldEdge) marker() {
 	panic("do not call")
 }
 
-// ForeignKeyEdge is when the edge is handled by having a foreign key in the other table
-// So contacts -> contact_emails with the ContactID being a field stored in ContactEmail table
-// There'll be a ForeignKey edge from Contact -> ContactEmails and then a FieldEdge from ContactEmail to Contact
-type ForeignKeyEdge struct {
-	EntConfig interface{} // zero-value of the struct
-}
-
-func (ForeignKeyEdge) Name() string {
-	return "foreignKeyEdge"
-}
-
-func (ForeignKeyEdge) marker() {
-	panic("do not call")
-}
-
 // AssociationEdge is the fb-style edge where the information is stored in the edges_info table.
 // This is the preferred edge in the framework
 type AssociationEdge struct {
