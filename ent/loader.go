@@ -613,17 +613,21 @@ func (l *loadNodesLoader) Configure() configureQueryResult {
 }
 
 func (l *loadNodesLoader) ProcessRows() func(rows *sqlx.Rows) error {
-	if !cacheEnabled && l.rawData {
+	// cache enabled and we have specific ids to query
+	if cacheEnabled && len(l.queryIDs) != 0 {
+		return l.queryRowsAndFillCache()
+	}
+
+	// rawData not going to cache
+	if l.rawData {
 		return mapScanRows(&l.dataRows)
 	}
 
-	// cache not enabled OR
-	// clause or rawQuery. we know these don't need to be cached (yet)
-	if len(l.queryIDs) == 0 || !cacheEnabled {
-		return queryRows(l)
-	}
+	// everything else. clause, not going to cache for example
+	return queryRows(l)
+}
 
-	// multi-ids and cache enabled, check for cache.
+func (l *loadNodesLoader) queryRowsAndFillCache() func(rows *sqlx.Rows) error {
 	return func(rows *sqlx.Rows) error {
 		for rows.Next() {
 			dataMap := make(map[string]interface{})

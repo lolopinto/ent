@@ -113,17 +113,13 @@ func LoadNodeRawDataViaQueryClause(entLoader Loader, clause sql.QueryClause) (ma
 	return l.dataRow, err
 }
 
-func genLoadNodesViaClause(entLoader Loader, clause sql.QueryClause) <-chan multiEntResult {
-	res := make(chan multiEntResult)
-	go func() {
-		l := &loadNodesLoader{
-			entLoader: entLoader,
-			clause:    clause,
-		}
-		err := loadData(l)
-		res <- getMultiEntResult(entLoader, l, err)
-	}()
-	return res
+func loadNodesViaClause(entLoader Loader, clause sql.QueryClause) multiEntResult {
+	l := &loadNodesLoader{
+		entLoader: entLoader,
+		clause:    clause,
+	}
+	err := loadData(l)
+	return getMultiEntResult(entLoader, l, err)
 }
 
 func SaveChangeset(changeset Changeset) error {
@@ -500,38 +496,30 @@ func getMultiEntResult(entLoader Loader, l *loadNodesLoader, err error) multiEnt
 	}
 }
 
-func genLoadNodesByType(id string, edgeType EdgeType, entLoader Loader) <-chan multiEntResult {
-	res := make(chan multiEntResult)
-	go func() {
-		l := &loadNodesLoader{
-			entLoader: entLoader,
-		}
-		err := chainLoaders(
-			[]loader{
-				&loadEdgesByType{
-					id:         id,
-					edgeType:   edgeType,
-					outputID2s: true,
-				},
-				l,
+func loadNodesByType(id string, edgeType EdgeType, entLoader Loader) multiEntResult {
+	l := &loadNodesLoader{
+		entLoader: entLoader,
+	}
+	err := chainLoaders(
+		[]loader{
+			&loadEdgesByType{
+				id:         id,
+				edgeType:   edgeType,
+				outputID2s: true,
 			},
-		)
-		res <- getMultiEntResult(entLoader, l, err)
-	}()
-	return res
+			l,
+		},
+	)
+	return getMultiEntResult(entLoader, l, err)
 }
 
-func genLoadNodes(ids []string, entLoader Loader) <-chan multiEntResult {
-	res := make(chan multiEntResult)
-	go func() {
-		l := &loadNodesLoader{
-			ids:       ids,
-			entLoader: entLoader,
-		}
-		err := loadData(l)
-		res <- getMultiEntResult(entLoader, l, err)
-	}()
-	return res
+func loadNodes(ids []string, entLoader Loader) multiEntResult {
+	l := &loadNodesLoader{
+		ids:       ids,
+		entLoader: entLoader,
+	}
+	err := loadData(l)
+	return getMultiEntResult(entLoader, l, err)
 }
 
 // TODO figure out correct long-term API here

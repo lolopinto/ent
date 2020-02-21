@@ -454,40 +454,42 @@ func (suite *modelsTestSuite) TestLoadRawForeignKeyNodes() {
 	contact := testingutils.CreateTestContact(suite.T(), user)
 	contact2 := testingutils.CreateTestContact(suite.T(), user)
 
-	var testCases = []struct {
+	var testCases = map[string]struct {
 		id          string
 		foundResult bool
 	}{
-		{
+		"correct id": {
 			user.ID,
 			true,
 		},
-		{
+		"incorrect id": {
 			contact.ID,
 			false,
 		},
 	}
 
-	for _, tt := range testCases {
-		loader := models.NewContactLoader(viewer.LoggedOutViewer())
-		contacts, err := ent.LoadNodesRawDataViaQueryClause(loader, sql.Eq("user_id", tt.id))
-		if tt.foundResult {
-			assert.Nil(suite.T(), err)
-			assert.NotEmpty(suite.T(), contacts)
+	for key, tt := range testCases {
+		suite.T().Run(key, func(t *testing.T) {
+			loader := models.NewContactLoader(viewer.LoggedOutViewer())
+			contacts, err := ent.LoadNodesRawDataViaQueryClause(loader, sql.Eq("user_id", tt.id))
+			if tt.foundResult {
+				assert.Nil(t, err)
+				assert.NotEmpty(t, contacts)
 
-			assert.Len(suite.T(), contacts, 2)
-			for _, contactData := range contacts {
-				assert.NotNil(suite.T(), contactData)
-				id, err := cast.ToUUIDString(contactData["id"])
-				assert.Nil(suite.T(), err)
-				assert.Contains(suite.T(), []string{contact.ID, contact2.ID}, id)
+				assert.Len(t, contacts, 2)
+				for _, contactData := range contacts {
+					assert.NotNil(t, contactData)
+					id, err := cast.ToUUIDString(contactData["id"])
+					assert.Nil(t, err)
+					assert.Contains(t, []string{contact.ID, contact2.ID}, id)
+				}
+			} else {
+				// no results is standard and no error
+				assert.Nil(t, err)
+				assert.Len(t, contacts, 0)
+				assert.Empty(t, contacts)
 			}
-		} else {
-			// no results is standard and no error
-			assert.Nil(suite.T(), err)
-			assert.Len(suite.T(), contacts, 0)
-			assert.Empty(suite.T(), contacts)
-		}
+		})
 	}
 }
 
