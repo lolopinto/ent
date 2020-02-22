@@ -66,6 +66,10 @@ type addressLoader struct {
 }
 
 func (res *addressLoader) GetNewInstance() ent.DBObject {
+	return res.GetNewAddress()
+}
+
+func (res *addressLoader) GetNewAddress() *Address {
 	var address Address
 	address.Viewer = res.v
 	return &address

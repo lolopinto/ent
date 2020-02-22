@@ -28,17 +28,17 @@ func NewMutationBuilder(
 	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *AddressMutationBuilder {
-	var address models.Address
+	address := models.NewAddressLoader(v).GetNewAddress()
 
 	ret := &AddressMutationBuilder{
 		requiredFields: requiredFields,
-		address:        &address,
+		address:        address,
 	}
 	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
-		&address,
+		address,
 		&configs.AddressConfig{},
 		opts...,
 	)

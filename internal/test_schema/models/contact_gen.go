@@ -71,6 +71,10 @@ type contactLoader struct {
 }
 
 func (res *contactLoader) GetNewInstance() ent.DBObject {
+	return res.GetNewContact()
+}
+
+func (res *contactLoader) GetNewContact() *Contact {
 	var contact Contact
 	contact.Viewer = res.v
 	return &contact

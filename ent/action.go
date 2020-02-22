@@ -63,14 +63,11 @@ type FieldInfo struct {
 // makes it easier to change Viewer because I can change it once and it gets changed everywhere...
 
 type MutationBuilder interface {
-	// placeholder id to be used by fields/values in the mutation and replaced after we have a created ent
-	//	GetPlaceholderID() string
-	//GetOperation() ent.WriteOperation // TODO Create|Edit|Delete as top level mutations not actions
 	ExistingEnt() Entity
-	Entity() Entity
+	Entity() Entity           // TODO Ola: maybe this should get loader instance?
 	GetPlaceholderID() string // TODO GetMutationID()?
 	GetViewer() viewer.ViewerContext
-	GetChangeset() (Changeset, error)
+	GetChangeset() (Changeset, error) // TODO rename to Build()
 	GetOperation() WriteOperation
 }
 

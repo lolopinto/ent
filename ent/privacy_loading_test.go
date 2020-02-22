@@ -10,7 +10,6 @@ import (
 	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
-	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
@@ -194,13 +193,15 @@ func (suite *privacyTestSuite) TestGeneratedForeignKeyNodes() {
 	contact2 := testingutils.CreateTestContact(suite.T(), user)
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
-	entreflect.SetViewerInEnt(v, user)
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	require.Nil(suite.T(), err)
+
 	verifyLoadedForeignKeyNodes(
 		suite,
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-			return user.LoadContacts()
+			return reloadedUser.LoadContacts()
 		},
 		[]string{
 			contact.ID,
@@ -216,13 +217,14 @@ func (suite *privacyTestSuite) TestGeneratedGenForeignKeyNodes() {
 	contact2 := testingutils.CreateTestContact(suite.T(), user)
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
-	entreflect.SetViewerInEnt(v, user)
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	require.Nil(suite.T(), err)
 	verifyLoadedForeignKeyNodes(
 		suite,
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-			result := <-user.GenContacts()
+			result := <-reloadedUser.GenContacts()
 			return result.Contacts, result.Err
 		},
 		[]string{
@@ -294,14 +296,15 @@ func (suite *privacyTestSuite) TestGeneratedLoadNodesByType() {
 	event2 := testingutils.CreateTestEvent(suite.T(), user)
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
-	entreflect.SetViewerInEnt(v, user)
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	require.Nil(suite.T(), err)
 
 	verifyLoadedNodesByType(
 		suite,
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-			return user.LoadEvents()
+			return reloadedUser.LoadEvents()
 		},
 		[]string{
 			event.ID,
@@ -317,14 +320,15 @@ func (suite *privacyTestSuite) TestGeneratedGenLoadNodesByType() {
 	event2 := testingutils.CreateTestEvent(suite.T(), user)
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
-	entreflect.SetViewerInEnt(v, user)
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	require.Nil(suite.T(), err)
 
 	verifyLoadedNodesByType(
 		suite,
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-			result := <-user.GenEvents()
+			result := <-reloadedUser.GenEvents()
 			return result.Events, result.Err
 		},
 		[]string{

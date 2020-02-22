@@ -98,6 +98,9 @@ func (action *RemoveFamilyMemberAction) Validate() error {
 // Save is the method called to execute this action and save change
 func (action *RemoveFamilyMemberAction) Save() (*models.User, error) {
 	err := actions.Save(action)
+	if err != nil {
+		return nil, err
+	}
 	return action.builder.GetUser(), err
 }
 

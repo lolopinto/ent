@@ -187,6 +187,9 @@ func (action *{{$actionName}}) Validate() error {
 func (action * {{$actionName}}) Save() {{saveActionType $action}} {
   {{ if returnsObjectInstance $action -}}
     err := actions.Save(action)
+    if err != nil {
+      return nil, err
+    }
     return action.builder.Get{{$nodeInfo.Node}}(), err
   {{else -}}
     return actions.Save(action)

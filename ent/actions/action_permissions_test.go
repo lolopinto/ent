@@ -63,10 +63,10 @@ func (suite *actionsPermissionsSuite) TestCreatePrivacy() {
 		action, err := createUser(tt.viewer)
 		if tt.allowed {
 			assert.Nil(suite.T(), err)
-			assert.NotZero(suite.T(), action.user)
+			assert.NotZero(suite.T(), action.GetUser())
 		} else {
 			assert.NotNil(suite.T(), err)
-			assert.Zero(suite.T(), action.user)
+			assert.Nil(suite.T(), action.GetUser())
 		}
 	}
 }
@@ -74,7 +74,7 @@ func (suite *actionsPermissionsSuite) TestCreatePrivacy() {
 func (suite *actionsPermissionsSuite) TestEditPrivacy() {
 	action, err := createUser(viewer.LoggedOutViewer())
 	assert.Nil(suite.T(), err)
-	user := action.user
+	user := action.GetUser()
 	assert.NotZero(suite.T(), user)
 
 	var testCases = []struct {
@@ -105,18 +105,20 @@ func (suite *actionsPermissionsSuite) TestEditPrivacy() {
 	}
 
 	for _, tt := range testCases {
-		action := userEditAction(tt.viewer, &user)
-		action.firstName = "Ola2"
-		err := actions.Save(action)
-		if tt.allowed {
-			assert.Nil(suite.T(), err, tt.testCase)
-			assert.NotZero(suite.T(), action.user, tt.testCase)
-			assert.Equal(suite.T(), "Ola2", action.user.FirstName, tt.testCase)
-		} else {
-			assert.NotNil(suite.T(), err, tt.testCase)
-			assert.IsType(suite.T(), &actions.ActionPermissionsError{}, err, tt.testCase)
-			assert.Zero(suite.T(), action.user, tt.testCase)
-		}
+		suite.T().Run(tt.testCase, func(t *testing.T) {
+			action := userEditAction(tt.viewer, user)
+			action.firstName = "Ola2"
+			user, err := action.Save()
+			if tt.allowed {
+				assert.Nil(t, err)
+				assert.NotZero(t, user)
+				assert.Equal(t, "Ola2", user.FirstName)
+			} else {
+				assert.NotNil(t, err)
+				assert.IsType(t, &actions.ActionPermissionsError{}, err)
+				assert.Nil(t, user)
+			}
+		})
 	}
 }
 

@@ -14,7 +14,11 @@ type Action interface {
 	// and the generated code calls actions.GetChangeset() which calls GetBuilder
 	GetChangeset() (ent.Changeset, error)
 	// where new ent should be stored.
+	// (TODO:ola) not really needed since builder has all this
 	Entity() ent.Entity
+	// need a way to nil out this ent when saving failed since it's
+	// gonna have viewer...
+	// For now, we're depending on action.Save() (*models.User, error) vs actions.Save() (error)
 
 	GetBuilder() ent.MutationBuilder
 }
@@ -123,6 +127,7 @@ func GetChangeset(action Action) (ent.Changeset, error) {
 }
 
 func Save(action Action) error {
+	// TODO enforce viewer not nil somewhere here
 	changeset, err := GetChangeset(action)
 	if err != nil {
 		return err

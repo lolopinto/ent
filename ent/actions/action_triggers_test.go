@@ -8,10 +8,10 @@ import (
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -34,7 +34,7 @@ func (suite *actionsTriggersSuite) SetupSuite() {
 func verifyLoadContacts(t *testing.T, user *models.User) {
 	contacts, err := user.LoadContacts()
 	assert.Nil(t, err)
-	assert.Len(t, contacts, 1)
+	require.Len(t, contacts, 1)
 	assert.Equal(t, contacts[0].UserID, user.ID)
 }
 
@@ -44,14 +44,14 @@ func verifyLoadContactEmail(t *testing.T, user *models.User) {
 
 	contactEmails, err := contact.LoadContactEmails()
 	assert.Nil(t, err)
-	assert.Len(t, contactEmails, 1)
+	require.Len(t, contactEmails, 1)
 	assert.Equal(t, contactEmails[0].ContactID, contact.ID)
 }
 
 func verifyLoadEvents(t *testing.T, user *models.User) {
 	events, err := user.LoadEvents()
 	assert.Nil(t, err)
-	assert.Len(t, events, 1)
+	require.Len(t, events, 1)
 	assert.Equal(t, events[0].UserID, user.ID)
 
 	verifyEventCreationState(t, events[0], user)
@@ -63,10 +63,10 @@ func (suite *actionsTriggersSuite) TestAddEdgesInCreationTrigger() {
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 	action := eventCreateAction(v)
 
-	err := actions.Save(action)
+	event, err := action.Save()
 	assert.Nil(suite.T(), err)
 
-	verifyEventCreationState(suite.T(), &action.event, user)
+	verifyEventCreationState(suite.T(), event, user)
 }
 
 func (suite *actionsTriggersSuite) TestCreateDependentObjectInTrigger() {
@@ -76,12 +76,10 @@ func (suite *actionsTriggersSuite) TestCreateDependentObjectInTrigger() {
 	action.lastName = "Okelola"
 	action.emailAddress = util.GenerateRandEmail()
 	action.password = util.GenerateRandPassword()
-	err := actions.Save(action)
+	user, err := action.Save()
 	assert.Nil(suite.T(), err)
 
-	user := &action.user
-
-	testingutils.VerifyUserObj(suite.T(), &action.user, user.EmailAddress)
+	testingutils.VerifyUserObj(suite.T(), user, user.EmailAddress)
 
 	// reload user because of privacy reasons
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
@@ -101,31 +99,36 @@ func (suite *actionsTriggersSuite) TestCreateDependentObjectInTrigger2() {
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 	action := &createContactAndEmailAction{}
 	action.viewer = v
+	loader := models.NewContactLoader(v)
 	action.builder = actions.NewMutationBuilder(
-		v, ent.InsertOperation, &action.contact, &configs.ContactConfig{},
+		v,
+		ent.InsertOperation,
+		loader.GetNewContact(),
+		loader.GetConfig(),
 	)
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
 	action.emailAddress = user.EmailAddress
 	action.userID = user.ID
-	err := actions.Save(action)
+	contact, err := action.Save()
 	assert.Nil(suite.T(), err)
-
-	contact := &action.contact
 
 	assert.NotZero(suite.T(), contact)
 	assert.Equal(suite.T(), contact.UserID, user.ID)
 	assert.Equal(suite.T(), contact.EmailAddress, user.EmailAddress)
 
-	verifyLoadContacts(suite.T(), user)
-	verifyLoadContactEmail(suite.T(), user)
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	assert.Nil(suite.T(), err)
+
+	verifyLoadContacts(suite.T(), reloadedUser)
+	verifyLoadContactEmail(suite.T(), reloadedUser)
 }
 
 func (suite *actionsTriggersSuite) TestCreateDependentObjectAndEdgesTrigger() {
 	v := viewer.LoggedOutViewer()
 	action := &createUserAndEventAction{}
 	action.viewer = v
-	action.builder = getUserCreateBuilder(v, &action.user)
+	action.builder = getUserCreateBuilder(v)
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
 	action.emailAddress = util.GenerateRandEmail()
@@ -133,9 +136,9 @@ func (suite *actionsTriggersSuite) TestCreateDependentObjectAndEdgesTrigger() {
 	err := actions.Save(action)
 	assert.Nil(suite.T(), err)
 
-	user := &action.user
+	user := action.GetUser()
 
-	testingutils.VerifyUserObj(suite.T(), &action.user, user.EmailAddress)
+	testingutils.VerifyUserObj(suite.T(), action.GetUser(), user.EmailAddress)
 
 	// reload user because of privacy reasons
 	v = viewertesting.LoggedinViewerContext{ViewerID: user.ID}
@@ -150,7 +153,7 @@ func (suite *actionsTriggersSuite) TestMultiLevelDeep() {
 	v := viewer.LoggedOutViewer()
 	action := &createUserContactAndEmailAction{}
 	action.viewer = v
-	action.builder = getUserCreateBuilder(v, &action.user)
+	action.builder = getUserCreateBuilder(v)
 
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
@@ -159,9 +162,9 @@ func (suite *actionsTriggersSuite) TestMultiLevelDeep() {
 	err := actions.Save(action)
 	assert.Nil(suite.T(), err)
 
-	user := &action.user
+	user := action.GetUser()
 
-	testingutils.VerifyUserObj(suite.T(), &action.user, user.EmailAddress)
+	testingutils.VerifyUserObj(suite.T(), action.GetUser(), user.EmailAddress)
 
 	// reload user because of privacy reasons
 	v = viewertesting.LoggedinViewerContext{ViewerID: user.ID}
@@ -177,7 +180,7 @@ func (suite *actionsTriggersSuite) TestCreateAllTheThingsTrigger() {
 	v := viewer.LoggedOutViewer()
 	action := &createUserAndAllTheThingsAction{}
 	action.viewer = v
-	action.builder = getUserCreateBuilder(v, &action.user)
+	action.builder = getUserCreateBuilder(v)
 
 	action.firstName = "Ola"
 	action.lastName = "Okelola"
@@ -186,9 +189,9 @@ func (suite *actionsTriggersSuite) TestCreateAllTheThingsTrigger() {
 	err := actions.Save(action)
 	assert.Nil(suite.T(), err)
 
-	user := &action.user
+	user := action.GetUser()
 
-	testingutils.VerifyUserObj(suite.T(), &action.user, user.EmailAddress)
+	testingutils.VerifyUserObj(suite.T(), action.GetUser(), user.EmailAddress)
 
 	// reload user because of privacy reasons
 	v = viewertesting.LoggedinViewerContext{ViewerID: user.ID}

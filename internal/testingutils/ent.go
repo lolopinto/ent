@@ -7,9 +7,9 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
+	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -104,20 +104,17 @@ func AddFamilyMember(t *testing.T, user1, user2 *models.User) {
 
 func GetBaseBuilder(
 	operation ent.WriteOperation,
-	entity ent.Entity,
-	config ent.Config,
+	loader ent.Loader,
 	existingEnt ent.Entity,
 ) *actions.EntMutationBuilder {
 	v := viewertesting.OmniViewerContext{}
-	return actions.NewMutationBuilder(v, operation, entity, config, actions.ExistingEnt(existingEnt))
+	return actions.NewMutationBuilder(v, operation, loader.GetNewInstance().(ent.Entity), loader.GetConfig(), actions.ExistingEnt(existingEnt))
 }
 
 func CreateEdge(t *testing.T, edge *ent.AssocEdgeData) {
-	var newEdge ent.AssocEdgeData
 	b := GetBaseBuilder(
 		ent.InsertOperation,
-		&newEdge,
-		&ent.AssocEdgeConfig{},
+		&ent.AssocEdgeLoader{},
 		nil,
 	)
 	b.SetRawFields(map[string]interface{}{
@@ -132,11 +129,9 @@ func CreateEdge(t *testing.T, edge *ent.AssocEdgeData) {
 }
 
 func EditEdge(t *testing.T, edge *ent.AssocEdgeData) {
-	var newEdge ent.AssocEdgeData
 	b := GetBaseBuilder(
 		ent.EditOperation,
-		&newEdge,
-		&ent.AssocEdgeConfig{},
+		&ent.AssocEdgeLoader{},
 		edge,
 	)
 	b.SetRawFields(map[string]interface{}{
@@ -153,11 +148,9 @@ func GetUserBuilder(
 	operation ent.WriteOperation,
 	existingEnt ent.Entity,
 ) *actions.EntMutationBuilder {
-	var user models.User
 	b := GetBaseBuilder(
 		operation,
-		&user,
-		&configs.UserConfig{},
+		models.NewUserLoader(viewer.LoggedOutViewer()),
 		existingEnt,
 	)
 	return b
@@ -177,11 +170,9 @@ func GetEventBuilder(
 	operation ent.WriteOperation,
 	existingEnt ent.Entity,
 ) *actions.EntMutationBuilder {
-	var event models.Event
 	b := GetBaseBuilder(
 		operation,
-		&event,
-		&configs.EventConfig{},
+		models.NewEventLoader(viewer.LoggedOutViewer()),
 		existingEnt,
 	)
 	return b
@@ -201,11 +192,9 @@ func GetContactBuilder(
 	operation ent.WriteOperation,
 	existingEnt ent.Entity,
 ) *actions.EntMutationBuilder {
-	var contact models.Contact
 	b := GetBaseBuilder(
 		operation,
-		&contact,
-		&configs.ContactConfig{},
+		models.NewContactLoader(viewer.LoggedOutViewer()),
 		existingEnt,
 	)
 	return b
@@ -215,11 +204,9 @@ func GetAddressBuilder(
 	operation ent.WriteOperation,
 	existingEnt ent.Entity,
 ) *actions.EntMutationBuilder {
-	var address models.Address
 	b := GetBaseBuilder(
 		operation,
-		&address,
-		&configs.AddressConfig{},
+		models.NewAddressLoader(viewer.LoggedOutViewer()),
 		existingEnt,
 	)
 	return b

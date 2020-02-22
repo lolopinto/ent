@@ -198,17 +198,17 @@ func (config *AssocEdgeConfig) GetTableName() string {
 	return "assoc_edge_config"
 }
 
-type assocEdgeLoader struct {
+type AssocEdgeLoader struct {
 	results []*AssocEdgeData
 }
 
-func (res *assocEdgeLoader) GetNewInstance() DBObject {
+func (res *AssocEdgeLoader) GetNewInstance() DBObject {
 	var edge AssocEdgeData
 	res.results = append(res.results, &edge)
 	return &edge
 }
 
-func (res *assocEdgeLoader) GetMap() map[EdgeType]*AssocEdgeData {
+func (res *AssocEdgeLoader) GetMap() map[EdgeType]*AssocEdgeData {
 	m := make(map[EdgeType]*AssocEdgeData, len(res.results))
 	for _, edge := range res.results {
 		m[edge.EdgeType] = edge
@@ -216,11 +216,11 @@ func (res *assocEdgeLoader) GetMap() map[EdgeType]*AssocEdgeData {
 	return m
 }
 
-func (edgeData *assocEdgeLoader) GetPrimaryKey() string {
+func (edgeData *AssocEdgeLoader) GetPrimaryKey() string {
 	return "edge_type"
 }
 
-func (res *assocEdgeLoader) GetConfig() Config {
+func (res *AssocEdgeLoader) GetConfig() Config {
 	return &AssocEdgeConfig{}
 }
 

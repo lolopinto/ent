@@ -32,17 +32,17 @@ func NewMutationBuilder(
 	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *EventMutationBuilder {
-	var event models.Event
+	event := models.NewEventLoader(v).GetNewEvent()
 
 	ret := &EventMutationBuilder{
 		requiredFields: requiredFields,
-		event:          &event,
+		event:          event,
 	}
 	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
-		&event,
+		event,
 		&configs.EventConfig{},
 		opts...,
 	)

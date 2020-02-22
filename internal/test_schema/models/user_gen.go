@@ -81,6 +81,10 @@ type userLoader struct {
 }
 
 func (res *userLoader) GetNewInstance() ent.DBObject {
+	return res.GetNewUser()
+}
+
+func (res *userLoader) GetNewUser() *User {
 	var user User
 	user.Viewer = res.v
 	return &user

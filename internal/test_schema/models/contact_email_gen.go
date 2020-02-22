@@ -63,6 +63,10 @@ type contactEmailLoader struct {
 }
 
 func (res *contactEmailLoader) GetNewInstance() ent.DBObject {
+	return res.GetNewContactEmail()
+}
+
+func (res *contactEmailLoader) GetNewContactEmail() *ContactEmail {
 	var contactEmail ContactEmail
 	contactEmail.Viewer = res.v
 	return &contactEmail

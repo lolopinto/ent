@@ -30,17 +30,17 @@ func NewMutationBuilder(
 	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *UserMutationBuilder {
-	var user models.User
+	user := models.NewUserLoader(v).GetNewUser()
 
 	ret := &UserMutationBuilder{
 		requiredFields: requiredFields,
-		user:           &user,
+		user:           user,
 	}
 	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
-		&user,
+		user,
 		&configs.UserConfig{},
 		opts...,
 	)

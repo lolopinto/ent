@@ -14,7 +14,6 @@ import (
 	"github.com/lolopinto/ent/data"
 	"github.com/lolopinto/ent/ent/sql"
 
-	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/pkg/errors"
 )
 
@@ -123,19 +122,7 @@ func loadNodesViaClause(entLoader Loader, clause sql.QueryClause) multiEntResult
 }
 
 func SaveChangeset(changeset Changeset) error {
-	// TODO critical observers!
-	err := executeOperations(changeset.GetExecutor())
-	if err != nil {
-		return err
-	}
-	entity := changeset.Entity()
-	// TODO fix this.
-	// This should be set beforehand
-	// anything which doesn't have this needs to be fixed...
-	if !isNil(entity) {
-		entreflect.SetViewerInEnt(changeset.GetViewer(), entity)
-	}
-	return err
+	return executeOperations(changeset.GetExecutor())
 }
 
 func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
@@ -527,7 +514,7 @@ func loadNodes(ids []string, entLoader Loader) multiEntResult {
 func GetEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
 	l := &loadNodeLoader{
 		id:        string(edgeType),
-		entLoader: &assocEdgeLoader{},
+		entLoader: &AssocEdgeLoader{},
 	}
 	err := loadData(l, cfgtx(tx))
 	if err != nil {
@@ -537,7 +524,7 @@ func GetEdgeInfo(edgeType EdgeType, tx *sqlx.Tx) (*AssocEdgeData, error) {
 }
 
 func GetEdgeInfos(edgeTypes []string) (map[EdgeType]*AssocEdgeData, error) {
-	entLoader := &assocEdgeLoader{}
+	entLoader := &AssocEdgeLoader{}
 	l := &loadNodesLoader{
 		entLoader: entLoader,
 		ids:       edgeTypes,
@@ -552,7 +539,7 @@ func GetEdgeInfos(edgeTypes []string) (map[EdgeType]*AssocEdgeData, error) {
 func GenLoadAssocEdges() <-chan AssocEdgeDatasResult {
 	res := make(chan AssocEdgeDatasResult)
 	go func() {
-		entLoader := &assocEdgeLoader{}
+		entLoader := &AssocEdgeLoader{}
 		err := chainLoaders(
 			[]loader{
 				&loadAssocEdgeConfigExists{},

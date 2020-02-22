@@ -421,7 +421,7 @@ func (suite *generatedActionSuite) TestActionPrivacy() {
 	contact, err := createContact(v)
 	assert.NotNil(suite.T(), err)
 	assert.IsType(suite.T(), &actions.ActionPermissionsError{}, err)
-	assert.Zero(suite.T(), *contact)
+	assert.Nil(suite.T(), contact)
 
 	user := testingutils.CreateTestUser(suite.T())
 	// can create contact when logged in

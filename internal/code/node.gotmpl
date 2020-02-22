@@ -92,6 +92,10 @@ const (
   }
 
   func (res *{{.NodeLoader}}) GetNewInstance() ent.DBObject {
+    return res.GetNew{{.Node}}()
+  }
+
+  func (res *{{.NodeLoader}}) GetNew{{.Node}}() *{{.Node}} {
     var {{.NodeInstance}} {{.Node}}
     {{.NodeInstance}}.Viewer = res.v
     return &{{.NodeInstance}}

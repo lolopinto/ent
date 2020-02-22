@@ -55,17 +55,17 @@ func NewMutationBuilder(
   requiredFields []string, 
   opts ...func(*actions.EntMutationBuilder),
 ) *{{$builderName}} {
-  var {{.NodeInstance}} models.{{.Node}}
+  {{.NodeInstance}} := models.{{.NewNodeLoader}}(v).GetNew{{.Node}}()
 
   ret := &{{$builderName}}{
     requiredFields: requiredFields,
-    {{.NodeInstance}}: &{{.NodeInstance}},
+    {{.NodeInstance}}: {{.NodeInstance}},
   }
   opts = append(opts, actions.BuildFields(ret.buildFields))
   b := actions.NewMutationBuilder(
     v, 
     operation,
-    &{{.NodeInstance}},
+    {{.NodeInstance}},
     {{.EntConfig}},
     opts...,
   )

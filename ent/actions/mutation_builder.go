@@ -51,6 +51,7 @@ func BuildFields(buildFieldsFn func() ent.ActionFieldMap) func(*EntMutationBuild
 	}
 }
 
+// TODO have this just take a loader...
 func NewMutationBuilder(
 	v viewer.ViewerContext,
 	operation ent.WriteOperation,

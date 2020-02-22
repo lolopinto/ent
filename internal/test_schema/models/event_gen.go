@@ -89,6 +89,10 @@ type eventLoader struct {
 }
 
 func (res *eventLoader) GetNewInstance() ent.DBObject {
+	return res.GetNewEvent()
+}
+
+func (res *eventLoader) GetNewEvent() *Event {
 	var event Event
 	event.Viewer = res.v
 	return &event

@@ -34,17 +34,17 @@ func NewMutationBuilder(
 	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *ContactMutationBuilder {
-	var contact models.Contact
+	contact := models.NewContactLoader(v).GetNewContact()
 
 	ret := &ContactMutationBuilder{
 		requiredFields: requiredFields,
-		contact:        &contact,
+		contact:        contact,
 	}
 	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
-		&contact,
+		contact,
 		&configs.ContactConfig{},
 		opts...,
 	)

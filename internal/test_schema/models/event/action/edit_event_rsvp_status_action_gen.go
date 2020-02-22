@@ -98,6 +98,9 @@ func (action *EditEventRsvpStatusAction) Validate() error {
 // Save is the method called to execute this action and save change
 func (action *EditEventRsvpStatusAction) Save() (*models.Event, error) {
 	err := actions.Save(action)
+	if err != nil {
+		return nil, err
+	}
 	return action.builder.GetEvent(), err
 }
 

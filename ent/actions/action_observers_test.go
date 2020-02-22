@@ -32,12 +32,12 @@ func (suite *actionsObserversSuite) TestSimpleObserver() {
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 	action := eventCreateAction(v)
 
-	err := actions.Save(action)
+	event, err := action.Save()
 	assert.Nil(suite.T(), err)
 
-	verifyEventCreationState(suite.T(), &action.event, user)
+	verifyEventCreationState(suite.T(), event, user)
 
-	testingutils.AssertEntLogged(suite.T(), &action.event)
+	testingutils.AssertEntLogged(suite.T(), event)
 }
 
 func (suite *actionsObserversSuite) TestObserverReturnsError() {
