@@ -53,7 +53,7 @@ const (
         {{$field.GetFieldNameInStruct}} {{fTypeString $field}} {{$field.GetFieldTag}}
       {{end -}}
     {{end -}}
-    Viewer viewer.ViewerContext
+    viewer viewer.ViewerContext
   }
 
   type {{.Nodes}} map[string]*{{.Node}}
@@ -97,7 +97,7 @@ const (
 
   func (res *{{.NodeLoader}}) GetNew{{.Node}}() *{{.Node}} {
     var {{.NodeInstance}} {{.Node}}
-    {{.NodeInstance}}.Viewer = res.v
+    {{.NodeInstance}}.viewer = res.v
     return &{{.NodeInstance}}
   }
 
@@ -160,7 +160,7 @@ const (
 
   // GetViewer returns the viewer for this entity.
   func ({{.NodeInstance}} *{{.Node}}) GetViewer() viewer.ViewerContext {
-    return {{.NodeInstance}}.Viewer
+    return {{.NodeInstance}}.viewer
   }
 
   // Load{{.Node}}FromContext loads the given {{.Node}} given the context and id
@@ -284,12 +284,12 @@ const (
       {{with .NodeInfo -}}
         // Gen{{$edgeName}} returns the {{$edgeName}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodeResult}}{
-          return GenLoad{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edge.FieldName}})
+          return GenLoad{{.Node}}({{$currentNodeInstance}}.viewer, {{$currentNodeInstance}}.{{$edge.FieldName}})
         }
 
         // Load{{$edgeName}} returns the {{$edgeName}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() (*{{.Node}}, error) {
-          return Load{{.Node}}({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.{{$edge.FieldName}})
+          return Load{{.Node}}({{$currentNodeInstance}}.viewer, {{$currentNodeInstance}}.{{$edge.FieldName}})
         }
       {{end}}
     {{end}}
@@ -300,8 +300,8 @@ const (
         func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodesResult}} {
           res := make(chan *{{.NodesResult}})
           go func() {
-            loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-            err := ent.LoadNodesViaQueryClause({{$currentNodeInstance}}.Viewer, loader, sql.Eq({{$edge.QuotedDBColName}}, {{$currentNodeInstance}}.ID))
+            loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.viewer)
+            err := ent.LoadNodesViaQueryClause({{$currentNodeInstance}}.viewer, loader, sql.Eq({{$edge.QuotedDBColName}}, {{$currentNodeInstance}}.ID))
             res <- &{{.NodesResult}}{
               Err: err,
               {{.Nodes}}: loader.results,
@@ -312,8 +312,8 @@ const (
 
         // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
         func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() ({{.NodesSlice}}, error) {
-          loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-          err := ent.LoadNodesViaQueryClause({{$currentNodeInstance}}.Viewer, loader, sql.Eq({{$edge.QuotedDBColName}}, {{$currentNodeInstance}}.ID))
+          loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.viewer)
+          err := ent.LoadNodesViaQueryClause({{$currentNodeInstance}}.viewer, loader, sql.Eq({{$edge.QuotedDBColName}}, {{$currentNodeInstance}}.ID))
           return loader.results, err
         }
       {{end}}
@@ -338,8 +338,8 @@ const (
           func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodeResult}} {
             res := make(chan *{{.NodeResult}})
             go func() {
-              loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-              err := ent.LoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
+              loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.viewer)
+              err := ent.LoadUniqueNodeByType({{$currentNodeInstance}}.viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
               res <- &{{.NodeResult}}{
                 Err: err,
                 {{.Node}}: loader.getFirstInstance(),
@@ -350,8 +350,8 @@ const (
 
           // Load{{$edgeName}} returns the {{.Node}} associated with the {{$currentNode}} instance
           func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() (*{{.Node}}, error) {
-            loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-            err := ent.LoadUniqueNodeByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
+            loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.viewer)
+            err := ent.LoadUniqueNodeByType({{$currentNodeInstance}}.viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
             return loader.getFirstInstance(), err
           }
         {{else -}}
@@ -369,8 +369,8 @@ const (
           func ({{$currentNodeInstance}} *{{$currentNode}}) Gen{{$edgeName}}() <-chan *{{.NodesResult}} {
             res := make(chan *{{.NodesResult}})
             go func() {
-              loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-              err := ent.LoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
+              loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.viewer)
+              err := ent.LoadNodesByType({{$currentNodeInstance}}.viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
               res <- &{{.NodesResult}}{
                 Err: err,
                 {{.Nodes}}: loader.results,
@@ -381,8 +381,8 @@ const (
 
           // Load{{$edgeName}} returns the {{.Nodes}} associated with the {{$currentNode}} instance
           func ({{$currentNodeInstance}} *{{$currentNode}}) Load{{$edgeName}}() ({{.NodesSlice}}, error) {
-            loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.Viewer)
-            err := ent.LoadNodesByType({{$currentNodeInstance}}.Viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
+            loader := {{.NewNodeLoader}}({{$currentNodeInstance}}.viewer)
+            err := ent.LoadNodesByType({{$currentNodeInstance}}.viewer, {{$currentNodeInstance}}.ID, {{$edge.EdgeConst}}, loader)
             return loader.results, err
           }
         {{end -}}
@@ -404,7 +404,7 @@ const (
       {{- $const := $assocEdgeGroup.ConstType -}}
       {{$funcName := $assocEdgeGroup.GetStatusFuncName -}}
       func ({{$currentNodeInstance}} *{{$currentNode}}) {{$funcName}}() (*{{$const}}, error) {
-        if !viewer.HasIdentity({{$currentNodeInstance}}.Viewer) {
+        if !viewer.HasIdentity({{$currentNodeInstance}}.viewer) {
           ret := {{$assocEdgeGroup.GetConstNameForUnknown}}
       		return &ret, nil
         }
@@ -413,7 +413,7 @@ const (
         errs := make(map[string]error)
         for key, data := range statusMap {
           // TODO concurrent versions
-          edges[key], errs[key] = ent.LoadEdgeByType({{$currentNodeInstance}}.ID, {{$currentNodeInstance}}.Viewer.GetViewerID(), data.Edge)
+          edges[key], errs[key] = ent.LoadEdgeByType({{$currentNodeInstance}}.ID, {{$currentNodeInstance}}.viewer.GetViewerID(), data.Edge)
         }
         for _, err := range errs {
           if err != nil {

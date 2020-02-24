@@ -33,7 +33,7 @@ type Contact struct {
 	Favorite      *bool    `db:"favorite" graphql:"_"`
 	NumberOfCalls *int     `db:"number_of_calls" graphql:"_"`
 	Pi            *float64 `db:"pi" graphql:"_"`
-	Viewer        viewer.ViewerContext
+	viewer        viewer.ViewerContext
 }
 
 type Contacts map[string]*Contact
@@ -76,7 +76,7 @@ func (res *contactLoader) GetNewInstance() ent.DBObject {
 
 func (res *contactLoader) GetNewContact() *Contact {
 	var contact Contact
-	contact.Viewer = res.v
+	contact.viewer = res.v
 	return &contact
 }
 
@@ -139,7 +139,7 @@ func (contact *Contact) GetType() ent.NodeType {
 
 // GetViewer returns the viewer for this entity.
 func (contact *Contact) GetViewer() viewer.ViewerContext {
-	return contact.Viewer
+	return contact.viewer
 }
 
 // LoadContactFromContext loads the given Contact given the context and id
@@ -227,20 +227,20 @@ func LoadContactFromEmailAddress(v viewer.ViewerContext, emailAddress string) (*
 
 // GenUser returns the User associated with the Contact instance
 func (contact *Contact) GenUser() <-chan *UserResult {
-	return GenLoadUser(contact.Viewer, contact.UserID)
+	return GenLoadUser(contact.viewer, contact.UserID)
 }
 
 // LoadUser returns the User associated with the Contact instance
 func (contact *Contact) LoadUser() (*User, error) {
-	return LoadUser(contact.Viewer, contact.UserID)
+	return LoadUser(contact.viewer, contact.UserID)
 }
 
 // GenContactEmails returns the ContactEmails associated with the Contact instance
 func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
-		loader := NewContactEmailLoader(contact.Viewer)
-		err := ent.LoadNodesViaQueryClause(contact.Viewer, loader, sql.Eq("contact_id", contact.ID))
+		loader := NewContactEmailLoader(contact.viewer)
+		err := ent.LoadNodesViaQueryClause(contact.viewer, loader, sql.Eq("contact_id", contact.ID))
 		res <- &ContactEmailsResult{
 			Err:           err,
 			ContactEmails: loader.results,
@@ -251,8 +251,8 @@ func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 
 // LoadContactEmails returns the ContactEmails associated with the Contact instance
 func (contact *Contact) LoadContactEmails() ([]*ContactEmail, error) {
-	loader := NewContactEmailLoader(contact.Viewer)
-	err := ent.LoadNodesViaQueryClause(contact.Viewer, loader, sql.Eq("contact_id", contact.ID))
+	loader := NewContactEmailLoader(contact.viewer)
+	err := ent.LoadNodesViaQueryClause(contact.viewer, loader, sql.Eq("contact_id", contact.ID))
 	return loader.results, err
 }
 
@@ -270,8 +270,8 @@ func (contact *Contact) GenAllowListEdges() <-chan *ent.AssocEdgesResult {
 func (contact *Contact) GenAllowList() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
-		loader := NewUserLoader(contact.Viewer)
-		err := ent.LoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, loader)
+		loader := NewUserLoader(contact.viewer)
+		err := ent.LoadNodesByType(contact.viewer, contact.ID, ContactToAllowListEdge, loader)
 		res <- &UsersResult{
 			Err:   err,
 			Users: loader.results,
@@ -282,8 +282,8 @@ func (contact *Contact) GenAllowList() <-chan *UsersResult {
 
 // LoadAllowList returns the Users associated with the Contact instance
 func (contact *Contact) LoadAllowList() ([]*User, error) {
-	loader := NewUserLoader(contact.Viewer)
-	err := ent.LoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, loader)
+	loader := NewUserLoader(contact.viewer)
+	err := ent.LoadNodesByType(contact.viewer, contact.ID, ContactToAllowListEdge, loader)
 	return loader.results, err
 }
 

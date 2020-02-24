@@ -25,7 +25,7 @@ type ContactEmail struct {
 	EmailAddress string `db:"email_address"`
 	Label        string `db:"label"`
 	ContactID    string `db:"contact_id"`
-	Viewer       viewer.ViewerContext
+	viewer       viewer.ViewerContext
 }
 
 type ContactEmails map[string]*ContactEmail
@@ -68,7 +68,7 @@ func (res *contactEmailLoader) GetNewInstance() ent.DBObject {
 
 func (res *contactEmailLoader) GetNewContactEmail() *ContactEmail {
 	var contactEmail ContactEmail
-	contactEmail.Viewer = res.v
+	contactEmail.viewer = res.v
 	return &contactEmail
 }
 
@@ -131,7 +131,7 @@ func (contactEmail *ContactEmail) GetType() ent.NodeType {
 
 // GetViewer returns the viewer for this entity.
 func (contactEmail *ContactEmail) GetViewer() viewer.ViewerContext {
-	return contactEmail.Viewer
+	return contactEmail.viewer
 }
 
 // LoadContactEmailFromContext loads the given ContactEmail given the context and id
@@ -198,12 +198,12 @@ func GenLoadContactEmails(v viewer.ViewerContext, ids ...string) <-chan *Contact
 
 // GenContact returns the Contact associated with the ContactEmail instance
 func (contactEmail *ContactEmail) GenContact() <-chan *ContactResult {
-	return GenLoadContact(contactEmail.Viewer, contactEmail.ContactID)
+	return GenLoadContact(contactEmail.viewer, contactEmail.ContactID)
 }
 
 // LoadContact returns the Contact associated with the ContactEmail instance
 func (contactEmail *ContactEmail) LoadContact() (*Contact, error) {
-	return LoadContact(contactEmail.Viewer, contactEmail.ContactID)
+	return LoadContact(contactEmail.viewer, contactEmail.ContactID)
 }
 
 // DBFields is used by the ent framework to load the ent from the underlying database

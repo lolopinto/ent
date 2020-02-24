@@ -28,7 +28,7 @@ type Address struct {
 	State         string   `db:"state"`
 	StreetAddress string   `db:"street_address"`
 	Zip           string   `db:"zip"`
-	Viewer        viewer.ViewerContext
+	viewer        viewer.ViewerContext
 }
 
 type Addresses map[string]*Address
@@ -71,7 +71,7 @@ func (res *addressLoader) GetNewInstance() ent.DBObject {
 
 func (res *addressLoader) GetNewAddress() *Address {
 	var address Address
-	address.Viewer = res.v
+	address.viewer = res.v
 	return &address
 }
 
@@ -134,7 +134,7 @@ func (address *Address) GetType() ent.NodeType {
 
 // GetViewer returns the viewer for this entity.
 func (address *Address) GetViewer() viewer.ViewerContext {
-	return address.Viewer
+	return address.viewer
 }
 
 // LoadAddressFromContext loads the given Address given the context and id

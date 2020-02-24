@@ -378,7 +378,7 @@ func testLoadNode(suite *privacyTestSuite, f func(viewer.ViewerContext, string) 
 		if tt.visible {
 			assert.Nil(suite.T(), err, tt.testCase)
 			assert.NotZero(suite.T(), user, tt.testCase)
-			assert.Equal(suite.T(), user.Viewer, tt.viewer, tt.testCase)
+			assert.Equal(suite.T(), user.GetViewer(), tt.viewer, tt.testCase)
 		} else {
 			assert.Error(suite.T(), err, tt.testCase)
 			assert.True(suite.T(), ent.IsPrivacyError(err), tt.testCase)
@@ -481,7 +481,7 @@ func verifyLoadedForeignKeyNodes(
 			actualIds := []string{}
 			for _, contact := range contacts {
 				assert.NotZero(suite.T(), contact, testCase)
-				assert.Equal(suite.T(), contact.Viewer, v, testCase)
+				assert.Equal(suite.T(), contact.GetViewer(), v, testCase)
 				assert.Equal(suite.T(), id, contact.UserID, testCase)
 				actualIds = append(actualIds, contact.ID)
 			}
@@ -511,7 +511,7 @@ func verifyLoadedNodesByType(
 			actualIds := []string{}
 			for _, event := range events {
 				assert.NotZero(suite.T(), event, testCase)
-				assert.Equal(suite.T(), event.Viewer, v, testCase)
+				assert.Equal(suite.T(), event.GetViewer(), v, testCase)
 				assert.Equal(suite.T(), id, event.UserID, testCase)
 				actualIds = append(actualIds, event.ID)
 			}
