@@ -415,16 +415,16 @@ func (b *UserMutationBuilder) Validate() error {
 	return b.builder.Validate()
 }
 
-func (b *UserMutationBuilder) buildFields() ent.ActionFieldMap {
+func (b *UserMutationBuilder) buildFields() actions.FieldMap {
 	m := make(map[string]bool)
 	for _, f := range b.requiredFields {
 		m[f] = true
 	}
 
 	fieldMap := b.GetFields()
-	fields := make(ent.ActionFieldMap)
+	fields := make(actions.FieldMap)
 	addField := func(key string, val interface{}) {
-		fields[key] = &ent.FieldInfo{
+		fields[key] = &actions.FieldInfo{
 			Field: fieldMap[key],
 			Value: val,
 		}

@@ -374,7 +374,7 @@ func executeOperations(exec Executor) error {
 
 	for {
 		op, err := exec.Operation()
-		if err == AllOperations {
+		if err == ErrAllOperations {
 			break
 		} else if err != nil {
 			return handErrInTransaction(tx, err)

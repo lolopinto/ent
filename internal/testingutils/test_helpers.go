@@ -33,7 +33,6 @@ func VerifyFamilyEdge(t *testing.T, user, user2 *models.User) {
 		EdgeType: models.UserToFamilyMembersEdge,
 		ID1Type:  user.GetType(),
 		ID2Type:  user.GetType(),
-		Data:     "",
 	}, edge)
 }
 
@@ -52,7 +51,6 @@ func VerifyInvitedToEventEdge(t *testing.T, user *models.User, event *models.Eve
 		ID2:      user.ID,
 		ID2Type:  user.GetType(),
 		EdgeType: models.EventToInvitedEdge,
-		Data:     "",
 	}, invitedEdge)
 
 	userInvitedEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToInvitedEventsEdge)
@@ -63,7 +61,6 @@ func VerifyInvitedToEventEdge(t *testing.T, user *models.User, event *models.Eve
 		ID2:      event.ID,
 		ID2Type:  event.GetType(),
 		EdgeType: models.UserToInvitedEventsEdge,
-		Data:     "",
 	}, userInvitedEdge)
 }
 
@@ -85,7 +82,6 @@ func VerifyUserAttendingEventEdge(t *testing.T, user *models.User, event *models
 		ID2:      user.ID,
 		ID2Type:  user.GetType(),
 		EdgeType: models.EventToAttendingEdge,
-		Data:     "",
 	}, attendingEdge)
 
 	userAttendingEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToEventsAttendingEdge)
@@ -96,7 +92,6 @@ func VerifyUserAttendingEventEdge(t *testing.T, user *models.User, event *models
 		ID2:      event.ID,
 		ID2Type:  event.GetType(),
 		EdgeType: models.UserToEventsAttendingEdge,
-		Data:     "",
 	}, userAttendingEdge)
 }
 
@@ -118,7 +113,6 @@ func VerifyUserDeclinedEventEdge(t *testing.T, user *models.User, event *models.
 		ID2:      user.ID,
 		ID2Type:  user.GetType(),
 		EdgeType: models.EventToDeclinedEdge,
-		Data:     "",
 	}, declinedEdge)
 
 	userDeclinedEdge, err := ent.LoadEdgeByType(user.ID, event.ID, models.UserToDeclinedEventsEdge)
@@ -129,7 +123,6 @@ func VerifyUserDeclinedEventEdge(t *testing.T, user *models.User, event *models.
 		ID2:      event.ID,
 		ID2Type:  event.GetType(),
 		EdgeType: models.UserToDeclinedEventsEdge,
-		Data:     "",
 	}, userDeclinedEdge)
 }
 
@@ -151,7 +144,6 @@ func VerifyUserToEventEdge(t *testing.T, user *models.User, event *models.Event)
 		ID2:      event.ID,
 		ID2Type:  event.GetType(),
 		EdgeType: models.UserToEventsEdge,
-		Data:     "",
 	}, userToEventEdge)
 }
 
@@ -170,7 +162,6 @@ func VerifyEventToHostEdge(t *testing.T, event *models.Event, user *models.User)
 		ID2:      user.GetID(),
 		ID2Type:  user.GetType(),
 		EdgeType: models.EventToHostsEdge,
-		Data:     "",
 	}, edge)
 }
 
@@ -183,7 +174,6 @@ func VerifyEventToCreatorEdge(t *testing.T, event *models.Event, user *models.Us
 		ID2:      user.GetID(),
 		ID2Type:  user.GetType(),
 		EdgeType: models.EventToCreatorEdge,
-		Data:     "",
 	}, edge)
 }
 
@@ -199,7 +189,6 @@ func VerifyFriendsEdge(t *testing.T, user, user2 *models.User) {
 		ID2:      user2.ID,
 		ID2Type:  user2.GetType(),
 		EdgeType: models.UserToFriendsEdge,
-		Data:     "",
 	}, friends1Edge)
 	VerifyEdge(t, &ent.AssocEdge{
 		ID1:      user2.ID,
@@ -207,7 +196,6 @@ func VerifyFriendsEdge(t *testing.T, user, user2 *models.User) {
 		ID2:      user.ID,
 		ID2Type:  user.GetType(),
 		EdgeType: models.UserToFriendsEdge,
-		Data:     "",
 	}, friends2Edge)
 }
 

@@ -90,15 +90,6 @@ type PrivacyPolicy interface {
 	Rules() []PrivacyPolicyRule
 }
 
-// // PolicySimple defines a single method to be evaluated to determine if an ent is visible
-// // to the viewer
-// // TBD on if we'll keep this long-term.
-// // TODO...
-// type PrivacyPolicySimple interface {
-// 	// Eval is the method called to evaluate the visibility of the ent
-// 	Eval(v viewer.ViewerContext, ent Entity) bool
-// }
-
 // PrivacyPolicyRule is an independent PrivacyRule that evaluates an ent and determines if it's visible or not
 type PrivacyPolicyRule interface {
 	// Eval is the method called to evaluate the visibility of the ent

@@ -20,7 +20,7 @@ type EntMutationBuilder struct {
 	entity          ent.Entity
 	Operation       ent.WriteOperation
 	EntConfig       ent.Config
-	buildFieldsFn   func() ent.ActionFieldMap
+	buildFieldsFn   func() FieldMap
 	rawDBFields     map[string]interface{}
 	validatedFields map[string]interface{}
 	edges           []*ent.EdgeOperation
@@ -45,7 +45,7 @@ func ExistingEnt(existingEnt ent.Entity) func(*EntMutationBuilder) {
 	}
 }
 
-func BuildFields(buildFieldsFn func() ent.ActionFieldMap) func(*EntMutationBuilder) {
+func BuildFields(buildFieldsFn func() FieldMap) func(*EntMutationBuilder) {
 	return func(mb *EntMutationBuilder) {
 		mb.buildFieldsFn = buildFieldsFn
 	}
