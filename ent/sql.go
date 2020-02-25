@@ -19,12 +19,11 @@ const (
 
 // first simple version of sql builder
 type sqlBuilder struct {
-	entity       DBObject
-	fields       DBFields
-	colsString   string // not long term value of course
-	tableName    string
-	clause       sql.QueryClause
-	argsOverride []interface{}
+	entity     DBObject
+	fields     DBFields
+	colsString string // not long term value of course
+	tableName  string
+	clause     sql.QueryClause
 	// keeping these so as to not kill existing use cases
 	// TODO kill inField, inArgs
 	inField      string
@@ -100,26 +99,25 @@ func (s *sqlBuilder) getColsString() string {
 	return strings.Join(columns, ", ")
 }
 
-// This should be a Build()-> (string, []interface{}, error)
-func (s *sqlBuilder) getQuery() string {
+func (s *sqlBuilder) Build() (string, []interface{}, error) {
 	if s.rawQuery != "" {
-		return s.rawQuery
+		return s.rawQuery, s.rawValues, nil
 	}
 
 	switch s.queryType {
 	case selectQuery:
-		return s.getSelectQuery()
+		return s.buildSelectQuery()
 	case insertQuery:
-		return s.getInsertQuery()
+		return s.buildInsertQuery()
 	case updateQuery:
-		return s.getUpdateQuery()
+		return s.buildUpdateQuery()
 	case deleteQuery:
-		return s.getDeleteQuery()
+		return s.buildDeleteQuery()
 	}
 	panic("unsupported query")
 }
 
-func (s *sqlBuilder) getInsertQuery() string {
+func (s *sqlBuilder) buildInsertQuery() (string, []interface{}, error) {
 	cols := make([]string, len(s.writeFields))
 	vals := make([]interface{}, len(s.writeFields))
 	valsString := make([]string, len(s.writeFields))
@@ -132,19 +130,17 @@ func (s *sqlBuilder) getInsertQuery() string {
 		idx++
 	}
 
-	// to be returned by getValues()
-	s.argsOverride = vals
-
-	return fmt.Sprintf(
+	query := fmt.Sprintf(
 		"INSERT INTO %s (%s) VALUES(%s) %s",
 		s.tableName,
 		strings.Join(cols, ", "),
 		strings.Join(valsString, ", "),
 		s.insertSuffix,
 	)
+	return query, vals, nil
 }
 
-func (s *sqlBuilder) getUpdateQuery() string {
+func (s *sqlBuilder) buildUpdateQuery() (string, []interface{}, error) {
 	vals := make([]interface{}, len(s.writeFields))
 	valsString := make([]string, len(s.writeFields))
 
@@ -155,34 +151,32 @@ func (s *sqlBuilder) getUpdateQuery() string {
 		idx++
 	}
 
-	// to be returned by getValues()
-	s.argsOverride = vals
-
-	return fmt.Sprintf(
+	query := fmt.Sprintf(
 		"UPDATE %s SET %s WHERE %s = '%s' RETURNING *",
 		s.tableName,
 		strings.Join(valsString, ", "),
 		getPrimaryKeyForObj(s.existingEnt),
 		s.existingEnt.GetID(),
 	)
+	return query, vals, nil
 }
 
-func (s *sqlBuilder) getDeleteQuery() string {
-	// to be returned by getValues()
-	s.argsOverride = s.clause.GetValues()
-
-	return fmt.Sprintf(
+func (s *sqlBuilder) buildDeleteQuery() (string, []interface{}, error) {
+	query := fmt.Sprintf(
 		"DELETE from %s WHERE %s",
 		s.tableName,
 		s.clause.GetClause(),
 	)
+	return query, s.clause.GetValues(), nil
 }
 
-func (s *sqlBuilder) getSelectQuery() string {
+func (s *sqlBuilder) buildSelectQuery() (string, []interface{}, error) {
 	var whereClause string
 
+	var args []interface{}
 	if s.clause != nil {
 		whereClause = s.clause.GetClause()
+		args = s.clause.GetValues()
 	}
 
 	var formatSb strings.Builder
@@ -214,30 +208,13 @@ func (s *sqlBuilder) getSelectQuery() string {
 		inClause, ok := s.clause.(sql.InClause)
 		if ok && inClause.RebindInClause() {
 			var err error
-			query, s.argsOverride, err = sqlx.In(query, s.clause.GetValues())
+			query, args, err = sqlx.In(query, s.clause.GetValues())
 			if err != nil {
-				// TODO make this return an error correctly
-				panic(err)
+				return "", nil, err
 			}
 		}
 	}
-	return query
-}
-
-func (s *sqlBuilder) getValues() []interface{} {
-	if len(s.argsOverride) != 0 {
-		return s.argsOverride
-	}
-	// TODO validate that rawQuery and rawValues are passed together
-	if len(s.rawValues) != 0 {
-		return s.rawValues
-	}
-
-	if s.clause != nil {
-		return s.clause.GetValues()
-	}
-
-	return nil
+	return query, args, nil
 }
 
 func getPrimaryKeyForObj(entity DBObject) string {

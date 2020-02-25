@@ -374,21 +374,21 @@ func (suite *modelsTestSuite) TestInvalidLoadEdgeByType() {
 
 	edge, err := ent.LoadEdgeByType(event.ID, user.ID, models.UserToEventsEdge)
 	assert.Nil(suite.T(), err)
-	assert.Zero(suite.T(), *edge)
+	assert.Nil(suite.T(), edge)
 }
 
 func (suite *modelsTestSuite) TestLoadEdgeByTypeEmptyID1() {
 	user := testingutils.CreateTestUser(suite.T())
 	edge, err := ent.LoadEdgeByType("", user.ID, models.UserToEventsEdge)
 	assert.Nil(suite.T(), err)
-	assert.Zero(suite.T(), *edge)
+	assert.Nil(suite.T(), edge)
 }
 
 func (suite *modelsTestSuite) TestLoadEdgeByTypeEmptyID2() {
 	user := testingutils.CreateTestUser(suite.T())
 	edge, err := ent.LoadEdgeByType(user.ID, "", models.UserToEventsEdge)
 	assert.Nil(suite.T(), err)
-	assert.Zero(suite.T(), *edge)
+	assert.Nil(suite.T(), edge)
 }
 
 func testLoadEdgeByType(suite *modelsTestSuite, f func(id, id2 string) (*ent.AssocEdge, error)) {
@@ -432,7 +432,7 @@ func testUniqueLoadNodeByType(suite *modelsTestSuite, f func(id string) (*models
 func verifyEdgeByType(suite *modelsTestSuite, f func() (*ent.AssocEdge, error), id1, id2 string) {
 	edge, err := f()
 	assert.Nil(suite.T(), err)
-	assert.NotZero(suite.T(), edge)
+	assert.NotNil(suite.T(), edge)
 	assert.Equal(suite.T(), edge.ID1, id1)
 	assert.Equal(suite.T(), edge.ID2, id2)
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/lolopinto/ent/data"
 	"github.com/lolopinto/ent/ent/sql"
 	"github.com/pkg/errors"
 	"github.com/rocketlaunchr/remember-go"
@@ -104,8 +103,7 @@ func (op *EditNodeOperation) PerformWrite(tx *sqlx.Tx) error {
 		return errors.New("Unsupported operation")
 	}
 
-	query, values := builder.getQuery(), builder.getValues()
-	return performWrite(query, values, tx, op.Entity)
+	return performWrite(builder, tx, op.Entity)
 }
 
 // GetCacheKeys returns keys that need to be deleted for this operation
@@ -294,7 +292,7 @@ func (op *EdgeOperation) PerformWrite(tx *sqlx.Tx) error {
 		return fmt.Errorf("unsupported edge operation %v passed to edgeOperation.PerformWrite", op)
 	}
 
-	return performWrite(builder.getQuery(), builder.getValues(), tx, nil)
+	return performWrite(builder, tx, nil)
 }
 
 // GetCacheKeys returns keys that need to be deleted for this operation
@@ -400,7 +398,7 @@ type DeleteNodeOperation struct {
 func (op *DeleteNodeOperation) PerformWrite(tx *sqlx.Tx) error {
 	builder := getDeleteQuery(op.EntConfig.GetTableName(), sql.Eq("id", op.ExistingEnt.GetID()))
 
-	return performWrite(builder.getQuery(), builder.getValues(), tx, nil)
+	return performWrite(builder, tx, nil)
 }
 
 // GetCacheKeys returns keys that need to be deleted for this operation
@@ -408,54 +406,6 @@ func (op *DeleteNodeOperation) GetCacheKeys() []string {
 	return []string{
 		getKeyForNode(op.ExistingEnt.GetID(), op.EntConfig.GetTableName()),
 	}
-}
-
-// the meat of how things work
-func executeOperations(exec Executor) error {
-	db := data.DBConn()
-	tx, err := db.Beginx()
-	if err != nil {
-		fmt.Println("error creating transaction", err)
-		return err
-	}
-
-	for {
-		op, err := exec.Operation()
-		if err == ErrAllOperations {
-			break
-		} else if err != nil {
-			return handErrInTransaction(tx, err)
-		}
-
-		resolvableOp, ok := op.(DataOperationWithResolver)
-		if ok {
-			if err = resolvableOp.Resolve(exec); err != nil {
-				return handErrInTransaction(tx, err)
-			}
-		}
-
-		// perform the write as needed
-		if err = op.PerformWrite(tx); err != nil {
-			return handErrInTransaction(tx, err)
-		}
-
-		// get any keys for this op and delete
-		cacheableOp, ok := op.(DataOperationWithKeys)
-		if cacheEnabled && ok {
-			for _, key := range cacheableOp.GetCacheKeys() {
-				deleteKey(key)
-			}
-		}
-	}
-
-	tx.Commit()
-	return nil
-}
-
-func handErrInTransaction(tx *sqlx.Tx, err error) error {
-	fmt.Println("error during transaction", err)
-	tx.Rollback()
-	return err
 }
 
 func getKeyForNode(id, tableName string) string {

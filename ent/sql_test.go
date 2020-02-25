@@ -11,6 +11,7 @@ import (
 	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testUser2 struct {
@@ -287,7 +288,7 @@ func TestDeleteBuilder(t *testing.T) {
 	)
 }
 
-func testEdiValues(t *testing.T, tt *sqlTestCase, expectedCols, actualCols []string) {
+func testEdiValues(t *testing.T, tt *sqlTestCase, expectedCols, actualCols []string, actualValues []interface{}) {
 	// keep track of positions because we'll use that to check that the expectedValues are in the order we expect
 	// based on this
 	// since we end up using maps which aren't stable, we need to do all this
@@ -297,8 +298,6 @@ func testEdiValues(t *testing.T, tt *sqlTestCase, expectedCols, actualCols []str
 		actualColPos[actualCols[idx]] = idx
 		expectedColPos[expectedCols[idx]] = idx
 	}
-
-	actualValues := tt.s.getValues()
 
 	for _, col := range actualCols {
 		actualValPos := actualColPos[col]
@@ -320,11 +319,12 @@ func testBuilder(
 	t *testing.T,
 	testCases map[string]sqlTestCase,
 	colsFromQuery func(*testing.T, string, *sqlTestCase) ([]string, []string),
-	testFn func(*testing.T, *sqlTestCase, []string, []string)) {
+	testFn func(*testing.T, *sqlTestCase, []string, []string, []interface{})) {
 
 	for key, tt := range testCases {
 		t.Run(key, func(t *testing.T) {
-			actualQuery := tt.s.getQuery()
+			actualQuery, actualValues, err := tt.s.Build()
+			require.NoError(t, err)
 
 			var origActualCols, origExpectedCols []string
 
@@ -348,7 +348,6 @@ func testBuilder(
 					actualQuery,
 				)
 			}
-			actualValues := tt.s.getValues()
 
 			if len(actualValues) != len(tt.expectedValues) {
 				t.Errorf("length of slice was not as expected")
@@ -361,7 +360,7 @@ func testBuilder(
 					}
 				}
 			} else {
-				testFn(t, &tt, origExpectedCols, origActualCols)
+				testFn(t, &tt, origExpectedCols, origActualCols, actualValues)
 			}
 		})
 	}

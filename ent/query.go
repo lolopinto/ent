@@ -66,8 +66,12 @@ func (q *dbQuery) query(processor *processRawData) error {
 	if err != nil {
 		return err
 	}
-	query := builder.getQuery()
-	//fmt.Println(query)
+	query, values, err := builder.Build()
+	if err != nil {
+		err = errors.Wrap(err, "error building query")
+		fmt.Println(err)
+		return err
+	}
 
 	db := data.DBConn()
 	if db == nil {
@@ -85,9 +89,9 @@ func (q *dbQuery) query(processor *processRawData) error {
 	defer stmt.Close()
 
 	if processor.singleRow != nil {
-		err = q.processSingleRow(builder, stmt, processor.singleRow)
+		err = q.processSingleRow(stmt, values, processor.singleRow)
 	} else if processor.multiRows != nil {
-		err = q.processMultiRows(builder, stmt, processor.multiRows)
+		err = q.processMultiRows(stmt, values, processor.multiRows)
 	} else {
 		panic("invalid processor passed")
 	}
@@ -97,13 +101,13 @@ func (q *dbQuery) query(processor *processRawData) error {
 	return err
 }
 
-func (q *dbQuery) processSingleRow(builder *sqlBuilder, stmt *sqlx.Stmt, processRow func(row *sqlx.Row) error) error {
-	row := stmt.QueryRowx(builder.getValues()...)
+func (q *dbQuery) processSingleRow(stmt *sqlx.Stmt, values []interface{}, processRow func(row *sqlx.Row) error) error {
+	row := stmt.QueryRowx(values...)
 	return processRow(row)
 }
 
-func (q *dbQuery) processMultiRows(builder *sqlBuilder, stmt *sqlx.Stmt, processRows func(rows *sqlx.Rows) error) error {
-	rows, err := stmt.Queryx(builder.getValues()...)
+func (q *dbQuery) processMultiRows(stmt *sqlx.Stmt, values []interface{}, processRows func(rows *sqlx.Rows) error) error {
+	rows, err := stmt.Queryx(values...)
 	if err != nil {
 		return err
 	}

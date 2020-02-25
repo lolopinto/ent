@@ -78,35 +78,7 @@ func IsInvalidEntPrivacyError(err error) bool {
 	return ok
 }
 
-func getTypeName(ent DBObject) string {
-	// hmm kill it? no reflection
-	// for errors
-	if ent == nil {
-		return ""
-	}
-	t := reflect.TypeOf(ent)
-	if t.Kind() == reflect.Ptr {
-		return t.Elem().Name()
-	}
-	return t.Name()
-}
-
-func loadNodeFromLoader(v viewer.ViewerContext, loader PrivacyBackedLoader, l *loadNodeLoader) error {
-	err := loadData(l)
-	ent := l.GetEntity()
-	// there's an error loading raw data, return the value here and we're done.
-	if err != nil {
-		return err
-	}
-
-	// check privacy policy...
-	// note that when loading the one item we send that error back to error out the entire
-	// thing just so that it's clearer to the client that loading the item
-	// wasn't as expected.
-	return applyPrivacyPolicyUnsure(v, ent, loader)
-}
-
-// TODO same issues as below
+// LoadNode fetches an id given the viewer and id
 func LoadNode(v viewer.ViewerContext, id string, loader PrivacyBackedLoader) error {
 	if id == "" {
 		debug.PrintStack()
@@ -119,55 +91,13 @@ func LoadNode(v viewer.ViewerContext, id string, loader PrivacyBackedLoader) err
 	return loadNodeFromLoader(v, loader, l)
 }
 
-// TODO...
+// GenLoadNode is the concurrent version of LoadNode.
 func GenLoadNode(v viewer.ViewerContext, id string, loader PrivacyBackedLoader) <-chan error {
 	res := make(chan error)
 	go func() {
 		res <- LoadNode(v, id, loader)
 	}()
 	return res
-}
-
-func logEntResult(ent interface{}, err error) {
-	return
-	// result
-	// fmt.Printf(
-	// 	"result from loading ent: err %v  privacy errror %v ent %v \n",
-	// 	err,
-	// 	IsPrivacyError(err),
-	// 	ent,
-	// )
-}
-
-func applyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt DBObject, loader PrivacyBackedLoader) error {
-	ent, ok := maybeEnt.(Entity)
-	var visible bool
-	var err error
-
-	if !ok {
-		fmt.Println("invalid ent", ent)
-		err = &InvalidEntPrivacyError{
-			entType: getTypeName(ent),
-		}
-	} else {
-		if v != ent.GetViewer() {
-			err = fmt.Errorf("viewer mismatch. expected Instance Viewer to be same as passed in viewer")
-		} else {
-			err = ApplyPrivacyForEnt(v, ent)
-			visible = err == nil
-		}
-	}
-
-	// log and return
-	if visible {
-		loader.SetPrivacyResult(ent.GetID(), ent, nil)
-		logEntResult(ent, nil)
-	} else {
-		logEntResult(nil, err)
-		loader.SetPrivacyResult(ent.GetID(), nil, err)
-	}
-
-	return err
 }
 
 // ApplyPrivacyForEnt takes an ent and evaluates whether the ent is visible or not
@@ -234,6 +164,8 @@ func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity
 	return &InvalidPrivacyRule{}
 }
 
+// LoadNodeViaQueryClause loads a node with a query clause e.g. load the user given the query
+// to load via email address like sql.Eq("email_address", "test@example.com")
 func LoadNodeViaQueryClause(v viewer.ViewerContext, entLoader PrivacyBackedLoader, clause sql.QueryClause) error {
 	l := &loadNodeLoader{
 		entLoader: entLoader,
@@ -242,56 +174,106 @@ func LoadNodeViaQueryClause(v viewer.ViewerContext, entLoader PrivacyBackedLoade
 	return loadNodeFromLoader(v, entLoader, l)
 }
 
+// GenLoadNodesViaQueryClause loads a list of nodes givens a query clause e.g. fetching all nodes with a foreign key
 func GenLoadNodesViaQueryClause(v viewer.ViewerContext, entLoader PrivacyBackedLoader, clause sql.QueryClause) <-chan error {
 	return genLoadNodesImpl(v, func() multiEntResult {
 		return loadNodesViaClause(entLoader, clause)
 	})
 }
 
+// LoadNodesViaQueryClause loads a list of nodes givens a query clause e.g. fetching all nodes with a foreign key
 func LoadNodesViaQueryClause(v viewer.ViewerContext, entLoader PrivacyBackedLoader, clause sql.QueryClause) error {
 	return loadNodesImpl(v, func() multiEntResult {
 		return loadNodesViaClause(entLoader, clause)
 	})
 }
 
+// GenLoadNodes loads a list of nodes given the ids
 func GenLoadNodes(v viewer.ViewerContext, ids []string, entLoader PrivacyBackedLoader) <-chan error {
 	return genLoadNodesImpl(v, func() multiEntResult {
 		return loadNodes(ids, entLoader)
 	})
 }
 
+// LoadNodes loads a list of nodes given the ids
 func LoadNodes(v viewer.ViewerContext, ids []string, entLoader PrivacyBackedLoader) error {
 	return loadNodesImpl(v, func() multiEntResult {
 		return loadNodes(ids, entLoader)
 	})
 }
 
+// GenLoadNodesByType loads a list of nodes given the id and edgetype
 func GenLoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, entLoader PrivacyBackedLoader) <-chan error {
 	return genLoadNodesImpl(v, func() multiEntResult {
 		return loadNodesByType(id, edgeType, entLoader)
 	})
 }
 
+// LoadNodesByType loads a list of nodes given the id and edgetype
 func LoadNodesByType(v viewer.ViewerContext, id string, edgeType EdgeType, entLoader PrivacyBackedLoader) error {
 	return loadNodesImpl(v, func() multiEntResult {
 		return loadNodesByType(id, edgeType, entLoader)
 	})
 }
 
+// LoadUniqueNodeByType loads the unique node for a given edge type
 func LoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, loader PrivacyBackedLoader) error {
 	edge, err := LoadUniqueEdgeByType(id, edgeType)
-	if err != nil {
+	if err != nil || edge == nil {
 		return err
 	}
 	return LoadNode(v, edge.ID2, loader)
 }
 
+// GenLoadUniqueNodeByType loads the unique node for a given edge type
 func GenLoadUniqueNodeByType(v viewer.ViewerContext, id string, edgeType EdgeType, loader PrivacyBackedLoader) chan error {
 	ret := make(chan error)
 	go func() {
 		ret <- LoadUniqueNodeByType(v, id, edgeType, loader)
 	}()
 	return ret
+}
+
+func logEntResult(ent interface{}, err error) {
+	return
+	// result
+	// fmt.Printf(
+	// 	"result from loading ent: err %v  privacy errror %v ent %v \n",
+	// 	err,
+	// 	IsPrivacyError(err),
+	// 	ent,
+	// )
+}
+
+func applyPrivacyPolicyUnsure(v viewer.ViewerContext, maybeEnt DBObject, loader PrivacyBackedLoader) error {
+	ent, ok := maybeEnt.(Entity)
+	var visible bool
+	var err error
+
+	if !ok {
+		fmt.Println("invalid ent", ent)
+		err = &InvalidEntPrivacyError{
+			entType: getTypeName(ent),
+		}
+	} else {
+		if v != ent.GetViewer() {
+			err = fmt.Errorf("viewer mismatch. expected Instance Viewer to be same as passed in viewer")
+		} else {
+			err = ApplyPrivacyForEnt(v, ent)
+			visible = err == nil
+		}
+	}
+
+	// log and return
+	if visible {
+		loader.SetPrivacyResult(ent.GetID(), ent, nil)
+		logEntResult(ent, nil)
+	} else {
+		logEntResult(nil, err)
+		loader.SetPrivacyResult(ent.GetID(), nil, err)
+	}
+
+	return err
 }
 
 // function that does the actual work of loading the raw data when fetching a list of nodes
@@ -303,10 +285,20 @@ type multiEntResult struct {
 	err    error
 }
 
+func getMultiEntResult(entLoader Loader, l *loadNodesLoader, err error) multiEntResult {
+	if err != nil {
+		return multiEntResult{
+			err: err,
+		}
+	}
+	return multiEntResult{
+		ents:   l.dbobjects,
+		loader: entLoader,
+	}
+}
+
 // genLoadNodesImpl takes the raw nodes fetched by whatever means we need to fetch data and applies a privacy check to
 // make sure that only the nodes which should be visible are returned to the viewer
-// TODO change API of genLoadNodesImpl to use this: PrivacyBackedMultiEntLoader
-// and then it'll be clear what the API to loadNodesLoader is: returning ents or map[string]interface{}
 func genLoadNodesImpl(v viewer.ViewerContext, nodesLoader loadRawNodes) <-chan error {
 	res := make(chan error)
 	go func() {
@@ -341,4 +333,67 @@ func applyPrivacyPolicyForEnts(v viewer.ViewerContext, entLoader PrivacyBackedLo
 		}(idx)
 	}
 	wg.Wait()
+}
+
+func loadNodeFromLoader(v viewer.ViewerContext, loader PrivacyBackedLoader, l *loadNodeLoader) error {
+	err := loadData(l)
+	ent := l.GetEntity()
+	// there's an error loading raw data, return the value here and we're done.
+	if err != nil {
+		return err
+	}
+
+	// check privacy policy...
+	// note that when loading the one item we send that error back to error out the entire
+	// thing just so that it's clearer to the client that loading the item
+	// wasn't as expected.
+	return applyPrivacyPolicyUnsure(v, ent, loader)
+}
+
+func loadNodesViaClause(entLoader Loader, clause sql.QueryClause) multiEntResult {
+	l := &loadNodesLoader{
+		entLoader: entLoader,
+		clause:    clause,
+	}
+	err := loadData(l)
+	return getMultiEntResult(entLoader, l, err)
+}
+
+func loadNodesByType(id string, edgeType EdgeType, entLoader Loader) multiEntResult {
+	l := &loadNodesLoader{
+		entLoader: entLoader,
+	}
+	err := chainLoaders(
+		[]loader{
+			&loadEdgesByType{
+				id:         id,
+				edgeType:   edgeType,
+				outputID2s: true,
+			},
+			l,
+		},
+	)
+	return getMultiEntResult(entLoader, l, err)
+}
+
+func loadNodes(ids []string, entLoader Loader) multiEntResult {
+	l := &loadNodesLoader{
+		ids:       ids,
+		entLoader: entLoader,
+	}
+	err := loadData(l)
+	return getMultiEntResult(entLoader, l, err)
+}
+
+func getTypeName(ent DBObject) string {
+	// hmm kill it? no reflection
+	// for errors
+	if ent == nil {
+		return ""
+	}
+	t := reflect.TypeOf(ent)
+	if t.Kind() == reflect.Ptr {
+		return t.Elem().Name()
+	}
+	return t.Name()
 }
