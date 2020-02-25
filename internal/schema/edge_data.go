@@ -55,7 +55,7 @@ func (edgeData *assocEdgeData) updateInverseEdgeTypeForEdge(constName string, co
 		panic(fmt.Sprintf("couldn't find edge with constName %s", constName))
 	}
 
-	ns := &sql.NullString{}
+	ns := sql.NullString{}
 	util.Die(ns.Scan(constValue))
 	edge.InverseEdgeType = ns
 	edgeData.edgesToUpdate = append(edgeData.edgesToUpdate, edge)

@@ -9,6 +9,7 @@ import (
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -111,7 +112,7 @@ func (suite *actionsPermissionsSuite) TestEditPrivacy() {
 			user, err := action.Save()
 			if tt.allowed {
 				assert.Nil(t, err)
-				assert.NotZero(t, user)
+				require.NotNil(t, user)
 				assert.Equal(t, "Ola2", user.FirstName)
 			} else {
 				assert.NotNil(t, err)

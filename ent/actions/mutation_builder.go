@@ -338,7 +338,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		}
 
 		// inverse edge
-		if edgeInfo.InverseEdgeType != nil && edgeInfo.InverseEdgeType.Valid {
+		if edgeInfo.InverseEdgeType.Valid {
 			ops = append(ops, edge.InverseEdge(
 				ent.EdgeType(edgeInfo.InverseEdgeType.String),
 			))

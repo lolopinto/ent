@@ -8,6 +8,15 @@ import (
 	"github.com/lolopinto/ent/ent/sql"
 )
 
+type queryType uint
+
+const (
+	selectQuery queryType = iota
+	insertQuery
+	updateQuery
+	deleteQuery
+)
+
 // first simple version of sql builder
 type sqlBuilder struct {
 	entity       DBObject
@@ -18,12 +27,43 @@ type sqlBuilder struct {
 	argsOverride []interface{}
 	// keeping these so as to not kill existing use cases
 	// TODO kill inField, inArgs
-	inField   string
-	inArgs    []interface{}
-	order     string
-	rawQuery  string
-	rawValues []interface{}
-	limit     *int
+	inField      string
+	inArgs       []interface{}
+	order        string
+	rawQuery     string
+	rawValues    []interface{}
+	limit        *int
+	queryType    queryType
+	writeFields  map[string]interface{}
+	existingEnt  DBObject
+	insertSuffix string
+}
+
+func getInsertQuery(tableName string, fields map[string]interface{}, insertSuffix string) *sqlBuilder {
+	return &sqlBuilder{
+		queryType:   insertQuery,
+		tableName:   tableName,
+		writeFields: fields,
+		// TODO make this better support returningfields, upsert mode etc
+		insertSuffix: insertSuffix,
+	}
+}
+
+func getUpdateQuery(tableName string, existingEnt DBObject, fields map[string]interface{}) *sqlBuilder {
+	return &sqlBuilder{
+		queryType:   updateQuery,
+		tableName:   tableName,
+		writeFields: fields,
+		existingEnt: existingEnt,
+	}
+}
+
+func getDeleteQuery(tableName string, clause sql.QueryClause) *sqlBuilder {
+	return &sqlBuilder{
+		queryType: deleteQuery,
+		tableName: tableName,
+		clause:    clause,
+	}
 }
 
 func (s *sqlBuilder) in(field string, args []interface{}) *sqlBuilder {
@@ -66,6 +106,79 @@ func (s *sqlBuilder) getQuery() string {
 		return s.rawQuery
 	}
 
+	switch s.queryType {
+	case selectQuery:
+		return s.getSelectQuery()
+	case insertQuery:
+		return s.getInsertQuery()
+	case updateQuery:
+		return s.getUpdateQuery()
+	case deleteQuery:
+		return s.getDeleteQuery()
+	}
+	panic("unsupported query")
+}
+
+func (s *sqlBuilder) getInsertQuery() string {
+	cols := make([]string, len(s.writeFields))
+	vals := make([]interface{}, len(s.writeFields))
+	valsString := make([]string, len(s.writeFields))
+
+	idx := 0
+	for k, v := range s.writeFields {
+		cols[idx] = k
+		vals[idx] = v
+		valsString[idx] = "?"
+		idx++
+	}
+
+	// to be returned by getValues()
+	s.argsOverride = vals
+
+	return fmt.Sprintf(
+		"INSERT INTO %s (%s) VALUES(%s) %s",
+		s.tableName,
+		strings.Join(cols, ", "),
+		strings.Join(valsString, ", "),
+		s.insertSuffix,
+	)
+}
+
+func (s *sqlBuilder) getUpdateQuery() string {
+	vals := make([]interface{}, len(s.writeFields))
+	valsString := make([]string, len(s.writeFields))
+
+	idx := 0
+	for k, v := range s.writeFields {
+		vals[idx] = v
+		valsString[idx] = fmt.Sprintf("%s = ?", k)
+		idx++
+	}
+
+	// to be returned by getValues()
+	s.argsOverride = vals
+
+	return fmt.Sprintf(
+		"UPDATE %s SET %s WHERE %s = '%s' RETURNING *",
+		s.tableName,
+		strings.Join(valsString, ", "),
+		getPrimaryKeyForObj(s.existingEnt),
+		s.existingEnt.GetID(),
+	)
+}
+
+func (s *sqlBuilder) getDeleteQuery() string {
+	// to be returned by getValues()
+	s.argsOverride = s.clause.GetValues()
+
+	return fmt.Sprintf(
+		"DELETE from %s WHERE %s",
+		s.tableName,
+		s.clause.GetClause(),
+	)
+}
+
+func (s *sqlBuilder) getSelectQuery() string {
 	var whereClause string
 
 	if s.clause != nil {
@@ -125,4 +238,13 @@ func (s *sqlBuilder) getValues() []interface{} {
 	}
 
 	return nil
+}
+
+func getPrimaryKeyForObj(entity DBObject) string {
+	pKey := "id"
+	entityWithPkey, ok := entity.(DBObjectWithDiffKey)
+	if ok {
+		pKey = entityWithPkey.GetPrimaryKey()
+	}
+	return pKey
 }

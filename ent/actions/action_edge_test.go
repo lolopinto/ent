@@ -1,6 +1,7 @@
 package actions_test
 
 import (
+	"database/sql"
 	"testing"
 
 	"github.com/lib/pq"
@@ -65,7 +66,10 @@ func (suite *actionEdgesSuite) TestUniqueEdges() {
 		ID2:      user.GetID(),
 		ID2Type:  user.GetType(),
 		EdgeType: models.EventToCreatorEdge,
-		Data:     "creator!",
+		Data: sql.NullString{
+			String: "creator!",
+			Valid:  true,
+		},
 	}, edge)
 }
 

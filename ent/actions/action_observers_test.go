@@ -10,6 +10,7 @@ import (
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -50,7 +51,7 @@ func (suite *actionsObserversSuite) TestObserverReturnsError() {
 	defer l.Reset()
 	action := userDeleteAction(v, user)
 	err := actions.Save(action)
-	assert.Nil(suite.T(), err)
+	require.Nil(suite.T(), err)
 
 	testingutils.AssertEmailSent(suite.T(), user.EmailAddress, fmt.Sprintf("Hello %s, we're sad to see you go from our magical website", user.FirstName))
 

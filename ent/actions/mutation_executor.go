@@ -197,7 +197,7 @@ func (exec *entWithDependenciesExecutor) handleCreatedEnt(op ent.DataOperation) 
 }
 
 func handleCreatedEnt(op ent.DataOperation, entity ent.Entity) (ent.Entity, error) {
-	createOp, ok := op.(ent.DataOperationWithEnt)
+	createOp, ok := op.(ent.DataOperationWithCreatedEnt)
 
 	if !ok {
 		return nil, nil

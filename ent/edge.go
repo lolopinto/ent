@@ -13,13 +13,13 @@ import (
 // It's generic enough so that it applies across all types.
 // Doesn't care what table it's stored in.
 type AssocEdge struct {
-	ID1      string    `db:"id1"`
-	ID1Type  NodeType  `db:"id1_type"`
-	EdgeType EdgeType  `db:"edge_type"`
-	ID2      string    `db:"id2"`
-	ID2Type  NodeType  `db:"id2_type"`
-	Time     time.Time `db:"time"`
-	Data     *string   `db:"data"`
+	ID1      string         `db:"id1"`
+	ID1Type  NodeType       `db:"id1_type"`
+	EdgeType EdgeType       `db:"edge_type"`
+	ID2      string         `db:"id2"`
+	ID2Type  NodeType       `db:"id2_type"`
+	Time     time.Time      `db:"time"`
+	Data     sql.NullString `db:"data"`
 }
 
 // DBFields is used by the ent framework to load the edge from the underlying database
@@ -56,9 +56,7 @@ func (edge *AssocEdge) DBFields() DBFields {
 			return err
 		},
 		"data": func(v interface{}) error {
-			var err error
-			edge.Data, err = cast.ToNullableString(v)
-			return err
+			return edge.Data.Scan(v)
 		},
 	}
 }
@@ -92,11 +90,11 @@ func (res *AssocEdgesResult) Error() string {
 
 // AssocEdgeData is corresponding ent for AssocEdgeConfig
 type AssocEdgeData struct {
-	EdgeType        EdgeType        `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
-	EdgeName        string          `db:"edge_name"`
-	SymmetricEdge   bool            `db:"symmetric_edge"`
-	InverseEdgeType *sql.NullString `db:"inverse_edge_type"` // TODO inconsistency btw this and above. when to use NullString vs *string
-	EdgeTable       string          `db:"edge_table"`
+	EdgeType        EdgeType       `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
+	EdgeName        string         `db:"edge_name"`
+	SymmetricEdge   bool           `db:"symmetric_edge"`
+	InverseEdgeType sql.NullString `db:"inverse_edge_type"`
+	EdgeTable       string         `db:"edge_table"`
 	Timestamps
 }
 
@@ -129,11 +127,7 @@ func (edgeData *AssocEdgeData) DBFields() DBFields {
 			if id == "" {
 				return nil
 			}
-			edgeData.InverseEdgeType = &sql.NullString{
-				Valid:  true,
-				String: id,
-			}
-			return nil
+			return edgeData.InverseEdgeType.Scan(id)
 		},
 		"edge_table": func(v interface{}) error {
 			var err error

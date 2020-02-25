@@ -381,7 +381,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 				EdgeName:        constName,
 				SymmetricEdge:   assocEdge.Symmetric,
 				EdgeTable:       assocEdge.TableName,
-				InverseEdgeType: &sql.NullString{},
+				InverseEdgeType: sql.NullString{},
 			}
 
 			if inverseConstValue != "" {
@@ -392,7 +392,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 		}
 
 		if newInverseEdge {
-			ns := &sql.NullString{}
+			ns := sql.NullString{}
 			util.Die(ns.Scan(constValue))
 
 			// add inverse edge to list of new edges

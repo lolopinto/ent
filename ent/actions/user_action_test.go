@@ -60,12 +60,20 @@ func (a *userAction) SetBuilderOnValidators(validators []actions.Validator) {
 }
 
 func (a *userAction) getFields() map[string]interface{} {
-	return map[string]interface{}{
-		"email_address": a.emailAddress,
-		"password":      a.password,
-		"first_name":    a.firstName,
-		"last_name":     a.lastName,
+	m := make(map[string]interface{})
+	if a.emailAddress != "" {
+		m["email_address"] = a.emailAddress
 	}
+	if a.password != "" {
+		m["password"] = a.password
+	}
+	if a.firstName != "" {
+		m["first_name"] = a.firstName
+	}
+	if a.lastName != "" {
+		m["last_name"] = a.lastName
+	}
+	return m
 }
 
 func (a *userAction) Entity() ent.Entity {

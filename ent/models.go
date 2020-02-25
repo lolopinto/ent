@@ -4,70 +4,15 @@ import (
 	dbsql "database/sql"
 
 	"fmt"
-	"runtime/debug"
-	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/rocketlaunchr/remember-go"
 
 	"github.com/lolopinto/ent/data"
 	"github.com/lolopinto/ent/ent/sql"
 
 	"github.com/pkg/errors"
 )
-
-func getValuesDataForUpdate(columns []string, values []interface{}) string {
-	if len(values) != len(columns) {
-		panic("columns and values not of equal length for update")
-	}
-	var vals []string
-	for i, column := range columns {
-		setter := fmt.Sprintf("%s = $%d", column, i+1)
-		vals = append(vals, setter)
-	}
-
-	valsString := strings.Join(vals, ", ")
-	return valsString
-}
-
-/*
-* For an INSERT or UPDATE string, return the string for values
-* @see getValuesDataForInsert() and getValuesDataForUpdate
- */
-func getValsString(values []interface{}) string {
-	var vals []string
-	for i := range values {
-		vals = append(vals, fmt.Sprintf("$%d", i+1))
-	}
-	return strings.Join(vals, ", ")
-}
-
-/*
- * Given a list of columns, returns a comma separated list for use in a SQL statement
- */
-func getColumnsString(columns []string) string {
-	return strings.Join(columns, ", ")
-}
-
-func getKeyForNode(id, tableName string) string {
-	if id == "" {
-		debug.PrintStack()
-		panic(errors.WithStack(errors.New("empty id passed")))
-	}
-	return remember.CreateKey(false, "_", "table_id", tableName, id)
-}
-
-func getKeyForEdge(id string, edgeType EdgeType) string {
-	return remember.CreateKey(false, "_", "edge_id", edgeType, id)
-}
-
-// func getKeyForEdgePair(id string, edgeType EdgeType, id2 string) string {
-// 	if id == "" || id2 == "" {
-// 		panic(errors.WithStack(errors.New("empty id passed")))
-// 	}
-// 	return remember.CreateKey(false, "_", "edge_id_id2", edgeType, id, id2)
-// }
 
 // TODO move this and other raw data access pattern methods to a lower level API below ent
 func LoadNodeRawData(id string, entLoader Loader) (map[string]interface{}, error) {
@@ -125,7 +70,7 @@ func SaveChangeset(changeset Changeset) error {
 	return executeOperations(changeset.GetExecutor())
 }
 
-func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
+func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (string, *sqlx.Stmt, error) {
 	var stmt *sqlx.Stmt
 	var err error
 
@@ -140,7 +85,7 @@ func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (*sqlx.Stmt, error) {
 		query = tx.Rebind(query)
 		stmt, err = tx.Preparex(query)
 	}
-	return stmt, err
+	return query, stmt, err
 }
 
 /*
@@ -155,7 +100,7 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 		return err
 	}
 
-	stmt, err := getStmtFromTx(tx, db, query)
+	query, stmt, err := getStmtFromTx(tx, db, query)
 
 	if err != nil {
 		fmt.Println(err)
@@ -195,18 +140,6 @@ func performWrite(query string, values []interface{}, tx *sqlx.Tx, entity Entity
 	return nil
 }
 
-func deleteNodeInTransaction(entity DBObject, entConfig Config, tx *sqlx.Tx) error {
-	if entity == nil {
-		return errors.New("nil pointer passed to deleteNodeInTransaction")
-	}
-
-	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", entConfig.GetTableName())
-	id := entity.GetID()
-
-	deleteKey(getKeyForNode(id, entConfig.GetTableName()))
-	return performWrite(query, []interface{}{id}, tx, nil)
-}
-
 // EdgeOptions is a struct that can be used to configure an edge.
 // Time refers to the time associated with the edge. If not specified, defaults to current time
 // Data refers to whatever information that needs to be stored/associated with the edge
@@ -214,77 +147,6 @@ func deleteNodeInTransaction(entity DBObject, entConfig Config, tx *sqlx.Tx) err
 type EdgeOptions struct {
 	Time time.Time
 	Data string
-}
-
-func addEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, id1Ttype, id2Type NodeType, edgeOptions EdgeOptions, tx *sqlx.Tx) error {
-	edgeData, err := GetEdgeInfo(edgeType, tx)
-	if err != nil {
-		return err
-	}
-
-	cols := []string{
-		"id1",
-		"id1_type",
-		"edge_type",
-		"id2",
-		"id2_type",
-		"time",
-		"data",
-	}
-
-	// get time for queries
-	var t time.Time
-	if edgeOptions.Time.IsZero() {
-		t = time.Now()
-	} else {
-		t = edgeOptions.Time
-	}
-
-	vals := []interface{}{
-		id1,
-		id1Ttype,
-		edgeType,
-		id2,
-		id2Type,
-		t,
-		edgeOptions.Data, // zero value of data works for us. no check needed
-	}
-
-	//	spew.Dump("data!!!!", edgeOptions.Data)
-	query := fmt.Sprintf(
-		// postgres specific
-		// this is where the db dialects will eventually be needed
-		"INSERT into %s (%s) VALUES(%s) ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
-		edgeData.EdgeTable,
-		getColumnsString(cols),
-		getValsString(vals),
-	)
-
-	deleteKey(getKeyForEdge(id1, edgeType))
-	return performWrite(query, vals, tx, nil)
-}
-
-func deleteEdgeInTransactionRaw(edgeType EdgeType, id1, id2 string, tx *sqlx.Tx) error {
-	edgeData, err := GetEdgeInfo(edgeType, tx)
-	if err != nil {
-		return err
-	}
-
-	query := fmt.Sprintf(
-		"DELETE FROM %s WHERE id1 = $1 AND edge_type = $2 AND id2 = $3",
-		edgeData.EdgeTable,
-	)
-
-	vals := []interface{}{
-		id1,
-		edgeType,
-		id2,
-	}
-
-	//fmt.Println(query)
-	deleteKey(getKeyForEdge(id1, edgeType))
-
-	return performWrite(query, vals, tx, nil)
 }
 
 // LoadEdgeConfig configures the way to load edges

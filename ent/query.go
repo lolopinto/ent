@@ -76,10 +76,7 @@ func (q *dbQuery) query(processor *processRawData) error {
 		return err
 	}
 
-	stmt, err := getStmtFromTx(q.cfg.tx, db, query)
-
-	// rebind the query for the db
-	query = db.Rebind(query)
+	query, stmt, err := getStmtFromTx(q.cfg.tx, db, query)
 
 	if err != nil {
 		fmt.Println(query, err)

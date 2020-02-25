@@ -242,7 +242,7 @@ func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
 	expectedEdge := &ent.AssocEdgeData{
 		EdgeName:      "AccountToFriendRequestsEdge",
 		SymmetricEdge: false,
-		InverseEdgeType: &sql.NullString{
+		InverseEdgeType: sql.NullString{
 			String: string(friendRequestsReceivedEdge.EdgeType),
 			Valid:  true,
 		},
@@ -254,7 +254,7 @@ func verifyInverseAssocEdgeSameEnt(t *testing.T, s *schema.Schema) {
 	expectedInverseEdge := &ent.AssocEdgeData{
 		EdgeName:      "AccountToFriendRequestsReceivedEdge",
 		SymmetricEdge: false,
-		InverseEdgeType: &sql.NullString{
+		InverseEdgeType: sql.NullString{
 			String: string(friendRequestsEdge.EdgeType),
 			Valid:  true,
 		},
@@ -357,7 +357,7 @@ type TodoConfig struct {
 	expectedEdge := &ent.AssocEdgeData{
 		EdgeName:      "AccountToTodosEdge",
 		SymmetricEdge: false,
-		InverseEdgeType: &sql.NullString{
+		InverseEdgeType: sql.NullString{
 			String: string(todoAccountsEdge.EdgeType),
 			Valid:  true,
 		},
@@ -369,7 +369,7 @@ type TodoConfig struct {
 	expectedInverseEdge := &ent.AssocEdgeData{
 		EdgeName:      "TodoToAccountsEdge",
 		SymmetricEdge: false,
-		InverseEdgeType: &sql.NullString{
+		InverseEdgeType: sql.NullString{
 			String: string(accountTodosEdge.EdgeType),
 			Valid:  true,
 		},
@@ -513,7 +513,7 @@ type EventConfig struct {
 		expectedEdge := &ent.AssocEdgeData{
 			EdgeName:      edgeName,
 			SymmetricEdge: false,
-			InverseEdgeType: &sql.NullString{
+			InverseEdgeType: sql.NullString{
 				String: string(inverseEdge.EdgeType),
 				Valid:  true,
 			},
@@ -747,7 +747,7 @@ func testEdgesFromConstsAndEdges(t *testing.T, s *schema.Schema) {
 	expectedEdge := &ent.AssocEdgeData{
 		EdgeName:        "AccountToFriendsEdge",
 		SymmetricEdge:   false,
-		InverseEdgeType: &sql.NullString{},
+		InverseEdgeType: sql.NullString{},
 		EdgeTable:       "account_friends_edges",
 	}
 
@@ -916,7 +916,7 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 	expectedEdge := &ent.AssocEdgeData{
 		EdgeName:        "AccountToFriendRequestsEdge",
 		SymmetricEdge:   false,
-		InverseEdgeType: &sql.NullString{},
+		InverseEdgeType: sql.NullString{},
 		EdgeTable:       "account_friend_requests_edges",
 	}
 
