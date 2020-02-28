@@ -1,0 +1,32 @@
+{{/* for now we are hardcoding to where this currently is. we should be better about this */ -}}
+import Schema from "{{.SchemaPath}}"
+
+{{ range $schema := .Schemas -}}
+  import {{$schema.Name}} from "./{{$schema.Path}}"
+{{end -}}
+
+let potentialSchemas = {
+{{ range $schema := .Schemas -}}
+
+  "{{$schema.Name}}": {{$schema.Name}},
+{{end -}}
+};
+
+let schemas = {};
+
+for (const key in potentialSchemas) {
+  const value = potentialSchemas[key];
+  let schema: Schema;
+  if (value.constructor == Object) {
+    schema = value;
+  } else {
+    schema = new value();
+  }
+
+  schemas[key] = {
+    tableName: schema.tableName,
+    fields: schema.fields,
+  };
+}
+
+console.log(JSON.stringify(schemas));
