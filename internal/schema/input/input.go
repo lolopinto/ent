@@ -1,6 +1,9 @@
 package input
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"go/types"
+)
 
 type Schema struct {
 	Nodes map[string]Node
@@ -30,16 +33,23 @@ type FieldType struct {
 }
 
 type Field struct {
-	Name            string    `json:"name"`
-	Type            FieldType `json:"type"`
-	Nullable        *bool     `json:"nullable"`
-	StorageKey      *string   `json:"storageKey"`
-	Unique          *bool     `json:"unique"`
-	HideFromGraphQL *bool     `json:"hideFromGraphQL"`
-	Private         *bool     `json:"private"`
-	GraphQLName     *string   `json:"graphqlName"`
-	Index           *bool     `json:"index"`
-	ForeignKey      [2]string `json:"foreignKey"`
+	Name            string      `json:"name"`
+	Type            FieldType   `json:"type"` // todo
+	Nullable        bool        `json:"nullable"`
+	StorageKey      string      `json:"storageKey"`
+	Unique          bool        `json:"unique"`
+	HideFromGraphQL bool        `json:"hideFromGraphQL"`
+	Private         bool        `json:"private"`
+	GraphQLName     string      `json:"graphqlName"`
+	Index           bool        `json:"index"`
+	ForeignKey      *[2]string  `json:"foreignKey"`
+	ServerDefault   interface{} `json:"serverDefault"`
+
+	// Go specific information here
+	TagMap          map[string]string
+	GoType          types.Type
+	PkgPath         string
+	DataTypePkgPath string
 }
 
 func ParseSchema(input []byte) (*Schema, error) {

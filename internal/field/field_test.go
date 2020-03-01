@@ -429,8 +429,9 @@ func getFieldInfoMap() *testsync.RunOnce {
 		r = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
 			data := parsehelper.ParseFilesForTest(t, parsehelper.ParseFuncs(parsehelper.ParseStruct))
 
-			fieldInfo := GetFieldInfoForStruct(data.StructMap[configName], data.Info)
+			fieldInfo, err := GetFieldInfoForStruct(data.StructMap[configName], data.Info)
 
+			assert.Nil(t, err)
 			assert.NotNil(t, fieldInfo, "invalid fieldInfo retrieved")
 			return fieldInfo
 		})

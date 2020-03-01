@@ -28,6 +28,7 @@ type field struct {
 	graphqlName     string
 	index           bool
 	foreignKey      [2]string
+	serverDefault   string
 }
 
 type testCase struct {
@@ -265,6 +266,30 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		"server default": testCase{
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import Schema, {Field} from "{schema}"
+				import {TimeType} from "{field}";
+
+				export default class User implements Schema {
+					fields: Field[] = [
+						TimeType({name: "updated_at", serverDefault: 'now()'}),
+					]
+				}`),
+			},
+			expectedOutput: map[string]node{
+				"User": node{
+					fields: []field{
+						field{
+							name:          "updated_at",
+							dbType:        input.Time,
+							serverDefault: "now()",
+						},
+					},
+				},
+			},
+		},
 		"multiple files/complicated": testCase{
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
@@ -359,7 +384,7 @@ func TestParse(t *testing.T) {
 
 	for key, tt := range testCases {
 		t.Run(key, func(t *testing.T) {
-			dirPath, err := ioutil.TempDir(absPath, "base")
+			dirPath, err := ioutil.TempDir(absPath, "project")
 			require.NoError(t, err)
 
 			// delete temporary created file
@@ -393,14 +418,14 @@ func TestParse(t *testing.T) {
 					assert.Equal(t, expField.dbType, field.Type.DBType)
 					assert.Equal(t, expField.name, field.Name)
 
-					assertStrEqual(t, "storageKey", expField.storageKey, field.StorageKey)
+					assert.Equal(t, expField.storageKey, field.StorageKey)
 
-					assertBoolEqual(t, "nullable", expField.nullable, field.Nullable)
-					assertBoolEqual(t, "unique", expField.unique, field.Unique)
-					assertBoolEqual(t, "hideFromGraphQL", expField.hideFromGraphQL, field.HideFromGraphQL)
-					assertBoolEqual(t, "private", expField.private, field.Private)
-					assertStrEqual(t, "graphqlName", expField.graphqlName, field.GraphQLName)
-					assertBoolEqual(t, "index", expField.index, field.Index)
+					assert.Equal(t, expField.nullable, field.Nullable)
+					assert.Equal(t, expField.unique, field.Unique)
+					assert.Equal(t, expField.hideFromGraphQL, field.HideFromGraphQL)
+					assert.Equal(t, expField.private, field.Private)
+					assert.Equal(t, expField.graphqlName, field.GraphQLName)
+					assert.Equal(t, expField.index, field.Index)
 
 					assert.Equal(t, expField.foreignKey, field.ForeignKey)
 				}
@@ -411,15 +436,6 @@ func TestParse(t *testing.T) {
 
 func assertStrEqual(t *testing.T, key, expectedValue string, value *string) {
 	if expectedValue != "" {
-		require.NotNil(t, value, key)
-		assert.Equal(t, expectedValue, *value, key)
-	} else {
-		require.Nil(t, value, key)
-	}
-}
-
-func assertBoolEqual(t *testing.T, key string, expectedValue bool, value *bool) {
-	if expectedValue {
 		require.NotNil(t, value, key)
 		assert.Equal(t, expectedValue, *value, key)
 	} else {

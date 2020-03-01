@@ -155,7 +155,9 @@ func (m NodeMapInfo) parseFile(
 
 				// pass the structtype to get the config
 				g.AddItem("ParseFields", func(nodeData *NodeData) {
-					fieldInfoFields = field.GetFieldInfoForStruct(s, typeInfo)
+					var err error
+					fieldInfoFields, err = field.GetFieldInfoForStruct(s, typeInfo)
+					util.Die(err)
 				})
 			}
 		}

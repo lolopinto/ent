@@ -4,20 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
-	"sort"
 	"sync"
 
 	"github.com/lolopinto/ent/internal/astparser"
-	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"golang.org/x/tools/go/packages"
 )
 
 func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error) {
 	elts := astparser.GetEltsInFunc(fn)
-
-	fieldInfo := newFieldInfo()
-	fieldInfo.getFieldsFn = true
 
 	var wg sync.WaitGroup
 	wg.Add(len(elts))
@@ -26,6 +22,8 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 
 	// TODO this should be a singleton or passed in here so that we cache as needed across object types
 	explorer := newPackageExplorer()
+
+	fields := make([]*input.Field, len(elts))
 
 	for idx := range elts {
 		go func(idx int) {
@@ -42,7 +40,9 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 				return
 			}
 
-			f := newField(result.Key)
+			f := &input.Field{
+				Name: result.Key,
+			}
 
 			chanErr := parseField(f, pkg, result.Value, explorer)
 			err = <-chanErr
@@ -50,28 +50,25 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 				sErr.Append(err)
 			}
 
-			fieldInfo.addField(f)
+			fields[idx] = f
 		}(idx)
 	}
 	wg.Wait()
 
-	// sort fields
-	sort.Slice(fieldInfo.Fields, func(i, j int) bool {
-		// sort lexicographically but put ID first
-		if fieldInfo.Fields[i].FieldName == "ID" {
-			return true
-		}
-		if fieldInfo.Fields[j].FieldName == "ID" {
-			return false
-		}
+	if err := sErr.Err(); err != nil {
+		return nil, err
+	}
 
-		return fieldInfo.Fields[i].FieldName < fieldInfo.Fields[j].FieldName
+	fieldInfo := NewFieldInfoFromInputs(fields, &Options{
+		AddBaseFields: true,
+		SortFields:    true,
 	})
+	fieldInfo.getFieldsFn = true
 
-	return fieldInfo, sErr.Err()
+	return fieldInfo, nil
 }
 
-func parseField(f *Field, pkg *packages.Package, result *astparser.Result, explorer *packageExplorer) chan error {
+func parseField(f *input.Field, pkg *packages.Package, result *astparser.Result, explorer *packageExplorer) chan error {
 	chanErr := make(chan error)
 	go func() {
 		var err error
@@ -104,29 +101,29 @@ func parseField(f *Field, pkg *packages.Package, result *astparser.Result, explo
 }
 
 func modifyFieldForDataType(
-	f *Field,
+	f *input.Field,
 	pkg *packages.Package,
 	explorer *packageExplorer,
 	info *astparser.Result,
 ) chan error {
 	errChan := make(chan error)
+
 	go func() {
 		resChan := explorer.getTypeForInfo(pkg, info)
 		res := <-resChan
 
 		if res.entType != nil {
-			f.entType = res.entType
-			f.setFieldType(enttype.GetType(f.entType))
+			f.GoType = res.entType
 		}
 		if res.pkgPath != "" {
-			f.pkgPath = res.pkgPath
+			f.PkgPath = res.pkgPath
 		}
 		// if the datatype is specifically private, field makes it private
 		if res.private {
-			f.setPrivate()
+			f.Private = true
 		}
 
-		f.dataTypePkgPath = getImportedPackageThatMatchesIdent(pkg, info.PkgName, info.IdentName).PkgPath
+		f.DataTypePkgPath = getImportedPackageThatMatchesIdent(pkg, info.PkgName, info.IdentName).PkgPath
 
 		// return error or lack thereof from result
 		errChan <- res.err
@@ -150,7 +147,7 @@ func validateFieldResult(result *astparser.Result) error {
 	return nil
 }
 
-type fn func(f *Field, args astparser.Results) error
+type fn func(f *input.Field, args astparser.Results) error
 
 func verifyArgs(args []*astparser.Result, expectedCount int, fn func()) error {
 	if len(args) != expectedCount {
@@ -161,50 +158,48 @@ func verifyArgs(args []*astparser.Result, expectedCount int, fn func()) error {
 }
 
 var m = map[string]fn{
-	"field.DB": func(f *Field, args astparser.Results) error {
+	"field.DB": func(f *input.Field, args astparser.Results) error {
 		return verifyArgs(args, 1, func() {
-			f.setDBName(args[0].Literal)
+			f.StorageKey = args[0].Literal
 		})
 	},
-	"field.GraphQL": func(f *Field, args astparser.Results) error {
+	"field.GraphQL": func(f *input.Field, args astparser.Results) error {
 		return verifyArgs(args, 1, func() {
-			f.graphQLName = args[0].Literal
+			f.GraphQLName = args[0].Literal
 		})
 	},
-	"field.Nullable": func(f *Field, args astparser.Results) error {
+	"field.Nullable": func(f *input.Field, args astparser.Results) error {
 		return verifyArgs(args, 0, func() {
-			f.nullable = true
-			f.setFieldType(enttype.GetNullableType(f.entType, f.nullable))
+			f.Nullable = true
 		})
 	},
-	"field.Unique": func(f *Field, args astparser.Results) error {
+	"field.Unique": func(f *input.Field, args astparser.Results) error {
 		return verifyArgs(args, 0, func() {
-			f.unique = true
-			f.setFieldType(enttype.GetNullableType(f.entType, f.nullable))
+			f.Unique = true
 		})
 	},
-	"field.Index": func(f *Field, args astparser.Results) error {
+	"field.Index": func(f *input.Field, args astparser.Results) error {
 		return verifyArgs(args, 0, func() {
-			f.index = true
+			f.Index = true
 		})
 	},
-	"field.ServerDefault": func(f *Field, args astparser.Results) error {
+	"field.ServerDefault": func(f *input.Field, args astparser.Results) error {
 		return verifyArgs(args, 1, func() {
 			// TODO compare types with f.type
-			f.defaultValue = args[0].Literal
+			f.ServerDefault = args[0].Literal
 		})
 	},
-	"field.HideFromGraphQL": func(f *Field, args astparser.Results) error {
+	"field.HideFromGraphQL": func(f *input.Field, args astparser.Results) error {
 		return verifyArgs(args, 0, func() {
-			f.hideFromGraphQL = true
+			f.HideFromGraphQL = true
 		})
 	},
-	"field.ForeignKey": func(f *Field, args astparser.Results) error {
+	"field.ForeignKey": func(f *input.Field, args astparser.Results) error {
 		return verifyArgs(args, 2, func() {
 			configName := args[0].Literal
 			fieldName := args[1].Literal
 
-			f.setForeignKeyInfoFromString(configName + "." + fieldName)
+			f.ForeignKey = &[2]string{configName, fieldName}
 		})
 	},
 }
