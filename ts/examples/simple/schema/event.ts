@@ -1,28 +1,13 @@
 import Schema, {Field} from "./../../../schema"
+import {StringType, TimeType} from "./../../../field"
 
 /// explicit schema
 export default class Event implements Schema {
   fields: Field[] = [
-    {
-      name: "name",
-      type: "string",
-    },
-    {
-      name: "user_id",
-      type: "string",
-    },
-    {
-      name: "start_time",
-      type: "time", // todo
-    },
-    {
-      name: "end_time",
-      type: "time",
-      nullable: true,
-    },
-    {
-      name: "location",
-      type: "string",
-    },
+    StringType({name: "name"}),
+    StringType({name: "user_id"}),
+    TimeType({name: "start_time"}),
+    TimeType({name: "end_time", nullable: true}),
+    StringType({name: "location"}),
   ]
 }

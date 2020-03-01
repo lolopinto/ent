@@ -19,7 +19,7 @@ type node struct {
 
 type field struct {
 	name            string
-	typ             string
+	dbType          input.DBType
 	nullable        bool
 	storageKey      string
 	unique          bool
@@ -39,23 +39,28 @@ func TestParse(t *testing.T) {
 	testCases := map[string]testCase{
 		"node with implicit schema": testCase{
 			code: map[string]string{
-				"user.ts": `const User = {
+				"user.ts": getCodeWithSchema(`
+				import { DBType } from "{schema}";
+
+				const User = {
 				fields: [
 					{
 						name: 'FirstName',
-						type: 'string',
+						type: {
+							dbType: DBType.String,
+						},
 					},
 				]
 			};
 
-			export default User`,
+			export default User`),
 			},
 			expectedOutput: map[string]node{
 				"User": node{
 					fields: []field{
 						field{
-							name: "FirstName",
-							typ:  "string",
+							name:   "FirstName",
+							dbType: input.String,
 						},
 					},
 				},
@@ -64,20 +69,15 @@ func TestParse(t *testing.T) {
 		"node with explicit schema": testCase{
 			code: map[string]string{
 				"address.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {Field} from "{schema}";
+				import {StringType} from "{field}";
 
 				export default class Address implements Schema {
 					tableName: string = "addresses";
 
 					fields: Field[] = [
-						{
-							name: "street_name",
-							type: "string",
-						},
-						{
-							name: "city",
-							type: "string",
-						},
+						StringType({name: "street_name"}),
+						StringType({name: "city"}),
 					]
 				}`),
 			},
@@ -86,12 +86,12 @@ func TestParse(t *testing.T) {
 					tableName: "addresses",
 					fields: []field{
 						field{
-							name: "street_name",
-							typ:  "string",
+							name:   "street_name",
+							dbType: input.String,
 						},
 						field{
-							name: "city",
-							typ:  "string",
+							name:   "city",
+							dbType: input.String,
 						},
 					},
 				},
@@ -101,14 +101,11 @@ func TestParse(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import Schema, {Field} from "{schema}"
+				import {StringType} from "{field}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
-						{
-							name: "bio",
-							type: "string",
-							nullable: true,
-						},
+						StringType({name: "bio", nullable: true}),
 					]
 				}`),
 			},
@@ -117,7 +114,7 @@ func TestParse(t *testing.T) {
 					fields: []field{
 						field{
 							name:     "bio",
-							typ:      "string",
+							dbType:   input.String,
 							nullable: true,
 						},
 					},
@@ -128,14 +125,11 @@ func TestParse(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import Schema, {Field} from "{schema}"
+				import {StringType} from "{field}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
-						{
-							name: "bio",
-							type: "string",
-							storageKey: "about_me",
-						},
+						StringType({name: "bio", storageKey: "about_me"}),
 					]
 				}`),
 			},
@@ -144,7 +138,7 @@ func TestParse(t *testing.T) {
 					fields: []field{
 						field{
 							name:       "bio",
-							typ:        "string",
+							dbType:     input.String,
 							storageKey: "about_me",
 						},
 					},
@@ -155,14 +149,11 @@ func TestParse(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import Schema, {Field} from "{schema}"
+				import {StringType} from "{field}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
-						{
-							name: "bio",
-							type: "string",
-							graphqlName: "aboutMe",
-						},
+						StringType({name: "bio", graphqlName: "aboutMe"}),
 					]
 				}`),
 			},
@@ -171,7 +162,7 @@ func TestParse(t *testing.T) {
 					fields: []field{
 						field{
 							name:        "bio",
-							typ:         "string",
+							dbType:      input.String,
 							graphqlName: "aboutMe",
 						},
 					},
@@ -182,14 +173,11 @@ func TestParse(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import Schema, {Field} from "{schema}"
+				import {StringType} from "{field}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
-						{
-							name: "email",
-							type: "string",
-							unique: true,
-						},
+						StringType({name: "email", unique: true}),
 					]
 				}`),
 			},
@@ -198,7 +186,7 @@ func TestParse(t *testing.T) {
 					fields: []field{
 						field{
 							name:   "email",
-							typ:    "string",
+							dbType: input.String,
 							unique: true,
 						},
 					},
@@ -209,14 +197,11 @@ func TestParse(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import Schema, {Field} from "{schema}"
+				import {StringType} from "{field}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
-						{
-							name: "password",
-							type: "string",
-							hideFromGraphQL: true,
-						},
+						StringType({name: "password", hideFromGraphQL: true}),
 					]
 				}`),
 			},
@@ -225,7 +210,7 @@ func TestParse(t *testing.T) {
 					fields: []field{
 						field{
 							name:            "password",
-							typ:             "string",
+							dbType:          input.String,
 							hideFromGraphQL: true,
 						},
 					},
@@ -236,14 +221,11 @@ func TestParse(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import Schema, {Field} from "{schema}"
+				import {StringType} from "{field}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
-						{
-							name: "password",
-							type: "string",
-							private: true,
-						},
+						StringType({name: "password", private: true}),
 					]
 				}`),
 			},
@@ -252,7 +234,7 @@ func TestParse(t *testing.T) {
 					fields: []field{
 						field{
 							name:    "password",
-							typ:     "string",
+							dbType:  input.String,
 							private: true,
 						},
 					},
@@ -263,14 +245,11 @@ func TestParse(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import Schema, {Field} from "{schema}"
+				import {StringType} from "{field}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
-						{
-							name: "last_name",
-							type: "string",
-							index: true,
-						},
+						StringType({name: "last_name", index: true}),
 					]
 				}`),
 			},
@@ -278,9 +257,9 @@ func TestParse(t *testing.T) {
 				"User": node{
 					fields: []field{
 						field{
-							name:  "last_name",
-							typ:   "string",
-							index: true,
+							name:   "last_name",
+							dbType: input.String,
+							index:  true,
 						},
 					},
 				},
@@ -290,61 +269,28 @@ func TestParse(t *testing.T) {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import Schema, {Field} from "{schema}"
+				import {UUIDType, StringType} from "{field}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
-						{
-							name: "id",
-							type: "string",
-						},
-						{
-							name: "first_name",
-							type: "string",
-						},
-						{
-							name: "last_name",
-							type: "string",
-						},
-						{
-							name: "email",
-							type: "string",
-							unique: true,
-						},
-						{
-							name: "password",
-							type: "string",
-							private: true,
-							hideFromGraphQL: true,
-						},
+						UUIDType({name: "id"}),
+						StringType({name: "first_name"}),
+						StringType({name: "last_name"}),
+						StringType({name: "email", unique: true}),
+						StringType({name: "password", private: true, hideFromGraphQL: true}),
 					]
 				}`),
 				"event.ts": getCodeWithSchema(`
 				import Schema, {Field} from "{schema}"
+				import {TimeType, StringType, UUIDType} from "{field}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
-						{
-							name: "name",
-							type: "string",
-						},
-						{
-							name: "creator_id",
-							type: "string",
-							foreignKey: ["User", "id"],
-						},
-						{
-							name: "start_time",
-							type: "time",
-						},
-						{
-							name: "end_time",
-							type: "time",
-							nullable: true,
-						},
-						{
-							name: "location",
-							type: "string",
-						},
+						StringType({name: "name"}),
+						UUIDType({name: "creator_id", foreignKey: ["User", "id"]}),
+						TimeType({name: "start_time"}),
+						TimeType({name: "end_time", nullable: true}),
+						StringType({name: "location"}),
 					]
 				}`),
 			},
@@ -354,25 +300,25 @@ func TestParse(t *testing.T) {
 						// TODO id will come from Node later
 						// for now need it for foreign key
 						field{
-							name: "id",
-							typ:  "string",
+							name:   "id",
+							dbType: input.UUID,
 						},
 						field{
-							name: "first_name",
-							typ:  "string",
+							name:   "first_name",
+							dbType: input.String,
 						},
 						field{
-							name: "last_name",
-							typ:  "string",
+							name:   "last_name",
+							dbType: input.String,
 						},
 						field{
 							name:   "email",
-							typ:    "string",
+							dbType: input.String,
 							unique: true,
 						},
 						field{
 							name:            "password",
-							typ:             "string",
+							dbType:          input.String,
 							private:         true,
 							hideFromGraphQL: true,
 						},
@@ -381,26 +327,26 @@ func TestParse(t *testing.T) {
 				"Event": node{
 					fields: []field{
 						field{
-							name: "name",
-							typ:  "string",
+							name:   "name",
+							dbType: input.String,
 						},
 						field{
 							name:       "creator_id",
-							typ:        "string",
+							dbType:     input.UUID,
 							foreignKey: [2]string{"User", "id"},
 						},
 						field{
-							name: "start_time",
-							typ:  "time",
+							name:   "start_time",
+							dbType: input.Time,
 						},
 						field{
 							name:     "end_time",
-							typ:      "time",
+							dbType:   input.Time,
 							nullable: true,
 						},
 						field{
-							name: "location",
-							typ:  "string",
+							name:   "location",
+							dbType: input.String,
 						},
 					},
 				},
@@ -444,7 +390,7 @@ func TestParse(t *testing.T) {
 				for j, expField := range expectedNode.fields {
 					field := node.Fields[j]
 
-					assert.Equal(t, expField.typ, field.Type)
+					assert.Equal(t, expField.dbType, field.Type.DBType)
 					assert.Equal(t, expField.name, field.Name)
 
 					assertStrEqual(t, "storageKey", expField.storageKey, field.StorageKey)
@@ -482,6 +428,9 @@ func assertBoolEqual(t *testing.T, key string, expectedValue bool, value *bool) 
 }
 
 func getCodeWithSchema(code string) string {
-	r := strings.NewReplacer("{schema}", input.GetAbsoluteSchemaPath())
+	schemaPath := input.GetAbsoluteSchemaPath()
+	fieldPath := strings.Replace(schemaPath, "schema", "field", 1)
+
+	r := strings.NewReplacer("{schema}", schemaPath, "{field}", fieldPath)
 	return r.Replace(code)
 }

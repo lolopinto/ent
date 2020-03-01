@@ -1,14 +1,20 @@
+import { DBType } from "../../../schema";
+
 // implicit schema
 const User = {
   tableName: "users",
   fields: [
     {
       name: "FirstName",
-      type: "string",
+      type: {
+        dbType: DBType.String,
+      },
     },
     {
       name: "LastName",
-      type: "string",
+      type: {
+        dbType: DBType.String,
+      },
     },
   ]
 };
