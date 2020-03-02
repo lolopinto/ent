@@ -30,7 +30,7 @@ func (p *Step) Name() string {
 
 func (p *Step) ProcessData(data *codegen.Data) error {
 	// generate python schema file and then make changes to underlying db
-	db := newDBSchema(data.Schema)
+	db := newDBSchema(data.Schema, data.CodePath.GetRelativePathToConfigs())
 	db.generateSchema()
 	// right now it all panics but we have to change that lol
 	return nil
@@ -45,13 +45,8 @@ func getNameFromParts(nameParts []string) string {
 type dbTable struct {
 	Columns         []*dbColumn
 	Constraints     []dbConstraint
+	TableName       string
 	QuotedTableName string
-}
-
-func (t *dbTable) GetUnquotedTableName() string {
-	str, err := strconv.Unquote(t.QuotedTableName)
-	util.Die(err)
-	return str
 }
 
 type dbColumn struct {
@@ -213,13 +208,14 @@ func (constraint *indexConstraint) getConstraintString() string {
 	)
 }
 
-func newDBSchema(schema *schema.Schema) *dbSchema {
+func newDBSchema(schema *schema.Schema, pathToConfigs string) *dbSchema {
 	configTableMap := make(map[string]*dbTable)
 	tableMap := make(map[string]*dbTable)
 	return &dbSchema{
 		schema:         schema,
 		configTableMap: configTableMap,
 		tableMap:       tableMap,
+		pathToConfigs:  pathToConfigs,
 	}
 }
 
@@ -228,6 +224,7 @@ type dbSchema struct {
 	schema         *schema.Schema
 	configTableMap map[string]*dbTable
 	tableMap       map[string]*dbTable
+	pathToConfigs  string
 }
 
 func (s *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
@@ -255,7 +252,8 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	}
 
 	return &dbTable{
-		QuotedTableName: nodeData.TableName,
+		TableName:       nodeData.TableName,
+		QuotedTableName: nodeData.GetQuotedTableName(),
 		Columns:         columns,
 		Constraints:     constraints,
 	}
@@ -263,7 +261,7 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 
 func (s *dbSchema) addTable(table *dbTable) {
 	s.Tables = append(s.Tables, table)
-	s.tableMap[table.QuotedTableName] = table
+	s.tableMap[table.TableName] = table
 }
 
 func (s *dbSchema) generateSchema() {
@@ -292,15 +290,14 @@ func (s *dbSchema) generateShemaTables() {
 
 	// sort tables by table name so that we are not always changing the order of the generated schema
 	sort.Slice(s.Tables, func(i, j int) bool {
-		return s.Tables[i].QuotedTableName < s.Tables[j].QuotedTableName
+		return s.Tables[i].TableName < s.Tables[j].TableName
 	})
 }
 
-func runPythonCommand(extraArgs ...string) {
+func runPythonCommand(pathToConfigs string, extraArgs ...string) {
 	args := []string{
 		util.GetAbsolutePath("../../python/auto_schema/gen_db_schema.py"),
-		// TODO: this should be changed to use path to configs
-		"-s=models/configs",
+		fmt.Sprintf("-s=%s", pathToConfigs),
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	}
 	if len(extraArgs) > 0 {
@@ -316,15 +313,15 @@ func runPythonCommand(extraArgs ...string) {
 }
 
 func (s *dbSchema) generateDbSchema() {
-	runPythonCommand()
+	runPythonCommand(s.pathToConfigs)
 }
 
-func UpgradeDB() {
-	runPythonCommand("-u=True")
+func UpgradeDB(pathToConfigs string) {
+	runPythonCommand(pathToConfigs, "-u=True")
 }
 
-func DowngradeDB(revision string) {
-	runPythonCommand(fmt.Sprintf("-d=%s", revision))
+func DowngradeDB(pathToConfigs, revision string) {
+	runPythonCommand(pathToConfigs, fmt.Sprintf("-d=%s", revision))
 }
 
 func (s *dbSchema) writeSchemaFile() {
@@ -332,8 +329,7 @@ func (s *dbSchema) writeSchemaFile() {
 		Data:              s.getSchemaForTemplate(),
 		AbsPathToTemplate: util.GetAbsolutePath("db_schema.tmpl"),
 		TemplateName:      "db_schema.tmpl",
-		// TODO: this should be change to use path to configs
-		PathToFile: "models/configs/schema.py",
+		PathToFile:        fmt.Sprintf("%s/schema.py", s.pathToConfigs),
 	}))
 }
 
@@ -442,6 +438,7 @@ func (s *dbSchema) addEdgeConfigTable() {
 	})
 
 	s.addTable(&dbTable{
+		TableName:       tableName,
 		QuotedTableName: strconv.Quote(tableName),
 		Columns:         columns,
 		Constraints:     constraints,
@@ -457,7 +454,7 @@ func (s *dbSchema) addEdgeTables(nodeData *schema.NodeData) bool {
 			continue
 		}
 		// edge with shared table. nothing to do here
-		if s.tableMap[strconv.Quote(assocEdge.TableName)] != nil {
+		if s.tableMap[assocEdge.TableName] != nil {
 			continue
 		}
 		table := s.createEdgeTable(nodeData, assocEdge)
@@ -502,6 +499,7 @@ func (s *dbSchema) createEdgeTable(nodeData *schema.NodeData, assocEdge *edge.As
 	}
 
 	return &dbTable{
+		TableName:       tableName,
 		QuotedTableName: strconv.Quote(tableName),
 		Columns:         columns,
 		Constraints:     constraints,
@@ -557,8 +555,6 @@ func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.Node
 	}
 
 	fkeyTable := s.getTableForNode(fkeyConfig.NodeData)
-	fkeyTableName, err := strconv.Unquote(fkeyTable.QuotedTableName)
-	util.Die(err)
 
 	var fkeyColumn *dbColumn
 	for _, fkeyCol := range fkeyTable.Columns {
@@ -583,7 +579,7 @@ func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.Node
 	constraint := &foreignKeyConstraint{
 		tableName:     tableName,
 		column:        col,
-		fkeyTableName: fkeyTableName,
+		fkeyTableName: fkeyTable.TableName,
 		fkeyColumn:    fkeyColumn,
 	}
 	*constraints = append(*constraints, constraint)

@@ -59,13 +59,15 @@ func ParseFieldsFunc(pkg *packages.Package, fn *ast.FuncDecl) (*FieldInfo, error
 		return nil, err
 	}
 
-	fieldInfo := NewFieldInfoFromInputs(fields, &Options{
+	fieldInfo, err := NewFieldInfoFromInputs(fields, &Options{
 		AddBaseFields: true,
 		SortFields:    true,
 	})
-	fieldInfo.getFieldsFn = true
+	if fieldInfo != nil {
+		fieldInfo.getFieldsFn = true
+	}
 
-	return fieldInfo, nil
+	return fieldInfo, err
 }
 
 func parseField(f *input.Field, pkg *packages.Package, result *astparser.Result, explorer *packageExplorer) chan error {

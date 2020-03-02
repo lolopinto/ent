@@ -1,0 +1,9 @@
+# for typescript
+dialect: postgres
+database: tsent_test
+user: ola
+password: '' 
+host: localhost 
+port: 5432
+pool: 5 # ¯\_(ツ)_/¯ 
+sslmode: disable

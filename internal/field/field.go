@@ -23,7 +23,7 @@ type Options struct {
 // Decouples the parsing of fields from the logic associated with it
 // Means this can be called by multiple languages using this or different formats/sources
 // in each language e.g. golang supporting fields in a struct or the stronger API (ent.FieldMap)
-func NewFieldInfoFromInputs(fields []*input.Field, options *Options) *FieldInfo {
+func NewFieldInfoFromInputs(fields []*input.Field, options *Options) (*FieldInfo, error) {
 	fieldInfo := &FieldInfo{
 		fieldMap:       make(map[string]*Field),
 		emailFields:    make(map[string]bool),
@@ -36,7 +36,11 @@ func NewFieldInfoFromInputs(fields []*input.Field, options *Options) *FieldInfo 
 	}
 	// TODO eventually make this smarter and use length of slice as needed
 	for _, field := range fields {
-		fieldInfo.addField(newFieldFromInput(field))
+		f, err := newFieldFromInput(field)
+		if err != nil {
+			return nil, err
+		}
+		fieldInfo.addField(f)
 	}
 
 	if options.SortFields {
@@ -54,7 +58,7 @@ func NewFieldInfoFromInputs(fields []*input.Field, options *Options) *FieldInfo 
 		})
 	}
 
-	return fieldInfo
+	return fieldInfo, nil
 }
 
 type FieldInfo struct {
@@ -280,7 +284,7 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, err
 
 	return NewFieldInfoFromInputs(fields, &Options{
 		AddBaseFields: true,
-	}), nil
+	})
 }
 
 func parseFieldTag(fieldName string, tag *ast.BasicLit) map[string]string {

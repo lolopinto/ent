@@ -570,7 +570,7 @@ func testEdgeTable(t *testing.T, table *dbTable) {
 			strconv.Quote("id1"),
 			strconv.Quote("edge_type"),
 			strconv.Quote("id2"),
-			strconv.Quote(fmt.Sprintf("%s_id1_edge_type_id2_pkey", table.GetUnquotedTableName())),
+			strconv.Quote(fmt.Sprintf("%s_id1_edge_type_id2_pkey", table.TableName)),
 		),
 	)
 }
@@ -646,13 +646,13 @@ func getParsedTestSchema(t *testing.T) *schema.Schema {
 }
 
 func getTestSchema(t *testing.T) *dbSchema {
-	return newDBSchema(getParsedTestSchema(t))
+	return newDBSchema(getParsedTestSchema(t), "models/configs")
 }
 
 func getInMemoryTestSchemas(t *testing.T, sources map[string]string, uniqueKey string) *dbSchema {
 	return newDBSchema(parseSchema(
 		t, sources, uniqueKey,
-	))
+	), "models/configs")
 }
 
 func getTestTable(configName string, t *testing.T) *dbTable {

@@ -1,6 +1,7 @@
 package field
 
 import (
+	"errors"
 	"fmt"
 	"go/types"
 	"sort"
@@ -49,7 +50,7 @@ type Field struct {
 	dataTypePkgPath string
 }
 
-func newFieldFromInput(f *input.Field) *Field {
+func newFieldFromInput(f *input.Field) (*Field, error) {
 	ret := &Field{
 		FieldName:                f.Name,
 		nullable:                 f.Nullable,
@@ -102,6 +103,10 @@ func newFieldFromInput(f *input.Field) *Field {
 		} else {
 			ret.setFieldType(enttype.GetType(ret.entType))
 		}
+	} else if f.Type != nil {
+		ret.setFieldType(f.GetEntType())
+	} else {
+		return nil, errors.New("invalid input. no way to get the type")
 	}
 
 	if ret.private {
@@ -115,9 +120,7 @@ func newFieldFromInput(f *input.Field) *Field {
 		}
 	}
 
-	// TODO f.Type
-
-	return ret
+	return ret, nil
 }
 
 func newField(fieldName string) *Field {

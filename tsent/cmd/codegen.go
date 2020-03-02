@@ -3,7 +3,9 @@ package cmd
 import (
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/db"
+	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/spf13/cobra"
 )
@@ -21,12 +23,26 @@ var codegenCmd = &cobra.Command{
 		}
 		// TODO init generates schema, db, tsconfig etc
 
-		schema, err := input.ParseSchemaFromTSDir(path)
+		inputSchema, err := input.ParseSchemaFromTSDir(path)
 		if err != nil {
 			return err
 		}
-		spew.Dump(schema)
+		schema := schema.ParseFromInputSchema(inputSchema)
 
-		return nil
+		// nothing to do here
+		if len(schema.Nodes) == 0 {
+			return nil
+		}
+
+		// module path empty because not go
+		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
+		codePathInfo := codegen.NewCodePath("schema", "")
+
+		data := &codegen.Data{
+			Schema: schema, CodePath: codePathInfo}
+
+		// only support db for now
+		// TODO eventually support other steps similar to gent/cmd/codegen.go
+		return new(db.Step).ProcessData(data)
 	},
 }

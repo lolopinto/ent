@@ -545,6 +545,14 @@ func (t *jsonTypeImpl) GetCastToMethod() string {
 	return "cast.UnmarshallJSON"
 }
 
+type RawJSONType struct {
+	jsonTypeImpl
+}
+
+func (t *RawJSONType) GetGraphQLType() string {
+	panic("TODO implement this later")
+}
+
 type SliceType struct {
 	typ *types.Slice
 	jsonTypeImpl

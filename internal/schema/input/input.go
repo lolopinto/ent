@@ -3,6 +3,8 @@ package input
 import (
 	"encoding/json"
 	"go/types"
+
+	"github.com/lolopinto/ent/internal/enttype"
 )
 
 type Schema struct {
@@ -10,8 +12,8 @@ type Schema struct {
 }
 
 type Node struct {
-	TableName *string `json:"tableName"`
-	Fields    []Field `json:"fields"`
+	TableName *string  `json:"tableName"`
+	Fields    []*Field `json:"fields"`
 }
 
 type DBType string
@@ -33,16 +35,16 @@ type FieldType struct {
 }
 
 type Field struct {
-	Name            string    `json:"name"`
-	Type            FieldType `json:"type"` // todo
-	Nullable        bool      `json:"nullable"`
-	StorageKey      string    `json:"storageKey"`
-	Unique          bool      `json:"unique"`
-	HideFromGraphQL bool      `json:"hideFromGraphQL"`
-	Private         bool      `json:"private"`
-	GraphQLName     string    `json:"graphqlName"`
-	Index           bool      `json:"index"`
-	PrimaryKey      bool      `json:"primaryKey"`
+	Name            string     `json:"name"`
+	Type            *FieldType `json:"type"`
+	Nullable        bool       `json:"nullable"`
+	StorageKey      string     `json:"storageKey"`
+	Unique          bool       `json:"unique"`
+	HideFromGraphQL bool       `json:"hideFromGraphQL"`
+	Private         bool       `json:"private"`
+	GraphQLName     string     `json:"graphqlName"`
+	Index           bool       `json:"index"`
+	PrimaryKey      bool       `json:"primaryKey"`
 
 	ForeignKey    *[2]string  `json:"foreignKey"`
 	ServerDefault interface{} `json:"serverDefault"`
@@ -52,6 +54,44 @@ type Field struct {
 	GoType          types.Type
 	PkgPath         string
 	DataTypePkgPath string
+}
+
+func (f *Field) GetEntType() enttype.EntType {
+	switch f.Type.DBType {
+	case UUID:
+		return &enttype.IDType{}
+	case Int64ID:
+		panic("unsupported type")
+		return &enttype.IntegerType{}
+	case Boolean:
+		if f.Nullable {
+			return &enttype.NullableBoolType{}
+		}
+		return &enttype.BoolType{}
+	case Int:
+		if f.Nullable {
+			return &enttype.NullableIntegerType{}
+		}
+		return &enttype.IntegerType{}
+	case Float:
+		if f.Nullable {
+			return &enttype.NullableFloatType{}
+		}
+		return &enttype.FloatType{}
+	case String:
+		if f.Nullable {
+			return &enttype.NullableStringType{}
+		}
+		return &enttype.StringType{}
+	case Time:
+		if f.Nullable {
+			return &enttype.NullableTimeType{}
+		}
+		return &enttype.TimeType{}
+	case JSON:
+		return &enttype.RawJSONType{}
+	}
+	panic("unsupported type")
 }
 
 func ParseSchema(input []byte) (*Schema, error) {
