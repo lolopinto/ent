@@ -1,4 +1,4 @@
-import { DBType } from "../../../schema";
+import { DBType, Node } from "../../../schema";
 
 // implicit schema
 const User = {
@@ -16,7 +16,8 @@ const User = {
         dbType: DBType.String,
       },
     },
-  ]
+  ],
+  patterns: [Node],
 };
 
 export default User;

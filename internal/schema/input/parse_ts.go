@@ -104,5 +104,7 @@ func writeTsFile(fileToWrite string, schemas []schemaData) error {
 			AbsPathToTemplate: util.GetAbsolutePath("read_schema.tmpl"),
 			TemplateName:      "read_schema.tmpl",
 			PathToFile:        fileToWrite,
-		}, file.DisableLog())
+		},
+		file.DisableLog(),
+	)
 }

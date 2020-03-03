@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/davecgh/go-spew/spew"
-
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/spf13/cobra"
 )

@@ -27,7 +27,8 @@ type field struct {
 	private         bool
 	graphqlName     string
 	index           bool
-	foreignKey      [2]string
+	primaryKey      bool
+	foreignKey      *[2]string
 	serverDefault   string
 }
 
@@ -101,7 +102,7 @@ func TestParse(t *testing.T) {
 		"nullable field": testCase{
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {Field} from "{schema}";
 				import {StringType} from "{field}";
 
 				export default class User implements Schema {
@@ -125,7 +126,7 @@ func TestParse(t *testing.T) {
 		"renamed storageKey": testCase{
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {Field} from "{schema}";
 				import {StringType} from "{field}";
 
 				export default class User implements Schema {
@@ -149,7 +150,7 @@ func TestParse(t *testing.T) {
 		"renamed graphqlName": testCase{
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {Field} from "{schema}";
 				import {StringType} from "{field}";
 
 				export default class User implements Schema {
@@ -173,7 +174,7 @@ func TestParse(t *testing.T) {
 		"unique": testCase{
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {Field} from "{schema}";
 				import {StringType} from "{field}";
 
 				export default class User implements Schema {
@@ -197,7 +198,7 @@ func TestParse(t *testing.T) {
 		"hideFromGraphQL": testCase{
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {Field} from "{schema}";
 				import {StringType} from "{field}";
 
 				export default class User implements Schema {
@@ -221,7 +222,7 @@ func TestParse(t *testing.T) {
 		"private field": testCase{
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {Field} from "{schema}";
 				import {StringType} from "{field}";
 
 				export default class User implements Schema {
@@ -245,7 +246,7 @@ func TestParse(t *testing.T) {
 		"index": testCase{
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {Field} from "{schema}";
 				import {StringType} from "{field}";
 
 				export default class User implements Schema {
@@ -269,7 +270,7 @@ func TestParse(t *testing.T) {
 		"server default": testCase{
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {Field} from "{schema}";
 				import {TimeType} from "{field}";
 
 				export default class User implements Schema {
@@ -290,15 +291,52 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		"with base schema": testCase{
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import Schema, {Field, BaseEntSchema} from "{schema}";
+				import {StringType} from "{field}";
+
+				export default class User extends BaseEntSchema implements Schema {
+					fields: Field[] = [
+						StringType({name: "firstName"}),
+					];
+				}`),
+			},
+			expectedOutput: map[string]node{
+				"User": node{
+					fields: []field{
+						field{
+							name:       "ID",
+							dbType:     input.UUID,
+							primaryKey: true,
+						},
+						field{
+							name:            "createdAt",
+							dbType:          input.Time,
+							hideFromGraphQL: true,
+						},
+						field{
+							name:            "updatedAt",
+							dbType:          input.Time,
+							hideFromGraphQL: true,
+						},
+						field{
+							name:   "firstName",
+							dbType: input.String,
+						},
+					},
+				},
+			},
+		},
 		"multiple files/complicated": testCase{
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {Field, BaseEntSchema} from "{schema}"
 				import {UUIDType, StringType} from "{field}";
 
-				export default class User implements Schema {
+				export default class User extends BaseEntSchema implements Schema {
 					fields: Field[] = [
-						UUIDType({name: "id"}),
 						StringType({name: "first_name"}),
 						StringType({name: "last_name"}),
 						StringType({name: "email", unique: true}),
@@ -306,13 +344,13 @@ func TestParse(t *testing.T) {
 					]
 				}`),
 				"event.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}"
+				import Schema, {BaseEntSchema, Field} from "{schema}"
 				import {TimeType, StringType, UUIDType} from "{field}";
 
-				export default class Event implements Schema {
+				export default class Event extends BaseEntSchema implements Schema {
 					fields: Field[] = [
 						StringType({name: "name"}),
-						UUIDType({name: "creator_id", foreignKey: ["User", "id"]}),
+						UUIDType({name: "creator_id", foreignKey: ["User", "ID"]}),
 						TimeType({name: "start_time"}),
 						TimeType({name: "end_time", nullable: true}),
 						StringType({name: "location"}),
@@ -322,11 +360,20 @@ func TestParse(t *testing.T) {
 			expectedOutput: map[string]node{
 				"User": node{
 					fields: []field{
-						// TODO id will come from Node later
-						// for now need it for foreign key
 						field{
-							name:   "id",
-							dbType: input.UUID,
+							name:       "ID",
+							dbType:     input.UUID,
+							primaryKey: true,
+						},
+						field{
+							name:            "createdAt",
+							dbType:          input.Time,
+							hideFromGraphQL: true,
+						},
+						field{
+							name:            "updatedAt",
+							dbType:          input.Time,
+							hideFromGraphQL: true,
 						},
 						field{
 							name:   "first_name",
@@ -352,13 +399,28 @@ func TestParse(t *testing.T) {
 				"Event": node{
 					fields: []field{
 						field{
+							name:       "ID",
+							dbType:     input.UUID,
+							primaryKey: true,
+						},
+						field{
+							name:            "createdAt",
+							dbType:          input.Time,
+							hideFromGraphQL: true,
+						},
+						field{
+							name:            "updatedAt",
+							dbType:          input.Time,
+							hideFromGraphQL: true,
+						},
+						field{
 							name:   "name",
 							dbType: input.String,
 						},
 						field{
 							name:       "creator_id",
 							dbType:     input.UUID,
-							foreignKey: [2]string{"User", "id"},
+							foreignKey: &[2]string{"User", "ID"},
 						},
 						field{
 							name:   "start_time",
@@ -426,6 +488,7 @@ func TestParse(t *testing.T) {
 					assert.Equal(t, expField.private, field.Private)
 					assert.Equal(t, expField.graphqlName, field.GraphQLName)
 					assert.Equal(t, expField.index, field.Index)
+					assert.Equal(t, expField.primaryKey, field.PrimaryKey)
 
 					assert.Equal(t, expField.foreignKey, field.ForeignKey)
 				}

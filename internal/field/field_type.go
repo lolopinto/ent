@@ -63,6 +63,7 @@ func newFieldFromInput(f *input.Field) *Field {
 		topLevelStructField:      true,
 		dbColumn:                 true,
 		exposeToActionsByDefault: true,
+		singleFieldPrimaryKey:    f.PrimaryKey,
 
 		// go specific things
 		entType:         f.GoType,

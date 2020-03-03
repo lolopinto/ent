@@ -1,5 +1,5 @@
 {{/* for now we are hardcoding to where this currently is. we should be better about this */ -}}
-import Schema from "{{.SchemaPath}}"
+import Schema, {Field} from "{{.SchemaPath}}"
 
 {{ range $schema := .Schemas -}}
   import {{$schema.Name}} from "./{{$schema.Path}}"
@@ -23,9 +23,20 @@ for (const key in potentialSchemas) {
     schema = new value();
   }
 
+  // let's put patterns first just so we have id, created_at, updated_at first
+  // ¯\_(ツ)_/¯
+  let fields: Field[] = [];
+  //  let fields = [...schema.fields];
+  if (schema.patterns) {
+    for (const pattern of schema.patterns) {
+      fields = fields.concat(pattern.fields);
+    }
+  }
+  fields = fields.concat(schema.fields);
+
   schemas[key] = {
     tableName: schema.tableName,
-    fields: schema.fields,
+    fields: fields,
   };
 }
 
