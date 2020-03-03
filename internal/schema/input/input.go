@@ -12,8 +12,10 @@ type Schema struct {
 }
 
 type Node struct {
-	TableName *string  `json:"tableName"`
-	Fields    []*Field `json:"fields"`
+	TableName      *string           `json:"tableName"`
+	Fields         []*Field          `json:"fields"`
+	AssocEdges     []*AssocEdge      `json:"assocEdges"`
+	AssocEdgeGroup []*AssocEdgeGroup `json:"assocEdgeGroups"`
 }
 
 type DBType string
@@ -46,6 +48,7 @@ type Field struct {
 	Index           bool       `json:"index"`
 	PrimaryKey      bool       `json:"primaryKey"`
 
+	FieldEdge     *[2]string  `json:"fieldEdge"` // this only really makes sense on id fields...
 	ForeignKey    *[2]string  `json:"foreignKey"`
 	ServerDefault interface{} `json:"serverDefault"`
 
@@ -92,6 +95,26 @@ func (f *Field) GetEntType() enttype.EntType {
 		return &enttype.RawJSONType{}
 	}
 	panic("unsupported type")
+}
+
+type AssocEdge struct {
+	Name        string            `json:"name"`
+	SchemaName  string            `json:"schemaName"`
+	Symmetric   bool              `json:"symmetric"`
+	Unique      bool              `json:"unique"`
+	TableName   string            `json:"tableName"`
+	InverseEdge *InverseAssocEdge `json:"inverseEdge"`
+}
+
+type AssocEdgeGroup struct {
+	Name            string       `json:"name"`
+	GroupStatusName string       `json:"groupStatusName"`
+	TableName       string       `json:"tableName"`
+	AssocEdges      []*AssocEdge `json:"assocEdges"`
+}
+
+type InverseAssocEdge struct {
+	Name string `json:"name"`
 }
 
 func ParseSchema(input []byte) (*Schema, error) {

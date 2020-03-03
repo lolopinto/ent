@@ -8,7 +8,74 @@ export default interface Schema {
 
   // reusable functionality in each schema
   patterns?: Pattern[];
+
+  // edges in the schema
+  edges?: Edge[];
 }
+
+// An AssocEdge is an edge between 2 ids that has a common table/edge format 
+// columns are
+// id1 uuid (or int64), 
+// id1Type type (enum), TODO
+// edgeType (enum?), TODO
+// id2 uuid (or int64)
+// id2Type (enum), TODO
+// time (time without time zone)
+// data  (string)
+// common edge type means we can support all types of common functionality
+// across different edges
+// we also get 3 types of assocs from the framework: 1-way (favorite), inverse (followers + followees), symmetric (friends)
+// default is 1-way
+export interface AssocEdge {
+  // name of the edge e.g. creator, hosts, etc. edge name should be plural except for unique edges
+  name: string; 
+  // name of schema which edge is pointing to e.g. User, Address
+  schemaName: string;
+  // symmetric edge? should we write an edge from id2 -> id1 of the same edgeType?
+  symmetric?: boolean;
+  // unique edge. add constraint and enforce that not more than one can be written
+  unique?: boolean;
+  // inverse edge. should we write an inverse edge from id2 -> id1 of the inverse edge type
+  inverseEdge?: InverseAssocEdge;
+  // optional, can be overriden as needed. if not provided, schema generates one
+  tableName?: string;
+}
+
+// Information about the inverse edge of an assoc edge
+export interface InverseAssocEdge {
+  // name of the inverse edge
+  name: string;
+}
+
+// AssocEdgeGroup provides a way to group related edges together
+// e.g. rsvps and you have an invited, attending, declined edge all together in the same 
+// table and a way to configure it so that changing one edge also affects the others
+export interface AssocEdgeGroup {
+  name: string;
+  groupStatusName: string;
+  tableName?: string;
+  assocEdges: AssocEdge[];
+}
+
+// edges we support from the schema
+// there are some implied edges that are derived from fields: foreignKeys/fieldEdges
+// writing to those fields automatically writes to the defined edges
+// TODO other edges such as join tables 3-way id1->id2 (data)
+export type Edge = AssocEdge | AssocEdgeGroup;
+
+
+// TODO really need to work on the name of this
+// but it says when we write fieldName in this object.
+// we should also write edge UserConfig.Events
+// doing this on the field makes sense because it's consistent with ForeignKey api...
+// maybe add it to field instead?
+// export default interface FieldEdge {
+//   fieldName: string;
+//   schemaName: string;
+//   inverseEdgeName: string;
+// }
+
+
 
 // Pattern is reusable functionality that leads to code sharing
 // The most commonly used pattern in the ent framework is going to be the Node pattern
@@ -54,6 +121,8 @@ export interface FieldOptions {
   graphqlName?:string;
   index?:boolean;
   foreignKey?:[string,string];
+  fieldEdge?:[string, string]; // replaces fieldEdge above...
+  // TODO put this on id field not all field options?
   primaryKey?: boolean; // can only have one in a schema. Node provides id as default primary key in a schema
 }
 

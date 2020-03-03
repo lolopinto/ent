@@ -7,8 +7,9 @@ import (
 )
 
 type EventConfig struct {
-	Name      string
-	UserID    string
+	Name string
+	// TODO change this as I'm changing typescript API here...
+	UserID    string //-> ref UserConfig.Events so we know when to set that we write this
 	StartTime time.Time
 	EndTime   time.Time `nullable:"true"`
 	Location  string
