@@ -8,7 +8,6 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
-	"github.com/lolopinto/ent/internal/util"
 )
 
 type ConstInfo struct {
@@ -66,15 +65,11 @@ func newNodeData(packageName string) *NodeData {
 }
 
 func (nodeData *NodeData) GetTableName() string {
-	tableName, err := strconv.Unquote(nodeData.TableName)
-	util.Die(err)
-
-	return tableName
+	return nodeData.TableName
 }
 
-// probably not needed?
 func (nodeData *NodeData) GetQuotedTableName() string {
-	return nodeData.TableName
+	return strconv.Quote(nodeData.TableName)
 }
 
 func (nodeData *NodeData) GetFieldByName(fieldName string) *field.Field {

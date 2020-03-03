@@ -65,6 +65,14 @@ func configRequired(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// for places where this isn't required...
+func getPathToConfig() string {
+	if pathToConfig == "" {
+		return "models/configs"
+	}
+	return pathToConfig
+}
+
 func getPathToCode(pathToConfig string) *codegen.CodePath {
 	dir, err := filepath.Abs(".")
 	util.Die(err)

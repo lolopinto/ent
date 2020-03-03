@@ -11,12 +11,15 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
 	"golang.org/x/tools/go/packages"
@@ -155,7 +158,9 @@ func (m NodeMapInfo) parseFile(
 
 				// pass the structtype to get the config
 				g.AddItem("ParseFields", func(nodeData *NodeData) {
-					fieldInfoFields = field.GetFieldInfoForStruct(s, typeInfo)
+					var err error
+					fieldInfoFields, err = field.GetFieldInfoForStruct(s, typeInfo)
+					util.Die(err)
 				})
 			}
 		}
@@ -518,11 +523,42 @@ func (m NodeMapInfo) HideFromGraphQL(edge edge.Edge) bool {
 	return nodeData.HideFromGraphQL
 }
 
+func (m NodeMapInfo) parseInputSchema(schema *input.Schema) *assocEdgeData {
+	// TODO right now this is also depending on config/database.yml
+	// figure out if best place for this
+	edgeData := m.loadExistingEdges()
+
+	for nodeName, node := range schema.Nodes {
+
+		nodeName = strcase.ToSnake(strings.ToLower(nodeName))
+		// user.ts, address.ts etc
+		nodeData := newNodeData(nodeName)
+
+		// default nodeName goes from address -> addresses, user -> users etc
+		if node.TableName == nil {
+			nodeData.TableName = inflection.Plural(nodeName)
+		} else {
+			nodeData.TableName = *node.TableName
+		}
+		var err error
+		nodeData.FieldInfo, err = field.NewFieldInfoFromInputs(
+			node.Fields,
+			&field.Options{},
+		)
+		util.Die(err)
+
+		m.addConfig(&NodeDataInfo{
+			NodeData: nodeData,
+		})
+	}
+
+	return edgeData
+}
+
 // getTableName returns the name of the table the node should be stored in
 func getTableName(fn *ast.FuncDecl) string {
 	expr := astparser.GetLastReturnStmtExpr(fn)
-	basicLit := astparser.GetExprToBasicLit(expr)
-	return basicLit.Value
+	return astparser.GetUnderylingStringFromLiteralExpr(expr)
 }
 
 func getHideFromGraphQL(fn *ast.FuncDecl) bool {

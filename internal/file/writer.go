@@ -58,8 +58,12 @@ func writeFile(w Writer, opts ...func(opt *Options)) error {
 		}
 	}
 	err = ioutil.WriteFile(pathToFile, bytes, 0666)
-	if err == nil {
-		log.Println("wrote to file ", pathToFile)
+	if !option.disableLog {
+		if err == nil {
+			log.Println("wrote to file ", pathToFile)
+		} else {
+			log.Println(err)
+		}
 	}
 	return err
 }
@@ -67,7 +71,8 @@ func writeFile(w Writer, opts ...func(opt *Options)) error {
 // Options provides a way to configure the file writing process as needed
 // TODO: maybe move things like createDirIfNeeded to here?
 type Options struct {
-	writeOnce bool
+	writeOnce  bool
+	disableLog bool
 }
 
 // WriteOnce specifes that writing to path provided should not occur if the file already exists
@@ -85,6 +90,13 @@ func WriteOnceMaybe(forceOverwrite bool) func(opt *Options) {
 		return nil
 	}
 	return WriteOnce()
+}
+
+// DisableLog disables the log that the file was written
+func DisableLog() func(opt *Options) {
+	return func(opt *Options) {
+		opt.disableLog = true
+	}
 }
 
 func Write(w Writer, opts ...func(opt *Options)) error {

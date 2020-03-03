@@ -9,7 +9,6 @@ import (
 	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schemaparser"
-	"github.com/lolopinto/ent/internal/util"
 	"github.com/spf13/cobra"
 )
 
@@ -25,9 +24,9 @@ var codegenCmd = &cobra.Command{
 	Short: "runs the codegen (and db schema) migration",
 	Long:  `This runs the codegen steps. It generates the ent, db, and graphql code based on the arguments passed in`,
 	Args:  configRequired,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		codePathInfo := getPathToCode(pathToConfig)
-		parseSchemasAndGenerate(codePathInfo, codegenInfo.specificConfig, codegenInfo.step)
+		return parseSchemasAndGenerate(codePathInfo, codegenInfo.specificConfig, codegenInfo.step)
 	},
 }
 
@@ -39,11 +38,13 @@ func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Sch
 	return schema.Parse(p, specificConfigs...)
 }
 
-func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, step string) {
+// TODO break this up into something that takes steps and knows what to do with them
+// or shared code that's language specific?
+func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, step string) error {
 	schema := parseAllSchemaFiles(codePathInfo.GetRootPathToConfigs(), specificConfig)
 
 	if len(schema.Nodes) == 0 {
-		return
+		return nil
 	}
 
 	// TOOD validate things here first.
@@ -73,13 +74,14 @@ func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, ste
 			}
 		}
 		if len(steps) != 1 {
-			util.Die(errors.New("invalid step passed"))
+			return errors.New("invalid step passed")
 		}
 	}
 
 	for _, s := range steps {
 		if err := s.ProcessData(data); err != nil {
-			util.Die(err)
+			return err
 		}
 	}
+	return nil
 }
