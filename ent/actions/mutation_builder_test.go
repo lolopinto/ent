@@ -7,7 +7,6 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
@@ -23,6 +22,7 @@ func (suite *mutationBuilderSuite) SetupSuite() {
 		"users",
 		"event_invited_edges",
 		"events",
+		"event_creator_edges",
 		"user_family_members_edges",
 		"user_friends_edges",
 	}
@@ -72,11 +72,10 @@ func (suite *mutationBuilderSuite) TestDeletion() {
 
 	assert.Nil(suite.T(), updatedUser)
 
-	var loadedUser models.User
-	err := ent.LoadNodeRawData(user.ID, &loadedUser, &configs.UserConfig{})
+	userData, err := ent.LoadNodeRawData(user.ID, models.NewUserLoader(b.Viewer))
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), err, sql.ErrNoRows)
-	assert.Zero(suite.T(), loadedUser)
+	assert.Nil(suite.T(), userData)
 }
 
 func (suite *mutationBuilderSuite) TestAddSimpleEdgeAtCreation() {
@@ -264,53 +263,59 @@ func (suite *mutationBuilderSuite) TestManualDataField() {
 		EdgeType: models.UserToFamilyMembersEdge,
 		ID1Type:  user.GetType(),
 		ID2Type:  user.GetType(),
-		Data:     "brother",
+		Data: sql.NullString{
+			String: "brother",
+			Valid:  true,
+		},
 	}, edge)
 }
 
 func (suite *mutationBuilderSuite) TestManualTimeField() {
 	t := time.Now()
 
-	var testCases = []struct {
+	var testCases = map[string]struct {
 		t time.Time
 		f func(*ent.EdgeOperation)
 	}{
-		{
+		"future": {
 			t.Add(3 * time.Hour), // time in the future
 			ent.EdgeTime(t.Add(3 * time.Hour)),
 		},
-		{
-			t.Add(-3 * time.Hour), // time in the future
+		"past": {
+			t.Add(-3 * time.Hour), // time in the past
 			ent.EdgeTime(t.Add(-3 * time.Hour)),
 		},
-		{
+		"raw number": {
 			time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC).Add(1 * time.Second),
 			ent.EdgeTimeRawNumber(1),
 		},
 	}
-	for _, tt := range testCases {
-		user := testingutils.CreateTestUser(suite.T())
-		user2 := testingutils.CreateTestUser(suite.T())
+	for key, tt := range testCases {
 
-		b := testingutils.GetUserBuilderWithFields(
-			ent.EditOperation,
-			user,
-			map[string]interface{}{},
-		)
-		b.AddOutboundEdge(models.UserToFamilyMembersEdge, user2.ID, user2.GetType(), tt.f)
-		testingutils.SaveUser(suite.T(), b)
+		suite.T().Run(key, func(t *testing.T) {
+			user := testingutils.CreateTestUser(suite.T())
+			user2 := testingutils.CreateTestUser(suite.T())
 
-		edge, err := ent.LoadEdgeByType(user.ID, user2.ID, models.UserToFamilyMembersEdge)
-		assert.Nil(suite.T(), err)
-		testingutils.VerifyEdge(suite.T(), &ent.AssocEdge{
-			ID1:      user.ID,
-			ID2:      user2.ID,
-			EdgeType: models.UserToFamilyMembersEdge,
-			ID1Type:  user.GetType(),
-			ID2Type:  user.GetType(),
-			Data:     "",
-			Time:     tt.t,
-		}, edge)
+			b := testingutils.GetUserBuilderWithFields(
+				ent.EditOperation,
+				user,
+				map[string]interface{}{},
+			)
+			b.AddOutboundEdge(models.UserToFamilyMembersEdge, user2.ID, user2.GetType(), tt.f)
+			testingutils.SaveUser(t, b)
+
+			edge, err := ent.LoadEdgeByType(user.ID, user2.ID, models.UserToFamilyMembersEdge)
+			assert.Nil(t, err)
+			testingutils.VerifyEdge(t, &ent.AssocEdge{
+				ID1:      user.ID,
+				ID2:      user2.ID,
+				EdgeType: models.UserToFamilyMembersEdge,
+				ID1Type:  user.GetType(),
+				ID2Type:  user.GetType(),
+				Time:     tt.t,
+			}, edge)
+		})
+
 	}
 }
 

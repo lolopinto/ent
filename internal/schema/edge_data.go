@@ -10,15 +10,14 @@ import (
 
 func (m NodeMapInfo) loadExistingEdges() *assocEdgeData {
 	// load all edges in db
-	var existingEdges []*ent.AssocEdgeData
-	err := ent.GenLoadAssocEdges(&existingEdges)
-	if err != nil {
-		fmt.Println("error loading data. assoc_edge_config related", err)
+	result := <-ent.GenLoadAssocEdges()
+	if result.Err != nil {
+		fmt.Println("error loading data. assoc_edge_config related", result.Err)
 	}
-	util.Die(err)
+	util.Die(result.Err)
 
 	edgeMap := make(map[string]*ent.AssocEdgeData)
-	for _, assocEdgeData := range existingEdges {
+	for _, assocEdgeData := range result.Edges {
 		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
 	}
 	return &assocEdgeData{
@@ -42,7 +41,7 @@ func (edgeData *assocEdgeData) edgeTypeOfEdge(constName string) string {
 	if !edgeData.existingEdge(constName) {
 		return ""
 	}
-	return edgeData.edgeMap[constName].EdgeType
+	return string(edgeData.edgeMap[constName].EdgeType)
 }
 
 func (edgeData *assocEdgeData) addNewEdge(newEdge *ent.AssocEdgeData) {
@@ -56,7 +55,7 @@ func (edgeData *assocEdgeData) updateInverseEdgeTypeForEdge(constName string, co
 		panic(fmt.Sprintf("couldn't find edge with constName %s", constName))
 	}
 
-	ns := &sql.NullString{}
+	ns := sql.NullString{}
 	util.Die(ns.Scan(constValue))
 	edge.InverseEdgeType = ns
 	edgeData.edgesToUpdate = append(edgeData.edgesToUpdate, edge)

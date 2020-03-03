@@ -8,7 +8,6 @@ import (
 	"github.com/lolopinto/ent/ent/privacy"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 )
 
@@ -18,7 +17,6 @@ type userAction struct {
 	password     string
 	firstName    string
 	lastName     string
-	user         models.User
 	builder      *actions.EntMutationBuilder
 }
 
@@ -62,16 +60,28 @@ func (a *userAction) SetBuilderOnValidators(validators []actions.Validator) {
 }
 
 func (a *userAction) getFields() map[string]interface{} {
-	return map[string]interface{}{
-		"email_address": a.emailAddress,
-		"password":      a.password,
-		"first_name":    a.firstName,
-		"last_name":     a.lastName,
+	m := make(map[string]interface{})
+	if a.emailAddress != "" {
+		m["email_address"] = a.emailAddress
 	}
+	if a.password != "" {
+		m["password"] = a.password
+	}
+	if a.firstName != "" {
+		m["first_name"] = a.firstName
+	}
+	if a.lastName != "" {
+		m["last_name"] = a.lastName
+	}
+	return m
 }
 
 func (a *userAction) Entity() ent.Entity {
-	return &a.user
+	return a.builder.Entity()
+}
+
+func (a *userAction) GetUser() *models.User {
+	return a.builder.Entity().(*models.User)
 }
 
 type createUserAction struct {
@@ -80,6 +90,14 @@ type createUserAction struct {
 
 func (a *createUserAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(a)
+}
+
+func (a *createUserAction) Save() (*models.User, error) {
+	err := actions.Save(a)
+	if err != nil {
+		return nil, err
+	}
+	return a.GetUser(), err
 }
 
 func (a *createUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
@@ -99,6 +117,14 @@ type editUserAction struct {
 
 func (a *editUserAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(a)
+}
+
+func (a *editUserAction) Save() (*models.User, error) {
+	err := actions.Save(a)
+	if err != nil {
+		return nil, err
+	}
+	return a.GetUser(), err
 }
 
 func getEditUserPrivacyPolicy(existingEnt ent.Entity) ent.PrivacyPolicy {
@@ -162,6 +188,14 @@ func (a *deleteUserAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(a)
 }
 
+func (a *deleteUserAction) Save() (*models.User, error) {
+	err := actions.Save(a)
+	if err != nil {
+		return nil, err
+	}
+	return a.GetUser(), err
+}
+
 func (a *deleteUserAction) GetPrivacyPolicy() ent.PrivacyPolicy {
 	return getEditUserPrivacyPolicy(&a.existingEnt)
 }
@@ -195,8 +229,9 @@ func (trigger *UserCreateContactTrigger) GetChangeset() (ent.Changeset, error) {
 	// create a contact action and send changeset
 	a := &createContactAction{}
 	a.viewer = trigger.Builder.GetViewer()
+	loader := models.NewContactLoader(a.viewer)
 	a.builder = actions.NewMutationBuilder(
-		a.viewer, ent.InsertOperation, &a.contact, &configs.ContactConfig{},
+		a.viewer, ent.InsertOperation, loader.GetNewContact(), loader.GetConfig(),
 	)
 	fields := trigger.Builder.GetRawFields()
 	a.firstName = fields["first_name"]
@@ -216,8 +251,9 @@ func (trigger *UserCreateContactAndEmailTrigger) GetChangeset() (ent.Changeset, 
 	// same as above except for this line.
 	a := &createContactAndEmailAction{}
 	a.viewer = trigger.Builder.GetViewer()
+	loader := models.NewContactLoader(a.viewer)
 	a.builder = actions.NewMutationBuilder(
-		a.viewer, ent.InsertOperation, &a.contact, &configs.ContactConfig{},
+		a.viewer, ent.InsertOperation, loader.GetNewContact(), loader.GetConfig(),
 	)
 	fields := trigger.Builder.GetRawFields()
 	a.firstName = fields["first_name"]
@@ -258,12 +294,13 @@ func (observer *UserSendByeEmailObserver) Observe() error {
 	return emailHandler.SendEmail()
 }
 
-func getUserCreateBuilder(v viewer.ViewerContext, user *models.User) *actions.EntMutationBuilder {
+func getUserCreateBuilder(v viewer.ViewerContext) *actions.EntMutationBuilder {
+	loader := models.NewUserLoader(v)
 	return actions.NewMutationBuilder(
 		v,
 		ent.InsertOperation,
-		user,
-		&configs.UserConfig{},
+		loader.GetNewUser(),
+		loader.GetConfig(),
 	)
 }
 
@@ -272,7 +309,7 @@ func userCreateAction(
 ) *createUserAction {
 	action := &createUserAction{}
 	action.viewer = v
-	action.builder = getUserCreateBuilder(v, &action.user)
+	action.builder = getUserCreateBuilder(v)
 
 	return action
 }
@@ -281,12 +318,13 @@ func userEditAction(
 	v viewer.ViewerContext,
 	user *models.User,
 ) *editUserAction {
+	loader := models.NewUserLoader(v)
 	action := &editUserAction{}
 	b := actions.NewMutationBuilder(
 		v,
 		ent.EditOperation,
-		&action.user,
-		&configs.UserConfig{},
+		loader.GetNewUser(),
+		loader.GetConfig(),
 		actions.ExistingEnt(user),
 	)
 	action.existingEnt = *user
@@ -301,11 +339,12 @@ func userDeleteAction(
 	user *models.User,
 ) *deleteUserAction {
 	action := &deleteUserAction{}
+	loader := models.NewUserLoader(v)
 	b := actions.NewMutationBuilder(
 		v,
 		ent.DeleteOperation,
-		&action.user,
-		&configs.UserConfig{},
+		loader.GetNewUser(),
+		loader.GetConfig(),
 		actions.ExistingEnt(user),
 	)
 	action.existingEnt = *user

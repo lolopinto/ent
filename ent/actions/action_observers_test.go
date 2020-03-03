@@ -10,6 +10,7 @@ import (
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -32,12 +33,12 @@ func (suite *actionsObserversSuite) TestSimpleObserver() {
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 	action := eventCreateAction(v)
 
-	err := actions.Save(action)
+	event, err := action.Save()
 	assert.Nil(suite.T(), err)
 
-	verifyEventCreationState(suite.T(), &action.event, user)
+	verifyEventCreationState(suite.T(), event, user)
 
-	testingutils.AssertEntLogged(suite.T(), &action.event)
+	testingutils.AssertEntLogged(suite.T(), event)
 }
 
 func (suite *actionsObserversSuite) TestObserverReturnsError() {
@@ -50,7 +51,7 @@ func (suite *actionsObserversSuite) TestObserverReturnsError() {
 	defer l.Reset()
 	action := userDeleteAction(v, user)
 	err := actions.Save(action)
-	assert.Nil(suite.T(), err)
+	require.Nil(suite.T(), err)
 
 	testingutils.AssertEmailSent(suite.T(), user.EmailAddress, fmt.Sprintf("Hello %s, we're sad to see you go from our magical website", user.FirstName))
 
@@ -59,7 +60,7 @@ func (suite *actionsObserversSuite) TestObserverReturnsError() {
 	assert.True(suite.T(), l.Contains("error from observer: microservice down"))
 
 	reloadedUser, err := models.LoadUser(v, user.ID)
-	assert.Zero(suite.T(), *reloadedUser)
+	assert.Nil(suite.T(), reloadedUser)
 	assert.NotNil(suite.T(), err)
 }
 

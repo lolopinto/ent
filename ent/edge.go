@@ -2,6 +2,7 @@ package ent
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/lolopinto/ent/ent/cast"
@@ -11,20 +12,17 @@ import (
 // AssocEdge is the information about an edge between two Nodes
 // It's generic enough so that it applies across all types.
 // Doesn't care what table it's stored in.
-// TODO fix comment about where edges are stored.
-// By default, edges are stored in the `edges_info` table but we
-// can have custom edge tables for specific edges where we know
-// there'll be a lot of data
 type AssocEdge struct {
-	ID1      string    `db:"id1"`
-	ID1Type  NodeType  `db:"id1_type"`
-	EdgeType EdgeType  `db:"edge_type"`
-	ID2      string    `db:"id2"`
-	ID2Type  NodeType  `db:"id2_type"`
-	Time     time.Time `db:"time"`
-	Data     string    `db:"data"` // nullable TODO nullable strings
+	ID1      string         `db:"id1"`
+	ID1Type  NodeType       `db:"id1_type"`
+	EdgeType EdgeType       `db:"edge_type"`
+	ID2      string         `db:"id2"`
+	ID2Type  NodeType       `db:"id2_type"`
+	Time     time.Time      `db:"time"`
+	Data     sql.NullString `db:"data"`
 }
 
+// DBFields is used by the ent framework to load the edge from the underlying database
 func (edge *AssocEdge) DBFields() DBFields {
 	return DBFields{
 		"id1": func(v interface{}) error {
@@ -58,11 +56,16 @@ func (edge *AssocEdge) DBFields() DBFields {
 			return err
 		},
 		"data": func(v interface{}) error {
-			var err error
-			edge.Data, err = cast.ToString(v)
-			return err
+			return edge.Data.Scan(v)
 		},
 	}
+}
+
+// GetID returns a unique id for this ent
+// TODO ola. audit where this is used right now
+func (edge *AssocEdge) GetID() string {
+	panic(fmt.Sprintf("AssocEdge.GetID called for edge %s", edge.EdgeType))
+	//	return string(edge.EdgeType)
 }
 
 // AssocEdgeResult stores the result of loading an Edge concurrently
@@ -87,21 +90,22 @@ func (res *AssocEdgesResult) Error() string {
 
 // AssocEdgeData is corresponding ent for AssocEdgeConfig
 type AssocEdgeData struct {
-	EdgeType        string          `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
-	EdgeName        string          `db:"edge_name"`
-	SymmetricEdge   bool            `db:"symmetric_edge"`
-	InverseEdgeType *sql.NullString `db:"inverse_edge_type"`
-	EdgeTable       string          `db:"edge_table"`
+	EdgeType        EdgeType       `db:"edge_type" pkey:"true"` // if you have a pkey, don't add id uuid since we already have one...
+	EdgeName        string         `db:"edge_name"`
+	SymmetricEdge   bool           `db:"symmetric_edge"`
+	InverseEdgeType sql.NullString `db:"inverse_edge_type"`
+	EdgeTable       string         `db:"edge_table"`
 	Timestamps
 }
 
+// DBFields is used by the ent framework to load the ent from the underlying database
 func (edgeData *AssocEdgeData) DBFields() DBFields {
 	// can cache AssocEdgeData though :/
 	// however leaving as-is because probably better for when this comes from a different cache
 	return DBFields{
 		"edge_type": func(v interface{}) error {
-			var err error
-			edgeData.EdgeType, err = cast.ToUUIDString(v)
+			edgeType, err := cast.ToUUIDString(v)
+			edgeData.EdgeType = EdgeType(edgeType)
 			return err
 		},
 		"edge_name": func(v interface{}) error {
@@ -123,20 +127,27 @@ func (edgeData *AssocEdgeData) DBFields() DBFields {
 			if id == "" {
 				return nil
 			}
-			edgeData.InverseEdgeType = &sql.NullString{
-				Valid:  true,
-				String: id,
-			}
-			return nil
+			return edgeData.InverseEdgeType.Scan(id)
 		},
 		"edge_table": func(v interface{}) error {
 			var err error
 			edgeData.EdgeTable, err = cast.ToString(v)
 			return err
 		},
+		"created_at": func(v interface{}) error {
+			var err error
+			edgeData.CreatedAt, err = cast.ToTime(v)
+			return err
+		},
+		"updated_at": func(v interface{}) error {
+			var err error
+			edgeData.UpdatedAt, err = cast.ToTime(v)
+			return err
+		},
 	}
 }
 
+// GetPrimaryKey is used to let the ent framework know what column is being edited
 func (edgeData *AssocEdgeData) GetPrimaryKey() string {
 	return "edge_type"
 }
@@ -145,19 +156,19 @@ func (edgeData *AssocEdgeData) GetPrimaryKey() string {
 // we need to break this up for tests
 // or worst case translate AssocEdgeData to a fake object that is an ent for use by node_map_test.go
 func (edgeData *AssocEdgeData) GetID() string {
-	return edgeData.EdgeType
+	return string(edgeData.EdgeType)
 }
 
 func (edgeData *AssocEdgeData) GetPrivacyPolicy() PrivacyPolicy {
-	panic("ss")
+	panic("AssocEdgedata.GetPrivacyPolicy called")
 }
 
 func (edgeData *AssocEdgeData) GetType() NodeType {
-	panic("ss")
+	panic("AssocEdgedata.GetType called")
 }
 
 func (edgeData *AssocEdgeData) GetViewer() viewer.ViewerContext {
-	panic("ss")
+	panic("AssocEdgedata.GetViewer called")
 }
 
 func (edgeData *AssocEdgeData) GetConfig() Config {
@@ -176,4 +187,56 @@ type AssocEdgeConfig struct {
 // GetTableName returns the underyling database table the model's data is stored
 func (config *AssocEdgeConfig) GetTableName() string {
 	return "assoc_edge_config"
+}
+
+// AssocEdgeLoader is used to load AssocEdgeData. implements Loader interface
+type AssocEdgeLoader struct {
+	results []*AssocEdgeData
+}
+
+// GetNewInstance reutrns a new AssocEdgeData to be used to retrieve data from database
+func (res *AssocEdgeLoader) GetNewInstance() DBObject {
+	var edge AssocEdgeData
+	res.results = append(res.results, &edge)
+	return &edge
+}
+
+// GetMap returns a map of EdgeType to AssocEdgeData
+// Provides a non-list API for the loaded data
+func (res *AssocEdgeLoader) GetMap() map[EdgeType]*AssocEdgeData {
+	m := make(map[EdgeType]*AssocEdgeData, len(res.results))
+	for _, edge := range res.results {
+		m[edge.EdgeType] = edge
+	}
+	return m
+}
+
+// GetPrimaryKey indicates which column is the primary key in the assoc_edge_config table
+func (res *AssocEdgeLoader) GetPrimaryKey() string {
+	return "edge_type"
+}
+
+// GetConfig returns the config/scheme for this object
+func (res *AssocEdgeLoader) GetConfig() Config {
+	return &AssocEdgeConfig{}
+}
+
+// AssocEdgeDataResult stores the result of loading AssocEdgeData
+type AssocEdgeDataResult struct {
+	EdgeData *AssocEdgeData
+	Err      error
+}
+
+func (res *AssocEdgeDataResult) Error() string {
+	return res.Err.Error()
+}
+
+// AssocEdgeDatasResult stores the result of loading all assoc edges concurrently
+type AssocEdgeDatasResult struct {
+	Edges []*AssocEdgeData
+	Err   error
+}
+
+func (res *AssocEdgeDatasResult) Error() string {
+	return res.Err.Error()
 }

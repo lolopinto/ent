@@ -136,7 +136,7 @@ type ComplexityRoot struct {
 		GetContactFoo func(childComplexity int) int
 		ID            func(childComplexity int) int
 		LastName      func(childComplexity int) int
-		UserID        func(childComplexity int) int
+		User          func(childComplexity int) int
 	}
 
 	ContactCreateResponse struct {
@@ -316,6 +316,8 @@ type ContactResolver interface {
 	AllowList(ctx context.Context, obj *models.Contact) ([]*models.User, error)
 
 	ContactEmails(ctx context.Context, obj *models.Contact) ([]*models.ContactEmail, error)
+
+	User(ctx context.Context, obj *models.Contact) (*models.User, error)
 }
 type ContactEmailResolver interface {
 	Contact(ctx context.Context, obj *models.ContactEmail) (*models.Contact, error)
@@ -639,12 +641,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Contact.LastName(childComplexity), true
 
-	case "Contact.userID":
-		if e.complexity.Contact.UserID == nil {
+	case "Contact.user":
+		if e.complexity.Contact.User == nil {
 			break
 		}
 
-		return e.complexity.Contact.UserID(childComplexity), true
+		return e.complexity.Contact.User(childComplexity), true
 
 	case "ContactCreateResponse.contact":
 		if e.complexity.ContactCreateResponse.Contact == nil {
@@ -1702,7 +1704,7 @@ type Contact implements Node {
     firstName: String!
     id: ID!
     lastName: String!
-    userID: String!
+    user: User
 }
 
 input ContactCreateInput {
@@ -3751,7 +3753,7 @@ func (ec *executionContext) _Contact_lastName(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Contact_userID(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
+func (ec *executionContext) _Contact_user(ctx context.Context, field graphql.CollectedField, obj *models.Contact) (ret graphql.Marshaler) {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() {
 		if r := recover(); r != nil {
@@ -3764,28 +3766,25 @@ func (ec *executionContext) _Contact_userID(ctx context.Context, field graphql.C
 		Object:   "Contact",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.UserID, nil
+		return ec.resolvers.Contact().User(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*models.User)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋlolopintoᚋentᚋinternalᚋtest_schemaᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ContactCreateResponse_contact(ctx context.Context, field graphql.CollectedField, obj *ContactCreateResponse) (ret graphql.Marshaler) {
@@ -9888,11 +9887,17 @@ func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "userID":
-			out.Values[i] = ec._Contact_userID(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Contact_user(ctx, field, obj)
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

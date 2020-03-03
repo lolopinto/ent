@@ -156,6 +156,9 @@ func (action *CreateContactAction) Validate() error {
 // Save is the method called to execute this action and save change
 func (action *CreateContactAction) Save() (*models.Contact, error) {
 	err := actions.Save(action)
+	if err != nil {
+		return nil, err
+	}
 	return action.builder.GetContact(), err
 }
 

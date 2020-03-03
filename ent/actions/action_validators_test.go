@@ -32,12 +32,12 @@ func (suite *actionsValidatorsSuite) TestWithValidEndTime() {
 	// in the future end time is valid
 	action.builder.OverrideRawField("end_time", time.Now().Add(1*time.Hour))
 
-	err := actions.Save(action)
+	event, err := action.Save()
 	assert.Nil(suite.T(), err)
 
-	assert.NotNil(suite.T(), &action.event.EndTime)
+	assert.NotNil(suite.T(), event.EndTime)
 
-	testingutils.AssertEntLogged(suite.T(), &action.event)
+	testingutils.AssertEntLogged(suite.T(), event)
 }
 
 func (suite *actionsValidatorsSuite) TestWithInValidEndTime() {

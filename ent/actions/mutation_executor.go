@@ -29,7 +29,7 @@ type entListBasedExecutor struct {
 
 func (exec *entListBasedExecutor) Operation() (ent.DataOperation, error) {
 	if exec.idx == len(exec.ops) {
-		return nil, ent.AllOperations
+		return nil, ent.ErrAllOperations
 	}
 
 	if exec.lastOp != nil {
@@ -130,7 +130,7 @@ func (exec *entWithDependenciesExecutor) init() {
 
 func (exec *entWithDependenciesExecutor) getOperation() (ent.DataOperation, error) {
 	if exec.idx == len(exec.executors) {
-		return nil, ent.AllOperations
+		return nil, ent.ErrAllOperations
 	}
 	return exec.executors[exec.idx].Operation()
 }
@@ -146,7 +146,7 @@ func (exec *entWithDependenciesExecutor) Operation() (ent.DataOperation, error) 
 		}
 	}
 
-	if err == ent.AllOperations {
+	if err == ent.ErrAllOperations {
 		// done with previous executor, let's move to the next
 		exec.idx++
 		// get new op and error to send
@@ -197,7 +197,7 @@ func (exec *entWithDependenciesExecutor) handleCreatedEnt(op ent.DataOperation) 
 }
 
 func handleCreatedEnt(op ent.DataOperation, entity ent.Entity) (ent.Entity, error) {
-	createOp, ok := op.(ent.DataOperationWithEnt)
+	createOp, ok := op.(ent.DataOperationWithCreatedEnt)
 
 	if !ok {
 		return nil, nil

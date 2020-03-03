@@ -1,11 +1,11 @@
 package actions_test
 
 import (
+	"database/sql"
 	"testing"
 
 	"github.com/lib/pq"
 	"github.com/lolopinto/ent/ent"
-	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/testingutils"
@@ -32,11 +32,10 @@ func (suite *actionEdgesSuite) TestUniqueEdges() {
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 	action := eventCreateAction(v)
 
-	err := actions.Save(action)
+	event, err := action.Save()
 	assert.Nil(suite.T(), err)
 
-	event := &action.event
-	verifyEventCreationState(suite.T(), &action.event, user)
+	verifyEventCreationState(suite.T(), event, user)
 
 	// can't add new creator since unique edge.
 	user2 := testingutils.CreateTestUser(suite.T())
@@ -55,7 +54,7 @@ func (suite *actionEdgesSuite) TestUniqueEdges() {
 	assert.Equal(suite.T(), pq.ErrorCode("23505"), pErr.Code)
 
 	// can modify or rewrite to the edge for the same id
-	b2 := testingutils.GetEventBuilder(ent.EditOperation, &action.event)
+	b2 := testingutils.GetEventBuilder(ent.EditOperation, event)
 	b2.AddOutboundEdge(models.EventToCreatorEdge, user.GetID(), models.UserType, ent.EdgeData("creator!"))
 	testingutils.SaveBuilder(suite.T(), b2)
 
@@ -67,7 +66,10 @@ func (suite *actionEdgesSuite) TestUniqueEdges() {
 		ID2:      user.GetID(),
 		ID2Type:  user.GetType(),
 		EdgeType: models.EventToCreatorEdge,
-		Data:     "creator!",
+		Data: sql.NullString{
+			String: "creator!",
+			Valid:  true,
+		},
 	}, edge)
 }
 

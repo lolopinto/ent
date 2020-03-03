@@ -32,17 +32,17 @@ func NewMutationBuilder(
 	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *EventMutationBuilder {
-	var event models.Event
+	event := models.NewEventLoader(v).GetNewEvent()
 
 	ret := &EventMutationBuilder{
 		requiredFields: requiredFields,
-		event:          &event,
+		event:          event,
 	}
 	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
-		&event,
+		event,
 		&configs.EventConfig{},
 		opts...,
 	)
@@ -383,16 +383,16 @@ func (b *EventMutationBuilder) Validate() error {
 	return b.builder.Validate()
 }
 
-func (b *EventMutationBuilder) buildFields() ent.ActionFieldMap {
+func (b *EventMutationBuilder) buildFields() actions.FieldMap {
 	m := make(map[string]bool)
 	for _, f := range b.requiredFields {
 		m[f] = true
 	}
 
 	fieldMap := b.GetFields()
-	fields := make(ent.ActionFieldMap)
+	fields := make(actions.FieldMap)
 	addField := func(key string, val interface{}) {
-		fields[key] = &ent.FieldInfo{
+		fields[key] = &actions.FieldInfo{
 			Field: fieldMap[key],
 			Value: val,
 		}

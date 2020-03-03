@@ -4,10 +4,12 @@ package models
 
 import (
 	"context"
+	"sync"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/cast"
 	"github.com/lolopinto/ent/ent/privacy"
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 )
@@ -31,8 +33,10 @@ type Contact struct {
 	Favorite      *bool    `db:"favorite" graphql:"_"`
 	NumberOfCalls *int     `db:"number_of_calls" graphql:"_"`
 	Pi            *float64 `db:"pi" graphql:"_"`
-	Viewer        viewer.ViewerContext
+	viewer        viewer.ViewerContext
 }
+
+type Contacts map[string]*Contact
 
 // ContactResult stores the result of loading a Contact. It's a tuple type which has 2 fields:
 // a Contact and an error
@@ -56,6 +60,75 @@ func (res *ContactsResult) Error() string {
 	return res.Err.Error()
 }
 
+// contactLoader is an ent.PrivacyBackedLoader which is used to
+// load Contact
+type contactLoader struct {
+	nodes   map[string]*Contact
+	errs    map[string]error
+	results []*Contact
+	v       viewer.ViewerContext
+	m       sync.Mutex
+}
+
+func (res *contactLoader) GetNewInstance() ent.DBObject {
+	return res.GetNewContact()
+}
+
+func (res *contactLoader) GetNewContact() *Contact {
+	var contact Contact
+	contact.viewer = res.v
+	return &contact
+}
+
+func (res *contactLoader) GetConfig() ent.Config {
+	return &configs.ContactConfig{}
+}
+
+func (res *contactLoader) SetPrivacyResult(id string, obj ent.DBObject, err error) {
+	res.m.Lock()
+	defer res.m.Unlock()
+	if err != nil {
+		res.errs[id] = err
+	} else if obj != nil {
+		// TODO kill results?
+		ent := obj.(*Contact)
+		res.nodes[id] = ent
+		res.results = append(res.results, ent)
+	}
+}
+
+func (res *contactLoader) GetEntForID(id string) *Contact {
+	return res.nodes[id]
+}
+
+// hmm make private...
+func (res *contactLoader) List() []*Contact {
+	return res.results
+}
+
+func (res *contactLoader) getFirstInstance() *Contact {
+	if len(res.results) == 0 {
+		return nil
+	}
+	return res.results[0]
+}
+
+func (res *contactLoader) getFirstErr() error {
+	for _, err := range res.errs {
+		return err
+	}
+	return nil
+}
+
+// NewContactLoader returns a new contactLoader which is used to load one or more Contacts
+func NewContactLoader(v viewer.ViewerContext) *contactLoader {
+	return &contactLoader{
+		nodes: make(map[string]*Contact),
+		errs:  make(map[string]error),
+		v:     v,
+	}
+}
+
 // IsNode is needed by gqlgen to indicate that this implements the Node interface in GraphQL
 func (contact Contact) IsNode() {}
 
@@ -66,12 +139,7 @@ func (contact *Contact) GetType() ent.NodeType {
 
 // GetViewer returns the viewer for this entity.
 func (contact *Contact) GetViewer() viewer.ViewerContext {
-	return contact.Viewer
-}
-
-// GetConfig returns the config for this entity.
-func (contact *Contact) GetConfig() ent.Config {
-	return &configs.ContactConfig{}
+	return contact.viewer
 }
 
 // LoadContactFromContext loads the given Contact given the context and id
@@ -87,84 +155,105 @@ func LoadContactFromContext(ctx context.Context, id string) (*Contact, error) {
 func GenLoadContactFromContext(ctx context.Context, id string) <-chan *ContactResult {
 	res := make(chan *ContactResult)
 	go func() {
-		v, err := viewer.ForContext(ctx)
-		if err != nil {
-			res <- &ContactResult{
-				Err: err,
-			}
-			return
+		contact, err := LoadContactFromContext(ctx, id)
+		res <- &ContactResult{
+			Err:     err,
+			Contact: contact,
 		}
-		res <- <-(GenLoadContact(v, id))
 	}()
 	return res
 }
 
 // LoadContact loads the given Contact given the viewer and id
 func LoadContact(v viewer.ViewerContext, id string) (*Contact, error) {
-	var contact Contact
-	err := ent.LoadNode(v, id, &contact)
-	return &contact, err
+	loader := NewContactLoader(v)
+	err := ent.LoadNode(v, id, loader)
+	return loader.nodes[id], err
 }
 
 // GenLoadContact loads the given Contact given the id
 func GenLoadContact(v viewer.ViewerContext, id string) <-chan *ContactResult {
 	res := make(chan *ContactResult)
 	go func() {
-		var result ContactResult
-		var contact Contact
-		result.Err = <-ent.GenLoadNode(v, id, &contact)
-		result.Contact = &contact
-		res <- &result
+		contact, err := LoadContact(v, id)
+		res <- &ContactResult{
+			Err:     err,
+			Contact: contact,
+		}
 	}()
 	return res
 }
 
 // LoadContacts loads multiple Contacts given the ids
 func LoadContacts(v viewer.ViewerContext, ids ...string) ([]*Contact, error) {
-	var contacts []*Contact
-	err := ent.LoadNodes(v, ids, &contacts, &configs.ContactConfig{})
-	return contacts, err
+	loader := NewContactLoader(v)
+	err := ent.LoadNodes(v, ids, loader)
+	return loader.results, err
 }
 
 // GenLoadContacts loads multiple Contacts given the ids
 func GenLoadContacts(v viewer.ViewerContext, ids ...string) <-chan *ContactsResult {
 	res := make(chan *ContactsResult)
 	go func() {
-		var result ContactsResult
-		result.Err = <-ent.GenLoadNodes(v, ids, &result.Contacts, &configs.ContactConfig{})
-		res <- &result
+		results, err := LoadContacts(v, ids...)
+		res <- &ContactsResult{
+			Err:      err,
+			Contacts: results,
+		}
 	}()
 	return res
 }
 
 func LoadContactIDFromEmailAddress(emailAddress string) (string, error) {
-	// TODO this is a short term API that needs to be killed
-	// since it shouldn't be possible to get an ent without privacy
-	// change the underlying API to only return a map[string]interface{} or something else
-	var contact Contact
-	err := ent.LoadNodeFromParts(&contact, &configs.ContactConfig{}, "email_address", emailAddress)
+	loader := NewContactLoader(viewer.LoggedOutViewer())
+	data, err := ent.LoadNodeRawDataViaQueryClause(
+		loader,
+		sql.Eq("email_address", emailAddress),
+	)
 	if err != nil {
 		return "", err
 	}
-	return contact.ID, nil
+	return cast.ToUUIDString(data["id"])
+}
+
+func LoadContactFromEmailAddress(v viewer.ViewerContext, emailAddress string) (*Contact, error) {
+	loader := NewContactLoader(v)
+	err := ent.LoadNodeViaQueryClause(v, loader, sql.Eq("email_address", emailAddress))
+	if err != nil {
+		return nil, err
+	}
+	return loader.getFirstInstance(), loader.getFirstErr()
+}
+
+// GenUser returns the User associated with the Contact instance
+func (contact *Contact) GenUser() <-chan *UserResult {
+	return GenLoadUser(contact.viewer, contact.UserID)
+}
+
+// LoadUser returns the User associated with the Contact instance
+func (contact *Contact) LoadUser() (*User, error) {
+	return LoadUser(contact.viewer, contact.UserID)
 }
 
 // GenContactEmails returns the ContactEmails associated with the Contact instance
 func (contact *Contact) GenContactEmails() <-chan *ContactEmailsResult {
 	res := make(chan *ContactEmailsResult)
 	go func() {
-		var result ContactEmailsResult
-		result.Err = <-ent.GenLoadForeignKeyNodes(contact.Viewer, contact.ID, &result.ContactEmails, "contact_id", &configs.ContactEmailConfig{})
-		res <- &result
+		loader := NewContactEmailLoader(contact.viewer)
+		err := ent.LoadNodesViaQueryClause(contact.viewer, loader, sql.Eq("contact_id", contact.ID))
+		res <- &ContactEmailsResult{
+			Err:           err,
+			ContactEmails: loader.results,
+		}
 	}()
 	return res
 }
 
 // LoadContactEmails returns the ContactEmails associated with the Contact instance
 func (contact *Contact) LoadContactEmails() ([]*ContactEmail, error) {
-	var contactEmails []*ContactEmail
-	err := ent.LoadForeignKeyNodes(contact.Viewer, contact.ID, &contactEmails, "contact_id", &configs.ContactEmailConfig{})
-	return contactEmails, err
+	loader := NewContactEmailLoader(contact.viewer)
+	err := ent.LoadNodesViaQueryClause(contact.viewer, loader, sql.Eq("contact_id", contact.ID))
+	return loader.results, err
 }
 
 // LoadAllowListEdges returns the AllowList edges associated with the Contact instance
@@ -181,18 +270,21 @@ func (contact *Contact) GenAllowListEdges() <-chan *ent.AssocEdgesResult {
 func (contact *Contact) GenAllowList() <-chan *UsersResult {
 	res := make(chan *UsersResult)
 	go func() {
-		var result UsersResult
-		result.Err = <-ent.GenLoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &result.Users, &configs.UserConfig{})
-		res <- &result
+		loader := NewUserLoader(contact.viewer)
+		err := ent.LoadNodesByType(contact.viewer, contact.ID, ContactToAllowListEdge, loader)
+		res <- &UsersResult{
+			Err:   err,
+			Users: loader.results,
+		}
 	}()
 	return res
 }
 
 // LoadAllowList returns the Users associated with the Contact instance
 func (contact *Contact) LoadAllowList() ([]*User, error) {
-	var users []*User
-	err := ent.LoadNodesByType(contact.Viewer, contact.ID, ContactToAllowListEdge, &users, &configs.UserConfig{})
-	return users, err
+	loader := NewUserLoader(contact.viewer)
+	err := ent.LoadNodesByType(contact.viewer, contact.ID, ContactToAllowListEdge, loader)
+	return loader.results, err
 }
 
 // LoadAllowListEdgeFor loads the ent.AssocEdge between the current node and the given id2 for the AllowList edge.
@@ -211,6 +303,16 @@ func (contact *Contact) DBFields() ent.DBFields {
 		"id": func(v interface{}) error {
 			var err error
 			contact.ID, err = cast.ToUUIDString(v)
+			return err
+		},
+		"created_at": func(v interface{}) error {
+			var err error
+			contact.CreatedAt, err = cast.ToTime(v)
+			return err
+		},
+		"updated_at": func(v interface{}) error {
+			var err error
+			contact.UpdatedAt, err = cast.ToTime(v)
 			return err
 		},
 		"email_address": func(v interface{}) error {

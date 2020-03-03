@@ -20,7 +20,7 @@ type EntMutationBuilder struct {
 	entity          ent.Entity
 	Operation       ent.WriteOperation
 	EntConfig       ent.Config
-	buildFieldsFn   func() ent.ActionFieldMap
+	buildFieldsFn   func() FieldMap
 	rawDBFields     map[string]interface{}
 	validatedFields map[string]interface{}
 	edges           []*ent.EdgeOperation
@@ -45,12 +45,13 @@ func ExistingEnt(existingEnt ent.Entity) func(*EntMutationBuilder) {
 	}
 }
 
-func BuildFields(buildFieldsFn func() ent.ActionFieldMap) func(*EntMutationBuilder) {
+func BuildFields(buildFieldsFn func() FieldMap) func(*EntMutationBuilder) {
 	return func(mb *EntMutationBuilder) {
 		mb.buildFieldsFn = buildFieldsFn
 	}
 }
 
+// TODO have this just take a loader...
 func NewMutationBuilder(
 	v viewer.ViewerContext,
 	operation ent.WriteOperation,
@@ -337,7 +338,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		}
 
 		// inverse edge
-		if edgeInfo.InverseEdgeType != nil && edgeInfo.InverseEdgeType.Valid {
+		if edgeInfo.InverseEdgeType.Valid {
 			ops = append(ops, edge.InverseEdge(
 				ent.EdgeType(edgeInfo.InverseEdgeType.String),
 			))
@@ -487,31 +488,13 @@ func (b *EntMutationBuilder) loadEdges() (map[ent.EdgeType]*ent.AssocEdgeData, e
 		return nil, nil
 	}
 
-	var wg sync.WaitGroup
-	// TODO we need concurrent versions of this API
-	// a multi-get version of the API
-	// this is too hard.
-	wg.Add(len(b.edgeTypes))
-	var m sync.Mutex
-	edges := make(map[ent.EdgeType]*ent.AssocEdgeData)
-	var sErr syncerr.Error
+	edgeTypes := make([]string, len(b.edgeTypes))
+
+	idx := 0
 	for edgeType := range b.edgeTypes {
-		edgeType := edgeType
-		f := func(edgeType ent.EdgeType) {
-			defer wg.Done()
-			edge, err := ent.GetEdgeInfo(edgeType, nil)
-			sErr.Append(err)
-			m.Lock()
-			defer m.Unlock()
-			edges[edgeType] = edge
-		}
-		go f(edgeType)
-	}
-	wg.Wait()
-
-	if err := sErr.Err(); err != nil {
-		return nil, err
+		edgeTypes[idx] = string(edgeType)
+		idx++
 	}
 
-	return edges, nil
+	return ent.GetEdgeInfos(edgeTypes)
 }

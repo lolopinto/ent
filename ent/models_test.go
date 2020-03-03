@@ -1,8 +1,7 @@
 package ent_test
 
 import (
-	"database/sql"
-
+	dbsql "database/sql"
 	"testing"
 
 	"github.com/google/uuid"
@@ -11,9 +10,11 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/sql"
+	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 )
 
@@ -32,60 +33,57 @@ func (suite *modelsTestSuite) SetupSuite() {
 	suite.Suite.SetupSuite()
 }
 
-func (suite *modelsTestSuite) TestLoadNodeFromParts() {
+func (suite *modelsTestSuite) TestLoadNodeRawDataViaQueryClause() {
 	user := testingutils.CreateTestUser(suite.T())
 
-	var testCases = []struct {
-		parts       []interface{}
+	var testCases = map[string]struct {
+		clause      sql.QueryClause
 		foundResult bool
 	}{
-		{
-			[]interface{}{
-				"first_name",
-				"Ola",
-			},
+		"first_name": {
+			sql.Eq("first_name", "Ola"),
 			true,
 		},
-		{
-			[]interface{}{
-				"first_name",
-				"Ola",
-				"last_name",
-				"Okelola",
-			},
+		"first and last_name": {
+			sql.And(
+				sql.Eq("first_name", "Ola"),
+				sql.Eq("last_name", "Okelola"),
+			),
 			true,
 		},
-		{
-			[]interface{}{
-				"email_address",
-				user.EmailAddress,
-				"last_name",
-				"Okelola",
-			},
+		"email and last name": {
+			sql.And(
+				sql.Eq("email_address", user.EmailAddress),
+				sql.Eq("last_name", "Okelola"),
+			),
 			true,
 		},
-		{
-			[]interface{}{
-				"email_address",
-				"Okelola",
-			},
+		"wrong email": {
+			sql.Eq("email_address", "Okelola"),
 			false,
 		},
 	}
 
-	for _, tt := range testCases {
-		var existingUser models.User
-		err := ent.LoadNodeFromParts(&existingUser, &configs.UserConfig{}, tt.parts...)
-		if tt.foundResult {
-			assert.Nil(suite.T(), err)
-			assert.NotZero(suite.T(), existingUser)
-		} else {
-			assert.NotNil(suite.T(), err)
-			assert.Equal(suite.T(), err, sql.ErrNoRows)
-			// TODO ugh... it's finally time to change this to return nil...
-			// can't do assert.Zero because (user.Bio returns (*string) instead of "")
-			assert.Equal(suite.T(), existingUser.ID, "")
-		}
+	for key, tt := range testCases {
+		suite.T().Run(key, func(t *testing.T) {
+			userData, err := ent.LoadNodeRawDataViaQueryClause(
+				models.NewUserLoader(viewer.LoggedOutViewer()),
+				tt.clause,
+			)
+			if tt.foundResult {
+				assert.Nil(t, err)
+				assert.NotNil(t, userData)
+
+				// confirm id is same as user we are fetching about
+				id, err := cast.ToUUIDString(userData["id"])
+				require.Nil(t, err)
+				assert.Equal(t, user.ID, id)
+			} else {
+				assert.NotNil(t, err)
+				assert.Equal(t, err, dbsql.ErrNoRows)
+				assert.Nil(t, userData)
+			}
+		})
 	}
 }
 
@@ -107,15 +105,19 @@ func (suite *modelsTestSuite) TestLoadNodeFromID() {
 	}
 
 	for _, tt := range testCases {
-		var existingUser models.User
-		err := ent.LoadNodeRawData(tt.id, &existingUser, &configs.UserConfig{})
+		loader := models.NewUserLoader(viewer.LoggedOutViewer())
+		userData, err := ent.LoadNodeRawData(tt.id, loader)
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
-			assert.NotZero(suite.T(), existingUser)
+			assert.NotNil(suite.T(), userData)
+
+			id, err := cast.ToUUIDString(userData["id"])
+			assert.Nil(suite.T(), err)
+			assert.Equal(suite.T(), id, user.ID)
 		} else {
 			assert.NotNil(suite.T(), err)
-			assert.Equal(suite.T(), err, sql.ErrNoRows)
-			assert.Zero(suite.T(), existingUser)
+			assert.Equal(suite.T(), err, dbsql.ErrNoRows)
+			assert.Nil(suite.T(), userData)
 		}
 	}
 }
@@ -139,11 +141,11 @@ func (suite *modelsTestSuite) TestGetEdgeInfo() {
 		edgeData, err := ent.GetEdgeInfo(tt.edgeType, nil)
 		if tt.foundResult {
 			assert.Nil(suite.T(), err)
-			assert.NotZero(suite.T(), edgeData)
+			assert.NotNil(suite.T(), edgeData)
 		} else {
 			assert.NotNil(suite.T(), err)
-			assert.Equal(suite.T(), err, sql.ErrNoRows)
-			assert.Zero(suite.T(), *edgeData)
+			assert.Equal(suite.T(), err, dbsql.ErrNoRows)
+			assert.Nil(suite.T(), edgeData)
 		}
 	}
 }
@@ -372,21 +374,21 @@ func (suite *modelsTestSuite) TestInvalidLoadEdgeByType() {
 
 	edge, err := ent.LoadEdgeByType(event.ID, user.ID, models.UserToEventsEdge)
 	assert.Nil(suite.T(), err)
-	assert.Zero(suite.T(), *edge)
+	assert.Nil(suite.T(), edge)
 }
 
 func (suite *modelsTestSuite) TestLoadEdgeByTypeEmptyID1() {
 	user := testingutils.CreateTestUser(suite.T())
 	edge, err := ent.LoadEdgeByType("", user.ID, models.UserToEventsEdge)
 	assert.Nil(suite.T(), err)
-	assert.Zero(suite.T(), *edge)
+	assert.Nil(suite.T(), edge)
 }
 
 func (suite *modelsTestSuite) TestLoadEdgeByTypeEmptyID2() {
 	user := testingutils.CreateTestUser(suite.T())
 	edge, err := ent.LoadEdgeByType(user.ID, "", models.UserToEventsEdge)
 	assert.Nil(suite.T(), err)
-	assert.Zero(suite.T(), *edge)
+	assert.Nil(suite.T(), edge)
 }
 
 func testLoadEdgeByType(suite *modelsTestSuite, f func(id, id2 string) (*ent.AssocEdge, error)) {
@@ -430,7 +432,7 @@ func testUniqueLoadNodeByType(suite *modelsTestSuite, f func(id string) (*models
 func verifyEdgeByType(suite *modelsTestSuite, f func() (*ent.AssocEdge, error), id1, id2 string) {
 	edge, err := f()
 	assert.Nil(suite.T(), err)
-	assert.NotZero(suite.T(), edge)
+	assert.NotNil(suite.T(), edge)
 	assert.Equal(suite.T(), edge.ID1, id1)
 	assert.Equal(suite.T(), edge.ID2, id2)
 }
@@ -441,52 +443,57 @@ func (suite *modelsTestSuite) TestLoadAssocEdges() {
 	// 2/ table not being empty and full of valid data
 	// we can't remove and re-add fresh data because of how dbcleaner works
 	// we can't validate the number of edges here because that's subject to change
-	var existingEdges []*ent.AssocEdgeData
-	err := ent.GenLoadAssocEdges(&existingEdges)
+	result := <-ent.GenLoadAssocEdges()
 
-	assert.NotEmpty(suite.T(), existingEdges)
-	assert.Nil(suite.T(), err)
+	assert.NotEmpty(suite.T(), result.Edges)
+	assert.Nil(suite.T(), result.Err)
 }
 
-func (suite *modelsTestSuite) TestLoadForeignKeyNodes() {
+func (suite *modelsTestSuite) TestLoadRawForeignKeyNodes() {
 	user := testingutils.CreateTestUser(suite.T())
 	contact := testingutils.CreateTestContact(suite.T(), user)
 	contact2 := testingutils.CreateTestContact(suite.T(), user)
 
-	var testCases = []struct {
+	var testCases = map[string]struct {
 		id          string
 		foundResult bool
 	}{
-		{
+		"correct id": {
 			user.ID,
 			true,
 		},
-		{
+		"incorrect id": {
 			contact.ID,
 			false,
 		},
 	}
 
-	for _, tt := range testCases {
-		var contacts []*models.Contact
-		err := ent.LoadRawForeignKeyNodes(tt.id, &contacts, "user_id", &configs.ContactConfig{})
-		assert.Nil(suite.T(), err)
-		if tt.foundResult {
-			assert.NotEmpty(suite.T(), contacts)
+	for key, tt := range testCases {
+		suite.T().Run(key, func(t *testing.T) {
+			loader := models.NewContactLoader(viewer.LoggedOutViewer())
+			contacts, err := ent.LoadNodesRawDataViaQueryClause(loader, sql.Eq("user_id", tt.id))
+			if tt.foundResult {
+				assert.Nil(t, err)
+				assert.NotEmpty(t, contacts)
 
-			assert.Len(suite.T(), contacts, 2)
-			for _, loadedContact := range contacts {
-				assert.NotZero(suite.T(), loadedContact)
-				assert.Contains(suite.T(), []string{contact.ID, contact2.ID}, loadedContact.ID)
+				assert.Len(t, contacts, 2)
+				for _, contactData := range contacts {
+					assert.NotNil(t, contactData)
+					id, err := cast.ToUUIDString(contactData["id"])
+					assert.Nil(t, err)
+					assert.Contains(t, []string{contact.ID, contact2.ID}, id)
+				}
+			} else {
+				// no results is standard and no error
+				assert.Nil(t, err)
+				assert.Len(t, contacts, 0)
+				assert.Empty(t, contacts)
 			}
-		} else {
-			assert.Len(suite.T(), contacts, 0)
-			assert.Empty(suite.T(), contacts)
-		}
+		})
 	}
 }
 
-func (suite *modelsTestSuite) TestLoadNodesByType() {
+func (suite *modelsTestSuite) TestLoadRawNodesByType() {
 	user := testingutils.CreateTestUser(suite.T())
 	event := testingutils.CreateTestEvent(suite.T(), user)
 	event2 := testingutils.CreateTestEvent(suite.T(), user)
@@ -506,16 +513,18 @@ func (suite *modelsTestSuite) TestLoadNodesByType() {
 	}
 
 	for _, tt := range testCases {
-		var events []*models.Event
-		err := ent.LoadRawNodesByType(tt.id1, models.UserToEventsEdge, &events, &configs.EventConfig{})
+		loader := models.NewEventLoader(viewer.LoggedOutViewer())
+		events, err := ent.LoadRawNodesByType(tt.id1, models.UserToEventsEdge, loader)
 		assert.Nil(suite.T(), err)
 		if tt.foundResult {
 			assert.NotEmpty(suite.T(), events)
 
 			assert.Len(suite.T(), events, 2)
-			for _, loadedEvent := range events {
-				assert.NotZero(suite.T(), loadedEvent)
-				assert.Contains(suite.T(), []string{event.ID, event2.ID}, loadedEvent.ID)
+			for _, eventData := range events {
+				assert.NotZero(suite.T(), eventData)
+				id, err := cast.ToUUIDString(eventData["id"])
+				assert.Nil(suite.T(), err)
+				assert.Contains(suite.T(), []string{event.ID, event2.ID}, id)
 			}
 		} else {
 			assert.Len(suite.T(), events, 0)
@@ -529,11 +538,13 @@ func (suite *modelsTestSuite) TestLoadNodeWithJSON() {
 	residentNames := []string{"The Queen"}
 	address := testingutils.CreateTestAddress(suite.T(), residentNames)
 
-	var loadedAddress models.Address
-	err := ent.LoadNodeRawData(address.ID, &loadedAddress, &configs.AddressConfig{})
+	loader := models.NewAddressLoader(viewer.LoggedOutViewer())
+	addressData, err := ent.LoadNodeRawData(address.ID, loader)
 	require.NoError(suite.T(), err)
-
-	assert.Equal(suite.T(), residentNames, loadedAddress.ResidentNames)
+	require.NotNil(suite.T(), addressData)
+	var loadedResidentNames []string
+	cast.UnmarshallJSON(addressData["resident_names"], &loadedResidentNames)
+	assert.Equal(suite.T(), residentNames, loadedResidentNames)
 }
 
 func (suite *modelsTestSuite) TestLoadingMultiNodesWithJSON() {
@@ -549,21 +560,23 @@ func (suite *modelsTestSuite) TestLoadingMultiNodesWithJSON() {
 		address2.ID,
 		address3.ID,
 	}
-	var addresses []*models.Address
-	err := ent.LoadNodesRawData(ids, &addresses, &configs.AddressConfig{})
+	loader := models.NewAddressLoader(viewer.LoggedOutViewer())
+	addresses, err := ent.LoadNodesRawData(ids, loader)
 	require.NoError(suite.T(), err)
 
 	assert.Len(suite.T(), addresses, 3)
 
-	for _, loadedAddress := range addresses {
-		assert.Equal(suite.T(), residentNames, loadedAddress.ResidentNames)
+	for _, addressData := range addresses {
+		var loadedResidentNames []string
+		err := cast.UnmarshallJSON(addressData["resident_names"], &loadedResidentNames)
+		assert.Nil(suite.T(), err)
+		assert.Equal(suite.T(), residentNames, loadedResidentNames)
 	}
 }
 
-func (suite *modelsTestSuite) TestLoadingRawMultiNodesWithJSON() {
-	// This case is different from above. We're not going through any caching layer
-	// that would have needed MapScan previously. we StructScan directly so what would have been expected here
-	suite.T().Skip("need to come back to this edge case")
+func (suite *modelsTestSuite) TestLoadRawQueryWithJSON() {
+	// This tests the raw_data mode
+	// We still don't have a way to test StructScan that loader orchestrates on its own since we go through caching layer as expected
 	residentNames := []string{"The Queen", "Prince Phillip"}
 	address := testingutils.CreateTestAddress(suite.T(), residentNames)
 	address2 := testingutils.CreateTestAddress(suite.T(), residentNames)
@@ -574,15 +587,20 @@ func (suite *modelsTestSuite) TestLoadingRawMultiNodesWithJSON() {
 		address2.ID: true,
 		address3.ID: true,
 	}
-	var addresses []*models.Address
-	err := ent.LoadRawQuery("SELECT * FROM addresses", &addresses)
+	loader := models.NewAddressLoader(viewer.LoggedOutViewer())
+	addresses, err := ent.LoadRawQuery("SELECT * FROM addresses", loader)
 	require.NoError(suite.T(), err)
 
-	assert.Len(suite.T(), addresses, 1)
+	assert.Len(suite.T(), addresses, 3)
 
-	for _, loadedAddress := range addresses {
-		assert.NotNil(suite.T(), ids[loadedAddress.ID])
-		assert.Equal(suite.T(), residentNames, loadedAddress.ResidentNames)
+	for _, addressData := range addresses {
+		id, err := cast.ToUUIDString(addressData["id"])
+		assert.Nil(suite.T(), err)
+		assert.NotNil(suite.T(), ids[id])
+		var loadedResidentNames []string
+		err = cast.UnmarshallJSON(addressData["resident_names"], &loadedResidentNames)
+		assert.Nil(suite.T(), err)
+		assert.Equal(suite.T(), residentNames, loadedResidentNames)
 	}
 }
 

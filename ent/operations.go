@@ -2,34 +2,58 @@ package ent
 
 import (
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/lolopinto/ent/data"
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/pkg/errors"
+	"github.com/rocketlaunchr/remember-go"
 )
 
+// DataOperation corresponds to an individual operation to write to the database
+// could be inserting a node, deleting a node, adding an edge, etc
+// Ent framework comes with different operations which handle common things
+// Each operation is returned by Executor
 type DataOperation interface {
 	PerformWrite(tx *sqlx.Tx) error
 }
 
-type DataOperationWithEnt interface {
+// DataOperationWithCreatedEnt indicates an operation which can create an ent
+// This is used to track placeholder ids and id of the created ent
+type DataOperationWithCreatedEnt interface {
+	DataOperation
 	CreatedEnt() Entity
 }
 
+// DataOperationWithResolver corresponds to an operation which can resolve placeholder ids
+// so that the executor ca nbe passed to it as needed
 type DataOperationWithResolver interface {
+	DataOperation
 	Resolve(Executor) error
 }
 
+// DataOperationWithKeys indicates an operation that has keys in cache(redis/memory, etc)
+// and makes sure to delete these keys when an operation happens
+type DataOperationWithKeys interface {
+	DataOperation
+	GetCacheKeys() []string
+}
+
+// WriteOperation indicates if we're creating, editing or deleting an ent
 type WriteOperation string
 
 const (
+	// InsertOperation means we're creating a new ent
 	InsertOperation WriteOperation = "insert"
-	EditOperation   WriteOperation = "edit"
+	// EditOperation means we're editing an existing ent
+	EditOperation WriteOperation = "edit"
+	// DeleteOperation means we're deleting an ent
 	DeleteOperation WriteOperation = "delete"
 )
 
+// EditNodeOperation indicates we're creating or editing an ent
 type EditNodeOperation struct {
 	ExistingEnt         Entity
 	Entity              Entity
@@ -39,6 +63,7 @@ type EditNodeOperation struct {
 	Operation           WriteOperation
 }
 
+// Resolve replaces any placeholders this operation has with the actual ID of the created ent
 func (op *EditNodeOperation) Resolve(exec Executor) error {
 	//	resolve any placeholders before doing the write
 	// only do this for fields that need to be resolved to speed things up
@@ -52,139 +77,67 @@ func (op *EditNodeOperation) Resolve(exec Executor) error {
 	return nil
 }
 
+// PerformWrite writes the node to the database
 func (op *EditNodeOperation) PerformWrite(tx *sqlx.Tx) error {
-	var queryOp nodeOp
-	if op.Operation == InsertOperation {
-		queryOp = &insertNodeOp{Entity: op.Entity, EntConfig: op.EntConfig}
-	} else {
-		queryOp = &updateNodeOp{ExistingEnt: op.ExistingEnt, EntConfig: op.EntConfig}
+	m := op.Fields
+	if m == nil {
+		m = make(map[string]interface{})
+	}
+	var builder *sqlBuilder
+	switch op.Operation {
+	case InsertOperation:
+		op.updateInsertDefaultMap(m)
+		builder = getInsertQuery(op.EntConfig.GetTableName(), m, "RETURNING *")
+		break
+	case EditOperation:
+		op.updateEditDefaultMap(m)
+
+		builder = getUpdateQuery(
+			op.EntConfig.GetTableName(),
+			op.ExistingEnt,
+			m,
+		)
+
+		break
+	default:
+		return errors.New("Unsupported operation")
 	}
 
-	columns, values := queryOp.getInitColsAndVals()
-	for k, v := range op.Fields {
-		columns = append(columns, k)
-		values = append(values, v)
-	}
-
-	query := queryOp.getSQLQuery(columns, values)
-
-	return performWrite(query, values, tx, op.Entity)
+	return performWrite(builder, tx, op.Entity)
 }
 
+// GetCacheKeys returns keys that need to be deleted for this operation
+func (op *EditNodeOperation) GetCacheKeys() []string {
+	if op.ExistingEnt == nil {
+		return []string{}
+	}
+	return []string{
+		getKeyForNode(op.ExistingEnt.GetID(), op.EntConfig.GetTableName()),
+	}
+}
+
+// CreatedEnt returns the newly created ent (if any)
 func (op *EditNodeOperation) CreatedEnt() Entity {
 	return op.Entity
 }
 
-type nodeOp interface {
-	getInitColsAndVals() ([]string, []interface{})
-	getSQLQuery(columns []string, values []interface{}) string
-}
-
-type insertNodeOp struct {
-	Entity    Entity
-	EntConfig Config
-}
-
-func (op *insertNodeOp) getInitColsAndVals() ([]string, []interface{}) {
-	newUUID := uuid.New().String()
+func (op *EditNodeOperation) updateInsertDefaultMap(m map[string]interface{}) {
 	t := time.Now()
 
 	// TODO: break this down into something not hardcoded in here
-	var columns []string
-	var values []interface{}
-	_, ok := op.Entity.(dataEntityWithDiffPKey)
-	if ok {
-		columns = []string{"created_at", "updated_at"}
-		values = []interface{}{t, t}
-	} else {
-		// initialize id, created_at and updated_at times
-		columns = []string{"id", "created_at", "updated_at"}
-		values = []interface{}{newUUID, t, t}
-
+	m["created_at"] = t
+	m["updated_at"] = t
+	_, ok := op.Entity.(DBObjectWithDiffKey)
+	if !ok {
+		m["id"] = uuid.New().String()
 	}
-	return columns, values
 }
 
-func (op *insertNodeOp) getSQLQuery(columns []string, values []interface{}) string {
-	// TODO sql builder factory...
-	colsString := getColumnsString(columns)
-	valsString := getValsString(values)
-	//	fields := make(map[string]interface{})
-
-	computedQuery := fmt.Sprintf(
-		"INSERT INTO %s (%s) VALUES(%s) RETURNING *",
-		op.EntConfig.GetTableName(),
-		colsString,
-		valsString,
-	)
-	//fmt.Println(computedQuery)
-	return computedQuery
+func (op *EditNodeOperation) updateEditDefaultMap(m map[string]interface{}) {
+	m["updated_at"] = time.Now()
 }
 
-type updateNodeOp struct {
-	ExistingEnt Entity
-	EntConfig   Config
-}
-
-func (op *updateNodeOp) getInitColsAndVals() ([]string, []interface{}) {
-	// initialize updated_at time
-	t := time.Now()
-
-	columns := []string{"updated_at"}
-	values := []interface{}{t}
-	return columns, values
-}
-
-func (op *updateNodeOp) getSQLQuery(columns []string, values []interface{}) string {
-	valsString := getValuesDataForUpdate(columns, values)
-
-	computedQuery := fmt.Sprintf(
-		"UPDATE %s SET %s WHERE %s = '%s' RETURNING *",
-		op.EntConfig.GetTableName(),
-		valsString,
-		getPrimaryKeyForObj(op.ExistingEnt),
-		op.ExistingEnt.GetID(),
-	)
-
-	//fmt.Println(computedQuery)
-	deleteKey(getKeyForNode(op.ExistingEnt.GetID(), op.EntConfig.GetTableName()))
-
-	return computedQuery
-}
-
-type EdgeOperation struct {
-	edgeType       EdgeType
-	id1            string
-	id1Type        NodeType
-	id2            string
-	id2Type        NodeType
-	time           time.Time
-	data           string
-	operation      WriteOperation
-	id1Placeholder bool
-	id2Placeholder bool
-}
-
-func newEdgeOperation(
-	edgeType EdgeType,
-	op WriteOperation,
-	options ...func(*EdgeOperation)) *EdgeOperation {
-	edgeOp := &EdgeOperation{
-		edgeType:  edgeType,
-		operation: op,
-	}
-	for _, opt := range options {
-		opt(edgeOp)
-	}
-	return edgeOp
-}
-
-func isNil(ent Entity) bool {
-	// to handle go weirdness
-	// TODO convert everything
-	return ent == nil || ent == Entity(nil)
-}
-
+// NewInboundEdge returns a new edge from id1 -> viewer
 func NewInboundEdge(
 	edgeType EdgeType,
 	op WriteOperation,
@@ -213,6 +166,7 @@ func NewInboundEdge(
 	return edgeOp
 }
 
+// NewOutboundEdge returns a new edge from viewer -> id2
 func NewOutboundEdge(
 	edgeType EdgeType,
 	op WriteOperation,
@@ -243,6 +197,41 @@ func NewOutboundEdge(
 	return edgeOp
 }
 
+// EdgeOperation handles creating, editing or deleting an edge
+type EdgeOperation struct {
+	edgeType       EdgeType
+	id1            string
+	id1Type        NodeType
+	id2            string
+	id2Type        NodeType
+	time           time.Time
+	data           *string
+	operation      WriteOperation
+	id1Placeholder bool
+	id2Placeholder bool
+}
+
+func newEdgeOperation(
+	edgeType EdgeType,
+	op WriteOperation,
+	options ...func(*EdgeOperation)) *EdgeOperation {
+	edgeOp := &EdgeOperation{
+		edgeType:  edgeType,
+		operation: op,
+	}
+	for _, opt := range options {
+		opt(edgeOp)
+	}
+	return edgeOp
+}
+
+func isNil(ent Entity) bool {
+	// to handle go weirdness
+	// TODO convert everything
+	return ent == nil || ent == Entity(nil)
+}
+
+// InverseEdge returns the inverse edge of the current edge with the provided edgeType
 func (op *EdgeOperation) InverseEdge(edgeType EdgeType) *EdgeOperation {
 	return &EdgeOperation{
 		operation:      op.operation,
@@ -258,6 +247,7 @@ func (op *EdgeOperation) InverseEdge(edgeType EdgeType) *EdgeOperation {
 	}
 }
 
+// SymmetricEdge returns a symmetric edge of the current one with id1 and id2 swapped
 func (op *EdgeOperation) SymmetricEdge() *EdgeOperation {
 	return &EdgeOperation{
 		operation:      op.operation,
@@ -273,40 +263,78 @@ func (op *EdgeOperation) SymmetricEdge() *EdgeOperation {
 	}
 }
 
+// EdgeType returns the edge type of the Operation
 func (op *EdgeOperation) EdgeType() EdgeType {
 	return op.edgeType
 }
 
+// PerformWrite writes the edge to the database
 func (op *EdgeOperation) PerformWrite(tx *sqlx.Tx) error {
 	// check that they're valid uuids
 	if op.id1Placeholder || op.id2Placeholder {
 		return errors.New("error performing write. failed to replace placeholder in ent edge operation")
 	}
 
+	edgeData, err := GetEdgeInfo(op.edgeType, tx)
+	if err != nil {
+		return err
+	}
+
+	var builder *sqlBuilder
+	switch op.operation {
+	case InsertOperation:
+		builder = op.getBuilderForInsertOp(edgeData)
+		break
+	case DeleteOperation:
+		builder = op.getBuilderForDeleteOp(edgeData)
+		break
+	default:
+		return fmt.Errorf("unsupported edge operation %v passed to edgeOperation.PerformWrite", op)
+	}
+
+	return performWrite(builder, tx, nil)
+}
+
+// GetCacheKeys returns keys that need to be deleted for this operation
+func (op *EdgeOperation) GetCacheKeys() []string {
+	return []string{
+		getKeyForEdge(op.id1, op.edgeType),
+	}
+}
+
+func (op *EdgeOperation) getBuilderForInsertOp(edgeData *AssocEdgeData) *sqlBuilder {
 	if op.time.IsZero() {
 		// log warning here?
 		op.time = time.Now()
 	}
-	edgeOptions := EdgeOptions{Time: op.time, Data: op.data}
 
-	switch op.operation {
-	case InsertOperation:
-		return addEdgeInTransactionRaw(
-			op.edgeType,
-			op.id1,
-			op.id2,
-			op.id1Type,
-			op.id2Type,
-			edgeOptions,
-			tx,
-		)
-	case DeleteOperation:
-		return deleteEdgeInTransactionRaw(op.edgeType, op.id1, op.id2, tx)
-	default:
-		return fmt.Errorf("unsupported edge operation %v passed to edgeOperation.PerformWrite", op)
-	}
+	return getInsertQuery(
+		edgeData.EdgeTable,
+		map[string]interface{}{
+			"id1":       op.id1,
+			"id1_type":  op.id1Type,
+			"edge_type": op.edgeType,
+			"id2":       op.id2,
+			"id2_type":  op.id2Type,
+			"time":      op.time,
+			"data":      op.data, // zero value of data works for us. no check needed
+		},
+		// postgres specific
+		// this is where the db dialects will eventually be needed
+		"ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
+	)
 }
 
+func (op *EdgeOperation) getBuilderForDeleteOp(edgeData *AssocEdgeData) *sqlBuilder {
+	return getDeleteQuery(edgeData.EdgeTable,
+		sql.And(
+			sql.Eq("id1", op.id1),
+			sql.Eq("edge_type", op.edgeType),
+			sql.Eq("id2", op.id2),
+		))
+}
+
+// Resolve replaces any placeholders this operation has with the actual ID of the created ent
 func (op *EdgeOperation) Resolve(exec Executor) error {
 	if op.id1Placeholder {
 		ent := exec.ResolveValue(op.id1)
@@ -334,12 +362,16 @@ func (op *EdgeOperation) Resolve(exec Executor) error {
 	return nil
 }
 
+// EdgeTime provides the ability to change the time of an edge. Passed to Edge modification functions
 func EdgeTime(t time.Time) func(*EdgeOperation) {
 	return func(op *EdgeOperation) {
 		op.time = t
 	}
 }
 
+// EdgeTimeRawNumber provides the ability to store a raw number in the time field of an edge
+// e.g. to keep track of an ordering, use this
+// Passed to Edge modification functions
 func EdgeTimeRawNumber(num int64) func(*EdgeOperation) {
 	// if we wanna store raw numbers, e.g. to keep track of an order, use this
 	return func(op *EdgeOperation) {
@@ -349,60 +381,41 @@ func EdgeTimeRawNumber(num int64) func(*EdgeOperation) {
 	}
 }
 
+// EdgeData provides the ability to change the data field of an edge. Passed to Edge modification functions
 func EdgeData(data string) func(*EdgeOperation) {
 	return func(op *EdgeOperation) {
-		op.data = data
+		op.data = &data
 	}
 }
 
-func executeOperations(exec Executor) error {
-	db := data.DBConn()
-	tx, err := db.Beginx()
-	if err != nil {
-		fmt.Println("error creating transaction", err)
-		return err
-	}
-
-	for {
-		op, err := exec.Operation()
-		if err == AllOperations {
-			break
-		} else if err != nil {
-			return handErrInTransaction(tx, err)
-		}
-
-		resolvableOp, ok := op.(DataOperationWithResolver)
-		if ok {
-			if err = resolvableOp.Resolve(exec); err != nil {
-				return handErrInTransaction(tx, err)
-			}
-		}
-
-		// perform the write as needed
-		if err = op.PerformWrite(tx); err != nil {
-			return handErrInTransaction(tx, err)
-		}
-	}
-
-	tx.Commit()
-	return nil
-}
-
-func handErrInTransaction(tx *sqlx.Tx, err error) error {
-	fmt.Println("error during transaction", err)
-	tx.Rollback()
-	return err
-}
-
+// DeleteNodeOperation indicates we're deleting an ent
 type DeleteNodeOperation struct {
 	ExistingEnt Entity
 	EntConfig   Config
 }
 
+// PerformWrite deletes the node from the database
 func (op *DeleteNodeOperation) PerformWrite(tx *sqlx.Tx) error {
-	return deleteNodeInTransaction(
-		op.ExistingEnt,
-		op.EntConfig,
-		tx,
-	)
+	builder := getDeleteQuery(op.EntConfig.GetTableName(), sql.Eq("id", op.ExistingEnt.GetID()))
+
+	return performWrite(builder, tx, nil)
+}
+
+// GetCacheKeys returns keys that need to be deleted for this operation
+func (op *DeleteNodeOperation) GetCacheKeys() []string {
+	return []string{
+		getKeyForNode(op.ExistingEnt.GetID(), op.EntConfig.GetTableName()),
+	}
+}
+
+func getKeyForNode(id, tableName string) string {
+	if id == "" {
+		debug.PrintStack()
+		panic(errors.WithStack(errors.New("empty id passed")))
+	}
+	return remember.CreateKey(false, "_", "table_id", tableName, id)
+}
+
+func getKeyForEdge(id string, edgeType EdgeType) string {
+	return remember.CreateKey(false, "_", "edge_id", edgeType, id)
 }

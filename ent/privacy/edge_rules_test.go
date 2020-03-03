@@ -12,8 +12,6 @@ import (
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-
-	entreflect "github.com/lolopinto/ent/internal/reflect"
 )
 
 type edgeRulesTestSuite struct {
@@ -101,6 +99,7 @@ func (suite *edgeRulesTestSuite) TestAllowIfViewerOutboundEdgeExistsRule() {
 	)
 }
 
+//√
 func (suite *edgeRulesTestSuite) TestAllowIfEdgeExistsRule() {
 	user := testingutils.CreateTestUser(suite.T())
 	user2 := testingutils.CreateTestUser(suite.T())
@@ -312,19 +311,21 @@ func testEdge(suite *edgeRulesTestSuite, extraTestCases []testCase, policy ent.P
 	}
 
 	for _, tt := range testCases {
-		entreflect.SetViewerInEnt(tt.viewer, entity)
 
-		err := ent.ApplyPrivacyPolicy(
-			tt.viewer,
-			policy,
-			entity,
-		)
+		suite.T().Run(tt.testCase, func(t *testing.T) {
+			err := ent.ApplyPrivacyPolicy(
+				tt.viewer,
+				policy,
+				entity,
+			)
 
-		if tt.visible {
-			assert.Nil(suite.T(), err, tt.testCase)
-		} else {
-			assert.Error(suite.T(), err, tt.testCase)
-		}
+			if tt.visible {
+				assert.Nil(t, err, tt.testCase)
+			} else {
+				assert.Error(t, err, tt.testCase)
+			}
+
+		})
 	}
 }
 

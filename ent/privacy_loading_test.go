@@ -7,11 +7,10 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/ent/viewertesting"
-	entreflect "github.com/lolopinto/ent/internal/reflect"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,20 +37,39 @@ func (suite *privacyTestSuite) TestGeneratedLoadNode() {
 	})
 }
 
-func (suite *privacyTestSuite) TestManualLoadNode() {
-	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
-		// call the method manually based on public APIs
-		var user models.User
-		err := ent.LoadNode(v, id, &user)
-		return &user, err
-	})
-}
-
 func (suite *privacyTestSuite) TestGeneratedGenLoadNode() {
 	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
 		// use generated GenLoadUser method
 		userResult := <-models.GenLoadUser(v, id)
 		return userResult.User, userResult.Err
+	})
+}
+
+func (suite *privacyTestSuite) TestManualLoadNode() {
+	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
+		// call the method manually based on public APIs
+		loader := models.NewUserLoader(v)
+		err := ent.LoadNode(v, id, loader)
+		return loader.GetEntForID(id), err
+	})
+}
+
+func (suite *privacyTestSuite) TestManualGenLoadNode() {
+	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
+		// call the method manually based on public APIs
+		loader := models.NewUserLoader(v)
+		err := <-ent.GenLoadNode(v, id, loader)
+		return loader.GetEntForID(id), err
+	})
+}
+
+func (suite *privacyTestSuite) TestGeneratedLoadContextNode() {
+	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
+		req, err := http.NewRequest("GET", "bar", nil)
+		require.NoError(suite.T(), err)
+
+		ctx := viewer.NewRequestWithContext(req, v).Context()
+		return models.LoadUserFromContext(ctx, id)
 	})
 }
 
@@ -74,13 +92,18 @@ func (suite *privacyTestSuite) TestGeneratedGenLoadContextNoViewer() {
 	require.Error(suite.T(), userResult.Err)
 }
 
-func (suite *privacyTestSuite) TestManualGenLoadNode() {
-	testLoadNode(suite, func(v viewer.ViewerContext, id string) (*models.User, error) {
-		// call the method manually based on public APIs
-		var user models.User
-		err := <-ent.GenLoadNode(v, id, &user)
-		return &user, err
-	})
+func (suite *privacyTestSuite) TestViewerMismatch() {
+	dbUser := testingutils.CreateTestUser(suite.T())
+	dbUser2 := testingutils.CreateTestUser(suite.T())
+
+	v := viewertesting.LoggedinViewerContext{ViewerID: dbUser.ID}
+	v2 := viewertesting.LoggedinViewerContext{ViewerID: dbUser2.ID}
+
+	loader := models.NewUserLoader(v2)
+
+	err := ent.LoadNode(v, dbUser.ID, loader)
+	assert.NotNil(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "viewer mismatch")
 }
 
 func (suite *privacyTestSuite) TestWaitForMultiple() {
@@ -90,8 +113,10 @@ func (suite *privacyTestSuite) TestWaitForMultiple() {
 	v := viewertesting.OmniViewerContext{}
 	eventResult, userResult := <-models.GenLoadEvent(v, dbEvent.ID), <-models.GenLoadUser(v, dbUser.ID)
 
-	assert.Nil(suite.T(), userResult.Err)
-	assert.Nil(suite.T(), eventResult.Err)
+	require.Nil(suite.T(), userResult.Err)
+	require.Nil(suite.T(), eventResult.Err)
+	require.NotNil(suite.T(), userResult)
+	require.NotNil(suite.T(), eventResult)
 
 	assert.Equal(suite.T(), dbEvent.ID, eventResult.Event.ID)
 	assert.Equal(suite.T(), dbUser.ID, userResult.User.ID)
@@ -127,29 +152,38 @@ func (suite *privacyTestSuite) TestAllowIfViewerCanSeeEntRule() {
 			),
 			nil,
 		)
-		var user models.User
 		if err != nil {
-			return &user, err
+			return nil, err
 		}
-		entreflect.SetViewerInEnt(v, &user)
-		err = ent.LoadNodeRawData(id, &user, &configs.UserConfig{})
-		return &user, err
+		// 🤦🏿‍♂️figure out what this test buys us again...
+		loader := models.NewUserLoader(v)
+		data, err := ent.LoadNodeRawData(id, loader)
+		if err != nil {
+			return nil, err
+		}
+		user := loader.GetNewInstance()
+		for key, fn := range user.DBFields() {
+			if err := fn(data[key]); err != nil {
+				return nil, err
+			}
+		}
+		return user.(*models.User), err
 	})
 }
 
 func (suite *privacyTestSuite) TestManualLoadForeignKeyNodes() {
 	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-		var contacts []*models.Contact
-		err := ent.LoadForeignKeyNodes(v, id, &contacts, "user_id", &configs.ContactConfig{})
-		return contacts, err
+		loader := models.NewContactLoader(v)
+		err := ent.LoadNodesViaQueryClause(v, loader, sql.Eq("user_id", id))
+		return loader.List(), err
 	})
 }
 
 func (suite *privacyTestSuite) TestManualGenLoadForeignKeyNodes() {
 	testLoadForeignKeyNodes(suite, func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-		var contacts []*models.Contact
-		err := <-ent.GenLoadForeignKeyNodes(v, id, &contacts, "user_id", &configs.ContactConfig{})
-		return contacts, err
+		loader := models.NewContactLoader(v)
+		err := <-ent.GenLoadNodesViaQueryClause(v, loader, sql.Eq("user_id", id))
+		return loader.List(), err
 	})
 }
 
@@ -159,13 +193,15 @@ func (suite *privacyTestSuite) TestGeneratedForeignKeyNodes() {
 	contact2 := testingutils.CreateTestContact(suite.T(), user)
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
-	entreflect.SetViewerInEnt(v, user)
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	require.Nil(suite.T(), err)
+
 	verifyLoadedForeignKeyNodes(
 		suite,
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-			return user.LoadContacts()
+			return reloadedUser.LoadContacts()
 		},
 		[]string{
 			contact.ID,
@@ -181,13 +217,14 @@ func (suite *privacyTestSuite) TestGeneratedGenForeignKeyNodes() {
 	contact2 := testingutils.CreateTestContact(suite.T(), user)
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
-	entreflect.SetViewerInEnt(v, user)
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	require.Nil(suite.T(), err)
 	verifyLoadedForeignKeyNodes(
 		suite,
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Contact, error) {
-			result := <-user.GenContacts()
+			result := <-reloadedUser.GenContacts()
 			return result.Contacts, result.Err
 		},
 		[]string{
@@ -200,33 +237,33 @@ func (suite *privacyTestSuite) TestGeneratedGenForeignKeyNodes() {
 
 func (suite *privacyTestSuite) TestLoadNodesByType() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		var events []*models.Event
-		err := ent.LoadNodesByType(v, id, models.UserToEventsEdge, &events, &configs.EventConfig{})
-		return events, err
+		loader := models.NewEventLoader(v)
+		err := ent.LoadNodesByType(v, id, models.UserToEventsEdge, loader)
+		return loader.List(), err
 	})
 }
 
 func (suite *privacyTestSuite) TestGenLoadNodesByType() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		var events []*models.Event
-		err := <-ent.GenLoadNodesByType(v, id, models.UserToEventsEdge, &events, &configs.EventConfig{})
-		return events, err
+		loader := models.NewEventLoader(v)
+		err := <-ent.GenLoadNodesByType(v, id, models.UserToEventsEdge, loader)
+		return loader.List(), err
 	})
 }
 
 func (suite *privacyTestSuite) TestLoadNodes() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		var events []*models.Event
-		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), &events, &configs.EventConfig{})
-		return events, err
+		loader := models.NewEventLoader(v)
+		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), loader)
+		return loader.List(), err
 	})
 }
 
 func (suite *privacyTestSuite) TestGenLoadNodes() {
 	testLoadNodesByType(suite, func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-		var events []*models.Event
-		err := ent.LoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), &events, &configs.EventConfig{})
-		return events, err
+		loader := models.NewEventLoader(v)
+		err := <-ent.GenLoadNodes(v, suite.getID2sForEdge(id, models.UserToEventsEdge), loader)
+		return loader.List(), err
 	})
 }
 
@@ -259,14 +296,15 @@ func (suite *privacyTestSuite) TestGeneratedLoadNodesByType() {
 	event2 := testingutils.CreateTestEvent(suite.T(), user)
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
-	entreflect.SetViewerInEnt(v, user)
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	require.Nil(suite.T(), err)
 
 	verifyLoadedNodesByType(
 		suite,
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-			return user.LoadEvents()
+			return reloadedUser.LoadEvents()
 		},
 		[]string{
 			event.ID,
@@ -282,14 +320,15 @@ func (suite *privacyTestSuite) TestGeneratedGenLoadNodesByType() {
 	event2 := testingutils.CreateTestEvent(suite.T(), user)
 	v := viewertesting.LoggedinViewerContext{ViewerID: user.ID}
 
-	entreflect.SetViewerInEnt(v, user)
+	reloadedUser, err := models.LoadUser(v, user.ID)
+	require.Nil(suite.T(), err)
 
 	verifyLoadedNodesByType(
 		suite,
 		v,
 		user.ID,
 		func(v viewer.ViewerContext, id string) ([]*models.Event, error) {
-			result := <-user.GenEvents()
+			result := <-reloadedUser.GenEvents()
 			return result.Events, result.Err
 		},
 		[]string{
@@ -339,11 +378,11 @@ func testLoadNode(suite *privacyTestSuite, f func(viewer.ViewerContext, string) 
 		if tt.visible {
 			assert.Nil(suite.T(), err, tt.testCase)
 			assert.NotZero(suite.T(), user, tt.testCase)
-			assert.Equal(suite.T(), user.Viewer, tt.viewer, tt.testCase)
+			assert.Equal(suite.T(), user.GetViewer(), tt.viewer, tt.testCase)
 		} else {
 			assert.Error(suite.T(), err, tt.testCase)
 			assert.True(suite.T(), ent.IsPrivacyError(err), tt.testCase)
-			assert.Zero(suite.T(), *user, tt.testCase)
+			assert.Nil(suite.T(), user, tt.testCase)
 		}
 	}
 }
@@ -442,7 +481,7 @@ func verifyLoadedForeignKeyNodes(
 			actualIds := []string{}
 			for _, contact := range contacts {
 				assert.NotZero(suite.T(), contact, testCase)
-				assert.Equal(suite.T(), contact.Viewer, v, testCase)
+				assert.Equal(suite.T(), contact.GetViewer(), v, testCase)
 				assert.Equal(suite.T(), id, contact.UserID, testCase)
 				actualIds = append(actualIds, contact.ID)
 			}
@@ -472,7 +511,7 @@ func verifyLoadedNodesByType(
 			actualIds := []string{}
 			for _, event := range events {
 				assert.NotZero(suite.T(), event, testCase)
-				assert.Equal(suite.T(), event.Viewer, v, testCase)
+				assert.Equal(suite.T(), event.GetViewer(), v, testCase)
 				assert.Equal(suite.T(), id, event.UserID, testCase)
 				actualIds = append(actualIds, event.ID)
 			}
@@ -493,13 +532,15 @@ func verifyLoadedMultiNodes(
 	expectedIds []string,
 	testCase string,
 ) {
-	assert.Nil(suite.T(), err, testCase)
-	actualIds := buildIds()
-	assert.Equal(suite.T(), len(actualIds), len(expectedIds), testCase)
+	suite.T().Run(testCase, func(t *testing.T) {
+		assert.Nil(t, err)
+		actualIds := buildIds()
+		assert.Equal(t, len(actualIds), len(expectedIds))
 
-	sort.Strings(expectedIds)
-	sort.Strings(actualIds)
-	assert.Equal(suite.T(), expectedIds, actualIds, testCase)
+		sort.Strings(expectedIds)
+		sort.Strings(actualIds)
+		assert.Equal(t, expectedIds, actualIds)
+	})
 }
 
 func testLoadNodesByType(suite *privacyTestSuite, f func(v viewer.ViewerContext, id string) ([]*models.Event, error)) {

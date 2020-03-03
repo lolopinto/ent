@@ -2,10 +2,10 @@ package ent
 
 import "github.com/lolopinto/ent/ent/field"
 
-// Config interface that configurations for different ents should implement.
+// Config interface that configurations for an ent should implement.
 type Config interface {
 	// GetTableName returns the underyling database table the model's data is stored
-	// TODO how do we get a default value???
+	// TODO how do we get a default value without reflection at run time.
 	// TOOD embedding or something fancier later with default values may be better
 	GetTableName() string
 }
@@ -55,21 +55,6 @@ func (FieldEdge) Name() string {
 }
 
 func (FieldEdge) marker() {
-	panic("do not call")
-}
-
-// ForeignKeyEdge is when the edge is handled by having a foreign key in the other table
-// So contacts -> contact_emails with the ContactID being a field stored in ContactEmail table
-// There'll be a ForeignKey edge from Contact -> ContactEmails and then a FieldEdge from ContactEmail to Contact
-type ForeignKeyEdge struct {
-	EntConfig interface{} // zero-value of the struct
-}
-
-func (ForeignKeyEdge) Name() string {
-	return "foreignKeyEdge"
-}
-
-func (ForeignKeyEdge) marker() {
 	panic("do not call")
 }
 

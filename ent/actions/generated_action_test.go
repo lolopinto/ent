@@ -31,6 +31,7 @@ func (suite *generatedActionSuite) SetupSuite() {
 		"addresses",
 		"users",
 		"contacts",
+		"event_creator_edges",
 		"event_invited_edges",
 		"events",
 		"user_family_members_edges",
@@ -223,7 +224,7 @@ func (suite *generatedActionSuite) TestDeleting() {
 
 	user2, err := models.LoadUser(v, user.ID)
 	assert.NotNil(suite.T(), err)
-	assert.Zero(suite.T(), *user2)
+	assert.Nil(suite.T(), user2)
 }
 
 func (suite *generatedActionSuite) TestAddEdgeAction() {
@@ -420,7 +421,7 @@ func (suite *generatedActionSuite) TestActionPrivacy() {
 	contact, err := createContact(v)
 	assert.NotNil(suite.T(), err)
 	assert.IsType(suite.T(), &actions.ActionPermissionsError{}, err)
-	assert.Zero(suite.T(), *contact)
+	assert.Nil(suite.T(), contact)
 
 	user := testingutils.CreateTestUser(suite.T())
 	// can create contact when logged in

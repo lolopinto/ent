@@ -62,7 +62,7 @@ func execOperations(exec ent.Executor) ([]string, error) {
 	var result []string
 	for {
 		op, err := exec.Operation()
-		if err == ent.AllOperations {
+		if err == ent.ErrAllOperations {
 			break
 		} else if err != nil {
 			return nil, err

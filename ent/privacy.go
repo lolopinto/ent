@@ -18,8 +18,8 @@ const (
 	AllowPrivacyResult privacyResult = 200
 
 	// DenyPrivacyResult returns a value indicating that the ent should should not be visible to the viewer.
-	// We use HTTP status code 400 for the lols
-	DenyPrivacyResult privacyResult = 400
+	// We use HTTP status code 401 for the lols
+	DenyPrivacyResult privacyResult = 401
 
 	// SkipPrivacyResult returns a value indicating that the ent should not be visible to the viewer.
 	// We use HTTP status code 307 for the lols
@@ -89,15 +89,6 @@ func (r DenyWithReasonResult) Error() string {
 type PrivacyPolicy interface {
 	Rules() []PrivacyPolicyRule
 }
-
-// // PolicySimple defines a single method to be evaluated to determine if an ent is visible
-// // to the viewer
-// // TBD on if we'll keep this long-term.
-// // TODO...
-// type PrivacyPolicySimple interface {
-// 	// Eval is the method called to evaluate the visibility of the ent
-// 	Eval(v viewer.ViewerContext, ent Entity) bool
-// }
 
 // PrivacyPolicyRule is an independent PrivacyRule that evaluates an ent and determines if it's visible or not
 type PrivacyPolicyRule interface {

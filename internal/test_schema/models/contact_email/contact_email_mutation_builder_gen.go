@@ -27,17 +27,17 @@ func NewMutationBuilder(
 	requiredFields []string,
 	opts ...func(*actions.EntMutationBuilder),
 ) *ContactEmailMutationBuilder {
-	var contactEmail models.ContactEmail
+	contactEmail := models.NewContactEmailLoader(v).GetNewContactEmail()
 
 	ret := &ContactEmailMutationBuilder{
 		requiredFields: requiredFields,
-		contactEmail:   &contactEmail,
+		contactEmail:   contactEmail,
 	}
 	opts = append(opts, actions.BuildFields(ret.buildFields))
 	b := actions.NewMutationBuilder(
 		v,
 		operation,
-		&contactEmail,
+		contactEmail,
 		&configs.ContactEmailConfig{},
 		opts...,
 	)
@@ -113,16 +113,16 @@ func (b *ContactEmailMutationBuilder) Validate() error {
 	return b.builder.Validate()
 }
 
-func (b *ContactEmailMutationBuilder) buildFields() ent.ActionFieldMap {
+func (b *ContactEmailMutationBuilder) buildFields() actions.FieldMap {
 	m := make(map[string]bool)
 	for _, f := range b.requiredFields {
 		m[f] = true
 	}
 
 	fieldMap := b.GetFields()
-	fields := make(ent.ActionFieldMap)
+	fields := make(actions.FieldMap)
 	addField := func(key string, val interface{}) {
-		fields[key] = &ent.FieldInfo{
+		fields[key] = &actions.FieldInfo{
 			Field: fieldMap[key],
 			Value: val,
 		}

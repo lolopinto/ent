@@ -5,7 +5,6 @@ import (
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/util"
 )
 
@@ -16,7 +15,6 @@ type createContactAction struct {
 	lastName     interface{}
 	user         *models.User
 	userID       interface{}
-	contact      models.Contact
 	builder      *actions.EntMutationBuilder
 }
 
@@ -49,7 +47,11 @@ func (a *createContactAction) getFields() map[string]interface{} {
 }
 
 func (a *createContactAction) Entity() ent.Entity {
-	return &a.contact
+	return a.builder.Entity()
+}
+
+func (a *createContactAction) GetContact() *models.Contact {
+	return a.builder.Entity().(*models.Contact)
 }
 
 func (a *createContactAction) setBuilder(v interface{}) {
@@ -84,6 +86,14 @@ func (a *createContactAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(a)
 }
 
+func (a *createContactAction) Save() (*models.Contact, error) {
+	err := actions.Save(a)
+	if err != nil {
+		return nil, err
+	}
+	return a.GetContact(), err
+}
+
 type ContactCallbackWithBuilder interface {
 	SetBuilder(*actions.EntMutationBuilder)
 }
@@ -106,17 +116,29 @@ func (action *createContactAndEmailAction) GetTriggers() []actions.Trigger {
 	}
 }
 
+func (a *createContactAndEmailAction) GetChangeset() (ent.Changeset, error) {
+	return actions.GetChangeset(a)
+}
+
+func (a *createContactAndEmailAction) Save() (*models.Contact, error) {
+	err := actions.Save(a)
+	if err != nil {
+		return nil, err
+	}
+	return a.GetContact(), err
+}
+
 type ContactCreateEmailTrigger struct {
 	ContactMutationCallback
 }
 
 func (trigger *ContactCreateEmailTrigger) GetChangeset() (ent.Changeset, error) {
-	var contactEmail models.ContactEmail
+	loader := models.NewContactEmailLoader(trigger.Builder.GetViewer())
 	builder := actions.NewMutationBuilder(
 		trigger.Builder.GetViewer(),
 		ent.InsertOperation,
-		&contactEmail,
-		&configs.ContactEmailConfig{},
+		loader.GetNewContactEmail(),
+		loader.GetConfig(),
 	)
 	builder.SetRawFields(map[string]interface{}{
 		"email_address": util.GenerateRandEmail(),

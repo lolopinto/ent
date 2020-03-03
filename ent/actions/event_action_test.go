@@ -9,13 +9,11 @@ import (
 	"github.com/lolopinto/ent/ent/actions"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
-	"github.com/lolopinto/ent/internal/test_schema/models/configs"
 	"github.com/lolopinto/ent/internal/testingutils"
 )
 
 type eventAction struct {
 	viewer  viewer.ViewerContext
-	event   models.Event
 	builder *actions.EntMutationBuilder
 }
 
@@ -32,7 +30,11 @@ func (a *eventAction) Validate() error {
 }
 
 func (a *eventAction) Entity() ent.Entity {
-	return &a.event
+	return a.builder.Entity()
+}
+
+func (a *eventAction) GetEvent() *models.Event {
+	return a.builder.Entity().(*models.Event)
 }
 
 type createEventAction struct {
@@ -43,11 +45,12 @@ func eventCreateAction(
 	v viewer.ViewerContext,
 ) *createEventAction {
 	action := createEventAction{}
+	loader := models.NewEventLoader(v)
 	b := actions.NewMutationBuilder(
 		v,
 		ent.InsertOperation,
-		&action.event,
-		&configs.EventConfig{},
+		loader.GetNewEvent(),
+		loader.GetConfig(),
 	)
 	action.viewer = v
 	fields := testingutils.GetDefaultEventFieldsUserID(v.GetViewerID())
@@ -89,6 +92,14 @@ func (a *createEventAction) SetBuilderOnValidators(validators []actions.Validato
 
 func (a *createEventAction) GetChangeset() (ent.Changeset, error) {
 	return actions.GetChangeset(a)
+}
+
+func (a *createEventAction) Save() (*models.Event, error) {
+	err := actions.Save(a)
+	if err != nil {
+		return nil, err
+	}
+	return a.GetEvent(), err
 }
 
 func (a *createEventAction) GetTriggers() []actions.Trigger {

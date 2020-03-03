@@ -2,11 +2,9 @@ package ent
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/data"
-	"github.com/lolopinto/ent/ent/cast"
 	"github.com/pkg/errors"
 )
 
@@ -37,74 +35,30 @@ func (q *dbQuery) MapScan(dataMap map[string]interface{}) error {
 
 func (q *dbQuery) StructScanRows(l multiRowLoader) error {
 	return q.query(&processRawData{
-		multiRows: func(rows *sqlx.Rows) error {
+		multiRows: structScanRows(l),
+	})
+}
 
-			for rows.Next() {
-				var err error
-				instance := l.GetNewInstance()
-				value, ok := instance.(reflect.Value)
-				if ok {
-					err = rows.StructScan(value.Interface())
-				} else {
-					// otherwise assume it implements Scan interface
-					err = rows.StructScan(instance)
-				}
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-			}
-			return nil
-		}})
+func (q *dbQuery) QueryRows(l multiRowLoader) error {
+	return q.query(&processRawData{
+		multiRows: queryRows(l),
+	})
 }
 
 func (q *dbQuery) MapScanRows() ([]map[string]interface{}, error) {
 	var dataRows []map[string]interface{}
 
 	err := q.query(&processRawData{
-		multiRows: func(rows *sqlx.Rows) error {
-
-			for rows.Next() {
-				dataMap := make(map[string]interface{})
-				err := rows.MapScan(dataMap)
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-				dataRows = append(dataRows, dataMap)
-			}
-			return nil
-		}})
+		multiRows: mapScanRows(&dataRows),
+	})
 
 	return dataRows, err
 }
 
-func (q *dbQuery) MapScanAndFillRows(l multiInputLoader) error {
+func (q *dbQuery) customProcessRows(fn func(*sqlx.Rows) error) error {
 	return q.query(&processRawData{
-		multiRows: func(rows *sqlx.Rows) error {
-
-			for rows.Next() {
-				dataMap := make(map[string]interface{})
-				err := rows.MapScan(dataMap)
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-
-				idStr, err := cast.ToUUIDString(dataMap["id"])
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-				key := l.GetCacheKeyForID(idStr)
-				// set in cache
-				setSingleCachedItem(key, dataMap, nil)
-
-				// call GetInstance() and DBFields on that instance
-				fillInstance(l, dataMap)
-			}
-			return nil
-		}})
+		multiRows: fn,
+	})
 }
 
 func (q *dbQuery) query(processor *processRawData) error {
@@ -112,8 +66,12 @@ func (q *dbQuery) query(processor *processRawData) error {
 	if err != nil {
 		return err
 	}
-	query := builder.getQuery()
-	//fmt.Println(query)
+	query, values, err := builder.Build()
+	if err != nil {
+		err = errors.Wrap(err, "error building query")
+		fmt.Println(err)
+		return err
+	}
 
 	db := data.DBConn()
 	if db == nil {
@@ -122,7 +80,7 @@ func (q *dbQuery) query(processor *processRawData) error {
 		return err
 	}
 
-	stmt, err := getStmtFromTx(q.cfg.tx, db, query)
+	query, stmt, err := getStmtFromTx(q.cfg.tx, db, query)
 
 	if err != nil {
 		fmt.Println(query, err)
@@ -131,9 +89,9 @@ func (q *dbQuery) query(processor *processRawData) error {
 	defer stmt.Close()
 
 	if processor.singleRow != nil {
-		err = q.processSingleRow(builder, stmt, processor.singleRow)
+		err = q.processSingleRow(stmt, values, processor.singleRow)
 	} else if processor.multiRows != nil {
-		err = q.processMultiRows(builder, stmt, processor.multiRows)
+		err = q.processMultiRows(stmt, values, processor.multiRows)
 	} else {
 		panic("invalid processor passed")
 	}
@@ -143,27 +101,24 @@ func (q *dbQuery) query(processor *processRawData) error {
 	return err
 }
 
-func (q *dbQuery) processSingleRow(builder *sqlBuilder, stmt *sqlx.Stmt, processRow func(row *sqlx.Row) error) error {
-	row := stmt.QueryRowx(builder.getValues()...)
+func (q *dbQuery) processSingleRow(stmt *sqlx.Stmt, values []interface{}, processRow func(row *sqlx.Row) error) error {
+	row := stmt.QueryRowx(values...)
 	return processRow(row)
 }
 
-func (q *dbQuery) processMultiRows(builder *sqlBuilder, stmt *sqlx.Stmt, processRows func(rows *sqlx.Rows) error) error {
-	rows, err := stmt.Queryx(builder.getValues()...)
+func (q *dbQuery) processMultiRows(stmt *sqlx.Stmt, values []interface{}, processRows func(rows *sqlx.Rows) error) error {
+	rows, err := stmt.Queryx(values...)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer rows.Close()
-	err = processRows(rows)
-	if err != nil {
-		fmt.Println(err)
+	if err := processRows(rows); err != nil {
+		return err
 	}
-	err = rows.Err()
-	if err != nil {
-		fmt.Println(err)
+	if err := rows.Err(); err != nil {
+		return err
 	}
-	return err
+	return nil
 }
 
 type rowQueryer interface {
@@ -173,7 +128,6 @@ type rowQueryer interface {
 
 func mapScan(query rowQueryer) (map[string]interface{}, error) {
 	dataMap := make(map[string]interface{})
-	//			fmt.Println("cache miss for key", key)
 
 	// query and scan into map. return data in format needed by cache function
 	err := query.MapScan(dataMap)
@@ -183,7 +137,7 @@ func mapScan(query rowQueryer) (map[string]interface{}, error) {
 // This handles StructScan vs MapScan descisions that need to be made when querying a single row
 // (that's not going to cache)
 // at some point we should change this to handle data going into cache
-func queryRow(query rowQueryer, entity dataEntity) error {
+func queryRow(query rowQueryer, entity DBObject) error {
 	notScannable, ok := entity.(dataEntityNotScannable)
 
 	if !(ok && notScannable.UnsupportedScan()) {
@@ -192,7 +146,61 @@ func queryRow(query rowQueryer, entity dataEntity) error {
 
 	dataMap, err := mapScan(query)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 	return fillEntityFromMap(entity, dataMap)
+}
+
+func queryRowRetMap(query rowQueryer, entity DBObject) (map[string]interface{}, error) {
+	dataMap, err := mapScan(query)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	err = fillEntityFromMap(entity, dataMap)
+	return dataMap, err
+}
+
+func mapScanRows(dataRows *[]map[string]interface{}) func(*sqlx.Rows) error {
+	return func(rows *sqlx.Rows) error {
+		for rows.Next() {
+			dataMap := make(map[string]interface{})
+			if err := rows.MapScan(dataMap); err != nil {
+				fmt.Println(err)
+				return err
+			}
+			*dataRows = append(*dataRows, dataMap)
+		}
+		return nil
+	}
+}
+
+func structScanRows(l multiRowLoader) func(*sqlx.Rows) error {
+	return func(rows *sqlx.Rows) error {
+		for rows.Next() {
+			instance := l.GetNewInstance()
+			if err := rows.StructScan(instance); err != nil {
+				fmt.Println(err)
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+// This handles structScan vs MapScan decisions that need to be made when querying multiple
+// rows that are not going to cache
+// see queryRow
+func queryRows(l multiRowLoader) func(*sqlx.Rows) error {
+	return func(rows *sqlx.Rows) error {
+		for rows.Next() {
+			instance := l.GetNewInstance()
+			if err := queryRow(rows, instance); err != nil {
+				fmt.Println(err)
+				return err
+			}
+		}
+		return nil
+	}
 }
