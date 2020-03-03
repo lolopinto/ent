@@ -10,6 +10,6 @@ var upgradeCmd = &cobra.Command{
 	Short: "upgrade db",
 	Long:  `This upgrades the database to the latest version`,
 	Run: func(cmd *cobra.Command, args []string) {
-		db.UpgradeDB()
+		db.UpgradeDB(getPathToConfig())
 	},
 }
