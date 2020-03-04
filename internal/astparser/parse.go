@@ -76,6 +76,30 @@ func (result *Result) IsScalarType(name string) bool {
 		result.parent == nil)
 }
 
+func (result *Result) GetTypeName() string {
+	if result.PkgName == "" {
+		return result.IdentName
+	}
+	// todo verify
+	return result.PkgName + "." + result.IdentName
+}
+
+// rename to isTrueResult or soemthing
+func IsBooleanResult(result *Result) bool {
+	if result == nil {
+		return false
+	}
+	return result.IsScalarType("true")
+}
+
+func GetStringList(result *Result) []string {
+	results := make([]string, len(result.Elems))
+	for idx, elem := range result.Elems {
+		results[idx] = elem.Literal
+	}
+	return results
+}
+
 func newResult(expr ast.Expr) *Result {
 	return &Result{Expr: expr}
 }
@@ -147,11 +171,18 @@ func parse(expr ast.Expr, ret *Result, parent ast.Expr) error {
 	kve, ok := expr.(*ast.KeyValueExpr)
 	if ok {
 		key := newResult(kve.Key)
+		// spew.Dump(kve.Key)
+		// spew.Dump(key)
 		if err := parse(kve.Key, key, expr); err != nil {
 			return err
 		}
-		// get the key from the string literal
-		ret.Key = key.Literal
+		// get some fields from the key
+		if key.Literal != "" {
+			ret.Key = key.Literal
+		} else {
+			ret.PkgName = key.PkgName
+			ret.IdentName = key.IdentName
+		}
 
 		ret.Value = newResult(kve.Value)
 		if err := parse(kve.Value, ret.Value, expr); err != nil {

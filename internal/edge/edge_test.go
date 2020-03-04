@@ -11,6 +11,7 @@ import (
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEdgeInfo(t *testing.T) {
@@ -20,17 +21,18 @@ func TestEdgeInfo(t *testing.T) {
 
 	edgeInfo = getTestEdgeInfo(t, "todo")
 
-	testEdgeInfo(t, edgeInfo, 1, 0)
+	testEdgeInfo(t, edgeInfo, 0, 0)
 
 	edgeInfo = getTestEdgeInfo(t, "folder")
 
-	testEdgeInfo(t, edgeInfo, 0, 1)
+	testEdgeInfo(t, edgeInfo, 1, 1)
 }
 
 func TestFieldEdge(t *testing.T) {
-	edgeInfo := getTestEdgeInfo(t, "todo")
+	edgeInfo := getTestEdgeInfo(t, "folder")
 	edge := edgeInfo.GetFieldEdgeByName("Account")
 
+	require.NotNil(t, edge)
 	if edge.EdgeName != "Account" {
 		t.Errorf("edge name of account field edge is not as expected, got %s instead", edge.EdgeName)
 	}
@@ -276,6 +278,7 @@ func TestEdgeGroupWithCustomActionEdges(t *testing.T) {
 }
 
 func testAssocEdge(t *testing.T, edge, expectedAssocEdge *AssociationEdge) {
+	require.NotNil(t, edge)
 	if edge.GetEdgeName() != expectedAssocEdge.EdgeName {
 		t.Errorf(
 			"name of edge was not as expected, expected %s, got %s instead",
@@ -533,7 +536,12 @@ func getEdgeInfoMap() *testsync.RunOnce {
 		r = testsync.NewRunOnce(func(t *testing.T, packageName string) interface{} {
 			data := parsehelper.ParseFilesForTest(t, parsehelper.ParseFuncs(parsehelper.ParseEdges))
 			fn := data.GetEdgesFn(packageName)
-			assert.NotNil(t, fn, "GetEdges fn was unexpectedly nil")
+
+			// allowed to be nil
+			if fn == nil {
+				return NewEdgeInfo()
+			}
+
 			edgeInfo := ParseEdgesFunc(packageName, fn)
 			assert.NotNil(t, edgeInfo, "invalid edgeInfo retrieved")
 			return edgeInfo

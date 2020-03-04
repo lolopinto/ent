@@ -27,5 +27,10 @@ func (config *FolderConfig) GetEdges() ent.EdgeMap {
 			},
 			EntConfig: TodoConfig{},
 		},
+		"Account": &ent.FieldEdge{
+			FieldName:   "AccountID",
+			EntConfig:   AccountConfig{},
+			InverseEdge: "Folders",
+		},
 	}
 }

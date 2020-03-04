@@ -625,6 +625,55 @@ func TestLocalInlineFunc(t *testing.T) {
 	)
 }
 
+func TestNonLiteralKeys(t *testing.T) {
+	loadCode(t,
+		`package configs
+
+	import "github.com/lolopinto/ent/ent"
+
+	func f() ent.EdgeMap {
+		return ent.EdgeMap {
+			"Edge": &ent.AssociationEdge{
+				EntConfig: "5",  // todo
+				Symmetric: true,
+			},
+		}
+	}`,
+		&astparser.Result{
+			PkgName:     "ent",
+			IdentName:   "EdgeMap",
+			Format:      astparser.TypFormat,
+			ContainsMap: true,
+			Elems: []*astparser.Result{
+				&astparser.Result{
+					Key: "Edge",
+					Value: &astparser.Result{
+						PkgName:   "ent",
+						Pointer:   true,
+						IdentName: "AssociationEdge",
+						Format:    astparser.TypFormat,
+						Elems: []*astparser.Result{
+							&astparser.Result{
+								IdentName: "EntConfig",
+								Value: &astparser.Result{
+									Literal:     "5",
+									LiteralKind: token.STRING,
+								},
+							},
+							&astparser.Result{
+								IdentName: "Symmetric",
+								Value: &astparser.Result{
+									IdentName: "true",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+}
+
 func loadCode(t *testing.T, code string, expResult *astparser.Result) {
 	pkg, fn, err := schemaparser.FindFunction(code, "configs", "f")
 	assert.Nil(t, err)
@@ -642,7 +691,7 @@ func validateResult(t *testing.T, expResult, result *astparser.Result) {
 	assert.Equal(t, expResult.IdentName, result.IdentName, "ident name")
 	assert.Equal(t, expResult.Pointer, result.Pointer, "pointer")
 	assert.Equal(t, expResult.Literal, result.Literal, "literal")
-	assert.Equal(t, expResult.LiteralKind, result.LiteralKind, "literal kind")
+	assert.Equal(t, expResult.LiteralKind, result.LiteralKind, "literal kind of value %s", result.Literal)
 	assert.Equal(t, expResult.Format, result.Format, "format")
 
 	validateMap(t, expResult, result)
