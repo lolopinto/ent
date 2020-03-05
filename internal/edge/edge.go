@@ -379,7 +379,7 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 		if inversePackageName == "" {
 			inversePackageName = edge.EntConfig.PackageName
 		}
-		inverseEdge.EdgeConst = getEdgeCostName(inversePackageName, edgeName)
+		inverseEdge.EdgeConst = getEdgeConstName(inversePackageName, edgeName)
 
 		inverseEdge.commonEdgeInfo = getCommonEdgeInfo(
 			edgeName,
@@ -392,7 +392,7 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 		assocEdge.InverseEdge = inverseEdge
 	}
 
-	assocEdge.EdgeConst = getEdgeCostName(packageName, edge.Name)
+	assocEdge.EdgeConst = getEdgeConstName(packageName, edge.Name)
 
 	// golang
 	if edge.EntConfig != nil {
@@ -662,9 +662,9 @@ func parseEdgeAction(elem *astparser.Result) *EdgeAction {
 	return ret
 }
 
-func getEdgeCostName(packageName, edgeName string) string {
+func getEdgeConstName(packageName, edgeName string) string {
 	// todo... need to support custom edges at some point...
-	return strcase.ToCamel(packageName) + "To" + edgeName + "Edge"
+	return strcase.ToCamel(packageName) + "To" + strcase.ToCamel(edgeName) + "Edge"
 }
 
 // duplicated from db_schema.go
