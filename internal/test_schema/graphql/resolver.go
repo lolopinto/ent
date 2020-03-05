@@ -314,11 +314,11 @@ func (r *mutationResolver) ContactCreate(ctx context.Context, input ContactCreat
 
 func (r *mutationResolver) EventCreate(ctx context.Context, input EventCreateInput) (*EventCreateResponse, error) {
 	node, err := action2.CreateEventFromContext(ctx).
-		SetName(input.Name).
-		SetUserID(input.UserID).
-		SetStartTime(input.StartTime).
 		SetNilableEndTime(input.EndTime).
 		SetLocation(input.Location).
+		SetName(input.Name).
+		SetStartTime(input.StartTime).
+		SetUserID(input.UserID).
 		Save()
 
 	if err != nil {

@@ -2,13 +2,22 @@ package configs
 
 import (
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/field"
 )
 
 // FolderConfig is the config for test folders in todo land
-type FolderConfig struct {
-	Name          string
-	AccountID     string
-	NumberOfFiles int
+type FolderConfig struct{}
+
+func (config *FolderConfig) GetFields() ent.FieldMap {
+	return ent.FieldMap{
+		"Name": field.F(field.StringType()),
+		"AccountID": field.F(
+			field.StringType(),
+			// also write the Account -> Folders edge when this field is set
+			field.FieldEdge("AccountConfig", "Folders"),
+		),
+		"NumberOfFiles": field.F(field.IntType()),
+	}
 }
 
 // GetTableName returns the underyling database table the account model's data is stored
@@ -26,11 +35,6 @@ func (config *FolderConfig) GetEdges() ent.EdgeMap {
 				EdgeName: "Folders",
 			},
 			EntConfig: TodoConfig{},
-		},
-		"Account": &ent.FieldEdge{
-			FieldName:   "AccountID",
-			EntConfig:   AccountConfig{},
-			InverseEdge: "Folders",
 		},
 	}
 }

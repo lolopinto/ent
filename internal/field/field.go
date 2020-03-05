@@ -156,6 +156,11 @@ type ForeignKeyInfo struct {
 	Field  string
 }
 
+type FieldEdgeInfo struct {
+	Config   string
+	EdgeName string
+}
+
 func GetNilableGoType(f *Field) string {
 	// See comment in GetNonNilableGoType
 	// In cases, where we want a Nillable type, we need to explicitly add it here

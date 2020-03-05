@@ -1,17 +1,21 @@
 package configs
 
 import (
-	"time"
-
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/ent/field"
 )
 
-type EventConfig struct {
-	Name      string
-	UserID    string
-	StartTime time.Time
-	EndTime   time.Time `nullable:"true"`
-	Location  string
+type EventConfig struct{}
+
+func (config *EventConfig) GetFields() ent.FieldMap {
+	return ent.FieldMap{
+		"Name": field.F(field.StringType()),
+		// also write the User -> Events edge when this field is set
+		"UserID":    field.F(field.StringType(), field.FieldEdge("UserConfig", "Events")),
+		"StartTime": field.F(field.TimeType()),
+		"EndTime":   field.F(field.TimeType(), field.Nullable()),
+		"Location":  field.F(field.StringType()),
+	}
 }
 
 func (config *EventConfig) GetTableName() string {
@@ -20,11 +24,6 @@ func (config *EventConfig) GetTableName() string {
 
 func (config *EventConfig) GetEdges() ent.EdgeMap {
 	return ent.EdgeMap{
-		"User": &ent.FieldEdge{
-			FieldName:   "UserID",
-			EntConfig:   UserConfig{},
-			InverseEdge: "Events",
-		},
 		// you can have multiple hosts
 		"Hosts": &ent.AssociationEdge{
 			EntConfig: UserConfig{},

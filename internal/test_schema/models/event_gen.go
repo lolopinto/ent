@@ -46,11 +46,11 @@ const (
 type Event struct {
 	ent.Node
 	privacy.AlwaysDenyPrivacyPolicy
-	Name      string     `db:"name"`
-	UserID    string     `db:"user_id"`
-	StartTime time.Time  `db:"start_time"`
 	EndTime   *time.Time `db:"end_time"`
 	Location  string     `db:"location"`
+	Name      string     `db:"name"`
+	StartTime time.Time  `db:"start_time"`
+	UserID    string     `db:"user_id"`
 	viewer    viewer.ViewerContext
 }
 
@@ -519,21 +519,6 @@ func (event *Event) DBFields() ent.DBFields {
 			event.UpdatedAt, err = cast.ToTime(v)
 			return err
 		},
-		"name": func(v interface{}) error {
-			var err error
-			event.Name, err = cast.ToString(v)
-			return err
-		},
-		"user_id": func(v interface{}) error {
-			var err error
-			event.UserID, err = cast.ToString(v)
-			return err
-		},
-		"start_time": func(v interface{}) error {
-			var err error
-			event.StartTime, err = cast.ToTime(v)
-			return err
-		},
 		"end_time": func(v interface{}) error {
 			var err error
 			event.EndTime, err = cast.ToNullableTime(v)
@@ -542,6 +527,21 @@ func (event *Event) DBFields() ent.DBFields {
 		"location": func(v interface{}) error {
 			var err error
 			event.Location, err = cast.ToString(v)
+			return err
+		},
+		"name": func(v interface{}) error {
+			var err error
+			event.Name, err = cast.ToString(v)
+			return err
+		},
+		"start_time": func(v interface{}) error {
+			var err error
+			event.StartTime, err = cast.ToTime(v)
+			return err
+		},
+		"user_id": func(v interface{}) error {
+			var err error
+			event.UserID, err = cast.ToString(v)
 			return err
 		},
 	}

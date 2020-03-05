@@ -1,5 +1,5 @@
 {{/* for now we are hardcoding to where this currently is. we should be better about this */ -}}
-import Schema, {Field} from "{{.SchemaPath}}"
+import Schema, {Field, Edge, AssocEdge, AssocEdgeGroup} from "{{.SchemaPath}}"
 
 {{ range $schema := .Schemas -}}
   import {{$schema.Name}} from "./{{$schema.Path}}"
@@ -34,10 +34,29 @@ for (const key in potentialSchemas) {
   }
   fields = fields.concat(schema.fields);
 
+  let assocEdges: AssocEdge[] = [];
+  let assocEdgeGroups: AssocEdgeGroup[] = [];
+
+  if (schema.edges) {
+    for (const edge of schema.edges) {
+      if (isAssocEdge(edge)) {
+        assocEdges.push(edge)
+      } else {
+        assocEdgeGroups.push(edge)
+      }
+    }
+  }
+
   schemas[key] = {
     tableName: schema.tableName,
     fields: fields,
+    assocEdges: assocEdges,
+    assocEdgeGroups: assocEdgeGroups,
   };
+}
+
+function isAssocEdge(edge: Edge): edge is AssocEdge {
+  return (edge as AssocEdge).schemaName != undefined;
 }
 
 console.log(JSON.stringify(schemas));

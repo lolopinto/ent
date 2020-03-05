@@ -74,30 +74,6 @@ func (action *CreateEventAction) ExistingEnt() ent.Entity {
 	return action.builder.ExistingEnt()
 }
 
-// SetName sets the Name while editing the Event ent
-func (action *CreateEventAction) SetName(name string) *CreateEventAction {
-	action.builder.SetName(name)
-	return action
-}
-
-// SetUserID sets the UserID while editing the Event ent
-func (action *CreateEventAction) SetUserID(userID string) *CreateEventAction {
-	action.builder.SetUserID(userID)
-	return action
-}
-
-// SetUserIDBuilder sets the UserID while editing the Event ent
-func (action *CreateEventAction) SetUserIDBuilder(builder ent.MutationBuilder) *CreateEventAction {
-	action.builder.SetUserIDBuilder(builder)
-	return action
-}
-
-// SetStartTime sets the StartTime while editing the Event ent
-func (action *CreateEventAction) SetStartTime(startTime time.Time) *CreateEventAction {
-	action.builder.SetStartTime(startTime)
-	return action
-}
-
 // SetEndTime sets the EndTime while editing the Event ent
 func (action *CreateEventAction) SetEndTime(endTime time.Time) *CreateEventAction {
 	action.builder.SetEndTime(endTime)
@@ -116,12 +92,36 @@ func (action *CreateEventAction) SetLocation(location string) *CreateEventAction
 	return action
 }
 
+// SetName sets the Name while editing the Event ent
+func (action *CreateEventAction) SetName(name string) *CreateEventAction {
+	action.builder.SetName(name)
+	return action
+}
+
+// SetStartTime sets the StartTime while editing the Event ent
+func (action *CreateEventAction) SetStartTime(startTime time.Time) *CreateEventAction {
+	action.builder.SetStartTime(startTime)
+	return action
+}
+
+// SetUserID sets the UserID while editing the Event ent
+func (action *CreateEventAction) SetUserID(userID string) *CreateEventAction {
+	action.builder.SetUserID(userID)
+	return action
+}
+
+// SetUserIDBuilder sets the UserID while editing the Event ent
+func (action *CreateEventAction) SetUserIDBuilder(builder ent.MutationBuilder) *CreateEventAction {
+	action.builder.SetUserIDBuilder(builder)
+	return action
+}
+
 func (action *CreateEventAction) requiredFields() []string {
 	return []string{
-		"Name",
-		"UserID",
-		"StartTime",
 		"Location",
+		"Name",
+		"StartTime",
+		"UserID",
 	}
 }
 

@@ -27,7 +27,10 @@ var codegenCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		schema := schema.ParseFromInputSchema(inputSchema)
+		schema, err := schema.ParseFromInputSchema(inputSchema)
+		if err != nil {
+			return err
+		}
 
 		// nothing to do here
 		if len(schema.Nodes) == 0 {
