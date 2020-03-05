@@ -375,7 +375,11 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 		inverseEdge := &InverseAssocEdge{}
 
 		edgeName := edge.InverseEdge.Name
-		inverseEdge.EdgeConst = getEdgeCostName(packageName, edgeName)
+		inversePackageName := edge.SchemaName
+		if inversePackageName == "" {
+			inversePackageName = edge.EntConfig.PackageName
+		}
+		inverseEdge.EdgeConst = getEdgeCostName(inversePackageName, edgeName)
 
 		inverseEdge.commonEdgeInfo = getCommonEdgeInfo(
 			edgeName,

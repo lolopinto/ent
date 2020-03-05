@@ -338,8 +338,8 @@ func testInverseAssociationEdge(t *testing.T, edgeName string, edge, expectedAss
 		t.Errorf(
 			"edge const of inverse edge %s was not as expected, expected %s, got %s instead",
 			edgeName,
-			expectedInverseEdge.EdgeConst,
 			inverseEdge.EdgeConst,
+			expectedInverseEdge.EdgeConst,
 		)
 	}
 
