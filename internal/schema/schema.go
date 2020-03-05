@@ -22,34 +22,37 @@ type Schema struct {
 
 // Given a schema file parser, Parse parses the schema to return the completely
 // parsed schema
-func Parse(p schemaparser.Parser, specificConfigs ...string) *Schema {
-	return parse(func(s *Schema) *assocEdgeData {
+func Parse(p schemaparser.Parser, specificConfigs ...string) (*Schema, error) {
+	return parse(func(s *Schema) (*assocEdgeData, error) {
 		return s.Nodes.parseFiles(p, specificConfigs...)
 	})
 }
 
-func ParsePackage(pkg *packages.Package, specificConfigs ...string) *Schema {
-	return parse(func(s *Schema) *assocEdgeData {
+func ParsePackage(pkg *packages.Package, specificConfigs ...string) (*Schema, error) {
+	return parse(func(s *Schema) (*assocEdgeData, error) {
 		return s.Nodes.parsePackage(pkg, specificConfigs...)
 	})
 }
 
 // ParseFromInputSchema takes the schema that has been parsed from whatever input source
 // and provides the schema we have that's checked and conforms to everything we expect
-func ParseFromInputSchema(schema *input.Schema) *Schema {
-	return parse(func(s *Schema) *assocEdgeData {
+func ParseFromInputSchema(schema *input.Schema) (*Schema, error) {
+	return parse(func(s *Schema) (*assocEdgeData, error) {
 		return s.Nodes.parseInputSchema(schema)
 	})
 }
 
-func parse(parseFn func(*Schema) *assocEdgeData) *Schema {
+func parse(parseFn func(*Schema) (*assocEdgeData, error)) (*Schema, error) {
 	s := &Schema{}
 	s.init()
-	edgeData := parseFn(s)
+	edgeData, err := parseFn(s)
+	if err != nil {
+		return nil, err
+	}
 	s.edges = edgeData.edgeMap
 	s.newEdges = edgeData.newEdges
 	s.edgesToUpdate = edgeData.edgesToUpdate
-	return s
+	return s, nil
 }
 
 func (s *Schema) init() {

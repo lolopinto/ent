@@ -18,6 +18,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(codegenCmd)
+	rootCmd.AddCommand(downgradeCmd)
 }
 
 func Execute() {

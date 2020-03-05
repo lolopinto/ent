@@ -1,5 +1,7 @@
 import { DBType, Node } from "../../../schema";
 
+// TODO this is too complicated to be implicit.
+// create a simpler one that's implicit
 // implicit schema
 const User = {
   tableName: "users",
@@ -18,6 +20,17 @@ const User = {
     },
   ],
   patterns: [Node],
+  edges: [
+    {
+      name: "createdEvents",
+      schemaName: "Event",
+    },
+    {
+      name: "friends",
+      schemaName: "User",
+      symmetric: true,
+    },
+  ],
 };
 
 export default User;

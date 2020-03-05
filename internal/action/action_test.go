@@ -357,7 +357,8 @@ func initSyncs() {
 			data := getParsedConfig(t)
 			fn := data.GetEdgesFn(configName)
 			assert.NotNil(t, fn, "GetEdges fn was unexpectedly nil")
-			edgeInfo := edge.ParseEdgesFunc(configName, fn)
+			edgeInfo, err := edge.ParseEdgesFunc(configName, fn)
+			require.Nil(t, err)
 			assert.NotNil(t, edgeInfo, "invalid edgeInfo retrieved")
 			return edgeInfo
 		})

@@ -42,22 +42,6 @@ type ConfigWithActions interface {
 	GetActions() []*ActionConfig
 }
 
-// FieldEdge refers to when the Edge being loaded from an ent is a field on the same node/ent
-type FieldEdge struct {
-	FieldName   string
-	EntConfig   interface{} // zero-value of the struct...
-	InverseEdge string      // InverseEdge represents the edge from the other ent to this so that when we set the field we know what edge to write
-	// can specify it on the other side also. e.g. InverseField NoteID so that we know what field to write
-}
-
-func (FieldEdge) Name() string {
-	return "fieldEdge"
-}
-
-func (FieldEdge) marker() {
-	panic("do not call")
-}
-
 // AssociationEdge is the fb-style edge where the information is stored in the edges_info table.
 // This is the preferred edge in the framework
 type AssociationEdge struct {

@@ -134,13 +134,13 @@ func GetTypeNameFromExpr(expr ast.Expr) string {
 // Takes an Expr and converts it to the underlying string without quotes
 // For example: in the GetEdges method below,
 // return ent.EdgeMap{
-// 	"User": ent.FieldEdge{
-// 		FieldName: "UserID",
-// 		EntConfig: UserConfig{},
+// 	"User": ent.AssociationEdgeGroup{
+//    GroupStatusName: "Rsvp",
+// ...
 // 	},
 // }
-// Calling this with the "User" Expr returns User and calling it with
-// the "UserID" Expr returns UserID
+// Calling this with the "User" Expr returns `User` and calling it with
+// the "Rsvp" Expr returns `Rsvp`
 func GetUnderylingStringFromLiteralExpr(expr ast.Expr) string {
 	key, ok := expr.(*ast.BasicLit)
 	if !ok || key.Kind != token.STRING {

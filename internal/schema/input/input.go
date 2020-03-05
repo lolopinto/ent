@@ -5,15 +5,26 @@ import (
 	"go/types"
 
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schemaparser"
 )
 
 type Schema struct {
-	Nodes map[string]Node
+	Nodes map[string]*Node
 }
 
 type Node struct {
-	TableName *string  `json:"tableName"`
-	Fields    []*Field `json:"fields"`
+	TableName       *string           `json:"tableName"`
+	Fields          []*Field          `json:"fields"`
+	AssocEdges      []*AssocEdge      `json:"assocEdges"`
+	AssocEdgeGroups []*AssocEdgeGroup `json:"assocEdgeGroups"`
+}
+
+func (n *Node) AddAssocEdge(edge *AssocEdge) {
+	n.AssocEdges = append(n.AssocEdges, edge)
+}
+
+func (n *Node) AddAssocEdgeGroup(edgeGroup *AssocEdgeGroup) {
+	n.AssocEdgeGroups = append(n.AssocEdgeGroups, edgeGroup)
 }
 
 type DBType string
@@ -46,6 +57,7 @@ type Field struct {
 	Index           bool       `json:"index"`
 	PrimaryKey      bool       `json:"primaryKey"`
 
+	FieldEdge     *[2]string  `json:"fieldEdge"` // this only really makes sense on id fields...
 	ForeignKey    *[2]string  `json:"foreignKey"`
 	ServerDefault interface{} `json:"serverDefault"`
 
@@ -94,8 +106,40 @@ func (f *Field) GetEntType() enttype.EntType {
 	panic("unsupported type")
 }
 
+type AssocEdge struct {
+	Name        string            `json:"name"`
+	SchemaName  string            `json:"schemaName"`
+	Symmetric   bool              `json:"symmetric"`
+	Unique      bool              `json:"unique"`
+	TableName   string            `json:"tableName"`
+	InverseEdge *InverseAssocEdge `json:"inverseEdge"`
+
+	// Go specific
+	EntConfig   *schemaparser.EntConfigInfo
+	EdgeActions interface{}
+}
+
+type AssocEdgeGroup struct {
+	Name            string       `json:"name"`
+	GroupStatusName string       `json:"groupStatusName"`
+	TableName       string       `json:"tableName"`
+	AssocEdges      []*AssocEdge `json:"assocEdges"`
+
+	// Go specific
+	EdgeActions interface{}
+	ActionEdges []string
+}
+
+func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {
+	g.AssocEdges = append(g.AssocEdges, edge)
+}
+
+type InverseAssocEdge struct {
+	Name string `json:"name"`
+}
+
 func ParseSchema(input []byte) (*Schema, error) {
-	nodes := make(map[string]Node)
+	nodes := make(map[string]*Node)
 	if err := json.Unmarshal(input, &nodes); err != nil {
 		return nil, err
 	}

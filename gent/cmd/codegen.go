@@ -30,7 +30,7 @@ var codegenCmd = &cobra.Command{
 	},
 }
 
-func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Schema {
+func parseAllSchemaFiles(rootPath string, specificConfigs ...string) (*schema.Schema, error) {
 	p := &schemaparser.ConfigSchemaParser{
 		AbsRootPath: rootPath,
 	}
@@ -41,7 +41,10 @@ func parseAllSchemaFiles(rootPath string, specificConfigs ...string) *schema.Sch
 // TODO break this up into something that takes steps and knows what to do with them
 // or shared code that's language specific?
 func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, step string) error {
-	schema := parseAllSchemaFiles(codePathInfo.GetRootPathToConfigs(), specificConfig)
+	schema, err := parseAllSchemaFiles(codePathInfo.GetRootPathToConfigs(), specificConfig)
+	if err != nil {
+		return err
+	}
 
 	if len(schema.Nodes) == 0 {
 		return nil

@@ -7,7 +7,6 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/actions"
-	"github.com/lolopinto/ent/ent/field"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/test_schema/models"
 	"github.com/lolopinto/ent/internal/test_schema/models/configs"
@@ -17,13 +16,13 @@ type EventMutationBuilder struct {
 	requiredFields []string
 	builder        *actions.EdgeGroupMutationBuilder
 	event          *models.Event
-	name           *string
-	userID         *string
-	userIDBuilder  ent.MutationBuilder
-	startTime      *time.Time
 	endTime        *time.Time
 	clearendTime   bool
 	location       *string
+	name           *string
+	startTime      *time.Time
+	userID         *string
+	userIDBuilder  ent.MutationBuilder
 }
 
 func NewMutationBuilder(
@@ -54,28 +53,6 @@ func NewMutationBuilder(
 	return ret
 }
 
-func (b *EventMutationBuilder) SetName(name string) *EventMutationBuilder {
-	b.name = &name
-	return b
-}
-
-func (b *EventMutationBuilder) SetUserID(userID string) *EventMutationBuilder {
-	b.userID = &userID
-	b.builder.AddInboundEdge(models.UserToEventsEdge, userID, models.EventType)
-	return b
-}
-
-func (b *EventMutationBuilder) SetUserIDBuilder(builder ent.MutationBuilder) *EventMutationBuilder {
-	b.userIDBuilder = builder
-	b.builder.AddInboundEdge(models.UserToEventsEdge, builder, models.EventType)
-	return b
-}
-
-func (b *EventMutationBuilder) SetStartTime(startTime time.Time) *EventMutationBuilder {
-	b.startTime = &startTime
-	return b
-}
-
 func (b *EventMutationBuilder) SetEndTime(endTime time.Time) *EventMutationBuilder {
 	b.endTime = &endTime
 	return b
@@ -92,11 +69,54 @@ func (b *EventMutationBuilder) SetLocation(location string) *EventMutationBuilde
 	return b
 }
 
+func (b *EventMutationBuilder) SetName(name string) *EventMutationBuilder {
+	b.name = &name
+	return b
+}
+
+func (b *EventMutationBuilder) SetStartTime(startTime time.Time) *EventMutationBuilder {
+	b.startTime = &startTime
+	return b
+}
+
+func (b *EventMutationBuilder) SetUserID(userID string) *EventMutationBuilder {
+	b.userID = &userID
+	b.builder.AddInboundEdge(models.UserToEventsEdge, userID, models.EventType)
+	return b
+}
+
+func (b *EventMutationBuilder) SetUserIDBuilder(builder ent.MutationBuilder) *EventMutationBuilder {
+	b.userIDBuilder = builder
+	b.builder.AddInboundEdge(models.UserToEventsEdge, builder, models.EventType)
+	return b
+}
+
+func (b *EventMutationBuilder) GetEndTime() *time.Time {
+	if b.endTime == nil {
+		return nil
+	}
+	return b.endTime
+}
+
+func (b *EventMutationBuilder) GetLocation() string {
+	if b.location == nil {
+		return ""
+	}
+	return *b.location
+}
+
 func (b *EventMutationBuilder) GetName() string {
 	if b.name == nil {
 		return ""
 	}
 	return *b.name
+}
+
+func (b *EventMutationBuilder) GetStartTime() time.Time {
+	if b.startTime == nil {
+		return time.Time{}
+	}
+	return *b.startTime
 }
 
 func (b *EventMutationBuilder) GetUserID() string {
@@ -112,27 +132,6 @@ func (b *EventMutationBuilder) GetUserID() string {
 
 func (b *EventMutationBuilder) GetUserIDBuilder() ent.MutationBuilder {
 	return b.userIDBuilder
-}
-
-func (b *EventMutationBuilder) GetStartTime() time.Time {
-	if b.startTime == nil {
-		return time.Time{}
-	}
-	return *b.startTime
-}
-
-func (b *EventMutationBuilder) GetEndTime() *time.Time {
-	if b.endTime == nil {
-		return nil
-	}
-	return b.endTime
-}
-
-func (b *EventMutationBuilder) GetLocation() string {
-	if b.location == nil {
-		return ""
-	}
-	return *b.location
 }
 
 // AddHosts adds one or more instances of User to the Hosts edge while editing the User ent
@@ -401,24 +400,6 @@ func (b *EventMutationBuilder) buildFields() actions.FieldMap {
 	// Need to have Id fields be fine with Builder
 
 	// if required, field is not nil or field explicitly set to nil, add the field
-	if b.name != nil {
-		addField("Name", *b.name)
-	} else if m["Name"] { // nil but required
-		addField("Name", nil)
-	}
-	if b.userID != nil {
-		addField("UserID", *b.userID)
-	} else if m["UserID"] { // nil but required
-		addField("UserID", nil)
-	}
-	if b.userIDBuilder != nil { // builder not nil, override userID
-		addField("UserID", b.userIDBuilder)
-	}
-	if b.startTime != nil {
-		addField("StartTime", *b.startTime)
-	} else if m["StartTime"] { // nil but required
-		addField("StartTime", nil)
-	}
 	if b.endTime != nil {
 		addField("EndTime", *b.endTime)
 	} else if m["EndTime"] || b.clearendTime { // required or value cleared
@@ -428,6 +409,24 @@ func (b *EventMutationBuilder) buildFields() actions.FieldMap {
 		addField("Location", *b.location)
 	} else if m["Location"] { // nil but required
 		addField("Location", nil)
+	}
+	if b.name != nil {
+		addField("Name", *b.name)
+	} else if m["Name"] { // nil but required
+		addField("Name", nil)
+	}
+	if b.startTime != nil {
+		addField("StartTime", *b.startTime)
+	} else if m["StartTime"] { // nil but required
+		addField("StartTime", nil)
+	}
+	if b.userID != nil {
+		addField("UserID", *b.userID)
+	} else if m["UserID"] { // nil but required
+		addField("UserID", nil)
+	}
+	if b.userIDBuilder != nil { // builder not nil, override userID
+		addField("UserID", b.userIDBuilder)
 	}
 	return fields
 }
@@ -450,13 +449,7 @@ func (b *EventMutationBuilder) GetPlaceholderID() string {
 
 // GetFields returns the field configuration for this mutation builder
 func (b *EventMutationBuilder) GetFields() ent.FieldMap {
-	return ent.FieldMap{
-		"Name":      field.F(field.NoopType(), field.DB("name")),
-		"UserID":    field.F(field.NoopType(), field.DB("user_id")),
-		"StartTime": field.F(field.NoopType(), field.DB("start_time")),
-		"EndTime":   field.F(field.NoopType(), field.DB("end_time"), field.Nullable()),
-		"Location":  field.F(field.NoopType(), field.DB("location")),
-	}
+	return (&configs.EventConfig{}).GetFields()
 }
 
 var _ ent.MutationBuilder = &EventMutationBuilder{}
