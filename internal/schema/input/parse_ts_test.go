@@ -114,25 +114,37 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 					assert.Equal(t, expField.fieldEdge, field.FieldEdge)
 				}
 
-				for j, expEdge := range expectedNode.assocEdges {
-					edge := node.AssocEdges[j]
+				verifyAssocEdges(t, expectedNode.assocEdges, node.AssocEdges)
 
-					assert.Equal(t, expEdge.name, edge.Name)
-					assert.Equal(t, expEdge.schemaName, edge.SchemaName)
-					assert.Equal(t, expEdge.symmetric, edge.Symmetric)
-					assert.Equal(t, expEdge.unique, edge.Unique)
+				for j, expEdgeGroup := range expectedNode.assocEdgeGroups {
+					edgeGroup := node.AssocEdgeGroups[j]
 
-					if expEdge.inverseEdge == nil {
-						assert.Nil(t, edge.InverseEdge)
-					} else {
-						require.NotNil(t, edge.InverseEdge)
-						assert.Equal(t, expEdge.inverseEdge.name, edge.InverseEdge.Name)
-					}
+					assert.Equal(t, expEdgeGroup.name, edgeGroup.Name)
+					assert.Equal(t, expEdgeGroup.groupStatusName, edgeGroup.GroupStatusName)
+					assert.Equal(t, expEdgeGroup.tableName, edgeGroup.TableName)
+
+					verifyAssocEdges(t, expEdgeGroup.assocEdges, edgeGroup.AssocEdges)
 				}
 			}
-
-			// oops didn't do assocEdgeGroup test?
 		})
+	}
+}
+
+func verifyAssocEdges(t *testing.T, expAssocEdges []assocEdge, assocEdges []*input.AssocEdge) {
+	for j, expEdge := range expAssocEdges {
+		edge := assocEdges[j]
+
+		assert.Equal(t, expEdge.name, edge.Name)
+		assert.Equal(t, expEdge.schemaName, edge.SchemaName)
+		assert.Equal(t, expEdge.symmetric, edge.Symmetric)
+		assert.Equal(t, expEdge.unique, edge.Unique)
+
+		if expEdge.inverseEdge == nil {
+			assert.Nil(t, edge.InverseEdge)
+		} else {
+			require.NotNil(t, edge.InverseEdge)
+			assert.Equal(t, expEdge.inverseEdge.name, edge.InverseEdge.Name)
+		}
 	}
 }
 

@@ -174,7 +174,7 @@ func TestParseEdges(t *testing.T) {
 										},
 									},
 									{
-										name: "friendss",
+										name: "friends",
 										schemaName: "User",
 										symmetric: true,
 									},
@@ -195,12 +195,13 @@ func TestParseEdges(t *testing.T) {
 									name:       "friendRequests",
 									schemaName: "User",
 									inverseEdge: &inverseAssocEdge{
-										name: "friendRequestsEdge",
+										name: "friendRequestsReceived",
 									},
 								},
 								assocEdge{
-									name:      "friends",
-									symmetric: true,
+									name:       "friends",
+									schemaName: "User",
+									symmetric:  true,
 								},
 							},
 						},
