@@ -5,6 +5,7 @@ import (
 	"go/types"
 
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schemaparser"
 )
 
 type Schema struct {
@@ -12,10 +13,18 @@ type Schema struct {
 }
 
 type Node struct {
-	TableName      *string           `json:"tableName"`
-	Fields         []*Field          `json:"fields"`
-	AssocEdges     []*AssocEdge      `json:"assocEdges"`
-	AssocEdgeGroup []*AssocEdgeGroup `json:"assocEdgeGroups"`
+	TableName       *string           `json:"tableName"`
+	Fields          []*Field          `json:"fields"`
+	AssocEdges      []*AssocEdge      `json:"assocEdges"`
+	AssocEdgeGroups []*AssocEdgeGroup `json:"assocEdgeGroups"`
+}
+
+func (n *Node) AddAssocEdge(edge *AssocEdge) {
+	n.AssocEdges = append(n.AssocEdges, edge)
+}
+
+func (n *Node) AddAssocEdgeGroup(edgeGroup *AssocEdgeGroup) {
+	n.AssocEdgeGroups = append(n.AssocEdgeGroups, edgeGroup)
 }
 
 type DBType string
@@ -104,6 +113,10 @@ type AssocEdge struct {
 	Unique      bool              `json:"unique"`
 	TableName   string            `json:"tableName"`
 	InverseEdge *InverseAssocEdge `json:"inverseEdge"`
+
+	// Go specific
+	EntConfig   *schemaparser.EntConfigInfo
+	EdgeActions interface{}
 }
 
 type AssocEdgeGroup struct {
@@ -111,10 +124,22 @@ type AssocEdgeGroup struct {
 	GroupStatusName string       `json:"groupStatusName"`
 	TableName       string       `json:"tableName"`
 	AssocEdges      []*AssocEdge `json:"assocEdges"`
+
+	// Go specific
+	EdgeActions interface{}
+	ActionEdges []string
+}
+
+func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {
+	g.AssocEdges = append(g.AssocEdges, edge)
 }
 
 type InverseAssocEdge struct {
 	Name string `json:"name"`
+
+	// Go specific
+	// EdgeConst      string
+	// CommonEdgeInfo interface{}
 }
 
 func ParseSchema(input []byte) (*Schema, error) {

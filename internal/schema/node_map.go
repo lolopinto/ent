@@ -170,7 +170,9 @@ func (m NodeMapInfo) parseFile(
 			case "GetEdges":
 				g.AddItem("GetEdges", func(nodeData *NodeData) {
 					// TODO: validate edges. can only have one of each type etc
-					nodeData.EdgeInfo = edge.ParseEdgesFunc(packageName, fn)
+					var err error
+					nodeData.EdgeInfo, err = edge.ParseEdgesFunc(packageName, fn)
+					util.Die(err)
 
 					m.addConstsFromEdgeGroups(nodeData)
 				})

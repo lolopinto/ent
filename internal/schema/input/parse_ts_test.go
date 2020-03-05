@@ -130,6 +130,8 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 					}
 				}
 			}
+
+			// oops didn't do assocEdgeGroup test?
 		})
 	}
 }

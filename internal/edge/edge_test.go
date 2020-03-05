@@ -348,8 +348,8 @@ func testInverseAssociationEdge(t *testing.T, edgeName string, edge, expectedAss
 		t.Errorf(
 			"name of inverse edge for edge %s was not as expected, expected %s, got %s instead",
 			edgeName,
-			inverseEdge.EdgeName,
 			expectedInverseEdge.EdgeName,
+			inverseEdge.EdgeName,
 		)
 	}
 
@@ -357,8 +357,8 @@ func testInverseAssociationEdge(t *testing.T, edgeName string, edge, expectedAss
 		t.Errorf(
 			"edge const of inverse edge %s was not as expected, expected %s, got %s instead",
 			edgeName,
-			inverseEdge.EdgeConst,
 			expectedInverseEdge.EdgeConst,
+			inverseEdge.EdgeConst,
 		)
 	}
 
@@ -542,7 +542,8 @@ func getEdgeInfoMap() *testsync.RunOnce {
 				return NewEdgeInfo()
 			}
 
-			edgeInfo := ParseEdgesFunc(packageName, fn)
+			edgeInfo, err := ParseEdgesFunc(packageName, fn)
+			require.Nil(t, err)
 			assert.NotNil(t, edgeInfo, "invalid edgeInfo retrieved")
 			return edgeInfo
 		})
