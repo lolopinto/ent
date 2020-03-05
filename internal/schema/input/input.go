@@ -136,10 +136,6 @@ func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {
 
 type InverseAssocEdge struct {
 	Name string `json:"name"`
-
-	// Go specific
-	// EdgeConst      string
-	// CommonEdgeInfo interface{}
 }
 
 func ParseSchema(input []byte) (*Schema, error) {

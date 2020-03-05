@@ -63,20 +63,6 @@ export interface AssocEdgeGroup {
 // TODO other edges such as join tables 3-way id1->id2 (data)
 export type Edge = AssocEdge | AssocEdgeGroup;
 
-
-// TODO really need to work on the name of this
-// but it says when we write fieldName in this object.
-// we should also write edge UserConfig.Events
-// doing this on the field makes sense because it's consistent with ForeignKey api...
-// maybe add it to field instead?
-// export default interface FieldEdge {
-//   fieldName: string;
-//   schemaName: string;
-//   inverseEdgeName: string;
-// }
-
-
-
 // Pattern is reusable functionality that leads to code sharing
 // The most commonly used pattern in the ent framework is going to be the Node pattern
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
