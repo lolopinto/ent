@@ -28,6 +28,7 @@ type Field struct {
 	defaultValue             interface{}
 	unique                   bool
 	fkey                     *ForeignKeyInfo
+	fieldEdge                *FieldEdgeInfo
 	index                    bool
 	dbName                   string // storage key/column name for the field
 	graphQLName              string
@@ -120,6 +121,13 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 		}
 	}
 
+	if f.FieldEdge != nil {
+		ret.fieldEdge = &FieldEdgeInfo{
+			Config:   f.FieldEdge[0],
+			EdgeName: f.FieldEdge[1],
+		}
+	}
+
 	return ret, nil
 }
 
@@ -159,13 +167,22 @@ func (f *Field) GetQuotedDBColName() string {
 
 // We're going from field -> edge to be consistent and
 // not have circular dependencies
-func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
+func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
 	fkeyInfo := f.ForeignKeyInfo()
 	if fkeyInfo == nil {
 		panic(fmt.Errorf("invalid field %s added", f.FieldName))
 	}
 
-	edgeInfo.AddFieldEdgeFromFieldInfo(f.FieldName, fkeyInfo.Config)
+	edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Config)
+}
+
+func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
+	fieldEdgeInfo := f.FieldEdgeInfo()
+	if fieldEdgeInfo == nil {
+		panic(fmt.Errorf("invalid field %s added", f.FieldName))
+	}
+
+	edgeInfo.AddFieldEdgeFromFieldEdgeInfo(f.FieldName, fieldEdgeInfo.Config, fieldEdgeInfo.EdgeName)
 }
 
 func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, nodeName string) {
@@ -209,6 +226,10 @@ func (f *Field) Index() bool {
 
 func (f *Field) ForeignKeyInfo() *ForeignKeyInfo {
 	return f.fkey
+}
+
+func (f *Field) FieldEdgeInfo() *FieldEdgeInfo {
+	return f.fieldEdge
 }
 
 func (f *Field) GetGraphQLName() string {

@@ -230,20 +230,22 @@ func (m NodeMapInfo) parseFile(
 	g2.AddItem(
 		// want all configs loaded for this.
 		// Actions depends on this.
+		// this adds the linked assoc edge to the field
 		"LinkedEdges", func(info *NodeDataInfo) {
 			m.addLinkedEdges(info)
 		},
+		"EdgesFromFields",
 	)
 
-	g2.AddItem("ForeignKeyInfos", func(info *NodeDataInfo) {
-		m.addForeignKeyEdges(info)
+	g2.AddItem("EdgesFromFields", func(info *NodeDataInfo) {
+		m.addEdgesFromFields(info)
 	})
 
 	// inverse edges also require everything to be loaded
 	g2.AddItem(
 		"InverseEdges", func(info *NodeDataInfo) {
 			m.addInverseAssocEdges(info)
-		}, "ForeignKeyInfos")
+		}, "EdgesFromFields")
 
 	// add new consts and edges as a dependency of linked edges and inverse edges
 	g2.AddItem("ConstsAndEdges", func(info *NodeDataInfo) {
@@ -257,6 +259,7 @@ func (m NodeMapInfo) parseFile(
 	}
 }
 
+// this adds the linked assoc edge to the field
 func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 	nodeData := info.NodeData
 	fieldInfo := nodeData.FieldInfo
@@ -287,30 +290,58 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 	}
 }
 
-func (m NodeMapInfo) addForeignKeyEdges(info *NodeDataInfo) {
+func (m NodeMapInfo) addEdgesFromFields(info *NodeDataInfo) {
 	nodeData := info.NodeData
 	fieldInfo := nodeData.FieldInfo
 	edgeInfo := nodeData.EdgeInfo
 
 	for _, f := range fieldInfo.Fields {
 		fkeyInfo := f.ForeignKeyInfo()
-		if fkeyInfo == nil {
-			continue
+		if fkeyInfo != nil {
+			m.addForeignKeyEdges(nodeData, fieldInfo, edgeInfo, f, fkeyInfo)
 		}
 
-		foreignInfo, ok := m[fkeyInfo.Config]
-		if !ok {
-			panic(fmt.Errorf("could not find the EntConfig codegen info for %s", fkeyInfo.Config))
+		fieldEdgeInfo := f.FieldEdgeInfo()
+		if fieldEdgeInfo != nil {
+			m.addFieldEdge(edgeInfo, f)
 		}
-
-		// add a field edge on current config so we can load underlying user
-		// and return it in GraphQL appropriately
-		f.AddFieldEdgeToEdgeInfo(edgeInfo)
-
-		// TODO need to make sure this is not nil if no fields
-		foreignEdgeInfo := foreignInfo.NodeData.EdgeInfo
-		f.AddForeignKeyEdgeToInverseEdgeInfo(foreignEdgeInfo, nodeData.Node)
 	}
+}
+
+func (m NodeMapInfo) addForeignKeyEdges(
+	nodeData *NodeData,
+	fieldInfo *field.FieldInfo,
+	edgeInfo *edge.EdgeInfo,
+	f *field.Field,
+	fkeyInfo *field.ForeignKeyInfo,
+) {
+	foreignInfo, ok := m[fkeyInfo.Config]
+	if !ok {
+		panic(fmt.Errorf("could not find the EntConfig codegen info for %s", fkeyInfo.Config))
+	}
+
+	if f := foreignInfo.NodeData.GetFieldByName(fkeyInfo.Field); f == nil {
+		panic(fmt.Errorf("could not find field %s by name", fkeyInfo.Field))
+	}
+
+	// add a field edge on current config so we can load underlying user
+	// and return it in GraphQL appropriately
+	f.AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo)
+
+	// TODO need to make sure this is not nil if no fields
+	foreignEdgeInfo := foreignInfo.NodeData.EdgeInfo
+	f.AddForeignKeyEdgeToInverseEdgeInfo(foreignEdgeInfo, nodeData.Node)
+}
+
+func (m NodeMapInfo) addFieldEdge(
+	edgeInfo *edge.EdgeInfo,
+	f *field.Field,
+) {
+	// add a field edge on current config so we can load underlying user
+	// and return it in GraphQL appropriately
+	// this also flags that when we write data to this field, we write the inverse edge also
+	// e.g. writing user_id field on an event will also write corresponding user -> events edge
+	f.AddFieldEdgeToEdgeInfo(edgeInfo)
 }
 
 func (m NodeMapInfo) addInverseAssocEdges(info *NodeDataInfo) {

@@ -204,4 +204,12 @@ var m = map[string]fn{
 			f.ForeignKey = &[2]string{configName, fieldName}
 		})
 	},
+	"field.FieldEdge": func(f *input.Field, args astparser.Results) error {
+		return verifyArgs(args, 2, func() {
+			configName := args[0].Literal
+			edgeName := args[1].Literal
+
+			f.FieldEdge = &[2]string{configName, edgeName}
+		})
+	},
 }

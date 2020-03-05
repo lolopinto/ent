@@ -48,56 +48,60 @@ type AccountConfig struct {
 	package configs
 
 	import "github.com/lolopinto/ent/ent"
+	import "github.com/lolopinto/ent/ent/field"
 
-type TodoConfig struct {
-	Text      string
-	AccountID string
+type TodoConfig struct {}
+
+func (config *TodoConfig) GetFields() ent.FieldMap {
+	return ent.FieldMap {
+		"Text": field.F(field.StringType()),
+		"AccountID": field.F(field.StringType(), field.FieldEdge("AccountConfig", "Todos")),
+	}
 }
 
 	func (config *TodoConfig) GetTableName() string {
 		return "todos"
 	}
-
-	func (config *TodoConfig) GetEdges() ent.EdgeMap{
-		return ent.EdgeMap{
-			"Account": ent.FieldEdge{
-				FieldName:   "AccountID",
-				EntConfig:   AccountConfig{},
-				InverseEdge: "Todos",
-			},
-		}
-	}
 	`
 	s := parseSchema(t, sources, "InverseFieldEdge")
 	textField := getFieldFromSchema(t, s, "TodoConfig", "Text")
 
-	if textField.InverseEdge != nil {
-		t.Errorf(
-			"expected the text field to have no inverse edge. instead it did",
-		)
-	}
+	require.Nil(t, textField.InverseEdge, "expected the text field to have no inverse edge. instead it did")
+
+	// creating a fieldEdge above does 2 things:
+	// 	1. it adds an inverse edge to the field
 	accountField := getFieldFromSchema(t, s, "TodoConfig", "AccountID")
 	inverseEdge := accountField.InverseEdge
-	if inverseEdge == nil {
-		t.Errorf(
-			"expected the account field to have an inverse edge. it didn't",
-		)
-	}
+	require.NotNil(
+		t,
+		inverseEdge,
+		"expected the account field to have an inverse edge. it didn't",
+	)
 
-	if inverseEdge.EdgeConst != "AccountToTodosEdge" {
-		t.Errorf(
-			"inverse edge const not as expected, expected %s, got %s",
-			"AccountToTodosEdge",
-			inverseEdge.EdgeConst,
-		)
-	}
-	if inverseEdge.EdgeName != "Todos" {
-		t.Errorf(
-			"inverse edge name not as expected, expected %s, got %s",
-			"Todos",
-			inverseEdge.EdgeName,
-		)
-	}
+	assert.Equal(
+		t,
+		"AccountToTodosEdge",
+		inverseEdge.EdgeConst,
+		"inverse edge const not as expected, expected %s, got %s",
+		"AccountToTodosEdge",
+		inverseEdge.EdgeConst,
+	)
+	assert.Equal(
+		t,
+		"Todos",
+		inverseEdge.EdgeName,
+		"inverse edge name not as expected, expected %s, got %s",
+		"Todos",
+		inverseEdge.EdgeName,
+	)
+
+	// 2. adds a fieldEdge on source edgeInfo
+	todoInfo := s.Nodes["TodoConfig"]
+	require.NotNil(t, todoInfo)
+	accountEdge := todoInfo.NodeData.EdgeInfo.GetFieldEdgeByName("Account")
+	require.NotNil(t, accountEdge)
+	assert.Equal(t, "Account", accountEdge.EdgeName)
+	assert.Equal(t, "AccountConfig", accountEdge.GetEntConfig().ConfigName)
 }
 
 func TestForeignKey(t *testing.T) {
@@ -180,21 +184,12 @@ type TodoConfig struct {}
 func (config *TodoConfig) GetFields() ent.FieldMap {
 	return ent.FieldMap {
 		"Text": field.F(field.StringType()),
-		"AccountID": field.F(field.StringType(), field.ForeignKey("AccountConfig", "ID")),
+		"AccountID": field.F(field.StringType(), field.ForeignKey("Accounts", "ID")),
 	}
 }
 
 	func (config *TodoConfig) GetTableName() string {
 		return "todos"
-	}
-
-	func (config *TodoConfig) GetEdges() ent.EdgeMap{
-		return ent.EdgeMap{
-			"Account": ent.FieldEdge{
-				FieldName:   "AccountID",
-				EntConfig:   AccountConfig{},
-			},
-		}
 	}
 	`
 

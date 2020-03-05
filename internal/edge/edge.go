@@ -93,7 +93,15 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromFieldInfo(fieldName, configName string) {
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string) {
+	e.addFieldEdgeFromInfo(fieldName, configName, "")
+}
+
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName, configName, inverseEdgeName string) {
+	e.addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName)
+}
+
+func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string) {
 	r := regexp.MustCompile("([A-Za-z]+)ID")
 	match := r.FindStringSubmatch(fieldName)
 
@@ -109,6 +117,7 @@ func (e *EdgeInfo) AddFieldEdgeFromFieldInfo(fieldName, configName string) {
 			match[1],
 			schemaparser.GetEntConfigFromEntConfig(configName),
 		),
+		InverseEdgeName: inverseEdgeName,
 	}
 
 	e.addEdge(edge)
@@ -345,10 +354,11 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 	assocEdge := &AssociationEdge{
 		Symmetric: edge.Symmetric,
 		Unique:    edge.Unique,
+		TableName: edge.TableName,
 	}
 
 	// name wasn't specified? get default one
-	if edge.TableName == "" {
+	if assocEdge.TableName == "" {
 		tableNameParts := []string{
 			packageName,
 			strings.ToLower(strcase.ToSnake(edge.Name)),
@@ -406,7 +416,7 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 	for _, edge := range edgeGroup.AssocEdges {
 		// if input edge doesn't have its own tableName, use group tableName
 		if edge.TableName == "" {
-			edge.TableName = edgeGroup.TableName
+			edge.TableName = tableName
 		}
 		assocEdge := assocEdgeFromInput(packageName, node, edge)
 		assocEdgeGroup.Edges[edge.Name] = assocEdge
@@ -440,11 +450,6 @@ func parseEdgeItem(node *input.Node, containingPackageName string, expr ast.Expr
 	}
 
 	switch value.IdentName {
-	case "FieldEdge":
-		// TODO kill not a valid input type for now...
-		return nil
-		//return parseFieldEdgeItem(node, value, edgeName)
-
 	case "AssociationEdge":
 		return parseAssociationEdgeItem(node, containingPackageName, edgeName, value)
 
@@ -486,30 +491,6 @@ func (g *parseEdgeGraph) RunLoop() {
 	}
 	g.ClearOptionalItems()
 	g.RunQueuedUpItems()
-}
-
-func parseFieldEdgeItem(edgeInfo *EdgeInfo, result *astparser.Result, edgeName string) error {
-	var fieldName string
-	var inverseEdgeName string
-	var entConfig schemaparser.EntConfigInfo
-	g := initDepgraph(result, &entConfig)
-
-	g.AddItem("FieldName", func(elem *astparser.Result) {
-		fieldName = elem.Literal
-	})
-
-	g.AddItem("InverseEdge", func(elem *astparser.Result) {
-		inverseEdgeName = elem.Literal
-	})
-
-	g.RunLoop()
-
-	edgeInfo.addEdge(&FieldEdge{
-		commonEdgeInfo:  getCommonEdgeInfo(edgeName, entConfig),
-		FieldName:       fieldName,
-		InverseEdgeName: inverseEdgeName,
-	})
-	return nil
 }
 
 func getCommonEdgeInfo(edgeName string, entConfig schemaparser.EntConfigInfo) commonEdgeInfo {

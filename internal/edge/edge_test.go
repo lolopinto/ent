@@ -17,34 +17,15 @@ import (
 func TestEdgeInfo(t *testing.T) {
 	edgeInfo := getTestEdgeInfo(t, "account")
 
-	testEdgeInfo(t, edgeInfo, 0, 4)
+	testEdgeInfo(t, edgeInfo, 4)
 
 	edgeInfo = getTestEdgeInfo(t, "todo")
 
-	testEdgeInfo(t, edgeInfo, 0, 0)
+	testEdgeInfo(t, edgeInfo, 0)
 
 	edgeInfo = getTestEdgeInfo(t, "folder")
 
-	testEdgeInfo(t, edgeInfo, 1, 1)
-}
-
-func TestFieldEdge(t *testing.T) {
-	edgeInfo := getTestEdgeInfo(t, "folder")
-	edge := edgeInfo.GetFieldEdgeByName("Account")
-
-	require.NotNil(t, edge)
-	if edge.EdgeName != "Account" {
-		t.Errorf("edge name of account field edge is not as expected, got %s instead", edge.EdgeName)
-	}
-
-	// TODO PackageName is useless and we should fix it/remove it in this instance
-	testEntConfig(t, edge.entConfig, "Account", "AccountConfig")
-
-	testNodeInfo(t, edge.NodeInfo, "Account")
-
-	if edge.FieldName != "AccountID" {
-		t.Errorf("field name of account field edge is not as expected, got %s instead", edge.FieldName)
-	}
+	testEdgeInfo(t, edgeInfo, 1)
 }
 
 func TestAssociationEdge(t *testing.T) {
@@ -432,9 +413,10 @@ func testEdgeActions(t *testing.T, edgeName string, edgeActions, expectedEdgeAct
 	}
 }
 
-func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expFieldEdges, expAssocs int) {
-	if len(edgeInfo.FieldEdges) != expFieldEdges {
-		t.Errorf("expected %d field edges. got %d instead", expFieldEdges, len(edgeInfo.FieldEdges))
+func testEdgeInfo(t *testing.T, edgeInfo *EdgeInfo, expAssocs int) {
+	// field edges are never passed in. they are generated in node_map
+	if len(edgeInfo.FieldEdges) != 0 {
+		t.Errorf("expected %d field edges. got %d instead", 0, len(edgeInfo.FieldEdges))
 	}
 
 	// foreign keys are never passed in. they are generated in node_map

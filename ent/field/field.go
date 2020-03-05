@@ -24,6 +24,8 @@ type Field struct {
 	index           bool
 	fkeyConfig      string
 	fkeyField       string
+	fieldEdgeConfig string
+	fieldEdgeName   string
 }
 
 func (f *Field) Valid(name string, val interface{}) error {
@@ -148,6 +150,15 @@ func ForeignKey(configName, fieldName string) Option {
 	return func(f *Field) {
 		f.fkeyConfig = configName
 		f.fkeyField = fieldName
+	}
+}
+
+// FieldEdge specifies that this field maps to an edge on a separate Node/edge combo
+// when this field is written to, the corresponding edge is also written to
+func FieldEdge(configName, edgeName string) Option {
+	return func(f *Field) {
+		f.fieldEdgeConfig = configName
+		f.fieldEdgeName = edgeName
 	}
 }
 
