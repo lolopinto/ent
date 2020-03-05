@@ -16,17 +16,6 @@ export default class Event extends BaseEntSchema implements Schema {
       name: "hosts",
       schemaName: "User",
     },
-    // can either do this or something like above with creator id and inverse edge somewhere else
-    // up to user.
-    // test this somewhere else...
-    // {
-    //   name: "creator",
-    //   unique: true,
-    //   schemaName: "User",
-    //   // inverseEdge: {
-    //   //   name: "createdEvents",
-    //   // },
-    // },
     {
       name: "rsvps",
       groupStatusName: "rsvpStatus",
