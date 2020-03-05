@@ -588,7 +588,9 @@ func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources st
 		t,
 		parsehelper.Sources(uniqueKeyForSources, sources),
 	)
-	return schema.ParsePackage(data.Pkg)
+	s, err := schema.ParsePackage(data.Pkg)
+	require.NoError(t, err)
+	return s
 }
 
 func getEdgeFromSchema(t *testing.T, s *schema.Schema, configName, edgeName string) *edge.AssociationEdge {

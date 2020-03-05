@@ -375,7 +375,7 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 		inverseEdge := &InverseAssocEdge{}
 
 		edgeName := edge.InverseEdge.Name
-		inverseEdge.EdgeConst = getEdgeCostName(edge.EntConfig.PackageName, edgeName)
+		inverseEdge.EdgeConst = getEdgeCostName(packageName, edgeName)
 
 		inverseEdge.commonEdgeInfo = getCommonEdgeInfo(
 			edgeName,
@@ -389,7 +389,16 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 	}
 
 	assocEdge.EdgeConst = getEdgeCostName(packageName, edge.Name)
-	assocEdge.commonEdgeInfo = getCommonEdgeInfo(edge.Name, *edge.EntConfig)
+
+	// golang
+	if edge.EntConfig != nil {
+		assocEdge.commonEdgeInfo = getCommonEdgeInfo(edge.Name, *edge.EntConfig)
+	} else { // typescript
+		assocEdge.commonEdgeInfo = getCommonEdgeInfo(
+			edge.Name,
+			schemaparser.GetEntConfigFromName(edge.SchemaName),
+		)
+	}
 
 	return assocEdge
 }
@@ -420,6 +429,10 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 		}
 		assocEdge := assocEdgeFromInput(packageName, node, edge)
 		assocEdgeGroup.Edges[edge.Name] = assocEdge
+		// if assocEdge.InverseEdge != nil {
+		// TODO should we add inverse edges to this map?
+		// need to audit everything related to assoc groups anyways
+		// }
 		edgeInfo.addEdge(assocEdge)
 	}
 

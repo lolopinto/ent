@@ -9,7 +9,7 @@ import (
 )
 
 type Schema struct {
-	Nodes map[string]Node
+	Nodes map[string]*Node
 }
 
 type Node struct {
@@ -143,7 +143,7 @@ type InverseAssocEdge struct {
 }
 
 func ParseSchema(input []byte) (*Schema, error) {
-	nodes := make(map[string]Node)
+	nodes := make(map[string]*Node)
 	if err := json.Unmarshal(input, &nodes); err != nil {
 		return nil, err
 	}

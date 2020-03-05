@@ -114,16 +114,26 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 		ret.setPrivate()
 	}
 
+	getConfigName := func(config string) string {
+		if strings.HasSuffix(config, "Config") {
+			return config
+		}
+
+		// to make typescript and golang consistent
+		// TODO. we're going to eliminate config from go and won't need this anymore
+		return config + "Config"
+	}
+
 	if f.ForeignKey != nil {
 		ret.fkey = &ForeignKeyInfo{
-			Config: f.ForeignKey[0],
+			Config: getConfigName(f.ForeignKey[0]),
 			Field:  f.ForeignKey[1],
 		}
 	}
 
 	if f.FieldEdge != nil {
 		ret.fieldEdge = &FieldEdgeInfo{
-			Config:   f.FieldEdge[0],
+			Config:   getConfigName(f.FieldEdge[0]),
 			EdgeName: f.FieldEdge[1],
 		}
 	}

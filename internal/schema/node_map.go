@@ -65,7 +65,7 @@ func (m NodeMapInfo) getActionFromGraphQLName(graphQLName string) action.Action 
 var fileRegex = regexp.MustCompile(`(\w+)_config.go`)
 var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
 
-func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...string) *assocEdgeData {
+func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...string) (*assocEdgeData, error) {
 	typeInfo := pkg.TypesInfo
 	fset := pkg.Fset
 
@@ -75,7 +75,7 @@ func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...stri
 	for idx, filePath := range pkg.GoFiles {
 		match := fileRegex.FindStringSubmatch(filePath)
 		if len(match) != 2 {
-			panic(fmt.Errorf("invalid filename match, expected length 2, have length %d", len(match)))
+			return nil, fmt.Errorf("invalid filename match, expected length 2, have length %d", len(match))
 		}
 		// TODO rename packageName to something better it's contact_date in contact_date_config.go
 		// TODO break this into concurrent jobs
@@ -87,6 +87,43 @@ func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...stri
 		m.addConfig(codegenInfo)
 	}
 
+	return m.processDepgrah(edgeData)
+}
+
+func (m NodeMapInfo) buildPostRunDepgraph(edgeData *assocEdgeData) *depgraph.Depgraph {
+	// things that need all nodeDatas loaded
+	g := &depgraph.Depgraph{}
+
+	// queue up linking edges
+	g.AddItem(
+		// want all configs loaded for this.
+		// Actions depends on this.
+		// this adds the linked assoc edge to the field
+		"LinkedEdges", func(info *NodeDataInfo) {
+			m.addLinkedEdges(info)
+		},
+		"EdgesFromFields",
+	)
+
+	g.AddItem("EdgesFromFields", func(info *NodeDataInfo) {
+		m.addEdgesFromFields(info)
+	})
+
+	// inverse edges also require everything to be loaded
+	g.AddItem(
+		"InverseEdges", func(info *NodeDataInfo) {
+			m.addInverseAssocEdges(info)
+		}, "EdgesFromFields")
+
+	// add new consts and edges as a dependency of linked edges and inverse edges
+	g.AddItem("ConstsAndEdges", func(info *NodeDataInfo) {
+		m.addNewConstsAndEdges(info, edgeData)
+	}, "LinkedEdges", "InverseEdges")
+
+	return g
+}
+
+func (m NodeMapInfo) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error) {
 	// second pass to run things that depend on the entire data being loaded
 	for _, info := range m {
 
@@ -98,15 +135,15 @@ func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...stri
 		info.depgraph.Run(func(item interface{}) {
 			execFn, ok := item.(func(*NodeDataInfo))
 			if !ok {
-				panic("invalid function passed")
+				panic(fmt.Errorf("invalid function passed"))
 			}
 			execFn(info)
 		})
 	}
-	return edgeData
+	return edgeData, nil
 }
 
-func (m NodeMapInfo) parseFiles(p schemaparser.Parser, specificConfigs ...string) *assocEdgeData {
+func (m NodeMapInfo) parseFiles(p schemaparser.Parser, specificConfigs ...string) (*assocEdgeData, error) {
 	pkg := schemaparser.LoadPackageX(p)
 
 	return m.parsePackage(pkg, specificConfigs...)
@@ -127,7 +164,7 @@ func (m NodeMapInfo) parseFile(
 	g := &depgraph.Depgraph{}
 
 	// things that need all nodeDatas loaded
-	g2 := &depgraph.Depgraph{}
+	g2 := m.buildPostRunDepgraph(edgeData)
 
 	var shouldCodegen bool
 
@@ -225,32 +262,6 @@ func (m NodeMapInfo) parseFile(
 	} else {
 		panic("no fields why??")
 	}
-
-	// queue up linking edges
-	g2.AddItem(
-		// want all configs loaded for this.
-		// Actions depends on this.
-		// this adds the linked assoc edge to the field
-		"LinkedEdges", func(info *NodeDataInfo) {
-			m.addLinkedEdges(info)
-		},
-		"EdgesFromFields",
-	)
-
-	g2.AddItem("EdgesFromFields", func(info *NodeDataInfo) {
-		m.addEdgesFromFields(info)
-	})
-
-	// inverse edges also require everything to be loaded
-	g2.AddItem(
-		"InverseEdges", func(info *NodeDataInfo) {
-			m.addInverseAssocEdges(info)
-		}, "EdgesFromFields")
-
-	// add new consts and edges as a dependency of linked edges and inverse edges
-	g2.AddItem("ConstsAndEdges", func(info *NodeDataInfo) {
-		m.addNewConstsAndEdges(info, edgeData)
-	}, "LinkedEdges", "InverseEdges")
 
 	return &NodeDataInfo{
 		depgraph:      g2,
@@ -556,7 +567,7 @@ func (m NodeMapInfo) HideFromGraphQL(edge edge.Edge) bool {
 	return nodeData.HideFromGraphQL
 }
 
-func (m NodeMapInfo) parseInputSchema(schema *input.Schema) *assocEdgeData {
+func (m NodeMapInfo) parseInputSchema(schema *input.Schema) (*assocEdgeData, error) {
 	// TODO right now this is also depending on config/database.yml
 	// figure out if best place for this
 	edgeData := m.loadExistingEdges()
@@ -578,14 +589,22 @@ func (m NodeMapInfo) parseInputSchema(schema *input.Schema) *assocEdgeData {
 			node.Fields,
 			&field.Options{},
 		)
-		util.Die(err)
+		if err != nil {
+			return nil, err
+		}
+
+		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(nodeName, node)
+		if err != nil {
+			return nil, err
+		}
 
 		m.addConfig(&NodeDataInfo{
 			NodeData: nodeData,
+			depgraph: m.buildPostRunDepgraph(edgeData),
 		})
 	}
 
-	return edgeData
+	return m.processDepgrah(edgeData)
 }
 
 // getTableName returns the name of the table the node should be stored in
