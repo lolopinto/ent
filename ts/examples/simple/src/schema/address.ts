@@ -1,5 +1,5 @@
-import Schema, {Field, BaseEntSchema} from "./../../../schema"
-import {StringType} from "./../../../field"
+import Schema, {Field, BaseEntSchema} from "../../../../src/schema"
+import {StringType} from "../../../../src/field"
 
 /// explicit schema
 export default class Address extends BaseEntSchema implements Schema {

@@ -1,0 +1,14 @@
+{
+  // TODO
+  "compilerOptions": {
+    "lib": ["es2015", "es6", "dom"],
+    "outDir": "./dist",
+    "target": "es6",
+    "strictNullChecks": true,
+    "downlevelIteration": true,
+    "moduleResolution": "node"
+//    "noImplicitAny": true,
+  },
+  "include": ["src/**/*"],
+  "exclude": ["./examples"],
+}

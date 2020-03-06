@@ -1,4 +1,4 @@
-import { DBType, Node } from "../../../schema";
+import { DBType, Node } from "../../../../src/schema";
 
 // TODO this is too complicated to be implicit.
 // create a simpler one that's implicit
@@ -34,3 +34,5 @@ const User = {
 };
 
 export default User;
+
+// TODO figure out typescript splitting thing 
