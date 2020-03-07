@@ -1,9 +1,9 @@
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
-  fields: Field[]; 
+  fields: Field[];
 
   // optional, can be overriden as needed
   tableName?: string;
@@ -15,9 +15,9 @@ export default interface Schema {
   edges?: Edge[];
 }
 
-// An AssocEdge is an edge between 2 ids that has a common table/edge format 
+// An AssocEdge is an edge between 2 ids that has a common table/edge format
 // columns are
-// id1 uuid (or int64), 
+// id1 uuid (or int64),
 // id1Type type (enum), TODO
 // edgeType (enum?), TODO
 // id2 uuid (or int64)
@@ -30,7 +30,7 @@ export default interface Schema {
 // default is 1-way
 export interface AssocEdge {
   // name of the edge e.g. creator, hosts, etc. edge name should be plural except for unique edges
-  name: string; 
+  name: string;
   // name of schema which edge is pointing to e.g. User, Address
   schemaName: string;
   // symmetric edge? should we write an edge from id2 -> id1 of the same edgeType?
@@ -50,7 +50,7 @@ export interface InverseAssocEdge {
 }
 
 // AssocEdgeGroup provides a way to group related edges together
-// e.g. rsvps and you have an invited, attending, declined edge all together in the same 
+// e.g. rsvps and you have an invited, attending, declined edge all together in the same
 // table and a way to configure it so that changing one edge also affects the others
 export interface AssocEdgeGroup {
   name: string;
@@ -69,7 +69,7 @@ export type Edge = AssocEdge | AssocEdgeGroup;
 // The most commonly used pattern in the ent framework is going to be the Node pattern
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
-  fields: Field[]; 
+  fields: Field[];
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
@@ -77,7 +77,7 @@ export interface Pattern {
 
 // supported db types
 export enum DBType {
-  UUID = "UUID", 
+  UUID = "UUID",
   Int64ID = "Int64ID", // unsupported right now
   Boolean = "Boolean",
   Int = "Int",
@@ -92,42 +92,42 @@ export interface Type {
   dbType: DBType; // type in the db
   // TODO make these required eventually once we get there
   type?: string; // typescript type
-  graphQLType?: string // graphql type
+  graphQLType?: string; // graphql type
 }
 
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
-  name: string; 
+  name: string;
   // optional modification of fields: nullable/storagekey etc.
-  nullable?: boolean; 
+  nullable?: boolean;
   storageKey?: string; // db?
   serverDefault?: any;
   unique?: boolean;
-  hideFromGraphQL?:boolean;
-  private?:boolean;
-  graphqlName?:string;
-  index?:boolean;
-  foreignKey?:[string,string];
-  fieldEdge?:[string, string]; // replaces fieldEdge above...
+  hideFromGraphQL?: boolean;
+  private?: boolean;
+  graphqlName?: string;
+  index?: boolean;
+  foreignKey?: [string, string];
+  fieldEdge?: [string, string]; // replaces fieldEdge above...
   // TODO put this on id field not all field options?
   primaryKey?: boolean; // can only have one in a schema. Node provides id as default primary key in a schema
 
   // indicates that this can't be edited by the user
   // must have a defaultValueOnCreate() field if set
   disableUserEditable?: boolean;
-  defaultValueOnCreate?():any;
-  defaultValueOnEdit?():any;
+  defaultValueOnCreate?(): any;
+  defaultValueOnEdit?(): any;
 }
 
 // Field interface that each Field needs to support
 export interface Field extends FieldOptions {
   // type of field. db, typescript, graphql types encoded in here
-  type: Type; 
+  type: Type;
 
   // optional valid and format to validate and format before storing
-  valid?(val: any):boolean;
-  format?(val: any):any;
+  valid?(val: any): boolean;
+  format?(val: any): any;
 }
 
 let tsFields: Field[];
@@ -142,7 +142,7 @@ tsFields = [
     defaultValueOnCreate: () => {
       return new Date();
     },
-// TODO need a withTimezone time
+    // TODO need a withTimezone time
   },
   {
     name: "updatedAt",
@@ -180,7 +180,7 @@ let nodeFields: Field[] = [
 ];
 nodeFields = nodeFields.concat(tsFields);
 
-// Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps) 
+// Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps)
 export const Node = {
   fields: nodeFields,
 };

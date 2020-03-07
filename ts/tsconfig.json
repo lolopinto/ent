@@ -7,8 +7,8 @@
     "strictNullChecks": true,
     "downlevelIteration": true,
     "moduleResolution": "node"
-//    "noImplicitAny": true,
+    //    "noImplicitAny": true,
   },
   "include": ["src/**/*", "tests/**/*"],
-  "exclude": ["./examples"],
+  "exclude": ["./examples"]
 }

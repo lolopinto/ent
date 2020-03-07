@@ -1,21 +1,20 @@
-import {Type, DBType, Field, FieldOptions} from "./schema"
+import { Type, DBType, Field, FieldOptions } from "./schema";
 
 abstract class BaseField {
-
   name: string;
-  nullable?: boolean; 
+  nullable?: boolean;
   storageKey?: string;
   serverDefault?: any;
   unique?: boolean;
-  hideFromGraphQL?:boolean;
-  private?:boolean;
-  graphqlName?:string;
-  index?:boolean;
-  foreignKey?:[string,string];
+  hideFromGraphQL?: boolean;
+  private?: boolean;
+  graphqlName?: string;
+  index?: boolean;
+  foreignKey?: [string, string];
 }
 
 export class UUID extends BaseField implements Field {
-  type: Type = {dbType: DBType.UUID};
+  type: Type = { dbType: DBType.UUID };
 }
 
 export function UUIDType(options: FieldOptions): UUID {
@@ -28,7 +27,7 @@ export function UUIDType(options: FieldOptions): UUID {
 }
 
 export class Integer extends BaseField implements Field {
-  type: Type = {dbType: DBType.Int};
+  type: Type = { dbType: DBType.Int };
 }
 
 export function IntegerType(options: FieldOptions): Integer {
@@ -41,7 +40,7 @@ export function IntegerType(options: FieldOptions): Integer {
 }
 
 export class Float extends BaseField implements Field {
-  type: Type = {dbType: DBType.Float};
+  type: Type = { dbType: DBType.Float };
 }
 
 export function FloatType(options: FieldOptions): Float {
@@ -54,7 +53,7 @@ export function FloatType(options: FieldOptions): Float {
 }
 
 export class Boolean extends BaseField implements Field {
-  type: Type = {dbType: DBType.Boolean};
+  type: Type = { dbType: DBType.Boolean };
 }
 
 export function BooleanType(options: FieldOptions): Boolean {
@@ -77,10 +76,10 @@ export class String extends BaseField implements Field, StringOptions {
   maxLen: number;
   length: number;
 
-  type: Type = {dbType: DBType.String};
+  type: Type = { dbType: DBType.String };
 
-  private validators: {(str:string):boolean }[] = [];
-  private formatters: {(str:string):string }[] = [];
+  private validators: { (str: string): boolean }[] = [];
+  private formatters: { (str: string): string }[] = [];
 
   valid(val: any): boolean {
     // TODO minLen, maxLen, length
@@ -105,40 +104,40 @@ export class String extends BaseField implements Field, StringOptions {
     return val;
   }
 
-  validate(validator: (str:string)=>boolean): String {
+  validate(validator: (str: string) => boolean): String {
     this.validators.push(validator);
     return this;
   }
 
-  formatter(formatter: (str:string)=>string): String {
+  formatter(formatter: (str: string) => string): String {
     this.formatters.push(formatter);
     return this;
   }
 
-  match(pattern: string|RegExp): String {
-    return this.validate(function(str:string): boolean{
+  match(pattern: string | RegExp): String {
+    return this.validate(function(str: string): boolean {
       let r = new RegExp(pattern);
       return r.test(str);
-    })
+    });
   }
 
-  doesNotMatch(pattern: string|RegExp): String {
-    return this.validate(function(str:string): boolean{
+  doesNotMatch(pattern: string | RegExp): String {
+    return this.validate(function(str: string): boolean {
       let r = new RegExp(pattern);
       return !r.test(str);
-    })
+    });
   }
-  
+
   toLowerCase(): String {
     return this.formatter(function(str: string): string {
       return str.toLowerCase();
-    })
+    });
   }
 
   toUpperCase(): String {
     return this.formatter(function(str: string): string {
       return str.toUpperCase();
-    })
+    });
   }
 }
 
@@ -151,9 +150,8 @@ export function StringType(options: StringOptions): String {
   return result;
 }
 
-
 export class Time extends BaseField implements Field {
-  type: Type = {dbType: DBType.Time}
+  type: Type = { dbType: DBType.Time };
 }
 
 export function TimeType(options: FieldOptions): Time {

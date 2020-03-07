@@ -8,15 +8,15 @@
     "downlevelIteration": true,
     "baseUrl": ".",
     "moduleResolution": "node",
-//    "noImplicitAny": true,
-"paths": {
-  "*": [
-    "*",
-    "schema",
-//    ""
-  ]
-}
+    //    "noImplicitAny": true,
+    "paths": {
+      "*": [
+        "*",
+        "schema"
+        //    ""
+      ]
+    }
   },
   "include": ["src/**/*", "tests/**/*"],
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules"]
 }

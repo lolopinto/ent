@@ -1,11 +1,10 @@
-import {Pool, ClientConfig, PoolClient} from "pg";
+import { Pool, ClientConfig, PoolClient } from "pg";
 
 function getClientConfig(): ClientConfig {
-  return {database: "tsent_test", user: "ola", host: "localhost", port: 5432};
+  return { database: "tsent_test", user: "ola", host: "localhost", port: 5432 };
 }
 
 export default class DB {
-
   private static instance: DB;
 
   private pool: Pool;
@@ -23,7 +22,7 @@ export default class DB {
   }
 
   // this should be called when the server is shutting down or end of tests.
-  async endPool(): Promise<void>{
+  async endPool(): Promise<void> {
     return this.pool.end();
   }
 

@@ -1,16 +1,16 @@
-import {Pool, ClientConfig} from "pg";
+import { Pool, ClientConfig } from "pg";
 
 import DB from "./db";
 
 export interface Ent {
   id: ID;
-  // todo viewer 
-  // todo privacy policy 
+  // todo viewer
+  // todo privacy policy
 }
 
 export interface EntConstructor {
   // TODO make this add viewer eventually
-  new(id: ID, options:{});
+  new (id: ID, options: {});
 }
 
 export type ID = string | number;
@@ -18,7 +18,7 @@ export type ID = string | number;
 interface Options<T> {
   // TODO pool or client later since we should get it from there
   // TODO this can be passed in for scenarios where we are not using default configuration
-//  clientConfig?: ClientConfig;
+  //  clientConfig?: ClientConfig;
   tableName: string;
 }
 
@@ -37,12 +37,18 @@ export interface EditEntOptions<T> extends LoadableEntOptions<T> {
 }
 
 // Todo viewer
-export async function loadEnt<T>(id: ID, options: LoadEntOptions<T>): Promise<T | null> {
+export async function loadEnt<T>(
+  id: ID,
+  options: LoadEntOptions<T>,
+): Promise<T | null> {
   return loadRow(id, options);
 }
 
 // todo viewer
-export async function loadEntX<T>(id: ID, options: LoadEntOptions<T>): Promise<T> {
+export async function loadEntX<T>(
+  id: ID,
+  options: LoadEntOptions<T>,
+): Promise<T> {
   return loadRowX(id, options);
 }
 
@@ -55,10 +61,13 @@ async function loadRowX<T>(id: ID, options: LoadEntOptions<T>): Promise<T> {
 }
 
 function logQuery(query: string) {
-//  console.log(query);
+  //  console.log(query);
 }
 
-async function loadRow<T>(id: ID, options: LoadEntOptions<T>): Promise<T | null> {
+async function loadRow<T>(
+  id: ID,
+  options: LoadEntOptions<T>,
+): Promise<T | null> {
   const pool = DB.getInstance().getPool();
   const fields = options.fields.join(", ");
   const query = `SELECT ${fields} FROM ${options.tableName} WHERE id = $1`;
@@ -75,7 +84,9 @@ async function loadRow<T>(id: ID, options: LoadEntOptions<T>): Promise<T | null>
   return new options.ent(id, res.rows[0]);
 }
 
-export async function createEnt<T>(options: EditEntOptions<T>): Promise<T | null> {
+export async function createEnt<T>(
+  options: EditEntOptions<T>,
+): Promise<T | null> {
   let fields: string[] = [];
   let values: any[] = [];
   let valsString: string[] = [];
@@ -90,7 +101,7 @@ export async function createEnt<T>(options: EditEntOptions<T>): Promise<T | null
   const cols = fields.join(", ");
   const vals = valsString.join(", ");
 
-  let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals}) RETURNING *`
+  let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals}) RETURNING *`;
 
   logQuery(query);
 
@@ -99,12 +110,12 @@ export async function createEnt<T>(options: EditEntOptions<T>): Promise<T | null
     const res = await pool.query(query, values);
 
     if (res.rowCount == 1) {
-      // for now assume id primary key 
+      // for now assume id primary key
       // todo
       let row = res.rows[0];
       return new options.ent(row.id, row);
     }
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     return null;
   }
@@ -112,7 +123,10 @@ export async function createEnt<T>(options: EditEntOptions<T>): Promise<T | null
 }
 
 // column should be passed in here
-export async function editEnt<T>(id: ID, options: EditEntOptions<T>): Promise<T | null> {
+export async function editEnt<T>(
+  id: ID,
+  options: EditEntOptions<T>,
+): Promise<T | null> {
   let valsString: string[] = [];
   let values: any[] = [];
 
@@ -126,7 +140,7 @@ export async function editEnt<T>(id: ID, options: EditEntOptions<T>): Promise<T 
 
   const vals = valsString.join(", ");
 
-  let query = `UPDATE ${options.tableName} SET ${vals} WHERE id = $${idx} RETURNING *`
+  let query = `UPDATE ${options.tableName} SET ${vals} WHERE id = $${idx} RETURNING *`;
   logQuery(query);
 
   try {
@@ -134,12 +148,12 @@ export async function editEnt<T>(id: ID, options: EditEntOptions<T>): Promise<T 
     const res = await pool.query(query, values);
 
     if (res.rowCount == 1) {
-      // for now assume id primary key 
+      // for now assume id primary key
       // TODO make this extensible as needed.
       let row = res.rows[0];
       return new options.ent(row.id, row);
     }
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     return null;
   }
@@ -147,21 +161,20 @@ export async function editEnt<T>(id: ID, options: EditEntOptions<T>): Promise<T 
 }
 
 export async function deleteEnt<T>(id: ID, options: Options<T>): Promise<null> {
-  let query = `DELETE FROM ${options.tableName} WHERE id = $1`
+  let query = `DELETE FROM ${options.tableName} WHERE id = $1`;
   logQuery(query);
 
   try {
     const pool = DB.getInstance().getPool();
     await pool.query(query, [id]);
-  } catch(e) {
+  } catch (e) {
     console.error(e);
   }
   return null;
 }
 
-
 enum EditOperation {
   Create = "create",
   Edit = "edit",
-  Delete = "delete"
+  Delete = "delete",
 }
