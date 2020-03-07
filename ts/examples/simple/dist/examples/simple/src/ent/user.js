@@ -7,20 +7,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { loadEnt, loadEntX, createEnt, editEnt, deleteEnt } from "../../../../src/ent";
+import { loadEnt, loadEntX, createEnt, editEnt, deleteEnt, } from "../../../../src/ent";
 import { getFields } from "../../../../src/schema";
-import schema from './../schema/user';
+import schema from "./../schema/user";
 const tableName = "users";
 export default class User {
     // TODO viewer...
     constructor(id, options) {
         this.id = id;
         // TODO don't double read id
-        this.id = options['id'];
-        this.createdAt = options['created_at'];
-        this.updatedAt = options['updated_at'];
-        this.firstName = options['first_name'];
-        this.lastName = options['last_name'];
+        this.id = options["id"];
+        this.createdAt = options["created_at"];
+        this.updatedAt = options["updated_at"];
+        this.firstName = options["first_name"];
+        this.lastName = options["last_name"];
     }
     // TODO viewer
     static load(id) {
@@ -35,19 +35,13 @@ export default class User {
         });
     }
     static getFields() {
-        return [
-            'id',
-            'created_at',
-            'updated_at',
-            'first_name',
-            'last_name',
-        ];
+        return ["id", "created_at", "updated_at", "first_name", "last_name"];
     }
     static getSchemaFields() {
         if (User.schemaFields != null) {
             return User.schemaFields;
         }
-        return User.schemaFields = getFields(schema);
+        return (User.schemaFields = getFields(schema));
     }
     static getField(key) {
         return User.getSchemaFields().get(key);
@@ -68,15 +62,14 @@ function defaultValue(key, property) {
     }
     return fn();
 }
-;
 export function createUser(input) {
     return __awaiter(this, void 0, void 0, function* () {
         let fields = {
-            "id": defaultValue("ID", "defaultValueOnCreate"),
-            "created_at": defaultValue("createdAt", "defaultValueOnCreate"),
-            "updated_at": defaultValue("updatedAt", "defaultValueOnCreate"),
-            "first_name": input.firstName,
-            "last_name": input.lastName,
+            id: defaultValue("ID", "defaultValueOnCreate"),
+            created_at: defaultValue("createdAt", "defaultValueOnCreate"),
+            updated_at: defaultValue("updatedAt", "defaultValueOnCreate"),
+            first_name: input.firstName,
+            last_name: input.lastName,
         };
         return yield createEnt({
             tableName: tableName,
@@ -88,12 +81,13 @@ export function createUser(input) {
 export function editUser(id, input) {
     return __awaiter(this, void 0, void 0, function* () {
         const setField = function (key, value) {
-            if (value !== undefined) { // nullable fields allowed
+            if (value !== undefined) {
+                // nullable fields allowed
                 fields[key] = value;
             }
         };
         let fields = {
-            "updated_at": defaultValue("updatedAt", "defaultValueOnEdit"),
+            updated_at: defaultValue("updatedAt", "defaultValueOnEdit"),
         };
         setField("first_name", input.firstName);
         setField("last_name", input.lastName);
@@ -111,4 +105,3 @@ export function deleteUser(id) {
         });
     });
 }
-;

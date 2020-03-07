@@ -7,21 +7,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { loadEnt, loadEntX, createEnt, editEnt, deleteEnt } from "../../../../src/ent";
+import { loadEnt, loadEntX, createEnt, editEnt, deleteEnt, } from "../../../../src/ent";
 import { getFields } from "../../../../src/schema";
-import schema from './../schema/address';
+import schema from "./../schema/address";
 const tableName = "addresses";
 export default class Address {
     // TODO viewer...
     constructor(id, options) {
         this.id = id;
         // TODO don't double read id
-        this.id = options['id'];
-        this.createdAt = options['created_at'];
-        this.updatedAt = options['updated_at'];
-        this.streetName = options['street_name'];
-        this.city = options['city'];
-        this.zip = options['zip'];
+        this.id = options["id"];
+        this.createdAt = options["created_at"];
+        this.updatedAt = options["updated_at"];
+        this.streetName = options["street_name"];
+        this.city = options["city"];
+        this.zip = options["zip"];
     }
     // TODO viewer
     static load(id) {
@@ -36,20 +36,13 @@ export default class Address {
         });
     }
     static getFields() {
-        return [
-            'id',
-            'created_at',
-            'updated_at',
-            'street_name',
-            'city',
-            'zip',
-        ];
+        return ["id", "created_at", "updated_at", "street_name", "city", "zip"];
     }
     static getSchemaFields() {
         if (Address.schemaFields != null) {
             return Address.schemaFields;
         }
-        return Address.schemaFields = getFields(schema);
+        return (Address.schemaFields = getFields(schema));
     }
     static getField(key) {
         return Address.getSchemaFields().get(key);
@@ -70,16 +63,15 @@ function defaultValue(key, property) {
     }
     return fn();
 }
-;
 export function createAddress(input) {
     return __awaiter(this, void 0, void 0, function* () {
         let fields = {
-            "id": defaultValue("ID", "defaultValueOnCreate"),
-            "created_at": defaultValue("createdAt", "defaultValueOnCreate"),
-            "updated_at": defaultValue("updatedAt", "defaultValueOnCreate"),
-            "street_name": input.streetName,
-            "city": input.city,
-            "zip": input.zip,
+            id: defaultValue("ID", "defaultValueOnCreate"),
+            created_at: defaultValue("createdAt", "defaultValueOnCreate"),
+            updated_at: defaultValue("updatedAt", "defaultValueOnCreate"),
+            street_name: input.streetName,
+            city: input.city,
+            zip: input.zip,
         };
         return yield createEnt({
             tableName: tableName,
@@ -91,12 +83,13 @@ export function createAddress(input) {
 export function editAddress(id, input) {
     return __awaiter(this, void 0, void 0, function* () {
         const setField = function (key, value) {
-            if (value !== undefined) { // nullable fields allowed
+            if (value !== undefined) {
+                // nullable fields allowed
                 fields[key] = value;
             }
         };
         let fields = {
-            "updated_at": defaultValue("updatedAt", "defaultValueOnEdit"),
+            updated_at: defaultValue("updatedAt", "defaultValueOnEdit"),
         };
         setField("street_name", input.streetName);
         setField("city", input.city);
@@ -115,4 +108,3 @@ export function deleteAddress(id) {
         });
     });
 }
-;

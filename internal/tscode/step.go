@@ -2,12 +2,10 @@ package tscode
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 	"text/template"
 
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/syncerr"
@@ -74,11 +72,7 @@ func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) e
 		AbsPathToTemplate: util.GetAbsolutePath("node.tmpl"),
 		TemplateName:      "node.tmpl",
 		PathToFile:        getFilePathForModelFile(nodeData),
-		FuncMap: template.FuncMap{
-			// TODO figure out which methods we actually need
-			"fTypeString":           field.GetNilableGoType,
-			"notNullableTypeString": field.GetNonNilableGoType,
-			"quoteStr":              strconv.Quote,
-		},
+		FormatSource:      true,
+		FuncMap:           template.FuncMap{},
 	})
 }

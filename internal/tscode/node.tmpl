@@ -8,7 +8,7 @@ const tableName = "{{.TableName}}";
 export default class {{.Node}} {
 
   {{range $field := .FieldInfo.Fields -}}
-  readonly {{$field.TsFieldName}}: {{$field.TsType}};
+    readonly {{$field.TsFieldName}}: {{$field.TsType}};
   {{end}}
 
   // TODO viewer...
@@ -16,7 +16,7 @@ export default class {{.Node}} {
     this.id = id;
     // TODO don't double read id
     {{range $field := .FieldInfo.Fields -}}
-    this.{{$field.TsFieldName}} = options['{{$field.GetDbColName}}'];
+      this.{{$field.TsFieldName}} = options['{{$field.GetDbColName}}'];
     {{end}}
   }
 
@@ -63,22 +63,22 @@ export default class {{.Node}} {
 // no actions yet so we support full create, edit, delete for now
 export interface {{.Node}}CreateInput {
   {{range $field := .FieldInfo.Fields -}}
-  {{ if $field.EditableField -}}
-    {{/* if nullable or has default value, make it optional */ -}}
-    {{if or $field.Nullable $field.HasDefaultValueOnCreate -}}
-      {{$field.TsFieldName}}?: {{$field.TsType}};
-    {{else -}}
-      {{$field.TsFieldName}}: {{$field.TsType}};
-    {{end -}}
-  {{ end -}}
+    {{ if $field.EditableField -}}
+      {{/* if nullable or has default value, make it optional */ -}}
+      {{if or $field.Nullable $field.HasDefaultValueOnCreate -}}
+        {{$field.TsFieldName}}?: {{$field.TsType}};
+      {{else -}}
+        {{$field.TsFieldName}}: {{$field.TsType}};
+      {{end -}}
+    {{ end -}}
   {{end}}
 }
 
 export interface {{.Node}}EditInput {
   {{range $field := .FieldInfo.Fields -}}
-  {{ if $field.EditableField -}}
+    {{ if $field.EditableField -}}
       {{$field.TsFieldName}}?: {{$field.TsType}};
-  {{ end -}}
+    {{ end -}}
   {{end}}
 }
 
@@ -93,11 +93,11 @@ function defaultValue (key: string, property: string): any {
 export async function create{{.Node}}(input: {{.Node}}CreateInput): Promise<{{.Node}} | null> {
   let fields  = {
     {{range $field := .FieldInfo.Fields -}}
-    {{ if $field.EditableField -}}
-      "{{$field.GetDbColName}}": input.{{$field.TsFieldName}},
-    {{ else if $field.HasDefaultValueOnCreate -}}
-      "{{$field.GetDbColName}}": defaultValue("{{$field.FieldName}}", "defaultValueOnCreate"),
-    {{end -}}
+      {{ if $field.EditableField -}}
+        "{{$field.GetDbColName}}": input.{{$field.TsFieldName}},
+      {{ else if $field.HasDefaultValueOnCreate -}}
+        "{{$field.GetDbColName}}": defaultValue("{{$field.FieldName}}", "defaultValueOnCreate"),
+      {{end -}}
     {{end -}}
   };
 
@@ -118,15 +118,15 @@ export async function edit{{.Node}}(id: ID, input: {{.Node}}EditInput): Promise<
   };
   let fields  = {
     {{range $field := .FieldInfo.Fields -}}
-    {{ if $field.HasDefaultValueOnEdit -}}
-      "{{$field.GetDbColName}}": defaultValue("{{$field.FieldName}}", "defaultValueOnEdit"),
-    {{end -}}
+      {{ if $field.HasDefaultValueOnEdit -}}
+        "{{$field.GetDbColName}}": defaultValue("{{$field.FieldName}}", "defaultValueOnEdit"),
+      {{end -}}
     {{end -}}
   };
   {{range $field := .FieldInfo.Fields -}}
-  {{ if $field.EditableField -}}
-  setField("{{$field.GetDbColName}}", input.{{$field.TsFieldName}});
-  {{end -}}
+    {{ if $field.EditableField -}}
+      setField("{{$field.GetDbColName}}", input.{{$field.TsFieldName}});
+    {{end -}}
   {{end}}
 
   return await editEnt(

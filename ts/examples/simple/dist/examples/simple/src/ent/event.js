@@ -7,23 +7,23 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { loadEnt, loadEntX, createEnt, editEnt, deleteEnt } from "../../../../src/ent";
+import { loadEnt, loadEntX, createEnt, editEnt, deleteEnt, } from "../../../../src/ent";
 import { getFields } from "../../../../src/schema";
-import schema from './../schema/event';
+import schema from "./../schema/event";
 const tableName = "events";
 export default class Event {
     // TODO viewer...
     constructor(id, options) {
         this.id = id;
         // TODO don't double read id
-        this.id = options['id'];
-        this.createdAt = options['created_at'];
-        this.updatedAt = options['updated_at'];
-        this.name = options['name'];
-        this.creatorID = options['user_id'];
-        this.startTime = options['start_time'];
-        this.endTime = options['end_time'];
-        this.location = options['location'];
+        this.id = options["id"];
+        this.createdAt = options["created_at"];
+        this.updatedAt = options["updated_at"];
+        this.name = options["name"];
+        this.creatorID = options["user_id"];
+        this.startTime = options["start_time"];
+        this.endTime = options["end_time"];
+        this.location = options["location"];
     }
     // TODO viewer
     static load(id) {
@@ -39,21 +39,21 @@ export default class Event {
     }
     static getFields() {
         return [
-            'id',
-            'created_at',
-            'updated_at',
-            'name',
-            'user_id',
-            'start_time',
-            'end_time',
-            'location',
+            "id",
+            "created_at",
+            "updated_at",
+            "name",
+            "user_id",
+            "start_time",
+            "end_time",
+            "location",
         ];
     }
     static getSchemaFields() {
         if (Event.schemaFields != null) {
             return Event.schemaFields;
         }
-        return Event.schemaFields = getFields(schema);
+        return (Event.schemaFields = getFields(schema));
     }
     static getField(key) {
         return Event.getSchemaFields().get(key);
@@ -74,18 +74,17 @@ function defaultValue(key, property) {
     }
     return fn();
 }
-;
 export function createEvent(input) {
     return __awaiter(this, void 0, void 0, function* () {
         let fields = {
-            "id": defaultValue("ID", "defaultValueOnCreate"),
-            "created_at": defaultValue("createdAt", "defaultValueOnCreate"),
-            "updated_at": defaultValue("updatedAt", "defaultValueOnCreate"),
-            "name": input.name,
-            "user_id": input.creatorID,
-            "start_time": input.startTime,
-            "end_time": input.endTime,
-            "location": input.location,
+            id: defaultValue("ID", "defaultValueOnCreate"),
+            created_at: defaultValue("createdAt", "defaultValueOnCreate"),
+            updated_at: defaultValue("updatedAt", "defaultValueOnCreate"),
+            name: input.name,
+            user_id: input.creatorID,
+            start_time: input.startTime,
+            end_time: input.endTime,
+            location: input.location,
         };
         return yield createEnt({
             tableName: tableName,
@@ -97,12 +96,13 @@ export function createEvent(input) {
 export function editEvent(id, input) {
     return __awaiter(this, void 0, void 0, function* () {
         const setField = function (key, value) {
-            if (value !== undefined) { // nullable fields allowed
+            if (value !== undefined) {
+                // nullable fields allowed
                 fields[key] = value;
             }
         };
         let fields = {
-            "updated_at": defaultValue("updatedAt", "defaultValueOnEdit"),
+            updated_at: defaultValue("updatedAt", "defaultValueOnEdit"),
         };
         setField("name", input.name);
         setField("user_id", input.creatorID);
@@ -123,4 +123,3 @@ export function deleteEvent(id) {
         });
     });
 }
-;
