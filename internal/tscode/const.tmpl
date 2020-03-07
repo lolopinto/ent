@@ -1,0 +1,13 @@
+export enum NodeType {
+  {{ range $data := .NodeData -}} 
+    // {{.Comment}}
+    {{.Name}} = {{.Value}},
+  {{ end -}}
+}
+
+export enum EdgeType {
+  {{ range $data := .EdgeData -}} 
+    // {{.Comment}}
+    {{.Name}} = {{.Value}},
+  {{ end -}}
+}
