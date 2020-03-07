@@ -24,11 +24,11 @@ import (
 type Step struct {
 }
 
-func (p *Step) Name() string {
+func (s *Step) Name() string {
 	return "db"
 }
 
-func (p *Step) ProcessData(data *codegen.Data) error {
+func (s *Step) ProcessData(data *codegen.Data) error {
 	// generate python schema file and then make changes to underlying db
 	db := newDBSchema(data.Schema, data.CodePath.GetRelativePathToConfigs())
 	db.generateSchema()

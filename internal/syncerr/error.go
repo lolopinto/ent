@@ -1,8 +1,10 @@
 package syncerr
 
-import "sync"
+import (
+	"sync"
 
-import "github.com/lolopinto/ent/internal/util"
+	"github.com/lolopinto/ent/internal/util"
+)
 
 // Error abstracts out collecting errors in goroutines
 // Makes it safe to add each new error in Append
@@ -24,8 +26,6 @@ func (e *Error) Append(err error) {
 }
 
 // Err returns something which satisfies the error interface
-// It currently returns just the first error which is what util.CoalesceErr does
-// will be fixed soon
 func (e *Error) Err() error {
 	return util.CoalesceErr(e.errs...)
 }

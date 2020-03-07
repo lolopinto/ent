@@ -1,0 +1,48 @@
+import {loadEnt, ID, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "../../../../src/ent"
+import { v4 as uuidv4 } from 'uuid';
+
+{{with .NodeData -}}
+const tableName = "{{.TableName}}";
+
+export default class {{.Node}} {
+
+  {{range $field := .FieldInfo.Fields -}}
+  readonly {{$field.TsFieldName}}: {{$field.TsType}};
+  {{end}}
+
+  // TODO viewer...
+  constructor(id: ID, options:{}) {
+    this.id = id;
+    // TODO don't double read id
+    {{range $field := .FieldInfo.Fields -}}
+    this.{{$field.TsFieldName}} = options['{{$field.GetDbColName}}'];
+    {{end}}
+  }
+
+  // TODO viewer
+  static async load(id: ID): Promise<{{.Node}} | null>{
+    return loadEnt(id, {{.Node}}.getOptions());
+  }
+
+  // also TODO viewer
+  static async loadX(id: ID): Promise<{{.Node}}> {
+    return loadEntX(id, {{.Node}}.getOptions());
+  }
+
+  private static getFields(): string[] {
+    return [
+    {{range $field := .FieldInfo.Fields -}}
+      '{{$field.GetDbColName}}',
+    {{end}}
+    ];
+  }
+
+  private static getOptions(): LoadEntOptions<{{.Node}}> {
+    return {
+      tableName: tableName,
+      fields: {{.Node}}.getFields(),
+      ent: {{.Node}},
+    };
+  }
+}
+{{end -}}

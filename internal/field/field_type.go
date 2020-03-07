@@ -316,6 +316,23 @@ func (f *Field) GetFieldTag() string {
 	return "`" + strings.Join(tags, " ") + "`"
 }
 
+// TODO add GoFieldName and kill FieldName as public...
+func (f *Field) TsFieldName() string {
+	// TODO need to solve these id issues generally
+	if f.FieldName == "ID" {
+		return "id"
+	}
+	return strcase.ToLowerCamel(f.FieldName)
+}
+
+func (f *Field) TsType() string {
+	tsType, ok := f.fieldType.(enttype.TSType)
+	if !ok {
+		panic("cannot get typescript type from invalid type")
+	}
+	return tsType.GetTSType()
+}
+
 func (f *Field) setFieldType(fieldType enttype.Type) {
 	fieldEntType, ok := fieldType.(enttype.EntType)
 	if !ok {

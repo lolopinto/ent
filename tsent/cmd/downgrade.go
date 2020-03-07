@@ -12,6 +12,6 @@ var downgradeCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// another hardcoded place
-		db.DowngradeDB("schema", args[0])
+		db.DowngradeDB("src/schema", args[0])
 	},
 }

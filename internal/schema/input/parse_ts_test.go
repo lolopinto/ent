@@ -72,7 +72,7 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 			// delete temporary created file
 			defer os.RemoveAll(dirPath)
 
-			schemaDir := filepath.Join(dirPath, "schema")
+			schemaDir := filepath.Join(dirPath, "src", "schema")
 			require.NoError(t, os.MkdirAll(schemaDir, os.ModePerm))
 
 			for fileName, contents := range tt.code {

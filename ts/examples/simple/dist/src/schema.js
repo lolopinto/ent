@@ -33,7 +33,7 @@ tsFields = [
 export const Timestamps = {
     fields: tsFields,
 };
-let nodeFields = [].concat([
+let nodeFields = [
     {
         name: "ID",
         type: {
@@ -41,7 +41,8 @@ let nodeFields = [].concat([
         },
         primaryKey: true,
     },
-], tsFields);
+];
+nodeFields = nodeFields.concat(tsFields);
 // Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps) 
 export const Node = {
     fields: nodeFields,
