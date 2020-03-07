@@ -7,7 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { loadEnt, loadEntX } from "../../../../src/ent";
+import { loadEnt, loadEntX, createEnt, editEnt, deleteEnt } from "../../../../src/ent";
+import { getFields } from "../../../../src/schema";
+import schema from './../schema/event';
 const tableName = "events";
 export default class Event {
     // TODO viewer...
@@ -47,6 +49,15 @@ export default class Event {
             'location',
         ];
     }
+    static getSchemaFields() {
+        if (Event.schemaFields != null) {
+            return Event.schemaFields;
+        }
+        return Event.schemaFields = getFields(schema);
+    }
+    static getField(key) {
+        return Event.getSchemaFields().get(key);
+    }
     static getOptions() {
         return {
             tableName: tableName,
@@ -55,3 +66,61 @@ export default class Event {
         };
     }
 }
+function defaultValue(key, property) {
+    var _a;
+    let fn = (_a = Event.getField(key)) === null || _a === void 0 ? void 0 : _a[property];
+    if (!fn) {
+        return null;
+    }
+    return fn();
+}
+;
+export function createEvent(input) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let fields = {
+            "id": defaultValue("ID", "defaultValueOnCreate"),
+            "created_at": defaultValue("createdAt", "defaultValueOnCreate"),
+            "updated_at": defaultValue("updatedAt", "defaultValueOnCreate"),
+            "name": input.name,
+            "user_id": input.creatorID,
+            "start_time": input.startTime,
+            "end_time": input.endTime,
+            "location": input.location,
+        };
+        return yield createEnt({
+            tableName: tableName,
+            fields: fields,
+            ent: Event,
+        });
+    });
+}
+export function editEvent(id, input) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const setField = function (key, value) {
+            if (value !== undefined) { // nullable fields allowed
+                fields[key] = value;
+            }
+        };
+        let fields = {
+            "updated_at": defaultValue("updatedAt", "defaultValueOnEdit"),
+        };
+        setField("name", input.name);
+        setField("user_id", input.creatorID);
+        setField("start_time", input.startTime);
+        setField("end_time", input.endTime);
+        setField("location", input.location);
+        return yield editEnt(id, {
+            tableName: tableName,
+            fields: fields,
+            ent: Event,
+        });
+    });
+}
+export function deleteEvent(id) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield deleteEnt(id, {
+            tableName: tableName,
+        });
+    });
+}
+;

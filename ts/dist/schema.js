@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
 // should eventually generate (boolean | null) etc
 // supported db types
@@ -20,6 +21,10 @@ tsFields = [
             dbType: DBType.Time,
         },
         hideFromGraphQL: true,
+        disableUserEditable: true,
+        defaultValueOnCreate: () => {
+            return new Date();
+        },
     },
     {
         name: "updatedAt",
@@ -27,6 +32,13 @@ tsFields = [
             dbType: DBType.Time,
         },
         hideFromGraphQL: true,
+        disableUserEditable: true,
+        defaultValueOnCreate: () => {
+            return new Date();
+        },
+        defaultValueOnEdit: () => {
+            return new Date();
+        },
     },
 ];
 // Timestamps is a Pattern that adds a createdAt and updatedAt timestamp fields to the ent
@@ -40,6 +52,10 @@ let nodeFields = [
             dbType: DBType.UUID,
         },
         primaryKey: true,
+        disableUserEditable: true,
+        defaultValueOnCreate: () => {
+            return uuidv4();
+        },
     },
 ];
 nodeFields = nodeFields.concat(tsFields);
@@ -53,4 +69,25 @@ export class BaseEntSchema {
     constructor() {
         this.patterns = [Node];
     }
+}
+export function getFields(value) {
+    let schema;
+    if (value.constructor == Object) {
+        schema = value;
+    }
+    else {
+        schema = new value();
+    }
+    let m = new Map();
+    if (schema.patterns) {
+        for (const pattern of schema.patterns) {
+            for (const field of pattern.fields) {
+                m.set(field.name, field);
+            }
+        }
+    }
+    for (const field of schema.fields) {
+        m.set(field.name, field);
+    }
+    return m;
 }

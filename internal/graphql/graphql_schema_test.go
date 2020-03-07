@@ -13,6 +13,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildGraphQLSchema(t *testing.T) {
@@ -482,11 +483,15 @@ func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources st
 		t,
 		parsehelper.Sources(uniqueKeyForSources, sources),
 	)
-	return schema.ParsePackage(data.Pkg)
+	schema, err := schema.ParsePackage(data.Pkg)
+	require.Nil(t, err)
+	return schema
 }
 
 func getParsedTestSchema(t *testing.T) *schema.Schema {
 	// use parsehelper.ParseFilesForTest since that caches it
 	data := parsehelper.ParseFilesForTest(t)
-	return schema.ParsePackage(data.Pkg)
+	schema, err := schema.ParsePackage(data.Pkg)
+	require.Nil(t, err)
+	return schema
 }

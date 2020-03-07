@@ -9,6 +9,6 @@
     "moduleResolution": "node"
 //    "noImplicitAny": true,
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "tests/**/*"],
   "exclude": ["./examples"],
 }

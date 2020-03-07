@@ -30,7 +30,7 @@ function loadRowX(id, options) {
     });
 }
 function logQuery(query) {
-    console.log(query);
+    //  console.log(query);
 }
 function loadRow(id, options) {
     return __awaiter(this, void 0, void 0, function* () {
