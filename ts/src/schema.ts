@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from 'uuid';
+
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
@@ -110,6 +112,12 @@ export interface FieldOptions {
   fieldEdge?:[string, string]; // replaces fieldEdge above...
   // TODO put this on id field not all field options?
   primaryKey?: boolean; // can only have one in a schema. Node provides id as default primary key in a schema
+
+  // indicates that this can't be edited by the user
+  // must have a defaultValueOnCreate() field if set
+  disableUserEditable?: boolean;
+  defaultValueOnCreate?():any;
+  defaultValueOnEdit?():any;
 }
 
 // Field interface that each Field needs to support
@@ -130,8 +138,10 @@ tsFields = [
       dbType: DBType.Time,
     },
     hideFromGraphQL: true,
-//    serverDefault: 'now()', // not what we actually want because now() seems to be with timezone and default timestamp is without timezone
-// so probably want to do this in typescript similar to what we do in golang
+    disableUserEditable: true,
+    defaultValueOnCreate: () => {
+      return new Date();
+    },
 // TODO need a withTimezone time
   },
   {
@@ -140,7 +150,13 @@ tsFields = [
       dbType: DBType.Time,
     },
     hideFromGraphQL: true,
-//    serverDefault: 'now()', same as above. Also need a default update value but that's not serverDefault
+    disableUserEditable: true,
+    defaultValueOnCreate: () => {
+      return new Date();
+    },
+    defaultValueOnEdit: () => {
+      return new Date();
+    },
   },
 ];
 
@@ -156,6 +172,10 @@ let nodeFields: Field[] = [
       dbType: DBType.UUID,
     },
     primaryKey: true,
+    disableUserEditable: true,
+    defaultValueOnCreate: () => {
+      return uuidv4();
+    },
   },
 ];
 nodeFields = nodeFields.concat(tsFields);
@@ -169,4 +189,27 @@ export const Node = {
 // exists just to have less typing and easier for clients to implement
 export abstract class BaseEntSchema {
   patterns: Pattern[] = [Node];
+}
+
+export function getFields(value: any): Map<string, Field> {
+  let schema: Schema;
+  if (value.constructor == Object) {
+    schema = value;
+  } else {
+    schema = new value();
+  }
+
+  let m = new Map();
+  if (schema.patterns) {
+    for (const pattern of schema.patterns) {
+      for (const field of pattern.fields) {
+        m.set(field.name, field);
+      }
+    }
+  }
+  for (const field of schema.fields) {
+    m.set(field.name, field);
+  }
+
+  return m;
 }

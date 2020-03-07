@@ -20,19 +20,22 @@ type node struct {
 }
 
 type field struct {
-	name            string
-	dbType          input.DBType
-	nullable        bool
-	storageKey      string
-	unique          bool
-	hideFromGraphQL bool
-	private         bool
-	graphqlName     string
-	index           bool
-	primaryKey      bool
-	foreignKey      *[2]string
-	fieldEdge       *[2]string
-	serverDefault   string
+	name                    string
+	dbType                  input.DBType
+	nullable                bool
+	storageKey              string
+	unique                  bool
+	hideFromGraphQL         bool
+	private                 bool
+	graphqlName             string
+	index                   bool
+	primaryKey              bool
+	foreignKey              *[2]string
+	fieldEdge               *[2]string
+	serverDefault           string
+	disableUserEditable     bool
+	hasDefaultValueOnCreate bool
+	hasDefaultValueOnEdit   bool
 }
 
 type assocEdge struct {
@@ -109,6 +112,9 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 					assert.Equal(t, expField.graphqlName, field.GraphQLName)
 					assert.Equal(t, expField.index, field.Index)
 					assert.Equal(t, expField.primaryKey, field.PrimaryKey)
+					assert.Equal(t, expField.disableUserEditable, field.DisableUserEditable)
+					assert.Equal(t, expField.hasDefaultValueOnCreate, field.HasDefaultValueOnCreate)
+					assert.Equal(t, expField.hasDefaultValueOnEdit, field.HasDefaultValueOnEdit)
 
 					assert.Equal(t, expField.foreignKey, field.ForeignKey)
 					assert.Equal(t, expField.fieldEdge, field.FieldEdge)

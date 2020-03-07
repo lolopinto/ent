@@ -55,7 +55,7 @@ async function loadRowX<T>(id: ID, options: LoadEntOptions<T>): Promise<T> {
 }
 
 function logQuery(query: string) {
-  console.log(query);
+//  console.log(query);
 }
 
 async function loadRow<T>(id: ID, options: LoadEntOptions<T>): Promise<T | null> {

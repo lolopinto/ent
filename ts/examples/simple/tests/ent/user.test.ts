@@ -1,4 +1,4 @@
-import User, {createUser, editUser, deleteUser, UserCreateInput} from "../../src/ent/user_manual";
+import User, {createUser, editUser, deleteUser, UserCreateInput} from "../../src/ent/user";
 import DB from "../../../../src/db";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -22,7 +22,7 @@ test('create user', async () => {
     expect(user.firstName).toBe("Jon");
     expect(user.lastName).toBe("Snow");
   } catch (e) {
-    fail("should not have gotten here");
+    fail(e.message);
   }
 });
 
@@ -36,7 +36,7 @@ test('edit user', async () => {
     expect(editedUser?.firstName).toBe("First of his name");
     expect(editedUser?.lastName).toBe("Snow");
   } catch (e) {
-    fail("should not have gotten here");
+    fail(e.message);
   }
 })
 
@@ -49,7 +49,7 @@ test('delete user', async () => {
     let loadedUser = await User.load(user.id);
     expect(loadedUser).toBe(null);
   } catch (e) {
-    fail("should not have gotten here " + e.message);
+    fail(e.message);
   }
 })
 

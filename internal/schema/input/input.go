@@ -60,6 +60,10 @@ type Field struct {
 	FieldEdge     *[2]string  `json:"fieldEdge"` // this only really makes sense on id fields...
 	ForeignKey    *[2]string  `json:"foreignKey"`
 	ServerDefault interface{} `json:"serverDefault"`
+	// DisableUserEditable true == DefaultValueOnCreate required
+	DisableUserEditable     bool `json:"disableUserEditable"`
+	HasDefaultValueOnCreate bool `json:"hasDefaultValueOnCreate"`
+	HasDefaultValueOnEdit   bool `json:"hasDefaultValueOnEdit"`
 
 	// Go specific information here
 	TagMap          map[string]string

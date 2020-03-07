@@ -1,5 +1,6 @@
-import {loadEnt, ID, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "../../../../src/ent"
-import { v4 as uuidv4 } from 'uuid';
+import {loadEnt, ID, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "../../../../src/ent";
+import {Field, getFields} from "../../../../src/schema";
+import schema from './../schema/event';
 
 const tableName = "events";
 
@@ -54,6 +55,19 @@ export default class Event {
     ];
   }
 
+  private static schemaFields: Map<string,Field>;
+
+  private static getSchemaFields(): Map<string, Field> {
+    if (Event.schemaFields != null) {
+      return Event.schemaFields;
+    }
+    return Event.schemaFields = getFields(schema);
+  }
+
+  static getField(key: string): Field | undefined{
+    return Event.getSchemaFields().get(key);
+  }
+
   private static getOptions(): LoadEntOptions<Event> {
     return {
       tableName: tableName,
@@ -62,3 +76,86 @@ export default class Event {
     };
   }
 }
+
+// no actions yet so we support full create, edit, delete for now
+export interface EventCreateInput {
+  name: string;
+    creatorID: string;
+    startTime: Date;
+    endTime?: Date | null;
+    location: string;
+    
+}
+
+export interface EventEditInput {
+  name?: string;
+  creatorID?: string;
+  startTime?: Date;
+  endTime?: Date | null;
+  location?: string;
+  
+}
+
+function defaultValue (key: string, property: string): any {
+  let fn = Event.getField(key)?.[property];
+  if (!fn) {
+    return null;
+  }
+  return fn();
+};
+
+export async function createEvent(input: EventCreateInput): Promise<Event | null> {
+  let fields  = {
+    "id": defaultValue("ID", "defaultValueOnCreate"),
+    "created_at": defaultValue("createdAt", "defaultValueOnCreate"),
+    "updated_at": defaultValue("updatedAt", "defaultValueOnCreate"),
+    "name": input.name,
+    "user_id": input.creatorID,
+    "start_time": input.startTime,
+    "end_time": input.endTime,
+    "location": input.location,
+    };
+
+  return await createEnt(
+    {
+      tableName: tableName,
+      fields: fields,
+      ent: Event,
+    }
+  );
+}
+
+export async function editEvent(id: ID, input: EventEditInput): Promise<Event | null> {
+  const setField = function(key: string, value: any) {
+    if (value !== undefined) { // nullable fields allowed
+      fields[key] = value;
+    }
+  };
+  let fields  = {
+    "updated_at": defaultValue("updatedAt", "defaultValueOnEdit"),
+    };
+  setField("name", input.name);
+  setField("user_id", input.creatorID);
+  setField("start_time", input.startTime);
+  setField("end_time", input.endTime);
+  setField("location", input.location);
+  
+
+  return await editEnt(
+    id,
+    {
+      tableName: tableName,
+      fields: fields,
+      ent: Event,
+    }
+  );
+}
+
+export async function deleteEvent(id: ID): Promise<null> {
+  return await deleteEnt(
+    id,
+    {
+      tableName: tableName,
+    }
+  );
+};
