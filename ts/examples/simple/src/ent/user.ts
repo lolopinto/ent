@@ -1,6 +1,7 @@
 import {
   loadEnt,
   ID,
+  Viewer,
   loadEntX,
   LoadEntOptions,
   createEnt,
@@ -19,8 +20,7 @@ export default class User {
   readonly firstName: string;
   readonly lastName: string;
 
-  // TODO viewer...
-  constructor(id: ID, options: {}) {
+  constructor(viewer: Viewer, id: ID, options: {}) {
     this.id = id;
     // TODO don't double read id
     this.id = options["id"];
@@ -30,14 +30,12 @@ export default class User {
     this.lastName = options["last_name"];
   }
 
-  // TODO viewer
-  static async load(id: ID): Promise<User | null> {
-    return loadEnt(id, User.getOptions());
+  static async load(viewer: Viewer, id: ID): Promise<User | null> {
+    return loadEnt(viewer, id, User.getOptions());
   }
 
-  // also TODO viewer
-  static async loadX(id: ID): Promise<User> {
-    return loadEntX(id, User.getOptions());
+  static async loadX(viewer: Viewer, id: ID): Promise<User> {
+    return loadEntX(viewer, id, User.getOptions());
   }
 
   private static getFields(): string[] {
@@ -85,7 +83,10 @@ function defaultValue(key: string, property: string): any {
   return fn();
 }
 
-export async function createUser(input: UserCreateInput): Promise<User | null> {
+export async function createUser(
+  viewer: Viewer,
+  input: UserCreateInput
+): Promise<User | null> {
   let fields = {
     id: defaultValue("ID", "defaultValueOnCreate"),
     created_at: defaultValue("createdAt", "defaultValueOnCreate"),
@@ -94,7 +95,7 @@ export async function createUser(input: UserCreateInput): Promise<User | null> {
     last_name: input.lastName,
   };
 
-  return await createEnt({
+  return await createEnt(viewer, {
     tableName: tableName,
     fields: fields,
     ent: User,
@@ -102,6 +103,7 @@ export async function createUser(input: UserCreateInput): Promise<User | null> {
 }
 
 export async function editUser(
+  viewer: Viewer,
   id: ID,
   input: UserEditInput
 ): Promise<User | null> {
@@ -117,15 +119,15 @@ export async function editUser(
   setField("first_name", input.firstName);
   setField("last_name", input.lastName);
 
-  return await editEnt(id, {
+  return await editEnt(viewer, id, {
     tableName: tableName,
     fields: fields,
     ent: User,
   });
 }
 
-export async function deleteUser(id: ID): Promise<null> {
-  return await deleteEnt(id, {
+export async function deleteUser(viewer: Viewer, id: ID): Promise<null> {
+  return await deleteEnt(viewer, id, {
     tableName: tableName,
   });
 }

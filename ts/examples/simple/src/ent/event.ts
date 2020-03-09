@@ -1,6 +1,7 @@
 import {
   loadEnt,
   ID,
+  Viewer,
   loadEntX,
   LoadEntOptions,
   createEnt,
@@ -22,8 +23,7 @@ export default class Event {
   readonly endTime: Date | null;
   readonly location: string;
 
-  // TODO viewer...
-  constructor(id: ID, options: {}) {
+  constructor(viewer: Viewer, id: ID, options: {}) {
     this.id = id;
     // TODO don't double read id
     this.id = options["id"];
@@ -36,14 +36,12 @@ export default class Event {
     this.location = options["location"];
   }
 
-  // TODO viewer
-  static async load(id: ID): Promise<Event | null> {
-    return loadEnt(id, Event.getOptions());
+  static async load(viewer: Viewer, id: ID): Promise<Event | null> {
+    return loadEnt(viewer, id, Event.getOptions());
   }
 
-  // also TODO viewer
-  static async loadX(id: ID): Promise<Event> {
-    return loadEntX(id, Event.getOptions());
+  static async loadX(viewer: Viewer, id: ID): Promise<Event> {
+    return loadEntX(viewer, id, Event.getOptions());
   }
 
   private static getFields(): string[] {
@@ -107,6 +105,7 @@ function defaultValue(key: string, property: string): any {
 }
 
 export async function createEvent(
+  viewer: Viewer,
   input: EventCreateInput
 ): Promise<Event | null> {
   let fields = {
@@ -120,7 +119,7 @@ export async function createEvent(
     location: input.location,
   };
 
-  return await createEnt({
+  return await createEnt(viewer, {
     tableName: tableName,
     fields: fields,
     ent: Event,
@@ -128,6 +127,7 @@ export async function createEvent(
 }
 
 export async function editEvent(
+  viewer: Viewer,
   id: ID,
   input: EventEditInput
 ): Promise<Event | null> {
@@ -146,15 +146,15 @@ export async function editEvent(
   setField("end_time", input.endTime);
   setField("location", input.location);
 
-  return await editEnt(id, {
+  return await editEnt(viewer, id, {
     tableName: tableName,
     fields: fields,
     ent: Event,
   });
 }
 
-export async function deleteEvent(id: ID): Promise<null> {
-  return await deleteEnt(id, {
+export async function deleteEvent(viewer: Viewer, id: ID): Promise<null> {
+  return await deleteEnt(viewer, id, {
     tableName: tableName,
   });
 }

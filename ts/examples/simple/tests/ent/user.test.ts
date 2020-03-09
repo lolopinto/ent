@@ -4,8 +4,12 @@ import User, {
   deleteUser,
   UserCreateInput,
 } from "../../src/ent/user";
+import { LogedOutViewer } from "../../../../src/viewer";
+
 import DB from "../../../../src/db";
 import { v4 as uuidv4 } from "uuid";
+
+const loggedOutViewer = new LogedOutViewer();
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -13,7 +17,7 @@ afterAll(async () => {
 });
 
 async function create(input: UserCreateInput): Promise<User> {
-  let user = await createUser(input);
+  let user = await createUser(loggedOutViewer, input);
   if (user == null) {
     fail("could not create user");
   }
@@ -35,7 +39,7 @@ test("edit user", async () => {
   try {
     let user = await create({ firstName: "Jon", lastName: "Snow" });
 
-    let editedUser = await editUser(user.id, {
+    let editedUser = await editUser(loggedOutViewer, user.id, {
       firstName: "First of his name",
     });
 
@@ -51,9 +55,9 @@ test("delete user", async () => {
   try {
     let user = await create({ firstName: "Jon", lastName: "Snow" });
 
-    await deleteUser(user.id);
+    await deleteUser(loggedOutViewer, user.id);
 
-    let loadedUser = await User.load(user.id);
+    let loadedUser = await User.load(loggedOutViewer, user.id);
     expect(loadedUser).toBe(null);
   } catch (e) {
     fail(e.message);
@@ -62,7 +66,7 @@ test("delete user", async () => {
 
 test("loadX", async () => {
   try {
-    await User.loadX(uuidv4());
+    await User.loadX(loggedOutViewer, uuidv4());
     fail("should have thrown exception");
   } catch (e) {}
 });

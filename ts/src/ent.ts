@@ -1,16 +1,20 @@
-import { Pool, ClientConfig } from "pg";
-
 import DB from "./db";
+
+export interface Viewer {
+  viewer: Ent | null;
+  viewerID: ID | null;
+  instanceKey: () => string;
+}
 
 export interface Ent {
   id: ID;
+  viewer: Viewer;
   // todo viewer
   // todo privacy policy
 }
 
 export interface EntConstructor {
-  // TODO make this add viewer eventually
-  new (id: ID, options: {});
+  new (viewer: Viewer, id: ID, options: {});
 }
 
 export type ID = string | number;
@@ -36,24 +40,28 @@ export interface EditEntOptions<T> extends LoadableEntOptions<T> {
   fields: {};
 }
 
-// Todo viewer
 export async function loadEnt<T>(
+  viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  return loadRow(id, options);
+  return loadRow(viewer, id, options);
 }
 
-// todo viewer
 export async function loadEntX<T>(
+  viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T> {
-  return loadRowX(id, options);
+  return loadRowX(viewer, id, options);
 }
 
-async function loadRowX<T>(id: ID, options: LoadEntOptions<T>): Promise<T> {
-  const result = await loadRow(id, options);
+async function loadRowX<T>(
+  viewer: Viewer,
+  id: ID,
+  options: LoadEntOptions<T>,
+): Promise<T> {
+  const result = await loadRow(viewer, id, options);
   if (result == null) {
     throw new Error(`couldn't find row for id ${id}`);
   }
@@ -65,6 +73,7 @@ function logQuery(query: string) {
 }
 
 async function loadRow<T>(
+  viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
@@ -81,10 +90,11 @@ async function loadRow<T>(
     return null;
   }
 
-  return new options.ent(id, res.rows[0]);
+  return new options.ent(viewer, id, res.rows[0]);
 }
 
 export async function createEnt<T>(
+  viewer: Viewer,
   options: EditEntOptions<T>,
 ): Promise<T | null> {
   let fields: string[] = [];
@@ -113,7 +123,7 @@ export async function createEnt<T>(
       // for now assume id primary key
       // todo
       let row = res.rows[0];
-      return new options.ent(row.id, row);
+      return new options.ent(viewer, row.id, row);
     }
   } catch (e) {
     console.error(e);
@@ -124,6 +134,7 @@ export async function createEnt<T>(
 
 // column should be passed in here
 export async function editEnt<T>(
+  viewer: Viewer,
   id: ID,
   options: EditEntOptions<T>,
 ): Promise<T | null> {
@@ -151,7 +162,7 @@ export async function editEnt<T>(
       // for now assume id primary key
       // TODO make this extensible as needed.
       let row = res.rows[0];
-      return new options.ent(row.id, row);
+      return new options.ent(viewer, row.id, row);
     }
   } catch (e) {
     console.error(e);
@@ -160,7 +171,11 @@ export async function editEnt<T>(
   return null;
 }
 
-export async function deleteEnt<T>(id: ID, options: Options<T>): Promise<null> {
+export async function deleteEnt<T>(
+  viewer: Viewer,
+  id: ID,
+  options: Options<T>,
+): Promise<null> {
   let query = `DELETE FROM ${options.tableName} WHERE id = $1`;
   logQuery(query);
 

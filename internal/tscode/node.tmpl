@@ -1,4 +1,4 @@
-import {loadEnt, ID, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "../../../../src/ent";
+import {loadEnt, ID, Viewer, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "../../../../src/ent";
 import {Field, getFields} from "../../../../src/schema";
 import schema from './../schema/{{.NodeData.PackageName}}';
 
@@ -11,8 +11,7 @@ export default class {{.Node}} {
     readonly {{$field.TsFieldName}}: {{$field.TsType}};
   {{end}}
 
-  // TODO viewer...
-  constructor(id: ID, options:{}) {
+  constructor(viewer: Viewer, id: ID, options:{}) {
     this.id = id;
     // TODO don't double read id
     {{range $field := .FieldInfo.Fields -}}
@@ -20,14 +19,12 @@ export default class {{.Node}} {
     {{end}}
   }
 
-  // TODO viewer
-  static async load(id: ID): Promise<{{.Node}} | null>{
-    return loadEnt(id, {{.Node}}.getOptions());
+  static async load(viewer: Viewer, id: ID): Promise<{{.Node}} | null>{
+    return loadEnt(viewer, id, {{.Node}}.getOptions());
   }
 
-  // also TODO viewer
-  static async loadX(id: ID): Promise<{{.Node}}> {
-    return loadEntX(id, {{.Node}}.getOptions());
+  static async loadX(viewer: Viewer, id: ID): Promise<{{.Node}}> {
+    return loadEntX(viewer, id, {{.Node}}.getOptions());
   }
 
   private static getFields(): string[] {
@@ -90,7 +87,7 @@ function defaultValue (key: string, property: string): any {
   return fn();
 };
 
-export async function create{{.Node}}(input: {{.Node}}CreateInput): Promise<{{.Node}} | null> {
+export async function create{{.Node}}(viewer: Viewer, input: {{.Node}}CreateInput): Promise<{{.Node}} | null> {
   let fields  = {
     {{range $field := .FieldInfo.Fields -}}
       {{ if $field.EditableField -}}
@@ -102,6 +99,7 @@ export async function create{{.Node}}(input: {{.Node}}CreateInput): Promise<{{.N
   };
 
   return await createEnt(
+    viewer, 
     {
       tableName: tableName,
       fields: fields,
@@ -110,7 +108,7 @@ export async function create{{.Node}}(input: {{.Node}}CreateInput): Promise<{{.N
   );
 }
 
-export async function edit{{.Node}}(id: ID, input: {{.Node}}EditInput): Promise<{{.Node}} | null> {
+export async function edit{{.Node}}(viewer: Viewer, id: ID, input: {{.Node}}EditInput): Promise<{{.Node}} | null> {
   const setField = function(key: string, value: any) {
     if (value !== undefined) { // nullable fields allowed
       fields[key] = value;
@@ -130,6 +128,7 @@ export async function edit{{.Node}}(id: ID, input: {{.Node}}EditInput): Promise<
   {{end}}
 
   return await editEnt(
+    viewer,
     id,
     {
       tableName: tableName,
@@ -139,8 +138,9 @@ export async function edit{{.Node}}(id: ID, input: {{.Node}}EditInput): Promise<
   );
 }
 
-export async function delete{{.Node}}(id: ID): Promise<null> {
+export async function delete{{.Node}}(viewer: Viewer, id: ID): Promise<null> {
   return await deleteEnt(
+    viewer,
     id,
     {
       tableName: tableName,

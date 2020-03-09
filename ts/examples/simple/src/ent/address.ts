@@ -1,6 +1,7 @@
 import {
   loadEnt,
   ID,
+  Viewer,
   loadEntX,
   LoadEntOptions,
   createEnt,
@@ -20,8 +21,7 @@ export default class Address {
   readonly city: string;
   readonly zip: string;
 
-  // TODO viewer...
-  constructor(id: ID, options: {}) {
+  constructor(viewer: Viewer, id: ID, options: {}) {
     this.id = id;
     // TODO don't double read id
     this.id = options["id"];
@@ -32,14 +32,12 @@ export default class Address {
     this.zip = options["zip"];
   }
 
-  // TODO viewer
-  static async load(id: ID): Promise<Address | null> {
-    return loadEnt(id, Address.getOptions());
+  static async load(viewer: Viewer, id: ID): Promise<Address | null> {
+    return loadEnt(viewer, id, Address.getOptions());
   }
 
-  // also TODO viewer
-  static async loadX(id: ID): Promise<Address> {
-    return loadEntX(id, Address.getOptions());
+  static async loadX(viewer: Viewer, id: ID): Promise<Address> {
+    return loadEntX(viewer, id, Address.getOptions());
   }
 
   private static getFields(): string[] {
@@ -90,6 +88,7 @@ function defaultValue(key: string, property: string): any {
 }
 
 export async function createAddress(
+  viewer: Viewer,
   input: AddressCreateInput
 ): Promise<Address | null> {
   let fields = {
@@ -101,7 +100,7 @@ export async function createAddress(
     zip: input.zip,
   };
 
-  return await createEnt({
+  return await createEnt(viewer, {
     tableName: tableName,
     fields: fields,
     ent: Address,
@@ -109,6 +108,7 @@ export async function createAddress(
 }
 
 export async function editAddress(
+  viewer: Viewer,
   id: ID,
   input: AddressEditInput
 ): Promise<Address | null> {
@@ -125,15 +125,15 @@ export async function editAddress(
   setField("city", input.city);
   setField("zip", input.zip);
 
-  return await editEnt(id, {
+  return await editEnt(viewer, id, {
     tableName: tableName,
     fields: fields,
     ent: Address,
   });
 }
 
-export async function deleteAddress(id: ID): Promise<null> {
-  return await deleteEnt(id, {
+export async function deleteAddress(viewer: Viewer, id: ID): Promise<null> {
+  return await deleteEnt(viewer, id, {
     tableName: tableName,
   });
 }
