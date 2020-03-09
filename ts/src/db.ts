@@ -1,7 +1,35 @@
 import { Pool, ClientConfig, PoolClient } from "pg";
+import * as fs from "fs";
+import { safeLoad } from "js-yaml";
 
-function getClientConfig(): ClientConfig {
-  return { database: "tsent_test", user: "ola", host: "localhost", port: 5432 };
+function getClientConfig(): ClientConfig | null {
+  // if there's a db connection string, use that first
+  const str = process.env.DB_CONNECTION_STRING;
+  if (str) {
+    return {
+      connectionString: str,
+    };
+  }
+
+  try {
+    // TODO support multiple environments
+    let data = fs.readFileSync("config/database.yml", { encoding: "utf8" });
+    let yaml = safeLoad(data);
+    if (yaml) {
+      return {
+        database: yaml.database,
+        user: yaml.user,
+        password: yaml.password,
+        host: yaml.host,
+        port: yaml.port,
+        ssl: yaml.sslmode == "enable",
+      };
+    }
+  } catch (e) {
+    console.error("error reading file" + e.message);
+    return null;
+  }
+  return null;
 }
 
 export default class DB {
@@ -26,12 +54,17 @@ export default class DB {
     return this.pool.end();
   }
 
+  // throws if invalid
   static getInstance(): DB {
     if (DB.instance) {
       return DB.instance;
     }
-    // TODO get this from config/database.yml or environment variable
-    DB.instance = new DB(getClientConfig());
+
+    const clientConfig = getClientConfig();
+    if (!clientConfig) {
+      throw new Error("could not load client config");
+    }
+    DB.instance = new DB(clientConfig);
     return DB.instance;
   }
 }
