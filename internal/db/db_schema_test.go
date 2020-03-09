@@ -13,6 +13,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIDColumn(t *testing.T) {
@@ -292,12 +293,10 @@ type TodoConfig struct {
 	}
 	`
 
-	schemas := getInMemoryTestSchemas(t, sources, "InvalidForeignKey")
-
 	assert.Panics(
 		t,
 		func() {
-			getTestTableFromSchema("TodoConfig", schemas, t)
+			getInMemoryTestSchemas(t, sources, "InvalidForeignKey")
 		},
 		"invalid Field Bar set as ForeignKey of field AccountID on ent config TodoConfig",
 	)
@@ -642,7 +641,9 @@ func testConstraints(t *testing.T, table *dbTable, expConstraints int) {
 func getParsedTestSchema(t *testing.T) *schema.Schema {
 	// use parsehelper.ParseFilesForTest since that caches it
 	data := parsehelper.ParseFilesForTest(t)
-	return schema.ParsePackage(data.Pkg)
+	schema, err := schema.ParsePackage(data.Pkg)
+	require.Nil(t, err)
+	return schema
 }
 
 func getTestSchema(t *testing.T) *dbSchema {
@@ -818,5 +819,7 @@ func parseSchema(t *testing.T, sources map[string]string, uniqueKeyForSources st
 		t,
 		parsehelper.Sources(uniqueKeyForSources, sources),
 	)
-	return schema.ParsePackage(data.Pkg)
+	schema, err := schema.ParsePackage(data.Pkg)
+	require.Nil(t, err)
+	return schema
 }

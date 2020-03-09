@@ -276,19 +276,26 @@ func TestParseFields(t *testing.T) {
 				"User": node{
 					fields: []field{
 						field{
-							name:       "ID",
-							dbType:     input.UUID,
-							primaryKey: true,
+							name:                    "ID",
+							dbType:                  input.UUID,
+							primaryKey:              true,
+							disableUserEditable:     true,
+							hasDefaultValueOnCreate: true,
 						},
 						field{
-							name:            "createdAt",
-							dbType:          input.Time,
-							hideFromGraphQL: true,
+							name:                    "createdAt",
+							dbType:                  input.Time,
+							hideFromGraphQL:         true,
+							disableUserEditable:     true,
+							hasDefaultValueOnCreate: true,
 						},
 						field{
-							name:            "updatedAt",
-							dbType:          input.Time,
-							hideFromGraphQL: true,
+							name:                    "updatedAt",
+							dbType:                  input.Time,
+							hideFromGraphQL:         true,
+							disableUserEditable:     true,
+							hasDefaultValueOnCreate: true,
+							hasDefaultValueOnEdit:   true,
 						},
 						field{
 							name:   "firstName",
@@ -330,19 +337,26 @@ func TestParseFields(t *testing.T) {
 				"User": node{
 					fields: []field{
 						field{
-							name:       "ID",
-							dbType:     input.UUID,
-							primaryKey: true,
+							name:                    "ID",
+							dbType:                  input.UUID,
+							primaryKey:              true,
+							disableUserEditable:     true,
+							hasDefaultValueOnCreate: true,
 						},
 						field{
-							name:            "createdAt",
-							dbType:          input.Time,
-							hideFromGraphQL: true,
+							name:                    "createdAt",
+							dbType:                  input.Time,
+							hideFromGraphQL:         true,
+							disableUserEditable:     true,
+							hasDefaultValueOnCreate: true,
 						},
 						field{
-							name:            "updatedAt",
-							dbType:          input.Time,
-							hideFromGraphQL: true,
+							name:                    "updatedAt",
+							dbType:                  input.Time,
+							hideFromGraphQL:         true,
+							disableUserEditable:     true,
+							hasDefaultValueOnCreate: true,
+							hasDefaultValueOnEdit:   true,
 						},
 						field{
 							name:   "first_name",
@@ -368,19 +382,26 @@ func TestParseFields(t *testing.T) {
 				"Event": node{
 					fields: []field{
 						field{
-							name:       "ID",
-							dbType:     input.UUID,
-							primaryKey: true,
+							name:                    "ID",
+							dbType:                  input.UUID,
+							primaryKey:              true,
+							disableUserEditable:     true,
+							hasDefaultValueOnCreate: true,
 						},
 						field{
-							name:            "createdAt",
-							dbType:          input.Time,
-							hideFromGraphQL: true,
+							name:                    "createdAt",
+							dbType:                  input.Time,
+							hideFromGraphQL:         true,
+							disableUserEditable:     true,
+							hasDefaultValueOnCreate: true,
 						},
 						field{
-							name:            "updatedAt",
-							dbType:          input.Time,
-							hideFromGraphQL: true,
+							name:                    "updatedAt",
+							dbType:                  input.Time,
+							hideFromGraphQL:         true,
+							disableUserEditable:     true,
+							hasDefaultValueOnCreate: true,
+							hasDefaultValueOnEdit:   true,
 						},
 						field{
 							name:   "name",

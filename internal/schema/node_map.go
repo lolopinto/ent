@@ -599,8 +599,9 @@ func (m NodeMapInfo) parseInputSchema(schema *input.Schema) (*assocEdgeData, err
 		}
 
 		m.addConfig(&NodeDataInfo{
-			NodeData: nodeData,
-			depgraph: m.buildPostRunDepgraph(edgeData),
+			NodeData:      nodeData,
+			depgraph:      m.buildPostRunDepgraph(edgeData),
+			ShouldCodegen: true,
 		})
 	}
 

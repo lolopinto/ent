@@ -7,11 +7,11 @@ import (
 type Step struct {
 }
 
-func (p *Step) Name() string {
+func (s *Step) Name() string {
 	return "codegen"
 }
 
-func (p *Step) ProcessData(data *codegen.Data) error {
+func (s *Step) ProcessData(data *codegen.Data) error {
 	for _, info := range data.Schema.Nodes {
 		if !info.ShouldCodegen {
 			continue

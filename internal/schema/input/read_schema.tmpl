@@ -29,10 +29,10 @@ for (const key in potentialSchemas) {
   //  let fields = [...schema.fields];
   if (schema.patterns) {
     for (const pattern of schema.patterns) {
-      fields = fields.concat(pattern.fields);
+      processFields(fields, pattern.fields)
     }
   }
-  fields = fields.concat(schema.fields);
+  processFields(fields, schema.fields);
 
   let assocEdges: AssocEdge[] = [];
   let assocEdgeGroups: AssocEdgeGroup[] = [];
@@ -57,6 +57,16 @@ for (const key in potentialSchemas) {
 
 function isAssocEdge(edge: Edge): edge is AssocEdge {
   return (edge as AssocEdge).schemaName != undefined;
+}
+
+function processFields(dst: {}[], src:Field[]) {
+  for (const field of src) {
+    let f = {};
+    f = field;
+    f['hasDefaultValueOnCreate'] = (field.defaultValueOnCreate != undefined)
+    f['hasDefaultValueOnEdit'] = (field.defaultValueOnEdit != undefined)
+    dst.push(f);
+  }
 }
 
 console.log(JSON.stringify(schemas));

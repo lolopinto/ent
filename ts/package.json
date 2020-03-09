@@ -1,0 +1,31 @@
+{
+  "name": "ent",
+  "version": "0.0.1",
+  "description": "ent framework",
+  "main": ".",
+  "directories": {
+    "example": "examples"
+  },
+  "dependencies": {
+    "@types/js-yaml": "^3.12.2",
+    "@types/pg": "^7.14.1",
+    "js-yaml": "^3.13.1",
+    "pg": "^7.18.2",
+    "prettier": "^1.19.1",
+    "ts-node": "^8.6.2",
+    "uuid": "^7.0.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.1.4",
+    "@types/node": "^13.9.0",
+    "jest": "^25.1.0",
+    "ts-jest": "^25.2.1",
+    "typescript": "^3.8.3"
+  },
+  "scripts": {
+    "compile": "tsc",
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC"
+}

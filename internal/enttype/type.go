@@ -26,6 +26,13 @@ type EntType interface {
 	GetZeroValue() string
 }
 
+// types that also support Typescript
+// TODO need to eventually add this for all things but starting with primitives for now
+type TSType interface {
+	EntType
+	GetTSType() string
+}
+
 type ListType interface {
 	Type
 	GetElemGraphQLType() string
@@ -67,6 +74,10 @@ func (t *StringType) GetGraphQLType() string {
 	return "String!"
 }
 
+func (t *StringType) GetTSType() string {
+	return "string"
+}
+
 func (t *StringType) GetCastToMethod() string {
 	return "cast.ToString"
 }
@@ -81,6 +92,10 @@ type NullableStringType struct {
 
 func (t *NullableStringType) GetGraphQLType() string {
 	return "String"
+}
+
+func (t *NullableStringType) GetTSType() string {
+	return "string | null"
 }
 
 func (t *NullableStringType) GetCastToMethod() string {
@@ -109,6 +124,10 @@ func (t *BoolType) GetGraphQLType() string {
 	return "Boolean!"
 }
 
+func (t *BoolType) GetTSType() string {
+	return "boolean"
+}
+
 func (t *BoolType) GetCastToMethod() string {
 	return "cast.ToBool"
 }
@@ -123,6 +142,10 @@ type NullableBoolType struct {
 
 func (t *NullableBoolType) GetGraphQLType() string {
 	return "Boolean"
+}
+
+func (t *NullableBoolType) GetTSType() string {
+	return "boolean | null"
 }
 
 func (t *NullableBoolType) GetCastToMethod() string {
@@ -154,6 +177,10 @@ func (t *IDType) GetGraphQLType() string {
 	return "ID!"
 }
 
+func (t *IDType) GetTSType() string {
+	return "ID"
+}
+
 func (t *IDType) GetCastToMethod() string {
 	return "cast.ToUUIDString"
 }
@@ -168,6 +195,10 @@ type NullableIDType struct {
 
 func (t *NullableIDType) GetGraphQLType() string {
 	return "ID"
+}
+
+func (t *NullableIDType) GetTSType() string {
+	return "ID | null"
 }
 
 func (t *NullableIDType) GetCastToMethod() string {
@@ -195,6 +226,10 @@ func (t *IntegerType) GetGraphQLType() string {
 	return "Int!"
 }
 
+func (t *IntegerType) GetTSType() string {
+	return "number"
+}
+
 func (t *IntegerType) GetCastToMethod() string {
 	return "cast.ToInt"
 }
@@ -209,6 +244,10 @@ type NullableIntegerType struct {
 
 func (t *NullableIntegerType) GetGraphQLType() string {
 	return "Int"
+}
+
+func (t *NullableIntegerType) GetTSType() string {
+	return "number | null"
 }
 
 func (t *NullableIntegerType) GetCastToMethod() string {
@@ -237,6 +276,10 @@ func (t *FloatType) GetGraphQLType() string {
 	return "Float!"
 }
 
+func (t *FloatType) GetTSType() string {
+	return "number"
+}
+
 func (t *FloatType) GetCastToMethod() string {
 	return "cast.ToFloat"
 }
@@ -251,6 +294,10 @@ type NullableFloatType struct {
 
 func (t *NullableFloatType) GetGraphQLType() string {
 	return "Float"
+}
+
+func (t *NullableFloatType) GetTSType() string {
+	return "number | null"
 }
 
 func (t *NullableFloatType) GetCastToMethod() string {
@@ -284,6 +331,10 @@ func (t *TimeType) GetGraphQLType() string {
 	return "Time!"
 }
 
+func (t *TimeType) GetTSType() string {
+	return "Date"
+}
+
 func (t *TimeType) GetCastToMethod() string {
 	return "cast.ToTime"
 }
@@ -302,6 +353,10 @@ func (t *NullableTimeType) GetCastToMethod() string {
 
 func (t *NullableTimeType) GetGraphQLType() string {
 	return "Time"
+}
+
+func (t *NullableTimeType) GetTSType() string {
+	return "Date | null"
 }
 
 func (t *NullableTimeType) GetNonNullableType() Type {

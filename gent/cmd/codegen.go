@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"errors"
-
 	"github.com/lolopinto/ent/internal/code"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
@@ -69,22 +67,5 @@ func parseSchemasAndGenerate(codePathInfo *codegen.CodePath, specificConfig, ste
 		new(graphql.Step),
 	}
 
-	if step != "" {
-		for _, s := range steps {
-			if s.Name() == step {
-				steps = []codegen.Step{s}
-				break
-			}
-		}
-		if len(steps) != 1 {
-			return errors.New("invalid step passed")
-		}
-	}
-
-	for _, s := range steps {
-		if err := s.ProcessData(data); err != nil {
-			return err
-		}
-	}
-	return nil
+	return codegen.RunSteps(data, steps, step)
 }

@@ -19,6 +19,8 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(codegenCmd)
 	rootCmd.AddCommand(downgradeCmd)
+
+	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
 }
 
 func Execute() {

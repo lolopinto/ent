@@ -19,7 +19,7 @@ import (
 
 func ParseSchemaFromTSDir(dirPath string) (*Schema, error) {
 	// TODO provide flag for this and pass it here
-	schemaPath := filepath.Join(dirPath, "schema")
+	schemaPath := filepath.Join(dirPath, "src", "schema")
 	info, err := os.Stat(schemaPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "no schema file")
@@ -83,7 +83,7 @@ type schemaData struct {
 }
 
 func GetAbsoluteSchemaPath() string {
-	schemaPath := util.GetAbsolutePath("../../../ts/schema.ts")
+	schemaPath := util.GetAbsolutePath("../../../ts/src/schema.ts")
 	// trim the suffix for the import
 	schemaPath = strings.TrimSuffix(schemaPath, ".ts")
 	return schemaPath

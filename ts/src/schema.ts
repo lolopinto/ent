@@ -1,7 +1,9 @@
+import { v4 as uuidv4 } from "uuid";
+
 // Schema is the base for every schema in typescript
 export default interface Schema {
   // schema has list of fields that are unique to each node
-  fields: Field[]; 
+  fields: Field[];
 
   // optional, can be overriden as needed
   tableName?: string;
@@ -13,9 +15,9 @@ export default interface Schema {
   edges?: Edge[];
 }
 
-// An AssocEdge is an edge between 2 ids that has a common table/edge format 
+// An AssocEdge is an edge between 2 ids that has a common table/edge format
 // columns are
-// id1 uuid (or int64), 
+// id1 uuid (or int64),
 // id1Type type (enum), TODO
 // edgeType (enum?), TODO
 // id2 uuid (or int64)
@@ -28,7 +30,7 @@ export default interface Schema {
 // default is 1-way
 export interface AssocEdge {
   // name of the edge e.g. creator, hosts, etc. edge name should be plural except for unique edges
-  name: string; 
+  name: string;
   // name of schema which edge is pointing to e.g. User, Address
   schemaName: string;
   // symmetric edge? should we write an edge from id2 -> id1 of the same edgeType?
@@ -48,7 +50,7 @@ export interface InverseAssocEdge {
 }
 
 // AssocEdgeGroup provides a way to group related edges together
-// e.g. rsvps and you have an invited, attending, declined edge all together in the same 
+// e.g. rsvps and you have an invited, attending, declined edge all together in the same
 // table and a way to configure it so that changing one edge also affects the others
 export interface AssocEdgeGroup {
   name: string;
@@ -67,7 +69,7 @@ export type Edge = AssocEdge | AssocEdgeGroup;
 // The most commonly used pattern in the ent framework is going to be the Node pattern
 // which automatically provides 3 fields to every ent: id, created_at, updated_at
 export interface Pattern {
-  fields: Field[]; 
+  fields: Field[];
 }
 
 // we want --strictNullChecks flag so nullable is used to type graphql, ts, db
@@ -75,7 +77,7 @@ export interface Pattern {
 
 // supported db types
 export enum DBType {
-  UUID = "UUID", 
+  UUID = "UUID",
   Int64ID = "Int64ID", // unsupported right now
   Boolean = "Boolean",
   Int = "Int",
@@ -90,36 +92,42 @@ export interface Type {
   dbType: DBType; // type in the db
   // TODO make these required eventually once we get there
   type?: string; // typescript type
-  graphQLType?: string // graphql type
+  graphQLType?: string; // graphql type
 }
 
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
-  name: string; 
+  name: string;
   // optional modification of fields: nullable/storagekey etc.
-  nullable?: boolean; 
+  nullable?: boolean;
   storageKey?: string; // db?
   serverDefault?: any;
   unique?: boolean;
-  hideFromGraphQL?:boolean;
-  private?:boolean;
-  graphqlName?:string;
-  index?:boolean;
-  foreignKey?:[string,string];
-  fieldEdge?:[string, string]; // replaces fieldEdge above...
+  hideFromGraphQL?: boolean;
+  private?: boolean;
+  graphqlName?: string;
+  index?: boolean;
+  foreignKey?: [string, string];
+  fieldEdge?: [string, string]; // replaces fieldEdge above...
   // TODO put this on id field not all field options?
   primaryKey?: boolean; // can only have one in a schema. Node provides id as default primary key in a schema
+
+  // indicates that this can't be edited by the user
+  // must have a defaultValueOnCreate() field if set
+  disableUserEditable?: boolean;
+  defaultValueOnCreate?(): any;
+  defaultValueOnEdit?(): any;
 }
 
 // Field interface that each Field needs to support
 export interface Field extends FieldOptions {
   // type of field. db, typescript, graphql types encoded in here
-  type: Type; 
+  type: Type;
 
   // optional valid and format to validate and format before storing
-  valid?(val: any):boolean;
-  format?(val: any):any;
+  valid?(val: any): boolean;
+  format?(val: any): any;
 }
 
 let tsFields: Field[];
@@ -130,9 +138,11 @@ tsFields = [
       dbType: DBType.Time,
     },
     hideFromGraphQL: true,
-//    serverDefault: 'now()', // not what we actually want because now() seems to be with timezone and default timestamp is without timezone
-// so probably want to do this in typescript similar to what we do in golang
-// TODO need a withTimezone time
+    disableUserEditable: true,
+    defaultValueOnCreate: () => {
+      return new Date();
+    },
+    // TODO need a withTimezone time
   },
   {
     name: "updatedAt",
@@ -140,7 +150,13 @@ tsFields = [
       dbType: DBType.Time,
     },
     hideFromGraphQL: true,
-//    serverDefault: 'now()', same as above. Also need a default update value but that's not serverDefault
+    disableUserEditable: true,
+    defaultValueOnCreate: () => {
+      return new Date();
+    },
+    defaultValueOnEdit: () => {
+      return new Date();
+    },
   },
 ];
 
@@ -149,19 +165,22 @@ export const Timestamps = {
   fields: tsFields,
 };
 
-let nodeFields: Field[] = [].concat([
-    {
-      name: "ID",
-      type: {
-        dbType: DBType.UUID,
-      },
-      primaryKey: true,
+let nodeFields: Field[] = [
+  {
+    name: "ID",
+    type: {
+      dbType: DBType.UUID,
     },
-  ], 
-  tsFields,
-);
+    primaryKey: true,
+    disableUserEditable: true,
+    defaultValueOnCreate: () => {
+      return uuidv4();
+    },
+  },
+];
+nodeFields = nodeFields.concat(tsFields);
 
-// Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps) 
+// Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps)
 export const Node = {
   fields: nodeFields,
 };
@@ -170,4 +189,27 @@ export const Node = {
 // exists just to have less typing and easier for clients to implement
 export abstract class BaseEntSchema {
   patterns: Pattern[] = [Node];
+}
+
+export function getFields(value: any): Map<string, Field> {
+  let schema: Schema;
+  if (value.constructor == Object) {
+    schema = value;
+  } else {
+    schema = new value();
+  }
+
+  let m = new Map();
+  if (schema.patterns) {
+    for (const pattern of schema.patterns) {
+      for (const field of pattern.fields) {
+        m.set(field.name, field);
+      }
+    }
+  }
+  for (const field of schema.fields) {
+    m.set(field.name, field);
+  }
+
+  return m;
 }
