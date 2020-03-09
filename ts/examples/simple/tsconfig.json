@@ -1,0 +1,22 @@
+{
+  // TODO eventually generate this from an init step
+  "compilerOptions": {
+    "lib": ["es2015", "es6", "dom"],
+    "outDir": "./dist",
+    "target": "es6",
+    "strictNullChecks": true,
+    "downlevelIteration": true,
+    "baseUrl": ".",
+    "moduleResolution": "node",
+    //    "noImplicitAny": true,
+    "paths": {
+      "*": [
+        "*",
+        "schema"
+        //    ""
+      ]
+    }
+  },
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["node_modules"]
+}

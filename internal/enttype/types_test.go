@@ -24,6 +24,7 @@ type expType struct {
 	errorType           bool
 	contextType         bool
 	goType              string
+	tsType              string
 }
 
 func TestStringType(t *testing.T) {
@@ -41,6 +42,7 @@ func f() string {
 		castToMethod: "cast.ToString",
 		goType:       "string",
 		nullableType: &enttype.NullableStringType{},
+		tsType:       "string",
 	}, ret)
 }
 
@@ -63,6 +65,7 @@ func f() ent.NodeType {
 		castToMethod: "cast.ToString",
 		goType:       "ent.NodeType",
 		nullableType: &enttype.NullableStringType{},
+		tsType:       "string",
 	}, ret)
 }
 
@@ -81,6 +84,7 @@ func f() *string {
 		castToMethod:    "cast.ToNullableString",
 		goType:          "*string",
 		nonNullableType: &enttype.StringType{},
+		tsType:          "string | null",
 	}, ret)
 }
 
@@ -99,6 +103,7 @@ func f() bool {
 		castToMethod: "cast.ToBool",
 		goType:       "bool",
 		nullableType: &enttype.NullableBoolType{},
+		tsType:       "boolean",
 	}, ret)
 }
 
@@ -117,6 +122,7 @@ func f() *bool {
 		castToMethod:    "cast.ToNullableBool",
 		nonNullableType: &enttype.BoolType{},
 		goType:          "*bool",
+		tsType:          "boolean | null",
 	}, ret)
 }
 
@@ -127,6 +133,7 @@ func TestIDType(t *testing.T) {
 		zeroValue:    "",
 		castToMethod: "cast.ToUUIDString",
 		nullableType: &enttype.NullableIDType{},
+		tsType:       "ID",
 	}, returnType{
 		entType: &enttype.IDType{},
 	})
@@ -139,6 +146,7 @@ func TestNullableIDType(t *testing.T) {
 		zeroValue:       "",
 		castToMethod:    "cast.ToNullableUUIDString",
 		nonNullableType: &enttype.IDType{},
+		tsType:          "ID | null",
 	}, returnType{
 		entType: &enttype.NullableIDType{},
 	})
@@ -159,6 +167,7 @@ func f() int {
 		castToMethod: "cast.ToInt",
 		goType:       "int",
 		nullableType: &enttype.NullableIntegerType{},
+		tsType:       "number",
 	}, ret)
 }
 
@@ -177,6 +186,7 @@ func f() *int {
 		castToMethod:    "cast.ToNullableInt",
 		nonNullableType: &enttype.IntegerType{},
 		goType:          "*int",
+		tsType:          "number | null",
 	}, ret)
 }
 
@@ -207,6 +217,7 @@ func testFloatType(t *testing.T, ret returnType, goType string) {
 		castToMethod: "cast.ToFloat",
 		goType:       goType,
 		nullableType: &enttype.NullableFloatType{},
+		tsType:       "number",
 	}, ret)
 }
 
@@ -237,6 +248,7 @@ func testNullableFloatType(t *testing.T, ret returnType, goType string) {
 		castToMethod:    "cast.ToNullableFloat",
 		goType:          goType,
 		nonNullableType: &enttype.FloatType{},
+		tsType:          "number | null",
 	}, ret)
 }
 
@@ -258,6 +270,7 @@ func f() time.Time {
 		nullableType:        &enttype.NullableTimeType{},
 		defaultGQLFieldName: "time",
 		goType:              "time.Time",
+		tsType:              "Date",
 	}, ret)
 }
 
@@ -279,6 +292,7 @@ func f() *time.Time {
 		nonNullableType:     &enttype.TimeType{},
 		defaultGQLFieldName: "time",
 		goType:              "*time.Time",
+		tsType:              "Date | null",
 	}, ret)
 }
 
@@ -890,6 +904,13 @@ func testType(t *testing.T, exp expType, ret returnType) {
 
 	if ret.goType != nil {
 		assert.Equal(t, exp.goType, enttype.GetGoType(ret.goType))
+	}
+
+	tsType, ok := typ.(enttype.TSType)
+	if ok {
+		assert.Equal(t, exp.tsType, tsType.GetTSType())
+	} else {
+		assert.Equal(t, "", exp.tsType)
 	}
 
 	assert.Equal(t, exp.errorType, enttype.IsErrorType(typ))

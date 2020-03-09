@@ -3,9 +3,12 @@ package file
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
+	"strings"
 	"text/template"
 
 	intimports "github.com/lolopinto/ent/internal/imports"
+	"github.com/pkg/errors"
 	"golang.org/x/tools/imports"
 )
 
@@ -31,8 +34,8 @@ func (fw *TemplatedBasedFileWriter) getPathToFile() string {
 }
 
 func (fw *TemplatedBasedFileWriter) generateBytes() ([]byte, error) {
-	// generate the new AST we want for the file
-	buf, err := fw.generateNewAst()
+	// execute template
+	buf, err := fw.executeTemplate()
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +45,19 @@ func (fw *TemplatedBasedFileWriter) generateBytes() ([]byte, error) {
 		return buf.Bytes(), nil
 	}
 
+	// formatting typescript
+	// vs formatting go!
+	if strings.HasSuffix(fw.getPathToFile(), ".go") {
+		return fw.formatGo(buf)
+	} else if strings.HasSuffix(fw.getPathToFile(), ".ts") {
+		return fw.formatTs(buf)
+	}
+	return nil, fmt.Errorf("cannot format source for non-go or ts file")
+}
+
+func (fw *TemplatedBasedFileWriter) formatGo(buf *bytes.Buffer) ([]byte, error) {
 	var b []byte
+	var err error
 	if fw.Imports != nil {
 		buf, err = fw.handleManualImports(buf)
 		if err != nil {
@@ -67,9 +82,31 @@ func (fw *TemplatedBasedFileWriter) generateBytes() ([]byte, error) {
 	return b, err
 }
 
-// TODO rename this since this is just parse template that's non-AST
-// generate new AST for the given file from the template
-func (fw *TemplatedBasedFileWriter) generateNewAst() (*bytes.Buffer, error) {
+func (fw *TemplatedBasedFileWriter) formatTs(buf *bytes.Buffer) ([]byte, error) {
+	// options: https://prettier.io/docs/en/options.html
+	args := []string{
+		"--trailing-comma", "es5",
+		"--quote-props", "consistent",
+		"--parser", "typescript",
+		"--end-of-line", "lf",
+	}
+	// also needs to be part of the docker container
+	cmd := exec.Command("prettier", args...)
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	cmd.Stdin = buf
+
+	if err := cmd.Run(); err != nil {
+		str := stderr.String()
+		err = errors.Wrap(err, str)
+		return nil, err
+	}
+	return out.Bytes(), nil
+}
+
+func (fw *TemplatedBasedFileWriter) executeTemplate() (*bytes.Buffer, error) {
 	path := []string{fw.AbsPathToTemplate}
 	t := template.New(fw.TemplateName).Funcs(fw.FuncMap)
 	t, err := t.ParseFiles(path...)

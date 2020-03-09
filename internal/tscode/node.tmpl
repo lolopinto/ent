@@ -1,0 +1,150 @@
+import {loadEnt, ID, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "../../../../src/ent";
+import {Field, getFields} from "../../../../src/schema";
+import schema from './../schema/{{.NodeData.PackageName}}';
+
+{{with .NodeData -}}
+const tableName = "{{.TableName}}";
+
+export default class {{.Node}} {
+
+  {{range $field := .FieldInfo.Fields -}}
+    readonly {{$field.TsFieldName}}: {{$field.TsType}};
+  {{end}}
+
+  // TODO viewer...
+  constructor(id: ID, options:{}) {
+    this.id = id;
+    // TODO don't double read id
+    {{range $field := .FieldInfo.Fields -}}
+      this.{{$field.TsFieldName}} = options['{{$field.GetDbColName}}'];
+    {{end}}
+  }
+
+  // TODO viewer
+  static async load(id: ID): Promise<{{.Node}} | null>{
+    return loadEnt(id, {{.Node}}.getOptions());
+  }
+
+  // also TODO viewer
+  static async loadX(id: ID): Promise<{{.Node}}> {
+    return loadEntX(id, {{.Node}}.getOptions());
+  }
+
+  private static getFields(): string[] {
+    return [
+    {{range $field := .FieldInfo.Fields -}}
+      '{{$field.GetDbColName}}',
+    {{end}}
+    ];
+  }
+
+  private static schemaFields: Map<string,Field>;
+
+  private static getSchemaFields(): Map<string, Field> {
+    if ({{.Node}}.schemaFields != null) {
+      return {{.Node}}.schemaFields;
+    }
+    return {{.Node}}.schemaFields = getFields(schema);
+  }
+
+  static getField(key: string): Field | undefined{
+    return {{.Node}}.getSchemaFields().get(key);
+  }
+
+  private static getOptions(): LoadEntOptions<{{.Node}}> {
+    return {
+      tableName: tableName,
+      fields: {{.Node}}.getFields(),
+      ent: {{.Node}},
+    };
+  }
+}
+
+// no actions yet so we support full create, edit, delete for now
+export interface {{.Node}}CreateInput {
+  {{range $field := .FieldInfo.Fields -}}
+    {{ if $field.EditableField -}}
+      {{/* if nullable or has default value, make it optional */ -}}
+      {{if or $field.Nullable $field.HasDefaultValueOnCreate -}}
+        {{$field.TsFieldName}}?: {{$field.TsType}};
+      {{else -}}
+        {{$field.TsFieldName}}: {{$field.TsType}};
+      {{end -}}
+    {{ end -}}
+  {{end}}
+}
+
+export interface {{.Node}}EditInput {
+  {{range $field := .FieldInfo.Fields -}}
+    {{ if $field.EditableField -}}
+      {{$field.TsFieldName}}?: {{$field.TsType}};
+    {{ end -}}
+  {{end}}
+}
+
+function defaultValue (key: string, property: string): any {
+  let fn = {{.Node}}.getField(key)?.[property];
+  if (!fn) {
+    return null;
+  }
+  return fn();
+};
+
+export async function create{{.Node}}(input: {{.Node}}CreateInput): Promise<{{.Node}} | null> {
+  let fields  = {
+    {{range $field := .FieldInfo.Fields -}}
+      {{ if $field.EditableField -}}
+        "{{$field.GetDbColName}}": input.{{$field.TsFieldName}},
+      {{ else if $field.HasDefaultValueOnCreate -}}
+        "{{$field.GetDbColName}}": defaultValue("{{$field.FieldName}}", "defaultValueOnCreate"),
+      {{end -}}
+    {{end -}}
+  };
+
+  return await createEnt(
+    {
+      tableName: tableName,
+      fields: fields,
+      ent: {{.Node}},
+    }
+  );
+}
+
+export async function edit{{.Node}}(id: ID, input: {{.Node}}EditInput): Promise<{{.Node}} | null> {
+  const setField = function(key: string, value: any) {
+    if (value !== undefined) { // nullable fields allowed
+      fields[key] = value;
+    }
+  };
+  let fields  = {
+    {{range $field := .FieldInfo.Fields -}}
+      {{ if $field.HasDefaultValueOnEdit -}}
+        "{{$field.GetDbColName}}": defaultValue("{{$field.FieldName}}", "defaultValueOnEdit"),
+      {{end -}}
+    {{end -}}
+  };
+  {{range $field := .FieldInfo.Fields -}}
+    {{ if $field.EditableField -}}
+      setField("{{$field.GetDbColName}}", input.{{$field.TsFieldName}});
+    {{end -}}
+  {{end}}
+
+  return await editEnt(
+    id,
+    {
+      tableName: tableName,
+      fields: fields,
+      ent: {{.Node}},
+    }
+  );
+}
+
+export async function delete{{.Node}}(id: ID): Promise<null> {
+  return await deleteEnt(
+    id,
+    {
+      tableName: tableName,
+    }
+  );
+};
+{{end -}}

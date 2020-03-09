@@ -1,7 +1,19 @@
 {
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnType": true,
+  "prettier.endOfLine": "lf",
+  "prettier.trailingComma": "all",
+  "prettier.quoteProps": "consistent",
+  "prettier.semi": true,
+  "prettier.tabWidth": 2,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "go.testEnvVars": {
     "PATH_TO_DB_FILE": "testdata/config/database.yml",
-    "DB_CONNECTION_STRING": "postgres://ola:@localhost/ent_test?sslmode=disable",
-  } ,
-  "go.testTimeout": "30s",
+    "DB_CONNECTION_STRING": "postgres://ola:@localhost/ent_test?sslmode=disable"
+  },
+  "go.testTimeout": "30s"
 }

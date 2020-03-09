@@ -7,8 +7,15 @@ import (
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/tscode"
 	"github.com/spf13/cobra"
 )
+
+type codegenArgs struct {
+	step string
+}
+
+var codegenInfo codegenArgs
 
 var codegenCmd = &cobra.Command{
 	Use:   "codegen", // TODO is there a better name here?
@@ -39,13 +46,17 @@ var codegenCmd = &cobra.Command{
 
 		// module path empty because not go
 		// same as ParseSchemaFromTSDir. default to schema. we want a flag here eventually
-		codePathInfo := codegen.NewCodePath("schema", "")
+		codePathInfo := codegen.NewCodePath("src/schema", "")
 
 		data := &codegen.Data{
-			Schema: schema, CodePath: codePathInfo}
+			Schema:   schema,
+			CodePath: codePathInfo,
+		}
 
-		// only support db for now
-		// TODO eventually support other steps similar to gent/cmd/codegen.go
-		return new(db.Step).ProcessData(data)
+		steps := []codegen.Step{
+			new(db.Step),
+			new(tscode.Step),
+		}
+		return codegen.RunSteps(data, steps, codegenInfo.step)
 	},
 }

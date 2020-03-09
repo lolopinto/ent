@@ -49,6 +49,11 @@ type Field struct {
 
 	// this is the package path of the datatype that referenced this field
 	dataTypePkgPath string
+
+	// these 3 should override exposeToActionsByDefault and topLevelStructField at some point since they're built to be reusable and work across types
+	disableUserEditable     bool
+	hasDefaultValueOnCreate bool
+	hasDefaultValueOnEdit   bool
 }
 
 func newFieldFromInput(f *input.Field) (*Field, error) {
@@ -66,6 +71,9 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 		dbColumn:                 true,
 		exposeToActionsByDefault: true,
 		singleFieldPrimaryKey:    f.PrimaryKey,
+		disableUserEditable:      f.DisableUserEditable,
+		hasDefaultValueOnCreate:  f.HasDefaultValueOnCreate,
+		hasDefaultValueOnEdit:    f.HasDefaultValueOnEdit,
 
 		// go specific things
 		entType:         f.GoType,
@@ -280,6 +288,18 @@ func (f *Field) SingleFieldPrimaryKey() bool {
 	return f.singleFieldPrimaryKey
 }
 
+func (f *Field) EditableField() bool {
+	return !f.disableUserEditable
+}
+
+func (f *Field) HasDefaultValueOnCreate() bool {
+	return f.hasDefaultValueOnCreate
+}
+
+func (f *Field) HasDefaultValueOnEdit() bool {
+	return f.hasDefaultValueOnEdit
+}
+
 func (f *Field) IDField() bool {
 	if !f.topLevelStructField {
 		return false
@@ -314,6 +334,23 @@ func (f *Field) GetFieldTag() string {
 	}
 	sort.Strings(tags)
 	return "`" + strings.Join(tags, " ") + "`"
+}
+
+// TODO add GoFieldName and kill FieldName as public...
+func (f *Field) TsFieldName() string {
+	// TODO need to solve these id issues generally
+	if f.FieldName == "ID" {
+		return "id"
+	}
+	return strcase.ToLowerCamel(f.FieldName)
+}
+
+func (f *Field) TsType() string {
+	tsType, ok := f.fieldType.(enttype.TSType)
+	if !ok {
+		panic("cannot get typescript type from invalid type")
+	}
+	return tsType.GetTSType()
 }
 
 func (f *Field) setFieldType(fieldType enttype.Type) {

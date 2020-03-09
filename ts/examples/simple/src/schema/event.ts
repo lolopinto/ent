@@ -1,5 +1,5 @@
-import Schema, {Field, Edge, BaseEntSchema} from "./../../../schema"
-import {StringType, TimeType} from "./../../../field"
+import Schema, {Field, Edge, BaseEntSchema} from "../../../../src/schema"
+import {StringType, TimeType} from "../../../../src/field"
 
 /// explicit schema
 export default class Event extends BaseEntSchema implements Schema {
