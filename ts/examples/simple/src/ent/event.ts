@@ -1,3 +1,4 @@
+// these are dependent on having the right tsconfig.json file...
 import {
   loadEnt,
   ID,
@@ -7,8 +8,8 @@ import {
   createEnt,
   editEnt,
   deleteEnt,
-} from "../../../../src/ent";
-import { Field, getFields } from "../../../../src/schema";
+} from "ent/ent";
+import { Field, getFields } from "ent/schema";
 import schema from "./../schema/event";
 
 const tableName = "events";
@@ -106,7 +107,7 @@ function defaultValue(key: string, property: string): any {
 
 export async function createEvent(
   viewer: Viewer,
-  input: EventCreateInput
+  input: EventCreateInput,
 ): Promise<Event | null> {
   let fields = {
     id: defaultValue("ID", "defaultValueOnCreate"),
@@ -129,7 +130,7 @@ export async function createEvent(
 export async function editEvent(
   viewer: Viewer,
   id: ID,
-  input: EventEditInput
+  input: EventEditInput,
 ): Promise<Event | null> {
   const setField = function(key: string, value: any) {
     if (value !== undefined) {

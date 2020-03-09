@@ -1,3 +1,4 @@
+// these are dependent on having the right tsconfig.json file...
 import {
   loadEnt,
   ID,
@@ -7,8 +8,8 @@ import {
   createEnt,
   editEnt,
   deleteEnt,
-} from "../../../../src/ent";
-import { Field, getFields } from "../../../../src/schema";
+} from "ent/ent";
+import { Field, getFields } from "ent/schema";
 import schema from "./../schema/user";
 
 const tableName = "users";
@@ -85,7 +86,7 @@ function defaultValue(key: string, property: string): any {
 
 export async function createUser(
   viewer: Viewer,
-  input: UserCreateInput
+  input: UserCreateInput,
 ): Promise<User | null> {
   let fields = {
     id: defaultValue("ID", "defaultValueOnCreate"),
@@ -105,7 +106,7 @@ export async function createUser(
 export async function editUser(
   viewer: Viewer,
   id: ID,
-  input: UserEditInput
+  input: UserEditInput,
 ): Promise<User | null> {
   const setField = function(key: string, value: any) {
     if (value !== undefined) {

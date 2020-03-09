@@ -10,11 +10,9 @@
     "moduleResolution": "node",
     //    "noImplicitAny": true,
     "paths": {
-      "*": [
-        "*",
-        "schema"
-        //    ""
-      ]
+      // to make importing of ent easier
+      "ent/*": ["../../src/*"],
+      "*": ["*"]
     }
   },
   "include": ["src/**/*", "tests/**/*"],

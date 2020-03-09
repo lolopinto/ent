@@ -1,5 +1,6 @@
-import {loadEnt, ID, Viewer, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "../../../../src/ent";
-import {Field, getFields} from "../../../../src/schema";
+// these are dependent on having the right tsconfig.json file...
+import {loadEnt, ID, Viewer, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "ent/ent";
+import {Field, getFields} from "ent/schema";
 import schema from './../schema/{{.NodeData.PackageName}}';
 
 {{with .NodeData -}}

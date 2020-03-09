@@ -4,9 +4,9 @@ import User, {
   deleteUser,
   UserCreateInput,
 } from "../../src/ent/user";
-import { LogedOutViewer } from "../../../../src/viewer";
+import { LogedOutViewer } from "ent/viewer";
 
-import DB from "../../../../src/db";
+import DB from "ent/db";
 import { v4 as uuidv4 } from "uuid";
 
 const loggedOutViewer = new LogedOutViewer();
