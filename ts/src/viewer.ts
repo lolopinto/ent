@@ -1,8 +1,10 @@
 import { Viewer } from "./ent";
 
 export class LogedOutViewer implements Viewer {
-  viewer: null;
   viewerID: null;
+  async viewer() {
+    return null;
+  }
   instanceKey(): string {
     return "viewer.LoggedOutViewer";
   }

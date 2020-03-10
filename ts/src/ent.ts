@@ -1,8 +1,8 @@
 import DB from "./db";
 
 export interface Viewer {
-  viewer: Ent | null;
   viewerID: ID | null;
+  viewer: () => Promise<Ent | null>;
   instanceKey: () => string;
 }
 
