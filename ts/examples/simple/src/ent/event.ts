@@ -9,6 +9,7 @@ import {
   editEnt,
   deleteEnt,
 } from "ent/ent";
+import { AlwaysAllowRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "./../schema/event";
 
@@ -24,7 +25,7 @@ export default class Event {
   readonly endTime: Date | null;
   readonly location: string;
 
-  constructor(viewer: Viewer, id: ID, options: {}) {
+  constructor(public viewer: Viewer, id: ID, options: {}) {
     this.id = id;
     // TODO don't double read id
     this.id = options["id"];
@@ -36,6 +37,11 @@ export default class Event {
     this.endTime = options["end_time"];
     this.location = options["location"];
   }
+
+  // TODO change defaults here
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysAllowRule],
+  };
 
   static async load(viewer: Viewer, id: ID): Promise<Event | null> {
     return loadEnt(viewer, id, Event.getOptions());
@@ -107,7 +113,7 @@ function defaultValue(key: string, property: string): any {
 
 export async function createEvent(
   viewer: Viewer,
-  input: EventCreateInput,
+  input: EventCreateInput
 ): Promise<Event | null> {
   let fields = {
     id: defaultValue("ID", "defaultValueOnCreate"),
@@ -130,7 +136,7 @@ export async function createEvent(
 export async function editEvent(
   viewer: Viewer,
   id: ID,
-  input: EventEditInput,
+  input: EventEditInput
 ): Promise<Event | null> {
   const setField = function(key: string, value: any) {
     if (value !== undefined) {

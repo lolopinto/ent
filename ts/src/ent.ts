@@ -1,4 +1,5 @@
 import DB from "./db";
+import { PrivacyPolicy } from "./privacy";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -9,12 +10,11 @@ export interface Viewer {
 export interface Ent {
   id: ID;
   viewer: Viewer;
-  // todo viewer
-  // todo privacy policy
+  privacyPolicy: PrivacyPolicy;
 }
 
-export interface EntConstructor {
-  new (viewer: Viewer, id: ID, options: {});
+export interface EntConstructor<T extends Ent> {
+  new (viewer: Viewer, id: ID, options: {}): T;
 }
 
 export type ID = string | number;
@@ -26,21 +26,22 @@ interface Options<T> {
   tableName: string;
 }
 
-interface LoadableEntOptions<T> extends Options<T> {
-  ent: EntConstructor;
+interface LoadableEntOptions<T extends Ent> extends Options<T> {
+  ent: EntConstructor<T>;
 }
 
-export interface LoadEntOptions<T> extends LoadableEntOptions<T> {
+// TODO these will change when ability to read/edit non-ents is added
+export interface LoadEntOptions<T extends Ent> extends LoadableEntOptions<T> {
   // list of fields to edit
   fields: string[];
 }
 
-export interface EditEntOptions<T> extends LoadableEntOptions<T> {
+export interface EditEntOptions<T extends Ent> extends LoadableEntOptions<T> {
   // fields to be edited
   fields: {};
 }
 
-export async function loadEnt<T>(
+export async function loadEnt<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
@@ -48,7 +49,7 @@ export async function loadEnt<T>(
   return loadRow(viewer, id, options);
 }
 
-export async function loadEntX<T>(
+export async function loadEntX<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
@@ -56,7 +57,7 @@ export async function loadEntX<T>(
   return loadRowX(viewer, id, options);
 }
 
-async function loadRowX<T>(
+async function loadRowX<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
@@ -72,7 +73,7 @@ function logQuery(query: string) {
   //  console.log(query);
 }
 
-async function loadRow<T>(
+async function loadRow<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
@@ -93,7 +94,7 @@ async function loadRow<T>(
   return new options.ent(viewer, id, res.rows[0]);
 }
 
-export async function createEnt<T>(
+export async function createEnt<T extends Ent>(
   viewer: Viewer,
   options: EditEntOptions<T>,
 ): Promise<T | null> {
@@ -133,7 +134,7 @@ export async function createEnt<T>(
 }
 
 // column should be passed in here
-export async function editEnt<T>(
+export async function editEnt<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: EditEntOptions<T>,
@@ -171,7 +172,7 @@ export async function editEnt<T>(
   return null;
 }
 
-export async function deleteEnt<T>(
+export async function deleteEnt<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: Options<T>,

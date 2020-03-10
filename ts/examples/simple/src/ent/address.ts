@@ -9,6 +9,7 @@ import {
   editEnt,
   deleteEnt,
 } from "ent/ent";
+import { AlwaysAllowRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "./../schema/address";
 
@@ -22,7 +23,7 @@ export default class Address {
   readonly city: string;
   readonly zip: string;
 
-  constructor(viewer: Viewer, id: ID, options: {}) {
+  constructor(public viewer: Viewer, id: ID, options: {}) {
     this.id = id;
     // TODO don't double read id
     this.id = options["id"];
@@ -32,6 +33,11 @@ export default class Address {
     this.city = options["city"];
     this.zip = options["zip"];
   }
+
+  // TODO change defaults here
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysAllowRule],
+  };
 
   static async load(viewer: Viewer, id: ID): Promise<Address | null> {
     return loadEnt(viewer, id, Address.getOptions());
@@ -90,7 +96,7 @@ function defaultValue(key: string, property: string): any {
 
 export async function createAddress(
   viewer: Viewer,
-  input: AddressCreateInput,
+  input: AddressCreateInput
 ): Promise<Address | null> {
   let fields = {
     id: defaultValue("ID", "defaultValueOnCreate"),
@@ -111,7 +117,7 @@ export async function createAddress(
 export async function editAddress(
   viewer: Viewer,
   id: ID,
-  input: AddressEditInput,
+  input: AddressEditInput
 ): Promise<Address | null> {
   const setField = function(key: string, value: any) {
     if (value !== undefined) {

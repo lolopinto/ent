@@ -9,6 +9,7 @@ import {
   editEnt,
   deleteEnt,
 } from "ent/ent";
+import { AlwaysAllowRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "./../schema/user";
 
@@ -21,7 +22,7 @@ export default class User {
   readonly firstName: string;
   readonly lastName: string;
 
-  constructor(viewer: Viewer, id: ID, options: {}) {
+  constructor(public viewer: Viewer, id: ID, options: {}) {
     this.id = id;
     // TODO don't double read id
     this.id = options["id"];
@@ -30,6 +31,11 @@ export default class User {
     this.firstName = options["first_name"];
     this.lastName = options["last_name"];
   }
+
+  // TODO change defaults here
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysAllowRule],
+  };
 
   static async load(viewer: Viewer, id: ID): Promise<User | null> {
     return loadEnt(viewer, id, User.getOptions());

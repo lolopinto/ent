@@ -1,5 +1,6 @@
 // these are dependent on having the right tsconfig.json file...
 import {loadEnt, ID, Viewer, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "ent/ent";
+import {AlwaysAllowRule, PrivacyPolicy} from "ent/privacy";
 import {Field, getFields} from "ent/schema";
 import schema from './../schema/{{.NodeData.PackageName}}';
 
@@ -12,13 +13,18 @@ export default class {{.Node}} {
     readonly {{$field.TsFieldName}}: {{$field.TsType}};
   {{end}}
 
-  constructor(viewer: Viewer, id: ID, options:{}) {
+  constructor(public viewer: Viewer, id: ID, options:{}) {
     this.id = id;
     // TODO don't double read id
     {{range $field := .FieldInfo.Fields -}}
       this.{{$field.TsFieldName}} = options['{{$field.GetDbColName}}'];
     {{end}}
   }
+
+  // TODO change defaults here 
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysAllowRule],
+  };
 
   static async load(viewer: Viewer, id: ID): Promise<{{.Node}} | null>{
     return loadEnt(viewer, id, {{.Node}}.getOptions());

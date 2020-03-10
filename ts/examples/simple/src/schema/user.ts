@@ -35,4 +35,4 @@ const User = {
 
 export default User;
 
-// TODO figure out typescript splitting thing 
+// TODO figure out typescript splitting thing
