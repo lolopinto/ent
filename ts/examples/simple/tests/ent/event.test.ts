@@ -3,10 +3,10 @@ import Event, {
   createEvent,
   editEvent,
   deleteEvent,
-  EventCreateInput,
 } from "../../src/ent/event";
-import { LogedOutViewer } from "../../../../src/viewer";
-import DB from "../../../../src/db";
+
+import { LogedOutViewer } from "ent/viewer";
+import DB from "ent/db";
 
 const loggedOutViewer = new LogedOutViewer();
 

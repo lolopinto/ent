@@ -1,5 +1,10 @@
 import DB from "./db";
-import { PrivacyPolicy } from "./privacy";
+import {
+  EntPrivacyError,
+  applyPrivacyPolicy,
+  applyPrivacyPolicyX,
+  PrivacyPolicy,
+} from "./privacy";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -46,7 +51,50 @@ export async function loadEnt<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  return loadRow(viewer, id, options);
+  const ent = await loadRow(viewer, id, options);
+  return await applyPrivacyPolicyForEnt(viewer, ent);
+}
+
+export async function loadDerivedEnt<T extends Ent>(
+  viewer: Viewer,
+  data: {},
+  loader: new (viewer: Viewer, data: {}) => T,
+): Promise<T | null> {
+  const ent = new loader(viewer, data);
+  return await applyPrivacyPolicyForEnt(viewer, ent);
+}
+
+export async function loadDerivedEntX<T extends Ent>(
+  viewer: Viewer,
+  data: {},
+  loader: new (viewer: Viewer, data: {}) => T,
+): Promise<T> {
+  const ent = new loader(viewer, data);
+  return await applyPrivacyPolicyForEntX(viewer, ent);
+}
+
+async function applyPrivacyPolicyForEnt<T extends Ent>(
+  viewer: Viewer,
+  ent: T | null,
+): Promise<T | null> {
+  if (ent) {
+    const visible = await applyPrivacyPolicy(viewer, ent.privacyPolicy, ent);
+    if (visible) {
+      return ent;
+    }
+  }
+  return null;
+}
+
+async function applyPrivacyPolicyForEntX<T extends Ent>(
+  viewer: Viewer,
+  ent: T,
+): Promise<T> {
+  const visible = await applyPrivacyPolicyX(viewer, ent.privacyPolicy, ent);
+  if (visible) {
+    return ent;
+  }
+  throw new EntPrivacyError(ent.id);
 }
 
 export async function loadEntX<T extends Ent>(
@@ -54,10 +102,16 @@ export async function loadEntX<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T> {
-  return loadRowX(viewer, id, options);
+  const ent = await loadRowX(viewer, id, options);
+  return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
-async function loadRowX<T extends Ent>(
+function logQuery(query: string) {
+  //  console.log(query);
+}
+
+// TODO change this and loadRow to not return an ent or do anything with ent
+export async function loadRowX<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
@@ -69,11 +123,7 @@ async function loadRowX<T extends Ent>(
   return result;
 }
 
-function logQuery(query: string) {
-  //  console.log(query);
-}
-
-async function loadRow<T extends Ent>(
+export async function loadRow<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,

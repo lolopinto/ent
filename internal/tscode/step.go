@@ -55,7 +55,11 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 				return
 			}
 
-			if err := writeModelFile(nodeData, data.CodePath); err != nil {
+			if err := writeBaseModelFile(nodeData, data.CodePath); err != nil {
+				serr.Append(err)
+				return
+			}
+			if err := writeEntFile(nodeData, data.CodePath); err != nil {
 				serr.Append(err)
 				return
 			}
@@ -140,6 +144,10 @@ type enumData struct {
 	Comment string
 }
 
+func getFilePathForBaseModelFile(nodeData *schema.NodeData) string {
+	return fmt.Sprintf("src/ent/generated/%s_base.ts", nodeData.PackageName)
+}
+
 func getFilePathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s.ts", nodeData.PackageName)
 }
@@ -148,18 +156,36 @@ func getFilePathForConstFile() string {
 	return fmt.Sprintf("src/ent/const.ts")
 }
 
-func writeModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
 			CodePath: codePathInfo,
 		},
-		AbsPathToTemplate: util.GetAbsolutePath("node.tmpl"),
-		TemplateName:      "node.tmpl",
-		PathToFile:        getFilePathForModelFile(nodeData),
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("base.tmpl"),
+		TemplateName:      "base.tmpl",
+		PathToFile:        getFilePathForBaseModelFile(nodeData),
 		FormatSource:      true,
 		FuncMap:           template.FuncMap{},
 	})
+}
+
+func writeEntFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data: nodeTemplateCodePath{
+			NodeData: nodeData,
+			CodePath: codePathInfo,
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ent.tmpl"),
+		TemplateName:      "ent.tmpl",
+		PathToFile:        getFilePathForModelFile(nodeData),
+		FormatSource:      true,
+		FuncMap:           template.FuncMap{},
+		// only write this file once.
+		// TODO need a flag to overwrite this later.
+	}, file.WriteOnce())
 }
 
 func writeConstFile(nodeData []enumData, edgeData []enumData) error {

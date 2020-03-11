@@ -4,9 +4,11 @@ import User, {
   deleteUser,
   UserCreateInput,
 } from "../../src/ent/user";
+
+import { ID, Ent, Viewer } from "ent/ent";
+import DB from "ent/db";
 import { LogedOutViewer } from "ent/viewer";
 
-import DB from "ent/db";
 import { v4 as uuidv4 } from "uuid";
 
 const loggedOutViewer = new LogedOutViewer();
@@ -62,6 +64,61 @@ test("delete user", async () => {
   } catch (e) {
     fail(e.message);
   }
+});
+
+class IDViewer implements Viewer {
+  constructor(public viewerID: ID, private ent: Ent | null = null) {}
+  async viewer() {
+    return this.ent;
+  }
+  instanceKey(): string {
+    return `idViewer: ${this.viewerID}`;
+  }
+}
+
+describe("privacy", () => {
+  test("load", async () => {
+    let user = await create({ firstName: "Jon", lastName: "Snow" });
+    let user2 = await create({
+      firstName: "Daenerys",
+      lastName: "Targaryen",
+    });
+
+    try {
+      // we only do privacy checks when loading right now...
+      let loadedUser = await User.load(new IDViewer(user.id, user), user.id);
+      expect(loadedUser).not.toBe(null);
+      expect(loadedUser?.id).toBe(user.id);
+
+      // privacy indicates other user cannot load
+      let loadedUser2 = await User.load(new IDViewer(user2.id, user2), user.id);
+      expect(loadedUser2).toBe(null);
+    } catch (e) {
+      fail(e.message);
+    }
+  });
+
+  test("loadX", async () => {
+    let user = await create({ firstName: "Jon", lastName: "Snow" });
+    let user2 = await create({
+      firstName: "Daenerys",
+      lastName: "Targaryen",
+    });
+
+    try {
+      // we only do privacy checks when loading right now...
+      let loadedUser = await User.loadX(new IDViewer(user.id, user), user.id);
+      expect(loadedUser.id).toBe(user.id);
+    } catch (e) {
+      fail(e.message);
+    }
+
+    try {
+      // privacy indicates other user cannot load
+      await User.loadX(new IDViewer(user2.id, user2), user.id);
+      fail("should have thrown exception");
+    } catch (e) {}
+  });
 });
 
 test("loadX", async () => {

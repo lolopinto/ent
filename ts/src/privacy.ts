@@ -12,11 +12,11 @@ interface PrivacyResult {
   error?: PrivacyError;
 }
 
-interface PrivacyError extends Error {
+export interface PrivacyError extends Error {
   entID: ID;
 }
 
-class EntPrivacyError extends Error implements PrivacyError {
+export class EntPrivacyError extends Error implements PrivacyError {
   constructor(public entID: ID) {
     super(`ent ${entID} is not visible for privacy reasons`);
   }

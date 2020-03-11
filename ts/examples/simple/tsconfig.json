@@ -8,6 +8,7 @@
     "downlevelIteration": true,
     "baseUrl": ".",
     "moduleResolution": "node",
+    "esModuleInterop": true,
     //    "noImplicitAny": true,
     "paths": {
       // to make importing of ent easier
