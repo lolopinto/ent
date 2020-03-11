@@ -11,7 +11,7 @@ import {
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
-import schema from "./../../schema/address";
+import schema from "src/schema/address";
 
 const tableName = "addresses";
 

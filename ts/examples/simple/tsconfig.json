@@ -13,6 +13,7 @@
     "paths": {
       // to make importing of ent easier
       "ent/*": ["../../src/*"],
+      "src/*": ["./src/*"],
       "*": ["*"]
     }
   },
