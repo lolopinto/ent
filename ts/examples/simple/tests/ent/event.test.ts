@@ -1,9 +1,5 @@
-import { createUser } from "../../src/ent/user";
-import Event, {
-  createEvent,
-  editEvent,
-  deleteEvent,
-} from "../../src/ent/event";
+import { createUser } from "src/ent/user";
+import Event, { createEvent, editEvent, deleteEvent } from "src/ent/event";
 
 import { LogedOutViewer } from "ent/viewer";
 import DB from "ent/db";

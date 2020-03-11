@@ -3,7 +3,7 @@ import User, {
   editUser,
   deleteUser,
   UserCreateInput,
-} from "../../src/ent/user";
+} from "src/ent/user";
 
 import { ID, Ent, Viewer } from "ent/ent";
 import DB from "ent/db";
