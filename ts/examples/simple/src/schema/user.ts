@@ -1,4 +1,4 @@
-import { DBType, Node } from "../../../../src/schema";
+import { DBType, Node } from "ent/schema";
 
 // TODO this is too complicated to be implicit.
 // create a simpler one that's implicit

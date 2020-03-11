@@ -1,14 +1,18 @@
-import Schema, {Field, Edge, BaseEntSchema} from "../../../../src/schema"
-import {StringType, TimeType} from "../../../../src/field"
+import Schema, { Field, Edge, BaseEntSchema } from "ent/schema";
+import { StringType, TimeType } from "ent/field";
 
 /// explicit schema
 export default class Event extends BaseEntSchema implements Schema {
   fields: Field[] = [
-    StringType({name: "name"}),
-    StringType({name: "creatorID", fieldEdge:["User", "createdEvents"], storageKey: "user_id"}),
-    TimeType({name: "start_time"}),
-    TimeType({name: "end_time", nullable: true}),
-    StringType({name: "location"}),
+    StringType({ name: "name" }),
+    StringType({
+      name: "creatorID",
+      fieldEdge: ["User", "createdEvents"],
+      storageKey: "user_id",
+    }),
+    TimeType({ name: "start_time" }),
+    TimeType({ name: "end_time", nullable: true }),
+    StringType({ name: "location" }),
   ];
 
   edges: Edge[] = [
@@ -54,4 +58,4 @@ export default class Event extends BaseEntSchema implements Schema {
       ],
     },
   ];
-};
+}
