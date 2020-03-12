@@ -42,7 +42,7 @@ export abstract class UserBase {
   protected static async loadFrom<T extends UserBase>(
     viewer: Viewer,
     id: ID,
-    arg: new (viewer: Viewer, id: ID, data: {}) => T
+    arg: new (viewer: Viewer, id: ID, data: {}) => T,
   ): Promise<T | null> {
     return loadEnt(viewer, id, UserBase.getOptions(arg));
   }
@@ -50,7 +50,7 @@ export abstract class UserBase {
   protected static async loadXFrom<T extends UserBase>(
     viewer: Viewer,
     id: ID,
-    arg: new (viewer: Viewer, id: ID, data: {}) => T
+    arg: new (viewer: Viewer, id: ID, data: {}) => T,
   ): Promise<T> {
     return loadEntX(viewer, id, UserBase.getOptions(arg));
   }
@@ -73,7 +73,7 @@ export abstract class UserBase {
   }
 
   private static getOptions<T extends UserBase>(
-    arg: new (viewer: Viewer, id: ID, data: {}) => T
+    arg: new (viewer: Viewer, id: ID, data: {}) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -105,7 +105,7 @@ function defaultValue(key: string, property: string): any {
 export async function createUserFrom<T extends UserBase>(
   viewer: Viewer,
   input: UserCreateInput,
-  arg: new (viewer: Viewer, id: ID, data: {}) => T
+  arg: new (viewer: Viewer, id: ID, data: {}) => T,
 ): Promise<T | null> {
   let fields = {
     id: defaultValue("ID", "defaultValueOnCreate"),
@@ -126,7 +126,7 @@ export async function editUserFrom<T extends UserBase>(
   viewer: Viewer,
   id: ID,
   input: UserEditInput,
-  arg: new (viewer: Viewer, id: ID, data: {}) => T
+  arg: new (viewer: Viewer, id: ID, data: {}) => T,
 ): Promise<T | null> {
   const setField = function(key: string, value: any) {
     if (value !== undefined) {

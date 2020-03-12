@@ -85,7 +85,7 @@ func (fw *TemplatedBasedFileWriter) formatGo(buf *bytes.Buffer) ([]byte, error) 
 func (fw *TemplatedBasedFileWriter) formatTs(buf *bytes.Buffer) ([]byte, error) {
 	// options: https://prettier.io/docs/en/options.html
 	args := []string{
-		"--trailing-comma", "es5",
+		"--trailing-comma", "all",
 		"--quote-props", "consistent",
 		"--parser", "typescript",
 		"--end-of-line", "lf",

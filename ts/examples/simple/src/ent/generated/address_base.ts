@@ -44,7 +44,7 @@ export abstract class AddressBase {
   protected static async loadFrom<T extends AddressBase>(
     viewer: Viewer,
     id: ID,
-    arg: new (viewer: Viewer, id: ID, data: {}) => T
+    arg: new (viewer: Viewer, id: ID, data: {}) => T,
   ): Promise<T | null> {
     return loadEnt(viewer, id, AddressBase.getOptions(arg));
   }
@@ -52,7 +52,7 @@ export abstract class AddressBase {
   protected static async loadXFrom<T extends AddressBase>(
     viewer: Viewer,
     id: ID,
-    arg: new (viewer: Viewer, id: ID, data: {}) => T
+    arg: new (viewer: Viewer, id: ID, data: {}) => T,
   ): Promise<T> {
     return loadEntX(viewer, id, AddressBase.getOptions(arg));
   }
@@ -75,7 +75,7 @@ export abstract class AddressBase {
   }
 
   private static getOptions<T extends AddressBase>(
-    arg: new (viewer: Viewer, id: ID, data: {}) => T
+    arg: new (viewer: Viewer, id: ID, data: {}) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
@@ -109,7 +109,7 @@ function defaultValue(key: string, property: string): any {
 export async function createAddressFrom<T extends AddressBase>(
   viewer: Viewer,
   input: AddressCreateInput,
-  arg: new (viewer: Viewer, id: ID, data: {}) => T
+  arg: new (viewer: Viewer, id: ID, data: {}) => T,
 ): Promise<T | null> {
   let fields = {
     id: defaultValue("ID", "defaultValueOnCreate"),
@@ -131,7 +131,7 @@ export async function editAddressFrom<T extends AddressBase>(
   viewer: Viewer,
   id: ID,
   input: AddressEditInput,
-  arg: new (viewer: Viewer, id: ID, data: {}) => T
+  arg: new (viewer: Viewer, id: ID, data: {}) => T,
 ): Promise<T | null> {
   const setField = function(key: string, value: any) {
     if (value !== undefined) {

@@ -63,7 +63,7 @@ func ParseSchemaFromTSDir(dirPath string) (*Schema, error) {
 	defer os.Remove(fileName)
 
 	// TODO dependencies as needed docker file?
-	execCmd := exec.Command("ts-node", fileName)
+	execCmd := exec.Command("ts-node", "-r", "tsconfig-paths/register", fileName)
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	execCmd.Stdout = &out
