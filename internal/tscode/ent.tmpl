@@ -1,0 +1,42 @@
+{{with .NodeData -}}
+import { 
+  {{.Node}}Base,
+  {{.Node}}CreateInput,
+  {{.Node}}EditInput,
+  create{{.Node}}From,
+  edit{{.Node}}From,
+  delete{{.Node}},
+} from "./generated/{{.PackageName}}_base";
+import {ID, Viewer} from "ent/ent";
+
+// we're only writing this once except with --force and packageName provided
+export default class {{.Node}} extends {{.Node}}Base {
+
+  static async load(viewer: Viewer, id: ID): Promise<{{.Node}} | null> {
+    return {{.Node}}.loadFrom(viewer, id, {{.Node}});
+  }
+
+  static async loadX(viewer: Viewer, id: ID): Promise<{{.Node}}> {
+    return {{.Node}}.loadXFrom(viewer, id, {{.Node}});
+  }
+}
+
+// no actions yet so we support full create, edit, delete for now
+export { {{.Node}}CreateInput, {{.Node}}EditInput, delete{{.Node}} };
+
+export async function create{{.Node}}(
+  viewer: Viewer,
+  input: {{.Node}}CreateInput,
+): Promise<{{.Node}} | null> {
+  return create{{.Node}}From(viewer, input, {{.Node}});
+}
+
+export async function edit{{.Node}}(
+  viewer: Viewer,
+  id: ID,
+  input: {{.Node}}EditInput,
+): Promise<{{.Node}} | null> {
+  return edit{{.Node}}From(viewer, id, input, {{.Node}});
+}
+
+{{end -}}
