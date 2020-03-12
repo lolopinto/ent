@@ -8,13 +8,13 @@
     "downlevelIteration": true,
     "baseUrl": ".",
     "moduleResolution": "node",
+    "esModuleInterop": true,
     //    "noImplicitAny": true,
     "paths": {
-      "*": [
-        "*",
-        "schema"
-        //    ""
-      ]
+      // to make importing of ent easier
+      "ent/*": ["../../src/*"],
+      "src/*": ["./src/*"],
+      "*": ["*"]
     }
   },
   "include": ["src/**/*", "tests/**/*"],

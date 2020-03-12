@@ -6,8 +6,15 @@
     "target": "es6",
     "strictNullChecks": true,
     "downlevelIteration": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "esModuleInterop": true,
     //    "noImplicitAny": true,
+    "paths": {
+      // TODO to make importing of ent easier
+      // "ent/*": ["./"],
+      // "*": ["*"]
+    }
   },
   "include": ["src/**/*", "tests/**/*"],
   "exclude": ["./examples"]

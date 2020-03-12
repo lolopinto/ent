@@ -1,33 +1,50 @@
-import {loadEnt, ID, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "../../../../src/ent";
-import {Field, getFields} from "../../../../src/schema";
-import schema from './../schema/{{.NodeData.PackageName}}';
-
+// these are dependent on having the right tsconfig.json file...
 {{with .NodeData -}}
+import {loadEnt, ID, Viewer, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "ent/ent";
+import {AlwaysDenyRule, PrivacyPolicy} from "ent/privacy";
+import {Field, getFields} from "ent/schema";
+import schema from "src/schema/{{.PackageName}}";
+
 const tableName = "{{.TableName}}";
 
-export default class {{.Node}} {
+{{$baseClass := printf "%sBase" .Node -}}
+{{$constructor := "arg: new (viewer: Viewer, id: ID, data: {}) => T"}}
+
+export abstract class {{$baseClass}} {
 
   {{range $field := .FieldInfo.Fields -}}
     readonly {{$field.TsFieldName}}: {{$field.TsType}};
   {{end}}
 
-  // TODO viewer...
-  constructor(id: ID, options:{}) {
+  constructor(public viewer: Viewer, id: ID, data:{}) {
     this.id = id;
     // TODO don't double read id
     {{range $field := .FieldInfo.Fields -}}
-      this.{{$field.TsFieldName}} = options['{{$field.GetDbColName}}'];
+      this.{{$field.TsFieldName}} = data['{{$field.GetDbColName}}'];
     {{end}}
   }
 
-  // TODO viewer
-  static async load(id: ID): Promise<{{.Node}} | null>{
-    return loadEnt(id, {{.Node}}.getOptions());
+  // by default, we always deny and it's up to the ent 
+  // to overwrite this privacy policy in its subclasses
+  {{/* TODO: make this configurable */}} 
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysDenyRule],
+  };
+
+  protected static async loadFrom<T extends {{$baseClass}}>(
+    viewer: Viewer, 
+    id: ID,
+    {{$constructor}},
+  ): Promise<T | null>{
+    return loadEnt(viewer, id, {{$baseClass}}.getOptions(arg));
   }
 
-  // also TODO viewer
-  static async loadX(id: ID): Promise<{{.Node}}> {
-    return loadEntX(id, {{.Node}}.getOptions());
+  protected static async loadXFrom<T extends {{$baseClass}}>(
+    viewer: Viewer, 
+    id: ID,
+    {{$constructor}},
+  ): Promise<T> {
+    return loadEntX(viewer, id, {{$baseClass}}.getOptions(arg));
   }
 
   private static getFields(): string[] {
@@ -41,21 +58,23 @@ export default class {{.Node}} {
   private static schemaFields: Map<string,Field>;
 
   private static getSchemaFields(): Map<string, Field> {
-    if ({{.Node}}.schemaFields != null) {
-      return {{.Node}}.schemaFields;
+    if ({{$baseClass}}.schemaFields != null) {
+      return {{$baseClass}}.schemaFields;
     }
-    return {{.Node}}.schemaFields = getFields(schema);
+    return {{$baseClass}}.schemaFields = getFields(schema);
   }
 
   static getField(key: string): Field | undefined{
-    return {{.Node}}.getSchemaFields().get(key);
+    return {{$baseClass}}.getSchemaFields().get(key);
   }
 
-  private static getOptions(): LoadEntOptions<{{.Node}}> {
+  private static getOptions<T extends {{$baseClass}}>(
+    {{$constructor}},
+  ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: {{.Node}}.getFields(),
-      ent: {{.Node}},
+      fields: {{$baseClass}}.getFields(),
+      ent: arg,
     };
   }
 }
@@ -83,14 +102,18 @@ export interface {{.Node}}EditInput {
 }
 
 function defaultValue (key: string, property: string): any {
-  let fn = {{.Node}}.getField(key)?.[property];
+  let fn = {{$baseClass}}.getField(key)?.[property];
   if (!fn) {
     return null;
   }
   return fn();
 };
 
-export async function create{{.Node}}(input: {{.Node}}CreateInput): Promise<{{.Node}} | null> {
+export async function create{{.Node}}From<T extends {{$baseClass}}>(
+  viewer: Viewer, 
+  input: {{.Node}}CreateInput,
+  {{$constructor}},
+  ): Promise<T | null> {
   let fields  = {
     {{range $field := .FieldInfo.Fields -}}
       {{ if $field.EditableField -}}
@@ -102,15 +125,21 @@ export async function create{{.Node}}(input: {{.Node}}CreateInput): Promise<{{.N
   };
 
   return await createEnt(
+    viewer, 
     {
       tableName: tableName,
       fields: fields,
-      ent: {{.Node}},
+      ent: arg,
     }
   );
 }
 
-export async function edit{{.Node}}(id: ID, input: {{.Node}}EditInput): Promise<{{.Node}} | null> {
+export async function edit{{.Node}}From<T extends {{$baseClass}}>(
+  viewer: Viewer, 
+  id: ID, 
+  input: {{.Node}}EditInput,
+  {{$constructor}},
+): Promise<T | null> {
   const setField = function(key: string, value: any) {
     if (value !== undefined) { // nullable fields allowed
       fields[key] = value;
@@ -130,17 +159,19 @@ export async function edit{{.Node}}(id: ID, input: {{.Node}}EditInput): Promise<
   {{end}}
 
   return await editEnt(
+    viewer,
     id,
     {
       tableName: tableName,
       fields: fields,
-      ent: {{.Node}},
+      ent: arg,
     }
   );
 }
 
-export async function delete{{.Node}}(id: ID): Promise<null> {
+export async function delete{{.Node}}(viewer: Viewer, id: ID): Promise<null> {
   return await deleteEnt(
+    viewer,
     id,
     {
       tableName: tableName,

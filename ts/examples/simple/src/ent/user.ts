@@ -1,131 +1,43 @@
 import {
-  loadEnt,
-  ID,
-  loadEntX,
-  LoadEntOptions,
-  createEnt,
-  editEnt,
-  deleteEnt,
-} from "../../../../src/ent";
-import { Field, getFields } from "../../../../src/schema";
-import schema from "./../schema/user";
+  UserBase,
+  UserCreateInput,
+  UserEditInput,
+  createUserFrom,
+  editUserFrom,
+  deleteUser,
+} from "./generated/user_base";
+import { ID, Viewer } from "ent/ent";
+import { PrivacyPolicy, AllowIfViewerRule, AlwaysDenyRule } from "ent/privacy";
 
-const tableName = "users";
+// we're only writing this once except with --force and packageName provided
+export default class User extends UserBase {
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AllowIfViewerRule, AlwaysDenyRule],
+  };
 
-export default class User {
-  readonly id: ID;
-  readonly createdAt: Date;
-  readonly updatedAt: Date;
-  readonly firstName: string;
-  readonly lastName: string;
-
-  // TODO viewer...
-  constructor(id: ID, options: {}) {
-    this.id = id;
-    // TODO don't double read id
-    this.id = options["id"];
-    this.createdAt = options["created_at"];
-    this.updatedAt = options["updated_at"];
-    this.firstName = options["first_name"];
-    this.lastName = options["last_name"];
+  static async load(viewer: Viewer, id: ID): Promise<User | null> {
+    return User.loadFrom(viewer, id, User);
   }
 
-  // TODO viewer
-  static async load(id: ID): Promise<User | null> {
-    return loadEnt(id, User.getOptions());
-  }
-
-  // also TODO viewer
-  static async loadX(id: ID): Promise<User> {
-    return loadEntX(id, User.getOptions());
-  }
-
-  private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "first_name", "last_name"];
-  }
-
-  private static schemaFields: Map<string, Field>;
-
-  private static getSchemaFields(): Map<string, Field> {
-    if (User.schemaFields != null) {
-      return User.schemaFields;
-    }
-    return (User.schemaFields = getFields(schema));
-  }
-
-  static getField(key: string): Field | undefined {
-    return User.getSchemaFields().get(key);
-  }
-
-  private static getOptions(): LoadEntOptions<User> {
-    return {
-      tableName: tableName,
-      fields: User.getFields(),
-      ent: User,
-    };
+  static async loadX(viewer: Viewer, id: ID): Promise<User> {
+    return User.loadXFrom(viewer, id, User);
   }
 }
 
 // no actions yet so we support full create, edit, delete for now
-export interface UserCreateInput {
-  firstName: string;
-  lastName: string;
-}
+export { UserCreateInput, UserEditInput, deleteUser };
 
-export interface UserEditInput {
-  firstName?: string;
-  lastName?: string;
-}
-
-function defaultValue(key: string, property: string): any {
-  let fn = User.getField(key)?.[property];
-  if (!fn) {
-    return null;
-  }
-  return fn();
-}
-
-export async function createUser(input: UserCreateInput): Promise<User | null> {
-  let fields = {
-    id: defaultValue("ID", "defaultValueOnCreate"),
-    created_at: defaultValue("createdAt", "defaultValueOnCreate"),
-    updated_at: defaultValue("updatedAt", "defaultValueOnCreate"),
-    first_name: input.firstName,
-    last_name: input.lastName,
-  };
-
-  return await createEnt({
-    tableName: tableName,
-    fields: fields,
-    ent: User,
-  });
+export async function createUser(
+  viewer: Viewer,
+  input: UserCreateInput,
+): Promise<User | null> {
+  return createUserFrom(viewer, input, User);
 }
 
 export async function editUser(
+  viewer: Viewer,
   id: ID,
-  input: UserEditInput
+  input: UserEditInput,
 ): Promise<User | null> {
-  const setField = function(key: string, value: any) {
-    if (value !== undefined) {
-      // nullable fields allowed
-      fields[key] = value;
-    }
-  };
-  let fields = {
-    updated_at: defaultValue("updatedAt", "defaultValueOnEdit"),
-  };
-  setField("first_name", input.firstName);
-  setField("last_name", input.lastName);
-
-  return await editEnt(id, {
-    tableName: tableName,
-    fields: fields,
-    ent: User,
-  });
-}
-
-export async function deleteUser(id: ID): Promise<null> {
-  return await deleteEnt(id, {
-    tableName: tableName,
-  });
+  return editUserFrom(viewer, id, input, User);
 }

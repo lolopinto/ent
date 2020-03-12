@@ -1,11 +1,10 @@
-import User, { createUser } from "../../src/ent/user";
-import Event, {
-  createEvent,
-  editEvent,
-  deleteEvent,
-  EventCreateInput,
-} from "../../src/ent/event";
-import DB from "../../../../src/db";
+import { createUser } from "src/ent/user";
+import Event, { createEvent, editEvent, deleteEvent } from "src/ent/event";
+
+import { LogedOutViewer } from "ent/viewer";
+import DB from "ent/db";
+
+const loggedOutViewer = new LogedOutViewer();
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -13,11 +12,14 @@ afterAll(async () => {
 });
 
 async function create(startTime: Date): Promise<Event> {
-  let user = await createUser({ firstName: "Jon", lastName: "Snow" });
+  let user = await createUser(loggedOutViewer, {
+    firstName: "Jon",
+    lastName: "Snow",
+  });
   if (!user) {
     fail("could not create user");
   }
-  let event = await createEvent({
+  let event = await createEvent(loggedOutViewer, {
     name: "fun event",
     creatorID: user.id as string,
     startTime: startTime,
@@ -50,7 +52,9 @@ test("edit event", async () => {
     let date = new Date();
     let event = await create(date);
 
-    let editedEvent = await editEvent(event.id, { location: "fun location" });
+    let editedEvent = await editEvent(loggedOutViewer, event.id, {
+      location: "fun location",
+    });
     expect(editedEvent).not.toBe(null);
     expect(editedEvent?.name).toBe("fun event");
     expect(editedEvent?.location).toBe("fun location");
@@ -70,7 +74,9 @@ test("edit nullable field", async () => {
     let endTime = new Date(date.getTime());
     endTime.setTime(date.getTime() + 24 * 60 * 60);
 
-    let editedEvent = await editEvent(event.id, { endTime: endTime });
+    let editedEvent = await editEvent(loggedOutViewer, event.id, {
+      endTime: endTime,
+    });
     expect(editedEvent).not.toBe(null);
     expect(editedEvent?.name).toBe("fun event");
     expect(editedEvent?.location).toBe("location");
@@ -79,7 +85,7 @@ test("edit nullable field", async () => {
     expect(editedEvent?.endTime?.toDateString()).toBe(endTime.toDateString());
 
     // re-edit and clear the value
-    editedEvent = await editEvent(event.id, { endTime: null });
+    editedEvent = await editEvent(loggedOutViewer, event.id, { endTime: null });
     expect(editedEvent).not.toBe(null);
     expect(editedEvent?.name).toBe("fun event");
     expect(editedEvent?.location).toBe("location");
@@ -95,9 +101,9 @@ test("delete event", async () => {
   try {
     let event = await create(new Date());
 
-    await deleteEvent(event.id);
+    await deleteEvent(loggedOutViewer, event.id);
 
-    let loadEvent = await Event.load(event.id);
+    let loadEvent = await Event.load(loggedOutViewer, event.id);
     expect(loadEvent).toBe(null);
   } catch (e) {
     fail(e.message);
