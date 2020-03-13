@@ -5,16 +5,7 @@ import User, {
   UserCreateInput,
 } from "src/ent/user";
 
-import {
-  ID,
-  Ent,
-  Viewer,
-  writeEdge,
-  loadEdges,
-  AssocEdge,
-  AssocEdgeInput,
-  loadNodesByEdge,
-} from "ent/ent";
+import { ID, Ent, Viewer, writeEdge, AssocEdge, AssocEdgeInput } from "ent/ent";
 import DB from "ent/db";
 import { LogedOutViewer } from "ent/viewer";
 
@@ -150,11 +141,13 @@ test("symmetric edge", async () => {
   };
   await writeEdge(input);
 
-  const edges = await loadEdges(user.id, EdgeType.UserToFriends);
+  const [edges, edges2] = await Promise.all([
+    user.loadFriendsEdges(),
+    user2.loadFriendsEdges(),
+  ]);
   expect(edges.length).toBe(1);
   verifyEdge(edges[0], input);
 
-  const edges2 = await loadEdges(user2.id, EdgeType.UserToFriends);
   expect(edges2.length).toBe(1);
   verifyEdge(edges2[0], {
     id1: user2.id,
@@ -169,13 +162,7 @@ test("symmetric edge", async () => {
   const loadedUser = await User.load(v, user2.id);
   expect(loadedUser).toBe(null);
 
-  const friends = await loadNodesByEdge(
-    v,
-    user.id,
-    EdgeType.UserToFriends,
-    User.loaderOptions(),
-  );
-
+  const friends = await user.loadFriends();
   expect(friends.length).toBe(0);
 });
 
@@ -204,11 +191,13 @@ test("inverse edge", async () => {
   };
   await writeEdge(input);
 
-  const edges = await loadEdges(event.id, EdgeType.EventToInvited);
+  const [edges, edges2] = await Promise.all([
+    event.loadInvitedEdges(),
+    user.loadInvitedEventsEdges(),
+  ]);
   expect(edges.length).toBe(1);
   verifyEdge(edges[0], input);
 
-  const edges2 = await loadEdges(user.id, EdgeType.UserToInvitedEvents);
   expect(edges2.length).toBe(1);
   verifyEdge(edges2[0], {
     id1: user.id,
@@ -223,12 +212,7 @@ test("inverse edge", async () => {
   const loadedEvent = await Event.load(v, event.id);
   expect(loadedEvent).not.toBe(null);
 
-  const invitedEvents = await loadNodesByEdge(
-    v,
-    user.id,
-    EdgeType.UserToInvitedEvents,
-    Event.loaderOptions(),
-  );
+  const invitedEvents = await user.loadInvitedEvents();
   expect(invitedEvents.length).toBe(1);
   expect(invitedEvents[0].id).toBe(loadedEvent?.id);
 });
@@ -256,7 +240,7 @@ test("one-way edge", async () => {
   };
   await writeEdge(input);
 
-  const edges = await loadEdges(user.id, EdgeType.UserToCreatedEvents);
+  const edges = await user.loadCreatedEventsEdges();
   expect(edges.length).toBe(1);
   verifyEdge(edges[0], input);
 });

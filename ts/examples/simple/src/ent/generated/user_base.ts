@@ -8,10 +8,16 @@ import {
   createEnt,
   editEnt,
   deleteEnt,
+  AssocEdge,
+  loadEdges,
+  loadNodesByEdge,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/user";
+import { EdgeType } from "src/ent/const";
+import Event from "src/ent/event";
+import User from "src/ent/user";
 
 const tableName = "users";
 
@@ -80,6 +86,84 @@ export class UserBase {
 
   static getField(key: string): Field | undefined {
     return UserBase.getSchemaFields().get(key);
+  }
+
+  loadCreatedEventsEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.UserToCreatedEvents);
+  }
+
+  loadCreatedEvents(): Promise<Event[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.UserToCreatedEvents,
+      Event.loaderOptions(),
+    );
+  }
+
+  loadFriendsEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.UserToFriends);
+  }
+
+  loadFriends(): Promise<User[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.UserToFriends,
+      User.loaderOptions(),
+    );
+  }
+
+  loadInvitedEventsEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.UserToInvitedEvents);
+  }
+
+  loadInvitedEvents(): Promise<Event[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.UserToInvitedEvents,
+      Event.loaderOptions(),
+    );
+  }
+
+  loadEventsAttendingEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.UserToEventsAttending);
+  }
+
+  loadEventsAttending(): Promise<Event[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.UserToEventsAttending,
+      Event.loaderOptions(),
+    );
+  }
+
+  loadDeclinedEventsEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.UserToDeclinedEvents);
+  }
+
+  loadDeclinedEvents(): Promise<Event[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.UserToDeclinedEvents,
+      Event.loaderOptions(),
+    );
+  }
+
+  loadMaybeEventsEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.UserToMaybeEvents);
+  }
+
+  loadMaybeEvents(): Promise<Event[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.UserToMaybeEvents,
+      Event.loaderOptions(),
+    );
   }
 }
 

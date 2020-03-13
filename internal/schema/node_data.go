@@ -177,3 +177,28 @@ func (nodeData *NodeData) HasAssocGroups() bool {
 	}
 	return length > 0
 }
+
+// return the list of unique nodes at the end of an association
+// needed to 
+type uniqueNodeInfo struct {
+	Node string
+	PackageName string
+}
+
+// GetUniqueNodes returns node info that this Node has edges to
+func (nodeData *NodeData) GetUniqueNodes() []uniqueNodeInfo {
+	var ret []uniqueNodeInfo
+	m := make(map[string]bool)
+
+	for _, edge := range nodeData.EdgeInfo.Associations {
+		node :=	edge.NodeInfo.Node
+		if !m[node] {
+			ret = append(ret, uniqueNodeInfo{
+				Node: node,
+				PackageName: edge.NodeInfo.PackageName,
+			})
+		}
+		m[node] = true
+	}
+	return ret
+}

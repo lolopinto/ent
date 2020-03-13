@@ -1,9 +1,26 @@
 // these are dependent on having the right tsconfig.json file...
 {{with .NodeData -}}
-import {loadEnt, ID, Viewer, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "ent/ent";
+{{/* TODO handle imports that are not used. similar to reserveImport in goland */ -}}
+import {
+  loadEnt, 
+  ID, 
+  Viewer, 
+  loadEntX, 
+  LoadEntOptions, 
+  createEnt, 
+  editEnt, 
+  deleteEnt, 
+  AssocEdge,
+  loadEdges,
+  loadNodesByEdge,
+} from "ent/ent";
 import {AlwaysDenyRule, PrivacyPolicy} from "ent/privacy";
 import {Field, getFields} from "ent/schema";
 import schema from "src/schema/{{.PackageName}}";
+import { EdgeType } from "src/ent/const";
+{{ range .GetUniqueNodes -}} 
+  import {{.Node}} from "src/ent/{{.PackageName}}";
+{{ end}}
 
 const tableName = "{{.TableName}}";
 
@@ -77,6 +94,26 @@ export class {{$baseClass}} {
   static getField(key: string): Field | undefined{
     return {{$baseClass}}.getSchemaFields().get(key);
   }
+
+  {{/* load edges and load objects */ -}}
+  {{range $edge := .EdgeInfo.Associations -}}
+    {{$edgeName := .CamelCaseEdgeName -}}
+    {{$uniqueEdge := .Unique -}}
+    {{with .NodeInfo -}}
+     {{/* TODO unique edges */}}
+     {{ if $uniqueEdge -}}
+
+     {{ else -}}
+      load{{$edgeName}}Edges():Promise<AssocEdge[]> {
+        return loadEdges(this.id, EdgeType.{{$edge.TsEdgeConst}});
+      }
+
+      load{{$edgeName}}():Promise<{{.Node}}[]> {
+        return loadNodesByEdge(this.viewer, this.id, EdgeType.{{$edge.TsEdgeConst}}, {{.Node}}.loaderOptions());
+      }
+     {{end -}}
+    {{end -}}
+  {{end -}}
 }
 
 // no actions yet so we support full create, edit, delete for now

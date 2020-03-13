@@ -9,6 +9,7 @@ import (
 	"text/template"
 
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/syncerr"
@@ -26,7 +27,6 @@ func (s *Step) Name() string {
 }
 
 var nodeType = regexp.MustCompile(`(\w+)Type`)
-var edgeType = regexp.MustCompile(`(\w+)Edge`)
 
 
 func (s *Step) ProcessData(data *codegen.Data) error {
@@ -115,13 +115,13 @@ func (s *Step) accumulateConsts(nodeData *schema.NodeData) error {
 			break
 			
 			case "EdgeType":
-				match := edgeType.FindStringSubmatch(constant.ConstName)
-				if len(match) != 2 {
-					return fmt.Errorf("%s is not a valid edge type", constant.ConstName)
+				constName, err := edge.TsEdgeConst(constant.ConstName)
+				if err != nil {
+					return err
 				}
-				comment := strings.ReplaceAll(constant.Comment, constant.ConstName, match[1])
+				comment := strings.ReplaceAll(constant.Comment, constant.ConstName, constName)
 
-				s.addEdgeType(match[1], constant.ConstValue, comment)
+				s.addEdgeType(constName, constant.ConstValue, comment)
 				break
 			}
 		}

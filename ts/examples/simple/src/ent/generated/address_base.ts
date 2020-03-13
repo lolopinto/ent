@@ -8,10 +8,14 @@ import {
   createEnt,
   editEnt,
   deleteEnt,
+  AssocEdge,
+  loadEdges,
+  loadNodesByEdge,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/address";
+import { EdgeType } from "src/ent/const";
 
 const tableName = "addresses";
 

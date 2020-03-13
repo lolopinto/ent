@@ -15,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
+	"github.com/lolopinto/ent/internal/util"
 )
 
 type EdgeInfo struct {
@@ -172,6 +173,10 @@ func (e *commonEdgeInfo) GetEntConfig() schemaparser.EntConfigInfo {
 	return e.entConfig
 }
 
+func (e *commonEdgeInfo) CamelCaseEdgeName() string {
+	return strcase.ToCamel(e.EdgeName)
+}
+
 type FieldEdge struct {
 	commonEdgeInfo
 	FieldName       string
@@ -205,6 +210,18 @@ type InverseAssocEdge struct {
 	EdgeConst string
 }
 
+var edgeRegexp = regexp.MustCompile(`(\w+)Edge`)
+
+func TsEdgeConst(constName string) (string, error) {
+	match := edgeRegexp.FindStringSubmatch(constName)
+
+	if len(match) != 2 {
+		return "", fmt.Errorf("%s is not a valid edge type", constName)
+	}
+
+	return match[1], nil
+}
+
 type AssociationEdge struct {
 	commonEdgeInfo
 	EdgeConst     string
@@ -215,6 +232,16 @@ type AssociationEdge struct {
 	TableName     string // TableName will be gotten from the GroupName if part of a group or derived from each edge
 	// will eventually be made configurable to the user
 	EdgeActions []*EdgeAction
+}
+
+// TsEdgeConst returns the Edge const as used in typescript.
+// It transforms UserToFriends Edge to UserToFriends since that's 
+// in an enum
+// will evntually fix at edge creation
+func (e *AssociationEdge) TsEdgeConst() string {
+	edgeConst, err := TsEdgeConst(e.EdgeConst)
+	util.Die(err)
+	return edgeConst
 }
 
 func (e *AssociationEdge) PluralEdge() bool {

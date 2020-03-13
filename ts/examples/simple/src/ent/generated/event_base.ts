@@ -8,10 +8,15 @@ import {
   createEnt,
   editEnt,
   deleteEnt,
+  AssocEdge,
+  loadEdges,
+  loadNodesByEdge,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/event";
+import { EdgeType } from "src/ent/const";
+import User from "src/ent/user";
 
 const tableName = "events";
 
@@ -95,6 +100,71 @@ export class EventBase {
 
   static getField(key: string): Field | undefined {
     return EventBase.getSchemaFields().get(key);
+  }
+
+  loadHostsEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.EventToHosts);
+  }
+
+  loadHosts(): Promise<User[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.EventToHosts,
+      User.loaderOptions(),
+    );
+  }
+
+  loadInvitedEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.EventToInvited);
+  }
+
+  loadInvited(): Promise<User[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.EventToInvited,
+      User.loaderOptions(),
+    );
+  }
+
+  loadAttendingEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.EventToAttending);
+  }
+
+  loadAttending(): Promise<User[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.EventToAttending,
+      User.loaderOptions(),
+    );
+  }
+
+  loadDeclinedEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.EventToDeclined);
+  }
+
+  loadDeclined(): Promise<User[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.EventToDeclined,
+      User.loaderOptions(),
+    );
+  }
+
+  loadMaybeEdges(): Promise<AssocEdge[]> {
+    return loadEdges(this.id, EdgeType.EventToMaybe);
+  }
+
+  loadMaybe(): Promise<User[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.EventToMaybe,
+      User.loaderOptions(),
+    );
   }
 }
 
