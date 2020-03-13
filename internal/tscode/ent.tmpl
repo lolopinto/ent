@@ -12,13 +12,6 @@ import {ID, Viewer} from "ent/ent";
 // we're only writing this once except with --force and packageName provided
 export default class {{.Node}} extends {{.Node}}Base {
 
-  static async load(viewer: Viewer, id: ID): Promise<{{.Node}} | null> {
-    return {{.Node}}.loadFrom(viewer, id, {{.Node}});
-  }
-
-  static async loadX(viewer: Viewer, id: ID): Promise<{{.Node}}> {
-    return {{.Node}}.loadXFrom(viewer, id, {{.Node}});
-  }
 }
 
 // no actions yet so we support full create, edit, delete for now

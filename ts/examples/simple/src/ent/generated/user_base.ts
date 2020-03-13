@@ -15,7 +15,7 @@ import schema from "src/schema/user";
 
 const tableName = "users";
 
-export abstract class UserBase {
+export class UserBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -39,20 +39,22 @@ export abstract class UserBase {
     rules: [AlwaysDenyRule],
   };
 
-  protected static async loadFrom<T extends UserBase>(
+  static async load<T extends typeof UserBase>(
+    this: T,
     viewer: Viewer,
     id: ID,
-    arg: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): Promise<T | null> {
-    return loadEnt(viewer, id, UserBase.getOptions(arg));
+  ): Promise<InstanceType<T> | null> {
+    return loadEnt(viewer, id, UserBase.getOptions(this)) as InstanceType<
+      T
+    > | null;
   }
 
-  protected static async loadXFrom<T extends UserBase>(
+  static async loadX<T extends typeof UserBase>(
+    this: T,
     viewer: Viewer,
     id: ID,
-    arg: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): Promise<T> {
-    return loadEntX(viewer, id, UserBase.getOptions(arg));
+  ): Promise<InstanceType<T>> {
+    return loadEntX(viewer, id, UserBase.getOptions(this)) as InstanceType<T>;
   }
 
   private static getFields(): string[] {

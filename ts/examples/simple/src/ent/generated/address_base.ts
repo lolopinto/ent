@@ -15,7 +15,7 @@ import schema from "src/schema/address";
 
 const tableName = "addresses";
 
-export abstract class AddressBase {
+export class AddressBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -41,20 +41,24 @@ export abstract class AddressBase {
     rules: [AlwaysDenyRule],
   };
 
-  protected static async loadFrom<T extends AddressBase>(
+  static async load<T extends typeof AddressBase>(
+    this: T,
     viewer: Viewer,
     id: ID,
-    arg: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): Promise<T | null> {
-    return loadEnt(viewer, id, AddressBase.getOptions(arg));
+  ): Promise<InstanceType<T> | null> {
+    return loadEnt(viewer, id, AddressBase.getOptions(this)) as InstanceType<
+      T
+    > | null;
   }
 
-  protected static async loadXFrom<T extends AddressBase>(
+  static async loadX<T extends typeof AddressBase>(
+    this: T,
     viewer: Viewer,
     id: ID,
-    arg: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): Promise<T> {
-    return loadEntX(viewer, id, AddressBase.getOptions(arg));
+  ): Promise<InstanceType<T>> {
+    return loadEntX(viewer, id, AddressBase.getOptions(this)) as InstanceType<
+      T
+    >;
   }
 
   private static getFields(): string[] {

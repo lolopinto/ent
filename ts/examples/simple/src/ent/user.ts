@@ -14,14 +14,6 @@ export default class User extends UserBase {
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
-
-  static async load(viewer: Viewer, id: ID): Promise<User | null> {
-    return User.loadFrom(viewer, id, User);
-  }
-
-  static async loadX(viewer: Viewer, id: ID): Promise<User> {
-    return User.loadXFrom(viewer, id, User);
-  }
 }
 
 // no actions yet so we support full create, edit, delete for now

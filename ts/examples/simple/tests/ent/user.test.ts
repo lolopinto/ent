@@ -87,6 +87,7 @@ describe("privacy", () => {
     try {
       // we only do privacy checks when loading right now...
       let loadedUser = await User.load(new IDViewer(user.id, user), user.id);
+      expect(loadedUser).toBeInstanceOf(User);
       expect(loadedUser).not.toBe(null);
       expect(loadedUser?.id).toBe(user.id);
 
@@ -108,6 +109,7 @@ describe("privacy", () => {
     try {
       // we only do privacy checks when loading right now...
       let loadedUser = await User.loadX(new IDViewer(user.id, user), user.id);
+      expect(loadedUser).toBeInstanceOf(User);
       expect(loadedUser.id).toBe(user.id);
     } catch (e) {
       fail(e.message);
