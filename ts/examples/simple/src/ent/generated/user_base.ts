@@ -44,9 +44,7 @@ export class UserBase {
     viewer: Viewer,
     id: ID,
   ): Promise<InstanceType<T> | null> {
-    return loadEnt(viewer, id, UserBase.getOptions(this)) as InstanceType<
-      T
-    > | null;
+    return loadEnt(viewer, id, this.loaderOptions()) as InstanceType<T> | null;
   }
 
   static async loadX<T extends typeof UserBase>(
@@ -54,7 +52,17 @@ export class UserBase {
     viewer: Viewer,
     id: ID,
   ): Promise<InstanceType<T>> {
-    return loadEntX(viewer, id, UserBase.getOptions(this)) as InstanceType<T>;
+    return loadEntX(viewer, id, this.loaderOptions()) as InstanceType<T>;
+  }
+
+  static loaderOptions<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+  ): LoadEntOptions<T> {
+    return {
+      tableName: tableName,
+      fields: UserBase.getFields(),
+      ent: this,
+    };
   }
 
   private static getFields(): string[] {
@@ -72,16 +80,6 @@ export class UserBase {
 
   static getField(key: string): Field | undefined {
     return UserBase.getSchemaFields().get(key);
-  }
-
-  private static getOptions<T extends UserBase>(
-    arg: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): LoadEntOptions<T> {
-    return {
-      tableName: tableName,
-      fields: UserBase.getFields(),
-      ent: arg,
-    };
   }
 }
 

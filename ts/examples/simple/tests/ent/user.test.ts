@@ -169,13 +169,13 @@ test("symmetric edge", async () => {
   const loadedUser = await User.load(v, user2.id);
   expect(loadedUser).toBe(null);
 
-  const friends = await loadNodesByEdge(v, user.id, EdgeType.UserToFriends, {
-    // todo put this in an enum like the others in const
-    // this will also be generated anyways
-    tableName: "users",
-    fields: ["id", "created_at", "updated_at", "first_name", "last_name"],
-    ent: User,
-  });
+  const friends = await loadNodesByEdge(
+    v,
+    user.id,
+    EdgeType.UserToFriends,
+    User.loaderOptions(),
+  );
+
   expect(friends.length).toBe(0);
 });
 
@@ -227,22 +227,7 @@ test("inverse edge", async () => {
     v,
     user.id,
     EdgeType.UserToInvitedEvents,
-    {
-      // todo put this in an enum like the others in const
-      // this will also be generated anyways
-      tableName: "events",
-      fields: [
-        "id",
-        "created_at",
-        "updated_at",
-        "start_time",
-        "end_time",
-        "location",
-        "name",
-        "user_id",
-      ],
-      ent: Event,
-    },
+    Event.loaderOptions(),
   );
   expect(invitedEvents.length).toBe(1);
   expect(invitedEvents[0].id).toBe(loadedEvent?.id);
