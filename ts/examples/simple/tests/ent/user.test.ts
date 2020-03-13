@@ -5,11 +5,22 @@ import User, {
   UserCreateInput,
 } from "src/ent/user";
 
-import { ID, Ent, Viewer } from "ent/ent";
+import {
+  ID,
+  Ent,
+  Viewer,
+  writeEdge,
+  loadEdges,
+  AssocEdge,
+  AssocEdgeInput,
+} from "ent/ent";
 import DB from "ent/db";
 import { LogedOutViewer } from "ent/viewer";
 
 import { v4 as uuidv4 } from "uuid";
+import { NodeType, EdgeType } from "src/ent/const";
+import { createEvent } from "src/ent/event";
+import { createUserFrom } from "src/ent/generated/user_base";
 
 const loggedOutViewer = new LogedOutViewer();
 
@@ -122,6 +133,111 @@ describe("privacy", () => {
     } catch (e) {}
   });
 });
+
+test("symmetric edge", async () => {
+  let user = await create({ firstName: "Jon", lastName: "Snow" });
+  let user2 = await create({
+    firstName: "Daenerys",
+    lastName: "Targaryen",
+  });
+
+  const input = {
+    id1: user.id,
+    id2: user2.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+  };
+  await writeEdge(input);
+
+  const edges = await loadEdges(user.id, EdgeType.UserToFriends);
+  expect(edges.length).toBe(1);
+  verifyEdge(edges[0], input);
+
+  const edges2 = await loadEdges(user2.id, EdgeType.UserToFriends);
+  expect(edges2.length).toBe(1);
+  verifyEdge(edges2[0], {
+    id1: user2.id,
+    id2: user.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+  });
+});
+
+test("inverse edge", async () => {
+  let user = await create({ firstName: "Jon", lastName: "Snow" });
+  let event = await createEvent(new LogedOutViewer(), {
+    creatorID: user.id as string,
+    startTime: new Date(),
+    name: "fun event",
+    location: "location",
+  });
+
+  if (!event) {
+    fail("could not create event");
+  }
+
+  const input = {
+    id1: event.id,
+    id1Type: NodeType.Event,
+    id2: user.id,
+    id2Type: NodeType.User,
+    edgeType: EdgeType.EventToInvited,
+  };
+  await writeEdge(input);
+
+  const edges = await loadEdges(event.id, EdgeType.EventToInvited);
+  expect(edges.length).toBe(1);
+  verifyEdge(edges[0], input);
+
+  const edges2 = await loadEdges(user.id, EdgeType.UserToInvitedEvents);
+  expect(edges2.length).toBe(1);
+  verifyEdge(edges2[0], {
+    id1: user.id,
+    id1Type: NodeType.User,
+    id2: event.id,
+    id2Type: NodeType.Event,
+    edgeType: EdgeType.UserToInvitedEvents,
+  });
+});
+
+test.only("one-way edge", async () => {
+  // todo this is a field edge that we'll get later
+  let user = await create({ firstName: "Jon", lastName: "Snow" });
+  let event = await createEvent(new LogedOutViewer(), {
+    creatorID: user.id as string,
+    startTime: new Date(),
+    name: "fun event",
+    location: "location",
+  });
+
+  if (!event) {
+    fail("could not create event");
+  }
+
+  const input = {
+    id1: user.id,
+    id1Type: NodeType.User,
+    id2: event.id,
+    id2Type: NodeType.Event,
+    edgeType: EdgeType.UserToCreatedEvents,
+  };
+  await writeEdge(input);
+
+  const edges = await loadEdges(user.id, EdgeType.UserToCreatedEvents);
+  expect(edges.length).toBe(1);
+  verifyEdge(edges[0], input);
+});
+
+function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
+  expect(edge.id1).toBe(expectedEdge.id1);
+  expect(edge.id2).toBe(expectedEdge.id2);
+  expect(edge.id1Type).toBe(expectedEdge.id1Type);
+  expect(edge.id2Type).toBe(expectedEdge.id2Type);
+  expect(edge.edgeType).toBe(expectedEdge.edgeType);
+  expect(edge.data).toBe(expectedEdge.data || null);
+}
 
 test("loadX", async () => {
   try {
