@@ -9,15 +9,7 @@ import {
 import { ID, Viewer } from "ent/ent";
 
 // we're only writing this once except with --force and packageName provided
-export default class Event extends EventBase {
-  static async load(viewer: Viewer, id: ID): Promise<Event | null> {
-    return Event.loadFrom(viewer, id, Event);
-  }
-
-  static async loadX(viewer: Viewer, id: ID): Promise<Event> {
-    return Event.loadXFrom(viewer, id, Event);
-  }
-}
+export default class Event extends EventBase {}
 
 // no actions yet so we support full create, edit, delete for now
 export { EventCreateInput, EventEditInput, deleteEvent };

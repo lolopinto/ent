@@ -15,7 +15,7 @@ import schema from "src/schema/event";
 
 const tableName = "events";
 
-export abstract class EventBase {
+export class EventBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -45,20 +45,22 @@ export abstract class EventBase {
     rules: [AlwaysDenyRule],
   };
 
-  protected static async loadFrom<T extends EventBase>(
+  static async load<T extends typeof EventBase>(
+    this: T,
     viewer: Viewer,
     id: ID,
-    arg: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): Promise<T | null> {
-    return loadEnt(viewer, id, EventBase.getOptions(arg));
+  ): Promise<InstanceType<T> | null> {
+    return loadEnt(viewer, id, EventBase.getOptions(this)) as InstanceType<
+      T
+    > | null;
   }
 
-  protected static async loadXFrom<T extends EventBase>(
+  static async loadX<T extends typeof EventBase>(
+    this: T,
     viewer: Viewer,
     id: ID,
-    arg: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): Promise<T> {
-    return loadEntX(viewer, id, EventBase.getOptions(arg));
+  ): Promise<InstanceType<T>> {
+    return loadEntX(viewer, id, EventBase.getOptions(this)) as InstanceType<T>;
   }
 
   private static getFields(): string[] {

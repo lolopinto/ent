@@ -9,15 +9,7 @@ import {
 import { ID, Viewer } from "ent/ent";
 
 // we're only writing this once except with --force and packageName provided
-export default class Address extends AddressBase {
-  static async load(viewer: Viewer, id: ID): Promise<Address | null> {
-    return Address.loadFrom(viewer, id, Address);
-  }
-
-  static async loadX(viewer: Viewer, id: ID): Promise<Address> {
-    return Address.loadXFrom(viewer, id, Address);
-  }
-}
+export default class Address extends AddressBase {}
 
 // no actions yet so we support full create, edit, delete for now
 export { AddressCreateInput, AddressEditInput, deleteAddress };

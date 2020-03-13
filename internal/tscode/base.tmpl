@@ -10,7 +10,7 @@ const tableName = "{{.TableName}}";
 {{$baseClass := printf "%sBase" .Node -}}
 {{$constructor := "arg: new (viewer: Viewer, id: ID, data: {}) => T"}}
 
-export abstract class {{$baseClass}} {
+export class {{$baseClass}} {
 
   {{range $field := .FieldInfo.Fields -}}
     readonly {{$field.TsFieldName}}: {{$field.TsType}};
@@ -31,20 +31,20 @@ export abstract class {{$baseClass}} {
     rules: [AlwaysDenyRule],
   };
 
-  protected static async loadFrom<T extends {{$baseClass}}>(
+  static async load<T extends typeof {{$baseClass}}>(
+    this: T,
     viewer: Viewer, 
     id: ID,
-    {{$constructor}},
-  ): Promise<T | null>{
-    return loadEnt(viewer, id, {{$baseClass}}.getOptions(arg));
+  ): Promise<InstanceType<T> | null>{
+    return loadEnt(viewer, id, {{$baseClass}}.getOptions(this)) as InstanceType<T> | null;
   }
 
-  protected static async loadXFrom<T extends {{$baseClass}}>(
+  static async loadX<T extends typeof {{$baseClass}}>(
+    this: T,
     viewer: Viewer, 
     id: ID,
-    {{$constructor}},
-  ): Promise<T> {
-    return loadEntX(viewer, id, {{$baseClass}}.getOptions(arg));
+  ): Promise<InstanceType<T>> {
+    return loadEntX(viewer, id, {{$baseClass}}.getOptions(this)) as InstanceType<T>;
   }
 
   private static getFields(): string[] {
