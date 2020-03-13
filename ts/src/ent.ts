@@ -6,7 +6,6 @@ import {
   QueryResultRow,
   QueryConfig,
   QueryResult,
-  Pool,
 } from "pg";
 import {
   EntPrivacyError,
@@ -14,6 +13,9 @@ import {
   applyPrivacyPolicyX,
   PrivacyPolicy,
 } from "./privacy";
+
+import * as query from "./query";
+import { strictEqual } from "assert";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -50,8 +52,7 @@ interface LoadRowOptions extends DataOptions {
 interface LoadRowsOptions extends DataOptions {
   // list of fields to read
   fields: string[];
-  // todo sql builder. for now used for query
-  andFields: {};
+  clause: query.Clause;
 }
 
 interface EditRowOptions extends DataOptions {
@@ -139,7 +140,7 @@ async function applyPrivacyPolicyForEntX<T extends Ent>(
 }
 
 function logQuery(query: string) {
-  //  console.log(query);
+  // console.log(query);
 }
 
 // TODO change this and loadRow to not return an ent or do anything with ent
@@ -181,16 +182,9 @@ export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
   const pool = DB.getInstance().getPool();
   const fields = options.fields.join(", ");
 
-  let clauses: string[] = [];
-  let values: any[] = [];
-  let idx = 1;
-  for (const key in options.andFields) {
-    const value = options.andFields[key];
-    clauses.push(`${key} = $${idx}`);
-    values.push(value);
-    idx++;
-  }
-  const whereClause = clauses.join(" AND ");
+  // always start at 1
+  const whereClause = options.clause.clause(1);
+  const values = options.clause.values();
   const query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
   logQuery(query);
   const res = await pool.query(query, values);
@@ -530,10 +524,7 @@ export async function loadEdges(
   const rows = await loadRows({
     tableName: edgeData.edgeTable,
     fields: ["id1", "id1_type", "edge_type", "id2", "id2_type", "time", "data"],
-    andFields: {
-      id1: id1,
-      edge_type: edgeType,
-    },
+    clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
   });
 
   let result: AssocEdge[] = [];
@@ -541,4 +532,34 @@ export async function loadEdges(
     result.push(new AssocEdge(row));
   }
   return result;
+}
+
+export async function loadNodesByEdge<T extends Ent>(
+  viewer: Viewer,
+  id1: ID,
+  edgeType: string,
+  options: LoadEntOptions<T>,
+  //  constructor: EntConstructor<T>,
+): Promise<T[]> {
+  // load edges
+  const rows = await loadEdges(id1, edgeType);
+
+  // extract id2s
+  const ids = rows.map(row => row.id2);
+
+  // load nodes
+  const nodes = await loadRows({
+    tableName: options.tableName,
+    clause: query.In("id", ...ids),
+    fields: options.fields,
+  });
+
+  // apply privacy logic
+  const ents = await Promise.all(
+    nodes.map(row => {
+      const ent = new options.ent(viewer, row["id"], row);
+      return applyPrivacyPolicyForEnt(viewer, ent);
+    }),
+  );
+  return ents.filter(ent => ent) as T[];
 }

@@ -13,14 +13,14 @@ import {
   loadEdges,
   AssocEdge,
   AssocEdgeInput,
+  loadNodesByEdge,
 } from "ent/ent";
 import DB from "ent/db";
 import { LogedOutViewer } from "ent/viewer";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
-import { createEvent } from "src/ent/event";
-import { createUserFrom } from "src/ent/generated/user_base";
+import Event, { createEvent } from "src/ent/event";
 
 const loggedOutViewer = new LogedOutViewer();
 
@@ -163,10 +163,27 @@ test("symmetric edge", async () => {
     id1Type: NodeType.User,
     id2Type: NodeType.User,
   });
+
+  // even though can load raw edges above. can't load the nodes that you can't see privacy of
+  const v = new IDViewer(user.id);
+  const loadedUser = await User.load(v, user2.id);
+  expect(loadedUser).toBe(null);
+
+  const friends = await loadNodesByEdge(v, user.id, EdgeType.UserToFriends, {
+    // todo put this in an enum like the others in const
+    // this will also be generated anyways
+    tableName: "users",
+    fields: ["id", "created_at", "updated_at", "first_name", "last_name"],
+    ent: User,
+  });
+  expect(friends.length).toBe(0);
 });
 
 test("inverse edge", async () => {
-  let user = await create({ firstName: "Jon", lastName: "Snow" });
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+  });
   let event = await createEvent(new LogedOutViewer(), {
     creatorID: user.id as string,
     startTime: new Date(),
@@ -200,9 +217,38 @@ test("inverse edge", async () => {
     id2Type: NodeType.Event,
     edgeType: EdgeType.UserToInvitedEvents,
   });
+
+  // privacy of event is everyone can see so can load events at end of edge
+  const v = new IDViewer(user.id);
+  const loadedEvent = await Event.load(v, event.id);
+  expect(loadedEvent).not.toBe(null);
+
+  const invitedEvents = await loadNodesByEdge(
+    v,
+    user.id,
+    EdgeType.UserToInvitedEvents,
+    {
+      // todo put this in an enum like the others in const
+      // this will also be generated anyways
+      tableName: "events",
+      fields: [
+        "id",
+        "created_at",
+        "updated_at",
+        "start_time",
+        "end_time",
+        "location",
+        "name",
+        "user_id",
+      ],
+      ent: Event,
+    },
+  );
+  expect(invitedEvents.length).toBe(1);
+  expect(invitedEvents[0].id).toBe(loadedEvent?.id);
 });
 
-test.only("one-way edge", async () => {
+test("one-way edge", async () => {
   // todo this is a field edge that we'll get later
   let user = await create({ firstName: "Jon", lastName: "Snow" });
   let event = await createEvent(new LogedOutViewer(), {
