@@ -7,9 +7,18 @@ import {
   deleteContact,
 } from "./generated/contact_base";
 import { ID, Viewer } from "ent/ent";
+import {
+  PrivacyPolicy,
+  AllowIfViewerIsRule,
+  AlwaysDenyRule,
+} from "ent/privacy";
 
 // we're only writing this once except with --force and packageName provided
-export default class Contact extends ContactBase {}
+export default class Contact extends ContactBase {
+  privacyPolicy: PrivacyPolicy = {
+    rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
+  };
+}
 
 // no actions yet so we support full create, edit, delete for now
 export { ContactCreateInput, ContactEditInput, deleteContact };

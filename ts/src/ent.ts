@@ -15,7 +15,6 @@ import {
 } from "./privacy";
 
 import * as query from "./query";
-import { strictEqual } from "assert";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -118,19 +117,7 @@ export async function loadEnts<T extends Ent>(
   options: LoadEntOptions<T>,
   ...ids: ID[]
 ): Promise<T[]> {
-  const rowOptions: LoadRowOptions = {
-    ...options,
-    clause: query.In("id", ...ids),
-  };
-  const nodes = await loadRows(rowOptions);
-  // apply privacy logic
-  const ents = await Promise.all(
-    nodes.map(row => {
-      const ent = new options.ent(viewer, row["id"], row);
-      return applyPrivacyPolicyForEnt(viewer, ent);
-    }),
-  );
-  return ents.filter(ent => ent) as T[];
+  return loadEntsFromClause(viewer, query.In("id", ...ids), options);
 }
 
 export async function loadDerivedEnt<T extends Ent>(
@@ -618,7 +605,6 @@ export async function loadNodesByEdge<T extends Ent>(
   id1: ID,
   edgeType: string,
   options: LoadEntOptions<T>,
-  //  constructor: EntConstructor<T>,
 ): Promise<T[]> {
   // load edges
   const rows = await loadEdges(id1, edgeType);
@@ -627,4 +613,27 @@ export async function loadNodesByEdge<T extends Ent>(
   const ids = rows.map(row => row.id2);
 
   return loadEnts(viewer, options, ...ids);
+}
+
+export async function loadEntsFromClause<T extends Ent>(
+  viewer: Viewer,
+  clause: query.Clause,
+  options: LoadEntOptions<T>,
+): Promise<T[]> {
+  loadRows;
+  const rowOptions: LoadRowOptions = {
+    ...options,
+    clause: clause,
+  };
+
+  const nodes = await loadRows(rowOptions);
+  // apply privacy logic
+  const ents = await Promise.all(
+    nodes.map(row => {
+      // todo eventually there'll be a different key
+      const ent = new options.ent(viewer, row["id"], row);
+      return applyPrivacyPolicyForEnt(viewer, ent);
+    }),
+  );
+  return ents.filter(ent => ent) as T[];
 }
