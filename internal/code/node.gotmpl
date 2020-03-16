@@ -320,7 +320,7 @@ const (
     {{end}}
     {{range $edge := .Associations -}}
       {{$edgeName := .EdgeName -}}
-      {{$uniqueEdge := .Unique}}
+      {{$uniqueEdge := .Unique -}}
       {{with .NodeInfo -}}
 
         {{ if $uniqueEdge -}}

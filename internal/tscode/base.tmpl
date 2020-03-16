@@ -1,9 +1,28 @@
 // these are dependent on having the right tsconfig.json file...
 {{with .NodeData -}}
-import {loadEnt, ID, Viewer, loadEntX, LoadEntOptions, createEnt, editEnt, deleteEnt} from "ent/ent";
+{{/* TODO handle imports that are not used. similar to reserveImport in goland */ -}}
+import {
+  loadEnt, 
+  ID, 
+  Viewer, 
+  loadEntX, 
+  LoadEntOptions, 
+  createEnt, 
+  editEnt, 
+  deleteEnt, 
+  AssocEdge,
+  loadEdges,
+  loadRawEdgeCountX,
+  loadNodesByEdge,
+  loadEdgeForID2,
+} from "ent/ent";
 import {AlwaysDenyRule, PrivacyPolicy} from "ent/privacy";
 import {Field, getFields} from "ent/schema";
 import schema from "src/schema/{{.PackageName}}";
+import { EdgeType } from "src/ent/const";
+{{ range .GetUniqueNodes -}} 
+  import {{.Node}} from "src/ent/{{.PackageName}}";
+{{ end}}
 
 const tableName = "{{.TableName}}";
 
@@ -36,7 +55,7 @@ export class {{$baseClass}} {
     viewer: Viewer, 
     id: ID,
   ): Promise<InstanceType<T> | null>{
-    return loadEnt(viewer, id, {{$baseClass}}.getOptions(this)) as InstanceType<T> | null;
+    return loadEnt(viewer, id, this.loaderOptions()) as InstanceType<T> | null;
   }
 
   static async loadX<T extends typeof {{$baseClass}}>(
@@ -44,7 +63,17 @@ export class {{$baseClass}} {
     viewer: Viewer, 
     id: ID,
   ): Promise<InstanceType<T>> {
-    return loadEntX(viewer, id, {{$baseClass}}.getOptions(this)) as InstanceType<T>;
+    return loadEntX(viewer, id, this.loaderOptions()) as InstanceType<T>;
+  }
+
+  static loaderOptions<T extends {{$baseClass}}>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+  ): LoadEntOptions<T> {
+    return {
+      tableName: tableName,
+      fields: {{$baseClass}}.getFields(),
+      ent: this,
+    };
   }
 
   private static getFields(): string[] {
@@ -68,15 +97,33 @@ export class {{$baseClass}} {
     return {{$baseClass}}.getSchemaFields().get(key);
   }
 
-  private static getOptions<T extends {{$baseClass}}>(
-    {{$constructor}},
-  ): LoadEntOptions<T> {
-    return {
-      tableName: tableName,
-      fields: {{$baseClass}}.getFields(),
-      ent: arg,
-    };
-  }
+  {{/* load edges and load objects */ -}}
+  {{range $edge := .EdgeInfo.Associations -}}
+    {{$edgeName := .CamelCaseEdgeName -}}
+    {{$uniqueEdge := .Unique -}}
+    {{with .NodeInfo -}}
+     {{/* TODO unique edges */}}
+     {{ if $uniqueEdge -}}
+
+     {{ else -}}
+      load{{$edgeName}}Edges():Promise<AssocEdge[]> {
+        return loadEdges(this.id, EdgeType.{{$edge.TsEdgeConst}});
+      }
+
+      load{{$edgeName}}():Promise<{{.Node}}[]> {
+        return loadNodesByEdge(this.viewer, this.id, EdgeType.{{$edge.TsEdgeConst}}, {{.Node}}.loaderOptions());
+      }
+
+      load{{$edgeName}}RawCountX():Promise<number> {
+        return loadRawEdgeCountX(this.id, EdgeType.{{$edge.TsEdgeConst}});
+      }
+
+      load{{$edge.Singular}}EdgeFor(id2: ID):Promise<AssocEdge|undefined> {
+        return loadEdgeForID2(this.id, EdgeType.{{$edge.TsEdgeConst}}, id2);
+      }
+     {{end -}}
+    {{end -}}
+  {{end -}}
 }
 
 // no actions yet so we support full create, edit, delete for now

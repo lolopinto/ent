@@ -5,6 +5,8 @@ import { StringType, TimeType } from "ent/field";
 export default class Event extends BaseEntSchema implements Schema {
   fields: Field[] = [
     StringType({ name: "name" }),
+    // TODO this should be an id type...
+    // we should warn when we see an "ID/id/Id" field as non-id type and ask if they wanna change it
     StringType({
       name: "creatorID",
       fieldEdge: ["User", "createdEvents"],

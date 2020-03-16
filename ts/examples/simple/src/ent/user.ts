@@ -8,11 +8,12 @@ import {
 } from "./generated/user_base";
 import { ID, Viewer } from "ent/ent";
 import { PrivacyPolicy, AllowIfViewerRule, AlwaysDenyRule } from "ent/privacy";
+import { AllowIfOmniRule } from "./../privacy/omni";
 
 // we're only writing this once except with --force and packageName provided
 export default class User extends UserBase {
   privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
+    rules: [AllowIfOmniRule, AllowIfViewerRule, AlwaysDenyRule],
   };
 }
 

@@ -5,11 +5,21 @@ import User, {
   UserCreateInput,
 } from "src/ent/user";
 
-import { ID, Ent, Viewer } from "ent/ent";
+import {
+  ID,
+  Ent,
+  Viewer,
+  writeEdge,
+  AssocEdge,
+  AssocEdgeInput,
+  loadEnts,
+} from "ent/ent";
 import DB from "ent/db";
 import { LogedOutViewer } from "ent/viewer";
 
 import { v4 as uuidv4 } from "uuid";
+import { NodeType, EdgeType } from "src/ent/const";
+import Event, { createEvent } from "src/ent/event";
 
 const loggedOutViewer = new LogedOutViewer();
 
@@ -76,6 +86,12 @@ class IDViewer implements Viewer {
   }
 }
 
+class OmniViewer extends IDViewer {
+  isOmniscient(): boolean {
+    return true;
+  }
+}
+
 describe("privacy", () => {
   test("load", async () => {
     let user = await create({ firstName: "Jon", lastName: "Snow" });
@@ -122,6 +138,191 @@ describe("privacy", () => {
     } catch (e) {}
   });
 });
+
+test("symmetric edge", async () => {
+  let jon = await create({ firstName: "Jon", lastName: "Snow" });
+  let dany = await create({
+    firstName: "Daenerys",
+    lastName: "Targaryen",
+  });
+  let sam = await create({ firstName: "Samwell", lastName: "Tarly" });
+
+  const danyInput = {
+    id1: jon.id,
+    id2: dany.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+  };
+  await writeEdge(danyInput);
+  let t = new Date();
+  t.setTime(t.getTime() + 86400);
+  const samInput = {
+    id1: jon.id,
+    id2: sam.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+    time: t,
+  };
+  await writeEdge(samInput);
+
+  const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
+    jon.loadFriendsEdges(),
+    jon.loadFriendsRawCountX(),
+    dany.loadFriendsEdges(),
+    dany.loadFriendsRawCountX(),
+  ]);
+  expect(edges.length).toBe(2);
+
+  expect(edgesCount).toBe(2);
+  // sam is more recent, so dany should be [1]
+  verifyEdge(edges[1], danyInput);
+
+  const samEdge = await jon.loadFriendEdgeFor(sam.id);
+  expect(samEdge).not.toBe(null);
+  verifyEdge(samEdge!, samInput);
+
+  expect(edges2.length).toBe(1);
+  expect(edges2Count).toBe(1);
+  verifyEdge(edges2[0], {
+    id1: dany.id,
+    id2: jon.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+  });
+
+  // even though can load raw edges above. can't load the nodes that you can't see privacy of
+  const v = new IDViewer(jon.id);
+  const loadedUser = await User.load(v, dany.id);
+  expect(loadedUser).toBe(null);
+
+  // logged out user so other users aren't visible
+  const friends = await jon.loadFriends();
+  expect(friends.length).toBe(0);
+});
+
+test("inverse edge", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+  });
+  let event = await createEvent(new LogedOutViewer(), {
+    creatorID: user.id as string,
+    startTime: new Date(),
+    name: "fun event",
+    location: "location",
+  });
+
+  if (!event) {
+    fail("could not create event");
+  }
+
+  const input = {
+    id1: event.id,
+    id1Type: NodeType.Event,
+    id2: user.id,
+    id2Type: NodeType.User,
+    edgeType: EdgeType.EventToInvited,
+  };
+  await writeEdge(input);
+
+  const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
+    event.loadInvitedEdges(),
+    event.loadInvitedRawCountX(),
+    user.loadInvitedEventsEdges(),
+    user.loadInvitedEventsRawCountX(),
+  ]);
+  expect(edges.length).toBe(1);
+  expect(edgesCount).toBe(1);
+  verifyEdge(edges[0], input);
+
+  expect(edges2.length).toBe(1);
+  expect(edges2Count).toBe(1);
+  verifyEdge(edges2[0], {
+    id1: user.id,
+    id1Type: NodeType.User,
+    id2: event.id,
+    id2Type: NodeType.Event,
+    edgeType: EdgeType.UserToInvitedEvents,
+  });
+
+  // privacy of event is everyone can see so can load events at end of edge
+  const v = new IDViewer(user.id);
+  const loadedEvent = await Event.load(v, event.id);
+  expect(loadedEvent).not.toBe(null);
+
+  const invitedEvents = await user.loadInvitedEvents();
+  expect(invitedEvents.length).toBe(1);
+  expect(invitedEvents[0].id).toBe(loadedEvent?.id);
+});
+
+test("one-way edge", async () => {
+  // todo this is a field edge that we'll get later
+  let user = await create({ firstName: "Jon", lastName: "Snow" });
+  let event = await createEvent(new LogedOutViewer(), {
+    creatorID: user.id as string,
+    startTime: new Date(),
+    name: "fun event",
+    location: "location",
+  });
+
+  if (!event) {
+    fail("could not create event");
+  }
+
+  const input = {
+    id1: user.id,
+    id1Type: NodeType.User,
+    id2: event.id,
+    id2Type: NodeType.Event,
+    edgeType: EdgeType.UserToCreatedEvents,
+  };
+  await writeEdge(input);
+
+  const edges = await user.loadCreatedEventsEdges();
+  expect(edges.length).toBe(1);
+  verifyEdge(edges[0], input);
+});
+
+test("loadMultiUsers", async () => {
+  let jon = await create({ firstName: "Jon", lastName: "Snow" });
+  let dany = await create({
+    firstName: "Daenerys",
+    lastName: "Targaryen",
+  });
+  let sam = await create({ firstName: "Samwell", lastName: "Tarly" });
+
+  const tests: [Viewer, number, string][] = [
+    [loggedOutViewer, 0, "logged out viewer"],
+    [new OmniViewer(jon.id), 3, "omni viewer"],
+    [new IDViewer(jon.id), 1, "1 id"],
+  ];
+
+  for (const testData of tests) {
+    const v = testData[0];
+    const expectedCount = testData[1];
+    const users = await loadEnts(
+      v,
+      User.loaderOptions(),
+      jon.id,
+      dany.id,
+      sam.id,
+    );
+
+    expect(users.length, testData[2]).toBe(expectedCount);
+  }
+});
+
+function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
+  expect(edge.id1).toBe(expectedEdge.id1);
+  expect(edge.id2).toBe(expectedEdge.id2);
+  expect(edge.id1Type).toBe(expectedEdge.id1Type);
+  expect(edge.id2Type).toBe(expectedEdge.id2Type);
+  expect(edge.edgeType).toBe(expectedEdge.edgeType);
+  expect(edge.data).toBe(expectedEdge.data || null);
+}
 
 test("loadX", async () => {
   try {
