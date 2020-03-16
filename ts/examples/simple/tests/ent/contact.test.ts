@@ -110,7 +110,9 @@ test("create contacts", async () => {
   verifyContacts(contacts);
 
   const userId = contacts[0].userID;
-  const user = await User.loadX(new IDViewer(userId), userId);
+  const v = new IDViewer(userId);
+  const loadedContact = await Contact.loadX(v, contacts[0].id);
+  const user = await loadedContact.loadUserX();
   expect(user).toBeInstanceOf(User);
 
   // viewer can load their own contacts

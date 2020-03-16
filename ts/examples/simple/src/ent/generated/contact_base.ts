@@ -20,6 +20,7 @@ import { Field, getFields } from "ent/schema";
 import schema from "src/schema/contact";
 import { EdgeType } from "src/ent/const";
 import * as query from "ent/query";
+import User from "src/ent/user";
 
 const tableName = "contacts";
 
@@ -100,6 +101,14 @@ export class ContactBase {
 
   static getField(key: string): Field | undefined {
     return ContactBase.getSchemaFields().get(key);
+  }
+
+  loadUser(): Promise<User | null> {
+    return loadEnt(this.viewer, this.userID, User.loaderOptions());
+  }
+
+  loadUserX(): Promise<User> {
+    return loadEntX(this.viewer, this.userID, User.loaderOptions());
   }
 }
 

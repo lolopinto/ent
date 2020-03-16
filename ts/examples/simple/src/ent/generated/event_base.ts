@@ -210,6 +210,14 @@ export class EventBase {
   loadMaybeEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
     return loadEdgeForID2(this.id, EdgeType.EventToMaybe, id2);
   }
+
+  loadCreator(): Promise<User | null> {
+    return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
+  }
+
+  loadCreatorX(): Promise<User> {
+    return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
+  }
 }
 
 // no actions yet so we support full create, edit, delete for now

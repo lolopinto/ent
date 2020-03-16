@@ -131,9 +131,34 @@ export class {{$baseClass}} {
     {{$edgeName := .CamelCaseEdgeName -}}
     {{with .NodeInfo -}}
       load{{$edgeName}}(): Promise<{{.Node}}[]> {
-        return loadEntsFromClause(this.viewer, query.Eq({{$edge.QuotedDBColName}}, this.id), {{.Node}}.loaderOptions());
+        return loadEntsFromClause(
+          this.viewer, 
+          query.Eq({{$edge.QuotedDBColName}}, this.id), 
+          {{.Node}}.loaderOptions(),
+        );
       }
 
+    {{end -}}
+  {{end -}}
+
+  {{ range $edge := .EdgeInfo.FieldEdges -}}
+    {{$edgeName := .CamelCaseEdgeName -}}
+    {{with .NodeInfo -}}
+      load{{$edgeName}}(): Promise<{{.Node}}|null> {
+        return loadEnt(
+          this.viewer, 
+          this.{{$edge.FieldName}},
+          {{.Node}}.loaderOptions(),
+        );
+      }
+
+      load{{$edgeName}}X(): Promise<{{.Node}}> {
+        return loadEntX(
+          this.viewer, 
+          this.{{$edge.FieldName}},
+          {{.Node}}.loaderOptions(),
+        );
+      }
     {{end -}}
   {{end -}}
 }

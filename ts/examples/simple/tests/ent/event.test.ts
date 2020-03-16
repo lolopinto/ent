@@ -1,10 +1,20 @@
 import { createUser } from "src/ent/user";
 import Event, { createEvent, editEvent, deleteEvent } from "src/ent/event";
-
+import { ID, Ent, Viewer } from "ent/ent";
 import { LogedOutViewer } from "ent/viewer";
 import DB from "ent/db";
 
 const loggedOutViewer = new LogedOutViewer();
+
+class IDViewer implements Viewer {
+  constructor(public viewerID: ID, private ent: Ent | null = null) {}
+  async viewer() {
+    return this.ent;
+  }
+  instanceKey(): string {
+    return `idViewer: ${this.viewerID}`;
+  }
+}
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -42,6 +52,13 @@ test("create event", async () => {
     expect(event.startTime.toDateString()).toBe(date.toDateString());
     expect(event.creatorID).not.toBe(null);
     expect(event.endTime).toBe(null);
+
+    // reload the event from the viewer's perspective
+    const v = new IDViewer(event.creatorID);
+    event = await Event.loadX(v, event.id);
+    const creator = await event.loadCreator();
+    expect(creator).not.toBe(null);
+    expect(creator!.id).toBe(event.creatorID);
   } catch (e) {
     fail(e.message);
   }

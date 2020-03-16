@@ -207,5 +207,9 @@ func (nodeData *NodeData) GetUniqueNodes() []uniqueNodeInfo {
 	for _,edge := range nodeData.EdgeInfo.ForeignKeys {
 		processNode(edge.NodeInfo)
 	}
+
+	for _,edge := range nodeData.EdgeInfo.FieldEdges {
+		processNode(edge.NodeInfo)
+	}
 	return ret
 }
