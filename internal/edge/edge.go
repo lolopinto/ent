@@ -249,7 +249,7 @@ func (e *AssociationEdge) PluralEdge() bool {
 }
 
 func (e *AssociationEdge) Singular() string {
-	return inflection.Singular(e.EdgeName)
+	return inflection.Singular(e.CamelCaseEdgeName())
 }
 
 func (e *AssociationEdge) EdgeIdentifier() string {

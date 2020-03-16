@@ -21,6 +21,10 @@ export interface Viewer {
   viewerID: ID | null;
   viewer: () => Promise<Ent | null>;
   instanceKey: () => string;
+  isOmniscient?(): boolean; // optional function to indicate a viewer that can see anything e.g. admin
+  // TODO determine if we want this here.
+  // just helpful to have it here
+  // not providing a default AllowIfOmniRule
 }
 
 export interface Ent {
@@ -55,6 +59,7 @@ interface LoadRowOptions extends SelectDataOptions {
 
 interface LoadRowsOptions extends SelectDataOptions {
   clause: query.Clause;
+  orderby?: string;
 }
 
 interface EditRowOptions extends DataOptions {
@@ -108,6 +113,26 @@ export async function loadEntX<T extends Ent>(
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
+export async function loadEnts<T extends Ent>(
+  viewer: Viewer,
+  options: LoadEntOptions<T>,
+  ...ids: ID[]
+): Promise<T[]> {
+  const rowOptions: LoadRowOptions = {
+    ...options,
+    clause: query.In("id", ...ids),
+  };
+  const nodes = await loadRows(rowOptions);
+  // apply privacy logic
+  const ents = await Promise.all(
+    nodes.map(row => {
+      const ent = new options.ent(viewer, row["id"], row);
+      return applyPrivacyPolicyForEnt(viewer, ent);
+    }),
+  );
+  return ents.filter(ent => ent) as T[];
+}
+
 export async function loadDerivedEnt<T extends Ent>(
   viewer: Viewer,
   data: {},
@@ -150,8 +175,9 @@ async function applyPrivacyPolicyForEntX<T extends Ent>(
   throw new EntPrivacyError(ent.id);
 }
 
-function logQuery(query: string) {
+function logQuery(query: string, values: any[] = []) {
   // console.log(query);
+  // console.log(values);
 }
 
 export async function loadRowX(options: LoadRowOptions): Promise<{}> {
@@ -176,17 +202,21 @@ export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
   const whereClause = options.clause.clause(1);
   const values = options.clause.values();
   const query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
-  logQuery(query);
-  const res = await pool.query(query, values);
-
-  if (res.rowCount != 1) {
-    if (res.rowCount > 1) {
-      console.error("got more than one row for query " + query);
+  logQuery(query, values);
+  try {
+    const res = await pool.query(query, values);
+    if (res.rowCount != 1) {
+      if (res.rowCount > 1) {
+        console.error("got more than one row for query " + query);
+      }
+      return null;
     }
+
+    return res.rows[0];
+  } catch (e) {
+    console.error(e);
     return null;
   }
-
-  return res.rows[0];
 }
 
 export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
@@ -196,11 +226,20 @@ export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
   // always start at 1
   const whereClause = options.clause.clause(1);
   const values = options.clause.values();
-  const query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
-  logQuery(query);
-  const res = await pool.query(query, values);
+  let query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
+  if (options.orderby) {
+    query = `${query} ORDER BY ${options.orderby} `;
+  }
 
-  return res.rows;
+  logQuery(query, values);
+  try {
+    const res = await pool.query(query, values);
+    return res.rows;
+  } catch (e) {
+    // TODO need to change every query to catch an error!
+    console.error(e);
+    return [];
+  }
 }
 
 export async function createEnt<T extends Ent>(
@@ -536,6 +575,7 @@ export async function loadEdges(
     tableName: edgeData.edgeTable,
     fields: ["id1", "id1_type", "edge_type", "id2", "id2_type", "time", "data"],
     clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
+    orderby: "time DESC",
   });
 
   let result: AssocEdge[] = [];
@@ -562,6 +602,17 @@ export async function loadRawEdgeCountX(
   return parseInt(row["count"], 10);
 }
 
+export async function loadEdgeForID2(
+  id1: ID,
+  edgeType: string,
+  id2: ID,
+): Promise<AssocEdge | undefined> {
+  // TODO at some point, same as in go, we can be smart about this and have heuristics to determine if we fetch everything here or not
+  // we're assuming a cache here but not always tue and this can be expensive if not...
+  const edges = await loadEdges(id1, edgeType);
+  return edges.find(edge => edge.id2 == id2);
+}
+
 export async function loadNodesByEdge<T extends Ent>(
   viewer: Viewer,
   id1: ID,
@@ -575,19 +626,5 @@ export async function loadNodesByEdge<T extends Ent>(
   // extract id2s
   const ids = rows.map(row => row.id2);
 
-  // load nodes
-  const nodes = await loadRows({
-    tableName: options.tableName,
-    clause: query.In("id", ...ids),
-    fields: options.fields,
-  });
-
-  // apply privacy logic
-  const ents = await Promise.all(
-    nodes.map(row => {
-      const ent = new options.ent(viewer, row["id"], row);
-      return applyPrivacyPolicyForEnt(viewer, ent);
-    }),
-  );
-  return ents.filter(ent => ent) as T[];
+  return loadEnts(viewer, options, ...ids);
 }

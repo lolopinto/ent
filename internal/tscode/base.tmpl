@@ -14,6 +14,7 @@ import {
   loadEdges,
   loadRawEdgeCountX,
   loadNodesByEdge,
+  loadEdgeForID2,
 } from "ent/ent";
 import {AlwaysDenyRule, PrivacyPolicy} from "ent/privacy";
 import {Field, getFields} from "ent/schema";
@@ -115,6 +116,10 @@ export class {{$baseClass}} {
 
       load{{$edgeName}}RawCountX():Promise<number> {
         return loadRawEdgeCountX(this.id, EdgeType.{{$edge.TsEdgeConst}});
+      }
+
+      load{{$edge.Singular}}EdgeFor(id2: ID):Promise<AssocEdge|undefined> {
+        return loadEdgeForID2(this.id, EdgeType.{{$edge.TsEdgeConst}}, id2);
       }
      {{end -}}
     {{end -}}

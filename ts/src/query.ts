@@ -19,7 +19,17 @@ class inClause implements Clause {
   constructor(private col: string, private value: any[]) {}
 
   clause(idx: number): string {
-    return `${this.col} IN ($${idx})`;
+    let indices: string[] = [];
+    for (let i = 0; i < this.value.length; i++) {
+      indices.push(`$${idx}`);
+      idx++;
+    }
+    const inValue = indices.join(", ");
+    return `${this.col} IN (${inValue})`;
+    // TODO we need to return idx at end to query builder...
+    // or anything that's doing a composite query so next clause knows where to start
+    // or change to a sqlx.Rebind format
+    // here's what sqlx does: https://play.golang.org/p/vPzvYqeAcP0
   }
 
   values(): any[] {

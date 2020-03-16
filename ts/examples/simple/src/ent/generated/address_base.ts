@@ -12,6 +12,7 @@ import {
   loadEdges,
   loadRawEdgeCountX,
   loadNodesByEdge,
+  loadEdgeForID2,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";

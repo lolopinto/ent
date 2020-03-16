@@ -7,7 +7,7 @@ enum privacyResult {
   Skip = 307,
 }
 
-interface PrivacyResult {
+export interface PrivacyResult {
   result: privacyResult;
   error?: PrivacyError;
 }
