@@ -13,11 +13,13 @@ import {
   loadRawEdgeCountX,
   loadNodesByEdge,
   loadEdgeForID2,
+  loadEntsFromClause,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/event";
 import { EdgeType } from "src/ent/const";
+import * as query from "ent/query";
 import User from "src/ent/user";
 
 const tableName = "events";

@@ -190,15 +190,22 @@ func (nodeData *NodeData) GetUniqueNodes() []uniqueNodeInfo {
 	var ret []uniqueNodeInfo
 	m := make(map[string]bool)
 
-	for _, edge := range nodeData.EdgeInfo.Associations {
-		node :=	edge.NodeInfo.Node
+	processNode := func(nodeInfo nodeinfo.NodeInfo) {
+		node := nodeInfo.Node
 		if !m[node] {
 			ret = append(ret, uniqueNodeInfo{
 				Node: node,
-				PackageName: edge.NodeInfo.PackageName,
+				PackageName: nodeInfo.PackageName,
 			})
 		}
 		m[node] = true
+	}
+	for _, edge := range nodeData.EdgeInfo.Associations {
+		processNode(edge.NodeInfo)
+	}
+
+	for _,edge := range nodeData.EdgeInfo.ForeignKeys {
+		processNode(edge.NodeInfo)
 	}
 	return ret
 }

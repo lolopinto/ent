@@ -3,8 +3,8 @@ import User, { createUser, UserCreateInput } from "src/ent/user";
 import Contact, { createContact, ContactCreateInput } from "src/ent/contact";
 import DB from "ent/db";
 import { LogedOutViewer } from "ent/viewer";
-import { ID, Ent, Viewer, loadEntsFromClause } from "ent/ent";
-import * as query from "ent/query";
+import { ID, Ent, Viewer, writeEdge } from "ent/ent";
+import { NodeType, EdgeType } from "src/ent/const";
 
 const loggedOutViewer = new LogedOutViewer();
 
@@ -114,24 +114,24 @@ test("create contacts", async () => {
   expect(user).toBeInstanceOf(User);
 
   // viewer can load their own contacts
-  const loadedContacts = await loadEntsFromClause(
-    user.viewer,
-    query.Eq("user_id", userId),
-    Contact.loaderOptions(),
-  );
+  const loadedContacts = await user.loadContacts();
   verifyContacts(loadedContacts);
 
-  // ramsay can't see jon snow's contacts
-  let ramsay = await createUser(loggedOutViewer, {
-    firstName: "Ramsay",
-    lastName: "Bolton",
+  // ygritte can't see jon snow's contacts
+  let ygritte = await createUser(loggedOutViewer, {
+    firstName: "Ygritte",
+    lastName: "",
   });
-  expect(ramsay).not.toBe(null);
-
-  const contactsViaRamsay = await loadEntsFromClause(
-    new IDViewer(ramsay!.id),
-    query.Eq("user_id", userId),
-    Contact.loaderOptions(),
-  );
-  expect(contactsViaRamsay.length).toBe(0);
+  expect(ygritte).not.toBe(null);
+  await writeEdge({
+    id1: user.id,
+    id2: ygritte!.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+  });
+  // ygritte can load jon (because they are friends) but not his contacts
+  let jonFromYgritte = await User.loadX(new IDViewer(ygritte!.id), user.id);
+  const contactsViaYgritte = await jonFromYgritte.loadContacts();
+  expect(contactsViaYgritte.length).toBe(0);
 });
