@@ -8,10 +8,16 @@ import {
   createEnt,
   editEnt,
   deleteEnt,
+  AssocEdge,
+  loadEdges,
+  loadRawEdgeCountX,
+  loadNodesByEdge,
+  loadEdgeForID2,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/address";
+import { EdgeType } from "src/ent/const";
 
 const tableName = "addresses";
 
@@ -46,9 +52,7 @@ export class AddressBase {
     viewer: Viewer,
     id: ID,
   ): Promise<InstanceType<T> | null> {
-    return loadEnt(viewer, id, AddressBase.getOptions(this)) as InstanceType<
-      T
-    > | null;
+    return loadEnt(viewer, id, this.loaderOptions()) as InstanceType<T> | null;
   }
 
   static async loadX<T extends typeof AddressBase>(
@@ -56,9 +60,17 @@ export class AddressBase {
     viewer: Viewer,
     id: ID,
   ): Promise<InstanceType<T>> {
-    return loadEntX(viewer, id, AddressBase.getOptions(this)) as InstanceType<
-      T
-    >;
+    return loadEntX(viewer, id, this.loaderOptions()) as InstanceType<T>;
+  }
+
+  static loaderOptions<T extends AddressBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+  ): LoadEntOptions<T> {
+    return {
+      tableName: tableName,
+      fields: AddressBase.getFields(),
+      ent: this,
+    };
   }
 
   private static getFields(): string[] {
@@ -76,16 +88,6 @@ export class AddressBase {
 
   static getField(key: string): Field | undefined {
     return AddressBase.getSchemaFields().get(key);
-  }
-
-  private static getOptions<T extends AddressBase>(
-    arg: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): LoadEntOptions<T> {
-    return {
-      tableName: tableName,
-      fields: AddressBase.getFields(),
-      ent: arg,
-    };
   }
 }
 

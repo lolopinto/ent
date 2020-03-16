@@ -7,9 +7,14 @@ import {
   deleteEvent,
 } from "./generated/event_base";
 import { ID, Viewer } from "ent/ent";
+import { PrivacyPolicy, AlwaysAllowRule } from "ent/privacy";
 
 // we're only writing this once except with --force and packageName provided
-export default class Event extends EventBase {}
+export default class Event extends EventBase {
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysAllowRule],
+  };
+}
 
 // no actions yet so we support full create, edit, delete for now
 export { EventCreateInput, EventEditInput, deleteEvent };
