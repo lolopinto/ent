@@ -141,14 +141,18 @@ test("symmetric edge", async () => {
   };
   await writeEdge(input);
 
-  const [edges, edges2] = await Promise.all([
+  const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
     user.loadFriendsEdges(),
+    user.loadFriendsRawCountX(),
     user2.loadFriendsEdges(),
+    user2.loadFriendsRawCountX(),
   ]);
   expect(edges.length).toBe(1);
+  expect(edgesCount).toBe(1);
   verifyEdge(edges[0], input);
 
   expect(edges2.length).toBe(1);
+  expect(edges2Count).toBe(1);
   verifyEdge(edges2[0], {
     id1: user2.id,
     id2: user.id,
@@ -191,14 +195,18 @@ test("inverse edge", async () => {
   };
   await writeEdge(input);
 
-  const [edges, edges2] = await Promise.all([
+  const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
     event.loadInvitedEdges(),
+    event.loadInvitedRawCountX(),
     user.loadInvitedEventsEdges(),
+    user.loadInvitedEventsRawCountX(),
   ]);
   expect(edges.length).toBe(1);
+  expect(edgesCount).toBe(1);
   verifyEdge(edges[0], input);
 
   expect(edges2.length).toBe(1);
+  expect(edges2Count).toBe(1);
   verifyEdge(edges2[0], {
     id1: user.id,
     id1Type: NodeType.User,

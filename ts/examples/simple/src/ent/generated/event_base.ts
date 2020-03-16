@@ -10,6 +10,7 @@ import {
   deleteEnt,
   AssocEdge,
   loadEdges,
+  loadRawEdgeCountX,
   loadNodesByEdge,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
@@ -115,6 +116,10 @@ export class EventBase {
     );
   }
 
+  loadHostsRawCountX(): Promise<number> {
+    return loadRawEdgeCountX(this.id, EdgeType.EventToHosts);
+  }
+
   loadInvitedEdges(): Promise<AssocEdge[]> {
     return loadEdges(this.id, EdgeType.EventToInvited);
   }
@@ -126,6 +131,10 @@ export class EventBase {
       EdgeType.EventToInvited,
       User.loaderOptions(),
     );
+  }
+
+  loadInvitedRawCountX(): Promise<number> {
+    return loadRawEdgeCountX(this.id, EdgeType.EventToInvited);
   }
 
   loadAttendingEdges(): Promise<AssocEdge[]> {
@@ -141,6 +150,10 @@ export class EventBase {
     );
   }
 
+  loadAttendingRawCountX(): Promise<number> {
+    return loadRawEdgeCountX(this.id, EdgeType.EventToAttending);
+  }
+
   loadDeclinedEdges(): Promise<AssocEdge[]> {
     return loadEdges(this.id, EdgeType.EventToDeclined);
   }
@@ -154,6 +167,10 @@ export class EventBase {
     );
   }
 
+  loadDeclinedRawCountX(): Promise<number> {
+    return loadRawEdgeCountX(this.id, EdgeType.EventToDeclined);
+  }
+
   loadMaybeEdges(): Promise<AssocEdge[]> {
     return loadEdges(this.id, EdgeType.EventToMaybe);
   }
@@ -165,6 +182,10 @@ export class EventBase {
       EdgeType.EventToMaybe,
       User.loaderOptions(),
     );
+  }
+
+  loadMaybeRawCountX(): Promise<number> {
+    return loadRawEdgeCountX(this.id, EdgeType.EventToMaybe);
   }
 }
 

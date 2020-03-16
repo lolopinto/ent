@@ -10,6 +10,7 @@ import {
   deleteEnt,
   AssocEdge,
   loadEdges,
+  loadRawEdgeCountX,
   loadNodesByEdge,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";

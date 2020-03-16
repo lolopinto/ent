@@ -42,16 +42,18 @@ interface DataOptions {
   tableName: string;
 }
 
-// For loading data from database
-interface LoadRowOptions extends DataOptions {
+interface SelectDataOptions extends DataOptions {
   // list of fields to read
   fields: string[];
-  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
-interface LoadRowsOptions extends DataOptions {
-  // list of fields to read
-  fields: string[];
+// For loading data from database
+interface LoadRowOptions extends SelectDataOptions {
+  clause: query.Clause;
+  //  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
+}
+
+interface LoadRowsOptions extends SelectDataOptions {
   clause: query.Clause;
 }
 
@@ -65,9 +67,10 @@ interface LoadableEntOptions<T extends Ent> extends DataOptions {
 }
 
 // information needed to load an ent from the databse
+// always id for now...
 export interface LoadEntOptions<T extends Ent>
   extends LoadableEntOptions<T>,
-    LoadRowOptions {}
+    SelectDataOptions {}
 
 // information needed to edit an ent
 export interface EditEntOptions<T extends Ent>
@@ -79,7 +82,11 @@ export async function loadEnt<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  const row = await loadRow(id, options);
+  const rowOptions: LoadRowOptions = {
+    ...options,
+    clause: query.Eq("id", id),
+  };
+  const row = await loadRow(rowOptions);
   if (!row) {
     return null;
   }
@@ -92,7 +99,11 @@ export async function loadEntX<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T> {
-  const row = await loadRowX(viewer, id, options);
+  const rowOptions: LoadRowOptions = {
+    ...options,
+    clause: query.Eq("id", id),
+  };
+  const row = await loadRowX(rowOptions);
   const ent = new options.ent(viewer, id, row);
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
@@ -143,30 +154,30 @@ function logQuery(query: string) {
   // console.log(query);
 }
 
-// TODO change this and loadRow to not return an ent or do anything with ent
-export async function loadRowX(
-  viewer: Viewer,
-  id: ID,
-  options: LoadRowOptions,
-): Promise<{}> {
-  const result = await loadRow(id, options);
+export async function loadRowX(options: LoadRowOptions): Promise<{}> {
+  const result = await loadRow(options);
   if (result == null) {
-    throw new Error(`couldn't find row for id ${id}`);
+    // todo make this better
+    // make clause have a description
+    throw new Error(
+      `couldn't find row for query ${options.clause.clause(
+        1,
+      )} with values ${options.clause.values()}`,
+    );
   }
   return result;
 }
 
-export async function loadRow(
-  id: ID,
-  options: LoadRowOptions,
-): Promise<{} | null> {
+export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
   const pool = DB.getInstance().getPool();
   const fields = options.fields.join(", ");
 
-  const pkey = options.pkey || "id";
-  const query = `SELECT ${fields} FROM ${options.tableName} WHERE ${pkey} = $1`;
+  // always start at 1
+  const whereClause = options.clause.clause(1);
+  const values = options.clause.values();
+  const query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
   logQuery(query);
-  const res = await pool.query(query, [id]);
+  const res = await pool.query(query, values);
 
   if (res.rowCount != 1) {
     if (res.rowCount > 1) {
@@ -496,7 +507,7 @@ export async function writeEdge(edge: AssocEdgeInput): Promise<null> {
 }
 
 async function loadEdgeData(edgeType: string): Promise<AssocEdgeData | null> {
-  const row = await loadRow(edgeType, {
+  const row = await loadRow({
     tableName: "assoc_edge_config",
     fields: [
       "edge_type",
@@ -505,7 +516,7 @@ async function loadEdgeData(edgeType: string): Promise<AssocEdgeData | null> {
       "inverse_edge_type",
       "edge_table",
     ],
-    pkey: "edge_type",
+    clause: query.Eq("edge_type", edgeType),
   });
   if (!row) {
     return null;
@@ -532,6 +543,23 @@ export async function loadEdges(
     result.push(new AssocEdge(row));
   }
   return result;
+}
+
+export async function loadRawEdgeCountX(
+  id1: ID,
+  edgeType: string,
+): Promise<number> {
+  const edgeData = await loadEdgeData(edgeType);
+  if (!edgeData) {
+    throw new Error(`error loading edge data for ${edgeType}`);
+  }
+
+  const row = await loadRowX({
+    tableName: edgeData.edgeTable,
+    fields: ["count(1)"],
+    clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
+  });
+  return parseInt(row["count"], 10);
 }
 
 export async function loadNodesByEdge<T extends Ent>(
