@@ -13,13 +13,16 @@ import {
   loadRawEdgeCountX,
   loadNodesByEdge,
   loadEdgeForID2,
+  loadEntsFromClause,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/user";
 import { EdgeType } from "src/ent/const";
+import * as query from "ent/query";
 import Event from "src/ent/event";
 import User from "src/ent/user";
+import Contact from "src/ent/contact";
 
 const tableName = "users";
 
@@ -214,6 +217,14 @@ export class UserBase {
 
   loadMaybeEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
     return loadEdgeForID2(this.id, EdgeType.UserToMaybeEvents, id2);
+  }
+
+  loadContacts(): Promise<Contact[]> {
+    return loadEntsFromClause(
+      this.viewer,
+      query.Eq("user_id", this.id),
+      Contact.loaderOptions(),
+    );
   }
 }
 

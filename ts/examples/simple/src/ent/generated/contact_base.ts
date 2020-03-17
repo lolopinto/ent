@@ -17,19 +17,21 @@ import {
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
-import schema from "src/schema/address";
+import schema from "src/schema/contact";
 import { EdgeType } from "src/ent/const";
 import * as query from "ent/query";
+import User from "src/ent/user";
 
-const tableName = "addresses";
+const tableName = "contacts";
 
-export class AddressBase {
+export class ContactBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly streetName: string;
-  readonly city: string;
-  readonly zip: string;
+  readonly emailAddress: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly userID: string;
 
   constructor(public viewer: Viewer, id: ID, data: {}) {
     this.id = id;
@@ -37,9 +39,10 @@ export class AddressBase {
     this.id = data["id"];
     this.createdAt = data["created_at"];
     this.updatedAt = data["updated_at"];
-    this.streetName = data["street_name"];
-    this.city = data["city"];
-    this.zip = data["zip"];
+    this.emailAddress = data["email_address"];
+    this.firstName = data["first_name"];
+    this.lastName = data["last_name"];
+    this.userID = data["user_id"];
   }
 
   // by default, we always deny and it's up to the ent
@@ -49,7 +52,7 @@ export class AddressBase {
     rules: [AlwaysDenyRule],
   };
 
-  static async load<T extends typeof AddressBase>(
+  static async load<T extends typeof ContactBase>(
     this: T,
     viewer: Viewer,
     id: ID,
@@ -57,7 +60,7 @@ export class AddressBase {
     return loadEnt(viewer, id, this.loaderOptions()) as InstanceType<T> | null;
   }
 
-  static async loadX<T extends typeof AddressBase>(
+  static async loadX<T extends typeof ContactBase>(
     this: T,
     viewer: Viewer,
     id: ID,
@@ -65,67 +68,86 @@ export class AddressBase {
     return loadEntX(viewer, id, this.loaderOptions()) as InstanceType<T>;
   }
 
-  static loaderOptions<T extends AddressBase>(
+  static loaderOptions<T extends ContactBase>(
     this: new (viewer: Viewer, id: ID, data: {}) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: AddressBase.getFields(),
+      fields: ContactBase.getFields(),
       ent: this,
     };
   }
 
   private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "street_name", "city", "zip"];
+    return [
+      "id",
+      "created_at",
+      "updated_at",
+      "email_address",
+      "first_name",
+      "last_name",
+      "user_id",
+    ];
   }
 
   private static schemaFields: Map<string, Field>;
 
   private static getSchemaFields(): Map<string, Field> {
-    if (AddressBase.schemaFields != null) {
-      return AddressBase.schemaFields;
+    if (ContactBase.schemaFields != null) {
+      return ContactBase.schemaFields;
     }
-    return (AddressBase.schemaFields = getFields(schema));
+    return (ContactBase.schemaFields = getFields(schema));
   }
 
   static getField(key: string): Field | undefined {
-    return AddressBase.getSchemaFields().get(key);
+    return ContactBase.getSchemaFields().get(key);
+  }
+
+  loadUser(): Promise<User | null> {
+    return loadEnt(this.viewer, this.userID, User.loaderOptions());
+  }
+
+  loadUserX(): Promise<User> {
+    return loadEntX(this.viewer, this.userID, User.loaderOptions());
   }
 }
 
 // no actions yet so we support full create, edit, delete for now
-export interface AddressCreateInput {
-  streetName: string;
-  city: string;
-  zip: string;
+export interface ContactCreateInput {
+  emailAddress: string;
+  firstName: string;
+  lastName: string;
+  userID: string;
 }
 
-export interface AddressEditInput {
-  streetName?: string;
-  city?: string;
-  zip?: string;
+export interface ContactEditInput {
+  emailAddress?: string;
+  firstName?: string;
+  lastName?: string;
+  userID?: string;
 }
 
 function defaultValue(key: string, property: string): any {
-  let fn = AddressBase.getField(key)?.[property];
+  let fn = ContactBase.getField(key)?.[property];
   if (!fn) {
     return null;
   }
   return fn();
 }
 
-export async function createAddressFrom<T extends AddressBase>(
+export async function createContactFrom<T extends ContactBase>(
   viewer: Viewer,
-  input: AddressCreateInput,
+  input: ContactCreateInput,
   arg: new (viewer: Viewer, id: ID, data: {}) => T,
 ): Promise<T | null> {
   let fields = {
     id: defaultValue("ID", "defaultValueOnCreate"),
     created_at: defaultValue("createdAt", "defaultValueOnCreate"),
     updated_at: defaultValue("updatedAt", "defaultValueOnCreate"),
-    street_name: input.streetName,
-    city: input.city,
-    zip: input.zip,
+    email_address: input.emailAddress,
+    first_name: input.firstName,
+    last_name: input.lastName,
+    user_id: input.userID,
   };
 
   return await createEnt(viewer, {
@@ -135,10 +157,10 @@ export async function createAddressFrom<T extends AddressBase>(
   });
 }
 
-export async function editAddressFrom<T extends AddressBase>(
+export async function editContactFrom<T extends ContactBase>(
   viewer: Viewer,
   id: ID,
-  input: AddressEditInput,
+  input: ContactEditInput,
   arg: new (viewer: Viewer, id: ID, data: {}) => T,
 ): Promise<T | null> {
   const setField = function(key: string, value: any) {
@@ -150,9 +172,10 @@ export async function editAddressFrom<T extends AddressBase>(
   let fields = {
     updated_at: defaultValue("updatedAt", "defaultValueOnEdit"),
   };
-  setField("street_name", input.streetName);
-  setField("city", input.city);
-  setField("zip", input.zip);
+  setField("email_address", input.emailAddress);
+  setField("first_name", input.firstName);
+  setField("last_name", input.lastName);
+  setField("user_id", input.userID);
 
   return await editEnt(viewer, id, {
     tableName: tableName,
@@ -161,7 +184,7 @@ export async function editAddressFrom<T extends AddressBase>(
   });
 }
 
-export async function deleteAddress(viewer: Viewer, id: ID): Promise<null> {
+export async function deleteContact(viewer: Viewer, id: ID): Promise<null> {
   return await deleteEnt(viewer, id, {
     tableName: tableName,
   });
