@@ -1,4 +1,4 @@
-import { Viewer, Ent, ID } from "./ent";
+import { Viewer, Ent, ID, loadEdgeForID2 } from "./ent";
 
 enum privacyResult {
   // using http status codes similar to golang for the lols
@@ -89,6 +89,15 @@ export const DenyIfLoggedOutRule = {
   },
 };
 
+export const AllowIfHasIdentity = {
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    if (v.viewerID === null || v.viewerID == undefined) {
+      return Skip();
+    }
+    return Allow();
+  },
+};
+
 export const AllowIfViewerRule = {
   async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
     if (v.viewerID == ent.id) {
@@ -119,6 +128,85 @@ export class AllowIfViewerIsRule implements PrivacyPolicyRule {
       return Allow();
     }
     return Skip();
+  }
+}
+
+async function allowIfEdgeExistsRule(
+  id1: ID | null,
+  id2: ID | null,
+  edgeType: string,
+): Promise<PrivacyResult> {
+  if (!id1 || !id2) {
+    return Skip();
+  }
+  const edge = await loadEdgeForID2(id1, edgeType, id2);
+  if (edge) {
+    return Allow();
+  }
+  return Skip();
+}
+
+export class AllowIfEdgeExistsRule implements PrivacyPolicyRule {
+  constructor(private id1: ID, private id2: ID, private edgeType: string) {}
+
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    return allowIfEdgeExistsRule(this.id1, this.id2, this.edgeType);
+  }
+}
+
+export class AllowIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
+  constructor(private edgeType: string) {}
+
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    return allowIfEdgeExistsRule(v.viewerID, ent.id, this.edgeType);
+  }
+}
+
+export class AllowIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
+  constructor(private edgeType: string) {}
+
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    return allowIfEdgeExistsRule(ent.id, v.viewerID, this.edgeType);
+  }
+}
+
+async function denyIfEdgeExistsRule(
+  id1: ID | null,
+  id2: ID | null,
+  edgeType: string,
+): Promise<PrivacyResult> {
+  // edge doesn't exist if no viewer
+  if (!id1 || !id2) {
+    return Skip();
+  }
+  const edge = await loadEdgeForID2(id1, edgeType, id2);
+  if (edge) {
+    return Deny();
+  }
+  return Skip();
+}
+
+export class DenyIfEdgeExistsRule implements PrivacyPolicyRule {
+  constructor(private id1: ID, private id2: ID, private edgeType: string) {}
+
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    return denyIfEdgeExistsRule(this.id1, this.id2, this.edgeType);
+  }
+}
+
+export class DenyIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
+  constructor(private edgeType: string) {}
+
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    return denyIfEdgeExistsRule(v.viewerID, ent.id, this.edgeType);
+  }
+}
+
+export class DenyIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
+  constructor(private edgeType: string) {}
+
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    return denyIfEdgeExistsRule(ent.id, v.viewerID, this.edgeType);
   }
 }
 

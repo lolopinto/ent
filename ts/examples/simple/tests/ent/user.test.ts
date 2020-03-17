@@ -140,12 +140,18 @@ describe("privacy", () => {
 });
 
 test("symmetric edge", async () => {
-  let jon = await create({ firstName: "Jon", lastName: "Snow" });
+  let jon = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+  });
   let dany = await create({
     firstName: "Daenerys",
     lastName: "Targaryen",
   });
-  let sam = await create({ firstName: "Samwell", lastName: "Tarly" });
+  let sam = await create({
+    firstName: "Samwell",
+    lastName: "Tarly",
+  });
 
   const danyInput = {
     id1: jon.id,
@@ -193,12 +199,11 @@ test("symmetric edge", async () => {
     id2Type: NodeType.User,
   });
 
+  // logged out viewer here (because no privacy for creation yet)
   // even though can load raw edges above. can't load the nodes that you can't see privacy of
-  const v = new IDViewer(jon.id);
-  const loadedUser = await User.load(v, dany.id);
+  const loadedUser = await User.load(jon.viewer, dany.id);
   expect(loadedUser).toBe(null);
 
-  // logged out user so other users aren't visible
   const friends = await jon.loadFriends();
   expect(friends.length).toBe(0);
 });
