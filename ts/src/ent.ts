@@ -293,7 +293,12 @@ interface DataOperation {
   performWrite(queryer: Queryer): Promise<void>;
 }
 
-async function executeOperations(operations: DataOperation[]): Promise<void> {
+// this sould get a flag of whether it should throw or not and then do the right thing
+// each operation shouldn't throw or do anything with exceptions
+async function executeOperations(
+  operations: DataOperation[],
+  throwErr: boolean = false,
+): Promise<void> {
   if (operations.length == 1) {
     const pool = DB.getInstance().getPool();
 
@@ -308,8 +313,13 @@ async function executeOperations(operations: DataOperation[]): Promise<void> {
     }
     await client.query("COMMIT");
   } catch (e) {
-    console.error(e);
     await client.query("ROLLBACK");
+    // rethrow the exception to be caught
+    if (throwErr) {
+      throw e;
+    } else {
+      console.error(e);
+    }
   } finally {
     client.release();
   }
@@ -339,14 +349,10 @@ class CreateRowOperation implements DataOperation {
 
     logQuery(query);
 
-    try {
-      const res = await queryer.query(query, values);
+    const res = await queryer.query(query, values);
 
-      if (res.rowCount == 1) {
-        this.row = res.rows[0];
-      }
-    } catch (e) {
-      console.error(e);
+    if (res.rowCount == 1) {
+      this.row = res.rows[0];
     }
   }
 }
@@ -502,8 +508,19 @@ export class AssocEdgeData {
   }
 }
 
-// TODO will be handled later as part of a big builder
-export async function writeEdge(edge: AssocEdgeInput): Promise<null> {
+// writeEdge doesn't throw
+export async function writeEdge(edge: AssocEdgeInput): Promise<void> {
+  const operations = await edgeOperations(edge);
+  await executeOperations(operations);
+}
+
+// writeEdgeX does
+export async function writeEdgeX(edge: AssocEdgeInput): Promise<void> {
+  const operations = await edgeOperations(edge);
+  await executeOperations(operations, true);
+}
+
+async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
   const edgeData = await loadEdgeData(edge.edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edge.edgeType}`);
@@ -544,8 +561,7 @@ export async function writeEdge(edge: AssocEdgeInput): Promise<null> {
     );
   }
 
-  await executeOperations(operations);
-  return null;
+  return operations;
 }
 
 async function loadEdgeData(edgeType: string): Promise<AssocEdgeData | null> {

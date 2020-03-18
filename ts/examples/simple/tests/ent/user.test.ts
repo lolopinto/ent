@@ -10,10 +10,9 @@ import {
   ID,
   Ent,
   Viewer,
-  writeEdge,
   AssocEdge,
   AssocEdgeInput,
-  loadEnts,
+  writeEdgeX,
 } from "ent/ent";
 import DB from "ent/db";
 import { LogedOutViewer } from "ent/viewer";
@@ -187,7 +186,7 @@ test("symmetric edge", async () => {
     id1Type: NodeType.User,
     id2Type: NodeType.User,
   };
-  await writeEdge(danyInput);
+  await writeEdgeX(danyInput);
   let t = new Date();
   t.setTime(t.getTime() + 86400);
   const samInput = {
@@ -198,7 +197,7 @@ test("symmetric edge", async () => {
     id2Type: NodeType.User,
     time: t,
   };
-  await writeEdge(samInput);
+  await writeEdgeX(samInput);
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
     jon.loadFriendsEdges(),
@@ -259,7 +258,7 @@ test("inverse edge", async () => {
     id2Type: NodeType.User,
     edgeType: EdgeType.EventToInvited,
   };
-  await writeEdge(input);
+  await writeEdgeX(input);
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
     event.loadInvitedEdges(),
@@ -316,7 +315,7 @@ test("one-way edge", async () => {
     id2Type: NodeType.Event,
     edgeType: EdgeType.UserToCreatedEvents,
   };
-  await writeEdge(input);
+  await writeEdgeX(input);
 
   const edges = await user.loadCreatedEventsEdges();
   expect(edges.length).toBe(1);
@@ -422,7 +421,7 @@ test("loadUniqueEdge|Node", async () => {
   expect(sansa).toBeInstanceOf(User);
 
   // make them friends
-  await writeEdge({
+  await writeEdgeX({
     id1: jon.id,
     id2: sansa.id,
     edgeType: EdgeType.UserToFriends,
@@ -456,7 +455,14 @@ test("loadUniqueEdge|Node", async () => {
     id2Type: NodeType.Contact,
     edgeType: EdgeType.UserToSelfContact,
   };
-  writeEdge(selfContactInput);
+  await writeEdgeX(selfContactInput);
+  // try and write unique edge again
+  try {
+    await writeEdgeX(selfContactInput);
+    fail("should have throw an exception trying to write duplicate edge");
+  } catch (e) {
+    expect(e.message).toMatch(/duplicate key value violates unique constraint/);
+  }
 
   const v = new IDViewer(jon.id);
   const jonFromHimself = await User.loadX(v, jon.id);
