@@ -1,26 +1,13 @@
-import { DBType, Node } from "ent/schema";
+import Schema, { Field, Edge, BaseEntSchema } from "ent/schema";
+import { StringType } from "ent/field";
 
-// TODO this is too complicated to be implicit.
-// create a simpler one that's implicit
-// implicit schema
-const User = {
-  tableName: "users",
-  fields: [
-    {
-      name: "FirstName",
-      type: {
-        dbType: DBType.String,
-      },
-    },
-    {
-      name: "LastName",
-      type: {
-        dbType: DBType.String,
-      },
-    },
-  ],
-  patterns: [Node],
-  edges: [
+export default class User extends BaseEntSchema implements Schema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+  ];
+
+  edges: Edge[] = [
     {
       name: "createdEvents",
       schemaName: "Event",
@@ -30,7 +17,5 @@ const User = {
       schemaName: "User",
       symmetric: true,
     },
-  ],
-};
-
-export default User;
+  ];
+}

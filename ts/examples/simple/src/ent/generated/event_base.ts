@@ -4,6 +4,7 @@ import {
   ID,
   Viewer,
   loadEntX,
+  loadEnts,
   LoadEntOptions,
   createEnt,
   editEnt,
@@ -54,20 +55,28 @@ export class EventBase {
     rules: [AlwaysDenyRule],
   };
 
-  static async load<T extends typeof EventBase>(
-    this: T,
+  static async load<T extends EventBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
-  ): Promise<InstanceType<T> | null> {
-    return loadEnt(viewer, id, this.loaderOptions()) as InstanceType<T> | null;
+  ): Promise<T | null> {
+    return loadEnt(viewer, id, EventBase.loaderOptions.apply(this));
   }
 
-  static async loadX<T extends typeof EventBase>(
-    this: T,
+  static async loadX<T extends EventBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
-  ): Promise<InstanceType<T>> {
-    return loadEntX(viewer, id, this.loaderOptions()) as InstanceType<T>;
+  ): Promise<T> {
+    return loadEntX(viewer, id, EventBase.loaderOptions.apply(this));
+  }
+
+  static async loadMany<T extends EventBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    viewer: Viewer,
+    ...ids: ID[]
+  ): Promise<T[]> {
+    return loadEnts(viewer, EventBase.loaderOptions.apply(this), ...ids);
   }
 
   static loaderOptions<T extends EventBase>(
