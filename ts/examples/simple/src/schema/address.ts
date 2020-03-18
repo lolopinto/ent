@@ -1,13 +1,25 @@
-import Schema, { Field, BaseEntSchema } from "ent/schema";
+import { DBType, Node } from "ent/schema";
 import { StringType } from "ent/field";
 
-/// explicit schema
-export default class Address extends BaseEntSchema implements Schema {
-  tableName: string = "addresses";
-
-  fields: Field[] = [
-    StringType({ name: "street_name", maxLen: 100 }),
-    StringType({ name: "city" }),
+// implicit schema
+const Address = {
+  tableName: "addresses",
+  fields: [
+    {
+      name: "street_name",
+      type: {
+        dbType: DBType.String,
+      },
+    },
+    {
+      name: "city",
+      type: {
+        dbType: DBType.String,
+      },
+    },
     StringType({ name: "zip" }).match(/^\d{5}(-\d{4})?$/),
-  ];
-}
+  ],
+  patterns: [Node],
+};
+
+export default Address;
