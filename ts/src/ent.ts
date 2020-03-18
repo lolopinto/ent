@@ -51,7 +51,7 @@ interface SelectDataOptions extends DataOptions {
 }
 
 // For loading data from database
-interface LoadRowOptions extends SelectDataOptions {
+export interface LoadRowOptions extends SelectDataOptions {
   clause: query.Clause;
   //  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
 }
@@ -86,15 +86,23 @@ export async function loadEnt<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
+  return loadEntFromClause(viewer, options, query.Eq("id", id));
+}
+
+export async function loadEntFromClause<T extends Ent>(
+  viewer: Viewer,
+  options: LoadEntOptions<T>,
+  clause: query.Clause,
+): Promise<T | null> {
   const rowOptions: LoadRowOptions = {
     ...options,
-    clause: query.Eq("id", id),
+    clause: clause,
   };
   const row = await loadRow(rowOptions);
   if (!row) {
     return null;
   }
-  const ent = new options.ent(viewer, id, row);
+  const ent = new options.ent(viewer, row["id"], row);
   return await applyPrivacyPolicyForEnt(viewer, ent);
 }
 
@@ -103,12 +111,20 @@ export async function loadEntX<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T> {
+  return loadEntXFromClause(viewer, options, query.Eq("id", id));
+}
+
+export async function loadEntXFromClause<T extends Ent>(
+  viewer: Viewer,
+  options: LoadEntOptions<T>,
+  clause: query.Clause,
+): Promise<T> {
   const rowOptions: LoadRowOptions = {
     ...options,
-    clause: query.Eq("id", id),
+    clause: clause,
   };
   const row = await loadRowX(rowOptions);
-  const ent = new options.ent(viewer, id, row);
+  const ent = new options.ent(viewer, row["id"], row);
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 

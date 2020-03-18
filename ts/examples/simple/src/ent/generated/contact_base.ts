@@ -15,6 +15,9 @@ import {
   loadNodesByEdge,
   loadEdgeForID2,
   loadEntsFromClause,
+  loadEntFromClause,
+  loadEntXFromClause,
+  loadRow,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";

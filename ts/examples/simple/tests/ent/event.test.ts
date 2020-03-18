@@ -3,6 +3,7 @@ import Event, { createEvent, editEvent, deleteEvent } from "src/ent/event";
 import { ID, Ent, Viewer } from "ent/ent";
 import { LogedOutViewer } from "ent/viewer";
 import DB from "ent/db";
+import { randomEmail } from "src/util/random";
 
 const loggedOutViewer = new LogedOutViewer();
 
@@ -25,6 +26,7 @@ async function create(startTime: Date): Promise<Event> {
   let user = await createUser(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
+    emailAddress: randomEmail(),
   });
   if (!user) {
     fail("could not create user");

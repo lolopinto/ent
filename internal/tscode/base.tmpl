@@ -17,6 +17,9 @@ import {
   loadNodesByEdge,
   loadEdgeForID2,
   loadEntsFromClause,
+  loadEntFromClause,
+  loadEntXFromClause,
+  loadRow,
 } from "ent/ent";
 import {AlwaysDenyRule, PrivacyPolicy} from "ent/privacy";
 import {Field, getFields} from "ent/schema";
@@ -71,12 +74,53 @@ export class {{$baseClass}} {
   }
 
   static async loadMany<T extends {{$baseClass}}>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: {{$thisType}},
     viewer: Viewer,
     ...ids: ID[],
   ): Promise<T[]> {
     return loadEnts(viewer, {{$baseClass}}.loaderOptions.apply(this), ...ids);
   }
+
+  {{ range $field := .FieldInfo.Fields -}}
+    {{ if or $field.Index $field.Unique -}}
+      static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
+        this: {{$thisType}},
+        viewer: Viewer,
+        {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
+      ): Promise<T | null> {
+        return loadEntFromClause(
+          viewer, 
+          {{$baseClass}}.loaderOptions.apply(this), 
+          query.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
+        );
+      }
+
+      static async loadFrom{{$field.CamelCaseName}}X<T extends {{$baseClass}}>(
+        this: {{$thisType}},
+        viewer: Viewer,
+        {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
+      ): Promise<T> {
+        return loadEntXFromClause(
+          viewer, 
+          {{$baseClass}}.loaderOptions.apply(this), 
+          query.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
+        );
+      }
+
+      static async loadIDFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
+        this: {{$thisType}},
+        {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
+      ): Promise<ID | null> {
+        const row = await loadRow({
+          ...{{$baseClass}}.loaderOptions.apply(this),
+          clause: query.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
+        }); 
+        if (!row) { return null;}
+        return row['id'];
+      }
+
+    {{end -}}
+  {{end -}}
 
   static loaderOptions<T extends {{$baseClass}}>(
     this: new (viewer: Viewer, id: ID, data: {}) => T,
