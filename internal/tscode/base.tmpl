@@ -31,6 +31,7 @@ const tableName = "{{.TableName}}";
 
 {{$baseClass := printf "%sBase" .Node -}}
 {{$constructor := "arg: new (viewer: Viewer, id: ID, data: {}) => T"}}
+{{$thisType := "new (viewer: Viewer, id: ID, data: {}) => T"}}
 
 export class {{$baseClass}} {
 
@@ -53,20 +54,20 @@ export class {{$baseClass}} {
     rules: [AlwaysDenyRule],
   };
 
-  static async load<T extends typeof {{$baseClass}}>(
-    this: T,
+  static async load<T extends {{$baseClass}}>(
+    this: {{$thisType}},
     viewer: Viewer, 
     id: ID,
-  ): Promise<InstanceType<T> | null>{
-    return loadEnt(viewer, id, this.loaderOptions()) as InstanceType<T> | null;
+  ): Promise<T | null>{
+    return loadEnt(viewer, id, {{$baseClass}}.loaderOptions.apply(this));
   }
 
-  static async loadX<T extends typeof {{$baseClass}}>(
-    this: T,
+  static async loadX<T extends {{$baseClass}}>(
+    this: {{$thisType}},
     viewer: Viewer, 
     id: ID,
-  ): Promise<InstanceType<T>> {
-    return loadEntX(viewer, id, this.loaderOptions()) as InstanceType<T>;
+  ): Promise<T> {
+    return loadEntX(viewer, id, {{$baseClass}}.loaderOptions.apply(this));
   }
 
   static async loadMany<T extends {{$baseClass}}>(

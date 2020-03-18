@@ -51,20 +51,20 @@ export class UserBase {
     rules: [AlwaysDenyRule],
   };
 
-  static async load<T extends typeof UserBase>(
-    this: T,
+  static async load<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
-  ): Promise<InstanceType<T> | null> {
-    return loadEnt(viewer, id, this.loaderOptions()) as InstanceType<T> | null;
+  ): Promise<T | null> {
+    return loadEnt(viewer, id, UserBase.loaderOptions.apply(this));
   }
 
-  static async loadX<T extends typeof UserBase>(
-    this: T,
+  static async loadX<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
-  ): Promise<InstanceType<T>> {
-    return loadEntX(viewer, id, this.loaderOptions()) as InstanceType<T>;
+  ): Promise<T> {
+    return loadEntX(viewer, id, UserBase.loaderOptions.apply(this));
   }
 
   static async loadMany<T extends UserBase>(
