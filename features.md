@@ -41,18 +41,18 @@
 
 # Schema
 
-| Functionality           |         Go         |     Typescript     |
-| ----------------------- | :----------------: | :----------------: |
-| Fields                  | :heavy_check_mark: | :heavy_check_mark: |
-| Custom Table name       | :heavy_check_mark: | :heavy_check_mark: |
-| Default Table name      |                    | :heavy_check_mark: |
-| edges                   | :heavy_check_mark: | :heavy_check_mark: |
-| actions                 | :heavy_check_mark: |                    |
-| composite indices       |                    |                    |
-| composite unique fields |                    |                    |
-| composite primary keys  |                    |                    |
-| patterns                |                    |                    |
-| hide from graphql       |                    |                    |
+| Functionality            |         Go         |     Typescript     |
+| ------------------------ | :----------------: | :----------------: |
+| [Fields](#fields-schema) | :heavy_check_mark: | :heavy_check_mark: |
+| Custom Table name        | :heavy_check_mark: | :heavy_check_mark: |
+| Default Table name       |                    | :heavy_check_mark: |
+| [Edges](#edges)          | :heavy_check_mark: | :heavy_check_mark: |
+| actions                  | :heavy_check_mark: |                    |
+| composite indices        |                    |                    |
+| composite unique fields  |                    |                    |
+| composite primary keys   |                    |                    |
+| patterns                 |                    |                    |
+| hide from graphql        |                    |                    |
 
 # Fields (schema)
 
@@ -120,7 +120,7 @@
 
 | Functionality     |         Go         |     Typescript     |
 | ----------------- | :----------------: | :----------------: |
-| unique            | :heavy_check_mark: |                    |
+| unique            | :heavy_check_mark: | :heavy_check_mark: |
 | symmetric         | :heavy_check_mark: | :heavy_check_mark: |
 | Inverse           | :heavy_check_mark: | :heavy_check_mark: |
 | Counts            |                    | :heavy_check_mark: |
