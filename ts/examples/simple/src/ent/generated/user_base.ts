@@ -15,6 +15,9 @@ import {
   loadNodesByEdge,
   loadEdgeForID2,
   loadEntsFromClause,
+  loadEntFromClause,
+  loadEntXFromClause,
+  loadRow,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
@@ -75,6 +78,44 @@ export class UserBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, UserBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadFromEmailAddress<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    viewer: Viewer,
+    emailAddress: string,
+  ): Promise<T | null> {
+    return loadEntFromClause(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      query.Eq("email_address", emailAddress),
+    );
+  }
+
+  static async loadFromEmailAddressX<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    viewer: Viewer,
+    emailAddress: string,
+  ): Promise<T> {
+    return loadEntXFromClause(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      query.Eq("email_address", emailAddress),
+    );
+  }
+
+  static async loadIDFromEmailAddress<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    emailAddress: string,
+  ): Promise<ID | null> {
+    const row = await loadRow({
+      ...UserBase.loaderOptions.apply(this),
+      clause: query.Eq("email_address", emailAddress),
+    });
+    if (!row) {
+      return null;
+    }
+    return row["id"];
   }
 
   static loaderOptions<T extends UserBase>(

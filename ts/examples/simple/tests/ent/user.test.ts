@@ -359,6 +359,43 @@ test("loadMultiUsers", async () => {
   }
 });
 
+test("loadFromEmailAddress", async () => {
+  const emailAddress = randomEmail();
+
+  let jon = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: emailAddress,
+  });
+
+  const loggedOutJon = await User.loadFromEmailAddress(
+    loggedOutViewer,
+    emailAddress,
+  );
+  expect(loggedOutJon).toBe(null);
+
+  const jonFromHimself = await User.loadFromEmailAddress(
+    new IDViewer(jon.id),
+    emailAddress,
+  );
+  expect(jonFromHimself).not.toBe(null);
+  expect(jonFromHimself?.id).toBe(jon.id);
+  expect(jonFromHimself).toBeInstanceOf(User);
+
+  const mustJon = await User.loadFromEmailAddressX(
+    new IDViewer(jon.id),
+    emailAddress,
+  );
+  expect(mustJon.id).toBe(jon.id);
+  expect(mustJon).toBeInstanceOf(User);
+
+  const rawID = await User.loadIDFromEmailAddress(emailAddress);
+  expect(rawID).toBe(jon.id);
+
+  const rando = await User.loadIDFromEmailAddress(randomEmail());
+  expect(rando).toBe(null);
+});
+
 function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
   expect(edge.id1).toBe(expectedEdge.id1);
   expect(edge.id2).toBe(expectedEdge.id2);

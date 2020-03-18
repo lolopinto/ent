@@ -345,8 +345,26 @@ func (f *Field) TsFieldName() string {
 	return strcase.ToLowerCamel(f.FieldName)
 }
 
+func (f *Field) CamelCaseName() string {
+	return strcase.ToCamel(f.FieldName)
+}
+
 func (f *Field) TsType() string {
 	tsType, ok := f.fieldType.(enttype.TSType)
+	if !ok {
+		panic("cannot get typescript type from invalid type")
+	}
+	return tsType.GetTSType()
+}
+
+func (f *Field) GetNotNullableTsType() string {
+	var baseType enttype.Type
+	baseType = f.fieldType
+	nonNullableType, ok := f.fieldType.(enttype.NonNullableType)
+	if ok {
+		baseType = nonNullableType.GetNonNullableType()
+	}
+	tsType, ok := baseType.(enttype.TSType)
 	if !ok {
 		panic("cannot get typescript type from invalid type")
 	}
