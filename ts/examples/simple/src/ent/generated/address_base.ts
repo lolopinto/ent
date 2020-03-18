@@ -4,6 +4,7 @@ import {
   ID,
   Viewer,
   loadEntX,
+  loadEnts,
   LoadEntOptions,
   createEnt,
   editEnt,
@@ -49,20 +50,28 @@ export class AddressBase {
     rules: [AlwaysDenyRule],
   };
 
-  static async load<T extends typeof AddressBase>(
-    this: T,
+  static async load<T extends AddressBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
-  ): Promise<InstanceType<T> | null> {
-    return loadEnt(viewer, id, this.loaderOptions()) as InstanceType<T> | null;
+  ): Promise<T | null> {
+    return loadEnt(viewer, id, AddressBase.loaderOptions.apply(this));
   }
 
-  static async loadX<T extends typeof AddressBase>(
-    this: T,
+  static async loadX<T extends AddressBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
-  ): Promise<InstanceType<T>> {
-    return loadEntX(viewer, id, this.loaderOptions()) as InstanceType<T>;
+  ): Promise<T> {
+    return loadEntX(viewer, id, AddressBase.loaderOptions.apply(this));
+  }
+
+  static async loadMany<T extends AddressBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    viewer: Viewer,
+    ...ids: ID[]
+  ): Promise<T[]> {
+    return loadEnts(viewer, AddressBase.loaderOptions.apply(this), ...ids);
   }
 
   static loaderOptions<T extends AddressBase>(
