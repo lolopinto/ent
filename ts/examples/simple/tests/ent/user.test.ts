@@ -4,6 +4,7 @@ import User, {
   deleteUser,
   UserCreateInput,
 } from "src/ent/user";
+import Contact, { createContact } from "src/ent/contact";
 
 import {
   ID,
@@ -404,6 +405,80 @@ function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
   expect(edge.edgeType).toBe(expectedEdge.edgeType);
   expect(edge.data).toBe(expectedEdge.data || null);
 }
+
+test("loadUniqueEdge|Node", async () => {
+  let jon = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+  let sansa = await create({
+    firstName: "Sansa",
+    lastName: "Stark",
+    emailAddress: randomEmail(),
+  });
+
+  expect(jon).toBeInstanceOf(User);
+  expect(sansa).toBeInstanceOf(User);
+
+  // make them friends
+  await writeEdge({
+    id1: jon.id,
+    id2: sansa.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+  });
+
+  let contact = await createContact(loggedOutViewer, {
+    emailAddress: jon.emailAddress,
+    firstName: jon.firstName,
+    lastName: jon.lastName,
+    userID: jon.id as string,
+  });
+  let contact2 = await createContact(loggedOutViewer, {
+    emailAddress: sansa.emailAddress,
+    firstName: sansa.firstName,
+    lastName: sansa.lastName,
+    userID: jon.id as string,
+  });
+
+  if (!contact || !contact2) {
+    fail("couldn't create contacts");
+  }
+
+  expect(contact).toBeInstanceOf(Contact);
+
+  const selfContactInput: AssocEdgeInput = {
+    id1: jon.id,
+    id2: contact.id,
+    id1Type: NodeType.User,
+    id2Type: NodeType.Contact,
+    edgeType: EdgeType.UserToSelfContact,
+  };
+  writeEdge(selfContactInput);
+
+  const v = new IDViewer(jon.id);
+  const jonFromHimself = await User.loadX(v, jon.id);
+  const [jonContact, allContacts] = await Promise.all([
+    jonFromHimself.loadSelfContact(),
+    jonFromHimself.loadContacts(),
+  ]);
+  //  const jonContact = await jonFromHimself.loadSelfContact();
+  expect(jonContact).not.toBe(null);
+  expect(jonContact?.id).toBe(contact.id);
+  expect(allContacts?.length).toBe(2);
+
+  // sansa can load jon because friends but can't load his contact
+  const v2 = new IDViewer(sansa.id);
+  const jonFromSansa = await User.loadX(v2, jon.id);
+  const jonContactFromSansa = await jonFromSansa.loadSelfContact();
+  expect(jonContactFromSansa).toBe(null);
+
+  const edge = await jonFromSansa.loadSelfContactEdge();
+  expect(edge).not.toBe(null);
+  verifyEdge(edge!, selfContactInput);
+});
 
 test("loadX", async () => {
   try {

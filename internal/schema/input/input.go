@@ -50,6 +50,7 @@ type Field struct {
 	Type            *FieldType `json:"type"`
 	Nullable        bool       `json:"nullable"`
 	StorageKey      string     `json:"storageKey"`
+	// TODO need a way to indicate unique edge is Required also. this changes type generated in ent and graphql
 	Unique          bool       `json:"unique"`
 	HideFromGraphQL bool       `json:"hideFromGraphQL"`
 	Private         bool       `json:"private"`

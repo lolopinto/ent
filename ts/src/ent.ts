@@ -566,6 +566,16 @@ async function loadEdgeData(edgeType: string): Promise<AssocEdgeData | null> {
   return new AssocEdgeData(row);
 }
 
+const edgeFields = [
+  "id1",
+  "id1_type",
+  "edge_type",
+  "id2",
+  "id2_type",
+  "time",
+  "data",
+];
+
 export async function loadEdges(
   id1: ID,
   edgeType: string,
@@ -576,7 +586,7 @@ export async function loadEdges(
   }
   const rows = await loadRows({
     tableName: edgeData.edgeTable,
-    fields: ["id1", "id1_type", "edge_type", "id2", "id2_type", "time", "data"],
+    fields: edgeFields,
     clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
     orderby: "time DESC",
   });
@@ -586,6 +596,38 @@ export async function loadEdges(
     result.push(new AssocEdge(row));
   }
   return result;
+}
+
+export async function loadUniqueEdge(
+  id1: ID,
+  edgeType: string,
+): Promise<AssocEdge | null> {
+  const edgeData = await loadEdgeData(edgeType);
+  if (!edgeData) {
+    throw new Error(`error loading edge data for ${edgeType}`);
+  }
+  const row = await loadRow({
+    tableName: edgeData.edgeTable,
+    fields: edgeFields,
+    clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
+  });
+  if (!row) {
+    return null;
+  }
+  return new AssocEdge(row);
+}
+
+export async function loadUniqueNode<T extends Ent>(
+  viewer: Viewer,
+  id1: ID,
+  edgeType: string,
+  options: LoadEntOptions<T>,
+): Promise<T | null> {
+  const edge = await loadUniqueEdge(id1, edgeType);
+  if (!edge) {
+    return null;
+  }
+  return await loadEnt(viewer, edge.id2, options);
 }
 
 export async function loadRawEdgeCountX(

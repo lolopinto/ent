@@ -18,6 +18,8 @@ import {
   loadEntFromClause,
   loadEntXFromClause,
   loadRow,
+  loadUniqueEdge,
+  loadUniqueNode,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
@@ -192,6 +194,19 @@ export class UserBase {
 
   loadFriendEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
     return loadEdgeForID2(this.id, EdgeType.UserToFriends, id2);
+  }
+
+  loadSelfContactEdge(): Promise<AssocEdge | null> {
+    return loadUniqueEdge(this.id, EdgeType.UserToSelfContact);
+  }
+
+  loadSelfContact(): Promise<Contact | null> {
+    return loadUniqueNode(
+      this.viewer,
+      this.id,
+      EdgeType.UserToSelfContact,
+      Contact.loaderOptions(),
+    );
   }
 
   loadInvitedEventsEdges(): Promise<AssocEdge[]> {
