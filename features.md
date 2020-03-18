@@ -21,9 +21,9 @@
 | encryption at rest                                                                                               |                    |                    |
 | Fb style fbobject and everything that comes with that <br /> e.g. FriendFeed style indices etc and go from there |                    |                    |
 | can viewer do                                                                                                    |                    |                    |
-| load multiple ids easily                                                                                         | :heavy_check_mark: |                    |
+| load multiple ids easily                                                                                         | :heavy_check_mark: | :heavy_check_mark: |
 | concurrency                                                                                                      | :heavy_check_mark: | :heavy_check_mark: |
-| load ents/ids from unique/indices                                                                                | :heavy_check_mark: |                    |
+| load ents/ids from unique/indices                                                                                | :heavy_check_mark: | :heavy_check_mark: |
 | Init/setup                                                                                                       | :heavy_check_mark: |                    |
 | CLI                                                                                                              | :heavy_check_mark: | :heavy_check_mark: |
 | [database migrations](#database-migrations)                                                                      | :heavy_check_mark: | :heavy_check_mark: |
