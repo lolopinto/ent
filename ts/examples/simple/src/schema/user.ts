@@ -18,5 +18,10 @@ export default class User extends BaseEntSchema implements Schema {
       schemaName: "User",
       symmetric: true,
     },
+    {
+      name: "selfContact",
+      unique: true,
+      schemaName: "Contact",
+    },
   ];
 }
