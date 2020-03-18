@@ -33,6 +33,7 @@ export class UserBase {
   readonly updatedAt: Date;
   readonly firstName: string;
   readonly lastName: string;
+  readonly emailAddress: string;
 
   constructor(public viewer: Viewer, id: ID, data: {}) {
     this.id = id;
@@ -42,6 +43,7 @@ export class UserBase {
     this.updatedAt = data["updated_at"];
     this.firstName = data["first_name"];
     this.lastName = data["last_name"];
+    this.emailAddress = data["email_address"];
   }
 
   // by default, we always deny and it's up to the ent
@@ -86,7 +88,14 @@ export class UserBase {
   }
 
   private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "first_name", "last_name"];
+    return [
+      "id",
+      "created_at",
+      "updated_at",
+      "first_name",
+      "last_name",
+      "email_address",
+    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -241,11 +250,13 @@ export class UserBase {
 export interface UserCreateInput {
   firstName: string;
   lastName: string;
+  emailAddress: string;
 }
 
 export interface UserEditInput {
   firstName?: string;
   lastName?: string;
+  emailAddress?: string;
 }
 
 function defaultValue(key: string, property: string): any {
@@ -267,6 +278,7 @@ export async function createUserFrom<T extends UserBase>(
     updated_at: defaultValue("updatedAt", "defaultValueOnCreate"),
     first_name: input.firstName,
     last_name: input.lastName,
+    email_address: input.emailAddress,
   };
 
   return await createEnt(viewer, {
@@ -293,6 +305,7 @@ export async function editUserFrom<T extends UserBase>(
   };
   setField("first_name", input.firstName);
   setField("last_name", input.lastName);
+  setField("email_address", input.emailAddress);
 
   return await editEnt(viewer, id, {
     tableName: tableName,

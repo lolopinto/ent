@@ -103,7 +103,9 @@ sa.Table("users", metadata,
     sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
     sa.Column("first_name", sa.Text(), nullable=False),
     sa.Column("last_name", sa.Text(), nullable=False),
+    sa.Column("email_address", sa.Text(), nullable=False),
     sa.PrimaryKeyConstraint("id", name="users_id_pkey"),
+    sa.UniqueConstraint("email_address", name="users_unique_email_address"),
 )
   
 

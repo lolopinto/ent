@@ -20,6 +20,7 @@ import { LogedOutViewer } from "ent/viewer";
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
 import Event, { createEvent } from "src/ent/event";
+import { randomEmail } from "src/util/random";
 
 const loggedOutViewer = new LogedOutViewer();
 
@@ -38,7 +39,11 @@ async function create(input: UserCreateInput): Promise<User> {
 
 test("create user", async () => {
   try {
-    let user = await create({ firstName: "Jon", lastName: "Snow" });
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+    });
 
     expect(user.firstName).toBe("Jon");
     expect(user.lastName).toBe("Snow");
@@ -49,7 +54,11 @@ test("create user", async () => {
 
 test("edit user", async () => {
   try {
-    let user = await create({ firstName: "Jon", lastName: "Snow" });
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+    });
 
     let editedUser = await editUser(loggedOutViewer, user.id, {
       firstName: "First of his name",
@@ -65,7 +74,11 @@ test("edit user", async () => {
 
 test("delete user", async () => {
   try {
-    let user = await create({ firstName: "Jon", lastName: "Snow" });
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+    });
 
     await deleteUser(loggedOutViewer, user.id);
 
@@ -94,10 +107,15 @@ class OmniViewer extends IDViewer {
 
 describe("privacy", () => {
   test("load", async () => {
-    let user = await create({ firstName: "Jon", lastName: "Snow" });
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+    });
     let user2 = await create({
       firstName: "Daenerys",
       lastName: "Targaryen",
+      emailAddress: randomEmail(),
     });
 
     try {
@@ -116,10 +134,15 @@ describe("privacy", () => {
   });
 
   test("loadX", async () => {
-    let user = await create({ firstName: "Jon", lastName: "Snow" });
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+    });
     let user2 = await create({
       firstName: "Daenerys",
       lastName: "Targaryen",
+      emailAddress: randomEmail(),
     });
 
     try {
@@ -143,14 +166,17 @@ test("symmetric edge", async () => {
   let jon = await create({
     firstName: "Jon",
     lastName: "Snow",
+    emailAddress: randomEmail(),
   });
   let dany = await create({
     firstName: "Daenerys",
     lastName: "Targaryen",
+    emailAddress: randomEmail(),
   });
   let sam = await create({
     firstName: "Samwell",
     lastName: "Tarly",
+    emailAddress: randomEmail(),
   });
 
   const danyInput = {
@@ -212,6 +238,7 @@ test("inverse edge", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
+    emailAddress: randomEmail(),
   });
   let event = await createEvent(new LogedOutViewer(), {
     creatorID: user.id as string,
@@ -265,7 +292,11 @@ test("inverse edge", async () => {
 
 test("one-way edge", async () => {
   // todo this is a field edge that we'll get later
-  let user = await create({ firstName: "Jon", lastName: "Snow" });
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
   let event = await createEvent(new LogedOutViewer(), {
     creatorID: user.id as string,
     startTime: new Date(),
@@ -292,12 +323,21 @@ test("one-way edge", async () => {
 });
 
 test("loadMultiUsers", async () => {
-  let jon = await create({ firstName: "Jon", lastName: "Snow" });
+  let jon = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
   let dany = await create({
     firstName: "Daenerys",
     lastName: "Targaryen",
+    emailAddress: randomEmail(),
   });
-  let sam = await create({ firstName: "Samwell", lastName: "Tarly" });
+  let sam = await create({
+    firstName: "Samwell",
+    lastName: "Tarly",
+    emailAddress: randomEmail(),
+  });
 
   const tests: [Viewer, number, string][] = [
     [loggedOutViewer, 0, "logged out viewer"],
