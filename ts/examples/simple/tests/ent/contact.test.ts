@@ -5,6 +5,7 @@ import DB from "ent/db";
 import { LogedOutViewer } from "ent/viewer";
 import { ID, Ent, Viewer, writeEdge } from "ent/ent";
 import { NodeType, EdgeType } from "src/ent/const";
+import { randomEmail } from "src/util/random";
 
 const loggedOutViewer = new LogedOutViewer();
 
@@ -27,6 +28,7 @@ async function create(firstName: string, lastName: string): Promise<Contact> {
   let user = await createUser(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
+    emailAddress: randomEmail(),
   });
   if (user == null) {
     fail("could not create user");
@@ -54,19 +56,15 @@ async function createMany(
   let user = await createUser(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
+    emailAddress: randomEmail(),
   });
   if (user == null) {
     fail("could not create user");
   }
-  function random(): string {
-    return Math.random()
-      .toString(16)
-      .substring(2);
-  }
   let results: Contact[] = [];
   for (const name of names) {
     let contact = await createContact(loggedOutViewer, {
-      emailAddress: `test+${random()}@email.com`,
+      emailAddress: randomEmail(),
       firstName: name.firstName,
       lastName: name.lastName,
       userID: user.id as string,
@@ -123,6 +121,7 @@ test("create contacts", async () => {
   let ygritte = await createUser(loggedOutViewer, {
     firstName: "Ygritte",
     lastName: "",
+    emailAddress: randomEmail(),
   });
   expect(ygritte).not.toBe(null);
   await writeEdge({

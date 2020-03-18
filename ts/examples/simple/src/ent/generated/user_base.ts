@@ -15,6 +15,9 @@ import {
   loadNodesByEdge,
   loadEdgeForID2,
   loadEntsFromClause,
+  loadEntFromClause,
+  loadEntXFromClause,
+  loadRow,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
@@ -33,6 +36,7 @@ export class UserBase {
   readonly updatedAt: Date;
   readonly firstName: string;
   readonly lastName: string;
+  readonly emailAddress: string;
 
   constructor(public viewer: Viewer, id: ID, data: {}) {
     this.id = id;
@@ -42,6 +46,7 @@ export class UserBase {
     this.updatedAt = data["updated_at"];
     this.firstName = data["first_name"];
     this.lastName = data["last_name"];
+    this.emailAddress = data["email_address"];
   }
 
   // by default, we always deny and it's up to the ent
@@ -75,6 +80,44 @@ export class UserBase {
     return loadEnts(viewer, UserBase.loaderOptions.apply(this), ...ids);
   }
 
+  static async loadFromEmailAddress<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    viewer: Viewer,
+    emailAddress: string,
+  ): Promise<T | null> {
+    return loadEntFromClause(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      query.Eq("email_address", emailAddress),
+    );
+  }
+
+  static async loadFromEmailAddressX<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    viewer: Viewer,
+    emailAddress: string,
+  ): Promise<T> {
+    return loadEntXFromClause(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      query.Eq("email_address", emailAddress),
+    );
+  }
+
+  static async loadIDFromEmailAddress<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    emailAddress: string,
+  ): Promise<ID | null> {
+    const row = await loadRow({
+      ...UserBase.loaderOptions.apply(this),
+      clause: query.Eq("email_address", emailAddress),
+    });
+    if (!row) {
+      return null;
+    }
+    return row["id"];
+  }
+
   static loaderOptions<T extends UserBase>(
     this: new (viewer: Viewer, id: ID, data: {}) => T,
   ): LoadEntOptions<T> {
@@ -86,7 +129,14 @@ export class UserBase {
   }
 
   private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "first_name", "last_name"];
+    return [
+      "id",
+      "created_at",
+      "updated_at",
+      "first_name",
+      "last_name",
+      "email_address",
+    ];
   }
 
   private static schemaFields: Map<string, Field>;
@@ -241,11 +291,13 @@ export class UserBase {
 export interface UserCreateInput {
   firstName: string;
   lastName: string;
+  emailAddress: string;
 }
 
 export interface UserEditInput {
   firstName?: string;
   lastName?: string;
+  emailAddress?: string;
 }
 
 function defaultValue(key: string, property: string): any {
@@ -267,6 +319,7 @@ export async function createUserFrom<T extends UserBase>(
     updated_at: defaultValue("updatedAt", "defaultValueOnCreate"),
     first_name: input.firstName,
     last_name: input.lastName,
+    email_address: input.emailAddress,
   };
 
   return await createEnt(viewer, {
@@ -293,6 +346,7 @@ export async function editUserFrom<T extends UserBase>(
   };
   setField("first_name", input.firstName);
   setField("last_name", input.lastName);
+  setField("email_address", input.emailAddress);
 
   return await editEnt(viewer, id, {
     tableName: tableName,
