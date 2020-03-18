@@ -140,6 +140,8 @@ func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {
 }
 
 type InverseAssocEdge struct {
+	// TODO need to be able to mark this as unique
+	// this is an easy way to get 1->many
 	Name string `json:"name"`
 }
 
