@@ -97,6 +97,18 @@ sa.Table("user_friends_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_friends_edges_id1_edge_type_id2_pkey"),
 )
    
+sa.Table("user_self_contact_edges", metadata,
+    sa.Column("id1", UUID(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", UUID(), nullable=False),
+    sa.Column("id2", UUID(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_self_contact_edges_id1_edge_type_id2_pkey"),
+    sa.UniqueConstraint("id1", "edge_type", name="user_self_contact_edges_unique_id1_edge_type"),
+)
+   
 sa.Table("users", metadata,
     sa.Column("id", UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -122,6 +134,7 @@ edges = {
     'UserToFriendsEdge': {"edge_name":"UserToFriendsEdge", "edge_type":"d1a9316d-090f-4b02-b393-fd9372e2c905", "edge_table":"user_friends_edges", "symmetric_edge":True, "inverse_edge_type":None},
     'UserToInvitedEventsEdge': {"edge_name":"UserToInvitedEventsEdge", "edge_type":"e439f2b2-d93a-4d1a-83f0-865bda5c8337", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"a72f5f64-3580-44fd-9bd0-d1335b803a46"},
     'UserToMaybeEventsEdge': {"edge_name":"UserToMaybeEventsEdge", "edge_type":"8d5b1dee-ce65-452e-9f8d-78eca1993800", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"b0f6311b-fdab-4c26-b6bf-b751e0997735"},
+    'UserToSelfContactEdge': {"edge_name":"UserToSelfContactEdge", "edge_type":"d504201d-cf3f-4eef-b6a0-0b46a7ae186b", "edge_table":"user_self_contact_edges", "symmetric_edge":False, "inverse_edge_type":None},
   }
 }
 

@@ -33,13 +33,9 @@ async function create(firstName: string, lastName: string): Promise<Contact> {
   if (user == null) {
     fail("could not create user");
   }
-  function random(): string {
-    return Math.random()
-      .toString(16)
-      .substring(2);
-  }
+
   let contact = await createContact(loggedOutViewer, {
-    emailAddress: `test+${random()}@email.com`,
+    emailAddress: randomEmail(),
     firstName: firstName,
     lastName: lastName,
     userID: user.id as string,

@@ -18,6 +18,8 @@ import {
   loadEntFromClause,
   loadEntXFromClause,
   loadRow,
+  loadUniqueEdge,
+  loadUniqueNode,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";

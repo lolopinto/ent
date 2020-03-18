@@ -20,6 +20,8 @@ import {
   loadEntFromClause,
   loadEntXFromClause,
   loadRow,
+  loadUniqueEdge,
+  loadUniqueNode,
 } from "ent/ent";
 import {AlwaysDenyRule, PrivacyPolicy} from "ent/privacy";
 import {Field, getFields} from "ent/schema";
@@ -160,6 +162,13 @@ export class {{$baseClass}} {
     {{with .NodeInfo -}}
      {{/* TODO unique edges */}}
      {{ if $uniqueEdge -}}
+      load{{$edgeName}}Edge(): Promise<AssocEdge | null> {
+        return loadUniqueEdge(this.id, EdgeType.{{$edge.TsEdgeConst}});
+      }
+
+      load{{$edgeName}}(): Promise<{{.Node}} | null> {
+        return loadUniqueNode(this.viewer, this.id, EdgeType.{{$edge.TsEdgeConst}}, {{.Node}}.loaderOptions());
+      }
 
      {{ else -}}
       load{{$edgeName}}Edges():Promise<AssocEdge[]> {
