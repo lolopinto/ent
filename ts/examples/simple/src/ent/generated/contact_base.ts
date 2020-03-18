@@ -4,6 +4,7 @@ import {
   ID,
   Viewer,
   loadEntX,
+  loadEnts,
   LoadEntOptions,
   createEnt,
   editEnt,
@@ -66,6 +67,14 @@ export class ContactBase {
     id: ID,
   ): Promise<InstanceType<T>> {
     return loadEntX(viewer, id, this.loaderOptions()) as InstanceType<T>;
+  }
+
+  static async loadMany<T extends ContactBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    viewer: Viewer,
+    ...ids: ID[]
+  ): Promise<T[]> {
+    return loadEnts(viewer, ContactBase.loaderOptions.apply(this), ...ids);
   }
 
   static loaderOptions<T extends ContactBase>(

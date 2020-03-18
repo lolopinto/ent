@@ -4,6 +4,7 @@ import {
   ID,
   Viewer,
   loadEntX,
+  loadEnts,
   LoadEntOptions,
   createEnt,
   editEnt,
@@ -68,6 +69,14 @@ export class EventBase {
     id: ID,
   ): Promise<InstanceType<T>> {
     return loadEntX(viewer, id, this.loaderOptions()) as InstanceType<T>;
+  }
+
+  static async loadMany<T extends EventBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    viewer: Viewer,
+    ...ids: ID[]
+  ): Promise<T[]> {
+    return loadEnts(viewer, EventBase.loaderOptions.apply(this), ...ids);
   }
 
   static loaderOptions<T extends EventBase>(

@@ -308,15 +308,14 @@ test("loadMultiUsers", async () => {
   for (const testData of tests) {
     const v = testData[0];
     const expectedCount = testData[1];
-    const users = await loadEnts(
-      v,
-      User.loaderOptions(),
-      jon.id,
-      dany.id,
-      sam.id,
-    );
+    const users = await User.loadMany(v, jon.id, dany.id, sam.id);
 
     expect(users.length, testData[2]).toBe(expectedCount);
+
+    for (const user of users) {
+      // confirm they're the right type
+      expect(user).toBeInstanceOf(User);
+    }
   }
 });
 
