@@ -6,18 +6,18 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"text/template"
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/syncerr"
+	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 )
 
-type Step struct{
-	m sync.Mutex
+type Step struct {
+	m        sync.Mutex
 	nodeType []enumData
 	edgeType []enumData
 }
@@ -27,7 +27,6 @@ func (s *Step) Name() string {
 }
 
 var nodeType = regexp.MustCompile(`(\w+)Type`)
-
 
 func (s *Step) ProcessData(data *codegen.Data) error {
 	var wg sync.WaitGroup
@@ -77,8 +76,8 @@ func (s *Step) addNodeType(name, value, comment string) {
 	s.m.Lock()
 	defer s.m.Unlock()
 	s.nodeType = append(s.nodeType, enumData{
-		Name: name,
-		Value: value,
+		Name:    name,
+		Value:   value,
 		Comment: comment,
 	})
 }
@@ -87,8 +86,8 @@ func (s *Step) addEdgeType(name, value, comment string) {
 	s.m.Lock()
 	defer s.m.Unlock()
 	s.edgeType = append(s.edgeType, enumData{
-		Name: name,
-		Value: value,
+		Name:    name,
+		Value:   value,
 		Comment: comment,
 	})
 }
@@ -112,8 +111,8 @@ func (s *Step) accumulateConsts(nodeData *schema.NodeData) error {
 				comment := strings.ReplaceAll(constant.Comment, constant.ConstName, match[1])
 
 				s.addNodeType(match[1], constant.ConstValue, comment)
-			break
-			
+				break
+
 			case "EdgeType":
 				constName, err := edge.TsEdgeConst(constant.ConstName)
 				if err != nil {
@@ -129,7 +128,6 @@ func (s *Step) accumulateConsts(nodeData *schema.NodeData) error {
 	return nil
 }
 
-
 var _ codegen.Step = &Step{}
 
 // todo standardize this? same as in internal/code
@@ -139,8 +137,8 @@ type nodeTemplateCodePath struct {
 }
 
 type enumData struct {
-	Name string
-	Value string
+	Name    string
+	Value   string
 	Comment string
 }
 
@@ -157,6 +155,8 @@ func getFilePathForConstFile() string {
 }
 
 func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
@@ -167,11 +167,13 @@ func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePat
 		TemplateName:      "base.tmpl",
 		PathToFile:        getFilePathForBaseModelFile(nodeData),
 		FormatSource:      true,
-		FuncMap:           template.FuncMap{},
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
 	})
 }
 
 func writeEntFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
@@ -182,7 +184,9 @@ func writeEntFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) err
 		TemplateName:      "ent.tmpl",
 		PathToFile:        getFilePathForModelFile(nodeData),
 		FormatSource:      true,
-		FuncMap:           template.FuncMap{},
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+		EditableCode:      true,
 		// only write this file once.
 		// TODO need a flag to overwrite this later.
 	}, file.WriteOnce())
@@ -197,11 +201,13 @@ func writeConstFile(nodeData []enumData, edgeData []enumData) error {
 		return edgeData[i].Name < edgeData[j].Name
 	})
 
+	imps := tsimport.NewImports()
+
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: struct {
 			NodeData []enumData
 			EdgeData []enumData
-		} {
+		}{
 			nodeData,
 			edgeData,
 		},
@@ -209,6 +215,7 @@ func writeConstFile(nodeData []enumData, edgeData []enumData) error {
 		TemplateName:      "const.tmpl",
 		PathToFile:        getFilePathForConstFile(),
 		FormatSource:      true,
-		FuncMap:           template.FuncMap{},
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
 	})
 }
