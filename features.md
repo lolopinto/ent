@@ -13,7 +13,7 @@
 | per request in memory cache (viewer\|ents)                                                                       |                    |                    |
 | [auth](#auth)                                                                                                    |                    |                    |
 | patterns                                                                                                         |                    | :heavy_check_mark: |
-| Correct imports in generated file                                                                                | :heavy_check_mark: |                    |
+| Correct imports in generated file                                                                                | :heavy_check_mark: | :heavy_check_mark: |
 | custom functions/accessors in ents                                                                               | :heavy_check_mark: |                    |
 | custom top level functions                                                                                       | :heavy_check_mark: |                    |
 | sharding                                                                                                         |                    |                    |
