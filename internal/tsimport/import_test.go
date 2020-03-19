@@ -42,7 +42,6 @@ func reserveAllImport(imps *tsimport.Imports, path, as string) {
 	util.Die(err)
 }
 
-
 func TestImports(t *testing.T) {
 	testCases := map[string]testCase{
 		"reserve some": testCase{

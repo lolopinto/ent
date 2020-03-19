@@ -37,7 +37,6 @@ func (imps *Imports) ReserveAll(path, as string) (string, error) {
 	return imps.reserve(path, "", true, []string{as})
 }
 
-
 func (imps *Imports) reserve(path string, defaultExport string, importAll bool, exports []string) (string, error) {
 	imp := &importInfo{
 		path:          path,
@@ -59,16 +58,16 @@ func (imps *Imports) reserve(path string, defaultExport string, importAll bool, 
 		imps.exportMap[export] = imp
 	}
 	imps.imports = append(imps.imports, imp)
-	return "", nil 
+	return "", nil
 }
 
 // FuncMap returns the FuncMap to be passed to a template
 func (imps *Imports) FuncMap() template.FuncMap {
 	return template.FuncMap{
-		"reserveImport": imps.Reserve,
+		"reserveImport":        imps.Reserve,
 		"reserveDefaultImport": imps.ReserveDefault,
-		"reserveAllImport": imps.ReserveAll,
-		"useImport": imps.Use,
+		"reserveAllImport":     imps.ReserveAll,
+		"useImport":            imps.Use,
 	}
 }
 

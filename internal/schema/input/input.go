@@ -46,17 +46,17 @@ type FieldType struct {
 }
 
 type Field struct {
-	Name            string     `json:"name"`
-	Type            *FieldType `json:"type"`
-	Nullable        bool       `json:"nullable"`
-	StorageKey      string     `json:"storageKey"`
+	Name       string     `json:"name"`
+	Type       *FieldType `json:"type"`
+	Nullable   bool       `json:"nullable"`
+	StorageKey string     `json:"storageKey"`
 	// TODO need a way to indicate unique edge is Required also. this changes type generated in ent and graphql
-	Unique          bool       `json:"unique"`
-	HideFromGraphQL bool       `json:"hideFromGraphQL"`
-	Private         bool       `json:"private"`
-	GraphQLName     string     `json:"graphqlName"`
-	Index           bool       `json:"index"`
-	PrimaryKey      bool       `json:"primaryKey"`
+	Unique          bool   `json:"unique"`
+	HideFromGraphQL bool   `json:"hideFromGraphQL"`
+	Private         bool   `json:"private"`
+	GraphQLName     string `json:"graphqlName"`
+	Index           bool   `json:"index"`
+	PrimaryKey      bool   `json:"primaryKey"`
 
 	FieldEdge     *[2]string  `json:"fieldEdge"` // this only really makes sense on id fields...
 	ForeignKey    *[2]string  `json:"foreignKey"`
