@@ -29,6 +29,7 @@ class IDViewer implements Viewer {
 class User implements Ent {
   accountID: string;
   privacyPolicy: PrivacyPolicy;
+  nodeType: "User";
   // TODO add policy here
   constructor(public viewer: Viewer, public id: ID) {}
 }

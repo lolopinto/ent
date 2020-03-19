@@ -14,10 +14,12 @@ import {
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/address";
+import { NodeType } from "src/ent/const";
 
 const tableName = "addresses";
 
 export class AddressBase {
+  readonly nodeType: NodeType.Address;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;

@@ -22,13 +22,13 @@ test("Or", () => {
 describe("In", () => {
   test("spread args", () => {
     const clause = query.In("id", 1, 2, 3);
-    expect(clause.clause(1)).toBe("id IN ($1)");
+    expect(clause.clause(1)).toBe("id IN ($1, $2, $3)");
     expect(clause.values()).toStrictEqual([1, 2, 3]);
   });
 
   test("list", () => {
     const clause = query.In("id", ...[1, 2, 3]);
-    expect(clause.clause(1)).toBe("id IN ($1)");
+    expect(clause.clause(1)).toBe("id IN ($1, $2, $3)");
     expect(clause.values()).toStrictEqual([1, 2, 3]);
   });
 });

@@ -22,6 +22,7 @@ class IDViewer implements Viewer {
 class User implements Ent {
   id: ID;
   accountID: string;
+  nodeType: "User";
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };

@@ -30,6 +30,7 @@ export interface Ent {
   id: ID;
   viewer: Viewer;
   privacyPolicy: PrivacyPolicy;
+  nodeType: string;
 }
 
 export interface EntConstructor<T extends Ent> {
