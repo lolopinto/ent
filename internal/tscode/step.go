@@ -6,13 +6,13 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"text/template"
 
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/syncerr"
+	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 )
 
@@ -157,6 +157,8 @@ func getFilePathForConstFile() string {
 }
 
 func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
@@ -167,11 +169,13 @@ func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePat
 		TemplateName:      "base.tmpl",
 		PathToFile:        getFilePathForBaseModelFile(nodeData),
 		FormatSource:      true,
-		FuncMap:           template.FuncMap{},
+		TsImports: imps,
+		FuncMap:           imps.FuncMap(),
 	})
 }
 
 func writeEntFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
@@ -182,7 +186,9 @@ func writeEntFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) err
 		TemplateName:      "ent.tmpl",
 		PathToFile:        getFilePathForModelFile(nodeData),
 		FormatSource:      true,
-		FuncMap:           template.FuncMap{},
+		TsImports: 			   imps,
+		FuncMap:           imps.FuncMap(),
+		EditableCode: true,
 		// only write this file once.
 		// TODO need a flag to overwrite this later.
 	}, file.WriteOnce())
@@ -197,6 +203,8 @@ func writeConstFile(nodeData []enumData, edgeData []enumData) error {
 		return edgeData[i].Name < edgeData[j].Name
 	})
 
+	imps := tsimport.NewImports()
+
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: struct {
 			NodeData []enumData
@@ -209,6 +217,7 @@ func writeConstFile(nodeData []enumData, edgeData []enumData) error {
 		TemplateName:      "const.tmpl",
 		PathToFile:        getFilePathForConstFile(),
 		FormatSource:      true,
-		FuncMap:           template.FuncMap{},
+		TsImports: 				 imps,
+		FuncMap:           imps.FuncMap(),
 	})
 }

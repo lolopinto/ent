@@ -6,14 +6,15 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/tsimport"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testCase struct {
 	fn            func(*tsimport.Imports)
 	expectedLines []string
 	panicInFn     bool
-	panicInStr    bool
 }
 
 func getImportLine(line, path string) string {
@@ -21,14 +22,35 @@ func getImportLine(line, path string) string {
 	return r.Replace(line)
 }
 
+func reserveImport(imps *tsimport.Imports, path string, exports ...string) {
+	_, err := imps.Reserve(path, exports...)
+	util.Die(err)
+}
+
+func useImport(imps *tsimport.Imports, export string) {
+	_, err := imps.Use(export)
+	util.Die(err)
+}
+
+func reserveDefaultImport(imps *tsimport.Imports, path, defaultExport string, exports ...string) {
+	_, err := imps.ReserveDefault(path, defaultExport, exports...)
+	util.Die(err)
+}
+
+func reserveAllImport(imps *tsimport.Imports, path, as string) {
+	_, err := imps.ReserveAll(path, as)
+	util.Die(err)
+}
+
+
 func TestImports(t *testing.T) {
 	testCases := map[string]testCase{
 		"reserve some": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.Reserve("ent/ent", "loadEnt", "loadEntX", "Viewer")
+				reserveImport(imps, "ent/ent", "loadEnt", "loadEntX", "Viewer")
 
-				imps.Use("loadEnt")
-				imps.Use("loadEntX")
+				useImport(imps, "loadEnt")
+				useImport(imps, "loadEntX")
 			},
 			expectedLines: []string{
 				getImportLine("import {loadEnt, loadEntX} from {path};", "ent/ent"),
@@ -36,15 +58,15 @@ func TestImports(t *testing.T) {
 		},
 		"nothing used": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.Reserve("ent/ent", "loadEnt", "loadEntX", "Viewer")
+				reserveImport(imps, "ent/ent", "loadEnt", "loadEntX", "Viewer")
 			},
 			expectedLines: []string{},
 		},
 		"reserve default. only default used": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.ReserveDefault("src/ent/user", "User", "createUser", "editUser")
+				reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser")
 
-				imps.Use("User")
+				useImport(imps, "User")
 			},
 			expectedLines: []string{
 				getImportLine("import User from {path};", "src/ent/user"),
@@ -52,10 +74,10 @@ func TestImports(t *testing.T) {
 		},
 		"reserve default. non-default used": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.ReserveDefault("src/ent/user", "User", "createUser", "editUser")
+				reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser")
 
-				imps.Use("createUser")
-				imps.Use("editUser")
+				useImport(imps, "createUser")
+				useImport(imps, "editUser")
 			},
 			expectedLines: []string{
 				getImportLine("import {createUser, editUser} from {path};", "src/ent/user"),
@@ -63,11 +85,11 @@ func TestImports(t *testing.T) {
 		},
 		"reserve default. mix used": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.ReserveDefault("src/ent/user", "User", "createUser", "editUser")
+				reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser")
 
-				imps.Use("createUser")
-				imps.Use("editUser")
-				imps.Use("User")
+				useImport(imps, "createUser")
+				useImport(imps, "editUser")
+				useImport(imps, "User")
 			},
 			expectedLines: []string{
 				getImportLine("import User, {createUser, editUser} from {path};", "src/ent/user"),
@@ -75,9 +97,9 @@ func TestImports(t *testing.T) {
 		},
 		"reserve all. used": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.ReserveAll("ent/query", "query")
+				reserveAllImport(imps, "ent/query", "query")
 
-				imps.Use("query")
+				useImport(imps, "query")
 			},
 			expectedLines: []string{
 				getImportLine("import * as query from {path};", "ent/query"),
@@ -85,7 +107,7 @@ func TestImports(t *testing.T) {
 		},
 		"reserve all. not used": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.ReserveAll("ent/query", "query")
+				reserveAllImport(imps, "ent/query", "query")
 			},
 			expectedLines: []string{},
 		},
@@ -93,23 +115,23 @@ func TestImports(t *testing.T) {
 		// simpler version of * as query?
 		"reserve same thing multiple times": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.ReserveAll("ent/query", "query")
-				imps.ReserveAll("bar/foo", "query")
+				reserveAllImport(imps, "ent/query", "query")
+				reserveAllImport(imps, "bar/foo", "query")
 			},
 			panicInFn: true,
 		},
 		"use not reserved": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.Use("query")
+				useImport(imps, "query")
 			},
 			panicInFn: true,
 		},
 		"use multiple times": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.ReserveAll("ent/query", "query")
+				reserveAllImport(imps, "ent/query", "query")
 
-				imps.Use("query")
-				imps.Use("query")
+				useImport(imps, "query")
+				useImport(imps, "query")
 			},
 			expectedLines: []string{
 				getImportLine("import * as query from {path};", "ent/query"),
@@ -117,19 +139,19 @@ func TestImports(t *testing.T) {
 		},
 		"combo": testCase{
 			fn: func(imps *tsimport.Imports) {
-				imps.Reserve("ent/ent", "loadEnt", "loadEntX", "Viewer", "ID")
-				imps.ReserveDefault("src/ent/user", "User", "createUser", "editUser")
-				imps.ReserveDefault("src/ent/contact", "Contact", "createContact", "editContact")
+				reserveImport(imps, "ent/ent", "loadEnt", "loadEntX", "Viewer", "ID")
+				reserveDefaultImport(imps, "src/ent/user", "User", "createUser", "editUser")
+				reserveDefaultImport(imps, "src/ent/contact", "Contact", "createContact", "editContact")
 
-				imps.ReserveAll("ent/query", "query")
+				reserveAllImport(imps, "ent/query", "query")
 
-				imps.Use("ID")
-				imps.Use("loadEnt")
-				imps.Use("loadEntX")
+				useImport(imps, "ID")
+				useImport(imps, "loadEnt")
+				useImport(imps, "loadEntX")
 
-				imps.Use("User")
-				imps.Use("editUser")
-				imps.Use("query")
+				useImport(imps, "User")
+				useImport(imps, "editUser")
+				useImport(imps, "query")
 			},
 			expectedLines: []string{
 				getImportLine("import {loadEnt, loadEntX, ID} from {path};", "ent/ent"),
@@ -150,21 +172,17 @@ func TestImports(t *testing.T) {
 				})
 			} else {
 				tt.fn(imps)
-				if tt.panicInStr {
-					assert.Len(t, tt.expectedLines, 0)
-					assert.Panics(t, func() {
-						imps.String()
-					})
-				} else {
-					validateExpectedLines(t, imps, tt.expectedLines)
-				}
+
+				validateExpectedLines(t, imps, tt.expectedLines)
 			}
 		})
 	}
 }
 
 func validateExpectedLines(t *testing.T, imps *tsimport.Imports, lines []string) {
-	expLines := strings.Split(imps.String(), "\n")
+	str, err := imps.String()
+	require.Nil(t, err)
+	expLines := strings.Split(str, "\n")
 	// remove last element since it's always nonsense
 	expLines = expLines[:len(expLines)-1]
 
