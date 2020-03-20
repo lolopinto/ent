@@ -62,7 +62,7 @@ interface LoadRowsOptions extends SelectDataOptions {
   orderby?: string;
 }
 
-interface EditRowOptions extends DataOptions {
+export interface EditRowOptions extends DataOptions {
   // fields to be edited
   fields: {};
 }
@@ -260,7 +260,7 @@ export async function createEnt<T extends Ent>(
 }
 
 // slew of methods taken from pg
-interface Queryer {
+export interface Queryer {
   query<T extends Submittable>(queryStream: T): T;
   // tslint:disable:no-unnecessary-generics
   query<R extends any[] = any[], I extends any[] = any[]>(
@@ -290,7 +290,7 @@ interface Queryer {
   // tslint:enable:no-unnecessary-generics
 }
 
-interface DataOperation {
+export interface DataOperation {
   performWrite(queryer: Queryer): Promise<void>;
 }
 
@@ -326,7 +326,7 @@ async function executeOperations(
   }
 }
 
-class CreateRowOperation implements DataOperation {
+export class CreateRowOperation implements DataOperation {
   row: {};
 
   constructor(public options: EditRowOptions, private suffix?: string) {}
@@ -358,7 +358,7 @@ class CreateRowOperation implements DataOperation {
   }
 }
 
-class CreateEdgeOperation extends CreateRowOperation {
+export class CreateEdgeOperation extends CreateRowOperation {
   constructor(edge: AssocEdgeInput, edgeData: AssocEdgeData) {
     const fields = {
       id1: edge.id1,
@@ -483,14 +483,17 @@ export class AssocEdge {
   }
 }
 
-export interface AssocEdgeInput {
+export interface AssocEdgeInputOptions {
+  time?: Date;
+  data?: string;
+}
+
+export interface AssocEdgeInput extends AssocEdgeInputOptions {
   id1: ID;
   id1Type: string;
   edgeType: string;
   id2: ID;
   id2Type: string;
-  time?: Date;
-  data?: string;
 }
 
 export class AssocEdgeData {
