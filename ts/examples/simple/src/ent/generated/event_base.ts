@@ -25,7 +25,7 @@ import User from "src/ent/user";
 const tableName = "events";
 
 export class EventBase {
-  readonly nodeType: NodeType.Event;
+  readonly nodeType = NodeType.Event;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;

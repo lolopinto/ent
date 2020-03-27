@@ -19,7 +19,7 @@ import { NodeType } from "src/ent/const";
 const tableName = "addresses";
 
 export class AddressBase {
-  readonly nodeType: NodeType.Address;
+  readonly nodeType = NodeType.Address;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;

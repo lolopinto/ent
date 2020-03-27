@@ -25,7 +25,7 @@ export enum WriteOperation {
 }
 
 export interface Builder<T extends Ent> {
-  existingEnt: Ent | null;
+  existingEnt?: Ent;
   ent: EntConstructor<T>;
   placeholderID: ID;
   viewer: Viewer;

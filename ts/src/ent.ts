@@ -359,6 +359,7 @@ export class CreateRowOperation implements DataOperation {
 }
 
 export class CreateEdgeOperation extends CreateRowOperation {
+  edgeInput: AssocEdgeInput;
   constructor(edge: AssocEdgeInput, edgeData: AssocEdgeData) {
     const fields = {
       id1: edge.id1,
@@ -386,6 +387,7 @@ export class CreateEdgeOperation extends CreateRowOperation {
       // postgres specific suffix. could be handled by sqlbuilder also
       "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
     );
+    this.edgeInput = edge;
   }
 }
 

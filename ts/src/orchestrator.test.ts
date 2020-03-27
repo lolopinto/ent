@@ -1,4 +1,4 @@
-import { Orchestrator } from "./orchestrator";
+import { Orchestrator, EdgeOperation } from "./orchestrator";
 import { Builder, WriteOperation } from "./action";
 import {
   Viewer,
@@ -7,17 +7,19 @@ import {
   EntConstructor,
   DataOperation,
   CreateRowOperation,
+  CreateEdgeOperation,
 } from "./ent";
 import { PrivacyPolicy, AlwaysAllowRule } from "./privacy";
 import { LoggedOutViewer } from "./viewer";
 import { Changeset } from "./action";
 import { StringType, TimeType } from "./field";
 import { BaseEntSchema, Field } from "./schema";
+import { IDViewer } from "../src/testutils/id_viewer";
 
 class User implements Ent {
   id: ID;
   accountID: string;
-  nodeType: "User";
+  nodeType = "User";
   privacyPolicy: PrivacyPolicy = {
     rules: [AlwaysAllowRule],
   };
@@ -27,23 +29,23 @@ class User implements Ent {
 }
 
 class SimpleBuilder implements Builder<User> {
-  existingEnt: null;
   ent: EntConstructor<User>;
   placeholderID: "1";
   viewer: Viewer;
-  //  operation: WriteOperation;
-  private orchestrator: Orchestrator<User>;
+  public orchestrator: Orchestrator<User>;
 
   constructor(
     private schema: any,
     private fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
+    public existingEnt: Ent | undefined = undefined,
   ) {
     this.viewer = new LoggedOutViewer();
     this.orchestrator = new Orchestrator({
       viewer: this.viewer,
       operation: operation,
       tableName: "foo",
+      //      existingEnt: existingEnt,
       ent: User,
       builder: this,
       schema: this.schema,
@@ -235,6 +237,28 @@ describe("schema_with_processors", () => {
   });
 });
 
+test("inbound edge", async () => {
+  const viewer = new IDViewer("1");
+  const user = new User(viewer, { id: "1" });
+  const builder = new SimpleBuilder(
+    UserSchema,
+    new Map(),
+    WriteOperation.Edit,
+    user, // TODO enforce existing ent if not create
+  );
+  builder.viewer = viewer;
+  builder.orchestrator.addInboundEdge("2", "edge", "User");
+
+  const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+  expect(edgeOp.edgeInput).toStrictEqual({
+    id1: "2",
+    id1Type: "User",
+    edgeType: "edge",
+    id2: "1",
+    id2Type: "User",
+  });
+});
+
 function validateFieldsExist(fields: {}, ...names: string[]) {
   for (const name of names) {
     expect(fields[name], `field ${name}`).not.toBe(undefined);
@@ -257,11 +281,38 @@ function getOperations<T extends Ent>(c: Changeset<T>): DataOperation[] {
 
 async function getFieldsFromBuilder<T extends Ent>(
   builder: Builder<T>,
+  expLength: number = 1,
 ): Promise<{}> {
   const c = await builder.build();
   const ops = getOperations(c);
-  expect(ops.length).toBe(1);
-  const rowOp = ops[0];
-  expect(rowOp).toBeInstanceOf(CreateRowOperation);
-  return (rowOp as CreateRowOperation)!.options.fields;
+  expect(ops.length).toBe(expLength);
+  for (const op of ops) {
+    const options = (op as CreateRowOperation).options;
+    if (options !== undefined) {
+      return options.fields;
+    }
+  }
+  fail("couldn't find CreateRowOperation where fields are being edited");
+}
+
+async function getEdgeOpFromBuilder<T extends Ent>(
+  builder: Builder<T>,
+  expLength: number,
+  edgeType: string,
+): Promise<EdgeOperation<T>> {
+  const c = await builder.build();
+  const ops = getOperations(c);
+  expect(ops.length).toBe(expLength);
+  //  console.log(ops);
+  for (const op of ops) {
+    if ((op as EdgeOperation<T>).edgeInput !== undefined) {
+      //      console.log(op);
+      // todo add more things to differentiate this by
+      const edgeOp = (op as EdgeOperation<T>)!;
+      if (edgeOp.edgeInput.edgeType === edgeType) {
+        return edgeOp;
+      }
+    }
+  }
+  fail(`could not find edge operation with edgeType ${edgeType}`);
 }

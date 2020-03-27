@@ -20,7 +20,7 @@ import User from "src/ent/user";
 const tableName = "contacts";
 
 export class ContactBase {
-  readonly nodeType: NodeType.Contact;
+  readonly nodeType = NodeType.Contact;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;

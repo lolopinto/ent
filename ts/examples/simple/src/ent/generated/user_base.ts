@@ -34,7 +34,7 @@ import Contact from "src/ent/contact";
 const tableName = "users";
 
 export class UserBase {
-  readonly nodeType: NodeType.User;
+  readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;

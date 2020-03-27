@@ -27,7 +27,8 @@ export interface OrchestratorOptions<T extends Ent> {
   operation: WriteOperation;
   tableName: string;
   ent: EntConstructor<T>; // should we make it nullable for delete?
-  existingEnt?: Ent; // allowed to be null for create
+  //  existingEnt?: Ent; // allowed to be null for create
+  // ^ should just take this from builder?
 
   builder: Builder<T>;
   action?: Action<T>;
@@ -44,14 +45,14 @@ export class Orchestrator<T extends Ent> {
   // this should be edge operations...
   private edgeOps: EdgeOperation<T>[] = [];
   private edgeSet: Set<string> = new Set<string>();
-  existingEnt: Ent | undefined;
+  //  existingEnt: Ent | undefined;
 
   constructor(
     // public readonly viewer: Viewer,
     // public readonly operation: ActionOperation,
     private options: OrchestratorOptions<T>,
   ) {
-    this.existingEnt = options.existingEnt;
+    //    this.existingEnt = options.existingEnt;
   }
 
   addInboundEdge(
@@ -62,10 +63,10 @@ export class Orchestrator<T extends Ent> {
   ) {
     this.edgeOps.push(
       EdgeOperation.inboundEdge(
+        this.options.builder,
         edgeType,
         id1,
         nodeType,
-        this.options.builder,
         options,
       ),
     );
@@ -157,11 +158,11 @@ export class Orchestrator<T extends Ent> {
 }
 
 // TODO implements DataOperation and move functionality away
-class EdgeOperation<T extends Ent> implements DataOperation {
+export class EdgeOperation<T extends Ent> implements DataOperation {
   private createRow: DataOperation;
-  private constructor(edge: AssocEdgeInput) {
+  private constructor(public edgeInput: AssocEdgeInput) {
     // TODO
-    this.createRow = new CreateEdgeOperation(edge, new AssocEdgeData({}));
+    this.createRow = new CreateEdgeOperation(edgeInput, new AssocEdgeData({}));
   }
 
   performWrite(q: Queryer): Promise<void> {
@@ -169,10 +170,10 @@ class EdgeOperation<T extends Ent> implements DataOperation {
   }
 
   static inboundEdge<T extends Ent>(
+    builder: Builder<T>,
     edgeType: string,
     id1: Builder<T> | ID,
     nodeType: string,
-    builder: Builder<T>, // todo builder?
     options?: AssocEdgeInputOptions,
   ): EdgeOperation<T> {
     let id1Val: ID;
@@ -188,6 +189,7 @@ class EdgeOperation<T extends Ent> implements DataOperation {
       id2Val = builder.existingEnt.id;
       id2Type = builder.existingEnt.nodeType;
     } else {
+      console.log("placeholder");
       // get placeholder.
       id2Val = builder.placeholderID;
       // expected to be filled later

@@ -25,7 +25,7 @@ const tableName = "{{.TableName}}";
 
 export class {{$baseClass}} {
 
-  readonly nodeType: {{useImport "NodeType"}}.{{.Node}};
+  readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
     readonly {{$field.TsFieldName}}: {{$field.TsType}};
   {{end}}
