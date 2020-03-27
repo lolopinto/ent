@@ -23,8 +23,6 @@ export interface FieldInfo {
 }
 
 export interface OrchestratorOptions<T extends Ent> {
-  // coming from
-  //  placeholderID: ID;
   viewer: Viewer;
   operation: WriteOperation;
   tableName: string;
@@ -43,8 +41,6 @@ export interface OrchestratorOptions<T extends Ent> {
 }
 
 export class Orchestrator<T extends Ent> {
-  //  public readonly placeholderID: ID;
-
   // this should be edge operations...
   private edgeOps: EdgeOperation<T>[] = [];
   private edgeSet: Set<string> = new Set<string>();
@@ -102,7 +98,6 @@ export class Orchestrator<T extends Ent> {
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let dbKey = field.storageKey || snakeCase(field.name);
-
       if (value === undefined) {
         if (
           field.defaultValueOnCreate &&
@@ -125,6 +120,13 @@ export class Orchestrator<T extends Ent> {
             `field ${field.name} set to null for non-nullable field`,
           );
         }
+      } else if (value === undefined) {
+        if (
+          !field.nullable &&
+          this.options.operation === WriteOperation.Insert
+        ) {
+          throw new Error(`required field ${field.name} not set`);
+        }
       } else {
         if (field.valid && !field.valid(value)) {
           throw new Error(`invalid field ${field.name} with value ${value}`);
@@ -136,7 +138,6 @@ export class Orchestrator<T extends Ent> {
       }
       data[dbKey] = value;
     }
-    //    console.log(data);
 
     let ops: DataOperation[] = [
       ...this.edgeOps,
@@ -146,24 +147,6 @@ export class Orchestrator<T extends Ent> {
       }),
     ];
 
-    // for (const fieldInfo of fieldInfos) {
-    //   let value = fieldInfo.value;
-    //   const field = fieldInfo.field;
-
-    //   if (!field) {
-    //     throw new Error("invalid field");
-    //   }
-    //   if (field.valid && !field.valid(value)) {
-    //     throw new Error(`invalid field ${field.name} with value ${value}`);
-    //   }
-
-    //   if (field.format) {
-    //     value = field.format(value);
-    //   }
-    //   //      if (field.)
-    // }
-    //    const fields = getFields(this.options.schema);
-    //
     return new EntChangeset(
       this.options.viewer,
       this.options.builder.placeholderID,
