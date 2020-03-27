@@ -79,7 +79,16 @@ export class Orchestrator<T extends Ent> {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ) {
-    // TODO
+    this.edgeOps.push(
+      EdgeOperation.outboundEdge(
+        this.options.builder,
+        edgeType,
+        id2,
+        nodeType,
+        options,
+      ),
+    );
+    this.edgeSet.add(edgeType);
   }
 
   removeInboundEdge(id1: ID, edgeType: string, nodeType: string) {
@@ -169,6 +178,33 @@ export class EdgeOperation<T extends Ent> implements DataOperation {
     return this.createRow.performWrite(q);
   }
 
+  private static resolveIDs<T extends Ent>(
+    srcBuilder: Builder<T>, // id1
+    destID: Builder<T> | ID, // id2 ( and then you flip it)
+  ): [ID, string, ID] {
+    let destIDVal: ID;
+    if (typeof destID === "string" || typeof destID === "number") {
+      destIDVal = destID;
+    } else {
+      destIDVal = destID.placeholderID;
+    }
+    let srcIDVal: ID;
+    let srcType: string;
+
+    if (srcBuilder.existingEnt) {
+      srcIDVal = srcBuilder.existingEnt.id;
+      srcType = srcBuilder.existingEnt.nodeType;
+    } else {
+      console.log("placeholder");
+      // get placeholder.
+      srcIDVal = srcBuilder.placeholderID;
+      // expected to be filled later
+      srcType = "";
+    }
+
+    return [srcIDVal, srcType, destIDVal];
+  }
+
   static inboundEdge<T extends Ent>(
     builder: Builder<T>,
     edgeType: string,
@@ -176,31 +212,37 @@ export class EdgeOperation<T extends Ent> implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation<T> {
-    let id1Val: ID;
-    if (typeof id1 === "string" || typeof id1 === "number") {
-      id1Val = id1;
-    } else {
-      id1Val = id1.placeholderID;
-    }
-    let id2Val: ID;
-    let id2Type: string;
+    // todo we still need flags to indicate something is a placeholder ID
+    let [id2Val, id2Type, id1Val] = EdgeOperation.resolveIDs(builder, id1);
 
-    if (builder.existingEnt) {
-      id2Val = builder.existingEnt.id;
-      id2Type = builder.existingEnt.nodeType;
-    } else {
-      console.log("placeholder");
-      // get placeholder.
-      id2Val = builder.placeholderID;
-      // expected to be filled later
-      id2Type = "";
-    }
     const edge: AssocEdgeInput = {
       id1: id1Val,
       edgeType: edgeType,
       id2: id2Val,
       id2Type: id2Type,
       id1Type: nodeType,
+      ...options,
+    };
+
+    return new EdgeOperation(edge);
+  }
+
+  static outboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id2: Builder<T> | ID,
+    nodeType: string,
+    options?: AssocEdgeInputOptions,
+  ): EdgeOperation<T> {
+    // todo we still need flags to indicate something is a placeholder ID
+    let [id1Val, id1Type, id2Val] = EdgeOperation.resolveIDs(builder, id2);
+
+    const edge: AssocEdgeInput = {
+      id1: id1Val,
+      edgeType: edgeType,
+      id2: id2Val,
+      id2Type: nodeType,
+      id1Type: id1Type,
       ...options,
     };
 

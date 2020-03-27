@@ -259,6 +259,28 @@ test("inbound edge", async () => {
   });
 });
 
+test("outbound edge", async () => {
+  const viewer = new IDViewer("1");
+  const user = new User(viewer, { id: "1" });
+  const builder = new SimpleBuilder(
+    UserSchema,
+    new Map(),
+    WriteOperation.Edit,
+    user, // TODO enforce existing ent if not create
+  );
+  builder.viewer = viewer;
+  builder.orchestrator.addOutboundEdge("2", "edge", "User");
+
+  const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+  expect(edgeOp.edgeInput).toStrictEqual({
+    id1: "1",
+    id1Type: "User",
+    edgeType: "edge",
+    id2: "2",
+    id2Type: "User",
+  });
+});
+
 function validateFieldsExist(fields: {}, ...names: string[]) {
   for (const name of names) {
     expect(fields[name], `field ${name}`).not.toBe(undefined);
