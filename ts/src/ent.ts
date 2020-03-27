@@ -459,12 +459,6 @@ export async function deleteEnt(
   return null;
 }
 
-enum EditOperation {
-  Create = "create",
-  Edit = "edit",
-  Delete = "delete",
-}
-
 export class AssocEdge {
   id1: ID;
   id1Type: string;

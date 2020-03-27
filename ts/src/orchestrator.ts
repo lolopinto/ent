@@ -91,12 +91,16 @@ export class Orchestrator<T extends Ent> {
     this.edgeSet.add(edgeType);
   }
 
-  removeInboundEdge(id1: ID, edgeType: string, nodeType: string) {
-    // TODO
+  removeInboundEdge(id1: ID, edgeType: string) {
+    this.edgeOps.push(
+      EdgeOperation.removeInboundEdge(this.options.builder, edgeType, id1),
+    );
   }
 
-  removeOutboundEdge(id2: ID, edgeType: string, nodeType: string) {
-    // TODO
+  removeOutboundEdge(id2: ID, edgeType: string) {
+    this.edgeOps.push(
+      EdgeOperation.removeOutboundEdge(this.options.builder, edgeType, id2),
+    );
   }
 
   async build(): Promise<EntChangeset<T>> {
@@ -169,12 +173,16 @@ export class Orchestrator<T extends Ent> {
 // TODO implements DataOperation and move functionality away
 export class EdgeOperation<T extends Ent> implements DataOperation {
   private createRow: DataOperation;
-  private constructor(public edgeInput: AssocEdgeInput) {
+  private constructor(
+    public edgeInput: AssocEdgeInput,
+    public operation: WriteOperation = WriteOperation.Insert,
+  ) {
     // TODO
     this.createRow = new CreateEdgeOperation(edgeInput, new AssocEdgeData({}));
   }
 
   performWrite(q: Queryer): Promise<void> {
+    // todo...
     return this.createRow.performWrite(q);
   }
 
@@ -247,6 +255,42 @@ export class EdgeOperation<T extends Ent> implements DataOperation {
     };
 
     return new EdgeOperation(edge);
+  }
+
+  static removeInboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id1: ID,
+  ): EdgeOperation<T> {
+    if (!builder.existingEnt) {
+      throw new Error("cannot remove an edge from a non-existing ent");
+    }
+    const edge: AssocEdgeInput = {
+      id1: id1,
+      edgeType: edgeType,
+      id2: builder.existingEnt!.id,
+      id2Type: "", // these 2 shouldn't matter
+      id1Type: "",
+    };
+    return new EdgeOperation(edge, WriteOperation.Delete);
+  }
+
+  static removeOutboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id2: ID,
+  ): EdgeOperation<T> {
+    if (!builder.existingEnt) {
+      throw new Error("cannot remove an edge from a non-existing ent");
+    }
+    const edge: AssocEdgeInput = {
+      id2: id2,
+      edgeType: edgeType,
+      id1: builder.existingEnt!.id,
+      id2Type: "", // these 2 shouldn't matter
+      id1Type: "",
+    };
+    return new EdgeOperation(edge, WriteOperation.Delete);
   }
 }
 

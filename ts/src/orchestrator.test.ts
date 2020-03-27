@@ -281,6 +281,84 @@ test("outbound edge", async () => {
   });
 });
 
+describe("remove inbound edge", () => {
+  test("existing ent", async () => {
+    const viewer = new IDViewer("1");
+    const user = new User(viewer, { id: "1" });
+    const builder = new SimpleBuilder(
+      UserSchema,
+      new Map(),
+      WriteOperation.Edit,
+      user, // TODO enforce existing ent if not create
+    );
+    builder.viewer = viewer;
+    builder.orchestrator.removeInboundEdge("2", "edge");
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "2",
+      edgeType: "edge",
+      id2: "1",
+      id1Type: "", // not useful so we don't care
+      id2Type: "",
+    });
+  });
+
+  test("no ent", async () => {
+    const builder = new SimpleBuilder(
+      UserSchema,
+      new Map(),
+      WriteOperation.Edit,
+    );
+
+    try {
+      builder.orchestrator.removeInboundEdge("2", "edge");
+      fail("should not get here");
+    } catch (e) {
+      expect(e.message).toBe("cannot remove an edge from a non-existing ent");
+    }
+  });
+});
+
+describe("remove outbound edge", () => {
+  test("existing ent", async () => {
+    const viewer = new IDViewer("1");
+    const user = new User(viewer, { id: "1" });
+    const builder = new SimpleBuilder(
+      UserSchema,
+      new Map(),
+      WriteOperation.Edit,
+      user, // TODO enforce existing ent if not create
+    );
+    builder.viewer = viewer;
+    builder.orchestrator.removeOutboundEdge("2", "edge");
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "1",
+      edgeType: "edge",
+      id2: "2",
+      id1Type: "", // not useful so we don't care
+      id2Type: "",
+    });
+  });
+
+  test("no ent", async () => {
+    const builder = new SimpleBuilder(
+      UserSchema,
+      new Map(),
+      WriteOperation.Edit,
+    );
+
+    try {
+      builder.orchestrator.removeOutboundEdge("2", "edge");
+      fail("should not get here");
+    } catch (e) {
+      expect(e.message).toBe("cannot remove an edge from a non-existing ent");
+    }
+  });
+});
+
 function validateFieldsExist(fields: {}, ...names: string[]) {
   for (const name of names) {
     expect(fields[name], `field ${name}`).not.toBe(undefined);
