@@ -15,14 +15,14 @@ import {
   writeEdgeX,
 } from "ent/ent";
 import DB from "ent/db";
-import { LogedOutViewer } from "ent/viewer";
+import { LoggedOutViewer } from "ent/viewer";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
 import Event, { createEvent } from "src/ent/event";
 import { randomEmail } from "src/util/random";
 
-const loggedOutViewer = new LogedOutViewer();
+const loggedOutViewer = new LoggedOutViewer();
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -240,7 +240,7 @@ test("inverse edge", async () => {
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  let event = await createEvent(new LogedOutViewer(), {
+  let event = await createEvent(new LoggedOutViewer(), {
     creatorID: user.id as string,
     startTime: new Date(),
     name: "fun event",
@@ -297,7 +297,7 @@ test("one-way edge", async () => {
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  let event = await createEvent(new LogedOutViewer(), {
+  let event = await createEvent(new LoggedOutViewer(), {
     creatorID: user.id as string,
     startTime: new Date(),
     name: "fun event",

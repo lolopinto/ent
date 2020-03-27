@@ -18,21 +18,29 @@ export enum ActionOperation {
   EdgeGroup,
 }
 
+export enum WriteOperation {
+  Insert = "insert",
+  Edit = "edit",
+  Delete = "delete",
+}
+
 export interface Builder<T extends Ent> {
   existingEnt: Ent | null;
   ent: EntConstructor<T>;
   placeholderID: ID;
   viewer: Viewer;
-  build: Changeset<T>;
-  operation: ActionOperation;
+  build(): Promise<Changeset<T>>;
+  operation: WriteOperation;
 }
 
-export interface Executor extends Iterator<DataOperation> {
+export interface Executor
+  extends Iterable<DataOperation>,
+    Iterator<DataOperation> {
   resolveValue(val: any): Ent;
 }
 
 export interface Changeset<T extends Ent> {
-  executor: Executor;
+  executor(): Executor;
   viewer: Viewer;
   placeholderID: ID;
   ent: EntConstructor<T>;
@@ -54,29 +62,11 @@ export interface Validator {
 
 export interface Action<T extends Ent> {
   viewer: Viewer;
-  changeset(): Changeset<T>;
-  ent: Ent;
+  changeset(): Promise<Changeset<T>>;
+  //ent: EntConstructor<T>;
   builder: Builder<T>;
   privacyPolicy?: PrivacyPolicy;
   triggers?: Trigger<T>[];
   observers?: Observer[];
   validators?: Validator[];
-}
-
-class ListBasedExecutor implements Executor {
-  private idx: number;
-  constructor(private operations: DataOperation[]) {}
-  resolveValue(val: any): Ent {
-    throw new Error();
-  }
-
-  next(): IteratorResult<DataOperation> {
-    const op = this.operations[this.idx];
-    const done = this.idx == this.operations.length - 1;
-    this.idx++;
-    return {
-      value: op,
-      done: done,
-    };
-  }
 }
