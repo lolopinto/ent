@@ -4,9 +4,12 @@ import {
   EntConstructor,
   Viewer,
   ID,
+  applyPrivacyPolicyForEntX,
+  applyPrivacyPolicyForEnt,
   CreateRowOperation,
 } from "./ent";
 import { PrivacyPolicy } from "./privacy";
+import DB from "./db";
 
 export enum ActionOperation {
   Create = 1,
@@ -65,8 +68,73 @@ export interface Action<T extends Ent> {
   changeset(): Promise<Changeset<T>>;
   //ent: EntConstructor<T>;
   builder: Builder<T>;
-  privacyPolicy?: PrivacyPolicy;
+  privacyPolicy?: PrivacyPolicy; // todo make required?
   triggers?: Trigger<T>[];
   observers?: Observer[];
   validators?: Validator[];
+}
+
+export async function saveBuilder<T extends Ent>(
+  builder: Builder<T>,
+): Promise<T | null> {
+  const ent = await saveBuilderImpl(builder, false);
+  if (ent) {
+    return ent;
+    // TODO we need to apply privacy while loading
+    // so we also need an API to get the raw object back e.g. for account creation
+    // or a way to inject viewer for privacy purposes
+    //    return applyPrivacyPolicyForEnt(builder.viewer, ent);
+  }
+  return null;
+}
+
+export async function saveBuilderX<T extends Ent>(
+  builder: Builder<T>,
+): Promise<T> {
+  const ent = await saveBuilderImpl(builder, true);
+  if (ent) {
+    return ent;
+    // TODO same as above re: viewer
+    //    return applyPrivacyPolicyForEntX(builder.viewer, ent);
+  }
+  throw new Error("could not save ent for builder");
+}
+
+async function saveBuilderImpl<T extends Ent>(
+  builder: Builder<T>,
+  throwErr: boolean,
+): Promise<T | null> {
+  const changeset = await builder.build();
+  const executor = changeset.executor();
+
+  const client = await DB.getInstance().getNewClient();
+
+  let row = {};
+  try {
+    await client.query("BEGIN");
+    for (const operation of executor) {
+      await operation.performWrite(client);
+      if (operation.createdRow) {
+        // we need a way to eventually know primary vs not once we can stack these
+        // things with triggers etc
+        row = operation.createdRow();
+      }
+    }
+    await client.query("COMMIT");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    // rethrow the exception to be caught
+    if (throwErr) {
+      throw e;
+    } else {
+      console.error(e);
+    }
+  } finally {
+    client.release();
+  }
+
+  if (row) {
+    return new builder.ent(builder.viewer, row["id"], row);
+  }
+  return null;
 }

@@ -112,6 +112,7 @@ export class Orchestrator<T extends Ent> {
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
       let dbKey = field.storageKey || snakeCase(field.name);
+
       if (value === undefined) {
         if (
           field.defaultValueOnCreate &&

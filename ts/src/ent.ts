@@ -155,7 +155,7 @@ export async function loadDerivedEntX<T extends Ent>(
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
-async function applyPrivacyPolicyForEnt<T extends Ent>(
+export async function applyPrivacyPolicyForEnt<T extends Ent>(
   viewer: Viewer,
   ent: T | null,
 ): Promise<T | null> {
@@ -168,7 +168,7 @@ async function applyPrivacyPolicyForEnt<T extends Ent>(
   return null;
 }
 
-async function applyPrivacyPolicyForEntX<T extends Ent>(
+export async function applyPrivacyPolicyForEntX<T extends Ent>(
   viewer: Viewer,
   ent: T,
 ): Promise<T> {
@@ -292,6 +292,7 @@ export interface Queryer {
 
 export interface DataOperation {
   performWrite(queryer: Queryer): Promise<void>;
+  createdRow?(): {}; // optional to indicate the row that was created
 }
 
 // this sould get a flag of whether it should throw or not and then do the right thing
@@ -355,6 +356,10 @@ export class CreateRowOperation implements DataOperation {
     if (res.rowCount == 1) {
       this.row = res.rows[0];
     }
+  }
+
+  createdRow(): {} {
+    return this.row;
   }
 }
 

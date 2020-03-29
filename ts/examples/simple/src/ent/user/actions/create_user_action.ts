@@ -8,8 +8,15 @@ import {
   AssocEdgeInputOptions,
   createEnt,
 } from "ent/ent";
-import { Action, Builder, WriteOperation, Changeset } from "ent/action";
-import { Orchestrator, FieldInfo } from "ent/orchestrator";
+import {
+  Action,
+  Builder,
+  WriteOperation,
+  Changeset,
+  saveBuilderX,
+  saveBuilder,
+} from "ent/action";
+import { Orchestrator } from "ent/orchestrator";
 
 import User from "src/ent/user";
 import { EdgeType, NodeType } from "src/ent/const";
@@ -46,7 +53,7 @@ function randomNum(): string {
 export class UserBuilder implements Builder<User> {
   private orchestrator: Orchestrator<User>;
   readonly placeholderID: ID;
-  readonly ent: EntConstructor<User>;
+  readonly ent = User;
 
   public constructor(
     public readonly viewer: Viewer,
@@ -85,22 +92,22 @@ export class UserBuilder implements Builder<User> {
 
     const addField = function(key: string, value: any, setNull: boolean) {
       if (value !== undefined) {
-        result[key] = value;
+        result.set(key, value);
       } else if (setNull) {
-        result[key] = null;
+        result.set(key, null);
       }
     };
     // we need the defaults too!
 
-    const schemaFields = getFields(schema);
+    //    const schemaFields = getFields(schema);
 
     // this should really just be fieldName -> val...
     // and account for required fields and pass undefined
     // TODO...
     // we need to put null in these cases which is different from undefined later
-    addField("firstName", fields.firstName, m["firstName"]);
-    addField("lastName", fields.firstName, m["lastName"]);
-    addField("emailAddress", fields.firstName, m["emailAddress"]);
+    addField("FirstName", fields.firstName, m["firstName"]);
+    addField("LastName", fields.lastName, m["lastName"]);
+    addField("EmailAddress", fields.emailAddress, m["emailAddress"]);
 
     return result;
   }
@@ -151,6 +158,7 @@ export class UserBuilder implements Builder<User> {
 export class CreateUserAction implements Action<User> {
   //  private orchestrator: Orchestrator<User>;
   public readonly builder: Builder<User>;
+  //  ent: User;
 
   protected constructor(
     public readonly viewer: Viewer,
@@ -160,38 +168,27 @@ export class CreateUserAction implements Action<User> {
       this.viewer,
       WriteOperation.Insert,
       this,
-      null,
+      undefined,
     );
-    // this.orchestrator = new Orchestrator(viewer, ActionOperation.Create, {
-    //   tableName: "users",
-    //   ent: User,
-    //   action: this,
-    // });
   }
 
   getFields(): UserInput {
     return {
       ...this.input,
-      requiredFields: ["firstName", "lastName", "emailAddress"],
+      requiredFields: ["FirstName", "LastName", "EmailAddress"],
     };
   }
 
-  //  builder()
   async changeset(): Promise<Changeset<User>> {
     return this.builder.build();
   }
 
-  ent: User;
-
   async save(): Promise<User | null> {
-    //    return createEnt(this.viewer,this);
-    return null;
+    return saveBuilder(this.builder);
   }
 
-  // TODO....
-  // this should throw and not return X
-  async saveX(): Promise<User | null> {
-    return null;
+  async saveX(): Promise<User> {
+    return saveBuilderX(this.builder);
   }
 
   // this API doesn't work because yes even though we have input, we want optional builder params....

@@ -21,6 +21,7 @@ import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
 import Event, { createEvent } from "src/ent/event";
 import { randomEmail } from "src/util/random";
+import { CreateUserAction } from "src/ent/user/actions/create_user_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -30,11 +31,7 @@ afterAll(async () => {
 });
 
 async function create(input: UserCreateInput): Promise<User> {
-  let user = await createUser(loggedOutViewer, input);
-  if (user == null) {
-    fail("could not create user");
-  }
-  return user;
+  return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
 test("create user", async () => {
