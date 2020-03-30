@@ -1,4 +1,4 @@
-import User, { deleteUser, UserCreateInput } from "src/ent/user";
+import User from "src/ent/user";
 import Contact, { createContact } from "src/ent/contact";
 
 import {
@@ -19,6 +19,8 @@ import { randomEmail } from "src/util/random";
 import {
   CreateUserAction,
   EditUserAction,
+  UserCreateInput,
+  DeleteUserAction,
 } from "src/ent/user/actions/create_user_action";
 
 const loggedOutViewer = new LoggedOutViewer();
@@ -75,7 +77,7 @@ test("delete user", async () => {
       emailAddress: randomEmail(),
     });
 
-    await deleteUser(loggedOutViewer, user.id);
+    await DeleteUserAction.create(loggedOutViewer, user).saveX();
 
     let loadedUser = await User.load(loggedOutViewer, user.id);
     expect(loadedUser).toBe(null);

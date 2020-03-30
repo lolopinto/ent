@@ -1,13 +1,4 @@
-import {
-  Viewer,
-  ID,
-  DataOperation,
-  Ent,
-  EntConstructor,
-  AssocEdgeInput,
-  AssocEdgeInputOptions,
-  createEnt,
-} from "ent/ent";
+import { Viewer, ID, Ent, AssocEdgeInputOptions } from "ent/ent";
 import {
   Action,
   Builder,
@@ -23,7 +14,6 @@ import { EdgeType, NodeType } from "src/ent/const";
 import schema from "src/schema/user";
 import { Field, getFields } from "ent/schema";
 
-//export interface
 export interface UserCreateInput {
   firstName: string;
   lastName: string;
@@ -215,5 +205,40 @@ export class EditUserAction implements Action<User> {
     input: UserEditInput,
   ): EditUserAction {
     return new EditUserAction(viewer, user, input);
+  }
+}
+
+export class DeleteUserAction implements Action<User> {
+  public readonly builder: Builder<User>;
+
+  protected constructor(public readonly viewer: Viewer, user: User) {
+    this.builder = new UserBuilder(
+      this.viewer,
+      WriteOperation.Edit,
+      this,
+      user,
+    );
+  }
+
+  getFields(): UserInput {
+    return {
+      requiredFields: [],
+    };
+  }
+
+  async changeset(): Promise<Changeset<User>> {
+    return this.builder.build();
+  }
+
+  async save(): Promise<void> {
+    await saveBuilder(this.builder);
+  }
+
+  async saveX(): Promise<void> {
+    await saveBuilderX(this.builder);
+  }
+
+  static create(viewer: Viewer, user: User): DeleteUserAction {
+    return new DeleteUserAction(viewer, user);
   }
 }

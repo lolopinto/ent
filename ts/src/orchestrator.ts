@@ -9,6 +9,7 @@ import {
   CreateEdgeOperation,
   AssocEdgeData,
   EditNodeOperation,
+  DeleteNodeOperation,
   Queryer,
 } from "./ent";
 import { Field, getFields } from "./schema";
@@ -102,8 +103,22 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
-  async build(): Promise<EntChangeset<T>> {
-    // TODO...
+  private buildDeleteOp(): DataOperation {
+    if (!this.options.builder.existingEnt) {
+      throw new Error("existing ent required with delete operation");
+    }
+    return new DeleteNodeOperation(this.options.builder.existingEnt.id, {
+      tableName: this.options.tableName,
+    });
+  }
+
+  private buildEditOp(): DataOperation {
+    if (
+      this.options.operation === WriteOperation.Edit &&
+      !this.options.builder.existingEnt
+    ) {
+      throw new Error("existing ent required with edit operation");
+    }
     const editedFields = this.options.editedFields();
     // build up data to be saved...
     let data = {};
@@ -156,16 +171,28 @@ export class Orchestrator<T extends Ent> {
       }
     }
 
-    let ops: DataOperation[] = [
-      new EditNodeOperation(
-        {
-          fields: data,
-          tableName: this.options.tableName,
-        },
-        this.options.builder.existingEnt,
-      ),
-      ...this.edgeOps,
-    ];
+    return new EditNodeOperation(
+      {
+        fields: data,
+        tableName: this.options.tableName,
+      },
+      this.options.builder.existingEnt,
+    );
+  }
+
+  async build(): Promise<EntChangeset<T>> {
+    let ops: DataOperation[] = [];
+
+    switch (this.options.operation) {
+      case WriteOperation.Delete:
+        ops.push(this.buildDeleteOp());
+        break;
+      case WriteOperation.Edit:
+      case WriteOperation.Insert:
+        ops.push(this.buildEditOp());
+    }
+
+    ops = ops.concat(this.edgeOps);
 
     return new EntChangeset(
       this.options.viewer,

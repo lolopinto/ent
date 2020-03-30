@@ -485,7 +485,18 @@ export async function editEnt<T extends Ent>(
   return null;
 }
 
-// need a deleteRow vs deleteEnt eventually
+// TODO...
+export class DeleteNodeOperation implements DataOperation {
+  constructor(private id: ID, private options: DataOptions) {}
+
+  async performWrite(queryer: Queryer): Promise<void> {
+    let query = `DELETE FROM ${this.options.tableName} WHERE id = $1`;
+    logQuery(query);
+    await queryer.query(query, [this.id]);
+  }
+}
+
+// TODO kill
 export async function deleteEnt(
   viewer: Viewer,
   id: ID,

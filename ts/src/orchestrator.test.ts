@@ -7,6 +7,7 @@ import {
   EntConstructor,
   DataOperation,
   EditNodeOperation,
+  DeleteNodeOperation,
   CreateEdgeOperation,
 } from "./ent";
 import { PrivacyPolicy, AlwaysAllowRule } from "./privacy";
@@ -125,18 +126,35 @@ test("required field not set", async () => {
 });
 
 test("schema on edit", async () => {
+  const user = new User(new LoggedOutViewer(), { id: "1" });
   const builder = new SimpleBuilder(
     UserSchema,
     // field that's not changed isn't set...
     // simulating what the generated builder will do
     new Map([["LastName", "Targaryean"]]),
     WriteOperation.Edit,
+    user,
   );
 
   const fields = await getFieldsFromBuilder(builder);
   expect(fields["last_name"]).toBe("Targaryean");
   validateFieldsExist(fields, "updated_at");
   validateFieldsDoNotExist(fields, "id", "created_at");
+});
+
+test("schema on delete", async () => {
+  const user = new User(new LoggedOutViewer(), { id: "1" });
+  const builder = new SimpleBuilder(
+    UserSchema,
+    new Map(),
+    WriteOperation.Delete,
+    user,
+  );
+
+  const c = await builder.build();
+  const ops = getOperations(c);
+  expect(ops.length).toBe(1);
+  expect(ops[0]).toBeInstanceOf(DeleteNodeOperation);
 });
 
 test("schema with null fields", async () => {
