@@ -250,7 +250,11 @@ export async function createEnt<T extends Ent>(
   viewer: Viewer,
   options: EditEntOptions<T>,
 ): Promise<T | null> {
-  const row = await createRow(options);
+  const row = await createRow(
+    DB.getInstance().getPool(),
+    options,
+    "RETURNING *",
+  );
   if (!row) {
     return null;
   }
@@ -292,7 +296,7 @@ export interface Queryer {
 
 export interface DataOperation {
   performWrite(queryer: Queryer): Promise<void>;
-  createdRow?(): {}; // optional to indicate the row that was created
+  returnedEntRow?(): {} | null; // optional to indicate the row that was created
 }
 
 // this sould get a flag of whether it should throw or not and then do the right thing
@@ -327,38 +331,42 @@ async function executeOperations(
   }
 }
 
+export class EditNodeOperation implements DataOperation {
+  row: {} | null;
+
+  constructor(
+    public options: EditRowOptions,
+    private existingEnt: Ent | null = null,
+  ) {}
+
+  async performWrite(queryer: Queryer): Promise<void> {
+    if (this.existingEnt) {
+      this.row = await editRow(queryer, this.options, this.existingEnt.id);
+    } else {
+      this.row = await createRow(queryer, this.options, "RETURNING *");
+    }
+  }
+
+  returnedEntRow(): {} | null {
+    return this.row;
+  }
+}
+
+// TODO kill...
 export class CreateRowOperation implements DataOperation {
-  row: {};
+  row: {} | null;
 
   constructor(public options: EditRowOptions, private suffix?: string) {}
 
   async performWrite(queryer: Queryer): Promise<void> {
-    let fields: string[] = [];
-    let values: any[] = [];
-    let valsString: string[] = [];
-    let idx = 1;
-    for (const key in this.options.fields) {
-      fields.push(key);
-      values.push(this.options.fields[key]);
-      valsString.push(`$${idx}`);
-      idx++;
-    }
-
-    const cols = fields.join(", ");
-    const vals = valsString.join(", ");
-
-    let query = `INSERT INTO ${this.options.tableName} (${cols}) VALUES (${vals}) RETURNING *`;
-
-    logQuery(query);
-
-    const res = await queryer.query(query, values);
-
-    if (res.rowCount == 1) {
-      this.row = res.rows[0];
-    }
+    this.row = await createRow(
+      queryer,
+      this.options,
+      this.suffix || "RETURNING *",
+    );
   }
 
-  createdRow(): {} {
+  returnedEntRow(): {} | null {
     return this.row;
   }
 }
@@ -396,23 +404,42 @@ export class CreateEdgeOperation extends CreateRowOperation {
   }
 }
 
-// simple helper function for single create (not in a transaction)
-// TODO handle this better when actions etc come up
-async function createRow(options: EditRowOptions): Promise<{} | null> {
-  const op = new CreateRowOperation(options);
-  await executeOperations([op]);
-  if (op.row) {
-    return op.row;
+async function createRow(
+  queryer: Queryer,
+  options: EditRowOptions,
+  suffix: string,
+): Promise<{} | null> {
+  let fields: string[] = [];
+  let values: any[] = [];
+  let valsString: string[] = [];
+  let idx = 1;
+  for (const key in options.fields) {
+    fields.push(key);
+    values.push(options.fields[key]);
+    valsString.push(`$${idx}`);
+    idx++;
+  }
+
+  const cols = fields.join(", ");
+  const vals = valsString.join(", ");
+
+  let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals}) ${suffix}`;
+
+  logQuery(query);
+
+  const res = await queryer.query(query, values);
+
+  if (res.rowCount == 1) {
+    return res.rows[0];
   }
   return null;
 }
 
-// column should be passed in here
-export async function editEnt<T extends Ent>(
-  viewer: Viewer,
+async function editRow(
+  queryer: Queryer,
+  options: EditRowOptions,
   id: ID,
-  options: EditEntOptions<T>,
-): Promise<T | null> {
+): Promise<{} | null> {
   let valsString: string[] = [];
   let values: any[] = [];
 
@@ -430,18 +457,30 @@ export async function editEnt<T extends Ent>(
   logQuery(query);
 
   try {
-    const pool = DB.getInstance().getPool();
-    const res = await pool.query(query, values);
+    const res = await queryer.query(query, values);
 
     if (res.rowCount == 1) {
       // for now assume id primary key
       // TODO make this extensible as needed.
       let row = res.rows[0];
-      return new options.ent(viewer, row.id, row);
+      return row;
     }
   } catch (e) {
     console.error(e);
     return null;
+  }
+  return null;
+}
+
+// column should be passed in here
+export async function editEnt<T extends Ent>(
+  viewer: Viewer,
+  id: ID,
+  options: EditEntOptions<T>,
+): Promise<T | null> {
+  const row = await editRow(DB.getInstance().getPool(), options, id);
+  if (row) {
+    return new options.ent(viewer, row["id"], row);
   }
   return null;
 }

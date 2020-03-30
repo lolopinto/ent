@@ -6,7 +6,6 @@ import {
   ID,
   applyPrivacyPolicyForEntX,
   applyPrivacyPolicyForEnt,
-  CreateRowOperation,
 } from "./ent";
 import { PrivacyPolicy } from "./privacy";
 import DB from "./db";
@@ -109,15 +108,15 @@ async function saveBuilderImpl<T extends Ent>(
 
   const client = await DB.getInstance().getNewClient();
 
-  let row = {};
+  let row: {} | null = null;
   try {
     await client.query("BEGIN");
     for (const operation of executor) {
       await operation.performWrite(client);
-      if (operation.createdRow) {
+      if (operation.returnedEntRow) {
         // we need a way to eventually know primary vs not once we can stack these
         // things with triggers etc
-        row = operation.createdRow();
+        row = operation.returnedEntRow();
       }
     }
     await client.query("COMMIT");

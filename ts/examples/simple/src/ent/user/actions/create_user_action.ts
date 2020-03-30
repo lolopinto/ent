@@ -59,7 +59,7 @@ export class UserBuilder implements Builder<User> {
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
     private action: UserAction,
-    public readonly existingEnt: Ent | undefined,
+    public readonly existingEnt?: Ent | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
 
@@ -71,21 +71,16 @@ export class UserBuilder implements Builder<User> {
       builder: this,
       action: action,
       schema: schema,
-      //      schema: schema,
-      //      placeholderID: this.placeholderID,
       editedFields: this.getEditedFields,
     });
-    //    this.placeholderID = this.orchestrator.placeholderID;
   }
 
   private getEditedFields(): Map<string, any> {
-    // todo kill types
     const fields = this.action.getFields();
 
     // required fields
     let m = {};
     let result = new Map<string, any>();
-    //    let result: FieldInfo[] = [];
     for (const field of fields.requiredFields) {
       m[field] = true;
     }
@@ -97,31 +92,12 @@ export class UserBuilder implements Builder<User> {
         result.set(key, null);
       }
     };
-    // we need the defaults too!
-
-    //    const schemaFields = getFields(schema);
-
-    // this should really just be fieldName -> val...
-    // and account for required fields and pass undefined
-    // TODO...
-    // we need to put null in these cases which is different from undefined later
     addField("FirstName", fields.firstName, m["firstName"]);
     addField("LastName", fields.lastName, m["lastName"]);
     addField("EmailAddress", fields.emailAddress, m["emailAddress"]);
 
     return result;
   }
-  // private static schemaFields: Map<string, Field<any>>;
-
-  // // pass schema to orchestrator instead of this
-  // // and then also pass fields
-  // private static getSchemaFields(): Map<string, Field<any>> {
-  //   if (UserBuilder.schemaFields != null) {
-  //     return UserBuilder.schemaFields;
-  //   }
-  //   return (UserBuilder.schemaFields = getFields(schema));
-  // }
-  // need a way to map schemaName to input key
 
   // hmm function overloading doesn't work in classes?
   // function overload so easier for client
@@ -136,7 +112,6 @@ export class UserBuilder implements Builder<User> {
         this.addFriendID(user);
       }
     }
-    //    users.map(user => this.addFriendID(user.id));
     return this;
   }
 
@@ -164,12 +139,7 @@ export class CreateUserAction implements Action<User> {
     public readonly viewer: Viewer,
     private input: UserCreateInput,
   ) {
-    this.builder = new UserBuilder(
-      this.viewer,
-      WriteOperation.Insert,
-      this,
-      undefined,
-    );
+    this.builder = new UserBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
   getFields(): UserInput {
@@ -195,5 +165,55 @@ export class CreateUserAction implements Action<User> {
   // TODO this...
   static create(viewer: Viewer, input: UserCreateInput): CreateUserAction {
     return new CreateUserAction(viewer, input);
+  }
+}
+
+export interface UserEditInput {
+  firstName?: string;
+  lastName?: string;
+  emailAddress?: string;
+}
+
+export class EditUserAction implements Action<User> {
+  public readonly builder: Builder<User>;
+
+  protected constructor(
+    public readonly viewer: Viewer,
+    user: User,
+    private input: UserEditInput,
+  ) {
+    this.builder = new UserBuilder(
+      this.viewer,
+      WriteOperation.Edit,
+      this,
+      user,
+    );
+  }
+
+  getFields(): UserInput {
+    return {
+      ...this.input,
+      requiredFields: [],
+    };
+  }
+
+  async changeset(): Promise<Changeset<User>> {
+    return this.builder.build();
+  }
+
+  async save(): Promise<User | null> {
+    return saveBuilder(this.builder);
+  }
+
+  async saveX(): Promise<User> {
+    return saveBuilderX(this.builder);
+  }
+
+  static create(
+    viewer: Viewer,
+    user: User,
+    input: UserEditInput,
+  ): EditUserAction {
+    return new EditUserAction(viewer, user, input);
   }
 }

@@ -8,7 +8,7 @@ import {
   DataOperation,
   CreateEdgeOperation,
   AssocEdgeData,
-  CreateRowOperation,
+  EditNodeOperation,
   Queryer,
 } from "./ent";
 import { Field, getFields } from "./schema";
@@ -42,8 +42,7 @@ export interface OrchestratorOptions<T extends Ent> {
 }
 
 export class Orchestrator<T extends Ent> {
-  // this should be edge operations...
-  private edgeOps: EdgeOperation<T>[] = [];
+  private edgeOps: EdgeOperation[] = [];
   private edgeSet: Set<string> = new Set<string>();
   //  existingEnt: Ent | undefined;
 
@@ -151,15 +150,21 @@ export class Orchestrator<T extends Ent> {
           value = field.format(value);
         }
       }
-      data[dbKey] = value;
+
+      if (value !== undefined) {
+        data[dbKey] = value;
+      }
     }
 
     let ops: DataOperation[] = [
+      new EditNodeOperation(
+        {
+          fields: data,
+          tableName: this.options.tableName,
+        },
+        this.options.builder.existingEnt,
+      ),
       ...this.edgeOps,
-      new CreateRowOperation({
-        fields: data,
-        tableName: this.options.tableName,
-      }),
     ];
 
     return new EntChangeset(
@@ -172,7 +177,7 @@ export class Orchestrator<T extends Ent> {
 }
 
 // TODO implements DataOperation and move functionality away
-export class EdgeOperation<T extends Ent> implements DataOperation {
+export class EdgeOperation implements DataOperation {
   private createRow: DataOperation;
   private constructor(
     public edgeInput: AssocEdgeInput,
@@ -220,7 +225,7 @@ export class EdgeOperation<T extends Ent> implements DataOperation {
     id1: Builder<T> | ID,
     nodeType: string,
     options?: AssocEdgeInputOptions,
-  ): EdgeOperation<T> {
+  ): EdgeOperation {
     // todo we still need flags to indicate something is a placeholder ID
     let [id2Val, id2Type, id1Val] = EdgeOperation.resolveIDs(builder, id1);
 
@@ -242,7 +247,7 @@ export class EdgeOperation<T extends Ent> implements DataOperation {
     id2: Builder<T> | ID,
     nodeType: string,
     options?: AssocEdgeInputOptions,
-  ): EdgeOperation<T> {
+  ): EdgeOperation {
     // todo we still need flags to indicate something is a placeholder ID
     let [id1Val, id1Type, id2Val] = EdgeOperation.resolveIDs(builder, id2);
 
@@ -262,7 +267,7 @@ export class EdgeOperation<T extends Ent> implements DataOperation {
     builder: Builder<T>,
     edgeType: string,
     id1: ID,
-  ): EdgeOperation<T> {
+  ): EdgeOperation {
     if (!builder.existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
     }
@@ -280,7 +285,7 @@ export class EdgeOperation<T extends Ent> implements DataOperation {
     builder: Builder<T>,
     edgeType: string,
     id2: ID,
-  ): EdgeOperation<T> {
+  ): EdgeOperation {
     if (!builder.existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
     }

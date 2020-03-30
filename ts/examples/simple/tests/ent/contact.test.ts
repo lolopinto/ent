@@ -2,12 +2,11 @@ import User, { createUser, UserCreateInput } from "src/ent/user";
 
 import Contact, { createContact, ContactCreateInput } from "src/ent/contact";
 import DB from "ent/db";
-import { LogedOutViewer } from "ent/viewer";
+import { LoggedOutViewer } from "ent/viewer";
 import { ID, Ent, Viewer, writeEdge } from "ent/ent";
 import { NodeType, EdgeType } from "src/ent/const";
 import { randomEmail } from "src/util/random";
-
-const loggedOutViewer = new LogedOutViewer();
+const loggedOutViewer = new LoggedOutViewer();
 
 class IDViewer implements Viewer {
   constructor(public viewerID: ID, private ent: Ent | null = null) {}

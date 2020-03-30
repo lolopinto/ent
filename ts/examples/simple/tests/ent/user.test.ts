@@ -1,9 +1,4 @@
-import User, {
-  createUser,
-  editUser,
-  deleteUser,
-  UserCreateInput,
-} from "src/ent/user";
+import User, { deleteUser, UserCreateInput } from "src/ent/user";
 import Contact, { createContact } from "src/ent/contact";
 
 import {
@@ -21,7 +16,10 @@ import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
 import Event, { createEvent } from "src/ent/event";
 import { randomEmail } from "src/util/random";
-import { CreateUserAction } from "src/ent/user/actions/create_user_action";
+import {
+  CreateUserAction,
+  EditUserAction,
+} from "src/ent/user/actions/create_user_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -57,9 +55,9 @@ test("edit user", async () => {
       emailAddress: randomEmail(),
     });
 
-    let editedUser = await editUser(loggedOutViewer, user.id, {
+    let editedUser = await EditUserAction.create(loggedOutViewer, user, {
       firstName: "First of his name",
-    });
+    }).saveX();
 
     expect(editedUser).not.toBe(null);
     expect(editedUser?.firstName).toBe("First of his name");
@@ -402,7 +400,7 @@ function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
   expect(edge.data).toBe(expectedEdge.data || null);
 }
 
-test("loadUniqueEdge|Node", async () => {
+test("uniqueEdge|Node", async () => {
   let jon = await create({
     firstName: "Jon",
     lastName: "Snow",
@@ -453,9 +451,12 @@ test("loadUniqueEdge|Node", async () => {
     edgeType: EdgeType.UserToSelfContact,
   };
   await writeEdgeX(selfContactInput);
-  // try and write unique edge again
   try {
-    await writeEdgeX(selfContactInput);
+    // try and write another contact
+    await writeEdgeX({
+      ...selfContactInput,
+      id2: contact2.id,
+    });
     fail("should have throw an exception trying to write duplicate edge");
   } catch (e) {
     expect(e.message).toMatch(/duplicate key value violates unique constraint/);

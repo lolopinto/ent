@@ -6,7 +6,7 @@ import {
   ID,
   EntConstructor,
   DataOperation,
-  CreateRowOperation,
+  EditNodeOperation,
   CreateEdgeOperation,
 } from "./ent";
 import { PrivacyPolicy, AlwaysAllowRule } from "./privacy";
@@ -387,28 +387,28 @@ async function getFieldsFromBuilder<T extends Ent>(
   const ops = getOperations(c);
   expect(ops.length).toBe(expLength);
   for (const op of ops) {
-    const options = (op as CreateRowOperation).options;
+    const options = (op as EditNodeOperation).options;
     if (options !== undefined) {
       return options.fields;
     }
   }
-  fail("couldn't find CreateRowOperation where fields are being edited");
+  fail("couldn't find EditNodeOperation where fields are being edited");
 }
 
 async function getEdgeOpFromBuilder<T extends Ent>(
   builder: Builder<T>,
   expLength: number,
   edgeType: string,
-): Promise<EdgeOperation<T>> {
+): Promise<EdgeOperation> {
   const c = await builder.build();
   const ops = getOperations(c);
   expect(ops.length).toBe(expLength);
   //  console.log(ops);
   for (const op of ops) {
-    if ((op as EdgeOperation<T>).edgeInput !== undefined) {
+    if ((op as EdgeOperation).edgeInput !== undefined) {
       //      console.log(op);
       // todo add more things to differentiate this by
-      const edgeOp = (op as EdgeOperation<T>)!;
+      const edgeOp = (op as EdgeOperation)!;
       if (edgeOp.edgeInput.edgeType === edgeType) {
         return edgeOp;
       }

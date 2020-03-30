@@ -1,11 +1,11 @@
 import { createUser } from "src/ent/user";
 import Event, { createEvent, editEvent, deleteEvent } from "src/ent/event";
 import { ID, Ent, Viewer } from "ent/ent";
-import { LogedOutViewer } from "ent/viewer";
+import { LoggedOutViewer } from "ent/viewer";
 import DB from "ent/db";
 import { randomEmail } from "src/util/random";
 
-const loggedOutViewer = new LogedOutViewer();
+const loggedOutViewer = new LoggedOutViewer();
 
 class IDViewer implements Viewer {
   constructor(public viewerID: ID, private ent: Ent | null = null) {}
