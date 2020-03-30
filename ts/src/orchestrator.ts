@@ -11,17 +11,13 @@ import {
   EditNodeOperation,
   DeleteNodeOperation,
   Queryer,
+  loadEdgeDatas,
+  loadEdgeData,
 } from "./ent";
-import { Field, getFields } from "./schema";
+import { getFields } from "./schema";
 import { Changeset, Executor } from "./action";
 import { WriteOperation, Builder, Action } from "./action";
 import { snakeCase } from "snake-case";
-
-// T is useless probably
-export interface FieldInfo {
-  field: Field;
-  value: any;
-}
 
 export interface OrchestratorOptions<T extends Ent> {
   viewer: Viewer;
@@ -55,13 +51,18 @@ export class Orchestrator<T extends Ent> {
     //    this.existingEnt = options.existingEnt;
   }
 
+  private addEdge(edge: EdgeOperation) {
+    this.edgeOps.push(edge);
+    this.edgeSet.add(edge.edgeInput.edgeType);
+  }
+
   addInboundEdge(
     id1: ID | Builder<T>,
     edgeType: string,
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ) {
-    this.edgeOps.push(
+    this.addEdge(
       EdgeOperation.inboundEdge(
         this.options.builder,
         edgeType,
@@ -70,7 +71,6 @@ export class Orchestrator<T extends Ent> {
         options,
       ),
     );
-    this.edgeSet.add(edgeType);
   }
 
   addOutboundEdge(
@@ -79,7 +79,7 @@ export class Orchestrator<T extends Ent> {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ) {
-    this.edgeOps.push(
+    this.addEdge(
       EdgeOperation.outboundEdge(
         this.options.builder,
         edgeType,
@@ -88,17 +88,16 @@ export class Orchestrator<T extends Ent> {
         options,
       ),
     );
-    this.edgeSet.add(edgeType);
   }
 
   removeInboundEdge(id1: ID, edgeType: string) {
-    this.edgeOps.push(
+    this.addEdge(
       EdgeOperation.removeInboundEdge(this.options.builder, edgeType, id1),
     );
   }
 
   removeOutboundEdge(id2: ID, edgeType: string) {
-    this.edgeOps.push(
+    this.addEdge(
       EdgeOperation.removeOutboundEdge(this.options.builder, edgeType, id2),
     );
   }
@@ -140,6 +139,7 @@ export class Orchestrator<T extends Ent> {
           this.options.operation === WriteOperation.Edit
         ) {
           value = field.defaultValueOnEdit();
+          // TODO special case this if this is the onlything changing and don't do the write.
         }
       }
 
@@ -171,6 +171,8 @@ export class Orchestrator<T extends Ent> {
       }
     }
 
+    //    console.log(data);
+
     return new EditNodeOperation(
       {
         fields: data,
@@ -178,6 +180,28 @@ export class Orchestrator<T extends Ent> {
       },
       this.options.builder.existingEnt,
     );
+  }
+
+  private async buildEdgeOps(ops: DataOperation[]): Promise<void> {
+    const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
+    //    console.log(edgeDatas);
+    for (const edgeOp of this.edgeOps) {
+      ops.push(edgeOp);
+
+      const edgeType = edgeOp.edgeInput.edgeType;
+      const edgeData = edgeDatas.get(edgeType);
+      if (!edgeData) {
+        throw new Error(`could not load edge data for ${edgeType}`);
+      }
+
+      if (edgeData.symmetricEdge) {
+        ops.push(edgeOp.symmetricEdge());
+      }
+
+      if (edgeData.inverseEdgeType) {
+        ops.push(edgeOp.inverseEdge(edgeData));
+      }
+    }
   }
 
   async build(): Promise<EntChangeset<T>> {
@@ -190,9 +214,10 @@ export class Orchestrator<T extends Ent> {
       case WriteOperation.Edit:
       case WriteOperation.Insert:
         ops.push(this.buildEditOp());
+        break;
     }
 
-    ops = ops.concat(this.edgeOps);
+    await this.buildEdgeOps(ops);
 
     return new EntChangeset(
       this.options.viewer,
@@ -203,20 +228,48 @@ export class Orchestrator<T extends Ent> {
   }
 }
 
-// TODO implements DataOperation and move functionality away
 export class EdgeOperation implements DataOperation {
   private createRow: DataOperation;
   private constructor(
     public edgeInput: AssocEdgeInput,
     public operation: WriteOperation = WriteOperation.Insert,
   ) {
-    // TODO
-    this.createRow = new CreateEdgeOperation(edgeInput, new AssocEdgeData({}));
+    this.createRow = new CreateEdgeOperation(edgeInput);
   }
 
-  performWrite(q: Queryer): Promise<void> {
-    // todo...
+  async performWrite(q: Queryer): Promise<void> {
+    // TODO need DeleteEdgeOperation
     return this.createRow.performWrite(q);
+  }
+
+  symmetricEdge(): EdgeOperation {
+    return new EdgeOperation(
+      {
+        id1: this.edgeInput.id2,
+        id1Type: this.edgeInput.id2Type,
+        id2: this.edgeInput.id1,
+        id2Type: this.edgeInput.id1Type,
+        edgeType: this.edgeInput.edgeType,
+        time: this.edgeInput.time,
+        data: this.edgeInput.data,
+      },
+      this.operation,
+    );
+  }
+
+  inverseEdge(edgeData: AssocEdgeData): EdgeOperation {
+    return new EdgeOperation(
+      {
+        id1: this.edgeInput.id2,
+        id1Type: this.edgeInput.id2Type,
+        id2: this.edgeInput.id1,
+        id2Type: this.edgeInput.id1Type,
+        edgeType: edgeData.inverseEdgeType!,
+        time: this.edgeInput.time,
+        data: this.edgeInput.data,
+      },
+      this.operation,
+    );
   }
 
   private static resolveIDs<T extends Ent>(

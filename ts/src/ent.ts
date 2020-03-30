@@ -179,7 +179,7 @@ export async function applyPrivacyPolicyForEntX<T extends Ent>(
   throw new EntPrivacyError(ent.id);
 }
 
-function logQuery(query: string, values: any[] = []) {
+function logQuery(query: string, values: any[]) {
   // console.log(query);
   // console.log(values);
 }
@@ -301,6 +301,7 @@ export interface DataOperation {
 
 // this sould get a flag of whether it should throw or not and then do the right thing
 // each operation shouldn't throw or do anything with exceptions
+// TODO kill
 async function executeOperations(
   operations: DataOperation[],
   throwErr: boolean = false,
@@ -371,9 +372,16 @@ export class CreateRowOperation implements DataOperation {
   }
 }
 
-export class CreateEdgeOperation extends CreateRowOperation {
-  edgeInput: AssocEdgeInput;
-  constructor(edge: AssocEdgeInput, edgeData: AssocEdgeData) {
+// TODO collapse into EdgeOperation
+// TODO kill AssocEdgeData or pass it in later...
+export class CreateEdgeOperation implements DataOperation {
+  constructor(
+    public edgeInput: AssocEdgeInput,
+    private edgeData: AssocEdgeData | null = null,
+  ) {}
+
+  async performWrite(queryer: Queryer): Promise<void> {
+    const edge = this.edgeInput;
     const fields = {
       id1: edge.id1,
       id2: edge.id2,
@@ -392,15 +400,23 @@ export class CreateEdgeOperation extends CreateRowOperation {
     if (edge.data) {
       fields["data"] = edge.data;
     }
-    super(
+
+    let edgeData = this.edgeData;
+    if (!edgeData) {
+      edgeData = await loadEdgeData(edge.edgeType);
+      if (!edgeData) {
+        throw new Error(`error loading edge data for ${edge.edgeType}`);
+      }
+    }
+
+    await createRow(
+      queryer,
       {
         tableName: edgeData.edgeTable,
         fields: fields,
       },
-      // postgres specific suffix. could be handled by sqlbuilder also
       "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
     );
-    this.edgeInput = edge;
   }
 }
 
@@ -425,7 +441,7 @@ async function createRow(
 
   let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals}) ${suffix}`;
 
-  logQuery(query);
+  logQuery(query, values);
 
   const res = await queryer.query(query, values);
 
@@ -454,7 +470,7 @@ async function editRow(
   const vals = valsString.join(", ");
 
   let query = `UPDATE ${options.tableName} SET ${vals} WHERE id = $${idx} RETURNING *`;
-  logQuery(query);
+  logQuery(query, values);
 
   try {
     const res = await queryer.query(query, values);
@@ -491,8 +507,9 @@ export class DeleteNodeOperation implements DataOperation {
 
   async performWrite(queryer: Queryer): Promise<void> {
     let query = `DELETE FROM ${this.options.tableName} WHERE id = $1`;
-    logQuery(query);
-    await queryer.query(query, [this.id]);
+    const values = [this.id];
+    logQuery(query, values);
+    await queryer.query(query, values);
   }
 }
 
@@ -502,12 +519,13 @@ export async function deleteEnt(
   id: ID,
   options: DataOptions,
 ): Promise<null> {
-  let query = `DELETE FROM ${options.tableName} WHERE id = $1`;
-  logQuery(query);
+  const query = `DELETE FROM ${options.tableName} WHERE id = $1`;
+  const values = [id];
+  logQuery(query, values);
 
   try {
     const pool = DB.getInstance().getPool();
-    await pool.query(query, [id]);
+    await pool.query(query, values);
   } catch (e) {
     console.error(e);
   }
@@ -619,7 +637,9 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
   return operations;
 }
 
-async function loadEdgeData(edgeType: string): Promise<AssocEdgeData | null> {
+export async function loadEdgeData(
+  edgeType: string,
+): Promise<AssocEdgeData | null> {
   const row = await loadRow({
     tableName: "assoc_edge_config",
     fields: [
@@ -635,6 +655,28 @@ async function loadEdgeData(edgeType: string): Promise<AssocEdgeData | null> {
     return null;
   }
   return new AssocEdgeData(row);
+}
+
+// this should be a map
+export async function loadEdgeDatas(
+  ...edgeTypes: string[]
+): Promise<Map<string, AssocEdgeData>> {
+  if (!edgeTypes.length) {
+    return new Map();
+  }
+
+  const rows = await loadRows({
+    tableName: "assoc_edge_config",
+    fields: [
+      "edge_type",
+      "edge_name",
+      "symmetric_edge",
+      "inverse_edge_type",
+      "edge_table",
+    ],
+    clause: query.In("edge_type", ...edgeTypes),
+  });
+  return new Map(rows.map(row => [row["edge_type"], new AssocEdgeData(row)]));
 }
 
 const edgeFields = [

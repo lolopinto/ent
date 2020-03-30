@@ -12,7 +12,6 @@ import { Orchestrator } from "ent/orchestrator";
 import User from "src/ent/user";
 import { EdgeType, NodeType } from "src/ent/const";
 import schema from "src/schema/user";
-import { Field, getFields } from "ent/schema";
 
 export interface UserCreateInput {
   firstName: string;
@@ -20,8 +19,6 @@ export interface UserCreateInput {
   emailAddress: string;
 }
 
-// hmm todo
-// need to be able to share this amongst create and edit...
 export interface UserInput {
   firstName?: string;
   lastName?: string;
@@ -32,7 +29,6 @@ export interface UserInput {
 export interface UserAction extends Action<User> {
   getFields(): UserInput;
 }
-// getInputFn
 
 function randomNum(): string {
   return Math.random()
@@ -89,7 +85,6 @@ export class UserBuilder implements Builder<User> {
     return result;
   }
 
-  // hmm function overloading doesn't work in classes?
   // function overload so easier for client
   addFriend(...ids: ID[]): UserBuilder;
   addFriend(...users: User[]): UserBuilder;
@@ -121,9 +116,7 @@ export class UserBuilder implements Builder<User> {
 }
 
 export class CreateUserAction implements Action<User> {
-  //  private orchestrator: Orchestrator<User>;
-  public readonly builder: Builder<User>;
-  //  ent: User;
+  public readonly builder: UserBuilder;
 
   protected constructor(
     public readonly viewer: Viewer,
@@ -165,7 +158,7 @@ export interface UserEditInput {
 }
 
 export class EditUserAction implements Action<User> {
-  public readonly builder: Builder<User>;
+  public readonly builder: UserBuilder;
 
   protected constructor(
     public readonly viewer: Viewer,
@@ -209,7 +202,7 @@ export class EditUserAction implements Action<User> {
 }
 
 export class DeleteUserAction implements Action<User> {
-  public readonly builder: Builder<User>;
+  public readonly builder: UserBuilder;
 
   protected constructor(public readonly viewer: Viewer, user: User) {
     this.builder = new UserBuilder(

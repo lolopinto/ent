@@ -160,11 +160,6 @@ describe("privacy", () => {
 });
 
 test("symmetric edge", async () => {
-  let jon = await create({
-    firstName: "Jon",
-    lastName: "Snow",
-    emailAddress: randomEmail(),
-  });
   let dany = await create({
     firstName: "Daenerys",
     lastName: "Targaryen",
@@ -175,26 +170,20 @@ test("symmetric edge", async () => {
     lastName: "Tarly",
     emailAddress: randomEmail(),
   });
-
-  const danyInput = {
-    id1: jon.id,
-    id2: dany.id,
-    edgeType: EdgeType.UserToFriends,
-    id1Type: NodeType.User,
-    id2Type: NodeType.User,
-  };
-  await writeEdgeX(danyInput);
+  let jon = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+  // TODO this should be combined with Create above once we have placeholders resolving
+  const action = EditUserAction.create(loggedOutViewer, jon, {});
+  action.builder.addFriend(dany);
   let t = new Date();
   t.setTime(t.getTime() + 86400);
-  const samInput = {
-    id1: jon.id,
-    id2: sam.id,
-    edgeType: EdgeType.UserToFriends,
-    id1Type: NodeType.User,
-    id2Type: NodeType.User,
+  action.builder.addFriendID(sam.id, {
     time: t,
-  };
-  await writeEdgeX(samInput);
+  });
+  await action.saveX();
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
     jon.loadFriendsEdges(),
@@ -206,11 +195,24 @@ test("symmetric edge", async () => {
 
   expect(edgesCount).toBe(2);
   // sam is more recent, so dany should be [1]
-  verifyEdge(edges[1], danyInput);
+  verifyEdge(edges[1], {
+    id1: jon.id,
+    id2: dany.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+  });
 
   const samEdge = await jon.loadFriendEdgeFor(sam.id);
   expect(samEdge).not.toBe(null);
-  verifyEdge(samEdge!, samInput);
+  verifyEdge(samEdge!, {
+    id1: jon.id,
+    id2: sam.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+    time: t,
+  });
 
   expect(edges2.length).toBe(1);
   expect(edges2Count).toBe(1);

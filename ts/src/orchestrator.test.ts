@@ -8,7 +8,6 @@ import {
   DataOperation,
   EditNodeOperation,
   DeleteNodeOperation,
-  CreateEdgeOperation,
 } from "./ent";
 import { PrivacyPolicy, AlwaysAllowRule } from "./privacy";
 import { LoggedOutViewer } from "./viewer";
