@@ -1,18 +1,14 @@
 import {
   ID,
   Ent,
-  AssocEdgeInput,
   Viewer,
   EntConstructor,
   AssocEdgeInputOptions,
   DataOperation,
-  CreateEdgeOperation,
-  AssocEdgeData,
+  EdgeOperation,
   EditNodeOperation,
   DeleteNodeOperation,
-  Queryer,
   loadEdgeDatas,
-  loadEdgeData,
 } from "./ent";
 import { getFields } from "./schema";
 import { Changeset, Executor } from "./action";
@@ -225,158 +221,6 @@ export class Orchestrator<T extends Ent> {
       this.options.ent,
       ops,
     );
-  }
-}
-
-export class EdgeOperation implements DataOperation {
-  private createRow: DataOperation;
-  private constructor(
-    public edgeInput: AssocEdgeInput,
-    public operation: WriteOperation = WriteOperation.Insert,
-  ) {
-    this.createRow = new CreateEdgeOperation(edgeInput);
-  }
-
-  async performWrite(q: Queryer): Promise<void> {
-    // TODO need DeleteEdgeOperation
-    return this.createRow.performWrite(q);
-  }
-
-  symmetricEdge(): EdgeOperation {
-    return new EdgeOperation(
-      {
-        id1: this.edgeInput.id2,
-        id1Type: this.edgeInput.id2Type,
-        id2: this.edgeInput.id1,
-        id2Type: this.edgeInput.id1Type,
-        edgeType: this.edgeInput.edgeType,
-        time: this.edgeInput.time,
-        data: this.edgeInput.data,
-      },
-      this.operation,
-    );
-  }
-
-  inverseEdge(edgeData: AssocEdgeData): EdgeOperation {
-    return new EdgeOperation(
-      {
-        id1: this.edgeInput.id2,
-        id1Type: this.edgeInput.id2Type,
-        id2: this.edgeInput.id1,
-        id2Type: this.edgeInput.id1Type,
-        edgeType: edgeData.inverseEdgeType!,
-        time: this.edgeInput.time,
-        data: this.edgeInput.data,
-      },
-      this.operation,
-    );
-  }
-
-  private static resolveIDs<T extends Ent>(
-    srcBuilder: Builder<T>, // id1
-    destID: Builder<T> | ID, // id2 ( and then you flip it)
-  ): [ID, string, ID] {
-    let destIDVal: ID;
-    if (typeof destID === "string" || typeof destID === "number") {
-      destIDVal = destID;
-    } else {
-      destIDVal = destID.placeholderID;
-    }
-    let srcIDVal: ID;
-    let srcType: string;
-
-    if (srcBuilder.existingEnt) {
-      srcIDVal = srcBuilder.existingEnt.id;
-      srcType = srcBuilder.existingEnt.nodeType;
-    } else {
-      console.log("placeholder");
-      // get placeholder.
-      srcIDVal = srcBuilder.placeholderID;
-      // expected to be filled later
-      srcType = "";
-    }
-
-    return [srcIDVal, srcType, destIDVal];
-  }
-
-  static inboundEdge<T extends Ent>(
-    builder: Builder<T>,
-    edgeType: string,
-    id1: Builder<T> | ID,
-    nodeType: string,
-    options?: AssocEdgeInputOptions,
-  ): EdgeOperation {
-    // todo we still need flags to indicate something is a placeholder ID
-    let [id2Val, id2Type, id1Val] = EdgeOperation.resolveIDs(builder, id1);
-
-    const edge: AssocEdgeInput = {
-      id1: id1Val,
-      edgeType: edgeType,
-      id2: id2Val,
-      id2Type: id2Type,
-      id1Type: nodeType,
-      ...options,
-    };
-
-    return new EdgeOperation(edge);
-  }
-
-  static outboundEdge<T extends Ent>(
-    builder: Builder<T>,
-    edgeType: string,
-    id2: Builder<T> | ID,
-    nodeType: string,
-    options?: AssocEdgeInputOptions,
-  ): EdgeOperation {
-    // todo we still need flags to indicate something is a placeholder ID
-    let [id1Val, id1Type, id2Val] = EdgeOperation.resolveIDs(builder, id2);
-
-    const edge: AssocEdgeInput = {
-      id1: id1Val,
-      edgeType: edgeType,
-      id2: id2Val,
-      id2Type: nodeType,
-      id1Type: id1Type,
-      ...options,
-    };
-
-    return new EdgeOperation(edge);
-  }
-
-  static removeInboundEdge<T extends Ent>(
-    builder: Builder<T>,
-    edgeType: string,
-    id1: ID,
-  ): EdgeOperation {
-    if (!builder.existingEnt) {
-      throw new Error("cannot remove an edge from a non-existing ent");
-    }
-    const edge: AssocEdgeInput = {
-      id1: id1,
-      edgeType: edgeType,
-      id2: builder.existingEnt!.id,
-      id2Type: "", // these 2 shouldn't matter
-      id1Type: "",
-    };
-    return new EdgeOperation(edge, WriteOperation.Delete);
-  }
-
-  static removeOutboundEdge<T extends Ent>(
-    builder: Builder<T>,
-    edgeType: string,
-    id2: ID,
-  ): EdgeOperation {
-    if (!builder.existingEnt) {
-      throw new Error("cannot remove an edge from a non-existing ent");
-    }
-    const edge: AssocEdgeInput = {
-      id2: id2,
-      edgeType: edgeType,
-      id1: builder.existingEnt!.id,
-      id2Type: "", // these 2 shouldn't matter
-      id1Type: "",
-    };
-    return new EdgeOperation(edge, WriteOperation.Delete);
   }
 }
 

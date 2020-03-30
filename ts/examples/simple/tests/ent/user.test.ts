@@ -231,6 +231,30 @@ test("symmetric edge", async () => {
 
   const friends = await jon.loadFriends();
   expect(friends.length).toBe(0);
+
+  // delete all the edges and let's confirm it works
+  const action2 = EditUserAction.create(loggedOutViewer, jon, {});
+  action2.builder.removeFriend(dany, sam);
+  await action2.saveX();
+
+  const [
+    jonReloadedEdges,
+    jonReloadedEdgesCount,
+    danyReloadedEdges,
+    danyReloadedEdgesCount,
+    samReloadedEdgesCount,
+  ] = await Promise.all([
+    jon.loadFriendsEdges(),
+    jon.loadFriendsRawCountX(),
+    dany.loadFriendsEdges(),
+    dany.loadFriendsRawCountX(),
+    sam.loadFriendsRawCountX(),
+  ]);
+  expect(jonReloadedEdges.length).toBe(0);
+  expect(jonReloadedEdgesCount).toBe(0);
+  expect(danyReloadedEdges.length).toBe(0);
+  expect(danyReloadedEdgesCount).toBe(0);
+  expect(samReloadedEdgesCount).toBe(0);
 });
 
 test("inverse edge", async () => {

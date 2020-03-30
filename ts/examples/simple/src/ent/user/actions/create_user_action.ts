@@ -110,6 +110,20 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
+  removeFriend(...ids: ID[]): UserBuilder;
+  removeFriend(...users: User[]): UserBuilder;
+
+  removeFriend(...users: ID[] | User[]): UserBuilder {
+    for (const user of users) {
+      if (typeof user == "object") {
+        this.orchestrator.removeOutboundEdge(user.id, EdgeType.UserToFriends);
+      } else {
+        this.orchestrator.removeOutboundEdge(user, EdgeType.UserToFriends);
+      }
+    }
+    return this;
+  }
+
   async build(): Promise<Changeset<User>> {
     return this.orchestrator.build();
   }

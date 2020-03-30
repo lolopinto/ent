@@ -15,6 +15,7 @@ import {
 } from "./privacy";
 
 import * as query from "./query";
+import { WriteOperation, Builder } from "./action";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -372,16 +373,57 @@ export class CreateRowOperation implements DataOperation {
   }
 }
 
-// TODO collapse into EdgeOperation
 // TODO kill AssocEdgeData or pass it in later...
-export class CreateEdgeOperation implements DataOperation {
+export class EdgeOperation implements DataOperation {
   constructor(
     public edgeInput: AssocEdgeInput,
+    private operation: WriteOperation,
     private edgeData: AssocEdgeData | null = null,
   ) {}
 
   async performWrite(queryer: Queryer): Promise<void> {
     const edge = this.edgeInput;
+
+    let edgeData = this.edgeData;
+    if (!edgeData) {
+      edgeData = await loadEdgeData(edge.edgeType);
+      if (!edgeData) {
+        throw new Error(`error loading edge data for ${edge.edgeType}`);
+      }
+    }
+
+    switch (this.operation) {
+      case WriteOperation.Delete:
+        return this.performDeleteWrite(queryer, edgeData, edge);
+      case WriteOperation.Insert:
+      case WriteOperation.Edit:
+        return this.performInsertWrite(queryer, edgeData, edge);
+    }
+  }
+
+  private async performDeleteWrite(
+    q: Queryer,
+    edgeData: AssocEdgeData,
+    edge: AssocEdgeInput,
+  ): Promise<void> {
+    return deleteRow(
+      q,
+      {
+        tableName: edgeData.edgeTable,
+      },
+      query.And(
+        query.Eq("id1", edge.id1),
+        query.Eq("id2", edge.id2),
+        query.Eq("edge_type", edge.edgeType),
+      ),
+    );
+  }
+
+  private async performInsertWrite(
+    q: Queryer,
+    edgeData: AssocEdgeData,
+    edge: AssocEdgeInput,
+  ): Promise<void> {
     const fields = {
       id1: edge.id1,
       id2: edge.id2,
@@ -401,22 +443,151 @@ export class CreateEdgeOperation implements DataOperation {
       fields["data"] = edge.data;
     }
 
-    let edgeData = this.edgeData;
-    if (!edgeData) {
-      edgeData = await loadEdgeData(edge.edgeType);
-      if (!edgeData) {
-        throw new Error(`error loading edge data for ${edge.edgeType}`);
-      }
-    }
-
     await createRow(
-      queryer,
+      q,
       {
         tableName: edgeData.edgeTable,
         fields: fields,
       },
       "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
     );
+  }
+
+  symmetricEdge(): EdgeOperation {
+    return new EdgeOperation(
+      {
+        id1: this.edgeInput.id2,
+        id1Type: this.edgeInput.id2Type,
+        id2: this.edgeInput.id1,
+        id2Type: this.edgeInput.id1Type,
+        edgeType: this.edgeInput.edgeType,
+        time: this.edgeInput.time,
+        data: this.edgeInput.data,
+      },
+      this.operation,
+    );
+  }
+
+  inverseEdge(edgeData: AssocEdgeData): EdgeOperation {
+    return new EdgeOperation(
+      {
+        id1: this.edgeInput.id2,
+        id1Type: this.edgeInput.id2Type,
+        id2: this.edgeInput.id1,
+        id2Type: this.edgeInput.id1Type,
+        edgeType: edgeData.inverseEdgeType!,
+        time: this.edgeInput.time,
+        data: this.edgeInput.data,
+      },
+      this.operation,
+    );
+  }
+
+  private static resolveIDs<T extends Ent>(
+    srcBuilder: Builder<T>, // id1
+    destID: Builder<T> | ID, // id2 ( and then you flip it)
+  ): [ID, string, ID] {
+    let destIDVal: ID;
+    if (typeof destID === "string" || typeof destID === "number") {
+      destIDVal = destID;
+    } else {
+      destIDVal = destID.placeholderID;
+    }
+    let srcIDVal: ID;
+    let srcType: string;
+
+    if (srcBuilder.existingEnt) {
+      srcIDVal = srcBuilder.existingEnt.id;
+      srcType = srcBuilder.existingEnt.nodeType;
+    } else {
+      console.log("placeholder");
+      // get placeholder.
+      srcIDVal = srcBuilder.placeholderID;
+      // expected to be filled later
+      srcType = "";
+    }
+
+    return [srcIDVal, srcType, destIDVal];
+  }
+
+  static inboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id1: Builder<T> | ID,
+    nodeType: string,
+    options?: AssocEdgeInputOptions,
+  ): EdgeOperation {
+    // todo we still need flags to indicate something is a placeholder ID
+    let [id2Val, id2Type, id1Val] = EdgeOperation.resolveIDs(builder, id1);
+
+    const edge: AssocEdgeInput = {
+      id1: id1Val,
+      edgeType: edgeType,
+      id2: id2Val,
+      id2Type: id2Type,
+      id1Type: nodeType,
+      ...options,
+    };
+
+    return new EdgeOperation(edge, WriteOperation.Insert);
+  }
+
+  static outboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id2: Builder<T> | ID,
+    nodeType: string,
+    options?: AssocEdgeInputOptions,
+  ): EdgeOperation {
+    // todo we still need flags to indicate something is a placeholder ID
+    let [id1Val, id1Type, id2Val] = EdgeOperation.resolveIDs(builder, id2);
+
+    const edge: AssocEdgeInput = {
+      id1: id1Val,
+      edgeType: edgeType,
+      id2: id2Val,
+      id2Type: nodeType,
+      id1Type: id1Type,
+      ...options,
+    };
+
+    return new EdgeOperation(edge, WriteOperation.Insert);
+  }
+
+  static removeInboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id1: ID,
+  ): EdgeOperation {
+    if (!builder.existingEnt) {
+      throw new Error("cannot remove an edge from a non-existing ent");
+    }
+    const edge: AssocEdgeInput = {
+      id1: id1,
+      edgeType: edgeType,
+      id2: builder.existingEnt!.id,
+      id2Type: "", // these 2 shouldn't matter
+      id1Type: "",
+    };
+    return new EdgeOperation(edge, WriteOperation.Delete);
+  }
+
+  static removeOutboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id2: ID,
+  ): EdgeOperation {
+    if (!builder.existingEnt) {
+      throw new Error("cannot remove an edge from a non-existing ent");
+    }
+    const edge: AssocEdgeInput = {
+      id2: id2,
+      edgeType: edgeType,
+      id1: builder.existingEnt!.id,
+      id2Type: "", // these 2 shouldn't matter
+      id1Type: "",
+    };
+    return new EdgeOperation(edge, WriteOperation.Delete);
   }
 }
 
@@ -501,15 +672,22 @@ export async function editEnt<T extends Ent>(
   return null;
 }
 
-// TODO...
+async function deleteRow(
+  queryer: Queryer,
+  options: DataOptions,
+  clause: query.Clause,
+): Promise<void> {
+  const query = `DELETE FROM ${options.tableName} WHERE ${clause.clause(1)}`;
+  const values = clause.values();
+  logQuery(query, values);
+  await queryer.query(query, values);
+}
+
 export class DeleteNodeOperation implements DataOperation {
   constructor(private id: ID, private options: DataOptions) {}
 
   async performWrite(queryer: Queryer): Promise<void> {
-    let query = `DELETE FROM ${this.options.tableName} WHERE id = $1`;
-    const values = [this.id];
-    logQuery(query, values);
-    await queryer.query(query, values);
+    return deleteRow(queryer, this.options, query.Eq("id", this.id));
   }
 }
 
@@ -599,11 +777,13 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
     throw new Error(`error loading edge data for ${edge.edgeType}`);
   }
 
-  let operations: DataOperation[] = [new CreateEdgeOperation(edge, edgeData)];
+  let operations: DataOperation[] = [
+    new EdgeOperation(edge, WriteOperation.Insert, edgeData),
+  ];
 
   if (edgeData.symmetricEdge) {
     operations.push(
-      new CreateEdgeOperation(
+      new EdgeOperation(
         {
           id1: edge.id2,
           id1Type: edge.id2Type,
@@ -613,13 +793,14 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
           time: edge.time,
           data: edge.data,
         },
+        WriteOperation.Insert,
         edgeData,
       ),
     );
   }
   if (edgeData.inverseEdgeType) {
     operations.push(
-      new CreateEdgeOperation(
+      new EdgeOperation(
         {
           id1: edge.id2,
           id1Type: edge.id2Type,
@@ -629,6 +810,7 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
           time: edge.time,
           data: edge.data,
         },
+        WriteOperation.Insert,
         edgeData,
       ),
     );
