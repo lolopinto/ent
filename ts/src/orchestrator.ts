@@ -41,7 +41,6 @@ export class Orchestrator<T extends Ent> {
 
   constructor(
     // public readonly viewer: Viewer,
-    // public readonly operation: ActionOperation,
     private options: OrchestratorOptions<T>,
   ) {
     //    this.existingEnt = options.existingEnt;

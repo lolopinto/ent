@@ -158,8 +158,6 @@ export class CreateUserAction implements Action<User> {
     return saveBuilderX(this.builder);
   }
 
-  // this API doesn't work because yes even though we have input, we want optional builder params....
-  // TODO this...
   static create(viewer: Viewer, input: UserCreateInput): CreateUserAction {
     return new CreateUserAction(viewer, input);
   }

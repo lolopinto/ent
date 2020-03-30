@@ -839,7 +839,6 @@ export async function loadEdgeData(
   return new AssocEdgeData(row);
 }
 
-// this should be a map
 export async function loadEdgeDatas(
   ...edgeTypes: string[]
 ): Promise<Map<string, AssocEdgeData>> {

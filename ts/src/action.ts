@@ -10,16 +10,6 @@ import {
 import { PrivacyPolicy } from "./privacy";
 import DB from "./db";
 
-export enum ActionOperation {
-  Create = 1,
-  Edit,
-  Delete,
-  Mutations,
-  AddEdge,
-  RemoveEdge,
-  EdgeGroup,
-}
-
 export enum WriteOperation {
   Insert = "insert",
   Edit = "edit",

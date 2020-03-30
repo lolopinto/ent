@@ -1,4 +1,4 @@
-import { Orchestrator, EdgeOperation } from "./orchestrator";
+import { Orchestrator } from "./orchestrator";
 import { Builder, WriteOperation } from "./action";
 import {
   Viewer,
@@ -8,13 +8,39 @@ import {
   DataOperation,
   EditNodeOperation,
   DeleteNodeOperation,
+  EdgeOperation,
+  AssocEdgeData,
 } from "./ent";
+import * as ent from "./ent";
 import { PrivacyPolicy, AlwaysAllowRule } from "./privacy";
 import { LoggedOutViewer } from "./viewer";
 import { Changeset } from "./action";
 import { StringType, TimeType } from "./field";
 import { BaseEntSchema, Field } from "./schema";
 import { IDViewer } from "../src/testutils/id_viewer";
+
+// mock loadEdgeDatas and return a simple non-symmetric|non-inverse edge
+// not sure if this is the best way but it's the only way I got
+// long discussion about issues: https://github.com/facebook/jest/issues/936
+jest.spyOn(ent, "loadEdgeDatas").mockImplementation(
+  async (...edgeTypes: string[]): Promise<Map<string, AssocEdgeData>> => {
+    if (!edgeTypes.length) {
+      return new Map();
+    }
+    return new Map(
+      edgeTypes.map(edgeType => [
+        edgeType,
+        new AssocEdgeData({
+          edge_table: "foo",
+          symmetric_edge: false,
+          inverse_edge_type: null,
+          edge_type: edgeType,
+          edge_name: "name",
+        }),
+      ]),
+    );
+  },
+);
 
 class User implements Ent {
   id: ID;
