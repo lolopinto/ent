@@ -19,12 +19,13 @@ import {
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/event";
-import { EdgeType } from "src/ent/const";
+import { EdgeType, NodeType } from "src/ent/const";
 import User from "src/ent/user";
 
 const tableName = "events";
 
 export class EventBase {
+  readonly nodeType = NodeType.Event;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;

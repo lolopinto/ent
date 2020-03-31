@@ -1,6 +1,6 @@
 import { Viewer } from "./ent";
 
-export class LogedOutViewer implements Viewer {
+export class LoggedOutViewer implements Viewer {
   viewerID: null;
   async viewer() {
     return null;

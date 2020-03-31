@@ -14,11 +14,13 @@ import {
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/contact";
+import { NodeType } from "src/ent/const";
 import User from "src/ent/user";
 
 const tableName = "contacts";
 
 export class ContactBase {
+  readonly nodeType = NodeType.Contact;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;

@@ -1,27 +1,18 @@
-import { LogedOutViewer } from "./../src/viewer";
+import { LoggedOutViewer } from "./../src/viewer";
 import {
   PrivacyPolicy,
   AlwaysDenyRule,
   AllowIfViewerRule,
 } from "./../src/privacy";
 import { ID, Ent, Viewer, loadDerivedEnt, loadDerivedEntX } from "./../src/ent";
+import { IDViewer } from "../src/testutils/id_viewer";
 
-const loggedOutViewer = new LogedOutViewer();
-
-// todo share this eventually
-class IDViewer implements Viewer {
-  constructor(public viewerID: ID, private ent: Ent | null = null) {}
-  async viewer() {
-    return this.ent;
-  }
-  instanceKey(): string {
-    return `idViewer: ${this.viewerID}`;
-  }
-}
+const loggedOutViewer = new LoggedOutViewer();
 
 class User implements Ent {
   id: ID;
   accountID: string;
+  nodeType: "User";
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };

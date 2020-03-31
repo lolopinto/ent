@@ -213,3 +213,13 @@ export function getFields(value: any): Map<string, Field> {
 
   return m;
 }
+
+export enum ActionOperation {
+  Create = 1,
+  Edit,
+  Delete,
+  Mutations,
+  AddEdge,
+  RemoveEdge,
+  EdgeGroup,
+}
