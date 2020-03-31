@@ -6,7 +6,7 @@
 {{ reserveImport "ent/schema" "Field" "getFields"}}
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
 {{ reserveDefaultImport $schemaPath "schema"}}
-{{ reserveImport "src/ent/const" "EdgeType" }}
+{{ reserveImport "src/ent/const" "EdgeType" "NodeType" }}
 {{ reserveAllImport "ent/query" "query" }}
 
 {{ range .GetUniqueNodes -}} 
@@ -25,6 +25,7 @@ const tableName = "{{.TableName}}";
 
 export class {{$baseClass}} {
 
+  readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
     readonly {{$field.TsFieldName}}: {{$field.TsType}};
   {{end}}

@@ -13,22 +13,15 @@ import {
   PrivacyPolicy,
 } from "./../src/privacy";
 
-import { LogedOutViewer } from "./../src/viewer";
+import { IDViewer } from "../src/testutils/id_viewer";
+import { LoggedOutViewer } from "./../src/viewer";
 
-const loggedOutViewer = new LogedOutViewer();
-class IDViewer implements Viewer {
-  constructor(public viewerID: ID, private ent: Ent | null = null) {}
-  async viewer() {
-    return this.ent;
-  }
-  instanceKey(): string {
-    return `idViewer: ${this.viewerID}`;
-  }
-}
+const loggedOutViewer = new LoggedOutViewer();
 
 class User implements Ent {
   accountID: string;
   privacyPolicy: PrivacyPolicy;
+  nodeType: "User";
   // TODO add policy here
   constructor(public viewer: Viewer, public id: ID) {}
 }

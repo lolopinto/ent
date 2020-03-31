@@ -15,6 +15,7 @@ import {
 } from "./privacy";
 
 import * as query from "./query";
+import { WriteOperation, Builder } from "./action";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -30,6 +31,7 @@ export interface Ent {
   id: ID;
   viewer: Viewer;
   privacyPolicy: PrivacyPolicy;
+  nodeType: string;
 }
 
 export interface EntConstructor<T extends Ent> {
@@ -61,7 +63,7 @@ interface LoadRowsOptions extends SelectDataOptions {
   orderby?: string;
 }
 
-interface EditRowOptions extends DataOptions {
+export interface EditRowOptions extends DataOptions {
   // fields to be edited
   fields: {};
 }
@@ -154,7 +156,7 @@ export async function loadDerivedEntX<T extends Ent>(
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
-async function applyPrivacyPolicyForEnt<T extends Ent>(
+export async function applyPrivacyPolicyForEnt<T extends Ent>(
   viewer: Viewer,
   ent: T | null,
 ): Promise<T | null> {
@@ -167,7 +169,7 @@ async function applyPrivacyPolicyForEnt<T extends Ent>(
   return null;
 }
 
-async function applyPrivacyPolicyForEntX<T extends Ent>(
+export async function applyPrivacyPolicyForEntX<T extends Ent>(
   viewer: Viewer,
   ent: T,
 ): Promise<T> {
@@ -178,7 +180,7 @@ async function applyPrivacyPolicyForEntX<T extends Ent>(
   throw new EntPrivacyError(ent.id);
 }
 
-function logQuery(query: string, values: any[] = []) {
+function logQuery(query: string, values: any[]) {
   // console.log(query);
   // console.log(values);
 }
@@ -249,7 +251,11 @@ export async function createEnt<T extends Ent>(
   viewer: Viewer,
   options: EditEntOptions<T>,
 ): Promise<T | null> {
-  const row = await createRow(options);
+  const row = await createRow(
+    DB.getInstance().getPool(),
+    options,
+    "RETURNING *",
+  );
   if (!row) {
     return null;
   }
@@ -259,7 +265,7 @@ export async function createEnt<T extends Ent>(
 }
 
 // slew of methods taken from pg
-interface Queryer {
+export interface Queryer {
   query<T extends Submittable>(queryStream: T): T;
   // tslint:disable:no-unnecessary-generics
   query<R extends any[] = any[], I extends any[] = any[]>(
@@ -289,12 +295,14 @@ interface Queryer {
   // tslint:enable:no-unnecessary-generics
 }
 
-interface DataOperation {
+export interface DataOperation {
   performWrite(queryer: Queryer): Promise<void>;
+  returnedEntRow?(): {} | null; // optional to indicate the row that was created
 }
 
 // this sould get a flag of whether it should throw or not and then do the right thing
 // each operation shouldn't throw or do anything with exceptions
+// TODO kill
 async function executeOperations(
   operations: DataOperation[],
   throwErr: boolean = false,
@@ -325,40 +333,97 @@ async function executeOperations(
   }
 }
 
-class CreateRowOperation implements DataOperation {
-  row: {};
+export class EditNodeOperation implements DataOperation {
+  row: {} | null;
+
+  constructor(
+    public options: EditRowOptions,
+    private existingEnt: Ent | null = null,
+  ) {}
+
+  async performWrite(queryer: Queryer): Promise<void> {
+    if (this.existingEnt) {
+      this.row = await editRow(queryer, this.options, this.existingEnt.id);
+    } else {
+      this.row = await createRow(queryer, this.options, "RETURNING *");
+    }
+  }
+
+  returnedEntRow(): {} | null {
+    return this.row;
+  }
+}
+
+// TODO kill...
+export class CreateRowOperation implements DataOperation {
+  row: {} | null;
 
   constructor(public options: EditRowOptions, private suffix?: string) {}
 
   async performWrite(queryer: Queryer): Promise<void> {
-    let fields: string[] = [];
-    let values: any[] = [];
-    let valsString: string[] = [];
-    let idx = 1;
-    for (const key in this.options.fields) {
-      fields.push(key);
-      values.push(this.options.fields[key]);
-      valsString.push(`$${idx}`);
-      idx++;
-    }
+    this.row = await createRow(
+      queryer,
+      this.options,
+      this.suffix || "RETURNING *",
+    );
+  }
 
-    const cols = fields.join(", ");
-    const vals = valsString.join(", ");
-
-    let query = `INSERT INTO ${this.options.tableName} (${cols}) VALUES (${vals}) RETURNING *`;
-
-    logQuery(query);
-
-    const res = await queryer.query(query, values);
-
-    if (res.rowCount == 1) {
-      this.row = res.rows[0];
-    }
+  returnedEntRow(): {} | null {
+    return this.row;
   }
 }
 
-class CreateEdgeOperation extends CreateRowOperation {
-  constructor(edge: AssocEdgeInput, edgeData: AssocEdgeData) {
+// TODO kill AssocEdgeData or pass it in later...
+export class EdgeOperation implements DataOperation {
+  constructor(
+    public edgeInput: AssocEdgeInput,
+    private operation: WriteOperation,
+    private edgeData: AssocEdgeData | null = null,
+  ) {}
+
+  async performWrite(queryer: Queryer): Promise<void> {
+    const edge = this.edgeInput;
+
+    let edgeData = this.edgeData;
+    if (!edgeData) {
+      edgeData = await loadEdgeData(edge.edgeType);
+      if (!edgeData) {
+        throw new Error(`error loading edge data for ${edge.edgeType}`);
+      }
+    }
+
+    switch (this.operation) {
+      case WriteOperation.Delete:
+        return this.performDeleteWrite(queryer, edgeData, edge);
+      case WriteOperation.Insert:
+      case WriteOperation.Edit:
+        return this.performInsertWrite(queryer, edgeData, edge);
+    }
+  }
+
+  private async performDeleteWrite(
+    q: Queryer,
+    edgeData: AssocEdgeData,
+    edge: AssocEdgeInput,
+  ): Promise<void> {
+    return deleteRow(
+      q,
+      {
+        tableName: edgeData.edgeTable,
+      },
+      query.And(
+        query.Eq("id1", edge.id1),
+        query.Eq("id2", edge.id2),
+        query.Eq("edge_type", edge.edgeType),
+      ),
+    );
+  }
+
+  private async performInsertWrite(
+    q: Queryer,
+    edgeData: AssocEdgeData,
+    edge: AssocEdgeInput,
+  ): Promise<void> {
     const fields = {
       id1: edge.id1,
       id2: edge.id2,
@@ -377,34 +442,191 @@ class CreateEdgeOperation extends CreateRowOperation {
     if (edge.data) {
       fields["data"] = edge.data;
     }
-    super(
+
+    await createRow(
+      q,
       {
         tableName: edgeData.edgeTable,
         fields: fields,
       },
-      // postgres specific suffix. could be handled by sqlbuilder also
       "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
     );
   }
+
+  symmetricEdge(): EdgeOperation {
+    return new EdgeOperation(
+      {
+        id1: this.edgeInput.id2,
+        id1Type: this.edgeInput.id2Type,
+        id2: this.edgeInput.id1,
+        id2Type: this.edgeInput.id1Type,
+        edgeType: this.edgeInput.edgeType,
+        time: this.edgeInput.time,
+        data: this.edgeInput.data,
+      },
+      this.operation,
+    );
+  }
+
+  inverseEdge(edgeData: AssocEdgeData): EdgeOperation {
+    return new EdgeOperation(
+      {
+        id1: this.edgeInput.id2,
+        id1Type: this.edgeInput.id2Type,
+        id2: this.edgeInput.id1,
+        id2Type: this.edgeInput.id1Type,
+        edgeType: edgeData.inverseEdgeType!,
+        time: this.edgeInput.time,
+        data: this.edgeInput.data,
+      },
+      this.operation,
+    );
+  }
+
+  private static resolveIDs<T extends Ent>(
+    srcBuilder: Builder<T>, // id1
+    destID: Builder<T> | ID, // id2 ( and then you flip it)
+  ): [ID, string, ID] {
+    let destIDVal: ID;
+    if (typeof destID === "string" || typeof destID === "number") {
+      destIDVal = destID;
+    } else {
+      destIDVal = destID.placeholderID;
+    }
+    let srcIDVal: ID;
+    let srcType: string;
+
+    if (srcBuilder.existingEnt) {
+      srcIDVal = srcBuilder.existingEnt.id;
+      srcType = srcBuilder.existingEnt.nodeType;
+    } else {
+      console.log("placeholder");
+      // get placeholder.
+      srcIDVal = srcBuilder.placeholderID;
+      // expected to be filled later
+      srcType = "";
+    }
+
+    return [srcIDVal, srcType, destIDVal];
+  }
+
+  static inboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id1: Builder<T> | ID,
+    nodeType: string,
+    options?: AssocEdgeInputOptions,
+  ): EdgeOperation {
+    // todo we still need flags to indicate something is a placeholder ID
+    let [id2Val, id2Type, id1Val] = EdgeOperation.resolveIDs(builder, id1);
+
+    const edge: AssocEdgeInput = {
+      id1: id1Val,
+      edgeType: edgeType,
+      id2: id2Val,
+      id2Type: id2Type,
+      id1Type: nodeType,
+      ...options,
+    };
+
+    return new EdgeOperation(edge, WriteOperation.Insert);
+  }
+
+  static outboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id2: Builder<T> | ID,
+    nodeType: string,
+    options?: AssocEdgeInputOptions,
+  ): EdgeOperation {
+    // todo we still need flags to indicate something is a placeholder ID
+    let [id1Val, id1Type, id2Val] = EdgeOperation.resolveIDs(builder, id2);
+
+    const edge: AssocEdgeInput = {
+      id1: id1Val,
+      edgeType: edgeType,
+      id2: id2Val,
+      id2Type: nodeType,
+      id1Type: id1Type,
+      ...options,
+    };
+
+    return new EdgeOperation(edge, WriteOperation.Insert);
+  }
+
+  static removeInboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id1: ID,
+  ): EdgeOperation {
+    if (!builder.existingEnt) {
+      throw new Error("cannot remove an edge from a non-existing ent");
+    }
+    const edge: AssocEdgeInput = {
+      id1: id1,
+      edgeType: edgeType,
+      id2: builder.existingEnt!.id,
+      id2Type: "", // these 2 shouldn't matter
+      id1Type: "",
+    };
+    return new EdgeOperation(edge, WriteOperation.Delete);
+  }
+
+  static removeOutboundEdge<T extends Ent>(
+    builder: Builder<T>,
+    edgeType: string,
+    id2: ID,
+  ): EdgeOperation {
+    if (!builder.existingEnt) {
+      throw new Error("cannot remove an edge from a non-existing ent");
+    }
+    const edge: AssocEdgeInput = {
+      id2: id2,
+      edgeType: edgeType,
+      id1: builder.existingEnt!.id,
+      id2Type: "", // these 2 shouldn't matter
+      id1Type: "",
+    };
+    return new EdgeOperation(edge, WriteOperation.Delete);
+  }
 }
 
-// simple helper function for single create (not in a transaction)
-// TODO handle this better when actions etc come up
-async function createRow(options: EditRowOptions): Promise<{} | null> {
-  const op = new CreateRowOperation(options);
-  await executeOperations([op]);
-  if (op.row) {
-    return op.row;
+async function createRow(
+  queryer: Queryer,
+  options: EditRowOptions,
+  suffix: string,
+): Promise<{} | null> {
+  let fields: string[] = [];
+  let values: any[] = [];
+  let valsString: string[] = [];
+  let idx = 1;
+  for (const key in options.fields) {
+    fields.push(key);
+    values.push(options.fields[key]);
+    valsString.push(`$${idx}`);
+    idx++;
+  }
+
+  const cols = fields.join(", ");
+  const vals = valsString.join(", ");
+
+  let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals}) ${suffix}`;
+
+  logQuery(query, values);
+
+  const res = await queryer.query(query, values);
+
+  if (res.rowCount == 1) {
+    return res.rows[0];
   }
   return null;
 }
 
-// column should be passed in here
-export async function editEnt<T extends Ent>(
-  viewer: Viewer,
+async function editRow(
+  queryer: Queryer,
+  options: EditRowOptions,
   id: ID,
-  options: EditEntOptions<T>,
-): Promise<T | null> {
+): Promise<{} | null> {
   let valsString: string[] = [];
   let values: any[] = [];
 
@@ -419,17 +641,16 @@ export async function editEnt<T extends Ent>(
   const vals = valsString.join(", ");
 
   let query = `UPDATE ${options.tableName} SET ${vals} WHERE id = $${idx} RETURNING *`;
-  logQuery(query);
+  logQuery(query, values);
 
   try {
-    const pool = DB.getInstance().getPool();
-    const res = await pool.query(query, values);
+    const res = await queryer.query(query, values);
 
     if (res.rowCount == 1) {
       // for now assume id primary key
       // TODO make this extensible as needed.
       let row = res.rows[0];
-      return new options.ent(viewer, row.id, row);
+      return row;
     }
   } catch (e) {
     console.error(e);
@@ -438,28 +659,55 @@ export async function editEnt<T extends Ent>(
   return null;
 }
 
-// need a deleteRow vs deleteEnt eventually
+// column should be passed in here
+export async function editEnt<T extends Ent>(
+  viewer: Viewer,
+  id: ID,
+  options: EditEntOptions<T>,
+): Promise<T | null> {
+  const row = await editRow(DB.getInstance().getPool(), options, id);
+  if (row) {
+    return new options.ent(viewer, row["id"], row);
+  }
+  return null;
+}
+
+async function deleteRow(
+  queryer: Queryer,
+  options: DataOptions,
+  clause: query.Clause,
+): Promise<void> {
+  const query = `DELETE FROM ${options.tableName} WHERE ${clause.clause(1)}`;
+  const values = clause.values();
+  logQuery(query, values);
+  await queryer.query(query, values);
+}
+
+export class DeleteNodeOperation implements DataOperation {
+  constructor(private id: ID, private options: DataOptions) {}
+
+  async performWrite(queryer: Queryer): Promise<void> {
+    return deleteRow(queryer, this.options, query.Eq("id", this.id));
+  }
+}
+
+// TODO kill
 export async function deleteEnt(
   viewer: Viewer,
   id: ID,
   options: DataOptions,
 ): Promise<null> {
-  let query = `DELETE FROM ${options.tableName} WHERE id = $1`;
-  logQuery(query);
+  const query = `DELETE FROM ${options.tableName} WHERE id = $1`;
+  const values = [id];
+  logQuery(query, values);
 
   try {
     const pool = DB.getInstance().getPool();
-    await pool.query(query, [id]);
+    await pool.query(query, values);
   } catch (e) {
     console.error(e);
   }
   return null;
-}
-
-enum EditOperation {
-  Create = "create",
-  Edit = "edit",
-  Delete = "delete",
 }
 
 export class AssocEdge {
@@ -482,14 +730,17 @@ export class AssocEdge {
   }
 }
 
-export interface AssocEdgeInput {
+export interface AssocEdgeInputOptions {
+  time?: Date;
+  data?: string;
+}
+
+export interface AssocEdgeInput extends AssocEdgeInputOptions {
   id1: ID;
   id1Type: string;
   edgeType: string;
   id2: ID;
   id2Type: string;
-  time?: Date;
-  data?: string;
 }
 
 export class AssocEdgeData {
@@ -526,11 +777,13 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
     throw new Error(`error loading edge data for ${edge.edgeType}`);
   }
 
-  let operations: DataOperation[] = [new CreateEdgeOperation(edge, edgeData)];
+  let operations: DataOperation[] = [
+    new EdgeOperation(edge, WriteOperation.Insert, edgeData),
+  ];
 
   if (edgeData.symmetricEdge) {
     operations.push(
-      new CreateEdgeOperation(
+      new EdgeOperation(
         {
           id1: edge.id2,
           id1Type: edge.id2Type,
@@ -540,13 +793,14 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
           time: edge.time,
           data: edge.data,
         },
+        WriteOperation.Insert,
         edgeData,
       ),
     );
   }
   if (edgeData.inverseEdgeType) {
     operations.push(
-      new CreateEdgeOperation(
+      new EdgeOperation(
         {
           id1: edge.id2,
           id1Type: edge.id2Type,
@@ -556,6 +810,7 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
           time: edge.time,
           data: edge.data,
         },
+        WriteOperation.Insert,
         edgeData,
       ),
     );
@@ -564,7 +819,9 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
   return operations;
 }
 
-async function loadEdgeData(edgeType: string): Promise<AssocEdgeData | null> {
+export async function loadEdgeData(
+  edgeType: string,
+): Promise<AssocEdgeData | null> {
   const row = await loadRow({
     tableName: "assoc_edge_config",
     fields: [
@@ -580,6 +837,27 @@ async function loadEdgeData(edgeType: string): Promise<AssocEdgeData | null> {
     return null;
   }
   return new AssocEdgeData(row);
+}
+
+export async function loadEdgeDatas(
+  ...edgeTypes: string[]
+): Promise<Map<string, AssocEdgeData>> {
+  if (!edgeTypes.length) {
+    return new Map();
+  }
+
+  const rows = await loadRows({
+    tableName: "assoc_edge_config",
+    fields: [
+      "edge_type",
+      "edge_name",
+      "symmetric_edge",
+      "inverse_edge_type",
+      "edge_table",
+    ],
+    clause: query.In("edge_type", ...edgeTypes),
+  });
+  return new Map(rows.map(row => [row["edge_type"], new AssocEdgeData(row)]));
 }
 
 const edgeFields = [

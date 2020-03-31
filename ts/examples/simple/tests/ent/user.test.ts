@@ -1,9 +1,4 @@
-import User, {
-  createUser,
-  editUser,
-  deleteUser,
-  UserCreateInput,
-} from "src/ent/user";
+import User from "src/ent/user";
 import Contact, { createContact } from "src/ent/contact";
 
 import {
@@ -15,14 +10,20 @@ import {
   writeEdgeX,
 } from "ent/ent";
 import DB from "ent/db";
-import { LogedOutViewer } from "ent/viewer";
+import { LoggedOutViewer } from "ent/viewer";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
 import Event, { createEvent } from "src/ent/event";
 import { randomEmail } from "src/util/random";
+import {
+  CreateUserAction,
+  EditUserAction,
+  UserCreateInput,
+  DeleteUserAction,
+} from "src/ent/user/actions/create_user_action";
 
-const loggedOutViewer = new LogedOutViewer();
+const loggedOutViewer = new LoggedOutViewer();
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -30,11 +31,7 @@ afterAll(async () => {
 });
 
 async function create(input: UserCreateInput): Promise<User> {
-  let user = await createUser(loggedOutViewer, input);
-  if (user == null) {
-    fail("could not create user");
-  }
-  return user;
+  return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
 test("create user", async () => {
@@ -60,9 +57,9 @@ test("edit user", async () => {
       emailAddress: randomEmail(),
     });
 
-    let editedUser = await editUser(loggedOutViewer, user.id, {
+    let editedUser = await EditUserAction.create(loggedOutViewer, user, {
       firstName: "First of his name",
-    });
+    }).saveX();
 
     expect(editedUser).not.toBe(null);
     expect(editedUser?.firstName).toBe("First of his name");
@@ -80,7 +77,7 @@ test("delete user", async () => {
       emailAddress: randomEmail(),
     });
 
-    await deleteUser(loggedOutViewer, user.id);
+    await DeleteUserAction.create(loggedOutViewer, user).saveX();
 
     let loadedUser = await User.load(loggedOutViewer, user.id);
     expect(loadedUser).toBe(null);
@@ -163,11 +160,6 @@ describe("privacy", () => {
 });
 
 test("symmetric edge", async () => {
-  let jon = await create({
-    firstName: "Jon",
-    lastName: "Snow",
-    emailAddress: randomEmail(),
-  });
   let dany = await create({
     firstName: "Daenerys",
     lastName: "Targaryen",
@@ -178,26 +170,20 @@ test("symmetric edge", async () => {
     lastName: "Tarly",
     emailAddress: randomEmail(),
   });
-
-  const danyInput = {
-    id1: jon.id,
-    id2: dany.id,
-    edgeType: EdgeType.UserToFriends,
-    id1Type: NodeType.User,
-    id2Type: NodeType.User,
-  };
-  await writeEdgeX(danyInput);
+  let jon = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+  // TODO this should be combined with Create above once we have placeholders resolving
+  const action = EditUserAction.create(loggedOutViewer, jon, {});
+  action.builder.addFriend(dany);
   let t = new Date();
   t.setTime(t.getTime() + 86400);
-  const samInput = {
-    id1: jon.id,
-    id2: sam.id,
-    edgeType: EdgeType.UserToFriends,
-    id1Type: NodeType.User,
-    id2Type: NodeType.User,
+  action.builder.addFriendID(sam.id, {
     time: t,
-  };
-  await writeEdgeX(samInput);
+  });
+  await action.saveX();
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
     jon.loadFriendsEdges(),
@@ -209,11 +195,24 @@ test("symmetric edge", async () => {
 
   expect(edgesCount).toBe(2);
   // sam is more recent, so dany should be [1]
-  verifyEdge(edges[1], danyInput);
+  verifyEdge(edges[1], {
+    id1: jon.id,
+    id2: dany.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+  });
 
   const samEdge = await jon.loadFriendEdgeFor(sam.id);
   expect(samEdge).not.toBe(null);
-  verifyEdge(samEdge!, samInput);
+  verifyEdge(samEdge!, {
+    id1: jon.id,
+    id2: sam.id,
+    edgeType: EdgeType.UserToFriends,
+    id1Type: NodeType.User,
+    id2Type: NodeType.User,
+    time: t,
+  });
 
   expect(edges2.length).toBe(1);
   expect(edges2Count).toBe(1);
@@ -232,6 +231,30 @@ test("symmetric edge", async () => {
 
   const friends = await jon.loadFriends();
   expect(friends.length).toBe(0);
+
+  // delete all the edges and let's confirm it works
+  const action2 = EditUserAction.create(loggedOutViewer, jon, {});
+  action2.builder.removeFriend(dany, sam);
+  await action2.saveX();
+
+  const [
+    jonReloadedEdges,
+    jonReloadedEdgesCount,
+    danyReloadedEdges,
+    danyReloadedEdgesCount,
+    samReloadedEdgesCount,
+  ] = await Promise.all([
+    jon.loadFriendsEdges(),
+    jon.loadFriendsRawCountX(),
+    dany.loadFriendsEdges(),
+    dany.loadFriendsRawCountX(),
+    sam.loadFriendsRawCountX(),
+  ]);
+  expect(jonReloadedEdges.length).toBe(0);
+  expect(jonReloadedEdgesCount).toBe(0);
+  expect(danyReloadedEdges.length).toBe(0);
+  expect(danyReloadedEdgesCount).toBe(0);
+  expect(samReloadedEdgesCount).toBe(0);
 });
 
 test("inverse edge", async () => {
@@ -240,7 +263,7 @@ test("inverse edge", async () => {
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  let event = await createEvent(new LogedOutViewer(), {
+  let event = await createEvent(new LoggedOutViewer(), {
     creatorID: user.id as string,
     startTime: new Date(),
     name: "fun event",
@@ -297,7 +320,7 @@ test("one-way edge", async () => {
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  let event = await createEvent(new LogedOutViewer(), {
+  let event = await createEvent(new LoggedOutViewer(), {
     creatorID: user.id as string,
     startTime: new Date(),
     name: "fun event",
@@ -405,7 +428,7 @@ function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
   expect(edge.data).toBe(expectedEdge.data || null);
 }
 
-test("loadUniqueEdge|Node", async () => {
+test("uniqueEdge|Node", async () => {
   let jon = await create({
     firstName: "Jon",
     lastName: "Snow",
@@ -456,9 +479,12 @@ test("loadUniqueEdge|Node", async () => {
     edgeType: EdgeType.UserToSelfContact,
   };
   await writeEdgeX(selfContactInput);
-  // try and write unique edge again
   try {
-    await writeEdgeX(selfContactInput);
+    // try and write another contact
+    await writeEdgeX({
+      ...selfContactInput,
+      id2: contact2.id,
+    });
     fail("should have throw an exception trying to write duplicate edge");
   } catch (e) {
     expect(e.message).toMatch(/duplicate key value violates unique constraint/);
