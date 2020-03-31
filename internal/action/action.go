@@ -57,7 +57,6 @@ func getInputAction(nodeName string, result *astparser.Result) (*input.Action, e
 			action.CustomActionName = elem.Value.Literal
 
 		case "HideFromGraphQL":
-			// exposeToGraphQL is inverse of HideFromGraphQL
 			action.HideFromGraphQL = astparser.IsTrueBooleanResult(elem.Value)
 
 		case "CustomGraphQLName":
@@ -69,6 +68,7 @@ func getInputAction(nodeName string, result *astparser.Result) (*input.Action, e
 }
 
 func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *field.FieldInfo) ([]Action, error) {
+	// exposeToGraphQL is inverse of HideFromGraphQL
 	exposeToGraphQL := !action.HideFromGraphQL
 	typ := getActionTypeFromOperation(action.Operation)
 
