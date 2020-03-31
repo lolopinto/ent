@@ -349,7 +349,7 @@ func initSyncs() {
 		rF = testsync.NewRunOnce(func(t *testing.T, configName string) interface{} {
 			data := getParsedConfig(t)
 			fieldInfo, err := field.GetFieldInfoForStruct(data.StructMap[configName], data.Info)
-			assert.NotNil(t, err)
+			assert.Nil(t, err)
 			assert.NotNil(t, fieldInfo, "invalid fieldInfo retrieved")
 			return fieldInfo
 		})

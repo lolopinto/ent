@@ -600,6 +600,11 @@ func (m NodeMapInfo) parseInputSchema(schema *input.Schema) (*assocEdgeData, err
 			return nil, err
 		}
 
+		nodeData.ActionInfo, err = action.ParseFromInput(nodeName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo)
+		if err != nil {
+			return nil, err
+		}
+
 		m.addConfig(&NodeDataInfo{
 			NodeData:      nodeData,
 			depgraph:      m.buildPostRunDepgraph(edgeData),

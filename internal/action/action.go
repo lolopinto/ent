@@ -6,22 +6,39 @@ import (
 	"math"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/internal/field"
 
 	"github.com/lolopinto/ent/internal/astparser"
 )
 
-func parseActions(nodeName string, result *astparser.Result, fieldInfo *field.FieldInfo) ([]Action, error) {
-	var customActionName string
-	exposeToGraphQL := true
-	var customGraphQLName string
-	var fieldNames []string
-	var actionTypeStr string
+func getActionOperationFromTypeName(typeName string) ent.ActionOperation {
+	switch typeName {
+	case "ent.CreateAction":
+		return ent.CreateAction
+	case "ent.EditAction":
+		return ent.EditAction
+	case "ent.DeleteAction":
+		return ent.DeleteAction
+	case "ent.MutationsAction":
+		return ent.MutationsAction
+	case "ent.AddEdgeAction":
+		return ent.AddEdgeAction
+	case "ent.RemoveEdgeAction":
+		return ent.RemoveEdgeAction
+	case "ent.EdgeGroupAction":
+		return ent.EdgeGroupAction
+	}
+	panic(fmt.Errorf("invalid action type passed %s", typeName))
+}
 
+func getInputAction(nodeName string, result *astparser.Result) (*input.Action, error) {
+	var action input.Action
 	for _, elem := range result.Elems {
 		if elem.Value == nil {
 			return nil, fmt.Errorf("elem with nil value")
@@ -29,54 +46,66 @@ func parseActions(nodeName string, result *astparser.Result, fieldInfo *field.Fi
 
 		switch elem.IdentName {
 		case "Action":
-			actionTypeStr = elem.Value.GetTypeName()
+			action.Operation = getActionOperationFromTypeName(elem.Value.GetTypeName())
 
 		case "Fields":
 			for _, child := range elem.Value.Elems {
-				fieldNames = append(fieldNames, child.Literal)
+				action.Fields = append(action.Fields, child.Literal)
 			}
 
 		case "CustomActionName":
-			customActionName = elem.Value.Literal
+			action.CustomActionName = elem.Value.Literal
 
 		case "HideFromGraphQL":
 			// exposeToGraphQL is inverse of HideFromGraphQL
-			exposeToGraphQL = !astparser.IsTrueBooleanResult(elem.Value)
+			action.HideFromGraphQL = astparser.IsTrueBooleanResult(elem.Value)
 
 		case "CustomGraphQLName":
-			customGraphQLName = elem.Value.Literal
+			action.CustomGraphQLName = elem.Value.Literal
 		}
 	}
 
-	typ := getActionTypeFromString(actionTypeStr)
+	return &action, nil
+}
+
+func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *field.FieldInfo) ([]Action, error) {
+	exposeToGraphQL := !action.HideFromGraphQL
+	typ := getActionTypeFromOperation(action.Operation)
 
 	// create/edit/delete
 	concreteAction, ok := typ.(concreteNodeActionType)
 	if ok {
-		fields := getFieldsForAction(fieldNames, fieldInfo, actionTypeStr, concreteAction)
+		fields, err := getFieldsForAction(action.Fields, fieldInfo, concreteAction)
+		if err != nil {
+			return nil, err
+		}
 
-		commonInfo := getCommonInfo(nodeName, concreteAction, customActionName, customGraphQLName, exposeToGraphQL, fields)
+		commonInfo := getCommonInfo(nodeName, concreteAction, action.CustomActionName, action.CustomGraphQLName, exposeToGraphQL, fields)
 		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
 
 	_, ok = typ.(*mutationsActionType)
 	if ok {
-		if customActionName != "" {
+		if action.CustomActionName != "" {
 			return nil, fmt.Errorf("cannot have a custom action name when using default actions")
 		}
-		if customGraphQLName != "" {
+		if action.CustomGraphQLName != "" {
 			return nil, fmt.Errorf("cannot have a custom graphql name when using default actions")
 		}
-		return getActionsForMutationsType(nodeName, fieldInfo, exposeToGraphQL, fieldNames), nil
+		return getActionsForMutationsType(nodeName, fieldInfo, exposeToGraphQL, action.Fields)
 	}
 
 	return nil, errors.New("unsupported action type")
 }
 
-func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exposeToGraphQL bool, fieldNames []string) []Action {
+func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exposeToGraphQL bool, fieldNames []string) ([]Action, error) {
 	var actions []Action
 
 	createTyp := &createActionType{}
+	fields, err := getFieldsForAction(fieldNames, fieldInfo, createTyp)
+	if err != nil {
+		return nil, err
+	}
 	actions = append(actions, getCreateAction(
 		getCommonInfo(
 			nodeName,
@@ -84,10 +113,15 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			"",
 			"",
 			exposeToGraphQL,
-			getFieldsForAction(fieldNames, fieldInfo, "ent.CreateAction", createTyp),
+			fields,
 		),
 	))
+
 	editTyp := &editActionType{}
+	fields, err = getFieldsForAction(fieldNames, fieldInfo, editTyp)
+	if err != nil {
+		return nil, err
+	}
 	actions = append(actions, getEditAction(
 		getCommonInfo(
 			nodeName,
@@ -95,10 +129,15 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			"",
 			"",
 			exposeToGraphQL,
-			getFieldsForAction(fieldNames, fieldInfo, "ent.EditAction", createTyp),
+			fields,
 		),
 	))
+
 	deleteTyp := &deleteActionType{}
+	fields, err = getFieldsForAction(fieldNames, fieldInfo, deleteTyp)
+	if err != nil {
+		return nil, err
+	}
 	actions = append(actions, getDeleteAction(
 		getCommonInfo(
 			nodeName,
@@ -106,16 +145,16 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			"",
 			"",
 			exposeToGraphQL,
-			getFieldsForAction(fieldNames, fieldInfo, "ent.DeleteAction", deleteTyp),
+			fields,
 		),
 	))
-	return actions
+	return actions, nil
 }
 
-func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, actionTypeStr string, typ concreteNodeActionType) []*field.Field {
+func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ concreteNodeActionType) ([]*field.Field, error) {
 	var fields []*field.Field
 	if !typ.supportsFieldsFromEnt() {
-		return fields
+		return fields, nil
 	}
 
 	// TODO
@@ -134,13 +173,13 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, actionT
 		for _, fieldName := range fieldNames {
 			f := fieldInfo.GetFieldByName(fieldName)
 			if f == nil {
-				panic(fmt.Errorf("invalid field name passed to %s", actionTypeStr))
+				return nil, fmt.Errorf("invalid field name %s passed", fieldName)
 			}
 			fields = append(fields, f)
 		}
 
 	}
-	return fields
+	return fields, nil
 }
 
 func getEdgeActionType(actionStr string) concreteEdgeActionType {

@@ -12,6 +12,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/field"
@@ -184,8 +185,7 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 	// get the actions in the function
 	elts := astparser.GetEltsInFunc(fn)
 
-	actionInfo := NewActionInfo()
-
+	var inputActions []*input.Action
 	for _, expr := range elts {
 		result, err := astparser.Parse(expr)
 		if err != nil {
@@ -197,7 +197,21 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 			return nil, fmt.Errorf("expected type name to ent.ActionConfig, got %s instead", typeName)
 		}
 
-		actions, err := parseActions(nodeName, result, fieldInfo)
+		inputAction, err := getInputAction(nodeName, result)
+		if err != nil {
+			return nil, err
+		}
+		inputActions = append(inputActions, inputAction)
+	}
+
+	return ParseFromInput(nodeName, inputActions, fieldInfo, edgeInfo)
+}
+
+func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo) (*ActionInfo, error) {
+	actionInfo := NewActionInfo()
+
+	for _, action := range actions {
+		actions, err := parseActionsFromInput(nodeName, action, fieldInfo)
 		if err != nil {
 			return nil, err
 		}
