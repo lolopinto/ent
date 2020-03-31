@@ -30,7 +30,7 @@ var codegenCmd = &cobra.Command{
 		}
 		// TODO init generates schema, db, tsconfig etc
 
-		inputSchema, err := input.ParseSchemaFromTSDir(path)
+		inputSchema, err := input.ParseSchemaFromTSDir(path, false)
 		if err != nil {
 			return err
 		}

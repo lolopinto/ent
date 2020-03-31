@@ -13,6 +13,8 @@ export default interface Schema {
 
   // edges in the schema
   edges?: Edge[];
+
+  actions?: Action[];
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format
@@ -214,12 +216,34 @@ export function getFields(value: any): Map<string, Field> {
   return m;
 }
 
+// this maps to ActionOperation in ent/action.go
 export enum ActionOperation {
+  // Create generates a create action for the ent. If no fields are provided, uses all fields
+  // on the ent. Doesn't include private fields if no fields are provided.
   Create = 1,
-  Edit,
-  Delete,
-  Mutations,
-  AddEdge,
-  RemoveEdge,
-  EdgeGroup,
+  // Edit generates an edit action for the ent. If no fields are provided, uses all fields
+  // on the ent. Can have multiple EditActions with different fields provided. Doesn't include
+  // private fields if no fields are provided.
+  Edit = 2,
+  // Delete generates a delete action for the ent.
+  Delete = 4,
+  // Mutations is a shortcut to generate create, edit, and delete actions for an ent
+  // Can be used to boostrap ents or for simple ents where the granularity of actions is overkill
+  // Provides CUD	of CRUD. Can be the default for most ents. Should rarely be used for the `User` or `Account` ent
+  Mutations = 8,
+  // AddEdge is used to provide the ability to add an edge in an AssociationEdge.
+  AddEdge = 16,
+  // RemoveEdge is used to provide the ability to remove an edge in an AssociationEdge.
+  RemoveEdge = 32,
+  // EdgeGroup is used to provide the abilith to edit an edge group in an AssociationEdgeGroup.
+  EdgeGroup = 64,
+}
+
+// provides a way to configure the actions generated for the ent
+export interface Action {
+  operation: ActionOperation;
+  fields?: string[];
+  actionName?: string;
+  graphQLName?: string;
+  hideFromGraphQL?: boolean;
 }
