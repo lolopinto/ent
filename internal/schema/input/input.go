@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"go/types"
 
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schemaparser"
 )
@@ -17,6 +18,7 @@ type Node struct {
 	Fields          []*Field          `json:"fields"`
 	AssocEdges      []*AssocEdge      `json:"assocEdges"`
 	AssocEdgeGroups []*AssocEdgeGroup `json:"assocEdgeGroups"`
+	Actions         []*Action         `json:"actions"`
 }
 
 func (n *Node) AddAssocEdge(edge *AssocEdge) {
@@ -133,6 +135,14 @@ type AssocEdgeGroup struct {
 	// Go specific
 	EdgeActions interface{}
 	ActionEdges []string
+}
+
+type Action struct {
+	Operation         ent.ActionOperation `json:"operation"`
+	Fields            []string            `json:"fields"`
+	CustomActionName  string              `json:"actionName"`
+	CustomGraphQLName string              `json:"graphQLName"`
+	HideFromGraphQL   bool                `json:"hideFromGraphQL"`
 }
 
 func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {

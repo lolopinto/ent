@@ -241,6 +241,26 @@ func getActionTypeFromString(typ string) actionType {
 	panic(fmt.Errorf("invalid action type passed %s", typ))
 }
 
+func getActionTypeFromOperation(op ent.ActionOperation) actionType {
+	switch op {
+	case ent.CreateAction:
+		return &createActionType{}
+	case ent.EditAction:
+		return &editActionType{}
+	case ent.DeleteAction:
+		return &deleteActionType{}
+	case ent.MutationsAction:
+		return &mutationsActionType{}
+	case ent.AddEdgeAction:
+		return &addEdgeActionType{}
+	case ent.RemoveEdgeAction:
+		return &removeEdgeActionType{}
+	case ent.EdgeGroupAction:
+		return &groupEdgeActionType{}
+	}
+	panic(fmt.Errorf("invalid action type passed %v", op))
+}
+
 func getActionNameForNodeActionType(typ concreteNodeActionType, nodeName, customName string) string {
 	if customName != "" {
 		return customName
