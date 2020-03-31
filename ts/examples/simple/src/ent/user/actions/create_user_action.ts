@@ -78,9 +78,9 @@ export class UserBuilder implements Builder<User> {
         result.set(key, null);
       }
     };
-    addField("FirstName", fields.firstName, m["firstName"]);
-    addField("LastName", fields.lastName, m["lastName"]);
-    addField("EmailAddress", fields.emailAddress, m["emailAddress"]);
+    addField("FirstName", fields.firstName, m["FirstName"]);
+    addField("LastName", fields.lastName, m["LastName"]);
+    addField("EmailAddress", fields.emailAddress, m["EmailAddress"]);
 
     return result;
   }

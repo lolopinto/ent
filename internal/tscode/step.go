@@ -62,6 +62,15 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 				serr.Append(err)
 				return
 			}
+
+			if len(nodeData.ActionInfo.Actions) == 0 {
+				return
+			}
+
+			if err := writeBuilderFile(nodeData, data.CodePath); err != nil {
+				serr.Append(err)
+			}
+
 		}(key)
 	}
 
@@ -154,6 +163,10 @@ func getFilePathForConstFile() string {
 	return fmt.Sprintf("src/ent/const.ts")
 }
 
+func getFilePathForBuilderFile(nodeData *schema.NodeData) string {
+	return fmt.Sprintf("src/ent/%s/actions/%s_builder.ts", nodeData.PackageName, nodeData.PackageName)
+}
+
 func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
@@ -214,6 +227,24 @@ func writeConstFile(nodeData []enumData, edgeData []enumData) error {
 		AbsPathToTemplate: util.GetAbsolutePath("const.tmpl"),
 		TemplateName:      "const.tmpl",
 		PathToFile:        getFilePathForConstFile(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
+func writeBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data: nodeTemplateCodePath{
+			NodeData: nodeData,
+			CodePath: codePathInfo,
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("builder.tmpl"),
+		TemplateName:      "builder.tmpl",
+		PathToFile:        getFilePathForBuilderFile(nodeData),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
