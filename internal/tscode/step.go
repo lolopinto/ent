@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
@@ -71,6 +73,21 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 				serr.Append(err)
 			}
 
+			// write all the actions concurrently
+			var actionsWg sync.WaitGroup
+			actionsWg.Add(len(nodeData.ActionInfo.Actions))
+			for idx := range nodeData.ActionInfo.Actions {
+				go func(idx int) {
+					defer actionsWg.Done()
+
+					action := nodeData.ActionInfo.Actions[idx]
+					if err := writeBaseActionFile(nodeData, action); err != nil {
+						serr.Append(err)
+					}
+
+				}(idx)
+			}
+			actionsWg.Wait()
 		}(key)
 	}
 
@@ -165,6 +182,15 @@ func getFilePathForConstFile() string {
 
 func getFilePathForBuilderFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s_builder.ts", nodeData.PackageName, nodeData.PackageName)
+}
+
+func getImportPathForBuilderFile(nodeData *schema.NodeData) string {
+	return fmt.Sprintf("src/ent/%s/actions/%s_builder", nodeData.PackageName, nodeData.PackageName)
+}
+
+func getFilePathForAtionBaseFile(nodeData *schema.NodeData, a action.Action) string {
+	fileName := strcase.ToSnake(a.GetActionName())
+	return fmt.Sprintf("src/ent/%s/actions/generated/%s_base.ts", nodeData.PackageName, fileName)
 }
 
 func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {

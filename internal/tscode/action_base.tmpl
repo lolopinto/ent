@@ -1,0 +1,119 @@
+{{ reserveImport "ent/action" "Action" "saveBuilder" "saveBuilderX" "WriteOperation" "Changeset" }}
+{{reserveImport "ent/ent" "Viewer" "ID" "Ent" }}
+
+{{ $packagePath := printf "src/ent/%s" .NodeData.PackageName }}
+{{ reserveDefaultImport $packagePath .NodeData.Node}}
+{{ $builderName := printf "%sBuilder" .NodeData.Node -}}
+{{ $builderInput := printf "%sInput" .NodeData.Node -}}
+
+{{ reserveImport .BuilderPath $builderName $builderInput}}
+
+{{ $action := .Action -}}
+{{ $actionName := printf "%sBase" $action.GetActionName -}}
+
+{{ $node := useImport .NodeData.Node -}}
+
+{{$hasInput := hasInput $action -}}
+{{$inputName := "" -}}
+{{ if $hasInput -}}
+  {{$inputName = getInputName $action -}}
+
+  export interface {{$inputName}} {
+    {{ range $field := $action.GetFields -}}
+      {{ if $field.EditableField -}}
+        {{if isRequiredField $action $field -}}
+          {{$field.TsFieldName}}: {{$field.TsType}};
+        {{else -}}
+          {{$field.TsFieldName}}?: {{$field.TsType}};
+        {{end -}}
+      {{end -}}
+    {{end -}}
+  }
+{{end}}
+
+export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
+  public readonly builder: {{useImport $builderName}};
+
+  constructor(
+  {{/* they all require viewer */ -}}
+  public readonly viewer: {{useImport "Viewer"}},
+  {{/* existing object, pass it in */ -}}
+  {{ if $action.MutatingExistingObject -}}
+    {{.NodeData.NodeInstance}}: {{$node}},
+  {{end -}}
+  {{/* has input? create/edit, pass it in */ -}}
+  {{ if $hasInput -}}
+    private input: {{$inputName}},
+  {{end -}}
+  ) {
+    this.builder = new {{$builderName}}(
+      this.viewer,
+      {{useImport "WriteOperation"}}.{{getWriteOperation $action}},
+      this,
+      {{ if $action.MutatingExistingObject -}}
+        {{.NodeData.NodeInstance}},
+      {{end -}}
+    );
+  }
+
+  getFields(): {{useImport $builderInput}} {
+    return {
+      {{ if $hasInput -}}
+        ...this.input,
+      {{end -}}
+      requiredFields: [
+        {{ range $field := $action.GetFields -}}
+          {{ if and $field.EditableField (isRequiredField $action $field) -}}
+          "{{$field.FieldName}}",
+          {{end -}}
+        {{end -}}
+      ],
+    };
+  }
+
+  async changeset(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
+    return this.builder.build();
+  }
+
+  {{ if $action.IsDeletingNode -}}
+    async save(): Promise<void> {
+      await {{useImport "saveBuilder"}}(this.builder);
+  {{ else -}}
+    async save(): Promise<{{$node}} | null> {
+    return await {{useImport "saveBuilder"}}(this.builder);
+  {{ end -}}
+  }
+
+  {{ if $action.IsDeletingNode -}}
+    async saveX(): Promise<void> {
+      await {{useImport "saveBuilderX"}}(this.builder);
+  {{ else -}}
+    async saveX(): Promise<{{$node}}> {
+    return await {{useImport "saveBuilderX"}}(this.builder);
+  {{ end -}}
+  }
+
+  static create(
+    {{/* they all require viewer */ -}}
+    viewer: {{useImport "Viewer"}},
+  {{/* existing object, pass it in */ -}}
+  {{ if $action.MutatingExistingObject -}}
+    {{.NodeData.NodeInstance}}: {{$node}},
+  {{end -}}
+  {{/* has input? create/edit, pass it in */ -}}
+  {{ if $hasInput -}}
+    input: {{$inputName}},
+  {{end -}}
+  ): {{$actionName}} {
+    return new {{$actionName}}(
+      viewer,
+      {{ if $action.MutatingExistingObject -}}
+        {{.NodeData.NodeInstance}},
+      {{end -}}
+      {{/* has input? create/edit, pass it in */ -}}
+      {{ if $hasInput -}}
+        input,
+      {{end -}}
+    );
+  }
+}

@@ -1,7 +1,7 @@
 {{with .NodeData -}}
 
 {{reserveImport "ent/ent" "Viewer" "ID" "Ent" "AssocEdgeInputOptions"}}
-{{reserveImport "ent/action" "Action" "Builder" "WriteOperation" "Changeset" "saveBuilderX" "saveBuilder"}}
+{{reserveImport "ent/action" "Action" "Builder" "WriteOperation" "Changeset"}}
 {{reserveImport "ent/orchestrator" "Orchestrator"}}
 
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
