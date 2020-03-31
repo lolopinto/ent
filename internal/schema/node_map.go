@@ -224,8 +224,10 @@ func (m NodeMapInfo) parseFile(
 			case "GetActions":
 				// queue up to run later since it depends on parsed fieldInfo and edges
 				g2.AddItem("GetActions", func(info *NodeDataInfo) {
+					var err error
 					nodeData := info.NodeData
-					nodeData.ActionInfo = action.ParseActions(packageName, fn, nodeData.FieldInfo, nodeData.EdgeInfo)
+					nodeData.ActionInfo, err = action.ParseActions(packageName, fn, nodeData.FieldInfo, nodeData.EdgeInfo)
+					util.Die(err)
 				}, "LinkedEdges")
 
 			case "GetTableName":
@@ -594,6 +596,11 @@ func (m NodeMapInfo) parseInputSchema(schema *input.Schema) (*assocEdgeData, err
 		}
 
 		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(nodeName, node)
+		if err != nil {
+			return nil, err
+		}
+
+		nodeData.ActionInfo, err = action.ParseFromInput(nodeName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo)
 		if err != nil {
 			return nil, err
 		}

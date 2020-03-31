@@ -12,10 +12,10 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/field"
-	"github.com/lolopinto/ent/internal/util"
 )
 
 type NonEntField struct {
@@ -181,25 +181,41 @@ type EdgeGroupAction struct {
 	mutationExistingObjAction
 }
 
-func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo) *ActionInfo {
+func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo) (*ActionInfo, error) {
 	// get the actions in the function
 	elts := astparser.GetEltsInFunc(fn)
 
-	actionInfo := NewActionInfo()
-
+	var inputActions []*input.Action
 	for _, expr := range elts {
-		// hardcode to unary expressions for now but this may not be what we want
-
-		compositeLit := astparser.GetComposeLitInUnaryExpr(expr)
-		typeName := astparser.GetTypeNameFromExpr(compositeLit.Type)
-
-		if typeName != "ent.ActionConfig" {
-			util.Die(
-				fmt.Errorf("expected the type to be ent.ActionConfig, got %s instead", typeName),
-			)
+		result, err := astparser.Parse(expr)
+		if err != nil {
+			return nil, err
 		}
 
-		actionInfo.addActions(parseActions(nodeName, compositeLit, fieldInfo)...)
+		typeName := result.GetTypeName()
+		if typeName != "ent.ActionConfig" {
+			return nil, fmt.Errorf("expected type name to ent.ActionConfig, got %s instead", typeName)
+		}
+
+		inputAction, err := getInputAction(nodeName, result)
+		if err != nil {
+			return nil, err
+		}
+		inputActions = append(inputActions, inputAction)
+	}
+
+	return ParseFromInput(nodeName, inputActions, fieldInfo, edgeInfo)
+}
+
+func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo) (*ActionInfo, error) {
+	actionInfo := NewActionInfo()
+
+	for _, action := range actions {
+		actions, err := parseActionsFromInput(nodeName, action, fieldInfo)
+		if err != nil {
+			return nil, err
+		}
+		actionInfo.addActions(actions...)
 	}
 
 	if edgeInfo != nil {
@@ -212,7 +228,7 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 		}
 	}
 
-	return actionInfo
+	return actionInfo, nil
 }
 
 // FieldActionTemplateInfo is passed to codegeneration template (both action and graphql) to generate

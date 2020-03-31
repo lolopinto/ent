@@ -1,4 +1,10 @@
-import Schema, { Field, Edge, BaseEntSchema } from "ent/schema";
+import Schema, {
+  Action,
+  Field,
+  Edge,
+  BaseEntSchema,
+  ActionOperation,
+} from "ent/schema";
 import { StringType, TimeType } from "ent/field";
 
 /// explicit schema
@@ -58,6 +64,13 @@ export default class Event extends BaseEntSchema implements Schema {
           },
         },
       ],
+    },
+  ];
+
+  // create, edit, delete
+  actions: Action[] = [
+    {
+      operation: ActionOperation.Mutations,
     },
   ];
 }

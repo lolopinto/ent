@@ -235,7 +235,7 @@ type AssociationEdge struct {
 }
 
 // TsEdgeConst returns the Edge const as used in typescript.
-// It transforms UserToFriends Edge to UserToFriends since that's 
+// It transforms UserToFriends Edge to UserToFriends since that's
 // in an enum
 // will evntually fix at edge creation
 func (e *AssociationEdge) TsEdgeConst() string {
@@ -584,11 +584,11 @@ func getParsedAssociationEdgeItem(containingPackageName, edgeName string, result
 	}
 
 	g.AddItem("Symmetric", func(elem *astparser.Result) {
-		assocEdge.Symmetric = astparser.IsBooleanResult(elem)
+		assocEdge.Symmetric = astparser.IsTrueBooleanResult(elem)
 	})
 
 	g.AddItem("Unique", func(elem *astparser.Result) {
-		assocEdge.Unique = astparser.IsBooleanResult(elem)
+		assocEdge.Unique = astparser.IsTrueBooleanResult(elem)
 	})
 
 	g.AddItem("EdgeActions", func(elem *astparser.Result) {
@@ -682,7 +682,7 @@ func parseEdgeAction(elem *astparser.Result) *EdgeAction {
 			break
 
 		case "HideFromGraphQL":
-			ret.ExposeToGraphQL = !astparser.IsBooleanResult(elem.Value)
+			ret.ExposeToGraphQL = !astparser.IsTrueBooleanResult(elem.Value)
 		}
 	}
 

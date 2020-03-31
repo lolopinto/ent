@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,6 +18,7 @@ type node struct {
 	fields          []field
 	assocEdges      []assocEdge
 	assocEdgeGroups []assocEdgeGroup
+	actions         []action
 }
 
 type field struct {
@@ -58,6 +60,14 @@ type assocEdgeGroup struct {
 	assocEdges      []assocEdge
 }
 
+type action struct {
+	operation       ent.ActionOperation // Todo?
+	fields          []string
+	actionName      string
+	graphQLName     string
+	hideFromGraphQL bool
+}
+
 type testCase struct {
 	code           map[string]string
 	expectedOutput map[string]node
@@ -83,7 +93,7 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				require.NoError(t, ioutil.WriteFile(path, []byte(contents), os.ModePerm))
 			}
 
-			schema, err := input.ParseSchemaFromTSDir(dirPath)
+			schema, err := input.ParseSchemaFromTSDir(dirPath, true)
 			require.NoError(t, err)
 
 			require.NotNil(t, schema)
@@ -130,6 +140,18 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 					assert.Equal(t, expEdgeGroup.tableName, edgeGroup.TableName)
 
 					verifyAssocEdges(t, expEdgeGroup.assocEdges, edgeGroup.AssocEdges)
+				}
+
+				require.Len(t, node.Actions, len(expectedNode.actions))
+
+				for j, expAction := range expectedNode.actions {
+					action := node.Actions[j]
+
+					assert.Equal(t, expAction.operation, action.Operation)
+					assert.Equal(t, expAction.actionName, action.CustomActionName)
+					assert.Equal(t, expAction.graphQLName, action.CustomGraphQLName)
+					assert.Equal(t, expAction.hideFromGraphQL, action.HideFromGraphQL)
+					assert.Equal(t, expAction.fields, action.Fields)
 				}
 			}
 		})
