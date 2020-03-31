@@ -311,7 +311,8 @@ func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expe
 
 	require.NotNil(t, fnMap["GetActions"])
 
-	actionInfo := ParseActions(nodeName, fnMap["GetActions"], fieldInfo, nil)
+	actionInfo, err := ParseActions(nodeName, fnMap["GetActions"], fieldInfo, nil)
+	require.Nil(t, err)
 
 	require.Len(t, actionInfo.Actions, len(expActions))
 
@@ -372,8 +373,9 @@ func initSyncs() {
 			// TODO need to fix this dissonance...
 			fieldInfo := getTestFieldInfo(t, strcase.ToCamel(configName)+"Config")
 			edgeInfo := getTestEdgeInfo(t, configName)
-			actionInfo := ParseActions("Account", fn, fieldInfo, edgeInfo)
+			actionInfo, err := ParseActions("Account", fn, fieldInfo, edgeInfo)
 			assert.NotNil(t, actionInfo, "invalid actionInfo retrieved")
+			require.NoError(t, err)
 			return actionInfo
 		})
 	})

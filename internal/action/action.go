@@ -1,8 +1,8 @@
 package action
 
 import (
+	"errors"
 	"fmt"
-	"go/ast"
 	"math"
 
 	"github.com/iancoleman/strcase"
@@ -15,59 +15,36 @@ import (
 	"github.com/lolopinto/ent/internal/astparser"
 )
 
-// func getActionFromExpr(keyValueExpr *ast.KeyValueExpr) {
-// 	name := astparser.GetTypeNameFromExpr(keyValueExpr.Value)
-// 	// TODO come back
-// 	switch name {
-// 	case "ent.MutationsAction":
-// 	case "ent.CreateAction":
-// 	case "ent.EditAction":
-// 	case "ent.DeleteAction":
-// 	}
-// }
-
-func getFieldsFromExpr(keyValueExpr *ast.KeyValueExpr) []string {
-	compositLit := astparser.GetExprToCompositeLit(keyValueExpr.Value)
-
-	var fields []string
-	for _, expr := range compositLit.Elts {
-		field := astparser.GetUnderylingStringFromLiteralExpr(expr)
-
-		fields = append(fields, field)
-	}
-	return fields
-}
-
-func parseActions(nodeName string, compositeLit *ast.CompositeLit, fieldInfo *field.FieldInfo) []Action {
-	//	keyValueExpr *ast.KeyValueExpr) []Action {
-
+func parseActions(nodeName string, result *astparser.Result, fieldInfo *field.FieldInfo) ([]Action, error) {
 	var customActionName string
 	exposeToGraphQL := true
 	var customGraphQLName string
 	var fieldNames []string
 	var actionTypeStr string
 
-	for _, expr := range compositeLit.Elts {
-		keyValueExpr := astparser.GetExprToKeyValueExpr(expr)
+	for _, elem := range result.Elems {
+		if elem.Value == nil {
+			return nil, fmt.Errorf("elem with nil value")
+		}
 
-		fieldName := astparser.GetExprToIdent(keyValueExpr.Key).Name
-
-		switch fieldName {
+		switch elem.IdentName {
 		case "Action":
-			actionTypeStr = astparser.GetTypeNameFromExpr(keyValueExpr.Value)
+			actionTypeStr = elem.Value.GetTypeName()
 
 		case "Fields":
-			fieldNames = getFieldsFromExpr(keyValueExpr)
+			for _, child := range elem.Value.Elems {
+				fieldNames = append(fieldNames, child.Literal)
+			}
 
 		case "CustomActionName":
-			customActionName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExpr.Value)
+			customActionName = elem.Value.Literal
 
 		case "HideFromGraphQL":
 			// exposeToGraphQL is inverse of HideFromGraphQL
-			exposeToGraphQL = !astparser.GetBooleanValueFromExpr(keyValueExpr.Value)
+			exposeToGraphQL = !astparser.IsTrueBooleanResult(elem.Value)
 
 		case "CustomGraphQLName":
-			customGraphQLName = astparser.GetUnderylingStringFromLiteralExpr(keyValueExpr.Value)
+			customGraphQLName = elem.Value.Literal
 		}
 	}
 
@@ -79,21 +56,21 @@ func parseActions(nodeName string, compositeLit *ast.CompositeLit, fieldInfo *fi
 		fields := getFieldsForAction(fieldNames, fieldInfo, actionTypeStr, concreteAction)
 
 		commonInfo := getCommonInfo(nodeName, concreteAction, customActionName, customGraphQLName, exposeToGraphQL, fields)
-		return []Action{concreteAction.getAction(commonInfo)}
+		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
 
 	_, ok = typ.(*mutationsActionType)
 	if ok {
 		if customActionName != "" {
-			panic("cannot have a custom action name when using default actions")
+			return nil, fmt.Errorf("cannot have a custom action name when using default actions")
 		}
 		if customGraphQLName != "" {
-			panic("cannot have a custom graphql name when using default actions")
+			return nil, fmt.Errorf("cannot have a custom graphql name when using default actions")
 		}
-		return getActionsForMutationsType(nodeName, fieldInfo, exposeToGraphQL, fieldNames)
+		return getActionsForMutationsType(nodeName, fieldInfo, exposeToGraphQL, fieldNames), nil
 	}
 
-	panic("unsupported action type")
+	return nil, errors.New("unsupported action type")
 }
 
 func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exposeToGraphQL bool, fieldNames []string) []Action {

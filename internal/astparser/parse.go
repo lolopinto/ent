@@ -84,12 +84,18 @@ func (result *Result) GetTypeName() string {
 	return result.PkgName + "." + result.IdentName
 }
 
-// rename to isTrueResult or soemthing
-func IsBooleanResult(result *Result) bool {
+func IsTrueBooleanResult(result *Result) bool {
 	if result == nil {
 		return false
 	}
 	return result.IsScalarType("true")
+}
+
+func IsFalseBooleanResult(result *Result) bool {
+	if result == nil {
+		return false
+	}
+	return result.IsScalarType("false")
 }
 
 func GetStringList(result *Result) []string {
