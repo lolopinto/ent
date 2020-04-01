@@ -1,12 +1,16 @@
 import User from "src/ent/user";
 
-import Contact, { createContact, ContactCreateInput } from "src/ent/contact";
+import Contact from "src/ent/contact";
 import DB from "ent/db";
 import { LoggedOutViewer } from "ent/viewer";
 import { ID, Ent, Viewer, writeEdge } from "ent/ent";
 import { NodeType, EdgeType } from "src/ent/const";
 import { randomEmail } from "src/util/random";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
+import CreateContactAction, {
+  ContactCreateInput,
+} from "src/ent/contact/actions/create_contact_action";
+
 const loggedOutViewer = new LoggedOutViewer();
 
 class IDViewer implements Viewer {
@@ -31,16 +35,12 @@ async function create(firstName: string, lastName: string): Promise<Contact> {
     emailAddress: randomEmail(),
   }).saveX();
 
-  let contact = await createContact(loggedOutViewer, {
+  return await CreateContactAction.create(loggedOutViewer, {
     emailAddress: randomEmail(),
     firstName: firstName,
     lastName: lastName,
     userID: user.id as string,
-  });
-  if (contact == null) {
-    fail("could not create contact");
-  }
-  return contact;
+  }).saveX();
 }
 
 async function createMany(
@@ -53,15 +53,13 @@ async function createMany(
   }).saveX();
   let results: Contact[] = [];
   for (const name of names) {
-    let contact = await createContact(loggedOutViewer, {
+    // TODO eventually a multi-create API
+    let contact = await CreateContactAction.create(loggedOutViewer, {
       emailAddress: randomEmail(),
       firstName: name.firstName,
       lastName: name.lastName,
       userID: user.id as string,
-    });
-    if (contact == null) {
-      fail("could not create contact");
-    }
+    }).saveX();
     results.push(contact);
   }
 
