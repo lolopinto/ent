@@ -179,7 +179,7 @@ func (nodeData *NodeData) HasAssocGroups() bool {
 }
 
 // return the list of unique nodes at the end of an association
-// needed to
+// needed to import what's needed in generated code
 type uniqueNodeInfo struct {
 	Node        string
 	PackageName string
