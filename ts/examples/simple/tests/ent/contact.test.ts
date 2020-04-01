@@ -1,4 +1,4 @@
-import User, { createUser, UserCreateInput } from "src/ent/user";
+import User from "src/ent/user";
 
 import Contact, { createContact, ContactCreateInput } from "src/ent/contact";
 import DB from "ent/db";
@@ -6,6 +6,7 @@ import { LoggedOutViewer } from "ent/viewer";
 import { ID, Ent, Viewer, writeEdge } from "ent/ent";
 import { NodeType, EdgeType } from "src/ent/const";
 import { randomEmail } from "src/util/random";
+import CreateUserAction from "src/ent/user/actions/create_user_action";
 const loggedOutViewer = new LoggedOutViewer();
 
 class IDViewer implements Viewer {
@@ -24,14 +25,11 @@ afterAll(async () => {
 });
 
 async function create(firstName: string, lastName: string): Promise<Contact> {
-  let user = await createUser(loggedOutViewer, {
+  let user = await CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
-  });
-  if (user == null) {
-    fail("could not create user");
-  }
+  }).saveX();
 
   let contact = await createContact(loggedOutViewer, {
     emailAddress: randomEmail(),
@@ -48,14 +46,11 @@ async function create(firstName: string, lastName: string): Promise<Contact> {
 async function createMany(
   names: Pick<ContactCreateInput, "firstName" | "lastName">[],
 ): Promise<Contact[]> {
-  let user = await createUser(loggedOutViewer, {
+  let user = await CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
-  });
-  if (user == null) {
-    fail("could not create user");
-  }
+  }).saveX();
   let results: Contact[] = [];
   for (const name of names) {
     let contact = await createContact(loggedOutViewer, {
@@ -113,12 +108,11 @@ test("create contacts", async () => {
   verifyContacts(loadedContacts);
 
   // ygritte can't see jon snow's contacts
-  let ygritte = await createUser(loggedOutViewer, {
+  let ygritte = await CreateUserAction.create(loggedOutViewer, {
     firstName: "Ygritte",
     lastName: "",
     emailAddress: randomEmail(),
-  });
-  expect(ygritte).not.toBe(null);
+  }).saveX();
   await writeEdge({
     id1: user.id,
     id2: ygritte!.id,
