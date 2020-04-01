@@ -3,7 +3,7 @@
 import {
   Action,
   saveBuilder,
-  saveBuilderX,
+  saveBuilderXNoEnt,
   WriteOperation,
   Changeset,
 } from "ent/action";
@@ -40,7 +40,7 @@ export class DeleteEventActionBase implements Action<Event> {
   }
 
   async saveX(): Promise<void> {
-    await saveBuilderX(this.builder);
+    await saveBuilderXNoEnt(this.builder);
   }
 
   static create<T extends DeleteEventActionBase>(

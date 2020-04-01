@@ -89,6 +89,13 @@ export async function saveBuilderX<T extends Ent>(
   throw new Error("could not save ent for builder");
 }
 
+// this is used by delete builders which want exceptions but don't want to load the ent
+export async function saveBuilderXNoEnt<T extends Ent>(
+  builder: Builder<T>,
+): Promise<void> {
+  await saveBuilderImpl(builder, true);
+}
+
 async function saveBuilderImpl<T extends Ent>(
   builder: Builder<T>,
   throwErr: boolean,

@@ -1,4 +1,4 @@
-{{ reserveImport "ent/action" "Action" "saveBuilder" "saveBuilderX" "WriteOperation" "Changeset" }}
+{{ reserveImport "ent/action" "Action" "saveBuilder" "saveBuilderX" "saveBuilderXNoEnt" "WriteOperation" "Changeset" }}
 {{reserveImport "ent/ent" "Viewer" "ID" "Ent" }}
 
 {{ $packagePath := printf "src/ent/%s" .NodeData.PackageName }}
@@ -102,7 +102,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
 
   {{ if $action.IsDeletingNode -}}
     async saveX(): Promise<void> {
-      await {{useImport "saveBuilderX"}}(this.builder);
+      await {{useImport "saveBuilderXNoEnt"}}(this.builder);
   {{ else -}}
     async saveX(): Promise<{{$node}}> {
     return await {{useImport "saveBuilderX"}}(this.builder);

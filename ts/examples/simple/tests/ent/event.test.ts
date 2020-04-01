@@ -1,9 +1,12 @@
-import { createUser } from "src/ent/user";
-import Event, { createEvent, editEvent, deleteEvent } from "src/ent/event";
+import Event from "src/ent/event";
 import { ID, Ent, Viewer } from "ent/ent";
 import { LoggedOutViewer } from "ent/viewer";
 import DB from "ent/db";
 import { randomEmail } from "src/util/random";
+import { CreateUserAction } from "src/ent/user/actions/create_user_action";
+import CreateEventAction from "src/ent/event/actions/create_event_action";
+import EditEventAction from "src/ent/event/actions/edit_event_action";
+import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -23,24 +26,18 @@ afterAll(async () => {
 });
 
 async function create(startTime: Date): Promise<Event> {
-  let user = await createUser(loggedOutViewer, {
+  let user = await CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
-  });
-  if (!user) {
-    fail("could not create user");
-  }
-  let event = await createEvent(loggedOutViewer, {
+  }).saveX();
+
+  return await CreateEventAction.create(loggedOutViewer, {
     name: "fun event",
     creatorID: user.id as string,
     startTime: startTime,
     location: "location",
-  });
-  if (event == null) {
-    fail("could not create event");
-  }
-  return event;
+  }).saveX();
 }
 
 test("create event", async () => {
@@ -71,9 +68,9 @@ test("edit event", async () => {
     let date = new Date();
     let event = await create(date);
 
-    let editedEvent = await editEvent(loggedOutViewer, event.id, {
+    let editedEvent = await EditEventAction.create(loggedOutViewer, event, {
       location: "fun location",
-    });
+    }).saveX();
     expect(editedEvent).not.toBe(null);
     expect(editedEvent?.name).toBe("fun event");
     expect(editedEvent?.location).toBe("fun location");
@@ -93,9 +90,9 @@ test("edit nullable field", async () => {
     let endTime = new Date(date.getTime());
     endTime.setTime(date.getTime() + 24 * 60 * 60);
 
-    let editedEvent = await editEvent(loggedOutViewer, event.id, {
+    let editedEvent = await EditEventAction.create(loggedOutViewer, event, {
       endTime: endTime,
-    });
+    }).saveX();
     expect(editedEvent).not.toBe(null);
     expect(editedEvent?.name).toBe("fun event");
     expect(editedEvent?.location).toBe("location");
@@ -104,7 +101,9 @@ test("edit nullable field", async () => {
     expect(editedEvent?.endTime?.toDateString()).toBe(endTime.toDateString());
 
     // re-edit and clear the value
-    editedEvent = await editEvent(loggedOutViewer, event.id, { endTime: null });
+    editedEvent = await EditEventAction.create(loggedOutViewer, event, {
+      endTime: null,
+    }).saveX();
     expect(editedEvent).not.toBe(null);
     expect(editedEvent?.name).toBe("fun event");
     expect(editedEvent?.location).toBe("location");
@@ -120,7 +119,7 @@ test("delete event", async () => {
   try {
     let event = await create(new Date());
 
-    await deleteEvent(loggedOutViewer, event.id);
+    await DeleteEventAction.create(loggedOutViewer, event).saveX();
 
     let loadEvent = await Event.load(loggedOutViewer, event.id);
     expect(loadEvent).toBe(null);
