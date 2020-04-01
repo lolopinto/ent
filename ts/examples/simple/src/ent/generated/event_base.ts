@@ -7,9 +7,6 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  createEnt,
-  editEnt,
-  deleteEnt,
   AssocEdge,
   loadEdges,
   loadRawEdgeCountX,
@@ -227,86 +224,4 @@ export class EventBase {
   loadCreatorX(): Promise<User> {
     return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
   }
-}
-
-// no actions yet so we support full create, edit, delete for now
-export interface EventCreateInput {
-  name: string;
-  creatorID: string;
-  startTime: Date;
-  endTime?: Date | null;
-  location: string;
-}
-
-export interface EventEditInput {
-  name?: string;
-  creatorID?: string;
-  startTime?: Date;
-  endTime?: Date | null;
-  location?: string;
-}
-
-function defaultValue(key: string, property: string): any {
-  let fn = EventBase.getField(key)?.[property];
-  if (!fn) {
-    return null;
-  }
-  return fn();
-}
-
-export async function createEventFrom<T extends EventBase>(
-  viewer: Viewer,
-  input: EventCreateInput,
-  arg: new (viewer: Viewer, id: ID, data: {}) => T,
-): Promise<T | null> {
-  let fields = {
-    id: defaultValue("ID", "defaultValueOnCreate"),
-    created_at: defaultValue("createdAt", "defaultValueOnCreate"),
-    updated_at: defaultValue("updatedAt", "defaultValueOnCreate"),
-    name: input.name,
-    user_id: input.creatorID,
-    start_time: input.startTime,
-    end_time: input.endTime,
-    location: input.location,
-  };
-
-  return await createEnt(viewer, {
-    tableName: tableName,
-    fields: fields,
-    ent: arg,
-  });
-}
-
-export async function editEventFrom<T extends EventBase>(
-  viewer: Viewer,
-  id: ID,
-  input: EventEditInput,
-  arg: new (viewer: Viewer, id: ID, data: {}) => T,
-): Promise<T | null> {
-  const setField = function(key: string, value: any) {
-    if (value !== undefined) {
-      // nullable fields allowed
-      fields[key] = value;
-    }
-  };
-  let fields = {
-    updated_at: defaultValue("updatedAt", "defaultValueOnEdit"),
-  };
-  setField("name", input.name);
-  setField("user_id", input.creatorID);
-  setField("start_time", input.startTime);
-  setField("end_time", input.endTime);
-  setField("location", input.location);
-
-  return await editEnt(viewer, id, {
-    tableName: tableName,
-    fields: fields,
-    ent: arg,
-  });
-}
-
-export async function deleteEvent(viewer: Viewer, id: ID): Promise<null> {
-  return await deleteEnt(viewer, id, {
-    tableName: tableName,
-  });
 }

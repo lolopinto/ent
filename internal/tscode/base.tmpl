@@ -1,7 +1,7 @@
 {{with .NodeData -}}
 {{/* TODO break this up to make it easier to use? */}}
 {{/* these are dependent on having the right tsconfig.json file... */}}
-{{ reserveImport "ent/ent" "loadEnt" "ID" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "createEnt" "editEnt" "deleteEnt" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadUniqueEdge" "loadUniqueNode" }}
+{{ reserveImport "ent/ent" "loadEnt" "ID" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadUniqueEdge" "loadUniqueNode" }}
 {{ reserveImport "ent/privacy" "AlwaysDenyRule" "PrivacyPolicy"}}
 {{ reserveImport "ent/schema" "Field" "getFields"}}
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
@@ -249,103 +249,4 @@ export class {{$baseClass}} {
   {{end -}}
 }
 
-// no actions yet so we support full create, edit, delete for now
-export interface {{.Node}}CreateInput {
-  {{range $field := .FieldInfo.Fields -}}
-    {{ if $field.EditableField -}}
-      {{/* if nullable or has default value, make it optional */ -}}
-      {{if or $field.Nullable $field.HasDefaultValueOnCreate -}}
-        {{$field.TsFieldName}}?: {{$field.TsType}};
-      {{else -}}
-        {{$field.TsFieldName}}: {{$field.TsType}};
-      {{end -}}
-    {{ end -}}
-  {{end}}
-}
-
-export interface {{.Node}}EditInput {
-  {{range $field := .FieldInfo.Fields -}}
-    {{ if $field.EditableField -}}
-      {{$field.TsFieldName}}?: {{$field.TsType}};
-    {{ end -}}
-  {{end}}
-}
-
-function defaultValue (key: string, property: string): any {
-  let fn = {{$baseClass}}.getField(key)?.[property];
-  if (!fn) {
-    return null;
-  }
-  return fn();
-};
-
-export async function create{{.Node}}From<T extends {{$baseClass}}>(
-  viewer: {{$viewerType}}, 
-  input: {{.Node}}CreateInput,
-  {{$constructor}},
-  ): Promise<T | null> {
-  let fields  = {
-    {{range $field := .FieldInfo.Fields -}}
-      {{ if $field.EditableField -}}
-        "{{$field.GetDbColName}}": input.{{$field.TsFieldName}},
-      {{ else if $field.HasDefaultValueOnCreate -}}
-        "{{$field.GetDbColName}}": defaultValue("{{$field.FieldName}}", "defaultValueOnCreate"),
-      {{end -}}
-    {{end -}}
-  };
-
-  return await {{useImport "createEnt"}}(
-    viewer, 
-    {
-      tableName: tableName,
-      fields: fields,
-      ent: arg,
-    }
-  );
-}
-
-export async function edit{{.Node}}From<T extends {{$baseClass}}>(
-  viewer: {{$viewerType}}, 
-  id: {{$idType}}, 
-  input: {{.Node}}EditInput,
-  {{$constructor}},
-): Promise<T | null> {
-  const setField = function(key: string, value: any) {
-    if (value !== undefined) { // nullable fields allowed
-      fields[key] = value;
-    }
-  };
-  let fields  = {
-    {{range $field := .FieldInfo.Fields -}}
-      {{ if $field.HasDefaultValueOnEdit -}}
-        "{{$field.GetDbColName}}": defaultValue("{{$field.FieldName}}", "defaultValueOnEdit"),
-      {{end -}}
-    {{end -}}
-  };
-  {{range $field := .FieldInfo.Fields -}}
-    {{ if $field.EditableField -}}
-      setField("{{$field.GetDbColName}}", input.{{$field.TsFieldName}});
-    {{end -}}
-  {{end}}
-
-  return await {{useImport "editEnt"}}(
-    viewer,
-    id,
-    {
-      tableName: tableName,
-      fields: fields,
-      ent: arg,
-    }
-  );
-}
-
-export async function delete{{.Node}}(viewer: Viewer, id: ID): Promise<null> {
-  return await {{useImport "deleteEnt"}}(
-    viewer,
-    id,
-    {
-      tableName: tableName,
-    }
-  );
-};
 {{end -}}

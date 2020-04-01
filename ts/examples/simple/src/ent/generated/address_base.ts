@@ -7,9 +7,6 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  createEnt,
-  editEnt,
-  deleteEnt,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
@@ -95,78 +92,4 @@ export class AddressBase {
   static getField(key: string): Field | undefined {
     return AddressBase.getSchemaFields().get(key);
   }
-}
-
-// no actions yet so we support full create, edit, delete for now
-export interface AddressCreateInput {
-  streetName: string;
-  city: string;
-  zip: string;
-}
-
-export interface AddressEditInput {
-  streetName?: string;
-  city?: string;
-  zip?: string;
-}
-
-function defaultValue(key: string, property: string): any {
-  let fn = AddressBase.getField(key)?.[property];
-  if (!fn) {
-    return null;
-  }
-  return fn();
-}
-
-export async function createAddressFrom<T extends AddressBase>(
-  viewer: Viewer,
-  input: AddressCreateInput,
-  arg: new (viewer: Viewer, id: ID, data: {}) => T,
-): Promise<T | null> {
-  let fields = {
-    id: defaultValue("ID", "defaultValueOnCreate"),
-    created_at: defaultValue("createdAt", "defaultValueOnCreate"),
-    updated_at: defaultValue("updatedAt", "defaultValueOnCreate"),
-    street_name: input.streetName,
-    city: input.city,
-    zip: input.zip,
-  };
-
-  return await createEnt(viewer, {
-    tableName: tableName,
-    fields: fields,
-    ent: arg,
-  });
-}
-
-export async function editAddressFrom<T extends AddressBase>(
-  viewer: Viewer,
-  id: ID,
-  input: AddressEditInput,
-  arg: new (viewer: Viewer, id: ID, data: {}) => T,
-): Promise<T | null> {
-  const setField = function(key: string, value: any) {
-    if (value !== undefined) {
-      // nullable fields allowed
-      fields[key] = value;
-    }
-  };
-  let fields = {
-    updated_at: defaultValue("updatedAt", "defaultValueOnEdit"),
-  };
-  setField("street_name", input.streetName);
-  setField("city", input.city);
-  setField("zip", input.zip);
-
-  return await editEnt(viewer, id, {
-    tableName: tableName,
-    fields: fields,
-    ent: arg,
-  });
-}
-
-export async function deleteAddress(viewer: Viewer, id: ID): Promise<null> {
-  return await deleteEnt(viewer, id, {
-    tableName: tableName,
-  });
 }
