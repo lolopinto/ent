@@ -1,0 +1,138 @@
+{{with .NodeData -}}
+
+{{reserveImport "ent/ent" "Viewer" "ID" "Ent" "AssocEdgeInputOptions"}}
+{{reserveImport "ent/action" "Action" "Builder" "WriteOperation" "Changeset"}}
+{{reserveImport "ent/orchestrator" "Orchestrator"}}
+
+{{ $schemaPath := printf "src/schema/%s" .PackageName }}
+{{ reserveDefaultImport $schemaPath "schema"}}
+{{ reserveImport "src/ent/const" "EdgeType" "NodeType" }}
+
+{{ $packagePath := printf "src/ent/%s" .PackageName }}
+{{ reserveDefaultImport $packagePath .Node}}
+{{ range .GetUniqueNodes -}} 
+  {{$packagePath := printf "src/ent/%s" .PackageName }}
+  {{ reserveDefaultImport $packagePath .Node}}
+{{ end}}
+
+export interface {{.Node}}Input {
+  {{range $field := .FieldInfo.Fields -}}
+    {{ if $field.EditableField -}}
+      {{$field.TsFieldName}}?: {{$field.TsType}};
+    {{end -}}
+  {{end -}}
+  requiredFields: string[];
+}
+
+export interface {{.Node}}Action extends {{useImport "Action"}}<{{useImport .Node}}> {
+  getFields(): {{.Node}}Input;
+}
+
+{{/* TODO better way of doing this? */}}
+function randomNum(): string {
+  return Math.random()
+    .toString(10)
+    .substring(2);
+}
+
+{{$node := useImport .Node}}
+{{$builder := printf "%sBuilder" .Node}}
+
+export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
+  private orchestrator: {{useImport "Orchestrator"}}<{{$node}}>;
+  readonly placeholderID: {{useImport "ID"}};
+  readonly ent = {{$node}};
+
+  public constructor(
+    public readonly viewer: {{useImport "Viewer"}},
+    public readonly operation: {{useImport "WriteOperation"}},
+    private action: {{.Node}}Action,
+    public readonly existingEnt?: {{useImport "Ent"}} | undefined,
+  ) {
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+
+    this.orchestrator = new {{useImport "Orchestrator"}}({
+      viewer: viewer,
+      operation: this.operation,
+      tableName: "{{.TableName}}", 
+      ent: {{$node}},
+      builder: this,
+      action: action,
+      schema: {{useImport "schema"}},
+      editedFields: this.getEditedFields,
+    });
+  }
+
+  private getEditedFields(): Map<string, any> {
+    const fields = this.action.getFields();
+
+    // required fields
+    let m = {};
+    let result = new Map<string, any>();
+    for (const field of fields.requiredFields) {
+      m[field] = true;
+    }
+
+    const addField = function(key: string, value: any, setNull: boolean) {
+      if (value !== undefined) {
+        result.set(key, value);
+      } else if (setNull) {
+        result.set(key, null);
+      }
+    };
+    {{range $field := .FieldInfo.Fields -}}
+      {{ if $field.EditableField -}}
+        addField("{{$field.FieldName}}", fields.{{$field.TsFieldName}}, m["{{$field.FieldName}}"]);
+      {{end -}}
+    {{end -}}
+    return result;
+  }
+
+  {{ $edgeInfos := .EdgeInfo.Associations -}}
+  {{ range $edge := $edgeInfos -}}  
+  add{{$edge.Singular}}(...ids: {{useImport "ID"}}[]): {{$builder}};
+  add{{$edge.Singular}}(...nodes: {{useImport .NodeInfo.Node}}[]): {{$builder}};
+  add{{$edge.Singular}}(...nodes: ID[] | {{.NodeInfo.Node}}[]): {{$builder}} {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.add{{$edge.Singular}}ID(node.id);
+      } else {
+        this.add{{$edge.Singular}}ID(node);
+      }
+    }
+    return this;
+  }
+
+  add{{$edge.Singular}}ID(id: {{useImport "ID"}}, options?: {{useImport "AssocEdgeInputOptions"}}): {{$builder}} {
+    {{/* TODO need inbound edges also */}}
+    this.orchestrator.addOutboundEdge(
+      id, 
+      {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}},
+      {{useImport "NodeType"}}.{{.NodeInfo.Node}},
+      options,
+    );
+    return this;
+  }
+
+  remove{{$edge.Singular}}(...ids: {{useImport "ID"}}[]): {{$builder}};
+  remove{{$edge.Singular}}(...nodes: {{useImport .NodeInfo.Node}}[]): {{$builder}};
+  remove{{$edge.Singular}}(...nodes: ID[] | {{.NodeInfo.Node}}[]): {{$builder}} {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(node.id, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}});
+      } else {
+        this.orchestrator.removeOutboundEdge(node, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}});
+      }
+    }
+    return this;
+  }
+
+  {{end -}}
+
+
+  async build(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
+    return this.orchestrator.build();
+  }
+}
+
+{{end -}}
