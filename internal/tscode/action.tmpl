@@ -1,0 +1,8 @@
+{{ $actionName := .Action.GetActionName -}}
+{{ $baseName := printf "%sBase" $actionName -}}
+{{ reserveImport .BasePath $baseName -}}
+
+// we're only writing this once except with --force and packageName provided
+export default class {{$actionName}} extends {{useImport $baseName}} {
+
+}

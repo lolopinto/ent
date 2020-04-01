@@ -21,12 +21,12 @@ export interface EventEditInput {
 
 export class EditEventActionBase implements Action<Event> {
   public readonly builder: EventBuilder;
+  public readonly viewer: Viewer;
+  private input: EventEditInput;
 
-  constructor(
-    public readonly viewer: Viewer,
-    event: Event,
-    private input: EventEditInput,
-  ) {
+  constructor(viewer: Viewer, event: Event, input: EventEditInput) {
+    this.viewer = viewer;
+    this.input = input;
     this.builder = new EventBuilder(
       this.viewer,
       WriteOperation.Edit,
@@ -54,11 +54,12 @@ export class EditEventActionBase implements Action<Event> {
     return await saveBuilderX(this.builder);
   }
 
-  static create(
+  static create<T extends EditEventActionBase>(
+    this: new (viewer: Viewer, event: Event, input: EventEditInput) => T,
     viewer: Viewer,
     event: Event,
     input: EventEditInput,
   ): EditEventActionBase {
-    return new EditEventActionBase(viewer, event, input);
+    return new this(viewer, event, input);
   }
 }

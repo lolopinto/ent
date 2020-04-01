@@ -13,8 +13,10 @@ import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
 export class DeleteEventActionBase implements Action<Event> {
   public readonly builder: EventBuilder;
+  public readonly viewer: Viewer;
 
-  constructor(public readonly viewer: Viewer, event: Event) {
+  constructor(viewer: Viewer, event: Event) {
+    this.viewer = viewer;
     this.builder = new EventBuilder(
       this.viewer,
       WriteOperation.Delete,
@@ -41,7 +43,11 @@ export class DeleteEventActionBase implements Action<Event> {
     await saveBuilderX(this.builder);
   }
 
-  static create(viewer: Viewer, event: Event): DeleteEventActionBase {
-    return new DeleteEventActionBase(viewer, event);
+  static create<T extends DeleteEventActionBase>(
+    this: new (viewer: Viewer, event: Event) => T,
+    viewer: Viewer,
+    event: Event,
+  ): DeleteEventActionBase {
+    return new this(viewer, event);
   }
 }

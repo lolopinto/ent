@@ -12,6 +12,7 @@
 {{ $actionName := printf "%sBase" $action.GetActionName -}}
 
 {{ $node := useImport .NodeData.Node -}}
+{{ $viewer := useImport "Viewer"}}
 
 {{$hasInput := hasInput $action -}}
 {{$inputName := "" -}}
@@ -31,27 +32,42 @@
   }
 {{end}}
 
+{{ $constructor := "" }}
+{{ $newArgs := ""}}
+{{ $instance := .NodeData.NodeInstance}}
+
+{{/* edit, whole shebang */ -}}
+{{ if and $action.MutatingExistingObject $hasInput -}}
+  {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewer $instance $node $inputName -}}
+  {{ $newArgs = printf "viewer, %s, input" $instance -}}
+{{/* create, no editing */ -}}
+{{ else if $hasInput -}} 
+  {{ $constructor = printf "viewer: %s, input: %s"  $viewer $inputName -}}
+  {{ $newArgs = "viewer, input" }}
+{{/* delete, no input */ -}}
+{{ else -}}
+  {{ $constructor = printf "viewer: %s, %s: %s" $viewer $instance $node -}}
+  {{ $newArgs = printf "viewer, %s" $instance -}}
+{{end -}}
+
 export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   public readonly builder: {{useImport $builderName}};
-
-  constructor(
-  {{/* they all require viewer */ -}}
-  public readonly viewer: {{useImport "Viewer"}},
-  {{/* existing object, pass it in */ -}}
-  {{ if $action.MutatingExistingObject -}}
-    {{.NodeData.NodeInstance}}: {{$node}},
-  {{end -}}
-  {{/* has input? create/edit, pass it in */ -}}
+  public readonly viewer: {{$viewer}}
   {{ if $hasInput -}}
-    private input: {{$inputName}},
-  {{end -}}
-  ) {
+    private input: {{$inputName}};
+  {{end}}
+
+  constructor({{$constructor}}) {
+    this.viewer = viewer;
+    {{ if $hasInput -}}
+      this.input = input;
+    {{end -}}
     this.builder = new {{$builderName}}(
       this.viewer,
       {{useImport "WriteOperation"}}.{{getWriteOperation $action}},
       this,
       {{ if $action.MutatingExistingObject -}}
-        {{.NodeData.NodeInstance}},
+        {{$instance}},
       {{end -}}
     );
   }
@@ -93,27 +109,10 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   {{ end -}}
   }
 
-  static create(
-    {{/* they all require viewer */ -}}
-    viewer: {{useImport "Viewer"}},
-  {{/* existing object, pass it in */ -}}
-  {{ if $action.MutatingExistingObject -}}
-    {{.NodeData.NodeInstance}}: {{$node}},
-  {{end -}}
-  {{/* has input? create/edit, pass it in */ -}}
-  {{ if $hasInput -}}
-    input: {{$inputName}},
-  {{end -}}
+  static create<T extends {{$actionName}}>(
+    this: new ({{$constructor}}) => T,
+    {{$constructor}},
   ): {{$actionName}} {
-    return new {{$actionName}}(
-      viewer,
-      {{ if $action.MutatingExistingObject -}}
-        {{.NodeData.NodeInstance}},
-      {{end -}}
-      {{/* has input? create/edit, pass it in */ -}}
-      {{ if $hasInput -}}
-        input,
-      {{end -}}
-    );
+    return new this({{$newArgs}});
   }
 }

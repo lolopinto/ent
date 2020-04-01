@@ -85,6 +85,10 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 						serr.Append(err)
 					}
 
+					if err := writeActionFile(nodeData, action); err != nil {
+						serr.Append(err)
+					}
+
 				}(idx)
 			}
 			actionsWg.Wait()
@@ -188,9 +192,19 @@ func getImportPathForBuilderFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s_builder", nodeData.PackageName, nodeData.PackageName)
 }
 
-func getFilePathForAtionBaseFile(nodeData *schema.NodeData, a action.Action) string {
+func getFilePathForActionBaseFile(nodeData *schema.NodeData, a action.Action) string {
 	fileName := strcase.ToSnake(a.GetActionName())
 	return fmt.Sprintf("src/ent/%s/actions/generated/%s_base.ts", nodeData.PackageName, fileName)
+}
+
+func getImportPathForActionBaseFile(nodeData *schema.NodeData, a action.Action) string {
+	fileName := strcase.ToSnake(a.GetActionName())
+	return fmt.Sprintf("src/ent/%s/actions/generated/%s_base", nodeData.PackageName, fileName)
+}
+
+func getFilePathForActionFile(nodeData *schema.NodeData, a action.Action) string {
+	fileName := strcase.ToSnake(a.GetActionName())
+	return fmt.Sprintf("src/ent/%s/actions/%s.ts", nodeData.PackageName, fileName)
 }
 
 func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {

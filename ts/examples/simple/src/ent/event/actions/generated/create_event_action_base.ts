@@ -21,8 +21,12 @@ export interface EventCreateInput {
 
 export class CreateEventActionBase implements Action<Event> {
   public readonly builder: EventBuilder;
+  public readonly viewer: Viewer;
+  private input: EventCreateInput;
 
-  constructor(public readonly viewer: Viewer, private input: EventCreateInput) {
+  constructor(viewer: Viewer, input: EventCreateInput) {
+    this.viewer = viewer;
+    this.input = input;
     this.builder = new EventBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
@@ -45,10 +49,11 @@ export class CreateEventActionBase implements Action<Event> {
     return await saveBuilderX(this.builder);
   }
 
-  static create(
+  static create<T extends CreateEventActionBase>(
+    this: new (viewer: Viewer, input: EventCreateInput) => T,
     viewer: Viewer,
     input: EventCreateInput,
   ): CreateEventActionBase {
-    return new CreateEventActionBase(viewer, input);
+    return new this(viewer, input);
   }
 }
