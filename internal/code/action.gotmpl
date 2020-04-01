@@ -17,7 +17,7 @@
 
 {{end -}}
 
-{{$actionName := actionName $action}}
+{{$actionName := $action.GetActionName}}
 
 {{$builderName := printf "%sMutationBuilder" $nodeInfo.Node -}}
 {{$builderType := printf "*builder.%s" $builderName -}}

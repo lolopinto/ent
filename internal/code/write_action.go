@@ -43,7 +43,6 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 				"actionMethodName":        action.GetActionMethodName,
 				"actionMethodArgs":        getActionMethodArgs,
 				"actionMethodContextArgs": getActionMethodContextArgs,
-				"actionName":              getActionName,
 				"fields":                  action.GetFields,
 				"nonEntFields":            action.GetNonEntFields,
 				"edges":                   action.GetEdges,
@@ -61,10 +60,6 @@ func writeActionFile(nodeData *schema.NodeData, a action.Action, codePathInfo *c
 			},
 		},
 	)
-}
-
-func getActionName(action action.Action) string {
-	return action.GetActionName()
 }
 
 func getActionMethodArgs(action action.Action) string {

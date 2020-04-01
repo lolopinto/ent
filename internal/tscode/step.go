@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
@@ -62,6 +64,34 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 				serr.Append(err)
 				return
 			}
+
+			if len(nodeData.ActionInfo.Actions) == 0 {
+				return
+			}
+
+			if err := writeBuilderFile(nodeData, data.CodePath); err != nil {
+				serr.Append(err)
+			}
+
+			// write all the actions concurrently
+			var actionsWg sync.WaitGroup
+			actionsWg.Add(len(nodeData.ActionInfo.Actions))
+			for idx := range nodeData.ActionInfo.Actions {
+				go func(idx int) {
+					defer actionsWg.Done()
+
+					action := nodeData.ActionInfo.Actions[idx]
+					if err := writeBaseActionFile(nodeData, action); err != nil {
+						serr.Append(err)
+					}
+
+					if err := writeActionFile(nodeData, action); err != nil {
+						serr.Append(err)
+					}
+
+				}(idx)
+			}
+			actionsWg.Wait()
 		}(key)
 	}
 
@@ -154,6 +184,29 @@ func getFilePathForConstFile() string {
 	return fmt.Sprintf("src/ent/const.ts")
 }
 
+func getFilePathForBuilderFile(nodeData *schema.NodeData) string {
+	return fmt.Sprintf("src/ent/%s/actions/%s_builder.ts", nodeData.PackageName, nodeData.PackageName)
+}
+
+func getImportPathForBuilderFile(nodeData *schema.NodeData) string {
+	return fmt.Sprintf("src/ent/%s/actions/%s_builder", nodeData.PackageName, nodeData.PackageName)
+}
+
+func getFilePathForActionBaseFile(nodeData *schema.NodeData, a action.Action) string {
+	fileName := strcase.ToSnake(a.GetActionName())
+	return fmt.Sprintf("src/ent/%s/actions/generated/%s_base.ts", nodeData.PackageName, fileName)
+}
+
+func getImportPathForActionBaseFile(nodeData *schema.NodeData, a action.Action) string {
+	fileName := strcase.ToSnake(a.GetActionName())
+	return fmt.Sprintf("src/ent/%s/actions/generated/%s_base", nodeData.PackageName, fileName)
+}
+
+func getFilePathForActionFile(nodeData *schema.NodeData, a action.Action) string {
+	fileName := strcase.ToSnake(a.GetActionName())
+	return fmt.Sprintf("src/ent/%s/actions/%s.ts", nodeData.PackageName, fileName)
+}
+
 func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
@@ -214,6 +267,24 @@ func writeConstFile(nodeData []enumData, edgeData []enumData) error {
 		AbsPathToTemplate: util.GetAbsolutePath("const.tmpl"),
 		TemplateName:      "const.tmpl",
 		PathToFile:        getFilePathForConstFile(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
+func writeBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data: nodeTemplateCodePath{
+			NodeData: nodeData,
+			CodePath: codePathInfo,
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("builder.tmpl"),
+		TemplateName:      "builder.tmpl",
+		PathToFile:        getFilePathForBuilderFile(nodeData),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),

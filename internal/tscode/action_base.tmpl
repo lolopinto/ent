@@ -1,0 +1,118 @@
+{{ reserveImport "ent/action" "Action" "saveBuilder" "saveBuilderX" "saveBuilderXNoEnt" "WriteOperation" "Changeset" }}
+{{reserveImport "ent/ent" "Viewer" "ID" "Ent" }}
+
+{{ $packagePath := printf "src/ent/%s" .NodeData.PackageName }}
+{{ reserveDefaultImport $packagePath .NodeData.Node}}
+{{ $builderName := printf "%sBuilder" .NodeData.Node -}}
+{{ $builderInput := printf "%sInput" .NodeData.Node -}}
+
+{{ reserveImport .BuilderPath $builderName $builderInput}}
+
+{{ $action := .Action -}}
+{{ $actionName := printf "%sBase" $action.GetActionName -}}
+
+{{ $node := useImport .NodeData.Node -}}
+{{ $viewer := useImport "Viewer"}}
+
+{{$hasInput := hasInput $action -}}
+{{$inputName := "" -}}
+{{ if $hasInput -}}
+  {{$inputName = getInputName $action -}}
+
+  export interface {{$inputName}} {
+    {{ range $field := $action.GetFields -}}
+      {{ if $field.EditableField -}}
+        {{if isRequiredField $action $field -}}
+          {{$field.TsFieldName}}: {{$field.TsType}};
+        {{else -}}
+          {{$field.TsFieldName}}?: {{$field.TsType}};
+        {{end -}}
+      {{end -}}
+    {{end -}}
+  }
+{{end}}
+
+{{ $constructor := "" }}
+{{ $newArgs := ""}}
+{{ $instance := .NodeData.NodeInstance}}
+
+{{/* edit, whole shebang */ -}}
+{{ if and $action.MutatingExistingObject $hasInput -}}
+  {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewer $instance $node $inputName -}}
+  {{ $newArgs = printf "viewer, %s, input" $instance -}}
+{{/* create, no editing */ -}}
+{{ else if $hasInput -}} 
+  {{ $constructor = printf "viewer: %s, input: %s"  $viewer $inputName -}}
+  {{ $newArgs = "viewer, input" }}
+{{/* delete, no input */ -}}
+{{ else -}}
+  {{ $constructor = printf "viewer: %s, %s: %s" $viewer $instance $node -}}
+  {{ $newArgs = printf "viewer, %s" $instance -}}
+{{end -}}
+
+export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
+  public readonly builder: {{useImport $builderName}};
+  public readonly viewer: {{$viewer}}
+  {{ if $hasInput -}}
+    private input: {{$inputName}};
+  {{end}}
+
+  constructor({{$constructor}}) {
+    this.viewer = viewer;
+    {{ if $hasInput -}}
+      this.input = input;
+    {{end -}}
+    this.builder = new {{$builderName}}(
+      this.viewer,
+      {{useImport "WriteOperation"}}.{{getWriteOperation $action}},
+      this,
+      {{ if $action.MutatingExistingObject -}}
+        {{$instance}},
+      {{end -}}
+    );
+  }
+
+  getFields(): {{useImport $builderInput}} {
+    return {
+      {{ if $hasInput -}}
+        ...this.input,
+      {{end -}}
+      requiredFields: [
+        {{ range $field := $action.GetFields -}}
+          {{ if and $field.EditableField (isRequiredField $action $field) -}}
+          "{{$field.FieldName}}",
+          {{end -}}
+        {{end -}}
+      ],
+    };
+  }
+
+  async changeset(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
+    return this.builder.build();
+  }
+
+  {{ if $action.IsDeletingNode -}}
+    async save(): Promise<void> {
+      await {{useImport "saveBuilder"}}(this.builder);
+  {{ else -}}
+    async save(): Promise<{{$node}} | null> {
+    return await {{useImport "saveBuilder"}}(this.builder);
+  {{ end -}}
+  }
+
+  {{ if $action.IsDeletingNode -}}
+    async saveX(): Promise<void> {
+      await {{useImport "saveBuilderXNoEnt"}}(this.builder);
+  {{ else -}}
+    async saveX(): Promise<{{$node}}> {
+    return await {{useImport "saveBuilderX"}}(this.builder);
+  {{ end -}}
+  }
+
+  static create<T extends {{$actionName}}>(
+    this: new ({{$constructor}}) => T,
+    {{$constructor}},
+  ): {{$actionName}} {
+    return new this({{$newArgs}});
+  }
+}
