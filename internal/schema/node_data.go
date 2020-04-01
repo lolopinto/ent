@@ -179,36 +179,49 @@ func (nodeData *NodeData) HasAssocGroups() bool {
 }
 
 // return the list of unique nodes at the end of an association
-// needed to 
+// needed to
 type uniqueNodeInfo struct {
-	Node string
+	Node        string
 	PackageName string
 }
 
 // GetUniqueNodes returns node info that this Node has edges to
 func (nodeData *NodeData) GetUniqueNodes() []uniqueNodeInfo {
+	return nodeData.getUniqueNodes(false)
+}
+
+func (nodeData *NodeData) GetUniqueNodesForceSelf() []uniqueNodeInfo {
+	return nodeData.getUniqueNodes(true)
+}
+
+// don't need this distinction at the moment but why not
+func (nodeData *NodeData) getUniqueNodes(forceSelf bool) []uniqueNodeInfo {
 	var ret []uniqueNodeInfo
 	m := make(map[string]bool)
-
 	processNode := func(nodeInfo nodeinfo.NodeInfo) {
 		node := nodeInfo.Node
 		if !m[node] {
 			ret = append(ret, uniqueNodeInfo{
-				Node: node,
+				Node:        node,
 				PackageName: nodeInfo.PackageName,
 			})
 		}
 		m[node] = true
 	}
+
+	if forceSelf {
+		processNode(nodeData.NodeInfo)
+	}
+
 	for _, edge := range nodeData.EdgeInfo.Associations {
 		processNode(edge.NodeInfo)
 	}
 
-	for _,edge := range nodeData.EdgeInfo.ForeignKeys {
+	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
 		processNode(edge.NodeInfo)
 	}
 
-	for _,edge := range nodeData.EdgeInfo.FieldEdges {
+	for _, edge := range nodeData.EdgeInfo.FieldEdges {
 		processNode(edge.NodeInfo)
 	}
 	return ret

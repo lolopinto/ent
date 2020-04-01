@@ -1,6 +1,18 @@
-{{ $actionName := .Action.GetActionName -}}
+{{$action := .Action }}
+{{ $actionName := $action.GetActionName -}}
 {{ $baseName := printf "%sBase" $actionName -}}
-{{ reserveImport .BasePath $baseName -}}
+
+{{ $hasInput := hasInput $action -}}
+{{ $inputName := "" -}}
+{{ if $hasInput -}}
+  {{$inputName = getInputName $action -}}
+{{ end -}}
+
+{{ reserveImport .BasePath $baseName $inputName -}}
+
+{{ if $hasInput -}}
+  export { {{useImport $inputName}} };
+{{end}}
 
 // we're only writing this once except with --force and packageName provided
 export default class {{$actionName}} extends {{useImport $baseName}} {

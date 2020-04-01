@@ -16,12 +16,11 @@ import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
 import Event, { createEvent } from "src/ent/event";
 import { randomEmail } from "src/util/random";
-import {
-  CreateUserAction,
-  EditUserAction,
+import CreateUserAction, {
   UserCreateInput,
-  DeleteUserAction,
 } from "src/ent/user/actions/create_user_action";
+import EditUserAction from "src/ent/user/actions/edit_user_action";
+import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
