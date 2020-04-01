@@ -1,4 +1,10 @@
-import Schema, { Field, Edge, BaseEntSchema } from "ent/schema";
+import Schema, {
+  Action,
+  Field,
+  Edge,
+  BaseEntSchema,
+  ActionOperation,
+} from "ent/schema";
 import { StringType } from "ent/field";
 
 export default class User extends BaseEntSchema implements Schema {
@@ -22,6 +28,14 @@ export default class User extends BaseEntSchema implements Schema {
       name: "selfContact",
       unique: true,
       schemaName: "Contact",
+    },
+  ];
+
+  // create, edit, delete
+  // TODO break edit into editEmail or something
+  actions: Action[] = [
+    {
+      operation: ActionOperation.Mutations,
     },
   ];
 }

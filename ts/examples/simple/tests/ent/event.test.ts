@@ -3,7 +3,7 @@ import { ID, Ent, Viewer } from "ent/ent";
 import { LoggedOutViewer } from "ent/viewer";
 import DB from "ent/db";
 import { randomEmail } from "src/util/random";
-import { CreateUserAction } from "src/ent/user/actions/create_user_action";
+import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
 import EditEventAction from "src/ent/event/actions/edit_event_action";
 import DeleteEventAction from "src/ent/event/actions/delete_event_action";

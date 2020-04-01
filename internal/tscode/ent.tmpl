@@ -1,37 +1,12 @@
 {{with .NodeData -}}
 {{$basePath := printf "./generated/%s_base" .PackageName }}
 {{$baseClass := printf "%sBase" .Node }}
-{{$createInterface := printf "%sCreateInput" .Node }}
-{{$editInterface := printf "%sEditInput" .Node }}
-{{$createFrom := printf "create%sFrom" .Node }}
-{{$editFrom := printf "edit%sFrom" .Node }}
-{{$deleteNode := printf "delete%s" .Node }}
 
-{{ reserveImport $basePath $baseClass $createInterface $editInterface $createFrom $editFrom $deleteNode}}
-{{ reserveImport "ent/ent" "ID" "Viewer"}}
+{{ reserveImport $basePath $baseClass}}
 
 // we're only writing this once except with --force and packageName provided
 export default class {{.Node}} extends {{useImport $baseClass}} {
 
 
 }
-
-// no actions yet so we support full create, edit, delete for now
-export { {{useImport $createInterface}}, {{useImport $editInterface}}, {{useImport $deleteNode}} };
-
-export async function create{{.Node}}(
-  viewer: {{useImport "Viewer"}},
-  input: {{useImport $createInterface}}
-): Promise<{{.Node}} | null> {
-  return {{useImport $createFrom}}(viewer, input, {{.Node}});
-}
-
-export async function edit{{.Node}}(
-  viewer: {{useImport "Viewer"}},
-  id: {{useImport "ID"}},
-  input: {{useImport $editInterface}}
-): Promise<{{.Node}} | null> {
-  return {{useImport $editFrom}}(viewer, id, input, {{.Node}});
-}
-
 {{end -}}

@@ -8,9 +8,7 @@
 {{ reserveDefaultImport $schemaPath "schema"}}
 {{ reserveImport "src/ent/const" "EdgeType" "NodeType" }}
 
-{{ $packagePath := printf "src/ent/%s" .PackageName }}
-{{ reserveDefaultImport $packagePath .Node}}
-{{ range .GetUniqueNodes -}} 
+{{ range .GetUniqueNodesForceSelf -}} 
   {{$packagePath := printf "src/ent/%s" .PackageName }}
   {{ reserveDefaultImport $packagePath .Node}}
 {{ end}}
