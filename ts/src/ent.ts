@@ -247,23 +247,6 @@ export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
   }
 }
 
-export async function createEnt<T extends Ent>(
-  viewer: Viewer,
-  options: EditEntOptions<T>,
-): Promise<T | null> {
-  const row = await createRow(
-    DB.getInstance().getPool(),
-    options,
-    "RETURNING *",
-  );
-  if (!row) {
-    return null;
-  }
-  // for now assume id primary key
-  // todo
-  return new options.ent(viewer, row["id"], row);
-}
-
 // slew of methods taken from pg
 export interface Queryer {
   query<T extends Submittable>(queryStream: T): T;
@@ -347,25 +330,6 @@ export class EditNodeOperation implements DataOperation {
     } else {
       this.row = await createRow(queryer, this.options, "RETURNING *");
     }
-  }
-
-  returnedEntRow(): {} | null {
-    return this.row;
-  }
-}
-
-// TODO kill...
-export class CreateRowOperation implements DataOperation {
-  row: {} | null;
-
-  constructor(public options: EditRowOptions, private suffix?: string) {}
-
-  async performWrite(queryer: Queryer): Promise<void> {
-    this.row = await createRow(
-      queryer,
-      this.options,
-      this.suffix || "RETURNING *",
-    );
   }
 
   returnedEntRow(): {} | null {
@@ -659,19 +623,6 @@ async function editRow(
   return null;
 }
 
-// column should be passed in here
-export async function editEnt<T extends Ent>(
-  viewer: Viewer,
-  id: ID,
-  options: EditEntOptions<T>,
-): Promise<T | null> {
-  const row = await editRow(DB.getInstance().getPool(), options, id);
-  if (row) {
-    return new options.ent(viewer, row["id"], row);
-  }
-  return null;
-}
-
 async function deleteRow(
   queryer: Queryer,
   options: DataOptions,
@@ -689,25 +640,6 @@ export class DeleteNodeOperation implements DataOperation {
   async performWrite(queryer: Queryer): Promise<void> {
     return deleteRow(queryer, this.options, query.Eq("id", this.id));
   }
-}
-
-// TODO kill
-export async function deleteEnt(
-  viewer: Viewer,
-  id: ID,
-  options: DataOptions,
-): Promise<null> {
-  const query = `DELETE FROM ${options.tableName} WHERE id = $1`;
-  const values = [id];
-  logQuery(query, values);
-
-  try {
-    const pool = DB.getInstance().getPool();
-    await pool.query(query, values);
-  } catch (e) {
-    console.error(e);
-  }
-  return null;
 }
 
 export class AssocEdge {

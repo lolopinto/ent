@@ -14,14 +14,14 @@ import { LoggedOutViewer } from "ent/viewer";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
-import Event, { createEvent } from "src/ent/event";
+import Event from "src/ent/event";
 import { randomEmail } from "src/util/random";
-import {
-  CreateUserAction,
-  EditUserAction,
+import CreateUserAction, {
   UserCreateInput,
-  DeleteUserAction,
 } from "src/ent/user/actions/create_user_action";
+import EditUserAction from "src/ent/user/actions/edit_user_action";
+import DeleteUserAction from "src/ent/user/actions/delete_user_action";
+import CreateEventAction from "src/ent/event/actions/create_event_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -263,16 +263,12 @@ test("inverse edge", async () => {
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  let event = await createEvent(new LoggedOutViewer(), {
+  const event = await CreateEventAction.create(new LoggedOutViewer(), {
     creatorID: user.id as string,
     startTime: new Date(),
     name: "fun event",
     location: "location",
-  });
-
-  if (!event) {
-    fail("could not create event");
-  }
+  }).saveX();
 
   const input = {
     id1: event.id,
@@ -281,6 +277,7 @@ test("inverse edge", async () => {
     id2Type: NodeType.User,
     edgeType: EdgeType.EventToInvited,
   };
+  // TODO waiting for resolving placeholders...
   await writeEdgeX(input);
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
@@ -320,16 +317,12 @@ test("one-way edge", async () => {
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  let event = await createEvent(new LoggedOutViewer(), {
+  const event = await CreateEventAction.create(new LoggedOutViewer(), {
     creatorID: user.id as string,
     startTime: new Date(),
     name: "fun event",
     location: "location",
-  });
-
-  if (!event) {
-    fail("could not create event");
-  }
+  }).saveX();
 
   const input = {
     id1: user.id,

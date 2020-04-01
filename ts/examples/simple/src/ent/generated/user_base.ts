@@ -7,9 +7,6 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  createEnt,
-  editEnt,
-  deleteEnt,
   AssocEdge,
   loadEdges,
   loadRawEdgeCountX,
@@ -302,78 +299,4 @@ export class UserBase {
       Contact.loaderOptions(),
     );
   }
-}
-
-// no actions yet so we support full create, edit, delete for now
-export interface UserCreateInput {
-  firstName: string;
-  lastName: string;
-  emailAddress: string;
-}
-
-export interface UserEditInput {
-  firstName?: string;
-  lastName?: string;
-  emailAddress?: string;
-}
-
-function defaultValue(key: string, property: string): any {
-  let fn = UserBase.getField(key)?.[property];
-  if (!fn) {
-    return null;
-  }
-  return fn();
-}
-
-export async function createUserFrom<T extends UserBase>(
-  viewer: Viewer,
-  input: UserCreateInput,
-  arg: new (viewer: Viewer, id: ID, data: {}) => T,
-): Promise<T | null> {
-  let fields = {
-    id: defaultValue("ID", "defaultValueOnCreate"),
-    created_at: defaultValue("createdAt", "defaultValueOnCreate"),
-    updated_at: defaultValue("updatedAt", "defaultValueOnCreate"),
-    first_name: input.firstName,
-    last_name: input.lastName,
-    email_address: input.emailAddress,
-  };
-
-  return await createEnt(viewer, {
-    tableName: tableName,
-    fields: fields,
-    ent: arg,
-  });
-}
-
-export async function editUserFrom<T extends UserBase>(
-  viewer: Viewer,
-  id: ID,
-  input: UserEditInput,
-  arg: new (viewer: Viewer, id: ID, data: {}) => T,
-): Promise<T | null> {
-  const setField = function(key: string, value: any) {
-    if (value !== undefined) {
-      // nullable fields allowed
-      fields[key] = value;
-    }
-  };
-  let fields = {
-    updated_at: defaultValue("updatedAt", "defaultValueOnEdit"),
-  };
-  setField("first_name", input.firstName);
-  setField("last_name", input.lastName);
-  setField("email_address", input.emailAddress);
-
-  return await editEnt(viewer, id, {
-    tableName: tableName,
-    fields: fields,
-    ent: arg,
-  });
-}
-
-export async function deleteUser(viewer: Viewer, id: ID): Promise<null> {
-  return await deleteEnt(viewer, id, {
-    tableName: tableName,
-  });
 }
