@@ -1,7 +1,7 @@
 import User from "src/ent/user";
 import Contact from "src/ent/contact";
 
-import { ID, Ent, Viewer, AssocEdge, AssocEdgeInput } from "ent/ent";
+import { Viewer, AssocEdge, AssocEdgeInput } from "ent/ent";
 import DB from "ent/db";
 import { LoggedOutViewer } from "ent/viewer";
 
@@ -141,10 +141,9 @@ test("symmetric edge", async () => {
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  action.builder.addFriend(dany);
   let t = new Date();
   t.setTime(t.getTime() + 86400);
-  action.builder.addFriendID(sam.id, {
+  action.builder.addFriend(dany).addFriendID(sam.id, {
     time: t,
   });
   const jon = await action.saveX();
