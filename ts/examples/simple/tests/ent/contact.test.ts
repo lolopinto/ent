@@ -1,26 +1,15 @@
 import User from "src/ent/user";
-
 import Contact from "src/ent/contact";
 import DB from "ent/db";
 import { LoggedOutViewer } from "ent/viewer";
-import { ID, Ent, Viewer } from "ent/ent";
 import { randomEmail } from "src/util/random";
+import { IDViewer } from "src/util/id_viewer";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateContactAction, {
   ContactCreateInput,
 } from "src/ent/contact/actions/create_contact_action";
 
 const loggedOutViewer = new LoggedOutViewer();
-
-class IDViewer implements Viewer {
-  constructor(public viewerID: ID, private ent: Ent | null = null) {}
-  async viewer() {
-    return this.ent;
-  }
-  instanceKey(): string {
-    return `idViewer: ${this.viewerID}`;
-  }
-}
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {

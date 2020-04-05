@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
 import Event from "src/ent/event";
 import { randomEmail } from "src/util/random";
+import { IDViewer } from "src/util/id_viewer";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
@@ -28,73 +29,51 @@ async function create(input: UserCreateInput): Promise<User> {
   return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
-test("create user", async () => {
-  try {
-    let user = await create({
-      firstName: "Jon",
-      lastName: "Snow",
-      emailAddress: randomEmail(),
-    });
-
-    expect(user.firstName).toBe("Jon");
-    expect(user.lastName).toBe("Snow");
-  } catch (e) {
-    fail(e.message);
-  }
-});
-
-test("edit user", async () => {
-  try {
-    let user = await create({
-      firstName: "Jon",
-      lastName: "Snow",
-      emailAddress: randomEmail(),
-    });
-
-    let editedUser = await EditUserAction.create(loggedOutViewer, user, {
-      firstName: "First of his name",
-    }).saveX();
-
-    expect(editedUser).not.toBe(null);
-    expect(editedUser?.firstName).toBe("First of his name");
-    expect(editedUser?.lastName).toBe("Snow");
-  } catch (e) {
-    fail(e.message);
-  }
-});
-
-test("delete user", async () => {
-  try {
-    let user = await create({
-      firstName: "Jon",
-      lastName: "Snow",
-      emailAddress: randomEmail(),
-    });
-
-    await DeleteUserAction.create(loggedOutViewer, user).saveX();
-
-    let loadedUser = await User.load(loggedOutViewer, user.id);
-    expect(loadedUser).toBe(null);
-  } catch (e) {
-    fail(e.message);
-  }
-});
-
-class IDViewer implements Viewer {
-  constructor(public viewerID: ID, private ent: Ent | null = null) {}
-  async viewer() {
-    return this.ent;
-  }
-  instanceKey(): string {
-    return `idViewer: ${this.viewerID}`;
-  }
-}
-
 class OmniViewer extends IDViewer {
   isOmniscient(): boolean {
     return true;
   }
 }
+
+test("create user", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+
+  expect(user.firstName).toBe("Jon");
+  expect(user.lastName).toBe("Snow");
+});
+
+test("edit user", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+
+  let editedUser = await EditUserAction.create(loggedOutViewer, user, {
+    firstName: "First of his name",
+  }).saveX();
+
+  expect(editedUser).not.toBe(null);
+  expect(editedUser.firstName).toBe("First of his name");
+  expect(editedUser.lastName).toBe("Snow");
+});
+
+test("delete user", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+
+  await DeleteUserAction.create(loggedOutViewer, user).saveX();
+
+  let loadedUser = await User.load(loggedOutViewer, user.id);
+  expect(loadedUser).toBe(null);
+});
 
 describe("privacy", () => {
   test("load", async () => {
@@ -109,19 +88,15 @@ describe("privacy", () => {
       emailAddress: randomEmail(),
     });
 
-    try {
-      // we only do privacy checks when loading right now...
-      let loadedUser = await User.load(new IDViewer(user.id, user), user.id);
-      expect(loadedUser).toBeInstanceOf(User);
-      expect(loadedUser).not.toBe(null);
-      expect(loadedUser?.id).toBe(user.id);
+    // we only do privacy checks when loading right now...
+    let loadedUser = await User.load(new IDViewer(user.id, user), user.id);
+    expect(loadedUser).toBeInstanceOf(User);
+    expect(loadedUser).not.toBe(null);
+    expect(loadedUser?.id).toBe(user.id);
 
-      // privacy indicates other user cannot load
-      let loadedUser2 = await User.load(new IDViewer(user2.id, user2), user.id);
-      expect(loadedUser2).toBe(null);
-    } catch (e) {
-      fail(e.message);
-    }
+    // privacy indicates other user cannot load
+    let loadedUser2 = await User.load(new IDViewer(user2.id, user2), user.id);
+    expect(loadedUser2).toBe(null);
   });
 
   test("loadX", async () => {
@@ -136,14 +111,10 @@ describe("privacy", () => {
       emailAddress: randomEmail(),
     });
 
-    try {
-      // we only do privacy checks when loading right now...
-      let loadedUser = await User.loadX(new IDViewer(user.id, user), user.id);
-      expect(loadedUser).toBeInstanceOf(User);
-      expect(loadedUser.id).toBe(user.id);
-    } catch (e) {
-      fail(e.message);
-    }
+    // we only do privacy checks when loading right now...
+    let loadedUser = await User.loadX(new IDViewer(user.id, user), user.id);
+    expect(loadedUser).toBeInstanceOf(User);
+    expect(loadedUser.id).toBe(user.id);
 
     try {
       // privacy indicates other user cannot load
@@ -256,8 +227,8 @@ test("inverse edge", async () => {
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  const action = await CreateEventAction.create(new LoggedOutViewer(), {
-    creatorID: user.id as string,
+  const action = CreateEventAction.create(new LoggedOutViewer(), {
+    creatorID: user.id as string, // TODO id as string needs to stop...
     startTime: new Date(),
     name: "fun event",
     location: "location",
@@ -406,15 +377,6 @@ test("loadFromEmailAddress", async () => {
   expect(rando).toBe(null);
 });
 
-function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
-  expect(edge.id1).toBe(expectedEdge.id1);
-  expect(edge.id2).toBe(expectedEdge.id2);
-  expect(edge.id1Type).toBe(expectedEdge.id1Type);
-  expect(edge.id2Type).toBe(expectedEdge.id2Type);
-  expect(edge.edgeType).toBe(expectedEdge.edgeType);
-  expect(edge.data).toBe(expectedEdge.data || null);
-}
-
 test("uniqueEdge|Node", async () => {
   let jon = await create({
     firstName: "Jon",
@@ -498,3 +460,12 @@ test("loadX", async () => {
     fail("should have thrown exception");
   } catch (e) {}
 });
+
+function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
+  expect(edge.id1).toBe(expectedEdge.id1);
+  expect(edge.id2).toBe(expectedEdge.id2);
+  expect(edge.id1Type).toBe(expectedEdge.id1Type);
+  expect(edge.id2Type).toBe(expectedEdge.id2Type);
+  expect(edge.edgeType).toBe(expectedEdge.edgeType);
+  expect(edge.data).toBe(expectedEdge.data || null);
+}
