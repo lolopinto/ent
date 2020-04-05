@@ -103,7 +103,7 @@ test("required field not set", async () => {
 });
 
 test("schema on edit", async () => {
-  const user = new User(new LoggedOutViewer(), { id: "1" });
+  const user = new User(new LoggedOutViewer(), "1", { id: "1" });
   const builder = new SimpleBuilder(
     UserSchema,
     // field that's not changed isn't set...
@@ -120,7 +120,7 @@ test("schema on edit", async () => {
 });
 
 test("schema on delete", async () => {
-  const user = new User(new LoggedOutViewer(), { id: "1" });
+  const user = new User(new LoggedOutViewer(), "1", { id: "1" });
   const builder = new SimpleBuilder(
     UserSchema,
     new Map(),
@@ -234,7 +234,7 @@ describe("schema_with_processors", () => {
 
 test("inbound edge", async () => {
   const viewer = new IDViewer("1");
-  const user = new User(viewer, { id: "1" });
+  const user = new User(viewer, "1", { id: "1" });
   const builder = new SimpleBuilder(
     UserSchema,
     new Map(),
@@ -256,7 +256,7 @@ test("inbound edge", async () => {
 
 test("outbound edge", async () => {
   const viewer = new IDViewer("1");
-  const user = new User(viewer, { id: "1" });
+  const user = new User(viewer, "1", { id: "1" });
   const builder = new SimpleBuilder(
     UserSchema,
     new Map(),
@@ -279,7 +279,7 @@ test("outbound edge", async () => {
 describe("remove inbound edge", () => {
   test("existing ent", async () => {
     const viewer = new IDViewer("1");
-    const user = new User(viewer, { id: "1" });
+    const user = new User(viewer, "1", { id: "1" });
     const builder = new SimpleBuilder(
       UserSchema,
       new Map(),
@@ -318,7 +318,7 @@ describe("remove inbound edge", () => {
 describe("remove outbound edge", () => {
   test("existing ent", async () => {
     const viewer = new IDViewer("1");
-    const user = new User(viewer, { id: "1" });
+    const user = new User(viewer, "1", { id: "1" });
     const builder = new SimpleBuilder(
       UserSchema,
       new Map(),
@@ -366,8 +366,8 @@ function validateFieldsDoNotExist(fields: {}, ...names: string[]) {
   }
 }
 
-function getOperations<T extends Ent>(c: Changeset<T>): DataOperation[] {
-  let ops: DataOperation[] = [];
+function getOperations<T extends Ent>(c: Changeset<T>): DataOperation<T>[] {
+  let ops: DataOperation<T>[] = [];
   for (let op of c.executor()) {
     ops.push(op);
   }
@@ -382,7 +382,7 @@ async function getFieldsFromBuilder<T extends Ent>(
   const ops = getOperations(c);
   expect(ops.length).toBe(expLength);
   for (const op of ops) {
-    const options = (op as EditNodeOperation).options;
+    const options = (op as EditNodeOperation<T>).options;
     if (options !== undefined) {
       return options.fields;
     }

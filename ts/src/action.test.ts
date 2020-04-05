@@ -177,24 +177,24 @@ class edgeOp implements DataOperation<never> {
     queryer.query("edge", [this.options.id1, this.options.id2]);
   }
 
-  resolve(executor: Executor): void {
+  resolve<T extends Ent>(executor: Executor<T>): void {
     if (this.options.id1Placeholder) {
-      let id1 = executor.resolveValue(this.options.id1);
-      if (!id1) {
+      let ent = executor.resolveValue(this.options.id1);
+      if (!ent) {
         throw new Error(
           `could not resolve id1 placeholder ${this.options.id1}`,
         );
       }
-      this.options.id1 = id1;
+      this.options.id1 = ent.id;
     }
     if (this.options.id2Placeholder) {
-      let id2 = executor.resolveValue(this.options.id2);
-      if (!id2) {
+      let ent = executor.resolveValue(this.options.id2);
+      if (!ent) {
         throw new Error(
           `could not resolve id2 placeholder ${this.options.id2}`,
         );
       }
-      this.options.id2 = id2;
+      this.options.id2 = ent.id;
     }
   }
 }
