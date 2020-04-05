@@ -1,10 +1,6 @@
-import { Orchestrator } from "./orchestrator";
 import { Builder, WriteOperation } from "./action";
 import {
-  Viewer,
   Ent,
-  ID,
-  EntConstructor,
   DataOperation,
   EditNodeOperation,
   DeleteNodeOperation,
@@ -12,12 +8,12 @@ import {
   AssocEdgeData,
 } from "./ent";
 import * as ent from "./ent";
-import { PrivacyPolicy, AlwaysAllowRule } from "./privacy";
 import { LoggedOutViewer } from "./viewer";
 import { Changeset } from "./action";
 import { StringType, TimeType } from "./field";
 import { BaseEntSchema, Field } from "./schema";
 import { IDViewer } from "../src/testutils/id_viewer";
+import { User, SimpleBuilder } from "./testutils/builder";
 
 // mock loadEdgeDatas and return a simple non-symmetric|non-inverse edge
 // not sure if this is the best way but it's the only way I got
@@ -28,7 +24,7 @@ jest.spyOn(ent, "loadEdgeDatas").mockImplementation(
       return new Map();
     }
     return new Map(
-      edgeTypes.map(edgeType => [
+      edgeTypes.map((edgeType) => [
         edgeType,
         new AssocEdgeData({
           edge_table: "foo",
@@ -41,50 +37,6 @@ jest.spyOn(ent, "loadEdgeDatas").mockImplementation(
     );
   },
 );
-
-class User implements Ent {
-  id: ID;
-  accountID: string;
-  nodeType = "User";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AlwaysAllowRule],
-  };
-  constructor(public viewer: Viewer, data: {}) {
-    this.id = data["id"];
-  }
-}
-
-class SimpleBuilder implements Builder<User> {
-  ent: EntConstructor<User>;
-  placeholderID: "1";
-  viewer: Viewer;
-  public orchestrator: Orchestrator<User>;
-
-  constructor(
-    private schema: any,
-    private fields: Map<string, any>,
-    public operation: WriteOperation = WriteOperation.Insert,
-    public existingEnt: Ent | undefined = undefined,
-  ) {
-    this.viewer = new LoggedOutViewer();
-    this.orchestrator = new Orchestrator({
-      viewer: this.viewer,
-      operation: operation,
-      tableName: "foo",
-      //      existingEnt: existingEnt,
-      ent: User,
-      builder: this,
-      schema: this.schema,
-      editedFields: () => {
-        return this.fields;
-      },
-    });
-  }
-
-  build(): Promise<Changeset<User>> {
-    return this.orchestrator.build();
-  }
-}
 
 class UserSchema extends BaseEntSchema {
   fields: Field[] = [
@@ -151,7 +103,7 @@ test("required field not set", async () => {
 });
 
 test("schema on edit", async () => {
-  const user = new User(new LoggedOutViewer(), { id: "1" });
+  const user = new User(new LoggedOutViewer(), "1", { id: "1" });
   const builder = new SimpleBuilder(
     UserSchema,
     // field that's not changed isn't set...
@@ -168,7 +120,7 @@ test("schema on edit", async () => {
 });
 
 test("schema on delete", async () => {
-  const user = new User(new LoggedOutViewer(), { id: "1" });
+  const user = new User(new LoggedOutViewer(), "1", { id: "1" });
   const builder = new SimpleBuilder(
     UserSchema,
     new Map(),
@@ -282,7 +234,7 @@ describe("schema_with_processors", () => {
 
 test("inbound edge", async () => {
   const viewer = new IDViewer("1");
-  const user = new User(viewer, { id: "1" });
+  const user = new User(viewer, "1", { id: "1" });
   const builder = new SimpleBuilder(
     UserSchema,
     new Map(),
@@ -304,7 +256,7 @@ test("inbound edge", async () => {
 
 test("outbound edge", async () => {
   const viewer = new IDViewer("1");
-  const user = new User(viewer, { id: "1" });
+  const user = new User(viewer, "1", { id: "1" });
   const builder = new SimpleBuilder(
     UserSchema,
     new Map(),
@@ -327,7 +279,7 @@ test("outbound edge", async () => {
 describe("remove inbound edge", () => {
   test("existing ent", async () => {
     const viewer = new IDViewer("1");
-    const user = new User(viewer, { id: "1" });
+    const user = new User(viewer, "1", { id: "1" });
     const builder = new SimpleBuilder(
       UserSchema,
       new Map(),
@@ -366,7 +318,7 @@ describe("remove inbound edge", () => {
 describe("remove outbound edge", () => {
   test("existing ent", async () => {
     const viewer = new IDViewer("1");
-    const user = new User(viewer, { id: "1" });
+    const user = new User(viewer, "1", { id: "1" });
     const builder = new SimpleBuilder(
       UserSchema,
       new Map(),
@@ -414,8 +366,8 @@ function validateFieldsDoNotExist(fields: {}, ...names: string[]) {
   }
 }
 
-function getOperations<T extends Ent>(c: Changeset<T>): DataOperation[] {
-  let ops: DataOperation[] = [];
+function getOperations<T extends Ent>(c: Changeset<T>): DataOperation<T>[] {
+  let ops: DataOperation<T>[] = [];
   for (let op of c.executor()) {
     ops.push(op);
   }
@@ -430,7 +382,7 @@ async function getFieldsFromBuilder<T extends Ent>(
   const ops = getOperations(c);
   expect(ops.length).toBe(expLength);
   for (const op of ops) {
-    const options = (op as EditNodeOperation).options;
+    const options = (op as EditNodeOperation<T>).options;
     if (options !== undefined) {
       return options.fields;
     }

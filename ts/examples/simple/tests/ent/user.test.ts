@@ -1,14 +1,7 @@
 import User from "src/ent/user";
-import Contact, { createContact } from "src/ent/contact";
+import Contact from "src/ent/contact";
 
-import {
-  ID,
-  Ent,
-  Viewer,
-  AssocEdge,
-  AssocEdgeInput,
-  writeEdgeX,
-} from "ent/ent";
+import { Viewer, AssocEdge, AssocEdgeInput } from "ent/ent";
 import DB from "ent/db";
 import { LoggedOutViewer } from "ent/viewer";
 
@@ -16,12 +9,14 @@ import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
 import Event from "src/ent/event";
 import { randomEmail } from "src/util/random";
+import { IDViewer } from "src/util/id_viewer";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
+import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -34,73 +29,51 @@ async function create(input: UserCreateInput): Promise<User> {
   return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
-test("create user", async () => {
-  try {
-    let user = await create({
-      firstName: "Jon",
-      lastName: "Snow",
-      emailAddress: randomEmail(),
-    });
-
-    expect(user.firstName).toBe("Jon");
-    expect(user.lastName).toBe("Snow");
-  } catch (e) {
-    fail(e.message);
-  }
-});
-
-test("edit user", async () => {
-  try {
-    let user = await create({
-      firstName: "Jon",
-      lastName: "Snow",
-      emailAddress: randomEmail(),
-    });
-
-    let editedUser = await EditUserAction.create(loggedOutViewer, user, {
-      firstName: "First of his name",
-    }).saveX();
-
-    expect(editedUser).not.toBe(null);
-    expect(editedUser?.firstName).toBe("First of his name");
-    expect(editedUser?.lastName).toBe("Snow");
-  } catch (e) {
-    fail(e.message);
-  }
-});
-
-test("delete user", async () => {
-  try {
-    let user = await create({
-      firstName: "Jon",
-      lastName: "Snow",
-      emailAddress: randomEmail(),
-    });
-
-    await DeleteUserAction.create(loggedOutViewer, user).saveX();
-
-    let loadedUser = await User.load(loggedOutViewer, user.id);
-    expect(loadedUser).toBe(null);
-  } catch (e) {
-    fail(e.message);
-  }
-});
-
-class IDViewer implements Viewer {
-  constructor(public viewerID: ID, private ent: Ent | null = null) {}
-  async viewer() {
-    return this.ent;
-  }
-  instanceKey(): string {
-    return `idViewer: ${this.viewerID}`;
-  }
-}
-
 class OmniViewer extends IDViewer {
   isOmniscient(): boolean {
     return true;
   }
 }
+
+test("create user", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+
+  expect(user.firstName).toBe("Jon");
+  expect(user.lastName).toBe("Snow");
+});
+
+test("edit user", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+
+  let editedUser = await EditUserAction.create(loggedOutViewer, user, {
+    firstName: "First of his name",
+  }).saveX();
+
+  expect(editedUser).not.toBe(null);
+  expect(editedUser.firstName).toBe("First of his name");
+  expect(editedUser.lastName).toBe("Snow");
+});
+
+test("delete user", async () => {
+  let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+
+  await DeleteUserAction.create(loggedOutViewer, user).saveX();
+
+  let loadedUser = await User.load(loggedOutViewer, user.id);
+  expect(loadedUser).toBe(null);
+});
 
 describe("privacy", () => {
   test("load", async () => {
@@ -115,19 +88,15 @@ describe("privacy", () => {
       emailAddress: randomEmail(),
     });
 
-    try {
-      // we only do privacy checks when loading right now...
-      let loadedUser = await User.load(new IDViewer(user.id, user), user.id);
-      expect(loadedUser).toBeInstanceOf(User);
-      expect(loadedUser).not.toBe(null);
-      expect(loadedUser?.id).toBe(user.id);
+    // we only do privacy checks when loading right now...
+    let loadedUser = await User.load(new IDViewer(user.id, user), user.id);
+    expect(loadedUser).toBeInstanceOf(User);
+    expect(loadedUser).not.toBe(null);
+    expect(loadedUser?.id).toBe(user.id);
 
-      // privacy indicates other user cannot load
-      let loadedUser2 = await User.load(new IDViewer(user2.id, user2), user.id);
-      expect(loadedUser2).toBe(null);
-    } catch (e) {
-      fail(e.message);
-    }
+    // privacy indicates other user cannot load
+    let loadedUser2 = await User.load(new IDViewer(user2.id, user2), user.id);
+    expect(loadedUser2).toBe(null);
   });
 
   test("loadX", async () => {
@@ -142,14 +111,10 @@ describe("privacy", () => {
       emailAddress: randomEmail(),
     });
 
-    try {
-      // we only do privacy checks when loading right now...
-      let loadedUser = await User.loadX(new IDViewer(user.id, user), user.id);
-      expect(loadedUser).toBeInstanceOf(User);
-      expect(loadedUser.id).toBe(user.id);
-    } catch (e) {
-      fail(e.message);
-    }
+    // we only do privacy checks when loading right now...
+    let loadedUser = await User.loadX(new IDViewer(user.id, user), user.id);
+    expect(loadedUser).toBeInstanceOf(User);
+    expect(loadedUser.id).toBe(user.id);
 
     try {
       // privacy indicates other user cannot load
@@ -170,20 +135,18 @@ test("symmetric edge", async () => {
     lastName: "Tarly",
     emailAddress: randomEmail(),
   });
-  let jon = await create({
+
+  let action = CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  // TODO this should be combined with Create above once we have placeholders resolving
-  const action = EditUserAction.create(loggedOutViewer, jon, {});
-  action.builder.addFriend(dany);
   let t = new Date();
   t.setTime(t.getTime() + 86400);
-  action.builder.addFriendID(sam.id, {
+  action.builder.addFriend(dany).addFriendID(sam.id, {
     time: t,
   });
-  await action.saveX();
+  const jon = await action.saveX();
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
     jon.loadFriendsEdges(),
@@ -263,22 +226,14 @@ test("inverse edge", async () => {
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  const event = await CreateEventAction.create(new LoggedOutViewer(), {
-    creatorID: user.id as string,
+  const action = CreateEventAction.create(new LoggedOutViewer(), {
+    creatorID: user.id as string, // TODO id as string needs to stop...
     startTime: new Date(),
     name: "fun event",
     location: "location",
-  }).saveX();
-
-  const input = {
-    id1: event.id,
-    id1Type: NodeType.Event,
-    id2: user.id,
-    id2Type: NodeType.User,
-    edgeType: EdgeType.EventToInvited,
-  };
-  // TODO waiting for resolving placeholders...
-  await writeEdgeX(input);
+  });
+  action.builder.addInvited(user);
+  const event = await action.saveX();
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
     event.loadInvitedEdges(),
@@ -288,7 +243,13 @@ test("inverse edge", async () => {
   ]);
   expect(edges.length).toBe(1);
   expect(edgesCount).toBe(1);
-  verifyEdge(edges[0], input);
+  verifyEdge(edges[0], {
+    id1: event.id,
+    id1Type: NodeType.Event,
+    id2: user.id,
+    id2Type: NodeType.User,
+    edgeType: EdgeType.EventToInvited,
+  });
 
   expect(edges2.length).toBe(1);
   expect(edges2Count).toBe(1);
@@ -311,7 +272,8 @@ test("inverse edge", async () => {
 });
 
 test("one-way edge", async () => {
-  // todo this is a field edge that we'll get later
+  // todo this is a field edge that we'll get to later
+  // TODO need to do this when setting userID and setting the inbound edge
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
@@ -324,18 +286,20 @@ test("one-way edge", async () => {
     location: "location",
   }).saveX();
 
-  const input = {
+  // TODO we should get this for free above...
+  let action = EditUserAction.create(loggedOutViewer, user, {});
+  action.builder.addCreatedEvent(event);
+  await action.saveX();
+
+  const edges = await user.loadCreatedEventsEdges();
+  expect(edges.length).toBe(1);
+  verifyEdge(edges[0], {
     id1: user.id,
     id1Type: NodeType.User,
     id2: event.id,
     id2Type: NodeType.Event,
     edgeType: EdgeType.UserToCreatedEvents,
-  };
-  await writeEdgeX(input);
-
-  const edges = await user.loadCreatedEventsEdges();
-  expect(edges.length).toBe(1);
-  verifyEdge(edges[0], input);
+  });
 });
 
 test("loadMultiUsers", async () => {
@@ -412,72 +376,51 @@ test("loadFromEmailAddress", async () => {
   expect(rando).toBe(null);
 });
 
-function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
-  expect(edge.id1).toBe(expectedEdge.id1);
-  expect(edge.id2).toBe(expectedEdge.id2);
-  expect(edge.id1Type).toBe(expectedEdge.id1Type);
-  expect(edge.id2Type).toBe(expectedEdge.id2Type);
-  expect(edge.edgeType).toBe(expectedEdge.edgeType);
-  expect(edge.data).toBe(expectedEdge.data || null);
-}
-
 test("uniqueEdge|Node", async () => {
   let jon = await create({
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
-  let sansa = await create({
+
+  let action = CreateUserAction.create(loggedOutViewer, {
     firstName: "Sansa",
     lastName: "Stark",
     emailAddress: randomEmail(),
   });
+  // make them friends
+  action.builder.addFriend(jon);
+  const sansa = await action.saveX();
 
   expect(jon).toBeInstanceOf(User);
   expect(sansa).toBeInstanceOf(User);
 
-  // make them friends
-  await writeEdgeX({
-    id1: jon.id,
-    id2: sansa.id,
-    edgeType: EdgeType.UserToFriends,
-    id1Type: NodeType.User,
-    id2Type: NodeType.User,
-  });
-
-  let contact = await createContact(loggedOutViewer, {
+  let contact = await CreateContactAction.create(loggedOutViewer, {
     emailAddress: jon.emailAddress,
     firstName: jon.firstName,
     lastName: jon.lastName,
     userID: jon.id as string,
-  });
-  let contact2 = await createContact(loggedOutViewer, {
+  }).saveX();
+  let contact2 = await CreateContactAction.create(loggedOutViewer, {
     emailAddress: sansa.emailAddress,
     firstName: sansa.firstName,
     lastName: sansa.lastName,
     userID: jon.id as string,
-  });
-
-  if (!contact || !contact2) {
-    fail("couldn't create contacts");
-  }
+  }).saveX();
 
   expect(contact).toBeInstanceOf(Contact);
 
-  const selfContactInput: AssocEdgeInput = {
-    id1: jon.id,
-    id2: contact.id,
-    id1Type: NodeType.User,
-    id2Type: NodeType.Contact,
-    edgeType: EdgeType.UserToSelfContact,
-  };
-  await writeEdgeX(selfContactInput);
+  let editAction = EditUserAction.create(loggedOutViewer, jon, {});
+  // TODO throw at trying to mutate a build after saving. will help with a bunch of typos...
+  editAction.builder.addSelfContact(contact);
+  await editAction.saveX();
+
   try {
     // try and write another contact
-    await writeEdgeX({
-      ...selfContactInput,
-      id2: contact2.id,
-    });
+    let editAction = EditUserAction.create(loggedOutViewer, jon, {});
+    editAction.builder.addSelfContact(contact2);
+    await editAction.saveX();
+
     fail("should have throw an exception trying to write duplicate edge");
   } catch (e) {
     expect(e.message).toMatch(/duplicate key value violates unique constraint/);
@@ -489,7 +432,6 @@ test("uniqueEdge|Node", async () => {
     jonFromHimself.loadSelfContact(),
     jonFromHimself.loadContacts(),
   ]);
-  //  const jonContact = await jonFromHimself.loadSelfContact();
   expect(jonContact).not.toBe(null);
   expect(jonContact?.id).toBe(contact.id);
   expect(allContacts?.length).toBe(2);
@@ -502,7 +444,13 @@ test("uniqueEdge|Node", async () => {
 
   const edge = await jonFromSansa.loadSelfContactEdge();
   expect(edge).not.toBe(null);
-  verifyEdge(edge!, selfContactInput);
+  verifyEdge(edge!, {
+    id1: jon.id,
+    id2: contact.id,
+    id1Type: NodeType.User,
+    id2Type: NodeType.Contact,
+    edgeType: EdgeType.UserToSelfContact,
+  });
 });
 
 test("loadX", async () => {
@@ -511,3 +459,12 @@ test("loadX", async () => {
     fail("should have thrown exception");
   } catch (e) {}
 });
+
+function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
+  expect(edge.id1).toBe(expectedEdge.id1);
+  expect(edge.id2).toBe(expectedEdge.id2);
+  expect(edge.id1Type).toBe(expectedEdge.id1Type);
+  expect(edge.id2Type).toBe(expectedEdge.id2Type);
+  expect(edge.edgeType).toBe(expectedEdge.edgeType);
+  expect(edge.data).toBe(expectedEdge.data || null);
+}
