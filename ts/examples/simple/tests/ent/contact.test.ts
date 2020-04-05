@@ -3,8 +3,7 @@ import User from "src/ent/user";
 import Contact from "src/ent/contact";
 import DB from "ent/db";
 import { LoggedOutViewer } from "ent/viewer";
-import { ID, Ent, Viewer, writeEdge } from "ent/ent";
-import { NodeType, EdgeType } from "src/ent/const";
+import { ID, Ent, Viewer } from "ent/ent";
 import { randomEmail } from "src/util/random";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateContactAction, {
@@ -106,18 +105,14 @@ test("create contacts", async () => {
   verifyContacts(loadedContacts);
 
   // ygritte can't see jon snow's contacts
-  let ygritte = await CreateUserAction.create(loggedOutViewer, {
+  let action = CreateUserAction.create(loggedOutViewer, {
     firstName: "Ygritte",
     lastName: "",
     emailAddress: randomEmail(),
-  }).saveX();
-  await writeEdge({
-    id1: user.id,
-    id2: ygritte!.id,
-    edgeType: EdgeType.UserToFriends,
-    id1Type: NodeType.User,
-    id2Type: NodeType.User,
   });
+  action.builder.addFriend(user);
+  const ygritte = await action.saveX();
+
   // ygritte can load jon (because they are friends) but not his contacts
   let jonFromYgritte = await User.loadX(new IDViewer(ygritte!.id), user.id);
   const contactsViaYgritte = await jonFromYgritte.loadContacts();

@@ -101,7 +101,7 @@ class FakeBuilder implements Builder<User> {
   viewer: Viewer;
   public orchestrator: Orchestrator<User>;
 
-  private ops: DataOperation[] = [];
+  private ops: DataOperation<any>[] = [];
   constructor(
     private fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
@@ -126,7 +126,7 @@ class FakeBuilder implements Builder<User> {
   }
 }
 
-class dataOp implements DataOperation {
+class dataOp implements DataOperation<User> {
   private id: ID | null;
   constructor(
     private fields: Map<string, any>,
@@ -151,14 +151,14 @@ class dataOp implements DataOperation {
     queryer.query(`${this.operation} ${keys.join(", ")}`, values);
   }
 
-  returnedEntRow?(): {} | null {
+  returnedEntRow?(viewer: LoggedOutViewer): User | null {
     if (this.operation === WriteOperation.Insert) {
       let ent = {};
       for (const [key, value] of this.fields) {
         ent[key] = value;
       }
       ent["id"] = this.id;
-      return ent;
+      return new User(viewer, this.id!, ent);
     }
     return null;
   }
@@ -170,7 +170,7 @@ interface edgeOpOptions {
   id1Placeholder?: boolean;
   id2Placeholder?: boolean;
 }
-class edgeOp implements DataOperation {
+class edgeOp implements DataOperation<never> {
   constructor(private options: edgeOpOptions) {}
 
   async performWrite(queryer: Queryer): Promise<void> {

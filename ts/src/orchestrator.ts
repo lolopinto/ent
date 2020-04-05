@@ -14,6 +14,7 @@ import { getFields } from "./schema";
 import { Changeset, Executor } from "./action";
 import { WriteOperation, Builder, Action } from "./action";
 import { snakeCase } from "snake-case";
+import { LoggedOutViewer } from "./viewer";
 
 export interface OrchestratorOptions<T extends Ent> {
   viewer: Viewer;
@@ -97,7 +98,7 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
-  private buildDeleteOp(): DataOperation {
+  private buildDeleteOp(): DeleteNodeOperation {
     if (!this.options.builder.existingEnt) {
       throw new Error("existing ent required with delete operation");
     }
@@ -106,7 +107,7 @@ export class Orchestrator<T extends Ent> {
     });
   }
 
-  private buildEditOp(): DataOperation {
+  private buildEditOp(): EditNodeOperation<T> {
     if (
       this.options.operation === WriteOperation.Edit &&
       !this.options.builder.existingEnt
@@ -166,18 +167,17 @@ export class Orchestrator<T extends Ent> {
       }
     }
 
-    //    console.log(data);
-
     return new EditNodeOperation(
       {
         fields: data,
         tableName: this.options.tableName,
       },
+      this.options.ent,
       this.options.builder.existingEnt,
     );
   }
 
-  private async buildEdgeOps(ops: DataOperation[]): Promise<void> {
+  private async buildEdgeOps(ops: DataOperation<T>[]): Promise<void> {
     const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
     //    console.log(edgeDatas);
     for (const edgeOp of this.edgeOps) {
@@ -200,7 +200,7 @@ export class Orchestrator<T extends Ent> {
   }
 
   async build(): Promise<EntChangeset<T>> {
-    let ops: DataOperation[] = [];
+    let ops: DataOperation<T>[] = [];
 
     switch (this.options.operation) {
       case WriteOperation.Delete:
@@ -228,23 +228,30 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public viewer: Viewer,
     public readonly placeholderID: ID,
     public readonly ent: EntConstructor<T>,
-    public operations: DataOperation[],
+    public operations: DataOperation<T>[],
   ) {}
 
-  executor(): ListBasedExecutor {
-    return new ListBasedExecutor(this.placeholderID, this.operations);
+  executor(): ListBasedExecutor<T> {
+    return new ListBasedExecutor(this.placeholderID, this.ent, this.operations);
   }
 }
 
-export class ListBasedExecutor implements Executor {
+export class ListBasedExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
-  constructor(private placeholderID: ID, private operations: DataOperation[]) {}
-  private lastOp: DataOperation | undefined;
-  private id: ID | null; // hmm we don't
+  constructor(
+    private placeholderID: ID,
+    // todo probably don't need this actually...
+    private ent: EntConstructor<T>,
+    private operations: DataOperation<T>[],
+  ) {}
+  private lastOp: DataOperation<T> | undefined;
+  private createdEnt: T | null; // hmm we don't
 
-  resolveValue(val: any): ID | null {
+  // todo...
+  // we're going to eventually need this passed to each operation correctly though but we can deal with it then e.g. when creating multiple objects, the executor
+  resolveValue(val: any): T | null {
     if (val === this.placeholderID && val !== undefined) {
-      return this.id;
+      return this.createdEnt;
     }
 
     return null;
@@ -259,12 +266,9 @@ export class ListBasedExecutor implements Executor {
   // TODO this is the main work
   // add test in orchestrator.ts with fake operations which PerformWrite() but do nothing and see
   // what happens here
-  next(): IteratorResult<DataOperation> {
+  next(): IteratorResult<DataOperation<T>> {
     if (this.lastOp && this.lastOp.returnedEntRow) {
-      const row = this.lastOp.returnedEntRow();
-      if (row) {
-        this.id = row["id"]; // todo eventually we need to support other keys here
-      }
+      this.createdEnt = this.lastOp.returnedEntRow(new LoggedOutViewer());
     }
     const done = this.idx === this.operations.length;
     const op = this.operations[this.idx];

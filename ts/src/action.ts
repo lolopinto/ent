@@ -9,6 +9,7 @@ import {
 } from "./ent";
 import { PrivacyPolicy } from "./privacy";
 import DB from "./db";
+import { LoggedOutViewer } from "./viewer";
 
 export enum WriteOperation {
   Insert = "insert",
@@ -25,18 +26,18 @@ export interface Builder<T extends Ent> {
   operation: WriteOperation;
 }
 
-// interface DataOperation {
-//   resolve?(executor: Executor); //throws?
-// }
-
-export interface Executor
-  extends Iterable<DataOperation>,
-    Iterator<DataOperation> {
-  resolveValue(val: any): ID | null;
+export interface Executor<T extends Ent>
+  extends Iterable<DataOperation<T>>,
+    Iterator<DataOperation<T>> {
+  // this returns a non-privacy checked "ent"
+  // TODO are we sure we want Executor with type-T
+  // and maybe only want resolveValue somehow??
+  // Executor needs to work on multiple types at once eventually...
+  resolveValue(val: any): T | null;
 }
 
 export interface Changeset<T extends Ent> {
-  executor(): Executor;
+  executor(): Executor<T>;
   viewer: Viewer;
   placeholderID: ID;
   ent: EntConstructor<T>;
@@ -109,7 +110,8 @@ async function saveBuilderImpl<T extends Ent>(
 
   const client = await DB.getInstance().getNewClient();
 
-  let row: {} | null = null;
+  let viewer = new LoggedOutViewer();
+  let ent: T | null = null;
   try {
     await client.query("BEGIN");
     for (const operation of executor) {
@@ -122,7 +124,7 @@ async function saveBuilderImpl<T extends Ent>(
       if (operation.returnedEntRow) {
         // we need a way to eventually know primary vs not once we can stack these
         // things with triggers etc
-        row = operation.returnedEntRow();
+        ent = operation.returnedEntRow(viewer);
       }
     }
     await client.query("COMMIT");
@@ -138,8 +140,5 @@ async function saveBuilderImpl<T extends Ent>(
     client.release();
   }
 
-  if (row) {
-    return new builder.ent(builder.viewer, row["id"], row);
-  }
-  return null;
+  return ent;
 }

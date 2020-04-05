@@ -17,6 +17,7 @@ import { Executor } from "./action";
 
 import * as query from "./query";
 import { WriteOperation, Builder } from "./action";
+import { LoggedOutViewer } from "./viewer";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -279,17 +280,18 @@ export interface Queryer {
   // tslint:enable:no-unnecessary-generics
 }
 
-export interface DataOperation {
+export interface DataOperation<T extends Ent> {
   performWrite(queryer: Queryer): Promise<void>;
-  returnedEntRow?(): {} | null; // optional to indicate the row that was created
-  resolve?(executor: Executor): void; //throws?
+  // this returns a non-privacy checked ent to use
+  returnedEntRow?(viewer: LoggedOutViewer): T | null; // optional to indicate the row that was created
+  resolve?(executor: Executor<T>): void; //throws?
 }
 
 // this sould get a flag of whether it should throw or not and then do the right thing
 // each operation shouldn't throw or do anything with exceptions
 // TODO kill
-async function executeOperations(
-  operations: DataOperation[],
+async function executeOperations<T extends Ent>(
+  operations: DataOperation<T>[],
   throwErr: boolean = false,
 ): Promise<void> {
   if (operations.length == 1) {
@@ -318,11 +320,12 @@ async function executeOperations(
   }
 }
 
-export class EditNodeOperation implements DataOperation {
+export class EditNodeOperation<T extends Ent> implements DataOperation<T> {
   row: {} | null;
 
   constructor(
     public options: EditRowOptions,
+    private ent: EntConstructor<T>,
     private existingEnt: Ent | null = null,
   ) {}
 
@@ -334,8 +337,11 @@ export class EditNodeOperation implements DataOperation {
     }
   }
 
-  returnedEntRow(): {} | null {
-    return this.row;
+  returnedEntRow(viewer: LoggedOutViewer): T | null {
+    if (!this.row) {
+      return null;
+    }
+    return new this.ent(viewer, this.row["id"], this.row);
   }
 }
 
@@ -346,7 +352,7 @@ interface EdgeOperationOptions {
 }
 
 // TODO kill AssocEdgeData or pass it in later...
-export class EdgeOperation implements DataOperation {
+export class EdgeOperation implements DataOperation<never> {
   // TODO make this constructor private
   constructor(
     public edgeInput: AssocEdgeInput,
@@ -427,24 +433,34 @@ export class EdgeOperation implements DataOperation {
     );
   }
 
-  resolve(executor: Executor): void {
+  private resolveImpl<T extends Ent>(
+    executor: Executor<T>,
+    placeholder: ID,
+    desc: string,
+  ): [ID, string] {
+    let ent = executor.resolveValue(placeholder);
+    if (!ent) {
+      throw new Error(
+        `could not resolve placeholder value ${placeholder} for ${desc} for edge ${this.edgeInput.edgeType}`,
+      );
+    }
+    return [ent.id, ent.nodeType];
+  }
+
+  resolve<T extends Ent>(executor: Executor<T>): void {
     if (this.options.id1Placeholder) {
-      let id1 = executor.resolveValue(this.edgeInput.id1);
-      if (!id1) {
-        throw new Error(
-          `could not resolve placeholder value ${this.edgeInput.id1} for id1 for edge ${this.edgeInput.edgeType}`,
-        );
-      }
-      this.edgeInput.id1 = id1;
+      [this.edgeInput.id1, this.edgeInput.id1Type] = this.resolveImpl(
+        executor,
+        this.edgeInput.id1,
+        "id1",
+      );
     }
     if (this.options.id2Placeholder) {
-      let id2 = executor.resolveValue(this.edgeInput.id2);
-      if (!id2) {
-        throw new Error(
-          `could not resolve placeholder value ${this.edgeInput.id2} for id2 for edge ${this.edgeInput.edgeType}`,
-        );
-      }
-      this.edgeInput.id2 = id2;
+      [this.edgeInput.id2, this.edgeInput.id2Type] = this.resolveImpl(
+        executor,
+        this.edgeInput.id2,
+        "id2",
+      );
     }
   }
 
@@ -505,7 +521,6 @@ export class EdgeOperation implements DataOperation {
       srcType = srcBuilder.existingEnt.nodeType;
     } else {
       srcPlaceholder = true;
-      console.log("placeholder");
       // get placeholder.
       srcIDVal = srcBuilder.placeholderID;
       // expected to be filled later
@@ -689,7 +704,7 @@ async function deleteRow(
   await queryer.query(query, values);
 }
 
-export class DeleteNodeOperation implements DataOperation {
+export class DeleteNodeOperation implements DataOperation<never> {
   constructor(private id: ID, private options: DataOptions) {}
 
   async performWrite(queryer: Queryer): Promise<void> {
@@ -758,13 +773,16 @@ export async function writeEdgeX(edge: AssocEdgeInput): Promise<void> {
   await executeOperations(operations, true);
 }
 
-async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
+// TODO kill
+async function edgeOperations(
+  edge: AssocEdgeInput,
+): Promise<DataOperation<never>[]> {
   const edgeData = await loadEdgeData(edge.edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edge.edgeType}`);
   }
 
-  let operations: DataOperation[] = [
+  let operations: DataOperation<never>[] = [
     new EdgeOperation(
       edge,
       {
@@ -854,7 +872,7 @@ export async function loadEdgeDatas(
     ],
     clause: query.In("edge_type", ...edgeTypes),
   });
-  return new Map(rows.map(row => [row["edge_type"], new AssocEdgeData(row)]));
+  return new Map(rows.map((row) => [row["edge_type"], new AssocEdgeData(row)]));
 }
 
 const edgeFields = [
@@ -946,7 +964,7 @@ export async function loadEdgeForID2(
   // TODO at some point, same as in go, we can be smart about this and have heuristics to determine if we fetch everything here or not
   // we're assuming a cache here but not always tue and this can be expensive if not...
   const edges = await loadEdges(id1, edgeType);
-  return edges.find(edge => edge.id2 == id2);
+  return edges.find((edge) => edge.id2 == id2);
 }
 
 export async function loadNodesByEdge<T extends Ent>(
@@ -959,7 +977,7 @@ export async function loadNodesByEdge<T extends Ent>(
   const rows = await loadEdges(id1, edgeType);
 
   // extract id2s
-  const ids = rows.map(row => row.id2);
+  const ids = rows.map((row) => row.id2);
 
   return loadEnts(viewer, options, ...ids);
 }
@@ -978,11 +996,11 @@ export async function loadEntsFromClause<T extends Ent>(
   const nodes = await loadRows(rowOptions);
   // apply privacy logic
   const ents = await Promise.all(
-    nodes.map(row => {
+    nodes.map((row) => {
       // todo eventually there'll be a different key
       const ent = new options.ent(viewer, row["id"], row);
       return applyPrivacyPolicyForEnt(viewer, ent);
     }),
   );
-  return ents.filter(ent => ent) as T[];
+  return ents.filter((ent) => ent) as T[];
 }
