@@ -245,7 +245,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
     private operations: DataOperation<T>[],
   ) {}
   private lastOp: DataOperation<T> | undefined;
-  private createdEnt: T | null; // hmm we don't
+  private createdEnt: T | null;
 
   // todo...
   // we're going to eventually need this passed to each operation correctly though but we can deal with it then e.g. when creating multiple objects, the executor
@@ -263,9 +263,6 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
 
   // simple case which assumes only 1 data based ent and edges. used for tests
   // not for production
-  // TODO this is the main work
-  // add test in orchestrator.ts with fake operations which PerformWrite() but do nothing and see
-  // what happens here
   next(): IteratorResult<DataOperation<T>> {
     if (this.lastOp && this.lastOp.returnedEntRow) {
       this.createdEnt = this.lastOp.returnedEntRow(new LoggedOutViewer());

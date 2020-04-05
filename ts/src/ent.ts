@@ -321,7 +321,7 @@ interface EdgeOperationOptions {
 export class EdgeOperation implements DataOperation<never> {
   private constructor(
     public edgeInput: AssocEdgeInput,
-    private options: EdgeOperationOptions, //    private operation: WriteOperation, //    private edgeData: AssocEdgeData | null = null,
+    private options: EdgeOperationOptions,
   ) {}
 
   async performWrite(queryer: Queryer): Promise<void> {
