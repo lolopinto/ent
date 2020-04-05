@@ -287,39 +287,6 @@ export interface DataOperation<T extends Ent> {
   resolve?(executor: Executor<T>): void; //throws?
 }
 
-// this sould get a flag of whether it should throw or not and then do the right thing
-// each operation shouldn't throw or do anything with exceptions
-// TODO kill
-async function executeOperations<T extends Ent>(
-  operations: DataOperation<T>[],
-  throwErr: boolean = false,
-): Promise<void> {
-  if (operations.length == 1) {
-    const pool = DB.getInstance().getPool();
-
-    return operations[0].performWrite(pool);
-  }
-
-  const client = await DB.getInstance().getNewClient();
-  try {
-    await client.query("BEGIN");
-    for (const op of operations) {
-      await op.performWrite(client);
-    }
-    await client.query("COMMIT");
-  } catch (e) {
-    await client.query("ROLLBACK");
-    // rethrow the exception to be caught
-    if (throwErr) {
-      throw e;
-    } else {
-      console.error(e);
-    }
-  } finally {
-    client.release();
-  }
-}
-
 export class EditNodeOperation<T extends Ent> implements DataOperation<T> {
   row: {} | null;
 
@@ -351,25 +318,18 @@ interface EdgeOperationOptions {
   id2Placeholder?: boolean;
 }
 
-// TODO kill AssocEdgeData or pass it in later...
 export class EdgeOperation implements DataOperation<never> {
-  // TODO make this constructor private
-  constructor(
+  private constructor(
     public edgeInput: AssocEdgeInput,
-    private options: EdgeOperationOptions,
-    //    private operation: WriteOperation,
-    private edgeData: AssocEdgeData | null = null,
+    private options: EdgeOperationOptions, //    private operation: WriteOperation, //    private edgeData: AssocEdgeData | null = null,
   ) {}
 
   async performWrite(queryer: Queryer): Promise<void> {
     const edge = this.edgeInput;
 
-    let edgeData = this.edgeData;
+    let edgeData = await loadEdgeData(edge.edgeType);
     if (!edgeData) {
-      edgeData = await loadEdgeData(edge.edgeType);
-      if (!edgeData) {
-        throw new Error(`error loading edge data for ${edge.edgeType}`);
-      }
+      throw new Error(`error loading edge data for ${edge.edgeType}`);
     }
 
     switch (this.options.operation) {
@@ -759,79 +719,6 @@ export class AssocEdgeData {
     this.inverseEdgeType = data["inverse_edge_type"];
     this.edgeTable = data["edge_table"];
   }
-}
-
-// writeEdge doesn't throw
-export async function writeEdge(edge: AssocEdgeInput): Promise<void> {
-  const operations = await edgeOperations(edge);
-  await executeOperations(operations);
-}
-
-// writeEdgeX does
-export async function writeEdgeX(edge: AssocEdgeInput): Promise<void> {
-  const operations = await edgeOperations(edge);
-  await executeOperations(operations, true);
-}
-
-// TODO kill
-async function edgeOperations(
-  edge: AssocEdgeInput,
-): Promise<DataOperation<never>[]> {
-  const edgeData = await loadEdgeData(edge.edgeType);
-  if (!edgeData) {
-    throw new Error(`error loading edge data for ${edge.edgeType}`);
-  }
-
-  let operations: DataOperation<never>[] = [
-    new EdgeOperation(
-      edge,
-      {
-        operation: WriteOperation.Insert,
-      },
-      edgeData,
-    ),
-  ];
-
-  if (edgeData.symmetricEdge) {
-    operations.push(
-      new EdgeOperation(
-        {
-          id1: edge.id2,
-          id1Type: edge.id2Type,
-          id2: edge.id1,
-          id2Type: edge.id1Type,
-          edgeType: edge.edgeType,
-          time: edge.time,
-          data: edge.data,
-        },
-        {
-          operation: WriteOperation.Insert,
-        },
-        edgeData,
-      ),
-    );
-  }
-  if (edgeData.inverseEdgeType) {
-    operations.push(
-      new EdgeOperation(
-        {
-          id1: edge.id2,
-          id1Type: edge.id2Type,
-          id2: edge.id1,
-          id2Type: edge.id1Type,
-          edgeType: edgeData.inverseEdgeType,
-          time: edge.time,
-          data: edge.data,
-        },
-        {
-          operation: WriteOperation.Insert,
-        },
-        edgeData,
-      ),
-    );
-  }
-
-  return operations;
 }
 
 export async function loadEdgeData(
