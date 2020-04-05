@@ -13,9 +13,11 @@ import {
   applyPrivacyPolicyX,
   PrivacyPolicy,
 } from "./privacy";
+import { Executor } from "./action";
 
 import * as query from "./query";
 import { WriteOperation, Builder } from "./action";
+import { LoggedOutViewer } from "./viewer";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -278,49 +280,19 @@ export interface Queryer {
   // tslint:enable:no-unnecessary-generics
 }
 
-export interface DataOperation {
+export interface DataOperation<T extends Ent> {
   performWrite(queryer: Queryer): Promise<void>;
-  returnedEntRow?(): {} | null; // optional to indicate the row that was created
+  // this returns a non-privacy checked ent to use
+  returnedEntRow?(viewer: LoggedOutViewer): T | null; // optional to indicate the row that was created
+  resolve?(executor: Executor<T>): void; //throws?
 }
 
-// this sould get a flag of whether it should throw or not and then do the right thing
-// each operation shouldn't throw or do anything with exceptions
-// TODO kill
-async function executeOperations(
-  operations: DataOperation[],
-  throwErr: boolean = false,
-): Promise<void> {
-  if (operations.length == 1) {
-    const pool = DB.getInstance().getPool();
-
-    return operations[0].performWrite(pool);
-  }
-
-  const client = await DB.getInstance().getNewClient();
-  try {
-    await client.query("BEGIN");
-    for (const op of operations) {
-      await op.performWrite(client);
-    }
-    await client.query("COMMIT");
-  } catch (e) {
-    await client.query("ROLLBACK");
-    // rethrow the exception to be caught
-    if (throwErr) {
-      throw e;
-    } else {
-      console.error(e);
-    }
-  } finally {
-    client.release();
-  }
-}
-
-export class EditNodeOperation implements DataOperation {
+export class EditNodeOperation<T extends Ent> implements DataOperation<T> {
   row: {} | null;
 
   constructor(
     public options: EditRowOptions,
+    private ent: EntConstructor<T>,
     private existingEnt: Ent | null = null,
   ) {}
 
@@ -332,31 +304,35 @@ export class EditNodeOperation implements DataOperation {
     }
   }
 
-  returnedEntRow(): {} | null {
-    return this.row;
+  returnedEntRow(viewer: LoggedOutViewer): T | null {
+    if (!this.row) {
+      return null;
+    }
+    return new this.ent(viewer, this.row["id"], this.row);
   }
 }
 
-// TODO kill AssocEdgeData or pass it in later...
-export class EdgeOperation implements DataOperation {
-  constructor(
+interface EdgeOperationOptions {
+  operation: WriteOperation;
+  id1Placeholder?: boolean;
+  id2Placeholder?: boolean;
+}
+
+export class EdgeOperation implements DataOperation<never> {
+  private constructor(
     public edgeInput: AssocEdgeInput,
-    private operation: WriteOperation,
-    private edgeData: AssocEdgeData | null = null,
+    private options: EdgeOperationOptions,
   ) {}
 
   async performWrite(queryer: Queryer): Promise<void> {
     const edge = this.edgeInput;
 
-    let edgeData = this.edgeData;
+    let edgeData = await loadEdgeData(edge.edgeType);
     if (!edgeData) {
-      edgeData = await loadEdgeData(edge.edgeType);
-      if (!edgeData) {
-        throw new Error(`error loading edge data for ${edge.edgeType}`);
-      }
+      throw new Error(`error loading edge data for ${edge.edgeType}`);
     }
 
-    switch (this.operation) {
+    switch (this.options.operation) {
       case WriteOperation.Delete:
         return this.performDeleteWrite(queryer, edgeData, edge);
       case WriteOperation.Insert:
@@ -417,6 +393,37 @@ export class EdgeOperation implements DataOperation {
     );
   }
 
+  private resolveImpl<T extends Ent>(
+    executor: Executor<T>,
+    placeholder: ID,
+    desc: string,
+  ): [ID, string] {
+    let ent = executor.resolveValue(placeholder);
+    if (!ent) {
+      throw new Error(
+        `could not resolve placeholder value ${placeholder} for ${desc} for edge ${this.edgeInput.edgeType}`,
+      );
+    }
+    return [ent.id, ent.nodeType];
+  }
+
+  resolve<T extends Ent>(executor: Executor<T>): void {
+    if (this.options.id1Placeholder) {
+      [this.edgeInput.id1, this.edgeInput.id1Type] = this.resolveImpl(
+        executor,
+        this.edgeInput.id1,
+        "id1",
+      );
+    }
+    if (this.options.id2Placeholder) {
+      [this.edgeInput.id2, this.edgeInput.id2Type] = this.resolveImpl(
+        executor,
+        this.edgeInput.id2,
+        "id2",
+      );
+    }
+  }
+
   symmetricEdge(): EdgeOperation {
     return new EdgeOperation(
       {
@@ -428,7 +435,11 @@ export class EdgeOperation implements DataOperation {
         time: this.edgeInput.time,
         data: this.edgeInput.data,
       },
-      this.operation,
+      {
+        operation: this.options.operation,
+        id1Placeholder: this.options.id2Placeholder,
+        id2Placeholder: this.options.id1Placeholder,
+      },
     );
   }
 
@@ -443,14 +454,18 @@ export class EdgeOperation implements DataOperation {
         time: this.edgeInput.time,
         data: this.edgeInput.data,
       },
-      this.operation,
+      {
+        operation: this.options.operation,
+        id1Placeholder: this.options.id2Placeholder,
+        id2Placeholder: this.options.id1Placeholder,
+      },
     );
   }
 
   private static resolveIDs<T extends Ent>(
     srcBuilder: Builder<T>, // id1
     destID: Builder<T> | ID, // id2 ( and then you flip it)
-  ): [ID, string, ID] {
+  ): [ID, string, boolean, ID] {
     let destIDVal: ID;
     if (typeof destID === "string" || typeof destID === "number") {
       destIDVal = destID;
@@ -460,18 +475,19 @@ export class EdgeOperation implements DataOperation {
     let srcIDVal: ID;
     let srcType: string;
 
+    let srcPlaceholder = false;
     if (srcBuilder.existingEnt) {
       srcIDVal = srcBuilder.existingEnt.id;
       srcType = srcBuilder.existingEnt.nodeType;
     } else {
-      console.log("placeholder");
+      srcPlaceholder = true;
       // get placeholder.
       srcIDVal = srcBuilder.placeholderID;
       // expected to be filled later
       srcType = "";
     }
 
-    return [srcIDVal, srcType, destIDVal];
+    return [srcIDVal, srcType, srcPlaceholder, destIDVal];
   }
 
   static inboundEdge<T extends Ent>(
@@ -481,8 +497,10 @@ export class EdgeOperation implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    // todo we still need flags to indicate something is a placeholder ID
-    let [id2Val, id2Type, id1Val] = EdgeOperation.resolveIDs(builder, id1);
+    let [id2Val, id2Type, id2Placeholder, id1Val] = EdgeOperation.resolveIDs(
+      builder,
+      id1,
+    );
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -493,7 +511,10 @@ export class EdgeOperation implements DataOperation {
       ...options,
     };
 
-    return new EdgeOperation(edge, WriteOperation.Insert);
+    return new EdgeOperation(edge, {
+      operation: WriteOperation.Insert,
+      id2Placeholder: id2Placeholder,
+    });
   }
 
   static outboundEdge<T extends Ent>(
@@ -503,8 +524,10 @@ export class EdgeOperation implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    // todo we still need flags to indicate something is a placeholder ID
-    let [id1Val, id1Type, id2Val] = EdgeOperation.resolveIDs(builder, id2);
+    let [id1Val, id1Type, id1Placeholder, id2Val] = EdgeOperation.resolveIDs(
+      builder,
+      id2,
+    );
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -515,7 +538,10 @@ export class EdgeOperation implements DataOperation {
       ...options,
     };
 
-    return new EdgeOperation(edge, WriteOperation.Insert);
+    return new EdgeOperation(edge, {
+      operation: WriteOperation.Insert,
+      id1Placeholder: id1Placeholder,
+    });
   }
 
   static removeInboundEdge<T extends Ent>(
@@ -533,7 +559,9 @@ export class EdgeOperation implements DataOperation {
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
     };
-    return new EdgeOperation(edge, WriteOperation.Delete);
+    return new EdgeOperation(edge, {
+      operation: WriteOperation.Delete,
+    });
   }
 
   static removeOutboundEdge<T extends Ent>(
@@ -551,7 +579,9 @@ export class EdgeOperation implements DataOperation {
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
     };
-    return new EdgeOperation(edge, WriteOperation.Delete);
+    return new EdgeOperation(edge, {
+      operation: WriteOperation.Delete,
+    });
   }
 }
 
@@ -634,7 +664,7 @@ async function deleteRow(
   await queryer.query(query, values);
 }
 
-export class DeleteNodeOperation implements DataOperation {
+export class DeleteNodeOperation implements DataOperation<never> {
   constructor(private id: ID, private options: DataOptions) {}
 
   async performWrite(queryer: Queryer): Promise<void> {
@@ -691,66 +721,6 @@ export class AssocEdgeData {
   }
 }
 
-// writeEdge doesn't throw
-export async function writeEdge(edge: AssocEdgeInput): Promise<void> {
-  const operations = await edgeOperations(edge);
-  await executeOperations(operations);
-}
-
-// writeEdgeX does
-export async function writeEdgeX(edge: AssocEdgeInput): Promise<void> {
-  const operations = await edgeOperations(edge);
-  await executeOperations(operations, true);
-}
-
-async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
-  const edgeData = await loadEdgeData(edge.edgeType);
-  if (!edgeData) {
-    throw new Error(`error loading edge data for ${edge.edgeType}`);
-  }
-
-  let operations: DataOperation[] = [
-    new EdgeOperation(edge, WriteOperation.Insert, edgeData),
-  ];
-
-  if (edgeData.symmetricEdge) {
-    operations.push(
-      new EdgeOperation(
-        {
-          id1: edge.id2,
-          id1Type: edge.id2Type,
-          id2: edge.id1,
-          id2Type: edge.id1Type,
-          edgeType: edge.edgeType,
-          time: edge.time,
-          data: edge.data,
-        },
-        WriteOperation.Insert,
-        edgeData,
-      ),
-    );
-  }
-  if (edgeData.inverseEdgeType) {
-    operations.push(
-      new EdgeOperation(
-        {
-          id1: edge.id2,
-          id1Type: edge.id2Type,
-          id2: edge.id1,
-          id2Type: edge.id1Type,
-          edgeType: edgeData.inverseEdgeType,
-          time: edge.time,
-          data: edge.data,
-        },
-        WriteOperation.Insert,
-        edgeData,
-      ),
-    );
-  }
-
-  return operations;
-}
-
 export async function loadEdgeData(
   edgeType: string,
 ): Promise<AssocEdgeData | null> {
@@ -789,7 +759,7 @@ export async function loadEdgeDatas(
     ],
     clause: query.In("edge_type", ...edgeTypes),
   });
-  return new Map(rows.map(row => [row["edge_type"], new AssocEdgeData(row)]));
+  return new Map(rows.map((row) => [row["edge_type"], new AssocEdgeData(row)]));
 }
 
 const edgeFields = [
@@ -881,7 +851,7 @@ export async function loadEdgeForID2(
   // TODO at some point, same as in go, we can be smart about this and have heuristics to determine if we fetch everything here or not
   // we're assuming a cache here but not always tue and this can be expensive if not...
   const edges = await loadEdges(id1, edgeType);
-  return edges.find(edge => edge.id2 == id2);
+  return edges.find((edge) => edge.id2 == id2);
 }
 
 export async function loadNodesByEdge<T extends Ent>(
@@ -894,7 +864,7 @@ export async function loadNodesByEdge<T extends Ent>(
   const rows = await loadEdges(id1, edgeType);
 
   // extract id2s
-  const ids = rows.map(row => row.id2);
+  const ids = rows.map((row) => row.id2);
 
   return loadEnts(viewer, options, ...ids);
 }
@@ -913,11 +883,11 @@ export async function loadEntsFromClause<T extends Ent>(
   const nodes = await loadRows(rowOptions);
   // apply privacy logic
   const ents = await Promise.all(
-    nodes.map(row => {
+    nodes.map((row) => {
       // todo eventually there'll be a different key
       const ent = new options.ent(viewer, row["id"], row);
       return applyPrivacyPolicyForEnt(viewer, ent);
     }),
   );
-  return ents.filter(ent => ent) as T[];
+  return ents.filter((ent) => ent) as T[];
 }
