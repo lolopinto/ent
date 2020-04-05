@@ -1,10 +1,6 @@
-import { Orchestrator } from "./orchestrator";
 import { Builder, WriteOperation } from "./action";
 import {
-  Viewer,
   Ent,
-  ID,
-  EntConstructor,
   DataOperation,
   EditNodeOperation,
   DeleteNodeOperation,
@@ -12,12 +8,12 @@ import {
   AssocEdgeData,
 } from "./ent";
 import * as ent from "./ent";
-import { PrivacyPolicy, AlwaysAllowRule } from "./privacy";
 import { LoggedOutViewer } from "./viewer";
 import { Changeset } from "./action";
 import { StringType, TimeType } from "./field";
 import { BaseEntSchema, Field } from "./schema";
 import { IDViewer } from "../src/testutils/id_viewer";
+import { User, SimpleBuilder } from "./testutils/builder";
 
 // mock loadEdgeDatas and return a simple non-symmetric|non-inverse edge
 // not sure if this is the best way but it's the only way I got
@@ -28,7 +24,7 @@ jest.spyOn(ent, "loadEdgeDatas").mockImplementation(
       return new Map();
     }
     return new Map(
-      edgeTypes.map(edgeType => [
+      edgeTypes.map((edgeType) => [
         edgeType,
         new AssocEdgeData({
           edge_table: "foo",
@@ -41,50 +37,6 @@ jest.spyOn(ent, "loadEdgeDatas").mockImplementation(
     );
   },
 );
-
-class User implements Ent {
-  id: ID;
-  accountID: string;
-  nodeType = "User";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AlwaysAllowRule],
-  };
-  constructor(public viewer: Viewer, data: {}) {
-    this.id = data["id"];
-  }
-}
-
-class SimpleBuilder implements Builder<User> {
-  ent: EntConstructor<User>;
-  placeholderID: "1";
-  viewer: Viewer;
-  public orchestrator: Orchestrator<User>;
-
-  constructor(
-    private schema: any,
-    private fields: Map<string, any>,
-    public operation: WriteOperation = WriteOperation.Insert,
-    public existingEnt: Ent | undefined = undefined,
-  ) {
-    this.viewer = new LoggedOutViewer();
-    this.orchestrator = new Orchestrator({
-      viewer: this.viewer,
-      operation: operation,
-      tableName: "foo",
-      //      existingEnt: existingEnt,
-      ent: User,
-      builder: this,
-      schema: this.schema,
-      editedFields: () => {
-        return this.fields;
-      },
-    });
-  }
-
-  build(): Promise<Changeset<User>> {
-    return this.orchestrator.build();
-  }
-}
 
 class UserSchema extends BaseEntSchema {
   fields: Field[] = [

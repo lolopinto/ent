@@ -25,10 +25,14 @@ export interface Builder<T extends Ent> {
   operation: WriteOperation;
 }
 
+// interface DataOperation {
+//   resolve?(executor: Executor); //throws?
+// }
+
 export interface Executor
   extends Iterable<DataOperation>,
     Iterator<DataOperation> {
-  resolveValue(val: any): Ent;
+  resolveValue(val: any): ID | null;
 }
 
 export interface Changeset<T extends Ent> {
@@ -109,6 +113,11 @@ async function saveBuilderImpl<T extends Ent>(
   try {
     await client.query("BEGIN");
     for (const operation of executor) {
+      // resolve any placeholders before writes
+      if (operation.resolve) {
+        operation.resolve(executor);
+      }
+
       await operation.performWrite(client);
       if (operation.returnedEntRow) {
         // we need a way to eventually know primary vs not once we can stack these

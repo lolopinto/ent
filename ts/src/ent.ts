@@ -13,6 +13,7 @@ import {
   applyPrivacyPolicyX,
   PrivacyPolicy,
 } from "./privacy";
+import { Executor } from "./action";
 
 import * as query from "./query";
 import { WriteOperation, Builder } from "./action";
@@ -281,6 +282,7 @@ export interface Queryer {
 export interface DataOperation {
   performWrite(queryer: Queryer): Promise<void>;
   returnedEntRow?(): {} | null; // optional to indicate the row that was created
+  resolve?(executor: Executor): void; //throws?
 }
 
 // this sould get a flag of whether it should throw or not and then do the right thing
@@ -337,11 +339,19 @@ export class EditNodeOperation implements DataOperation {
   }
 }
 
+interface EdgeOperationOptions {
+  operation: WriteOperation;
+  id1Placeholder?: boolean;
+  id2Placeholder?: boolean;
+}
+
 // TODO kill AssocEdgeData or pass it in later...
 export class EdgeOperation implements DataOperation {
+  // TODO make this constructor private
   constructor(
     public edgeInput: AssocEdgeInput,
-    private operation: WriteOperation,
+    private options: EdgeOperationOptions,
+    //    private operation: WriteOperation,
     private edgeData: AssocEdgeData | null = null,
   ) {}
 
@@ -356,7 +366,7 @@ export class EdgeOperation implements DataOperation {
       }
     }
 
-    switch (this.operation) {
+    switch (this.options.operation) {
       case WriteOperation.Delete:
         return this.performDeleteWrite(queryer, edgeData, edge);
       case WriteOperation.Insert:
@@ -417,6 +427,27 @@ export class EdgeOperation implements DataOperation {
     );
   }
 
+  resolve(executor: Executor): void {
+    if (this.options.id1Placeholder) {
+      let id1 = executor.resolveValue(this.edgeInput.id1);
+      if (!id1) {
+        throw new Error(
+          `could not resolve placeholder value ${this.edgeInput.id1} for id1 for edge ${this.edgeInput.edgeType}`,
+        );
+      }
+      this.edgeInput.id1 = id1;
+    }
+    if (this.options.id2Placeholder) {
+      let id2 = executor.resolveValue(this.edgeInput.id2);
+      if (!id2) {
+        throw new Error(
+          `could not resolve placeholder value ${this.edgeInput.id2} for id2 for edge ${this.edgeInput.edgeType}`,
+        );
+      }
+      this.edgeInput.id2 = id2;
+    }
+  }
+
   symmetricEdge(): EdgeOperation {
     return new EdgeOperation(
       {
@@ -428,7 +459,11 @@ export class EdgeOperation implements DataOperation {
         time: this.edgeInput.time,
         data: this.edgeInput.data,
       },
-      this.operation,
+      {
+        operation: this.options.operation,
+        id1Placeholder: this.options.id2Placeholder,
+        id2Placeholder: this.options.id1Placeholder,
+      },
     );
   }
 
@@ -443,14 +478,18 @@ export class EdgeOperation implements DataOperation {
         time: this.edgeInput.time,
         data: this.edgeInput.data,
       },
-      this.operation,
+      {
+        operation: this.options.operation,
+        id1Placeholder: this.options.id2Placeholder,
+        id2Placeholder: this.options.id1Placeholder,
+      },
     );
   }
 
   private static resolveIDs<T extends Ent>(
     srcBuilder: Builder<T>, // id1
     destID: Builder<T> | ID, // id2 ( and then you flip it)
-  ): [ID, string, ID] {
+  ): [ID, string, boolean, ID] {
     let destIDVal: ID;
     if (typeof destID === "string" || typeof destID === "number") {
       destIDVal = destID;
@@ -460,10 +499,12 @@ export class EdgeOperation implements DataOperation {
     let srcIDVal: ID;
     let srcType: string;
 
+    let srcPlaceholder = false;
     if (srcBuilder.existingEnt) {
       srcIDVal = srcBuilder.existingEnt.id;
       srcType = srcBuilder.existingEnt.nodeType;
     } else {
+      srcPlaceholder = true;
       console.log("placeholder");
       // get placeholder.
       srcIDVal = srcBuilder.placeholderID;
@@ -471,7 +512,7 @@ export class EdgeOperation implements DataOperation {
       srcType = "";
     }
 
-    return [srcIDVal, srcType, destIDVal];
+    return [srcIDVal, srcType, srcPlaceholder, destIDVal];
   }
 
   static inboundEdge<T extends Ent>(
@@ -481,8 +522,10 @@ export class EdgeOperation implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    // todo we still need flags to indicate something is a placeholder ID
-    let [id2Val, id2Type, id1Val] = EdgeOperation.resolveIDs(builder, id1);
+    let [id2Val, id2Type, id2Placeholder, id1Val] = EdgeOperation.resolveIDs(
+      builder,
+      id1,
+    );
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -493,7 +536,10 @@ export class EdgeOperation implements DataOperation {
       ...options,
     };
 
-    return new EdgeOperation(edge, WriteOperation.Insert);
+    return new EdgeOperation(edge, {
+      operation: WriteOperation.Insert,
+      id2Placeholder: id2Placeholder,
+    });
   }
 
   static outboundEdge<T extends Ent>(
@@ -503,8 +549,10 @@ export class EdgeOperation implements DataOperation {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    // todo we still need flags to indicate something is a placeholder ID
-    let [id1Val, id1Type, id2Val] = EdgeOperation.resolveIDs(builder, id2);
+    let [id1Val, id1Type, id1Placeholder, id2Val] = EdgeOperation.resolveIDs(
+      builder,
+      id2,
+    );
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -515,7 +563,10 @@ export class EdgeOperation implements DataOperation {
       ...options,
     };
 
-    return new EdgeOperation(edge, WriteOperation.Insert);
+    return new EdgeOperation(edge, {
+      operation: WriteOperation.Insert,
+      id1Placeholder: id1Placeholder,
+    });
   }
 
   static removeInboundEdge<T extends Ent>(
@@ -533,7 +584,9 @@ export class EdgeOperation implements DataOperation {
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
     };
-    return new EdgeOperation(edge, WriteOperation.Delete);
+    return new EdgeOperation(edge, {
+      operation: WriteOperation.Delete,
+    });
   }
 
   static removeOutboundEdge<T extends Ent>(
@@ -551,7 +604,9 @@ export class EdgeOperation implements DataOperation {
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
     };
-    return new EdgeOperation(edge, WriteOperation.Delete);
+    return new EdgeOperation(edge, {
+      operation: WriteOperation.Delete,
+    });
   }
 }
 
@@ -710,7 +765,13 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
   }
 
   let operations: DataOperation[] = [
-    new EdgeOperation(edge, WriteOperation.Insert, edgeData),
+    new EdgeOperation(
+      edge,
+      {
+        operation: WriteOperation.Insert,
+      },
+      edgeData,
+    ),
   ];
 
   if (edgeData.symmetricEdge) {
@@ -725,7 +786,9 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
           time: edge.time,
           data: edge.data,
         },
-        WriteOperation.Insert,
+        {
+          operation: WriteOperation.Insert,
+        },
         edgeData,
       ),
     );
@@ -742,7 +805,9 @@ async function edgeOperations(edge: AssocEdgeInput): Promise<DataOperation[]> {
           time: edge.time,
           data: edge.data,
         },
-        WriteOperation.Insert,
+        {
+          operation: WriteOperation.Insert,
+        },
         edgeData,
       ),
     );

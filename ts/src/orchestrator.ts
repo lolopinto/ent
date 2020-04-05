@@ -231,26 +231,45 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public operations: DataOperation[],
   ) {}
 
-  executor(): ListBasedExecutor<T> {
-    return new ListBasedExecutor<T>(this.operations);
+  executor(): ListBasedExecutor {
+    return new ListBasedExecutor(this.placeholderID, this.operations);
   }
 }
 
-class ListBasedExecutor<T extends Ent> implements Executor {
+export class ListBasedExecutor implements Executor {
   private idx: number = 0;
-  constructor(private operations: DataOperation[]) {}
-  resolveValue(val: any): T {
-    throw new Error();
+  constructor(private placeholderID: ID, private operations: DataOperation[]) {}
+  private lastOp: DataOperation | undefined;
+  private id: ID | null; // hmm we don't
+
+  resolveValue(val: any): ID | null {
+    if (val === this.placeholderID && val !== undefined) {
+      return this.id;
+    }
+
+    return null;
   }
 
   [Symbol.iterator]() {
     return this;
   }
 
+  // simple case which assumes only 1 data based ent and edges. used for tests
+  // not for production
+  // TODO this is the main work
+  // add test in orchestrator.ts with fake operations which PerformWrite() but do nothing and see
+  // what happens here
   next(): IteratorResult<DataOperation> {
-    const op = this.operations[this.idx];
+    if (this.lastOp && this.lastOp.returnedEntRow) {
+      const row = this.lastOp.returnedEntRow();
+      if (row) {
+        this.id = row["id"]; // todo eventually we need to support other keys here
+      }
+    }
     const done = this.idx === this.operations.length;
+    const op = this.operations[this.idx];
     this.idx++;
+    this.lastOp = op;
     return {
       value: op,
       done: done,
