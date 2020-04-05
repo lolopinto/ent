@@ -227,7 +227,7 @@ test("inverse edge", async () => {
     emailAddress: randomEmail(),
   });
   const action = CreateEventAction.create(new LoggedOutViewer(), {
-    creatorID: user.id as string, // TODO id as string needs to stop...
+    creatorID: user.id,
     startTime: new Date(),
     name: "fun event",
     location: "location",
@@ -280,7 +280,7 @@ test("one-way edge", async () => {
     emailAddress: randomEmail(),
   });
   const event = await CreateEventAction.create(new LoggedOutViewer(), {
-    creatorID: user.id as string,
+    creatorID: user.id,
     startTime: new Date(),
     name: "fun event",
     location: "location",
@@ -399,13 +399,13 @@ test("uniqueEdge|Node", async () => {
     emailAddress: jon.emailAddress,
     firstName: jon.firstName,
     lastName: jon.lastName,
-    userID: jon.id as string,
+    userID: jon.id,
   }).saveX();
   let contact2 = await CreateContactAction.create(loggedOutViewer, {
     emailAddress: sansa.emailAddress,
     firstName: sansa.firstName,
     lastName: sansa.lastName,
-    userID: jon.id as string,
+    userID: jon.id,
   }).saveX();
 
   expect(contact).toBeInstanceOf(Contact);

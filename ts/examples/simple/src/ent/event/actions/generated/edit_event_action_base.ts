@@ -7,13 +7,13 @@ import {
   WriteOperation,
   Changeset,
 } from "ent/action";
-import { Viewer } from "ent/ent";
+import { Viewer, ID } from "ent/ent";
 import Event from "src/ent/event";
 import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
 export interface EventEditInput {
   name?: string;
-  creatorID?: string;
+  creatorID?: ID;
   startTime?: Date;
   endTime?: Date | null;
   location?: string;

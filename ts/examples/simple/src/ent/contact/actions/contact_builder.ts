@@ -10,7 +10,7 @@ export interface ContactInput {
   emailAddress?: string;
   firstName?: string;
   lastName?: string;
-  userID?: string;
+  userID?: ID;
   requiredFields: string[];
 }
 

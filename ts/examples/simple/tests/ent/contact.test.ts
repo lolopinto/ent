@@ -27,7 +27,7 @@ async function create(firstName: string, lastName: string): Promise<Contact> {
     emailAddress: randomEmail(),
     firstName: firstName,
     lastName: lastName,
-    userID: user.id as string,
+    userID: user.id,
   }).saveX();
 }
 
@@ -46,7 +46,7 @@ async function createMany(
       emailAddress: randomEmail(),
       firstName: name.firstName,
       lastName: name.lastName,
-      userID: user.id as string,
+      userID: user.id,
     }).saveX();
     results.push(contact);
   }

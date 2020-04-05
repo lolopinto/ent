@@ -304,8 +304,16 @@ func (f *Field) IDField() bool {
 	if !f.topLevelStructField {
 		return false
 	}
-	// TOOD this needs a better name
+	// TOOD this needs a better name, way of figuring out etc
+	// TODO kill this and replace with EvolvedIDField
 	return strings.HasSuffix(f.FieldName, "ID")
+}
+
+func (f *Field) EvolvedIDField() bool {
+	// TODO kill above and convert to this
+	// if there's a fieldEdge or a foreign key or an inverse edge to this, this is an ID field
+	// and we should use the ID type and add a builder
+	return f.fieldEdge != nil || f.fkey != nil || f.InverseEdge != nil
 }
 
 func (f *Field) Nullable() bool {
@@ -353,6 +361,9 @@ func (f *Field) TsType() string {
 	tsType, ok := f.fieldType.(enttype.TSType)
 	if !ok {
 		panic("cannot get typescript type from invalid type")
+	}
+	if f.EvolvedIDField() {
+		return (&enttype.IDType{}).GetTSType()
 	}
 	return tsType.GetTSType()
 }
