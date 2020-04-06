@@ -24,7 +24,7 @@ export class ContactBase {
   readonly emailAddress: string;
   readonly firstName: string;
   readonly lastName: string;
-  readonly userID: string;
+  readonly userID: ID;
 
   constructor(public viewer: Viewer, id: ID, data: {}) {
     this.id = id;

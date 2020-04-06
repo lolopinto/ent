@@ -10,7 +10,7 @@ export interface ContactInput {
   emailAddress?: string;
   firstName?: string;
   lastName?: string;
-  userID?: string;
+  userID?: ID;
   requiredFields: string[];
 }
 
@@ -45,7 +45,9 @@ export class ContactBuilder implements Builder<Contact> {
       builder: this,
       action: action,
       schema: schema,
-      editedFields: this.getEditedFields,
+      editedFields: () => {
+        return this.getEditedFields.apply(this);
+      },
     });
   }
 

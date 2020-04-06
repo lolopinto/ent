@@ -279,6 +279,21 @@ func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) {
 	})
 }
 
+func (e *AssociationEdge) CloneWithCommonInfo(configName string) *AssociationEdge {
+	return &AssociationEdge{
+		EdgeConst:   e.EdgeConst,
+		Symmetric:   e.Symmetric,
+		Unique:      e.Unique,
+		InverseEdge: e.InverseEdge,
+		TableName:   e.TableName,
+		EdgeActions: e.EdgeActions,
+		commonEdgeInfo: getCommonEdgeInfo(
+			e.EdgeName,
+			schemaparser.GetEntConfigFromEntConfig(configName),
+		),
+	}
+}
+
 var _ Edge = &AssociationEdge{}
 var _ PluralEdge = &AssociationEdge{}
 

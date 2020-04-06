@@ -25,7 +25,7 @@ async function create(startTime: Date): Promise<Event> {
 
   return await CreateEventAction.create(loggedOutViewer, {
     name: "fun event",
-    creatorID: user.id as string,
+    creatorID: user.id,
     startTime: startTime,
     location: "location",
   }).saveX();

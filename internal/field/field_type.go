@@ -42,7 +42,7 @@ type Field struct {
 	// (e.g. graphql mutation/rest/worker job) and not via a trigger
 
 	singleFieldPrimaryKey bool
-	InverseEdge           *edge.AssociationEdge
+	inverseEdge           *edge.AssociationEdge
 	// this is the package path that should be imported when the field is rendered in the ent
 	// TODO use it
 	pkgPath string
@@ -304,8 +304,16 @@ func (f *Field) IDField() bool {
 	if !f.topLevelStructField {
 		return false
 	}
-	// TOOD this needs a better name
+	// TOOD this needs a better name, way of figuring out etc
+	// TODO kill this and replace with EvolvedIDField
 	return strings.HasSuffix(f.FieldName, "ID")
+}
+
+func (f *Field) EvolvedIDField() bool {
+	// TODO kill above and convert to this
+	// if there's a fieldEdge or a foreign key or an inverse edge to this, this is an ID field
+	// and we should use the ID type and add a builder
+	return f.fieldEdge != nil || f.fkey != nil || f.inverseEdge != nil
 }
 
 func (f *Field) Nullable() bool {
@@ -354,6 +362,12 @@ func (f *Field) TsType() string {
 	if !ok {
 		panic("cannot get typescript type from invalid type")
 	}
+	if f.EvolvedIDField() {
+		if f.Nullable() {
+			return (&enttype.NullableIDType{}).GetTSType()
+		}
+		return (&enttype.IDType{}).GetTSType()
+	}
 	return tsType.GetTSType()
 }
 
@@ -388,4 +402,15 @@ func (f *Field) setPrivate() {
 	f.private = true
 	f.hideFromGraphQL = true
 	f.exposeToActionsByDefault = false
+}
+
+func (f *Field) AddInverseEdge(edge *edge.AssociationEdge) {
+	if f.fieldEdge == nil {
+		panic("cannot add an inverse edge on a field without a field edge")
+	}
+	f.inverseEdge = edge.CloneWithCommonInfo(f.fieldEdge.Config)
+}
+
+func (f *Field) GetInverseEdge() *edge.AssociationEdge {
+	return f.inverseEdge
 }

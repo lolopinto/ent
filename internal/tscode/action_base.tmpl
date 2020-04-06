@@ -1,5 +1,5 @@
 {{ reserveImport "ent/action" "Action" "saveBuilder" "saveBuilderX" "saveBuilderXNoEnt" "WriteOperation" "Changeset" }}
-{{reserveImport "ent/ent" "Viewer" "ID" "Ent" }}
+{{ reserveImport "ent/ent" "Viewer" "ID" "Ent" }}
 
 {{ $packagePath := printf "src/ent/%s" .NodeData.PackageName }}
 {{ reserveDefaultImport $packagePath .NodeData.Node}}
@@ -22,10 +22,15 @@
   export interface {{$inputName}} {
     {{ range $field := $action.GetFields -}}
       {{ if $field.EditableField -}}
+        {{$type := $field.TsType -}}
+        {{/* TODO make this generic to work for all imported types but this is hack for ID for now */ -}}
+        {{ if eq $type "ID" -}}
+          {{ $type = useImport "ID" -}}
+        {{end -}}
         {{if isRequiredField $action $field -}}
-          {{$field.TsFieldName}}: {{$field.TsType}};
+          {{$field.TsFieldName}}: {{$type}};
         {{else -}}
-          {{$field.TsFieldName}}?: {{$field.TsType}};
+          {{$field.TsFieldName}}?: {{$type}};
         {{end -}}
       {{end -}}
     {{end -}}

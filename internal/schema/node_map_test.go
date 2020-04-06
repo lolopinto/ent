@@ -66,12 +66,12 @@ func (config *TodoConfig) GetFields() ent.FieldMap {
 	s := parseSchema(t, sources, "InverseFieldEdge")
 	textField := getFieldFromSchema(t, s, "TodoConfig", "Text")
 
-	require.Nil(t, textField.InverseEdge, "expected the text field to have no inverse edge. instead it did")
+	require.Nil(t, textField.GetInverseEdge(), "expected the text field to have no inverse edge. instead it did")
 
 	// creating a fieldEdge above does 2 things:
 	// 	1. it adds an inverse edge to the field
 	accountField := getFieldFromSchema(t, s, "TodoConfig", "AccountID")
-	inverseEdge := accountField.InverseEdge
+	inverseEdge := accountField.GetInverseEdge()
 	require.NotNil(
 		t,
 		inverseEdge,
@@ -93,6 +93,14 @@ func (config *TodoConfig) GetFields() ent.FieldMap {
 		"inverse edge name not as expected, expected %s, got %s",
 		"Todos",
 		inverseEdge.EdgeName,
+	)
+	assert.Equal(
+		t,
+		"Account",
+		inverseEdge.NodeInfo.Node,
+		"Node at the end of inverse edge should be %s, got %s instead",
+		"Account",
+		inverseEdge.NodeInfo.Node,
 	)
 
 	// 2. adds a fieldEdge on source edgeInfo

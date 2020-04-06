@@ -81,13 +81,13 @@ func (b *EventMutationBuilder) SetStartTime(startTime time.Time) *EventMutationB
 
 func (b *EventMutationBuilder) SetUserID(userID string) *EventMutationBuilder {
 	b.userID = &userID
-	b.builder.AddInboundEdge(models.UserToEventsEdge, userID, models.EventType)
+	b.builder.AddInboundEdge(models.UserToEventsEdge, userID, models.UserType)
 	return b
 }
 
 func (b *EventMutationBuilder) SetUserIDBuilder(builder ent.MutationBuilder) *EventMutationBuilder {
 	b.userIDBuilder = builder
-	b.builder.AddInboundEdge(models.UserToEventsEdge, builder, models.EventType)
+	b.builder.AddInboundEdge(models.UserToEventsEdge, builder, models.UserType)
 	return b
 }
 
