@@ -299,7 +299,7 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 		if fEdge == nil {
 			panic(fmt.Errorf("couldn't find inverse edge with name %s", e.InverseEdgeName))
 		}
-		f.InverseEdge = fEdge
+		f.AddInverseEdge(fEdge)
 	}
 }
 

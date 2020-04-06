@@ -47,7 +47,9 @@ export class UserBuilder implements Builder<User> {
       builder: this,
       action: action,
       schema: schema,
-      editedFields: this.getEditedFields,
+      editedFields: () => {
+        return this.getEditedFields.apply(this);
+      },
     });
   }
 

@@ -280,7 +280,7 @@ func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
 			FieldName:                f.FieldName,
 			QuotedFieldName:          strconv.Quote(f.FieldName),
 			QuotedDBName:             f.GetQuotedDBColName(),
-			InverseEdge:              f.InverseEdge,
+			InverseEdge:              f.GetInverseEdge(),
 			Field:                    f,
 		})
 	}

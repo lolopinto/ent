@@ -27,7 +27,7 @@ export class EventBase {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly name: string;
-  readonly creatorID: string;
+  readonly creatorID: ID;
   readonly startTime: Date;
   readonly endTime: Date | null;
   readonly location: string;

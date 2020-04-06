@@ -7,7 +7,7 @@ import {
   WriteOperation,
   Changeset,
 } from "ent/action";
-import { Viewer } from "ent/ent";
+import { Viewer, ID } from "ent/ent";
 import Contact from "src/ent/contact";
 import {
   ContactBuilder,
@@ -18,7 +18,7 @@ export interface ContactCreateInput {
   emailAddress: string;
   firstName: string;
   lastName: string;
-  userID: string;
+  userID: ID;
 }
 
 export class CreateContactActionBase implements Action<Contact> {
