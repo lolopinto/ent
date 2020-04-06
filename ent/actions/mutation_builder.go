@@ -393,7 +393,7 @@ func (b *EntMutationBuilder) validateFieldInfos() chan fieldsResult {
 				val := fieldInfo.Value
 				dbKey := fieldInfo.Field.DBKey(fieldName)
 
-				// don't validate builders, they'll be resolved later (maybe)
+				// don't validate builders, they'll be resolved later (hopefully)
 				_, ok := fieldInfo.Value.(ent.MutationBuilder)
 				if !ok {
 					var err error
