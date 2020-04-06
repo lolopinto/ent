@@ -390,20 +390,26 @@ func (b *EntMutationBuilder) validateFieldInfos() chan fieldsResult {
 				defer wg.Done()
 				fieldInfo := fieldInfos[fieldName]
 
-				// validate field
-				if err := fieldInfo.Field.Valid(fieldName, fieldInfo.Value); err != nil {
-					serr.Append(err)
-					return
-				}
-
+				val := fieldInfo.Value
 				dbKey := fieldInfo.Field.DBKey(fieldName)
 
-				// this is also where default values will be set eventually
-				// format as needed
-				val, err := fieldInfo.Field.Format(fieldInfo.Value)
-				if err != nil {
-					serr.Append(err)
-					return
+				// don't validate builders, they'll be resolved later (maybe)
+				_, ok := fieldInfo.Value.(ent.MutationBuilder)
+				if !ok {
+					var err error
+					// validate field
+					if err = fieldInfo.Field.Valid(fieldName, fieldInfo.Value); err != nil {
+						serr.Append(err)
+						return
+					}
+
+					// this is also where default values will be set eventually
+					// format as needed
+					val, err = fieldInfo.Field.Format(fieldInfo.Value)
+					if err != nil {
+						serr.Append(err)
+						return
+					}
 				}
 				m.Lock()
 				defer m.Unlock()

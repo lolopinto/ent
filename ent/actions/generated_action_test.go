@@ -292,6 +292,18 @@ func (suite *generatedActionSuite) TestInboundEdge() {
 	assert.Nil(suite.T(), err)
 	assert.Len(suite.T(), events, 1)
 	assert.Equal(suite.T(), events[0].ID, event.ID)
+
+	edge, err := reloadedUser.LoadEventEdgeFor(event.ID)
+	assert.Nil(suite.T(), err)
+
+	// validate the edge data is as expected
+	testingutils.VerifyEdge(suite.T(), &ent.AssocEdge{
+		ID1:      user.ID,
+		ID2:      event.ID,
+		EdgeType: models.UserToEventsEdge,
+		ID1Type:  user.GetType(),
+		ID2Type:  event.GetType(),
+	}, edge)
 }
 
 func (suite *generatedActionSuite) TestInboundEdgeBuilder() {

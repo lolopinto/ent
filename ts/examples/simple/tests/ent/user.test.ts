@@ -271,9 +271,7 @@ test("inverse edge", async () => {
   expect(invitedEvents[0].id).toBe(loadedEvent?.id);
 });
 
-test("one-way edge", async () => {
-  // todo this is a field edge that we'll get to later
-  // TODO need to do this when setting userID and setting the inbound edge
+test("one-way + inverse edge", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
@@ -286,11 +284,8 @@ test("one-way edge", async () => {
     location: "location",
   }).saveX();
 
-  // TODO we should get this for free above...
-  let action = EditUserAction.create(loggedOutViewer, user, {});
-  action.builder.addCreatedEvent(event);
-  await action.saveX();
-
+  // setting the creator id field also sets edge from user -> created event
+  // because of the configuration
   const edges = await user.loadCreatedEventsEdges();
   expect(edges.length).toBe(1);
   verifyEdge(edges[0], {

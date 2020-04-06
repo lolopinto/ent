@@ -48,7 +48,9 @@ export class EventBuilder implements Builder<Event> {
       builder: this,
       action: action,
       schema: schema,
-      editedFields: this.getEditedFields,
+      editedFields: () => {
+        return this.getEditedFields.apply(this);
+      },
     });
   }
 
@@ -71,6 +73,13 @@ export class EventBuilder implements Builder<Event> {
     };
     addField("name", fields.name, m["name"]);
     addField("creatorID", fields.creatorID, m["creatorID"]);
+    if (fields.creatorID) {
+      this.orchestrator.addInboundEdge(
+        fields.creatorID,
+        EdgeType.UserToCreatedEvents,
+        NodeType.User,
+      );
+    }
     addField("start_time", fields.startTime, m["start_time"]);
     addField("end_time", fields.endTime, m["end_time"]);
     addField("location", fields.location, m["location"]);

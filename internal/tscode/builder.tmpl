@@ -62,7 +62,9 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
       builder: this,
       action: action,
       schema: {{useImport "schema"}},
-      editedFields: this.getEditedFields,
+      editedFields: () => {
+        return this.getEditedFields.apply(this);
+      },
     });
   }
 
@@ -85,7 +87,18 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     };
     {{range $field := .FieldInfo.Fields -}}
       {{ if $field.EditableField -}}
-        addField("{{$field.FieldName}}", fields.{{$field.TsFieldName}}, m["{{$field.FieldName}}"]);
+        {{$tsFieldName := $field.TsFieldName -}}
+        addField("{{$field.FieldName}}", fields.{{$tsFieldName}}, m["{{$field.FieldName}}"]);
+        {{ $inverseEdge := $field.GetInverseEdge -}}
+        {{ if $inverseEdge -}}
+          if (fields.{{$tsFieldName}}) {
+            this.orchestrator.addInboundEdge(
+              fields.{{$tsFieldName}},
+              {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+              {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
+            );
+          }
+        {{end -}}
       {{end -}}
     {{end -}}
     return result;

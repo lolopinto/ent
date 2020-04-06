@@ -45,7 +45,9 @@ export class ContactBuilder implements Builder<Contact> {
       builder: this,
       action: action,
       schema: schema,
-      editedFields: this.getEditedFields,
+      editedFields: () => {
+        return this.getEditedFields.apply(this);
+      },
     });
   }
 
