@@ -37,9 +37,6 @@ export interface Executor<T extends Ent>
 }
 
 export interface Changeset<T extends Ent> {
-  // validate(): Promise<void>;
-  // validateX(): Promise<void>;
-
   executor(): Executor<T>;
   viewer: Viewer;
   placeholderID: ID;

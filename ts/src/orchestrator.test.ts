@@ -374,8 +374,6 @@ describe("validators", () => {
   const validators = [
     {
       validate: async (builder: SimpleBuilder): Promise<void> => {
-        // console.log. not even getting here.
-        // time to mock/spy everything here similar to what we're doing in action.test.ts
         let startTime: Date = builder.fields.get("startTime");
         let endTime: Date = builder.fields.get("endTime");
 
