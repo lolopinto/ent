@@ -13,7 +13,16 @@ import { Changeset } from "./action";
 import { StringType, TimeType } from "./field";
 import { BaseEntSchema, Field } from "./schema";
 import { IDViewer } from "../src/testutils/id_viewer";
-import { User, SimpleBuilder } from "./testutils/builder";
+import { User, SimpleBuilder, SimpleAction } from "./testutils/builder";
+import { Pool } from "pg";
+import { QueryRecorder } from "./testutils/db_mock";
+
+jest.mock("pg");
+QueryRecorder.mockPool(Pool);
+
+afterEach(() => {
+  QueryRecorder.clear();
+});
 
 // mock loadEdgeDatas and return a simple non-symmetric|non-inverse edge
 // not sure if this is the best way but it's the only way I got
@@ -27,7 +36,7 @@ jest.spyOn(ent, "loadEdgeDatas").mockImplementation(
       edgeTypes.map((edgeType) => [
         edgeType,
         new AssocEdgeData({
-          edge_table: "foo",
+          edge_table: "assoc_edge_config",
           symmetric_edge: false,
           inverse_edge_type: null,
           edge_type: edgeType,
@@ -351,6 +360,76 @@ describe("remove outbound edge", () => {
     } catch (e) {
       expect(e.message).toBe("cannot remove an edge from a non-existing ent");
     }
+  });
+});
+
+describe("validators", () => {
+  class EventSchema extends BaseEntSchema {
+    fields: Field[] = [
+      TimeType({ name: "startTime" }),
+      TimeType({ name: "endTime" }),
+    ];
+  }
+
+  const validators = [
+    {
+      validate: async (builder: SimpleBuilder): Promise<void> => {
+        // console.log. not even getting here.
+        // time to mock/spy everything here similar to what we're doing in action.test.ts
+        let startTime: Date = builder.fields.get("startTime");
+        let endTime: Date = builder.fields.get("endTime");
+
+        if (!startTime || !endTime) {
+          throw new Error("startTime and endTime required");
+        }
+
+        if (startTime.getTime() > endTime.getTime()) {
+          throw new Error("start time cannot be after end time");
+        }
+      },
+    },
+  ];
+
+  test("invalid", async () => {
+    let now = new Date();
+    let yesterday = new Date(now.getTime() - 86400);
+
+    let action = new SimpleAction(
+      EventSchema,
+      new Map([
+        ["startTime", now],
+        ["endTime", yesterday],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.validators = validators;
+
+    try {
+      await action.validX();
+      fail("should have thrown exception");
+    } catch (e) {
+      expect(e.message).toBe("start time cannot be after end time");
+    }
+  });
+
+  test("valid", async () => {
+    let now = new Date();
+    let yesterday = new Date(now.getTime() - 86400);
+
+    let action = new SimpleAction(
+      EventSchema,
+      new Map([
+        ["startTime", yesterday],
+        ["endTime", now],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.validators = validators;
+
+    await action.validX();
+
+    // can "save" the query!
+    await action.saveX();
   });
 });
 

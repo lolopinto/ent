@@ -44,6 +44,14 @@ export class EditUserActionBase implements Action<User> {
     return this.builder.build();
   }
 
+  async valid(): Promise<boolean> {
+    return this.builder.valid();
+  }
+
+  async validX(): Promise<void> {
+    await this.builder.validX();
+  }
+
   async save(): Promise<User | null> {
     return await saveBuilder(this.builder);
   }

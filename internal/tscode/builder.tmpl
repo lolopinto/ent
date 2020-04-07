@@ -50,7 +50,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     public readonly viewer: {{useImport "Viewer"}},
     public readonly operation: {{useImport "WriteOperation"}},
     private action: {{.Node}}Action,
-    public readonly existingEnt?: {{useImport "Ent"}} | undefined,
+    public readonly existingEnt?: {{$node}} | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
 
@@ -66,6 +66,10 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
         return this.getEditedFields.apply(this);
       },
     });
+  }
+
+  getInput(): {{.Node}}Input {
+    return this.action.getFields();
   }
 
   private getEditedFields(): Map<string, any> {
@@ -148,6 +152,14 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
 
   async build(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
     return this.orchestrator.build();
+  }
+
+  async valid(): Promise<boolean> {
+    return this.orchestrator.valid();
+  }
+
+  async validX(): Promise<void> {
+    return this.orchestrator.validX();
   }
 }
 

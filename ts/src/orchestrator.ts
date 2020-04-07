@@ -38,14 +38,9 @@ export interface OrchestratorOptions<T extends Ent> {
 export class Orchestrator<T extends Ent> {
   private edgeOps: EdgeOperation[] = [];
   private edgeSet: Set<string> = new Set<string>();
-  //  existingEnt: Ent | undefined;
+  private validatedFields: {} | null;
 
-  constructor(
-    // public readonly viewer: Viewer,
-    private options: OrchestratorOptions<T>,
-  ) {
-    //    this.existingEnt = options.existingEnt;
-  }
+  constructor(private options: OrchestratorOptions<T>) {}
 
   private addEdge(edge: EdgeOperation) {
     this.edgeOps.push(edge);
@@ -98,22 +93,71 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
-  private buildDeleteOp(): DeleteNodeOperation {
-    if (!this.options.builder.existingEnt) {
-      throw new Error("existing ent required with delete operation");
+  private buildMainOp(): DataOperation<T> {
+    // this assumes we have validated fields
+    switch (this.options.operation) {
+      case WriteOperation.Delete:
+        return new DeleteNodeOperation(this.options.builder.existingEnt!.id, {
+          tableName: this.options.tableName,
+        });
+      default:
+        return new EditNodeOperation(
+          {
+            fields: this.validatedFields!,
+            tableName: this.options.tableName,
+          },
+          this.options.ent,
+          this.options.builder.existingEnt,
+        );
     }
-    return new DeleteNodeOperation(this.options.builder.existingEnt.id, {
-      tableName: this.options.tableName,
-    });
   }
 
-  private buildEditOp(): EditNodeOperation<T> {
-    if (
-      this.options.operation === WriteOperation.Edit &&
-      !this.options.builder.existingEnt
-    ) {
-      throw new Error("existing ent required with edit operation");
+  private async buildEdgeOps(ops: DataOperation<T>[]): Promise<void> {
+    const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
+    //    console.log(edgeDatas);
+    for (const edgeOp of this.edgeOps) {
+      ops.push(edgeOp);
+
+      const edgeType = edgeOp.edgeInput.edgeType;
+      const edgeData = edgeDatas.get(edgeType);
+      if (!edgeData) {
+        throw new Error(`could not load edge data for ${edgeType}`);
+      }
+
+      if (edgeData.symmetricEdge) {
+        ops.push(edgeOp.symmetricEdge());
+      }
+
+      if (edgeData.inverseEdgeType) {
+        ops.push(edgeOp.inverseEdge(edgeData));
+      }
     }
+  }
+
+  private async validate(): Promise<void> {
+    let validators = this.options.action?.validators || [];
+    await Promise.all([
+      ...validators.map((validator) =>
+        validator.validate(this.options.builder),
+      ),
+      this.validateFields(),
+    ]);
+  }
+
+  private async validateFields(): Promise<void> {
+    // existing ent required for edit or delete operations
+    switch (this.options.operation) {
+      case WriteOperation.Delete:
+      case WriteOperation.Edit:
+        if (!this.options.builder.existingEnt) {
+          throw new Error("existing ent required with delete operation");
+        }
+    }
+
+    if (this.options.operation == WriteOperation.Delete) {
+      return;
+    }
+
     const editedFields = this.options.editedFields();
     // build up data to be saved...
     let data = {};
@@ -167,51 +211,27 @@ export class Orchestrator<T extends Ent> {
       }
     }
 
-    return new EditNodeOperation(
-      {
-        fields: data,
-        tableName: this.options.tableName,
-      },
-      this.options.ent,
-      this.options.builder.existingEnt,
-    );
+    this.validatedFields = data;
   }
 
-  private async buildEdgeOps(ops: DataOperation<T>[]): Promise<void> {
-    const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
-    //    console.log(edgeDatas);
-    for (const edgeOp of this.edgeOps) {
-      ops.push(edgeOp);
-
-      const edgeType = edgeOp.edgeInput.edgeType;
-      const edgeData = edgeDatas.get(edgeType);
-      if (!edgeData) {
-        throw new Error(`could not load edge data for ${edgeType}`);
-      }
-
-      if (edgeData.symmetricEdge) {
-        ops.push(edgeOp.symmetricEdge());
-      }
-
-      if (edgeData.inverseEdgeType) {
-        ops.push(edgeOp.inverseEdge(edgeData));
-      }
+  async valid(): Promise<boolean> {
+    try {
+      await this.validate();
+    } catch (e) {
+      return false;
     }
+    return true;
+  }
+
+  async validX(): Promise<void> {
+    return this.validate();
   }
 
   async build(): Promise<EntChangeset<T>> {
-    let ops: DataOperation<T>[] = [];
+    // validate everything first
+    await this.validX();
 
-    switch (this.options.operation) {
-      case WriteOperation.Delete:
-        ops.push(this.buildDeleteOp());
-        break;
-      case WriteOperation.Edit:
-      case WriteOperation.Insert:
-        ops.push(this.buildEditOp());
-        break;
-    }
-
+    let ops: DataOperation<T>[] = [this.buildMainOp()];
     await this.buildEdgeOps(ops);
 
     return new EntChangeset(

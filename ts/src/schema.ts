@@ -129,6 +129,7 @@ export interface Field extends FieldOptions {
 
   // optional valid and format to validate and format before storing
   valid?(val: any): boolean;
+  //valid?(val: any): Promise<boolean>;
   format?(val: any): any;
 }
 
