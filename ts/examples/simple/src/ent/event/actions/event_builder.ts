@@ -18,7 +18,7 @@ export interface EventInput {
 }
 
 export interface EventAction extends Action<Event> {
-  getFields(): EventInput;
+  getInput(): EventInput;
 }
 
 function randomNum(): string {
@@ -55,11 +55,11 @@ export class EventBuilder implements Builder<Event> {
   }
 
   getInput(): EventInput {
-    return this.action.getFields();
+    return this.action.getInput();
   }
 
   private getEditedFields(): Map<string, any> {
-    const fields = this.action.getFields();
+    const fields = this.action.getInput();
 
     // required fields
     let m = {};

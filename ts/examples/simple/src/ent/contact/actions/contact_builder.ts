@@ -15,7 +15,7 @@ export interface ContactInput {
 }
 
 export interface ContactAction extends Action<Contact> {
-  getFields(): ContactInput;
+  getInput(): ContactInput;
 }
 
 function randomNum(): string {
@@ -52,11 +52,11 @@ export class ContactBuilder implements Builder<Contact> {
   }
 
   getInput(): ContactInput {
-    return this.action.getFields();
+    return this.action.getInput();
   }
 
   private getEditedFields(): Map<string, any> {
-    const fields = this.action.getFields();
+    const fields = this.action.getInput();
 
     // required fields
     let m = {};

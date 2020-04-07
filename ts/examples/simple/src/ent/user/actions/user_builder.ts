@@ -17,7 +17,7 @@ export interface UserInput {
 }
 
 export interface UserAction extends Action<User> {
-  getFields(): UserInput;
+  getInput(): UserInput;
 }
 
 function randomNum(): string {
@@ -54,11 +54,11 @@ export class UserBuilder implements Builder<User> {
   }
 
   getInput(): UserInput {
-    return this.action.getFields();
+    return this.action.getInput();
   }
 
   private getEditedFields(): Map<string, any> {
-    const fields = this.action.getFields();
+    const fields = this.action.getInput();
 
     // required fields
     let m = {};

@@ -28,7 +28,7 @@ export interface {{.Node}}Input {
 }
 
 export interface {{.Node}}Action extends {{useImport "Action"}}<{{useImport .Node}}> {
-  getFields(): {{.Node}}Input;
+  getInput(): {{.Node}}Input;
 }
 
 {{/* TODO better way of doing this? */}}
@@ -69,11 +69,11 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   }
 
   getInput(): {{.Node}}Input {
-    return this.action.getFields();
+    return this.action.getInput();
   }
 
   private getEditedFields(): Map<string, any> {
-    const fields = this.action.getFields();
+    const fields = this.action.getInput();
 
     // required fields
     let m = {};
