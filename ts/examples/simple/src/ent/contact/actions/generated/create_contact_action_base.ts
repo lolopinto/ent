@@ -43,6 +43,14 @@ export class CreateContactActionBase implements Action<Contact> {
     return this.builder.build();
   }
 
+  async valid(): Promise<boolean> {
+    return this.builder.valid();
+  }
+
+  async validX(): Promise<void> {
+    await this.builder.validX();
+  }
+
   async save(): Promise<Contact | null> {
     return await saveBuilder(this.builder);
   }

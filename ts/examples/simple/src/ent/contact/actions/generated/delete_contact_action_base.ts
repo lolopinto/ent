@@ -38,6 +38,14 @@ export class DeleteContactActionBase implements Action<Contact> {
     return this.builder.build();
   }
 
+  async valid(): Promise<boolean> {
+    return this.builder.valid();
+  }
+
+  async validX(): Promise<void> {
+    await this.builder.validX();
+  }
+
   async save(): Promise<void> {
     await saveBuilder(this.builder);
   }
