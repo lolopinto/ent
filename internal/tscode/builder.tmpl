@@ -28,7 +28,7 @@ export interface {{.Node}}Input {
 }
 
 export interface {{.Node}}Action extends {{useImport "Action"}}<{{useImport .Node}}> {
-  getFields(): {{.Node}}Input;
+  getInput(): {{.Node}}Input;
 }
 
 {{/* TODO better way of doing this? */}}
@@ -50,7 +50,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     public readonly viewer: {{useImport "Viewer"}},
     public readonly operation: {{useImport "WriteOperation"}},
     private action: {{.Node}}Action,
-    public readonly existingEnt?: {{useImport "Ent"}} | undefined,
+    public readonly existingEnt?: {{$node}} | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
 
@@ -68,8 +68,12 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     });
   }
 
+  getInput(): {{.Node}}Input {
+    return this.action.getInput();
+  }
+
   private getEditedFields(): Map<string, any> {
-    const fields = this.action.getFields();
+    const fields = this.action.getInput();
 
     // required fields
     let m = {};
@@ -148,6 +152,14 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
 
   async build(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
     return this.orchestrator.build();
+  }
+
+  async valid(): Promise<boolean> {
+    return this.orchestrator.valid();
+  }
+
+  async validX(): Promise<void> {
+    return this.orchestrator.validX();
   }
 }
 

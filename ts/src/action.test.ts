@@ -10,90 +10,15 @@ import { User } from "./testutils/builder";
 import { Viewer, Ent, ID, DataOperation, Queryer } from "./ent";
 import { EntChangeset, Orchestrator } from "./orchestrator";
 import { LoggedOutViewer } from "./viewer";
-import { v4 as uuidv4 } from "uuid";
-import { Pool, PoolClient } from "pg";
-import { mocked } from "ts-jest/utils";
+import { Pool } from "pg";
+import { QueryRecorder } from "./testutils/db_mock";
 
-const eventEmitter = {
-  on: jest.fn(),
-  addListener: jest.fn(),
-  removeListener: jest.fn(),
-  once: jest.fn(),
-  off: jest.fn(),
-  removeAllListeners: jest.fn(),
-  setMaxListeners: jest.fn(),
-  getMaxListeners: jest.fn(),
-  listeners: jest.fn(),
-  rawListeners: jest.fn(),
-  emit: jest.fn(),
-  listenerCount: jest.fn(),
-  prependListener: jest.fn(),
-  prependOnceListener: jest.fn(),
-  eventNames: jest.fn(),
-};
-
-let queries: queryOptions[] = [];
-function recordQuery(query: string, values: any[]) {
-  //  console.log(query, values);
-
-  queries.push({
-    query: query,
-    values: values,
-  });
-}
-
-let ids: ID[] = [];
-function newID(): ID {
-  let id = uuidv4();
-  ids.push(id);
-  return id;
-}
-
-// clear after each query
-afterEach(() => {
-  queries = [];
-  ids = [];
-});
-
-// TODO
-process.env.DB_CONNECTION_STRING = "ss";
 jest.mock("pg");
+QueryRecorder.mockPool(Pool);
 
-const mockedPool = mocked(Pool, true);
-mockedPool.mockImplementation(
-  (): Pool => {
-    return {
-      totalCount: 1,
-      idleCount: 1,
-      waitingCount: 1,
-      connect: async (): Promise<PoolClient> => {
-        return {
-          connect: jest.fn(),
-          release: jest.fn(),
-          query: jest
-            .fn()
-            .mockImplementation((query: string, values: any[]) => {
-              recordQuery(query, values);
-            }),
-          copyFrom: jest.fn(),
-          copyTo: jest.fn(),
-          pauseDrain: jest.fn(),
-          resumeDrain: jest.fn(),
-          escapeIdentifier: jest.fn(),
-          escapeLiteral: jest.fn(),
-
-          // EventEmitter
-          ...eventEmitter,
-        };
-      },
-      end: jest.fn(),
-      query: jest.fn(),
-
-      // EVentEmitter
-      ...eventEmitter,
-    };
-  },
-);
+afterEach(() => {
+  QueryRecorder.clear();
+});
 
 class FakeBuilder implements Builder<User> {
   ent = User;
@@ -133,7 +58,7 @@ class dataOp implements DataOperation<User> {
     private operation: WriteOperation,
   ) {
     if (this.operation === WriteOperation.Insert) {
-      this.id = newID();
+      this.id = QueryRecorder.newID();
     }
   }
 
@@ -206,8 +131,7 @@ test("simple", async () => {
   );
 
   let ent = await saveBuilder(builder);
-  //  console.log(ent);
-  validateQueryOrder(
+  QueryRecorder.validateQueryOrder(
     [
       {
         query: "BEGIN",
@@ -229,7 +153,7 @@ test("new ent with edge", async () => {
     new Map([["foo", "bar"]]),
     WriteOperation.Insert,
   );
-  const id2 = newID();
+  const id2 = QueryRecorder.newID();
   builder.addEdge({
     id1: builder.placeholderID,
     id2: id2,
@@ -237,7 +161,7 @@ test("new ent with edge", async () => {
   });
 
   let ent = await saveBuilder(builder);
-  validateQueryOrder(
+  QueryRecorder.validateQueryOrder(
     [
       {
         query: "BEGIN",
@@ -259,20 +183,20 @@ test("new ent with edge", async () => {
 });
 
 test("existing ent with edge", async () => {
-  const user = new User(new LoggedOutViewer(), newID(), {});
+  const user = new User(new LoggedOutViewer(), QueryRecorder.newID(), {});
   const builder = new FakeBuilder(
     new Map([["foo", "bar"]]),
     WriteOperation.Edit,
     user,
   );
-  const id2 = newID();
+  const id2 = QueryRecorder.newID();
   builder.addEdge({
     id1: user.id,
     id2: id2,
   });
 
   let ent = await saveBuilder(builder);
-  validateQueryOrder(
+  QueryRecorder.validateQueryOrder(
     [
       {
         query: "BEGIN",
@@ -298,7 +222,7 @@ test("insert with incorrect resolver", async () => {
     new Map([["foo", "bar"]]),
     WriteOperation.Insert,
   );
-  const id2 = newID();
+  const id2 = QueryRecorder.newID();
   builder.addEdge({
     id1: "2",
     id2: id2,
@@ -312,7 +236,7 @@ test("insert with incorrect resolver", async () => {
   } catch (error) {
     expect(error.message).toBe("could not resolve id1 placeholder 2");
   }
-  validateQueryOrder(
+  QueryRecorder.validateQueryOrder(
     [
       {
         query: "BEGIN",
@@ -320,7 +244,7 @@ test("insert with incorrect resolver", async () => {
       {
         query: "insert foo, id",
         // first id created. can't use ent.id here since we don't get ent back...
-        values: ["bar", ids[0]],
+        values: ["bar", QueryRecorder.getCurrentIDs()[0]],
       },
       {
         query: "ROLLBACK",
@@ -329,34 +253,3 @@ test("insert with incorrect resolver", async () => {
     ent,
   );
 });
-
-interface queryOptions {
-  query: string;
-  values?: any[];
-}
-
-function validateQueryOrder(expected: queryOptions[], ent: User | null) {
-  expect(queries.length).toBe(expected.length);
-
-  for (let i = 0; i < expected.length; i++) {
-    expect(queries[i].query, `${i}th query`).toBe(expected[i].query);
-
-    if (expected[i].values === undefined) {
-      expect(queries[i].values, `${i}th query`).toBe(undefined);
-    } else {
-      let expectedVals = expected[i].values!;
-      let actualVals = queries[i].values!;
-      expect(actualVals.length, `${i}th query`).toBe(expectedVals.length);
-
-      for (let j = 0; j < expectedVals.length; j++) {
-        let expectedVal = expectedVals[j];
-        let actualVal = actualVals[j];
-
-        if (expectedVal === "{id}") {
-          expectedVal = ent?.id;
-        }
-        expect(actualVal, `${i}th query`).toBe(expectedVal);
-      }
-    }
-  }
-}

@@ -54,7 +54,9 @@ export interface Observer {
 }
 
 export interface Validator {
-  validate();
+  // can throw if it wants
+  validate<T extends Ent>(builder: Builder<T>): Promise<void>;
+  validate<T extends Ent>(builder: Builder<T>): void;
 }
 
 export interface Action<T extends Ent> {
@@ -66,6 +68,17 @@ export interface Action<T extends Ent> {
   triggers?: Trigger<T>[];
   observers?: Observer[];
   validators?: Validator[];
+
+  valid(): Promise<boolean>;
+  // throws if invalid
+  validX(): Promise<void>;
+
+  // if we have overloads we need to provide all which sucks
+  // so maybe don't make the ones below required
+  // save(): Promise<T | null>;
+  // save(): Promise<void>;
+  // saveX(): Promise<T>;
+  // saveX(): Promise<T>;
 }
 
 export async function saveBuilder<T extends Ent>(

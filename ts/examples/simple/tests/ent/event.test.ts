@@ -16,12 +16,16 @@ afterAll(async () => {
   await DB.getInstance().endPool();
 });
 
-async function create(startTime: Date): Promise<Event> {
-  let user = await CreateUserAction.create(loggedOutViewer, {
+async function createUser() {
+  return await CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
   }).saveX();
+}
+
+async function create(startTime: Date): Promise<Event> {
+  let user = await createUser();
 
   return await CreateEventAction.create(loggedOutViewer, {
     name: "fun event",
@@ -101,4 +105,144 @@ test("delete event", async () => {
 
   let loadEvent = await Event.load(loggedOutViewer, event.id);
   expect(loadEvent).toBe(null);
+});
+
+describe("validators", () => {
+  test("create just startTime", async () => {
+    let user = await createUser();
+
+    let action = CreateEventAction.create(loggedOutViewer, {
+      name: "fun event",
+      creatorID: user.id,
+      startTime: new Date(),
+      location: "location",
+    });
+
+    let valid = await action.valid();
+    expect(valid).toBe(true);
+  });
+
+  test("create startTime + valid endTime", async () => {
+    let user = await createUser();
+
+    let now = new Date();
+    let yesterday = new Date(now.getTime() - 86400);
+    let action = CreateEventAction.create(loggedOutViewer, {
+      name: "fun event",
+      creatorID: user.id,
+      startTime: yesterday,
+      endTime: now,
+      location: "location",
+    });
+
+    let valid = await action.valid();
+    expect(valid).toBe(true);
+  });
+
+  test("create startTime + invalid endTime", async () => {
+    let user = await createUser();
+
+    let now = new Date();
+    let yesterday = new Date(now.getTime() - 86400);
+    let action = CreateEventAction.create(loggedOutViewer, {
+      name: "fun event",
+      creatorID: user.id,
+      startTime: now,
+      endTime: yesterday,
+      location: "location",
+    });
+
+    let valid = await action.valid();
+    expect(valid).toBe(false);
+  });
+
+  test("edit time not changed", async () => {
+    let user = await createUser();
+
+    let now = new Date();
+    let event = await CreateEventAction.create(loggedOutViewer, {
+      name: "fun event",
+      creatorID: user.id,
+      startTime: now,
+      location: "location",
+    }).saveX();
+
+    let action = EditEventAction.create(loggedOutViewer, event, {
+      name: "fun event2",
+    });
+
+    let valid = await action.valid();
+    expect(valid).toBe(true);
+  });
+
+  test("edit time not changed", async () => {
+    let event = await create(new Date());
+
+    let action = EditEventAction.create(loggedOutViewer, event, {
+      name: "fun event2",
+    });
+
+    let valid = await action.valid();
+    expect(valid).toBe(true);
+  });
+
+  test("edit time not changed", async () => {
+    let event = await create(new Date());
+
+    let action = EditEventAction.create(loggedOutViewer, event, {
+      name: "fun event2",
+    });
+
+    let valid = await action.valid();
+    expect(valid).toBe(true);
+  });
+
+  test("edit end time changed to be before existing startTime", async () => {
+    let event = await create(new Date());
+
+    let yesterday = new Date(event.startTime.getTime() - 86400);
+
+    let action = EditEventAction.create(loggedOutViewer, event, {
+      endTime: yesterday,
+    });
+
+    let valid = await action.valid();
+    expect(valid).toBe(false);
+  });
+
+  test("edit start and end time both changed correctly", async () => {
+    let event = await create(new Date());
+
+    let yesterday = new Date(event.startTime.getTime() - 86400);
+    let yesterdayPlus = new Date(yesterday.getTime() + 3600);
+
+    let action = EditEventAction.create(loggedOutViewer, event, {
+      startTime: yesterday,
+      endTime: yesterdayPlus,
+    });
+
+    let valid = await action.valid();
+    expect(valid).toBe(true);
+  });
+
+  test("edit start changed incorrectly", async () => {
+    let event = await create(new Date());
+
+    let yesterday = new Date(event.startTime.getTime() - 86400);
+    let yesterdayPlus = new Date(yesterday.getTime() + 3600);
+
+    let action = EditEventAction.create(loggedOutViewer, event, {
+      startTime: yesterday,
+      endTime: yesterdayPlus,
+    });
+
+    event = await action.saveX();
+
+    // now changing startTime to be before endTime incorrect...
+    action = EditEventAction.create(loggedOutViewer, event, {
+      startTime: new Date(),
+    });
+    let valid = await action.valid();
+    expect(valid).toBe(false);
+  });
 });

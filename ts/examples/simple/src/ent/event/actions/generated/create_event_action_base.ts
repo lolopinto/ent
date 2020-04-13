@@ -41,6 +41,14 @@ export class CreateEventActionBase implements Action<Event> {
     return this.builder.build();
   }
 
+  async valid(): Promise<boolean> {
+    return this.builder.valid();
+  }
+
+  async validX(): Promise<void> {
+    await this.builder.validX();
+  }
+
   async save(): Promise<Event | null> {
     return await saveBuilder(this.builder);
   }
