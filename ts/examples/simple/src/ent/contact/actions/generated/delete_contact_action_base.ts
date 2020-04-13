@@ -28,7 +28,7 @@ export class DeleteContactActionBase implements Action<Contact> {
     );
   }
 
-  getFields(): ContactInput {
+  getInput(): ContactInput {
     return {
       requiredFields: [],
     };

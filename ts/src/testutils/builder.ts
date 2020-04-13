@@ -1,4 +1,4 @@
-import { Ent, ID, Viewer, EntConstructor } from "../ent";
+import { Ent, ID, Viewer } from "../ent";
 import { PrivacyPolicy, AlwaysAllowRule } from "../privacy";
 import { Orchestrator } from "../orchestrator";
 import { LoggedOutViewer } from "../viewer";
@@ -26,17 +26,16 @@ export class User implements Ent {
 export class SimpleBuilder implements Builder<User> {
   ent = User;
   placeholderID = "1";
-  viewer: Viewer;
   public orchestrator: Orchestrator<User>;
 
   constructor(
+    public viewer: Viewer,
     private schema: any,
     public fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
     public existingEnt: Ent | undefined = undefined,
     action?: Action<User> | undefined,
   ) {
-    this.viewer = new LoggedOutViewer();
     this.orchestrator = new Orchestrator({
       viewer: this.viewer,
       operation: operation,
@@ -57,24 +56,25 @@ export class SimpleBuilder implements Builder<User> {
 }
 
 export class SimpleAction implements Action<User> {
-  viewer: Viewer;
   builder: SimpleBuilder;
   validators: Validator[] = [];
+  privacyPolicy: PrivacyPolicy;
 
   constructor(
+    public viewer: Viewer,
     schema: any,
     fields: Map<string, any>,
     operation: WriteOperation = WriteOperation.Insert,
     existingEnt: Ent | undefined = undefined,
   ) {
     this.builder = new SimpleBuilder(
+      this.viewer,
       schema,
       fields,
       operation,
       existingEnt,
       this,
     );
-    this.viewer = this.builder.viewer;
   }
 
   changeset(): Promise<Changeset<User>> {

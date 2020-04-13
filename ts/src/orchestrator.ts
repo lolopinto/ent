@@ -9,12 +9,14 @@ import {
   EditNodeOperation,
   DeleteNodeOperation,
   loadEdgeDatas,
+  applyPrivacyPolicyForEntX,
 } from "./ent";
 import { getFields } from "./schema";
 import { Changeset, Executor } from "./action";
 import { WriteOperation, Builder, Action } from "./action";
 import { snakeCase } from "snake-case";
 import { LoggedOutViewer } from "./viewer";
+import { applyPrivacyPolicyX } from "./privacy";
 
 export interface OrchestratorOptions<T extends Ent> {
   viewer: Viewer;
@@ -136,12 +138,26 @@ export class Orchestrator<T extends Ent> {
 
   private async validate(): Promise<void> {
     let validators = this.options.action?.validators || [];
-    await Promise.all([
+
+    let privacyPolicy = this.options.action?.privacyPolicy;
+
+    let promises: Promise<any>[] = [];
+    if (privacyPolicy) {
+      promises.push(
+        applyPrivacyPolicyX(
+          this.options.viewer,
+          privacyPolicy,
+          this.options.builder.existingEnt,
+        ),
+      );
+    }
+    promises.push(
+      this.validateFields(),
       ...validators.map((validator) =>
         validator.validate(this.options.builder),
       ),
-      this.validateFields(),
-    ]);
+    );
+    await Promise.all(promises);
   }
 
   private async validateFields(): Promise<void> {
