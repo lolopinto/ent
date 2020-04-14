@@ -33,10 +33,7 @@ export class EditUserActionBase implements Action<User> {
   }
 
   getInput(): UserInput {
-    return {
-      ...this.input,
-      requiredFields: [],
-    };
+    return this.input;
   }
 
   async changeset(): Promise<Changeset<User>> {

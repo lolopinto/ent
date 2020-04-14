@@ -14,7 +14,6 @@ export interface EventInput {
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
-  requiredFields: string[];
 }
 
 export interface EventAction extends Action<Event> {
@@ -60,35 +59,26 @@ export class EventBuilder implements Builder<Event> {
     return this.input;
   }
 
-  // TODO... need to kill requiredFields anyways.
-  updateInput(input: Exclude<Partial<EventInput>, "requiredFields">) {
+  updateInput(input: EventInput) {
     // override input
     this.input = {
       ...this.input,
       ...input,
     };
-    console.log(this.input);
   }
 
   private getEditedFields(): Map<string, any> {
     const fields = this.input;
 
-    // required fields
-    let m = {};
     let result = new Map<string, any>();
-    for (const field of fields.requiredFields) {
-      m[field] = true;
-    }
 
-    const addField = function(key: string, value: any, setNull: boolean) {
+    const addField = function(key: string, value: any) {
       if (value !== undefined) {
         result.set(key, value);
-      } else if (setNull) {
-        result.set(key, null);
       }
     };
-    addField("name", fields.name, m["name"]);
-    addField("creatorID", fields.creatorID, m["creatorID"]);
+    addField("name", fields.name);
+    addField("creatorID", fields.creatorID);
     if (fields.creatorID) {
       this.orchestrator.addInboundEdge(
         fields.creatorID,
@@ -96,9 +86,9 @@ export class EventBuilder implements Builder<Event> {
         NodeType.User,
       );
     }
-    addField("start_time", fields.startTime, m["start_time"]);
-    addField("end_time", fields.endTime, m["end_time"]);
-    addField("location", fields.location, m["location"]);
+    addField("start_time", fields.startTime);
+    addField("end_time", fields.endTime);
+    addField("location", fields.location);
     return result;
   }
 

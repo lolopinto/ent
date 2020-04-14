@@ -24,7 +24,6 @@ export interface {{.Node}}Input {
       {{$field.TsFieldName}}?: {{$type}};
     {{end -}}
   {{end -}}
-  requiredFields: string[];
 }
 
 export interface {{.Node}}Action extends {{useImport "Action"}}<{{useImport .Node}}> {
@@ -74,37 +73,28 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     return this.input;
   }
 
-    // TODO... need to kill requiredFields anyways.
-  updateInput(input: Exclude<Partial<{{.Node}}Input>, "requiredFields">) {
+  updateInput(input: {{.Node}}Input) {
     // override input
     this.input = {
       ...this.input,
       ...input,
     };
-    console.log(this.input);
   }
 
   private getEditedFields(): Map<string, any> {
     const fields = this.input;
 
-    // required fields
-    let m = {};
     let result = new Map<string, any>();
-    for (const field of fields.requiredFields) {
-      m[field] = true;
-    }
 
-    const addField = function(key: string, value: any, setNull: boolean) {
+    const addField = function(key: string, value: any) {
       if (value !== undefined) {
         result.set(key, value);
-      } else if (setNull) {
-        result.set(key, null);
       }
     };
     {{range $field := .FieldInfo.Fields -}}
       {{ if $field.EditableField -}}
         {{$tsFieldName := $field.TsFieldName -}}
-        addField("{{$field.FieldName}}", fields.{{$tsFieldName}}, m["{{$field.FieldName}}"]);
+        addField("{{$field.FieldName}}", fields.{{$tsFieldName}});
         {{ $inverseEdge := $field.GetInverseEdge -}}
         {{ if $inverseEdge -}}
           if (fields.{{$tsFieldName}}) {

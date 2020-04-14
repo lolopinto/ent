@@ -15,7 +15,6 @@ export interface UserInput {
   emailAddress?: string;
   accountStatus?: string | null;
   emailVerified?: boolean;
-  requiredFields: string[];
 }
 
 export interface UserAction extends Action<User> {
@@ -61,38 +60,29 @@ export class UserBuilder implements Builder<User> {
     return this.input;
   }
 
-  // TODO... need to kill requiredFields anyways.
-  updateInput(input: Exclude<Partial<UserInput>, "requiredFields">) {
+  updateInput(input: UserInput) {
     // override input
     this.input = {
       ...this.input,
       ...input,
     };
-    console.log(this.input);
   }
 
   private getEditedFields(): Map<string, any> {
     const fields = this.input;
 
-    // required fields
-    let m = {};
     let result = new Map<string, any>();
-    for (const field of fields.requiredFields) {
-      m[field] = true;
-    }
 
-    const addField = function(key: string, value: any, setNull: boolean) {
+    const addField = function(key: string, value: any) {
       if (value !== undefined) {
         result.set(key, value);
-      } else if (setNull) {
-        result.set(key, null);
       }
     };
-    addField("FirstName", fields.firstName, m["FirstName"]);
-    addField("LastName", fields.lastName, m["LastName"]);
-    addField("EmailAddress", fields.emailAddress, m["EmailAddress"]);
-    addField("AccountStatus", fields.accountStatus, m["AccountStatus"]);
-    addField("emailVerified", fields.emailVerified, m["emailVerified"]);
+    addField("FirstName", fields.firstName);
+    addField("LastName", fields.lastName);
+    addField("EmailAddress", fields.emailAddress);
+    addField("AccountStatus", fields.accountStatus);
+    addField("emailVerified", fields.emailVerified);
     return result;
   }
 

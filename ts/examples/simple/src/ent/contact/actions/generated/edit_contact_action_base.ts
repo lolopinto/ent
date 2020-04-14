@@ -38,10 +38,7 @@ export class EditContactActionBase implements Action<Contact> {
   }
 
   getInput(): ContactInput {
-    return {
-      ...this.input,
-      requiredFields: [],
-    };
+    return this.input;
   }
 
   async changeset(): Promise<Changeset<Contact>> {

@@ -11,7 +11,6 @@ export interface ContactInput {
   firstName?: string;
   lastName?: string;
   userID?: ID;
-  requiredFields: string[];
 }
 
 export interface ContactAction extends Action<Contact> {
@@ -57,37 +56,28 @@ export class ContactBuilder implements Builder<Contact> {
     return this.input;
   }
 
-  // TODO... need to kill requiredFields anyways.
-  updateInput(input: Exclude<Partial<ContactInput>, "requiredFields">) {
+  updateInput(input: ContactInput) {
     // override input
     this.input = {
       ...this.input,
       ...input,
     };
-    console.log(this.input);
   }
 
   private getEditedFields(): Map<string, any> {
     const fields = this.input;
 
-    // required fields
-    let m = {};
     let result = new Map<string, any>();
-    for (const field of fields.requiredFields) {
-      m[field] = true;
-    }
 
-    const addField = function(key: string, value: any, setNull: boolean) {
+    const addField = function(key: string, value: any) {
       if (value !== undefined) {
         result.set(key, value);
-      } else if (setNull) {
-        result.set(key, null);
       }
     };
-    addField("emailAddress", fields.emailAddress, m["emailAddress"]);
-    addField("firstName", fields.firstName, m["firstName"]);
-    addField("lastName", fields.lastName, m["lastName"]);
-    addField("userID", fields.userID, m["userID"]);
+    addField("emailAddress", fields.emailAddress);
+    addField("firstName", fields.firstName);
+    addField("lastName", fields.lastName);
+    addField("userID", fields.userID);
     return result;
   }
 

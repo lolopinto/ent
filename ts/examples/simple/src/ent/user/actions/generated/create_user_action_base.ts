@@ -29,10 +29,7 @@ export class CreateUserActionBase implements Action<User> {
   }
 
   getInput(): UserInput {
-    return {
-      ...this.input,
-      requiredFields: ["FirstName", "LastName", "EmailAddress"],
-    };
+    return this.input;
   }
 
   async changeset(): Promise<Changeset<User>> {

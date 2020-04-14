@@ -31,10 +31,7 @@ export class CreateEventActionBase implements Action<Event> {
   }
 
   getInput(): EventInput {
-    return {
-      ...this.input,
-      requiredFields: ["name", "creatorID", "start_time", "location"],
-    };
+    return this.input;
   }
 
   async changeset(): Promise<Changeset<Event>> {

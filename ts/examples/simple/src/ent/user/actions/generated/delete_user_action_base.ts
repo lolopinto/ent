@@ -26,9 +26,7 @@ export class DeleteUserActionBase implements Action<User> {
   }
 
   getInput(): UserInput {
-    return {
-      requiredFields: [],
-    };
+    return {};
   }
 
   async changeset(): Promise<Changeset<User>> {

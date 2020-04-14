@@ -26,9 +26,7 @@ export class DeleteEventActionBase implements Action<Event> {
   }
 
   getInput(): EventInput {
-    return {
-      requiredFields: [],
-    };
+    return {};
   }
 
   async changeset(): Promise<Changeset<Event>> {

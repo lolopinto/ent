@@ -33,10 +33,7 @@ export class CreateContactActionBase implements Action<Contact> {
   }
 
   getInput(): ContactInput {
-    return {
-      ...this.input,
-      requiredFields: ["emailAddress", "firstName", "lastName", "userID"],
-    };
+    return this.input;
   }
 
   async changeset(): Promise<Changeset<Contact>> {

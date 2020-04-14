@@ -36,10 +36,7 @@ export class EditEventActionBase implements Action<Event> {
   }
 
   getInput(): EventInput {
-    return {
-      ...this.input,
-      requiredFields: [],
-    };
+    return this.input;
   }
 
   async changeset(): Promise<Changeset<Event>> {

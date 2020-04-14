@@ -29,9 +29,7 @@ export class DeleteContactActionBase implements Action<Contact> {
   }
 
   getInput(): ContactInput {
-    return {
-      requiredFields: [],
-    };
+    return {};
   }
 
   async changeset(): Promise<Changeset<Contact>> {
