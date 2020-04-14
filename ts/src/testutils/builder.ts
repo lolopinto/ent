@@ -9,6 +9,8 @@ import {
   WriteOperation,
   Validator,
   saveBuilderXNoEnt,
+  saveBuilderX,
+  Trigger,
 } from "../action";
 
 export class User implements Ent {
@@ -18,7 +20,7 @@ export class User implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AlwaysAllowRule],
   };
-  constructor(public viewer: Viewer, id: ID, data: {}) {
+  constructor(public viewer: Viewer, id: ID, public data: {}) {
     this.id = id;
   }
 }
@@ -58,6 +60,7 @@ export class SimpleBuilder implements Builder<User> {
 export class SimpleAction implements Action<User> {
   builder: SimpleBuilder;
   validators: Validator[] = [];
+  triggers: Trigger<User>[] = [];
   privacyPolicy: PrivacyPolicy;
 
   constructor(
@@ -89,7 +92,11 @@ export class SimpleAction implements Action<User> {
     return this.builder.orchestrator.validX();
   }
 
-  async saveX(): Promise<void> {
-    await saveBuilderXNoEnt(this.builder);
+  async saveX(): Promise<User | void> {
+    if (this.builder.operation === WriteOperation.Delete) {
+      await saveBuilderXNoEnt(this.builder);
+    } else {
+      return await saveBuilderX(this.builder);
+    }
   }
 }

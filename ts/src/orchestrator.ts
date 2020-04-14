@@ -137,9 +137,8 @@ export class Orchestrator<T extends Ent> {
   }
 
   private async validate(): Promise<void> {
-    let validators = this.options.action?.validators || [];
-
     let privacyPolicy = this.options.action?.privacyPolicy;
+    const builder = this.options.builder;
 
     let promises: Promise<any>[] = [];
     if (privacyPolicy) {
@@ -147,10 +146,23 @@ export class Orchestrator<T extends Ent> {
         applyPrivacyPolicyX(
           this.options.viewer,
           privacyPolicy,
-          this.options.builder.existingEnt,
+          builder.existingEnt,
         ),
       );
     }
+
+    let validators = this.options.action?.validators || [];
+
+    let triggers = this.options.action?.triggers;
+    if (triggers) {
+      triggers.forEach((trigger) => {
+        let c = trigger.changeset(builder);
+        if (c) {
+          console.log("todo handle changesets");
+        }
+      });
+    }
+
     promises.push(
       this.validateFields(),
       ...validators.map((validator) =>

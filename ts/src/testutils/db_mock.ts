@@ -38,9 +38,29 @@ export class QueryRecorder {
       values: values,
     });
     // mock all possible (known) results here...
+    let ret = {};
+    let rowCount = 0;
+
+    // we parsing sql now??
+    // slowing building sqlshim?
+    // make it so that we return the values entered back when mocking the db
+    if (/RETURNING \*$/.test(query)) {
+      let execArray = /INSERT INTO \w+ \((.+)\) VALUES \((.+)\)/.exec(query);
+      if (execArray) {
+        let keys = execArray[1].split(", ");
+        if (keys.length === values.length) {
+          for (let i = 0; i < keys.length; i++) {
+            let key = keys[i];
+            let value = values[i];
+            ret[key] = value;
+          }
+          rowCount++;
+        }
+      }
+    }
     return {
-      rows: [{}],
-      rowCount: 0,
+      rows: [ret],
+      rowCount: rowCount,
       oid: 0,
       fields: [],
       command: "",
@@ -87,7 +107,7 @@ export class QueryRecorder {
           if (expectedVal === "{id}") {
             expectedVal = ent?.id;
           }
-          expect(actualVal, `${i}th query`).toBe(expectedVal);
+          expect(actualVal, `${i}th query`).toStrictEqual(expectedVal);
         }
       }
     }

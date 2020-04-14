@@ -45,8 +45,11 @@ export interface Changeset<T extends Ent> {
   dependencies?: Map<ID, Builder<T>>;
 }
 
+// TODO. this makes no sense...
+// why is the type required in the interface here but not for Validator?
 export interface Trigger<T extends Ent> {
-  changeset(): Changeset<T> | null; // TODO type
+  //  changeset(builder: Builder<T>): Promise<Changeset<T> | void>;
+  changeset(builder: Builder<T>): Changeset<T> | void;
 }
 
 export interface Observer {

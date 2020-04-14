@@ -1,6 +1,8 @@
-import { Builder, WriteOperation } from "./action";
+import { advanceTo } from "jest-date-mock";
+import { Builder, WriteOperation, Trigger, Validator } from "./action";
 import {
   Ent,
+  Viewer,
   DataOperation,
   EditNodeOperation,
   DeleteNodeOperation,
@@ -52,6 +54,15 @@ class UserSchema extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
+  ];
+}
+
+class UserSchemaWithStatus extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    // let's assume this was hidden from the generated action and has to be set by the builder...
+    StringType({ name: "account_status" }),
   ];
 }
 
@@ -385,7 +396,7 @@ describe("validators", () => {
     ];
   }
 
-  const validators = [
+  const validators: Validator[] = [
     {
       validate: async (builder: SimpleBuilder): Promise<void> => {
         let startTime: Date = builder.fields.get("startTime");
@@ -448,7 +459,7 @@ describe("validators", () => {
 });
 
 describe("privacyPolicy", () => {
-  test("create simple policy", async () => {
+  test("valid simple policy", async () => {
     let action = new SimpleAction(
       new LoggedOutViewer(),
       UserSchema,
@@ -463,9 +474,11 @@ describe("privacyPolicy", () => {
     };
     let valid = await action.valid();
     expect(valid).toBe(true);
+  });
 
+  test("invalid simple policy", async () => {
     const viewer = new IDViewer("1");
-    action = new SimpleAction(
+    const action = new SimpleAction(
       viewer,
       UserSchema,
       new Map([
@@ -477,8 +490,128 @@ describe("privacyPolicy", () => {
     action.privacyPolicy = {
       rules: [DenyIfLoggedInRule, AlwaysAllowRule],
     };
-    valid = await action.valid();
+    let valid = await action.valid();
     expect(valid).toBe(false);
+  });
+});
+
+describe("trigger", () => {
+  let now = new Date();
+
+  const triggers: Trigger<User>[] = [
+    {
+      changeset: (builder: SimpleBuilder): Changeset<User> | void => {
+        builder.fields.set("account_status", "VALID");
+      },
+    },
+  ];
+
+  test("update builder", async () => {
+    advanceTo(now);
+    const viewer = new IDViewer("1");
+    const action = new SimpleAction(
+      viewer,
+      UserSchemaWithStatus,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+
+    action.triggers = triggers;
+    const user = await action.saveX();
+    if (!user) {
+      fail("couldn't save user");
+    }
+
+    expect(user.data).toStrictEqual({
+      id: user.id,
+      created_at: now,
+      updated_at: now,
+      first_name: "Jon",
+      last_name: "Snow",
+      account_status: "VALID",
+    });
+  });
+});
+
+describe("combo", () => {
+  const createAction = (
+    viewer: Viewer,
+    fields: Map<string, any>,
+  ): SimpleAction => {
+    const action = new SimpleAction(
+      viewer,
+      UserSchemaWithStatus,
+      fields,
+      WriteOperation.Insert,
+    );
+    action.triggers = [
+      {
+        changeset: (builder: SimpleBuilder): Changeset<User> | void => {
+          builder.fields.set("account_status", "VALID");
+        },
+      },
+    ];
+    action.privacyPolicy = {
+      rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+    };
+    action.validators = [
+      {
+        validate: async (builder: SimpleBuilder): Promise<void> => {
+          let fields = builder.fields;
+          if (fields.get("LastName") !== "Snow") {
+            throw new Error("only Jon Snow's name is valid");
+          }
+        },
+      },
+    ];
+    return action;
+  };
+
+  test("success", async () => {
+    let now = new Date();
+    let action = createAction(
+      new LoggedOutViewer(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    advanceTo(now);
+
+    const user = await action.saveX();
+    if (!user) {
+      fail("couldn't save user");
+    }
+
+    expect(user.data).toStrictEqual({
+      id: user.id,
+      created_at: now,
+      updated_at: now,
+      first_name: "Jon",
+      last_name: "Snow",
+      account_status: "VALID",
+    });
+  });
+
+  test("privacy", async () => {
+    let now = new Date();
+    let action = createAction(
+      new IDViewer("1"),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+
+    try {
+      await action.saveX();
+      fail("expected error");
+    } catch (err) {
+      expect(err.message).toMatch(/is not visible for privacy reasons$/);
+    }
   });
 });
 
