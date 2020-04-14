@@ -1,7 +1,8 @@
 import { EventBuilder } from "./event_builder";
 import { Validator } from "ent/action";
+import Event from "src/ent/event";
 
-export class EventTimeValidator implements Validator {
+export class EventTimeValidator implements Validator<Event> {
   async validate(builder: EventBuilder): Promise<void> {
     const input = builder.getInput();
 

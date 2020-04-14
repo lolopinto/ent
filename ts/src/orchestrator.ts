@@ -11,8 +11,8 @@ import {
   loadEdgeDatas,
   applyPrivacyPolicyForEntX,
 } from "./ent";
-import { getFields } from "./schema";
-import { Changeset, Executor } from "./action";
+import { getFields, SchemaInputType } from "./schema";
+import { Changeset, Executor, Validator } from "./action";
 import { WriteOperation, Builder, Action } from "./action";
 import { snakeCase } from "snake-case";
 import { LoggedOutViewer } from "./viewer";
@@ -28,7 +28,7 @@ export interface OrchestratorOptions<T extends Ent> {
 
   builder: Builder<T>;
   action?: Action<T>;
-  schema: any; // TODO
+  schema: SchemaInputType;
   editedFields(): Map<string, any>;
   // pass schema and buildFieldsFN
   // pass schema here...
@@ -164,12 +164,21 @@ export class Orchestrator<T extends Ent> {
       });
     }
 
-    promises.push(
-      this.validateFields(),
-      ...validators.map((validator) =>
-        validator.validate(this.options.builder),
-      ),
-    );
+    promises.push(this.validateFields(), this.validators(validators, builder));
+    await Promise.all(promises);
+  }
+
+  private async validators(
+    validators: Validator<T>[],
+    builder: Builder<T>,
+  ): Promise<void> {
+    let promises: Promise<void>[] = [];
+    validators.forEach((validator) => {
+      let res = validator.validate(builder);
+      if (res) {
+        promises.push(res);
+      }
+    });
     await Promise.all(promises);
   }
 

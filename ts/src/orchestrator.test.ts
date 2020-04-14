@@ -15,7 +15,7 @@ import { Changeset } from "./action";
 import { StringType, TimeType } from "./field";
 import { BaseEntSchema, Field } from "./schema";
 import { IDViewer } from "../src/testutils/id_viewer";
-import { User, SimpleBuilder, SimpleAction } from "./testutils/builder";
+import { User, Event, SimpleBuilder, SimpleAction } from "./testutils/builder";
 import { Pool } from "pg";
 import { QueryRecorder } from "./testutils/db_mock";
 import { AlwaysAllowRule, DenyIfLoggedInRule } from "./privacy";
@@ -55,6 +55,7 @@ class UserSchema extends BaseEntSchema {
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
   ];
+  ent = User;
 }
 
 class UserSchemaWithStatus extends BaseEntSchema {
@@ -64,6 +65,7 @@ class UserSchemaWithStatus extends BaseEntSchema {
     // let's assume this was hidden from the generated action and has to be set by the builder...
     StringType({ name: "account_status" }),
   ];
+  ent = User;
 }
 
 class SchemaWithProcessors extends BaseEntSchema {
@@ -71,12 +73,13 @@ class SchemaWithProcessors extends BaseEntSchema {
     StringType({ name: "zip" }).match(/^\d{5}(-\d{4})?$/),
     StringType({ name: "username" }).toLowerCase(),
   ];
+  ent = User;
 }
 
 test("schema on create", async () => {
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
-    UserSchema,
+    new UserSchema(),
     new Map([
       ["FirstName", "Jon"],
       ["LastName", "Snow"],
@@ -92,7 +95,7 @@ test("schema on create", async () => {
 test("missing required field", async () => {
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
-    UserSchema,
+    new UserSchema(),
     new Map([
       ["FirstName", "Jon"],
       // non-nullable field set to null
@@ -114,7 +117,7 @@ test("missing required field", async () => {
 test("required field not set", async () => {
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
-    UserSchema,
+    new UserSchema(),
     new Map([["FirstName", "Jon"]]),
   );
 
@@ -130,7 +133,7 @@ test("schema on edit", async () => {
   const user = new User(new LoggedOutViewer(), "1", { id: "1" });
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
-    UserSchema,
+    new UserSchema(),
     // field that's not changed isn't set...
     // simulating what the generated builder will do
     new Map([["LastName", "Targaryean"]]),
@@ -148,7 +151,7 @@ test("schema on delete", async () => {
   const user = new User(new LoggedOutViewer(), "1", { id: "1" });
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
-    UserSchema,
+    new UserSchema(),
     new Map(),
     WriteOperation.Delete,
     user,
@@ -166,11 +169,12 @@ test("schema with null fields", async () => {
       TimeType({ name: "startTime" }),
       TimeType({ name: "endTime", nullable: true }),
     ];
+    ent = User;
   }
 
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
-    SchemaWithNullFields,
+    new SchemaWithNullFields(),
     new Map([["startTime", new Date()]]),
   );
 
@@ -181,7 +185,7 @@ test("schema with null fields", async () => {
 
   const builder2 = new SimpleBuilder(
     new LoggedOutViewer(),
-    SchemaWithNullFields,
+    new SchemaWithNullFields(),
     new Map([
       ["startTime", new Date()],
       ["endTime", null],
@@ -199,11 +203,12 @@ test("schema_with_overriden_storage_key", async () => {
     fields: Field[] = [
       StringType({ name: "emailAddress", storageKey: "email" }),
     ];
+    ent = User;
   }
 
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
-    SchemaWithOverridenDBKey,
+    new SchemaWithOverridenDBKey(),
     new Map([["emailAddress", "test@email.com"]]),
   );
 
@@ -216,7 +221,7 @@ describe("schema_with_processors", () => {
   test("simple case", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      SchemaWithProcessors,
+      new SchemaWithProcessors(),
       new Map([
         ["username", "lolopinto"],
         ["zip", "94114"],
@@ -232,7 +237,7 @@ describe("schema_with_processors", () => {
   test("username lowered", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      SchemaWithProcessors,
+      new SchemaWithProcessors(),
       new Map([
         ["username", "LOLOPINTO"],
         ["zip", "94114"],
@@ -248,7 +253,7 @@ describe("schema_with_processors", () => {
   test("invalid zip", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      SchemaWithProcessors,
+      new SchemaWithProcessors(),
       new Map([
         ["username", "LOLOPINTO"],
         ["zip", "941"],
@@ -269,7 +274,7 @@ test("inbound edge", async () => {
   const user = new User(viewer, "1", { id: "1" });
   const builder = new SimpleBuilder(
     viewer,
-    UserSchema,
+    new UserSchema(),
     new Map(),
     WriteOperation.Edit,
     user, // TODO enforce existing ent if not create
@@ -291,7 +296,7 @@ test("outbound edge", async () => {
   const user = new User(viewer, "1", { id: "1" });
   const builder = new SimpleBuilder(
     viewer,
-    UserSchema,
+    new UserSchema(),
     new Map(),
     WriteOperation.Edit,
     user, // TODO enforce existing ent if not create
@@ -314,7 +319,7 @@ describe("remove inbound edge", () => {
     const user = new User(viewer, "1", { id: "1" });
     const builder = new SimpleBuilder(
       viewer,
-      UserSchema,
+      new UserSchema(),
       new Map(),
       WriteOperation.Edit,
       user, // TODO enforce existing ent if not create
@@ -334,7 +339,7 @@ describe("remove inbound edge", () => {
   test("no ent", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      UserSchema,
+      new UserSchema(),
       new Map(),
       WriteOperation.Edit,
     );
@@ -354,7 +359,7 @@ describe("remove outbound edge", () => {
     const user = new User(viewer, "1", { id: "1" });
     const builder = new SimpleBuilder(
       viewer,
-      UserSchema,
+      new UserSchema(),
       new Map(),
       WriteOperation.Edit,
       user, // TODO enforce existing ent if not create
@@ -374,7 +379,7 @@ describe("remove outbound edge", () => {
   test("no ent", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),
-      UserSchema,
+      new UserSchema(),
       new Map(),
       WriteOperation.Edit,
     );
@@ -394,11 +399,12 @@ describe("validators", () => {
       TimeType({ name: "startTime" }),
       TimeType({ name: "endTime" }),
     ];
+    ent = Event;
   }
 
-  const validators: Validator[] = [
+  const validators: Validator<Event>[] = [
     {
-      validate: async (builder: SimpleBuilder): Promise<void> => {
+      validate: async (builder: SimpleBuilder<Event>): Promise<void> => {
         let startTime: Date = builder.fields.get("startTime");
         let endTime: Date = builder.fields.get("endTime");
 
@@ -419,7 +425,7 @@ describe("validators", () => {
 
     let action = new SimpleAction(
       new LoggedOutViewer(),
-      EventSchema,
+      new EventSchema(),
       new Map([
         ["startTime", now],
         ["endTime", yesterday],
@@ -442,7 +448,7 @@ describe("validators", () => {
 
     let action = new SimpleAction(
       new LoggedOutViewer(),
-      EventSchema,
+      new EventSchema(),
       new Map([
         ["startTime", yesterday],
         ["endTime", now],
@@ -462,7 +468,7 @@ describe("privacyPolicy", () => {
   test("valid simple policy", async () => {
     let action = new SimpleAction(
       new LoggedOutViewer(),
-      UserSchema,
+      new UserSchema(),
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -480,7 +486,7 @@ describe("privacyPolicy", () => {
     const viewer = new IDViewer("1");
     const action = new SimpleAction(
       viewer,
-      UserSchema,
+      new UserSchema(),
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -500,7 +506,7 @@ describe("trigger", () => {
 
   const triggers: Trigger<User>[] = [
     {
-      changeset: (builder: SimpleBuilder): Changeset<User> | void => {
+      changeset: (builder: SimpleBuilder<User>): Changeset<User> | void => {
         builder.fields.set("account_status", "VALID");
       },
     },
@@ -511,7 +517,7 @@ describe("trigger", () => {
     const viewer = new IDViewer("1");
     const action = new SimpleAction(
       viewer,
-      UserSchemaWithStatus,
+      new UserSchemaWithStatus(),
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
@@ -540,16 +546,16 @@ describe("combo", () => {
   const createAction = (
     viewer: Viewer,
     fields: Map<string, any>,
-  ): SimpleAction => {
+  ): SimpleAction<User> => {
     const action = new SimpleAction(
       viewer,
-      UserSchemaWithStatus,
+      new UserSchemaWithStatus(),
       fields,
       WriteOperation.Insert,
     );
     action.triggers = [
       {
-        changeset: (builder: SimpleBuilder): Changeset<User> | void => {
+        changeset: (builder: SimpleBuilder<User>): Changeset<User> | void => {
           builder.fields.set("account_status", "VALID");
         },
       },
@@ -559,7 +565,7 @@ describe("combo", () => {
     };
     action.validators = [
       {
-        validate: async (builder: SimpleBuilder): Promise<void> => {
+        validate: async (builder: SimpleBuilder<User>): Promise<void> => {
           let fields = builder.fields;
           if (fields.get("LastName") !== "Snow") {
             throw new Error("only Jon Snow's name is valid");

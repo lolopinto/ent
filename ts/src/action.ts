@@ -43,6 +43,13 @@ export interface Changeset<T extends Ent> {
   ent: EntConstructor<T>;
   changesets?: Changeset<T>[];
   dependencies?: Map<ID, Builder<T>>;
+  // also need the builder to pass to things...
+  // we don't need the triggers here because triggers are run to create the changeset
+  // do we need the validators tho?
+  // if we run the field based validators, we can run the normal validators?
+  // we don't need the validators or triggers because they're used to build the changeset
+  //  builder: Builder<T>;
+  //  observers?// still need builder to pass to observer...
 }
 
 // TODO. this makes no sense...
@@ -56,10 +63,9 @@ export interface Observer {
   observe();
 }
 
-export interface Validator {
+export interface Validator<T extends Ent> {
   // can throw if it wants
-  validate<T extends Ent>(builder: Builder<T>): Promise<void>;
-  validate<T extends Ent>(builder: Builder<T>): void;
+  validate(builder: Builder<T>): Promise<void> | void;
 }
 
 export interface Action<T extends Ent> {
@@ -70,7 +76,7 @@ export interface Action<T extends Ent> {
   privacyPolicy?: PrivacyPolicy; // todo make required?
   triggers?: Trigger<T>[];
   observers?: Observer[];
-  validators?: Validator[];
+  validators?: Validator<T>[];
 
   valid(): Promise<boolean>;
   // throws if invalid

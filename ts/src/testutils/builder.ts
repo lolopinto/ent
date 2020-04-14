@@ -1,7 +1,6 @@
-import { Ent, ID, Viewer } from "../ent";
+import { Ent, ID, Viewer, EntConstructor } from "../ent";
 import { PrivacyPolicy, AlwaysAllowRule } from "../privacy";
 import { Orchestrator } from "../orchestrator";
-import { LoggedOutViewer } from "../viewer";
 import {
   Action,
   Builder,
@@ -12,6 +11,7 @@ import {
   saveBuilderX,
   Trigger,
 } from "../action";
+import Schema from "../schema";
 
 export class User implements Ent {
   id: ID;
@@ -25,24 +25,41 @@ export class User implements Ent {
   }
 }
 
-export class SimpleBuilder implements Builder<User> {
-  ent = User;
+export class Event implements Ent {
+  id: ID;
+  accountID: string;
+  nodeType = "Event";
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysAllowRule],
+  };
+  constructor(public viewer: Viewer, id: ID, public data: {}) {
+    this.id = id;
+  }
+}
+
+export interface BuilderSchema<T extends Ent> extends Schema {
+  ent: EntConstructor<T>;
+}
+
+export class SimpleBuilder<T extends Ent> implements Builder<T> {
+  ent: EntConstructor<T>;
   placeholderID = "1";
-  public orchestrator: Orchestrator<User>;
+  public orchestrator: Orchestrator<T>;
 
   constructor(
     public viewer: Viewer,
-    private schema: any,
+    private schema: BuilderSchema<T>,
     public fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
     public existingEnt: Ent | undefined = undefined,
-    action?: Action<User> | undefined,
+    action?: Action<T> | undefined,
   ) {
+    this.ent = schema.ent;
     this.orchestrator = new Orchestrator({
       viewer: this.viewer,
       operation: operation,
       tableName: "foo",
-      ent: User,
+      ent: this.ent,
       builder: this,
       action: action,
       schema: this.schema,
@@ -52,23 +69,23 @@ export class SimpleBuilder implements Builder<User> {
     });
   }
 
-  build(): Promise<Changeset<User>> {
+  build(): Promise<Changeset<T>> {
     return this.orchestrator.build();
   }
 }
 
-export class SimpleAction implements Action<User> {
-  builder: SimpleBuilder;
-  validators: Validator[] = [];
-  triggers: Trigger<User>[] = [];
+export class SimpleAction<T extends Ent> implements Action<T> {
+  builder: SimpleBuilder<T>;
+  validators: Validator<T>[] = [];
+  triggers: Trigger<T>[] = [];
   privacyPolicy: PrivacyPolicy;
 
   constructor(
     public viewer: Viewer,
-    schema: any,
+    schema: BuilderSchema<T>,
     fields: Map<string, any>,
     operation: WriteOperation = WriteOperation.Insert,
-    existingEnt: Ent | undefined = undefined,
+    existingEnt: T | undefined = undefined,
   ) {
     this.builder = new SimpleBuilder(
       this.viewer,
@@ -80,7 +97,7 @@ export class SimpleAction implements Action<User> {
     );
   }
 
-  changeset(): Promise<Changeset<User>> {
+  changeset(): Promise<Changeset<T>> {
     return this.builder.build();
   }
 
@@ -92,7 +109,7 @@ export class SimpleAction implements Action<User> {
     return this.builder.orchestrator.validX();
   }
 
-  async saveX(): Promise<User | void> {
+  async saveX(): Promise<T | void> {
     if (this.builder.operation === WriteOperation.Delete) {
       await saveBuilderXNoEnt(this.builder);
     } else {
