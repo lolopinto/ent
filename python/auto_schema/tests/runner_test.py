@@ -159,6 +159,10 @@ def validate_column_server_default(schema_column, db_column):
   schema_clause_text = runner.Runner.get_clause_text(schema_column.server_default)
   db_clause_text = runner.Runner.get_clause_text(db_column.server_default)
 
+  if isinstance(schema_column.type, sa.Boolean):
+    schema_clause_text = runner.Runner.convert_postgres_boolean(schema_clause_text) 
+    db_clause_text = runner.Runner.convert_postgres_boolean(db_clause_text) 
+
   if schema_clause_text is None and db_column.autoincrement == True:
     assert db_clause_text.startswith("nextval")
   else:
@@ -613,7 +617,8 @@ class TestPostgresRunner(BaseTestRunner):
       (conftest.metadata_with_table_text_changed, "modify column email_address type from VARCHAR(255) to TEXT" ),
       (conftest.metadata_with_timestamp_changed, "modify column created_at type from DATE to TIMESTAMP"),
       (conftest.metadata_with_nullable_changed, "modify nullable value of column last_name from False to True"),
-      (conftest.metadata_with_server_default_changed, "modify server_default value of column meaning_of_life from 42 to 35"),
+      (conftest.metadata_with_server_default_changed_int, "modify server_default value of column meaning_of_life from 42 to 35"),
+      (conftest.metadata_with_server_default_changed_bool, "modify server_default value of column email_verified from false to TRUE"),
       (conftest.metadata_with_created_at_default_changed, "modify server_default value of column created_at from None to now()"),
     ])
   def test_column_attr_change(self, new_test_runner, metadata_with_table, new_metadata_func, expected_message):

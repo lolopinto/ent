@@ -80,7 +80,8 @@ def metadata_with_table():
     sa.Column('created_at', sa.Date(), nullable=False),
 
     # test default sqlite
-    sa.Column('meaning_of_life', sa.Integer(), nullable=False, server_default='42'), 
+    sa.Column('meaning_of_life', sa.Integer(), nullable=False, server_default='42'),
+    sa.Column('email_verified', sa.Boolean(), nullable=False, server_default='false'),
 
     sa.Column('phone_number', sa.Text(), nullable=False),
     sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
@@ -130,8 +131,12 @@ def metadata_with_nullable_changed(metadata):
 
 
 # takes the account table and converts the default value of meaning_of_life column from 42 to 35
-def metadata_with_server_default_changed(metadata):
+def metadata_with_server_default_changed_int(metadata):
   return _metadata_with_server_default_changed(metadata, 'meaning_of_life', 'accounts', '35')
+
+
+def metadata_with_server_default_changed_bool(metadata):
+  return _metadata_with_server_default_changed(metadata, 'email_verified', 'accounts', 'TRUE')
 
 
 def metadata_with_created_at_default_changed(metadata):
