@@ -14,7 +14,6 @@ import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
 export interface UserEditInput {
   firstName?: string;
   lastName?: string;
-  emailAddress?: string;
 }
 
 export class EditUserActionBase implements Action<User> {

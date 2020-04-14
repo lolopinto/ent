@@ -45,6 +45,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   private orchestrator: {{useImport "Orchestrator"}}<{{$node}}>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
+  private input: {{.Node}}Input;
 
   public constructor(
     public readonly viewer: {{useImport "Viewer"}},
@@ -53,6 +54,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     public readonly existingEnt?: {{$node}} | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.input = action.getInput();
 
     this.orchestrator = new {{useImport "Orchestrator"}}({
       viewer: viewer,
@@ -69,11 +71,21 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   }
 
   getInput(): {{.Node}}Input {
-    return this.action.getInput();
+    return this.input;
+  }
+
+    // TODO... need to kill requiredFields anyways.
+  updateInput(input: Exclude<Partial<{{.Node}}Input>, "requiredFields">) {
+    // override input
+    this.input = {
+      ...this.input,
+      ...input,
+    };
+    console.log(this.input);
   }
 
   private getEditedFields(): Map<string, any> {
-    const fields = this.action.getInput();
+    const fields = this.input;
 
     // required fields
     let m = {};

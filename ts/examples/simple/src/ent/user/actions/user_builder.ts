@@ -13,6 +13,8 @@ export interface UserInput {
   firstName?: string;
   lastName?: string;
   emailAddress?: string;
+  accountStatus?: string | null;
+  emailVerified?: boolean;
   requiredFields: string[];
 }
 
@@ -30,6 +32,7 @@ export class UserBuilder implements Builder<User> {
   private orchestrator: Orchestrator<User>;
   readonly placeholderID: ID;
   readonly ent = User;
+  private input: UserInput;
 
   public constructor(
     public readonly viewer: Viewer,
@@ -38,6 +41,7 @@ export class UserBuilder implements Builder<User> {
     public readonly existingEnt?: User | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({
       viewer: viewer,
@@ -54,11 +58,21 @@ export class UserBuilder implements Builder<User> {
   }
 
   getInput(): UserInput {
-    return this.action.getInput();
+    return this.input;
+  }
+
+  // TODO... need to kill requiredFields anyways.
+  updateInput(input: Exclude<Partial<UserInput>, "requiredFields">) {
+    // override input
+    this.input = {
+      ...this.input,
+      ...input,
+    };
+    console.log(this.input);
   }
 
   private getEditedFields(): Map<string, any> {
-    const fields = this.action.getInput();
+    const fields = this.input;
 
     // required fields
     let m = {};
@@ -77,6 +91,8 @@ export class UserBuilder implements Builder<User> {
     addField("FirstName", fields.firstName, m["FirstName"]);
     addField("LastName", fields.lastName, m["LastName"]);
     addField("EmailAddress", fields.emailAddress, m["EmailAddress"]);
+    addField("AccountStatus", fields.accountStatus, m["AccountStatus"]);
+    addField("emailVerified", fields.emailVerified, m["emailVerified"]);
     return result;
   }
 

@@ -158,7 +158,8 @@ export class Orchestrator<T extends Ent> {
       triggers.forEach((trigger) => {
         let c = trigger.changeset(builder);
         if (c) {
-          console.log("todo handle changesets");
+          //console.log("todo handle changesets");
+          // hmm right now these are undefined promises which isn't what we want...
         }
       });
     }

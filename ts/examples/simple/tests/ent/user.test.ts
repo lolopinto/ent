@@ -44,6 +44,8 @@ test("create user", async () => {
 
   expect(user.firstName).toBe("Jon");
   expect(user.lastName).toBe("Snow");
+  expect(user.accountStatus).toBe("UNVERIFIED");
+  expect(user.emailVerified).toBeFalsy();
 });
 
 test("edit user", async () => {

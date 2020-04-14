@@ -28,6 +28,7 @@ export class ContactBuilder implements Builder<Contact> {
   private orchestrator: Orchestrator<Contact>;
   readonly placeholderID: ID;
   readonly ent = Contact;
+  private input: ContactInput;
 
   public constructor(
     public readonly viewer: Viewer,
@@ -36,6 +37,7 @@ export class ContactBuilder implements Builder<Contact> {
     public readonly existingEnt?: Contact | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({
       viewer: viewer,
@@ -52,11 +54,21 @@ export class ContactBuilder implements Builder<Contact> {
   }
 
   getInput(): ContactInput {
-    return this.action.getInput();
+    return this.input;
+  }
+
+  // TODO... need to kill requiredFields anyways.
+  updateInput(input: Exclude<Partial<ContactInput>, "requiredFields">) {
+    // override input
+    this.input = {
+      ...this.input,
+      ...input,
+    };
+    console.log(this.input);
   }
 
   private getEditedFields(): Map<string, any> {
-    const fields = this.action.getInput();
+    const fields = this.input;
 
     // required fields
     let m = {};
