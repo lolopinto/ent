@@ -16,11 +16,10 @@
 export interface {{.Node}}Input {
   {{range $field := .FieldInfo.Fields -}}
     {{ if $field.EditableField -}}
-      {{$type := $field.TsType -}}
-      {{/* TODO make this generic to work for all imported types but this is hack for ID for now */ -}}
-      {{ if eq $type "ID" -}}
-        {{ $type = useImport "ID" -}}
-      {{end -}}
+      {{$type := $field.TsBuilderType -}}
+        {{range $import := $field.TsBuilderImports -}}
+          {{ $ignore := useImport $import -}}
+        {{end -}}
       {{$field.TsFieldName}}?: {{$type}};
     {{end -}}
   {{end -}}

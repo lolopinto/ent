@@ -12,12 +12,13 @@ import {
 import { Orchestrator } from "ent/orchestrator";
 import schema from "src/schema/contact";
 import Contact from "src/ent/contact";
+import User from "src/ent/user";
 
 export interface ContactInput {
   emailAddress?: string;
   firstName?: string;
   lastName?: string;
-  userID?: ID;
+  userID?: ID | Builder<User>;
 }
 
 export interface ContactAction extends Action<Contact> {

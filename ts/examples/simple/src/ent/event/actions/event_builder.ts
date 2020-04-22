@@ -17,7 +17,7 @@ import User from "src/ent/user";
 
 export interface EventInput {
   name?: string;
-  creatorID?: ID;
+  creatorID?: ID | Builder<User>;
   startTime?: Date;
   endTime?: Date | null;
   location?: string;

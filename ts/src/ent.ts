@@ -486,9 +486,9 @@ export class EdgeOperation implements DataOperation<never> {
     );
   }
 
-  private static resolveIDs<T extends Ent>(
+  private static resolveIDs<T extends Ent, T2 extends Ent>(
     srcBuilder: Builder<T>, // id1
-    destID: Builder<T> | ID, // id2 ( and then you flip it)
+    destID: Builder<T2> | ID, // id2 ( and then you flip it)
   ): [ID, string, boolean, ID] {
     let destIDVal: ID;
     if (typeof destID === "string" || typeof destID === "number") {
@@ -514,10 +514,10 @@ export class EdgeOperation implements DataOperation<never> {
     return [srcIDVal, srcType, srcPlaceholder, destIDVal];
   }
 
-  static inboundEdge<T extends Ent>(
+  static inboundEdge<T extends Ent, T2 extends Ent>(
     builder: Builder<T>,
     edgeType: string,
-    id1: Builder<T> | ID,
+    id1: Builder<T2> | ID,
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
@@ -541,10 +541,10 @@ export class EdgeOperation implements DataOperation<never> {
     });
   }
 
-  static outboundEdge<T extends Ent>(
+  static outboundEdge<T extends Ent, T2 extends Ent>(
     builder: Builder<T>,
     edgeType: string,
-    id2: Builder<T> | ID,
+    id2: Builder<T2> | ID,
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {

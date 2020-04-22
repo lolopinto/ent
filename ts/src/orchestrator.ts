@@ -53,8 +53,8 @@ export class Orchestrator<T extends Ent> {
     this.edgeSet.add(edge.edgeInput.edgeType);
   }
 
-  addInboundEdge(
-    id1: ID | Builder<T>,
+  addInboundEdge<T2 extends Ent>(
+    id1: ID | Builder<T2>,
     edgeType: string,
     nodeType: string,
     options?: AssocEdgeInputOptions,

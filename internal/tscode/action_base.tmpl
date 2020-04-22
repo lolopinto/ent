@@ -1,8 +1,11 @@
-{{ reserveImport "ent/action" "Action" "WriteOperation" "Changeset" }}
+{{ reserveImport "ent/action" "Action" "Builder" "WriteOperation" "Changeset" }}
 {{ reserveImport "ent/ent" "Viewer" "ID" "Ent" }}
 
-{{ $packagePath := printf "src/ent/%s" .NodeData.PackageName }}
-{{ reserveDefaultImport $packagePath .NodeData.Node}}
+{{ range .NodeData.GetUniqueNodesForceSelf -}} 
+  {{$packagePath := printf "src/ent/%s" .PackageName }}
+  {{ reserveDefaultImport $packagePath .Node}}
+{{ end}}
+
 {{ $builderName := printf "%sBuilder" .NodeData.Node -}}
 {{ $builderInput := printf "%sInput" .NodeData.Node -}}
 
@@ -22,10 +25,9 @@
   export interface {{$inputName}} {
     {{ range $field := $action.GetFields -}}
       {{ if $field.EditableField -}}
-        {{$type := $field.TsType -}}
-        {{/* TODO make this generic to work for all imported types but this is hack for ID for now */ -}}
-        {{ if eq $type "ID" -}}
-          {{ $type = useImport "ID" -}}
+        {{$type := $field.TsBuilderType -}}
+        {{range $import := $field.TsBuilderImports -}}
+          {{ $ignore := useImport $import -}}
         {{end -}}
         {{if isRequiredField $action $field -}}
           {{$field.TsFieldName}}: {{$type}};
