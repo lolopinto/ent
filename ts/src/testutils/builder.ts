@@ -37,6 +37,18 @@ export class Event implements Ent {
   }
 }
 
+export class Contact implements Ent {
+  id: ID;
+  accountID: string;
+  nodeType = "Contact";
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysAllowRule],
+  };
+  constructor(public viewer: Viewer, id: ID, public data: {}) {
+    this.id = id;
+  }
+}
+
 export interface BuilderSchema<T extends Ent> extends Schema {
   ent: EntConstructor<T>;
 }
@@ -110,10 +122,13 @@ export class SimpleAction<T extends Ent> implements Action<T> {
   }
 
   async saveX(): Promise<T | void> {
-    if (this.builder.operation === WriteOperation.Delete) {
-      await saveBuilderXNoEnt(this.builder);
-    } else {
-      return await saveBuilderX(this.builder);
+    // TODO simplify all the saveBuilders...
+    await saveBuilderXNoEnt(this.builder);
+    if (this.builder.operation !== WriteOperation.Delete) {
+      let ent = await this.builder.orchestrator.createdEnt();
+      if (ent) {
+        return ent;
+      }
     }
   }
 }

@@ -10,7 +10,7 @@ export { UserCreateInput };
 export default class CreateUserAction extends CreateUserActionBase {
   triggers = [
     {
-      changeset: async (builder: UserBuilder): Promise<void> => {
+      changeset: (builder: UserBuilder): void => {
         builder.updateInput({
           accountStatus: "UNVERIFIED",
           // not needed because we have serverDefault but can also set it here.

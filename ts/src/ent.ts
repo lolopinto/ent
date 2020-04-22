@@ -283,18 +283,47 @@ export interface Queryer {
 export interface DataOperation<T extends Ent> {
   performWrite(queryer: Queryer): Promise<void>;
   // this returns a non-privacy checked ent to use
-  returnedEntRow?(viewer: LoggedOutViewer): T | null; // optional to indicate the row that was created
+  // TODO change this to just return the raw-data
+  returnedEntRow?(viewer: Viewer): T | null; // optional to indicate the row that was created
   resolve?(executor: Executor<T>): void; //throws?
+}
+
+export interface EditNodeOptions extends EditRowOptions {
+  fieldsToResolve: string[];
 }
 
 export class EditNodeOperation<T extends Ent> implements DataOperation<T> {
   row: {} | null;
 
   constructor(
-    public options: EditRowOptions,
+    public options: EditNodeOptions,
     private ent: EntConstructor<T>,
     private existingEnt: Ent | null = null,
   ) {}
+
+  resolve<T extends Ent>(executor: Executor<T>): void {
+    if (!this.options.fieldsToResolve.length) {
+      return;
+    }
+
+    let fields = this.options.fields;
+    this.options.fieldsToResolve.forEach((fieldName) => {
+      let value: Builder<T> | null = fields[fieldName];
+      if (!value) {
+        throw new Error(
+          `trying to resolve field ${fieldName} but not a valid field`,
+        );
+      }
+      let ent = executor.resolveValue(value.placeholderID);
+      if (!ent) {
+        throw new Error(
+          `couldn't resolve field ${fieldName} with value ${value.placeholderID}`,
+        );
+      }
+      fields[fieldName] = ent.id;
+    });
+    this.options.fields = fields;
+  }
 
   async performWrite(queryer: Queryer): Promise<void> {
     if (this.existingEnt) {

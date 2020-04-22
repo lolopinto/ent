@@ -15,7 +15,13 @@ import { Changeset } from "./action";
 import { StringType, TimeType } from "./field";
 import { BaseEntSchema, Field } from "./schema";
 import { IDViewer } from "../src/testutils/id_viewer";
-import { User, Event, SimpleBuilder, SimpleAction } from "./testutils/builder";
+import {
+  User,
+  Event,
+  Contact,
+  SimpleBuilder,
+  SimpleAction,
+} from "./testutils/builder";
 import { Pool } from "pg";
 import { QueryRecorder } from "./testutils/db_mock";
 import { AlwaysAllowRule, DenyIfLoggedInRule } from "./privacy";
@@ -504,13 +510,12 @@ describe("privacyPolicy", () => {
 describe("trigger", () => {
   let now = new Date();
 
-  const triggers: Trigger<User>[] = [
-    {
-      changeset: (builder: SimpleBuilder<User>): Changeset<User> | void => {
-        builder.fields.set("account_status", "VALID");
-      },
+  const accountStatusTrigger = {
+    changeset: (builder: SimpleBuilder<User>): void => {
+      builder.fields.set("account_status", "VALID");
     },
-  ];
+  };
+  const triggers: Trigger<User>[] = [accountStatusTrigger];
 
   test("update builder", async () => {
     advanceTo(now);
@@ -540,6 +545,83 @@ describe("trigger", () => {
       account_status: "VALID",
     });
   });
+
+  test("new changeset", async () => {
+    advanceTo(now);
+    class ContactSchema extends BaseEntSchema {
+      fields: Field[] = [
+        StringType({ name: "FirstName" }),
+        StringType({ name: "LastName" }),
+        StringType({ name: "UserID" }),
+      ];
+      ent = Contact;
+    }
+
+    const viewer = new IDViewer("1");
+    let contactAction: SimpleAction<Contact>;
+    const action = new SimpleAction(
+      viewer,
+      new UserSchemaWithStatus(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    // also create a contact when we create a user
+    action.triggers = [
+      accountStatusTrigger,
+      {
+        changeset: (
+          builder: SimpleBuilder<User>,
+        ): Promise<Changeset<Contact>> => {
+          let firstName = builder.fields.get("FirstName");
+          let lastName = builder.fields.get("LastName");
+          contactAction = new SimpleAction(
+            viewer,
+            new ContactSchema(),
+            new Map([
+              ["FirstName", firstName],
+              ["LastName", lastName],
+              ["UserID", builder],
+            ]),
+            WriteOperation.Insert,
+          );
+          return contactAction.changeset();
+        },
+      },
+    ];
+
+    // this returned a Contact not a User
+    // this didn't replace the builder
+    const user = await action.saveX();
+    if (!user) {
+      fail("couldn't save user");
+    }
+    expect(user.data).toStrictEqual({
+      id: user.id,
+      created_at: now,
+      updated_at: now,
+      first_name: "Jon",
+      last_name: "Snow",
+      account_status: "VALID",
+    });
+
+    // let's inspect the created contact
+    expect(contactAction!).not.toBe(null);
+    let contact = await contactAction!.builder.orchestrator.createdEnt();
+    if (!contact) {
+      fail("couldn't save contact");
+    }
+    expect(contact.data).toStrictEqual({
+      id: contact.id,
+      created_at: now,
+      updated_at: now,
+      first_name: "Jon",
+      last_name: "Snow",
+      user_id: user.id, // created contact and set the user_id correctly
+    });
+  });
 });
 
 describe("combo", () => {
@@ -555,7 +637,7 @@ describe("combo", () => {
     );
     action.triggers = [
       {
-        changeset: (builder: SimpleBuilder<User>): Changeset<User> | void => {
+        changeset: (builder: SimpleBuilder<User>): void => {
           builder.fields.set("account_status", "VALID");
         },
       },

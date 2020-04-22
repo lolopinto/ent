@@ -12,7 +12,7 @@ import {
   applyPrivacyPolicyForEntX,
 } from "./ent";
 import { getFields, SchemaInputType } from "./schema";
-import { Changeset, Executor, Validator } from "./action";
+import { Changeset, Executor, Validator, Trigger } from "./action";
 import { WriteOperation, Builder, Action } from "./action";
 import { snakeCase } from "snake-case";
 import { LoggedOutViewer } from "./viewer";
@@ -41,6 +41,10 @@ export class Orchestrator<T extends Ent> {
   private edgeOps: EdgeOperation[] = [];
   private edgeSet: Set<string> = new Set<string>();
   private validatedFields: {} | null;
+  private changesets: Changeset<T>[] = [];
+  private dependencies: Map<ID, Builder<T>> = new Map();
+  private fieldsToResolve: string[] = [];
+  private mainOp: DataOperation<T> | null;
 
   constructor(private options: OrchestratorOptions<T>) {}
 
@@ -103,14 +107,16 @@ export class Orchestrator<T extends Ent> {
           tableName: this.options.tableName,
         });
       default:
-        return new EditNodeOperation(
+        this.mainOp = new EditNodeOperation(
           {
             fields: this.validatedFields!,
             tableName: this.options.tableName,
+            fieldsToResolve: this.fieldsToResolve,
           },
           this.options.ent,
           this.options.builder.existingEnt,
         );
+        return this.mainOp;
     }
   }
 
@@ -151,21 +157,38 @@ export class Orchestrator<T extends Ent> {
       );
     }
 
-    let validators = this.options.action?.validators || [];
-
+    // have to run triggers which update fields first before field and other validators
+    // so running this first to build things up
     let triggers = this.options.action?.triggers;
     if (triggers) {
+      let triggerPromises: Promise<Changeset<T>>[] = [];
+
       triggers.forEach((trigger) => {
         let c = trigger.changeset(builder);
         if (c) {
-          //console.log("todo handle changesets");
-          // hmm right now these are undefined promises which isn't what we want...
+          triggerPromises.push(c);
         }
       });
+      // TODO right now trying to parallelize this with validateFields below
+      // may need to run triggers first to be deterministic
+      promises.push(this.triggers(triggerPromises));
     }
 
-    promises.push(this.validateFields(), this.validators(validators, builder));
+    promises.push(this.validateFields());
+
+    let validators = this.options.action?.validators || [];
+    if (validators) {
+      promises.push(this.validators(validators, builder));
+    }
+
     await Promise.all(promises);
+  }
+
+  private async triggers(
+    triggerPromises: Promise<Changeset<T>>[],
+  ): Promise<void> {
+    // keep changesets to use later
+    this.changesets = await Promise.all(triggerPromises);
   }
 
   private async validators(
@@ -180,6 +203,10 @@ export class Orchestrator<T extends Ent> {
       }
     });
     await Promise.all(promises);
+  }
+
+  private isBuilder(val: any): val is Builder<T> {
+    return (val as Builder<T>).placeholderID !== undefined;
   }
 
   private async validateFields(): Promise<void> {
@@ -234,6 +261,12 @@ export class Orchestrator<T extends Ent> {
         ) {
           throw new Error(`required field ${field.name} not set`);
         }
+      } else if (this.isBuilder(value)) {
+        let builder = value;
+        // keep track of dependencies to resolve
+        this.dependencies.set(builder.placeholderID, builder);
+        // keep track of fields to resolve
+        this.fieldsToResolve.push(dbKey);
       } else {
         if (field.valid && !field.valid(value)) {
           throw new Error(`invalid field ${field.name} with value ${value}`);
@@ -277,7 +310,20 @@ export class Orchestrator<T extends Ent> {
       this.options.builder.placeholderID,
       this.options.ent,
       ops,
+      this.dependencies,
+      this.changesets,
     );
+  }
+
+  // we don't do privacy checks here but will eventually
+  async createdEnt(): Promise<T | null> {
+    if (this.mainOp && this.mainOp.returnedEntRow) {
+      // TODO same comment from saveBuilder re: viewer
+      // we need to apply privacy logic here
+      //    return applyPrivacyPolicyForEntX(builder.viewer, ent);
+      return this.mainOp.returnedEntRow(this.options.viewer);
+    }
+    return null;
   }
 }
 
@@ -287,27 +333,33 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public readonly placeholderID: ID,
     public readonly ent: EntConstructor<T>,
     public operations: DataOperation<T>[],
+    public dependencies: Map<ID, Builder<T>>,
+    public changesets: Changeset<T>[],
   ) {}
 
-  executor(): ListBasedExecutor<T> {
-    return new ListBasedExecutor(this.placeholderID, this.ent, this.operations);
+  executor(): Executor<T> {
+    if (this.dependencies || this.changesets) {
+      return new ComplexExecutor(
+        this.placeholderID,
+        this.operations,
+        this.dependencies,
+        this.changesets,
+      );
+    }
+    return new ListBasedExecutor(this.placeholderID, this.operations);
   }
 }
 
-export class ListBasedExecutor<T extends Ent> implements Executor<T> {
+class ListBasedExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
   constructor(
     private placeholderID: ID,
-    // todo probably don't need this actually...
-    private ent: EntConstructor<T>,
     private operations: DataOperation<T>[],
   ) {}
   private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null;
 
-  // todo...
-  // we're going to eventually need this passed to each operation correctly though but we can deal with it then e.g. when creating multiple objects, the executor
-  resolveValue(val: any): T | null {
+  resolveValue(val: ID): T | null {
     if (val === this.placeholderID && val !== undefined) {
       return this.createdEnt;
     }
@@ -319,8 +371,6 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
     return this;
   }
 
-  // simple case which assumes only 1 data based ent and edges. used for tests
-  // not for production
   next(): IteratorResult<DataOperation<T>> {
     if (this.lastOp && this.lastOp.returnedEntRow) {
       this.createdEnt = this.lastOp.returnedEntRow(new LoggedOutViewer());
@@ -333,5 +383,116 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
       value: op,
       done: done,
     };
+  }
+}
+
+class ComplexExecutor<T extends Ent> implements Executor<T> {
+  private idx: number = 0;
+  private nativeIdx: number;
+  private executors: Executor<T>[] = [];
+  private placeholders: ID[] = [];
+  private mapper: Map<ID, T> = new Map();
+  private lastOp: DataOperation<T> | undefined;
+
+  constructor(
+    private placeholderID: ID,
+    private operations: DataOperation<T>[],
+    dependencies: Map<ID, Builder<T>>,
+    changesets: Changeset<T>[],
+  ) {
+    let earlyChangesets: Changeset<T>[] = [];
+    let lateChangesets: Changeset<T>[] = [];
+
+    changesets.forEach((changeset) => {
+      let builder = dependencies.get(changeset.placeholderID);
+      // copied comment from go
+      // the default expectation is that we run current changeset, then dependent changesets
+      // if there are dependencies, we run the changesets that current one depends on before self and then subsequent
+      // again, this all assumes simple linear dependencies and no webs for now
+
+      if (builder) {
+        earlyChangesets.push(changeset);
+      } else {
+        lateChangesets.push(changeset);
+      }
+    });
+
+    // expectation is we do dependencies first, then self, then other changesets
+    this.addChangesets(earlyChangesets);
+    this.addSelf();
+    this.addChangesets(lateChangesets);
+  }
+
+  private addChangesets(changesets: Changeset<T>[]) {
+    changesets.forEach((changeset) => {
+      this.executors.push(changeset.executor());
+      this.placeholders.push(changeset.placeholderID);
+    });
+  }
+
+  private addSelf() {
+    let executor = new ListBasedExecutor(this.placeholderID, this.operations);
+    this.nativeIdx = this.executors.length;
+    this.executors.push(executor);
+    this.placeholders.push(this.placeholderID);
+  }
+
+  [Symbol.iterator]() {
+    return this;
+  }
+
+  private getOperation(): IteratorResult<DataOperation<T>> {
+    // done. nothing to do here
+    if (this.idx === this.executors.length) {
+      return { value: null, done: true };
+    }
+    return this.executors[this.idx].next();
+  }
+
+  private handleCreatedEnt() {
+    if (!this.lastOp || !this.lastOp.returnedEntRow) {
+      return;
+    }
+    let createdEnt = this.lastOp.returnedEntRow(new LoggedOutViewer());
+    if (!createdEnt) {
+      return;
+    }
+
+    // hmm, this is how it worked with go. can probably be made better at some point.
+    if (this.idx != this.nativeIdx) {
+      return;
+    }
+    let placeholderID = this.placeholders[this.idx];
+    this.mapper[placeholderID] = createdEnt;
+  }
+
+  next(): IteratorResult<DataOperation<T>> {
+    let result = this.getOperation();
+
+    if (this.lastOp) {
+      this.handleCreatedEnt();
+    }
+
+    if (result.done) {
+      // done with previous executor, let's move to the next
+      this.idx++;
+      result = this.getOperation();
+    }
+    return result;
+  }
+
+  resolveValue(val: ID): T | null {
+    let ent = this.mapper.get(val);
+    if (ent) {
+      return ent;
+    }
+
+    for (let i = 0; i < this.executors.length; i++) {
+      let ent = this.executors[i].resolveValue(val);
+      if (ent) {
+        return ent;
+      }
+    }
+    return null;
   }
 }

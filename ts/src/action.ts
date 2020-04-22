@@ -52,11 +52,9 @@ export interface Changeset<T extends Ent> {
   //  observers?// still need builder to pass to observer...
 }
 
-// TODO. this makes no sense...
-// why is the type required in the interface here but not for Validator?
 export interface Trigger<T extends Ent> {
-  //  changeset(builder: Builder<T>): Promise<Changeset<T> | void>;
-  changeset(builder: Builder<T>): Changeset<T> | void;
+  // can throw if it wants. not expected to throw tho.
+  changeset(builder: Builder<T>): void | Promise<Changeset<T>>;
 }
 
 export interface Observer {
@@ -146,6 +144,7 @@ async function saveBuilderImpl<T extends Ent>(
       if (operation.returnedEntRow) {
         // we need a way to eventually know primary vs not once we can stack these
         // things with triggers etc
+        // so yah this keeps rewriting the row which isn't what we want...
         ent = operation.returnedEntRow(viewer);
       }
     }
