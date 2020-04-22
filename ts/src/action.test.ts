@@ -8,7 +8,7 @@ import {
 } from "./action";
 import { User } from "./testutils/builder";
 import { Viewer, Ent, ID, DataOperation, Queryer } from "./ent";
-import { EntChangeset, Orchestrator } from "./orchestrator";
+import { EntChangeset } from "./orchestrator";
 import { LoggedOutViewer } from "./viewer";
 import { Pool } from "pg";
 import { QueryRecorder } from "./testutils/db_mock";
@@ -24,7 +24,6 @@ class FakeBuilder implements Builder<User> {
   ent = User;
   placeholderID = "1";
   viewer: Viewer;
-  public orchestrator: Orchestrator<User>;
 
   private ops: DataOperation<any>[] = [];
   constructor(
@@ -48,6 +47,28 @@ class FakeBuilder implements Builder<User> {
       this.ent,
       this.ops,
     );
+  }
+
+  private createdUser(): User | null {
+    let dataOp = this.ops[0];
+    if (!dataOp || !dataOp.returnedEntRow) {
+      return null;
+    }
+    let row = dataOp.returnedEntRow();
+    if (!row) {
+      return null;
+    }
+    return new User(this.viewer, row["id"], row);
+  }
+
+  async save(): Promise<User | null> {
+    await saveBuilder(this);
+    return this.createdUser();
+  }
+
+  async saveX(): Promise<User> {
+    await saveBuilderX(this);
+    return this.createdUser()!;
   }
 }
 
@@ -76,14 +97,14 @@ class dataOp implements DataOperation<User> {
     queryer.query(`${this.operation} ${keys.join(", ")}`, values);
   }
 
-  returnedEntRow?(viewer: LoggedOutViewer): User | null {
+  returnedEntRow?(): {} | null {
     if (this.operation === WriteOperation.Insert) {
-      let ent = {};
+      let row = {};
       for (const [key, value] of this.fields) {
-        ent[key] = value;
+        row[key] = value;
       }
-      ent["id"] = this.id;
-      return new User(viewer, this.id!, ent);
+      row["id"] = this.id;
+      return row;
     }
     return null;
   }
@@ -130,7 +151,7 @@ test("simple", async () => {
     WriteOperation.Insert,
   );
 
-  let ent = await saveBuilder(builder);
+  let ent = await builder.save();
   QueryRecorder.validateQueryOrder(
     [
       {
@@ -160,7 +181,7 @@ test("new ent with edge", async () => {
     id1Placeholder: true,
   });
 
-  let ent = await saveBuilder(builder);
+  let ent = await builder.save();
   QueryRecorder.validateQueryOrder(
     [
       {
@@ -195,7 +216,7 @@ test("existing ent with edge", async () => {
     id2: id2,
   });
 
-  let ent = await saveBuilder(builder);
+  let ent = await builder.save();
   QueryRecorder.validateQueryOrder(
     [
       {
@@ -231,7 +252,7 @@ test("insert with incorrect resolver", async () => {
 
   let ent: User | null = null;
   try {
-    ent = await saveBuilderX(builder);
+    ent = await builder.saveX();
     fail("should have thrown exception");
   } catch (error) {
     expect(error.message).toBe("could not resolve id1 placeholder 2");

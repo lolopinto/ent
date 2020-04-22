@@ -609,7 +609,7 @@ describe("trigger", () => {
 
     // let's inspect the created contact
     expect(contactAction!).not.toBe(null);
-    let contact = await contactAction!.builder.orchestrator.createdEnt();
+    let contact = await contactAction!.builder.orchestrator.editedEnt();
     if (!contact) {
       fail("couldn't save contact");
     }

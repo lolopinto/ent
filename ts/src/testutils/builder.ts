@@ -7,9 +7,8 @@ import {
   Changeset,
   WriteOperation,
   Validator,
-  saveBuilderXNoEnt,
-  saveBuilderX,
   Trigger,
+  saveBuilderX,
 } from "../action";
 import Schema from "../schema";
 
@@ -122,10 +121,9 @@ export class SimpleAction<T extends Ent> implements Action<T> {
   }
 
   async saveX(): Promise<T | void> {
-    // TODO simplify all the saveBuilders...
-    await saveBuilderXNoEnt(this.builder);
+    await saveBuilderX(this.builder);
     if (this.builder.operation !== WriteOperation.Delete) {
-      let ent = await this.builder.orchestrator.createdEnt();
+      let ent = await this.builder.orchestrator.editedEnt();
       if (ent) {
         return ent;
       }

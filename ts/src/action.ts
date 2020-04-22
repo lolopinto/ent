@@ -90,32 +90,11 @@ export interface Action<T extends Ent> {
 
 export async function saveBuilder<T extends Ent>(
   builder: Builder<T>,
-): Promise<T | null> {
-  const ent = await saveBuilderImpl(builder, false);
-  if (ent) {
-    return ent;
-    // TODO we need to apply privacy while loading
-    // so we also need an API to get the raw object back e.g. for account creation
-    // or a way to inject viewer for privacy purposes
-    //    return applyPrivacyPolicyForEnt(builder.viewer, ent);
-  }
-  return null;
+): Promise<void> {
+  await saveBuilderImpl(builder, false);
 }
 
 export async function saveBuilderX<T extends Ent>(
-  builder: Builder<T>,
-): Promise<T> {
-  const ent = await saveBuilderImpl(builder, true);
-  if (ent) {
-    return ent;
-    // TODO same as above re: viewer
-    //    return applyPrivacyPolicyForEntX(builder.viewer, ent);
-  }
-  throw new Error("could not save ent for builder");
-}
-
-// this is used by delete builders which want exceptions but don't want to load the ent
-export async function saveBuilderXNoEnt<T extends Ent>(
   builder: Builder<T>,
 ): Promise<void> {
   await saveBuilderImpl(builder, true);
@@ -124,14 +103,13 @@ export async function saveBuilderXNoEnt<T extends Ent>(
 async function saveBuilderImpl<T extends Ent>(
   builder: Builder<T>,
   throwErr: boolean,
-): Promise<T | null> {
+): Promise<void> {
   const changeset = await builder.build();
   const executor = changeset.executor();
 
   const client = await DB.getInstance().getNewClient();
 
   let viewer = new LoggedOutViewer();
-  let ent: T | null = null;
   try {
     await client.query("BEGIN");
     for (const operation of executor) {
@@ -141,12 +119,6 @@ async function saveBuilderImpl<T extends Ent>(
       }
 
       await operation.performWrite(client);
-      if (operation.returnedEntRow) {
-        // we need a way to eventually know primary vs not once we can stack these
-        // things with triggers etc
-        // so yah this keeps rewriting the row which isn't what we want...
-        ent = operation.returnedEntRow(viewer);
-      }
     }
     await client.query("COMMIT");
   } catch (e) {
@@ -160,6 +132,4 @@ async function saveBuilderImpl<T extends Ent>(
   } finally {
     client.release();
   }
-
-  return ent;
 }

@@ -1,7 +1,7 @@
 {{with .NodeData -}}
 
 {{reserveImport "ent/ent" "Viewer" "ID" "Ent" "AssocEdgeInputOptions"}}
-{{reserveImport "ent/action" "Action" "Builder" "WriteOperation" "Changeset"}}
+{{reserveImport "ent/action" "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" }}
 {{reserveImport "ent/orchestrator" "Orchestrator"}}
 
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
@@ -162,6 +162,24 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
 
   async validX(): Promise<void> {
     return this.orchestrator.validX();
+  }
+
+  async save(): Promise<void> {
+    await {{useImport "saveBuilder"}}(this);
+  }
+
+  async saveX(): Promise<void> {
+    await {{useImport "saveBuilderX"}}(this);
+  }
+
+  async editedEnt(): Promise<{{$node}} | null> {
+    {{/* TODO: throw if save() has not been called */ -}}
+    return await this.orchestrator.editedEnt();
+  }
+
+  async editedEntX(): Promise<{{$node}}> {
+    {{/* TODO: throw if saveX() has not been called */ -}}
+    return await this.orchestrator.editedEntX();
   }
 }
 

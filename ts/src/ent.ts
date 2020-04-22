@@ -282,9 +282,7 @@ export interface Queryer {
 
 export interface DataOperation<T extends Ent> {
   performWrite(queryer: Queryer): Promise<void>;
-  // this returns a non-privacy checked ent to use
-  // TODO change this to just return the raw-data
-  returnedEntRow?(viewer: Viewer): T | null; // optional to indicate the row that was created
+  returnedEntRow?(): {} | null; // optional to indicate the row that was created
   resolve?(executor: Executor<T>): void; //throws?
 }
 
@@ -333,11 +331,8 @@ export class EditNodeOperation<T extends Ent> implements DataOperation<T> {
     }
   }
 
-  returnedEntRow(viewer: LoggedOutViewer): T | null {
-    if (!this.row) {
-      return null;
-    }
-    return new this.ent(viewer, this.row["id"], this.row);
+  returnedEntRow(): {} | null {
+    return this.row;
   }
 }
 

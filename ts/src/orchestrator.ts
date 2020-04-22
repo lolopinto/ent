@@ -316,14 +316,26 @@ export class Orchestrator<T extends Ent> {
   }
 
   // we don't do privacy checks here but will eventually
-  async createdEnt(): Promise<T | null> {
+  async editedEnt(): Promise<T | null> {
     if (this.mainOp && this.mainOp.returnedEntRow) {
-      // TODO same comment from saveBuilder re: viewer
-      // we need to apply privacy logic here
-      //    return applyPrivacyPolicyForEntX(builder.viewer, ent);
-      return this.mainOp.returnedEntRow(this.options.viewer);
+      // TODO we need to apply privacy while loading
+      // so we also need an API to get the raw object back e.g. for account creation
+      // or a way to inject viewer for privacy purposes
+      // return applyPrivacyPolicyForEnt(builder.viewer, ent);
+      let row = this.mainOp.returnedEntRow();
+      if (row) {
+        return new this.options.ent(this.options.viewer, row["id"], row);
+      }
     }
     return null;
+  }
+
+  async editedEntX(): Promise<T> {
+    let ent = await this.editedEnt();
+    if (ent) {
+      return ent;
+    }
+    throw new Error(`ent was not created`);
   }
 }
 
@@ -333,27 +345,36 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public readonly placeholderID: ID,
     public readonly ent: EntConstructor<T>,
     public operations: DataOperation<T>[],
-    public dependencies: Map<ID, Builder<T>>,
-    public changesets: Changeset<T>[],
+    public dependencies?: Map<ID, Builder<T>>,
+    public changesets?: Changeset<T>[],
   ) {}
 
   executor(): Executor<T> {
     if (this.dependencies || this.changesets) {
       return new ComplexExecutor(
+        this.viewer,
         this.placeholderID,
+        this.ent,
         this.operations,
-        this.dependencies,
-        this.changesets,
+        this.dependencies!,
+        this.changesets!,
       );
     }
-    return new ListBasedExecutor(this.placeholderID, this.operations);
+    return new ListBasedExecutor(
+      this.viewer,
+      this.placeholderID,
+      this.ent,
+      this.operations,
+    );
   }
 }
 
 class ListBasedExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
   constructor(
+    private viewer: Viewer,
     private placeholderID: ID,
+    private ent: EntConstructor<T>,
     private operations: DataOperation<T>[],
   ) {}
   private lastOp: DataOperation<T> | undefined;
@@ -372,9 +393,11 @@ class ListBasedExecutor<T extends Ent> implements Executor<T> {
   }
 
   next(): IteratorResult<DataOperation<T>> {
-    if (this.lastOp && this.lastOp.returnedEntRow) {
-      this.createdEnt = this.lastOp.returnedEntRow(new LoggedOutViewer());
+    let createdEnt = getCreatedEnt(this.viewer, this.lastOp, this.ent);
+    if (createdEnt) {
+      this.createdEnt = createdEnt;
     }
+
     const done = this.idx === this.operations.length;
     const op = this.operations[this.idx];
     this.idx++;
@@ -386,6 +409,20 @@ class ListBasedExecutor<T extends Ent> implements Executor<T> {
   }
 }
 
+function getCreatedEnt<T extends Ent>(
+  viewer: Viewer,
+  op: DataOperation<T> | undefined,
+  ent: EntConstructor<T>,
+): T | null {
+  if (op && op.returnedEntRow) {
+    let row = op.returnedEntRow();
+    if (row) {
+      return new ent(viewer, row["id"], row);
+    }
+  }
+  return null;
+}
+
 class ComplexExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
   private nativeIdx: number;
@@ -395,7 +432,9 @@ class ComplexExecutor<T extends Ent> implements Executor<T> {
   private lastOp: DataOperation<T> | undefined;
 
   constructor(
+    private viewer: Viewer,
     private placeholderID: ID,
+    private ent: EntConstructor<T>,
     private operations: DataOperation<T>[],
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset<T>[],
@@ -431,7 +470,12 @@ class ComplexExecutor<T extends Ent> implements Executor<T> {
   }
 
   private addSelf() {
-    let executor = new ListBasedExecutor(this.placeholderID, this.operations);
+    let executor = new ListBasedExecutor(
+      this.viewer,
+      this.placeholderID,
+      this.ent,
+      this.operations,
+    );
     this.nativeIdx = this.executors.length;
     this.executors.push(executor);
     this.placeholders.push(this.placeholderID);
@@ -450,10 +494,7 @@ class ComplexExecutor<T extends Ent> implements Executor<T> {
   }
 
   private handleCreatedEnt() {
-    if (!this.lastOp || !this.lastOp.returnedEntRow) {
-      return;
-    }
-    let createdEnt = this.lastOp.returnedEntRow(new LoggedOutViewer());
+    let createdEnt = getCreatedEnt(this.viewer, this.lastOp, this.ent);
     if (!createdEnt) {
       return;
     }
