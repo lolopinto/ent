@@ -9,10 +9,10 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
     private viewer: Viewer,
     private placeholderID: ID,
     private ent: EntConstructor<T>,
-    private operations: DataOperation<T>[],
+    private operations: DataOperation[],
   ) {}
-  private lastOp: DataOperation<T> | undefined;
-  private createdEnt: T | null;
+  private lastOp: DataOperation | undefined;
+  private createdEnt: T | null = null;
 
   resolveValue(val: ID): T | null {
     if (val === this.placeholderID && val !== undefined) {
@@ -26,7 +26,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
     return this;
   }
 
-  next(): IteratorResult<DataOperation<T>> {
+  next(): IteratorResult<DataOperation> {
     let createdEnt = getCreatedEnt(this.viewer, this.lastOp, this.ent);
     if (createdEnt) {
       this.createdEnt = createdEnt;
@@ -45,7 +45,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
 
 function getCreatedEnt<T extends Ent>(
   viewer: Viewer,
-  op: DataOperation<T> | undefined,
+  op: DataOperation | undefined,
   ent: EntConstructor<T>,
 ): T | null {
   if (op && op.returnedEntRow) {
@@ -60,8 +60,8 @@ function getCreatedEnt<T extends Ent>(
 export class ComplexExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
   private mapper: Map<ID, T> = new Map();
-  private lastOp: DataOperation<T> | undefined;
-  private allOperations: DataOperation<T>[] = [];
+  private lastOp: DataOperation | undefined;
+  private allOperations: DataOperation[] = [];
   private changesetNodes: string[] = [];
   private changesetMap: Map<string, Changeset<T>> = new Map();
 
@@ -69,7 +69,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     private viewer: Viewer,
     private placeholderID: ID,
     private ent: EntConstructor<T>,
-    operations: DataOperation<T>[],
+    operations: DataOperation[],
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset<T>[],
   ) {
@@ -115,8 +115,8 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     // console.log(graph.nodes());
     // console.log(this.changesetMap);
     //    let rowMap: Map<string, number> = new Map();
-    let nodeOps: DataOperation<T>[] = [];
-    let remainOps: DataOperation<T>[] = [];
+    let nodeOps: DataOperation[] = [];
+    let remainOps: DataOperation[] = [];
 
     graph.nodes().forEach((node) => {
       // TODO throw if we see any undefined because we're trying to write with incomplete data
@@ -170,7 +170,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     //    console.log(this.mapper);
   }
 
-  next(): IteratorResult<DataOperation<T>> {
+  next(): IteratorResult<DataOperation> {
     if (this.lastOp) {
       this.handleCreatedEnt();
     }

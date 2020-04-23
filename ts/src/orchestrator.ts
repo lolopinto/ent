@@ -36,7 +36,7 @@ export class Orchestrator<T extends Ent> {
   private changesets: Changeset<T>[] = [];
   private dependencies: Map<ID, Builder<T>> = new Map();
   private fieldsToResolve: string[] = [];
-  private mainOp: DataOperation<T> | null;
+  private mainOp: DataOperation | null;
 
   constructor(private options: OrchestratorOptions<T>) {}
 
@@ -91,7 +91,7 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
-  private buildMainOp(): DataOperation<T> {
+  private buildMainOp(): DataOperation {
     // this assumes we have validated fields
     switch (this.options.operation) {
       case WriteOperation.Delete:
@@ -105,14 +105,13 @@ export class Orchestrator<T extends Ent> {
             tableName: this.options.tableName,
             fieldsToResolve: this.fieldsToResolve,
           },
-          this.options.ent,
           this.options.builder.existingEnt,
         );
         return this.mainOp;
     }
   }
 
-  private async buildEdgeOps(ops: DataOperation<T>[]): Promise<void> {
+  private async buildEdgeOps(ops: DataOperation[]): Promise<void> {
     const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
     //    console.log(edgeDatas);
     for (const edgeOp of this.edgeOps) {
@@ -294,7 +293,7 @@ export class Orchestrator<T extends Ent> {
     // validate everything first
     await this.validX();
 
-    let ops: DataOperation<T>[] = [this.buildMainOp()];
+    let ops: DataOperation[] = [this.buildMainOp()];
     await this.buildEdgeOps(ops);
 
     return new EntChangeset(
@@ -336,7 +335,7 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public viewer: Viewer,
     public readonly placeholderID: ID,
     public readonly ent: EntConstructor<T>,
-    public operations: DataOperation<T>[],
+    public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<T>>,
     public changesets?: Changeset<T>[],
   ) {}

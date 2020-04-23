@@ -15,6 +15,7 @@ test("simple", async () => {
   const builder = new FakeBuilder(
     new Map([["foo", "bar"]]),
     WriteOperation.Insert,
+    User,
   );
 
   let ent = await builder.save();
@@ -33,6 +34,7 @@ test("new ent with edge", async () => {
   const builder = new FakeBuilder(
     new Map([["foo", "bar"]]),
     WriteOperation.Insert,
+    User,
   );
   const id2 = QueryRecorder.newID();
   builder.addEdge({
@@ -62,6 +64,7 @@ test("existing ent with edge", async () => {
   const builder = new FakeBuilder(
     new Map([["foo", "bar"]]),
     WriteOperation.Edit,
+    User,
     user,
   );
   const id2 = QueryRecorder.newID();
@@ -90,6 +93,7 @@ test("insert with incorrect resolver", async () => {
   const builder = new FakeBuilder(
     new Map([["foo", "bar"]]),
     WriteOperation.Insert,
+    User,
   );
   const id2 = QueryRecorder.newID();
   builder.addEdge({

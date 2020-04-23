@@ -152,30 +152,42 @@ export class SimpleAction<T extends Ent> implements Action<T> {
   }
 }
 
-export class FakeBuilder implements Builder<User> {
-  ent = User;
+export class FakeBuilder<T extends Ent> implements Builder<T> {
   placeholderID: ID;
   viewer: Viewer;
+  triggers: Trigger<T>[] = [];
 
-  private ops: DataOperation<any>[] = [];
+  private dependencies: Map<ID, Builder<T>> = new Map();
+  private changesets: Changeset<T>[] = [];
+
+  private ops: DataOperation[] = [];
   constructor(
     private fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
+    public ent: EntConstructor<T>,
     public existingEnt: Ent | undefined = undefined,
   ) {
     // create dynamic placeholder
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
 
     this.viewer = new LoggedOutViewer();
-    this.ops.push(new dataOp(this.fields, this.operation));
+    if (this.fields.size) {
+      for (let [key, value] of this.fields) {
+        if (this.isBuilder(value)) {
+          let builder = value;
+          this.dependencies.set(builder.placeholderID, builder);
+        }
+      }
+      this.ops.push(new dataOp(this.fields, this.operation));
+    }
   }
 
-  addEdge(options: edgeOpOptions): FakeBuilder {
+  addEdge(options: edgeOpOptions): FakeBuilder<T> {
     this.ops.push(new edgeOp(options));
     return this;
   }
 
-  async build(): Promise<Changeset<User>> {
+  async build(): Promise<Changeset<T>> {
     // TODO need dependencies and changesets to test the complicated cases...
     return new EntChangeset(
       this.viewer,
@@ -185,7 +197,12 @@ export class FakeBuilder implements Builder<User> {
     );
   }
 
-  private createdUser(): User | null {
+  // should really just double down on orchestrator type tests instead of what we have here...
+  private isBuilder(val: any): val is Builder<T> {
+    return (val as Builder<T>).placeholderID !== undefined;
+  }
+
+  createdEnt(): T | null {
     let dataOp = this.ops[0];
     if (!dataOp || !dataOp.returnedEntRow) {
       return null;
@@ -194,21 +211,21 @@ export class FakeBuilder implements Builder<User> {
     if (!row) {
       return null;
     }
-    return new User(this.viewer, row["id"], row);
+    return new this.ent(this.viewer, row["id"], row);
   }
 
-  async save(): Promise<User | null> {
+  async save(): Promise<T | null> {
     await saveBuilder(this);
-    return this.createdUser();
+    return this.createdEnt();
   }
 
-  async saveX(): Promise<User> {
+  async saveX(): Promise<T> {
     await saveBuilderX(this);
-    return this.createdUser()!;
+    return this.createdEnt()!;
   }
 }
 
-class dataOp implements DataOperation<User> {
+class dataOp implements DataOperation {
   private id: ID | null;
   constructor(
     private fields: Map<string, any>,
@@ -244,6 +261,8 @@ class dataOp implements DataOperation<User> {
     }
     return null;
   }
+
+  // TODO resolve values here...
 }
 
 interface edgeOpOptions {
@@ -252,7 +271,8 @@ interface edgeOpOptions {
   id1Placeholder?: boolean;
   id2Placeholder?: boolean;
 }
-class edgeOp implements DataOperation<never> {
+
+class edgeOp implements DataOperation {
   constructor(private options: edgeOpOptions) {}
 
   async performWrite(queryer: Queryer): Promise<void> {

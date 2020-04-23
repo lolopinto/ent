@@ -280,22 +280,21 @@ export interface Queryer {
   // tslint:enable:no-unnecessary-generics
 }
 
-export interface DataOperation<T extends Ent> {
+export interface DataOperation {
   performWrite(queryer: Queryer): Promise<void>;
   returnedEntRow?(): {} | null; // optional to indicate the row that was created
-  resolve?(executor: Executor<T>): void; //throws?
+  resolve?<T extends Ent>(executor: Executor<T>): void; //throws?
 }
 
 export interface EditNodeOptions extends EditRowOptions {
   fieldsToResolve: string[];
 }
 
-export class EditNodeOperation<T extends Ent> implements DataOperation<T> {
+export class EditNodeOperation implements DataOperation {
   row: {} | null;
 
   constructor(
     public options: EditNodeOptions,
-    private ent: EntConstructor<T>,
     private existingEnt: Ent | null = null,
   ) {}
 
@@ -342,7 +341,7 @@ interface EdgeOperationOptions {
   id2Placeholder?: boolean;
 }
 
-export class EdgeOperation implements DataOperation<never> {
+export class EdgeOperation implements DataOperation {
   private constructor(
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
@@ -698,7 +697,7 @@ async function deleteRow(
   await queryer.query(query, values);
 }
 
-export class DeleteNodeOperation implements DataOperation<never> {
+export class DeleteNodeOperation implements DataOperation {
   constructor(private id: ID, private options: DataOptions) {}
 
   async performWrite(queryer: Queryer): Promise<void> {

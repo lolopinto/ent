@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { Pool, PoolClient } from "pg";
 import { mocked } from "ts-jest/utils";
-import { ID, Ent } from "./../ent";
+import { ID, Ent, AssocEdgeData } from "./../ent";
 
 const eventEmitter = {
   on: jest.fn(),
@@ -159,6 +159,33 @@ export class QueryRecorder {
           // EventEmitter
           ...eventEmitter,
         };
+      },
+    );
+  }
+
+  // mock loadEdgeDatas and return a simple non-symmetric|non-inverse edge
+  // not sure if this is the best way but it's the only way I got
+  // long discussion about issues: https://github.com/facebook/jest/issues/936
+
+  // TODO type correctly
+  static mockLoadEdgeDatas(ent: any) {
+    jest.spyOn(ent, "loadEdgeDatas").mockImplementation(
+      async (...edgeTypes: string[]): Promise<Map<string, AssocEdgeData>> => {
+        if (!edgeTypes.length) {
+          return new Map();
+        }
+        return new Map(
+          edgeTypes.map((edgeType) => [
+            edgeType,
+            new AssocEdgeData({
+              edge_table: "assoc_edge_config",
+              symmetric_edge: false,
+              inverse_edge_type: null,
+              edge_type: edgeType,
+              edge_name: "name",
+            }),
+          ]),
+        );
       },
     );
   }

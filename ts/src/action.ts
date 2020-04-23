@@ -18,8 +18,8 @@ export interface Builder<T extends Ent> {
 }
 
 export interface Executor<T extends Ent>
-  extends Iterable<DataOperation<T>>,
-    Iterator<DataOperation<T>> {
+  extends Iterable<DataOperation>,
+    Iterator<DataOperation> {
   // this returns a non-privacy checked "ent"
   // TODO are we sure we want Executor with type-T
   // and maybe only want resolveValue somehow??

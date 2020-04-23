@@ -33,28 +33,7 @@ afterEach(() => {
   QueryRecorder.clear();
 });
 
-// mock loadEdgeDatas and return a simple non-symmetric|non-inverse edge
-// not sure if this is the best way but it's the only way I got
-// long discussion about issues: https://github.com/facebook/jest/issues/936
-jest.spyOn(ent, "loadEdgeDatas").mockImplementation(
-  async (...edgeTypes: string[]): Promise<Map<string, AssocEdgeData>> => {
-    if (!edgeTypes.length) {
-      return new Map();
-    }
-    return new Map(
-      edgeTypes.map((edgeType) => [
-        edgeType,
-        new AssocEdgeData({
-          edge_table: "assoc_edge_config",
-          symmetric_edge: false,
-          inverse_edge_type: null,
-          edge_type: edgeType,
-          edge_name: "name",
-        }),
-      ]),
-    );
-  },
-);
+QueryRecorder.mockLoadEdgeDatas(ent);
 
 class UserSchema extends BaseEntSchema {
   fields: Field[] = [
@@ -715,8 +694,8 @@ function validateFieldsDoNotExist(fields: {}, ...names: string[]) {
   }
 }
 
-function getOperations<T extends Ent>(c: Changeset<T>): DataOperation<T>[] {
-  let ops: DataOperation<T>[] = [];
+function getOperations<T extends Ent>(c: Changeset<T>): DataOperation[] {
+  let ops: DataOperation[] = [];
   for (let op of c.executor()) {
     ops.push(op);
   }
@@ -731,7 +710,7 @@ async function getFieldsFromBuilder<T extends Ent>(
   const ops = getOperations(c);
   expect(ops.length).toBe(expLength);
   for (const op of ops) {
-    const options = (op as EditNodeOperation<T>).options;
+    const options = (op as EditNodeOperation).options;
     if (options !== undefined) {
       return options.fields;
     }
