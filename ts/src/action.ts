@@ -1,15 +1,6 @@
-import {
-  DataOperation,
-  Ent,
-  EntConstructor,
-  Viewer,
-  ID,
-  applyPrivacyPolicyForEntX,
-  applyPrivacyPolicyForEnt,
-} from "./ent";
+import { DataOperation, Ent, EntConstructor, Viewer, ID } from "./ent";
 import { PrivacyPolicy } from "./privacy";
 import DB from "./db";
-import { LoggedOutViewer } from "./viewer";
 
 export enum WriteOperation {
   Insert = "insert",
@@ -109,7 +100,6 @@ async function saveBuilderImpl<T extends Ent>(
 
   const client = await DB.getInstance().getNewClient();
 
-  let viewer = new LoggedOutViewer();
   try {
     await client.query("BEGIN");
     for (const operation of executor) {

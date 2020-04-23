@@ -86,6 +86,18 @@ export class QueryRecorder {
     return QueryRecorder.queries;
   }
 
+  static validateQueriesInTx(expected: queryOptions[], ent: Ent | null) {
+    expected.unshift({ query: "BEGIN" });
+    expected.push({ query: "COMMIT" });
+    this.validateQueryOrder(expected, ent);
+  }
+
+  static validateFailedQueriesInTx(expected: queryOptions[], ent: Ent | null) {
+    expected.unshift({ query: "BEGIN" });
+    expected.push({ query: "ROLLBACK" });
+    this.validateQueryOrder(expected, ent);
+  }
+
   static validateQueryOrder(expected: queryOptions[], ent: Ent | null) {
     let queries = QueryRecorder.queries;
     expect(queries.length).toBe(expected.length);
