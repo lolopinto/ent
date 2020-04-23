@@ -489,12 +489,14 @@ export class EdgeOperation implements DataOperation<never> {
   private static resolveIDs<T extends Ent, T2 extends Ent>(
     srcBuilder: Builder<T>, // id1
     destID: Builder<T2> | ID, // id2 ( and then you flip it)
-  ): [ID, string, boolean, ID] {
+  ): [ID, string, boolean, ID, boolean] {
     let destIDVal: ID;
+    let destPlaceholder = false;
     if (typeof destID === "string" || typeof destID === "number") {
       destIDVal = destID;
     } else {
       destIDVal = destID.placeholderID;
+      destPlaceholder = true;
     }
     let srcIDVal: ID;
     let srcType: string;
@@ -511,7 +513,7 @@ export class EdgeOperation implements DataOperation<never> {
       srcType = "";
     }
 
-    return [srcIDVal, srcType, srcPlaceholder, destIDVal];
+    return [srcIDVal, srcType, srcPlaceholder, destIDVal, destPlaceholder];
   }
 
   static inboundEdge<T extends Ent, T2 extends Ent>(
@@ -521,10 +523,13 @@ export class EdgeOperation implements DataOperation<never> {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    let [id2Val, id2Type, id2Placeholder, id1Val] = EdgeOperation.resolveIDs(
-      builder,
-      id1,
-    );
+    let [
+      id2Val,
+      id2Type,
+      id2Placeholder,
+      id1Val,
+      id1Placeholder,
+    ] = EdgeOperation.resolveIDs(builder, id1);
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -538,6 +543,7 @@ export class EdgeOperation implements DataOperation<never> {
     return new EdgeOperation(edge, {
       operation: WriteOperation.Insert,
       id2Placeholder: id2Placeholder,
+      id1Placeholder: id1Placeholder,
     });
   }
 
@@ -548,10 +554,13 @@ export class EdgeOperation implements DataOperation<never> {
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    let [id1Val, id1Type, id1Placeholder, id2Val] = EdgeOperation.resolveIDs(
-      builder,
-      id2,
-    );
+    let [
+      id1Val,
+      id1Type,
+      id1Placeholder,
+      id2Val,
+      id2Placeholder,
+    ] = EdgeOperation.resolveIDs(builder, id2);
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -565,6 +574,7 @@ export class EdgeOperation implements DataOperation<never> {
     return new EdgeOperation(edge, {
       operation: WriteOperation.Insert,
       id1Placeholder: id1Placeholder,
+      id2Placeholder: id2Placeholder,
     });
   }
 

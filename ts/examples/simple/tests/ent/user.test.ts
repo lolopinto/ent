@@ -58,6 +58,11 @@ test("create user", async () => {
   expect(contact.lastName).toBe("Snow");
   expect(contact.emailAddress).toBe(user.emailAddress);
   expect(contact.userID).toBe(user.id);
+
+  // confirm contact was indicated as a self-contact
+  let selfContact = await user.loadSelfContact();
+  expect(selfContact).not.toBe(null);
+  expect(selfContact?.id).toBe(contact.id);
 });
 
 test("edit user", async () => {

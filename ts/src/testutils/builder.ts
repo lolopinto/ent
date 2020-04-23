@@ -52,9 +52,15 @@ export interface BuilderSchema<T extends Ent> extends Schema {
   ent: EntConstructor<T>;
 }
 
+function randomNum(): string {
+  return Math.random()
+    .toString(10)
+    .substring(2);
+}
+
 export class SimpleBuilder<T extends Ent> implements Builder<T> {
   ent: EntConstructor<T>;
-  placeholderID = "1";
+  placeholderID: ID;
   public orchestrator: Orchestrator<T>;
 
   constructor(
@@ -65,6 +71,8 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     public existingEnt: Ent | undefined = undefined,
     action?: Action<T> | undefined,
   ) {
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+
     this.ent = schema.ent;
     this.orchestrator = new Orchestrator({
       viewer: this.viewer,

@@ -15,8 +15,9 @@ import { getFields, SchemaInputType } from "./schema";
 import { Changeset, Executor, Validator, Trigger } from "./action";
 import { WriteOperation, Builder, Action } from "./action";
 import { snakeCase } from "snake-case";
-import { LoggedOutViewer } from "./viewer";
 import { applyPrivacyPolicyX } from "./privacy";
+import { flattenChangesets } from "./multi_changeset";
+import Graph from "graph-data-structure";
 
 export interface OrchestratorOptions<T extends Ent> {
   viewer: Viewer;
@@ -70,8 +71,8 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
-  addOutboundEdge(
-    id2: ID | Builder<T>,
+  addOutboundEdge<T2 extends Ent>(
+    id2: ID | Builder<T2>,
     edgeType: string,
     nodeType: string,
     options?: AssocEdgeInputOptions,
@@ -350,7 +351,10 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
   ) {}
 
   executor(): Executor<T> {
-    if (this.dependencies || this.changesets) {
+    // TODO: write comment here similar to go
+    // if we have dependencies but no changesets, we just need a simple
+    // executor and depend on something else in the stack to handle this correctly
+    if (this.changesets?.length) {
       return new ComplexExecutor(
         this.viewer,
         this.placeholderID,
@@ -425,114 +429,135 @@ function getCreatedEnt<T extends Ent>(
 
 class ComplexExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
-  private nativeIdx: number;
-  private executors: Executor<T>[] = [];
-  private placeholders: ID[] = [];
   private mapper: Map<ID, T> = new Map();
   private lastOp: DataOperation<T> | undefined;
+  private allOperations: DataOperation<T>[] = [];
+  private changesetNodes: string[] = [];
+  private changesetMap: Map<string, Changeset<T>> = new Map();
 
   constructor(
     private viewer: Viewer,
     private placeholderID: ID,
     private ent: EntConstructor<T>,
-    private operations: DataOperation<T>[],
+    operations: DataOperation<T>[],
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset<T>[],
   ) {
-    let earlyChangesets: Changeset<T>[] = [];
-    let lateChangesets: Changeset<T>[] = [];
+    let graph = Graph();
 
-    changesets.forEach((changeset) => {
-      let builder = dependencies.get(changeset.placeholderID);
-      // copied comment from go
-      // the default expectation is that we run current changeset, then dependent changesets
-      // if there are dependencies, we run the changesets that current one depends on before self and then subsequent
-      // again, this all assumes simple linear dependencies and no webs for now
+    //    let m = new Map<string, Changeset<T>>();
+    const impl = (c: Changeset<T>) => {
+      this.changesetMap.set(c.placeholderID.toString(), c);
 
-      if (builder) {
-        earlyChangesets.push(changeset);
-      } else {
-        lateChangesets.push(changeset);
+      graph.addNode(c.placeholderID.toString());
+      if (c.dependencies) {
+        for (let [key, builder] of c.dependencies) {
+          graph.addEdge(key.toString(), builder.placeholderID.toString(), 1);
+        }
+      }
+
+      if (c.changesets) {
+        // TODO may not want this because of double-counting and may want each changeset's executor to handle this
+        // if so, need to call this outside the loop once
+        c.changesets.forEach((c2) => {
+          impl(c2);
+        });
+      }
+    };
+
+    // create a new changeset representing the source changeset with the simple executor
+    impl({
+      viewer: this.viewer,
+      placeholderID: this.placeholderID,
+      ent: this.ent,
+      changesets: changesets,
+      dependencies: dependencies,
+      executor: () => {
+        return new ListBasedExecutor(
+          this.viewer,
+          this.placeholderID,
+          this.ent,
+          operations,
+        );
+      },
+    });
+
+    // console.log(graph.nodes());
+    // console.log(this.changesetMap);
+    //    let rowMap: Map<string, number> = new Map();
+    let nodeOps: DataOperation<T>[] = [];
+    let remainOps: DataOperation<T>[] = [];
+
+    graph.nodes().forEach((node) => {
+      // TODO throw if we see any undefined because we're trying to write with incomplete data
+      let c = this.changesetMap.get(node);
+      if (!c) {
+        throw new Error(
+          `trying to do a write with incomplete mutation data ${node}`,
+        );
+      }
+      //      console.log(c);
+      // does this work if we're going to call this to figure out the executor?
+      // we need to override this for ourselves and instead of doing executor(), it does list like we have in ComplexExecutor...
+      for (let op of c.executor()) {
+        if (op.returnedEntRow) {
+          // keep track of where we are for each node...
+          // this should work even if a changeset has multiple of these as long as they're the same node-type
+          this.changesetNodes.push(node);
+          //          this.rowMap.set(node, nodeOps.length);
+          nodeOps.push(op);
+        } else {
+          remainOps.push(op);
+        }
       }
     });
-
-    // expectation is we do dependencies first, then self, then other changesets
-    this.addChangesets(earlyChangesets);
-    this.addSelf();
-    this.addChangesets(lateChangesets);
-  }
-
-  private addChangesets(changesets: Changeset<T>[]) {
-    changesets.forEach((changeset) => {
-      this.executors.push(changeset.executor());
-      this.placeholders.push(changeset.placeholderID);
-    });
-  }
-
-  private addSelf() {
-    let executor = new ListBasedExecutor(
-      this.viewer,
-      this.placeholderID,
-      this.ent,
-      this.operations,
-    );
-    this.nativeIdx = this.executors.length;
-    this.executors.push(executor);
-    this.placeholders.push(this.placeholderID);
+    // get all the operations and put node operations first
+    this.allOperations = [...nodeOps, ...remainOps];
+    //    console.log(this.changesetNodes);
+    //    console.log(nodeOps, remainOps, nodeOps.length, remainOps.length);
+    //    console.log(this.allOperations);
   }
 
   [Symbol.iterator]() {
     return this;
   }
 
-  private getOperation(): IteratorResult<DataOperation<T>> {
-    // done. nothing to do here
-    if (this.idx === this.executors.length) {
-      return { value: null, done: true };
-    }
-    return this.executors[this.idx].next();
-  }
-
   private handleCreatedEnt() {
-    let createdEnt = getCreatedEnt(this.viewer, this.lastOp, this.ent);
+    // using previous index
+    let c = this.changesetMap.get(this.changesetNodes[this.idx - 1]);
+    if (!c) {
+      // nothing to do here
+      return;
+    }
+    let createdEnt = getCreatedEnt(this.viewer, this.lastOp, c.ent);
+    //    console.log(createdEnt);
     if (!createdEnt) {
       return;
     }
 
-    // hmm, this is how it worked with go. can probably be made better at some point.
-    if (this.idx != this.nativeIdx) {
-      return;
-    }
-    let placeholderID = this.placeholders[this.idx];
-    this.mapper[placeholderID] = createdEnt;
+    let placeholderID = c.placeholderID;
+    this.mapper.set(placeholderID, createdEnt);
+    //    console.log(this.mapper);
   }
 
   next(): IteratorResult<DataOperation<T>> {
-    let result = this.getOperation();
-
     if (this.lastOp) {
       this.handleCreatedEnt();
     }
-
-    if (result.done) {
-      // done with previous executor, let's move to the next
-      this.idx++;
-      result = this.getOperation();
-    }
-    return result;
+    const done = this.idx === this.allOperations.length;
+    const op = this.allOperations[this.idx];
+    this.idx++;
+    this.lastOp = op;
+    return {
+      value: op,
+      done: done,
+    };
   }
 
   resolveValue(val: ID): T | null {
     let ent = this.mapper.get(val);
     if (ent) {
       return ent;
-    }
-
-    for (let i = 0; i < this.executors.length; i++) {
-      let ent = this.executors[i].resolveValue(val);
-      if (ent) {
-        return ent;
-      }
     }
     return null;
   }

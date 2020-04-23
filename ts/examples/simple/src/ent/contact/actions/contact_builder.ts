@@ -72,23 +72,6 @@ export class ContactBuilder implements Builder<Contact> {
     };
   }
 
-  private getEditedFields(): Map<string, any> {
-    const fields = this.input;
-
-    let result = new Map<string, any>();
-
-    const addField = function(key: string, value: any) {
-      if (value !== undefined) {
-        result.set(key, value);
-      }
-    };
-    addField("emailAddress", fields.emailAddress);
-    addField("firstName", fields.firstName);
-    addField("lastName", fields.lastName);
-    addField("userID", fields.userID);
-    return result;
-  }
-
   async build(): Promise<Changeset<Contact>> {
     return this.orchestrator.build();
   }
@@ -115,5 +98,28 @@ export class ContactBuilder implements Builder<Contact> {
 
   async editedEntX(): Promise<Contact> {
     return await this.orchestrator.editedEntX();
+  }
+
+  private getEditedFields(): Map<string, any> {
+    const fields = this.input;
+
+    let result = new Map<string, any>();
+
+    const addField = function(key: string, value: any) {
+      if (value !== undefined) {
+        result.set(key, value);
+      }
+    };
+    addField("emailAddress", fields.emailAddress);
+    addField("firstName", fields.firstName);
+    addField("lastName", fields.lastName);
+    addField("userID", fields.userID);
+    return result;
+  }
+
+  private isUserBuilder(
+    node: ID | User | Builder<User>,
+  ): node is Builder<User> {
+    return (node as Builder<User>).placeholderID !== undefined;
   }
 }

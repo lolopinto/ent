@@ -519,7 +519,7 @@ describe("trigger", () => {
 
   test("update builder", async () => {
     advanceTo(now);
-    const viewer = new IDViewer("1");
+    const viewer = new IDViewer("11");
     const action = new SimpleAction(
       viewer,
       new UserSchemaWithStatus(),

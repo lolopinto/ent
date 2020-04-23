@@ -32,8 +32,7 @@ export default class CreateUserAction extends CreateUserActionBase {
           userID: builder,
         });
 
-        // TODO this should be supported...
-        //builder.addSelfContact(action.builder);
+        builder.addSelfContact(action.builder);
         return action.changeset();
       },
     },

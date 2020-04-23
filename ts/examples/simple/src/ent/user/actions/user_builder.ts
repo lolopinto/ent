@@ -75,29 +75,14 @@ export class UserBuilder implements Builder<User> {
     };
   }
 
-  private getEditedFields(): Map<string, any> {
-    const fields = this.input;
-
-    let result = new Map<string, any>();
-
-    const addField = function(key: string, value: any) {
-      if (value !== undefined) {
-        result.set(key, value);
-      }
-    };
-    addField("FirstName", fields.firstName);
-    addField("LastName", fields.lastName);
-    addField("EmailAddress", fields.emailAddress);
-    addField("AccountStatus", fields.accountStatus);
-    addField("emailVerified", fields.emailVerified);
-    return result;
-  }
-
   addCreatedEvent(...ids: ID[]): UserBuilder;
   addCreatedEvent(...nodes: Event[]): UserBuilder;
-  addCreatedEvent(...nodes: ID[] | Event[]): UserBuilder {
+  addCreatedEvent(...nodes: Builder<Event>[]): UserBuilder;
+  addCreatedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
     for (const node of nodes) {
-      if (typeof node === "object") {
+      if (this.isEventBuilder(node)) {
+        this.addCreatedEventID(node.placeholderID);
+      } else if (typeof node === "object") {
         this.addCreatedEventID(node.id);
       } else {
         this.addCreatedEventID(node);
@@ -106,7 +91,10 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addCreatedEventID(id: ID, options?: AssocEdgeInputOptions): UserBuilder {
+  addCreatedEventID(
+    id: ID | Builder<Event>,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToCreatedEvents,
@@ -137,9 +125,12 @@ export class UserBuilder implements Builder<User> {
 
   addFriend(...ids: ID[]): UserBuilder;
   addFriend(...nodes: User[]): UserBuilder;
-  addFriend(...nodes: ID[] | User[]): UserBuilder {
+  addFriend(...nodes: Builder<User>[]): UserBuilder;
+  addFriend(...nodes: ID[] | User[] | Builder<User>[]): UserBuilder {
     for (const node of nodes) {
-      if (typeof node === "object") {
+      if (this.isUserBuilder(node)) {
+        this.addFriendID(node.placeholderID);
+      } else if (typeof node === "object") {
         this.addFriendID(node.id);
       } else {
         this.addFriendID(node);
@@ -148,7 +139,10 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addFriendID(id: ID, options?: AssocEdgeInputOptions): UserBuilder {
+  addFriendID(
+    id: ID | Builder<User>,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToFriends,
@@ -173,9 +167,12 @@ export class UserBuilder implements Builder<User> {
 
   addSelfContact(...ids: ID[]): UserBuilder;
   addSelfContact(...nodes: Contact[]): UserBuilder;
-  addSelfContact(...nodes: ID[] | Contact[]): UserBuilder {
+  addSelfContact(...nodes: Builder<Contact>[]): UserBuilder;
+  addSelfContact(...nodes: ID[] | Contact[] | Builder<Contact>[]): UserBuilder {
     for (const node of nodes) {
-      if (typeof node === "object") {
+      if (this.isContactBuilder(node)) {
+        this.addSelfContactID(node);
+      } else if (typeof node === "object") {
         this.addSelfContactID(node.id);
       } else {
         this.addSelfContactID(node);
@@ -184,7 +181,10 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addSelfContactID(id: ID, options?: AssocEdgeInputOptions): UserBuilder {
+  addSelfContactID(
+    id: ID | Builder<Contact>,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToSelfContact,
@@ -212,9 +212,12 @@ export class UserBuilder implements Builder<User> {
 
   addInvitedEvent(...ids: ID[]): UserBuilder;
   addInvitedEvent(...nodes: Event[]): UserBuilder;
-  addInvitedEvent(...nodes: ID[] | Event[]): UserBuilder {
+  addInvitedEvent(...nodes: Builder<Event>[]): UserBuilder;
+  addInvitedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
     for (const node of nodes) {
-      if (typeof node === "object") {
+      if (this.isEventBuilder(node)) {
+        this.addInvitedEventID(node.placeholderID);
+      } else if (typeof node === "object") {
         this.addInvitedEventID(node.id);
       } else {
         this.addInvitedEventID(node);
@@ -223,7 +226,10 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addInvitedEventID(id: ID, options?: AssocEdgeInputOptions): UserBuilder {
+  addInvitedEventID(
+    id: ID | Builder<Event>,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToInvitedEvents,
@@ -254,9 +260,12 @@ export class UserBuilder implements Builder<User> {
 
   addEventsAttending(...ids: ID[]): UserBuilder;
   addEventsAttending(...nodes: Event[]): UserBuilder;
-  addEventsAttending(...nodes: ID[] | Event[]): UserBuilder {
+  addEventsAttending(...nodes: Builder<Event>[]): UserBuilder;
+  addEventsAttending(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
     for (const node of nodes) {
-      if (typeof node === "object") {
+      if (this.isEventBuilder(node)) {
+        this.addEventsAttendingID(node.placeholderID);
+      } else if (typeof node === "object") {
         this.addEventsAttendingID(node.id);
       } else {
         this.addEventsAttendingID(node);
@@ -265,7 +274,10 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addEventsAttendingID(id: ID, options?: AssocEdgeInputOptions): UserBuilder {
+  addEventsAttendingID(
+    id: ID | Builder<Event>,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToEventsAttending,
@@ -296,9 +308,12 @@ export class UserBuilder implements Builder<User> {
 
   addDeclinedEvent(...ids: ID[]): UserBuilder;
   addDeclinedEvent(...nodes: Event[]): UserBuilder;
-  addDeclinedEvent(...nodes: ID[] | Event[]): UserBuilder {
+  addDeclinedEvent(...nodes: Builder<Event>[]): UserBuilder;
+  addDeclinedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
     for (const node of nodes) {
-      if (typeof node === "object") {
+      if (this.isEventBuilder(node)) {
+        this.addDeclinedEventID(node.placeholderID);
+      } else if (typeof node === "object") {
         this.addDeclinedEventID(node.id);
       } else {
         this.addDeclinedEventID(node);
@@ -307,7 +322,10 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addDeclinedEventID(id: ID, options?: AssocEdgeInputOptions): UserBuilder {
+  addDeclinedEventID(
+    id: ID | Builder<Event>,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToDeclinedEvents,
@@ -338,9 +356,12 @@ export class UserBuilder implements Builder<User> {
 
   addMaybeEvent(...ids: ID[]): UserBuilder;
   addMaybeEvent(...nodes: Event[]): UserBuilder;
-  addMaybeEvent(...nodes: ID[] | Event[]): UserBuilder {
+  addMaybeEvent(...nodes: Builder<Event>[]): UserBuilder;
+  addMaybeEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
     for (const node of nodes) {
-      if (typeof node === "object") {
+      if (this.isEventBuilder(node)) {
+        this.addMaybeEventID(node.placeholderID);
+      } else if (typeof node === "object") {
         this.addMaybeEventID(node.id);
       } else {
         this.addMaybeEventID(node);
@@ -349,7 +370,10 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
-  addMaybeEventID(id: ID, options?: AssocEdgeInputOptions): UserBuilder {
+  addMaybeEventID(
+    id: ID | Builder<Event>,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
     this.orchestrator.addOutboundEdge(
       id,
       EdgeType.UserToMaybeEvents,
@@ -401,5 +425,41 @@ export class UserBuilder implements Builder<User> {
 
   async editedEntX(): Promise<User> {
     return await this.orchestrator.editedEntX();
+  }
+
+  private getEditedFields(): Map<string, any> {
+    const fields = this.input;
+
+    let result = new Map<string, any>();
+
+    const addField = function(key: string, value: any) {
+      if (value !== undefined) {
+        result.set(key, value);
+      }
+    };
+    addField("FirstName", fields.firstName);
+    addField("LastName", fields.lastName);
+    addField("EmailAddress", fields.emailAddress);
+    addField("AccountStatus", fields.accountStatus);
+    addField("emailVerified", fields.emailVerified);
+    return result;
+  }
+
+  private isEventBuilder(
+    node: ID | Event | Builder<Event>,
+  ): node is Builder<Event> {
+    return (node as Builder<Event>).placeholderID !== undefined;
+  }
+
+  private isUserBuilder(
+    node: ID | User | Builder<User>,
+  ): node is Builder<User> {
+    return (node as Builder<User>).placeholderID !== undefined;
+  }
+
+  private isContactBuilder(
+    node: ID | Contact | Builder<Contact>,
+  ): node is Builder<Contact> {
+    return (node as Builder<Contact>).placeholderID !== undefined;
   }
 }
