@@ -152,7 +152,7 @@ export class Orchestrator<T extends Ent> {
     // so running this first to build things up
     let triggers = this.options.action?.triggers;
     if (triggers) {
-      let triggerPromises: Promise<Changeset<T>>[] = [];
+      let triggerPromises: Promise<Changeset<T> | Changeset<T>[]>[] = [];
 
       triggers.forEach((trigger) => {
         let c = trigger.changeset(builder);
@@ -176,10 +176,20 @@ export class Orchestrator<T extends Ent> {
   }
 
   private async triggers(
-    triggerPromises: Promise<Changeset<T>>[],
+    triggerPromises: Promise<Changeset<T> | Changeset<T>[]>[],
   ): Promise<void> {
     // keep changesets to use later
-    this.changesets = await Promise.all(triggerPromises);
+    let changesets: (Changeset<T> | Changeset<T>[])[] = await Promise.all(
+      triggerPromises,
+    );
+    changesets.forEach((c) => {
+      if (Array.isArray(c)) {
+        this.changesets.push(...c);
+      } else {
+        this.changesets.push(c);
+      }
+    });
+    //    console.log(this.changesets);
   }
 
   private async validators(
@@ -341,6 +351,7 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
   ) {}
 
   executor(): Executor<T> {
+    //    console.log(this.operations, this.dependencies, this.changesets);
     // TODO: write comment here similar to go
     // if we have dependencies but no changesets, we just need a simple
     // executor and depend on something else in the stack to handle this correctly

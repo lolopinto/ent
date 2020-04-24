@@ -45,7 +45,10 @@ export interface Changeset<T extends Ent> {
 
 export interface Trigger<T extends Ent> {
   // can throw if it wants. not expected to throw tho.
-  changeset(builder: Builder<T>): void | Promise<Changeset<T>>;
+  changeset(
+    builder: Builder<T>,
+  ): // hmm Promise<void> is not yet an option...
+  void | Promise<Changeset<T> | Changeset<T>[]>;
 }
 
 export interface Observer {

@@ -59,6 +59,30 @@ export class Contact implements Ent {
   }
 }
 
+export class Group implements Ent {
+  id: ID;
+  accountID: string;
+  nodeType = "Group";
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysAllowRule],
+  };
+  constructor(public viewer: Viewer, id: ID, public data: {}) {
+    this.id = id;
+  }
+}
+
+export class Message implements Ent {
+  id: ID;
+  accountID: string;
+  nodeType = "Message";
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysAllowRule],
+  };
+  constructor(public viewer: Viewer, id: ID, public data: {}) {
+    this.id = id;
+  }
+}
+
 export interface BuilderSchema<T extends Ent> extends Schema {
   ent: EntConstructor<T>;
 }
@@ -90,7 +114,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     this.orchestrator = new Orchestrator({
       viewer: this.viewer,
       operation: operation,
-      tableName: "foo",
+      tableName: this.ent.name,
       ent: this.ent,
       builder: this,
       action: action,
@@ -149,6 +173,10 @@ export class SimpleAction<T extends Ent> implements Action<T> {
         return ent;
       }
     }
+  }
+
+  async editedEnt(): Promise<T | null> {
+    return await this.builder.orchestrator.editedEnt();
   }
 }
 

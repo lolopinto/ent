@@ -33,7 +33,9 @@ afterEach(() => {
   QueryRecorder.clear();
 });
 
-QueryRecorder.mockLoadEdgeDatas(ent);
+jest
+  .spyOn(ent, "loadEdgeDatas")
+  .mockImplementation(QueryRecorder.mockImplOfLoadEdgeDatas);
 
 class UserSchema extends BaseEntSchema {
   fields: Field[] = [

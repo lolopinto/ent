@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO recreate these tests for typescript...
 func TestEmptyList(t *testing.T) {
 	exec := newListBasedExec([]string{}, "")
 	result, err := execOperations(exec)

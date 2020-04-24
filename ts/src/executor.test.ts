@@ -1,14 +1,17 @@
-import { Ent, DataOperation } from "./ent";
-import { Builder, Executor, WriteOperation } from "./action";
+import { AssocEdgeData, Ent, DataOperation, Viewer } from "./ent";
+import { Builder, Changeset, Executor, WriteOperation } from "./action";
 import * as action from "./action";
 import * as ent from "./ent";
+import { snakeCase } from "snake-case";
 
 import DB from "./db";
 
-import { Pool } from "pg";
-import { QueryRecorder } from "./testutils/db_mock";
+import { Pool, Query } from "pg";
+import { QueryRecorder, queryType } from "./testutils/db_mock";
 import {
   User,
+  Group,
+  Message,
   FakeBuilder,
   Contact,
   SimpleBuilder,
@@ -16,13 +19,39 @@ import {
 } from "./testutils/builder";
 import { LoggedOutViewer } from "./viewer";
 import { BaseEntSchema, Field } from "./schema";
-import { StringType, TimeType } from "./field";
+import { StringType, TimeType, BooleanType } from "./field";
+import { ListBasedExecutor, ComplexExecutor } from "./executor";
+import * as query from "./query";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
-QueryRecorder.mockLoadEdgeDatas(ent);
+
+jest
+  .spyOn(ent, "loadEdgeDatas")
+  .mockImplementation(QueryRecorder.mockImplOfLoadEdgeDatas);
 
 let operations: DataOperation[] = [];
+
+beforeEach(() => {
+  // can't mock loadEdgeData because it's being called from within the ent module so have to do this instead
+  // this is getting too complicated...
+
+  // TODO can change loadEdgeDatas to do this depending on values[0]
+  QueryRecorder.mockResult({
+    tableName: "assoc_edge_config",
+    clause: query.Eq("edge_type", "fake_edge"),
+    row: (values: any[]) => {
+      let edgeType = values[0];
+      return {
+        edge_table: snakeCase(`${edgeType}_table`),
+        symmetric_edge: false,
+        inverse_edge_type: null,
+        edge_type: edgeType,
+        edge_name: "name",
+      };
+    },
+  });
+});
 
 afterEach(() => {
   QueryRecorder.clear();
@@ -56,6 +85,8 @@ async function executeOperations<T extends Ent>(
     await client.query("COMMIT");
   } catch (e) {
     await client.query("ROLLBACK");
+    // rethrow
+    throw e;
   }
 }
 
@@ -70,6 +101,7 @@ class UserSchema extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
+    StringType({ name: "EmailAddress", nullable: true }),
   ];
   ent = User;
 }
@@ -142,7 +174,9 @@ test("simple-one-op-no-created-ent", async () => {
   );
 });
 
-test.only("list-based-with-dependency", async () => {
+// TODO figure out if I want to keep everything above as-is
+
+test("list-based-with-dependency", async () => {
   let userBuilder = new SimpleBuilder(
     new LoggedOutViewer(),
     new UserSchema(),
@@ -164,10 +198,24 @@ test.only("list-based-with-dependency", async () => {
     ]),
     WriteOperation.Insert,
   );
+
+  // list based executor because dependencies but no changesets
+  const exec = await executor(contactAction.builder);
+  expect(exec).toBeInstanceOf(ListBasedExecutor);
+
+  try {
+    // can't actually run this on its own but that's expected
+    await executeOperations(exec);
+    fail("should not have gotten here");
+  } catch (e) {
+    expect(e.message).toBe(
+      `couldn't resolve field user_id with value ${userBuilder.placeholderID}`,
+    );
+    expect(operations.length).toBe(1);
+  }
 });
 
 test("complex-based-with-dependencies", async () => {
-  // todo this is complex with dependencies
   let contactAction: SimpleAction<Contact>;
   const action = new SimpleAction(
     new LoggedOutViewer(),
@@ -182,7 +230,7 @@ test("complex-based-with-dependencies", async () => {
     {
       changeset: (
         builder: SimpleBuilder<User>,
-      ): Promise<action.Changeset<Contact>> => {
+      ): Promise<Changeset<Contact>> => {
         let firstName = builder.fields.get("FirstName");
         let lastName = builder.fields.get("LastName");
         contactAction = new SimpleAction(
@@ -204,20 +252,256 @@ test("complex-based-with-dependencies", async () => {
       },
     },
   ];
+  // expect ComplexExecutor because of complexity of what we have here
   const exec = await executor(action.builder);
-  console.log(exec);
-  // await executeOperations(exec);
-  // let ent = builder.createdEnt();
-  // expect(ent).toBe(null);
-  // expect(exec.resolveValue(builder.placeholderID)).toBe(null);
-  // expect(operations.length).toBe(1);
-  // QueryRecorder.validateQueriesInTx(
-  //   [
-  //     {
-  //       query: "edge",
-  //       values: [user.id, id2],
-  //     },
-  //   ],
-  //   ent,
-  // );
+  expect(exec).toBeInstanceOf(ComplexExecutor);
+
+  await executeOperations(exec);
+  let [user, contact] = await Promise.all([
+    action.editedEnt(),
+    contactAction!.editedEnt(),
+  ]);
+  expect(operations.length).toBe(3);
+  expect(user).toBeInstanceOf(User);
+  expect(contact).toBeInstanceOf(Contact);
+
+  expect(exec.resolveValue(contactAction!.builder.placeholderID)).toStrictEqual(
+    contact,
+  );
+  expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(user);
+
+  QueryRecorder.validateQueryStructuresInTx([
+    {
+      tableName: "User",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "Contact",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "fake_edge_table",
+      type: queryType.INSERT,
+    },
+  ]);
+});
+
+class GroupSchema extends BaseEntSchema {
+  fields: Field[] = [];
+  ent = Group;
+}
+
+class MessageSchema extends BaseEntSchema {
+  fields: Field[] = [
+    // TODO both id fields
+    StringType({ name: "from" }),
+    StringType({ name: "to" }),
+    StringType({ name: "message" }),
+    BooleanType({ name: "transient", nullable: true }),
+    TimeType({ name: "expiresAt", nullable: true }),
+  ];
+  ent = Message;
+}
+
+class MessageAction extends SimpleAction<Message> {
+  constructor(
+    viewer: Viewer,
+    fields: Map<string, any>,
+    operation: WriteOperation.Insert,
+    existingEnt?: Message,
+  ) {
+    super(viewer, new MessageSchema(), fields, operation, existingEnt);
+  }
+
+  triggers: action.Trigger<Message>[] = [
+    {
+      changeset: (builder: SimpleBuilder<Message>): void => {
+        let from = builder.fields.get("from");
+        let to = builder.fields.get("to");
+
+        builder.orchestrator.addInboundEdge(from, "senderToMessage", "user");
+        builder.orchestrator.addInboundEdge(to, "recipientToMessage", "user");
+      },
+    },
+  ];
+}
+
+function randomEmail(): string {
+  const rand = Math.random()
+    .toString(16)
+    .substring(2);
+
+  return `test+${rand}@email.com`;
+}
+
+// TODO add- user creating contact or something like that in here and wer'e done...
+
+// this is the join a slack workspace and autojoin channels flow
+test("list-with-complex-layers", async () => {
+  async function fetchUserName() {
+    return {
+      firstName: "Sansa",
+      lastName: "Stark",
+      emailAddress: randomEmail(),
+    };
+  }
+  async function getAutoJoinChannels() {
+    return [
+      {
+        name: "#general",
+        id: QueryRecorder.newID(),
+      },
+      {
+        name: "#random",
+        id: QueryRecorder.newID(),
+      },
+      {
+        name: "#fun",
+        id: QueryRecorder.newID(),
+      },
+    ];
+  }
+  async function getInvitee(viewer: Viewer): Promise<User> {
+    return new User(viewer, QueryRecorder.newID(), {});
+  }
+  const group = new Group(new LoggedOutViewer(), QueryRecorder.newID(), {});
+
+  let userAction: SimpleAction<User>;
+  let messageAction: SimpleAction<Message>;
+
+  const action = new SimpleAction(
+    new LoggedOutViewer(),
+    new GroupSchema(),
+    new Map(),
+    WriteOperation.Edit,
+    group,
+  );
+  // this would ordinarily be built into the action...
+  action.builder.orchestrator.addInboundEdge(
+    group.id,
+    "workspaceMember",
+    "user",
+  );
+  action.triggers = [
+    {
+      changeset: async (
+        builder: SimpleBuilder<Group>,
+      ): Promise<Changeset<any>[]> => {
+        let [userInfo, autoJoinChannels, invitee] = await Promise.all([
+          fetchUserName(),
+          getAutoJoinChannels(),
+          getInvitee(builder.viewer),
+        ]);
+        userAction = new SimpleAction(
+          builder.viewer,
+          new UserSchema(),
+          new Map([
+            ["FirstName", userInfo.firstName],
+            ["LastName", userInfo.lastName],
+            ["EmailAddress", userInfo.emailAddress],
+          ]),
+          WriteOperation.Insert,
+        );
+        for (let channel of autoJoinChannels) {
+          // for extra credit make this
+          builder.orchestrator.addOutboundEdge(
+            channel.id,
+            "channelMember",
+            "Channel",
+          );
+        }
+
+        messageAction = new MessageAction(
+          builder.viewer,
+          new Map<string, any>([
+            ["from", userAction.builder],
+            ["to", invitee.id],
+            ["message", `${userInfo.firstName} has joined!`],
+            ["transient", true],
+            ["expiresAt", new Date().setTime(new Date().getTime() + 86400)],
+          ]),
+          WriteOperation.Insert,
+        );
+
+        return await Promise.all([
+          userAction.changeset(),
+          messageAction.changeset(),
+        ]);
+      },
+    },
+  ];
+
+  // expect ComplexExecutor because of complexity of what we have here
+  // we have a Group action which has
+  const exec = await executor(action.builder);
+  expect(exec).toBeInstanceOf(ComplexExecutor);
+
+  await executeOperations(exec);
+  let [createdGroup, user, message] = await Promise.all([
+    action.editedEnt(),
+    userAction!.editedEnt(),
+    messageAction!.editedEnt(),
+  ]);
+  //  console.log(operations);
+  // 3 nodes changed:
+  // * Group updated(shouldn't actually be)
+  // * User created
+  // * Message created
+  // 6 edges added (assume all one-way):
+  // 1 workspace member
+  // 3 channel members (for the 3 auto-join channels)
+  // 2 messages: 1 from message -> sender and one from message -> receiver
+  expect(operations.length).toBe(9);
+  expect(createdGroup).toBeInstanceOf(Group);
+  expect(user).toBeInstanceOf(User);
+  expect(message).toBeInstanceOf(Message);
+
+  expect(exec.resolveValue(userAction!.builder.placeholderID)).toStrictEqual(
+    user,
+  );
+  expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(
+    createdGroup,
+  );
+  expect(exec.resolveValue(messageAction!.builder.placeholderID)).toStrictEqual(
+    message,
+  );
+
+  QueryRecorder.validateQueryStructuresInTx([
+    {
+      tableName: "Group",
+      type: queryType.UPDATE,
+    },
+    {
+      tableName: "User",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "Message",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "workspace_member_table",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "channel_member_table",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "channel_member_table",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "channel_member_table",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "sender_to_message_table",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "recipient_to_message_table",
+      type: queryType.INSERT,
+    },
+  ]);
 });
