@@ -22,6 +22,7 @@ import { BaseEntSchema, Field } from "./schema";
 import { StringType, TimeType, BooleanType } from "./field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import * as query from "./query";
+import { IDViewer } from "./testutils/id_viewer";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -124,57 +125,68 @@ test("empty", async () => {
 });
 
 test("simple-one-op-created-ent", async () => {
-  const builder = new FakeBuilder(
-    new Map([["foo", "bar"]]),
+  const action = new SimpleAction(
+    new LoggedOutViewer(),
+    new UserSchema(),
+    new Map([
+      ["FirstName", "Jon"],
+      ["LastName", "Snow"],
+    ]),
     WriteOperation.Insert,
-    User,
   );
 
-  const exec = await executor(builder);
+  const exec = await executor(action.builder);
+  expect(exec).toBeInstanceOf(ListBasedExecutor);
   await executeOperations(exec);
-  let ent = builder.createdEnt();
+
+  let ent = await action.editedEnt();
   expect(ent).not.toBe(null);
-  expect(exec.resolveValue(builder.placeholderID)).toStrictEqual(ent);
+  expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(ent);
   expect(exec.resolveValue(ent?.id)).toBe(null);
 
   expect(operations.length).toBe(1);
-  QueryRecorder.validateQueriesInTx(
-    [
-      {
-        query: "insert foo, id",
-        values: ["bar", "{id}"],
-      },
-    ],
-    ent,
-  );
+  QueryRecorder.validateQueryStructuresInTx([
+    {
+      tableName: "User",
+      type: queryType.INSERT,
+    },
+  ]);
 });
 
 test("simple-one-op-no-created-ent", async () => {
-  const user = new User(new LoggedOutViewer(), QueryRecorder.newID(), {});
-  const builder = new FakeBuilder(new Map(), WriteOperation.Edit, User, user);
-
-  const id2 = QueryRecorder.newID();
-  builder.addEdge({ id1: user.id, id2: id2 });
-
-  const exec = await executor(builder);
-  await executeOperations(exec);
-  let ent = builder.createdEnt();
-  expect(ent).toBe(null);
-  expect(exec.resolveValue(builder.placeholderID)).toBe(null);
-
-  expect(operations.length).toBe(1);
-  QueryRecorder.validateQueriesInTx(
-    [
-      {
-        query: "edge",
-        values: [user.id, id2],
-      },
-    ],
-    ent,
+  let id = QueryRecorder.newID();
+  const viewer = new IDViewer(id);
+  const user = new User(viewer, id, {});
+  const action = new SimpleAction(
+    viewer,
+    new UserSchema(),
+    new Map(),
+    WriteOperation.Edit,
+    user,
   );
-});
+  const id2 = QueryRecorder.newID();
 
-// TODO figure out if I want to keep everything above as-is
+  action.builder.orchestrator.addOutboundEdge(id2, "fakeEdge", "user");
+
+  const exec = await executor(action.builder);
+  await executeOperations(exec);
+  let ent = await action.editedEnt();
+  expect(ent).not.toBe(null);
+  expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(ent);
+
+  expect(operations.length).toBe(2);
+  QueryRecorder.validateQueryStructuresInTx([
+    {
+      // TODO this shouldn't be here...
+      tableName: "User",
+      type: queryType.UPDATE,
+    },
+    {
+      tableName: "fake_edge_table",
+      type: queryType.INSERT,
+    },
+  ]);
+});
 
 test("list-based-with-dependency", async () => {
   let userBuilder = new SimpleBuilder(
@@ -442,7 +454,6 @@ test("list-with-complex-layers", async () => {
     userAction!.editedEnt(),
     messageAction!.editedEnt(),
   ]);
-  //  console.log(operations);
   // 3 nodes changed:
   // * Group updated(shouldn't actually be)
   // * User created
