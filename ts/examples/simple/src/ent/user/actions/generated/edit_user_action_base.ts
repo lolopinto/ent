@@ -33,7 +33,7 @@ export class EditUserActionBase implements Action<User> {
     );
   }
 
-  getFields(): UserInput {
+  getInput(): UserInput {
     return {
       ...this.input,
       requiredFields: [],

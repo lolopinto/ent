@@ -25,7 +25,7 @@ export class DeleteEventActionBase implements Action<Event> {
     );
   }
 
-  getFields(): EventInput {
+  getInput(): EventInput {
     return {
       requiredFields: [],
     };

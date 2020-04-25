@@ -2,11 +2,6 @@
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "editor.formatOnType": true,
-  "prettier.endOfLine": "lf",
-  "prettier.trailingComma": "all",
-  "prettier.quoteProps": "consistent",
-  "prettier.semi": true,
-  "prettier.tabWidth": 2,
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },

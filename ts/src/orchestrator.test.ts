@@ -16,6 +16,7 @@ import { IDViewer } from "../src/testutils/id_viewer";
 import { User, SimpleBuilder, SimpleAction } from "./testutils/builder";
 import { Pool } from "pg";
 import { QueryRecorder } from "./testutils/db_mock";
+import { AlwaysAllowRule, DenyIfLoggedInRule } from "./privacy";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -63,6 +64,7 @@ class SchemaWithProcessors extends BaseEntSchema {
 
 test("schema on create", async () => {
   const builder = new SimpleBuilder(
+    new LoggedOutViewer(),
     UserSchema,
     new Map([
       ["FirstName", "Jon"],
@@ -78,6 +80,7 @@ test("schema on create", async () => {
 
 test("missing required field", async () => {
   const builder = new SimpleBuilder(
+    new LoggedOutViewer(),
     UserSchema,
     new Map([
       ["FirstName", "Jon"],
@@ -99,6 +102,7 @@ test("missing required field", async () => {
 // should this be default and simplify builders?
 test("required field not set", async () => {
   const builder = new SimpleBuilder(
+    new LoggedOutViewer(),
     UserSchema,
     new Map([["FirstName", "Jon"]]),
   );
@@ -114,6 +118,7 @@ test("required field not set", async () => {
 test("schema on edit", async () => {
   const user = new User(new LoggedOutViewer(), "1", { id: "1" });
   const builder = new SimpleBuilder(
+    new LoggedOutViewer(),
     UserSchema,
     // field that's not changed isn't set...
     // simulating what the generated builder will do
@@ -131,6 +136,7 @@ test("schema on edit", async () => {
 test("schema on delete", async () => {
   const user = new User(new LoggedOutViewer(), "1", { id: "1" });
   const builder = new SimpleBuilder(
+    new LoggedOutViewer(),
     UserSchema,
     new Map(),
     WriteOperation.Delete,
@@ -152,6 +158,7 @@ test("schema with null fields", async () => {
   }
 
   const builder = new SimpleBuilder(
+    new LoggedOutViewer(),
     SchemaWithNullFields,
     new Map([["startTime", new Date()]]),
   );
@@ -162,6 +169,7 @@ test("schema with null fields", async () => {
   validateFieldsDoNotExist(fields, "end_time");
 
   const builder2 = new SimpleBuilder(
+    new LoggedOutViewer(),
     SchemaWithNullFields,
     new Map([
       ["startTime", new Date()],
@@ -183,6 +191,7 @@ test("schema_with_overriden_storage_key", async () => {
   }
 
   const builder = new SimpleBuilder(
+    new LoggedOutViewer(),
     SchemaWithOverridenDBKey,
     new Map([["emailAddress", "test@email.com"]]),
   );
@@ -195,6 +204,7 @@ test("schema_with_overriden_storage_key", async () => {
 describe("schema_with_processors", () => {
   test("simple case", async () => {
     const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
       SchemaWithProcessors,
       new Map([
         ["username", "lolopinto"],
@@ -210,6 +220,7 @@ describe("schema_with_processors", () => {
 
   test("username lowered", async () => {
     const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
       SchemaWithProcessors,
       new Map([
         ["username", "LOLOPINTO"],
@@ -225,6 +236,7 @@ describe("schema_with_processors", () => {
 
   test("invalid zip", async () => {
     const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
       SchemaWithProcessors,
       new Map([
         ["username", "LOLOPINTO"],
@@ -245,12 +257,12 @@ test("inbound edge", async () => {
   const viewer = new IDViewer("1");
   const user = new User(viewer, "1", { id: "1" });
   const builder = new SimpleBuilder(
+    viewer,
     UserSchema,
     new Map(),
     WriteOperation.Edit,
     user, // TODO enforce existing ent if not create
   );
-  builder.viewer = viewer;
   builder.orchestrator.addInboundEdge("2", "edge", "User");
 
   const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
@@ -267,12 +279,12 @@ test("outbound edge", async () => {
   const viewer = new IDViewer("1");
   const user = new User(viewer, "1", { id: "1" });
   const builder = new SimpleBuilder(
+    viewer,
     UserSchema,
     new Map(),
     WriteOperation.Edit,
     user, // TODO enforce existing ent if not create
   );
-  builder.viewer = viewer;
   builder.orchestrator.addOutboundEdge("2", "edge", "User");
 
   const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
@@ -290,12 +302,12 @@ describe("remove inbound edge", () => {
     const viewer = new IDViewer("1");
     const user = new User(viewer, "1", { id: "1" });
     const builder = new SimpleBuilder(
+      viewer,
       UserSchema,
       new Map(),
       WriteOperation.Edit,
       user, // TODO enforce existing ent if not create
     );
-    builder.viewer = viewer;
     builder.orchestrator.removeInboundEdge("2", "edge");
 
     const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
@@ -310,6 +322,7 @@ describe("remove inbound edge", () => {
 
   test("no ent", async () => {
     const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
       UserSchema,
       new Map(),
       WriteOperation.Edit,
@@ -329,12 +342,12 @@ describe("remove outbound edge", () => {
     const viewer = new IDViewer("1");
     const user = new User(viewer, "1", { id: "1" });
     const builder = new SimpleBuilder(
+      viewer,
       UserSchema,
       new Map(),
       WriteOperation.Edit,
       user, // TODO enforce existing ent if not create
     );
-    builder.viewer = viewer;
     builder.orchestrator.removeOutboundEdge("2", "edge");
 
     const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
@@ -349,6 +362,7 @@ describe("remove outbound edge", () => {
 
   test("no ent", async () => {
     const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
       UserSchema,
       new Map(),
       WriteOperation.Edit,
@@ -393,6 +407,7 @@ describe("validators", () => {
     let yesterday = new Date(now.getTime() - 86400);
 
     let action = new SimpleAction(
+      new LoggedOutViewer(),
       EventSchema,
       new Map([
         ["startTime", now],
@@ -415,6 +430,7 @@ describe("validators", () => {
     let yesterday = new Date(now.getTime() - 86400);
 
     let action = new SimpleAction(
+      new LoggedOutViewer(),
       EventSchema,
       new Map([
         ["startTime", yesterday],
@@ -428,6 +444,41 @@ describe("validators", () => {
 
     // can "save" the query!
     await action.saveX();
+  });
+});
+
+describe("privacyPolicy", () => {
+  test("create simple policy", async () => {
+    let action = new SimpleAction(
+      new LoggedOutViewer(),
+      UserSchema,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.privacyPolicy = {
+      rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+    };
+    let valid = await action.valid();
+    expect(valid).toBe(true);
+
+    const viewer = new IDViewer("1");
+    action = new SimpleAction(
+      viewer,
+      UserSchema,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.privacyPolicy = {
+      rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+    };
+    valid = await action.valid();
+    expect(valid).toBe(false);
   });
 });
 

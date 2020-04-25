@@ -21,7 +21,7 @@ export interface Builder<T extends Ent> {
   existingEnt?: Ent;
   ent: EntConstructor<T>;
   placeholderID: ID;
-  viewer: Viewer;
+  readonly viewer: Viewer;
   build(): Promise<Changeset<T>>;
   operation: WriteOperation;
 }
@@ -60,7 +60,7 @@ export interface Validator {
 }
 
 export interface Action<T extends Ent> {
-  viewer: Viewer;
+  readonly viewer: Viewer;
   changeset(): Promise<Changeset<T>>;
   //ent: EntConstructor<T>;
   builder: Builder<T>;

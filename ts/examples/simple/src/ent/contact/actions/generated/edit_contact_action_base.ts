@@ -37,7 +37,7 @@ export class EditContactActionBase implements Action<Contact> {
     );
   }
 
-  getFields(): ContactInput {
+  getInput(): ContactInput {
     return {
       ...this.input,
       requiredFields: [],

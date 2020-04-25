@@ -53,7 +53,17 @@ test("edit user", async () => {
     emailAddress: randomEmail(),
   });
 
-  let editedUser = await EditUserAction.create(loggedOutViewer, user, {
+  try {
+    await EditUserAction.create(loggedOutViewer, user, {
+      firstName: "First of his name",
+    }).saveX();
+    fail("should have thrown exception");
+  } catch (err) {
+    expect(err.message).toMatch(/is not visible for privacy reasons$/);
+  }
+
+  let vc = new IDViewer(user.id, user);
+  let editedUser = await EditUserAction.create(vc, user, {
     firstName: "First of his name",
   }).saveX();
 
@@ -69,7 +79,14 @@ test("delete user", async () => {
     emailAddress: randomEmail(),
   });
 
-  await DeleteUserAction.create(loggedOutViewer, user).saveX();
+  try {
+    await DeleteUserAction.create(loggedOutViewer, user).saveX();
+    fail("should have thrown exception");
+  } catch (err) {
+    expect(err.message).toMatch(/is not visible for privacy reasons$/);
+  }
+  let vc = new IDViewer(user.id, user);
+  await DeleteUserAction.create(vc, user).saveX();
 
   let loadedUser = await User.load(loggedOutViewer, user.id);
   expect(loadedUser).toBe(null);
@@ -195,8 +212,9 @@ test("symmetric edge", async () => {
   const friends = await jon.loadFriends();
   expect(friends.length).toBe(0);
 
+  let vc = new IDViewer(jon.id, jon);
   // delete all the edges and let's confirm it works
-  const action2 = EditUserAction.create(loggedOutViewer, jon, {});
+  const action2 = EditUserAction.create(vc, jon, {});
   action2.builder.removeFriend(dany, sam);
   await action2.saveX();
 
@@ -405,14 +423,15 @@ test("uniqueEdge|Node", async () => {
 
   expect(contact).toBeInstanceOf(Contact);
 
-  let editAction = EditUserAction.create(loggedOutViewer, jon, {});
+  let vc = new IDViewer(jon.id, jon);
+  let editAction = EditUserAction.create(vc, jon, {});
   // TODO throw at trying to mutate a build after saving. will help with a bunch of typos...
   editAction.builder.addSelfContact(contact);
   await editAction.saveX();
 
   try {
     // try and write another contact
-    let editAction = EditUserAction.create(loggedOutViewer, jon, {});
+    let editAction = EditUserAction.create(vc, jon, {});
     editAction.builder.addSelfContact(contact2);
     await editAction.saveX();
 

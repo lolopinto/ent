@@ -35,7 +35,7 @@ export class EditEventActionBase implements Action<Event> {
     );
   }
 
-  getFields(): EventInput {
+  getInput(): EventInput {
     return {
       ...this.input,
       requiredFields: [],

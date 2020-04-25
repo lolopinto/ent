@@ -28,7 +28,7 @@ export class CreateUserActionBase implements Action<User> {
     this.builder = new UserBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getFields(): UserInput {
+  getInput(): UserInput {
     return {
       ...this.input,
       requiredFields: ["FirstName", "LastName", "EmailAddress"],

@@ -30,7 +30,7 @@ export class CreateEventActionBase implements Action<Event> {
     this.builder = new EventBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getFields(): EventInput {
+  getInput(): EventInput {
     return {
       ...this.input,
       requiredFields: ["name", "creatorID", "start_time", "location"],
