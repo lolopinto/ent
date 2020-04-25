@@ -312,6 +312,7 @@ export class Orchestrator<T extends Ent> {
       ops,
       this.dependencies,
       this.changesets,
+      this.options,
     );
   }
 
@@ -347,6 +348,7 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<T>>,
     public changesets?: Changeset<T>[],
+    private options?: OrchestratorOptions<T>,
   ) {}
 
   executor(): Executor<T> {
@@ -368,6 +370,7 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
       this.placeholderID,
       this.ent,
       this.operations,
+      this.options,
     );
   }
 }

@@ -1,5 +1,11 @@
 import { advanceTo } from "jest-date-mock";
-import { Builder, WriteOperation, Trigger, Validator } from "./action";
+import {
+  Builder,
+  WriteOperation,
+  Trigger,
+  Validator,
+  Observer,
+} from "./action";
 import {
   Ent,
   Viewer,
@@ -21,6 +27,7 @@ import {
   SimpleBuilder,
   SimpleAction,
 } from "./testutils/builder";
+import { FakeComms, Mode } from "./testutils/fake_comms";
 import { Pool } from "pg";
 import { QueryRecorder } from "./testutils/db_mock";
 import { AlwaysAllowRule, DenyIfLoggedInRule } from "./privacy";
@@ -30,6 +37,7 @@ QueryRecorder.mockPool(Pool);
 
 afterEach(() => {
   QueryRecorder.clear();
+  FakeComms.clear();
 });
 
 jest
@@ -600,6 +608,100 @@ describe("trigger", () => {
       first_name: "Jon",
       last_name: "Snow",
       user_id: user.id, // created contact and set the user_id correctly
+    });
+  });
+});
+
+describe.only("observer", () => {
+  class UserSchemaExtended extends BaseEntSchema {
+    fields: Field[] = [
+      StringType({ name: "FirstName" }),
+      StringType({ name: "LastName" }),
+      StringType({ name: "EmailAddress", nullable: true }),
+      StringType({ name: "PhoneNumber", nullable: true }),
+    ];
+    ent = User;
+  }
+  let now = new Date();
+
+  let sendEmailObserver: Observer<User> = {
+    observe: (builder: SimpleBuilder<User>): void => {
+      let email = builder.fields.get("EmailAddress");
+      if (!email) {
+        return;
+      }
+      let firstName = builder.fields.get("FirstName");
+      FakeComms.send({
+        from: "noreply@foo.com",
+        to: email,
+        subject: `Welcome, ${firstName}!`,
+        body: `Hi ${firstName}, thanks for joining fun app!`,
+        mode: Mode.EMAIL,
+      });
+    },
+  };
+
+  test("no email sent", async () => {
+    advanceTo(now);
+    const viewer = new IDViewer("11");
+    const action = new SimpleAction(
+      viewer,
+      new UserSchemaExtended(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.observers = [sendEmailObserver];
+
+    const user = await action.saveX();
+    if (!user) {
+      fail("couldn't save user");
+    }
+
+    expect(user.data).toStrictEqual({
+      id: user.id,
+      created_at: now,
+      updated_at: now,
+      first_name: "Jon",
+      last_name: "Snow",
+    });
+    FakeComms.verifyNoEmailSent();
+  });
+
+  test("email sent", async () => {
+    advanceTo(now);
+    const viewer = new IDViewer("11");
+    const action = new SimpleAction(
+      viewer,
+      new UserSchemaExtended(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+        ["EmailAddress", "foo@email.com"],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.observers = [sendEmailObserver];
+
+    const user = await action.saveX();
+    if (!user) {
+      fail("couldn't save user");
+    }
+
+    expect(user.data).toStrictEqual({
+      id: user.id,
+      created_at: now,
+      updated_at: now,
+      first_name: "Jon",
+      last_name: "Snow",
+      email_address: "foo@email.com",
+    });
+
+    FakeComms.verifySent("foo@email.com", Mode.EMAIL, {
+      subject: "Welcome, Jon!",
+      body: "Hi Jon, thanks for joining fun app!",
     });
   });
 });

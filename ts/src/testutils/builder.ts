@@ -18,6 +18,7 @@ import {
   saveBuilder,
   saveBuilderX,
   Executor,
+  Observer,
 } from "../action";
 import Schema from "../schema";
 import { LoggedOutViewer } from "./../viewer";
@@ -134,6 +135,7 @@ export class SimpleAction<T extends Ent> implements Action<T> {
   builder: SimpleBuilder<T>;
   validators: Validator<T>[] = [];
   triggers: Trigger<T>[] = [];
+  observers: Observer<T>[] = [];
   privacyPolicy: PrivacyPolicy;
 
   constructor(

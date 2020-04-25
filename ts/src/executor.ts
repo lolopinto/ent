@@ -2,6 +2,7 @@ import { ID, Ent, Viewer, EntConstructor, DataOperation } from "./ent";
 import { Changeset, Executor } from "./action";
 import { Builder } from "./action";
 import Graph from "graph-data-structure";
+import { OrchestratorOptions } from "./orchestrator";
 
 export class ListBasedExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
@@ -10,6 +11,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
     private placeholderID: ID,
     private ent: EntConstructor<T>,
     private operations: DataOperation[],
+    private options?: OrchestratorOptions<T>,
   ) {}
   private lastOp: DataOperation | undefined;
   private createdEnt: T | null = null;
@@ -40,6 +42,18 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
       value: op,
       done: done,
     };
+  }
+
+  async executeObservers() {
+    if (!this.options?.action?.observers) {
+      return;
+    }
+    const builder = this.options.builder;
+    await Promise.all(
+      this.options.action.observers.map((observer) => {
+        observer.observe(builder);
+      }),
+    );
   }
 }
 

@@ -25,6 +25,7 @@ export interface Executor<T extends Ent>
   // and maybe only want resolveValue somehow??
   // Executor needs to work on multiple types at once eventually...
   resolveValue(val: any): T | null;
+  executeObservers?(): Promise<void>;
 }
 
 export interface Changeset<T extends Ent> {
@@ -34,6 +35,7 @@ export interface Changeset<T extends Ent> {
   ent: EntConstructor<T>;
   changesets?: Changeset<T>[];
   dependencies?: Map<ID, Builder<T>>;
+  //  observers:
   // also need the builder to pass to things...
   // we don't need the triggers here because triggers are run to create the changeset
   // do we need the validators tho?
@@ -52,8 +54,8 @@ export interface Trigger<T extends Ent> {
   void | Promise<Changeset<T> | Changeset<T>[]>;
 }
 
-export interface Observer {
-  observe();
+export interface Observer<T extends Ent> {
+  observe(builder: Builder<T>): void | Promise<void>;
 }
 
 export interface Validator<T extends Ent> {
@@ -64,11 +66,10 @@ export interface Validator<T extends Ent> {
 export interface Action<T extends Ent> {
   readonly viewer: Viewer;
   changeset(): Promise<Changeset<T>>;
-  //ent: EntConstructor<T>;
   builder: Builder<T>;
   privacyPolicy?: PrivacyPolicy; // todo make required?
   triggers?: Trigger<T>[];
-  observers?: Observer[];
+  observers?: Observer<T>[];
   validators?: Validator<T>[];
 
   valid(): Promise<boolean>;
@@ -126,4 +127,9 @@ async function saveBuilderImpl<T extends Ent>(
   } finally {
     client.release();
   }
+
+  if (executor.executeObservers) {
+    executor.executeObservers();
+  }
+  //  executor.ob
 }
