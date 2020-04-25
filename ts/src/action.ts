@@ -44,6 +44,7 @@ export interface Changeset<T extends Ent> {
 }
 
 export interface Trigger<T extends Ent> {
+  // TODO: way in the future. detect any writes happening in changesets and optionally throw if configured to do so
   // can throw if it wants. not expected to throw tho.
   changeset(
     builder: Builder<T>,

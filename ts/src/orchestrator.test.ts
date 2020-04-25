@@ -7,7 +7,6 @@ import {
   EditNodeOperation,
   DeleteNodeOperation,
   EdgeOperation,
-  AssocEdgeData,
 } from "./ent";
 import * as ent from "./ent";
 import { LoggedOutViewer } from "./viewer";

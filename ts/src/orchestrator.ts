@@ -161,6 +161,7 @@ export class Orchestrator<T extends Ent> {
       });
       // TODO right now trying to parallelize this with validateFields below
       // may need to run triggers first to be deterministic
+      // TODO: see https://github.com/lolopinto/ent/pull/50
       promises.push(this.triggers(triggerPromises));
     }
 
