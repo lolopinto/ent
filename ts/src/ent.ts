@@ -179,7 +179,7 @@ export async function applyPrivacyPolicyForEntX<T extends Ent>(
   if (visible) {
     return ent;
   }
-  throw new EntPrivacyError(ent.id);
+  throw new EntPrivacyError(ent.privacyPolicy, ent.id);
 }
 
 function logQuery(query: string, values: any[]) {

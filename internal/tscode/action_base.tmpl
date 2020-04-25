@@ -77,7 +77,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
     );
   }
 
-  getFields(): {{useImport $builderInput}} {
+  getInput(): {{useImport $builderInput}} {
     return {
       {{ if $hasInput -}}
         ...this.input,

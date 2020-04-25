@@ -13,17 +13,18 @@ export interface PrivacyResult {
 }
 
 export interface PrivacyError extends Error {
-  entID: ID;
+  privacyPolicy: PrivacyPolicy;
+  entID?: ID;
 }
 
 export class EntPrivacyError extends Error implements PrivacyError {
-  constructor(public entID: ID) {
+  constructor(public privacyPolicy: PrivacyPolicy, public entID?: ID) {
     super(`ent ${entID} is not visible for privacy reasons`);
   }
 }
 
 class EntInvalidPrivacyPolicyError extends Error implements PrivacyError {
-  constructor(public entID: ID) {
+  constructor(public privacyPolicy: PrivacyPolicy, public entID?: ID) {
     super(
       `ent ${entID} is not visible because privacy policy is not properly configured`,
     );
@@ -56,7 +57,7 @@ export function DenyWithReason(e: PrivacyError): PrivacyResult {
 }
 
 export interface PrivacyPolicyRule {
-  apply(v: Viewer, ent: Ent): Promise<PrivacyResult>;
+  apply(v: Viewer, ent?: Ent): Promise<PrivacyResult>;
 }
 
 // export interface PrivacyPolicyRuleSync {
@@ -86,6 +87,15 @@ export const DenyIfLoggedOutRule = {
       return Deny();
     }
     return Skip();
+  },
+};
+
+export const DenyIfLoggedInRule = {
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    if (v.viewerID === null || v.viewerID == undefined) {
+      return Skip();
+    }
+    return Deny();
   },
 };
 
@@ -226,11 +236,11 @@ export async function applyPrivacyPolicy(
 export async function applyPrivacyPolicyX(
   v: Viewer,
   policy: PrivacyPolicy,
-  ent: Ent,
+  ent: Ent | undefined,
 ): Promise<boolean> {
   // right now we apply all at same time. todo: be smart about this in the future
   const results = await Promise.all(
-    policy.rules.map(rule => rule.apply(v, ent)),
+    policy.rules.map((rule) => rule.apply(v, ent)),
   );
   for (const res of results) {
     if (res.result == privacyResult.Allow) {
@@ -240,9 +250,9 @@ export async function applyPrivacyPolicyX(
       if (res.error) {
         throw res.error;
       }
-      throw new EntPrivacyError(ent.id);
+      throw new EntPrivacyError(policy, ent?.id);
     }
   }
 
-  throw new EntInvalidPrivacyPolicyError(ent.id);
+  throw new EntInvalidPrivacyPolicyError(policy, ent?.id);
 }

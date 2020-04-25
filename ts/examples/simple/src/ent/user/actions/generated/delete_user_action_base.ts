@@ -25,7 +25,7 @@ export class DeleteUserActionBase implements Action<User> {
     );
   }
 
-  getFields(): UserInput {
+  getInput(): UserInput {
     return {
       requiredFields: [],
     };

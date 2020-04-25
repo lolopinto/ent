@@ -32,7 +32,7 @@ export class CreateContactActionBase implements Action<Contact> {
     this.builder = new ContactBuilder(this.viewer, WriteOperation.Insert, this);
   }
 
-  getFields(): ContactInput {
+  getInput(): ContactInput {
     return {
       ...this.input,
       requiredFields: ["emailAddress", "firstName", "lastName", "userID"],

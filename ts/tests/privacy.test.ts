@@ -256,7 +256,7 @@ describe("applyPrivacyPolicyX", () => {
 });
 
 class BlockedEntError extends Error {
-  constructor(public entID: ID) {
+  constructor(public privacyPolicy: PrivacyPolicy, public entID: ID) {
     super(`blocked privacy!`);
   }
 }
@@ -267,7 +267,7 @@ describe("denywithReason", () => {
       {
         async apply(v: Viewer, ent: Ent) {
           if (v.viewerID === "1") {
-            return DenyWithReason(new BlockedEntError(v.viewerID));
+            return DenyWithReason(new BlockedEntError(this, v.viewerID));
           }
           return Skip();
         },
