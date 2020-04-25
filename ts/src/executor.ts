@@ -62,8 +62,8 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
   private mapper: Map<ID, T> = new Map();
   private lastOp: DataOperation | undefined;
   private allOperations: DataOperation[] = [];
-  private changesetNodes: string[] = [];
   private changesetMap: Map<string, Changeset<T>> = new Map();
+  private nodeOpMap: Map<DataOperation, Changeset<T>> = new Map();
 
   constructor(
     private viewer: Viewer,
@@ -75,14 +75,18 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
   ) {
     let graph = Graph();
 
-    //    let m = new Map<string, Changeset<T>>();
     const impl = (c: Changeset<T>) => {
       this.changesetMap.set(c.placeholderID.toString(), c);
 
       graph.addNode(c.placeholderID.toString());
       if (c.dependencies) {
         for (let [key, builder] of c.dependencies) {
-          graph.addEdge(key.toString(), builder.placeholderID.toString(), 1);
+          // dependency should go first...
+          graph.addEdge(
+            builder.placeholderID.toString(),
+            c.placeholderID.toString(),
+            1,
+          );
         }
       }
 
@@ -112,11 +116,10 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
       },
     });
 
-    // console.log(graph.nodes());
-    // console.log(this.changesetMap);
-    //    let rowMap: Map<string, number> = new Map();
-    let nodeOps: DataOperation[] = [];
-    let remainOps: DataOperation[] = [];
+    // use a set to handle repeated ops because of how the executor logic currently works
+    // TODO: this logic can be rewritten to be smarter and probably not need a set
+    let nodeOps: Set<DataOperation> = new Set();
+    let remainOps: Set<DataOperation> = new Set();
 
     graph.nodes().forEach((node) => {
       // TODO throw if we see any undefined because we're trying to write with incomplete data
@@ -126,26 +129,20 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
           `trying to do a write with incomplete mutation data ${node}`,
         );
       }
-      //      console.log(c);
+
       // does this work if we're going to call this to figure out the executor?
       // we need to override this for ourselves and instead of doing executor(), it does list like we have in ComplexExecutor...
       for (let op of c.executor()) {
         if (op.returnedEntRow) {
-          // keep track of where we are for each node...
-          // this should work even if a changeset has multiple of these as long as they're the same node-type
-          this.changesetNodes.push(node);
-          //          this.rowMap.set(node, nodeOps.length);
-          nodeOps.push(op);
+          nodeOps.add(op);
+          this.nodeOpMap.set(op, c);
         } else {
-          remainOps.push(op);
+          remainOps.add(op);
         }
       }
     });
     // get all the operations and put node operations first
     this.allOperations = [...nodeOps, ...remainOps];
-    //    console.log(this.changesetNodes);
-    //    console.log(nodeOps, remainOps, nodeOps.length, remainOps.length);
-    //    console.log(this.allOperations);
   }
 
   [Symbol.iterator]() {
@@ -153,21 +150,18 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
   }
 
   private handleCreatedEnt() {
-    // using previous index
-    let c = this.changesetMap.get(this.changesetNodes[this.idx - 1]);
+    let c = this.nodeOpMap.get(this.lastOp!);
     if (!c) {
       // nothing to do here
       return;
     }
     let createdEnt = getCreatedEnt(this.viewer, this.lastOp, c.ent);
-    //    console.log(createdEnt);
     if (!createdEnt) {
       return;
     }
 
     let placeholderID = c.placeholderID;
     this.mapper.set(placeholderID, createdEnt);
-    //    console.log(this.mapper);
   }
 
   next(): IteratorResult<DataOperation> {

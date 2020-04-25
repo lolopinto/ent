@@ -1,4 +1,4 @@
-import { AssocEdgeData, Ent, DataOperation, Viewer } from "./ent";
+import { Ent, DataOperation, Viewer } from "./ent";
 import { Builder, Changeset, Executor, WriteOperation } from "./action";
 import * as action from "./action";
 import * as ent from "./ent";
@@ -6,7 +6,7 @@ import { snakeCase } from "snake-case";
 
 import DB from "./db";
 
-import { Pool, Query } from "pg";
+import { Pool } from "pg";
 import { QueryRecorder, queryType } from "./testutils/db_mock";
 import {
   User,
@@ -114,6 +114,94 @@ class ContactSchema extends BaseEntSchema {
     StringType({ name: "UserID" }),
   ];
   ent = Contact;
+}
+
+class GroupSchema extends BaseEntSchema {
+  fields: Field[] = [];
+  ent = Group;
+}
+
+class MessageSchema extends BaseEntSchema {
+  fields: Field[] = [
+    // TODO both id fields
+    StringType({ name: "from" }),
+    StringType({ name: "to" }),
+    StringType({ name: "message" }),
+    BooleanType({ name: "transient", nullable: true }),
+    TimeType({ name: "expiresAt", nullable: true }),
+  ];
+  ent = Message;
+}
+
+class MessageAction extends SimpleAction<Message> {
+  constructor(
+    viewer: Viewer,
+    fields: Map<string, any>,
+    operation: WriteOperation,
+    existingEnt?: Message,
+  ) {
+    super(viewer, new MessageSchema(), fields, operation, existingEnt);
+  }
+
+  triggers: action.Trigger<Message>[] = [
+    {
+      changeset: (builder: SimpleBuilder<Message>): void => {
+        let from = builder.fields.get("from");
+        let to = builder.fields.get("to");
+
+        builder.orchestrator.addInboundEdge(from, "senderToMessage", "user");
+        builder.orchestrator.addInboundEdge(to, "recipientToMessage", "user");
+      },
+    },
+  ];
+}
+
+class UserAction extends SimpleAction<User> {
+  contactAction: SimpleAction<Contact>;
+
+  constructor(
+    viewer: Viewer,
+    fields: Map<string, any>,
+    operation: WriteOperation,
+    existingEnt?: User,
+  ) {
+    super(viewer, new UserSchema(), fields, operation, existingEnt);
+  }
+
+  triggers: action.Trigger<User>[] = [
+    {
+      changeset: (
+        builder: SimpleBuilder<User>,
+      ): Promise<Changeset<Contact>> => {
+        let firstName = builder.fields.get("FirstName");
+        let lastName = builder.fields.get("LastName");
+        this.contactAction = new SimpleAction(
+          builder.viewer,
+          new ContactSchema(),
+          new Map([
+            ["FirstName", firstName],
+            ["LastName", lastName],
+            ["UserID", builder],
+          ]),
+          WriteOperation.Insert,
+        );
+        builder.orchestrator.addOutboundEdge(
+          this.contactAction.builder,
+          "selfContact",
+          "contact",
+        );
+        return this.contactAction.changeset();
+      },
+    },
+  ];
+}
+
+function randomEmail(): string {
+  const rand = Math.random()
+    .toString(16)
+    .substring(2);
+
+  return `test+${rand}@email.com`;
 }
 
 test("empty", async () => {
@@ -228,42 +316,15 @@ test("list-based-with-dependency", async () => {
 });
 
 test("complex-based-with-dependencies", async () => {
-  let contactAction: SimpleAction<Contact>;
-  const action = new SimpleAction(
+  const action = new UserAction(
     new LoggedOutViewer(),
-    new UserSchema(),
     new Map([
       ["FirstName", "Jon"],
       ["LastName", "Snow"],
     ]),
     WriteOperation.Insert,
   );
-  action.triggers = [
-    {
-      changeset: (
-        builder: SimpleBuilder<User>,
-      ): Promise<Changeset<Contact>> => {
-        let firstName = builder.fields.get("FirstName");
-        let lastName = builder.fields.get("LastName");
-        contactAction = new SimpleAction(
-          builder.viewer,
-          new ContactSchema(),
-          new Map([
-            ["FirstName", firstName],
-            ["LastName", lastName],
-            ["UserID", builder],
-          ]),
-          WriteOperation.Insert,
-        );
-        builder.orchestrator.addOutboundEdge(
-          contactAction.builder,
-          "fakeEdge",
-          "contact",
-        );
-        return contactAction.changeset();
-      },
-    },
-  ];
+
   // expect ComplexExecutor because of complexity of what we have here
   const exec = await executor(action.builder);
   expect(exec).toBeInstanceOf(ComplexExecutor);
@@ -271,15 +332,15 @@ test("complex-based-with-dependencies", async () => {
   await executeOperations(exec);
   let [user, contact] = await Promise.all([
     action.editedEnt(),
-    contactAction!.editedEnt(),
+    action.contactAction.editedEnt(),
   ]);
   expect(operations.length).toBe(3);
   expect(user).toBeInstanceOf(User);
   expect(contact).toBeInstanceOf(Contact);
 
-  expect(exec.resolveValue(contactAction!.builder.placeholderID)).toStrictEqual(
-    contact,
-  );
+  expect(
+    exec.resolveValue(action.contactAction.builder.placeholderID),
+  ).toStrictEqual(contact);
   expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(user);
 
   QueryRecorder.validateQueryStructuresInTx([
@@ -292,63 +353,15 @@ test("complex-based-with-dependencies", async () => {
       type: queryType.INSERT,
     },
     {
-      tableName: "fake_edge_table",
+      tableName: "self_contact_table",
       type: queryType.INSERT,
     },
   ]);
 });
 
-class GroupSchema extends BaseEntSchema {
-  fields: Field[] = [];
-  ent = Group;
-}
-
-class MessageSchema extends BaseEntSchema {
-  fields: Field[] = [
-    // TODO both id fields
-    StringType({ name: "from" }),
-    StringType({ name: "to" }),
-    StringType({ name: "message" }),
-    BooleanType({ name: "transient", nullable: true }),
-    TimeType({ name: "expiresAt", nullable: true }),
-  ];
-  ent = Message;
-}
-
-class MessageAction extends SimpleAction<Message> {
-  constructor(
-    viewer: Viewer,
-    fields: Map<string, any>,
-    operation: WriteOperation.Insert,
-    existingEnt?: Message,
-  ) {
-    super(viewer, new MessageSchema(), fields, operation, existingEnt);
-  }
-
-  triggers: action.Trigger<Message>[] = [
-    {
-      changeset: (builder: SimpleBuilder<Message>): void => {
-        let from = builder.fields.get("from");
-        let to = builder.fields.get("to");
-
-        builder.orchestrator.addInboundEdge(from, "senderToMessage", "user");
-        builder.orchestrator.addInboundEdge(to, "recipientToMessage", "user");
-      },
-    },
-  ];
-}
-
-function randomEmail(): string {
-  const rand = Math.random()
-    .toString(16)
-    .substring(2);
-
-  return `test+${rand}@email.com`;
-}
-
-// TODO add- user creating contact or something like that in here and wer'e done...
-
 // this is the join a slack workspace and autojoin channels flow
+// this also creates a contact for the user
+// combines the slack + social contact management app flows into one just for complicated-ness
 test("list-with-complex-layers", async () => {
   async function fetchUserName() {
     return {
@@ -404,9 +417,8 @@ test("list-with-complex-layers", async () => {
           getAutoJoinChannels(),
           getInvitee(builder.viewer),
         ]);
-        userAction = new SimpleAction(
+        userAction = new UserAction(
           builder.viewer,
-          new UserSchema(),
           new Map([
             ["FirstName", userInfo.firstName],
             ["LastName", userInfo.lastName],
@@ -444,7 +456,7 @@ test("list-with-complex-layers", async () => {
   ];
 
   // expect ComplexExecutor because of complexity of what we have here
-  // we have a Group action which has
+  // we have a Group action which has nested things in it
   const exec = await executor(action.builder);
   expect(exec).toBeInstanceOf(ComplexExecutor);
 
@@ -454,15 +466,17 @@ test("list-with-complex-layers", async () => {
     userAction!.editedEnt(),
     messageAction!.editedEnt(),
   ]);
-  // 3 nodes changed:
+  // 4 nodes changed:
   // * Group updated(shouldn't actually be)
   // * User created
   // * Message created
-  // 6 edges added (assume all one-way):
+  // * Contact created
+  // 7 edges added (assume all one-way):
   // 1 workspace member
   // 3 channel members (for the 3 auto-join channels)
   // 2 messages: 1 from message -> sender and one from message -> receiver
-  expect(operations.length).toBe(9);
+  // 1 user->contact (user -> self-contact)
+  expect(operations.length).toBe(11);
   expect(createdGroup).toBeInstanceOf(Group);
   expect(user).toBeInstanceOf(User);
   expect(message).toBeInstanceOf(Message);
@@ -487,6 +501,10 @@ test("list-with-complex-layers", async () => {
       type: queryType.INSERT,
     },
     {
+      tableName: "Contact",
+      type: queryType.INSERT,
+    },
+    {
       tableName: "Message",
       type: queryType.INSERT,
     },
@@ -504,6 +522,10 @@ test("list-with-complex-layers", async () => {
     },
     {
       tableName: "channel_member_table",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "self_contact_table",
       type: queryType.INSERT,
     },
     {

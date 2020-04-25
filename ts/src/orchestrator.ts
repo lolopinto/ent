@@ -113,7 +113,6 @@ export class Orchestrator<T extends Ent> {
 
   private async buildEdgeOps(ops: DataOperation[]): Promise<void> {
     const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
-    //    console.log(edgeDatas);
     for (const edgeOp of this.edgeOps) {
       ops.push(edgeOp);
 
@@ -189,7 +188,6 @@ export class Orchestrator<T extends Ent> {
         this.changesets.push(c);
       }
     });
-    //    console.log(this.changesets);
   }
 
   private async validators(
@@ -351,7 +349,6 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
   ) {}
 
   executor(): Executor<T> {
-    //    console.log(this.operations, this.dependencies, this.changesets);
     // TODO: write comment here similar to go
     // if we have dependencies but no changesets, we just need a simple
     // executor and depend on something else in the stack to handle this correctly
