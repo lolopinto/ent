@@ -167,6 +167,14 @@ export class SimpleAction<T extends Ent> implements Action<T> {
     return this.builder.orchestrator.validX();
   }
 
+  async save(): Promise<T | null> {
+    await saveBuilder(this.builder);
+    if (this.builder.operation !== WriteOperation.Delete) {
+      return await this.builder.orchestrator.editedEnt();
+    }
+    return null;
+  }
+
   async saveX(): Promise<T | void> {
     await saveBuilderX(this.builder);
     if (this.builder.operation !== WriteOperation.Delete) {

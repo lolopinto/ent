@@ -100,11 +100,22 @@ async function saveBuilderImpl<T extends Ent>(
   builder: Builder<T>,
   throwErr: boolean,
 ): Promise<void> {
-  const changeset = await builder.build();
-  const executor = changeset.executor();
+  let changeset: Changeset<T>;
+  try {
+    changeset = await builder.build();
+  } catch (e) {
+    if (throwErr) {
+      throw e;
+    } else {
+      // expected...
+      return;
+    }
+  }
+  const executor = changeset!.executor();
 
   const client = await DB.getInstance().getNewClient();
 
+  let error = false;
   try {
     await client.query("BEGIN");
     for (const operation of executor) {
@@ -117,6 +128,7 @@ async function saveBuilderImpl<T extends Ent>(
     }
     await client.query("COMMIT");
   } catch (e) {
+    error = true;
     await client.query("ROLLBACK");
     // rethrow the exception to be caught
     if (throwErr) {
@@ -128,7 +140,7 @@ async function saveBuilderImpl<T extends Ent>(
     client.release();
   }
 
-  if (executor.executeObservers) {
+  if (!error && executor.executeObservers) {
     executor.executeObservers();
   }
   //  executor.ob

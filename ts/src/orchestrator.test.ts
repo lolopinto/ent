@@ -62,6 +62,17 @@ class UserSchemaWithStatus extends BaseEntSchema {
   ent = User;
 }
 
+class UserSchemaExtended extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    StringType({ name: "account_status" }),
+    StringType({ name: "EmailAddress", nullable: true }),
+    StringType({ name: "PhoneNumber", nullable: true }),
+  ];
+  ent = User;
+}
+
 class SchemaWithProcessors extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "zip" }).match(/^\d{5}(-\d{4})?$/),
@@ -612,34 +623,25 @@ describe("trigger", () => {
   });
 });
 
-describe.only("observer", () => {
-  class UserSchemaExtended extends BaseEntSchema {
-    fields: Field[] = [
-      StringType({ name: "FirstName" }),
-      StringType({ name: "LastName" }),
-      StringType({ name: "EmailAddress", nullable: true }),
-      StringType({ name: "PhoneNumber", nullable: true }),
-    ];
-    ent = User;
-  }
-  let now = new Date();
+let sendEmailObserver: Observer<User> = {
+  observe: (builder: SimpleBuilder<User>): void => {
+    let email = builder.fields.get("EmailAddress");
+    if (!email) {
+      return;
+    }
+    let firstName = builder.fields.get("FirstName");
+    FakeComms.send({
+      from: "noreply@foo.com",
+      to: email,
+      subject: `Welcome, ${firstName}!`,
+      body: `Hi ${firstName}, thanks for joining fun app!`,
+      mode: Mode.EMAIL,
+    });
+  },
+};
 
-  let sendEmailObserver: Observer<User> = {
-    observe: (builder: SimpleBuilder<User>): void => {
-      let email = builder.fields.get("EmailAddress");
-      if (!email) {
-        return;
-      }
-      let firstName = builder.fields.get("FirstName");
-      FakeComms.send({
-        from: "noreply@foo.com",
-        to: email,
-        subject: `Welcome, ${firstName}!`,
-        body: `Hi ${firstName}, thanks for joining fun app!`,
-        mode: Mode.EMAIL,
-      });
-    },
-  };
+describe("observer", () => {
+  let now = new Date();
 
   test("no email sent", async () => {
     advanceTo(now);
@@ -650,6 +652,7 @@ describe.only("observer", () => {
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        ["account_status", "UNVERIFIED"],
       ]),
       WriteOperation.Insert,
     );
@@ -666,6 +669,7 @@ describe.only("observer", () => {
       updated_at: now,
       first_name: "Jon",
       last_name: "Snow",
+      account_status: "UNVERIFIED",
     });
     FakeComms.verifyNoEmailSent();
   });
@@ -680,6 +684,7 @@ describe.only("observer", () => {
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
         ["EmailAddress", "foo@email.com"],
+        ["account_status", "UNVERIFIED"],
       ]),
       WriteOperation.Insert,
     );
@@ -697,6 +702,7 @@ describe.only("observer", () => {
       first_name: "Jon",
       last_name: "Snow",
       email_address: "foo@email.com",
+      account_status: "UNVERIFIED",
     });
 
     FakeComms.verifySent("foo@email.com", Mode.EMAIL, {
@@ -713,7 +719,7 @@ describe("combo", () => {
   ): SimpleAction<User> => {
     const action = new SimpleAction(
       viewer,
-      new UserSchemaWithStatus(),
+      new UserSchemaExtended(),
       fields,
       WriteOperation.Insert,
     );
@@ -737,6 +743,7 @@ describe("combo", () => {
         },
       },
     ];
+    action.observers = [sendEmailObserver];
     return action;
   };
 
@@ -764,15 +771,48 @@ describe("combo", () => {
       last_name: "Snow",
       account_status: "VALID",
     });
+    FakeComms.verifyNoEmailSent();
+  });
+
+  test("success with email", async () => {
+    let now = new Date();
+    let action = createAction(
+      new LoggedOutViewer(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+        ["EmailAddress", "foo@email.com"],
+      ]),
+    );
+    advanceTo(now);
+
+    const user = await action.saveX();
+    if (!user) {
+      fail("couldn't save user");
+    }
+
+    expect(user.data).toStrictEqual({
+      id: user.id,
+      created_at: now,
+      updated_at: now,
+      first_name: "Jon",
+      last_name: "Snow",
+      account_status: "VALID",
+      email_address: "foo@email.com",
+    });
+    FakeComms.verifySent("foo@email.com", Mode.EMAIL, {
+      subject: "Welcome, Jon!",
+      body: "Hi Jon, thanks for joining fun app!",
+    });
   });
 
   test("privacy", async () => {
-    let now = new Date();
     let action = createAction(
       new IDViewer("1"),
       new Map([
         ["FirstName", "Jon"],
         ["LastName", "Snow"],
+        ["EmailAddress", "foo@email.com"],
       ]),
     );
 
@@ -782,6 +822,22 @@ describe("combo", () => {
     } catch (err) {
       expect(err.message).toMatch(/is not visible for privacy reasons$/);
     }
+    FakeComms.verifyNoEmailSent();
+  });
+
+  test("privacy no exceptions", async () => {
+    let action = createAction(
+      new IDViewer("1"),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+        ["EmailAddress", "foo@email.com"],
+      ]),
+    );
+
+    let ent = await action.save();
+    expect(ent).toBe(null);
+    FakeComms.verifyNoEmailSent();
   });
 });
 
