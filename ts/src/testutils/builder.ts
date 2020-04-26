@@ -18,6 +18,7 @@ import {
   saveBuilder,
   saveBuilderX,
   Executor,
+  Observer,
 } from "../action";
 import Schema from "../schema";
 import { LoggedOutViewer } from "./../viewer";
@@ -128,12 +129,17 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
   build(): Promise<Changeset<T>> {
     return this.orchestrator.build();
   }
+
+  async editedEnt(): Promise<T | null> {
+    return await this.orchestrator.editedEnt();
+  }
 }
 
 export class SimpleAction<T extends Ent> implements Action<T> {
   builder: SimpleBuilder<T>;
   validators: Validator<T>[] = [];
   triggers: Trigger<T>[] = [];
+  observers: Observer<T>[] = [];
   privacyPolicy: PrivacyPolicy;
 
   constructor(
@@ -163,6 +169,14 @@ export class SimpleAction<T extends Ent> implements Action<T> {
 
   validX(): Promise<void> {
     return this.builder.orchestrator.validX();
+  }
+
+  async save(): Promise<T | null> {
+    await saveBuilder(this.builder);
+    if (this.builder.operation !== WriteOperation.Delete) {
+      return await this.builder.orchestrator.editedEnt();
+    }
+    return null;
   }
 
   async saveX(): Promise<T | void> {
@@ -216,7 +230,6 @@ export class FakeBuilder<T extends Ent> implements Builder<T> {
   }
 
   async build(): Promise<Changeset<T>> {
-    // TODO need dependencies and changesets to test the complicated cases...
     return new EntChangeset(
       this.viewer,
       this.placeholderID,

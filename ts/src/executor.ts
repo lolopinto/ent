@@ -2,6 +2,7 @@ import { ID, Ent, Viewer, EntConstructor, DataOperation } from "./ent";
 import { Changeset, Executor } from "./action";
 import { Builder } from "./action";
 import Graph from "graph-data-structure";
+import { OrchestratorOptions } from "./orchestrator";
 
 export class ListBasedExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
@@ -10,6 +11,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
     private placeholderID: ID,
     private ent: EntConstructor<T>,
     private operations: DataOperation[],
+    private options?: OrchestratorOptions<T>,
   ) {}
   private lastOp: DataOperation | undefined;
   private createdEnt: T | null = null;
@@ -41,6 +43,18 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
       done: done,
     };
   }
+
+  async executeObservers() {
+    if (!this.options?.action?.observers) {
+      return;
+    }
+    const builder = this.options.builder;
+    await Promise.all(
+      this.options.action.observers.map((observer) => {
+        observer.observe(builder);
+      }),
+    );
+  }
 }
 
 function getCreatedEnt<T extends Ent>(
@@ -64,6 +78,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
   private allOperations: DataOperation[] = [];
   private changesetMap: Map<string, Changeset<T>> = new Map();
   private nodeOpMap: Map<DataOperation, Changeset<T>> = new Map();
+  private executors: Executor<T>[] = [];
 
   constructor(
     private viewer: Viewer,
@@ -72,6 +87,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     operations: DataOperation[],
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset<T>[],
+    private options?: OrchestratorOptions<T>,
   ) {
     let graph = Graph();
 
@@ -112,6 +128,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
           this.placeholderID,
           this.ent,
           operations,
+          this.options,
         );
       },
     });
@@ -132,7 +149,8 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
 
       // does this work if we're going to call this to figure out the executor?
       // we need to override this for ourselves and instead of doing executor(), it does list like we have in ComplexExecutor...
-      for (let op of c.executor()) {
+      let executor = c.executor();
+      for (let op of executor) {
         if (op.returnedEntRow) {
           nodeOps.add(op);
           this.nodeOpMap.set(op, c);
@@ -140,6 +158,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
           remainOps.add(op);
         }
       }
+      this.executors.push(executor);
     });
     // get all the operations and put node operations first
     this.allOperations = [...nodeOps, ...remainOps];
@@ -184,5 +203,16 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
       return ent;
     }
     return null;
+  }
+
+  async executeObservers() {
+    await Promise.all(
+      this.executors.map((executor) => {
+        if (!executor.executeObservers) {
+          return null;
+        }
+        return executor.executeObservers();
+      }),
+    );
   }
 }
