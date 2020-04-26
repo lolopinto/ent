@@ -170,23 +170,23 @@
 
 # Actions
 
-| Functionality                                     |         Go         | Typescript |
-| ------------------------------------------------- | :----------------: | :--------: |
-| custom actions (schema)                           | :heavy_check_mark: |            |
-| Easy create/edit/delete generated/editable        | :heavy_check_mark: |            |
-| observers                                         | :heavy_check_mark: |            |
-| validators                                        | :heavy_check_mark: |            |
-| triggers                                          | :heavy_check_mark: |            |
-| permissions                                       | :heavy_check_mark: |            |
-| inverse edge (write field edge)                   | :heavy_check_mark: |            |
-| nullable fields                                   | :heavy_check_mark: |            |
-| custom mutation fields                            |                    |            |
-| custom data/time for edges                        | :heavy_check_mark: |            |
-| placeholders and resolvers                        | :heavy_check_mark: |            |
-| integrate fields                                  | :heavy_check_mark: |            |
-| built in transactions                             | :heavy_check_mark: |            |
-| default triggers (phone number \| email \| slack) |                    |            |
-| custom actions called from custom functions       |                    |            |
+| Functionality                                           |         Go         |     Typescript     |
+| ------------------------------------------------------- | :----------------: | :----------------: |
+| custom actions (schema)                                 | :heavy_check_mark: |                    |
+| Easy create/edit/delete generated/editable              | :heavy_check_mark: | :heavy_check_mark: |
+| observers                                               | :heavy_check_mark: | :heavy_check_mark: |
+| validators                                              | :heavy_check_mark: | :heavy_check_mark: |
+| triggers                                                | :heavy_check_mark: | :heavy_check_mark: |
+| permissions                                             | :heavy_check_mark: | :heavy_check_mark: |
+| inverse edge (write field edge)                         | :heavy_check_mark: | :heavy_check_mark: |
+| nullable fields                                         | :heavy_check_mark: | :heavy_check_mark: |
+| custom mutation fields                                  |                    |                    |
+| custom data/time for edges                              | :heavy_check_mark: | :heavy_check_mark: |
+| placeholders and resolvers                              | :heavy_check_mark: | :heavy_check_mark: |
+| integrate fields                                        | :heavy_check_mark: | :heavy_check_mark: |
+| built in transactions                                   | :heavy_check_mark: | :heavy_check_mark: |
+| default observers (send phone number \| email \| slack) |                    |                    |
+| custom actions called from custom functions             |                    |                    |
 
 # cache support
 
