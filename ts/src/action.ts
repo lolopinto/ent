@@ -15,6 +15,7 @@ export interface Builder<T extends Ent> {
   readonly viewer: Viewer;
   build(): Promise<Changeset<T>>;
   operation: WriteOperation;
+  editedEnt?(): Promise<T | null>;
 }
 
 export interface Executor<T extends Ent>
@@ -25,6 +26,7 @@ export interface Executor<T extends Ent>
   // and maybe only want resolveValue somehow??
   // Executor needs to work on multiple types at once eventually...
   resolveValue(val: any): T | null;
+  executeObservers?(): Promise<void>;
 }
 
 export interface Changeset<T extends Ent> {
@@ -34,13 +36,6 @@ export interface Changeset<T extends Ent> {
   ent: EntConstructor<T>;
   changesets?: Changeset<T>[];
   dependencies?: Map<ID, Builder<T>>;
-  // also need the builder to pass to things...
-  // we don't need the triggers here because triggers are run to create the changeset
-  // do we need the validators tho?
-  // if we run the field based validators, we can run the normal validators?
-  // we don't need the validators or triggers because they're used to build the changeset
-  //  builder: Builder<T>;
-  //  observers?// still need builder to pass to observer...
 }
 
 export interface Trigger<T extends Ent> {
@@ -52,8 +47,8 @@ export interface Trigger<T extends Ent> {
   void | Promise<Changeset<T> | Changeset<T>[]>;
 }
 
-export interface Observer {
-  observe();
+export interface Observer<T extends Ent> {
+  observe(builder: Builder<T>): void | Promise<void>;
 }
 
 export interface Validator<T extends Ent> {
@@ -64,11 +59,10 @@ export interface Validator<T extends Ent> {
 export interface Action<T extends Ent> {
   readonly viewer: Viewer;
   changeset(): Promise<Changeset<T>>;
-  //ent: EntConstructor<T>;
   builder: Builder<T>;
   privacyPolicy?: PrivacyPolicy; // todo make required?
   triggers?: Trigger<T>[];
-  observers?: Observer[];
+  observers?: Observer<T>[];
   validators?: Validator<T>[];
 
   valid(): Promise<boolean>;
@@ -99,11 +93,22 @@ async function saveBuilderImpl<T extends Ent>(
   builder: Builder<T>,
   throwErr: boolean,
 ): Promise<void> {
-  const changeset = await builder.build();
-  const executor = changeset.executor();
+  let changeset: Changeset<T>;
+  try {
+    changeset = await builder.build();
+  } catch (e) {
+    if (throwErr) {
+      throw e;
+    } else {
+      // expected...
+      return;
+    }
+  }
+  const executor = changeset!.executor();
 
   const client = await DB.getInstance().getNewClient();
 
+  let error = false;
   try {
     await client.query("BEGIN");
     for (const operation of executor) {
@@ -116,6 +121,7 @@ async function saveBuilderImpl<T extends Ent>(
     }
     await client.query("COMMIT");
   } catch (e) {
+    error = true;
     await client.query("ROLLBACK");
     // rethrow the exception to be caught
     if (throwErr) {
@@ -125,5 +131,9 @@ async function saveBuilderImpl<T extends Ent>(
     }
   } finally {
     client.release();
+  }
+
+  if (!error && executor.executeObservers) {
+    await executor.executeObservers();
   }
 }

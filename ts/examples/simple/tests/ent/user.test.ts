@@ -17,12 +17,16 @@ import EditUserAction from "src/ent/user/actions/edit_user_action";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
+import { FakeLogger } from "ent/testutils/fake_log";
+import { FakeComms, Mode } from "ent/testutils/fake_comms";
 
 const loggedOutViewer = new LoggedOutViewer();
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
   await DB.getInstance().endPool();
+  FakeLogger.clear();
+  FakeComms.clear();
 });
 
 async function create(input: UserCreateInput): Promise<User> {
@@ -63,6 +67,16 @@ test("create user", async () => {
   let selfContact = await user.loadSelfContact();
   expect(selfContact).not.toBe(null);
   expect(selfContact?.id).toBe(contact.id);
+
+  expect(FakeLogger.verifyLogs(2));
+  expect(FakeLogger.contains(`ent User created with id ${user.id}`)).toBe(true);
+  expect(FakeLogger.contains(`ent Contact created with id ${contact.id}`)).toBe(
+    true,
+  );
+  FakeComms.verifySent(user.emailAddress, Mode.EMAIL, {
+    subject: "Welcome, Jon!",
+    body: "Hi Jon, thanks for joining fun app!",
+  });
 });
 
 test("edit user", async () => {
