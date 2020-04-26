@@ -194,9 +194,19 @@ export abstract class BaseEntSchema {
   patterns: Pattern[] = [Node];
 }
 
-export function getFields(value: any): Map<string, Field> {
+export interface SchemaConstructor {
+  new (): Schema;
+}
+
+export type SchemaInputType = Schema | SchemaConstructor;
+
+function isSchema(value: SchemaInputType): value is Schema {
+  return (value as Schema).fields !== undefined;
+}
+
+export function getFields(value: SchemaInputType): Map<string, Field> {
   let schema: Schema;
-  if (value.constructor == Object) {
+  if (isSchema(value)) {
     schema = value;
   } else {
     schema = new value();

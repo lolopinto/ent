@@ -5,13 +5,21 @@ import Schema, {
   BaseEntSchema,
   ActionOperation,
 } from "ent/schema";
-import { StringType } from "ent/field";
+import { StringType, BooleanType } from "ent/field";
 
 export default class User extends BaseEntSchema implements Schema {
   fields: Field[] = [
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
     StringType({ name: "EmailAddress", unique: true }),
+    // TODO support enums: UNVERIFIED, VERIFIED, DEACTIVATED, DISABLED etc.
+    // TODO shouldn't really be nullable. same issue as #35
+    StringType({ name: "AccountStatus", nullable: true }),
+    BooleanType({
+      name: "emailVerified",
+      hideFromGraphQL: true,
+      serverDefault: "FALSE",
+    }),
   ];
 
   edges: Edge[] = [
@@ -35,7 +43,15 @@ export default class User extends BaseEntSchema implements Schema {
   // TODO break edit into editEmail or something
   actions: Action[] = [
     {
-      operation: ActionOperation.Mutations,
+      operation: ActionOperation.Create,
+      fields: ["FirstName", "LastName", "EmailAddress"],
+    },
+    {
+      operation: ActionOperation.Edit,
+      fields: ["FirstName", "LastName"],
+    },
+    {
+      operation: ActionOperation.Delete,
     },
   ];
 }

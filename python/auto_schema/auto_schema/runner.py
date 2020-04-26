@@ -92,10 +92,39 @@ class Runner(object):
 
 
   @classmethod
+  def convert_postgres_boolean(cls, metadata_default):
+    boolean_map = {
+      'true': 'true',
+      't': 'true',
+      'y': 'true',
+      'yes':'true',
+      'TRUE': 'true',
+      '1': 'true',
+      'false': 'false',
+      'f': 'false',
+      'n': 'false',
+      'no':'false',
+      'FALSE': 'false',
+      '0': 'false',
+    }
+    # postgres is very liberal about what it allows for boolean values so support that here
+    if metadata_default in boolean_map:
+      return boolean_map[metadata_default]
+    return metadata_default
+
+
+  @classmethod
   def compare_server_default(cls, context, inspected_column, metadata_column, inspected_default, metadata_default, rendered_metadata_default):
     # let's just do simple comparison for now. 
     # Things may get more complicated in the future but this works for now
-    if cls.get_clause_text(inspected_default) != cls.get_clause_text(metadata_default):
+
+    new_inspected_default = cls.get_clause_text(inspected_default)
+    new_metadata_default = cls.get_clause_text(metadata_default)
+    if isinstance(metadata_column.type, sa.Boolean):
+      new_inspected_default = cls.convert_postgres_boolean(new_inspected_default)
+      new_metadata_default = cls.convert_postgres_boolean(new_metadata_default)
+
+    if new_inspected_default != new_metadata_default:
       return True
     return False
 

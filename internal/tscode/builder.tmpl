@@ -1,7 +1,7 @@
 {{with .NodeData -}}
 
 {{reserveImport "ent/ent" "Viewer" "ID" "Ent" "AssocEdgeInputOptions"}}
-{{reserveImport "ent/action" "Action" "Builder" "WriteOperation" "Changeset"}}
+{{reserveImport "ent/action" "Action" "Builder" "WriteOperation" "Changeset" "saveBuilder" "saveBuilderX" }}
 {{reserveImport "ent/orchestrator" "Orchestrator"}}
 
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
@@ -16,15 +16,13 @@
 export interface {{.Node}}Input {
   {{range $field := .FieldInfo.Fields -}}
     {{ if $field.EditableField -}}
-      {{$type := $field.TsType -}}
-      {{/* TODO make this generic to work for all imported types but this is hack for ID for now */ -}}
-      {{ if eq $type "ID" -}}
-        {{ $type = useImport "ID" -}}
-      {{end -}}
+      {{$type := $field.TsBuilderType -}}
+        {{range $import := $field.TsBuilderImports -}}
+          {{ $ignore := useImport $import -}}
+        {{end -}}
       {{$field.TsFieldName}}?: {{$type}};
     {{end -}}
   {{end -}}
-  requiredFields: string[];
 }
 
 export interface {{.Node}}Action extends {{useImport "Action"}}<{{useImport .Node}}> {
@@ -45,6 +43,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   private orchestrator: {{useImport "Orchestrator"}}<{{$node}}>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
+  private input: {{.Node}}Input;
 
   public constructor(
     public readonly viewer: {{useImport "Viewer"}},
@@ -53,6 +52,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     public readonly existingEnt?: {{$node}} | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.input = action.getInput();
 
     this.orchestrator = new {{useImport "Orchestrator"}}({
       viewer: viewer,
@@ -69,52 +69,28 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   }
 
   getInput(): {{.Node}}Input {
-    return this.action.getInput();
+    return this.input;
   }
 
-  private getEditedFields(): Map<string, any> {
-    const fields = this.action.getInput();
-
-    // required fields
-    let m = {};
-    let result = new Map<string, any>();
-    for (const field of fields.requiredFields) {
-      m[field] = true;
-    }
-
-    const addField = function(key: string, value: any, setNull: boolean) {
-      if (value !== undefined) {
-        result.set(key, value);
-      } else if (setNull) {
-        result.set(key, null);
-      }
+  updateInput(input: {{.Node}}Input) {
+    // override input
+    this.input = {
+      ...this.input,
+      ...input,
     };
-    {{range $field := .FieldInfo.Fields -}}
-      {{ if $field.EditableField -}}
-        {{$tsFieldName := $field.TsFieldName -}}
-        addField("{{$field.FieldName}}", fields.{{$tsFieldName}}, m["{{$field.FieldName}}"]);
-        {{ $inverseEdge := $field.GetInverseEdge -}}
-        {{ if $inverseEdge -}}
-          if (fields.{{$tsFieldName}}) {
-            this.orchestrator.addInboundEdge(
-              fields.{{$tsFieldName}},
-              {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
-              {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
-            );
-          }
-        {{end -}}
-      {{end -}}
-    {{end -}}
-    return result;
   }
 
   {{ $edgeInfos := .EdgeInfo.Associations -}}
   {{ range $edge := $edgeInfos -}}  
+    {{ $node := useImport .NodeInfo.Node -}}
   add{{$edge.Singular}}(...ids: {{useImport "ID"}}[]): {{$builder}};
-  add{{$edge.Singular}}(...nodes: {{useImport .NodeInfo.Node}}[]): {{$builder}};
-  add{{$edge.Singular}}(...nodes: ID[] | {{.NodeInfo.Node}}[]): {{$builder}} {
+  add{{$edge.Singular}}(...nodes: {{$node}}[]): {{$builder}};
+  add{{$edge.Singular}}(...nodes: Builder<{{$node}}>[]): {{$builder}};
+  add{{$edge.Singular}}(...nodes: ID[] | {{$node}}[] | Builder<{{$node}}>[]): {{$builder}} {
     for (const node of nodes) {
-      if (typeof node === "object") {
+      if (this.is{{$node}}Builder(node)) {
+        this.add{{$edge.Singular}}ID(node);
+      } else if (typeof node === "object") {
         this.add{{$edge.Singular}}ID(node.id);
       } else {
         this.add{{$edge.Singular}}ID(node);
@@ -123,7 +99,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     return this;
   }
 
-  add{{$edge.Singular}}ID(id: {{useImport "ID"}}, options?: {{useImport "AssocEdgeInputOptions"}}): {{$builder}} {
+  add{{$edge.Singular}}ID(id: {{useImport "ID"}} | Builder<{{$node}}>, options?: {{useImport "AssocEdgeInputOptions"}}): {{$builder}} {
     {{/* TODO need inbound edges also */}}
     this.orchestrator.addOutboundEdge(
       id, 
@@ -161,6 +137,61 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   async validX(): Promise<void> {
     return this.orchestrator.validX();
   }
+
+  async save(): Promise<void> {
+    await {{useImport "saveBuilder"}}(this);
+  }
+
+  async saveX(): Promise<void> {
+    await {{useImport "saveBuilderX"}}(this);
+  }
+
+  async editedEnt(): Promise<{{$node}} | null> {
+    {{/* TODO: throw if save() has not been called */ -}}
+    return await this.orchestrator.editedEnt();
+  }
+
+  async editedEntX(): Promise<{{$node}}> {
+    {{/* TODO: throw if saveX() has not been called */ -}}
+    return await this.orchestrator.editedEntX();
+  }
+
+  private getEditedFields(): Map<string, any> {
+    const fields = this.input;
+
+    let result = new Map<string, any>();
+
+    const addField = function(key: string, value: any) {
+      if (value !== undefined) {
+        result.set(key, value);
+      }
+    };
+    {{range $field := .FieldInfo.Fields -}}
+      {{ if $field.EditableField -}}
+        {{$tsFieldName := $field.TsFieldName -}}
+        addField("{{$field.FieldName}}", fields.{{$tsFieldName}});
+        {{ $inverseEdge := $field.GetInverseEdge -}}
+        {{ if $inverseEdge -}}
+          if (fields.{{$tsFieldName}}) {
+            this.orchestrator.addInboundEdge(
+              fields.{{$tsFieldName}},
+              {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+              {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
+            );
+          }
+        {{end -}}
+      {{end -}}
+    {{end -}}
+    return result;
+  }
+
+  {{ range .GetUniqueNodes -}} 
+    private is{{.Node}}Builder(node: ID | {{.Node}} | Builder<{{.Node}}>): node is Builder<{{.Node}}> {
+      return (node as Builder<{{.Node}}>).placeholderID !== undefined;
+    }
+
+  {{end}}
+
 }
 
 {{end -}}

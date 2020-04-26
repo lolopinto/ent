@@ -280,21 +280,47 @@ export interface Queryer {
   // tslint:enable:no-unnecessary-generics
 }
 
-export interface DataOperation<T extends Ent> {
+export interface DataOperation {
   performWrite(queryer: Queryer): Promise<void>;
-  // this returns a non-privacy checked ent to use
-  returnedEntRow?(viewer: LoggedOutViewer): T | null; // optional to indicate the row that was created
-  resolve?(executor: Executor<T>): void; //throws?
+  returnedEntRow?(): {} | null; // optional to indicate the row that was created
+  resolve?<T extends Ent>(executor: Executor<T>): void; //throws?
 }
 
-export class EditNodeOperation<T extends Ent> implements DataOperation<T> {
+export interface EditNodeOptions extends EditRowOptions {
+  fieldsToResolve: string[];
+}
+
+export class EditNodeOperation implements DataOperation {
   row: {} | null;
 
   constructor(
-    public options: EditRowOptions,
-    private ent: EntConstructor<T>,
+    public options: EditNodeOptions,
     private existingEnt: Ent | null = null,
   ) {}
+
+  resolve<T extends Ent>(executor: Executor<T>): void {
+    if (!this.options.fieldsToResolve.length) {
+      return;
+    }
+
+    let fields = this.options.fields;
+    this.options.fieldsToResolve.forEach((fieldName) => {
+      let value: Builder<T> | null = fields[fieldName];
+      if (!value) {
+        throw new Error(
+          `trying to resolve field ${fieldName} but not a valid field`,
+        );
+      }
+      let ent = executor.resolveValue(value.placeholderID);
+      if (!ent) {
+        throw new Error(
+          `couldn't resolve field ${fieldName} with value ${value.placeholderID}`,
+        );
+      }
+      fields[fieldName] = ent.id;
+    });
+    this.options.fields = fields;
+  }
 
   async performWrite(queryer: Queryer): Promise<void> {
     if (this.existingEnt) {
@@ -304,11 +330,8 @@ export class EditNodeOperation<T extends Ent> implements DataOperation<T> {
     }
   }
 
-  returnedEntRow(viewer: LoggedOutViewer): T | null {
-    if (!this.row) {
-      return null;
-    }
-    return new this.ent(viewer, this.row["id"], this.row);
+  returnedEntRow(): {} | null {
+    return this.row;
   }
 }
 
@@ -318,7 +341,7 @@ interface EdgeOperationOptions {
   id2Placeholder?: boolean;
 }
 
-export class EdgeOperation implements DataOperation<never> {
+export class EdgeOperation implements DataOperation {
   private constructor(
     public edgeInput: AssocEdgeInput,
     private options: EdgeOperationOptions,
@@ -462,15 +485,17 @@ export class EdgeOperation implements DataOperation<never> {
     );
   }
 
-  private static resolveIDs<T extends Ent>(
+  private static resolveIDs<T extends Ent, T2 extends Ent>(
     srcBuilder: Builder<T>, // id1
-    destID: Builder<T> | ID, // id2 ( and then you flip it)
-  ): [ID, string, boolean, ID] {
+    destID: Builder<T2> | ID, // id2 ( and then you flip it)
+  ): [ID, string, boolean, ID, boolean] {
     let destIDVal: ID;
+    let destPlaceholder = false;
     if (typeof destID === "string" || typeof destID === "number") {
       destIDVal = destID;
     } else {
       destIDVal = destID.placeholderID;
+      destPlaceholder = true;
     }
     let srcIDVal: ID;
     let srcType: string;
@@ -487,20 +512,23 @@ export class EdgeOperation implements DataOperation<never> {
       srcType = "";
     }
 
-    return [srcIDVal, srcType, srcPlaceholder, destIDVal];
+    return [srcIDVal, srcType, srcPlaceholder, destIDVal, destPlaceholder];
   }
 
-  static inboundEdge<T extends Ent>(
+  static inboundEdge<T extends Ent, T2 extends Ent>(
     builder: Builder<T>,
     edgeType: string,
-    id1: Builder<T> | ID,
+    id1: Builder<T2> | ID,
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    let [id2Val, id2Type, id2Placeholder, id1Val] = EdgeOperation.resolveIDs(
-      builder,
-      id1,
-    );
+    let [
+      id2Val,
+      id2Type,
+      id2Placeholder,
+      id1Val,
+      id1Placeholder,
+    ] = EdgeOperation.resolveIDs(builder, id1);
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -514,20 +542,24 @@ export class EdgeOperation implements DataOperation<never> {
     return new EdgeOperation(edge, {
       operation: WriteOperation.Insert,
       id2Placeholder: id2Placeholder,
+      id1Placeholder: id1Placeholder,
     });
   }
 
-  static outboundEdge<T extends Ent>(
+  static outboundEdge<T extends Ent, T2 extends Ent>(
     builder: Builder<T>,
     edgeType: string,
-    id2: Builder<T> | ID,
+    id2: Builder<T2> | ID,
     nodeType: string,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation {
-    let [id1Val, id1Type, id1Placeholder, id2Val] = EdgeOperation.resolveIDs(
-      builder,
-      id2,
-    );
+    let [
+      id1Val,
+      id1Type,
+      id1Placeholder,
+      id2Val,
+      id2Placeholder,
+    ] = EdgeOperation.resolveIDs(builder, id2);
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -541,6 +573,7 @@ export class EdgeOperation implements DataOperation<never> {
     return new EdgeOperation(edge, {
       operation: WriteOperation.Insert,
       id1Placeholder: id1Placeholder,
+      id2Placeholder: id2Placeholder,
     });
   }
 
@@ -664,7 +697,7 @@ async function deleteRow(
   await queryer.query(query, values);
 }
 
-export class DeleteNodeOperation implements DataOperation<never> {
+export class DeleteNodeOperation implements DataOperation {
   constructor(private id: ID, private options: DataOptions) {}
 
   async performWrite(queryer: Queryer): Promise<void> {

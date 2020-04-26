@@ -11,5 +11,5 @@ module.exports = {
   // ignore subdirectories until I figure out how to get projects and root files/module name mapper working correctly
   testPathIgnorePatterns: ["<rootDir>/examples"],
   //  collectCoverage: true,
-  setupFilesAfterEnv: ["jest-expect-message"],
+  setupFilesAfterEnv: ["jest-expect-message", "jest-date-mock"],
 };

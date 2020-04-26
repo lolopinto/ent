@@ -1,8 +1,11 @@
-{{ reserveImport "ent/action" "Action" "saveBuilder" "saveBuilderX" "saveBuilderXNoEnt" "WriteOperation" "Changeset" }}
+{{ reserveImport "ent/action" "Action" "Builder" "WriteOperation" "Changeset" }}
 {{ reserveImport "ent/ent" "Viewer" "ID" "Ent" }}
 
-{{ $packagePath := printf "src/ent/%s" .NodeData.PackageName }}
-{{ reserveDefaultImport $packagePath .NodeData.Node}}
+{{ range .NodeData.GetUniqueNodesForceSelf -}} 
+  {{$packagePath := printf "src/ent/%s" .PackageName }}
+  {{ reserveDefaultImport $packagePath .Node}}
+{{ end}}
+
 {{ $builderName := printf "%sBuilder" .NodeData.Node -}}
 {{ $builderInput := printf "%sInput" .NodeData.Node -}}
 
@@ -22,10 +25,9 @@
   export interface {{$inputName}} {
     {{ range $field := $action.GetFields -}}
       {{ if $field.EditableField -}}
-        {{$type := $field.TsType -}}
-        {{/* TODO make this generic to work for all imported types but this is hack for ID for now */ -}}
-        {{ if eq $type "ID" -}}
-          {{ $type = useImport "ID" -}}
+        {{$type := $field.TsBuilderType -}}
+        {{range $import := $field.TsBuilderImports -}}
+          {{ $ignore := useImport $import -}}
         {{end -}}
         {{if isRequiredField $action $field -}}
           {{$field.TsFieldName}}: {{$type}};
@@ -78,18 +80,11 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   }
 
   getInput(): {{useImport $builderInput}} {
-    return {
-      {{ if $hasInput -}}
-        ...this.input,
-      {{end -}}
-      requiredFields: [
-        {{ range $field := $action.GetFields -}}
-          {{ if and $field.EditableField (isRequiredField $action $field) -}}
-          "{{$field.FieldName}}",
-          {{end -}}
-        {{end -}}
-      ],
-    };
+    {{ if $hasInput -}}
+      return this.input;
+      {{ else -}}
+      return {};
+    {{end -}}
   }
 
   async changeset(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
@@ -106,19 +101,21 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
 
   {{ if $action.IsDeletingNode -}}
     async save(): Promise<void> {
-      await {{useImport "saveBuilder"}}(this.builder);
+      await this.builder.save();
   {{ else -}}
     async save(): Promise<{{$node}} | null> {
-    return await {{useImport "saveBuilder"}}(this.builder);
+      await this.builder.save();
+      return await this.builder.editedEnt();
   {{ end -}}
   }
 
   {{ if $action.IsDeletingNode -}}
     async saveX(): Promise<void> {
-      await {{useImport "saveBuilderXNoEnt"}}(this.builder);
+      await this.builder.saveX();
   {{ else -}}
     async saveX(): Promise<{{$node}}> {
-    return await {{useImport "saveBuilderX"}}(this.builder);
+      await this.builder.saveX();
+      return await this.builder.editedEntX();
   {{ end -}}
   }
 
