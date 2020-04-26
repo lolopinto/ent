@@ -44,6 +44,25 @@ test("create user", async () => {
 
   expect(user.firstName).toBe("Jon");
   expect(user.lastName).toBe("Snow");
+  expect(user.accountStatus).toBe("UNVERIFIED");
+  expect(user.emailVerified).toBeFalsy();
+
+  // confirm contact was automatically created
+  let v = new IDViewer(user.id);
+  user = await User.loadX(v, user.id);
+  let contacts = await user.loadContacts();
+  expect(contacts.length).toBe(1);
+  let contact = contacts[0];
+
+  expect(contact.firstName).toBe("Jon");
+  expect(contact.lastName).toBe("Snow");
+  expect(contact.emailAddress).toBe(user.emailAddress);
+  expect(contact.userID).toBe(user.id);
+
+  // confirm contact was indicated as a self-contact
+  let selfContact = await user.loadSelfContact();
+  expect(selfContact).not.toBe(null);
+  expect(selfContact?.id).toBe(contact.id);
 });
 
 test("edit user", async () => {
@@ -390,6 +409,7 @@ test("loadFromEmailAddress", async () => {
 });
 
 test("uniqueEdge|Node", async () => {
+  // self contact also set at creation
   let jon = await create({
     firstName: "Jon",
     lastName: "Snow",
@@ -408,12 +428,14 @@ test("uniqueEdge|Node", async () => {
   expect(jon).toBeInstanceOf(User);
   expect(sansa).toBeInstanceOf(User);
 
-  let contact = await CreateContactAction.create(loggedOutViewer, {
-    emailAddress: jon.emailAddress,
-    firstName: jon.firstName,
-    lastName: jon.lastName,
-    userID: jon.id,
-  }).saveX();
+  let vc = new IDViewer(jon.id, jon);
+  jon = await User.loadX(vc, jon.id);
+
+  // jon was created as his own contact
+  let contacts = await jon.loadContacts();
+  expect(contacts.length).toBe(1);
+  let contact = contacts[0];
+
   let contact2 = await CreateContactAction.create(loggedOutViewer, {
     emailAddress: sansa.emailAddress,
     firstName: sansa.firstName,
@@ -421,9 +443,8 @@ test("uniqueEdge|Node", async () => {
     userID: jon.id,
   }).saveX();
 
-  expect(contact).toBeInstanceOf(Contact);
+  expect(contact2).toBeInstanceOf(Contact);
 
-  let vc = new IDViewer(jon.id, jon);
   let editAction = EditUserAction.create(vc, jon, {});
   // TODO throw at trying to mutate a build after saving. will help with a bunch of typos...
   editAction.builder.addSelfContact(contact);

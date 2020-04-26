@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go/types"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -369,6 +370,47 @@ func (f *Field) TsType() string {
 		return (&enttype.IDType{}).GetTSType()
 	}
 	return tsType.GetTSType()
+}
+
+var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
+
+func (f *Field) getIDFieldTypeName() string {
+	var typeName string
+	if f.fkey != nil {
+		typeName = f.fkey.Config
+	} else if f.fieldEdge != nil {
+		typeName = f.fieldEdge.Config
+	}
+	return typeName
+}
+
+func (f *Field) TsBuilderType() string {
+	typ := f.TsType()
+	typeName := f.getIDFieldTypeName()
+	if typeName == "" {
+		return typ
+	}
+	match := structNameRegex.FindStringSubmatch(typeName)
+	if len(match) != 2 {
+		panic("invalid config name")
+	}
+	// TODO we're doing this in a builder where we don't need currently need useImport
+	// but that may not always be true
+	return fmt.Sprintf("%s | Builder<%s>", typ, match[1])
+}
+
+func (f *Field) TsBuilderImports() []string {
+	typeName := f.getIDFieldTypeName()
+	if typeName == "" {
+		return []string{}
+	}
+	match := structNameRegex.FindStringSubmatch(typeName)
+	if len(match) != 2 {
+		panic("invalid config name")
+	}
+	return []string{
+		match[1], "ID", "Builder",
+	}
 }
 
 func (f *Field) GetNotNullableTsType() string {

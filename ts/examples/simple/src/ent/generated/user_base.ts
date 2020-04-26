@@ -38,6 +38,8 @@ export class UserBase {
   readonly firstName: string;
   readonly lastName: string;
   readonly emailAddress: string;
+  readonly accountStatus: string | null;
+  readonly emailVerified: boolean;
 
   constructor(public viewer: Viewer, id: ID, data: {}) {
     this.id = id;
@@ -48,6 +50,8 @@ export class UserBase {
     this.firstName = data["first_name"];
     this.lastName = data["last_name"];
     this.emailAddress = data["email_address"];
+    this.accountStatus = data["account_status"];
+    this.emailVerified = data["email_verified"];
   }
 
   // by default, we always deny and it's up to the ent
@@ -137,6 +141,8 @@ export class UserBase {
       "first_name",
       "last_name",
       "email_address",
+      "account_status",
+      "email_verified",
     ];
   }
 

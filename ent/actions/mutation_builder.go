@@ -360,7 +360,10 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		dependencies:  b.dependencies,
 		changesets:    b.changesets,
 		observers:     b.observers,
-		validators:    b.validators,
+		// this shouldn't be needed...
+		// we have run the validators to get to this step.
+		// TODO kill...
+		validators: b.validators,
 	}, nil
 }
 

@@ -1,15 +1,6 @@
-import {
-  DataOperation,
-  Ent,
-  EntConstructor,
-  Viewer,
-  ID,
-  applyPrivacyPolicyForEntX,
-  applyPrivacyPolicyForEnt,
-} from "./ent";
+import { DataOperation, Ent, EntConstructor, Viewer, ID } from "./ent";
 import { PrivacyPolicy } from "./privacy";
 import DB from "./db";
-import { LoggedOutViewer } from "./viewer";
 
 export enum WriteOperation {
   Insert = "insert",
@@ -27,8 +18,8 @@ export interface Builder<T extends Ent> {
 }
 
 export interface Executor<T extends Ent>
-  extends Iterable<DataOperation<T>>,
-    Iterator<DataOperation<T>> {
+  extends Iterable<DataOperation>,
+    Iterator<DataOperation> {
   // this returns a non-privacy checked "ent"
   // TODO are we sure we want Executor with type-T
   // and maybe only want resolveValue somehow??
@@ -43,20 +34,31 @@ export interface Changeset<T extends Ent> {
   ent: EntConstructor<T>;
   changesets?: Changeset<T>[];
   dependencies?: Map<ID, Builder<T>>;
+  // also need the builder to pass to things...
+  // we don't need the triggers here because triggers are run to create the changeset
+  // do we need the validators tho?
+  // if we run the field based validators, we can run the normal validators?
+  // we don't need the validators or triggers because they're used to build the changeset
+  //  builder: Builder<T>;
+  //  observers?// still need builder to pass to observer...
 }
 
 export interface Trigger<T extends Ent> {
-  changeset(): Changeset<T> | null; // TODO type
+  // TODO: way in the future. detect any writes happening in changesets and optionally throw if configured to do so
+  // can throw if it wants. not expected to throw tho.
+  changeset(
+    builder: Builder<T>,
+  ): // hmm Promise<void> is not yet an option...
+  void | Promise<Changeset<T> | Changeset<T>[]>;
 }
 
 export interface Observer {
   observe();
 }
 
-export interface Validator {
+export interface Validator<T extends Ent> {
   // can throw if it wants
-  validate<T extends Ent>(builder: Builder<T>): Promise<void>;
-  validate<T extends Ent>(builder: Builder<T>): void;
+  validate(builder: Builder<T>): Promise<void> | void;
 }
 
 export interface Action<T extends Ent> {
@@ -67,7 +69,7 @@ export interface Action<T extends Ent> {
   privacyPolicy?: PrivacyPolicy; // todo make required?
   triggers?: Trigger<T>[];
   observers?: Observer[];
-  validators?: Validator[];
+  validators?: Validator<T>[];
 
   valid(): Promise<boolean>;
   // throws if invalid
@@ -83,32 +85,11 @@ export interface Action<T extends Ent> {
 
 export async function saveBuilder<T extends Ent>(
   builder: Builder<T>,
-): Promise<T | null> {
-  const ent = await saveBuilderImpl(builder, false);
-  if (ent) {
-    return ent;
-    // TODO we need to apply privacy while loading
-    // so we also need an API to get the raw object back e.g. for account creation
-    // or a way to inject viewer for privacy purposes
-    //    return applyPrivacyPolicyForEnt(builder.viewer, ent);
-  }
-  return null;
+): Promise<void> {
+  await saveBuilderImpl(builder, false);
 }
 
 export async function saveBuilderX<T extends Ent>(
-  builder: Builder<T>,
-): Promise<T> {
-  const ent = await saveBuilderImpl(builder, true);
-  if (ent) {
-    return ent;
-    // TODO same as above re: viewer
-    //    return applyPrivacyPolicyForEntX(builder.viewer, ent);
-  }
-  throw new Error("could not save ent for builder");
-}
-
-// this is used by delete builders which want exceptions but don't want to load the ent
-export async function saveBuilderXNoEnt<T extends Ent>(
   builder: Builder<T>,
 ): Promise<void> {
   await saveBuilderImpl(builder, true);
@@ -117,14 +98,12 @@ export async function saveBuilderXNoEnt<T extends Ent>(
 async function saveBuilderImpl<T extends Ent>(
   builder: Builder<T>,
   throwErr: boolean,
-): Promise<T | null> {
+): Promise<void> {
   const changeset = await builder.build();
   const executor = changeset.executor();
 
   const client = await DB.getInstance().getNewClient();
 
-  let viewer = new LoggedOutViewer();
-  let ent: T | null = null;
   try {
     await client.query("BEGIN");
     for (const operation of executor) {
@@ -134,11 +113,6 @@ async function saveBuilderImpl<T extends Ent>(
       }
 
       await operation.performWrite(client);
-      if (operation.returnedEntRow) {
-        // we need a way to eventually know primary vs not once we can stack these
-        // things with triggers etc
-        ent = operation.returnedEntRow(viewer);
-      }
     }
     await client.query("COMMIT");
   } catch (e) {
@@ -152,6 +126,4 @@ async function saveBuilderImpl<T extends Ent>(
   } finally {
     client.release();
   }
-
-  return ent;
 }
