@@ -18,7 +18,6 @@ export class FakeLogger {
 
   static verifyLogs(length?: number) {
     expect(this.logs.length).toBeGreaterThan(0);
-    console.log(this.logs);
     if (length) {
       expect(this.logs.length).toBe(length);
     }
@@ -33,6 +32,10 @@ export class FakeLogger {
   }
 }
 
+// TODO instead of needing to add this manually
+// we need to build a way to add global observers (and maybe triggers)
+// to be run on every action/mutation
+// logger is an obvious one that's needed/ wanted on every action
 export class EntCreationObserver<T extends Ent> {
   async observe(builder: Builder<T>) {
     if (!builder.editedEnt) {

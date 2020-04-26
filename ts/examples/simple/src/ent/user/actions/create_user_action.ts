@@ -5,7 +5,10 @@ import {
 import { UserBuilder } from "./user_builder";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import Contact from "src/ent/contact";
+import User from "src/ent/user";
+
 import { Changeset } from "ent/action";
+import { EntCreationObserver } from "ent/testutils/fake_log";
 
 export { UserCreateInput };
 
@@ -37,4 +40,6 @@ export default class CreateUserAction extends CreateUserActionBase {
       },
     },
   ];
+
+  observers = [new EntCreationObserver<User>()];
 }
