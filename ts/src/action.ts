@@ -15,6 +15,7 @@ export interface Builder<T extends Ent> {
   readonly viewer: Viewer;
   build(): Promise<Changeset<T>>;
   operation: WriteOperation;
+  editedEnt?(): Promise<T | null>;
 }
 
 export interface Executor<T extends Ent>
@@ -35,14 +36,6 @@ export interface Changeset<T extends Ent> {
   ent: EntConstructor<T>;
   changesets?: Changeset<T>[];
   dependencies?: Map<ID, Builder<T>>;
-  //  observers:
-  // also need the builder to pass to things...
-  // we don't need the triggers here because triggers are run to create the changeset
-  // do we need the validators tho?
-  // if we run the field based validators, we can run the normal validators?
-  // we don't need the validators or triggers because they're used to build the changeset
-  //  builder: Builder<T>;
-  //  observers?// still need builder to pass to observer...
 }
 
 export interface Trigger<T extends Ent> {
@@ -141,7 +134,6 @@ async function saveBuilderImpl<T extends Ent>(
   }
 
   if (!error && executor.executeObservers) {
-    executor.executeObservers();
+    await executor.executeObservers();
   }
-  //  executor.ob
 }

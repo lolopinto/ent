@@ -129,6 +129,10 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
   build(): Promise<Changeset<T>> {
     return this.orchestrator.build();
   }
+
+  async editedEnt(): Promise<T | null> {
+    return await this.orchestrator.editedEnt();
+  }
 }
 
 export class SimpleAction<T extends Ent> implements Action<T> {
@@ -226,7 +230,6 @@ export class FakeBuilder<T extends Ent> implements Builder<T> {
   }
 
   async build(): Promise<Changeset<T>> {
-    // TODO need dependencies and changesets to test the complicated cases...
     return new EntChangeset(
       this.viewer,
       this.placeholderID,

@@ -363,6 +363,7 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
         this.operations,
         this.dependencies!,
         this.changesets!,
+        this.options,
       );
     }
     return new ListBasedExecutor(

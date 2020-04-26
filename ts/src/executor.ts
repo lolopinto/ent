@@ -78,6 +78,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
   private allOperations: DataOperation[] = [];
   private changesetMap: Map<string, Changeset<T>> = new Map();
   private nodeOpMap: Map<DataOperation, Changeset<T>> = new Map();
+  private executors: Executor<T>[] = [];
 
   constructor(
     private viewer: Viewer,
@@ -86,6 +87,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     operations: DataOperation[],
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset<T>[],
+    private options?: OrchestratorOptions<T>,
   ) {
     let graph = Graph();
 
@@ -126,6 +128,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
           this.placeholderID,
           this.ent,
           operations,
+          this.options,
         );
       },
     });
@@ -146,7 +149,8 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
 
       // does this work if we're going to call this to figure out the executor?
       // we need to override this for ourselves and instead of doing executor(), it does list like we have in ComplexExecutor...
-      for (let op of c.executor()) {
+      let executor = c.executor();
+      for (let op of executor) {
         if (op.returnedEntRow) {
           nodeOps.add(op);
           this.nodeOpMap.set(op, c);
@@ -154,6 +158,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
           remainOps.add(op);
         }
       }
+      this.executors.push(executor);
     });
     // get all the operations and put node operations first
     this.allOperations = [...nodeOps, ...remainOps];
@@ -198,5 +203,16 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
       return ent;
     }
     return null;
+  }
+
+  async executeObservers() {
+    await Promise.all(
+      this.executors.map((executor) => {
+        if (!executor.executeObservers) {
+          return null;
+        }
+        return executor.executeObservers();
+      }),
+    );
   }
 }

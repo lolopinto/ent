@@ -23,6 +23,7 @@ import { StringType, TimeType, BooleanType } from "./field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import * as query from "./query";
 import { IDViewer } from "./testutils/id_viewer";
+import { FakeLogger, EntCreationObserver } from "./testutils/fake_log";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -56,6 +57,7 @@ beforeEach(() => {
 
 afterEach(() => {
   QueryRecorder.clear();
+  FakeLogger.clear();
   operations = [];
 });
 
@@ -84,10 +86,16 @@ async function executeOperations<T extends Ent>(
       await operation.performWrite(client);
     }
     await client.query("COMMIT");
+
+    if (executor.executeObservers) {
+      await executor.executeObservers();
+    }
   } catch (e) {
     await client.query("ROLLBACK");
     // rethrow
     throw e;
+  } finally {
+    client.release();
   }
 }
 
@@ -154,6 +162,8 @@ class MessageAction extends SimpleAction<Message> {
       },
     },
   ];
+
+  observers: action.Observer<Message>[] = [new EntCreationObserver<Message>()];
 }
 
 class UserAction extends SimpleAction<User> {
@@ -185,6 +195,9 @@ class UserAction extends SimpleAction<User> {
           ]),
           WriteOperation.Insert,
         );
+
+        this.contactAction.observers = [new EntCreationObserver<Contact>()];
+
         builder.orchestrator.addOutboundEdge(
           this.contactAction.builder,
           "selfContact",
@@ -194,6 +207,8 @@ class UserAction extends SimpleAction<User> {
       },
     },
   ];
+
+  observers: action.Observer<User>[] = [new EntCreationObserver<User>()];
 }
 
 function randomEmail(): string {
@@ -357,6 +372,13 @@ test("complex-based-with-dependencies", async () => {
       type: queryType.INSERT,
     },
   ]);
+  FakeLogger.verifyLogs(2);
+  expect(FakeLogger.contains(`ent User created with id ${user?.id}`)).toBe(
+    true,
+  );
+  expect(
+    FakeLogger.contains(`ent Contact created with id ${contact?.id}`),
+  ).toBe(true);
 });
 
 // this is the join a slack workspace and autojoin channels flow
@@ -391,7 +413,7 @@ test("list-with-complex-layers", async () => {
   }
   const group = new Group(new LoggedOutViewer(), QueryRecorder.newID(), {});
 
-  let userAction: SimpleAction<User>;
+  let userAction: UserAction;
   let messageAction: SimpleAction<Message>;
 
   const action = new SimpleAction(
@@ -454,6 +476,7 @@ test("list-with-complex-layers", async () => {
       },
     },
   ];
+  action.observers = [new EntCreationObserver<Group>()];
 
   // expect ComplexExecutor because of complexity of what we have here
   // we have a Group action which has nested things in it
@@ -461,10 +484,11 @@ test("list-with-complex-layers", async () => {
   expect(exec).toBeInstanceOf(ComplexExecutor);
 
   await executeOperations(exec);
-  let [createdGroup, user, message] = await Promise.all([
+  let [createdGroup, user, message, contact] = await Promise.all([
     action.editedEnt(),
     userAction!.editedEnt(),
     messageAction!.editedEnt(),
+    userAction!.contactAction.builder.editedEnt(),
   ]);
   // 4 nodes changed:
   // * Group updated(shouldn't actually be)
@@ -537,4 +561,19 @@ test("list-with-complex-layers", async () => {
       type: queryType.INSERT,
     },
   ]);
+  FakeLogger.verifyLogs(5); // should be 4
+  // TODO important and need to fix
+  // same double counting bug where the observer for Contact is being called twice
+  expect(FakeLogger.contains(`ent User created with id ${user?.id}`)).toBe(
+    true,
+  );
+  expect(
+    FakeLogger.contains(`ent Group created with id ${createdGroup?.id}`),
+  ).toBe(true);
+  expect(
+    FakeLogger.contains(`ent Message created with id ${message?.id}`),
+  ).toBe(true);
+  expect(
+    FakeLogger.contains(`ent Contact created with id ${contact?.id}`),
+  ).toBe(true);
 });
