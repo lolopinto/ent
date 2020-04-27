@@ -8,17 +8,23 @@
   },
   "scripts": {
     "compile": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "build": "./node_modules/.bin/webpack --progress"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/jest": "^25.1.4",
     "@types/jest-expect-message": "^1.0.1",
+    "copy-webpack-plugin": "^5.1.1",
+    "glob": "^7.1.6",
     "jest": "^25.1.0",
     "jest-expect-message": "^1.0.2",
     "ts-jest": "^25.2.1",
-    "typescript": "^3.8.3"
+    "ts-loader": "^7.0.1",
+    "typescript": "^3.8.3",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11"
   },
   "dependencies": {}
 }
