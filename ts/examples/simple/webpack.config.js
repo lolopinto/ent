@@ -1,7 +1,8 @@
 const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
-//const glob = require("glob");
+let alias = require("./start").getWebpackAlias();
 
+console.log(alias);
 module.exports = {
   // entry: glob.sync("./**/*.ts", {
   //   ignore: [".*/node_modules/**", "./tests/**"],
@@ -18,10 +19,7 @@ module.exports = {
     ],
   },
   resolve: {
-    alias: {
-      ent: path.resolve(__dirname, "../../src/"),
-      src: path.resolve(__dirname, "./src/"),
-    },
+    alias: alias,
     extensions: [".tsx", ".ts", ".js"],
   },
   output: {
