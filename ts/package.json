@@ -26,12 +26,15 @@
     "jest-date-mock": "^1.0.8",
     "jest-expect-message": "^1.0.2",
     "ts-jest": "^25.2.1",
-    "typescript": "^3.8.3"
+    "typescript": "^3.8.3",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11"
   },
   "scripts": {
     "compile": "tsc",
     "test": "jest"
   },
+  "private": true,
   "author": "",
   "license": "ISC"
 }
