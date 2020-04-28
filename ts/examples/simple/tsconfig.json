@@ -1,13 +1,16 @@
 {
   // TODO eventually generate this from an init step
   "compilerOptions": {
-    "lib": ["es2015", "es6", "dom"],
+    "lib": ["es2015", "es6", "dom", "esnext.asynciterable"],
     "target": "es6",
     "strictNullChecks": true,
     "downlevelIteration": true,
     "baseUrl": ".",
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "module": "commonjs",
     //    "noImplicitAny": true,
     "paths": {
       // to make importing of ent easier

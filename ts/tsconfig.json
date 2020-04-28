@@ -9,6 +9,7 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "esModuleInterop": true,
+    "experimentalDecorators": true,
     //    "noImplicitAny": true,
     "paths": {
       // TODO to make importing of ent easier
