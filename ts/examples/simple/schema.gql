@@ -3,8 +3,16 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+type Contact {
+  id: ID!
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+}
+
 type Query {
-  userByID(id: ID!): User
+  user(id: ID!): User
+  contact(id: ID!): Contact
 }
 
 type User {
