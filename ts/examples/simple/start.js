@@ -35,7 +35,7 @@ function getPaths() {
   return paths;
 }
 
-function convertStarValue(value) {
+function convertStarValue(starValue) {
   let aliasKey = starValue;
   let idx = starValue.indexOf("/");
   if (idx !== -1) {
