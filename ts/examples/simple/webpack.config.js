@@ -1,13 +1,21 @@
 const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
+
+const glob = require("glob");
 let alias = require("./start").getWebpackAlias();
 
-console.log(alias);
 module.exports = {
-  // entry: glob.sync("./**/*.ts", {
-  //   ignore: [".*/node_modules/**", "./tests/**"],
-  // }),
-  entry: "./src/index.ts",
+  entry: () => {
+    let entry = {};
+    let files = glob.sync("./**/*.ts", {
+      ignore: [".*/node_modules/**", "./tests/**"],
+    });
+
+    files.forEach((file) => {
+      entry[file.replace(".ts", "")] = file;
+    });
+    return entry;
+  },
   target: "node",
   module: {
     rules: [
