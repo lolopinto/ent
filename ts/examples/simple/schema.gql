@@ -20,4 +20,6 @@ type User {
   firstName: String!
   lastName: String!
   emailAddress: String!
+  selfContact: Contact!
+  contacts: [Contact!]!
 }

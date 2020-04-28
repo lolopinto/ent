@@ -211,6 +211,7 @@ export class UserBase {
     return loadUniqueEdge(this.id, EdgeType.UserToSelfContact);
   }
 
+  @GQLField((type) => Contact, { name: "selfContact" })
   loadSelfContact(): Promise<Contact | null> {
     return loadUniqueNode(
       this.viewer,
@@ -304,6 +305,7 @@ export class UserBase {
     return loadEdgeForID2(this.id, EdgeType.UserToMaybeEvents, id2);
   }
 
+  @GQLField((type) => [Contact], { name: "contacts" })
   loadContacts(): Promise<Contact[]> {
     return loadEntsFromClause(
       this.viewer,
