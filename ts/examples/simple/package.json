@@ -9,7 +9,7 @@
   "scripts": {
     "compile": "tsc",
     "test": "jest",
-    "build": "./node_modules/.bin/webpack --progress"
+    "build": "./node_modules/.bin/webpack --silent"
   },
   "author": "",
   "license": "ISC",
