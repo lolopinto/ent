@@ -4,6 +4,17 @@ import { Action, WriteOperation, Changeset } from "ent/action";
 import { Viewer } from "ent/ent";
 import User from "src/ent/user";
 import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
+import { InputType, Field as GQLField } from "type-graphql";
+
+@InputType()
+export class UserCreateInput {
+  @GQLField()
+  firstName: string;
+  @GQLField()
+  lastName: string;
+  @GQLField()
+  emailAddress: string;
+}
 
 export interface UserCreateInput {
   firstName: string;

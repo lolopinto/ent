@@ -17,7 +17,7 @@ async function bootstrap() {
     const server = new GraphQLServer({
       schema,
       context: {
-        viewer: new IDViewer("09ab1a18-303f-4821-980f-bdbb6fb60210"),
+        viewer: new IDViewer("02477962-620e-48e8-9162-9234b45309d8"),
       },
     });
 

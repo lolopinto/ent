@@ -10,6 +10,11 @@ type Contact {
   lastName: String!
 }
 
+type Mutation {
+  createUser(input: UserCreateInput!): User!
+  editUser(input: UserEditInput!, id: ID!): User
+}
+
 type Query {
   user(id: ID!): User
   contact(id: ID!): Contact
@@ -22,4 +27,15 @@ type User {
   emailAddress: String!
   selfContact: Contact!
   contacts: [Contact!]!
+}
+
+input UserCreateInput {
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+}
+
+input UserEditInput {
+  firstName: String
+  lastName: String
 }
