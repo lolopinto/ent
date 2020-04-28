@@ -6,7 +6,9 @@ import {
   Resolver,
   Root,
   Ctx,
+  Field as GQLField,
   ID as GQLID,
+  ObjectType,
 } from "type-graphql";
 import Contact from "src/ent/contact";
 import User from "src/ent/user";
@@ -30,16 +32,16 @@ export class UserResolver {
     return await User.load(ctx.viewer, id);
   }
 
-  @Mutation((returns) => User)
-  async createUser(
+  @Mutation((returns) => User, { name: "userCreate" })
+  async userCreate(
     @Ctx() ctx: Context,
     @Arg("input") input: UserCreateInput,
   ): Promise<User> {
     return CreateUserAction.create(ctx.viewer, input).saveX();
   }
 
-  @Mutation((returns) => User, { nullable: true })
-  async editUser(
+  @Mutation((returns) => User, { nullable: true, name: "userEdit" })
+  async userEdit(
     @Ctx() ctx: Context,
     @Arg("id", (type) => GQLID) id: ID,
     @Arg("input") input: UserEditInput,
@@ -52,19 +54,31 @@ export class UserResolver {
     return EditUserAction.create(ctx.viewer, user, input).saveX();
   }
 
-  // OTDO...
-  // @Mutation()
-  // async deleteUser(
-  //   @Ctx() ctx: Context,
-  //   @Arg("id", (type) => GQLID) id: ID,
-  // ): Promise<void> {
-  //   let user = await User.load(ctx.viewer, id);
-  //   if (!user) {
-  //     return;
-  //   }
-  //   // TODO produce a createFromID method....
-  //   return DeleteUserAction.create(ctx.viewer, user).saveX();
-  // }
+  @Mutation((returns) => UserDeleteResponse, { name: "userDelete" })
+  async userDelete(
+    @Ctx() ctx: Context,
+    @Arg("id", (type) => GQLID) id: ID,
+  ): Promise<UserDeleteResponse | null> {
+    let user = await User.load(ctx.viewer, id);
+    if (!user) {
+      return null;
+    }
+    // TODO produce a createFromID method....
+    await DeleteUserAction.create(ctx.viewer, user).saveX();
+    return new UserDeleteResponse(id);
+  }
+}
+
+@ObjectType()
+class UserDeleteResponse {
+  constructor(
+    // TODO is it possible to do it all and decorate here?
+    deletedUserID: ID,
+  ) {
+    this.deletedUserID = deletedUserID;
+  }
+  @GQLField((type) => GQLID)
+  deletedUserID: ID;
 }
 
 @Resolver((of) => Contact)

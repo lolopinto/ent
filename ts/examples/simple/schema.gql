@@ -11,8 +11,9 @@ type Contact {
 }
 
 type Mutation {
-  createUser(input: UserCreateInput!): User!
-  editUser(input: UserEditInput!, id: ID!): User
+  userCreate(input: UserCreateInput!): User!
+  userEdit(input: UserEditInput!, id: ID!): User
+  userDelete(id: ID!): UserDeleteResponse!
 }
 
 type Query {
@@ -33,6 +34,10 @@ input UserCreateInput {
   firstName: String!
   lastName: String!
   emailAddress: String!
+}
+
+type UserDeleteResponse {
+  deletedUserID: ID!
 }
 
 input UserEditInput {
