@@ -3,6 +3,13 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+enum AccountStatus {
+  UNVERIFIED
+  VERIFIED
+  DEACTIVATED
+  DISABLED
+}
+
 type Contact {
   id: ID!
   emailAddress: String!
@@ -50,7 +57,7 @@ type User {
   firstName: String!
   lastName: String!
   emailAddress: String!
-  accountStatus: String
+  accountStatus: AccountStatus
   createdEvents: [Event!]!
   createdEventsCount: Int!
   friends: [User!]!

@@ -5,7 +5,7 @@ import {
 import { UserBuilder } from "./user_builder";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import Contact from "src/ent/contact";
-import User from "src/ent/user";
+import User, { AccountStatus } from "src/ent/user";
 
 import { Changeset } from "ent/action";
 import { EntCreationObserver } from "ent/testutils/fake_log";
@@ -19,7 +19,7 @@ export default class CreateUserAction extends CreateUserActionBase {
     {
       changeset: (builder: UserBuilder): void => {
         builder.updateInput({
-          accountStatus: "UNVERIFIED",
+          accountStatus: AccountStatus.UNVERIFIED,
           // not needed because we have serverDefault but can also set it here.
           emailVerified: false,
         });
