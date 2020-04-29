@@ -10,11 +10,16 @@ type Contact {
   lastName: String!
 }
 
+"""
+The javascript `Date` as string. Type represents date and time as the ISO Date string.
+"""
+scalar DateTime
+
 type Event {
   id: ID!
   name: String!
-  startTime: Timestamp!
-  endTime: Timestamp
+  startTime: DateTime!
+  endTime: DateTime
   location: String!
   hosts: [User!]!
   hostCount: Int!
@@ -39,11 +44,6 @@ type Query {
   user(id: ID!): User
   contact(id: ID!): Contact
 }
-
-"""
-The javascript `Date` as integer. Type represents date and time as number of milliseconds from start of UNIX epoch.
-"""
-scalar Timestamp
 
 type User {
   id: ID!

@@ -1,15 +1,17 @@
 import { GraphQLServer } from "graphql-yoga";
 import "reflect-metadata";
 import { buildSchema } from "type-graphql";
-import { UserResolver } from "./resolver";
 //import { Context } from "./context";
 import { IDViewer } from "src/util/id_viewer";
-
+import UserResolver from "src/graphql/resolvers/user_resolver";
+import ContactResolver from "src/graphql/resolvers/contact_resolver";
 // bootstrap
 async function bootstrap() {
   try {
     const schema = await buildSchema({
-      resolvers: [UserResolver],
+      // can't do this until i fix the webpack emitting as individual files
+      //resolvers: [__dirname + "/resolvers/**/*.{ts,js}"],
+      resolvers: [UserResolver, ContactResolver],
       emitSchemaFile: true,
       // TODO this should be a configurable option
       // defaults to "isoDate". seems better than "timestamp"

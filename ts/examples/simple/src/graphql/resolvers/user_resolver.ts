@@ -1,19 +1,16 @@
 import {
   Arg,
-  FieldResolver,
   Query,
   Mutation,
   Resolver,
-  Root,
   Ctx,
   Field as GQLField,
   ID as GQLID,
   ObjectType,
 } from "type-graphql";
-import Contact from "src/ent/contact";
 import User from "src/ent/user";
 import { ID } from "ent/ent";
-import { Context } from "./context";
+import { Context } from "src/graphql/context";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
@@ -22,9 +19,8 @@ import EditUserAction, {
 } from "src/ent/user/actions/edit_user_action";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 
-@Resolver((of) => User)
-export class UserResolver {
-  @Query((returns) => User, { nullable: true })
+export default class UserResolver {
+  @Query((returns) => User, { nullable: true, name: "user" })
   async user(
     @Ctx() ctx: Context,
     @Arg("id", (type) => GQLID) id: ID,
@@ -69,6 +65,7 @@ export class UserResolver {
   }
 }
 
+@Resolver((of) => User)
 @ObjectType()
 class UserDeleteResponse {
   constructor(
@@ -79,15 +76,4 @@ class UserDeleteResponse {
   }
   @GQLField((type) => GQLID)
   deletedUserID: ID;
-}
-
-@Resolver((of) => Contact)
-export class ContactResolver {
-  @Query((returns) => Contact, { nullable: true })
-  async contact(
-    @Ctx() ctx: Context,
-    @Arg("id", (type) => GQLID) id: ID,
-  ): Promise<Contact | null> {
-    return await Contact.load(ctx.viewer, id);
-  }
 }
