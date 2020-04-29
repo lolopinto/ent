@@ -10,6 +10,25 @@ type Contact {
   lastName: String!
 }
 
+type Event {
+  id: ID!
+  name: String!
+  startTime: Timestamp!
+  endTime: Timestamp
+  location: String!
+  hosts: [User!]!
+  hostCount: Int!
+  invited: [User!]!
+  invitedCount: Int!
+  attending: [User!]!
+  attendingCount: Int!
+  declined: [User!]!
+  declinedCount: Int!
+  maybe: [User!]!
+  maybeCount: Int!
+  creator: User
+}
+
 type Mutation {
   userCreate(input: UserCreateInput!): User!
   userEdit(input: UserEditInput!, id: ID!): User
@@ -21,12 +40,30 @@ type Query {
   contact(id: ID!): Contact
 }
 
+"""
+The javascript `Date` as integer. Type represents date and time as number of milliseconds from start of UNIX epoch.
+"""
+scalar Timestamp
+
 type User {
   id: ID!
   firstName: String!
   lastName: String!
   emailAddress: String!
+  accountStatus: String
+  createdEvents: [Event!]!
+  createdEventsCount: Int!
+  friends: [User!]!
+  friendCount: Int!
   selfContact: Contact!
+  invitedEvents: [Event!]!
+  invitedEventsCount: Int!
+  eventsAttending: [Event!]!
+  eventsAttendingCount: Int!
+  declinedEvents: [Event!]!
+  declinedEventsCount: Int!
+  maybeEvents: [Event!]!
+  maybeEventsCount: Int!
   contacts: [Contact!]!
 }
 

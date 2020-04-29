@@ -11,13 +11,16 @@ async function bootstrap() {
     const schema = await buildSchema({
       resolvers: [UserResolver],
       emitSchemaFile: true,
+      // TODO this should be a configurable option
+      // defaults to "isoDate". seems better than "timestamp"
+      dateScalarMode: "isoDate",
     });
     // TODO we can change this as needed if we choose to use type-graphql
     // that can be cool. make this plug and play as needed
     const server = new GraphQLServer({
       schema,
       context: {
-        viewer: new IDViewer("02477962-620e-48e8-9162-9234b45309d8"),
+        viewer: new IDViewer("e0fba30e-8bc3-4d0d-b574-903cd6772d16"),
       },
     });
 

@@ -44,6 +44,7 @@ export class UserBase {
   readonly lastName: string;
   @GQLField()
   readonly emailAddress: string;
+  @GQLField((type) => String, { nullable: true })
   readonly accountStatus: string | null;
   readonly emailVerified: boolean;
 
@@ -169,6 +170,7 @@ export class UserBase {
     return loadEdges(this.id, EdgeType.UserToCreatedEvents);
   }
 
+  @GQLField((type) => [Event], { name: "createdEvents" })
   loadCreatedEvents(): Promise<Event[]> {
     return loadNodesByEdge(
       this.viewer,
@@ -178,6 +180,7 @@ export class UserBase {
     );
   }
 
+  @GQLField((type) => Int, { name: "createdEventsCount" })
   loadCreatedEventsRawCountX(): Promise<number> {
     return loadRawEdgeCountX(this.id, EdgeType.UserToCreatedEvents);
   }
@@ -190,6 +193,7 @@ export class UserBase {
     return loadEdges(this.id, EdgeType.UserToFriends);
   }
 
+  @GQLField((type) => [User], { name: "friends" })
   loadFriends(): Promise<User[]> {
     return loadNodesByEdge(
       this.viewer,
@@ -199,6 +203,7 @@ export class UserBase {
     );
   }
 
+  @GQLField((type) => Int, { name: "friendCount" })
   loadFriendsRawCountX(): Promise<number> {
     return loadRawEdgeCountX(this.id, EdgeType.UserToFriends);
   }
@@ -225,6 +230,7 @@ export class UserBase {
     return loadEdges(this.id, EdgeType.UserToInvitedEvents);
   }
 
+  @GQLField((type) => [Event], { name: "invitedEvents" })
   loadInvitedEvents(): Promise<Event[]> {
     return loadNodesByEdge(
       this.viewer,
@@ -234,6 +240,7 @@ export class UserBase {
     );
   }
 
+  @GQLField((type) => Int, { name: "invitedEventsCount" })
   loadInvitedEventsRawCountX(): Promise<number> {
     return loadRawEdgeCountX(this.id, EdgeType.UserToInvitedEvents);
   }
@@ -246,6 +253,7 @@ export class UserBase {
     return loadEdges(this.id, EdgeType.UserToEventsAttending);
   }
 
+  @GQLField((type) => [Event], { name: "eventsAttending" })
   loadEventsAttending(): Promise<Event[]> {
     return loadNodesByEdge(
       this.viewer,
@@ -255,6 +263,7 @@ export class UserBase {
     );
   }
 
+  @GQLField((type) => Int, { name: "eventsAttendingCount" })
   loadEventsAttendingRawCountX(): Promise<number> {
     return loadRawEdgeCountX(this.id, EdgeType.UserToEventsAttending);
   }
@@ -267,6 +276,7 @@ export class UserBase {
     return loadEdges(this.id, EdgeType.UserToDeclinedEvents);
   }
 
+  @GQLField((type) => [Event], { name: "declinedEvents" })
   loadDeclinedEvents(): Promise<Event[]> {
     return loadNodesByEdge(
       this.viewer,
@@ -276,6 +286,7 @@ export class UserBase {
     );
   }
 
+  @GQLField((type) => Int, { name: "declinedEventsCount" })
   loadDeclinedEventsRawCountX(): Promise<number> {
     return loadRawEdgeCountX(this.id, EdgeType.UserToDeclinedEvents);
   }
@@ -288,6 +299,7 @@ export class UserBase {
     return loadEdges(this.id, EdgeType.UserToMaybeEvents);
   }
 
+  @GQLField((type) => [Event], { name: "maybeEvents" })
   loadMaybeEvents(): Promise<Event[]> {
     return loadNodesByEdge(
       this.viewer,
@@ -297,6 +309,7 @@ export class UserBase {
     );
   }
 
+  @GQLField((type) => Int, { name: "maybeEventsCount" })
   loadMaybeEventsRawCountX(): Promise<number> {
     return loadRawEdgeCountX(this.id, EdgeType.UserToMaybeEvents);
   }
