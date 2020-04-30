@@ -30,6 +30,13 @@ import Contact from "src/ent/contact";
 
 const tableName = "users";
 
+export enum AccountStatus {
+  UNVERIFIED = "UNVERIFIED",
+  VERIFIED = "VERIFIED",
+  DEACTIVATED = "DEACTIVATED",
+  DISABLED = "DISABLED",
+}
+
 export class UserBase {
   readonly nodeType = NodeType.User;
   readonly id: ID;
