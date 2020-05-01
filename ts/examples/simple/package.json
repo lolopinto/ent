@@ -9,7 +9,7 @@
   "scripts": {
     "compile": "tsc",
     "test": "jest",
-    "build": "./node_modules/.bin/webpack --silent"
+    "build": "./node_modules/.bin/webpack"
   },
   "author": "",
   "license": "ISC",
@@ -27,5 +27,7 @@
     "webpack": "^5.0.0-beta.13",
     "webpack-cli": "^3.3.11"
   },
-  "dependencies": {}
+  "dependencies": {
+    "graphql-yoga": "^1.18.3"
+  }
 }
