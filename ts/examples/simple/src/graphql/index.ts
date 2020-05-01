@@ -1,6 +1,7 @@
 import express from "express";
 import graphqlHTTP from "express-graphql";
 import User, { AccountStatus } from "src/ent/user";
+import Contact from "src/ent/contact";
 import { IDViewer } from "src/util/id_viewer";
 import { ID } from "ent/ent";
 
@@ -14,6 +15,8 @@ import {
   GraphQLNonNull,
 } from "graphql";
 
+import { userType } from "./resolvers/user";
+import { contactType } from "./resolvers/contact";
 // code to generate this and read from it, not hard since I already have this...
 // let schema = buildSchema(`
 // type Query {
@@ -27,55 +30,6 @@ import {
 //   emailAddress:String!
 // }`);
 
-const accountStatusEnum = new GraphQLEnumType({
-  name: "ACCOUNT_STATUS",
-  values: {
-    UNVERIFIED: {
-      value: "UNVERIFIED",
-      description: "unverified account",
-    },
-    VERIFIED: {
-      value: "VERIFIED",
-      description: "verified account",
-    },
-    DEACTIVATED: {
-      value: "DEACTIVATED",
-      description: "deactivated account",
-    },
-    DISABLED: {
-      value: "DISABLED",
-      description: "disabled account",
-    },
-  },
-});
-
-const userType = new GraphQLObjectType({
-  name: "User",
-  description: "User",
-  fields: () => ({
-    id: {
-      type: GraphQLNonNull(GraphQLID),
-      description: "id",
-    },
-    firstName: {
-      type: GraphQLNonNull(GraphQLString),
-      description: "first name",
-    },
-    lastName: {
-      type: GraphQLNonNull(GraphQLString),
-      description: "last name",
-    },
-    emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
-      description: "emailAddress",
-    },
-    accountStatus: {
-      type: accountStatusEnum,
-      description: "account status",
-    },
-  }),
-});
-
 const queryType = new GraphQLObjectType({
   name: "Query",
   fields: () => ({
@@ -87,11 +41,26 @@ const queryType = new GraphQLObjectType({
           type: GraphQLID,
         },
       },
-      resolve: async (_source, { id }) => {
-        return User.load(
-          new IDViewer("e0fba30e-8bc3-4d0d-b574-903cd6772d16"),
-          "e0fba30e-8bc3-4d0d-b574-903cd6772d16",
-        );
+      // src, args, context, info
+      resolve: async (_source, { id }, context, info) => {
+        //console.log(_source); // undefined
+        console.log("sss");
+        //console.log(context); // viewer
+        //console.log(id); // args
+        //console.log(info); //all the things
+        return User.load(context.viewer, id);
+      },
+    },
+    contact: {
+      type: contactType,
+      args: {
+        id: {
+          description: "id",
+          type: GraphQLID,
+        },
+      },
+      resolve: async (_source, { id }, context) => {
+        return Contact.load(context.viewer, id);
       },
     },
   }),
@@ -109,6 +78,9 @@ app.use(
   graphqlHTTP({
     schema: schema,
     graphiql: true,
+    context: {
+      viewer: new IDViewer("e0fba30e-8bc3-4d0d-b574-903cd6772d16"),
+    },
   }),
 );
 app.listen(4000);
