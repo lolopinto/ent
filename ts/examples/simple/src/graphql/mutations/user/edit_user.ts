@@ -11,7 +11,7 @@ import EditUserAction from "src/ent/user/actions/edit_user_action";
 import User from "src/ent/user";
 import { Context } from "src/graphql/context";
 
-const userEditInput = new GraphQLInputObjectType({
+export const userEditInput = new GraphQLInputObjectType({
   name: "UserEditInput",
   description: "inputs for editing user",
   fields: () => ({
@@ -30,7 +30,7 @@ const userEditInput = new GraphQLInputObjectType({
   }),
 });
 
-const userEditResponseType = new GraphQLObjectType({
+export const userEditResponseType = new GraphQLObjectType({
   name: "UserEditResponse",
   description: "response for editing a user",
   fields: () => ({

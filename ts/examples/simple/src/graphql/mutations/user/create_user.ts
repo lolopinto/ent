@@ -9,7 +9,7 @@ import { userType } from "src/graphql/resolvers/user_type";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import { Context } from "src/graphql/context";
 
-const userCreateInputType = new GraphQLInputObjectType({
+export const userCreateInputType = new GraphQLInputObjectType({
   name: "UserCreateInput",
   description: "inputs for creating user",
   fields: () => ({
@@ -28,7 +28,7 @@ const userCreateInputType = new GraphQLInputObjectType({
   }),
 });
 
-const userCreateResponseType = new GraphQLObjectType({
+export const userCreateResponseType = new GraphQLObjectType({
   name: "UserCreateResponse",
   description: "response for creating a user",
   fields: () => ({

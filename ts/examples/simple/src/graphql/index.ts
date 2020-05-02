@@ -5,40 +5,45 @@ import Contact from "src/ent/contact";
 import Event from "src/ent/event";
 import { IDViewer } from "src/util/id_viewer";
 
-import {
-  GraphQLSchema,
-  GraphQLObjectType,
-  GraphQLID,
-  GraphQLString,
-  GraphQLEnumType,
-  GraphQLNonNull,
-} from "graphql";
+import { GraphQLSchema } from "graphql";
 
 import { userType } from "./resolvers/user_type";
 import { contactType } from "./resolvers/contact_type";
 import { eventType } from "./resolvers/event_type";
 import { queryType } from "./resolvers/query_type";
 import { mutationType } from "./mutations/mutation_type";
-
-// code to generate this and read from it, not hard since I already have this...
-// let schema = buildSchema(`
-// type Query {
-//   user(id: ID) User
-// }
-
-// type User {
-//   id: ID!
-//   firstName: String!
-//   lastName: String!
-//   emailAddress:String!
-// }`);
+import {
+  userCreateInputType,
+  userCreateResponseType,
+} from "./mutations/user/create_user";
+import {
+  userEditInput,
+  userEditResponseType,
+} from "./mutations/user/edit_user";
+import {
+  userDeleteInput,
+  userDeleteResponseType,
+} from "./mutations/user/delete_user";
 
 const schema = new GraphQLSchema({
   query: queryType,
   mutation: mutationType,
+  // can't find a value for this yet. GraphiQl doesn't need it...
+  // maybe introspection or something of the sort?
   // don't need this??
   // when would we want types that are not inherently referenced by Query or Mutation?
-  //  types: [userType, eventType],
+  // all types...
+  // types: [
+  //   userType,
+  //   eventType,
+  //   contactType,
+  //   userCreateInputType,
+  //   userCreateResponseType,
+  //   userEditInput,
+  //   userEditResponseType,
+  //   userDeleteInput,
+  //   userDeleteResponseType,
+  // ],
 });
 
 var app = express();

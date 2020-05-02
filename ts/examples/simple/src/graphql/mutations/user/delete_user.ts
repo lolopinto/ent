@@ -9,7 +9,7 @@ import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 import { Context } from "src/graphql/context";
 import User from "src/ent/user";
 
-const userDeleteInput = new GraphQLInputObjectType({
+export const userDeleteInput = new GraphQLInputObjectType({
   name: "UserDeleteInput",
   description: "input for deleter user",
   fields: () => ({
@@ -20,7 +20,7 @@ const userDeleteInput = new GraphQLInputObjectType({
   }),
 });
 
-const userDeleteResponseType = new GraphQLObjectType({
+export const userDeleteResponseType = new GraphQLObjectType({
   name: "UserDeleteResponse",
   description: "response for deleting a user",
   fields: () => ({
