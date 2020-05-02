@@ -4,7 +4,7 @@ import {
   GraphQLString,
   GraphQLNonNull,
 } from "graphql";
-import { userType } from "./user";
+import { userType } from "./user_type";
 import Event from "src/ent/event";
 import { timeType } from "./time";
 

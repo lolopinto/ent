@@ -6,7 +6,6 @@ import Event from "src/ent/event";
 import { IDViewer } from "src/util/id_viewer";
 
 import {
-  //  graphql,
   GraphQLSchema,
   GraphQLObjectType,
   GraphQLID,
@@ -15,10 +14,12 @@ import {
   GraphQLNonNull,
 } from "graphql";
 
-import { userType } from "./resolvers/user";
-import { contactType } from "./resolvers/contact";
-import { eventType } from "./resolvers/event";
-import { LoggedOutViewer } from "ent/viewer";
+import { userType } from "./resolvers/user_type";
+import { contactType } from "./resolvers/contact_type";
+import { eventType } from "./resolvers/event_type";
+import { queryType } from "./resolvers/query_type";
+import { mutationType } from "./mutations/mutation_type";
+
 // code to generate this and read from it, not hard since I already have this...
 // let schema = buildSchema(`
 // type Query {
@@ -32,57 +33,12 @@ import { LoggedOutViewer } from "ent/viewer";
 //   emailAddress:String!
 // }`);
 
-const queryType = new GraphQLObjectType({
-  name: "Query",
-  fields: () => ({
-    user: {
-      type: userType,
-      args: {
-        id: {
-          description: "id",
-          type: GraphQLID,
-        },
-      },
-      // src, args, context, info
-      resolve: async (_source, { id }, context, info) => {
-        //console.log(_source); // undefined
-        console.log("sss");
-        //console.log(context); // viewer
-        //console.log(id); // args
-        //console.log(info); //all the things
-        return User.load(context.viewer, id);
-      },
-    },
-    contact: {
-      type: contactType,
-      args: {
-        id: {
-          description: "id",
-          type: GraphQLID,
-        },
-      },
-      resolve: async (_source, { id }, context) => {
-        return Contact.load(context.viewer, id);
-      },
-    },
-    event: {
-      type: eventType,
-      args: {
-        id: {
-          description: "id",
-          type: GraphQLID,
-        },
-      },
-      resolve: async (_source, { id }, context) => {
-        return Event.load(context.viewer, id);
-      },
-    },
-  }),
-});
-
 const schema = new GraphQLSchema({
   query: queryType,
-  types: [userType],
+  mutation: mutationType,
+  // don't need this??
+  // when would we want types that are not inherently referenced by Query or Mutation?
+  //  types: [userType, eventType],
 });
 
 var app = express();

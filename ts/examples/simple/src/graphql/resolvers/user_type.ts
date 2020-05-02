@@ -9,9 +9,9 @@ import {
   GraphQLList,
   GraphQLInt,
 } from "graphql";
-import { contactType } from "./contact";
+import { contactType } from "./contact_type";
 import User from "src/ent/user";
-import { eventType } from "./event";
+import { eventType } from "./event_type";
 
 const accountStatusEnum = new GraphQLEnumType({
   name: "ACCOUNT_STATUS",
