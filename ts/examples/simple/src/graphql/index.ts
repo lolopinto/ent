@@ -25,6 +25,9 @@ import {
   userDeleteResponseType,
 } from "./mutations/user/delete_user";
 
+import fs from "fs";
+import { printSchema, printIntrospectionSchema } from "graphql/utilities";
+import { fstat } from "fs";
 const schema = new GraphQLSchema({
   query: queryType,
   mutation: mutationType,
@@ -45,6 +48,10 @@ const schema = new GraphQLSchema({
   //   userDeleteResponseType,
   // ],
 });
+
+let str = printSchema(schema);
+// TODO move this to be done as part of build/codegen process
+fs.writeFileSync("schema.gql", str);
 
 var app = express();
 

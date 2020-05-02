@@ -1,0 +1,171 @@
+enum ACCOUNT_STATUS {
+  """unverified account"""
+  UNVERIFIED
+
+  """verified account"""
+  VERIFIED
+
+  """deactivated account"""
+  DEACTIVATED
+
+  """disabled account"""
+  DISABLED
+}
+
+"""Contact"""
+type Contact {
+  """id"""
+  id: ID!
+
+  """first name"""
+  firstName: String!
+
+  """last name"""
+  lastName: String!
+
+  """emailAddress"""
+  emailAddress: String!
+}
+
+"""Event"""
+type Event {
+  """id"""
+  id: ID!
+
+  """name"""
+  name: String!
+
+  """location"""
+  location: String!
+
+  """startTime"""
+  startTime: Time!
+
+  """endTime"""
+  endTime: Time
+
+  """creator"""
+  creator: User
+}
+
+type Mutation {
+  """create user"""
+  userCreate(
+    """input args"""
+    input: UserCreateInput!
+  ): UserCreateResponse!
+
+  """edit user"""
+  userEdit(
+    """input args"""
+    input: UserEditInput!
+  ): UserEditResponse!
+
+  """delete user"""
+  userDelete(
+    """input args"""
+    input: UserDeleteInput!
+  ): UserDeleteResponse!
+}
+
+type Query {
+  user(
+    """id"""
+    id: ID
+  ): User
+  contact(
+    """id"""
+    id: ID
+  ): Contact
+  event(
+    """id"""
+    id: ID
+  ): Event
+}
+
+"""Time scalar type"""
+scalar Time
+
+"""User"""
+type User {
+  """id"""
+  id: ID!
+
+  """first name"""
+  firstName: String!
+
+  """last name"""
+  lastName: String!
+
+  """emailAddress"""
+  emailAddress: String!
+
+  """account status"""
+  accountStatus: ACCOUNT_STATUS
+
+  """self contact for user"""
+  selfContact: Contact
+
+  """user's contacts"""
+  contacts: [Contact!]!
+
+  """created events"""
+  createdEvents: [Event!]!
+
+  """created events count"""
+  createdEventsCount: Int!
+
+  """friends"""
+  friends: [User!]!
+
+  """friendscount"""
+  friendsCount: Int!
+}
+
+"""inputs for creating user"""
+input UserCreateInput {
+  """firstName"""
+  firstName: String!
+
+  """lastName"""
+  lastName: String!
+
+  """emailAddress"""
+  emailAddress: String!
+}
+
+"""response for creating a user"""
+type UserCreateResponse {
+  """created user"""
+  user: User!
+}
+
+"""input for deleter user"""
+input UserDeleteInput {
+  """id of user"""
+  id: ID!
+}
+
+"""response for deleting a user"""
+type UserDeleteResponse {
+  """deleted user id"""
+  deletedUserID: ID!
+}
+
+"""inputs for editing user"""
+input UserEditInput {
+  """id of user"""
+  id: ID!
+
+  """firstName"""
+  firstName: String
+
+  """lastName"""
+  lastName: String
+}
+
+"""response for editing a user"""
+type UserEditResponse {
+  """edited user"""
+  user: User!
+}
