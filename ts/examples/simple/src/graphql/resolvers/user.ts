@@ -7,9 +7,11 @@ import {
   GraphQLEnumType,
   GraphQLNonNull,
   GraphQLList,
+  GraphQLInt,
 } from "graphql";
 import { contactType } from "./contact";
 import User from "src/ent/user";
+import { eventType } from "./event";
 
 const accountStatusEnum = new GraphQLEnumType({
   name: "ACCOUNT_STATUS",
@@ -69,6 +71,34 @@ export const userType = new GraphQLObjectType({
       description: "user's contacts",
       resolve: async (user: User) => {
         return user.loadContacts();
+      },
+    },
+    createdEvents: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(eventType))),
+      description: "created events",
+      resolve: async (user: User) => {
+        return user.loadCreatedEvents();
+      },
+    },
+    createdEventsCount: {
+      type: GraphQLNonNull(GraphQLInt),
+      description: "created events count",
+      resolve: async (user: User) => {
+        return user.loadCreatedEventsRawCountX();
+      },
+    },
+    friends: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(userType))),
+      description: "friends",
+      resolve: async (user: User) => {
+        return user.loadFriends();
+      },
+    },
+    friendsCount: {
+      type: GraphQLNonNull(GraphQLInt),
+      description: "friendscount",
+      resolve: async (user: User) => {
+        return user.loadFriendsRawCountX();
       },
     },
   }),

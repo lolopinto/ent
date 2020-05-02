@@ -1,10 +1,7 @@
 import {
-  //  graphql,
-  GraphQLSchema,
   GraphQLObjectType,
   GraphQLID,
   GraphQLString,
-  GraphQLEnumType,
   GraphQLNonNull,
 } from "graphql";
 

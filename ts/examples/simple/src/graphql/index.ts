@@ -1,9 +1,9 @@
 import express from "express";
 import graphqlHTTP from "express-graphql";
-import User, { AccountStatus } from "src/ent/user";
+import User from "src/ent/user";
 import Contact from "src/ent/contact";
+import Event from "src/ent/event";
 import { IDViewer } from "src/util/id_viewer";
-import { ID } from "ent/ent";
 
 import {
   //  graphql,
@@ -17,6 +17,8 @@ import {
 
 import { userType } from "./resolvers/user";
 import { contactType } from "./resolvers/contact";
+import { eventType } from "./resolvers/event";
+import { LoggedOutViewer } from "ent/viewer";
 // code to generate this and read from it, not hard since I already have this...
 // let schema = buildSchema(`
 // type Query {
@@ -63,6 +65,18 @@ const queryType = new GraphQLObjectType({
         return Contact.load(context.viewer, id);
       },
     },
+    event: {
+      type: eventType,
+      args: {
+        id: {
+          description: "id",
+          type: GraphQLID,
+        },
+      },
+      resolve: async (_source, { id }, context) => {
+        return Event.load(context.viewer, id);
+      },
+    },
   }),
 });
 
@@ -79,6 +93,7 @@ app.use(
     schema: schema,
     graphiql: true,
     context: {
+      //viewer: new LoggedOutViewer(),
       viewer: new IDViewer("e0fba30e-8bc3-4d0d-b574-903cd6772d16"),
     },
   }),
