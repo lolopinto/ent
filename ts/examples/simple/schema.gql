@@ -84,6 +84,7 @@ type Query {
     """id"""
     id: ID
   ): Event
+  viewer: Viewer
 }
 
 """Time scalar type"""
@@ -171,4 +172,10 @@ input UserEditInput {
 type UserEditResponse {
   """edited user"""
   user: User!
+}
+
+"""logged in User"""
+type Viewer {
+  """logged in user"""
+  user: User
 }

@@ -7,6 +7,7 @@ import { GraphQLObjectType, GraphQLID } from "graphql";
 import { userQuery } from "./user_type";
 import { contactQuery } from "./contact_type";
 import { eventQuery } from "./event_type";
+import { viewerQuery } from "./viewer_type";
 
 export const queryType = new GraphQLObjectType({
   name: "Query",
@@ -15,5 +16,6 @@ export const queryType = new GraphQLObjectType({
     user: userQuery,
     contact: contactQuery,
     event: eventQuery,
+    viewer: viewerQuery,
   }),
 });

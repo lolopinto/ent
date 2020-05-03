@@ -5,6 +5,7 @@ import {
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLResolveInfo,
+  GraphQLFieldConfigMap,
 } from "graphql";
 import { userType } from "./user_type";
 import Event from "src/ent/event";
@@ -16,7 +17,11 @@ export const eventType = new GraphQLObjectType({
   name: "Event",
   description: "Event",
   // TODO move this to interface...
-  fields: () => ({
+  fields: (): GraphQLFieldConfigMap<
+    Event,
+    Context,
+    { [argName: string]: any }
+  > => ({
     id: {
       type: GraphQLNonNull(GraphQLID),
       description: "id",
