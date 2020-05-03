@@ -8,6 +8,7 @@ import {
 import { userType } from "src/graphql/resolvers/user_type";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import { Context } from "src/graphql/context";
+import User from "src/ent/user";
 
 export const userCreateInputType = new GraphQLInputObjectType({
   name: "UserCreateInput",
@@ -39,9 +40,16 @@ export const userCreateResponseType = new GraphQLObjectType({
   }),
 });
 
-// todo this is more readable as a class that builds these things up.
-// TODO GraphQLFieldConfig
-export const userCreateType = {
+interface userCreateResponse {
+  user: User;
+}
+
+// TODO this is more readable as a class that builds these things up.
+export const userCreateType: GraphQLFieldConfig<
+  undefined,
+  Context,
+  { [argName: string]: any }
+> = {
   type: GraphQLNonNull(userCreateResponseType),
   description: "create user",
   args: {
@@ -50,7 +58,11 @@ export const userCreateType = {
       type: GraphQLNonNull(userCreateInputType),
     },
   },
-  resolve: async (_source, { input }, context: Context) => {
+  resolve: async (
+    _source,
+    { input },
+    context: Context,
+  ): Promise<userCreateResponse> => {
     // can't load user back because of privacy so this is expected
     // TODO need to handle this especially because it negatively affects demo...
     // actually, can load. why?

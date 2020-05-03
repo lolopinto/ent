@@ -27,7 +27,6 @@ import {
 
 import fs from "fs";
 import { printSchema, printIntrospectionSchema } from "graphql/utilities";
-import { fstat } from "fs";
 const schema = new GraphQLSchema({
   query: queryType,
   mutation: mutationType,

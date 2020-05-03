@@ -137,6 +137,10 @@ export async function loadEnts<T extends Ent>(
   options: LoadEntOptions<T>,
   ...ids: ID[]
 ): Promise<T[]> {
+  // TODO make sure to save this...
+  if (ids.length === 0) {
+    return [];
+  }
   return loadEntsFromClause(viewer, query.In("id", ...ids), options);
 }
 

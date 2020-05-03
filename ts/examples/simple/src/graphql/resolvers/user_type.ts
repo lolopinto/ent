@@ -8,10 +8,12 @@ import {
   GraphQLNonNull,
   GraphQLList,
   GraphQLInt,
+  GraphQLFieldConfigMap,
 } from "graphql";
 import { contactType } from "./contact_type";
 import User from "src/ent/user";
 import { eventType } from "./event_type";
+import { Context } from "src/graphql/context";
 
 const accountStatusEnum = new GraphQLEnumType({
   name: "ACCOUNT_STATUS",
@@ -38,7 +40,11 @@ const accountStatusEnum = new GraphQLEnumType({
 export const userType = new GraphQLObjectType({
   name: "User",
   description: "User",
-  fields: () => ({
+  fields: (): GraphQLFieldConfigMap<
+    User,
+    Context,
+    { [argName: string]: any }
+  > => ({
     id: {
       type: GraphQLNonNull(GraphQLID),
       description: "id",

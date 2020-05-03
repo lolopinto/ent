@@ -25,6 +25,9 @@ type Contact {
 
   """emailAddress"""
   emailAddress: String!
+
+  """user who owns contact"""
+  user: User
 }
 
 """Event"""

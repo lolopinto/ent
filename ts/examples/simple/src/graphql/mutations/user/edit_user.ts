@@ -41,9 +41,16 @@ export const userEditResponseType = new GraphQLObjectType({
   }),
 });
 
+interface userEditResponse {
+  user?: User;
+}
+
 // todo this is more readable as a class that builds these things up.
-// TODO GraphQLFieldConfig
-export const userEditType = {
+export const userEditType: GraphQLFieldConfig<
+  undefined,
+  Context,
+  { [argName: string]: any }
+> = {
   type: GraphQLNonNull(userEditResponseType),
   description: "edit user",
   args: {
@@ -52,7 +59,11 @@ export const userEditType = {
       type: GraphQLNonNull(userEditInput),
     },
   },
-  resolve: async (_source, { input }, context: Context) => {
+  resolve: async (
+    _source,
+    { input },
+    context: Context,
+  ): Promise<userEditResponse | null> => {
     // TODO edit from id...
     // TODO can we differentiate null from undefined here?
     // yup!

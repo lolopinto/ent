@@ -8,6 +8,7 @@ import {
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 import { Context } from "src/graphql/context";
 import User from "src/ent/user";
+import { ID } from "ent/ent";
 
 export const userDeleteInput = new GraphQLInputObjectType({
   name: "UserDeleteInput",
@@ -31,9 +32,17 @@ export const userDeleteResponseType = new GraphQLObjectType({
   }),
 });
 
+// TODO eventually support doing more things in here
+interface userDeleteResponse {
+  deletedUserID?: ID;
+}
+
 // todo this is more readable as a class that builds these things up.
-// TODO GraphQLFieldConfig
-export const userDeleteType = {
+export const userDeleteType: GraphQLFieldConfig<
+  undefined,
+  Context,
+  { [argName: string]: any }
+> = {
   type: GraphQLNonNull(userDeleteResponseType),
   description: "delete user",
   args: {
@@ -42,15 +51,15 @@ export const userDeleteType = {
       type: GraphQLNonNull(userDeleteInput),
     },
   },
-  resolve: async (_source, { input }, context: Context) => {
+  resolve: async (
+    _source,
+    { input },
+    context: Context,
+  ): Promise<userDeleteResponse | null> => {
     let user = await User.load(context.viewer, input.id);
     if (!user) {
       return null;
     }
-    // can't load user back because of privacy so this is expected
-    // TODO need to handle this especially because it negatively affects demo...
-    // actually, can load. why?
-    // privacy bug?
     await DeleteUserAction.create(context.viewer, user).saveX();
     return {
       deletedUserID: user.id,
