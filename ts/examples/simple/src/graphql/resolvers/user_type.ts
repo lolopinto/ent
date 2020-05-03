@@ -8,12 +8,15 @@ import {
   GraphQLNonNull,
   GraphQLList,
   GraphQLInt,
+  GraphQLFieldConfig,
   GraphQLFieldConfigMap,
+  GraphQLResolveInfo,
 } from "graphql";
 import { contactType } from "./contact_type";
 import User from "src/ent/user";
 import { eventType } from "./event_type";
 import { Context } from "src/graphql/context";
+import { ID } from "ent/ent";
 
 const accountStatusEnum = new GraphQLEnumType({
   name: "ACCOUNT_STATUS",
@@ -109,3 +112,25 @@ export const userType = new GraphQLObjectType({
     },
   }),
 });
+
+interface userQueryArgs {
+  id: ID;
+}
+
+export const userQuery: GraphQLFieldConfig<
+  undefined,
+  Context,
+  userQueryArgs
+> = {
+  type: userType,
+  args: {
+    id: {
+      description: "id",
+      type: GraphQLID,
+    },
+  },
+  resolve: async (_source, args, context, _info: GraphQLResolveInfo) => {
+    console.log("sss");
+    return User.load(context.viewer, args.id);
+  },
+};

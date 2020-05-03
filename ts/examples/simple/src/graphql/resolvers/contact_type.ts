@@ -4,11 +4,13 @@ import {
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfigMap,
+  GraphQLFieldConfig,
+  GraphQLResolveInfo,
 } from "graphql";
 import { Context } from "src/graphql/context";
 import Contact from "src/ent/contact";
 import { userType } from "./user_type";
-import User from "src/ent/user";
+import { ID } from "ent/ent";
 
 export const contactType = new GraphQLObjectType({
   name: "Contact",
@@ -45,3 +47,24 @@ export const contactType = new GraphQLObjectType({
     },
   }),
 });
+
+interface contactQueryArgs {
+  id: ID;
+}
+
+export const contactQuery: GraphQLFieldConfig<
+  undefined,
+  Context,
+  contactQueryArgs
+> = {
+  type: contactType,
+  args: {
+    id: {
+      description: "id",
+      type: GraphQLID,
+    },
+  },
+  resolve: async (_source, args, context, _info: GraphQLResolveInfo) => {
+    return Contact.load(context.viewer, args.id);
+  },
+};

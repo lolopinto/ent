@@ -3,10 +3,14 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLFieldConfig,
+  GraphQLResolveInfo,
 } from "graphql";
 import { userType } from "./user_type";
 import Event from "src/ent/event";
 import { timeType } from "./time";
+import { ID } from "ent/ent";
+import { Context } from "src/graphql/context";
 
 export const eventType = new GraphQLObjectType({
   name: "Event",
@@ -43,3 +47,25 @@ export const eventType = new GraphQLObjectType({
     },
   }),
 });
+
+interface eventQueryArgs {
+  id: ID;
+}
+
+export const eventQuery: GraphQLFieldConfig<
+  undefined,
+  Context,
+  eventQueryArgs
+> = {
+  type: eventType,
+  args: {
+    id: {
+      description: "id",
+      type: GraphQLID,
+    },
+  },
+  resolve: async (_source, args, context, _info: GraphQLResolveInfo) => {
+    console.log("sss");
+    return Event.load(context.viewer, args.id);
+  },
+};
