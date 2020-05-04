@@ -7,6 +7,16 @@ function createCompilerHost(
   options: ts.CompilerOptions,
   moduleSearchLocations: string[],
 ): ts.CompilerHost {
+  let regexMap: Map<string, RegExp> = new Map();
+  if (options.paths) {
+    for (let key in options.paths) {
+      if (key === "*") {
+        continue;
+      }
+      // always make sure it starts at the beginning...
+      regexMap.set(key, new RegExp("^" + key, "i"));
+    }
+  }
   return {
     getSourceFile,
     getDefaultLibFileName: () => "lib.d.ts",
@@ -46,56 +56,88 @@ function createCompilerHost(
     moduleNames: string[],
     containingFile: string,
   ): ts.ResolvedModule[] {
-    //console.log(moduleNames);
-    const resolvedModules: ts.ResolvedModule[] = [];
-    // console.log("resolve called");
-    // console.log(moduleNames, containingFile);
     let cwd = process.cwd();
-    for (const moduleName of moduleNames) {
-      // try to use standard resolution
-      let result = ts.resolveModuleName(moduleName, containingFile, options, {
-        fileExists,
-        readFile,
-      });
-      // console.log("standard", result);
-      if (result.resolvedModule) {
-        resolvedModules.push(result.resolvedModule);
-      } else {
-        // here's where we do the math and tell it where to go
-        // let's be simple for now...
-        // check fallback locations, for simplicity assume that module at location
-        // should be represented by '.d.ts' file
-        // for (const location of moduleSearchLocations) {
-        //   const modulePath = path.join(location, moduleName + ".d.ts");
-        //   if (fileExists(modulePath)) {
-        //     resolvedModules.push({ resolvedFileName: modulePath });
-        //   }
-        // }
-        // hack!!!
-        // TODO generalize these and figure out path mechanics
-        if (/^src\//.test(moduleName)) {
-          //          console.log("src", moduleName);
-          resolvedModules.push({
-            resolvedFileName: cwd + moduleName + ".ts",
-          });
-          // TODO go from here...
-        } else if (/^ent\//.test(moduleName)) {
-          //          console.log("ent", moduleName);
-          resolvedModules.push({
-            resolvedFileName: cwd + "../../src/" + moduleName.substr(3) + ".ts",
-          });
-        } else {
-          // flip it and do these first...
-          //          console.log("orphaned", moduleName);
-          for (const location of moduleSearchLocations) {
-            const modulePath = path.join(location, moduleName + ".d.ts");
-            if (fileExists(modulePath)) {
-              //              console.log("found", moduleName);
-              resolvedModules.push({ resolvedFileName: modulePath });
-            }
+    const resolvePaths = (moduleName: string) => {
+      //      console.log("resolvePaths", moduleName);
+      if (!options.paths) {
+        return null;
+      }
+
+      let paths = options.paths;
+      for (let key in paths) {
+        let r = regexMap.get(key);
+        if (!r) {
+          continue;
+        }
+        let value = paths[key];
+
+        if (r.test(moduleName)) {
+          // substitute...
+          // can this be more than one?
+          // not for now...
+          let str = value[0];
+          let lastIdx = value[0].lastIndexOf("*");
+          if (lastIdx === -1) {
+            console.error("incorrectly formatted regex");
+            continue;
           }
+          str = str.substr(0, lastIdx);
+          let resolvedFileName =
+            path.join(cwd, moduleName.replace(r, str)) + ".ts";
+          //          console.log(resolvedFileName);
+          return {
+            resolvedFileName,
+          };
         }
       }
+      return null;
+    };
+    // go through all resolvers
+    let resolvers = [
+      // standard
+      (moduleName) => {
+        let result = ts.resolveModuleName(moduleName, containingFile, options, {
+          fileExists,
+          readFile,
+        });
+        return result.resolvedModule;
+      },
+      // resolvePaths based on tsconfig's paths
+      resolvePaths,
+
+      // use node or other location paths
+      (moduleName) => {
+        for (const location of moduleSearchLocations) {
+          const modulePath = path.join(location, moduleName + ".d.ts");
+          if (fileExists(modulePath)) {
+            return { resolvedFileName: modulePath };
+          }
+        }
+        return null;
+      },
+    ];
+
+    // go through each moduleName and resolvers in order to see if we find what we're looking for
+    const resolvedModules: ts.ResolvedModule[] = [];
+    for (const moduleName of moduleNames) {
+      for (const resolver of resolvers) {
+        let result = resolver(moduleName);
+        // yay!
+        if (result) {
+          resolvedModules.push(result);
+          break;
+        }
+      }
+    }
+
+    if (moduleNames.length !== resolvedModules.length) {
+      // TODO if not equal, we need to do more
+      // it doesn't seem to be coming here for node_modules here which is good
+      console.error(
+        "couldn't resolve everything",
+        moduleNames,
+        resolvedModules,
+      );
     }
     return resolvedModules;
   }
@@ -120,11 +162,6 @@ function readCompilerOptions(): ts.CompilerOptions {
 }
 
 function transformer(context: ts.TransformationContext) {
-  //      const resolver = context.getEmitResolver();
-  //  const compilerOptions = context.getCompilerOptions();
-
-  //  console.log(context);
-
   let cwd = process.cwd();
   return function(node: ts.SourceFile) {
     // don't do anything with declaration files
@@ -185,7 +222,7 @@ function transformer(context: ts.TransformationContext) {
         }
 
         if (/^ent/.test(text)) {
-          console.log("yay ent");
+          //          console.log("yay ent");
           //          relPath = "./../../" + path.relative(path.dirname(fullPath), text);
           // TODO need to do this transformation automatically
           relPath = path.relative(
@@ -193,12 +230,12 @@ function transformer(context: ts.TransformationContext) {
             "../../src" + text.substr(3),
           );
 
-          console.log(fullPath, text, relPath);
+          //console.log(fullPath, text, relPath);
         }
         //        console.log(importNode.moduleSpecifier.getText());
 
         if (relPath !== undefined) {
-          console.log("update!");
+          //          console.log("update!");
           //          console.log(ts.createLiteral(relPath));
           // update the node...
           return ts.updateImportDeclaration(
@@ -231,6 +268,7 @@ function compile(sourceFiles: string[], moduleSearchLocations: string[]): void {
   //   noEmitOnError: true,
   //   noImplicitAny: true,
   // };
+  //  console.log(options.paths);
   const host = createCompilerHost(options, moduleSearchLocations);
   const program = ts.createProgram(sourceFiles, options, host);
   /// do something with program...
