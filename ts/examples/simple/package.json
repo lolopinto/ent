@@ -20,5 +20,8 @@
     "ts-jest": "^25.2.1",
     "typescript": "^3.8.3"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@types/node": "^13.13.4",
+    "json5": "^2.1.3"
+  }
 }
