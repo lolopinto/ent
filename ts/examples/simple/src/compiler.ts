@@ -46,7 +46,7 @@ function createCompilerHost(
     moduleNames: string[],
     containingFile: string,
   ): ts.ResolvedModule[] {
-    console.log(moduleNames);
+    //console.log(moduleNames);
     const resolvedModules: ts.ResolvedModule[] = [];
     // console.log("resolve called");
     // console.log(moduleNames, containingFile);
@@ -74,13 +74,13 @@ function createCompilerHost(
         // hack!!!
         // TODO generalize these and figure out path mechanics
         if (/^src\//.test(moduleName)) {
-          console.log("src", moduleName);
+          //          console.log("src", moduleName);
           resolvedModules.push({
             resolvedFileName: cwd + moduleName + ".ts",
           });
           // TODO go from here...
         } else if (/^ent\//.test(moduleName)) {
-          console.log("ent", moduleName);
+          //          console.log("ent", moduleName);
           resolvedModules.push({
             resolvedFileName: cwd + "../../src/" + moduleName.substr(3) + ".ts",
           });
@@ -119,9 +119,111 @@ function readCompilerOptions(): ts.CompilerOptions {
   return options;
 }
 
+function transformer(context: ts.TransformationContext) {
+  //      const resolver = context.getEmitResolver();
+  //  const compilerOptions = context.getCompilerOptions();
+
+  //  console.log(context);
+
+  let cwd = process.cwd();
+  return function(node: ts.SourceFile) {
+    // don't do anything with declaration files
+    // nothing to do here
+    if (node.isDeclarationFile) {
+      return node;
+    }
+
+    let fullPath: string;
+    if (path.isAbsolute(node.fileName)) {
+      fullPath = node.fileName;
+    } else {
+      fullPath = path.join(cwd, node.fileName);
+    }
+    // don't care about paths not relative to cwd since we can't handle that...
+    let relativePath = path.relative(cwd, fullPath);
+    if (relativePath.startsWith("..")) {
+      return node;
+    }
+    //    console.log("full path", fullPath);
+    // console.log(process.cwd);
+    // //    console.log()
+    // console.log(path.isAbsolute(node.fileName));
+    // console.log("filename", node.fileName, node.moduleName);
+
+    function visitor(node: ts.Node) {
+      if (/^import/.test(node.getText())) {
+        // console.log(node.getText());
+        // console.log(node.kind);
+        //        console.log(node.)
+        //        console.log(node);
+      }
+      if (node.kind === ts.SyntaxKind.ImportDeclaration) {
+        let importNode = node as ts.ImportDeclaration;
+        //        console.log(importNode.importClause);
+        // TODO now we're cooking with gas
+        // and need to change this to figure out how to update the visited node...
+
+        //        importNode.moduleSpecifier.g
+        let text = importNode.moduleSpecifier.getText();
+        //        console.log(fullPath, text);
+        // remove quotes
+        text = text.slice(1, -1);
+
+        let relPath: string | undefined;
+        // it's relative. include
+        if (/^src/.test(text)) {
+          //          console.log("yay src");
+          // usually we'd want transformations first based on regex...
+          // just because of how imports work. it's relative from directory not current path
+          relPath = "./" + path.relative(path.dirname(fullPath), text);
+
+          //          console.log(fullPath, text, relPath);
+
+          // quote it...
+          //          relPath = '"' + relPath + '"';
+          //          text =
+        }
+
+        if (/^ent/.test(text)) {
+          console.log("yay ent");
+          //          relPath = "./../../" + path.relative(path.dirname(fullPath), text);
+          // TODO need to do this transformation automatically
+          relPath = path.relative(
+            path.dirname(fullPath),
+            "../../src" + text.substr(3),
+          );
+
+          console.log(fullPath, text, relPath);
+        }
+        //        console.log(importNode.moduleSpecifier.getText());
+
+        if (relPath !== undefined) {
+          console.log("update!");
+          //          console.log(ts.createLiteral(relPath));
+          // update the node...
+          return ts.updateImportDeclaration(
+            importNode,
+            importNode.decorators,
+            importNode.modifiers,
+            importNode.importClause,
+            //          importNode.moduleSpecifier,
+            // damn did everything and still doesn't work....
+            ts.createLiteral(relPath),
+          );
+        }
+      }
+      return node;
+    }
+
+    return ts.visitEachChild(node, visitor, context);
+    //    console.log(node.isDeclarationFile);
+    //    return node;
+  };
+}
+
 function compile(sourceFiles: string[], moduleSearchLocations: string[]): void {
   const options = readCompilerOptions();
-  console.log(options);
+  //  console.log(options);
   // TODO read tsconfig.json for this?
   // const options: ts.CompilerOptions = {
   //   module: ts.ModuleKind.CommonJS,
@@ -134,36 +236,15 @@ function compile(sourceFiles: string[], moduleSearchLocations: string[]): void {
   /// do something with program...
   //console.log(program.getSourceFiles());
   // TODO look at customTransformers???
-  let emitResult = program.emit();
+  let emitResult = program.emit(undefined, undefined, undefined, undefined, {
+    before: [transformer],
+  });
   console.log(emitResult);
-
-  // let allDiagnostics = ts
-  //   .getPreEmitDiagnostics(program)
-  //   .concat(emitResult.diagnostics);
-
-  // allDiagnostics.forEach((diagnostic) => {
-  //   if (diagnostic.file) {
-  //     let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(
-  //       diagnostic.start!,
-  //     );
-  //     let message = ts.flattenDiagnosticMessageText(
-  //       diagnostic.messageText,
-  //       "\n",
-  //     );
-  //     console.log(
-  //       `${diagnostic.file.fileName} (${line + 1},${character +
-  //         1}): ${message}`,
-  //     );
-  //   } else {
-  //     console.log(
-  //       ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
-  //     );
-  //   }
-  // });
 
   let exitCode = emitResult.emitSkipped ? 1 : 0;
   console.log(`Process exiting with code '${exitCode}'.`);
   process.exit(exitCode);
 }
 
+// TODO need to figure out how to do evetything here...?
 compile(["src/index.ts"], ["node_modules/@types/node"]);
