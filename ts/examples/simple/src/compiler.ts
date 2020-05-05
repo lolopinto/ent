@@ -2,6 +2,7 @@ import * as ts from "typescript";
 import * as path from "path";
 import * as fs from "fs";
 import JSON5 from "json5";
+import glob from "glob";
 
 class Compiler {
   private options: ts.CompilerOptions;
@@ -277,5 +278,13 @@ class Compiler {
   }
 }
 
-// TODO need to figure out how to do evetything here...?
-new Compiler(["src/index.ts"], ["node_modules/@types/node"]).compile();
+// let's use a glob from current directory
+// todo this should be configurable
+// TODO this should be broken into its own repo and npm module
+// TODO use includes and exclude in tsconfig.json if it exists
+new Compiler(
+  glob.sync("**/*.ts", {
+    ignore: ["node_modules/**", "tests/**", "./src/compiler.ts"],
+  }),
+  ["node_modules/@types/node"],
+).compile();
