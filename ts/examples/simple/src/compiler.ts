@@ -3,90 +3,6 @@ import * as path from "path";
 import * as fs from "fs";
 import JSON5 from "json5";
 
-function transformer(context: ts.TransformationContext) {
-  let cwd = process.cwd();
-  return function(node: ts.SourceFile) {
-    // don't do anything with declaration files
-    // nothing to do here
-    if (node.isDeclarationFile) {
-      return node;
-    }
-
-    let fullPath: string;
-    if (path.isAbsolute(node.fileName)) {
-      fullPath = node.fileName;
-    } else {
-      fullPath = path.join(cwd, node.fileName);
-    }
-    // don't care about paths not relative to cwd since we can't handle that...
-    let relativePath = path.relative(cwd, fullPath);
-    if (relativePath.startsWith("..")) {
-      return node;
-    }
-
-    function visitor(node: ts.Node) {
-      if (node.kind === ts.SyntaxKind.ImportDeclaration) {
-        let importNode = node as ts.ImportDeclaration;
-        //        console.log(importNode.importClause);
-        // TODO now we're cooking with gas
-        // and need to change this to figure out how to update the visited node...
-
-        //        importNode.moduleSpecifier.g
-        let text = importNode.moduleSpecifier.getText();
-        //        console.log(fullPath, text);
-        // remove quotes
-        text = text.slice(1, -1);
-
-        let relPath: string | undefined;
-        // it's relative. include
-        if (/^src/.test(text)) {
-          //          console.log("yay src");
-          // usually we'd want transformations first based on regex...
-          // just because of how imports work. it's relative from directory not current path
-          relPath = "./" + path.relative(path.dirname(fullPath), text);
-
-          //          console.log(fullPath, text, relPath);
-
-          // quote it...
-          //          relPath = '"' + relPath + '"';
-          //          text =
-        }
-
-        if (/^ent/.test(text)) {
-          //          console.log("yay ent");
-          //          relPath = "./../../" + path.relative(path.dirname(fullPath), text);
-          // TODO need to do this transformation automatically
-          relPath = path.relative(
-            path.dirname(fullPath),
-            "../../src" + text.substr(3),
-          );
-
-          //console.log(fullPath, text, relPath);
-        }
-        //        console.log(importNode.moduleSpecifier.getText());
-
-        if (relPath !== undefined) {
-          //          console.log("update!");
-          //          console.log(ts.createLiteral(relPath));
-          // update the node...
-          return ts.updateImportDeclaration(
-            importNode,
-            importNode.decorators,
-            importNode.modifiers,
-            importNode.importClause,
-            //          importNode.moduleSpecifier,
-            // damn did everything and still doesn't work....
-            ts.createLiteral(relPath),
-          );
-        }
-      }
-      return node;
-    }
-
-    return ts.visitEachChild(node, visitor, context);
-  };
-}
-
 class Compiler {
   private options: ts.CompilerOptions;
   private regexMap: Map<string, RegExp> = new Map();
@@ -271,11 +187,95 @@ class Compiler {
     return resolvedModules;
   }
 
+  private transformer(context: ts.TransformationContext) {
+    let cwd = this.cwd;
+    return function(node: ts.SourceFile) {
+      // don't do anything with declaration files
+      // nothing to do here
+      if (node.isDeclarationFile) {
+        return node;
+      }
+
+      let fullPath: string;
+      if (path.isAbsolute(node.fileName)) {
+        fullPath = node.fileName;
+      } else {
+        fullPath = path.join(cwd, node.fileName);
+      }
+      // don't care about paths not relative to cwd since we can't handle that...
+      let relativePath = path.relative(cwd, fullPath);
+      if (relativePath.startsWith("..")) {
+        return node;
+      }
+
+      function visitor(node: ts.Node) {
+        if (node.kind === ts.SyntaxKind.ImportDeclaration) {
+          let importNode = node as ts.ImportDeclaration;
+          //        console.log(importNode.importClause);
+          // TODO now we're cooking with gas
+          // and need to change this to figure out how to update the visited node...
+
+          //        importNode.moduleSpecifier.g
+          let text = importNode.moduleSpecifier.getText();
+          //        console.log(fullPath, text);
+          // remove quotes
+          text = text.slice(1, -1);
+
+          let relPath: string | undefined;
+          // it's relative. include
+          if (/^src/.test(text)) {
+            //          console.log("yay src");
+            // usually we'd want transformations first based on regex...
+            // just because of how imports work. it's relative from directory not current path
+            relPath = "./" + path.relative(path.dirname(fullPath), text);
+
+            //          console.log(fullPath, text, relPath);
+
+            // quote it...
+            //          relPath = '"' + relPath + '"';
+            //          text =
+          }
+
+          if (/^ent/.test(text)) {
+            //          console.log("yay ent");
+            //          relPath = "./../../" + path.relative(path.dirname(fullPath), text);
+            // TODO need to do this transformation automatically
+            relPath = path.relative(
+              path.dirname(fullPath),
+              "../../src" + text.substr(3),
+            );
+
+            //console.log(fullPath, text, relPath);
+          }
+          //        console.log(importNode.moduleSpecifier.getText());
+
+          if (relPath !== undefined) {
+            //          console.log("update!");
+            //          console.log(ts.createLiteral(relPath));
+            // update the node...
+            return ts.updateImportDeclaration(
+              importNode,
+              importNode.decorators,
+              importNode.modifiers,
+              importNode.importClause,
+              //          importNode.moduleSpecifier,
+              // damn did everything and still doesn't work....
+              ts.createLiteral(relPath),
+            );
+          }
+        }
+        return node;
+      }
+
+      return ts.visitEachChild(node, visitor, context);
+    };
+  }
+
   compile(): void {
     const host = this.createCompilerHost();
     const program = ts.createProgram(this.sourceFiles, this.options, host);
     let emitResult = program.emit(undefined, undefined, undefined, undefined, {
-      before: [transformer],
+      before: [this.transformer.bind(this)],
     });
     if (emitResult.emitSkipped) {
       console.error("error emitting code");
