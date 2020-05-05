@@ -3,164 +3,6 @@ import * as path from "path";
 import * as fs from "fs";
 import JSON5 from "json5";
 
-function createCompilerHost(
-  options: ts.CompilerOptions,
-  moduleSearchLocations: string[],
-): ts.CompilerHost {
-  let regexMap: Map<string, RegExp> = new Map();
-  if (options.paths) {
-    for (let key in options.paths) {
-      if (key === "*") {
-        continue;
-      }
-      // always make sure it starts at the beginning...
-      regexMap.set(key, new RegExp("^" + key, "i"));
-    }
-  }
-  return {
-    getSourceFile,
-    getDefaultLibFileName: () => "lib.d.ts",
-    writeFile: (fileName, content) => ts.sys.writeFile(fileName, content),
-    getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
-    getDirectories: (path) => ts.sys.getDirectories(path),
-    getCanonicalFileName: (fileName) =>
-      ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase(),
-    getNewLine: () => ts.sys.newLine,
-    useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
-    fileExists,
-    readFile,
-    resolveModuleNames,
-  };
-
-  function fileExists(fileName: string): boolean {
-    return ts.sys.fileExists(fileName);
-  }
-
-  function readFile(fileName: string): string | undefined {
-    return ts.sys.readFile(fileName);
-  }
-
-  function getSourceFile(
-    fileName: string,
-    languageVersion: ts.ScriptTarget,
-    onError?: (message: string) => void,
-  ) {
-    const sourceText = ts.sys.readFile(fileName);
-    return sourceText !== undefined
-      ? ts.createSourceFile(fileName, sourceText, languageVersion)
-      : undefined;
-  }
-
-  // this is not enough because it doesn't solve the outputted file?
-  function resolveModuleNames(
-    moduleNames: string[],
-    containingFile: string,
-  ): ts.ResolvedModule[] {
-    let cwd = process.cwd();
-    const resolvePaths = (moduleName: string) => {
-      //      console.log("resolvePaths", moduleName);
-      if (!options.paths) {
-        return null;
-      }
-
-      let paths = options.paths;
-      for (let key in paths) {
-        let r = regexMap.get(key);
-        if (!r) {
-          continue;
-        }
-        let value = paths[key];
-
-        if (r.test(moduleName)) {
-          // substitute...
-          // can this be more than one?
-          // not for now...
-          let str = value[0];
-          let lastIdx = value[0].lastIndexOf("*");
-          if (lastIdx === -1) {
-            console.error("incorrectly formatted regex");
-            continue;
-          }
-          str = str.substr(0, lastIdx);
-          let resolvedFileName =
-            path.join(cwd, moduleName.replace(r, str)) + ".ts";
-          //          console.log(resolvedFileName);
-          return {
-            resolvedFileName,
-          };
-        }
-      }
-      return null;
-    };
-    // go through all resolvers
-    let resolvers = [
-      // standard
-      (moduleName) => {
-        let result = ts.resolveModuleName(moduleName, containingFile, options, {
-          fileExists,
-          readFile,
-        });
-        return result.resolvedModule;
-      },
-      // resolvePaths based on tsconfig's paths
-      resolvePaths,
-
-      // use node or other location paths
-      (moduleName) => {
-        for (const location of moduleSearchLocations) {
-          const modulePath = path.join(location, moduleName + ".d.ts");
-          if (fileExists(modulePath)) {
-            return { resolvedFileName: modulePath };
-          }
-        }
-        return null;
-      },
-    ];
-
-    // go through each moduleName and resolvers in order to see if we find what we're looking for
-    const resolvedModules: ts.ResolvedModule[] = [];
-    for (const moduleName of moduleNames) {
-      for (const resolver of resolvers) {
-        let result = resolver(moduleName);
-        // yay!
-        if (result) {
-          resolvedModules.push(result);
-          break;
-        }
-      }
-    }
-
-    if (moduleNames.length !== resolvedModules.length) {
-      // TODO if not equal, we need to do more
-      // it doesn't seem to be coming here for node_modules here which is good
-      console.error(
-        "couldn't resolve everything",
-        moduleNames,
-        resolvedModules,
-      );
-    }
-    return resolvedModules;
-  }
-}
-
-function readCompilerOptions(): ts.CompilerOptions {
-  let json = {};
-  try {
-    json = JSON5.parse(
-      fs.readFileSync("./tsconfig.json", {
-        encoding: "utf8",
-      }),
-    );
-  } catch (e) {
-    console.error("couldn't read tsconfig.json file");
-  }
-  let options = json["compilerOptions"] || {};
-  if (options.moduleResolution === "node") {
-    options.moduleResolution = ts.ModuleResolutionKind.NodeJs;
-  }
-  return options;
-}
-
 function transformer(context: ts.TransformationContext) {
   let cwd = process.cwd();
   return function(node: ts.SourceFile) {
@@ -181,19 +23,8 @@ function transformer(context: ts.TransformationContext) {
     if (relativePath.startsWith("..")) {
       return node;
     }
-    //    console.log("full path", fullPath);
-    // console.log(process.cwd);
-    // //    console.log()
-    // console.log(path.isAbsolute(node.fileName));
-    // console.log("filename", node.fileName, node.moduleName);
 
     function visitor(node: ts.Node) {
-      if (/^import/.test(node.getText())) {
-        // console.log(node.getText());
-        // console.log(node.kind);
-        //        console.log(node.)
-        //        console.log(node);
-      }
       if (node.kind === ts.SyntaxKind.ImportDeclaration) {
         let importNode = node as ts.ImportDeclaration;
         //        console.log(importNode.importClause);
@@ -253,36 +84,207 @@ function transformer(context: ts.TransformationContext) {
     }
 
     return ts.visitEachChild(node, visitor, context);
-    //    console.log(node.isDeclarationFile);
-    //    return node;
   };
 }
 
-function compile(sourceFiles: string[], moduleSearchLocations: string[]): void {
-  const options = readCompilerOptions();
-  //  console.log(options);
-  // TODO read tsconfig.json for this?
-  // const options: ts.CompilerOptions = {
-  //   module: ts.ModuleKind.CommonJS,
-  //   target: ts.ScriptTarget.ES2015,
-  //   noEmitOnError: true,
-  //   noImplicitAny: true,
-  // };
-  //  console.log(options.paths);
-  const host = createCompilerHost(options, moduleSearchLocations);
-  const program = ts.createProgram(sourceFiles, options, host);
-  /// do something with program...
-  //console.log(program.getSourceFiles());
-  // TODO look at customTransformers???
-  let emitResult = program.emit(undefined, undefined, undefined, undefined, {
-    before: [transformer],
-  });
-  console.log(emitResult);
+class Compiler {
+  private options: ts.CompilerOptions;
+  private regexMap: Map<string, RegExp> = new Map();
+  private cwd: string;
 
-  let exitCode = emitResult.emitSkipped ? 1 : 0;
-  console.log(`Process exiting with code '${exitCode}'.`);
-  process.exit(exitCode);
+  private resolvers: ((
+    moduleName: string,
+    containingFile: string,
+  ) => ts.ResolvedModule | undefined | null)[] = [];
+
+  constructor(
+    private sourceFiles: string[],
+    private moduleSearchLocations: string[],
+  ) {
+    this.options = this.readCompilerOptions();
+    if (this.options.paths) {
+      for (let key in this.options.paths) {
+        if (key === "*") {
+          continue;
+        }
+        // always make sure it starts at the beginning...
+        this.regexMap.set(key, new RegExp("^" + key, "i"));
+      }
+    }
+    this.cwd = process.cwd();
+
+    // set resolvers
+    this.resolvers = [
+      // standard
+      this.standardModules.bind(this),
+
+      // resolvePaths based on tsconfig's paths
+      this.resolvePaths.bind(this),
+
+      // use node or other location paths
+      this.otherLocations.bind(this),
+    ];
+  }
+
+  private standardModules(moduleName: string, containingFile: string) {
+    let result = ts.resolveModuleName(
+      moduleName,
+      containingFile,
+      this.options,
+      {
+        fileExists: this.fileExists,
+        readFile: this.readFile,
+      },
+    );
+    return result.resolvedModule;
+  }
+
+  private resolvePaths(moduleName: string, _containingFile: string) {
+    //      console.log("resolvePaths", moduleName);
+    if (!this.options.paths) {
+      return null;
+    }
+
+    let paths = this.options.paths;
+    for (let key in paths) {
+      let r = this.regexMap.get(key);
+      if (!r) {
+        continue;
+      }
+      let value = paths[key];
+
+      if (r.test(moduleName)) {
+        // substitute...
+        // can this be more than one?
+        // not for now...
+        let str = value[0];
+        let lastIdx = value[0].lastIndexOf("*");
+        if (lastIdx === -1) {
+          console.error("incorrectly formatted regex");
+          continue;
+        }
+        str = str.substr(0, lastIdx);
+        let resolvedFileName =
+          path.join(this.cwd, moduleName.replace(r, str)) + ".ts";
+        //          console.log(resolvedFileName);
+        return {
+          resolvedFileName,
+        };
+      }
+    }
+    return null;
+  }
+
+  private otherLocations(moduleName: string, containingFile: string) {
+    for (const location of this.moduleSearchLocations) {
+      const modulePath = path.join(location, moduleName + ".d.ts");
+      if (this.fileExists(modulePath)) {
+        return { resolvedFileName: modulePath };
+      }
+    }
+    return null;
+  }
+
+  private readCompilerOptions(): ts.CompilerOptions {
+    let json = {};
+    try {
+      json = JSON5.parse(
+        fs.readFileSync("./tsconfig.json", {
+          encoding: "utf8",
+        }),
+      );
+    } catch (e) {
+      console.error("couldn't read tsconfig.json file");
+    }
+    let options = json["compilerOptions"] || {};
+    if (options.moduleResolution === "node") {
+      options.moduleResolution = ts.ModuleResolutionKind.NodeJs;
+    }
+    return options;
+  }
+
+  private createCompilerHost(): ts.CompilerHost {
+    return {
+      getSourceFile: this.getSourceFile,
+      getDefaultLibFileName: () => "lib.d.ts",
+      writeFile: (fileName, content) => ts.sys.writeFile(fileName, content),
+      getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
+      getDirectories: (path) => ts.sys.getDirectories(path),
+      getCanonicalFileName: (fileName) =>
+        ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase(),
+      getNewLine: () => ts.sys.newLine,
+      useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
+      fileExists: this.fileExists,
+      readFile: this.readFile,
+      resolveModuleNames: (moduleNames: string[], containingFile: string) => {
+        return this.resolveModuleNames(moduleNames, containingFile);
+      },
+    };
+  }
+
+  private fileExists(fileName: string): boolean {
+    return ts.sys.fileExists(fileName);
+  }
+
+  private readFile(fileName: string): string | undefined {
+    return ts.sys.readFile(fileName);
+  }
+
+  private getSourceFile(
+    fileName: string,
+    languageVersion: ts.ScriptTarget,
+    onError?: (message: string) => void,
+  ) {
+    const sourceText = ts.sys.readFile(fileName);
+    return sourceText !== undefined
+      ? ts.createSourceFile(fileName, sourceText, languageVersion)
+      : undefined;
+  }
+
+  // this is not enough because it doesn't solve the outputted file?
+  private resolveModuleNames(
+    moduleNames: string[],
+    containingFile: string,
+  ): ts.ResolvedModule[] {
+    // go through each moduleName and resolvers in order to see if we find what we're looking for
+    let resolvedModules: ts.ResolvedModule[] = [];
+    for (const moduleName of moduleNames) {
+      for (const resolver of this.resolvers) {
+        let result = resolver(moduleName, containingFile);
+        // yay!
+        if (result) {
+          resolvedModules.push(result);
+          break;
+        }
+      }
+    }
+
+    if (moduleNames.length !== resolvedModules.length) {
+      // TODO if not equal, we need to do more
+      // it doesn't seem to be coming here for node_modules here which is good
+      console.error(
+        "couldn't resolve everything",
+        moduleNames,
+        resolvedModules,
+      );
+    }
+    return resolvedModules;
+  }
+
+  compile(): void {
+    const host = this.createCompilerHost();
+    const program = ts.createProgram(this.sourceFiles, this.options, host);
+    let emitResult = program.emit(undefined, undefined, undefined, undefined, {
+      before: [transformer],
+    });
+    if (emitResult.emitSkipped) {
+      console.error("error emitting code");
+    }
+
+    let exitCode = emitResult.emitSkipped ? 1 : 0;
+    process.exit(exitCode);
+  }
 }
 
 // TODO need to figure out how to do evetything here...?
-compile(["src/index.ts"], ["node_modules/@types/node"]);
+new Compiler(["src/index.ts"], ["node_modules/@types/node"]).compile();
