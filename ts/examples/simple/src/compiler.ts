@@ -27,6 +27,7 @@ class Compiler {
         this.regexMap.set(key, new RegExp("^" + key, "i"));
       }
     }
+    // TODO should be taking baseUrl and using that instead of using cwd and assuming baseUrl == "."
     this.cwd = process.cwd();
 
     // set resolvers
@@ -48,8 +49,8 @@ class Compiler {
       containingFile,
       this.options,
       {
-        fileExists: this.fileExists,
-        readFile: this.readFile,
+        fileExists: ts.sys.fileExists,
+        readFile: ts.sys.readFile,
       },
     );
     return result.resolvedModule;
@@ -94,7 +95,7 @@ class Compiler {
   private otherLocations(moduleName: string, containingFile: string) {
     for (const location of this.moduleSearchLocations) {
       const modulePath = path.join(location, moduleName + ".d.ts");
-      if (this.fileExists(modulePath)) {
+      if (ts.sys.fileExists(modulePath)) {
         return { resolvedFileName: modulePath };
       }
     }
@@ -130,20 +131,12 @@ class Compiler {
         ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase(),
       getNewLine: () => ts.sys.newLine,
       useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
-      fileExists: this.fileExists,
-      readFile: this.readFile,
+      fileExists: ts.sys.fileExists,
+      readFile: ts.sys.readFile,
       resolveModuleNames: (moduleNames: string[], containingFile: string) => {
         return this.resolveModuleNames(moduleNames, containingFile);
       },
     };
-  }
-
-  private fileExists(fileName: string): boolean {
-    return ts.sys.fileExists(fileName);
-  }
-
-  private readFile(fileName: string): string | undefined {
-    return ts.sys.readFile(fileName);
   }
 
   private getSourceFile(
@@ -189,10 +182,17 @@ class Compiler {
 
   private transformer(context: ts.TransformationContext) {
     let cwd = this.cwd;
+    let paths = this.options.paths;
+    let regexMap = this.regexMap;
     return function(node: ts.SourceFile) {
       // don't do anything with declaration files
       // nothing to do here
       if (node.isDeclarationFile) {
+        return node;
+      }
+
+      // no paths, nothing to do heree
+      if (!paths) {
         return node;
       }
 
@@ -211,55 +211,46 @@ class Compiler {
       function visitor(node: ts.Node) {
         if (node.kind === ts.SyntaxKind.ImportDeclaration) {
           let importNode = node as ts.ImportDeclaration;
-          //        console.log(importNode.importClause);
-          // TODO now we're cooking with gas
-          // and need to change this to figure out how to update the visited node...
 
-          //        importNode.moduleSpecifier.g
           let text = importNode.moduleSpecifier.getText();
-          //        console.log(fullPath, text);
           // remove quotes
           text = text.slice(1, -1);
-
           let relPath: string | undefined;
-          // it's relative. include
-          if (/^src/.test(text)) {
-            //          console.log("yay src");
-            // usually we'd want transformations first based on regex...
-            // just because of how imports work. it's relative from directory not current path
-            relPath = "./" + path.relative(path.dirname(fullPath), text);
 
-            //          console.log(fullPath, text, relPath);
+          for (const key in paths) {
+            let r = regexMap.get(key);
+            if (!r) {
+              continue;
+            }
+            let value = paths[key];
+            let str = value[0];
 
-            // quote it...
-            //          relPath = '"' + relPath + '"';
-            //          text =
-          }
-
-          if (/^ent/.test(text)) {
-            //          console.log("yay ent");
-            //          relPath = "./../../" + path.relative(path.dirname(fullPath), text);
-            // TODO need to do this transformation automatically
+            if (!r.test(text)) {
+              continue;
+            }
+            let idx = text.indexOf("/");
+            let strIdx = str.indexOf("*");
+            if (idx === -1 || strIdx == -1) {
+              continue;
+            }
             relPath = path.relative(
+              // just because of how imports work. it's relative from directory not current path
               path.dirname(fullPath),
-              "../../src" + text.substr(3),
+              path.join(
+                text.substr(0, idx).replace(r, str.substr(0, strIdx)),
+                text.substr(idx),
+              ),
             );
+            if (!relPath.startsWith("..")) {
+              relPath = "./" + relPath;
+            }
 
-            //console.log(fullPath, text, relPath);
-          }
-          //        console.log(importNode.moduleSpecifier.getText());
-
-          if (relPath !== undefined) {
-            //          console.log("update!");
-            //          console.log(ts.createLiteral(relPath));
             // update the node...
             return ts.updateImportDeclaration(
               importNode,
               importNode.decorators,
               importNode.modifiers,
               importNode.importClause,
-              //          importNode.moduleSpecifier,
-              // damn did everything and still doesn't work....
               ts.createLiteral(relPath),
             );
           }
