@@ -1,0 +1,1 @@
+{"query":"{viewer {user {id,emailAddress,firstName,lastName,accountStatus,selfContact {id,firstName,lastName,emailAddress,},contacts {id,firstName,lastName,emailAddress,user {id,firstName,}},friends {id,firstName,lastName,},friendsCount,createdEvents {id,name,startTime,endTime,}}}}"}

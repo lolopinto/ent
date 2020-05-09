@@ -1,0 +1,404 @@
+Statistical profiling result from isolate-0x10406b000-84394-v8.log, (451 ticks, 1 unaccounted, 0 excluded).
+
+ [Shared libraries]:
+   ticks  total  nonlib   name
+     13    2.9%          /usr/lib/system/libsystem_kernel.dylib
+      8    1.8%          /usr/lib/system/libsystem_platform.dylib
+      6    1.3%          /usr/lib/system/libsystem_pthread.dylib
+      2    0.4%          /usr/lib/system/libsystem_malloc.dylib
+
+ [JavaScript]:
+   ticks  total  nonlib   name
+
+ [C++]:
+   ticks  total  nonlib   name
+    191   42.4%   45.3%  t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+     47   10.4%   11.1%  T ___ulock_wait
+     36    8.0%    8.5%  T node::contextify::ContextifyContext::CompileFunction(v8::FunctionCallbackInfo<v8::Value> const&)
+     34    7.5%    8.1%  T node::native_module::NativeModuleEnv::CompileFunction(v8::FunctionCallbackInfo<v8::Value> const&)
+     22    4.9%    5.2%  t void node::Buffer::(anonymous namespace)::StringSlice<(node::encoding)1>(v8::FunctionCallbackInfo<v8::Value> const&)
+     17    3.8%    4.0%  T _vm_copy
+     12    2.7%    2.8%  T __kernelrpc_thread_policy_set
+      7    1.6%    1.7%  T node::binding::GetInternalBinding(v8::FunctionCallbackInfo<v8::Value> const&)
+      6    1.3%    1.4%  T _read$NOCANCEL
+      6    1.3%    1.4%  T __ZN4node10StreamBase8JSMethodIXadL_ZNS0_6WritevERKN2v820FunctionCallbackInfoINS2_5ValueEEEEEEEvS7_
+      2    0.4%    0.5%  t std::__1::basic_istream<wchar_t, std::__1::char_traits<wchar_t> >& std::__1::__input_arithmetic<long long, wchar_t, std::__1::char_traits<wchar_t> >(std::__1::basic_istream<wchar_t, std::__1::char_traits<wchar_t> >&, long long&)
+      2    0.4%    0.5%  t _tiny_free_no_lock
+      2    0.4%    0.5%  t _small_malloc_should_clear
+      2    0.4%    0.5%  t _nanov2_find_block_and_allocate
+      2    0.4%    0.5%  T _u_strlen_64
+      2    0.4%    0.5%  T __kernelrpc_mach_vm_purgable_control_trap
+      2    0.4%    0.5%  T ___sfp
+      2    0.4%    0.5%  T __ZN4node7TTYWrap3NewERKN2v820FunctionCallbackInfoINS1_5ValueEEE
+      1    0.2%    0.2%  t std::__1::basic_istream<wchar_t, std::__1::char_traits<wchar_t> >& std::__1::__input_arithmetic<unsigned long long, wchar_t, std::__1::char_traits<wchar_t> >(std::__1::basic_istream<wchar_t, std::__1::char_traits<wchar_t> >&, unsigned long long&)
+      1    0.2%    0.2%  t node::fs::Read(v8::FunctionCallbackInfo<v8::Value> const&)
+      1    0.2%    0.2%  t node::cares_wrap::(anonymous namespace)::ChannelWrap::New(v8::FunctionCallbackInfo<v8::Value> const&)
+      1    0.2%    0.2%  t init_resb_result(ResourceData const*, unsigned int, char const*, int, UResourceDataEntry*, UResourceBundle const*, int, UResourceBundle*, UErrorCode*)
+      1    0.2%    0.2%  t init()
+      1    0.2%    0.2%  t dyld3::Loader::mapAndFixupAllImages(Diagnostics&, bool, bool)
+      1    0.2%    0.2%  t _uprv_compareInvAscii_64
+      1    0.2%    0.2%  t _tiny_malloc_from_free_list
+      1    0.2%    0.2%  t _nanov2_malloc
+      1    0.2%    0.2%  t _free_small
+      1    0.2%    0.2%  t __cxxabiv1::__function_type_info::~__function_type_info()
+      1    0.2%    0.2%  t __cxxabiv1::__free_with_fallback(void*)
+      1    0.2%    0.2%  t ___vfprintf
+      1    0.2%    0.2%  t ___srefill0
+      1    0.2%    0.2%  t __ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_
+      1    0.2%    0.2%  T std::__1::locale::classic()
+      1    0.2%    0.2%  T node::HandleWrap::Close(v8::FunctionCallbackInfo<v8::Value> const&)
+      1    0.2%    0.2%  T _task_policy_set
+      1    0.2%    0.2%  T _malloc_zone_malloc
+      1    0.2%    0.2%  T _kdebug_typefilter
+      1    0.2%    0.2%  T _inet_net_pton
+      1    0.2%    0.2%  T _fcntl
+      1    0.2%    0.2%  T __platform_strncmp
+      1    0.2%    0.2%  T __platform_strcmp
+      1    0.2%    0.2%  T ___sflags
+      1    0.2%    0.2%  T __ZN4node6crypto4Hash3NewERKN2v820FunctionCallbackInfoINS2_5ValueEEE
+      1    0.2%    0.2%  T __ZN4node15LibuvStreamWrap9OnUvAllocEmP8uv_buf_t
+
+ [Summary]:
+   ticks  total  nonlib   name
+      0    0.0%    0.0%  JavaScript
+    421   93.3%   99.8%  C++
+     76   16.9%   18.0%  GC
+     29    6.4%          Shared libraries
+      1    0.2%          Unaccounted
+
+ [C++ entry points]:
+   ticks    cpp   total   name
+    334   99.7%   74.1%  t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1    0.3%    0.2%  t __ZN4node10task_queueL13RunMicrotasksERKN2v820FunctionCallbackInfoINS1_5ValueEEE
+
+ [Bottom up (heavy) profile]:
+  Note: percentage shows a share of a particular caller in the total
+  amount of its parent calls.
+  Callers occupying less than 1.0% are not shown.
+
+   ticks parent  name
+    191   42.4%  t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+    113   59.2%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+     12   10.6%      LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+     11   91.7%        Eval: ~<anonymous> :1:1
+      3   27.3%          LazyCompile: ~./node_modules/iconv-lite/encodings/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:3618:8
+      3  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      3   27.3%          LazyCompile: ~./node_modules/express-graphql/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:472:8
+      3  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1    9.1%          LazyCompile: ~./src/graphql/resolvers/query_type.ts /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:47355:8
+      1  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1    9.1%          LazyCompile: ~./node_modules/send/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:41135:8
+      1  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1    9.1%          LazyCompile: ~./node_modules/mime-db/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:40928:8
+      1  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1    9.1%          LazyCompile: ~./node_modules/graphql/execution/execute.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:1068:8
+      1  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1    9.1%          LazyCompile: ~./node_modules/express/lib/view.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:704:8
+      1  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1    8.3%        LazyCompile: ~loadParser :132:21
+      1  100.0%          LazyCompile: ~get :122:23
+      1  100.0%            Eval: ~<anonymous> :1:1
+     11    9.7%      Eval: ~<anonymous> :1:1
+      1    9.1%        LazyCompile: ~./src/graphql/mutations/user/create_user.ts /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:47274:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+      1    9.1%        LazyCompile: ~./src/graphql/index.ts /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:47242:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:9:11
+      1    9.1%        LazyCompile: ~./node_modules/send/node_modules/mime/types.json /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:46743:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+      1    9.1%        LazyCompile: ~./node_modules/send/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:41135:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+      1    9.1%        LazyCompile: ~./node_modules/mime-db/db.json /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:40914:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+      1    9.1%        LazyCompile: ~./node_modules/iconv-lite/encodings/dbcs-data.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:3604:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+      1    9.1%        LazyCompile: ~./node_modules/graphql/utilities/findBreakingChanges.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:2534:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+      1    9.1%        LazyCompile: ~./node_modules/graphql/utilities/coerceInputValue.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:2467:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+      1    9.1%        LazyCompile: ~./node_modules/graphql/type/introspection.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:2310:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+      1    9.1%        LazyCompile: ~./node_modules/graphql/type/definition.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:2161:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+      1    9.1%        LazyCompile: ~./node_modules/cookie-signature/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:314:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+      6    5.3%      LazyCompile: ~./node_modules/express-graphql/renderGraphiQL.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:532:8
+      6  100.0%        LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      6  100.0%          Eval: ~<anonymous> :1:1
+      6  100.0%            LazyCompile: ~./node_modules/express-graphql/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:472:8
+      3    2.7%      LazyCompile: ~__nested_webpack_require_583__ :12:50
+      2   66.7%        LazyCompile: ~<anonymous> :406:15
+      2  100.0%          LazyCompile: ~__nested_webpack_require_583__ :12:50
+      2  100.0%            LazyCompile: ~<anonymous> :52:15
+      1   33.3%        LazyCompile: ~<anonymous> :52:15
+      1  100.0%          LazyCompile: ~__nested_webpack_require_583__ :12:50
+      1  100.0%            LazyCompile: ~<anonymous> :7:26
+      3    2.7%      Eval: ~../../node_modules/esprima/dist/esprima.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:47822:16
+      3  100.0%        LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      3  100.0%          Eval: ~<anonymous> :1:1
+      3  100.0%            LazyCompile: ~../../node_modules/js-yaml/lib/js-yaml/type/js/function.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:48188:8
+      2    1.8%      t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1   50.0%        LazyCompile: ~populateMaps :154:23
+      1  100.0%          Eval: ~<anonymous> :1:1
+      1  100.0%            LazyCompile: ~./node_modules/mime-types/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:40941:8
+      1   50.0%        LazyCompile: ~parseMediaType :53:24
+      1  100.0%          LazyCompile: ~parseAccept :31:21
+      1  100.0%            LazyCompile: ~preferredMediaTypes :162:29
+      2    1.8%      LazyCompile: ~readFileSync fs.js:361:22
+      2  100.0%        LazyCompile: ~Module._extensions..js internal/modules/cjs/loader.js:1156:37
+      2  100.0%          LazyCompile: ~Module.load internal/modules/cjs/loader.js:984:33
+      2  100.0%            LazyCompile: ~Module._load internal/modules/cjs/loader.js:840:24
+      2    1.8%      LazyCompile: ~processTicksAndRejections internal/process/task_queues.js:69:35
+      3    1.6%    LazyCompile: ~_addHeaderLine _http_incoming.js:265:24
+      3  100.0%      LazyCompile: ~_addHeaderLines _http_incoming.js:130:25
+      3  100.0%        LazyCompile: ~parserOnHeadersComplete _http_common.js:71:33
+      3    1.6%    LazyCompile: ~EventEmitter.init events.js:130:29
+      3  100.0%      LazyCompile: ~EventEmitter events.js:64:22
+      3  100.0%        LazyCompile: ~Stream internal/streams/legacy.js:9:16
+      3  100.0%          LazyCompile: ~Readable _stream_readable.js:171:18
+      3  100.0%            LazyCompile: ~IncomingMessage _http_incoming.js:42:25
+      2    1.0%    LazyCompile: ~setStreamTimeout internal/stream_base_commons.js:224:26
+      2  100.0%      LazyCompile: ~resOnFinish _http_server.js:674:21
+      2  100.0%        LazyCompile: ~emit events.js:263:44
+      2  100.0%          LazyCompile: ~onFinish _http_outgoing.js:738:18
+      2  100.0%            LazyCompile: ~onCorkedFinish _stream_writable.js:681:24
+      2    1.0%    LazyCompile: ~resOnFinish _http_server.js:674:21
+      2  100.0%      LazyCompile: ~emit events.js:263:44
+      2  100.0%        LazyCompile: ~onFinish _http_outgoing.js:738:18
+      2  100.0%          LazyCompile: ~onCorkedFinish _stream_writable.js:681:24
+      2  100.0%            LazyCompile: ~afterWrite _stream_writable.js:463:20
+      2    1.0%    LazyCompile: ~parserOnHeadersComplete _http_common.js:71:33
+      2    1.0%    LazyCompile: ~parse url.js:158:37
+      2  100.0%      LazyCompile: ~urlParse url.js:150:18
+      2  100.0%        LazyCompile: ~getGraphQLParams :269:32
+      2  100.0%          t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      2  100.0%            t __ZN4node10task_queueL13RunMicrotasksERKN2v820FunctionCallbackInfoINS1_5ValueEEE
+      2    1.0%    LazyCompile: ~matchKnownFields _http_incoming.js:158:26
+      1   50.0%      LazyCompile: ~matchKnownFields _http_incoming.js:158:26
+      1  100.0%        LazyCompile: ~_addHeaderLine _http_incoming.js:265:24
+      1  100.0%          LazyCompile: ~_addHeaderLines _http_incoming.js:130:25
+      1  100.0%            LazyCompile: ~parserOnHeadersComplete _http_common.js:71:33
+      1   50.0%      LazyCompile: ~_addHeaderLine _http_incoming.js:265:24
+      1  100.0%        LazyCompile: ~_addHeaderLines _http_incoming.js:130:25
+      1  100.0%          LazyCompile: ~parserOnHeadersComplete _http_common.js:71:33
+      2    1.0%    LazyCompile: ~handle :136:31
+      2  100.0%      LazyCompile: ~handle :158:29
+      2  100.0%        LazyCompile: ~app :38:21
+      2  100.0%          LazyCompile: ~emit events.js:263:44
+      2  100.0%            LazyCompile: ~parserOnIncoming _http_server.js:720:26
+      2    1.0%    LazyCompile: ~getHighWaterMark internal/streams/state.js:19:26
+      2  100.0%      LazyCompile: ~ReadableState _stream_readable.js:87:23
+      2  100.0%        LazyCompile: ~Readable _stream_readable.js:171:18
+      2  100.0%          LazyCompile: ~IncomingMessage _http_incoming.js:42:25
+      2  100.0%            LazyCompile: ~parserOnHeadersComplete _http_common.js:71:33
+      2    1.0%    LazyCompile: ~end _http_outgoing.js:743:45
+      2  100.0%      LazyCompile: ~send :107:25
+      2  100.0%        LazyCompile: ~json :239:25
+      2  100.0%          LazyCompile: ~<anonymous> :195:13
+      2  100.0%            t __ZN4node10task_queueL13RunMicrotasksERKN2v820FunctionCallbackInfoINS1_5ValueEEE
+      2    1.0%    LazyCompile: ~_addHeaderLines _http_incoming.js:130:25
+      2  100.0%      LazyCompile: ~parserOnHeadersComplete _http_common.js:71:33
+
+     47   10.4%  T ___ulock_wait
+      2    4.3%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1   50.0%      LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%        Eval: ~<anonymous> :1:1
+      1  100.0%          LazyCompile: ~./node_modules/express/lib/utils.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:690:8
+      1  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1   50.0%      Eval: ~<anonymous> dns.js:1:1
+      1  100.0%        LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1  100.0%          LazyCompile: ~compileForPublicLoader internal/bootstrap/loaders.js:212:25
+      1  100.0%            LazyCompile: ~loadNativeModule internal/modules/cjs/helpers.js:20:26
+
+     36    8.0%  T node::contextify::ContextifyContext::CompileFunction(v8::FunctionCallbackInfo<v8::Value> const&)
+     36  100.0%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+     36  100.0%      LazyCompile: ~wrapSafe internal/modules/cjs/loader.js:1048:18
+     36  100.0%        LazyCompile: ~Module._compile internal/modules/cjs/loader.js:1101:37
+     36  100.0%          LazyCompile: ~Module._extensions..js internal/modules/cjs/loader.js:1156:37
+     36  100.0%            LazyCompile: ~Module.load internal/modules/cjs/loader.js:984:33
+
+     34    7.5%  T node::native_module::NativeModuleEnv::CompileFunction(v8::FunctionCallbackInfo<v8::Value> const&)
+     34  100.0%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+     34  100.0%      LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+     31   91.2%        LazyCompile: ~nativeModuleRequire internal/bootstrap/loaders.js:296:29
+      3    9.7%          Eval: ~<anonymous> internal/bootstrap/node.js:1:1
+      2    6.5%          Eval: ~<anonymous> stream.js:1:1
+      2  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      2    6.5%          Eval: ~<anonymous> internal/modules/esm/loader.js:1:1
+      2  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      2    6.5%          Eval: ~<anonymous> internal/modules/cjs/loader.js:1:1
+      2  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      2    6.5%          Eval: ~<anonymous> http.js:1:1
+      2  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      2    6.5%          Eval: ~<anonymous> events.js:1:1
+      2  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          LazyCompile: ~setupPrepareStackTrace internal/bootstrap/node.js:251:32
+      1  100.0%            Eval: ~<anonymous> internal/bootstrap/node.js:1:1
+      1    3.2%          LazyCompile: ~get fs.js:2008:8
+      1  100.0%            t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1    3.2%          Eval: ~<anonymous> tty.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> internal/url.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> internal/timers.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> internal/source_map/source_map_cache.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> internal/process/task_queues.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> internal/modules/cjs/helpers.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> internal/main/run_main_module.js:1:1
+      1    3.2%          Eval: ~<anonymous> internal/crypto/keygen.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> internal/cluster/master.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> internal/child_process.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> fs.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> dns.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> dgram.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> crypto.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> buffer.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1    3.2%          Eval: ~<anonymous> _http_outgoing.js:1:1
+      1  100.0%            LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      3    8.8%        LazyCompile: ~compileForPublicLoader internal/bootstrap/loaders.js:212:25
+      3  100.0%          LazyCompile: ~loadNativeModule internal/modules/cjs/helpers.js:20:26
+      3  100.0%            LazyCompile: ~Module._load internal/modules/cjs/loader.js:840:24
+
+     22    4.9%  t void node::Buffer::(anonymous namespace)::StringSlice<(node::encoding)1>(v8::FunctionCallbackInfo<v8::Value> const&)
+     22  100.0%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+     22  100.0%      LazyCompile: ~slice buffer.js:603:12
+     22  100.0%        LazyCompile: ~toString buffer.js:771:46
+     22  100.0%          LazyCompile: ~readFileSync fs.js:361:22
+     22  100.0%            LazyCompile: ~Module._extensions..js internal/modules/cjs/loader.js:1156:37
+
+     17    3.8%  T _vm_copy
+     12   70.6%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      2   16.7%      LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      2  100.0%        Eval: ~<anonymous> :1:1
+      1   50.0%          LazyCompile: ~./node_modules/graphql/validation/validate.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:3515:8
+      1  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1   50.0%          LazyCompile: ~./node_modules/graphql/validation/specifiedRules.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:3495:8
+      1  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1    8.3%      t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1  100.0%        LazyCompile: ~typeMapDirectiveReducer :300:33
+      1  100.0%          t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1  100.0%            LazyCompile: ~GraphQLSchema :116:25
+      1    8.3%      LazyCompile: ~setStreamTimeout internal/stream_base_commons.js:224:26
+      1  100.0%        LazyCompile: ~resOnFinish _http_server.js:674:21
+      1  100.0%          LazyCompile: ~emit events.js:263:44
+      1  100.0%            LazyCompile: ~onFinish _http_outgoing.js:738:18
+      1    8.3%      LazyCompile: ~next :176:16
+      1  100.0%        LazyCompile: ~handle :136:31
+      1  100.0%          LazyCompile: ~handle :158:29
+      1  100.0%            LazyCompile: ~app :38:21
+      1    8.3%      LazyCompile: ~entitytag :39:20
+      1  100.0%        LazyCompile: ~etag :70:15
+      1  100.0%          LazyCompile: ~generateETag :275:32
+      1  100.0%            LazyCompile: ~send :107:25
+      1    8.3%      LazyCompile: ~Socket._final net.js:401:35
+      1  100.0%        LazyCompile: ~callFinal _stream_writable.js:619:19
+      1  100.0%          LazyCompile: ~processTicksAndRejections internal/process/task_queues.js:69:35
+      1    8.3%      LazyCompile: ~Readable.resume _stream_readable.js:931:37
+      1  100.0%        LazyCompile: ~Socket.resume net.js:610:35
+      1  100.0%          LazyCompile: ~Readable.on _stream_readable.js:844:33
+      1  100.0%            LazyCompile: ~connectionListenerInternal _http_server.js:404:36
+      1    8.3%      LazyCompile: ~./node_modules/send/node_modules/debug/src/debug.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:41175:8
+      1  100.0%        LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%          Eval: ~<anonymous> :1:1
+      1  100.0%            LazyCompile: ~./node_modules/send/node_modules/debug/src/node.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:41201:8
+      1    8.3%      LazyCompile: ~./node_modules/parseurl/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:41039:8
+      1  100.0%        LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%          Eval: ~<anonymous> :1:1
+      1  100.0%            LazyCompile: ~./node_modules/finalhandler/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:866:8
+      1    8.3%      LazyCompile: ~../../node_modules/pg-types/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:48824:8
+      1  100.0%        LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%          Eval: ~<anonymous> :1:1
+      1  100.0%            LazyCompile: ~../../node_modules/pg/lib/defaults.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:48973:8
+      1    8.3%      Eval: ~<anonymous> :1:1
+      1  100.0%        LazyCompile: ~./node_modules/graphql/type/validate.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:2367:8
+      1  100.0%          LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%            Eval: ~<anonymous> :1:1
+
+     13    2.9%  /usr/lib/system/libsystem_kernel.dylib
+      1    7.7%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1  100.0%      LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%        Eval: ~<anonymous> :1:1
+      1  100.0%          LazyCompile: ~./node_modules/graphql/validation/specifiedRules.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:3495:8
+      1  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+
+     12    2.7%  T __kernelrpc_thread_policy_set
+
+      8    1.8%  /usr/lib/system/libsystem_platform.dylib
+      5   62.5%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1   20.0%      t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1  100.0%        LazyCompile: ~<anonymous> :627:52
+      1  100.0%          LazyCompile: ~mapValue :16:18
+      1  100.0%            LazyCompile: ~defineFieldMap :624:24
+      1   20.0%      LazyCompile: ~parserOnHeadersComplete _http_common.js:71:33
+      1   20.0%      LazyCompile: ~<anonymous> :58:65
+      1  100.0%        t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1  100.0%          LazyCompile: ~printFilteredSchema :55:29
+      1  100.0%            LazyCompile: ~printSchema :41:21
+      1   20.0%      LazyCompile: ~./node_modules/express-graphql/renderGraphiQL.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:532:8
+      1  100.0%        LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%          Eval: ~<anonymous> :1:1
+      1  100.0%            LazyCompile: ~./node_modules/express-graphql/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:472:8
+      1   20.0%      Eval: ~<anonymous> internal/console/global.js:1:1
+      1  100.0%        LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1  100.0%          LazyCompile: ~nativeModuleRequire internal/bootstrap/loaders.js:296:29
+      1  100.0%            LazyCompile: ~createGlobalConsole internal/bootstrap/node.js:346:29
+
+      7    1.6%  T node::binding::GetInternalBinding(v8::FunctionCallbackInfo<v8::Value> const&)
+      7  100.0%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      7  100.0%      LazyCompile: ~internalBinding internal/bootstrap/loaders.js:132:45
+      4   57.1%        Eval: ~<anonymous> crypto.js:1:1
+      4  100.0%          LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      4  100.0%            LazyCompile: ~compileForPublicLoader internal/bootstrap/loaders.js:212:25
+      1   14.3%        Eval: ~<anonymous> net.js:1:1
+      1  100.0%          LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1  100.0%            LazyCompile: ~nativeModuleRequire internal/bootstrap/loaders.js:296:29
+      1   14.3%        Eval: ~<anonymous> internal/util.js:1:1
+      1  100.0%          LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1  100.0%            LazyCompile: ~nativeModuleRequire internal/bootstrap/loaders.js:296:29
+      1   14.3%        Eval: ~<anonymous> _http_common.js:1:1
+      1  100.0%          LazyCompile: ~compileForInternalLoader internal/bootstrap/loaders.js:263:27
+      1  100.0%            LazyCompile: ~nativeModuleRequire internal/bootstrap/loaders.js:296:29
+
+      6    1.3%  T _read$NOCANCEL
+
+      6    1.3%  T __ZN4node10StreamBase8JSMethodIXadL_ZNS0_6WritevERKN2v820FunctionCallbackInfoINS2_5ValueEEEEEEEvS7_
+      6  100.0%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      6  100.0%      LazyCompile: ~writevGeneric internal/stream_base_commons.js:116:23
+      6  100.0%        LazyCompile: ~Socket._writeGeneric net.js:760:42
+      6  100.0%          LazyCompile: ~Socket._writev net.js:792:36
+      6  100.0%            LazyCompile: ~doWrite _stream_writable.js:382:17
+
+      6    1.3%  /usr/lib/system/libsystem_pthread.dylib
+      3   50.0%    t __ZNSt3__113__vector_baseINS_10unique_ptrIN12v8_inspector8protocol8Profiler16TypeProfileEntryENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEED2Ev
+      1   33.3%      LazyCompile: ~resolveThunk :436:22
+      1  100.0%        LazyCompile: ~defineFieldMap :624:24
+      1  100.0%          LazyCompile: ~getFields :577:41
+      1  100.0%            LazyCompile: ~typeMapReducer :252:24
+      1   33.3%      LazyCompile: ~afterShutdown net.js:426:23
+      1   33.3%      LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+      1  100.0%        Eval: ~<anonymous> :1:1
+      1  100.0%          LazyCompile: ~./node_modules/graphql/utilities/index.js /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:2633:8
+      1  100.0%            LazyCompile: ~__webpack_require__ /Users/ola/code/ent/ts/examples/simple/lib/src/graphql/index.js:49910:39
+
