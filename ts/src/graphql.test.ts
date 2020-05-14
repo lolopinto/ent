@@ -599,4 +599,42 @@ describe("function", () => {
       },
     ]);
   });
+
+  test("enabled. async response", () => {
+    try {
+      class User {
+        @gqlField({})
+        async load(): Promise<User> {
+          return new User();
+        }
+      }
+      fail("shouldn't have gotten here");
+    } catch (e) {
+      expect(e.message).toMatch(/^Promise isn't a valid type/);
+    }
+    validateNoCustom();
+  });
+
+  test("enabled. async response with type hint", () => {
+    class User {
+      @gqlField({ type: User, name: "self" })
+      async loadSelf(): Promise<User> {
+        return new User();
+      }
+    }
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "loadSelf",
+      gqlName: "self",
+      results: [
+        {
+          type: "User",
+          name: "",
+          needsResolving: true,
+        },
+      ],
+      args: [],
+    });
+    validateNoCustomArgs();
+  });
 });

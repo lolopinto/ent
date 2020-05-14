@@ -1,13 +1,18 @@
 import "reflect-metadata";
 import { GraphQLScalarType } from "graphql";
 
-type Type = GraphQLScalarType;
+interface ClassType<T = any> {
+  new (...args: any[]): T;
+}
+
+// scalars or classes
+type Type = GraphQLScalarType | ClassType;
 
 export interface gqlFieldOptions {
   name?: string;
   nullable?: boolean;
   description?: string;
-  type?: Type; // only scalars allowed for now
+  type?: Type;
 }
 
 export interface CustomField {
@@ -186,7 +191,7 @@ export class GQLCapture {
       //      console.log(nodeName, propertyKey, results);
       GQLCapture.customFields.push({
         nodeName: nodeName,
-        gqlName: propertyKey,
+        gqlName: options?.name || propertyKey,
         functionName: propertyKey,
         args: args,
         results: results,
