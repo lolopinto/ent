@@ -15,6 +15,13 @@ export interface gqlFieldOptions {
   type?: Type;
 }
 
+export enum CustomFieldType {
+  Accessor,
+  Field, // or property
+  Function,
+  AsyncFunction, // do we care about this?
+}
+
 export interface CustomField {
   nodeName: string;
   gqlName: string;
@@ -23,6 +30,7 @@ export interface CustomField {
   args: Field[];
   results: Field[];
   importPath?: string;
+  fieldType: CustomFieldType;
 }
 
 export interface CustomArg {
@@ -132,6 +140,8 @@ export class GQLCapture {
         return;
       }
 
+      //      console.log(target, propertyKey, descriptor);
+      let fieldType: CustomFieldType;
       let nodeName = target.constructor.name as string;
 
       let args: Field[] = [];
@@ -148,12 +158,28 @@ export class GQLCapture {
         propertyKey,
       );
       if (returnTypeMetadata) {
-        //        console.log("return type");
+        // function...
+        if (returnTypeMetadata.name === "Promise") {
+          fieldType = CustomFieldType.AsyncFunction;
+        } else {
+          fieldType = CustomFieldType.Function;
+        }
+        //console.log("return type", returnTypeMetadata.name);
+
         results.push(
           GQLCapture.getResultFromMetadata(returnTypeMetadata, options),
         );
       } else if (typeMetadata) {
-        // console.log("type");
+        if (descriptor && descriptor.get) {
+          fieldType = CustomFieldType.Accessor;
+        } else if (descriptor && descriptor.value) {
+          // could be implicit async
+          fieldType = CustomFieldType.Function;
+        } else {
+          fieldType = CustomFieldType.Field;
+        }
+
+        //        console.log("type");
         results.push(GQLCapture.getResultFromMetadata(typeMetadata, options));
       }
 
@@ -195,6 +221,7 @@ export class GQLCapture {
         functionName: propertyKey,
         args: args,
         results: results,
+        fieldType: fieldType!,
       });
     };
   }
@@ -241,6 +268,9 @@ export class GQLCapture {
       _propertyKey: string,
       _descriptor: PropertyDescriptor,
     ): void {
+      if (!GQLCapture.isEnabled()) {
+        return;
+      }
       let className = target.name as string;
       let nodeName = options?.name || className;
 

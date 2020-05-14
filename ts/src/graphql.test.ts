@@ -6,6 +6,7 @@ import {
   gqlArgType,
   Field,
   CustomArg,
+  CustomFieldType,
 } from "./graphql";
 import { GraphQLInt, GraphQLFloat } from "graphql";
 
@@ -28,6 +29,7 @@ function validateCustomFields(expected: CustomField[]) {
     expect(customField.nodeName).toBe(expectedCustomField.nodeName);
     expect(customField.functionName).toBe(expectedCustomField.functionName);
     expect(customField.gqlName).toBe(expectedCustomField.gqlName);
+    expect(customField.fieldType).toBe(expectedCustomField.fieldType);
 
     validateFields(customField.results, expectedCustomField.results);
 
@@ -97,6 +99,7 @@ describe("accessor", () => {
       nodeName: "User",
       functionName: "fullName",
       gqlName: "fullName",
+      fieldType: CustomFieldType.Accessor,
       results: [
         {
           type: "String",
@@ -119,6 +122,7 @@ describe("accessor", () => {
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
+      fieldType: CustomFieldType.Accessor,
       results: [
         {
           type: "Int",
@@ -141,6 +145,7 @@ describe("accessor", () => {
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
+      fieldType: CustomFieldType.Accessor,
       results: [
         {
           type: "Float",
@@ -163,6 +168,7 @@ describe("accessor", () => {
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
+      fieldType: CustomFieldType.Accessor,
       results: [
         {
           type: "Float",
@@ -185,6 +191,7 @@ describe("accessor", () => {
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
+      fieldType: CustomFieldType.Accessor,
       results: [
         {
           type: "Int",
@@ -246,6 +253,7 @@ describe("property", () => {
       nodeName: "User",
       functionName: "fullName",
       gqlName: "fullName",
+      fieldType: CustomFieldType.Field,
       results: [
         {
           type: "String",
@@ -266,6 +274,7 @@ describe("property", () => {
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
+      fieldType: CustomFieldType.Field,
       results: [
         {
           type: "Int",
@@ -286,6 +295,7 @@ describe("property", () => {
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
+      fieldType: CustomFieldType.Field,
       results: [
         {
           type: "Float",
@@ -307,6 +317,7 @@ describe("property", () => {
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
+      fieldType: CustomFieldType.Field,
       results: [
         {
           type: "Float",
@@ -357,6 +368,7 @@ describe("function", () => {
       nodeName: "User",
       functionName: "username",
       gqlName: "username",
+      fieldType: CustomFieldType.Function,
       results: [
         {
           type: "String",
@@ -380,6 +392,7 @@ describe("function", () => {
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
+      fieldType: CustomFieldType.Function,
       results: [
         {
           type: "Int",
@@ -403,6 +416,7 @@ describe("function", () => {
       nodeName: "User",
       functionName: "pi",
       gqlName: "pi",
+      fieldType: CustomFieldType.Function,
       results: [
         {
           type: "Float",
@@ -426,6 +440,7 @@ describe("function", () => {
       nodeName: "User",
       functionName: "pi",
       gqlName: "pi",
+      fieldType: CustomFieldType.Function,
       results: [
         {
           type: "Float",
@@ -463,6 +478,7 @@ describe("function", () => {
       nodeName: "User",
       functionName: "add",
       gqlName: "add",
+      fieldType: CustomFieldType.Function,
       results: [
         {
           type: "Int",
@@ -494,6 +510,7 @@ describe("function", () => {
       nodeName: "User",
       functionName: "find",
       gqlName: "find",
+      fieldType: CustomFieldType.Function,
       results: [
         {
           type: "String",
@@ -553,6 +570,7 @@ describe("function", () => {
         nodeName: "SearchArgs",
         functionName: "startCursor",
         gqlName: "startCursor",
+        fieldType: CustomFieldType.Field,
         results: [
           {
             type: "String",
@@ -565,6 +583,8 @@ describe("function", () => {
         nodeName: "SearchArgs",
         functionName: "start",
         gqlName: "start",
+        fieldType: CustomFieldType.Field,
+
         results: [
           {
             type: "Int",
@@ -577,6 +597,7 @@ describe("function", () => {
         nodeName: "User",
         functionName: "search",
         gqlName: "search",
+        fieldType: CustomFieldType.Function,
         args: [
           {
             type: "SearchArgs",
@@ -626,6 +647,31 @@ describe("function", () => {
       nodeName: "User",
       functionName: "loadSelf",
       gqlName: "self",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "User",
+          name: "",
+          needsResolving: true,
+        },
+      ],
+      args: [],
+    });
+    validateNoCustomArgs();
+  });
+
+  test("enabled. implied async response with type hint", () => {
+    class User {
+      @gqlField({ type: User, name: "self" })
+      async loadSelf() {
+        return new User();
+      }
+    }
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "loadSelf",
+      gqlName: "self",
+      fieldType: CustomFieldType.AsyncFunction,
       results: [
         {
           type: "User",
