@@ -11,9 +11,9 @@ type Type = GraphQLScalarType | ClassType;
 // TODO lists/ nullables (list nullables) /etc
 export interface gqlFieldOptions {
   name?: string;
-  nullable?: boolean;
+  nullable?: boolean | NullableListOptions;
   description?: string;
-  type?: Type;
+  type?: Type | Array<Type>; // types or lists of types
 }
 
 export enum CustomFieldType {
@@ -40,12 +40,20 @@ export interface CustomArg {
   className: string; // TODO both the same right now...
 }
 
+type NullableListOptions = "contents" | "contentsAndList";
+
 export interface Field {
   name: string;
   type: string; // TODO
   importPath?: string;
   needsResolving?: boolean; // unknown type that we need to resolve eventually
-  nullable?: boolean;
+
+  // if a list and nullable
+  // list itself is nullable
+  // if a list and items are nullable, list is not nullable but list contains nullable items
+  // if a list and both are nullable, both contents and list itself nullable
+  nullable?: boolean | NullableListOptions;
+  list?: boolean;
 }
 
 interface arg {
@@ -113,8 +121,22 @@ export class GQLCapture {
         "type is required when accessor/function/property returns a number",
       );
     }
+
+    const isArray = (type: Type | Array<Type>): type is Array<Type> => {
+      if (typeof type === "function") {
+        return false;
+      }
+      return (type as Array<Type>).length !== undefined;
+    };
+    let list: boolean | undefined;
+
     if (options?.type) {
-      type = options.type.name;
+      if (isArray(options.type)) {
+        list = true;
+        type = options.type[0].name;
+      } else {
+        type = options.type.name;
+      }
     }
     if (GQLCapture.knownDisAllowedNames.has(type)) {
       throw new Error(
@@ -126,6 +148,7 @@ export class GQLCapture {
       name: metadata.paramName || "",
       type,
       nullable: options?.nullable,
+      list: list,
     };
     // unknown type. we need to flag that this field needs to eventually be resolved
     if (!GQLCapture.knownAllowedNames.has(type)) {

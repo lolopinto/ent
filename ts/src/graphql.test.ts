@@ -264,6 +264,130 @@ describe("accessor", () => {
     }
     validateNoCustom();
   });
+
+  test("enabled. list of strings", () => {
+    class User {
+      @gqlField({ type: [String] })
+      get names(): string[] {
+        return ["firstName", "lastName", "fullName"];
+      }
+    }
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "names",
+      gqlName: "names",
+      fieldType: CustomFieldType.Accessor,
+      results: [
+        {
+          type: "String",
+          list: true,
+          name: "",
+        },
+      ],
+      args: [],
+    });
+    validateNoCustomArgs();
+  });
+
+  test("enabled. list of strings", () => {
+    class User {
+      @gqlField({ type: [String] })
+      get names(): string[] {
+        return ["firstName", "lastName", "fullName"];
+      }
+    }
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "names",
+      gqlName: "names",
+      fieldType: CustomFieldType.Accessor,
+      results: [
+        {
+          type: "String",
+          list: true,
+          name: "",
+        },
+      ],
+      args: [],
+    });
+    validateNoCustomArgs();
+  });
+
+  test("enabled. nullable list of strings", () => {
+    class User {
+      @gqlField({ type: [String], nullable: true })
+      get names(): string[] | null {
+        return null;
+      }
+    }
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "names",
+      gqlName: "names",
+      fieldType: CustomFieldType.Accessor,
+      results: [
+        {
+          type: "String",
+          list: true,
+          nullable: true,
+          name: "",
+        },
+      ],
+      args: [],
+    });
+    validateNoCustomArgs();
+  });
+
+  test("enabled. nullable contents of strings", () => {
+    class User {
+      @gqlField({ type: [String], nullable: "contents" })
+      get names(): (string | null)[] {
+        return ["firstName", "lastName", "fullName", null];
+      }
+    }
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "names",
+      gqlName: "names",
+      fieldType: CustomFieldType.Accessor,
+      results: [
+        {
+          type: "String",
+          list: true,
+          name: "",
+          nullable: "contents",
+        },
+      ],
+      args: [],
+    });
+    validateNoCustomArgs();
+  });
+
+  test("enabled. nullable contents and list of strings", () => {
+    class User {
+      // all nullable
+      @gqlField({ type: [String], nullable: "contentsAndList" })
+      get names(): (string | null)[] | null {
+        return null;
+      }
+    }
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "names",
+      gqlName: "names",
+      fieldType: CustomFieldType.Accessor,
+      results: [
+        {
+          type: "String",
+          list: true,
+          name: "",
+          nullable: "contentsAndList",
+        },
+      ],
+      args: [],
+    });
+    validateNoCustomArgs();
+  });
 });
 
 describe("property", () => {
