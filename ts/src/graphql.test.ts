@@ -8,7 +8,7 @@ import {
   CustomArg,
   CustomFieldType,
 } from "./graphql";
-import { GraphQLInt, GraphQLFloat } from "graphql";
+import { GraphQLInt, GraphQLFloat, GraphQLString } from "graphql";
 
 beforeEach(() => {
   GQLCapture.clear();
@@ -47,6 +47,7 @@ function validateFields(actual: Field[], expected: Field[]) {
     expect(field.type).toBe(expField.type);
     expect(field.name).toBe(expField.name);
     expect(field.needsResolving).toBe(expField.needsResolving);
+    expect(field.nullable).toBe(expField.nullable);
   }
 }
 
@@ -104,6 +105,37 @@ describe("accessor", () => {
         {
           type: "String",
           name: "",
+        },
+      ],
+      args: [],
+    });
+    validateNoCustomArgs();
+  });
+
+  test("enabled. nullable string", () => {
+    class User {
+      @gqlField({
+        type: GraphQLString,
+        nullable: true,
+        description: "first + last name",
+      })
+      // boo when it's nullable, we need to indicate type and nullable: true
+      get fullName(): string | null {
+        return "fullName";
+      }
+    }
+
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "fullName",
+      gqlName: "fullName",
+      fieldType: CustomFieldType.Accessor,
+      description: "first + last name",
+      results: [
+        {
+          type: "String",
+          name: "",
+          nullable: true,
         },
       ],
       args: [],
@@ -469,7 +501,7 @@ describe("function", () => {
   test("enabled, one param", () => {
     class User {
       @gqlField({ type: GraphQLInt })
-      add(@gqlArg("id", { type: GraphQLInt }) base: number): number {
+      add(@gqlArg("base", { type: GraphQLInt }) base: number): number {
         return 1 + base;
       }
     }
@@ -488,7 +520,7 @@ describe("function", () => {
       args: [
         {
           type: "Int",
-          name: "id",
+          name: "base",
         },
       ],
     });
@@ -531,6 +563,39 @@ describe("function", () => {
     validateNoCustomArgs();
   });
 
+  test("enabled, nullable arg", () => {
+    class User {
+      @gqlField({ name: "find" })
+      findFromPos(
+        @gqlArg("pos", { type: GraphQLInt, nullable: true })
+        pos: number,
+      ): string {
+        return `${pos}`;
+      }
+    }
+
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "findFromPos",
+      gqlName: "find",
+      fieldType: CustomFieldType.Function,
+      results: [
+        {
+          type: "String",
+          name: "",
+        },
+      ],
+      args: [
+        {
+          type: "Int",
+          name: "pos",
+          nullable: true,
+        },
+      ],
+    });
+    validateNoCustomArgs();
+  });
+
   test("enabled, no arg decorator", () => {
     try {
       class User {
@@ -553,8 +618,11 @@ describe("function", () => {
       @gqlField()
       startCursor: string;
 
-      @gqlField({ type: GraphQLInt, nullable: true })
+      @gqlField({ type: GraphQLInt })
       start: number;
+
+      @gqlField({ type: GraphQLInt, nullable: true })
+      end: number;
     }
     class User {
       // search to return count
@@ -589,6 +657,21 @@ describe("function", () => {
           {
             type: "Int",
             name: "",
+          },
+        ],
+        args: [],
+      },
+      {
+        nodeName: "SearchArgs",
+        functionName: "end",
+        gqlName: "end",
+        fieldType: CustomFieldType.Field,
+
+        results: [
+          {
+            type: "Int",
+            name: "",
+            nullable: true,
           },
         ],
         args: [],

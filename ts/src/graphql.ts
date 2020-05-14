@@ -8,6 +8,7 @@ interface ClassType<T = any> {
 // scalars or classes
 type Type = GraphQLScalarType | ClassType;
 
+// TODO lists/ nullables (list nullables) /etc
 export interface gqlFieldOptions {
   name?: string;
   nullable?: boolean;
@@ -31,6 +32,7 @@ export interface CustomField {
   results: Field[];
   importPath?: string;
   fieldType: CustomFieldType;
+  description?: string;
 }
 
 export interface CustomArg {
@@ -43,6 +45,7 @@ export interface Field {
   type: string; // TODO
   importPath?: string;
   needsResolving?: boolean; // unknown type that we need to resolve eventually
+  nullable?: boolean;
 }
 
 interface arg {
@@ -122,6 +125,7 @@ export class GQLCapture {
     let result: Field = {
       name: metadata.paramName || "",
       type,
+      nullable: options?.nullable,
     };
     // unknown type. we need to flag that this field needs to eventually be resolved
     if (!GQLCapture.knownAllowedNames.has(type)) {
@@ -193,6 +197,7 @@ export class GQLCapture {
         let parsedArgs =
           GQLCapture.argMap.get(nodeName)?.get(propertyKey) || [];
         if (params.length !== parsedArgs.length) {
+          // console.log(params, parsedArgs);
           throw new Error("args were not captured correctly");
         }
         parsedArgs.forEach((arg) => {
@@ -222,6 +227,7 @@ export class GQLCapture {
         args: args,
         results: results,
         fieldType: fieldType!,
+        description: options?.description,
       });
     };
   }
