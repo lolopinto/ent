@@ -1,4 +1,12 @@
-import { gqlField, gqlArg, GQLCapture, Func } from "./graphql";
+import {
+  gqlField,
+  gqlArg,
+  GQLCapture,
+  CustomField,
+  gqlArgType,
+  Field,
+  CustomArg,
+} from "./graphql";
 import { GraphQLInt, GraphQLFloat } from "graphql";
 
 beforeEach(() => {
@@ -6,30 +14,63 @@ beforeEach(() => {
   GQLCapture.enable(true);
 });
 
-function validateOne(customFns: Func[], expected: Func) {
-  expect(customFns.length).toBe(1);
-  let customFn = customFns[0];
-  expect(customFn.nodeName).toBe(expected.nodeName);
-  expect(customFn.functionName).toBe(expected.functionName);
-  expect(customFn.gqlName).toBe(expected.gqlName);
+function validateOneCustomField(expected: CustomField) {
+  validateCustomFields([expected]);
+}
 
-  let results = customFn.results;
-  expect(results.length).toBe(1);
-  expect(expected.results.length).toBe(1);
-  expect(results[0].type).toBe(expected.results[0].type);
-  expect(results[0].name).toBe(expected.results[0].name);
+function validateCustomFields(expected: CustomField[]) {
+  let customFields = GQLCapture.getCustomFields();
+  expect(customFields.length).toBe(expected.length);
 
-  expect(customFn.args.length).toBe(expected.args.length);
+  for (let i = 0; i < customFields.length; i++) {
+    let customField = customFields[i];
+    let expectedCustomField = expected[i];
+    expect(customField.nodeName).toBe(expectedCustomField.nodeName);
+    expect(customField.functionName).toBe(expectedCustomField.functionName);
+    expect(customField.gqlName).toBe(expectedCustomField.gqlName);
 
-  if (expected.args.length) {
-    for (let i = 0; i < expected.args.length; i++) {
-      let expectedArg = expected.args[i];
-      let actualArg = customFn.args[i];
+    validateFields(customField.results, expectedCustomField.results);
 
-      expect(actualArg.type).toBe(expectedArg.type);
-      expect(actualArg.name).toBe(expectedArg.name);
-    }
+    validateFields(customField.args, expectedCustomField.args);
   }
+}
+
+function validateFields(actual: Field[], expected: Field[]) {
+  expect(actual.length).toBe(expected.length);
+
+  for (let j = 0; j < actual.length; j++) {
+    let field = actual[j];
+    let expField = expected[j];
+
+    expect(field.type).toBe(expField.type);
+    expect(field.name).toBe(expField.name);
+    expect(field.needsResolving).toBe(expField.needsResolving);
+  }
+}
+
+function validateNoCustomFields() {
+  expect(GQLCapture.getCustomFields().length).toBe(0);
+}
+
+function validateCustomArgs(expected: CustomArg[]) {
+  let args = GQLCapture.getCustomArgs();
+  expect(args.length).toBe(expected.length);
+
+  for (let i = 0; i < args.length; i++) {
+    let arg = args[i];
+    let expectedArg = expected[i];
+
+    expect(arg.className).toBe(expectedArg.className);
+    expect(arg.nodeName).toBe(expectedArg.nodeName);
+  }
+}
+function validateNoCustomArgs() {
+  expect(GQLCapture.getCustomArgs().length).toBe(0);
+}
+
+function validateNoCustom() {
+  validateNoCustomFields();
+  validateNoCustomArgs();
 }
 
 describe("accessor", () => {
@@ -41,7 +82,7 @@ describe("accessor", () => {
         return "fullName";
       }
     }
-    expect(GQLCapture.getCustomFns().length).toBe(0);
+    validateNoCustom();
   });
 
   test("enabled. string", () => {
@@ -51,9 +92,8 @@ describe("accessor", () => {
         return "fullName";
       }
     }
-    let customFns = GQLCapture.getCustomFns();
 
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "fullName",
       gqlName: "fullName",
@@ -65,6 +105,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled. int", () => {
@@ -74,8 +115,7 @@ describe("accessor", () => {
         return 3.2;
       }
     }
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
@@ -87,6 +127,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled. float", () => {
@@ -96,8 +137,7 @@ describe("accessor", () => {
         return 3.2;
       }
     }
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
@@ -109,6 +149,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled. returns float with implicit number", () => {
@@ -118,8 +159,7 @@ describe("accessor", () => {
         return 3.2;
       }
     }
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
@@ -131,6 +171,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled. returns int with implicit number", () => {
@@ -140,8 +181,7 @@ describe("accessor", () => {
         return 3.2;
       }
     }
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
@@ -153,6 +193,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled. throws with number and no type", () => {
@@ -167,6 +208,7 @@ describe("accessor", () => {
     } catch (e) {
       expect(e.message).toMatch(/^type is required (.)+/);
     }
+    validateNoCustom();
   });
 
   test("enabled. throws with implicit type and no passed in type", () => {
@@ -181,6 +223,7 @@ describe("accessor", () => {
     } catch (e) {
       expect(e.message).toMatch(/^type is required (.)+/);
     }
+    validateNoCustom();
   });
 });
 
@@ -191,7 +234,7 @@ describe("property", () => {
       @gqlField()
       fullName: string;
     }
-    expect(GQLCapture.getCustomFns().length).toBe(0);
+    validateNoCustom();
   });
 
   test("enabled. string", () => {
@@ -199,8 +242,7 @@ describe("property", () => {
       @gqlField()
       fullName: string;
     }
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "fullName",
       gqlName: "fullName",
@@ -212,6 +254,7 @@ describe("property", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled. int", () => {
@@ -219,8 +262,7 @@ describe("property", () => {
       @gqlField({ type: GraphQLInt })
       age: number;
     }
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
@@ -232,6 +274,7 @@ describe("property", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled. float", () => {
@@ -239,8 +282,7 @@ describe("property", () => {
       @gqlField({ type: GraphQLFloat })
       age: number;
     }
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
@@ -252,6 +294,7 @@ describe("property", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled. with implicit type", () => {
@@ -260,8 +303,7 @@ describe("property", () => {
       // lol but why?
       age;
     }
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
@@ -273,6 +315,7 @@ describe("property", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled. with implicit type", () => {
@@ -286,10 +329,11 @@ describe("property", () => {
     } catch (e) {
       expect(e.message).toMatch(/^type is required (.)+/);
     }
+    validateNoCustom();
   });
 });
 
-describe.only("function", () => {
+describe("function", () => {
   test("disabled", () => {
     GQLCapture.enable(false);
     class User {
@@ -298,7 +342,7 @@ describe.only("function", () => {
         return "ola";
       }
     }
-    expect(GQLCapture.getCustomFns().length).toBe(0);
+    validateNoCustom();
   });
 
   test("enabled, returns string", () => {
@@ -309,8 +353,7 @@ describe.only("function", () => {
       }
     }
 
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "username",
       gqlName: "username",
@@ -322,6 +365,7 @@ describe.only("function", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled, returns int", () => {
@@ -332,8 +376,7 @@ describe.only("function", () => {
       }
     }
 
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "age",
       gqlName: "age",
@@ -345,6 +388,7 @@ describe.only("function", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled, returns float", () => {
@@ -355,8 +399,7 @@ describe.only("function", () => {
       }
     }
 
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "pi",
       gqlName: "pi",
@@ -368,6 +411,7 @@ describe.only("function", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled, returns float for implicit return type", () => {
@@ -378,8 +422,7 @@ describe.only("function", () => {
       }
     }
 
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "pi",
       gqlName: "pi",
@@ -391,6 +434,7 @@ describe.only("function", () => {
       ],
       args: [],
     });
+    validateNoCustomArgs();
   });
 
   test("enabled, throws for implicit return type", () => {
@@ -402,8 +446,9 @@ describe.only("function", () => {
         }
       }
     } catch (err) {
-      expect(err.message).toMatch(/^type is required (.)+/);
+      expect(err.message).toMatch(/^Function isn't a valid type/);
     }
+    validateNoCustom();
   });
 
   test("enabled, one param", () => {
@@ -414,8 +459,7 @@ describe.only("function", () => {
       }
     }
 
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "add",
       gqlName: "add",
@@ -432,12 +476,9 @@ describe.only("function", () => {
         },
       ],
     });
+    validateNoCustomArgs();
   });
 
-  // TODO other tests with params
-  // e.g. object param
-  // no @gqlArg
-  // nullable, etc
   test("enabled, multiple param", () => {
     class User {
       @gqlField()
@@ -449,8 +490,7 @@ describe.only("function", () => {
       }
     }
 
-    let customFns = GQLCapture.getCustomFns();
-    validateOne(customFns, {
+    validateOneCustomField({
       nodeName: "User",
       functionName: "find",
       gqlName: "find",
@@ -471,5 +511,92 @@ describe.only("function", () => {
         },
       ],
     });
+    validateNoCustomArgs();
+  });
+
+  test("enabled, no arg decorator", () => {
+    try {
+      class User {
+        @gqlField()
+        find(pos: number, @gqlArg("cursor") cursor: string): string {
+          return `${cursor}:${pos}`;
+        }
+      }
+      fail("should not get here");
+    } catch (e) {
+      expect(e.message).toBe("args were not captured correctly");
+    }
+    validateNoCustom();
+  });
+
+  test("enabled. arg class", () => {
+    // TODO need to ensure no params for these since not valid graphql i believe
+    @gqlArgType()
+    class SearchArgs {
+      @gqlField()
+      startCursor: string;
+
+      @gqlField({ type: GraphQLInt, nullable: true })
+      start: number;
+    }
+    class User {
+      // search to return count
+      // TODO need
+      @gqlField({ type: GraphQLInt })
+      search(@gqlArg("searchArgs") arg: SearchArgs): number {
+        return 0;
+      }
+    }
+
+    validateCustomFields([
+      {
+        nodeName: "SearchArgs",
+        functionName: "startCursor",
+        gqlName: "startCursor",
+        results: [
+          {
+            type: "String",
+            name: "",
+          },
+        ],
+        args: [],
+      },
+      {
+        nodeName: "SearchArgs",
+        functionName: "start",
+        gqlName: "start",
+        results: [
+          {
+            type: "Int",
+            name: "",
+          },
+        ],
+        args: [],
+      },
+      {
+        nodeName: "User",
+        functionName: "search",
+        gqlName: "search",
+        args: [
+          {
+            type: "SearchArgs",
+            name: "searchArgs",
+            needsResolving: true,
+          },
+        ],
+        results: [
+          {
+            type: "Int",
+            name: "",
+          },
+        ],
+      },
+    ]);
+    validateCustomArgs([
+      {
+        nodeName: "SearchArgs",
+        className: "SearchArgs",
+      },
+    ]);
   });
 });
