@@ -57,18 +57,20 @@ function validateNoCustomFields() {
 
 function validateCustomArgs(expected: CustomArg[]) {
   let args = GQLCapture.getCustomArgs();
-  expect(args.length).toBe(expected.length);
+  expect(args.size).toBe(expected.length);
 
-  for (let i = 0; i < args.length; i++) {
-    let arg = args[i];
+  for (let i = 0; i < expected.length; i++) {
     let expectedArg = expected[i];
+    let arg = args.get(expectedArg.className);
+    expect(arg).not.toBe(undefined);
+    //    let arg = args[i];
 
-    expect(arg.className).toBe(expectedArg.className);
-    expect(arg.nodeName).toBe(expectedArg.nodeName);
+    expect(arg!.className).toBe(expectedArg.className);
+    expect(arg!.nodeName).toBe(expectedArg.nodeName);
   }
 }
 function validateNoCustomArgs() {
-  expect(GQLCapture.getCustomArgs().length).toBe(0);
+  expect(GQLCapture.getCustomArgs().size).toBe(0);
 }
 
 function validateNoCustom() {
@@ -809,7 +811,7 @@ describe("function", () => {
           {
             type: "SearchArgs",
             name: "searchArgs",
-            needsResolving: true,
+            needsResolving: true, // TODO do we still need this?
           },
         ],
         results: [
@@ -826,6 +828,65 @@ describe("function", () => {
         className: "SearchArgs",
       },
     ]);
+  });
+
+  test("enabled. referencing non-arg class", () => {
+    try {
+      class SearchArgs {
+        startCursor: string;
+
+        start: number;
+
+        end: number;
+      }
+      class User {
+        @gqlField({ type: GraphQLInt })
+        search(@gqlArg("searchArgs") arg: SearchArgs): number {
+          return 0;
+        }
+      }
+    } catch (error) {
+      // TODO need a better message here
+      expect(error.message).toMatch("args were not captured correctly");
+    }
+  });
+
+  test("enabled. resolve return types", () => {
+    // graphql object
+    class Contact {}
+
+    class User {
+      @gqlField({ type: Contact })
+      selfContact(): Contact {
+        return new Contact();
+      }
+    }
+
+    expect(GQLCapture.getCustomArgs().size).toBe(0);
+    expect(GQLCapture.getCustomFields().length).toBe(1);
+    // no errors!
+    GQLCapture.resolve(["User", "Contact"]);
+  });
+
+  test("enabled. resolve return types", () => {
+    // graphql object
+    class Contact {}
+
+    class User {
+      @gqlField({ type: Contact })
+      selfContact(): Contact {
+        return new Contact();
+      }
+    }
+
+    expect(GQLCapture.getCustomArgs().size).toBe(0);
+    expect(GQLCapture.getCustomFields().length).toBe(1);
+    try {
+      GQLCapture.resolve(["User"]);
+      fail("shouldn't get here");
+    } catch (error) {
+      expect(error.message).toMatch(/^field selfContact references Contact/);
+    }
   });
 
   test("enabled. async response", () => {

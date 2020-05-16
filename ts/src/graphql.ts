@@ -79,19 +79,19 @@ export class GQLCapture {
   }
 
   private static customFields: CustomField[] = [];
-  private static customArgs: CustomArg[] = [];
+  private static customArgs: Map<string, CustomArg> = new Map();
 
   static getCustomFields(): CustomField[] {
     return this.customFields;
   }
 
-  static getCustomArgs(): CustomArg[] {
+  static getCustomArgs(): Map<string, CustomArg> {
     return this.customArgs;
   }
 
   static clear(): void {
     this.customFields = [];
-    this.customArgs = [];
+    this.customArgs.clear();
   }
 
   private static knownAllowedNames: Map<string, boolean> = new Map([
@@ -303,11 +303,43 @@ export class GQLCapture {
       let className = target.name as string;
       let nodeName = options?.name || className;
 
-      GQLCapture.customArgs.push({
+      GQLCapture.customArgs.set(className, {
         className,
         nodeName,
       });
     };
+  }
+
+  static resolve(objects: string[]): void {
+    let baseEnts = new Map<string, boolean>();
+    objects.map((object) => baseEnts.set(object, true));
+
+    GQLCapture.customFields.forEach((field) => {
+      // we have a check earlier that *should* make this path impossible
+      field.args.forEach((arg) => {
+        if (arg.needsResolving) {
+          throw new Error(
+            `arg ${arg.name} of field ${field.functionName} needs resolving. should not be possible`,
+          );
+        }
+      });
+      // fields are not because we can return existing ents and we want to run the capturing
+      // in parallel with the codegen gathering step so we resolve at the end to make
+      // sure there's no dangling objects
+      // TODO when we have other objects, we may need to change the logic here
+      // but i don't think it applies
+      field.results.forEach((result) => {
+        if (result.needsResolving) {
+          if (baseEnts.get(result.type)) {
+            result.needsResolving = false;
+          } else {
+            throw new Error(
+              `field ${field.functionName} references ${result.type} which isn't a graphql object`,
+            );
+          }
+        }
+      });
+    });
   }
 }
 
