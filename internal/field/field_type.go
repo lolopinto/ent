@@ -456,3 +456,33 @@ func (f *Field) AddInverseEdge(edge *edge.AssociationEdge) {
 func (f *Field) GetInverseEdge() *edge.AssociationEdge {
 	return f.inverseEdge
 }
+
+func (f *Field) GetTSGraphQLTypeForField() string {
+	tsGQLType, ok := f.fieldType.(enttype.TSGraphQLType)
+	if !ok {
+		panic("field doesn't support TS graphql.TODO")
+	}
+
+	imports := tsGQLType.GetTSGraphQLImports()
+
+	var sb strings.Builder
+	var endSb strings.Builder
+	for idx, imp := range imports {
+		// only need to write () if we have more than one
+		if idx != 0 {
+			sb.WriteString("(")
+			endSb.WriteString(")")
+		}
+		sb.WriteString(imp)
+	}
+	sb.WriteString(endSb.String())
+	return sb.String()
+}
+
+func (f *Field) GetTSGraphQLTypeForFieldImports() []string {
+	tsGQLType, ok := f.fieldType.(enttype.TSGraphQLType)
+	if !ok {
+		panic("field doesn't support TS graphql.TODO")
+	}
+	return tsGQLType.GetTSGraphQLImports()
+}

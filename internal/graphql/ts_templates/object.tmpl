@@ -1,0 +1,48 @@
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo"}}
+{{reserveImport "ent/ent" "ID" }}
+{{reserveImport "src/graphql/context" "Context"}};
+
+{{with .NodeData -}}
+
+{{$packagePath := printf "src/ent/%s" .PackageName -}}
+{{ reserveDefaultImport $packagePath .Node -}}
+
+{{$node := useImport .Node -}}
+export const {{$node}}Type = new {{useImport "GraphQLObjectType"}}({
+  name: "{{.Node}}",
+  fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$node}}, {{useImport "Context"}}> => ({
+  {{/* TODO eenum support e.g. account status */}} 
+    {{ range $field := .FieldInfo.GraphQLFields -}}
+    {{$field.GetGraphQLName}}: {
+      {{range $import := $field.GetTSGraphQLTypeForFieldImports -}}
+        {{$ignore := useImport $import -}}
+      {{end -}}
+      type: {{$field.GetTSGraphQLTypeForField}},
+    },
+    {{end -}}
+  }),
+});
+
+
+interface {{$node}}QueryArgs {
+  id: {{useImport "ID"}};
+}
+
+export const {{$node}}Query: {{useImport "GraphQLFieldConfig"}}<
+  undefined,
+  Context,
+  {{$node}}QueryArgs
+> = {
+  type: {{$node}}Type,
+  args: {
+    id: {
+      description: "id",
+      type: {{useImport "GraphQLID"}},
+    },
+  },
+  resolve: async (_source, args: {{$node}}QueryArgs, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+    return {{$node}}.load(context.viewer, args.id);
+  },
+};
+
+{{end -}}

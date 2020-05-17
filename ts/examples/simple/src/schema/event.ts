@@ -18,8 +18,10 @@ export default class Event extends BaseEntSchema implements Schema {
       fieldEdge: ["User", "createdEvents"],
       storageKey: "user_id",
     }),
-    TimeType({ name: "start_time" }),
-    TimeType({ name: "end_time", nullable: true }),
+    // hidden because not supported yet...
+    // TODO come back
+    TimeType({ name: "start_time", hideFromGraphQL:true }),
+    TimeType({ name: "end_time", nullable: true, hideFromGraphQL:true }),
     StringType({ name: "location" }),
   ];
 
