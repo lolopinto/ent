@@ -54,11 +54,11 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 var _ codegen.Step = &TSStep{}
 
 func getFilePathForObjectFile(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("src/graphql/resolvers/%s_type.ts", nodeData.PackageName)
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName)
 }
 
 func getQueryFilePath() string {
-	return fmt.Sprintf("src/graphql/resolvers/query_type.ts")
+	return fmt.Sprintf("src/graphql/resolvers/generated/query_type.ts")
 }
 
 type gqlobjectData struct {

@@ -6,7 +6,7 @@ import { IDViewer } from "src/util/id_viewer";
 
 import { GraphQLSchema } from "graphql";
 
-import { QueryType } from "./resolvers/query_type";
+import { QueryType } from "./resolvers/generated/query_type";
 const schema = new GraphQLSchema({
   query: QueryType,
 });
