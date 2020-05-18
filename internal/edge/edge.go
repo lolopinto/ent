@@ -215,7 +215,13 @@ func (e *ForeignKeyEdge) EdgeIdentifier() string {
 }
 
 func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []string {
-	panic("TODO")
+	nodeType := fmt.Sprintf("%sType", e.NodeInfo.Node)
+	return []string{
+		"GraphQLNonNull",
+		"GraphQLList",
+		"GraphQLNonNull",
+		nodeType,
+	}
 }
 
 var _ Edge = &ForeignKeyEdge{}

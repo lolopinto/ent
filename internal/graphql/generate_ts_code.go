@@ -132,6 +132,13 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) n
 			addPluralEdge(edge, &fields, instance)
 		}
 	}
+
+	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
+		if nodeMap.HideFromGraphQL(edge) {
+			continue
+		}
+		addPluralEdge(edge, &fields, instance)
+	}
 	result.Fields = fields
 	return result
 }

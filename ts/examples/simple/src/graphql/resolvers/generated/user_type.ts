@@ -77,6 +77,12 @@ export const UserType = new GraphQLObjectType({
         return user.loadMaybeEvents();
       },
     },
+    contacts: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
+      resolve: (user: User) => {
+        return user.loadContacts();
+      },
+    },
   }),
 });
 
