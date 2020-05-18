@@ -12,6 +12,7 @@ import {
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
+import { UserType } from "./user_type";
 import Event from "src/ent/event";
 
 export const EventType = new GraphQLObjectType({
@@ -36,6 +37,12 @@ export const EventType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
       resolve: (event: Event) => {
         return event.location;
+      },
+    },
+    creator: {
+      type: UserType,
+      resolve: (event: Event) => {
+        return event.loadCreator();
       },
     },
   }),

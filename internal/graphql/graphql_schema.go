@@ -450,6 +450,7 @@ func (s *graphQLSchema) addGraphQLInfoForType(nodeMap schema.NodeMapInfo, nodeDa
 	if nodeData.EdgeInfo != nil {
 		for _, edge := range nodeData.EdgeInfo.FieldEdges {
 			f := fieldInfo.GetFieldByName(edge.FieldName)
+			// TODO this shouldn't be here but be somewhere else...
 			if f != nil {
 				fieldInfo.InvalidateFieldForGraphQL(f)
 			}

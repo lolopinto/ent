@@ -3,29 +3,44 @@
 {{reserveImport "src/graphql/context" "Context"}}
 {{reserveImport "ent/graphql/scalars/time" "GraphQLTime"}}
 
+{{/* import types that we may need e.g. UserType, ContactType, etc */}}
+{{ range .EdgeNodes -}} 
+  {{reserveImport .ImportPath .GraphQLType}}
+{{ end -}}
+
 {{with .NodeData -}}
 
 {{$packagePath := printf "src/ent/%s" .PackageName -}}
 {{ reserveDefaultImport $packagePath .Node -}}
+
 
 {{$node := useImport .Node -}}
 {{$nodeInstance := .NodeInstance -}}
 export const {{$node}}Type = new {{useImport "GraphQLObjectType"}}({
   name: "{{.Node}}",
   fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$node}}, {{useImport "Context"}}> => ({
-  {{/* TODO eenum support e.g. account status */}} 
+    {{/* TODO enum support e.g. account status */}} 
     {{ range $field := .FieldInfo.GraphQLFields -}}
-    {{$field.GetGraphQLName}}: {
-      {{range $import := $field.GetTSGraphQLTypeForFieldImports -}}
-        {{$ignore := useImport $import -}}
-      {{end -}}
-      type: {{$field.GetTSGraphQLTypeForField}},
-      {{if ne $field.GetGraphQLName $field.TsFieldName -}}
+      {{$field.GetGraphQLName}}: {
+        {{range $import := $field.GetTSGraphQLTypeForFieldImports -}}
+          {{$ignore := useImport $import -}}
+        {{end -}}
+        type: {{$field.GetTSGraphQLTypeForField}},
+        {{if ne $field.GetGraphQLName $field.TsFieldName -}}
+          resolve: ({{$nodeInstance}}: {{$node}}) => {
+            return {{$nodeInstance}}.{{$field.TsFieldName}};
+          },
+        {{end -}}
+      },
+    {{end -}}
+
+    {{ range $edge := .EdgeInfo.FieldEdges -}}
+      {{$edge.GraphQLEdgeName}}: {
+        type: {{useImport $edge.GetTSGraphQLType -}},
         resolve: ({{$nodeInstance}}: {{$node}}) => {
-          return {{$nodeInstance}}.{{$field.TsFieldName}};
+          return {{$nodeInstance}}.load{{$edge.CamelCaseEdgeName}}();
         },
-      {{end -}}
-    },
+      },
     {{end -}}
   }),
 });

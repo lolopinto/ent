@@ -177,10 +177,19 @@ func (e *commonEdgeInfo) CamelCaseEdgeName() string {
 	return strcase.ToCamel(e.EdgeName)
 }
 
+func (e *commonEdgeInfo) GraphQLEdgeName() string {
+	return strcase.ToLowerCamel(e.EdgeName)
+}
+
 type FieldEdge struct {
 	commonEdgeInfo
 	FieldName       string
 	InverseEdgeName string
+}
+
+func (edge *FieldEdge) GetTSGraphQLType() string {
+	// TODO required and needing stuff...
+	return fmt.Sprintf("%sType", edge.NodeInfo.Node)
 }
 
 var _ Edge = &FieldEdge{}

@@ -62,7 +62,8 @@ func getQueryFilePath() string {
 }
 
 type gqlobjectData struct {
-	NodeData *schema.NodeData
+	NodeData  *schema.NodeData
+	EdgeNodes []queryGQLDatum
 }
 
 // write graphql file
@@ -70,7 +71,8 @@ func writeTypeFile(nodeData *schema.NodeData) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlobjectData{
-			NodeData: nodeData,
+			NodeData:  nodeData,
+			EdgeNodes: getEdgeNodes(nodeData),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
@@ -82,6 +84,19 @@ func writeTypeFile(nodeData *schema.NodeData) error {
 	}))
 }
 
+func getEdgeNodes(nodeData *schema.NodeData) []queryGQLDatum {
+	var results []queryGQLDatum
+
+	for _, node := range nodeData.GetUniqueNodes() {
+		results = append(results, queryGQLDatum{
+			ImportPath:  fmt.Sprintf("./%s_type", node.PackageName),
+			GraphQLType: fmt.Sprintf("%sType", node.Node),
+		})
+	}
+	return results
+}
+
+// TODO rename this...
 type queryGQLDatum struct {
 	ImportPath  string
 	GraphQLName string
