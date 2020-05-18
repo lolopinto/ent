@@ -11,6 +11,7 @@ import {
 } from "graphql";
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
+import { ContactType } from "./contact_type";
 import User from "src/ent/user";
 
 export const UserType = new GraphQLObjectType({
@@ -30,6 +31,13 @@ export const UserType = new GraphQLObjectType({
     },
     accountStatus: {
       type: GraphQLString,
+    },
+
+    selfContact: {
+      type: ContactType,
+      resolve: (user: User) => {
+        return user.loadSelfContact();
+      },
     },
   }),
 });

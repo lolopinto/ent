@@ -42,6 +42,20 @@ export const {{$node}}Type = new {{useImport "GraphQLObjectType"}}({
         },
       },
     {{end -}}
+
+    {{ range $edge := .EdgeInfo.Associations -}}
+      {{/* TODO hidden from gql */}}
+      {{if $edge.Unique -}}
+        {{$edge.GraphQLEdgeName}}: {
+          type: {{useImport $edge.GetTSGraphQLType -}},
+          resolve: ({{$nodeInstance}}: {{$node}}) => {
+            return {{$nodeInstance}}.load{{$edge.CamelCaseEdgeName}}();
+          },
+        },
+        // this is a good place to rewrite all of this to be more generic and not have all this logic here.
+        // same for loop etc, rewritten 
+      {{end -}}
+    {{ end -}}
   }),
 });
 

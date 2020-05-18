@@ -188,7 +188,7 @@ type FieldEdge struct {
 }
 
 func (edge *FieldEdge) GetTSGraphQLType() string {
-	// TODO required and needing stuff...
+	// TODO required and nullable eventually
 	return fmt.Sprintf("%sType", edge.NodeInfo.Node)
 }
 
@@ -263,6 +263,19 @@ func (e *AssociationEdge) Singular() string {
 
 func (e *AssociationEdge) EdgeIdentifier() string {
 	return e.Singular()
+}
+
+func (edge *AssociationEdge) GetTSGraphQLType() string {
+	if edge.Unique {
+		return fmt.Sprintf("%sType", edge.NodeInfo.Node)
+	}
+	panic("TODO")
+	// return []string{
+
+	// }
+	// in this case, it's a list
+	// TODO required and nullable eventually
+	//	return fmt.Sprintf("%sType", edge.NodeInfo.Node)
 }
 
 func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) {
