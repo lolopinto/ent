@@ -389,6 +389,10 @@ func (t *TimeType) GetNullableType() Type {
 	return &NullableTimeType{}
 }
 
+func (t *TimeType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLNonNull", "GraphQLTime"}
+}
+
 type NullableTimeType struct {
 	timeType
 }
@@ -407,6 +411,10 @@ func (t *NullableTimeType) GetTSType() string {
 
 func (t *NullableTimeType) GetNonNullableType() Type {
 	return &TimeType{}
+}
+
+func (t *NullableTimeType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLTime"}
 }
 
 type typeConfig struct {

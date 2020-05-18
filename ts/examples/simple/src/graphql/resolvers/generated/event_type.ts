@@ -11,6 +11,7 @@ import {
 } from "graphql";
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
+import { GraphQLTime } from "ent/graphql/scalars/time";
 import Event from "src/ent/event";
 
 export const EventType = new GraphQLObjectType({
@@ -24,6 +25,12 @@ export const EventType = new GraphQLObjectType({
     },
     creatorID: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    startTime: {
+      type: GraphQLNonNull(GraphQLTime),
+    },
+    endTime: {
+      type: GraphQLTime,
     },
     location: {
       type: GraphQLNonNull(GraphQLString),
