@@ -2,10 +2,12 @@ package graphql
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/syncerr"
@@ -25,6 +27,7 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 	wg.Add(len(data.Schema.Nodes))
 	var serr syncerr.Error
 
+	nodeMap := data.Schema.Nodes
 	for key := range data.Schema.Nodes {
 		go func(key string) {
 			defer wg.Done()
@@ -37,7 +40,7 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 				return
 			}
 
-			if err := writeTypeFile(nodeData); err != nil {
+			if err := writeTypeFile(nodeMap, nodeData); err != nil {
 				serr.Append(err)
 				return
 			}
@@ -64,15 +67,17 @@ func getQueryFilePath() string {
 type gqlobjectData struct {
 	NodeData  *schema.NodeData
 	EdgeNodes []queryGQLDatum
+	GQLNode   nodeType
 }
 
 // write graphql file
-func writeTypeFile(nodeData *schema.NodeData) error {
+func writeTypeFile(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlobjectData{
 			NodeData:  nodeData,
 			EdgeNodes: getEdgeNodes(nodeData),
+			GQLNode:   buildNodeForObject(nodeMap, nodeData),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
@@ -82,6 +87,98 @@ func writeTypeFile(nodeData *schema.NodeData) error {
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
+}
+
+func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) nodeType {
+	result := nodeType{
+		Type:     fmt.Sprintf("%sType", nodeData.Node),
+		Node:     nodeData.Node,
+		GQLType:  "GraphQLObjectType",
+		Exported: true,
+	}
+
+	instance := nodeData.NodeInstance
+
+	fieldInfo := nodeData.FieldInfo
+	var fields []fieldType
+	for _, field := range fieldInfo.GraphQLFields() {
+		gqlField := fieldType{
+			Name:               field.GetGraphQLName(),
+			HasResolveFunction: field.GetGraphQLName() != field.TsFieldName(),
+			FieldImports:       field.GetTSGraphQLTypeForFieldImports(),
+		}
+		if gqlField.HasResolveFunction {
+			gqlField.FunctionContents = fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())
+		}
+		fields = append(fields, gqlField)
+	}
+
+	for _, edge := range nodeData.EdgeInfo.FieldEdges {
+		f := fieldInfo.GetFieldByName(edge.FieldName)
+		// TODO this shouldn't be here but be somewhere else...
+		if f != nil {
+			fieldInfo.InvalidateFieldForGraphQL(f)
+		}
+		addSingularEdge(edge, &fields, instance)
+	}
+
+	for _, edge := range nodeData.EdgeInfo.Associations {
+		if nodeMap.HideFromGraphQL(edge) {
+			continue
+		}
+		if edge.Unique {
+			addSingularEdge(edge, &fields, instance)
+		} else {
+			// TODO
+		}
+	}
+	result.Fields = fields
+	return result
+}
+
+func addSingularEdge(edge edge.Edge, fields *[]fieldType, instance string) {
+	gqlField := fieldType{
+		Name:               edge.GraphQLEdgeName(),
+		HasResolveFunction: true,
+		FieldImports:       edge.GetTSGraphQLTypeImports(),
+		FunctionContents:   fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName()),
+	}
+	*fields = append(*fields, gqlField)
+}
+
+type nodeType struct {
+	Type     string
+	Node     string
+	Fields   []fieldType
+	Exported bool
+	GQLType  string // for now only GraphQLObjectType
+
+	// TODO imports default vs not
+}
+
+type fieldType struct {
+	Name               string
+	HasResolveFunction bool
+	FieldImports       []string
+
+	// no args for now. come back.
+	FunctionContents string // TODO
+	// TODO more types we need to support
+}
+
+func (f *fieldType) FieldType() string {
+	var sb strings.Builder
+	var endSb strings.Builder
+	for idx, imp := range f.FieldImports {
+		// only need to write () if we have more than one
+		if idx != 0 {
+			sb.WriteString("(")
+			endSb.WriteString(")")
+		}
+		sb.WriteString(imp)
+	}
+	sb.WriteString(endSb.String())
+	return sb.String()
 }
 
 func getEdgeNodes(nodeData *schema.NodeData) []queryGQLDatum {

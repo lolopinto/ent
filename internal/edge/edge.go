@@ -146,6 +146,9 @@ type Edge interface {
 	GetEdgeName() string
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetEntConfig() schemaparser.EntConfigInfo
+	GraphQLEdgeName() string
+	CamelCaseEdgeName() string
+	GetTSGraphQLTypeImports() []string
 }
 
 // marker interface
@@ -187,9 +190,9 @@ type FieldEdge struct {
 	InverseEdgeName string
 }
 
-func (edge *FieldEdge) GetTSGraphQLType() string {
+func (edge *FieldEdge) GetTSGraphQLTypeImports() []string {
 	// TODO required and nullable eventually
-	return fmt.Sprintf("%sType", edge.NodeInfo.Node)
+	return []string{fmt.Sprintf("%sType", edge.NodeInfo.Node)}
 }
 
 var _ Edge = &FieldEdge{}
@@ -211,12 +214,20 @@ func (e *ForeignKeyEdge) EdgeIdentifier() string {
 	return e.Singular()
 }
 
+func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []string {
+	panic("TODO")
+}
+
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
 
 type InverseAssocEdge struct {
 	commonEdgeInfo
 	EdgeConst string
+}
+
+func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []string {
+	panic("TODO")
 }
 
 var edgeRegexp = regexp.MustCompile(`(\w+)Edge`)
@@ -265,9 +276,9 @@ func (e *AssociationEdge) EdgeIdentifier() string {
 	return e.Singular()
 }
 
-func (edge *AssociationEdge) GetTSGraphQLType() string {
+func (edge *AssociationEdge) GetTSGraphQLTypeImports() []string {
 	if edge.Unique {
-		return fmt.Sprintf("%sType", edge.NodeInfo.Node)
+		return []string{fmt.Sprintf("%sType", edge.NodeInfo.Node)}
 	}
 	panic("TODO")
 	// return []string{

@@ -8,54 +8,33 @@
   {{reserveImport .ImportPath .GraphQLType}}
 {{ end -}}
 
-{{with .NodeData -}}
+{{$gqlNode := .GQLNode -}}
 
+{{with .NodeData -}}
 {{$packagePath := printf "src/ent/%s" .PackageName -}}
 {{ reserveDefaultImport $packagePath .Node -}}
 
-
 {{$node := useImport .Node -}}
 {{$nodeInstance := .NodeInstance -}}
-export const {{$node}}Type = new {{useImport "GraphQLObjectType"}}({
-  name: "{{.Node}}",
+
+
+export const {{$gqlNode.Type}} = new {{useImport "GraphQLObjectType"}}({
+  name: "{{$gqlNode.Node}}",
   fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$node}}, {{useImport "Context"}}> => ({
     {{/* TODO enum support e.g. account status */}} 
-    {{ range $field := .FieldInfo.GraphQLFields -}}
-      {{$field.GetGraphQLName}}: {
-        {{range $import := $field.GetTSGraphQLTypeForFieldImports -}}
+    {{ range $field := $gqlNode.Fields -}}
+      {{$field.Name}}: {
+        {{range $import := $field.FieldImports -}}
           {{$ignore := useImport $import -}}
         {{end -}}
-        type: {{$field.GetTSGraphQLTypeForField}},
-        {{if ne $field.GetGraphQLName $field.TsFieldName -}}
+        type: {{$field.FieldType}},
+        {{if $field.HasResolveFunction -}}
           resolve: ({{$nodeInstance}}: {{$node}}) => {
-            return {{$nodeInstance}}.{{$field.TsFieldName}};
+            {{$field.FunctionContents}};
           },
         {{end -}}
       },
     {{end -}}
-
-    {{ range $edge := .EdgeInfo.FieldEdges -}}
-      {{$edge.GraphQLEdgeName}}: {
-        type: {{useImport $edge.GetTSGraphQLType -}},
-        resolve: ({{$nodeInstance}}: {{$node}}) => {
-          return {{$nodeInstance}}.load{{$edge.CamelCaseEdgeName}}();
-        },
-      },
-    {{end -}}
-
-    {{ range $edge := .EdgeInfo.Associations -}}
-      {{/* TODO hidden from gql */}}
-      {{if $edge.Unique -}}
-        {{$edge.GraphQLEdgeName}}: {
-          type: {{useImport $edge.GetTSGraphQLType -}},
-          resolve: ({{$nodeInstance}}: {{$node}}) => {
-            return {{$nodeInstance}}.load{{$edge.CamelCaseEdgeName}}();
-          },
-        },
-        // this is a good place to rewrite all of this to be more generic and not have all this logic here.
-        // same for loop etc, rewritten 
-      {{end -}}
-    {{ end -}}
   }),
 });
 

@@ -32,7 +32,6 @@ export const UserType = new GraphQLObjectType({
     accountStatus: {
       type: GraphQLString,
     },
-
     selfContact: {
       type: ContactType,
       resolve: (user: User) => {
