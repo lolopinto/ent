@@ -129,7 +129,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) n
 		if edge.Unique {
 			addSingularEdge(edge, &fields, instance)
 		} else {
-			// TODO
+			addPluralEdge(edge, &fields, instance)
 		}
 	}
 	result.Fields = fields
@@ -137,6 +137,16 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) n
 }
 
 func addSingularEdge(edge edge.Edge, fields *[]fieldType, instance string) {
+	gqlField := fieldType{
+		Name:               edge.GraphQLEdgeName(),
+		HasResolveFunction: true,
+		FieldImports:       edge.GetTSGraphQLTypeImports(),
+		FunctionContents:   fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName()),
+	}
+	*fields = append(*fields, gqlField)
+}
+
+func addPluralEdge(edge edge.Edge, fields *[]fieldType, instance string) {
 	gqlField := fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,

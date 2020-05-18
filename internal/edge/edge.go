@@ -277,16 +277,16 @@ func (e *AssociationEdge) EdgeIdentifier() string {
 }
 
 func (edge *AssociationEdge) GetTSGraphQLTypeImports() []string {
+	nodeType := fmt.Sprintf("%sType", edge.NodeInfo.Node)
 	if edge.Unique {
-		return []string{fmt.Sprintf("%sType", edge.NodeInfo.Node)}
+		return []string{nodeType}
 	}
-	panic("TODO")
-	// return []string{
-
-	// }
-	// in this case, it's a list
-	// TODO required and nullable eventually
-	//	return fmt.Sprintf("%sType", edge.NodeInfo.Node)
+	return []string{
+		"GraphQLNonNull",
+		"GraphQLList",
+		"GraphQLNonNull",
+		nodeType,
+	}
 }
 
 func (e *AssociationEdge) AddInverseEdge(inverseEdgeInfo *EdgeInfo) {

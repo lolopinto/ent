@@ -5,12 +5,15 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLList,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
 } from "graphql";
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
+import { EventType } from "./event_type";
+import { UserType } from "./user_type";
 import { ContactType } from "./contact_type";
 import User from "src/ent/user";
 
@@ -32,10 +35,46 @@ export const UserType = new GraphQLObjectType({
     accountStatus: {
       type: GraphQLString,
     },
+    createdEvents: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      resolve: (user: User) => {
+        return user.loadCreatedEvents();
+      },
+    },
+    friends: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      resolve: (user: User) => {
+        return user.loadFriends();
+      },
+    },
     selfContact: {
       type: ContactType,
       resolve: (user: User) => {
         return user.loadSelfContact();
+      },
+    },
+    invitedEvents: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      resolve: (user: User) => {
+        return user.loadInvitedEvents();
+      },
+    },
+    eventsAttending: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      resolve: (user: User) => {
+        return user.loadEventsAttending();
+      },
+    },
+    declinedEvents: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      resolve: (user: User) => {
+        return user.loadDeclinedEvents();
+      },
+    },
+    maybeEvents: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      resolve: (user: User) => {
+        return user.loadMaybeEvents();
       },
     },
   }),

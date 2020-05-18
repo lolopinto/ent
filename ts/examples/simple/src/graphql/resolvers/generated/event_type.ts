@@ -5,6 +5,7 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLList,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
@@ -43,6 +44,36 @@ export const EventType = new GraphQLObjectType({
       type: UserType,
       resolve: (event: Event) => {
         return event.loadCreator();
+      },
+    },
+    hosts: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      resolve: (event: Event) => {
+        return event.loadHosts();
+      },
+    },
+    invited: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      resolve: (event: Event) => {
+        return event.loadInvited();
+      },
+    },
+    attending: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      resolve: (event: Event) => {
+        return event.loadAttending();
+      },
+    },
+    declined: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      resolve: (event: Event) => {
+        return event.loadDeclined();
+      },
+    },
+    maybe: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      resolve: (event: Event) => {
+        return event.loadMaybe();
       },
     },
   }),
