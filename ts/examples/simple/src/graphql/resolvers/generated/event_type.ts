@@ -16,6 +16,9 @@ import { GraphQLTime } from "ent/graphql/scalars/time";
 import { UserType } from "./user_type";
 import Event from "src/ent/event";
 
+interface EventQueryArgs {
+  id: ID;
+}
 export const EventType = new GraphQLObjectType({
   name: "Event",
   fields: (): GraphQLFieldConfigMap<Event, Context> => ({
@@ -78,10 +81,6 @@ export const EventType = new GraphQLObjectType({
     },
   }),
 });
-
-interface EventQueryArgs {
-  id: ID;
-}
 
 export const EventQuery: GraphQLFieldConfig<
   undefined,

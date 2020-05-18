@@ -13,6 +13,9 @@ import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
 import Address from "src/ent/address";
 
+interface AddressQueryArgs {
+  id: ID;
+}
 export const AddressType = new GraphQLObjectType({
   name: "Address",
   fields: (): GraphQLFieldConfigMap<Address, Context> => ({
@@ -30,10 +33,6 @@ export const AddressType = new GraphQLObjectType({
     },
   }),
 });
-
-interface AddressQueryArgs {
-  id: ID;
-}
 
 export const AddressQuery: GraphQLFieldConfig<
   undefined,

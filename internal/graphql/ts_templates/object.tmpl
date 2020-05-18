@@ -3,20 +3,36 @@
 {{reserveImport "src/graphql/context" "Context"}}
 {{reserveImport "ent/graphql/scalars/time" "GraphQLTime"}}
 
+{{$gqlNode := .GQLNode -}}
+
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
-{{ range .EdgeNodes -}} 
+{{ range $gqlNode.Imports -}} 
   {{reserveImport .ImportPath .GraphQLType}}
 {{ end -}}
 
-{{$gqlNode := .GQLNode -}}
+{{ range $gqlNode.DefaultImports -}} 
+  {{reserveDefaultImport .ImportPath .GraphQLType}}
+{{ end -}}
 
-{{with .NodeData -}}
-{{$packagePath := printf "src/ent/%s" .PackageName -}}
-{{ reserveDefaultImport $packagePath .Node -}}
 
-{{$node := useImport .Node -}}
-{{$nodeInstance := .NodeInstance -}}
+{{$node := useImport .NodeData.Node -}}
+{{$nodeInstance := .NodeData.NodeInstance -}}
 
+{{ range $gqlNode.Interfaces -}}
+  {{ if .Exported -}}
+    export interface {{.Name }} {
+  {{ else -}}
+   interface {{.Name }} {
+  {{ end -}}
+  {{ range .Fields -}}
+    {{$type := .Type -}}
+    {{if .UseImport -}}
+      {{$type = useImport $type -}}
+    {{end -}}
+    {{.Name}}: {{$type}};
+  {{ end -}}
+   }
+{{ end -}}
 
 export const {{$gqlNode.Type}} = new {{useImport "GraphQLObjectType"}}({
   name: "{{$gqlNode.Node}}",
@@ -25,7 +41,9 @@ export const {{$gqlNode.Type}} = new {{useImport "GraphQLObjectType"}}({
     {{ range $field := $gqlNode.Fields -}}
       {{$field.Name}}: {
         {{range $import := $field.FieldImports -}}
-          {{$ignore := useImport $import -}}
+          {{ if ne $import $gqlNode.Type -}}
+            {{$ignore := useImport $import -}}
+          {{end -}}
         {{end -}}
         type: {{$field.FieldType}},
         {{if $field.HasResolveFunction -}}
@@ -38,26 +56,32 @@ export const {{$gqlNode.Type}} = new {{useImport "GraphQLObjectType"}}({
   }),
 });
 
+{{$fieldConfig := .FieldConfig -}}
 
-interface {{$node}}QueryArgs {
-  id: {{useImport "ID"}};
-}
+{{$prefix := printf "const %s" $fieldConfig.Name -}}
+{{ if $fieldConfig.Exported -}}
+  {{$prefix = printf "export %s" $prefix -}}
+{{end -}}
 
-export const {{$node}}Query: {{useImport "GraphQLFieldConfig"}}<
+{{$prefix}}: {{useImport "GraphQLFieldConfig"}}<
   undefined,
   Context,
-  {{$node}}QueryArgs
+  {{$fieldConfig.Arg}}
 > = {
-  type: {{$node}}Type,
+  type: {{$fieldConfig.Type}},
   args: {
-    id: {
-      description: "id",
-      type: {{useImport "GraphQLID"}},
-    },
+    {{range $arg := $fieldConfig.Args -}}
+      {{$arg.Name}}: {
+        description: "{{$arg.Description}}",
+        {{ range $import := .Imports -}}
+          {{$ignored := useImport $import -}}
+        {{ end -}}
+        type: {{$arg.FieldType -}},
+      }
+    {{end -}}
   },
-  resolve: async (_source, args: {{$node}}QueryArgs, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
-    return {{$node}}.load(context.viewer, args.id);
+  resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+    {{$fieldConfig.FunctionContents}}
   },
 };
 
-{{end -}}

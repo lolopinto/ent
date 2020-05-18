@@ -13,10 +13,12 @@ import {
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
 import { EventType } from "./event_type";
-import { UserType } from "./user_type";
 import { ContactType } from "./contact_type";
 import User from "src/ent/user";
 
+interface UserQueryArgs {
+  id: ID;
+}
 export const UserType = new GraphQLObjectType({
   name: "User",
   fields: (): GraphQLFieldConfigMap<User, Context> => ({
@@ -85,10 +87,6 @@ export const UserType = new GraphQLObjectType({
     },
   }),
 });
-
-interface UserQueryArgs {
-  id: ID;
-}
 
 export const UserQuery: GraphQLFieldConfig<
   undefined,
