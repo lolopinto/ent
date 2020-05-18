@@ -20,7 +20,7 @@ export default class Event extends BaseEntSchema implements Schema {
     }),
     TimeType({ name: "start_time"}),
     TimeType({ name: "end_time", nullable: true}),
-    StringType({ name: "location" }),
+    StringType({ name: "location", graphqlName: "eventLocation" }),
   ];
 
   edges: Edge[] = [

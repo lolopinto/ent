@@ -32,8 +32,11 @@ export const EventType = new GraphQLObjectType({
     endTime: {
       type: GraphQLTime,
     },
-    location: {
+    eventLocation: {
       type: GraphQLNonNull(GraphQLString),
+      resolve: (event: Event) => {
+        return event.location;
+      },
     },
   }),
 });

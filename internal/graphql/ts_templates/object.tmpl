@@ -9,6 +9,7 @@
 {{ reserveDefaultImport $packagePath .Node -}}
 
 {{$node := useImport .Node -}}
+{{$nodeInstance := .NodeInstance -}}
 export const {{$node}}Type = new {{useImport "GraphQLObjectType"}}({
   name: "{{.Node}}",
   fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$node}}, {{useImport "Context"}}> => ({
@@ -19,6 +20,11 @@ export const {{$node}}Type = new {{useImport "GraphQLObjectType"}}({
         {{$ignore := useImport $import -}}
       {{end -}}
       type: {{$field.GetTSGraphQLTypeForField}},
+      {{if ne $field.GetGraphQLName $field.TsFieldName -}}
+        resolve: ({{$nodeInstance}}: {{$node}}) => {
+          return {{$nodeInstance}}.{{$field.TsFieldName}};
+        },
+      {{end -}}
     },
     {{end -}}
   }),
