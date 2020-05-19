@@ -62,7 +62,7 @@ export const EventEditResponseType = new GraphQLObjectType({
 export const EventEditType: GraphQLFieldConfig<
   undefined,
   Context,
-  customEventEditInput
+  { [input: string]: customEventEditInput }
 > = {
   type: GraphQLNonNull(EventEditResponseType),
   args: {
@@ -73,18 +73,18 @@ export const EventEditType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: customEventEditInput,
+    { input },
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<EventEditResponse> => {
     let event = await EditEventAction.saveXFromID(
       context.viewer,
-      args.eventID,
+      input.eventID,
       {
-        name: args.name,
-        startTime: args.startTime,
-        endTime: args.endTime,
-        location: args.location,
+        name: input.name,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        location: input.location,
       },
     );
     return { event: event };

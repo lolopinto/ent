@@ -46,7 +46,7 @@ export const UserCreateResponseType = new GraphQLObjectType({
 export const UserCreateType: GraphQLFieldConfig<
   undefined,
   Context,
-  UserCreateInput
+  { [input: string]: UserCreateInput }
 > = {
   type: GraphQLNonNull(UserCreateResponseType),
   args: {
@@ -57,14 +57,14 @@ export const UserCreateType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: UserCreateInput,
+    { input },
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserCreateResponse> => {
     let user = await CreateUserAction.create(context.viewer, {
-      firstName: args.firstName,
-      lastName: args.lastName,
-      emailAddress: args.emailAddress,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      emailAddress: input.emailAddress,
     }).saveX();
     return { user: user };
   },

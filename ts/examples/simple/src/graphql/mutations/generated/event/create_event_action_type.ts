@@ -53,7 +53,7 @@ export const EventCreateResponseType = new GraphQLObjectType({
 export const EventCreateType: GraphQLFieldConfig<
   undefined,
   Context,
-  EventCreateInput
+  { [input: string]: EventCreateInput }
 > = {
   type: GraphQLNonNull(EventCreateResponseType),
   args: {
@@ -64,16 +64,16 @@ export const EventCreateType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: EventCreateInput,
+    { input },
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<EventCreateResponse> => {
     let event = await CreateEventAction.create(context.viewer, {
-      name: args.name,
-      creatorID: args.creatorID,
-      startTime: args.startTime,
-      endTime: args.endTime,
-      location: args.location,
+      name: input.name,
+      creatorID: input.creatorID,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      location: input.location,
     }).saveX();
     return { event: event };
   },

@@ -58,7 +58,7 @@ export const ContactEditResponseType = new GraphQLObjectType({
 export const ContactEditType: GraphQLFieldConfig<
   undefined,
   Context,
-  customContactEditInput
+  { [input: string]: customContactEditInput }
 > = {
   type: GraphQLNonNull(ContactEditResponseType),
   args: {
@@ -69,17 +69,17 @@ export const ContactEditType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: customContactEditInput,
+    { input },
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<ContactEditResponse> => {
     let contact = await EditContactAction.saveXFromID(
       context.viewer,
-      args.contactID,
+      input.contactID,
       {
-        emailAddress: args.emailAddress,
-        firstName: args.firstName,
-        lastName: args.lastName,
+        emailAddress: input.emailAddress,
+        firstName: input.firstName,
+        lastName: input.lastName,
       },
     );
     return { contact: contact };

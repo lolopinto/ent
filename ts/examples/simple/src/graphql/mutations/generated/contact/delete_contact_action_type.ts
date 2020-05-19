@@ -43,7 +43,7 @@ export const ContactDeleteResponseType = new GraphQLObjectType({
 export const ContactDeleteType: GraphQLFieldConfig<
   undefined,
   Context,
-  customContactDeleteInput
+  { [input: string]: customContactDeleteInput }
 > = {
   type: GraphQLNonNull(ContactDeleteResponseType),
   args: {
@@ -54,11 +54,11 @@ export const ContactDeleteType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: customContactDeleteInput,
+    { input },
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<ContactDeleteResponse> => {
-    await DeleteContactAction.saveXFromID(context.viewer, args.contactID);
-    return { deletedContactID: args.contactID };
+    await DeleteContactAction.saveXFromID(context.viewer, input.contactID);
+    return { deletedContactID: input.contactID };
   },
 };

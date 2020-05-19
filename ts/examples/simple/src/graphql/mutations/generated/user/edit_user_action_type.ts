@@ -52,7 +52,7 @@ export const UserEditResponseType = new GraphQLObjectType({
 export const UserEditType: GraphQLFieldConfig<
   undefined,
   Context,
-  customUserEditInput
+  { [input: string]: customUserEditInput }
 > = {
   type: GraphQLNonNull(UserEditResponseType),
   args: {
@@ -63,13 +63,13 @@ export const UserEditType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: customUserEditInput,
+    { input },
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserEditResponse> => {
-    let user = await EditUserAction.saveXFromID(context.viewer, args.userID, {
-      firstName: args.firstName,
-      lastName: args.lastName,
+    let user = await EditUserAction.saveXFromID(context.viewer, input.userID, {
+      firstName: input.firstName,
+      lastName: input.lastName,
     });
     return { user: user };
   },

@@ -43,7 +43,7 @@ export const EventDeleteResponseType = new GraphQLObjectType({
 export const EventDeleteType: GraphQLFieldConfig<
   undefined,
   Context,
-  customEventDeleteInput
+  { [input: string]: customEventDeleteInput }
 > = {
   type: GraphQLNonNull(EventDeleteResponseType),
   args: {
@@ -54,11 +54,11 @@ export const EventDeleteType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: customEventDeleteInput,
+    { input },
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<EventDeleteResponse> => {
-    await DeleteEventAction.saveXFromID(context.viewer, args.eventID);
-    return { deletedEventID: args.eventID };
+    await DeleteEventAction.saveXFromID(context.viewer, input.eventID);
+    return { deletedEventID: input.eventID };
   },
 };

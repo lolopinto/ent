@@ -107,9 +107,17 @@
     {{end -}}
   },
   {{if $fieldConfig.ReturnTypeHint -}}
-    resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+    {{ if $fieldConfig.ResolveMethodArg -}}
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+    {{ else -}}
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+    {{end -}}
   {{ else -}}
-  resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+    {{ if $fieldConfig.ResolveMethodArg -}}
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+    {{else -}}
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+    {{end -}}
   {{ end -}}
     {{range $line := $fieldConfig.FunctionContents -}}
       {{ $line }}

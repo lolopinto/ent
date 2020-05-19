@@ -43,7 +43,7 @@ export const UserDeleteResponseType = new GraphQLObjectType({
 export const UserDeleteType: GraphQLFieldConfig<
   undefined,
   Context,
-  customUserDeleteInput
+  { [input: string]: customUserDeleteInput }
 > = {
   type: GraphQLNonNull(UserDeleteResponseType),
   args: {
@@ -54,11 +54,11 @@ export const UserDeleteType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: customUserDeleteInput,
+    { input },
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserDeleteResponse> => {
-    await DeleteUserAction.saveXFromID(context.viewer, args.userID);
-    return { deletedUserID: args.userID };
+    await DeleteUserAction.saveXFromID(context.viewer, input.userID);
+    return { deletedUserID: input.userID };
   },
 };

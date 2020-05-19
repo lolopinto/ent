@@ -49,7 +49,7 @@ export const ContactCreateResponseType = new GraphQLObjectType({
 export const ContactCreateType: GraphQLFieldConfig<
   undefined,
   Context,
-  ContactCreateInput
+  { [input: string]: ContactCreateInput }
 > = {
   type: GraphQLNonNull(ContactCreateResponseType),
   args: {
@@ -60,15 +60,15 @@ export const ContactCreateType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: ContactCreateInput,
+    { input },
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<ContactCreateResponse> => {
     let contact = await CreateContactAction.create(context.viewer, {
-      emailAddress: args.emailAddress,
-      firstName: args.firstName,
-      lastName: args.lastName,
-      userID: args.userID,
+      emailAddress: input.emailAddress,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      userID: input.userID,
     }).saveX();
     return { contact: contact };
   },

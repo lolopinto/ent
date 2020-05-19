@@ -184,6 +184,7 @@ type fieldConfig struct {
 	Exported         bool
 	Name             string
 	Arg              string
+	ResolveMethodArg string
 	TypeImports      []string
 	ArgImports       []string // incase it's { [argName: string]: any }, we need to know difference
 	Args             []fieldConfigArg
@@ -507,7 +508,8 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		Exported: true,
 		Name:     fmt.Sprintf("%sType", actionPrefix),
 		// imports UserCreateInput...
-		Arg: argName,
+		Arg: fmt.Sprintf("{ [input: string]: %s}", argName),
+		ResolveMethodArg: "{ input }",
 		TypeImports: []string{
 			"GraphQLNonNull",
 			fmt.Sprintf("%sResponseType", actionPrefix),
@@ -535,10 +537,9 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		for _, f := range action.GetFields() {
 			// we need fields like userID here which aren't exposed to graphql but editable...
 			if f.EditableField() {
-				// TODO rename from args to input?
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("%s: args.%s,", f.TsFieldName(), f.TsFieldName()),
+					fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
 				)
 			}
 		}
@@ -551,25 +552,24 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 	} else if action.GetOperation() == ent.DeleteAction {
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf("await %s.saveXFromID(context.viewer, args.%sID);", action.GetActionName(), nodeData.NodeInstance),
+			fmt.Sprintf("await %s.saveXFromID(context.viewer, input.%sID);", action.GetActionName(), nodeData.NodeInstance),
 		)
 
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf("return {deleted%sID: args.%sID};", nodeData.Node, nodeData.NodeInstance),
+			fmt.Sprintf("return {deleted%sID: input.%sID};", nodeData.Node, nodeData.NodeInstance),
 		)
 	} else {
 		// some kind of editing
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf("let %s = await %s.saveXFromID(context.viewer, args.%sID, {", nodeData.NodeInstance, action.GetActionName(), nodeData.NodeInstance),
+			fmt.Sprintf("let %s = await %s.saveXFromID(context.viewer, input.%sID, {", nodeData.NodeInstance, action.GetActionName(), nodeData.NodeInstance),
 		)
 		for _, f := range action.GetFields() {
 			if f.ExposeToGraphQL() && f.EditableField() {
-				// TODO rename from args to input?
 				result.FunctionContents = append(
 					result.FunctionContents,
-					fmt.Sprintf("%s: args.%s,", f.TsFieldName(), f.TsFieldName()),
+					fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
 				)
 			}
 		}
