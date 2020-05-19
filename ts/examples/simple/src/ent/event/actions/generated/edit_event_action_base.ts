@@ -64,4 +64,14 @@ export class EditEventActionBase implements Action<Event> {
   ): EditEventActionBase {
     return new this(viewer, event, input);
   }
+
+  static async saveXFromID<T extends EditEventActionBase>(
+    this: new (viewer: Viewer, event: Event, input: EventEditInput) => T,
+    viewer: Viewer,
+    id: ID,
+    input: EventEditInput,
+  ): Promise<Event> {
+    let event = await Event.loadX(viewer, id);
+    return await new this(viewer, event, input).saveX();
+  }
 }

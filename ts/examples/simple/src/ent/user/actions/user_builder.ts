@@ -81,7 +81,7 @@ export class UserBuilder implements Builder<User> {
   addCreatedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
     for (const node of nodes) {
       if (this.isEventBuilder(node)) {
-        this.addCreatedEventID(node.placeholderID);
+        this.addCreatedEventID(node);
       } else if (typeof node === "object") {
         this.addCreatedEventID(node.id);
       } else {
@@ -129,7 +129,7 @@ export class UserBuilder implements Builder<User> {
   addFriend(...nodes: ID[] | User[] | Builder<User>[]): UserBuilder {
     for (const node of nodes) {
       if (this.isUserBuilder(node)) {
-        this.addFriendID(node.placeholderID);
+        this.addFriendID(node);
       } else if (typeof node === "object") {
         this.addFriendID(node.id);
       } else {
@@ -216,7 +216,7 @@ export class UserBuilder implements Builder<User> {
   addInvitedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
     for (const node of nodes) {
       if (this.isEventBuilder(node)) {
-        this.addInvitedEventID(node.placeholderID);
+        this.addInvitedEventID(node);
       } else if (typeof node === "object") {
         this.addInvitedEventID(node.id);
       } else {
@@ -264,7 +264,7 @@ export class UserBuilder implements Builder<User> {
   addEventsAttending(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
     for (const node of nodes) {
       if (this.isEventBuilder(node)) {
-        this.addEventsAttendingID(node.placeholderID);
+        this.addEventsAttendingID(node);
       } else if (typeof node === "object") {
         this.addEventsAttendingID(node.id);
       } else {
@@ -312,7 +312,7 @@ export class UserBuilder implements Builder<User> {
   addDeclinedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
     for (const node of nodes) {
       if (this.isEventBuilder(node)) {
-        this.addDeclinedEventID(node.placeholderID);
+        this.addDeclinedEventID(node);
       } else if (typeof node === "object") {
         this.addDeclinedEventID(node.id);
       } else {
@@ -360,7 +360,7 @@ export class UserBuilder implements Builder<User> {
   addMaybeEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
     for (const node of nodes) {
       if (this.isEventBuilder(node)) {
-        this.addMaybeEventID(node.placeholderID);
+        this.addMaybeEventID(node);
       } else if (typeof node === "object") {
         this.addMaybeEventID(node.id);
       } else {
