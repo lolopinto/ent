@@ -134,7 +134,13 @@ class Compiler {
       useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
       fileExists: ts.sys.fileExists,
       readFile: ts.sys.readFile,
-      resolveModuleNames: (moduleNames: string[], containingFile: string) => {
+      resolveModuleNames: (
+        moduleNames: string[],
+        containingFile: string,
+        _reusedNames: string[] | undefined,
+        _redirectedReference: ts.ResolvedProjectReference | undefined,
+        _options: ts.CompilerOptions,
+      ) => {
         return this.resolveModuleNames(moduleNames, containingFile);
       },
     };
@@ -231,7 +237,7 @@ class Compiler {
             }
             let idx = text.indexOf("/");
             let strIdx = str.indexOf("*");
-            if (idx === -1 || strIdx == -1) {
+            if (idx === -1 || strIdx === -1) {
               continue;
             }
             relPath = path.relative(
@@ -242,8 +248,32 @@ class Compiler {
                 text.substr(idx),
               ),
             );
+            // if file ends with "..", we've reached a case where we're trying to
+            // import something like foo/contact(.ts) from within foo/contact/bar/baz/page.ts
+            // and we're confused about it so we need to detect that case and handle it
+            if (relPath.endsWith("..")) {
+              // there's an actual local file here not root of directory, try that instead
+              // (if root of directory and there's ambiguity, we should use "contact/")
+              if (ts.sys.fileExists(text + ".ts")) {
+                let text2 = text + ".ts";
+                relPath = path.relative(
+                  // just because of how imports work. it's relative from directory not current path
+                  path.dirname(fullPath),
+                  path.join(
+                    text2.substr(0, idx).replace(r, str.substr(0, strIdx)),
+                    text2.substr(idx),
+                  ),
+                );
+              }
+            }
             if (!relPath.startsWith("..")) {
               relPath = "./" + relPath;
+            }
+
+            // tsc removes this by default so we need to also do it
+            let tsIdx = relPath.indexOf(".ts");
+            if (tsIdx !== -1) {
+              relPath = relPath.substr(0, tsIdx);
             }
 
             // update the node...
