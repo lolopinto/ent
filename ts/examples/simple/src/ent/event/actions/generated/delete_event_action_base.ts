@@ -51,15 +51,12 @@ export class DeleteEventActionBase implements Action<Event> {
     return new this(viewer, event);
   }
 
-  static async saveFromID<T extends DeleteEventActionBase>(
+  static async saveXFromID<T extends DeleteEventActionBase>(
     this: new (viewer: Viewer, event: Event) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let event = await Event.load(viewer, id);
-    if (!event) {
-      return;
-    }
-    return await new this(viewer, event).save();
+    let event = await Event.loadX(viewer, id);
+    return await new this(viewer, event).saveX();
   }
 }

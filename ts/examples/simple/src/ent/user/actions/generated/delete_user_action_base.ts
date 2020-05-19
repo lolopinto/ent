@@ -51,15 +51,12 @@ export class DeleteUserActionBase implements Action<User> {
     return new this(viewer, user);
   }
 
-  static async saveFromID<T extends DeleteUserActionBase>(
+  static async saveXFromID<T extends DeleteUserActionBase>(
     this: new (viewer: Viewer, user: User) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let user = await User.load(viewer, id);
-    if (!user) {
-      return;
-    }
-    return await new this(viewer, user).save();
+    let user = await User.loadX(viewer, id);
+    return await new this(viewer, user).saveX();
   }
 }

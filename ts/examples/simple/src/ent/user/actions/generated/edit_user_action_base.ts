@@ -61,16 +61,13 @@ export class EditUserActionBase implements Action<User> {
     return new this(viewer, user, input);
   }
 
-  static async saveFromID<T extends EditUserActionBase>(
+  static async saveXFromID<T extends EditUserActionBase>(
     this: new (viewer: Viewer, user: User, input: UserEditInput) => T,
     viewer: Viewer,
     id: ID,
     input: UserEditInput,
-  ): Promise<User | null> {
-    let user = await User.load(viewer, id);
-    if (!user) {
-      return null;
-    }
-    return await new this(viewer, user, input).save();
+  ): Promise<User> {
+    let user = await User.loadX(viewer, id);
+    return await new this(viewer, user, input).saveX();
   }
 }

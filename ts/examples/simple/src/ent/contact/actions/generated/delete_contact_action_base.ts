@@ -54,15 +54,12 @@ export class DeleteContactActionBase implements Action<Contact> {
     return new this(viewer, contact);
   }
 
-  static async saveFromID<T extends DeleteContactActionBase>(
+  static async saveXFromID<T extends DeleteContactActionBase>(
     this: new (viewer: Viewer, contact: Contact) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    let contact = await Contact.load(viewer, id);
-    if (!contact) {
-      return;
-    }
-    return await new this(viewer, contact).save();
+    let contact = await Contact.loadX(viewer, id);
+    return await new this(viewer, contact).saveX();
   }
 }

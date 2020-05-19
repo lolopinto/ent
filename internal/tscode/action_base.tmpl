@@ -130,7 +130,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   }
 
   {{if $hasSaveFromID -}}
-    static async saveFromID<T extends {{$actionName}}>(
+    static async saveXFromID<T extends {{$actionName}}>(
       this: new ({{$constructor}}) => T,
       viewer: {{useImport "Viewer"}},
       id: {{useImport "ID"}},
@@ -139,21 +139,14 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       {{end -}}
       {{ if $action.IsDeletingNode -}}
         ): Promise<void> {
-        let {{$instance}} = await {{$node}}.load(viewer, id);
-        if (!{{$instance}}) {
-          return;
-        }
       {{else -}}
-        ): Promise<{{$node}} | null> {
-        let {{$instance}} = await {{$node}}.load(viewer, id);
-        if (!{{$instance}}) {
-          return null;
-        }
+        ): Promise<{{$node}}> {
       {{end -}}
+      let {{$instance}} = await {{$node}}.loadX(viewer, id);
       {{if $hasInput -}}
-        return await new this(viewer, {{$instance}}, input).save();
+        return await new this(viewer, {{$instance}}, input).saveX();
       {{else -}}
-        return await new this(viewer, {{$instance}}).save();
+        return await new this(viewer, {{$instance}}).saveX();
       {{end -}}
     } 
   {{end -}}

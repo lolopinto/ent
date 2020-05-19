@@ -105,6 +105,22 @@ test("edit user", async () => {
   expect(editedUser.lastName).toBe("Snow");
 });
 
+test("edit user. saveXFromID", async () => {
+    let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+
+  let vc = new IDViewer(user.id, user);
+  let editedUser = await EditUserAction.saveXFromID(vc, user.id, {
+    firstName: "First of his name",
+  });
+
+  expect(editedUser.firstName).toBe("First of his name");
+  expect(editedUser.lastName).toBe("Snow");
+})
+
 test("delete user", async () => {
   let user = await create({
     firstName: "Jon",
@@ -121,9 +137,24 @@ test("delete user", async () => {
   let vc = new IDViewer(user.id, user);
   await DeleteUserAction.create(vc, user).saveX();
 
-  let loadedUser = await User.load(loggedOutViewer, user.id);
+  let loadedUser = await User.load(vc, user.id);
   expect(loadedUser).toBe(null);
 });
+
+test("delete user. saveXFromID", async () => {
+    let user = await create({
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+
+  let vc = new IDViewer(user.id, user);
+  let editedUser = await DeleteUserAction.saveXFromID(vc, user.id)
+
+  let loadedUser = await User.load(vc, user.id);
+  expect(loadedUser).toBe(null);
+})
+
 
 describe("privacy", () => {
   test("load", async () => {
