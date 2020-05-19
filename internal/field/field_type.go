@@ -455,12 +455,27 @@ func (f *Field) GetInverseEdge() *edge.AssociationEdge {
 	return f.inverseEdge
 }
 
-func (f *Field) GetTSGraphQLTypeForFieldImports() []string {
-	tsGQLType, ok := f.fieldType.(enttype.TSGraphQLType)
-	if !ok {
-		panic("field doesn't support TS graphql.TODO")
+// for non-required fields in actions, we want to make it optional if it's not a required field
+// in the action
+func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []string {
+	var tsGQLType enttype.TSGraphQLType
+	var ok bool
+	nullableType, ok := f.fieldType.(enttype.NullableType)
+
+	if forceOptional && ok {
+		tsGQLType2, ok := nullableType.GetNullableType().(enttype.TSGraphQLType)
+		if ok {
+			tsGQLType = tsGQLType2
+		}
+	} else {
+		// already null and/or not forceOptional
+		tsGQLType, ok = f.fieldType.(enttype.TSGraphQLType)
+		if !ok {
+			panic("field doesn't support TS graphql.TODO " + f.FieldName)
+		}
+	}
+	if tsGQLType == nil {
+		panic("field doesn't support TS graphql.TODO" + f.FieldName)
 	}
 	return tsGQLType.GetTSGraphQLImports()
 }
-
-// need to incorporate action.IsRequiredField(aciton, field) in here and what we return

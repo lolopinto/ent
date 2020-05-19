@@ -29,10 +29,10 @@ export const UserEditInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(GraphQLID),
     },
     firstName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
     },
     lastName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
     },
   }),
 });
@@ -57,7 +57,7 @@ export const UserEditType: GraphQLFieldConfig<
   type: GraphQLNonNull(UserEditResponseType),
   args: {
     input: {
-      description: "input for action",
+      description: "",
       type: GraphQLNonNull(UserEditInputType),
     },
   },

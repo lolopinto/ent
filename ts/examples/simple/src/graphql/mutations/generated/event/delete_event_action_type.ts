@@ -49,7 +49,7 @@ export const EventDeleteType: GraphQLFieldConfig<
   type: GraphQLNonNull(EventDeleteResponseType),
   args: {
     input: {
-      description: "input for action",
+      description: "",
       type: GraphQLNonNull(EventDeleteInputType),
     },
   },

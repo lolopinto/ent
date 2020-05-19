@@ -49,7 +49,7 @@ export const UserDeleteType: GraphQLFieldConfig<
   type: GraphQLNonNull(UserDeleteResponseType),
   args: {
     input: {
-      description: "input for action",
+      description: "",
       type: GraphQLNonNull(UserDeleteInputType),
     },
   },

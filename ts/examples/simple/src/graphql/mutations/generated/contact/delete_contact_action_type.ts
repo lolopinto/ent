@@ -49,7 +49,7 @@ export const ContactDeleteType: GraphQLFieldConfig<
   type: GraphQLNonNull(ContactDeleteResponseType),
   args: {
     input: {
-      description: "input for action",
+      description: "",
       type: GraphQLNonNull(ContactDeleteInputType),
     },
   },

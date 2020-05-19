@@ -51,7 +51,7 @@ export const UserCreateType: GraphQLFieldConfig<
   type: GraphQLNonNull(UserCreateResponseType),
   args: {
     input: {
-      description: "input for action",
+      description: "",
       type: GraphQLNonNull(UserCreateInputType),
     },
   },

@@ -13,7 +13,6 @@ import {
 } from "graphql";
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
-import { GraphQLTime } from "ent/graphql/scalars/time";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type.ts";
 import { ContactEditInput } from "src/ent/contact/actions/edit_contact_action";
 import Contact from "src/ent/contact";
@@ -29,26 +28,17 @@ export const ContactEditInputType = new GraphQLInputObjectType({
     contactID: {
       type: GraphQLNonNull(GraphQLID),
     },
-    id: {
-      type: GraphQLNonNull(GraphQLID),
-    },
-    createdAt: {
-      type: GraphQLNonNull(GraphQLTime),
-    },
-    updatedAt: {
-      type: GraphQLNonNull(GraphQLTime),
-    },
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
     },
     firstName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
     },
     lastName: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
     },
     userID: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
     },
   }),
 });
@@ -73,7 +63,7 @@ export const ContactEditType: GraphQLFieldConfig<
   type: GraphQLNonNull(ContactEditResponseType),
   args: {
     input: {
-      description: "input for action",
+      description: "",
       type: GraphQLNonNull(ContactEditInputType),
     },
   },
@@ -84,7 +74,6 @@ export const ContactEditType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<ContactEditResponse> => {
     let contact = await EditContactAction.saveXFromID(context.viewer, args.id, {
-      id: args.id,
       emailAddress: args.emailAddress,
       firstName: args.firstName,
       lastName: args.lastName,

@@ -3,7 +3,6 @@
 import {
   GraphQLObjectType,
   GraphQLInputObjectType,
-  GraphQLID,
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfig,
@@ -12,7 +11,6 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
-import { GraphQLTime } from "ent/graphql/scalars/time";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type.ts";
 import { ContactCreateInput } from "src/ent/contact/actions/create_contact_action";
 import Contact from "src/ent/contact";
@@ -21,15 +19,6 @@ import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 export const ContactCreateInputType = new GraphQLInputObjectType({
   name: "ContactCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    id: {
-      type: GraphQLNonNull(GraphQLID),
-    },
-    createdAt: {
-      type: GraphQLNonNull(GraphQLTime),
-    },
-    updatedAt: {
-      type: GraphQLNonNull(GraphQLTime),
-    },
     emailAddress: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -65,7 +54,7 @@ export const ContactCreateType: GraphQLFieldConfig<
   type: GraphQLNonNull(ContactCreateResponseType),
   args: {
     input: {
-      description: "input for action",
+      description: "",
       type: GraphQLNonNull(ContactCreateInputType),
     },
   },
@@ -76,7 +65,6 @@ export const ContactCreateType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<ContactCreateResponse> => {
     let contact = await CreateContactAction.create(context.viewer, {
-      id: args.id,
       emailAddress: args.emailAddress,
       firstName: args.firstName,
       lastName: args.lastName,

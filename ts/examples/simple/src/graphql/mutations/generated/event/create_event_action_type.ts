@@ -3,7 +3,6 @@
 import {
   GraphQLObjectType,
   GraphQLInputObjectType,
-  GraphQLID,
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfig,
@@ -21,15 +20,6 @@ import CreateEventAction from "src/ent/event/actions/create_event_action";
 export const EventCreateInputType = new GraphQLInputObjectType({
   name: "EventCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    id: {
-      type: GraphQLNonNull(GraphQLID),
-    },
-    createdAt: {
-      type: GraphQLNonNull(GraphQLTime),
-    },
-    updatedAt: {
-      type: GraphQLNonNull(GraphQLTime),
-    },
     name: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -68,7 +58,7 @@ export const EventCreateType: GraphQLFieldConfig<
   type: GraphQLNonNull(EventCreateResponseType),
   args: {
     input: {
-      description: "input for action",
+      description: "",
       type: GraphQLNonNull(EventCreateInputType),
     },
   },
@@ -79,7 +69,6 @@ export const EventCreateType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<EventCreateResponse> => {
     let event = await CreateEventAction.create(context.viewer, {
-      id: args.id,
       name: args.name,
       startTime: args.startTime,
       endTime: args.endTime,

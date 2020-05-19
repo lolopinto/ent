@@ -246,7 +246,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) o
 		gqlField := fieldType{
 			Name:               field.GetGraphQLName(),
 			HasResolveFunction: field.GetGraphQLName() != field.TsFieldName(),
-			FieldImports:       field.GetTSGraphQLTypeForFieldImports(),
+			FieldImports:       field.GetTSGraphQLTypeForFieldImports(false),
 		}
 		if gqlField.HasResolveFunction {
 			gqlField.FunctionContents = fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())
@@ -311,7 +311,7 @@ func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPre
 	}
 }
 
-func buildActionInputNode(nodeData *schema.NodeData, action action.Action, actionPrefix string) objectType {
+func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) objectType {
 	// TODO shared input types across created/edit for example
 	result := objectType{
 		Type:     fmt.Sprintf("%sInputType", actionPrefix),
@@ -321,31 +321,34 @@ func buildActionInputNode(nodeData *schema.NodeData, action action.Action, actio
 	}
 
 	// add id field for edit and delete mutations
-	if action.MutatingExistingObject() {
+	if a.MutatingExistingObject() {
 		result.Fields = append(result.Fields, fieldType{
-			Name:         fmt.Sprintf("%sID", action.GetNodeInfo().NodeInstance),
+			Name:         fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
 			FieldImports: []string{"GraphQLNonNull", "GraphQLID"},
 			Description:  fmt.Sprintf("id of %s", nodeData.Node),
 		})
 	}
 
-	for _, f := range action.GetFields() {
+	for _, f := range a.GetFields() {
+		if !f.EditableField() {
+			continue
+		}
 		result.Fields = append(result.Fields, fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: f.GetTSGraphQLTypeForFieldImports(),
+			FieldImports: f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f)),
 		})
 	}
 
 	// add each edge that's part of the mutation as an ID
 	// use singular version so that this is friendID instead of friendsID
-	for _, edge := range action.GetEdges() {
+	for _, edge := range a.GetEdges() {
 		result.Fields = append(result.Fields, fieldType{
 			Name:         fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
 			FieldImports: []string{"GraphQLNonNull", "GraphQLID"},
 		})
 	}
 
-	if action.MutatingExistingObject() {
+	if a.MutatingExistingObject() {
 		// custom interface for editing
 		result.Interfaces = []interfaceType{
 			{
@@ -353,7 +356,7 @@ func buildActionInputNode(nodeData *schema.NodeData, action action.Action, actio
 				Name:     fmt.Sprintf("custom%sInput", actionPrefix),
 				Fields: []interfaceField{
 					{
-						Name:      fmt.Sprintf("%sID", action.GetNodeInfo().NodeInstance),
+						Name:      fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
 						Type:      "ID", // ID
 						UseImport: true,
 					},
@@ -486,7 +489,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 	if action.GetOperation() == ent.CreateAction {
 		result.FunctionContents = append(result.FunctionContents, fmt.Sprintf("let %s = await %s.create(context.viewer, {", nodeData.NodeInstance, action.GetActionName()))
 		for _, f := range action.GetFields() {
-			if f.ExposeToGraphQL() {
+			if f.ExposeToGraphQL() && f.EditableField() {
 				// TODO rename from args to input?
 				result.FunctionContents = append(
 					result.FunctionContents,
@@ -506,7 +509,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		// some kind of editing
 		result.FunctionContents = append(result.FunctionContents, fmt.Sprintf("let %s = await %s.saveXFromID(context.viewer, args.id, {", nodeData.NodeInstance, action.GetActionName()))
 		for _, f := range action.GetFields() {
-			if f.ExposeToGraphQL() {
+			if f.ExposeToGraphQL() && f.EditableField() {
 				// TODO rename from args to input?
 				result.FunctionContents = append(
 					result.FunctionContents,

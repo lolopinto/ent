@@ -29,29 +29,20 @@ export const EventEditInputType = new GraphQLInputObjectType({
     eventID: {
       type: GraphQLNonNull(GraphQLID),
     },
-    id: {
-      type: GraphQLNonNull(GraphQLID),
-    },
-    createdAt: {
-      type: GraphQLNonNull(GraphQLTime),
-    },
-    updatedAt: {
-      type: GraphQLNonNull(GraphQLTime),
-    },
     name: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
     },
     creatorID: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
     },
     startTime: {
-      type: GraphQLNonNull(GraphQLTime),
+      type: GraphQLTime,
     },
     endTime: {
       type: GraphQLTime,
     },
     eventLocation: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
     },
   }),
 });
@@ -76,7 +67,7 @@ export const EventEditType: GraphQLFieldConfig<
   type: GraphQLNonNull(EventEditResponseType),
   args: {
     input: {
-      description: "input for action",
+      description: "",
       type: GraphQLNonNull(EventEditInputType),
     },
   },
@@ -87,7 +78,6 @@ export const EventEditType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<EventEditResponse> => {
     let event = await EditEventAction.saveXFromID(context.viewer, args.id, {
-      id: args.id,
       name: args.name,
       startTime: args.startTime,
       endTime: args.endTime,
