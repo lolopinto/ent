@@ -135,17 +135,19 @@ func writeTypeFile(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) error 
 }
 
 func writeActionFile(nodeData *schema.NodeData, action action.Action) error {
+	actionPrefix := strcase.ToCamel(action.GetGraphQLName())
+
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlobjectData{
 			NodeData:    nodeData,
-			GQLNodes:    buildActionNodes(nodeData, action),
-			FieldConfig: buildActionFieldConfig(nodeData, action),
+			GQLNodes:    buildActionNodes(nodeData, action, actionPrefix),
+			FieldConfig: buildActionFieldConfig(nodeData, action, actionPrefix),
 			LocalImports: []string{
-				fmt.Sprintf("%sInputType", action.GetGraphQLName()),
-				fmt.Sprintf("%sResponseType", action.GetGraphQLName()),
-				fmt.Sprintf("%sResponse", action.GetGraphQLName()),
-				fmt.Sprintf("%sType", action.GetGraphQLName()),
+				fmt.Sprintf("%sInputType", actionPrefix),
+				fmt.Sprintf("%sResponseType", actionPrefix),
+				fmt.Sprintf("%sResponse", actionPrefix),
+				fmt.Sprintf("%sType", actionPrefix),
 			},
 		},
 		CreateDirIfNeeded: true,
@@ -163,8 +165,10 @@ type fieldConfig struct {
 	Name             string
 	Arg              string
 	TypeImports      []string
+	ArgImports       []string // incase it's { [argName: string]: any }, we need to know difference
 	Args             []fieldConfigArg
 	FunctionContents []string
+	ReturnTypeHint   string
 }
 
 func (f fieldConfig) FieldType() string {
@@ -300,18 +304,18 @@ func addPluralEdge(edge edge.Edge, fields *[]fieldType, instance string) {
 	*fields = append(*fields, gqlField)
 }
 
-func buildActionNodes(nodeData *schema.NodeData, action action.Action) []objectType {
+func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPrefix string) []objectType {
 	return []objectType{
-		buildActionInputNode(nodeData, action),
-		buildActionResponseNode(nodeData, action),
+		buildActionInputNode(nodeData, action, actionPrefix),
+		buildActionResponseNode(nodeData, action, actionPrefix),
 	}
 }
 
-func buildActionInputNode(nodeData *schema.NodeData, action action.Action) objectType {
+func buildActionInputNode(nodeData *schema.NodeData, action action.Action, actionPrefix string) objectType {
 	// TODO shared input types across created/edit for example
 	result := objectType{
-		Type:     fmt.Sprintf("%sInputType", action.GetGraphQLName()),
-		Node:     fmt.Sprintf("%sInput", action.GetGraphQLName()),
+		Type:     fmt.Sprintf("%sInputType", actionPrefix),
+		Node:     fmt.Sprintf("%sInput", actionPrefix),
 		Exported: true,
 		GQLType:  "GraphQLInputObjectType",
 	}
@@ -358,14 +362,16 @@ func getInputName(action action.Action) string {
 	case ent.EditAction:
 		return fmt.Sprintf("%sEditInput", node)
 	}
+	// invalid
+	return fmt.Sprintf("%sDeleteInput", node)
 	panic("invalid. todo")
 }
 
-func buildActionResponseNode(nodeData *schema.NodeData, action action.Action) objectType {
+func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, actionPrefix string) objectType {
 	// TODO add type for input above
 	result := objectType{
-		Type:     fmt.Sprintf("%sResponseType", action.GetGraphQLName()),
-		Node:     fmt.Sprintf("%sResponse", action.GetGraphQLName()),
+		Type:     fmt.Sprintf("%sResponseType", actionPrefix),
+		Node:     fmt.Sprintf("%sResponse", actionPrefix),
 		Exported: true,
 		GQLType:  "GraphQLObjectType",
 		// TODO these don't make sense here either and should be moved up
@@ -408,7 +414,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action) ob
 	result.Interfaces = []interfaceType{
 		{
 			Exported: false,
-			Name:     fmt.Sprintf("%sResponse", action.GetGraphQLName()),
+			Name:     fmt.Sprintf("%sResponse", actionPrefix),
 			Fields: []interfaceField{
 				{
 					Name:      nodeData.NodeInstance,
@@ -422,27 +428,42 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action) ob
 	return result
 }
 
-// TODO need all these action.GetGraphQLName() to be uppercase
-func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action) fieldConfig {
+func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, actionPrefix string) fieldConfig {
 	result := fieldConfig{
 		Exported: true,
-		Name:     fmt.Sprintf("%sType", action.GetGraphQLName()),
+		Name:     fmt.Sprintf("%sType", actionPrefix),
 		// imports UserCreateInput...
 		Arg: getInputName(action),
 		TypeImports: []string{
 			"GraphQLNonNull",
-			fmt.Sprintf("%sResponseType", action.GetGraphQLName()),
+			fmt.Sprintf("%sResponseType", actionPrefix),
 		},
+		// TODO these are just all imports, we don't care where from
+		ArgImports: []string{getInputName(action), action.GetActionName()},
 		Args: []fieldConfigArg{
 			{
 				Name:        "input",
 				Description: "input for action",
 				Imports: []string{
 					"GraphQLNonNull",
-					fmt.Sprintf("%sInputType", action.GetGraphQLName()),
+					fmt.Sprintf("%sInputType", actionPrefix),
 				},
 			},
 		},
+		ReturnTypeHint: fmt.Sprintf("Promise<%sResponse>", actionPrefix),
+	}
+
+	if action.GetOperation() == ent.CreateAction {
+		result.FunctionContents = append(result.FunctionContents, fmt.Sprintf("let %s = await %s.create(context.viewer, {", nodeData.NodeInstance, action.GetActionName()))
+		for _, f := range action.GetFields() {
+			if f.ExposeToGraphQL() {
+				// TODO rename from args to input?
+				result.FunctionContents = append(result.FunctionContents, fmt.Sprintf("%s: args.%s,", f.TsFieldName(), f.TsFieldName()))
+			}
+		}
+		result.FunctionContents = append(result.FunctionContents, "}).saveX();")
+
+		result.FunctionContents = append(result.FunctionContents, fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance))
 	}
 	// TODO FunctionContents
 	//		FunctionContents: []string{},

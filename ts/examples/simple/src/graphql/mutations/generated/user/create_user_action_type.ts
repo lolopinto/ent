@@ -2,19 +2,23 @@
 
 import {
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
+  GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
 import { UserType } from "src/graphql/resolvers/generated/user_type.ts";
+import { UserCreateInput } from "src/ent/user/actions/create_user_action";
 import User from "src/ent/user";
+import CreateUserAction from "src/ent/user/actions/create_user_action";
 
-export const userCreateInputType = new GraphQLObjectType({
-  name: "userCreateInput",
-  fields: (): GraphQLFieldConfigMap<User, Context> => ({
+export const UserCreateInputType = new GraphQLInputObjectType({
+  name: "UserCreateInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
     firstName: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -26,12 +30,12 @@ export const userCreateInputType = new GraphQLObjectType({
     },
   }),
 });
-interface userCreateResponse {
+interface UserCreateResponse {
   user: User;
 }
 
-export const userCreateResponseType = new GraphQLObjectType({
-  name: "userCreateResponse",
+export const UserCreateResponseType = new GraphQLObjectType({
+  name: "UserCreateResponse",
   fields: (): GraphQLFieldConfigMap<User, Context> => ({
     user: {
       type: GraphQLNonNull(UserType),
@@ -39,22 +43,29 @@ export const userCreateResponseType = new GraphQLObjectType({
   }),
 });
 
-export const userCreateType: GraphQLFieldConfig<
+export const UserCreateType: GraphQLFieldConfig<
   undefined,
   Context,
-  userCreateInput
+  UserCreateInput
 > = {
-  type: GraphQLNonNull(userCreateResponseType),
+  type: GraphQLNonNull(UserCreateResponseType),
   args: {
     input: {
       description: "input for action",
-      type: GraphQLNonNull(userCreateInputType),
+      type: GraphQLNonNull(UserCreateInputType),
     },
   },
   resolve: async (
     _source,
-    args: userCreateInput,
+    args: UserCreateInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ) => {},
+  ): Promise<UserCreateResponse> => {
+    let user = await CreateUserAction.create(context.viewer, {
+      firstName: args.firstName,
+      lastName: args.lastName,
+      emailAddress: args.emailAddress,
+    }).saveX();
+    return { user: user };
+  },
 };

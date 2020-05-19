@@ -2,21 +2,25 @@
 
 import {
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
+  GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { EventType } from "src/graphql/resolvers/generated/event_type.ts";
+import { EventEditInput } from "src/ent/event/actions/edit_event_action";
 import Event from "src/ent/event";
+import EditEventAction from "src/ent/event/actions/edit_event_action";
 
-export const eventEditInputType = new GraphQLObjectType({
-  name: "eventEditInput",
-  fields: (): GraphQLFieldConfigMap<Event, Context> => ({
+export const EventEditInputType = new GraphQLInputObjectType({
+  name: "EventEditInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
     eventID: {
       type: GraphQLNonNull(GraphQLID),
     },
@@ -46,12 +50,12 @@ export const eventEditInputType = new GraphQLObjectType({
     },
   }),
 });
-interface eventEditResponse {
+interface EventEditResponse {
   event: Event;
 }
 
-export const eventEditResponseType = new GraphQLObjectType({
-  name: "eventEditResponse",
+export const EventEditResponseType = new GraphQLObjectType({
+  name: "EventEditResponse",
   fields: (): GraphQLFieldConfigMap<Event, Context> => ({
     event: {
       type: GraphQLNonNull(EventType),
@@ -59,22 +63,22 @@ export const eventEditResponseType = new GraphQLObjectType({
   }),
 });
 
-export const eventEditType: GraphQLFieldConfig<
+export const EventEditType: GraphQLFieldConfig<
   undefined,
   Context,
-  eventEditInput
+  EventEditInput
 > = {
-  type: GraphQLNonNull(eventEditResponseType),
+  type: GraphQLNonNull(EventEditResponseType),
   args: {
     input: {
       description: "input for action",
-      type: GraphQLNonNull(eventEditInputType),
+      type: GraphQLNonNull(EventEditInputType),
     },
   },
   resolve: async (
     _source,
-    args: eventEditInput,
+    args: EventEditInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ) => {},
+  ): Promise<EventEditResponse> => {},
 };

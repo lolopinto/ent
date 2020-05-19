@@ -2,29 +2,33 @@
 
 import {
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLID,
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
+  GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
+import { ContactDeleteInput } from "src/ent/contact/actions/delete_contact_action";
 import Contact from "src/ent/contact";
+import DeleteContactAction from "src/ent/contact/actions/delete_contact_action";
 
-export const contactDeleteInputType = new GraphQLObjectType({
-  name: "contactDeleteInput",
-  fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
+export const ContactDeleteInputType = new GraphQLInputObjectType({
+  name: "ContactDeleteInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
     contactID: {
       type: GraphQLNonNull(GraphQLID),
     },
   }),
 });
-interface contactDeleteResponse {
+interface ContactDeleteResponse {
   contact: Contact;
 }
 
-export const contactDeleteResponseType = new GraphQLObjectType({
-  name: "contactDeleteResponse",
+export const ContactDeleteResponseType = new GraphQLObjectType({
+  name: "ContactDeleteResponse",
   fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
     deletedContactID: {
       type: GraphQLID,
@@ -32,22 +36,22 @@ export const contactDeleteResponseType = new GraphQLObjectType({
   }),
 });
 
-export const contactDeleteType: GraphQLFieldConfig<
+export const ContactDeleteType: GraphQLFieldConfig<
   undefined,
   Context,
-  contactDeleteInput
+  ContactDeleteInput
 > = {
-  type: GraphQLNonNull(contactDeleteResponseType),
+  type: GraphQLNonNull(ContactDeleteResponseType),
   args: {
     input: {
       description: "input for action",
-      type: GraphQLNonNull(contactDeleteInputType),
+      type: GraphQLNonNull(ContactDeleteInputType),
     },
   },
   resolve: async (
     _source,
-    args: contactDeleteInput,
+    args: ContactDeleteInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ) => {},
+  ): Promise<ContactDeleteResponse> => {},
 };

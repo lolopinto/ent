@@ -2,29 +2,33 @@
 
 import {
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLID,
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
+  GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
+import { EventDeleteInput } from "src/ent/event/actions/delete_event_action";
 import Event from "src/ent/event";
+import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
-export const eventDeleteInputType = new GraphQLObjectType({
-  name: "eventDeleteInput",
-  fields: (): GraphQLFieldConfigMap<Event, Context> => ({
+export const EventDeleteInputType = new GraphQLInputObjectType({
+  name: "EventDeleteInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
     eventID: {
       type: GraphQLNonNull(GraphQLID),
     },
   }),
 });
-interface eventDeleteResponse {
+interface EventDeleteResponse {
   event: Event;
 }
 
-export const eventDeleteResponseType = new GraphQLObjectType({
-  name: "eventDeleteResponse",
+export const EventDeleteResponseType = new GraphQLObjectType({
+  name: "EventDeleteResponse",
   fields: (): GraphQLFieldConfigMap<Event, Context> => ({
     deletedEventID: {
       type: GraphQLID,
@@ -32,22 +36,22 @@ export const eventDeleteResponseType = new GraphQLObjectType({
   }),
 });
 
-export const eventDeleteType: GraphQLFieldConfig<
+export const EventDeleteType: GraphQLFieldConfig<
   undefined,
   Context,
-  eventDeleteInput
+  EventDeleteInput
 > = {
-  type: GraphQLNonNull(eventDeleteResponseType),
+  type: GraphQLNonNull(EventDeleteResponseType),
   args: {
     input: {
       description: "input for action",
-      type: GraphQLNonNull(eventDeleteInputType),
+      type: GraphQLNonNull(EventDeleteInputType),
     },
   },
   resolve: async (
     _source,
-    args: eventDeleteInput,
+    args: EventDeleteInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ) => {},
+  ): Promise<EventDeleteResponse> => {},
 };

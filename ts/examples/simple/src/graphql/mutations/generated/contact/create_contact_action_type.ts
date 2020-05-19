@@ -2,21 +2,25 @@
 
 import {
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
+  GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type.ts";
+import { ContactCreateInput } from "src/ent/contact/actions/create_contact_action";
 import Contact from "src/ent/contact";
+import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 
-export const contactCreateInputType = new GraphQLObjectType({
-  name: "contactCreateInput",
-  fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
+export const ContactCreateInputType = new GraphQLInputObjectType({
+  name: "ContactCreateInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
     id: {
       type: GraphQLNonNull(GraphQLID),
     },
@@ -40,12 +44,12 @@ export const contactCreateInputType = new GraphQLObjectType({
     },
   }),
 });
-interface contactCreateResponse {
+interface ContactCreateResponse {
   contact: Contact;
 }
 
-export const contactCreateResponseType = new GraphQLObjectType({
-  name: "contactCreateResponse",
+export const ContactCreateResponseType = new GraphQLObjectType({
+  name: "ContactCreateResponse",
   fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
     contact: {
       type: GraphQLNonNull(ContactType),
@@ -53,22 +57,30 @@ export const contactCreateResponseType = new GraphQLObjectType({
   }),
 });
 
-export const contactCreateType: GraphQLFieldConfig<
+export const ContactCreateType: GraphQLFieldConfig<
   undefined,
   Context,
-  contactCreateInput
+  ContactCreateInput
 > = {
-  type: GraphQLNonNull(contactCreateResponseType),
+  type: GraphQLNonNull(ContactCreateResponseType),
   args: {
     input: {
       description: "input for action",
-      type: GraphQLNonNull(contactCreateInputType),
+      type: GraphQLNonNull(ContactCreateInputType),
     },
   },
   resolve: async (
     _source,
-    args: contactCreateInput,
+    args: ContactCreateInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ) => {},
+  ): Promise<ContactCreateResponse> => {
+    let contact = await CreateContactAction.create(context.viewer, {
+      id: args.id,
+      emailAddress: args.emailAddress,
+      firstName: args.firstName,
+      lastName: args.lastName,
+    }).saveX();
+    return { contact: contact };
+  },
 };

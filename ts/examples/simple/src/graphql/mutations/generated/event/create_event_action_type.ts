@@ -2,21 +2,25 @@
 
 import {
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
+  GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { EventType } from "src/graphql/resolvers/generated/event_type.ts";
+import { EventCreateInput } from "src/ent/event/actions/create_event_action";
 import Event from "src/ent/event";
+import CreateEventAction from "src/ent/event/actions/create_event_action";
 
-export const eventCreateInputType = new GraphQLObjectType({
-  name: "eventCreateInput",
-  fields: (): GraphQLFieldConfigMap<Event, Context> => ({
+export const EventCreateInputType = new GraphQLInputObjectType({
+  name: "EventCreateInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
     id: {
       type: GraphQLNonNull(GraphQLID),
     },
@@ -43,12 +47,12 @@ export const eventCreateInputType = new GraphQLObjectType({
     },
   }),
 });
-interface eventCreateResponse {
+interface EventCreateResponse {
   event: Event;
 }
 
-export const eventCreateResponseType = new GraphQLObjectType({
-  name: "eventCreateResponse",
+export const EventCreateResponseType = new GraphQLObjectType({
+  name: "EventCreateResponse",
   fields: (): GraphQLFieldConfigMap<Event, Context> => ({
     event: {
       type: GraphQLNonNull(EventType),
@@ -56,22 +60,31 @@ export const eventCreateResponseType = new GraphQLObjectType({
   }),
 });
 
-export const eventCreateType: GraphQLFieldConfig<
+export const EventCreateType: GraphQLFieldConfig<
   undefined,
   Context,
-  eventCreateInput
+  EventCreateInput
 > = {
-  type: GraphQLNonNull(eventCreateResponseType),
+  type: GraphQLNonNull(EventCreateResponseType),
   args: {
     input: {
       description: "input for action",
-      type: GraphQLNonNull(eventCreateInputType),
+      type: GraphQLNonNull(EventCreateInputType),
     },
   },
   resolve: async (
     _source,
-    args: eventCreateInput,
+    args: EventCreateInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ) => {},
+  ): Promise<EventCreateResponse> => {
+    let event = await CreateEventAction.create(context.viewer, {
+      id: args.id,
+      name: args.name,
+      startTime: args.startTime,
+      endTime: args.endTime,
+      location: args.location,
+    }).saveX();
+    return { event: event };
+  },
 };

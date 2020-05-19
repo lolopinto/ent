@@ -2,20 +2,24 @@
 
 import {
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
+  GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
 import { UserType } from "src/graphql/resolvers/generated/user_type.ts";
+import { UserEditInput } from "src/ent/user/actions/edit_user_action";
 import User from "src/ent/user";
+import EditUserAction from "src/ent/user/actions/edit_user_action";
 
-export const userEditInputType = new GraphQLObjectType({
-  name: "userEditInput",
-  fields: (): GraphQLFieldConfigMap<User, Context> => ({
+export const UserEditInputType = new GraphQLInputObjectType({
+  name: "UserEditInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       type: GraphQLNonNull(GraphQLID),
     },
@@ -27,12 +31,12 @@ export const userEditInputType = new GraphQLObjectType({
     },
   }),
 });
-interface userEditResponse {
+interface UserEditResponse {
   user: User;
 }
 
-export const userEditResponseType = new GraphQLObjectType({
-  name: "userEditResponse",
+export const UserEditResponseType = new GraphQLObjectType({
+  name: "UserEditResponse",
   fields: (): GraphQLFieldConfigMap<User, Context> => ({
     user: {
       type: GraphQLNonNull(UserType),
@@ -40,22 +44,22 @@ export const userEditResponseType = new GraphQLObjectType({
   }),
 });
 
-export const userEditType: GraphQLFieldConfig<
+export const UserEditType: GraphQLFieldConfig<
   undefined,
   Context,
-  userEditInput
+  UserEditInput
 > = {
-  type: GraphQLNonNull(userEditResponseType),
+  type: GraphQLNonNull(UserEditResponseType),
   args: {
     input: {
       description: "input for action",
-      type: GraphQLNonNull(userEditInputType),
+      type: GraphQLNonNull(UserEditInputType),
     },
   },
   resolve: async (
     _source,
-    args: userEditInput,
+    args: UserEditInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ) => {},
+  ): Promise<UserEditResponse> => {},
 };

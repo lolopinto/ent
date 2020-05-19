@@ -2,21 +2,25 @@
 
 import {
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
+  GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type.ts";
+import { ContactEditInput } from "src/ent/contact/actions/edit_contact_action";
 import Contact from "src/ent/contact";
+import EditContactAction from "src/ent/contact/actions/edit_contact_action";
 
-export const contactEditInputType = new GraphQLObjectType({
-  name: "contactEditInput",
-  fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
+export const ContactEditInputType = new GraphQLInputObjectType({
+  name: "ContactEditInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
     contactID: {
       type: GraphQLNonNull(GraphQLID),
     },
@@ -43,12 +47,12 @@ export const contactEditInputType = new GraphQLObjectType({
     },
   }),
 });
-interface contactEditResponse {
+interface ContactEditResponse {
   contact: Contact;
 }
 
-export const contactEditResponseType = new GraphQLObjectType({
-  name: "contactEditResponse",
+export const ContactEditResponseType = new GraphQLObjectType({
+  name: "ContactEditResponse",
   fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
     contact: {
       type: GraphQLNonNull(ContactType),
@@ -56,22 +60,22 @@ export const contactEditResponseType = new GraphQLObjectType({
   }),
 });
 
-export const contactEditType: GraphQLFieldConfig<
+export const ContactEditType: GraphQLFieldConfig<
   undefined,
   Context,
-  contactEditInput
+  ContactEditInput
 > = {
-  type: GraphQLNonNull(contactEditResponseType),
+  type: GraphQLNonNull(ContactEditResponseType),
   args: {
     input: {
       description: "input for action",
-      type: GraphQLNonNull(contactEditInputType),
+      type: GraphQLNonNull(ContactEditInputType),
     },
   },
   resolve: async (
     _source,
-    args: contactEditInput,
+    args: ContactEditInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ) => {},
+  ): Promise<ContactEditResponse> => {},
 };

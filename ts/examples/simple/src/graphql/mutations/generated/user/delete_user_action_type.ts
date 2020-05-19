@@ -2,29 +2,33 @@
 
 import {
   GraphQLObjectType,
+  GraphQLInputObjectType,
   GraphQLID,
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
+  GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
+import { UserDeleteInput } from "src/ent/user/actions/delete_user_action";
 import User from "src/ent/user";
+import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 
-export const userDeleteInputType = new GraphQLObjectType({
-  name: "userDeleteInput",
-  fields: (): GraphQLFieldConfigMap<User, Context> => ({
+export const UserDeleteInputType = new GraphQLInputObjectType({
+  name: "UserDeleteInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       type: GraphQLNonNull(GraphQLID),
     },
   }),
 });
-interface userDeleteResponse {
+interface UserDeleteResponse {
   user: User;
 }
 
-export const userDeleteResponseType = new GraphQLObjectType({
-  name: "userDeleteResponse",
+export const UserDeleteResponseType = new GraphQLObjectType({
+  name: "UserDeleteResponse",
   fields: (): GraphQLFieldConfigMap<User, Context> => ({
     deletedUserID: {
       type: GraphQLID,
@@ -32,22 +36,22 @@ export const userDeleteResponseType = new GraphQLObjectType({
   }),
 });
 
-export const userDeleteType: GraphQLFieldConfig<
+export const UserDeleteType: GraphQLFieldConfig<
   undefined,
   Context,
-  userDeleteInput
+  UserDeleteInput
 > = {
-  type: GraphQLNonNull(userDeleteResponseType),
+  type: GraphQLNonNull(UserDeleteResponseType),
   args: {
     input: {
       description: "input for action",
-      type: GraphQLNonNull(userDeleteInputType),
+      type: GraphQLNonNull(UserDeleteInputType),
     },
   },
   resolve: async (
     _source,
-    args: userDeleteInput,
+    args: UserDeleteInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ) => {},
+  ): Promise<UserDeleteResponse> => {},
 };
