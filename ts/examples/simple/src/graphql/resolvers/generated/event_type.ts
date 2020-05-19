@@ -19,6 +19,7 @@ import Event from "src/ent/event";
 interface EventQueryArgs {
   id: ID;
 }
+
 export const EventType = new GraphQLObjectType({
   name: "Event",
   fields: (): GraphQLFieldConfigMap<Event, Context> => ({
@@ -91,7 +92,7 @@ export const EventQuery: GraphQLFieldConfig<
   args: {
     id: {
       description: "id",
-      type: GraphQLID,
+      type: GraphQLNonNull(GraphQLID),
     },
   },
   resolve: async (

@@ -68,14 +68,16 @@ func getCustomFuncMap(imps *tsimport.Imports) template.FuncMap {
 	return m
 }
 
+// TODO duplicated in internal/graphql/generate_ts_code.go
 func getInputName(action action.Action) string {
 	// TODO
+	// todo multiple create | edits
+
 	node := action.GetNodeInfo().Node
 	switch action.GetOperation() {
 	case ent.CreateAction:
 		return fmt.Sprintf("%sCreateInput", node)
 	case ent.EditAction:
-		// todo multiple edits
 		return fmt.Sprintf("%sEditInput", node)
 	}
 	panic("invalid. todo")

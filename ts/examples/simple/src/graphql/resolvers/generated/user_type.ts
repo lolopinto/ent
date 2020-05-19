@@ -19,6 +19,7 @@ import User from "src/ent/user";
 interface UserQueryArgs {
   id: ID;
 }
+
 export const UserType = new GraphQLObjectType({
   name: "User",
   fields: (): GraphQLFieldConfigMap<User, Context> => ({
@@ -97,7 +98,7 @@ export const UserQuery: GraphQLFieldConfig<
   args: {
     id: {
       description: "id",
-      type: GraphQLID,
+      type: GraphQLNonNull(GraphQLID),
     },
   },
   resolve: async (

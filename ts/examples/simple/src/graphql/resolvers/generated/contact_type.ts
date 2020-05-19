@@ -17,6 +17,7 @@ import Contact from "src/ent/contact";
 interface ContactQueryArgs {
   id: ID;
 }
+
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
   fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
@@ -53,7 +54,7 @@ export const ContactQuery: GraphQLFieldConfig<
   args: {
     id: {
       description: "id",
-      type: GraphQLID,
+      type: GraphQLNonNull(GraphQLID),
     },
   },
   resolve: async (

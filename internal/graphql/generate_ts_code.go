@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
@@ -44,6 +46,29 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 				serr.Append(err)
 				return
 			}
+
+			actionInfo := nodeData.ActionInfo
+			if actionInfo == nil {
+				return
+			}
+
+			//			write all the actions concurrently
+			var actionsWg sync.WaitGroup
+			actionsWg.Add(len(nodeData.ActionInfo.Actions))
+			for idx := range actionInfo.Actions {
+				go func(idx int) {
+					defer actionsWg.Done()
+					action := actionInfo.Actions[idx]
+
+					if !action.ExposedToGraphQL() {
+						return
+					}
+					if err := writeActionFile(nodeData, action); err != nil {
+						serr.Append(err)
+					}
+				}(idx)
+			}
+			actionsWg.Wait()
 		}(key)
 	}
 	wg.Wait()
@@ -56,7 +81,7 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 
 var _ codegen.Step = &TSStep{}
 
-func getFilePathForObjectFile(nodeData *schema.NodeData) string {
+func getFilePathForNode(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName)
 }
 
@@ -64,10 +89,25 @@ func getQueryFilePath() string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/query_type.ts")
 }
 
+func getFilePathForAction(nodeData *schema.NodeData, action action.Action) string {
+	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(action.GetActionName()))
+}
+
 type gqlobjectData struct {
-	NodeData    *schema.NodeData
-	GQLNode     nodeType
-	FieldConfig fieldConfig
+	NodeData     *schema.NodeData
+	GQLNodes     []objectType
+	FieldConfig  fieldConfig
+	LocalImports []string
+}
+
+func (obj gqlobjectData) ForeignImport(name string) bool {
+	// TODO this should eventually be a map
+	for _, localImport := range obj.LocalImports {
+		if localImport == name {
+			return false
+		}
+	}
+	return true
 }
 
 // write graphql file
@@ -75,15 +115,43 @@ func writeTypeFile(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) error 
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlobjectData{
-			NodeData: nodeData,
-			// TODO this becomes nodes once we move to mutation and all the types involved
-			GQLNode:     buildNodeForObject(nodeMap, nodeData),
+			NodeData:    nodeData,
+			GQLNodes:    []objectType{buildNodeForObject(nodeMap, nodeData)},
 			FieldConfig: buildFieldConfig(nodeData),
+			LocalImports: []string{
+				fmt.Sprintf("%sType", nodeData.Node),
+				fmt.Sprintf("%sQueryArgs", nodeData.Node),
+				fmt.Sprintf("%sQuery", nodeData.Node),
+			},
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
 		TemplateName:      "object.tmpl",
-		PathToFile:        getFilePathForObjectFile(nodeData),
+		PathToFile:        getFilePathForNode(nodeData),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	}))
+}
+
+func writeActionFile(nodeData *schema.NodeData, action action.Action) error {
+	imps := tsimport.NewImports()
+	return file.Write((&file.TemplatedBasedFileWriter{
+		Data: gqlobjectData{
+			NodeData:    nodeData,
+			GQLNodes:    buildActionNodes(nodeData, action),
+			FieldConfig: buildActionFieldConfig(nodeData, action),
+			LocalImports: []string{
+				fmt.Sprintf("%sInputType", action.GetGraphQLName()),
+				fmt.Sprintf("%sResponseType", action.GetGraphQLName()),
+				fmt.Sprintf("%sResponse", action.GetGraphQLName()),
+				fmt.Sprintf("%sType", action.GetGraphQLName()),
+			},
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
+		TemplateName:      "object.tmpl",
+		PathToFile:        getFilePathForAction(nodeData, action),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
@@ -94,9 +162,13 @@ type fieldConfig struct {
 	Exported         bool
 	Name             string
 	Arg              string
-	Type             string
+	TypeImports      []string
 	Args             []fieldConfigArg
-	FunctionContents string
+	FunctionContents []string
+}
+
+func (f fieldConfig) FieldType() string {
+	return typeFromImports(f.TypeImports)
 }
 
 type fieldConfigArg struct {
@@ -111,23 +183,25 @@ func (f fieldConfigArg) FieldType() string {
 
 func buildFieldConfig(nodeData *schema.NodeData) fieldConfig {
 	return fieldConfig{
-		Exported: true,
-		Name:     fmt.Sprintf("%sQuery", nodeData.Node),
-		Arg:      fmt.Sprintf("%sQueryArgs", nodeData.Node),
-		Type:     fmt.Sprintf("%sType", nodeData.Node),
+		Exported:    true,
+		Name:        fmt.Sprintf("%sQuery", nodeData.Node),
+		Arg:         fmt.Sprintf("%sQueryArgs", nodeData.Node),
+		TypeImports: []string{fmt.Sprintf("%sType", nodeData.Node)},
 		Args: []fieldConfigArg{
 			{
 				Name:        "id",
 				Description: "id",
-				Imports:     []string{"GraphQLID"},
+				Imports:     []string{"GraphQLNonNull", "GraphQLID"},
 			},
 		},
-		FunctionContents: fmt.Sprintf("return %s.load(context.viewer, args.id);", nodeData.Node),
+		FunctionContents: []string{
+			fmt.Sprintf("return %s.load(context.viewer, args.id);", nodeData.Node),
+		},
 	}
 }
 
-func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) nodeType {
-	result := nodeType{
+func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) objectType {
+	result := objectType{
 		Type:     fmt.Sprintf("%sType", nodeData.Node),
 		Node:     nodeData.Node,
 		GQLType:  "GraphQLObjectType",
@@ -226,7 +300,158 @@ func addPluralEdge(edge edge.Edge, fields *[]fieldType, instance string) {
 	*fields = append(*fields, gqlField)
 }
 
-type nodeType struct {
+func buildActionNodes(nodeData *schema.NodeData, action action.Action) []objectType {
+	return []objectType{
+		buildActionInputNode(nodeData, action),
+		buildActionResponseNode(nodeData, action),
+	}
+}
+
+func buildActionInputNode(nodeData *schema.NodeData, action action.Action) objectType {
+	// TODO shared input types across created/edit for example
+	result := objectType{
+		Type:     fmt.Sprintf("%sInputType", action.GetGraphQLName()),
+		Node:     fmt.Sprintf("%sInput", action.GetGraphQLName()),
+		Exported: true,
+		GQLType:  "GraphQLInputObjectType",
+	}
+
+	// add id field for edit and delete mutations
+	if action.MutatingExistingObject() {
+		result.Fields = append(result.Fields, fieldType{
+			Name:         fmt.Sprintf("%sID", action.GetNodeInfo().NodeInstance),
+			FieldImports: []string{"GraphQLNonNull", "GraphQLID"},
+			Description:  fmt.Sprintf("id of %s", nodeData.Node),
+		})
+	}
+
+	for _, f := range action.GetFields() {
+		result.Fields = append(result.Fields, fieldType{
+			Name:         f.GetGraphQLName(),
+			FieldImports: f.GetTSGraphQLTypeForFieldImports(),
+		})
+	}
+
+	// add each edge that's part of the mutation as an ID
+	// use singular version so that this is friendID instead of friendsID
+	for _, edge := range action.GetEdges() {
+		result.Fields = append(result.Fields, fieldType{
+			Name:         fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+			FieldImports: []string{"GraphQLNonNull", "GraphQLID"},
+		})
+	}
+
+	// TODO non ent fields 	e.g. status etc
+
+	return result
+}
+
+// TODO stolen from internal/tscode/write_action.go
+func getInputName(action action.Action) string {
+	// TODO
+	// todo multiple create | edits
+
+	node := action.GetNodeInfo().Node
+	switch action.GetOperation() {
+	case ent.CreateAction:
+		return fmt.Sprintf("%sCreateInput", node)
+	case ent.EditAction:
+		return fmt.Sprintf("%sEditInput", node)
+	}
+	panic("invalid. todo")
+}
+
+func buildActionResponseNode(nodeData *schema.NodeData, action action.Action) objectType {
+	// TODO add type for input above
+	result := objectType{
+		Type:     fmt.Sprintf("%sResponseType", action.GetGraphQLName()),
+		Node:     fmt.Sprintf("%sResponse", action.GetGraphQLName()),
+		Exported: true,
+		GQLType:  "GraphQLObjectType",
+		// TODO these don't make sense here either and should be moved up
+		DefaultImports: []queryGQLDatum{
+			{
+				ImportPath:  fmt.Sprintf("src/ent/%s", nodeData.PackageName),
+				GraphQLType: nodeData.Node,
+			},
+			{
+				ImportPath:  fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
+				GraphQLType: action.GetActionName(),
+			},
+		},
+		Imports: []queryGQLDatum{
+			{
+				ImportPath:  getFilePathForNode(nodeData),
+				GraphQLType: fmt.Sprintf("%sType", nodeData.Node),
+			},
+			{
+				ImportPath:  fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
+				GraphQLType: getInputName(action),
+			},
+		},
+	}
+
+	nodeInfo := action.GetNodeInfo()
+	if action.GetOperation() != ent.DeleteAction {
+		result.Fields = append(result.Fields, fieldType{
+			Name:         nodeInfo.NodeInstance,
+			FieldImports: []string{"GraphQLNonNull", fmt.Sprintf("%sType", nodeInfo.Node)},
+		})
+	} else {
+		result.Fields = append(result.Fields, fieldType{
+			Name:         fmt.Sprintf("deleted%sID", nodeInfo.Node),
+			FieldImports: []string{"GraphQLID"},
+		})
+	}
+
+	// TODO this doesn't make sense here. it should be a top level thing
+	result.Interfaces = []interfaceType{
+		{
+			Exported: false,
+			Name:     fmt.Sprintf("%sResponse", action.GetGraphQLName()),
+			Fields: []interfaceField{
+				{
+					Name:      nodeData.NodeInstance,
+					Type:      nodeData.Node,
+					UseImport: true,
+				},
+			},
+		},
+	}
+
+	return result
+}
+
+// TODO need all these action.GetGraphQLName() to be uppercase
+func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action) fieldConfig {
+	result := fieldConfig{
+		Exported: true,
+		Name:     fmt.Sprintf("%sType", action.GetGraphQLName()),
+		// imports UserCreateInput...
+		Arg: getInputName(action),
+		TypeImports: []string{
+			"GraphQLNonNull",
+			fmt.Sprintf("%sResponseType", action.GetGraphQLName()),
+		},
+		Args: []fieldConfigArg{
+			{
+				Name:        "input",
+				Description: "input for action",
+				Imports: []string{
+					"GraphQLNonNull",
+					fmt.Sprintf("%sInputType", action.GetGraphQLName()),
+				},
+			},
+		},
+	}
+	// TODO FunctionContents
+	//		FunctionContents: []string{},
+
+	return result
+
+}
+
+type objectType struct {
 	Type     string
 	Node     string
 	Fields   []fieldType
@@ -242,6 +467,7 @@ type nodeType struct {
 type fieldType struct {
 	Name               string
 	HasResolveFunction bool
+	Description        string
 	FieldImports       []string
 
 	// no args for now. come back.

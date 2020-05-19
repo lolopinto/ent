@@ -16,6 +16,7 @@ import Address from "src/ent/address";
 interface AddressQueryArgs {
   id: ID;
 }
+
 export const AddressType = new GraphQLObjectType({
   name: "Address",
   fields: (): GraphQLFieldConfigMap<Address, Context> => ({
@@ -43,7 +44,7 @@ export const AddressQuery: GraphQLFieldConfig<
   args: {
     id: {
       description: "id",
-      type: GraphQLID,
+      type: GraphQLNonNull(GraphQLID),
     },
   },
   resolve: async (
