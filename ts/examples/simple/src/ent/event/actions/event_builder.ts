@@ -80,7 +80,7 @@ export class EventBuilder implements Builder<Event> {
   addHost(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
     for (const node of nodes) {
       if (this.isUserBuilder(node)) {
-        this.addHostID(node.placeholderID);
+        this.addHostID(node);
       } else if (typeof node === "object") {
         this.addHostID(node.id);
       } else {
@@ -122,7 +122,7 @@ export class EventBuilder implements Builder<Event> {
   addInvited(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
     for (const node of nodes) {
       if (this.isUserBuilder(node)) {
-        this.addInvitedID(node.placeholderID);
+        this.addInvitedID(node);
       } else if (typeof node === "object") {
         this.addInvitedID(node.id);
       } else {
@@ -164,7 +164,7 @@ export class EventBuilder implements Builder<Event> {
   addAttending(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
     for (const node of nodes) {
       if (this.isUserBuilder(node)) {
-        this.addAttendingID(node.placeholderID);
+        this.addAttendingID(node);
       } else if (typeof node === "object") {
         this.addAttendingID(node.id);
       } else {
@@ -209,7 +209,7 @@ export class EventBuilder implements Builder<Event> {
   addDeclined(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
     for (const node of nodes) {
       if (this.isUserBuilder(node)) {
-        this.addDeclinedID(node.placeholderID);
+        this.addDeclinedID(node);
       } else if (typeof node === "object") {
         this.addDeclinedID(node.id);
       } else {
@@ -251,7 +251,7 @@ export class EventBuilder implements Builder<Event> {
   addMaybe(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
     for (const node of nodes) {
       if (this.isUserBuilder(node)) {
-        this.addMaybeID(node.placeholderID);
+        this.addMaybeID(node);
       } else if (typeof node === "object") {
         this.addMaybeID(node.id);
       } else {

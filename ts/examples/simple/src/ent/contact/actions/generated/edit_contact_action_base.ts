@@ -66,4 +66,17 @@ export class EditContactActionBase implements Action<Contact> {
   ): EditContactActionBase {
     return new this(viewer, contact, input);
   }
+
+  static async saveFromID<T extends EditContactActionBase>(
+    this: new (viewer: Viewer, contact: Contact, input: ContactEditInput) => T,
+    viewer: Viewer,
+    id: ID,
+    input: ContactEditInput,
+  ): Promise<Contact | null> {
+    let contact = await Contact.load(viewer, id);
+    if (!contact) {
+      return null;
+    }
+    return await new this(viewer, contact, input).save();
+  }
 }

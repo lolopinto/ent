@@ -42,11 +42,13 @@
 {{ $constructor := "" }}
 {{ $newArgs := ""}}
 {{ $instance := .NodeData.NodeInstance}}
+{{ $hasSaveFromID := false }}
 
 {{/* edit, whole shebang */ -}}
 {{ if and $action.MutatingExistingObject $hasInput -}}
   {{ $constructor = printf "viewer: %s, %s: %s, input: %s" $viewer $instance $node $inputName -}}
   {{ $newArgs = printf "viewer, %s, input" $instance -}}
+  {{ $hasSaveFromID = true}}
 {{/* create, no editing */ -}}
 {{ else if $hasInput -}} 
   {{ $constructor = printf "viewer: %s, input: %s"  $viewer $inputName -}}
@@ -55,6 +57,7 @@
 {{ else -}}
   {{ $constructor = printf "viewer: %s, %s: %s" $viewer $instance $node -}}
   {{ $newArgs = printf "viewer, %s" $instance -}}
+  {{ $hasSaveFromID = true}}
 {{end -}}
 
 export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
@@ -125,4 +128,33 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   ): {{$actionName}} {
     return new this({{$newArgs}});
   }
+
+  {{if $hasSaveFromID -}}
+    static async saveFromID<T extends {{$actionName}}>(
+      this: new ({{$constructor}}) => T,
+      viewer: {{useImport "Viewer"}},
+      id: {{useImport "ID"}},
+      {{if $hasInput -}}
+        input: {{$inputName}},
+      {{end -}}
+      {{ if $action.IsDeletingNode -}}
+        ): Promise<void> {
+        let {{$instance}} = await {{$node}}.load(viewer, id);
+        if (!{{$instance}}) {
+          return;
+        }
+      {{else -}}
+        ): Promise<{{$node}} | null> {
+        let {{$instance}} = await {{$node}}.load(viewer, id);
+        if (!{{$instance}}) {
+          return null;
+        }
+      {{end -}}
+      {{if $hasInput -}}
+        return await new this(viewer, {{$instance}}, input).save();
+      {{else -}}
+        return await new this(viewer, {{$instance}}).save();
+      {{end -}}
+    } 
+  {{end -}}
 }
