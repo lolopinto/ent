@@ -12,11 +12,10 @@ import {
 } from "graphql";
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
-import { EventDeleteInput } from "src/ent/event/actions/delete_event_action";
 import Event from "src/ent/event";
 import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
-interface customEventDeleteInput extends EventDeleteInput {
+interface customEventDeleteInput {
   eventID: ID;
 }
 
@@ -29,7 +28,7 @@ export const EventDeleteInputType = new GraphQLInputObjectType({
   }),
 });
 interface EventDeleteResponse {
-  event: Event;
+  deletedEventID: ID;
 }
 
 export const EventDeleteResponseType = new GraphQLObjectType({
@@ -58,5 +57,8 @@ export const EventDeleteType: GraphQLFieldConfig<
     args: customEventDeleteInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ): Promise<EventDeleteResponse> => {},
+  ): Promise<EventDeleteResponse> => {
+    await DeleteEventAction.saveXFromID(context.viewer, args.id);
+    return { deletedEventID: args.eventID };
+  },
 };

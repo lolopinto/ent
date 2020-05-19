@@ -12,11 +12,10 @@ import {
 } from "graphql";
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
-import { ContactDeleteInput } from "src/ent/contact/actions/delete_contact_action";
 import Contact from "src/ent/contact";
 import DeleteContactAction from "src/ent/contact/actions/delete_contact_action";
 
-interface customContactDeleteInput extends ContactDeleteInput {
+interface customContactDeleteInput {
   contactID: ID;
 }
 
@@ -29,7 +28,7 @@ export const ContactDeleteInputType = new GraphQLInputObjectType({
   }),
 });
 interface ContactDeleteResponse {
-  contact: Contact;
+  deletedContactID: ID;
 }
 
 export const ContactDeleteResponseType = new GraphQLObjectType({
@@ -58,5 +57,8 @@ export const ContactDeleteType: GraphQLFieldConfig<
     args: customContactDeleteInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ): Promise<ContactDeleteResponse> => {},
+  ): Promise<ContactDeleteResponse> => {
+    await DeleteContactAction.saveXFromID(context.viewer, args.id);
+    return { deletedContactID: args.contactID };
+  },
 };

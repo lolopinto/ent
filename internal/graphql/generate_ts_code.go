@@ -350,6 +350,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 
 	if a.MutatingExistingObject() {
 		// custom interface for editing
+
 		result.Interfaces = []interfaceType{
 			{
 				Exported: false,
@@ -361,11 +362,15 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 						UseImport: true,
 					},
 				},
-				// TODO remove this for delete since no input
-				Extends: []string{
-					fmt.Sprintf("%sInput", actionPrefix),
-				},
 			},
+		}
+
+		// this doesn't ally for delete
+		// can be done cleaner if/when this gets more complicated but works for now
+		if a.GetOperation() != ent.DeleteAction {
+			result.Interfaces[0].Extends = []string{
+				fmt.Sprintf("%sInput", actionPrefix),
+			}
 		}
 	}
 
@@ -427,26 +432,41 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 			Name:         nodeInfo.NodeInstance,
 			FieldImports: []string{"GraphQLNonNull", fmt.Sprintf("%sType", nodeInfo.Node)},
 		})
+
+		// TODO this doesn't make sense here. it should be a top level thing
+		result.Interfaces = []interfaceType{
+			{
+				Exported: false,
+				Name:     fmt.Sprintf("%sResponse", actionPrefix),
+				Fields: []interfaceField{
+					{
+						Name:      nodeData.NodeInstance,
+						Type:      nodeData.Node,
+						UseImport: true,
+					},
+				},
+			},
+		}
 	} else {
 		result.Fields = append(result.Fields, fieldType{
 			Name:         fmt.Sprintf("deleted%sID", nodeInfo.Node),
 			FieldImports: []string{"GraphQLID"},
 		})
-	}
 
-	// TODO this doesn't make sense here. it should be a top level thing
-	result.Interfaces = []interfaceType{
-		{
-			Exported: false,
-			Name:     fmt.Sprintf("%sResponse", actionPrefix),
-			Fields: []interfaceField{
-				{
-					Name:      nodeData.NodeInstance,
-					Type:      nodeData.Node,
-					UseImport: true,
+		// TODO this doesn't make sense here. it should be a top level thing
+		result.Interfaces = []interfaceType{
+			{
+				Exported: false,
+				Name:     fmt.Sprintf("%sResponse", actionPrefix),
+				Fields: []interfaceField{
+					{
+						Name:      fmt.Sprintf("deleted%sID", nodeInfo.Node),
+						Type:      "ID",
+						UseImport: true,
+					},
 				},
 			},
-		},
+		}
 	}
 
 	return result
@@ -487,7 +507,10 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 	}
 
 	if action.GetOperation() == ent.CreateAction {
-		result.FunctionContents = append(result.FunctionContents, fmt.Sprintf("let %s = await %s.create(context.viewer, {", nodeData.NodeInstance, action.GetActionName()))
+		result.FunctionContents = append(
+			result.FunctionContents,
+			fmt.Sprintf("let %s = await %s.create(context.viewer, {", nodeData.NodeInstance, action.GetActionName()),
+		)
 		for _, f := range action.GetFields() {
 			if f.ExposeToGraphQL() && f.EditableField() {
 				// TODO rename from args to input?
@@ -504,10 +527,21 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 			fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance),
 		)
 	} else if action.GetOperation() == ent.DeleteAction {
+		result.FunctionContents = append(
+			result.FunctionContents,
+			fmt.Sprintf("await %s.saveXFromID(context.viewer, args.id);", action.GetActionName()),
+		)
 
+		result.FunctionContents = append(
+			result.FunctionContents,
+			fmt.Sprintf("return {deleted%sID: args.%sID};", nodeData.Node, nodeData.PackageName),
+		)
 	} else {
 		// some kind of editing
-		result.FunctionContents = append(result.FunctionContents, fmt.Sprintf("let %s = await %s.saveXFromID(context.viewer, args.id, {", nodeData.NodeInstance, action.GetActionName()))
+		result.FunctionContents = append(
+			result.FunctionContents,
+			fmt.Sprintf("let %s = await %s.saveXFromID(context.viewer, args.id, {", nodeData.NodeInstance, action.GetActionName()),
+		)
 		for _, f := range action.GetFields() {
 			if f.ExposeToGraphQL() && f.EditableField() {
 				// TODO rename from args to input?

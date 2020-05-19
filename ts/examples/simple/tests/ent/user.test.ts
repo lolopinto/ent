@@ -149,7 +149,7 @@ test("delete user. saveXFromID", async () => {
   });
 
   let vc = new IDViewer(user.id, user);
-  let editedUser = await DeleteUserAction.saveXFromID(vc, user.id)
+  await DeleteUserAction.saveXFromID(vc, user.id)
 
   let loadedUser = await User.load(vc, user.id);
   expect(loadedUser).toBe(null);
