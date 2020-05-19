@@ -114,20 +114,55 @@ func getImportPathForAction(nodeData *schema.NodeData, action action.Action) str
 }
 
 type gqlobjectData struct {
-	NodeData     *schema.NodeData
-	GQLNodes     []objectType
-	FieldConfig  fieldConfig
-	LocalImports []string
+	NodeData    *schema.NodeData
+	GQLNodes    []objectType
+	FieldConfig fieldConfig
+	initMap     bool
+	m           map[string]bool
+}
+
+func (obj gqlobjectData) DefaultImports() []queryGQLDatum {
+	var result []queryGQLDatum
+	for _, node := range obj.GQLNodes {
+		result = append(result, node.DefaultImports...)
+	}
+	return result
+}
+
+func (obj gqlobjectData) Imports() []queryGQLDatum {
+	var result []queryGQLDatum
+	for _, node := range obj.GQLNodes {
+		result = append(result, node.Imports...)
+	}
+	return result
+}
+
+func (obj gqlobjectData) Interfaces() []interfaceType {
+	var result []interfaceType
+	for _, node := range obj.GQLNodes {
+		result = append(result, node.Interfaces...)
+	}
+	return result
 }
 
 func (obj gqlobjectData) ForeignImport(name string) bool {
-	// TODO this should eventually be a map
-	for _, localImport := range obj.LocalImports {
-		if localImport == name {
-			return false
+	if !obj.initMap {
+		obj.m = make(map[string]bool)
+
+		// any node Type defined here is local
+		for _, node := range obj.GQLNodes {
+			obj.m[node.Type] = true
+
+			// same for interfaces
+			for _, in := range node.Interfaces {
+				obj.m[in.Name] = true
+			}
 		}
+		// and field config
+		obj.m[obj.FieldConfig.Name] = true
+		obj.initMap = true
 	}
-	return true
+	return !obj.m[name]
 }
 
 // write graphql file
@@ -138,11 +173,6 @@ func writeTypeFile(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) error 
 			NodeData:    nodeData,
 			GQLNodes:    []objectType{buildNodeForObject(nodeMap, nodeData)},
 			FieldConfig: buildFieldConfig(nodeData),
-			LocalImports: []string{
-				fmt.Sprintf("%sType", nodeData.Node),
-				fmt.Sprintf("%sQueryArgs", nodeData.Node),
-				fmt.Sprintf("%sQuery", nodeData.Node),
-			},
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
@@ -163,12 +193,6 @@ func writeActionFile(nodeData *schema.NodeData, action action.Action) error {
 			NodeData:    nodeData,
 			GQLNodes:    buildActionNodes(nodeData, action, actionPrefix),
 			FieldConfig: buildActionFieldConfig(nodeData, action, actionPrefix),
-			LocalImports: []string{
-				fmt.Sprintf("%sInputType", actionPrefix),
-				fmt.Sprintf("%sResponseType", actionPrefix),
-				fmt.Sprintf("%sResponse", actionPrefix),
-				fmt.Sprintf("%sType", actionPrefix),
-			},
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
@@ -412,19 +436,15 @@ func getInputName(action action.Action) string {
 	case ent.EditAction:
 		return fmt.Sprintf("%sEditInput", node)
 	}
-	// invalid
-	return fmt.Sprintf("%sDeleteInput", node)
 	panic("invalid. todo")
 }
 
 func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, actionPrefix string) objectType {
-	// TODO add type for input above
 	result := objectType{
 		Type:     fmt.Sprintf("%sResponseType", actionPrefix),
 		Node:     fmt.Sprintf("%sResponse", actionPrefix),
 		Exported: true,
 		GQLType:  "GraphQLObjectType",
-		// TODO these don't make sense here either and should be moved up
 		DefaultImports: []queryGQLDatum{
 			{
 				ImportPath:  fmt.Sprintf("src/ent/%s", nodeData.PackageName),
@@ -440,11 +460,14 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 				ImportPath:  getImportPathForNode(nodeData),
 				GraphQLType: fmt.Sprintf("%sType", nodeData.Node),
 			},
-			{
-				ImportPath:  fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
-				GraphQLType: getInputName(action),
-			},
 		},
+	}
+
+	if action.GetOperation() != ent.DeleteAction {
+		result.Imports = append(result.Imports, queryGQLDatum{
+			ImportPath:  fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
+			GraphQLType: getInputName(action),
+		})
 	}
 
 	nodeInfo := action.GetNodeInfo()
@@ -454,7 +477,6 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 			FieldImports: []string{"GraphQLNonNull", fmt.Sprintf("%sType", nodeInfo.Node)},
 		})
 
-		// TODO this doesn't make sense here. it should be a top level thing
 		result.Interfaces = []interfaceType{
 			{
 				Exported: false,
@@ -474,7 +496,6 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 			FieldImports: []string{"GraphQLID"},
 		})
 
-		// TODO this doesn't make sense here. it should be a top level thing
 		result.Interfaces = []interfaceType{
 			{
 				Exported: false,
@@ -505,10 +526,9 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		argImports = append(argImports, argName)
 	}
 	result := fieldConfig{
-		Exported: true,
-		Name:     fmt.Sprintf("%sType", actionPrefix),
-		// imports UserCreateInput...
-		Arg: fmt.Sprintf("{ [input: string]: %s}", argName),
+		Exported:         true,
+		Name:             fmt.Sprintf("%sType", actionPrefix),
+		Arg:              fmt.Sprintf("{ [input: string]: %s}", argName),
 		ResolveMethodArg: "{ input }",
 		TypeImports: []string{
 			"GraphQLNonNull",
@@ -589,7 +609,7 @@ type objectType struct {
 	Node     string
 	Fields   []fieldType
 	Exported bool
-	GQLType  string // for now only GraphQLObjectType
+	GQLType  string // GraphQLObjectType or GraphQLInputObjectType
 
 	// TODO will soon need to allow calling import multiple times for the same path
 	DefaultImports []queryGQLDatum

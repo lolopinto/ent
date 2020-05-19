@@ -22,6 +22,10 @@ interface customContactEditInput extends ContactEditInput {
   contactID: ID;
 }
 
+interface ContactEditResponse {
+  contact: Contact;
+}
+
 export const ContactEditInputType = new GraphQLInputObjectType({
   name: "ContactEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -42,9 +46,6 @@ export const ContactEditInputType = new GraphQLInputObjectType({
     },
   }),
 });
-interface ContactEditResponse {
-  contact: Contact;
-}
 
 export const ContactEditResponseType = new GraphQLObjectType({
   name: "ContactEditResponse",

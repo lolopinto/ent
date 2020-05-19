@@ -22,6 +22,10 @@ interface customUserEditInput extends UserEditInput {
   userID: ID;
 }
 
+interface UserEditResponse {
+  user: User;
+}
+
 export const UserEditInputType = new GraphQLInputObjectType({
   name: "UserEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -36,9 +40,6 @@ export const UserEditInputType = new GraphQLInputObjectType({
     },
   }),
 });
-interface UserEditResponse {
-  user: User;
-}
 
 export const UserEditResponseType = new GraphQLObjectType({
   name: "UserEditResponse",

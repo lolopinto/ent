@@ -23,6 +23,10 @@ interface customEventEditInput extends EventEditInput {
   eventID: ID;
 }
 
+interface EventEditResponse {
+  event: Event;
+}
+
 export const EventEditInputType = new GraphQLInputObjectType({
   name: "EventEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -46,9 +50,6 @@ export const EventEditInputType = new GraphQLInputObjectType({
     },
   }),
 });
-interface EventEditResponse {
-  event: Event;
-}
 
 export const EventEditResponseType = new GraphQLObjectType({
   name: "EventEditResponse",

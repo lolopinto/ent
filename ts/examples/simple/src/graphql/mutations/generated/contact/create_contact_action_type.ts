@@ -16,6 +16,10 @@ import { ContactCreateInput } from "src/ent/contact/actions/create_contact_actio
 import Contact from "src/ent/contact";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 
+interface ContactCreateResponse {
+  contact: Contact;
+}
+
 export const ContactCreateInputType = new GraphQLInputObjectType({
   name: "ContactCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -33,9 +37,6 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
     },
   }),
 });
-interface ContactCreateResponse {
-  contact: Contact;
-}
 
 export const ContactCreateResponseType = new GraphQLObjectType({
   name: "ContactCreateResponse",

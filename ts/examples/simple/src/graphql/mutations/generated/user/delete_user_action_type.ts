@@ -19,6 +19,10 @@ interface customUserDeleteInput {
   userID: ID;
 }
 
+interface UserDeleteResponse {
+  deletedUserID: ID;
+}
+
 export const UserDeleteInputType = new GraphQLInputObjectType({
   name: "UserDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -27,9 +31,6 @@ export const UserDeleteInputType = new GraphQLInputObjectType({
     },
   }),
 });
-interface UserDeleteResponse {
-  deletedUserID: ID;
-}
 
 export const UserDeleteResponseType = new GraphQLObjectType({
   name: "UserDeleteResponse",

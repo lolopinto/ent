@@ -19,6 +19,10 @@ interface customEventDeleteInput {
   eventID: ID;
 }
 
+interface EventDeleteResponse {
+  deletedEventID: ID;
+}
+
 export const EventDeleteInputType = new GraphQLInputObjectType({
   name: "EventDeleteInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -27,9 +31,6 @@ export const EventDeleteInputType = new GraphQLInputObjectType({
     },
   }),
 });
-interface EventDeleteResponse {
-  deletedEventID: ID;
-}
 
 export const EventDeleteResponseType = new GraphQLObjectType({
   name: "EventDeleteResponse",

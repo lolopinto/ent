@@ -16,6 +16,10 @@ import { UserCreateInput } from "src/ent/user/actions/create_user_action";
 import User from "src/ent/user";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 
+interface UserCreateResponse {
+  user: User;
+}
+
 export const UserCreateInputType = new GraphQLInputObjectType({
   name: "UserCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -30,9 +34,6 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     },
   }),
 });
-interface UserCreateResponse {
-  user: User;
-}
 
 export const UserCreateResponseType = new GraphQLObjectType({
   name: "UserCreateResponse",

@@ -17,6 +17,10 @@ import { EventCreateInput } from "src/ent/event/actions/create_event_action";
 import Event from "src/ent/event";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
 
+interface EventCreateResponse {
+  event: Event;
+}
+
 export const EventCreateInputType = new GraphQLInputObjectType({
   name: "EventCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -37,9 +41,6 @@ export const EventCreateInputType = new GraphQLInputObjectType({
     },
   }),
 });
-interface EventCreateResponse {
-  event: Event;
-}
 
 export const EventCreateResponseType = new GraphQLObjectType({
   name: "EventCreateResponse",

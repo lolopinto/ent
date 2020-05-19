@@ -5,40 +5,38 @@
 
 {{$baseObj := . -}}
 
-{{ range $gqlNode := .GQLNodes -}}
-
-  {{/* import types that we may need e.g. UserType, ContactType, etc */}}
-  {{ range $gqlNode.Imports -}} 
-    {{reserveImport .ImportPath .GraphQLType}}
-  {{ end -}}
-
-  {{ range $gqlNode.DefaultImports -}} 
-    {{reserveDefaultImport .ImportPath .GraphQLType}}
-  {{ end -}}
+{{/* import types that we may need e.g. UserType, ContactType, etc */}}
+{{ range $baseObj.Imports -}} 
+  {{reserveImport .ImportPath .GraphQLType}}
 {{ end -}}
+
+{{ range $baseObj.DefaultImports -}} 
+  {{reserveDefaultImport .ImportPath .GraphQLType}}
+{{ end -}}
+
+{{ range $baseObj.Interfaces -}}
+  {{ range .Extends}}
+    {{ if $baseObj.ForeignImport . -}}
+      {{$ignored := useImport . -}}
+    {{ end -}}
+  {{ end -}}
+  {{.InterfaceDecl }} {
+  {{ range .Fields -}}
+    {{$type := .Type -}}
+    {{if .UseImport -}}
+      {{$type = useImport $type -}}
+    {{end -}}
+    {{.Name}}: {{$type}};
+  {{ end -}}
+  }
+
+{{end}}
 
 {{/* these 2 probably need to change */}}
 {{$node := useImport .NodeData.Node -}}
 {{$nodeInstance := .NodeData.NodeInstance -}}
 
 {{ range $gqlNode := .GQLNodes -}}
-
-  {{ range $gqlNode.Interfaces -}}
-    {{ range .Extends}}
-      {{ if $baseObj.ForeignImport . -}}
-        {{$ignored := useImport . -}}
-      {{ end -}}
-    {{ end -}}
-    {{.InterfaceDecl }} {
-    {{ range .Fields -}}
-      {{$type := .Type -}}
-      {{if .UseImport -}}
-        {{$type = useImport $type -}}
-      {{end -}}
-      {{.Name}}: {{$type}};
-    {{ end -}}
-    }
-  {{end}}
 
   export const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
     name: "{{$gqlNode.Node}}",
@@ -65,6 +63,7 @@
       {{end -}}
     }),
   });
+  
 {{end}}
 
 {{$fieldConfig := .FieldConfig -}}
