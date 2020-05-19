@@ -93,6 +93,10 @@ func getFilePathForNode(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName)
 }
 
+func getImportPathForNode(nodeData *schema.NodeData) string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", nodeData.PackageName)
+}
+
 func getQueryFilePath() string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/query_type.ts")
 }
@@ -432,7 +436,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 		},
 		Imports: []queryGQLDatum{
 			{
-				ImportPath:  getFilePathForNode(nodeData),
+				ImportPath:  getImportPathForNode(nodeData),
 				GraphQLType: fmt.Sprintf("%sType", nodeData.Node),
 			},
 			{
@@ -525,10 +529,12 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 	if action.GetOperation() == ent.CreateAction {
 		result.FunctionContents = append(
 			result.FunctionContents,
+			// we need fields like userID here which aren't exposed to graphql but editable...
 			fmt.Sprintf("let %s = await %s.create(context.viewer, {", nodeData.NodeInstance, action.GetActionName()),
 		)
 		for _, f := range action.GetFields() {
-			if f.ExposeToGraphQL() && f.EditableField() {
+			// we need fields like userID here which aren't exposed to graphql but editable...
+			if f.EditableField() {
 				// TODO rename from args to input?
 				result.FunctionContents = append(
 					result.FunctionContents,
@@ -545,18 +551,18 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 	} else if action.GetOperation() == ent.DeleteAction {
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf("await %s.saveXFromID(context.viewer, args.id);", action.GetActionName()),
+			fmt.Sprintf("await %s.saveXFromID(context.viewer, args.%sID);", action.GetActionName(), nodeData.NodeInstance),
 		)
 
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf("return {deleted%sID: args.%sID};", nodeData.Node, nodeData.PackageName),
+			fmt.Sprintf("return {deleted%sID: args.%sID};", nodeData.Node, nodeData.NodeInstance),
 		)
 	} else {
 		// some kind of editing
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf("let %s = await %s.saveXFromID(context.viewer, args.id, {", nodeData.NodeInstance, action.GetActionName()),
+			fmt.Sprintf("let %s = await %s.saveXFromID(context.viewer, args.%sID, {", nodeData.NodeInstance, action.GetActionName(), nodeData.NodeInstance),
 		)
 		for _, f := range action.GetFields() {
 			if f.ExposeToGraphQL() && f.EditableField() {

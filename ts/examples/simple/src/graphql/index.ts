@@ -3,12 +3,14 @@ import express from "express";
 import graphqlHTTP from "express-graphql";
 import { IDViewer } from "src/util/id_viewer";
 
-
 import { GraphQLSchema } from "graphql";
 
 import { QueryType } from "./resolvers/generated/query_type";
+import { MutationType } from "./mutations/generated/mutation_type";
+
 const schema = new GraphQLSchema({
   query: QueryType,
+  mutation: MutationType,
 });
 
 var app = express();

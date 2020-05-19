@@ -13,7 +13,7 @@ import {
 } from "graphql";
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
-import { UserType } from "src/graphql/resolvers/generated/user_type.ts";
+import { UserType } from "src/graphql/resolvers/generated/user_type";
 import { UserEditInput } from "src/ent/user/actions/edit_user_action";
 import User from "src/ent/user";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
@@ -67,7 +67,7 @@ export const UserEditType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserEditResponse> => {
-    let user = await EditUserAction.saveXFromID(context.viewer, args.id, {
+    let user = await EditUserAction.saveXFromID(context.viewer, args.userID, {
       firstName: args.firstName,
       lastName: args.lastName,
     });

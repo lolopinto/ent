@@ -14,7 +14,7 @@ import {
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
-import { EventType } from "src/graphql/resolvers/generated/event_type.ts";
+import { EventType } from "src/graphql/resolvers/generated/event_type";
 import { EventEditInput } from "src/ent/event/actions/edit_event_action";
 import Event from "src/ent/event";
 import EditEventAction from "src/ent/event/actions/edit_event_action";
@@ -77,12 +77,16 @@ export const EventEditType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<EventEditResponse> => {
-    let event = await EditEventAction.saveXFromID(context.viewer, args.id, {
-      name: args.name,
-      startTime: args.startTime,
-      endTime: args.endTime,
-      location: args.location,
-    });
+    let event = await EditEventAction.saveXFromID(
+      context.viewer,
+      args.eventID,
+      {
+        name: args.name,
+        startTime: args.startTime,
+        endTime: args.endTime,
+        location: args.location,
+      },
+    );
     return { event: event };
   },
 };

@@ -58,7 +58,7 @@ export const EventDeleteType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<EventDeleteResponse> => {
-    await DeleteEventAction.saveXFromID(context.viewer, args.id);
+    await DeleteEventAction.saveXFromID(context.viewer, args.eventID);
     return { deletedEventID: args.eventID };
   },
 };

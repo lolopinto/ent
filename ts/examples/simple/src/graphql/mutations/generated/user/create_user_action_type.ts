@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
-import { UserType } from "src/graphql/resolvers/generated/user_type.ts";
+import { UserType } from "src/graphql/resolvers/generated/user_type";
 import { UserCreateInput } from "src/ent/user/actions/create_user_action";
 import User from "src/ent/user";
 import CreateUserAction from "src/ent/user/actions/create_user_action";

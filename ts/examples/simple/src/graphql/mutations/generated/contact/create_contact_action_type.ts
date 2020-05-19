@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "src/graphql/context";
-import { ContactType } from "src/graphql/resolvers/generated/contact_type.ts";
+import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import { ContactCreateInput } from "src/ent/contact/actions/create_contact_action";
 import Contact from "src/ent/contact";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
@@ -68,6 +68,7 @@ export const ContactCreateType: GraphQLFieldConfig<
       emailAddress: args.emailAddress,
       firstName: args.firstName,
       lastName: args.lastName,
+      userID: args.userID,
     }).saveX();
     return { contact: contact };
   },

@@ -13,7 +13,7 @@ import {
 } from "graphql";
 import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
-import { ContactType } from "src/graphql/resolvers/generated/contact_type.ts";
+import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import { ContactEditInput } from "src/ent/contact/actions/edit_contact_action";
 import Contact from "src/ent/contact";
 import EditContactAction from "src/ent/contact/actions/edit_contact_action";
@@ -73,11 +73,15 @@ export const ContactEditType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<ContactEditResponse> => {
-    let contact = await EditContactAction.saveXFromID(context.viewer, args.id, {
-      emailAddress: args.emailAddress,
-      firstName: args.firstName,
-      lastName: args.lastName,
-    });
+    let contact = await EditContactAction.saveXFromID(
+      context.viewer,
+      args.contactID,
+      {
+        emailAddress: args.emailAddress,
+        firstName: args.firstName,
+        lastName: args.lastName,
+      },
+    );
     return { contact: contact };
   },
 };

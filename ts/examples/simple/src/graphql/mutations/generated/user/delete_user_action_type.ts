@@ -58,7 +58,7 @@ export const UserDeleteType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserDeleteResponse> => {
-    await DeleteUserAction.saveXFromID(context.viewer, args.id);
+    await DeleteUserAction.saveXFromID(context.viewer, args.userID);
     return { deletedUserID: args.userID };
   },
 };

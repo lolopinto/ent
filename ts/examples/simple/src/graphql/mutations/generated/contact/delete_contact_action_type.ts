@@ -58,7 +58,7 @@ export const ContactDeleteType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<ContactDeleteResponse> => {
-    await DeleteContactAction.saveXFromID(context.viewer, args.id);
+    await DeleteContactAction.saveXFromID(context.viewer, args.contactID);
     return { deletedContactID: args.contactID };
   },
 };
