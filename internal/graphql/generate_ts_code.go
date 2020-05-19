@@ -345,6 +345,27 @@ func buildActionInputNode(nodeData *schema.NodeData, action action.Action, actio
 		})
 	}
 
+	if action.MutatingExistingObject() {
+		// custom interface for editing
+		result.Interfaces = []interfaceType{
+			{
+				Exported: false,
+				Name:     fmt.Sprintf("custom%sInput", actionPrefix),
+				Fields: []interfaceField{
+					{
+						Name:      fmt.Sprintf("%sID", action.GetNodeInfo().NodeInstance),
+						Type:      "ID", // ID
+						UseImport: true,
+					},
+				},
+				// TODO remove this for delete since no input
+				Extends: []string{
+					fmt.Sprintf("%sInput", actionPrefix),
+				},
+			},
+		}
+	}
+
 	// TODO non ent fields 	e.g. status etc
 
 	return result
@@ -429,21 +450,30 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 }
 
 func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, actionPrefix string) fieldConfig {
+	argImports := []string{
+		action.GetActionName(),
+	}
+	var argName string
+	if action.MutatingExistingObject() {
+		argName = fmt.Sprintf("custom%sInput", actionPrefix)
+	} else {
+		argName = getInputName(action)
+		argImports = append(argImports, argName)
+	}
 	result := fieldConfig{
 		Exported: true,
 		Name:     fmt.Sprintf("%sType", actionPrefix),
 		// imports UserCreateInput...
-		Arg: getInputName(action),
+		Arg: argName,
 		TypeImports: []string{
 			"GraphQLNonNull",
 			fmt.Sprintf("%sResponseType", actionPrefix),
 		},
 		// TODO these are just all imports, we don't care where from
-		ArgImports: []string{getInputName(action), action.GetActionName()},
+		ArgImports: argImports,
 		Args: []fieldConfigArg{
 			{
-				Name:        "input",
-				Description: "input for action",
+				Name: "input",
 				Imports: []string{
 					"GraphQLNonNull",
 					fmt.Sprintf("%sInputType", actionPrefix),
@@ -458,18 +488,41 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		for _, f := range action.GetFields() {
 			if f.ExposeToGraphQL() {
 				// TODO rename from args to input?
-				result.FunctionContents = append(result.FunctionContents, fmt.Sprintf("%s: args.%s,", f.TsFieldName(), f.TsFieldName()))
+				result.FunctionContents = append(
+					result.FunctionContents,
+					fmt.Sprintf("%s: args.%s,", f.TsFieldName(), f.TsFieldName()),
+				)
 			}
 		}
 		result.FunctionContents = append(result.FunctionContents, "}).saveX();")
 
-		result.FunctionContents = append(result.FunctionContents, fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance))
+		result.FunctionContents = append(
+			result.FunctionContents,
+			fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance),
+		)
+	} else if action.GetOperation() == ent.DeleteAction {
+
+	} else {
+		// some kind of editing
+		result.FunctionContents = append(result.FunctionContents, fmt.Sprintf("let %s = await %s.saveXFromID(context.viewer, args.id, {", nodeData.NodeInstance, action.GetActionName()))
+		for _, f := range action.GetFields() {
+			if f.ExposeToGraphQL() {
+				// TODO rename from args to input?
+				result.FunctionContents = append(
+					result.FunctionContents,
+					fmt.Sprintf("%s: args.%s,", f.TsFieldName(), f.TsFieldName()),
+				)
+			}
+		}
+		result.FunctionContents = append(result.FunctionContents, "});")
+
+		result.FunctionContents = append(
+			result.FunctionContents,
+			fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance),
+		)
 	}
-	// TODO FunctionContents
-	//		FunctionContents: []string{},
 
 	return result
-
 }
 
 type objectType struct {
@@ -500,6 +553,24 @@ type interfaceType struct {
 	Exported bool
 	Name     string
 	Fields   []interfaceField
+	// interfaces to extend
+	Extends []string
+}
+
+func (it interfaceType) InterfaceDecl() string {
+	var sb strings.Builder
+	if it.Exported {
+		sb.WriteString("export ")
+	}
+	sb.WriteString("interface ")
+	sb.WriteString(it.Name)
+
+	if len(it.Extends) > 0 {
+		sb.WriteString(" extends ")
+		sb.WriteString(strings.Join(it.Extends, ", "))
+	}
+
+	return sb.String()
 }
 
 type interfaceField struct {

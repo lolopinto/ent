@@ -11,12 +11,17 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
+import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { EventType } from "src/graphql/resolvers/generated/event_type.ts";
 import { EventEditInput } from "src/ent/event/actions/edit_event_action";
 import Event from "src/ent/event";
 import EditEventAction from "src/ent/event/actions/edit_event_action";
+
+interface customEventEditInput extends EventEditInput {
+  eventID: ID;
+}
 
 export const EventEditInputType = new GraphQLInputObjectType({
   name: "EventEditInput",
@@ -66,7 +71,7 @@ export const EventEditResponseType = new GraphQLObjectType({
 export const EventEditType: GraphQLFieldConfig<
   undefined,
   Context,
-  EventEditInput
+  customEventEditInput
 > = {
   type: GraphQLNonNull(EventEditResponseType),
   args: {
@@ -77,8 +82,17 @@ export const EventEditType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: EventEditInput,
+    args: customEventEditInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ): Promise<EventEditResponse> => {},
+  ): Promise<EventEditResponse> => {
+    let event = await EditEventAction.saveXFromID(context.viewer, args.id, {
+      id: args.id,
+      name: args.name,
+      startTime: args.startTime,
+      endTime: args.endTime,
+      location: args.location,
+    });
+    return { event: event };
+  },
 };

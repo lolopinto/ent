@@ -10,10 +10,15 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
+import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
 import { ContactDeleteInput } from "src/ent/contact/actions/delete_contact_action";
 import Contact from "src/ent/contact";
 import DeleteContactAction from "src/ent/contact/actions/delete_contact_action";
+
+interface customContactDeleteInput extends ContactDeleteInput {
+  contactID: ID;
+}
 
 export const ContactDeleteInputType = new GraphQLInputObjectType({
   name: "ContactDeleteInput",
@@ -39,7 +44,7 @@ export const ContactDeleteResponseType = new GraphQLObjectType({
 export const ContactDeleteType: GraphQLFieldConfig<
   undefined,
   Context,
-  ContactDeleteInput
+  customContactDeleteInput
 > = {
   type: GraphQLNonNull(ContactDeleteResponseType),
   args: {
@@ -50,7 +55,7 @@ export const ContactDeleteType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: ContactDeleteInput,
+    args: customContactDeleteInput,
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<ContactDeleteResponse> => {},

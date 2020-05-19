@@ -394,8 +394,6 @@ func (f *Field) TsBuilderType() string {
 	if len(match) != 2 {
 		panic("invalid config name")
 	}
-	// TODO we're doing this in a builder where we don't need currently need useImport
-	// but that may not always be true
 	return fmt.Sprintf("%s | Builder<%s>", typ, match[1])
 }
 
@@ -464,3 +462,5 @@ func (f *Field) GetTSGraphQLTypeForFieldImports() []string {
 	}
 	return tsGQLType.GetTSGraphQLImports()
 }
+
+// need to incorporate action.IsRequiredField(aciton, field) in here and what we return

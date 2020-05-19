@@ -11,12 +11,17 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
+import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type.ts";
 import { ContactEditInput } from "src/ent/contact/actions/edit_contact_action";
 import Contact from "src/ent/contact";
 import EditContactAction from "src/ent/contact/actions/edit_contact_action";
+
+interface customContactEditInput extends ContactEditInput {
+  contactID: ID;
+}
 
 export const ContactEditInputType = new GraphQLInputObjectType({
   name: "ContactEditInput",
@@ -63,7 +68,7 @@ export const ContactEditResponseType = new GraphQLObjectType({
 export const ContactEditType: GraphQLFieldConfig<
   undefined,
   Context,
-  ContactEditInput
+  customContactEditInput
 > = {
   type: GraphQLNonNull(ContactEditResponseType),
   args: {
@@ -74,8 +79,16 @@ export const ContactEditType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: ContactEditInput,
+    args: customContactEditInput,
     context: Context,
     _info: GraphQLResolveInfo,
-  ): Promise<ContactEditResponse> => {},
+  ): Promise<ContactEditResponse> => {
+    let contact = await EditContactAction.saveXFromID(context.viewer, args.id, {
+      id: args.id,
+      emailAddress: args.emailAddress,
+      firstName: args.firstName,
+      lastName: args.lastName,
+    });
+    return { contact: contact };
+  },
 };

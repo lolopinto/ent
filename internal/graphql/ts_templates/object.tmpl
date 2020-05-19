@@ -24,11 +24,12 @@
 {{ range $gqlNode := .GQLNodes -}}
 
   {{ range $gqlNode.Interfaces -}}
-    {{ if .Exported -}}
-      export interface {{.Name }} {
-    {{ else -}}
-      interface {{.Name }} {
+    {{ range .Extends}}
+      {{ if $baseObj.ForeignImport . -}}
+        {{$ignored := useImport . -}}
+      {{ end -}}
     {{ end -}}
+    {{.InterfaceDecl }} {
     {{ range .Fields -}}
       {{$type := .Type -}}
       {{if .UseImport -}}

@@ -10,10 +10,15 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
+import { ID } from "ent/ent";
 import { Context } from "src/graphql/context";
 import { UserDeleteInput } from "src/ent/user/actions/delete_user_action";
 import User from "src/ent/user";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
+
+interface customUserDeleteInput extends UserDeleteInput {
+  userID: ID;
+}
 
 export const UserDeleteInputType = new GraphQLInputObjectType({
   name: "UserDeleteInput",
@@ -39,7 +44,7 @@ export const UserDeleteResponseType = new GraphQLObjectType({
 export const UserDeleteType: GraphQLFieldConfig<
   undefined,
   Context,
-  UserDeleteInput
+  customUserDeleteInput
 > = {
   type: GraphQLNonNull(UserDeleteResponseType),
   args: {
@@ -50,7 +55,7 @@ export const UserDeleteType: GraphQLFieldConfig<
   },
   resolve: async (
     _source,
-    args: UserDeleteInput,
+    args: customUserDeleteInput,
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserDeleteResponse> => {},
