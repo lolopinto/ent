@@ -6,6 +6,7 @@ import { AddressQuery } from "./address_type";
 import { ContactQuery } from "./contact_type";
 import { EventQuery } from "./event_type";
 import { UserQuery } from "./user_type";
+
 export const QueryType = new GraphQLObjectType({
   name: "Query",
   fields: () => ({

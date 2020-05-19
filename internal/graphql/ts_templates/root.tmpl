@@ -2,10 +2,10 @@
 
 {{ range $query := .Queries -}} 
   import { {{$query.GraphQLType}} } from "{{$query.ImportPath}}";
-{{ end -}}
+{{ end }}
 
-export const QueryType = new {{useImport "GraphQLObjectType"}}({
-  name: "Query",
+export const {{.Type}} = new {{useImport "GraphQLObjectType"}}({
+  name: "{{.Node}}",
   fields: () => ({
     {{ range $query := .Queries -}} 
       {{$query.GraphQLName}}: {{$query.GraphQLType}},
