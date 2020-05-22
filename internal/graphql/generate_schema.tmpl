@@ -6,7 +6,9 @@
 
 const schema = new {{useImport "GraphQLSchema"}}({
   query: {{useImport "QueryType"}},
-  mutation: {{useImport "MutationType"}},
+  {{ if .HasMutations}} 
+    mutation: {{useImport "MutationType"}},
+  {{end -}}
 });
 
 let str = {{useImport "printSchema"}}(schema);

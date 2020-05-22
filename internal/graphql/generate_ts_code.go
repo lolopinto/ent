@@ -33,6 +33,7 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 	wg.Add(len(data.Schema.Nodes))
 	var serr syncerr.Error
 
+	var hasMutations bool
 	nodeMap := data.Schema.Nodes
 	for key := range data.Schema.Nodes {
 		go func(key string) {
@@ -56,7 +57,7 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 				return
 			}
 
-			//			write all the actions concurrently
+			// write all the actions concurrently
 			var actionsWg sync.WaitGroup
 			actionsWg.Add(len(nodeData.ActionInfo.Actions))
 			for idx := range actionInfo.Actions {
@@ -67,6 +68,7 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 					if !action.ExposedToGraphQL() {
 						return
 					}
+					hasMutations = true
 					if err := writeActionFile(nodeData, action); err != nil {
 						serr.Append(err)
 					}
@@ -83,11 +85,13 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 	if err := writeQueryFile(data); err != nil {
 		serr.Append(err)
 	}
-	if err := writeMutationFile(data); err != nil {
-		serr.Append(err)
+	if hasMutations {
+		if err := writeMutationFile(data); err != nil {
+			serr.Append(err)
+		}
 	}
 
-	if err := generateSchemaFile(); err != nil {
+	if err := generateSchemaFile(hasMutations); err != nil {
 		serr.Append(err)
 	}
 
@@ -791,10 +795,10 @@ func writeMutationFile(data *codegen.Data) error {
 	}))
 }
 
-func generateSchemaFile() error {
+func generateSchemaFile(hasMutations bool) error {
 	filePath := getTempSchemaFilePath()
 
-	if err := writeSchemaFile(filePath); err != nil {
+	if err := writeSchemaFile(filePath, hasMutations); err != nil {
 		return errors.Wrap(err, "error writing temporary schema file")
 	}
 
@@ -807,10 +811,11 @@ func generateSchemaFile() error {
 type schemaData struct {
 	QueryPath    string
 	MutationPath string
+	HasMutations bool
 	SchemaPath   string
 }
 
-func writeSchemaFile(fileToWrite string) error {
+func writeSchemaFile(fileToWrite string, hasMutations bool) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(
@@ -818,6 +823,7 @@ func writeSchemaFile(fileToWrite string) error {
 			Data: schemaData{
 				QueryPath:    getQueryFilePath(),
 				MutationPath: getMutationFilePath(),
+				HasMutations: hasMutations,
 				SchemaPath:   getSchemaFilePath(),
 			},
 			AbsPathToTemplate: util.GetAbsolutePath("generate_schema.tmpl"),
