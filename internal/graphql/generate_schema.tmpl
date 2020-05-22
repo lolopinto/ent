@@ -1,0 +1,14 @@
+{{ reserveImport .QueryPath "QueryType" }}
+{{ reserveImport .MutationPath "MutationType" }}
+{{ reserveImport "graphql" "GraphQLSchema" }}
+{{ reserveImport "graphql/utilities" "printSchema" }}
+{{ reserveDefaultImport "fs" "fs" }}
+
+const schema = new {{useImport "GraphQLSchema"}}({
+  query: {{useImport "QueryType"}},
+  mutation: {{useImport "MutationType"}},
+});
+
+let str = {{useImport "printSchema"}}(schema);
+
+{{useImport "fs"}}.writeFileSync("{{.SchemaPath}}", str);

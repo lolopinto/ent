@@ -2,6 +2,8 @@ package graphql
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"sort"
 	"strings"
 	"sync"
@@ -16,6 +18,7 @@ import (
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
+	"github.com/pkg/errors"
 )
 
 type TSStep struct {
@@ -84,6 +87,10 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 		serr.Append(err)
 	}
 
+	if err := generateSchemaFile(); err != nil {
+		serr.Append(err)
+	}
+
 	return serr.Err()
 }
 
@@ -103,6 +110,15 @@ func getQueryFilePath() string {
 
 func getMutationFilePath() string {
 	return fmt.Sprintf("src/graphql/mutations/generated/mutation_type.ts")
+}
+
+func getTempSchemaFilePath() string {
+	return fmt.Sprintf("src/graphql/gen_schema.ts")
+}
+
+func getSchemaFilePath() string {
+	// just put it at root of src/graphql
+	return "schema.gql"
 }
 
 func getFilePathForAction(nodeData *schema.NodeData, action action.Action) string {
@@ -238,9 +254,8 @@ func buildFieldConfig(nodeData *schema.NodeData) fieldConfig {
 		TypeImports: []string{fmt.Sprintf("%sType", nodeData.Node)},
 		Args: []fieldConfigArg{
 			{
-				Name:        "id",
-				Description: "id",
-				Imports:     []string{"GraphQLNonNull", "GraphQLID"},
+				Name:    "id",
+				Imports: []string{"GraphQLNonNull", "GraphQLID"},
 			},
 		},
 		FunctionContents: []string{
@@ -774,4 +789,45 @@ func writeMutationFile(data *codegen.Data) error {
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
+}
+
+func generateSchemaFile() error {
+	filePath := getTempSchemaFilePath()
+
+	if err := writeSchemaFile(filePath); err != nil {
+		return errors.Wrap(err, "error writing temporary schema file")
+	}
+
+	defer os.Remove(filePath)
+
+	cmd := exec.Command("ts-node", "-r", "tsconfig-paths/register", filePath)
+	return cmd.Run()
+}
+
+type schemaData struct {
+	QueryPath    string
+	MutationPath string
+	SchemaPath   string
+}
+
+func writeSchemaFile(fileToWrite string) error {
+	imps := tsimport.NewImports()
+
+	return file.Write(
+		&file.TemplatedBasedFileWriter{
+			Data: schemaData{
+				QueryPath:    getQueryFilePath(),
+				MutationPath: getMutationFilePath(),
+				SchemaPath:   getSchemaFilePath(),
+			},
+			AbsPathToTemplate: util.GetAbsolutePath("generate_schema.tmpl"),
+			TemplateName:      "generate_schema.tmpl",
+			PathToFile:        fileToWrite,
+			TsImports:         imps,
+			FormatSource:      true,
+			CreateDirIfNeeded: true,
+			FuncMap:           imps.FuncMap(),
+		},
+		file.DisableLog(),
+	)
 }

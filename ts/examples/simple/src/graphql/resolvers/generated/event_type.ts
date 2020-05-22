@@ -91,7 +91,7 @@ export const EventQuery: GraphQLFieldConfig<
   type: EventType,
   args: {
     id: {
-      description: "id",
+      description: "",
       type: GraphQLNonNull(GraphQLID),
     },
   },

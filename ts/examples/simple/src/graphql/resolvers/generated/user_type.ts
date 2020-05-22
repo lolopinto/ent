@@ -97,7 +97,7 @@ export const UserQuery: GraphQLFieldConfig<
   type: UserType,
   args: {
     id: {
-      description: "id",
+      description: "",
       type: GraphQLNonNull(GraphQLID),
     },
   },

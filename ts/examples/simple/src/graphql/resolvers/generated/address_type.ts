@@ -43,7 +43,7 @@ export const AddressQuery: GraphQLFieldConfig<
   type: AddressType,
   args: {
     id: {
-      description: "id",
+      description: "",
       type: GraphQLNonNull(GraphQLID),
     },
   },

@@ -53,7 +53,7 @@ export const ContactQuery: GraphQLFieldConfig<
   type: ContactType,
   args: {
     id: {
-      description: "id",
+      description: "",
       type: GraphQLNonNull(GraphQLID),
     },
   },
