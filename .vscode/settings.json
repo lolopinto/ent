@@ -12,10 +12,10 @@
   },
   "go.testTimeout": "30s",
   "prettier.configPath": "ts/.prettierrc",
-  "jestrunner.configPath": "ts/jest.config.js",
-//   "jest.pathToConfig": "ts/jest.config.js",
-  // "jest.rootPath": "ts/examples/simple",
-   "jest.debugMode": true,
-  "jestrunner.jestCommand": "jest",
-  "jestrunner.jestPath": "ts/"
+  // "jest.pathToConfig": "jest.config.js",
+  // // TODO need to figure out how to get vscode intellisense to understand all these paths
+  // "jest.rootPath": "ts",
+  // "jest.autoEnable": true,
+  // "jest.pathToJest": "jest",
+  // "jest.debugMode": true
 }
