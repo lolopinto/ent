@@ -11,5 +11,11 @@
     "DB_CONNECTION_STRING": "postgres://ola:@localhost/ent_test?sslmode=disable"
   },
   "go.testTimeout": "30s",
-  "prettier.configPath": "ts/.prettierrc"
+  "prettier.configPath": "ts/.prettierrc",
+  "jestrunner.configPath": "ts/jest.config.js",
+//   "jest.pathToConfig": "ts/jest.config.js",
+  // "jest.rootPath": "ts/examples/simple",
+   "jest.debugMode": true,
+  "jestrunner.jestCommand": "jest",
+  "jestrunner.jestPath": "ts/"
 }

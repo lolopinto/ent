@@ -11,7 +11,6 @@ import { LoggedOutViewer } from "ent/viewer";
 import User from "src/ent/user";
 import { randomEmail } from "src/util/random";
 import { IDViewer } from "src/util/id_viewer";
-import { userInfo } from "os";
 
 // TODO come back and make test things here generic
 
@@ -51,15 +50,16 @@ async function create(input: UserCreateInput): Promise<User> {
   return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
-interface Option {
-  path: string;
-  value: any;
-}
+type Option = [string, any];
+// interface Option {
+//   path: string;
+//   value: any;
+// }
 
 function buildTreeFromQueryPaths(...options: Option[]) {
   let topLevelTree = {};
   options.forEach((option) => {
-    let path = option.path;
+    let path = option[0];
     let parts = path.split(".");
 
     let tree = topLevelTree;
@@ -103,14 +103,11 @@ function expectQueryFromRoot(root: string, args: {}, ...options: Option[]) {
   for (let key in args) {
     params.push(`${key}: $${key}`);
   }
-  let rootOption = {
-    path: `${root}(${params.join(",")})`,
-    value: "ignore",
-  };
+  let rootOption: Option = [`${root}(${params.join(",")})`, "ignore"];
   // don't need this and move the construction from what we're currently doing in test.only
   for (let i = 0; i < options.length; i++) {
     let option = options[i];
-    option.path = `${rootOption.path}.${option.path}`;
+    option[0] = `${rootOption[0]}.${option[0]}`;
     options[i] = option;
   }
 
@@ -137,21 +134,11 @@ test.only("tree building", async () => {
     {
       id: user.id,
     },
-    // TODO this is too much
-    // change the API to [ string, any]
-    {
-      path: "id",
-      value: user.id,
-    },
-    {
-      path: "firstName",
-      value: user.firstName,
-    },
-    {
-      path: "lastName",
-      value: user.lastName,
-    },
+    ["id", user.id],
+    ["firstName", user.firstName],
+    ["lastName", user.lastName],
   );
+  //  schema.
   // wrap in query
   // TODO name of query
   // args of query TBD
