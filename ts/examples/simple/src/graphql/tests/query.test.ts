@@ -12,7 +12,7 @@ import User from "src/ent/user";
 import { randomEmail } from "src/util/random";
 import { IDViewer } from "src/util/id_viewer";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
-import { advanceTo } from "jest-date-mock";
+import { advanceBy } from "jest-date-mock";
 
 // TODO come back and make test things here generic
 
@@ -31,7 +31,7 @@ function server(viewer: Viewer) {
 }
 
 function makeRequest(viewer: Viewer, query: string, args?: {}): request.Test {
-  console.log(args);
+  //  console.log(args);
   // query/variables etc
   return request(server(viewer))
     .post("/graphql")
@@ -94,11 +94,11 @@ function constructQueryFromTreePath(treePath: {}) {
 
 function expectQueryResult(...options: Option[]) {
   let topLevelTree = buildTreeFromQueryPaths(...options);
-  console.log(topLevelTree);
+  //  console.log(topLevelTree);
 
   let query = constructQueryFromTreePath(topLevelTree);
 
-  console.log(query);
+  //  console.log(query);
   return query;
 }
 
@@ -152,7 +152,7 @@ async function expectQueryFromRoot(
   let data = res.body.data;
   let result = data[root];
 
-  console.log(result);
+  //  console.log(result);
   options.forEach((option) => {
     let path = option[0];
     let expected = option[1];
@@ -198,11 +198,14 @@ async function expectQueryFromRoot(
 
       if (i === parts.length - 1) {
         // leaf node, check the value
-        expect(current, part).toBe(expected);
+        expect(
+          current,
+          `value of ${part} in path ${path} was not as expected`,
+        ).toBe(expected);
       } else {
         expect(
           part,
-          `found undefiend node in path ${path} at subtree ${part}`,
+          `found undefined node in path ${path} at subtree ${part}`,
         ).not.toBe(undefined);
       }
     }
@@ -293,7 +296,7 @@ test("query user and nested object", async () => {
   );
 });
 
-test.only("load list", async () => {
+test("load list", async () => {
   let [user, user2, user3] = await Promise.all([
     create({
       firstName: "user1",
@@ -312,18 +315,16 @@ test.only("load list", async () => {
     }),
   ]);
 
-  let now = new Date();
   let vc = new IDViewer(user.id);
   let action = EditUserAction.create(vc, user, {});
-  advanceTo(now);
   action.builder.addFriend(user2);
   await action.saveX();
 
   // add time btw adding a new friend so that it's deterministic
-  advanceTo(now.setTime(now.getTime() + 86400));
+  advanceBy(86400);
   let action2 = EditUserAction.create(vc, user, {});
-  action.builder.addFriend(user3);
-  await action.saveX();
+  action2.builder.addFriend(user3);
+  await action2.saveX();
 
   await expectQueryFromRoot(
     new IDViewer(user.id),
@@ -336,11 +337,12 @@ test.only("load list", async () => {
     ["lastName", user.lastName],
     ["emailAddress", user.emailAddress],
     ["accountStatus", user.accountStatus],
-    ["friends[0].id", user2.id],
-    ["friends[0].firstName", user2.firstName],
-    ["friends[0].lastName", user2.lastName],
-    ["friends[1].id", user3.id],
-    ["friends[1].firstName", user3.firstName],
-    ["friends[1].lastName", user3.lastName],
+    // most recent first
+    ["friends[0].id", user3.id],
+    ["friends[0].firstName", user3.firstName],
+    ["friends[0].lastName", user3.lastName],
+    ["friends[1].id", user2.id],
+    ["friends[1].firstName", user2.firstName],
+    ["friends[1].lastName", user2.lastName],
   );
 });
