@@ -1,22 +1,13 @@
-import schema from "src/graphql/schema";
+// TODO all this can/should be moved into its own npm package
+// or into ent itself
+// haven't figured out the correct dependency structure with express etc so not for now
 import express from "express";
 import graphqlHTTP from "express-graphql";
-import { Viewer } from "ent/ent";
 import request from "supertest";
-import DB from "ent/db";
-import CreateUserAction, {
-  UserCreateInput,
-} from "src/ent/user/actions/create_user_action";
-import { LoggedOutViewer } from "ent/viewer";
-import User from "src/ent/user";
-import { randomEmail } from "src/util/random";
-import { IDViewer } from "src/util/id_viewer";
-import EditUserAction from "src/ent/user/actions/edit_user_action";
-import { advanceBy } from "jest-date-mock";
+import { Viewer } from "ent/ent";
+import { GraphQLSchema } from "graphql";
 
-// TODO come back and make test things here generic
-
-function server(viewer: Viewer) {
+function server(viewer: Viewer, schema: GraphQLSchema) {
   let app = express();
   app.use(
     "/graphql",
@@ -30,29 +21,21 @@ function server(viewer: Viewer) {
   return app;
 }
 
-function makeRequest(viewer: Viewer, query: string, args?: {}): request.Test {
+function makeRequest(
+  viewer: Viewer,
+  schema: GraphQLSchema,
+  query: string,
+  args?: {},
+): request.Test {
   //  console.log(args);
   // query/variables etc
-  return request(server(viewer))
+  return request(server(viewer, schema))
     .post("/graphql")
     .send({
       query: query,
       variables: JSON.stringify(args),
     });
 }
-
-// TODO we need something that does this by default for all tests
-afterAll(async () => {
-  await DB.getInstance().endPool();
-});
-
-const loggedOutViewer = new LoggedOutViewer();
-
-async function create(input: UserCreateInput): Promise<User> {
-  return await CreateUserAction.create(loggedOutViewer, input).saveX();
-}
-
-type Option = [string, any];
 
 function buildTreeFromQueryPaths(...options: Option[]) {
   let topLevelTree = {};
@@ -102,8 +85,11 @@ function expectQueryResult(...options: Option[]) {
   return query;
 }
 
-async function expectQueryFromRoot(
+export type Option = [string, any];
+
+export async function expectQueryFromRoot(
   viewer: Viewer,
+  schema: GraphQLSchema,
   root: string,
   args: {},
   ...options: Option[] // TODO queries? expected values
@@ -139,7 +125,10 @@ async function expectQueryFromRoot(
     ${root}(${params.join(",")}) {${q}}
   }`;
 
-  let res = await makeRequest(viewer, q, args).expect("Content-Type", /json/);
+  let res = await makeRequest(viewer, schema, q, args).expect(
+    "Content-Type",
+    /json/,
+  );
   if (res.status !== 200) {
     // TODO allow errors...
     throw new Error(
@@ -211,138 +200,3 @@ async function expectQueryFromRoot(
     }
   });
 }
-
-test("query user", async () => {
-  let user = await create({
-    firstName: "ffirst",
-    lastName: "last",
-    emailAddress: randomEmail(),
-  });
-
-  await expectQueryFromRoot(
-    new IDViewer(user.id),
-    "user",
-    {
-      id: user.id,
-    },
-    ["id", user.id],
-    ["firstName", user.firstName],
-    ["lastName", user.lastName],
-    ["emailAddress", user.emailAddress],
-    ["accountStatus", user.accountStatus],
-  );
-});
-
-test("query user who's not visible", async () => {
-  let [user, user2] = await Promise.all([
-    create({
-      firstName: "user1",
-      lastName: "last",
-      emailAddress: randomEmail(),
-    }),
-    create({
-      firstName: "user2",
-      lastName: "last",
-      emailAddress: randomEmail(),
-    }),
-  ]);
-
-  // TODO this works for now but needs to change
-  await expectQueryFromRoot(
-    new IDViewer(user.id),
-    "user",
-    {
-      id: user2.id,
-    },
-    ["id", null],
-    ["firstName", null],
-    ["lastName", null],
-    ["emailAddress", null],
-    ["accountStatus", null],
-  );
-});
-
-test("query user and nested object", async () => {
-  let user = await create({
-    firstName: "ffirst",
-    lastName: "last",
-    emailAddress: randomEmail(),
-  });
-  let vc = new IDViewer(user.id);
-  user = await User.loadX(vc, user.id);
-  let selfContact = await user.loadSelfContact();
-  if (!selfContact) {
-    fail("expected self contact to be loaded");
-  }
-
-  await expectQueryFromRoot(
-    new IDViewer(user.id),
-    "user",
-    {
-      id: user.id,
-    },
-    ["id", user.id],
-    ["firstName", user.firstName],
-    ["lastName", user.lastName],
-    ["emailAddress", user.emailAddress],
-    ["accountStatus", user.accountStatus],
-    ["selfContact.id", selfContact.id],
-    ["selfContact.firstName", selfContact.firstName],
-    ["selfContact.lastName", selfContact.lastName],
-    ["selfContact.emailAddress", selfContact.emailAddress],
-    // TODO we allow loading id objects here instead of invalidating them
-    // e.g. userID is available here
-    ["selfContact.user.id", user.id],
-  );
-});
-
-test("load list", async () => {
-  let [user, user2, user3] = await Promise.all([
-    create({
-      firstName: "user1",
-      lastName: "last",
-      emailAddress: randomEmail(),
-    }),
-    create({
-      firstName: "user2",
-      lastName: "last",
-      emailAddress: randomEmail(),
-    }),
-    create({
-      firstName: "user3",
-      lastName: "last",
-      emailAddress: randomEmail(),
-    }),
-  ]);
-
-  let vc = new IDViewer(user.id);
-  let action = EditUserAction.create(vc, user, {});
-  action.builder.addFriend(user2);
-  await action.saveX();
-
-  // add time btw adding a new friend so that it's deterministic
-  advanceBy(86400);
-  let action2 = EditUserAction.create(vc, user, {});
-  action2.builder.addFriend(user3);
-  await action2.saveX();
-
-  await expectQueryFromRoot(
-    new IDViewer(user.id),
-    "user",
-    {
-      id: user.id,
-    },
-    ["id", user.id],
-    ["firstName", user.firstName],
-    ["lastName", user.lastName],
-    ["emailAddress", user.emailAddress],
-    ["accountStatus", user.accountStatus],
-    // most recent first
-    ["friends[0].id", user3.id],
-    ["friends[0].firstName", user3.firstName],
-    ["friends[0].lastName", user3.lastName],
-    ["friends[1].id", user2.id],
-    ["friends[1].firstName", user2.firstName],
-    ["friends[1].lastName", user2.lastName],
-  );
-});
