@@ -190,7 +190,12 @@ async function expectFromRoot(config: rootConfig, ...options: Option[]) {
     ${config.root}(${params.join(",")}) {${q}}
   }`;
 
-  let res = await makeRequest(config.viewer, config.schema, q, config.args); //.expect("Content-Type", /json/);
+  let res = await makeRequest(
+    config.viewer,
+    config.schema,
+    q,
+    config.args,
+  ).expect("Content-Type", /json/);
   // if there's a callback, let everything be done there and we're done
   if (config.callback) {
     return config.callback(res);
