@@ -9,7 +9,8 @@ import { randomEmail } from "src/util/random";
 import { IDViewer } from "src/util/id_viewer";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import { advanceBy } from "jest-date-mock";
-import { expectQueryFromRoot } from "src/graphql_test_utils";
+import { queryRootConfig, expectQueryFromRoot } from "src/graphql_test_utils";
+import { ID, Viewer } from "ent/ent";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -22,6 +23,22 @@ async function create(input: UserCreateInput): Promise<User> {
   return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
+function getConfig(
+  viewer: Viewer,
+  userID: ID,
+  partialConfig?: Partial<queryRootConfig>,
+): queryRootConfig {
+  return {
+    viewer: viewer,
+    schema: schema,
+    root: "user",
+    args: {
+      id: userID,
+    },
+    ...partialConfig,
+  };
+}
+
 test("query user", async () => {
   let user = await create({
     firstName: "ffirst",
@@ -30,12 +47,7 @@ test("query user", async () => {
   });
 
   await expectQueryFromRoot(
-    new IDViewer(user.id),
-    schema,
-    "user",
-    {
-      id: user.id,
-    },
+    getConfig(new IDViewer(user.id), user.id),
     ["id", user.id],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
@@ -58,14 +70,8 @@ test("query user who's not visible", async () => {
     }),
   ]);
 
-  // TODO this works for now but needs to change
   await expectQueryFromRoot(
-    new IDViewer(user.id),
-    schema,
-    "user",
-    {
-      id: user2.id,
-    },
+    getConfig(new IDViewer(user.id), user2.id, { rootQueryNull: true }),
     ["id", null],
     ["firstName", null],
     ["lastName", null],
@@ -88,12 +94,7 @@ test("query user and nested object", async () => {
   }
 
   await expectQueryFromRoot(
-    new IDViewer(user.id),
-    schema,
-    "user",
-    {
-      id: user.id,
-    },
+    getConfig(new IDViewer(user.id), user.id),
     ["id", user.id],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
@@ -140,12 +141,7 @@ test("load list", async () => {
   await action2.saveX();
 
   await expectQueryFromRoot(
-    new IDViewer(user.id),
-    schema,
-    "user",
-    {
-      id: user.id,
-    },
+    getConfig(new IDViewer(user.id), user.id),
     ["id", user.id],
     ["firstName", user.firstName],
     ["lastName", user.lastName],

@@ -5,12 +5,12 @@ export const GraphQLTime = new GraphQLScalarType({
   name: "Time",
   description: "Time scalar type",
   serialize: (outputValue: any) => {
-    console.log("serialize", outputValue);
-    return new Date(outputValue);
+    console.log("serialize", outputValue, typeof outputValue);
+    return new Date(outputValue).toISOString();
   },
   parseValue: (input: any) => {
     console.log("parseValue", input);
-    return input.getIme();
+    return input.getTime();
   },
   parseLiteral: (ast: ValueNode) => {
     console.log("literal", ast);

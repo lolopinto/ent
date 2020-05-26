@@ -87,29 +87,34 @@ function expectQueryResult(...options: Option[]) {
 
 export type Option = [string, any];
 
+export interface queryRootConfig {
+  viewer: Viewer;
+  schema: GraphQLSchema;
+  root: string;
+  args: {};
+  rootQueryNull?: boolean;
+}
+
 export async function expectQueryFromRoot(
-  viewer: Viewer,
-  schema: GraphQLSchema,
-  root: string,
-  args: {},
+  config: queryRootConfig,
   ...options: Option[] // TODO queries? expected values
 ) {
   // we want options after so this should not be variable sadly
   // or have this be overloaded
-  let query = schema.getQueryType();
+  let query = config.schema.getQueryType();
   let fields = query?.getFields();
   if (!fields) {
     fail("schema doesn't have query or fields");
   }
-  let field = fields[root];
+  let field = fields[config.root];
   if (!field) {
-    fail(`could not find field ${root} in GraphQL query schema`);
+    fail(`could not find field ${config.root} in GraphQL query schema`);
   }
   let fieldArgs = field.args;
 
   let queryParams: string[] = [];
   fieldArgs.forEach((fieldArg) => {
-    let arg = args[fieldArg.name];
+    let arg = config.args[fieldArg.name];
     // let the graphql runtime handle this (it may be optional for example)
     if (!arg) {
       return;
@@ -117,18 +122,20 @@ export async function expectQueryFromRoot(
     queryParams.push(`$${fieldArg.name}: ${fieldArg.type}`);
   });
   let params: string[] = [];
-  for (let key in args) {
+  for (let key in config.args) {
     params.push(`${key}: $${key}`);
   }
   let q = expectQueryResult(...options);
-  q = `query ${root}Query (${queryParams.join(",")}) {
-    ${root}(${params.join(",")}) {${q}}
+  q = `query ${config.root}Query (${queryParams.join(",")}) {
+    ${config.root}(${params.join(",")}) {${q}}
   }`;
 
-  let res = await makeRequest(viewer, schema, q, args).expect(
-    "Content-Type",
-    /json/,
-  );
+  let res = await makeRequest(
+    config.viewer,
+    config.schema,
+    q,
+    config.args,
+  ).expect("Content-Type", /json/);
   if (res.status !== 200) {
     // TODO allow errors...
     throw new Error(
@@ -139,7 +146,12 @@ export async function expectQueryFromRoot(
   }
 
   let data = res.body.data;
-  let result = data[root];
+  let result = data[config.root];
+
+  if (config.rootQueryNull) {
+    expect(result, "root query wasn't null").toBe(null);
+    return;
+  }
 
   //  console.log(result);
   options.forEach((option) => {
@@ -149,13 +161,6 @@ export async function expectQueryFromRoot(
     let parts = path.split(".");
     let current = result;
 
-    if (expected === null) {
-      // TODO this works for now but doesn't work when root node is visible and
-      // and it's just a leaf that's not
-      // we need a new way to indicate roof isn't
-      expect(result).toBe(null);
-      return;
-    }
     //    console.log(result, current);
     // possible to make this smarter and better
     // e.g. when building up the tree above
@@ -181,12 +186,23 @@ export async function expectQueryFromRoot(
 
       current = current[part];
 
+      if (expected === null) {
+        // TODO this doesn't always work. need to indicate when source is null
+        // vs id is null
+        // need an option similar to rootQueryNull but for different subtrees
+        expect(current).toBe(null);
+        break;
+      }
+
       if (listIdx !== undefined) {
         current = current[listIdx];
       }
 
       if (i === parts.length - 1) {
         // leaf node, check the value
+        if (current !== expected) {
+          console.log(current, expected, typeof current, typeof expected);
+        }
         expect(
           current,
           `value of ${part} in path ${path} was not as expected`,
