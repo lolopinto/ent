@@ -126,11 +126,11 @@ func getSchemaFilePath() string {
 }
 
 func getFilePathForAction(nodeData *schema.NodeData, action action.Action) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(action.GetActionName()))
+	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
 }
 
 func getImportPathForAction(nodeData *schema.NodeData, action action.Action) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetActionName()))
+	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
 }
 
 type gqlobjectData struct {
