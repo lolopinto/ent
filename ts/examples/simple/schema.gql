@@ -13,12 +13,11 @@ type Address {
 }
 
 type Contact {
+  user: User
   id: ID!
   emailAddress: String!
   firstName: String!
   lastName: String!
-  userID: String!
-  user: User
 }
 
 type User {
@@ -38,13 +37,12 @@ type User {
 }
 
 type Event {
+  creator: User
   id: ID!
   name: String!
-  creatorID: String!
   startTime: Time!
   endTime: Time
   eventLocation: String!
-  creator: User
   hosts: [User!]!
   invited: [User!]!
   attending: [User!]!

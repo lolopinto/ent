@@ -104,8 +104,6 @@ test("query user and nested object", async () => {
     ["selfContact.firstName", selfContact.firstName],
     ["selfContact.lastName", selfContact.lastName],
     ["selfContact.emailAddress", selfContact.emailAddress],
-    // TODO we allow loading id objects here instead of invalidating them
-    // e.g. userID is available here
     ["selfContact.user.id", user.id],
   );
 });
