@@ -5,7 +5,7 @@ import express from "express";
 import graphqlHTTP from "express-graphql";
 import request from "supertest";
 import { Viewer } from "ent/ent";
-import { GraphQLSchema } from "graphql";
+import { GraphQLSchema, GraphQLObjectType } from "graphql";
 
 function server(viewer: Viewer, schema: GraphQLSchema) {
   let app = express();
@@ -87,11 +87,18 @@ function expectQueryResult(...options: Option[]) {
 
 export type Option = [string, any];
 
-export interface queryRootConfig {
+interface queryConfig {
   viewer: Viewer;
   schema: GraphQLSchema;
-  root: string;
   args: {};
+  expectedStatus?: number; // expected http status code
+  expectedError?: string | RegExp; // expected error message
+  // todo there can be more than one etc
+  callback?: (res: request.Response) => void;
+}
+
+export interface queryRootConfig extends queryConfig {
+  root: string;
   rootQueryNull?: boolean;
 }
 
@@ -99,11 +106,62 @@ export async function expectQueryFromRoot(
   config: queryRootConfig,
   ...options: Option[] // TODO queries? expected values
 ) {
-  // we want options after so this should not be variable sadly
-  // or have this be overloaded
-  let query = config.schema.getQueryType();
+  await expectFromRoot(
+    {
+      ...config,
+      queryPrefix: "query",
+      querySuffix: "Query",
+      queryFN: config.schema.getQueryType(),
+    },
+    ...options,
+  );
+}
+
+export interface mutationRootConfig extends queryConfig {
+  mutation: string;
+  disableInputWrapping?: boolean;
+  //  rootQueryNull?: boolean;
+}
+
+export async function expectMutation(
+  config: mutationRootConfig,
+  ...options: Option[]
+) {
+  // wrap args in input because we simplify the args for mutations
+  // and don't require the input
+  let args = config.args;
+  if (!config.disableInputWrapping) {
+    args = {
+      input: args,
+    };
+  }
+
+  await expectFromRoot(
+    {
+      ...config,
+      args: args,
+      root: config.mutation,
+      queryPrefix: "mutation",
+      querySuffix: "Mutation",
+      queryFN: config.schema.getMutationType(),
+    },
+    ...options,
+  );
+}
+
+interface rootConfig extends queryConfig {
+  queryFN: GraphQLObjectType<any, any> | null | undefined;
+  queryPrefix: string;
+  root: string;
+  querySuffix: string;
+  rootQueryNull?: boolean;
+}
+
+async function expectFromRoot(config: rootConfig, ...options: Option[]) {
+  let query = config.queryFN;
   let fields = query?.getFields();
   if (!fields) {
+    // TODO custom error?
     fail("schema doesn't have query or fields");
   }
   let field = fields[config.root];
@@ -126,25 +184,38 @@ export async function expectQueryFromRoot(
     params.push(`${key}: $${key}`);
   }
   let q = expectQueryResult(...options);
-  q = `query ${config.root}Query (${queryParams.join(",")}) {
+  q = `${config.queryPrefix} ${config.root}${
+    config.querySuffix
+  } (${queryParams.join(",")}) {
     ${config.root}(${params.join(",")}) {${q}}
   }`;
 
-  let res = await makeRequest(
-    config.viewer,
-    config.schema,
-    q,
-    config.args,
-  ).expect("Content-Type", /json/);
-  if (res.status !== 200) {
-    // TODO allow errors...
-    throw new Error(
-      `expected 200 status. instead got ${
+  let res = await makeRequest(config.viewer, config.schema, q, config.args); //.expect("Content-Type", /json/);
+  // if there's a callback, let everything be done there and we're done
+  if (config.callback) {
+    return config.callback(res);
+  }
+  if (config.expectedStatus !== undefined) {
+    expect(res.status).toBe(config.expectedStatus);
+  } else {
+    expect(
+      res.ok,
+      `expected ok response. instead got ${
         res.status
       } and result ${JSON.stringify(res.body)}`,
     );
   }
 
+  if (!res.ok) {
+    let errors: any[] = res.body.errors;
+    expect(errors.length).toBeGreaterThan(0);
+
+    if (config.expectedError) {
+      // todo multiple errors etc
+      expect(errors[0].message).toMatch(config.expectedError);
+    }
+    return;
+  }
   let data = res.body.data;
   let result = data[config.root];
 
@@ -177,11 +248,9 @@ export async function expectQueryFromRoot(
         }
         // get the idx we care about
         listIdx = parseInt(part.substr(idx + 1, endIdx - idx), 10);
-        //        console.log(idx, endIdx, part.substr(idx + 1, endIdx - idx), listIdx);
 
         // update part
         part = part.substr(0, idx);
-        //        console.log(part, current, current[part]);
       }
 
       current = current[part];
@@ -200,13 +269,15 @@ export async function expectQueryFromRoot(
 
       if (i === parts.length - 1) {
         // leaf node, check the value
-        if (current !== expected) {
-          console.log(current, expected, typeof current, typeof expected);
+        if (typeof expected === "function") {
+          // TODO eventually may need to batch this but fine for now
+          Promise.resolve(expected(current));
+        } else {
+          expect(
+            current,
+            `value of ${part} in path ${path} was not as expected`,
+          ).toBe(expected);
         }
-        expect(
-          current,
-          `value of ${part} in path ${path} was not as expected`,
-        ).toBe(expected);
       } else {
         expect(
           part,
