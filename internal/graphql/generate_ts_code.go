@@ -53,7 +53,7 @@ type CustomField struct {
 	FieldType    FieldType    `json:"fieldType"`
 }
 
-type CustomData struct {
+type customData struct {
 	Args   map[string]CustomArg `json:"args"`
 	Fields []CustomField        `json:"fields"`
 	Error  error
@@ -67,62 +67,59 @@ type CustomItem struct {
 }
 
 func (p *TSStep) ProcessData(data *codegen.Data) error {
+	cd, s := <-parseCustomData(data), <-buildGQLSchema(data)
+	if cd.Error != nil {
+		return cd.Error
+	}
+
+	if err := processCustomData(cd, s); err != nil {
+		return err
+	}
+
+	spew.Dump(cd)
+	spew.Dump(s.hasMutations)
+	spew.Dump(len(s.nodes))
+
 	var wg sync.WaitGroup
-	wg.Add(len(data.Schema.Nodes))
+	wg.Add(len(s.nodes))
 	var serr syncerr.Error
 
-	customData := <-parseCustomData(data)
-	if customData.Error != nil {
-		serr.Append(customData.Error)
-		return serr.Err()
-	}
-	spew.Dump(customData)
-
-	var hasMutations bool
-	nodeMap := data.Schema.Nodes
-	for key := range data.Schema.Nodes {
+	for key := range s.nodes {
 		go func(key string) {
 			defer wg.Done()
+			node := s.nodes[key]
 
-			info := data.Schema.Nodes[key]
-			nodeData := info.NodeData
-
-			// nothing to do here
-			if nodeData.HideFromGraphQL {
-				return
-			}
-
-			if err := writeTypeFile(nodeMap, nodeData); err != nil {
+			if err := writeFile(node); err != nil {
 				serr.Append(err)
+			}
+
+			if len(node.Dependents) == 0 {
 				return
 			}
 
-			actionInfo := nodeData.ActionInfo
-			if actionInfo == nil {
-				return
-			}
-
-			// write all the actions concurrently
-			var actionsWg sync.WaitGroup
-			actionsWg.Add(len(nodeData.ActionInfo.Actions))
-			for idx := range actionInfo.Actions {
+			var dependentsWg sync.WaitGroup
+			dependentsWg.Add(len(node.Dependents))
+			for idx := range node.Dependents {
 				go func(idx int) {
-					defer actionsWg.Done()
-					action := actionInfo.Actions[idx]
+					defer dependentsWg.Done()
+					dependentNode := node.Dependents[idx]
 
-					if !action.ExposedToGraphQL() {
-						return
-					}
-					hasMutations = true
-					if err := writeActionFile(nodeData, action); err != nil {
+					if err := writeFile(dependentNode); err != nil {
 						serr.Append(err)
 					}
 				}(idx)
 			}
-			actionsWg.Wait()
+			dependentsWg.Wait()
 		}(key)
 	}
-	wg.Wait()
+
+	// these all need to be done after
+	// 1a/ build data (actions and nodes)
+	// 1b/ parse custom files
+	// 2/ inject any custom data in there
+	// 3/ write node files first then action files since there's a dependency...
+	// 4/ write query/mutation/schema file
+	// schema file depends on query/mutation so not quite worth the complication of breaking those 2 up
 
 	if err := serr.Err(); err != nil {
 		return err
@@ -130,13 +127,13 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 	if err := writeQueryFile(data); err != nil {
 		serr.Append(err)
 	}
-	if hasMutations {
+	if s.hasMutations {
 		if err := writeMutationFile(data); err != nil {
 			serr.Append(err)
 		}
 	}
 
-	if err := generateSchemaFile(hasMutations); err != nil {
+	if err := generateSchemaFile(s.hasMutations); err != nil {
 		serr.Append(err)
 	}
 
@@ -178,10 +175,10 @@ func getImportPathForAction(nodeData *schema.NodeData, action action.Action) str
 	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
 }
 
-func parseCustomData(data *codegen.Data) chan CustomData {
-	var res = make(chan CustomData)
+func parseCustomData(data *codegen.Data) chan *customData {
+	var res = make(chan *customData)
 	go func() {
-		var customData CustomData
+		var cd customData
 
 		var buf bytes.Buffer
 		var out bytes.Buffer
@@ -200,18 +197,23 @@ func parseCustomData(data *codegen.Data) chan CustomData {
 		if err := cmd.Run(); err != nil {
 			str := stderr.String()
 			err = errors.Wrap(err, str)
-			customData.Error = err
-			res <- customData
+			cd.Error = err
+			res <- &cd
 			return
 		}
 
-		if err := json.Unmarshal(out.Bytes(), &customData); err != nil {
+		if err := json.Unmarshal(out.Bytes(), &cd); err != nil {
 			err = errors.Wrap(err, "error unmarshing custom data")
-			customData.Error = err
+			cd.Error = err
 		}
-		res <- customData
+		res <- &cd
 	}()
 	return res
+}
+
+func processCustomData(cd *customData, s *gqlSchema) error {
+	// TODO
+	return nil
 }
 
 type gqlobjectData struct {
@@ -266,39 +268,93 @@ func (obj gqlobjectData) ForeignImport(name string) bool {
 	return !obj.m[name]
 }
 
-// write graphql file
-func writeTypeFile(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) error {
-	imps := tsimport.NewImports()
-	return file.Write((&file.TemplatedBasedFileWriter{
-		Data: gqlobjectData{
-			NodeData:    nodeData,
-			GQLNodes:    []objectType{buildNodeForObject(nodeMap, nodeData)},
-			FieldConfig: buildFieldConfig(nodeData),
-		},
-		CreateDirIfNeeded: true,
-		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
-		TemplateName:      "object.tmpl",
-		PathToFile:        getFilePathForNode(nodeData),
-		FormatSource:      true,
-		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
-	}))
+type gqlSchema struct {
+	hasMutations bool
+	nodes        map[string]gqlNode
 }
 
-func writeActionFile(nodeData *schema.NodeData, action action.Action) error {
-	actionPrefix := strcase.ToCamel(action.GetGraphQLName())
+type gqlNode struct {
+	ObjData    gqlobjectData
+	FilePath   string
+	Dependents []gqlNode // actions are the dependents
+}
 
+func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
+	var result = make(chan *gqlSchema)
+	go func() {
+		var hasMutations bool
+		nodes := make(map[string]gqlNode)
+		var wg sync.WaitGroup
+		var m sync.Mutex
+		wg.Add(len(data.Schema.Nodes))
+
+		nodeMap := data.Schema.Nodes
+		for key := range data.Schema.Nodes {
+			go func(key string) {
+				defer wg.Done()
+
+				info := data.Schema.Nodes[key]
+				nodeData := info.NodeData
+
+				// nothing to do here
+				if nodeData.HideFromGraphQL {
+					return
+				}
+
+				obj := gqlNode{
+					ObjData: gqlobjectData{
+						NodeData:    nodeData,
+						GQLNodes:    []objectType{buildNodeForObject(nodeMap, nodeData)},
+						FieldConfig: buildFieldConfig(nodeData),
+					},
+					FilePath: getFilePathForNode(nodeData),
+				}
+
+				actionInfo := nodeData.ActionInfo
+				if actionInfo != nil {
+					for _, action := range actionInfo.Actions {
+						if !action.ExposedToGraphQL() {
+							continue
+						}
+						hasMutations = true
+						actionPrefix := strcase.ToCamel(action.GetGraphQLName())
+
+						actionObj := gqlNode{
+							ObjData: gqlobjectData{
+								NodeData:    nodeData,
+								GQLNodes:    buildActionNodes(nodeData, action, actionPrefix),
+								FieldConfig: buildActionFieldConfig(nodeData, action, actionPrefix),
+							},
+							FilePath: getFilePathForAction(nodeData, action),
+						}
+						obj.Dependents = append(obj.Dependents, actionObj)
+					}
+				}
+
+				m.Lock()
+				defer m.Unlock()
+				nodes[nodeData.Node] = obj
+			}(key)
+		}
+
+		wg.Wait()
+		result <- &gqlSchema{
+			nodes:        nodes,
+			hasMutations: hasMutations,
+		}
+	}()
+	return result
+}
+
+// write graphql file
+func writeFile(node gqlNode) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
-		Data: gqlobjectData{
-			NodeData:    nodeData,
-			GQLNodes:    buildActionNodes(nodeData, action, actionPrefix),
-			FieldConfig: buildActionFieldConfig(nodeData, action, actionPrefix),
-		},
+		Data:              node.ObjData,
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
 		TemplateName:      "object.tmpl",
-		PathToFile:        getFilePathForAction(nodeData, action),
+		PathToFile:        node.FilePath,
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
