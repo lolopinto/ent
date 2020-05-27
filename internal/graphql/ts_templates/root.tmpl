@@ -1,0 +1,14 @@
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo"}}
+
+{{ range $query := .Queries -}} 
+  import { {{$query.GraphQLType}} } from "{{$query.ImportPath}}";
+{{ end }}
+
+export const {{.Type}} = new {{useImport "GraphQLObjectType"}}({
+  name: "{{.Node}}",
+  fields: () => ({
+    {{ range $query := .Queries -}} 
+      {{$query.GraphQLName}}: {{$query.GraphQLType}},
+    {{ end -}}
+  }),
+});

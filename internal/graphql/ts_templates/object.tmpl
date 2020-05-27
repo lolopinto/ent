@@ -1,0 +1,126 @@
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" }}
+{{reserveImport "ent/ent" "ID" }}
+{{reserveImport "src/graphql/context" "Context"}}
+{{reserveImport "ent/graphql/scalars/time" "GraphQLTime"}}
+
+{{$baseObj := . -}}
+
+{{/* import types that we may need e.g. UserType, ContactType, etc */}}
+{{ range $baseObj.Imports -}} 
+  {{reserveImport .ImportPath .GraphQLType}}
+{{ end -}}
+
+{{ range $baseObj.DefaultImports -}} 
+  {{reserveDefaultImport .ImportPath .GraphQLType}}
+{{ end -}}
+
+{{ range $baseObj.Interfaces -}}
+  {{ range .Extends}}
+    {{ if $baseObj.ForeignImport . -}}
+      {{$ignored := useImport . -}}
+    {{ end -}}
+  {{ end -}}
+  {{.InterfaceDecl }} {
+  {{ range .Fields -}}
+    {{$type := .Type -}}
+    {{if .UseImport -}}
+      {{$type = useImport $type -}}
+    {{end -}}
+    {{.Name}}: {{$type}};
+  {{ end -}}
+  }
+
+{{end}}
+
+{{/* these 2 probably need to change */}}
+{{$node := useImport .NodeData.Node -}}
+{{$nodeInstance := .NodeData.NodeInstance -}}
+
+{{ range $gqlNode := .GQLNodes -}}
+
+  export const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
+    name: "{{$gqlNode.Node}}",
+    {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
+      fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
+    {{ else -}}
+      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$node}}, {{useImport "Context"}}> => ({
+    {{ end -}}
+      {{/* TODO enum support e.g. account status */}} 
+      {{ range $field := $gqlNode.Fields -}}
+        {{$field.Name}}: {
+          {{range $import := $field.FieldImports -}}
+            {{ if $baseObj.ForeignImport $import -}}
+              {{$ignore := useImport $import -}}
+            {{end -}}
+          {{end -}}
+          type: {{$field.FieldType}},
+          {{if $field.HasResolveFunction -}}
+            resolve: ({{$nodeInstance}}: {{$node}}) => {
+              {{$field.FunctionContents}};
+            },
+          {{end -}}
+        },
+      {{end -}}
+    }),
+  });
+  
+{{end}}
+
+{{$fieldConfig := .FieldConfig -}}
+
+{{$prefix := printf "const %s" $fieldConfig.Name -}}
+{{ if $fieldConfig.Exported -}}
+  {{$prefix = printf "export %s" $prefix -}}
+{{end -}}
+
+
+{{ range $import := $fieldConfig.TypeImports -}}
+  {{ if $baseObj.ForeignImport $import -}}
+    {{ $ignored := useImport $import -}}
+  {{ end -}}
+{{ end -}}
+{{ range $import := $fieldConfig.ArgImports -}}
+  {{ if $baseObj.ForeignImport $import -}}
+    {{ $ignored := useImport $import -}}
+  {{ end -}}
+{{ end -}}
+
+
+{{$prefix}}: {{useImport "GraphQLFieldConfig"}}<
+  undefined,
+  Context,
+  {{$fieldConfig.Arg}}
+> = {
+  type: {{$fieldConfig.FieldType}},
+  args: {
+    {{range $arg := $fieldConfig.Args -}}
+      {{$arg.Name}}: {
+        description: "{{$arg.Description}}",
+        {{ range $import := .Imports -}}
+          {{ if $baseObj.ForeignImport $import -}}
+            {{$ignored := useImport $import -}}
+          {{end -}}
+        {{ end -}}
+        type: {{$arg.FieldType -}},
+      }
+    {{end -}}
+  },
+  {{if $fieldConfig.ReturnTypeHint -}}
+    {{ if $fieldConfig.ResolveMethodArg -}}
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+    {{ else -}}
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+    {{end -}}
+  {{ else -}}
+    {{ if $fieldConfig.ResolveMethodArg -}}
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+    {{else -}}
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+    {{end -}}
+  {{ end -}}
+    {{range $line := $fieldConfig.FunctionContents -}}
+      {{ $line }}
+    {{end -}}
+  },
+};
+

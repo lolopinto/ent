@@ -150,6 +150,17 @@ func (fieldInfo *FieldInfo) TopLevelFields() []*Field {
 	return fields
 }
 
+func (fieldInfo *FieldInfo) GraphQLFields() []*Field {
+	var fields []*Field
+
+	for _, f := range fieldInfo.Fields {
+		if !f.hideFromGraphQL {
+			fields = append(fields, f)
+		}
+	}
+	return fields
+}
+
 // ForeignKeyInfo stores config and field name of the foreign key object
 type ForeignKeyInfo struct {
 	Config string

@@ -33,6 +33,12 @@ type TSType interface {
 	GetTSType() string
 }
 
+type TSGraphQLType interface {
+	// returns imports from outside in
+	// e.g. required string => []string{"GraphQLNonNull", "GraphQLString"}
+	GetTSGraphQLImports() []string
+}
+
 type ListType interface {
 	Type
 	GetElemGraphQLType() string
@@ -86,6 +92,10 @@ func (t *StringType) GetNullableType() Type {
 	return &NullableStringType{}
 }
 
+func (t *StringType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLNonNull", "GraphQLString"}
+}
+
 type NullableStringType struct {
 	stringType
 }
@@ -104,6 +114,10 @@ func (t *NullableStringType) GetCastToMethod() string {
 
 func (t *NullableStringType) GetNonNullableType() Type {
 	return &StringType{}
+}
+
+func (t *NullableStringType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLString"}
 }
 
 type boolType struct{}
@@ -136,6 +150,10 @@ func (t *BoolType) GetNullableType() Type {
 	return &NullableBoolType{}
 }
 
+func (t *BoolType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLNonNull", "GraphQLBoolean"}
+}
+
 type NullableBoolType struct {
 	boolType
 }
@@ -154,6 +172,10 @@ func (t *NullableBoolType) GetCastToMethod() string {
 
 func (t *NullableBoolType) GetNonNullableType() Type {
 	return &BoolType{}
+}
+
+func (t *NullableBoolType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLBoolean"}
 }
 
 // TODO uuid support needed
@@ -189,6 +211,10 @@ func (t *IDType) GetNullableType() Type {
 	return &NullableIDType{}
 }
 
+func (t *IDType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLNonNull", "GraphQLID"}
+}
+
 type NullableIDType struct {
 	idType
 }
@@ -207,6 +233,10 @@ func (t *NullableIDType) GetCastToMethod() string {
 
 func (t *NullableIDType) GetNonNullableType() Type {
 	return &IDType{}
+}
+
+func (t *NullableIDType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLID"}
 }
 
 type intType struct{}
@@ -238,6 +268,10 @@ func (t *IntegerType) GetNullableType() Type {
 	return &NullableIntegerType{}
 }
 
+func (t *IntegerType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLNonNull", "GraphQLInt"}
+}
+
 type NullableIntegerType struct {
 	intType
 }
@@ -256,6 +290,10 @@ func (t *NullableIntegerType) GetCastToMethod() string {
 
 func (t *NullableIntegerType) GetNonNullableType() Type {
 	return &IntegerType{}
+}
+
+func (t *NullableIntegerType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLInt"}
 }
 
 type floatType struct{}
@@ -288,6 +326,10 @@ func (t *FloatType) GetNullableType() Type {
 	return &NullableFloatType{}
 }
 
+func (t *FloatType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLNonNull", "GraphQLFloat"}
+}
+
 type NullableFloatType struct {
 	floatType
 }
@@ -306,6 +348,10 @@ func (t *NullableFloatType) GetCastToMethod() string {
 
 func (t *NullableFloatType) GetNonNullableType() Type {
 	return &FloatType{}
+}
+
+func (t *NullableFloatType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLFloat"}
 }
 
 type timeType struct{}
@@ -343,6 +389,10 @@ func (t *TimeType) GetNullableType() Type {
 	return &NullableTimeType{}
 }
 
+func (t *TimeType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLNonNull", "GraphQLTime"}
+}
+
 type NullableTimeType struct {
 	timeType
 }
@@ -361,6 +411,10 @@ func (t *NullableTimeType) GetTSType() string {
 
 func (t *NullableTimeType) GetNonNullableType() Type {
 	return &TimeType{}
+}
+
+func (t *NullableTimeType) GetTSGraphQLImports() []string {
+	return []string{"GraphQLTime"}
 }
 
 type typeConfig struct {
