@@ -137,7 +137,20 @@ export async function loadEnts<T extends Ent>(
   options: LoadEntOptions<T>,
   ...ids: ID[]
 ): Promise<T[]> {
-  return loadEntsFromClause(viewer, query.In("id", ...ids), options);
+  // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
+  // TODO eventually this should be doing a cache then db queyr and maybe depend on dataloader to get all the results at once
+
+  // we need to get the result and re-sort... because the raw db access doesn't guarantee it in same order
+  // apparently
+  let m = await loadEntsFromClause(viewer, query.In("id", ...ids), options);
+  let result: T[] = [];
+  ids.forEach((id) => {
+    let ent = m.get(id);
+    if (ent) {
+      result.push(ent);
+    }
+  });
+  return result;
 }
 
 export async function loadDerivedEnt<T extends Ent>(
@@ -902,11 +915,13 @@ export async function loadNodesByEdge<T extends Ent>(
   return loadEnts(viewer, options, ...ids);
 }
 
+// we return a map here so that any sorting for queries that exist
+// can be done in O(N) time
 export async function loadEntsFromClause<T extends Ent>(
   viewer: Viewer,
   clause: query.Clause,
   options: LoadEntOptions<T>,
-): Promise<T[]> {
+): Promise<Map<ID, T>> {
   loadRows;
   const rowOptions: LoadRowOptions = {
     ...options,
@@ -914,13 +929,17 @@ export async function loadEntsFromClause<T extends Ent>(
   };
 
   const nodes = await loadRows(rowOptions);
+  let m: Map<ID, T> = new Map();
   // apply privacy logic
   const ents = await Promise.all(
-    nodes.map((row) => {
+    nodes.map(async (row) => {
       // todo eventually there'll be a different key
       const ent = new options.ent(viewer, row["id"], row);
-      return applyPrivacyPolicyForEnt(viewer, ent);
+      let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
+      if (privacyEnt) {
+        m.set(row["id"], privacyEnt);
+      }
     }),
   );
-  return ents.filter((ent) => ent) as T[];
+  return m;
 }

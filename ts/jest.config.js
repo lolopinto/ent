@@ -1,7 +1,6 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
-
   transform: {
     "^.+\\.tsx?$": "ts-jest",
   },
@@ -12,4 +11,6 @@ module.exports = {
   testPathIgnorePatterns: ["<rootDir>/examples"],
   //  collectCoverage: true,
   setupFilesAfterEnv: ["jest-expect-message", "jest-date-mock"],
+  // doesn't work because db.ts depends on "config/database.yml" being called from root of each project
+  //  projects: ["<rootDir>", "<rootDir>/examples/*"],
 };

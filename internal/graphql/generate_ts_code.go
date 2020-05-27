@@ -126,11 +126,11 @@ func getSchemaFilePath() string {
 }
 
 func getFilePathForAction(nodeData *schema.NodeData, action action.Action) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(action.GetActionName()))
+	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type.ts", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
 }
 
 func getImportPathForAction(nodeData *schema.NodeData, action action.Action) string {
-	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetActionName()))
+	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
 }
 
 type gqlobjectData struct {
@@ -306,6 +306,16 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) o
 
 	fieldInfo := nodeData.FieldInfo
 	var fields []fieldType
+
+	for _, edge := range nodeData.EdgeInfo.FieldEdges {
+		f := fieldInfo.GetFieldByName(edge.FieldName)
+		// TODO this shouldn't be here but be somewhere else...
+		if f != nil {
+			fieldInfo.InvalidateFieldForGraphQL(f)
+		}
+		addSingularEdge(edge, &fields, instance)
+	}
+
 	for _, field := range fieldInfo.GraphQLFields() {
 		gqlField := fieldType{
 			Name:               field.GetGraphQLName(),
@@ -316,15 +326,6 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) o
 			gqlField.FunctionContents = fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())
 		}
 		fields = append(fields, gqlField)
-	}
-
-	for _, edge := range nodeData.EdgeInfo.FieldEdges {
-		f := fieldInfo.GetFieldByName(edge.FieldName)
-		// TODO this shouldn't be here but be somewhere else...
-		if f != nil {
-			fieldInfo.InvalidateFieldForGraphQL(f)
-		}
-		addSingularEdge(edge, &fields, instance)
 	}
 
 	for _, edge := range nodeData.EdgeInfo.Associations {

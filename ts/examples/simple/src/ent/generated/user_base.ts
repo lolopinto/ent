@@ -298,11 +298,16 @@ export class UserBase {
     return loadEdgeForID2(this.id, EdgeType.UserToMaybeEvents, id2);
   }
 
-  loadContacts(): Promise<Contact[]> {
-    return loadEntsFromClause(
+  async loadContacts(): Promise<Contact[]> {
+    let map = await loadEntsFromClause(
       this.viewer,
       query.Eq("user_id", this.id),
       Contact.loaderOptions(),
     );
+    let results: Contact[] = [];
+    map.forEach((ent) => {
+      results.push(ent);
+    });
+    return results;
   }
 }

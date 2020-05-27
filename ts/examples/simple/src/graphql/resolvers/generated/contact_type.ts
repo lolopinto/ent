@@ -21,6 +21,12 @@ interface ContactQueryArgs {
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
   fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
+    user: {
+      type: UserType,
+      resolve: (contact: Contact) => {
+        return contact.loadUser();
+      },
+    },
     id: {
       type: GraphQLNonNull(GraphQLID),
     },
@@ -32,15 +38,6 @@ export const ContactType = new GraphQLObjectType({
     },
     lastName: {
       type: GraphQLNonNull(GraphQLString),
-    },
-    userID: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    user: {
-      type: UserType,
-      resolve: (contact: Contact) => {
-        return contact.loadUser();
-      },
     },
   }),
 });
