@@ -18,9 +18,9 @@ export default class Event extends BaseEntSchema implements Schema {
       fieldEdge: ["User", "createdEvents"],
       storageKey: "user_id",
     }),
-    TimeType({ name: "start_time" }),
-    TimeType({ name: "end_time", nullable: true }),
-    StringType({ name: "location" }),
+    TimeType({ name: "start_time"}),
+    TimeType({ name: "end_time", nullable: true}),
+    StringType({ name: "location", graphqlName: "eventLocation" }),
   ];
 
   edges: Edge[] = [

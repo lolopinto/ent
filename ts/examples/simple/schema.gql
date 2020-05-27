@@ -1,0 +1,160 @@
+type Query {
+  address(id: ID!): Address
+  contact(id: ID!): Contact
+  event(id: ID!): Event
+  user(id: ID!): User
+}
+
+type Address {
+  id: ID!
+  streetName: String!
+  city: String!
+  zip: String!
+}
+
+type Contact {
+  id: ID!
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+  userID: String!
+  user: User
+}
+
+type User {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  accountStatus: String
+  createdEvents: [Event!]!
+  friends: [User!]!
+  selfContact: Contact
+  invitedEvents: [Event!]!
+  eventsAttending: [Event!]!
+  declinedEvents: [Event!]!
+  maybeEvents: [Event!]!
+  contacts: [Contact!]!
+}
+
+type Event {
+  id: ID!
+  name: String!
+  creatorID: String!
+  startTime: Time!
+  endTime: Time
+  eventLocation: String!
+  creator: User
+  hosts: [User!]!
+  invited: [User!]!
+  attending: [User!]!
+  declined: [User!]!
+  maybe: [User!]!
+}
+
+"""Time scalar type"""
+scalar Time
+
+type Mutation {
+  contactCreate(input: ContactCreateInput!): ContactCreateResponse!
+  contactDelete(input: ContactDeleteInput!): ContactDeleteResponse!
+  contactEdit(input: ContactEditInput!): ContactEditResponse!
+  eventCreate(input: EventCreateInput!): EventCreateResponse!
+  eventDelete(input: EventDeleteInput!): EventDeleteResponse!
+  eventEdit(input: EventEditInput!): EventEditResponse!
+  userCreate(input: UserCreateInput!): UserCreateResponse!
+  userDelete(input: UserDeleteInput!): UserDeleteResponse!
+  userEdit(input: UserEditInput!): UserEditResponse!
+}
+
+type ContactCreateResponse {
+  contact: Contact!
+}
+
+input ContactCreateInput {
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+  userID: String!
+}
+
+type ContactDeleteResponse {
+  deletedContactID: ID
+}
+
+input ContactDeleteInput {
+  contactID: ID!
+}
+
+type ContactEditResponse {
+  contact: Contact!
+}
+
+input ContactEditInput {
+  contactID: ID!
+  emailAddress: String
+  firstName: String
+  lastName: String
+  userID: String
+}
+
+type EventCreateResponse {
+  event: Event!
+}
+
+input EventCreateInput {
+  name: String!
+  creatorID: String!
+  startTime: Time!
+  endTime: Time
+  eventLocation: String!
+}
+
+type EventDeleteResponse {
+  deletedEventID: ID
+}
+
+input EventDeleteInput {
+  eventID: ID!
+}
+
+type EventEditResponse {
+  event: Event!
+}
+
+input EventEditInput {
+  eventID: ID!
+  name: String
+  creatorID: String
+  startTime: Time
+  endTime: Time
+  eventLocation: String
+}
+
+type UserCreateResponse {
+  user: User!
+}
+
+input UserCreateInput {
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+}
+
+type UserDeleteResponse {
+  deletedUserID: ID
+}
+
+input UserDeleteInput {
+  userID: ID!
+}
+
+type UserEditResponse {
+  user: User!
+}
+
+input UserEditInput {
+  userID: ID!
+  firstName: String
+  lastName: String
+}

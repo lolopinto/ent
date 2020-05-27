@@ -394,8 +394,6 @@ func (f *Field) TsBuilderType() string {
 	if len(match) != 2 {
 		panic("invalid config name")
 	}
-	// TODO we're doing this in a builder where we don't need currently need useImport
-	// but that may not always be true
 	return fmt.Sprintf("%s | Builder<%s>", typ, match[1])
 }
 
@@ -455,4 +453,29 @@ func (f *Field) AddInverseEdge(edge *edge.AssociationEdge) {
 
 func (f *Field) GetInverseEdge() *edge.AssociationEdge {
 	return f.inverseEdge
+}
+
+// for non-required fields in actions, we want to make it optional if it's not a required field
+// in the action
+func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []string {
+	var tsGQLType enttype.TSGraphQLType
+	var ok bool
+	nullableType, ok := f.fieldType.(enttype.NullableType)
+
+	if forceOptional && ok {
+		tsGQLType2, ok := nullableType.GetNullableType().(enttype.TSGraphQLType)
+		if ok {
+			tsGQLType = tsGQLType2
+		}
+	} else {
+		// already null and/or not forceOptional
+		tsGQLType, ok = f.fieldType.(enttype.TSGraphQLType)
+		if !ok {
+			panic("field doesn't support TS graphql.TODO " + f.FieldName)
+		}
+	}
+	if tsGQLType == nil {
+		panic("field doesn't support TS graphql.TODO" + f.FieldName)
+	}
+	return tsGQLType.GetTSGraphQLImports()
 }

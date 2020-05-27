@@ -4,10 +4,9 @@ import (
 	"os"
 
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/db"
+	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/input"
-	"github.com/lolopinto/ent/internal/tscode"
 	"github.com/spf13/cobra"
 )
 
@@ -54,8 +53,10 @@ var codegenCmd = &cobra.Command{
 		}
 
 		steps := []codegen.Step{
-			new(db.Step),
-			new(tscode.Step),
+			// new(db.Step),
+			// new(tscode.Step),
+			// we only want graphql for now
+			new(graphql.TSStep),
 		}
 		return codegen.RunSteps(data, steps, codegenInfo.step)
 	},
