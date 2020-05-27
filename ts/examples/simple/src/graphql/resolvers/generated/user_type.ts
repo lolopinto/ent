@@ -86,6 +86,9 @@ export const UserType = new GraphQLObjectType({
         return user.loadContacts();
       },
     },
+    fullName: {
+      type: GraphQLNonNull(GraphQLString),
+    },
   }),
 });
 

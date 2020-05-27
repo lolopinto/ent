@@ -67,6 +67,14 @@ type CustomItem struct {
 }
 
 func (p *TSStep) ProcessData(data *codegen.Data) error {
+	// these all need to be done after
+	// 1a/ build data (actions and nodes)
+	// 1b/ parse custom files
+	// 2/ inject any custom data in there
+	// 3/ write node files first then action files since there's a dependency...
+	// 4/ write query/mutation/schema file
+	// schema file depends on query/mutation so not quite worth the complication of breaking those 2 up
+
 	cd, s := <-parseCustomData(data), <-buildGQLSchema(data)
 	if cd.Error != nil {
 		return cd.Error
@@ -77,8 +85,6 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 	}
 
 	spew.Dump(cd)
-	spew.Dump(s.hasMutations)
-	spew.Dump(len(s.nodes))
 
 	var wg sync.WaitGroup
 	wg.Add(len(s.nodes))
@@ -112,14 +118,6 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 			dependentsWg.Wait()
 		}(key)
 	}
-
-	// these all need to be done after
-	// 1a/ build data (actions and nodes)
-	// 1b/ parse custom files
-	// 2/ inject any custom data in there
-	// 3/ write node files first then action files since there's a dependency...
-	// 4/ write query/mutation/schema file
-	// schema file depends on query/mutation so not quite worth the complication of breaking those 2 up
 
 	if err := serr.Err(); err != nil {
 		return err
@@ -213,35 +211,114 @@ func parseCustomData(data *codegen.Data) chan *customData {
 
 func processCustomData(cd *customData, s *gqlSchema) error {
 	// TODO
+	if len(cd.Args) > 0 {
+		return errors.New("TOOD: need to process args. doesn't work at the moment")
+	}
+
+	for _, field := range cd.Fields {
+		nodeInfo := s.nodes[field.Node]
+
+		if nodeInfo == nil {
+			return fmt.Errorf("can't find %s node that has custom field %s ", field.Node, field.GraphQLName)
+		}
+
+		if len(field.Args) > 0 {
+			return fmt.Errorf("don't currently support fields with any args")
+		}
+
+		objData := nodeInfo.ObjData
+		nodeData := objData.NodeData
+		// always has a node for now
+		obj := objData.GQLNodes[0]
+		imports, err := getGraphQLImportsForField(field, s)
+		if err != nil {
+			return err
+		}
+		gqlField := &fieldType{
+			Name:               field.GraphQLName,
+			HasResolveFunction: false,
+			FieldImports:       imports,
+		}
+		instance := nodeData.NodeInstance
+
+		switch field.FieldType {
+		case Accessor:
+		case Field:
+			// for an accessor or field, we only add a resolve function if named differently
+			if field.GraphQLName != field.FunctionName {
+				gqlField.HasResolveFunction = true
+				gqlField.FunctionContents = fmt.Sprintf("return %s.%s;", instance, field.FunctionName)
+			}
+			break
+
+		case Function:
+		case AsyncFunction:
+			panic("TODO come back")
+		}
+
+		// append the field
+		obj.Fields = append(obj.Fields, gqlField)
+	}
 	return nil
+}
+
+func getGraphQLImportsForField(f CustomField, s *gqlSchema) ([]string, error) {
+	scalars := map[string]string{
+		"String":  "GraphQLString",
+		"Date":    "Time",
+		"Int":     "GraphQLInt",
+		"Float":   "GraphQLFloat",
+		"Boolean": "GraphQLBoolean",
+	}
+
+	var imports []string
+	for _, result := range f.Results {
+		// TODO nullable...
+		imports = append(imports, "GraphQLNonNull")
+
+		typ, ok := scalars[result.Type]
+		if ok {
+			// scalar!
+			imports = append(imports, typ)
+		} else {
+			_, ok := s.nodes[result.Type]
+			if ok {
+				// TODo need to add it to DefaultImport for the entire file...
+				imports = append(imports, fmt.Sprintf("%sType", result.Type))
+			} else {
+				return nil, errors.New("found a type which was not part of the schema")
+			}
+		}
+	}
+	return imports, nil
 }
 
 type gqlobjectData struct {
 	NodeData    *schema.NodeData
-	GQLNodes    []objectType
-	FieldConfig fieldConfig
+	GQLNodes    []*objectType
+	FieldConfig *fieldConfig
 	initMap     bool
 	m           map[string]bool
 }
 
-func (obj gqlobjectData) DefaultImports() []queryGQLDatum {
-	var result []queryGQLDatum
+func (obj gqlobjectData) DefaultImports() []*queryGQLDatum {
+	var result []*queryGQLDatum
 	for _, node := range obj.GQLNodes {
 		result = append(result, node.DefaultImports...)
 	}
 	return result
 }
 
-func (obj gqlobjectData) Imports() []queryGQLDatum {
-	var result []queryGQLDatum
+func (obj gqlobjectData) Imports() []*queryGQLDatum {
+	var result []*queryGQLDatum
 	for _, node := range obj.GQLNodes {
 		result = append(result, node.Imports...)
 	}
 	return result
 }
 
-func (obj gqlobjectData) Interfaces() []interfaceType {
-	var result []interfaceType
+func (obj gqlobjectData) Interfaces() []*interfaceType {
+	var result []*interfaceType
 	for _, node := range obj.GQLNodes {
 		result = append(result, node.Interfaces...)
 	}
@@ -270,20 +347,20 @@ func (obj gqlobjectData) ForeignImport(name string) bool {
 
 type gqlSchema struct {
 	hasMutations bool
-	nodes        map[string]gqlNode
+	nodes        map[string]*gqlNode
 }
 
 type gqlNode struct {
-	ObjData    gqlobjectData
+	ObjData    *gqlobjectData
 	FilePath   string
-	Dependents []gqlNode // actions are the dependents
+	Dependents []*gqlNode // actions are the dependents
 }
 
 func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 	var result = make(chan *gqlSchema)
 	go func() {
 		var hasMutations bool
-		nodes := make(map[string]gqlNode)
+		nodes := make(map[string]*gqlNode)
 		var wg sync.WaitGroup
 		var m sync.Mutex
 		wg.Add(len(data.Schema.Nodes))
@@ -302,9 +379,9 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 				}
 
 				obj := gqlNode{
-					ObjData: gqlobjectData{
+					ObjData: &gqlobjectData{
 						NodeData:    nodeData,
-						GQLNodes:    []objectType{buildNodeForObject(nodeMap, nodeData)},
+						GQLNodes:    []*objectType{buildNodeForObject(nodeMap, nodeData)},
 						FieldConfig: buildFieldConfig(nodeData),
 					},
 					FilePath: getFilePathForNode(nodeData),
@@ -320,20 +397,20 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 						actionPrefix := strcase.ToCamel(action.GetGraphQLName())
 
 						actionObj := gqlNode{
-							ObjData: gqlobjectData{
+							ObjData: &gqlobjectData{
 								NodeData:    nodeData,
 								GQLNodes:    buildActionNodes(nodeData, action, actionPrefix),
 								FieldConfig: buildActionFieldConfig(nodeData, action, actionPrefix),
 							},
 							FilePath: getFilePathForAction(nodeData, action),
 						}
-						obj.Dependents = append(obj.Dependents, actionObj)
+						obj.Dependents = append(obj.Dependents, &actionObj)
 					}
 				}
 
 				m.Lock()
 				defer m.Unlock()
-				nodes[nodeData.Node] = obj
+				nodes[nodeData.Node] = &obj
 			}(key)
 		}
 
@@ -347,7 +424,7 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 }
 
 // write graphql file
-func writeFile(node gqlNode) error {
+func writeFile(node *gqlNode) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data:              node.ObjData,
@@ -368,7 +445,7 @@ type fieldConfig struct {
 	ResolveMethodArg string
 	TypeImports      []string
 	ArgImports       []string // incase it's { [argName: string]: any }, we need to know difference
-	Args             []fieldConfigArg
+	Args             []*fieldConfigArg
 	FunctionContents []string
 	ReturnTypeHint   string
 }
@@ -387,13 +464,13 @@ func (f fieldConfigArg) FieldType() string {
 	return typeFromImports(f.Imports)
 }
 
-func buildFieldConfig(nodeData *schema.NodeData) fieldConfig {
-	return fieldConfig{
+func buildFieldConfig(nodeData *schema.NodeData) *fieldConfig {
+	return &fieldConfig{
 		Exported:    true,
 		Name:        fmt.Sprintf("%sQuery", nodeData.Node),
 		Arg:         fmt.Sprintf("%sQueryArgs", nodeData.Node),
 		TypeImports: []string{fmt.Sprintf("%sType", nodeData.Node)},
-		Args: []fieldConfigArg{
+		Args: []*fieldConfigArg{
 			{
 				Name:    "id",
 				Imports: []string{"GraphQLNonNull", "GraphQLID"},
@@ -405,8 +482,8 @@ func buildFieldConfig(nodeData *schema.NodeData) fieldConfig {
 	}
 }
 
-func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) objectType {
-	result := objectType{
+func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *objectType {
+	result := &objectType{
 		Type:     fmt.Sprintf("%sType", nodeData.Node),
 		Node:     nodeData.Node,
 		GQLType:  "GraphQLObjectType",
@@ -418,19 +495,19 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) o
 		if node.Node == nodeData.Node {
 			continue
 		}
-		result.Imports = append(result.Imports, queryGQLDatum{
+		result.Imports = append(result.Imports, &queryGQLDatum{
 			ImportPath:  fmt.Sprintf("./%s_type", node.PackageName),
 			GraphQLType: fmt.Sprintf("%sType", node.Node),
 		})
 	}
-	result.DefaultImports = append(result.DefaultImports, queryGQLDatum{
+	result.DefaultImports = append(result.DefaultImports, &queryGQLDatum{
 		ImportPath:  fmt.Sprintf("src/ent/%s", nodeData.PackageName),
 		GraphQLType: nodeData.Node,
 	})
 
-	result.Interfaces = append(result.Interfaces, interfaceType{
+	result.Interfaces = append(result.Interfaces, &interfaceType{
 		Name: fmt.Sprintf("%sQueryArgs", nodeData.Node),
-		Fields: []interfaceField{
+		Fields: []*interfaceField{
 			{
 				Name:      "id",
 				Type:      "ID",
@@ -442,7 +519,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) o
 	instance := nodeData.NodeInstance
 
 	fieldInfo := nodeData.FieldInfo
-	var fields []fieldType
+	var fields []*fieldType
 
 	for _, edge := range nodeData.EdgeInfo.FieldEdges {
 		f := fieldInfo.GetFieldByName(edge.FieldName)
@@ -454,7 +531,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) o
 	}
 
 	for _, field := range fieldInfo.GraphQLFields() {
-		gqlField := fieldType{
+		gqlField := &fieldType{
 			Name:               field.GetGraphQLName(),
 			HasResolveFunction: field.GetGraphQLName() != field.TsFieldName(),
 			FieldImports:       field.GetTSGraphQLTypeForFieldImports(false),
@@ -486,8 +563,8 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) o
 	return result
 }
 
-func addSingularEdge(edge edge.Edge, fields *[]fieldType, instance string) {
-	gqlField := fieldType{
+func addSingularEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
+	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       edge.GetTSGraphQLTypeImports(),
@@ -496,8 +573,8 @@ func addSingularEdge(edge edge.Edge, fields *[]fieldType, instance string) {
 	*fields = append(*fields, gqlField)
 }
 
-func addPluralEdge(edge edge.Edge, fields *[]fieldType, instance string) {
-	gqlField := fieldType{
+func addPluralEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
+	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       edge.GetTSGraphQLTypeImports(),
@@ -506,16 +583,16 @@ func addPluralEdge(edge edge.Edge, fields *[]fieldType, instance string) {
 	*fields = append(*fields, gqlField)
 }
 
-func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPrefix string) []objectType {
-	return []objectType{
+func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
+	return []*objectType{
 		buildActionInputNode(nodeData, action, actionPrefix),
 		buildActionResponseNode(nodeData, action, actionPrefix),
 	}
 }
 
-func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) objectType {
+func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
 	// TODO shared input types across created/edit for example
-	result := objectType{
+	result := &objectType{
 		Type:     fmt.Sprintf("%sInputType", actionPrefix),
 		Node:     fmt.Sprintf("%sInput", actionPrefix),
 		Exported: true,
@@ -524,7 +601,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 
 	// add id field for edit and delete mutations
 	if a.MutatingExistingObject() {
-		result.Fields = append(result.Fields, fieldType{
+		result.Fields = append(result.Fields, &fieldType{
 			Name:         fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
 			FieldImports: []string{"GraphQLNonNull", "GraphQLID"},
 			Description:  fmt.Sprintf("id of %s", nodeData.Node),
@@ -535,7 +612,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 		if !f.EditableField() {
 			continue
 		}
-		result.Fields = append(result.Fields, fieldType{
+		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
 			FieldImports: f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f)),
 		})
@@ -544,7 +621,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 	// add each edge that's part of the mutation as an ID
 	// use singular version so that this is friendID instead of friendsID
 	for _, edge := range a.GetEdges() {
-		result.Fields = append(result.Fields, fieldType{
+		result.Fields = append(result.Fields, &fieldType{
 			Name:         fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
 			FieldImports: []string{"GraphQLNonNull", "GraphQLID"},
 		})
@@ -553,11 +630,11 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 	if a.MutatingExistingObject() {
 		// custom interface for editing
 
-		result.Interfaces = []interfaceType{
+		result.Interfaces = []*interfaceType{
 			{
 				Exported: false,
 				Name:     fmt.Sprintf("custom%sInput", actionPrefix),
-				Fields: []interfaceField{
+				Fields: []*interfaceField{
 					{
 						Name:      fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
 						Type:      "ID", // ID
@@ -596,13 +673,13 @@ func getInputName(action action.Action) string {
 	panic("invalid. todo")
 }
 
-func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, actionPrefix string) objectType {
-	result := objectType{
+func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, actionPrefix string) *objectType {
+	result := &objectType{
 		Type:     fmt.Sprintf("%sResponseType", actionPrefix),
 		Node:     fmt.Sprintf("%sResponse", actionPrefix),
 		Exported: true,
 		GQLType:  "GraphQLObjectType",
-		DefaultImports: []queryGQLDatum{
+		DefaultImports: []*queryGQLDatum{
 			{
 				ImportPath:  fmt.Sprintf("src/ent/%s", nodeData.PackageName),
 				GraphQLType: nodeData.Node,
@@ -612,7 +689,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 				GraphQLType: action.GetActionName(),
 			},
 		},
-		Imports: []queryGQLDatum{
+		Imports: []*queryGQLDatum{
 			{
 				ImportPath:  getImportPathForNode(nodeData),
 				GraphQLType: fmt.Sprintf("%sType", nodeData.Node),
@@ -621,7 +698,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 	}
 
 	if action.GetOperation() != ent.DeleteAction {
-		result.Imports = append(result.Imports, queryGQLDatum{
+		result.Imports = append(result.Imports, &queryGQLDatum{
 			ImportPath:  fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
 			GraphQLType: getInputName(action),
 		})
@@ -629,16 +706,16 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 
 	nodeInfo := action.GetNodeInfo()
 	if action.GetOperation() != ent.DeleteAction {
-		result.Fields = append(result.Fields, fieldType{
+		result.Fields = append(result.Fields, &fieldType{
 			Name:         nodeInfo.NodeInstance,
 			FieldImports: []string{"GraphQLNonNull", fmt.Sprintf("%sType", nodeInfo.Node)},
 		})
 
-		result.Interfaces = []interfaceType{
+		result.Interfaces = []*interfaceType{
 			{
 				Exported: false,
 				Name:     fmt.Sprintf("%sResponse", actionPrefix),
-				Fields: []interfaceField{
+				Fields: []*interfaceField{
 					{
 						Name:      nodeData.NodeInstance,
 						Type:      nodeData.Node,
@@ -648,16 +725,16 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 			},
 		}
 	} else {
-		result.Fields = append(result.Fields, fieldType{
+		result.Fields = append(result.Fields, &fieldType{
 			Name:         fmt.Sprintf("deleted%sID", nodeInfo.Node),
 			FieldImports: []string{"GraphQLID"},
 		})
 
-		result.Interfaces = []interfaceType{
+		result.Interfaces = []*interfaceType{
 			{
 				Exported: false,
 				Name:     fmt.Sprintf("%sResponse", actionPrefix),
-				Fields: []interfaceField{
+				Fields: []*interfaceField{
 					{
 						Name:      fmt.Sprintf("deleted%sID", nodeInfo.Node),
 						Type:      "ID",
@@ -671,7 +748,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 	return result
 }
 
-func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, actionPrefix string) fieldConfig {
+func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, actionPrefix string) *fieldConfig {
 	argImports := []string{
 		action.GetActionName(),
 	}
@@ -682,7 +759,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		argName = getInputName(action)
 		argImports = append(argImports, argName)
 	}
-	result := fieldConfig{
+	result := &fieldConfig{
 		Exported:         true,
 		Name:             fmt.Sprintf("%sType", actionPrefix),
 		Arg:              fmt.Sprintf("{ [input: string]: %s}", argName),
@@ -693,7 +770,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		},
 		// TODO these are just all imports, we don't care where from
 		ArgImports: argImports,
-		Args: []fieldConfigArg{
+		Args: []*fieldConfigArg{
 			{
 				Name: "input",
 				Imports: []string{
@@ -764,14 +841,14 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 type objectType struct {
 	Type     string
 	Node     string
-	Fields   []fieldType
+	Fields   []*fieldType
 	Exported bool
 	GQLType  string // GraphQLObjectType or GraphQLInputObjectType
 
 	// TODO will soon need to allow calling import multiple times for the same path
-	DefaultImports []queryGQLDatum
-	Imports        []queryGQLDatum
-	Interfaces     []interfaceType
+	DefaultImports []*queryGQLDatum
+	Imports        []*queryGQLDatum
+	Interfaces     []*interfaceType
 }
 
 type fieldType struct {
@@ -788,7 +865,7 @@ type fieldType struct {
 type interfaceType struct {
 	Exported bool
 	Name     string
-	Fields   []interfaceField
+	Fields   []*interfaceField
 	// interfaces to extend
 	Extends []string
 }

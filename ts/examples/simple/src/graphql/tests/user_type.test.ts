@@ -56,6 +56,22 @@ test("query user", async () => {
   );
 });
 
+test("query custom field", async () => {
+  let user = await create({
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+  });
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    ["firstName", user.firstName],
+    ["lastName", user.lastName],
+    ["fullName", user.fullName],
+  );
+});
+
 test("query user who's not visible", async () => {
   let [user, user2] = await Promise.all([
     create({
