@@ -23,13 +23,16 @@ interface EventQueryArgs {
 export const EventType = new GraphQLObjectType({
   name: "Event",
   fields: (): GraphQLFieldConfigMap<Event, Context> => ({
+    creator: {
+      type: UserType,
+      resolve: (event: Event) => {
+        return event.loadCreator();
+      },
+    },
     id: {
       type: GraphQLNonNull(GraphQLID),
     },
     name: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    creatorID: {
       type: GraphQLNonNull(GraphQLString),
     },
     startTime: {
@@ -42,12 +45,6 @@ export const EventType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
       resolve: (event: Event) => {
         return event.location;
-      },
-    },
-    creator: {
-      type: UserType,
-      resolve: (event: Event) => {
-        return event.loadCreator();
       },
     },
     hosts: {

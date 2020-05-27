@@ -10,6 +10,7 @@ import { NodeType, EdgeType } from "src/ent/const";
 import Event from "src/ent/event";
 import { randomEmail } from "src/util/random";
 import { IDViewer } from "src/util/id_viewer";
+
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
@@ -106,7 +107,7 @@ test("edit user", async () => {
 });
 
 test("edit user. saveXFromID", async () => {
-    let user = await create({
+  let user = await create({
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
@@ -119,7 +120,7 @@ test("edit user. saveXFromID", async () => {
 
   expect(editedUser.firstName).toBe("First of his name");
   expect(editedUser.lastName).toBe("Snow");
-})
+});
 
 test("delete user", async () => {
   let user = await create({
@@ -142,19 +143,18 @@ test("delete user", async () => {
 });
 
 test("delete user. saveXFromID", async () => {
-    let user = await create({
+  let user = await create({
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
   });
 
   let vc = new IDViewer(user.id, user);
-  await DeleteUserAction.saveXFromID(vc, user.id)
+  await DeleteUserAction.saveXFromID(vc, user.id);
 
   let loadedUser = await User.load(vc, user.id);
   expect(loadedUser).toBe(null);
-})
-
+});
 
 describe("privacy", () => {
   test("load", async () => {

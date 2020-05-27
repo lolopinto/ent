@@ -2,15 +2,15 @@
 
 import { GraphQLObjectType } from "graphql";
 
-import { ContactCreateType } from "src/graphql/mutations/generated/contact/create_contact_action_type";
-import { ContactDeleteType } from "src/graphql/mutations/generated/contact/delete_contact_action_type";
-import { ContactEditType } from "src/graphql/mutations/generated/contact/edit_contact_action_type";
-import { EventCreateType } from "src/graphql/mutations/generated/event/create_event_action_type";
-import { EventDeleteType } from "src/graphql/mutations/generated/event/delete_event_action_type";
-import { EventEditType } from "src/graphql/mutations/generated/event/edit_event_action_type";
-import { UserCreateType } from "src/graphql/mutations/generated/user/create_user_action_type";
-import { UserDeleteType } from "src/graphql/mutations/generated/user/delete_user_action_type";
-import { UserEditType } from "src/graphql/mutations/generated/user/edit_user_action_type";
+import { ContactCreateType } from "src/graphql/mutations/generated/contact/contact_create_type";
+import { ContactDeleteType } from "src/graphql/mutations/generated/contact/contact_delete_type";
+import { ContactEditType } from "src/graphql/mutations/generated/contact/contact_edit_type";
+import { EventCreateType } from "src/graphql/mutations/generated/event/event_create_type";
+import { EventDeleteType } from "src/graphql/mutations/generated/event/event_delete_type";
+import { EventEditType } from "src/graphql/mutations/generated/event/event_edit_type";
+import { UserCreateType } from "src/graphql/mutations/generated/user/user_create_type";
+import { UserDeleteType } from "src/graphql/mutations/generated/user/user_delete_type";
+import { UserEditType } from "src/graphql/mutations/generated/user/user_edit_type";
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",

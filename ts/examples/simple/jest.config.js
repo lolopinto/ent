@@ -10,5 +10,5 @@ module.exports = {
     // map to src/ so that we don't have relative paths like "./../"
     "^src/(.*)": "<rootDir>/src/$1",
   },
-  setupFilesAfterEnv: ["jest-expect-message"],
+  setupFilesAfterEnv: ["jest-expect-message", "jest-date-mock"],
 };

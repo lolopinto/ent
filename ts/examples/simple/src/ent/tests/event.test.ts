@@ -1,5 +1,4 @@
 import Event from "src/ent/event";
-import { ID, Ent, Viewer } from "ent/ent";
 import { LoggedOutViewer } from "ent/viewer";
 import DB from "ent/db";
 import { randomEmail } from "src/util/random";
