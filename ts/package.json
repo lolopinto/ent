@@ -13,15 +13,18 @@
     "js-yaml": "^3.13.1",
     "pg": "^7.18.2",
     "prettier": "^1.19.1",
+    "reflect-metadata": "^0.1.13",
     "snake-case": "^3.0.3",
     "ts-node": "^8.6.2",
     "tsconfig-paths": "^3.9.0",
     "uuid": "^7.0.2"
   },
   "devDependencies": {
+    "@types/glob": "^7.1.1",
     "@types/jest": "^25.1.4",
     "@types/jest-expect-message": "^1.0.1",
     "@types/node": "^13.9.0",
+    "glob": "^7.1.6",
     "jest": "^25.1.0",
     "jest-date-mock": "^1.0.8",
     "jest-expect-message": "^1.0.2",
