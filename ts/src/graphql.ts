@@ -17,10 +17,10 @@ export interface gqlFieldOptions {
 }
 
 export enum CustomFieldType {
-  Accessor,
-  Field, // or property
-  Function,
-  AsyncFunction, // do we care about this?
+  Accessor = "ACCESSOR",
+  Field = "FIELD", // or property
+  Function = "FUNCTION",
+  AsyncFunction = "ASYNC_FUNCTION", // do we care about this?
 }
 
 export interface CustomField {

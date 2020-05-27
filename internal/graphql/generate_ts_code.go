@@ -1,6 +1,7 @@
 package graphql
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
@@ -19,6 +21,7 @@ import (
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
+	"github.com/square/go-jose/json"
 )
 
 type TSStep struct {
@@ -28,10 +31,52 @@ func (p *TSStep) Name() string {
 	return "graphql"
 }
 
+type CustomArg struct {
+	// TODOO
+	NodeName  string `json:"nodeName"`
+	ClassName string `json:"className"`
+}
+
+type FieldType string
+
+const Accessor FieldType = "ACCESSOR"
+const Field FieldType = "FIELD"
+const Function FieldType = "FUNCTION"
+const AsyncFunction FieldType = "ASYNC_FUNCTION"
+
+type CustomField struct {
+	Node         string       `json:"nodeName"`
+	GraphQLName  string       `json:"gqlName"`
+	FunctionName string       `json:"functionName"`
+	Args         []CustomItem `json:"args"`
+	Results      []CustomItem `json:"results"`
+	FieldType    FieldType    `json:"fieldType"`
+}
+
+type CustomData struct {
+	Args   map[string]CustomArg `json:"args"`
+	Fields []CustomField        `json:"fields"`
+	Error  error
+}
+
+type CustomItem struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+	//	Nullable TODO
+	//List  TODO
+}
+
 func (p *TSStep) ProcessData(data *codegen.Data) error {
 	var wg sync.WaitGroup
 	wg.Add(len(data.Schema.Nodes))
 	var serr syncerr.Error
+
+	customData := <-parseCustomData(data)
+	if customData.Error != nil {
+		serr.Append(customData.Error)
+		return serr.Err()
+	}
+	spew.Dump(customData)
 
 	var hasMutations bool
 	nodeMap := data.Schema.Nodes
@@ -131,6 +176,42 @@ func getFilePathForAction(nodeData *schema.NodeData, action action.Action) strin
 
 func getImportPathForAction(nodeData *schema.NodeData, action action.Action) string {
 	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
+}
+
+func parseCustomData(data *codegen.Data) chan CustomData {
+	var res = make(chan CustomData)
+	go func() {
+		var customData CustomData
+
+		var buf bytes.Buffer
+		var out bytes.Buffer
+		var stderr bytes.Buffer
+		for key := range data.Schema.Nodes {
+			info := data.Schema.Nodes[key]
+			nodeData := info.NodeData
+
+			buf.WriteString(nodeData.Node)
+			buf.WriteString("\n")
+		}
+		cmd := exec.Command("ts-node", "-r", "tsconfig-paths/register", "src/custom_graphql.ts")
+		cmd.Stdin = &buf
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			str := stderr.String()
+			err = errors.Wrap(err, str)
+			customData.Error = err
+			res <- customData
+			return
+		}
+
+		if err := json.Unmarshal(out.Bytes(), &customData); err != nil {
+			err = errors.Wrap(err, "error unmarshing custom data")
+			customData.Error = err
+		}
+		res <- customData
+	}()
+	return res
 }
 
 type gqlobjectData struct {
