@@ -7,6 +7,7 @@ import {
 } from "ent/privacy";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { EdgeType } from "./const";
+import { gqlField } from "ent/graphql";
 
 // we're only writing this once except with --force and packageName provided
 export default class User extends UserBase {
@@ -18,4 +19,9 @@ export default class User extends UserBase {
       AlwaysDenyRule,
     ],
   };
+
+  @gqlField()
+  get fullName(): string {
+    return this.firstName + " " + this.lastName;
+  }
 }
