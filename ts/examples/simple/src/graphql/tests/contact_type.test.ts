@@ -2,12 +2,12 @@ import schema from "src/graphql/schema";
 import DB from "ent/db";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import { LoggedOutViewer } from "ent/viewer";
-import Contact from "src/ent/contact";
 import { randomEmail } from "src/util/random";
 import { IDViewer } from "src/util/id_viewer";
 import { expectQueryFromRoot, queryRootConfig } from "src/graphql_test_utils";
 import { ID, Viewer } from "ent/ent";
 import User from "src/ent/user";
+import { ContactInterface } from "src/ent/generated/interfaces";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -32,7 +32,7 @@ function getConfig(
   };
 }
 
-async function createContact(): Promise<Contact> {
+async function createContact(): Promise<ContactInterface> {
   let user = await CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
