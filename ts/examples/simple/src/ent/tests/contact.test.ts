@@ -8,7 +8,7 @@ import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateContactAction, {
   ContactCreateInput,
 } from "src/ent/contact/actions/create_contact_action";
-
+import { ContactInterface } from "../generated/interfaces";
 const loggedOutViewer = new LoggedOutViewer();
 
 // TODO we need something that does this by default for all tests
@@ -66,7 +66,10 @@ test("create contact", async () => {
 });
 
 test("create contacts", async () => {
-  function verifyContacts(contacts: Contact[], includeSelf: boolean = false) {
+  function verifyContacts(
+    contacts: ContactInterface[],
+    includeSelf: boolean = false,
+  ) {
     let expLength = 5;
     if (includeSelf) {
       expLength++;
@@ -96,11 +99,11 @@ test("create contacts", async () => {
   const userId = contacts[0].userID;
   const v = new IDViewer(userId);
   const loadedContact = await Contact.loadX(v, contacts[0].id);
-  user = await loadedContact.loadUserX();
-  expect(user).toBeInstanceOf(User);
+  let user2 = await loadedContact.loadUserX();
+  expect(user2).toBeInstanceOf(User);
 
   // viewer can load their own contacts
-  const loadedContacts = await user.loadContacts();
+  const loadedContacts = await user2.loadContacts();
   verifyContacts(loadedContacts, true);
 
   // ygritte can't see jon snow's contacts

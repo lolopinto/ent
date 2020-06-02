@@ -2,8 +2,8 @@
 
 import { Action, WriteOperation, Changeset } from "ent/action";
 import { Viewer, ID } from "ent/ent";
-import User from "src/ent/user";
 import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
+import User from "src/ent/user";
 
 export class DeleteUserActionBase implements Action<User> {
   public readonly builder: UserBuilder;

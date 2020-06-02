@@ -13,11 +13,11 @@ import { Field, getFields } from "ent/schema";
 import schema from "src/schema/address";
 import { NodeType } from "src/ent/const";
 
-import { Address } from "src/ent/generated/interfaces";
+import { AddressInterface } from "src/ent/generated/interfaces";
 import { AddressLoader } from "src/ent/generated/loaders";
 //const tableName = "addresses";
 
-export class AddressBase implements Address {
+export class AddressBase implements AddressInterface {
   readonly nodeType = NodeType.Address;
   readonly id: ID;
   readonly createdAt: Date;

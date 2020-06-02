@@ -4,6 +4,7 @@ import { Action, Builder, WriteOperation, Changeset } from "ent/action";
 import { Viewer, ID } from "ent/ent";
 import Contact from "src/ent/contact";
 import User from "src/ent/user";
+//import { UserInterface } from "src/ent/generated/interfaces";
 import {
   ContactBuilder,
   ContactInput,

@@ -3,7 +3,7 @@ import { ID, Ent, AssocEdge, LoadEntOptions } from "ent/ent";
 // TODO name these UserInterface?
 // the interface issue means that custom things aren't available tho...
 // maybe why same name is good?
-export interface User extends Ent {
+export interface UserInterface extends Ent {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly firstName: string;
@@ -12,18 +12,24 @@ export interface User extends Ent {
   readonly accountStatus: string | null;
   readonly emailVerified: boolean;
 
+  // only way to get the type is to have this be generated tooo
+  // so needs to be passed to the schema
+  // no way to manually do this because can't merge types across
+  // and get full codegen as needed.
+  fullName: string;
   // etc..
   loadCreatedEventsEdges(): Promise<AssocEdge[]>;
-  loadCreatedEvents(): Promise<Event[]>;
+  loadCreatedEvents(): Promise<EventInterface[]>;
   loadCreatedEventsRawCountX(): Promise<number>;
   loadCreatedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined>;
   // TODO...
-  loadSelfContact(): Promise<Contact | null>;
+  loadSelfContact(): Promise<ContactInterface | null>;
+  loadContacts(): Promise<ContactInterface[]>;
 
   //  static loaderOptions<T extends User>(): LoadEntOptions<T>;
 }
 
-export interface Address extends Ent {
+export interface AddressInterface extends Ent {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly streetName: string;
@@ -31,18 +37,18 @@ export interface Address extends Ent {
   readonly zip: string;
 }
 
-export interface Contact extends Ent {
+export interface ContactInterface extends Ent {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly emailAddress: string;
   readonly firstName: string;
   readonly lastName: string;
   readonly userID: ID;
-  loadUser(): Promise<User | null>;
-  loadUserX(): Promise<User>;
+  loadUser(): Promise<UserInterface | null>;
+  loadUserX(): Promise<UserInterface>;
 }
 
-export interface Event extends Ent {
+export interface EventInterface extends Ent {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly name: string;
@@ -52,7 +58,7 @@ export interface Event extends Ent {
   readonly location: string;
   // etc...
   loadHostsEdges(): Promise<AssocEdge[]>;
-  loadHosts(): Promise<User[]>;
+  loadHosts(): Promise<UserInterface[]>;
   loadHostsRawCountX(): Promise<number>;
   loadHostEdgeFor(id2: ID): Promise<AssocEdge | undefined>;
   loadInvitedEdges(): Promise<AssocEdge[]>;

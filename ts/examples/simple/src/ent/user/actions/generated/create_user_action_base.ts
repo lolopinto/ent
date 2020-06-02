@@ -4,6 +4,7 @@ import { Action, WriteOperation, Changeset } from "ent/action";
 import { Viewer } from "ent/ent";
 import User from "src/ent/user";
 import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
+import { UserInterface } from "src/ent/generated/interfaces";
 
 export interface UserCreateInput {
   firstName: string;

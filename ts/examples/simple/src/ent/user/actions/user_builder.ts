@@ -12,10 +12,14 @@ import {
 import { Orchestrator } from "ent/orchestrator";
 import schema from "src/schema/user";
 import { EdgeType, NodeType } from "src/ent/const";
-// import User from "src/ent/user";
+import User from "src/ent/user";
 // import Event from "src/ent/event";
 // import Contact from "src/ent/contact";
-import { User, Event, Contact } from "src/ent/generated/interfaces";
+import {
+  //  User,
+  EventInterface,
+  ContactInterface,
+} from "src/ent/generated/interfaces";
 import UserEnt from "src/ent/user";
 
 export interface UserInput {
@@ -36,7 +40,7 @@ function randomNum(): string {
     .substring(2);
 }
 
-export class UserBuilder implements Builder<User> {
+export class UserBuilder implements Builder<UserEnt> {
   private orchestrator: Orchestrator<User>;
   readonly placeholderID: ID;
   readonly ent = UserEnt;
@@ -78,9 +82,11 @@ export class UserBuilder implements Builder<User> {
   }
 
   addCreatedEvent(...ids: ID[]): UserBuilder;
-  addCreatedEvent(...nodes: Event[]): UserBuilder;
-  addCreatedEvent(...nodes: Builder<Event>[]): UserBuilder;
-  addCreatedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
+  addCreatedEvent(...nodes: EventInterface[]): UserBuilder;
+  addCreatedEvent(...nodes: Builder<EventInterface>[]): UserBuilder;
+  addCreatedEvent(
+    ...nodes: ID[] | EventInterface[] | Builder<EventInterface>[]
+  ): UserBuilder {
     for (const node of nodes) {
       if (this.isEventBuilder(node)) {
         this.addCreatedEventID(node);
@@ -94,7 +100,7 @@ export class UserBuilder implements Builder<User> {
   }
 
   addCreatedEventID(
-    id: ID | Builder<Event>,
+    id: ID | Builder<EventInterface>,
     options?: AssocEdgeInputOptions,
   ): UserBuilder {
     this.orchestrator.addOutboundEdge(
@@ -107,8 +113,8 @@ export class UserBuilder implements Builder<User> {
   }
 
   removeCreatedEvent(...ids: ID[]): UserBuilder;
-  removeCreatedEvent(...nodes: Event[]): UserBuilder;
-  removeCreatedEvent(...nodes: ID[] | Event[]): UserBuilder {
+  removeCreatedEvent(...nodes: EventInterface[]): UserBuilder;
+  removeCreatedEvent(...nodes: ID[] | EventInterface[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -168,9 +174,11 @@ export class UserBuilder implements Builder<User> {
   }
 
   addSelfContact(...ids: ID[]): UserBuilder;
-  addSelfContact(...nodes: Contact[]): UserBuilder;
-  addSelfContact(...nodes: Builder<Contact>[]): UserBuilder;
-  addSelfContact(...nodes: ID[] | Contact[] | Builder<Contact>[]): UserBuilder {
+  addSelfContact(...nodes: ContactInterface[]): UserBuilder;
+  addSelfContact(...nodes: Builder<ContactInterface>[]): UserBuilder;
+  addSelfContact(
+    ...nodes: ID[] | ContactInterface[] | Builder<ContactInterface>[]
+  ): UserBuilder {
     for (const node of nodes) {
       if (this.isContactBuilder(node)) {
         this.addSelfContactID(node);
@@ -184,7 +192,7 @@ export class UserBuilder implements Builder<User> {
   }
 
   addSelfContactID(
-    id: ID | Builder<Contact>,
+    id: ID | Builder<ContactInterface>,
     options?: AssocEdgeInputOptions,
   ): UserBuilder {
     this.orchestrator.addOutboundEdge(
@@ -197,8 +205,8 @@ export class UserBuilder implements Builder<User> {
   }
 
   removeSelfContact(...ids: ID[]): UserBuilder;
-  removeSelfContact(...nodes: Contact[]): UserBuilder;
-  removeSelfContact(...nodes: ID[] | Contact[]): UserBuilder {
+  removeSelfContact(...nodes: ContactInterface[]): UserBuilder;
+  removeSelfContact(...nodes: ID[] | ContactInterface[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -213,9 +221,11 @@ export class UserBuilder implements Builder<User> {
   }
 
   addInvitedEvent(...ids: ID[]): UserBuilder;
-  addInvitedEvent(...nodes: Event[]): UserBuilder;
-  addInvitedEvent(...nodes: Builder<Event>[]): UserBuilder;
-  addInvitedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
+  addInvitedEvent(...nodes: EventInterface[]): UserBuilder;
+  addInvitedEvent(...nodes: Builder<EventInterface>[]): UserBuilder;
+  addInvitedEvent(
+    ...nodes: ID[] | EventInterface[] | Builder<EventInterface>[]
+  ): UserBuilder {
     for (const node of nodes) {
       if (this.isEventBuilder(node)) {
         this.addInvitedEventID(node);
@@ -229,7 +239,7 @@ export class UserBuilder implements Builder<User> {
   }
 
   addInvitedEventID(
-    id: ID | Builder<Event>,
+    id: ID | Builder<EventInterface>,
     options?: AssocEdgeInputOptions,
   ): UserBuilder {
     this.orchestrator.addOutboundEdge(
@@ -242,8 +252,8 @@ export class UserBuilder implements Builder<User> {
   }
 
   removeInvitedEvent(...ids: ID[]): UserBuilder;
-  removeInvitedEvent(...nodes: Event[]): UserBuilder;
-  removeInvitedEvent(...nodes: ID[] | Event[]): UserBuilder {
+  removeInvitedEvent(...nodes: EventInterface[]): UserBuilder;
+  removeInvitedEvent(...nodes: ID[] | EventInterface[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -261,9 +271,11 @@ export class UserBuilder implements Builder<User> {
   }
 
   addEventsAttending(...ids: ID[]): UserBuilder;
-  addEventsAttending(...nodes: Event[]): UserBuilder;
-  addEventsAttending(...nodes: Builder<Event>[]): UserBuilder;
-  addEventsAttending(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
+  addEventsAttending(...nodes: EventInterface[]): UserBuilder;
+  addEventsAttending(...nodes: Builder<EventInterface>[]): UserBuilder;
+  addEventsAttending(
+    ...nodes: ID[] | EventInterface[] | Builder<EventInterface>[]
+  ): UserBuilder {
     for (const node of nodes) {
       if (this.isEventBuilder(node)) {
         this.addEventsAttendingID(node);
@@ -277,7 +289,7 @@ export class UserBuilder implements Builder<User> {
   }
 
   addEventsAttendingID(
-    id: ID | Builder<Event>,
+    id: ID | Builder<EventInterface>,
     options?: AssocEdgeInputOptions,
   ): UserBuilder {
     this.orchestrator.addOutboundEdge(
@@ -290,8 +302,8 @@ export class UserBuilder implements Builder<User> {
   }
 
   removeEventsAttending(...ids: ID[]): UserBuilder;
-  removeEventsAttending(...nodes: Event[]): UserBuilder;
-  removeEventsAttending(...nodes: ID[] | Event[]): UserBuilder {
+  removeEventsAttending(...nodes: EventInterface[]): UserBuilder;
+  removeEventsAttending(...nodes: ID[] | EventInterface[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -309,9 +321,11 @@ export class UserBuilder implements Builder<User> {
   }
 
   addDeclinedEvent(...ids: ID[]): UserBuilder;
-  addDeclinedEvent(...nodes: Event[]): UserBuilder;
-  addDeclinedEvent(...nodes: Builder<Event>[]): UserBuilder;
-  addDeclinedEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
+  addDeclinedEvent(...nodes: EventInterface[]): UserBuilder;
+  addDeclinedEvent(...nodes: Builder<EventInterface>[]): UserBuilder;
+  addDeclinedEvent(
+    ...nodes: ID[] | EventInterface[] | Builder<EventInterface>[]
+  ): UserBuilder {
     for (const node of nodes) {
       if (this.isEventBuilder(node)) {
         this.addDeclinedEventID(node);
@@ -325,7 +339,7 @@ export class UserBuilder implements Builder<User> {
   }
 
   addDeclinedEventID(
-    id: ID | Builder<Event>,
+    id: ID | Builder<EventInterface>,
     options?: AssocEdgeInputOptions,
   ): UserBuilder {
     this.orchestrator.addOutboundEdge(
@@ -338,8 +352,8 @@ export class UserBuilder implements Builder<User> {
   }
 
   removeDeclinedEvent(...ids: ID[]): UserBuilder;
-  removeDeclinedEvent(...nodes: Event[]): UserBuilder;
-  removeDeclinedEvent(...nodes: ID[] | Event[]): UserBuilder {
+  removeDeclinedEvent(...nodes: EventInterface[]): UserBuilder;
+  removeDeclinedEvent(...nodes: ID[] | EventInterface[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -357,9 +371,11 @@ export class UserBuilder implements Builder<User> {
   }
 
   addMaybeEvent(...ids: ID[]): UserBuilder;
-  addMaybeEvent(...nodes: Event[]): UserBuilder;
-  addMaybeEvent(...nodes: Builder<Event>[]): UserBuilder;
-  addMaybeEvent(...nodes: ID[] | Event[] | Builder<Event>[]): UserBuilder {
+  addMaybeEvent(...nodes: EventInterface[]): UserBuilder;
+  addMaybeEvent(...nodes: Builder<EventInterface>[]): UserBuilder;
+  addMaybeEvent(
+    ...nodes: ID[] | EventInterface[] | Builder<EventInterface>[]
+  ): UserBuilder {
     for (const node of nodes) {
       if (this.isEventBuilder(node)) {
         this.addMaybeEventID(node);
@@ -373,7 +389,7 @@ export class UserBuilder implements Builder<User> {
   }
 
   addMaybeEventID(
-    id: ID | Builder<Event>,
+    id: ID | Builder<EventInterface>,
     options?: AssocEdgeInputOptions,
   ): UserBuilder {
     this.orchestrator.addOutboundEdge(
@@ -386,8 +402,8 @@ export class UserBuilder implements Builder<User> {
   }
 
   removeMaybeEvent(...ids: ID[]): UserBuilder;
-  removeMaybeEvent(...nodes: Event[]): UserBuilder;
-  removeMaybeEvent(...nodes: ID[] | Event[]): UserBuilder {
+  removeMaybeEvent(...nodes: EventInterface[]): UserBuilder;
+  removeMaybeEvent(...nodes: ID[] | EventInterface[]): UserBuilder {
     for (const node of nodes) {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
@@ -448,9 +464,9 @@ export class UserBuilder implements Builder<User> {
   }
 
   private isEventBuilder(
-    node: ID | Event | Builder<Event>,
-  ): node is Builder<Event> {
-    return (node as Builder<Event>).placeholderID !== undefined;
+    node: ID | EventInterface | Builder<EventInterface>,
+  ): node is Builder<EventInterface> {
+    return (node as Builder<EventInterface>).placeholderID !== undefined;
   }
 
   private isUserBuilder(
@@ -460,8 +476,8 @@ export class UserBuilder implements Builder<User> {
   }
 
   private isContactBuilder(
-    node: ID | Contact | Builder<Contact>,
-  ): node is Builder<Contact> {
-    return (node as Builder<Contact>).placeholderID !== undefined;
+    node: ID | ContactInterface | Builder<ContactInterface>,
+  ): node is Builder<ContactInterface> {
+    return (node as Builder<ContactInterface>).placeholderID !== undefined;
   }
 }

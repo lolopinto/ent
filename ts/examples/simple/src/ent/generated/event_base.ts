@@ -6,7 +6,7 @@ import {
   Viewer,
   loadEntX,
   loadEnts,
-  LoadEntOptions,
+  //  LoadEntOptions,
   AssocEdge,
   loadEdges,
   loadRawEdgeCountX,
@@ -18,7 +18,7 @@ import { Field, getFields } from "ent/schema";
 import schema from "src/schema/event";
 import { EdgeType, NodeType } from "src/ent/const";
 //import User from "src/ent/user";
-import { User, Event } from "src/ent/generated/interfaces";
+import { UserInterface } from "src/ent/generated/interfaces";
 import { UserLoader, EventLoader } from "./loaders";
 
 //const tableName = "events";
@@ -118,7 +118,7 @@ export class EventBase {
     return loadEdges(this.id, EdgeType.EventToHosts);
   }
 
-  loadHosts(): Promise<User[]> {
+  loadHosts(): Promise<UserInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -139,7 +139,7 @@ export class EventBase {
     return loadEdges(this.id, EdgeType.EventToInvited);
   }
 
-  loadInvited(): Promise<User[]> {
+  loadInvited(): Promise<UserInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -160,7 +160,7 @@ export class EventBase {
     return loadEdges(this.id, EdgeType.EventToAttending);
   }
 
-  loadAttending(): Promise<User[]> {
+  loadAttending(): Promise<UserInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -181,7 +181,7 @@ export class EventBase {
     return loadEdges(this.id, EdgeType.EventToDeclined);
   }
 
-  loadDeclined(): Promise<User[]> {
+  loadDeclined(): Promise<UserInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -202,7 +202,7 @@ export class EventBase {
     return loadEdges(this.id, EdgeType.EventToMaybe);
   }
 
-  loadMaybe(): Promise<User[]> {
+  loadMaybe(): Promise<UserInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -219,11 +219,11 @@ export class EventBase {
     return loadEdgeForID2(this.id, EdgeType.EventToMaybe, id2);
   }
 
-  loadCreator(): Promise<User | null> {
+  loadCreator(): Promise<UserInterface | null> {
     return loadEnt(this.viewer, this.creatorID, UserLoader.loaderOptions());
   }
 
-  loadCreatorX(): Promise<User> {
+  loadCreatorX(): Promise<UserInterface> {
     return loadEntX(this.viewer, this.creatorID, UserLoader.loaderOptions());
   }
 }

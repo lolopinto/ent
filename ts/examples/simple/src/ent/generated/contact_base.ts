@@ -14,12 +14,12 @@ import schema from "src/schema/contact";
 import { NodeType } from "src/ent/const";
 //import User from "src/ent/user";
 import { UserLoader, ContactLoader } from "./loaders";
-import { Contact, User } from "src/ent/generated/interfaces";
+import { ContactInterface, UserInterface } from "src/ent/generated/interfaces";
 
 //import
 //const tableName = "contacts";
 
-export class ContactBase implements Contact {
+export class ContactBase implements ContactInterface {
   readonly nodeType = NodeType.Contact;
   readonly id: ID;
   readonly createdAt: Date;
@@ -108,11 +108,11 @@ export class ContactBase implements Contact {
   }
 
   // this could be an interface
-  loadUser(): Promise<User | null> {
+  loadUser(): Promise<UserInterface | null> {
     return loadEnt(this.viewer, this.userID, UserLoader.loaderOptions());
   }
 
-  loadUserX(): Promise<User> {
+  loadUserX(): Promise<UserInterface> {
     return loadEntX(this.viewer, this.userID, UserLoader.loaderOptions());
   }
 }

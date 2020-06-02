@@ -245,3 +245,13 @@ describe("validators", () => {
     expect(valid).toBe(false);
   });
 });
+
+test.only("load creator and get custom", async () => {
+  let event = await create(new Date());
+
+  let vc = new IDViewer(event.creatorID);
+
+  const reloaded = await Event.loadX(vc, event.id);
+  const creator = await reloaded.loadCreator();
+  expect(creator?.fullName).toBe("Jon Snow");
+});

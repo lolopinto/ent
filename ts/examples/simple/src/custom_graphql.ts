@@ -7,7 +7,7 @@ GQLCapture.enable(true);
 // TODO we can probably be even smarter here but this is fine for now
 // and then it'll be graphql/custom or something
 const files = glob.sync("src/ent/**/*.ts", {
-  ignore: ["**/generated/**"],
+  ignore: ["**/generated/**", "**/tests/**"],
 });
 let promises: any[] = [];
 files.forEach((file) => {
@@ -17,7 +17,7 @@ files.forEach((file) => {
 Promise.all(promises).then(() => {
   let args = GQLCapture.getCustomArgs();
   let fields = GQLCapture.getCustomFields();
-  GQLCapture.resolve(["User"]);
+  GQLCapture.resolve(["User", "Contact", "Event"]);
   console.log(
     JSON.stringify({
       args,

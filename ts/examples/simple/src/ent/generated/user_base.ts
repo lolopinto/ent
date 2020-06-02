@@ -26,7 +26,11 @@ import * as query from "ent/query";
 // import Event from "src/ent/event";
 // import User from "src/ent/user";
 // import Contact from "src/ent/contact";
-import { Event, User, Contact } from "src/ent/generated/interfaces";
+import {
+  EventInterface,
+  UserInterface,
+  ContactInterface,
+} from "src/ent/generated/interfaces";
 import {
   UserLoader,
   EventLoader,
@@ -35,7 +39,7 @@ import {
 
 //const tableName = "users";
 
-export class UserBase implements User {
+export class UserBase implements UserInterface {
   readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
@@ -59,6 +63,8 @@ export class UserBase implements User {
     this.emailVerified = data["email_verified"];
   }
 
+  fullName: string;
+
   // by default, we always deny and it's up to the ent
   // to overwrite this privacy policy in its subclasses
 
@@ -66,7 +72,7 @@ export class UserBase implements User {
     rules: [AlwaysDenyRule],
   };
 
-  static async load<T extends User>(
+  static async load<T extends UserInterface>(
     //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
@@ -75,7 +81,7 @@ export class UserBase implements User {
     //      UserBase.loaderOptions.apply(this));
   }
 
-  static async loadX<T extends User>(
+  static async loadX<T extends UserInterface>(
     this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
@@ -83,7 +89,7 @@ export class UserBase implements User {
     return loadEntX(viewer, id, UserLoader.loaderOptions.apply(this));
   }
 
-  static async loadMany<T extends User>(
+  static async loadMany<T extends UserInterface>(
     //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     ...ids: ID[]
@@ -104,7 +110,7 @@ export class UserBase implements User {
     );
   }
 
-  static async loadFromEmailAddressX<T extends User>(
+  static async loadFromEmailAddressX<T extends UserInterface>(
     //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     emailAddress: string,
@@ -117,7 +123,7 @@ export class UserBase implements User {
     );
   }
 
-  static async loadIDFromEmailAddress<T extends User>(
+  static async loadIDFromEmailAddress<T extends UserInterface>(
     //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     emailAddress: string,
   ): Promise<ID | null> {
@@ -172,7 +178,7 @@ export class UserBase implements User {
     return loadEdges(this.id, EdgeType.UserToCreatedEvents);
   }
 
-  loadCreatedEvents(): Promise<Event[]> {
+  loadCreatedEvents(): Promise<EventInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -195,7 +201,7 @@ export class UserBase implements User {
     return loadEdges(this.id, EdgeType.UserToFriends);
   }
 
-  loadFriends(): Promise<User[]> {
+  loadFriends(): Promise<UserInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -217,7 +223,7 @@ export class UserBase implements User {
     return loadUniqueEdge(this.id, EdgeType.UserToSelfContact);
   }
 
-  loadSelfContact(): Promise<Contact | null> {
+  loadSelfContact(): Promise<ContactInterface | null> {
     return loadUniqueNode(
       this.viewer,
       this.id,
@@ -231,7 +237,7 @@ export class UserBase implements User {
     return loadEdges(this.id, EdgeType.UserToInvitedEvents);
   }
 
-  loadInvitedEvents(): Promise<Event[]> {
+  loadInvitedEvents(): Promise<EventInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -253,7 +259,7 @@ export class UserBase implements User {
     return loadEdges(this.id, EdgeType.UserToEventsAttending);
   }
 
-  loadEventsAttending(): Promise<Event[]> {
+  loadEventsAttending(): Promise<EventInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -275,7 +281,7 @@ export class UserBase implements User {
     return loadEdges(this.id, EdgeType.UserToDeclinedEvents);
   }
 
-  loadDeclinedEvents(): Promise<Event[]> {
+  loadDeclinedEvents(): Promise<EventInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -297,7 +303,7 @@ export class UserBase implements User {
     return loadEdges(this.id, EdgeType.UserToMaybeEvents);
   }
 
-  loadMaybeEvents(): Promise<Event[]> {
+  loadMaybeEvents(): Promise<EventInterface[]> {
     return loadNodesByEdge(
       this.viewer,
       this.id,
@@ -315,14 +321,14 @@ export class UserBase implements User {
     return loadEdgeForID2(this.id, EdgeType.UserToMaybeEvents, id2);
   }
 
-  async loadContacts(): Promise<Contact[]> {
+  async loadContacts(): Promise<ContactInterface[]> {
     let map = await loadEntsFromClause(
       this.viewer,
       query.Eq("user_id", this.id),
       ContactLoader.loaderOptions(),
       //      Contact.loaderOptions(),
     );
-    let results: Contact[] = [];
+    let results: ContactInterface[] = [];
     map.forEach((ent) => {
       results.push(ent);
     });

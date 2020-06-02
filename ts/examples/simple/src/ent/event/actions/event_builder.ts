@@ -13,6 +13,7 @@ import { Orchestrator } from "ent/orchestrator";
 import schema from "src/schema/event";
 import { EdgeType, NodeType } from "src/ent/const";
 import Event from "src/ent/event";
+//import { User } from "src/ent/generated/interfaces";
 import User from "src/ent/user";
 
 export interface EventInput {

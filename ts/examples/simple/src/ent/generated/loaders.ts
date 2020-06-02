@@ -1,19 +1,23 @@
-import { User, Event, Address, Contact } from "./interfaces";
+import {
+  UserInterface,
+  EventInterface,
+  AddressInterface,
+  ContactInterface,
+} from "./interfaces";
 import { ID, Viewer, Ent, LoadEntOptions } from "ent/ent";
 import { TableName } from "src/ent/const";
 
-// TODO change this to ent type
 interface ClassType<T = Ent> {
   new (viewer: Viewer, id: ID, data: {}): T;
 }
 
 export class UserLoader {
   private static instance: any;
-  static registerClass<T extends User>(t: ClassType<T>) {
+  static registerClass<T extends UserInterface>(t: ClassType<T>) {
     UserLoader.instance = t;
   }
 
-  static loaderOptions<T extends User>(): //    this: ClassType<T>
+  static loaderOptions<T extends UserInterface>(): //    this: ClassType<T>
   LoadEntOptions<T> {
     return {
       tableName: TableName.User,
@@ -34,11 +38,11 @@ export class UserLoader {
 
 export class EventLoader {
   private static instance: any;
-  static registerClass<T extends Event>(t: ClassType<T>) {
+  static registerClass<T extends EventInterface>(t: ClassType<T>) {
     EventLoader.instance = t;
   }
 
-  static loaderOptions<T extends Event>(): //    this: ClassType<T>
+  static loaderOptions<T extends EventInterface>(): //    this: ClassType<T>
   LoadEntOptions<T> {
     return {
       tableName: TableName.Event,
@@ -59,11 +63,11 @@ export class EventLoader {
 
 export class AddressLoader {
   private static instance: any;
-  static registerClass<T extends Address>(t: ClassType<T>) {
+  static registerClass<T extends AddressInterface>(t: ClassType<T>) {
     AddressLoader.instance = t;
   }
 
-  static loaderOptions<T extends Address>(): //    this: ClassType<T>,
+  static loaderOptions<T extends AddressInterface>(): //    this: ClassType<T>,
   LoadEntOptions<T> {
     return {
       tableName: TableName.Address,
@@ -75,11 +79,11 @@ export class AddressLoader {
 
 export class ContactLoader {
   private static instance: any;
-  static registerClass<T extends Contact>(t: ClassType<T>) {
+  static registerClass<T extends ContactInterface>(t: ClassType<T>) {
     ContactLoader.instance = t;
   }
 
-  static loaderOptions<T extends Contact>(): //    this: ClassType<T>,
+  static loaderOptions<T extends ContactInterface>(): //    this: ClassType<T>,
   LoadEntOptions<T> {
     return {
       tableName: TableName.Contact,

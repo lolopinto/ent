@@ -13,6 +13,7 @@ import { Orchestrator } from "ent/orchestrator";
 import schema from "src/schema/contact";
 import Contact from "src/ent/contact";
 import User from "src/ent/user";
+//import { User } from "src/ent/generated/interfaces";
 
 export interface ContactInput {
   emailAddress?: string;
