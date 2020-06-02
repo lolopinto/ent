@@ -89,6 +89,12 @@ export const UserType = new GraphQLObjectType({
     fullName: {
       type: GraphQLNonNull(GraphQLString),
     },
+    bar: {
+      type: GraphQLString,
+      resolve: (user: User) => {
+        return user.getUserBar();
+      },
+    },
   }),
 });
 

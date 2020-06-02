@@ -35,6 +35,7 @@ type User {
   maybeEvents: [Event!]!
   contacts: [Contact!]!
   fullName: String!
+  bar: String
 }
 
 type Event {

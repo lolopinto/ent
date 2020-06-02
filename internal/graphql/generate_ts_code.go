@@ -37,20 +37,22 @@ type CustomArg struct {
 	ClassName string `json:"className"`
 }
 
-type FieldType string
+// CustomFieldType for a TypeScript class
+type CustomFieldType string
 
-const Accessor FieldType = "ACCESSOR"
-const Field FieldType = "FIELD"
-const Function FieldType = "FUNCTION"
-const AsyncFunction FieldType = "ASYNC_FUNCTION"
+// these values map to CustomFieldType enum in JS
+const Accessor CustomFieldType = "ACCESSOR"
+const Field CustomFieldType = "FIELD"
+const Function CustomFieldType = "FUNCTION"
+const AsyncFunction CustomFieldType = "ASYNC_FUNCTION"
 
 type CustomField struct {
-	Node         string       `json:"nodeName"`
-	GraphQLName  string       `json:"gqlName"`
-	FunctionName string       `json:"functionName"`
-	Args         []CustomItem `json:"args"`
-	Results      []CustomItem `json:"results"`
-	FieldType    FieldType    `json:"fieldType"`
+	Node         string          `json:"nodeName"`
+	GraphQLName  string          `json:"gqlName"`
+	FunctionName string          `json:"functionName"`
+	Args         []CustomItem    `json:"args"`
+	Results      []CustomItem    `json:"results"`
+	FieldType    CustomFieldType `json:"fieldType"`
 }
 
 type customData struct {
@@ -60,9 +62,9 @@ type customData struct {
 }
 
 type CustomItem struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-	//	Nullable TODO
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Nullable bool   `json:"nullable"`
 	//List  TODO
 }
 
@@ -83,8 +85,6 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 	if err := processCustomData(cd, s); err != nil {
 		return err
 	}
-
-	spew.Dump(cd)
 
 	var wg sync.WaitGroup
 	wg.Add(len(s.nodes))
@@ -200,6 +200,7 @@ func parseCustomData(data *codegen.Data) chan *customData {
 			return
 		}
 
+		spew.Dump(out.Bytes())
 		if err := json.Unmarshal(out.Bytes(), &cd); err != nil {
 			err = errors.Wrap(err, "error unmarshing custom data")
 			cd.Error = err
@@ -242,8 +243,7 @@ func processCustomData(cd *customData, s *gqlSchema) error {
 		instance := nodeData.NodeInstance
 
 		switch field.FieldType {
-		case Accessor:
-		case Field:
+		case Accessor, Field:
 			// for an accessor or field, we only add a resolve function if named differently
 			if field.GraphQLName != field.FunctionName {
 				gqlField.HasResolveFunction = true
@@ -251,9 +251,13 @@ func processCustomData(cd *customData, s *gqlSchema) error {
 			}
 			break
 
-		case Function:
-		case AsyncFunction:
-			panic("TODO come back")
+		case Function, AsyncFunction:
+			gqlField.HasResolveFunction = true
+			gqlField.FunctionContents = fmt.Sprintf("return %s.%s();", instance, field.FunctionName)
+			break
+
+		default:
+			spew.Dump("default case")
 		}
 
 		// append the field
@@ -273,8 +277,10 @@ func getGraphQLImportsForField(f CustomField, s *gqlSchema) ([]string, error) {
 
 	var imports []string
 	for _, result := range f.Results {
-		// TODO nullable...
-		imports = append(imports, "GraphQLNonNull")
+		if !result.Nullable {
+			imports = append(imports, "GraphQLNonNull")
+		}
+		// todo list...
 
 		typ, ok := scalars[result.Type]
 		if ok {
@@ -283,7 +289,7 @@ func getGraphQLImportsForField(f CustomField, s *gqlSchema) ([]string, error) {
 		} else {
 			_, ok := s.nodes[result.Type]
 			if ok {
-				// TODo need to add it to DefaultImport for the entire file...
+				// TODO need to add it to DefaultImport for the entire file...
 				imports = append(imports, fmt.Sprintf("%sType", result.Type))
 			} else {
 				return nil, errors.New("found a type which was not part of the schema")

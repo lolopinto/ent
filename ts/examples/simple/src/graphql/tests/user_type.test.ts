@@ -72,6 +72,43 @@ test("query custom field", async () => {
   );
 });
 
+test("query custom function", async () => {
+  let [user, user2] = await Promise.all([
+    create({
+      firstName: "first",
+      lastName: "last",
+      emailAddress: randomEmail(),
+    }),
+    create({
+      firstName: "first2",
+      lastName: "last",
+      emailAddress: randomEmail(),
+    }),
+  ]);
+  let vc = new IDViewer(user.id);
+  let action = EditUserAction.create(vc, user, {});
+  action.builder.addFriend(user2);
+  action.saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    ["firstName", user.firstName],
+    ["lastName", user.lastName],
+    // returns id when logged in user is same
+    ["bar", user.id],
+  );
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user2.id), user.id),
+    ["id", user.id],
+    ["firstName", user.firstName],
+    ["lastName", user.lastName],
+    // returns null when viewed as different user
+    ["bar", null],
+  );
+});
+
 test("query user who's not visible", async () => {
   let [user, user2] = await Promise.all([
     create({
