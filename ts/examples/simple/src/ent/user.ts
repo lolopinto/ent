@@ -8,6 +8,7 @@ import {
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { EdgeType } from "./const";
 import { gqlField } from "ent/graphql";
+import { UserLoader } from "./generated/loaders";
 
 // we're only writing this once except with --force and packageName provided
 export default class User extends UserBase {
@@ -25,3 +26,5 @@ export default class User extends UserBase {
     return this.firstName + " " + this.lastName;
   }
 }
+
+UserLoader.registerClass(User);

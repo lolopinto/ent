@@ -6,16 +6,18 @@ import {
   Viewer,
   loadEntX,
   loadEnts,
-  LoadEntOptions,
+  //  LoadEntOptions,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/address";
 import { NodeType } from "src/ent/const";
 
-const tableName = "addresses";
+import { Address } from "src/ent/generated/interfaces";
+import { AddressLoader } from "src/ent/generated/loaders";
+//const tableName = "addresses";
 
-export class AddressBase {
+export class AddressBase implements Address {
   readonly nodeType = NodeType.Address;
   readonly id: ID;
   readonly createdAt: Date;
@@ -43,42 +45,42 @@ export class AddressBase {
   };
 
   static async load<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, AddressBase.loaderOptions.apply(this));
+    return loadEnt(viewer, id, AddressLoader.loaderOptions());
   }
 
   static async loadX<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, AddressBase.loaderOptions.apply(this));
+    return loadEntX(viewer, id, AddressLoader.loaderOptions());
   }
 
   static async loadMany<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, AddressBase.loaderOptions.apply(this), ...ids);
+    return loadEnts(viewer, AddressLoader.loaderOptions(), ...ids);
   }
 
-  static loaderOptions<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): LoadEntOptions<T> {
-    return {
-      tableName: tableName,
-      fields: AddressBase.getFields(),
-      ent: this,
-    };
-  }
+  // static loaderOptions<T extends AddressBase>(
+  //   this: new (viewer: Viewer, id: ID, data: {}) => T,
+  // ): LoadEntOptions<T> {
+  //   return {
+  //     tableName: tableName,
+  //     fields: AddressBase.getFields(),
+  //     ent: this,
+  //   };
+  // }
 
-  private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "street_name", "city", "zip"];
-  }
+  // private static getFields(): string[] {
+  //   return ["id", "created_at", "updated_at", "street_name", "city", "zip"];
+  // }
 
   private static schemaFields: Map<string, Field>;
 

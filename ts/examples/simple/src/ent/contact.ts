@@ -1,4 +1,5 @@
 import { ContactBase } from "./generated/contact_base";
+import { ContactLoader } from "./generated/loaders";
 import {
   PrivacyPolicy,
   AllowIfViewerIsRule,
@@ -11,3 +12,4 @@ export default class Contact extends ContactBase {
     rules: [new AllowIfViewerIsRule("userID"), AlwaysDenyRule],
   };
 }
+ContactLoader.registerClass(Contact);

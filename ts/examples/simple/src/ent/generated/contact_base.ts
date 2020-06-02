@@ -6,17 +6,20 @@ import {
   Viewer,
   loadEntX,
   loadEnts,
-  LoadEntOptions,
+  //  LoadEntOptions,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/contact";
 import { NodeType } from "src/ent/const";
-import User from "src/ent/user";
+//import User from "src/ent/user";
+import { UserLoader, ContactLoader } from "./loaders";
+import { Contact, User } from "src/ent/generated/interfaces";
 
-const tableName = "contacts";
+//import
+//const tableName = "contacts";
 
-export class ContactBase {
+export class ContactBase implements Contact {
   readonly nodeType = NodeType.Contact;
   readonly id: ID;
   readonly createdAt: Date;
@@ -46,50 +49,50 @@ export class ContactBase {
   };
 
   static async load<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, ContactBase.loaderOptions.apply(this));
+    return loadEnt(viewer, id, ContactLoader.loaderOptions());
   }
 
   static async loadX<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, ContactBase.loaderOptions.apply(this));
+    return loadEntX(viewer, id, ContactLoader.loaderOptions());
   }
 
   static async loadMany<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, ContactBase.loaderOptions.apply(this), ...ids);
+    return loadEnts(viewer, ContactLoader.loaderOptions(), ...ids);
   }
 
-  static loaderOptions<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): LoadEntOptions<T> {
-    return {
-      tableName: tableName,
-      fields: ContactBase.getFields(),
-      ent: this,
-    };
-  }
+  // static loaderOptions<T extends ContactBase>(
+  //   this: new (viewer: Viewer, id: ID, data: {}) => T,
+  // ): LoadEntOptions<T> {
+  //   return {
+  //     tableName: tableName,
+  //     fields: ContactBase.getFields(),
+  //     ent: this,
+  //   };
+  // }
 
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "email_address",
-      "first_name",
-      "last_name",
-      "user_id",
-    ];
-  }
+  // private static getFields(): string[] {
+  //   return [
+  //     "id",
+  //     "created_at",
+  //     "updated_at",
+  //     "email_address",
+  //     "first_name",
+  //     "last_name",
+  //     "user_id",
+  //   ];
+  // }
 
   private static schemaFields: Map<string, Field>;
 
@@ -104,11 +107,12 @@ export class ContactBase {
     return ContactBase.getSchemaFields().get(key);
   }
 
+  // this could be an interface
   loadUser(): Promise<User | null> {
-    return loadEnt(this.viewer, this.userID, User.loaderOptions());
+    return loadEnt(this.viewer, this.userID, UserLoader.loaderOptions());
   }
 
   loadUserX(): Promise<User> {
-    return loadEntX(this.viewer, this.userID, User.loaderOptions());
+    return loadEntX(this.viewer, this.userID, UserLoader.loaderOptions());
   }
 }

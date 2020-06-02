@@ -12,9 +12,11 @@ import {
 import { Orchestrator } from "ent/orchestrator";
 import schema from "src/schema/user";
 import { EdgeType, NodeType } from "src/ent/const";
-import User from "src/ent/user";
-import Event from "src/ent/event";
-import Contact from "src/ent/contact";
+// import User from "src/ent/user";
+// import Event from "src/ent/event";
+// import Contact from "src/ent/contact";
+import { User, Event, Contact } from "src/ent/generated/interfaces";
+import UserEnt from "src/ent/user";
 
 export interface UserInput {
   firstName?: string;
@@ -37,7 +39,7 @@ function randomNum(): string {
 export class UserBuilder implements Builder<User> {
   private orchestrator: Orchestrator<User>;
   readonly placeholderID: ID;
-  readonly ent = User;
+  readonly ent = UserEnt;
   private input: UserInput;
 
   public constructor(
@@ -53,7 +55,7 @@ export class UserBuilder implements Builder<User> {
       viewer: viewer,
       operation: this.operation,
       tableName: "users",
-      ent: User,
+      ent: UserEnt,
       builder: this,
       action: action,
       schema: schema,

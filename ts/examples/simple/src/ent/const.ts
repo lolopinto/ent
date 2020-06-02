@@ -37,3 +37,10 @@ export enum EdgeType {
   // UserToSelfContact is the edgeType for the user to selfcontact edge.
   UserToSelfContact = "d504201d-cf3f-4eef-b6a0-0b46a7ae186b",
 }
+
+export enum TableName {
+  Address = "addresses",
+  Contact = "contacts",
+  Event = "events",
+  User = "users",
+}

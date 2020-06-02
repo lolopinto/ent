@@ -416,6 +416,18 @@ test("loadMultiUsers", async () => {
   }
 });
 
+test("custom", async () => {
+  let jon = await CreateUserAction.create(loggedOutViewer, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  }).saveX();
+
+  let vc = new IDViewer(jon.id);
+  let jonFromHimself = await User.loadX(vc, jon.id);
+  expect(jonFromHimself.fullName).toBe("Jon Snow");
+});
+
 test("loadFromEmailAddress", async () => {
   const emailAddress = randomEmail();
 

@@ -6,7 +6,6 @@ import {
   Viewer,
   loadEntX,
   loadEnts,
-  LoadEntOptions,
   AssocEdge,
   loadEdges,
   loadRawEdgeCountX,
@@ -24,13 +23,19 @@ import { Field, getFields } from "ent/schema";
 import schema from "src/schema/user";
 import { EdgeType, NodeType } from "src/ent/const";
 import * as query from "ent/query";
-import Event from "src/ent/event";
-import User from "src/ent/user";
-import Contact from "src/ent/contact";
+// import Event from "src/ent/event";
+// import User from "src/ent/user";
+// import Contact from "src/ent/contact";
+import { Event, User, Contact } from "src/ent/generated/interfaces";
+import {
+  UserLoader,
+  EventLoader,
+  ContactLoader,
+} from "src/ent/generated/loaders";
 
-const tableName = "users";
+//const tableName = "users";
 
-export class UserBase {
+export class UserBase implements User {
   readonly nodeType = NodeType.User;
   readonly id: ID;
   readonly createdAt: Date;
@@ -61,28 +66,29 @@ export class UserBase {
     rules: [AlwaysDenyRule],
   };
 
-  static async load<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+  static async load<T extends User>(
+    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, UserBase.loaderOptions.apply(this));
+    return loadEnt(viewer, id, UserLoader.loaderOptions.apply(this));
+    //      UserBase.loaderOptions.apply(this));
   }
 
-  static async loadX<T extends UserBase>(
+  static async loadX<T extends User>(
     this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, UserBase.loaderOptions.apply(this));
+    return loadEntX(viewer, id, UserLoader.loaderOptions.apply(this));
   }
 
-  static async loadMany<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+  static async loadMany<T extends User>(
+    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, UserBase.loaderOptions.apply(this), ...ids);
+    return loadEnts(viewer, UserLoader.loaderOptions.apply(this), ...ids);
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
@@ -92,29 +98,32 @@ export class UserBase {
   ): Promise<T | null> {
     return loadEntFromClause(
       viewer,
-      UserBase.loaderOptions.apply(this),
+      UserLoader.loaderOptions.apply(this),
+      //      UserBase.loaderOptions.apply(this),
       query.Eq("email_address", emailAddress),
     );
   }
 
-  static async loadFromEmailAddressX<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+  static async loadFromEmailAddressX<T extends User>(
+    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T> {
     return loadEntXFromClause(
       viewer,
-      UserBase.loaderOptions.apply(this),
+      UserLoader.loaderOptions.apply(this),
+      //      UserBase.loaderOptions.apply(this),
       query.Eq("email_address", emailAddress),
     );
   }
 
-  static async loadIDFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+  static async loadIDFromEmailAddress<T extends User>(
+    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     emailAddress: string,
   ): Promise<ID | null> {
     const row = await loadRow({
-      ...UserBase.loaderOptions.apply(this),
+      ...UserLoader.loaderOptions.apply(this),
+      //      ...UserBase.loaderOptions.apply(this),
       clause: query.Eq("email_address", emailAddress),
     });
     if (!row) {
@@ -123,28 +132,28 @@ export class UserBase {
     return row["id"];
   }
 
-  static loaderOptions<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): LoadEntOptions<T> {
-    return {
-      tableName: tableName,
-      fields: UserBase.getFields(),
-      ent: this,
-    };
-  }
+  // static loaderOptions<T extends UserBase>(
+  //   this: new (viewer: Viewer, id: ID, data: {}) => T,
+  // ): LoadEntOptions<T> {
+  //   return {
+  //     tableName: tableName,
+  //     fields: UserBase.getFields(),
+  //     ent: this,
+  //   };
+  // }
 
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "first_name",
-      "last_name",
-      "email_address",
-      "account_status",
-      "email_verified",
-    ];
-  }
+  // private static getFields(): string[] {
+  //   return [
+  //     "id",
+  //     "created_at",
+  //     "updated_at",
+  //     "first_name",
+  //     "last_name",
+  //     "email_address",
+  //     "account_status",
+  //     "email_verified",
+  //   ];
+  // }
 
   private static schemaFields: Map<string, Field>;
 
@@ -168,7 +177,9 @@ export class UserBase {
       this.viewer,
       this.id,
       EdgeType.UserToCreatedEvents,
-      Event.loaderOptions(),
+      EventLoader.loaderOptions(), // no....
+      // can get it to work for User.load but not things like this without circular dependencies...
+      //      Event.loaderOptions(),
     );
   }
 
@@ -189,7 +200,8 @@ export class UserBase {
       this.viewer,
       this.id,
       EdgeType.UserToFriends,
-      User.loaderOptions(),
+      UserLoader.loaderOptions(),
+      //      User.loaderOptions(),
     );
   }
 
@@ -210,7 +222,8 @@ export class UserBase {
       this.viewer,
       this.id,
       EdgeType.UserToSelfContact,
-      Contact.loaderOptions(),
+      ContactLoader.loaderOptions(),
+      //      Contact.loaderOptions(),
     );
   }
 
@@ -223,7 +236,8 @@ export class UserBase {
       this.viewer,
       this.id,
       EdgeType.UserToInvitedEvents,
-      Event.loaderOptions(),
+      EventLoader.loaderOptions(),
+      //      Event.loaderOptions(),
     );
   }
 
@@ -244,7 +258,8 @@ export class UserBase {
       this.viewer,
       this.id,
       EdgeType.UserToEventsAttending,
-      Event.loaderOptions(),
+      EventLoader.loaderOptions(),
+      //      Event.loaderOptions(),
     );
   }
 
@@ -265,7 +280,8 @@ export class UserBase {
       this.viewer,
       this.id,
       EdgeType.UserToDeclinedEvents,
-      Event.loaderOptions(),
+      EventLoader.loaderOptions(),
+      //      Event.loaderOptions(),
     );
   }
 
@@ -286,7 +302,8 @@ export class UserBase {
       this.viewer,
       this.id,
       EdgeType.UserToMaybeEvents,
-      Event.loaderOptions(),
+      EventLoader.loaderOptions(),
+      //      Event.loaderOptions(),
     );
   }
 
@@ -302,7 +319,8 @@ export class UserBase {
     let map = await loadEntsFromClause(
       this.viewer,
       query.Eq("user_id", this.id),
-      Contact.loaderOptions(),
+      ContactLoader.loaderOptions(),
+      //      Contact.loaderOptions(),
     );
     let results: Contact[] = [];
     map.forEach((ent) => {

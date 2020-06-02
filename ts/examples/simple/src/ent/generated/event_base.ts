@@ -17,9 +17,11 @@ import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/event";
 import { EdgeType, NodeType } from "src/ent/const";
-import User from "src/ent/user";
+//import User from "src/ent/user";
+import { User, Event } from "src/ent/generated/interfaces";
+import { UserLoader, EventLoader } from "./loaders";
 
-const tableName = "events";
+//const tableName = "events";
 
 export class EventBase {
   readonly nodeType = NodeType.Event;
@@ -57,7 +59,7 @@ export class EventBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, EventBase.loaderOptions.apply(this));
+    return loadEnt(viewer, id, EventLoader.loaderOptions());
   }
 
   static async loadX<T extends EventBase>(
@@ -65,7 +67,7 @@ export class EventBase {
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, EventBase.loaderOptions.apply(this));
+    return loadEntX(viewer, id, EventLoader.loaderOptions());
   }
 
   static async loadMany<T extends EventBase>(
@@ -73,31 +75,31 @@ export class EventBase {
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, EventBase.loaderOptions.apply(this), ...ids);
+    return loadEnts(viewer, EventLoader.loaderOptions(), ...ids);
   }
 
-  static loaderOptions<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
-  ): LoadEntOptions<T> {
-    return {
-      tableName: tableName,
-      fields: EventBase.getFields(),
-      ent: this,
-    };
-  }
+  // static loaderOptions<T extends EventBase>(
+  //   this: new (viewer: Viewer, id: ID, data: {}) => T,
+  // ): LoadEntOptions<T> {
+  //   return {
+  //     tableName: tableName,
+  //     fields: EventBase.getFields(),
+  //     ent: this,
+  //   };
+  // }
 
-  private static getFields(): string[] {
-    return [
-      "id",
-      "created_at",
-      "updated_at",
-      "name",
-      "user_id",
-      "start_time",
-      "end_time",
-      "location",
-    ];
-  }
+  // private static getFields(): string[] {
+  //   return [
+  //     "id",
+  //     "created_at",
+  //     "updated_at",
+  //     "name",
+  //     "user_id",
+  //     "start_time",
+  //     "end_time",
+  //     "location",
+  //   ];
+  // }
 
   private static schemaFields: Map<string, Field>;
 
@@ -121,7 +123,7 @@ export class EventBase {
       this.viewer,
       this.id,
       EdgeType.EventToHosts,
-      User.loaderOptions(),
+      UserLoader.loaderOptions(),
     );
   }
 
@@ -142,7 +144,7 @@ export class EventBase {
       this.viewer,
       this.id,
       EdgeType.EventToInvited,
-      User.loaderOptions(),
+      UserLoader.loaderOptions(),
     );
   }
 
@@ -163,7 +165,7 @@ export class EventBase {
       this.viewer,
       this.id,
       EdgeType.EventToAttending,
-      User.loaderOptions(),
+      UserLoader.loaderOptions(),
     );
   }
 
@@ -184,7 +186,7 @@ export class EventBase {
       this.viewer,
       this.id,
       EdgeType.EventToDeclined,
-      User.loaderOptions(),
+      UserLoader.loaderOptions(),
     );
   }
 
@@ -205,7 +207,7 @@ export class EventBase {
       this.viewer,
       this.id,
       EdgeType.EventToMaybe,
-      User.loaderOptions(),
+      UserLoader.loaderOptions(),
     );
   }
 
@@ -218,10 +220,10 @@ export class EventBase {
   }
 
   loadCreator(): Promise<User | null> {
-    return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
+    return loadEnt(this.viewer, this.creatorID, UserLoader.loaderOptions());
   }
 
   loadCreatorX(): Promise<User> {
-    return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
+    return loadEntX(this.viewer, this.creatorID, UserLoader.loaderOptions());
   }
 }
