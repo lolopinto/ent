@@ -8,6 +8,10 @@ interface ClassType<T = any> {
 // scalars or classes
 type Type = GraphQLScalarType | ClassType;
 
+type ReturnType = Type | Array<Type>;
+
+type ReturnTypeFunc = (returns?: void) => ReturnType;
+
 // TODO lists/ nullables (list nullables) /etc
 export interface gqlFieldOptions {
   name?: string;
@@ -133,6 +137,7 @@ export class GQLCapture {
     if (options?.type) {
       if (isArray(options.type)) {
         list = true;
+        console.log(options);
         type = options.type[0].name;
       } else {
         type = options.type.name;
@@ -157,7 +162,25 @@ export class GQLCapture {
     return result;
   }
 
-  static gqlField(options?: gqlFieldOptions): any {
+  private static isType(
+    typeOrOptions?: ReturnTypeFunc | gqlFieldOptions,
+  ): typeOrOptions is ReturnTypeFunc {
+    if (typeof typeOrOptions === "function") {
+      return true;
+    }
+    if (typeOrOptions?.description !== undefined) {
+      return true;
+    }
+    return false;
+  }
+
+  static gqlField(): any;
+  static gqlField(type?: ReturnTypeFunc, options?: gqlFieldOptions): any;
+  static gqlField(options?: gqlFieldOptions): any;
+  static gqlField(
+    typeOrOptions?: ReturnTypeFunc | gqlFieldOptions,
+    maybeOptions?: gqlFieldOptions,
+  ): any {
     return function(
       target,
       propertyKey: string,
@@ -166,7 +189,28 @@ export class GQLCapture {
       if (!GQLCapture.isEnabled()) {
         return;
       }
+      let typ: ReturnTypeFunc | undefined;
+      let options: gqlFieldOptions | undefined;
+      if (typeOrOptions !== undefined) {
+        if (GQLCapture.isType(typeOrOptions)) {
+          options = maybeOptions || {};
+          typ = typeOrOptions;
+        } else {
+          options = typeOrOptions || {};
+        }
+      }
+      if (typ) {
+        let foo = typ();
+        console.log(typeof typ);
+        console.log("foo", foo);
+        // console.log(typ.constructor);
+        // console.log(typ.constructor.name);
 
+        console.log(typ.name);
+        console.log("ss", Reflect.getMetadata("design:type", typ));
+        console.log("tt", Reflect.getMetadata("design:returntype", typ));
+      }
+      //    console.log(typ?.name, options);
       //      console.log(target, propertyKey, descriptor);
       let fieldType: CustomFieldType;
       let nodeName = target.constructor.name as string;
@@ -184,7 +228,10 @@ export class GQLCapture {
         target,
         propertyKey,
       );
+      console.log(typeMetadata, returnTypeMetadata);
+
       if (returnTypeMetadata) {
+        console.log(returnTypeMetadata);
         // function...
         if (returnTypeMetadata.name === "Promise") {
           fieldType = CustomFieldType.AsyncFunction;

@@ -251,9 +251,11 @@ func processCustomData(cd *customData, s *gqlSchema) error {
 			}
 			break
 
-		case Function, AsyncFunction:
+		case Function:
 			gqlField.HasResolveFunction = true
 			gqlField.FunctionContents = fmt.Sprintf("return %s.%s();", instance, field.FunctionName)
+		case AsyncFunction:
+			gqlField.HasAsyncModifier = true
 			break
 
 		default:
@@ -860,6 +862,7 @@ type objectType struct {
 type fieldType struct {
 	Name               string
 	HasResolveFunction bool
+	HasAsyncModifier   bool
 	Description        string
 	FieldImports       []string
 
