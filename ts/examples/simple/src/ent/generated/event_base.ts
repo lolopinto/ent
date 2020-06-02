@@ -18,7 +18,7 @@ import { Field, getFields } from "ent/schema";
 import schema from "src/schema/event";
 import { EdgeType, NodeType } from "src/ent/const";
 //import User from "src/ent/user";
-import { UserInterface } from "src/ent/generated/interfaces";
+import { UserInterface, EventInterface } from "src/ent/generated/interfaces";
 import { UserLoader, EventLoader } from "./loaders";
 
 //const tableName = "events";
@@ -54,7 +54,7 @@ export class EventBase {
     rules: [AlwaysDenyRule],
   };
 
-  static async load<T extends EventBase>(
+  static async load<T extends EventInterface>(
     this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
@@ -62,7 +62,7 @@ export class EventBase {
     return loadEnt(viewer, id, EventLoader.loaderOptions());
   }
 
-  static async loadX<T extends EventBase>(
+  static async loadX<T extends EventInterface>(
     this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
@@ -70,7 +70,7 @@ export class EventBase {
     return loadEntX(viewer, id, EventLoader.loaderOptions());
   }
 
-  static async loadMany<T extends EventBase>(
+  static async loadMany<T extends EventInterface>(
     this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     ...ids: ID[]

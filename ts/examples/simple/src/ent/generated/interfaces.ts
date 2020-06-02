@@ -3,6 +3,7 @@ import { ID, Ent, AssocEdge, LoadEntOptions } from "ent/ent";
 // TODO name these UserInterface?
 // the interface issue means that custom things aren't available tho...
 // maybe why same name is good?
+//export Type
 export interface UserInterface extends Ent {
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -16,6 +17,10 @@ export interface UserInterface extends Ent {
   // so needs to be passed to the schema
   // no way to manually do this because can't merge types across
   // and get full codegen as needed.
+  // this can be optional...
+  // and only exists if we want full typing..
+  // we *should* get full typing in graphql because it's a thin layer
+  // and can type as User instead of UserInterface
   fullName: string;
   // etc..
   loadCreatedEventsEdges(): Promise<AssocEdge[]>;

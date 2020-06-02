@@ -6,14 +6,18 @@ interface ClassType<T = any> {
 }
 
 // scalars or classes
-type Type = GraphQLScalarType | ClassType;
+type Type = GraphQLScalarType | ClassType | string;
+type ReturnType = Type | Array<Type>;
+type ReturnTypeFunc = (returns?: void) => ReturnType;
 
 // TODO lists/ nullables (list nullables) /etc
 export interface gqlFieldOptions {
   name?: string;
   nullable?: boolean | NullableListOptions;
   description?: string;
-  type?: Type | Array<Type>; // types or lists of types
+  type?: Type | Array<Type>; // types or lists of types (strings allowed for object types and it must map to GraphQL type)
+  // ClassType not ideal for circular-dependency purposes
+  // fucking hate TS
 }
 
 export enum CustomFieldType {
@@ -126,14 +130,26 @@ export class GQLCapture {
       if (typeof type === "function") {
         return false;
       }
-      return (type as Array<Type>).length !== undefined;
+      return (type as Array<Type>).concat !== undefined;
+    };
+
+    const isString = (type: Type | Array<Type>): type is string => {
+      return (type as string).lastIndexOf !== undefined;
     };
     let list: boolean | undefined;
 
     if (options?.type) {
-      if (isArray(options.type)) {
+      if (isString(options.type)) {
+        //      if ((options.type as String).startsWith !== undefined) {
+        type = options.type;
+      } else if (isArray(options.type)) {
         list = true;
-        type = options.type[0].name;
+        if (isString(options.type[0])) {
+          type = options.type[0];
+          // TODO recursive
+        } else {
+          type = options.type[0].name;
+        }
       } else {
         type = options.type.name;
       }
@@ -157,7 +173,25 @@ export class GQLCapture {
     return result;
   }
 
+  private static isType(
+    typeOrOptions?: ReturnTypeFunc | gqlFieldOptions,
+  ): typeOrOptions is ReturnTypeFunc {
+    if (typeof typeOrOptions === "function") {
+      return true;
+    }
+    if (typeOrOptions?.description !== undefined) {
+      return true;
+    }
+    return false;
+  }
+
+  // static gqlField(): any;
+  // static gqlField(type?: ReturnTypeFunc, options?: gqlFieldOptions): any;
   static gqlField(options?: gqlFieldOptions): any {
+    // static gqlField(
+    //   typeOrOptions?: ReturnTypeFunc | gqlFieldOptions,
+    //   maybeOptions?: gqlFieldOptions,
+    // ): any {
     return function(
       target,
       propertyKey: string,

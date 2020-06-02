@@ -15,6 +15,7 @@ import { NodeType } from "src/ent/const";
 //import User from "src/ent/user";
 import { UserLoader, ContactLoader } from "./loaders";
 import { ContactInterface, UserInterface } from "src/ent/generated/interfaces";
+//import Contact from "src/schema/contact";
 
 //import
 //const tableName = "contacts";
@@ -48,23 +49,23 @@ export class ContactBase implements ContactInterface {
     rules: [AlwaysDenyRule],
   };
 
-  static async load<T extends ContactBase>(
-    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
+  static async load<T extends ContactInterface>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
     return loadEnt(viewer, id, ContactLoader.loaderOptions());
   }
 
-  static async loadX<T extends ContactBase>(
-    //    this: new (viewer: Viewer, id: ID, data: {}) => T,
+  static async loadX<T extends ContactInterface>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
     return loadEntX(viewer, id, ContactLoader.loaderOptions());
   }
 
-  static async loadMany<T extends ContactBase>(
+  static async loadMany<T extends ContactInterface>(
     //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     ...ids: ID[]

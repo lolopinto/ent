@@ -44,7 +44,7 @@ export class AddressBase implements AddressInterface {
     rules: [AlwaysDenyRule],
   };
 
-  static async load<T extends AddressBase>(
+  static async load<T extends AddressInterface>(
     //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
@@ -52,7 +52,7 @@ export class AddressBase implements AddressInterface {
     return loadEnt(viewer, id, AddressLoader.loaderOptions());
   }
 
-  static async loadX<T extends AddressBase>(
+  static async loadX<T extends AddressInterface>(
     //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     id: ID,
@@ -60,7 +60,7 @@ export class AddressBase implements AddressInterface {
     return loadEntX(viewer, id, AddressLoader.loaderOptions());
   }
 
-  static async loadMany<T extends AddressBase>(
+  static async loadMany<T extends AddressInterface>(
     //    this: new (viewer: Viewer, id: ID, data: {}) => T,
     viewer: Viewer,
     ...ids: ID[]

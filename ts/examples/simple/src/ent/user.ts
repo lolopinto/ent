@@ -10,7 +10,8 @@ import { EdgeType } from "./const";
 import { gqlField } from "ent/graphql";
 import { UserLoader } from "./generated/loaders";
 //import Contact from "src/schema/contact";
-import { ContactInterface } from "./generated/interfaces";
+//import { ContactInterface } from "./generated/interfaces";
+//import Contact from "src/ent/contact";
 
 // interface UserInterface {
 //   fullName: string;
@@ -31,8 +32,12 @@ export default class User extends UserBase {
     return this.firstName + " " + this.lastName;
   }
 
-  // nope, can't put interface here wtf
-  //  @gqlField({type: ContactInterface})
+  // nope, can't put interface here
+  // works here because no circular dependency but once i make the change
+  @gqlField({ type: "Contact" })
+  contact() {
+    return this.loadSelfContact();
+  }
 }
 
 UserLoader.registerClass(User);
