@@ -36,6 +36,7 @@ type User {
   contacts: [Contact!]!
   fullName: String!
   bar: String
+  contactSameDomain: Contact
 }
 
 type Event {

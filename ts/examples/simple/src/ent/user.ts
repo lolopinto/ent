@@ -11,8 +11,6 @@ import { GraphQLString } from "graphql";
 import Contact from "src/ent/contact";
 import { gqlField } from "ent/graphql";
 
-// this is circular dependency issue!
-console.log(Contact);
 // we're only writing this once except with --force and packageName provided
 export default class User extends UserBase {
   privacyPolicy: PrivacyPolicy = {
@@ -24,12 +22,12 @@ export default class User extends UserBase {
     ],
   };
 
-  //  @gqlField()
+  @gqlField()
   get fullName(): string {
     return this.firstName + " " + this.lastName;
   }
 
-  @gqlField((type) => GraphQLString, {
+  @gqlField({
     type: GraphQLString,
     nullable: true,
     name: "bar",
@@ -49,27 +47,24 @@ export default class User extends UserBase {
     return null;
   }
 
-  // hmm Contact isn't loaded yet?
-  // regardless of format!
-  // whethere
-  @gqlField(
-    // (type) => {
-    //   console.log("called");
-    //   return Contact;
-    // },
-    {
-      type: Contact, // this works with User
-      nullable: true,
-      name: "contactSameDomain",
-    },
-  )
+  @gqlField({
+    type: "Contact",
+    nullable: true,
+    name: "contactSameDomain",
+  })
   async getFirstContactSameDomain(): Promise<Contact | undefined> {
     let domain = this.getDomainFromEmail(this.emailAddress);
     if (!domain) {
       return;
     }
-    let contacts = await this.loadContacts();
-    return contacts.find((contact) => {
+    let [selfContactEdge, contacts] = await Promise.all([
+      this.loadSelfContactEdge(),
+      this.loadContacts(),
+    ]);
+    return contacts!.find((contact) => {
+      if (selfContactEdge?.id2 === contact.id) {
+        return null;
+      }
       if (domain === this.getDomainFromEmail(contact.emailAddress)) {
         return contact;
       }

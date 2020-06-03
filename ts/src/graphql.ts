@@ -6,11 +6,9 @@ interface ClassType<T = any> {
 }
 
 // scalars or classes
-type Type = GraphQLScalarType | ClassType;
-
-type ReturnType = Type | Array<Type>;
-
-type ReturnTypeFunc = (returns?: void) => ReturnType;
+// string for GraphQL name in situation where we can't load the object
+// e.g. User, Contact etc
+type Type = GraphQLScalarType | ClassType | string;
 
 // TODO lists/ nullables (list nullables) /etc
 export interface gqlFieldOptions {
@@ -130,15 +128,33 @@ export class GQLCapture {
       if (typeof type === "function") {
         return false;
       }
-      return (type as Array<Type>).length !== undefined;
+      return (type as Array<Type>).push !== undefined;
+    };
+
+    const isString = (type: Type | Array<Type>): type is string => {
+      if ((type as string).lastIndexOf !== undefined) {
+        return true;
+      }
+      return false;
     };
     let list: boolean | undefined;
 
     if (options?.type) {
       if (isArray(options.type)) {
         list = true;
-        console.log(options);
-        type = options.type[0].name;
+        //console.log(options);
+        if (isString(options.type[0])) {
+          type = options.type[0];
+        } else {
+          type = options.type[0].name;
+        }
+      } else if (isString(options.type)) {
+        type = options.type;
+        if (type.lastIndexOf("]") !== -1) {
+          // list
+          list = true;
+          type = type.substr(1, type.length - 2);
+        }
       } else {
         type = options.type.name;
       }
@@ -162,25 +178,7 @@ export class GQLCapture {
     return result;
   }
 
-  private static isType(
-    typeOrOptions?: ReturnTypeFunc | gqlFieldOptions,
-  ): typeOrOptions is ReturnTypeFunc {
-    if (typeof typeOrOptions === "function") {
-      return true;
-    }
-    if (typeOrOptions?.description !== undefined) {
-      return true;
-    }
-    return false;
-  }
-
-  static gqlField(): any;
-  static gqlField(type?: ReturnTypeFunc, options?: gqlFieldOptions): any;
-  static gqlField(options?: gqlFieldOptions): any;
-  static gqlField(
-    typeOrOptions?: ReturnTypeFunc | gqlFieldOptions,
-    maybeOptions?: gqlFieldOptions,
-  ): any {
+  static gqlField(options?: gqlFieldOptions): any {
     return function(
       target,
       propertyKey: string,
@@ -188,27 +186,6 @@ export class GQLCapture {
     ): void {
       if (!GQLCapture.isEnabled()) {
         return;
-      }
-      let typ: ReturnTypeFunc | undefined;
-      let options: gqlFieldOptions | undefined;
-      if (typeOrOptions !== undefined) {
-        if (GQLCapture.isType(typeOrOptions)) {
-          options = maybeOptions || {};
-          typ = typeOrOptions;
-        } else {
-          options = typeOrOptions || {};
-        }
-      }
-      if (typ) {
-        let foo = typ();
-        console.log(typeof typ);
-        console.log("foo", foo);
-        // console.log(typ.constructor);
-        // console.log(typ.constructor.name);
-
-        console.log(typ.name);
-        console.log("ss", Reflect.getMetadata("design:type", typ));
-        console.log("tt", Reflect.getMetadata("design:returntype", typ));
       }
       //    console.log(typ?.name, options);
       //      console.log(target, propertyKey, descriptor);
@@ -228,10 +205,10 @@ export class GQLCapture {
         target,
         propertyKey,
       );
-      console.log(typeMetadata, returnTypeMetadata);
+      //console.log(typeMetadata, returnTypeMetadata);
 
       if (returnTypeMetadata) {
-        console.log(returnTypeMetadata);
+        //console.log(returnTypeMetadata);
         // function...
         if (returnTypeMetadata.name === "Promise") {
           fieldType = CustomFieldType.AsyncFunction;

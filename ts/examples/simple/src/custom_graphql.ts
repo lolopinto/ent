@@ -28,7 +28,6 @@ rl.on("close", function() {
   files.forEach((file) => {
     promises.push(require(file));
   });
-  console.log("ss");
 
   Promise.all(promises).then(() => {
     let args = GQLCapture.getCustomArgs();

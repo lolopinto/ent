@@ -11,6 +11,7 @@ import EditUserAction from "src/ent/user/actions/edit_user_action";
 import { advanceBy } from "jest-date-mock";
 import { queryRootConfig, expectQueryFromRoot } from "src/graphql_test_utils";
 import { ID, Viewer } from "ent/ent";
+import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -106,6 +107,40 @@ test("query custom function", async () => {
     ["lastName", user.lastName],
     // returns null when viewed as different user
     ["bar", null],
+  );
+});
+
+test("query custom async function", async () => {
+  let user = await create({
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+  });
+  let vc = new IDViewer(user.id);
+  await CreateContactAction.create(vc, {
+    emailAddress: randomEmail("foo.com"),
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  }).saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    ["contactSameDomain.id", null], // no contact on same domain
+  );
+
+  let contact = await CreateContactAction.create(vc, {
+    emailAddress: randomEmail(),
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  }).saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    ["contactSameDomain.id", contact.id], // query again, new contact shows up
   );
 });
 

@@ -254,8 +254,12 @@ func processCustomData(cd *customData, s *gqlSchema) error {
 		case Function:
 			gqlField.HasResolveFunction = true
 			gqlField.FunctionContents = fmt.Sprintf("return %s.%s();", instance, field.FunctionName)
+			break
 		case AsyncFunction:
 			gqlField.HasAsyncModifier = true
+			gqlField.HasResolveFunction = true
+			gqlField.FunctionContents = fmt.Sprintf("return %s.%s();", instance, field.FunctionName)
+
 			break
 
 		default:
