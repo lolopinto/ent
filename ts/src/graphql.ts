@@ -235,8 +235,6 @@ export class GQLCapture {
       if (!GQLCapture.isEnabled()) {
         return;
       }
-      //    console.log(typ?.name, options);
-      //      console.log(target, propertyKey, descriptor);
       let fieldType: CustomFieldType;
       let nodeName = target.constructor.name as string;
 
@@ -253,17 +251,14 @@ export class GQLCapture {
         target,
         propertyKey,
       );
-      //console.log(typeMetadata, returnTypeMetadata);
 
       if (returnTypeMetadata) {
-        //console.log(returnTypeMetadata);
         // function...
         if (returnTypeMetadata.name === "Promise") {
           fieldType = CustomFieldType.AsyncFunction;
         } else {
           fieldType = CustomFieldType.Function;
         }
-        //console.log("return type", returnTypeMetadata.name);
 
         results.push(
           GQLCapture.getResultFromMetadata(returnTypeMetadata, options),
@@ -278,7 +273,6 @@ export class GQLCapture {
           fieldType = CustomFieldType.Field;
         }
 
-        //        console.log("type");
         results.push(GQLCapture.getResultFromMetadata(typeMetadata, options));
       }
 
@@ -292,12 +286,10 @@ export class GQLCapture {
         let parsedArgs =
           GQLCapture.argMap.get(nodeName)?.get(propertyKey) || [];
         if (params.length !== parsedArgs.length) {
-          // console.log(params, parsedArgs);
           throw new Error("args were not captured correctly");
         }
         parsedArgs.forEach((arg) => {
           let param = params![arg.index];
-          //          console.log("param", param);
           let paramName = arg.name;
           let field = GQLCapture.getResultFromMetadata(
             {

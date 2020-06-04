@@ -6,7 +6,6 @@ import graphqlHTTP from "express-graphql";
 import request from "supertest";
 import { Viewer } from "ent/ent";
 import { GraphQLSchema, GraphQLObjectType } from "graphql";
-import { isParenthesizedExpression } from "typescript";
 
 function server(viewer: Viewer, schema: GraphQLSchema) {
   let app = express();
