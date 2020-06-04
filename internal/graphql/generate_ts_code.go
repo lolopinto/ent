@@ -179,10 +179,21 @@ func getImportPathForAction(nodeData *schema.NodeData, action action.Action) str
 	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
 }
 
+func writeCustomFile(path string) error {
+	return file.Write(&file.TemplatedBasedFileWriter{
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/custom_graphql.tmpl"),
+		TemplateName:      "custom_graphql.tmpl",
+		PathToFile:        path,
+		FormatSource:      true,
+	}, file.DisableLog())
+}
+
 func parseCustomData(data *codegen.Data) chan *customData {
 	var res = make(chan *customData)
 	go func() {
 		var cd customData
+		fmt.Println("checking for custom graphql definitions...")
 
 		var buf bytes.Buffer
 		var out bytes.Buffer
@@ -194,7 +205,15 @@ func parseCustomData(data *codegen.Data) chan *customData {
 			buf.WriteString(nodeData.Node)
 			buf.WriteString("\n")
 		}
-		cmd := exec.Command("ts-node", "-r", "tsconfig-paths/register", "src/custom_graphql.ts")
+		filePath := "src/custom_graphql.ts"
+		if err := writeCustomFile(filePath); err != nil {
+			cd.Error = err
+			res <- &cd
+			return
+		}
+		defer os.Remove(filePath)
+
+		cmd := exec.Command("ts-node", "-r", "tsconfig-paths/register", filePath)
 		cmd.Stdin = &buf
 		cmd.Stdout = &out
 		cmd.Stderr = &stderr
