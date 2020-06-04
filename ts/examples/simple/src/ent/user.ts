@@ -72,8 +72,9 @@ export default class User extends UserBase {
     });
   }
 
-  //  @gqlField({ type: [Contact], name: "contactsSameDomain" })
+  @gqlField({ type: "[Contact]", name: "contactsSameDomain" })
   async getContactsSameDomain(): Promise<Contact[]> {
+    // the behavior here is inconsistent but meh
     let domain = this.getDomainFromEmail(this.emailAddress);
     if (!domain) {
       return [];

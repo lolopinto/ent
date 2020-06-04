@@ -144,6 +144,30 @@ test("query custom async function", async () => {
   );
 });
 
+test("query custom async function list", async () => {
+  let user = await create({
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+  });
+  let vc = new IDViewer(user.id);
+  user = await User.loadX(vc, user.id);
+  let selfContact = await user.loadSelfContact();
+  let contact = await CreateContactAction.create(vc, {
+    emailAddress: randomEmail(),
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  }).saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    ["contactSameDomains[0].id", selfContact!.id],
+    ["contactSameDomains[1].id", contact!.id],
+  );
+});
+
 test("query user who's not visible", async () => {
   let [user, user2] = await Promise.all([
     create({

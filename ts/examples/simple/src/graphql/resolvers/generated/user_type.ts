@@ -101,6 +101,12 @@ export const UserType = new GraphQLObjectType({
         return user.getFirstContactSameDomain();
       },
     },
+    contactsSameDomain: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
+      resolve: async (user: User) => {
+        return user.getContactsSameDomain();
+      },
+    },
   }),
 });
 

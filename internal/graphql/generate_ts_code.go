@@ -65,7 +65,7 @@ type CustomItem struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 	Nullable bool   `json:"nullable"`
-	//List  TODO
+	List     bool   `json:"list"`
 }
 
 func (p *TSStep) ProcessData(data *codegen.Data) error {
@@ -283,10 +283,20 @@ func getGraphQLImportsForField(f CustomField, s *gqlSchema) ([]string, error) {
 
 	var imports []string
 	for _, result := range f.Results {
-		if !result.Nullable {
-			imports = append(imports, "GraphQLNonNull")
+
+		if result.List {
+			// todo handle nullable list options
+			imports = append(
+				imports,
+				"GraphQLNonNull",
+				"GraphQLList",
+				"GraphQLNonNull",
+			)
+		} else {
+			if !result.Nullable {
+				imports = append(imports, "GraphQLNonNull")
+			}
 		}
-		// todo list...
 
 		typ, ok := scalars[result.Type]
 		if ok {
