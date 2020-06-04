@@ -140,7 +140,6 @@ export class GQLCapture {
 
     if (options?.type) {
       if (isString(options.type)) {
-        //      if ((options.type as String).startsWith !== undefined) {
         type = options.type;
       } else if (isArray(options.type)) {
         list = true;
@@ -225,7 +224,6 @@ export class GQLCapture {
         } else {
           fieldType = CustomFieldType.Function;
         }
-        //console.log("return type", returnTypeMetadata.name);
 
         results.push(
           GQLCapture.getResultFromMetadata(returnTypeMetadata, options),
@@ -319,8 +317,6 @@ export class GQLCapture {
         index: index,
         options: options,
       });
-
-      //      console.log("arg", name, target, propertyKey, index);
     };
   }
 
