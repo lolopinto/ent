@@ -168,7 +168,7 @@ func getTempSchemaFilePath() string {
 
 func getSchemaFilePath() string {
 	// just put it at root of src/graphql
-	return "schema.gql"
+	return "src/graphql/schema.gql"
 }
 
 func getFilePathForAction(nodeData *schema.NodeData, action action.Action) string {
