@@ -25,16 +25,24 @@ export enum CustomFieldType {
   AsyncFunction = "ASYNC_FUNCTION", // do we care about this?
 }
 
-export interface CustomField {
+interface CustomFieldImpl {
   nodeName: string;
   gqlName: string;
   functionName: string; // accessorName (not necessarily a function)
   // need enum type for accessor/function/etc so we can build generated code
-  args: Field[];
-  results: Field[];
   importPath?: string;
   fieldType: CustomFieldType;
   description?: string;
+}
+
+export interface CustomField extends CustomFieldImpl {
+  args: Field[];
+  results: Field[];
+}
+
+interface ProcessedCustomField extends CustomFieldImpl {
+  args: ProcessedField[];
+  results: ProcessedField[];
 }
 
 export interface CustomArg {
@@ -44,18 +52,30 @@ export interface CustomArg {
 
 type NullableListOptions = "contents" | "contentsAndList";
 
-export interface Field {
-  name: string;
+interface FieldImpl {
   type: string; // TODO
   importPath?: string;
   needsResolving?: boolean; // unknown type that we need to resolve eventually
+  list?: boolean;
+  name: string;
+}
 
+export interface Field extends FieldImpl {
   // if a list and nullable
   // list itself is nullable
   // if a list and items are nullable, list is not nullable but list contains nullable items
   // if a list and both are nullable, both contents and list itself nullable
   nullable?: boolean | NullableListOptions;
-  list?: boolean;
+}
+
+interface ProcessedField extends FieldImpl {
+  nullable?: NullableResult;
+}
+
+enum NullableResult {
+  CONTENTS = "contents",
+  CONTENTS_AND_LIST = "contentsAndList",
+  ITEM = "true", // nullable = true
 }
 
 interface arg {
@@ -85,6 +105,34 @@ export class GQLCapture {
 
   static getCustomFields(): CustomField[] {
     return this.customFields;
+  }
+
+  private static getNullableArg(fd: Field): ProcessedField {
+    let res: ProcessedField = fd as ProcessedField;
+    if (fd.nullable === undefined) {
+      return res;
+    }
+    if (fd.nullable === "contents") {
+      res.nullable = NullableResult.CONTENTS;
+    } else if (fd.nullable === "contentsAndList") {
+      res.nullable = NullableResult.CONTENTS_AND_LIST;
+    } else {
+      res.nullable = NullableResult.ITEM;
+    }
+    return res;
+  }
+
+  static getProcessedCustomFields(): ProcessedCustomField[] {
+    return this.customFields.map((field) => {
+      let res: ProcessedCustomField = field as ProcessedCustomField;
+      res.args = field.args.map((arg) => {
+        return this.getNullableArg(arg);
+      });
+      res.results = field.results.map((result) => {
+        return this.getNullableArg(result);
+      });
+      return res;
+    });
   }
 
   static getCustomArgs(): Map<string, CustomArg> {

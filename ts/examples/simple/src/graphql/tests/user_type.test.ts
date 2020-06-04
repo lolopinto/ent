@@ -5,7 +5,7 @@ import CreateUserAction, {
 } from "src/ent/user/actions/create_user_action";
 import { LoggedOutViewer } from "ent/viewer";
 import User from "src/ent/user";
-import { randomEmail } from "src/util/random";
+import { random, randomEmail } from "src/util/random";
 import { IDViewer } from "src/util/id_viewer";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import { advanceBy } from "jest-date-mock";
@@ -165,6 +165,111 @@ test("query custom async function list", async () => {
     ["id", user.id],
     ["contactSameDomains[0].id", selfContact!.id],
     ["contactSameDomains[1].id", contact!.id],
+  );
+});
+
+test("query custom async function nullable list", async () => {
+  let user = await create({
+    firstName: "first",
+    lastName: "last",
+    emailAddress: random(),
+  });
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id, {
+      nullQueryPaths: ["contactsSameDomainNullable"],
+    }),
+    ["id", user.id],
+    ["contactsSameDomainNullable[0].id", null],
+  );
+});
+
+test("query custom async function nullable contents", async () => {
+  let user = await create({
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+  });
+  let vc = new IDViewer(user.id);
+  user = await User.loadX(vc, user.id);
+  let selfContact = await user.loadSelfContact();
+  await CreateContactAction.create(vc, {
+    emailAddress: randomEmail("foo.com"),
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  }).saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    ["contactsSameDomainNullableContents[0].id", selfContact!.id],
+    ["contactsSameDomainNullableContents[1].id", null],
+  );
+});
+
+test("query custom async function nullable list contents", async () => {
+  let user = await create({
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+  });
+  let vc = new IDViewer(user.id);
+  user = await User.loadX(vc, user.id);
+  let selfContact = await user.loadSelfContact();
+  let contact = await CreateContactAction.create(vc, {
+    emailAddress: randomEmail("foo.com"),
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user.id,
+  }).saveX();
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    ["contactsSameDomainNullableContents[0].id", selfContact!.id],
+    ["contactsSameDomainNullableContents[1].id", null],
+  );
+});
+
+test("query custom async function nullable list and contents", async () => {
+  let user = await create({
+    firstName: "first",
+    lastName: "last",
+    emailAddress: random(),
+  });
+  let vc = new IDViewer(user.id);
+  user = await User.loadX(vc, user.id);
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id, {
+      nullQueryPaths: ["contactsSameDomainNullableContentsAndList"],
+    }),
+    ["id", user.id],
+    ["contactsSameDomainNullableContentsAndList[0].id", null],
+  );
+
+  // for user 2, because there's a valid email, we get a non-null list even though
+  // the list is nullable
+  let user2 = await create({
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+  });
+  let vc2 = new IDViewer(user2.id);
+  user2 = await User.loadX(vc2, user2.id);
+  let selfContact2 = await user2.loadSelfContact();
+  await CreateContactAction.create(vc, {
+    emailAddress: randomEmail("foo.com"),
+    firstName: "Jon",
+    lastName: "Snow",
+    userID: user2.id,
+  }).saveX();
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user2.id), user2.id),
+    ["id", user2.id],
+    ["contactsSameDomainNullableContentsAndList[0].id", selfContact2!.id],
+    ["contactsSameDomainNullableContentsAndList[1].id", null],
   );
 });
 

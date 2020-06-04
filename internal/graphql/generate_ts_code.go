@@ -62,11 +62,17 @@ type customData struct {
 }
 
 type CustomItem struct {
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Nullable bool   `json:"nullable"`
-	List     bool   `json:"list"`
+	Name     string       `json:"name"`
+	Type     string       `json:"type"`
+	Nullable NullableItem `json:"nullable"`
+	List     bool         `json:"list"`
 }
+
+type NullableItem string
+
+const NullableContents NullableItem = "contents"
+const NullableContentsAndList NullableItem = "contentsAndList"
+const NullableTrue NullableItem = "true"
 
 func (p *TSStep) ProcessData(data *codegen.Data) error {
 	// these all need to be done after
@@ -200,7 +206,6 @@ func parseCustomData(data *codegen.Data) chan *customData {
 			return
 		}
 
-		spew.Dump(out.Bytes())
 		if err := json.Unmarshal(out.Bytes(), &cd); err != nil {
 			err = errors.Wrap(err, "error unmarshing custom data")
 			cd.Error = err
@@ -284,18 +289,50 @@ func getGraphQLImportsForField(f CustomField, s *gqlSchema) ([]string, error) {
 	var imports []string
 	for _, result := range f.Results {
 
-		if result.List {
-			// todo handle nullable list options
+		switch result.Nullable {
+		case NullableTrue:
+			if result.List {
+				imports = append(
+					imports,
+					"GraphQLList",
+					"GraphQLNonNull",
+				)
+			}
+			break
+
+		case NullableContents:
+			if !result.List {
+				return nil, fmt.Errorf("list required to use this option")
+			}
 			imports = append(
 				imports,
 				"GraphQLNonNull",
 				"GraphQLList",
-				"GraphQLNonNull",
 			)
-		} else {
-			if !result.Nullable {
+			break
+
+		case NullableContentsAndList:
+			if !result.List {
+				return nil, fmt.Errorf("list required to use this option")
+			}
+			imports = append(
+				imports,
+				"GraphQLList",
+			)
+			break
+
+		default:
+			if result.List {
+				imports = append(
+					imports,
+					"GraphQLNonNull",
+					"GraphQLList",
+					"GraphQLNonNull",
+				)
+			} else {
 				imports = append(imports, "GraphQLNonNull")
 			}
+			break
 		}
 
 		typ, ok := scalars[result.Type]

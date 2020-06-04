@@ -6,6 +6,7 @@ import graphqlHTTP from "express-graphql";
 import request from "supertest";
 import { Viewer } from "ent/ent";
 import { GraphQLSchema, GraphQLObjectType } from "graphql";
+import { isParenthesizedExpression } from "typescript";
 
 function server(viewer: Viewer, schema: GraphQLSchema) {
   let app = express();
@@ -100,6 +101,7 @@ interface queryConfig {
 export interface queryRootConfig extends queryConfig {
   root: string;
   rootQueryNull?: boolean;
+  nullQueryPaths?: string[];
 }
 
 export async function expectQueryFromRoot(
@@ -155,6 +157,7 @@ interface rootConfig extends queryConfig {
   root: string;
   querySuffix: string;
   rootQueryNull?: boolean;
+  nullQueryPaths?: string[];
 }
 
 async function expectFromRoot(config: rootConfig, ...options: Option[]) {
@@ -224,20 +227,31 @@ async function expectFromRoot(config: rootConfig, ...options: Option[]) {
   let data = res.body.data;
   let result = data[config.root];
 
+  //console.log(result);
   if (config.rootQueryNull) {
     expect(result, "root query wasn't null").toBe(null);
     return;
   }
 
-  //  console.log(result);
   options.forEach((option) => {
     let path = option[0];
     let expected = option[1];
 
+    let nullPath: string | undefined;
+    let nullParts: string[] = [];
+    if (config.nullQueryPaths) {
+      for (let i = 0; i < config.nullQueryPaths.length; i++) {
+        if (path.startsWith(config.nullQueryPaths[i])) {
+          nullPath = config.nullQueryPaths[i];
+          nullParts = nullPath.split(".");
+          break;
+        }
+      }
+    }
+
     let parts = path.split(".");
     let current = result;
 
-    //    console.log(result, current);
     // possible to make this smarter and better
     // e.g. when building up the tree above
     for (let i = 0; i < parts.length; i++) {
@@ -260,16 +274,18 @@ async function expectFromRoot(config: rootConfig, ...options: Option[]) {
 
       current = current[part];
 
-      if (expected === null) {
-        // TODO this doesn't always work. need to indicate when source is null
-        // vs id is null
-        // need an option similar to rootQueryNull but for different subtrees
-        expect(current).toBe(null);
-        break;
+      // at the part of the path where it's expected to be null, confirm it is before proceeding
+      if (nullParts.length === i + 1) {
+        expect(expected, `path ${nullPath} expected to be null`).toBe(null);
+        return;
       }
 
       if (listIdx !== undefined) {
         current = current[listIdx];
+      }
+      if (expected === null) {
+        expect(current).toBe(null);
+        break;
       }
 
       if (i === parts.length - 1) {

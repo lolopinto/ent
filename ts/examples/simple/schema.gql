@@ -38,6 +38,9 @@ type User {
   bar: String
   contactSameDomain: Contact
   contactsSameDomain: [Contact!]!
+  contactsSameDomainNullable: [Contact!]
+  contactsSameDomainNullableContents: [Contact]!
+  contactsSameDomainNullableContentsAndList: [Contact]
 }
 
 type Event {

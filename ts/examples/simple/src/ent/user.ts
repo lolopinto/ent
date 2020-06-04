@@ -84,4 +84,65 @@ export default class User extends UserBase {
       return domain === this.getDomainFromEmail(contact.emailAddress);
     });
   }
+
+  @gqlField({
+    type: "[Contact]",
+    name: "contactsSameDomainNullable",
+    nullable: true,
+  })
+  async getContactsSameDomainNullable(): Promise<Contact[] | null> {
+    // the behavior here is inconsistent but meh
+    let domain = this.getDomainFromEmail(this.emailAddress);
+    if (!domain) {
+      return null;
+    }
+    let contacts = await this.loadContacts();
+    return contacts.filter((contact) => {
+      return domain === this.getDomainFromEmail(contact.emailAddress);
+    });
+  }
+
+  @gqlField({
+    type: "[Contact]",
+    name: "contactsSameDomainNullableContents",
+    nullable: "contents",
+  })
+  async getContactsSameDomainNullableContents(): Promise<(Contact | null)[]> {
+    // the behavior here is inconsistent but meh
+    let domain = this.getDomainFromEmail(this.emailAddress);
+    if (!domain) {
+      return [];
+    }
+    let contacts = await this.loadContacts();
+    return contacts.map((contact) => {
+      let contactDomain = this.getDomainFromEmail(contact.emailAddress);
+      if (contactDomain === domain) {
+        return contact;
+      }
+      return null;
+    });
+  }
+
+  @gqlField({
+    type: "[Contact]",
+    name: "contactsSameDomainNullableContentsAndList",
+    nullable: "contentsAndList",
+  })
+  async getContactsSameDomainNullableContentsAndList(): Promise<
+    (Contact | null)[] | null
+  > {
+    // the behavior here is inconsistent but meh
+    let domain = this.getDomainFromEmail(this.emailAddress);
+    if (!domain) {
+      return null;
+    }
+    let contacts = await this.loadContacts();
+    return contacts.map((contact) => {
+      let contactDomain = this.getDomainFromEmail(contact.emailAddress);
+      if (contactDomain === domain) {
+        return contact;
+      }
+      return null;
+    });
+  }
 }

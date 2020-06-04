@@ -31,7 +31,7 @@ rl.on("close", function() {
 
   Promise.all(promises).then(() => {
     let args = GQLCapture.getCustomArgs();
-    let fields = GQLCapture.getCustomFields();
+    let fields = GQLCapture.getProcessedCustomFields();
     GQLCapture.resolve(nodes);
     console.log(
       JSON.stringify({
