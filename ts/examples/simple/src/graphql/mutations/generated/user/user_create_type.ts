@@ -32,6 +32,9 @@ export const UserCreateInputType = new GraphQLInputObjectType({
     emailAddress: {
       type: GraphQLNonNull(GraphQLString),
     },
+    password: {
+      type: GraphQLString,
+    },
   }),
 });
 
@@ -66,6 +69,7 @@ export const UserCreateType: GraphQLFieldConfig<
       firstName: input.firstName,
       lastName: input.lastName,
       emailAddress: input.emailAddress,
+      password: input.password,
     }).saveX();
     return { user: user };
   },

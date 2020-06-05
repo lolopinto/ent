@@ -38,6 +38,7 @@ export class UserBase {
   readonly firstName: string;
   readonly lastName: string;
   readonly emailAddress: string;
+  protected readonly password: string | null;
   readonly accountStatus: string | null;
   readonly emailVerified: boolean;
 
@@ -50,6 +51,7 @@ export class UserBase {
     this.firstName = data["first_name"];
     this.lastName = data["last_name"];
     this.emailAddress = data["email_address"];
+    this.password = data["password"];
     this.accountStatus = data["account_status"];
     this.emailVerified = data["email_verified"];
   }
@@ -141,6 +143,7 @@ export class UserBase {
       "first_name",
       "last_name",
       "email_address",
+      "password",
       "account_status",
       "email_verified",
     ];

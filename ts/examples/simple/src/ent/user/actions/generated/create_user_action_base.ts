@@ -9,6 +9,7 @@ export interface UserCreateInput {
   firstName: string;
   lastName: string;
   emailAddress: string;
+  password?: string | null;
 }
 
 export class CreateUserActionBase implements Action<User> {
