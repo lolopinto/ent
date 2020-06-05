@@ -34,6 +34,13 @@ type User {
   declinedEvents: [Event!]!
   maybeEvents: [Event!]!
   contacts: [Contact!]!
+  fullName: String!
+  bar: String
+  contactSameDomain: Contact
+  contactsSameDomain: [Contact!]!
+  contactsSameDomainNullable: [Contact!]
+  contactsSameDomainNullableContents: [Contact]!
+  contactsSameDomainNullableContentsAndList: [Contact]
 }
 
 type Event {

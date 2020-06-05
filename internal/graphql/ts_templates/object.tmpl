@@ -55,7 +55,11 @@
           {{end -}}
           type: {{$field.FieldType}},
           {{if $field.HasResolveFunction -}}
-            resolve: ({{$nodeInstance}}: {{$node}}) => {
+            {{if $field.HasAsyncModifier -}}
+              resolve: async({{$nodeInstance}}: {{$node}}) => {
+            {{ else -}}
+              resolve: ({{$nodeInstance}}: {{$node}}) => {
+            {{ end -}}
               {{$field.FunctionContents}};
             },
           {{end -}}

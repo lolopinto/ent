@@ -6,7 +6,9 @@ interface ClassType<T = any> {
 }
 
 // scalars or classes
-type Type = GraphQLScalarType | ClassType;
+// string for GraphQL name in situation where we can't load the object
+// e.g. User, Contact etc
+type Type = GraphQLScalarType | ClassType | string;
 
 // TODO lists/ nullables (list nullables) /etc
 export interface gqlFieldOptions {
@@ -17,22 +19,30 @@ export interface gqlFieldOptions {
 }
 
 export enum CustomFieldType {
-  Accessor,
-  Field, // or property
-  Function,
-  AsyncFunction, // do we care about this?
+  Accessor = "ACCESSOR",
+  Field = "FIELD", // or property
+  Function = "FUNCTION",
+  AsyncFunction = "ASYNC_FUNCTION", // do we care about this?
 }
 
-export interface CustomField {
+interface CustomFieldImpl {
   nodeName: string;
   gqlName: string;
   functionName: string; // accessorName (not necessarily a function)
   // need enum type for accessor/function/etc so we can build generated code
-  args: Field[];
-  results: Field[];
   importPath?: string;
   fieldType: CustomFieldType;
   description?: string;
+}
+
+export interface CustomField extends CustomFieldImpl {
+  args: Field[];
+  results: Field[];
+}
+
+interface ProcessedCustomField extends CustomFieldImpl {
+  args: ProcessedField[];
+  results: ProcessedField[];
 }
 
 export interface CustomArg {
@@ -42,18 +52,30 @@ export interface CustomArg {
 
 type NullableListOptions = "contents" | "contentsAndList";
 
-export interface Field {
-  name: string;
+interface FieldImpl {
   type: string; // TODO
   importPath?: string;
   needsResolving?: boolean; // unknown type that we need to resolve eventually
+  list?: boolean;
+  name: string;
+}
 
+export interface Field extends FieldImpl {
   // if a list and nullable
   // list itself is nullable
   // if a list and items are nullable, list is not nullable but list contains nullable items
   // if a list and both are nullable, both contents and list itself nullable
   nullable?: boolean | NullableListOptions;
-  list?: boolean;
+}
+
+interface ProcessedField extends FieldImpl {
+  nullable?: NullableResult;
+}
+
+enum NullableResult {
+  CONTENTS = "contents",
+  CONTENTS_AND_LIST = "contentsAndList",
+  ITEM = "true", // nullable = true
 }
 
 interface arg {
@@ -83,6 +105,34 @@ export class GQLCapture {
 
   static getCustomFields(): CustomField[] {
     return this.customFields;
+  }
+
+  private static getNullableArg(fd: Field): ProcessedField {
+    let res: ProcessedField = fd as ProcessedField;
+    if (fd.nullable === undefined) {
+      return res;
+    }
+    if (fd.nullable === "contents") {
+      res.nullable = NullableResult.CONTENTS;
+    } else if (fd.nullable === "contentsAndList") {
+      res.nullable = NullableResult.CONTENTS_AND_LIST;
+    } else {
+      res.nullable = NullableResult.ITEM;
+    }
+    return res;
+  }
+
+  static getProcessedCustomFields(): ProcessedCustomField[] {
+    return this.customFields.map((field) => {
+      let res: ProcessedCustomField = field as ProcessedCustomField;
+      res.args = field.args.map((arg) => {
+        return this.getNullableArg(arg);
+      });
+      res.results = field.results.map((result) => {
+        return this.getNullableArg(result);
+      });
+      return res;
+    });
   }
 
   static getCustomArgs(): Map<string, CustomArg> {
@@ -126,14 +176,33 @@ export class GQLCapture {
       if (typeof type === "function") {
         return false;
       }
-      return (type as Array<Type>).length !== undefined;
+      return (type as Array<Type>).push !== undefined;
+    };
+
+    const isString = (type: Type | Array<Type>): type is string => {
+      if ((type as string).lastIndexOf !== undefined) {
+        return true;
+      }
+      return false;
     };
     let list: boolean | undefined;
 
     if (options?.type) {
       if (isArray(options.type)) {
         list = true;
-        type = options.type[0].name;
+        //console.log(options);
+        if (isString(options.type[0])) {
+          type = options.type[0];
+        } else {
+          type = options.type[0].name;
+        }
+      } else if (isString(options.type)) {
+        type = options.type;
+        if (type.lastIndexOf("]") !== -1) {
+          // list
+          list = true;
+          type = type.substr(1, type.length - 2);
+        }
       } else {
         type = options.type.name;
       }
@@ -166,8 +235,6 @@ export class GQLCapture {
       if (!GQLCapture.isEnabled()) {
         return;
       }
-
-      //      console.log(target, propertyKey, descriptor);
       let fieldType: CustomFieldType;
       let nodeName = target.constructor.name as string;
 
@@ -184,6 +251,7 @@ export class GQLCapture {
         target,
         propertyKey,
       );
+
       if (returnTypeMetadata) {
         // function...
         if (returnTypeMetadata.name === "Promise") {
@@ -191,7 +259,6 @@ export class GQLCapture {
         } else {
           fieldType = CustomFieldType.Function;
         }
-        //console.log("return type", returnTypeMetadata.name);
 
         results.push(
           GQLCapture.getResultFromMetadata(returnTypeMetadata, options),
@@ -206,7 +273,6 @@ export class GQLCapture {
           fieldType = CustomFieldType.Field;
         }
 
-        //        console.log("type");
         results.push(GQLCapture.getResultFromMetadata(typeMetadata, options));
       }
 
@@ -220,12 +286,10 @@ export class GQLCapture {
         let parsedArgs =
           GQLCapture.argMap.get(nodeName)?.get(propertyKey) || [];
         if (params.length !== parsedArgs.length) {
-          // console.log(params, parsedArgs);
           throw new Error("args were not captured correctly");
         }
         parsedArgs.forEach((arg) => {
           let param = params![arg.index];
-          //          console.log("param", param);
           let paramName = arg.name;
           let field = GQLCapture.getResultFromMetadata(
             {
