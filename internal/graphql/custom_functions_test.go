@@ -556,10 +556,10 @@ func verifyGeneratedCode(t *testing.T, userCode, fnName, receiverName, expectedG
 	}
 	packageDir := filepath.Join(dirPath, "graphql")
 	err = os.MkdirAll(packageDir, 0755)
+	defer os.RemoveAll(dirPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(dirPath)
 
 	parse(t, userCode, dirPath, packageDir, nodes)
 

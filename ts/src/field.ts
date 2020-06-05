@@ -1,6 +1,6 @@
 import { Type, DBType, Field, FieldOptions } from "./schema";
 
-abstract class BaseField {
+export abstract class BaseField {
   name: string;
   nullable?: boolean;
   storageKey?: string;
@@ -19,11 +19,7 @@ export class UUID extends BaseField implements Field {
 
 export function UUIDType(options: FieldOptions): UUID {
   let result = new UUID();
-  for (const key in options) {
-    const value = options[key];
-    result[key] = value;
-  }
-  return result;
+  return Object.assign(result, options);
 }
 
 export class Integer extends BaseField implements Field {
@@ -32,11 +28,7 @@ export class Integer extends BaseField implements Field {
 
 export function IntegerType(options: FieldOptions): Integer {
   let result = new Integer();
-  for (const key in options) {
-    const value = options[key];
-    result[key] = value;
-  }
-  return result;
+  return Object.assign(result, options);
 }
 
 export class Float extends BaseField implements Field {
@@ -45,11 +37,7 @@ export class Float extends BaseField implements Field {
 
 export function FloatType(options: FieldOptions): Float {
   let result = new Float();
-  for (const key in options) {
-    const value = options[key];
-    result[key] = value;
-  }
-  return result;
+  return Object.assign(result, options);
 }
 
 export class Boolean extends BaseField implements Field {
@@ -58,11 +46,7 @@ export class Boolean extends BaseField implements Field {
 
 export function BooleanType(options: FieldOptions): Boolean {
   let result = new Boolean();
-  for (const key in options) {
-    const value = options[key];
-    result[key] = value;
-  }
-  return result;
+  return Object.assign(result, options);
 }
 
 export interface StringOptions extends FieldOptions {
@@ -72,9 +56,9 @@ export interface StringOptions extends FieldOptions {
 }
 
 export class String extends BaseField implements Field, StringOptions {
-  minLen: number;
-  maxLen: number;
-  length: number;
+  minLen: number | undefined;
+  maxLen: number | undefined;
+  length: number | undefined;
 
   type: Type = { dbType: DBType.String };
 
@@ -82,13 +66,24 @@ export class String extends BaseField implements Field, StringOptions {
   private formatters: { (str: string): string }[] = [];
 
   valid(val: any): boolean {
-    // TODO minLen, maxLen, length
+    if (this.minLen) {
+      let minLen = this.minLen;
+      this.validators.push((val) => val.length >= minLen);
+    }
+
+    if (this.maxLen) {
+      let maxLen = this.maxLen;
+      this.validators.push((val) => val.length <= maxLen);
+    }
+
+    if (this.length) {
+      let length = this.length;
+      this.validators.push((val) => val.length === length);
+    }
+
     // TODO play with API more and figure out if I want functions ala below
     // or properties ala this
     // both doable but which API is better ?
-    // if (this.minLen) {
-    //   this.validate(function())
-    // }
     for (const validator of this.validators) {
       if (!validator(val)) {
         return false;
@@ -143,11 +138,7 @@ export class String extends BaseField implements Field, StringOptions {
 
 export function StringType(options: StringOptions): String {
   let result = new String();
-  for (const key in options) {
-    const value = options[key];
-    result[key] = value;
-  }
-  return result;
+  return Object.assign(result, options);
 }
 
 export class Time extends BaseField implements Field {
@@ -156,11 +147,7 @@ export class Time extends BaseField implements Field {
 
 export function TimeType(options: FieldOptions): Time {
   let result = new Time();
-  for (const key in options) {
-    const value = options[key];
-    result[key] = value;
-  }
-  return result;
+  return Object.assign(result, options);
 }
 
 // export class JSON extends BaseField implements Field {
