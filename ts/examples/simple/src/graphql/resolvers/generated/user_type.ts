@@ -86,6 +86,45 @@ export const UserType = new GraphQLObjectType({
         return user.loadContacts();
       },
     },
+    fullName: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    bar: {
+      type: GraphQLString,
+      resolve: (user: User) => {
+        return user.getUserBar();
+      },
+    },
+    contactSameDomain: {
+      type: ContactType,
+      resolve: async (user: User) => {
+        return user.getFirstContactSameDomain();
+      },
+    },
+    contactsSameDomain: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
+      resolve: async (user: User) => {
+        return user.getContactsSameDomain();
+      },
+    },
+    contactsSameDomainNullable: {
+      type: GraphQLList(GraphQLNonNull(ContactType)),
+      resolve: async (user: User) => {
+        return user.getContactsSameDomainNullable();
+      },
+    },
+    contactsSameDomainNullableContents: {
+      type: GraphQLNonNull(GraphQLList(ContactType)),
+      resolve: async (user: User) => {
+        return user.getContactsSameDomainNullableContents();
+      },
+    },
+    contactsSameDomainNullableContentsAndList: {
+      type: GraphQLList(ContactType),
+      resolve: async (user: User) => {
+        return user.getContactsSameDomainNullableContentsAndList();
+      },
+    },
   }),
 });
 

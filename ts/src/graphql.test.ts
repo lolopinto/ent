@@ -951,4 +951,55 @@ describe("function", () => {
     });
     validateNoCustomArgs();
   });
+
+  test("enabled. object type string because 'circular dependencies'", () => {
+    class User {
+      @gqlField({ type: "User", name: "self" })
+      async loadSelf() {
+        return new User();
+      }
+    }
+
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "loadSelf",
+      gqlName: "self",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "User",
+          name: "",
+          needsResolving: true,
+        },
+      ],
+      args: [],
+    });
+    validateNoCustomArgs();
+  });
+
+  test("enabled. object type string list because 'circular dependencies'", () => {
+    class User {
+      @gqlField({ type: "[User]", name: "self" })
+      async loadSelf() {
+        return [new User()];
+      }
+    }
+
+    validateOneCustomField({
+      nodeName: "User",
+      functionName: "loadSelf",
+      gqlName: "self",
+      fieldType: CustomFieldType.AsyncFunction,
+      results: [
+        {
+          type: "User",
+          name: "",
+          list: true,
+          needsResolving: true,
+        },
+      ],
+      args: [],
+    });
+    validateNoCustomArgs();
+  });
 });

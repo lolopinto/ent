@@ -1,7 +1,11 @@
-export function randomEmail(): string {
-  const rand = Math.random()
+export function random(): string {
+  return Math.random()
     .toString(16)
     .substring(2);
+}
 
-  return `test+${rand}@email.com`;
+export function randomEmail(domain?: string): string {
+  domain = domain || "email.com";
+
+  return `test+${random()}@${domain}`;
 }
