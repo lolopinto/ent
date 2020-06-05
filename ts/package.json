@@ -7,8 +7,10 @@
     "example": "examples"
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.2",
     "@types/js-yaml": "^3.12.2",
     "@types/pg": "^7.14.1",
+    "bcryptjs": "^2.4.3",
     "graph-data-structure": "^1.12.0",
     "graphql": "^15.0.0",
     "js-yaml": "^3.13.1",
@@ -24,11 +26,12 @@
     "@types/glob": "^7.1.1",
     "@types/jest": "^25.1.4",
     "@types/jest-expect-message": "^1.0.1",
-    "glob": "^7.1.6",
     "@types/node": "^13.13.9",
+    "glob": "^7.1.6",
     "jest": "^25.1.0",
     "jest-date-mock": "^1.0.8",
     "jest-expect-message": "^1.0.2",
+    "password-validator": "^5.0.3",
     "ts-jest": "^25.2.1",
     "typescript": "^3.8.3"
   },

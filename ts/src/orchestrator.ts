@@ -268,12 +268,17 @@ export class Orchestrator<T extends Ent> {
         // keep track of fields to resolve
         this.fieldsToResolve.push(dbKey);
       } else {
-        if (field.valid && !field.valid(value)) {
-          throw new Error(`invalid field ${field.name} with value ${value}`);
+        if (field.valid) {
+          // TODO this could be async. handle this better
+          let valid = await Promise.resolve(field.valid(value));
+          if (!valid) {
+            throw new Error(`invalid field ${field.name} with value ${value}`);
+          }
         }
 
         if (field.format) {
-          value = field.format(value);
+          // TODO this could be async e.g. password. handle this better
+          value = await Promise.resolve(field.format(value));
         }
       }
 
