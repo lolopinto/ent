@@ -80,10 +80,9 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 	for key, tt := range testCases {
 		t.Run(key, func(t *testing.T) {
 			dirPath, err := ioutil.TempDir(absPath, "project")
-			require.NoError(t, err)
-
 			// delete temporary created file
 			defer os.RemoveAll(dirPath)
+			require.NoError(t, err)
 
 			schemaDir := filepath.Join(dirPath, "src", "schema")
 			require.NoError(t, os.MkdirAll(schemaDir, os.ModePerm))

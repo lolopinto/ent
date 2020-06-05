@@ -799,11 +799,12 @@ func writeMutationFile(data *codegen.Data) error {
 func generateSchemaFile(hasMutations bool) error {
 	filePath := getTempSchemaFilePath()
 
-	if err := writeSchemaFile(filePath, hasMutations); err != nil {
-		return errors.Wrap(err, "error writing temporary schema file")
-	}
+	err := writeSchemaFile(filePath, hasMutations)
 
 	defer os.Remove(filePath)
+	if err != nil {
+		return errors.Wrap(err, "error writing temporary schema file")
+	}
 
 	cmd := exec.Command("ts-node", "-r", "tsconfig-paths/register", filePath)
 	return cmd.Run()

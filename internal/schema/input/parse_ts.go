@@ -57,11 +57,12 @@ func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
 
 	fileName := filepath.Join(schemaPath, fmt.Sprintf("%d_read_schema.ts", time.Now().Unix()))
 
-	if err := writeTsFile(fileName, schemas); err != nil {
+	err = writeTsFile(fileName, schemas)
+	defer os.Remove(fileName)
+
+	if err != nil {
 		return nil, errors.Wrapf(err, "error writing temp file")
 	}
-
-	defer os.Remove(fileName)
 
 	// TODO dependencies as needed docker file?
 	var execCmd exec.Cmd
