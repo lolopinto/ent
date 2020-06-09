@@ -4,28 +4,72 @@ import { Auth, AuthViewer } from "./index";
 import { Viewer } from "src/ent";
 import { IncomingMessage, ServerResponse } from "http";
 import { Strategy } from "passport-strategy";
+import { Context } from "./context";
+import { ID, Ent } from "../ent";
 
-// boo
-// export class EntPassport implements Auth {
-//   constructor(public strategy: passport.Strategy) {
-//     console.log("passport constructor");
-//     if (!this.strategy.name) {
-//       throw new Error("strategy name required");
-//     }
-//     passport.use(strategy);
-//   }
+export interface PassportAuthOptions {
+  serializeViewer?(viewer: Viewer): unknown;
+  deserializeViewer?(id: unknown): Viewer;
+  reqUserToViewer?(user: any): Viewer;
+}
 
-//   // damn this needs to return logged in user not create the user
-//   async authViewer(
-//     request: IncomingMessage,
-//     response: ServerResponse,
-//   ): Promise<Viewer | null> {
-//     console.log("authViewer");
+// TODO need something better here
+class IDViewer implements Viewer {
+  constructor(public viewerID: ID, private ent: Ent | null = null) {}
+  async viewer() {
+    return this.ent;
+  }
+  instanceKey(): string {
+    return `idViewer: ${this.viewerID}`;
+  }
+}
 
-//     //    passport.authenticate(this.strategy.name!);
-//     return null;
-//   }
-// }
+export class PassportAuthHandler implements Auth {
+  private options: PassportAuthOptions | undefined;
+  constructor(options?: PassportAuthOptions) {
+    this.options = options;
+  }
+
+  async authViewer(request: IncomingMessage, response: ServerResponse) {
+    let that = this;
+    passport.serializeUser(function(viewer: Viewer, done) {
+      let serializeUser = that.options?.serializeViewer;
+      if (!serializeUser) {
+        serializeUser = (viewer: Viewer) => {
+          return viewer.viewerID;
+        };
+      }
+
+      done(null, serializeUser!(viewer));
+    });
+
+    passport.deserializeUser(function(id: unknown, done) {
+      let deserializeUser = that.options?.deserializeViewer;
+      if (!deserializeUser) {
+        deserializeUser = (id: ID) => {
+          return new IDViewer(id);
+        };
+      }
+
+      done(null, deserializeUser(id));
+    });
+
+    console.log("passport auth handler");
+    let user = request["user"];
+    console.log(user);
+    if (!user) {
+      return null;
+    }
+    // valid viewer!
+    if ((user as Viewer).viewerID !== undefined) {
+      return user;
+    }
+    if (this.options?.reqUserToViewer) {
+      return this.options.reqUserToViewer(user);
+    }
+    throw new Error("cannot convert req.user to a Viewer");
+  }
+}
 
 interface LocalStrategyOptions {
   // email or username

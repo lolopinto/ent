@@ -8,7 +8,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import { useAndAuth, LocalStrategy } from "ent/auth/passport";
 import User from "src/ent/user";
 import { IDViewer } from "src/util/id_viewer";
@@ -72,10 +72,6 @@ export const UserAuthType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserAuthResponse> => {
-    // console.log(input.emailAddress);
-    // console.log(input.password);
-
-    let viewerID: ID | undefined;
     await useAndAuth(
       context,
       new LocalStrategy({
@@ -98,15 +94,13 @@ export const UserAuthType: GraphQLFieldConfig<
           if (!valid) {
             return null;
           }
-          viewerID = user.id;
           return new IDViewer(user.id);
         },
       }),
     );
 
-    // TODO...
     return {
-      viewerID: viewerID || "",
+      viewerID: context.getViewer().viewerID || "",
       token: "1",
     };
   },
