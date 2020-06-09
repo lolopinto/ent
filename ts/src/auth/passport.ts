@@ -72,13 +72,7 @@ export class PassportAuthHandler implements Auth {
 }
 
 interface LocalStrategyOptions {
-  // email or username
-  emailAddress: string;
-  password: string;
-  verifyFn?: (
-    emailAddress: string,
-    password: string,
-  ) => AuthViewer | Promise<AuthViewer>;
+  verifyFn: () => AuthViewer | Promise<AuthViewer>;
 }
 
 export class LocalStrategy extends Strategy {
@@ -87,24 +81,18 @@ export class LocalStrategy extends Strategy {
     super();
   }
 
-  async authenticate(req: IncomingMessage): Promise<AuthViewer> {
-    if (this.options.verifyFn) {
-      let viewer = await this.options.verifyFn(
-        this.options.emailAddress,
-        this.options.password,
-      );
-      console.log("auth viewer", viewer);
-      // we actually want the logged in viewer here
-      if (viewer) {
-        this.success(viewer);
-        return viewer;
-      } else {
-        this.fail(401); // todo
-        return null;
-      }
-    }
+  async authenticate(_req: IncomingMessage): Promise<AuthViewer> {
     console.log("local strategy authenticate called");
-    return null;
+    let viewer = await this.options.verifyFn();
+    console.log("auth viewer", viewer);
+    // we actually want the logged in viewer here
+    if (viewer) {
+      this.success(viewer);
+      return viewer;
+    } else {
+      this.fail(401); // todo
+      return null;
+    }
   }
 }
 
@@ -125,6 +113,7 @@ function promisified(context: Context, strategy: passport.Strategy) {
   });
 }
 
+// TODO this should probably return Viewer
 export async function useAndAuth(
   context: Context,
   strategy: passport.Strategy,

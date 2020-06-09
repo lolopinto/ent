@@ -68,29 +68,26 @@ export const UserAuthType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    // should be getViewer in case it's changed...
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserAuthResponse> => {
     await useAndAuth(
       context,
       new LocalStrategy({
-        emailAddress: input.emailAddress,
-        password: input.password,
-        verifyFn: async (emailAddress: string, password: string) => {
-          // need load ro
+        verifyFn: async () => {
+          // we need load raw here
           const user = await User.loadFromEmailAddress(
             // This leads to invalid uuid so we need to account for this
             //            new OmniViewer("1"),
             new OmniViewer("b38e3d04-4f6a-4421-a566-a211f4799c12"),
-            emailAddress,
+            input.emailAddress,
           );
 
           if (!user) {
             return null;
           }
 
-          let valid = await user.verifyPassword(password);
+          let valid = await user.verifyPassword(input.password);
           if (!valid) {
             return null;
           }
