@@ -7,7 +7,7 @@ import { LoggedOutViewer } from "../viewer";
 type Request = IncomingMessage;
 type Response = ServerResponse;
 
-type AuthViewer = Viewer | null;
+export type AuthViewer = Viewer | null;
 export interface Auth {
   authViewer(
     // TODO

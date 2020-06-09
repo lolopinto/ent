@@ -196,8 +196,8 @@ export async function applyPrivacyPolicyForEntX<T extends Ent>(
 }
 
 function logQuery(query: string, values: any[]) {
-  // console.log(query);
-  // console.log(values);
+  console.log(query);
+  console.log(values);
 }
 
 export async function loadRowX(options: LoadRowOptions): Promise<{}> {
