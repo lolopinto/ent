@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
 import { UserCreateInput } from "src/ent/user/actions/create_user_action";
 import User from "src/ent/user";
@@ -65,7 +65,7 @@ export const UserCreateType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserCreateResponse> => {
-    let user = await CreateUserAction.create(context.viewer, {
+    let user = await CreateUserAction.create(context.getViewer(), {
       firstName: input.firstName,
       lastName: input.lastName,
       emailAddress: input.emailAddress,

@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import { ContactCreateInput } from "src/ent/contact/actions/create_contact_action";
 import Contact from "src/ent/contact";
@@ -65,7 +65,7 @@ export const ContactCreateType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<ContactCreateResponse> => {
-    let contact = await CreateContactAction.create(context.viewer, {
+    let contact = await CreateContactAction.create(context.getViewer(), {
       emailAddress: input.emailAddress,
       firstName: input.firstName,
       lastName: input.lastName,

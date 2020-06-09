@@ -10,6 +10,7 @@ import passport from "passport";
 import { Viewer } from "ent/ent";
 import { ID } from "ent/ent";
 import session from "express-session";
+import { buildContext } from "ent/auth/context";
 
 //import { EntPassport } from "ent/auth/passport";
 let app = express();
@@ -22,6 +23,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 registerAuthHandler("viewer", {
+  // TODO move this to something with passport
   authViewer: async (request, response) => {
     passport.serializeUser(function(viewer: Viewer, done) {
       console.log("serialize", viewer, done);
@@ -55,26 +57,15 @@ registerAuthHandler("viewer", {
   },
 });
 
-// test
-// passport.use(
-//   new LocalStrategy({
-//     emailAddress: "",
-//     password: "",
-//   }),
-// );
 app.use(
   "/graphql",
   graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
     let doWork = async () => {
-      let viewer = await getLoggedInViewer(request, response);
+      let context = await buildContext(request, response);
       return {
         schema: schema,
         graphiql: true,
-        context: {
-          viewer,
-          request,
-          response,
-        },
+        context,
       };
     };
     return doWork();

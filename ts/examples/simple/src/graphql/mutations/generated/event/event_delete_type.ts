@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import Event from "src/ent/event";
 import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
@@ -59,7 +59,7 @@ export const EventDeleteType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<EventDeleteResponse> => {
-    await DeleteEventAction.saveXFromID(context.viewer, input.eventID);
+    await DeleteEventAction.saveXFromID(context.getViewer(), input.eventID);
     return { deletedEventID: input.eventID };
   },
 };

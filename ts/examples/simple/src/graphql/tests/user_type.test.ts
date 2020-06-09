@@ -12,10 +12,15 @@ import { advanceBy } from "jest-date-mock";
 import { queryRootConfig, expectQueryFromRoot } from "src/graphql_test_utils";
 import { ID, Viewer } from "ent/ent";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
+import { clearAuthHandlers } from "ent/auth";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
   await DB.getInstance().endPool();
+});
+
+afterEach(() => {
+  clearAuthHandlers();
 });
 
 const loggedOutViewer = new LoggedOutViewer();

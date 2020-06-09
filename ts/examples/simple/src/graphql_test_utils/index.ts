@@ -1,23 +1,36 @@
 // TODO all this can/should be moved into its own npm package
 // or into ent itself
 // haven't figured out the correct dependency structure with express etc so not for now
-import express from "express";
+import express, { response } from "express";
 import graphqlHTTP from "express-graphql";
 import request from "supertest";
 import { Viewer } from "ent/ent";
 import { GraphQLSchema, GraphQLObjectType } from "graphql";
+import { registerAuthHandler } from "ent/auth";
+import { buildContext } from "ent/auth/context";
+import { IncomingMessage, ServerResponse } from "http";
 
 function server(viewer: Viewer, schema: GraphQLSchema) {
+  registerAuthHandler("viewer", {
+    authViewer: async (request, response) => {
+      return viewer;
+    },
+  });
   let app = express();
   app.use(
     "/graphql",
-    graphqlHTTP({
-      schema: schema,
-      context: {
-        viewer,
-      },
+    graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
+      const foo = async () => {
+        let context = await buildContext(request, response);
+        return {
+          schema: schema,
+          context,
+        };
+      };
+      return foo();
     }),
   );
+
   return app;
 }
 

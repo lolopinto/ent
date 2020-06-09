@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { UserType } from "./user_type";
 import Event from "src/ent/event";
@@ -98,6 +98,6 @@ export const EventQuery: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ) => {
-    return Event.load(context.viewer, args.id);
+    return Event.load(context.getViewer(), args.id);
   },
 };

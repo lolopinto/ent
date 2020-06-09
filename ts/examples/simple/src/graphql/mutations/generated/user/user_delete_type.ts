@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import User from "src/ent/user";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 
@@ -59,7 +59,7 @@ export const UserDeleteType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserDeleteResponse> => {
-    await DeleteUserAction.saveXFromID(context.viewer, input.userID);
+    await DeleteUserAction.saveXFromID(context.getViewer(), input.userID);
     return { deletedUserID: input.userID };
   },
 };

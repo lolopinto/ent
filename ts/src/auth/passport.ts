@@ -64,12 +64,6 @@ export class LocalStrategy extends Strategy {
   }
 }
 
-interface Context {
-  viewer: Viewer;
-  request: IncomingMessage;
-  response: ServerResponse;
-}
-
 function promisified(context: Context, strategy: passport.Strategy) {
   return new Promise<AuthViewer>((resolve, reject) => {
     const done = (err: Error, user) => {
@@ -96,15 +90,6 @@ export async function useAndAuth(
   }
   passport.use(strategy);
   let result = await promisified(context, strategy);
-  // let authMethod = await passport.authenticate(strategy.name!);
-  // // do we need next here?
-  // let next = (err?: any) => {
-  //   console.log("next called");
-  //   console.log(err);
-  // };
-  // await authMethod(context.request, context.response, next);
-  // user...
-  //   console.log(err);
-  // });
+
   console.log("useAndAuth", result, context.request["user"]);
 }

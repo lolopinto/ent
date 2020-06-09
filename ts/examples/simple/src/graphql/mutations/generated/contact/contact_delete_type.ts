@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import Contact from "src/ent/contact";
 import DeleteContactAction from "src/ent/contact/actions/delete_contact_action";
 
@@ -59,7 +59,7 @@ export const ContactDeleteType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<ContactDeleteResponse> => {
-    await DeleteContactAction.saveXFromID(context.viewer, input.contactID);
+    await DeleteContactAction.saveXFromID(context.getViewer(), input.contactID);
     return { deletedContactID: input.contactID };
   },
 };

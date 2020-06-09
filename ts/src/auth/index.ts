@@ -33,11 +33,11 @@ export async function getLoggedInViewer(
   for (const [name, authHandler] of handlers) {
     let v = await authHandler.authViewer(request, response);
     if (v !== null) {
-      console.log(`auth handler ${name} authenticated user ${v.viewerID}`);
+      //      console.log(`auth handler ${name} authenticated user ${v.viewerID}`);
       return v;
     }
   }
-  console.log("no auth handler returned viewer. default to logged out viewer");
+  //  console.log("no auth handler returned viewer. default to logged out viewer");
   return new LoggedOutViewer();
 }
 
