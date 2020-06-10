@@ -30,12 +30,22 @@ registerAuthHandler(
   new PassportStrategyHandler(
     new JWTStrategy(
       {
+        // apparently issuer, audience, algos not required
+        // for HS256 ones
+        // issuer: "https://foo.com",
+        // audience: "https://foo.com/website",
+        // algorithms: ["HS256"],
         secretOrKey: "secret",
         jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+        // jsonWebTokenOptions: {
+        //   algorithms: ["HS256"],
+        //   audience: "https://foo.com/website",
+        //   issuer: "https://foo.com",
+        // },
       },
       function(jwt_payload: {}, next) {
         console.log("jwt payload", jwt_payload);
-        return next(null, new IDViewer(jwt_payload.toString()), {});
+        return next(null, new IDViewer(jwt_payload["viewerID"].toString()), {});
       },
     ),
     { session: false },

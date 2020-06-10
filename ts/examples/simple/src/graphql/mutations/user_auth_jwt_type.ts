@@ -74,21 +74,6 @@ export const UserAuthJWTType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserAuthJWTResponse | null> => {
-    // not helpful here
-    // now need to register auth handler to handle this
-    // because we're going to use jwt token to get viewer
-    // const strategy = new JWTStrategy(
-    //   {
-    //     secretOrKey: "secret",
-    //     // audience: "foo.com",
-    //     // issuer: "bar.foo.com",
-    //     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    //   },
-    //   function(jwt_payload: {}, next) {
-    //     return next(null, {}, {});
-    //   },
-    // );
-
     // TODO: auth locally with username/password
     // get jwt, sign it return it
     // and then use jwt to get viewer
@@ -126,8 +111,13 @@ export const UserAuthJWTType: GraphQLFieldConfig<
       return null;
     }
 
-    // TODO should have signed the entire payload not just a string
-    const token = jwt.sign(viewer.viewerID.toString(), "secret");
+    const token = jwt.sign({ viewerID: viewer.viewerID }, "secret", {
+      algorithm: "HS256",
+      audience: "https://foo.com/website",
+      issuer: "https://foo.com",
+      subject: viewer.viewerID.toString(),
+      expiresIn: "1h",
+    });
 
     return {
       viewerID: viewer.viewerID.toString(),
