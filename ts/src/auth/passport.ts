@@ -1,16 +1,20 @@
 // TODO this should be moved to ent-passport or something like that
-import passport from "passport";
+import passport, { AuthenticateOptions } from "passport";
 import { Auth, AuthViewer } from "./index";
 import { Viewer } from "src/ent";
-import { IncomingMessage, ServerResponse } from "http";
+import { IncomingMessage, ServerResponse, Server } from "http";
 import { Strategy } from "passport-strategy";
 import { Context } from "./context";
 import { ID, Ent } from "../ent";
 
+interface UserToViewerFunc {
+  (user: any): Viewer;
+}
+
 export interface PassportAuthOptions {
   serializeViewer?(viewer: Viewer): unknown;
   deserializeViewer?(id: unknown): Viewer;
-  reqUserToViewer?(user: any): Viewer;
+  reqUserToViewer: UserToViewerFunc;
 }
 
 // TODO need something better here
@@ -24,6 +28,7 @@ class IDViewer implements Viewer {
   }
 }
 
+// should this be renamed to session?
 export class PassportAuthHandler implements Auth {
   private options: PassportAuthOptions | undefined;
   constructor(options?: PassportAuthOptions) {
@@ -60,14 +65,51 @@ export class PassportAuthHandler implements Auth {
     if (!user) {
       return null;
     }
-    // valid viewer!
-    if ((user as Viewer).viewerID !== undefined) {
-      return user;
+    return toViewer(user, this.options?.reqUserToViewer);
+  }
+}
+
+function toViewer(obj: any, reqUserToViewer?: UserToViewerFunc): Viewer {
+  console.log("viewer", obj);
+
+  if ((obj as Viewer).viewerID !== undefined) {
+    return obj;
+  }
+  if (reqUserToViewer) {
+    return reqUserToViewer(obj);
+  }
+
+  throw new Error("cannot convert to Viewer");
+}
+
+// passportstrategyhandler
+// to be used for other requests when JWT is passed
+
+export class PassportStrategyHandler implements Auth {
+  constructor(
+    private strategy: passport.Strategy,
+    private options?: AuthenticateOptions,
+    private reqToViewer?: UserToViewerFunc,
+  ) {
+    if (!this.strategy.name) {
+      throw new Error("name required for strategy");
     }
-    if (this.options?.reqUserToViewer) {
-      return this.options.reqUserToViewer(user);
+    passport.use(strategy);
+  }
+
+  async authViewer(request: IncomingMessage, response: ServerResponse) {
+    const viewerMaybe = await promisifiedAuth(
+      request,
+      response,
+      this.strategy,
+      this.options,
+    );
+
+    if (!viewerMaybe) {
+      return null;
     }
-    throw new Error("cannot convert req.user to a Viewer");
+
+    return toViewer(viewerMaybe, this.reqToViewer);
   }
 }
 
@@ -96,7 +138,12 @@ export class LocalStrategy extends Strategy {
   }
 }
 
-function promisifiedAuth(context: Context, strategy: passport.Strategy) {
+function promisifiedAuth(
+  request: IncomingMessage,
+  response: ServerResponse,
+  strategy: passport.Strategy,
+  options?: AuthenticateOptions,
+) {
   return new Promise<AuthViewer>((resolve, reject) => {
     const done = (err: Error, user: Viewer | null | undefined, _info: any) => {
       console.log("done", err, user);
@@ -106,18 +153,19 @@ function promisifiedAuth(context: Context, strategy: passport.Strategy) {
         resolve(user);
       }
     };
-    let authMethod = passport.authenticate(strategy.name!, done);
-    return authMethod(
-      context.request,
-      context.response,
-      (err?: Error | null) => {
-        console.error(err);
-      },
-    );
+    options = options || {};
+    let authMethod = passport.authenticate(strategy.name!, options, done);
+    return authMethod(request, response, (err?: Error | null) => {
+      console.error("err", err);
+    });
   });
 }
 
-function promisifiedLogin(context: Context, viewer: Viewer) {
+function promisifiedLogin(
+  context: Context,
+  viewer: Viewer,
+  options?: AuthenticateOptions,
+) {
   if (typeof context.request["login"] !== "function") {
     return null;
   }
@@ -133,19 +181,25 @@ function promisifiedLogin(context: Context, viewer: Viewer) {
     // log the user in!
     // call the login function
     // need to call it with request as this
-    context.request["login"](viewer, null, done);
+    context.request["login"](viewer, options, done);
   });
 }
 
 export async function useAndAuth(
   context: Context,
   strategy: passport.Strategy,
+  options?: AuthenticateOptions,
 ): Promise<AuthViewer> {
   if (!strategy.name) {
     throw new Error("name required for strategy");
   }
   passport.use(strategy);
-  let viewer = await promisifiedAuth(context, strategy);
+  let viewer = await promisifiedAuth(
+    context.request,
+    context.response,
+    strategy,
+    options,
+  );
 
   if (!viewer) {
     return viewer;
@@ -154,7 +208,7 @@ export async function useAndAuth(
   await context.authViewer(viewer);
 
   // login the user to passport
-  await promisifiedLogin(context, viewer);
+  await promisifiedLogin(context, viewer, options);
 
   console.log("useAndAuth", viewer);
   return viewer;

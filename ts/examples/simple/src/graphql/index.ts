@@ -7,18 +7,40 @@ import { registerAuthHandler } from "ent/auth";
 import passport from "passport";
 import session from "express-session";
 import { buildContext } from "ent/auth/context";
-import { PassportAuthHandler } from "ent/auth/passport";
+import {
+  PassportAuthHandler,
+  PassportStrategyHandler,
+} from "ent/auth/passport";
+import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
+import { IDViewer } from "src/util/id_viewer";
 
 let app = express();
-app.use(
-  session({
-    secret: "ss",
-  }),
-);
+// app.use(
+//   session({
+//     secret: "ss",
+//   }),
+// );
 app.use(passport.initialize());
-app.use(passport.session());
+// session and PassportAuthHandler for non-JWT flows
+//app.use(passport.session());
 
-registerAuthHandler("viewer", new PassportAuthHandler());
+//registerAuthHandler("viewer", new PassportAuthHandler());
+registerAuthHandler(
+  "viewer",
+  new PassportStrategyHandler(
+    new JWTStrategy(
+      {
+        secretOrKey: "secret",
+        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      },
+      function(jwt_payload: {}, next) {
+        console.log("jwt payload", jwt_payload);
+        return next(null, new IDViewer(jwt_payload.toString()), {});
+      },
+    ),
+    { session: false },
+  ),
+);
 
 app.use(
   "/graphql",
