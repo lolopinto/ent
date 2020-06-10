@@ -56,7 +56,7 @@ export class PassportAuthHandler implements Auth {
 
     console.log("passport auth handler");
     let user = request["user"];
-    console.log(user);
+    console.log("req.user", user);
     if (!user) {
       return null;
     }
@@ -90,39 +90,72 @@ export class LocalStrategy extends Strategy {
       this.success(viewer);
       return viewer;
     } else {
-      this.fail(401); // todo
+      this.fail(401); // TODO
       return null;
     }
   }
 }
 
-function promisified(context: Context, strategy: passport.Strategy) {
+function promisifiedAuth(context: Context, strategy: passport.Strategy) {
   return new Promise<AuthViewer>((resolve, reject) => {
-    const done = (err: Error, user) => {
+    const done = (err: Error, user: Viewer | null | undefined, _info: any) => {
       console.log("done", err, user);
       if (err) {
         reject(err);
       } else {
-        console.log(user);
-        // TODO args to resolve
         resolve(user);
       }
     };
-    let authMethod = passport.authenticate(strategy.name!);
-    return authMethod(context.request, context.response, done);
+    let authMethod = passport.authenticate(strategy.name!, done);
+    return authMethod(
+      context.request,
+      context.response,
+      (err?: Error | null) => {
+        console.error(err);
+      },
+    );
   });
 }
 
-// TODO this should probably return Viewer
+function promisifiedLogin(context: Context, viewer: Viewer) {
+  if (typeof context.request["login"] !== "function") {
+    return null;
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const done = (err: Error | undefined) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    };
+    // log the user in!
+    // call the login function
+    // need to call it with request as this
+    context.request["login"](viewer, null, done);
+  });
+}
+
 export async function useAndAuth(
   context: Context,
   strategy: passport.Strategy,
-) {
+): Promise<AuthViewer> {
   if (!strategy.name) {
     throw new Error("name required for strategy");
   }
   passport.use(strategy);
-  let result = await promisified(context, strategy);
+  let viewer = await promisifiedAuth(context, strategy);
 
-  console.log("useAndAuth", result, context.request["user"]);
+  if (!viewer) {
+    return viewer;
+  }
+  // auth the viewer with context
+  await context.authViewer(viewer);
+
+  // login the user to passport
+  await promisifiedLogin(context, viewer);
+
+  console.log("useAndAuth", viewer);
+  return viewer;
 }
