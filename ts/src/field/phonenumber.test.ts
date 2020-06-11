@@ -1,9 +1,5 @@
 import { PhoneNumberType, PhoneNumber } from "./phonenumber";
 
-function phone() {
-  return PhoneNumberType({ name: "phone" });
-}
-
 function testCase(exp: expectedResult) {
   let typ = PhoneNumberType({ name: "phone" });
   if (exp.pre) {
