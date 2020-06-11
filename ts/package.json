@@ -14,6 +14,7 @@
     "graph-data-structure": "^1.12.0",
     "graphql": "^15.0.0",
     "js-yaml": "^3.13.1",
+    "libphonenumber-js": "^1.7.52",
     "pg": "^7.18.2",
     "prettier": "^1.19.1",
     "reflect-metadata": "^0.1.13",
