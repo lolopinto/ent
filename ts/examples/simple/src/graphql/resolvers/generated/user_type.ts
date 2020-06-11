@@ -35,6 +35,9 @@ export const UserType = new GraphQLObjectType({
     emailAddress: {
       type: GraphQLNonNull(GraphQLString),
     },
+    phoneNumber: {
+      type: GraphQLString,
+    },
     accountStatus: {
       type: GraphQLString,
     },

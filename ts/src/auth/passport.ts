@@ -1,11 +1,10 @@
 // TODO this should be moved to ent-passport or something like that
 import passport, { AuthenticateOptions } from "passport";
 import { Auth, AuthViewer } from "./index";
-import { Viewer } from "src/ent";
 import { IncomingMessage, ServerResponse, Server } from "http";
 import { Strategy } from "passport-strategy";
 import { Context } from "./context";
-import { ID, Ent } from "../ent";
+import { ID, Ent, Viewer } from "../ent";
 
 interface UserToViewerFunc {
   (user: any): Viewer;

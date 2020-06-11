@@ -9,6 +9,7 @@ export interface UserCreateInput {
   firstName: string;
   lastName: string;
   emailAddress: string;
+  phoneNumber?: string | null;
   password?: string | null;
 }
 

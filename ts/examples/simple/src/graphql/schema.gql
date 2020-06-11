@@ -25,6 +25,7 @@ type User {
   firstName: String!
   lastName: String!
   emailAddress: String!
+  phoneNumber: String
   accountStatus: String
   createdEvents: [Event!]!
   friends: [User!]!
@@ -144,6 +145,7 @@ input UserCreateInput {
   firstName: String!
   lastName: String!
   emailAddress: String!
+  phoneNumber: String
   password: String
 }
 
