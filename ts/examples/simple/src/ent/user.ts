@@ -97,9 +97,18 @@ export default class User extends UserBase {
       return null;
     }
     let contacts = await this.loadContacts();
-    return contacts.filter((contact) => {
-      return domain === this.getDomainFromEmail(contact.emailAddress);
+    contacts = contacts.filter((contact) => {
+      return (
+        this.id !== contact.userID &&
+        domain === this.getDomainFromEmail(contact.emailAddress)
+      );
     });
+    // cheats and returns null if no contacts
+    // doesn't return self contact
+    if (!contacts.length) {
+      return null;
+    }
+    return contacts;
   }
 
   @gqlField({

@@ -124,15 +124,23 @@ export class String extends BaseField implements Field, StringOptions {
   }
 
   toLowerCase(): String {
-    return this.formatter(function(str: string): string {
-      return str.toLowerCase();
-    });
+    return this.formatter((str) => str.toLowerCase());
   }
 
   toUpperCase(): String {
-    return this.formatter(function(str: string): string {
-      return str.toUpperCase();
-    });
+    return this.formatter((str) => str.toUpperCase());
+  }
+
+  trim(): String {
+    return this.formatter((str) => str.trim());
+  }
+
+  trimLeft(): String {
+    return this.formatter((str) => str.trimLeft());
+  }
+
+  trimRiight(): String {
+    return this.formatter((str) => str.trimRight());
   }
 }
 

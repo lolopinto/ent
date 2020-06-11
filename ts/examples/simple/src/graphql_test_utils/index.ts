@@ -275,7 +275,7 @@ async function expectFromRoot(config: rootConfig, ...options: Option[]) {
 
       // at the part of the path where it's expected to be null, confirm it is before proceeding
       if (nullParts.length === i + 1) {
-        expect(expected, `path ${nullPath} expected to be null`).toBe(null);
+        expect(current, `path ${nullPath} expected to be null`).toBe(null);
         return;
       }
 

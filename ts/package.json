@@ -11,6 +11,7 @@
     "@types/js-yaml": "^3.12.2",
     "@types/pg": "^7.14.1",
     "bcryptjs": "^2.4.3",
+    "email-addresses": "^3.1.0",
     "graph-data-structure": "^1.12.0",
     "graphql": "^15.0.0",
     "js-yaml": "^3.13.1",

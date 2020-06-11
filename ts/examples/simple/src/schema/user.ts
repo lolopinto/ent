@@ -6,12 +6,13 @@ import Schema, {
   ActionOperation,
 } from "ent/schema";
 import { StringType, BooleanType } from "ent/field";
+import { EmailType } from "ent/field/email";
 
 export default class User extends BaseEntSchema implements Schema {
   fields: Field[] = [
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
-    StringType({ name: "EmailAddress", unique: true }),
+    EmailType({ name: "EmailAddress", unique: true }),
     // TODO support enums: UNVERIFIED, VERIFIED, DEACTIVATED, DISABLED etc.
     // TODO shouldn't really be nullable. same issue as #35
     StringType({ name: "AccountStatus", nullable: true }),
