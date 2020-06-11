@@ -5,10 +5,11 @@ import Schema, {
   BaseEntSchema,
 } from "ent/schema";
 import { StringType } from "ent/field";
+import { EmailType } from "ent/field/email";
 
 export default class Contact extends BaseEntSchema implements Schema {
   fields: Field[] = [
-    StringType({ name: "emailAddress" }),
+    EmailType({ name: "emailAddress" }),
     StringType({ name: "firstName" }),
     StringType({ name: "lastName" }),
     StringType({ name: "userID", foreignKey: ["User", "ID"] }),
