@@ -118,3 +118,19 @@ test("with comments", () => {
     invalid: true,
   });
 });
+
+test("restrict domain", () => {
+  testCase({
+    pre: (typ) => typ.domain("email.com"),
+    input: "first_last@email.com",
+    output: "first_last@email.com",
+  });
+});
+
+test("restrict domain. invalid ", () => {
+  testCase({
+    pre: (typ) => typ.domain("email.com"),
+    input: "first_last@bar.com",
+    invalid: true,
+  });
+});
