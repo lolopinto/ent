@@ -5,7 +5,7 @@ import CreateUserAction, {
 } from "src/ent/user/actions/create_user_action";
 import { LoggedOutViewer } from "ent/viewer";
 import User from "src/ent/user";
-import { random, randomEmail } from "src/util/random";
+import { randomEmail } from "src/util/random";
 import { IDViewer } from "src/util/id_viewer";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import { advanceBy } from "jest-date-mock";

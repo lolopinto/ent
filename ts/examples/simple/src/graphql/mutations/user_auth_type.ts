@@ -71,7 +71,7 @@ export const UserAuthType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserAuthResponse> => {
-    await useAndAuth(
+    const viewer = await useAndAuth(
       context,
       new LocalStrategy({
         verifyFn: async () => {
@@ -96,8 +96,12 @@ export const UserAuthType: GraphQLFieldConfig<
       }),
     );
 
+    if (!viewer || !viewer.viewerID) {
+      throw new Error("not the right credentials");
+    }
+
     return {
-      viewerID: context.getViewer().viewerID || "",
+      viewerID: viewer.viewerID,
       token: "1",
     };
   },

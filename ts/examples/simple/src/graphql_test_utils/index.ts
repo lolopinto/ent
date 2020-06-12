@@ -10,39 +10,40 @@ import { registerAuthHandler } from "ent/auth";
 import { buildContext } from "ent/auth/context";
 import { IncomingMessage, ServerResponse } from "http";
 
-function server(viewer: Viewer, schema: GraphQLSchema) {
-  registerAuthHandler("viewer", {
-    authViewer: async (request, response) => {
-      return viewer;
-    },
-  });
+function server(schema: GraphQLSchema, viewer?: Viewer) {
+  if (viewer) {
+    registerAuthHandler("viewer", {
+      authViewer: async (_request, _response) => {
+        return viewer;
+      },
+    });
+  }
   let app = express();
   app.use(
     "/graphql",
     graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
-      const foo = async () => {
+      const doWork = async () => {
         let context = await buildContext(request, response);
         return {
           schema: schema,
           context,
         };
       };
-      return foo();
+      return doWork();
     }),
   );
 
   return app;
 }
 
-function makeRequest(
-  viewer: Viewer,
+function makeGraphQLRequest(
   schema: GraphQLSchema,
   query: string,
+  viewer: Viewer | undefined, // TODO interface
   args?: {},
 ): request.Test {
   //  console.log(args);
-  // query/variables etc
-  return request(server(viewer, schema))
+  return request(server(schema, viewer))
     .post("/graphql")
     .send({
       query: query,
@@ -101,7 +102,9 @@ function expectQueryResult(...options: Option[]) {
 export type Option = [string, any];
 
 interface queryConfig {
-  viewer: Viewer;
+  viewer?: Viewer; // viewer or function that takes express
+  // TODO
+  // if none indicated, defaults to logged out viewer
   schema: GraphQLSchema;
   args: {};
   expectedStatus?: number; // expected http status code
@@ -205,10 +208,10 @@ async function expectFromRoot(config: rootConfig, ...options: Option[]) {
     ${config.root}(${params.join(",")}) {${q}}
   }`;
 
-  let res = await makeRequest(
-    config.viewer,
+  let res = await makeGraphQLRequest(
     config.schema,
     q,
+    config.viewer,
     config.args,
   ).expect("Content-Type", /json/);
   // if there's a callback, let everything be done there and we're done
@@ -233,13 +236,14 @@ async function expectFromRoot(config: rootConfig, ...options: Option[]) {
     if (config.expectedError) {
       // todo multiple errors etc
       expect(errors[0].message).toMatch(config.expectedError);
+    } else {
+      fail("unhandled error");
     }
     return;
   }
   let data = res.body.data;
   let result = data[config.root];
 
-  //console.log(result);
   if (config.rootQueryNull) {
     expect(result, "root query wasn't null").toBe(null);
     return;
