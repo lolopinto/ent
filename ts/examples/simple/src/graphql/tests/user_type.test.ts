@@ -94,7 +94,10 @@ test("query custom function", async () => {
   let vc = new IDViewer(user.id);
   let action = EditUserAction.create(vc, user, {});
   action.builder.addFriend(user2);
-  action.saveX();
+  await action.saveX();
+
+  const edges = await user.loadFriendsEdges();
+  expect(edges.length).toBe(1);
 
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user.id),
@@ -104,7 +107,9 @@ test("query custom function", async () => {
     // returns id when logged in user is same
     ["bar", user.id],
   );
+  clearAuthHandlers();
 
+  // got some reason, it thinks this person is logged out
   await expectQueryFromRoot(
     getConfig(new IDViewer(user2.id), user.id),
     ["id", user.id],
@@ -168,8 +173,8 @@ test("query custom async function list", async () => {
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user.id),
     ["id", user.id],
-    ["contactSameDomains[0].id", selfContact!.id],
-    ["contactSameDomains[1].id", contact!.id],
+    ["contactsSameDomain[0].id", selfContact!.id],
+    ["contactsSameDomain[1].id", contact!.id],
   );
 });
 

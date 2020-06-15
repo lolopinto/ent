@@ -44,7 +44,7 @@ registerAuthHandler(
         // },
       },
       function(jwt_payload: {}, next) {
-        console.log("jwt payload", jwt_payload);
+        // console.log("jwt payload", jwt_payload);
         return next(null, new IDViewer(jwt_payload["viewerID"].toString()), {});
       },
     ),

@@ -58,9 +58,9 @@ export class PassportAuthHandler implements Auth {
       done(null, deserializeUser(id));
     });
 
-    console.log("passport auth handler");
+    //console.log("passport auth handler");
     let user = request["user"];
-    console.log("req.user", user);
+    //console.log("req.user", user);
     if (!user) {
       return null;
     }
@@ -69,7 +69,7 @@ export class PassportAuthHandler implements Auth {
 }
 
 function toViewer(obj: any, reqUserToViewer?: UserToViewerFunc): Viewer {
-  console.log("viewer", obj);
+  //console.log("viewer", obj);
 
   if ((obj as Viewer).viewerID !== undefined) {
     return obj;
@@ -123,9 +123,9 @@ export class LocalStrategy extends Strategy {
   }
 
   async authenticate(_req: IncomingMessage): Promise<AuthViewer> {
-    console.log("local strategy authenticate called");
+    //console.log("local strategy authenticate called");
     let viewer = await this.options.verifyFn();
-    console.log("auth viewer", viewer);
+    //console.log("auth viewer", viewer);
     // we actually want the logged in viewer here
     if (viewer) {
       this.success(viewer);
@@ -145,7 +145,7 @@ function promisifiedAuth(
 ) {
   return new Promise<AuthViewer>((resolve, reject) => {
     const done = (err: Error, user: Viewer | null | undefined, _info: any) => {
-      console.log("done", err, user);
+      //console.log("done", err, user);
       if (err) {
         reject(err);
       } else {
@@ -209,6 +209,6 @@ export async function useAndAuth(
   // login the user to passport
   await promisifiedLogin(context, viewer, options);
 
-  console.log("useAndAuth", viewer);
+  // console.log("useAndAuth", viewer);
   return viewer;
 }

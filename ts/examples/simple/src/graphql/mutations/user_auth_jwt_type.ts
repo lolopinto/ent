@@ -61,7 +61,7 @@ export const UserAuthJWTType: GraphQLFieldConfig<
   Context,
   { [input: string]: UserAuthJWTInput }
 > = {
-  type: UserAuthJWTResponseType,
+  type: GraphQLNonNull(UserAuthJWTResponseType),
   args: {
     input: {
       description: "",
@@ -73,7 +73,7 @@ export const UserAuthJWTType: GraphQLFieldConfig<
     { input },
     context: Context,
     _info: GraphQLResolveInfo,
-  ): Promise<UserAuthJWTResponse | null> => {
+  ): Promise<UserAuthJWTResponse> => {
     // TODO: auth locally with username/password
     // get jwt, sign it return it
     // and then use jwt to get viewer
@@ -108,7 +108,7 @@ export const UserAuthJWTType: GraphQLFieldConfig<
     );
 
     if (!viewer?.viewerID) {
-      return null;
+      throw new Error("not the right credentials");
     }
 
     const token = jwt.sign({ viewerID: viewer.viewerID }, "secret", {

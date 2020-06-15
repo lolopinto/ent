@@ -1,16 +1,17 @@
 // TODO all this can/should be moved into its own npm package
 // or into ent itself
 // haven't figured out the correct dependency structure with express etc so not for now
-import express, { response } from "express";
+import express, { Express, response } from "express";
 import graphqlHTTP from "express-graphql";
-import request from "supertest";
 import { Viewer } from "ent/ent";
 import { GraphQLSchema, GraphQLObjectType } from "graphql";
 import { registerAuthHandler } from "ent/auth";
 import { buildContext } from "ent/auth/context";
 import { IncomingMessage, ServerResponse } from "http";
+import supertest from "supertest";
 
-function server(schema: GraphQLSchema, viewer?: Viewer) {
+function server(config: queryConfig): Express {
+  const viewer = config.viewer;
   if (viewer) {
     registerAuthHandler("viewer", {
       authViewer: async (_request, _response) => {
@@ -19,13 +20,16 @@ function server(schema: GraphQLSchema, viewer?: Viewer) {
     });
   }
   let app = express();
+  if (config.init) {
+    config.init(app);
+  }
   app.use(
     "/graphql",
     graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
       const doWork = async () => {
         let context = await buildContext(request, response);
         return {
-          schema: schema,
+          schema: config.schema,
           context,
         };
       };
@@ -37,18 +41,31 @@ function server(schema: GraphQLSchema, viewer?: Viewer) {
 }
 
 function makeGraphQLRequest(
-  schema: GraphQLSchema,
+  config: queryConfig,
   query: string,
-  viewer: Viewer | undefined, // TODO interface
-  args?: {},
-): request.Test {
-  //  console.log(args);
-  return request(server(schema, viewer))
-    .post("/graphql")
-    .send({
-      query: query,
-      variables: JSON.stringify(args),
-    });
+): [supertest.SuperTest<supertest.Test>, supertest.Test] {
+  let test: supertest.SuperTest<supertest.Test>;
+
+  if (config.test) {
+    if (typeof config.test === "function") {
+      test = config.test(server(config));
+    } else {
+      test = config.test;
+    }
+  } else {
+    test = supertest(server(config));
+  }
+
+  return [
+    test,
+    test
+      .post("/graphql")
+      .set(config.headers || {})
+      .send({
+        query: query,
+        variables: JSON.stringify(config.args),
+      }),
+  ];
 }
 
 function buildTreeFromQueryPaths(...options: Option[]) {
@@ -102,15 +119,23 @@ function expectQueryResult(...options: Option[]) {
 export type Option = [string, any];
 
 interface queryConfig {
-  viewer?: Viewer; // viewer or function that takes express
+  // if neither viewer nor init is passed, we end with a logged out viewer
+  viewer?: Viewer;
+  // to init express e.g. session, passport initialize etc
+  init?: (app: Express) => void;
+  test?:
+    | supertest.SuperTest<supertest.Test>
+    | ((express: Express) => supertest.SuperTest<supertest.Test>);
   // TODO
   // if none indicated, defaults to logged out viewer
   schema: GraphQLSchema;
+  headers?: object;
+  debugMode?: boolean;
   args: {};
   expectedStatus?: number; // expected http status code
   expectedError?: string | RegExp; // expected error message
   // todo there can be more than one etc
-  callback?: (res: request.Response) => void;
+  callback?: (res: supertest.Response) => void;
 }
 
 export interface queryRootConfig extends queryConfig {
@@ -122,8 +147,8 @@ export interface queryRootConfig extends queryConfig {
 export async function expectQueryFromRoot(
   config: queryRootConfig,
   ...options: Option[] // TODO queries? expected values
-) {
-  await expectFromRoot(
+): Promise<supertest.SuperTest<supertest.Test>> {
+  return await expectFromRoot(
     {
       ...config,
       queryPrefix: "query",
@@ -143,7 +168,7 @@ export interface mutationRootConfig extends queryConfig {
 export async function expectMutation(
   config: mutationRootConfig,
   ...options: Option[]
-) {
+): Promise<supertest.SuperTest<supertest.Test>> {
   // wrap args in input because we simplify the args for mutations
   // and don't require the input
   let args = config.args;
@@ -153,7 +178,7 @@ export async function expectMutation(
     };
   }
 
-  await expectFromRoot(
+  return await expectFromRoot(
     {
       ...config,
       args: args,
@@ -175,7 +200,10 @@ interface rootConfig extends queryConfig {
   nullQueryPaths?: string[];
 }
 
-async function expectFromRoot(config: rootConfig, ...options: Option[]) {
+async function expectFromRoot(
+  config: rootConfig,
+  ...options: Option[]
+): Promise<supertest.SuperTest<supertest.Test>> {
   let query = config.queryFN;
   let fields = query?.getFields();
   if (!fields) {
@@ -208,15 +236,15 @@ async function expectFromRoot(config: rootConfig, ...options: Option[]) {
     ${config.root}(${params.join(",")}) {${q}}
   }`;
 
-  let res = await makeGraphQLRequest(
-    config.schema,
-    q,
-    config.viewer,
-    config.args,
-  ).expect("Content-Type", /json/);
+  let [st, temp] = makeGraphQLRequest(config, q);
+  const res = await temp.expect("Content-Type", /json/);
+  if (config.debugMode) {
+    console.log(res.body);
+  }
   // if there's a callback, let everything be done there and we're done
   if (config.callback) {
-    return config.callback(res);
+    config.callback(res);
+    return st;
   }
   if (config.expectedStatus !== undefined) {
     expect(res.status).toBe(config.expectedStatus);
@@ -239,14 +267,14 @@ async function expectFromRoot(config: rootConfig, ...options: Option[]) {
     } else {
       fail("unhandled error");
     }
-    return;
+    return st;
   }
   let data = res.body.data;
   let result = data[config.root];
 
   if (config.rootQueryNull) {
     expect(result, "root query wasn't null").toBe(null);
-    return;
+    return st;
   }
 
   options.forEach((option) => {
@@ -293,7 +321,7 @@ async function expectFromRoot(config: rootConfig, ...options: Option[]) {
       // at the part of the path where it's expected to be null, confirm it is before proceeding
       if (nullParts.length === i + 1) {
         expect(current, `path ${nullPath} expected to be null`).toBe(null);
-        return;
+        return st;
       }
 
       if (listIdx !== undefined) {
@@ -323,4 +351,5 @@ async function expectFromRoot(config: rootConfig, ...options: Option[]) {
       }
     }
   });
+  return st;
 }
