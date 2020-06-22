@@ -9,10 +9,8 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "ent/auth/context";
-import { useAndAuth, LocalStrategy } from "ent/auth/passport";
-import User from "src/ent/user";
-import { IDViewer } from "src/util/id_viewer";
 import { ID } from "ent/ent";
+import { AuthResolver } from "./auth";
 
 interface UserAuthResponse {
   token: string;
@@ -48,11 +46,6 @@ export const UserAuthResponseType = new GraphQLObjectType({
   }),
 });
 
-class OmniViewer extends IDViewer {
-  isOmniscient(): boolean {
-    return true;
-  }
-}
 export const UserAuthType: GraphQLFieldConfig<
   undefined,
   Context,
@@ -71,38 +64,10 @@ export const UserAuthType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserAuthResponse> => {
-    const viewer = await useAndAuth(
-      context,
-      new LocalStrategy({
-        verifyFn: async () => {
-          // we need load raw here
-          const user = await User.loadFromEmailAddress(
-            // This leads to invalid uuid so we need to account for this
-            //            new OmniViewer("1"),
-            new OmniViewer("b38e3d04-4f6a-4421-a566-a211f4799c12"),
-            input.emailAddress,
-          );
-
-          if (!user) {
-            return null;
-          }
-
-          let valid = await user.verifyPassword(input.password);
-          if (!valid) {
-            return null;
-          }
-          return new IDViewer(user.id);
-        },
-      }),
-    );
-
-    if (!viewer || !viewer.viewerID) {
-      throw new Error("not the right credentials");
-    }
-
-    return {
-      viewerID: viewer.viewerID,
-      token: "1",
-    };
+    const r = new AuthResolver();
+    return r.userAuth(context, {
+      emailAddress: input.emailAddress,
+      password: input.password,
+    });
   },
 };
