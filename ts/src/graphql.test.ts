@@ -5,78 +5,24 @@ import {
   CustomField,
   gqlArgType,
   Field,
-  CustomArg,
+  CustomObject,
   CustomFieldType,
 } from "./graphql";
 import { GraphQLInt, GraphQLFloat, GraphQLString } from "graphql";
+
+import {
+  validateOneCustomField,
+  validateCustomFields,
+  validateNoCustom,
+  validateNoCustomFields,
+  validateCustomArgs,
+  validateNoCustomArgs,
+} from "./graphql_field_helpers";
 
 beforeEach(() => {
   GQLCapture.clear();
   GQLCapture.enable(true);
 });
-
-function validateOneCustomField(expected: CustomField) {
-  validateCustomFields([expected]);
-}
-
-function validateCustomFields(expected: CustomField[]) {
-  let customFields = GQLCapture.getCustomFields();
-  expect(customFields.length).toBe(expected.length);
-
-  for (let i = 0; i < customFields.length; i++) {
-    let customField = customFields[i];
-    let expectedCustomField = expected[i];
-    expect(customField.nodeName).toBe(expectedCustomField.nodeName);
-    expect(customField.functionName).toBe(expectedCustomField.functionName);
-    expect(customField.gqlName).toBe(expectedCustomField.gqlName);
-    expect(customField.fieldType).toBe(expectedCustomField.fieldType);
-
-    validateFields(customField.results, expectedCustomField.results);
-
-    validateFields(customField.args, expectedCustomField.args);
-  }
-}
-
-function validateFields(actual: Field[], expected: Field[]) {
-  expect(actual.length).toBe(expected.length);
-
-  for (let j = 0; j < actual.length; j++) {
-    let field = actual[j];
-    let expField = expected[j];
-
-    expect(field.type).toBe(expField.type);
-    expect(field.name).toBe(expField.name);
-    expect(field.needsResolving).toBe(expField.needsResolving);
-    expect(field.nullable).toBe(expField.nullable);
-  }
-}
-
-function validateNoCustomFields() {
-  expect(GQLCapture.getCustomFields().length).toBe(0);
-}
-
-function validateCustomArgs(expected: CustomArg[]) {
-  let args = GQLCapture.getCustomArgs();
-  expect(args.size).toBe(expected.length);
-
-  for (let i = 0; i < expected.length; i++) {
-    let expectedArg = expected[i];
-    let arg = args.get(expectedArg.className);
-    expect(arg).not.toBe(undefined);
-    //    let arg = args[i];
-
-    expect(arg!.className).toBe(expectedArg.className);
-    expect(arg!.nodeName).toBe(expectedArg.nodeName);
-  }
-}
-function validateNoCustomArgs() {
-  expect(GQLCapture.getCustomArgs().size).toBe(0);
-}
-
-function validateNoCustom() {
-  validateNoCustomFields();
-  validateNoCustomArgs();
-}
 
 describe("accessor", () => {
   test("disabled", () => {
@@ -732,7 +678,7 @@ describe("function", () => {
       }
       fail("should not get here");
     } catch (e) {
-      expect(e.message).toBe("args were not captured correctly");
+      expect(e.message).toMatch(/^args were not captured correctly/);
     }
     validateNoCustom();
   });
@@ -847,7 +793,7 @@ describe("function", () => {
       }
     } catch (error) {
       // TODO need a better message here
-      expect(error.message).toMatch("args were not captured correctly");
+      expect(error.message).toMatch(/^args were not captured correctly/);
     }
   });
 

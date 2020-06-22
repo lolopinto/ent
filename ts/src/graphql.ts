@@ -18,6 +18,23 @@ export interface gqlFieldOptions {
   type?: Type | Array<Type>; // types or lists of types
 }
 
+interface fieldOptions extends gqlFieldOptions {
+  // implies no return type...
+  allowFunctionType?: boolean;
+}
+
+export interface gqlObjectOptions {
+  name?: string;
+  description?: string;
+}
+
+type gqlTopLevelOptions = Exclude<gqlFieldOptions, "nullable">;
+// export interface gqlTopLevelOptions
+//   name?: string;
+//   type?: Type | Array<Type>;
+//   description?: string;
+// }
+
 export enum CustomFieldType {
   Accessor = "ACCESSOR",
   Field = "FIELD", // or property
@@ -40,15 +57,29 @@ export interface CustomField extends CustomFieldImpl {
   results: Field[];
 }
 
+export interface CustomMutation extends CustomField {}
+export interface CustomQuery extends CustomField {}
+
 interface ProcessedCustomField extends CustomFieldImpl {
   args: ProcessedField[];
   results: ProcessedField[];
 }
 
-export interface CustomArg {
+export interface CustomObject {
   nodeName: string;
-  className: string; // TODO both the same right now...
+  className: string; // TODO both of these 2 the same right now
+  description?: string;
 }
+
+// export interface CustomArg {
+//   nodeName: string;
+//   className: string; // TODO both the same right now...
+// }
+
+// export interface CustomInputObject {
+//   nodeName: string;
+//   className: string; // TODO both the same right now
+// }
 
 type NullableListOptions = "contents" | "contentsAndList";
 
@@ -66,6 +97,7 @@ export interface Field extends FieldImpl {
   // if a list and items are nullable, list is not nullable but list contains nullable items
   // if a list and both are nullable, both contents and list itself nullable
   nullable?: boolean | NullableListOptions;
+  isContextArg?: boolean;
 }
 
 interface ProcessedField extends FieldImpl {
@@ -82,11 +114,13 @@ interface arg {
   name: string;
   index: number;
   options?: gqlFieldOptions;
+  isContextArg?: boolean;
 }
 
 interface metadataIsh {
   name: string; // the type
   paramName?: string;
+  isContextArg?: boolean;
 }
 
 export class GQLCapture {
@@ -101,10 +135,43 @@ export class GQLCapture {
   }
 
   private static customFields: CustomField[] = [];
-  private static customArgs: Map<string, CustomArg> = new Map();
+  private static customQueries: CustomQuery[] = [];
+  private static customMutations: CustomMutation[] = [];
+  private static customArgs: Map<string, CustomObject> = new Map();
+  private static customInputObjects: Map<string, CustomObject> = new Map();
+  private static customObjects: Map<string, CustomObject> = new Map();
+
+  static clear(): void {
+    this.customFields = [];
+    this.customQueries = [];
+    this.customMutations = [];
+    this.customArgs.clear();
+    this.customInputObjects.clear();
+    this.customObjects.clear();
+  }
 
   static getCustomFields(): CustomField[] {
     return this.customFields;
+  }
+
+  static getCustomMutations(): CustomMutation[] {
+    return this.customMutations;
+  }
+
+  static getCustomQueries(): CustomQuery[] {
+    return this.customQueries;
+  }
+
+  static getCustomArgs(): Map<string, CustomObject> {
+    return this.customArgs;
+  }
+
+  static getCustomInputObjects(): Map<string, CustomObject> {
+    return this.customInputObjects;
+  }
+
+  static getCustomObjects(): Map<string, CustomObject> {
+    return this.customObjects;
   }
 
   private static getNullableArg(fd: Field): ProcessedField {
@@ -135,15 +202,6 @@ export class GQLCapture {
     });
   }
 
-  static getCustomArgs(): Map<string, CustomArg> {
-    return this.customArgs;
-  }
-
-  static clear(): void {
-    this.customFields = [];
-    this.customArgs.clear();
-  }
-
   private static knownAllowedNames: Map<string, boolean> = new Map([
     ["Date", true],
     ["Boolean", true],
@@ -152,6 +210,7 @@ export class GQLCapture {
     // TODO not right to have this and Number
     ["Int", true],
     ["Float", true],
+    ["ID", true],
   ]);
 
   private static knownDisAllowedNames: Map<string, boolean> = new Map([
@@ -163,12 +222,12 @@ export class GQLCapture {
 
   private static getResultFromMetadata(
     metadata: metadataIsh,
-    options?: gqlFieldOptions,
+    options?: fieldOptions,
   ): Field {
     let type = metadata.name;
     if ((type === "Number" || type === "Object") && !options?.type) {
       throw new Error(
-        "type is required when accessor/function/property returns a number",
+        `type is required when accessor/function/property returns a ${type}`,
       );
     }
 
@@ -207,6 +266,7 @@ export class GQLCapture {
         type = options.type.name;
       }
     }
+
     if (GQLCapture.knownDisAllowedNames.has(type)) {
       throw new Error(
         `${type} isn't a valid type for accessor/function/property`,
@@ -218,6 +278,7 @@ export class GQLCapture {
       type,
       nullable: options?.nullable,
       list: list,
+      isContextArg: metadata.isContextArg,
     };
     // unknown type. we need to flag that this field needs to eventually be resolved
     if (!GQLCapture.knownAllowedNames.has(type)) {
@@ -235,95 +296,119 @@ export class GQLCapture {
       if (!GQLCapture.isEnabled()) {
         return;
       }
-      let fieldType: CustomFieldType;
-      let nodeName = target.constructor.name as string;
 
-      let args: Field[] = [];
-      let results: Field[] = [];
-
-      let typeMetadata: metadataIsh | null = Reflect.getMetadata(
-        "design:type",
-        target,
-        propertyKey,
+      GQLCapture.customFields.push(
+        GQLCapture.getCustomField(target, propertyKey, descriptor, options),
       );
-      let returnTypeMetadata: metadataIsh | null = Reflect.getMetadata(
-        "design:returntype",
-        target,
-        propertyKey,
+    };
+  }
+
+  private static getCustomField(
+    target,
+    propertyKey: string,
+    descriptor: PropertyDescriptor,
+    options?: fieldOptions,
+  ): CustomField {
+    let fieldType: CustomFieldType;
+    let nodeName = target.constructor.name as string;
+
+    let args: Field[] = [];
+    let results: Field[] = [];
+
+    let typeMetadata: metadataIsh | null = Reflect.getMetadata(
+      "design:type",
+      target,
+      propertyKey,
+    );
+    let returnTypeMetadata: metadataIsh | null = Reflect.getMetadata(
+      "design:returntype",
+      target,
+      propertyKey,
+    );
+
+    if (returnTypeMetadata) {
+      // function...
+      if (returnTypeMetadata.name === "Promise") {
+        fieldType = CustomFieldType.AsyncFunction;
+      } else {
+        fieldType = CustomFieldType.Function;
+      }
+
+      results.push(
+        GQLCapture.getResultFromMetadata(returnTypeMetadata, options),
       );
+    } else if (typeMetadata) {
+      if (descriptor && descriptor.get) {
+        fieldType = CustomFieldType.Accessor;
+      } else if (descriptor && descriptor.value) {
+        // could be implicit async
+        fieldType = CustomFieldType.Function;
+      } else {
+        fieldType = CustomFieldType.Field;
+      }
 
-      if (returnTypeMetadata) {
-        // function...
-        if (returnTypeMetadata.name === "Promise") {
-          fieldType = CustomFieldType.AsyncFunction;
-        } else {
-          fieldType = CustomFieldType.Function;
-        }
-
-        results.push(
-          GQLCapture.getResultFromMetadata(returnTypeMetadata, options),
-        );
-      } else if (typeMetadata) {
-        if (descriptor && descriptor.get) {
-          fieldType = CustomFieldType.Accessor;
-        } else if (descriptor && descriptor.value) {
-          // could be implicit async
-          fieldType = CustomFieldType.Function;
-        } else {
-          fieldType = CustomFieldType.Field;
-        }
-
+      if (
+        !(
+          options?.allowFunctionType &&
+          fieldType === CustomFieldType.Function &&
+          typeMetadata.name === "Function"
+        )
+      ) {
         results.push(GQLCapture.getResultFromMetadata(typeMetadata, options));
       }
+    }
 
-      let params: metadataIsh[] | null = Reflect.getMetadata(
-        "design:paramtypes",
-        target,
-        propertyKey,
-      );
+    let params: metadataIsh[] | null = Reflect.getMetadata(
+      "design:paramtypes",
+      target,
+      propertyKey,
+    );
 
-      if (params && params.length > 0) {
-        let parsedArgs =
-          GQLCapture.argMap.get(nodeName)?.get(propertyKey) || [];
-        if (params.length !== parsedArgs.length) {
-          throw new Error("args were not captured correctly");
-        }
-        parsedArgs.forEach((arg) => {
-          let param = params![arg.index];
-          let paramName = arg.name;
-          let field = GQLCapture.getResultFromMetadata(
-            {
-              name: param.name,
-              paramName,
-            },
-            arg.options,
-          );
-
-          // TODO this may not be the right order...
-          args.push(field);
-        });
-        // TODO this is deterministically (so far) coming in reverse order so reverse (for now)
-        args = args.reverse();
+    if (params && params.length > 0) {
+      let parsedArgs = GQLCapture.argMap.get(nodeName)?.get(propertyKey) || [];
+      if (params.length !== parsedArgs.length) {
+        throw new Error(
+          `args were not captured correctly, ${params.length}, ${parsedArgs.length}`,
+        );
       }
+      parsedArgs.forEach((arg) => {
+        let param = params![arg.index];
+        let paramName = arg.name;
+        let field = GQLCapture.getResultFromMetadata(
+          {
+            name: param.name,
+            paramName,
+            isContextArg: arg.isContextArg,
+          },
+          arg.options,
+        );
 
-      //      console.log(nodeName, propertyKey, results);
-      GQLCapture.customFields.push({
-        nodeName: nodeName,
-        gqlName: options?.name || propertyKey,
-        functionName: propertyKey,
-        args: args,
-        results: results,
-        fieldType: fieldType!,
-        description: options?.description,
+        // TODO this may not be the right order...
+        args.push(field);
       });
+      // TODO this is deterministically (so far) coming in reverse order so reverse (for now)
+      args = args.reverse();
+    }
+
+    return {
+      nodeName: nodeName,
+      gqlName: options?.name || propertyKey,
+      functionName: propertyKey,
+      args: args,
+      results: results,
+      fieldType: fieldType!,
+      description: options?.description,
     };
   }
 
   // User -> add -> [{name, options}, {}, {}]
   private static argMap: Map<string, Map<string, arg[]>> = new Map();
 
-  // TODO custom args because for example name doesn't make sense here.
-  static gqlArg(name: string, options?: gqlFieldOptions): any {
+  private static argImpl(
+    name: string,
+    isContextArg?: boolean,
+    options?: gqlFieldOptions,
+  ): any {
     return function(
       target,
       propertyKey: string,
@@ -348,65 +433,174 @@ export class GQLCapture {
         name: name,
         index: index,
         options: options,
+        isContextArg,
       });
 
       //      console.log("arg", name, target, propertyKey, index);
     };
   }
 
-  // TODO provide different options
-  static gqlArgType(options?: gqlFieldOptions): any {
+  // TODO custom args because for example name doesn't make sense here.
+  static gqlArg(name: string, options?: gqlFieldOptions): any {
+    return GQLCapture.argImpl(name, undefined, options);
+  }
+
+  static gqlContextType(): any {
+    // hardcoded?
+    return GQLCapture.argImpl("context", true, { type: "Context" });
+  }
+
+  static gqlArgType(options?: gqlObjectOptions): any {
     return function(
       target: Function,
       _propertyKey: string,
       _descriptor: PropertyDescriptor,
     ): void {
+      return GQLCapture.customGQLObject(target, GQLCapture.customArgs, options);
+    };
+  }
+
+  static gqlInputObjectType(options?: gqlObjectOptions): any {
+    return function(
+      target: Function,
+      _propertyKey: string,
+      _descriptor: PropertyDescriptor,
+    ): void {
+      return GQLCapture.customGQLObject(
+        target,
+        GQLCapture.customInputObjects,
+        options,
+      );
+    };
+  }
+
+  static gqlObjectType(options?: gqlObjectOptions): any {
+    return function(
+      target: Function,
+      _propertyKey: string,
+      _descriptor: PropertyDescriptor,
+    ): void {
+      return GQLCapture.customGQLObject(
+        target,
+        GQLCapture.customObjects,
+        options,
+      );
+    };
+  }
+
+  private static customGQLObject(
+    target: Function,
+    map: Map<string, CustomObject>,
+    options?: gqlObjectOptions,
+  ) {
+    if (!GQLCapture.isEnabled()) {
+      return;
+    }
+
+    let className = target.name as string;
+    let nodeName = options?.name || className;
+
+    map.set(className, {
+      className,
+      nodeName,
+      description: options?.description,
+    });
+  }
+
+  // TODO query and mutation
+  // we want to specify args if any, name, response if any
+  static gqlQuery(options?: gqlTopLevelOptions): any {
+    return function(
+      target: Function,
+      propertyKey: string,
+      descriptor: PropertyDescriptor,
+    ): void {
       if (!GQLCapture.isEnabled()) {
         return;
       }
-      let className = target.name as string;
-      let nodeName = options?.name || className;
 
-      GQLCapture.customArgs.set(className, {
-        className,
-        nodeName,
-      });
+      GQLCapture.customQueries.push(
+        GQLCapture.getCustomField(target, propertyKey, descriptor, options),
+      );
+    };
+  }
+  // we want to specify inputs (required), name, response
+  // input is via gqlArg
+  // should it be gqlInputArg?
+  static gqlMutation(options?: gqlTopLevelOptions): any {
+    return function(
+      target: Function,
+      propertyKey: string,
+      descriptor: PropertyDescriptor,
+    ): void {
+      if (!GQLCapture.isEnabled()) {
+        return;
+      }
+
+      GQLCapture.customMutations.push(
+        GQLCapture.getCustomField(target, propertyKey, descriptor, {
+          ...options,
+          allowFunctionType: true,
+        }),
+      );
     };
   }
 
   static resolve(objects: string[]): void {
     let baseEnts = new Map<string, boolean>();
     objects.map((object) => baseEnts.set(object, true));
+    this.customObjects.forEach((_val, key) => baseEnts.set(key, true));
 
-    GQLCapture.customFields.forEach((field) => {
-      // we have a check earlier that *should* make this path impossible
-      field.args.forEach((arg) => {
-        if (arg.needsResolving) {
-          throw new Error(
-            `arg ${arg.name} of field ${field.functionName} needs resolving. should not be possible`,
-          );
-        }
-      });
-      // fields are not because we can return existing ents and we want to run the capturing
-      // in parallel with the codegen gathering step so we resolve at the end to make
-      // sure there's no dangling objects
-      // TODO when we have other objects, we may need to change the logic here
-      // but i don't think it applies
-      field.results.forEach((result) => {
-        if (result.needsResolving) {
-          if (baseEnts.get(result.type)) {
-            result.needsResolving = false;
-          } else {
-            throw new Error(
-              `field ${field.functionName} references ${result.type} which isn't a graphql object`,
-            );
+    let baseArgs = new Map<string, boolean>();
+    this.customArgs.forEach((_val, key) => baseArgs.set(key, true));
+    this.customInputObjects.forEach((_val, key) => baseArgs.set(key, true));
+    baseArgs.set("Context", true);
+
+    const resolveFields = (fields: CustomField[]) => {
+      fields.forEach((field) => {
+        // we have a check earlier that *should* make this path impossible
+        field.args.forEach((arg) => {
+          if (arg.needsResolving) {
+            if (baseArgs.has(arg.type)) {
+              arg.needsResolving = false;
+            } else {
+              throw new Error(
+                `arg ${arg.name} of field ${field.functionName} needs resolving. should not be possible`,
+              );
+            }
           }
-        }
+        });
+        // fields are not because we can return existing ents and we want to run the capturing
+        // in parallel with the codegen gathering step so we resolve at the end to make
+        // sure there's no dangling objects
+        // TODO when we have other objects, we may need to change the logic here
+        // but i don't think it applies
+        field.results.forEach((result) => {
+          if (result.needsResolving) {
+            if (baseEnts.has(result.type)) {
+              result.needsResolving = false;
+            } else {
+              throw new Error(
+                `field ${field.functionName} references ${result.type} which isn't a graphql object`,
+              );
+            }
+          }
+        });
       });
-    });
+    };
+    resolveFields(GQLCapture.customFields);
+    resolveFields(GQLCapture.customQueries);
+    resolveFields(GQLCapture.customMutations);
   }
 }
 
+// why is this a static class lol?
+// TODO make all these just plain functions
 export const gqlField = GQLCapture.gqlField;
 export const gqlArg = GQLCapture.gqlArg;
 export const gqlArgType = GQLCapture.gqlArgType;
+export const gqlInputObjectType = GQLCapture.gqlInputObjectType;
+export const gqlObjectType = GQLCapture.gqlObjectType;
+export const gqlQuery = GQLCapture.gqlQuery;
+export const gqlMutation = GQLCapture.gqlMutation;
+export const gqlContextType = GQLCapture.gqlContextType;
