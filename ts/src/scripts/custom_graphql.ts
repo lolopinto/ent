@@ -1,9 +1,9 @@
 import glob from "glob";
 import minimist from "minimist";
-import { GQLCapture } from "../graphql";
+import { GQLCapture, ProcessedCustomField } from "../graphql";
 import * as readline from "readline";
 import * as path from "path";
-//import * as tsconfigPaths from "tsconfig-paths";
+import { parseCustomInput } from "../imports";
 
 GQLCapture.enable(true);
 
@@ -25,43 +25,76 @@ async function readInputs(): Promise<string[]> {
   });
 }
 
-async function main() {
-  const options = minimist(process.argv.slice(2));
-  console.log(options);
-
-  if (!options.path) {
-    throw new Error("path required");
-  }
-  const nodes = await readInputs();
-
+async function captureCustom(filePath: string) {
   // TODO configurable paths...
   // for now only ent/**/
   // TODO we can probably be even smarter here but this is fine for now
   // and then it'll be graphql/custom or something
-  const entFiles = glob.sync(path.join(options.path, "/ent/**/*.ts"), {
+  const entFiles = glob.sync(path.join(filePath, "/ent/**/*.ts"), {
     // no actions for now to speed things up
     ignore: ["**/generated/**", "**/tests/**", "**/actions/**"],
   });
-  const graphqlFiles = glob.sync(path.join(options.path, "/graphql/**/*.ts"), {
+  const graphqlFiles = glob.sync(path.join(filePath, "/graphql/**/*.ts"), {
     // no actions for now to speed things up
-    ignore: ["**/generated/**", "**/tests/**", "**/actions/**"],
+    // no index.ts (need a better way to explicitly ignore specific files)
+    ignore: ["**/generated/**", "**/tests/**", "**/index.ts"],
   });
   const files = [...entFiles, ...graphqlFiles];
-  console.log(files);
+  //  console.log(files);
   let promises: any[] = [];
   files.forEach((file) => {
     promises.push(require(file));
   });
 
   await Promise.all(promises);
+}
+
+async function parseImports(filePath: string) {
+  // only do graphql files...
+  return parseCustomInput(path.join(filePath, "graphql"), {
+    ignore: ["**/generated/**", "**/tests/**"],
+  });
+}
+
+async function main() {
+  const options = minimist(process.argv.slice(2));
+
+  if (!options.path) {
+    throw new Error("path required");
+  }
+  const [nodes, _, imports] = await Promise.all([
+    readInputs(),
+    captureCustom(options.path),
+    parseImports(options.path),
+  ]);
+
+  GQLCapture.resolve(nodes);
 
   let args = GQLCapture.getCustomArgs();
+  let inputs = GQLCapture.getCustomInputObjects();
   let fields = GQLCapture.getProcessedCustomFields();
-  GQLCapture.resolve(nodes);
+  let queries = GQLCapture.getProcessedCustomQueries();
+  let mutations = GQLCapture.getProcessedCustomMutations();
+
+  let classes = {};
+
+  const buildClasses = (fields: ProcessedCustomField[]) => {
+    fields.forEach((field) => {
+      let info = imports.getInfoForClass(field.nodeName);
+      classes[field.nodeName] = { ...info.class, path: info.file.path };
+    });
+  };
+  buildClasses(mutations);
+  buildClasses(queries);
+
   console.log(
     JSON.stringify({
       args,
+      inputs,
       fields,
+      queries,
+      mutations,
+      classes,
     }),
   );
 }

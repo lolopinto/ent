@@ -60,7 +60,7 @@ export interface CustomField extends CustomFieldImpl {
 export interface CustomMutation extends CustomField {}
 export interface CustomQuery extends CustomField {}
 
-interface ProcessedCustomField extends CustomFieldImpl {
+export interface ProcessedCustomField extends CustomFieldImpl {
   args: ProcessedField[];
   results: ProcessedField[];
 }
@@ -190,7 +190,21 @@ export class GQLCapture {
   }
 
   static getProcessedCustomFields(): ProcessedCustomField[] {
-    return this.customFields.map((field) => {
+    return this.getProcessedCustomFieldsImpl(this.customFields);
+  }
+
+  static getProcessedCustomMutations(): ProcessedCustomField[] {
+    return this.getProcessedCustomFieldsImpl(this.customMutations);
+  }
+
+  static getProcessedCustomQueries(): ProcessedCustomField[] {
+    return this.getProcessedCustomFieldsImpl(this.customQueries);
+  }
+
+  private static getProcessedCustomFieldsImpl(
+    customFields: CustomField[],
+  ): ProcessedCustomField[] {
+    return customFields.map((field) => {
       let res: ProcessedCustomField = field as ProcessedCustomField;
       res.args = field.args.map((arg) => {
         return this.getNullableArg(arg);
