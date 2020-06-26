@@ -84,7 +84,7 @@ export function parseCustomInput(filePath: string, opts?: Options): PathResult {
   };
 }
 
-function findTSConfigFile(filePath: string): string | null {
+export function findTSConfigFile(filePath: string): string | null {
   while (filePath != "/") {
     let configPath = `${filePath}/tsconfig.json`;
     if (fs.existsSync(configPath)) {
