@@ -1,6 +1,6 @@
 import glob from "glob";
 import minimist from "minimist";
-import { GQLCapture, ProcessedCustomField } from "../graphql";
+import { GQLCapture, ProcessedCustomField, CustomObject } from "../graphql";
 import * as readline from "readline";
 import * as path from "path";
 import { parseCustomInput } from "../imports";
@@ -68,13 +68,21 @@ async function main() {
     parseImports(options.path),
   ]);
 
+  const fromMap = (m: Map<string, CustomObject>) => {
+    let result = {};
+    for (const [key, value] of m) {
+      result[key] = value;
+    }
+    return result;
+  };
   GQLCapture.resolve(nodes);
 
-  let args = GQLCapture.getCustomArgs();
-  let inputs = GQLCapture.getCustomInputObjects();
+  let args = fromMap(GQLCapture.getCustomArgs());
+  let inputs = fromMap(GQLCapture.getCustomInputObjects());
   let fields = GQLCapture.getProcessedCustomFields();
   let queries = GQLCapture.getProcessedCustomQueries();
   let mutations = GQLCapture.getProcessedCustomMutations();
+  let objects = fromMap(GQLCapture.getCustomObjects());
 
   let classes = {};
 
@@ -95,6 +103,7 @@ async function main() {
       queries,
       mutations,
       classes,
+      objects,
     }),
   );
 }
