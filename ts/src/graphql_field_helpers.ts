@@ -55,6 +55,11 @@ export function validateFields(actual: Field[], expected: Field[]) {
     expect(field.needsResolving, field.name).toBe(expField.needsResolving);
     expect(field.nullable, field.name).toBe(expField.nullable);
     expect(field.isContextArg, field.name).toBe(expField.isContextArg);
+
+    // TODO set this for everyone and then don't need this...
+    if (expField.tsType) {
+      expect(field.tsType, expField.tsType);
+    }
   }
 }
 

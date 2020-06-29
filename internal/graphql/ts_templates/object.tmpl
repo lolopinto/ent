@@ -33,8 +33,10 @@
 {{end}}
 
 {{/* these 2 probably need to change */}}
-{{$node := useImport .NodeData.Node -}}
-{{$nodeInstance := .NodeData.NodeInstance -}}
+{{/* TODO these definitely need to change now */}}
+{{/* node and nodeInstance don't make sense for non-ents e.g. custom types...*/}}
+{{$node := useImport .Node -}}
+{{$nodeInstance := .NodeInstance -}}
 
 {{ range $gqlNode := .GQLNodes -}}
 

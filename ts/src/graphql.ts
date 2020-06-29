@@ -85,6 +85,7 @@ type NullableListOptions = "contents" | "contentsAndList";
 
 interface FieldImpl {
   type: string; // TODO
+  tsType?: string; // TODO make this required...
   importPath?: string;
   needsResolving?: boolean; // unknown type that we need to resolve eventually
   list?: boolean;
@@ -100,8 +101,9 @@ export interface Field extends FieldImpl {
   isContextArg?: boolean;
 }
 
-interface ProcessedField extends FieldImpl {
+export interface ProcessedField extends FieldImpl {
   nullable?: NullableResult;
+  isContextArg?: boolean;
 }
 
 enum NullableResult {
@@ -216,15 +218,15 @@ export class GQLCapture {
     });
   }
 
-  private static knownAllowedNames: Map<string, boolean> = new Map([
-    ["Date", true],
-    ["Boolean", true],
-    ["Number", true],
-    ["String", true],
+  private static knownAllowedNames: Map<string, string> = new Map([
+    ["Date", "Date"],
+    ["Boolean", "boolean"],
+    ["Number", "number"],
+    ["String", "string"],
     // TODO not right to have this and Number
-    ["Int", true],
-    ["Float", true],
-    ["ID", true],
+    ["Int", "number"],
+    ["Float", "number"],
+    ["ID", "ID"],
   ]);
 
   private static knownDisAllowedNames: Map<string, boolean> = new Map([
@@ -290,6 +292,7 @@ export class GQLCapture {
     let result: Field = {
       name: metadata.paramName || "",
       type,
+      tsType: this.knownAllowedNames.get(type),
       nullable: options?.nullable,
       list: list,
       isContextArg: metadata.isContextArg,

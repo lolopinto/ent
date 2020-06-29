@@ -1,9 +1,15 @@
 import glob from "glob";
 import minimist from "minimist";
-import { GQLCapture, ProcessedCustomField, CustomObject } from "../graphql";
+import {
+  GQLCapture,
+  ProcessedField,
+  ProcessedCustomField,
+  CustomObject,
+} from "../graphql";
 import * as readline from "readline";
 import * as path from "path";
 import { parseCustomInput } from "../imports";
+import { argsToArgsConfig } from "graphql/type/definition";
 
 GQLCapture.enable(true);
 
@@ -86,10 +92,28 @@ async function main() {
 
   let classes = {};
 
+  const buildClasses2 = (args: ProcessedField[]) => {
+    args.forEach((arg) => {
+      if (arg.isContextArg) {
+        return;
+      }
+      let files = imports.m.get(arg.type);
+      if (files?.length !== 1) {
+        return;
+      }
+      let file = files[0];
+      let classInfo = file.classes.get(arg.type);
+      classes[arg.type] = { ...classInfo, path: file.path };
+    });
+  };
+
   const buildClasses = (fields: ProcessedCustomField[]) => {
     fields.forEach((field) => {
       let info = imports.getInfoForClass(field.nodeName);
       classes[field.nodeName] = { ...info.class, path: info.file.path };
+
+      buildClasses2(field.args);
+      buildClasses2(field.results);
     });
   };
   buildClasses(mutations);

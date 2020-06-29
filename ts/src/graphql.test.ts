@@ -53,6 +53,7 @@ describe("accessor", () => {
         {
           type: "String",
           name: "",
+          tsType: "string",
         },
       ],
       args: [],

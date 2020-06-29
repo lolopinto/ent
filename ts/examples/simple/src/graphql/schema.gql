@@ -68,6 +68,8 @@ type Mutation {
   eventCreate(input: EventCreateInput!): EventCreateResponse!
   eventDelete(input: EventDeleteInput!): EventDeleteResponse!
   eventEdit(input: EventEditInput!): EventEditResponse!
+  userAuth(input: UserAuthInput!): UserAuthResponse!
+  userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTResponse!
   userCreate(input: UserCreateInput!): UserCreateResponse!
   userDelete(input: UserDeleteInput!): UserDeleteResponse!
   userEdit(input: UserEditInput!): UserEditResponse!
@@ -135,6 +137,26 @@ input EventEditInput {
   startTime: Time
   endTime: Time
   eventLocation: String
+}
+
+type UserAuthResponse {
+  token: String!
+  viewerID: ID!
+}
+
+input UserAuthInput {
+  emailAddress: String!
+  password: String!
+}
+
+type UserAuthJWTResponse {
+  token: String!
+  viewerID: ID!
+}
+
+input UserAuthJWTInput {
+  emailAddress: String!
+  password: String!
 }
 
 type UserCreateResponse {

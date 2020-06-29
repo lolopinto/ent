@@ -15,7 +15,9 @@ import { GraphQLID } from "graphql";
 import jwt from "jsonwebtoken";
 
 @gqlInputObjectType()
-class UserAuthInput {
+// we're going to test exporting UserAuthInput types
+// and not exporting JWT versions
+export class UserAuthInput {
   @gqlField()
   emailAddress: string;
   @gqlField()
@@ -31,7 +33,7 @@ class UserAuthJWTInput {
 }
 
 @gqlObjectType()
-class UserAuthResponse {
+export class UserAuthResponse {
   @gqlField()
   token: string;
 
