@@ -434,16 +434,14 @@ func processCustomMutations(data *codegen.Data, cd *customData, s *gqlSchema) er
 					return err
 				}
 				if cls.DefaultExport {
-					responseType.DefaultImports = append(responseType.DefaultImports, &queryGQLDatum{
-						ImportPath:  importPath,
-						GraphQLType: mutation.Node,
+					responseType.DefaultImports = append(responseType.DefaultImports, &fileImport{
+						ImportPath: importPath,
+						Type:       mutation.Node,
 					})
 				} else {
-					responseType.Imports = append(responseType.Imports, &queryGQLDatum{
+					responseType.Imports = append(responseType.Imports, &fileImport{
 						ImportPath: importPath,
-						// TODO rename this...
-						// GraphQLType doesn't make sense here
-						GraphQLType: mutation.Node,
+						Type:       mutation.Node,
 					})
 				}
 			}
@@ -590,20 +588,18 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 		if cls.DefaultExport {
 
 			// exported, we need to import it
-			typ.DefaultImports = []*queryGQLDatum{
+			typ.DefaultImports = []*fileImport{
 				{
 					ImportPath: importPath,
-					// TODO rename this
-					GraphQLType: item.Type,
+					Type:       item.Type,
 				},
 			}
 			createInterface = false
 		} else if cls.Exported {
-			typ.Imports = []*queryGQLDatum{
+			typ.Imports = []*fileImport{
 				{
 					ImportPath: importPath,
-					// TODO rename this
-					GraphQLType: item.Type,
+					Type:       item.Type,
 				},
 			}
 			createInterface = false
@@ -737,16 +733,16 @@ type gqlobjectData struct {
 	m            map[string]bool
 }
 
-func (obj gqlobjectData) DefaultImports() []*queryGQLDatum {
-	var result []*queryGQLDatum
+func (obj gqlobjectData) DefaultImports() []*fileImport {
+	var result []*fileImport
 	for _, node := range obj.GQLNodes {
 		result = append(result, node.DefaultImports...)
 	}
 	return result
 }
 
-func (obj gqlobjectData) Imports() []*queryGQLDatum {
-	var result []*queryGQLDatum
+func (obj gqlobjectData) Imports() []*fileImport {
+	var result []*fileImport
 	for _, node := range obj.GQLNodes {
 		result = append(result, node.Imports...)
 	}
@@ -938,14 +934,14 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		if node.Node == nodeData.Node {
 			continue
 		}
-		result.Imports = append(result.Imports, &queryGQLDatum{
-			ImportPath:  fmt.Sprintf("./%s_type", node.PackageName),
-			GraphQLType: fmt.Sprintf("%sType", node.Node),
+		result.Imports = append(result.Imports, &fileImport{
+			ImportPath: fmt.Sprintf("./%s_type", node.PackageName),
+			Type:       fmt.Sprintf("%sType", node.Node),
 		})
 	}
-	result.DefaultImports = append(result.DefaultImports, &queryGQLDatum{
-		ImportPath:  fmt.Sprintf("src/ent/%s", nodeData.PackageName),
-		GraphQLType: nodeData.Node,
+	result.DefaultImports = append(result.DefaultImports, &fileImport{
+		ImportPath: fmt.Sprintf("src/ent/%s", nodeData.PackageName),
+		Type:       nodeData.Node,
 	})
 
 	result.Interfaces = append(result.Interfaces, &interfaceType{
@@ -1122,28 +1118,28 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 		Node:     fmt.Sprintf("%sResponse", actionPrefix),
 		Exported: true,
 		GQLType:  "GraphQLObjectType",
-		DefaultImports: []*queryGQLDatum{
+		DefaultImports: []*fileImport{
 			{
-				ImportPath:  fmt.Sprintf("src/ent/%s", nodeData.PackageName),
-				GraphQLType: nodeData.Node,
+				ImportPath: fmt.Sprintf("src/ent/%s", nodeData.PackageName),
+				Type:       nodeData.Node,
 			},
 			{
-				ImportPath:  fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
-				GraphQLType: action.GetActionName(),
+				ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
+				Type:       action.GetActionName(),
 			},
 		},
-		Imports: []*queryGQLDatum{
+		Imports: []*fileImport{
 			{
-				ImportPath:  getImportPathForNode(nodeData),
-				GraphQLType: fmt.Sprintf("%sType", nodeData.Node),
+				ImportPath: getImportPathForNode(nodeData),
+				Type:       fmt.Sprintf("%sType", nodeData.Node),
 			},
 		},
 	}
 
 	if action.GetOperation() != ent.DeleteAction {
-		result.Imports = append(result.Imports, &queryGQLDatum{
-			ImportPath:  fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
-			GraphQLType: getInputName(action),
+		result.Imports = append(result.Imports, &fileImport{
+			ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
+			Type:       getInputName(action),
 		})
 	}
 
@@ -1289,8 +1285,8 @@ type objectType struct {
 	GQLType  string // GraphQLObjectType or GraphQLInputObjectType
 
 	// TODO will soon need to allow calling import multiple times for the same path
-	DefaultImports []*queryGQLDatum
-	Imports        []*queryGQLDatum
+	DefaultImports []*fileImport
+	Imports        []*fileImport
 	Interfaces     []*interfaceType
 }
 
@@ -1356,6 +1352,13 @@ func (f *fieldType) FieldType() string {
 }
 
 // TODO rename this...
+
+// this is conflated...
+type fileImport struct {
+	ImportPath string
+	Type       string
+}
+
 type queryGQLDatum struct {
 	ImportPath  string
 	GraphQLName string

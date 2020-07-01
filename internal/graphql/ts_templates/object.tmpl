@@ -7,11 +7,11 @@
 
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
 {{ range $baseObj.Imports -}} 
-  {{reserveImport .ImportPath .GraphQLType}}
+  {{reserveImport .ImportPath .Type}}
 {{ end -}}
 
 {{ range $baseObj.DefaultImports -}} 
-  {{reserveDefaultImport .ImportPath .GraphQLType}}
+  {{reserveDefaultImport .ImportPath .Type}}
 {{ end -}}
 
 {{ range $baseObj.Interfaces -}}
