@@ -7,8 +7,8 @@
 export const {{.Type}} = new {{useImport "GraphQLObjectType"}}({
   name: "{{.Node}}",
   fields: () => ({
-    {{ range $query := .Queries -}} 
-      {{$query.GraphQLName}}: {{$query.GraphQLType}},
+    {{ range $field := .RootFields -}} 
+      {{$field.Name}}: {{$field.Type}},
     {{ end -}}
   }),
 });

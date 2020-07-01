@@ -1351,50 +1351,49 @@ func (f *fieldType) FieldType() string {
 	return typeFromImports(f.FieldImports)
 }
 
-// TODO rename this...
-
-// this is conflated...
 type fileImport struct {
 	ImportPath string
 	Type       string
 }
 
-type queryGQLDatum struct {
-	ImportPath  string
-	GraphQLName string
-	GraphQLType string
+// a root field in the schema
+type rootField struct {
+	ImportPath string // import path
+	Name       string // name e.g. viewer, contact, userCreate
+	Type       string // TypeScript type e.g. User
 }
 
+// for root query | mutation in schema
 type gqlRootData struct {
-	Queries []queryGQLDatum
-	Type    string
-	Node    string
+	RootFields []rootField
+	Type       string
+	Node       string
 }
 
-func getQueryData(data *codegen.Data) []queryGQLDatum {
-	var results []queryGQLDatum
+func getQueryData(data *codegen.Data) []rootField {
+	var results []rootField
 	for key := range data.Schema.Nodes {
 
 		nodeData := data.Schema.Nodes[key].NodeData
 		if nodeData.HideFromGraphQL {
 			continue
 		}
-		results = append(results, queryGQLDatum{
-			ImportPath:  fmt.Sprintf("./%s_type", nodeData.PackageName),
-			GraphQLType: fmt.Sprintf("%sQuery", nodeData.Node),
-			GraphQLName: strcase.ToLowerCamel(nodeData.Node),
+		results = append(results, rootField{
+			ImportPath: fmt.Sprintf("./%s_type", nodeData.PackageName),
+			Type:       fmt.Sprintf("%sQuery", nodeData.Node),
+			Name:       strcase.ToLowerCamel(nodeData.Node),
 		})
 	}
 
 	// sort lexicographically so that we are not always changing this
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].GraphQLName < results[j].GraphQLName
+		return results[i].Name < results[j].Name
 	})
 	return results
 }
 
-func getMutationData(data *codegen.Data, s *gqlSchema) []queryGQLDatum {
-	var results []queryGQLDatum
+func getMutationData(data *codegen.Data, s *gqlSchema) []rootField {
+	var results []rootField
 	for key := range data.Schema.Nodes {
 
 		nodeData := data.Schema.Nodes[key].NodeData
@@ -1406,10 +1405,10 @@ func getMutationData(data *codegen.Data, s *gqlSchema) []queryGQLDatum {
 			if !action.ExposedToGraphQL() {
 				continue
 			}
-			results = append(results, queryGQLDatum{
-				ImportPath:  getImportPathForAction(nodeData, action),
-				GraphQLType: fmt.Sprintf("%sType", strcase.ToCamel(action.GetGraphQLName())),
-				GraphQLName: action.GetGraphQLName(),
+			results = append(results, rootField{
+				ImportPath: getImportPathForAction(nodeData, action),
+				Type:       fmt.Sprintf("%sType", strcase.ToCamel(action.GetGraphQLName())),
+				Name:       action.GetGraphQLName(),
 			})
 		}
 	}
@@ -1421,16 +1420,16 @@ func getMutationData(data *codegen.Data, s *gqlSchema) []queryGQLDatum {
 		//		spew.Dump("node field", node.Field)
 		mutation := node.Field
 		// TODO import path not registering well...
-		results = append(results, queryGQLDatum{
-			ImportPath:  getImportPathForCustomMutation(mutation.GraphQLName),
-			GraphQLName: mutation.GraphQLName,
-			GraphQLType: fmt.Sprintf("%sType", strcase.ToCamel(mutation.GraphQLName)),
+		results = append(results, rootField{
+			ImportPath: getImportPathForCustomMutation(mutation.GraphQLName),
+			Name:       mutation.GraphQLName,
+			Type:       fmt.Sprintf("%sType", strcase.ToCamel(mutation.GraphQLName)),
 		})
 	}
 
 	// sort lexicographically so that we are not always changing this
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].GraphQLName < results[j].GraphQLName
+		return results[i].Name < results[j].Name
 	})
 	return results
 }
@@ -1439,9 +1438,9 @@ func writeQueryFile(data *codegen.Data) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlRootData{
-			Queries: getQueryData(data),
-			Type:    "QueryType",
-			Node:    "Query",
+			RootFields: getQueryData(data),
+			Type:       "QueryType",
+			Node:       "Query",
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root.tmpl"),
@@ -1457,9 +1456,9 @@ func writeMutationFile(data *codegen.Data, s *gqlSchema) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlRootData{
-			Queries: getMutationData(data, s),
-			Type:    "MutationType",
-			Node:    "Mutation",
+			RootFields: getMutationData(data, s),
+			Type:       "MutationType",
+			Node:       "Mutation",
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/root.tmpl"),
