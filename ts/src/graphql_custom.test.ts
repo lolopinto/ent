@@ -2,10 +2,6 @@ import {
   gqlField,
   gqlArg,
   GQLCapture,
-  CustomField,
-  gqlArgType,
-  Field,
-  CustomObject,
   CustomFieldType,
   gqlMutation,
   gqlInputObjectType,
@@ -13,20 +9,19 @@ import {
   gqlQuery,
   gqlContextType,
 } from "./graphql";
-import { GraphQLInt, GraphQLFloat, GraphQLString, GraphQLID } from "graphql";
+import { GraphQLID } from "graphql";
 import { ID, Viewer } from "./ent";
 
 import {
-  validateOneCustomField,
   validateCustomFields,
   validateNoCustom,
-  validateNoCustomFields,
-  validateCustomArgs,
   validateNoCustomArgs,
   validateCustomInputObjects,
   validateCustomObjects,
   validateCustomMutations,
   validateCustomQueries,
+  CustomTypes,
+  validateNoCustomQueries,
 } from "./graphql_field_helpers";
 import { User } from "./testutils/builder";
 import { Context } from "./auth/context";
@@ -161,6 +156,8 @@ test("mutation with input type", async () => {
       ],
     },
   ]);
+  validateNoCustomArgs();
+  validateNoCustomQueries();
 
   GQLCapture.resolve([]);
 });
@@ -253,6 +250,8 @@ test("mutation with different types", async () => {
     },
   ]);
 
+  validateNoCustom(CustomTypes.Field, CustomTypes.Mutation, CustomTypes.Object);
+
   GQLCapture.resolve([]);
 });
 
@@ -272,6 +271,7 @@ test("mutation with no args", () => {
       args: [],
     },
   ]);
+  validateNoCustom(CustomTypes.Mutation);
   GQLCapture.resolve([]);
 });
 
@@ -341,6 +341,8 @@ test("query with return type", () => {
       args: [],
     },
   ]);
+
+  validateNoCustom(CustomTypes.Field, CustomTypes.Object, CustomTypes.Query);
 
   GQLCapture.resolve([]);
 });

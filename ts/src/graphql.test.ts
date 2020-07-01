@@ -2,21 +2,17 @@ import {
   gqlField,
   gqlArg,
   GQLCapture,
-  CustomField,
   gqlArgType,
-  Field,
-  CustomObject,
   CustomFieldType,
 } from "./graphql";
 import { GraphQLInt, GraphQLFloat, GraphQLString } from "graphql";
 
 import {
   validateOneCustomField,
+  CustomTypes,
   validateCustomFields,
   validateNoCustom,
-  validateNoCustomFields,
   validateCustomArgs,
-  validateNoCustomArgs,
 } from "./graphql_field_helpers";
 
 beforeEach(() => {
@@ -58,7 +54,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. nullable string", () => {
@@ -89,7 +85,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. int", () => {
@@ -112,7 +108,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. float", () => {
@@ -135,7 +131,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. returns float with implicit number", () => {
@@ -158,7 +154,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. returns int with implicit number", () => {
@@ -181,7 +177,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. throws with number and no type", () => {
@@ -235,7 +231,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. list of strings", () => {
@@ -259,7 +255,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. nullable list of strings", () => {
@@ -284,7 +280,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. nullable contents of strings", () => {
@@ -309,7 +305,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. nullable contents and list of strings", () => {
@@ -335,7 +331,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 });
 
@@ -367,7 +363,7 @@ describe("property", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. int", () => {
@@ -388,7 +384,7 @@ describe("property", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. float", () => {
@@ -409,7 +405,7 @@ describe("property", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. with implicit type", () => {
@@ -431,7 +427,7 @@ describe("property", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. with implicit type", () => {
@@ -482,7 +478,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, returns int", () => {
@@ -506,7 +502,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, returns float", () => {
@@ -530,7 +526,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, returns float for implicit return type", () => {
@@ -554,7 +550,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, throws for implicit return type", () => {
@@ -597,7 +593,7 @@ describe("function", () => {
         },
       ],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, multiple param", () => {
@@ -633,7 +629,7 @@ describe("function", () => {
         },
       ],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, nullable arg", () => {
@@ -666,7 +662,7 @@ describe("function", () => {
         },
       ],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, no arg decorator", () => {
@@ -775,6 +771,7 @@ describe("function", () => {
         className: "SearchArgs",
       },
     ]);
+    validateNoCustom(CustomTypes.Field, CustomTypes.Arg);
   });
 
   test("enabled. referencing non-arg class", () => {
@@ -796,6 +793,7 @@ describe("function", () => {
       // TODO need a better message here
       expect(error.message).toMatch(/^args were not captured correctly/);
     }
+    validateNoCustom();
   });
 
   test("enabled. resolve return types", () => {
@@ -810,7 +808,7 @@ describe("function", () => {
     }
 
     expect(GQLCapture.getCustomArgs().size).toBe(0);
-    expect(GQLCapture.getCustomFields().length).toBe(1);
+    expect(GQLCapture.getCustomFields().size).toBe(1);
     // no errors!
     GQLCapture.resolve(["User", "Contact"]);
   });
@@ -826,8 +824,7 @@ describe("function", () => {
       }
     }
 
-    expect(GQLCapture.getCustomArgs().size).toBe(0);
-    expect(GQLCapture.getCustomFields().length).toBe(1);
+    validateNoCustom(CustomTypes.Field);
     try {
       GQLCapture.resolve(["User"]);
       fail("shouldn't get here");
@@ -872,7 +869,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. implied async response with type hint", () => {
@@ -896,7 +893,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. object type string because 'circular dependencies'", () => {
@@ -921,7 +918,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. object type string list because 'circular dependencies'", () => {
@@ -947,6 +944,6 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 });

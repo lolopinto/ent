@@ -6,9 +6,15 @@ import {
   CustomMutation,
   CustomQuery,
 } from "./graphql";
+import { ECANCELED } from "constants";
 
 export function validateOneCustomField(expected: CustomField) {
-  validateCustomFields([expected]);
+  let customFields = GQLCapture.getCustomFields();
+  // only 1 node
+  expect(customFields.size).toBe(1);
+  let fields = customFields.get(expected.nodeName);
+  expect(fields).toBeDefined();
+  validateCustomFieldImpl(expected, fields![0]);
 }
 
 function validateCustomFieldsImpl(
@@ -20,19 +26,48 @@ function validateCustomFieldsImpl(
   for (let i = 0; i < actual.length; i++) {
     let customField = actual[i];
     let expectedCustomField = expected[i];
-    expect(customField.nodeName).toBe(expectedCustomField.nodeName);
-    expect(customField.functionName).toBe(expectedCustomField.functionName);
-    expect(customField.gqlName).toBe(expectedCustomField.gqlName);
-    expect(customField.fieldType).toBe(expectedCustomField.fieldType);
-
-    validateFields(customField.results, expectedCustomField.results);
-
-    validateFields(customField.args, expectedCustomField.args);
+    validateCustomFieldImpl(expectedCustomField, customField);
   }
 }
 
+function validateCustomFieldImpl(
+  expectedCustomField: CustomField,
+  customField: CustomField,
+) {
+  expect(customField.nodeName).toBe(expectedCustomField.nodeName);
+  expect(customField.functionName).toBe(expectedCustomField.functionName);
+  expect(customField.gqlName).toBe(expectedCustomField.gqlName);
+  expect(customField.fieldType).toBe(expectedCustomField.fieldType);
+
+  validateFields(customField.results, expectedCustomField.results);
+
+  validateFields(customField.args, expectedCustomField.args);
+}
+
+// we keep the simple API for the client and map to what the underlying data structure supports...
 export function validateCustomFields(expected: CustomField[]) {
-  validateCustomFieldsImpl(expected, GQLCapture.getCustomFields());
+  let map = new Map<string, CustomField[]>();
+  expected.forEach((field) => {
+    let list = map.get(field.nodeName);
+
+    if (list === undefined) {
+      list = [field];
+      map.set(field.nodeName, list);
+    } else {
+      list.push(field);
+    }
+  });
+
+  let customFields = GQLCapture.getCustomFields();
+
+  expect(map.size).toEqual(customFields.size);
+
+  for (const [key, list] of customFields) {
+    let expFields = map.get(key);
+    expect(expFields).toBeDefined();
+
+    validateCustomFieldsImpl(expFields!, list);
+  }
 }
 
 export function validateCustomMutations(expected: CustomMutation[]) {
@@ -64,7 +99,7 @@ export function validateFields(actual: Field[], expected: Field[]) {
 }
 
 export function validateNoCustomFields() {
-  expect(GQLCapture.getCustomFields().length).toBe(0);
+  expect(GQLCapture.getCustomFields().size).toBe(0);
 }
 
 function validateCustom(
@@ -100,7 +135,44 @@ export function validateNoCustomArgs() {
   expect(GQLCapture.getCustomArgs().size).toBe(0);
 }
 
-export function validateNoCustom() {
-  validateNoCustomFields();
-  validateNoCustomArgs();
+export function validateNoCustomQueries() {
+  expect(GQLCapture.getCustomQueries().length).toBe(0);
+}
+
+export function validateNoCustomMutations() {
+  expect(GQLCapture.getCustomMutations().length).toBe(0);
+}
+
+export function validateNoCustomInputObjects() {
+  expect(GQLCapture.getCustomInputObjects().size).toBe(0);
+}
+
+export function validateNoCustomObjects() {
+  expect(GQLCapture.getCustomObjects().size).toBe(0);
+}
+
+export enum CustomTypes {
+  Field = 0x1,
+  Arg = 0x2,
+  Object = 0x4,
+  InputObject = 0x8,
+  Query = 0x10,
+  Mutation = 0x20,
+}
+
+// TODO what's a good name for this instead
+export function validateNoCustom(...exceptions: number[]) {
+  let bit = 0;
+  exceptions.forEach((exp) => (bit = bit | exp));
+  const validate = (typ: CustomTypes, validateFn: () => void) => {
+    if (!(bit & typ)) {
+      validateFn();
+    }
+  };
+  validate(CustomTypes.Field, validateNoCustomFields);
+  validate(CustomTypes.Arg, validateNoCustomArgs);
+  validate(CustomTypes.Object, validateNoCustomObjects);
+  validate(CustomTypes.Query, validateNoCustomQueries);
+  validate(CustomTypes.Mutation, validateNoCustomMutations);
+  validate(CustomTypes.InputObject, validateNoCustomInputObjects);
 }

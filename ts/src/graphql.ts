@@ -65,6 +65,10 @@ export interface ProcessedCustomField extends CustomFieldImpl {
   results: ProcessedField[];
 }
 
+export type ProcessCustomFieldMap = {
+  [key: string]: ProcessedCustomField;
+};
+
 export interface CustomObject {
   nodeName: string;
   className: string; // TODO both of these 2 the same right now
@@ -136,7 +140,8 @@ export class GQLCapture {
     return this.enabled;
   }
 
-  private static customFields: CustomField[] = [];
+  // map from class name to fields
+  private static customFields: Map<string, CustomField[]> = new Map();
   private static customQueries: CustomQuery[] = [];
   private static customMutations: CustomMutation[] = [];
   private static customArgs: Map<string, CustomObject> = new Map();
@@ -144,7 +149,7 @@ export class GQLCapture {
   private static customObjects: Map<string, CustomObject> = new Map();
 
   static clear(): void {
-    this.customFields = [];
+    this.customFields.clear();
     this.customQueries = [];
     this.customMutations = [];
     this.customArgs.clear();
@@ -152,7 +157,7 @@ export class GQLCapture {
     this.customObjects.clear();
   }
 
-  static getCustomFields(): CustomField[] {
+  static getCustomFields(): Map<string, CustomField[]> {
     return this.customFields;
   }
 
@@ -191,8 +196,12 @@ export class GQLCapture {
     return res;
   }
 
-  static getProcessedCustomFields(): ProcessedCustomField[] {
-    return this.getProcessedCustomFieldsImpl(this.customFields);
+  static getProcessedCustomFields(): ProcessCustomFieldMap {
+    let result = {};
+    for (const [key, value] of this.customFields) {
+      result[key] = this.getProcessedCustomFieldsImpl(value);
+    }
+    return result;
   }
 
   static getProcessedCustomMutations(): ProcessedCustomField[] {
@@ -314,9 +323,21 @@ export class GQLCapture {
         return;
       }
 
-      GQLCapture.customFields.push(
-        GQLCapture.getCustomField(target, propertyKey, descriptor, options),
+      let customField = GQLCapture.getCustomField(
+        target,
+        propertyKey,
+        descriptor,
+        options,
       );
+      if (!customField) {
+        return;
+      }
+      let list = GQLCapture.customFields.get(customField.nodeName);
+      if (list === undefined) {
+        list = [];
+      }
+      list.push(customField);
+      GQLCapture.customFields.set(customField.nodeName, list);
     };
   }
 
@@ -605,7 +626,9 @@ export class GQLCapture {
         });
       });
     };
-    resolveFields(GQLCapture.customFields);
+    GQLCapture.customFields.forEach((customFields) =>
+      resolveFields(customFields),
+    );
     resolveFields(GQLCapture.customQueries);
     resolveFields(GQLCapture.customMutations);
   }
