@@ -14,9 +14,10 @@ import {
 import { ID } from "ent/ent";
 import { Context } from "ent/auth/context";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
-import { UserEditInput } from "src/ent/user/actions/edit_user_action";
+import EditUserAction, {
+  UserEditInput,
+} from "src/ent/user/actions/edit_user_action";
 import User from "src/ent/user";
-import EditUserAction from "src/ent/user/actions/edit_user_action";
 
 interface customUserEditInput extends UserEditInput {
   userID: ID;

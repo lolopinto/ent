@@ -118,7 +118,6 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 			defer wg.Done()
 			node := s.nodes[key]
 
-			return
 			if err := writeFile(node); err != nil {
 				serr.Append(err)
 			}
@@ -1284,7 +1283,6 @@ type objectType struct {
 	Exported bool
 	GQLType  string // GraphQLObjectType or GraphQLInputObjectType
 
-	// TODO will soon need to allow calling import multiple times for the same path
 	DefaultImports []*fileImport
 	Imports        []*fileImport
 	Interfaces     []*interfaceType

@@ -10,6 +10,7 @@ import (
 // Imports keeps track of imports in a generated typescript file
 type Imports struct {
 	exportMap   map[string]*importInfo
+	pathMap     map[string]*importInfo
 	usedExports map[string]bool
 	imports     []*importInfo
 }
@@ -19,6 +20,7 @@ func NewImports() *Imports {
 	return &Imports{
 		exportMap:   make(map[string]*importInfo),
 		usedExports: make(map[string]bool),
+		pathMap:     make(map[string]*importInfo),
 	}
 }
 
@@ -38,16 +40,37 @@ func (imps *Imports) ReserveAll(path, as string) (string, error) {
 }
 
 func (imps *Imports) reserve(path string, defaultExport string, importAll bool, exports []string) (string, error) {
-	imp := &importInfo{
-		path:          path,
-		exports:       exports,
-		importAll:     importAll,
-		defaultExport: defaultExport,
-	}
+	var imp *importInfo
+	imp = imps.pathMap[path]
 
 	if defaultExport != "" {
 		exports = append(exports, defaultExport)
-		imp.exports = exports
+	}
+
+	// not there, create a new one...
+	if imp == nil {
+		imp = &importInfo{
+			path:          path,
+			exports:       exports,
+			importAll:     importAll,
+			defaultExport: defaultExport,
+		}
+
+		imps.pathMap[path] = imp
+		imps.imports = append(imps.imports, imp)
+
+	} else {
+		// update existing one...
+		if defaultExport != "" && imp.defaultExport != defaultExport && imp.defaultExport != "" {
+			return "", fmt.Errorf("can't set %s as new default export for %s. %s already default export", defaultExport, path, imp.defaultExport)
+		}
+		if defaultExport != "" {
+			imp.defaultExport = defaultExport
+		}
+		imp.exports = append(imp.exports, exports...)
+		if importAll {
+			imp.importAll = true
+		}
 	}
 
 	for _, export := range exports {
@@ -57,7 +80,6 @@ func (imps *Imports) reserve(path string, defaultExport string, importAll bool, 
 		}
 		imps.exportMap[export] = imp
 	}
-	imps.imports = append(imps.imports, imp)
 	return "", nil
 }
 

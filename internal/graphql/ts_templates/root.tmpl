@@ -1,7 +1,7 @@
 {{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo"}}
 
-{{ range $query := .Queries -}} 
-  import { {{$query.GraphQLType}} } from "{{$query.ImportPath}}";
+{{ range $field := .RootFields -}} 
+  import { {{$field.Type}} } from "{{$field.ImportPath}}";
 {{ end }}
 
 export const {{.Type}} = new {{useImport "GraphQLObjectType"}}({
