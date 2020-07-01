@@ -12,9 +12,9 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { Context } from "ent/auth/context";
-import { UserAuthInput } from "/Users/ola/code/ent/ts/examples/simple/src/graphql/mutations/auth.ts";
-import { UserAuthResponse } from "/Users/ola/code/ent/ts/examples/simple/src/graphql/mutations/auth.ts";
-import { AuthResolver } from "/Users/ola/code/ent/ts/examples/simple/src/graphql/mutations/auth.ts";
+import { UserAuthInput } from "../auth";
+import { UserAuthResponse } from "../auth";
+import { AuthResolver } from "../auth";
 
 export const UserAuthInputType = new GraphQLInputObjectType({
   name: "UserAuthInput",

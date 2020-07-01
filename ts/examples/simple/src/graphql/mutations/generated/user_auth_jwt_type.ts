@@ -13,7 +13,7 @@ import {
 } from "graphql";
 import { ID } from "ent/ent";
 import { Context } from "ent/auth/context";
-import { AuthResolver } from "/Users/ola/code/ent/ts/examples/simple/src/graphql/mutations/auth.ts";
+import { AuthResolver } from "../auth";
 
 interface UserAuthJWTInput {
   emailAddress: string;
