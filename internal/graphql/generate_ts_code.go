@@ -64,10 +64,11 @@ type CustomClassInfo struct {
 }
 
 type customData struct {
-	Args      map[string]*CustomArg       `json:"args"`
-	Inputs    map[string]*CustomArg       `json:"inputs"`
-	Objects   map[string]*CustomArg       `json:"objects"`
-	Fields    []CustomField               `json:"fields"`
+	Args    map[string]*CustomArg `json:"args"`
+	Inputs  map[string]*CustomArg `json:"inputs"`
+	Objects map[string]*CustomArg `json:"objects"`
+	// map of class to fields in that class
+	Fields    map[string][]CustomField    `json:"fields"`
 	Queries   []CustomField               `json:"queries"`
 	Mutations []CustomField               `json:"mutations"`
 	Classes   map[string]*CustomClassInfo `json:"classes"`
@@ -286,8 +287,7 @@ func processCustomData(data *codegen.Data, s *gqlSchema) error {
 }
 
 func processCustomFields(cd *customData, s *gqlSchema) error {
-	for _, field := range cd.Fields {
-		nodeName := field.Node
+	for nodeName, fields := range cd.Fields {
 		if cd.Inputs[nodeName] != nil {
 			continue
 		}
@@ -299,11 +299,7 @@ func processCustomFields(cd *customData, s *gqlSchema) error {
 		nodeInfo := s.nodes[nodeName]
 
 		if nodeInfo == nil {
-			return fmt.Errorf("can't find %s node that has custom field %s ", field.Node, field.GraphQLName)
-		}
-
-		if len(field.Args) > 0 {
-			return fmt.Errorf("don't currently support fields with any args")
+			return fmt.Errorf("can't find %s node that has custom fields", nodeName)
 		}
 
 		objData := nodeInfo.ObjData
@@ -311,12 +307,19 @@ func processCustomFields(cd *customData, s *gqlSchema) error {
 		// always has a node for now
 		obj := objData.GQLNodes[0]
 
-		gqlField, err := getCustomGQLField(field, s, nodeData.NodeInstance)
-		if err != nil {
-			return err
+		for _, field := range fields {
+
+			if len(field.Args) > 0 {
+				return fmt.Errorf("don't currently support fields with any args")
+			}
+
+			gqlField, err := getCustomGQLField(field, s, nodeData.NodeInstance)
+			if err != nil {
+				return err
+			}
+			// append the field
+			obj.Fields = append(obj.Fields, gqlField)
 		}
-		// append the field
-		obj.Fields = append(obj.Fields, gqlField)
 	}
 	return nil
 }
@@ -451,12 +454,16 @@ func processCustomMutations(data *codegen.Data, cd *customData, s *gqlSchema) er
 			return errors.New("no response for mutation. TODO handle")
 		}
 
+		fieldConfig, err := buildCustomMutationFieldConfig(cd, mutation, objTypes)
+		if err != nil {
+			return err
+		}
 		s.customMutations = append(s.customMutations, &gqlNode{
 			ObjData: &gqlobjectData{
 				Node:         mutation.Node,
 				NodeInstance: "obj",
 				GQLNodes:     objTypes,
-				FieldConfig:  buildCustomMutationFieldConfig(cd, mutation, objTypes),
+				FieldConfig:  fieldConfig,
 			},
 			FilePath: mutationPath,
 			Field:    &mutation,
@@ -471,7 +478,7 @@ func processCustomMutations(data *codegen.Data, cd *customData, s *gqlSchema) er
 	return nil
 }
 
-func buildCustomMutationFieldConfig(cd *customData, mutation CustomField, objTypes []*objectType) *fieldConfig {
+func buildCustomMutationFieldConfig(cd *customData, mutation CustomField, objTypes []*objectType) (*fieldConfig, error) {
 	prefix := strcase.ToCamel(mutation.GraphQLName)
 	var argImports []string
 
@@ -529,14 +536,14 @@ func buildCustomMutationFieldConfig(cd *customData, mutation CustomField, objTyp
 		if input == nil {
 			argContents[idx] = arg.Name
 		} else {
-			// TODO need to change the format of fields...
-			args := []string{}
-			for _, f := range cd.Fields {
+			fields, ok := cd.Fields[arg.Type]
+			if !ok {
+				return nil, fmt.Errorf("input type %s has no fields", arg.Type)
+			}
+			args := make([]string, len(fields))
 
-				if f.Node != arg.Type {
-					continue
-				}
-				args = append(args, fmt.Sprintf("%s:input.%s", f.GraphQLName, f.GraphQLName))
+			for idx, f := range fields {
+				args[idx] = fmt.Sprintf("%s:input.%s", f.GraphQLName, f.GraphQLName)
 			}
 			argContents[idx] = fmt.Sprintf("{%s},", strings.Join(args, ","))
 		}
@@ -550,7 +557,7 @@ func buildCustomMutationFieldConfig(cd *customData, mutation CustomField, objTyp
 		");",
 	}
 
-	return result
+	return result, nil
 }
 
 func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item CustomItem, destPath, gqlType string) (*objectType, error) {
@@ -562,13 +569,12 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 		GQLType: gqlType,
 	}
 
-	// TODO this is way too slow
-	// need to change the format of fields
-	// to not be a list but be mapped via name or something
-	for _, f := range cd.Fields {
-		if f.Node != item.Type {
-			continue
-		}
+	fields, ok := cd.Fields[item.Type]
+	if !ok {
+		return nil, fmt.Errorf(" type %s has no fields", item.Type)
+	}
+
+	for _, f := range fields {
 		// maybe we'll care for input vs response here at some point
 		gqlField, err := getCustomGQLField(f, s, "obj")
 		if err != nil {
@@ -611,18 +617,18 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 			Exported: false,
 			Name:     item.Type,
 		}
-		// TODO also needs to be fixed...
-		for _, field := range cd.Fields {
-			if field.Node != item.Type {
-				continue
-			}
+		fields, ok := cd.Fields[item.Type]
+		if !ok {
+			return nil, fmt.Errorf("type %s has no fields", item.Type)
 
+		}
+		for _, field := range fields {
 			newInt := &interfaceField{
 				Name: field.GraphQLName,
 				Type: field.Results[0].Type,
 				// TODO getGraphQLImportsForField???
 				UseImport: false,
-				// TODO need to conver to number etc...
+				// TODO need to convert to number etc...
 				// need to convert from graphql type to TS type :(
 			}
 
@@ -637,8 +643,6 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 				}
 			}
 
-			//			if field.Ts
-			//			if field.Args[0].
 			customInt.Fields = append(customInt.Fields, newInt)
 		}
 		typ.Interfaces = []*interfaceType{customInt}
