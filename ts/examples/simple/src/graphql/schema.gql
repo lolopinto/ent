@@ -3,6 +3,7 @@ type Query {
   contact(id: ID!): Contact
   event(id: ID!): Event
   user(id: ID!): User
+  viewer: ViewerType!
 }
 
 type Address {
@@ -60,6 +61,10 @@ type Event {
 
 """Time scalar type"""
 scalar Time
+
+type ViewerType {
+  viewerID: ID
+}
 
 type Mutation {
   contactCreate(input: ContactCreateInput!): ContactCreateResponse!

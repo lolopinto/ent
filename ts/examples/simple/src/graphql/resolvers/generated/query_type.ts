@@ -6,6 +6,7 @@ import { AddressQuery } from "./address_type";
 import { ContactQuery } from "./contact_type";
 import { EventQuery } from "./event_type";
 import { UserQuery } from "./user_type";
+import { ViewerType } from "src/graphql/resolvers/generated/viewer_type";
 
 export const QueryType = new GraphQLObjectType({
   name: "Query",
@@ -14,5 +15,6 @@ export const QueryType = new GraphQLObjectType({
     contact: ContactQuery,
     event: EventQuery,
     user: UserQuery,
+    viewer: ViewerType,
   }),
 });

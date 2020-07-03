@@ -153,6 +153,17 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 			}
 		}(idx)
 	}
+	wg.Add(len(s.customQueries))
+	for idx := range s.customQueries {
+		go func(idx int) {
+			defer wg.Done()
+			node := s.customQueries[idx]
+
+			if err := writeFile(node); err != nil {
+				serr.Append(err)
+			}
+		}(idx)
+	}
 
 	wg.Wait()
 
@@ -160,7 +171,7 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 		return err
 	}
 
-	if err := writeQueryFile(data); err != nil {
+	if err := writeQueryFile(data, s); err != nil {
 		serr.Append(err)
 	}
 	if s.hasMutations {
@@ -217,6 +228,14 @@ func getFilePathForCustomMutation(name string) string {
 
 func getImportPathForCustomMutation(name string) string {
 	return fmt.Sprintf("src/graphql/mutations/generated/%s_type", strcase.ToSnake(name))
+}
+
+func getFilePathForCustomQuery(name string) string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strcase.ToSnake(name))
+}
+
+func getImportPathForCustomQuery(name string) string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", strcase.ToSnake(name))
 }
 
 func parseCustomData(data *codegen.Data) chan *customData {
@@ -281,6 +300,10 @@ func processCustomData(data *codegen.Data, s *gqlSchema) error {
 	}
 
 	if err := processCustomMutations(data, cd, s); err != nil {
+		return err
+	}
+
+	if err := processCustomQueries(data, cd, s); err != nil {
 		return err
 	}
 	return nil
@@ -361,293 +384,14 @@ func getCustomGQLField(field CustomField, s *gqlSchema, instance string) (*field
 	return gqlField, nil
 }
 
-func getRelativeImportPath(data *codegen.Data, basepath, targetpath string) (string, error) {
-	// BONUS: instead of this, we should use the nice paths in tsconfig...
-	absPath := filepath.Join(data.CodePath.GetAbsPathToRoot(), basepath)
-
-	// need to do any relative imports from the directory not from the file itself
-	dir := filepath.Dir(absPath)
-	rel, err := filepath.Rel(dir, targetpath)
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSuffix(rel, ".ts"), nil
-}
-
 func processCustomMutations(data *codegen.Data, cd *customData, s *gqlSchema) error {
-	spew.Dump(data.CodePath.GetAbsPathToRoot())
-	for idx := range cd.Mutations {
-		// mutation having weird issues unless broken down like this
-		mutation := cd.Mutations[idx]
-		nodeName := mutation.Node
-
-		class := cd.Classes[nodeName]
-		if class == nil {
-			return fmt.Errorf("mutation %s with class %s not found", mutation.GraphQLName, class.Name)
-		}
-
-		if !class.Exported {
-			return fmt.Errorf("Resolver class %s needs to be exported", class.Name)
-		}
-
-		var objTypes []*objectType
-
-		// TODO we want an option for namespace for folders but for now ignore
-		mutationPath := getFilePathForCustomMutation(mutation.GraphQLName)
-
-		// let's try and make this generic enough to work for input type and standard args...
-		// and have graphql complain if not valid types at the end here
-		for _, arg := range mutation.Args {
-			// nothing to do with context args yet
-			if arg.IsContextArg {
-				continue
-			}
-
-			// need to build input type
-			// TODO for now we assume inputtype is 1:1, that's not going to remain the same forever...
-			inputObj := cd.Inputs[arg.Type]
-			if inputObj == nil {
-				continue
-			}
-			inputType, err := buildObjectType(data, cd, s, arg, mutationPath, "GraphQLInputObjectType")
-			if err != nil {
-				return err
-			}
-			objTypes = append(objTypes, inputType)
-		}
-
-		hasResponse := false
-		for _, result := range mutation.Results {
-			// 0 -1 allowed...
-			object := cd.Objects[result.Type]
-			if object == nil {
-				continue
-			}
-			responseType, err := buildObjectType(data, cd, s, result, mutationPath, "GraphQLObjectType")
-			if err != nil {
-				return err
-			}
-
-			cls := cd.Classes[mutation.Node]
-			if cls != nil {
-				importPath, err := getRelativeImportPath(data, mutationPath, cls.Path)
-				if err != nil {
-					return err
-				}
-				if cls.DefaultExport {
-					responseType.DefaultImports = append(responseType.DefaultImports, &fileImport{
-						ImportPath: importPath,
-						Type:       mutation.Node,
-					})
-				} else {
-					responseType.Imports = append(responseType.Imports, &fileImport{
-						ImportPath: importPath,
-						Type:       mutation.Node,
-					})
-				}
-			}
-			hasResponse = true
-			objTypes = append(objTypes, responseType)
-		}
-		if !hasResponse {
-			return errors.New("no response for mutation. TODO handle")
-		}
-
-		fieldConfig, err := buildCustomMutationFieldConfig(cd, mutation, objTypes)
-		if err != nil {
-			return err
-		}
-		s.customMutations = append(s.customMutations, &gqlNode{
-			ObjData: &gqlobjectData{
-				Node:         mutation.Node,
-				NodeInstance: "obj",
-				GQLNodes:     objTypes,
-				FieldConfig:  fieldConfig,
-			},
-			FilePath: mutationPath,
-			Field:    &mutation,
-		})
-	}
-
-	// flag this appropriately
-	if len(s.customMutations) > 0 {
-		s.hasMutations = true
-	}
-
-	return nil
+	cm := &customMutationsProcesser{}
+	return cm.process(data, cd, s)
 }
 
-func buildCustomMutationFieldConfig(cd *customData, mutation CustomField, objTypes []*objectType) (*fieldConfig, error) {
-	prefix := strcase.ToCamel(mutation.GraphQLName)
-	var argImports []string
-
-	// args that "useImport" should be called on
-	for _, arg := range mutation.Args {
-		if arg.IsContextArg {
-			continue
-		}
-
-		cls := cd.Classes[arg.Type]
-		if cls != nil && cls.Exported {
-			argImports = append(argImports, arg.Type)
-		}
-	}
-	for _, result := range mutation.Results {
-		cls := cd.Classes[result.Type]
-		if cls != nil && cls.Exported {
-			argImports = append(argImports, result.Type)
-		}
-	}
-	//	mutation.Args[0].Type
-	// TODO share this with buildActionFieldConfig?
-	result := &fieldConfig{
-		Exported: true,
-		Name:     fmt.Sprintf("%sType", prefix),
-		// TODO this may eventually not be input but may be other types...
-		Arg:              fmt.Sprintf("{ [input: string]: %s}", objTypes[0].Node),
-		ResolveMethodArg: "{ input }",
-		TypeImports: []string{
-			"GraphQLNonNull",
-			// TODO we should pass this in instead of automatically doing this
-			fmt.Sprintf("%sResponseType", prefix),
-		},
-		ArgImports: argImports,
-		Args: []*fieldConfigArg{
-			{
-				Name: "input",
-				Imports: []string{
-					"GraphQLNonNull",
-					// same for this about passing it in
-					fmt.Sprintf("%sInputType", prefix),
-				},
-			},
-		},
-		ReturnTypeHint: fmt.Sprintf("Promise<%sResponse>", prefix),
-	}
-
-	argContents := make([]string, len(mutation.Args))
-	for idx, arg := range mutation.Args {
-		if arg.IsContextArg {
-			argContents[idx] = "context"
-			continue
-		}
-		input := cd.Inputs[arg.Type]
-		if input == nil {
-			argContents[idx] = arg.Name
-		} else {
-			fields, ok := cd.Fields[arg.Type]
-			if !ok {
-				return nil, fmt.Errorf("input type %s has no fields", arg.Type)
-			}
-			args := make([]string, len(fields))
-
-			for idx, f := range fields {
-				args[idx] = fmt.Sprintf("%s:input.%s", f.GraphQLName, f.GraphQLName)
-			}
-			argContents[idx] = fmt.Sprintf("{%s},", strings.Join(args, ","))
-		}
-	}
-	result.FunctionContents = []string{
-		fmt.Sprintf("const r = new %s();", mutation.Node),
-		fmt.Sprintf("return r.%s(", mutation.GraphQLName),
-		// put all the args on one line separated by a comma. we'll depend on prettier to format correctly
-		strings.Join(argContents, ","),
-		// closing the funtion call..
-		");",
-	}
-
-	return result, nil
-}
-
-func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item CustomItem, destPath, gqlType string) (*objectType, error) {
-	typ := &objectType{
-		Type:     fmt.Sprintf("%sType", item.Type),
-		Node:     item.Type,
-		Exported: true,
-		// input or object type
-		GQLType: gqlType,
-	}
-
-	fields, ok := cd.Fields[item.Type]
-	if !ok {
-		return nil, fmt.Errorf(" type %s has no fields", item.Type)
-	}
-
-	for _, f := range fields {
-		// maybe we'll care for input vs response here at some point
-		gqlField, err := getCustomGQLField(f, s, "obj")
-		if err != nil {
-			return nil, err
-		}
-		typ.Fields = append(typ.Fields, gqlField)
-	}
-
-	cls := cd.Classes[item.Type]
-	createInterface := true
-	if cls != nil {
-		importPath, err := getRelativeImportPath(data, destPath, cls.Path)
-		if err != nil {
-			return nil, err
-		}
-		if cls.DefaultExport {
-
-			// exported, we need to import it
-			typ.DefaultImports = []*fileImport{
-				{
-					ImportPath: importPath,
-					Type:       item.Type,
-				},
-			}
-			createInterface = false
-		} else if cls.Exported {
-			typ.Imports = []*fileImport{
-				{
-					ImportPath: importPath,
-					Type:       item.Type,
-				},
-			}
-			createInterface = false
-		}
-	}
-
-	if createInterface {
-		// need to create an interface for it
-		customInt := &interfaceType{
-			Exported: false,
-			Name:     item.Type,
-		}
-		fields, ok := cd.Fields[item.Type]
-		if !ok {
-			return nil, fmt.Errorf("type %s has no fields", item.Type)
-
-		}
-		for _, field := range fields {
-			newInt := &interfaceField{
-				Name: field.GraphQLName,
-				Type: field.Results[0].Type,
-				// TODO getGraphQLImportsForField???
-				UseImport: false,
-				// TODO need to convert to number etc...
-				// need to convert from graphql type to TS type :(
-			}
-
-			if len(field.Results) == 1 {
-				result := field.Results[0]
-				if result.TSType != nil {
-					newInt.Type = *result.TSType
-					if newInt.Type == "ID" {
-						// TODO this needs to change since this isn't scalable
-						newInt.UseImport = true
-					}
-				}
-			}
-
-			customInt.Fields = append(customInt.Fields, newInt)
-		}
-		typ.Interfaces = []*interfaceType{customInt}
-	}
-	return typ, nil
+func processCustomQueries(data *codegen.Data, cd *customData, s *gqlSchema) error {
+	cq := &customQueriesProcesser{}
+	return cq.process(data, cd, s)
 }
 
 func getGraphQLImportsForField(f CustomField, s *gqlSchema) ([]string, error) {
@@ -1372,7 +1116,7 @@ type gqlRootData struct {
 	Node       string
 }
 
-func getQueryData(data *codegen.Data) []rootField {
+func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 	var results []rootField
 	for key := range data.Schema.Nodes {
 
@@ -1384,6 +1128,18 @@ func getQueryData(data *codegen.Data) []rootField {
 			ImportPath: fmt.Sprintf("./%s_type", nodeData.PackageName),
 			Type:       fmt.Sprintf("%sQuery", nodeData.Node),
 			Name:       strcase.ToLowerCamel(nodeData.Node),
+		})
+	}
+
+	for _, node := range s.customQueries {
+		if node.Field == nil {
+			panic("TODO query with no custom field")
+		}
+		query := node.Field
+		results = append(results, rootField{
+			ImportPath: getImportPathForCustomQuery(query.GraphQLName),
+			Name:       query.GraphQLName,
+			Type:       fmt.Sprintf("%sType", strcase.ToCamel(query.GraphQLName)),
 		})
 	}
 
@@ -1419,9 +1175,7 @@ func getMutationData(data *codegen.Data, s *gqlSchema) []rootField {
 		if node.Field == nil {
 			panic("TODO mutation with no custom field")
 		}
-		//		spew.Dump("node field", node.Field)
 		mutation := node.Field
-		// TODO import path not registering well...
 		results = append(results, rootField{
 			ImportPath: getImportPathForCustomMutation(mutation.GraphQLName),
 			Name:       mutation.GraphQLName,
@@ -1436,11 +1190,11 @@ func getMutationData(data *codegen.Data, s *gqlSchema) []rootField {
 	return results
 }
 
-func writeQueryFile(data *codegen.Data) error {
+func writeQueryFile(data *codegen.Data, s *gqlSchema) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
 		Data: gqlRootData{
-			RootFields: getQueryData(data),
+			RootFields: getQueryData(data, s),
 			Type:       "QueryType",
 			Node:       "Query",
 		},
