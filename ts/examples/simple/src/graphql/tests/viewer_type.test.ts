@@ -42,5 +42,10 @@ test("viewer", async () => {
     emailAddress: randomEmail(),
   }).saveX();
   let vc = new IDViewer(user.id);
-  await expectQueryFromRoot(getConfig(vc), ["viewerID", user.id]);
+  await expectQueryFromRoot(
+    getConfig(vc),
+    ["viewerID", user.id],
+    ["user.id", user.id],
+    ["user.firstName", user.firstName],
+  );
 });

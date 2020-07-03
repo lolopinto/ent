@@ -44,7 +44,7 @@ export const UserCreateInputType = new GraphQLInputObjectType({
 
 export const UserCreateResponseType = new GraphQLObjectType({
   name: "UserCreateResponse",
-  fields: (): GraphQLFieldConfigMap<User, Context> => ({
+  fields: (): GraphQLFieldConfigMap<UserCreateResponse, Context> => ({
     user: {
       type: GraphQLNonNull(UserType),
     },

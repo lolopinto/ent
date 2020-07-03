@@ -41,7 +41,7 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
 
 export const ContactCreateResponseType = new GraphQLObjectType({
   name: "ContactCreateResponse",
-  fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
+  fields: (): GraphQLFieldConfigMap<ContactCreateResponse, Context> => ({
     contact: {
       type: GraphQLNonNull(ContactType),
     },

@@ -44,7 +44,7 @@ export const UserEditInputType = new GraphQLInputObjectType({
 
 export const UserEditResponseType = new GraphQLObjectType({
   name: "UserEditResponse",
-  fields: (): GraphQLFieldConfigMap<User, Context> => ({
+  fields: (): GraphQLFieldConfigMap<UserEditResponse, Context> => ({
     user: {
       type: GraphQLNonNull(UserType),
     },

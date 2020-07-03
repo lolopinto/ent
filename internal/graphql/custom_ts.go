@@ -136,6 +136,7 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 			if object == nil {
 				continue
 			}
+
 			responseType, err := buildObjectType(data, cd, s, result, filePath, "GraphQLObjectType")
 			if err != nil {
 				return nil, err
@@ -172,6 +173,7 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 		}
 		result = append(result, &gqlNode{
 			ObjData: &gqlobjectData{
+				// TODO kill node and NodeInstance they don't make sense here...
 				Node:         field.Node,
 				NodeInstance: "obj",
 				GQLNodes:     objTypes,
@@ -284,6 +286,7 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports() []string {
 		// nullable
 		return []string{r.Type}
 	}
+	// TODO these too...
 	return []string{
 		"GraphQLNonNull",
 		fmt.Sprintf("%sType", r.Type),
@@ -300,6 +303,7 @@ func (qfcg *queryFieldConfigBuilder) getArgs() []*fieldConfigArg {
 		// non-null
 		var imports []string
 		if arg.Nullable == "" {
+			// TODO this needs to also change to fileImport
 			imports = []string{
 				"GraphQLNonNull",
 				arg.Type,
@@ -405,16 +409,17 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 
 	fields, ok := cd.Fields[item.Type]
 	if !ok {
-		return nil, fmt.Errorf(" type %s has no fields", item.Type)
+		return nil, fmt.Errorf("type %s has no fields", item.Type)
 	}
 
 	for _, f := range fields {
 		// maybe we'll care for input vs response here at some point
-		gqlField, err := getCustomGQLField(f, s, "obj")
+		gqlField, err := getCustomGQLField(cd, f, s, "obj")
 		if err != nil {
 			return nil, err
 		}
 		typ.Fields = append(typ.Fields, gqlField)
+		typ.Imports = append(typ.Imports, gqlField.FieldImports...)
 	}
 
 	cls := cd.Classes[item.Type]
@@ -427,20 +432,16 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 		if cls.DefaultExport {
 
 			// exported, we need to import it
-			typ.DefaultImports = []*fileImport{
-				{
-					ImportPath: importPath,
-					Type:       item.Type,
-				},
-			}
+			typ.DefaultImports = append(typ.DefaultImports, &fileImport{
+				ImportPath: importPath,
+				Type:       item.Type,
+			})
 			createInterface = false
 		} else if cls.Exported {
-			typ.Imports = []*fileImport{
-				{
-					ImportPath: importPath,
-					Type:       item.Type,
-				},
-			}
+			typ.Imports = append(typ.Imports, &fileImport{
+				ImportPath: importPath,
+				Type:       item.Type,
+			})
 			createInterface = false
 		}
 	}
@@ -461,6 +462,8 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 				Name: field.GraphQLName,
 				Type: field.Results[0].Type,
 				// TODO getGraphQLImportsForField???
+				// here we grab import from classessss
+				// but then later we need class
 				UseImport: false,
 				// TODO need to convert to number etc...
 				// need to convert from graphql type to TS type :(
@@ -473,6 +476,8 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 					if newInt.Type == "ID" {
 						// TODO this needs to change since this isn't scalable
 						newInt.UseImport = true
+					} else {
+						// import needed here also...
 					}
 				}
 			}
@@ -496,4 +501,164 @@ func getRelativeImportPath(data *codegen.Data, basepath, targetpath string) (str
 	}
 
 	return strings.TrimSuffix(rel, ".ts"), nil
+}
+
+func processCustomFields(cd *customData, s *gqlSchema) error {
+	for nodeName, fields := range cd.Fields {
+		if cd.Inputs[nodeName] != nil {
+			continue
+		}
+
+		if cd.Objects[nodeName] != nil {
+			continue
+		}
+
+		nodeInfo := s.nodes[nodeName]
+
+		if nodeInfo == nil {
+			return fmt.Errorf("can't find %s node that has custom fields", nodeName)
+		}
+
+		objData := nodeInfo.ObjData
+		nodeData := objData.NodeData
+		// always has a node for now
+		obj := objData.GQLNodes[0]
+
+		for _, field := range fields {
+
+			if len(field.Args) > 0 {
+				return fmt.Errorf("don't currently support fields with any args")
+			}
+
+			gqlField, err := getCustomGQLField(cd, field, s, nodeData.NodeInstance)
+			if err != nil {
+				return err
+			}
+			// append the field
+			obj.Fields = append(obj.Fields, gqlField)
+		}
+	}
+	return nil
+}
+
+func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance string) (*fieldType, error) {
+	imports, err := getGraphQLImportsForField(cd, field, s)
+	if err != nil {
+		return nil, err
+	}
+	gqlField := &fieldType{
+		Name:               field.GraphQLName,
+		HasResolveFunction: false,
+		FieldImports:       imports,
+	}
+
+	switch field.FieldType {
+	case Accessor, Field:
+		// for an accessor or field, we only add a resolve function if named differently
+		if field.GraphQLName != field.FunctionName {
+			gqlField.HasResolveFunction = true
+			gqlField.FunctionContents = fmt.Sprintf("return %s.%s;", instance, field.FunctionName)
+		}
+		break
+
+	case Function:
+		gqlField.HasResolveFunction = true
+		gqlField.FunctionContents = fmt.Sprintf("return %s.%s();", instance, field.FunctionName)
+		break
+	case AsyncFunction:
+		gqlField.HasAsyncModifier = true
+		gqlField.HasResolveFunction = true
+		gqlField.FunctionContents = fmt.Sprintf("return %s.%s();", instance, field.FunctionName)
+
+		break
+	}
+	return gqlField, nil
+}
+
+func processCustomMutations(data *codegen.Data, cd *customData, s *gqlSchema) error {
+	cm := &customMutationsProcesser{}
+	return cm.process(data, cd, s)
+}
+
+func processCustomQueries(data *codegen.Data, cd *customData, s *gqlSchema) error {
+	cq := &customQueriesProcesser{}
+	return cq.process(data, cd, s)
+}
+
+func getGraphQLImportsForField(cd *customData, f CustomField, s *gqlSchema) ([]*fileImport, error) {
+	graphqlScalars := map[string]string{
+		"String":  "GraphQLString",
+		"Date":    "Time",
+		"Int":     "GraphQLInt",
+		"Float":   "GraphQLFloat",
+		"Boolean": "GraphQLBoolean",
+		"ID":      "GraphQLID",
+	}
+
+	var imports []*fileImport
+	addGQLImports := func(imps ...string) {
+		for _, imp := range imps {
+			imports = append(imports, &fileImport{
+				ImportPath: "graphql",
+				Type:       imp,
+			})
+		}
+	}
+	for _, result := range f.Results {
+
+		switch result.Nullable {
+		case NullableTrue:
+			if result.List {
+				addGQLImports("GraphQLList", "GraphQLNonNull")
+			}
+			break
+
+		case NullableContents:
+			if !result.List {
+				return nil, fmt.Errorf("list required to use this option")
+			}
+			addGQLImports("GraphQLNonNull", "GraphQLList")
+			break
+
+		case NullableContentsAndList:
+			if !result.List {
+				return nil, fmt.Errorf("list required to use this option")
+			}
+			addGQLImports("GraphQLList")
+			break
+
+		default:
+			if result.List {
+				addGQLImports("GraphQLNonNull", "GraphQLList", "GraphQLNonNull")
+			} else {
+				addGQLImports("GraphQLNonNull")
+			}
+			break
+		}
+
+		typ, ok := graphqlScalars[result.Type]
+		if ok {
+			addGQLImports(typ)
+		} else {
+			node, ok := s.nodes[result.Type]
+			if ok {
+				nodeData := node.ObjData.NodeData
+				imports = append(imports, &fileImport{
+					Type:       fmt.Sprintf("%sType", result.Type),
+					ImportPath: getImportPathForNode(nodeData),
+				})
+				//				s.nodes[resultre]
+				// now we need to figure out where this is from e.g.
+				// result.Type a native thing e.g. User so getUserType
+				// TODO need to add it to DefaultImport for the entire file...
+				// e.g. getImportPathForNode
+				// or in cd.Classes and figure that out for what the path should be...
+				//				imports = append(imports, fmt.Sprintf("%sType", result.Type))
+				//				spew.Dump(result.Type + " needs to be added to import for file...")
+			} else {
+				return nil, fmt.Errorf("found a type %s which was not part of the schema", result.Type)
+			}
+		}
+	}
+	return imports, nil
 }

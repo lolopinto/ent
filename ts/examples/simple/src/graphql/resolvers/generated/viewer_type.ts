@@ -9,19 +9,26 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { Context } from "ent/auth/context";
-import ViewerResolver from "../viewer";
+import { UserType } from "src/graphql/resolvers/generated/user_type";
+import ViewerResolver, { GQLViewer } from "../viewer";
 
-export const ViewerTypeType = new GraphQLObjectType({
-  name: "ViewerType",
-  fields: (): GraphQLFieldConfigMap<ViewerResolver, Context> => ({
+export const GQLViewerType = new GraphQLObjectType({
+  name: "GQLViewer",
+  fields: (): GraphQLFieldConfigMap<GQLViewer, Context> => ({
     viewerID: {
       type: GraphQLID,
+    },
+    user: {
+      type: UserType,
+      resolve: async (obj: GQLViewer) => {
+        return obj.user();
+      },
     },
   }),
 });
 
 export const ViewerType: GraphQLFieldConfig<undefined, Context> = {
-  type: GraphQLNonNull(ViewerTypeType),
+  type: GraphQLNonNull(GQLViewerType),
   args: {},
   resolve: async (
     _source,

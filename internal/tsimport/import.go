@@ -75,7 +75,7 @@ func (imps *Imports) reserve(path string, defaultExport string, importAll bool, 
 
 	for _, export := range exports {
 		existingImport := imps.exportMap[export]
-		if existingImport != nil {
+		if existingImport != nil && existingImport != imp {
 			return "", fmt.Errorf("%s is already exported from path %s", export, existingImport.path)
 		}
 		imps.exportMap[export] = imp
@@ -136,10 +136,17 @@ type importInfo struct {
 func (imp *importInfo) String(usedExportsMap map[string]bool) (string, error) {
 	var usedExports []string
 	var defaultExport string
+	seen := make(map[string]bool)
 	for _, export := range imp.exports {
 		if !usedExportsMap[export] {
 			continue
 		}
+		if seen[export] {
+			continue
+		}
+
+		// to keep track of duplicates
+		seen[export] = true
 
 		if imp.defaultExport == export && imp.defaultExport != "" {
 			// default export

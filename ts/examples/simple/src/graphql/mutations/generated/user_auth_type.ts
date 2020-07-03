@@ -28,7 +28,7 @@ export const UserAuthInputType = new GraphQLInputObjectType({
 
 export const UserAuthResponseType = new GraphQLObjectType({
   name: "UserAuthResponse",
-  fields: (): GraphQLFieldConfigMap<AuthResolver, Context> => ({
+  fields: (): GraphQLFieldConfigMap<UserAuthResponse, Context> => ({
     token: {
       type: GraphQLNonNull(GraphQLString),
     },

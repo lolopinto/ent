@@ -50,7 +50,7 @@ export const ContactEditInputType = new GraphQLInputObjectType({
 
 export const ContactEditResponseType = new GraphQLObjectType({
   name: "ContactEditResponse",
-  fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
+  fields: (): GraphQLFieldConfigMap<ContactEditResponse, Context> => ({
     contact: {
       type: GraphQLNonNull(ContactType),
     },

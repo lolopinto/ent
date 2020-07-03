@@ -3,7 +3,7 @@ type Query {
   contact(id: ID!): Contact
   event(id: ID!): Event
   user(id: ID!): User
-  viewer: ViewerType!
+  viewer: GQLViewer!
 }
 
 type Address {
@@ -62,8 +62,9 @@ type Event {
 """Time scalar type"""
 scalar Time
 
-type ViewerType {
+type GQLViewer {
   viewerID: ID
+  user: User
 }
 
 type Mutation {
