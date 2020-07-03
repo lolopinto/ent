@@ -45,7 +45,7 @@
     {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
       fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
     {{ else -}}
-      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$gqlNode.Node}}, {{useImport "Context"}}> => ({
+      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$gqlNode.TSType}}, {{useImport "Context"}}> => ({
     {{ end -}}
       {{/* TODO enum support e.g. account status */}} 
       {{ range $field := $gqlNode.Fields -}}
@@ -58,9 +58,9 @@
           type: {{$field.FieldType}},
           {{if $field.HasResolveFunction -}}
             {{if $field.HasAsyncModifier -}}
-              resolve: async({{$nodeInstance}}: {{$gqlNode.Node}}) => {
+              resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}) => {
             {{ else -}}
-              resolve: ({{$nodeInstance}}: {{$gqlNode.Node}}) => {
+              resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}) => {
             {{ end -}}
               {{$field.FunctionContents}};
             },

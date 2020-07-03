@@ -13,7 +13,7 @@ import { UserType } from "src/graphql/resolvers/generated/user_type";
 import ViewerResolver, { GQLViewer } from "../viewer";
 
 export const GQLViewerType = new GraphQLObjectType({
-  name: "GQLViewer",
+  name: "Viewer",
   fields: (): GraphQLFieldConfigMap<GQLViewer, Context> => ({
     viewerID: {
       type: GraphQLID,

@@ -13,7 +13,7 @@ import (
 type processCustomRoot interface {
 	process(data *codegen.Data, cd *customData, s *gqlSchema) error
 	getFilePath(string) string
-	getArgObject(cd *customData, arg CustomItem) *CustomArg
+	getArgObject(cd *customData, arg CustomItem) *CustomObject
 	getFields(cd *customData) []CustomField
 	buildFieldConfig(cd *customData, field CustomField) (*fieldConfig, error)
 }
@@ -40,7 +40,7 @@ func (cm *customMutationsProcesser) getFilePath(gqlName string) string {
 	return getFilePathForCustomMutation(gqlName)
 }
 
-func (cm *customMutationsProcesser) getArgObject(cd *customData, arg CustomItem) *CustomArg {
+func (cm *customMutationsProcesser) getArgObject(cd *customData, arg CustomItem) *CustomObject {
 	return cd.Inputs[arg.Type]
 }
 
@@ -69,7 +69,7 @@ func (cq *customQueriesProcesser) getFilePath(gqlName string) string {
 	return getFilePathForCustomQuery(gqlName)
 }
 
-func (cq *customQueriesProcesser) getArgObject(cd *customData, arg CustomItem) *CustomArg {
+func (cq *customQueriesProcesser) getArgObject(cd *customData, arg CustomItem) *CustomObject {
 	return cd.Args[arg.Type]
 }
 
@@ -122,7 +122,7 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 				continue
 			}
 			// not always going to be GraphQLInputObjectType (for queries)
-			argType, err := buildObjectType(data, cd, s, arg, filePath, "GraphQLInputObjectType")
+			argType, err := buildObjectType(data, cd, s, arg, argObj, filePath, "GraphQLInputObjectType")
 			if err != nil {
 				return nil, err
 			}
@@ -137,7 +137,7 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 				continue
 			}
 
-			responseType, err := buildObjectType(data, cd, s, result, filePath, "GraphQLObjectType")
+			responseType, err := buildObjectType(data, cd, s, result, object, filePath, "GraphQLObjectType")
 			if err != nil {
 				return nil, err
 			}
@@ -194,7 +194,7 @@ type fieldConfigBuilder interface {
 	getTypeImports() []string
 	getArgs() []*fieldConfigArg
 	getReturnTypeHint() string
-	getArgMap(cd *customData) map[string]*CustomArg
+	getArgMap(cd *customData) map[string]*CustomObject
 }
 
 type mutationFieldConfigBuilder struct {
@@ -250,7 +250,7 @@ func (mfcg *mutationFieldConfigBuilder) getReturnTypeHint() string {
 	return fmt.Sprintf("Promise<%sResponse>", prefix)
 }
 
-func (mfcg *mutationFieldConfigBuilder) getArgMap(cd *customData) map[string]*CustomArg {
+func (mfcg *mutationFieldConfigBuilder) getArgMap(cd *customData) map[string]*CustomObject {
 	return cd.Inputs
 }
 
@@ -326,7 +326,7 @@ func (qfcg *queryFieldConfigBuilder) getReturnTypeHint() string {
 	return ""
 }
 
-func (qfcg *queryFieldConfigBuilder) getArgMap(cd *customData) map[string]*CustomArg {
+func (qfcg *queryFieldConfigBuilder) getArgMap(cd *customData) map[string]*CustomObject {
 	return cd.Args
 }
 
@@ -398,10 +398,11 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, cd *customData, field Cust
 	return result, nil
 }
 
-func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item CustomItem, destPath, gqlType string) (*objectType, error) {
+func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item CustomItem, obj *CustomObject, destPath, gqlType string) (*objectType, error) {
 	typ := &objectType{
 		Type:     fmt.Sprintf("%sType", item.Type),
-		Node:     item.Type,
+		Node:     obj.NodeName,
+		TSType:   item.Type,
 		Exported: true,
 		// input or object type
 		GQLType: gqlType,

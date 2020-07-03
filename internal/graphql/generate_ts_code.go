@@ -31,7 +31,7 @@ func (p *TSStep) Name() string {
 	return "graphql"
 }
 
-type CustomArg struct {
+type CustomObject struct {
 	// TODOO
 	NodeName  string `json:"nodeName"`
 	ClassName string `json:"className"`
@@ -63,9 +63,9 @@ type CustomClassInfo struct {
 }
 
 type customData struct {
-	Args    map[string]*CustomArg `json:"args"`
-	Inputs  map[string]*CustomArg `json:"inputs"`
-	Objects map[string]*CustomArg `json:"objects"`
+	Args    map[string]*CustomObject `json:"args"`
+	Inputs  map[string]*CustomObject `json:"inputs"`
+	Objects map[string]*CustomObject `json:"objects"`
 	// map of class to fields in that class
 	Fields    map[string][]CustomField    `json:"fields"`
 	Queries   []CustomField               `json:"queries"`
@@ -521,6 +521,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 	result := &objectType{
 		Type:     fmt.Sprintf("%sType", nodeData.Node),
 		Node:     nodeData.Node,
+		TSType:   nodeData.Node,
 		GQLType:  "GraphQLObjectType",
 		Exported: true,
 	}
@@ -627,9 +628,12 @@ func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPre
 
 func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
 	// TODO shared input types across create/edit for example
+	node := fmt.Sprintf("%sInput", actionPrefix)
+
 	result := &objectType{
 		Type:     fmt.Sprintf("%sInputType", actionPrefix),
-		Node:     fmt.Sprintf("%sInput", actionPrefix),
+		Node:     node,
+		TSType:   node,
 		Exported: true,
 		GQLType:  "GraphQLInputObjectType",
 	}
@@ -709,9 +713,11 @@ func getInputName(action action.Action) string {
 }
 
 func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, actionPrefix string) *objectType {
+	node := fmt.Sprintf("%sResponse", actionPrefix)
 	result := &objectType{
 		Type:     fmt.Sprintf("%sResponseType", actionPrefix),
-		Node:     fmt.Sprintf("%sResponse", actionPrefix),
+		Node:     node,
+		TSType:   node,
 		Exported: true,
 		GQLType:  "GraphQLObjectType",
 		DefaultImports: []*fileImport{
@@ -885,7 +891,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 type objectType struct {
 	Type     string // GQLType we're creating
 	Node     string // GraphQL Node AND also ent node. Need to decouple this...
-	EntType  string
+	TSType   string
 	Fields   []*fieldType
 	Exported bool
 	GQLType  string // GraphQLObjectType or GraphQLInputObjectType
