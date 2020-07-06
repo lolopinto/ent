@@ -27,7 +27,11 @@ export class {{$baseClass}} {
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
-    readonly {{$field.TsFieldName}}: {{$field.TsType}};
+    {{ if $field.Private -}}
+      protected readonly {{$field.TsFieldName}}: {{$field.TsType}};
+    {{ else -}}
+      readonly {{$field.TsFieldName}}: {{$field.TsType}};
+    {{end -}}
   {{end}}
 
   constructor(public viewer: {{$viewerType}}, id: {{$idType}}, data:{}) {

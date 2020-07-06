@@ -11,6 +11,8 @@ import { EventEditType } from "src/graphql/mutations/generated/event/event_edit_
 import { UserCreateType } from "src/graphql/mutations/generated/user/user_create_type";
 import { UserDeleteType } from "src/graphql/mutations/generated/user/user_delete_type";
 import { UserEditType } from "src/graphql/mutations/generated/user/user_edit_type";
+import { UserAuthType } from "../user_auth_type";
+import { UserAuthJWTType } from "../user_auth_jwt_type";
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
@@ -23,6 +25,8 @@ export const MutationType = new GraphQLObjectType({
     eventEdit: EventEditType,
     userCreate: UserCreateType,
     userDelete: UserDeleteType,
+    userAuth: UserAuthType,
+    userAuthJWT: UserAuthJWTType,
     userEdit: UserEditType,
   }),
 });

@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import Address from "src/ent/address";
 
 interface AddressQueryArgs {
@@ -53,6 +53,6 @@ export const AddressQuery: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ) => {
-    return Address.load(context.viewer, args.id);
+    return Address.load(context.getViewer(), args.id);
   },
 };

@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { EventType } from "src/graphql/resolvers/generated/event_type";
 import { EventCreateInput } from "src/ent/event/actions/create_event_action";
@@ -69,7 +69,7 @@ export const EventCreateType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<EventCreateResponse> => {
-    let event = await CreateEventAction.create(context.viewer, {
+    let event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
       creatorID: input.creatorID,
       startTime: input.startTime,

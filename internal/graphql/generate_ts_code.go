@@ -555,7 +555,7 @@ func buildFieldConfig(nodeData *schema.NodeData) *fieldConfig {
 			},
 		},
 		FunctionContents: []string{
-			fmt.Sprintf("return %s.load(context.viewer, args.id);", nodeData.Node),
+			fmt.Sprintf("return %s.load(context.getViewer(), args.id);", nodeData.Node),
 		},
 	}
 }
@@ -864,7 +864,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		result.FunctionContents = append(
 			result.FunctionContents,
 			// we need fields like userID here which aren't exposed to graphql but editable...
-			fmt.Sprintf("let %s = await %s.create(context.viewer, {", nodeData.NodeInstance, action.GetActionName()),
+			fmt.Sprintf("let %s = await %s.create(context.getViewer(), {", nodeData.NodeInstance, action.GetActionName()),
 		)
 		for _, f := range action.GetFields() {
 			// we need fields like userID here which aren't exposed to graphql but editable...
@@ -884,7 +884,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 	} else if action.GetOperation() == ent.DeleteAction {
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf("await %s.saveXFromID(context.viewer, input.%sID);", action.GetActionName(), nodeData.NodeInstance),
+			fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID);", action.GetActionName(), nodeData.NodeInstance),
 		)
 
 		result.FunctionContents = append(
@@ -895,7 +895,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		// some kind of editing
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf("let %s = await %s.saveXFromID(context.viewer, input.%sID, {", nodeData.NodeInstance, action.GetActionName(), nodeData.NodeInstance),
+			fmt.Sprintf("let %s = await %s.saveXFromID(context.getViewer(), input.%sID, {", nodeData.NodeInstance, action.GetActionName(), nodeData.NodeInstance),
 		)
 		for _, f := range action.GetFields() {
 			if f.ExposeToGraphQL() && f.EditableField() {

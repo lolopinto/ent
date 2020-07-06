@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import { EventType } from "./event_type";
 import { ContactType } from "./contact_type";
 import User from "src/ent/user";
@@ -34,6 +34,9 @@ export const UserType = new GraphQLObjectType({
     },
     emailAddress: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    phoneNumber: {
+      type: GraphQLString,
     },
     accountStatus: {
       type: GraphQLString,
@@ -146,6 +149,6 @@ export const UserQuery: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ) => {
-    return User.load(context.viewer, args.id);
+    return User.load(context.getViewer(), args.id);
   },
 };

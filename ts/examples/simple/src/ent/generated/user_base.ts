@@ -38,6 +38,8 @@ export class UserBase {
   readonly firstName: string;
   readonly lastName: string;
   readonly emailAddress: string;
+  readonly phoneNumber: string | null;
+  protected readonly password: string | null;
   readonly accountStatus: string | null;
   readonly emailVerified: boolean;
 
@@ -50,6 +52,8 @@ export class UserBase {
     this.firstName = data["first_name"];
     this.lastName = data["last_name"];
     this.emailAddress = data["email_address"];
+    this.phoneNumber = data["phone_number"];
+    this.password = data["password"];
     this.accountStatus = data["account_status"];
     this.emailVerified = data["email_verified"];
   }
@@ -123,6 +127,44 @@ export class UserBase {
     return row["id"];
   }
 
+  static async loadFromPhoneNumber<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    viewer: Viewer,
+    phoneNumber: string,
+  ): Promise<T | null> {
+    return loadEntFromClause(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      query.Eq("phone_number", phoneNumber),
+    );
+  }
+
+  static async loadFromPhoneNumberX<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    viewer: Viewer,
+    phoneNumber: string,
+  ): Promise<T> {
+    return loadEntXFromClause(
+      viewer,
+      UserBase.loaderOptions.apply(this),
+      query.Eq("phone_number", phoneNumber),
+    );
+  }
+
+  static async loadIDFromPhoneNumber<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    phoneNumber: string,
+  ): Promise<ID | null> {
+    const row = await loadRow({
+      ...UserBase.loaderOptions.apply(this),
+      clause: query.Eq("phone_number", phoneNumber),
+    });
+    if (!row) {
+      return null;
+    }
+    return row["id"];
+  }
+
   static loaderOptions<T extends UserBase>(
     this: new (viewer: Viewer, id: ID, data: {}) => T,
   ): LoadEntOptions<T> {
@@ -141,6 +183,8 @@ export class UserBase {
       "first_name",
       "last_name",
       "email_address",
+      "phone_number",
+      "password",
       "account_status",
       "email_verified",
     ];

@@ -116,10 +116,13 @@ sa.Table("users", metadata,
     sa.Column("first_name", sa.Text(), nullable=False),
     sa.Column("last_name", sa.Text(), nullable=False),
     sa.Column("email_address", sa.Text(), nullable=False),
+    sa.Column("phone_number", sa.Text(), nullable=True),
+    sa.Column("password", sa.Text(), nullable=True),
     sa.Column("account_status", sa.Text(), nullable=True),
     sa.Column("email_verified", sa.Boolean(), nullable=False, server_default='FALSE'),
     sa.PrimaryKeyConstraint("id", name="users_id_pkey"),
     sa.UniqueConstraint("email_address", name="users_unique_email_address"),
+    sa.UniqueConstraint("phone_number", name="users_unique_phone_number"),
 )
   
 

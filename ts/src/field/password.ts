@@ -9,6 +9,10 @@ export class Password extends BaseField implements Field {
   private _cost: number | undefined;
   private stringType: String;
 
+  // hardcode password to be private and hidden from graphql by default
+  private = true;
+  hideFromGraphQL = true;
+
   constructor() {
     super();
     this.stringType = new String();

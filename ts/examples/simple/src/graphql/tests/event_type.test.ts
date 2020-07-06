@@ -10,12 +10,15 @@ import CreateEventAction, {
   EventCreateInput,
 } from "src/ent/event/actions/create_event_action";
 import { ID, Viewer } from "ent/ent";
+import { clearAuthHandlers } from "ent/auth";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
   await DB.getInstance().endPool();
 });
-
+afterEach(() => {
+  clearAuthHandlers();
+});
 const loggedOutViewer = new LoggedOutViewer();
 
 function getConfig(
