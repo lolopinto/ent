@@ -11,11 +11,11 @@
 | [support different caches](#cache-support)                                                                       |                    |    :heavy_check_mark:                |                    |
 | per request in memory cache (raw data)                                                                           |                    |                    | :heavy_check_mark: |
 | per request in memory cache (viewer\|ents)                                                                       |                    |                    | :heavy_check_mark: |
-| [auth](#auth)                                                                                                    |                    |                    |                    |
+| [auth](#auth)                                                                                                    |                    |       :heavy_check_mark:             |    :heavy_check_mark:                |
 | patterns \| mixins                                                                                                        |                    | :heavy_check_mark: |                  :heavy_check_mark:  |
 | Correct imports in generated file                                                                                | :heavy_check_mark: | :heavy_check_mark: |      :heavy_check_mark:              |
-| custom functions/accessors in ents                                                                               | :heavy_check_mark: |                    |       :heavy_check_mark:             |
-| custom top level functions                                                                                       | :heavy_check_mark: |                    |       :heavy_check_mark:             |
+| custom functions/accessors in ents                                                                               | :heavy_check_mark: |      :heavy_check_mark:              |       :heavy_check_mark:             |
+| custom top level functions                                                                                       | :heavy_check_mark: |    :heavy_check_mark:                |       :heavy_check_mark:             |
 | sharding                                                                                                         |                    |                    |                    |
 | file uploads                                                                                                     |                    |                    |     :heavy_check_mark:               |
 | encryption at rest                                                                                               |                    |                    |                    |
@@ -84,8 +84,8 @@
 
 | Functionality | Go                 | Typescript | MVP                |
 |---------------|--------------------|------------|--------------------|
-| validate      | :heavy_check_mark: |            | :heavy_check_mark: |
-| format        | :heavy_check_mark: |            | :heavy_check_mark: |
+| validate      | :heavy_check_mark: |      :heavy_check_mark:      | :heavy_check_mark: |
+| format        | :heavy_check_mark: |     :heavy_check_mark:       | :heavy_check_mark: |
 | allow blank?  |                    |            |                    |
 | allow nil?    |                    |            |                    |
 
@@ -108,9 +108,9 @@
 | string enums                 |                    |                    | :heavy_check_mark: |
 | int enums                    |                    |                    |  |
 | custom type (part of json)   | :heavy_check_mark: |                    | :heavy_check_mark: |
-| email                        | :heavy_check_mark: |                    | :heavy_check_mark: |
-| password                     | :heavy_check_mark: |                    | :heavy_check_mark: |
-| phone number                 | :heavy_check_mark: |                    | :heavy_check_mark: |
+| email                        | :heavy_check_mark: |       :heavy_check_mark:             | :heavy_check_mark: |
+| password                     | :heavy_check_mark: |       :heavy_check_mark:             | :heavy_check_mark: |
+| phone number                 | :heavy_check_mark: |      :heavy_check_mark:              | :heavy_check_mark: |
 | Url                          | :heavy_check_mark: |                    | :heavy_check_mark: |
 
 
@@ -152,7 +152,7 @@
 | persisted queries                    |                    |            | :heavy_check_mark: |
 | only gql errors returned to the user |                    |            | :heavy_check_mark: |
 | Subscriptions                        |                    |            |                    |
-| easy testing                         |                    |            | :heavy_check_mark: |
+| easy testing                         |                    |     :heavy_check_mark:       | :heavy_check_mark: |
 | entquery                             |                    |            | :heavy_check_mark: |
 
 # EntQuery
@@ -214,10 +214,10 @@
 | Functionality    | Go                 | Typescript | MVP                |
 |------------------|--------------------|------------|--------------------|
 | passwordless     |                    |            |                    |
-| email/password   | :heavy_check_mark: |            | :heavy_check_mark: |
+| email/password   | :heavy_check_mark: |    :heavy_check_mark:        | :heavy_check_mark: |
 | phone number/pin | :heavy_check_mark: |            | :heavy_check_mark: |
 | auth0            | :heavy_check_mark: |            | :heavy_check_mark: |
-| passport         |                    |            | :heavy_check_mark: |
+| passport         |                    | :heavy_check_mark:           | :heavy_check_mark: |
 | facebook         |                    |            |                    |
 | google           |                    |            |                    |
 | github           |                    |            |                    |
