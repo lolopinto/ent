@@ -10,6 +10,7 @@ import { EdgeType } from "./const";
 import { GraphQLString } from "graphql";
 import Contact from "src/ent/contact";
 import { gqlField } from "ent/graphql";
+import * as bcrypt from "bcryptjs";
 
 // we're only writing this once except with --force and packageName provided
 export default class User extends UserBase {
@@ -153,5 +154,9 @@ export default class User extends UserBase {
       }
       return null;
     });
+  }
+
+  verifyPassword(password: string): Promise<boolean> {
+    return bcrypt.compare(password, this.password || "");
   }
 }

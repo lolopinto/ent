@@ -12,7 +12,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
 import { UserEditInput } from "src/ent/user/actions/edit_user_action";
 import User from "src/ent/user";
@@ -68,10 +68,14 @@ export const UserEditType: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ): Promise<UserEditResponse> => {
-    let user = await EditUserAction.saveXFromID(context.viewer, input.userID, {
-      firstName: input.firstName,
-      lastName: input.lastName,
-    });
+    let user = await EditUserAction.saveXFromID(
+      context.getViewer(),
+      input.userID,
+      {
+        firstName: input.firstName,
+        lastName: input.lastName,
+      },
+    );
     return { user: user };
   },
 };

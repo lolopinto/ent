@@ -12,7 +12,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import { ContactEditInput } from "src/ent/contact/actions/edit_contact_action";
 import Contact from "src/ent/contact";
@@ -75,7 +75,7 @@ export const ContactEditType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<ContactEditResponse> => {
     let contact = await EditContactAction.saveXFromID(
-      context.viewer,
+      context.getViewer(),
       input.contactID,
       {
         emailAddress: input.emailAddress,

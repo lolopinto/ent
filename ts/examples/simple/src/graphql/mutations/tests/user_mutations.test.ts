@@ -7,17 +7,17 @@ import { IDViewer } from "src/util/id_viewer";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
-import {
-  queryRootConfig,
-  expectMutation,
-  mutationRootConfig,
-  expectQueryFromRoot,
-} from "src/graphql_test_utils";
+import { expectMutation, mutationRootConfig } from "src/graphql_test_utils";
 import { ID, Viewer } from "ent/ent";
+import { clearAuthHandlers } from "ent/auth";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
   await DB.getInstance().endPool();
+});
+
+afterEach(() => {
+  clearAuthHandlers();
 });
 
 const loggedOutViewer = new LoggedOutViewer();

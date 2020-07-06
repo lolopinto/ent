@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "src/graphql/context";
+import { Context } from "ent/auth/context";
 import { UserType } from "./user_type";
 import Contact from "src/ent/contact";
 
@@ -60,6 +60,6 @@ export const ContactQuery: GraphQLFieldConfig<
     context: Context,
     _info: GraphQLResolveInfo,
   ) => {
-    return Contact.load(context.viewer, args.id);
+    return Contact.load(context.getViewer(), args.id);
   },
 };

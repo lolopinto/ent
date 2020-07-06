@@ -5,17 +5,22 @@ import CreateUserAction, {
 } from "src/ent/user/actions/create_user_action";
 import { LoggedOutViewer } from "ent/viewer";
 import User from "src/ent/user";
-import { random, randomEmail } from "src/util/random";
+import { randomEmail } from "src/util/random";
 import { IDViewer } from "src/util/id_viewer";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import { advanceBy } from "jest-date-mock";
 import { queryRootConfig, expectQueryFromRoot } from "src/graphql_test_utils";
 import { ID, Viewer } from "ent/ent";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
+import { clearAuthHandlers } from "ent/auth";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
   await DB.getInstance().endPool();
+});
+
+afterEach(() => {
+  clearAuthHandlers();
 });
 
 const loggedOutViewer = new LoggedOutViewer();
@@ -89,7 +94,10 @@ test("query custom function", async () => {
   let vc = new IDViewer(user.id);
   let action = EditUserAction.create(vc, user, {});
   action.builder.addFriend(user2);
-  action.saveX();
+  await action.saveX();
+
+  const edges = await user.loadFriendsEdges();
+  expect(edges.length).toBe(1);
 
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user.id),
@@ -99,7 +107,9 @@ test("query custom function", async () => {
     // returns id when logged in user is same
     ["bar", user.id],
   );
+  clearAuthHandlers();
 
+  // got some reason, it thinks this person is logged out
   await expectQueryFromRoot(
     getConfig(new IDViewer(user2.id), user.id),
     ["id", user.id],
@@ -163,8 +173,8 @@ test("query custom async function list", async () => {
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user.id),
     ["id", user.id],
-    ["contactSameDomains[0].id", selfContact!.id],
-    ["contactSameDomains[1].id", contact!.id],
+    ["contactsSameDomain[0].id", selfContact!.id],
+    ["contactsSameDomain[1].id", contact!.id],
   );
 });
 

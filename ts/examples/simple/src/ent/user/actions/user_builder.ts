@@ -20,6 +20,8 @@ export interface UserInput {
   firstName?: string;
   lastName?: string;
   emailAddress?: string;
+  phoneNumber?: string | null;
+  password?: string | null;
   accountStatus?: string | null;
   emailVerified?: boolean;
 }
@@ -440,6 +442,8 @@ export class UserBuilder implements Builder<User> {
     addField("FirstName", fields.firstName);
     addField("LastName", fields.lastName);
     addField("EmailAddress", fields.emailAddress);
+    addField("PhoneNumber", fields.phoneNumber);
+    addField("Password", fields.password);
     addField("AccountStatus", fields.accountStatus);
     addField("emailVerified", fields.emailVerified);
     return result;

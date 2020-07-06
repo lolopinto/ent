@@ -9,7 +9,9 @@ import { FormatNumberOptions } from "libphonenumber-js/types";
 
 // TODO this should be in ent-phonenumber eventually
 
-export class PhoneNumber extends BaseField {
+export class PhoneNumber extends BaseField implements Field {
+  type: Type = { dbType: DBType.String };
+
   private _region: CountryCode = "US";
   private _format: NumberFormat = "E.164";
   private _formatOptions: FormatNumberOptions | undefined;
