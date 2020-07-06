@@ -71,6 +71,7 @@ type customData struct {
 	Queries   []CustomField               `json:"queries"`
 	Mutations []CustomField               `json:"mutations"`
 	Classes   map[string]*CustomClassInfo `json:"classes"`
+	Files     map[string]*CustomFile      `json:"files"`
 	Error     error
 }
 
@@ -81,6 +82,15 @@ type CustomItem struct {
 	List         bool         `json:"list"`
 	IsContextArg bool         `json:"isContextArg"`
 	TSType       *string      `json:"tsType"`
+}
+
+type CustomFile struct {
+	Imports map[string]*CustomImportInfo `json:"imports"`
+}
+
+type CustomImportInfo struct {
+	Path          string `json:"path"`
+	DefaultImport bool   `json:"defaultImport"`
 }
 
 type NullableItem string

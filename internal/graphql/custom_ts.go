@@ -472,13 +472,28 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 
 			if len(field.Results) == 1 {
 				result := field.Results[0]
+				// check for imported paths that are being used
 				if result.TSType != nil {
 					newInt.Type = *result.TSType
-					if newInt.Type == "ID" {
-						// TODO this needs to change since this isn't scalable
-						newInt.UseImport = true
-					} else {
-						// import needed here also...
+					if cls != nil {
+						file := cd.Files[cls.Path]
+						if file != nil {
+							imp := file.Imports[newInt.Type]
+							if imp != nil {
+								fImp := &fileImport{
+									Type: newInt.Type,
+									// TODO this needs to be resolved to be relative...
+									// for now assuming tsconfig.json paths being used
+									ImportPath: imp.Path,
+								}
+								if imp.DefaultImport {
+									typ.DefaultImports = append(typ.DefaultImports, fImp)
+								} else {
+									typ.Imports = append(typ.Imports, fImp)
+								}
+								newInt.UseImport = true
+							}
+						}
 					}
 				}
 			}

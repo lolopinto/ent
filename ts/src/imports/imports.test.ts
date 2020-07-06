@@ -27,6 +27,12 @@ test("AuthResolver", () => {
   expect(file.classes.has("UserAuthInput")).toBe(true);
   expect(file.classes.has("UserAuthResponse")).toBe(true);
   expect(file.classes.has("AuthResolver")).toBe(true);
+
+  // confirm one of the imports in the file
+  let importInfo = file.imports.get("ID");
+  expect(importInfo).toBeDefined();
+  expect(importInfo!.defaultImport).toBeFalsy();
+  expect(importInfo!.importPath).toBe("../../../ent");
 });
 
 test("ViewerResolver", () => {

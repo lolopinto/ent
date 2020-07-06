@@ -8,7 +8,7 @@ import {
 } from "../graphql";
 import * as readline from "readline";
 import * as path from "path";
-import { parseCustomInput } from "../imports";
+import { parseCustomInput, file } from "../imports";
 import { argsToArgsConfig } from "graphql/type/definition";
 
 GQLCapture.enable(true);
@@ -91,6 +91,7 @@ async function main() {
   let objects = fromMap(GQLCapture.getCustomObjects());
 
   let classes = {};
+  let allFiles = {};
 
   const buildClasses2 = (args: ProcessedField[]) => {
     args.forEach((arg) => {
@@ -104,7 +105,29 @@ async function main() {
       let file = files[0];
       let classInfo = file.classes.get(arg.type);
       classes[arg.type] = { ...classInfo, path: file.path };
+
+      buildFiles(file);
     });
+  };
+
+  // gather imports from files...
+  // format is more compact as needed
+  const buildFiles = (f: file) => {
+    if (allFiles[f.path]) {
+      return;
+    }
+    let imps = {};
+    for (const [key, value] of f.imports) {
+      imps[key] = {
+        path: value.importPath,
+      };
+      if (value.defaultImport) {
+        imps[key].defaultImport = true;
+      }
+    }
+    allFiles[f.path] = {
+      imports: imps,
+    };
   };
 
   const buildClasses = (fields: ProcessedCustomField[]) => {
@@ -114,6 +137,7 @@ async function main() {
 
       buildClasses2(field.args);
       buildClasses2(field.results);
+      buildFiles(info.file);
     });
   };
   buildClasses(mutations);
@@ -128,6 +152,7 @@ async function main() {
       mutations,
       classes,
       objects,
+      files: allFiles,
     }),
   );
 }
