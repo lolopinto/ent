@@ -144,18 +144,34 @@ describe("invalid", () => {
     });
   });
 
-  test("invalid number for region", () => {
+  test("valid area code. invalid number", () => {
+    testCase({
+      input: "4152",
+      pre: (typ) => typ.validateForRegion(false),
+      output: "+14152",
+    });
+  });
+
+  test("valid area code. invalid number", () => {
+    testCase({
+      input: "4152",
+      invalid: true,
+    });
+  });
+
+  test("invalid number for region. disable validation", () => {
     testCase({
       input: "07911 123456",
-      // just formats it incorrectly
+      // disable validation for the region
+      pre: (typ) => typ.validateForRegion(false),
+      // formats it incorrectly
       output: "+107911123456",
     });
   });
 
-  test("invalid number for region.validate for region", () => {
+  test("invalid number for region. validate (default)", () => {
     testCase({
       input: "07911 123456",
-      pre: (typ) => typ.validateForRegion(true),
       invalid: true,
     });
   });

@@ -16,7 +16,14 @@ export class PhoneNumber extends BaseField implements Field {
   private _format: NumberFormat = "E.164";
   private _formatOptions: FormatNumberOptions | undefined;
   private _number: LibPhoneNumber | undefined;
-  private _validateForRegion: boolean;
+
+  // This calls isPossible() by default and doesn't call isValid() by default
+  // Provides a way to change the default behavior
+  // Also provides a way to validate the number by taking the instance of LibPhoneNumber
+  private _validateForRegion: boolean = true;
+  private _validate: boolean = false;
+
+  private validators: { (number: LibPhoneNumber): boolean }[] = [];
 
   countryCode(region: CountryCode): this {
     this._region = region;
@@ -38,6 +45,16 @@ export class PhoneNumber extends BaseField implements Field {
     return this;
   }
 
+  validateNumber(valid: boolean): this {
+    this._validate = valid;
+    return this;
+  }
+
+  validate(validator: (number: LibPhoneNumber) => boolean): this {
+    this.validators.push(validator);
+    return this;
+  }
+
   valid(val: any): boolean {
     const phoneNumber = phonenumber.parsePhoneNumberFromString(
       val,
@@ -47,14 +64,23 @@ export class PhoneNumber extends BaseField implements Field {
       return false;
     }
 
-    // not validating validity because needed for tests
-    // TODO: need to add an option for this
     // TODO isNonGeographic too?
     // /console.log(phoneNumber.isPossible(), phoneNumber.isNonGeographic());
 
     if (this._validateForRegion && !phoneNumber.isPossible()) {
       return false;
     }
+
+    if (this._validate && !phoneNumber.isValid()) {
+      return false;
+    }
+
+    for (const validator of this.validators) {
+      if (!validator(phoneNumber)) {
+        return false;
+      }
+    }
+
     this._number = phoneNumber;
     return true;
   }
