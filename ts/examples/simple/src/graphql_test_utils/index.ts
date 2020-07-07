@@ -230,10 +230,16 @@ async function expectFromRoot(
     params.push(`${key}: $${key}`);
   }
   let q = expectQueryResult(...options);
-  q = `${config.queryPrefix} ${config.root}${
-    config.querySuffix
-  } (${queryParams.join(",")}) {
-    ${config.root}(${params.join(",")}) {${q}}
+  let queryVar = "";
+  let callVar = "";
+  if (queryParams.length) {
+    queryVar = `(${queryParams.join(",")})`;
+  }
+  if (params.length) {
+    callVar = `(${params.join(",")})`;
+  }
+  q = `${config.queryPrefix} ${config.root}${config.querySuffix} ${queryVar} {
+    ${config.root}${callVar} {${q}}
   }`;
 
   let [st, temp] = makeGraphQLRequest(config, q);
@@ -265,7 +271,7 @@ async function expectFromRoot(
       // todo multiple errors etc
       expect(errors[0].message).toMatch(config.expectedError);
     } else {
-      fail("unhandled error");
+      fail(`unhandled error ${JSON.stringify(errors)}`);
     }
     return st;
   }

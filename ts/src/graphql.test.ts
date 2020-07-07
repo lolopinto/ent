@@ -2,81 +2,23 @@ import {
   gqlField,
   gqlArg,
   GQLCapture,
-  CustomField,
   gqlArgType,
-  Field,
-  CustomArg,
   CustomFieldType,
 } from "./graphql";
 import { GraphQLInt, GraphQLFloat, GraphQLString } from "graphql";
+
+import {
+  validateOneCustomField,
+  CustomTypes,
+  validateCustomFields,
+  validateNoCustom,
+  validateCustomArgs,
+} from "./graphql_field_helpers";
 
 beforeEach(() => {
   GQLCapture.clear();
   GQLCapture.enable(true);
 });
-
-function validateOneCustomField(expected: CustomField) {
-  validateCustomFields([expected]);
-}
-
-function validateCustomFields(expected: CustomField[]) {
-  let customFields = GQLCapture.getCustomFields();
-  expect(customFields.length).toBe(expected.length);
-
-  for (let i = 0; i < customFields.length; i++) {
-    let customField = customFields[i];
-    let expectedCustomField = expected[i];
-    expect(customField.nodeName).toBe(expectedCustomField.nodeName);
-    expect(customField.functionName).toBe(expectedCustomField.functionName);
-    expect(customField.gqlName).toBe(expectedCustomField.gqlName);
-    expect(customField.fieldType).toBe(expectedCustomField.fieldType);
-
-    validateFields(customField.results, expectedCustomField.results);
-
-    validateFields(customField.args, expectedCustomField.args);
-  }
-}
-
-function validateFields(actual: Field[], expected: Field[]) {
-  expect(actual.length).toBe(expected.length);
-
-  for (let j = 0; j < actual.length; j++) {
-    let field = actual[j];
-    let expField = expected[j];
-
-    expect(field.type).toBe(expField.type);
-    expect(field.name).toBe(expField.name);
-    expect(field.needsResolving).toBe(expField.needsResolving);
-    expect(field.nullable).toBe(expField.nullable);
-  }
-}
-
-function validateNoCustomFields() {
-  expect(GQLCapture.getCustomFields().length).toBe(0);
-}
-
-function validateCustomArgs(expected: CustomArg[]) {
-  let args = GQLCapture.getCustomArgs();
-  expect(args.size).toBe(expected.length);
-
-  for (let i = 0; i < expected.length; i++) {
-    let expectedArg = expected[i];
-    let arg = args.get(expectedArg.className);
-    expect(arg).not.toBe(undefined);
-    //    let arg = args[i];
-
-    expect(arg!.className).toBe(expectedArg.className);
-    expect(arg!.nodeName).toBe(expectedArg.nodeName);
-  }
-}
-function validateNoCustomArgs() {
-  expect(GQLCapture.getCustomArgs().size).toBe(0);
-}
-
-function validateNoCustom() {
-  validateNoCustomFields();
-  validateNoCustomArgs();
-}
 
 describe("accessor", () => {
   test("disabled", () => {
@@ -107,11 +49,12 @@ describe("accessor", () => {
         {
           type: "String",
           name: "",
+          tsType: "string",
         },
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. nullable string", () => {
@@ -142,7 +85,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. int", () => {
@@ -165,7 +108,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. float", () => {
@@ -188,7 +131,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. returns float with implicit number", () => {
@@ -211,7 +154,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. returns int with implicit number", () => {
@@ -234,7 +177,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. throws with number and no type", () => {
@@ -288,7 +231,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. list of strings", () => {
@@ -312,7 +255,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. nullable list of strings", () => {
@@ -337,7 +280,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. nullable contents of strings", () => {
@@ -362,7 +305,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. nullable contents and list of strings", () => {
@@ -388,7 +331,7 @@ describe("accessor", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 });
 
@@ -420,7 +363,7 @@ describe("property", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. int", () => {
@@ -441,7 +384,7 @@ describe("property", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. float", () => {
@@ -462,7 +405,7 @@ describe("property", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. with implicit type", () => {
@@ -484,7 +427,7 @@ describe("property", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. with implicit type", () => {
@@ -535,7 +478,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, returns int", () => {
@@ -559,7 +502,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, returns float", () => {
@@ -583,7 +526,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, returns float for implicit return type", () => {
@@ -607,7 +550,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, throws for implicit return type", () => {
@@ -650,7 +593,7 @@ describe("function", () => {
         },
       ],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, multiple param", () => {
@@ -686,7 +629,7 @@ describe("function", () => {
         },
       ],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, nullable arg", () => {
@@ -719,7 +662,7 @@ describe("function", () => {
         },
       ],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled, no arg decorator", () => {
@@ -732,7 +675,7 @@ describe("function", () => {
       }
       fail("should not get here");
     } catch (e) {
-      expect(e.message).toBe("args were not captured correctly");
+      expect(e.message).toMatch(/^args were not captured correctly/);
     }
     validateNoCustom();
   });
@@ -828,6 +771,7 @@ describe("function", () => {
         className: "SearchArgs",
       },
     ]);
+    validateNoCustom(CustomTypes.Field, CustomTypes.Arg);
   });
 
   test("enabled. referencing non-arg class", () => {
@@ -847,8 +791,9 @@ describe("function", () => {
       }
     } catch (error) {
       // TODO need a better message here
-      expect(error.message).toMatch("args were not captured correctly");
+      expect(error.message).toMatch(/^args were not captured correctly/);
     }
+    validateNoCustom();
   });
 
   test("enabled. resolve return types", () => {
@@ -863,7 +808,7 @@ describe("function", () => {
     }
 
     expect(GQLCapture.getCustomArgs().size).toBe(0);
-    expect(GQLCapture.getCustomFields().length).toBe(1);
+    expect(GQLCapture.getCustomFields().size).toBe(1);
     // no errors!
     GQLCapture.resolve(["User", "Contact"]);
   });
@@ -879,8 +824,7 @@ describe("function", () => {
       }
     }
 
-    expect(GQLCapture.getCustomArgs().size).toBe(0);
-    expect(GQLCapture.getCustomFields().length).toBe(1);
+    validateNoCustom(CustomTypes.Field);
     try {
       GQLCapture.resolve(["User"]);
       fail("shouldn't get here");
@@ -925,7 +869,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. implied async response with type hint", () => {
@@ -949,7 +893,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. object type string because 'circular dependencies'", () => {
@@ -974,7 +918,7 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 
   test("enabled. object type string list because 'circular dependencies'", () => {
@@ -1000,6 +944,6 @@ describe("function", () => {
       ],
       args: [],
     });
-    validateNoCustomArgs();
+    validateNoCustom(CustomTypes.Field);
   });
 });

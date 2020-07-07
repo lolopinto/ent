@@ -15,9 +15,10 @@ import { ID } from "ent/ent";
 import { Context } from "ent/auth/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { EventType } from "src/graphql/resolvers/generated/event_type";
-import { EventEditInput } from "src/ent/event/actions/edit_event_action";
+import EditEventAction, {
+  EventEditInput,
+} from "src/ent/event/actions/edit_event_action";
 import Event from "src/ent/event";
-import EditEventAction from "src/ent/event/actions/edit_event_action";
 
 interface customEventEditInput extends EventEditInput {
   eventID: ID;
@@ -53,7 +54,7 @@ export const EventEditInputType = new GraphQLInputObjectType({
 
 export const EventEditResponseType = new GraphQLObjectType({
   name: "EventEditResponse",
-  fields: (): GraphQLFieldConfigMap<Event, Context> => ({
+  fields: (): GraphQLFieldConfigMap<EventEditResponse, Context> => ({
     event: {
       type: GraphQLNonNull(EventType),
     },

@@ -7,11 +7,11 @@
 
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
 {{ range $baseObj.Imports -}} 
-  {{reserveImport .ImportPath .GraphQLType}}
+  {{reserveImport .ImportPath .Type}}
 {{ end -}}
 
 {{ range $baseObj.DefaultImports -}} 
-  {{reserveDefaultImport .ImportPath .GraphQLType}}
+  {{reserveDefaultImport .ImportPath .Type}}
 {{ end -}}
 
 {{ range $baseObj.Interfaces -}}
@@ -33,8 +33,10 @@
 {{end}}
 
 {{/* these 2 probably need to change */}}
-{{$node := useImport .NodeData.Node -}}
-{{$nodeInstance := .NodeData.NodeInstance -}}
+{{/* TODO these definitely need to change now */}}
+{{/* node and nodeInstance don't make sense for non-ents e.g. custom types...*/}}
+{{$node := useImport .Node -}}
+{{$nodeInstance := .NodeInstance -}}
 
 {{ range $gqlNode := .GQLNodes -}}
 
@@ -43,22 +45,22 @@
     {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
       fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
     {{ else -}}
-      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$node}}, {{useImport "Context"}}> => ({
+      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$gqlNode.TSType}}, {{useImport "Context"}}> => ({
     {{ end -}}
       {{/* TODO enum support e.g. account status */}} 
       {{ range $field := $gqlNode.Fields -}}
         {{$field.Name}}: {
           {{range $import := $field.FieldImports -}}
-            {{ if $baseObj.ForeignImport $import -}}
-              {{$ignore := useImport $import -}}
+            {{ if $baseObj.ForeignImport $import.Type -}}
+              {{$ignore := useImport $import.Type -}}
             {{end -}}
           {{end -}}
           type: {{$field.FieldType}},
           {{if $field.HasResolveFunction -}}
             {{if $field.HasAsyncModifier -}}
-              resolve: async({{$nodeInstance}}: {{$node}}) => {
+              resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}) => {
             {{ else -}}
-              resolve: ({{$nodeInstance}}: {{$node}}) => {
+              resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}) => {
             {{ end -}}
               {{$field.FunctionContents}};
             },

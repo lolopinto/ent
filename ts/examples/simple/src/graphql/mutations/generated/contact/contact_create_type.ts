@@ -12,9 +12,10 @@ import {
 } from "graphql";
 import { Context } from "ent/auth/context";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type";
-import { ContactCreateInput } from "src/ent/contact/actions/create_contact_action";
+import CreateContactAction, {
+  ContactCreateInput,
+} from "src/ent/contact/actions/create_contact_action";
 import Contact from "src/ent/contact";
-import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 
 interface ContactCreateResponse {
   contact: Contact;
@@ -40,7 +41,7 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
 
 export const ContactCreateResponseType = new GraphQLObjectType({
   name: "ContactCreateResponse",
-  fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
+  fields: (): GraphQLFieldConfigMap<ContactCreateResponse, Context> => ({
     contact: {
       type: GraphQLNonNull(ContactType),
     },

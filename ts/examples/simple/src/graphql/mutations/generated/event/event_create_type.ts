@@ -13,9 +13,10 @@ import {
 import { Context } from "ent/auth/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { EventType } from "src/graphql/resolvers/generated/event_type";
-import { EventCreateInput } from "src/ent/event/actions/create_event_action";
+import CreateEventAction, {
+  EventCreateInput,
+} from "src/ent/event/actions/create_event_action";
 import Event from "src/ent/event";
-import CreateEventAction from "src/ent/event/actions/create_event_action";
 
 interface EventCreateResponse {
   event: Event;
@@ -44,7 +45,7 @@ export const EventCreateInputType = new GraphQLInputObjectType({
 
 export const EventCreateResponseType = new GraphQLObjectType({
   name: "EventCreateResponse",
-  fields: (): GraphQLFieldConfigMap<Event, Context> => ({
+  fields: (): GraphQLFieldConfigMap<EventCreateResponse, Context> => ({
     event: {
       type: GraphQLNonNull(EventType),
     },

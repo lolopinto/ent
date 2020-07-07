@@ -14,9 +14,10 @@ import {
 import { ID } from "ent/ent";
 import { Context } from "ent/auth/context";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type";
-import { ContactEditInput } from "src/ent/contact/actions/edit_contact_action";
+import EditContactAction, {
+  ContactEditInput,
+} from "src/ent/contact/actions/edit_contact_action";
 import Contact from "src/ent/contact";
-import EditContactAction from "src/ent/contact/actions/edit_contact_action";
 
 interface customContactEditInput extends ContactEditInput {
   contactID: ID;
@@ -49,7 +50,7 @@ export const ContactEditInputType = new GraphQLInputObjectType({
 
 export const ContactEditResponseType = new GraphQLObjectType({
   name: "ContactEditResponse",
-  fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
+  fields: (): GraphQLFieldConfigMap<ContactEditResponse, Context> => ({
     contact: {
       type: GraphQLNonNull(ContactType),
     },
