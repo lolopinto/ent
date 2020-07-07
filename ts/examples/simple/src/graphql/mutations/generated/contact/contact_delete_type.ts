@@ -34,7 +34,7 @@ export const ContactDeleteInputType = new GraphQLInputObjectType({
 
 export const ContactDeleteResponseType = new GraphQLObjectType({
   name: "ContactDeleteResponse",
-  fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
+  fields: (): GraphQLFieldConfigMap<ContactDeleteResponse, Context> => ({
     deletedContactID: {
       type: GraphQLID,
     },

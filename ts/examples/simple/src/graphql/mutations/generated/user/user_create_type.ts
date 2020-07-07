@@ -12,9 +12,10 @@ import {
 } from "graphql";
 import { Context } from "ent/auth/context";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
-import { UserCreateInput } from "src/ent/user/actions/create_user_action";
+import CreateUserAction, {
+  UserCreateInput,
+} from "src/ent/user/actions/create_user_action";
 import User from "src/ent/user";
-import CreateUserAction from "src/ent/user/actions/create_user_action";
 
 interface UserCreateResponse {
   user: User;
@@ -43,7 +44,7 @@ export const UserCreateInputType = new GraphQLInputObjectType({
 
 export const UserCreateResponseType = new GraphQLObjectType({
   name: "UserCreateResponse",
-  fields: (): GraphQLFieldConfigMap<User, Context> => ({
+  fields: (): GraphQLFieldConfigMap<UserCreateResponse, Context> => ({
     user: {
       type: GraphQLNonNull(UserType),
     },

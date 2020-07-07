@@ -8,11 +8,11 @@ import { ContactEditType } from "src/graphql/mutations/generated/contact/contact
 import { EventCreateType } from "src/graphql/mutations/generated/event/event_create_type";
 import { EventDeleteType } from "src/graphql/mutations/generated/event/event_delete_type";
 import { EventEditType } from "src/graphql/mutations/generated/event/event_edit_type";
+import { UserAuthType } from "src/graphql/mutations/generated/user_auth_type";
+import { UserAuthJWTType } from "src/graphql/mutations/generated/user_auth_jwt_type";
 import { UserCreateType } from "src/graphql/mutations/generated/user/user_create_type";
 import { UserDeleteType } from "src/graphql/mutations/generated/user/user_delete_type";
 import { UserEditType } from "src/graphql/mutations/generated/user/user_edit_type";
-import { UserAuthType } from "../user_auth_type";
-import { UserAuthJWTType } from "../user_auth_jwt_type";
 
 export const MutationType = new GraphQLObjectType({
   name: "Mutation",
@@ -23,10 +23,10 @@ export const MutationType = new GraphQLObjectType({
     eventCreate: EventCreateType,
     eventDelete: EventDeleteType,
     eventEdit: EventEditType,
-    userCreate: UserCreateType,
-    userDelete: UserDeleteType,
     userAuth: UserAuthType,
     userAuthJWT: UserAuthJWTType,
+    userCreate: UserCreateType,
+    userDelete: UserDeleteType,
     userEdit: UserEditType,
   }),
 });
