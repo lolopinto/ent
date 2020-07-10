@@ -1,10 +1,13 @@
+import { HighlightSpanKind } from "typescript";
+
 export interface Clause {
   clause(idx: number): string;
   values(): any[];
+  instanceKey(): string;
 }
 
 class simpleClause implements Clause {
-  constructor(private col: string, private value: any) {}
+  constructor(private col: string, private value: any, private op: string) {}
 
   clause(idx: number): string {
     return `${this.col} = $${idx}`;
@@ -12,6 +15,10 @@ class simpleClause implements Clause {
 
   values(): any[] {
     return [this.value];
+  }
+
+  instanceKey(): string {
+    return `${this.col}:${this.op}:${this.value}`;
   }
 }
 
@@ -35,6 +42,10 @@ class inClause implements Clause {
   values(): any[] {
     return this.value;
   }
+
+  instanceKey(): string {
+    return `in:${this.value.join(",")}`;
+  }
 }
 
 class compositeClause implements Clause {
@@ -57,10 +68,16 @@ class compositeClause implements Clause {
     }
     return result;
   }
+
+  instanceKey(): string {
+    let keys: string[] = [];
+    this.clauses.forEach((clause) => keys.push(clause.instanceKey()));
+    return keys.join(this.sep);
+  }
 }
 
 export function Eq(col: string, value: any): simpleClause {
-  return new simpleClause(col, value);
+  return new simpleClause(col, value, "=");
 }
 
 export function And(...args: Clause[]): compositeClause {

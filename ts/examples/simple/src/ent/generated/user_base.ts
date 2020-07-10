@@ -343,6 +343,9 @@ export class UserBase {
   }
 
   async loadContacts(): Promise<Contact[]> {
+    // special type of loader
+    // fkey loader...
+    // and then prime each of the user object...
     let map = await loadEntsFromClause(
       this.viewer,
       query.Eq("user_id", this.id),

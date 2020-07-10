@@ -14,10 +14,13 @@ import {
   PrivacyPolicy,
 } from "./privacy";
 import { Executor } from "./action";
+import DataLoader from "dataloader";
+
+// TODO move Viewer and context into viewer.ts or something
+import { Context } from "./auth/context";
 
 import * as query from "./query";
 import { WriteOperation, Builder } from "./action";
-import { LoggedOutViewer } from "./viewer";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -27,6 +30,12 @@ export interface Viewer {
   // TODO determine if we want this here.
   // just helpful to have it here
   // not providing a default AllowIfOmniRule
+
+  // where should dataloaders be put?
+  // I want dataloaders to be created on demand as needed
+  // so it seems having it in Context (per-request info makes sense)
+  // so does that mean we should pass Context all the way down and not Viewer?
+  context?: Context;
 }
 
 export interface Ent {
@@ -49,7 +58,7 @@ interface DataOptions {
   tableName: string;
 }
 
-interface SelectDataOptions extends DataOptions {
+export interface SelectDataOptions extends DataOptions {
   // list of fields to read
   fields: string[];
 }
@@ -90,9 +99,36 @@ export async function loadEnt<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  return loadEntFromClause(viewer, options, query.Eq("id", id));
+  const l = viewer.context?.cache?.getEntLoader(options);
+  if (!l) {
+    return loadEntFromClause(viewer, options, query.Eq("id", id));
+  }
+  const row = await l.load(id);
+  return await applyPrivacyPolicyForRow(viewer, options, row);
 }
 
+async function applyPrivacyPolicyForRow<T extends Ent>(
+  viewer: Viewer,
+  options: LoadEntOptions<T>,
+  row: {} | null,
+): Promise<T | null> {
+  if (!row) {
+    return null;
+  }
+  const ent = new options.ent(viewer, row["id"], row);
+  return await applyPrivacyPolicyForEnt(viewer, ent);
+}
+
+async function applyPrivacyPolicyForRowX<T extends Ent>(
+  viewer: Viewer,
+  options: LoadEntOptions<T>,
+  row: {},
+): Promise<T> {
+  const ent = new options.ent(viewer, row["id"], row);
+  return await applyPrivacyPolicyForEntX(viewer, ent);
+}
+
+// TODO this is being called externally. if called, not using loaders...
 export async function loadEntFromClause<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
@@ -103,11 +139,7 @@ export async function loadEntFromClause<T extends Ent>(
     clause: clause,
   };
   const row = await loadRow(rowOptions);
-  if (!row) {
-    return null;
-  }
-  const ent = new options.ent(viewer, row["id"], row);
-  return await applyPrivacyPolicyForEnt(viewer, ent);
+  return await applyPrivacyPolicyForRow(viewer, options, row);
 }
 
 export async function loadEntX<T extends Ent>(
@@ -115,9 +147,19 @@ export async function loadEntX<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T> {
-  return loadEntXFromClause(viewer, options, query.Eq("id", id));
+  const l = viewer.context?.cache?.getEntLoader(options);
+  console.log("loadEntX", l);
+  if (!l) {
+    return loadEntXFromClause(viewer, options, query.Eq("id", id));
+  }
+  const row = await l?.load(id);
+  if (!row) {
+    throw new Error(`couldn't find row for id ${id}`);
+  }
+  return await applyPrivacyPolicyForRowX(viewer, options, row);
 }
 
+// same as loadEntFromClause
 export async function loadEntXFromClause<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
@@ -137,12 +179,28 @@ export async function loadEnts<T extends Ent>(
   options: LoadEntOptions<T>,
   ...ids: ID[]
 ): Promise<T[]> {
+  if (!ids.length) {
+    return [];
+  }
+  console.log(ids, viewer.context?.cache);
+  const l = viewer.context?.cache?.getEntLoader(options);
+  let m: Map<ID, T> = new Map();
+
+  // TODO do we want this loader check all over the place?
+  //  need to change loadEntFromClause and loadEntsFromClause to handle this...
+  if (l) {
+    const rows = await l.loadMany(ids);
+    m = await applyPrivacyPolicyForRows(viewer, rows, options);
+  } else {
+    m = await loadEntsFromClause(viewer, query.In("id", ...ids), options);
+  }
+
   // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
   // TODO eventually this should be doing a cache then db queyr and maybe depend on dataloader to get all the results at once
 
   // we need to get the result and re-sort... because the raw db access doesn't guarantee it in same order
   // apparently
-  let m = await loadEntsFromClause(viewer, query.In("id", ...ids), options);
+  //  let m = await loadEntsFromClause(viewer, query.In("id", ...ids), options);
   let result: T[] = [];
   ids.forEach((id) => {
     let ent = m.get(id);
@@ -151,6 +209,35 @@ export async function loadEnts<T extends Ent>(
     }
   });
   return result;
+}
+
+// ent based data-loader
+export function createDataLoader(options: SelectDataOptions) {
+  return new DataLoader(async (ids: ID[]) => {
+    if (!ids.length) {
+      return [];
+    }
+    const clause = query.In("id", ...ids);
+    const rowOptions: LoadRowOptions = {
+      ...options,
+      clause: clause,
+    };
+
+    // TODO is there a better way of doing this?
+    const nodes = await loadRows(rowOptions);
+    let result: {}[] = [];
+    ids.forEach((id) => {
+      for (const node of nodes) {
+        if (node["id"] === id) {
+          result.push(node);
+          return;
+        }
+      }
+      return null;
+    });
+
+    return result;
+  });
 }
 
 export async function loadDerivedEnt<T extends Ent>(
@@ -196,8 +283,9 @@ export async function applyPrivacyPolicyForEntX<T extends Ent>(
 }
 
 function logQuery(query: string, values: any[]) {
-  // console.log(query);
-  // console.log(values);
+  console.log(query);
+  console.log(values);
+  console.trace();
 }
 
 export async function loadRowX(options: LoadRowOptions): Promise<{}> {
@@ -928,11 +1016,19 @@ export async function loadEntsFromClause<T extends Ent>(
     clause: clause,
   };
 
-  const nodes = await loadRows(rowOptions);
+  const rows = await loadRows(rowOptions);
+  return await applyPrivacyPolicyForRows(viewer, rows, options);
+}
+
+async function applyPrivacyPolicyForRows<T extends Ent>(
+  viewer: Viewer,
+  rows: {}[],
+  options: LoadEntOptions<T>,
+) {
   let m: Map<ID, T> = new Map();
   // apply privacy logic
   const ents = await Promise.all(
-    nodes.map(async (row) => {
+    rows.map(async (row) => {
       // todo eventually there'll be a different key
       const ent = new options.ent(viewer, row["id"], row);
       let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);

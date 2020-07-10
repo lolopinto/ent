@@ -45,10 +45,14 @@ registerAuthHandler(
       },
       function(jwt_payload: {}, next) {
         // console.log("jwt payload", jwt_payload);
-        return next(null, new IDViewer(jwt_payload["viewerID"].toString()), {});
+        return next(null, jwt_payload["viewerID"].toString(), {});
       },
     ),
     { session: false },
+    function(context, viewerID) {
+      // toViewer method
+      return new IDViewer(viewerID, context);
+    },
   ),
 );
 

@@ -14,7 +14,8 @@ function server(config: queryConfig): Express {
   const viewer = config.viewer;
   if (viewer) {
     registerAuthHandler("viewer", {
-      authViewer: async (_request, _response) => {
+      authViewer: async (_context) => {
+        // TODO we want to use Context here in tests to get caching etc
         return viewer;
       },
     });

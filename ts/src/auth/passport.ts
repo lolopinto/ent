@@ -7,18 +7,22 @@ import { Context } from "./context";
 import { ID, Ent, Viewer } from "../ent";
 
 interface UserToViewerFunc {
-  (user: any): Viewer;
+  (context: Context, user: any): Viewer;
 }
 
 export interface PassportAuthOptions {
   serializeViewer?(viewer: Viewer): unknown;
   deserializeViewer?(id: unknown): Viewer;
-  reqUserToViewer: UserToViewerFunc;
+  userToViewer: UserToViewerFunc;
 }
 
 // TODO need something better here
 class IDViewer implements Viewer {
-  constructor(public viewerID: ID, private ent: Ent | null = null) {}
+  constructor(
+    public viewerID: ID,
+    public context?: Context,
+    private ent: Ent | null = null,
+  ) {}
   async viewer() {
     return this.ent;
   }
@@ -34,7 +38,7 @@ export class PassportAuthHandler implements Auth {
     this.options = options;
   }
 
-  async authViewer(request: IncomingMessage, response: ServerResponse) {
+  async authViewer(context: Context) {
     let that = this;
     passport.serializeUser(function(viewer: Viewer, done) {
       let serializeUser = that.options?.serializeViewer;
@@ -51,7 +55,7 @@ export class PassportAuthHandler implements Auth {
       let deserializeUser = that.options?.deserializeViewer;
       if (!deserializeUser) {
         deserializeUser = (id: ID) => {
-          return new IDViewer(id);
+          return new IDViewer(id, context);
         };
       }
 
@@ -59,23 +63,27 @@ export class PassportAuthHandler implements Auth {
     });
 
     //console.log("passport auth handler");
-    let user = request["user"];
+    let user = context.request["user"];
     //console.log("req.user", user);
     if (!user) {
       return null;
     }
-    return toViewer(user, this.options?.reqUserToViewer);
+    return toViewer(context, user, this.options?.reqUserToViewer);
   }
 }
 
-function toViewer(obj: any, reqUserToViewer?: UserToViewerFunc): Viewer {
+function toViewer(
+  context: Context,
+  obj: any,
+  userToViewer?: UserToViewerFunc,
+): Viewer {
   //console.log("viewer", obj);
 
   if ((obj as Viewer).viewerID !== undefined) {
     return obj;
   }
-  if (reqUserToViewer) {
-    return reqUserToViewer(obj);
+  if (userToViewer) {
+    return userToViewer(context, obj);
   }
 
   throw new Error("cannot convert to Viewer");
@@ -96,10 +104,10 @@ export class PassportStrategyHandler implements Auth {
     passport.use(strategy);
   }
 
-  async authViewer(request: IncomingMessage, response: ServerResponse) {
+  async authViewer(context: Context) {
+    //    console.log("passport authViewer", context.getViewer());
     const viewerMaybe = await promisifiedAuth(
-      request,
-      response,
+      context,
       this.strategy,
       this.options,
     );
@@ -108,12 +116,16 @@ export class PassportStrategyHandler implements Auth {
       return null;
     }
 
-    return toViewer(viewerMaybe, this.reqToViewer);
+    const viewer = toViewer(context, viewerMaybe, this.reqToViewer);
+    // needed to pass viewer to auth
+    await context.authViewer(viewer);
+    return viewer;
   }
 }
 
 interface LocalStrategyOptions {
-  verifyFn: () => AuthViewer | Promise<AuthViewer>;
+  // hmmmmmmmmmm how to pass Context all the way down?
+  verifyFn: (context?: Context) => AuthViewer | Promise<AuthViewer>;
 }
 
 export class LocalStrategy extends Strategy {
@@ -138,14 +150,15 @@ export class LocalStrategy extends Strategy {
 }
 
 function promisifiedAuth(
-  request: IncomingMessage,
-  response: ServerResponse,
+  context: Context,
+  // request: IncomingMessage,
+  // response: ServerResponse,
   strategy: passport.Strategy,
   options?: AuthenticateOptions,
 ) {
   return new Promise<AuthViewer>((resolve, reject) => {
     const done = (err: Error, user: Viewer | null | undefined, _info: any) => {
-      //console.log("done", err, user);
+      console.log("done", err, user);
       if (err) {
         reject(err);
       } else {
@@ -154,9 +167,13 @@ function promisifiedAuth(
     };
     options = options || {};
     let authMethod = passport.authenticate(strategy.name!, options, done);
-    return authMethod(request, response, (err?: Error | null) => {
-      console.error("err", err);
-    });
+    return authMethod(
+      context.request,
+      context.response,
+      (err?: Error | null) => {
+        console.error("err", err);
+      },
+    );
   });
 }
 
@@ -193,13 +210,9 @@ export async function useAndAuth(
     throw new Error("name required for strategy");
   }
   passport.use(strategy);
-  let viewer = await promisifiedAuth(
-    context.request,
-    context.response,
-    strategy,
-    options,
-  );
+  let viewer = await promisifiedAuth(context, strategy, options);
 
+  console.log("useAndAuth viewer", viewer);
   if (!viewer) {
     return viewer;
   }

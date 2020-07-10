@@ -3,6 +3,8 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { Viewer } from "../ent";
 import { LoggedOutViewer } from "../viewer";
+import { Contact } from "src/testutils/builder";
+import { Context } from "./context";
 
 type Request = IncomingMessage;
 type Response = ServerResponse;
@@ -10,10 +12,11 @@ type Response = ServerResponse;
 export type AuthViewer = Viewer | null;
 export interface Auth {
   authViewer(
-    // TODO
-    request: Request,
-    response: Response,
-  ): //    params?: graphqlHTTP.OptionsData.GraphQLParams,
+    ctx: Context,
+  ): // TODO
+  //    request: Request,
+  //    response: Response,
+  //    params?: graphqlHTTP.OptionsData.GraphQLParams,
   AuthViewer | Promise<AuthViewer>;
 }
 
@@ -26,12 +29,9 @@ export async function clearAuthHandlers() {
   handlers.clear();
 }
 
-export async function getLoggedInViewer(
-  request: Request,
-  response: Response,
-): Promise<Viewer> {
+export async function getLoggedInViewer(context: Context): Promise<Viewer> {
   for (const [name, authHandler] of handlers) {
-    let v = await authHandler.authViewer(request, response);
+    let v = await authHandler.authViewer(context);
     if (v !== null) {
       //      console.log(`auth handler ${name} authenticated user ${v.viewerID}`);
       return v;
