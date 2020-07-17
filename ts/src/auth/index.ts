@@ -3,7 +3,6 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { Viewer } from "../ent";
 import { LoggedOutViewer } from "../viewer";
-import { Contact } from "src/testutils/builder";
 import { Context } from "./context";
 
 type Request = IncomingMessage;

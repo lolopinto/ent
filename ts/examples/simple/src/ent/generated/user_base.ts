@@ -204,7 +204,11 @@ export class UserBase {
   }
 
   loadCreatedEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges(this.id, EdgeType.UserToCreatedEvents);
+    return loadEdges({
+      id1: this.id,
+      edgeType: EdgeType.UserToCreatedEvents,
+      context: this.viewer.context,
+    });
   }
 
   loadCreatedEvents(): Promise<Event[]> {
@@ -221,11 +225,20 @@ export class UserBase {
   }
 
   loadCreatedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2(this.id, EdgeType.UserToCreatedEvents, id2);
+    return loadEdgeForID2({
+      id1: this.id,
+      edgeType: EdgeType.UserToCreatedEvents,
+      id2,
+      context: this.viewer.context,
+    });
   }
 
   loadFriendsEdges(): Promise<AssocEdge[]> {
-    return loadEdges(this.id, EdgeType.UserToFriends);
+    return loadEdges({
+      id1: this.id,
+      edgeType: EdgeType.UserToFriends,
+      context: this.viewer.context,
+    });
   }
 
   loadFriends(): Promise<User[]> {
@@ -242,7 +255,12 @@ export class UserBase {
   }
 
   loadFriendEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2(this.id, EdgeType.UserToFriends, id2);
+    return loadEdgeForID2({
+      id1: this.id,
+      edgeType: EdgeType.UserToFriends,
+      id2,
+      context: this.viewer.context,
+    });
   }
 
   loadSelfContactEdge(): Promise<AssocEdge | null> {
@@ -259,7 +277,11 @@ export class UserBase {
   }
 
   loadInvitedEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges(this.id, EdgeType.UserToInvitedEvents);
+    return loadEdges({
+      id1: this.id,
+      edgeType: EdgeType.UserToInvitedEvents,
+      context: this.viewer.context,
+    });
   }
 
   loadInvitedEvents(): Promise<Event[]> {
@@ -276,11 +298,20 @@ export class UserBase {
   }
 
   loadInvitedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2(this.id, EdgeType.UserToInvitedEvents, id2);
+    return loadEdgeForID2({
+      id1: this.id,
+      edgeType: EdgeType.UserToInvitedEvents,
+      id2,
+      context: this.viewer.context,
+    });
   }
 
   loadEventsAttendingEdges(): Promise<AssocEdge[]> {
-    return loadEdges(this.id, EdgeType.UserToEventsAttending);
+    return loadEdges({
+      id1: this.id,
+      edgeType: EdgeType.UserToEventsAttending,
+      context: this.viewer.context,
+    });
   }
 
   loadEventsAttending(): Promise<Event[]> {
@@ -297,11 +328,20 @@ export class UserBase {
   }
 
   loadEventsAttendingEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2(this.id, EdgeType.UserToEventsAttending, id2);
+    return loadEdgeForID2({
+      id1: this.id,
+      edgeType: EdgeType.UserToEventsAttending,
+      id2,
+      context: this.viewer.context,
+    });
   }
 
   loadDeclinedEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges(this.id, EdgeType.UserToDeclinedEvents);
+    return loadEdges({
+      id1: this.id,
+      edgeType: EdgeType.UserToDeclinedEvents,
+      context: this.viewer.context,
+    });
   }
 
   loadDeclinedEvents(): Promise<Event[]> {
@@ -318,11 +358,20 @@ export class UserBase {
   }
 
   loadDeclinedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2(this.id, EdgeType.UserToDeclinedEvents, id2);
+    return loadEdgeForID2({
+      id1: this.id,
+      edgeType: EdgeType.UserToDeclinedEvents,
+      id2,
+      context: this.viewer.context,
+    });
   }
 
   loadMaybeEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges(this.id, EdgeType.UserToMaybeEvents);
+    return loadEdges({
+      id1: this.id,
+      edgeType: EdgeType.UserToMaybeEvents,
+      context: this.viewer.context,
+    });
   }
 
   loadMaybeEvents(): Promise<Event[]> {
@@ -339,15 +388,15 @@ export class UserBase {
   }
 
   loadMaybeEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2(this.id, EdgeType.UserToMaybeEvents, id2);
+    return loadEdgeForID2({
+      id1: this.id,
+      edgeType: EdgeType.UserToMaybeEvents,
+      id2,
+      context: this.viewer.context,
+    });
   }
 
   async loadContacts(): Promise<Contact[]> {
-    // special type of loader
-    // fkey loader...
-    // and then prime each of the user object...
-    // less a data loader and more a query cache
-    // because we can't really handle what's happening here...
     let map = await loadEntsFromClause(
       this.viewer,
       query.Eq("user_id", this.id),

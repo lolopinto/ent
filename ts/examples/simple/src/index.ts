@@ -4,7 +4,7 @@ import CreateContactAction from "./ent/contact/actions/create_contact_action";
 import { randomEmail } from "./util/random";
 import { createLoaders } from "src/ent/loaders";
 import EditUserAction from "./ent/user/actions/edit_user_action";
-import { loadEdges2 } from "ent/ent";
+import { loadEdges } from "ent/ent";
 import { EdgeType } from "./ent/const";
 import * as http from "http";
 import { buildContext } from "ent/auth/context";
@@ -45,12 +45,12 @@ async function main() {
       // loaders.User.clear(id);
       // console.log(await loaders.User.load(id));
 
-      await loadEdges2({
+      await loadEdges({
         id1: user.id,
         edgeType: EdgeType.UserToFriends,
         context: vc.context,
       });
-      await loadEdges2({
+      await loadEdges({
         id1: user.id,
         edgeType: EdgeType.UserToFriends,
         context: vc.context,

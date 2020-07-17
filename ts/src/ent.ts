@@ -925,22 +925,13 @@ const edgeFields = [
   "data",
 ];
 
-// we need context here...
 interface loadEdgesOptions {
   id1: ID;
   edgeType: string;
   context?: Context;
 }
 
-// TODO deprecate for loadEdges2
 export async function loadEdges(
-  id1: ID,
-  edgeType: string,
-): Promise<AssocEdge[]> {
-  return loadEdges2({ id1, edgeType });
-}
-
-export async function loadEdges2(
   options: loadEdgesOptions,
 ): Promise<AssocEdge[]> {
   const { id1, edgeType } = { ...options };
@@ -1012,15 +1003,17 @@ export async function loadRawEdgeCountX(
   return parseInt(row["count"], 10);
 }
 
+interface loadEdgeForIDOptions extends loadEdgesOptions {
+  id2: ID;
+}
+
 export async function loadEdgeForID2(
-  id1: ID,
-  edgeType: string,
-  id2: ID,
+  options: loadEdgeForIDOptions,
 ): Promise<AssocEdge | undefined> {
   // TODO at some point, same as in go, we can be smart about this and have heuristics to determine if we fetch everything here or not
   // we're assuming a cache here but not always tue and this can be expensive if not...
-  const edges = await loadEdges(id1, edgeType);
-  return edges.find((edge) => edge.id2 == id2);
+  const edges = await loadEdges(options);
+  return edges.find((edge) => edge.id2 == options.id2);
 }
 
 export async function loadNodesByEdge<T extends Ent>(
@@ -1030,7 +1023,7 @@ export async function loadNodesByEdge<T extends Ent>(
   options: LoadEntOptions<T>,
 ): Promise<T[]> {
   // load edges
-  const rows = await loadEdges(id1, edgeType);
+  const rows = await loadEdges({ id1, edgeType, context: viewer.context });
 
   // extract id2s
   const ids = rows.map((row) => row.id2);

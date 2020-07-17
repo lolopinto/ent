@@ -68,7 +68,7 @@ export class PassportAuthHandler implements Auth {
     if (!user) {
       return null;
     }
-    return toViewer(context, user, this.options?.reqUserToViewer);
+    return toViewer(context, user, this.options?.userToViewer);
   }
 }
 

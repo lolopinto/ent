@@ -184,10 +184,11 @@ export class {{$baseClass}} {
 
      {{ else -}}
       load{{$edgeName}}Edges():Promise<{{$assocEdgeType}}[]> {
-        return {{useImport "loadEdges"}}(
-          this.id, 
-          {{$edgeType}}.{{$edge.TsEdgeConst}},
-        );
+        return {{useImport "loadEdges"}}({
+          id1:this.id, 
+          edgeType: {{$edgeType}}.{{$edge.TsEdgeConst}},
+          context: this.viewer.context,
+        });
       }
 
       load{{$edgeName}}():Promise<{{useImport .Node}}[]> {
@@ -207,11 +208,12 @@ export class {{$baseClass}} {
       }
 
       load{{$edge.Singular}}EdgeFor(id2: {{$idType}}):Promise<{{$assocEdgeType}}|undefined> {
-        return {{useImport "loadEdgeForID2"}}(
-          this.id, 
-          {{$edgeType}}.{{$edge.TsEdgeConst}}, 
+        return {{useImport "loadEdgeForID2"}}({
+          id1: this.id, 
+          edgeType: {{$edgeType}}.{{$edge.TsEdgeConst}}, 
           id2,
-        );
+          context: this.viewer.context,
+        });
       }
      {{end}}
     {{end -}}
