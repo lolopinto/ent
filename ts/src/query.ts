@@ -18,7 +18,7 @@ class simpleClause implements Clause {
   }
 
   instanceKey(): string {
-    return `${this.col}:${this.op}:${this.value}`;
+    return `${this.col}${this.op}${this.value}`;
   }
 }
 
@@ -44,7 +44,7 @@ class inClause implements Clause {
   }
 
   instanceKey(): string {
-    return `in:${this.value.join(",")}`;
+    return `in:${this.col}:${this.value.join(",")}`;
   }
 }
 
