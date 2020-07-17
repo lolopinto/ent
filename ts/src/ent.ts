@@ -67,11 +67,13 @@ export interface SelectDataOptions extends DataOptions {
 export interface LoadRowOptions extends SelectDataOptions {
   clause: query.Clause;
   //  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
+  context?: Context;
 }
 
 interface LoadRowsOptions extends SelectDataOptions {
   clause: query.Clause;
   orderby?: string;
+  context?: Context;
 }
 
 export interface EditRowOptions extends DataOptions {
@@ -224,6 +226,7 @@ export function createDataLoader(options: SelectDataOptions) {
     };
 
     // TODO is there a better way of doing this?
+    // context not needed because we're creating a loader which has its own cache which is being used here
     const nodes = await loadRows(rowOptions);
     let result: {}[] = [];
     ids.forEach((id) => {
@@ -331,6 +334,17 @@ export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
   const pool = DB.getInstance().getPool();
   const fields = options.fields.join(", ");
 
+  let cache = options.context?.cache;
+  console.log("cache", cache);
+  if (cache) {
+    let rows = cache.getCachedRows(options);
+    if (rows !== null) {
+      console.log("cache hit");
+      return rows;
+    }
+  }
+
+  console.log("cache miss");
   // always start at 1
   const whereClause = options.clause.clause(1);
   const values = options.clause.values();
@@ -342,6 +356,11 @@ export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
   logQuery(query, values);
   try {
     const res = await pool.query(query, values);
+    // put the rows in the cache...
+    if (cache) {
+      console.log("prime cache");
+      cache.primeCache(options, res.rows);
+    }
     return res.rows;
   } catch (e) {
     // TODO need to change every query to catch an error!
@@ -906,10 +925,25 @@ const edgeFields = [
   "data",
 ];
 
+// we need context here...
+interface loadEdgesOptions {
+  id1: ID;
+  edgeType: string;
+  context?: Context;
+}
+
+// TODO deprecate for loadEdges2
 export async function loadEdges(
   id1: ID,
   edgeType: string,
 ): Promise<AssocEdge[]> {
+  return loadEdges2({ id1, edgeType });
+}
+
+export async function loadEdges2(
+  options: loadEdgesOptions,
+): Promise<AssocEdge[]> {
+  const { id1, edgeType } = { ...options };
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
@@ -919,6 +953,7 @@ export async function loadEdges(
     fields: edgeFields,
     clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
     orderby: "time DESC",
+    context: options.context,
   });
 
   let result: AssocEdge[] = [];
@@ -1010,7 +1045,6 @@ export async function loadEntsFromClause<T extends Ent>(
   clause: query.Clause,
   options: LoadEntOptions<T>,
 ): Promise<Map<ID, T>> {
-  loadRows;
   const rowOptions: LoadRowOptions = {
     ...options,
     clause: clause,

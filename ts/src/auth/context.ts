@@ -4,6 +4,7 @@ import { IncomingMessage, ServerResponse } from "http";
 import { LoggedOutViewer } from "../viewer";
 
 import DataLoader from "dataloader";
+import * as query from "./../query";
 
 export interface Context {
   getViewer(): Viewer;
@@ -53,6 +54,8 @@ export async function buildContext(
   //  const ctx = new contextImpl(request, response);
   console.log("build context called");
   ctx.cache = new ContextCache();
+  // TODO since this is done, whatever other call to authViewer that was needed no longer needed
+  ctx.authViewer(viewer);
   return ctx;
 }
 
@@ -77,4 +80,47 @@ export class ContextCache {
     console.log("new loader");
     return l;
   }
+
+  // we have a per-table map to make it easier to purge and have less things to compare with
+  private itemMap: Map<string, Map<string, {}>> = new Map();
+  private listMap: Map<string, Map<string, {}[]>> = new Map();
+
+  // tableName is ignored bcos already indexed on that
+  // maybe we just want to store sql queries???
+
+  private getkey(options: queryOptions): string {
+    let parts: string[] = [
+      options.fields.join(","),
+      options.clause.instanceKey(),
+    ];
+    if (options.orderby) {
+      parts.push(options.orderby);
+    }
+    return parts.join(",");
+  }
+
+  getCachedRows(options: queryOptions): {}[] | null {
+    console.log("get", this.listMap);
+    let m = this.listMap.get(options.tableName);
+    if (!m) {
+      return null;
+    }
+    let rows = m.get(this.getkey(options));
+    console.log("rows money line", rows);
+    return rows || null;
+  }
+
+  primeCache(options: queryOptions, rows: {}[]) {
+    let m = this.listMap.get(options.tableName) || new Map();
+    m.set(this.getkey(options), rows);
+    this.listMap.set(options.tableName, m);
+    console.log("post-prime", this.listMap);
+  }
+}
+
+interface queryOptions {
+  fields: string[];
+  tableName: string;
+  clause: query.Clause;
+  orderby?: string;
 }
