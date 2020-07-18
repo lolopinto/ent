@@ -6,6 +6,7 @@ import { LoggedOutViewer } from "../viewer";
 import DataLoader from "dataloader";
 import * as query from "./../query";
 
+// TODO need ContextLite that just has viewer and cache?
 export interface Context {
   getViewer(): Viewer;
   authViewer(viewer: Viewer): Promise<void>; //logs user in and changes viewer to this
@@ -100,7 +101,7 @@ export class ContextCache {
   }
 
   getCachedRows(options: queryOptions): {}[] | null {
-    console.log("get", this.listMap);
+    //    console.log("get", this.listMap);
     let m = this.listMap.get(options.tableName);
     if (!m) {
       return null;
@@ -110,11 +111,27 @@ export class ContextCache {
     return rows || null;
   }
 
-  primeCache(options: queryOptions, rows: {}[]) {
-    let m = this.listMap.get(options.tableName) || new Map();
-    m.set(this.getkey(options), rows);
-    this.listMap.set(options.tableName, m);
-    console.log("post-prime", this.listMap);
+  getCachedRow(options: queryOptions): {} | null {
+    let m = this.itemMap.get(options.tableName);
+    if (!m) {
+      return null;
+    }
+    let row = m.get(this.getkey(options));
+    return row || null;
+  }
+
+  primeCache(options: queryOptions, rows: {}[] | {}) {
+    if (Array.isArray(rows)) {
+      let m = this.listMap.get(options.tableName) || new Map();
+      m.set(this.getkey(options), rows);
+      this.listMap.set(options.tableName, m);
+      console.log("post-prime", this.listMap);
+    } else {
+      let m = this.itemMap.get(options.tableName) || new Map();
+      m.set(this.getkey(options), rows);
+      this.itemMap.set(options.tableName, m);
+      console.log("post-prime", this.itemMap);
+    }
   }
 }
 

@@ -4,7 +4,7 @@ import CreateContactAction from "./ent/contact/actions/create_contact_action";
 import { randomEmail } from "./util/random";
 import { createLoaders } from "src/ent/loaders";
 import EditUserAction from "./ent/user/actions/edit_user_action";
-import { loadEdges } from "ent/ent";
+import { loadEdges, loadEdgeData } from "ent/ent";
 import { EdgeType } from "./ent/const";
 import * as http from "http";
 import { buildContext } from "ent/auth/context";
@@ -36,25 +36,32 @@ async function main() {
   http
     .createServer(async function(req, res) {
       let context = await buildContext(req, res);
-      const loaders = createLoaders();
-      const vc = new IDViewer(id2, context);
-      const user = await User.loadX(vc, id2);
-      // const user2 = await loaders.User.load(id);
+      //      const loaders = createLoaders();
+
+      // console.log(await loadEdgeData(EdgeType.UserToFriends));
+      // console.log(await loadEdgeData(EdgeType.UserToFriends));
+      //      const user2 = await loaders.User.load(id);
       // console.log(user1, user2);
 
       // loaders.User.clear(id);
       // console.log(await loaders.User.load(id));
 
-      await loadEdges({
-        id1: user.id,
-        edgeType: EdgeType.UserToFriends,
-        context: vc.context,
-      });
-      await loadEdges({
-        id1: user.id,
-        edgeType: EdgeType.UserToFriends,
-        context: vc.context,
-      });
+      const vc = new IDViewer(id2, context);
+      const user = await User.loadX(vc, id2);
+
+      await user.loadFriends();
+      await user.loadFriends();
+      await user.loadContacts();
+      // await loadEdges({
+      //   id1: user.id,
+      //   edgeType: EdgeType.UserToFriends,
+      //   context: vc.context,
+      // });
+      // await loadEdges({
+      //   id1: user.id,
+      //   edgeType: EdgeType.UserToFriends,
+      //   context: vc.context,
+      // });
 
       res.end("c'est fini");
     })
