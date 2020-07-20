@@ -73,12 +73,12 @@ export class ContextCache {
     let l = this.loaders.get(loaderOptions.tableName);
 
     if (l) {
-      console.log("existing loader");
+      //console.log("existing loader");
       return l;
     }
     l = createDataLoader(loaderOptions);
     this.loaders.set(loaderOptions.tableName, l);
-    console.log("new loader");
+    //console.log("new loader");
     return l;
   }
 
@@ -107,7 +107,7 @@ export class ContextCache {
       return null;
     }
     let rows = m.get(this.getkey(options));
-    console.log("rows money line", rows);
+    //    console.log("rows money line", rows);
     return rows || null;
   }
 
@@ -120,17 +120,19 @@ export class ContextCache {
     return row || null;
   }
 
-  primeCache(options: queryOptions, rows: {}[] | {}) {
+  primeCache(options: queryOptions, rows: {}[]): void;
+  primeCache(options: queryOptions, rows: {}): void;
+  primeCache(options: queryOptions, rows: {}[] | {}): void {
     if (Array.isArray(rows)) {
       let m = this.listMap.get(options.tableName) || new Map();
       m.set(this.getkey(options), rows);
       this.listMap.set(options.tableName, m);
-      console.log("post-prime", this.listMap);
+      //console.log("post-prime", this.listMap);
     } else {
       let m = this.itemMap.get(options.tableName) || new Map();
       m.set(this.getkey(options), rows);
       this.itemMap.set(options.tableName, m);
-      console.log("post-prime", this.itemMap);
+      //console.log("post-prime", this.itemMap);
     }
   }
 }

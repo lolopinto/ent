@@ -152,7 +152,7 @@ export async function loadEntX<T extends Ent>(
   options: LoadEntOptions<T>,
 ): Promise<T> {
   const l = viewer.context?.cache?.getEntLoader(options);
-  console.log("loadEntX", l);
+  // console.log("loadEntX", l);
   if (!l) {
     return loadEntXFromClause(viewer, options, query.Eq("id", id));
   }
@@ -187,7 +187,7 @@ export async function loadEnts<T extends Ent>(
   if (!ids.length) {
     return [];
   }
-  console.log(ids, viewer.context?.cache);
+  //console.log(ids, viewer.context?.cache);
   const l = viewer.context?.cache?.getEntLoader(options);
   let m: Map<ID, T> = new Map();
 
@@ -322,18 +322,18 @@ function buildQuery(options: QueryableDataOptions): string {
 
 export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
   let cache = options.context?.cache;
-  console.log("cache", cache);
+  //console.log("cache", cache);
   if (cache) {
     let row = cache.getCachedRow(options);
     if (row !== null) {
-      console.log("single cache hit");
+      //  console.log("single cache hit");
       return row;
     }
   }
 
   const pool = DB.getInstance().getPool();
 
-  console.log("single cache miss");
+  //console.log("single cache miss");
 
   const query = buildQuery(options);
   const values = options.clause.values();
@@ -349,7 +349,7 @@ export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
 
     // put the row in the cache...
     if (cache) {
-      console.log("prime cache");
+      // console.log("prime cache");
       cache.primeCache(options, res.rows[0]);
     }
 
@@ -362,18 +362,18 @@ export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
 
 export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
   let cache = options.context?.cache;
-  console.log("cache", cache);
+  // console.log("cache", cache);
   if (cache) {
     let rows = cache.getCachedRows(options);
     if (rows !== null) {
-      console.log("multi cache hit");
+      //      console.log("multi cache hit");
       return rows;
     }
   }
 
   const pool = DB.getInstance().getPool();
 
-  console.log("multi cache miss");
+  //  console.log("multi cache miss");
   // always start at 1
   const values = options.clause.values();
   const query = buildQuery(options);
@@ -383,7 +383,7 @@ export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
     const res = await pool.query(query, values);
     // put the rows in the cache...
     if (cache) {
-      console.log("prime cache");
+      //      console.log("prime cache");
       cache.primeCache(options, res.rows);
     }
     return res.rows;
