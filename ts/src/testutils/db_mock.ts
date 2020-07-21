@@ -32,7 +32,7 @@ export interface mockOptions {
   tableName: string;
   //  columns?: string[];
   clause: Clause;
-  row: (values: any[]) => {};
+  result: (values: any[]) => {};
 }
 
 export enum queryType {
@@ -78,7 +78,7 @@ export class QueryRecorder {
         // correct table and clause
         // for now we don't care about columns...
         // we may later.
-        return result.row(values);
+        return result.result(values);
       }
     }
   }

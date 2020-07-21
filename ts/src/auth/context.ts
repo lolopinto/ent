@@ -5,19 +5,22 @@ import { LoggedOutViewer } from "../viewer";
 
 import DataLoader from "dataloader";
 import * as query from "./../query";
+import { load } from "js-yaml";
 
-// TODO need ContextLite that just has viewer and cache?
-export interface Context {
+// TODO rename to Context and RequestContext
+export interface ContextLite {
   getViewer(): Viewer;
-  authViewer(viewer: Viewer): Promise<void>; //logs user in and changes viewer to this
-  logout(): Promise<void>;
-  request: IncomingMessage;
-  response: ServerResponse;
-
   // optional per request
   // absence means we are not doing any caching
   // presence means we have loader, ent cache etc
   cache?: ContextCache;
+}
+
+export interface Context extends ContextLite {
+  authViewer(viewer: Viewer): Promise<void>; //logs user in and changes viewer to this
+  logout(): Promise<void>;
+  request: IncomingMessage;
+  response: ServerResponse;
 }
 
 class contextImpl implements Context {
@@ -134,6 +137,15 @@ export class ContextCache {
       this.itemMap.set(options.tableName, m);
       //console.log("post-prime", this.itemMap);
     }
+  }
+
+  clearCache(): void {
+    for (const [_key, loader] of this.loaders) {
+      loader.clearAll();
+    }
+    this.loaders.clear();
+    this.itemMap.clear();
+    this.listMap.clear();
   }
 }
 

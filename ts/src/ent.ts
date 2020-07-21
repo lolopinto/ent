@@ -17,7 +17,7 @@ import { Executor } from "./action";
 import DataLoader from "dataloader";
 
 // TODO move Viewer and context into viewer.ts or something
-import { Context } from "./auth/context";
+import { Context, ContextLite } from "./auth/context";
 
 import * as query from "./query";
 import { WriteOperation, Builder } from "./action";
@@ -67,7 +67,7 @@ export interface SelectDataOptions extends DataOptions {
 export interface QueryableDataOptions extends SelectDataOptions {
   clause: query.Clause;
   orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
-  context?: Context;
+  context?: ContextLite;
 }
 
 // For loading data from database
@@ -80,7 +80,7 @@ interface LoadRowsOptions extends QueryableDataOptions {}
 export interface EditRowOptions extends DataOptions {
   // fields to be edited
   fields: {};
-  context?: Context;
+  context?: ContextLite;
 }
 
 interface LoadableEntOptions<T extends Ent> extends DataOptions {
@@ -290,9 +290,9 @@ export async function applyPrivacyPolicyForEntX<T extends Ent>(
 }
 
 function logQuery(query: string, values: any[]) {
-  console.log(query);
-  console.log(values);
-  console.trace();
+  // console.log(query);
+  // console.log(values);
+  // console.trace();
 }
 
 export async function loadRowX(options: LoadRowOptions): Promise<{}> {
@@ -309,7 +309,7 @@ export async function loadRowX(options: LoadRowOptions): Promise<{}> {
   return result;
 }
 
-function buildQuery(options: QueryableDataOptions): string {
+export function buildQuery(options: QueryableDataOptions): string {
   const fields = options.fields.join(", ");
   // always start at 1
   const whereClause = options.clause.clause(1);
@@ -907,11 +907,13 @@ const assocEdgeFields = [
   "edge_table",
 ];
 
-let assocEdgeLoader = createDataLoader({
+export const assocEdgeLoader = createDataLoader({
   tableName: "assoc_edge_config",
   fields: assocEdgeFields,
   pkey: "edge_type",
 });
+
+//export assocEdgeLoader;
 
 // we don't expect assoc_edge_config information to change
 // so not using ContextCache but just caching it as needed once per server

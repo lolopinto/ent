@@ -42,7 +42,7 @@ beforeEach(() => {
   QueryRecorder.mockResult({
     tableName: "assoc_edge_config",
     clause: query.Eq("edge_type", "fake_edge"),
-    row: (values: any[]) => {
+    result: (values: any[]) => {
       let edgeType = values[0];
       return {
         edge_table: snakeCase(`${edgeType}_table`),
