@@ -72,7 +72,7 @@ export class ContextCache {
 
   // only create as needed for the "requests" which need it
   getEntLoader(loaderOptions: SelectDataOptions) {
-    console.log(loaderOptions);
+    //    console.log(loaderOptions);
     let l = this.loaders.get(loaderOptions.tableName);
 
     if (l) {

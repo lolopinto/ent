@@ -184,13 +184,19 @@ export class QueryRecorder {
       }
     }
 
-    return {
+    let result = {
       rows: [ret],
       rowCount: rowCount,
       oid: 0,
       fields: [],
       command: "",
     };
+    // if we're returning a list, no need to double wrap it
+    if (Array.isArray(ret)) {
+      result.rows = ret;
+      result.rowCount = ret.length;
+    }
+    return result;
   }
 
   static newID(): ID {

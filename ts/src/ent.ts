@@ -35,7 +35,7 @@ export interface Viewer {
   // I want dataloaders to be created on demand as needed
   // so it seems having it in Context (per-request info makes sense)
   // so does that mean we should pass Context all the way down and not Viewer?
-  context?: Context;
+  context?: ContextLite;
 }
 
 export interface Ent {
@@ -98,6 +98,7 @@ export interface EditEntOptions<T extends Ent>
   extends LoadableEntOptions<T>,
     EditRowOptions {}
 
+// Ent accessors
 export async function loadEnt<T extends Ent>(
   viewer: Viewer,
   id: ID,
@@ -105,31 +106,11 @@ export async function loadEnt<T extends Ent>(
 ): Promise<T | null> {
   const l = viewer.context?.cache?.getEntLoader(options);
   if (!l) {
-    return loadEntFromClause(viewer, options, query.Eq("id", id));
+    const col = options.pkey || "id";
+    return loadEntFromClause(viewer, options, query.Eq(col, id));
   }
   const row = await l.load(id);
   return await applyPrivacyPolicyForRow(viewer, options, row);
-}
-
-async function applyPrivacyPolicyForRow<T extends Ent>(
-  viewer: Viewer,
-  options: LoadEntOptions<T>,
-  row: {} | null,
-): Promise<T | null> {
-  if (!row) {
-    return null;
-  }
-  const ent = new options.ent(viewer, row["id"], row);
-  return await applyPrivacyPolicyForEnt(viewer, ent);
-}
-
-async function applyPrivacyPolicyForRowX<T extends Ent>(
-  viewer: Viewer,
-  options: LoadEntOptions<T>,
-  row: {},
-): Promise<T> {
-  const ent = new options.ent(viewer, row["id"], row);
-  return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
 export async function loadEntFromClause<T extends Ent>(
@@ -154,7 +135,8 @@ export async function loadEntX<T extends Ent>(
   const l = viewer.context?.cache?.getEntLoader(options);
   // console.log("loadEntX", l);
   if (!l) {
-    return loadEntXFromClause(viewer, options, query.Eq("id", id));
+    const col = options.pkey || "id";
+    return loadEntXFromClause(viewer, options, query.Eq(col, id));
   }
   const row = await l?.load(id);
   if (!row) {
@@ -175,7 +157,8 @@ export async function loadEntXFromClause<T extends Ent>(
     context: viewer.context,
   };
   const row = await loadRowX(rowOptions);
-  const ent = new options.ent(viewer, row["id"], row);
+  const col = options.pkey || "id";
+  const ent = new options.ent(viewer, row[col], row);
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
@@ -197,7 +180,8 @@ export async function loadEnts<T extends Ent>(
     const rows = await l.loadMany(ids);
     m = await applyPrivacyPolicyForRows(viewer, rows, options);
   } else {
-    m = await loadEntsFromClause(viewer, query.In("id", ...ids), options);
+    const col = options.pkey || "id";
+    m = await loadEntsFromClause(viewer, query.In(col, ...ids), options);
   }
 
   // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
@@ -214,6 +198,42 @@ export async function loadEnts<T extends Ent>(
     }
   });
   return result;
+}
+
+// we return a map here so that any sorting for queries that exist
+// can be done in O(N) time
+export async function loadEntsFromClause<T extends Ent>(
+  viewer: Viewer,
+  clause: query.Clause,
+  options: LoadEntOptions<T>,
+): Promise<Map<ID, T>> {
+  const rowOptions: LoadRowOptions = {
+    ...options,
+    clause: clause,
+    context: viewer.context,
+  };
+
+  const rows = await loadRows(rowOptions);
+  return await applyPrivacyPolicyForRows(viewer, rows, options);
+}
+
+// Derived ents
+export async function loadDerivedEnt<T extends Ent>(
+  viewer: Viewer,
+  data: {},
+  loader: new (viewer: Viewer, data: {}) => T,
+): Promise<T | null> {
+  const ent = new loader(viewer, data);
+  return await applyPrivacyPolicyForEnt(viewer, ent);
+}
+
+export async function loadDerivedEntX<T extends Ent>(
+  viewer: Viewer,
+  data: {},
+  loader: new (viewer: Viewer, data: {}) => T,
+): Promise<T> {
+  const ent = new loader(viewer, data);
+  return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
 // ent based data-loader
@@ -245,24 +265,6 @@ export function createDataLoader(options: SelectDataOptions) {
 
     return result;
   });
-}
-
-export async function loadDerivedEnt<T extends Ent>(
-  viewer: Viewer,
-  data: {},
-  loader: new (viewer: Viewer, data: {}) => T,
-): Promise<T | null> {
-  const ent = new loader(viewer, data);
-  return await applyPrivacyPolicyForEnt(viewer, ent);
-}
-
-export async function loadDerivedEntX<T extends Ent>(
-  viewer: Viewer,
-  data: {},
-  loader: new (viewer: Viewer, data: {}) => T,
-): Promise<T> {
-  const ent = new loader(viewer, data);
-  return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
 export async function applyPrivacyPolicyForEnt<T extends Ent>(
@@ -307,17 +309,6 @@ export async function loadRowX(options: LoadRowOptions): Promise<{}> {
     );
   }
   return result;
-}
-
-export function buildQuery(options: QueryableDataOptions): string {
-  const fields = options.fields.join(", ");
-  // always start at 1
-  const whereClause = options.clause.clause(1);
-  let query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
-  if (options.orderby) {
-    query = `${query} ORDER BY ${options.orderby} `;
-  }
-  return query;
 }
 
 export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
@@ -392,6 +383,17 @@ export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
     console.error(e);
     return [];
   }
+}
+
+export function buildQuery(options: QueryableDataOptions): string {
+  const fields = options.fields.join(", ");
+  // always start at 1
+  const whereClause = options.clause.clause(1);
+  let query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
+  if (options.orderby) {
+    query = `${query} ORDER BY ${options.orderby} `;
+  }
+  return query;
 }
 
 // slew of methods taken from pg
@@ -907,13 +909,11 @@ const assocEdgeFields = [
   "edge_table",
 ];
 
-export const assocEdgeLoader = createDataLoader({
+const assocEdgeLoader = createDataLoader({
   tableName: "assoc_edge_config",
   fields: assocEdgeFields,
   pkey: "edge_type",
 });
-
-//export assocEdgeLoader;
 
 // we don't expect assoc_edge_config information to change
 // so not using ContextCache but just caching it as needed once per server
@@ -952,7 +952,7 @@ const edgeFields = [
 interface loadEdgesOptions {
   id1: ID;
   edgeType: string;
-  context?: Context;
+  context?: ContextLite;
 }
 
 export async function loadEdges(
@@ -982,7 +982,7 @@ export async function loadEdges(
 export async function loadUniqueEdge(
   id1: ID,
   edgeType: string,
-  context?: Context,
+  context?: ContextLite,
 ): Promise<AssocEdge | null> {
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
@@ -1061,21 +1061,28 @@ export async function loadNodesByEdge<T extends Ent>(
   return loadEnts(viewer, options, ...ids);
 }
 
-// we return a map here so that any sorting for queries that exist
-// can be done in O(N) time
-export async function loadEntsFromClause<T extends Ent>(
+async function applyPrivacyPolicyForRow<T extends Ent>(
   viewer: Viewer,
-  clause: query.Clause,
   options: LoadEntOptions<T>,
-): Promise<Map<ID, T>> {
-  const rowOptions: LoadRowOptions = {
-    ...options,
-    clause: clause,
-    context: viewer.context,
-  };
+  row: {} | null,
+): Promise<T | null> {
+  if (!row) {
+    return null;
+  }
+  const col = options.pkey || "id";
+  const ent = new options.ent(viewer, row[col], row);
+  return await applyPrivacyPolicyForEnt(viewer, ent);
+}
 
-  const rows = await loadRows(rowOptions);
-  return await applyPrivacyPolicyForRows(viewer, rows, options);
+async function applyPrivacyPolicyForRowX<T extends Ent>(
+  viewer: Viewer,
+  options: LoadEntOptions<T>,
+  row: {},
+): Promise<T> {
+  const col = options.pkey || "id";
+
+  const ent = new options.ent(viewer, row[col], row);
+  return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
 async function applyPrivacyPolicyForRows<T extends Ent>(
@@ -1087,8 +1094,8 @@ async function applyPrivacyPolicyForRows<T extends Ent>(
   // apply privacy logic
   const ents = await Promise.all(
     rows.map(async (row) => {
-      // todo eventually there'll be a different key
-      const ent = new options.ent(viewer, row["id"], row);
+      const col = options.pkey || "id";
+      const ent = new options.ent(viewer, row[col], row);
       let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
       if (privacyEnt) {
         m.set(row["id"], privacyEnt);
