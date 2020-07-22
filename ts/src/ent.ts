@@ -1098,7 +1098,7 @@ async function applyPrivacyPolicyForRows<T extends Ent>(
       const ent = new options.ent(viewer, row[col], row);
       let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
       if (privacyEnt) {
-        m.set(row["id"], privacyEnt);
+        m.set(row[col], privacyEnt);
       }
     }),
   );

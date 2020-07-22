@@ -202,36 +202,39 @@ async function loadTestEnt(
   fn: loadEntFn,
   getExpQueries: getEntQueriesFn,
   addCtx?: boolean,
+  disableMock?: boolean,
 ): Promise<[User | null, User | null]> {
-  if (addCtx) {
-    // with context, we hit a loader and it's transformed to an IN query
-    QueryRecorder.mockResult({
-      tableName: selectOptions.tableName,
-      clause: query.In("bar", 1),
-      // loader...
-      result: (values: any[]) => {
-        return values.map((value) => {
+  if (!disableMock) {
+    if (addCtx) {
+      // with context, we hit a loader and it's transformed to an IN query
+      QueryRecorder.mockResult({
+        tableName: selectOptions.tableName,
+        clause: query.In("bar", 1),
+        // loader...
+        result: (values: any[]) => {
+          return values.map((value) => {
+            return {
+              bar: value,
+              baz: "baz",
+              foo: "foo",
+            };
+          });
+        },
+      });
+    } else {
+      // without context, no loader and we do a standard EQ query
+      QueryRecorder.mockResult({
+        tableName: selectOptions.tableName,
+        clause: query.Eq("bar", 1),
+        result: (values: any[]) => {
           return {
-            bar: value,
+            bar: values[0],
             baz: "baz",
             foo: "foo",
           };
-        });
-      },
-    });
-  } else {
-    // without context, no loader and we do a standard EQ query
-    QueryRecorder.mockResult({
-      tableName: selectOptions.tableName,
-      clause: query.Eq("bar", 1),
-      result: (values: any[]) => {
-        return {
-          bar: values[0],
-          baz: "baz",
-          foo: "foo",
-        };
-      },
-    });
+        },
+      });
+    }
   }
 
   const [expQueries1, expQueries2] = getExpQueries();
@@ -573,5 +576,255 @@ describe("loadEntX", () => {
         return [[queryOption], [queryOption, queryOption]];
       },
     );
+  });
+});
+
+describe("loadEnt(X)FromClause", () => {
+  let clause = query.And(query.Eq("bar", 1), query.Eq("baz", "baz"));
+
+  beforeEach(() => {
+    QueryRecorder.mockResult({
+      tableName: selectOptions.tableName,
+      clause: clause,
+      result: (values: any[]) => {
+        return {
+          bar: values[0],
+          baz: values[1],
+          foo: "foo",
+        };
+      },
+    });
+  });
+
+  const options = {
+    ...User.loaderOptions(),
+    clause: clause,
+  };
+
+  test("with context", async () => {
+    const vc = getIDViewer(1);
+
+    await loadTestEnt(
+      () => ent.loadEntFromClause(vc, User.loaderOptions(), clause),
+      () => {
+        const expQueries = [
+          {
+            query: ent.buildQuery(options),
+            values: options.clause.values(),
+          },
+        ];
+        // when there's a context cache, we only run the query once so should be the same result
+        return [expQueries, expQueries];
+      },
+      true,
+      true, // disableMock
+    );
+  });
+
+  test("without context", async () => {
+    const vc = new IDViewer(1);
+
+    await loadTestEnt(
+      () => ent.loadEntFromClause(vc, User.loaderOptions(), clause),
+      () => {
+        const queryOption = {
+          query: ent.buildQuery(options),
+          values: options.clause.values(),
+        };
+        const expQueries = [
+          {
+            query: ent.buildQuery(options),
+            values: options.clause.values(),
+          },
+        ];
+        // no context cache. so multiple queries needed
+        return [[queryOption], [queryOption, queryOption]];
+      },
+      false,
+      true, // disableMock
+    );
+  });
+
+  test("loadEntXFromClause with context", async () => {
+    const vc = getIDViewer(1);
+
+    await loadTestEnt(
+      () => ent.loadEntXFromClause(vc, User.loaderOptions(), clause),
+      () => {
+        const expQueries = [
+          {
+            query: ent.buildQuery(options),
+            values: options.clause.values(),
+          },
+        ];
+        // when there's a context cache, we only run the query once so should be the same result
+        return [expQueries, expQueries];
+      },
+      true,
+      true, // disableMock
+    );
+  });
+
+  test("loadEntXFromClause without context", async () => {
+    const vc = new IDViewer(1);
+
+    await loadTestEnt(
+      () => ent.loadEntXFromClause(vc, User.loaderOptions(), clause),
+      () => {
+        const queryOption = {
+          query: ent.buildQuery(options),
+          values: options.clause.values(),
+        };
+        const expQueries = [
+          {
+            query: ent.buildQuery(options),
+            values: options.clause.values(),
+          },
+        ];
+        // no context cache. so multiple queries needed
+        return [[queryOption], [queryOption, queryOption]];
+      },
+      false,
+      true, // disableMock
+    );
+  });
+});
+
+describe("loadEnts", () => {
+  test("with context", async () => {
+    QueryRecorder.mockResult({
+      tableName: selectOptions.tableName,
+      clause: query.In("bar", 1, 2, 3),
+      // loader...
+      result: (values: any[]) => {
+        return values.map((value) => {
+          return {
+            bar: value,
+            baz: "baz",
+            foo: "foo",
+          };
+        });
+      },
+    });
+
+    const vc = getIDViewer(1);
+    const ents = await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+
+    // only loading self worked because of privacy
+    expect(ents.length).toBe(1);
+    expect(ents[0].id).toBe(1);
+
+    const options = {
+      ...User.loaderOptions(),
+      clause: query.In("bar", 1, 2, 3),
+    };
+    const expQueries = [
+      {
+        query: ent.buildQuery(options),
+        values: options.clause.values(),
+      },
+    ];
+
+    // only one query
+    QueryRecorder.validateQueryOrder(expQueries, null);
+
+    // reload each of these in a different place
+    await Promise.all([
+      ent.loadEnt(vc, 1, User.loaderOptions()),
+      ent.loadEnt(vc, 2, User.loaderOptions()),
+      ent.loadEnt(vc, 3, User.loaderOptions()),
+    ]);
+
+    // still the same one query
+    QueryRecorder.validateQueryOrder(expQueries, null);
+
+    // reload all
+    await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+
+    // still the same one query
+    QueryRecorder.validateQueryOrder(expQueries, null);
+  });
+
+  test("without context", async () => {
+    QueryRecorder.mockResult({
+      tableName: selectOptions.tableName,
+      clause: query.In("bar", 1, 2, 3),
+      // loader...
+      result: (values: any[]) => {
+        return values.map((value) => {
+          return {
+            bar: value,
+            baz: "baz",
+            foo: "foo",
+          };
+        });
+      },
+    });
+
+    const vc = new IDViewer(1);
+    const ents = await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+
+    // only loading self worked because of privacy
+    expect(ents.length).toBe(1);
+    expect(ents[0].id).toBe(1);
+
+    const options = {
+      ...User.loaderOptions(),
+      clause: query.In("bar", 1, 2, 3),
+    };
+    const expQueries = [
+      {
+        query: ent.buildQuery(options),
+        values: options.clause.values(),
+      },
+    ];
+
+    // only one query
+    QueryRecorder.validateQueryOrder(expQueries, null);
+
+    // add each query.Eq for the one-offs
+    const ids = [1, 2, 3];
+    let expQueries2 = expQueries.concat();
+    ids.map((id) => {
+      let clause = query.Eq("bar", id);
+      let options = {
+        ...User.loaderOptions(),
+        clause: clause,
+      };
+      QueryRecorder.mockResult({
+        tableName: selectOptions.tableName,
+        clause: clause,
+        // loader...
+        result: (values: any[]) => {
+          return {
+            bar: id,
+            baz: "baz",
+            foo: "foo",
+          };
+        },
+      });
+      expQueries2.push({
+        query: ent.buildQuery(options),
+        values: options.clause.values(),
+      });
+    });
+
+    // reload each of these in a different place
+    await Promise.all([
+      ent.loadEnt(vc, 1, User.loaderOptions()),
+      ent.loadEnt(vc, 2, User.loaderOptions()),
+      ent.loadEnt(vc, 3, User.loaderOptions()),
+    ]);
+
+    // should now have 4 queries
+    QueryRecorder.validateQueryOrder(expQueries2, null);
+
+    // reload all
+    await ent.loadEnts(vc, User.loaderOptions(), 1, 2, 3);
+
+    const expQueries3 = expQueries2.concat(expQueries);
+
+    // a 5th in query added
+    QueryRecorder.validateQueryOrder(expQueries3, null);
   });
 });
