@@ -34,16 +34,16 @@ class User implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
-  constructor(public viewer: Viewer, public data: {}) {
+  constructor(public viewer: Viewer, id: ID, public data: {}) {
     this.id = data["bar"];
   }
 
-  static async load(v: Viewer, data: {}): Promise<User | null> {
-    return loadDerivedEnt(v, data, User);
+  static async load(v: Viewer, id: ID): Promise<User | null> {
+    return ent.loadEnt(v, id, User.loaderOptions());
   }
 
-  static async loadX(v: Viewer, data: {}): Promise<User> {
-    return loadDerivedEntX(v, data, User);
+  static async loadX(v: Viewer, id: ID): Promise<User> {
+    return ent.loadEntX(v, id, User.loaderOptions());
   }
 
   static loaderOptions(): ent.LoadEntOptions<User> {
@@ -187,7 +187,7 @@ async function loadTestEnt(
   fn: loadEntFn,
   getExpQueries: getEntQueriesFn,
   addCtx?: boolean,
-) {
+): Promise<[User | null, User | null]> {
   if (addCtx) {
     // with context, we hit a loader and it's transformed to an IN query
     QueryRecorder.mockResult({
@@ -236,6 +236,8 @@ async function loadTestEnt(
   } else {
     expect(row).toStrictEqual(row2);
   }
+
+  return [ent1, ent2];
 }
 
 describe("loadRow", () => {
@@ -312,20 +314,43 @@ describe("loadEnt", () => {
       clause: query.In("bar", 1),
     };
 
-    await loadTestEnt(
-      () => ent.loadEnt(vc, 1, User.loaderOptions()),
-      () => {
-        const expQueries = [
-          {
-            query: ent.buildQuery(options),
-            values: options.clause.values(),
-          },
-        ];
-        // when there's a context cache, we only run the query once so should be the same result
-        return [expQueries, expQueries];
-      },
-      true,
-    );
+    const testEnt = async (vc: Viewer) => {
+      return await loadTestEnt(
+        () => ent.loadEnt(vc, 1, User.loaderOptions()),
+        () => {
+          const expQueries = [
+            {
+              query: ent.buildQuery(options),
+              values: options.clause.values(),
+            },
+          ];
+          // when there's a context cache, we only run the query once so should be the same result
+          return [expQueries, expQueries];
+        },
+        true,
+      );
+    };
+
+    const [ent1, ent2] = await testEnt(vc);
+
+    // same context, change viewer
+    const vc2 = new IDViewer(1, null, ctx);
+    ctx.setViewer(vc2);
+
+    // we still reuse the same raw-data query since it's viewer agnostic
+    // context cache works as viewer is changed
+    const [ent3, ent4] = await testEnt(vc2);
+
+    // no viewer, nothing loaded
+    expect(ent1).toBe(null);
+    expect(ent2).toBe(null);
+
+    // viewer, same data reused and privacy respected
+    expect(ent3).not.toBe(null);
+    expect(ent4).not.toBe(null);
+
+    expect(ent3?.id).toBe(1);
+    expect(ent4?.id).toBe(1);
   });
 
   test("without context", async () => {
