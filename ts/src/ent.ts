@@ -138,7 +138,7 @@ export async function loadEntX<T extends Ent>(
     const col = options.pkey || "id";
     return loadEntXFromClause(viewer, options, query.Eq(col, id));
   }
-  const row = await l?.load(id);
+  const row = await l.load(id);
   if (!row) {
     throw new Error(`couldn't find row for id ${id}`);
   }

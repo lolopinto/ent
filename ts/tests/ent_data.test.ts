@@ -12,6 +12,9 @@ import * as ent from "./../src/ent";
 import { ContextLite, ContextCache } from "../src/auth/context";
 import * as query from "../src/query";
 import ViewerResolver from "src/imports/dataz/example1/_viewer";
+import { getVisitFn } from "graphql";
+import { Context } from "vm";
+import { createJsxText } from "typescript";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -60,7 +63,10 @@ beforeEach(() => {
   ctx = getCtx();
 });
 
-function getCtx(v?: Viewer) {
+interface TestCtx extends ContextLite {
+  setViewer(v: Viewer);
+}
+function getCtx(v?: Viewer): TestCtx {
   let viewer = v || loggedOutViewer;
   let ctx = {
     //    viewer: Viewer
@@ -73,6 +79,15 @@ function getCtx(v?: Viewer) {
     cache: new ContextCache(),
   };
   return ctx;
+}
+
+function getIDViewer(id: ID, ctx?: TestCtx) {
+  if (!ctx) {
+    ctx = getCtx();
+  }
+  let v = new IDViewer(id, null, ctx);
+  ctx.setViewer(v);
+  return v;
 }
 
 afterEach(() => {
@@ -334,8 +349,7 @@ describe("loadEnt", () => {
     const [ent1, ent2] = await testEnt(vc);
 
     // same context, change viewer
-    const vc2 = new IDViewer(1, null, ctx);
-    ctx.setViewer(vc2);
+    const vc2 = getIDViewer(1, ctx);
 
     // we still reuse the same raw-data query since it's viewer agnostic
     // context cache works as viewer is changed
@@ -358,12 +372,198 @@ describe("loadEnt", () => {
 
     const options = {
       ...User.loaderOptions(),
-      // gonna end up being a data loader...
+      // no dataloader. simple query
       clause: query.Eq("bar", 1),
     };
 
     await loadTestEnt(
       () => ent.loadEnt(vc, 1, User.loaderOptions()),
+      () => {
+        const queryOption = {
+          query: ent.buildQuery(options),
+          values: options.clause.values(),
+        };
+        // when there's a context cache, we only run the query once so should be the same result
+        return [[queryOption], [queryOption, queryOption]];
+      },
+    );
+  });
+
+  test("parallel queries with context", async () => {
+    QueryRecorder.mockResult({
+      tableName: selectOptions.tableName,
+      clause: query.In("bar", 1, 2, 3),
+      // loader...
+      result: (values: any[]) => {
+        return values.map((value) => {
+          return {
+            bar: value,
+            baz: "baz",
+            foo: "foo",
+          };
+        });
+      },
+    });
+
+    const vc = getIDViewer(1);
+
+    // 3 loadEnts at the same time
+    const [ent1, ent2, ent3] = await Promise.all([
+      ent.loadEnt(vc, 1, User.loaderOptions()),
+      ent.loadEnt(vc, 2, User.loaderOptions()),
+      ent.loadEnt(vc, 3, User.loaderOptions()),
+    ]);
+
+    // only 1 ent visible
+    expect(ent1).not.toBe(null);
+    expect(ent2).toBe(null);
+    expect(ent3).toBe(null);
+
+    const options = {
+      ...User.loaderOptions(),
+      // gets coalesced into 1 IN query...
+      clause: query.In("bar", 1, 2, 3),
+    };
+    const expQueries = [
+      {
+        query: ent.buildQuery(options),
+        values: options.clause.values(),
+      },
+    ];
+
+    // only one query
+    QueryRecorder.validateQueryOrder(expQueries, null);
+
+    // load the data again
+    // everything should still be in cache
+    const [ent4, ent5, ent6] = await Promise.all([
+      ent.loadEnt(vc, 1, User.loaderOptions()),
+      ent.loadEnt(vc, 2, User.loaderOptions()),
+      ent.loadEnt(vc, 3, User.loaderOptions()),
+    ]);
+
+    // only 1 ent visible (same as before)
+    expect(ent4).not.toBe(null);
+    expect(ent5).toBe(null);
+    expect(ent6).toBe(null);
+
+    // still only that same query
+    QueryRecorder.validateQueryOrder(expQueries, null);
+
+    // exact same row.
+    expect(ent1?.data).toBe(ent4?.data);
+  });
+
+  test("parallel queries without context", async () => {
+    const ids = [1, 2, 3];
+    ids.forEach((id) => {
+      QueryRecorder.mockResult({
+        tableName: selectOptions.tableName,
+        clause: query.Eq("bar", id),
+        // no loader
+        result: (values: any[]) => {
+          return {
+            bar: values[0],
+            baz: "baz",
+            foo: "foo",
+          };
+        },
+      });
+    });
+
+    const vc = new IDViewer(1);
+
+    // 3 loadEnts at the same time
+    const [ent1, ent2, ent3] = await Promise.all([
+      ent.loadEnt(vc, 1, User.loaderOptions()),
+      ent.loadEnt(vc, 2, User.loaderOptions()),
+      ent.loadEnt(vc, 3, User.loaderOptions()),
+    ]);
+
+    // only 1 ent visible
+    expect(ent1).not.toBe(null);
+    expect(ent2).toBe(null);
+    expect(ent3).toBe(null);
+
+    // a different query sent for each id so ending up with 3
+    const expQueries = ids.map((id) => {
+      const options = {
+        ...User.loaderOptions(),
+        clause: query.Eq("bar", id),
+      };
+      return {
+        query: ent.buildQuery(options),
+        values: options.clause.values(),
+      };
+    });
+
+    QueryRecorder.validateQueryOrder(expQueries, null);
+
+    // load the data again
+    const [ent4, ent5, ent6] = await Promise.all([
+      ent.loadEnt(vc, 1, User.loaderOptions()),
+      ent.loadEnt(vc, 2, User.loaderOptions()),
+      ent.loadEnt(vc, 3, User.loaderOptions()),
+    ]);
+
+    // only 1 ent visible (same as before)
+    expect(ent4).not.toBe(null);
+    expect(ent5).toBe(null);
+    expect(ent6).toBe(null);
+
+    // 3 more queries for 6
+    const expQueries2 = expQueries.concat(expQueries);
+    QueryRecorder.validateQueryOrder(expQueries2, null);
+  });
+});
+
+describe("loadEntX", () => {
+  test("with context", async () => {
+    const vc = getIDViewer(1);
+
+    const options = {
+      ...User.loaderOptions(),
+      // context. dataloader. in query
+      clause: query.In("bar", 1),
+    };
+
+    const testEnt = async (vc: Viewer) => {
+      return await loadTestEnt(
+        () => ent.loadEntX(vc, 1, User.loaderOptions()),
+        () => {
+          const expQueries = [
+            {
+              query: ent.buildQuery(options),
+              values: options.clause.values(),
+            },
+          ];
+          // when there's a context cache, we only run the query once so should be the same result
+          return [expQueries, expQueries];
+        },
+        true,
+      );
+    };
+
+    const [ent1, ent2] = await testEnt(vc);
+
+    expect(ent1).not.toBe(null);
+    expect(ent2).not.toBe(null);
+
+    expect(ent1?.id).toBe(1);
+    expect(ent2?.id).toBe(1);
+  });
+
+  test("without context", async () => {
+    const vc = new IDViewer(1);
+
+    const options = {
+      ...User.loaderOptions(),
+      // no context, simple query
+      clause: query.Eq("bar", 1),
+    };
+
+    await loadTestEnt(
+      () => ent.loadEntX(vc, 1, User.loaderOptions()),
       () => {
         const queryOption = {
           query: ent.buildQuery(options),
