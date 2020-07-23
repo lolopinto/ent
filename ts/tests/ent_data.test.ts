@@ -15,6 +15,7 @@ import ViewerResolver from "src/imports/dataz/example1/_viewer";
 import { getVisitFn } from "graphql";
 import { Context } from "vm";
 import { createJsxText } from "typescript";
+import { isDate } from "util";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -826,5 +827,93 @@ describe("loadEnts", () => {
 
     // a 5th in query added
     QueryRecorder.validateQueryOrder(expQueries3, null);
+  });
+});
+
+describe("loadEntsFromClause", () => {
+  let idResults = [1, 2, 3];
+  let clause = query.Eq("baz", "baz");
+
+  beforeEach(() => {
+    QueryRecorder.mockResult({
+      tableName: selectOptions.tableName,
+      clause: clause,
+      result: (values: any[]) => {
+        return idResults.map((id) => {
+          return {
+            bar: id,
+            baz: values[0],
+            foo: "foo",
+          };
+        });
+      },
+    });
+  });
+
+  const options = {
+    ...User.loaderOptions(),
+    clause: clause,
+  };
+
+  test("with context", async () => {
+    const vc = getIDViewer(1);
+
+    const ents = await ent.loadEntsFromClause(vc, clause, User.loaderOptions());
+    // only loading self worked because of privacy
+    expect(ents.size).toBe(1);
+    expect(ents.has(1)).toBe(true);
+
+    const expQueries = [
+      {
+        query: ent.buildQuery(options),
+        values: options.clause.values(),
+      },
+    ];
+
+    // only one query
+    QueryRecorder.validateQueryOrder(expQueries, null);
+
+    const ents2 = await ent.loadEntsFromClause(
+      vc,
+      clause,
+      User.loaderOptions(),
+    );
+    // only loading self worked because of privacy
+    expect(ents2.size).toBe(1);
+    expect(ents2.has(1)).toBe(true);
+
+    // still only one query
+    QueryRecorder.validateQueryOrder(expQueries, null);
+  });
+
+  test("without context", async () => {
+    const vc = new IDViewer(1);
+
+    const ents = await ent.loadEntsFromClause(vc, clause, User.loaderOptions());
+    // only loading self worked because of privacy
+    expect(ents.size).toBe(1);
+    expect(ents.has(1)).toBe(true);
+
+    const expQueries = [
+      {
+        query: ent.buildQuery(options),
+        values: options.clause.values(),
+      },
+    ];
+
+    // only one query
+    QueryRecorder.validateQueryOrder(expQueries, null);
+
+    const ents2 = await ent.loadEntsFromClause(
+      vc,
+      clause,
+      User.loaderOptions(),
+    );
+    // only loading self worked because of privacy
+    expect(ents2.size).toBe(1);
+    expect(ents2.has(1)).toBe(true);
+
+    // 2 queries
+    QueryRecorder.validateQueryOrder(expQueries.concat(expQueries), null);
   });
 });
