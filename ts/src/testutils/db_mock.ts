@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { Pool, PoolClient, Query } from "pg";
+import { Pool, PoolClient } from "pg";
 import { mocked } from "ts-jest/utils";
 import { ID, Ent, AssocEdgeData } from "./../ent";
 import { Clause } from "./../query";

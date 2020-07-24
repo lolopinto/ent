@@ -24,6 +24,7 @@ import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import * as query from "./query";
 import { IDViewer } from "./testutils/id_viewer";
 import { FakeLogger, EntCreationObserver } from "./testutils/fake_log";
+import { ContextLite } from "./auth/context";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -71,6 +72,7 @@ async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
 
 async function executeOperations<T extends Ent>(
   executor: Executor<T>,
+  context?: ContextLite,
 ): Promise<void> {
   const client = await DB.getInstance().getNewClient();
 
@@ -83,7 +85,7 @@ async function executeOperations<T extends Ent>(
         operation.resolve(executor);
       }
 
-      await operation.performWrite(client);
+      await operation.performWrite(client, context);
     }
     await client.query("COMMIT");
 

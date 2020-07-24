@@ -11,11 +11,8 @@ import { Pool, Query } from "pg";
 import * as ent from "./../src/ent";
 import { ContextLite, ContextCache } from "../src/auth/context";
 import * as query from "../src/query";
-import ViewerResolver from "src/imports/dataz/example1/_viewer";
-import { getVisitFn } from "graphql";
-import { Context } from "vm";
-import { createJsxText } from "typescript";
-import { isDate } from "util";
+import DB from "./../src/db";
+import each from "jest-each";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -259,33 +256,33 @@ async function loadTestEnt(
   return [ent1, ent2];
 }
 
-describe("loadRow", () => {
-  test("with context", async () => {
-    await loadTestRow(
-      ent.loadRow,
-      (options) => {
-        const expQueries = [
-          {
-            query: ent.buildQuery(options),
-            values: options.clause.values(),
-          },
-        ];
-        // when there's a context cache, we only run the query once so should be the same result
-        return [expQueries, expQueries];
-      },
-      true,
-    );
-  });
-
-  test("without context", async () => {
-    await loadTestRow(ent.loadRow, (options) => {
+async function testLoadRow(addCtx?: boolean) {
+  await loadTestRow(
+    ent.loadRow,
+    (options) => {
       const queryOption = {
         query: ent.buildQuery(options),
         values: options.clause.values(),
       };
+
+      // when there's a context cache, we only run the query once so should be the same result
+      if (addCtx) {
+        return [[queryOption], [queryOption]];
+      }
       // not cached (no context), so multiple queries made here
       return [[queryOption], [queryOption, queryOption]];
-    });
+    },
+    addCtx,
+  );
+}
+
+describe("loadRow", () => {
+  test("with context", async () => {
+    await testLoadRow(true);
+  });
+
+  test("without context", async () => {
+    await testLoadRow(false);
   });
 });
 
@@ -915,5 +912,107 @@ describe("loadEntsFromClause", () => {
 
     // 2 queries
     QueryRecorder.validateQueryOrder(expQueries.concat(expQueries), null);
+  });
+});
+
+describe("writes", () => {
+  const fields = {
+    bar: 1,
+    baz: "baz",
+    foo: "foo",
+  };
+  let options: ent.EditRowOptions;
+  let pool = DB.getInstance().getPool();
+  beforeEach(() => {
+    options = {
+      fields: fields,
+      pkey: "bar",
+      tableName: selectOptions.tableName,
+      context: ctx!, // reuse "global" context
+    };
+  });
+
+  const args = [
+    [
+      "createRow",
+      async () => ent.createRow(pool, options, "RETURNING *"),
+      {
+        query:
+          "INSERT INTO table (bar, baz, foo) VALUES ($1, $2, $3) RETURNING *",
+        values: Object.values(fields),
+      },
+    ],
+    [
+      "editRow",
+      async () => ent.editRow(pool, options, 1),
+      {
+        query:
+          "UPDATE table SET bar = $1, baz = $2, foo = $3 WHERE bar = $4 RETURNING *",
+        values: [...Object.values(fields), 1],
+      },
+    ],
+    [
+      "deleteRow",
+      async () => ent.deleteRow(pool, options, query.Eq("bar", 1)),
+      {
+        query: "DELETE FROM table WHERE bar = $1",
+        values: [1],
+      },
+    ],
+  ];
+
+  each(args).test("with context: %s", async (_name, writeFn, query) => {
+    await testLoadRow(true);
+
+    // reload. still hits same cache with one row
+    await testLoadRow(true);
+
+    // performWrite
+    // this clears the context cache
+    await writeFn();
+
+    // this does additional queries
+    await loadTestRow(
+      ent.loadRow,
+      (options) => {
+        const queryOption = {
+          query: ent.buildQuery(options),
+          values: options.clause.values(),
+        };
+
+        // since we cleared the cache, this will now show an additional read query
+        return [
+          [queryOption, query, queryOption],
+          [queryOption, query, queryOption],
+        ];
+      },
+      true,
+    );
+  });
+
+  each(args).test("without context: %s", async (_name, writeFn, query) => {
+    // no context, multiple queries
+    await testLoadRow(false);
+
+    // performWrite
+    await writeFn();
+
+    // this does additional queries
+    await loadTestRow(
+      ent.loadRow,
+      (options) => {
+        const queryOption = {
+          query: ent.buildQuery(options),
+          values: options.clause.values(),
+        };
+
+        // no context cache so it just keeps making queries
+        return [
+          [queryOption, queryOption, query, queryOption],
+          [queryOption, queryOption, query, queryOption, queryOption],
+        ];
+      },
+      false,
+    );
   });
 });

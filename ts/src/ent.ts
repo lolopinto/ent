@@ -56,6 +56,7 @@ interface DataOptions {
   // TODO this can be passed in for scenarios where we are not using default configuration
   //  clientConfig?: ClientConfig;
   tableName: string;
+  context?: ContextLite;
 }
 
 export interface SelectDataOptions extends DataOptions {
@@ -67,7 +68,6 @@ export interface SelectDataOptions extends DataOptions {
 export interface QueryableDataOptions extends SelectDataOptions {
   clause: query.Clause;
   orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
-  context?: ContextLite;
 }
 
 // For loading data from database
@@ -80,7 +80,7 @@ interface LoadRowsOptions extends QueryableDataOptions {}
 export interface EditRowOptions extends DataOptions {
   // fields to be edited
   fields: {};
-  context?: ContextLite;
+  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
 interface LoadableEntOptions<T extends Ent> extends DataOptions {
@@ -428,7 +428,7 @@ export interface Queryer {
 }
 
 export interface DataOperation {
-  performWrite(queryer: Queryer): Promise<void>;
+  performWrite(queryer: Queryer, context?: ContextLite): Promise<void>;
   returnedEntRow?(): {} | null; // optional to indicate the row that was created
   resolve?<T extends Ent>(executor: Executor<T>): void; //throws?
 }
@@ -469,11 +469,15 @@ export class EditNodeOperation implements DataOperation {
     this.options.fields = fields;
   }
 
-  async performWrite(queryer: Queryer): Promise<void> {
+  async performWrite(queryer: Queryer, context?: ContextLite): Promise<void> {
+    let options = {
+      ...this.options,
+      context,
+    };
     if (this.existingEnt) {
-      this.row = await editRow(queryer, this.options, this.existingEnt.id);
+      this.row = await editRow(queryer, options, this.existingEnt.id);
     } else {
-      this.row = await createRow(queryer, this.options, "RETURNING *");
+      this.row = await createRow(queryer, options, "RETURNING *");
     }
   }
 
@@ -494,7 +498,7 @@ export class EdgeOperation implements DataOperation {
     private options: EdgeOperationOptions,
   ) {}
 
-  async performWrite(queryer: Queryer): Promise<void> {
+  async performWrite(queryer: Queryer, context?: ContextLite): Promise<void> {
     const edge = this.edgeInput;
 
     let edgeData = await loadEdgeData(edge.edgeType);
@@ -504,10 +508,10 @@ export class EdgeOperation implements DataOperation {
 
     switch (this.options.operation) {
       case WriteOperation.Delete:
-        return this.performDeleteWrite(queryer, edgeData, edge);
+        return this.performDeleteWrite(queryer, edgeData, edge, context);
       case WriteOperation.Insert:
       case WriteOperation.Edit:
-        return this.performInsertWrite(queryer, edgeData, edge);
+        return this.performInsertWrite(queryer, edgeData, edge, context);
     }
   }
 
@@ -515,11 +519,13 @@ export class EdgeOperation implements DataOperation {
     q: Queryer,
     edgeData: AssocEdgeData,
     edge: AssocEdgeInput,
+    context?: ContextLite,
   ): Promise<void> {
     return deleteRow(
       q,
       {
         tableName: edgeData.edgeTable,
+        context,
       },
       query.And(
         query.Eq("id1", edge.id1),
@@ -533,6 +539,7 @@ export class EdgeOperation implements DataOperation {
     q: Queryer,
     edgeData: AssocEdgeData,
     edge: AssocEdgeInput,
+    context?: ContextLite,
   ): Promise<void> {
     const fields = {
       id1: edge.id1,
@@ -558,6 +565,7 @@ export class EdgeOperation implements DataOperation {
       {
         tableName: edgeData.edgeTable,
         fields: fields,
+        context,
       },
       "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
     );
@@ -765,7 +773,30 @@ export class EdgeOperation implements DataOperation {
   }
 }
 
-async function createRow(
+async function mutateRow(
+  queryer: Queryer,
+  query: string,
+  values: any[],
+  options: DataOptions,
+) {
+  logQuery(query, values);
+
+  let cache = options.context?.cache;
+  try {
+    const res = await queryer.query(query, values);
+    if (cache) {
+      cache.clearCache();
+    }
+    return res;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+// TODO: these three are not to be exported out of this package
+// only from this file
+export async function createRow(
   queryer: Queryer,
   options: EditRowOptions,
   suffix: string,
@@ -786,17 +817,15 @@ async function createRow(
 
   let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals}) ${suffix}`;
 
-  logQuery(query, values);
+  const res = await mutateRow(queryer, query, values, options);
 
-  const res = await queryer.query(query, values);
-
-  if (res.rowCount == 1) {
+  if (res?.rowCount === 1) {
     return res.rows[0];
   }
   return null;
 }
 
-async function editRow(
+export async function editRow(
   queryer: Queryer,
   options: EditRowOptions,
   id: ID,
@@ -813,42 +842,40 @@ async function editRow(
   values.push(id);
 
   const vals = valsString.join(", ");
+  const col = options.pkey || "id";
 
-  let query = `UPDATE ${options.tableName} SET ${vals} WHERE id = $${idx} RETURNING *`;
-  logQuery(query, values);
+  let query = `UPDATE ${options.tableName} SET ${vals} WHERE ${col} = $${idx} RETURNING *`;
 
-  try {
-    const res = await queryer.query(query, values);
+  const res = await mutateRow(queryer, query, values, options);
 
-    if (res.rowCount == 1) {
-      // for now assume id primary key
-      // TODO make this extensible as needed.
-      let row = res.rows[0];
-      return row;
-    }
-  } catch (e) {
-    console.error(e);
-    return null;
+  if (res?.rowCount == 1) {
+    // for now assume id primary key
+    // TODO make this extensible as needed.
+    let row = res.rows[0];
+    return row;
   }
   return null;
 }
 
-async function deleteRow(
+export async function deleteRow(
   queryer: Queryer,
   options: DataOptions,
   clause: query.Clause,
 ): Promise<void> {
   const query = `DELETE FROM ${options.tableName} WHERE ${clause.clause(1)}`;
   const values = clause.values();
-  logQuery(query, values);
-  await queryer.query(query, values);
+  await mutateRow(queryer, query, values, options);
 }
 
 export class DeleteNodeOperation implements DataOperation {
   constructor(private id: ID, private options: DataOptions) {}
 
-  async performWrite(queryer: Queryer): Promise<void> {
-    return deleteRow(queryer, this.options, query.Eq("id", this.id));
+  async performWrite(queryer: Queryer, context?: ContextLite): Promise<void> {
+    let options = {
+      ...this.options,
+      context,
+    };
+    return deleteRow(queryer, options, query.Eq("id", this.id));
   }
 }
 
