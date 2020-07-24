@@ -6,11 +6,6 @@ import {
 } from "./../src/privacy";
 import { ID, Ent, Viewer, loadDerivedEnt, loadDerivedEntX } from "./../src/ent";
 import { IDViewer } from "../src/testutils/id_viewer";
-import { QueryRecorder } from "../src/testutils/db_mock";
-import { Pool, Query } from "pg";
-import * as ent from "./../src/ent";
-import { Context, ContextCache } from "../src/auth/context";
-import * as query from "../src/query";
 
 const loggedOutViewer = new LoggedOutViewer();
 

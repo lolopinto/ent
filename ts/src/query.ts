@@ -1,5 +1,3 @@
-import { HighlightSpanKind } from "typescript";
-
 export interface Clause {
   clause(idx: number): string;
   values(): any[];

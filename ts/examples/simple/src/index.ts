@@ -2,7 +2,6 @@ import User from "src/ent/user.ts"; // default removes the suffix and transforms
 import { IDViewer } from "src/util/id_viewer";
 import CreateContactAction from "./ent/contact/actions/create_contact_action";
 import { randomEmail } from "./util/random";
-import { createLoaders } from "src/ent/loaders";
 import EditUserAction from "./ent/user/actions/edit_user_action";
 import { loadEdges, loadEdgeData } from "ent/ent";
 import { EdgeType } from "./ent/const";
@@ -46,7 +45,7 @@ async function main() {
       // loaders.User.clear(id);
       // console.log(await loaders.User.load(id));
 
-      const vc = new IDViewer(id2, context);
+      const vc = new IDViewer(id2, null, context);
       const user = await User.loadX(vc, id2);
 
       await user.loadFriends();

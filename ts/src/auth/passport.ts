@@ -151,8 +151,6 @@ export class LocalStrategy extends Strategy {
 
 function promisifiedAuth(
   context: RequestContext,
-  // request: IncomingMessage,
-  // response: ServerResponse,
   strategy: passport.Strategy,
   options?: AuthenticateOptions,
 ) {

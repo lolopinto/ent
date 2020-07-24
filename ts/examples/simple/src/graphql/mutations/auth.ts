@@ -84,7 +84,7 @@ export class AuthResolver {
           if (!valid) {
             return null;
           }
-          return new IDViewer(user.id, context);
+          return new IDViewer(user.id, null, context);
         },
       }),
     );
@@ -130,7 +130,7 @@ export class AuthResolver {
           if (!valid) {
             return null;
           }
-          return new IDViewer(user.id, context);
+          return new IDViewer(user.id, null, context);
         },
       }),
       // don't store this in session since we're using JWT here

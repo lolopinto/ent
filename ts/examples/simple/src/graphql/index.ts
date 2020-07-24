@@ -51,7 +51,7 @@ registerAuthHandler(
     { session: false },
     function(context, viewerID) {
       // toViewer method
-      return new IDViewer(viewerID, context);
+      return new IDViewer(viewerID, null, context);
     },
   ),
 );
