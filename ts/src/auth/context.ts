@@ -65,16 +65,13 @@ export class ContextCache {
 
   // only create as needed for the "requests" which need it
   getEntLoader(loaderOptions: SelectDataOptions) {
-    //    console.log(loaderOptions);
     let l = this.loaders.get(loaderOptions.tableName);
 
     if (l) {
-      //console.log("existing loader");
       return l;
     }
     l = createDataLoader(loaderOptions);
     this.loaders.set(loaderOptions.tableName, l);
-    //console.log("new loader");
     return l;
   }
 
@@ -97,13 +94,11 @@ export class ContextCache {
   }
 
   getCachedRows(options: queryOptions): {}[] | null {
-    //    console.log("get", this.listMap);
     let m = this.listMap.get(options.tableName);
     if (!m) {
       return null;
     }
     let rows = m.get(this.getkey(options));
-    //    console.log("rows money line", rows);
     return rows || null;
   }
 
@@ -123,12 +118,10 @@ export class ContextCache {
       let m = this.listMap.get(options.tableName) || new Map();
       m.set(this.getkey(options), rows);
       this.listMap.set(options.tableName, m);
-      //console.log("post-prime", this.listMap);
     } else {
       let m = this.itemMap.get(options.tableName) || new Map();
       m.set(this.getkey(options), rows);
       this.itemMap.set(options.tableName, m);
-      //console.log("post-prime", this.itemMap);
     }
   }
 
