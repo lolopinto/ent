@@ -1,11 +1,11 @@
 import { ID, Viewer, Ent } from "../ent";
-import { ContextLite } from "src/auth/context";
+import { Context } from "src/auth/context";
 
 export class IDViewer implements Viewer {
   constructor(
     public viewerID: ID,
     private ent: Ent | null = null,
-    public context?: ContextLite,
+    public context?: Context,
   ) {}
   async viewer() {
     return this.ent;

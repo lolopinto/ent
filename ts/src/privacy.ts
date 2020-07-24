@@ -1,5 +1,5 @@
 import { Viewer, Ent, ID, loadEdgeForID2 } from "./ent";
-import { Context, ContextLite } from "./auth/context";
+import { RequestContext, Context } from "./auth/context";
 
 enum privacyResult {
   // using http status codes similar to golang for the lols
@@ -146,7 +146,7 @@ async function allowIfEdgeExistsRule(
   id1: ID | null,
   id2: ID | null,
   edgeType: string,
-  context?: ContextLite,
+  context?: Context,
 ): Promise<PrivacyResult> {
   if (!id1 || !id2) {
     return Skip();
@@ -186,7 +186,7 @@ async function denyIfEdgeExistsRule(
   id1: ID | null,
   id2: ID | null,
   edgeType: string,
-  context?: ContextLite,
+  context?: Context,
 ): Promise<PrivacyResult> {
   // edge doesn't exist if no viewer
   if (!id1 || !id2) {

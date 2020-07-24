@@ -17,7 +17,7 @@ import { Executor } from "./action";
 import DataLoader from "dataloader";
 
 // TODO move Viewer and context into viewer.ts or something
-import { Context, ContextLite } from "./auth/context";
+import { RequestContext, Context } from "./auth/context";
 
 import * as query from "./query";
 import { WriteOperation, Builder } from "./action";
@@ -35,7 +35,7 @@ export interface Viewer {
   // I want dataloaders to be created on demand as needed
   // so it seems having it in Context (per-request info makes sense)
   // so does that mean we should pass Context all the way down and not Viewer?
-  context?: ContextLite;
+  context?: Context;
 }
 
 export interface Ent {
@@ -56,7 +56,7 @@ interface DataOptions {
   // TODO this can be passed in for scenarios where we are not using default configuration
   //  clientConfig?: ClientConfig;
   tableName: string;
-  context?: ContextLite;
+  context?: Context;
 }
 
 export interface SelectDataOptions extends DataOptions {
@@ -428,7 +428,7 @@ export interface Queryer {
 }
 
 export interface DataOperation {
-  performWrite(queryer: Queryer, context?: ContextLite): Promise<void>;
+  performWrite(queryer: Queryer, context?: Context): Promise<void>;
   returnedEntRow?(): {} | null; // optional to indicate the row that was created
   resolve?<T extends Ent>(executor: Executor<T>): void; //throws?
 }
@@ -469,7 +469,7 @@ export class EditNodeOperation implements DataOperation {
     this.options.fields = fields;
   }
 
-  async performWrite(queryer: Queryer, context?: ContextLite): Promise<void> {
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     let options = {
       ...this.options,
       context,
@@ -498,7 +498,7 @@ export class EdgeOperation implements DataOperation {
     private options: EdgeOperationOptions,
   ) {}
 
-  async performWrite(queryer: Queryer, context?: ContextLite): Promise<void> {
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     const edge = this.edgeInput;
 
     let edgeData = await loadEdgeData(edge.edgeType);
@@ -519,7 +519,7 @@ export class EdgeOperation implements DataOperation {
     q: Queryer,
     edgeData: AssocEdgeData,
     edge: AssocEdgeInput,
-    context?: ContextLite,
+    context?: Context,
   ): Promise<void> {
     return deleteRow(
       q,
@@ -539,7 +539,7 @@ export class EdgeOperation implements DataOperation {
     q: Queryer,
     edgeData: AssocEdgeData,
     edge: AssocEdgeInput,
-    context?: ContextLite,
+    context?: Context,
   ): Promise<void> {
     const fields = {
       id1: edge.id1,
@@ -870,7 +870,7 @@ export async function deleteRow(
 export class DeleteNodeOperation implements DataOperation {
   constructor(private id: ID, private options: DataOptions) {}
 
-  async performWrite(queryer: Queryer, context?: ContextLite): Promise<void> {
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     let options = {
       ...this.options,
       context,
@@ -979,7 +979,7 @@ const edgeFields = [
 interface loadEdgesOptions {
   id1: ID;
   edgeType: string;
-  context?: ContextLite;
+  context?: Context;
 }
 
 export async function loadEdges(
@@ -1009,7 +1009,7 @@ export async function loadEdges(
 export async function loadUniqueEdge(
   id1: ID,
   edgeType: string,
-  context?: ContextLite,
+  context?: Context,
 ): Promise<AssocEdge | null> {
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
@@ -1044,7 +1044,7 @@ export async function loadUniqueNode<T extends Ent>(
 export async function loadRawEdgeCountX(
   id1: ID,
   edgeType: string,
-  context?: Context,
+  context?: RequestContext,
 ): Promise<number> {
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {

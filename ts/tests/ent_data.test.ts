@@ -9,7 +9,7 @@ import { IDViewer } from "../src/testutils/id_viewer";
 import { QueryRecorder, queryOptions } from "../src/testutils/db_mock";
 import { Pool, Query } from "pg";
 import * as ent from "./../src/ent";
-import { ContextLite, ContextCache } from "../src/auth/context";
+import { Context, ContextCache } from "../src/auth/context";
 import * as query from "../src/query";
 import DB from "./../src/db";
 import each from "jest-each";
@@ -55,13 +55,13 @@ class User implements Ent {
     };
   }
 }
-let ctx: ContextLite;
+let ctx: Context;
 
 beforeEach(() => {
   ctx = getCtx();
 });
 
-interface TestCtx extends ContextLite {
+interface TestCtx extends Context {
   setViewer(v: Viewer);
 }
 function getCtx(v?: Viewer): TestCtx {

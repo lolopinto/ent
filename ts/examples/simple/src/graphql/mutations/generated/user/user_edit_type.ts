@@ -12,7 +12,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
 import EditUserAction, {
   UserEditInput,
@@ -44,7 +44,7 @@ export const UserEditInputType = new GraphQLInputObjectType({
 
 export const UserEditResponseType = new GraphQLObjectType({
   name: "UserEditResponse",
-  fields: (): GraphQLFieldConfigMap<UserEditResponse, Context> => ({
+  fields: (): GraphQLFieldConfigMap<UserEditResponse, RequestContext> => ({
     user: {
       type: GraphQLNonNull(UserType),
     },
@@ -53,7 +53,7 @@ export const UserEditResponseType = new GraphQLObjectType({
 
 export const UserEditType: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   { [input: string]: customUserEditInput }
 > = {
   type: GraphQLNonNull(UserEditResponseType),
@@ -66,7 +66,7 @@ export const UserEditType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<UserEditResponse> => {
     let user = await EditUserAction.saveXFromID(

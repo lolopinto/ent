@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import Contact from "src/ent/contact";
 import DeleteContactAction from "src/ent/contact/actions/delete_contact_action";
 
@@ -34,7 +34,7 @@ export const ContactDeleteInputType = new GraphQLInputObjectType({
 
 export const ContactDeleteResponseType = new GraphQLObjectType({
   name: "ContactDeleteResponse",
-  fields: (): GraphQLFieldConfigMap<ContactDeleteResponse, Context> => ({
+  fields: (): GraphQLFieldConfigMap<ContactDeleteResponse, RequestContext> => ({
     deletedContactID: {
       type: GraphQLID,
     },
@@ -43,7 +43,7 @@ export const ContactDeleteResponseType = new GraphQLObjectType({
 
 export const ContactDeleteType: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   { [input: string]: customContactDeleteInput }
 > = {
   type: GraphQLNonNull(ContactDeleteResponseType),
@@ -56,7 +56,7 @@ export const ContactDeleteType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<ContactDeleteResponse> => {
     await DeleteContactAction.saveXFromID(context.getViewer(), input.contactID);

@@ -3,11 +3,11 @@ import passport, { AuthenticateOptions } from "passport";
 import { Auth, AuthViewer } from "./index";
 import { IncomingMessage, ServerResponse, Server } from "http";
 import { Strategy } from "passport-strategy";
-import { Context } from "./context";
+import { RequestContext } from "./context";
 import { ID, Ent, Viewer } from "../ent";
 
 interface UserToViewerFunc {
-  (context: Context, user: any): Viewer;
+  (context: RequestContext, user: any): Viewer;
 }
 
 export interface PassportAuthOptions {
@@ -20,7 +20,7 @@ export interface PassportAuthOptions {
 class IDViewer implements Viewer {
   constructor(
     public viewerID: ID,
-    public context?: Context,
+    public context?: RequestContext,
     private ent: Ent | null = null,
   ) {}
   async viewer() {
@@ -38,7 +38,7 @@ export class PassportAuthHandler implements Auth {
     this.options = options;
   }
 
-  async authViewer(context: Context) {
+  async authViewer(context: RequestContext) {
     let that = this;
     passport.serializeUser(function(viewer: Viewer, done) {
       let serializeUser = that.options?.serializeViewer;
@@ -73,7 +73,7 @@ export class PassportAuthHandler implements Auth {
 }
 
 function toViewer(
-  context: Context,
+  context: RequestContext,
   obj: any,
   userToViewer?: UserToViewerFunc,
 ): Viewer {
@@ -104,7 +104,7 @@ export class PassportStrategyHandler implements Auth {
     passport.use(strategy);
   }
 
-  async authViewer(context: Context) {
+  async authViewer(context: RequestContext) {
     //    console.log("passport authViewer", context.getViewer());
     const viewerMaybe = await promisifiedAuth(
       context,
@@ -125,7 +125,7 @@ export class PassportStrategyHandler implements Auth {
 
 interface LocalStrategyOptions {
   // hmmmmmmmmmm how to pass Context all the way down?
-  verifyFn: (context?: Context) => AuthViewer | Promise<AuthViewer>;
+  verifyFn: (context?: RequestContext) => AuthViewer | Promise<AuthViewer>;
 }
 
 export class LocalStrategy extends Strategy {
@@ -150,7 +150,7 @@ export class LocalStrategy extends Strategy {
 }
 
 function promisifiedAuth(
-  context: Context,
+  context: RequestContext,
   // request: IncomingMessage,
   // response: ServerResponse,
   strategy: passport.Strategy,
@@ -178,7 +178,7 @@ function promisifiedAuth(
 }
 
 function promisifiedLogin(
-  context: Context,
+  context: RequestContext,
   viewer: Viewer,
   options?: AuthenticateOptions,
 ) {
@@ -202,7 +202,7 @@ function promisifiedLogin(
 }
 
 export async function useAndAuth(
-  context: Context,
+  context: RequestContext,
   strategy: passport.Strategy,
   options?: AuthenticateOptions,
 ): Promise<AuthViewer> {

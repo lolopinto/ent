@@ -24,7 +24,6 @@ import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import * as query from "./query";
 import { IDViewer } from "./testutils/id_viewer";
 import { FakeLogger, EntCreationObserver } from "./testutils/fake_log";
-import { ContextLite } from "./auth/context";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

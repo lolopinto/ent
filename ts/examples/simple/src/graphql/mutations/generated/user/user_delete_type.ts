@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import User from "src/ent/user";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 
@@ -34,7 +34,7 @@ export const UserDeleteInputType = new GraphQLInputObjectType({
 
 export const UserDeleteResponseType = new GraphQLObjectType({
   name: "UserDeleteResponse",
-  fields: (): GraphQLFieldConfigMap<UserDeleteResponse, Context> => ({
+  fields: (): GraphQLFieldConfigMap<UserDeleteResponse, RequestContext> => ({
     deletedUserID: {
       type: GraphQLID,
     },
@@ -43,7 +43,7 @@ export const UserDeleteResponseType = new GraphQLObjectType({
 
 export const UserDeleteType: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   { [input: string]: customUserDeleteInput }
 > = {
   type: GraphQLNonNull(UserDeleteResponseType),
@@ -56,7 +56,7 @@ export const UserDeleteType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<UserDeleteResponse> => {
     await DeleteUserAction.saveXFromID(context.getViewer(), input.userID);

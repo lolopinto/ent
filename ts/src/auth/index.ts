@@ -3,7 +3,7 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { Viewer } from "../ent";
 import { LoggedOutViewer } from "../viewer";
-import { Context } from "./context";
+import { RequestContext } from "./context";
 
 type Request = IncomingMessage;
 type Response = ServerResponse;
@@ -11,7 +11,7 @@ type Response = ServerResponse;
 export type AuthViewer = Viewer | null;
 export interface Auth {
   authViewer(
-    ctx: Context,
+    ctx: RequestContext,
   ): // TODO
   //    request: Request,
   //    response: Response,
@@ -28,7 +28,9 @@ export async function clearAuthHandlers() {
   handlers.clear();
 }
 
-export async function getLoggedInViewer(context: Context): Promise<Viewer> {
+export async function getLoggedInViewer(
+  context: RequestContext,
+): Promise<Viewer> {
   for (const [name, authHandler] of handlers) {
     let v = await authHandler.authViewer(context);
     if (v !== null) {

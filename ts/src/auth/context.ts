@@ -1,29 +1,28 @@
 import { getLoggedInViewer } from "./index";
-import { Viewer, ID, Ent, SelectDataOptions, createDataLoader } from "./../ent";
+import { Viewer, ID, SelectDataOptions, createDataLoader } from "./../ent";
 import { IncomingMessage, ServerResponse } from "http";
 import { LoggedOutViewer } from "../viewer";
 
 import DataLoader from "dataloader";
 import * as query from "./../query";
-import { load } from "js-yaml";
 
-// TODO rename to Context and RequestContext
-export interface ContextLite {
+export interface Context {
   getViewer(): Viewer;
-  // optional per request
+  // optional per (request)contet
   // absence means we are not doing any caching
   // presence means we have loader, ent cache etc
   cache?: ContextCache;
 }
 
-export interface Context extends ContextLite {
+// RequestBasedContet e.g. from an HTTP request with a server/response conponent
+export interface RequestContext extends Context {
   authViewer(viewer: Viewer): Promise<void>; //logs user in and changes viewer to this
   logout(): Promise<void>;
   request: IncomingMessage;
   response: ServerResponse;
 }
 
-class contextImpl implements Context {
+class contextImpl implements RequestContext {
   cache?: ContextCache;
   private loggedOutViewer: LoggedOutViewer = new LoggedOutViewer();
   private viewer: Viewer;
@@ -51,7 +50,7 @@ class contextImpl implements Context {
 export async function buildContext(
   request: IncomingMessage,
   response: ServerResponse,
-): Promise<Context> {
+): Promise<RequestContext> {
   const ctx = new contextImpl(request, response);
 
   let viewer = await getLoggedInViewer(ctx);
@@ -63,10 +62,6 @@ export async function buildContext(
   return ctx;
 }
 
-// or call it ViewerCache?
-// or ContextCache?
-// since we truly don't care about Request bounds...
-// used to be RequestCachee
 export class ContextCache {
   loaders: Map<string, DataLoader<ID, {}>> = new Map();
 

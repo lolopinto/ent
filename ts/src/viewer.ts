@@ -1,8 +1,8 @@
 import { Viewer } from "./ent";
-import { ContextLite } from "./auth/context";
+import { Context } from "./auth/context";
 
 export class LoggedOutViewer implements Viewer {
-  constructor(public context?: ContextLite) {}
+  constructor(public context?: Context) {}
   viewerID: null;
   async viewer() {
     return null;

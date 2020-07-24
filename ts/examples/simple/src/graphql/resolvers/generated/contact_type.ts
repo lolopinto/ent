@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { UserType } from "./user_type";
 import Contact from "src/ent/contact";
 
@@ -20,7 +20,7 @@ interface ContactQueryArgs {
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
-  fields: (): GraphQLFieldConfigMap<Contact, Context> => ({
+  fields: (): GraphQLFieldConfigMap<Contact, RequestContext> => ({
     user: {
       type: UserType,
       resolve: (contact: Contact) => {
@@ -44,7 +44,7 @@ export const ContactType = new GraphQLObjectType({
 
 export const ContactQuery: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   ContactQueryArgs
 > = {
   type: ContactType,
@@ -57,7 +57,7 @@ export const ContactQuery: GraphQLFieldConfig<
   resolve: async (
     _source,
     args: ContactQueryArgs,
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     return Contact.load(context.getViewer(), args.id);

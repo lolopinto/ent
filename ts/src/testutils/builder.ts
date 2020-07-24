@@ -23,7 +23,7 @@ import {
 import Schema from "../schema";
 import { LoggedOutViewer } from "./../viewer";
 import { QueryRecorder } from "./db_mock";
-import { ContextLite } from "src/auth/context";
+import { Context } from "src/auth/context";
 
 export class User implements Ent {
   id: ID;
@@ -278,7 +278,7 @@ class dataOp implements DataOperation {
     }
   }
 
-  async performWrite(queryer: Queryer, context?: ContextLite): Promise<void> {
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     let keys: string[] = [];
     let values: any[] = [];
     for (const [key, value] of this.fields) {
@@ -317,7 +317,7 @@ interface edgeOpOptions {
 class edgeOp implements DataOperation {
   constructor(private options: edgeOpOptions) {}
 
-  async performWrite(queryer: Queryer, context?: ContextLite): Promise<void> {
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     queryer.query("edge", [this.options.id1, this.options.id2]);
   }
 

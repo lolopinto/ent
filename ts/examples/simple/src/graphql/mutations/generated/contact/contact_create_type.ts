@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import CreateContactAction, {
   ContactCreateInput,
@@ -41,7 +41,7 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
 
 export const ContactCreateResponseType = new GraphQLObjectType({
   name: "ContactCreateResponse",
-  fields: (): GraphQLFieldConfigMap<ContactCreateResponse, Context> => ({
+  fields: (): GraphQLFieldConfigMap<ContactCreateResponse, RequestContext> => ({
     contact: {
       type: GraphQLNonNull(ContactType),
     },
@@ -50,7 +50,7 @@ export const ContactCreateResponseType = new GraphQLObjectType({
 
 export const ContactCreateType: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   { [input: string]: ContactCreateInput }
 > = {
   type: GraphQLNonNull(ContactCreateResponseType),
@@ -63,7 +63,7 @@ export const ContactCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<ContactCreateResponse> => {
     let contact = await CreateContactAction.create(context.getViewer(), {

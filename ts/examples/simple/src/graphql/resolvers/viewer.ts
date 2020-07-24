@@ -1,7 +1,7 @@
 import { gqlField, gqlObjectType, gqlContextType, gqlQuery } from "ent/graphql";
 import { Viewer } from "ent/ent";
 import { GraphQLID } from "graphql";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import User from "src/ent/user";
 
 @gqlObjectType({ name: "Viewer" })
@@ -26,7 +26,7 @@ export class GQLViewer {
 
 export default class ViewerResolver {
   @gqlQuery({ name: "viewer", type: GQLViewer })
-  viewer(@gqlContextType() context: Context): GQLViewer {
+  viewer(@gqlContextType() context: RequestContext): GQLViewer {
     return new GQLViewer(context.getViewer());
   }
 }
