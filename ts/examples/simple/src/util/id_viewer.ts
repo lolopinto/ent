@@ -4,8 +4,8 @@ import { Context } from "ent/auth/context";
 export class IDViewer implements Viewer {
   constructor(
     public viewerID: ID,
-    public context?: Context,
     private ent: Ent | null = null,
+    public context?: Context,
   ) {}
   async viewer() {
     return this.ent;

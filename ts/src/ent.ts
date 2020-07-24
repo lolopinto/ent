@@ -790,7 +790,7 @@ async function mutateRow(
     return res;
   } catch (err) {
     console.error(err);
-    return null;
+    throw err;
   }
 }
 

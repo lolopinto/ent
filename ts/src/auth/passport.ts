@@ -158,7 +158,7 @@ function promisifiedAuth(
 ) {
   return new Promise<AuthViewer>((resolve, reject) => {
     const done = (err: Error, user: Viewer | null | undefined, _info: any) => {
-      console.log("done", err, user);
+      //console.log("done", err, user);
       if (err) {
         reject(err);
       } else {
@@ -212,7 +212,7 @@ export async function useAndAuth(
   passport.use(strategy);
   let viewer = await promisifiedAuth(context, strategy, options);
 
-  console.log("useAndAuth viewer", viewer);
+  //console.log("useAndAuth viewer", viewer);
   if (!viewer) {
     return viewer;
   }

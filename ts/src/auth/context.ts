@@ -54,8 +54,6 @@ export async function buildContext(
   const ctx = new contextImpl(request, response);
 
   let viewer = await getLoggedInViewer(ctx);
-  //  const ctx = new contextImpl(request, response);
-  console.log("build context called");
   ctx.cache = new ContextCache();
   // TODO since this is done, whatever other call to authViewer that was needed no longer needed
   ctx.authViewer(viewer);
