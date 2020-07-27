@@ -173,7 +173,6 @@ export async function loadEnts<T extends Ent>(
   let m: Map<ID, T> = new Map();
 
   // TODO do we want this loader check all over the place?
-  //  need to change loadEntFromClause and loadEntsFromClause to handle this...
   if (l) {
     const rows = await l.loadMany(ids);
     m = await applyPrivacyPolicyForRows(viewer, rows, options);
@@ -974,7 +973,7 @@ interface loadEdgesOptions {
 export async function loadEdges(
   options: loadEdgesOptions,
 ): Promise<AssocEdge[]> {
-  const { id1, edgeType } = { ...options };
+  const { id1, edgeType, context } = options;
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
@@ -984,7 +983,7 @@ export async function loadEdges(
     fields: edgeFields,
     clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
     orderby: "time DESC",
-    context: options.context,
+    context,
   });
 
   let result: AssocEdge[] = [];
@@ -994,12 +993,11 @@ export async function loadEdges(
   return result;
 }
 
-// TODO loadEdgesOptions?
 export async function loadUniqueEdge(
-  id1: ID,
-  edgeType: string,
-  context?: Context,
+  options: loadEdgesOptions,
 ): Promise<AssocEdge | null> {
+  const { id1, edgeType, context } = options;
+
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
@@ -1022,19 +1020,17 @@ export async function loadUniqueNode<T extends Ent>(
   edgeType: string,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  const edge = await loadUniqueEdge(id1, edgeType, viewer.context);
+  const edge = await loadUniqueEdge({ id1, edgeType, context: viewer.context });
   if (!edge) {
     return null;
   }
   return await loadEnt(viewer, edge.id2, options);
 }
 
-// TODO loadEdgesOptions
 export async function loadRawEdgeCountX(
-  id1: ID,
-  edgeType: string,
-  context?: Context,
+  options: loadEdgesOptions,
 ): Promise<number> {
+  const { id1, edgeType, context } = options;
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);

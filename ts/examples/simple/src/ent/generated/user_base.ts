@@ -221,7 +221,11 @@ export class UserBase {
   }
 
   loadCreatedEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX(this.id, EdgeType.UserToCreatedEvents);
+    return loadRawEdgeCountX({
+      id1: this.id,
+      edgeType: EdgeType.UserToCreatedEvents,
+      context: this.viewer.context,
+    });
   }
 
   loadCreatedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
@@ -251,7 +255,11 @@ export class UserBase {
   }
 
   loadFriendsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX(this.id, EdgeType.UserToFriends);
+    return loadRawEdgeCountX({
+      id1: this.id,
+      edgeType: EdgeType.UserToFriends,
+      context: this.viewer.context,
+    });
   }
 
   loadFriendEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
@@ -264,7 +272,11 @@ export class UserBase {
   }
 
   loadSelfContactEdge(): Promise<AssocEdge | null> {
-    return loadUniqueEdge(this.id, EdgeType.UserToSelfContact);
+    return loadUniqueEdge({
+      id1: this.id,
+      edgeType: EdgeType.UserToSelfContact,
+      context: this.viewer.context,
+    });
   }
 
   loadSelfContact(): Promise<Contact | null> {
@@ -294,7 +306,11 @@ export class UserBase {
   }
 
   loadInvitedEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX(this.id, EdgeType.UserToInvitedEvents);
+    return loadRawEdgeCountX({
+      id1: this.id,
+      edgeType: EdgeType.UserToInvitedEvents,
+      context: this.viewer.context,
+    });
   }
 
   loadInvitedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
@@ -324,7 +340,11 @@ export class UserBase {
   }
 
   loadEventsAttendingRawCountX(): Promise<number> {
-    return loadRawEdgeCountX(this.id, EdgeType.UserToEventsAttending);
+    return loadRawEdgeCountX({
+      id1: this.id,
+      edgeType: EdgeType.UserToEventsAttending,
+      context: this.viewer.context,
+    });
   }
 
   loadEventsAttendingEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
@@ -354,7 +374,11 @@ export class UserBase {
   }
 
   loadDeclinedEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX(this.id, EdgeType.UserToDeclinedEvents);
+    return loadRawEdgeCountX({
+      id1: this.id,
+      edgeType: EdgeType.UserToDeclinedEvents,
+      context: this.viewer.context,
+    });
   }
 
   loadDeclinedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
@@ -384,7 +408,11 @@ export class UserBase {
   }
 
   loadMaybeEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX(this.id, EdgeType.UserToMaybeEvents);
+    return loadRawEdgeCountX({
+      id1: this.id,
+      edgeType: EdgeType.UserToMaybeEvents,
+      context: this.viewer.context,
+    });
   }
 
   loadMaybeEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {

@@ -167,10 +167,11 @@ export class {{$baseClass}} {
      {{/* TODO unique edges */}}
      {{ if $uniqueEdge -}}
       load{{$edgeName}}Edge(): Promise<{{$assocEdgeType}} | null> {
-        return {{useImport "loadUniqueEdge"}}(
-          this.id, 
-          {{$edgeType}}.{{$edge.TsEdgeConst}},
-        );
+        return {{useImport "loadUniqueEdge"}}({
+          id1: this.id, 
+          edgeType: {{$edgeType}}.{{$edge.TsEdgeConst}},
+          context: this.viewer.context,
+        });
       }
 
       load{{$edgeName}}(): Promise<{{.Node}} | null> {
@@ -201,10 +202,11 @@ export class {{$baseClass}} {
       }
 
       load{{$edgeName}}RawCountX():Promise<number> {
-        return {{useImport "loadRawEdgeCountX"}}(
-          this.id, 
-          {{$edgeType}}.{{$edge.TsEdgeConst}},
-        );
+        return {{useImport "loadRawEdgeCountX"}}({
+          id1: this.id, 
+          edgeType: {{$edgeType}}.{{$edge.TsEdgeConst}},
+          context: this.viewer.context,
+        });
       }
 
       load{{$edge.Singular}}EdgeFor(id2: {{$idType}}):Promise<{{$assocEdgeType}}|undefined> {
