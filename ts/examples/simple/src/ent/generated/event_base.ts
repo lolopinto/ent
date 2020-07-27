@@ -13,11 +13,14 @@ import {
   loadRawEdgeCountX,
   loadNodesByEdge,
   loadEdgeForID2,
+  loadRow,
+  loadRowX,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/event";
 import { EdgeType, NodeType } from "src/ent/const";
+import * as query from "ent/query";
 import User from "src/ent/user";
 
 const tableName = "events";
@@ -75,6 +78,26 @@ export class EventBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, EventBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadRawData<T extends EventBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    id: ID,
+  ): Promise<Data | null> {
+    return await loadRow({
+      ...EventBase.loaderOptions.apply(this),
+      clause: query.Eq("id", id),
+    });
+  }
+
+  static async loadRawDataX<T extends EventBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    id: ID,
+  ): Promise<Data> {
+    return await loadRowX({
+      ...EventBase.loaderOptions.apply(this),
+      clause: query.Eq("id", id),
+    });
   }
 
   static loaderOptions<T extends EventBase>(

@@ -17,6 +17,7 @@ import {
   loadEntFromClause,
   loadEntXFromClause,
   loadRow,
+  loadRowX,
   loadUniqueEdge,
   loadUniqueNode,
 } from "ent/ent";
@@ -90,6 +91,26 @@ export class UserBase {
     return loadEnts(viewer, UserBase.loaderOptions.apply(this), ...ids);
   }
 
+  static async loadRawData<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    id: ID,
+  ): Promise<Data | null> {
+    return await loadRow({
+      ...UserBase.loaderOptions.apply(this),
+      clause: query.Eq("id", id),
+    });
+  }
+
+  static async loadRawDataX<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    id: ID,
+  ): Promise<Data> {
+    return await loadRowX({
+      ...UserBase.loaderOptions.apply(this),
+      clause: query.Eq("id", id),
+    });
+  }
+
   static async loadFromEmailAddress<T extends UserBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
@@ -128,6 +149,16 @@ export class UserBase {
     return row["id"];
   }
 
+  static async loadRawDataFromEmailAddress<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    emailAddress: string,
+  ): Promise<Data | null> {
+    return await loadRow({
+      ...UserBase.loaderOptions.apply(this),
+      clause: query.Eq("email_address", emailAddress),
+    });
+  }
+
   static async loadFromPhoneNumber<T extends UserBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
@@ -164,6 +195,16 @@ export class UserBase {
       return null;
     }
     return row["id"];
+  }
+
+  static async loadRawDataFromPhoneNumber<T extends UserBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    phoneNumber: string,
+  ): Promise<Data | null> {
+    return await loadRow({
+      ...UserBase.loaderOptions.apply(this),
+      clause: query.Eq("phone_number", phoneNumber),
+    });
   }
 
   static loaderOptions<T extends UserBase>(

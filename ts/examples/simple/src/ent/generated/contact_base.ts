@@ -8,11 +8,14 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
+  loadRow,
+  loadRowX,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/contact";
 import { NodeType } from "src/ent/const";
+import * as query from "ent/query";
 import User from "src/ent/user";
 
 const tableName = "contacts";
@@ -68,6 +71,26 @@ export class ContactBase {
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, ContactBase.loaderOptions.apply(this), ...ids);
+  }
+
+  static async loadRawData<T extends ContactBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    id: ID,
+  ): Promise<Data | null> {
+    return await loadRow({
+      ...ContactBase.loaderOptions.apply(this),
+      clause: query.Eq("id", id),
+    });
+  }
+
+  static async loadRawDataX<T extends ContactBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    id: ID,
+  ): Promise<Data> {
+    return await loadRowX({
+      ...ContactBase.loaderOptions.apply(this),
+      clause: query.Eq("id", id),
+    });
   }
 
   static loaderOptions<T extends ContactBase>(

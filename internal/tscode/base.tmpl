@@ -1,7 +1,7 @@
 {{with .NodeData -}}
 {{/* TODO break this up to make it easier to use? */}}
 {{/* these are dependent on having the right tsconfig.json file... */}}
-{{ reserveImport "ent/ent" "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadUniqueEdge" "loadUniqueNode" }}
+{{ reserveImport "ent/ent" "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRowX" "loadUniqueEdge" "loadUniqueNode" }}
 {{ reserveImport "ent/privacy" "AlwaysDenyRule" "PrivacyPolicy"}}
 {{ reserveImport "ent/schema" "Field" "getFields"}}
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
@@ -86,6 +86,26 @@ export class {{$baseClass}} {
     );
   }
 
+  static async loadRawData<T extends {{$baseClass}}>(
+    this: {{$thisType}},
+    id: ID,
+  ): Promise<{{$dataType}} | null> {
+    return await {{useImport "loadRow"}}({
+      ...{{$baseClass}}.loaderOptions.apply(this),
+      clause: {{useImport "query"}}.Eq("id", id),
+    });
+  }
+
+  static async loadRawDataX<T extends {{$baseClass}}>(
+    this: {{$thisType}},
+    id: ID,
+  ): Promise<{{$dataType}}> {
+    return await {{useImport "loadRowX"}}({
+      ...{{$baseClass}}.loaderOptions.apply(this),
+      clause: {{useImport "query"}}.Eq("id", id),
+    });
+  }
+
   {{ range $field := .FieldInfo.Fields -}}
     {{ if or $field.Index $field.Unique -}}
       static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
@@ -122,6 +142,16 @@ export class {{$baseClass}} {
         }); 
         if (!row) { return null;}
         return row['id'];
+      }
+
+      static async loadRawDataFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
+        this: {{$thisType}},
+        {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
+      ): Promise<{{$dataType}} | null> {
+        return await {{useImport "loadRow"}}({
+          ...{{$baseClass}}.loaderOptions.apply(this),
+          clause: query.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
+        }); 
       }
 
     {{end -}}
