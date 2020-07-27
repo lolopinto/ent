@@ -1,8 +1,7 @@
 import Event from "src/ent/event";
-import { LoggedOutViewer } from "ent/viewer";
+import { LoggedOutViewer, IDViewer } from "ent/viewer";
 import DB from "ent/db";
 import { randomEmail } from "src/util/random";
-import { IDViewer } from "src/util/id_viewer";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
 import EditEventAction from "src/ent/event/actions/edit_event_action";

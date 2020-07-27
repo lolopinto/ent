@@ -23,8 +23,7 @@ import {
   CustomTypes,
   validateNoCustomQueries,
 } from "./graphql_field_helpers";
-import { User } from "./testutils/builder";
-import { Context } from "./auth/context";
+import { RequestContext } from "./auth/context";
 
 beforeEach(() => {
   GQLCapture.clear();
@@ -289,7 +288,7 @@ test("query with return type", () => {
 
   class ViewerResolver {
     @gqlQuery({ type: ViewerType })
-    viewer(@gqlContextType() context: Context): ViewerType {
+    viewer(@gqlContextType() context: RequestContext): ViewerType {
       return new ViewerType(context.getViewer());
     }
   }

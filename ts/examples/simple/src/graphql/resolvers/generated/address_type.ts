@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import Address from "src/ent/address";
 
 interface AddressQueryArgs {
@@ -19,7 +19,7 @@ interface AddressQueryArgs {
 
 export const AddressType = new GraphQLObjectType({
   name: "Address",
-  fields: (): GraphQLFieldConfigMap<Address, Context> => ({
+  fields: (): GraphQLFieldConfigMap<Address, RequestContext> => ({
     id: {
       type: GraphQLNonNull(GraphQLID),
     },
@@ -37,7 +37,7 @@ export const AddressType = new GraphQLObjectType({
 
 export const AddressQuery: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   AddressQueryArgs
 > = {
   type: AddressType,
@@ -50,7 +50,7 @@ export const AddressQuery: GraphQLFieldConfig<
   resolve: async (
     _source,
     args: AddressQueryArgs,
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     return Address.load(context.getViewer(), args.id);

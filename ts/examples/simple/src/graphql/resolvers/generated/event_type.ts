@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { UserType } from "./user_type";
 import Event from "src/ent/event";
@@ -22,7 +22,7 @@ interface EventQueryArgs {
 
 export const EventType = new GraphQLObjectType({
   name: "Event",
-  fields: (): GraphQLFieldConfigMap<Event, Context> => ({
+  fields: (): GraphQLFieldConfigMap<Event, RequestContext> => ({
     creator: {
       type: UserType,
       resolve: (event: Event) => {
@@ -82,7 +82,7 @@ export const EventType = new GraphQLObjectType({
 
 export const EventQuery: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   EventQueryArgs
 > = {
   type: EventType,
@@ -95,7 +95,7 @@ export const EventQuery: GraphQLFieldConfig<
   resolve: async (
     _source,
     args: EventQueryArgs,
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     return Event.load(context.getViewer(), args.id);

@@ -13,8 +13,7 @@ import {
   PrivacyPolicy,
 } from "./../src/privacy";
 
-import { IDViewer } from "../src/testutils/id_viewer";
-import { LoggedOutViewer } from "./../src/viewer";
+import { LoggedOutViewer, IDViewer } from "./../src/viewer";
 
 const loggedOutViewer = new LoggedOutViewer();
 

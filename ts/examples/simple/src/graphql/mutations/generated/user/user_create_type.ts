@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
 import CreateUserAction, {
   UserCreateInput,
@@ -44,7 +44,7 @@ export const UserCreateInputType = new GraphQLInputObjectType({
 
 export const UserCreateResponseType = new GraphQLObjectType({
   name: "UserCreateResponse",
-  fields: (): GraphQLFieldConfigMap<UserCreateResponse, Context> => ({
+  fields: (): GraphQLFieldConfigMap<UserCreateResponse, RequestContext> => ({
     user: {
       type: GraphQLNonNull(UserType),
     },
@@ -53,7 +53,7 @@ export const UserCreateResponseType = new GraphQLObjectType({
 
 export const UserCreateType: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   { [input: string]: UserCreateInput }
 > = {
   type: GraphQLNonNull(UserCreateResponseType),
@@ -66,7 +66,7 @@ export const UserCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<UserCreateResponse> => {
     let user = await CreateUserAction.create(context.getViewer(), {

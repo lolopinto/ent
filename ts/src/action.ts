@@ -117,7 +117,7 @@ async function saveBuilderImpl<T extends Ent>(
         operation.resolve(executor);
       }
 
-      await operation.performWrite(client);
+      await operation.performWrite(client, builder.viewer.context);
     }
     await client.query("COMMIT");
   } catch (e) {

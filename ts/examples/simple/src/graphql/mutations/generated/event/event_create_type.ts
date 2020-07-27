@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { GraphQLTime } from "ent/graphql/scalars/time";
 import { EventType } from "src/graphql/resolvers/generated/event_type";
 import CreateEventAction, {
@@ -45,7 +45,7 @@ export const EventCreateInputType = new GraphQLInputObjectType({
 
 export const EventCreateResponseType = new GraphQLObjectType({
   name: "EventCreateResponse",
-  fields: (): GraphQLFieldConfigMap<EventCreateResponse, Context> => ({
+  fields: (): GraphQLFieldConfigMap<EventCreateResponse, RequestContext> => ({
     event: {
       type: GraphQLNonNull(EventType),
     },
@@ -54,7 +54,7 @@ export const EventCreateResponseType = new GraphQLObjectType({
 
 export const EventCreateType: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   { [input: string]: EventCreateInput }
 > = {
   type: GraphQLNonNull(EventCreateResponseType),
@@ -67,7 +67,7 @@ export const EventCreateType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<EventCreateResponse> => {
     let event = await CreateEventAction.create(context.getViewer(), {

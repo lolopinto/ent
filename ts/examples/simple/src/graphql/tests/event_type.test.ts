@@ -4,7 +4,7 @@ import CreateUserAction from "src/ent/user/actions/create_user_action";
 import { LoggedOutViewer } from "ent/viewer";
 import Event from "src/ent/event";
 import { randomEmail } from "src/util/random";
-import { IDViewer } from "src/util/id_viewer";
+import { IDViewer } from "ent/viewer";
 import { expectQueryFromRoot, queryRootConfig } from "src/graphql_test_utils";
 import CreateEventAction, {
   EventCreateInput,

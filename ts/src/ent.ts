@@ -14,10 +14,13 @@ import {
   PrivacyPolicy,
 } from "./privacy";
 import { Executor } from "./action";
+import DataLoader from "dataloader";
+
+// TODO move Viewer and context into viewer.ts or something
+import { Context } from "./auth/context";
 
 import * as query from "./query";
 import { WriteOperation, Builder } from "./action";
-import { LoggedOutViewer } from "./viewer";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -27,6 +30,12 @@ export interface Viewer {
   // TODO determine if we want this here.
   // just helpful to have it here
   // not providing a default AllowIfOmniRule
+
+  // where should dataloaders be put?
+  // I want dataloaders to be created on demand as needed
+  // so it seems having it in Context (per-request info makes sense)
+  // so does that mean we should pass Context all the way down and not Viewer?
+  context?: Context;
 }
 
 export interface Ent {
@@ -47,27 +56,31 @@ interface DataOptions {
   // TODO this can be passed in for scenarios where we are not using default configuration
   //  clientConfig?: ClientConfig;
   tableName: string;
+  context?: Context;
 }
 
-interface SelectDataOptions extends DataOptions {
+export interface SelectDataOptions extends DataOptions {
   // list of fields to read
   fields: string[];
+  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
+}
+
+export interface QueryableDataOptions extends SelectDataOptions {
+  clause: query.Clause;
+  orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
 }
 
 // For loading data from database
-export interface LoadRowOptions extends SelectDataOptions {
-  clause: query.Clause;
+export interface LoadRowOptions extends QueryableDataOptions {
   //  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
-interface LoadRowsOptions extends SelectDataOptions {
-  clause: query.Clause;
-  orderby?: string;
-}
+interface LoadRowsOptions extends QueryableDataOptions {}
 
 export interface EditRowOptions extends DataOptions {
   // fields to be edited
   fields: {};
+  pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
 interface LoadableEntOptions<T extends Ent> extends DataOptions {
@@ -85,12 +98,19 @@ export interface EditEntOptions<T extends Ent>
   extends LoadableEntOptions<T>,
     EditRowOptions {}
 
+// Ent accessors
 export async function loadEnt<T extends Ent>(
   viewer: Viewer,
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  return loadEntFromClause(viewer, options, query.Eq("id", id));
+  const l = viewer.context?.cache?.getEntLoader(options);
+  if (!l) {
+    const col = options.pkey || "id";
+    return loadEntFromClause(viewer, options, query.Eq(col, id));
+  }
+  const row = await l.load(id);
+  return await applyPrivacyPolicyForRow(viewer, options, row);
 }
 
 export async function loadEntFromClause<T extends Ent>(
@@ -101,13 +121,10 @@ export async function loadEntFromClause<T extends Ent>(
   const rowOptions: LoadRowOptions = {
     ...options,
     clause: clause,
+    context: viewer.context,
   };
   const row = await loadRow(rowOptions);
-  if (!row) {
-    return null;
-  }
-  const ent = new options.ent(viewer, row["id"], row);
-  return await applyPrivacyPolicyForEnt(viewer, ent);
+  return await applyPrivacyPolicyForRow(viewer, options, row);
 }
 
 export async function loadEntX<T extends Ent>(
@@ -115,9 +132,19 @@ export async function loadEntX<T extends Ent>(
   id: ID,
   options: LoadEntOptions<T>,
 ): Promise<T> {
-  return loadEntXFromClause(viewer, options, query.Eq("id", id));
+  const l = viewer.context?.cache?.getEntLoader(options);
+  if (!l) {
+    const col = options.pkey || "id";
+    return loadEntXFromClause(viewer, options, query.Eq(col, id));
+  }
+  const row = await l.load(id);
+  if (!row) {
+    throw new Error(`couldn't find row for id ${id}`);
+  }
+  return await applyPrivacyPolicyForRowX(viewer, options, row);
 }
 
+// same as loadEntFromClause
 export async function loadEntXFromClause<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
@@ -126,9 +153,11 @@ export async function loadEntXFromClause<T extends Ent>(
   const rowOptions: LoadRowOptions = {
     ...options,
     clause: clause,
+    context: viewer.context,
   };
   const row = await loadRowX(rowOptions);
-  const ent = new options.ent(viewer, row["id"], row);
+  const col = options.pkey || "id";
+  const ent = new options.ent(viewer, row[col], row);
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
@@ -137,12 +166,27 @@ export async function loadEnts<T extends Ent>(
   options: LoadEntOptions<T>,
   ...ids: ID[]
 ): Promise<T[]> {
+  if (!ids.length) {
+    return [];
+  }
+  const l = viewer.context?.cache?.getEntLoader(options);
+  let m: Map<ID, T> = new Map();
+
+  // TODO do we want this loader check all over the place?
+  if (l) {
+    const rows = await l.loadMany(ids);
+    m = await applyPrivacyPolicyForRows(viewer, rows, options);
+  } else {
+    const col = options.pkey || "id";
+    m = await loadEntsFromClause(viewer, query.In(col, ...ids), options);
+  }
+
   // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
   // TODO eventually this should be doing a cache then db queyr and maybe depend on dataloader to get all the results at once
 
   // we need to get the result and re-sort... because the raw db access doesn't guarantee it in same order
   // apparently
-  let m = await loadEntsFromClause(viewer, query.In("id", ...ids), options);
+  //  let m = await loadEntsFromClause(viewer, query.In("id", ...ids), options);
   let result: T[] = [];
   ids.forEach((id) => {
     let ent = m.get(id);
@@ -153,6 +197,24 @@ export async function loadEnts<T extends Ent>(
   return result;
 }
 
+// we return a map here so that any sorting for queries that exist
+// can be done in O(N) time
+export async function loadEntsFromClause<T extends Ent>(
+  viewer: Viewer,
+  clause: query.Clause,
+  options: LoadEntOptions<T>,
+): Promise<Map<ID, T>> {
+  const rowOptions: LoadRowOptions = {
+    ...options,
+    clause: clause,
+    context: viewer.context,
+  };
+
+  const rows = await loadRows(rowOptions);
+  return await applyPrivacyPolicyForRows(viewer, rows, options);
+}
+
+// Derived ents
 export async function loadDerivedEnt<T extends Ent>(
   viewer: Viewer,
   data: {},
@@ -169,6 +231,37 @@ export async function loadDerivedEntX<T extends Ent>(
 ): Promise<T> {
   const ent = new loader(viewer, data);
   return await applyPrivacyPolicyForEntX(viewer, ent);
+}
+
+// ent based data-loader
+export function createDataLoader(options: SelectDataOptions) {
+  return new DataLoader(async (ids: ID[]) => {
+    if (!ids.length) {
+      return [];
+    }
+    let col = options.pkey || "id";
+    const clause = query.In(col, ...ids);
+    const rowOptions: LoadRowOptions = {
+      ...options,
+      clause: clause,
+    };
+
+    // TODO is there a better way of doing this?
+    // context not needed because we're creating a loader which has its own cache which is being used here
+    const nodes = await loadRows(rowOptions);
+    let result: {}[] = [];
+    ids.forEach((id) => {
+      for (const node of nodes) {
+        if (node[col] === id) {
+          result.push(node);
+          return;
+        }
+      }
+      return null;
+    });
+
+    return result;
+  });
 }
 
 export async function applyPrivacyPolicyForEnt<T extends Ent>(
@@ -198,6 +291,7 @@ export async function applyPrivacyPolicyForEntX<T extends Ent>(
 function logQuery(query: string, values: any[]) {
   // console.log(query);
   // console.log(values);
+  // console.trace();
 }
 
 export async function loadRowX(options: LoadRowOptions): Promise<{}> {
@@ -215,13 +309,18 @@ export async function loadRowX(options: LoadRowOptions): Promise<{}> {
 }
 
 export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
-  const pool = DB.getInstance().getPool();
-  const fields = options.fields.join(", ");
+  let cache = options.context?.cache;
+  if (cache) {
+    let row = cache.getCachedRow(options);
+    if (row !== null) {
+      return row;
+    }
+  }
 
-  // always start at 1
-  const whereClause = options.clause.clause(1);
+  const pool = DB.getInstance().getPool();
+
+  const query = buildQuery(options);
   const values = options.clause.values();
-  const query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
   logQuery(query, values);
   try {
     const res = await pool.query(query, values);
@@ -232,6 +331,11 @@ export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
       return null;
     }
 
+    // put the row in the cache...
+    if (cache) {
+      cache.primeCache(options, res.rows[0]);
+    }
+
     return res.rows[0];
   } catch (e) {
     console.error(e);
@@ -240,26 +344,44 @@ export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
 }
 
 export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
+  let cache = options.context?.cache;
+  if (cache) {
+    let rows = cache.getCachedRows(options);
+    if (rows !== null) {
+      return rows;
+    }
+  }
+
   const pool = DB.getInstance().getPool();
-  const fields = options.fields.join(", ");
 
   // always start at 1
-  const whereClause = options.clause.clause(1);
   const values = options.clause.values();
-  let query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
-  if (options.orderby) {
-    query = `${query} ORDER BY ${options.orderby} `;
-  }
+  const query = buildQuery(options);
 
   logQuery(query, values);
   try {
     const res = await pool.query(query, values);
+    // put the rows in the cache...
+    if (cache) {
+      cache.primeCache(options, res.rows);
+    }
     return res.rows;
   } catch (e) {
     // TODO need to change every query to catch an error!
     console.error(e);
     return [];
   }
+}
+
+export function buildQuery(options: QueryableDataOptions): string {
+  const fields = options.fields.join(", ");
+  // always start at 1
+  const whereClause = options.clause.clause(1);
+  let query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
+  if (options.orderby) {
+    query = `${query} ORDER BY ${options.orderby} `;
+  }
+  return query;
 }
 
 // slew of methods taken from pg
@@ -294,7 +416,7 @@ export interface Queryer {
 }
 
 export interface DataOperation {
-  performWrite(queryer: Queryer): Promise<void>;
+  performWrite(queryer: Queryer, context?: Context): Promise<void>;
   returnedEntRow?(): {} | null; // optional to indicate the row that was created
   resolve?<T extends Ent>(executor: Executor<T>): void; //throws?
 }
@@ -335,11 +457,15 @@ export class EditNodeOperation implements DataOperation {
     this.options.fields = fields;
   }
 
-  async performWrite(queryer: Queryer): Promise<void> {
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
+    let options = {
+      ...this.options,
+      context,
+    };
     if (this.existingEnt) {
-      this.row = await editRow(queryer, this.options, this.existingEnt.id);
+      this.row = await editRow(queryer, options, this.existingEnt.id);
     } else {
-      this.row = await createRow(queryer, this.options, "RETURNING *");
+      this.row = await createRow(queryer, options, "RETURNING *");
     }
   }
 
@@ -360,7 +486,7 @@ export class EdgeOperation implements DataOperation {
     private options: EdgeOperationOptions,
   ) {}
 
-  async performWrite(queryer: Queryer): Promise<void> {
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     const edge = this.edgeInput;
 
     let edgeData = await loadEdgeData(edge.edgeType);
@@ -370,10 +496,10 @@ export class EdgeOperation implements DataOperation {
 
     switch (this.options.operation) {
       case WriteOperation.Delete:
-        return this.performDeleteWrite(queryer, edgeData, edge);
+        return this.performDeleteWrite(queryer, edgeData, edge, context);
       case WriteOperation.Insert:
       case WriteOperation.Edit:
-        return this.performInsertWrite(queryer, edgeData, edge);
+        return this.performInsertWrite(queryer, edgeData, edge, context);
     }
   }
 
@@ -381,11 +507,13 @@ export class EdgeOperation implements DataOperation {
     q: Queryer,
     edgeData: AssocEdgeData,
     edge: AssocEdgeInput,
+    context?: Context,
   ): Promise<void> {
     return deleteRow(
       q,
       {
         tableName: edgeData.edgeTable,
+        context,
       },
       query.And(
         query.Eq("id1", edge.id1),
@@ -399,6 +527,7 @@ export class EdgeOperation implements DataOperation {
     q: Queryer,
     edgeData: AssocEdgeData,
     edge: AssocEdgeInput,
+    context?: Context,
   ): Promise<void> {
     const fields = {
       id1: edge.id1,
@@ -424,6 +553,7 @@ export class EdgeOperation implements DataOperation {
       {
         tableName: edgeData.edgeTable,
         fields: fields,
+        context,
       },
       "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
     );
@@ -631,7 +761,30 @@ export class EdgeOperation implements DataOperation {
   }
 }
 
-async function createRow(
+async function mutateRow(
+  queryer: Queryer,
+  query: string,
+  values: any[],
+  options: DataOptions,
+) {
+  logQuery(query, values);
+
+  let cache = options.context?.cache;
+  try {
+    const res = await queryer.query(query, values);
+    if (cache) {
+      cache.clearCache();
+    }
+    return res;
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+}
+
+// TODO: these three are not to be exported out of this package
+// only from this file
+export async function createRow(
   queryer: Queryer,
   options: EditRowOptions,
   suffix: string,
@@ -652,17 +805,15 @@ async function createRow(
 
   let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals}) ${suffix}`;
 
-  logQuery(query, values);
+  const res = await mutateRow(queryer, query, values, options);
 
-  const res = await queryer.query(query, values);
-
-  if (res.rowCount == 1) {
+  if (res?.rowCount === 1) {
     return res.rows[0];
   }
   return null;
 }
 
-async function editRow(
+export async function editRow(
   queryer: Queryer,
   options: EditRowOptions,
   id: ID,
@@ -679,42 +830,40 @@ async function editRow(
   values.push(id);
 
   const vals = valsString.join(", ");
+  const col = options.pkey || "id";
 
-  let query = `UPDATE ${options.tableName} SET ${vals} WHERE id = $${idx} RETURNING *`;
-  logQuery(query, values);
+  let query = `UPDATE ${options.tableName} SET ${vals} WHERE ${col} = $${idx} RETURNING *`;
 
-  try {
-    const res = await queryer.query(query, values);
+  const res = await mutateRow(queryer, query, values, options);
 
-    if (res.rowCount == 1) {
-      // for now assume id primary key
-      // TODO make this extensible as needed.
-      let row = res.rows[0];
-      return row;
-    }
-  } catch (e) {
-    console.error(e);
-    return null;
+  if (res?.rowCount == 1) {
+    // for now assume id primary key
+    // TODO make this extensible as needed.
+    let row = res.rows[0];
+    return row;
   }
   return null;
 }
 
-async function deleteRow(
+export async function deleteRow(
   queryer: Queryer,
   options: DataOptions,
   clause: query.Clause,
 ): Promise<void> {
   const query = `DELETE FROM ${options.tableName} WHERE ${clause.clause(1)}`;
   const values = clause.values();
-  logQuery(query, values);
-  await queryer.query(query, values);
+  await mutateRow(queryer, query, values, options);
 }
 
 export class DeleteNodeOperation implements DataOperation {
   constructor(private id: ID, private options: DataOptions) {}
 
-  async performWrite(queryer: Queryer): Promise<void> {
-    return deleteRow(queryer, this.options, query.Eq("id", this.id));
+  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
+    let options = {
+      ...this.options,
+      context,
+    };
+    return deleteRow(queryer, options, query.Eq("id", this.id));
   }
 }
 
@@ -767,20 +916,27 @@ export class AssocEdgeData {
   }
 }
 
+const assocEdgeFields = [
+  "edge_type",
+  "edge_name",
+  "symmetric_edge",
+  "inverse_edge_type",
+  "edge_table",
+];
+
+const assocEdgeLoader = createDataLoader({
+  tableName: "assoc_edge_config",
+  fields: assocEdgeFields,
+  pkey: "edge_type",
+});
+
+// we don't expect assoc_edge_config information to change
+// so not using ContextCache but just caching it as needed once per server
+
 export async function loadEdgeData(
   edgeType: string,
 ): Promise<AssocEdgeData | null> {
-  const row = await loadRow({
-    tableName: "assoc_edge_config",
-    fields: [
-      "edge_type",
-      "edge_name",
-      "symmetric_edge",
-      "inverse_edge_type",
-      "edge_table",
-    ],
-    clause: query.Eq("edge_type", edgeType),
-  });
+  const row = await assocEdgeLoader.load(edgeType);
   if (!row) {
     return null;
   }
@@ -794,17 +950,7 @@ export async function loadEdgeDatas(
     return new Map();
   }
 
-  const rows = await loadRows({
-    tableName: "assoc_edge_config",
-    fields: [
-      "edge_type",
-      "edge_name",
-      "symmetric_edge",
-      "inverse_edge_type",
-      "edge_table",
-    ],
-    clause: query.In("edge_type", ...edgeTypes),
-  });
+  const rows = await assocEdgeLoader.loadMany(edgeTypes);
   return new Map(rows.map((row) => [row["edge_type"], new AssocEdgeData(row)]));
 }
 
@@ -818,10 +964,16 @@ const edgeFields = [
   "data",
 ];
 
+interface loadEdgesOptions {
+  id1: ID;
+  edgeType: string;
+  context?: Context;
+}
+
 export async function loadEdges(
-  id1: ID,
-  edgeType: string,
+  options: loadEdgesOptions,
 ): Promise<AssocEdge[]> {
+  const { id1, edgeType, context } = options;
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
@@ -831,6 +983,7 @@ export async function loadEdges(
     fields: edgeFields,
     clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
     orderby: "time DESC",
+    context,
   });
 
   let result: AssocEdge[] = [];
@@ -841,9 +994,10 @@ export async function loadEdges(
 }
 
 export async function loadUniqueEdge(
-  id1: ID,
-  edgeType: string,
+  options: loadEdgesOptions,
 ): Promise<AssocEdge | null> {
+  const { id1, edgeType, context } = options;
+
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
@@ -852,6 +1006,7 @@ export async function loadUniqueEdge(
     tableName: edgeData.edgeTable,
     fields: edgeFields,
     clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
+    context,
   });
   if (!row) {
     return null;
@@ -865,7 +1020,7 @@ export async function loadUniqueNode<T extends Ent>(
   edgeType: string,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  const edge = await loadUniqueEdge(id1, edgeType);
+  const edge = await loadUniqueEdge({ id1, edgeType, context: viewer.context });
   if (!edge) {
     return null;
   }
@@ -873,9 +1028,9 @@ export async function loadUniqueNode<T extends Ent>(
 }
 
 export async function loadRawEdgeCountX(
-  id1: ID,
-  edgeType: string,
+  options: loadEdgesOptions,
 ): Promise<number> {
+  const { id1, edgeType, context } = options;
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
@@ -885,19 +1040,22 @@ export async function loadRawEdgeCountX(
     tableName: edgeData.edgeTable,
     fields: ["count(1)"],
     clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
+    context,
   });
   return parseInt(row["count"], 10);
 }
 
+interface loadEdgeForIDOptions extends loadEdgesOptions {
+  id2: ID;
+}
+
 export async function loadEdgeForID2(
-  id1: ID,
-  edgeType: string,
-  id2: ID,
+  options: loadEdgeForIDOptions,
 ): Promise<AssocEdge | undefined> {
   // TODO at some point, same as in go, we can be smart about this and have heuristics to determine if we fetch everything here or not
   // we're assuming a cache here but not always tue and this can be expensive if not...
-  const edges = await loadEdges(id1, edgeType);
-  return edges.find((edge) => edge.id2 == id2);
+  const edges = await loadEdges(options);
+  return edges.find((edge) => edge.id2 == options.id2);
 }
 
 export async function loadNodesByEdge<T extends Ent>(
@@ -907,7 +1065,7 @@ export async function loadNodesByEdge<T extends Ent>(
   options: LoadEntOptions<T>,
 ): Promise<T[]> {
   // load edges
-  const rows = await loadEdges(id1, edgeType);
+  const rows = await loadEdges({ id1, edgeType, context: viewer.context });
 
   // extract id2s
   const ids = rows.map((row) => row.id2);
@@ -915,29 +1073,44 @@ export async function loadNodesByEdge<T extends Ent>(
   return loadEnts(viewer, options, ...ids);
 }
 
-// we return a map here so that any sorting for queries that exist
-// can be done in O(N) time
-export async function loadEntsFromClause<T extends Ent>(
+async function applyPrivacyPolicyForRow<T extends Ent>(
   viewer: Viewer,
-  clause: query.Clause,
   options: LoadEntOptions<T>,
-): Promise<Map<ID, T>> {
-  loadRows;
-  const rowOptions: LoadRowOptions = {
-    ...options,
-    clause: clause,
-  };
+  row: {} | null,
+): Promise<T | null> {
+  if (!row) {
+    return null;
+  }
+  const col = options.pkey || "id";
+  const ent = new options.ent(viewer, row[col], row);
+  return await applyPrivacyPolicyForEnt(viewer, ent);
+}
 
-  const nodes = await loadRows(rowOptions);
+async function applyPrivacyPolicyForRowX<T extends Ent>(
+  viewer: Viewer,
+  options: LoadEntOptions<T>,
+  row: {},
+): Promise<T> {
+  const col = options.pkey || "id";
+
+  const ent = new options.ent(viewer, row[col], row);
+  return await applyPrivacyPolicyForEntX(viewer, ent);
+}
+
+async function applyPrivacyPolicyForRows<T extends Ent>(
+  viewer: Viewer,
+  rows: {}[],
+  options: LoadEntOptions<T>,
+) {
   let m: Map<ID, T> = new Map();
   // apply privacy logic
   const ents = await Promise.all(
-    nodes.map(async (row) => {
-      // todo eventually there'll be a different key
-      const ent = new options.ent(viewer, row["id"], row);
+    rows.map(async (row) => {
+      const col = options.pkey || "id";
+      const ent = new options.ent(viewer, row[col], row);
       let privacyEnt = await applyPrivacyPolicyForEnt(viewer, ent);
       if (privacyEnt) {
-        m.set(row["id"], privacyEnt);
+        m.set(row[col], privacyEnt);
       }
     }),
   );

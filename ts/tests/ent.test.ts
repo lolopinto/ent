@@ -1,11 +1,10 @@
-import { LoggedOutViewer } from "./../src/viewer";
+import { LoggedOutViewer, IDViewer } from "./../src/viewer";
 import {
   PrivacyPolicy,
   AlwaysDenyRule,
   AllowIfViewerRule,
 } from "./../src/privacy";
 import { ID, Ent, Viewer, loadDerivedEnt, loadDerivedEntX } from "./../src/ent";
-import { IDViewer } from "../src/testutils/id_viewer";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -29,7 +28,7 @@ class User implements Ent {
   }
 }
 
-describe("loadEnt", () => {
+describe("loadDerivedEnt", () => {
   test("loggedout", async () => {
     const user = await User.load(loggedOutViewer, { id: "1" });
     expect(user).toBe(null);

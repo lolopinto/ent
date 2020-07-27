@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { Pool, PoolClient, Query } from "pg";
+import { Pool, PoolClient } from "pg";
 import { mocked } from "ts-jest/utils";
 import { ID, Ent, AssocEdgeData } from "./../ent";
 import { Clause } from "./../query";
@@ -32,7 +32,7 @@ export interface mockOptions {
   tableName: string;
   //  columns?: string[];
   clause: Clause;
-  row: (values: any[]) => {};
+  result: (values: any[]) => {};
 }
 
 export enum queryType {
@@ -78,7 +78,7 @@ export class QueryRecorder {
         // correct table and clause
         // for now we don't care about columns...
         // we may later.
-        return result.row(values);
+        return result.result(values);
       }
     }
   }
@@ -184,13 +184,19 @@ export class QueryRecorder {
       }
     }
 
-    return {
+    let result = {
       rows: [ret],
       rowCount: rowCount,
       oid: 0,
       fields: [],
       command: "",
     };
+    // if we're returning a list, no need to double wrap it
+    if (Array.isArray(ret)) {
+      result.rows = ret;
+      result.rowCount = ret.length;
+    }
+    return result;
   }
 
   static newID(): ID {

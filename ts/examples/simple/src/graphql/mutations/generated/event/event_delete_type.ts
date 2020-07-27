@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import Event from "src/ent/event";
 import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
@@ -34,7 +34,7 @@ export const EventDeleteInputType = new GraphQLInputObjectType({
 
 export const EventDeleteResponseType = new GraphQLObjectType({
   name: "EventDeleteResponse",
-  fields: (): GraphQLFieldConfigMap<EventDeleteResponse, Context> => ({
+  fields: (): GraphQLFieldConfigMap<EventDeleteResponse, RequestContext> => ({
     deletedEventID: {
       type: GraphQLID,
     },
@@ -43,7 +43,7 @@ export const EventDeleteResponseType = new GraphQLObjectType({
 
 export const EventDeleteType: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   { [input: string]: customEventDeleteInput }
 > = {
   type: GraphQLNonNull(EventDeleteResponseType),
@@ -56,7 +56,7 @@ export const EventDeleteType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<EventDeleteResponse> => {
     await DeleteEventAction.saveXFromID(context.getViewer(), input.eventID);
