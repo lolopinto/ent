@@ -17,7 +17,7 @@ import { Executor } from "./action";
 import DataLoader from "dataloader";
 
 // TODO move Viewer and context into viewer.ts or something
-import { RequestContext, Context } from "./auth/context";
+import { Context } from "./auth/context";
 
 import * as query from "./query";
 import { WriteOperation, Builder } from "./action";
@@ -1033,7 +1033,7 @@ export async function loadUniqueNode<T extends Ent>(
 export async function loadRawEdgeCountX(
   id1: ID,
   edgeType: string,
-  context?: RequestContext,
+  context?: Context,
 ): Promise<number> {
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
