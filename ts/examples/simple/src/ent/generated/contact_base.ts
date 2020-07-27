@@ -3,15 +3,19 @@
 import {
   loadEnt,
   ID,
+  Data,
   Viewer,
   loadEntX,
   loadEnts,
   LoadEntOptions,
+  loadRow,
+  loadRowX,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/contact";
 import { NodeType } from "src/ent/const";
+import * as query from "ent/query";
 import User from "src/ent/user";
 
 const tableName = "contacts";
@@ -26,16 +30,16 @@ export class ContactBase {
   readonly lastName: string;
   readonly userID: ID;
 
-  constructor(public viewer: Viewer, id: ID, data: {}) {
+  constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
     // TODO don't double read id
-    this.id = data["id"];
-    this.createdAt = data["created_at"];
-    this.updatedAt = data["updated_at"];
-    this.emailAddress = data["email_address"];
-    this.firstName = data["first_name"];
-    this.lastName = data["last_name"];
-    this.userID = data["user_id"];
+    this.id = data.id;
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
+    this.emailAddress = data.email_address;
+    this.firstName = data.first_name;
+    this.lastName = data.last_name;
+    this.userID = data.user_id;
   }
 
   // by default, we always deny and it's up to the ent
@@ -46,7 +50,7 @@ export class ContactBase {
   };
 
   static async load<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -54,7 +58,7 @@ export class ContactBase {
   }
 
   static async loadX<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -62,15 +66,35 @@ export class ContactBase {
   }
 
   static async loadMany<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, ContactBase.loaderOptions.apply(this), ...ids);
   }
 
+  static async loadRawData<T extends ContactBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    id: ID,
+  ): Promise<Data | null> {
+    return await loadRow({
+      ...ContactBase.loaderOptions.apply(this),
+      clause: query.Eq("id", id),
+    });
+  }
+
+  static async loadRawDataX<T extends ContactBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    id: ID,
+  ): Promise<Data> {
+    return await loadRowX({
+      ...ContactBase.loaderOptions.apply(this),
+      clause: query.Eq("id", id),
+    });
+  }
+
   static loaderOptions<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,

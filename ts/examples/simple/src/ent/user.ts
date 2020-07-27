@@ -10,6 +10,7 @@ import { EdgeType } from "./const";
 import { GraphQLString } from "graphql";
 import Contact from "src/ent/contact";
 import { gqlField } from "ent/graphql";
+import { Data } from "ent/ent";
 import * as bcrypt from "bcryptjs";
 
 // we're only writing this once except with --force and packageName provided
@@ -156,7 +157,17 @@ export default class User extends UserBase {
     });
   }
 
-  verifyPassword(password: string): Promise<boolean> {
-    return bcrypt.compare(password, this.password || "");
+  static async validateEmailPassword(
+    email: string,
+    password: string,
+  ): Promise<Data | null> {
+    // TODO loadRawDataFromEmailAddress should eventually be optional incase someone wants to hide this
+    // as a public API
+    const data = await User.loadRawDataFromEmailAddress(email);
+    if (!data) {
+      return null;
+    }
+    let valid = await bcrypt.compare(password, data.password || "");
+    return valid ? data : null;
   }
 }

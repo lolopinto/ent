@@ -3,15 +3,19 @@
 import {
   loadEnt,
   ID,
+  Data,
   Viewer,
   loadEntX,
   loadEnts,
   LoadEntOptions,
+  loadRow,
+  loadRowX,
 } from "ent/ent";
 import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
 import { Field, getFields } from "ent/schema";
 import schema from "src/schema/address";
 import { NodeType } from "src/ent/const";
+import * as query from "ent/query";
 
 const tableName = "addresses";
 
@@ -24,15 +28,15 @@ export class AddressBase {
   readonly city: string;
   readonly zip: string;
 
-  constructor(public viewer: Viewer, id: ID, data: {}) {
+  constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
     // TODO don't double read id
-    this.id = data["id"];
-    this.createdAt = data["created_at"];
-    this.updatedAt = data["updated_at"];
-    this.streetName = data["street_name"];
-    this.city = data["city"];
-    this.zip = data["zip"];
+    this.id = data.id;
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
+    this.streetName = data.street_name;
+    this.city = data.city;
+    this.zip = data.zip;
   }
 
   // by default, we always deny and it's up to the ent
@@ -43,7 +47,7 @@ export class AddressBase {
   };
 
   static async load<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -51,7 +55,7 @@ export class AddressBase {
   }
 
   static async loadX<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -59,15 +63,35 @@ export class AddressBase {
   }
 
   static async loadMany<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
     return loadEnts(viewer, AddressBase.loaderOptions.apply(this), ...ids);
   }
 
+  static async loadRawData<T extends AddressBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    id: ID,
+  ): Promise<Data | null> {
+    return await loadRow({
+      ...AddressBase.loaderOptions.apply(this),
+      clause: query.Eq("id", id),
+    });
+  }
+
+  static async loadRawDataX<T extends AddressBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    id: ID,
+  ): Promise<Data> {
+    return await loadRowX({
+      ...AddressBase.loaderOptions.apply(this),
+      clause: query.Eq("id", id),
+    });
+  }
+
   static loaderOptions<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,

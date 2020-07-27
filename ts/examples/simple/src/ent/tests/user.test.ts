@@ -439,6 +439,13 @@ test("loadFromEmailAddress", async () => {
   );
   expect(loggedOutJon).toBe(null);
 
+  const data = await User.loadRawDataFromEmailAddress(emailAddress);
+  expect(data).toMatchObject({
+    first_name: "Jon",
+    last_name: "Snow",
+    email_address: emailAddress,
+  });
+
   const jonFromHimself = await User.loadFromEmailAddress(
     new IDViewer(jon.id),
     emailAddress,

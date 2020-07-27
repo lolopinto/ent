@@ -45,8 +45,12 @@ export interface Ent {
   nodeType: string;
 }
 
+export declare type Data = {
+  [key: string]: any;
+};
+
 export interface EntConstructor<T extends Ent> {
-  new (viewer: Viewer, id: ID, options: {}): T;
+  new (viewer: Viewer, id: ID, options: Data): T;
 }
 
 export type ID = string | number;
@@ -79,7 +83,7 @@ interface LoadRowsOptions extends QueryableDataOptions {}
 
 export interface EditRowOptions extends DataOptions {
   // fields to be edited
-  fields: {};
+  fields: Data;
   pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
@@ -217,8 +221,8 @@ export async function loadEntsFromClause<T extends Ent>(
 // Derived ents
 export async function loadDerivedEnt<T extends Ent>(
   viewer: Viewer,
-  data: {},
-  loader: new (viewer: Viewer, data: {}) => T,
+  data: Data,
+  loader: new (viewer: Viewer, data: Data) => T,
 ): Promise<T | null> {
   const ent = new loader(viewer, data);
   return await applyPrivacyPolicyForEnt(viewer, ent);
@@ -226,8 +230,8 @@ export async function loadDerivedEnt<T extends Ent>(
 
 export async function loadDerivedEntX<T extends Ent>(
   viewer: Viewer,
-  data: {},
-  loader: new (viewer: Viewer, data: {}) => T,
+  data: Data,
+  loader: new (viewer: Viewer, data: Data) => T,
 ): Promise<T> {
   const ent = new loader(viewer, data);
   return await applyPrivacyPolicyForEntX(viewer, ent);
@@ -249,7 +253,7 @@ export function createDataLoader(options: SelectDataOptions) {
     // TODO is there a better way of doing this?
     // context not needed because we're creating a loader which has its own cache which is being used here
     const nodes = await loadRows(rowOptions);
-    let result: {}[] = [];
+    let result: Data[] = [];
     ids.forEach((id) => {
       for (const node of nodes) {
         if (node[col] === id) {
@@ -294,7 +298,7 @@ function logQuery(query: string, values: any[]) {
   // console.trace();
 }
 
-export async function loadRowX(options: LoadRowOptions): Promise<{}> {
+export async function loadRowX(options: LoadRowOptions): Promise<Data> {
   const result = await loadRow(options);
   if (result == null) {
     // todo make this better
@@ -308,7 +312,7 @@ export async function loadRowX(options: LoadRowOptions): Promise<{}> {
   return result;
 }
 
-export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
+export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   let cache = options.context?.cache;
   if (cache) {
     let row = cache.getCachedRow(options);
@@ -343,7 +347,7 @@ export async function loadRow(options: LoadRowOptions): Promise<{} | null> {
   }
 }
 
-export async function loadRows(options: LoadRowsOptions): Promise<{}[]> {
+export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   let cache = options.context?.cache;
   if (cache) {
     let rows = cache.getCachedRows(options);
@@ -417,7 +421,7 @@ export interface Queryer {
 
 export interface DataOperation {
   performWrite(queryer: Queryer, context?: Context): Promise<void>;
-  returnedEntRow?(): {} | null; // optional to indicate the row that was created
+  returnedEntRow?(): Data | null; // optional to indicate the row that was created
   resolve?<T extends Ent>(executor: Executor<T>): void; //throws?
 }
 
@@ -426,7 +430,7 @@ export interface EditNodeOptions extends EditRowOptions {
 }
 
 export class EditNodeOperation implements DataOperation {
-  row: {} | null;
+  row: Data | null;
 
   constructor(
     public options: EditNodeOptions,
@@ -469,7 +473,7 @@ export class EditNodeOperation implements DataOperation {
     }
   }
 
-  returnedEntRow(): {} | null {
+  returnedEntRow(): Data | null {
     return this.row;
   }
 }
@@ -788,7 +792,7 @@ export async function createRow(
   queryer: Queryer,
   options: EditRowOptions,
   suffix: string,
-): Promise<{} | null> {
+): Promise<Data | null> {
   let fields: string[] = [];
   let values: any[] = [];
   let valsString: string[] = [];
@@ -817,7 +821,7 @@ export async function editRow(
   queryer: Queryer,
   options: EditRowOptions,
   id: ID,
-): Promise<{} | null> {
+): Promise<Data | null> {
   let valsString: string[] = [];
   let values: any[] = [];
 
@@ -876,14 +880,14 @@ export class AssocEdge {
   time?: Date;
   data?: string;
 
-  constructor(data: {}) {
-    this.id1 = data["id1"];
-    this.id1Type = data["id1_type"];
-    this.id2 = data["id2"];
-    this.id2Type = data["id2_type"];
-    this.edgeType = data["edge_type"];
-    this.time = data["time"];
-    this.data = data["data"];
+  constructor(data: Data) {
+    this.id1 = data.id1;
+    this.id1Type = data.id1_type;
+    this.id2 = data.id2;
+    this.id2Type = data.id2_type;
+    this.edgeType = data.edge_type;
+    this.time = data.time;
+    this.data = data.data;
   }
 }
 
@@ -907,12 +911,12 @@ export class AssocEdgeData {
   inverseEdgeType?: string;
   edgeTable: string;
 
-  constructor(data: {}) {
-    this.edgeType = data["edge_type"];
-    this.edgeName = data["edge_name"];
-    this.symmetricEdge = data["symmetric_edge"];
-    this.inverseEdgeType = data["inverse_edge_type"];
-    this.edgeTable = data["edge_table"];
+  constructor(data: Data) {
+    this.edgeType = data.edge_type;
+    this.edgeName = data.edge_name;
+    this.symmetricEdge = data.symmetric_edge;
+    this.inverseEdgeType = data.inverse_edge_type;
+    this.edgeTable = data.edge_table;
   }
 }
 
@@ -1076,7 +1080,7 @@ export async function loadNodesByEdge<T extends Ent>(
 async function applyPrivacyPolicyForRow<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
-  row: {} | null,
+  row: Data | null,
 ): Promise<T | null> {
   if (!row) {
     return null;
@@ -1089,7 +1093,7 @@ async function applyPrivacyPolicyForRow<T extends Ent>(
 async function applyPrivacyPolicyForRowX<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
-  row: {},
+  row: Data,
 ): Promise<T> {
   const col = options.pkey || "id";
 
@@ -1099,7 +1103,7 @@ async function applyPrivacyPolicyForRowX<T extends Ent>(
 
 async function applyPrivacyPolicyForRows<T extends Ent>(
   viewer: Viewer,
-  rows: {}[],
+  rows: Data[],
   options: LoadEntOptions<T>,
 ) {
   let m: Map<ID, T> = new Map();
