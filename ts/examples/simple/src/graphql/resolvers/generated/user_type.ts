@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { EventType } from "./event_type";
 import { ContactType } from "./contact_type";
 import User from "src/ent/user";
@@ -22,7 +22,7 @@ interface UserQueryArgs {
 
 export const UserType = new GraphQLObjectType({
   name: "User",
-  fields: (): GraphQLFieldConfigMap<User, Context> => ({
+  fields: (): GraphQLFieldConfigMap<User, RequestContext> => ({
     id: {
       type: GraphQLNonNull(GraphQLID),
     },
@@ -133,7 +133,7 @@ export const UserType = new GraphQLObjectType({
 
 export const UserQuery: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   UserQueryArgs
 > = {
   type: UserType,
@@ -146,7 +146,7 @@ export const UserQuery: GraphQLFieldConfig<
   resolve: async (
     _source,
     args: UserQueryArgs,
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     return User.load(context.getViewer(), args.id);

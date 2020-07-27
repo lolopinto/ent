@@ -12,7 +12,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import EditContactAction, {
   ContactEditInput,
@@ -50,7 +50,7 @@ export const ContactEditInputType = new GraphQLInputObjectType({
 
 export const ContactEditResponseType = new GraphQLObjectType({
   name: "ContactEditResponse",
-  fields: (): GraphQLFieldConfigMap<ContactEditResponse, Context> => ({
+  fields: (): GraphQLFieldConfigMap<ContactEditResponse, RequestContext> => ({
     contact: {
       type: GraphQLNonNull(ContactType),
     },
@@ -59,7 +59,7 @@ export const ContactEditResponseType = new GraphQLObjectType({
 
 export const ContactEditType: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   { [input: string]: customContactEditInput }
 > = {
   type: GraphQLNonNull(ContactEditResponseType),
@@ -72,7 +72,7 @@ export const ContactEditType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<ContactEditResponse> => {
     let contact = await EditContactAction.saveXFromID(

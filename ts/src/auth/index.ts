@@ -1,20 +1,10 @@
-//import graphqlHTTP from "express-graphql";
-//
-import { IncomingMessage, ServerResponse } from "http";
 import { Viewer } from "../ent";
 import { LoggedOutViewer } from "../viewer";
-
-type Request = IncomingMessage;
-type Response = ServerResponse;
+import { RequestContext } from "./context";
 
 export type AuthViewer = Viewer | null;
 export interface Auth {
-  authViewer(
-    // TODO
-    request: Request,
-    response: Response,
-  ): //    params?: graphqlHTTP.OptionsData.GraphQLParams,
-  AuthViewer | Promise<AuthViewer>;
+  authViewer(ctx: RequestContext): AuthViewer | Promise<AuthViewer>;
 }
 
 let handlers: Map<string, Auth> = new Map();
@@ -27,11 +17,10 @@ export async function clearAuthHandlers() {
 }
 
 export async function getLoggedInViewer(
-  request: Request,
-  response: Response,
+  context: RequestContext,
 ): Promise<Viewer> {
   for (const [name, authHandler] of handlers) {
-    let v = await authHandler.authViewer(request, response);
+    let v = await authHandler.authViewer(context);
     if (v !== null) {
       //      console.log(`auth handler ${name} authenticated user ${v.viewerID}`);
       return v;
@@ -40,5 +29,3 @@ export async function getLoggedInViewer(
   //  console.log("no auth handler returned viewer. default to logged out viewer");
   return new LoggedOutViewer();
 }
-
-//

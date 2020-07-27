@@ -17,12 +17,11 @@ import {
   SimpleBuilder,
   SimpleAction,
 } from "./testutils/builder";
-import { LoggedOutViewer } from "./viewer";
+import { LoggedOutViewer, IDViewer } from "./viewer";
 import { BaseEntSchema, Field } from "./schema";
 import { StringType, TimeType, BooleanType } from "./field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import * as query from "./query";
-import { IDViewer } from "./testutils/id_viewer";
 import { FakeLogger, EntCreationObserver } from "./testutils/fake_log";
 
 jest.mock("pg");
@@ -39,18 +38,20 @@ beforeEach(() => {
   // this is getting too complicated...
 
   // TODO can change loadEdgeDatas to do this depending on values[0]
+  // have to do it this way because loadEdgeData is now wrapped via a loader
   QueryRecorder.mockResult({
     tableName: "assoc_edge_config",
-    clause: query.Eq("edge_type", "fake_edge"),
-    row: (values: any[]) => {
-      let edgeType = values[0];
-      return {
-        edge_table: snakeCase(`${edgeType}_table`),
-        symmetric_edge: false,
-        inverse_edge_type: null,
-        edge_type: edgeType,
-        edge_name: "name",
-      };
+    clause: query.In("edge_type", "fake_edge"),
+    result: (values: any[]) => {
+      return values.map((edgeType) => {
+        return {
+          edge_table: snakeCase(`${edgeType}_table`),
+          symmetric_edge: false,
+          inverse_edge_type: null,
+          edge_type: edgeType,
+          edge_name: "name",
+        };
+      });
     },
   });
 });
@@ -66,11 +67,24 @@ jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
 async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
   const changeset = await builder.build();
   const executor = changeset.executor();
-  await executeOperations(executor);
+  await executeOperations(executor, builder);
+}
+
+async function executeAction<T extends Ent, E = any>(
+  action: action.Action<T>,
+  name?: E,
+): Promise<Executor<T>> {
+  const exec = await executor(action.builder);
+  if (name !== undefined) {
+    expect(exec).toBeInstanceOf(name);
+  }
+  await executeOperations(exec, action.builder);
+  return exec;
 }
 
 async function executeOperations<T extends Ent>(
   executor: Executor<T>,
+  builder: Builder<T>,
 ): Promise<void> {
   const client = await DB.getInstance().getNewClient();
 
@@ -83,7 +97,7 @@ async function executeOperations<T extends Ent>(
         operation.resolve(executor);
       }
 
-      await operation.performWrite(client);
+      await operation.performWrite(client, builder.viewer.context);
     }
     await client.query("COMMIT");
 
@@ -238,9 +252,7 @@ test("simple-one-op-created-ent", async () => {
     WriteOperation.Insert,
   );
 
-  const exec = await executor(action.builder);
-  expect(exec).toBeInstanceOf(ListBasedExecutor);
-  await executeOperations(exec);
+  const exec = await executeAction(action, ListBasedExecutor);
 
   let ent = await action.editedEnt();
   expect(ent).not.toBe(null);
@@ -271,8 +283,7 @@ test("simple-one-op-no-created-ent", async () => {
 
   action.builder.orchestrator.addOutboundEdge(id2, "fakeEdge", "user");
 
-  const exec = await executor(action.builder);
-  await executeOperations(exec);
+  const exec = await executeAction(action);
   let ent = await action.editedEnt();
   expect(ent).not.toBe(null);
   expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(ent);
@@ -314,13 +325,10 @@ test("list-based-with-dependency", async () => {
     WriteOperation.Insert,
   );
 
-  // list based executor because dependencies but no changesets
-  const exec = await executor(contactAction.builder);
-  expect(exec).toBeInstanceOf(ListBasedExecutor);
-
   try {
+    // list based executor because dependencies but no changesets
     // can't actually run this on its own but that's expected
-    await executeOperations(exec);
+    await executeAction(contactAction, ListBasedExecutor);
     fail("should not have gotten here");
   } catch (e) {
     expect(e.message).toBe(
@@ -341,10 +349,8 @@ test("complex-based-with-dependencies", async () => {
   );
 
   // expect ComplexExecutor because of complexity of what we have here
-  const exec = await executor(action.builder);
-  expect(exec).toBeInstanceOf(ComplexExecutor);
+  const exec = await executeAction(action, ComplexExecutor);
 
-  await executeOperations(exec);
   let [user, contact] = await Promise.all([
     action.editedEnt(),
     action.contactAction.editedEnt(),
@@ -480,10 +486,8 @@ test("list-with-complex-layers", async () => {
 
   // expect ComplexExecutor because of complexity of what we have here
   // we have a Group action which has nested things in it
-  const exec = await executor(action.builder);
-  expect(exec).toBeInstanceOf(ComplexExecutor);
+  const exec = await executeAction(action, ComplexExecutor);
 
-  await executeOperations(exec);
   let [createdGroup, user, message, contact] = await Promise.all([
     action.editedEnt(),
     userAction!.editedEnt(),

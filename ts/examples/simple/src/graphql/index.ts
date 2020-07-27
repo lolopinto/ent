@@ -4,6 +4,7 @@ import graphqlHTTP from "express-graphql";
 import schema from "./schema";
 import { IncomingMessage, ServerResponse } from "http";
 import { registerAuthHandler } from "ent/auth";
+import { IDViewer } from "ent/viewer";
 import passport from "passport";
 import session from "express-session";
 import { buildContext } from "ent/auth/context";
@@ -12,7 +13,6 @@ import {
   PassportStrategyHandler,
 } from "ent/auth/passport";
 import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
-import { IDViewer } from "src/util/id_viewer";
 
 let app = express();
 // app.use(
@@ -45,10 +45,14 @@ registerAuthHandler(
       },
       function(jwt_payload: {}, next) {
         // console.log("jwt payload", jwt_payload);
-        return next(null, new IDViewer(jwt_payload["viewerID"].toString()), {});
+        return next(null, jwt_payload["viewerID"].toString(), {});
       },
     ),
     { session: false },
+    function(context, viewerID) {
+      // toViewer method
+      return new IDViewer(viewerID, { context });
+    },
   ),
 );
 

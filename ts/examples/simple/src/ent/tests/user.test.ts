@@ -3,13 +3,12 @@ import Contact from "src/ent/contact";
 
 import { Viewer, AssocEdge, AssocEdgeInput } from "ent/ent";
 import DB from "ent/db";
-import { LoggedOutViewer } from "ent/viewer";
+import { LoggedOutViewer, IDViewer } from "ent/viewer";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
 import Event from "src/ent/event";
 import { randomEmail } from "src/util/random";
-import { IDViewer } from "src/util/id_viewer";
 
 import CreateUserAction, {
   UserCreateInput,
@@ -96,7 +95,7 @@ test("edit user", async () => {
     expect(err.message).toMatch(/is not visible for privacy reasons$/);
   }
 
-  let vc = new IDViewer(user.id, user);
+  let vc = new IDViewer(user.id, { ent: user });
   let editedUser = await EditUserAction.create(vc, user, {
     firstName: "First of his name",
   }).saveX();
@@ -113,7 +112,7 @@ test("edit user. saveXFromID", async () => {
     emailAddress: randomEmail(),
   });
 
-  let vc = new IDViewer(user.id, user);
+  let vc = new IDViewer(user.id, { ent: user });
   let editedUser = await EditUserAction.saveXFromID(vc, user.id, {
     firstName: "First of his name",
   });
@@ -135,7 +134,7 @@ test("delete user", async () => {
   } catch (err) {
     expect(err.message).toMatch(/is not visible for privacy reasons$/);
   }
-  let vc = new IDViewer(user.id, user);
+  let vc = new IDViewer(user.id, { ent: user });
   await DeleteUserAction.create(vc, user).saveX();
 
   let loadedUser = await User.load(vc, user.id);
@@ -149,7 +148,7 @@ test("delete user. saveXFromID", async () => {
     emailAddress: randomEmail(),
   });
 
-  let vc = new IDViewer(user.id, user);
+  let vc = new IDViewer(user.id, { ent: user });
   await DeleteUserAction.saveXFromID(vc, user.id);
 
   let loadedUser = await User.load(vc, user.id);
@@ -170,13 +169,19 @@ describe("privacy", () => {
     });
 
     // we only do privacy checks when loading right now...
-    let loadedUser = await User.load(new IDViewer(user.id, user), user.id);
+    let loadedUser = await User.load(
+      new IDViewer(user.id, { ent: user }),
+      user.id,
+    );
     expect(loadedUser).toBeInstanceOf(User);
     expect(loadedUser).not.toBe(null);
     expect(loadedUser?.id).toBe(user.id);
 
     // privacy indicates other user cannot load
-    let loadedUser2 = await User.load(new IDViewer(user2.id, user2), user.id);
+    let loadedUser2 = await User.load(
+      new IDViewer(user2.id, { ent: user2 }),
+      user.id,
+    );
     expect(loadedUser2).toBe(null);
   });
 
@@ -193,13 +198,16 @@ describe("privacy", () => {
     });
 
     // we only do privacy checks when loading right now...
-    let loadedUser = await User.loadX(new IDViewer(user.id, user), user.id);
+    let loadedUser = await User.loadX(
+      new IDViewer(user.id, { ent: user }),
+      user.id,
+    );
     expect(loadedUser).toBeInstanceOf(User);
     expect(loadedUser.id).toBe(user.id);
 
     try {
       // privacy indicates other user cannot load
-      await User.loadX(new IDViewer(user2.id, user2), user.id);
+      await User.loadX(new IDViewer(user2.id, { ent: user2 }), user.id);
       fail("should have thrown exception");
     } catch (e) {}
   });
@@ -276,7 +284,7 @@ test("symmetric edge", async () => {
   const friends = await jon.loadFriends();
   expect(friends.length).toBe(0);
 
-  let vc = new IDViewer(jon.id, jon);
+  let vc = new IDViewer(jon.id, { ent: jon });
   // delete all the edges and let's confirm it works
   const action2 = EditUserAction.create(vc, jon, {});
   action2.builder.removeFriend(dany, sam);
@@ -473,7 +481,7 @@ test("uniqueEdge|Node", async () => {
   expect(jon).toBeInstanceOf(User);
   expect(sansa).toBeInstanceOf(User);
 
-  let vc = new IDViewer(jon.id, jon);
+  let vc = new IDViewer(jon.id, { ent: jon });
   jon = await User.loadX(vc, jon.id);
 
   // jon was created as his own contact

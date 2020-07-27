@@ -12,7 +12,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID } from "ent/ent";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { AuthResolver } from "../auth";
 
 interface UserAuthJWTInput {
@@ -39,7 +39,7 @@ export const UserAuthJWTInputType = new GraphQLInputObjectType({
 
 export const UserAuthJWTResponseType = new GraphQLObjectType({
   name: "UserAuthJWTResponse",
-  fields: (): GraphQLFieldConfigMap<UserAuthJWTResponse, Context> => ({
+  fields: (): GraphQLFieldConfigMap<UserAuthJWTResponse, RequestContext> => ({
     token: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -51,7 +51,7 @@ export const UserAuthJWTResponseType = new GraphQLObjectType({
 
 export const UserAuthJWTType: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   { [input: string]: UserAuthJWTInput }
 > = {
   type: GraphQLNonNull(UserAuthJWTResponseType),
@@ -64,7 +64,7 @@ export const UserAuthJWTType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<UserAuthJWTResponse> => {
     const r = new AuthResolver();

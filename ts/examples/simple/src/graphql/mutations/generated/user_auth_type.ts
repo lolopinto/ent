@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { UserAuthInput, UserAuthResponse, AuthResolver } from "../auth";
 
 export const UserAuthInputType = new GraphQLInputObjectType({
@@ -28,7 +28,7 @@ export const UserAuthInputType = new GraphQLInputObjectType({
 
 export const UserAuthResponseType = new GraphQLObjectType({
   name: "UserAuthResponse",
-  fields: (): GraphQLFieldConfigMap<UserAuthResponse, Context> => ({
+  fields: (): GraphQLFieldConfigMap<UserAuthResponse, RequestContext> => ({
     token: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -40,7 +40,7 @@ export const UserAuthResponseType = new GraphQLObjectType({
 
 export const UserAuthType: GraphQLFieldConfig<
   undefined,
-  Context,
+  RequestContext,
   { [input: string]: UserAuthInput }
 > = {
   type: GraphQLNonNull(UserAuthResponseType),
@@ -53,7 +53,7 @@ export const UserAuthType: GraphQLFieldConfig<
   resolve: async (
     _source,
     { input },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ): Promise<UserAuthResponse> => {
     const r = new AuthResolver();

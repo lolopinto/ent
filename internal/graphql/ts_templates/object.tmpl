@@ -1,6 +1,6 @@
 {{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" }}
 {{reserveImport "ent/ent" "ID" }}
-{{reserveImport "ent/auth/context" "Context"}}
+{{reserveImport "ent/auth/context" "RequestContext"}}
 {{reserveImport "ent/graphql/scalars/time" "GraphQLTime"}}
 
 {{$baseObj := . -}}
@@ -45,7 +45,7 @@
     {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
       fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
     {{ else -}}
-      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$gqlNode.TSType}}, {{useImport "Context"}}> => ({
+      fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$gqlNode.TSType}}, {{useImport "RequestContext"}}> => ({
     {{ end -}}
       {{/* TODO enum support e.g. account status */}} 
       {{ range $field := $gqlNode.Fields -}}
@@ -94,7 +94,7 @@
 
 {{$prefix}}: {{useImport "GraphQLFieldConfig"}}<
   undefined,
-  Context,
+  {{useImport "RequestContext"}},
   {{$fieldConfig.Arg}}
 > = {
   type: {{$fieldConfig.FieldType}},
@@ -113,15 +113,15 @@
   },
   {{if $fieldConfig.ReturnTypeHint -}}
     {{ if $fieldConfig.ResolveMethodArg -}}
-      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
     {{ else -}}
-      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
     {{end -}}
   {{ else -}}
     {{ if $fieldConfig.ResolveMethodArg -}}
-      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
     {{else -}}
-      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "Context"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
     {{end -}}
   {{ end -}}
     {{range $line := $fieldConfig.FunctionContents -}}

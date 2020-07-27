@@ -34,6 +34,7 @@
     "@types/passport-jwt": "^3.0.3",
     "@types/passport-local": "^1.0.33",
     "@types/passport-strategy": "^0.2.35",
+    "dataloader": "^2.0.0",
     "express": "^4.17.1",
     "express-graphql": "^0.9.0",
     "express-session": "^1.17.1",

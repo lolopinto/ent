@@ -6,10 +6,10 @@ import {
   gqlArg,
   gqlObjectType,
 } from "ent/graphql";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { useAndAuth, LocalStrategy } from "ent/auth/passport";
 import User from "src/ent/user";
-import { IDViewer } from "src/util/id_viewer";
+import { IDViewer } from "ent/viewer";
 import { ID } from "ent/ent";
 import { GraphQLID } from "graphql";
 import jwt from "jsonwebtoken";
@@ -61,7 +61,7 @@ class OmniViewer extends IDViewer {
 export class AuthResolver {
   @gqlMutation({ name: "userAuth", type: UserAuthResponse })
   async userAuth(
-    @gqlContextType() context: Context,
+    @gqlContextType() context: RequestContext,
     @gqlArg("input") input: UserAuthInput,
   ): Promise<UserAuthResponse> {
     const viewer = await useAndAuth(
@@ -84,7 +84,7 @@ export class AuthResolver {
           if (!valid) {
             return null;
           }
-          return new IDViewer(user.id);
+          return new IDViewer(user.id, { context });
         },
       }),
     );
@@ -101,7 +101,7 @@ export class AuthResolver {
 
   @gqlMutation({ name: "userAuthJWT", type: UserAuthJWTResponse })
   async userAuthJWT(
-    @gqlContextType() context: Context,
+    @gqlContextType() context: RequestContext,
     @gqlArg("input") input: UserAuthJWTInput,
   ): Promise<UserAuthJWTResponse> {
     // TODO: auth locally with username/password
@@ -130,7 +130,7 @@ export class AuthResolver {
           if (!valid) {
             return null;
           }
-          return new IDViewer(user.id);
+          return new IDViewer(user.id, { context });
         },
       }),
       // don't store this in session since we're using JWT here

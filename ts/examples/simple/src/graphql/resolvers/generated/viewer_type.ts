@@ -8,13 +8,13 @@ import {
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
 } from "graphql";
-import { Context } from "ent/auth/context";
+import { RequestContext } from "ent/auth/context";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
 import ViewerResolver, { GQLViewer } from "../viewer";
 
 export const GQLViewerType = new GraphQLObjectType({
   name: "Viewer",
-  fields: (): GraphQLFieldConfigMap<GQLViewer, Context> => ({
+  fields: (): GraphQLFieldConfigMap<GQLViewer, RequestContext> => ({
     viewerID: {
       type: GraphQLID,
     },
@@ -27,13 +27,13 @@ export const GQLViewerType = new GraphQLObjectType({
   }),
 });
 
-export const ViewerType: GraphQLFieldConfig<undefined, Context> = {
+export const ViewerType: GraphQLFieldConfig<undefined, RequestContext> = {
   type: GraphQLNonNull(GQLViewerType),
   args: {},
   resolve: async (
     _source,
     { arg },
-    context: Context,
+    context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
     const r = new ViewerResolver();
