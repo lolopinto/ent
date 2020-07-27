@@ -52,12 +52,6 @@ class UserAuthJWTResponse {
   viewerID: ID;
 }
 
-class OmniViewer extends IDViewer {
-  isOmniscient(): boolean {
-    return true;
-  }
-}
-
 export class AuthResolver {
   @gqlMutation({ name: "userAuth", type: UserAuthResponse })
   async userAuth(
@@ -68,23 +62,14 @@ export class AuthResolver {
       context,
       new LocalStrategy({
         verifyFn: async () => {
-          // we need load raw here
-          const user = await User.loadFromEmailAddress(
-            // This leads to invalid uuid so we need to account for this
-            //            new OmniViewer("1"),
-            new OmniViewer("b38e3d04-4f6a-4421-a566-a211f4799c12"),
+          const data = await User.validateEmailPassword(
             input.emailAddress,
+            input.password,
           );
-
-          if (!user) {
+          if (!data) {
             return null;
           }
-
-          let valid = await user.verifyPassword(input.password);
-          if (!valid) {
-            return null;
-          }
-          return new IDViewer(user.id, { context });
+          return new IDViewer(data.id, { context });
         },
       }),
     );
@@ -114,23 +99,14 @@ export class AuthResolver {
       context,
       new LocalStrategy({
         verifyFn: async () => {
-          // we need load raw here
-          const user = await User.loadFromEmailAddress(
-            // This leads to invalid uuid so we need to account for this
-            //            new OmniViewer("1"),
-            new OmniViewer("b38e3d04-4f6a-4421-a566-a211f4799c12"),
+          const data = await User.validateEmailPassword(
             input.emailAddress,
+            input.password,
           );
-
-          if (!user) {
+          if (!data) {
             return null;
           }
-
-          let valid = await user.verifyPassword(input.password);
-          if (!valid) {
-            return null;
-          }
-          return new IDViewer(user.id, { context });
+          return new IDViewer(data.id, { context });
         },
       }),
       // don't store this in session since we're using JWT here
