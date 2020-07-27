@@ -1,5 +1,11 @@
 import { getLoggedInViewer } from "./index";
-import { Viewer, ID, SelectDataOptions, createDataLoader } from "./../ent";
+import {
+  Viewer,
+  ID,
+  Data,
+  SelectDataOptions,
+  createDataLoader,
+} from "./../ent";
 import { IncomingMessage, ServerResponse } from "http";
 import { LoggedOutViewer } from "../viewer";
 
@@ -61,7 +67,7 @@ export async function buildContext(
 }
 
 export class ContextCache {
-  loaders: Map<string, DataLoader<ID, {}>> = new Map();
+  loaders: Map<string, DataLoader<ID, Data>> = new Map();
 
   // only create as needed for the "requests" which need it
   getEntLoader(loaderOptions: SelectDataOptions) {
@@ -76,8 +82,8 @@ export class ContextCache {
   }
 
   // we have a per-table map to make it easier to purge and have less things to compare with
-  private itemMap: Map<string, Map<string, {}>> = new Map();
-  private listMap: Map<string, Map<string, {}[]>> = new Map();
+  private itemMap: Map<string, Map<string, Data>> = new Map();
+  private listMap: Map<string, Map<string, Data[]>> = new Map();
 
   // tableName is ignored bcos already indexed on that
   // maybe we just want to store sql queries???
@@ -93,7 +99,7 @@ export class ContextCache {
     return parts.join(",");
   }
 
-  getCachedRows(options: queryOptions): {}[] | null {
+  getCachedRows(options: queryOptions): Data[] | null {
     let m = this.listMap.get(options.tableName);
     if (!m) {
       return null;
@@ -102,7 +108,7 @@ export class ContextCache {
     return rows || null;
   }
 
-  getCachedRow(options: queryOptions): {} | null {
+  getCachedRow(options: queryOptions): Data | null {
     let m = this.itemMap.get(options.tableName);
     if (!m) {
       return null;
@@ -111,9 +117,9 @@ export class ContextCache {
     return row || null;
   }
 
-  primeCache(options: queryOptions, rows: {}[]): void;
-  primeCache(options: queryOptions, rows: {}): void;
-  primeCache(options: queryOptions, rows: {}[] | {}): void {
+  primeCache(options: queryOptions, rows: Data[]): void;
+  primeCache(options: queryOptions, rows: Data): void;
+  primeCache(options: queryOptions, rows: Data[] | Data): void {
     if (Array.isArray(rows)) {
       let m = this.listMap.get(options.tableName) || new Map();
       m.set(this.getkey(options), rows);

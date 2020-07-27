@@ -3,6 +3,7 @@
 import {
   loadEnt,
   ID,
+  Data,
   Viewer,
   loadEntX,
   loadEnts,
@@ -43,19 +44,19 @@ export class UserBase {
   readonly accountStatus: string | null;
   readonly emailVerified: boolean;
 
-  constructor(public viewer: Viewer, id: ID, data: {}) {
+  constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
     // TODO don't double read id
-    this.id = data["id"];
-    this.createdAt = data["created_at"];
-    this.updatedAt = data["updated_at"];
-    this.firstName = data["first_name"];
-    this.lastName = data["last_name"];
-    this.emailAddress = data["email_address"];
-    this.phoneNumber = data["phone_number"];
-    this.password = data["password"];
-    this.accountStatus = data["account_status"];
-    this.emailVerified = data["email_verified"];
+    this.id = data.id;
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
+    this.firstName = data.first_name;
+    this.lastName = data.last_name;
+    this.emailAddress = data.email_address;
+    this.phoneNumber = data.phone_number;
+    this.password = data.password;
+    this.accountStatus = data.account_status;
+    this.emailVerified = data.email_verified;
   }
 
   // by default, we always deny and it's up to the ent
@@ -66,7 +67,7 @@ export class UserBase {
   };
 
   static async load<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -74,7 +75,7 @@ export class UserBase {
   }
 
   static async loadX<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -82,7 +83,7 @@ export class UserBase {
   }
 
   static async loadMany<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -90,7 +91,7 @@ export class UserBase {
   }
 
   static async loadFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T | null> {
@@ -102,7 +103,7 @@ export class UserBase {
   }
 
   static async loadFromEmailAddressX<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     emailAddress: string,
   ): Promise<T> {
@@ -114,7 +115,7 @@ export class UserBase {
   }
 
   static async loadIDFromEmailAddress<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     emailAddress: string,
   ): Promise<ID | null> {
     const row = await loadRow({
@@ -128,7 +129,7 @@ export class UserBase {
   }
 
   static async loadFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     phoneNumber: string,
   ): Promise<T | null> {
@@ -140,7 +141,7 @@ export class UserBase {
   }
 
   static async loadFromPhoneNumberX<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     phoneNumber: string,
   ): Promise<T> {
@@ -152,7 +153,7 @@ export class UserBase {
   }
 
   static async loadIDFromPhoneNumber<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     phoneNumber: string,
   ): Promise<ID | null> {
     const row = await loadRow({
@@ -166,7 +167,7 @@ export class UserBase {
   }
 
   static loaderOptions<T extends UserBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,

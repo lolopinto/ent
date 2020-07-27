@@ -2,6 +2,7 @@ import {
   Ent,
   ID,
   Viewer,
+  Data,
   DataOperation,
   EntConstructor,
   Queryer,
@@ -32,7 +33,7 @@ export class User implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AlwaysAllowRule],
   };
-  constructor(public viewer: Viewer, id: ID, public data: {}) {
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
 }
@@ -44,7 +45,7 @@ export class Event implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AlwaysAllowRule],
   };
-  constructor(public viewer: Viewer, id: ID, public data: {}) {
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
 }
@@ -56,7 +57,7 @@ export class Contact implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AlwaysAllowRule],
   };
-  constructor(public viewer: Viewer, id: ID, public data: {}) {
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
 }
@@ -68,7 +69,7 @@ export class Group implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AlwaysAllowRule],
   };
-  constructor(public viewer: Viewer, id: ID, public data: {}) {
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
 }
@@ -80,7 +81,7 @@ export class Message implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AlwaysAllowRule],
   };
-  constructor(public viewer: Viewer, id: ID, public data: {}) {
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
 }
@@ -292,7 +293,7 @@ class dataOp implements DataOperation {
     queryer.query(`${this.operation} ${keys.join(", ")}`, values);
   }
 
-  returnedEntRow?(): {} | null {
+  returnedEntRow?(): Data | null {
     if (this.operation === WriteOperation.Insert) {
       let row = {};
       for (const [key, value] of this.fields) {

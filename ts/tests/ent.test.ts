@@ -4,7 +4,14 @@ import {
   AlwaysDenyRule,
   AllowIfViewerRule,
 } from "./../src/privacy";
-import { ID, Ent, Viewer, loadDerivedEnt, loadDerivedEntX } from "./../src/ent";
+import {
+  ID,
+  Ent,
+  Data,
+  Viewer,
+  loadDerivedEnt,
+  loadDerivedEntX,
+} from "./../src/ent";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -15,15 +22,15 @@ class User implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
-  constructor(public viewer: Viewer, data: {}) {
+  constructor(public viewer: Viewer, data: Data) {
     this.id = data["id"];
   }
 
-  static async load(v: Viewer, data: {}): Promise<User | null> {
+  static async load(v: Viewer, data: Data): Promise<User | null> {
     return loadDerivedEnt(v, data, User);
   }
 
-  static async loadX(v: Viewer, data: {}): Promise<User> {
+  static async loadX(v: Viewer, data: Data): Promise<User> {
     return loadDerivedEntX(v, data, User);
   }
 }

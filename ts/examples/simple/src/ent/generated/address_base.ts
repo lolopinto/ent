@@ -3,6 +3,7 @@
 import {
   loadEnt,
   ID,
+  Data,
   Viewer,
   loadEntX,
   loadEnts,
@@ -24,15 +25,15 @@ export class AddressBase {
   readonly city: string;
   readonly zip: string;
 
-  constructor(public viewer: Viewer, id: ID, data: {}) {
+  constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
     // TODO don't double read id
-    this.id = data["id"];
-    this.createdAt = data["created_at"];
-    this.updatedAt = data["updated_at"];
-    this.streetName = data["street_name"];
-    this.city = data["city"];
-    this.zip = data["zip"];
+    this.id = data.id;
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
+    this.streetName = data.street_name;
+    this.city = data.city;
+    this.zip = data.zip;
   }
 
   // by default, we always deny and it's up to the ent
@@ -43,7 +44,7 @@ export class AddressBase {
   };
 
   static async load<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -51,7 +52,7 @@ export class AddressBase {
   }
 
   static async loadX<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -59,7 +60,7 @@ export class AddressBase {
   }
 
   static async loadMany<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -67,7 +68,7 @@ export class AddressBase {
   }
 
   static loaderOptions<T extends AddressBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,

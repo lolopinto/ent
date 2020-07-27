@@ -4,7 +4,7 @@ import {
   AlwaysDenyRule,
   AllowIfViewerRule,
 } from "./../src/privacy";
-import { ID, Ent, Viewer } from "./../src/ent";
+import { ID, Ent, Data, Viewer } from "./../src/ent";
 import { QueryRecorder, queryOptions } from "../src/testutils/db_mock";
 import { Pool } from "pg";
 import * as ent from "./../src/ent";
@@ -34,7 +34,7 @@ class User implements Ent {
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
-  constructor(public viewer: Viewer, id: ID, public data: {}) {
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = data["bar"];
   }
 
@@ -93,7 +93,7 @@ afterEach(() => {
 });
 
 interface loadRowFn {
-  (options: ent.LoadRowOptions): Promise<{} | null>;
+  (options: ent.LoadRowOptions): Promise<Data | null>;
 }
 
 interface getQueriesFn {
@@ -142,7 +142,7 @@ async function loadTestRow(
 }
 
 interface loadRowsFn {
-  (options: ent.LoadRowOptions): Promise<{} | null>;
+  (options: ent.LoadRowOptions): Promise<Data | null>;
 }
 
 async function loadTestRows(

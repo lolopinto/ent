@@ -3,6 +3,7 @@
 import {
   loadEnt,
   ID,
+  Data,
   Viewer,
   loadEntX,
   loadEnts,
@@ -32,17 +33,17 @@ export class EventBase {
   readonly endTime: Date | null;
   readonly location: string;
 
-  constructor(public viewer: Viewer, id: ID, data: {}) {
+  constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
     // TODO don't double read id
-    this.id = data["id"];
-    this.createdAt = data["created_at"];
-    this.updatedAt = data["updated_at"];
-    this.name = data["name"];
-    this.creatorID = data["user_id"];
-    this.startTime = data["start_time"];
-    this.endTime = data["end_time"];
-    this.location = data["location"];
+    this.id = data.id;
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
+    this.name = data.name;
+    this.creatorID = data.user_id;
+    this.startTime = data.start_time;
+    this.endTime = data.end_time;
+    this.location = data.location;
   }
 
   // by default, we always deny and it's up to the ent
@@ -53,7 +54,7 @@ export class EventBase {
   };
 
   static async load<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -61,7 +62,7 @@ export class EventBase {
   }
 
   static async loadX<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -69,7 +70,7 @@ export class EventBase {
   }
 
   static async loadMany<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -77,7 +78,7 @@ export class EventBase {
   }
 
   static loaderOptions<T extends EventBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,

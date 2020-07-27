@@ -1,7 +1,7 @@
 {{with .NodeData -}}
 {{/* TODO break this up to make it easier to use? */}}
 {{/* these are dependent on having the right tsconfig.json file... */}}
-{{ reserveImport "ent/ent" "loadEnt" "ID" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadUniqueEdge" "loadUniqueNode" }}
+{{ reserveImport "ent/ent" "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadUniqueEdge" "loadUniqueNode" }}
 {{ reserveImport "ent/privacy" "AlwaysDenyRule" "PrivacyPolicy"}}
 {{ reserveImport "ent/schema" "Field" "getFields"}}
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
@@ -16,12 +16,13 @@
 
 {{$viewerType := useImport "Viewer"}}
 {{$idType := useImport "ID" }}
+{{$dataType := useImport "Data" }}
 
 const tableName = "{{.TableName}}";
 
 {{$baseClass := printf "%sBase" .Node -}}
-{{$constructor := "arg: new (viewer: Viewer, id: ID, data: {}) => T"}}
-{{$thisType := "new (viewer: Viewer, id: ID, data: {}) => T"}}
+{{$constructor := "arg: new (viewer: Viewer, id: ID, data: Data) => T"}}
+{{$thisType := "new (viewer: Viewer, id: ID, data: Data) => T"}}
 
 export class {{$baseClass}} {
 
@@ -34,11 +35,11 @@ export class {{$baseClass}} {
     {{end -}}
   {{end}}
 
-  constructor(public viewer: {{$viewerType}}, id: {{$idType}}, data:{}) {
+  constructor(public viewer: {{$viewerType}}, id: {{$idType}}, data:{{$dataType}}) {
     this.id = id;
     // TODO don't double read id
     {{range $field := .FieldInfo.Fields -}}
-      this.{{$field.TsFieldName}} = data['{{$field.GetDbColName}}'];
+      this.{{$field.TsFieldName}} = data.{{$field.GetDbColName}};
     {{end}}
   }
 
@@ -127,7 +128,7 @@ export class {{$baseClass}} {
   {{end -}}
 
   static loaderOptions<T extends {{$baseClass}}>(
-    this: new (viewer: {{$viewerType}}, id: {{$idType}}, data: {}) => T,
+    this: new (viewer: {{$viewerType}}, id: {{$idType}}, data: Data) => T,
   ): {{useImport "LoadEntOptions"}}<T> {
     return {
       tableName: tableName,

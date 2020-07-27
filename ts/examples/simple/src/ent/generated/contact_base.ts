@@ -3,6 +3,7 @@
 import {
   loadEnt,
   ID,
+  Data,
   Viewer,
   loadEntX,
   loadEnts,
@@ -26,16 +27,16 @@ export class ContactBase {
   readonly lastName: string;
   readonly userID: ID;
 
-  constructor(public viewer: Viewer, id: ID, data: {}) {
+  constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
     // TODO don't double read id
-    this.id = data["id"];
-    this.createdAt = data["created_at"];
-    this.updatedAt = data["updated_at"];
-    this.emailAddress = data["email_address"];
-    this.firstName = data["first_name"];
-    this.lastName = data["last_name"];
-    this.userID = data["user_id"];
+    this.id = data.id;
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
+    this.emailAddress = data.email_address;
+    this.firstName = data.first_name;
+    this.lastName = data.last_name;
+    this.userID = data.user_id;
   }
 
   // by default, we always deny and it's up to the ent
@@ -46,7 +47,7 @@ export class ContactBase {
   };
 
   static async load<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
@@ -54,7 +55,7 @@ export class ContactBase {
   }
 
   static async loadX<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
@@ -62,7 +63,7 @@ export class ContactBase {
   }
 
   static async loadMany<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
@@ -70,7 +71,7 @@ export class ContactBase {
   }
 
   static loaderOptions<T extends ContactBase>(
-    this: new (viewer: Viewer, id: ID, data: {}) => T,
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
