@@ -1,4 +1,4 @@
-import { Viewer } from "./ent";
+import { ID, Ent, Viewer } from "./ent";
 import { Context } from "./auth/context";
 
 export class LoggedOutViewer implements Viewer {
@@ -9,5 +9,38 @@ export class LoggedOutViewer implements Viewer {
   }
   instanceKey(): string {
     return "viewer.LoggedOutViewer";
+  }
+}
+
+export interface IDViewerOptions {
+  viewerID: ID;
+  context?: Context;
+  ent?: Ent | null;
+}
+
+export class IDViewer implements Viewer {
+  public viewerID: ID;
+  private ent: Ent | null = null;
+  public context?: Context;
+
+  constructor(viewerID: ID, opts?: Partial<IDViewerOptions>);
+  constructor(opts: IDViewerOptions);
+  constructor(args: IDViewerOptions | ID, opts?: IDViewerOptions) {
+    if (typeof args === "object") {
+      this.viewerID = args.viewerID;
+      opts = args;
+    } else {
+      this.viewerID = args;
+    }
+    this.ent = opts?.ent || null;
+    this.context = opts?.context;
+  }
+
+  async viewer() {
+    return this.ent;
+  }
+
+  instanceKey(): string {
+    return `idViewer: ${this.viewerID}`;
   }
 }

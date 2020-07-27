@@ -15,11 +15,10 @@ import {
   EdgeOperation,
 } from "./ent";
 import * as ent from "./ent";
-import { LoggedOutViewer } from "./viewer";
+import { LoggedOutViewer, IDViewer } from "./viewer";
 import { Changeset } from "./action";
 import { StringType, TimeType } from "./field";
 import { BaseEntSchema, Field } from "./schema";
-import { IDViewer } from "../src/testutils/id_viewer";
 import {
   User,
   Event,

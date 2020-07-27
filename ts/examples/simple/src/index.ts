@@ -1,5 +1,5 @@
 import User from "src/ent/user.ts"; // default removes the suffix and transforms it...
-import { IDViewer } from "src/util/id_viewer";
+import { IDViewer } from "ent/viewer";
 import CreateContactAction from "./ent/contact/actions/create_contact_action";
 import { randomEmail } from "./util/random";
 import EditUserAction from "./ent/user/actions/edit_user_action";
@@ -45,7 +45,7 @@ async function main() {
       // loaders.User.clear(id);
       // console.log(await loaders.User.load(id));
 
-      const vc = new IDViewer(id2, null, context);
+      const vc = new IDViewer(id2, { context });
       const user = await User.loadX(vc, id2);
 
       await user.loadFriends();

@@ -1,13 +1,12 @@
-import { LoggedOutViewer } from "./../src/viewer";
+import { LoggedOutViewer, IDViewer } from "./../src/viewer";
 import {
   PrivacyPolicy,
   AlwaysDenyRule,
   AllowIfViewerRule,
 } from "./../src/privacy";
-import { ID, Ent, Viewer, loadDerivedEnt, loadDerivedEntX } from "./../src/ent";
-import { IDViewer } from "../src/testutils/id_viewer";
+import { ID, Ent, Viewer } from "./../src/ent";
 import { QueryRecorder, queryOptions } from "../src/testutils/db_mock";
-import { Pool, Query } from "pg";
+import { Pool } from "pg";
 import * as ent from "./../src/ent";
 import { Context, ContextCache } from "../src/auth/context";
 import * as query from "../src/query";
@@ -83,7 +82,7 @@ function getIDViewer(id: ID, ctx?: TestCtx) {
   if (!ctx) {
     ctx = getCtx();
   }
-  let v = new IDViewer(id, null, ctx);
+  let v = new IDViewer(id, { context: ctx });
   ctx.setViewer(v);
   return v;
 }

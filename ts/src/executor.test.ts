@@ -17,12 +17,11 @@ import {
   SimpleBuilder,
   SimpleAction,
 } from "./testutils/builder";
-import { LoggedOutViewer } from "./viewer";
+import { LoggedOutViewer, IDViewer } from "./viewer";
 import { BaseEntSchema, Field } from "./schema";
 import { StringType, TimeType, BooleanType } from "./field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import * as query from "./query";
-import { IDViewer } from "./testutils/id_viewer";
 import { FakeLogger, EntCreationObserver } from "./testutils/fake_log";
 
 jest.mock("pg");

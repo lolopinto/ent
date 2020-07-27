@@ -1,10 +1,11 @@
 // TODO this should be moved to ent-passport or something like that
 import passport, { AuthenticateOptions } from "passport";
 import { Auth, AuthViewer } from "./index";
-import { IncomingMessage, ServerResponse, Server } from "http";
+import { IncomingMessage } from "http";
 import { Strategy } from "passport-strategy";
 import { RequestContext } from "./context";
-import { ID, Ent, Viewer } from "../ent";
+import { ID, Viewer } from "../ent";
+import { IDViewer } from "../viewer";
 
 interface UserToViewerFunc {
   (context: RequestContext, user: any): Viewer;
@@ -14,21 +15,6 @@ export interface PassportAuthOptions {
   serializeViewer?(viewer: Viewer): unknown;
   deserializeViewer?(id: unknown): Viewer;
   userToViewer: UserToViewerFunc;
-}
-
-// TODO need something better here
-class IDViewer implements Viewer {
-  constructor(
-    public viewerID: ID,
-    public context?: RequestContext,
-    private ent: Ent | null = null,
-  ) {}
-  async viewer() {
-    return this.ent;
-  }
-  instanceKey(): string {
-    return `idViewer: ${this.viewerID}`;
-  }
 }
 
 // should this be renamed to session?
@@ -55,7 +41,7 @@ export class PassportAuthHandler implements Auth {
       let deserializeUser = that.options?.deserializeViewer;
       if (!deserializeUser) {
         deserializeUser = (id: ID) => {
-          return new IDViewer(id, context);
+          return new IDViewer({ viewerID: id, context });
         };
       }
 

@@ -1,9 +1,8 @@
 import schema from "src/graphql/schema";
 import DB from "ent/db";
-import { LoggedOutViewer } from "ent/viewer";
+import { LoggedOutViewer, IDViewer } from "ent/viewer";
 import User from "src/ent/user";
 import { randomEmail } from "src/util/random";
-import { IDViewer } from "src/util/id_viewer";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";

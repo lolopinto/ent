@@ -11,7 +11,7 @@ import CreateUserAction, {
 import { randomEmail, random } from "src/util/random";
 import DB from "ent/db";
 import { clearAuthHandlers } from "ent/auth";
-import { LoggedOutViewer } from "ent/viewer";
+import { LoggedOutViewer, IDViewer } from "ent/viewer";
 import User from "src/ent/user";
 import passport from "passport";
 import { Express } from "express";
@@ -19,7 +19,6 @@ import { registerAuthHandler } from "ent/auth";
 import { PassportStrategyHandler } from "ent/auth/passport";
 import supertest from "supertest";
 import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
-import { IDViewer } from "src/util/id_viewer";
 import jwt from "jsonwebtoken";
 
 // TODO we need something that does this by default for all tests

@@ -1,11 +1,10 @@
-import { LoggedOutViewer } from "./../src/viewer";
+import { LoggedOutViewer, IDViewer } from "./../src/viewer";
 import {
   PrivacyPolicy,
   AlwaysDenyRule,
   AllowIfViewerRule,
 } from "./../src/privacy";
 import { ID, Ent, Viewer, loadDerivedEnt, loadDerivedEntX } from "./../src/ent";
-import { IDViewer } from "../src/testutils/id_viewer";
 
 const loggedOutViewer = new LoggedOutViewer();
 

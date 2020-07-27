@@ -9,7 +9,7 @@ import {
 import { RequestContext } from "ent/auth/context";
 import { useAndAuth, LocalStrategy } from "ent/auth/passport";
 import User from "src/ent/user";
-import { IDViewer } from "src/util/id_viewer";
+import { IDViewer } from "ent/viewer";
 import { ID } from "ent/ent";
 import { GraphQLID } from "graphql";
 import jwt from "jsonwebtoken";
@@ -84,7 +84,7 @@ export class AuthResolver {
           if (!valid) {
             return null;
           }
-          return new IDViewer(user.id, null, context);
+          return new IDViewer(user.id, { context });
         },
       }),
     );
@@ -130,7 +130,7 @@ export class AuthResolver {
           if (!valid) {
             return null;
           }
-          return new IDViewer(user.id, null, context);
+          return new IDViewer(user.id, { context });
         },
       }),
       // don't store this in session since we're using JWT here

@@ -1,9 +1,8 @@
 import User from "src/ent/user";
 import Contact from "src/ent/contact";
 import DB from "ent/db";
-import { LoggedOutViewer } from "ent/viewer";
+import { LoggedOutViewer, IDViewer } from "ent/viewer";
 import { randomEmail } from "src/util/random";
-import { IDViewer } from "src/util/id_viewer";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateContactAction, {
   ContactCreateInput,
