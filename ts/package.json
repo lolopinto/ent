@@ -1,5 +1,5 @@
 {
-  "name": "ent",
+  "name": "@lolopinto/ent",
   "version": "0.0.1",
   "description": "ent framework",
   "main": ".",
@@ -52,6 +52,13 @@
     "compile": "tsc",
     "test": "jest"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "lolopinto",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+	  "url": "git@github.com:lolopinto/ent.git"
+  },
+  "publishConfig": {
+    "registry":"https://npm.pkg.github.com/"
+  }
 }
