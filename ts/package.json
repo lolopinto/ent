@@ -2,8 +2,9 @@
   "name": "@lolopinto/ent",
   "version": "0.0.4",
   "description": "ent framework",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": ["./dist"],
   "np": {
     "yarn": false,
     "contents": "dist"
