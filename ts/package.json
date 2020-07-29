@@ -1,13 +1,13 @@
 {
   "name": "@lolopinto/ent",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "ent framework",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "np": {
-		"yarn": false,
-		"contents": "dist"
-	},
+    "yarn": false,
+    "contents": "dist"
+  },
   "directories": {
     "example": "examples"
   },
