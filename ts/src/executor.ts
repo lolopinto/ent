@@ -4,6 +4,7 @@ import { Builder } from "./action";
 import Graph from "graph-data-structure";
 import { OrchestratorOptions } from "./orchestrator";
 
+// private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
   constructor(

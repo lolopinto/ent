@@ -2,6 +2,7 @@
   // TODO
   "compilerOptions": {
     "lib": ["es2015", "es6", "dom"],
+    "rootDir": "src",
     "outDir": "./dist",
     "target": "es6",
     "strictNullChecks": true,
@@ -16,8 +17,9 @@
       // TODO to make importing of ent easier
       // "ent/*": ["./"],
       // "*": ["*"]
-    }
+    },
+    "declaration": true,
   },
-  "include": ["src/**/*", "tests/**/*"],
-  "exclude": ["./examples"]
+  "include": ["src/**/*"],
+  "exclude": ["./examples", "tests/**/*"]
 }
