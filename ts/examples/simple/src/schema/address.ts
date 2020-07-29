@@ -1,4 +1,4 @@
-import { DBType, Node } from "ent/schema";
+import { DBType, Node } from "ent/schema/schema";
 import { StringType } from "ent/field";
 
 // implicit schema

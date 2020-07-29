@@ -4,8 +4,8 @@ import { Auth, AuthViewer } from "./index";
 import { IncomingMessage } from "http";
 import { Strategy } from "passport-strategy";
 import { RequestContext } from "./context";
-import { ID, Viewer } from "../ent";
-import { IDViewer } from "../viewer";
+import { ID, Viewer } from "../core/ent";
+import { IDViewer } from "../core/viewer";
 
 interface UserToViewerFunc {
   (context: RequestContext, user: any): Viewer;

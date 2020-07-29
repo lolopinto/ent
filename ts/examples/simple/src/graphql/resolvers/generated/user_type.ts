@@ -10,7 +10,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
 } from "graphql";
-import { ID } from "ent/ent";
+import { ID } from "ent/core/ent";
 import { RequestContext } from "ent/auth/context";
 import { EventType } from "./event_type";
 import { ContactType } from "./contact_type";

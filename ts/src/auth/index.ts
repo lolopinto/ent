@@ -1,5 +1,5 @@
-import { Viewer } from "../ent";
-import { LoggedOutViewer } from "../viewer";
+import { Viewer } from "../core/ent";
+import { LoggedOutViewer } from "../core/viewer";
 import { RequestContext } from "./context";
 
 export type AuthViewer = Viewer | null;

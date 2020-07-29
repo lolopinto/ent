@@ -1,4 +1,4 @@
-import { Ent } from "./../ent";
+import { Ent } from "../core/ent";
 import { Builder } from "./../action";
 
 export class FakeLogger {

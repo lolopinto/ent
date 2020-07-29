@@ -1,6 +1,6 @@
-import { DataOperation, Ent, EntConstructor, Viewer, ID } from "./ent";
-import { PrivacyPolicy } from "./privacy";
-import DB from "./db";
+import { DataOperation, Ent, EntConstructor, Viewer, ID } from "../core/ent";
+import { PrivacyPolicy } from "../core/privacy";
+import DB from "../core/db";
 
 export enum WriteOperation {
   Insert = "insert",

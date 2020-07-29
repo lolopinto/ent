@@ -13,14 +13,14 @@ import {
   applyPrivacyPolicyX,
   PrivacyPolicy,
 } from "./privacy";
-import { Executor } from "./action";
+import { Executor } from "../action";
 import DataLoader from "dataloader";
 
 // TODO move Viewer and context into viewer.ts or something
-import { Context } from "./auth/context";
+import { Context } from "../auth/context";
 
 import * as query from "./query";
-import { WriteOperation, Builder } from "./action";
+import { WriteOperation, Builder } from "../action";
 
 export interface Viewer {
   viewerID: ID | null;

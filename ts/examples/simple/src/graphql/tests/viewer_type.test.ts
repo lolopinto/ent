@@ -1,10 +1,10 @@
 import schema from "src/graphql/schema";
-import DB from "ent/db";
+import DB from "ent/core/db";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
-import { LoggedOutViewer, IDViewer } from "ent/viewer";
+import { LoggedOutViewer, IDViewer } from "ent/core/viewer";
 import { randomEmail } from "src/util/random";
 import { expectQueryFromRoot, queryRootConfig } from "src/graphql_test_utils";
-import { Viewer } from "ent/ent";
+import { Viewer } from "ent/core/ent";
 import { clearAuthHandlers } from "ent/auth";
 
 // TODO we need something that does this by default for all tests

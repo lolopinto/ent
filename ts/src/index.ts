@@ -40,8 +40,8 @@ export {
   loadRawEdgeCountX,
   loadEdgeForID2,
   loadNodesByEdge,
-} from "./ent";
-import DB from "./db";
+} from "./core/ent";
+import DB from "./core/db";
 export { DB };
 
 export * from "./schema/";

@@ -3,7 +3,7 @@ import Schema, {
   ActionOperation,
   Field,
   BaseEntSchema,
-} from "ent/schema";
+} from "ent/schema/schema";
 import { StringType } from "ent/field";
 import { EmailType } from "ent/field/email";
 

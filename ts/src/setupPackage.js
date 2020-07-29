@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import path from "path";
+const fs = requre("fs");
+const path = require("path");
 
 // root is for some reason "ts/"
 const root = path.resolve();

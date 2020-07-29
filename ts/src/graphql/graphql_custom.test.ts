@@ -10,7 +10,7 @@ import {
   gqlContextType,
 } from "./graphql";
 import { GraphQLID } from "graphql";
-import { ID, Viewer } from "./ent";
+import { ID, Viewer } from "../core/ent";
 
 import {
   validateCustomFields,
@@ -22,8 +22,8 @@ import {
   validateCustomQueries,
   CustomTypes,
   validateNoCustomQueries,
-} from "./graphql_field_helpers";
-import { RequestContext } from "./auth/context";
+} from "./scalars/graphql_field_helpers";
+import { RequestContext } from "../auth/context";
 
 beforeEach(() => {
   GQLCapture.clear();

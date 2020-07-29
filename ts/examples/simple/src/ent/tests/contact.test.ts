@@ -1,7 +1,7 @@
 import User from "src/ent/user";
 import Contact from "src/ent/contact";
-import DB from "ent/db";
-import { LoggedOutViewer, IDViewer } from "ent/viewer";
+import DB from "ent/core/db";
+import { LoggedOutViewer, IDViewer } from "ent/core/viewer";
 import { randomEmail } from "src/util/random";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateContactAction, {

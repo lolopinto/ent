@@ -13,7 +13,7 @@ import {
   validateCustomFields,
   validateNoCustom,
   validateCustomArgs,
-} from "./graphql_field_helpers";
+} from "./scalars/graphql_field_helpers";
 
 beforeEach(() => {
   GQLCapture.clear();

@@ -1,13 +1,13 @@
 import schema from "src/graphql/schema";
-import DB from "ent/db";
-import { LoggedOutViewer, IDViewer } from "ent/viewer";
+import DB from "ent/core/db";
+import { LoggedOutViewer, IDViewer } from "ent/core/viewer";
 import User from "src/ent/user";
 import { randomEmail } from "src/util/random";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import { expectMutation, mutationRootConfig } from "src/graphql_test_utils";
-import { ID, Viewer } from "ent/ent";
+import { ID, Viewer } from "ent/core/ent";
 import { clearAuthHandlers } from "ent/auth";
 
 // TODO we need something that does this by default for all tests

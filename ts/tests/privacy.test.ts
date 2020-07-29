@@ -1,4 +1,4 @@
-import { ID, Ent, Viewer } from "./../src/ent";
+import { ID, Ent, Viewer } from "./../src/core/ent";
 import {
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
@@ -11,9 +11,9 @@ import {
   DenyWithReason,
   Skip,
   PrivacyPolicy,
-} from "./../src/privacy";
+} from "./../src/core/privacy";
 
-import { LoggedOutViewer, IDViewer } from "./../src/viewer";
+import { LoggedOutViewer, IDViewer } from "./../src/core/viewer";
 
 const loggedOutViewer = new LoggedOutViewer();
 

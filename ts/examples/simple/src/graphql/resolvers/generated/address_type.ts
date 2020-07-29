@@ -9,7 +9,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
 } from "graphql";
-import { ID } from "ent/ent";
+import { ID } from "ent/core/ent";
 import { RequestContext } from "ent/auth/context";
 import Address from "src/ent/address";
 

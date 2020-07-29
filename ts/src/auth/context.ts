@@ -5,12 +5,12 @@ import {
   Data,
   SelectDataOptions,
   createDataLoader,
-} from "./../ent";
+} from "../core/ent";
 import { IncomingMessage, ServerResponse } from "http";
-import { LoggedOutViewer } from "../viewer";
+import { LoggedOutViewer } from "../core/viewer";
 
 import DataLoader from "dataloader";
-import * as query from "./../query";
+import * as query from "../core/query";
 
 export interface Context {
   getViewer(): Viewer;

@@ -20,12 +20,12 @@ import {
   loadRowX,
   loadUniqueEdge,
   loadUniqueNode,
-} from "ent/ent";
-import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
-import { Field, getFields } from "ent/schema";
+} from "ent/core/ent";
+import { AlwaysDenyRule, PrivacyPolicy } from "ent/core/privacy";
+import { Field, getFields } from "ent/schema/schema";
 import schema from "src/schema/user";
 import { EdgeType, NodeType } from "src/ent/const";
-import * as query from "ent/query";
+import * as query from "ent/core/query";
 import Event from "src/ent/event";
 import User from "src/ent/user";
 import Contact from "src/ent/contact";

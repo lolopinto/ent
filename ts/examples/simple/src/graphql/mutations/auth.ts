@@ -5,12 +5,12 @@ import {
   gqlContextType,
   gqlArg,
   gqlObjectType,
-} from "ent/graphql";
+} from "ent/graphql/graphql";
 import { RequestContext } from "ent/auth/context";
 import { useAndAuth, LocalStrategy } from "ent/auth/passport";
 import User from "src/ent/user";
-import { IDViewer } from "ent/viewer";
-import { ID } from "ent/ent";
+import { IDViewer } from "ent/core/viewer";
+import { ID } from "ent/core/ent";
 import { GraphQLID } from "graphql";
 import jwt from "jsonwebtoken";
 

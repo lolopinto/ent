@@ -1,4 +1,4 @@
-import Schema from "../schema";
+import Schema from "./schema";
 export { Schema };
 export {
   Field,
@@ -18,4 +18,21 @@ export {
   getFields,
   ActionOperation,
   Action,
-} from "../schema";
+} from "./schema";
+
+export {
+  BaseField,
+  UUID,
+  UUIDType,
+  Integer,
+  IntegerType,
+  Float,
+  FloatType,
+  Boolean,
+  BooleanType,
+  StringOptions,
+  String,
+  StringType,
+  Time,
+  TimeType,
+} from "./field";

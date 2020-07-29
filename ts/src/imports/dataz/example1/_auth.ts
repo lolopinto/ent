@@ -4,8 +4,8 @@ import {
   gqlMutation,
   gqlArg,
   gqlObjectType,
-} from "../../../graphql";
-import { ID } from "../../../ent";
+} from "../../../graphql/graphql";
+import { ID } from "../../../core/ent";
 import { GraphQLID } from "graphql";
 
 @gqlInputObjectType()

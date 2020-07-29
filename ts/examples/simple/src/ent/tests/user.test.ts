@@ -1,9 +1,9 @@
 import User from "src/ent/user";
 import Contact from "src/ent/contact";
 
-import { Viewer, AssocEdge, AssocEdgeInput } from "ent/ent";
-import DB from "ent/db";
-import { LoggedOutViewer, IDViewer } from "ent/viewer";
+import { Viewer, AssocEdge, AssocEdgeInput } from "ent/core/ent";
+import DB from "ent/core/db";
+import { LoggedOutViewer, IDViewer } from "ent/core/viewer";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";

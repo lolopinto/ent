@@ -1,5 +1,6 @@
-import { Type, DBType, Field, FieldOptions } from "./../schema";
-import { BaseField, String } from "./../field";
+import { Type, DBType, Field, FieldOptions } from "../schema/schema";
+import { BaseField, String } from "../schema/field";
+
 import * as bcrypt from "bcryptjs";
 
 // TODO this should be in ent-password eventually

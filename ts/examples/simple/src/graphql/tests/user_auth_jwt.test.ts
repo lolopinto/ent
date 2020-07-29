@@ -4,14 +4,14 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "src/graphql_test_utils";
-import { ID } from "ent/ent";
+import { ID } from "ent/core/ent";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import { randomEmail, random } from "src/util/random";
-import DB from "ent/db";
+import DB from "ent/core/db";
 import { clearAuthHandlers } from "ent/auth";
-import { LoggedOutViewer, IDViewer } from "ent/viewer";
+import { LoggedOutViewer, IDViewer } from "ent/core/viewer";
 import User from "src/ent/user";
 import passport from "passport";
 import { Express } from "express";

@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID } from "ent/ent";
+import { ID } from "ent/core/ent";
 import { RequestContext } from "ent/auth/context";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import EditContactAction, {

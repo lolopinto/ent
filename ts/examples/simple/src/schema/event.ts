@@ -4,7 +4,7 @@ import Schema, {
   Edge,
   BaseEntSchema,
   ActionOperation,
-} from "ent/schema";
+} from "ent/schema/schema";
 import { StringType, TimeType } from "ent/field";
 
 /// explicit schema
@@ -18,8 +18,8 @@ export default class Event extends BaseEntSchema implements Schema {
       fieldEdge: ["User", "createdEvents"],
       storageKey: "user_id",
     }),
-    TimeType({ name: "start_time"}),
-    TimeType({ name: "end_time", nullable: true}),
+    TimeType({ name: "start_time" }),
+    TimeType({ name: "end_time", nullable: true }),
     StringType({ name: "location", graphqlName: "eventLocation" }),
   ];
 

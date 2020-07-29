@@ -3,7 +3,7 @@
 // haven't figured out the correct dependency structure with express etc so not for now
 import express, { Express, response } from "express";
 import graphqlHTTP from "express-graphql";
-import { Viewer } from "ent/ent";
+import { Viewer } from "ent/core/ent";
 import { GraphQLSchema, GraphQLObjectType } from "graphql";
 import { registerAuthHandler } from "ent/auth";
 import { buildContext } from "ent/auth/context";

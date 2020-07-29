@@ -4,7 +4,7 @@ import Schema, {
   Edge,
   BaseEntSchema,
   ActionOperation,
-} from "ent/schema";
+} from "ent/schema/schema";
 import { StringType, BooleanType } from "ent/field";
 import { EmailType } from "ent/field/email";
 import { PasswordType } from "ent/field/password";

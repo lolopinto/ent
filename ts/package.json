@@ -4,7 +4,6 @@
   "description": "ent framework",
   "main": "index.js",
   "types": "index.d.ts",
-  "type": "module",
   "directories": {
     "example": "examples"
   },
@@ -54,7 +53,7 @@
     "compile": "tsc",
     "test": "jest",
     "clean": "rm -rf dist",
-    "prepublish": "npm run clean && npm run compile && node dist/SetupPackage.js",
+    "prepublish": "npm run clean && npm run compile && node setupPackage.js",
     "actual-publish": "npm run prepublish && npm publish dist"
   },
   "author": "lolopinto",

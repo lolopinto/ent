@@ -1,13 +1,13 @@
-import { Ent, DataOperation, Viewer } from "./ent";
-import { Builder, Changeset, Executor, WriteOperation } from "./action";
-import * as action from "./action";
-import * as ent from "./ent";
+import { Ent, DataOperation, Viewer } from "../core/ent";
+import { Builder, Changeset, Executor, WriteOperation } from "../action";
+import * as action from "../action";
+import * as ent from "../core/ent";
 import { snakeCase } from "snake-case";
 
-import DB from "./db";
+import DB from "../core/db";
 
 import { Pool } from "pg";
-import { QueryRecorder, queryType } from "./testutils/db_mock";
+import { QueryRecorder, queryType } from "../testutils/db_mock";
 import {
   User,
   Group,
@@ -16,13 +16,13 @@ import {
   Contact,
   SimpleBuilder,
   SimpleAction,
-} from "./testutils/builder";
-import { LoggedOutViewer, IDViewer } from "./viewer";
-import { BaseEntSchema, Field } from "./schema";
-import { StringType, TimeType, BooleanType } from "./field";
+} from "../testutils/builder";
+import { LoggedOutViewer, IDViewer } from "../core/viewer";
+import { BaseEntSchema, Field } from "../schema";
+import { StringType, TimeType, BooleanType } from "../schema/field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
-import * as query from "./query";
-import { FakeLogger, EntCreationObserver } from "./testutils/fake_log";
+import * as query from "../core/query";
+import { FakeLogger, EntCreationObserver } from "../testutils/fake_log";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

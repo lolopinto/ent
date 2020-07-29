@@ -5,7 +5,7 @@ import {
   ProcessedField,
   ProcessedCustomField,
   CustomObject,
-} from "../graphql";
+} from "../graphql/graphql";
 import * as readline from "readline";
 import * as path from "path";
 import { parseCustomInput, file } from "../imports";

@@ -5,7 +5,7 @@ import {
   CustomObject,
   CustomMutation,
   CustomQuery,
-} from "./graphql";
+} from "../graphql";
 import { ECANCELED } from "constants";
 
 export function validateOneCustomField(expected: CustomField) {

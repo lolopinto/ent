@@ -1,8 +1,8 @@
-import { WriteOperation } from "./action";
-import { User, FakeBuilder } from "./testutils/builder";
-import { LoggedOutViewer } from "./viewer";
+import { WriteOperation } from ".";
+import { User, FakeBuilder } from "../testutils/builder";
+import { LoggedOutViewer } from "../core/viewer";
 import { Pool } from "pg";
-import { QueryRecorder } from "./testutils/db_mock";
+import { QueryRecorder } from "../testutils/db_mock";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

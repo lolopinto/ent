@@ -5,7 +5,7 @@ import {
   Trigger,
   Validator,
   Observer,
-} from "./action";
+} from "../action";
 import {
   Ent,
   Viewer,
@@ -13,23 +13,23 @@ import {
   EditNodeOperation,
   DeleteNodeOperation,
   EdgeOperation,
-} from "./ent";
-import * as ent from "./ent";
-import { LoggedOutViewer, IDViewer } from "./viewer";
-import { Changeset } from "./action";
-import { StringType, TimeType } from "./field";
-import { BaseEntSchema, Field } from "./schema";
+} from "../core/ent";
+import * as ent from "../core/ent";
+import { LoggedOutViewer, IDViewer } from "../core/viewer";
+import { Changeset } from "../action";
+import { StringType, TimeType } from "../schema/field";
+import { BaseEntSchema, Field } from "../schema";
 import {
   User,
   Event,
   Contact,
   SimpleBuilder,
   SimpleAction,
-} from "./testutils/builder";
-import { FakeComms, Mode } from "./testutils/fake_comms";
+} from "../testutils/builder";
+import { FakeComms, Mode } from "../testutils/fake_comms";
 import { Pool } from "pg";
-import { QueryRecorder } from "./testutils/db_mock";
-import { AlwaysAllowRule, DenyIfLoggedInRule } from "./privacy";
+import { QueryRecorder } from "../testutils/db_mock";
+import { AlwaysAllowRule, DenyIfLoggedInRule } from "../core/privacy";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
