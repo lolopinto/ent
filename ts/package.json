@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -55,7 +55,7 @@
     "test": "jest",
     "clean": "rm -rf dist",
     "prepublish": "npm run clean && npm run compile && node dist/SetupPackage.js",
-    "actual-publish": "npm run prepublish && cd dist && npm pack && npm publish"
+    "actual-publish": "npm run prepublish && cd dist && npm publish"
   },
   "author": "lolopinto",
   "license": "ISC",
