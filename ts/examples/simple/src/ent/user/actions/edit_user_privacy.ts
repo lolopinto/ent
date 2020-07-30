@@ -2,7 +2,7 @@ import {
   PrivacyPolicy,
   AllowIfViewerRule,
   AlwaysDenyRule,
-} from "ent/core/privacy";
+} from "@lolopinto/ent";
 
 export const EditUserPrivacy: PrivacyPolicy = {
   rules: [AllowIfViewerRule, AlwaysDenyRule],

@@ -81,11 +81,11 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 					defer actionsWg.Done()
 
 					action := nodeData.ActionInfo.Actions[idx]
-					if err := writeBaseActionFile(nodeData, action); err != nil {
+					if err := writeBaseActionFile(nodeData, data.CodePath, action); err != nil {
 						serr.Append(err)
 					}
 
-					if err := writeActionFile(nodeData, action); err != nil {
+					if err := writeActionFile(nodeData, data.CodePath, action); err != nil {
 						serr.Append(err)
 					}
 
@@ -164,6 +164,7 @@ var _ codegen.Step = &Step{}
 type nodeTemplateCodePath struct {
 	NodeData *schema.NodeData
 	CodePath *codegen.CodePath
+	Package  *codegen.ImportPackage
 }
 
 type enumData struct {
@@ -214,6 +215,7 @@ func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePat
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
 			CodePath: codePathInfo,
+			Package:  codePathInfo.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("base.tmpl"),
@@ -231,6 +233,7 @@ func writeEntFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) err
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
 			CodePath: codePathInfo,
+			Package:  codePathInfo.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ent.tmpl"),
@@ -280,6 +283,7 @@ func writeBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath)
 		Data: nodeTemplateCodePath{
 			NodeData: nodeData,
 			CodePath: codePathInfo,
+			Package:  codePathInfo.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("builder.tmpl"),

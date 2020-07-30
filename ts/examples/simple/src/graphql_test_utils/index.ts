@@ -1,12 +1,11 @@
 // TODO all this can/should be moved into its own npm package
 // or into ent itself
 // haven't figured out the correct dependency structure with express etc so not for now
-import express, { Express, response } from "express";
+import express, { Express } from "express";
 import graphqlHTTP from "express-graphql";
-import { Viewer } from "ent/core/ent";
+import { Viewer } from "@lolopinto/ent";
 import { GraphQLSchema, GraphQLObjectType } from "graphql";
-import { registerAuthHandler } from "ent/auth";
-import { buildContext } from "ent/auth/context";
+import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import { IncomingMessage, ServerResponse } from "http";
 import supertest from "supertest";
 

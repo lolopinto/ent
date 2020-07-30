@@ -1,5 +1,5 @@
 {{/* for now we are hardcoding to where this currently is. we should be better about this */ -}}
-import Schema, {Field, Edge, AssocEdge, AssocEdgeGroup} from "{{.SchemaPath}}"
+import {Schema, Field, Edge, AssocEdge, AssocEdgeGroup} from "@lolopinto/ent/schema";
 
 {{ range $schema := .Schemas -}}
   import {{$schema.Name}} from "./{{$schema.Path}}"

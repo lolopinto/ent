@@ -1,17 +1,20 @@
 import glob from "glob";
 import minimist from "minimist";
 import {
-  GQLCapture,
+  // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
   ProcessedCustomField,
   CustomObject,
 } from "../graphql/graphql";
 import * as readline from "readline";
 import * as path from "path";
+import * as fs from "fs";
 import { parseCustomInput, file } from "../imports";
-import { argsToArgsConfig } from "graphql/type/definition";
 
-GQLCapture.enable(true);
+// need to use the GQLCapture from the package so that when we call GQLCapture.enable()
+// we're affecting the local paths as opposed to a different instance
+// life is hard
+const MODULE_PATH = "@lolopinto/ent/graphql";
 
 async function readInputs(): Promise<string[]> {
   return await new Promise((resolve) => {
@@ -46,7 +49,7 @@ async function captureCustom(filePath: string) {
     ignore: ["**/generated/**", "**/tests/**", "**/index.ts"],
   });
   const files = [...entFiles, ...graphqlFiles];
-  //  console.log(files);
+
   let promises: any[] = [];
   files.forEach((file) => {
     promises.push(require(file));
@@ -62,12 +65,38 @@ async function parseImports(filePath: string) {
   });
 }
 
+function findGraphQLPath(filePath: string): string | undefined {
+  while (filePath !== "/") {
+    const potentialPath = path.join(filePath, "node_modules");
+    if (fs.existsSync(potentialPath)) {
+      const graphqlPath = path.join(potentialPath, MODULE_PATH);
+      if (fs.existsSync(graphqlPath)) {
+        return graphqlPath;
+      }
+    }
+    filePath = path.join(filePath, "..");
+  }
+  return undefined;
+}
+
 async function main() {
   const options = minimist(process.argv.slice(2));
 
   if (!options.path) {
     throw new Error("path required");
   }
+
+  const gqlPath = findGraphQLPath(options.path);
+  if (!gqlPath) {
+    throw new Error("could not find graphql path");
+  }
+  const r = require(gqlPath);
+  if (!r.GQLCapture) {
+    throw new Error("could not find GQLCapture in module");
+  }
+  const GQLCapture = r.GQLCapture;
+  GQLCapture.enable(true);
+
   const [nodes, _, imports] = await Promise.all([
     readInputs(),
     captureCustom(options.path),

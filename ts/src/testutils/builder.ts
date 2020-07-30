@@ -24,7 +24,7 @@ import {
 import { Schema } from "../schema";
 import { LoggedOutViewer } from "../core/viewer";
 import { QueryRecorder } from "./db_mock";
-import { Context } from "src/auth/context";
+import { Context } from "../core/context";
 
 export class User implements Ent {
   id: ID;

@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { RequestContext } from "ent/auth/context";
+import { RequestContext } from "@lolopinto/ent";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
 import CreateUserAction, {
   UserCreateInput,

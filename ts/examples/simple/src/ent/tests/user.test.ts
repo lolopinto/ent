@@ -1,9 +1,14 @@
 import User from "src/ent/user";
 import Contact from "src/ent/contact";
 
-import { Viewer, AssocEdge, AssocEdgeInput } from "ent/core/ent";
-import DB from "ent/core/db";
-import { LoggedOutViewer, IDViewer } from "ent/core/viewer";
+import {
+  Viewer,
+  AssocEdge,
+  AssocEdgeInput,
+  IDViewer,
+  LoggedOutViewer,
+  DB,
+} from "@lolopinto/ent";
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
@@ -17,8 +22,8 @@ import EditUserAction from "src/ent/user/actions/edit_user_action";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
-import { FakeLogger } from "ent/testutils/fake_log";
-import { FakeComms, Mode } from "ent/testutils/fake_comms";
+import { FakeLogger } from "@lolopinto/ent/testutils/fake_log";
+import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
 
 const loggedOutViewer = new LoggedOutViewer();
 

@@ -11,9 +11,8 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID } from "ent/core/ent";
-import { RequestContext } from "ent/auth/context";
-import { GraphQLTime } from "ent/graphql/scalars/time";
+import { ID, RequestContext } from "@lolopinto/ent";
+import { GraphQLTime } from "@lolopinto/ent/graphql";
 import { EventType } from "src/graphql/resolvers/generated/event_type";
 import EditEventAction, {
   EventEditInput,

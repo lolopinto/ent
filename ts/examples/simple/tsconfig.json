@@ -13,8 +13,6 @@
     "emitDecoratorMetadata": true,
     //    "noImplicitAny": true,
     "paths": {
-      // to make importing of ent easier
-      "ent/*": ["../../src/*"],
       "src/*": ["./src/*"],
       "*": ["*"]
     }

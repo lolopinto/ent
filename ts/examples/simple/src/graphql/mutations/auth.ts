@@ -5,12 +5,10 @@ import {
   gqlContextType,
   gqlArg,
   gqlObjectType,
-} from "ent/graphql/graphql";
-import { RequestContext } from "ent/auth/context";
-import { useAndAuth, LocalStrategy } from "ent/auth/passport";
+} from "@lolopinto/ent/graphql";
+import { useAndAuth, LocalStrategy } from "@lolopinto/ent/auth";
 import User from "src/ent/user";
-import { IDViewer } from "ent/core/viewer";
-import { ID } from "ent/core/ent";
+import { IDViewer, ID, RequestContext } from "@lolopinto/ent";
 import { GraphQLID } from "graphql";
 import jwt from "jsonwebtoken";
 
@@ -98,7 +96,7 @@ export class AuthResolver {
     const viewer = await useAndAuth(
       context,
       new LocalStrategy({
-        verifyFn: async () => {
+        verifyFn: async (_ctx?: RequestContext) => {
           const data = await User.validateEmailPassword(
             input.emailAddress,
             input.password,

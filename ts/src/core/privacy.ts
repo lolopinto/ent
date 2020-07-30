@@ -1,5 +1,5 @@
 import { Viewer, Ent, ID, loadEdgeForID2 } from "./ent";
-import { RequestContext, Context } from "../auth/context";
+import { Context } from "./context";
 
 enum privacyResult {
   // using http status codes similar to golang for the lols

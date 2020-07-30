@@ -1,14 +1,16 @@
-import Schema, {
+import {
+  Schema,
   Action,
   Field,
   Edge,
   BaseEntSchema,
   ActionOperation,
-} from "ent/schema/schema";
-import { StringType, BooleanType } from "ent/schema/field";
-import { EmailType } from "ent/field/email";
-import { PasswordType } from "ent/field/password";
-import { PhoneNumberType } from "ent/field/phonenumber";
+  StringType,
+  BooleanType,
+} from "@lolopinto/ent/schema";
+import { EmailType } from "@lolopinto/ent/field/email";
+import { PasswordType } from "@lolopinto/ent/field/password";
+import { PhoneNumberType } from "@lolopinto/ent/field/phonenumber";
 
 export default class User extends BaseEntSchema implements Schema {
   fields: Field[] = [

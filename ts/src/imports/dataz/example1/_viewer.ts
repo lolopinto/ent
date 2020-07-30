@@ -7,7 +7,7 @@ import {
 } from "../../../graphql/graphql";
 import { Viewer } from "../../../core/ent";
 import { GraphQLID } from "graphql";
-import { RequestContext } from "../../../auth/context";
+import { RequestContext } from "../../../core/context";
 
 @gqlObjectType({ name: "Viewer" })
 class ViewerType {

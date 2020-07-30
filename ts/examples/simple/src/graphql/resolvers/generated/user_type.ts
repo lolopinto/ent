@@ -10,8 +10,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
 } from "graphql";
-import { ID } from "ent/core/ent";
-import { RequestContext } from "ent/auth/context";
+import { ID, RequestContext } from "@lolopinto/ent";
 import { EventType } from "./event_type";
 import { ContactType } from "./contact_type";
 import User from "src/ent/user";

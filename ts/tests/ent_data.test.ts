@@ -8,7 +8,7 @@ import { ID, Ent, Data, Viewer } from "./../src/core/ent";
 import { QueryRecorder, queryOptions } from "../src/testutils/db_mock";
 import { Pool } from "pg";
 import * as ent from "./../src/core/ent";
-import { Context, ContextCache } from "../src/auth/context";
+import { Context, ContextCache } from "../src/core/context";
 import * as query from "../src/core/query";
 import DB from "./../src/core/db";
 import each from "jest-each";

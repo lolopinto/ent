@@ -17,7 +17,7 @@ import { Executor } from "../action";
 import DataLoader from "dataloader";
 
 // TODO move Viewer and context into viewer.ts or something
-import { Context } from "../auth/context";
+import { Context } from "./context";
 
 import * as query from "./query";
 import { WriteOperation, Builder } from "../action";

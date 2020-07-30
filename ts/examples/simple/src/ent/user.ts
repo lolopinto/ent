@@ -4,13 +4,14 @@ import {
   AllowIfViewerRule,
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
-} from "ent/core/privacy";
+  Data,
+} from "@lolopinto/ent";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { EdgeType } from "./const";
 import { GraphQLString } from "graphql";
 import Contact from "src/ent/contact";
-import { gqlField } from "ent/graphql/graphql";
-import { Data } from "ent/core/ent";
+// works when local but not via imports?
+import { gqlField } from "@lolopinto/ent/graphql";
 import * as bcrypt from "bcryptjs";
 
 // we're only writing this once except with --force and packageName provided

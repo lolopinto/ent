@@ -1,10 +1,11 @@
 {
   // TODO
   "compilerOptions": {
-    "lib": ["es2015", "es6", "dom"],
+    "lib": ["es2018", "esnext.asynciterable"],
+    "module": "commonjs",
     "rootDir": "src",
     "outDir": "./dist",
-    "target": "es6",
+    "target": "es2018",
     "strictNullChecks": true,
     "downlevelIteration": true,
     "moduleResolution": "node",

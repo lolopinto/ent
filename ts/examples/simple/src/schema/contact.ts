@@ -1,11 +1,12 @@
-import Schema, {
+import {
+  Schema,
   Action,
   ActionOperation,
   Field,
   BaseEntSchema,
-} from "ent/schema/schema";
-import { StringType } from "ent/schema/field";
-import { EmailType } from "ent/field/email";
+  StringType,
+} from "@lolopinto/ent/schema/";
+import { EmailType } from "@lolopinto/ent/field/email";
 
 export default class Contact extends BaseEntSchema implements Schema {
   fields: Field[] = [

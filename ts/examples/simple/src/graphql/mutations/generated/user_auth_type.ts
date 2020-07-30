@@ -11,7 +11,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { RequestContext } from "ent/auth/context";
+import { RequestContext } from "@lolopinto/ent";
 import { UserAuthInput, UserAuthResponse, AuthResolver } from "../auth";
 
 export const UserAuthInputType = new GraphQLInputObjectType({

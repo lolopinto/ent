@@ -3,15 +3,14 @@ import graphqlHTTP from "express-graphql";
 
 import schema from "./schema";
 import { IncomingMessage, ServerResponse } from "http";
-import { registerAuthHandler } from "ent/auth";
-import { IDViewer } from "ent/core/viewer";
+import { IDViewer } from "@lolopinto/ent";
 import passport from "passport";
 import session from "express-session";
-import { buildContext } from "ent/auth/context";
+import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import {
   PassportAuthHandler,
   PassportStrategyHandler,
-} from "ent/auth/passport";
+} from "@lolopinto/ent/auth";
 import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
 
 let app = express();

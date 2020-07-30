@@ -1,11 +1,13 @@
-import Schema, {
+import {
+  Schema,
   Action,
   Field,
   Edge,
   BaseEntSchema,
   ActionOperation,
-} from "ent/schema/schema";
-import { StringType, TimeType } from "ent/schema/field";
+  StringType,
+  TimeType,
+} from "@lolopinto/ent/schema/";
 
 /// explicit schema
 export default class Event extends BaseEntSchema implements Schema {

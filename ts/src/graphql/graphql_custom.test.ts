@@ -22,8 +22,8 @@ import {
   validateCustomQueries,
   CustomTypes,
   validateNoCustomQueries,
-} from "./scalars/graphql_field_helpers";
-import { RequestContext } from "../auth/context";
+} from "./graphql_field_helpers";
+import { RequestContext } from "../core/context";
 
 beforeEach(() => {
   GQLCapture.clear();

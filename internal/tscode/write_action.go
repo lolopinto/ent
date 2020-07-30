@@ -6,6 +6,7 @@ import (
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -17,9 +18,10 @@ type actionTemplate struct {
 	NodeData    *schema.NodeData
 	BuilderPath string
 	BasePath    string
+	Package     *codegen.ImportPackage
 }
 
-func writeBaseActionFile(nodeData *schema.NodeData, action action.Action) error {
+func writeBaseActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, action action.Action) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -27,6 +29,7 @@ func writeBaseActionFile(nodeData *schema.NodeData, action action.Action) error 
 			NodeData:    nodeData,
 			Action:      action,
 			BuilderPath: getImportPathForBuilderFile(nodeData),
+			Package:     codePathInfo.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("action_base.tmpl"),
@@ -38,7 +41,7 @@ func writeBaseActionFile(nodeData *schema.NodeData, action action.Action) error 
 	})
 }
 
-func writeActionFile(nodeData *schema.NodeData, action action.Action) error {
+func writeActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, action action.Action) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
@@ -46,6 +49,7 @@ func writeActionFile(nodeData *schema.NodeData, action action.Action) error {
 			NodeData: nodeData,
 			Action:   action,
 			BasePath: getImportPathForActionBaseFile(nodeData, action),
+			Package:  codePathInfo.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("action.tmpl"),

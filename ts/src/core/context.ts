@@ -1,4 +1,3 @@
-import { getLoggedInViewer } from "./index";
 import {
   Viewer,
   ID,
@@ -7,7 +6,6 @@ import {
   createDataLoader,
 } from "../core/ent";
 import { IncomingMessage, ServerResponse } from "http";
-import { LoggedOutViewer } from "../core/viewer";
 
 import DataLoader from "dataloader";
 import * as query from "../core/query";
@@ -26,44 +24,6 @@ export interface RequestContext extends Context {
   logout(): Promise<void>;
   request: IncomingMessage;
   response: ServerResponse;
-}
-
-class contextImpl implements RequestContext {
-  cache?: ContextCache;
-  private loggedOutViewer: LoggedOutViewer = new LoggedOutViewer();
-  private viewer: Viewer;
-
-  constructor(
-    public request: IncomingMessage,
-    public response: ServerResponse,
-  ) {
-    this.viewer = this.loggedOutViewer;
-  }
-
-  getViewer(): Viewer {
-    return this.viewer;
-  }
-
-  async authViewer(viewer: Viewer): Promise<void> {
-    this.viewer = viewer;
-  }
-
-  async logout(): Promise<void> {
-    this.viewer = this.loggedOutViewer;
-  }
-}
-
-export async function buildContext(
-  request: IncomingMessage,
-  response: ServerResponse,
-): Promise<RequestContext> {
-  const ctx = new contextImpl(request, response);
-
-  let viewer = await getLoggedInViewer(ctx);
-  ctx.cache = new ContextCache();
-  // TODO since this is done, whatever other call to authViewer that was needed no longer needed
-  ctx.authViewer(viewer);
-  return ctx;
 }
 
 export class ContextCache {

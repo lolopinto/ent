@@ -1,5 +1,4 @@
-import { DBType, Node } from "ent/schema/schema";
-import { StringType } from "ent/schema/field";
+import { DBType, Node, StringType } from "@lolopinto/ent/schema/";
 
 // implicit schema
 const Address = {

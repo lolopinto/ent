@@ -43,5 +43,8 @@
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "passport-strategy": "^1.0.0"
+  },
+  "resolutions": {
+    "graphql": "^0.15.0"
   }
 }
