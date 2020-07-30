@@ -5,7 +5,7 @@ import Schema, {
   BaseEntSchema,
   ActionOperation,
 } from "ent/schema/schema";
-import { StringType, BooleanType } from "ent/field";
+import { StringType, BooleanType } from "ent/schema/field";
 import { EmailType } from "ent/field/email";
 import { PasswordType } from "ent/field/password";
 import { PhoneNumberType } from "ent/field/phonenumber";

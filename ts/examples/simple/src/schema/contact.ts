@@ -4,7 +4,7 @@ import Schema, {
   Field,
   BaseEntSchema,
 } from "ent/schema/schema";
-import { StringType } from "ent/field";
+import { StringType } from "ent/schema/field";
 import { EmailType } from "ent/field/email";
 
 export default class Contact extends BaseEntSchema implements Schema {

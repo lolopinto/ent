@@ -5,7 +5,7 @@ import Schema, {
   BaseEntSchema,
   ActionOperation,
 } from "ent/schema/schema";
-import { StringType, TimeType } from "ent/field";
+import { StringType, TimeType } from "ent/schema/field";
 
 /// explicit schema
 export default class Event extends BaseEntSchema implements Schema {

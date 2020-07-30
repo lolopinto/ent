@@ -1,5 +1,5 @@
 import { DBType, Node } from "ent/schema/schema";
-import { StringType } from "ent/field";
+import { StringType } from "ent/schema/field";
 
 // implicit schema
 const Address = {
