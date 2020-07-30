@@ -10,7 +10,6 @@ import { AllowIfOmniRule } from "./../privacy/omni";
 import { EdgeType } from "./const";
 import { GraphQLString } from "graphql";
 import Contact from "src/ent/contact";
-// works when local but not via imports?
 import { gqlField } from "@lolopinto/ent/graphql";
 import * as bcrypt from "bcryptjs";
 
