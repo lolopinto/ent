@@ -44,6 +44,35 @@ export {
 import DB from "./core/db";
 export { DB };
 
+// TODO figure out if this should be its own
+export {
+  PrivacyResult,
+  PrivacyError,
+  EntPrivacyError,
+  Allow,
+  Skip,
+  Deny,
+  DenyWithReason,
+  PrivacyPolicyRule,
+  PrivacyPolicy,
+  AlwaysAllowRule,
+  AlwaysDenyRule,
+  DenyIfLoggedInRule,
+  DenyIfLoggedOutRule,
+  AllowIfHasIdentity,
+  AllowIfViewerRule,
+  AllowIfFuncRule,
+  AllowIfViewerIsRule,
+  AllowIfEdgeExistsRule,
+  AllowIfViewerInboundEdgeExistsRule,
+  AllowIfViewerOutboundEdgeExistsRule,
+  DenyIfEdgeExistsRule,
+  DenyIfViewerInboundEdgeExistsRule,
+  DenyIfViewerOutboundEdgeExistsRule,
+  applyPrivacyPolicy,
+  applyPrivacyPolicyX,
+} from "./core/privacy";
+
 export * from "./schema/";
 import * as q from "./core/query";
 const query = {
