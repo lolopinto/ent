@@ -53,7 +53,7 @@
     "compile": "tsc",
     "test": "jest",
     "clean": "rm -rf dist",
-    "prepublish": "npm run clean && npm run compile && node setupPackage.js",
+    "prepublish": "npm run clean && npm run compile && node src/setupPackage.js",
     "actual-publish": "npm run prepublish && npm publish dist"
   },
   "author": "lolopinto",

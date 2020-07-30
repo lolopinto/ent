@@ -1,7 +1,7 @@
-const fs = requre("fs");
+const fs = require("fs");
 const path = require("path");
 
-// root is for some reason "ts/"
+// root is "ts/"
 const root = path.resolve();
 
 // DO NOT DELETE THIS FILE
