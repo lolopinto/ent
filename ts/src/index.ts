@@ -45,3 +45,12 @@ import DB from "./core/db";
 export { DB };
 
 export * from "./schema/";
+import * as q from "./core/query";
+const query = {
+  Eq: q.Eq,
+  And: q.And,
+  Or: q.Or,
+  In: q.In,
+};
+
+export { query };
