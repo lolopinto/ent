@@ -102,7 +102,6 @@ const Package = "@lolopinto/ent"
 const ActionPackage = Package + "/action"
 
 // AuthPackage refers to the name of the auth package where ent-auth stuff is
-// TODO
 const AuthPackage = Package + "/auth"
 
 // SchemaPackage refers to the name of the schema package
