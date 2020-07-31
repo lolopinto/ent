@@ -319,13 +319,12 @@ func (s *dbSchema) generateDbSchema() {
 	runPythonCommand(s.pathToConfigs)
 }
 
-// TODO these 2...
-func UpgradeDB(pathToConfigs string) {
-	runPythonCommand(pathToConfigs, "-u=True")
+func UpgradeDB(codePathInfo *codegen.CodePath) {
+	runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-u=True")
 }
 
-func DowngradeDB(pathToConfigs, revision string) {
-	runPythonCommand(pathToConfigs, fmt.Sprintf("-d=%s", revision))
+func DowngradeDB(codePathInfo *codegen.CodePath, revision string) {
+	runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
 }
 
 func (s *dbSchema) writeSchemaFile() {

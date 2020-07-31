@@ -6,15 +6,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var downgradeCmd = &cobra.Command{
-	Use:   "downgrade",
-	Short: "downgrade db",
-	Long:  `This downgrades the database to the specified version`,
-	Args:  cobra.ExactArgs(1),
+var upgradeCmd = &cobra.Command{
+	Use:   "upgrade",
+	Short: "upgrade db",
+	Long:  `This upgrades the database to the latest version`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// another hardcoded place
 		codePathInfo := codegen.NewCodePath("src/schema", "")
 
-		db.DowngradeDB(codePathInfo, args[0])
+		db.UpgradeDB(codePathInfo)
 	},
 }
