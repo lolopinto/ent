@@ -10,8 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID } from "ent/ent";
-import { RequestContext } from "ent/auth/context";
+import { ID, RequestContext } from "@lolopinto/ent";
 import User from "src/ent/user";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 

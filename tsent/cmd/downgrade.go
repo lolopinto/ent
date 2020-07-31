@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/spf13/cobra"
 )
@@ -12,6 +13,8 @@ var downgradeCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// another hardcoded place
-		db.DowngradeDB("src/schema", args[0])
+		codePathInfo := codegen.NewCodePath("src/schema", "")
+
+		db.DowngradeDB(codePathInfo, args[0])
 	},
 }

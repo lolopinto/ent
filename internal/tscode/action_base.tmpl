@@ -1,5 +1,5 @@
-{{ reserveImport "ent/action" "Action" "Builder" "WriteOperation" "Changeset" }}
-{{ reserveImport "ent/ent" "Viewer" "ID" "Ent" }}
+{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" }}
+{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" }}
 
 {{ range .NodeData.GetUniqueNodesForceSelf -}} 
   {{$packagePath := printf "src/ent/%s" .PackageName }}

@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/iancoleman/strcase"
@@ -91,24 +90,14 @@ type schemaData struct {
 	Path string
 }
 
-func GetAbsoluteSchemaPath() string {
-	schemaPath := util.GetAbsolutePath("../../../ts/src/schema.ts")
-	// trim the suffix for the import
-	schemaPath = strings.TrimSuffix(schemaPath, ".ts")
-	return schemaPath
-}
-
 func writeTsFile(fileToWrite string, schemas []schemaData) error {
-	schemaPath := GetAbsoluteSchemaPath()
 
 	return file.Write(
 		&file.TemplatedBasedFileWriter{
 			Data: struct {
-				Schemas    []schemaData
-				SchemaPath string
+				Schemas []schemaData
 			}{
 				schemas,
-				schemaPath,
 			},
 			AbsPathToTemplate: util.GetAbsolutePath("read_schema.tmpl"),
 			TemplateName:      "read_schema.tmpl",

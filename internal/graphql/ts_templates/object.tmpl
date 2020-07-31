@@ -1,7 +1,6 @@
-{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" }}
-{{reserveImport "ent/ent" "ID" }}
-{{reserveImport "ent/auth/context" "RequestContext"}}
-{{reserveImport "ent/graphql/scalars/time" "GraphQLTime"}}
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
+{{reserveImport .Package.PackagePath "ID" "RequestContext" }}
+{{reserveImport .Package.GraphQLPackagePath "GraphQLTime"}}
 
 {{$baseObj := . -}}
 

@@ -11,8 +11,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID } from "ent/ent";
-import { RequestContext } from "ent/auth/context";
+import { ID, RequestContext } from "@lolopinto/ent";
 import { AuthResolver } from "../auth";
 
 interface UserAuthJWTInput {

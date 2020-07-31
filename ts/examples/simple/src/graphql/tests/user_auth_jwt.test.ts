@@ -4,19 +4,17 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "src/graphql_test_utils";
-import { ID } from "ent/ent";
+import { ID, DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import { randomEmail, random } from "src/util/random";
-import DB from "ent/db";
-import { clearAuthHandlers } from "ent/auth";
-import { LoggedOutViewer, IDViewer } from "ent/viewer";
+import { clearAuthHandlers } from "@lolopinto/ent/auth";
 import User from "src/ent/user";
 import passport from "passport";
 import { Express } from "express";
-import { registerAuthHandler } from "ent/auth";
-import { PassportStrategyHandler } from "ent/auth/passport";
+import { registerAuthHandler } from "@lolopinto/ent/auth";
+import { PassportStrategyHandler } from "@lolopinto/ent/auth";
 import supertest from "supertest";
 import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
 import jwt from "jsonwebtoken";

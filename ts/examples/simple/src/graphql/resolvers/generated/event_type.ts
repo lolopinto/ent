@@ -10,9 +10,8 @@ import {
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
 } from "graphql";
-import { ID } from "ent/ent";
-import { RequestContext } from "ent/auth/context";
-import { GraphQLTime } from "ent/graphql/scalars/time";
+import { ID, RequestContext } from "@lolopinto/ent";
+import { GraphQLTime } from "@lolopinto/ent/graphql";
 import { UserType } from "./user_type";
 import Event from "src/ent/event";
 

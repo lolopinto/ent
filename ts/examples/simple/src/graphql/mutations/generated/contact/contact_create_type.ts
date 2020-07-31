@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { RequestContext } from "ent/auth/context";
+import { RequestContext } from "@lolopinto/ent";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import CreateContactAction, {
   ContactCreateInput,

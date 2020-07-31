@@ -178,6 +178,7 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 				NodeInstance: "obj",
 				GQLNodes:     objTypes,
 				FieldConfig:  fieldConfig,
+				Package:      data.CodePath.GetImportPackage(),
 			},
 			FilePath: filePath,
 			Field:    &field,

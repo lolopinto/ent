@@ -10,8 +10,8 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { RequestContext } from "ent/auth/context";
-import { GraphQLTime } from "ent/graphql/scalars/time";
+import { RequestContext } from "@lolopinto/ent";
+import { GraphQLTime } from "@lolopinto/ent/graphql";
 import { EventType } from "src/graphql/resolvers/generated/event_type";
 import CreateEventAction, {
   EventCreateInput,

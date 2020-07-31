@@ -9,12 +9,12 @@ import {
   EditNodeOperation,
   DeleteNodeOperation,
   loadEdgeDatas,
-} from "./ent";
-import { getFields, SchemaInputType } from "./schema";
-import { Changeset, Executor, Validator, Trigger } from "./action";
-import { WriteOperation, Builder, Action } from "./action";
+} from "../core/ent";
+import { getFields, SchemaInputType } from "../schema/schema";
+import { Changeset, Executor, Validator, Trigger } from "../action";
+import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
-import { applyPrivacyPolicyX } from "./privacy";
+import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 
 export interface OrchestratorOptions<T extends Ent> {

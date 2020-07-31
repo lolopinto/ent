@@ -1,16 +1,16 @@
-import { LoggedOutViewer, IDViewer } from "./../src/viewer";
+import { LoggedOutViewer, IDViewer } from "./../src/core/viewer";
 import {
   PrivacyPolicy,
   AlwaysDenyRule,
   AllowIfViewerRule,
-} from "./../src/privacy";
-import { ID, Ent, Data, Viewer } from "./../src/ent";
+} from "./../src/core/privacy";
+import { ID, Ent, Data, Viewer } from "./../src/core/ent";
 import { QueryRecorder, queryOptions } from "../src/testutils/db_mock";
 import { Pool } from "pg";
-import * as ent from "./../src/ent";
-import { Context, ContextCache } from "../src/auth/context";
-import * as query from "../src/query";
-import DB from "./../src/db";
+import * as ent from "./../src/core/ent";
+import { Context, ContextCache } from "../src/core/context";
+import * as query from "../src/core/query";
+import DB from "./../src/core/db";
 import each from "jest-each";
 
 const loggedOutViewer = new LoggedOutViewer();

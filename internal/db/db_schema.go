@@ -30,7 +30,7 @@ func (s *Step) Name() string {
 
 func (s *Step) ProcessData(data *codegen.Data) error {
 	// generate python schema file and then make changes to underlying db
-	db := newDBSchema(data.Schema, data.CodePath.GetRelativePathToConfigs())
+	db := newDBSchema(data.Schema, data.CodePath.GetRootPathToConfigs())
 	db.generateSchema()
 	// right now it all panics but we have to change that lol
 	return nil
@@ -296,14 +296,17 @@ func (s *dbSchema) generateShemaTables() {
 
 func runPythonCommand(pathToConfigs string, extraArgs ...string) {
 	args := []string{
-		util.GetAbsolutePath("../../python/auto_schema/gen_db_schema.py"),
+		"run",
+		"python3",
+		"auto_schema/gen_db_schema.py",
 		fmt.Sprintf("-s=%s", pathToConfigs),
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	}
 	if len(extraArgs) > 0 {
 		args = append(args, extraArgs...)
 	}
-	cmd := exec.Command("python3", args...)
+	cmd := exec.Command("pipenv", args...)
+	cmd.Dir = util.GetAbsolutePath("../../python")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -316,12 +319,12 @@ func (s *dbSchema) generateDbSchema() {
 	runPythonCommand(s.pathToConfigs)
 }
 
-func UpgradeDB(pathToConfigs string) {
-	runPythonCommand(pathToConfigs, "-u=True")
+func UpgradeDB(codePathInfo *codegen.CodePath) {
+	runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-u=True")
 }
 
-func DowngradeDB(pathToConfigs, revision string) {
-	runPythonCommand(pathToConfigs, fmt.Sprintf("-d=%s", revision))
+func DowngradeDB(codePathInfo *codegen.CodePath, revision string) {
+	runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
 }
 
 func (s *dbSchema) writeSchemaFile() {

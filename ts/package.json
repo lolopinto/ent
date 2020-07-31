@@ -1,8 +1,9 @@
 {
   "name": "@lolopinto/ent",
-  "version": "0.0.1",
+  "version": "0.0.10",
   "description": "ent framework",
-  "main": ".",
+  "main": "index.js",
+  "types": "index.d.ts",
   "directories": {
     "example": "examples"
   },
@@ -16,7 +17,6 @@
     "dataloader": "^2.0.0",
     "email-addresses": "^3.1.0",
     "graph-data-structure": "^1.12.0",
-    "graphql": "^15.0.0",
     "js-yaml": "^3.13.1",
     "libphonenumber-js": "^1.7.52",
     "passport": "^0.4.1",
@@ -26,9 +26,12 @@
     "prettier": "^1.19.1",
     "reflect-metadata": "^0.1.13",
     "snake-case": "^3.0.3",
-    "ts-node": "^8.6.2",
+    "ts-node": "^8.10.2",
     "tsconfig-paths": "^3.9.0",
     "uuid": "^7.0.2"
+  },
+  "peerDependencies": {
+    "graphql": "^15.0.0"
   },
   "devDependencies": {
     "@types/glob": "^7.1.1",
@@ -38,6 +41,7 @@
     "@types/node": "^13.13.9",
     "@types/passport-strategy": "^0.2.35",
     "glob": "^7.1.6",
+    "graphql": "^15.3.0",
     "jest": "^25.1.0",
     "jest-date-mock": "^1.0.8",
     "jest-each": "^26.1.0",
@@ -50,7 +54,10 @@
   },
   "scripts": {
     "compile": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "clean": "rm -rf dist",
+    "prepare": "npm run clean && npm run compile && node src/setupPackage.js",
+    "actual-publish": "npm run prepare && npm publish dist"
   },
   "author": "lolopinto",
   "license": "ISC",
@@ -60,5 +67,9 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
+  },
+  "prepublish": "tsc",
+  "resolutions": {
+    "graphql": "^0.15.0"
   }
 }

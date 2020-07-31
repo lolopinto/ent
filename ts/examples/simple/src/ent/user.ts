@@ -4,13 +4,13 @@ import {
   AllowIfViewerRule,
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
-} from "ent/privacy";
+  Data,
+} from "@lolopinto/ent";
 import { AllowIfOmniRule } from "./../privacy/omni";
 import { EdgeType } from "./const";
 import { GraphQLString } from "graphql";
 import Contact from "src/ent/contact";
-import { gqlField } from "ent/graphql";
-import { Data } from "ent/ent";
+import { gqlField } from "@lolopinto/ent/graphql";
 import * as bcrypt from "bcryptjs";
 
 // we're only writing this once except with --force and packageName provided

@@ -7,9 +7,9 @@ import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import Contact from "src/ent/contact";
 import User from "src/ent/user";
 
-import { Changeset } from "ent/action";
-import { EntCreationObserver } from "ent/testutils/fake_log";
-import { FakeComms, Mode } from "ent/testutils/fake_comms";
+import { Changeset } from "@lolopinto/ent/action";
+import { EntCreationObserver } from "@lolopinto/ent/testutils/fake_log";
+import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
 
 export { UserCreateInput };
 

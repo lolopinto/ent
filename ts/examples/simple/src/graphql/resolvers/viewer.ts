@@ -1,7 +1,12 @@
-import { gqlField, gqlObjectType, gqlContextType, gqlQuery } from "ent/graphql";
-import { Viewer } from "ent/ent";
+import {
+  gqlField,
+  gqlObjectType,
+  gqlContextType,
+  gqlQuery,
+} from "@lolopinto/ent/graphql";
 import { GraphQLID } from "graphql";
-import { RequestContext } from "ent/auth/context";
+import { Viewer, RequestContext } from "@lolopinto/ent";
+
 import User from "src/ent/user";
 
 @gqlObjectType({ name: "Viewer" })

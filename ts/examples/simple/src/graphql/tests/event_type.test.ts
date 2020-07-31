@@ -1,16 +1,13 @@
 import schema from "src/graphql/schema";
-import DB from "ent/db";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
-import { LoggedOutViewer } from "ent/viewer";
+import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@lolopinto/ent";
 import Event from "src/ent/event";
 import { randomEmail } from "src/util/random";
-import { IDViewer } from "ent/viewer";
 import { expectQueryFromRoot, queryRootConfig } from "src/graphql_test_utils";
 import CreateEventAction, {
   EventCreateInput,
 } from "src/ent/event/actions/create_event_action";
-import { ID, Viewer } from "ent/ent";
-import { clearAuthHandlers } from "ent/auth";
+import { clearAuthHandlers } from "@lolopinto/ent/auth";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {

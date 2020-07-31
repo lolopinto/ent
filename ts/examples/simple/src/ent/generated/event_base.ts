@@ -15,12 +15,13 @@ import {
   loadEdgeForID2,
   loadRow,
   loadRowX,
-} from "ent/ent";
-import { AlwaysDenyRule, PrivacyPolicy } from "ent/privacy";
-import { Field, getFields } from "ent/schema";
+  AlwaysDenyRule,
+  PrivacyPolicy,
+  query,
+} from "@lolopinto/ent";
+import { Field, getFields } from "@lolopinto/ent/schema";
 import schema from "src/schema/event";
 import { EdgeType, NodeType } from "src/ent/const";
-import * as query from "ent/query";
 import User from "src/ent/user";
 
 const tableName = "events";

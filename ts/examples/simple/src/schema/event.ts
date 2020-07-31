@@ -1,11 +1,13 @@
-import Schema, {
+import {
+  Schema,
   Action,
   Field,
   Edge,
   BaseEntSchema,
   ActionOperation,
-} from "ent/schema";
-import { StringType, TimeType } from "ent/field";
+  StringType,
+  TimeType,
+} from "@lolopinto/ent/schema/";
 
 /// explicit schema
 export default class Event extends BaseEntSchema implements Schema {
@@ -18,8 +20,8 @@ export default class Event extends BaseEntSchema implements Schema {
       fieldEdge: ["User", "createdEvents"],
       storageKey: "user_id",
     }),
-    TimeType({ name: "start_time"}),
-    TimeType({ name: "end_time", nullable: true}),
+    TimeType({ name: "start_time" }),
+    TimeType({ name: "end_time", nullable: true }),
     StringType({ name: "location", graphqlName: "eventLocation" }),
   ];
 

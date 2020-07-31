@@ -13,14 +13,14 @@ import {
   applyPrivacyPolicyX,
   PrivacyPolicy,
 } from "./privacy";
-import { Executor } from "./action";
+import { Executor } from "../action";
 import DataLoader from "dataloader";
 
 // TODO move Viewer and context into viewer.ts or something
-import { Context } from "./auth/context";
+import { Context } from "./context";
 
 import * as query from "./query";
-import { WriteOperation, Builder } from "./action";
+import { WriteOperation, Builder } from "../action";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -238,6 +238,7 @@ export async function loadDerivedEntX<T extends Ent>(
 }
 
 // ent based data-loader
+// keep this private to the package for now
 export function createDataLoader(options: SelectDataOptions) {
   return new DataLoader(async (ids: ID[]) => {
     if (!ids.length) {
@@ -298,6 +299,7 @@ function logQuery(query: string, values: any[]) {
   // console.trace();
 }
 
+// TODO long term figure out if this API should be exposed
 export async function loadRowX(options: LoadRowOptions): Promise<Data> {
   const result = await loadRow(options);
   if (result == null) {
@@ -377,6 +379,7 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   }
 }
 
+// private to ent
 export function buildQuery(options: QueryableDataOptions): string {
   const fields = options.fields.join(", ");
   // always start at 1
@@ -389,6 +392,7 @@ export function buildQuery(options: QueryableDataOptions): string {
 }
 
 // slew of methods taken from pg
+// private to ent
 export interface Queryer {
   query<T extends Submittable>(queryStream: T): T;
   // tslint:disable:no-unnecessary-generics

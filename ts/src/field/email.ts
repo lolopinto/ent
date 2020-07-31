@@ -1,5 +1,5 @@
-import { Type, DBType, Field, FieldOptions } from "./../schema";
-import { BaseField, StringType } from "./../field";
+import { Type, DBType, Field, FieldOptions } from "../schema/schema";
+import { BaseField, StringType } from "../schema/field";
 import email from "email-addresses";
 
 function isParsedMailbox(

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
@@ -271,12 +272,15 @@ func parseCustomData(data *codegen.Data) chan *customData {
 			filepath.Join(data.CodePath.GetAbsPathToRoot(), "tsconfig.json"),
 			"-r",
 			"tsconfig-paths/register",
-			"../../src/scripts/custom_graphql.ts",
+			"src/scripts/custom_graphql.ts",
 			"--path",
 			// TODO this should be a configuration option to indicate where the code root is
 			filepath.Join(data.CodePath.GetAbsPathToRoot(), "src"),
 		}
 		cmd := exec.Command("ts-node", cmdArgs...)
+		// run it from the root of TS code
+		// up 2 to root and then back to root folder
+		cmd.Dir = util.GetAbsolutePath("../../ts")
 		cmd.Stdin = &buf
 		cmd.Stdout = &out
 		cmd.Stderr = &stderr
@@ -289,6 +293,7 @@ func parseCustomData(data *codegen.Data) chan *customData {
 		}
 
 		if err := json.Unmarshal(out.Bytes(), &cd); err != nil {
+			spew.Dump((out.Bytes()))
 			err = errors.Wrap(err, "error unmarshalling custom data")
 			cd.Error = err
 		}
@@ -326,6 +331,7 @@ type gqlobjectData struct {
 	FieldConfig  *fieldConfig
 	initMap      bool
 	m            map[string]bool
+	Package      *codegen.ImportPackage
 }
 
 func (obj gqlobjectData) DefaultImports() []*fileImport {
@@ -416,6 +422,7 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 						NodeInstance: nodeData.NodeInstance,
 						GQLNodes:     []*objectType{buildNodeForObject(nodeMap, nodeData)},
 						FieldConfig:  buildFieldConfig(nodeData),
+						Package:      data.CodePath.GetImportPackage(),
 					},
 					FilePath: getFilePathForNode(nodeData),
 				}
@@ -435,6 +442,7 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 								NodeInstance: nodeData.NodeInstance,
 								GQLNodes:     buildActionNodes(nodeData, action, actionPrefix),
 								FieldConfig:  buildActionFieldConfig(nodeData, action, actionPrefix),
+								Package:      data.CodePath.GetImportPackage(),
 							},
 							FilePath: getFilePathForAction(nodeData, action),
 						}

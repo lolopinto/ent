@@ -11,6 +11,7 @@ var downgradeCmd = &cobra.Command{
 	Long:  `This downgrades the database to the specified version`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		db.DowngradeDB(getPathToConfig(), args[0])
+		codePathInfo := getPathToCode(getPathToConfig())
+		db.DowngradeDB(codePathInfo, args[0])
 	},
 }

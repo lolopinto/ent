@@ -78,3 +78,43 @@ func (cp *CodePath) GetAbsPathToRoot() string {
 func (cp *CodePath) GetAbsPathToGraphQL() string {
 	return filepath.Join(cp.absPathToConfigs, "../..", "graphql")
 }
+
+func init() {
+	impPkg = &ImportPackage{
+		PackagePath:        Package,
+		AuthPackagePath:    AuthPackage,
+		ActionPackagePath:  ActionPackage,
+		SchemaPackagePath:  SchemaPackage,
+		GraphQLPackagePath: GraphQLPackage,
+	}
+}
+
+var impPkg *ImportPackage
+
+func (cp *CodePath) GetImportPackage() *ImportPackage {
+	return impPkg
+}
+
+// Package refers to the name of the package
+const Package = "@lolopinto/ent"
+
+// ActionPackage refers to the name of the action package
+const ActionPackage = Package + "/action"
+
+// AuthPackage refers to the name of the auth package where ent-auth stuff is
+const AuthPackage = Package + "/auth"
+
+// SchemaPackage refers to the name of the schema package
+const SchemaPackage = Package + "/schema"
+
+// GraphQLPackage refers to the name of the graphql package
+const GraphQLPackage = Package + "/graphql"
+
+// ImportPackage refers to TypeScript paths of what needs to be generated for imports
+type ImportPackage struct {
+	PackagePath        string
+	AuthPackagePath    string
+	ActionPackagePath  string
+	SchemaPackagePath  string
+	GraphQLPackagePath string
+}

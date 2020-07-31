@@ -4,20 +4,17 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "src/graphql_test_utils";
-import { ID } from "ent/ent";
+import { ID, DB, LoggedOutViewer } from "@lolopinto/ent";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import { randomEmail, random } from "src/util/random";
-import DB from "ent/db";
-import { clearAuthHandlers } from "ent/auth";
-import { LoggedOutViewer } from "ent/viewer";
+import { clearAuthHandlers, registerAuthHandler } from "@lolopinto/ent/auth";
 import User from "src/ent/user";
 import passport from "passport";
 import session from "express-session";
 import { Express } from "express";
-import { registerAuthHandler } from "ent/auth";
-import { PassportAuthHandler } from "ent/auth/passport";
+import { PassportAuthHandler } from "@lolopinto/ent/auth";
 import supertest from "supertest";
 
 // TODO we need something that does this by default for all tests
