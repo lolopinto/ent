@@ -5,7 +5,7 @@
 {{ $hasInput := hasInput $action -}}
 {{ $inputName := "" -}}
 {{ if $hasInput -}}
-  {{$inputName = getInputName $action -}}
+  {{$inputName = $action.GetInputName -}}
 {{ end -}}
 
 {{ reserveImport .BasePath $baseName $inputName -}}

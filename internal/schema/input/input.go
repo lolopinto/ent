@@ -142,6 +142,7 @@ type Action struct {
 	Fields            []string            `json:"fields"`
 	CustomActionName  string              `json:"actionName"`
 	CustomGraphQLName string              `json:"graphQLName"`
+	CustomInputName   string              `json:"inputName"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL"`
 }
 

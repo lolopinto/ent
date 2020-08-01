@@ -37,6 +37,7 @@ type Action interface {
 	GetActionName() string
 	ExposedToGraphQL() bool
 	GetGraphQLName() string
+	GetInputName() string         // only applies in TypeScript?
 	MutatingExistingObject() bool // whether to add User, Note etc params
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetOperation() ent.ActionOperation
@@ -96,6 +97,7 @@ func (info *ActionInfo) addActions(actions ...Action) {
 type commonActionInfo struct {
 	ActionName      string
 	ExposeToGraphQL bool
+	InputName       string
 	GraphQLName     string
 	Fields          []*field.Field
 	NonEntFields    []*NonEntField
@@ -114,6 +116,10 @@ func (action *commonActionInfo) ExposedToGraphQL() bool {
 
 func (action *commonActionInfo) GetGraphQLName() string {
 	return action.GraphQLName
+}
+
+func (action *commonActionInfo) GetInputName() string {
+	return action.InputName
 }
 
 func (action *commonActionInfo) GetFields() []*field.Field {
