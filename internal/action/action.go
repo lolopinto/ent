@@ -61,6 +61,9 @@ func getInputAction(nodeName string, result *astparser.Result) (*input.Action, e
 
 		case "CustomGraphQLName":
 			action.CustomGraphQLName = elem.Value.Literal
+
+		case "CustomInputName":
+			action.CustomInputName = elem.Value.Literal
 		}
 	}
 
@@ -80,7 +83,7 @@ func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *fie
 			return nil, err
 		}
 
-		commonInfo := getCommonInfo(nodeName, concreteAction, action.CustomActionName, action.CustomGraphQLName, exposeToGraphQL, fields)
+		commonInfo := getCommonInfo(nodeName, concreteAction, action.CustomActionName, action.CustomGraphQLName, action.CustomInputName, exposeToGraphQL, fields)
 		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
 
@@ -112,6 +115,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			createTyp,
 			"",
 			"",
+			"",
 			exposeToGraphQL,
 			fields,
 		),
@@ -128,6 +132,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			editTyp,
 			"",
 			"",
+			"",
 			exposeToGraphQL,
 			fields,
 		),
@@ -142,6 +147,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 		getCommonInfo(
 			nodeName,
 			deleteTyp,
+			"",
 			"",
 			"",
 			exposeToGraphQL,
@@ -264,12 +270,12 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 				typ,
 				edgeAction,
 				[]*NonEntField{
-					&NonEntField{
+					{
 						FieldName: assocGroup.GroupStatusName,
 						FieldType: &enttype.StringType{},
 						Flag:      "Enum",
 					},
-					&NonEntField{
+					{
 						FieldName: strcase.ToCamel(node + "ID"),
 						FieldType: &enttype.StringType{},
 						Flag:      "ID",
@@ -319,14 +325,16 @@ func getGroupEdgeAction(commonInfo commonActionInfo) *EdgeGroupAction {
 	}
 }
 
-func getCommonInfo(nodeName string, typ concreteNodeActionType, customActionName, customGraphQLName string, exposeToGraphQL bool, fields []*field.Field) commonActionInfo {
+func getCommonInfo(nodeName string, typ concreteNodeActionType, customActionName, customGraphQLName, customInputName string, exposeToGraphQL bool, fields []*field.Field) commonActionInfo {
 	var graphqlName string
 	if exposeToGraphQL {
 		graphqlName = getGraphQLNameForNodeActionType(typ, nodeName, customGraphQLName)
 	}
 	return commonActionInfo{
-		ActionName:      getActionNameForNodeActionType(typ, nodeName, customActionName),
-		GraphQLName:     graphqlName,
+		ActionName:  getActionNameForNodeActionType(typ, nodeName, customActionName),
+		GraphQLName: graphqlName,
+		// TODO need to break into graphql vs not?
+		InputName:       getInputNameForNodeActionType(typ, nodeName, customInputName),
 		ExposeToGraphQL: exposeToGraphQL,
 		Fields:          fields,
 		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),
@@ -347,6 +355,7 @@ func getCommonInfoForEdgeAction(
 	return commonActionInfo{
 		ActionName:      getActionNameForEdgeActionType(typ, nodeName, assocEdge, edgeAction.CustomActionName),
 		GraphQLName:     graphqlName,
+		InputName:       "", // TODO
 		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
 		Edges:           edges,
 		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),
@@ -376,6 +385,7 @@ func getCommonInfoForGroupEdgeAction(
 	return commonActionInfo{
 		ActionName:      actionName,
 		GraphQLName:     graphqlName,
+		InputName:       "", // TODO
 		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
 		NonEntFields:    fields,
 		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),

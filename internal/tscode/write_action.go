@@ -65,26 +65,10 @@ func writeActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, 
 func getCustomFuncMap(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["hasInput"] = hasInput
-	m["getInputName"] = getInputName
 	m["isRequiredField"] = action.IsRequiredField
 	m["getWriteOperation"] = getWriteOperation
 
 	return m
-}
-
-// TODO duplicated in internal/graphql/generate_ts_code.go
-func getInputName(action action.Action) string {
-	// TODO
-	// todo multiple create | edits
-
-	node := action.GetNodeInfo().Node
-	switch action.GetOperation() {
-	case ent.CreateAction:
-		return fmt.Sprintf("%sCreateInput", node)
-	case ent.EditAction:
-		return fmt.Sprintf("%sEditInput", node)
-	}
-	panic("invalid. todo")
 }
 
 func hasInput(action action.Action) bool {

@@ -255,6 +255,7 @@ export interface Action {
   operation: ActionOperation;
   fields?: string[];
   actionName?: string;
+  inputName?: string;
   graphQLName?: string;
   hideFromGraphQL?: boolean;
 }

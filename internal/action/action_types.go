@@ -22,6 +22,7 @@ type concreteNodeActionType interface {
 	concreteActionType
 	getDefaultActionName(nodeName string) string
 	getDefaultGraphQLName(nodeName string) string
+	getDefaultInputName(nodeName string) string
 	supportsFieldsFromEnt() bool
 }
 
@@ -40,6 +41,13 @@ func (action *createActionType) getDefaultActionName(nodeName string) string {
 
 func (action *createActionType) getDefaultGraphQLName(nodeName string) string {
 	return strcase.ToLowerCamel(nodeName) + "Create"
+}
+
+// CreateUserAction vs UserCreateInput is not consistent :(
+// need to figure out gql mutation vs action naming convention
+// but somehow choosing the same input type for both?
+func (action *createActionType) getDefaultInputName(nodeName string) string {
+	return strcase.ToCamel(nodeName) + "CreateInput"
 }
 
 func (action *createActionType) getAction(commonInfo commonActionInfo) Action {
@@ -71,6 +79,10 @@ func (action *editActionType) getDefaultGraphQLName(nodeName string) string {
 	return strcase.ToLowerCamel(nodeName) + "Edit"
 }
 
+func (action *editActionType) getDefaultInputName(nodeName string) string {
+	return strcase.ToCamel(nodeName) + "EditInput"
+}
+
 func (action *editActionType) getAction(commonInfo commonActionInfo) Action {
 	return getEditAction(commonInfo)
 }
@@ -98,6 +110,10 @@ func (action *deleteActionType) getDefaultActionName(nodeName string) string {
 
 func (action *deleteActionType) getDefaultGraphQLName(nodeName string) string {
 	return strcase.ToLowerCamel(nodeName) + "Delete"
+}
+
+func (action *deleteActionType) getDefaultInputName(nodeName string) string {
+	panic("Unsupported option")
 }
 
 func (action *deleteActionType) getAction(commonInfo commonActionInfo) Action {
@@ -273,6 +289,13 @@ func getGraphQLNameForNodeActionType(typ concreteNodeActionType, nodeName, custo
 		return customName
 	}
 	return typ.getDefaultGraphQLName(nodeName)
+}
+
+func getInputNameForNodeActionType(typ concreteNodeActionType, nodeName, customName string) string {
+	if customName != "" {
+		return customName
+	}
+	return typ.getDefaultInputName(nodeName)
 }
 
 func getActionNameForEdgeActionType(

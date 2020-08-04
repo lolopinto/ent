@@ -715,21 +715,6 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 	return result
 }
 
-// TODO stolen from internal/tscode/write_action.go
-func getInputName(action action.Action) string {
-	// TODO
-	// todo multiple create | edits
-
-	node := action.GetNodeInfo().Node
-	switch action.GetOperation() {
-	case ent.CreateAction:
-		return fmt.Sprintf("%sCreateInput", node)
-	case ent.EditAction:
-		return fmt.Sprintf("%sEditInput", node)
-	}
-	panic("invalid. todo")
-}
-
 func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, actionPrefix string) *objectType {
 	node := fmt.Sprintf("%sResponse", actionPrefix)
 	result := &objectType{
@@ -759,7 +744,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 	if action.GetOperation() != ent.DeleteAction {
 		result.Imports = append(result.Imports, &fileImport{
 			ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
-			Type:       getInputName(action),
+			Type:       action.GetInputName(),
 		})
 	}
 
@@ -824,7 +809,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 	if action.MutatingExistingObject() {
 		argName = fmt.Sprintf("custom%sInput", actionPrefix)
 	} else {
-		argName = getInputName(action)
+		argName = action.GetInputName()
 		argImports = append(argImports, argName)
 	}
 	result := &fieldConfig{
