@@ -33,6 +33,11 @@ type TSType interface {
 	GetTSType() string
 }
 
+type TSTypeWithImports interface {
+	TSType
+	GetTsTypeImports() []string
+}
+
 type TSGraphQLType interface {
 	// returns imports from outside in
 	// e.g. required string => []string{"GraphQLNonNull", "GraphQLString"}
@@ -189,6 +194,11 @@ func (t *idType) GetDBType() string {
 
 func (t *idType) GetZeroValue() string {
 	return ""
+}
+
+func (t *idType) GetTsTypeImports() []string {
+	// so that we "useImport ID" in the generation
+	return []string{"ID"}
 }
 
 type IDType struct {

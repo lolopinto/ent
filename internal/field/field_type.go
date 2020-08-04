@@ -398,6 +398,10 @@ func (f *Field) TsBuilderType() string {
 }
 
 func (f *Field) TsBuilderImports() []string {
+	typ, ok := f.fieldType.(enttype.TSTypeWithImports)
+	if ok {
+		return typ.GetTsTypeImports()
+	}
 	typeName := f.getIDFieldTypeName()
 	if typeName == "" {
 		return []string{}
