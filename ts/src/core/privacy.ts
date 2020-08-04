@@ -1,4 +1,11 @@
-import { Viewer, Ent, ID, loadEdgeForID2 } from "./ent";
+import {
+  Viewer,
+  Ent,
+  ID,
+  loadEdgeForID2,
+  LoadEntOptions,
+  loadEnt,
+} from "./ent";
 import { Context } from "./context";
 
 enum privacyResult {
@@ -139,6 +146,32 @@ export class AllowIfViewerIsRule implements PrivacyPolicyRule {
       return Allow();
     }
     return Skip();
+  }
+}
+
+export class AllowIfEntIsVisibleRule<T extends Ent>
+  implements PrivacyPolicyRule {
+  constructor(private options: LoadEntOptions<T>) {}
+
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    const visible = await loadEnt(v, ent.id, this.options);
+    if (visible === null) {
+      return Skip();
+    }
+    return Allow();
+  }
+}
+
+export class DenyIfEntIsVisibleRule<T extends Ent>
+  implements PrivacyPolicyRule {
+  constructor(private options: LoadEntOptions<T>) {}
+
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    const visible = await loadEnt(v, ent.id, this.options);
+    if (visible === null) {
+      return Skip();
+    }
+    return Deny();
   }
 }
 
