@@ -171,7 +171,7 @@ export class AllowIfEntIsVisiblePolicy<T extends Ent> implements PrivacyPolicy {
 export class DenyIfEntIsVisiblePolicy<T extends Ent> implements PrivacyPolicy {
   constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
-  rules = [new DenyIfEntIsVisibleRule(this.id, this.options), AlwaysDenyRule];
+  rules = [new DenyIfEntIsVisibleRule(this.id, this.options), AlwaysAllowRule];
 }
 
 export class DenyIfEntIsVisibleRule<T extends Ent>

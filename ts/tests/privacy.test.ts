@@ -1,11 +1,4 @@
-import {
-  ID,
-  Ent,
-  Viewer,
-  LoadEntOptions,
-  Data,
-  applyPrivacyPolicyForEnt,
-} from "./../src/core/ent";
+import { ID, Ent, Viewer, LoadEntOptions, Data } from "./../src/core/ent";
 import * as query from "./../src/core/query";
 import {
   applyPrivacyPolicy,
@@ -19,14 +12,13 @@ import {
   DenyWithReason,
   Skip,
   PrivacyPolicy,
-  AllowIfEntIsVisibleRule,
-  DenyIfEntIsVisibleRule,
+  AllowIfEntIsVisiblePolicy,
+  DenyIfEntIsVisiblePolicy,
 } from "./../src/core/privacy";
 
 import { LoggedOutViewer, IDViewer } from "./../src/core/viewer";
 import { Pool } from "pg";
 import { QueryRecorder } from "../src/testutils/db_mock";
-import { createJestPreset } from "ts-jest/utils";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -303,12 +295,10 @@ describe("AllowIfEntIsVisibleRule", () => {
   beforeEach(() => {
     mockUser();
   });
-  const policy: PrivacyPolicy = {
-    rules: [
-      new AllowIfEntIsVisibleRule("1", DefinedUser.loaderOptions()),
-      AlwaysDenyRule,
-    ],
-  };
+  const policy = new AllowIfEntIsVisiblePolicy(
+    "1",
+    DefinedUser.loaderOptions(),
+  );
 
   test("passes", async () => {
     const vc = new IDViewer("1");
@@ -327,12 +317,7 @@ describe("DenyIfEntIsVisibleRule", () => {
   beforeEach(() => {
     mockUser();
   });
-  const policy: PrivacyPolicy = {
-    rules: [
-      new DenyIfEntIsVisibleRule("1", DefinedUser.loaderOptions()),
-      AlwaysAllowRule,
-    ],
-  };
+  const policy = new DenyIfEntIsVisiblePolicy("1", DefinedUser.loaderOptions());
 
   test("passes", async () => {
     const vc = new IDViewer("1");
