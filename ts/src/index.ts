@@ -69,6 +69,10 @@ export {
   DenyIfEdgeExistsRule,
   DenyIfViewerInboundEdgeExistsRule,
   DenyIfViewerOutboundEdgeExistsRule,
+  AllowIfEntIsVisibleRule,
+  DenyIfEntIsVisibleRule,
+  AllowIfEntIsVisiblePolicy,
+  DenyIfEntIsVisiblePolicy,
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
 } from "./core/privacy";
