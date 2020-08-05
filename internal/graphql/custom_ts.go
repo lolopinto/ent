@@ -553,6 +553,7 @@ func processCustomFields(cd *customData, s *gqlSchema) error {
 			}
 			// append the field
 			obj.Fields = append(obj.Fields, gqlField)
+			obj.Imports = append(obj.Imports, gqlField.FieldImports...)
 		}
 	}
 	return nil
