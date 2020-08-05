@@ -305,7 +305,7 @@ describe("AllowIfEntIsVisibleRule", () => {
   });
   const policy: PrivacyPolicy = {
     rules: [
-      new AllowIfEntIsVisibleRule(DefinedUser.loaderOptions()),
+      new AllowIfEntIsVisibleRule("1", DefinedUser.loaderOptions()),
       AlwaysDenyRule,
     ],
   };
@@ -329,7 +329,7 @@ describe("DenyIfEntIsVisibleRule", () => {
   });
   const policy: PrivacyPolicy = {
     rules: [
-      new DenyIfEntIsVisibleRule(DefinedUser.loaderOptions()),
+      new DenyIfEntIsVisibleRule("1", DefinedUser.loaderOptions()),
       AlwaysAllowRule,
     ],
   };

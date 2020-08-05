@@ -151,10 +151,10 @@ export class AllowIfViewerIsRule implements PrivacyPolicyRule {
 
 export class AllowIfEntIsVisibleRule<T extends Ent>
   implements PrivacyPolicyRule {
-  constructor(private options: LoadEntOptions<T>) {}
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
-    const visible = await loadEnt(v, ent.id, this.options);
+  async apply(v: Viewer, _ent: Ent): Promise<PrivacyResult> {
+    const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Skip();
     }
@@ -164,10 +164,10 @@ export class AllowIfEntIsVisibleRule<T extends Ent>
 
 export class DenyIfEntIsVisibleRule<T extends Ent>
   implements PrivacyPolicyRule {
-  constructor(private options: LoadEntOptions<T>) {}
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
-    const visible = await loadEnt(v, ent.id, this.options);
+  async apply(v: Viewer, _ent: Ent): Promise<PrivacyResult> {
+    const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Skip();
     }
