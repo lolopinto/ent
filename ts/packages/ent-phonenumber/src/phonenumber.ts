@@ -1,5 +1,10 @@
-import { Type, DBType, Field, FieldOptions } from "../schema/schema";
-import { BaseField, String } from "../schema/field";
+import {
+  Type,
+  DBType,
+  Field,
+  FieldOptions,
+  BaseField,
+} from "@lolopinto/ent/schema";
 
 import phonenumber, {
   CountryCode,
@@ -7,8 +12,6 @@ import phonenumber, {
   PhoneNumber as LibPhoneNumber,
 } from "libphonenumber-js";
 import { FormatNumberOptions } from "libphonenumber-js/types";
-
-// TODO this should be in ent-phonenumber eventually
 
 export class PhoneNumber extends BaseField implements Field {
   type: Type = { dbType: DBType.String };
