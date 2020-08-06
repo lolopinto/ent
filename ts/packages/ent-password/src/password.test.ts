@@ -97,7 +97,7 @@ describe("manual format", () => {
   });
 });
 
-describe.only("password format", () => {
+describe("password format", () => {
   async function testPw(password: string, cost?: number) {
     let p = pw();
     if (cost) {
