@@ -220,7 +220,6 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 		return err
 	}
 
-	// we need a steps abstraction?
 	steps := []step{
 		writeQsAndMutationsStep{},
 		writeQueryStep{},

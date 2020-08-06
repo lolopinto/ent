@@ -553,7 +553,21 @@ func processCustomFields(cd *customData, s *gqlSchema) error {
 			}
 			// append the field
 			obj.Fields = append(obj.Fields, gqlField)
-			obj.Imports = append(obj.Imports, gqlField.FieldImports...)
+			for _, imp := range gqlField.FieldImports {
+				imported := false
+				// TODO change this to allow multiple imports and the reserveImport system handles this
+				// this is just a temporary fix...
+				for _, obImp := range obj.Imports {
+					if imp.Type == obImp.Type {
+						imported = true
+						break
+					}
+				}
+				if !imported {
+					obj.Imports = append(obj.Imports, imp)
+				}
+			}
+			//			obj.Imports = append(obj.Imports, gqlField.FieldImports...)
 		}
 	}
 	return nil

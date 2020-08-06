@@ -113,7 +113,8 @@ func (action *deleteActionType) getDefaultGraphQLName(nodeName string) string {
 }
 
 func (action *deleteActionType) getDefaultInputName(nodeName string) string {
-	panic("Unsupported option")
+	// TODO why is this being called?
+	return strcase.ToCamel(nodeName) + "DeleteInput"
 }
 
 func (action *deleteActionType) getAction(commonInfo commonActionInfo) Action {
