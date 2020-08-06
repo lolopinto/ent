@@ -9,7 +9,7 @@ import {
   BooleanType,
 } from "@lolopinto/ent/schema";
 import { EmailType } from "@lolopinto/ent-email";
-import { PasswordType } from "@lolopinto/ent/field/password";
+import { PasswordType } from "@lolopinto/ent-password";
 import { PhoneNumberType } from "@lolopinto/ent-phonenumber";
 
 export default class User extends BaseEntSchema implements Schema {
