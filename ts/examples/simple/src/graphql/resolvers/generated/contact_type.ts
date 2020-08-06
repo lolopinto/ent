@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
-import { UserType } from "./user_type";
+import { UserType } from "src/graphql/resolvers/generated/user_type";
 import Contact from "src/ent/contact";
 
 interface ContactQueryArgs {
