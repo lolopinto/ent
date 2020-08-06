@@ -1,5 +1,11 @@
-import { Type, DBType, Field, FieldOptions } from "../schema/schema";
-import { BaseField, StringType } from "../schema/field";
+import {
+  Type,
+  DBType,
+  Field,
+  FieldOptions,
+  BaseField,
+  StringType,
+} from "@lolopinto/ent";
 import email from "email-addresses";
 
 function isParsedMailbox(
@@ -7,8 +13,6 @@ function isParsedMailbox(
 ): mailboxOrGroup is email.ParsedMailbox {
   return mailboxOrGroup.type === "mailbox";
 }
-
-// TODO this should be in ent-email eventually
 
 export class Email extends BaseField implements Field {
   private _domain: string | undefined;

@@ -1,0 +1,46 @@
+{
+  "name": "@lolopinto/ent-email",
+  "version": "0.0.1",
+  "description": "ent email datatype",
+  "main": "dist/email.js",
+  "types": "dist/email.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "test": "jest",
+    "prepublishOnly": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:lolopinto/ent.git",
+    "directory": "packages/ent-email"
+  },
+  "keywords": [
+    "ent",
+    "email",
+    "datatype"
+  ],
+  "author": "lolopinto",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lolopinto/ent/issues"
+  },
+  "homepage": "https://github.com/lolopinto/ent#readme",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "dependencies": {
+    "email-addresses": "^3.1.0"
+  },
+  "devDependencies": {
+    "@lolopinto/ent": "0.0.13",
+    "@types/jest": "^26.0.9",
+    "jest": "^26.2.2",
+    "ts-jest": "^26.1.4",
+    "typescript": "^3.9.7"
+  },
+  "peerDependencies": {
+    "@lolopinto/ent": "0.0.13"
+  }
+}

@@ -6,7 +6,7 @@ import {
   BaseEntSchema,
   StringType,
 } from "@lolopinto/ent/schema/";
-import { EmailType } from "@lolopinto/ent/field/email";
+import { EmailType } from "@lolopinto/ent-email";
 
 export default class Contact extends BaseEntSchema implements Schema {
   fields: Field[] = [
