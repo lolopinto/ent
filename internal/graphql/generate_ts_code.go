@@ -100,26 +100,13 @@ const NullableContents NullableItem = "contents"
 const NullableContentsAndList NullableItem = "contentsAndList"
 const NullableTrue NullableItem = "true"
 
-func (p *TSStep) ProcessData(data *codegen.Data) error {
-	// these all need to be done after
-	// 1a/ build data (actions and nodes)
-	// 1b/ parse custom files
-	// 2/ inject any custom data in there
-	// 3/ write node files first then action files since there's a dependency...
-	// 4/ write query/mutation/schema file
-	// schema file depends on query/mutation so not quite worth the complication of breaking those 2 up
+type step interface {
+	process(data *codegen.Data, s *gqlSchema) error
+}
 
-	cd, s := <-parseCustomData(data), <-buildGQLSchema(data)
-	if cd.Error != nil {
-		return cd.Error
-	}
-	// put this here after the fact
-	s.customData = cd
+type writeQsAndMutationsStep struct{}
 
-	if err := processCustomData(data, s); err != nil {
-		return err
-	}
-
+func (st writeQsAndMutationsStep) process(data *codegen.Data, s *gqlSchema) error {
 	var wg sync.WaitGroup
 	wg.Add(len(s.nodes))
 	var serr syncerr.Error
@@ -177,24 +164,78 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 
 	wg.Wait()
 
-	if err := serr.Err(); err != nil {
+	return serr.Err()
+}
+
+type writeQueryStep struct{}
+
+func (st writeQueryStep) process(data *codegen.Data, s *gqlSchema) error {
+	return writeQueryFile(data, s)
+}
+
+type writeMutationStep struct{}
+
+func (st writeMutationStep) process(data *codegen.Data, s *gqlSchema) error {
+	if s.hasMutations {
+		return writeMutationFile(data, s)
+	}
+	return nil
+}
+
+type generateGQLSchemaStep struct{}
+
+func (st generateGQLSchemaStep) process(data *codegen.Data, s *gqlSchema) error {
+	return generateSchemaFile(s.hasMutations)
+}
+
+type writeSchemaStep struct{}
+
+func (st writeSchemaStep) process(data *codegen.Data, s *gqlSchema) error {
+	return writeTSSchemaFile(data, s)
+}
+
+type writeIndexStep struct{}
+
+func (st writeIndexStep) process(data *codegen.Data, s *gqlSchema) error {
+	return writeTSIndexFile(data, s)
+}
+
+func (p *TSStep) ProcessData(data *codegen.Data) error {
+	// these all need to be done after
+	// 1a/ build data (actions and nodes)
+	// 1b/ parse custom files
+	// 2/ inject any custom data in there
+	// 3/ write node files first then action files since there's a dependency...
+	// 4/ write query/mutation/schema file
+	// schema file depends on query/mutation so not quite worth the complication of breaking those 2 up
+
+	cd, s := <-parseCustomData(data), <-buildGQLSchema(data)
+	if cd.Error != nil {
+		return cd.Error
+	}
+	// put this here after the fact
+	s.customData = cd
+
+	if err := processCustomData(data, s); err != nil {
 		return err
 	}
 
-	if err := writeQueryFile(data, s); err != nil {
-		serr.Append(err)
+	// we need a steps abstraction?
+	steps := []step{
+		writeQsAndMutationsStep{},
+		writeQueryStep{},
+		writeMutationStep{},
+		generateGQLSchemaStep{},
+		writeSchemaStep{},
+		writeIndexStep{},
 	}
-	if s.hasMutations {
-		if err := writeMutationFile(data, s); err != nil {
-			serr.Append(err)
+
+	for _, st := range steps {
+		if err := st.process(data, s); err != nil {
+			return err
 		}
 	}
-
-	if err := generateSchemaFile(s.hasMutations); err != nil {
-		serr.Append(err)
-	}
-
-	return serr.Err()
+	return nil
 }
 
 var _ codegen.Step = &TSStep{}
@@ -213,6 +254,22 @@ func getQueryFilePath() string {
 
 func getMutationFilePath() string {
 	return fmt.Sprintf("src/graphql/mutations/generated/mutation_type.ts")
+}
+
+func getQueryImportPath() string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/query_type")
+}
+
+func getMutationImportPath() string {
+	return fmt.Sprintf("src/graphql/mutations/generated/mutation_type")
+}
+
+func getTSSchemaFilePath() string {
+	return "src/graphql/schema.ts"
+}
+
+func getTSIndexFilePath() string {
+	return "src/graphql/index.ts"
 }
 
 func getTempSchemaFilePath() string {
@@ -1098,6 +1155,43 @@ func writeMutationFile(data *codegen.Data, s *gqlSchema) error {
 	}))
 }
 
+func writeTSSchemaFile(data *codegen.Data, s *gqlSchema) error {
+	imps := tsimport.NewImports()
+	return file.Write((&file.TemplatedBasedFileWriter{
+		Data: struct {
+			HasMutations bool
+			QueryPath    string
+			MutationPath string
+		}{
+			s.hasMutations,
+			getQueryImportPath(),
+			getMutationImportPath(),
+		},
+
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/schema.tmpl"),
+		TemplateName:      "schema.tmpl",
+		PathToFile:        getTSSchemaFilePath(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	}))
+}
+
+func writeTSIndexFile(data *codegen.Data, s *gqlSchema) error {
+	imps := tsimport.NewImports()
+	return file.Write((&file.TemplatedBasedFileWriter{
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/index.tmpl"),
+		TemplateName:      "index.tmpl",
+		PathToFile:        getTSIndexFilePath(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+		EditableCode:      true,
+	}), file.WriteOnce())
+}
+
 func generateSchemaFile(hasMutations bool) error {
 	filePath := getTempSchemaFilePath()
 
@@ -1129,8 +1223,8 @@ func writeSchemaFile(fileToWrite string, hasMutations bool) error {
 	return file.Write(
 		&file.TemplatedBasedFileWriter{
 			Data: schemaData{
-				QueryPath:    getQueryFilePath(),
-				MutationPath: getMutationFilePath(),
+				QueryPath:    getQueryImportPath(),
+				MutationPath: getMutationImportPath(),
 				HasMutations: hasMutations,
 				SchemaPath:   getSchemaFilePath(),
 			},
