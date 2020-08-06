@@ -10,7 +10,7 @@ import {
 } from "@lolopinto/ent/schema";
 import { EmailType } from "@lolopinto/ent-email";
 import { PasswordType } from "@lolopinto/ent/field/password";
-import { PhoneNumberType } from "@lolopinto/ent/field/phonenumber";
+import { PhoneNumberType } from "@lolopinto/ent-phonenumber";
 
 export default class User extends BaseEntSchema implements Schema {
   fields: Field[] = [
