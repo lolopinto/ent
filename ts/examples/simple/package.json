@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@lolopinto/ent-graphql-tests": "0.0.1",
     "@types/express": "^4.17.6",
     "@types/glob": "^7.1.1",
     "@types/jest": "^25.2.3",
@@ -29,6 +30,7 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
+    "@lolopinto/ent": "0.0.13",
     "@types/express-session": "^1.17.0",
     "@types/node": "^13.13.4",
     "@types/passport-jwt": "^3.0.3",

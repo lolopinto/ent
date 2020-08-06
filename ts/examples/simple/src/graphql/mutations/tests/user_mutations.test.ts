@@ -5,7 +5,10 @@ import { randomEmail } from "src/util/random";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
-import { expectMutation, mutationRootConfig } from "src/graphql_test_utils";
+import {
+  expectMutation,
+  mutationRootConfig,
+} from "@lolopinto/ent-graphql-tests";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
 
 // TODO we need something that does this by default for all tests

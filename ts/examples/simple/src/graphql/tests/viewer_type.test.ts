@@ -2,7 +2,10 @@ import schema from "src/graphql/schema";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import { LoggedOutViewer, IDViewer, DB, Viewer } from "@lolopinto/ent";
 import { randomEmail } from "src/util/random";
-import { expectQueryFromRoot, queryRootConfig } from "src/graphql_test_utils";
+import {
+  expectQueryFromRoot,
+  queryRootConfig,
+} from "@lolopinto/ent-graphql-tests";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
 
 // TODO we need something that does this by default for all tests

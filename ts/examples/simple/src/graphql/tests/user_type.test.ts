@@ -7,7 +7,10 @@ import User from "src/ent/user";
 import { randomEmail } from "src/util/random";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import { advanceBy } from "jest-date-mock";
-import { queryRootConfig, expectQueryFromRoot } from "src/graphql_test_utils";
+import {
+  queryRootConfig,
+  expectQueryFromRoot,
+} from "@lolopinto/ent-graphql-tests";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
 
