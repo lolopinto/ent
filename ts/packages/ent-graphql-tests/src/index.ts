@@ -1,9 +1,6 @@
-// TODO all this can/should be moved into its own npm package
-// or into ent itself
-// haven't figured out the correct dependency structure with express etc so not for now
 import express, { Express } from "express";
-import graphqlHTTP from "express-graphql";
-import { Viewer } from "@lolopinto/ent";
+import { graphqlHTTP } from "express-graphql";
+import { Viewer, loadEnt } from "@lolopinto/ent";
 import { GraphQLSchema, GraphQLObjectType } from "graphql";
 import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import { IncomingMessage, ServerResponse } from "http";
@@ -238,8 +235,13 @@ async function expectFromRoot(
   if (params.length) {
     callVar = `(${params.join(",")})`;
   }
+  let suffix = "";
+  if (q) {
+    // if no suffix part of query, don't put it there
+    suffix = `{${q}}`;
+  }
   q = `${config.queryPrefix} ${config.root}${config.querySuffix} ${queryVar} {
-    ${config.root}${callVar} {${q}}
+    ${config.root}${callVar} ${suffix}
   }`;
 
   let [st, temp] = makeGraphQLRequest(config, q);
@@ -283,6 +285,11 @@ async function expectFromRoot(
     return st;
   }
 
+  // special case. TODO needs to be handled better
+  if (options.length === 1 && options[0][0] === "") {
+    expect(options[0][1]).toBe(result);
+    return st;
+  }
   options.forEach((option) => {
     let path = option[0];
     let expected = option[1];
@@ -332,10 +339,6 @@ async function expectFromRoot(
 
       if (listIdx !== undefined) {
         current = current[listIdx];
-      }
-      if (expected === null) {
-        expect(current).toBe(null);
-        break;
       }
 
       if (i === parts.length - 1) {

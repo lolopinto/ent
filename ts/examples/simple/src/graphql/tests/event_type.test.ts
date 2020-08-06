@@ -3,7 +3,10 @@ import CreateUserAction from "src/ent/user/actions/create_user_action";
 import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@lolopinto/ent";
 import Event from "src/ent/event";
 import { randomEmail } from "src/util/random";
-import { expectQueryFromRoot, queryRootConfig } from "src/graphql_test_utils";
+import {
+  expectQueryFromRoot,
+  queryRootConfig,
+} from "@lolopinto/ent-graphql-tests";
 import CreateEventAction, {
   EventCreateInput,
 } from "src/ent/event/actions/create_event_action";

@@ -1,0 +1,53 @@
+{
+  "name": "@lolopinto/ent-graphql-tests",
+  "version": "0.0.3",
+  "description": "easy ways to test ent and graphql",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "test": "jest",
+    "prepublishOnly": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:lolopinto/ent.git",
+    "directory": "packages/ent-graphql-tests"
+  },
+  "keywords": [
+    "ent",
+    "graphql",
+    "test"
+  ],
+  "author": "lolopinto",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lolopinto/ent/issues"
+  },
+  "homepage": "https://github.com/lolopinto/ent#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "express-graphql": "^0.11.0",
+    "jest-expect-message": "^1.0.2",
+    "supertest": "^4.0.2"
+  },
+  "devDependencies": {
+    "@lolopinto/ent": "0.0.13",
+    "@types/express": "^4.17.7",
+    "@types/express-graphql": "^0.9.0",
+    "@types/jest": "^26.0.9",
+    "graphql": "^15.3.0",
+    "jest": "^26.2.2",
+    "ts-jest": "^26.1.4",
+    "typescript": "^3.9.7"
+  },
+  "peerDependencies": {
+    "@lolopinto/ent": "0.0.13",
+    "graphql": "^15.3.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  }
+}

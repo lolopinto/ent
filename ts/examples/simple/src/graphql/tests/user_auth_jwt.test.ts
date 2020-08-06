@@ -3,7 +3,7 @@ import {
   queryRootConfig,
   expectQueryFromRoot,
   expectMutation,
-} from "src/graphql_test_utils";
+} from "@lolopinto/ent-graphql-tests";
 import { ID, DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
 import CreateUserAction, {
   UserCreateInput,
