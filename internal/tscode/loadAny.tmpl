@@ -1,0 +1,22 @@
+{{ reserveImport "./const" "NodeType"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Viewer" "Ent" "LoadEntOptions"}}
+{{ range .NodeData -}}
+  {{reserveDefaultImport .PackagePath .Name}}
+{{ end -}}
+
+export async function loadEntByType(
+  viewer: {{useImport "Viewer"}},
+  type: {{useImport "NodeType"}},
+  id: {{useImport "ID"}},
+): Promise<{{useImport "Ent"}} | null> {
+  return {{useImport "loadEnt"}}(viewer, id, getLoaderOptions(type));
+}
+
+export function getLoaderOptions(type: {{useImport "NodeType"}}): {{useImport "LoadEntOptions"}}<{{useImport "Ent"}}> {
+  switch (type) {
+  {{ range .NodeData -}}
+    case {{useImport "NodeType"}}.{{.Name}}:
+    return {{useImport .Name}}.loaderOptions();
+  {{ end -}}
+  }
+}

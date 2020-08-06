@@ -99,16 +99,28 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 	if err := serr.Err(); err != nil {
 		return err
 	}
-	return writeConstFile(s.nodeType, s.edgeType)
+	// sort data so that the enum is stable
+	sort.Slice(s.nodeType, func(i, j int) bool {
+		return s.nodeType[i].Name < s.nodeType[j].Name
+	})
+	sort.Slice(s.edgeType, func(i, j int) bool {
+		return s.edgeType[i].Name < s.edgeType[j].Name
+	})
+	if err := writeConstFile(s.nodeType, s.edgeType); err != nil {
+		return err
+	}
+	return writeLoadAnyFile(s.nodeType, data.CodePath)
 }
 
-func (s *Step) addNodeType(name, value, comment string) {
+func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeData) {
 	s.m.Lock()
 	defer s.m.Unlock()
 	s.nodeType = append(s.nodeType, enumData{
 		Name:    name,
 		Value:   value,
 		Comment: comment,
+		// needed for loadAny.ts
+		PackagePath: getImportPathForModelFile(nodeData),
 	})
 }
 
@@ -140,7 +152,7 @@ func (s *Step) accumulateConsts(nodeData *schema.NodeData) error {
 				}
 				comment := strings.ReplaceAll(constant.Comment, constant.ConstName, match[1])
 
-				s.addNodeType(match[1], constant.ConstValue, comment)
+				s.addNodeType(match[1], constant.ConstValue, comment, nodeData)
 				break
 
 			case "EdgeType":
@@ -168,9 +180,10 @@ type nodeTemplateCodePath struct {
 }
 
 type enumData struct {
-	Name    string
-	Value   string
-	Comment string
+	Name        string
+	Value       string
+	Comment     string
+	PackagePath string
 }
 
 func getFilePathForBaseModelFile(nodeData *schema.NodeData) string {
@@ -181,8 +194,16 @@ func getFilePathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s.ts", nodeData.PackageName)
 }
 
+func getImportPathForModelFile(nodeData *schema.NodeData) string {
+	return fmt.Sprintf("src/ent/%s", nodeData.PackageName)
+}
+
 func getFilePathForConstFile() string {
 	return fmt.Sprintf("src/ent/const.ts")
+}
+
+func getFilePathForLoadAnyFile() string {
+	return fmt.Sprintf("src/ent/loadAny.ts")
 }
 
 func getFilePathForBuilderFile(nodeData *schema.NodeData) string {
@@ -270,6 +291,26 @@ func writeConstFile(nodeData []enumData, edgeData []enumData) error {
 		AbsPathToTemplate: util.GetAbsolutePath("const.tmpl"),
 		TemplateName:      "const.tmpl",
 		PathToFile:        getFilePathForConstFile(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
+func writeLoadAnyFile(nodeData []enumData, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data: struct {
+			NodeData []enumData
+			Package  *codegen.ImportPackage
+		}{
+			nodeData,
+			codePathInfo.GetImportPackage(),
+		},
+		AbsPathToTemplate: util.GetAbsolutePath("loadAny.tmpl"),
+		TemplateName:      "loadAny.tmpl",
+		PathToFile:        getFilePathForLoadAnyFile(),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),

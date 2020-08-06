@@ -1,4 +1,11 @@
-import { Viewer, Ent, ID, loadEdgeForID2 } from "./ent";
+import {
+  Viewer,
+  Ent,
+  ID,
+  loadEdgeForID2,
+  LoadEntOptions,
+  loadEnt,
+} from "./ent";
 import { Context } from "./context";
 
 enum privacyResult {
@@ -139,6 +146,44 @@ export class AllowIfViewerIsRule implements PrivacyPolicyRule {
       return Allow();
     }
     return Skip();
+  }
+}
+
+export class AllowIfEntIsVisibleRule<T extends Ent>
+  implements PrivacyPolicyRule {
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
+
+  async apply(v: Viewer, _ent: Ent): Promise<PrivacyResult> {
+    const visible = await loadEnt(v, this.id, this.options);
+    if (visible === null) {
+      return Skip();
+    }
+    return Allow();
+  }
+}
+
+export class AllowIfEntIsVisiblePolicy<T extends Ent> implements PrivacyPolicy {
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
+
+  rules = [new AllowIfEntIsVisibleRule(this.id, this.options), AlwaysDenyRule];
+}
+
+export class DenyIfEntIsVisiblePolicy<T extends Ent> implements PrivacyPolicy {
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
+
+  rules = [new DenyIfEntIsVisibleRule(this.id, this.options), AlwaysAllowRule];
+}
+
+export class DenyIfEntIsVisibleRule<T extends Ent>
+  implements PrivacyPolicyRule {
+  constructor(private id: ID, private options: LoadEntOptions<T>) {}
+
+  async apply(v: Viewer, _ent: Ent): Promise<PrivacyResult> {
+    const visible = await loadEnt(v, this.id, this.options);
+    if (visible === null) {
+      return Skip();
+    }
+    return Deny();
   }
 }
 

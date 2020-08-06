@@ -1,4 +1,5 @@
-import { ID, Ent, Viewer } from "./../src/core/ent";
+import { ID, Ent, Viewer, LoadEntOptions, Data } from "./../src/core/ent";
+import * as query from "./../src/core/query";
 import {
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
@@ -11,9 +12,19 @@ import {
   DenyWithReason,
   Skip,
   PrivacyPolicy,
+  AllowIfEntIsVisiblePolicy,
+  DenyIfEntIsVisiblePolicy,
 } from "./../src/core/privacy";
 
 import { LoggedOutViewer, IDViewer } from "./../src/core/viewer";
+import { Pool } from "pg";
+import { QueryRecorder } from "../src/testutils/db_mock";
+
+jest.mock("pg");
+QueryRecorder.mockPool(Pool);
+afterEach(() => {
+  QueryRecorder.clear();
+});
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -22,7 +33,7 @@ class User implements Ent {
   privacyPolicy: PrivacyPolicy;
   nodeType: "User";
   // TODO add policy here
-  constructor(public viewer: Viewer, public id: ID) {}
+  constructor(public viewer: Viewer, public id: ID, data?: Data) {}
 }
 
 const getUser = function(
@@ -251,6 +262,73 @@ describe("applyPrivacyPolicyX", () => {
     } catch (e) {
       fail(e.message);
     }
+  });
+});
+
+function mockUser() {
+  QueryRecorder.mockResult({
+    tableName: "table",
+    clause: query.Eq("id", "1"),
+    result: (val: any) => {
+      return {
+        id: "1",
+        name: "name",
+      };
+    },
+  });
+}
+
+class DefinedUser extends User {
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AllowIfViewerRule, AlwaysDenyRule],
+  };
+  static loaderOptions(): LoadEntOptions<DefinedUser> {
+    return {
+      tableName: "table",
+      fields: ["id", "name"],
+      ent: this,
+    };
+  }
+}
+
+describe("AllowIfEntIsVisibleRule", () => {
+  beforeEach(() => {
+    mockUser();
+  });
+  const policy = new AllowIfEntIsVisiblePolicy(
+    "1",
+    DefinedUser.loaderOptions(),
+  );
+
+  test("passes", async () => {
+    const vc = new IDViewer("1");
+    const bool = await applyPrivacyPolicy(vc, policy, new DefinedUser(vc, "1"));
+    expect(bool).toBe(true);
+  });
+
+  test("fails", async () => {
+    const vc = new IDViewer("2");
+    const bool = await applyPrivacyPolicy(vc, policy, new DefinedUser(vc, "1"));
+    expect(bool).toBe(false);
+  });
+});
+
+describe("DenyIfEntIsVisibleRule", () => {
+  beforeEach(() => {
+    mockUser();
+  });
+  const policy = new DenyIfEntIsVisiblePolicy("1", DefinedUser.loaderOptions());
+
+  test("passes", async () => {
+    const vc = new IDViewer("1");
+    const bool = await applyPrivacyPolicy(vc, policy, new DefinedUser(vc, "1"));
+    expect(bool).toBe(false);
+  });
+
+  test("fails", async () => {
+    const vc = new IDViewer("2");
+    const bool = await applyPrivacyPolicy(vc, policy, new DefinedUser(vc, "1"));
+    expect(bool).toBe(true);
   });
 });
 
