@@ -340,10 +340,6 @@ async function expectFromRoot(
       if (listIdx !== undefined) {
         current = current[listIdx];
       }
-      if (expected === null) {
-        expect(current).toBe(null);
-        break;
-      }
 
       if (i === parts.length - 1) {
         // leaf node, check the value

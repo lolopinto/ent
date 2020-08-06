@@ -38,18 +38,40 @@ test("simplest query", async () => {
   await expectQueryFromRoot(cfg, ["", "world"]);
 });
 
+interface Address {
+  id: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  apartment?: string | null;
+}
+
 interface User {
   id: string;
   firstName: string;
   lastName: string;
+  address?: Address | null;
 }
 
 function getUser(id: string): User {
-  return {
+  let result: User = {
     id,
     firstName: "Jon",
     lastName: "Snow",
   };
+
+  let num = parseInt(id, 0) || 0;
+  if (num % 2 == 0) {
+    result.address = {
+      id: "23",
+      street: "1 main street",
+      city: "San Francisco",
+      state: "CA",
+      zipCode: "94102",
+    };
+  }
+  return result;
 }
 
 function editUser(id: string, user: Partial<User>): User {
@@ -59,17 +81,44 @@ function editUser(id: string, user: Partial<User>): User {
   };
 }
 
+let addressType = new GraphQLObjectType({
+  name: "Address",
+  fields: {
+    id: {
+      type: GraphQLNonNull(GraphQLID),
+    },
+    street: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    city: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    state: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    zipCode: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    apartment: {
+      type: GraphQLString,
+    },
+  },
+});
+
 let userType = new GraphQLObjectType({
   name: "User",
   fields: {
     id: {
-      type: GraphQLString,
+      type: GraphQLNonNull(GraphQLID),
     },
     firstName: {
       type: GraphQLString,
     },
     lastName: {
       type: GraphQLString,
+    },
+    address: {
+      type: addressType,
     },
   },
 });
@@ -91,26 +140,62 @@ let rootQuery = new GraphQLObjectType({
   },
 });
 
-test("query with args", async () => {
+describe("query with args", () => {
   let schema = new GraphQLSchema({
     query: rootQuery,
   });
 
-  let cfg: queryRootConfig = {
-    schema: schema,
-    args: {
-      id: "1",
-    },
-    root: "user",
-  };
+  test("simple. no nulls", async () => {
+    let cfg: queryRootConfig = {
+      schema: schema,
+      args: {
+        id: "1",
+      },
+      root: "user",
+    };
 
-  // root query
-  await expectQueryFromRoot(
-    cfg,
-    ["id", "1"],
-    ["firstName", "Jon"],
-    ["lastName", "Snow"],
-  );
+    await expectQueryFromRoot(
+      cfg,
+      ["id", "1"],
+      ["firstName", "Jon"],
+      ["lastName", "Snow"],
+    );
+  });
+
+  test("with nullable root paths", async () => {
+    let cfg: queryRootConfig = {
+      schema: schema,
+      args: {
+        id: "1",
+      },
+      nullQueryPaths: ["address"],
+      root: "user",
+    };
+
+    await expectQueryFromRoot(cfg, ["id", "1"], ["address.id", null]);
+  });
+
+  test("with nullable sub-parts", async () => {
+    let cfg: queryRootConfig = {
+      schema: schema,
+      args: {
+        id: "2",
+      },
+      root: "user",
+    };
+
+    await expectQueryFromRoot(
+      cfg,
+      ["id", "2"],
+      ["firstName", "Jon"],
+      ["lastName", "Snow"],
+      ["address.id", "23"],
+      ["address.street", "1 main street"],
+      ["address.state", "CA"],
+      ["address.zipCode", "94102"],
+      ["address.apartment", null],
+    );
+  });
 });
 
 test("mutation with args", async () => {
