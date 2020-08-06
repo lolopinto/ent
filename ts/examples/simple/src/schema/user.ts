@@ -8,7 +8,7 @@ import {
   StringType,
   BooleanType,
 } from "@lolopinto/ent/schema";
-import { EmailType } from "@lolopinto/ent/field/email";
+import { EmailType } from "@lolopinto/ent-email";
 import { PasswordType } from "@lolopinto/ent/field/password";
 import { PhoneNumberType } from "@lolopinto/ent/field/phonenumber";
 
