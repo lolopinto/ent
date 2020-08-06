@@ -1,0 +1,29 @@
+{
+  // TODO
+  "compilerOptions": {
+    "lib": [
+      "es2018",
+      "esnext.asynciterable"
+    ],
+    "module": "commonjs",
+    "rootDir": "src",
+    "outDir": "./dist",
+    "target": "es2018",
+    "strictNullChecks": true,
+    "downlevelIteration": true,
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    //    "noImplicitAny": true,
+    "declaration": true,
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "./examples",
+    "tests/**/*"
+  ]
+}
