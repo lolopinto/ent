@@ -2,10 +2,10 @@
 
 import { GraphQLObjectType } from "graphql";
 
-import { AddressQuery } from "./address_type";
-import { ContactQuery } from "./contact_type";
-import { EventQuery } from "./event_type";
-import { UserQuery } from "./user_type";
+import { AddressQuery } from "src/graphql/resolvers/generated/address_type";
+import { ContactQuery } from "src/graphql/resolvers/generated/contact_type";
+import { EventQuery } from "src/graphql/resolvers/generated/event_type";
+import { UserQuery } from "src/graphql/resolvers/generated/user_type";
 import { ViewerType } from "src/graphql/resolvers/generated/viewer_type";
 
 export const QueryType = new GraphQLObjectType({

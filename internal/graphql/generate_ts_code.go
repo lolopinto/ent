@@ -247,6 +247,10 @@ func getImportPathForNode(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", nodeData.PackageName)
 }
 
+func getImportPathFromNodePackage(packageName string) string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", packageName)
+}
+
 func getQueryFilePath() string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/query_type.ts")
 }
@@ -606,7 +610,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 			continue
 		}
 		result.Imports = append(result.Imports, &fileImport{
-			ImportPath: fmt.Sprintf("./%s_type", node.PackageName),
+			ImportPath: getImportPathFromNodePackage(node.PackageName),
 			Type:       fmt.Sprintf("%sType", node.Node),
 		})
 	}
@@ -1053,7 +1057,7 @@ func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 			continue
 		}
 		results = append(results, rootField{
-			ImportPath: fmt.Sprintf("./%s_type", nodeData.PackageName),
+			ImportPath: getImportPathForNode(nodeData),
 			Type:       fmt.Sprintf("%sQuery", nodeData.Node),
 			Name:       strcase.ToLowerCamel(nodeData.Node),
 		})

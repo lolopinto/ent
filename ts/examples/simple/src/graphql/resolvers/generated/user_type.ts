@@ -11,8 +11,8 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
-import { EventType } from "./event_type";
-import { ContactType } from "./contact_type";
+import { EventType } from "src/graphql/resolvers/generated/event_type";
+import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import User from "src/ent/user";
 
 interface UserQueryArgs {

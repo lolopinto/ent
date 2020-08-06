@@ -206,6 +206,24 @@ func TestImports(t *testing.T) {
 				getImportLine("import {loadEnt, ID} from {path};", "ent/ent"),
 			},
 		},
+		"reserve exact same thing": {
+			fn: func(imps *tsimport.Imports) {
+				reserveDefaultImport(imps, "src/ent/user", "User")
+				reserveDefaultImport(imps, "src/ent/user", "User")
+
+				useImport(imps, "User")
+			},
+			expectedLines: []string{
+				getImportLine("import User from {path};", "src/ent/user"),
+			},
+		},
+		"reserve different paths": {
+			fn: func(imps *tsimport.Imports) {
+				reserveDefaultImport(imps, "src/ent/user", "User")
+				reserveDefaultImport(imps, "/user", "User")
+			},
+			panicInFn: true,
+		},
 	}
 
 	for key, tt := range testCases {
