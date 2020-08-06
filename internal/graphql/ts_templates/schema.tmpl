@@ -1,0 +1,15 @@
+{{reserveImport "graphql" "GraphQLSchema"}}
+{{ reserveImport .QueryPath "QueryType" }}
+{{ if .HasMutations -}}
+  {{ reserveImport .MutationPath "MutationType" }}
+
+{{ end -}}
+
+export default new {{useImport "GraphQLSchema"}}({
+  query: {{useImport "QueryType"}},
+  {{if .HasMutations -}}
+    mutation: {{useImport "MutationType"}},
+  {{end -}}
+});
+
+

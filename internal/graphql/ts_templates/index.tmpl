@@ -1,0 +1,25 @@
+{{reserveDefaultImport "express" "express"}}
+{{reserveImport "express-graphql" "graphqlHTTP"}}
+{{reserveDefaultImport "./schema" "schema"}}
+
+{{reserveImport "http" "IncomingMessage" "ServerResponse" }}
+{{reserveImport "@lolopinto/ent/auth" "buildContext" }}
+
+let app = {{useImport "express"}}();
+
+app.use(
+  "/graphql",
+  {{useImport "graphqlHTTP"}}((request: {{useImport "IncomingMessage"}}, response: {{useImport "ServerResponse"}}) => {
+    let doWork = async () => {
+      let context = await {{useImport "buildContext"}}(request, response);
+      return {
+        schema: {{useImport "schema"}},
+        graphiql: true,
+        context,
+      };
+    };
+    return doWork();
+  })
+);
+app.listen(4000);
+
