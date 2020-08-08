@@ -2,12 +2,14 @@ package input
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/iancoleman/strcase"
@@ -56,7 +58,7 @@ func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
 
 	fileName := filepath.Join(schemaPath, fmt.Sprintf("%d_read_schema.ts", time.Now().Unix()))
 
-	err = writeTsFile(fileName, schemas)
+	err = writeTsFile(fileName, schemas, fromTest)
 	defer os.Remove(fileName)
 
 	if err != nil {
@@ -67,7 +69,11 @@ func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
 	var execCmd exec.Cmd
 	if fromTest {
 		// no tsconfig-paths for tests...
-		execCmd = *exec.Command("ts-node", fileName)
+		opts, err := json.Marshal(map[string]interface{}{"lib": []string{"esnext", "dom"}})
+		if err != nil {
+			return nil, errors.Wrap(err, "error creating json compiler options")
+		}
+		execCmd = *exec.Command("ts-node", "--compiler-options", string(opts), fileName)
 	} else {
 		execCmd = *exec.Command("ts-node", "-r", "tsconfig-paths/register", fileName)
 	}
@@ -90,14 +96,31 @@ type schemaData struct {
 	Path string
 }
 
-func writeTsFile(fileToWrite string, schemas []schemaData) error {
+func GetAbsoluteSchemaPathForTest() string {
+	schemaPath := util.GetAbsolutePath("../../../ts/src/schema/index.ts")
+	// trim the suffix for the import
+	schemaPath = strings.TrimSuffix(schemaPath, ".ts")
+	return schemaPath
+}
+
+func writeTsFile(fileToWrite string, schemas []schemaData, fromTest bool) error {
+	var schemaPath string
+	if fromTest {
+		// in tests, we don't have @lolopinto/ent installed so for now
+		// since no node_modules (for now) so we use absolute path
+		schemaPath = GetAbsoluteSchemaPathForTest()
+	} else {
+		schemaPath = "@lolopinto/ent/schema"
+	}
 
 	return file.Write(
 		&file.TemplatedBasedFileWriter{
 			Data: struct {
-				Schemas []schemaData
+				Schemas    []schemaData
+				SchemaPath string
 			}{
 				schemas,
+				schemaPath,
 			},
 			AbsPathToTemplate: util.GetAbsolutePath("read_schema.tmpl"),
 			TemplateName:      "read_schema.tmpl",

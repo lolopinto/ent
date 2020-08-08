@@ -8,11 +8,11 @@ import (
 
 func TestParseEdges(t *testing.T) {
 	testCases := map[string]testCase{
-		"unique with inverse edge": testCase{
+		"unique with inverse edge": {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import Schema, {Field, Edge} from "{schema}";
+				import {Schema, Field, Edge} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [];
@@ -30,10 +30,10 @@ func TestParseEdges(t *testing.T) {
 				};`),
 			},
 			expectedOutput: map[string]node{
-				"Event": node{
+				"Event": {
 					fields: []field{},
 					assocEdges: []assocEdge{
-						assocEdge{
+						{
 							name:       "creator",
 							schemaName: "User",
 							unique:     true,
@@ -46,12 +46,11 @@ func TestParseEdges(t *testing.T) {
 			},
 		},
 		// shown to contrast with unique above
-		"field edge with inverse edge": testCase{
+		"field edge with inverse edge": {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import Schema, {Field, Edge} from "{schema}";
-				import {StringType} from "{field}";
+				import {Schema, Field, Edge, StringType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
@@ -60,7 +59,7 @@ func TestParseEdges(t *testing.T) {
 				};`),
 				"user.ts": getCodeWithSchema(
 					`
-				import Schema, {Field, Edge} from "{schema}";
+				import {Schema, Field, Edge} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [];
@@ -73,18 +72,18 @@ func TestParseEdges(t *testing.T) {
 				};`),
 			},
 			expectedOutput: map[string]node{
-				"Event": node{
+				"Event": {
 					fields: []field{
-						field{
+						{
 							name:      "creatorID",
 							fieldEdge: &[2]string{"User", "createdEvents"},
 							dbType:    input.String,
 						},
 					},
 				},
-				"User": node{
+				"User": {
 					assocEdges: []assocEdge{
-						assocEdge{
+						{
 							name:       "createdEvents",
 							schemaName: "Event",
 						},
@@ -92,11 +91,11 @@ func TestParseEdges(t *testing.T) {
 				},
 			},
 		},
-		"symmetric edge": testCase{
+		"symmetric edge": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(
 					`
-					import Schema, {Field, Edge} from "{schema}";
+					import {Schema, Field, Edge} from "{schema}";
 	
 					export default class User implements Schema {
 						fields: Field[] = [];
@@ -111,10 +110,10 @@ func TestParseEdges(t *testing.T) {
 					};`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{},
 					assocEdges: []assocEdge{
-						assocEdge{
+						{
 							name:       "friends",
 							schemaName: "User",
 							symmetric:  true,
@@ -123,11 +122,11 @@ func TestParseEdges(t *testing.T) {
 				},
 			},
 		},
-		"one-way edge": testCase{
+		"one-way edge": {
 			code: map[string]string{
 				"post.ts": getCodeWithSchema(
 					`
-					import Schema, {Field, Edge} from "{schema}";
+					import {Schema, Field, Edge} from "{schema}";
 	
 					export default class Post implements Schema {
 						fields: Field[] = [];
@@ -141,10 +140,10 @@ func TestParseEdges(t *testing.T) {
 					};`),
 			},
 			expectedOutput: map[string]node{
-				"Post": node{
+				"Post": {
 					fields: []field{},
 					assocEdges: []assocEdge{
-						assocEdge{
+						{
 							name:       "likers",
 							schemaName: "User",
 						},
@@ -152,11 +151,11 @@ func TestParseEdges(t *testing.T) {
 				},
 			},
 		},
-		"edge group": testCase{
+		"edge group": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(
 					`
-					import Schema, {Field, Edge} from "{schema}";
+					import {Schema, Field, Edge} from "{schema}";
 	
 					export default class User implements Schema {
 						fields: Field[] = [];
@@ -184,21 +183,21 @@ func TestParseEdges(t *testing.T) {
 					};`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{},
 					assocEdgeGroups: []assocEdgeGroup{
-						assocEdgeGroup{
+						{
 							name:            "friendships",
 							groupStatusName: "friendshipStatus",
 							assocEdges: []assocEdge{
-								assocEdge{
+								{
 									name:       "friendRequests",
 									schemaName: "User",
 									inverseEdge: &inverseAssocEdge{
 										name: "friendRequestsReceived",
 									},
 								},
-								assocEdge{
+								{
 									name:       "friends",
 									schemaName: "User",
 									symmetric:  true,

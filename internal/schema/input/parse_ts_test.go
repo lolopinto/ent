@@ -185,7 +185,7 @@ func assertStrEqual(t *testing.T, key, expectedValue string, value *string) {
 }
 
 func getCodeWithSchema(code string) string {
-	schemaPath := input.GetAbsoluteSchemaPath()
+	schemaPath := input.GetAbsoluteSchemaPathForTest()
 	fieldPath := strings.Replace(schemaPath, "schema", "field", 1)
 
 	r := strings.NewReplacer("{schema}", schemaPath, "{field}", fieldPath)
