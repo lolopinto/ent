@@ -3,6 +3,7 @@ package input_test
 import (
 	"testing"
 
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/schema/input"
 )
 
@@ -201,6 +202,53 @@ func TestParseEdges(t *testing.T) {
 									name:       "friends",
 									schemaName: "User",
 									symmetric:  true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"edge actions": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(
+					`
+				import {Schema, Field, Edge, ActionOperation} from "{schema}";
+
+				export default class User implements Schema {
+					fields: Field[] = [];
+					edges: Edge[] = [
+						{
+							name: "friends",
+							schemaName: "User",
+							edgeActions: [
+								{
+									operation: ActionOperation.AddEdge,
+								},
+								{
+									operation: ActionOperation.RemoveEdge,
+									actionName: "RemoveFriendAction",
+									graphQLName: "friendRemove",
+								},
+							],
+						},
+					];	
+				};`),
+			},
+			expectedOutput: map[string]node{
+				"User": {
+					assocEdges: []assocEdge{
+						{
+							name:       "friends",
+							schemaName: "User",
+							edgeActions: []action{
+								{
+									operation: ent.AddEdgeAction,
+								},
+								{
+									operation:   ent.RemoveEdgeAction,
+									actionName:  "RemoveFriendAction",
+									graphQLName: "friendRemove",
 								},
 							},
 						},

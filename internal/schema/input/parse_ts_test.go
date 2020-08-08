@@ -47,6 +47,7 @@ type assocEdge struct {
 	unique      bool
 	tableName   string
 	inverseEdge *inverseAssocEdge
+	edgeActions []action
 }
 
 type inverseAssocEdge struct {
@@ -58,6 +59,7 @@ type assocEdgeGroup struct {
 	groupStatusName string
 	tableName       string
 	assocEdges      []assocEdge
+	edgeActions     []action
 }
 
 type action struct {
@@ -141,17 +143,7 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 					verifyAssocEdges(t, expEdgeGroup.assocEdges, edgeGroup.AssocEdges)
 				}
 
-				require.Len(t, node.Actions, len(expectedNode.actions))
-
-				for j, expAction := range expectedNode.actions {
-					action := node.Actions[j]
-
-					assert.Equal(t, expAction.operation, action.Operation)
-					assert.Equal(t, expAction.actionName, action.CustomActionName)
-					assert.Equal(t, expAction.graphQLName, action.CustomGraphQLName)
-					assert.Equal(t, expAction.hideFromGraphQL, action.HideFromGraphQL)
-					assert.Equal(t, expAction.fields, action.Fields)
-				}
+				verifyActions(t, expectedNode.actions, node.Actions)
 			}
 		})
 	}
@@ -172,6 +164,34 @@ func verifyAssocEdges(t *testing.T, expAssocEdges []assocEdge, assocEdges []*inp
 			require.NotNil(t, edge.InverseEdge)
 			assert.Equal(t, expEdge.inverseEdge.name, edge.InverseEdge.Name)
 		}
+		verifyEdgeActions(t, expEdge.edgeActions, edge.EdgeActions)
+	}
+}
+
+func verifyActions(t *testing.T, expActions []action, actions []*input.Action) {
+	require.Len(t, actions, len(expActions))
+
+	for j, expAction := range expActions {
+		action := actions[j]
+
+		assert.Equal(t, expAction.operation, action.Operation)
+		assert.Equal(t, expAction.actionName, action.CustomActionName)
+		assert.Equal(t, expAction.graphQLName, action.CustomGraphQLName)
+		assert.Equal(t, expAction.hideFromGraphQL, action.HideFromGraphQL)
+		assert.Equal(t, expAction.fields, action.Fields)
+	}
+}
+
+func verifyEdgeActions(t *testing.T, expActions []action, actions []*input.EdgeAction) {
+	require.Len(t, actions, len(expActions))
+
+	for j, expAction := range expActions {
+		action := actions[j]
+
+		assert.Equal(t, expAction.operation, action.Operation)
+		assert.Equal(t, expAction.actionName, action.CustomActionName)
+		assert.Equal(t, expAction.graphQLName, action.CustomGraphQLName)
+		assert.Equal(t, expAction.hideFromGraphQL, action.HideFromGraphQL)
 	}
 }
 
