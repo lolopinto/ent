@@ -40,13 +40,13 @@ func TestAssociationEdge(t *testing.T) {
 		),
 		TableName: "account_folders_edges",
 		EdgeActions: []*EdgeAction{
-			&EdgeAction{
+			{
 				Action:            "ent.AddEdgeAction",
 				CustomActionName:  "AccountAddFolderAction",
 				CustomGraphQLName: "accountFolderAdd",
 				ExposeToGraphQL:   true,
 			},
-			&EdgeAction{
+			{
 				Action:          "ent.RemoveEdgeAction",
 				ExposeToGraphQL: true,
 			},
@@ -185,7 +185,7 @@ func TestEdgeGroup(t *testing.T) {
 			"Friends":        friendsEdge,
 		},
 		EdgeActions: []*EdgeAction{
-			&EdgeAction{
+			{
 				Action:            "ent.AddEdgeAction",
 				CustomActionName:  "AccountFriendshipStatusAction",
 				CustomGraphQLName: "accountSetFriendshipStatus",
@@ -239,7 +239,7 @@ func TestEdgeGroupWithCustomActionEdges(t *testing.T) {
 			"Declined":  declinedEdge,
 		},
 		EdgeActions: []*EdgeAction{
-			&EdgeAction{
+			{
 				Action:            "ent.EdgeGroupAction",
 				ExposeToGraphQL:   true,
 				CustomActionName:  "EventRsvpAction",

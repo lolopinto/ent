@@ -17,6 +17,7 @@ import (
 	"github.com/lolopinto/ent/internal/astparser"
 )
 
+// copied to internal/edge/edge.go
 func getActionOperationFromTypeName(typeName string) ent.ActionOperation {
 	switch typeName {
 	case "ent.CreateAction":
