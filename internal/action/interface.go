@@ -271,6 +271,10 @@ func GetFields(action Action) []FieldActionTemplateInfo {
 	return GetFieldsFromFields(action.GetFields())
 }
 
+func HasInput(action Action) bool {
+	return len(action.GetFields()) != 0
+}
+
 // TODO abstract this out somewhere else...
 func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
 	var result []FieldActionTemplateInfo
@@ -326,6 +330,7 @@ type EdgeActionTemplateInfo struct {
 	NodeType      string
 	Node          string
 	GraphQLNodeID string
+	Edge          edge.Edge
 }
 
 func GetEdges(action Action) []EdgeActionTemplateInfo {
@@ -340,6 +345,7 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 		edgeName := edge.GetEdgeName()
 
 		result = append(result, EdgeActionTemplateInfo{
+			Edge:                     edge,
 			Node:                     edge.NodeInfo.Node,
 			AddEntMethodName:         "Add" + edge.EdgeName,
 			AddSingleIDMethodName:    "Add" + edge.Singular() + "ID",
@@ -375,4 +381,8 @@ func IsRequiredField(action Action, field *field.Field) bool {
 
 func IsRemoveEdgeAction(action Action) bool {
 	return action.GetOperation() == ent.RemoveEdgeAction
+}
+
+func IsEdgeAction(action Action) bool {
+	return action.GetOperation() == ent.RemoveEdgeAction || action.GetOperation() == ent.AddEdgeAction
 }

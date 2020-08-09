@@ -1,5 +1,5 @@
-{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" }}
-{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" }}
+{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" }}
+{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" }}
 
 {{ range .NodeData.GetUniqueNodesForceSelf -}} 
   {{$packagePath := printf "src/ent/%s" .PackageName }}
@@ -90,6 +90,34 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
     {{end -}}
   }
 
+  {{ $edges := edges $action}}
+  {{ range $edge := $edges -}}
+    {{$singular := $edge.Edge.Singular -}}
+    {{ $node := useImport $edge.Node -}}
+
+    {{ if removeEdgeAction $action -}}
+      remove{{$singular}}(...ids: {{useImport "ID"}}[]): this;
+      remove{{$singular}}(...nodes: {{$node}}[]): this;
+      remove{{$singular}}(...nodes: {{useImport "ID"}}[] | {{$node}}[]): this{
+        nodes.forEach(node => this.builder.add{{$singular}}(node));
+        return this;
+      }
+    {{ else -}}
+      add{{$singular}}(...ids: {{useImport "ID"}}[]): this;
+      add{{$singular}}(...nodes: {{$node}}[]): this;
+      add{{$singular}}(...nodes: {{useImport "Builder"}}<{{$node}}>[]): this;
+      add{{$singular}}(...nodes: {{useImport "ID"}}[] | {{$node}}[] | {{useImport "Builder"}}<{{$node}}>[]): this{
+        nodes.forEach(node => this.builder.add{{$singular}}(node));
+        return this;
+      }
+
+      add{{$singular}}ID(id: {{useImport "ID"}} | {{useImport "Builder"}}<{{$node}}>, options?: {{useImport "AssocEdgeInputOptions"}}): this {
+        this.builder.add{{$singular}}ID(id, options);
+        return this;
+      }
+    {{end -}}
+  {{end -}}
+
   async changeset(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
     return this.builder.build();
   }
@@ -136,7 +164,13 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       id: {{useImport "ID"}},
       {{if $hasInput -}}
         input: {{$inputName}},
-      {{end -}}
+      {{else if edgeAction $action -}}
+        {{ range $edge := $edges -}}
+          {{$singular := $edge.Edge.Singular -}}
+          {{/* TODO this assumes there is only one edge */}}
+          {{$singular}}ID: {{useImport "ID"}},
+        {{end -}}
+      {{ end -}}
       {{ if $action.IsDeletingNode -}}
         ): Promise<void> {
       {{else -}}

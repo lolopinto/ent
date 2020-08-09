@@ -150,6 +150,8 @@ type addEdgeActionType struct {
 func (action *addEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge) string {
 	// it's going to be in the node_name package..
 	// AddFriendAction
+	// hah! we don't need the nodeName here because in go it's user.AddFriendAction
+	// but in TypeScript we want it...
 	return "Add" + edge.EdgeIdentifier() + "Action"
 }
 
