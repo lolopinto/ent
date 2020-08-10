@@ -7,6 +7,7 @@ import (
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"golang.org/x/tools/go/packages"
@@ -36,9 +37,9 @@ func ParsePackage(pkg *packages.Package, specificConfigs ...string) (*Schema, er
 
 // ParseFromInputSchema takes the schema that has been parsed from whatever input source
 // and provides the schema we have that's checked and conforms to everything we expect
-func ParseFromInputSchema(schema *input.Schema) (*Schema, error) {
+func ParseFromInputSchema(schema *input.Schema, lang base.Language) (*Schema, error) {
 	return parse(func(s *Schema) (*assocEdgeData, error) {
-		return s.Nodes.parseInputSchema(schema)
+		return s.Nodes.parseInputSchema(schema, lang)
 	})
 }
 

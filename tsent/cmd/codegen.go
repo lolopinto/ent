@@ -7,6 +7,7 @@ import (
 	"github.com/lolopinto/ent/internal/db"
 	"github.com/lolopinto/ent/internal/graphql"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tscode"
 	"github.com/spf13/cobra"
@@ -35,7 +36,7 @@ var codegenCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		schema, err := schema.ParseFromInputSchema(inputSchema)
+		schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
 		if err != nil {
 			return err
 		}

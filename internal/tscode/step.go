@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"text/template"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
@@ -332,6 +333,13 @@ func writeBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath)
 		PathToFile:        getFilePathForBuilderFile(nodeData),
 		FormatSource:      true,
 		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
+		FuncMap:           getBuilderFuncs(imps),
 	})
+}
+
+func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
+	m := imps.FuncMap()
+	m["edgeInfos"] = action.GetEdgesFromEdges
+
+	return m
 }

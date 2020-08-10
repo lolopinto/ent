@@ -19,6 +19,7 @@ import (
 	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
@@ -226,7 +227,7 @@ func (m NodeMapInfo) parseFile(
 				g2.AddItem("GetActions", func(info *NodeDataInfo) {
 					var err error
 					nodeData := info.NodeData
-					nodeData.ActionInfo, err = action.ParseActions(packageName, fn, nodeData.FieldInfo, nodeData.EdgeInfo)
+					nodeData.ActionInfo, err = action.ParseActions(packageName, fn, nodeData.FieldInfo, nodeData.EdgeInfo, base.GoLang)
 					util.Die(err)
 				}, "LinkedEdges")
 
@@ -569,7 +570,7 @@ func (m NodeMapInfo) HideFromGraphQL(edge edge.Edge) bool {
 	return nodeData.HideFromGraphQL
 }
 
-func (m NodeMapInfo) parseInputSchema(schema *input.Schema) (*assocEdgeData, error) {
+func (m NodeMapInfo) parseInputSchema(schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
 	// TODO right now this is also depending on config/database.yml
 	// figure out if best place for this
 	edgeData := m.loadExistingEdges()
@@ -600,7 +601,7 @@ func (m NodeMapInfo) parseInputSchema(schema *input.Schema) (*assocEdgeData, err
 			return nil, err
 		}
 
-		nodeData.ActionInfo, err = action.ParseFromInput(nodeName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo)
+		nodeData.ActionInfo, err = action.ParseFromInput(nodeName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang)
 		if err != nil {
 			return nil, err
 		}

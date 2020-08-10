@@ -8,6 +8,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/parsehelper"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
 
@@ -311,7 +312,7 @@ func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expe
 
 	require.NotNil(t, fnMap["GetActions"])
 
-	actionInfo, err := ParseActions(nodeName, fnMap["GetActions"], fieldInfo, nil)
+	actionInfo, err := ParseActions(nodeName, fnMap["GetActions"], fieldInfo, nil, base.GoLang)
 	require.Nil(t, err)
 
 	require.Len(t, actionInfo.Actions, len(expActions))
@@ -373,7 +374,7 @@ func initSyncs() {
 			// TODO need to fix this dissonance...
 			fieldInfo := getTestFieldInfo(t, strcase.ToCamel(configName)+"Config")
 			edgeInfo := getTestEdgeInfo(t, configName)
-			actionInfo, err := ParseActions("Account", fn, fieldInfo, edgeInfo)
+			actionInfo, err := ParseActions("Account", fn, fieldInfo, edgeInfo, base.GoLang)
 			assert.NotNil(t, actionInfo, "invalid actionInfo retrieved")
 			require.NoError(t, err)
 			return actionInfo

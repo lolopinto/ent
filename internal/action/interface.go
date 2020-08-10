@@ -12,6 +12,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/internal/astparser"
@@ -187,7 +188,7 @@ type EdgeGroupAction struct {
 	mutationExistingObjAction
 }
 
-func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo) (*ActionInfo, error) {
+func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
 	// get the actions in the function
 	elts := astparser.GetEltsInFunc(fn)
 
@@ -210,10 +211,10 @@ func ParseActions(nodeName string, fn *ast.FuncDecl, fieldInfo *field.FieldInfo,
 		inputActions = append(inputActions, inputAction)
 	}
 
-	return ParseFromInput(nodeName, inputActions, fieldInfo, edgeInfo)
+	return ParseFromInput(nodeName, inputActions, fieldInfo, edgeInfo, lang)
 }
 
-func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo) (*ActionInfo, error) {
+func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.FieldInfo, edgeInfo *edge.EdgeInfo, lang base.Language) (*ActionInfo, error) {
 	actionInfo := NewActionInfo()
 
 	for _, action := range actions {
@@ -226,11 +227,11 @@ func ParseFromInput(nodeName string, actions []*input.Action, fieldInfo *field.F
 
 	if edgeInfo != nil {
 		for _, assocEdge := range edgeInfo.Associations {
-			actionInfo.addActions(processEdgeActions(nodeName, assocEdge)...)
+			actionInfo.addActions(processEdgeActions(nodeName, assocEdge, lang)...)
 		}
 
 		for _, assocGroup := range edgeInfo.AssocGroups {
-			actionInfo.addActions(processEdgeGroupActions(nodeName, assocGroup)...)
+			actionInfo.addActions(processEdgeGroupActions(nodeName, assocGroup, lang)...)
 		}
 	}
 
@@ -326,11 +327,16 @@ type EdgeActionTemplateInfo struct {
 	InstanceName             string
 	InstanceType             string
 	//	AssocEdge    *edge.AssociationEdge
-	EdgeConst     string
-	NodeType      string
-	Node          string
-	GraphQLNodeID string
-	Edge          edge.Edge
+	EdgeConst          string
+	NodeType           string
+	Node               string
+	GraphQLNodeID      string
+	TSEdgeConst        string
+	TSGraphQLNodeID    string
+	TSAddMethodName    string
+	TSAddIDMethodName  string
+	TSRemoveMethodName string
+	Edge               edge.Edge
 }
 
 func GetEdges(action Action) []EdgeActionTemplateInfo {
@@ -357,10 +363,15 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 			InstanceName:             edge.NodeInfo.NodeInstance,
 			InstanceType:             fmt.Sprintf("*models.%s", edge.NodeInfo.Node),
 			EdgeConst:                edge.EdgeConst,
+			TSEdgeConst:              edge.TsEdgeConst(),
 			//AssocEdge:    edge,
 			NodeType: edge.NodeInfo.NodeType,
 			// matches what we do in graphQLSchema.processAction
-			GraphQLNodeID: fmt.Sprintf("%sID", edge.Singular()),
+			GraphQLNodeID:      fmt.Sprintf("%sID", edge.Singular()),
+			TSGraphQLNodeID:    fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+			TSAddIDMethodName:  fmt.Sprintf("add%sID", edge.Singular()),
+			TSAddMethodName:    fmt.Sprintf("add%s", edge.Singular()),
+			TSRemoveMethodName: fmt.Sprintf("remove%s", edge.Singular()),
 		})
 	}
 

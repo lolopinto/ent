@@ -78,44 +78,44 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     };
   }
 
-  {{ $edgeInfos := .EdgeInfo.Associations -}}
+  {{ $edgeInfos := edgeInfos .EdgeInfo.Associations -}}
   {{ range $edge := $edgeInfos -}}  
-    {{ $node := useImport .NodeInfo.Node -}}
-  add{{$edge.Singular}}(...ids: {{useImport "ID"}}[]): {{$builder}};
-  add{{$edge.Singular}}(...nodes: {{$node}}[]): {{$builder}};
-  add{{$edge.Singular}}(...nodes: Builder<{{$node}}>[]): {{$builder}};
-  add{{$edge.Singular}}(...nodes: ID[] | {{$node}}[] | Builder<{{$node}}>[]): {{$builder}} {
+    {{ $node := useImport .Node -}}
+  {{$edge.TSAddMethodName}}(...ids: {{useImport "ID"}}[]): {{$builder}};
+  {{$edge.TSAddMethodName}}(...nodes: {{$node}}[]): {{$builder}};
+  {{$edge.TSAddMethodName}}(...nodes: Builder<{{$node}}>[]): {{$builder}};
+  {{$edge.TSAddMethodName}}(...nodes: ID[] | {{$node}}[] | Builder<{{$node}}>[]): {{$builder}} {
     for (const node of nodes) {
       if (this.is{{$node}}Builder(node)) {
-        this.add{{$edge.Singular}}ID(node);
+        this.{{$edge.TSAddIDMethodName}}(node);
       } else if (typeof node === "object") {
-        this.add{{$edge.Singular}}ID(node.id);
+        this.{{$edge.TSAddIDMethodName}}(node.id);
       } else {
-        this.add{{$edge.Singular}}ID(node);
+        this.{{$edge.TSAddIDMethodName}}(node);
       }
     }
     return this;
   }
 
-  add{{$edge.Singular}}ID(id: {{useImport "ID"}} | Builder<{{$node}}>, options?: {{useImport "AssocEdgeInputOptions"}}): {{$builder}} {
+  {{$edge.TSAddIDMethodName}}(id: {{useImport "ID"}} | Builder<{{$node}}>, options?: {{useImport "AssocEdgeInputOptions"}}): {{$builder}} {
     {{/* TODO need inbound edges also */}}
     this.orchestrator.addOutboundEdge(
       id, 
-      {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}},
-      {{useImport "NodeType"}}.{{.NodeInfo.Node}},
+      {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}},
+      {{useImport "NodeType"}}.{{.Node}},
       options,
     );
     return this;
   }
 
-  remove{{$edge.Singular}}(...ids: {{useImport "ID"}}[]): {{$builder}};
-  remove{{$edge.Singular}}(...nodes: {{useImport .NodeInfo.Node}}[]): {{$builder}};
-  remove{{$edge.Singular}}(...nodes: ID[] | {{.NodeInfo.Node}}[]): {{$builder}} {
+  {{$edge.TSRemoveMethodName}}(...ids: {{useImport "ID"}}[]): {{$builder}};
+  {{$edge.TSRemoveMethodName}}(...nodes: {{$node}}[]): {{$builder}};
+  {{$edge.TSRemoveMethodName}}(...nodes: ID[] | {{$node}}[]): {{$builder}} {
     for (const node of nodes) {
       if (typeof node === "object") {
-        this.orchestrator.removeOutboundEdge(node.id, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}});
+        this.orchestrator.removeOutboundEdge(node.id, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}});
       } else {
-        this.orchestrator.removeOutboundEdge(node, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}});
+        this.orchestrator.removeOutboundEdge(node, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}});
       }
     }
     return this;
