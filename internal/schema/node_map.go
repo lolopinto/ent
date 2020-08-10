@@ -577,13 +577,15 @@ func (m NodeMapInfo) parseInputSchema(schema *input.Schema, lang base.Language) 
 
 	for nodeName, node := range schema.Nodes {
 
-		nodeName = strcase.ToSnake(strings.ToLower(nodeName))
+		// order of operations matters here
+		// PickupLocation -> pickup_location
+		packageName := strings.ToLower(strcase.ToSnake(nodeName))
 		// user.ts, address.ts etc
-		nodeData := newNodeData(nodeName)
+		nodeData := newNodeData(packageName)
 
 		// default nodeName goes from address -> addresses, user -> users etc
 		if node.TableName == nil {
-			nodeData.TableName = inflection.Plural(nodeName)
+			nodeData.TableName = inflection.Plural(packageName)
 		} else {
 			nodeData.TableName = *node.TableName
 		}
@@ -596,12 +598,12 @@ func (m NodeMapInfo) parseInputSchema(schema *input.Schema, lang base.Language) 
 			return nil, err
 		}
 
-		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(nodeName, node)
+		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(packageName, node)
 		if err != nil {
 			return nil, err
 		}
 
-		nodeData.ActionInfo, err = action.ParseFromInput(nodeName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang)
+		nodeData.ActionInfo, err = action.ParseFromInput(packageName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang)
 		if err != nil {
 			return nil, err
 		}

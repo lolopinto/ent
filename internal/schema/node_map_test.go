@@ -568,10 +568,10 @@ func TestGeneratedConstants(t *testing.T) {
 		t,
 		accountInfo,
 		map[string]map[string]string{
-			"ent.NodeType": map[string]string{
+			"ent.NodeType": {
 				"AccountType": "account",
 			},
-			"ent.EdgeType": map[string]string{
+			"ent.EdgeType": {
 				"AccountToFriendsEdge": "",
 			},
 		},
@@ -583,7 +583,7 @@ func TestGeneratedConstants(t *testing.T) {
 		t,
 		todoInfo,
 		map[string]map[string]string{
-			"ent.NodeType": map[string]string{
+			"ent.NodeType": {
 				"TodoType": "todo",
 			},
 		},
@@ -933,10 +933,10 @@ func (suite *edgeTestSuite) TestInverseAssocEdgeAddedAfter() {
 		suite.T(),
 		accountInfo,
 		map[string]map[string]string{
-			"ent.NodeType": map[string]string{
+			"ent.NodeType": {
 				"AccountType": "account",
 			},
-			"ent.EdgeType": map[string]string{
+			"ent.EdgeType": {
 				"AccountToFriendRequestsEdge": "",
 			},
 		},

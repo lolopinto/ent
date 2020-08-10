@@ -13,15 +13,15 @@ import (
 func TestParseFromInputSchema(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
-			"User": &input.Node{
+			"User": {
 				Fields: []*input.Field{
-					&input.Field{
+					{
 						Name: "id",
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
 					},
-					&input.Field{
+					{
 						Name: "firstName",
 						Type: &input.FieldType{
 							DBType: input.String,
@@ -48,15 +48,57 @@ func TestParseFromInputSchema(t *testing.T) {
 	assert.NotNil(t, field)
 }
 
+func TestCompoundName(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"PickupLocation": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "name",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 1)
+
+	// still config name because of artifact of go and old schema
+	config := schema.Nodes["PickupLocationConfig"]
+	assert.NotNil(t, config)
+
+	nodeData := config.NodeData
+	// no table name provided and one automatically generated
+	assert.Equal(t, "pickup_locations", nodeData.TableName)
+
+	// package name correct
+	assert.Equal(t, "pickup_location", nodeData.PackageName)
+	field, err := schema.GetFieldByName("PickupLocationConfig", "id")
+	assert.Nil(t, err)
+	assert.NotNil(t, field)
+}
+
 func TestParseInputWithOverridenTable(t *testing.T) {
 	// rename of user -> accounts or something
 	tableName := "accounts"
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
-			"User": &input.Node{
+			"User": {
 				TableName: &tableName,
 				Fields: []*input.Field{
-					&input.Field{
+					{
 						Name: "id",
 						Type: &input.FieldType{
 							DBType: input.UUID,
@@ -82,9 +124,9 @@ func TestParseInputWithOverridenTable(t *testing.T) {
 func TestParseInputWithForeignKey(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
-			"User": &input.Node{
+			"User": {
 				Fields: []*input.Field{
-					&input.Field{
+					{
 						Name: "id",
 						Type: &input.FieldType{
 							DBType: input.UUID,
@@ -92,15 +134,15 @@ func TestParseInputWithForeignKey(t *testing.T) {
 					},
 				},
 			},
-			"Event": &input.Node{
+			"Event": {
 				Fields: []*input.Field{
-					&input.Field{
+					{
 						Name: "id",
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
 					},
-					&input.Field{
+					{
 						Name: "UserID",
 						Type: &input.FieldType{
 							DBType: input.UUID,
@@ -135,9 +177,9 @@ func TestParseInputWithForeignKey(t *testing.T) {
 func TestParseInputWithFieldEdge(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
-			"User": &input.Node{
+			"User": {
 				Fields: []*input.Field{
-					&input.Field{
+					{
 						Name: "id",
 						Type: &input.FieldType{
 							DBType: input.UUID,
@@ -145,21 +187,21 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 					},
 				},
 				AssocEdges: []*input.AssocEdge{
-					&input.AssocEdge{
+					{
 						Name:       "CreatedEvents",
 						SchemaName: "Event",
 					},
 				},
 			},
-			"Event": &input.Node{
+			"Event": {
 				Fields: []*input.Field{
-					&input.Field{
+					{
 						Name: "id",
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
 					},
-					&input.Field{
+					{
 						Name: "UserID",
 						Type: &input.FieldType{
 							DBType: input.UUID,
@@ -195,9 +237,9 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 func TestParseInputWithAssocEdgeGroup(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
-			"User": &input.Node{
+			"User": {
 				Fields: []*input.Field{
-					&input.Field{
+					{
 						Name: "id",
 						Type: &input.FieldType{
 							DBType: input.UUID,
@@ -205,17 +247,17 @@ func TestParseInputWithAssocEdgeGroup(t *testing.T) {
 					},
 				},
 				AssocEdgeGroups: []*input.AssocEdgeGroup{
-					&input.AssocEdgeGroup{
+					{
 						Name:            "Friendships",
 						GroupStatusName: "FriendshipStatus",
 						AssocEdges: []*input.AssocEdge{
-							&input.AssocEdge{
+							{
 								Name:       "Friends",
 								SchemaName: "User",
 								Symmetric:  true,
 							},
 							// has inverse too!
-							&input.AssocEdge{
+							{
 								Name:       "FriendRequestsSent",
 								SchemaName: "User",
 								InverseEdge: &input.InverseAssocEdge{
