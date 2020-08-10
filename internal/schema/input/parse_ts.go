@@ -37,6 +37,7 @@ func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
 	}
 
 	r := regexp.MustCompile(`(\w+).ts$`)
+	negR := regexp.MustCompile(`(\d+_read_schema).ts`)
 
 	var schemas []schemaData
 	for _, file := range files {
@@ -46,6 +47,10 @@ func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
 		match := r.FindStringSubmatch(file.Name())
 		// generated schema.py anything else...
 		if len(match) != 2 {
+			continue
+		}
+		// found a schema file from a previous broken thing. ignore
+		if len(negR.FindStringSubmatch(file.Name())) == 2 {
 			continue
 		}
 		// assumption is upper case file.
