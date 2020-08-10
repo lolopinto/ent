@@ -152,7 +152,6 @@ func (action *addEdgeActionType) getDefaultActionName(nodeName string, edge edge
 	// in golang, it'll be referred to as user.AddFriend so we don't want the name in there
 	// but that's not the norm in TypeScript so we want the name in here for TypeScript
 	if lang == base.TypeScript {
-		// TODO not seeing this...
 		return strcase.ToCamel(nodeName) + "Add" + edge.EdgeIdentifier() + "Action"
 	}
 	return "Add" + edge.EdgeIdentifier() + "Action"
