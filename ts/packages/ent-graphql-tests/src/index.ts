@@ -290,75 +290,77 @@ async function expectFromRoot(
     expect(options[0][1]).toBe(result);
     return st;
   }
-  options.forEach((option) => {
-    let path = option[0];
-    let expected = option[1];
+  await Promise.all(
+    options.map(async (option) => {
+      let path = option[0];
+      let expected = option[1];
 
-    let nullPath: string | undefined;
-    let nullParts: string[] = [];
-    if (config.nullQueryPaths) {
-      for (let i = 0; i < config.nullQueryPaths.length; i++) {
-        if (path.startsWith(config.nullQueryPaths[i])) {
-          nullPath = config.nullQueryPaths[i];
-          nullParts = nullPath.split(".");
-          break;
+      let nullPath: string | undefined;
+      let nullParts: string[] = [];
+      if (config.nullQueryPaths) {
+        for (let i = 0; i < config.nullQueryPaths.length; i++) {
+          if (path.startsWith(config.nullQueryPaths[i])) {
+            nullPath = config.nullQueryPaths[i];
+            nullParts = nullPath.split(".");
+            break;
+          }
         }
       }
-    }
 
-    let parts = path.split(".");
-    let current = result;
+      let parts = path.split(".");
+      let current = result;
 
-    // possible to make this smarter and better
-    // e.g. when building up the tree above
-    for (let i = 0; i < parts.length; i++) {
-      let part = parts[i];
-      let idx = part.indexOf("[");
-      let listIdx: number | undefined;
+      // possible to make this smarter and better
+      // e.g. when building up the tree above
+      for (let i = 0; i < parts.length; i++) {
+        let part = parts[i];
+        let idx = part.indexOf("[");
+        let listIdx: number | undefined;
 
-      // list
-      if (idx !== -1) {
-        let endIdx = part.indexOf("]");
-        if (endIdx === -1) {
-          fail("can't have a beginning index without an end index");
+        // list
+        if (idx !== -1) {
+          let endIdx = part.indexOf("]");
+          if (endIdx === -1) {
+            fail("can't have a beginning index without an end index");
+          }
+          // get the idx we care about
+          listIdx = parseInt(part.substr(idx + 1, endIdx - idx), 10);
+
+          // update part
+          part = part.substr(0, idx);
         }
-        // get the idx we care about
-        listIdx = parseInt(part.substr(idx + 1, endIdx - idx), 10);
 
-        // update part
-        part = part.substr(0, idx);
-      }
+        current = current[part];
 
-      current = current[part];
+        // at the part of the path where it's expected to be null, confirm it is before proceeding
+        if (nullParts.length === i + 1) {
+          expect(current, `path ${nullPath} expected to be null`).toBe(null);
+          return st;
+        }
 
-      // at the part of the path where it's expected to be null, confirm it is before proceeding
-      if (nullParts.length === i + 1) {
-        expect(current, `path ${nullPath} expected to be null`).toBe(null);
-        return st;
-      }
+        if (listIdx !== undefined) {
+          current = current[listIdx];
+        }
 
-      if (listIdx !== undefined) {
-        current = current[listIdx];
-      }
-
-      if (i === parts.length - 1) {
-        // leaf node, check the value
-        if (typeof expected === "function") {
-          // TODO eventually may need to batch this but fine for now
-          Promise.resolve(expected(current));
+        if (i === parts.length - 1) {
+          // leaf node, check the value
+          if (typeof expected === "function") {
+            // TODO eventually may need to batch this but fine for now
+            await expected(current);
+          } else {
+            expect(
+              current,
+              `value of ${part} in path ${path} was not as expected`,
+            ).toBe(expected);
+          }
         } else {
           expect(
-            current,
-            `value of ${part} in path ${path} was not as expected`,
-          ).toBe(expected);
+            part,
+            `found undefined node in path ${path} at subtree ${part}`,
+          ).not.toBe(undefined);
         }
-      } else {
-        expect(
-          part,
-          `found undefined node in path ${path} at subtree ${part}`,
-        ).not.toBe(undefined);
       }
-    }
-  });
+    }),
+  );
   return st;
 }
