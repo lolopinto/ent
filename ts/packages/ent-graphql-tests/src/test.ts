@@ -12,7 +12,6 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "./index";
-import { resolve } from "path";
 
 test("simplest query", async () => {
   let schema = new GraphQLSchema({
