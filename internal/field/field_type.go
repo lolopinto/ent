@@ -398,21 +398,21 @@ func (f *Field) TsBuilderType() string {
 }
 
 func (f *Field) TsBuilderImports() []string {
+	ret := []string{}
 	typ, ok := f.fieldType.(enttype.TSTypeWithImports)
 	if ok {
-		return typ.GetTsTypeImports()
+		ret = typ.GetTsTypeImports()
 	}
 	typeName := f.getIDFieldTypeName()
 	if typeName == "" {
-		return []string{}
+		return ret
 	}
 	match := structNameRegex.FindStringSubmatch(typeName)
 	if len(match) != 2 {
 		panic("invalid config name")
 	}
-	return []string{
-		match[1], "ID", "Builder",
-	}
+	ret = append(ret, match[1], "ID", "Builder")
+	return ret
 }
 
 func (f *Field) GetNotNullableTsType() string {
