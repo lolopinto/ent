@@ -347,12 +347,14 @@ describe("remove inbound edge", () => {
       new Map(),
       WriteOperation.Edit,
     );
+    builder.orchestrator.removeInboundEdge("2", "edge");
 
     try {
-      builder.orchestrator.removeInboundEdge("2", "edge");
+      await builder.build();
+
       fail("should not get here");
     } catch (e) {
-      expect(e.message).toBe("cannot remove an edge from a non-existing ent");
+      expect(e.message).toBe("existing ent required with operation");
     }
   });
 });
@@ -387,12 +389,13 @@ describe("remove outbound edge", () => {
       new Map(),
       WriteOperation.Edit,
     );
+    builder.orchestrator.removeOutboundEdge("2", "edge");
 
     try {
-      builder.orchestrator.removeOutboundEdge("2", "edge");
+      await builder.build();
       fail("should not get here");
     } catch (e) {
-      expect(e.message).toBe("cannot remove an edge from a non-existing ent");
+      expect(e.message).toBe("existing ent required with operation");
     }
   });
 });
