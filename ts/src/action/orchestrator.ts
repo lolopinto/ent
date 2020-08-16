@@ -30,20 +30,20 @@ export interface OrchestratorOptions<T extends Ent> {
 }
 
 // hmm is it worth having multiple types here or just having one?
-// todo may just change this to just ent and remove generics...
-interface EdgeInputData<T2 extends Ent> {
+// we have one type here instead
+interface EdgeInputData {
   edgeType: string;
-  id: Builder<T2> | ID; // when an OutboundEdge, this is the id2, when an inbound edge, this is the id1
+  id: Builder<Ent> | ID; // when an OutboundEdge, this is the id2, when an inbound edge, this is the id1
   nodeType?: string; // expected to be set for WriteOperation.Insert and undefined for WriteOperation.Delete
   options?: AssocEdgeInputOptions;
 }
 
-enum edgeDirection {
+export enum edgeDirection {
   inboundEdge,
   outboundEdge,
 }
 
-interface internalEdgeInputData extends EdgeInputData<Ent> {
+interface internalEdgeInputData extends EdgeInputData {
   direction: edgeDirection;
 }
 
@@ -52,7 +52,7 @@ export class Orchestrator<T extends Ent> {
   // wowza this is a lot lol
   private edges: Map<
     string,
-    Map<WriteOperation, Map<string, internalEdgeInputData>>
+    Map<WriteOperation, Map<ID, internalEdgeInputData>>
   > = new Map();
   private validatedFields: {} | null;
   private changesets: Changeset<T>[] = [];
@@ -65,10 +65,23 @@ export class Orchestrator<T extends Ent> {
   private addEdge(edge: internalEdgeInputData, op: WriteOperation) {
     this.edgeSet.add(edge.edgeType);
 
-    let m1: Map<WriteOperation, Map<string, internalEdgeInputData>> =
+    // need this because we're not referring to type T of the class
+    function isBuilder<T2 extends Ent>(
+      val: Builder<T2> | any,
+    ): val is Builder<T2> {
+      return (val as Builder<T2>).placeholderID !== undefined;
+    }
+
+    let m1: Map<WriteOperation, Map<ID, internalEdgeInputData>> =
       this.edges.get(edge.edgeType) || new Map();
-    let m2: Map<string, internalEdgeInputData> = m1.get(op) || new Map();
-    let id = edge.id.toString(); // TODO confirm that toString for builder is placeholderID. if not, add it or change this...
+    let m2: Map<ID, internalEdgeInputData> = m1.get(op) || new Map();
+    let id: ID;
+    if (isBuilder(edge.id)) {
+      id = edge.id.placeholderID;
+    } else {
+      id = edge.id;
+    }
+    //    let id = edge.id.toString(); // TODO confirm that toString for builder is placeholderID. if not, add it or change this...
     // set or overwrite the new edge data for said id
     m2.set(id, edge);
     m1.set(op, m2);
@@ -133,6 +146,19 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
+  // this doesn't take a direction as that's an implementation detail
+  // it doesn't make any sense to use the same edgeType for inbound and outbound edges
+  // so no need for that
+  getInputEdges(edgeType: string, op: WriteOperation): EdgeInputData[] {
+    let m: Map<ID, internalEdgeInputData> =
+      this.edges.get(edgeType)?.get(op) || new Map();
+    // want a list and not an IterableIterator
+    let ret: EdgeInputData[] = [];
+    m.forEach((v) => ret.push(v));
+
+    return ret;
+  }
+
   private buildMainOp(): DataOperation {
     // this assumes we have validated fields
     switch (this.options.operation) {
@@ -186,6 +212,7 @@ export class Orchestrator<T extends Ent> {
           edgeType,
           edge.id,
           edge.nodeType,
+          edge.options,
         );
       }
     } else if (op === WriteOperation.Delete) {
@@ -310,7 +337,7 @@ export class Orchestrator<T extends Ent> {
     await Promise.all(promises);
   }
 
-  private isBuilder(val: any): val is Builder<T> {
+  private isBuilder(val: Builder<T> | any): val is Builder<T> {
     return (val as Builder<T>).placeholderID !== undefined;
   }
 
