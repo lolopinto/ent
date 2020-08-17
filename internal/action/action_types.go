@@ -6,6 +6,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/schema/base"
 )
 
 type actionType interface {
@@ -28,7 +29,7 @@ type concreteNodeActionType interface {
 
 type concreteEdgeActionType interface {
 	concreteActionType
-	getDefaultActionName(nodeName string, edge edge.ActionableEdge) string
+	getDefaultActionName(nodeName string, edge edge.ActionableEdge, lang base.Language) string
 	getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string
 }
 
@@ -147,9 +148,12 @@ var _ actionType = &mutationsActionType{}
 type addEdgeActionType struct {
 }
 
-func (action *addEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge) string {
-	// it's going to be in the node_name package..
-	// AddFriendAction
+func (action *addEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge, lang base.Language) string {
+	// in golang, it'll be referred to as user.AddFriend so we don't want the name in there
+	// but that's not the norm in TypeScript so we want the name in here for TypeScript
+	if lang == base.TypeScript {
+		return strcase.ToCamel(nodeName) + "Add" + edge.EdgeIdentifier() + "Action"
+	}
 	return "Add" + edge.EdgeIdentifier() + "Action"
 }
 
@@ -180,7 +184,11 @@ var _ concreteEdgeActionType = &addEdgeActionType{}
 type removeEdgeActionType struct {
 }
 
-func (action *removeEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge) string {
+func (action *removeEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge, lang base.Language) string {
+	// see addEdgeActionType up
+	if lang == base.TypeScript {
+		return strcase.ToCamel(nodeName) + "Remove" + edge.EdgeIdentifier() + "Action"
+	}
 	return "Remove" + edge.EdgeIdentifier() + "Action"
 }
 
@@ -211,7 +219,7 @@ var _ concreteEdgeActionType = &removeEdgeActionType{}
 type groupEdgeActionType struct {
 }
 
-func (action *groupEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge) string {
+func (action *groupEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge, lang base.Language) string {
 	return fmt.Sprintf("Edit%s%sAction", strcase.ToCamel(nodeName), edge.EdgeIdentifier())
 }
 
@@ -303,11 +311,13 @@ func getActionNameForEdgeActionType(
 	typ concreteEdgeActionType,
 	nodeName string,
 	assocEdge *edge.AssociationEdge,
-	customName string) string {
+	customName string,
+	lang base.Language,
+) string {
 	if customName != "" {
 		return customName
 	}
-	return typ.getDefaultActionName(nodeName, assocEdge)
+	return typ.getDefaultActionName(nodeName, assocEdge, lang)
 }
 
 func getGraphQLNameForEdgeActionType(

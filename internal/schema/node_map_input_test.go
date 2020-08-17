@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestParseFromInputSchema(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema)
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
@@ -66,7 +67,7 @@ func TestParseInputWithOverridenTable(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema)
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)
@@ -111,7 +112,7 @@ func TestParseInputWithForeignKey(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema)
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
@@ -170,7 +171,7 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema)
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 2)
@@ -228,7 +229,7 @@ func TestParseInputWithAssocEdgeGroup(t *testing.T) {
 		},
 	}
 
-	schema, err := schema.ParseFromInputSchema(inputSchema)
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
 
 	require.Nil(t, err)
 	assert.Len(t, schema.Nodes, 1)

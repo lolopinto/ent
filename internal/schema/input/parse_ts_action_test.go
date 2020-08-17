@@ -9,12 +9,11 @@ import (
 
 func TestParseActions(t *testing.T) {
 	testCases := map[string]testCase{
-		"mutations action": testCase{
+		"mutations action": {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import Schema, {Action, Field, ActionOperation} from "{schema}";
-				import {StringType, TimeType} from "{field}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
@@ -30,31 +29,30 @@ func TestParseActions(t *testing.T) {
 				};`),
 			},
 			expectedOutput: map[string]node{
-				"Event": node{
+				"Event": {
 					fields: []field{
-						field{
+						{
 							name:   "name",
 							dbType: input.String,
 						},
-						field{
+						{
 							name:   "start_time",
 							dbType: input.Time,
 						},
 					},
 					actions: []action{
-						action{
+						{
 							operation: ent.MutationsAction,
 						},
 					},
 				},
 			},
 		},
-		"delete action": testCase{
+		"delete action": {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import Schema, {Action, Field, ActionOperation} from "{schema}";
-				import {StringType, TimeType} from "{field}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
@@ -70,31 +68,30 @@ func TestParseActions(t *testing.T) {
 				};`),
 			},
 			expectedOutput: map[string]node{
-				"Event": node{
+				"Event": {
 					fields: []field{
-						field{
+						{
 							name:   "name",
 							dbType: input.String,
 						},
-						field{
+						{
 							name:   "start_time",
 							dbType: input.Time,
 						},
 					},
 					actions: []action{
-						action{
+						{
 							operation: ent.DeleteAction,
 						},
 					},
 				},
 			},
 		},
-		"edit action": testCase{
+		"edit action": {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import Schema, {Action, Field, ActionOperation} from "{schema}";
-				import {StringType, TimeType} from "{field}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
@@ -117,24 +114,24 @@ func TestParseActions(t *testing.T) {
 				};`),
 			},
 			expectedOutput: map[string]node{
-				"Event": node{
+				"Event": {
 					fields: []field{
-						field{
+						{
 							name:   "name",
 							dbType: input.String,
 						},
-						field{
+						{
 							name:   "start_time",
 							dbType: input.Time,
 						},
-						field{
+						{
 							name:     "end_time",
 							dbType:   input.Time,
 							nullable: true,
 						},
 					},
 					actions: []action{
-						action{
+						{
 							operation: ent.EditAction,
 							fields: []string{
 								"start_time",
@@ -147,12 +144,11 @@ func TestParseActions(t *testing.T) {
 				},
 			},
 		},
-		"create action": testCase{
+		"create action": {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import Schema, {Action, Field, ActionOperation} from "{schema}";
-				import {StringType, TimeType} from "{field}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
@@ -168,19 +164,19 @@ func TestParseActions(t *testing.T) {
 				};`),
 			},
 			expectedOutput: map[string]node{
-				"Event": node{
+				"Event": {
 					fields: []field{
-						field{
+						{
 							name:   "name",
 							dbType: input.String,
 						},
-						field{
+						{
 							name:   "start_time",
 							dbType: input.Time,
 						},
 					},
 					actions: []action{
-						action{
+						{
 							operation: ent.CreateAction,
 						},
 					},

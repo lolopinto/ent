@@ -10,6 +10,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/jinzhu/inflection"
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/depgraph"
@@ -431,6 +432,22 @@ func EdgeInfoFromInput(packageName string, node *input.Node) (*EdgeInfo, error) 
 	return edgeInfo, nil
 }
 
+func edgeActionsFromInput(actions []*input.EdgeAction) []*EdgeAction {
+	if actions == nil {
+		return nil
+	}
+	ret := make([]*EdgeAction, len(actions))
+	for idx, action := range actions {
+		ret[idx] = &EdgeAction{
+			ExposeToGraphQL:   !action.HideFromGraphQL,
+			CustomActionName:  action.CustomActionName,
+			CustomGraphQLName: action.CustomGraphQLName,
+			Action:            getTypeNameActionOperationFromTypeName(action.Operation),
+		}
+	}
+	return ret
+}
+
 func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocEdge) *AssociationEdge {
 	assocEdge := &AssociationEdge{
 		Symmetric: edge.Symmetric,
@@ -448,9 +465,7 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 		assocEdge.TableName = getNameFromParts(tableNameParts)
 	}
 
-	if edge.EdgeActions != nil {
-		assocEdge.EdgeActions = edge.EdgeActions.([]*EdgeAction)
-	}
+	assocEdge.EdgeActions = edgeActionsFromInput(edge.EdgeActions)
 
 	if edge.InverseEdge != nil {
 		inverseEdge := &InverseAssocEdge{}
@@ -503,9 +518,7 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 
 	assocEdgeGroup.Edges = make(map[string]*AssociationEdge)
 
-	if edgeGroup.EdgeActions != nil {
-		assocEdgeGroup.EdgeActions = edgeGroup.EdgeActions.([]*EdgeAction)
-	}
+	assocEdgeGroup.EdgeActions = edgeActionsFromInput(edgeGroup.EdgeActions)
 
 	for _, edge := range edgeGroup.AssocEdges {
 		// if input edge doesn't have its own tableName, use group tableName
@@ -705,26 +718,67 @@ func parseAssociationEdgeGroupItem(node *input.Node, containingPackageName, grou
 	return nil
 }
 
-func parseEdgeActions(result *astparser.Result) []*EdgeAction {
-	edgeActions := make([]*EdgeAction, len(result.Elems))
+func parseEdgeActions(result *astparser.Result) []*input.EdgeAction {
+	edgeActions := make([]*input.EdgeAction, len(result.Elems))
 	for idx, elem := range result.Elems {
 		edgeActions[idx] = parseEdgeAction(elem)
 	}
 	return edgeActions
 }
 
-func parseEdgeAction(elem *astparser.Result) *EdgeAction {
+// copied from internal/action/action.go
+func getActionOperationFromTypeName(typeName string) ent.ActionOperation {
+	switch typeName {
+	case "ent.CreateAction":
+		return ent.CreateAction
+	case "ent.EditAction":
+		return ent.EditAction
+	case "ent.DeleteAction":
+		return ent.DeleteAction
+	case "ent.MutationsAction":
+		return ent.MutationsAction
+	case "ent.AddEdgeAction":
+		return ent.AddEdgeAction
+	case "ent.RemoveEdgeAction":
+		return ent.RemoveEdgeAction
+	case "ent.EdgeGroupAction":
+		return ent.EdgeGroupAction
+	}
+	panic(fmt.Errorf("invalid action type passed %s", typeName))
+}
+
+func getTypeNameActionOperationFromTypeName(op ent.ActionOperation) string {
+	switch op {
+	case ent.CreateAction:
+		return "ent.CreateAction"
+	case ent.EditAction:
+		return "ent.EditAction"
+	case ent.DeleteAction:
+		return "ent.DeleteAction"
+	case ent.MutationsAction:
+		return "ent.MutationsAction"
+	case ent.AddEdgeAction:
+		return "ent.AddEdgeAction"
+	case ent.RemoveEdgeAction:
+		return "ent.RemoveEdgeAction"
+	case ent.EdgeGroupAction:
+		return "ent.EdgeGroupAction"
+	}
+	panic(fmt.Errorf("invalid action type passed %v", op))
+}
+
+func parseEdgeAction(elem *astparser.Result) *input.EdgeAction {
 	if elem.GetTypeName() != "ent.EdgeActionConfig" {
 		panic("invalid format")
 	}
-	ret := &EdgeAction{
-		ExposeToGraphQL: true,
+	ret := &input.EdgeAction{
+		HideFromGraphQL: false,
 	}
 
 	for _, elem := range elem.Elems {
 		switch elem.IdentName {
 		case "Action":
-			ret.Action = elem.Value.GetTypeName()
+			ret.Operation = getActionOperationFromTypeName(elem.Value.GetTypeName())
 			break
 
 		case "CustomActionName":
@@ -736,7 +790,7 @@ func parseEdgeAction(elem *astparser.Result) *EdgeAction {
 			break
 
 		case "HideFromGraphQL":
-			ret.ExposeToGraphQL = !astparser.IsTrueBooleanResult(elem.Value)
+			ret.HideFromGraphQL = astparser.IsTrueBooleanResult(elem.Value)
 		}
 	}
 

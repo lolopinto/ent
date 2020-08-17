@@ -37,7 +37,7 @@ func writeBaseActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePa
 		PathToFile:        getFilePathForActionBaseFile(nodeData, action),
 		FormatSource:      true,
 		TsImports:         imps,
-		FuncMap:           getCustomFuncMap(imps),
+		FuncMap:           getFuncMapForActionBase(imps),
 	})
 }
 
@@ -64,15 +64,21 @@ func writeActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, 
 
 func getCustomFuncMap(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
-	m["hasInput"] = hasInput
+	m["hasInput"] = action.HasInput
 	m["isRequiredField"] = action.IsRequiredField
 	m["getWriteOperation"] = getWriteOperation
 
 	return m
 }
 
-func hasInput(action action.Action) bool {
-	return len(action.GetFields()) != 0
+func getFuncMapForActionBase(imps *tsimport.Imports) template.FuncMap {
+	m := getCustomFuncMap(imps)
+
+	m["edges"] = action.GetEdges
+	m["removeEdgeAction"] = action.IsRemoveEdgeAction
+	m["edgeAction"] = action.IsEdgeAction
+
+	return m
 }
 
 func getWriteOperation(action action.Action) string {

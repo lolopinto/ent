@@ -120,21 +120,28 @@ type AssocEdge struct {
 	Unique      bool              `json:"unique"`
 	TableName   string            `json:"tableName"`
 	InverseEdge *InverseAssocEdge `json:"inverseEdge"`
-
+	EdgeActions []*EdgeAction     `json:"edgeActions"`
 	// Go specific
-	EntConfig   *schemaparser.EntConfigInfo
-	EdgeActions interface{}
+	EntConfig *schemaparser.EntConfigInfo
 }
 
 type AssocEdgeGroup struct {
-	Name            string       `json:"name"`
-	GroupStatusName string       `json:"groupStatusName"`
-	TableName       string       `json:"tableName"`
-	AssocEdges      []*AssocEdge `json:"assocEdges"`
+	Name            string        `json:"name"`
+	GroupStatusName string        `json:"groupStatusName"`
+	TableName       string        `json:"tableName"`
+	AssocEdges      []*AssocEdge  `json:"assocEdges"`
+	EdgeActions     []*EdgeAction `json:"edgeActions"`
 
 	// Go specific
-	EdgeActions interface{}
 	ActionEdges []string
+}
+
+type EdgeAction struct {
+	Operation         ent.ActionOperation `json:"operation"`
+	CustomActionName  string              `json:"actionName"`
+	CustomGraphQLName string              `json:"graphQLName"`
+	CustomInputName   string              `json:"inputName"`
+	HideFromGraphQL   bool                `json:"hideFromGraphQL"`
 }
 
 type Action struct {

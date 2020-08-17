@@ -43,6 +43,26 @@ export interface AssocEdge {
   inverseEdge?: InverseAssocEdge;
   // optional, can be overriden as needed. if not provided, schema generates one
   tableName?: string;
+  edgeActions?: EdgeAction[];
+}
+
+// type PickKey<T, K extends keyof T> = Extract<keyof T, K>;
+// type EdgeActionOperation = PickKey<
+//   typeof ActionOperation,
+//   "AddEdge",
+//   "RemoveEdge"
+// >;
+
+export interface EdgeAction {
+  // TODO ideally this only requires AddEdge|RemoveEdge but can't get it to work (yet)
+  //  operation: EdgeActionOperation;
+  operation: ActionOperation;
+  //   ActionOperation,
+  //   ActionOperation.AddEdge | ActionOperation.RemoveEdge
+  // >;
+  actionName?: string;
+  hideFromGraphQL?: boolean;
+  graphQLName?: string;
 }
 
 // Information about the inverse edge of an assoc edge
@@ -246,7 +266,7 @@ export enum ActionOperation {
   AddEdge = 16,
   // RemoveEdge is used to provide the ability to remove an edge in an AssociationEdge.
   RemoveEdge = 32,
-  // EdgeGroup is used to provide the abilith to edit an edge group in an AssociationEdgeGroup.
+  // EdgeGroup is used to provide the ability to edit an edge group in an AssociationEdgeGroup.
   EdgeGroup = 64,
 }
 

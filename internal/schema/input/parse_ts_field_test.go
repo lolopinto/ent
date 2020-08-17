@@ -8,7 +8,7 @@ import (
 
 func TestParseFields(t *testing.T) {
 	testCases := map[string]testCase{
-		"node with implicit schema": testCase{
+		"node with implicit schema": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
 				import { DBType } from "{schema}";
@@ -27,9 +27,9 @@ func TestParseFields(t *testing.T) {
 			export default User`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:   "FirstName",
 							dbType: input.String,
 						},
@@ -37,11 +37,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"node with explicit schema": testCase{
+		"node with explicit schema": {
 			code: map[string]string{
 				"address.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}";
-				import {StringType} from "{field}";
+				import {Schema, Field, StringType} from "{schema}";
 
 				export default class Address implements Schema {
 					tableName: string = "addresses";
@@ -53,14 +52,14 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"Address": node{
+				"Address": {
 					tableName: "addresses",
 					fields: []field{
-						field{
+						{
 							name:   "street_name",
 							dbType: input.String,
 						},
-						field{
+						{
 							name:   "city",
 							dbType: input.String,
 						},
@@ -68,11 +67,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"nullable field": testCase{
+		"nullable field": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}";
-				import {StringType} from "{field}";
+				import {Schema, Field, StringType} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
@@ -81,9 +79,9 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:     "bio",
 							dbType:   input.String,
 							nullable: true,
@@ -92,11 +90,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"renamed storageKey": testCase{
+		"renamed storageKey": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}";
-				import {StringType} from "{field}";
+				import {Schema, Field, StringType} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
@@ -105,9 +102,9 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:       "bio",
 							dbType:     input.String,
 							storageKey: "about_me",
@@ -116,11 +113,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"renamed graphqlName": testCase{
+		"renamed graphqlName": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}";
-				import {StringType} from "{field}";
+				import {Schema, Field, StringType} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
@@ -129,9 +125,9 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:        "bio",
 							dbType:      input.String,
 							graphqlName: "aboutMe",
@@ -140,11 +136,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"unique": testCase{
+		"unique": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}";
-				import {StringType} from "{field}";
+				import {Schema, Field, StringType} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
@@ -153,9 +148,9 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:   "email",
 							dbType: input.String,
 							unique: true,
@@ -164,11 +159,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"hideFromGraphQL": testCase{
+		"hideFromGraphQL": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}";
-				import {StringType} from "{field}";
+				import {Schema, Field, StringType} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
@@ -177,9 +171,9 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:            "password",
 							dbType:          input.String,
 							hideFromGraphQL: true,
@@ -188,11 +182,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"private field": testCase{
+		"private field": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}";
-				import {StringType} from "{field}";
+				import {Schema, Field, StringType} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
@@ -201,9 +194,9 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:    "password",
 							dbType:  input.String,
 							private: true,
@@ -212,11 +205,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"index": testCase{
+		"index": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}";
-				import {StringType} from "{field}";
+				import {Schema, Field, StringType} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
@@ -225,9 +217,9 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:   "last_name",
 							dbType: input.String,
 							index:  true,
@@ -236,11 +228,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"server default": testCase{
+		"server default": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field} from "{schema}";
-				import {TimeType} from "{field}";
+				import {Schema, Field, TimeType} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
@@ -249,9 +240,9 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:          "updated_at",
 							dbType:        input.Time,
 							serverDefault: "now()",
@@ -260,11 +251,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"with base schema": testCase{
+		"with base schema": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field, BaseEntSchema} from "{schema}";
-				import {StringType} from "{field}";
+				import {Schema, Field, BaseEntSchema, StringType} from "{schema}";
 
 				export default class User extends BaseEntSchema implements Schema {
 					fields: Field[] = [
@@ -273,23 +263,23 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:                    "ID",
 							dbType:                  input.UUID,
 							primaryKey:              true,
 							disableUserEditable:     true,
 							hasDefaultValueOnCreate: true,
 						},
-						field{
+						{
 							name:                    "createdAt",
 							dbType:                  input.Time,
 							hideFromGraphQL:         true,
 							disableUserEditable:     true,
 							hasDefaultValueOnCreate: true,
 						},
-						field{
+						{
 							name:                    "updatedAt",
 							dbType:                  input.Time,
 							hideFromGraphQL:         true,
@@ -297,7 +287,7 @@ func TestParseFields(t *testing.T) {
 							hasDefaultValueOnCreate: true,
 							hasDefaultValueOnEdit:   true,
 						},
-						field{
+						{
 							name:   "firstName",
 							dbType: input.String,
 						},
@@ -305,11 +295,10 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
-		"multiple files/complicated": testCase{
+		"multiple files/complicated": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import Schema, {Field, BaseEntSchema} from "{schema}"
-				import {UUIDType, StringType} from "{field}";
+				import {Schema, Field, BaseEntSchema, UUIDType, StringType } from "{schema}"
 
 				export default class User extends BaseEntSchema implements Schema {
 					fields: Field[] = [
@@ -320,8 +309,7 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 				"event.ts": getCodeWithSchema(`
-				import Schema, {BaseEntSchema, Field} from "{schema}"
-				import {TimeType, StringType, UUIDType} from "{field}";
+				import {Schema, BaseEntSchema, Field, TimeType, StringType, UUIDType} from "{schema}"
 
 				export default class Event extends BaseEntSchema implements Schema {
 					fields: Field[] = [
@@ -334,23 +322,23 @@ func TestParseFields(t *testing.T) {
 				}`),
 			},
 			expectedOutput: map[string]node{
-				"User": node{
+				"User": {
 					fields: []field{
-						field{
+						{
 							name:                    "ID",
 							dbType:                  input.UUID,
 							primaryKey:              true,
 							disableUserEditable:     true,
 							hasDefaultValueOnCreate: true,
 						},
-						field{
+						{
 							name:                    "createdAt",
 							dbType:                  input.Time,
 							hideFromGraphQL:         true,
 							disableUserEditable:     true,
 							hasDefaultValueOnCreate: true,
 						},
-						field{
+						{
 							name:                    "updatedAt",
 							dbType:                  input.Time,
 							hideFromGraphQL:         true,
@@ -358,20 +346,20 @@ func TestParseFields(t *testing.T) {
 							hasDefaultValueOnCreate: true,
 							hasDefaultValueOnEdit:   true,
 						},
-						field{
+						{
 							name:   "first_name",
 							dbType: input.String,
 						},
-						field{
+						{
 							name:   "last_name",
 							dbType: input.String,
 						},
-						field{
+						{
 							name:   "email",
 							dbType: input.String,
 							unique: true,
 						},
-						field{
+						{
 							name:            "password",
 							dbType:          input.String,
 							private:         true,
@@ -379,23 +367,23 @@ func TestParseFields(t *testing.T) {
 						},
 					},
 				},
-				"Event": node{
+				"Event": {
 					fields: []field{
-						field{
+						{
 							name:                    "ID",
 							dbType:                  input.UUID,
 							primaryKey:              true,
 							disableUserEditable:     true,
 							hasDefaultValueOnCreate: true,
 						},
-						field{
+						{
 							name:                    "createdAt",
 							dbType:                  input.Time,
 							hideFromGraphQL:         true,
 							disableUserEditable:     true,
 							hasDefaultValueOnCreate: true,
 						},
-						field{
+						{
 							name:                    "updatedAt",
 							dbType:                  input.Time,
 							hideFromGraphQL:         true,
@@ -403,25 +391,25 @@ func TestParseFields(t *testing.T) {
 							hasDefaultValueOnCreate: true,
 							hasDefaultValueOnEdit:   true,
 						},
-						field{
+						{
 							name:   "name",
 							dbType: input.String,
 						},
-						field{
+						{
 							name:       "creator_id",
 							dbType:     input.UUID,
 							foreignKey: &[2]string{"User", "ID"},
 						},
-						field{
+						{
 							name:   "start_time",
 							dbType: input.Time,
 						},
-						field{
+						{
 							name:     "end_time",
 							dbType:   input.Time,
 							nullable: true,
 						},
-						field{
+						{
 							name:   "location",
 							dbType: input.String,
 						},

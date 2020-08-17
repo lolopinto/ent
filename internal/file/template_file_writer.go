@@ -23,7 +23,7 @@ type TemplatedBasedFileWriter struct {
 	FuncMap           template.FuncMap
 	PackageName       string
 	Imports           *intimports.Imports
-	TsImports 				*tsimport.Imports
+	TsImports         *tsimport.Imports
 	EditableCode      bool
 }
 
@@ -153,14 +153,14 @@ func (fw *TemplatedBasedFileWriter) handleManualGoImports(buf *bytes.Buffer) (*b
 	}
 
 	err := writeBuffer(
-		&result, 
+		&result,
 		"package ",
 		fw.PackageName,
 		"\n\n",
 		"import (\n",
 		fw.Imports.String(),
 		")\n",
-	) 
+	)
 	if err != nil {
 		return nil, err
 	}

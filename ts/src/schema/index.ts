@@ -18,6 +18,7 @@ export {
   getFields,
   ActionOperation,
   Action,
+  EdgeAction,
 } from "./schema";
 
 export {

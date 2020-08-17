@@ -10,6 +10,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/internal/field"
@@ -17,6 +18,7 @@ import (
 	"github.com/lolopinto/ent/internal/astparser"
 )
 
+// copied to internal/edge/edge.go
 func getActionOperationFromTypeName(typeName string) ent.ActionOperation {
 	switch typeName {
 	case "ent.CreateAction":
@@ -203,7 +205,7 @@ func getEdgeActionType(actionStr string) concreteEdgeActionType {
 	return typ
 }
 
-func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge) []Action {
+func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge, lang base.Language) []Action {
 	edgeActions := assocEdge.EdgeActions
 	if len(edgeActions) == 0 {
 		return nil
@@ -219,6 +221,7 @@ func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge) []Acti
 				assocEdge,
 				typ,
 				edgeAction,
+				lang,
 				[]*edge.AssociationEdge{
 					assocEdge,
 				},
@@ -228,7 +231,7 @@ func processEdgeActions(nodeName string, assocEdge *edge.AssociationEdge) []Acti
 	return actions
 }
 
-func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGroup) []Action {
+func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGroup, lang base.Language) []Action {
 	edgeActions := assocGroup.EdgeActions
 	if len(edgeActions) == 0 {
 		return nil
@@ -269,6 +272,7 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 				assocGroup,
 				typ,
 				edgeAction,
+				lang,
 				[]*NonEntField{
 					{
 						FieldName: assocGroup.GroupStatusName,
@@ -347,13 +351,14 @@ func getCommonInfoForEdgeAction(
 	assocEdge *edge.AssociationEdge,
 	typ concreteEdgeActionType,
 	edgeAction *edge.EdgeAction,
+	lang base.Language,
 	edges []*edge.AssociationEdge) commonActionInfo {
 	var graphqlName string
 	if edgeAction.ExposeToGraphQL {
 		graphqlName = getGraphQLNameForEdgeActionType(typ, nodeName, assocEdge, edgeAction.CustomGraphQLName)
 	}
 	return commonActionInfo{
-		ActionName:      getActionNameForEdgeActionType(typ, nodeName, assocEdge, edgeAction.CustomActionName),
+		ActionName:      getActionNameForEdgeActionType(typ, nodeName, assocEdge, edgeAction.CustomActionName, lang),
 		GraphQLName:     graphqlName,
 		InputName:       "", // TODO
 		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
@@ -368,6 +373,7 @@ func getCommonInfoForGroupEdgeAction(
 	assocEdgeGroup *edge.AssociationEdgeGroup,
 	typ concreteEdgeActionType,
 	edgeAction *edge.EdgeAction,
+	lang base.Language,
 	fields []*NonEntField) commonActionInfo {
 	var graphqlName, actionName string
 	if edgeAction.ExposeToGraphQL {
@@ -378,7 +384,7 @@ func getCommonInfoForGroupEdgeAction(
 		}
 	}
 	if edgeAction.CustomActionName == "" {
-		actionName = typ.getDefaultActionName(nodeName, assocEdgeGroup)
+		actionName = typ.getDefaultActionName(nodeName, assocEdgeGroup, lang)
 	} else {
 		actionName = edgeAction.CustomActionName
 	}

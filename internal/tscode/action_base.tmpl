@@ -1,5 +1,5 @@
-{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" }}
-{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" }}
+{{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" }}
+{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" }}
 
 {{ range .NodeData.GetUniqueNodesForceSelf -}} 
   {{$packagePath := printf "src/ent/%s" .PackageName }}
@@ -90,6 +90,32 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
     {{end -}}
   }
 
+  {{ $edges := edges $action}}
+  {{ range $edge := $edges -}}
+    {{ $node := useImport $edge.Node -}}
+    {{ if removeEdgeAction $action -}}
+      {{$edge.TSRemoveMethodName}}(...ids: {{useImport "ID"}}[]): this;
+      {{$edge.TSRemoveMethodName}}(...nodes: {{$node}}[]): this;
+      {{$edge.TSRemoveMethodName}}(...nodes: {{useImport "ID"}}[] | {{$node}}[]): this{
+        nodes.forEach(node => this.builder.{{$edge.TSRemoveMethodName}}(node));
+        return this;
+      }
+    {{ else -}}
+      {{$edge.TSAddMethodName}}(...ids: {{useImport "ID"}}[]): this;
+      {{$edge.TSAddMethodName}}(...nodes: {{$node}}[]): this;
+      {{$edge.TSAddMethodName}}(...nodes: {{useImport "Builder"}}<{{$node}}>[]): this;
+      {{$edge.TSAddMethodName}}(...nodes: {{useImport "ID"}}[] | {{$node}}[] | {{useImport "Builder"}}<{{$node}}>[]): this{
+        nodes.forEach(node => this.builder.{{$edge.TSAddMethodName}}(node));
+        return this;
+      }
+
+      {{$edge.TSAddIDMethodName}}(id: {{useImport "ID"}} | {{useImport "Builder"}}<{{$node}}>, options?: {{useImport "AssocEdgeInputOptions"}}): this {
+        this.builder.{{$edge.TSAddIDMethodName}}(id, options);
+        return this;
+      }
+    {{end -}}
+  {{end -}}
+
   async changeset(): Promise<{{useImport "Changeset"}}<{{$node}}>> {
     return this.builder.build();
   }
@@ -136,7 +162,12 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       id: {{useImport "ID"}},
       {{if $hasInput -}}
         input: {{$inputName}},
-      {{end -}}
+      {{else if edgeAction $action -}}
+        {{ range $edge := $edges -}}
+          {{/* TODO this assumes there is only one edge */ -}}
+          {{$edge.TSGraphQLNodeID}}: {{useImport "ID"}},
+        {{end -}}
+      {{ end -}}
       {{ if $action.IsDeletingNode -}}
         ): Promise<void> {
       {{else -}}
@@ -145,6 +176,17 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       let {{$instance}} = await {{$node}}.loadX(viewer, id);
       {{if $hasInput -}}
         return await new this(viewer, {{$instance}}, input).saveX();
+      {{else if edgeAction $action -}}
+        return await new this(viewer, {{$instance}})
+        {{ range $edge := $edges -}}
+          {{/* TODO this assumes there is only one edge */ -}}
+          {{if removeEdgeAction $action -}}
+            .{{$edge.TSRemoveMethodName}}({{$edge.TSGraphQLNodeID}})
+          {{else -}}
+            .{{$edge.TSAddMethodName}}({{$edge.TSGraphQLNodeID}})
+          {{end -}}
+        {{end -}}
+        .saveX();
       {{else -}}
         return await new this(viewer, {{$instance}}).saveX();
       {{end -}}

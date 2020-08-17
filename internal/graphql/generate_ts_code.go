@@ -496,12 +496,17 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 						hasMutations = true
 						actionPrefix := strcase.ToCamel(action.GetGraphQLName())
 
+						fieldCfg, err := buildActionFieldConfig(nodeData, action, actionPrefix)
+						if err != nil {
+							// TODO
+							panic(err)
+						}
 						actionObj := gqlNode{
 							ObjData: &gqlobjectData{
 								Node:         nodeData.Node,
 								NodeInstance: nodeData.NodeInstance,
 								GQLNodes:     buildActionNodes(nodeData, action, actionPrefix),
-								FieldConfig:  buildActionFieldConfig(nodeData, action, actionPrefix),
+								FieldConfig:  fieldCfg,
 								Package:      data.CodePath.GetImportPackage(),
 							},
 							FilePath: getFilePathForAction(nodeData, action),
@@ -747,27 +752,36 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 	if a.MutatingExistingObject() {
 		// custom interface for editing
 
-		result.Interfaces = []*interfaceType{
-			{
-				Exported: false,
-				Name:     fmt.Sprintf("custom%sInput", actionPrefix),
-				Fields: []*interfaceField{
-					{
-						Name:      fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
-						Type:      "ID", // ID
-						UseImport: true,
-					},
+		// add adminID to interface assuming it's not already there
+		intType := &interfaceType{
+			Exported: false,
+			Name:     fmt.Sprintf("custom%sInput", actionPrefix),
+			Fields: []*interfaceField{
+				{
+					Name:      fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
+					Type:      "ID", // ID
+					UseImport: true,
 				},
 			},
 		}
 
-		// this doesn't ally for delete
-		// can be done cleaner if/when this gets more complicated but works for now
-		if a.GetOperation() != ent.DeleteAction {
-			result.Interfaces[0].Extends = []string{
+		// add edges as part of the input
+		// usually onlly one edge e.g. addFriend or addAdmin etc
+		for _, edge := range a.GetEdges() {
+			intType.Fields = append(intType.Fields, &interfaceField{
+				Name:      fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+				Type:      "ID", //ID
+				UseImport: true,
+			})
+		}
+
+		if action.HasInput(a) {
+			intType.Extends = []string{
 				fmt.Sprintf("%sInput", actionPrefix),
 			}
 		}
+
+		result.Interfaces = []*interfaceType{intType}
 	}
 
 	// TODO non ent fields 	e.g. status etc
@@ -775,7 +789,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 	return result
 }
 
-func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, actionPrefix string) *objectType {
+func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
 	node := fmt.Sprintf("%sResponse", actionPrefix)
 	result := &objectType{
 		Type:     fmt.Sprintf("%sResponseType", actionPrefix),
@@ -789,8 +803,8 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 				Type:       nodeData.Node,
 			},
 			{
-				ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
-				Type:       action.GetActionName(),
+				ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName())),
+				Type:       a.GetActionName(),
 			},
 		},
 		Imports: []*fileImport{
@@ -801,15 +815,15 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 		},
 	}
 
-	if action.GetOperation() != ent.DeleteAction {
+	if action.HasInput(a) {
 		result.Imports = append(result.Imports, &fileImport{
-			ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(action.GetActionName())),
-			Type:       action.GetInputName(),
+			ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName())),
+			Type:       a.GetInputName(),
 		})
 	}
 
-	nodeInfo := action.GetNodeInfo()
-	if action.GetOperation() != ent.DeleteAction {
+	nodeInfo := a.GetNodeInfo()
+	if a.GetOperation() != ent.DeleteAction {
 		result.Fields = append(result.Fields, &fieldType{
 			Name: nodeInfo.NodeInstance,
 			FieldImports: []*fileImport{
@@ -861,15 +875,15 @@ func buildActionResponseNode(nodeData *schema.NodeData, action action.Action, ac
 	return result
 }
 
-func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, actionPrefix string) *fieldConfig {
+func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPrefix string) (*fieldConfig, error) {
 	argImports := []string{
-		action.GetActionName(),
+		a.GetActionName(),
 	}
 	var argName string
-	if action.MutatingExistingObject() {
+	if a.MutatingExistingObject() {
 		argName = fmt.Sprintf("custom%sInput", actionPrefix)
 	} else {
-		argName = action.GetInputName()
+		argName = a.GetInputName()
 		argImports = append(argImports, argName)
 	}
 	result := &fieldConfig{
@@ -895,13 +909,13 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		ReturnTypeHint: fmt.Sprintf("Promise<%sResponse>", actionPrefix),
 	}
 
-	if action.GetOperation() == ent.CreateAction {
+	if a.GetOperation() == ent.CreateAction {
 		result.FunctionContents = append(
 			result.FunctionContents,
 			// we need fields like userID here which aren't exposed to graphql but editable...
-			fmt.Sprintf("let %s = await %s.create(context.getViewer(), {", nodeData.NodeInstance, action.GetActionName()),
+			fmt.Sprintf("let %s = await %s.create(context.getViewer(), {", nodeData.NodeInstance, a.GetActionName()),
 		)
-		for _, f := range action.GetFields() {
+		for _, f := range a.GetFields() {
 			// we need fields like userID here which aren't exposed to graphql but editable...
 			if f.EditableField() {
 				result.FunctionContents = append(
@@ -916,10 +930,10 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 			result.FunctionContents,
 			fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance),
 		)
-	} else if action.GetOperation() == ent.DeleteAction {
+	} else if a.GetOperation() == ent.DeleteAction {
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID);", action.GetActionName(), nodeData.NodeInstance),
+			fmt.Sprintf("await %s.saveXFromID(context.getViewer(), input.%sID);", a.GetActionName(), nodeData.NodeInstance),
 		)
 
 		result.FunctionContents = append(
@@ -928,19 +942,37 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		)
 	} else {
 		// some kind of editing
-		result.FunctionContents = append(
-			result.FunctionContents,
-			fmt.Sprintf("let %s = await %s.saveXFromID(context.getViewer(), input.%sID, {", nodeData.NodeInstance, action.GetActionName(), nodeData.NodeInstance),
-		)
-		for _, f := range action.GetFields() {
-			if f.ExposeToGraphQL() && f.EditableField() {
-				result.FunctionContents = append(
-					result.FunctionContents,
-					fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
-				)
+
+		if action.HasInput(a) {
+			// have fields and therefore input
+			result.FunctionContents = append(
+				result.FunctionContents,
+				fmt.Sprintf("let %s = await %s.saveXFromID(context.getViewer(), input.%sID, {", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance),
+			)
+			for _, f := range a.GetFields() {
+				if f.ExposeToGraphQL() && f.EditableField() {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
+					)
+				}
 			}
+			result.FunctionContents = append(result.FunctionContents, "});")
+
+		} else if action.IsEdgeAction(a) {
+			edges := a.GetEdges()
+			if len(edges) != 1 {
+				return nil, errors.New("expected one edge for an edge action")
+			}
+			edge := edges[0]
+			// have fields and therefore input
+			result.FunctionContents = append(
+				result.FunctionContents,
+				fmt.Sprintf("let %s = await %s.saveXFromID(context.getViewer(), input.%sID, input.%sID);", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance, strcase.ToLowerCamel(edge.Singular())),
+			)
+		} else {
+			return nil, errors.New("unexpected editable edge")
 		}
-		result.FunctionContents = append(result.FunctionContents, "});")
 
 		result.FunctionContents = append(
 			result.FunctionContents,
@@ -948,7 +980,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, action action.Action, act
 		)
 	}
 
-	return result
+	return result, nil
 }
 
 type objectType struct {
