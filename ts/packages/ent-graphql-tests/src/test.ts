@@ -244,3 +244,31 @@ test("mutation with args", async () => {
     ["lastName", "Targaryen"],
   );
 });
+
+test("with async callback", async () => {
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "1",
+    },
+    root: "user",
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["id", "1"],
+    ["firstName", "Jon"],
+    [
+      "lastName",
+      async (arg) => {
+        await new Promise((resolve, reject) => {
+          setTimeout(() => resolve(), 10);
+        });
+      },
+    ],
+  );
+});
