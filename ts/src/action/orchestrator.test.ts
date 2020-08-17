@@ -947,6 +947,30 @@ test("multi-ids then take and add to other edge", async () => {
   expect(
     builder.orchestrator.getInputEdges("otherEdge", WriteOperation.Insert),
   ).toEqual(expect.arrayContaining(otherExpEdges));
+
+  // clears all the edges
+  builder.orchestrator.clearInputEdges("edge", WriteOperation.Insert);
+  expect(
+    builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+  ).toEqual([]);
+
+  // clear just one id "3"
+  ids = ids.filter((id) => id != "3");
+  builder.orchestrator.clearInputEdges("otherEdge", WriteOperation.Insert, "3");
+  otherExpEdges = [];
+  ids.forEach((id) => {
+    otherExpEdges.push(
+      expect.objectContaining({
+        id: id,
+        edgeType: "otherEdge",
+        nodeType: "User",
+        direction: edgeDirection.outboundEdge,
+      }),
+    );
+  });
+  expect(
+    builder.orchestrator.getInputEdges("otherEdge", WriteOperation.Insert),
+  ).toEqual(otherExpEdges);
 });
 
 describe("remove inbound edge", () => {

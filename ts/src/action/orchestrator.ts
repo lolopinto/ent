@@ -47,13 +47,21 @@ interface internalEdgeInputData extends EdgeInputData {
   direction: edgeDirection;
 }
 
+type IDMap = Map<ID, internalEdgeInputData>;
+type OperationMap = Map<WriteOperation, IDMap>;
+// this is a map of
+// edgeType : {
+//   WriteOperation: {
+//     id: {
+//       id input
+//     }
+//   }
+// }
+type EdgeMap = Map<string, OperationMap>;
+
 export class Orchestrator<T extends Ent> {
   private edgeSet: Set<string> = new Set<string>();
-  // wowza this is a lot lol
-  private edges: Map<
-    string,
-    Map<WriteOperation, Map<ID, internalEdgeInputData>>
-  > = new Map();
+  private edges: EdgeMap = new Map();
   private validatedFields: {} | null;
   private changesets: Changeset<T>[] = [];
   private dependencies: Map<ID, Builder<T>> = new Map();
@@ -72,9 +80,8 @@ export class Orchestrator<T extends Ent> {
       return (val as Builder<T2>).placeholderID !== undefined;
     }
 
-    let m1: Map<WriteOperation, Map<ID, internalEdgeInputData>> =
-      this.edges.get(edge.edgeType) || new Map();
-    let m2: Map<ID, internalEdgeInputData> = m1.get(op) || new Map();
+    let m1: OperationMap = this.edges.get(edge.edgeType) || new Map();
+    let m2: IDMap = m1.get(op) || new Map();
     let id: ID;
     if (isBuilder(edge.id)) {
       id = edge.id.placeholderID;
@@ -150,13 +157,23 @@ export class Orchestrator<T extends Ent> {
   // it doesn't make any sense to use the same edgeType for inbound and outbound edges
   // so no need for that
   getInputEdges(edgeType: string, op: WriteOperation): EdgeInputData[] {
-    let m: Map<ID, internalEdgeInputData> =
-      this.edges.get(edgeType)?.get(op) || new Map();
+    let m: IDMap = this.edges.get(edgeType)?.get(op) || new Map();
     // want a list and not an IterableIterator
     let ret: EdgeInputData[] = [];
     m.forEach((v) => ret.push(v));
 
     return ret;
+  }
+
+  // this privides a way to clear data if needed
+  // we don't have a great API for this yet
+  clearInputEdges(edgeType: string, op: WriteOperation, id?: ID) {
+    let m: IDMap = this.edges.get(edgeType)?.get(op) || new Map();
+    if (id) {
+      m.delete(id);
+    } else {
+      m.clear();
+    }
   }
 
   private buildMainOp(): DataOperation {
