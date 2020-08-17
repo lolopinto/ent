@@ -30,6 +30,7 @@ import { FakeComms, Mode } from "../testutils/fake_comms";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { AlwaysAllowRule, DenyIfLoggedInRule } from "../core/privacy";
+import { edgeDirection } from "./orchestrator";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -273,48 +274,703 @@ describe("schema_with_processors", () => {
   });
 });
 
-test("inbound edge", async () => {
+const getLoggedInBuilder = () => {
   const viewer = new IDViewer("1");
   const user = new User(viewer, "1", { id: "1" });
-  const builder = new SimpleBuilder(
+  return new SimpleBuilder(
     viewer,
     new UserSchema(),
     new Map(),
     WriteOperation.Edit,
     user, // TODO enforce existing ent if not create
   );
-  builder.orchestrator.addInboundEdge("2", "edge", "User");
+};
 
-  const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
-  expect(edgeOp.edgeInput).toStrictEqual({
-    id1: "2",
-    id1Type: "User",
-    edgeType: "edge",
-    id2: "1",
-    id2Type: "User",
+const getCreateBuilder = (map: Map<string, any>) => {
+  const viewer = new IDViewer("1");
+  return new SimpleBuilder(
+    new LoggedOutViewer(),
+    new UserSchema(),
+    map,
+    WriteOperation.Insert,
+  );
+};
+
+describe("inbound edge", () => {
+  test("no options", async () => {
+    const builder = getLoggedInBuilder();
+    builder.orchestrator.addInboundEdge("2", "edge", "User");
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.inboundEdge,
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "2",
+      id1Type: "User",
+      edgeType: "edge",
+      id2: "1",
+      id2Type: "User",
+    });
+  });
+
+  test("no id. creating. no options", async () => {
+    const builder = getCreateBuilder(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    builder.orchestrator.addInboundEdge("2", "edge", "User");
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.inboundEdge,
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "2",
+      id1Type: "User",
+      edgeType: "edge",
+      id2: builder.placeholderID,
+      id2Type: "",
+    });
+  });
+
+  test("no options then add options", async () => {
+    const builder = getLoggedInBuilder();
+    builder.orchestrator.addInboundEdge("2", "edge", "User");
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.inboundEdge,
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    builder.orchestrator.addInboundEdge("2", "edge", "User", {
+      data: "123456",
+    });
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.inboundEdge,
+          options: {
+            data: "123456",
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "2",
+      id1Type: "User",
+      edgeType: "edge",
+      id2: "1",
+      id2Type: "User",
+      data: "123456",
+    });
+  });
+
+  test("no id. creating. no options, then add options", async () => {
+    const builder = getCreateBuilder(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    builder.orchestrator.addInboundEdge("2", "edge", "User");
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.inboundEdge,
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    builder.orchestrator.addInboundEdge("2", "edge", "User", {
+      data: "123456",
+    });
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.inboundEdge,
+          options: {
+            data: "123456",
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "2",
+      id1Type: "User",
+      edgeType: "edge",
+      id2: builder.placeholderID,
+      id2Type: "",
+      data: "123456",
+    });
+  });
+
+  test("options then diff options", async () => {
+    const builder = getLoggedInBuilder();
+    builder.orchestrator.addInboundEdge("2", "edge", "User", {
+      data: "123456",
+    });
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.inboundEdge,
+          options: {
+            data: "123456",
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    let date = new Date();
+    builder.orchestrator.addInboundEdge("2", "edge", "User", {
+      data: "123456",
+      time: date,
+    });
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.inboundEdge,
+          options: {
+            data: "123456",
+            time: date,
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "2",
+      id1Type: "User",
+      edgeType: "edge",
+      id2: "1",
+      id2Type: "User",
+      data: "123456",
+      time: date,
+    });
+  });
+
+  test("no id. creating. options, then diff options", async () => {
+    const builder = getCreateBuilder(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    builder.orchestrator.addInboundEdge("2", "edge", "User", {
+      data: "123456",
+    });
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.inboundEdge,
+          options: {
+            data: "123456",
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    // NOTE: data wasn't set in re-adding so it's removed...
+    let date = new Date();
+    builder.orchestrator.addInboundEdge("2", "edge", "User", {
+      time: date,
+    });
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.inboundEdge,
+          options: {
+            time: date,
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "2",
+      id1Type: "User",
+      edgeType: "edge",
+      id2: builder.placeholderID,
+      id2Type: "",
+      time: date,
+    });
   });
 });
 
-test("outbound edge", async () => {
-  const viewer = new IDViewer("1");
-  const user = new User(viewer, "1", { id: "1" });
-  const builder = new SimpleBuilder(
-    viewer,
-    new UserSchema(),
-    new Map(),
-    WriteOperation.Edit,
-    user, // TODO enforce existing ent if not create
-  );
-  builder.orchestrator.addOutboundEdge("2", "edge", "User");
+describe("outbound edge", () => {
+  test("no options", async () => {
+    const builder = getLoggedInBuilder();
+    builder.orchestrator.addOutboundEdge("2", "edge", "User");
 
-  const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
-  expect(edgeOp.edgeInput).toStrictEqual({
-    id1: "1",
-    id1Type: "User",
-    edgeType: "edge",
-    id2: "2",
-    id2Type: "User",
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.outboundEdge,
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "1",
+      id1Type: "User",
+      edgeType: "edge",
+      id2: "2",
+      id2Type: "User",
+    });
   });
+
+  test("no id. creating. no options", async () => {
+    const builder = getCreateBuilder(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    builder.orchestrator.addOutboundEdge("2", "edge", "User");
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.outboundEdge,
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: builder.placeholderID,
+      id1Type: "",
+      id2: "2",
+      id2Type: "User",
+      edgeType: "edge",
+    });
+  });
+
+  test("no options then add options", async () => {
+    const builder = getLoggedInBuilder();
+    builder.orchestrator.addOutboundEdge("2", "edge", "User");
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.outboundEdge,
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    builder.orchestrator.addOutboundEdge("2", "edge", "User", {
+      data: "123456",
+    });
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.outboundEdge,
+          options: {
+            data: "123456",
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "1",
+      id1Type: "User",
+      edgeType: "edge",
+      id2: "2",
+      id2Type: "User",
+      data: "123456",
+    });
+  });
+
+  test("no id. creating. no options, then add options", async () => {
+    const builder = getCreateBuilder(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    builder.orchestrator.addOutboundEdge("2", "edge", "User");
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.outboundEdge,
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    builder.orchestrator.addOutboundEdge("2", "edge", "User", {
+      data: "123456",
+    });
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.outboundEdge,
+          options: {
+            data: "123456",
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id2: "2",
+      id2Type: "User",
+      edgeType: "edge",
+      id1: builder.placeholderID,
+      id1Type: "",
+      data: "123456",
+    });
+  });
+
+  test("options then diff options", async () => {
+    const builder = getLoggedInBuilder();
+    builder.orchestrator.addOutboundEdge("2", "edge", "User", {
+      data: "123456",
+    });
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.outboundEdge,
+          options: {
+            data: "123456",
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    let date = new Date();
+    builder.orchestrator.addOutboundEdge("2", "edge", "User", {
+      data: "123456",
+      time: date,
+    });
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.outboundEdge,
+          options: {
+            data: "123456",
+            time: date,
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id1: "1",
+      id1Type: "User",
+      edgeType: "edge",
+      id2: "2",
+      id2Type: "User",
+      data: "123456",
+      time: date,
+    });
+  });
+
+  test("no id. creating. options, then diff options", async () => {
+    const builder = getCreateBuilder(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    builder.orchestrator.addOutboundEdge("2", "edge", "User", {
+      data: "123456",
+    });
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.outboundEdge,
+          options: {
+            data: "123456",
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    // NOTE: data wasn't set in re-adding so it's removed...
+    let date = new Date();
+    builder.orchestrator.addOutboundEdge("2", "edge", "User", {
+      time: date,
+    });
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          nodeType: "User",
+          direction: edgeDirection.outboundEdge,
+          options: {
+            time: date,
+          },
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual([]);
+
+    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    expect(edgeOp.edgeInput).toStrictEqual({
+      id2: "2",
+      id2Type: "User",
+      edgeType: "edge",
+      id1: builder.placeholderID,
+      id1Type: "",
+      time: date,
+    });
+  });
+});
+
+test("multi-ids then take and add to other edge", async () => {
+  const builder = getLoggedInBuilder();
+  let ids = ["2", "3", "4", "5", "6", "7", "8", "9", "10"];
+  let expEdges: any[] = [];
+  let otherExpEdges: any[] = [];
+
+  ids.forEach((id) => {
+    builder.orchestrator.addOutboundEdge(id, "edge", "User");
+    expEdges.push(
+      expect.objectContaining({
+        id: id,
+        edgeType: "edge",
+        nodeType: "User",
+        direction: edgeDirection.outboundEdge,
+      }),
+    );
+
+    otherExpEdges.push(
+      expect.objectContaining({
+        id: id,
+        edgeType: "otherEdge",
+        nodeType: "User",
+        direction: edgeDirection.outboundEdge,
+      }),
+    );
+  });
+
+  let edges = builder.orchestrator.getInputEdges("edge", WriteOperation.Insert);
+  expect(edges).toEqual(expect.arrayContaining(expEdges));
+
+  expect(
+    builder.orchestrator.getInputEdges("otherEdge", WriteOperation.Insert),
+  ).toEqual([]);
+
+  edges.forEach((edge) => {
+    builder.orchestrator.addOutboundEdge(edge.id, "otherEdge", edge.nodeType!);
+  });
+
+  expect(
+    builder.orchestrator.getInputEdges("otherEdge", WriteOperation.Insert),
+  ).toEqual(expect.arrayContaining(otherExpEdges));
+
+  // clears all the edges
+  builder.orchestrator.clearInputEdges("edge", WriteOperation.Insert);
+  expect(
+    builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+  ).toEqual([]);
+
+  // clear just one id "3"
+  ids = ids.filter((id) => id != "3");
+  builder.orchestrator.clearInputEdges("otherEdge", WriteOperation.Insert, "3");
+  otherExpEdges = [];
+  ids.forEach((id) => {
+    otherExpEdges.push(
+      expect.objectContaining({
+        id: id,
+        edgeType: "otherEdge",
+        nodeType: "User",
+        direction: edgeDirection.outboundEdge,
+      }),
+    );
+  });
+  expect(
+    builder.orchestrator.getInputEdges("otherEdge", WriteOperation.Insert),
+  ).toEqual(otherExpEdges);
 });
 
 describe("remove inbound edge", () => {
@@ -329,6 +985,21 @@ describe("remove inbound edge", () => {
       user, // TODO enforce existing ent if not create
     );
     builder.orchestrator.removeInboundEdge("2", "edge");
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          direction: edgeDirection.inboundEdge,
+        }),
+      ]),
+    );
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual([]);
 
     const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
@@ -347,12 +1018,14 @@ describe("remove inbound edge", () => {
       new Map(),
       WriteOperation.Edit,
     );
+    builder.orchestrator.removeInboundEdge("2", "edge");
 
     try {
-      builder.orchestrator.removeInboundEdge("2", "edge");
+      await builder.build();
+
       fail("should not get here");
     } catch (e) {
-      expect(e.message).toBe("cannot remove an edge from a non-existing ent");
+      expect(e.message).toBe("existing ent required with operation");
     }
   });
 });
@@ -369,6 +1042,21 @@ describe("remove outbound edge", () => {
       user, // TODO enforce existing ent if not create
     );
     builder.orchestrator.removeOutboundEdge("2", "edge");
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
+    ).toEqual([]);
+
+    expect(
+      builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "2",
+          edgeType: "edge",
+          direction: edgeDirection.outboundEdge,
+        }),
+      ]),
+    );
 
     const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
@@ -387,12 +1075,13 @@ describe("remove outbound edge", () => {
       new Map(),
       WriteOperation.Edit,
     );
+    builder.orchestrator.removeOutboundEdge("2", "edge");
 
     try {
-      builder.orchestrator.removeOutboundEdge("2", "edge");
+      await builder.build();
       fail("should not get here");
     } catch (e) {
-      expect(e.message).toBe("cannot remove an edge from a non-existing ent");
+      expect(e.message).toBe("existing ent required with operation");
     }
   });
 });

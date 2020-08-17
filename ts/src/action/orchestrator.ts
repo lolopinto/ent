@@ -10,7 +10,7 @@ import {
   DeleteNodeOperation,
   loadEdgeDatas,
 } from "../core/ent";
-import { getFields, SchemaInputType } from "../schema/schema";
+import { getFields, SchemaInputType, Edge } from "../schema/schema";
 import { Changeset, Executor, Validator, Trigger } from "../action";
 import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
@@ -29,9 +29,39 @@ export interface OrchestratorOptions<T extends Ent> {
   editedFields(): Map<string, any>;
 }
 
+// hmm is it worth having multiple types here or just having one?
+// we have one type here instead
+interface EdgeInputData {
+  edgeType: string;
+  id: Builder<Ent> | ID; // when an OutboundEdge, this is the id2, when an inbound edge, this is the id1
+  nodeType?: string; // expected to be set for WriteOperation.Insert and undefined for WriteOperation.Delete
+  options?: AssocEdgeInputOptions;
+}
+
+export enum edgeDirection {
+  inboundEdge,
+  outboundEdge,
+}
+
+interface internalEdgeInputData extends EdgeInputData {
+  direction: edgeDirection;
+}
+
+type IDMap = Map<ID, internalEdgeInputData>;
+type OperationMap = Map<WriteOperation, IDMap>;
+// this is a map of
+// edgeType : {
+//   WriteOperation: {
+//     id: {
+//       id input
+//     }
+//   }
+// }
+type EdgeMap = Map<string, OperationMap>;
+
 export class Orchestrator<T extends Ent> {
-  private edgeOps: EdgeOperation[] = [];
   private edgeSet: Set<string> = new Set<string>();
+  private edges: EdgeMap = new Map();
   private validatedFields: {} | null;
   private changesets: Changeset<T>[] = [];
   private dependencies: Map<ID, Builder<T>> = new Map();
@@ -40,9 +70,29 @@ export class Orchestrator<T extends Ent> {
 
   constructor(private options: OrchestratorOptions<T>) {}
 
-  private addEdge(edge: EdgeOperation) {
-    this.edgeOps.push(edge);
-    this.edgeSet.add(edge.edgeInput.edgeType);
+  private addEdge(edge: internalEdgeInputData, op: WriteOperation) {
+    this.edgeSet.add(edge.edgeType);
+
+    // need this because we're not referring to type T of the class
+    function isBuilder<T2 extends Ent>(
+      val: Builder<T2> | any,
+    ): val is Builder<T2> {
+      return (val as Builder<T2>).placeholderID !== undefined;
+    }
+
+    let m1: OperationMap = this.edges.get(edge.edgeType) || new Map();
+    let m2: IDMap = m1.get(op) || new Map();
+    let id: ID;
+    if (isBuilder(edge.id)) {
+      id = edge.id.placeholderID;
+    } else {
+      id = edge.id;
+    }
+    //    let id = edge.id.toString(); // TODO confirm that toString for builder is placeholderID. if not, add it or change this...
+    // set or overwrite the new edge data for said id
+    m2.set(id, edge);
+    m1.set(op, m2);
+    this.edges.set(edge.edgeType, m1);
   }
 
   addInboundEdge<T2 extends Ent>(
@@ -52,13 +102,14 @@ export class Orchestrator<T extends Ent> {
     options?: AssocEdgeInputOptions,
   ) {
     this.addEdge(
-      EdgeOperation.inboundEdge(
-        this.options.builder,
+      {
+        id: id1,
         edgeType,
-        id1,
         nodeType,
         options,
-      ),
+        direction: edgeDirection.inboundEdge,
+      },
+      WriteOperation.Insert,
     );
   }
 
@@ -69,26 +120,60 @@ export class Orchestrator<T extends Ent> {
     options?: AssocEdgeInputOptions,
   ) {
     this.addEdge(
-      EdgeOperation.outboundEdge(
-        this.options.builder,
+      {
+        id: id2,
         edgeType,
-        id2,
         nodeType,
         options,
-      ),
+        direction: edgeDirection.outboundEdge,
+      },
+      WriteOperation.Insert,
     );
   }
 
   removeInboundEdge(id1: ID, edgeType: string) {
     this.addEdge(
-      EdgeOperation.removeInboundEdge(this.options.builder, edgeType, id1),
+      {
+        id: id1,
+        edgeType,
+        direction: edgeDirection.inboundEdge,
+      },
+      WriteOperation.Delete,
     );
   }
 
   removeOutboundEdge(id2: ID, edgeType: string) {
     this.addEdge(
-      EdgeOperation.removeOutboundEdge(this.options.builder, edgeType, id2),
+      {
+        id: id2,
+        edgeType,
+        direction: edgeDirection.outboundEdge,
+      },
+      WriteOperation.Delete,
     );
+  }
+
+  // this doesn't take a direction as that's an implementation detail
+  // it doesn't make any sense to use the same edgeType for inbound and outbound edges
+  // so no need for that
+  getInputEdges(edgeType: string, op: WriteOperation): EdgeInputData[] {
+    let m: IDMap = this.edges.get(edgeType)?.get(op) || new Map();
+    // want a list and not an IterableIterator
+    let ret: EdgeInputData[] = [];
+    m.forEach((v) => ret.push(v));
+
+    return ret;
+  }
+
+  // this privides a way to clear data if needed
+  // we don't have a great API for this yet
+  clearInputEdges(edgeType: string, op: WriteOperation, id?: ID) {
+    let m: IDMap = this.edges.get(edgeType)?.get(op) || new Map();
+    if (id) {
+      m.delete(id);
+    } else {
+      m.clear();
+    }
   }
 
   private buildMainOp(): DataOperation {
@@ -111,23 +196,87 @@ export class Orchestrator<T extends Ent> {
     }
   }
 
+  // edgeType e.g. EdgeType.OrganizationToArchivedMembers
+  // add | remove
+  // operation e.g. WriteOperation.Insert or WriteOperation.Delete
+  // and then what's the format to return and how do we deal with placeholders?
+  // { id: ID | Builder<Ent>}
+  // or we push the resolving to the end and return the raw data?
+  // seems like the best approach...
+  // so if you pass a builder, you get it back
+  // and can pass it to the other e.g. removeEdge
+  //
+  private getEdgeOperation(
+    edgeType: string,
+    op: WriteOperation,
+    edge: internalEdgeInputData,
+  ): EdgeOperation {
+    if (op === WriteOperation.Insert) {
+      if (!edge.nodeType) {
+        throw new Error(`no nodeType for edge when adding outboundEdge`);
+      }
+      if (edge.direction === edgeDirection.outboundEdge) {
+        return EdgeOperation.outboundEdge(
+          this.options.builder,
+          edgeType,
+          edge.id,
+          edge.nodeType,
+          edge.options,
+        );
+      } else {
+        return EdgeOperation.inboundEdge(
+          this.options.builder,
+          edgeType,
+          edge.id,
+          edge.nodeType,
+          edge.options,
+        );
+      }
+    } else if (op === WriteOperation.Delete) {
+      if (this.isBuilder(edge.id)) {
+        throw new Error("removeEdge APIs don't take a builder as an argument");
+      }
+      let id2 = edge.id as ID;
+
+      if (edge.direction === edgeDirection.outboundEdge) {
+        return EdgeOperation.removeOutboundEdge(
+          this.options.builder,
+          edgeType,
+          id2,
+        );
+      } else {
+        return EdgeOperation.removeInboundEdge(
+          this.options.builder,
+          edgeType,
+          id2,
+        );
+      }
+    }
+    throw new Error(
+      "could not find an edge operation from the given parameters",
+    );
+  }
+
   private async buildEdgeOps(ops: DataOperation[]): Promise<void> {
     const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
-    for (const edgeOp of this.edgeOps) {
-      ops.push(edgeOp);
+    for (const [edgeType, m] of this.edges) {
+      for (const [op, m2] of m) {
+        for (const [_, edge] of m2) {
+          let edgeOp = this.getEdgeOperation(edgeType, op, edge);
+          ops.push(edgeOp);
+          const edgeData = edgeDatas.get(edgeType);
+          if (!edgeData) {
+            throw new Error(`could not load edge data for ${edgeType}`);
+          }
 
-      const edgeType = edgeOp.edgeInput.edgeType;
-      const edgeData = edgeDatas.get(edgeType);
-      if (!edgeData) {
-        throw new Error(`could not load edge data for ${edgeType}`);
-      }
+          if (edgeData.symmetricEdge) {
+            ops.push(edgeOp.symmetricEdge());
+          }
 
-      if (edgeData.symmetricEdge) {
-        ops.push(edgeOp.symmetricEdge());
-      }
-
-      if (edgeData.inverseEdgeType) {
-        ops.push(edgeOp.inverseEdge(edgeData));
+          if (edgeData.inverseEdgeType) {
+            ops.push(edgeOp.inverseEdge(edgeData));
+          }
+        }
       }
     }
   }
@@ -205,7 +354,7 @@ export class Orchestrator<T extends Ent> {
     await Promise.all(promises);
   }
 
-  private isBuilder(val: any): val is Builder<T> {
+  private isBuilder(val: Builder<T> | any): val is Builder<T> {
     return (val as Builder<T>).placeholderID !== undefined;
   }
 
@@ -215,7 +364,7 @@ export class Orchestrator<T extends Ent> {
       case WriteOperation.Delete:
       case WriteOperation.Edit:
         if (!this.options.builder.existingEnt) {
-          throw new Error("existing ent required with delete operation");
+          throw new Error("existing ent required with operation");
         }
     }
 
