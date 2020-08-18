@@ -139,7 +139,7 @@ export class String extends BaseField implements Field, StringOptions {
     return this.formatter((str) => str.trimLeft());
   }
 
-  trimRiight(): String {
+  trimRight(): String {
     return this.formatter((str) => str.trimRight());
   }
 }
@@ -161,3 +161,33 @@ export function TimeType(options: FieldOptions): Time {
 // export class JSON extends BaseField implements Field {
 //   type: Type = {dbType: DBType.JSON}
 // }
+
+export interface EnumOptions extends FieldOptions {
+  values: string[];
+  //  by default the type is the name as the field
+  // it's recommended to scope the enum names in scenarios where it makes sense
+
+  tsType?: string;
+  graphQLType?: string;
+}
+
+export class Enum extends BaseField implements Field {
+  type: Type;
+
+  constructor(options: EnumOptions) {
+    super();
+    this.type = {
+      // stored as a string to start.
+      // will provide option to store as Enum eventually
+      dbType: DBType.StringEnum,
+      values: options.values,
+      type: options.tsType || options.name,
+      graphQLType: options.graphQLType || options.name,
+    };
+  }
+}
+
+export function EnumType(options: EnumOptions): Enum {
+  let result = new Enum(options);
+  return Object.assign(result, options);
+}

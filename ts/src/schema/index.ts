@@ -36,4 +36,6 @@ export {
   StringType,
   Time,
   TimeType,
+  Enum,
+  EnumType,
 } from "./field";

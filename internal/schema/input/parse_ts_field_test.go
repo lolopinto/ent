@@ -417,6 +417,69 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
+		"enum": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+				import {Schema, Field, EnumType} from "{schema}";
+
+				export default class User implements Schema {
+					fields: Field[] = [
+						EnumType({name: "AccountStatus", values: ["UNVERIFIED", "VERIFIED", "DEACTIVATED", "DISABLED"]}),
+					]
+				}`),
+			},
+			expectedOutput: map[string]node{
+				"User": {
+					fields: []field{
+						{
+							name: "AccountStatus",
+							typ: &input.FieldType{
+								DBType: input.StringEnum,
+								Values: []string{
+									"UNVERIFIED",
+									"VERIFIED",
+									"DEACTIVATED",
+									"DISABLED",
+								},
+								Type:        "AccountStatus",
+								GraphQLType: "AccountStatus",
+							},
+						},
+					},
+				},
+			},
+		},
+		"enum with custom type": {
+			code: map[string]string{
+				"request.ts": getCodeWithSchema(`
+				import {Schema, Field, EnumType} from "{schema}";
+
+				export default class Request implements Schema {
+					fields: Field[] = [
+						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
+					]
+				}`),
+			},
+			expectedOutput: map[string]node{
+				"Request": {
+					fields: []field{
+						{
+							name: "Status",
+							typ: &input.FieldType{
+								DBType: input.StringEnum,
+								Values: []string{
+									"OPEN",
+									"PENDING",
+									"CLOSED",
+								},
+								Type:        "RequestStatus",
+								GraphQLType: "RequestStatus",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	runTestCases(t, testCases)

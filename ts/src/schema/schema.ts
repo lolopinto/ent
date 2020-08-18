@@ -107,6 +107,8 @@ export enum DBType {
   String = "String",
   Time = "Time",
   JSON = "JSON", // tuple, lists, everything else converges on this
+  Enum = "Enum", // enum type in the database
+  StringEnum = "StringEnum", // string type in the database
 }
 
 // represents the type of each field
@@ -115,6 +117,7 @@ export interface Type {
   // TODO make these required eventually once we get there
   type?: string; // typescript type
   graphQLType?: string; // graphql type
+  values?: string[]; // values e.g. enum values
 }
 
 // FieldOptions are configurable options for fields.
