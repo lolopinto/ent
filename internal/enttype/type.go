@@ -64,6 +64,11 @@ type DefaulFieldNameType interface {
 	DefaultGraphQLFieldName() string
 }
 
+type EnumeratedType interface {
+	TSType
+	GetEnumValues() []string
+}
+
 type stringType struct {
 	underlyingType types.Type
 }
@@ -721,6 +726,91 @@ func (t *MapType) GetGraphQLType() string {
 	// this is sadly not consistent with behavior of slices
 	// TODO: need to add Map scalar to schema.graphql if we encounter this
 	// TODO need to convert to/from map[string]interface{} to return in gql
+}
+
+type enumType struct {
+}
+
+func (t *enumType) GetDBType() string {
+	// string type for now
+	// although we'll eventually want this to be customizable
+	return "sa.Text()"
+}
+
+func (t *enumType) GetZeroValue() string {
+	panic("enum type not supported in go-lang yet")
+}
+
+type EnumType struct {
+	enumType
+	Type        string
+	GraphQLType string
+	Values      []string
+}
+
+func (t *EnumType) GetEnumValues() []string {
+	return t.Values
+}
+
+func (t *EnumType) GetGraphQLType() string {
+	return fmt.Sprintf("%s!", t.GraphQLType)
+}
+
+func (t *EnumType) GetTSType() string {
+	return t.Type
+}
+
+func (t *EnumType) GetTsTypeImports() []string {
+	return []string{t.Type}
+}
+
+func (t *EnumType) GetCastToMethod() string {
+	panic("enum type not supported in go-lang yet")
+}
+
+func (t *EnumType) GetNullableType() Type {
+	return &NullableEnumType{}
+}
+
+func (t *EnumType) GetTSGraphQLImports() []string {
+	// TODO generated graphql type for
+	return []string{"GraphQLNonNull", "GraphQLString"}
+}
+
+type NullableEnumType struct {
+	enumType
+	Type        string
+	GraphQLType string
+	Values      []string
+}
+
+func (t *NullableEnumType) GetEnumValues() []string {
+	return t.Values
+}
+
+func (t *NullableEnumType) GetGraphQLType() string {
+	return t.GraphQLType
+}
+
+func (t *NullableEnumType) GetTSType() string {
+	return fmt.Sprintf("%s | null", t.Type)
+}
+
+func (t *NullableEnumType) GetTsTypeImports() []string {
+	return []string{t.Type}
+}
+
+func (t *NullableEnumType) GetCastToMethod() string {
+	panic("enum type not supported in go-lang yet")
+}
+
+func (t *NullableEnumType) GetNonNullableType() Type {
+	return &EnumType{}
+}
+
+func (t *NullableEnumType) GetTSGraphQLImports() []string {
+	// TODO generated graphql type
+	return []string{"GraphQLString"}
 }
 
 func getBasicType(typ types.Type) Type {

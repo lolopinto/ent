@@ -1238,8 +1238,13 @@ func generateSchemaFile(hasMutations bool) error {
 	}
 
 	cmd := exec.Command("ts-node", "-r", "tsconfig-paths/register", filePath)
+	// ooh this is interesting and works...
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
+		spew.Dump(cmd.Stdout)
+		spew.Dump(cmd.Stderr)
 		return errors.Wrap(err, "error writing schema file")
 	}
 	return nil

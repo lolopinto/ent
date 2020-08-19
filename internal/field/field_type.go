@@ -429,6 +429,10 @@ func (f *Field) GetNotNullableTsType() string {
 	return tsType.GetTSType()
 }
 
+func (f *Field) GetFieldType() enttype.EntType {
+	return f.fieldType
+}
+
 func (f *Field) setFieldType(fieldType enttype.Type) {
 	fieldEntType, ok := fieldType.(enttype.EntType)
 	if !ok {

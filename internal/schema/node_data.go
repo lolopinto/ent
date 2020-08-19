@@ -1,13 +1,18 @@
 package schema
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
+	"github.com/lolopinto/ent/internal/schema/enum"
 )
 
 type ConstInfo struct {
@@ -188,6 +193,79 @@ type uniqueNodeInfo struct {
 // GetUniqueNodes returns node info that this Node has edges to
 func (nodeData *NodeData) GetUniqueNodes() []uniqueNodeInfo {
 	return nodeData.getUniqueNodes(false)
+}
+
+// TODO kill?
+// type enumInfo struct {
+// 	//	Name        string
+// 	TSType      string
+// 	GraphQLType string
+// 	Values      []string
+// }
+
+func (nodeData *NodeData) GetTSEnums() []enum.Enum {
+	var ret []enum.Enum
+	for _, f := range nodeData.FieldInfo.Fields {
+		entType := f.GetFieldType()
+		enumType, ok := entType.(enttype.EnumeratedType)
+		if !ok {
+			continue
+		}
+		values := enumType.GetEnumValues()
+		vals := make([]enum.Data, len(values))
+		for i, val := range values {
+			vals[i] = enum.Data{
+				Name:  strcase.ToCamel(val),
+				Value: strconv.Quote(strings.ToLower(val)), //what do we want the consistent value to be here?
+			}
+		}
+		ret = append(ret, enum.Enum{
+			Name:   enumType.GetTSType(),
+			Values: vals,
+		})
+	}
+	return ret
+}
+
+type importPath struct {
+	PackagePath   string
+	Import        string
+	DefaultImport bool
+}
+
+// get things that need to be programmatically imported
+// for now
+func (nodeData *NodeData) GetImportPaths() []importPath {
+	var ret []importPath
+	for _, f := range nodeData.FieldInfo.Fields {
+		entType := f.GetFieldType()
+		enumType, ok := entType.(enttype.EnumeratedType)
+		if !ok {
+			continue
+		}
+
+		ret = append(ret, importPath{
+			Import:      enumType.GetTSType(),
+			PackagePath: getImportPathForBaseModelFile(nodeData),
+		})
+	}
+
+	// unique nodes referenced in builder
+	uniqueNodes := nodeData.getUniqueNodes(true)
+	for _, unique := range uniqueNodes {
+		ret = append(ret, importPath{
+			Import:        unique.Node,
+			PackagePath:   fmt.Sprintf("src/ent/%s", unique.PackageName),
+			DefaultImport: true,
+		})
+	}
+
+	return ret
+}
+
+// copied to internal/schema/node_data.go
+func getImportPathForBaseModelFile(nodeData *NodeData) string {
+	return fmt.Sprintf("src/ent/generated/%s_base", nodeData.PackageName)
 }
 
 func (nodeData *NodeData) GetUniqueNodesForceSelf() []uniqueNodeInfo {
