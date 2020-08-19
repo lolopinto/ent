@@ -1,0 +1,13 @@
+{{reserveImport "graphql" "GraphQLEnumType" "GraphQLNonNull" }}
+
+export const {{.Type}} = new {{useImport "GraphQLEnumType"}}({
+  name: "{{.Enum.Name}}",
+  values: {
+    {{range .Enum.Values -}}
+      {{.Name}}: {
+        value: {{.Value}},
+        {{/* TODO description */}}
+      },
+    {{end -}}
+  },
+});

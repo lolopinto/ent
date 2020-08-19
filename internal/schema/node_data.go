@@ -227,6 +227,32 @@ func (nodeData *NodeData) GetTSEnums() []enum.Enum {
 	return ret
 }
 
+func (nodeData *NodeData) GetGraphQLEnums() []enum.GQLEnum {
+	var ret []enum.GQLEnum
+	for _, f := range nodeData.FieldInfo.Fields {
+		entType := f.GetFieldType()
+		enumType, ok := entType.(enttype.EnumeratedType)
+		if !ok {
+			continue
+		}
+		values := enumType.GetEnumValues()
+		vals := make([]enum.Data, len(values))
+		for i, val := range values {
+			vals[i] = enum.Data{
+				Name: strings.ToUpper(val),
+				// norm for graphql enums is all caps
+				Value: strconv.Quote(strings.ToUpper(val)),
+			}
+		}
+		ret = append(ret, enum.GQLEnum{
+			Name:   enumType.GetGraphQLName(),
+			Type:   enumType.GetGraphQLType(),
+			Values: vals,
+		})
+	}
+	return ret
+}
+
 type importPath struct {
 	PackagePath   string
 	Import        string

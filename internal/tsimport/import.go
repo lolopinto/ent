@@ -76,7 +76,7 @@ func (imps *Imports) reserve(path string, defaultExport string, importAll bool, 
 	for _, export := range exports {
 		existingImport := imps.exportMap[export]
 		if existingImport != nil && existingImport != imp {
-			return "", fmt.Errorf("%s is already exported from path %s", export, existingImport.path)
+			return "", fmt.Errorf("%s is already exported from path %s. duplicate path: %s", export, existingImport.path, imp.path)
 		}
 		imps.exportMap[export] = imp
 	}

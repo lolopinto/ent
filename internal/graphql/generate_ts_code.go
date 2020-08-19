@@ -16,8 +16,10 @@ import (
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
@@ -104,12 +106,25 @@ type step interface {
 	process(data *codegen.Data, s *gqlSchema) error
 }
 
+// TODO rename this from WriteQsAndMutations to writeObjects?
 type writeQsAndMutationsStep struct{}
 
 func (st writeQsAndMutationsStep) process(data *codegen.Data, s *gqlSchema) error {
 	var wg sync.WaitGroup
-	wg.Add(len(s.nodes))
 	var serr syncerr.Error
+
+	wg.Add(len(s.enums))
+	for key := range s.enums {
+		go func(key string) {
+			defer wg.Done()
+			node := s.enums[key]
+			if err := writeEnumFile(node); err != nil {
+				serr.Append(err)
+			}
+		}(key)
+	}
+
+	wg.Add(len(s.nodes))
 
 	for key := range s.nodes {
 		go func(key string) {
@@ -247,8 +262,26 @@ func getImportPathForNode(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", nodeData.PackageName)
 }
 
+func getFilePathForEnum(e enum.GQLEnum) string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strings.ToLower(strcase.ToSnake(e.Name)))
+}
+
+func getImportPathForEnum(e enum.GQLEnum) string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", e.Name)
+}
+
+func getImportPathFromEnumName(name string) string {
+	// consistent with node_map/parseInputSchema
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", strings.ToLower(strcase.ToSnake(name)))
+}
+
 func getImportPathFromNodePackage(packageName string) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", packageName)
+}
+
+func getImportPathFromNodeName(nodeName string) string {
+	// consistent with node_map/parseInputSchema
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", strings.ToLower(strcase.ToSnake(nodeName)))
 }
 
 func getQueryFilePath() string {
@@ -406,6 +439,10 @@ func (obj gqlobjectData) Imports() []*fileImport {
 	var result []*fileImport
 	for _, node := range obj.GQLNodes {
 		result = append(result, node.Imports...)
+		for _, field := range node.Fields {
+			// append field imports to get non-graphql imports (and graphql but most already manually included)
+			result = append(result, field.FieldImports...)
+		}
 	}
 	return result
 }
@@ -441,6 +478,7 @@ func (obj gqlobjectData) ForeignImport(name string) bool {
 type gqlSchema struct {
 	hasMutations    bool
 	nodes           map[string]*gqlNode
+	enums           map[string]*gqlEnum
 	customQueries   []*gqlNode
 	customMutations []*gqlNode
 	customData      *customData
@@ -453,11 +491,19 @@ type gqlNode struct {
 	Field      *CustomField
 }
 
+type gqlEnum struct {
+	Enum enum.GQLEnum
+	Type string // the generated Type
+	// Enum Name is the graphql Name
+	FilePath string
+}
+
 func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 	var result = make(chan *gqlSchema)
 	go func() {
 		var hasMutations bool
 		nodes := make(map[string]*gqlNode)
+		enums := make(map[string]*gqlEnum)
 		var wg sync.WaitGroup
 		var m sync.Mutex
 		wg.Add(len(data.Schema.Nodes))
@@ -518,12 +564,25 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 				m.Lock()
 				defer m.Unlock()
 				nodes[nodeData.Node] = &obj
+
+				// should we add to dependent? does it matter that the type is different?
+				for _, enumType := range nodeData.GetGraphQLEnums() {
+					// needs a quoted name
+					// Type has GQLType
+					enums[enumType.Name] = &gqlEnum{
+						Type:     fmt.Sprintf("%sType", enumType.Name),
+						Enum:     enumType,
+						FilePath: getFilePathForEnum(enumType),
+					}
+				}
+
 			}(key)
 		}
 
 		wg.Wait()
 		result <- &gqlSchema{
 			nodes:        nodes,
+			enums:        enums,
 			hasMutations: hasMutations,
 		}
 	}()
@@ -539,6 +598,20 @@ func writeFile(node *gqlNode) error {
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
 		TemplateName:      "object.tmpl",
 		PathToFile:        node.FilePath,
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	}))
+}
+
+func writeEnumFile(enum *gqlEnum) error {
+	imps := tsimport.NewImports()
+	return file.Write((&file.TemplatedBasedFileWriter{
+		Data:              enum,
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/enum.tmpl"),
+		TemplateName:      "enum.tmpl",
+		PathToFile:        enum.FilePath,
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
@@ -587,6 +660,32 @@ func buildFieldConfig(nodeData *schema.NodeData) *fieldConfig {
 			fmt.Sprintf("return %s.load(context.getViewer(), args.id);", nodeData.Node),
 		},
 	}
+}
+
+func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
+	imports := make([]*fileImport, len(imps))
+	for idx, imp := range imps {
+		var importPath string
+		typ := imp.Type
+		switch imp.ImportType {
+		case enttype.GraphQL:
+			importPath = "graphql"
+			typ = imp.Type
+			break
+		case enttype.Enum:
+			importPath = getImportPathFromEnumName(imp.Type)
+			typ = fmt.Sprintf("%sType", typ)
+			break
+		case enttype.Node:
+			importPath = getImportPathFromNodeName(typ)
+			typ = fmt.Sprintf("%sType", typ)
+		}
+		imports[idx] = &fileImport{
+			Type:       typ,
+			ImportPath: importPath,
+		}
+	}
+	return imports
 }
 
 func getGQLFileImportsFromStrings(imps []string) []*fileImport {
@@ -653,7 +752,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		gqlField := &fieldType{
 			Name:               field.GetGraphQLName(),
 			HasResolveFunction: field.GetGraphQLName() != field.TsFieldName(),
-			FieldImports:       getGQLFileImportsFromStrings(field.GetTSGraphQLTypeForFieldImports(false)),
+			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false)),
 		}
 		if gqlField.HasResolveFunction {
 			gqlField.FunctionContents = fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())
@@ -686,7 +785,7 @@ func addSingularEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
-		FieldImports:       getGQLFileImportsFromStrings(edge.GetTSGraphQLTypeImports()),
+		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports()),
 		FunctionContents:   fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName()),
 	}
 	*fields = append(*fields, gqlField)
@@ -696,7 +795,7 @@ func addPluralEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
-		FieldImports:       getGQLFileImportsFromStrings(edge.GetTSGraphQLTypeImports()),
+		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports()),
 		FunctionContents:   fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName()),
 	}
 	*fields = append(*fields, gqlField)
@@ -736,7 +835,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 		}
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImportsFromStrings(f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f))),
+			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f))),
 		})
 	}
 

@@ -465,7 +465,7 @@ func (f *Field) GetInverseEdge() *edge.AssociationEdge {
 
 // for non-required fields in actions, we want to make it optional if it's not a required field
 // in the action
-func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []string {
+func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.FileImport {
 	var tsGQLType enttype.TSGraphQLType
 	var ok bool
 	nullableType, ok := f.fieldType.(enttype.NullableType)
