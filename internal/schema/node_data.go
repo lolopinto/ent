@@ -215,8 +215,11 @@ func (nodeData *NodeData) GetTSEnums() []enum.Enum {
 		vals := make([]enum.Data, len(values))
 		for i, val := range values {
 			vals[i] = enum.Data{
-				Name:  strcase.ToCamel(val),
-				Value: strconv.Quote(strings.ToLower(val)), //what do we want the consistent value to be here?
+				Name: strcase.ToCamel(val),
+				// value is actually what's put there for now
+				// TODO we need to figure out if there's a standard here
+				// or a way to have keys: values for the generated enums
+				Value: strconv.Quote(val),
 			}
 		}
 		ret = append(ret, enum.Enum{
