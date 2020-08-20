@@ -13,39 +13,39 @@ export abstract class BaseField {
   foreignKey?: [string, string];
 }
 
-export class UUID extends BaseField implements Field {
+export class UUIDField extends BaseField implements Field {
   type: Type = { dbType: DBType.UUID };
 }
 
-export function UUIDType(options: FieldOptions): UUID {
-  let result = new UUID();
+export function UUIDType(options: FieldOptions): UUIDField {
+  let result = new UUIDField();
   return Object.assign(result, options);
 }
 
-export class Integer extends BaseField implements Field {
+export class IntegerField extends BaseField implements Field {
   type: Type = { dbType: DBType.Int };
 }
 
-export function IntegerType(options: FieldOptions): Integer {
-  let result = new Integer();
+export function IntegerType(options: FieldOptions): IntegerField {
+  let result = new IntegerField();
   return Object.assign(result, options);
 }
 
-export class Float extends BaseField implements Field {
+export class FloatField extends BaseField implements Field {
   type: Type = { dbType: DBType.Float };
 }
 
-export function FloatType(options: FieldOptions): Float {
-  let result = new Float();
+export function FloatType(options: FieldOptions): FloatField {
+  let result = new FloatField();
   return Object.assign(result, options);
 }
 
-export class Boolean extends BaseField implements Field {
+export class BooleanField extends BaseField implements Field {
   type: Type = { dbType: DBType.Boolean };
 }
 
-export function BooleanType(options: FieldOptions): Boolean {
-  let result = new Boolean();
+export function BooleanType(options: FieldOptions): BooleanField {
+  let result = new BooleanField();
   return Object.assign(result, options);
 }
 
@@ -55,7 +55,7 @@ export interface StringOptions extends FieldOptions {
   length?: number;
 }
 
-export class String extends BaseField implements Field, StringOptions {
+export class StringField extends BaseField implements Field, StringOptions {
   minLen: number | undefined;
   maxLen: number | undefined;
   length: number | undefined;
@@ -99,62 +99,62 @@ export class String extends BaseField implements Field, StringOptions {
     return val;
   }
 
-  validate(validator: (str: string) => boolean): String {
+  validate(validator: (str: string) => boolean): StringField {
     this.validators.push(validator);
     return this;
   }
 
-  formatter(formatter: (str: string) => string): String {
+  formatter(formatter: (str: string) => string): StringField {
     this.formatters.push(formatter);
     return this;
   }
 
-  match(pattern: string | RegExp): String {
+  match(pattern: string | RegExp): StringField {
     return this.validate(function(str: string): boolean {
       let r = new RegExp(pattern);
       return r.test(str);
     });
   }
 
-  doesNotMatch(pattern: string | RegExp): String {
+  doesNotMatch(pattern: string | RegExp): StringField {
     return this.validate(function(str: string): boolean {
       let r = new RegExp(pattern);
       return !r.test(str);
     });
   }
 
-  toLowerCase(): String {
+  toLowerCase(): StringField {
     return this.formatter((str) => str.toLowerCase());
   }
 
-  toUpperCase(): String {
+  toUpperCase(): StringField {
     return this.formatter((str) => str.toUpperCase());
   }
 
-  trim(): String {
+  trim(): StringField {
     return this.formatter((str) => str.trim());
   }
 
-  trimLeft(): String {
+  trimLeft(): StringField {
     return this.formatter((str) => str.trimLeft());
   }
 
-  trimRight(): String {
+  trimRight(): StringField {
     return this.formatter((str) => str.trimRight());
   }
 }
 
-export function StringType(options: StringOptions): String {
-  let result = new String();
+export function StringType(options: StringOptions): StringField {
+  let result = new StringField();
   return Object.assign(result, options);
 }
 
-export class Time extends BaseField implements Field {
+export class TimeField extends BaseField implements Field {
   type: Type = { dbType: DBType.Time };
 }
 
-export function TimeType(options: FieldOptions): Time {
-  let result = new Time();
+export function TimeType(options: FieldOptions): TimeField {
+  let result = new TimeField();
   return Object.assign(result, options);
 }
 
@@ -171,8 +171,9 @@ export interface EnumOptions extends FieldOptions {
   graphQLType?: string;
 }
 
-export class Enum extends BaseField implements Field {
+export class EnumField extends BaseField implements Field {
   type: Type;
+  private values: string[];
 
   constructor(options: EnumOptions) {
     super();
@@ -184,10 +185,18 @@ export class Enum extends BaseField implements Field {
       type: options.tsType || options.name,
       graphQLType: options.graphQLType || options.name,
     };
+    this.values = options.values;
+  }
+
+  valid(val: any): boolean {
+    let str = String(val);
+    return this.values.some(
+      (value) => value === str || value.toUpperCase() === str,
+    );
   }
 }
 
-export function EnumType(options: EnumOptions): Enum {
-  let result = new Enum(options);
+export function EnumType(options: EnumOptions): EnumField {
+  let result = new EnumField(options);
   return Object.assign(result, options);
 }
