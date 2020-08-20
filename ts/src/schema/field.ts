@@ -194,6 +194,21 @@ export class EnumField extends BaseField implements Field {
       (value) => value === str || value.toUpperCase() === str,
     );
   }
+
+  format(val: any): any {
+    let str = String(val);
+
+    for (let i = 0; i < this.values.length; i++) {
+      let value = this.values[i];
+      // store the format that maps to the given value in the db instead of saving the upper case value
+      if (str === value || str.toLowerCase() === value.toLowerCase()) {
+        return value;
+      }
+    }
+
+    // whelp, just return what's passed
+    return val;
+  }
 }
 
 export function EnumType(options: EnumOptions): EnumField {
