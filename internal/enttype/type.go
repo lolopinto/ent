@@ -770,21 +770,24 @@ func (t *MapType) GetGraphQLType() string {
 type enumType struct {
 }
 
-func (t *enumType) GetDBType() string {
-	// string type for now
-	// although we'll eventually want this to be customizable
-	return "sa.Text()"
-}
-
 func (t *enumType) GetZeroValue() string {
 	panic("enum type not supported in go-lang yet")
 }
 
 type EnumType struct {
 	enumType
+	EnumDBType  bool
 	Type        string
 	GraphQLType string
 	Values      []string
+}
+
+func (t *EnumType) GetDBType() string {
+	if t.EnumDBType {
+		// TODO enum type
+		return ""
+	}
+	return "sa.Text()"
 }
 
 func (t *EnumType) GetEnumValues() []string {
@@ -834,9 +837,18 @@ func (t *EnumType) GetTSGraphQLImports() []FileImport {
 
 type NullableEnumType struct {
 	enumType
+	EnumDBType  bool
 	Type        string
 	GraphQLType string
 	Values      []string
+}
+
+func (t *NullableEnumType) GetDBType() string {
+	if t.EnumDBType {
+		// TODO enum type
+		return ""
+	}
+	return "sa.Text()"
 }
 
 func (t *NullableEnumType) GetEnumValues() []string {
