@@ -92,16 +92,17 @@ class ModifyEdgeOp(MigrateOperation):
 class AlterEnumOp(MigrateOperation):
   
   """Alters enum."""
-  def __init__(self, enum_name, value, schema=None):
+  def __init__(self, enum_name, value, schema=None, before=None):
     self.enum_name = enum_name
     self.value = value
+    self.before = before
 
 
   @classmethod
   def alter_enum(cls, operations, enum_name, value, **kw):
     """Issues an "alter enum" operation"""
 
-    op = AlterEnumOp(enum_name, value, *kw)
+    op = AlterEnumOp(enum_name, value, schema=kw.get('schema', None), before=kw.get('before', None))
     return operations.invoke(op)
 
   

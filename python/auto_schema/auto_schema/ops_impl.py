@@ -60,7 +60,11 @@ def _get_table(connection):
 @Operations.implementation_for(ops.AlterEnumOp)
 def alter_enum(operations, operation):
   connection = operations.get_bind()
-  connection.execute(
-    "ALTER TYPE %s ADD VALUE '%s'" %(operation.enum_name, operation.value)
-  )
-
+  if operation.before is None:
+    connection.execute(
+      "ALTER TYPE %s ADD VALUE '%s'" %(operation.enum_name, operation.value)
+    )
+  else:
+    connection.execute(
+      "ALTER TYPE %s ADD VALUE '%s' BEFORE '%s'" %(operation.enum_name, operation.value, operation.before)
+    )

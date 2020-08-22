@@ -72,14 +72,25 @@ def _render_edge_from_edges(edge_dicts, edge_fn_name):
 
 @renderers.dispatch_for(ops.AlterEnumOp)
 def render_alter_enum(autogen_context, op):
-  return (
-    "with op.get_context().autocommit_block():\n"
-    "%(indent)sop.alter_enum('%(enum_name)s', '%(value)s')" % {
-      "enum_name": op.enum_name,
-      "value": op.value,
-      "indent": "  ",
-    }
-  )
+  if op.before is None:
+    return (
+      "with op.get_context().autocommit_block():\n"
+      "%(indent)sop.alter_enum('%(enum_name)s', '%(value)s')" % {
+        "enum_name": op.enum_name,
+        "value": op.value,
+        "indent": "  ",
+      }
+    )
+  else:
+    return (
+      "with op.get_context().autocommit_block():\n"
+      "%(indent)sop.alter_enum('%(enum_name)s', '%(value)s', before='%(before)s')" % {
+        "enum_name": op.enum_name,
+        "value": op.value,
+        "indent": "  ",
+        "before": op.before,
+      }
+    )
 
 
 @renderers.dispatch_for(ops.NoDowngradeOp)
