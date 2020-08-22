@@ -9,6 +9,44 @@ import sqlalchemy as sa
 
 from auto_schema import runner
 
+class Postgres:
+  def get_url(self, _schema_path):
+    return "postgresql://localhost/autoschema_test"
+
+  def get_finalizer(self, metadata, session, connection, transaction, engine):
+    def fn():
+      session.close()
+      metadata.drop_all(bind=connection)
+      transaction.commit()
+      
+      # all of this mess needed to have different flows working
+      # e.g. commit each step in migration on its own so that adding new enum types later works
+      # needed to drop all tables & types
+      # but for some reason alembic_version is handled inconsistently
+      # not sure why so we have to drop 
+      conn2 = engine.connect()
+      metadata.bind = conn2
+      metadata.reflect()
+      alembic_table = [t for t in metadata.sorted_tables if t.name == 'alembic_version']
+      if len(alembic_table) == 1:
+        conn2.execute("drop table alembic_version")
+  
+    return fn
+
+
+class SQLite:
+  def get_url(self, schema_path):
+    return "sqlite:///%s/%s" % (schema_path, "foo.db")
+    #return "sqlite:///bar.db"  # if you want a local file to inspect for whatever reason
+    
+  def get_finalizer(self, metadata, session, connection, transaction, engine):
+    def fn():
+      session.close()
+      transaction.rollback()
+      connection.close()
+
+    return fn
+
 @pytest.fixture(scope="function")
 def new_test_runner(request):
   
@@ -22,45 +60,21 @@ def new_test_runner(request):
 
     # unclear if best way but use name of class to determine postgres vs sqlite and use that
     # to make sure everything works for both
+    dialect = None
     if "Postgres" in request.cls.__name__:
-      url = "postgresql://localhost/autoschema_test"
+      dialect = Postgres()
     else:
-      url = "sqlite:///%s/%s" % (schema_path, "foo.db")
-      #url = "sqlite:///bar.db" # if you want a local file to inspect for whatever reason
+      dialect = SQLite()
 
     # reuse connection if not None. same logic as schema_path above
     if prev_runner is None:
-      engine = create_engine(url)
+      engine = create_engine(dialect.get_url(schema_path))
       connection = engine.connect()
       metadata.bind = connection
       transaction = connection.begin()
       session = Session(bind=connection)
 
-      def rollback_everything():
-        session.close()
- #       transaction.rollback()
-        #connection.close()
-        #metadata.reflect(bind=connection)
-        # if postgres:
-        metadata.drop_all(bind=connection)
-        transaction.commit()
-        
-        conn2 = engine.connect()
-        metadata.bind = conn2
-        metadata.reflect()
-        trans2 = connection.begin()
-        #connection = engine.connect()
-        #metadata.bind = connection
-        #print(metadata.sorted_tables)
-        #[print(t.name) for t in metadata.sorted_tables]
-        alembic_table = [t for t in metadata.sorted_tables if t.name == 'alembic_version']
-        #print(alembic_table)
-        if len(alembic_table) == 1:
-          connection.execute("drop table alembic_version")
-        trans2.commit()
-        
-
-      request.addfinalizer(rollback_everything)
+      request.addfinalizer(dialect.get_finalizer(metadata, session, connection, transaction, engine))
     else:
       connection = prev_runner.get_connection()
 

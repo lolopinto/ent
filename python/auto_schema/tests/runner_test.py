@@ -183,7 +183,7 @@ def validate_column_type(schema_column, db_column):
   elif isinstance(schema_column.type, sa.Enum):
     # enum type if possible otherwise check constraint...
     assert isinstance(db_column.type, sa.Enum)
-    print(schema_column.type.enums, db_column.type.enums)
+    #print(schema_column.type.enums, db_column.type.enums)
     assert schema_column.type.enums == db_column.type.enums
   else:
     # compare types by using the string version of the types. 
@@ -677,7 +677,7 @@ class TestPostgresRunner(BaseTestRunner):
     run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
 
     # TODO this isn't ideal
-    # need a good way to commit in between
+    # need a good way to commit in between for separate steps in transaction to work
     conn = r.get_connection()
     conn.execute('COMMIT')
 
@@ -699,7 +699,7 @@ class TestPostgresRunner(BaseTestRunner):
     run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
 
     # TODO this isn't ideal
-    # need a good way to commit in between
+    # need a good way to commit in between for separate steps in transaction to work
     conn = r.get_connection()
     conn.execute('COMMIT')
 
@@ -721,7 +721,7 @@ class TestPostgresRunner(BaseTestRunner):
     run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
 
     # TODO this isn't ideal
-    # need a good way to commit in between
+    # need a good way to commit in between for separate steps in transaction to work
     conn = r.get_connection()
     conn.execute('COMMIT')
 
