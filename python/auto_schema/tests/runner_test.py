@@ -194,7 +194,7 @@ def validate_column_type(schema_column, db_column, metadata):
 
 def validate_enum_column_type(metadata, db_column, schema_column):
   # has to be same length
-  assert(len(schema_column.type.enums), db_column.type.enums)
+  assert(len(schema_column.type.enums) == len(db_column.type.enums))
   
   # if equal, nothing to do here, we're done
   if schema_column.type.enums == db_column.type.enums:
@@ -231,7 +231,7 @@ def validate_indexes(schema_table, db_table, metadata):
     schema_index_columns = schema_index.columns
     db_index_columns = db_index.columns
     for schema_column, db_column in zip(schema_index_columns, db_index_columns):
-      validate_column(schema_column, db_column)
+      validate_column(schema_column, db_column, metadata)
 
 
 def validate_constraints(schema_table, db_table, dialect, metadata):
@@ -690,7 +690,17 @@ class TestPostgresRunner(BaseTestRunner):
 
 
   @pytest.mark.usefixtures("metadata_with_enum")
-  def test_new_enum_value(self, new_test_runner, metadata_with_enum):
+  @pytest.mark.parametrize(
+    'new_metadata_func, expected_diff',
+    [
+      (conftest.metadata_with_new_enum_value, 1),
+      (conftest.metadata_with_multiple_new_enum_values, 2),
+      (conftest.metadata_with_enum_value_before_first_pos, 1),
+      (conftest.metadata_with_multiple_new_enum_values_at_diff_pos, 2),
+      (conftest.metadata_with_multiple_new_values_before, 2),
+    ]
+  )
+  def test_enum_additions(self, new_test_runner, metadata_with_enum, new_metadata_func, expected_diff):
     r = new_test_runner(metadata_with_enum)
     run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
 
@@ -699,34 +709,12 @@ class TestPostgresRunner(BaseTestRunner):
     conn = r.get_connection()
     conn.execute('COMMIT')
 
-    conftest.metadata_with_new_enum_value(metadata_with_enum)
+    new_metadata_func(metadata_with_enum)
     r2 = new_test_runner(metadata_with_enum, r)
 
     diff = r2.compute_changes()
 
-    assert len(diff) == 1
-
-    r2.run()
-    assert_num_files(r2, 2)
-    validate_metadata_after_change(r2, metadata_with_enum)
-
-
-  @pytest.mark.usefixtures("metadata_with_enum")
-  def test_multiple_new_enum_values(self, new_test_runner, metadata_with_enum):
-    r = new_test_runner(metadata_with_enum)
-    run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
-
-    # TODO this isn't ideal
-    # need a good way to commit in between for separate steps in transaction to work
-    conn = r.get_connection()
-    conn.execute('COMMIT')
-
-    conftest.metadata_with_multiple_new_enum_values(metadata_with_enum)
-    r2 = new_test_runner(metadata_with_enum, r)
-
-    diff = r2.compute_changes()
-
-    assert len(diff) == 2
+    assert len(diff) == expected_diff
 
     r2.run()
     assert_num_files(r2, 2)
@@ -748,28 +736,6 @@ class TestPostgresRunner(BaseTestRunner):
 
     with pytest.raises(ValueError, match="postgres doesn't support enum removals"):
       diff = r2.compute_changes()
-
-
-  @pytest.mark.usefixtures("metadata_with_enum")
-  def test_new_enum_value_first_pos(self, new_test_runner, metadata_with_enum):
-    r = new_test_runner(metadata_with_enum)
-    run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
-
-    # TODO this isn't ideal
-    # need a good way to commit in between for separate steps in transaction to work
-    conn = r.get_connection()
-    conn.execute('COMMIT')
-
-    conftest.metadata_with_enum_value_before_first_pos(metadata_with_enum)
-    r2 = new_test_runner(metadata_with_enum, r)
-
-    diff = r2.compute_changes()
-
-    assert len(diff) == 1
-
-    r2.run()
-    assert_num_files(r2, 2)
-    validate_metadata_after_change(r2, metadata_with_enum)
 
 
 

@@ -173,14 +173,16 @@ def _compare_enum(upgrade_ops, conn_column, metadata_column, sch):
   if conn_type.enums == metadata_type.enums:
     return
 
-  for enum in conn_type.enums:
-    if enum not in metadata_type.enums:
+  conn_enums = {k: k for k in conn_type.enums}
+  metadata_enums = {k: k for k in metadata_type.enums}
+  for key in conn_enums:
+    if key not in metadata_enums:
       raise ValueError("postgres doesn't support enum removals")
 
 
   l = len(metadata_type.enums)
   for index, value in enumerate(metadata_type.enums):
-    if value not in conn_type.enums:
+    if value not in conn_enums:
       # if first item in list BEFORE
       # if not last item use BEFORE
       # options are:
@@ -188,7 +190,8 @@ def _compare_enum(upgrade_ops, conn_column, metadata_column, sch):
       # ALTER TYPE enum_type ADD VALUE 'new_value' BEFORE 'old_value';
       # we don't need after since the previous 2 suffice so don't officially support that
       # ALTER TYPE enum_type ADD VALUE 'new_value' AFTER 'old_value';
-      if index != l - 1:
+      # only add before it previously existed
+      if index != l - 1 and metadata_type.enums[index+1] in conn_enums:
         upgrade_ops.ops.append(
           ops.AlterEnumOp(conn_type.name, value, schema=sch, before=metadata_type.enums[index + 1])
         )

@@ -84,8 +84,8 @@ def new_test_runner(request):
       path = r.get_schema_path()
 
       # delete temp directory which was created
-      # if os.path.isdir(path):
-      #   shutil.rmtree(path)
+      if os.path.isdir(path):
+        shutil.rmtree(path)
 
     request.addfinalizer(delete_path)
 
@@ -340,46 +340,59 @@ def metadata_with_enum():
   )
   return metadata
 
+def _apply_func_on_enum(metadata, fn):
+  return _apply_func_on_metadata(metadata, 'rainbow', 'accounts', fn)
+
 
 def metadata_with_new_enum_value(metadata_with_enum):
-  tables = [t for t in metadata_with_enum.sorted_tables if t.name == "accounts"]
-  table = tables[0]
+  def add_purple(col):
+    col.type.enums.append('purple')
+    return col
 
-  cols = [c for c in table.columns if c.name == 'rainbow']
-  col = cols[0]
-  col.type.enums.append('purple')
-  return metadata_with_enum
+  return _apply_func_on_enum(metadata_with_enum, add_purple)
 
 
 def metadata_with_enum_value_before_first_pos(metadata_with_enum):
-  tables = [t for t in metadata_with_enum.sorted_tables if t.name == "accounts"]
-  table = tables[0]
+  def insert_purple(col):
+    col.type.enums.insert(0, 'purple')
+    return col
 
-  cols = [c for c in table.columns if c.name == 'rainbow']
-  col = cols[0]
-  col.type.enums.insert(0, 'purple')
-  return metadata_with_enum
+  return _apply_func_on_enum(metadata_with_enum, insert_purple)
+
+
+def metadata_with_multiple_new_values_before(metadata_with_enum):
+  def insert_colors(col):
+    col.type.enums.insert(2, 'purple')
+    col.type.enums.insert(4, 'black')
+    return col
+
+  return _apply_func_on_enum(metadata_with_enum, insert_colors)
 
 
 def metadata_with_multiple_new_enum_values(metadata_with_enum):
-  tables = [t for t in metadata_with_enum.sorted_tables if t.name == "accounts"]
-  table = tables[0]
+  def append_colors(col):
+    col.type.enums.append('purple')
+    col.type.enums.append('black')
+    return col
 
-  cols = [c for c in table.columns if c.name == 'rainbow']
-  col = cols[0]
-  col.type.enums.append('purple')
-  col.type.enums.append('black')
-  return metadata_with_enum
+  return _apply_func_on_enum(metadata_with_enum, append_colors)
+
+
+def metadata_with_multiple_new_enum_values_at_diff_pos(metadata_with_enum):
+  def change_colors(col):
+    col.type.enums.insert(3, 'purple')
+    col.type.enums.append('black')
+    return col
+
+  return _apply_func_on_enum(metadata_with_enum, change_colors)
 
 
 def metadata_with_removed_value(metadata_with_enum):
-  tables = [t for t in metadata_with_enum.sorted_tables if t.name == "accounts"]
-  table = tables[0]
+  def remove_color(col):
+    col.type.enums.remove('green')
+    return col
 
-  cols = [c for c in table.columns if c.name == 'rainbow']
-  col = cols[0]
-  col.type.enums.remove('green')
-  return metadata_with_enum
+  return _apply_func_on_enum(metadata_with_enum, remove_color)
 
 
 def user_to_followers_edge(edge_type = 1, inverse_edge_type=None):

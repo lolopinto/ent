@@ -95,5 +95,4 @@ def render_alter_enum(autogen_context, op):
 
 @renderers.dispatch_for(ops.NoDowngradeOp)
 def render_no_downgrade_op(autogen_context, op):
-  return 'pass'
-#  raise ValueError("operation is not reversible")
+  return "raise ValueError('operation is not reversible')"
