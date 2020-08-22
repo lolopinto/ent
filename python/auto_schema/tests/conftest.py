@@ -336,7 +336,7 @@ def metadata_with_enum():
   sa.Table('accounts', metadata,
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('rainbow', enum, nullable=False),
-    sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'), # use named primary key constraint instead of what we had per-column
+    sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'), 
   )
   return metadata
 

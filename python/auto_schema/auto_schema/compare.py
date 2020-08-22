@@ -143,10 +143,11 @@ def compare_enum(autogen_context, upgrade_ops, schemas):
     metadata_tables = {table.name: table for table in autogen_context.metadata.sorted_tables}
 
 
-  # trying to detect change in tables
+    # trying to detect change in tables
     for name in conn_tables:
       if not name in metadata_tables:
         continue
+
       metadata_table = metadata_tables[name]
       conn_table = conn_tables[name]
 
@@ -183,14 +184,13 @@ def _compare_enum(upgrade_ops, conn_column, metadata_column, sch):
   l = len(metadata_type.enums)
   for index, value in enumerate(metadata_type.enums):
     if value not in conn_enums:
-      # if first item in list BEFORE
       # if not last item use BEFORE
       # options are:
       # ALTER TYPE enum_type ADD VALUE 'new_value';
       # ALTER TYPE enum_type ADD VALUE 'new_value' BEFORE 'old_value';
       # we don't need after since the previous 2 suffice so don't officially support that
       # ALTER TYPE enum_type ADD VALUE 'new_value' AFTER 'old_value';
-      # only add before it previously existed
+      # only add before if previously existed
       if index != l - 1 and metadata_type.enums[index+1] in conn_enums:
         upgrade_ops.ops.append(
           ops.AlterEnumOp(conn_type.name, value, schema=sch, before=metadata_type.enums[index + 1])

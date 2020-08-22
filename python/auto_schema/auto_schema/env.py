@@ -10,7 +10,7 @@ from alembic import context
 from auto_schema import config
 from auto_schema import runner
 
-# these 4 needed for ops (edges, enums etc)
+# these 4 needed for custom ops (edges, enums etc)
 from auto_schema import ops
 from auto_schema import renderers
 from auto_schema import compare
@@ -78,7 +78,7 @@ connection = config.connection
 #     engine = engine
 
 
-# TODO this doesn't work...
+# TODO this hasn't been fully tested or doesn't work...
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -91,13 +91,6 @@ def run_migrations_offline():
     script output.
 
     """
-    # url = config.get_main_option("sqlalchemy.url")
-    # context.configure(
-    #     url=url, 
-    #     target_metadata=target_metadata, 
-    #     literal_binds=True, 
-    #     include_object=runner.Runner.include_object
-    # )
     context.configure(
         connection=connection, 
         target_metadata=target_metadata,
@@ -105,8 +98,7 @@ def run_migrations_offline():
         include_object=runner.Runner.include_object,
         compare_server_default=runner.Runner.compare_server_default,
         render_item=runner.Runner.render_server_default,
-        # doesn't apply offline
-#        transaction_per_migration=True
+        # transaction_per_migration doesn't seem to apply offline
     )
 
     with context.begin_transaction():
@@ -120,14 +112,7 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    # connectable = engine_from_config(
-    #     config.get_section(config.config_ini_section),
-    #     prefix="sqlalchemy.",
-    #     poolclass=pool.NullPool,
-    # )
-    #connectable = engine
 
-    #with connectable.connect() as connection:
     context.configure(
         connection=connection, 
         target_metadata=target_metadata,

@@ -17,7 +17,6 @@ from . import compare
 from . import ops_impl
 
 class Runner(object):
-  
   def __init__(self, metadata, connection, schema_path):
     self.metadata = metadata
     self.schema_path = schema_path
