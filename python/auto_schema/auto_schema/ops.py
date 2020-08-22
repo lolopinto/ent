@@ -93,14 +93,12 @@ class AlterEnumOp(MigrateOperation):
   
   """Alters enum."""
   def __init__(self, enum_name, value, schema=None):
-    print('alter enum constructor')
     self.enum_name = enum_name
     self.value = value
 
 
   @classmethod
   def alter_enum(cls, operations, enum_name, value, **kw):
-    print('alter_enum class method')
     """Issues an "alter enum" operation"""
 
     op = AlterEnumOp(enum_name, value, *kw)
@@ -109,7 +107,6 @@ class AlterEnumOp(MigrateOperation):
   
   def reverse(self):
     return NoDowngradeOp()
-    #raise ValueError("operation is not reversible")
 
 
   def get_revision_message(self):
@@ -120,8 +117,6 @@ class AlterEnumOp(MigrateOperation):
 class NoDowngradeOp(MigrateOperation):
   @classmethod
   def no_downgrade(cls, operations, *kw):
-    print('no_downgrade class method')
-    """Issues an "alter enum" operation"""
 
     op = NoDowngradeOp(*kw)
     return operations.invoke(op)

@@ -182,16 +182,16 @@ class Runner(object):
     return migrations.upgrade_ops.ops
 
 
-  def run(self, sql=False):
+  def run(self):
     diff = self.compute_changes()
   
     if len(diff) == 0:
       print("schema is up to date")
     else:
-      self._apply_changes(diff, sql)
+      self._apply_changes(diff)
 
 
-  def _apply_changes(self, diff, sql=False):
+  def _apply_changes(self, diff):
     #pprint.pprint(diff, indent=2, width=20)
 
     #migration_script = produce_migrations(self.mc, self.metadata)
@@ -200,7 +200,7 @@ class Runner(object):
     # TODO we need a top level upgrade path which is run when we get to production instead of running this
     # we need to only call upgrade() and not revision() and then upgrade()
     self.revision(diff)
-    self.upgrade(sql)
+    self.upgrade()
 
 
   def revision_message(self, diff=None):
@@ -209,7 +209,6 @@ class Runner(object):
       diff = migrations.upgrade_ops.ops
     
     def alter_column_op(op):
-      pprint.pprint(vars(op), indent=2, width=30)
       if op.modify_type is not None:
         return 'modify column %s type from %s to %s' % (op.column_name, op.existing_type, op.modify_type)
       elif op.modify_nullable is not None:
@@ -237,11 +236,6 @@ class Runner(object):
       'AlterEnumOp': lambda  op: op.get_revision_message(),
     }
 
-#    print(diff)
-
-    # if type(diff[0]).__name__ == 'ModifyTableOps':
-    #   [print(alter_column_op(op)) for op in diff[0].ops]
-    #   #print(diff[0].__name)
     changes = [class_name_map[type(op).__name__](op) for op in diff]
 
     message = "\n".join(changes)
@@ -261,8 +255,8 @@ class Runner(object):
     # understand diff and make changes as needed
     #pprint.pprint(migrations, indent=2, width=30)
 
-  def upgrade(self, sql=False):
-    self.cmd.upgrade(revision='head', sql=sql)
+  def upgrade(self):
+    self.cmd.upgrade(revision='head')
 
 
   def downgrade(self, revision):

@@ -44,8 +44,6 @@ def modify_edge(operations, operation):
 
   edge = operation.new_edge
 
-  print(operation.edge_type)
-  print(edge)
   connection.execute(
     table.update().where(table.c.edge_type == operation.edge_type).values(edge)
   )
@@ -61,7 +59,6 @@ def _get_table(connection):
 
 @Operations.implementation_for(ops.AlterEnumOp)
 def alter_enum(operations, operation):
-  print('implementation')
   connection = operations.get_bind()
   connection.execute(
     "ALTER TYPE %s ADD VALUE '%s'" %(operation.enum_name, operation.value)

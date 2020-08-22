@@ -72,7 +72,6 @@ def _render_edge_from_edges(edge_dicts, edge_fn_name):
 
 @renderers.dispatch_for(ops.AlterEnumOp)
 def render_alter_enum(autogen_context, op):
-  print('dispatcher')
   return (
     "with op.get_context().autocommit_block():\n"
     "%(indent)sop.alter_enum('%(enum_name)s', '%(value)s')" % {
@@ -81,8 +80,6 @@ def render_alter_enum(autogen_context, op):
       "indent": "  ",
     }
   )
-  # # like clearly not working
-  # return "op.execute('drop table foo')"
 
 
 @renderers.dispatch_for(ops.NoDowngradeOp)

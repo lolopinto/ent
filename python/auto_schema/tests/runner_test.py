@@ -685,13 +685,52 @@ class TestPostgresRunner(BaseTestRunner):
     r2 = new_test_runner(metadata_with_enum, r)
 
     diff = r2.compute_changes()
-    #pprint.pprint(diff, indent=2, width=30)
 
     assert len(diff) == 1
 
     r2.run()
     assert_num_files(r2, 2)
     validate_metadata_after_change(r2, metadata_with_enum)
+
+
+  @pytest.mark.usefixtures("metadata_with_enum")
+  def test_multiple_new_enum_values(self, new_test_runner, metadata_with_enum):
+    r = new_test_runner(metadata_with_enum)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+
+    # TODO this isn't ideal
+    # need a good way to commit in between
+    conn = r.get_connection()
+    conn.execute('COMMIT')
+
+    conftest.metadata_with_multiple_new_enum_values(metadata_with_enum)
+    r2 = new_test_runner(metadata_with_enum, r)
+
+    diff = r2.compute_changes()
+
+    assert len(diff) == 2
+
+    r2.run()
+    assert_num_files(r2, 2)
+    validate_metadata_after_change(r2, metadata_with_enum)
+
+
+  @pytest.mark.usefixtures("metadata_with_enum")
+  def test_remove_enum_value(self, new_test_runner, metadata_with_enum):
+    r = new_test_runner(metadata_with_enum)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+
+    # TODO this isn't ideal
+    # need a good way to commit in between
+    conn = r.get_connection()
+    conn.execute('COMMIT')
+
+    conftest.metadata_with_removed_value(metadata_with_enum)
+    r2 = new_test_runner(metadata_with_enum, r)
+
+    with pytest.raises(ValueError, match="postgres doesn't support enum removals"):
+      diff = r2.compute_changes()
+
 
 
   

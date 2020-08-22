@@ -70,8 +70,8 @@ def new_test_runner(request):
       path = r.get_schema_path()
 
       # delete temp directory which was created
-      # if os.path.isdir(path):
-      #   shutil.rmtree(path)
+      if os.path.isdir(path):
+        shutil.rmtree(path)
 
     request.addfinalizer(delete_path)
 
@@ -334,7 +334,27 @@ def metadata_with_new_enum_value(metadata_with_enum):
   cols = [c for c in table.columns if c.name == 'rainbow']
   col = cols[0]
   col.type.enums.append('purple')
-  #print(col.type.enums)
+  return metadata_with_enum
+
+
+def metadata_with_multiple_new_enum_values(metadata_with_enum):
+  tables = [t for t in metadata_with_enum.sorted_tables if t.name == "accounts"]
+  table = tables[0]
+
+  cols = [c for c in table.columns if c.name == 'rainbow']
+  col = cols[0]
+  col.type.enums.append('purple')
+  col.type.enums.append('black')
+  return metadata_with_enum
+
+
+def metadata_with_removed_value(metadata_with_enum):
+  tables = [t for t in metadata_with_enum.sorted_tables if t.name == "accounts"]
+  table = tables[0]
+
+  cols = [c for c in table.columns if c.name == 'rainbow']
+  col = cols[0]
+  col.type.enums.remove('green')
   return metadata_with_enum
 
 
