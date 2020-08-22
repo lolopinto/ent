@@ -17,7 +17,7 @@ from . import compare
 from . import ops_impl
 
 class Runner(object):
-
+  
   def __init__(self, metadata, connection, schema_path):
     self.metadata = metadata
     self.schema_path = schema_path
@@ -79,10 +79,6 @@ class Runner(object):
     # TODO: we should allow going from all less-precise to more-precise since we're not losing any information
     if isinstance(inspected_type, sa.Date) and isinstance(metadata_type, sa.TIMESTAMP):
       return True
-
-    # disallow enum changes?
-    if isinstance(inspected_type, sa.Enum) and isinstance(metadata_type, sa.Enum):
-      return False
 
     return False
 
@@ -256,7 +252,7 @@ class Runner(object):
     #pprint.pprint(migrations, indent=2, width=30)
 
   def upgrade(self):
-    self.cmd.upgrade(revision='head')
+    self.cmd.upgrade()
 
 
   def downgrade(self, revision):
