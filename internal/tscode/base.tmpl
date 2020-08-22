@@ -23,6 +23,10 @@ const tableName = "{{.TableName}}";
 {{$constructor := "arg: new (viewer: Viewer, id: ID, data: Data) => T"}}
 {{$thisType := "new (viewer: Viewer, id: ID, data: Data) => T"}}
 
+{{ range .GetTSEnums -}}
+  {{ template "enum.tmpl" . -}}
+{{ end}}
+
 export class {{$baseClass}} {
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};

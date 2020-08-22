@@ -1,13 +1,3 @@
-export enum NodeType {
-  {{ range $data := .NodeData -}} 
-    // {{.Comment}}
-    {{.Name}} = {{.Value}},
-  {{ end -}}
-}
+{{template "enum.tmpl" .NodeType }}
 
-export enum EdgeType {
-  {{ range $data := .EdgeData -}} 
-    // {{.Comment}}
-    {{.Name}} = {{.Value}},
-  {{ end -}}
-}
+{{template "enum.tmpl" .EdgeType }}

@@ -15,6 +15,7 @@ type expType struct {
 	db                  string
 	graphql             string
 	graphqlPanics       bool
+	goTypePanics        bool
 	castToMethod        string
 	zeroValue           interface{}
 	nullableType        enttype.Type
@@ -321,7 +322,7 @@ func TestNamedType(t *testing.T) {
 		t,
 		&enttype.NamedType{},
 		map[string]testCase{
-			"context": testCase{
+			"context": {
 				`package main
 	
 			import "context"
@@ -340,7 +341,7 @@ func TestNamedType(t *testing.T) {
 				},
 				defaultFn,
 			},
-			"error": testCase{
+			"error": {
 				`package main
 	
 			func f() error {
@@ -356,7 +357,7 @@ func TestNamedType(t *testing.T) {
 				},
 				defaultFn,
 			},
-			"models.User": testCase{
+			"models.User": {
 				`package main
 	
 				import "github.com/lolopinto/ent/internal/test_schema/models"
@@ -397,7 +398,7 @@ func TestPointerType(t *testing.T) {
 	testTestCases(
 		t, &enttype.PointerType{},
 		map[string]testCase{
-			"models.User": testCase{
+			"models.User": {
 				`package main
 
 	import "github.com/lolopinto/ent/internal/test_schema/models"
@@ -415,7 +416,7 @@ func TestPointerType(t *testing.T) {
 				},
 				defaultFn,
 			},
-			"stringSlice": testCase{
+			"stringSlice": {
 				`package main
 	
 				func f() *[]string {
@@ -430,7 +431,7 @@ func TestPointerType(t *testing.T) {
 				},
 				defaultFn,
 			},
-			"stringPointerSlice": testCase{
+			"stringPointerSlice": {
 				`package main
 	
 				func f() *[]*string {
@@ -445,7 +446,7 @@ func TestPointerType(t *testing.T) {
 				},
 				defaultFn,
 			},
-			"models.UserPointer": testCase{
+			"models.UserPointer": {
 				`package main
 	
 				import "github.com/lolopinto/ent/internal/test_schema/models"
@@ -472,7 +473,7 @@ func TestSliceType(t *testing.T) {
 		t,
 		&enttype.SliceType{},
 		map[string]testCase{
-			"string": testCase{
+			"string": {
 				`package main
 	
 				func f() []string {
@@ -488,7 +489,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"stringPointer": testCase{
+			"stringPointer": {
 				`package main
 	
 				func f() []*string {
@@ -504,7 +505,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"bool": testCase{
+			"bool": {
 				`package main
 	
 				func f() []bool {
@@ -520,7 +521,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"boolPointer": testCase{
+			"boolPointer": {
 				`package main
 	
 				func f() []*bool {
@@ -536,7 +537,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"int": testCase{
+			"int": {
 				`package main
 	
 				func f() []int {
@@ -552,7 +553,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"intPointer": testCase{
+			"intPointer": {
 				`package main
 	
 				func f() []*int {
@@ -569,7 +570,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"float64": testCase{
+			"float64": {
 				`package main
 	
 				func f() []float64 {
@@ -585,7 +586,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"float64Pointer": testCase{
+			"float64Pointer": {
 				`package main
 	
 				func f() []*float64 {
@@ -601,7 +602,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"float32": testCase{
+			"float32": {
 				`package main
 	
 				func f() []float32 {
@@ -617,7 +618,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"float32Pointer": testCase{
+			"float32Pointer": {
 				`package main
 	
 				func f() []*float32 {
@@ -633,7 +634,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"time": testCase{
+			"time": {
 				`package main
 	
 				import "time"
@@ -652,7 +653,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"timePointer": testCase{
+			"timePointer": {
 				`package main
 	
 				import "time"
@@ -671,7 +672,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"models.User": testCase{
+			"models.User": {
 				`package main
 	
 				import "github.com/lolopinto/ent/internal/test_schema/models"
@@ -690,7 +691,7 @@ func TestSliceType(t *testing.T) {
 				},
 				nil,
 			},
-			"models.UserPointer": testCase{
+			"models.UserPointer": {
 				`package main
 	
 				import "github.com/lolopinto/ent/internal/test_schema/models"
@@ -720,7 +721,7 @@ func TestArrayType(t *testing.T) {
 		t,
 		&enttype.ArrayType{},
 		map[string]testCase{
-			"string": testCase{
+			"string": {
 				`package main
 
 	func f() [2]string {
@@ -736,7 +737,7 @@ func TestArrayType(t *testing.T) {
 				},
 				nil,
 			},
-			"stringPointer": testCase{
+			"stringPointer": {
 				`package main
 	
 				func f() [2]*string {
@@ -763,7 +764,7 @@ func TestMapType(t *testing.T) {
 		t,
 		&enttype.MapType{},
 		map[string]testCase{
-			"string": testCase{
+			"string": {
 				`package main
 
 	func f() map[string]string {
@@ -778,7 +779,7 @@ func TestMapType(t *testing.T) {
 				},
 				nil,
 			},
-			"stringPointer": testCase{
+			"stringPointer": {
 				`package main
 	
 				func f() map[string]*bool {
@@ -795,6 +796,99 @@ func TestMapType(t *testing.T) {
 			},
 		},
 	)
+}
+
+func TestNullableEnumType(t *testing.T) {
+	testTypeDirectly(t,
+		&enttype.NullableEnumType{
+			Type:        "AccountStatus",
+			GraphQLType: "AccountStatus",
+			Values: []string{
+				"NOT_VERIFIED",
+				"VERIFIED",
+				"DEACTIVATED",
+				"DISABLED",
+			},
+		},
+		map[string]*typeTestCase{
+			"nullable": {
+				expType{
+					db:           "sa.Text()",
+					graphql:      "AccountStatus",
+					tsType:       "AccountStatus | null",
+					goTypePanics: true,
+					nonNullableType: &enttype.EnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						Values: []string{
+							"NOT_VERIFIED",
+							"VERIFIED",
+							"DEACTIVATED",
+							"DISABLED",
+						},
+					},
+				},
+				nil,
+			},
+		},
+	)
+}
+
+func TestEnumType(t *testing.T) {
+	testTypeDirectly(t,
+		&enttype.EnumType{
+			Type:        "AccountStatus",
+			GraphQLType: "AccountStatus",
+			Values: []string{
+				"NOT_VERIFIED",
+				"VERIFIED",
+				"DEACTIVATED",
+				"DISABLED",
+			},
+		},
+		map[string]*typeTestCase{
+			"nullable": {
+				expType{
+					db:           "sa.Text()",
+					graphql:      "AccountStatus!",
+					tsType:       "AccountStatus",
+					goTypePanics: true,
+					nullableType: &enttype.NullableEnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						Values: []string{
+							"NOT_VERIFIED",
+							"VERIFIED",
+							"DEACTIVATED",
+							"DISABLED",
+						},
+					},
+				},
+				nil,
+			},
+		},
+	)
+}
+
+func testTypeDirectly(t *testing.T, typ enttype.Type, testCases map[string]*typeTestCase) {
+	for name, tt := range testCases {
+		t.Run(name, func(t *testing.T) {
+
+			ret := returnType{
+				entType: typ,
+			}
+			if tt.fn != nil {
+				tt.fn(&ret, &tt.exp)
+			}
+			testType(t, tt.exp, ret)
+		})
+	}
+}
+
+// when testing the type directly e.g. typescript...
+type typeTestCase struct {
+	exp expType
+	fn  func(ret *returnType, exp *expType)
 }
 
 type returnType struct {
@@ -844,8 +938,14 @@ func testType(t *testing.T, exp expType, ret returnType) {
 	entType, ok := typ.(enttype.EntType)
 	if ok {
 		assert.Equal(t, exp.db, entType.GetDBType())
-		assert.Equal(t, exp.castToMethod, entType.GetCastToMethod())
-		assert.Equal(t, exp.zeroValue, entType.GetZeroValue())
+		if exp.goTypePanics {
+			assert.Panics(t, func() { entType.GetCastToMethod() })
+			assert.Panics(t, func() { entType.GetZeroValue() })
+		} else {
+			assert.Equal(t, exp.castToMethod, entType.GetCastToMethod())
+			assert.Equal(t, exp.zeroValue, entType.GetZeroValue())
+
+		}
 	}
 
 	nullableType, ok := typ.(enttype.NullableType)

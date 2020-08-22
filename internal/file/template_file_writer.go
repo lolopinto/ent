@@ -14,17 +14,18 @@ import (
 )
 
 type TemplatedBasedFileWriter struct {
-	Data              interface{}
-	AbsPathToTemplate string
-	TemplateName      string
-	PathToFile        string
-	CreateDirIfNeeded bool
-	FormatSource      bool
-	FuncMap           template.FuncMap
-	PackageName       string
-	Imports           *intimports.Imports
-	TsImports         *tsimport.Imports
-	EditableCode      bool
+	Data               interface{}
+	AbsPathToTemplate  string
+	OtherTemplateFiles []string // should also be an absolute path
+	TemplateName       string
+	PathToFile         string
+	CreateDirIfNeeded  bool
+	FormatSource       bool
+	FuncMap            template.FuncMap
+	PackageName        string
+	Imports            *intimports.Imports
+	TsImports          *tsimport.Imports
+	EditableCode       bool
 }
 
 func (fw *TemplatedBasedFileWriter) createDirIfNeeded() bool {
@@ -116,9 +117,12 @@ func (fw *TemplatedBasedFileWriter) formatTs(buf *bytes.Buffer) ([]byte, error) 
 }
 
 func (fw *TemplatedBasedFileWriter) executeTemplate() (*bytes.Buffer, error) {
-	path := []string{fw.AbsPathToTemplate}
+	paths := []string{fw.AbsPathToTemplate}
+	if len(fw.OtherTemplateFiles) != 0 {
+		paths = append(paths, fw.OtherTemplateFiles...)
+	}
 	t := template.New(fw.TemplateName).Funcs(fw.FuncMap)
-	t, err := t.ParseFiles(path...)
+	t, err := t.ParseFiles(paths...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +130,8 @@ func (fw *TemplatedBasedFileWriter) executeTemplate() (*bytes.Buffer, error) {
 	var buffer bytes.Buffer
 
 	// execute the template and store in buffer
-	err = t.Execute(&buffer, fw.Data)
+	//	err = t.Execute(&buffer, fw.Data)
+	err = t.ExecuteTemplate(&buffer, fw.TemplateName, fw.Data)
 	return &buffer, err
 }
 

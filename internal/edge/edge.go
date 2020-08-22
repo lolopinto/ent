@@ -14,6 +14,7 @@ import (
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/depgraph"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
@@ -149,7 +150,7 @@ type Edge interface {
 	GetEntConfig() schemaparser.EntConfigInfo
 	GraphQLEdgeName() string
 	CamelCaseEdgeName() string
-	GetTSGraphQLTypeImports() []string
+	GetTSGraphQLTypeImports() []enttype.FileImport
 }
 
 // marker interface
@@ -191,9 +192,14 @@ type FieldEdge struct {
 	InverseEdgeName string
 }
 
-func (edge *FieldEdge) GetTSGraphQLTypeImports() []string {
-	// TODO required and nullable eventually
-	return []string{fmt.Sprintf("%sType", edge.NodeInfo.Node)}
+func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+	// TODO required and nullable eventually (options for the edges that is)
+	return []enttype.FileImport{
+		{
+			ImportType: enttype.Node,
+			Type:       edge.NodeInfo.Node,
+		},
+	}
 }
 
 var _ Edge = &FieldEdge{}
@@ -215,13 +221,15 @@ func (e *ForeignKeyEdge) EdgeIdentifier() string {
 	return e.Singular()
 }
 
-func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []string {
-	nodeType := fmt.Sprintf("%sType", e.NodeInfo.Node)
-	return []string{
-		"GraphQLNonNull",
-		"GraphQLList",
-		"GraphQLNonNull",
-		nodeType,
+func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+	return []enttype.FileImport{
+		enttype.NewGQLFileImport("GraphQLNonNull"),
+		enttype.NewGQLFileImport("GraphQLList"),
+		enttype.NewGQLFileImport("GraphQLNonNull"),
+		{
+			ImportType: enttype.Node,
+			Type:       e.NodeInfo.Node,
+		},
 	}
 }
 
@@ -233,8 +241,8 @@ type InverseAssocEdge struct {
 	EdgeConst string
 }
 
-func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []string {
-	panic("TODO")
+func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+	panic("TODO. no GraphQLImports for InverseAssocEdge")
 }
 
 var edgeRegexp = regexp.MustCompile(`(\w+)Edge`)
@@ -283,16 +291,23 @@ func (e *AssociationEdge) EdgeIdentifier() string {
 	return e.Singular()
 }
 
-func (edge *AssociationEdge) GetTSGraphQLTypeImports() []string {
-	nodeType := fmt.Sprintf("%sType", edge.NodeInfo.Node)
+func (edge *AssociationEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 	if edge.Unique {
-		return []string{nodeType}
+		return []enttype.FileImport{
+			{
+				ImportType: enttype.Node,
+				Type:       edge.NodeInfo.Node,
+			},
+		}
 	}
-	return []string{
-		"GraphQLNonNull",
-		"GraphQLList",
-		"GraphQLNonNull",
-		nodeType,
+	return []enttype.FileImport{
+		enttype.NewGQLFileImport("GraphQLNonNull"),
+		enttype.NewGQLFileImport("GraphQLList"),
+		enttype.NewGQLFileImport("GraphQLNonNull"),
+		{
+			ImportType: enttype.Node,
+			Type:       edge.NodeInfo.Node,
+		},
 	}
 }
 

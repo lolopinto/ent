@@ -14,6 +14,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
@@ -21,8 +22,8 @@ import (
 
 type Step struct {
 	m        sync.Mutex
-	nodeType []enumData
-	edgeType []enumData
+	nodeType []enum.Data
+	edgeType []enum.Data
 }
 
 func (s *Step) Name() string {
@@ -116,7 +117,7 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeData) {
 	s.m.Lock()
 	defer s.m.Unlock()
-	s.nodeType = append(s.nodeType, enumData{
+	s.nodeType = append(s.nodeType, enum.Data{
 		Name:    name,
 		Value:   value,
 		Comment: comment,
@@ -128,7 +129,7 @@ func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeDat
 func (s *Step) addEdgeType(name, value, comment string) {
 	s.m.Lock()
 	defer s.m.Unlock()
-	s.edgeType = append(s.edgeType, enumData{
+	s.edgeType = append(s.edgeType, enum.Data{
 		Name:    name,
 		Value:   value,
 		Comment: comment,
@@ -180,13 +181,7 @@ type nodeTemplateCodePath struct {
 	Package  *codegen.ImportPackage
 }
 
-type enumData struct {
-	Name        string
-	Value       string
-	Comment     string
-	PackagePath string
-}
-
+// copied to internal/schema/node_data.go
 func getFilePathForBaseModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/generated/%s_base.ts", nodeData.PackageName)
 }
@@ -239,13 +234,14 @@ func writeBaseModelFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePat
 			CodePath: codePathInfo,
 			Package:  codePathInfo.GetImportPackage(),
 		},
-		CreateDirIfNeeded: true,
-		AbsPathToTemplate: util.GetAbsolutePath("base.tmpl"),
-		TemplateName:      "base.tmpl",
-		PathToFile:        getFilePathForBaseModelFile(nodeData),
-		FormatSource:      true,
-		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
+		CreateDirIfNeeded:  true,
+		AbsPathToTemplate:  util.GetAbsolutePath("base.tmpl"),
+		TemplateName:       "base.tmpl",
+		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
+		PathToFile:         getFilePathForBaseModelFile(nodeData),
+		FormatSource:       true,
+		TsImports:          imps,
+		FuncMap:            imps.FuncMap(),
 	})
 }
 
@@ -270,7 +266,7 @@ func writeEntFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) err
 	}, file.WriteOnce())
 }
 
-func writeConstFile(nodeData []enumData, edgeData []enumData) error {
+func writeConstFile(nodeData []enum.Data, edgeData []enum.Data) error {
 	// sort data so that the enum is stable
 	sort.Slice(nodeData, func(i, j int) bool {
 		return nodeData[i].Name < nodeData[j].Name
@@ -283,27 +279,36 @@ func writeConstFile(nodeData []enumData, edgeData []enumData) error {
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: struct {
-			NodeData []enumData
-			EdgeData []enumData
+			NodeType enum.Enum
+			EdgeType enum.Enum
 		}{
-			nodeData,
-			edgeData,
+			enum.Enum{
+				Name:   "NodeType",
+				Values: nodeData,
+			},
+			enum.Enum{
+				Name:   "EdgeType",
+				Values: edgeData,
+			},
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("const.tmpl"),
 		TemplateName:      "const.tmpl",
-		PathToFile:        getFilePathForConstFile(),
-		FormatSource:      true,
-		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
+		OtherTemplateFiles: []string{
+			util.GetAbsolutePath("../schema/enum/enum.tmpl"),
+		},
+		PathToFile:   getFilePathForConstFile(),
+		FormatSource: true,
+		TsImports:    imps,
+		FuncMap:      imps.FuncMap(),
 	})
 }
 
-func writeLoadAnyFile(nodeData []enumData, codePathInfo *codegen.CodePath) error {
+func writeLoadAnyFile(nodeData []enum.Data, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: struct {
-			NodeData []enumData
+			NodeData []enum.Data
 			Package  *codegen.ImportPackage
 		}{
 			nodeData,

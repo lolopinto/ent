@@ -1,0 +1,9 @@
+{{/* TODO eventually support not exporting */}}
+export enum {{.Name}} {
+  {{ range $data := .Values -}} 
+    {{ if .Comment -}}
+      // {{.Comment}}
+    {{ end -}}
+    {{.Name}} = {{.Value}},
+  {{ end -}}
+}

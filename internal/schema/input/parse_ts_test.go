@@ -22,8 +22,10 @@ type node struct {
 }
 
 type field struct {
-	name                    string
-	dbType                  input.DBType
+	name   string
+	dbType input.DBType
+	// provided in lieu of dbType if we wanna provide everything
+	typ                     *input.FieldType
 	nullable                bool
 	storageKey              string
 	unique                  bool
@@ -111,7 +113,12 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				for j, expField := range expectedNode.fields {
 					field := node.Fields[j]
 
-					assert.Equal(t, expField.dbType, field.Type.DBType)
+					if expField.typ != nil {
+						assert.Equal(t, expField.typ, field.Type)
+					} else {
+						assert.Equal(t, expField.dbType, field.Type.DBType)
+
+					}
 					assert.Equal(t, expField.name, field.Name)
 
 					assert.Equal(t, expField.storageKey, field.StorageKey)

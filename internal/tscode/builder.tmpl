@@ -6,9 +6,13 @@
 {{ reserveDefaultImport $schemaPath "schema"}}
 {{ reserveImport "src/ent/const" "EdgeType" "NodeType" }}
 
-{{ range .GetUniqueNodesForceSelf -}} 
-  {{$packagePath := printf "src/ent/%s" .PackageName }}
-  {{ reserveDefaultImport $packagePath .Node}}
+
+{{ range .GetImportPaths -}}
+  {{ if .DefaultImport -}}
+    {{ reserveDefaultImport .PackagePath .Import}}
+  {{ else -}}
+    {{ reserveImport .PackagePath .Import}}
+  {{ end -}}
 {{ end}}
 
 export interface {{.Node}}Input {

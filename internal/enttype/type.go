@@ -40,8 +40,34 @@ type TSTypeWithImports interface {
 
 type TSGraphQLType interface {
 	// returns imports from outside in
-	// e.g. required string => []string{"GraphQLNonNull", "GraphQLString"}
-	GetTSGraphQLImports() []string
+	// e.g. required string => []fileImport{newGQLFileImport("GraphQLNonNull"), newGQLFileImport("GraphQLString")}
+	GetTSGraphQLImports() []FileImport
+}
+
+type ImportType string
+
+const (
+	GraphQL ImportType = "graphql"
+	Node    ImportType = "node"
+	Enum    ImportType = "enum"
+)
+
+// for imports that are not from "graphql"
+// we need a way to flag different import types
+// e.g. Node of type User
+// or enum of type RequestStatus
+// and have the import path be handled separately/later
+type FileImport struct {
+	Type       string
+	ImportType ImportType // so instead of the path being hardcoded, we indicate we're exposing an enum of a given type
+}
+
+// helper to more easily create a GraphQL import since very common
+func NewGQLFileImport(typ string) FileImport {
+	return FileImport{
+		Type:       typ,
+		ImportType: GraphQL,
+	}
 }
 
 type ListType interface {
@@ -62,6 +88,13 @@ type NonNullableType interface {
 
 type DefaulFieldNameType interface {
 	DefaultGraphQLFieldName() string
+}
+
+// EnumeratedType indicates that this is an enum type
+type EnumeratedType interface {
+	TSType
+	GetGraphQLName() string
+	GetEnumValues() []string
 }
 
 type stringType struct {
@@ -97,8 +130,10 @@ func (t *StringType) GetNullableType() Type {
 	return &NullableStringType{}
 }
 
-func (t *StringType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLNonNull", "GraphQLString"}
+func (t *StringType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLString"),
+	}
 }
 
 type NullableStringType struct {
@@ -121,8 +156,10 @@ func (t *NullableStringType) GetNonNullableType() Type {
 	return &StringType{}
 }
 
-func (t *NullableStringType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLString"}
+func (t *NullableStringType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		NewGQLFileImport("GraphQLString"),
+	}
 }
 
 type boolType struct{}
@@ -155,8 +192,10 @@ func (t *BoolType) GetNullableType() Type {
 	return &NullableBoolType{}
 }
 
-func (t *BoolType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLNonNull", "GraphQLBoolean"}
+func (t *BoolType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLBoolean"),
+	}
 }
 
 type NullableBoolType struct {
@@ -179,8 +218,10 @@ func (t *NullableBoolType) GetNonNullableType() Type {
 	return &BoolType{}
 }
 
-func (t *NullableBoolType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLBoolean"}
+func (t *NullableBoolType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		NewGQLFileImport("GraphQLBoolean"),
+	}
 }
 
 // TODO uuid support needed
@@ -221,8 +262,11 @@ func (t *IDType) GetNullableType() Type {
 	return &NullableIDType{}
 }
 
-func (t *IDType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLNonNull", "GraphQLID"}
+func (t *IDType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		NewGQLFileImport("GraphQLNonNull"),
+		NewGQLFileImport("GraphQLID"),
+	}
 }
 
 type NullableIDType struct {
@@ -245,8 +289,8 @@ func (t *NullableIDType) GetNonNullableType() Type {
 	return &IDType{}
 }
 
-func (t *NullableIDType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLID"}
+func (t *NullableIDType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{NewGQLFileImport("GraphQLID")}
 }
 
 type intType struct{}
@@ -278,8 +322,8 @@ func (t *IntegerType) GetNullableType() Type {
 	return &NullableIntegerType{}
 }
 
-func (t *IntegerType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLNonNull", "GraphQLInt"}
+func (t *IntegerType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLInt")}
 }
 
 type NullableIntegerType struct {
@@ -302,8 +346,8 @@ func (t *NullableIntegerType) GetNonNullableType() Type {
 	return &IntegerType{}
 }
 
-func (t *NullableIntegerType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLInt"}
+func (t *NullableIntegerType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{NewGQLFileImport("GraphQLInt")}
 }
 
 type floatType struct{}
@@ -336,8 +380,8 @@ func (t *FloatType) GetNullableType() Type {
 	return &NullableFloatType{}
 }
 
-func (t *FloatType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLNonNull", "GraphQLFloat"}
+func (t *FloatType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLFloat")}
 }
 
 type NullableFloatType struct {
@@ -360,8 +404,8 @@ func (t *NullableFloatType) GetNonNullableType() Type {
 	return &FloatType{}
 }
 
-func (t *NullableFloatType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLFloat"}
+func (t *NullableFloatType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{NewGQLFileImport("GraphQLFloat")}
 }
 
 type timeType struct{}
@@ -399,8 +443,8 @@ func (t *TimeType) GetNullableType() Type {
 	return &NullableTimeType{}
 }
 
-func (t *TimeType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLNonNull", "GraphQLTime"}
+func (t *TimeType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLTime")}
 }
 
 type NullableTimeType struct {
@@ -423,8 +467,8 @@ func (t *NullableTimeType) GetNonNullableType() Type {
 	return &TimeType{}
 }
 
-func (t *NullableTimeType) GetTSGraphQLImports() []string {
-	return []string{"GraphQLTime"}
+func (t *NullableTimeType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{NewGQLFileImport("GraphQLTime")}
 }
 
 type typeConfig struct {
@@ -721,6 +765,119 @@ func (t *MapType) GetGraphQLType() string {
 	// this is sadly not consistent with behavior of slices
 	// TODO: need to add Map scalar to schema.graphql if we encounter this
 	// TODO need to convert to/from map[string]interface{} to return in gql
+}
+
+type enumType struct {
+}
+
+func (t *enumType) GetDBType() string {
+	// string type for now
+	// although we'll eventually want this to be customizable
+	return "sa.Text()"
+}
+
+func (t *enumType) GetZeroValue() string {
+	panic("enum type not supported in go-lang yet")
+}
+
+type EnumType struct {
+	enumType
+	Type        string
+	GraphQLType string
+	Values      []string
+}
+
+func (t *EnumType) GetEnumValues() []string {
+	return t.Values
+}
+
+func (t *EnumType) GetGraphQLType() string {
+	return fmt.Sprintf("%s!", t.GraphQLType)
+}
+
+func (t *EnumType) GetGraphQLName() string {
+	return t.GraphQLType
+}
+
+func (t *EnumType) GetTSType() string {
+	return t.Type
+}
+
+func (t *EnumType) GetTsTypeImports() []string {
+	return []string{t.Type}
+}
+
+func (t *EnumType) GetCastToMethod() string {
+	panic("enum type not supported in go-lang yet")
+}
+
+func (t *EnumType) GetNullableType() Type {
+	return &NullableEnumType{
+		Type:        t.Type,
+		GraphQLType: t.GraphQLType,
+		Values:      t.Values,
+	}
+}
+
+func (t *EnumType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		{
+			ImportType: GraphQL,
+			Type:       "GraphQLNonNull",
+		},
+		{
+			ImportType: Enum,
+			Type:       t.GraphQLType,
+		},
+	}
+}
+
+type NullableEnumType struct {
+	enumType
+	Type        string
+	GraphQLType string
+	Values      []string
+}
+
+func (t *NullableEnumType) GetEnumValues() []string {
+	return t.Values
+}
+
+func (t *NullableEnumType) GetGraphQLType() string {
+	return t.GraphQLType
+}
+
+func (t *NullableEnumType) GetGraphQLName() string {
+	return t.GraphQLType
+}
+
+func (t *NullableEnumType) GetTSType() string {
+	return fmt.Sprintf("%s | null", t.Type)
+}
+
+func (t *NullableEnumType) GetTsTypeImports() []string {
+	return []string{t.Type}
+}
+
+func (t *NullableEnumType) GetCastToMethod() string {
+	panic("enum type not supported in go-lang yet")
+}
+
+func (t *NullableEnumType) GetNonNullableType() Type {
+	return &EnumType{
+		Type:        t.Type,
+		GraphQLType: t.GraphQLType,
+		Values:      t.Values,
+	}
+}
+
+func (t *NullableEnumType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		{
+			ImportType: Enum,
+			Type:       t.GraphQLType,
+		},
+	}
 }
 
 func getBasicType(typ types.Type) Type {

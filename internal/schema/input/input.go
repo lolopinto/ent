@@ -33,18 +33,24 @@ type DBType string
 
 const (
 	// Note that these types should match enum DBType in schema.ts
-	UUID    DBType = "UUID"
-	Int64ID        = "Int64ID"
-	Boolean        = "Boolean"
-	Int            = "Int"
-	Float          = "Float"
-	String         = "String"
-	Time           = "Time"
-	JSON           = "JSON"
+	UUID       DBType = "UUID"
+	Int64ID           = "Int64ID"
+	Boolean           = "Boolean"
+	Int               = "Int"
+	Float             = "Float"
+	String            = "String"
+	Time              = "Time"
+	JSON              = "JSON"
+	Enum              = "Enum"
+	StringEnum        = "StringEnum"
 )
 
 type FieldType struct {
 	DBType DBType `json:"dbType"`
+	// required when DBType == DBType.Enum || DBType.StringEnum
+	Values      []string `json:"values"`
+	Type        string   `json:"type"`
+	GraphQLType string   `json:"graphQLType"`
 }
 
 type Field struct {
@@ -109,6 +115,26 @@ func (f *Field) GetEntType() enttype.EntType {
 		return &enttype.TimeType{}
 	case JSON:
 		return &enttype.RawJSONType{}
+
+	case StringEnum:
+		if f.Type.Type == "" {
+			panic("enum type name is required")
+		}
+		if f.Type.GraphQLType == "" {
+			panic("enum graphql name is required")
+		}
+		if f.Nullable {
+			return &enttype.NullableEnumType{
+				Type:        f.Type.Type,
+				GraphQLType: f.Type.GraphQLType,
+				Values:      f.Type.Values,
+			}
+		}
+		return &enttype.EnumType{
+			Type:        f.Type.Type,
+			GraphQLType: f.Type.GraphQLType,
+			Values:      f.Type.Values,
+		}
 	}
 	panic("unsupported type")
 }
