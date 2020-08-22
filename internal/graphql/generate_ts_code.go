@@ -106,10 +106,9 @@ type step interface {
 	process(data *codegen.Data, s *gqlSchema) error
 }
 
-// TODO rename this from WriteQsAndMutations to writeObjects?
-type writeQsAndMutationsStep struct{}
+type writeGraphQLTypesStep struct{}
 
-func (st writeQsAndMutationsStep) process(data *codegen.Data, s *gqlSchema) error {
+func (st writeGraphQLTypesStep) process(data *codegen.Data, s *gqlSchema) error {
 	var wg sync.WaitGroup
 	var serr syncerr.Error
 
@@ -236,7 +235,7 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 	}
 
 	steps := []step{
-		writeQsAndMutationsStep{},
+		writeGraphQLTypesStep{},
 		writeQueryStep{},
 		writeMutationStep{},
 		generateGQLSchemaStep{},
@@ -565,7 +564,6 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 				defer m.Unlock()
 				nodes[nodeData.Node] = &obj
 
-				// should we add to dependent? does it matter that the type is different?
 				for _, enumType := range nodeData.GetGraphQLEnums() {
 					// needs a quoted name
 					// Type has GQLType
@@ -679,6 +677,8 @@ func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 		case enttype.Node:
 			importPath = getImportPathFromNodeName(typ)
 			typ = fmt.Sprintf("%sType", typ)
+		default:
+			panic(fmt.Sprintf("unsupported Import Type %v", imp.ImportType))
 		}
 		imports[idx] = &fileImport{
 			Type:       typ,
@@ -1337,7 +1337,11 @@ func generateSchemaFile(hasMutations bool) error {
 	}
 
 	cmd := exec.Command("ts-node", "-r", "tsconfig-paths/register", filePath)
-	// ooh this is interesting and works...
+	// TODO check this and do something useful with it
+	// and then apply this in more places
+	// for now we'll just spew it when there's an error as it's a hint as to what
+	// TODO https://github.com/lolopinto/ent/issues/61
+	// TODO https://github.com/lolopinto/ent/issues/76
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()

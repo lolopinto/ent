@@ -124,9 +124,17 @@ func (f *Field) GetEntType() enttype.EntType {
 			panic("enum graphql name is required")
 		}
 		if f.Nullable {
-			return &enttype.NullableEnumType{Type: f.Type.Type, GraphQLType: f.Type.GraphQLType, Values: f.Type.Values}
+			return &enttype.NullableEnumType{
+				Type:        f.Type.Type,
+				GraphQLType: f.Type.GraphQLType,
+				Values:      f.Type.Values,
+			}
 		}
-		return &enttype.EnumType{Type: f.Type.Type, GraphQLType: f.Type.GraphQLType, Values: f.Type.Values}
+		return &enttype.EnumType{
+			Type:        f.Type.Type,
+			GraphQLType: f.Type.GraphQLType,
+			Values:      f.Type.Values,
+		}
 	}
 	panic("unsupported type")
 }

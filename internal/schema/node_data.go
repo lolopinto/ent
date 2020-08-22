@@ -195,14 +195,6 @@ func (nodeData *NodeData) GetUniqueNodes() []uniqueNodeInfo {
 	return nodeData.getUniqueNodes(false)
 }
 
-// TODO kill?
-// type enumInfo struct {
-// 	//	Name        string
-// 	TSType      string
-// 	GraphQLType string
-// 	Values      []string
-// }
-
 func (nodeData *NodeData) GetTSEnums() []enum.Enum {
 	var ret []enum.Enum
 	for _, f := range nodeData.FieldInfo.Fields {

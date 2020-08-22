@@ -193,7 +193,7 @@ type FieldEdge struct {
 }
 
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
-	// TODO required and nullable eventually
+	// TODO required and nullable eventually (options for the edges that is)
 	return []enttype.FileImport{
 		{
 			ImportType: enttype.Node,
@@ -223,18 +223,9 @@ func (e *ForeignKeyEdge) EdgeIdentifier() string {
 
 func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 	return []enttype.FileImport{
-		{
-			ImportType: enttype.GraphQL,
-			Type:       "GraphQLNonNull",
-		},
-		{
-			ImportType: enttype.GraphQL,
-			Type:       "GraphQLList",
-		},
-		{
-			ImportType: enttype.GraphQL,
-			Type:       "GraphQLNonNull",
-		},
+		enttype.NewGQLFileImport("GraphQLNonNull"),
+		enttype.NewGQLFileImport("GraphQLList"),
+		enttype.NewGQLFileImport("GraphQLNonNull"),
 		{
 			ImportType: enttype.Node,
 			Type:       e.NodeInfo.Node,
@@ -251,7 +242,7 @@ type InverseAssocEdge struct {
 }
 
 func (e *InverseAssocEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
-	panic("TODO")
+	panic("TODO. no GraphQLImports for InverseAssocEdge")
 }
 
 var edgeRegexp = regexp.MustCompile(`(\w+)Edge`)
@@ -310,18 +301,9 @@ func (edge *AssociationEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 		}
 	}
 	return []enttype.FileImport{
-		{
-			ImportType: enttype.GraphQL,
-			Type:       "GraphQLNonNull",
-		},
-		{
-			ImportType: enttype.GraphQL,
-			Type:       "GraphQLList",
-		},
-		{
-			ImportType: enttype.GraphQL,
-			Type:       "GraphQLNonNull",
-		},
+		enttype.NewGQLFileImport("GraphQLNonNull"),
+		enttype.NewGQLFileImport("GraphQLList"),
+		enttype.NewGQLFileImport("GraphQLNonNull"),
 		{
 			ImportType: enttype.Node,
 			Type:       edge.NodeInfo.Node,

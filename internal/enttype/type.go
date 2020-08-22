@@ -56,13 +56,14 @@ const (
 // we need a way to flag different import types
 // e.g. Node of type User
 // or enum of type RequestStatus
-// and have the import path be handled separately
+// and have the import path be handled separately/later
 type FileImport struct {
 	Type       string
-	ImportType ImportType // so instead of the path being hardcoded, we indicate we're exposing an enum of type ex
+	ImportType ImportType // so instead of the path being hardcoded, we indicate we're exposing an enum of a given type
 }
 
-func newGQLFileImport(typ string) FileImport {
+// helper to more easily create a GraphQL import since very common
+func NewGQLFileImport(typ string) FileImport {
 	return FileImport{
 		Type:       typ,
 		ImportType: GraphQL,
@@ -89,6 +90,7 @@ type DefaulFieldNameType interface {
 	DefaultGraphQLFieldName() string
 }
 
+// EnumeratedType indicates that this is an enum type
 type EnumeratedType interface {
 	TSType
 	GetGraphQLName() string
@@ -130,7 +132,7 @@ func (t *StringType) GetNullableType() Type {
 
 func (t *StringType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{
-		newGQLFileImport("GraphQLNonNull"), newGQLFileImport("GraphQLString"),
+		NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLString"),
 	}
 }
 
@@ -156,7 +158,7 @@ func (t *NullableStringType) GetNonNullableType() Type {
 
 func (t *NullableStringType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{
-		newGQLFileImport("GraphQLString"),
+		NewGQLFileImport("GraphQLString"),
 	}
 }
 
@@ -192,7 +194,7 @@ func (t *BoolType) GetNullableType() Type {
 
 func (t *BoolType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{
-		newGQLFileImport("GraphQLNonNull"), newGQLFileImport("GraphQLBoolean"),
+		NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLBoolean"),
 	}
 }
 
@@ -218,7 +220,7 @@ func (t *NullableBoolType) GetNonNullableType() Type {
 
 func (t *NullableBoolType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{
-		newGQLFileImport("GraphQLBoolean"),
+		NewGQLFileImport("GraphQLBoolean"),
 	}
 }
 
@@ -262,8 +264,8 @@ func (t *IDType) GetNullableType() Type {
 
 func (t *IDType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{
-		newGQLFileImport("GraphQLNonNull"),
-		newGQLFileImport("GraphQLID"),
+		NewGQLFileImport("GraphQLNonNull"),
+		NewGQLFileImport("GraphQLID"),
 	}
 }
 
@@ -288,7 +290,7 @@ func (t *NullableIDType) GetNonNullableType() Type {
 }
 
 func (t *NullableIDType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{newGQLFileImport("GraphQLID")}
+	return []FileImport{NewGQLFileImport("GraphQLID")}
 }
 
 type intType struct{}
@@ -321,7 +323,7 @@ func (t *IntegerType) GetNullableType() Type {
 }
 
 func (t *IntegerType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{newGQLFileImport("GraphQLNonNull"), newGQLFileImport("GraphQLInt")}
+	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLInt")}
 }
 
 type NullableIntegerType struct {
@@ -345,7 +347,7 @@ func (t *NullableIntegerType) GetNonNullableType() Type {
 }
 
 func (t *NullableIntegerType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{newGQLFileImport("GraphQLInt")}
+	return []FileImport{NewGQLFileImport("GraphQLInt")}
 }
 
 type floatType struct{}
@@ -379,7 +381,7 @@ func (t *FloatType) GetNullableType() Type {
 }
 
 func (t *FloatType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{newGQLFileImport("GraphQLNonNull"), newGQLFileImport("GraphQLFloat")}
+	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLFloat")}
 }
 
 type NullableFloatType struct {
@@ -403,7 +405,7 @@ func (t *NullableFloatType) GetNonNullableType() Type {
 }
 
 func (t *NullableFloatType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{newGQLFileImport("GraphQLFloat")}
+	return []FileImport{NewGQLFileImport("GraphQLFloat")}
 }
 
 type timeType struct{}
@@ -442,7 +444,7 @@ func (t *TimeType) GetNullableType() Type {
 }
 
 func (t *TimeType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{newGQLFileImport("GraphQLNonNull"), newGQLFileImport("GraphQLTime")}
+	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLTime")}
 }
 
 type NullableTimeType struct {
@@ -466,7 +468,7 @@ func (t *NullableTimeType) GetNonNullableType() Type {
 }
 
 func (t *NullableTimeType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{newGQLFileImport("GraphQLTime")}
+	return []FileImport{NewGQLFileImport("GraphQLTime")}
 }
 
 type typeConfig struct {
@@ -810,7 +812,11 @@ func (t *EnumType) GetCastToMethod() string {
 }
 
 func (t *EnumType) GetNullableType() Type {
-	return &NullableEnumType{}
+	return &NullableEnumType{
+		Type:        t.Type,
+		GraphQLType: t.GraphQLType,
+		Values:      t.Values,
+	}
 }
 
 func (t *EnumType) GetTSGraphQLImports() []FileImport {
@@ -858,7 +864,11 @@ func (t *NullableEnumType) GetCastToMethod() string {
 }
 
 func (t *NullableEnumType) GetNonNullableType() Type {
-	return &EnumType{}
+	return &EnumType{
+		Type:        t.Type,
+		GraphQLType: t.GraphQLType,
+		Values:      t.Values,
+	}
 }
 
 func (t *NullableEnumType) GetTSGraphQLImports() []FileImport {

@@ -1,7 +1,5 @@
 package enttype_test
 
-// TODO test enum type typescript
-
 import (
 	"go/types"
 	"strconv"
@@ -17,6 +15,7 @@ type expType struct {
 	db                  string
 	graphql             string
 	graphqlPanics       bool
+	goTypePanics        bool
 	castToMethod        string
 	zeroValue           interface{}
 	nullableType        enttype.Type
@@ -799,6 +798,99 @@ func TestMapType(t *testing.T) {
 	)
 }
 
+func TestNullableEnumType(t *testing.T) {
+	testTypeDirectly(t,
+		&enttype.NullableEnumType{
+			Type:        "AccountStatus",
+			GraphQLType: "AccountStatus",
+			Values: []string{
+				"NOT_VERIFIED",
+				"VERIFIED",
+				"DEACTIVATED",
+				"DISABLED",
+			},
+		},
+		map[string]*typeTestCase{
+			"nullable": {
+				expType{
+					db:           "sa.Text()",
+					graphql:      "AccountStatus",
+					tsType:       "AccountStatus | null",
+					goTypePanics: true,
+					nonNullableType: &enttype.EnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						Values: []string{
+							"NOT_VERIFIED",
+							"VERIFIED",
+							"DEACTIVATED",
+							"DISABLED",
+						},
+					},
+				},
+				nil,
+			},
+		},
+	)
+}
+
+func TestEnumType(t *testing.T) {
+	testTypeDirectly(t,
+		&enttype.EnumType{
+			Type:        "AccountStatus",
+			GraphQLType: "AccountStatus",
+			Values: []string{
+				"NOT_VERIFIED",
+				"VERIFIED",
+				"DEACTIVATED",
+				"DISABLED",
+			},
+		},
+		map[string]*typeTestCase{
+			"nullable": {
+				expType{
+					db:           "sa.Text()",
+					graphql:      "AccountStatus!",
+					tsType:       "AccountStatus",
+					goTypePanics: true,
+					nullableType: &enttype.NullableEnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						Values: []string{
+							"NOT_VERIFIED",
+							"VERIFIED",
+							"DEACTIVATED",
+							"DISABLED",
+						},
+					},
+				},
+				nil,
+			},
+		},
+	)
+}
+
+func testTypeDirectly(t *testing.T, typ enttype.Type, testCases map[string]*typeTestCase) {
+	for name, tt := range testCases {
+		t.Run(name, func(t *testing.T) {
+
+			ret := returnType{
+				entType: typ,
+			}
+			if tt.fn != nil {
+				tt.fn(&ret, &tt.exp)
+			}
+			testType(t, tt.exp, ret)
+		})
+	}
+}
+
+// when testing the type directly e.g. typescript...
+type typeTestCase struct {
+	exp expType
+	fn  func(ret *returnType, exp *expType)
+}
+
 type returnType struct {
 	entType enttype.Type
 	goType  types.Type
@@ -846,8 +938,14 @@ func testType(t *testing.T, exp expType, ret returnType) {
 	entType, ok := typ.(enttype.EntType)
 	if ok {
 		assert.Equal(t, exp.db, entType.GetDBType())
-		assert.Equal(t, exp.castToMethod, entType.GetCastToMethod())
-		assert.Equal(t, exp.zeroValue, entType.GetZeroValue())
+		if exp.goTypePanics {
+			assert.Panics(t, func() { entType.GetCastToMethod() })
+			assert.Panics(t, func() { entType.GetZeroValue() })
+		} else {
+			assert.Equal(t, exp.castToMethod, entType.GetCastToMethod())
+			assert.Equal(t, exp.zeroValue, entType.GetZeroValue())
+
+		}
 	}
 
 	nullableType, ok := typ.(enttype.NullableType)
