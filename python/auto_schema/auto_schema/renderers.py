@@ -1,20 +1,20 @@
 from alembic.autogenerate import renderers
-from auto_schema import edge_op
+from . import ops
 
 # no need to put timestamps when rendering
 _IGNORED_KEYS = ['created_at', 'updated_at']
 
-@renderers.dispatch_for(edge_op.AddEdgesOp)
+@renderers.dispatch_for(ops.AddEdgesOp)
 def render_add_edges(autogen_context, op):
   return _render_edge_from_edges(op.edges, "op.add_edges")
 
 
-@renderers.dispatch_for(edge_op.RemoveEdgesOp)
+@renderers.dispatch_for(ops.RemoveEdgesOp)
 def render_remove_edges(autogen_context, op):
   return _render_edge_from_edges(op.edges, "op.remove_edges")
 
 
-@renderers.dispatch_for(edge_op.ModifyEdgeOp)
+@renderers.dispatch_for(ops.ModifyEdgeOp)
 def render_modify_edge(autogen_context, op):
   return (
     "op.modify_edge(\n"
@@ -69,3 +69,23 @@ def _render_edge_from_edges(edge_dicts, edge_fn_name):
     }
   )
 
+
+@renderers.dispatch_for(ops.AlterEnumOp)
+def render_alter_enum(autogen_context, op):
+  print('dispatcher')
+  return (
+    "with op.get_context().autocommit_block():\n"
+    "%(indent)sop.alter_enum('%(enum_name)s', '%(value)s')" % {
+      "enum_name": op.enum_name,
+      "value": op.value,
+      "indent": "  ",
+    }
+  )
+  # # like clearly not working
+  # return "op.execute('drop table foo')"
+
+
+@renderers.dispatch_for(ops.NoDowngradeOp)
+def render_no_downgrade_op(autogen_context, op):
+  return 'pass'
+#  raise ValueError("operation is not reversible")

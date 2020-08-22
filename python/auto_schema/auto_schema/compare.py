@@ -1,5 +1,8 @@
 from alembic.autogenerate import comparators
-from auto_schema import edge_op
+from . import ops
+from alembic.operations import Operations, MigrateOperation
+import sqlalchemy as sa
+import pprint
 
 @comparators.dispatch_for("schema")
 def compare_edges(autogen_context, upgrade_ops, schemas):
@@ -29,7 +32,7 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
     metadata_edges, 
     db_edges, 
     upgrade_ops, 
-    edge_op.AddEdgesOp,
+    ops.AddEdgesOp,
     _meta_to_db_edge_mismatch,
   )
 
@@ -38,7 +41,7 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
     db_edges, 
     metadata_edges, 
     upgrade_ops, 
-    edge_op.RemoveEdgesOp,
+    ops.RemoveEdgesOp,
   )
 
 
@@ -119,9 +122,108 @@ def _get_schema_key(schema):
 
 
 def _meta_to_db_edge_mismatch(meta_edge, db_edge, sch):
-  return edge_op.ModifyEdgeOp(
+  return ops.ModifyEdgeOp(
     meta_edge['edge_type'],
     meta_edge,
     db_edge,
     schema=sch
   )
+
+
+@comparators.dispatch_for("schema")
+def compare_enum(autogen_context, upgrade_ops, schemas):
+  inspector = autogen_context.inspector
+
+  db_metadata = sa.MetaData()
+  db_metadata.reflect(inspector.bind)
+
+  # pprint.pprint(vars(autogen_context))
+  #pprint.pprint(vars(inspector.bind.engine))
+
+ # is conn_tables correct?
+ # should be gotten from inspector?
+ # TODO schema not being used
+  for sch in schemas:
+    conn_tables = { table.name: table for table in db_metadata.sorted_tables}
+    metadata_tables = {table.name: table for table in autogen_context.metadata.sorted_tables}
+
+  # print(conn_tables)
+  # print(metadata_tables)
+
+  # trying to detect change in tables
+    for name in conn_tables:
+      if not name in metadata_tables:
+        continue
+      metadata_table = metadata_tables[name]
+      conn_table = conn_tables[name]
+
+      conn_columns = {col.name: col for col in conn_table.columns}
+      metadata_columns = {col.name: col for col in metadata_table.columns}
+
+      for name in conn_columns:
+        if not name in metadata_columns:
+          continue
+        metadata_column = metadata_columns[name]
+        conn_column = conn_columns[name]
+        _compare_enum(upgrade_ops, conn_column, metadata_column, sch)
+
+
+    # print(conn_table.columns)
+    # print(metadata_table.columns)
+
+
+def _compare_enum(upgrade_ops, conn_column, metadata_column, sch):
+  conn_type = conn_column.type
+  metadata_type = metadata_column.type
+
+  # print(type(conn_type).__name__)
+  # print(type(metadata_type).__name__)
+
+#  print(conn_column, vars(conn_type), metadata_column, vars(metadata_type))
+  #print(vars(conn_type))
+  # not enums, bye
+  if not isinstance(conn_type, sa.Enum) or not isinstance(metadata_type, sa.Enum):
+    return
+
+  print(conn_type.enums, metadata_type.enums)
+  # enums are the same, bye
+  if conn_type.enums == metadata_type.enums:
+    return
+
+  for enum in conn_type.enums:
+    if enum not in metadata_type.enums:
+      raise "postgres doesn't support enum removals"
+
+
+  for enum in metadata_type.enums:
+    if enum not in conn_type.enums:
+      print("new value", enum)
+      # TODO
+      upgrade_ops.ops.append(
+        ops.AlterEnumOp(conn_type.name, enum, schema=sch)
+        # ops.ExecuteSQLOp(
+        #   "ALTER TYPE %s ADD VALUE '%s'" %(conn_type.name, enum)
+        # )
+      )
+
+  #print(alter_column_op, tname, cname, conn_col, metadata_col)
+  print(conn_type.enums, metadata_type.enums)
+  #print(conn_type.name)
+
+
+  # connection
+  # for sch in schemas:
+  #   tables = set(inspector.get_table_names(schema=sch))
+  #   for t in tables:
+  #     print(t)
+
+  #pprint.pprint(vars(autogen_context))
+
+  # conn_type = conn_col.type
+  # metadata_type = metadata_col.type
+  # # not enums, bye
+  # if not isinstance(conn_type, sa.Enum) or not isinstance(metadata_type, sa.Enum):
+  #   return
+
+
+

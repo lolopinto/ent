@@ -10,10 +10,11 @@ from alembic import context
 from auto_schema import config
 from auto_schema import runner
 
-# these 3 needed for edge comparisons
-from auto_schema import edge_comparator
-from auto_schema import edge_op
-from auto_schema import edge_renderer
+# these 4 needed for ops (edges, enums etc)
+from auto_schema import ops
+from auto_schema import renderers
+from auto_schema import compare
+from auto_schema import ops_impl
 
 # set a bunch of loggic parameters based on default info in `alembic init as of 6/15/2019`
 log_config = {
@@ -90,12 +91,22 @@ def run_migrations_offline():
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    # url = config.get_main_option("sqlalchemy.url")
+    # context.configure(
+    #     url=url, 
+    #     target_metadata=target_metadata, 
+    #     literal_binds=True, 
+    #     include_object=runner.Runner.include_object
+    # )
     context.configure(
-        url=url, 
-        target_metadata=target_metadata, 
-        literal_binds=True, 
-        include_object=runner.Runner.include_object
+        connection=connection, 
+        target_metadata=target_metadata,
+        compare_type=runner.Runner.compare_type,
+        include_object=runner.Runner.include_object,
+        compare_server_default=runner.Runner.compare_server_default,
+        render_item=runner.Runner.render_server_default,
+        # doesn't apply offline
+#        transaction_per_migration=True
     )
 
     with context.begin_transaction():
@@ -124,6 +135,7 @@ def run_migrations_online():
         include_object=runner.Runner.include_object,
         compare_server_default=runner.Runner.compare_server_default,
         render_item=runner.Runner.render_server_default,
+        transaction_per_migration=True
     )
 
     with context.begin_transaction():

@@ -180,10 +180,15 @@ def validate_column_type(schema_column, db_column):
     assert isinstance(db_column.type, sa.Numeric)
     # precision is tricky so ignore this for now
     #assert schema_column.type.precision == db_column.type.precision
+  elif isinstance(schema_column.type, sa.Enum):
+    # enum type if possible otherwise check constraint...
+    assert isinstance(db_column.type, sa.Enum)
+    print(schema_column.type.enums, db_column.type.enums)
+    assert schema_column.type.enums == db_column.type.enums
   else:
     # compare types by using the string version of the types. 
     # seems to account for differences btw Integer and INTEGER, String(255) and VARCHAR(255) etc
-  
+
     assert str(schema_column.type) == str(db_column.type) 
 
 
@@ -659,6 +664,34 @@ class TestPostgresRunner(BaseTestRunner):
     assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
     validate_metadata_after_change(r2, r2.get_metadata())
 
+
+  @pytest.mark.usefixtures('metadata_with_enum')
+  def test_enum_type(self, new_test_runner, metadata_with_enum):
+    r = new_test_runner(metadata_with_enum)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+
+
+  @pytest.mark.usefixtures("metadata_with_enum")
+  def test_new_enum_value(self, new_test_runner, metadata_with_enum):
+    r = new_test_runner(metadata_with_enum)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+
+    # TODO this isn't ideal
+    # need a good way to commit in between
+    conn = r.get_connection()
+    conn.execute('COMMIT')
+
+    conftest.metadata_with_new_enum_value(metadata_with_enum)
+    r2 = new_test_runner(metadata_with_enum, r)
+
+    diff = r2.compute_changes()
+    #pprint.pprint(diff, indent=2, width=30)
+
+    assert len(diff) == 1
+
+    r2.run()
+    assert_num_files(r2, 2)
+    validate_metadata_after_change(r2, metadata_with_enum)
 
 
   

@@ -11,9 +11,10 @@ from sqlalchemy.sql.elements import TextClause
 
 from . import command
 from . import config
-from . import edge_op
-from . import edge_comparator
-from . import edge_renderer
+from . import ops
+from . import renderers
+from . import compare
+from . import ops_impl
 
 class Runner(object):
 
@@ -32,6 +33,7 @@ class Runner(object):
         "compare_type": Runner.compare_type,
         "include_object": Runner.include_object,
         "compare_server_default": Runner.compare_server_default,
+        "transaction_per_migration": True,
       },
     )
     self.cmd = command.Command(self.connection, self.schema_path)
@@ -77,6 +79,10 @@ class Runner(object):
     # TODO: we should allow going from all less-precise to more-precise since we're not losing any information
     if isinstance(inspected_type, sa.Date) and isinstance(metadata_type, sa.TIMESTAMP):
       return True
+
+    # disallow enum changes?
+    if isinstance(inspected_type, sa.Enum) and isinstance(metadata_type, sa.Enum):
+      return False
 
     return False
 
@@ -176,16 +182,16 @@ class Runner(object):
     return migrations.upgrade_ops.ops
 
 
-  def run(self):
+  def run(self, sql=False):
     diff = self.compute_changes()
   
     if len(diff) == 0:
       print("schema is up to date")
     else:
-      self._apply_changes(diff)
+      self._apply_changes(diff, sql)
 
 
-  def _apply_changes(self, diff):
+  def _apply_changes(self, diff, sql=False):
     #pprint.pprint(diff, indent=2, width=20)
 
     #migration_script = produce_migrations(self.mc, self.metadata)
@@ -194,7 +200,7 @@ class Runner(object):
     # TODO we need a top level upgrade path which is run when we get to production instead of running this
     # we need to only call upgrade() and not revision() and then upgrade()
     self.revision(diff)
-    self.upgrade()
+    self.upgrade(sql)
 
 
   def revision_message(self, diff=None):
@@ -203,6 +209,7 @@ class Runner(object):
       diff = migrations.upgrade_ops.ops
     
     def alter_column_op(op):
+      pprint.pprint(vars(op), indent=2, width=30)
       if op.modify_type is not None:
         return 'modify column %s type from %s to %s' % (op.column_name, op.existing_type, op.modify_type)
       elif op.modify_nullable is not None:
@@ -223,11 +230,18 @@ class Runner(object):
       'CreateUniqueConstraintOp': lambda op: 'add unique constraint %s' % op.constraint_name,
       'CreateIndexOp': lambda op: 'add index %s'% op.index_name,
       'AddColumnOp': lambda op: 'add column %s to table %s' % (op.column.name, op.table_name),
+        # TODO check for this by default
       'AddEdgesOp': lambda op: op.get_revision_message(),
       'RemoveEdgesOp': lambda op: op.get_revision_message(),
       'ModifyEdgeOp': lambda op: op.get_revision_message(),
+      'AlterEnumOp': lambda  op: op.get_revision_message(),
     }
 
+#    print(diff)
+
+    # if type(diff[0]).__name__ == 'ModifyTableOps':
+    #   [print(alter_column_op(op)) for op in diff[0].ops]
+    #   #print(diff[0].__name)
     changes = [class_name_map[type(op).__name__](op) for op in diff]
 
     message = "\n".join(changes)
@@ -247,8 +261,8 @@ class Runner(object):
     # understand diff and make changes as needed
     #pprint.pprint(migrations, indent=2, width=30)
 
-  def upgrade(self):
-    self.cmd.upgrade()
+  def upgrade(self, sql=False):
+    self.cmd.upgrade(revision='head', sql=sql)
 
 
   def downgrade(self, revision):

@@ -36,8 +36,8 @@ class Command(object):
     command.revision(self.alembic_cfg, message, autogenerate=True)
 
   # Simulates running the `alembic upgrade` command
-  def upgrade(self, revision='head'):
-    command.upgrade(self.alembic_cfg, revision)
+  def upgrade(self, revision='head', sql=False):
+    command.upgrade(self.alembic_cfg, revision, sql)
 
   # Simulates running the `alembic downgrade` command
   def downgrade(self, revision=''):

@@ -38,10 +38,27 @@ def new_test_runner(request):
 
       def rollback_everything():
         session.close()
-        transaction.rollback()
-        connection.close()
+ #       transaction.rollback()
+        #connection.close()
         #metadata.reflect(bind=connection)
-        #metadata.drop_all(bind=connection)
+        # if postgres:
+        metadata.drop_all(bind=connection)
+        transaction.commit()
+        
+        conn2 = engine.connect()
+        metadata.bind = conn2
+        metadata.reflect()
+        trans2 = connection.begin()
+        #connection = engine.connect()
+        #metadata.bind = connection
+        #print(metadata.sorted_tables)
+        #[print(t.name) for t in metadata.sorted_tables]
+        alembic_table = [t for t in metadata.sorted_tables if t.name == 'alembic_version']
+        #print(alembic_table)
+        if len(alembic_table) == 1:
+          connection.execute("drop table alembic_version")
+        trans2.commit()
+        
 
       request.addfinalizer(rollback_everything)
     else:
@@ -53,8 +70,8 @@ def new_test_runner(request):
       path = r.get_schema_path()
 
       # delete temp directory which was created
-      if os.path.isdir(path):
-        shutil.rmtree(path)
+      # if os.path.isdir(path):
+      #   shutil.rmtree(path)
 
     request.addfinalizer(delete_path)
 
@@ -294,6 +311,32 @@ def metadata_with_inverse_edge():
   metadata.info.setdefault("edges", edges)
   return metadata
   
+
+@pytest.fixture
+def metadata_with_enum():
+  metadata = sa.MetaData()
+
+  rainbow = ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')
+  enum = sa.Enum(*rainbow, name='rainbow_type')
+
+  sa.Table('accounts', metadata,
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('rainbow', enum, nullable=False),
+    sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'), # use named primary key constraint instead of what we had per-column
+  )
+  return metadata
+
+
+def metadata_with_new_enum_value(metadata_with_enum):
+  tables = [t for t in metadata_with_enum.sorted_tables if t.name == "accounts"]
+  table = tables[0]
+
+  cols = [c for c in table.columns if c.name == 'rainbow']
+  col = cols[0]
+  col.type.enums.append('purple')
+  #print(col.type.enums)
+  return metadata_with_enum
+
 
 def user_to_followers_edge(edge_type = 1, inverse_edge_type=None):
   return {
