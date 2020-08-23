@@ -171,7 +171,6 @@ export interface EnumOptions extends FieldOptions {
   graphQLType?: string;
 
   createEnumType?: boolean;
-  // if create enum type. let's goo...
 }
 
 export class EnumField extends BaseField implements Field {

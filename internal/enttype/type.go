@@ -774,6 +774,22 @@ func (t *enumType) GetZeroValue() string {
 	panic("enum type not supported in go-lang yet")
 }
 
+func (t *enumType) getDBTypeForEnumDBType(values []string, typ string) string {
+	var sb strings.Builder
+	for _, v := range values {
+		sb.WriteString(strconv.Quote(v))
+		sb.WriteString(", ")
+	}
+	// TODO eventually provide option to define enum type
+	// for now we take it from TSType if that's given since it makes sense to be consistent with that
+	// if not provided, we use the name
+	// we also need DBTypeName or something too
+	enumType := strconv.Quote(strcase.ToSnake(typ))
+	sb.WriteString(fmt.Sprintf("name=%s", enumType))
+	return fmt.Sprintf("sa.Enum(%s)", sb.String())
+
+}
+
 type EnumType struct {
 	enumType
 	EnumDBType  bool
@@ -784,8 +800,7 @@ type EnumType struct {
 
 func (t *EnumType) GetDBType() string {
 	if t.EnumDBType {
-		// TODO enum type
-		return ""
+		return t.getDBTypeForEnumDBType(t.Values, t.Type)
 	}
 	return "sa.Text()"
 }
@@ -845,8 +860,7 @@ type NullableEnumType struct {
 
 func (t *NullableEnumType) GetDBType() string {
 	if t.EnumDBType {
-		// TODO enum type
-		return ""
+		return t.getDBTypeForEnumDBType(t.Values, t.Type)
 	}
 	return "sa.Text()"
 }

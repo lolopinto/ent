@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
+	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -547,6 +549,89 @@ func TestInverseEdge(t *testing.T) {
 		"inverse_edge_type": "1",
 	}
 	testEdgeInSchema(t, edge2, expectedParts2)
+}
+
+func TestEnumType(t *testing.T) {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		absPath,
+		map[string]string{
+			"request.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, Field, EnumType} from "{schema}";
+
+				export default class Request implements Schema {
+					fields: Field[] = [
+						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
+					]
+				}
+				`,
+			),
+		},
+		base.TypeScript,
+	)
+	dbSchema := newDBSchema(schema, "models/configs")
+	dbSchema.generateShemaTables()
+
+	require.Len(t, dbSchema.Tables, 1)
+	require.Len(t, dbSchema.Tables[0].Columns, 1)
+
+	col := dbSchema.Tables[0].Columns[0]
+
+	testColumn(t, col, "status", "Status", "status", []string{
+		strconv.Quote("status"),
+		fmt.Sprintf(
+			"sa.Enum(%s, %s, %s, name=%s)",
+			strconv.Quote("OPEN"),
+			strconv.Quote("PENDING"),
+			strconv.Quote("CLOSED"),
+			strconv.Quote("request_status"),
+		),
+		"nullable=False",
+	})
+}
+
+func TestNullableEnumType(t *testing.T) {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		absPath,
+		map[string]string{
+			"request.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, Field, EnumType} from "{schema}";
+
+				export default class Request implements Schema {
+					fields: Field[] = [
+						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], createEnumType: true, nullable: true}),
+					]
+				}
+				`,
+			),
+		},
+		base.TypeScript,
+	)
+	dbSchema := newDBSchema(schema, "models/configs")
+	dbSchema.generateShemaTables()
+
+	require.Len(t, dbSchema.Tables, 1)
+	require.Len(t, dbSchema.Tables[0].Columns, 1)
+
+	col := dbSchema.Tables[0].Columns[0]
+
+	testColumn(t, col, "status", "Status", "status", []string{
+		strconv.Quote("status"),
+		fmt.Sprintf(
+			"sa.Enum(%s, %s, %s, name=%s)",
+			strconv.Quote("OPEN"),
+			strconv.Quote("PENDING"),
+			strconv.Quote("CLOSED"),
+			// in this case TypeScript Type is Status and we're taking the enum type based on that
+			strconv.Quote("status"),
+		),
+		"nullable=True",
+	})
 }
 
 func testEdgeTable(t *testing.T, table *dbTable) {

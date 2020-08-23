@@ -1,6 +1,7 @@
 package enttype_test
 
 import (
+	"fmt"
 	"go/types"
 	"strconv"
 	"strings"
@@ -798,22 +799,123 @@ func TestMapType(t *testing.T) {
 	)
 }
 
-func TestNullableEnumType(t *testing.T) {
+func TestEnumType(t *testing.T) {
 	testTypeDirectly(t,
-		&enttype.NullableEnumType{
-			Type:        "AccountStatus",
-			GraphQLType: "AccountStatus",
-			Values: []string{
-				"NOT_VERIFIED",
-				"VERIFIED",
-				"DEACTIVATED",
-				"DISABLED",
-			},
-		},
 		map[string]*typeTestCase{
 			"nullable": {
+				&enttype.NullableEnumType{
+					Type:        "AccountStatus",
+					GraphQLType: "AccountStatus",
+					Values: []string{
+						"NOT_VERIFIED",
+						"VERIFIED",
+						"DEACTIVATED",
+						"DISABLED",
+					},
+				},
 				expType{
 					db:           "sa.Text()",
+					graphql:      "AccountStatus",
+					tsType:       "AccountStatus | null",
+					goTypePanics: true,
+					nonNullableType: &enttype.EnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						Values: []string{
+							"NOT_VERIFIED",
+							"VERIFIED",
+							"DEACTIVATED",
+							"DISABLED",
+						},
+					},
+				},
+				nil,
+			},
+			"not nullable": {
+				&enttype.EnumType{
+					Type:        "AccountStatus",
+					GraphQLType: "AccountStatus",
+					Values: []string{
+						"NOT_VERIFIED",
+						"VERIFIED",
+						"DEACTIVATED",
+						"DISABLED",
+					},
+				},
+				expType{
+					db:           "sa.Text()",
+					graphql:      "AccountStatus!",
+					tsType:       "AccountStatus",
+					goTypePanics: true,
+					nullableType: &enttype.NullableEnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						Values: []string{
+							"NOT_VERIFIED",
+							"VERIFIED",
+							"DEACTIVATED",
+							"DISABLED",
+						},
+					},
+				},
+				nil,
+			},
+			"not nullable db enum": {
+				&enttype.EnumType{
+					Type:        "AccountStatus",
+					GraphQLType: "AccountStatus",
+					Values: []string{
+						"NOT_VERIFIED",
+						"VERIFIED",
+						"DEACTIVATED",
+						"DISABLED",
+					},
+					EnumDBType: true,
+				},
+				expType{
+					db: fmt.Sprintf("sa.Enum(%s, %s, %s, %s, name=%s)",
+						strconv.Quote("NOT_VERIFIED"),
+						strconv.Quote("VERIFIED"),
+						strconv.Quote("DEACTIVATED"),
+						strconv.Quote("DISABLED"),
+						strconv.Quote("account_status"),
+					),
+					graphql:      "AccountStatus!",
+					tsType:       "AccountStatus",
+					goTypePanics: true,
+					nullableType: &enttype.NullableEnumType{
+						Type:        "AccountStatus",
+						GraphQLType: "AccountStatus",
+						Values: []string{
+							"NOT_VERIFIED",
+							"VERIFIED",
+							"DEACTIVATED",
+							"DISABLED",
+						},
+					},
+				},
+				nil,
+			},
+			"nullable db enum": {
+				&enttype.NullableEnumType{
+					Type:        "AccountStatus",
+					GraphQLType: "AccountStatus",
+					Values: []string{
+						"NOT_VERIFIED",
+						"VERIFIED",
+						"DEACTIVATED",
+						"DISABLED",
+					},
+					EnumDBType: true,
+				},
+				expType{
+					db: fmt.Sprintf("sa.Enum(%s, %s, %s, %s, name=%s)",
+						strconv.Quote("NOT_VERIFIED"),
+						strconv.Quote("VERIFIED"),
+						strconv.Quote("DEACTIVATED"),
+						strconv.Quote("DISABLED"),
+						strconv.Quote("account_status"),
+					),
 					graphql:      "AccountStatus",
 					tsType:       "AccountStatus | null",
 					goTypePanics: true,
@@ -834,48 +936,12 @@ func TestNullableEnumType(t *testing.T) {
 	)
 }
 
-func TestEnumType(t *testing.T) {
-	testTypeDirectly(t,
-		&enttype.EnumType{
-			Type:        "AccountStatus",
-			GraphQLType: "AccountStatus",
-			Values: []string{
-				"NOT_VERIFIED",
-				"VERIFIED",
-				"DEACTIVATED",
-				"DISABLED",
-			},
-		},
-		map[string]*typeTestCase{
-			"nullable": {
-				expType{
-					db:           "sa.Text()",
-					graphql:      "AccountStatus!",
-					tsType:       "AccountStatus",
-					goTypePanics: true,
-					nullableType: &enttype.NullableEnumType{
-						Type:        "AccountStatus",
-						GraphQLType: "AccountStatus",
-						Values: []string{
-							"NOT_VERIFIED",
-							"VERIFIED",
-							"DEACTIVATED",
-							"DISABLED",
-						},
-					},
-				},
-				nil,
-			},
-		},
-	)
-}
-
-func testTypeDirectly(t *testing.T, typ enttype.Type, testCases map[string]*typeTestCase) {
+func testTypeDirectly(t *testing.T, testCases map[string]*typeTestCase) {
 	for name, tt := range testCases {
 		t.Run(name, func(t *testing.T) {
 
 			ret := returnType{
-				entType: typ,
+				entType: tt.typ,
 			}
 			if tt.fn != nil {
 				tt.fn(&ret, &tt.exp)
@@ -887,6 +953,7 @@ func testTypeDirectly(t *testing.T, typ enttype.Type, testCases map[string]*type
 
 // when testing the type directly e.g. typescript...
 type typeTestCase struct {
+	typ enttype.Type
 	exp expType
 	fn  func(ret *returnType, exp *expType)
 }
