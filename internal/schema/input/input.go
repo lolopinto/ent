@@ -116,8 +116,7 @@ func (f *Field) GetEntType() enttype.EntType {
 	case JSON:
 		return &enttype.RawJSONType{}
 
-	case StringEnum:
-	case Enum:
+	case StringEnum, Enum:
 		if f.Type.Type == "" {
 			panic("enum type name is required")
 		}
