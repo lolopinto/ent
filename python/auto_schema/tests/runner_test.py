@@ -728,11 +728,30 @@ class TestPostgresRunner(BaseTestRunner):
         conn = r.get_connection()
         conn.execute('COMMIT')
 
-        conftest.metadata_with_removed_value(metadata_with_enum)
+        conftest.metadata_with_removed_enum_value(metadata_with_enum)
         r2 = new_test_runner(metadata_with_enum, r)
 
         with pytest.raises(ValueError, match="postgres doesn't support enum removals"):
             diff = r2.compute_changes()
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_remove_column(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+
+        new_metadata = conftest.metadata_with_removed_column()
+        new_metadata.bind = r.get_connection()
+        r2 = new_test_runner(new_metadata, r)
+
+        diff = r2.compute_changes()
+
+        assert len(diff) == 1
+
+        assert r2.revision_message() == 'drop column meaning_of_life'
+
+        r2.run()
+        assert_num_files(r2, 2)
+        validate_metadata_after_change(r2, new_metadata)
 
 
 class TestSqliteRunner(BaseTestRunner):

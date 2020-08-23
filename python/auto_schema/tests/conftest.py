@@ -104,29 +104,36 @@ def empty_metadata():
     return metadata
 
 
+def default_children_of_table():
+    return [
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('email_address', sa.String(255), nullable=False),
+        sa.Column('first_name', sa.Text(), nullable=False),
+        sa.Column('last_name', sa.Text(), nullable=False),
+        sa.Column('created_at', sa.Date(), nullable=False),
+
+        # test default sqlite
+        sa.Column('meaning_of_life', sa.Integer(),
+                  nullable=False, server_default='42'),
+        sa.Column('email_verified', sa.Boolean(),
+                  nullable=False, server_default='false'),
+
+        sa.Column('phone_number', sa.Text(), nullable=False),
+        sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
+        sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'),
+        # support unique constraint as part of initial table creation
+        sa.UniqueConstraint(
+            "phone_number", name="accounts_unique_phone_number"
+        ),
+    ]
+
+
 @pytest.fixture
 def metadata_with_table():
     metadata = sa.MetaData()
+    changes = default_children_of_table()
     sa.Table('accounts', metadata,
-             sa.Column('id', sa.Integer(), nullable=False),
-             sa.Column('email_address', sa.String(255), nullable=False),
-             sa.Column('first_name', sa.Text(), nullable=False),
-             sa.Column('last_name', sa.Text(), nullable=False),
-             sa.Column('created_at', sa.Date(), nullable=False),
-
-             # test default sqlite
-             sa.Column('meaning_of_life', sa.Integer(),
-                       nullable=False, server_default='42'),
-             sa.Column('email_verified', sa.Boolean(),
-                       nullable=False, server_default='false'),
-
-             sa.Column('phone_number', sa.Text(), nullable=False),
-             sa.Column('updated_at', sa.TIMESTAMP(), nullable=False),
-             # use named primary key constraint instead of what we had per-column
-             sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'),
-             # support unique constraint as part of initial table creation
-             sa.UniqueConstraint(
-                 "phone_number", name="accounts_unique_phone_number"),
+             *changes,
              )
     return metadata
 
@@ -195,7 +202,7 @@ def _metadata_with_nullable_changed(metadata, col_name, table_name, nullable_val
 
 def _metadata_with_server_default_changed(metadata, col_name, table_name, new_value):
     def change_server_default(col):
-        print(col, col_name, new_value, repr(new_value))
+        #print(col, col_name, new_value, repr(new_value))
         col.server_default = new_value
         return col
 
@@ -405,12 +412,28 @@ def metadata_with_multiple_new_enum_values_at_diff_pos(metadata_with_enum):
     return _apply_func_on_enum(metadata_with_enum, change_colors)
 
 
-def metadata_with_removed_value(metadata_with_enum):
+def metadata_with_removed_enum_value(metadata_with_enum):
     def remove_color(col):
         col.type.enums.remove('green')
         return col
 
     return _apply_func_on_enum(metadata_with_enum, remove_color)
+
+
+def metadata_with_removed_column():
+    metadata = sa.MetaData()
+    changes = default_children_of_table()
+
+    cols = [c for c in changes if isinstance(
+        c, sa.Column) and c.name == 'meaning_of_life']
+    col = cols[0]
+    changes.remove(col)
+
+    metadata = sa.MetaData()
+    sa.Table('accounts', metadata,
+             *changes,
+             )
+    return metadata
 
 
 def user_to_followers_edge(edge_type=1, inverse_edge_type=None):

@@ -216,6 +216,7 @@ class Runner(object):
             'RemoveEdgesOp': lambda op: op.get_revision_message(),
             'ModifyEdgeOp': lambda op: op.get_revision_message(),
             'AlterEnumOp': lambda op: op.get_revision_message(),
+            'DropColumnOp': lambda op: 'drop column %s' % op.column_name,
         }
 
         changes = [class_name_map[type(op).__name__](op) for op in diff]
