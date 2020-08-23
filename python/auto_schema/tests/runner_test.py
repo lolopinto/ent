@@ -83,11 +83,12 @@ def validate_metadata_after_change(r, old_metadata):
   dialect = r.get_connection().dialect.name
   assert(len(old_metadata.sorted_tables)) != len(new_metadata.sorted_tables)
 
+  new_metadata.bind = r.get_connection()
   for db_table in new_metadata.sorted_tables:
     schema_table = next((t for t in old_metadata.sorted_tables if db_table.name == t.name), None)
 
     if schema_table is not None:
-      validate_table(schema_table, db_table, dialect)
+      validate_table(schema_table, db_table, dialect, new_metadata)
     else:
       # no need to do too much testing on this since we'll just have to trust that alembic works. 
       assert db_table.name == 'alembic_version'
@@ -113,31 +114,31 @@ def recreate_with_new_metadata(r, new_test_runner, metadata_with_table, metadata
   return r2
 
 
-def validate_table(schema_table, db_table, dialect):
+def validate_table(schema_table, db_table, dialect, metadata):
   assert schema_table != db_table
   assert id(schema_table) != id(db_table)
 
   assert schema_table.name == db_table.name
 
-  validate_columns(schema_table, db_table)
-  validate_constraints(schema_table, db_table, dialect)
-  validate_indexes(schema_table, db_table)
+  validate_columns(schema_table, db_table, metadata)
+  validate_constraints(schema_table, db_table, dialect, metadata)
+  validate_indexes(schema_table, db_table, metadata)
 
 
-def validate_columns(schema_table, db_table):
+def validate_columns(schema_table, db_table, metadata):
   schema_columns = schema_table.columns
   db_columns = db_table.columns
   assert len(schema_columns) == len(db_columns)
   for schema_column, db_column in zip(schema_columns, db_columns):
-    validate_column(schema_column, db_column)
+    validate_column(schema_column, db_column, metadata)
 
 
-def validate_column(schema_column, db_column):
+def validate_column(schema_column, db_column, metadata):
   assert schema_column != db_column
   assert(id(schema_column)) != id(db_column)
 
   assert schema_column.name == db_column.name
-  validate_column_type(schema_column, db_column)
+  validate_column_type(schema_column, db_column, metadata)
   assert schema_column.primary_key == db_column.primary_key
   assert schema_column.nullable == db_column.nullable
 
@@ -171,7 +172,7 @@ def validate_column_server_default(schema_column, db_column):
 
 
 
-def validate_column_type(schema_column, db_column):
+def validate_column_type(schema_column, db_column, metadata):
   #print(type(schema_column.type).__name__, schema_column.type, db_column.type, schema_column.type == db_column.type, str(schema_column.type) == str(db_column.type))
 
   if isinstance(schema_column.type, sa.TIMESTAMP):
@@ -180,11 +181,33 @@ def validate_column_type(schema_column, db_column):
     assert isinstance(db_column.type, sa.Numeric)
     # precision is tricky so ignore this for now
     #assert schema_column.type.precision == db_column.type.precision
+  elif isinstance(schema_column.type, sa.Enum):
+    # enum type if possible otherwise check constraint...
+    assert isinstance(db_column.type, sa.Enum)
+    validate_enum_column_type(metadata, db_column, schema_column)
   else:
     # compare types by using the string version of the types. 
     # seems to account for differences btw Integer and INTEGER, String(255) and VARCHAR(255) etc
-  
+
     assert str(schema_column.type) == str(db_column.type) 
+
+
+def validate_enum_column_type(metadata, db_column, schema_column):
+  # has to be same length
+  assert(len(schema_column.type.enums) == len(db_column.type.enums))
+  
+  # if equal, nothing to do here, we're done
+  if schema_column.type.enums == db_column.type.enums:
+    return
+
+  # we gotta go to the db and check the order
+  db_sorted_enums = []
+  # https://www.postgresql.org/docs/9.5/functions-enum.html
+  query = "select unnest(enum_range(enum_first(null::%s)));" % (db_column.type.name)
+  for row in metadata.bind.execute(query):
+    db_sorted_enums.append(dict(row)['unnest'])
+  
+  assert schema_column.type.enums == db_sorted_enums
 
 
 def sort_fn(item): 
@@ -195,7 +218,7 @@ def sort_fn(item):
   return type(item).__name__ + item.name
 
 
-def validate_indexes(schema_table, db_table):
+def validate_indexes(schema_table, db_table, metadata):
   # sort indexes so that the order for both are the same
   schema_indexes = sorted(schema_table.indexes, key=sort_fn)
   db_indexes = sorted(db_table.indexes, key=sort_fn)
@@ -208,10 +231,10 @@ def validate_indexes(schema_table, db_table):
     schema_index_columns = schema_index.columns
     db_index_columns = db_index.columns
     for schema_column, db_column in zip(schema_index_columns, db_index_columns):
-      validate_column(schema_column, db_column)
+      validate_column(schema_column, db_column, metadata)
 
 
-def validate_constraints(schema_table, db_table, dialect):
+def validate_constraints(schema_table, db_table, dialect, metadata):
   # sort constraints so that the order for both are the same
   schema_constraints = sorted(schema_table.constraints, key=sort_fn)
   db_constraints = sorted(db_table.constraints, key=sort_fn)
@@ -256,7 +279,7 @@ def validate_constraints(schema_table, db_table, dialect):
 
     assert len(schema_constraint_columns) == len(db_constraint_columns)
     for schema_column, db_column in zip(schema_constraint_columns, db_constraint_columns):
-      validate_column(schema_column, db_column)
+      validate_column(schema_column, db_column, metadata)
 
 
 def validate_foreign_key(schema_column, db_column):
@@ -658,6 +681,61 @@ class TestPostgresRunner(BaseTestRunner):
     assert_num_files(r2, 2)
     assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
     validate_metadata_after_change(r2, r2.get_metadata())
+
+
+  @pytest.mark.usefixtures('metadata_with_enum')
+  def test_enum_type(self, new_test_runner, metadata_with_enum):
+    r = new_test_runner(metadata_with_enum)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+
+
+  @pytest.mark.usefixtures("metadata_with_enum")
+  @pytest.mark.parametrize(
+    'new_metadata_func, expected_diff',
+    [
+      (conftest.metadata_with_new_enum_value, 1),
+      (conftest.metadata_with_multiple_new_enum_values, 2),
+      (conftest.metadata_with_enum_value_before_first_pos, 1),
+      (conftest.metadata_with_multiple_new_enum_values_at_diff_pos, 2),
+      (conftest.metadata_with_multiple_new_values_before, 2),
+    ]
+  )
+  def test_enum_additions(self, new_test_runner, metadata_with_enum, new_metadata_func, expected_diff):
+    r = new_test_runner(metadata_with_enum)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+
+    # TODO this isn't ideal
+    # need a good way to commit in between for separate steps in transaction to work
+    conn = r.get_connection()
+    conn.execute('COMMIT')
+
+    new_metadata_func(metadata_with_enum)
+    r2 = new_test_runner(metadata_with_enum, r)
+
+    diff = r2.compute_changes()
+
+    assert len(diff) == expected_diff
+
+    r2.run()
+    assert_num_files(r2, 2)
+    validate_metadata_after_change(r2, metadata_with_enum)
+
+
+  @pytest.mark.usefixtures("metadata_with_enum")
+  def test_remove_enum_value(self, new_test_runner, metadata_with_enum):
+    r = new_test_runner(metadata_with_enum)
+    run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+
+    # TODO this isn't ideal
+    # need a good way to commit in between for separate steps in transaction to work
+    conn = r.get_connection()
+    conn.execute('COMMIT')
+
+    conftest.metadata_with_removed_value(metadata_with_enum)
+    r2 = new_test_runner(metadata_with_enum, r)
+
+    with pytest.raises(ValueError, match="postgres doesn't support enum removals"):
+      diff = r2.compute_changes()
 
 
 

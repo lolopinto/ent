@@ -11,12 +11,12 @@ from sqlalchemy.sql.elements import TextClause
 
 from . import command
 from . import config
-from . import edge_op
-from . import edge_comparator
-from . import edge_renderer
+from . import ops
+from . import renderers
+from . import compare
+from . import ops_impl
 
 class Runner(object):
-
   def __init__(self, metadata, connection, schema_path):
     self.metadata = metadata
     self.schema_path = schema_path
@@ -32,6 +32,7 @@ class Runner(object):
         "compare_type": Runner.compare_type,
         "include_object": Runner.include_object,
         "compare_server_default": Runner.compare_server_default,
+        "transaction_per_migration": True,
       },
     )
     self.cmd = command.Command(self.connection, self.schema_path)
@@ -223,9 +224,11 @@ class Runner(object):
       'CreateUniqueConstraintOp': lambda op: 'add unique constraint %s' % op.constraint_name,
       'CreateIndexOp': lambda op: 'add index %s'% op.index_name,
       'AddColumnOp': lambda op: 'add column %s to table %s' % (op.column.name, op.table_name),
+        # TODO check for this by default
       'AddEdgesOp': lambda op: op.get_revision_message(),
       'RemoveEdgesOp': lambda op: op.get_revision_message(),
       'ModifyEdgeOp': lambda op: op.get_revision_message(),
+      'AlterEnumOp': lambda  op: op.get_revision_message(),
     }
 
     changes = [class_name_map[type(op).__name__](op) for op in diff]

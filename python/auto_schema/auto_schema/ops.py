@@ -1,6 +1,4 @@
 from alembic.operations import Operations, MigrateOperation
-import datetime
-import sqlalchemy as sa
 
 @Operations.register_operation("add_edges")
 class AddEdgesOp(MigrateOperation):
@@ -53,6 +51,14 @@ class RemoveEdgesOp(MigrateOperation):
     return _get_revision_message(self.edges, "remove edge %s", "remove edges %s")
 
 
+def _get_revision_message(edges, single_edge_msg, multi_edge_msg):
+  if len(edges) == 1:
+    return single_edge_msg % (edges[0]['edge_name'])
+
+  edge_names = [edge['edge_name'] for edge in edges]
+  return multi_edge_msg % (", ".join(sorted(edge_names)))
+
+
 @Operations.register_operation("modify_edge")
 class ModifyEdgeOp(MigrateOperation):
 
@@ -82,64 +88,37 @@ class ModifyEdgeOp(MigrateOperation):
     return "modify edge %s" % (self.old_edge['edge_name'])
 
 
-def add_edges_from(connection, edges):
-  t = datetime.datetime.now()
-  table = _get_table(connection)
-
-  edges_to_write = []
-  for edge in edges:
-    edge['created_at'] = t
-    edge['updated_at'] = t
-    edges_to_write.append(edge)
-
-  connection.execute(
-    table.insert().values(edges_to_write)
-  )
+@Operations.register_operation("alter_enum")
+class AlterEnumOp(MigrateOperation):
+  
+  """Alters enum."""
+  def __init__(self, enum_name, value, schema=None, before=None):
+    self.enum_name = enum_name
+    self.value = value
+    self.before = before
 
 
-@Operations.implementation_for(AddEdgesOp)
-def add_edges(operations, operation):
-  connection = operations.get_bind()
-  add_edges_from(connection, operation.edges)
+  @classmethod
+  def alter_enum(cls, operations, enum_name, value, **kw):
+    """Issues an "alter enum" operation"""
+
+    op = AlterEnumOp(enum_name, value, schema=kw.get('schema', None), before=kw.get('before', None))
+    return operations.invoke(op)
+
+  
+  def reverse(self):
+    return NoDowngradeOp()
 
 
-@Operations.implementation_for(RemoveEdgesOp)
-def drop_edge(operations, operation):
-  edge_types = [edge['edge_type'] for edge in operation.edges]
-
-  connection = operations.get_bind()
-  table = _get_table(connection)
-  connection.execute(
-    table.delete().where(table.c.edge_type.in_(edge_types))
-  )
+  def get_revision_message(self):
+    return 'alter enum %s, add value %s' %(self.enum_name, self.value)
 
 
-@Operations.implementation_for(ModifyEdgeOp)
-def modify_edge(operations, operation):
-  connection = operations.get_bind()
-  table = _get_table(connection)
-  t = datetime.datetime.now()
+@Operations.register_operation("no_downgrade")
+class NoDowngradeOp(MigrateOperation):
+  @classmethod
+  def no_downgrade(cls, operations, *kw):
 
-  edge = operation.new_edge
-
-  print(operation.edge_type)
-  print(edge)
-  connection.execute(
-    table.update().where(table.c.edge_type == operation.edge_type).values(edge)
-  )
-
-
-def _get_table(connection):
-  # todo there has to be a better way to do this instead of reflecting again
-  metadata = sa.MetaData()
-  metadata.reflect(connection)
-
-  return metadata.tables['assoc_edge_config']
-
-
-def _get_revision_message(edges, single_edge_msg, multi_edge_msg):
-  if len(edges) == 1:
-    return single_edge_msg % (edges[0]['edge_name'])
-
-  edge_names = [edge['edge_name'] for edge in edges]
-  return multi_edge_msg % (", ".join(sorted(edge_names)))
+    op = NoDowngradeOp(*kw)
+    return operations.invoke(op)
+  pass

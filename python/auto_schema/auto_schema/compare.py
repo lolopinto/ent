@@ -1,5 +1,8 @@
 from alembic.autogenerate import comparators
-from auto_schema import edge_op
+from . import ops
+from alembic.operations import Operations, MigrateOperation
+import sqlalchemy as sa
+import pprint
 
 @comparators.dispatch_for("schema")
 def compare_edges(autogen_context, upgrade_ops, schemas):
@@ -25,25 +28,25 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
   metadata_edges = autogen_context.metadata.info.setdefault("edges", {})
 
   # edges in metadata, but not in db, new edges that need to be added
-  process_edges(
+  _process_edges(
     metadata_edges, 
     db_edges, 
     upgrade_ops, 
-    edge_op.AddEdgesOp,
+    ops.AddEdgesOp,
     _meta_to_db_edge_mismatch,
   )
 
   # edges in db, but not in metadata, edges that need to be dropped
-  process_edges(
+  _process_edges(
     db_edges, 
     metadata_edges, 
     upgrade_ops, 
-    edge_op.RemoveEdgesOp,
+    ops.RemoveEdgesOp,
   )
 
 
 
-def process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mismatch_fn=None):
+def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mismatch_fn=None):
   alter_ops = []
 
   for sch, edges in source_edges.items():
@@ -119,9 +122,82 @@ def _get_schema_key(schema):
 
 
 def _meta_to_db_edge_mismatch(meta_edge, db_edge, sch):
-  return edge_op.ModifyEdgeOp(
+  return ops.ModifyEdgeOp(
     meta_edge['edge_type'],
     meta_edge,
     db_edge,
     schema=sch
   )
+
+
+@comparators.dispatch_for("schema")
+def compare_enum(autogen_context, upgrade_ops, schemas):
+  inspector = autogen_context.inspector
+
+  db_metadata = sa.MetaData()
+  db_metadata.reflect(inspector.bind)
+
+ # TODO schema not being used
+  for sch in schemas:
+    conn_tables = { table.name: table for table in db_metadata.sorted_tables}
+    metadata_tables = {table.name: table for table in autogen_context.metadata.sorted_tables}
+
+
+    # trying to detect change in tables
+    for name in conn_tables:
+      if not name in metadata_tables:
+        continue
+
+      metadata_table = metadata_tables[name]
+      conn_table = conn_tables[name]
+
+      conn_columns = {col.name: col for col in conn_table.columns}
+      metadata_columns = {col.name: col for col in metadata_table.columns}
+
+      for name in conn_columns:
+        if not name in metadata_columns:
+          continue
+        metadata_column = metadata_columns[name]
+        conn_column = conn_columns[name]
+        _compare_enum(upgrade_ops, conn_column, metadata_column, sch)
+
+
+def _compare_enum(upgrade_ops, conn_column, metadata_column, sch):
+  conn_type = conn_column.type
+  metadata_type = metadata_column.type
+
+  # not enums, bye
+  if not isinstance(conn_type, sa.Enum) or not isinstance(metadata_type, sa.Enum):
+    return
+
+  # enums are the same, bye
+  if conn_type.enums == metadata_type.enums:
+    return
+
+  conn_enums = {k: k for k in conn_type.enums}
+  metadata_enums = {k: k for k in metadata_type.enums}
+  for key in conn_enums:
+    if key not in metadata_enums:
+      raise ValueError("postgres doesn't support enum removals")
+
+
+  l = len(metadata_type.enums)
+  for index, value in enumerate(metadata_type.enums):
+    if value not in conn_enums:
+      # if not last item use BEFORE
+      # options are:
+      # ALTER TYPE enum_type ADD VALUE 'new_value';
+      # ALTER TYPE enum_type ADD VALUE 'new_value' BEFORE 'old_value';
+      # we don't need after since the previous 2 suffice so don't officially support that
+      # ALTER TYPE enum_type ADD VALUE 'new_value' AFTER 'old_value';
+      # only add before if previously existed
+      if index != l - 1 and metadata_type.enums[index+1] in conn_enums:
+        upgrade_ops.ops.append(
+          ops.AlterEnumOp(conn_type.name, value, schema=sch, before=metadata_type.enums[index + 1])
+        )
+      else:
+        upgrade_ops.ops.append(
+          ops.AlterEnumOp(conn_type.name, value, schema=sch)
+        )
+
+

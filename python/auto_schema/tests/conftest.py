@@ -9,6 +9,44 @@ import sqlalchemy as sa
 
 from auto_schema import runner
 
+class Postgres:
+  def get_url(self, _schema_path):
+    return "postgresql://localhost/autoschema_test"
+
+  def get_finalizer(self, metadata, session, connection, transaction, engine):
+    def fn():
+      session.close()
+      metadata.drop_all(bind=connection)
+      transaction.commit()
+      
+      # all of this mess needed to have different flows working
+      # e.g. commit each step in migration on its own so that adding new enum types later works
+      # needed to drop all tables & types
+      # but for some reason alembic_version is handled inconsistently
+      # not sure why so we have to drop 
+      conn2 = engine.connect()
+      metadata.bind = conn2
+      metadata.reflect()
+      alembic_table = [t for t in metadata.sorted_tables if t.name == 'alembic_version']
+      if len(alembic_table) == 1:
+        conn2.execute("drop table alembic_version")
+  
+    return fn
+
+
+class SQLite:
+  def get_url(self, schema_path):
+    return "sqlite:///%s/%s" % (schema_path, "foo.db")
+    #return "sqlite:///bar.db"  # if you want a local file to inspect for whatever reason
+    
+  def get_finalizer(self, metadata, session, connection, transaction, engine):
+    def fn():
+      session.close()
+      transaction.rollback()
+      connection.close()
+
+    return fn
+
 @pytest.fixture(scope="function")
 def new_test_runner(request):
   
@@ -22,28 +60,21 @@ def new_test_runner(request):
 
     # unclear if best way but use name of class to determine postgres vs sqlite and use that
     # to make sure everything works for both
+    dialect = None
     if "Postgres" in request.cls.__name__:
-      url = "postgresql://localhost/autoschema_test"
+      dialect = Postgres()
     else:
-      url = "sqlite:///%s/%s" % (schema_path, "foo.db")
-      #url = "sqlite:///bar.db" # if you want a local file to inspect for whatever reason
+      dialect = SQLite()
 
     # reuse connection if not None. same logic as schema_path above
     if prev_runner is None:
-      engine = create_engine(url)
+      engine = create_engine(dialect.get_url(schema_path))
       connection = engine.connect()
       metadata.bind = connection
       transaction = connection.begin()
       session = Session(bind=connection)
 
-      def rollback_everything():
-        session.close()
-        transaction.rollback()
-        connection.close()
-        #metadata.reflect(bind=connection)
-        #metadata.drop_all(bind=connection)
-
-      request.addfinalizer(rollback_everything)
+      request.addfinalizer(dialect.get_finalizer(metadata, session, connection, transaction, engine))
     else:
       connection = prev_runner.get_connection()
 
@@ -294,6 +325,75 @@ def metadata_with_inverse_edge():
   metadata.info.setdefault("edges", edges)
   return metadata
   
+
+@pytest.fixture
+def metadata_with_enum():
+  metadata = sa.MetaData()
+
+  rainbow = ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')
+  enum = sa.Enum(*rainbow, name='rainbow_type')
+
+  sa.Table('accounts', metadata,
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('rainbow', enum, nullable=False),
+    sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'), 
+  )
+  return metadata
+
+def _apply_func_on_enum(metadata, fn):
+  return _apply_func_on_metadata(metadata, 'rainbow', 'accounts', fn)
+
+
+def metadata_with_new_enum_value(metadata_with_enum):
+  def add_purple(col):
+    col.type.enums.append('purple')
+    return col
+
+  return _apply_func_on_enum(metadata_with_enum, add_purple)
+
+
+def metadata_with_enum_value_before_first_pos(metadata_with_enum):
+  def insert_purple(col):
+    col.type.enums.insert(0, 'purple')
+    return col
+
+  return _apply_func_on_enum(metadata_with_enum, insert_purple)
+
+
+def metadata_with_multiple_new_values_before(metadata_with_enum):
+  def insert_colors(col):
+    col.type.enums.insert(2, 'purple')
+    col.type.enums.insert(4, 'black')
+    return col
+
+  return _apply_func_on_enum(metadata_with_enum, insert_colors)
+
+
+def metadata_with_multiple_new_enum_values(metadata_with_enum):
+  def append_colors(col):
+    col.type.enums.append('purple')
+    col.type.enums.append('black')
+    return col
+
+  return _apply_func_on_enum(metadata_with_enum, append_colors)
+
+
+def metadata_with_multiple_new_enum_values_at_diff_pos(metadata_with_enum):
+  def change_colors(col):
+    col.type.enums.insert(3, 'purple')
+    col.type.enums.append('black')
+    return col
+
+  return _apply_func_on_enum(metadata_with_enum, change_colors)
+
+
+def metadata_with_removed_value(metadata_with_enum):
+  def remove_color(col):
+    col.type.enums.remove('green')
+    return col
+
+  return _apply_func_on_enum(metadata_with_enum, remove_color)
+
 
 def user_to_followers_edge(edge_type = 1, inverse_edge_type=None):
   return {
