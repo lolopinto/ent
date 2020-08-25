@@ -5,6 +5,7 @@ import os
 import sqlalchemy as sa
 import alembic.operations.ops as alembicops
 # from alembic import operations
+from sqlalchemy.dialects import postgresql
 
 from . import conftest
 from auto_schema import runner
@@ -190,9 +191,9 @@ def validate_column_type(schema_column, db_column, metadata):
         assert isinstance(db_column.type, sa.Numeric)
         # precision is tricky so ignore this for now
         # assert schema_column.type.precision == db_column.type.precision
-    elif isinstance(schema_column.type, sa.Enum):
+    elif isinstance(schema_column.type, postgresql.ENUM):
         # enum type if possible otherwise check constraint...
-        assert isinstance(db_column.type, sa.Enum)
+        assert isinstance(db_column.type, postgresql.ENUM)
         validate_enum_column_type(metadata, db_column, schema_column)
     else:
         # compare types by using the string version of the types.

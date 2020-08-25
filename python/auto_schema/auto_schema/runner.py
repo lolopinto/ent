@@ -8,6 +8,7 @@ from alembic.autogenerate import render_python_code
 
 from sqlalchemy.sql.schema import DefaultClause
 from sqlalchemy.sql.elements import TextClause
+from sqlalchemy.dialects import postgresql
 
 from . import command
 from . import config
@@ -34,6 +35,7 @@ class Runner(object):
                 "include_object": Runner.include_object,
                 "compare_server_default": Runner.compare_server_default,
                 "transaction_per_migration": True,
+                "render_item": Runner.render_item,
             },
         )
         self.cmd = command.Command(self.connection, self.schema_path)
@@ -65,7 +67,7 @@ class Runner(object):
         # types. a return value of True means the two types do not
         # match and should result in a type change operation.
 
-        #print(context, inspected_column, metadata_column, inspected_type, metadata_type, type(inspected_type), type(metadata_type))
+        # print(context, inspected_column, metadata_column, inspected_type, metadata_type, type(inspected_type), type(metadata_type))
 
         # going from VARCHAR to Text is accepted && makes sense and we should accept that change.
         if isinstance(inspected_type, sa.VARCHAR) and isinstance(metadata_type, sa.Text):
@@ -126,14 +128,31 @@ class Runner(object):
         return False
 
     @classmethod
-    def render_server_default(cls, type, server_default, autogen_context):
-        if type != 'server_default':
+    def render_item(cls, type_, item, autogen_context):
+        def server_default():
+            # For some reason, the default rendering is not doing this correctly, so we need to
+            # customize the rendering so that this is handled correctly and it adds the sa.text part
+            if isinstance(item, TextClause):
+                return "sa.text('%s')" % (item.text)
             return False
 
-        # For some reason, the default rendering is not doing this correctly, so we need to
-        # customize the rendering so that this is handled correctly and it adds the sa.text part
-        if isinstance(server_default, TextClause):
-            return "sa.text('%s')" % (server_default.text)
+        def enum():
+            if isinstance(item, postgresql.ENUM):
+                enum_values = ["'%s'" % (v) for v in item.enums]
+                # render postgres with create_type=False so that the type is not automatically created
+                # we want an explicit create type and drop type
+                # which we apparently don't get by default based
+                return "postgresql.ENUM(%s, name='%s', create_type=False)" % (", ".join(enum_values), item.name)
+            return False
+
+        type_map = {
+            'server_default': server_default,
+            'type': enum,
+        }
+
+        if type_ in type_map:
+            return type_map[type_]()
+
         return False
 
     @classmethod
@@ -175,9 +194,9 @@ class Runner(object):
             self._apply_changes(diff)
 
     def _apply_changes(self, diff):
-        #pprint.pprint(diff, indent=2, width=20)
+        # pprint.pprint(diff, indent=2, width=20)
 
-        #migration_script = produce_migrations(self.mc, self.metadata)
+        # migration_script = produce_migrations(self.mc, self.metadata)
         # print(render_python_code(migration_script.upgrade_ops))
 
         # TODO we need a top level upgrade path which is run when we get to production instead of running this
@@ -238,7 +257,7 @@ class Runner(object):
         self.cmd.revision(message)
 
         # understand diff and make changes as needed
-        #pprint.pprint(migrations, indent=2, width=30)
+        # pprint.pprint(migrations, indent=2, width=30)
 
     def upgrade(self):
         self.cmd.upgrade()

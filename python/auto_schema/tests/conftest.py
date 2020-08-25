@@ -4,6 +4,7 @@ import shutil
 import tempfile
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects import postgresql
 
 import sqlalchemy as sa
 
@@ -349,7 +350,7 @@ def metadata_with_enum():
     metadata = sa.MetaData()
 
     rainbow = ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')
-    enum = sa.Enum(*rainbow, name='rainbow_type')
+    enum = postgresql.ENUM(*rainbow, name='rainbow_type')
 
     sa.Table('accounts', metadata,
              sa.Column('id', sa.Integer(), nullable=False),
@@ -433,7 +434,7 @@ def metadata_with_new_enum_column():
     changes = default_children_of_table()
 
     rainbow = ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')
-    enum = sa.Enum(*rainbow, name='rainbow_type')
+    enum = postgresql.ENUM(*rainbow, name='rainbow_type')
 
     changes.append(
         sa.Column('rainbow', enum, nullable=False)

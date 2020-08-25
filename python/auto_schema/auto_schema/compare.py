@@ -3,6 +3,7 @@ from . import ops
 from alembic.operations import Operations, MigrateOperation
 import sqlalchemy as sa
 import pprint
+from sqlalchemy.dialects import postgresql
 
 
 @comparators.dispatch_for("schema")
@@ -151,6 +152,10 @@ def compare_enum(autogen_context, upgrade_ops, schemas):
             else:
                 _check_removed_table(conn_tables[name], upgrade_ops, sch)
 
+        for name in metadata_tables:
+            if not name in conn_tables:
+                _check_new_table(metadata_tables[name], upgrade_ops, sch)
+
 
 def _check_removed_table(metadata_table, upgrade_ops, sch):
     for column in metadata_table.columns:
@@ -180,7 +185,7 @@ def _check_existing_table(conn_table, metadata_table, upgrade_ops, sch):
 
 def _check_new_column(metadata_column, upgrade_ops, sch):
     metadata_type = metadata_column.type
-    if not isinstance(metadata_type, sa.Enum):
+    if not isinstance(metadata_type, postgresql.ENUM):
         return
 
     # new column with enum type
@@ -194,7 +199,7 @@ def _check_new_column(metadata_column, upgrade_ops, sch):
 
 def _check_removed_column(conn_column, upgrade_ops, sch):
     conn_type = conn_column.type
-    if not isinstance(conn_type, sa.Enum):
+    if not isinstance(conn_type, postgresql.ENUM):
         return
 
     # column being removed. remove type also
@@ -204,12 +209,17 @@ def _check_removed_column(conn_column, upgrade_ops, sch):
     )
 
 
+def _check_new_table(metadata_table, upgrade_ops, sch):
+    for column in metadata_table.columns:
+        _check_new_column(column, upgrade_ops, sch)
+
+
 def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch):
     conn_type = conn_column.type
     metadata_type = metadata_column.type
 
     # not enums, bye
-    if not isinstance(conn_type, sa.Enum) or not isinstance(metadata_type, sa.Enum):
+    if not isinstance(conn_type, postgresql.ENUM) or not isinstance(metadata_type, postgresql.ENUM):
         return
 
     # enums are the same, bye

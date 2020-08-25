@@ -1,6 +1,7 @@
 from alembic.operations import Operations, MigrateOperation
 import datetime
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 from . import ops
 
@@ -75,11 +76,11 @@ def alter_enum(operations, operation):
 
 @Operations.implementation_for(ops.AddEnumOp)
 def add_enum_type(operations, operation):
-    sa.Enum(*operation.values, name=operation.enum_name).create(
+    postgresql.ENUM(*operation.values, name=operation.enum_name).create(
         operations.get_bind())
 
 
 @Operations.implementation_for(ops.DropEnumOp)
 def drop_enum_type(operations, operation):
-    sa.Enum(*operation.values, name=operation.enum_name).drop(
+    postgresql.ENUM(*operation.values, name=operation.enum_name).drop(
         operations.get_bind())
