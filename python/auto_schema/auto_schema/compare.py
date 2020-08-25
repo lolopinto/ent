@@ -145,25 +145,11 @@ def compare_enum(autogen_context, upgrade_ops, schemas):
 
         # trying to detect change in tables
         for name in conn_tables:
-            if not name in metadata_tables:
+            if name in metadata_tables:
+                _check_existing_table(
+                    conn_tables[name], metadata_tables[name], upgrade_ops, sch)
+            else:
                 _check_removed_table(conn_tables[name], upgrade_ops, sch)
-                continue
-
-            metadata_table = metadata_tables[name]
-            conn_table = conn_tables[name]
-
-            _check_existing_table(conn_table, metadata_table, upgrade_ops, sch)
-
-        for name in metadata_tables:
-            if not name in conn_tables:
-                _check_new_table(metadata_tables[name], upgrade_ops, sch)
-
-
-# we want to change this to also detect the following
-# new table with new enum column (add type)
-# or new column in existing table (add type)
-# deleted table with deleted column (drop type)
-# existing table with deleted column (drop type)
 
 
 def _check_removed_table(metadata_table, upgrade_ops, sch):
@@ -216,10 +202,6 @@ def _check_removed_column(conn_column, upgrade_ops, sch):
     upgrade_ops.ops.append(
         ops.DropEnumOp(conn_type.name, conn_type.enums, schema=sch)
     )
-
-
-def _check_new_table(metadata_table, upgrade_ops, sch):
-    pass
 
 
 def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch):

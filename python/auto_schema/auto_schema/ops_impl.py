@@ -75,10 +75,8 @@ def alter_enum(operations, operation):
 
 @Operations.implementation_for(ops.AddEnumOp)
 def add_enum_type(operations, operation):
-    # TODO do we want checkfirst=True?
-    # seems safer
     sa.Enum(*operation.values, name=operation.enum_name).create(
-        operations.get_bind(), checkfirst=True)
+        operations.get_bind())
 
 
 @Operations.implementation_for(ops.DropEnumOp)
