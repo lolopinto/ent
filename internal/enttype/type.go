@@ -50,6 +50,8 @@ const (
 	GraphQL ImportType = "graphql"
 	Node    ImportType = "node"
 	Enum    ImportType = "enum"
+	// EntGraphQL refers to graphql scalars or things in the ent graphql space
+	EntGraphQL ImportType = "ent_graphql"
 )
 
 // for imports that are not from "graphql"
@@ -444,7 +446,13 @@ func (t *TimeType) GetNullableType() Type {
 }
 
 func (t *TimeType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLTime")}
+	return []FileImport{
+		NewGQLFileImport("GraphQLNonNull"),
+		{
+			Type:       "GraphQLTime",
+			ImportType: EntGraphQL,
+		},
+	}
 }
 
 type NullableTimeType struct {
@@ -468,7 +476,12 @@ func (t *NullableTimeType) GetNonNullableType() Type {
 }
 
 func (t *NullableTimeType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{NewGQLFileImport("GraphQLTime")}
+	return []FileImport{
+		{
+			Type:       "GraphQLTime",
+			ImportType: EntGraphQL,
+		},
+	}
 }
 
 type typeConfig struct {
