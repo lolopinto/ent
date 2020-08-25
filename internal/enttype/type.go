@@ -232,7 +232,7 @@ func (t *NullableBoolType) GetTSGraphQLImports() []FileImport {
 type idType struct{}
 
 func (t *idType) GetDBType() string {
-	return "UUID()"
+	return "postgresql.UUID()"
 }
 
 func (t *idType) GetZeroValue() string {
@@ -799,7 +799,7 @@ func (t *enumType) getDBTypeForEnumDBType(values []string, typ string) string {
 	// we also need DBTypeName or something too
 	enumType := strconv.Quote(strcase.ToSnake(typ))
 	sb.WriteString(fmt.Sprintf("name=%s", enumType))
-	return fmt.Sprintf("sa.Enum(%s)", sb.String())
+	return fmt.Sprintf("postgresql.ENUM(%s)", sb.String())
 
 }
 

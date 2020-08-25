@@ -23,7 +23,7 @@ func TestIDColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("id"),
-		"UUID()",
+		"postgresql.UUID()",
 		"nullable=False",
 	}
 	testColumn(t, col, "id", "ID", "id", parts)
@@ -235,7 +235,7 @@ func TestForeignKeyColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("account_id"), // db field
-		"UUID()",                    // db type
+		"postgresql.UUID()",         // db type
 		"nullable=False",
 	}
 	testColumn(t, column, "account_id", "AccountID", "account_id", parts)
@@ -350,7 +350,7 @@ func TestInverseEdgeTypeConfigColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("inverse_edge_type"),
-		"UUID()",
+		"postgresql.UUID()",
 		"nullable=True",
 	}
 	testColumn(t, col, "inverse_edge_type", "InverseEdgeType", "inverse_edge_type", parts)
@@ -431,7 +431,7 @@ func TestID1EdgeColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("id1"),
-		"UUID()",
+		"postgresql.UUID()",
 		"nullable=False",
 	}
 	testColumn(t, col, "id1", "ID1", "id1", parts)
@@ -453,7 +453,7 @@ func TestEdgeTypeEdgeColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("edge_type"),
-		"UUID()",
+		"postgresql.UUID()",
 		"nullable=False",
 	}
 	testColumn(t, col, "edge_type", "EdgeType", "edge_type", parts)
@@ -464,7 +464,7 @@ func TestID2EdgeColumn(t *testing.T) {
 
 	parts := []string{
 		strconv.Quote("id2"),
-		"UUID()",
+		"postgresql.UUID()",
 		"nullable=False",
 	}
 	testColumn(t, col, "id2", "ID2", "id2", parts)
@@ -582,7 +582,7 @@ func TestEnumType(t *testing.T) {
 	testColumn(t, col, "status", "Status", "status", []string{
 		strconv.Quote("status"),
 		fmt.Sprintf(
-			"sa.Enum(%s, %s, %s, name=%s)",
+			"postgresql.ENUM(%s, %s, %s, name=%s)",
 			strconv.Quote("OPEN"),
 			strconv.Quote("PENDING"),
 			strconv.Quote("CLOSED"),
@@ -623,7 +623,7 @@ func TestNullableEnumType(t *testing.T) {
 	testColumn(t, col, "status", "Status", "status", []string{
 		strconv.Quote("status"),
 		fmt.Sprintf(
-			"sa.Enum(%s, %s, %s, name=%s)",
+			"postgresql.ENUM(%s, %s, %s, name=%s)",
 			strconv.Quote("OPEN"),
 			strconv.Quote("PENDING"),
 			strconv.Quote("CLOSED"),

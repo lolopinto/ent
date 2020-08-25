@@ -130,7 +130,7 @@ func f() *bool {
 
 func TestIDType(t *testing.T) {
 	testType(t, expType{
-		db:           "UUID()",
+		db:           "postgresql.UUID()",
 		graphql:      "ID!",
 		zeroValue:    "",
 		castToMethod: "cast.ToUUIDString",
@@ -143,7 +143,7 @@ func TestIDType(t *testing.T) {
 
 func TestNullableIDType(t *testing.T) {
 	testType(t, expType{
-		db:              "UUID()",
+		db:              "postgresql.UUID()",
 		graphql:         "ID",
 		zeroValue:       "",
 		castToMethod:    "cast.ToNullableUUIDString",
@@ -873,7 +873,7 @@ func TestEnumType(t *testing.T) {
 					EnumDBType: true,
 				},
 				expType{
-					db: fmt.Sprintf("sa.Enum(%s, %s, %s, %s, name=%s)",
+					db: fmt.Sprintf("postgresql.ENUM(%s, %s, %s, %s, name=%s)",
 						strconv.Quote("NOT_VERIFIED"),
 						strconv.Quote("VERIFIED"),
 						strconv.Quote("DEACTIVATED"),
@@ -909,7 +909,7 @@ func TestEnumType(t *testing.T) {
 					EnumDBType: true,
 				},
 				expType{
-					db: fmt.Sprintf("sa.Enum(%s, %s, %s, %s, name=%s)",
+					db: fmt.Sprintf("postgresql.ENUM(%s, %s, %s, %s, name=%s)",
 						strconv.Quote("NOT_VERIFIED"),
 						strconv.Quote("VERIFIED"),
 						strconv.Quote("DEACTIVATED"),

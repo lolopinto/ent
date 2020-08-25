@@ -35,7 +35,7 @@ func TestIDField(t *testing.T) {
 			graphQLName:           "id",
 		},
 	)
-	testDBType(t, f, "UUID()")
+	testDBType(t, f, "postgresql.UUID()")
 	testGraphQLType(t, f, "ID!")
 }
 
