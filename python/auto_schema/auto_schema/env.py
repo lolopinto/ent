@@ -20,10 +20,10 @@ from auto_schema import ops_impl
 log_config = {
     'version': 1,
     'disable_existing_loggers': False,
-     'handlers': {
+    'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            #'args': '(sys.stderr,)',
+            # 'args': '(sys.stderr,)',
             'stream': 'ext://sys.stdout',
             'level': 'NOTSET',
             'formatter': 'generic'
@@ -59,7 +59,7 @@ dictConfig(log_config)
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = config.metadata 
+target_metadata = config.metadata
 
 # connection engine...
 #engine = config.engine
@@ -92,7 +92,7 @@ def run_migrations_offline():
 
     """
     context.configure(
-        connection=connection, 
+        connection=connection,
         target_metadata=target_metadata,
         compare_type=runner.Runner.compare_type,
         include_object=runner.Runner.include_object,
@@ -114,7 +114,7 @@ def run_migrations_online():
     """
 
     context.configure(
-        connection=connection, 
+        connection=connection,
         target_metadata=target_metadata,
         compare_type=runner.Runner.compare_type,
         include_object=runner.Runner.include_object,
@@ -125,7 +125,6 @@ def run_migrations_online():
 
     with context.begin_transaction():
         context.run_migrations()
-
 
 
 if context.is_offline_mode():
