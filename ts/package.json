@@ -28,7 +28,7 @@
     "uuid": "^7.0.2"
   },
   "peerDependencies": {
-    "graphql": "^15.0.0"
+    "graphql": "^15.3.0"
   },
   "devDependencies": {
     "@types/glob": "^7.1.1",
