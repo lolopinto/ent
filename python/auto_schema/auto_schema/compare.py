@@ -171,12 +171,9 @@ def _check_existing_table(conn_table, metadata_table, upgrade_ops, sch):
         if not name in metadata_columns:
             # dropped column (potentially dropped type)
             _check_removed_column(conn_columns[name], upgrade_ops, sch)
-            continue
-
-        metadata_column = metadata_columns[name]
-        conn_column = conn_columns[name]
-        _check_if_enum_values_changed(
-            upgrade_ops, conn_column, metadata_column, sch)
+        else:
+            _check_if_enum_values_changed(
+                upgrade_ops, conn_columns[name], metadata_columns[name], sch)
 
     for name in metadata_columns:
         if not name in conn_columns:

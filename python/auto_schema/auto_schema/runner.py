@@ -141,7 +141,7 @@ class Runner(object):
                 enum_values = ["'%s'" % (v) for v in item.enums]
                 # render postgres with create_type=False so that the type is not automatically created
                 # we want an explicit create type and drop type
-                # which we apparently don't get by default based
+                # which we apparently don't get by default
                 return "postgresql.ENUM(%s, name='%s', create_type=False)" % (", ".join(enum_values), item.name)
             return False
 

@@ -4,7 +4,6 @@ import os
 
 import sqlalchemy as sa
 import alembic.operations.ops as alembicops
-# from alembic import operations
 from sqlalchemy.dialects import postgresql
 
 from . import conftest
