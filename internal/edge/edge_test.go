@@ -521,7 +521,7 @@ func getEdgeInfoMap() *testsync.RunOnce {
 
 			// allowed to be nil
 			if fn == nil {
-				return NewEdgeInfo()
+				return NewEdgeInfo(packageName)
 			}
 
 			edgeInfo, err := ParseEdgesFunc(packageName, fn)
