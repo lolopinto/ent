@@ -96,15 +96,15 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string) {
-	e.addFieldEdgeFromInfo(fieldName, configName, "")
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool) {
+	e.addFieldEdgeFromInfo(fieldName, configName, "", nullable)
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName, configName, inverseEdgeName string) {
-	e.addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName)
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName, configName, inverseEdgeName string, nullable bool) {
+	e.addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName, nullable)
 }
 
-func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string) {
+func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, nullable bool) {
 	r := regexp.MustCompile("([A-Za-z]+)ID")
 	match := r.FindStringSubmatch(fieldName)
 
@@ -114,13 +114,15 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 	}
 
 	edge := &FieldEdge{
-		FieldName: fieldName,
+		FieldName:   fieldName,
+		TSFieldName: strcase.ToLowerCamel(fieldName),
 		// Edge name: User from UserID field
 		commonEdgeInfo: getCommonEdgeInfo(
 			match[1],
 			schemaparser.GetEntConfigFromEntConfig(configName),
 		),
 		InverseEdgeName: inverseEdgeName,
+		Nullable:        nullable,
 	}
 
 	e.addEdge(edge)
@@ -189,7 +191,9 @@ func (e *commonEdgeInfo) GraphQLEdgeName() string {
 type FieldEdge struct {
 	commonEdgeInfo
 	FieldName       string
+	TSFieldName     string
 	InverseEdgeName string
+	Nullable        bool
 }
 
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {

@@ -277,22 +277,29 @@ export class {{$baseClass}} {
   {{ range $edge := .EdgeInfo.FieldEdges -}}
     {{$edgeName := .CamelCaseEdgeName -}}
     {{with .NodeInfo -}}
-      load{{$edgeName}}(): Promise<{{useImport .Node}}|null> {
+      async load{{$edgeName}}(): Promise<{{useImport .Node}}|null> {
+        {{ if $edge.Nullable -}}
+          if (!this.{{$edge.TSFieldName}}) {
+            return null;
+          }
+        {{end -}}
         return {{useImport "loadEnt"}}(
           this.viewer, 
-          this.{{$edge.FieldName}},
+          this.{{$edge.TSFieldName}},
           {{useImport .Node}}.loaderOptions(),
         );
       }
 
-      load{{$edgeName}}X(): Promise<{{useImport .Node}}> {
-        return {{useImport "loadEntX"}}(
-          this.viewer, 
-          this.{{$edge.FieldName}},
-          {{useImport .Node}}.loaderOptions(),
-        );
-      }
-    {{end -}}
+      {{if not $edge.Nullable -}}
+        load{{$edgeName}}X(): Promise<{{useImport .Node}}> {
+          return {{useImport "loadEntX"}}(
+            this.viewer, 
+            this.{{$edge.TSFieldName}},
+            {{useImport .Node}}.loaderOptions(),
+          );
+        }
+      {{end -}}
+    {{end}}
   {{end -}}
 }
 
