@@ -71,3 +71,17 @@ def alter_enum(operations, operation):
             "ALTER TYPE %s ADD VALUE '%s' BEFORE '%s'" % (
                 operation.enum_name, operation.value, operation.before)
         )
+
+
+@Operations.implementation_for(ops.AddEnumOp)
+def add_enum_type(operations, operation):
+    # TODO do we want checkfirst=True?
+    # seems safer
+    sa.Enum(*operation.values, name=operation.enum_name).create(
+        operations.get_bind(), checkfirst=True)
+
+
+@Operations.implementation_for(ops.DropEnumOp)
+def drop_enum_type(operations, operation):
+    sa.Enum(*operation.values, name=operation.enum_name).drop(
+        operations.get_bind())

@@ -114,3 +114,51 @@ class NoDowngradeOp(MigrateOperation):
         op = NoDowngradeOp(*kw)
         return operations.invoke(op)
     pass
+
+
+@Operations.register_operation("add_enum_type")
+class AddEnumOp(MigrateOperation):
+
+    """Adds enum type."""
+
+    def __init__(self, enum_name, values, schema=None):
+        self.enum_name = enum_name
+        self.values = values
+
+    @classmethod
+    def add_enum_type(cls, operations, enum_name, values, **kw):
+        """Issues an "add emum" operation"""
+
+        op = AddEnumOp(enum_name, values, schema=kw.get(
+            'schema', None))
+        return operations.invoke(op)
+
+    def reverse(self):
+        return DropEnumOp(self.enum_name, self.values)
+
+    def get_revision_message(self):
+        return 'add enum %s' % (self.enum_name)
+
+
+@Operations.register_operation("drop_enum_type")
+class DropEnumOp(MigrateOperation):
+
+    """Drop enum type."""
+
+    def __init__(self, enum_name, values, schema=None):
+        self.enum_name = enum_name
+        self.values = values
+
+    @classmethod
+    def drop_enum_type(cls, operations, enum_name, values, **kw):
+        """Issues a "drop emum" operation"""
+
+        op = DropEnumOp(enum_name, values, schema=kw.get(
+            'schema', None))
+        return operations.invoke(op)
+
+    def reverse(self):
+        return AddEnumOp(self.enum_name, self.values)
+
+    def get_revision_message(self):
+        return 'drop enum %s' % (self.enum_name)

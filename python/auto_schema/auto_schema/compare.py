@@ -146,24 +146,83 @@ def compare_enum(autogen_context, upgrade_ops, schemas):
         # trying to detect change in tables
         for name in conn_tables:
             if not name in metadata_tables:
+                _check_removed_table(conn_tables[name], upgrade_ops, sch)
                 continue
 
             metadata_table = metadata_tables[name]
             conn_table = conn_tables[name]
 
-            conn_columns = {col.name: col for col in conn_table.columns}
-            metadata_columns = {
-                col.name: col for col in metadata_table.columns}
+            _check_existing_table(conn_table, metadata_table, upgrade_ops, sch)
 
-            for name in conn_columns:
-                if not name in metadata_columns:
-                    continue
-                metadata_column = metadata_columns[name]
-                conn_column = conn_columns[name]
-                _compare_enum(upgrade_ops, conn_column, metadata_column, sch)
+        for name in metadata_tables:
+            if not name in conn_tables:
+                _check_new_table(metadata_tables[name], upgrade_ops, sch)
 
 
-def _compare_enum(upgrade_ops, conn_column, metadata_column, sch):
+# we want to change this to also detect the following
+# new table with new enum column (add type)
+# or new column in existing table (add type)
+# deleted table with deleted column (drop type)
+# existing table with deleted column (drop type)
+
+
+def _check_removed_table(metadata_table, upgrade_ops, sch):
+    for column in metadata_table.columns:
+        _check_removed_column(column, upgrade_ops, sch)
+
+
+def _check_existing_table(conn_table, metadata_table, upgrade_ops, sch):
+    conn_columns = {col.name: col for col in conn_table.columns}
+    metadata_columns = {
+        col.name: col for col in metadata_table.columns}
+
+    for name in conn_columns:
+        if not name in metadata_columns:
+            # dropped column (potentially dropped type)
+            _check_removed_column(conn_columns[name], upgrade_ops, sch)
+            continue
+
+        metadata_column = metadata_columns[name]
+        conn_column = conn_columns[name]
+        _check_if_enum_values_changed(
+            upgrade_ops, conn_column, metadata_column, sch)
+
+    for name in metadata_columns:
+        if not name in conn_columns:
+            _check_new_column(metadata_columns[name], upgrade_ops, sch)
+
+
+def _check_new_column(metadata_column, upgrade_ops, sch):
+    metadata_type = metadata_column.type
+    if not isinstance(metadata_type, sa.Enum):
+        return
+
+    # new column with enum type
+    # time to create the type
+    # adding a new type. just add to front of list
+    upgrade_ops.ops.insert(
+        0,
+        ops.AddEnumOp(metadata_type.name, metadata_type.enums, schema=sch)
+    )
+
+
+def _check_removed_column(conn_column, upgrade_ops, sch):
+    conn_type = conn_column.type
+    if not isinstance(conn_type, sa.Enum):
+        return
+
+    # column being removed. remove type also
+    # we assume 1-1 for now
+    upgrade_ops.ops.append(
+        ops.DropEnumOp(conn_type.name, conn_type.enums, schema=sch)
+    )
+
+
+def _check_new_table(metadata_table, upgrade_ops, sch):
+    pass
+
+
+def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch):
     conn_type = conn_column.type
     metadata_type = metadata_column.type
 

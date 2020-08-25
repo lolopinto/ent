@@ -17,21 +17,15 @@ class Postgres:
     def get_finalizer(self, metadata, session, connection, transaction, engine):
         def fn():
             session.close()
+            metadata.reflect()
             metadata.drop_all(bind=connection)
+            # need to commit because we sometimes commit separately because of alter type ddls
             transaction.commit()
 
-            # all of this mess needed to have different flows working
-            # e.g. commit each step in migration on its own so that adding new enum types later works
-            # needed to drop all tables & types
-            # but for some reason alembic_version is handled inconsistently
-            # not sure why so we have to drop
-            conn2 = engine.connect()
-            metadata.bind = conn2
-            metadata.reflect()
-            alembic_table = [
-                t for t in metadata.sorted_tables if t.name == 'alembic_version']
-            if len(alembic_table) == 1:
-                conn2.execute("drop table alembic_version")
+            # get any newly added enum types and drop it
+            # \dT not working :(
+            for row in connection.execute("select distinct pg_type.typname as enumtype from pg_type join pg_enum on pg_enum.enumtypid = pg_type.oid;"):
+                connection.execute('drop type %s' % row['enumtype'])
 
         return fn
 
@@ -202,7 +196,7 @@ def _metadata_with_nullable_changed(metadata, col_name, table_name, nullable_val
 
 def _metadata_with_server_default_changed(metadata, col_name, table_name, new_value):
     def change_server_default(col):
-        #print(col, col_name, new_value, repr(new_value))
+        # print(col, col_name, new_value, repr(new_value))
         col.server_default = new_value
         return col
 
@@ -421,7 +415,6 @@ def metadata_with_removed_enum_value(metadata_with_enum):
 
 
 def metadata_with_removed_column():
-    metadata = sa.MetaData()
     changes = default_children_of_table()
 
     cols = [c for c in changes if isinstance(
@@ -433,6 +426,23 @@ def metadata_with_removed_column():
     sa.Table('accounts', metadata,
              *changes,
              )
+    return metadata
+
+
+def metadata_with_new_enum_column():
+    changes = default_children_of_table()
+
+    rainbow = ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')
+    enum = sa.Enum(*rainbow, name='rainbow_type')
+
+    changes.append(
+        sa.Column('rainbow', enum, nullable=False)
+    )
+    metadata = sa.MetaData()
+    sa.Table('accounts', metadata,
+             *changes,
+             )
+
     return metadata
 
 

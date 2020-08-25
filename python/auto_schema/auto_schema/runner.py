@@ -206,6 +206,7 @@ class Runner(object):
 
         class_name_map = {
             'CreateTableOp': lambda op: 'add %s table' % op.table_name,
+            'DropTableOp': lambda op: 'drop %s table' % op.table_name,
             'ModifyTableOps': lambda op: "\n".join([class_name_map[type(child_op).__name__](child_op) for child_op in op.ops]),
             'AlterColumnOp': lambda op: alter_column_op(op),
             'CreateUniqueConstraintOp': lambda op: 'add unique constraint %s' % op.constraint_name,
@@ -217,6 +218,8 @@ class Runner(object):
             'ModifyEdgeOp': lambda op: op.get_revision_message(),
             'AlterEnumOp': lambda op: op.get_revision_message(),
             'DropColumnOp': lambda op: 'drop column %s' % op.column_name,
+            'AddEnumOp': lambda op: op.get_revision_message(),
+            'DropEnumOp': lambda op: op.get_revision_message(),
         }
 
         changes = [class_name_map[type(op).__name__](op) for op in diff]
