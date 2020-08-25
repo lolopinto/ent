@@ -3,13 +3,16 @@ import pytest
 import os
 
 import sqlalchemy as sa
+import alembic.operations.ops as alembicops
+from sqlalchemy.dialects import postgresql
 
 from . import conftest
 from auto_schema import runner
+from auto_schema import ops
 
 
 def get_new_metadata_for_runner(r):
-    #metadata = r.get_metadata()
+    # metadata = r.get_metadata()
     # don't reflect but in fact get a new object so that we can reflect corectly
     new_metadata = sa.MetaData()
     # fetch any new tables
@@ -179,17 +182,17 @@ def validate_column_server_default(schema_column, db_column):
 
 
 def validate_column_type(schema_column, db_column, metadata):
-    #print(type(schema_column.type).__name__, schema_column.type, db_column.type, schema_column.type == db_column.type, str(schema_column.type) == str(db_column.type))
+    # print(type(schema_column.type).__name__, schema_column.type, db_column.type, schema_column.type == db_column.type, str(schema_column.type) == str(db_column.type))
 
     if isinstance(schema_column.type, sa.TIMESTAMP):
         assert schema_column.type.timezone == db_column.type.timezone
     elif isinstance(schema_column.type, sa.Numeric):
         assert isinstance(db_column.type, sa.Numeric)
         # precision is tricky so ignore this for now
-        #assert schema_column.type.precision == db_column.type.precision
-    elif isinstance(schema_column.type, sa.Enum):
+        # assert schema_column.type.precision == db_column.type.precision
+    elif isinstance(schema_column.type, postgresql.ENUM):
         # enum type if possible otherwise check constraint...
-        assert isinstance(db_column.type, sa.Enum)
+        assert isinstance(db_column.type, postgresql.ENUM)
         validate_enum_column_type(metadata, db_column, schema_column)
     else:
         # compare types by using the string version of the types.
@@ -748,6 +751,71 @@ class TestPostgresRunner(BaseTestRunner):
         assert len(diff) == 1
 
         assert r2.revision_message() == 'drop column meaning_of_life'
+
+        r2.run()
+        assert_num_files(r2, 2)
+        validate_metadata_after_change(r2, new_metadata)
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_new_enum_column_added_then_removed(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+
+        # add column with enum
+        new_metadata = conftest.metadata_with_new_enum_column()
+        new_metadata.bind = r.get_connection()
+        r2 = new_test_runner(new_metadata, r)
+
+        diff = r2.compute_changes()
+
+        assert len(diff) == 2
+
+        add_enum = [op for op in diff if isinstance(op, ops.AddEnumOp)]
+        modify_table_ops = [op for op in diff if isinstance(
+            op, alembicops.ModifyTableOps)]
+        assert len(add_enum) == 1
+        assert len(modify_table_ops) == 1
+
+        r2.run()
+        assert_num_files(r2, 2)
+        validate_metadata_after_change(r2, new_metadata)
+
+        # drop column with enum
+        r3 = new_test_runner(metadata_with_table, r)
+        diff = r3.compute_changes()
+
+        assert len(diff) == 2
+
+        drop_enum = [op for op in diff if isinstance(op, ops.DropEnumOp)]
+        modify_table_ops = [op for op in diff if isinstance(
+            op, alembicops.ModifyTableOps)]
+
+        assert len(drop_enum) == 1
+        assert len(modify_table_ops) == 1
+
+        r3.run()
+        assert_num_files(r3, 3)
+        validate_metadata_after_change(r3, metadata_with_table)
+
+    @pytest.mark.usefixtures("metadata_with_enum")
+    def test_drop_table_with_enum(self, new_test_runner, metadata_with_enum):
+        r = new_test_runner(metadata_with_enum)
+        run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+
+        # no tables
+        new_metadata = sa.MetaData()
+        new_metadata.bind = r.get_connection()
+        r2 = new_test_runner(new_metadata, r)
+
+        diff = r2.compute_changes()
+
+        assert len(diff) == 2
+
+        drop_enum = [op for op in diff if isinstance(op, ops.DropEnumOp)]
+        drop_table = [op for op in diff if isinstance(
+            op, alembicops.DropTableOp)]
+        assert len(drop_enum) == 1
+        assert len(drop_table) == 1
 
         r2.run()
         assert_num_files(r2, 2)

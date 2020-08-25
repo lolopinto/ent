@@ -96,3 +96,15 @@ def render_alter_enum(autogen_context, op):
 @renderers.dispatch_for(ops.NoDowngradeOp)
 def render_no_downgrade_op(autogen_context, op):
     return "raise ValueError('operation is not reversible')"
+
+
+@renderers.dispatch_for(ops.AddEnumOp)
+def render_add_enum_op(autogen_context, op):
+    enum_values = ["'%s'" % (v) for v in op.values]
+    return "op.add_enum_type('%s', [%s])" % (op.enum_name, ", ".join(enum_values))
+
+
+@renderers.dispatch_for(ops.DropEnumOp)
+def render_drop_enum_op(autogen_context, op):
+    enum_values = ["'%s'" % (v) for v in op.values]
+    return "op.drop_enum_type('%s', [%s])" % (op.enum_name, ", ".join(enum_values))

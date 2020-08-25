@@ -11,6 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 ## TODO: for down commans when removing edges, we add "UUID()" which is broken and unncessary :(
 ## from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects import postgresql
 ${imports if imports else ""}
 
 # revision identifiers, used by Alembic.
