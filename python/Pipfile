@@ -5,12 +5,14 @@ verify_ssl = true
 
 [dev-packages]
 pytest = "*"
+autopep8 = ""
 
 [packages]
 alembic = "*"
 datetime = "*"
 sqlalchemy = "*"
 psycopg2 = "*"
+autopep8 = "*"
 
 [requires]
 python_version = "3.8"
