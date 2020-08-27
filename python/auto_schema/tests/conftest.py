@@ -346,6 +346,41 @@ def metadata_with_inverse_edge():
 
 
 @pytest.fixture
+def metadata_with_request_data():
+    metadata = metdata_enum_table()
+    data = {
+        'public': {
+            'request_statuses': {
+                'pkeys': ['status'],
+                'rows': [
+                    {'status': 'open'},
+                    {'status': 'pending'},
+                    {'status': 'closed'},
+                ]
+            }
+        }
+    }
+    metadata.info.setdefault("data", data)
+    return metadata
+
+
+def metdata_enum_table():
+    metadata = sa.MetaData()
+    enum_table(metadata)
+    return metadata
+
+
+def enum_table(metadata):
+    sa.Table('request_statuses', metadata,
+             sa.Column('status', sa.String(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "status", name="request_status_pkey"),
+             )
+
+# def metadata_with_data():
+
+
+@pytest.fixture
 def metadata_with_enum():
     metadata = sa.MetaData()
 

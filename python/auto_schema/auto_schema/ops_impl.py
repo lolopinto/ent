@@ -51,12 +51,50 @@ def modify_edge(operations, operation):
     )
 
 
-def _get_table(connection):
+def _get_table(connection, name='assoc_edge_config'):
     # todo there has to be a better way to do this instead of reflecting again
     metadata = sa.MetaData()
     metadata.reflect(connection)
 
-    return metadata.tables['assoc_edge_config']
+    return metadata.tables[name]
+
+
+@Operations.implementation_for(ops.AddRowsOp)
+def add_rows(operations, operation):
+    connection = operations.get_bind()
+    table = _get_table(connection, name=operation.table_name)
+
+    connection.execute(
+        table.insert().values(operation.rows)
+    )
+
+
+@Operations.implementation_for(ops.RemoveRowsOp)
+def drop_rows(operations, operation):
+    connection = operations.get_bind()
+    table = _get_table(connection, name=operation.table_name)
+    if len(operation.pkeys) == 1:
+        key = operation.pkeys[0]
+        keys = [row[key] for row in operation.rows]
+        connection.execute(
+            table.delete().where(table.c[key].in_(key))
+        )
+    else:
+        raise ValueError("don't support multiple pkeys yet")
+
+# TODO modify rows
+
+# @Operations.implementation_for(ops.ModifyEdgeOp)
+# def modify_edge(operations, operation):
+#     connection = operations.get_bind()
+#     table = _get_table(connection)
+#     t = datetime.datetime.now()
+
+#     edge = operation.new_edge
+
+#     connection.execute(
+#         table.update().where(table.c.edge_type == operation.edge_type).values(edge)
+#     )
 
 
 @Operations.implementation_for(ops.AlterEnumOp)

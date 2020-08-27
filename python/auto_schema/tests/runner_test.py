@@ -83,6 +83,22 @@ def validate_edges_from_metadata(metadata, r):
         assert db_edge.get('symmetric_edge') == edge.get('symmetric_edge')
 
 
+def validate_data_from_metadata(metadata, r):
+    data_from_metadata = metadata.info.setdefault('data', {})
+    if len(data_from_metadata) != 0:
+        data_from_metadata = data_from_metadata['public']
+
+    for table_name in data_from_metadata:
+
+        db_rows = []
+        for row in r.get_connection().execute('SELECT * FROM %s' % table_name):
+            row_dict = dict(row)
+            db_rows.append(row_dict)
+
+        # verify data in db is same
+        assert data_from_metadata[table_name]['rows'] == db_rows
+
+
 # TODO audit that this is being called...
 def validate_metadata_after_change(r, old_metadata):
     new_metadata = get_new_metadata_for_runner(r)
@@ -624,6 +640,14 @@ class BaseTestRunner(object):
         r = new_test_runner(metadata_with_foreign_key_to_same_table)
         run_and_validate_with_standard_metadata_table(
             r, metadata_with_foreign_key_to_same_table, new_table_name="assoc_edge_config")
+
+    @pytest.mark.usefixtures('metadata_with_request_data')
+    def test_saving_data(self, new_test_runner, metadata_with_request_data):
+        r = new_test_runner(metadata_with_request_data)
+        run_and_validate_with_standard_metadata_table(
+            r, metadata_with_request_data, new_table_name="request_statuses")
+
+        validate_data_from_metadata(metadata_with_request_data, r)
 
 
 class TestPostgresRunner(BaseTestRunner):

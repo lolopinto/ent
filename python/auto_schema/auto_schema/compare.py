@@ -5,6 +5,10 @@ import sqlalchemy as sa
 import pprint
 from sqlalchemy.dialects import postgresql
 
+# just gonna build something generic
+
+
+# hmm, we check inverse_edge for some reason
 
 @comparators.dispatch_for("schema")
 def compare_edges(autogen_context, upgrade_ops, schemas):
@@ -13,6 +17,7 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
     for sch in schemas:
 
         # so first check if the table exists. if it doesn't, nothing to do here
+        # TODO not using schema here either
         if not _table_exists(autogen_context):
             continue
 
@@ -83,6 +88,7 @@ def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mi
         [upgrade_ops.ops.append(alter_op) for alter_op in alter_ops]
 
 
+# why isn't this just sorted_tables?
 def _table_exists(autogen_context):
     dialect_map = {
         'sqlite': _execute_sqlite_dialect,
@@ -128,6 +134,42 @@ def _meta_to_db_edge_mismatch(meta_edge, db_edge, sch):
         db_edge,
         schema=sch
     )
+
+
+# why is this called 3 times??
+@comparators.dispatch_for('schema')
+def compare_data(autogen_context, upgrade_ops, schemas):
+    # TODO not using schema correctly
+    # since we just
+
+    data = autogen_context.metadata.info.setdefault("data", {})
+
+    inspector = autogen_context.inspector
+    db_metadata = sa.MetaData()
+    db_metadata.reflect(inspector.bind)
+
+# dodn't need this
+    #db_tables = {t.name: t for t in db_metadata.sorted_tables}
+    # print(db_tables)
+
+    for sch in schemas:
+        sch = _get_schema_key(sch)
+        print(sch)
+
+        if not sch in data:
+            pass
+
+        schema_data = data[sch]
+        for table_name in schema_data:
+            table_data = schema_data[table_name]
+
+            # todo verify that data is in correct format
+            # e.g. pkeys and rows columns exist
+            # confirm that each row has pkeys in there
+            if not table_name in db_metadata.tables:
+                upgrade_ops.ops.append(ops.AddRowsOp(
+                    table_name, table_data['pkeys'], table_data['rows']))
+                # insert all rows
 
 
 @comparators.dispatch_for("schema")
