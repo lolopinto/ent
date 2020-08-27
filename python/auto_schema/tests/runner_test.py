@@ -649,6 +649,21 @@ class BaseTestRunner(object):
 
         validate_data_from_metadata(metadata_with_request_data, r)
 
+        new_metadata = conftest.metadata_with_row_removed(
+            metadata_with_request_data)
+        new_metadata.bind = r.get_connection()
+        r2 = new_test_runner(new_metadata, r)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 1
+
+        assert r2.revision_message() == "remove row from request_statuses"
+
+        r2.run()
+        assert_num_files(r2, 2)
+        validate_metadata_after_change(r2, new_metadata)
+        validate_data_from_metadata(new_metadata, r2)
+
 
 class TestPostgresRunner(BaseTestRunner):
 

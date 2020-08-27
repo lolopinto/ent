@@ -70,14 +70,14 @@ def add_rows(operations, operation):
 
 
 @Operations.implementation_for(ops.RemoveRowsOp)
-def drop_rows(operations, operation):
+def remove_rows(operations, operation):
     connection = operations.get_bind()
     table = _get_table(connection, name=operation.table_name)
     if len(operation.pkeys) == 1:
         key = operation.pkeys[0]
         keys = [row[key] for row in operation.rows]
         connection.execute(
-            table.delete().where(table.c[key].in_(key))
+            table.delete().where(table.c[key].in_(keys))
         )
     else:
         raise ValueError("don't support multiple pkeys yet")

@@ -88,7 +88,7 @@ def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mi
         [upgrade_ops.ops.append(alter_op) for alter_op in alter_ops]
 
 
-# why isn't this just sorted_tables?
+# why isn't this just metadata.sorted_tables?
 def _table_exists(autogen_context):
     dialect_map = {
         'sqlite': _execute_sqlite_dialect,
@@ -136,7 +136,15 @@ def _meta_to_db_edge_mismatch(meta_edge, db_edge, sch):
     )
 
 
-# why is this called 3 times??
+def _create_tuple_key(row, pkeys):
+    l = []
+    for key in pkeys:
+        if not key in row:
+            raise ValueError("pkey %s was not found in row" % key)
+        l.append(row[key])
+    return tuple(l)
+
+
 @comparators.dispatch_for('schema')
 def compare_data(autogen_context, upgrade_ops, schemas):
     # TODO not using schema correctly
@@ -148,28 +156,69 @@ def compare_data(autogen_context, upgrade_ops, schemas):
     db_metadata = sa.MetaData()
     db_metadata.reflect(inspector.bind)
 
-# dodn't need this
-    #db_tables = {t.name: t for t in db_metadata.sorted_tables}
-    # print(db_tables)
-
     for sch in schemas:
         sch = _get_schema_key(sch)
-        print(sch)
 
         if not sch in data:
             pass
 
-        schema_data = data[sch]
+        schema_data = data.get(sch, {})
         for table_name in schema_data:
             table_data = schema_data[table_name]
 
-            # todo verify that data is in correct format
-            # e.g. pkeys and rows columns exist
-            # confirm that each row has pkeys in there
+            pkeys = table_data.get('pkeys', None)
+            if pkeys is None or not isinstance(pkeys, list):
+                raise ValueError("pkeys needs to be a list")
+
+            rows = table_data.get('rows', None)
+            if rows is None or not isinstance(rows, list):
+                # we want list of dict...
+                raise ValueError("rows needs to be a list")
+
+            # verify that each row is valid + create tuple key
+            data_rows = {_create_tuple_key(row, pkeys): row for row in rows}
+
+            # new table. need to add
             if not table_name in db_metadata.tables:
                 upgrade_ops.ops.append(ops.AddRowsOp(
-                    table_name, table_data['pkeys'], table_data['rows']))
-                # insert all rows
+                    table_name, pkeys, rows))
+            else:
+                _compare_db_values(autogen_context, upgrade_ops,
+                                   table_name, pkeys, data_rows)
+
+
+def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_rows):
+    connection = autogen_context.connection
+    query = 'SELECT * FROM %s' % table_name
+
+    db_rows = {}
+    for row in connection.execute(query):
+        d = dict(row)
+        t = _create_tuple_key(d, pkeys)
+        db_rows[t] = d
+
+    deleted_rows = []
+    new_rows = []
+
+    for t in db_rows:
+        db_row = db_rows[t]
+        if t in data_rows:
+            pass
+            # maybe modify. come back
+        else:
+            deleted_rows.append(db_row)
+
+    for t in data_rows:
+        if t not in db_rows:
+            new_rows.append(new_rows[t])
+
+    if len(new_rows) > 0:
+        upgrade_ops.ops.append(ops.AddRowsOp(
+            table_name, pkeys, new_rows))
+
+    if len(deleted_rows) > 0:
+        upgrade_ops.ops.append(ops.RemoveRowsOp(
+            table_name, pkeys, deleted_rows))
 
 
 @comparators.dispatch_for("schema")

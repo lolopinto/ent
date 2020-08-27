@@ -345,22 +345,39 @@ def metadata_with_inverse_edge():
     return metadata
 
 
+def default_enum_values():
+    return ['open', 'pending', 'closed']
+
+
+def status_table_info(l):
+    return {
+        'pkeys': ['status'],
+        'rows': [{'status': v} for v in l]
+    }
+
+
 @pytest.fixture
 def metadata_with_request_data():
     metadata = metdata_enum_table()
     data = {
         'public': {
-            'request_statuses': {
-                'pkeys': ['status'],
-                'rows': [
-                    {'status': 'open'},
-                    {'status': 'pending'},
-                    {'status': 'closed'},
-                ]
-            }
+            'request_statuses': status_table_info(default_enum_values())
         }
     }
-    metadata.info.setdefault("data", data)
+    metadata.info["data"] = data
+    return metadata
+
+
+def metadata_with_row_removed(metadata):
+    enums = default_enum_values()
+    enums.remove('open')
+
+    data = {
+        'public': {
+            'request_statuses': status_table_info(enums)
+        }
+    }
+    metadata.info["data"] = data
     return metadata
 
 
@@ -377,10 +394,8 @@ def enum_table(metadata):
                  "status", name="request_status_pkey"),
              )
 
-# def metadata_with_data():
 
-
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_enum():
     metadata = sa.MetaData()
 
