@@ -210,7 +210,7 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
 
     for t in data_rows:
         if t not in db_rows:
-            new_rows.append(new_rows[t])
+            new_rows.append(data_rows[t])
 
     if len(new_rows) > 0:
         upgrade_ops.ops.append(ops.AddRowsOp(

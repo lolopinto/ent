@@ -664,6 +664,21 @@ class BaseTestRunner(object):
         validate_metadata_after_change(r2, new_metadata)
         validate_data_from_metadata(new_metadata, r2)
 
+        new_metadata = conftest.metadata_with_rows_added(
+            metadata_with_request_data)
+        new_metadata.bind = r.get_connection()
+        r3 = new_test_runner(new_metadata, r)
+
+        diff = r3.compute_changes()
+        assert len(diff) == 1
+
+        assert r3.revision_message() == "add rows to request_statuses"
+
+        r3.run()
+        assert_num_files(r3, 3)
+        validate_metadata_after_change(r3, new_metadata)
+        validate_data_from_metadata(new_metadata, r3)
+
 
 class TestPostgresRunner(BaseTestRunner):
 

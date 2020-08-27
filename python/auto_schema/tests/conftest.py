@@ -381,6 +381,21 @@ def metadata_with_row_removed(metadata):
     return metadata
 
 
+def metadata_with_rows_added(metadata):
+    enums = default_enum_values()
+    enums.remove('open')  # putting this here since done from above
+    enums.append('initial')  # e.g. open -> initial
+    enums.append('reviewed')
+
+    data = {
+        'public': {
+            'request_statuses': status_table_info(enums)
+        }
+    }
+    metadata.info["data"] = data
+    return metadata
+
+
 def metdata_enum_table():
     metadata = sa.MetaData()
     enum_table(metadata)
