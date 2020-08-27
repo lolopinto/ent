@@ -82,19 +82,20 @@ def remove_rows(operations, operation):
     else:
         raise ValueError("don't support multiple pkeys yet")
 
-# TODO modify rows
 
-# @Operations.implementation_for(ops.ModifyEdgeOp)
-# def modify_edge(operations, operation):
-#     connection = operations.get_bind()
-#     table = _get_table(connection)
-#     t = datetime.datetime.now()
+@Operations.implementation_for(ops.ModifyRowsOp)
+def modify_rows(operations, operation):
+    connection = operations.get_bind()
+    table = _get_table(connection, operation.table_name)
 
-#     edge = operation.new_edge
+    if len(operation.pkeys) != 1:
+        raise ValueError("don't support multiple pkeys yet")
 
-#     connection.execute(
-#         table.update().where(table.c.edge_type == operation.edge_type).values(edge)
-#     )
+    key = operation.pkeys[0]
+    for row in operation.rows:
+        connection.execute(
+            table.update().where(table.c[key] == row[key]).values(row)
+        )
 
 
 @Operations.implementation_for(ops.AlterEnumOp)

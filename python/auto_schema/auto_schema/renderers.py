@@ -84,7 +84,7 @@ def _render_row_from_op(row_fn_name, table_name, pkeys, rows):
         ")" % {
             "row_fn_name": row_fn_name,
             "table_name": table_name,
-            "indent": "  ",
+            "indent": "    ",
             "pkeys": util.render_list_csv_as_list(pkeys),
             "rows": "".join(rows),
         }
@@ -115,19 +115,29 @@ def render_remove_edges(autogen_context, op):
     return _render_row_from_op("op.remove_rows", op.table_name, op.pkeys, op.rows)
 
 
-# TODO modify_row
-# @renderers.dispatch_for(ops.ModifyEdgeOp)
-# def render_modify_edge(autogen_context, op):
-#     return (
-#         "op.modify_edge(\n"
-#         "%(indent)s'%(edge_type)s',\n"
-#         "%(indent)s%(edge)s\n"
-#         ")" % {
-#             "indent": "  ",
-#             "edge_type": op.edge_type,
-#             "edge": _render_edge(op.new_edge),
-#         }
-#     )
+@renderers.dispatch_for(ops.ModifyRowsOp)
+def render_modify_rows(autogen_context, op):
+    # indent 4 spaces instead of 2
+    rows = [_render_row(row, indent="    ") for row in op.rows]
+    # indent 4 spaces instead of 2
+    old_rows = [_render_row(row, indent="    ") for row in op.old_rows]
+
+    return (
+        "op.modify_rows('%(table_name)s', %(pkeys)s, \n"
+        "%(indent)s[\n"
+        "%(rows)s],\n"
+        "[\n%(old_rows)s],"
+        "%(indent)s\n"
+        ")" % {
+            "indent": "  ",
+            "table_name": op.table_name,
+            "indent": "    ",
+            "pkeys": util.render_list_csv_as_list(op.pkeys),
+            "rows": "".join(rows),
+            "old_rows": "".join(old_rows),
+        }
+    )
+
 
 @renderers.dispatch_for(ops.AlterEnumOp)
 def render_alter_enum(autogen_context, op):

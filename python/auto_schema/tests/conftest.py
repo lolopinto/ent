@@ -422,6 +422,16 @@ def metadata_with_multiple_data_tables():
     return metadata
 
 
+def metadata_with_rainbows_enum_changed(metadata):
+    data = metadata.info['data']
+    rows = data['public']['rainbows']['rows']
+    rows[3]['description'] = 'Really Green'
+    rows[4]['description'] = 'Navy Blue'
+
+#    data['public']['rainbows']['rows']
+    return metadata
+
+
 def metdata_enum_table():
     metadata = sa.MetaData()
     enum_table(metadata)

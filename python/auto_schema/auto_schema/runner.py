@@ -246,6 +246,7 @@ class Runner(object):
             # TODO go through all alembic ops and create default values here
             'AddRowsOp': lambda op: op.get_revision_message(),
             'RemoveRowsOp': lambda op: op.get_revision_message(),
+            'ModifyRowsOp': lambda op: op.get_revision_message(),
         }
 
         changes = [class_name_map[type(op).__name__](op) for op in diff]

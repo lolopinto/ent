@@ -199,12 +199,15 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
 
     deleted_rows = []
     new_rows = []
-
+    modified_new_rows = []
+    modified_old_rows = []
     for t in db_rows:
         db_row = db_rows[t]
         if t in data_rows:
-            pass
-            # maybe modify. come back
+            data_row = data_rows[t]
+            if db_row != data_row:
+                modified_new_rows.append(data_row)
+                modified_old_rows.append(db_row)
         else:
             deleted_rows.append(db_row)
 
@@ -219,6 +222,14 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
     if len(deleted_rows) > 0:
         upgrade_ops.ops.append(ops.RemoveRowsOp(
             table_name, pkeys, deleted_rows))
+
+    if len(modified_new_rows) > 0:
+        if len(modified_new_rows) != len(modified_old_rows):
+            raise ValueError(
+                "length of modified old and new rows should be the same")
+
+        upgrade_ops.ops.append(ops.ModifyRowsOp(
+            table_name, pkeys, modified_new_rows, modified_old_rows))
 
 
 @comparators.dispatch_for("schema")

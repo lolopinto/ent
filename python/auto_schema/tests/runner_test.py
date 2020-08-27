@@ -90,13 +90,21 @@ def validate_data_from_metadata(metadata, r):
 
     for table_name in data_from_metadata:
 
+        data_rows = data_from_metadata[table_name]['rows']
+        pkeys = data_from_metadata[table_name]['pkeys']
+        # only works for objects with primary key to sort for now
+        assert len(pkeys) == 1
+        data_rows.sort(key=lambda obj: obj[pkeys[0]])
+
         db_rows = []
         for row in r.get_connection().execute('SELECT * FROM %s' % table_name):
             row_dict = dict(row)
             db_rows.append(row_dict)
 
-        # verify data in db is same
-        assert data_from_metadata[table_name]['rows'] == db_rows
+        db_rows.sort(key=lambda obj: obj[pkeys[0]])
+
+        # verify data in db is same after sorting
+        assert data_rows == db_rows
 
 
 # TODO audit that this is being called...
@@ -692,6 +700,21 @@ class BaseTestRunner(object):
 
         # data is as expected
         validate_data_from_metadata(metadata_with_multiple_data_tables, r)
+
+        # update multiple objects so there's different values
+        new_metadata = conftest.metadata_with_rainbows_enum_changed(
+            metadata_with_multiple_data_tables)
+        new_metadata.bind = r.get_connection()
+        r2 = new_test_runner(new_metadata, r)
+
+        diff = r2.compute_changes()
+        assert len(diff) == 1
+        assert r2.revision_message() == 'modify rows in table rainbows'
+
+        r2.run()
+        assert_num_files(r2, 2)
+        validate_metadata_after_change(r2, new_metadata)
+        validate_data_from_metadata(new_metadata, r2)
 
 
 class TestPostgresRunner(BaseTestRunner):
