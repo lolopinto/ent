@@ -88,7 +88,7 @@ def remove_rows(operations, operation):
             )
 
 
-@ Operations.implementation_for(ops.ModifyRowsOp)
+@Operations.implementation_for(ops.ModifyRowsOp)
 def modify_rows(operations, operation):
     connection = operations.get_bind()
     table = _get_table(connection, operation.table_name)
@@ -107,7 +107,7 @@ def modify_rows(operations, operation):
             )
 
 
-@ Operations.implementation_for(ops.AlterEnumOp)
+@Operations.implementation_for(ops.AlterEnumOp)
 def alter_enum(operations, operation):
     connection = operations.get_bind()
     if operation.before is None:
@@ -122,13 +122,13 @@ def alter_enum(operations, operation):
         )
 
 
-@ Operations.implementation_for(ops.AddEnumOp)
+@Operations.implementation_for(ops.AddEnumOp)
 def add_enum_type(operations, operation):
     postgresql.ENUM(*operation.values, name=operation.enum_name).create(
         operations.get_bind())
 
 
-@ Operations.implementation_for(ops.DropEnumOp)
+@Operations.implementation_for(ops.DropEnumOp)
 def drop_enum_type(operations, operation):
     postgresql.ENUM(*operation.values, name=operation.enum_name).drop(
         operations.get_bind())

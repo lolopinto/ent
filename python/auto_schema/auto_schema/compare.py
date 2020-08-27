@@ -5,10 +5,6 @@ import sqlalchemy as sa
 import pprint
 from sqlalchemy.dialects import postgresql
 
-# just gonna build something generic
-
-
-# hmm, we check inverse_edge for some reason
 
 @comparators.dispatch_for("schema")
 def compare_edges(autogen_context, upgrade_ops, schemas):
@@ -18,6 +14,7 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
 
         # so first check if the table exists. if it doesn't, nothing to do here
         # TODO not using schema here either
+        # https://github.com/lolopinto/ent/issues/123
         if not _table_exists(autogen_context):
             continue
 
@@ -148,7 +145,7 @@ def _create_tuple_key(row, pkeys):
 @comparators.dispatch_for('schema')
 def compare_data(autogen_context, upgrade_ops, schemas):
     # TODO not using schema correctly
-    # since we just
+    # https: // github.com/lolopinto/ent/issues/123
 
     data = autogen_context.metadata.info.setdefault("data", {})
 
@@ -160,7 +157,7 @@ def compare_data(autogen_context, upgrade_ops, schemas):
         sch = _get_schema_key(sch)
 
         if not sch in data:
-            pass
+            continue
 
         schema_data = data.get(sch, {})
         for table_name in schema_data:
@@ -205,7 +202,6 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
         db_row = db_rows[t]
         if t in data_rows:
             data_row = data_rows[t]
-            # TODO this doesn't work when a row is missing and None in one place e.g. d
             if db_row != data_row:
                 # check to see if keys are the same
                 # check db since it has all the keys
@@ -245,7 +241,8 @@ def compare_enum(autogen_context, upgrade_ops, schemas):
     db_metadata = sa.MetaData()
     db_metadata.reflect(inspector.bind)
 
-   # TODO schema not being used
+    # TODO schema not being used
+    # https://github.com/lolopinto/ent/issues/123
     for sch in schemas:
         conn_tables = {
             table.name: table for table in db_metadata.sorted_tables}
