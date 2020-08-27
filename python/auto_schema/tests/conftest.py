@@ -293,7 +293,7 @@ def metadata_assoc_edge_config():
 @pytest.fixture
 def metadata_with_no_edges():
     metadata = metadata_assoc_edge_config()
-    metadata.info.setdefault("edges", {})
+    metadata.info["edges"] = {}
     return metadata
 
 
@@ -307,7 +307,7 @@ def metadata_with_one_edge():
         }
     }
 
-    metadata.info.setdefault("edges", edges)
+    metadata.info["edges"] = edges
     return metadata
 
 
@@ -326,7 +326,7 @@ def metadata_with_symmetric_edge():
         }
     }
 
-    metadata.info.setdefault("edges", edges)
+    metadata.info["edges"] = edges
     return metadata
 
 
@@ -341,7 +341,7 @@ def metadata_with_inverse_edge():
         }
     }
 
-    metadata.info.setdefault("edges", edges)
+    metadata.info["edges"] = edges
     return metadata
 
 

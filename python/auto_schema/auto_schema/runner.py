@@ -54,7 +54,7 @@ class Runner(object):
         connection = engine.connect()
 
         edges_map = metadata.info.setdefault("edges", {})
-        edge_op.add_edges_from(connection, list(edges_map['public'].values()))
+        ops_impl.add_edges_from(connection, list(edges_map['public'].values()))
 
     @classmethod
     def exclude_tables(cls):
