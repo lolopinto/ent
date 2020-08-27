@@ -428,7 +428,6 @@ def metadata_with_rainbows_enum_changed(metadata):
     rows[3]['description'] = 'Really Green'
     rows[4]['description'] = 'Navy Blue'
 
-#    data['public']['rainbows']['rows']
     return metadata
 
 
@@ -454,8 +453,105 @@ def complex_enum_table(metadata):
              )
 
 
-@ pytest.fixture
-def metadata_with_enum():
+def roles_table(metadata):
+    sa.Table('roles', metadata,
+             sa.Column('role', sa.String(), nullable=False),
+             sa.PrimaryKeyConstraint('role', name='roles_role_pkey'))
+
+
+def group_members_table(metadata):
+    sa.Table('group_members', metadata,
+             sa.Column('group_id', sa.Integer(), nullable=False),
+             sa.Column('user_id', sa.Integer(), nullable=False),
+             sa.Column('role', sa.String(), nullable=False),
+             sa.Column('data', sa.Text(), nullable=True),
+             # triple primary key!
+             # with a foreign key also
+             sa.PrimaryKeyConstraint(
+                 'group_id', 'user_id', 'role', name='group_member_roles_pkey'),
+             sa.ForeignKeyConstraint(['role'], [
+                                     'roles.role'], name="roles_role_fkey", ondelete="CASCADE"),
+             )
+
+
+def roles_table_info():
+    return {
+        'pkeys': ['role'],
+        'rows': [{'role': v} for v in ['admin', 'member', 'archived_member']]
+    }
+
+
+@pytest.fixture()
+def metadata_with_triple_pkey():
+    metadata = sa.MetaData()
+    roles_table(metadata)
+    group_members_table(metadata)
+
+    data = {
+        'public': {
+            'roles': roles_table_info(),
+            'group_members': {
+                'pkeys': ['group_id', 'user_id', 'role'],
+                'rows': [
+                    {
+                        'group_id': 1, 'user_id': 100, 'role': 'admin',
+                    },
+                    {
+                        'group_id': 1, 'user_id': 200, 'role': 'member',
+                    },
+                    {
+                        'group_id': 1, 'user_id': 200, 'role': 'admin',
+                    },
+                ]
+            }
+        }
+    }
+    metadata.info['data'] = data
+    return metadata
+
+
+def metadata_with_triple_pkey_with_rows_removed(metadata):
+    data = {
+        'public': {
+            'roles': roles_table_info(),
+            'group_members': {
+                'pkeys': ['group_id', 'user_id', 'role'],
+                'rows': [
+                    {
+                        'group_id': 1, 'user_id': 100, 'role': 'admin',
+                    },
+                    # remove everything with user 200
+                ]
+            }
+        }
+    }
+    metadata.info['data'] = data
+
+    return metadata
+
+
+def metadata_with_triple_pkey_with_rows_changed(metadata):
+    data = {
+        'public': {
+            'roles': roles_table_info(),
+            'group_members': {
+                'pkeys': ['group_id', 'user_id', 'role'],
+                'rows': [
+                    {
+                        # add data which wasn't previously there
+                        'group_id': 1, 'user_id': 100, 'role': 'admin', 'data': '123'
+                    },
+                ]
+            }
+        }
+    }
+    metadata.info['data'] = data
+
+    return metadata
+
+
+@pytest.fixture
+def metadata_with_enum_type():
     metadata = sa.MetaData()
 
     rainbow = ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')

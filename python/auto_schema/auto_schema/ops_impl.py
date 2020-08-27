@@ -80,25 +80,34 @@ def remove_rows(operations, operation):
             table.delete().where(table.c[key].in_(keys))
         )
     else:
-        raise ValueError("don't support multiple pkeys yet")
+        # multiple clauses. send a sql statement for each row
+        for row in operation.rows:
+            clauses = [table.c[key] == row[key] for key in operation.pkeys]
+            connection.execute(
+                table.delete().where(sa.sql.expression.and_(*clauses))
+            )
 
 
-@Operations.implementation_for(ops.ModifyRowsOp)
+@ Operations.implementation_for(ops.ModifyRowsOp)
 def modify_rows(operations, operation):
     connection = operations.get_bind()
     table = _get_table(connection, operation.table_name)
 
-    if len(operation.pkeys) != 1:
-        raise ValueError("don't support multiple pkeys yet")
+    if len(operation.pkeys) == 1:
+        key = operation.pkeys[0]
+        for row in operation.rows:
+            connection.execute(
+                table.update().where(table.c[key] == row[key]).values(row)
+            )
+    else:
+        for row in operation.rows:
+            clauses = [table.c[key] == row[key] for key in operation.pkeys]
+            connection.execute(
+                table.update().where(sa.sql.expression.and_(*clauses)).values(row)
+            )
 
-    key = operation.pkeys[0]
-    for row in operation.rows:
-        connection.execute(
-            table.update().where(table.c[key] == row[key]).values(row)
-        )
 
-
-@Operations.implementation_for(ops.AlterEnumOp)
+@ Operations.implementation_for(ops.AlterEnumOp)
 def alter_enum(operations, operation):
     connection = operations.get_bind()
     if operation.before is None:
@@ -113,13 +122,13 @@ def alter_enum(operations, operation):
         )
 
 
-@Operations.implementation_for(ops.AddEnumOp)
+@ Operations.implementation_for(ops.AddEnumOp)
 def add_enum_type(operations, operation):
     postgresql.ENUM(*operation.values, name=operation.enum_name).create(
         operations.get_bind())
 
 
-@Operations.implementation_for(ops.DropEnumOp)
+@ Operations.implementation_for(ops.DropEnumOp)
 def drop_enum_type(operations, operation):
     postgresql.ENUM(*operation.values, name=operation.enum_name).drop(
         operations.get_bind())

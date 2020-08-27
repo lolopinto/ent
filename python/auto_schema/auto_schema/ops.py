@@ -169,7 +169,7 @@ class ModifyRowsOp(MigrateOperation):
         return ModifyRowsOp(self.table_name, self.pkeys, self.old_rows, self.rows, schema=self.schema)
 
     def get_revision_message(self):
-        return "modify rows in table %s" % self.table_name
+        return "modify rows in %s" % self.table_name
 
 
 @Operations.register_operation("alter_enum")

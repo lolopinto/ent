@@ -205,9 +205,15 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
         db_row = db_rows[t]
         if t in data_rows:
             data_row = data_rows[t]
+            # TODO this doesn't work when a row is missing and None in one place e.g. d
             if db_row != data_row:
-                modified_new_rows.append(data_row)
-                modified_old_rows.append(db_row)
+                # check to see if keys are the same
+                # check db since it has all the keys
+                for key in db_row:
+                    if db_row[key] != data_row.get(key, None):
+                        modified_new_rows.append(data_row)
+                        modified_old_rows.append(db_row)
+                        break
         else:
             deleted_rows.append(db_row)
 
