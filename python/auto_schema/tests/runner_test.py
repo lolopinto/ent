@@ -119,14 +119,15 @@ def validate_metadata_after_change(r, old_metadata):
             assert db_table.name == 'alembic_version'
 
 
-def run_and_validate_with_standard_metadata_table(r, metadata_with_table, new_table_name='accounts'):
+def run_and_validate_with_standard_metadata_tables(r, metadata_with_table, new_table_names=['accounts']):
     r.run()
 
     # should have the expected file with the expected tables
     assert_num_files(r, 1)
-    tables = [new_table_name, 'alembic_version']
+    tables = ['alembic_version']
+    [tables.append(t) for t in new_table_names]
     tables.sort()
-    assert_num_tables(r, 2, tables)
+    assert_num_tables(r, len(tables), tables)
 
     validate_metadata_after_change(r, metadata_with_table)
 
@@ -474,12 +475,12 @@ class BaseTestRunner(object):
     @pytest.mark.usefixtures("metadata_with_table")
     def test_new_table_add(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
-        run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
     @pytest.mark.usefixtures("test_metadata_with_multi_column_index")
     def test_new_table_with_multi_column_index(self, new_test_runner, test_metadata_with_multi_column_index):
         r = new_test_runner(test_metadata_with_multi_column_index)
-        run_and_validate_with_standard_metadata_table(
+        run_and_validate_with_standard_metadata_tables(
             r, test_metadata_with_multi_column_index)
 
         tables = r.get_metadata().sorted_tables
@@ -493,10 +494,10 @@ class BaseTestRunner(object):
     @pytest.mark.usefixtures("metadata_with_multi_column_constraint")
     def test_new_table_with_multi_column_constraint(self, new_test_runner, metadata_with_multi_column_constraint):
         r = new_test_runner(metadata_with_multi_column_constraint)
-        run_and_validate_with_standard_metadata_table(
+        run_and_validate_with_standard_metadata_tables(
             r,
             metadata_with_multi_column_constraint,
-            new_table_name='user_friends_edge',
+            new_table_names=['user_friends_edge'],
         )
 
         tables = r.get_metadata().sorted_tables
@@ -510,13 +511,13 @@ class BaseTestRunner(object):
     @pytest.mark.usefixtures("metadata_with_table_with_index")
     def test_new_table_with_index_added(self, new_test_runner, metadata_with_table_with_index):
         r = new_test_runner(metadata_with_table_with_index)
-        run_and_validate_with_standard_metadata_table(
+        run_and_validate_with_standard_metadata_tables(
             r, metadata_with_table_with_index)
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_sequential_table_adds(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
-        run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
         # recreate runner with last runner
         r2 = recreate_with_new_metadata(
@@ -632,20 +633,20 @@ class BaseTestRunner(object):
     @pytest.mark.usefixtures("metadata_with_nullable_fields")
     def test_new_table_with_nullable_fields(self, new_test_runner, metadata_with_nullable_fields):
         r = new_test_runner(metadata_with_nullable_fields)
-        run_and_validate_with_standard_metadata_table(
+        run_and_validate_with_standard_metadata_tables(
             r, metadata_with_nullable_fields)
 
     @pytest.mark.usefixtures("metadata_with_foreign_key_to_same_table")
     def test_with_foreign_key_to_same_table(self, new_test_runner, metadata_with_foreign_key_to_same_table):
         r = new_test_runner(metadata_with_foreign_key_to_same_table)
-        run_and_validate_with_standard_metadata_table(
-            r, metadata_with_foreign_key_to_same_table, new_table_name="assoc_edge_config")
+        run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_foreign_key_to_same_table, new_table_names=["assoc_edge_config"])
 
     @pytest.mark.usefixtures('metadata_with_request_data')
     def test_saving_data(self, new_test_runner, metadata_with_request_data):
         r = new_test_runner(metadata_with_request_data)
-        run_and_validate_with_standard_metadata_table(
-            r, metadata_with_request_data, new_table_name="request_statuses")
+        run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_request_data, new_table_names=["request_statuses"])
 
         validate_data_from_metadata(metadata_with_request_data, r)
 
@@ -679,6 +680,19 @@ class BaseTestRunner(object):
         validate_metadata_after_change(r3, new_metadata)
         validate_data_from_metadata(new_metadata, r3)
 
+    @pytest.mark.usefixtures('metadata_with_multiple_data_tables')
+    def test_saving_complex_data(self, new_test_runner, metadata_with_multiple_data_tables):
+        r = new_test_runner(metadata_with_multiple_data_tables)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_with_multiple_data_tables,
+            # got 3 tables
+            new_table_names=["request_statuses", "rainbows"]
+        )
+
+        # data is as expected
+        validate_data_from_metadata(metadata_with_multiple_data_tables, r)
+
 
 class TestPostgresRunner(BaseTestRunner):
 
@@ -702,7 +716,7 @@ class TestPostgresRunner(BaseTestRunner):
         ])
     def test_column_attr_change(self, new_test_runner, metadata_with_table, new_metadata_func, expected_message):
         r = new_test_runner(metadata_with_table)
-        run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
         # recreate runner with last path and modified metadata
         new_metadata_func(metadata_with_table)
@@ -724,7 +738,7 @@ class TestPostgresRunner(BaseTestRunner):
     @pytest.mark.usefixtures("metadata_with_table")
     def test_unique_constraint_added(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
-        run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
         r2 = recreate_with_new_metadata(
             r, new_test_runner, metadata_with_table, conftest.metadata_with_unique_constraint_added)
@@ -742,7 +756,7 @@ class TestPostgresRunner(BaseTestRunner):
     @pytest.mark.usefixtures('metadata_with_enum')
     def test_enum_type(self, new_test_runner, metadata_with_enum):
         r = new_test_runner(metadata_with_enum)
-        run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_enum)
 
     @pytest.mark.usefixtures("metadata_with_enum")
     @pytest.mark.parametrize(
@@ -757,7 +771,7 @@ class TestPostgresRunner(BaseTestRunner):
     )
     def test_enum_additions(self, new_test_runner, metadata_with_enum, new_metadata_func, expected_diff):
         r = new_test_runner(metadata_with_enum)
-        run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_enum)
 
         # TODO this isn't ideal
         # need a good way to commit in between for separate steps in transaction to work
@@ -778,7 +792,7 @@ class TestPostgresRunner(BaseTestRunner):
     @pytest.mark.usefixtures("metadata_with_enum")
     def test_remove_enum_value(self, new_test_runner, metadata_with_enum):
         r = new_test_runner(metadata_with_enum)
-        run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_enum)
 
         # TODO this isn't ideal
         # need a good way to commit in between for separate steps in transaction to work
@@ -794,7 +808,7 @@ class TestPostgresRunner(BaseTestRunner):
     @pytest.mark.usefixtures("metadata_with_table")
     def test_remove_column(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
-        run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
         new_metadata = conftest.metadata_with_removed_column()
         new_metadata.bind = r.get_connection()
@@ -813,7 +827,7 @@ class TestPostgresRunner(BaseTestRunner):
     @pytest.mark.usefixtures("metadata_with_table")
     def test_new_enum_column_added_then_removed(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
-        run_and_validate_with_standard_metadata_table(r, metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
         # add column with enum
         new_metadata = conftest.metadata_with_new_enum_column()
@@ -854,7 +868,7 @@ class TestPostgresRunner(BaseTestRunner):
     @pytest.mark.usefixtures("metadata_with_enum")
     def test_drop_table_with_enum(self, new_test_runner, metadata_with_enum):
         r = new_test_runner(metadata_with_enum)
-        run_and_validate_with_standard_metadata_table(r, metadata_with_enum)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_enum)
 
         # no tables
         new_metadata = sa.MetaData()

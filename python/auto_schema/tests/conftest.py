@@ -396,6 +396,32 @@ def metadata_with_rows_added(metadata):
     return metadata
 
 
+@pytest.fixture
+def metadata_with_multiple_data_tables():
+    metadata = metdata_enum_table()
+    complex_enum_table(metadata)
+
+    data = {
+        'public': {
+            'request_statuses': status_table_info(default_enum_values()),
+            'rainbows': {
+                'pkeys': ['color'],
+                'rows': [
+                    {'color': 'red', 'description': "Red"},
+                    {'color': 'orange', 'description': "Orange"},
+                    {'color': 'yellow', 'description': "Yellow"},
+                    {'color': 'green', 'description': "Green"},
+                    {'color': 'blue', 'description': "Blue"},
+                    {'color': 'indigo', 'description': "Indigo"},
+                    {'color': 'violet', 'description': "Violet"},
+                ]
+            }
+        }
+    }
+    metadata.info["data"] = data
+    return metadata
+
+
 def metdata_enum_table():
     metadata = sa.MetaData()
     enum_table(metadata)
@@ -407,6 +433,14 @@ def enum_table(metadata):
              sa.Column('status', sa.String(), nullable=False),
              sa.PrimaryKeyConstraint(
                  "status", name="request_status_pkey"),
+             )
+
+
+def complex_enum_table(metadata):
+    sa.Table('rainbows', metadata,
+             sa.Column('color', sa.String(), nullable=False),
+             sa.Column('description', sa.String(), nullable=False),
+             sa.PrimaryKeyConstraint('color', name='rainbows_color_pkey')
              )
 
 
