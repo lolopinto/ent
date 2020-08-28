@@ -27,6 +27,15 @@ class Command(object):
         alembic_cfg.set_section_option(
             "alembic:exclude", "tables", runner.Runner.exclude_tables())
 
+        # for default formatting
+        alembic_cfg.set_section_option('post_write_hooks', 'hooks', 'autopep8')
+        alembic_cfg.set_section_option(
+            'post_write_hooks', 'autopep8.type', 'console_scripts')
+        alembic_cfg.set_section_option(
+            'post_write_hooks', 'autopep8.entrypoint', 'autopep8')
+        alembic_cfg.set_section_option(
+            'post_write_hooks', 'autopep8.options', '--in-place')
+
         self.alembic_cfg = alembic_cfg
 
         # pass connection instead of re-creating it and using a sqlalchemy_url file

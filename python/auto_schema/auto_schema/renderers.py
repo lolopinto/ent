@@ -20,17 +20,16 @@ def render_remove_edges(autogen_context, op):
 def render_modify_edge(autogen_context, op):
     return (
         "op.modify_edge(\n"
-        "%(indent)s'%(edge_type)s',\n"
-        "%(indent)s%(edge)s\n"
+        "'%(edge_type)s',\n"
+        "%(edge)s\n"
         ")" % {
-            "indent": "  ",
             "edge_type": op.edge_type,
             "edge": _render_edge(op.new_edge),
         }
     )
 
 
-def _render_edge(edge, indent="  "):
+def _render_edge(edge):
     kv_pairs = []
     # get each line for each edge
     for k, v in edge.items():
@@ -41,10 +40,7 @@ def _render_edge(edge, indent="  "):
 
     # get the rendering for an edge
     #     {"k": v, "k2": v2}
-    return "%(indent)s{%(edge)s},\n" % {
-        "indent": indent,
-        "edge": ", ".join(kv_pairs),
-    }
+    return "{%s},\n" % ", ".join(kv_pairs)
 
 
 def _render_edge_from_edges(edge_dicts, edge_fn_name):
@@ -53,56 +49,45 @@ def _render_edge_from_edges(edge_dicts, edge_fn_name):
     for edge in edge_dicts:
         # append the code for each edge into list. we should end with something like:
         edges.append(
-            # indent 4 spaces instead of 2
-            _render_edge(edge, indent="    ")
+            _render_edge(edge)
         )
 
     # splice the edges to be rendered
     return (
-        "%(edge_fn_name)s(\n"
-        "%(indent)s[\n"
+        "%(edge_fn_name)s([\n"
         "%(edges)s"
-        "%(indent)s]\n"
-        ")" % {
+        "])\n" % {
             "edge_fn_name": edge_fn_name,
-            "indent": "  ",
             "edges": "".join(edges),
         }
     )
 
 
 def _render_row_from_op(row_fn_name, table_name, pkeys, rows):
-    # indent 4 spaces instead of 2
-    rows = [_render_row(row, indent="    ") for row in rows]
+    rows = [_render_row(row) for row in rows]
 
     # splice the rows to be rendered
     return (
-        "%(row_fn_name)s('%(table_name)s', %(pkeys)s, \n"
-        "%(indent)s[\n"
+        "%(row_fn_name)s('%(table_name)s', %(pkeys)s, [\n"
         "%(rows)s"
-        "%(indent)s]\n"
-        ")" % {
+        "])" % {
             "row_fn_name": row_fn_name,
             "table_name": table_name,
-            "indent": "    ",
             "pkeys": util.render_list_csv_as_list(pkeys),
             "rows": "".join(rows),
         }
     )
 
 
-def _render_row(row, indent="  "):
+def _render_row(row):
     kv_pairs = []
-    # get each line for each edge
+    # get each line for each row
     for k, v in row.items():
         kv_pairs.append("'%s': %r" % (k, v))
 
     # get the rendering for a row
     #     {"k": v, "k2": v2}
-    return "%(indent)s{%(row)s},\n" % {
-        "indent": indent,
-        "row": ", ".join(kv_pairs),
-    }
+    return "{%s},\n" % ", ".join(kv_pairs)
 
 
 @renderers.dispatch_for(ops.AddRowsOp)
@@ -117,21 +102,15 @@ def render_remove_edges(autogen_context, op):
 
 @renderers.dispatch_for(ops.ModifyRowsOp)
 def render_modify_rows(autogen_context, op):
-    # indent 4 spaces instead of 2
-    rows = [_render_row(row, indent="    ") for row in op.rows]
-    # indent 4 spaces instead of 2
-    old_rows = [_render_row(row, indent="    ") for row in op.old_rows]
+    rows = [_render_row(row) for row in op.rows]
+    old_rows = [_render_row(row) for row in op.old_rows]
 
     return (
-        "op.modify_rows('%(table_name)s', %(pkeys)s, \n"
-        "%(indent)s[\n"
-        "%(rows)s],\n"
-        "[\n%(old_rows)s],"
-        "%(indent)s\n"
-        ")" % {
-            "indent": "  ",
+        "op.modify_rows('%(table_name)s', %(pkeys)s, [\n"
+        "%(rows)s],"
+        "[\n%(old_rows)s"
+        "])" % {
             "table_name": op.table_name,
-            "indent": "    ",
             "pkeys": util.render_list_csv_as_list(op.pkeys),
             "rows": "".join(rows),
             "old_rows": "".join(old_rows),
@@ -143,20 +122,20 @@ def render_modify_rows(autogen_context, op):
 def render_alter_enum(autogen_context, op):
     if op.before is None:
         return (
+            # manual indentation
             "with op.get_context().autocommit_block():\n"
-            "%(indent)sop.alter_enum('%(enum_name)s', '%(value)s')" % {
+            "    op.alter_enum('%(enum_name)s', '%(value)s')" % {
                 "enum_name": op.enum_name,
                 "value": op.value,
-                "indent": "  ",
             }
         )
     else:
         return (
+            # manual indentation
             "with op.get_context().autocommit_block():\n"
-            "%(indent)sop.alter_enum('%(enum_name)s', '%(value)s', before='%(before)s')" % {
+            "    op.alter_enum('%(enum_name)s', '%(value)s', before='%(before)s')" % {
                 "enum_name": op.enum_name,
                 "value": op.value,
-                "indent": "  ",
                 "before": op.before,
             }
         )
