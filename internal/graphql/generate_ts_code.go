@@ -677,6 +677,10 @@ func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 		case enttype.Node:
 			importPath = getImportPathFromNodeName(typ)
 			typ = fmt.Sprintf("%sType", typ)
+			break
+		case enttype.EntGraphQL:
+			importPath = codegen.GraphQLPackage
+			break
 		default:
 			panic(fmt.Sprintf("unsupported Import Type %v", imp.ImportType))
 		}

@@ -50,6 +50,8 @@ const (
 	GraphQL ImportType = "graphql"
 	Node    ImportType = "node"
 	Enum    ImportType = "enum"
+	// EntGraphQL refers to graphql scalars or things in the ent graphql space
+	EntGraphQL ImportType = "ent_graphql"
 )
 
 // for imports that are not from "graphql"
@@ -230,7 +232,7 @@ func (t *NullableBoolType) GetTSGraphQLImports() []FileImport {
 type idType struct{}
 
 func (t *idType) GetDBType() string {
-	return "UUID()"
+	return "postgresql.UUID()"
 }
 
 func (t *idType) GetZeroValue() string {
@@ -444,7 +446,13 @@ func (t *TimeType) GetNullableType() Type {
 }
 
 func (t *TimeType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{NewGQLFileImport("GraphQLNonNull"), NewGQLFileImport("GraphQLTime")}
+	return []FileImport{
+		NewGQLFileImport("GraphQLNonNull"),
+		{
+			Type:       "GraphQLTime",
+			ImportType: EntGraphQL,
+		},
+	}
 }
 
 type NullableTimeType struct {
@@ -468,7 +476,12 @@ func (t *NullableTimeType) GetNonNullableType() Type {
 }
 
 func (t *NullableTimeType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{NewGQLFileImport("GraphQLTime")}
+	return []FileImport{
+		{
+			Type:       "GraphQLTime",
+			ImportType: EntGraphQL,
+		},
+	}
 }
 
 type typeConfig struct {
@@ -770,21 +783,39 @@ func (t *MapType) GetGraphQLType() string {
 type enumType struct {
 }
 
-func (t *enumType) GetDBType() string {
-	// string type for now
-	// although we'll eventually want this to be customizable
-	return "sa.Text()"
-}
-
 func (t *enumType) GetZeroValue() string {
 	panic("enum type not supported in go-lang yet")
 }
 
+func (t *enumType) getDBTypeForEnumDBType(values []string, typ string) string {
+	var sb strings.Builder
+	for _, v := range values {
+		sb.WriteString(strconv.Quote(v))
+		sb.WriteString(", ")
+	}
+	// TODO eventually provide option to define enum type
+	// for now we take it from TSType if that's given since it makes sense to be consistent with that
+	// if not provided, we use the name
+	// we also need DBTypeName or something too
+	enumType := strconv.Quote(strcase.ToSnake(typ))
+	sb.WriteString(fmt.Sprintf("name=%s", enumType))
+	return fmt.Sprintf("postgresql.ENUM(%s)", sb.String())
+
+}
+
 type EnumType struct {
 	enumType
+	EnumDBType  bool
 	Type        string
 	GraphQLType string
 	Values      []string
+}
+
+func (t *EnumType) GetDBType() string {
+	if t.EnumDBType {
+		return t.getDBTypeForEnumDBType(t.Values, t.Type)
+	}
+	return "sa.Text()"
 }
 
 func (t *EnumType) GetEnumValues() []string {
@@ -834,9 +865,17 @@ func (t *EnumType) GetTSGraphQLImports() []FileImport {
 
 type NullableEnumType struct {
 	enumType
+	EnumDBType  bool
 	Type        string
 	GraphQLType string
 	Values      []string
+}
+
+func (t *NullableEnumType) GetDBType() string {
+	if t.EnumDBType {
+		return t.getDBTypeForEnumDBType(t.Values, t.Type)
+	}
+	return "sa.Text()"
 }
 
 func (t *NullableEnumType) GetEnumValues() []string {

@@ -307,7 +307,7 @@ export class EventBase {
     });
   }
 
-  loadCreator(): Promise<User | null> {
+  async loadCreator(): Promise<User | null> {
     return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
   }
 

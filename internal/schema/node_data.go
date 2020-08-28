@@ -62,7 +62,7 @@ func newNodeData(packageName string) *NodeData {
 	nodeData := &NodeData{
 		PackageName: packageName,
 		NodeInfo:    nodeinfo.GetNodeInfo(packageName),
-		EdgeInfo:    edge.NewEdgeInfo(),
+		EdgeInfo:    edge.NewEdgeInfo(packageName),
 		ActionInfo:  action.NewActionInfo(),
 	}
 	nodeData.ConstantGroups = make(map[string]*ConstGroupInfo)

@@ -23,21 +23,23 @@ import (
 type EdgeInfo struct {
 	// TODO hide FieldEdges etc
 	// make them accessors since we want to control mutations
-	FieldEdges     []*FieldEdge
-	fieldEdgeMap   map[string]*FieldEdge
-	ForeignKeys    []*ForeignKeyEdge
-	foreignKeyMap  map[string]*ForeignKeyEdge
-	Associations   []*AssociationEdge
-	assocMap       map[string]*AssociationEdge
-	AssocGroups    []*AssociationEdgeGroup
-	assocGroupsMap map[string]*AssociationEdgeGroup
+	FieldEdges        []*FieldEdge
+	fieldEdgeMap      map[string]*FieldEdge
+	ForeignKeys       []*ForeignKeyEdge
+	foreignKeyMap     map[string]*ForeignKeyEdge
+	Associations      []*AssociationEdge
+	assocMap          map[string]*AssociationEdge
+	AssocGroups       []*AssociationEdgeGroup
+	assocGroupsMap    map[string]*AssociationEdgeGroup
+	SourcePackageName string
 
 	// don't want name overlap even when being added programmatically because we use those names in all kinds of places even graphql
 	keys map[string]bool
 }
 
-func NewEdgeInfo() *EdgeInfo {
+func NewEdgeInfo(packageName string) *EdgeInfo {
 	ret := &EdgeInfo{}
+	ret.SourcePackageName = packageName
 	ret.fieldEdgeMap = make(map[string]*FieldEdge)
 	ret.foreignKeyMap = make(map[string]*ForeignKeyEdge)
 	ret.assocMap = make(map[string]*AssociationEdge)
@@ -52,7 +54,7 @@ func (e *EdgeInfo) HasAssociationEdges() bool {
 
 func (e *EdgeInfo) addEdge(edge Edge) {
 	if e.keys[edge.GetEdgeName()] {
-		panic(fmt.Errorf("tried to add a new edge named %s when name already taken", edge.GetEdgeName()))
+		panic(fmt.Errorf("tried to add a new edge named %s to node %s when name already taken", edge.GetEdgeName(), e.SourcePackageName))
 	}
 	e.keys[edge.GetEdgeName()] = true
 	fieldEdge, ok := edge.(*FieldEdge)
@@ -96,31 +98,34 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 	return e.assocGroupsMap[groupStatusName]
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string) {
-	e.addFieldEdgeFromInfo(fieldName, configName, "")
+func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool) {
+	e.addFieldEdgeFromInfo(fieldName, configName, "", nullable)
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName, configName, inverseEdgeName string) {
-	e.addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName)
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName, configName, inverseEdgeName string, nullable bool) {
+	e.addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName, nullable)
 }
 
-func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string) {
-	r := regexp.MustCompile("([A-Za-z]+)ID")
-	match := r.FindStringSubmatch(fieldName)
-
-	if len(match) != 2 {
+func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, nullable bool) {
+	if !strings.HasSuffix(fieldName, "ID") {
 		// TODO make this more flexible...
-		panic("expected field name to end with ID")
+		panic(fmt.Sprintf("expected field name to end with ID. FieldName was %s", fieldName))
+	}
+	trim := strings.TrimSuffix(fieldName, "ID")
+	if trim == "" {
+		trim = fieldName
 	}
 
 	edge := &FieldEdge{
-		FieldName: fieldName,
+		FieldName:   fieldName,
+		TSFieldName: strcase.ToLowerCamel(fieldName),
 		// Edge name: User from UserID field
 		commonEdgeInfo: getCommonEdgeInfo(
-			match[1],
+			trim,
 			schemaparser.GetEntConfigFromEntConfig(configName),
 		),
 		InverseEdgeName: inverseEdgeName,
+		Nullable:        nullable,
 	}
 
 	e.addEdge(edge)
@@ -189,7 +194,9 @@ func (e *commonEdgeInfo) GraphQLEdgeName() string {
 type FieldEdge struct {
 	commonEdgeInfo
 	FieldName       string
+	TSFieldName     string
 	InverseEdgeName string
+	Nullable        bool
 }
 
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
@@ -435,7 +442,7 @@ func ParseEdgesFunc(packageName string, fn *ast.FuncDecl) (*EdgeInfo, error) {
 }
 
 func EdgeInfoFromInput(packageName string, node *input.Node) (*EdgeInfo, error) {
-	edgeInfo := NewEdgeInfo()
+	edgeInfo := NewEdgeInfo(packageName)
 
 	for _, edge := range node.AssocEdges {
 		edgeInfo.addEdge(assocEdgeFromInput(packageName, node, edge))

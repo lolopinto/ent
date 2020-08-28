@@ -116,7 +116,7 @@ func (f *Field) GetEntType() enttype.EntType {
 	case JSON:
 		return &enttype.RawJSONType{}
 
-	case StringEnum:
+	case StringEnum, Enum:
 		if f.Type.Type == "" {
 			panic("enum type name is required")
 		}
@@ -125,12 +125,14 @@ func (f *Field) GetEntType() enttype.EntType {
 		}
 		if f.Nullable {
 			return &enttype.NullableEnumType{
+				EnumDBType:  f.Type.DBType == Enum,
 				Type:        f.Type.Type,
 				GraphQLType: f.Type.GraphQLType,
 				Values:      f.Type.Values,
 			}
 		}
 		return &enttype.EnumType{
+			EnumDBType:  f.Type.DBType == Enum,
 			Type:        f.Type.Type,
 			GraphQLType: f.Type.GraphQLType,
 			Values:      f.Type.Values,

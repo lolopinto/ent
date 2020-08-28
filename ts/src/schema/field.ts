@@ -169,6 +169,8 @@ export interface EnumOptions extends FieldOptions {
 
   tsType?: string;
   graphQLType?: string;
+
+  createEnumType?: boolean;
 }
 
 export class EnumField extends BaseField implements Field {
@@ -178,9 +180,8 @@ export class EnumField extends BaseField implements Field {
   constructor(options: EnumOptions) {
     super();
     this.type = {
-      // stored as a string to start.
-      // will provide option to store as Enum eventually
-      dbType: DBType.StringEnum,
+      // if createEnumType boolean, we create postgres enum otherwise we use a string for it
+      dbType: options.createEnumType ? DBType.Enum : DBType.StringEnum,
       values: options.values,
       type: options.tsType || options.name,
       graphQLType: options.graphQLType || options.name,

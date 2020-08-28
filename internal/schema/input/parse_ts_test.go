@@ -1,14 +1,12 @@
 package input_test
 
 import (
-	"io/ioutil"
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -83,23 +81,7 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 
 	for key, tt := range testCases {
 		t.Run(key, func(t *testing.T) {
-			dirPath, err := ioutil.TempDir(absPath, "project")
-			// delete temporary created file
-			defer os.RemoveAll(dirPath)
-			require.NoError(t, err)
-
-			schemaDir := filepath.Join(dirPath, "src", "schema")
-			require.NoError(t, os.MkdirAll(schemaDir, os.ModePerm))
-
-			for fileName, contents := range tt.code {
-				path := filepath.Join(schemaDir, fileName)
-				require.NoError(t, ioutil.WriteFile(path, []byte(contents), os.ModePerm))
-			}
-
-			schema, err := input.ParseSchemaFromTSDir(dirPath, true)
-			require.NoError(t, err)
-
-			require.NotNil(t, schema)
+			schema := testhelper.ParseInputSchemaForTest(t, absPath, tt.code)
 
 			require.Len(t, schema.Nodes, len(tt.expectedOutput))
 
@@ -212,9 +194,5 @@ func assertStrEqual(t *testing.T, key, expectedValue string, value *string) {
 }
 
 func getCodeWithSchema(code string) string {
-	schemaPath := input.GetAbsoluteSchemaPathForTest()
-	fieldPath := strings.Replace(schemaPath, "schema", "field", 1)
-
-	r := strings.NewReplacer("{schema}", schemaPath, "{field}", fieldPath)
-	return r.Replace(code)
+	return testhelper.GetCodeWithSchema(code)
 }

@@ -568,8 +568,8 @@ func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.Node
 			// store in the db from string to UUID. This only works the first time the table
 			// is defined.
 			// Need to handle uuid as a first class type in Config files and/or handle the conversion from string to uuid after the fact
-			if fkeyCol.DBType == "UUID()" && col.DBType == "sa.Text()" {
-				col.DBType = "UUID()"
+			if fkeyCol.DBType == "postgresql.UUID()" && col.DBType == "sa.Text()" {
+				col.DBType = "postgresql.UUID()"
 			}
 			break
 		}
@@ -643,7 +643,7 @@ func (s *dbSchema) getID1Column() *dbColumn {
 	return s.getColumn(
 		"ID1",
 		"id1",
-		"UUID()",
+		"postgresql.UUID()",
 		[]string{
 			"nullable=False",
 		},
@@ -667,7 +667,7 @@ func (s *dbSchema) getEdgeTypeColumn() *dbColumn {
 	return s.getColumn(
 		"EdgeType",
 		"edge_type",
-		"UUID()",
+		"postgresql.UUID()",
 		[]string{
 			"nullable=False",
 		},
@@ -679,7 +679,7 @@ func (s *dbSchema) getID2Column() *dbColumn {
 	return s.getColumn(
 		"ID2",
 		"id2",
-		"UUID()",
+		"postgresql.UUID()",
 		[]string{
 			"nullable=False",
 		},
@@ -752,7 +752,7 @@ func (s *dbSchema) getInverseEdgeTypeColumn() *dbColumn {
 	return s.getColumn(
 		"InverseEdgeType",
 		"inverse_edge_type",
-		"UUID()",
+		"postgresql.UUID()",
 		[]string{
 			"nullable=True",
 		},

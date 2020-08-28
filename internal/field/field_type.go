@@ -192,7 +192,7 @@ func (f *Field) AddForeignKeyFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
 		panic(fmt.Errorf("invalid field %s added", f.FieldName))
 	}
 
-	edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Config)
+	edgeInfo.AddFieldEdgeFromForeignKeyInfo(f.FieldName, fkeyInfo.Config, f.Nullable())
 }
 
 func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
@@ -201,7 +201,7 @@ func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
 		panic(fmt.Errorf("invalid field %s added", f.FieldName))
 	}
 
-	edgeInfo.AddFieldEdgeFromFieldEdgeInfo(f.FieldName, fieldEdgeInfo.Config, fieldEdgeInfo.EdgeName)
+	edgeInfo.AddFieldEdgeFromFieldEdgeInfo(f.FieldName, fieldEdgeInfo.Config, fieldEdgeInfo.EdgeName, f.Nullable())
 }
 
 func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, nodeName string) {

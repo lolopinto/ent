@@ -129,7 +129,7 @@ export class ContactBase {
     return ContactBase.getSchemaFields().get(key);
   }
 
-  loadUser(): Promise<User | null> {
+  async loadUser(): Promise<User | null> {
     return loadEnt(this.viewer, this.userID, User.loaderOptions());
   }
 

@@ -480,6 +480,68 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
+		"db enum with custom type": {
+			code: map[string]string{
+				"request.ts": getCodeWithSchema(`
+				import {Schema, Field, EnumType} from "{schema}";
+
+				export default class Request implements Schema {
+					fields: Field[] = [
+						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
+					]
+				}`),
+			},
+			expectedOutput: map[string]node{
+				"Request": {
+					fields: []field{
+						{
+							name: "Status",
+							typ: &input.FieldType{
+								DBType: input.Enum,
+								Values: []string{
+									"OPEN",
+									"PENDING",
+									"CLOSED",
+								},
+								Type:        "RequestStatus",
+								GraphQLType: "RequestStatus",
+							},
+						},
+					},
+				},
+			},
+		},
+		"db enum ": {
+			code: map[string]string{
+				"request.ts": getCodeWithSchema(`
+				import {Schema, Field, EnumType} from "{schema}";
+
+				export default class Request implements Schema {
+					fields: Field[] = [
+						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], createEnumType: true}),
+					]
+				}`),
+			},
+			expectedOutput: map[string]node{
+				"Request": {
+					fields: []field{
+						{
+							name: "Status",
+							typ: &input.FieldType{
+								DBType: input.Enum,
+								Values: []string{
+									"OPEN",
+									"PENDING",
+									"CLOSED",
+								},
+								Type:        "Status",
+								GraphQLType: "Status",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	runTestCases(t, testCases)

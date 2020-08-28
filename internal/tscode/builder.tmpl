@@ -100,7 +100,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   {{$edge.TSAddMethodName}}(...nodes: Builder<{{$node}}>[]): {{$builder}};
   {{$edge.TSAddMethodName}}(...nodes: ID[] | {{$node}}[] | Builder<{{$node}}>[]): {{$builder}} {
     for (const node of nodes) {
-      if (this.is{{$node}}Builder(node)) {
+      if (this.isBuilder(node)) {
         this.{{$edge.TSAddIDMethodName}}(node);
       } else if (typeof node === "object") {
         this.{{$edge.TSAddIDMethodName}}(node.id);
@@ -197,13 +197,9 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     return result;
   }
 
-  {{ range .GetUniqueNodes -}} 
-    private is{{.Node}}Builder(node: ID | {{.Node}} | Builder<{{.Node}}>): node is Builder<{{.Node}}> {
-      return (node as Builder<{{.Node}}>).placeholderID !== undefined;
-    }
-
-  {{end}}
-
+  private isBuilder(node: ID | {{useImport "Ent"}} | Builder<{{useImport "Ent"}}>): node is Builder<{{useImport "Ent"}}> {
+    return (node as Builder<{{useImport "Ent"}}>).placeholderID !== undefined;
+  }
 }
 
 {{end -}}
