@@ -634,6 +634,80 @@ func TestNullableEnumType(t *testing.T) {
 	})
 }
 
+func TestDataInSchema(t *testing.T) {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		absPath,
+		map[string]string{
+			"role.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, Field, StringType, IntegerType} from "{schema}";
+
+				export default class Role implements Schema {
+					fields: Field[] = [
+						StringType({
+							name: 'role',
+							primaryKey: true,
+						}),
+						IntegerType({
+							name: 'random',
+						}),
+					];
+
+					enumTable = true;
+
+					dbRows = [
+						{
+							role: 'admin',
+							random: 1,
+						},
+						{
+							role: 'member',
+							random: 2,
+						},
+						{
+							role: 'archived_member',
+							random: 3,
+						},
+						{
+							role: 'super_admin',
+							random: 4,
+						},
+						{
+							role: 'owner',
+							random: 5,
+						},
+					];
+				};`),
+		},
+		base.TypeScript,
+	)
+	dbSchema := newDBSchema(schema, "models/configs")
+	templateData := dbSchema.getSchemaForTemplate()
+
+	assert.Len(t, templateData.Data, 1)
+	data := templateData.Data[0]
+
+	roles := []string{
+		"admin",
+		"member",
+		"archived_member",
+		"super_admin",
+		"owner",
+	}
+	var rows []string
+	for idx, role := range roles {
+		// testing with an int to confirm that json.marshall mostly works...
+		// TODO going to need to test for all kinds of types eventually
+		// but it should work for basic types: string, int, float, bool etc
+		rows = append(rows, fmt.Sprintf("{'random': %d, 'role': %s}", idx+1, strconv.Quote(role)))
+	}
+	assert.Equal(t, data.TableName, "roles")
+	assert.Equal(t, data.Pkeys, fmt.Sprintf("[%s]", strconv.Quote("role")))
+	assert.Equal(t, data.Rows, rows)
+}
+
 func testEdgeTable(t *testing.T, table *dbTable) {
 	assert.Equal(t, 7, len(table.Columns), "invalid number of columns for table generated. expected %d, got %d", 7, len(table.Columns))
 

@@ -56,6 +56,8 @@ type NodeData struct {
 	ConstantGroups  map[string]*ConstGroupInfo
 	ActionInfo      *action.ActionInfo
 	HideFromGraphQL bool
+	EnumTable       bool
+	DBRows          []map[string]interface{}
 }
 
 func newNodeData(packageName string) *NodeData {

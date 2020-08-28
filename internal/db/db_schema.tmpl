@@ -27,7 +27,24 @@ edges = {
   }
 }
 
-metadata.info.setdefault("edges", edges)
+metadata.info["edges"] = edges
+
+{{ $length := len .Data }} {{ if ne $length 0 -}}
+  data = {
+    'public':{
+      {{ range .Data -}}
+        '{{.TableName}}': {
+          'pkeys': {{.Pkeys}},
+          'rows': [
+            {{ range .Rows -}}
+              {{ .}}
+            {{ end -}}
+          ],     
+        }
+      {{end -}}
+    }
+  }
+{{end -}}
 
 def get_metadata():
   return metadata

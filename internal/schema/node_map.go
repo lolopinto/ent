@@ -608,6 +608,9 @@ func (m NodeMapInfo) parseInputSchema(schema *input.Schema, lang base.Language) 
 			return nil, err
 		}
 
+		nodeData.EnumTable = node.EnumTable
+		nodeData.DBRows = node.DBRows
+
 		m.addConfig(&NodeDataInfo{
 			NodeData:      nodeData,
 			depgraph:      m.buildPostRunDepgraph(edgeData),
