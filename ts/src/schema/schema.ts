@@ -15,6 +15,14 @@ export default interface Schema {
   edges?: Edge[];
 
   actions?: Action[];
+
+  // treat the single primary key as enums
+  // (it's possible to have other values too..)
+  enumTable?: boolean;
+
+  // data that should be saved in the db corresponding for this table
+  // keys should map to either field names or storage_key
+  dbRows?: { [key: string]: any }[];
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format
@@ -135,7 +143,6 @@ export interface FieldOptions {
   index?: boolean;
   foreignKey?: [string, string];
   fieldEdge?: [string, string]; // replaces fieldEdge above...
-  // TODO put this on id field not all field options?
   primaryKey?: boolean; // can only have one in a schema. Node provides id as default primary key in a schema
 
   // indicates that this can't be edited by the user

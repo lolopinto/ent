@@ -14,14 +14,14 @@ func TestParseFields(t *testing.T) {
 				import { DBType } from "{schema}";
 
 				const User = {
-				fields: [
-					{
-						name: 'FirstName',
-						type: {
-							dbType: DBType.String,
+					fields: [
+						{
+							name: 'FirstName',
+							type: {
+								dbType: DBType.String,
+							},
 						},
-					},
-				]
+					]
 			};
 
 			export default User`),

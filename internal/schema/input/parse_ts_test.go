@@ -17,6 +17,8 @@ type node struct {
 	assocEdges      []assocEdge
 	assocEdgeGroups []assocEdgeGroup
 	actions         []action
+	enumTable       bool
+	dbRows          []map[string]interface{}
 }
 
 type field struct {
@@ -91,6 +93,9 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				require.NotNil(t, node, "node with node name %s not found", nodeName)
 
 				assertStrEqual(t, "tableName", expectedNode.tableName, node.TableName)
+
+				require.Equal(t, expectedNode.enumTable, node.EnumTable)
+				require.Equal(t, expectedNode.dbRows, node.DBRows)
 
 				for j, expField := range expectedNode.fields {
 					field := node.Fields[j]

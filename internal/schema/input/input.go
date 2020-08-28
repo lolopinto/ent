@@ -14,11 +14,13 @@ type Schema struct {
 }
 
 type Node struct {
-	TableName       *string           `json:"tableName"`
-	Fields          []*Field          `json:"fields"`
-	AssocEdges      []*AssocEdge      `json:"assocEdges"`
-	AssocEdgeGroups []*AssocEdgeGroup `json:"assocEdgeGroups"`
-	Actions         []*Action         `json:"actions"`
+	TableName       *string                  `json:"tableName"`
+	Fields          []*Field                 `json:"fields"`
+	AssocEdges      []*AssocEdge             `json:"assocEdges"`
+	AssocEdgeGroups []*AssocEdgeGroup        `json:"assocEdgeGroups"`
+	Actions         []*Action                `json:"actions"`
+	EnumTable       bool                     `json:"enumTable"`
+	DBRows          []map[string]interface{} `json:"dbRows"`
 }
 
 func (n *Node) AddAssocEdge(edge *AssocEdge) {
