@@ -51,12 +51,60 @@ def modify_edge(operations, operation):
     )
 
 
-def _get_table(connection):
+def _get_table(connection, name='assoc_edge_config'):
     # todo there has to be a better way to do this instead of reflecting again
     metadata = sa.MetaData()
     metadata.reflect(connection)
 
-    return metadata.tables['assoc_edge_config']
+    return metadata.tables[name]
+
+
+@Operations.implementation_for(ops.AddRowsOp)
+def add_rows(operations, operation):
+    connection = operations.get_bind()
+    table = _get_table(connection, name=operation.table_name)
+
+    connection.execute(
+        table.insert().values(operation.rows)
+    )
+
+
+@Operations.implementation_for(ops.RemoveRowsOp)
+def remove_rows(operations, operation):
+    connection = operations.get_bind()
+    table = _get_table(connection, name=operation.table_name)
+    if len(operation.pkeys) == 1:
+        key = operation.pkeys[0]
+        keys = [row[key] for row in operation.rows]
+        connection.execute(
+            table.delete().where(table.c[key].in_(keys))
+        )
+    else:
+        # multiple clauses. send a sql statement for each row
+        for row in operation.rows:
+            clauses = [table.c[key] == row[key] for key in operation.pkeys]
+            connection.execute(
+                table.delete().where(sa.sql.expression.and_(*clauses))
+            )
+
+
+@Operations.implementation_for(ops.ModifyRowsOp)
+def modify_rows(operations, operation):
+    connection = operations.get_bind()
+    table = _get_table(connection, operation.table_name)
+
+    if len(operation.pkeys) == 1:
+        key = operation.pkeys[0]
+        for row in operation.rows:
+            connection.execute(
+                table.update().where(table.c[key] == row[key]).values(row)
+            )
+    else:
+        for row in operation.rows:
+            clauses = [table.c[key] == row[key] for key in operation.pkeys]
+            connection.execute(
+                table.update().where(sa.sql.expression.and_(*clauses)).values(row)
+            )
 
 
 @Operations.implementation_for(ops.AlterEnumOp)

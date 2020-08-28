@@ -13,6 +13,8 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
     for sch in schemas:
 
         # so first check if the table exists. if it doesn't, nothing to do here
+        # TODO not using schema here either
+        # https://github.com/lolopinto/ent/issues/123
         if not _table_exists(autogen_context):
             continue
 
@@ -83,6 +85,7 @@ def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mi
         [upgrade_ops.ops.append(alter_op) for alter_op in alter_ops]
 
 
+# why isn't this just metadata.sorted_tables?
 def _table_exists(autogen_context):
     dialect_map = {
         'sqlite': _execute_sqlite_dialect,
@@ -130,6 +133,107 @@ def _meta_to_db_edge_mismatch(meta_edge, db_edge, sch):
     )
 
 
+def _create_tuple_key(row, pkeys):
+    l = []
+    for key in pkeys:
+        if not key in row:
+            raise ValueError("pkey %s was not found in row" % key)
+        l.append(row[key])
+    return tuple(l)
+
+
+@comparators.dispatch_for('schema')
+def compare_data(autogen_context, upgrade_ops, schemas):
+    # TODO not using schema correctly
+    # https: // github.com/lolopinto/ent/issues/123
+
+    data = autogen_context.metadata.info.setdefault("data", {})
+
+    inspector = autogen_context.inspector
+    db_metadata = sa.MetaData()
+    db_metadata.reflect(inspector.bind)
+
+    for sch in schemas:
+        sch = _get_schema_key(sch)
+
+        if not sch in data:
+            continue
+
+        schema_data = data.get(sch, {})
+        for table_name in schema_data:
+            table_data = schema_data[table_name]
+
+            pkeys = table_data.get('pkeys', None)
+            if pkeys is None or not isinstance(pkeys, list):
+                raise ValueError("pkeys needs to be a list")
+
+            rows = table_data.get('rows', None)
+            if rows is None or not isinstance(rows, list):
+                # we want list of dict...
+                raise ValueError("rows needs to be a list")
+
+            # verify that each row is valid + create tuple key
+            data_rows = {_create_tuple_key(row, pkeys): row for row in rows}
+
+            # new table. need to add
+            if not table_name in db_metadata.tables:
+                upgrade_ops.ops.append(ops.AddRowsOp(
+                    table_name, pkeys, rows))
+            else:
+                _compare_db_values(autogen_context, upgrade_ops,
+                                   table_name, pkeys, data_rows)
+
+
+def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_rows):
+    connection = autogen_context.connection
+    query = 'SELECT * FROM %s' % table_name
+
+    db_rows = {}
+    for row in connection.execute(query):
+        d = dict(row)
+        t = _create_tuple_key(d, pkeys)
+        db_rows[t] = d
+
+    deleted_rows = []
+    new_rows = []
+    modified_new_rows = []
+    modified_old_rows = []
+    for t in db_rows:
+        db_row = db_rows[t]
+        if t in data_rows:
+            data_row = data_rows[t]
+            if db_row != data_row:
+                # check to see if keys are the same
+                # check db since it has all the keys
+                for key in db_row:
+                    if db_row[key] != data_row.get(key, None):
+                        modified_new_rows.append(data_row)
+                        modified_old_rows.append(db_row)
+                        break
+        else:
+            deleted_rows.append(db_row)
+
+    for t in data_rows:
+        if t not in db_rows:
+            new_rows.append(data_rows[t])
+
+    if len(new_rows) > 0:
+        upgrade_ops.ops.append(ops.AddRowsOp(
+            table_name, pkeys, new_rows))
+
+    if len(deleted_rows) > 0:
+        upgrade_ops.ops.append(ops.RemoveRowsOp(
+            table_name, pkeys, deleted_rows))
+
+    if len(modified_new_rows) > 0:
+        if len(modified_new_rows) != len(modified_old_rows):
+            raise ValueError(
+                "length of modified old and new rows should be the same")
+
+        upgrade_ops.ops.append(ops.ModifyRowsOp(
+            table_name, pkeys, modified_new_rows, modified_old_rows))
+
+
 @comparators.dispatch_for("schema")
 def compare_enum(autogen_context, upgrade_ops, schemas):
     inspector = autogen_context.inspector
@@ -137,7 +241,8 @@ def compare_enum(autogen_context, upgrade_ops, schemas):
     db_metadata = sa.MetaData()
     db_metadata.reflect(inspector.bind)
 
-   # TODO schema not being used
+    # TODO schema not being used
+    # https://github.com/lolopinto/ent/issues/123
     for sch in schemas:
         conn_tables = {
             table.name: table for table in db_metadata.sorted_tables}

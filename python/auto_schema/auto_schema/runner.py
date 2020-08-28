@@ -16,6 +16,7 @@ from . import ops
 from . import renderers
 from . import compare
 from . import ops_impl
+from . import util
 
 
 class Runner(object):
@@ -53,7 +54,7 @@ class Runner(object):
         connection = engine.connect()
 
         edges_map = metadata.info.setdefault("edges", {})
-        edge_op.add_edges_from(connection, list(edges_map['public'].values()))
+        ops_impl.add_edges_from(connection, list(edges_map['public'].values()))
 
     @classmethod
     def exclude_tables(cls):
@@ -138,11 +139,10 @@ class Runner(object):
 
         def enum():
             if isinstance(item, postgresql.ENUM):
-                enum_values = ["'%s'" % (v) for v in item.enums]
                 # render postgres with create_type=False so that the type is not automatically created
                 # we want an explicit create type and drop type
                 # which we apparently don't get by default
-                return "postgresql.ENUM(%s, name='%s', create_type=False)" % (", ".join(enum_values), item.name)
+                return "postgresql.ENUM(%s, name='%s', create_type=False)" % (util.render_list_csv(item.enums), item.name)
             return False
 
         type_map = {
@@ -244,6 +244,9 @@ class Runner(object):
             'DropConstraintOp': lambda op: 'drop constraint %s from %s' % (op.constraint_name, op.table_name),
             'CreateForeignKeyOp': lambda op: 'create fk constraint %s on %s' % (op.constraint_name, op.source_table),
             # TODO go through all alembic ops and create default values here
+            'AddRowsOp': lambda op: op.get_revision_message(),
+            'RemoveRowsOp': lambda op: op.get_revision_message(),
+            'ModifyRowsOp': lambda op: op.get_revision_message(),
         }
 
         changes = [class_name_map[type(op).__name__](op) for op in diff]

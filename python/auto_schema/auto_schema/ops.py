@@ -21,7 +21,7 @@ class AddEdgesOp(MigrateOperation):
         return RemoveEdgesOp(self.edges, schema=self.schema)
 
     def get_revision_message(self):
-        return _get_revision_message(self.edges, "add edge %s", "add edges %s")
+        return _get_revision_message_for_edges(self.edges, "add edge %s", "add edges %s")
 
 
 @Operations.register_operation("remove_edges")
@@ -44,15 +44,22 @@ class RemoveEdgesOp(MigrateOperation):
         return AddEdgesOp(self.edges, schema=self.schema)
 
     def get_revision_message(self):
-        return _get_revision_message(self.edges, "remove edge %s", "remove edges %s")
+        return _get_revision_message_for_edges(self.edges, "remove edge %s", "remove edges %s")
 
 
-def _get_revision_message(edges, single_edge_msg, multi_edge_msg):
+def _get_revision_message_for_edges(edges, single_edge_msg, multi_edge_msg):
     if len(edges) == 1:
         return single_edge_msg % (edges[0]['edge_name'])
 
     edge_names = [edge['edge_name'] for edge in edges]
     return multi_edge_msg % (", ".join(sorted(edge_names)))
+
+
+def _get_revision_message_for_rows(rows, table_name, single_row_msg, multi_row_msg):
+    if len(rows) == 1:
+        return single_row_msg % (table_name)
+
+    return multi_row_msg % (table_name)
 
 
 @Operations.register_operation("modify_edge")
@@ -79,6 +86,90 @@ class ModifyEdgeOp(MigrateOperation):
     def get_revision_message(self):
         # assume name is not changing. if this is changing, this needs to be smarter
         return "modify edge %s" % (self.old_edge['edge_name'])
+
+
+@Operations.register_operation("add_rows")
+class AddRowsOp(MigrateOperation):
+
+    """Add one or more new rows to table."""
+
+    def __init__(self, table_name, pkeys, rows, schema=None):
+        self.table_name = table_name
+        self.rows = rows
+        self.pkeys = pkeys
+        self.schema = schema
+
+    @classmethod
+    def add_rows(cls, operations, table_name, pkeys, rows, **kw):
+        """Issue an "add rows" operation"""
+
+        op = AddRowsOp(table_name, pkeys, rows, **kw)
+        return operations.invoke(op)
+
+    def reverse(self):
+        return RemoveRowsOp(self.table_name, self.pkeys, self.rows, schema=self.schema)
+
+    def get_revision_message(self):
+        return _get_revision_message_for_rows(self.rows, self.table_name, "add row to %s", "add rows to %s")
+
+
+@Operations.register_operation("remove_rows")
+class RemoveRowsOp(MigrateOperation):
+
+    """Removes one or more existing rows."""
+
+    def __init__(self, table_name, pkeys, rows, schema=None):
+        self.table_name = table_name
+        self.rows = rows
+        self.pkeys = pkeys
+        self.schema = schema
+
+    @classmethod
+    def remove_rows(cls, operations, table_name, pkeys, rows, **kw):
+        """Issue a "remove rows" operation"""
+
+        op = RemoveRowsOp(table_name, pkeys, rows, **kw)
+        return operations.invoke(op)
+
+    def reverse(self):
+        return AddRowsOp(self.table_name, self.pkeys, self.rows, schema=self.schema)
+
+    def get_revision_message(self):
+        return _get_revision_message_for_rows(self.rows, self.table_name, "remove row from %s", "remove rows from %s")
+
+
+def _get_revision_message(edges, single_edge_msg, multi_edge_msg):
+    if len(edges) == 1:
+        return single_edge_msg % (edges[0]['edge_name'])
+
+    edge_names = [edge['edge_name'] for edge in edges]
+    return multi_edge_msg % (", ".join(sorted(edge_names)))
+
+
+@Operations.register_operation("modify_rows")
+class ModifyRowsOp(MigrateOperation):
+
+    """Modify an existing row"""
+
+    def __init__(self, table_name, pkeys, rows, old_rows, schema=None):
+        self.table_name = table_name
+        self.rows = rows
+        self.pkeys = pkeys
+        self.old_rows = old_rows
+        self.schema = schema
+
+    @classmethod
+    def modify_rows(cls, operations, table_name, pkeys, rows, old_rows, schema=None):
+        """Issue a "modify rows" operation"""
+
+        op = ModifyRowsOp(table_name, pkeys, rows, old_rows, schema)
+        return operations.invoke(op)
+
+    def reverse(self):
+        return ModifyRowsOp(self.table_name, self.pkeys, self.old_rows, self.rows, schema=self.schema)
+
+    def get_revision_message(self):
+        return "modify rows in %s" % self.table_name
 
 
 @Operations.register_operation("alter_enum")

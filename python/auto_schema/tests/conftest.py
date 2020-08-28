@@ -293,7 +293,7 @@ def metadata_assoc_edge_config():
 @pytest.fixture
 def metadata_with_no_edges():
     metadata = metadata_assoc_edge_config()
-    metadata.info.setdefault("edges", {})
+    metadata.info["edges"] = {}
     return metadata
 
 
@@ -307,7 +307,7 @@ def metadata_with_one_edge():
         }
     }
 
-    metadata.info.setdefault("edges", edges)
+    metadata.info["edges"] = edges
     return metadata
 
 
@@ -326,7 +326,7 @@ def metadata_with_symmetric_edge():
         }
     }
 
-    metadata.info.setdefault("edges", edges)
+    metadata.info["edges"] = edges
     return metadata
 
 
@@ -341,12 +341,217 @@ def metadata_with_inverse_edge():
         }
     }
 
-    metadata.info.setdefault("edges", edges)
+    metadata.info["edges"] = edges
+    return metadata
+
+
+def default_enum_values():
+    return ['open', 'pending', 'closed']
+
+
+def status_table_info(l):
+    return {
+        'pkeys': ['status'],
+        'rows': [{'status': v} for v in l]
+    }
+
+
+@pytest.fixture
+def metadata_with_request_data():
+    metadata = metdata_enum_table()
+    data = {
+        'public': {
+            'request_statuses': status_table_info(default_enum_values())
+        }
+    }
+    metadata.info["data"] = data
+    return metadata
+
+
+def metadata_with_row_removed(metadata):
+    enums = default_enum_values()
+    enums.remove('open')
+
+    data = {
+        'public': {
+            'request_statuses': status_table_info(enums)
+        }
+    }
+    metadata.info["data"] = data
+    return metadata
+
+
+def metadata_with_rows_added(metadata):
+    enums = default_enum_values()
+    enums.remove('open')  # putting this here since done from above
+    enums.append('initial')  # e.g. open -> initial
+    enums.append('reviewed')
+
+    data = {
+        'public': {
+            'request_statuses': status_table_info(enums)
+        }
+    }
+    metadata.info["data"] = data
     return metadata
 
 
 @pytest.fixture
-def metadata_with_enum():
+def metadata_with_multiple_data_tables():
+    metadata = metdata_enum_table()
+    complex_enum_table(metadata)
+
+    data = {
+        'public': {
+            'request_statuses': status_table_info(default_enum_values()),
+            'rainbows': {
+                'pkeys': ['color'],
+                'rows': [
+                    {'color': 'red', 'description': "Red"},
+                    {'color': 'orange', 'description': "Orange"},
+                    {'color': 'yellow', 'description': "Yellow"},
+                    {'color': 'green', 'description': "Green"},
+                    {'color': 'blue', 'description': "Blue"},
+                    {'color': 'indigo', 'description': "Indigo"},
+                    {'color': 'violet', 'description': "Violet"},
+                ]
+            }
+        }
+    }
+    metadata.info["data"] = data
+    return metadata
+
+
+def metadata_with_rainbows_enum_changed(metadata):
+    data = metadata.info['data']
+    rows = data['public']['rainbows']['rows']
+    rows[3]['description'] = 'Really Green'
+    rows[4]['description'] = 'Navy Blue'
+
+    return metadata
+
+
+def metdata_enum_table():
+    metadata = sa.MetaData()
+    enum_table(metadata)
+    return metadata
+
+
+def enum_table(metadata):
+    sa.Table('request_statuses', metadata,
+             sa.Column('status', sa.String(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "status", name="request_status_pkey"),
+             )
+
+
+def complex_enum_table(metadata):
+    sa.Table('rainbows', metadata,
+             sa.Column('color', sa.String(), nullable=False),
+             sa.Column('description', sa.String(), nullable=False),
+             sa.PrimaryKeyConstraint('color', name='rainbows_color_pkey')
+             )
+
+
+def roles_table(metadata):
+    sa.Table('roles', metadata,
+             sa.Column('role', sa.String(), nullable=False),
+             sa.PrimaryKeyConstraint('role', name='roles_role_pkey'))
+
+
+def group_members_table(metadata):
+    sa.Table('group_members', metadata,
+             sa.Column('group_id', sa.Integer(), nullable=False),
+             sa.Column('user_id', sa.Integer(), nullable=False),
+             sa.Column('role', sa.String(), nullable=False),
+             sa.Column('data', sa.Text(), nullable=True),
+             # triple primary key!
+             # with a foreign key also
+             sa.PrimaryKeyConstraint(
+                 'group_id', 'user_id', 'role', name='group_member_roles_pkey'),
+             sa.ForeignKeyConstraint(['role'], [
+                                     'roles.role'], name="roles_role_fkey", ondelete="CASCADE"),
+             )
+
+
+def roles_table_info():
+    return {
+        'pkeys': ['role'],
+        'rows': [{'role': v} for v in ['admin', 'member', 'archived_member']]
+    }
+
+
+@pytest.fixture()
+def metadata_with_triple_pkey():
+    metadata = sa.MetaData()
+    roles_table(metadata)
+    group_members_table(metadata)
+
+    data = {
+        'public': {
+            'roles': roles_table_info(),
+            'group_members': {
+                'pkeys': ['group_id', 'user_id', 'role'],
+                'rows': [
+                    {
+                        'group_id': 1, 'user_id': 100, 'role': 'admin',
+                    },
+                    {
+                        'group_id': 1, 'user_id': 200, 'role': 'member',
+                    },
+                    {
+                        'group_id': 1, 'user_id': 200, 'role': 'admin',
+                    },
+                ]
+            }
+        }
+    }
+    metadata.info['data'] = data
+    return metadata
+
+
+def metadata_with_triple_pkey_with_rows_removed(metadata):
+    data = {
+        'public': {
+            'roles': roles_table_info(),
+            'group_members': {
+                'pkeys': ['group_id', 'user_id', 'role'],
+                'rows': [
+                    {
+                        'group_id': 1, 'user_id': 100, 'role': 'admin',
+                    },
+                    # remove everything with user 200
+                ]
+            }
+        }
+    }
+    metadata.info['data'] = data
+
+    return metadata
+
+
+def metadata_with_triple_pkey_with_rows_changed(metadata):
+    data = {
+        'public': {
+            'roles': roles_table_info(),
+            'group_members': {
+                'pkeys': ['group_id', 'user_id', 'role'],
+                'rows': [
+                    {
+                        # add data which wasn't previously there
+                        'group_id': 1, 'user_id': 100, 'role': 'admin', 'data': '123'
+                    },
+                ]
+            }
+        }
+    }
+    metadata.info['data'] = data
+
+    return metadata
+
+
+@pytest.fixture
+def metadata_with_enum_type():
     metadata = sa.MetaData()
 
     rainbow = ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')
