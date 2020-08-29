@@ -506,7 +506,25 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 		var wg sync.WaitGroup
 		var m sync.Mutex
 		wg.Add(len(data.Schema.Nodes))
+		wg.Add(len(data.Schema.Enums))
 
+		for idx := range data.Schema.Enums {
+			go func(idx int) {
+				defer wg.Done()
+
+				enumType := data.Schema.Enums[idx].GQLEnum
+
+				m.Lock()
+				defer m.Unlock()
+				// needs a quoted name
+				// Type has GQLType
+				enums[enumType.Name] = &gqlEnum{
+					Type:     fmt.Sprintf("%sType", enumType.Name),
+					Enum:     enumType,
+					FilePath: getFilePathForEnum(enumType),
+				}
+			}(idx)
+		}
 		nodeMap := data.Schema.Nodes
 		for key := range data.Schema.Nodes {
 			go func(key string) {
@@ -563,17 +581,6 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 				m.Lock()
 				defer m.Unlock()
 				nodes[nodeData.Node] = &obj
-
-				for _, enumType := range nodeData.GetGraphQLEnums() {
-					// needs a quoted name
-					// Type has GQLType
-					enums[enumType.Name] = &gqlEnum{
-						Type:     fmt.Sprintf("%sType", enumType.Name),
-						Enum:     enumType,
-						FilePath: getFilePathForEnum(enumType),
-					}
-				}
-
 			}(key)
 		}
 

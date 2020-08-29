@@ -97,6 +97,21 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 		}(key)
 	}
 
+	wg.Add(len(data.Schema.Enums))
+	for idx := range data.Schema.Enums {
+		go func(idx int) {
+			defer wg.Done()
+
+			info := data.Schema.Enums[idx]
+
+			// enum is rendered in same file as a Node so no need to render it on its own
+			if info.NodeData != nil {
+				return
+			}
+
+			serr.Append(writeEnumFile(info, data.CodePath))
+		}(idx)
+	}
 	wg.Wait()
 	if err := serr.Err(); err != nil {
 		return err
@@ -190,6 +205,10 @@ func getFilePathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s.ts", nodeData.PackageName)
 }
 
+func getFilePathForEnumFile(info *schema.EnumInfo) string {
+	return fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name))
+}
+
 func getImportPathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s", nodeData.PackageName)
 }
@@ -264,6 +283,21 @@ func writeEntFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) err
 		// only write this file once.
 		// TODO need a flag to overwrite this later.
 	}, file.WriteOnce())
+}
+
+func writeEnumFile(enumInfo *schema.EnumInfo, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+	return file.Write(&file.TemplatedBasedFileWriter{
+		// enum file can be rendered on its own so just render it
+		Data:              enumInfo.Enum,
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("../schema/enum/enum.tmpl"),
+		TemplateName:      "enum.tmpl",
+		PathToFile:        getFilePathForEnumFile(enumInfo),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
 }
 
 func writeConstFile(nodeData []enum.Data, edgeData []enum.Data) error {

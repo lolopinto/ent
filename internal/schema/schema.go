@@ -2,12 +2,18 @@ package schema
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"golang.org/x/tools/go/packages"
@@ -19,6 +25,121 @@ type Schema struct {
 	edges         map[string]*ent.AssocEdgeData
 	newEdges      []*ent.AssocEdgeData
 	edgesToUpdate []*ent.AssocEdgeData
+	Enums         []*EnumInfo
+}
+
+func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) {
+	s.addEnumFrom(
+		enumType.GetTSType(),
+		enumType.GetGraphQLName(),
+		enumType.GetTSType(),
+		enumType.GetEnumValues(),
+		nodeData,
+	)
+}
+
+func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node) error {
+	if !node.EnumTable || len(node.DBRows) == 0 {
+		return errors.New("Can't create enum from NodeData that's not an enum table or has no rows")
+	}
+
+	var pkeyFields []*input.Field
+
+	for _, field := range node.Fields {
+		if field.PrimaryKey {
+			pkeyFields = append(pkeyFields, field)
+		}
+	}
+	if len(pkeyFields) != 1 {
+		return errors.New("need exactly 1 primary key for ")
+	}
+	field := pkeyFields[0]
+	fieldName := field.Name
+	storageKey := field.StorageKey
+	values := make([]string, len(node.DBRows))
+
+	addValue := func(row map[string]interface{}, key string) (bool, error) {
+		if key == "" {
+			return false, nil
+		}
+		fieldNameValue, ok := row[fieldName]
+		if ok {
+			str, ok := fieldNameValue.(string)
+			if !ok {
+				return false, fmt.Errorf("value of field %s should be a string to be an enum", fieldName)
+			}
+			values = append(values, str)
+			return true, nil
+		}
+		return false, nil
+	}
+	for _, row := range node.DBRows {
+		added, err := addValue(row, fieldName)
+		if err != nil {
+			return err
+		}
+		if !added {
+			added, err := addValue(row, storageKey)
+			if err != nil {
+				return err
+			}
+			if !added {
+				return fmt.Errorf("couldn't find key %s or %s in row", fieldName, storageKey)
+			}
+		}
+	}
+
+	s.addEnumFrom(
+		nodeName,
+		nodeName,
+		fmt.Sprintf("%s!", nodeName),
+		values,
+		nil,
+	)
+	return nil
+}
+
+func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []string, nodeData *NodeData) {
+	// first create EnumInfo...
+
+	//	values := enumType.GetEnumValues()
+	tsVals := make([]enum.Data, len(enumValues))
+	gqlVals := make([]enum.Data, len(enumValues))
+	for i, val := range enumValues {
+		gqlVals[i] = enum.Data{
+			Name: strings.ToUpper(val),
+			// norm for graphql enums is all caps
+			Value: strconv.Quote(strings.ToUpper(val)),
+		}
+		tsVals[i] = enum.Data{
+			Name: strcase.ToCamel(val),
+			// value is actually what's put there for now
+			// TODO we need to figure out if there's a standard here
+			// or a way to have keys: values for the generated enums
+			Value: strconv.Quote(val),
+		}
+	}
+
+	gqlEnum := enum.GQLEnum{
+		Name:   gqlName,
+		Type:   gqlType,
+		Values: gqlVals,
+	}
+
+	tsEnum := enum.Enum{
+		Name:   tsName,
+		Values: tsVals,
+	}
+
+	info := &EnumInfo{
+		Enum:     tsEnum,
+		GQLEnum:  gqlEnum,
+		NodeData: nodeData,
+	}
+	s.Enums = append(s.Enums, info)
+	if nodeData != nil {
+		nodeData.addEnum(info)
+	}
 }
 
 // Given a schema file parser, Parse parses the schema to return the completely
@@ -39,7 +160,7 @@ func ParsePackage(pkg *packages.Package, specificConfigs ...string) (*Schema, er
 // and provides the schema we have that's checked and conforms to everything we expect
 func ParseFromInputSchema(schema *input.Schema, lang base.Language) (*Schema, error) {
 	return parse(func(s *Schema) (*assocEdgeData, error) {
-		return s.Nodes.parseInputSchema(schema, lang)
+		return s.Nodes.parseInputSchema(s, schema, lang)
 	})
 }
 

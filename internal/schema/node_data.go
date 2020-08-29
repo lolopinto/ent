@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
@@ -58,6 +56,7 @@ type NodeData struct {
 	HideFromGraphQL bool
 	EnumTable       bool
 	DBRows          []map[string]interface{}
+	tsEnums         []enum.Enum
 }
 
 func newNodeData(packageName string) *NodeData {
@@ -69,6 +68,10 @@ func newNodeData(packageName string) *NodeData {
 	}
 	nodeData.ConstantGroups = make(map[string]*ConstGroupInfo)
 	return nodeData
+}
+
+func (nodeData *NodeData) addEnum(info *EnumInfo) {
+	nodeData.tsEnums = append(nodeData.tsEnums, info.Enum)
 }
 
 func (nodeData *NodeData) GetTableName() string {
@@ -198,56 +201,7 @@ func (nodeData *NodeData) GetUniqueNodes() []uniqueNodeInfo {
 }
 
 func (nodeData *NodeData) GetTSEnums() []enum.Enum {
-	var ret []enum.Enum
-	for _, f := range nodeData.FieldInfo.Fields {
-		entType := f.GetFieldType()
-		enumType, ok := entType.(enttype.EnumeratedType)
-		if !ok {
-			continue
-		}
-		values := enumType.GetEnumValues()
-		vals := make([]enum.Data, len(values))
-		for i, val := range values {
-			vals[i] = enum.Data{
-				Name: strcase.ToCamel(val),
-				// value is actually what's put there for now
-				// TODO we need to figure out if there's a standard here
-				// or a way to have keys: values for the generated enums
-				Value: strconv.Quote(val),
-			}
-		}
-		ret = append(ret, enum.Enum{
-			Name:   enumType.GetTSType(),
-			Values: vals,
-		})
-	}
-	return ret
-}
-
-func (nodeData *NodeData) GetGraphQLEnums() []enum.GQLEnum {
-	var ret []enum.GQLEnum
-	for _, f := range nodeData.FieldInfo.Fields {
-		entType := f.GetFieldType()
-		enumType, ok := entType.(enttype.EnumeratedType)
-		if !ok {
-			continue
-		}
-		values := enumType.GetEnumValues()
-		vals := make([]enum.Data, len(values))
-		for i, val := range values {
-			vals[i] = enum.Data{
-				Name: strings.ToUpper(val),
-				// norm for graphql enums is all caps
-				Value: strconv.Quote(strings.ToUpper(val)),
-			}
-		}
-		ret = append(ret, enum.GQLEnum{
-			Name:   enumType.GetGraphQLName(),
-			Type:   enumType.GetGraphQLType(),
-			Values: vals,
-		})
-	}
-	return ret
+	return nodeData.tsEnums
 }
 
 type importPath struct {

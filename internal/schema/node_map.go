@@ -18,6 +18,7 @@ import (
 	"github.com/lolopinto/ent/internal/astparser"
 	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/edge"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -570,13 +571,16 @@ func (m NodeMapInfo) HideFromGraphQL(edge edge.Edge) bool {
 	return nodeData.HideFromGraphQL
 }
 
-func (m NodeMapInfo) parseInputSchema(schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
+func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
 	// TODO right now this is also depending on config/database.yml
 	// figure out if best place for this
 	edgeData := m.loadExistingEdges()
 
 	for nodeName, node := range schema.Nodes {
-
+		if node.EnumTable {
+			s.addEnumFromInputNode(nodeName, node)
+			continue
+		}
 		// order of operations matters here
 		// PickupLocation -> pickup_location
 		packageName := strings.ToLower(strcase.ToSnake(nodeName))
@@ -596,6 +600,13 @@ func (m NodeMapInfo) parseInputSchema(schema *input.Schema, lang base.Language) 
 		)
 		if err != nil {
 			return nil, err
+		}
+		for _, f := range nodeData.FieldInfo.Fields {
+			entType := f.GetFieldType()
+			enumType, ok := entType.(enttype.EnumeratedType)
+			if ok {
+				s.addEnum(enumType, nodeData)
+			}
 		}
 
 		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(packageName, node)
