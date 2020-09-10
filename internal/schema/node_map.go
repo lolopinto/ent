@@ -577,10 +577,6 @@ func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base
 	edgeData := m.loadExistingEdges()
 
 	for nodeName, node := range schema.Nodes {
-		if node.EnumTable {
-			s.addEnumFromInputNode(nodeName, node)
-			continue
-		}
 		// order of operations matters here
 		// PickupLocation -> pickup_location
 		packageName := strings.ToLower(strcase.ToSnake(nodeName))
@@ -621,6 +617,12 @@ func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base
 
 		nodeData.EnumTable = node.EnumTable
 		nodeData.DBRows = node.DBRows
+
+		// not in schema.Nodes...
+		if node.EnumTable {
+			s.addEnumFromInputNode(nodeName, node, nodeData)
+			continue
+		}
 
 		m.addConfig(&NodeDataInfo{
 			NodeData:      nodeData,

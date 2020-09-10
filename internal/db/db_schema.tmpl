@@ -17,7 +17,7 @@ sa.Table({{- .TableName}}, metadata,
   {{ end -}}
 {{- end}}
 
-edges = {
+metadata.info["edges"] = {
   'public': {
 {{- with .Edges -}}
   {{- range .}}
@@ -27,23 +27,21 @@ edges = {
   }
 }
 
-metadata.info["edges"] = edges
-
-{{ $length := len .Data }} {{ if ne $length 0 -}}
-  data = {
-    'public':{
-      {{ range .Data -}}
-        '{{.TableName}}': {
-          'pkeys': {{.Pkeys}},
-          'rows': [
-            {{ range .Rows -}}
-              {{ .}}
-            {{ end -}}
-          ],     
-        }
-      {{end -}}
-    }
+{{ $length := len .Data -}} {{ if ne $length 0 -}}
+metadata.info["data"] = {
+  'public':{
+    {{ range .Data -}}
+      '{{.TableName}}': {
+        'pkeys': {{.Pkeys}},
+        'rows': [
+          {{- range .Rows}}
+            {{ . -}},
+          {{- end}}
+        ], 
+      }
+    {{- end}}
   }
+}
 {{end}}
 
 def get_metadata():

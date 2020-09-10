@@ -104,8 +104,8 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 
 			info := data.Schema.Enums[idx]
 
-			// enum is rendered in same file as a Node so no need to render it on its own
-			if info.NodeData != nil {
+			// only lookup table enums get their own files
+			if !info.LookupTableEnum() {
 				return
 			}
 

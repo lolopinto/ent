@@ -6,6 +6,12 @@ import (
 	"github.com/lolopinto/ent/internal/schema/input"
 )
 
+// TODO test
+//
+//  enumTable = true;
+
+//  dbRows: [
+
 func TestEnumTable(t *testing.T) {
 	testCases := map[string]testCase{
 		"enum table": {

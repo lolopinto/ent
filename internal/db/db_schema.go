@@ -286,6 +286,14 @@ func (s *dbSchema) generateShemaTables() {
 		}
 	}
 
+	// make sure to add lookup table enums to the schema
+	for _, info := range s.schema.Enums {
+		if !info.LookupTableEnum() {
+			continue
+		}
+		s.addTable(s.createTableForNode(info.NodeData))
+	}
+
 	if addedAtLeastOneTable {
 		s.addEdgeConfigTable()
 	}
@@ -366,13 +374,7 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 		})
 	}
 
-	// add data values
-	for _, node := range s.schema.Nodes {
-		if !node.NodeData.EnumTable {
-			continue
-		}
-
-		nodeData := node.NodeData
+	addData := func(nodeData *schema.NodeData) {
 		pkeys := []string{}
 		for _, field := range nodeData.FieldInfo.Fields {
 			// we only support single field primary keys here so this is the solution
@@ -426,6 +428,22 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 			Rows:      rows,
 			Pkeys:     fmt.Sprintf("[%s]", strings.Join(pkeys, ", ")),
 		})
+	}
+
+	// add data values
+	for _, info := range s.schema.Enums {
+		if info.LookupTableEnum() {
+			addData(info.NodeData)
+		}
+	}
+
+	for _, node := range s.schema.Nodes {
+		if !node.NodeData.EnumTable {
+			continue
+		}
+
+		nodeData := node.NodeData
+		addData(nodeData)
 	}
 
 	// sort edges

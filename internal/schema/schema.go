@@ -35,10 +35,11 @@ func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) {
 		enumType.GetTSType(),
 		enumType.GetEnumValues(),
 		nodeData,
+		nil,
 	)
 }
 
-func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node) error {
+func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeData *NodeData) error {
 	if !node.EnumTable || len(node.DBRows) == 0 {
 		return errors.New("Can't create enum from NodeData that's not an enum table or has no rows")
 	}
@@ -58,7 +59,7 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node) error {
 	storageKey := field.StorageKey
 	values := make([]string, len(node.DBRows))
 
-	addValue := func(row map[string]interface{}, key string) (bool, error) {
+	addValue := func(row map[string]interface{}, key string, idx int) (bool, error) {
 		if key == "" {
 			return false, nil
 		}
@@ -68,18 +69,18 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node) error {
 			if !ok {
 				return false, fmt.Errorf("value of field %s should be a string to be an enum", fieldName)
 			}
-			values = append(values, str)
+			values[idx] = str
 			return true, nil
 		}
 		return false, nil
 	}
-	for _, row := range node.DBRows {
-		added, err := addValue(row, fieldName)
+	for idx, row := range node.DBRows {
+		added, err := addValue(row, fieldName, idx)
 		if err != nil {
 			return err
 		}
 		if !added {
-			added, err := addValue(row, storageKey)
+			added, err := addValue(row, storageKey, idx)
 			if err != nil {
 				return err
 			}
@@ -94,12 +95,13 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node) error {
 		nodeName,
 		fmt.Sprintf("%s!", nodeName),
 		values,
-		nil,
+		nodeData,
+		node,
 	)
 	return nil
 }
 
-func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []string, nodeData *NodeData) {
+func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []string, nodeData *NodeData, inputNode *input.Node) {
 	// first create EnumInfo...
 
 	//	values := enumType.GetEnumValues()
@@ -132,9 +134,10 @@ func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []strin
 	}
 
 	info := &EnumInfo{
-		Enum:     tsEnum,
-		GQLEnum:  gqlEnum,
-		NodeData: nodeData,
+		Enum:      tsEnum,
+		GQLEnum:   gqlEnum,
+		NodeData:  nodeData,
+		InputNode: inputNode,
 	}
 	s.Enums = append(s.Enums, info)
 	if nodeData != nil {
