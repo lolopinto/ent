@@ -1,8 +1,9 @@
 package enum
 
 type Enum struct {
-	Name   string
-	Values []Data
+	Name     string
+	Values   []Data
+	Imported bool // Imported enum that's not in this file
 }
 
 type GQLEnum struct {

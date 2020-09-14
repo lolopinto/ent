@@ -32,7 +32,7 @@ type Schema struct {
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) {
 	s.addEnumFrom(
-		enumType.GetTSType(),
+		enumType.GetTSName(),
 		enumType.GetGraphQLName(),
 		enumType.GetTSType(),
 		enumType.GetEnumValues(),
@@ -133,6 +133,8 @@ func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []strin
 	tsEnum := enum.Enum{
 		Name:   tsName,
 		Values: tsVals,
+		// not the best way to determine this but works for now
+		Imported: len(tsVals) == 0,
 	}
 
 	info := &EnumInfo{

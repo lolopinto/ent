@@ -7,7 +7,7 @@
 {{ reserveImport "src/ent/const" "EdgeType" "NodeType" }}
 
 
-{{ range .GetImportPaths -}}
+{{ range .GetImportPathsForDependencies -}}
   {{ if .DefaultImport -}}
     {{ reserveDefaultImport .PackagePath .Import}}
   {{ else -}}

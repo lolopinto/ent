@@ -8,9 +8,12 @@
 {{ reserveDefaultImport $schemaPath "schema"}}
 {{ reserveImport "src/ent/const" "EdgeType" "NodeType" }}
 
-{{ range .GetUniqueNodes -}} 
-  {{$packagePath := printf "src/ent/%s" .PackageName }}
-  {{ reserveDefaultImport $packagePath .Node}}
+{{ range .GetImportsForBaseFile -}} 
+  {{ if .DefaultImport -}}
+    {{ reserveDefaultImport .PackagePath .Import}}
+  {{ else -}}
+    {{ reserveImport .PackagePath .Import}}
+  {{end -}}
 {{ end}}
 
 {{$viewerType := useImport "Viewer"}}
@@ -24,13 +27,18 @@ const tableName = "{{.TableName}}";
 {{$thisType := "new (viewer: Viewer, id: ID, data: Data) => T"}}
 
 {{ range .GetTSEnums -}}
-  {{ template "enum.tmpl" . -}}
+  {{if not .Imported -}}
+    {{ template "enum.tmpl" . -}}
+  {{end -}}
 {{ end}}
 
 export class {{$baseClass}} {
 
   readonly nodeType = {{useImport "NodeType"}}.{{.Node}};
   {{range $field := .FieldInfo.Fields -}}
+    {{ if $typ := $field.ForeignImport -}}
+      {{$typ = useImport $typ -}}
+    {{end -}}
     {{ if $field.Private -}}
       protected readonly {{$field.TsFieldName}}: {{$field.TsType}};
     {{ else -}}

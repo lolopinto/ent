@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
@@ -204,16 +205,37 @@ func (nodeData *NodeData) GetTSEnums() []enum.Enum {
 	return nodeData.tsEnums
 }
 
-type importPath struct {
+type ImportPath struct {
 	PackagePath   string
 	Import        string
 	DefaultImport bool
 }
 
-// get things that need to be programmatically imported
-// for now
-func (nodeData *NodeData) GetImportPaths() []importPath {
-	var ret []importPath
+// GetImportsForBaseFile returns list of imports needed in the base generated file
+func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
+	var ret []ImportPath
+	for _, nodeInfo := range nodeData.getUniqueNodes(false) {
+		ret = append(ret, ImportPath{
+			Import:        nodeInfo.Node,
+			PackagePath:   getImportPathForEntModelFile(nodeInfo.PackageName),
+			DefaultImport: true,
+		})
+	}
+
+	for _, enum := range nodeData.tsEnums {
+		if enum.Imported {
+			ret = append(ret, ImportPath{
+				Import:      enum.Name,
+				PackagePath: getImportPathForEnumFile(&enum),
+			})
+		}
+	}
+	return ret
+}
+
+// GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
+func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
+	var ret []ImportPath
 	for _, f := range nodeData.FieldInfo.Fields {
 		entType := f.GetFieldType()
 		enumType, ok := entType.(enttype.EnumeratedType)
@@ -221,16 +243,16 @@ func (nodeData *NodeData) GetImportPaths() []importPath {
 			continue
 		}
 
-		ret = append(ret, importPath{
+		ret = append(ret, ImportPath{
 			Import:      enumType.GetTSType(),
-			PackagePath: getImportPathForBaseModelFile(nodeData),
+			PackagePath: getImportPathForBaseModelFile(nodeData.PackageName),
 		})
 	}
 
 	// unique nodes referenced in builder
 	uniqueNodes := nodeData.getUniqueNodes(true)
 	for _, unique := range uniqueNodes {
-		ret = append(ret, importPath{
+		ret = append(ret, ImportPath{
 			Import:        unique.Node,
 			PackagePath:   fmt.Sprintf("src/ent/%s", unique.PackageName),
 			DefaultImport: true,
@@ -240,13 +262,17 @@ func (nodeData *NodeData) GetImportPaths() []importPath {
 	return ret
 }
 
-// copied to internal/schema/node_data.go
-func getImportPathForBaseModelFile(nodeData *NodeData) string {
-	return fmt.Sprintf("src/ent/generated/%s_base", nodeData.PackageName)
+// copied from internal/tscode/step.go
+func getImportPathForBaseModelFile(packageName string) string {
+	return fmt.Sprintf("src/ent/generated/%s_base", packageName)
 }
 
-func (nodeData *NodeData) GetUniqueNodesForceSelf() []uniqueNodeInfo {
-	return nodeData.getUniqueNodes(true)
+func getImportPathForEntModelFile(packageName string) string {
+	return fmt.Sprintf("src/ent/%s", packageName)
+}
+
+func getImportPathForEnumFile(enum *enum.Enum) string {
+	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(enum.Name))
 }
 
 // don't need this distinction at the moment but why not

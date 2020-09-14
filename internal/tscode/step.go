@@ -194,6 +194,7 @@ type nodeTemplateCodePath struct {
 	NodeData *schema.NodeData
 	CodePath *codegen.CodePath
 	Package  *codegen.ImportPackage
+	Imports  []schema.ImportPath
 }
 
 // copied to internal/schema/node_data.go
@@ -207,6 +208,10 @@ func getFilePathForModelFile(nodeData *schema.NodeData) string {
 
 func getFilePathForEnumFile(info *schema.EnumInfo) string {
 	return fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name))
+}
+
+func getImportPathForEnumFile(info *schema.EnumInfo) string {
+	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(info.Enum.Name))
 }
 
 func getImportPathForModelFile(nodeData *schema.NodeData) string {
@@ -365,6 +370,7 @@ func writeBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath)
 			NodeData: nodeData,
 			CodePath: codePathInfo,
 			Package:  codePathInfo.GetImportPackage(),
+			Imports:  nodeData.GetImportsForBaseFile(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("builder.tmpl"),

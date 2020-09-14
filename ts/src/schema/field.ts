@@ -187,10 +187,20 @@ export class EnumField extends BaseField implements Field {
       type: options.tsType || options.name,
       graphQLType: options.graphQLType || options.name,
     };
-    if (!options.foreignKey && !options.values) {
-      throw new Error(
-        "values required if not look up table enum. Look-up table enum indicated by foreignKey field",
-      );
+    if (!options.foreignKey) {
+      if (!options.values) {
+        throw new Error(
+          "values required if not look up table enum. Look-up table enum indicated by foreignKey field",
+        );
+      }
+      if (!options.values.length) {
+        throw new Error("need at least one value in enum type");
+      }
+    } else {
+      if (options.values) {
+        throw new Error("cannot specify values and foreign key for enum type");
+      }
+      // cannot also specify tsType, graphqlType, createEnumType
     }
     this.values = options.values;
   }
