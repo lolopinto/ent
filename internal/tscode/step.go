@@ -98,11 +98,11 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 	}
 
 	wg.Add(len(data.Schema.Enums))
-	for idx := range data.Schema.Enums {
-		go func(idx int) {
+	for key := range data.Schema.Enums {
+		go func(key string) {
 			defer wg.Done()
 
-			info := data.Schema.Enums[idx]
+			info := data.Schema.Enums[key]
 
 			// only lookup table enums get their own files
 			if !info.LookupTableEnum() {
@@ -110,7 +110,7 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 			}
 
 			serr.Append(writeEnumFile(info, data.CodePath))
-		}(idx)
+		}(key)
 	}
 	wg.Wait()
 	if err := serr.Err(); err != nil {

@@ -508,11 +508,11 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 		wg.Add(len(data.Schema.Nodes))
 		wg.Add(len(data.Schema.Enums))
 
-		for idx := range data.Schema.Enums {
-			go func(idx int) {
+		for key := range data.Schema.Enums {
+			go func(key string) {
 				defer wg.Done()
 
-				enumType := data.Schema.Enums[idx].GQLEnum
+				enumType := data.Schema.Enums[key].GQLEnum
 
 				m.Lock()
 				defer m.Unlock()
@@ -523,7 +523,7 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 					Enum:     enumType,
 					FilePath: getFilePathForEnum(enumType),
 				}
-			}(idx)
+			}(key)
 		}
 		nodeMap := data.Schema.Nodes
 		for key := range data.Schema.Nodes {

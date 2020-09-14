@@ -25,7 +25,9 @@ type Schema struct {
 	edges         map[string]*ent.AssocEdgeData
 	newEdges      []*ent.AssocEdgeData
 	edgesToUpdate []*ent.AssocEdgeData
-	Enums         []*EnumInfo
+	// unlike Nodes, the key is "EnumName" instead of "EnumNameConfig"
+	// confusing but gets us closer to what we want
+	Enums map[string]*EnumInfo
 }
 
 func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) {
@@ -139,23 +141,21 @@ func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []strin
 		NodeData:  nodeData,
 		InputNode: inputNode,
 	}
-	s.Enums = append(s.Enums, info)
-	if nodeData != nil {
-		nodeData.addEnum(info)
-	}
+	s.Enums[nodeData.Node] = info
+	nodeData.addEnum(info)
 }
 
 // Given a schema file parser, Parse parses the schema to return the completely
 // parsed schema
 func Parse(p schemaparser.Parser, specificConfigs ...string) (*Schema, error) {
 	return parse(func(s *Schema) (*assocEdgeData, error) {
-		return s.Nodes.parseFiles(p, specificConfigs...)
+		return s.Nodes.parseFiles(s, p, specificConfigs...)
 	})
 }
 
 func ParsePackage(pkg *packages.Package, specificConfigs ...string) (*Schema, error) {
 	return parse(func(s *Schema) (*assocEdgeData, error) {
-		return s.Nodes.parsePackage(pkg, specificConfigs...)
+		return s.Nodes.parsePackage(s, pkg, specificConfigs...)
 	})
 }
 
@@ -182,6 +182,7 @@ func parse(parseFn func(*Schema) (*assocEdgeData, error)) (*Schema, error) {
 
 func (s *Schema) init() {
 	s.Nodes = make(map[string]*NodeDataInfo)
+	s.Enums = make(map[string]*EnumInfo)
 }
 
 func (s *Schema) GetNodeDataFromGraphQLName(nodeName string) *NodeData {

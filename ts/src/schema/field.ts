@@ -167,6 +167,8 @@ export interface EnumOptions extends FieldOptions {
   //  by default the type is the name as the field
   // it's recommended to scope the enum names in scenarios where it makes sense
 
+  // if no values how to specify foreign key enum info....
+
   tsType?: string;
   graphQLType?: string;
 

@@ -67,7 +67,7 @@ func (m NodeMapInfo) getActionFromGraphQLName(graphQLName string) action.Action 
 var fileRegex = regexp.MustCompile(`(\w+)_config.go`)
 var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
 
-func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...string) (*assocEdgeData, error) {
+func (m NodeMapInfo) parsePackage(s *Schema, pkg *packages.Package, specificConfigs ...string) (*assocEdgeData, error) {
 	typeInfo := pkg.TypesInfo
 	fset := pkg.Fset
 
@@ -85,14 +85,14 @@ func (m NodeMapInfo) parsePackage(pkg *packages.Package, specificConfigs ...stri
 
 		file := pkg.Syntax[idx]
 
-		codegenInfo := m.parseFile(packageName, pkg, file, fset, specificConfigs, typeInfo, edgeData)
+		codegenInfo := m.parseFile(s, packageName, pkg, file, fset, specificConfigs, typeInfo, edgeData)
 		m.addConfig(codegenInfo)
 	}
 
 	return m.processDepgrah(edgeData)
 }
 
-func (m NodeMapInfo) buildPostRunDepgraph(edgeData *assocEdgeData) *depgraph.Depgraph {
+func (m NodeMapInfo) buildPostRunDepgraph(s *Schema, edgeData *assocEdgeData) *depgraph.Depgraph {
 	// things that need all nodeDatas loaded
 	g := &depgraph.Depgraph{}
 
@@ -108,7 +108,7 @@ func (m NodeMapInfo) buildPostRunDepgraph(edgeData *assocEdgeData) *depgraph.Dep
 	)
 
 	g.AddItem("EdgesFromFields", func(info *NodeDataInfo) {
-		m.addEdgesFromFields(info)
+		m.addEdgesFromFields(s, info)
 	})
 
 	// inverse edges also require everything to be loaded
@@ -145,14 +145,15 @@ func (m NodeMapInfo) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, er
 	return edgeData, nil
 }
 
-func (m NodeMapInfo) parseFiles(p schemaparser.Parser, specificConfigs ...string) (*assocEdgeData, error) {
+func (m NodeMapInfo) parseFiles(s *Schema, p schemaparser.Parser, specificConfigs ...string) (*assocEdgeData, error) {
 	pkg := schemaparser.LoadPackageX(p)
 
-	return m.parsePackage(pkg, specificConfigs...)
+	return m.parsePackage(s, pkg, specificConfigs...)
 }
 
 // TODO this is ugly but it's private...
 func (m NodeMapInfo) parseFile(
+	s *Schema,
 	packageName string,
 	pkg *packages.Package,
 	file *ast.File,
@@ -166,7 +167,7 @@ func (m NodeMapInfo) parseFile(
 	g := &depgraph.Depgraph{}
 
 	// things that need all nodeDatas loaded
-	g2 := m.buildPostRunDepgraph(edgeData)
+	g2 := m.buildPostRunDepgraph(s, edgeData)
 
 	var shouldCodegen bool
 
@@ -305,7 +306,7 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 	}
 }
 
-func (m NodeMapInfo) addEdgesFromFields(info *NodeDataInfo) {
+func (m NodeMapInfo) addEdgesFromFields(s *Schema, info *NodeDataInfo) {
 	nodeData := info.NodeData
 	fieldInfo := nodeData.FieldInfo
 	edgeInfo := nodeData.EdgeInfo
@@ -313,7 +314,7 @@ func (m NodeMapInfo) addEdgesFromFields(info *NodeDataInfo) {
 	for _, f := range fieldInfo.Fields {
 		fkeyInfo := f.ForeignKeyInfo()
 		if fkeyInfo != nil {
-			m.addForeignKeyEdges(nodeData, fieldInfo, edgeInfo, f, fkeyInfo)
+			m.addForeignKeyEdges(s, nodeData, fieldInfo, edgeInfo, f, fkeyInfo)
 		}
 
 		fieldEdgeInfo := f.FieldEdgeInfo()
@@ -324,6 +325,7 @@ func (m NodeMapInfo) addEdgesFromFields(info *NodeDataInfo) {
 }
 
 func (m NodeMapInfo) addForeignKeyEdges(
+	s *Schema,
 	nodeData *NodeData,
 	fieldInfo *field.FieldInfo,
 	edgeInfo *edge.EdgeInfo,
@@ -332,6 +334,15 @@ func (m NodeMapInfo) addForeignKeyEdges(
 ) {
 	foreignInfo, ok := m[fkeyInfo.Config]
 	if !ok {
+		match := structNameRegex.FindStringSubmatch(fkeyInfo.Config)
+		if len(match) != 2 {
+			panic("invalid config name")
+		}
+		// enum, that's ok. nothing to do here
+		_, ok := s.Enums[match[1]]
+		if ok {
+			return
+		}
 		panic(fmt.Errorf("could not find the EntConfig codegen info for %s", fkeyInfo.Config))
 	}
 
@@ -626,7 +637,7 @@ func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base
 
 		m.addConfig(&NodeDataInfo{
 			NodeData:      nodeData,
-			depgraph:      m.buildPostRunDepgraph(edgeData),
+			depgraph:      m.buildPostRunDepgraph(s, edgeData),
 			ShouldCodegen: true,
 		})
 	}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -629,6 +630,8 @@ func (s *dbSchema) addPrimaryKeyConstraint(f *field.Field, nodeData *schema.Node
 	*constraints = append(*constraints, constraint)
 }
 
+var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
+
 // adds a foreignKeyConstraint to the array of constraints
 // also returns new dbType of column
 func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
@@ -640,11 +643,24 @@ func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.Node
 	tableName := nodeData.GetTableName()
 
 	fkeyConfig := s.schema.Nodes[fkey.Config]
-	if fkeyConfig == nil {
+	var fkeyNodeData *schema.NodeData
+	if fkeyConfig != nil {
+		fkeyNodeData = fkeyConfig.NodeData
+	} else {
+		match := structNameRegex.FindStringSubmatch(fkey.Config)
+		if len(match) != 2 {
+			util.Die(fmt.Errorf("invalid config name %s", fkey.Config))
+		}
+		enum, ok := s.schema.Enums[match[1]]
+		if ok {
+			fkeyNodeData = enum.NodeData
+		}
+	}
+	if fkeyNodeData == nil {
 		util.Die(fmt.Errorf("invalid EntConfig %s set as ForeignKey of field %s on ent config %s", fkey.Config, f.FieldName, nodeData.EntConfigName))
 	}
 
-	fkeyTable := s.getTableForNode(fkeyConfig.NodeData)
+	fkeyTable := s.getTableForNode(fkeyNodeData)
 
 	var fkeyColumn *dbColumn
 	for _, fkeyCol := range fkeyTable.Columns {
