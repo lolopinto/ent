@@ -163,11 +163,10 @@ export function TimeType(options: FieldOptions): TimeField {
 // }
 
 export interface EnumOptions extends FieldOptions {
-  values: string[];
+  // required when not a reference to a lookup table
+  values?: string[];
   //  by default the type is the name as the field
   // it's recommended to scope the enum names in scenarios where it makes sense
-
-  // if no values how to specify foreign key enum info....
 
   tsType?: string;
   graphQLType?: string;
@@ -177,7 +176,7 @@ export interface EnumOptions extends FieldOptions {
 
 export class EnumField extends BaseField implements Field {
   type: Type;
-  private values: string[];
+  private values?: string[];
 
   constructor(options: EnumOptions) {
     super();
@@ -188,10 +187,19 @@ export class EnumField extends BaseField implements Field {
       type: options.tsType || options.name,
       graphQLType: options.graphQLType || options.name,
     };
+    if (!options.foreignKey && !options.values) {
+      throw new Error(
+        "values required if not look up table enum. Look-up table enum indicated by foreignKey field",
+      );
+    }
     this.values = options.values;
   }
 
   valid(val: any): boolean {
+    // lookup table enum and indicated via presence of foreignKey
+    if (!this.values) {
+      return true;
+    }
     let str = String(val);
     return this.values.some(
       (value) => value === str || value.toUpperCase() === str,
@@ -199,6 +207,11 @@ export class EnumField extends BaseField implements Field {
   }
 
   format(val: any): any {
+    // TODO need to format correctly for graphql purposes...
+    // how to best get the values in the db...
+    if (!this.values) {
+      return val;
+    }
     let str = String(val);
 
     for (let i = 0; i < this.values.length; i++) {
