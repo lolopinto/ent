@@ -197,7 +197,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     return result;
   }
 
-  private isBuilder(node: ID | {{useImport "Ent"}} | Builder<{{useImport "Ent"}}>): node is Builder<{{useImport "Ent"}}> {
+  isBuilder(node: ID | {{useImport "Ent"}} | Builder<{{useImport "Ent"}}>): node is Builder<{{useImport "Ent"}}> {
     return (node as Builder<{{useImport "Ent"}}>).placeholderID !== undefined;
   }
 }
