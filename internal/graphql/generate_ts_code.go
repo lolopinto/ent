@@ -887,7 +887,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 
 		if action.HasInput(a) {
 			intType.Extends = []string{
-				fmt.Sprintf("%sInput", actionPrefix),
+				a.GetInputName(),
 			}
 		}
 
