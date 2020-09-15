@@ -395,6 +395,14 @@ func (f *Field) ForeignImport() string {
 var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
 
 func (f *Field) getIDFieldTypeName() string {
+	_, ok := f.fieldType.(enttype.EnumeratedType)
+	// hmm not all foreign keys are id types... since the primary key can really be anything
+	// we "special case" enums for now but need to handle this later
+	// same logic from EvolvedIDField
+	if ok {
+		return ""
+	}
+
 	var typeName string
 	if f.fkey != nil {
 		typeName = f.fkey.Config

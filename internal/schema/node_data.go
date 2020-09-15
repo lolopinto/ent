@@ -9,7 +9,6 @@ import (
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/edge"
-	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/enum"
 )
@@ -236,17 +235,19 @@ func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
 // GetImportPathsForDependencies returns imports needed in dependencies e.g. actions and builders
 func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 	var ret []ImportPath
-	for _, f := range nodeData.FieldInfo.Fields {
-		entType := f.GetFieldType()
-		enumType, ok := entType.(enttype.EnumeratedType)
-		if !ok {
-			continue
-		}
 
-		ret = append(ret, ImportPath{
-			Import:      enumType.GetTSType(),
-			PackagePath: getImportPathForBaseModelFile(nodeData.PackageName),
-		})
+	for _, enum := range nodeData.GetTSEnums() {
+		if enum.Imported {
+			ret = append(ret, ImportPath{
+				Import:      enum.Name,
+				PackagePath: getImportPathForEnumFile(&enum),
+			})
+		} else {
+			ret = append(ret, ImportPath{
+				Import:      enum.Name,
+				PackagePath: getImportPathForBaseModelFile(nodeData.PackageName),
+			})
+		}
 	}
 
 	// unique nodes referenced in builder
