@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
@@ -110,13 +111,30 @@ func (s *Schema) addEnumFrom(tsName, gqlName, gqlType string, enumValues []strin
 	tsVals := make([]enum.Data, len(enumValues))
 	gqlVals := make([]enum.Data, len(enumValues))
 	for i, val := range enumValues {
+		allUpper := true
+		for _, char := range val {
+			if !unicode.IsLetter(char) {
+				continue
+			}
+			if !unicode.IsUpper(char) {
+				allUpper = false
+				break
+			}
+		}
+		// keep all caps constants as all caps constants
+		tsName := ""
+		if allUpper {
+			tsName = val
+		} else {
+			tsName = strcase.ToCamel(val)
+		}
 		gqlVals[i] = enum.Data{
 			Name: strings.ToUpper(val),
 			// norm for graphql enums is all caps
 			Value: strconv.Quote(strings.ToUpper(val)),
 		}
 		tsVals[i] = enum.Data{
-			Name: strcase.ToCamel(val),
+			Name: tsName,
 			// value is actually what's put there for now
 			// TODO we need to figure out if there's a standard here
 			// or a way to have keys: values for the generated enums
