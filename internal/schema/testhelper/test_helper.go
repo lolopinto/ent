@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
@@ -49,4 +50,13 @@ func ParseSchemaForTest(t *testing.T, absPath string, code map[string]string, la
 
 	require.NotNil(t, s)
 	return s
+}
+
+func ParseActionInfoForTest(t *testing.T, absPath string, code map[string]string, lang base.Language, nodeName string) *action.ActionInfo {
+	schema := ParseSchemaForTest(t, absPath, code, lang)
+
+	info := schema.Nodes[nodeName]
+	require.NotNil(t, info)
+
+	return info.NodeData.ActionInfo
 }

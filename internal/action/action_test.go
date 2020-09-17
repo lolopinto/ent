@@ -1,14 +1,17 @@
-package action
+package action_test
 
 import (
+	"path/filepath"
 	"sync"
 	"testing"
 
 	"github.com/iancoleman/strcase"
+	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	testsync "github.com/lolopinto/ent/internal/testingutils/sync"
 
@@ -20,13 +23,13 @@ func TestRequiredField(t *testing.T) {
 	f := getTestFieldByName(t, "AccountConfig", "LastName")
 	f2 := getTestFieldByName(t, "AccountConfig", "Bio")
 
-	action := getTestActionByType(t, "account", "ent.CreateAction")
-	action2 := getTestActionByType(t, "account", "ent.EditAction")
+	a := getTestActionByName(t, "account", "CreateAccountAction")
+	a2 := getTestActionByName(t, "account", "EditAccountAction")
 
-	assert.True(t, IsRequiredField(action, f), "LastName field not required in CreateAction as expected")
-	assert.False(t, IsRequiredField(action2, f), "LastName field required in EditAction not expected")
-	assert.False(t, IsRequiredField(action, f2), "Bio field required in CreateAction not expected")
-	assert.False(t, IsRequiredField(action2, f2), "Bio field required in EditAction not expected")
+	assert.True(t, action.IsRequiredField(a, f), "LastName field not required in CreateAction as expected")
+	assert.False(t, action.IsRequiredField(a2, f), "LastName field required in EditAction not expected")
+	assert.False(t, action.IsRequiredField(a, f2), "Bio field required in CreateAction not expected")
+	assert.False(t, action.IsRequiredField(a2, f2), "Bio field required in EditAction not expected")
 }
 
 func TestEdgeActions(t *testing.T) {
@@ -61,11 +64,11 @@ func TestEdgeActions(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		action := actionInfo.GetByName(tt.actionName)
+		a := actionInfo.GetByName(tt.actionName)
 
 		assert.NotNil(
 			t,
-			action,
+			a,
 			"expected there to be an action with name %s ",
 			tt.actionName,
 		)
@@ -90,7 +93,7 @@ func TestEdgeActions(t *testing.T) {
 		assert.Equal(
 			t,
 			tt.actionMethodName,
-			GetActionMethodName(action),
+			action.GetActionMethodName(a),
 		)
 	}
 }
@@ -154,7 +157,7 @@ func TestActionFields(t *testing.T) {
 	}`,
 		"contact",
 		[]expectedAction{
-			expectedAction{
+			{
 				name: "CreateContactAction",
 				fields: []string{
 					"EmailAddress",
@@ -163,7 +166,7 @@ func TestActionFields(t *testing.T) {
 					"PhoneNumber",
 				},
 			},
-			expectedAction{
+			{
 				name: "EditContactAction",
 				fields: []string{
 					"EmailAddress",
@@ -172,7 +175,7 @@ func TestActionFields(t *testing.T) {
 					"PhoneNumber",
 				},
 			},
-			expectedAction{
+			{
 				name:   "DeleteContactAction",
 				fields: []string{},
 			},
@@ -225,7 +228,7 @@ func TestActionFieldsWithPrivateFields(t *testing.T) {
 	}`,
 		"user",
 		[]expectedAction{
-			expectedAction{
+			{
 				name: "CreateUserAction",
 				fields: []string{
 					"FirstName",
@@ -233,7 +236,7 @@ func TestActionFieldsWithPrivateFields(t *testing.T) {
 					"Password",
 				},
 			},
-			expectedAction{
+			{
 				name: "EditUserAction",
 				fields: []string{
 					"FirstName",
@@ -281,19 +284,103 @@ func TestDefaultActionFieldsWithPrivateFields(t *testing.T) {
 		"user",
 		// Password not show up here by default since private
 		[]expectedAction{
-			expectedAction{
+			{
 				name: "CreateUserAction",
 				fields: []string{
 					"EmailAddress",
 					"FirstName",
 				},
 			},
-			expectedAction{
+			{
 				name: "EditUserAction",
 				fields: []string{
 					"EmailAddress",
 					"FirstName",
 				},
+			},
+		},
+	)
+}
+
+func TestDefaultNoFields(t *testing.T) {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	actionInfo := testhelper.ParseActionInfoForTest(
+		t,
+		absPath,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, Field, StringType, Action, ActionOperation, BaseEntSchema, NoFields} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({name: "FirstName"}),
+						StringType({name: "LastName"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Edit, 
+						},
+					];
+				}
+				`,
+			),
+		},
+		base.TypeScript,
+		"UserConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
+		[]expectedAction{
+			{
+				name: "EditUserAction",
+				// TODO action.GetFields() shouldn't include fields that are not editable by the action
+				fields: []string{"ID", "createdAt", "updatedAt", "FirstName", "LastName"},
+			},
+		},
+	)
+}
+
+func TestExplicitNoFields(t *testing.T) {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	actionInfo := testhelper.ParseActionInfoForTest(
+		t,
+		absPath,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, Field, StringType, Action, ActionOperation, BaseEntSchema, NoFields} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({name: "FirstName"}),
+						StringType({name: "LastName"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Edit, 
+							fields: [NoFields],
+						},
+					];
+				}
+				`,
+			),
+		},
+		base.TypeScript,
+		"UserConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
+		[]expectedAction{
+			{
+				name:   "EditUserAction",
+				fields: []string{},
 			},
 		},
 	)
@@ -312,16 +399,19 @@ func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expe
 
 	require.NotNil(t, fnMap["GetActions"])
 
-	actionInfo, err := ParseActions(nodeName, fnMap["GetActions"], fieldInfo, nil, base.GoLang)
+	actionInfo, err := action.ParseActions(nodeName, fnMap["GetActions"], fieldInfo, nil, base.GoLang)
 	require.Nil(t, err)
+	verifyExpectedActions(t, actionInfo, expActions)
+}
 
+func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActions []expectedAction) {
 	require.Len(t, actionInfo.Actions, len(expActions))
 
 	for _, expAction := range expActions {
-		action := actionInfo.GetByName(expAction.name)
-		require.NotNil(t, action, "action by name %s is nil", expAction.name)
+		a := actionInfo.GetByName(expAction.name)
+		require.NotNil(t, a, "action by name %s is nil", expAction.name)
 
-		fields := action.GetFields()
+		fields := a.GetFields()
 
 		require.Equal(t, len(expAction.fields), len(fields), "length of fields")
 
@@ -374,7 +464,7 @@ func initSyncs() {
 			// TODO need to fix this dissonance...
 			fieldInfo := getTestFieldInfo(t, strcase.ToCamel(configName)+"Config")
 			edgeInfo := getTestEdgeInfo(t, configName)
-			actionInfo, err := ParseActions("Account", fn, fieldInfo, edgeInfo, base.GoLang)
+			actionInfo, err := action.ParseActions("Account", fn, fieldInfo, edgeInfo, base.GoLang)
 			assert.NotNil(t, actionInfo, "invalid actionInfo retrieved")
 			require.NoError(t, err)
 			return actionInfo
@@ -397,15 +487,15 @@ func getEdgeInfoMap() *testsync.RunOnce {
 	return rE
 }
 
-func getTestActionInfo(t *testing.T, configName string) *ActionInfo {
-	return getActionInfoMap().Get(t, configName).(*ActionInfo)
+func getTestActionInfo(t *testing.T, configName string) *action.ActionInfo {
+	return getActionInfoMap().Get(t, configName).(*action.ActionInfo)
 }
 
-func getTestActionByType(t *testing.T, configName string, actionType string) Action {
-	name := getActionTypeFromString(actionType).(concreteNodeActionType).getDefaultActionName(configName)
-	action := getTestActionInfo(t, configName).GetByName(name)
-	assert.NotNil(t, action, "invalid action retrieved")
-	return action
+func getTestActionByName(t *testing.T, configName string, actionName string) action.Action {
+	//	name := action.GetActionTypeFromString(actionType).(actionWithDefaultActionName).getDefaultActionName(configName)
+	a := getTestActionInfo(t, configName).GetByName(actionName)
+	assert.NotNil(t, a, "invalid action retrieved")
+	return a
 }
 
 // copied and modified from field_test.go

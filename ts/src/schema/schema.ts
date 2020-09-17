@@ -289,3 +289,9 @@ export interface Action {
   graphQLName?: string;
   hideFromGraphQL?: boolean;
 }
+
+// sentinel that indicates an action has no fields
+// should be the only field in an action
+// required to differentiate against default value of no fields being set to indicate
+// all fields in a create/edit mutation
+export const NoFields = "__NO_FIELDS__";
