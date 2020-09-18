@@ -86,6 +86,9 @@ type Field struct {
 func (f *Field) GetEntType() enttype.EntType {
 	switch f.Type.DBType {
 	case UUID:
+		if f.Nullable {
+			return &enttype.NullableIDType{}
+		}
 		return &enttype.IDType{}
 	case Int64ID:
 		panic("unsupported type")
