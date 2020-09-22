@@ -134,3 +134,105 @@ describe("mixed case enum", () => {
     );
   });
 });
+
+test("fkey enum", () => {
+  let e = EnumType({ name: "role", foreignKey: ["Role", "role"] });
+  ["1", "2", "3", "HAPPY", "sad"].forEach((id) => {
+    // everything is valid since we don't currently support validating from source
+    // and depend on db foreign key validation to do it
+    expect(e.valid(id)).toBe(true);
+    // we return passed in values since no graphql formatting happening
+    expect(e.format(id)).toBe(id);
+  });
+});
+
+describe("errors", () => {
+  test("no fkey, no values", () => {
+    try {
+      EnumType({ name: "role" });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(/^values required if not look up table enum/);
+    }
+  });
+
+  test("zero-length values", () => {
+    try {
+      EnumType({ name: "role", values: [] });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(/need at least one value in enum type/);
+    }
+  });
+
+  test("fkey and values provided", () => {
+    try {
+      EnumType({ name: "role", values: ["sss"], foreignKey: ["Role", "role"] });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(
+        /cannot specify values and foreign key for lookup table enum type/,
+      );
+    }
+  });
+
+  test("fkey and empty values provided", () => {
+    try {
+      EnumType({
+        name: "role",
+        values: [],
+        foreignKey: ["Role", "role"],
+      });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(
+        /cannot specify values and foreign key for lookup table enum type/,
+      );
+    }
+  });
+
+  test("createEnumType invalid", () => {
+    try {
+      EnumType({
+        name: "role",
+        foreignKey: ["Role", "role"],
+        createEnumType: true,
+      });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(
+        /cannot specify createEnumType without specifying values/,
+      );
+    }
+  });
+
+  test("tsType invalid", () => {
+    try {
+      EnumType({
+        name: "role",
+        foreignKey: ["Role", "role"],
+        tsType: "Role",
+      });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(
+        /cannot specify tsType without specifying values/,
+      );
+    }
+  });
+
+  test("graphqlType invalid", () => {
+    try {
+      EnumType({
+        name: "role",
+        foreignKey: ["Role", "role"],
+        graphQLType: "Role",
+      });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(
+        /cannot specify graphQLType without specifying values/,
+      );
+    }
+  });
+});

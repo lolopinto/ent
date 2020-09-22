@@ -95,6 +95,8 @@ type DefaulFieldNameType interface {
 // EnumeratedType indicates that this is an enum type
 type EnumeratedType interface {
 	TSType
+	// GetTSName refers to the name of the generated enum
+	GetTSName() string
 	GetGraphQLName() string
 	GetEnumValues() []string
 }
@@ -826,6 +828,10 @@ func (t *EnumType) GetGraphQLType() string {
 	return fmt.Sprintf("%s!", t.GraphQLType)
 }
 
+func (t *EnumType) GetTSName() string {
+	return t.Type
+}
+
 func (t *EnumType) GetGraphQLName() string {
 	return t.GraphQLType
 }
@@ -884,6 +890,10 @@ func (t *NullableEnumType) GetEnumValues() []string {
 
 func (t *NullableEnumType) GetGraphQLType() string {
 	return t.GraphQLType
+}
+
+func (t *NullableEnumType) GetTSName() string {
+	return t.Type
 }
 
 func (t *NullableEnumType) GetGraphQLName() string {

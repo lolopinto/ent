@@ -1,14 +1,17 @@
 package db
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen"
@@ -284,6 +287,14 @@ func (s *dbSchema) generateShemaTables() {
 		}
 	}
 
+	// make sure to add lookup table enums to the schema
+	for _, info := range s.schema.Enums {
+		if !info.LookupTableEnum() {
+			continue
+		}
+		s.addTable(s.createTableForNode(info.NodeData))
+	}
+
 	if addedAtLeastOneTable {
 		s.addEdgeConfigTable()
 	}
@@ -364,9 +375,86 @@ func (s *dbSchema) getSchemaForTemplate() *dbSchemaTemplate {
 		})
 	}
 
+	addData := func(nodeData *schema.NodeData) {
+		pkeys := []string{}
+		for _, field := range nodeData.FieldInfo.Fields {
+			// we only support single field primary keys here so this is the solution
+			// eventually, this needs to change...
+			if field.SingleFieldPrimaryKey() {
+				pkeys = append(pkeys, strconv.Quote(field.GetDbColName()))
+			}
+		}
+
+		var rows []string
+		for _, row := range nodeData.DBRows {
+			var kvPairs []string
+
+			var keys []string
+			seenKeys := make(map[string]bool)
+			for k := range row {
+				if seenKeys[k] {
+					continue
+				}
+				seenKeys[k] = true
+				keys = append(keys, k)
+			}
+			// sort the keys so we can have stable values for testing purposes
+			// go through this once in case there's missing keys in some rows
+			sort.Strings(keys)
+
+			for _, k := range keys {
+				v, ok := row[k]
+				if !ok {
+					continue
+				}
+
+				var val interface{}
+				if v == nil {
+					val = "None"
+				} else {
+					// we're assuming a scalar. works for strings, booleans, int, float etc
+					b, err := json.Marshal(v)
+					val = string(b)
+					if err != nil {
+						panic(errors.Wrap(err, "Error unmarshalling value"))
+					}
+				}
+				kvPairs = append(kvPairs, fmt.Sprintf("'%s': %v", k, val))
+			}
+			rows = append(rows, fmt.Sprintf("{%s}", strings.Join(kvPairs, ", ")))
+		}
+
+		ret.Data = append(ret.Data, dbDataInfo{
+			TableName: nodeData.TableName,
+			Rows:      rows,
+			Pkeys:     fmt.Sprintf("[%s]", strings.Join(pkeys, ", ")),
+		})
+	}
+
+	// add data values
+	for _, info := range s.schema.Enums {
+		if info.LookupTableEnum() {
+			addData(info.NodeData)
+		}
+	}
+
+	for _, node := range s.schema.Nodes {
+		if !node.NodeData.EnumTable {
+			continue
+		}
+
+		nodeData := node.NodeData
+		addData(nodeData)
+	}
+
 	// sort edges
 	sort.Slice(ret.Edges, func(i, j int) bool {
 		return ret.Edges[i].EdgeName < ret.Edges[j].EdgeName
+	})
+
+	// sort data
+	sort.Slice(ret.Data, func(i, j int) bool {
+		return ret.Data[i].TableName < ret.Data[j].TableName
 	})
 	return ret
 }
@@ -542,6 +630,8 @@ func (s *dbSchema) addPrimaryKeyConstraint(f *field.Field, nodeData *schema.Node
 	*constraints = append(*constraints, constraint)
 }
 
+var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
+
 // adds a foreignKeyConstraint to the array of constraints
 // also returns new dbType of column
 func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
@@ -553,11 +643,24 @@ func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.Node
 	tableName := nodeData.GetTableName()
 
 	fkeyConfig := s.schema.Nodes[fkey.Config]
-	if fkeyConfig == nil {
+	var fkeyNodeData *schema.NodeData
+	if fkeyConfig != nil {
+		fkeyNodeData = fkeyConfig.NodeData
+	} else {
+		match := structNameRegex.FindStringSubmatch(fkey.Config)
+		if len(match) != 2 {
+			util.Die(fmt.Errorf("invalid config name %s", fkey.Config))
+		}
+		enum, ok := s.schema.Enums[match[1]]
+		if ok {
+			fkeyNodeData = enum.NodeData
+		}
+	}
+	if fkeyNodeData == nil {
 		util.Die(fmt.Errorf("invalid EntConfig %s set as ForeignKey of field %s on ent config %s", fkey.Config, f.FieldName, nodeData.EntConfigName))
 	}
 
-	fkeyTable := s.getTableForNode(fkeyConfig.NodeData)
+	fkeyTable := s.getTableForNode(fkeyNodeData)
 
 	var fkeyColumn *dbColumn
 	for _, fkeyCol := range fkeyTable.Columns {
@@ -785,8 +888,15 @@ type dbEdgeInfo struct {
 	EdgeLine string // generated line for edge (python dict)
 }
 
+type dbDataInfo struct {
+	TableName string
+	Pkeys     string
+	Rows      []string
+}
+
 // wrapper object to represent the list of tables that will be passed to a schema template file
 type dbSchemaTemplate struct {
 	Tables []dbSchemaTableInfo
 	Edges  []dbEdgeInfo
+	Data   []dbDataInfo
 }

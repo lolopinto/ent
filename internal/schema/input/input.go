@@ -14,11 +14,13 @@ type Schema struct {
 }
 
 type Node struct {
-	TableName       *string           `json:"tableName"`
-	Fields          []*Field          `json:"fields"`
-	AssocEdges      []*AssocEdge      `json:"assocEdges"`
-	AssocEdgeGroups []*AssocEdgeGroup `json:"assocEdgeGroups"`
-	Actions         []*Action         `json:"actions"`
+	TableName       *string                  `json:"tableName"`
+	Fields          []*Field                 `json:"fields"`
+	AssocEdges      []*AssocEdge             `json:"assocEdges"`
+	AssocEdgeGroups []*AssocEdgeGroup        `json:"assocEdgeGroups"`
+	Actions         []*Action                `json:"actions"`
+	EnumTable       bool                     `json:"enumTable"`
+	DBRows          []map[string]interface{} `json:"dbRows"`
 }
 
 func (n *Node) AddAssocEdge(edge *AssocEdge) {
@@ -117,6 +119,12 @@ func (f *Field) GetEntType() enttype.EntType {
 		return &enttype.RawJSONType{}
 
 	case StringEnum, Enum:
+		typ := f.Type.Type
+		graphqlType := f.Type.GraphQLType
+		if f.ForeignKey != nil {
+			typ = f.ForeignKey[0]
+			graphqlType = f.ForeignKey[0]
+		}
 		if f.Type.Type == "" {
 			panic("enum type name is required")
 		}
@@ -126,15 +134,15 @@ func (f *Field) GetEntType() enttype.EntType {
 		if f.Nullable {
 			return &enttype.NullableEnumType{
 				EnumDBType:  f.Type.DBType == Enum,
-				Type:        f.Type.Type,
-				GraphQLType: f.Type.GraphQLType,
+				Type:        typ,
+				GraphQLType: graphqlType,
 				Values:      f.Type.Values,
 			}
 		}
 		return &enttype.EnumType{
 			EnumDBType:  f.Type.DBType == Enum,
-			Type:        f.Type.Type,
-			GraphQLType: f.Type.GraphQLType,
+			Type:        typ,
+			GraphQLType: graphqlType,
 			Values:      f.Type.Values,
 		}
 	}

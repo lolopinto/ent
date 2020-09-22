@@ -311,6 +311,14 @@ func (f *Field) IDField() bool {
 }
 
 func (f *Field) EvolvedIDField() bool {
+	// hmm not all foreign keys are id types... since the primary key can really be anything
+	// we "special case" enums for now but need to handle this later
+	// TODO
+	_, ok := f.fieldType.(enttype.EnumeratedType)
+	if ok {
+		return false
+	}
+
 	// TODO kill above and convert to this
 	// if there's a fieldEdge or a foreign key or an inverse edge to this, this is an ID field
 	// and we should use the ID type and add a builder
@@ -372,9 +380,29 @@ func (f *Field) TsType() string {
 	return tsType.GetTSType()
 }
 
+func (f *Field) ForeignImport() string {
+	if f.fkey == nil {
+		return ""
+	}
+	// foreign key with enum type requires an import
+	enumType, ok := f.fieldType.(enttype.EnumeratedType)
+	if ok {
+		return enumType.GetTSName()
+	}
+	return ""
+}
+
 var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
 
 func (f *Field) getIDFieldTypeName() string {
+	_, ok := f.fieldType.(enttype.EnumeratedType)
+	// hmm not all foreign keys are id types... since the primary key can really be anything
+	// we "special case" enums for now but need to handle this later
+	// same logic from EvolvedIDField
+	if ok {
+		return ""
+	}
+
 	var typeName string
 	if f.fkey != nil {
 		typeName = f.fkey.Config

@@ -97,6 +97,21 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 		}(key)
 	}
 
+	wg.Add(len(data.Schema.Enums))
+	for key := range data.Schema.Enums {
+		go func(key string) {
+			defer wg.Done()
+
+			info := data.Schema.Enums[key]
+
+			// only lookup table enums get their own files
+			if !info.LookupTableEnum() {
+				return
+			}
+
+			serr.Append(writeEnumFile(info, data.CodePath))
+		}(key)
+	}
 	wg.Wait()
 	if err := serr.Err(); err != nil {
 		return err
@@ -179,6 +194,7 @@ type nodeTemplateCodePath struct {
 	NodeData *schema.NodeData
 	CodePath *codegen.CodePath
 	Package  *codegen.ImportPackage
+	Imports  []schema.ImportPath
 }
 
 // copied to internal/schema/node_data.go
@@ -188,6 +204,14 @@ func getFilePathForBaseModelFile(nodeData *schema.NodeData) string {
 
 func getFilePathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s.ts", nodeData.PackageName)
+}
+
+func getFilePathForEnumFile(info *schema.EnumInfo) string {
+	return fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name))
+}
+
+func getImportPathForEnumFile(info *schema.EnumInfo) string {
+	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(info.Enum.Name))
 }
 
 func getImportPathForModelFile(nodeData *schema.NodeData) string {
@@ -266,6 +290,21 @@ func writeEntFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) err
 	}, file.WriteOnce())
 }
 
+func writeEnumFile(enumInfo *schema.EnumInfo, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+	return file.Write(&file.TemplatedBasedFileWriter{
+		// enum file can be rendered on its own so just render it
+		Data:              enumInfo.Enum,
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("../schema/enum/enum.tmpl"),
+		TemplateName:      "enum.tmpl",
+		PathToFile:        getFilePathForEnumFile(enumInfo),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
 func writeConstFile(nodeData []enum.Data, edgeData []enum.Data) error {
 	// sort data so that the enum is stable
 	sort.Slice(nodeData, func(i, j int) bool {
@@ -331,6 +370,7 @@ func writeBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath)
 			NodeData: nodeData,
 			CodePath: codePathInfo,
 			Package:  codePathInfo.GetImportPackage(),
+			Imports:  nodeData.GetImportsForBaseFile(),
 		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("builder.tmpl"),

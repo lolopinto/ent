@@ -1,7 +1,7 @@
 {{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" }}
 {{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" }}
 
-{{ range .NodeData.GetImportPaths -}}
+{{ range .NodeData.GetImportPathsForDependencies -}}
   {{ if .DefaultImport -}}
     {{ reserveDefaultImport .PackagePath .Import}}
   {{ else -}}
