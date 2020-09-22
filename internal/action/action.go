@@ -159,6 +159,8 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 	return actions, nil
 }
 
+const noFields = "__NO_FIELDS__"
+
 func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ concreteNodeActionType) ([]*field.Field, error) {
 	var fields []*field.Field
 	if !typ.supportsFieldsFromEnt() {
@@ -169,6 +171,10 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 	// add ability to automatically add id field
 	// add ability to automatically remove id field
 
+	// provides a way to say this action doesn't have any fields
+	if len(fieldNames) == 1 && fieldNames[0] == noFields {
+		return fields, nil
+	}
 	// no override of fields so we should get default fields
 	if len(fieldNames) == 0 {
 		for _, f := range fieldInfo.Fields {

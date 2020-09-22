@@ -19,6 +19,7 @@ export {
   ActionOperation,
   Action,
   EdgeAction,
+  NoFields,
 } from "./schema";
 
 export {

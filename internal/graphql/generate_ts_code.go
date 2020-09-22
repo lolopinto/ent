@@ -1081,7 +1081,11 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 				fmt.Sprintf("let %s = await %s.saveXFromID(context.getViewer(), input.%sID, input.%sID);", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance, strcase.ToLowerCamel(edge.Singular())),
 			)
 		} else {
-			return nil, errors.New("unexpected editable edge")
+			// no fields
+			result.FunctionContents = append(
+				result.FunctionContents,
+				fmt.Sprintf("let %s = await %s.saveXFromID(context.getViewer(), input.%sID);", nodeData.NodeInstance, a.GetActionName(), nodeData.NodeInstance),
+			)
 		}
 
 		result.FunctionContents = append(
