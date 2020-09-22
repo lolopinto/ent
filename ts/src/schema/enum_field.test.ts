@@ -190,4 +190,49 @@ describe("errors", () => {
       );
     }
   });
+
+  test("createEnumType invalid", () => {
+    try {
+      EnumType({
+        name: "role",
+        foreignKey: ["Role", "role"],
+        createEnumType: true,
+      });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(
+        /cannot specify createEnumType without specifying values/,
+      );
+    }
+  });
+
+  test("tsType invalid", () => {
+    try {
+      EnumType({
+        name: "role",
+        foreignKey: ["Role", "role"],
+        tsType: "Role",
+      });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(
+        /cannot specify tsType without specifying values/,
+      );
+    }
+  });
+
+  test("graphqlType invalid", () => {
+    try {
+      EnumType({
+        name: "role",
+        foreignKey: ["Role", "role"],
+        graphQLType: "Role",
+      });
+      fail("shouldn't get here");
+    } catch (err) {
+      expect(err.message).toMatch(
+        /cannot specify graphQLType without specifying values/,
+      );
+    }
+  });
 });

@@ -164,6 +164,7 @@ export function TimeType(options: FieldOptions): TimeField {
 
 export interface EnumOptions extends FieldOptions {
   // required when not a reference to a lookup table
+  // when using a lookup table enum, we should use all caps because we don't have the values to translate back
   values?: string[];
   //  by default the type is the name as the field
   // it's recommended to scope the enum names in scenarios where it makes sense
@@ -202,7 +203,17 @@ export class EnumField extends BaseField implements Field {
           "cannot specify values and foreign key for lookup table enum type",
         );
       }
-      // cannot also specify tsType, graphqlType, createEnumType
+      if (options.createEnumType) {
+        throw new Error(
+          "cannot specify createEnumType without specifying values",
+        );
+      }
+      if (options.tsType) {
+        throw new Error("cannot specify tsType without specifying values");
+      }
+      if (options.graphQLType) {
+        throw new Error("cannot specify graphQLType without specifying values");
+      }
     }
     this.values = options.values;
   }
