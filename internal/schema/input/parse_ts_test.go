@@ -43,13 +43,14 @@ type field struct {
 }
 
 type assocEdge struct {
-	name        string
-	schemaName  string
-	symmetric   bool
-	unique      bool
-	tableName   string
-	inverseEdge *inverseAssocEdge
-	edgeActions []action
+	name            string
+	schemaName      string
+	symmetric       bool
+	unique          bool
+	tableName       string
+	inverseEdge     *inverseAssocEdge
+	edgeActions     []action
+	hideFromGraphQL bool
 }
 
 type inverseAssocEdge struct {
@@ -151,6 +152,7 @@ func verifyAssocEdges(t *testing.T, expAssocEdges []assocEdge, assocEdges []*inp
 		assert.Equal(t, expEdge.schemaName, edge.SchemaName)
 		assert.Equal(t, expEdge.symmetric, edge.Symmetric)
 		assert.Equal(t, expEdge.unique, edge.Unique)
+		assert.Equal(t, expEdge.hideFromGraphQL, edge.HideFromGraphQL)
 
 		if expEdge.inverseEdge == nil {
 			assert.Nil(t, edge.InverseEdge)

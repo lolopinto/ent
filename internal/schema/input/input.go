@@ -161,7 +161,8 @@ type AssocEdge struct {
 	InverseEdge *InverseAssocEdge `json:"inverseEdge"`
 	EdgeActions []*EdgeAction     `json:"edgeActions"`
 	// Go specific
-	EntConfig *schemaparser.EntConfigInfo
+	EntConfig       *schemaparser.EntConfigInfo
+	HideFromGraphQL bool `json:"hideFromGraphQL"`
 }
 
 type AssocEdgeGroup struct {

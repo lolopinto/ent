@@ -574,6 +574,9 @@ func (m NodeMapInfo) addNewEdgeType(nodeData *NodeData, constName, constValue st
 }
 
 func (m NodeMapInfo) HideFromGraphQL(edge edge.Edge) bool {
+	if edge.HideFromGraphQL() {
+		return true
+	}
 	node := edge.GetNodeInfo().Node
 	nodeData := m.getNodeDataFromGraphQLName(node)
 	if nodeData == nil {

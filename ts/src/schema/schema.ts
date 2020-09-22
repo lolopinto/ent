@@ -52,6 +52,7 @@ export interface AssocEdge {
   // optional, can be overriden as needed. if not provided, schema generates one
   tableName?: string;
   edgeActions?: EdgeAction[];
+  hideFromGraphQL?: boolean;
 }
 
 // type PickKey<T, K extends keyof T> = Extract<keyof T, K>;

@@ -256,6 +256,37 @@ func TestParseEdges(t *testing.T) {
 				},
 			},
 		},
+		"hidden edge from graphql": {
+			code: map[string]string{
+				"post.ts": getCodeWithSchema(
+					`
+					import {Schema, Field, Edge} from "{schema}";
+	
+					export default class Post implements Schema {
+						fields: Field[] = [];
+	
+						edges: Edge[] = [
+							{
+								name: "likers",
+								schemaName: "User",
+								hideFromGraphQL: true,
+							},
+						];
+					};`),
+			},
+			expectedOutput: map[string]node{
+				"Post": {
+					fields: []field{},
+					assocEdges: []assocEdge{
+						{
+							name:            "likers",
+							schemaName:      "User",
+							hideFromGraphQL: true,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	runTestCases(t, testCases)

@@ -155,6 +155,7 @@ type Edge interface {
 	GetEntConfig() schemaparser.EntConfigInfo
 	GraphQLEdgeName() string
 	CamelCaseEdgeName() string
+	HideFromGraphQL() bool
 	GetTSGraphQLTypeImports() []enttype.FileImport
 }
 
@@ -166,9 +167,10 @@ type PluralEdge interface {
 }
 
 type commonEdgeInfo struct {
-	EdgeName  string
-	entConfig schemaparser.EntConfigInfo
-	NodeInfo  nodeinfo.NodeInfo
+	EdgeName         string
+	entConfig        schemaparser.EntConfigInfo
+	NodeInfo         nodeinfo.NodeInfo
+	_HideFromGraphQL bool
 }
 
 func (e *commonEdgeInfo) GetEdgeName() string {
@@ -189,6 +191,10 @@ func (e *commonEdgeInfo) CamelCaseEdgeName() string {
 
 func (e *commonEdgeInfo) GraphQLEdgeName() string {
 	return strcase.ToLowerCamel(e.EdgeName)
+}
+
+func (e *commonEdgeInfo) HideFromGraphQL() bool {
+	return e._HideFromGraphQL
 }
 
 type FieldEdge struct {
@@ -521,6 +527,7 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 			schemaparser.GetEntConfigFromName(edge.SchemaName),
 		)
 	}
+	assocEdge._HideFromGraphQL = edge.HideFromGraphQL
 
 	return assocEdge
 }
