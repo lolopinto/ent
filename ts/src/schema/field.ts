@@ -198,7 +198,9 @@ export class EnumField extends BaseField implements Field {
       }
     } else {
       if (options.values) {
-        throw new Error("cannot specify values and foreign key for enum type");
+        throw new Error(
+          "cannot specify values and foreign key for lookup table enum type",
+        );
       }
       // cannot also specify tsType, graphqlType, createEnumType
     }
