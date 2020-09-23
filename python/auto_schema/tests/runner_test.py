@@ -371,15 +371,20 @@ def setup_assoc_edge_config(new_test_runner):
     return r
 
 
+def recreate_metadata_fixture(new_test_runner, metadata, prev_runner):
+    metadata.bind = prev_runner.get_connection()
+    metadata.reflect()
+
+    r = new_test_runner(metadata, prev_runner)
+    return r
+
+
 def run_edge_metadata_script(new_test_runner, metadata, message, num_files=2, prev_runner=None, num_changes=1):
     # TODO combine with recreate_with_new_metadata?
     if prev_runner is None:
         prev_runner = setup_assoc_edge_config(new_test_runner)
 
-    metadata.bind = prev_runner.get_connection()
-    metadata.reflect()
-
-    r = new_test_runner(metadata, prev_runner)
+    r = recreate_metadata_fixture(new_test_runner, metadata, prev_runner)
     assert len(r.compute_changes()) == num_changes
 
     assert r.revision_message() == message
@@ -943,7 +948,7 @@ class TestPostgresRunner(BaseTestRunner):
         validate_metadata_after_change(r2, r2.get_metadata())
 
     @pytest.mark.usefixtures("metadata_with_table")
-    def test_check_constraint_added(self, new_test_runner, metadata_with_table):
+    def test_check_constraint_added_and_removed(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
         run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
@@ -951,7 +956,7 @@ class TestPostgresRunner(BaseTestRunner):
             r, new_test_runner, metadata_with_table, conftest.metadata_with_constraint_added_after)
 
         message = r2.revision_message()
-        assert message == "add constraint meaning_of_life_correct"
+        assert message == "add constraint meaning_of_life_correct to accounts"
 
         r2.run()
 
@@ -959,6 +964,18 @@ class TestPostgresRunner(BaseTestRunner):
         assert_num_files(r2, 2)
         assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
         validate_metadata_after_change(r2, r2.get_metadata())
+
+        r3 = recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
+
+        message = r3.revision_message()
+        assert message == "drop constraint meaning_of_life_correct from accounts"
+
+        r3.run()
+
+        # should have the expected files with the expected tables
+        assert_num_files(r3, 3)
+        assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
 
     @pytest.mark.usefixtures('metadata_with_enum_type')
     def test_enum_type(self, new_test_runner, metadata_with_enum_type):

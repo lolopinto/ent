@@ -290,10 +290,14 @@ def _check_existing_table(conn_table, metadata_table, upgrade_ops, sch):
     meta_constraints = {
         constraint.name: constraint for constraint in metadata_table.constraints}
 
-    for constraint in conn_constraints:
-        pass
-
     new_ops = []
+
+    for name in conn_constraints:
+        if not name in meta_constraints:
+            constraint = conn_constraints[name]
+            new_ops.append(
+                ops.OurDropConstraintOp.from_constraint(constraint))
+
     for name in meta_constraints:
         if not name in conn_constraints:
             constraint = meta_constraints[name]
@@ -301,7 +305,6 @@ def _check_existing_table(conn_table, metadata_table, upgrade_ops, sch):
                 ops.OurCreateCheckConstraintOp.from_constraint(constraint))
 
     if len(new_ops) > 0:
-        # print('addedd')
         upgrade_ops.ops.append(
             alembicops.ModifyTableOps(
                 metadata_table.name, new_ops, schema=sch)

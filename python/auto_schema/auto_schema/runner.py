@@ -242,13 +242,14 @@ class Runner(object):
             # todo test these
             # effectively rename a column by dropping column with fkey constraint and readding it back
             'DropConstraintOp': lambda op: 'drop constraint %s from %s' % (op.constraint_name, op.table_name),
+            'OurDropConstraintOp': lambda op: 'drop constraint %s from %s' % (op.constraint_name, op.table_name),
             'CreateForeignKeyOp': lambda op: 'create fk constraint %s on %s' % (op.constraint_name, op.source_table),
             # TODO go through all alembic ops and create default values here
             'AddRowsOp': lambda op: op.get_revision_message(),
             'RemoveRowsOp': lambda op: op.get_revision_message(),
             'ModifyRowsOp': lambda op: op.get_revision_message(),
-            'CreateCheckConstraintOp': lambda op: 'add constraint %s' % op.constraint_name,
-            'OurCreateCheckConstraintOp': lambda op: 'add constraint %s' % op.constraint_name,
+            'CreateCheckConstraintOp': lambda op: 'add constraint %s to %s' % (op.constraint_name, op.table_name),
+            'OurCreateCheckConstraintOp': lambda op: 'add constraint %s to %s' % (op.constraint_name, op.table_name),
         }
 
         changes = [class_name_map[type(op).__name__](op) for op in diff]

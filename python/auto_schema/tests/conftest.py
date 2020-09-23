@@ -125,6 +125,10 @@ def default_children_of_table():
 
 @pytest.fixture
 def metadata_with_table():
+    return metadata_with_base_table_restored()
+
+
+def metadata_with_base_table_restored():
     metadata = sa.MetaData()
     changes = default_children_of_table()
     sa.Table('accounts', metadata,

@@ -260,3 +260,15 @@ class DropEnumOp(MigrateOperation):
 # alembic for some reason doesn't have it...
 class OurCreateCheckConstraintOp(alembicops.CreateCheckConstraintOp):
     pass
+
+
+# need to override this so that when we reverse, we render ours instead of theirs
+class OurDropConstraintOp(alembicops.DropConstraintOp):
+
+    def reverse(self):
+        if self._orig_constraint is None:
+            raise ValueError(
+                "operation is not reversible; "
+                "original constraint is not present"
+            )
+        return OurCreateCheckConstraintOp.from_constraint(self._orig_constraint)
