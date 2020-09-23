@@ -4,6 +4,7 @@ from alembic.operations import Operations, MigrateOperation
 import sqlalchemy as sa
 import pprint
 from sqlalchemy.dialects import postgresql
+import alembic.operations.ops as alembicops
 
 
 @comparators.dispatch_for("schema")
@@ -235,7 +236,7 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
 
 
 @comparators.dispatch_for("schema")
-def compare_enum(autogen_context, upgrade_ops, schemas):
+def compare_schema(autogen_context, upgrade_ops, schemas):
     inspector = autogen_context.inspector
 
     db_metadata = sa.MetaData()
@@ -283,6 +284,28 @@ def _check_existing_table(conn_table, metadata_table, upgrade_ops, sch):
     for name in metadata_columns:
         if not name in conn_columns:
             _check_new_column(metadata_columns[name], upgrade_ops, sch)
+
+    conn_constraints = {
+        constraint.name: constraint for constraint in conn_table.constraints}
+    meta_constraints = {
+        constraint.name: constraint for constraint in metadata_table.constraints}
+
+    for constraint in conn_constraints:
+        pass
+
+    new_ops = []
+    for name in meta_constraints:
+        if not name in conn_constraints:
+            constraint = meta_constraints[name]
+            new_ops.append(
+                ops.OurCreateCheckConstraintOp.from_constraint(constraint))
+
+    if len(new_ops) > 0:
+        # print('addedd')
+        upgrade_ops.ops.append(
+            alembicops.ModifyTableOps(
+                metadata_table.name, new_ops, schema=sch)
+        )
 
 
 def _check_new_column(metadata_column, upgrade_ops, sch):

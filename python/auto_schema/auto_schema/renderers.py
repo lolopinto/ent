@@ -1,6 +1,7 @@
 from alembic.autogenerate import renderers
 from . import ops
 from . import util
+import sqlalchemy as sa
 
 # no need to put timestamps when rendering
 _IGNORED_KEYS = ['created_at', 'updated_at']
@@ -154,3 +155,9 @@ def render_add_enum_op(autogen_context, op):
 @renderers.dispatch_for(ops.DropEnumOp)
 def render_drop_enum_op(autogen_context, op):
     return "op.drop_enum_type('%s', [%s])" % (op.enum_name, util.render_list_csv(op.values))
+
+
+# hmm not sure why we need this. there's probably an easier way to do this that doesn't require this...
+@renderers.dispatch_for(ops.OurCreateCheckConstraintOp)
+def render_check_constraint(autogen_context, op):
+    return "op.create_check_constraint('%s', '%s', '%s')" % (op.constraint_name, op.table_name, op.condition)

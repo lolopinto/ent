@@ -354,6 +354,13 @@ def metadata_with_column_check_constraint():
     return metadata
 
 
+def metadata_with_constraint_added_after(metadata):
+    return _add_constraint_to_metadata(
+        metadata,
+        sa.CheckConstraint('meaning_of_life = 42', 'meaning_of_life_correct'),
+    )
+
+
 @pytest.fixture()
 def metadata_with_multi_column_check_constraint():
     metadata = sa.MetaData()

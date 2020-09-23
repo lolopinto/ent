@@ -1,3 +1,4 @@
+import alembic.operations.ops as alembicops
 from alembic.operations import Operations, MigrateOperation
 
 
@@ -253,3 +254,9 @@ class DropEnumOp(MigrateOperation):
 
     def get_revision_message(self):
         return 'drop enum %s' % (self.enum_name)
+
+
+# overriding this so that we can implement dispatch and render
+# alembic for some reason doesn't have it...
+class OurCreateCheckConstraintOp(alembicops.CreateCheckConstraintOp):
+    pass

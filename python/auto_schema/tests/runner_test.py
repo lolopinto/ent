@@ -942,6 +942,24 @@ class TestPostgresRunner(BaseTestRunner):
         assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
         validate_metadata_after_change(r2, r2.get_metadata())
 
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_check_constraint_added(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
+
+        r2 = recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_table, conftest.metadata_with_constraint_added_after)
+
+        message = r2.revision_message()
+        assert message == "add constraint meaning_of_life_correct"
+
+        r2.run()
+
+        # should have the expected files with the expected tables
+        assert_num_files(r2, 2)
+        assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
+        validate_metadata_after_change(r2, r2.get_metadata())
+
     @pytest.mark.usefixtures('metadata_with_enum_type')
     def test_enum_type(self, new_test_runner, metadata_with_enum_type):
         r = new_test_runner(metadata_with_enum_type)

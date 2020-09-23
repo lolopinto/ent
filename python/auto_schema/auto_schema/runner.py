@@ -247,6 +247,8 @@ class Runner(object):
             'AddRowsOp': lambda op: op.get_revision_message(),
             'RemoveRowsOp': lambda op: op.get_revision_message(),
             'ModifyRowsOp': lambda op: op.get_revision_message(),
+            'CreateCheckConstraintOp': lambda op: 'add constraint %s' % op.constraint_name,
+            'OurCreateCheckConstraintOp': lambda op: 'add constraint %s' % op.constraint_name,
         }
 
         changes = [class_name_map[type(op).__name__](op) for op in diff]
