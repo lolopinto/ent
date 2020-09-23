@@ -201,6 +201,7 @@ def validate_column(schema_column, db_column, metadata):
     assert schema_column.key == db_column.key
     assert schema_column.onupdate == db_column.onupdate
     assert schema_column.constraints == db_column.constraints
+    assert len(schema_column.constraints) == 0
     assert schema_column.comment == db_column.comment
 
 
@@ -305,6 +306,12 @@ def validate_constraints(schema_table, db_table, dialect, metadata):
 
         db_constraints = db_constraints_to_compare
 
+#     validate_constraints_impl(
+#         schema_constraints, db_constraints, dialect, metadata, bool_column_names_set)
+
+
+# def validate_constraints_impl(schema_constraints, db_constraints, dialect, metadata, bool_column_names_set=set()):
+#     print(schema_constraints)
     assert len(schema_constraints) == len(db_constraints)
 
     for schema_constraint, db_constraint in zip(schema_constraints, db_constraints):
@@ -513,12 +520,12 @@ class BaseTestRunner(object):
         index = table.indexes.pop()
         assert len(index.columns) == 2
 
-    @pytest.mark.usefixtures("metadata_with_multi_column_constraint")
-    def test_new_table_with_multi_column_constraint(self, new_test_runner, metadata_with_multi_column_constraint):
-        r = new_test_runner(metadata_with_multi_column_constraint)
+    @pytest.mark.usefixtures("metadata_with_multi_column_pkey_constraint")
+    def test_new_table_with_multi_column_pkey_constraint(self, new_test_runner, metadata_with_multi_column_pkey_constraint):
+        r = new_test_runner(metadata_with_multi_column_pkey_constraint)
         run_and_validate_with_standard_metadata_tables(
             r,
-            metadata_with_multi_column_constraint,
+            metadata_with_multi_column_pkey_constraint,
             new_table_names=['user_friends_edge'],
         )
 
@@ -528,7 +535,107 @@ class BaseTestRunner(object):
 
         assert len(table.constraints) == 1
         constraint = table.constraints.pop()
+        assert isinstance(constraint, sa.PrimaryKeyConstraint)
         assert len(constraint.columns) == 3
+
+    @pytest.mark.usefixtures("metadata_with_multi_column_unique_constraint")
+    def test_new_table_with_multi_column_unique_constraint(self, new_test_runner, metadata_with_multi_column_unique_constraint):
+        r = new_test_runner(metadata_with_multi_column_unique_constraint)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_with_multi_column_unique_constraint,
+            new_table_names=['contacts'],
+        )
+
+        tables = r.get_metadata().sorted_tables
+        assert len(r.get_metadata().sorted_tables) == 1
+        table = tables.pop()
+
+        assert len(table.constraints) == 2
+        constraints = table._sorted_constraints
+        # first constraint, we don't care about but acknowledge
+        assert isinstance(constraints[0], sa.PrimaryKeyConstraint)
+        constraint = constraints[1]
+        assert isinstance(constraint, sa.UniqueConstraint)
+        assert len(constraint.columns) == 2
+
+    @pytest.mark.usefixtures("metadata_with_multi_column_fkey_constraint")
+    def test_new_table_with_multi_column_fkey_constraint(self, new_test_runner, metadata_with_multi_column_fkey_constraint):
+        r = new_test_runner(metadata_with_multi_column_fkey_constraint)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_with_multi_column_fkey_constraint,
+            new_table_names=['t1', 't2'],
+        )
+
+        tables = r.get_metadata().sorted_tables
+        assert len(r.get_metadata().sorted_tables) == 2
+        tables = [t for t in tables if t.name == 't2']
+        table = tables[0]
+
+        assert len(table.constraints) == 2
+        constraints = table._sorted_constraints
+        # first constraint, we don't care about but acknowledge
+        assert isinstance(constraints[0], sa.PrimaryKeyConstraint)
+        constraint = constraints[1]
+        assert isinstance(constraint, sa.ForeignKeyConstraint)
+        assert len(constraint.columns) == 2
+
+    # ideally we catch the expected error but this is the best we seem to be able to do do for now
+    @pytest.mark.usefixtures("metadata_with_multi_column_fkey_constraint_no_constraint_reference_table")
+    @pytest.mark.xfail()
+    def test_new_table_with_invalid_multi_column_constraint(self, new_test_runner, metadata_with_multi_column_fkey_constraint_no_constraint_reference_table):
+        r = new_test_runner(
+            metadata_with_multi_column_fkey_constraint_no_constraint_reference_table)
+
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_with_multi_column_fkey_constraint_no_constraint_reference_table,
+            new_table_names=['t1', 't2'],
+        )
+
+    @pytest.mark.usefixtures("metadata_with_column_check_constraint")
+    def test_new_table_with_column_check_constraint(self, new_test_runner, metadata_with_column_check_constraint):
+        r = new_test_runner(metadata_with_column_check_constraint)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_with_column_check_constraint,
+            new_table_names=['t1'],
+        )
+
+        tables = r.get_metadata().sorted_tables
+        assert len(r.get_metadata().sorted_tables) == 1
+        table = tables.pop()
+
+        assert len(table.constraints) == 2
+        constraints = table._sorted_constraints
+        # first constraint, we don't care about but acknowledge
+        assert isinstance(constraints[0], sa.PrimaryKeyConstraint)
+        constraint = constraints[1]
+        assert isinstance(constraint, sa.CheckConstraint)
+        assert len(constraint.columns) == 0
+
+    @pytest.mark.usefixtures("metadata_with_multi_column_check_constraint")
+    def test_new_table_with_multi_column_check_constraint(self, new_test_runner, metadata_with_multi_column_check_constraint):
+        r = new_test_runner(metadata_with_multi_column_check_constraint)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_with_multi_column_check_constraint,
+            new_table_names=['t1'],
+        )
+
+        tables = r.get_metadata().sorted_tables
+        assert len(r.get_metadata().sorted_tables) == 1
+        table = tables.pop()
+
+        assert len(table.constraints) == 4
+        constraints = table._sorted_constraints
+        # first constraint, we don't care about but acknowledge
+        assert isinstance(constraints[0], sa.PrimaryKeyConstraint)
+        for idx in range(1, 4):
+            constraint = constraints[idx]
+            assert isinstance(constraint, sa.CheckConstraint)
+            assert len(constraint.columns) == 0
 
     @pytest.mark.usefixtures("metadata_with_table_with_index")
     def test_new_table_with_index_added(self, new_test_runner, metadata_with_table_with_index):
