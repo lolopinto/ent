@@ -9,6 +9,7 @@ from alembic.autogenerate import render_python_code
 from sqlalchemy.sql.schema import DefaultClause
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.dialects import postgresql
+import alembic.operations.ops as alembicops
 
 from . import command
 from . import config
@@ -125,6 +126,10 @@ class Runner(object):
                 new_metadata_default)
 
         if new_inspected_default != new_metadata_default:
+            # specific case. not sure why this is needed
+            # can be generalized at some point in the future
+            if isinstance(new_inspected_default, str) and new_inspected_default.startswith("nextval") and metadata_default is None:
+                return False
             return True
         return False
 
@@ -219,9 +224,17 @@ class Runner(object):
                     op.column_name,
                     Runner.get_clause_text(op.existing_server_default),
                     Runner.get_clause_text(op.modify_server_default))
+            elif op.modify_comment:
+                return "modify comment of column %s"
+            elif op.modify_name:
+                return "modify name of column %s"
             else:
-                # TODO modify_comment, modify_name all valid options
-                return None
+                raise ValueError("unsupported alter_column op")
+
+        # for op in diff:
+        #     if isinstance(op, alembicops.ModifyTableOps):
+        #         for op2 in op.ops:
+        #             print(op2, op2.__dict__)
 
         class_name_map = {
             'CreateTableOp': lambda op: 'add %s table' % op.table_name,

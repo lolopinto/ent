@@ -623,7 +623,23 @@ class BaseTestRunner(object):
         assert isinstance(constraint, sa.ForeignKeyConstraint)
         assert len(constraint.columns) == 2
 
+        dialect = r.get_connection().dialect.name
+        # can't drop a constraint in sqlite so skipping below
+        if dialect == 'sqlite':
+            return
+
+        r2 = recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_multi_column_fkey_constraint_removed(), r)
+        message = r2.revision_message()
+        assert message == "drop constraint t2_fkey from t2"
+
+        r2.run()
+
+        assert_num_files(r2, 2)
+        assert_num_tables(r2, 3, ['alembic_version', 't1', 't2'])
+
     # ideally we catch the expected error but this is the best we seem to be able to do do for now
+
     @pytest.mark.usefixtures("metadata_with_multi_column_fkey_constraint_no_constraint_reference_table")
     @pytest.mark.xfail()
     def test_new_table_with_invalid_multi_column_constraint(self, new_test_runner, metadata_with_multi_column_fkey_constraint_no_constraint_reference_table):
@@ -948,7 +964,6 @@ class TestPostgresRunner(BaseTestRunner):
         r2 = new_test_runner(metadata_with_table, r)
 
         diff = r2.compute_changes()
-        pprint.pprint(diff, indent=2, width=30)
 
         assert len(diff) == 1
 

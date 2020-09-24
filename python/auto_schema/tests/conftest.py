@@ -320,6 +320,31 @@ def metadata_with_multi_column_fkey_constraint():
     return metadata
 
 
+def metadata_with_multi_column_fkey_constraint_removed():
+    metadata = sa.MetaData()
+    sa.Table('t1', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('c1', sa.Integer(), nullable=False),
+             sa.Column('c2', sa.Integer(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "id", name="t1_pkey",
+             ),
+             sa.UniqueConstraint(
+                 "c1", "c2", name="unique"
+             )
+             )
+
+    sa.Table('t2', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('c1', sa.Integer(), nullable=False),
+             sa.Column('c2', sa.Integer(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "id", name="t2_pkey",
+             ),
+             )
+    return metadata
+
+
 @pytest.fixture()
 def metadata_with_multi_column_fkey_constraint_no_constraint_reference_table():
     metadata = sa.MetaData()
