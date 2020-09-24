@@ -231,8 +231,6 @@ def _apply_func_on_metadata(metadata, col_name, table_name, fn):
     return metadata
 
 
-@pytest.fixture
-@pytest.mark.usefixtures("metadata_with_table")
 def metadata_with_table_with_index(metadata_with_table):
     return _add_constraint_to_metadata(
         metadata_with_table,

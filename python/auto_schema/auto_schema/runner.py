@@ -229,7 +229,8 @@ class Runner(object):
             'ModifyTableOps': lambda op: "\n".join([class_name_map[type(child_op).__name__](child_op) for child_op in op.ops]),
             'AlterColumnOp': lambda op: alter_column_op(op),
             'CreateUniqueConstraintOp': lambda op: 'add unique constraint %s' % op.constraint_name,
-            'CreateIndexOp': lambda op: 'add index %s' % op.index_name,
+            'CreateIndexOp': lambda op: 'add index %s to %s' % (op.index_name, op.table_name),
+            'DropIndexOp': lambda op: 'drop index %s from %s' % (op.index_name, op.table_name),
             'AddColumnOp': lambda op: 'add column %s to table %s' % (op.column.name, op.table_name),
             # TODO check for this by default
             'AddEdgesOp': lambda op: op.get_revision_message(),
