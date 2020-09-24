@@ -586,6 +586,21 @@ class BaseTestRunner(object):
         assert isinstance(constraint, sa.UniqueConstraint)
         assert len(constraint.columns) == 2
 
+        dialect = r.get_connection().dialect.name
+        # can't drop a constraint in sqlite so skipping below
+        if dialect == 'sqlite':
+            return
+
+        r2 = recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_contacts_table_with_no_unique_constraint(), r)
+        message = r2.revision_message()
+        assert message == "drop constraint contacts_unique_email_per_contact from contacts"
+
+        r2.run()
+
+        assert_num_files(r2, 2)
+        assert_num_tables(r2, 2, ['alembic_version', 'contacts'])
+
     @pytest.mark.usefixtures("metadata_with_multi_column_fkey_constraint")
     def test_new_table_with_multi_column_fkey_constraint(self, new_test_runner, metadata_with_multi_column_fkey_constraint):
         r = new_test_runner(metadata_with_multi_column_fkey_constraint)

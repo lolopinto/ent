@@ -267,21 +267,27 @@ def metadata_with_multi_column_pkey_constraint():
 
 @pytest.fixture()
 def metadata_with_multi_column_unique_constraint():
+    metadata = metadata_with_contacts_table_with_no_unique_constraint()
+    return _add_constraint_to_metadata(metadata,
+                                       sa.UniqueConstraint(
+                                           "email_address", "user_id", name="contacts_unique_email_per_contact"
+                                       ), table_name='contacts'
+                                       )
+
+
+def metadata_with_contacts_table_with_no_unique_constraint():
     metadata = sa.MetaData()
-    sa.Table('contacts', metadata,
-             sa.Column('id', sa.Integer(), nullable=False),
-             sa.Column('email_address', sa.Text(), nullable=False),
-             sa.Column('first_name', sa.Text(), nullable=False),
-             sa.Column('last_name', sa.Text(), nullable=False),
-             # ignoring the fkey here
-             sa.Column('user_id', sa.Integer(), nullable=False),
-             sa.PrimaryKeyConstraint(
-                 "id", name="contacts_pkey",
-             ),
-             sa.UniqueConstraint(
-                 "email_address", "user_id", name="contacts_unique_email_per_contact"
-             )
-             )
+    table = sa.Table('contacts', metadata,
+                     sa.Column('id', sa.Integer(), nullable=False),
+                     sa.Column('email_address', sa.Text(), nullable=False),
+                     sa.Column('first_name', sa.Text(), nullable=False),
+                     sa.Column('last_name', sa.Text(), nullable=False),
+                     # ignoring the fkey here
+                     sa.Column('user_id', sa.Integer(), nullable=False),
+                     sa.PrimaryKeyConstraint(
+                         "id", name="contacts_pkey",
+                     ),
+                     )
     return metadata
 
 
