@@ -306,12 +306,6 @@ def validate_constraints(schema_table, db_table, dialect, metadata):
 
         db_constraints = db_constraints_to_compare
 
-#     validate_constraints_impl(
-#         schema_constraints, db_constraints, dialect, metadata, bool_column_names_set)
-
-
-# def validate_constraints_impl(schema_constraints, db_constraints, dialect, metadata, bool_column_names_set=set()):
-#     print(schema_constraints)
     assert len(schema_constraints) == len(db_constraints)
 
     for schema_constraint, db_constraint in zip(schema_constraints, db_constraints):
