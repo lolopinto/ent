@@ -239,9 +239,7 @@ def metadata_with_table_with_index(metadata_with_table):
     )
 
 
-@pytest.fixture
-@pytest.mark.usefixtures("metadata_with_table")
-def test_metadata_with_multi_column_index(metadata_with_table):
+def metadata_with_multi_column_index(metadata_with_table):
     return _add_constraint_to_metadata(
         metadata_with_table,
         # index the first and last name because we support searching by that

@@ -513,19 +513,39 @@ class BaseTestRunner(object):
         r = new_test_runner(metadata_with_table)
         run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
-    @pytest.mark.usefixtures("test_metadata_with_multi_column_index")
-    def test_new_table_with_multi_column_index(self, new_test_runner, test_metadata_with_multi_column_index):
-        r = new_test_runner(test_metadata_with_multi_column_index)
-        run_and_validate_with_standard_metadata_tables(
-            r, test_metadata_with_multi_column_index)
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_multi_column_index_added_and_removed(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
-        tables = r.get_metadata().sorted_tables
-        assert len(r.get_metadata().sorted_tables) == 1
+        r2 = recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_table, conftest.metadata_with_multi_column_index)
+
+        message = r2.revision_message()
+        assert message == "add index accounts_first_name_last_name_idx to accounts"
+
+        r2.run()
+        assert_num_files(r2, 2)
+        assert_num_tables(r2, 2)
+
+        tables = [t for t in r2.get_metadata(
+        ).sorted_tables if t.name == "accounts"]
+        assert len(tables) == 1
         table = tables[0]
 
         assert len(table.indexes) == 1
         index = table.indexes.pop()
         assert len(index.columns) == 2
+
+        r3 = recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
+
+        message = r3.revision_message()
+        assert message == "drop index accounts_first_name_last_name_idx from accounts"
+
+        r3.run()
+        assert_num_files(r3, 3)
+        assert_num_tables(r3, 2)
 
     @pytest.mark.usefixtures("metadata_with_multi_column_pkey_constraint")
     def test_new_table_with_multi_column_pkey_constraint(self, new_test_runner, metadata_with_multi_column_pkey_constraint):
