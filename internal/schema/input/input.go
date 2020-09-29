@@ -21,6 +21,7 @@ type Node struct {
 	Actions         []*Action                `json:"actions"`
 	EnumTable       bool                     `json:"enumTable"`
 	DBRows          []map[string]interface{} `json:"dbRows"`
+	Constraints     []*Constraint            `json:"constraints"`
 }
 
 func (n *Node) AddAssocEdge(edge *AssocEdge) {
@@ -192,6 +193,40 @@ type Action struct {
 	CustomInputName   string              `json:"inputName"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL"`
 }
+
+type Constraint struct {
+	Name       string          `json:"name"`
+	Type       ConstraintType  `json:"type"`
+	Columns    []string        `json:"columns"`
+	ForeignKey *ForeignKeyInfo `json:"fkey"`
+	Condition  string          `json:"condition"`
+}
+
+type ConstraintType string
+
+const (
+	// Note that these type should match enum ConstraintType in schema.ts
+	PrimaryKey ConstraintType = "primary"
+	ForeignKey                = "foreign"
+	Unique                    = "unique"
+	Check                     = "check"
+)
+
+type ForeignKeyInfo struct {
+	TableName string       `json:"tableName"`
+	OnDelete  OnDeleteFkey `json:"ondelete"`
+}
+
+type OnDeleteFkey string
+
+const (
+	// Note that these type should match enum ForeignKeyInfo.ondelete in schema.ts
+	Restrict   OnDeleteFkey = "RESTRICT"
+	Cascade                 = "CASCADE"
+	SetNull                 = "SET NULL"
+	SetDefault              = "SET DEFAULT"
+	NoAction                = "NO ACTION"
+)
 
 func (g *AssocEdgeGroup) AddAssocEdge(edge *AssocEdge) {
 	g.AssocEdges = append(g.AssocEdges, edge)

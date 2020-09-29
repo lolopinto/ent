@@ -19,6 +19,7 @@ type node struct {
 	actions         []action
 	enumTable       bool
 	dbRows          []map[string]interface{}
+	constraints     []constraint
 }
 
 type field struct {
@@ -71,6 +72,19 @@ type action struct {
 	actionName      string
 	graphQLName     string
 	hideFromGraphQL bool
+}
+
+type constraint struct {
+	name      string
+	typ       input.ConstraintType
+	columns   []string
+	fkey      *fkeyInfo
+	condition string
+}
+
+type fkeyInfo struct {
+	tableName string
+	ondelete  input.OnDeleteFkey
 }
 
 type testCase struct {
@@ -139,6 +153,7 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				}
 
 				verifyActions(t, expectedNode.actions, node.Actions)
+				verifyConstraints(t, expectedNode.constraints, node.Constraints)
 			}
 		})
 	}
@@ -191,6 +206,27 @@ func verifyEdgeActions(t *testing.T, expActions []action, actions []*input.EdgeA
 	}
 }
 
+func verifyConstraints(t *testing.T, expConstraints []constraint, constraints []*input.Constraint) {
+	require.Len(t, constraints, len(expConstraints))
+
+	for j, expConstraint := range expConstraints {
+		constraint := constraints[j]
+
+		assert.Equal(t, expConstraint.name, constraint.Name)
+		assert.Equal(t, expConstraint.columns, constraint.Columns)
+		assert.Equal(t, expConstraint.typ, constraint.Type)
+		assert.Equal(t, expConstraint.condition, constraint.Condition)
+		if expConstraint.fkey == nil {
+			require.Nil(t, constraint.ForeignKey)
+		} else {
+			require.NotNil(t, constraint.ForeignKey)
+
+			assert.Equal(t, expConstraint.fkey.tableName, constraint.ForeignKey.TableName)
+			assert.Equal(t, expConstraint.fkey.ondelete, constraint.ForeignKey.OnDelete)
+		}
+	}
+}
+
 func assertStrEqual(t *testing.T, key, expectedValue string, value *string) {
 	if expectedValue != "" {
 		require.NotNil(t, value, key)
@@ -202,4 +238,35 @@ func assertStrEqual(t *testing.T, key, expectedValue string, value *string) {
 
 func getCodeWithSchema(code string) string {
 	return testhelper.GetCodeWithSchema(code)
+}
+
+func nodeFields() []field {
+	return []field{
+		{
+			name:                    "ID",
+			dbType:                  input.UUID,
+			primaryKey:              true,
+			disableUserEditable:     true,
+			hasDefaultValueOnCreate: true,
+		},
+		{
+			name:                    "createdAt",
+			dbType:                  input.Time,
+			hideFromGraphQL:         true,
+			disableUserEditable:     true,
+			hasDefaultValueOnCreate: true,
+		},
+		{
+			name:                    "updatedAt",
+			dbType:                  input.Time,
+			hideFromGraphQL:         true,
+			disableUserEditable:     true,
+			hasDefaultValueOnCreate: true,
+			hasDefaultValueOnEdit:   true,
+		},
+	}
+}
+
+func fieldsWithNodeFields(fields ...field) []field {
+	return append(nodeFields(), fields...)
 }
