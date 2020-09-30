@@ -214,6 +214,7 @@ const (
 
 type ForeignKeyInfo struct {
 	TableName string       `json:"tableName"`
+	Columns   []string     `json:"columns"`
 	OnDelete  OnDeleteFkey `json:"ondelete"`
 }
 

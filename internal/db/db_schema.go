@@ -610,6 +610,8 @@ func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeDa
 	}
 	col := s.getColumn(f.FieldName, f.GetDbColName(), dbType, extraParts)
 
+	// TODO move constraint info from fields to constraints on the schema so it works regardless...
+
 	s.addPrimaryKeyConstraint(f, nodeData, col, constraints)
 	s.addForeignKeyConstraint(f, nodeData, col, constraints)
 	s.addUniqueConstraint(f, nodeData, col, constraints)

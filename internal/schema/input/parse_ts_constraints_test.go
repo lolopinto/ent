@@ -219,6 +219,7 @@ func TestConstraints(t *testing.T) {
 								// TODO input validation. this is required when type is ForeignKey
 								fkey: {
 									tableName: "User",
+									columns: ["ID"],
 								}
 							},
 						];
@@ -251,6 +252,7 @@ func TestConstraints(t *testing.T) {
 							columns: []string{"userID"},
 							fkey: &fkeyInfo{
 								tableName: "User",
+								columns:   []string{"ID"},
 							},
 						},
 					},
@@ -299,6 +301,7 @@ func TestConstraints(t *testing.T) {
 								fkey: {
 									tableName: "User",
 									ondelete: "CASCADE",
+									columns: ["ID", "emailAddress"],
 								}
 							},
 						];
@@ -332,6 +335,7 @@ func TestConstraints(t *testing.T) {
 							fkey: &fkeyInfo{
 								tableName: "User",
 								ondelete:  input.Cascade,
+								columns:   []string{"ID", "emailAddress"},
 							},
 						},
 					},
@@ -401,7 +405,7 @@ func TestConstraints(t *testing.T) {
 								type: ConstraintType.Check,
 								// TODO condition is required when type == Check
 								condition: 'price > 0',
-								// TODO need to test this later when we have mixed everything in since we may not 
+								// TODO need to test this later when we have mixed everything in since we may not
 								// want this...
 								columns: ['price'],
 							},

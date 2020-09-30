@@ -312,6 +312,7 @@ export interface Constraint {
 export interface ForeignKeyInfo {
   tableName: string;
   ondelete?: "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT" | "NO ACTION";
+  columns: string[];
   // no on update, match full etc
 }
 
