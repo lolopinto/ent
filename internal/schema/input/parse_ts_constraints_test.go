@@ -216,7 +216,6 @@ func TestConstraints(t *testing.T) {
 								name: "contacts_user_fkey",
 								type: ConstraintType.ForeignKey,
 								columns: ["userID"],
-								// TODO input validation. this is required when type is ForeignKey
 								fkey: {
 									tableName: "User",
 									columns: ["ID"],
@@ -297,7 +296,6 @@ func TestConstraints(t *testing.T) {
 								name: "contacts_user_fkey",
 								type: ConstraintType.ForeignKey,
 								columns: ["userID", "emailAddress"],
-								// TODO input validation. this is required when type is ForeignKey
 								fkey: {
 									tableName: "User",
 									ondelete: "CASCADE",
@@ -358,7 +356,6 @@ func TestConstraints(t *testing.T) {
 							{
 								name: "item_positive_price",
 								type: ConstraintType.Check,
-								// TODO condition is required when type == Check
 								condition: 'price > 0',
 								columns: [],
 							},
@@ -403,7 +400,6 @@ func TestConstraints(t *testing.T) {
 							{
 								name: "item_positive_price",
 								type: ConstraintType.Check,
-								// TODO condition is required when type == Check
 								condition: 'price > 0',
 								// TODO need to test this later when we have mixed everything in since we may not
 								// want this...
@@ -412,14 +408,12 @@ func TestConstraints(t *testing.T) {
 							{
 								name: "item_positive_discount_price",
 								type: ConstraintType.Check,
-								// TODO condition is required when type == Check
 								condition: 'discount_price > 0',
 								columns: ['discount_price'],
 							},
 							{
 								name: "item_price_greater_than_discount",
 								type: ConstraintType.Check,
-								// TODO condition is required when type == Check
 								condition: 'price > discount_price',
 								columns: ['price', 'discount_price'],
 							},
