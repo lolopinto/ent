@@ -521,7 +521,7 @@ func (m NodeMapInfo) processConstraints(info *NodeDataInfo) {
 
 		if field.SingleFieldPrimaryKey() {
 			constraints = append(constraints, &input.Constraint{
-				Name:    getPrimaryKeyName(tableName, field.GetDbColName()),
+				Name:    GetPrimaryKeyName(tableName, field.GetDbColName()),
 				Type:    input.PrimaryKey,
 				Columns: cols,
 			})
@@ -529,7 +529,7 @@ func (m NodeMapInfo) processConstraints(info *NodeDataInfo) {
 
 		if field.Unique() {
 			constraints = append(constraints, &input.Constraint{
-				Name:    getUniqueKeyName(tableName, field.GetDbColName()),
+				Name:    GetUniqueKeyName(tableName, field.GetDbColName()),
 				Type:    input.Unique,
 				Columns: cols,
 			})
@@ -547,7 +547,7 @@ func (m NodeMapInfo) processConstraints(info *NodeDataInfo) {
 				panic(fmt.Errorf("invalid foreign key field %s", fkey.Field))
 			}
 			constraints = append(constraints, &input.Constraint{
-				Name:    getFKeyName(foreignNodeData.TableName, foreignField.GetDbColName()),
+				Name:    GetFKeyName(nodeData.TableName, field.GetDbColName()),
 				Type:    input.ForeignKey,
 				Columns: cols,
 				ForeignKey: &input.ForeignKeyInfo{
@@ -571,17 +571,31 @@ func getNameFromParts(nameParts []string) string {
 	return strings.Join(nameParts, "_")
 }
 
-// TODO all these are wrong somehow
-func getFKeyName(tableName, dbColName string) string {
-	return getNameFromParts([]string{tableName, dbColName, "fkey"})
+func getNameFromParts2(prefix string, parts []string, suffix string) string {
+	allParts := []string{prefix}
+	allParts = append(allParts, parts...)
+	allParts = append(allParts, suffix)
+	return getNameFromParts(allParts)
 }
 
-func getPrimaryKeyName(tableName, dbColName string) string {
-	return getNameFromParts([]string{tableName, dbColName, "pkey"})
+// generate a name for the foreignkey of the sort contacts_user_id_fkey.
+// It takes the table name, the name of the column that references a foreign column in a foreign table and the fkey keyword to generate
+// this only applies for single column fkeys
+func GetFKeyName(tableName string, dbColNames ...string) string {
+	return getNameFromParts2(tableName, dbColNames, "fkey")
 }
 
-func getUniqueKeyName(tableName, dbColName string) string {
-	return getNameFromParts([]string{tableName, "unique", strcase.ToSnake(dbColName)})
+func GetPrimaryKeyName(tableName string, dbColNames ...string) string {
+	return getNameFromParts2(tableName, dbColNames, "pkey")
+}
+
+func GetUniqueKeyName(tableName string, dbColNames ...string) string {
+	allParts := []string{tableName}
+	allParts = append(allParts, "unique")
+	for _, colName := range dbColNames {
+		allParts = append(allParts, colName)
+	}
+	return getNameFromParts(allParts)
 }
 
 func (m NodeMapInfo) addConstsFromEdgeGroups(nodeData *NodeData) {

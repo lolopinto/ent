@@ -88,7 +88,7 @@ func TestForeignKeyFieldConstraint(t *testing.T) {
 				Constraints: constraintsWithNodeConstraints(
 					"contacts",
 					&input.Constraint{
-						Name:    "users_id_fkey",
+						Name:    "contacts_owner_id_fkey",
 						Type:    input.ForeignKey,
 						Columns: []string{"ownerID"},
 						ForeignKey: &input.ForeignKeyInfo{
@@ -226,7 +226,7 @@ func TestConstraints(t *testing.T) {
 				"Contact": {
 					Constraints: constraintsWithNodeConstraints("contacts",
 						&input.Constraint{
-							Name:    "users_id_fkey",
+							Name:    "contacts_user_id_fkey",
 							Type:    input.ForeignKey,
 							Columns: []string{"userID"},
 							ForeignKey: &input.ForeignKeyInfo{
@@ -282,7 +282,7 @@ func TestConstraints(t *testing.T) {
 								type: ConstraintType.ForeignKey,
 								columns: ["userID", "emailAddress"],
 								fkey: {
-									tableName: "users", // hmm TODO not a tableName...
+									tableName: "users", 
 									ondelete: "CASCADE",
 									columns: ["ID", "emailAddress"],
 								}

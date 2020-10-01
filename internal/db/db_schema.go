@@ -17,6 +17,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
+	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/data"
 	"github.com/lolopinto/ent/internal/field"
@@ -73,60 +74,26 @@ type dbConstraint interface {
 	getConstraintString() string
 }
 
-func getConstraintStringForColumnBasedConstraint(constraint dbConstraint) string {
-	var dbColumns []*dbColumn
-	var tableName string
-	var extraNamePart string
-	var beforeColNameParts bool
-	var constraintName string
+type colBasedConstraint interface {
+	getName() string
+	getConstraintMethod() string
+	getColumns() []*dbColumn
+}
 
-	pKeyConstraint, ok := constraint.(*primaryKeyConstraint)
-	if ok {
-		dbColumns = pKeyConstraint.dbColumns
-		tableName = pKeyConstraint.tableName
-		extraNamePart = "pkey"
-		beforeColNameParts = false
-		constraintName = "sa.PrimaryKeyConstraint"
-	}
-	uniqConstraint, ok := constraint.(*uniqueConstraint)
-	if ok {
-		dbColumns = uniqConstraint.dbColumns
-		tableName = uniqConstraint.tableName
-		extraNamePart = "unique"
-		beforeColNameParts = true
-		constraintName = "sa.UniqueConstraint"
-	}
-	if constraintName == "" {
-		util.Die(errors.New("invalid constraint passed"))
-	}
-
+func getConstraintString(constraint colBasedConstraint) string {
 	var formattedStrParts []string
-	formattedObjs := []interface{}{constraintName}
-	// name made of 3 parts: tableName, "unique", and then colNames... OR
-	// tableName, colNames... and then "pkey"
-	nameParts := []string{tableName}
+	formattedObjs := []interface{}{constraint.getConstraintMethod()}
 
-	if beforeColNameParts {
-		nameParts = append(nameParts, extraNamePart)
-	}
-
-	for _, col := range dbColumns {
+	for _, col := range constraint.getColumns() {
 		// append all the %s we need for the names of the col in the formatted string
 		formattedStrParts = append(formattedStrParts, "%s")
 
 		// add quoted strings in order so we list the names of the columns in the call to sa.UniqueConstraint
 		formattedObjs = append(formattedObjs, strconv.Quote(col.DBColName))
-
-		// add the col name to parts needed for name of the unique constraint
-		nameParts = append(nameParts, col.DBColName)
-	}
-
-	if !beforeColNameParts {
-		nameParts = append(nameParts, extraNamePart)
 	}
 
 	// add the name to the end of the list of formatted objs
-	formattedObjs = append(formattedObjs, strconv.Quote(getNameFromParts(nameParts)))
+	formattedObjs = append(formattedObjs, strconv.Quote(constraint.getName()))
 
 	formattedStr := "%s(" + strings.Join(formattedStrParts, ", ") + ", name=%s)"
 	return fmt.Sprintf(
@@ -138,51 +105,99 @@ func getConstraintStringForColumnBasedConstraint(constraint dbConstraint) string
 type primaryKeyConstraint struct {
 	dbColumns []*dbColumn
 	tableName string
+	name      string
 }
 
 func (constraint *primaryKeyConstraint) getConstraintString() string {
-	return getConstraintStringForColumnBasedConstraint(constraint)
+	return getConstraintString(constraint)
+}
+
+func (constraint *primaryKeyConstraint) getName() string {
+	if constraint.name != "" {
+		return constraint.name
+	}
+	return schema.GetPrimaryKeyName(constraint.tableName, getNamesFromColumns(constraint.dbColumns)...)
+}
+
+func (constraint *primaryKeyConstraint) getConstraintMethod() string {
+	return "sa.PrimaryKeyConstraint"
+}
+
+func (constraint *primaryKeyConstraint) getColumns() []*dbColumn {
+	return constraint.dbColumns
 }
 
 type foreignKeyConstraint struct {
-	// these are hardcoded to one table/field now but can be changed later...
 	tableName     string
-	column        *dbColumn
+	name          string
+	columns       []*dbColumn
 	fkeyTableName string
-	fkeyColumn    *dbColumn
+	fkeyColumns   []*dbColumn
 	onDelete      string
 }
 
 func (constraint *foreignKeyConstraint) getConstraintString() string {
-	// generate a name for the foreignkey of the sort contacts_user_id_fkey.
-	// It takes the table name, the name of the column that references a foreign column in a foreign table and the fkey keyword to generate
-	fkeyNameParts := []string{
-		constraint.tableName,
-		constraint.column.DBColName,
-		"fkey",
-	}
 	onDelete := constraint.onDelete
 	if onDelete == "" {
 		onDelete = "CASCADE"
 	}
-	fkeyName := getNameFromParts(fkeyNameParts)
+
+	var colParts []string
+	for _, col := range constraint.columns {
+		colParts = append(colParts, strconv.Quote(col.DBColName))
+	}
+	cols := strings.Join(colParts, ",")
+
+	var fkeyColParts []string
+	for _, fkeyCol := range constraint.fkeyColumns {
+		fkeyColParts = append(
+			fkeyColParts,
+			strconv.Quote(strings.Join([]string{constraint.fkeyTableName, fkeyCol.DBColName}, ".")),
+		)
+	}
+	fkeyCols := strings.Join(fkeyColParts, ",")
+
 	return fmt.Sprintf(
 		//    sa.ForeignKeyConstraint(['account_id'], ['accounts.id'], name="contacts_account_id_fkey", ondelete="CASCADE"),
 		"sa.ForeignKeyConstraint([%s], [%s], name=%s, ondelete=%s)",
-		strconv.Quote(constraint.column.DBColName),
-		strconv.Quote(strings.Join([]string{constraint.fkeyTableName, constraint.fkeyColumn.DBColName}, ".")), // "accounts.id"
-		strconv.Quote(fkeyName),
+		cols,
+		fkeyCols,
+		strconv.Quote(constraint.name),
 		strconv.Quote(onDelete),
 	)
+}
+
+func getNamesFromColumns(cols []*dbColumn) []string {
+	ret := make([]string, len(cols))
+	for idx, col := range cols {
+		ret[idx] = col.DBColName
+	}
+	return ret
 }
 
 type uniqueConstraint struct {
 	dbColumns []*dbColumn
 	tableName string
+	name      string
 }
 
 func (constraint *uniqueConstraint) getConstraintString() string {
-	return getConstraintStringForColumnBasedConstraint(constraint)
+	return getConstraintString(constraint)
+}
+
+func (constraint *uniqueConstraint) getName() string {
+	if constraint.name != "" {
+		return constraint.name
+	}
+	return schema.GetUniqueKeyName(constraint.tableName, getNamesFromColumns(constraint.dbColumns)...)
+}
+
+func (constraint *uniqueConstraint) getConstraintMethod() string {
+	return "sa.UniqueConstraint"
+}
+
+func (constraint *uniqueConstraint) getColumns() []*dbColumn {
+	return constraint.dbColumns
 }
 
 type indexConstraint struct {
@@ -262,6 +277,34 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 	}
 }
 
+func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbColumn, constraints *[]dbConstraint) {
+	for _, constraint := range nodeData.Constraints {
+		switch constraint.Type {
+		case input.PrimaryKey:
+			err := s.addPrimaryKeyConstraint(nodeData, constraint, columns, constraints)
+			util.Die(err)
+			break
+
+		case input.Unique:
+			err := s.addUniqueConstraint(nodeData, constraint, columns, constraints)
+			util.Die(err)
+			break
+
+		case input.ForeignKey:
+			err := s.addForeignKeyConstraint(nodeData, constraint, columns, constraints)
+			util.Die(err)
+			break
+
+		case input.Check:
+			// TODO!
+			util.Die(errors.New("unsupported check type (for now)"))
+
+		default:
+			util.Die(fmt.Errorf("unsupported constraint type %s", constraint.Type))
+		}
+	}
+}
+
 func (s *dbSchema) addTable(table *dbTable) {
 	s.Tables = append(s.Tables, table)
 	s.tableMap[table.TableName] = table
@@ -293,6 +336,15 @@ func (s *dbSchema) generateShemaTables() {
 			continue
 		}
 		s.addTable(s.createTableForNode(info.NodeData))
+	}
+
+	// process constraints after because easier to access tableMap for fkey constraints
+	for _, info := range s.schema.Nodes {
+		nodeData := info.NodeData
+
+		table := s.tableMap[nodeData.TableName]
+
+		s.processConstraints(nodeData, table.Columns, &table.Constraints)
 	}
 
 	if addedAtLeastOneTable {
@@ -513,6 +565,7 @@ func (s *dbSchema) addEdgeConfigTable() {
 	constraints = append(constraints, &primaryKeyConstraint{
 		dbColumns: []*dbColumn{edgeTypeCol},
 		tableName: tableName,
+		name:      "assoc_edge_config_edge_type_pkey",
 	})
 	// TODO make edgeName column unique
 	constraints = append(constraints, &uniqueConstraint{
@@ -522,10 +575,11 @@ func (s *dbSchema) addEdgeConfigTable() {
 	// foreign key constraint on the edge_type column on the same table
 	constraints = append(constraints, &foreignKeyConstraint{
 		tableName:     tableName,
-		column:        inverseEdgeTypeCol,
+		columns:       []*dbColumn{inverseEdgeTypeCol},
 		fkeyTableName: tableName,
-		fkeyColumn:    edgeTypeCol,
+		fkeyColumns:   []*dbColumn{edgeTypeCol},
 		onDelete:      "RESTRICT",
+		name:          "assoc_edge_config_inverse_edge_type_fkey",
 	})
 
 	s.addTable(&dbTable{
@@ -610,98 +664,113 @@ func (s *dbSchema) getColumnInfoForField(f *field.Field, nodeData *schema.NodeDa
 	}
 	col := s.getColumn(f.FieldName, f.GetDbColName(), dbType, extraParts)
 
-	// TODO move constraint info from fields to constraints on the schema so it works regardless...
-
-	s.addPrimaryKeyConstraint(f, nodeData, col, constraints)
-	s.addForeignKeyConstraint(f, nodeData, col, constraints)
-	s.addUniqueConstraint(f, nodeData, col, constraints)
+	// index is still on a per field type so we leave this here
 	s.addIndexConstraint(f, nodeData, col, constraints)
 
 	return col
 }
 
-func (s *dbSchema) addPrimaryKeyConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
-	if !f.SingleFieldPrimaryKey() {
-		return
+func findColumn(columns []*dbColumn, name string) *dbColumn {
+	for _, col := range columns {
+		if col.DBColName == name || col.EntFieldName == name {
+			return col
+		}
+	}
+	return nil
+}
+
+func findConstraintDBColumns(inputConstraint *input.Constraint, columns []*dbColumn) ([]*dbColumn, error) {
+	var dbColumns []*dbColumn
+
+	for _, col := range inputConstraint.Columns {
+		dbColumn := findColumn(columns, col)
+		if dbColumn == nil {
+			return nil, fmt.Errorf("couldn't find column with name %s", col)
+		}
+		dbColumns = append(dbColumns, dbColumn)
+	}
+	return dbColumns, nil
+}
+
+func (s *dbSchema) addPrimaryKeyConstraint(nodeData *schema.NodeData, inputConstraint *input.Constraint, columns []*dbColumn, constraints *[]dbConstraint) error {
+	dbColumns, err := findConstraintDBColumns(inputConstraint, columns)
+
+	if err != nil {
+		return err
 	}
 
 	constraint := &primaryKeyConstraint{
-		dbColumns: []*dbColumn{col},
+		name:      inputConstraint.Name,
+		dbColumns: dbColumns,
 		tableName: nodeData.GetTableName(),
 	}
 	*constraints = append(*constraints, constraint)
+	return nil
 }
 
 var structNameRegex = regexp.MustCompile("([A-Za-z]+)Config")
 
 // adds a foreignKeyConstraint to the array of constraints
 // also returns new dbType of column
-func (s *dbSchema) addForeignKeyConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
-	fkey := f.ForeignKeyInfo()
-	if fkey == nil {
-		return
-	}
-	// get unquoted table name
-	tableName := nodeData.GetTableName()
+func (s *dbSchema) addForeignKeyConstraint(nodeData *schema.NodeData, inputConstraint *input.Constraint, columns []*dbColumn, constraints *[]dbConstraint) error {
 
-	fkeyConfig := s.schema.Nodes[fkey.Config]
-	var fkeyNodeData *schema.NodeData
-	if fkeyConfig != nil {
-		fkeyNodeData = fkeyConfig.NodeData
-	} else {
-		match := structNameRegex.FindStringSubmatch(fkey.Config)
-		if len(match) != 2 {
-			util.Die(fmt.Errorf("invalid config name %s", fkey.Config))
+	fkeyTableName := inputConstraint.ForeignKey.TableName
+	fkeyTable := s.tableMap[fkeyTableName]
+	if fkeyTable == nil {
+		return fmt.Errorf("couldn't find table %s", fkeyTableName)
+	}
+
+	dbColumns, err := findConstraintDBColumns(inputConstraint, columns)
+	if err != nil {
+		return err
+	}
+
+	var fkeyColumns []*dbColumn
+
+	for idx, colName := range inputConstraint.ForeignKey.Columns {
+		fkeyCol := findColumn(fkeyTable.Columns, colName)
+		if fkeyCol == nil {
+			return fmt.Errorf("couldn't find foreign column with name %s", colName)
 		}
-		enum, ok := s.schema.Enums[match[1]]
-		if ok {
-			fkeyNodeData = enum.NodeData
-		}
-	}
-	if fkeyNodeData == nil {
-		util.Die(fmt.Errorf("invalid EntConfig %s set as ForeignKey of field %s on ent config %s", fkey.Config, f.FieldName, nodeData.EntConfigName))
-	}
 
-	fkeyTable := s.getTableForNode(fkeyNodeData)
-
-	var fkeyColumn *dbColumn
-	for _, fkeyCol := range fkeyTable.Columns {
-		if fkeyCol.EntFieldName == fkey.Field {
-			fkeyColumn = fkeyCol
-
-			// if the foreign key is a uuid and we have it as string, convert the type we
-			// store in the db from string to UUID. This only works the first time the table
-			// is defined.
-			// Need to handle uuid as a first class type in Config files and/or handle the conversion from string to uuid after the fact
-			if fkeyCol.DBType == "postgresql.UUID()" && col.DBType == "sa.Text()" {
+		// if the foreign key is a uuid and we have it as string, convert the type we
+		// store in the db from string to UUID. This only works the first time the table
+		// is defined.
+		// Need to handle uuid as a first class type in Config files and/or handle the conversion from string to uuid after the fact
+		if fkeyCol.DBType == "postgresql.UUID()" {
+			col := dbColumns[idx]
+			if col.DBType == "sa.Text()" {
 				col.DBType = "postgresql.UUID()"
 			}
-			break
 		}
-	}
-
-	if fkeyColumn == nil {
-		util.Die(fmt.Errorf("invalid Field %s set as ForeignKey of field %s on ent config %s", fkey.Field, f.FieldName, nodeData.EntConfigName))
+		fkeyColumns = append(fkeyColumns, fkeyCol)
 	}
 
 	constraint := &foreignKeyConstraint{
-		tableName:     tableName,
-		column:        col,
+		tableName:     nodeData.GetTableName(),
+		columns:       dbColumns,
 		fkeyTableName: fkeyTable.TableName,
-		fkeyColumn:    fkeyColumn,
+		fkeyColumns:   fkeyColumns,
+		name:          inputConstraint.Name,
+		onDelete:      fmt.Sprintf("%s", inputConstraint.ForeignKey.OnDelete),
 	}
 	*constraints = append(*constraints, constraint)
+	return nil
 }
 
-func (s *dbSchema) addUniqueConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
-	if !f.Unique() {
-		return
+func (s *dbSchema) addUniqueConstraint(nodeData *schema.NodeData, inputConstraint *input.Constraint, columns []*dbColumn, constraints *[]dbConstraint) error {
+	dbColumns, err := findConstraintDBColumns(inputConstraint, columns)
+
+	if err != nil {
+		return err
 	}
 	constraint := &uniqueConstraint{
-		dbColumns: []*dbColumn{col},
+		dbColumns: dbColumns,
 		tableName: nodeData.GetTableName(),
+		name:      inputConstraint.Name,
 	}
 	*constraints = append(*constraints, constraint)
+	return nil
 }
 
 func (s *dbSchema) addIndexConstraint(f *field.Field, nodeData *schema.NodeData, col *dbColumn, constraints *[]dbConstraint) {
