@@ -689,27 +689,27 @@ func TestMultiColumnPrimaryKey(t *testing.T) {
 		t,
 		map[string]string{
 			"user_photo.ts": testhelper.GetCodeWithSchema(`
-					import {Schema, Field, UUIDType, Constraint, ConstraintType} from "{schema}";
+				import {Schema, Field, UUIDType, Constraint, ConstraintType} from "{schema}";
 
-					export default class UserPhoto implements Schema {
-						fields: Field[] = [
-							UUIDType({
-								name: 'UserID',
-							}),
-							UUIDType({
-								name: 'PhotoID',
-							}),
-						];
+				export default class UserPhoto implements Schema {
+					fields: Field[] = [
+						UUIDType({
+							name: 'UserID',
+						}),
+						UUIDType({
+							name: 'PhotoID',
+						}),
+					];
 
-						constraints: Constraint[] = [
-							{
-								name: "user_photos_pkey",
-								type: ConstraintType.PrimaryKey,
-								columns: ["UserID", "PhotoID"],
-							},
-						];
-					}
-				`),
+					constraints: Constraint[] = [
+						{
+							name: "user_photos_pkey",
+							type: ConstraintType.PrimaryKey,
+							columns: ["UserID", "PhotoID"],
+						},
+					];
+				}
+			`),
 		},
 	)
 
@@ -729,42 +729,42 @@ func TestMultiColumnUniqueKey(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(`
-					import {Field, StringType, BaseEntSchema} from "{schema}";
+				import {Field, StringType, BaseEntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-						];
-					}
-				`),
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'firstName',
+						}),
+						StringType({
+							name: 'lastName',
+						}),
+					];
+				}
+			`),
 			"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+				import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
 
-					export default class Contact extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: "emailAddress",
-							}),
-							UUIDType({
-								name: "userID",
-								foreignKey: ["User", "ID"],
-							}),
-						];
+				export default class Contact extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: "emailAddress",
+						}),
+						UUIDType({
+							name: "userID",
+							foreignKey: ["User", "ID"],
+						}),
+					];
 
-						constraints: Constraint[] = [
-							{
-								name: "contacts_unique_email",
-								type: ConstraintType.Unique,
-								columns: ["emailAddress", "userID"],
-							},
-						];
-					}
-				`),
+					constraints: Constraint[] = [
+						{
+							name: "contacts_unique_email",
+							type: ConstraintType.Unique,
+							columns: ["emailAddress", "userID"],
+						},
+					];
+				}
+			`),
 		},
 	)
 
@@ -786,50 +786,50 @@ func TestMultiColumnForeignKey(t *testing.T) {
 		t,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(`
-					import {Field, StringType, BaseEntSchema} from "{schema}";
+				import {Field, StringType, BaseEntSchema} from "{schema}";
 
-					export default class User extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: 'firstName',
-							}),
-							StringType({
-								name: 'lastName',
-							}),
-							StringType({
-								name: 'emailAddress',
-								unique: true,
-							}),
-						];
-					}
-				`),
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'firstName',
+						}),
+						StringType({
+							name: 'lastName',
+						}),
+						StringType({
+							name: 'emailAddress',
+							unique: true,
+						}),
+					];
+				}
+			`),
 			"contact.ts": testhelper.GetCodeWithSchema(`
-					import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+				import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
 
-					export default class Contact extends BaseEntSchema {
-						fields: Field[] = [
-							StringType({
-								name: "emailAddress",
-							}),
-							UUIDType({
-								name: "userID",
-							}),
-						];
+				export default class Contact extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: "emailAddress",
+						}),
+						UUIDType({
+							name: "userID",
+						}),
+					];
 
-						constraints: Constraint[] = [
-							{
-								name: "contacts_user_fkey",
-								type: ConstraintType.ForeignKey,
-								columns: ["userID", "emailAddress"],
-								fkey: {
-									tableName: "users", 
-									ondelete: "CASCADE",
-									columns: ["ID", "emailAddress"],
-								}
-							},
-						];
-					}
-				`),
+					constraints: Constraint[] = [
+						{
+							name: "contacts_user_fkey",
+							type: ConstraintType.ForeignKey,
+							columns: ["userID", "emailAddress"],
+							fkey: {
+								tableName: "users", 
+								ondelete: "CASCADE",
+								columns: ["ID", "emailAddress"],
+							}
+						},
+					];
+				}
+			`),
 		},
 	)
 
@@ -849,6 +849,66 @@ func TestMultiColumnForeignKey(t *testing.T) {
 			strconv.Quote("users.email_address"),
 			strconv.Quote("contacts_user_fkey"),
 			strconv.Quote("CASCADE"),
+		),
+	)
+}
+
+func TestCheckConstraint(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"item.ts": testhelper.GetCodeWithSchema(`
+				import {Field, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+
+				export default class Item extends BaseEntSchema {
+					fields: Field[] = [
+						FloatType({
+							name: 'price',
+						}),
+						FloatType({
+							name: 'discount_price',
+						}),
+					];
+
+					constraints: Constraint[] = [
+						{
+							name: "item_positive_price",
+							type: ConstraintType.Check,
+							condition: 'price > 0',
+							columns: [],
+						},
+						{
+							name: "item_positive_discount_price",
+							type: ConstraintType.Check,
+							condition: 'discount_price > 0',
+							columns: [],
+						},
+						{
+							name: "item_price_greater_than_discount",
+							type: ConstraintType.Check,
+							condition: 'price > discount_price',
+							columns: [],
+						},
+					];
+				}`),
+		},
+	)
+
+	table := getTestTableFromSchema("ItemConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 4)
+
+	// get first Check constraint
+	constraint := constraints[1]
+	cConstraint, ok := constraint.(*checkConstraint)
+	require.True(t, ok)
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.CheckConstraint(%s, %s)",
+			strconv.Quote(cConstraint.condition),
+			strconv.Quote(cConstraint.name),
 		),
 	)
 }

@@ -226,6 +226,15 @@ func (constraint *indexConstraint) getConstraintString() string {
 	)
 }
 
+type checkConstraint struct {
+	name      string
+	condition string
+}
+
+func (constraint *checkConstraint) getConstraintString() string {
+	return fmt.Sprintf("sa.CheckConstraint(%s, %s)", strconv.Quote(constraint.condition), strconv.Quote(constraint.name))
+}
+
 func newDBSchema(schema *schema.Schema, pathToConfigs string) *dbSchema {
 	configTableMap := make(map[string]*dbTable)
 	tableMap := make(map[string]*dbTable)
@@ -296,8 +305,8 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 			break
 
 		case input.Check:
-			// TODO!
-			util.Die(errors.New("unsupported check type (for now)"))
+			err := s.addCheckConstraint(nodeData, constraint, constraints)
+			util.Die(err)
 
 		default:
 			util.Die(fmt.Errorf("unsupported constraint type %s", constraint.Type))
@@ -782,6 +791,18 @@ func (s *dbSchema) addIndexConstraint(f *field.Field, nodeData *schema.NodeData,
 		tableName: nodeData.GetTableName(),
 	}
 	*constraints = append(*constraints, constraint)
+}
+
+func (s *dbSchema) addCheckConstraint(nodeData *schema.NodeData, inputConstraint *input.Constraint, constraints *[]dbConstraint) error {
+	if len(inputConstraint.Columns) != 0 {
+		return fmt.Errorf("constraint with columns not supported")
+	}
+	constraint := &checkConstraint{
+		name:      inputConstraint.Name,
+		condition: inputConstraint.Condition,
+	}
+	*constraints = append(*constraints, constraint)
+	return nil
 }
 
 // TODO: eventually create EntConfigs/EntPatterns for these and take it from that instead of this manual behavior.
