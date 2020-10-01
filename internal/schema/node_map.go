@@ -487,7 +487,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 func (m NodeMapInfo) processConstraints(info *NodeDataInfo) {
 	nodeData := info.NodeData
 
-	// TODO errors
+	// TODO errors instead of panicing
 
 	// verify constraints are correct
 	for _, constraint := range nodeData.Constraints {

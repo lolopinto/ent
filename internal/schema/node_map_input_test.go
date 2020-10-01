@@ -298,5 +298,3 @@ func TestParseInputWithAssocEdgeGroup(t *testing.T) {
 	// inverse edge not added to map
 	//	require.NotNil(t, edgeGroup.GetAssociationByName("FriendRequestsReceived"))
 }
-
-// tests constraints and tests first step in validation
