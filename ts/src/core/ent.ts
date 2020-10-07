@@ -19,7 +19,7 @@ import DataLoader from "dataloader";
 // TODO move Viewer and context into viewer.ts or something
 import { Context } from "./context";
 
-import * as query from "./query";
+import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
 
 export interface Viewer {
@@ -70,7 +70,7 @@ export interface SelectDataOptions extends DataOptions {
 }
 
 export interface QueryableDataOptions extends SelectDataOptions {
-  clause: query.Clause;
+  clause: clause.Clause;
   orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
 }
 
@@ -111,7 +111,7 @@ export async function loadEnt<T extends Ent>(
   const l = viewer.context?.cache?.getEntLoader(options);
   if (!l) {
     const col = options.pkey || "id";
-    return loadEntFromClause(viewer, options, query.Eq(col, id));
+    return loadEntFromClause(viewer, options, clause.Eq(col, id));
   }
   const row = await l.load(id);
   return await applyPrivacyPolicyForRow(viewer, options, row);
@@ -120,7 +120,7 @@ export async function loadEnt<T extends Ent>(
 export async function loadEntFromClause<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
-  clause: query.Clause,
+  clause: clause.Clause,
 ): Promise<T | null> {
   const rowOptions: LoadRowOptions = {
     ...options,
@@ -139,7 +139,7 @@ export async function loadEntX<T extends Ent>(
   const l = viewer.context?.cache?.getEntLoader(options);
   if (!l) {
     const col = options.pkey || "id";
-    return loadEntXFromClause(viewer, options, query.Eq(col, id));
+    return loadEntXFromClause(viewer, options, clause.Eq(col, id));
   }
   const row = await l.load(id);
   if (!row) {
@@ -152,7 +152,7 @@ export async function loadEntX<T extends Ent>(
 export async function loadEntXFromClause<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
-  clause: query.Clause,
+  clause: clause.Clause,
 ): Promise<T> {
   const rowOptions: LoadRowOptions = {
     ...options,
@@ -182,7 +182,7 @@ export async function loadEnts<T extends Ent>(
     m = await applyPrivacyPolicyForRows(viewer, rows, options);
   } else {
     const col = options.pkey || "id";
-    m = await loadEntsFromClause(viewer, query.In(col, ...ids), options);
+    m = await loadEntsFromClause(viewer, clause.In(col, ...ids), options);
   }
 
   // TODO do we want to change this to be a map not a list so that it's easy to check for existence?
@@ -190,7 +190,7 @@ export async function loadEnts<T extends Ent>(
 
   // we need to get the result and re-sort... because the raw db access doesn't guarantee it in same order
   // apparently
-  //  let m = await loadEntsFromClause(viewer, query.In("id", ...ids), options);
+  //  let m = await loadEntsFromClause(viewer, clause.In("id", ...ids), options);
   let result: T[] = [];
   ids.forEach((id) => {
     let ent = m.get(id);
@@ -205,7 +205,7 @@ export async function loadEnts<T extends Ent>(
 // can be done in O(N) time
 export async function loadEntsFromClause<T extends Ent>(
   viewer: Viewer,
-  clause: query.Clause,
+  clause: clause.Clause,
   options: LoadEntOptions<T>,
 ): Promise<Map<ID, T>> {
   const rowOptions: LoadRowOptions = {
@@ -245,10 +245,9 @@ export function createDataLoader(options: SelectDataOptions) {
       return [];
     }
     let col = options.pkey || "id";
-    const clause = query.In(col, ...ids);
     const rowOptions: LoadRowOptions = {
       ...options,
-      clause: clause,
+      clause: clause.In(col, ...ids),
     };
 
     // TODO is there a better way of doing this?
@@ -523,10 +522,10 @@ export class EdgeOperation implements DataOperation {
         tableName: edgeData.edgeTable,
         context,
       },
-      query.And(
-        query.Eq("id1", edge.id1),
-        query.Eq("id2", edge.id2),
-        query.Eq("edge_type", edge.edgeType),
+      clause.And(
+        clause.Eq("id1", edge.id1),
+        clause.Eq("id2", edge.id2),
+        clause.Eq("edge_type", edge.edgeType),
       ),
     );
   }
@@ -856,7 +855,7 @@ export async function editRow(
 export async function deleteRow(
   queryer: Queryer,
   options: DataOptions,
-  clause: query.Clause,
+  clause: clause.Clause,
 ): Promise<void> {
   const query = `DELETE FROM ${options.tableName} WHERE ${clause.clause(1)}`;
   const values = clause.values();
@@ -871,7 +870,7 @@ export class DeleteNodeOperation implements DataOperation {
       ...this.options,
       context,
     };
-    return deleteRow(queryer, options, query.Eq("id", this.id));
+    return deleteRow(queryer, options, clause.Eq("id", this.id));
   }
 }
 
@@ -978,6 +977,7 @@ interface loadEdgesOptions {
   context?: Context;
 }
 
+// TODO need to add a defult limit
 export async function loadEdges(
   options: loadEdgesOptions,
 ): Promise<AssocEdge[]> {
@@ -989,7 +989,7 @@ export async function loadEdges(
   const rows = await loadRows({
     tableName: edgeData.edgeTable,
     fields: edgeFields,
-    clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
+    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
     orderby: "time DESC",
     context,
   });
@@ -1013,7 +1013,7 @@ export async function loadUniqueEdge(
   const row = await loadRow({
     tableName: edgeData.edgeTable,
     fields: edgeFields,
-    clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
+    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
     context,
   });
   if (!row) {
@@ -1047,7 +1047,7 @@ export async function loadRawEdgeCountX(
   const row = await loadRowX({
     tableName: edgeData.edgeTable,
     fields: ["count(1)"],
-    clause: query.And(query.Eq("id1", id1), query.Eq("edge_type", edgeType)),
+    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
     context,
   });
   return parseInt(row["count"], 10);

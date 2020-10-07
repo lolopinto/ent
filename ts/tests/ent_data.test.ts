@@ -9,7 +9,7 @@ import { QueryRecorder, queryOptions } from "../src/testutils/db_mock";
 import { Pool } from "pg";
 import * as ent from "./../src/core/ent";
 import { Context, ContextCache } from "../src/core/context";
-import * as query from "../src/core/query";
+import * as clause from "../src/core/clause";
 import DB from "./../src/core/db";
 import each from "jest-each";
 
@@ -107,7 +107,7 @@ async function loadTestRow(
 ) {
   QueryRecorder.mockResult({
     tableName: selectOptions.tableName,
-    clause: query.Eq("bar", 1),
+    clause: clause.Eq("bar", 1),
     result: (values: any[]) => {
       return {
         bar: values[0],
@@ -119,7 +119,7 @@ async function loadTestRow(
 
   let options: ent.LoadRowOptions = {
     ...selectOptions,
-    clause: query.Eq("bar", 1),
+    clause: clause.Eq("bar", 1),
   };
   if (addCtx) {
     options.context = ctx!;
@@ -152,7 +152,7 @@ async function loadTestRows(
 ) {
   QueryRecorder.mockResult({
     tableName: selectOptions.tableName,
-    clause: query.In("bar", 1, 2, 3),
+    clause: clause.In("bar", 1, 2, 3),
     result: (values: any[]) => {
       return values.map((value) => {
         return {
@@ -166,7 +166,7 @@ async function loadTestRows(
 
   let options: ent.LoadRowOptions = {
     ...selectOptions,
-    clause: query.In("bar", 1, 2, 3),
+    clause: clause.In("bar", 1, 2, 3),
   };
   if (addCtx) {
     options.context = ctx!;
@@ -206,7 +206,7 @@ async function loadTestEnt(
       // with context, we hit a loader and it's transformed to an IN query
       QueryRecorder.mockResult({
         tableName: selectOptions.tableName,
-        clause: query.In("bar", 1),
+        clause: clause.In("bar", 1),
         // loader...
         result: (values: any[]) => {
           return values.map((value) => {
@@ -222,7 +222,7 @@ async function loadTestEnt(
       // without context, no loader and we do a standard EQ query
       QueryRecorder.mockResult({
         tableName: selectOptions.tableName,
-        clause: query.Eq("bar", 1),
+        clause: clause.Eq("bar", 1),
         result: (values: any[]) => {
           return {
             bar: values[0],
@@ -326,7 +326,7 @@ describe("loadEnt", () => {
     const options = {
       ...User.loaderOptions(),
       // gonna end up being a data loader...
-      clause: query.In("bar", 1),
+      clause: clause.In("bar", 1),
     };
 
     const testEnt = async (vc: Viewer) => {
@@ -373,7 +373,7 @@ describe("loadEnt", () => {
     const options = {
       ...User.loaderOptions(),
       // no dataloader. simple query
-      clause: query.Eq("bar", 1),
+      clause: clause.Eq("bar", 1),
     };
 
     await loadTestEnt(
@@ -392,7 +392,7 @@ describe("loadEnt", () => {
   test("parallel queries with context", async () => {
     QueryRecorder.mockResult({
       tableName: selectOptions.tableName,
-      clause: query.In("bar", 1, 2, 3),
+      clause: clause.In("bar", 1, 2, 3),
       // loader...
       result: (values: any[]) => {
         return values.map((value) => {
@@ -421,8 +421,8 @@ describe("loadEnt", () => {
 
     const options = {
       ...User.loaderOptions(),
-      // gets coalesced into 1 IN query...
-      clause: query.In("bar", 1, 2, 3),
+      // gets coalesced into 1 IN clause...
+      clause: clause.In("bar", 1, 2, 3),
     };
     const expQueries = [
       {
@@ -459,7 +459,7 @@ describe("loadEnt", () => {
     ids.forEach((id) => {
       QueryRecorder.mockResult({
         tableName: selectOptions.tableName,
-        clause: query.Eq("bar", id),
+        clause: clause.Eq("bar", id),
         // no loader
         result: (values: any[]) => {
           return {
@@ -489,7 +489,7 @@ describe("loadEnt", () => {
     const expQueries = ids.map((id) => {
       const options = {
         ...User.loaderOptions(),
-        clause: query.Eq("bar", id),
+        clause: clause.Eq("bar", id),
       };
       return {
         query: ent.buildQuery(options),
@@ -524,7 +524,7 @@ describe("loadEntX", () => {
     const options = {
       ...User.loaderOptions(),
       // context. dataloader. in query
-      clause: query.In("bar", 1),
+      clause: clause.In("bar", 1),
     };
 
     const testEnt = async (vc: Viewer) => {
@@ -559,7 +559,7 @@ describe("loadEntX", () => {
     const options = {
       ...User.loaderOptions(),
       // no context, simple query
-      clause: query.Eq("bar", 1),
+      clause: clause.Eq("bar", 1),
     };
 
     await loadTestEnt(
@@ -577,7 +577,7 @@ describe("loadEntX", () => {
 });
 
 describe("loadEnt(X)FromClause", () => {
-  let clause = query.And(query.Eq("bar", 1), query.Eq("baz", "baz"));
+  let clause = clause.And(clause.Eq("bar", 1), clause.Eq("baz", "baz"));
 
   beforeEach(() => {
     QueryRecorder.mockResult({
@@ -691,7 +691,7 @@ describe("loadEnts", () => {
   test("with context", async () => {
     QueryRecorder.mockResult({
       tableName: selectOptions.tableName,
-      clause: query.In("bar", 1, 2, 3),
+      clause: clause.In("bar", 1, 2, 3),
       // loader...
       result: (values: any[]) => {
         return values.map((value) => {
@@ -713,7 +713,7 @@ describe("loadEnts", () => {
 
     const options = {
       ...User.loaderOptions(),
-      clause: query.In("bar", 1, 2, 3),
+      clause: clause.In("bar", 1, 2, 3),
     };
     const expQueries = [
       {
@@ -745,7 +745,7 @@ describe("loadEnts", () => {
   test("without context", async () => {
     QueryRecorder.mockResult({
       tableName: selectOptions.tableName,
-      clause: query.In("bar", 1, 2, 3),
+      clause: clause.In("bar", 1, 2, 3),
       // loader...
       result: (values: any[]) => {
         return values.map((value) => {
@@ -767,7 +767,7 @@ describe("loadEnts", () => {
 
     const options = {
       ...User.loaderOptions(),
-      clause: query.In("bar", 1, 2, 3),
+      clause: clause.In("bar", 1, 2, 3),
     };
     const expQueries = [
       {
@@ -779,11 +779,11 @@ describe("loadEnts", () => {
     // only one query
     QueryRecorder.validateQueryOrder(expQueries, null);
 
-    // add each query.Eq for the one-offs
+    // add each clause.Eq for the one-offs
     const ids = [1, 2, 3];
     let expQueries2 = expQueries.concat();
     ids.map((id) => {
-      let clause = query.Eq("bar", id);
+      let clause = clause.Eq("bar", id);
       let options = {
         ...User.loaderOptions(),
         clause: clause,
@@ -828,7 +828,7 @@ describe("loadEnts", () => {
 
 describe("loadEntsFromClause", () => {
   let idResults = [1, 2, 3];
-  let clause = query.Eq("baz", "baz");
+  let clause = clause.Eq("baz", "baz");
 
   beforeEach(() => {
     QueryRecorder.mockResult({
@@ -952,7 +952,7 @@ describe("writes", () => {
     ],
     [
       "deleteRow",
-      async () => ent.deleteRow(pool, options, query.Eq("bar", 1)),
+      async () => ent.deleteRow(pool, options, clause.Eq("bar", 1)),
       {
         query: "DELETE FROM table WHERE bar = $1",
         values: [1],

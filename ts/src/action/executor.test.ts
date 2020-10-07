@@ -21,7 +21,7 @@ import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { BaseEntSchema, Field } from "../schema";
 import { StringType, TimeType, BooleanType } from "../schema/field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
-import * as query from "../core/query";
+import * as query from "../core/clause";
 import { FakeLogger, EntCreationObserver } from "../testutils/fake_log";
 
 jest.mock("pg");
