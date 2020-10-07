@@ -49,6 +49,11 @@ test("create event", async () => {
   const creator = await event.loadCreator();
   expect(creator).not.toBe(null);
   expect(creator!.id).toBe(event.creatorID);
+
+  // creator is added as host too
+  const hosts = await event.loadHosts();
+  expect(hosts.length).toBe(1);
+  expect(hosts[0].id).toBe(event.creatorID);
 });
 
 test("edit event", async () => {
