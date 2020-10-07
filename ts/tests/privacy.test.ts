@@ -1,5 +1,5 @@
 import { ID, Ent, Viewer, LoadEntOptions, Data } from "./../src/core/ent";
-import * as query from "./../src/core/query";
+import * as clause from "./../src/core/clause";
 import {
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
@@ -268,7 +268,7 @@ describe("applyPrivacyPolicyX", () => {
 function mockUser() {
   QueryRecorder.mockResult({
     tableName: "table",
-    clause: query.Eq("id", "1"),
+    clause: clause.Eq("id", "1"),
     result: (val: any) => {
       return {
         id: "1",

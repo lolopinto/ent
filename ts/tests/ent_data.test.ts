@@ -577,12 +577,12 @@ describe("loadEntX", () => {
 });
 
 describe("loadEnt(X)FromClause", () => {
-  let clause = clause.And(clause.Eq("bar", 1), clause.Eq("baz", "baz"));
+  let cls = clause.And(clause.Eq("bar", 1), clause.Eq("baz", "baz"));
 
   beforeEach(() => {
     QueryRecorder.mockResult({
       tableName: selectOptions.tableName,
-      clause: clause,
+      clause: cls,
       result: (values: any[]) => {
         return {
           bar: values[0],
@@ -595,14 +595,14 @@ describe("loadEnt(X)FromClause", () => {
 
   const options = {
     ...User.loaderOptions(),
-    clause: clause,
+    clause: cls,
   };
 
   test("with context", async () => {
     const vc = getIDViewer(1);
 
     await loadTestEnt(
-      () => ent.loadEntFromClause(vc, User.loaderOptions(), clause),
+      () => ent.loadEntFromClause(vc, User.loaderOptions(), cls),
       () => {
         const expQueries = [
           {
@@ -622,7 +622,7 @@ describe("loadEnt(X)FromClause", () => {
     const vc = new IDViewer(1);
 
     await loadTestEnt(
-      () => ent.loadEntFromClause(vc, User.loaderOptions(), clause),
+      () => ent.loadEntFromClause(vc, User.loaderOptions(), cls),
       () => {
         const queryOption = {
           query: ent.buildQuery(options),
@@ -646,7 +646,7 @@ describe("loadEnt(X)FromClause", () => {
     const vc = getIDViewer(1);
 
     await loadTestEnt(
-      () => ent.loadEntXFromClause(vc, User.loaderOptions(), clause),
+      () => ent.loadEntXFromClause(vc, User.loaderOptions(), cls),
       () => {
         const expQueries = [
           {
@@ -666,7 +666,7 @@ describe("loadEnt(X)FromClause", () => {
     const vc = new IDViewer(1);
 
     await loadTestEnt(
-      () => ent.loadEntXFromClause(vc, User.loaderOptions(), clause),
+      () => ent.loadEntXFromClause(vc, User.loaderOptions(), cls),
       () => {
         const queryOption = {
           query: ent.buildQuery(options),
@@ -783,14 +783,14 @@ describe("loadEnts", () => {
     const ids = [1, 2, 3];
     let expQueries2 = expQueries.concat();
     ids.map((id) => {
-      let clause = clause.Eq("bar", id);
+      let cls = clause.Eq("bar", id);
       let options = {
         ...User.loaderOptions(),
-        clause: clause,
+        clause: cls,
       };
       QueryRecorder.mockResult({
         tableName: selectOptions.tableName,
-        clause: clause,
+        clause: cls,
         // loader...
         result: (values: any[]) => {
           return {
@@ -828,12 +828,12 @@ describe("loadEnts", () => {
 
 describe("loadEntsFromClause", () => {
   let idResults = [1, 2, 3];
-  let clause = clause.Eq("baz", "baz");
+  let cls = clause.Eq("baz", "baz");
 
   beforeEach(() => {
     QueryRecorder.mockResult({
       tableName: selectOptions.tableName,
-      clause: clause,
+      clause: cls,
       result: (values: any[]) => {
         return idResults.map((id) => {
           return {
@@ -848,13 +848,13 @@ describe("loadEntsFromClause", () => {
 
   const options = {
     ...User.loaderOptions(),
-    clause: clause,
+    clause: cls,
   };
 
   test("with context", async () => {
     const vc = getIDViewer(1);
 
-    const ents = await ent.loadEntsFromClause(vc, clause, User.loaderOptions());
+    const ents = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
     // only loading self worked because of privacy
     expect(ents.size).toBe(1);
     expect(ents.has(1)).toBe(true);
@@ -869,11 +869,7 @@ describe("loadEntsFromClause", () => {
     // only one query
     QueryRecorder.validateQueryOrder(expQueries, null);
 
-    const ents2 = await ent.loadEntsFromClause(
-      vc,
-      clause,
-      User.loaderOptions(),
-    );
+    const ents2 = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
     // only loading self worked because of privacy
     expect(ents2.size).toBe(1);
     expect(ents2.has(1)).toBe(true);
@@ -885,7 +881,7 @@ describe("loadEntsFromClause", () => {
   test("without context", async () => {
     const vc = new IDViewer(1);
 
-    const ents = await ent.loadEntsFromClause(vc, clause, User.loaderOptions());
+    const ents = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
     // only loading self worked because of privacy
     expect(ents.size).toBe(1);
     expect(ents.has(1)).toBe(true);
@@ -900,11 +896,7 @@ describe("loadEntsFromClause", () => {
     // only one query
     QueryRecorder.validateQueryOrder(expQueries, null);
 
-    const ents2 = await ent.loadEntsFromClause(
-      vc,
-      clause,
-      User.loaderOptions(),
-    );
+    const ents2 = await ent.loadEntsFromClause(vc, cls, User.loaderOptions());
     // only loading self worked because of privacy
     expect(ents2.size).toBe(1);
     expect(ents2.has(1)).toBe(true);
