@@ -201,6 +201,7 @@ def validate_column(schema_column, db_column, metadata):
     assert schema_column.key == db_column.key
     assert schema_column.onupdate == db_column.onupdate
     assert schema_column.constraints == db_column.constraints
+    assert len(schema_column.constraints) == 0
     assert schema_column.comment == db_column.comment
 
 
@@ -364,15 +365,20 @@ def setup_assoc_edge_config(new_test_runner):
     return r
 
 
+def recreate_metadata_fixture(new_test_runner, metadata, prev_runner):
+    metadata.bind = prev_runner.get_connection()
+    metadata.reflect()
+
+    r = new_test_runner(metadata, prev_runner)
+    return r
+
+
 def run_edge_metadata_script(new_test_runner, metadata, message, num_files=2, prev_runner=None, num_changes=1):
     # TODO combine with recreate_with_new_metadata?
     if prev_runner is None:
         prev_runner = setup_assoc_edge_config(new_test_runner)
 
-    metadata.bind = prev_runner.get_connection()
-    metadata.reflect()
-
-    r = new_test_runner(metadata, prev_runner)
+    r = recreate_metadata_fixture(new_test_runner, metadata, prev_runner)
     assert len(r.compute_changes()) == num_changes
 
     assert r.revision_message() == message
@@ -399,11 +405,30 @@ class BaseTestRunner(object):
         assert len(r.compute_changes()) == 1
         assert_no_changes_made(r)
 
-    @pytest.mark.usefixtures("metadata_with_table_with_index")
-    def test_compute_changes_with_index(self, new_test_runner, metadata_with_table_with_index):
-        r = new_test_runner(metadata_with_table_with_index)
-        assert len(r.compute_changes()) == 2  # create table and create index
-        assert_no_changes_made(r)
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_index_added_and_removed(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
+
+        r2 = recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_table, conftest.metadata_with_table_with_index)
+
+        message = r2.revision_message()
+        assert message == "add index accounts_first_name_idx to accounts"
+
+        r2.run()
+        assert_num_files(r2, 2)
+        assert_num_tables(r2, 2)
+
+        r3 = recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
+
+        message = r3.revision_message()
+        assert message == "drop index accounts_first_name_idx from accounts"
+
+        r3.run()
+        assert_num_files(r3, 3)
+        assert_num_tables(r3, 2)
 
     @pytest.mark.usefixtures("metadata_with_two_tables")
     def test_compute_changes_with_two_tables(self, new_test_runner, metadata_with_two_tables):
@@ -431,13 +456,6 @@ class BaseTestRunner(object):
         message = r.revision_message()
         assert message == "add accounts table"
 
-    @pytest.mark.usefixtures("metadata_with_table_with_index")
-    def test_revision_message_with_index(self, new_test_runner, metadata_with_table_with_index):
-        r = new_test_runner(metadata_with_table_with_index)
-
-        message = r.revision_message()
-        assert message == "add accounts table\nadd index accounts_first_name_idx"
-
     @pytest.mark.usefixtures("metadata_with_two_tables")
     def test_revision_message_two_tables(self, new_test_runner, metadata_with_two_tables):
         r = new_test_runner(metadata_with_two_tables)
@@ -448,16 +466,6 @@ class BaseTestRunner(object):
     @pytest.mark.usefixtures("metadata_with_table")
     def test_new_revision(self, new_test_runner, metadata_with_table):
         r = new_test_runner(metadata_with_table)
-
-        r.revision()
-
-        # 1 schema file should have been created
-        assert_num_files(r, 1)
-        assert_num_tables(r, 0)
-
-    @pytest.mark.usefixtures("metadata_with_table_with_index")
-    def test_new_revision(self, new_test_runner, metadata_with_table_with_index):
-        r = new_test_runner(metadata_with_table_with_index)
 
         r.revision()
 
@@ -499,26 +507,46 @@ class BaseTestRunner(object):
         r = new_test_runner(metadata_with_table)
         run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
-    @pytest.mark.usefixtures("test_metadata_with_multi_column_index")
-    def test_new_table_with_multi_column_index(self, new_test_runner, test_metadata_with_multi_column_index):
-        r = new_test_runner(test_metadata_with_multi_column_index)
-        run_and_validate_with_standard_metadata_tables(
-            r, test_metadata_with_multi_column_index)
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_multi_column_index_added_and_removed(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
 
-        tables = r.get_metadata().sorted_tables
-        assert len(r.get_metadata().sorted_tables) == 1
+        r2 = recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_table, conftest.metadata_with_multi_column_index)
+
+        message = r2.revision_message()
+        assert message == "add index accounts_first_name_last_name_idx to accounts"
+
+        r2.run()
+        assert_num_files(r2, 2)
+        assert_num_tables(r2, 2)
+
+        tables = [t for t in r2.get_metadata(
+        ).sorted_tables if t.name == "accounts"]
+        assert len(tables) == 1
         table = tables[0]
 
         assert len(table.indexes) == 1
         index = table.indexes.pop()
         assert len(index.columns) == 2
 
-    @pytest.mark.usefixtures("metadata_with_multi_column_constraint")
-    def test_new_table_with_multi_column_constraint(self, new_test_runner, metadata_with_multi_column_constraint):
-        r = new_test_runner(metadata_with_multi_column_constraint)
+        r3 = recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
+
+        message = r3.revision_message()
+        assert message == "drop index accounts_first_name_last_name_idx from accounts"
+
+        r3.run()
+        assert_num_files(r3, 3)
+        assert_num_tables(r3, 2)
+
+    @pytest.mark.usefixtures("metadata_with_multi_column_pkey_constraint")
+    def test_new_table_with_multi_column_pkey_constraint(self, new_test_runner, metadata_with_multi_column_pkey_constraint):
+        r = new_test_runner(metadata_with_multi_column_pkey_constraint)
         run_and_validate_with_standard_metadata_tables(
             r,
-            metadata_with_multi_column_constraint,
+            metadata_with_multi_column_pkey_constraint,
             new_table_names=['user_friends_edge'],
         )
 
@@ -528,13 +556,138 @@ class BaseTestRunner(object):
 
         assert len(table.constraints) == 1
         constraint = table.constraints.pop()
+        assert isinstance(constraint, sa.PrimaryKeyConstraint)
         assert len(constraint.columns) == 3
 
-    @pytest.mark.usefixtures("metadata_with_table_with_index")
-    def test_new_table_with_index_added(self, new_test_runner, metadata_with_table_with_index):
-        r = new_test_runner(metadata_with_table_with_index)
+    @pytest.mark.usefixtures("metadata_with_multi_column_unique_constraint")
+    def test_new_table_with_multi_column_unique_constraint(self, new_test_runner, metadata_with_multi_column_unique_constraint):
+        r = new_test_runner(metadata_with_multi_column_unique_constraint)
         run_and_validate_with_standard_metadata_tables(
-            r, metadata_with_table_with_index)
+            r,
+            metadata_with_multi_column_unique_constraint,
+            new_table_names=['contacts'],
+        )
+
+        tables = r.get_metadata().sorted_tables
+        assert len(r.get_metadata().sorted_tables) == 1
+        table = tables.pop()
+
+        assert len(table.constraints) == 2
+        constraints = table._sorted_constraints
+        # first constraint, we don't care about but acknowledge
+        assert isinstance(constraints[0], sa.PrimaryKeyConstraint)
+        constraint = constraints[1]
+        assert isinstance(constraint, sa.UniqueConstraint)
+        assert len(constraint.columns) == 2
+
+        dialect = r.get_connection().dialect.name
+        # can't drop a constraint in sqlite so skipping below
+        if dialect == 'sqlite':
+            return
+
+        r2 = recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_contacts_table_with_no_unique_constraint(), r)
+        message = r2.revision_message()
+        assert message == "drop constraint contacts_unique_email_per_contact from contacts"
+
+        r2.run()
+
+        assert_num_files(r2, 2)
+        assert_num_tables(r2, 2, ['alembic_version', 'contacts'])
+
+    @pytest.mark.usefixtures("metadata_with_multi_column_fkey_constraint")
+    def test_new_table_with_multi_column_fkey_constraint(self, new_test_runner, metadata_with_multi_column_fkey_constraint):
+        r = new_test_runner(metadata_with_multi_column_fkey_constraint)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_with_multi_column_fkey_constraint,
+            new_table_names=['t1', 't2'],
+        )
+
+        tables = r.get_metadata().sorted_tables
+        assert len(r.get_metadata().sorted_tables) == 2
+        tables = [t for t in tables if t.name == 't2']
+        table = tables[0]
+
+        assert len(table.constraints) == 2
+        constraints = table._sorted_constraints
+        # first constraint, we don't care about but acknowledge
+        assert isinstance(constraints[0], sa.PrimaryKeyConstraint)
+        constraint = constraints[1]
+        assert isinstance(constraint, sa.ForeignKeyConstraint)
+        assert len(constraint.columns) == 2
+
+        dialect = r.get_connection().dialect.name
+        # can't drop a constraint in sqlite so skipping below
+        if dialect == 'sqlite':
+            return
+
+        r2 = recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_multi_column_fkey_constraint_removed(), r)
+        message = r2.revision_message()
+        assert message == "drop constraint t2_fkey from t2"
+
+        r2.run()
+
+        assert_num_files(r2, 2)
+        assert_num_tables(r2, 3, ['alembic_version', 't1', 't2'])
+
+    # ideally we catch the expected error but this is the best we seem to be able to do do for now
+
+    @pytest.mark.usefixtures("metadata_with_multi_column_fkey_constraint_no_constraint_reference_table")
+    @pytest.mark.xfail()
+    def test_new_table_with_invalid_multi_column_constraint(self, new_test_runner, metadata_with_multi_column_fkey_constraint_no_constraint_reference_table):
+        r = new_test_runner(
+            metadata_with_multi_column_fkey_constraint_no_constraint_reference_table)
+
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_with_multi_column_fkey_constraint_no_constraint_reference_table,
+            new_table_names=['t1', 't2'],
+        )
+
+    @pytest.mark.usefixtures("metadata_with_column_check_constraint")
+    def test_new_table_with_column_check_constraint(self, new_test_runner, metadata_with_column_check_constraint):
+        r = new_test_runner(metadata_with_column_check_constraint)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_with_column_check_constraint,
+            new_table_names=['t1'],
+        )
+
+        tables = r.get_metadata().sorted_tables
+        assert len(r.get_metadata().sorted_tables) == 1
+        table = tables.pop()
+
+        assert len(table.constraints) == 2
+        constraints = table._sorted_constraints
+        # first constraint, we don't care about but acknowledge
+        assert isinstance(constraints[0], sa.PrimaryKeyConstraint)
+        constraint = constraints[1]
+        assert isinstance(constraint, sa.CheckConstraint)
+        assert len(constraint.columns) == 0
+
+    @pytest.mark.usefixtures("metadata_with_multi_column_check_constraint")
+    def test_new_table_with_multi_column_check_constraint(self, new_test_runner, metadata_with_multi_column_check_constraint):
+        r = new_test_runner(metadata_with_multi_column_check_constraint)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_with_multi_column_check_constraint,
+            new_table_names=['t1'],
+        )
+
+        tables = r.get_metadata().sorted_tables
+        assert len(r.get_metadata().sorted_tables) == 1
+        table = tables.pop()
+
+        assert len(table.constraints) == 4
+        constraints = table._sorted_constraints
+        # first constraint, we don't care about but acknowledge
+        assert isinstance(constraints[0], sa.PrimaryKeyConstraint)
+        for idx in range(1, 4):
+            constraint = constraints[idx]
+            assert isinstance(constraint, sa.CheckConstraint)
+            assert len(constraint.columns) == 0
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_sequential_table_adds(self, new_test_runner, metadata_with_table):
@@ -805,7 +958,6 @@ class TestPostgresRunner(BaseTestRunner):
         r2 = new_test_runner(metadata_with_table, r)
 
         diff = r2.compute_changes()
-        pprint.pprint(diff, indent=2, width=30)
 
         assert len(diff) == 1
 
@@ -834,6 +986,36 @@ class TestPostgresRunner(BaseTestRunner):
         assert_num_files(r2, 2)
         assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
         validate_metadata_after_change(r2, r2.get_metadata())
+
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_check_constraint_added_and_removed(self, new_test_runner, metadata_with_table):
+        r = new_test_runner(metadata_with_table)
+        run_and_validate_with_standard_metadata_tables(r, metadata_with_table)
+
+        r2 = recreate_with_new_metadata(
+            r, new_test_runner, metadata_with_table, conftest.metadata_with_constraint_added_after)
+
+        message = r2.revision_message()
+        assert message == "add constraint meaning_of_life_correct to accounts"
+
+        r2.run()
+
+        # should have the expected files with the expected tables
+        assert_num_files(r2, 2)
+        assert_num_tables(r2, 2, ['accounts', 'alembic_version'])
+        validate_metadata_after_change(r2, r2.get_metadata())
+
+        r3 = recreate_metadata_fixture(
+            new_test_runner, conftest.metadata_with_base_table_restored(), r2)
+
+        message = r3.revision_message()
+        assert message == "drop constraint meaning_of_life_correct from accounts"
+
+        r3.run()
+
+        # should have the expected files with the expected tables
+        assert_num_files(r3, 3)
+        assert_num_tables(r3, 2, ['accounts', 'alembic_version'])
 
     @pytest.mark.usefixtures('metadata_with_enum_type')
     def test_enum_type(self, new_test_runner, metadata_with_enum_type):

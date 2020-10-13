@@ -125,6 +125,10 @@ def default_children_of_table():
 
 @pytest.fixture
 def metadata_with_table():
+    return metadata_with_base_table_restored()
+
+
+def metadata_with_base_table_restored():
     metadata = sa.MetaData()
     changes = default_children_of_table()
     sa.Table('accounts', metadata,
@@ -227,8 +231,6 @@ def _apply_func_on_metadata(metadata, col_name, table_name, fn):
     return metadata
 
 
-@pytest.fixture
-@pytest.mark.usefixtures("metadata_with_table")
 def metadata_with_table_with_index(metadata_with_table):
     return _add_constraint_to_metadata(
         metadata_with_table,
@@ -237,9 +239,7 @@ def metadata_with_table_with_index(metadata_with_table):
     )
 
 
-@pytest.fixture
-@pytest.mark.usefixtures("metadata_with_table")
-def test_metadata_with_multi_column_index(metadata_with_table):
+def metadata_with_multi_column_index(metadata_with_table):
     return _add_constraint_to_metadata(
         metadata_with_table,
         # index the first and last name because we support searching by that
@@ -249,7 +249,7 @@ def test_metadata_with_multi_column_index(metadata_with_table):
 
 
 @pytest.fixture
-def metadata_with_multi_column_constraint():
+def metadata_with_multi_column_pkey_constraint():
     metadata = sa.MetaData()
     sa.Table('user_friends_edge', metadata,
              sa.Column('id1', sa.Integer(), nullable=False),
@@ -260,7 +260,156 @@ def metadata_with_multi_column_constraint():
              sa.Column('time', sa.TIMESTAMP(), nullable=False),
              sa.Column('data', sa.Text(), nullable=True),
              sa.PrimaryKeyConstraint(
-                 "id1", "edge_type", "id2", name="accounts_friends_edge_id1_edge_type_id2_pkey"),
+                 "id1", "edge_type", "id2", name="user_friends_edge_id1_edge_type_id2_pkey"),
+             )
+    return metadata
+
+
+@pytest.fixture()
+def metadata_with_multi_column_unique_constraint():
+    metadata = metadata_with_contacts_table_with_no_unique_constraint()
+    return _add_constraint_to_metadata(metadata,
+                                       sa.UniqueConstraint(
+                                           "email_address", "user_id", name="contacts_unique_email_per_contact"
+                                       ), table_name='contacts'
+                                       )
+
+
+def metadata_with_contacts_table_with_no_unique_constraint():
+    metadata = sa.MetaData()
+    table = sa.Table('contacts', metadata,
+                     sa.Column('id', sa.Integer(), nullable=False),
+                     sa.Column('email_address', sa.Text(), nullable=False),
+                     sa.Column('first_name', sa.Text(), nullable=False),
+                     sa.Column('last_name', sa.Text(), nullable=False),
+                     # ignoring the fkey here
+                     sa.Column('user_id', sa.Integer(), nullable=False),
+                     sa.PrimaryKeyConstraint(
+                         "id", name="contacts_pkey",
+                     ),
+                     )
+    return metadata
+
+
+@pytest.fixture()
+def metadata_with_multi_column_fkey_constraint():
+    metadata = sa.MetaData()
+    sa.Table('t1', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('c1', sa.Integer(), nullable=False),
+             sa.Column('c2', sa.Integer(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "id", name="t1_pkey",
+             ),
+             sa.UniqueConstraint(
+                 "c1", "c2", name="unique"
+             )
+             )
+
+    sa.Table('t2', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('c1', sa.Integer(), nullable=False),
+             sa.Column('c2', sa.Integer(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "id", name="t2_pkey",
+             ),
+             sa.ForeignKeyConstraint(
+                 ['c1', 'c2'], ['t1.c1', 't1.c2'], name="t2_fkey", ondelete="RESTRICT"
+             ),
+             )
+    return metadata
+
+
+def metadata_with_multi_column_fkey_constraint_removed():
+    metadata = sa.MetaData()
+    sa.Table('t1', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('c1', sa.Integer(), nullable=False),
+             sa.Column('c2', sa.Integer(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "id", name="t1_pkey",
+             ),
+             sa.UniqueConstraint(
+                 "c1", "c2", name="unique"
+             )
+             )
+
+    sa.Table('t2', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('c1', sa.Integer(), nullable=False),
+             sa.Column('c2', sa.Integer(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "id", name="t2_pkey",
+             ),
+             )
+    return metadata
+
+
+@pytest.fixture()
+def metadata_with_multi_column_fkey_constraint_no_constraint_reference_table():
+    metadata = sa.MetaData()
+    sa.Table('t1', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('c1', sa.Integer(), nullable=False),
+             sa.Column('c2', sa.Integer(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "id", name="t1_pkey",
+             ),
+             )
+
+    sa.Table('t2', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('c1', sa.Integer(), nullable=False),
+             sa.Column('c2', sa.Integer(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "id", name="t2_pkey",
+             ),
+             sa.ForeignKeyConstraint(
+                 ['c1', 'c2'], ['t1.c1', 't1.c2'], name="t2_fkey", ondelete="RESTRICT"
+             ),
+             )
+    return metadata
+
+
+@pytest.fixture()
+def metadata_with_column_check_constraint():
+    metadata = sa.MetaData()
+    sa.Table('t1', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('price', sa.Numeric(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "id", name="t1_pkey",
+             ),
+             sa.CheckConstraint('price > 0', 'positive_price'),
+             )
+    return metadata
+
+
+def metadata_with_constraint_added_after(metadata):
+    return _add_constraint_to_metadata(
+        metadata,
+        sa.CheckConstraint('meaning_of_life = 42', 'meaning_of_life_correct'),
+    )
+
+
+@pytest.fixture()
+def metadata_with_multi_column_check_constraint():
+    metadata = sa.MetaData()
+    sa.Table('t1', metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('price', sa.Numeric(),
+                       nullable=False),
+             sa.Column('discounted_price', sa.Numeric(), nullable=False),
+             sa.PrimaryKeyConstraint(
+                 "id", name="t1_pkey",
+             ),
+             # we don't do inline constraints in columns because it's harder to test since it ends up being converted from schema column constraints
+             # to db table constraints which are harder to figure out so we just do everything
+             # like this because easier to programmatically confirm they're the same
+             sa.CheckConstraint('price > 0', 'positive_price'),
+             sa.CheckConstraint('discounted_price > 0',
+                                'positive_discounted_price'),
+             sa.CheckConstraint('discounted_price > price', 'price_check'),
              )
     return metadata
 

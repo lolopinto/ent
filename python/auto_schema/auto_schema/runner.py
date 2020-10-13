@@ -9,6 +9,7 @@ from alembic.autogenerate import render_python_code
 from sqlalchemy.sql.schema import DefaultClause
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.dialects import postgresql
+import alembic.operations.ops as alembicops
 
 from . import command
 from . import config
@@ -125,6 +126,10 @@ class Runner(object):
                 new_metadata_default)
 
         if new_inspected_default != new_metadata_default:
+            # specific case. not sure why this is needed
+            # can be generalized at some point in the future
+            if isinstance(new_inspected_default, str) and new_inspected_default.startswith("nextval") and metadata_default is None:
+                return False
             return True
         return False
 
@@ -219,9 +224,17 @@ class Runner(object):
                     op.column_name,
                     Runner.get_clause_text(op.existing_server_default),
                     Runner.get_clause_text(op.modify_server_default))
+            elif op.modify_comment:
+                return "modify comment of column %s"
+            elif op.modify_name:
+                return "modify name of column %s"
             else:
-                # TODO modify_comment, modify_name all valid options
-                return None
+                raise ValueError("unsupported alter_column op")
+
+        # for op in diff:
+        #     if isinstance(op, alembicops.ModifyTableOps):
+        #         for op2 in op.ops:
+        #             print(op2, op2.__dict__)
 
         class_name_map = {
             'CreateTableOp': lambda op: 'add %s table' % op.table_name,
@@ -229,7 +242,8 @@ class Runner(object):
             'ModifyTableOps': lambda op: "\n".join([class_name_map[type(child_op).__name__](child_op) for child_op in op.ops]),
             'AlterColumnOp': lambda op: alter_column_op(op),
             'CreateUniqueConstraintOp': lambda op: 'add unique constraint %s' % op.constraint_name,
-            'CreateIndexOp': lambda op: 'add index %s' % op.index_name,
+            'CreateIndexOp': lambda op: 'add index %s to %s' % (op.index_name, op.table_name),
+            'DropIndexOp': lambda op: 'drop index %s from %s' % (op.index_name, op.table_name),
             'AddColumnOp': lambda op: 'add column %s to table %s' % (op.column.name, op.table_name),
             # TODO check for this by default
             'AddEdgesOp': lambda op: op.get_revision_message(),
@@ -242,11 +256,14 @@ class Runner(object):
             # todo test these
             # effectively rename a column by dropping column with fkey constraint and readding it back
             'DropConstraintOp': lambda op: 'drop constraint %s from %s' % (op.constraint_name, op.table_name),
+            'OurDropConstraintOp': lambda op: 'drop constraint %s from %s' % (op.constraint_name, op.table_name),
             'CreateForeignKeyOp': lambda op: 'create fk constraint %s on %s' % (op.constraint_name, op.source_table),
             # TODO go through all alembic ops and create default values here
             'AddRowsOp': lambda op: op.get_revision_message(),
             'RemoveRowsOp': lambda op: op.get_revision_message(),
             'ModifyRowsOp': lambda op: op.get_revision_message(),
+            'CreateCheckConstraintOp': lambda op: 'add constraint %s to %s' % (op.constraint_name, op.table_name),
+            'OurCreateCheckConstraintOp': lambda op: 'add constraint %s to %s' % (op.constraint_name, op.table_name),
         }
 
         changes = [class_name_map[type(op).__name__](op) for op in diff]
