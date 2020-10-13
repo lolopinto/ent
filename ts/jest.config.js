@@ -8,7 +8,11 @@ module.exports = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   //  projects: ["<rootDir>", "<rootDir>/examples/simple/"],
   // ignore subdirectories until I figure out how to get projects and root files/module name mapper working correctly
-  testPathIgnorePatterns: ["<rootDir>/examples", "<rootDir>/packages"],
+  testPathIgnorePatterns: [
+    "<rootDir>/examples",
+    "<rootDir>/packages",
+    "fake_data",
+  ],
   //  collectCoverage: true,
   setupFilesAfterEnv: ["jest-expect-message", "jest-date-mock"],
   // doesn't work because db.ts depends on "config/database.yml" being called from root of each project

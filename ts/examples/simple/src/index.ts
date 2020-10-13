@@ -1,11 +1,15 @@
 import User from "src/ent/user.ts"; // default removes the suffix and transforms it...
-import { IDViewer } from "@lolopinto/ent";
+import { IDViewer, LoggedOutViewer, Viewer } from "@lolopinto/ent";
 import CreateContactAction from "./ent/contact/actions/create_contact_action";
 import { randomEmail } from "./util/random";
 import EditUserAction from "./ent/user/actions/edit_user_action";
 import { EdgeType } from "./ent/const";
 import * as http from "http";
 import { buildContext } from "@lolopinto/ent/auth";
+import CreateUserAction from "./ent/user/actions/create_user_action";
+import CreateEventAction from "./ent/event/actions/create_event_action";
+import Event from "./ent/event";
+import { UserToCreatedEventsQuery } from "./ent/user/query/user_query";
 async function loadUserAndCreate() {
   let user = await User.loadX(
     new IDViewer("6910e947-7bc1-4ed2-b8a8-5a07e6708830"),
@@ -73,4 +77,48 @@ async function main() {
   // await action.saveX();
 }
 
-Promise.resolve(main());
+async function createUser(viewer: Viewer) {
+  return await CreateUserAction.create(viewer, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  }).saveX();
+}
+
+async function create(startTime: Date, user: User): Promise<Event> {
+  return await CreateEventAction.create(user.viewer, {
+    name: "fun event",
+    creatorID: user.id,
+    startTime: startTime,
+    location: "location",
+  }).saveX();
+}
+
+async function queryEdgesMain() {
+  //  const loggedOutViewer = new LoggedOutViewer();
+  const vc = new IDViewer("c7f40718-1e1e-4d9f-9bae-56cca8c2b54e");
+  //  let user = await createUser(loggedOutViewer);
+  const user = await User.loadX(vc, vc.viewerID);
+
+  // const events = await Promise.all(
+  //   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(() => {
+  //     return create(new Date(), user);
+  //   }),
+  // );
+
+  console.log(user);
+
+  const query = UserToCreatedEventsQuery.query(user.viewer, user)
+    .firstN(5)
+    .queryHosts()
+    .querySelfContact();
+
+  const [ents, count] = await Promise.all([
+    query.queryEnts(),
+    query.queryCount(),
+  ]);
+
+  console.log(count, ents);
+}
+
+Promise.resolve(queryEdgesMain());
