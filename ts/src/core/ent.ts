@@ -55,7 +55,7 @@ export interface EntConstructor<T extends Ent> {
 
 export type ID = string | number;
 
-interface DataOptions {
+export interface DataOptions {
   // TODO pool or client later since we should get it from there
   // TODO this can be passed in for scenarios where we are not using default configuration
   //  clientConfig?: ClientConfig;
@@ -72,6 +72,7 @@ export interface SelectDataOptions extends DataOptions {
 export interface QueryableDataOptions extends SelectDataOptions {
   clause: clause.Clause;
   orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
+  limit?: number;
 }
 
 // For loading data from database
@@ -387,6 +388,9 @@ export function buildQuery(options: QueryableDataOptions): string {
   if (options.orderby) {
     query = `${query} ORDER BY ${options.orderby} `;
   }
+  if (options.limit) {
+    query = `${query} LIMIT ${options.limit}`;
+  }
   return query;
 }
 
@@ -470,7 +474,12 @@ export class EditNodeOperation implements DataOperation {
       context,
     };
     if (this.existingEnt) {
-      this.row = await editRow(queryer, options, this.existingEnt.id);
+      this.row = await editRow(
+        queryer,
+        options,
+        this.existingEnt.id,
+        "RETURNING *",
+      );
     } else {
       this.row = await createRow(queryer, options, "RETURNING *");
     }
@@ -789,13 +798,10 @@ async function mutateRow(
   }
 }
 
-// TODO: these three are not to be exported out of this package
-// only from this file
-export async function createRow(
-  queryer: Queryer,
+export function buildInsertQuery(
   options: EditRowOptions,
-  suffix: string,
-): Promise<Data | null> {
+  suffix?: string,
+): [string, string[]] {
   let fields: string[] = [];
   let values: any[] = [];
   let valsString: string[] = [];
@@ -810,7 +816,22 @@ export async function createRow(
   const cols = fields.join(", ");
   const vals = valsString.join(", ");
 
-  let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals}) ${suffix}`;
+  let query = `INSERT INTO ${options.tableName} (${cols}) VALUES (${vals})`;
+  if (suffix) {
+    query = query + " " + suffix;
+  }
+
+  return [query, values];
+}
+
+// TODO: these three are not to be exported out of this package
+// only from this file
+export async function createRow(
+  queryer: Queryer,
+  options: EditRowOptions,
+  suffix: string,
+): Promise<Data | null> {
+  const [query, values] = buildInsertQuery(options, suffix);
 
   const res = await mutateRow(queryer, query, values, options);
 
@@ -824,6 +845,7 @@ export async function editRow(
   queryer: Queryer,
   options: EditRowOptions,
   id: ID,
+  suffix?: string,
 ): Promise<Data | null> {
   let valsString: string[] = [];
   let values: any[] = [];
@@ -839,7 +861,10 @@ export async function editRow(
   const vals = valsString.join(", ");
   const col = options.pkey || "id";
 
-  let query = `UPDATE ${options.tableName} SET ${vals} WHERE ${col} = $${idx} RETURNING *`;
+  let query = `UPDATE ${options.tableName} SET ${vals} WHERE ${col} = $${idx}`;
+  if (suffix) {
+    query = query + " " + suffix;
+  }
 
   const res = await mutateRow(queryer, query, values, options);
 
@@ -852,13 +877,14 @@ export async function editRow(
   return null;
 }
 
+// TODO rename to deleteRows. works for one or more rows
 export async function deleteRow(
   queryer: Queryer,
   options: DataOptions,
-  clause: clause.Clause,
+  cls: clause.Clause,
 ): Promise<void> {
-  const query = `DELETE FROM ${options.tableName} WHERE ${clause.clause(1)}`;
-  const values = clause.values();
+  const query = `DELETE FROM ${options.tableName} WHERE ${cls.clause(1)}`;
+  const values = cls.values();
   await mutateRow(queryer, query, values, options);
 }
 

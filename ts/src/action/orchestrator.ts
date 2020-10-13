@@ -265,6 +265,7 @@ export class Orchestrator<T extends Ent> {
           let edgeOp = this.getEdgeOperation(edgeType, op, edge);
           ops.push(edgeOp);
           const edgeData = edgeDatas.get(edgeType);
+          //          console.log(edgeType, edgeData);
           if (!edgeData) {
             throw new Error(`could not load edge data for ${edgeType}`);
           }

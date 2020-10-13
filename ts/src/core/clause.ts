@@ -8,7 +8,7 @@ class simpleClause implements Clause {
   constructor(private col: string, private value: any, private op: string) {}
 
   clause(idx: number): string {
-    return `${this.col} = $${idx}`;
+    return `${this.col} ${this.op} $${idx}`;
   }
 
   values(): any[] {
@@ -76,6 +76,22 @@ class compositeClause implements Clause {
 
 export function Eq(col: string, value: any): simpleClause {
   return new simpleClause(col, value, "=");
+}
+
+export function Greater(col: string, value: any): simpleClause {
+  return new simpleClause(col, value, ">");
+}
+
+export function Less(col: string, value: any): simpleClause {
+  return new simpleClause(col, value, "<");
+}
+
+export function GreaterEq(col: string, value: any): simpleClause {
+  return new simpleClause(col, value, ">=");
+}
+
+export function LessEq(col: string, value: any): simpleClause {
+  return new simpleClause(col, value, "<=");
 }
 
 export function And(...args: Clause[]): compositeClause {

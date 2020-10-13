@@ -2,7 +2,6 @@ import { Ent, DataOperation, Viewer } from "../core/ent";
 import { Builder, Changeset, Executor, WriteOperation } from "../action";
 import * as action from "../action";
 import * as ent from "../core/ent";
-import { snakeCase } from "snake-case";
 
 import DB from "../core/db";
 
@@ -12,7 +11,6 @@ import {
   User,
   Group,
   Message,
-  FakeBuilder,
   Contact,
   SimpleBuilder,
   SimpleAction,
@@ -21,39 +19,37 @@ import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { BaseEntSchema, Field } from "../schema";
 import { StringType, TimeType, BooleanType } from "../schema/field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
-import * as query from "../core/clause";
 import { FakeLogger, EntCreationObserver } from "../testutils/fake_log";
+import { createRowForTest } from "../testutils/write";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
-jest
-  .spyOn(ent, "loadEdgeDatas")
-  .mockImplementation(QueryRecorder.mockImplOfLoadEdgeDatas);
-
 let operations: DataOperation[] = [];
 
-beforeEach(() => {
-  // can't mock loadEdgeData because it's being called from within the ent module so have to do this instead
-  // this is getting too complicated...
-
-  // TODO can change loadEdgeDatas to do this depending on values[0]
-  // have to do it this way because loadEdgeData is now wrapped via a loader
-  QueryRecorder.mockResult({
-    tableName: "assoc_edge_config",
-    clause: query.In("edge_type", "fake_edge"),
-    result: (values: any[]) => {
-      return values.map((edgeType) => {
-        return {
-          edge_table: snakeCase(`${edgeType}_table`),
-          symmetric_edge: false,
-          inverse_edge_type: null,
-          edge_type: edgeType,
-          edge_name: "name",
-        };
-      });
-    },
-  });
+beforeEach(async () => {
+  // does assoc_edge_config loader need to be cleared?
+  const edges = [
+    "fake_edge",
+    "selfContact",
+    "channelMember",
+    "senderToMessage",
+    "workspaceMember",
+    "recipientToMessage",
+  ];
+  for (const edge of edges) {
+    await createRowForTest({
+      tableName: "assoc_edge_config",
+      fields: {
+        edge_table: `${edge}_table`,
+        symmetric_edge: false,
+        inverse_edge_type: null,
+        edge_type: edge,
+        edge_name: "name",
+      },
+    });
+  }
+  QueryRecorder.clearQueries();
 });
 
 afterEach(() => {
@@ -146,7 +142,7 @@ class GroupSchema extends BaseEntSchema {
 class MessageSchema extends BaseEntSchema {
   fields: Field[] = [
     // TODO both id fields
-    StringType({ name: "from" }),
+    StringType({ name: "sender" }), // can't use from
     StringType({ name: "to" }),
     StringType({ name: "message" }),
     BooleanType({ name: "transient", nullable: true }),
@@ -168,10 +164,10 @@ class MessageAction extends SimpleAction<Message> {
   triggers: action.Trigger<Message>[] = [
     {
       changeset: (builder: SimpleBuilder<Message>): void => {
-        let from = builder.fields.get("from");
+        let sender = builder.fields.get("sender");
         let to = builder.fields.get("to");
 
-        builder.orchestrator.addInboundEdge(from, "senderToMessage", "user");
+        builder.orchestrator.addInboundEdge(sender, "senderToMessage", "user");
         builder.orchestrator.addInboundEdge(to, "recipientToMessage", "user");
       },
     },
@@ -233,12 +229,22 @@ function randomEmail(): string {
   return `test+${rand}@email.com`;
 }
 
-test("empty", async () => {
-  const builder = new FakeBuilder(new Map(), WriteOperation.Insert, User);
+test.only("empty", async () => {
+  const viewer = new LoggedOutViewer();
+  const user = new User(viewer, "1", {});
+
+  const builder = new SimpleBuilder(
+    viewer,
+    new UserSchema(),
+    new Map(),
+    WriteOperation.Edit,
+    user,
+  );
 
   let ent = await builder.save();
   expect(ent).toBe(null);
-  expect(operations.length).toBe(0);
+  // TODO for now it's the EditNodeOperation but we should skip it when no fields
+  expect(operations.length).toBe(1);
 });
 
 test("simple-one-op-created-ent", async () => {
@@ -262,7 +268,7 @@ test("simple-one-op-created-ent", async () => {
   expect(operations.length).toBe(1);
   QueryRecorder.validateQueryStructuresInTx([
     {
-      tableName: "User",
+      tableName: "users",
       type: queryType.INSERT,
     },
   ]);
@@ -270,6 +276,12 @@ test("simple-one-op-created-ent", async () => {
 
 test("simple-one-op-no-created-ent", async () => {
   let id = QueryRecorder.newID();
+  await createRowForTest({
+    tableName: "users",
+    fields: {
+      id: id,
+    },
+  });
   const viewer = new IDViewer(id);
   const user = new User(viewer, id, {});
   const action = new SimpleAction(
@@ -281,7 +293,7 @@ test("simple-one-op-no-created-ent", async () => {
   );
   const id2 = QueryRecorder.newID();
 
-  action.builder.orchestrator.addOutboundEdge(id2, "fakeEdge", "user");
+  action.builder.orchestrator.addOutboundEdge(id2, "fake_edge", "user");
 
   const exec = await executeAction(action);
   let ent = await action.editedEnt();
@@ -289,17 +301,27 @@ test("simple-one-op-no-created-ent", async () => {
   expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(ent);
 
   expect(operations.length).toBe(2);
-  QueryRecorder.validateQueryStructuresInTx([
-    {
-      // TODO this shouldn't be here...
-      tableName: "User",
-      type: queryType.UPDATE,
-    },
-    {
-      tableName: "fake_edge_table",
-      type: queryType.INSERT,
-    },
-  ]);
+  QueryRecorder.validateQueryStructuresInTx(
+    [
+      {
+        // TODO this shouldn't be here...
+        tableName: "users",
+        type: queryType.UPDATE,
+      },
+      {
+        tableName: "fake_edge_table",
+        type: queryType.INSERT,
+      },
+    ],
+    [
+      // this is before transaction
+      {
+        //        tableName: "User",
+        type: queryType.INSERT,
+        values: [id],
+      },
+    ],
+  );
 });
 
 test("list-based-with-dependency", async () => {
@@ -366,15 +388,15 @@ test("complex-based-with-dependencies", async () => {
 
   QueryRecorder.validateQueryStructuresInTx([
     {
-      tableName: "User",
+      tableName: "users",
       type: queryType.INSERT,
     },
     {
-      tableName: "Contact",
+      tableName: "contacts",
       type: queryType.INSERT,
     },
     {
-      tableName: "self_contact_table",
+      tableName: "selfContact_table",
       type: queryType.INSERT,
     },
   ]);
@@ -417,7 +439,17 @@ test("list-with-complex-layers", async () => {
   async function getInvitee(viewer: Viewer): Promise<User> {
     return new User(viewer, QueryRecorder.newID(), {});
   }
-  const group = new Group(new LoggedOutViewer(), QueryRecorder.newID(), {});
+  let groupID = QueryRecorder.newID();
+  let groupFields = {
+    id: groupID,
+    name: "group",
+  };
+  // need to create the group first
+  await createRowForTest({
+    tableName: "groups",
+    fields: groupFields,
+  });
+  const group = new Group(new LoggedOutViewer(), groupID, groupFields);
 
   let userAction: UserAction;
   let messageAction: SimpleAction<Message>;
@@ -466,7 +498,7 @@ test("list-with-complex-layers", async () => {
         messageAction = new MessageAction(
           builder.viewer,
           new Map<string, any>([
-            ["from", userAction.builder],
+            ["sender", userAction.builder],
             ["to", invitee.id],
             ["message", `${userInfo.firstName} has joined!`],
             ["transient", true],
@@ -519,52 +551,60 @@ test("list-with-complex-layers", async () => {
     message,
   );
 
-  QueryRecorder.validateQueryStructuresInTx([
-    {
-      tableName: "Group",
-      type: queryType.UPDATE,
-    },
-    {
-      tableName: "User",
-      type: queryType.INSERT,
-    },
-    {
-      tableName: "Contact",
-      type: queryType.INSERT,
-    },
-    {
-      tableName: "Message",
-      type: queryType.INSERT,
-    },
-    {
-      tableName: "workspace_member_table",
-      type: queryType.INSERT,
-    },
-    {
-      tableName: "channel_member_table",
-      type: queryType.INSERT,
-    },
-    {
-      tableName: "channel_member_table",
-      type: queryType.INSERT,
-    },
-    {
-      tableName: "channel_member_table",
-      type: queryType.INSERT,
-    },
-    {
-      tableName: "self_contact_table",
-      type: queryType.INSERT,
-    },
-    {
-      tableName: "sender_to_message_table",
-      type: queryType.INSERT,
-    },
-    {
-      tableName: "recipient_to_message_table",
-      type: queryType.INSERT,
-    },
-  ]);
+  QueryRecorder.validateQueryStructuresInTx(
+    [
+      {
+        tableName: "groups",
+        type: queryType.UPDATE,
+      },
+      {
+        tableName: "users",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "contacts",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "messages",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "workspaceMember_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "channelMember_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "channelMember_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "channelMember_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "selfContact_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "senderToMessage_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "recipientToMessage_table",
+        type: queryType.INSERT,
+      },
+    ],
+    [
+      {
+        //        tableName: "groups",
+        type: queryType.INSERT,
+      },
+    ],
+  );
   FakeLogger.verifyLogs(5); // should be 4
   // TODO important and need to fix
   // same double counting bug where the observer for Contact is being called twice

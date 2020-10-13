@@ -78,12 +78,16 @@ export {
 } from "./core/privacy";
 
 export * from "./schema/";
-import * as q from "./core/query";
+import * as q from "./core/clause";
 const query = {
   Eq: q.Eq,
   And: q.And,
   Or: q.Or,
   In: q.In,
+  Greater: q.Greater,
+  Less: q.Less,
+  GreaterEq: q.GreaterEq,
+  LessEq: q.LessEq,
 };
 
 export { query };
