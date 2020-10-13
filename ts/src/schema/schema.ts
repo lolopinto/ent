@@ -23,6 +23,9 @@ export default interface Schema {
   // data that should be saved in the db corresponding for this table
   // keys should map to either field names or storage_key
   dbRows?: { [key: string]: any }[];
+
+  // constraints applied to the schema e.g. multi-fkey, multi-column unique keys, join table primary keys etc
+  constraints?: Constraint[];
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format
@@ -296,3 +299,26 @@ export interface Action {
 // required to differentiate against default value of no fields being set to indicate
 // all fields in a create/edit mutation
 export const NoFields = "__NO_FIELDS__";
+
+// no nullable constraint here since simple enough it's just part of the field
+export interface Constraint {
+  name: string;
+  type: ConstraintType;
+  columns: string[];
+  fkey?: ForeignKeyInfo;
+  condition?: string; // only applies in check constraint
+}
+
+export interface ForeignKeyInfo {
+  tableName: string;
+  ondelete?: "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT" | "NO ACTION";
+  // no on update, match full etc
+}
+
+export enum ConstraintType {
+  PrimaryKey = "primary",
+  ForeignKey = "foreign",
+  Unique = "unique",
+  Check = "check",
+  // index not a constraint and will be its own indices field
+}

@@ -264,34 +264,12 @@ func TestParseFields(t *testing.T) {
 			},
 			expectedOutput: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name:                    "ID",
-							dbType:                  input.UUID,
-							primaryKey:              true,
-							disableUserEditable:     true,
-							hasDefaultValueOnCreate: true,
-						},
-						{
-							name:                    "createdAt",
-							dbType:                  input.Time,
-							hideFromGraphQL:         true,
-							disableUserEditable:     true,
-							hasDefaultValueOnCreate: true,
-						},
-						{
-							name:                    "updatedAt",
-							dbType:                  input.Time,
-							hideFromGraphQL:         true,
-							disableUserEditable:     true,
-							hasDefaultValueOnCreate: true,
-							hasDefaultValueOnEdit:   true,
-						},
-						{
+					fields: fieldsWithNodeFields(
+						field{
 							name:   "firstName",
 							dbType: input.String,
 						},
-					},
+					),
 				},
 			},
 		},
@@ -323,97 +301,53 @@ func TestParseFields(t *testing.T) {
 			},
 			expectedOutput: map[string]node{
 				"User": {
-					fields: []field{
-						{
-							name:                    "ID",
-							dbType:                  input.UUID,
-							primaryKey:              true,
-							disableUserEditable:     true,
-							hasDefaultValueOnCreate: true,
-						},
-						{
-							name:                    "createdAt",
-							dbType:                  input.Time,
-							hideFromGraphQL:         true,
-							disableUserEditable:     true,
-							hasDefaultValueOnCreate: true,
-						},
-						{
-							name:                    "updatedAt",
-							dbType:                  input.Time,
-							hideFromGraphQL:         true,
-							disableUserEditable:     true,
-							hasDefaultValueOnCreate: true,
-							hasDefaultValueOnEdit:   true,
-						},
-						{
+					fields: fieldsWithNodeFields(
+						field{
 							name:   "first_name",
 							dbType: input.String,
 						},
-						{
+						field{
 							name:   "last_name",
 							dbType: input.String,
 						},
-						{
+						field{
 							name:   "email",
 							dbType: input.String,
 							unique: true,
 						},
-						{
+						field{
 							name:            "password",
 							dbType:          input.String,
 							private:         true,
 							hideFromGraphQL: true,
 						},
-					},
+					),
 				},
 				"Event": {
-					fields: []field{
-						{
-							name:                    "ID",
-							dbType:                  input.UUID,
-							primaryKey:              true,
-							disableUserEditable:     true,
-							hasDefaultValueOnCreate: true,
-						},
-						{
-							name:                    "createdAt",
-							dbType:                  input.Time,
-							hideFromGraphQL:         true,
-							disableUserEditable:     true,
-							hasDefaultValueOnCreate: true,
-						},
-						{
-							name:                    "updatedAt",
-							dbType:                  input.Time,
-							hideFromGraphQL:         true,
-							disableUserEditable:     true,
-							hasDefaultValueOnCreate: true,
-							hasDefaultValueOnEdit:   true,
-						},
-						{
+					fields: fieldsWithNodeFields(
+						field{
 							name:   "name",
 							dbType: input.String,
 						},
-						{
+						field{
 							name:       "creator_id",
 							dbType:     input.UUID,
 							foreignKey: &[2]string{"User", "ID"},
 						},
-						{
+						field{
 							name:   "start_time",
 							dbType: input.Time,
 						},
-						{
+						field{
 							name:     "end_time",
 							dbType:   input.Time,
 							nullable: true,
 						},
-						{
+						field{
 							name:   "location",
 							dbType: input.String,
 						},
-					},
+					),
 				},
 			},
 		},

@@ -156,5 +156,4 @@ func TestEnumTable(t *testing.T) {
 	}
 
 	runTestCases(t, testCases)
-
 }

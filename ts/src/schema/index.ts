@@ -20,6 +20,9 @@ export {
   Action,
   EdgeAction,
   NoFields,
+  Constraint,
+  ConstraintType,
+  ForeignKeyInfo,
 } from "./schema";
 
 export {
