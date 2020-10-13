@@ -525,7 +525,7 @@ export class EdgeOperation implements DataOperation {
     edge: AssocEdgeInput,
     context?: Context,
   ): Promise<void> {
-    return deleteRow(
+    return deleteRows(
       q,
       {
         tableName: edgeData.edgeTable,
@@ -877,8 +877,7 @@ export async function editRow(
   return null;
 }
 
-// TODO rename to deleteRows. works for one or more rows
-export async function deleteRow(
+export async function deleteRows(
   queryer: Queryer,
   options: DataOptions,
   cls: clause.Clause,
@@ -896,7 +895,7 @@ export class DeleteNodeOperation implements DataOperation {
       ...this.options,
       context,
     };
-    return deleteRow(queryer, options, clause.Eq("id", this.id));
+    return deleteRows(queryer, options, clause.Eq("id", this.id));
   }
 }
 
@@ -1003,7 +1002,7 @@ interface loadEdgesOptions {
   context?: Context;
 }
 
-// TODO need to add a defult limit
+// TODO need to add a default limit
 export async function loadEdges(
   options: loadEdgesOptions,
 ): Promise<AssocEdge[]> {

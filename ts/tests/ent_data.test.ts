@@ -899,8 +899,8 @@ describe("writes", () => {
       },
     ],
     [
-      "deleteRow",
-      async () => ent.deleteRow(pool, options, clause.Eq("bar", 1)),
+      "deleteRows",
+      async () => ent.deleteRows(pool, options, clause.Eq("bar", 1)),
       {
         query: `DELETE FROM ${selectOptions.tableName} WHERE bar = $1`,
         values: [1],

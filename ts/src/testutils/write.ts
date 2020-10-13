@@ -4,7 +4,7 @@ import {
   ID,
   createRow,
   editRow,
-  deleteRow,
+  deleteRows,
   DataOptions,
 } from "../core/ent";
 import * as clause from "../core/clause";
@@ -35,5 +35,5 @@ export async function deleteRowsForTest(
 ) {
   const client = await DB.getInstance().getNewClient();
 
-  return await deleteRow(client, options, cls);
+  return await deleteRows(client, options, cls);
 }

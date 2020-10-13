@@ -1,9 +1,10 @@
-import { QueryRecorder, Where, EqOp } from "./db_mock";
+import { QueryRecorder } from "./db_mock";
 import { Pool } from "pg";
 import { createRowForTest, deleteRowsForTest, editRowForTest } from "./write";
 import { Data, loadRow, loadRows, ID } from "../core/ent";
 import DB from "../core/db";
 import * as clause from "../core/clause";
+import { Where, EqOp } from "./parse_sql";
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
