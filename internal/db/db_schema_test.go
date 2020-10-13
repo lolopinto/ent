@@ -552,11 +552,8 @@ func TestInverseEdge(t *testing.T) {
 }
 
 func TestEnumType(t *testing.T) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
-	schema := testhelper.ParseSchemaForTest(
+	dbSchema := getSchemaFromCode(
 		t,
-		absPath,
 		map[string]string{
 			"request.ts": testhelper.GetCodeWithSchema(
 				`import {Schema, Field, EnumType} from "{schema}";
@@ -569,15 +566,9 @@ func TestEnumType(t *testing.T) {
 				`,
 			),
 		},
-		base.TypeScript,
 	)
-	dbSchema := newDBSchema(schema, "models/configs")
-	dbSchema.generateShemaTables()
 
-	require.Len(t, dbSchema.Tables, 1)
-	require.Len(t, dbSchema.Tables[0].Columns, 1)
-
-	col := dbSchema.Tables[0].Columns[0]
+	col := getTestColumnFromSchema(t, dbSchema, "requests", "status")
 
 	testColumn(t, col, "status", "Status", "status", []string{
 		strconv.Quote("status"),
@@ -593,11 +584,7 @@ func TestEnumType(t *testing.T) {
 }
 
 func TestNullableEnumType(t *testing.T) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
-	schema := testhelper.ParseSchemaForTest(
-		t,
-		absPath,
+	dbSchema := getSchemaFromCode(t,
 		map[string]string{
 			"request.ts": testhelper.GetCodeWithSchema(
 				`import {Schema, Field, EnumType} from "{schema}";
@@ -610,15 +597,9 @@ func TestNullableEnumType(t *testing.T) {
 				`,
 			),
 		},
-		base.TypeScript,
 	)
-	dbSchema := newDBSchema(schema, "models/configs")
-	dbSchema.generateShemaTables()
 
-	require.Len(t, dbSchema.Tables, 1)
-	require.Len(t, dbSchema.Tables[0].Columns, 1)
-
-	col := dbSchema.Tables[0].Columns[0]
+	col := getTestColumnFromSchema(t, dbSchema, "requests", "status")
 
 	testColumn(t, col, "status", "Status", "status", []string{
 		strconv.Quote("status"),
@@ -635,11 +616,8 @@ func TestNullableEnumType(t *testing.T) {
 }
 
 func TestDataInSchema(t *testing.T) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
-	schema := testhelper.ParseSchemaForTest(
+	dbSchema := getSchemaFromCode(
 		t,
-		absPath,
 		map[string]string{
 			"role.ts": testhelper.GetCodeWithSchema(
 				`import {Schema, Field, StringType, IntegerType} from "{schema}";
@@ -681,9 +659,7 @@ func TestDataInSchema(t *testing.T) {
 					];
 				};`),
 		},
-		base.TypeScript,
 	)
-	dbSchema := newDBSchema(schema, "models/configs")
 	templateData := dbSchema.getSchemaForTemplate()
 
 	assert.Len(t, templateData.Data, 1)
@@ -706,6 +682,250 @@ func TestDataInSchema(t *testing.T) {
 	assert.Equal(t, data.TableName, "roles")
 	assert.Equal(t, data.Pkeys, fmt.Sprintf("[%s]", strconv.Quote("role")))
 	assert.Equal(t, data.Rows, rows)
+}
+
+func TestMultiColumnPrimaryKey(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"user_photo.ts": testhelper.GetCodeWithSchema(`
+				import {Schema, Field, UUIDType, Constraint, ConstraintType} from "{schema}";
+
+				export default class UserPhoto implements Schema {
+					fields: Field[] = [
+						UUIDType({
+							name: 'UserID',
+						}),
+						UUIDType({
+							name: 'PhotoID',
+						}),
+					];
+
+					constraints: Constraint[] = [
+						{
+							name: "user_photos_pkey",
+							type: ConstraintType.PrimaryKey,
+							columns: ["UserID", "PhotoID"],
+						},
+					];
+				}
+			`),
+		},
+	)
+
+	table := getTestTableFromSchema("UserPhotoConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 1)
+
+	testConstraint(
+		t,
+		constraints[0],
+		fmt.Sprintf("sa.PrimaryKeyConstraint(%s, %s, name=%s)", strconv.Quote("user_id"), strconv.Quote("photo_id"), strconv.Quote("user_photos_pkey")),
+	)
+}
+
+func TestMultiColumnUniqueKey(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+				import {Field, StringType, BaseEntSchema} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'firstName',
+						}),
+						StringType({
+							name: 'lastName',
+						}),
+					];
+				}
+			`),
+			"contact.ts": testhelper.GetCodeWithSchema(`
+				import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+
+				export default class Contact extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: "emailAddress",
+						}),
+						UUIDType({
+							name: "userID",
+							foreignKey: ["User", "ID"],
+						}),
+					];
+
+					constraints: Constraint[] = [
+						{
+							name: "contacts_unique_email",
+							type: ConstraintType.Unique,
+							columns: ["emailAddress", "userID"],
+						},
+					];
+				}
+			`),
+		},
+	)
+
+	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 3)
+
+	constraint := getTestUniqueKeyConstraintFromTable(t, table, "emailAddress", "userID")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.UniqueConstraint(%s, %s, name=%s)", strconv.Quote("email_address"), strconv.Quote("user_id"), strconv.Quote("contacts_unique_email")),
+	)
+}
+
+func TestMultiColumnForeignKey(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+				import {Field, StringType, BaseEntSchema} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'firstName',
+						}),
+						StringType({
+							name: 'lastName',
+						}),
+						StringType({
+							name: 'emailAddress',
+							unique: true,
+						}),
+					];
+				}
+			`),
+			"contact.ts": testhelper.GetCodeWithSchema(`
+				import {BaseEntSchema, Field, UUIDType, StringType, Constraint, ConstraintType} from "{schema}";
+
+				export default class Contact extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: "emailAddress",
+						}),
+						UUIDType({
+							name: "userID",
+						}),
+					];
+
+					constraints: Constraint[] = [
+						{
+							name: "contacts_user_fkey",
+							type: ConstraintType.ForeignKey,
+							columns: ["userID", "emailAddress"],
+							fkey: {
+								tableName: "users", 
+								ondelete: "CASCADE",
+								columns: ["ID", "emailAddress"],
+							}
+						},
+					];
+				}
+			`),
+		},
+	)
+
+	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestForeignKeyConstraintFromTable(t, table, "userID", "emailAddress")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.ForeignKeyConstraint([%s,%s], [%s,%s], name=%s, ondelete=%s)",
+			strconv.Quote("user_id"),
+			strconv.Quote("email_address"),
+			strconv.Quote("users.id"),
+			strconv.Quote("users.email_address"),
+			strconv.Quote("contacts_user_fkey"),
+			strconv.Quote("CASCADE"),
+		),
+	)
+}
+
+func TestCheckConstraint(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"item.ts": testhelper.GetCodeWithSchema(`
+				import {Field, FloatType, BaseEntSchema, Constraint, ConstraintType} from "{schema}";
+
+				export default class Item extends BaseEntSchema {
+					fields: Field[] = [
+						FloatType({
+							name: 'price',
+						}),
+						FloatType({
+							name: 'discount_price',
+						}),
+					];
+
+					constraints: Constraint[] = [
+						{
+							name: "item_positive_price",
+							type: ConstraintType.Check,
+							condition: 'price > 0',
+							columns: [],
+						},
+						{
+							name: "item_positive_discount_price",
+							type: ConstraintType.Check,
+							condition: 'discount_price > 0',
+							columns: [],
+						},
+						{
+							name: "item_price_greater_than_discount",
+							type: ConstraintType.Check,
+							condition: 'price > discount_price',
+							columns: [],
+						},
+					];
+				}`),
+		},
+	)
+
+	table := getTestTableFromSchema("ItemConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 4)
+
+	// get first Check constraint
+	constraint := constraints[1]
+	cConstraint, ok := constraint.(*checkConstraint)
+	require.True(t, ok)
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.CheckConstraint(%s, %s)",
+			strconv.Quote(cConstraint.condition),
+			strconv.Quote(cConstraint.name),
+		),
+	)
+}
+
+func getSchemaFromCode(t *testing.T, code map[string]string) *dbSchema {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		absPath,
+		code,
+		base.TypeScript,
+	)
+	dbSchema := newDBSchema(schema, "models/configs")
+	dbSchema.generateShemaTables()
+
+	return dbSchema
 }
 
 func testEdgeTable(t *testing.T, table *dbTable) {
@@ -817,6 +1037,8 @@ func getInMemoryTestSchemas(t *testing.T, sources map[string]string, uniqueKey s
 
 func getTestTable(configName string, t *testing.T) *dbTable {
 	schema := getTestSchema(t)
+	// need to do this now because constraints are generated separately
+	schema.generateShemaTables()
 
 	return getTestTableFromSchema(configName, schema, t)
 }
@@ -845,6 +1067,19 @@ func getTestColumn(tableConfigName, colFieldName string, t *testing.T) *dbColumn
 	return nil
 }
 
+func getTestColumnFromSchema(t *testing.T, schema *dbSchema, tableName, colName string) *dbColumn {
+	table := schema.tableMap[tableName]
+	require.NotNil(t, table)
+
+	for _, col := range table.Columns {
+		if col.DBColName == colName || col.EntFieldName == colName {
+			return col
+		}
+	}
+	require.Fail(t, "couldn't find column with name %s", colName)
+	return nil
+}
+
 func getColNames(cols []*dbColumn) []string {
 	res := make([]string, len(cols))
 	for idx := range cols {
@@ -859,12 +1094,13 @@ func getTestForeignKeyConstraint(t *testing.T, tableConfigName, colFieldName str
 	return getTestForeignKeyConstraintFromTable(t, table, colFieldName)
 }
 
-func getTestForeignKeyConstraintFromTable(t *testing.T, table *dbTable, colFieldName string) dbConstraint {
+func getTestForeignKeyConstraintFromTable(t *testing.T, table *dbTable, colFieldName ...string) dbConstraint {
 	for _, constraint := range table.Constraints {
 		fkeyConstraint, ok := constraint.(*foreignKeyConstraint)
-		if ok && fkeyConstraint.column.EntFieldName == colFieldName {
-			//		util.StringsEqual(getColNames([]*dbColumn{fkeyConstraint.column}), colFieldName) {
-			return fkeyConstraint
+		if ok {
+			if util.StringsEqual(getColNames(fkeyConstraint.columns), colFieldName) {
+				return fkeyConstraint
+			}
 		}
 	}
 	t.Errorf("no foreign key constraint for %v column(s) for %s table", colFieldName, table.QuotedTableName)

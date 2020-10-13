@@ -122,6 +122,10 @@ func (m NodeMapInfo) buildPostRunDepgraph(s *Schema, edgeData *assocEdgeData) *d
 		m.addNewConstsAndEdges(info, edgeData)
 	}, "LinkedEdges", "InverseEdges")
 
+	g.AddItem("Constraints", func(info *NodeDataInfo) {
+		m.processConstraints(info)
+	})
+
 	return g
 }
 
@@ -480,8 +484,118 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 	}
 }
 
+func (m NodeMapInfo) processConstraints(info *NodeDataInfo) {
+	nodeData := info.NodeData
+
+	// TODO errors instead of panicing
+
+	// verify constraints are correct
+	for _, constraint := range nodeData.Constraints {
+		switch constraint.Type {
+		case input.ForeignKey:
+			if constraint.ForeignKey == nil {
+				panic("ForeignKey cannot be nil when type is ForeignKey")
+			}
+			if len(constraint.Columns) != len(constraint.ForeignKey.Columns) {
+				panic("Foreign Key column length should be equal to the length of source columns")
+			}
+		case input.Check:
+			if constraint.Condition == "" {
+				panic("Condition is required when constraint type is Check")
+			}
+		}
+
+		if constraint.Condition != "" && constraint.Type != input.Check {
+			panic("Condition can only be set when constraint is check type")
+		}
+		if constraint.ForeignKey != nil && constraint.Type != input.ForeignKey {
+			panic("ForeignKey can only be set when constraint is ForeignKey type")
+		}
+	}
+
+	tableName := nodeData.TableName
+
+	var constraints []*input.Constraint
+	for _, field := range nodeData.FieldInfo.Fields {
+		cols := []string{field.FieldName}
+
+		if field.SingleFieldPrimaryKey() {
+			constraints = append(constraints, &input.Constraint{
+				Name:    GetPrimaryKeyName(tableName, field.GetDbColName()),
+				Type:    input.PrimaryKey,
+				Columns: cols,
+			})
+		}
+
+		if field.Unique() {
+			constraints = append(constraints, &input.Constraint{
+				Name:    GetUniqueKeyName(tableName, field.GetDbColName()),
+				Type:    input.Unique,
+				Columns: cols,
+			})
+		}
+
+		fkey := field.ForeignKeyInfo()
+		if fkey != nil {
+			foreignInfo := m[fkey.Config]
+			if foreignInfo == nil {
+				panic(fmt.Errorf("invalid foreign key table %s", fkey.Config))
+			}
+			foreignNodeData := foreignInfo.NodeData
+			foreignField := foreignNodeData.FieldInfo.GetFieldByName(fkey.Field)
+			if foreignField == nil {
+				panic(fmt.Errorf("invalid foreign key field %s", fkey.Field))
+			}
+			constraints = append(constraints, &input.Constraint{
+				Name:    GetFKeyName(nodeData.TableName, field.GetDbColName()),
+				Type:    input.ForeignKey,
+				Columns: cols,
+				ForeignKey: &input.ForeignKeyInfo{
+					TableName: foreignNodeData.TableName,
+					Columns:   []string{foreignField.GetDbColName()},
+					OnDelete:  "CASCADE", // default based on what we were previously doing
+				},
+			})
+		}
+	}
+	// doing this way so that it's consistent and easy to test
+	// primary key
+	// unique
+	// fkey
+	// user defined constraints
+	constraints = append(constraints, nodeData.Constraints...)
+	nodeData.Constraints = constraints
+}
+
 func getNameFromParts(nameParts []string) string {
 	return strings.Join(nameParts, "_")
+}
+
+func getNameFromParts2(prefix string, parts []string, suffix string) string {
+	allParts := []string{prefix}
+	allParts = append(allParts, parts...)
+	allParts = append(allParts, suffix)
+	return getNameFromParts(allParts)
+}
+
+// generate a name for the foreignkey of the sort contacts_user_id_fkey.
+// It takes the table name, the name of the column that references a foreign column in a foreign table and the fkey keyword to generate
+// this only applies for single column fkeys
+func GetFKeyName(tableName string, dbColNames ...string) string {
+	return getNameFromParts2(tableName, dbColNames, "fkey")
+}
+
+func GetPrimaryKeyName(tableName string, dbColNames ...string) string {
+	return getNameFromParts2(tableName, dbColNames, "pkey")
+}
+
+func GetUniqueKeyName(tableName string, dbColNames ...string) string {
+	allParts := []string{tableName}
+	allParts = append(allParts, "unique")
+	for _, colName := range dbColNames {
+		allParts = append(allParts, colName)
+	}
+	return getNameFromParts(allParts)
 }
 
 func (m NodeMapInfo) addConstsFromEdgeGroups(nodeData *NodeData) {
@@ -631,6 +745,7 @@ func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base
 
 		nodeData.EnumTable = node.EnumTable
 		nodeData.DBRows = node.DBRows
+		nodeData.Constraints = node.Constraints
 
 		// not in schema.Nodes...
 		if node.EnumTable {

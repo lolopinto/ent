@@ -11,6 +11,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/enum"
+	"github.com/lolopinto/ent/internal/schema/input"
 )
 
 type ConstInfo struct {
@@ -57,6 +58,8 @@ type NodeData struct {
 	EnumTable       bool
 	DBRows          []map[string]interface{}
 	tsEnums         []enum.Enum
+	// fine to just reuse input constraints for now
+	Constraints []*input.Constraint
 }
 
 func newNodeData(packageName string) *NodeData {

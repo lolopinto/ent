@@ -85,6 +85,7 @@ type constraint struct {
 type fkeyInfo struct {
 	tableName string
 	ondelete  input.OnDeleteFkey
+	columns   []string
 }
 
 type testCase struct {
@@ -223,6 +224,7 @@ func verifyConstraints(t *testing.T, expConstraints []constraint, constraints []
 
 			assert.Equal(t, expConstraint.fkey.tableName, constraint.ForeignKey.TableName)
 			assert.Equal(t, expConstraint.fkey.ondelete, constraint.ForeignKey.OnDelete)
+			assert.Equal(t, expConstraint.fkey.columns, constraint.ForeignKey.Columns)
 		}
 	}
 }
