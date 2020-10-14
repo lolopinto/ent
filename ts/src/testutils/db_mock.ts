@@ -1,8 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
 import { Pool, PoolClient } from "pg";
 import { mocked } from "ts-jest/utils";
-import { ID, Ent, AssocEdgeData } from "../core/ent";
-import { Clause } from "../core/query";
+import { ID, Ent, Data } from "../core/ent";
+import { Clause } from "../core/clause";
+
+import { performQuery, queryResult } from "./parse_sql";
 
 const eventEmitter = {
   on: jest.fn(),
@@ -53,7 +55,7 @@ export interface queryStructure {
 
 interface internalQueryStructure extends queryStructure {
   query: string;
-  colummns?: string[];
+  columns?: string[];
   whereClause?: string;
   suffix?: string;
   setClause?: string;
@@ -62,27 +64,11 @@ interface internalQueryStructure extends queryStructure {
 export class QueryRecorder {
   private static queries: queryOptions[] = [];
   private static ids: ID[] = [];
-  private static mockResults: mockOptions[] = [];
 
-  static mockResult(options: mockOptions) {
-    this.mockResults.push(options);
-  }
+  // we need pkeys when storing...
+  private static data: Map<string, Data[]> = new Map();
 
-  // TODO incorporate values, tableName etc...
-  private static findMockResult(qs: internalQueryStructure, values) {
-    for (let result of this.mockResults) {
-      if (
-        result.tableName === qs.tableName &&
-        result.clause.clause(1) === qs.whereClause
-      ) {
-        // correct table and clause
-        // for now we don't care about columns...
-        // we may later.
-        return result.result(values);
-      }
-    }
-  }
-
+  // TODO kill use AST or just throw away
   private static getQueryStructure(query): internalQueryStructure | null {
     // we parsing sql now??
     // slowing building sqlshim?
@@ -95,7 +81,7 @@ export class QueryRecorder {
       if (execArray) {
         return {
           tableName: execArray[1],
-          colummns: execArray[2].split(", "),
+          columns: execArray[2].split(", "),
           type: queryType.INSERT,
           query: execArray[0],
           suffix: execArray[4],
@@ -112,7 +98,7 @@ export class QueryRecorder {
           whereClause: execArray[3],
           type: queryType.SELECT,
           query: execArray[0],
-          colummns: execArray[1].split(", "),
+          columns: execArray[1].split(", "),
         };
       }
     }
@@ -135,13 +121,10 @@ export class QueryRecorder {
     return null;
   }
 
-  static recordQuery(query: string, values: any[]) {
-    //    console.log(query, values);
-
-    // mock all possible (known) results here...
-    let ret = {};
-    let rowCount = 0;
-
+  private static recordQuery(
+    query: string,
+    values: any[],
+  ): queryResult | undefined {
     let qs = QueryRecorder.getQueryStructure(query);
     QueryRecorder.queries.push({
       query: query,
@@ -149,54 +132,7 @@ export class QueryRecorder {
       qs: qs,
     });
 
-    if (qs && qs.type === queryType.INSERT) {
-      if (
-        qs?.colummns?.length === values.length &&
-        qs.suffix &&
-        /^RETURNING/.test(qs.suffix)
-      ) {
-        for (let i = 0; i < qs.colummns.length; i++) {
-          let key = qs.colummns[i];
-          let value = values[i];
-          ret[key] = value;
-        }
-        rowCount++;
-      }
-    }
-
-    if (qs && qs.type === queryType.SELECT) {
-      let row = QueryRecorder.findMockResult(qs, values);
-      if (row) {
-        ret = row;
-        rowCount++;
-      }
-    }
-
-    if (qs && qs.type === queryType.UPDATE) {
-      if (qs.whereClause && /RETURNING/.test(qs.whereClause!)) {
-        let parts = qs.setClause!.split(", ");
-        for (let i = 0; i < parts.length; i++) {
-          let part = parts[i];
-          ret[part.split(" = ")[0]] = values[i];
-        }
-
-        rowCount++;
-      }
-    }
-
-    let result = {
-      rows: [ret],
-      rowCount: rowCount,
-      oid: 0,
-      fields: [],
-      command: "",
-    };
-    // if we're returning a list, no need to double wrap it
-    if (Array.isArray(ret)) {
-      result.rows = ret;
-      result.rowCount = ret.length;
-    }
-    return result;
+    return performQuery(query, values, QueryRecorder.data);
   }
 
   static newID(): ID {
@@ -209,10 +145,21 @@ export class QueryRecorder {
     return QueryRecorder.ids;
   }
 
+  static getData() {
+    return QueryRecorder.data;
+  }
+
   static clear() {
     QueryRecorder.queries = [];
     QueryRecorder.ids = [];
-    QueryRecorder.mockResults = [];
+    QueryRecorder.data = new Map();
+  }
+
+  static clearQueries() {
+    // clears queries but keeps data
+    // this is useful for situations like write this data before each test
+    // but each test shouldn't have to account for this
+    QueryRecorder.queries = [];
   }
 
   static getCurrentQueries(): queryOptions[] {
@@ -233,6 +180,7 @@ export class QueryRecorder {
 
   static validateQueryOrder(expected: queryOptions[], ent: Ent | null) {
     let queries = QueryRecorder.queries;
+    //console.log(queries, expected);
     expect(queries.length).toBe(expected.length);
 
     for (let i = 0; i < expected.length; i++) {
@@ -258,10 +206,27 @@ export class QueryRecorder {
     }
   }
 
-  static validateQueryStructuresInTx(expected: queryStructure[]) {
+  static validateQueryStructuresInTx(
+    expected: queryStructure[],
+    pre?: queryStructure[],
+  ) {
     expected.unshift({ type: queryType.BEGIN });
     expected.push({ type: queryType.COMMIT });
     // we don't care about reads so skipping them for now.
+    let pre2 = pre || [];
+    expected.unshift(...pre2);
+    this.validateQueryStructures(expected, true);
+  }
+
+  static validateFailedQueryStructuresInTx(
+    expected: queryStructure[],
+    pre?: queryStructure[],
+  ) {
+    expected.unshift({ type: queryType.BEGIN });
+    expected.push({ type: queryType.ROLLBACK });
+    // we don't care about reads so skipping them for now.
+    let pre2 = pre || [];
+    expected.unshift(...pre2);
     this.validateQueryStructures(expected, true);
   }
 
@@ -273,6 +238,7 @@ export class QueryRecorder {
     if (skipSelect) {
       queries = queries.filter((query) => query.qs?.type !== queryType.SELECT);
     }
+    //    console.log(queries, expected);
     expect(queries.length).toBe(expected.length);
 
     for (let i = 0; i < expected.length; i++) {
@@ -301,9 +267,11 @@ export class QueryRecorder {
           // should be easy...
           break;
         case queryType.INSERT:
+          expect(query.query.startsWith("INSERT")).toBe(true);
           expect(query.qs?.tableName).toBe(expectedStructure.tableName);
           break;
         case queryType.UPDATE:
+          expect(query.query.startsWith("UPDATE")).toBe(true);
           expect(query.qs?.tableName).toBe(expectedStructure.tableName);
           break;
       }
@@ -345,30 +313,6 @@ export class QueryRecorder {
           ...eventEmitter,
         };
       },
-    );
-  }
-
-  // mock loadEdgeDatas and return a simple non-symmetric|non-inverse edge
-  // not sure if this is the best way but it's the only way I got
-  // long discussion about issues: https://github.com/facebook/jest/issues/936
-
-  static async mockImplOfLoadEdgeDatas(
-    ...edgeTypes: string[]
-  ): Promise<Map<string, AssocEdgeData>> {
-    if (!edgeTypes.length) {
-      return new Map();
-    }
-    return new Map(
-      edgeTypes.map((edgeType) => [
-        edgeType,
-        new AssocEdgeData({
-          edge_table: "assoc_edge_config",
-          symmetric_edge: false,
-          inverse_edge_type: null,
-          edge_type: edgeType,
-          edge_name: "name",
-        }),
-      ]),
     );
   }
 }

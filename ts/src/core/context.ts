@@ -8,7 +8,7 @@ import {
 import { IncomingMessage, ServerResponse } from "http";
 
 import DataLoader from "dataloader";
-import * as query from "../core/query";
+import * as clause from "./clause";
 
 export interface Context {
   getViewer(): Viewer;
@@ -104,6 +104,6 @@ export class ContextCache {
 interface queryOptions {
   fields: string[];
   tableName: string;
-  clause: query.Clause;
+  clause: clause.Clause;
   orderby?: string;
 }

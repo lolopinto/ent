@@ -14,7 +14,6 @@ import {
   DeleteNodeOperation,
   EdgeOperation,
 } from "../core/ent";
-import * as ent from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
 import { StringType, TimeType } from "../schema/field";
@@ -31,18 +30,32 @@ import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import { AlwaysAllowRule, DenyIfLoggedInRule } from "../core/privacy";
 import { edgeDirection } from "./orchestrator";
+import { createRowForTest } from "../testutils/write";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
+beforeEach(async () => {
+  // does assoc_edge_config loader need to be cleared?
+  const edges = ["edge"];
+  for (const edge of edges) {
+    await createRowForTest({
+      tableName: "assoc_edge_config",
+      fields: {
+        edge_table: `${edge}_table`,
+        symmetric_edge: false,
+        inverse_edge_type: null,
+        edge_type: edge,
+        edge_name: "name",
+      },
+    });
+  }
+  QueryRecorder.clearQueries();
+});
 afterEach(() => {
   QueryRecorder.clear();
   FakeComms.clear();
 });
-
-jest
-  .spyOn(ent, "loadEdgeDatas")
-  .mockImplementation(QueryRecorder.mockImplOfLoadEdgeDatas);
 
 class UserSchema extends BaseEntSchema {
   fields: Field[] = [

@@ -18,7 +18,7 @@ const loggedOutViewer = new LoggedOutViewer();
 class User implements Ent {
   id: ID;
   accountID: string;
-  nodeType: "User";
+  nodeType = "User";
   privacyPolicy: PrivacyPolicy = {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };

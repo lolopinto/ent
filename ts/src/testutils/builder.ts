@@ -1,14 +1,6 @@
-import {
-  Ent,
-  ID,
-  Viewer,
-  Data,
-  DataOperation,
-  EntConstructor,
-  Queryer,
-} from "../core/ent";
+import { Ent, ID, Viewer, Data, EntConstructor } from "../core/ent";
 import { PrivacyPolicy, AlwaysAllowRule } from "../core/privacy";
-import { Orchestrator, EntChangeset } from "../action/orchestrator";
+import { Orchestrator } from "../action/orchestrator";
 import {
   Action,
   Builder,
@@ -18,13 +10,11 @@ import {
   Trigger,
   saveBuilder,
   saveBuilderX,
-  Executor,
   Observer,
 } from "../action";
 import { Schema } from "../schema";
-import { LoggedOutViewer } from "../core/viewer";
 import { QueryRecorder } from "./db_mock";
-import { Context } from "../core/context";
+import pluralize from "pluralize";
 
 export class User implements Ent {
   id: ID;
@@ -101,11 +91,12 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
   ent: EntConstructor<T>;
   placeholderID: ID;
   public orchestrator: Orchestrator<T>;
+  public fields: Map<string, any>;
 
   constructor(
     public viewer: Viewer,
     private schema: BuilderSchema<T>,
-    public fields: Map<string, any>,
+    fields: Map<string, any>,
     public operation: WriteOperation = WriteOperation.Insert,
     public existingEnt: Ent | undefined = undefined,
     action?: Action<T> | undefined,
@@ -113,11 +104,20 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     // create dynamic placeholder
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
 
+    if (this.operation === WriteOperation.Insert) {
+      for (const [key, value] of fields) {
+        if (key === "id" && value === "{id}") {
+          fields[key] = QueryRecorder.newID();
+        }
+      }
+    }
+    this.fields = fields;
+
     this.ent = schema.ent;
     this.orchestrator = new Orchestrator({
       viewer: this.viewer,
       operation: operation,
-      tableName: this.ent.name,
+      tableName: pluralize(this.ent.name).toLowerCase(),
       ent: this.ent,
       builder: this,
       action: action,
@@ -134,6 +134,16 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
 
   async editedEnt(): Promise<T | null> {
     return await this.orchestrator.editedEnt();
+  }
+
+  async save(): Promise<T | null> {
+    await saveBuilder(this);
+    return await this.editedEnt();
+  }
+
+  async saveX(): Promise<T> {
+    await saveBuilderX(this);
+    return await this.orchestrator.editedEntX();
   }
 }
 
@@ -193,153 +203,5 @@ export class SimpleAction<T extends Ent> implements Action<T> {
 
   async editedEnt(): Promise<T | null> {
     return await this.builder.orchestrator.editedEnt();
-  }
-}
-
-export class FakeBuilder<T extends Ent> implements Builder<T> {
-  placeholderID: ID;
-  viewer: Viewer;
-  triggers: Trigger<T>[] = [];
-
-  private dependencies: Map<ID, Builder<T>> = new Map();
-  private changesets: Changeset<T>[] = [];
-
-  private ops: DataOperation[] = [];
-  constructor(
-    private fields: Map<string, any>,
-    public operation: WriteOperation = WriteOperation.Insert,
-    public ent: EntConstructor<T>,
-    public existingEnt: Ent | undefined = undefined,
-  ) {
-    // create dynamic placeholder
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
-
-    this.viewer = new LoggedOutViewer();
-    if (this.fields.size) {
-      for (let [key, value] of this.fields) {
-        if (this.isBuilder(value)) {
-          let builder = value;
-          this.dependencies.set(builder.placeholderID, builder);
-        }
-      }
-      this.ops.push(new dataOp(this.fields, this.operation));
-    }
-  }
-
-  addEdge(options: edgeOpOptions): FakeBuilder<T> {
-    this.ops.push(new edgeOp(options));
-    return this;
-  }
-
-  async build(): Promise<Changeset<T>> {
-    return new EntChangeset(
-      this.viewer,
-      this.placeholderID,
-      this.ent,
-      this.ops,
-    );
-  }
-
-  // should really just double down on orchestrator type tests instead of what we have here...
-  private isBuilder(val: any): val is Builder<T> {
-    return (val as Builder<T>).placeholderID !== undefined;
-  }
-
-  createdEnt(): T | null {
-    let dataOp = this.ops[0];
-    if (!dataOp || !dataOp.returnedEntRow) {
-      return null;
-    }
-    let row = dataOp.returnedEntRow();
-    if (!row) {
-      return null;
-    }
-    return new this.ent(this.viewer, row["id"], row);
-  }
-
-  async save(): Promise<T | null> {
-    await saveBuilder(this);
-    return this.createdEnt();
-  }
-
-  async saveX(): Promise<T> {
-    await saveBuilderX(this);
-    return this.createdEnt()!;
-  }
-}
-
-class dataOp implements DataOperation {
-  private id: ID | null;
-  constructor(
-    private fields: Map<string, any>,
-    private operation: WriteOperation,
-  ) {
-    if (this.operation === WriteOperation.Insert) {
-      this.id = QueryRecorder.newID();
-    }
-  }
-
-  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
-    let keys: string[] = [];
-    let values: any[] = [];
-    for (const [key, value] of this.fields) {
-      keys.push(key);
-      values.push(value);
-    }
-    if (this.operation === WriteOperation.Insert) {
-      keys.push("id");
-      values.push(this.id);
-    }
-    queryer.query(`${this.operation} ${keys.join(", ")}`, values);
-  }
-
-  returnedEntRow?(): Data | null {
-    if (this.operation === WriteOperation.Insert) {
-      let row = {};
-      for (const [key, value] of this.fields) {
-        row[key] = value;
-      }
-      row["id"] = this.id;
-      return row;
-    }
-    return null;
-  }
-
-  // TODO resolve values here...
-}
-
-interface edgeOpOptions {
-  id1: ID;
-  id2: ID;
-  id1Placeholder?: boolean;
-  id2Placeholder?: boolean;
-}
-
-class edgeOp implements DataOperation {
-  constructor(private options: edgeOpOptions) {}
-
-  async performWrite(queryer: Queryer, context?: Context): Promise<void> {
-    queryer.query("edge", [this.options.id1, this.options.id2]);
-  }
-
-  resolve<T extends Ent>(executor: Executor<T>): void {
-    if (this.options.id1Placeholder) {
-      let ent = executor.resolveValue(this.options.id1);
-      if (!ent) {
-        throw new Error(
-          `could not resolve id1 placeholder ${this.options.id1}`,
-        );
-      }
-      this.options.id1 = ent.id;
-    }
-    if (this.options.id2Placeholder) {
-      let ent = executor.resolveValue(this.options.id2);
-      if (!ent) {
-        throw new Error(
-          `could not resolve id2 placeholder ${this.options.id2}`,
-        );
-      }
-      this.options.id2 = ent.id;
-    }
   }
 }

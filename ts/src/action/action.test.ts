@@ -1,8 +1,10 @@
 import { WriteOperation } from ".";
-import { User, FakeBuilder } from "../testutils/builder";
-import { LoggedOutViewer } from "../core/viewer";
+import { User, BuilderSchema, SimpleBuilder } from "../testutils/builder";
+import { IDViewer, LoggedOutViewer } from "../core/viewer";
 import { Pool } from "pg";
-import { QueryRecorder } from "../testutils/db_mock";
+import { QueryRecorder, queryType } from "../testutils/db_mock";
+import { Field, StringType, UUIDType } from "../schema";
+import { createRowForTest } from "../testutils/write";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -11,19 +13,58 @@ afterEach(() => {
   QueryRecorder.clear();
 });
 
-test("simple", async () => {
-  const builder = new FakeBuilder(
-    new Map([["foo", "bar"]]),
-    WriteOperation.Insert,
-    User,
-  );
+class UserSchema implements BuilderSchema<User> {
+  ent = User;
+  fields: Field[] = [
+    UUIDType({
+      name: "id",
+    }),
+    StringType({
+      name: "foo",
+    }),
+  ];
+}
+const viewer = new LoggedOutViewer();
+const schema = new UserSchema();
 
-  let ent = await builder.save();
+function getCreateBuilder(): SimpleBuilder<User> {
+  return new SimpleBuilder(
+    viewer,
+    schema,
+    new Map([
+      ["id", "{id}"],
+      ["foo", "bar"],
+    ]),
+  );
+}
+
+beforeEach(async () => {
+  // does assoc_edge_config loader need to be cleared?
+  const edges = ["edge"];
+  for (const edge of edges) {
+    await createRowForTest({
+      tableName: "assoc_edge_config",
+      fields: {
+        edge_table: `${edge}_table`,
+        symmetric_edge: false,
+        inverse_edge_type: null,
+        edge_type: edge,
+        edge_name: "name",
+      },
+    });
+  }
+  QueryRecorder.clearQueries();
+});
+
+test("simple", async () => {
+  const builder = getCreateBuilder();
+
+  let ent = await builder.saveX();
   QueryRecorder.validateQueriesInTx(
     [
       {
-        query: "insert foo, id",
-        values: ["bar", "{id}"],
+        query: "INSERT INTO users (id, foo) VALUES ($1, $2) RETURNING *",
+        values: ["{id}", "bar"],
       },
     ],
     ent,
@@ -31,92 +72,82 @@ test("simple", async () => {
 });
 
 test("new ent with edge", async () => {
-  const builder = new FakeBuilder(
-    new Map([["foo", "bar"]]),
-    WriteOperation.Insert,
-    User,
-  );
+  const builder = getCreateBuilder();
   const id2 = QueryRecorder.newID();
-  builder.addEdge({
-    id1: builder.placeholderID,
-    id2: id2,
-    id1Placeholder: true,
-  });
+  builder.orchestrator.addOutboundEdge(id2, "edge", "User");
+  await builder.saveX();
 
-  let ent = await builder.save();
-  QueryRecorder.validateQueriesInTx(
-    [
-      {
-        query: "insert foo, id",
-        values: ["bar", "{id}"],
-      },
-      {
-        query: "edge",
-        values: ["{id}", id2],
-      },
-    ],
-    ent,
-  );
+  QueryRecorder.validateQueryStructuresInTx([
+    {
+      tableName: "users",
+      type: queryType.INSERT,
+    },
+    {
+      tableName: "edge_table",
+      type: queryType.INSERT,
+    },
+  ]);
 });
 
 test("existing ent with edge", async () => {
-  const user = new User(new LoggedOutViewer(), QueryRecorder.newID(), {});
-  const builder = new FakeBuilder(
+  const builder = getCreateBuilder();
+
+  let user = await builder.saveX();
+
+  const builder2 = new SimpleBuilder(
+    new IDViewer(user.id),
+    schema,
     new Map([["foo", "bar"]]),
     WriteOperation.Edit,
-    User,
     user,
   );
   const id2 = QueryRecorder.newID();
-  builder.addEdge({
-    id1: user.id,
-    id2: id2,
-  });
 
-  let ent = await builder.save();
-  QueryRecorder.validateQueriesInTx(
+  builder2.orchestrator.addOutboundEdge(id2, "edge", "User");
+  await builder2.saveX();
+
+  QueryRecorder.validateQueryStructuresInTx(
     [
       {
-        query: "edit foo",
-        values: ["bar"],
+        tableName: "users",
+        type: queryType.UPDATE,
       },
       {
-        query: "edge",
-        values: [user.id, id2],
+        tableName: "edge_table",
+        type: queryType.INSERT,
       },
     ],
-    ent,
+    [
+      {
+        type: queryType.BEGIN,
+      },
+      {
+        tableName: "users",
+        type: queryType.INSERT,
+      },
+      {
+        type: queryType.COMMIT,
+      },
+    ],
   );
 });
 
 test("insert with incorrect resolver", async () => {
-  const builder = new FakeBuilder(
-    new Map([["foo", "bar"]]),
-    WriteOperation.Insert,
-    User,
-  );
-  const id2 = QueryRecorder.newID();
-  builder.addEdge({
-    id1: "2",
-    id2: id2,
-    id1Placeholder: true,
-  });
+  const builder = getCreateBuilder();
+  const builder2 = getCreateBuilder();
+  builder.orchestrator.addOutboundEdge(builder2, "edge", "User");
 
   let ent: User | null = null;
   try {
     ent = await builder.saveX();
     fail("should have thrown exception");
   } catch (error) {
-    expect(error.message).toBe("could not resolve id1 placeholder 2");
+    expect(error.message).toMatch(/could not resolve placeholder value/);
   }
-  QueryRecorder.validateFailedQueriesInTx(
-    [
-      {
-        query: "insert foo, id",
-        // first id created. can't use ent.id here since we don't get ent back...
-        values: ["bar", QueryRecorder.getCurrentIDs()[0]],
-      },
-    ],
-    ent,
-  );
+  QueryRecorder.validateFailedQueryStructuresInTx([
+    {
+      tableName: "users",
+      type: queryType.INSERT,
+    },
+  ]);
 });

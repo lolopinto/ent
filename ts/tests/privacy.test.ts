@@ -1,5 +1,5 @@
 import { ID, Ent, Viewer, LoadEntOptions, Data } from "./../src/core/ent";
-import * as query from "./../src/core/query";
+import * as clause from "./../src/core/clause";
 import {
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
@@ -19,6 +19,7 @@ import {
 import { LoggedOutViewer, IDViewer } from "./../src/core/viewer";
 import { Pool } from "pg";
 import { QueryRecorder } from "../src/testutils/db_mock";
+import { createRowForTest } from "../src/testutils/write";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -31,7 +32,7 @@ const loggedOutViewer = new LoggedOutViewer();
 class User implements Ent {
   accountID: string;
   privacyPolicy: PrivacyPolicy;
-  nodeType: "User";
+  nodeType = "User";
   // TODO add policy here
   constructor(public viewer: Viewer, public id: ID, data?: Data) {}
 }
@@ -265,15 +266,12 @@ describe("applyPrivacyPolicyX", () => {
   });
 });
 
-function mockUser() {
-  QueryRecorder.mockResult({
-    tableName: "table",
-    clause: query.Eq("id", "1"),
-    result: (val: any) => {
-      return {
-        id: "1",
-        name: "name",
-      };
+async function createUser() {
+  await createRowForTest({
+    tableName: DefinedUser.loaderOptions().tableName,
+    fields: {
+      id: "1",
+      name: "name",
     },
   });
 }
@@ -284,7 +282,7 @@ class DefinedUser extends User {
   };
   static loaderOptions(): LoadEntOptions<DefinedUser> {
     return {
-      tableName: "table",
+      tableName: "users",
       fields: ["id", "name"],
       ent: this,
     };
@@ -292,8 +290,8 @@ class DefinedUser extends User {
 }
 
 describe("AllowIfEntIsVisibleRule", () => {
-  beforeEach(() => {
-    mockUser();
+  beforeEach(async () => {
+    await createUser();
   });
   const policy = new AllowIfEntIsVisiblePolicy(
     "1",
@@ -314,8 +312,8 @@ describe("AllowIfEntIsVisibleRule", () => {
 });
 
 describe("DenyIfEntIsVisibleRule", () => {
-  beforeEach(() => {
-    mockUser();
+  beforeEach(async () => {
+    await createUser();
   });
   const policy = new DenyIfEntIsVisiblePolicy("1", DefinedUser.loaderOptions());
 
