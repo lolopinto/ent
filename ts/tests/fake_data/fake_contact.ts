@@ -12,6 +12,10 @@ import {
   AlwaysDenyRule,
   PrivacyPolicy,
 } from "../../src/core/privacy";
+import { BaseEdgeQuery, EdgeQuerySource } from "../../src/core/query";
+import { createRowForTest, snakeAll } from "../../src/testutils/write";
+import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
+import { Field, StringType, BaseEntSchema, UUIDType } from "../../src/schema";
 
 export class FakeContact implements Ent {
   readonly id: ID;
@@ -51,7 +55,7 @@ export class FakeContact implements Ent {
 
   static loaderOptions(): LoadEntOptions<FakeContact> {
     return {
-      tableName: "contacts",
+      tableName: "fake_contacts",
       fields: FakeContact.getFields(),
       ent: this,
     };
@@ -64,3 +68,47 @@ export class FakeContact implements Ent {
     return loadEntX(v, id, FakeContact.loaderOptions());
   }
 }
+
+export class FakeContactSchema extends BaseEntSchema
+  implements BuilderSchema<FakeContact> {
+  ent = FakeContact;
+  fields: Field[] = [
+    StringType({
+      name: "firstName",
+    }),
+    StringType({
+      name: "lastName",
+    }),
+    StringType({
+      name: "emailAddress",
+    }),
+    UUIDType({
+      name: "userID",
+    }),
+  ];
+}
+
+export interface ContactCreateInput {
+  firstName: string;
+  lastName: string;
+  emailAddress: string;
+  userID: ID;
+}
+
+export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {
+  const m = new Map();
+  for (const key in input) {
+    m.set(key, input[key]);
+  }
+  return new SimpleBuilder(viewer, new FakeContactSchema(), m);
+}
+
+export async function createContact(viewer: Viewer, input: ContactCreateInput) {
+  const builder = getContactBuilder(viewer, input);
+  return await builder.saveX();
+}
+
+export class BaseContactDestQuery<TSource extends Ent> extends BaseEdgeQuery<
+  TSource,
+  FakeContact
+> {}

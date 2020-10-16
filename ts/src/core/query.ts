@@ -1,34 +1,297 @@
 //import { Edge } from "src/schema";
-import { ID, AssocEdge, Ent, Viewer, loadEdges } from "./ent";
+
+import {
+  ID,
+  AssocEdge,
+  Ent,
+  Viewer,
+  loadEdges,
+  loadRawEdgeCountX,
+  //  loadNodesByEdge,
+  //  EntConstructor,
+  LoadEntOptions,
+  loadEnt,
+  loadEnts,
+  //  Edge,
+} from "./ent";
+import { Clause } from "./clause";
 
 export interface EdgeQuery<T extends Ent> {
-  queryEdges(): Promise<AssocEdge[]>;
-  queryIDs(): Promise<ID[]>;
-  queryCount(): Promise<number>;
-  queryEnts(): Promise<T[]>;
-  limit(n: number): EdgeQuery<T>;
+  queryEdges(): Promise<Map<ID, AssocEdge[]>>;
+  queryIDs(): Promise<Map<ID, ID[]>>;
+  queryCount(): Promise<Map<ID, number>>;
+  queryEnts(): Promise<Map<ID, T[]>>;
+  //  limit(n: number): EdgeQuery<T>;
+  // no offset/limit based
   firstN(n: number): EdgeQuery<T>;
   lastN(n: number): EdgeQuery<T>;
+  // TODO
+  beforeCursor(cursor: string, limit: number): EdgeQuery<T>;
+  afterCursor(cursor: string, limit: number): EdgeQuery<T>;
+  //  after
   // TODO where queries etc
   //  where(query.Cla)
   // TODO cursors
+
+  // TODO we need a way to handle singular id for e.g. unique edge
+  // we need a way to get
 }
 
 interface Cursor {}
 
-class BaseEdgeQuery<T extends Ent> {
+interface EdgeQueryFilter {
+  // this is a filter that does the processing in TypeScript instead of at the SQL layer
+  filter?(edges: AssocEdge[]): AssocEdge[];
+  // there's 2 ways to do it.
+  // apply it in SQL
+  // or process it after the fact
+  // clauses that should be applied in SQL to change the query and do it after
+  clauses?(): Clause[];
+
+  // maybe it's a dynamic decision to do so and then clauses returns empty array and filter returns what was passed to it based on the decision flow
+  //  preProcess
+}
+
+function assertPositive(n: number) {
+  if (n < 0) {
+    throw new Error("cannot use a negative number");
+  }
+}
+
+class FirstNFilter implements EdgeQueryFilter {
+  constructor(private n: number) {
+    assertPositive(n);
+  }
+
+  filter(edges: AssocEdge[]): AssocEdge[] {
+    return edges.slice(0, this.n);
+  }
+}
+
+class LastNFilter implements EdgeQueryFilter {
+  constructor(private n: number) {
+    assertPositive(n);
+  }
+
+  filter(edges: AssocEdge[]): AssocEdge[] {
+    return edges.slice(edges.length - this.n, edges.length);
+  }
+}
+
+class AfterCursor implements EdgeQueryFilter {
+  constructor(private cursor: string, private limit: number) {}
+
+  filter(edges: AssocEdge[]): AssocEdge[] {
+    return edges;
+  }
+
+  clauses(): Clause[] {
+    return [];
+  }
+}
+
+// support paging back
+// make this optional...
+
+// TODO provide ways to parse cursor and handle this in the future
+class BeforeCursor implements EdgeQueryFilter {
+  constructor(private cursor: string, private limit: number) {}
+
+  filter(edges: AssocEdge[]): AssocEdge[] {
+    return edges;
+  }
+
+  clauses(): Clause[] {
+    return [];
+  }
+}
+
+export type EdgeQuerySource<T extends Ent> = T | T[] | ID | ID[] | EdgeQuery<T>;
+
+export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
+  private filters: EdgeQueryFilter[] = [];
+  private queryDispatched: boolean;
+  private idsResolved: boolean;
+  private edges: Map<ID, AssocEdge[]> = new Map();
+  private resolvedIDs: ID[] = [];
+
   constructor(
-    private viewer: Viewer,
-    private ent: T,
+    public viewer: Viewer,
+    private src: EdgeQuerySource<TSource>,
     private edgeType: string,
+    private ctr: LoadEntOptions<TDest>,
   ) {}
 
-  // TODO filters
-  queryEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.ent.id,
-      edgeType: this.edgeType,
-      context: this.viewer.context,
+  // TODO memoization...
+  private async resolveIDs(): Promise<ID[]> {
+    if (this.idsResolved) {
+      //      return this.resolvedIDs;
+    }
+    if (Array.isArray(this.src)) {
+      this.src.forEach((obj: TSource | ID) => this.addID(obj));
+    } else if (this.isEdgeQuery(this.src)) {
+      console.log("isEdgeQuery");
+      const idsMap = await this.src.queryIDs();
+      console.log("idsMap", idsMap);
+      for (const [_, ids] of idsMap) {
+        ids.forEach((id) => this.resolvedIDs.push(id));
+      }
+    } else {
+      this.addID(this.src);
+    }
+    this.idsResolved = true;
+    return this.resolvedIDs;
+  }
+
+  private isEdgeQuery(
+    obj: TSource | ID | EdgeQuery<TSource>,
+  ): obj is EdgeQuery<TSource> {
+    if ((obj as EdgeQuery<TSource>).queryIDs !== undefined) {
+      return true;
+    }
+    return false;
+  }
+
+  private addID(obj: TSource | ID) {
+    if (typeof obj === "object") {
+      this.resolvedIDs.push(obj.id);
+    } else {
+      this.resolvedIDs.push(obj);
+    }
+  }
+
+  firstN(n: number): this {
+    this.filters.push(new FirstNFilter(n));
+    return this;
+  }
+
+  lastN(n: number): this {
+    this.filters.push(new LastNFilter(n));
+    return this;
+  }
+
+  beforeCursor(cursor: string, n: number): this {
+    this.filters.push(new BeforeCursor(cursor, n));
+    return this;
+  }
+
+  afterCursor(cursor: string, n: number): this {
+    this.filters.push(new AfterCursor(cursor, n));
+    return this;
+  }
+
+  async queryEdges(): Promise<Map<ID, AssocEdge[]>> {
+    return await this.loadEdges();
+  }
+
+  async queryIDs(): Promise<Map<ID, ID[]>> {
+    const edges = await this.loadEdges();
+    let results: Map<ID, ID[]> = new Map();
+    for (const [id, edge_data] of edges) {
+      results.set(
+        id,
+        edge_data.map((edge) => edge.id2),
+      );
+    }
+    console.log("queryIDs", results);
+    return results;
+  }
+
+  // doesn't work with filters...
+  async queryRawCount(): Promise<Map<ID, number>> {
+    let results: Map<ID, number> = new Map();
+    const ids = await this.resolveIDs();
+    console.log("ids", ids);
+    await Promise.all(
+      ids.map(async (id) => {
+        const count = await loadRawEdgeCountX({
+          id1: id,
+          edgeType: this.edgeType,
+          context: this.viewer.context,
+        });
+        results.set(id, count);
+      }),
+    );
+    return results;
+  }
+
+  // works with filters
+  async queryCount(): Promise<Map<ID, number>> {
+    let results: Map<ID, number> = new Map();
+    const edges = await this.loadEdges();
+    edges.forEach((list, id) => {
+      results.set(id, list.length);
     });
+    return results;
+  }
+
+  async queryEnts(): Promise<Map<ID, TDest[]>> {
+    // applies filters and then gets things after
+    const edges = await this.loadEdges();
+    let promises: Promise<any>[] = [];
+    const results: Map<ID, TDest[]> = new Map();
+
+    const loadEntsForID = async (id: ID, edges: AssocEdge[]) => {
+      const ids = edges.map((edge) => edge.id2);
+      const ents = await loadEnts(this.viewer, this.ctr, ...ids);
+      results.set(id, ents);
+    };
+
+    for (const [id, edgesList] of edges) {
+      promises.push(loadEntsForID(id, edgesList));
+    }
+
+    await Promise.all(promises);
+    return results;
+  }
+
+  private async loadRawEdges() {
+    const ids = await this.resolveIDs();
+    await Promise.all(
+      ids.map(async (id) => {
+        const edges = await loadEdges({
+          id1: id,
+          edgeType: this.edgeType,
+          context: this.viewer.context,
+        });
+        this.edges.set(id, edges);
+      }),
+    );
+  }
+
+  private async loadEdges() {
+    if (this.queryDispatched) {
+      return this.edges;
+    }
+    // TODO how does one memoize this call?
+    this.queryDispatched = true;
+
+    this.filters.forEach((filter) => {
+      let clauses: Clause[] | undefined;
+      if (filter.clauses) {
+        clauses = filter.clauses();
+        if (clauses?.length) {
+          throw new Error("unsupported for now. can't have extra clauses");
+        }
+      }
+    });
+
+    await this.loadRawEdges();
+
+    // no filters. nothing to do here.
+    if (!this.filters.length) {
+      return this.edges;
+    }
+
+    // filter as needed
+    for (let [id, edges] of this.edges) {
+      this.filters.forEach((filter) => {
+        if (filter.filter) {
+          edges = filter.filter(edges);
+        }
+      });
+      this.edges.set(id, edges);
+    }
+    return this.edges;
   }
 }

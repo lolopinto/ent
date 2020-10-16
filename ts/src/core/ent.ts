@@ -551,7 +551,7 @@ export class EdgeOperation implements DataOperation {
       id1_type: edge.id1Type,
       id2_type: edge.id2Type,
       edge_type: edge.edgeType,
-      data: edge.data,
+      data: edge.data || null,
     };
     if (edge.time) {
       fields["time"] = edge.time;
