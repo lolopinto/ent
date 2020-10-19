@@ -917,6 +917,15 @@ export class AssocEdge {
     this.time = data.time;
     this.data = data.data;
   }
+
+  getCursor(): string {
+    // no time. no cursor. nothing to do here
+    if (!this.time) {
+      return "";
+    }
+    const str = `time:${this.time.getTime()}`;
+    return Buffer.from(str, "ascii").toString("base64");
+  }
 }
 
 export interface AssocEdgeInputOptions {
@@ -997,7 +1006,7 @@ const edgeFields = [
 ];
 
 export type EdgeQueryableDataOptions = Partial<
-  Pick<QueryableDataOptions, "limit" | "orderby">
+  Pick<QueryableDataOptions, "limit" | "orderby" | "clause">
 >;
 
 interface loadEdgesOptions {
@@ -1008,8 +1017,12 @@ interface loadEdgesOptions {
 }
 
 // TODO default limit from somewhere
-export function defaultEdgeQueryOptions(): EdgeQueryableDataOptions {
+export function defaultEdgeQueryOptions(
+  id1: ID,
+  edgeType: string,
+): EdgeQueryableDataOptions {
   return {
+    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
     orderby: "time DESC",
     limit: 1000,
   };
@@ -1024,13 +1037,18 @@ export async function loadEdges(
     throw new Error(`error loading edge data for ${edgeType}`);
   }
 
+  const defaultOptions = defaultEdgeQueryOptions(id1, edgeType);
+  let cls = defaultOptions.clause!;
+  if (options.queryOptions?.clause) {
+    cls = clause.And(cls, options.queryOptions.clause);
+  }
   const rows = await loadRows({
     tableName: edgeData.edgeTable,
     fields: edgeFields,
-    clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
-    ...defaultEdgeQueryOptions(),
-    context: options.context,
-    ...options.queryOptions,
+    clause: cls,
+    orderby: options.queryOptions?.orderby || defaultOptions.orderby,
+    limit: options.queryOptions?.limit || defaultOptions.limit,
+    context,
   });
   return rows.map((row) => {
     return new AssocEdge(row);

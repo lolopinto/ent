@@ -7,7 +7,7 @@ import { QueryRecorder } from "../src/testutils/db_mock";
 import { EdgeType } from "./fake_data/const";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../src/testutils/write";
-import { AssocEdge, ID, loadEdgeData, Viewer } from "../src/core/ent";
+import { AssocEdge, Data, ID, loadEdgeData, Viewer } from "../src/core/ent";
 import {
   createUser,
   FakeUser,
@@ -22,6 +22,9 @@ import {
   getContactBuilder,
 } from "./fake_data/fake_contact";
 import { advanceBy } from "jest-date-mock";
+import * as clause from "../src/core/clause";
+import { User } from "../src/testutils/builder";
+import { isExportDeclaration } from "typescript";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -142,7 +145,7 @@ function verifyUserToContactEdges(
 
   for (let i = 0; i < contacts.length; i++) {
     const edge = edges[i];
-    const expectedEdge: AssocEdge = {
+    const expectedEdge = {
       id1: user.id,
       id1Type: "User",
       id2: contacts[i].id,
@@ -151,6 +154,7 @@ function verifyUserToContactEdges(
       edgeType: EdgeType.UserToContacts,
     };
     expect(edge, `${i}th index`).toMatchObject(expectedEdge);
+    expect(edge.getCursor()).not.toBe("");
   }
 }
 
@@ -170,7 +174,10 @@ class TestQueryFilter {
   private contacts: FakeContact[] = [];
   private user: FakeUser;
   constructor(
-    private filter: (q: UserToContactsQuery) => UserToContactsQuery,
+    private filter: (
+      q: UserToContactsQuery,
+      user: FakeUser,
+    ) => UserToContactsQuery,
     private ents: (contacts: FakeContact[]) => FakeContact[],
   ) {}
 
@@ -183,6 +190,7 @@ class TestQueryFilter {
   getQuery(viewer?: Viewer) {
     return this.filter(
       UserToContactsQuery.query(viewer || new LoggedOutViewer(), this.user),
+      this.user,
     );
   }
 
@@ -190,7 +198,6 @@ class TestQueryFilter {
     const idsMap = await this.getQuery().queryIDs();
     expect(idsMap.size).toBe(1);
 
-    // ids are reversed so we gotta reverse
     expect(idsMap.get(this.user.id)).toStrictEqual(
       this.contacts.map((contact) => contact.id),
     );
@@ -399,4 +406,82 @@ describe("lastN", () => {
   test("ents", async () => {
     await filter.testEnts();
   });
+});
+
+describe("beforeCursor", () => {
+  const idx = 2;
+  const N = 3;
+  let rows: Data[] = [];
+  const filter = new TestQueryFilter(
+    (q: UserToContactsQuery, user: FakeUser) => {
+      rows = QueryRecorder.filterData("user_to_contacts_table", (row) => {
+        return row.id1 === user.id;
+      }).reverse(); // need to reverse
+      const cursor = new AssocEdge(rows[idx]).getCursor();
+
+      // TODO things like this which are always sql don't need this
+      //
+      return q.sql().beforeCursor(cursor, N);
+    },
+    (contacts: FakeContact[]) => {
+      // < check so we shouldn't get that index
+      return contacts.reverse().slice(idx + 1, idx + N);
+    },
+  );
+
+  beforeEach(async () => {
+    await filter.beforeEach();
+  });
+
+  test("ids", async () => {
+    await filter.testIDs();
+  });
+
+  test("rawCount", async () => {
+    await filter.testRawCount();
+  });
+
+  test("count", async () => {
+    await filter.testCount();
+  });
+
+  test("edges", async () => {
+    await filter.testEdges();
+  });
+
+  test("ents", async () => {
+    await filter.testEnts();
+  });
+});
+
+test("beforeCursor each cursor", async () => {
+  let [user, contacts] = await createAllContacts();
+  contacts = contacts.reverse();
+  const edgesMap = await UserToContactsQuery.query(
+    new LoggedOutViewer(),
+    user.id,
+  ).queryEdges();
+
+  const edges = edgesMap.get(user.id) || [];
+  for (let i = 0; i < edges.length; i++) {
+    const edge = edges[i];
+    const hasEdge = i !== edges.length - 1;
+
+    const newEdgeMap = await UserToContactsQuery.query(
+      new LoggedOutViewer(),
+      user.id,
+    )
+      .sql()
+      .beforeCursor(edge.getCursor(), 1)
+      .queryEdges();
+
+    const newEdges = newEdgeMap.get(user.id) || [];
+    if (hasEdge) {
+      expect(newEdges.length, `${i}`).toBe(1);
+      expect(newEdges[0], `${i}`).toStrictEqual(edges[i + 1]);
+    } else {
+      expect(newEdges.length, `${i}`).toBe(0);
+    }
+    // TODO we have no current way to know if there's more results so we need to fetch an extra one here and then discard it
+  }
 });

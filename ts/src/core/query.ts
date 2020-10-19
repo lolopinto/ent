@@ -15,7 +15,7 @@ import {
   EdgeQueryableDataOptions,
   //  Edge,
 } from "./ent";
-import { Clause } from "./clause";
+import * as clause from "./clause";
 
 export interface EdgeQuery<T extends Ent> {
   sql(): EdgeQuery<T>;
@@ -57,6 +57,22 @@ function assertPositive(n: number) {
   if (n < 0) {
     throw new Error("cannot use a negative number");
   }
+}
+
+function assertValidCursor(cursor: string): number {
+  let decoded = Buffer.from(cursor, "base64").toString("ascii");
+  let parts = decoded.split(":");
+  // invalid or unknown cursor. nothing to do here.
+  // TODO should we throw here?
+  // should this be domne
+  if (parts.length !== 2 || parts[0] !== "time") {
+    throw new Error(`invalid cursor ${cursor} passed`);
+  }
+  const time = parseInt(parts[1], 10);
+  if (isNaN(time)) {
+    throw new Error(`invalid cursor ${cursor} passed`);
+  }
+  return time;
 }
 
 class FirstNFilter implements EdgeQueryFilter {
@@ -106,14 +122,30 @@ class AfterCursor implements EdgeQueryFilter {
 
 // TODO provide ways to parse cursor and handle this in the future
 class BeforeCursor implements EdgeQueryFilter {
-  constructor(private cursor: string, private limit: number) {}
-
-  filter(edges: AssocEdge[]): AssocEdge[] {
-    return edges;
+  private time: number;
+  constructor(cursor: string, private limit: number) {
+    this.time = assertValidCursor(cursor);
   }
 
+  // for beforeCursor query, everything is done in sql (for now) and not done in
+  // application land
+  // eventually once we have caching etc, this won't make sense as we'd cache
+  // say the last 1k or 5k or 10k edges depending on the edge and then do the
+  // filtering in node-land since the cache is cheap
+  // filter(edges: AssocEdge[]): AssocEdge[] {
+  //   return edges;
+  // }
+
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
-    return options;
+    // we sort by most recent first
+    // so when paging, we fetch beforeCursor X
+    return {
+      ...options,
+      clause: clause.Less("time", this.time),
+      // just to be explicit even though this is the default
+      orderby: "time DESC",
+      limit: this.limit,
+    };
   }
 }
 

@@ -53,14 +53,13 @@ class compositeClause implements Clause {
     let clauses: string[] = [];
     for (const clause of this.clauses) {
       clauses.push(clause.clause(idx));
-      idx++;
+      idx = idx + clause.values().length;
     }
     return clauses.join(this.sep);
   }
 
   values(): any[] {
     let result = [];
-    let idx = 1;
     for (const clause of this.clauses) {
       result = result.concat(...clause.values());
     }
