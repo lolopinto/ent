@@ -6,7 +6,6 @@ import {
   CustomMutation,
   CustomQuery,
 } from "./graphql";
-import { ECANCELED } from "constants";
 
 export function validateOneCustomField(expected: CustomField) {
   let customFields = GQLCapture.getCustomFields();

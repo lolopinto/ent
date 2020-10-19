@@ -7,7 +7,7 @@ import { QueryRecorder } from "../src/testutils/db_mock";
 import { EdgeType } from "./fake_data/const";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../src/testutils/write";
-import { AssocEdge, Ent, ID, loadEdgeData, Viewer } from "../src/core/ent";
+import { AssocEdge, ID, loadEdgeData, Viewer } from "../src/core/ent";
 import {
   createUser,
   FakeUser,
@@ -21,12 +21,13 @@ import {
   FakeContact,
   getContactBuilder,
 } from "./fake_data/fake_contact";
-import { EdgeQuery } from "../src/core/query";
+import { advanceBy } from "jest-date-mock";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
 beforeEach(async () => {
+  QueryRecorder.clear();
   // create all edges// for now all one-way
   // TODO figure out symmetric and inverse later
   // maybe move this to testutils as a helper
@@ -109,6 +110,8 @@ async function createAllContacts(): Promise<[FakeUser, FakeContact[]]> {
 
   const contacts = await Promise.all(
     inputs.map(async (input) => {
+      // just to make times deterministic so that tests can consistently work
+      advanceBy(100);
       const builder = getContactBuilder(
         user.viewer,
         getContactInput(user, input),
@@ -118,6 +121,9 @@ async function createAllContacts(): Promise<[FakeUser, FakeContact[]]> {
         user.id,
         EdgeType.UserToContacts,
         "User",
+        {
+          time: new Date(), // set time to advanceBy time
+        },
       );
       return await builder.saveX();
     }),
@@ -136,7 +142,7 @@ function verifyUserToContactEdges(
 
   for (let i = 0; i < contacts.length; i++) {
     const edge = edges[i];
-    const expectedEdge = {
+    const expectedEdge: AssocEdge = {
       id1: user.id,
       id1Type: "User",
       id2: contacts[i].id,
@@ -171,6 +177,7 @@ class TestQueryFilter {
   async beforeEach() {
     [this.user, this.contacts] = await createAllContacts();
     this.contacts = this.ents(this.contacts);
+    QueryRecorder.clearQueries();
   }
 
   getQuery(viewer?: Viewer) {
@@ -208,7 +215,6 @@ class TestQueryFilter {
     const edgesMap = await this.getQuery().queryEdges();
     expect(edgesMap.size).toBe(1);
 
-    //    console.log(edgesMap, this.contacts);
     verifyUserToContactEdges(this.user, edgesMap, this.contacts);
   }
 
@@ -268,12 +274,23 @@ describe("firstN", () => {
     },
   );
 
+  function verifyQuery(length: number = 1) {
+    const queries = QueryRecorder.getCurrentQueries();
+    expect(queries.length).toBe(length);
+    const query = queries[0];
+    expect(query.qs?.whereClause).toBe(
+      // default limit
+      "id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT 1000",
+    );
+  }
+
   beforeEach(async () => {
     await filter.beforeEach();
   });
 
   test("ids", async () => {
     await filter.testIDs();
+    verifyQuery();
   });
 
   test("rawCount", async () => {
@@ -282,14 +299,68 @@ describe("firstN", () => {
 
   test("count", async () => {
     await filter.testCount();
+    verifyQuery();
   });
 
   test("edges", async () => {
     await filter.testEdges();
+    verifyQuery();
   });
 
   test("ents", async () => {
     await filter.testEnts();
+    // 2nd query to load the ents
+    verifyQuery(2);
+  });
+});
+
+describe("firstN sql mode", () => {
+  const N = 2;
+  const filter = new TestQueryFilter(
+    (q: UserToContactsQuery) => {
+      return q.sql().firstN(N);
+    },
+    (contacts: FakeContact[]) => {
+      return contacts.reverse().slice(0, N);
+    },
+  );
+
+  function verifyLimitInQuery(length: number = 1) {
+    const queries = QueryRecorder.getCurrentQueries();
+    expect(queries.length).toBe(length);
+    const query = queries[0];
+    expect(query.qs?.whereClause).toBe(
+      "id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT 2",
+    );
+  }
+
+  beforeEach(async () => {
+    await filter.beforeEach();
+  });
+
+  test("ids", async () => {
+    await filter.testIDs();
+    verifyLimitInQuery();
+  });
+
+  test("rawCount", async () => {
+    await filter.testRawCount();
+  });
+
+  test("count", async () => {
+    await filter.testCount();
+    verifyLimitInQuery();
+  });
+
+  test("edges", async () => {
+    await filter.testEdges();
+    verifyLimitInQuery();
+  });
+
+  test("ents", async () => {
+    await filter.testEnts();
+    // 2nd query to load the ents
+    verifyLimitInQuery(2);
   });
 });
 

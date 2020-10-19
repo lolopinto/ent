@@ -12,11 +12,13 @@ import {
   LoadEntOptions,
   loadEnt,
   loadEnts,
+  EdgeQueryableDataOptions,
   //  Edge,
 } from "./ent";
 import { Clause } from "./clause";
 
 export interface EdgeQuery<T extends Ent> {
+  sql(): EdgeQuery<T>;
   queryEdges(): Promise<Map<ID, AssocEdge[]>>;
   queryIDs(): Promise<Map<ID, ID[]>>;
   queryCount(): Promise<Map<ID, number>>;
@@ -42,13 +44,12 @@ interface Cursor {}
 interface EdgeQueryFilter {
   // this is a filter that does the processing in TypeScript instead of at the SQL layer
   filter?(edges: AssocEdge[]): AssocEdge[];
+
   // there's 2 ways to do it.
   // apply it in SQL
   // or process it after the fact
-  // clauses that should be applied in SQL to change the query and do it after
-  clauses?(): Clause[];
-
-  // maybe it's a dynamic decision to do so and then clauses returns empty array and filter returns what was passed to it based on the decision flow
+  query?(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions;
+  // maybe it's a dynamic decision to do so and then query returns what was passed to it and filter returns what was passed to it based on the decision flow
   //  preProcess
 }
 
@@ -59,12 +60,21 @@ function assertPositive(n: number) {
 }
 
 class FirstNFilter implements EdgeQueryFilter {
+  private sql: boolean;
   constructor(private n: number) {
     assertPositive(n);
   }
 
   filter(edges: AssocEdge[]): AssocEdge[] {
-    return edges.slice(0, this.n);
+    return this.sql ? edges : edges.slice(0, this.n);
+  }
+
+  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+    this.sql = true;
+    return {
+      ...options,
+      limit: this.n,
+    };
   }
 }
 
@@ -76,6 +86,7 @@ class LastNFilter implements EdgeQueryFilter {
   filter(edges: AssocEdge[]): AssocEdge[] {
     return edges.slice(edges.length - this.n, edges.length);
   }
+  // not doing sql with lastN because we don't know length...
 }
 
 class AfterCursor implements EdgeQueryFilter {
@@ -85,8 +96,8 @@ class AfterCursor implements EdgeQueryFilter {
     return edges;
   }
 
-  clauses(): Clause[] {
-    return [];
+  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+    return options;
   }
 }
 
@@ -101,8 +112,8 @@ class BeforeCursor implements EdgeQueryFilter {
     return edges;
   }
 
-  clauses(): Clause[] {
-    return [];
+  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+    return options;
   }
 }
 
@@ -114,6 +125,7 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
   private idsResolved: boolean;
   private edges: Map<ID, AssocEdge[]> = new Map();
   private resolvedIDs: ID[] = [];
+  private sqlMode: boolean;
 
   constructor(
     public viewer: Viewer,
@@ -158,6 +170,14 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     } else {
       this.resolvedIDs.push(obj);
     }
+  }
+
+  sql(): this {
+    if (this.filters.length) {
+      throw new Error("cannot go into sql mode after filters set");
+    }
+    this.sqlMode = true;
+    return this;
   }
 
   firstN(n: number): this {
@@ -245,7 +265,7 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     return results;
   }
 
-  private async loadRawEdges() {
+  private async loadRawEdges(options: EdgeQueryableDataOptions) {
     const ids = await this.resolveIDs();
     await Promise.all(
       ids.map(async (id) => {
@@ -253,6 +273,7 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
           id1: id,
           edgeType: this.edgeType,
           context: this.viewer.context,
+          queryOptions: options,
         });
         this.edges.set(id, edges);
       }),
@@ -266,17 +287,16 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     // TODO how does one memoize this call?
     this.queryDispatched = true;
 
-    this.filters.forEach((filter) => {
-      let clauses: Clause[] | undefined;
-      if (filter.clauses) {
-        clauses = filter.clauses();
-        if (clauses?.length) {
-          throw new Error("unsupported for now. can't have extra clauses");
+    let options: EdgeQueryableDataOptions = {};
+    if (this.sqlMode) {
+      this.filters.forEach((filter) => {
+        if (filter.query) {
+          options = filter.query(options);
         }
-      }
-    });
+      });
+    }
 
-    await this.loadRawEdges();
+    await this.loadRawEdges(options);
 
     // no filters. nothing to do here.
     if (!this.filters.length) {

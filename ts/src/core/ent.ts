@@ -386,7 +386,7 @@ export function buildQuery(options: QueryableDataOptions): string {
   const whereClause = options.clause.clause(1);
   let query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
   if (options.orderby) {
-    query = `${query} ORDER BY ${options.orderby} `;
+    query = `${query} ORDER BY ${options.orderby}`;
   }
   if (options.limit) {
     query = `${query} LIMIT ${options.limit}`;
@@ -906,7 +906,7 @@ export class AssocEdge {
   id2: ID;
   id2Type: string;
   time?: Date;
-  data?: string;
+  data?: string | null;
 
   constructor(data: Data) {
     this.id1 = data.id1;
@@ -996,13 +996,25 @@ const edgeFields = [
   "data",
 ];
 
+export type EdgeQueryableDataOptions = Partial<
+  Pick<QueryableDataOptions, "limit" | "orderby">
+>;
+
 interface loadEdgesOptions {
   id1: ID;
   edgeType: string;
   context?: Context;
+  queryOptions?: EdgeQueryableDataOptions;
 }
 
-// TODO need to add a default limit
+// TODO default limit from somewhere
+export function defaultEdgeQueryOptions(): EdgeQueryableDataOptions {
+  return {
+    orderby: "time DESC",
+    limit: 1000,
+  };
+}
+
 export async function loadEdges(
   options: loadEdgesOptions,
 ): Promise<AssocEdge[]> {
@@ -1011,19 +1023,18 @@ export async function loadEdges(
   if (!edgeData) {
     throw new Error(`error loading edge data for ${edgeType}`);
   }
+
   const rows = await loadRows({
     tableName: edgeData.edgeTable,
     fields: edgeFields,
     clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
-    orderby: "time DESC",
-    context,
+    ...defaultEdgeQueryOptions(),
+    context: options.context,
+    ...options.queryOptions,
   });
-
-  let result: AssocEdge[] = [];
-  for (const row of rows) {
-    result.push(new AssocEdge(row));
-  }
-  return result;
+  return rows.map((row) => {
+    return new AssocEdge(row);
+  });
 }
 
 export async function loadUniqueEdge(
