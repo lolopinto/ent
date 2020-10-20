@@ -1,7 +1,3 @@
-// TODO time to test query
-
-//but fake_data is in tests so maybe we don't want this here
-
 import { Pool } from "pg";
 import { QueryRecorder } from "../src/testutils/db_mock";
 import { EdgeType } from "./fake_data/const";
@@ -22,9 +18,6 @@ import {
   getContactBuilder,
 } from "./fake_data/fake_contact";
 import { advanceBy } from "jest-date-mock";
-import * as clause from "../src/core/clause";
-import { User } from "../src/testutils/builder";
-import { isExportDeclaration } from "typescript";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -253,45 +246,80 @@ describe("simple queries", () => {
 
   test("ids", async () => {
     await filter.testIDs();
+    verifyQuery({});
   });
 
   test("rawCount", async () => {
     await filter.testRawCount();
+    verifyCountQuery({});
   });
 
   test("count", async () => {
     await filter.testCount();
+    verifyQuery({});
   });
 
   test("edges", async () => {
     await filter.testEdges();
+    verifyQuery({});
   });
 
   test("ents", async () => {
     await filter.testEnts();
+    verifyQuery({ length: 2 });
   });
 });
 
-describe("firstN", () => {
-  const N = 2;
-  const filter = new TestQueryFilter(
-    (q: UserToContactsQuery) => {
-      return q.firstN(N);
-    },
-    (contacts: FakeContact[]) => {
-      return contacts.reverse().slice(0, N);
-    },
-  );
+const N = 2;
+function firstNFilter(q: UserToContactsQuery) {
+  return q.firstN(N);
+}
 
-  function verifyQuery(length: number = 1) {
-    const queries = QueryRecorder.getCurrentQueries();
-    expect(queries.length).toBe(length);
-    const query = queries[0];
-    expect(query.qs?.whereClause).toBe(
+function firstNEntsFilter(contacts: FakeContact[]) {
+  return contacts.reverse().slice(0, N);
+}
+
+function verifyQuery({ length = 1, numQueries = 1, limit = 1000 }) {
+  const queries = QueryRecorder.getCurrentQueries();
+  expect(queries.length).toBe(length);
+  for (let i = 0; i < numQueries; i++) {
+    const query = queries[i];
+    expect(query.qs?.whereClause, `${i}`).toBe(
       // default limit
-      "id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT 1000",
+      `id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT ${limit}`,
     );
   }
+}
+
+function verifyCountQuery({ length = 1, numQueries = 1 }) {
+  const queries = QueryRecorder.getCurrentQueries();
+  expect(queries.length).toBe(length);
+  for (let i = 0; i < numQueries; i++) {
+    const query = queries[i];
+    expect(query.qs?.whereClause).toBe(`id1 = $1 AND edge_type = $2`);
+  }
+}
+
+function verifyBeforeCursorQuery(length: number = 1) {
+  const queries = QueryRecorder.getCurrentQueries();
+  expect(queries.length).toBe(length);
+  const query = queries[0];
+  expect(query.qs?.whereClause).toBe(
+    `id1 = $1 AND edge_type = $2 AND time < $3 ORDER BY time DESC LIMIT 3`,
+  );
+}
+
+function verifyAfterCursorQuery(length: number = 1) {
+  const queries = QueryRecorder.getCurrentQueries();
+  expect(queries.length).toBe(length);
+  const query = queries[0];
+  expect(query.qs?.whereClause).toBe(
+    `id1 = $1 AND edge_type = $2 AND time > $3 ORDER BY time ASC LIMIT 3`,
+  );
+}
+
+describe("firstN", () => {
+  const filter = new TestQueryFilter(firstNFilter, firstNEntsFilter);
 
   beforeEach(async () => {
     await filter.beforeEach();
@@ -299,27 +327,28 @@ describe("firstN", () => {
 
   test("ids", async () => {
     await filter.testIDs();
-    verifyQuery();
+    verifyQuery({});
   });
 
   test("rawCount", async () => {
     await filter.testRawCount();
+    verifyCountQuery({});
   });
 
   test("count", async () => {
     await filter.testCount();
-    verifyQuery();
+    verifyQuery({});
   });
 
   test("edges", async () => {
     await filter.testEdges();
-    verifyQuery();
+    verifyQuery({});
   });
 
   test("ents", async () => {
     await filter.testEnts();
     // 2nd query to load the ents
-    verifyQuery(2);
+    verifyQuery({ length: 2 });
   });
 });
 
@@ -334,42 +363,34 @@ describe("firstN sql mode", () => {
     },
   );
 
-  function verifyLimitInQuery(length: number = 1) {
-    const queries = QueryRecorder.getCurrentQueries();
-    expect(queries.length).toBe(length);
-    const query = queries[0];
-    expect(query.qs?.whereClause).toBe(
-      "id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT 2",
-    );
-  }
-
   beforeEach(async () => {
     await filter.beforeEach();
   });
 
   test("ids", async () => {
     await filter.testIDs();
-    verifyLimitInQuery();
+    verifyQuery({ limit: 2 });
   });
 
   test("rawCount", async () => {
     await filter.testRawCount();
+    verifyCountQuery({});
   });
 
   test("count", async () => {
     await filter.testCount();
-    verifyLimitInQuery();
+    verifyQuery({ limit: 2 });
   });
 
   test("edges", async () => {
     await filter.testEdges();
-    verifyLimitInQuery();
+    verifyQuery({ limit: 2 });
   });
 
   test("ents", async () => {
     await filter.testEnts();
     // 2nd query to load the ents
-    verifyLimitInQuery(2);
+    verifyQuery({ length: 2, limit: 2 });
   });
 });
 
@@ -391,22 +412,27 @@ describe("lastN", () => {
 
   test("ids", async () => {
     await filter.testIDs();
+    verifyQuery({});
   });
 
   test("rawCount", async () => {
     await filter.testRawCount();
+    verifyCountQuery({});
   });
 
   test("count", async () => {
     await filter.testCount();
+    verifyQuery({});
   });
 
   test("edges", async () => {
     await filter.testEdges();
+    verifyQuery({});
   });
 
   test("ents", async () => {
     await filter.testEnts();
+    verifyQuery({ length: 2 });
   });
 });
 
@@ -437,22 +463,27 @@ describe("beforeCursor", () => {
 
   test("ids", async () => {
     await filter.testIDs();
+    verifyBeforeCursorQuery();
   });
 
   test("rawCount", async () => {
     await filter.testRawCount();
+    verifyCountQuery({});
   });
 
   test("count", async () => {
     await filter.testCount();
+    verifyBeforeCursorQuery();
   });
 
   test("edges", async () => {
     await filter.testEdges();
+    verifyBeforeCursorQuery();
   });
 
   test("ents", async () => {
     await filter.testEnts();
+    verifyBeforeCursorQuery(2);
   });
 });
 
@@ -517,22 +548,27 @@ describe("afterCursor", () => {
 
   test("ids", async () => {
     await filter.testIDs();
+    verifyAfterCursorQuery();
   });
 
   test("rawCount", async () => {
     await filter.testRawCount();
+    verifyCountQuery({});
   });
 
   test("count", async () => {
     await filter.testCount();
+    verifyAfterCursorQuery();
   });
 
   test("edges", async () => {
     await filter.testEdges();
+    verifyAfterCursorQuery();
   });
 
   test("ents", async () => {
     await filter.testEnts();
+    verifyAfterCursorQuery(2);
   });
 });
 
@@ -566,4 +602,190 @@ test("afterCursor each cursor", async () => {
     }
     // TODO we have no current way to know if there's more results so we need to fetch an extra one here and then discard it
   }
+});
+
+class MultiIDsTestQueryFilter {
+  dataz: [FakeUser, FakeContact[]][] = [];
+  constructor(
+    private filter: (q: UserToContactsQuery) => UserToContactsQuery,
+    private ents: (contacts: FakeContact[]) => FakeContact[],
+  ) {}
+
+  async beforeEach() {
+    let [user1, user2, user3] = await Promise.all([
+      createAllContacts({ firstName: "Jon", lastName: "Snow" }),
+      createAllContacts({ firstName: "Aegon", lastName: "Targaryen" }),
+      createAllContacts({ firstName: "Ned", lastName: "Stark" }),
+    ]);
+    // modify contacts as needed
+    user1[1] = this.ents(user1[1]);
+    user2[1] = this.ents(user2[1]);
+    user3[1] = this.ents(user3[1]);
+    this.dataz = [user1, user2, user3];
+    QueryRecorder.clearQueries();
+  }
+
+  getQuery(viewer?: Viewer) {
+    return this.filter(
+      UserToContactsQuery.query(
+        viewer || new LoggedOutViewer(),
+        this.dataz.map((data) => data[0]),
+      ),
+    );
+  }
+
+  async testIDs() {
+    const idsMap = await this.getQuery().queryIDs();
+
+    expect(idsMap.size).toBe(this.dataz.length);
+
+    for (let i = 0; i < this.dataz.length; i++) {
+      let data = this.dataz[i];
+
+      expect(idsMap.get(data[0].id)).toStrictEqual(
+        data[1].map((contact) => contact.id),
+      );
+    }
+    verifyQuery({ length: this.dataz.length, numQueries: this.dataz.length });
+  }
+
+  // rawCount isn't affected by filters...
+  async testRawCount() {
+    const countMap = await this.getQuery().queryRawCount();
+
+    expect(countMap.size).toBe(this.dataz.length);
+
+    for (let i = 0; i < this.dataz.length; i++) {
+      let data = this.dataz[i];
+
+      expect(countMap.get(data[0].id)).toStrictEqual(inputs.length);
+    }
+    verifyCountQuery({ numQueries: 3, length: 3 });
+  }
+
+  async testCount() {
+    const countMap = await this.getQuery().queryCount();
+
+    expect(countMap.size).toBe(this.dataz.length);
+
+    for (let i = 0; i < this.dataz.length; i++) {
+      let data = this.dataz[i];
+
+      expect(countMap.get(data[0].id)).toStrictEqual(data[1].length);
+    }
+    verifyQuery({
+      length: this.dataz.length,
+      numQueries: this.dataz.length,
+    });
+  }
+
+  async testEdges() {
+    const edgesMap = await this.getQuery().queryEdges();
+
+    expect(edgesMap.size).toBe(this.dataz.length);
+
+    for (let i = 0; i < this.dataz.length; i++) {
+      let data = this.dataz[i];
+
+      verifyUserToContactEdges(data[0], edgesMap, data[1]);
+    }
+    verifyQuery({
+      length: this.dataz.length,
+      numQueries: this.dataz.length,
+    });
+  }
+
+  async testEnts() {
+    // privacy...
+    const entsMap = await this.getQuery().queryEnts();
+    expect(entsMap.size).toBe(this.dataz.length);
+    for (let i = 0; i < this.dataz.length; i++) {
+      let data = this.dataz[i];
+      verifyUserToContacts(data[0], entsMap, []);
+    }
+
+    // privacy. only data for the first id is visible in this case
+    const entsMap2 = await this.getQuery(
+      new IDViewer(this.dataz[0][0].id),
+    ).queryEnts();
+    expect(entsMap2.size).toBe(this.dataz.length);
+    for (let i = 0; i < this.dataz.length; i++) {
+      let data = this.dataz[i];
+      verifyUserToContacts(data[0], entsMap2, i == 0 ? data[1] : []);
+    }
+    verifyQuery({
+      // extra query for the nodes
+      // dataz.length twice to fetch the edge data
+      // and then twice to fetch all the nodes for the contacts
+      length: this.dataz.length + this.dataz.length + this.dataz.length * 2,
+      numQueries: this.dataz.length,
+    });
+  }
+}
+
+describe("multi-ids", () => {
+  const filter = new MultiIDsTestQueryFilter(
+    (q: UserToContactsQuery) => {
+      // no filters
+      return q;
+    },
+    (contacts: FakeContact[]) => {
+      // nothing to do here
+      // reverse because edges are most recent first
+      return contacts.reverse();
+    },
+  );
+
+  beforeEach(async () => {
+    await filter.beforeEach();
+  });
+
+  test("ids", async () => {
+    await filter.testIDs();
+  });
+
+  test("rawCount", async () => {
+    await filter.testRawCount();
+  });
+
+  test("count", async () => {
+    await filter.testCount();
+  });
+
+  test("edges", async () => {
+    await filter.testEdges();
+  });
+
+  test("ents", async () => {
+    await filter.testEnts();
+  });
+});
+
+describe("multi-ids. firstN", () => {
+  const filter = new MultiIDsTestQueryFilter(firstNFilter, firstNEntsFilter);
+
+  beforeEach(async () => {
+    await filter.beforeEach();
+  });
+
+  test("ids", async () => {
+    await filter.testIDs();
+    console.log(QueryRecorder.getCurrentQueries());
+  });
+
+  test("rawCount", async () => {
+    await filter.testRawCount();
+  });
+
+  test("count", async () => {
+    await filter.testCount();
+  });
+
+  test("edges", async () => {
+    await filter.testEdges();
+  });
+
+  test("ents", async () => {
+    await filter.testEnts();
+  });
 });

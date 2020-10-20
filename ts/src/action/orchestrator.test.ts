@@ -154,13 +154,13 @@ test("schema on edit", async () => {
     new UserSchema(),
     // field that's not changed isn't set...
     // simulating what the generated builder will do
-    new Map([["LastName", "Targaryean"]]),
+    new Map([["LastName", "Targaryen"]]),
     WriteOperation.Edit,
     user,
   );
 
   const fields = await getFieldsFromBuilder(builder);
-  expect(fields["last_name"]).toBe("Targaryean");
+  expect(fields["last_name"]).toBe("Targaryen");
   validateFieldsExist(fields, "updated_at");
   validateFieldsDoNotExist(fields, "id", "created_at");
 });
