@@ -106,14 +106,25 @@ class LastNFilter implements EdgeQueryFilter {
 }
 
 class AfterCursor implements EdgeQueryFilter {
-  constructor(private cursor: string, private limit: number) {}
-
-  filter(edges: AssocEdge[]): AssocEdge[] {
-    return edges;
+  private time: number;
+  constructor(cursor: string, private limit: number) {
+    this.time = assertValidCursor(cursor);
   }
 
+  // same as BeforeCursor
+  // filter(edges: AssocEdge[]): AssocEdge[] {
+  //   return edges;
+  // }
+
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
-    return options;
+    // we sort by most recent first
+    // so when paging backwards, we fetch afterCursor X
+    return {
+      ...options,
+      clause: clause.Greater("time", this.time),
+      orderby: "time ASC",
+      limit: this.limit,
+    };
   }
 }
 

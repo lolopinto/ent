@@ -108,8 +108,10 @@ const inputs: Partial<ContactCreateInput>[] = [
   },
 ];
 
-async function createAllContacts(): Promise<[FakeUser, FakeContact[]]> {
-  const user = await createTestUser();
+async function createAllContacts(
+  input?: Partial<UserCreateInput>,
+): Promise<[FakeUser, FakeContact[]]> {
+  const user = await createTestUser(input);
 
   const contacts = await Promise.all(
     inputs.map(async (input) => {
@@ -479,6 +481,86 @@ test("beforeCursor each cursor", async () => {
     if (hasEdge) {
       expect(newEdges.length, `${i}`).toBe(1);
       expect(newEdges[0], `${i}`).toStrictEqual(edges[i + 1]);
+    } else {
+      expect(newEdges.length, `${i}`).toBe(0);
+    }
+    // TODO we have no current way to know if there's more results so we need to fetch an extra one here and then discard it
+  }
+});
+
+describe("afterCursor", () => {
+  const idx = 2;
+  const N = 3;
+  let rows: Data[] = [];
+  const filter = new TestQueryFilter(
+    (q: UserToContactsQuery, user: FakeUser) => {
+      rows = QueryRecorder.filterData("user_to_contacts_table", (row) => {
+        return row.id1 === user.id;
+      }).reverse(); // need to reverse
+      const cursor = new AssocEdge(rows[idx]).getCursor();
+
+      // TODO things like this which are always sql don't need this
+      return q.sql().afterCursor(cursor, N);
+    },
+    (contacts: FakeContact[]) => {
+      // > check so we don't want that index
+      return contacts
+        .reverse()
+        .slice(0, idx)
+        .reverse(); // because of order returned
+    },
+  );
+
+  beforeEach(async () => {
+    await filter.beforeEach();
+  });
+
+  test("ids", async () => {
+    await filter.testIDs();
+  });
+
+  test("rawCount", async () => {
+    await filter.testRawCount();
+  });
+
+  test("count", async () => {
+    await filter.testCount();
+  });
+
+  test("edges", async () => {
+    await filter.testEdges();
+  });
+
+  test("ents", async () => {
+    await filter.testEnts();
+  });
+});
+
+test("afterCursor each cursor", async () => {
+  let [user, contacts] = await createAllContacts();
+  contacts = contacts.reverse();
+  const edgesMap = await UserToContactsQuery.query(
+    new LoggedOutViewer(),
+    user.id,
+  ).queryEdges();
+
+  const edges = edgesMap.get(user.id) || [];
+  for (let i = edges.length - 1; i > 0; i--) {
+    const edge = edges[i];
+    const hasEdge = i != 0;
+
+    const newEdgeMap = await UserToContactsQuery.query(
+      new LoggedOutViewer(),
+      user.id,
+    )
+      .sql()
+      .afterCursor(edge.getCursor(), 1)
+      .queryEdges();
+
+    const newEdges = newEdgeMap.get(user.id) || [];
+    if (hasEdge) {
+      expect(newEdges.length, `${i}`).toBe(1);
+      expect(newEdges[0], `${i}`).toStrictEqual(edges[i - 1]);
     } else {
       expect(newEdges.length, `${i}`).toBe(0);
     }
