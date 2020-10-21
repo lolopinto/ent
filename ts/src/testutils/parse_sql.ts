@@ -56,15 +56,21 @@ function isDelete(ast: AST[] | AST): ast is Delete {
   return (ast as Delete).type === "delete";
 }
 
-function getColumns(cols: string[] | null | any[] | Column[] | "*"): string[] {
+interface ColsInfo {
+  allCols?: boolean;
+  count?: boolean;
+  columns?: string[];
+}
+
+function getColumns(cols: string[] | null | any[] | Column[] | "*"): ColsInfo {
   if (!cols) {
-    return [];
+    return {};
   }
   if (cols === "*") {
-    // 1 col allCols
-    return ["*"];
+    return { allCols: true };
   }
   let result: string[] = [];
+  let count: boolean | undefined;
   for (let col of cols) {
     if (typeof col === "string") {
       result.push(col);
@@ -72,10 +78,41 @@ function getColumns(cols: string[] | null | any[] | Column[] | "*"): string[] {
       assert(col.type === "expr", "invalid col type");
       assert(col.as === null, "column as not-null"); // TODO support this
       assert(col.expr !== null, "null col expr");
-      result.push(col.expr.column);
+      if (col.expr.column) {
+        // regular column
+        result.push(col.expr.column);
+      } else if (col.expr.type === "function") {
+        assert(
+          col.expr.name === "count",
+          "count is the only supported function for now",
+        );
+        // TODO count(col) is different. returns non-null or in our case undefined values
+        assert(col.expr.args.type === "expr_list");
+        if (col.expr.args.value?.length !== 1) {
+          throw new Error("only one supported arg");
+        }
+        if (col.expr.args.value[0].value === 1) {
+          count = true;
+        } else {
+          throw new Error(
+            `only count(1) or count(*) supported. count(${col.expr.args.value[0].value}) not supported`,
+          );
+        }
+      } else if (col.expr.type == "aggr_func") {
+        assert(
+          col.expr.name === "COUNT",
+          "count is the only supported function for now",
+        );
+        if (col.expr.args?.expr?.type !== "star") {
+          throw new Error("unsupported count expr");
+        }
+        count = true;
+      } else {
+        fail("unsupported expr type");
+      }
     }
   }
-  return result;
+  return { columns: result, count };
 }
 
 function getColumnFromRef(col: any): string {
@@ -100,7 +137,7 @@ function parseInsertStatement(
   values: any[], // values passed to query
 ): [string, Data, Data | null] {
   const tableName = getTableName(ast.table);
-  const columns = getColumns(ast.columns);
+  const colInfo = getColumns(ast.columns);
 
   let data: Data = {};
   if (ast.values.length !== 1) {
@@ -110,7 +147,8 @@ function parseInsertStatement(
   for (const val2 of val.value) {
     assert(isPreparedStatementValue(val2), "prepared statement");
   }
-  assert(val.value.length == columns.length, "cols values mismatch");
+  assert(val.value.length == colInfo?.columns?.length, "cols values mismatch");
+  const columns = colInfo?.columns!;
 
   // INSERT INTO tableName (cols) VALUES (pos args)
   for (let i = 0; i < columns.length; i++) {
@@ -297,9 +335,7 @@ function parseSelectStatement(
   assert(ast.options === null, "non-null options");
 
   const tableName = getTableName(ast.from);
-  const columns = getColumns(ast.columns);
-  const allColumns = columns.length == 1 && columns[0] == "*";
-
+  const colsInfo = getColumns(ast.columns);
   //  console.log(tableName, columns, allColumns);
 
   let limit: number | null = null;
@@ -315,6 +351,9 @@ function parseSelectStatement(
       const col = getColumnFromRef(order.expr);
       orderings.push([col, order.type]);
     }
+    if (colsInfo.count) {
+      throw new Error("cannot do count and order by");
+    }
   }
   let where = buildWhereStatement(ast, values);
 
@@ -323,31 +362,38 @@ function parseSelectStatement(
   let results: Data[] = [];
   let limitApplied = false;
 
-  if (where) {
-    for (const data of list) {
-      if (where.apply(data)) {
-        if (allColumns) {
-          results.push(data);
-        } else {
-          let result = {};
-          for (const col of columns) {
-            if (data[col] === undefined) {
-              throw new Error("requested a non-existing column");
-            }
-            result[col] = data[col];
-          }
-          results.push(result);
-        }
-      }
-
-      // don't apply limit early if there's an ordering
-      if (orderings.length === 0 && limit !== null && limit == results.length) {
-        limitApplied = true;
-        break;
-      }
+  for (const data of list) {
+    if (where && !where.apply(data)) {
+      continue;
     }
-  } else {
-    results = [...list];
+    if (colsInfo.allCols) {
+      results.push(data);
+    } else {
+      let result = {};
+      for (const col of colsInfo?.columns || []) {
+        if (data[col] === undefined) {
+          throw new Error(`requested a non-existing column ${col}`);
+        }
+        result[col] = data[col];
+      }
+      results.push(result);
+    }
+
+    // don't apply limit early if there's an ordering or count
+    if (
+      orderings.length === 0 &&
+      !colsInfo.count &&
+      limit !== null &&
+      limit == results.length
+    ) {
+      limitApplied = true;
+      break;
+    }
+  }
+
+  if (colsInfo.count) {
+    // if doing count, we just count and return
+    results = [{ count: results.length }];
   }
 
   for (const order of orderings) {

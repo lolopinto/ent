@@ -147,6 +147,24 @@ describe("select", () => {
     });
   });
 
+  test("select count(1)", async () => {
+    const row = await loadRow({
+      tableName: "t",
+      clause: clause.Eq("id", 2),
+      fields: ["count(1)"],
+    });
+    expect(row).toStrictEqual({ count: 1 });
+  });
+
+  test("select count(*)", async () => {
+    const row = await loadRow({
+      tableName: "t",
+      clause: clause.Eq("id", 2),
+      fields: ["count(*)"],
+    });
+    expect(row).toStrictEqual({ count: 1 });
+  });
+
   test("select *", async () => {
     const pool = DB.getInstance().getPool();
     const result = await pool.query("SELECT * FROM t WHERE id = $1", [2]);
@@ -171,6 +189,24 @@ describe("select", () => {
     expect(expected).toStrictEqual(rows);
   });
 
+  test("select count(1) multiple", async () => {
+    const rows = await loadRows({
+      tableName: "t",
+      fields: ["count(1)"],
+      clause: clause.Eq("name", "Jane"),
+    });
+    expect(rows).toStrictEqual([{ count: 5 }]);
+  });
+
+  test("select count(*) multiple", async () => {
+    const rows = await loadRows({
+      tableName: "t",
+      fields: ["count(*)"],
+      clause: clause.Eq("name", "Jane"),
+    });
+    expect(rows).toStrictEqual([{ count: 5 }]);
+  });
+
   test("select limit", async () => {
     const rows = await loadRows({
       tableName: "t",
@@ -179,6 +215,26 @@ describe("select", () => {
       limit: 1,
     });
     expect(rows).toStrictEqual([{ id: 2, bar: "bar", name: "Jane" }]);
+  });
+
+  test("select count(1) + limit", async () => {
+    const rows = await loadRows({
+      tableName: "t",
+      fields: ["count(1)"],
+      clause: clause.Eq("name", "Jane"),
+      limit: 1,
+    });
+    expect(rows).toStrictEqual([{ count: 5 }]);
+  });
+
+  test("select count(*) + limit", async () => {
+    const rows = await loadRows({
+      tableName: "t",
+      fields: ["count(*)"],
+      clause: clause.Eq("name", "Jane"),
+      limit: 1,
+    });
+    expect(rows).toStrictEqual([{ count: 5 }]);
   });
 
   test("order by DESC", async () => {
@@ -194,6 +250,32 @@ describe("select", () => {
       return { id, bar: "bar", name: "Jane" };
     });
     expect(expected).toStrictEqual(rows);
+  });
+
+  test("count(1) + order by", async () => {
+    try {
+      const pool = DB.getInstance().getPool();
+      await pool.query(
+        "SELECT count(1) FROM t WHERE name = $1 ORDER BY id desc",
+        ["Jane"],
+      );
+      fail("should have thrown error");
+    } catch (err) {
+      expect(err.message).toMatch(/cannot do count and order by/);
+    }
+  });
+
+  test("count(*) + order by", async () => {
+    try {
+      const pool = DB.getInstance().getPool();
+      await pool.query(
+        "SELECT count(*) FROM t WHERE name = $1 ORDER BY id desc",
+        ["Jane"],
+      );
+      fail("should have thrown error");
+    } catch (err) {
+      expect(err.message).toMatch(/cannot do count and order by/);
+    }
   });
 
   test("order by ASC", async () => {
@@ -271,6 +353,31 @@ describe("select", () => {
       };
     });
     expect(expected).toStrictEqual(result.rows);
+  });
+
+  test("no where clause + specific columns", async () => {
+    const pool = DB.getInstance().getPool();
+    const result = await pool.query("SELECT id, name, bar FROM t", []);
+    const expected = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((id) => {
+      return {
+        id: id,
+        bar: "bar",
+        name: names[id % 2],
+      };
+    });
+    expect(expected).toStrictEqual(result.rows);
+  });
+
+  test("no where clause + count(*)", async () => {
+    const pool = DB.getInstance().getPool();
+    const result = await pool.query("SELECT count(*) FROM t", []);
+    expect([{ count: 10 }]).toStrictEqual(result.rows);
+  });
+
+  test("no where clause + count(1)", async () => {
+    const pool = DB.getInstance().getPool();
+    const result = await pool.query("SELECT count(1) FROM t", []);
+    expect([{ count: 10 }]).toStrictEqual(result.rows);
   });
 
   test("no where clause + order by name", async () => {
