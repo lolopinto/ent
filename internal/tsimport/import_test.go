@@ -17,7 +17,7 @@ type testCase struct {
 	panicInFn     bool
 }
 
-func getImportLine(line, path string) string {
+func getLine(line, path string) string {
 	r := strings.NewReplacer("{path}", strconv.Quote(path))
 	return r.Replace(line)
 }
@@ -42,6 +42,21 @@ func reserveAllImport(imps *tsimport.Imports, path, as string) {
 	util.Die(err)
 }
 
+func exportAll(imps *tsimport.Imports, path string) {
+	_, err := imps.ExportAll(path)
+	util.Die(err)
+}
+
+func exportAllAs(imps *tsimport.Imports, path, as string) {
+	_, err := imps.ExportAllAs(path, as)
+	util.Die(err)
+}
+
+func export(imps *tsimport.Imports, path string, exports ...string) {
+	_, err := imps.Export(path, exports...)
+	util.Die(err)
+}
+
 func TestImports(t *testing.T) {
 	testCases := map[string]testCase{
 		"reserve some": {
@@ -52,7 +67,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "loadEntX")
 			},
 			expectedLines: []string{
-				getImportLine("import {loadEnt, loadEntX} from {path};", "ent/ent"),
+				getLine("import {loadEnt, loadEntX} from {path};", "ent/ent"),
 			},
 		},
 		"nothing used": {
@@ -68,7 +83,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "User")
 			},
 			expectedLines: []string{
-				getImportLine("import User from {path};", "src/ent/user"),
+				getLine("import User from {path};", "src/ent/user"),
 			},
 		},
 		"reserve default. non-default used": {
@@ -79,7 +94,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "editUser")
 			},
 			expectedLines: []string{
-				getImportLine("import {createUser, editUser} from {path};", "src/ent/user"),
+				getLine("import {createUser, editUser} from {path};", "src/ent/user"),
 			},
 		},
 		"reserve default. mix used": {
@@ -91,7 +106,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "User")
 			},
 			expectedLines: []string{
-				getImportLine("import User, {createUser, editUser} from {path};", "src/ent/user"),
+				getLine("import User, {createUser, editUser} from {path};", "src/ent/user"),
 			},
 		},
 		"reserve all. used": {
@@ -101,7 +116,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "query")
 			},
 			expectedLines: []string{
-				getImportLine("import * as query from {path};", "ent/query"),
+				getLine("import * as query from {path};", "ent/query"),
 			},
 		},
 		"reserve all. not used": {
@@ -133,7 +148,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "query")
 			},
 			expectedLines: []string{
-				getImportLine("import * as query from {path};", "ent/query"),
+				getLine("import * as query from {path};", "ent/query"),
 			},
 		},
 		"combo": {
@@ -153,9 +168,9 @@ func TestImports(t *testing.T) {
 				useImport(imps, "query")
 			},
 			expectedLines: []string{
-				getImportLine("import {loadEnt, loadEntX, ID} from {path};", "ent/ent"),
-				getImportLine("import User, {editUser} from {path};", "src/ent/user"),
-				getImportLine("import * as query from {path};", "ent/query"),
+				getLine("import {loadEnt, loadEntX, ID} from {path};", "ent/ent"),
+				getLine("import User, {editUser} from {path};", "src/ent/user"),
+				getLine("import * as query from {path};", "ent/query"),
 			},
 		},
 		"reserve separately": {
@@ -167,7 +182,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "loadEnt")
 			},
 			expectedLines: []string{
-				getImportLine("import {loadEnt, ID} from {path};", "ent/ent"),
+				getLine("import {loadEnt, ID} from {path};", "ent/ent"),
 			},
 		},
 		"reserve default separately": {
@@ -184,8 +199,8 @@ func TestImports(t *testing.T) {
 				useImport(imps, "createUser")
 			},
 			expectedLines: []string{
-				getImportLine("import User, {createUser} from {path};", "src/ent/user"),
-				getImportLine("import {loadEnt, ID} from {path};", "ent/ent"),
+				getLine("import User, {createUser} from {path};", "src/ent/user"),
+				getLine("import {loadEnt, ID} from {path};", "ent/ent"),
 			},
 		},
 		"reserve default import after import": {
@@ -202,8 +217,8 @@ func TestImports(t *testing.T) {
 				useImport(imps, "createUser")
 			},
 			expectedLines: []string{
-				getImportLine("import User, {createUser} from {path};", "src/ent/user"),
-				getImportLine("import {loadEnt, ID} from {path};", "ent/ent"),
+				getLine("import User, {createUser} from {path};", "src/ent/user"),
+				getLine("import {loadEnt, ID} from {path};", "ent/ent"),
 			},
 		},
 		"reserve exact same thing": {
@@ -214,7 +229,7 @@ func TestImports(t *testing.T) {
 				useImport(imps, "User")
 			},
 			expectedLines: []string{
-				getImportLine("import User from {path};", "src/ent/user"),
+				getLine("import User from {path};", "src/ent/user"),
 			},
 		},
 		"reserve different paths": {
@@ -223,6 +238,44 @@ func TestImports(t *testing.T) {
 				reserveDefaultImport(imps, "/user", "User")
 			},
 			panicInFn: true,
+		},
+		"export all": {
+			fn: func(imps *tsimport.Imports) {
+				exportAll(imps, "src/ent/const")
+			},
+			expectedLines: []string{
+				getLine("export * from {path};", "src/ent/const"),
+			},
+		},
+		"export all as ": {
+			fn: func(imps *tsimport.Imports) {
+				exportAllAs(imps, "src/ent/const", "foo")
+			},
+			expectedLines: []string{
+				getLine("export * as foo from {path};", "src/ent/const"),
+			},
+		},
+		"export": {
+			fn: func(imps *tsimport.Imports) {
+				export(imps, "src/ent/const", "foo", "bar")
+			},
+			expectedLines: []string{
+				getLine("export {foo, bar} from {path};", "src/ent/const"),
+			},
+		},
+		"import + export": {
+			fn: func(imps *tsimport.Imports) {
+				reserveImport(imps, "ent/ent", "loadEnt", "loadEntX", "Viewer")
+
+				useImport(imps, "loadEnt")
+				useImport(imps, "loadEntX")
+				export(imps, "src/ent/const", "foo", "bar")
+			},
+			expectedLines: []string{
+				// export first regardless of order
+				getLine("export {foo, bar} from {path};", "src/ent/const"),
+				getLine("import {loadEnt, loadEntX} from {path};", "ent/ent"),
+			},
 		},
 	}
 

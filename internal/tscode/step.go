@@ -123,10 +123,28 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 	sort.Slice(s.edgeType, func(i, j int) bool {
 		return s.edgeType[i].Name < s.edgeType[j].Name
 	})
-	if err := writeConstFile(s.nodeType, s.edgeType); err != nil {
-		return err
+	funcs := []func() error{
+		func() error {
+			return writeConstFile(s.nodeType, s.edgeType)
+		},
+		func() error {
+			return writeInternalEntFile(data.Schema, data.CodePath)
+		},
+		func() error {
+			// index file
+			return nil
+		},
+		func() error {
+			return writeLoadAnyFile(s.nodeType, data.CodePath)
+		},
 	}
-	return writeLoadAnyFile(s.nodeType, data.CodePath)
+
+	for _, fn := range funcs {
+		if err := fn(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeData) {
@@ -218,12 +236,20 @@ func getImportPathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s", nodeData.PackageName)
 }
 
+func getImportPathForBaseModelFile(packageName string) string {
+	return fmt.Sprintf("src/ent/generated/%s_base", packageName)
+}
+
 func getFilePathForConstFile() string {
 	return fmt.Sprintf("src/ent/const.ts")
 }
 
 func getFilePathForLoadAnyFile() string {
 	return fmt.Sprintf("src/ent/loadAny.ts")
+}
+
+func getFilePathForInternalFile() string {
+	return fmt.Sprintf("src/ent/internal.ts")
 }
 
 func getFilePathForBuilderFile(nodeData *schema.NodeData) string {
@@ -362,6 +388,26 @@ func writeLoadAnyFile(nodeData []enum.Data, codePathInfo *codegen.CodePath) erro
 	})
 }
 
+func writeInternalEntFile(s *schema.Schema, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data: struct {
+			Schema  *schema.Schema
+			Package *codegen.ImportPackage
+		}{
+			s,
+			codePathInfo.GetImportPackage(),
+		},
+		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
+		TemplateName:      "internal.tmpl",
+		PathToFile:        getFilePathForInternalFile(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           getInternalEntFuncs(imps),
+	})
+}
+
 func writeBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
@@ -386,5 +432,14 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["edgeInfos"] = action.GetEdgesFromEdges
 
+	return m
+}
+
+func getInternalEntFuncs(imps *tsimport.Imports) template.FuncMap {
+	m := imps.FuncMap()
+
+	m["pathBaseModelFile"] = getImportPathForBaseModelFile
+	m["pathEntFile"] = getImportPathForModelFile
+	m["pathEnumFile"] = getImportPathForEnumFile
 	return m
 }

@@ -1,0 +1,13 @@
+{{exportAll "src/ent/const"}}
+
+{{ range .Schema .Nodes}}
+  {{exportAll pathBaseModelFile .PackageName }}
+{{ end -}}
+
+{{ range .Schema .Nodes}}
+  {{exportAll pathEntFile .PackageName }}
+{{ end -}}
+
+{{ range .Schema.Enums }}
+  {{exportAll pathEnumFile .}}
+{{ end -}}
