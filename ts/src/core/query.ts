@@ -7,13 +7,9 @@ import {
   Viewer,
   loadEdges,
   loadRawEdgeCountX,
-  //  loadNodesByEdge,
-  //  EntConstructor,
   LoadEntOptions,
-  loadEnt,
   loadEnts,
   EdgeQueryableDataOptions,
-  //  Edge,
 } from "./ent";
 import * as clause from "./clause";
 
@@ -24,23 +20,14 @@ export interface EdgeQuery<T extends Ent> {
   queryCount(): Promise<Map<ID, number>>;
   queryRawCount(): Promise<Map<ID, number>>;
   queryEnts(): Promise<Map<ID, T[]>>;
-  //  limit(n: number): EdgeQuery<T>;
   // no offset/limit based
   firstN(n: number): EdgeQuery<T>;
   lastN(n: number): EdgeQuery<T>;
-  // TODO
   beforeCursor(cursor: string, limit: number): EdgeQuery<T>;
   afterCursor(cursor: string, limit: number): EdgeQuery<T>;
-  //  after
-  // TODO where queries etc
-  //  where(query.Cla)
-  // TODO cursors
 
   // TODO we need a way to handle singular id for e.g. unique edge
-  // we need a way to get
 }
-
-interface Cursor {}
 
 interface EdgeQueryFilter {
   // this is a filter that does the processing in TypeScript instead of at the SQL layer
@@ -64,8 +51,6 @@ function assertValidCursor(cursor: string): number {
   let decoded = Buffer.from(cursor, "base64").toString("ascii");
   let parts = decoded.split(":");
   // invalid or unknown cursor. nothing to do here.
-  // TODO should we throw here?
-  // should this be domne
   if (parts.length !== 2 || parts[0] !== "time") {
     throw new Error(`invalid cursor ${cursor} passed`);
   }
@@ -181,7 +166,7 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
   // TODO memoization...
   private async resolveIDs(): Promise<ID[]> {
     if (this.idsResolved) {
-      //      return this.resolvedIDs;
+      return this.resolvedIDs;
     }
     if (Array.isArray(this.src)) {
       this.src.forEach((obj: TSource | ID) => this.addID(obj));
