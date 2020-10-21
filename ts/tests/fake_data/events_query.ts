@@ -1,16 +1,7 @@
-import { Ent, Viewer } from "../../src/core/ent";
+import { Viewer } from "../../src/core/ent";
 import { BaseEdgeQuery, EdgeQuerySource } from "../../src/core/query";
 import { FakeUser } from "./fake_user";
 import { EdgeType, FakeEvent } from "./internal";
-
-// export class BaseEventDestQuery<TSource extends Ent> extends BaseEdgeQuery<
-//   TSource,
-//   FakeEvent
-// > {
-//   constructor(viewer: Viewer, src: EdgeQuerySource<TSource>, edgeType: string) {
-//     super(viewer, src, edgeType, FakeEvent.loaderOptions());
-//   }
-// }
 
 interface EventsDestQuery {
   queryHosts(): EventToHostsQuery;

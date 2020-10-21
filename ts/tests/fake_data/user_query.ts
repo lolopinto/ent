@@ -1,4 +1,4 @@
-import { Ent, Viewer } from "../../src/core/ent";
+import { Viewer } from "../../src/core/ent";
 import { BaseEdgeQuery, EdgeQuerySource } from "../../src/core/query";
 
 import {
@@ -12,17 +12,6 @@ import {
   EventToInvitedQuery,
   EventToMaybeQuery,
 } from "./internal";
-
-// eliminating base classes because of circular dependency issues
-// can't use it like this when referenced this way
-// export class BaseUserDestQuery<TSource extends Ent> extends BaseEdgeQuery<
-//   TSource,
-//   FakeUser
-// > {
-//   constructor(viewer: Viewer, src: EdgeQuerySource<TSource>, edgeType: string) {
-//     super(viewer, src, edgeType, FakeUser.loaderOptions());
-//   }
-// }
 
 export class UserToContactsQuery extends BaseEdgeQuery<FakeUser, FakeContact> {
   constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {

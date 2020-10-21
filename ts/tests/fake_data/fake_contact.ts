@@ -12,7 +12,6 @@ import {
   AlwaysDenyRule,
   PrivacyPolicy,
 } from "../../src/core/privacy";
-import { BaseEdgeQuery, EdgeQuerySource } from "../../src/core/query";
 import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
 import { Field, StringType, BaseEntSchema, UUIDType } from "../../src/schema";
 
@@ -105,13 +104,4 @@ export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {
 export async function createContact(viewer: Viewer, input: ContactCreateInput) {
   const builder = getContactBuilder(viewer, input);
   return await builder.saveX();
-}
-
-export class BaseContactDestQuery<TSource extends Ent> extends BaseEdgeQuery<
-  TSource,
-  FakeContact
-> {
-  constructor(viewer: Viewer, src: EdgeQuerySource<TSource>, edgeType: string) {
-    super(viewer, src, edgeType, FakeContact.loaderOptions());
-  }
 }
