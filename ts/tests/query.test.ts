@@ -812,13 +812,6 @@ describe("multi-ids. firstN", () => {
   });
 });
 
-// TODO chained ids
-
-//e.g. users -> friends -> attending events
-// so need friends edge
-// need created events and need attending events edge
-// that's a perfectly good case: find events my friends are going to
-
 async function createTestEvent(
   user: FakeUser,
   input?: Partial<EventCreateInput>,
@@ -964,9 +957,6 @@ class ChainTestQueryFilter {
   }
 }
 
-// so we want 2 steps
-// 3 steps
-// and so on
 describe("chained queries 2 steps", () => {
   const filter = new ChainTestQueryFilter(
     UserToFriendsQuery,
