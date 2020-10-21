@@ -12,10 +12,6 @@ import {
   AlwaysDenyRule,
   PrivacyPolicy,
 } from "../../src/core/privacy";
-import { BaseEdgeQuery, EdgeQuerySource } from "../../src/core/query";
-import { FakeContact, BaseContactDestQuery } from "./fake_contact";
-import { EdgeType } from "./const";
-import { createRowForTest, snakeAll } from "../../src/testutils/write";
 import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
 import { Field, StringType, BaseEntSchema } from "../../src/schema";
 
@@ -95,24 +91,6 @@ export class FakeUserSchema extends BaseEntSchema
       nullable: true,
     }),
   ];
-}
-
-export class BaseUserDestQuery<TSource extends Ent> extends BaseEdgeQuery<
-  TSource,
-  FakeUser
-> {}
-
-export class UserToContactsQuery extends BaseContactDestQuery<FakeUser> {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
-    super(viewer, src, EdgeType.UserToContacts, FakeContact.loaderOptions());
-  }
-
-  static query(
-    viewer: Viewer,
-    src: EdgeQuerySource<FakeUser>,
-  ): UserToContactsQuery {
-    return new UserToContactsQuery(viewer, src);
-  }
 }
 
 export interface UserCreateInput {

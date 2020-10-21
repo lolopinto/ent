@@ -13,7 +13,6 @@ import {
   PrivacyPolicy,
 } from "../../src/core/privacy";
 import { BaseEdgeQuery, EdgeQuerySource } from "../../src/core/query";
-import { createRowForTest, snakeAll } from "../../src/testutils/write";
 import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
 import { Field, StringType, BaseEntSchema, UUIDType } from "../../src/schema";
 
@@ -111,4 +110,8 @@ export async function createContact(viewer: Viewer, input: ContactCreateInput) {
 export class BaseContactDestQuery<TSource extends Ent> extends BaseEdgeQuery<
   TSource,
   FakeContact
-> {}
+> {
+  constructor(viewer: Viewer, src: EdgeQuerySource<TSource>, edgeType: string) {
+    super(viewer, src, edgeType, FakeContact.loaderOptions());
+  }
+}

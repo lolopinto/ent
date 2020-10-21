@@ -1,23 +1,38 @@
 import { Pool } from "pg";
 import { QueryRecorder } from "../src/testutils/db_mock";
-import { EdgeType } from "./fake_data/const";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../src/testutils/write";
-import { AssocEdge, Data, ID, loadEdgeData, Viewer } from "../src/core/ent";
+import {
+  AssocEdge,
+  Data,
+  ID,
+  Ent,
+  loadEdgeData,
+  Viewer,
+} from "../src/core/ent";
+import { EdgeQuery, EdgeQuerySource } from "../src/core/query";
+import { IDViewer, LoggedOutViewer } from "../src/core/viewer";
+import { fail } from "assert";
+import { advanceBy } from "jest-date-mock";
 import {
   createUser,
   FakeUser,
   UserCreateInput,
   UserToContactsQuery,
-} from "./fake_data/fake_user";
-import { IDViewer, LoggedOutViewer } from "../src/core/viewer";
-import { fail } from "assert";
-import {
   ContactCreateInput,
   FakeContact,
   getContactBuilder,
-} from "./fake_data/fake_contact";
-import { advanceBy } from "jest-date-mock";
+  EdgeType,
+  getUserBuilder,
+  getEventBuilder,
+  EventCreateInput,
+  SymmetricEdges,
+  InverseEdges,
+  UserToFriendsQuery,
+  FakeEvent,
+  UserToEventsAttendingQuery,
+  EventToHostsQuery,
+} from "./fake_data/";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -25,8 +40,6 @@ QueryRecorder.mockPool(Pool);
 beforeEach(async () => {
   QueryRecorder.clear();
   // create all edges// for now all one-way
-  // TODO figure out symmetric and inverse later
-  // maybe move this to testutils as a helper
   const edgeNames = Object.keys(EdgeType);
   const edges = Object.values(EdgeType);
 
@@ -36,14 +49,13 @@ beforeEach(async () => {
       tableName: "assoc_edge_config",
       fields: {
         edge_table: snakeCase(`${edge}_table`),
-        symmetric_edge: false,
-        inverse_edge_type: null,
+        symmetric_edge: SymmetricEdges.has(edge),
+        inverse_edge_type: InverseEdges.get(edge) || null,
         edge_type: edge,
         edge_name: edgeNames[i],
       },
     });
     const edgeData = await loadEdgeData(edge);
-    //    console.log(edgeData);
   }
   QueryRecorder.clearQueries();
 });
@@ -57,6 +69,17 @@ function getContactInput(
     lastName: "Snow",
     emailAddress: "foo@bar.com",
     userID: user.id,
+    ...input,
+  };
+}
+
+function getUserInput(input?: Partial<UserCreateInput>): UserCreateInput {
+  return {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: "foo@bar.com",
+    phoneNumber: "415-212-1212",
+    password: "pa$$w0rd",
     ...input,
   };
 }
@@ -770,7 +793,6 @@ describe("multi-ids. firstN", () => {
 
   test("ids", async () => {
     await filter.testIDs();
-    console.log(QueryRecorder.getCurrentQueries());
   });
 
   test("rawCount", async () => {
@@ -779,6 +801,266 @@ describe("multi-ids. firstN", () => {
 
   test("count", async () => {
     await filter.testCount();
+  });
+
+  test("edges", async () => {
+    await filter.testEdges();
+  });
+
+  test("ents", async () => {
+    await filter.testEnts();
+  });
+});
+
+// TODO chained ids
+
+//e.g. users -> friends -> attending events
+// so need friends edge
+// need created events and need attending events edge
+// that's a perfectly good case: find events my friends are going to
+
+async function createTestEvent(
+  user: FakeUser,
+  input?: Partial<EventCreateInput>,
+) {
+  const vc = new IDViewer(user.id);
+  const builder = getEventBuilder(vc, {
+    startTime: new Date(),
+    location: "fun house",
+    description: "fun fun fun",
+    title: "fun time",
+    userID: user.id,
+    ...input,
+  });
+  builder.orchestrator.addOutboundEdge(user.id, EdgeType.EventToHosts, "User");
+
+  return await builder.saveX();
+}
+
+interface EdgeQueryCtr<T extends Ent> {
+  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T>;
+}
+
+class ChainTestQueryFilter {
+  user: FakeUser;
+  event: FakeEvent;
+  event2: FakeEvent;
+  friends: FakeUser[];
+
+  constructor(
+    private initialQuery: EdgeQueryCtr<Ent>,
+    private subsequentQueries: EdgeQueryCtr<Ent>[],
+    private filter: (q: EdgeQuery<Ent>) => EdgeQuery<Ent>,
+    private lastHopFilter?: (q: EdgeQuery<Ent>) => EdgeQuery<Ent>,
+  ) {}
+
+  async beforeEach() {
+    this.user = await createTestUser();
+    this.event = await createTestEvent(this.user);
+    this.event2 = await createTestEvent(this.user, { title: "Red Wedding" });
+
+    this.friends = await Promise.all(
+      inputs.map(async (input) => {
+        // just to make times deterministic so that tests can consistently work
+        advanceBy(100);
+        const builder = getUserBuilder(this.user.viewer, getUserInput(input));
+        // add edge from user to contact
+        builder.orchestrator.addOutboundEdge(
+          this.user.id,
+          EdgeType.UserToFriends,
+          "User",
+          {
+            time: new Date(), // set time to advanceBy time
+          },
+        );
+        // all invited and all attending
+        builder.orchestrator.addInboundEdge(
+          this.event.id,
+          EdgeType.EventToInvited,
+          "Event",
+        );
+        builder.orchestrator.addInboundEdge(
+          this.event.id,
+          EdgeType.EventToAttendees,
+          "Event",
+        );
+        // Robb also attending the red wedding
+        if (input.firstName === "Robb") {
+          builder.orchestrator.addInboundEdge(
+            this.event2.id,
+            EdgeType.EventToInvited,
+            "Event",
+          );
+          builder.orchestrator.addInboundEdge(
+            this.event2.id,
+            EdgeType.EventToAttendees,
+            "Event",
+          );
+        }
+        return await builder.saveX();
+      }),
+    );
+
+    expect(this.friends.length).toBe(inputs.length);
+
+    const countMap = await UserToFriendsQuery.query(
+      new IDViewer(this.user.id),
+      this.user.id,
+    ).queryCount();
+    expect(countMap.get(this.user.id)).toStrictEqual(inputs.length);
+  }
+
+  getQuery(vc: Viewer) {
+    return this.filter(new this.initialQuery(vc, this.user.id));
+  }
+
+  private async compare(fn: (q: EdgeQuery<Ent>) => any) {
+    const vc = new IDViewer(this.user.id);
+    const oneHopResult = await fn(this.getQuery(vc));
+
+    const queries = [this.initialQuery, ...this.subsequentQueries];
+    let last: ID[] = [this.user.id];
+    let allHopsResult: any;
+    for (let i = 0; i < queries.length; i++) {
+      let queryCtr = queries[i];
+
+      let query = new queryCtr(vc, last);
+      if (this.lastHopFilter && i + 1 == queries.length - 1) {
+        query = this.lastHopFilter(query);
+      }
+      if (i === queries.length - 1) {
+        allHopsResult = await fn(query);
+        break;
+      }
+
+      let result = await query.queryIDs();
+      // reset last
+      last = [];
+      for (const [_, ids] of result) {
+        last.push(...ids);
+      }
+    }
+    expect(oneHopResult).toStrictEqual(allHopsResult);
+  }
+
+  async testIDs() {
+    await this.compare((q) => q.queryIDs());
+  }
+
+  async testCount() {
+    await this.compare((q) => q.queryCount());
+  }
+
+  async testRawCount() {
+    await this.compare((q) => q.queryRawCount());
+  }
+
+  async testEdges() {
+    await this.compare((q) => q.queryEdges());
+  }
+
+  async testEnts() {
+    await this.compare((q) => q.queryEnts());
+  }
+}
+
+// so we want 2 steps
+// 3 steps
+// and so on
+describe("chained queries 2 steps", () => {
+  const filter = new ChainTestQueryFilter(
+    UserToFriendsQuery,
+    [UserToEventsAttendingQuery],
+    (q: UserToFriendsQuery) => {
+      return q.queryEventsAttending();
+    },
+  );
+
+  beforeEach(async () => {
+    await filter.beforeEach();
+  });
+
+  test("ids", async () => {
+    await filter.testIDs();
+  });
+
+  test("count", async () => {
+    await filter.testCount();
+  });
+
+  test("rawCount", async () => {
+    await filter.testRawCount();
+  });
+
+  test("edges", async () => {
+    await filter.testEdges();
+  });
+
+  test("ents", async () => {
+    await filter.testEnts();
+  });
+});
+
+describe("chained queries 2 steps w/ filter", () => {
+  const filter = new ChainTestQueryFilter(
+    UserToFriendsQuery,
+    [UserToEventsAttendingQuery],
+    (q: UserToFriendsQuery) => {
+      return q.firstN(2).queryEventsAttending();
+    },
+    (q: UserToFriendsQuery) => {
+      return q.firstN(2);
+    },
+  );
+
+  beforeEach(async () => {
+    await filter.beforeEach();
+  });
+
+  test("ids", async () => {
+    await filter.testIDs();
+  });
+
+  test("count", async () => {
+    await filter.testCount();
+  });
+
+  test("rawCount", async () => {
+    await filter.testRawCount();
+  });
+
+  test("edges", async () => {
+    await filter.testEdges();
+  });
+
+  test("ents", async () => {
+    await filter.testEnts();
+  });
+});
+
+describe("chained queries 3 steps", () => {
+  const filter = new ChainTestQueryFilter(
+    UserToFriendsQuery,
+    [UserToEventsAttendingQuery, EventToHostsQuery],
+    (q: UserToFriendsQuery) => {
+      return q.queryEventsAttending().queryHosts();
+    },
+  );
+
+  beforeEach(async () => {
+    await filter.beforeEach();
+  });
+
+  test("ids", async () => {
+    await filter.testIDs();
+  });
+
+  test("count", async () => {
+    await filter.testCount();
+  });
+
+  test("rawCount", async () => {
+    await filter.testRawCount();
   });
 
   test("edges", async () => {

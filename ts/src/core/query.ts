@@ -22,6 +22,7 @@ export interface EdgeQuery<T extends Ent> {
   queryEdges(): Promise<Map<ID, AssocEdge[]>>;
   queryIDs(): Promise<Map<ID, ID[]>>;
   queryCount(): Promise<Map<ID, number>>;
+  queryRawCount(): Promise<Map<ID, number>>;
   queryEnts(): Promise<Map<ID, T[]>>;
   //  limit(n: number): EdgeQuery<T>;
   // no offset/limit based
@@ -172,7 +173,7 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
 
   constructor(
     public viewer: Viewer,
-    private src: EdgeQuerySource<TSource>,
+    public src: EdgeQuerySource<TSource>,
     private edgeType: string,
     private ctr: LoadEntOptions<TDest>,
   ) {}
@@ -185,9 +186,7 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     if (Array.isArray(this.src)) {
       this.src.forEach((obj: TSource | ID) => this.addID(obj));
     } else if (this.isEdgeQuery(this.src)) {
-      console.log("isEdgeQuery");
       const idsMap = await this.src.queryIDs();
-      console.log("idsMap", idsMap);
       for (const [_, ids] of idsMap) {
         ids.forEach((id) => this.resolvedIDs.push(id));
       }
@@ -256,7 +255,6 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
         edge_data.map((edge) => edge.id2),
       );
     }
-    console.log("queryIDs", results);
     return results;
   }
 
@@ -264,7 +262,6 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
   async queryRawCount(): Promise<Map<ID, number>> {
     let results: Map<ID, number> = new Map();
     const ids = await this.resolveIDs();
-    console.log("ids", ids);
     await Promise.all(
       ids.map(async (id) => {
         const count = await loadRawEdgeCountX({

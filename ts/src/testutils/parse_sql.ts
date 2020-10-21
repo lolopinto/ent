@@ -372,7 +372,8 @@ function parseSelectStatement(
       let result = {};
       for (const col of colsInfo?.columns || []) {
         if (data[col] === undefined) {
-          throw new Error(`requested a non-existing column ${col}`);
+          data[col] = null;
+          //          throw new Error(`requested a non-existing column ${col}`);
         }
         result[col] = data[col];
       }

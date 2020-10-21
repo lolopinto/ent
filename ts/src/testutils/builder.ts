@@ -13,7 +13,7 @@ import {
   Observer,
 } from "../action";
 import { Schema } from "../schema";
-import { QueryRecorder } from "./db_mock";
+//import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
 import { snakeCase } from "snake-case";
 
@@ -108,7 +108,8 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     if (this.operation === WriteOperation.Insert) {
       for (const [key, value] of fields) {
         if (key === "id" && value === "{id}") {
-          fields[key] = QueryRecorder.newID();
+          // TODO
+          //          fields[key] = QueryRecorder.newID();
         }
       }
     }
