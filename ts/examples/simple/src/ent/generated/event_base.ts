@@ -20,9 +20,8 @@ import {
   query,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
+import { EdgeType, NodeType, User } from "src/ent/internal";
 import schema from "src/schema/event";
-import { EdgeType, NodeType } from "src/ent/const";
-import User from "src/ent/user";
 
 const tableName = "events";
 

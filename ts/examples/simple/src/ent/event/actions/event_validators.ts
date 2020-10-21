@@ -1,6 +1,6 @@
 import { EventBuilder } from "./event_builder";
 import { Validator } from "@lolopinto/ent/action";
-import Event from "src/ent/event";
+import { Event } from "src/ent/";
 
 export class EventTimeValidator implements Validator<Event> {
   validate(builder: EventBuilder): void {

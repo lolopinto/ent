@@ -1,5 +1,4 @@
-import User from "src/ent/user";
-import Contact from "src/ent/contact";
+import { User, Contact } from "src/ent/";
 import { DB, LoggedOutViewer, IDViewer } from "@lolopinto/ent";
 import { randomEmail } from "src/util/random";
 import CreateUserAction from "src/ent/user/actions/create_user_action";

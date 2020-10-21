@@ -7,7 +7,7 @@ import {
   gqlObjectType,
 } from "@lolopinto/ent/graphql";
 import { useAndAuth, LocalStrategy } from "@lolopinto/ent/auth";
-import User from "src/ent/user";
+import { User } from "src/ent/";
 import { IDViewer, ID, RequestContext } from "@lolopinto/ent";
 import { GraphQLID } from "graphql";
 import jwt from "jsonwebtoken";

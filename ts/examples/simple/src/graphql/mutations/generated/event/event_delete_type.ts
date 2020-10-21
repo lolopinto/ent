@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
-import Event from "src/ent/event";
+import { Event } from "src/ent/";
 import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
 interface customEventDeleteInput {

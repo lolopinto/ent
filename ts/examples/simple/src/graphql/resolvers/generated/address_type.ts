@@ -10,7 +10,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
-import Address from "src/ent/address";
+import { Address } from "src/ent/";
 
 interface AddressQueryArgs {
   id: ID;

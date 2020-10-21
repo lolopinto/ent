@@ -1,5 +1,4 @@
-import User from "src/ent/user";
-import Contact from "src/ent/contact";
+import { User, Contact, Event } from "src/ent/";
 
 import {
   Viewer,
@@ -12,7 +11,6 @@ import {
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
-import Event from "src/ent/event";
 import { randomEmail } from "src/util/random";
 
 import CreateUserAction, {

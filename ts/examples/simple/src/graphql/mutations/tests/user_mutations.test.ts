@@ -1,6 +1,6 @@
 import schema from "src/graphql/schema";
 import { DB, ID, Viewer, LoggedOutViewer, IDViewer } from "@lolopinto/ent";
-import User from "src/ent/user";
+import { User } from "src/ent/";
 import { randomEmail } from "src/util/random";
 import CreateUserAction, {
   UserCreateInput,

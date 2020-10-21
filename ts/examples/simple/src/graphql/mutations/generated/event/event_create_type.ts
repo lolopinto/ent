@@ -12,11 +12,11 @@ import {
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLTime } from "@lolopinto/ent/graphql";
+import { Event } from "src/ent/";
 import { EventType } from "src/graphql/resolvers/generated/event_type";
 import CreateEventAction, {
   EventCreateInput,
 } from "src/ent/event/actions/create_event_action";
-import Event from "src/ent/event";
 
 interface EventCreateResponse {
   event: Event;

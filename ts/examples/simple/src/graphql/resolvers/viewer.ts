@@ -7,7 +7,7 @@ import {
 import { GraphQLID } from "graphql";
 import { Viewer, RequestContext } from "@lolopinto/ent";
 
-import User from "src/ent/user";
+import { User } from "src/ent/";
 
 @gqlObjectType({ name: "Viewer" })
 // TODO when this wasn't exported, it didn't work...

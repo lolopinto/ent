@@ -12,8 +12,7 @@ import {
 } from "@lolopinto/ent/action";
 import schema from "src/schema/contact";
 import { EdgeType } from "src/ent/const";
-import Contact from "src/ent/contact";
-import User from "src/ent/user";
+import { Contact, User } from "src/ent/";
 
 export interface ContactInput {
   emailAddress?: string;
@@ -126,7 +125,7 @@ export class ContactBuilder implements Builder<Contact> {
     return result;
   }
 
-  private isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
+  isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
 }

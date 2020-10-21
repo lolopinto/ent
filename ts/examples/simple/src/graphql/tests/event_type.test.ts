@@ -1,7 +1,7 @@
 import schema from "src/graphql/schema";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@lolopinto/ent";
-import Event from "src/ent/event";
+import { Event } from "src/ent/";
 import { randomEmail } from "src/util/random";
 import {
   expectQueryFromRoot,

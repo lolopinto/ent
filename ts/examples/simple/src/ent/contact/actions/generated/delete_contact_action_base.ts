@@ -2,7 +2,7 @@
 
 import { Action, WriteOperation, Changeset } from "@lolopinto/ent/action";
 import { Viewer, ID } from "@lolopinto/ent";
-import Contact from "src/ent/contact";
+import { Contact } from "src/ent/";
 import {
   ContactBuilder,
   ContactInput,

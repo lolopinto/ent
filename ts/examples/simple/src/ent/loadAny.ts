@@ -2,10 +2,7 @@
 
 import { NodeType } from "./const";
 import { loadEnt, ID, Viewer, Ent, LoadEntOptions } from "@lolopinto/ent";
-import Address from "src/ent/address";
-import Contact from "src/ent/contact";
-import Event from "src/ent/event";
-import User from "src/ent/user";
+import { Address, Contact, Event, User } from "src/ent/internal";
 
 export async function loadEntByType(
   viewer: Viewer,

@@ -4,7 +4,7 @@ import {
 } from "src/ent/contact/actions/generated/create_contact_action_base";
 
 export { ContactCreateInput };
-import Contact from "src/ent/contact";
+import { Contact } from "src/ent/";
 // TODO...
 import { EntCreationObserver } from "@lolopinto/ent/testutils/fake_log";
 

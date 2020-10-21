@@ -7,8 +7,7 @@ import {
   Changeset,
 } from "@lolopinto/ent/action";
 import { Viewer, ID } from "@lolopinto/ent";
-import Contact from "src/ent/contact";
-import User from "src/ent/user";
+import { Contact, User } from "src/ent/";
 import {
   ContactBuilder,
   ContactInput,

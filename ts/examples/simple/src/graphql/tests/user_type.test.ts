@@ -3,7 +3,7 @@ import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@lolopinto/ent";
-import User from "src/ent/user";
+import { User } from "src/ent/";
 import { randomEmail } from "src/util/random";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import { advanceBy } from "jest-date-mock";

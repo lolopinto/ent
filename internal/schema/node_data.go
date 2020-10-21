@@ -1,13 +1,12 @@
 package schema
 
 import (
-	"fmt"
 	"sort"
 	"strconv"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/enum"
@@ -218,9 +217,8 @@ func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
 	var ret []ImportPath
 	for _, nodeInfo := range nodeData.getUniqueNodes(false) {
 		ret = append(ret, ImportPath{
-			Import:        nodeInfo.Node,
-			PackagePath:   getImportPathForEntModelFile(nodeInfo.PackageName),
-			DefaultImport: true,
+			Import:      nodeInfo.Node,
+			PackagePath: codepath.GetInternalImportPath(),
 		})
 	}
 
@@ -228,7 +226,7 @@ func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
 		if enum.Imported {
 			ret = append(ret, ImportPath{
 				Import:      enum.Name,
-				PackagePath: getImportPathForEnumFile(&enum),
+				PackagePath: codepath.GetInternalImportPath(),
 			})
 		}
 	}
@@ -240,43 +238,22 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 	var ret []ImportPath
 
 	for _, enum := range nodeData.GetTSEnums() {
-		if enum.Imported {
-			ret = append(ret, ImportPath{
-				Import:      enum.Name,
-				PackagePath: getImportPathForEnumFile(&enum),
-			})
-		} else {
-			ret = append(ret, ImportPath{
-				Import:      enum.Name,
-				PackagePath: getImportPathForBaseModelFile(nodeData.PackageName),
-			})
-		}
+		ret = append(ret, ImportPath{
+			Import:      enum.Name,
+			PackagePath: codepath.GetExternalImportPath(),
+		})
 	}
 
 	// unique nodes referenced in builder
 	uniqueNodes := nodeData.getUniqueNodes(true)
 	for _, unique := range uniqueNodes {
 		ret = append(ret, ImportPath{
-			Import:        unique.Node,
-			PackagePath:   fmt.Sprintf("src/ent/%s", unique.PackageName),
-			DefaultImport: true,
+			Import:      unique.Node,
+			PackagePath: codepath.GetExternalImportPath(),
 		})
 	}
 
 	return ret
-}
-
-// copied from internal/tscode/step.go
-func getImportPathForBaseModelFile(packageName string) string {
-	return fmt.Sprintf("src/ent/generated/%s_base", packageName)
-}
-
-func getImportPathForEntModelFile(packageName string) string {
-	return fmt.Sprintf("src/ent/%s", packageName)
-}
-
-func getImportPathForEnumFile(enum *enum.Enum) string {
-	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(enum.Name))
 }
 
 // don't need this distinction at the moment but why not

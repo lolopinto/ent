@@ -15,8 +15,8 @@ import {
   query,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
+import { NodeType } from "src/ent/internal";
 import schema from "src/schema/address";
-import { NodeType } from "src/ent/const";
 
 const tableName = "addresses";
 

@@ -12,9 +12,7 @@ import {
 } from "@lolopinto/ent/action";
 import schema from "src/schema/user";
 import { EdgeType, NodeType } from "src/ent/const";
-import User from "src/ent/user";
-import Event from "src/ent/event";
-import Contact from "src/ent/contact";
+import { User, Event, Contact } from "src/ent/";
 
 export interface UserInput {
   firstName?: string;
@@ -457,7 +455,7 @@ export class UserBuilder implements Builder<User> {
     return result;
   }
 
-  private isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
+  isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
 }

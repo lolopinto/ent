@@ -11,6 +11,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
@@ -131,8 +132,7 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 			return writeInternalEntFile(data.Schema, data.CodePath)
 		},
 		func() error {
-			// index file
-			return nil
+			return writeEntIndexFile()
 		},
 		func() error {
 			return writeLoadAnyFile(s.nodeType, data.CodePath)
@@ -154,8 +154,6 @@ func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeDat
 		Name:    name,
 		Value:   value,
 		Comment: comment,
-		// needed for loadAny.ts
-		PackagePath: getImportPathForModelFile(nodeData),
 	})
 }
 
@@ -215,7 +213,6 @@ type nodeTemplateCodePath struct {
 	Imports  []schema.ImportPath
 }
 
-// copied to internal/schema/node_data.go
 func getFilePathForBaseModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/generated/%s_base.ts", nodeData.PackageName)
 }
@@ -228,6 +225,7 @@ func getFilePathForEnumFile(info *schema.EnumInfo) string {
 	return fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name))
 }
 
+// TODO these import path ones should go...
 func getImportPathForEnumFile(info *schema.EnumInfo) string {
 	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(info.Enum.Name))
 }
@@ -246,10 +244,6 @@ func getFilePathForConstFile() string {
 
 func getFilePathForLoadAnyFile() string {
 	return fmt.Sprintf("src/ent/loadAny.ts")
-}
-
-func getFilePathForInternalFile() string {
-	return fmt.Sprintf("src/ent/internal.ts")
 }
 
 func getFilePathForBuilderFile(nodeData *schema.NodeData) string {
@@ -401,10 +395,23 @@ func writeInternalEntFile(s *schema.Schema, codePathInfo *codegen.CodePath) erro
 		},
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
 		TemplateName:      "internal.tmpl",
-		PathToFile:        getFilePathForInternalFile(),
+		PathToFile:        codepath.GetFilePathForInternalFile(),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           getInternalEntFuncs(imps),
+	})
+}
+
+func writeEntIndexFile() error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		AbsPathToTemplate: util.GetAbsolutePath("index.tmpl"),
+		TemplateName:      "index.tmpl",
+		PathToFile:        codepath.GetFilePathForEntIndexFile(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
 	})
 }
 

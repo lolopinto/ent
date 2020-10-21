@@ -126,7 +126,7 @@ sa.Table("users", metadata,
 )
   
 
-edges = {
+metadata.info["edges"] = {
   'public': {
     'EventToAttendingEdge': {"edge_name":"EventToAttendingEdge", "edge_type":"6ebc0c47-ea29-4635-b991-95e44162174d", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"2a98ba02-e342-4bb4-93f6-5d7ed02f5c48"},
     'EventToDeclinedEdge': {"edge_name":"EventToDeclinedEdge", "edge_type":"db8d2454-f7b2-4147-aae1-e666daf3f3c3", "edge_table":"event_rsvps_edges", "symmetric_edge":False, "inverse_edge_type":"1c7c173b-63ce-4002-b121-4a87f82047dd"},
@@ -143,7 +143,7 @@ edges = {
   }
 }
 
-metadata.info.setdefault("edges", edges)
+
 
 def get_metadata():
   return metadata

@@ -4,7 +4,7 @@ import {
 } from "src/ent/event/actions/generated/edit_event_action_base";
 import { Validator } from "@lolopinto/ent/action";
 import { SharedValidators } from "./event_validators";
-import Event from "src/ent/event";
+import { Event } from "src/ent/";
 
 export { EventEditInput };
 

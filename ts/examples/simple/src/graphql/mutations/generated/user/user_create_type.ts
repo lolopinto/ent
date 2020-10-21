@@ -11,11 +11,11 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
+import { User } from "src/ent/";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
-import User from "src/ent/user";
 
 interface UserCreateResponse {
   user: User;
