@@ -4,7 +4,7 @@ import {
   Field,
   FieldOptions,
   BaseField,
-  String,
+  StringField,
 } from "@lolopinto/ent/schema";
 
 import * as bcrypt from "bcryptjs";
@@ -12,7 +12,7 @@ import * as bcrypt from "bcryptjs";
 export class Password extends BaseField implements Field {
   type: Type = { dbType: DBType.String };
   private _cost: number | undefined;
-  private stringType: String;
+  private stringType: StringField;
 
   // hardcode password to be private and hidden from graphql by default
   private = true;
@@ -20,7 +20,7 @@ export class Password extends BaseField implements Field {
 
   constructor() {
     super();
-    this.stringType = new String();
+    this.stringType = new StringField();
   }
 
   cost(cost: number): this {

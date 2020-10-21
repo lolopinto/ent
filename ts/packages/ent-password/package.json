@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent-password",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "password datatype for ents",
   "main": "dist/password.js",
   "types": "dist/password.d.ts",
@@ -34,13 +34,13 @@
     "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
-    "@lolopinto/ent": "0.0.13",
+    "@lolopinto/ent": "0.0.21",
     "@types/jest": "^26.0.9",
     "jest": "^26.2.2",
     "password-validator": "^5.1.0",
     "ts-jest": "^26.1.4"
   },
   "peerDependencies": {
-    "@lolopinto/ent": "0.0.13"
+    "@lolopinto/ent": "0.0.21"
   }
 }
