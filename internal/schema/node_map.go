@@ -89,7 +89,7 @@ func (m NodeMapInfo) parsePackage(s *Schema, pkg *packages.Package, specificConf
 		m.addConfig(codegenInfo)
 	}
 
-	return m.processDepgrah(edgeData)
+	return m.processDepgrah(s, edgeData)
 }
 
 func (m NodeMapInfo) buildPostRunDepgraph(s *Schema, edgeData *assocEdgeData) *depgraph.Depgraph {
@@ -122,14 +122,10 @@ func (m NodeMapInfo) buildPostRunDepgraph(s *Schema, edgeData *assocEdgeData) *d
 		m.addNewConstsAndEdges(info, edgeData)
 	}, "LinkedEdges", "InverseEdges")
 
-	g.AddItem("Constraints", func(info *NodeDataInfo) {
-		m.processConstraints(info)
-	})
-
 	return g
 }
 
-func (m NodeMapInfo) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, error) {
+func (m NodeMapInfo) processDepgrah(s *Schema, edgeData *assocEdgeData) (*assocEdgeData, error) {
 	// second pass to run things that depend on the entire data being loaded
 	for _, info := range m {
 
@@ -145,7 +141,17 @@ func (m NodeMapInfo) processDepgrah(edgeData *assocEdgeData) (*assocEdgeData, er
 			}
 			execFn(info)
 		})
+
+		m.processConstraints(s, info.NodeData)
 	}
+
+	// need to also process enums too
+	// TODO refactor all of these to not be on NodeMapInfo but be on Schema
+	// this no longer works anymore
+	for _, enumInfo := range s.Enums {
+		m.processConstraints(s, enumInfo.NodeData)
+	}
+
 	return edgeData, nil
 }
 
@@ -484,8 +490,7 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 	}
 }
 
-func (m NodeMapInfo) processConstraints(info *NodeDataInfo) {
-	nodeData := info.NodeData
+func (m NodeMapInfo) processConstraints(s *Schema, nodeData *NodeData) {
 
 	// TODO errors instead of panicing
 
@@ -749,7 +754,9 @@ func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base
 
 		// not in schema.Nodes...
 		if node.EnumTable {
-			s.addEnumFromInputNode(nodeName, node, nodeData)
+			if err := s.addEnumFromInputNode(nodeName, node, nodeData); err != nil {
+				return nil, err
+			}
 			continue
 		}
 
@@ -760,7 +767,7 @@ func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base
 		})
 	}
 
-	return m.processDepgrah(edgeData)
+	return m.processDepgrah(s, edgeData)
 }
 
 // getTableName returns the name of the table the node should be stored in
