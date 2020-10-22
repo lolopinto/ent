@@ -508,6 +508,69 @@ func TestEnumConstraints(t *testing.T) {
 				},
 			},
 		},
+		"enum table with fkey constraint": {
+			code: map[string]string{
+				"request_status.ts": testhelper.GetCodeWithSchema(`
+					import {Schema, Field, StringType} from "{schema}";
+
+					export default class RequestStatus implements Schema {
+						fields: Field[] = [
+							StringType({
+								name: 'status',
+								primaryKey: true,
+							}),
+						];
+
+						enumTable = true;
+
+						dbRows = [
+							{
+								status: 'open',
+							},
+							{
+								status: 'pending',
+							},
+							{
+								status: 'closed',
+							},
+						];
+					}`),
+				"request.ts": testhelper.GetCodeWithSchema(`
+					import {Schema, Field, StringType, EnumType, BaseEntSchema} from "{schema}";
+
+					export default class Request extends BaseEntSchema {
+						fields: Field[] = [
+							EnumType({
+								name: 'status',
+								foreignKey: ["RequestStatus", "status"],
+							}),
+						];
+					}`),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"RequestStatus": {
+					Constraints: []*input.Constraint{
+						{
+							Name:    "request_statuses_status_pkey",
+							Type:    input.PrimaryKey,
+							Columns: []string{"status"},
+						},
+					},
+				},
+				"Request": {
+					Constraints: constraintsWithNodeConstraints("requests", &input.Constraint{
+						Name:    "requests_status_fkey",
+						Type:    input.ForeignKey,
+						Columns: []string{"status"},
+						ForeignKey: &input.ForeignKeyInfo{
+							TableName: "request_statuses",
+							Columns:   []string{"status"},
+							OnDelete:  "CASCADE",
+						},
+					}),
+				},
+			},
+		},
 	}
 
 	runTestCases(t, testCases)
