@@ -615,7 +615,7 @@ func TestNullableEnumType(t *testing.T) {
 	})
 }
 
-func TestDataInSchema(t *testing.T) {
+func TestEnumTableInSchema(t *testing.T) {
 	dbSchema := getSchemaFromCode(
 		t,
 		map[string]string{
@@ -682,6 +682,16 @@ func TestDataInSchema(t *testing.T) {
 	assert.Equal(t, data.TableName, "roles")
 	assert.Equal(t, data.Pkeys, fmt.Sprintf("[%s]", strconv.Quote("role")))
 	assert.Equal(t, data.Rows, rows)
+
+	table := getTestEnumTableFromSchema("Role", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 1)
+
+	testConstraint(
+		t,
+		constraints[0],
+		fmt.Sprintf("sa.PrimaryKeyConstraint(%s, name=%s)", strconv.Quote("role"), strconv.Quote("roles_role_pkey")),
+	)
 }
 
 func TestMultiColumnPrimaryKey(t *testing.T) {
@@ -1051,6 +1061,18 @@ func getTestTableFromSchema(configName string, s *dbSchema, t *testing.T) *dbTab
 	table := s.getTableForNode(node.NodeData)
 	if table == nil {
 		t.Errorf("no dbtable info for %s", configName)
+	}
+	return table
+}
+
+func getTestEnumTableFromSchema(name string, s *dbSchema, t *testing.T) *dbTable {
+	enumInfo := s.schema.Enums[name]
+	if enumInfo == nil {
+		t.Errorf("no enum info for %s table", name)
+	}
+	table := s.getTableForNode(enumInfo.NodeData)
+	if table == nil {
+		t.Errorf("no dbtable info for %s", name)
 	}
 	return table
 }

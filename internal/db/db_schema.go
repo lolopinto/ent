@@ -344,7 +344,11 @@ func (s *dbSchema) generateShemaTables() {
 		if !info.LookupTableEnum() {
 			continue
 		}
-		s.addTable(s.createTableForNode(info.NodeData))
+		// need to use getTableForNode because that adds to map
+		table := s.getTableForNode(info.NodeData)
+		s.addTable(table)
+		// can process enum constraints immediately
+		s.processConstraints(info.NodeData, table.Columns, &table.Constraints)
 	}
 
 	// process constraints after because easier to access tableMap for fkey constraints

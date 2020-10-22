@@ -413,6 +413,52 @@ func TestConstraints(t *testing.T) {
 				},
 			},
 		},
+		"enum table constraint": {
+			code: map[string]string{
+				"role.ts": testhelper.GetCodeWithSchema(`
+					import {Schema, Field, StringType} from "{schema}";
+
+					export default class Role implements Schema {
+						fields: Field[] = [
+							StringType({
+								name: 'role',
+								primaryKey: true,
+							}),
+						];
+
+						enumTable = true;
+
+						dbRows = [
+							{
+								role: 'admin',
+							},
+							{
+								role: 'member',
+							},
+							{
+								role: 'archived_member',
+							},
+							{
+								role: 'super_admin',
+							},
+							{
+								role: 'owner',
+							},
+						];
+					}`),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"Role": {
+					Constraints: []*input.Constraint{
+						{
+							Name:    "roles_role_pkey",
+							Type:    input.PrimaryKey,
+							Columns: []string{"role"},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	runTestCases(t, testCases)
@@ -517,7 +563,7 @@ func testConstraints(t *testing.T, code map[string]string, expectedMap map[strin
 	absPath, err := filepath.Abs(".")
 	require.NoError(t, err)
 
-	schema := testhelper.ParseSchemaForTest(
+	s := testhelper.ParseSchemaForTest(
 		t,
 		absPath,
 		code,
@@ -525,14 +571,20 @@ func testConstraints(t *testing.T, code map[string]string, expectedMap map[strin
 	)
 
 	for k, expNodeData := range expectedMap {
-		info := schema.Nodes[k+"Config"]
-		require.NotNil(t, info, "expected %s to exist in schema", k)
-		nodeData := info.NodeData
+		info := s.Nodes[k+"Config"]
+		var nodeData *schema.NodeData
+		if info != nil {
+			nodeData = info.NodeData
+		} else {
+			enumInfo := s.Enums[k]
+			require.NotNil(t, enumInfo, "expected %s to exist in schema", k)
+			nodeData = enumInfo.NodeData
+		}
 
 		expConstraints := expNodeData.Constraints
 		constraints := nodeData.Constraints
 
-		assert.Len(t, constraints, len(expConstraints))
+		require.Len(t, constraints, len(expConstraints))
 
 		for i, expConstraint := range expConstraints {
 			constraint := constraints[i]
