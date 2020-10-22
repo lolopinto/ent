@@ -413,6 +413,13 @@ func TestConstraints(t *testing.T) {
 				},
 			},
 		},
+	}
+
+	runTestCases(t, testCases)
+}
+
+func TestEnumConstraints(t *testing.T) {
+	testCases := map[string]testCase{
 		"enum table constraint": {
 			code: map[string]string{
 				"role.ts": testhelper.GetCodeWithSchema(`
@@ -456,6 +463,48 @@ func TestConstraints(t *testing.T) {
 							Columns: []string{"role"},
 						},
 					},
+				},
+			},
+		},
+		// enum type should not create constraints
+		"enum-type constraint": {
+			code: map[string]string{
+				"request.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, EnumType, StringType, BaseEntSchema} from "{schema}";
+
+				export default class Request extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({name: "info"}),
+						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus", createEnumType: true}),
+					]
+				}
+				`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"Request": {
+					Constraints: constraintsWithNodeConstraints("requests"),
+				},
+			},
+		},
+		// enum values should not create constraints
+		"enum values constraint": {
+			code: map[string]string{
+				"request.ts": testhelper.GetCodeWithSchema(
+					`import {Schema, Field, EnumType, StringType, BaseEntSchema} from "{schema}";
+
+				export default class Request extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({name: "info"}),
+						EnumType({name: "Status", values: ["OPEN", "PENDING", "CLOSED"], tsType: "RequestStatus", graphQLType: "RequestStatus"}),
+					]
+				}
+				`,
+				),
+			},
+			expectedMap: map[string]*schema.NodeData{
+				"Request": {
+					Constraints: constraintsWithNodeConstraints("requests"),
 				},
 			},
 		},
