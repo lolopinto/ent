@@ -13,11 +13,11 @@ import {
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
 import { GraphQLTime } from "@lolopinto/ent/graphql";
+import { Event } from "src/ent/";
 import { EventType } from "src/graphql/resolvers/generated/event_type";
 import EditEventAction, {
   EventEditInput,
 } from "src/ent/event/actions/edit_event_action";
-import Event from "src/ent/event";
 
 interface customEventEditInput extends EventEditInput {
   eventID: ID;

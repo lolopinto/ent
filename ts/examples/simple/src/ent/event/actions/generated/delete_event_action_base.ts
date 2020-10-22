@@ -2,7 +2,7 @@
 
 import { Action, WriteOperation, Changeset } from "@lolopinto/ent/action";
 import { Viewer, ID } from "@lolopinto/ent";
-import Event from "src/ent/event";
+import { Event } from "src/ent/";
 import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
 export class DeleteEventActionBase implements Action<Event> {

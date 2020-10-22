@@ -13,7 +13,7 @@ import {
 import { ID, RequestContext } from "@lolopinto/ent";
 import { GraphQLTime } from "@lolopinto/ent/graphql";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
-import Event from "src/ent/event";
+import { Event } from "src/ent/";
 
 interface EventQueryArgs {
   id: ID;

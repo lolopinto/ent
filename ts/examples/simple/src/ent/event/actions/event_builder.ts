@@ -12,8 +12,7 @@ import {
 } from "@lolopinto/ent/action";
 import schema from "src/schema/event";
 import { EdgeType, NodeType } from "src/ent/const";
-import Event from "src/ent/event";
-import User from "src/ent/user";
+import { Event, User } from "src/ent/";
 
 export interface EventInput {
   name?: string;
@@ -348,7 +347,7 @@ export class EventBuilder implements Builder<Event> {
     return result;
   }
 
-  private isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
+  isBuilder(node: ID | Ent | Builder<Ent>): node is Builder<Ent> {
     return (node as Builder<Ent>).placeholderID !== undefined;
   }
 }

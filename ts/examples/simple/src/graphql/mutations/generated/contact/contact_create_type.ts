@@ -11,11 +11,11 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
+import { Contact } from "src/ent/";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import CreateContactAction, {
   ContactCreateInput,
 } from "src/ent/contact/actions/create_contact_action";
-import Contact from "src/ent/contact";
 
 interface ContactCreateResponse {
   contact: Contact;

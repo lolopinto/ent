@@ -11,6 +11,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
@@ -123,10 +124,27 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 	sort.Slice(s.edgeType, func(i, j int) bool {
 		return s.edgeType[i].Name < s.edgeType[j].Name
 	})
-	if err := writeConstFile(s.nodeType, s.edgeType); err != nil {
-		return err
+	funcs := []func() error{
+		func() error {
+			return writeConstFile(s.nodeType, s.edgeType)
+		},
+		func() error {
+			return writeInternalEntFile(data.Schema, data.CodePath)
+		},
+		func() error {
+			return writeEntIndexFile()
+		},
+		func() error {
+			return writeLoadAnyFile(s.nodeType, data.CodePath)
+		},
 	}
-	return writeLoadAnyFile(s.nodeType, data.CodePath)
+
+	for _, fn := range funcs {
+		if err := fn(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeData) {
@@ -136,8 +154,6 @@ func (s *Step) addNodeType(name, value, comment string, nodeData *schema.NodeDat
 		Name:    name,
 		Value:   value,
 		Comment: comment,
-		// needed for loadAny.ts
-		PackagePath: getImportPathForModelFile(nodeData),
 	})
 }
 
@@ -197,7 +213,6 @@ type nodeTemplateCodePath struct {
 	Imports  []schema.ImportPath
 }
 
-// copied to internal/schema/node_data.go
 func getFilePathForBaseModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/generated/%s_base.ts", nodeData.PackageName)
 }
@@ -210,12 +225,17 @@ func getFilePathForEnumFile(info *schema.EnumInfo) string {
 	return fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name))
 }
 
+// TODO these import path ones should go...
 func getImportPathForEnumFile(info *schema.EnumInfo) string {
 	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(info.Enum.Name))
 }
 
 func getImportPathForModelFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/%s", nodeData.PackageName)
+}
+
+func getImportPathForBaseModelFile(packageName string) string {
+	return fmt.Sprintf("src/ent/generated/%s_base", packageName)
 }
 
 func getFilePathForConstFile() string {
@@ -362,6 +382,39 @@ func writeLoadAnyFile(nodeData []enum.Data, codePathInfo *codegen.CodePath) erro
 	})
 }
 
+func writeInternalEntFile(s *schema.Schema, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data: struct {
+			Schema  *schema.Schema
+			Package *codegen.ImportPackage
+		}{
+			s,
+			codePathInfo.GetImportPackage(),
+		},
+		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
+		TemplateName:      "internal.tmpl",
+		PathToFile:        codepath.GetFilePathForInternalFile(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           getInternalEntFuncs(imps),
+	})
+}
+
+func writeEntIndexFile() error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		AbsPathToTemplate: util.GetAbsolutePath("index.tmpl"),
+		TemplateName:      "index.tmpl",
+		PathToFile:        codepath.GetFilePathForEntIndexFile(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
 func writeBuilderFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
@@ -386,5 +439,14 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["edgeInfos"] = action.GetEdgesFromEdges
 
+	return m
+}
+
+func getInternalEntFuncs(imps *tsimport.Imports) template.FuncMap {
+	m := imps.FuncMap()
+
+	m["pathBaseModelFile"] = getImportPathForBaseModelFile
+	m["pathEntFile"] = getImportPathForModelFile
+	m["pathEnumFile"] = getImportPathForEnumFile
 	return m
 }

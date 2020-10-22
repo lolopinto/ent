@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
-import User from "src/ent/user";
+import { User } from "src/ent/";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 
 interface customUserDeleteInput {

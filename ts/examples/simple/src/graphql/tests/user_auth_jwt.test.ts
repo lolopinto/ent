@@ -10,7 +10,7 @@ import CreateUserAction, {
 } from "src/ent/user/actions/create_user_action";
 import { randomEmail, random } from "src/util/random";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
-import User from "src/ent/user";
+import { User } from "src/ent/";
 import passport from "passport";
 import { Express } from "express";
 import { registerAuthHandler } from "@lolopinto/ent/auth";

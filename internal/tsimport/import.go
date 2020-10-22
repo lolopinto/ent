@@ -13,6 +13,7 @@ type Imports struct {
 	pathMap     map[string]*importInfo
 	usedExports map[string]bool
 	imports     []*importInfo
+	exports     []*exportInfo
 }
 
 // NewImports is the constructor for Imports
@@ -83,6 +84,28 @@ func (imps *Imports) reserve(path string, defaultExport string, importAll bool, 
 	return "", nil
 }
 
+func (imps *Imports) ExportAll(path string) (string, error) {
+	return imps.export(path, "")
+}
+
+func (imps *Imports) ExportAllAs(path, as string) (string, error) {
+	return imps.export(path, as)
+}
+
+func (imps *Imports) Export(path string, exports ...string) (string, error) {
+	return imps.export(path, "", exports...)
+}
+
+func (imps *Imports) export(path string, as string, exports ...string) (string, error) {
+	// for now just keep it simple and don't deal with duplicate paths
+	imps.exports = append(imps.exports, &exportInfo{
+		path:    path,
+		as:      as,
+		exports: exports,
+	})
+	return "", nil
+}
+
 // FuncMap returns the FuncMap to be passed to a template
 func (imps *Imports) FuncMap() template.FuncMap {
 	return template.FuncMap{
@@ -90,6 +113,9 @@ func (imps *Imports) FuncMap() template.FuncMap {
 		"reserveDefaultImport": imps.ReserveDefault,
 		"reserveAllImport":     imps.ReserveAll,
 		"useImport":            imps.Use,
+		"exportAll":            imps.ExportAll,
+		"exportAllAs":          imps.ExportAllAs,
+		"export":               imps.Export,
 	}
 }
 
@@ -106,6 +132,18 @@ func (imps *Imports) Use(export string) (string, error) {
 // Returns a list of imported lines
 func (imps *Imports) String() (string, error) {
 	var sb strings.Builder
+
+	for _, exp := range imps.exports {
+		str := exp.String()
+		if str == "" {
+			continue
+		}
+		_, err := sb.WriteString(str)
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString("\n")
+	}
 	for _, imp := range imps.imports {
 
 		str, err := imp.String(imps.usedExports)
@@ -184,4 +222,25 @@ func (imp *importInfo) String(usedExportsMap map[string]bool) (string, error) {
 		"import %s from %s;",
 		strings.Join(imports, ", "), strconv.Quote(imp.path),
 	), nil
+}
+
+type exportInfo struct {
+	path    string
+	as      string   // as "" means exportAll
+	exports []string // empty means ecportAll
+}
+
+func (exp *exportInfo) String() string {
+	if exp.as == "" && len(exp.exports) == 0 {
+		return fmt.Sprintf("export * from %s;", strconv.Quote(exp.path))
+	}
+	if exp.as != "" {
+		return fmt.Sprintf("export * as %s from %s;", exp.as, strconv.Quote(exp.path))
+	}
+
+	return fmt.Sprintf(
+		"export {%s} from %s;",
+		strings.Join(exp.exports, ", "),
+		strconv.Quote(exp.path),
+	)
 }

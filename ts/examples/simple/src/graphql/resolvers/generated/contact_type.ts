@@ -11,7 +11,7 @@ import {
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
 import { UserType } from "src/graphql/resolvers/generated/user_type";
-import Contact from "src/ent/contact";
+import { Contact } from "src/ent/";
 
 interface ContactQueryArgs {
   id: ID;

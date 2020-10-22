@@ -1,0 +1,15 @@
+{{exportAll "src/ent/const"}}
+
+{{ range .Schema.Nodes}}
+  {{exportAll (pathBaseModelFile .NodeData.PackageName) }}
+{{ end -}}
+
+{{ range .Schema.Nodes}}
+  {{exportAll (pathEntFile .NodeData) }}
+{{ end -}}
+
+{{ range .Schema.Enums }}
+  {{ if .LookupTableEnum}}
+    {{exportAll (pathEnumFile .)}}
+  {{ end -}}
+{{ end -}}

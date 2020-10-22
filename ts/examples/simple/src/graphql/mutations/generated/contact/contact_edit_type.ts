@@ -12,11 +12,11 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
+import { Contact } from "src/ent/";
 import { ContactType } from "src/graphql/resolvers/generated/contact_type";
 import EditContactAction, {
   ContactEditInput,
 } from "src/ent/contact/actions/edit_contact_action";
-import Contact from "src/ent/contact";
 
 interface customContactEditInput extends ContactEditInput {
   contactID: ID;

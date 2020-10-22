@@ -1,4 +1,4 @@
-import { UserBase } from "./generated/user_base";
+import { UserBase } from "src/ent/internal";
 import {
   PrivacyPolicy,
   AllowIfViewerRule,
@@ -7,14 +7,13 @@ import {
   Data,
 } from "@lolopinto/ent";
 import { AllowIfOmniRule } from "./../privacy/omni";
-import { EdgeType } from "./const";
 import { GraphQLString } from "graphql";
-import Contact from "src/ent/contact";
+import { Contact, EdgeType } from "src/ent/internal";
 import { gqlField } from "@lolopinto/ent/graphql";
 import * as bcrypt from "bcryptjs";
 
 // we're only writing this once except with --force and packageName provided
-export default class User extends UserBase {
+export class User extends UserBase {
   privacyPolicy: PrivacyPolicy = {
     rules: [
       AllowIfOmniRule,

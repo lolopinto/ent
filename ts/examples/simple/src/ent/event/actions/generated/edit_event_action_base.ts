@@ -7,8 +7,7 @@ import {
   Changeset,
 } from "@lolopinto/ent/action";
 import { Viewer, ID } from "@lolopinto/ent";
-import Event from "src/ent/event";
-import User from "src/ent/user";
+import { Event, User } from "src/ent/";
 import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
 export interface EventEditInput {

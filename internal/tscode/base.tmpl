@@ -1,12 +1,12 @@
 {{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "PrivacyPolicy" "query"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
+{{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 
 {{with .NodeData -}}
 {{/* TODO break this up to make it easier to use? */}}
 {{/* these are dependent on having the right tsconfig.json file... */}}
 {{ $schemaPath := printf "src/schema/%s" .PackageName }}
 {{ reserveDefaultImport $schemaPath "schema"}}
-{{ reserveImport "src/ent/const" "EdgeType" "NodeType" }}
 
 {{ range .GetImportsForBaseFile -}} 
   {{ if .DefaultImport -}}

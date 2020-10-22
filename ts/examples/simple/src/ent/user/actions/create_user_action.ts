@@ -4,8 +4,7 @@ import {
 } from "src/ent/user/actions/generated/create_user_action_base";
 import { UserBuilder } from "./user_builder";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
-import Contact from "src/ent/contact";
-import User from "src/ent/user";
+import { Contact, User } from "src/ent/";
 
 import { Changeset } from "@lolopinto/ent/action";
 import { EntCreationObserver } from "@lolopinto/ent/testutils/fake_log";

@@ -15,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/file"
@@ -686,7 +687,7 @@ func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 			typ = fmt.Sprintf("%sType", typ)
 			break
 		case enttype.EntGraphQL:
-			importPath = codegen.GraphQLPackage
+			importPath = codepath.GraphQLPackage
 			break
 		default:
 			panic(fmt.Sprintf("unsupported Import Type %v", imp.ImportType))
@@ -729,8 +730,8 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 			Type:       fmt.Sprintf("%sType", node.Node),
 		})
 	}
-	result.DefaultImports = append(result.DefaultImports, &fileImport{
-		ImportPath: fmt.Sprintf("src/ent/%s", nodeData.PackageName),
+	result.Imports = append(result.Imports, &fileImport{
+		ImportPath: codepath.GetExternalImportPath(),
 		Type:       nodeData.Node,
 	})
 
@@ -909,15 +910,15 @@ func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionP
 		GQLType:  "GraphQLObjectType",
 		DefaultImports: []*fileImport{
 			{
-				ImportPath: fmt.Sprintf("src/ent/%s", nodeData.PackageName),
-				Type:       nodeData.Node,
-			},
-			{
 				ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName())),
 				Type:       a.GetActionName(),
 			},
 		},
 		Imports: []*fileImport{
+			{
+				ImportPath: codepath.GetExternalImportPath(),
+				Type:       nodeData.Node,
+			},
 			{
 				ImportPath: getImportPathForNode(nodeData),
 				Type:       fmt.Sprintf("%sType", nodeData.Node),
