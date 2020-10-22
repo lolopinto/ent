@@ -149,7 +149,9 @@ func (m NodeMapInfo) processDepgrah(s *Schema, edgeData *assocEdgeData) (*assocE
 	// TODO refactor all of these to not be on NodeMapInfo but be on Schema
 	// this no longer works anymore
 	for _, enumInfo := range s.Enums {
-		m.processConstraints(s, enumInfo.NodeData)
+		if enumInfo.LookupTableEnum() {
+			m.processConstraints(s, enumInfo.NodeData)
+		}
 	}
 
 	return edgeData, nil
@@ -504,6 +506,7 @@ func (m NodeMapInfo) processConstraints(s *Schema, nodeData *NodeData) {
 			if len(constraint.Columns) != len(constraint.ForeignKey.Columns) {
 				panic("Foreign Key column length should be equal to the length of source columns")
 			}
+			break
 		case input.Check:
 			if constraint.Condition == "" {
 				panic("Condition is required when constraint type is Check")
