@@ -15,6 +15,7 @@ import {
 import { Schema } from "../schema";
 import { QueryRecorder } from "./db_mock";
 import pluralize from "pluralize";
+import { snakeCase } from "snake-case";
 
 export class User implements Ent {
   id: ID;
@@ -107,6 +108,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     if (this.operation === WriteOperation.Insert) {
       for (const [key, value] of fields) {
         if (key === "id" && value === "{id}") {
+          // hmm is this still needed?
           fields[key] = QueryRecorder.newID();
         }
       }
@@ -117,7 +119,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     this.orchestrator = new Orchestrator({
       viewer: this.viewer,
       operation: operation,
-      tableName: pluralize(this.ent.name).toLowerCase(),
+      tableName: pluralize(snakeCase(this.ent.name)).toLowerCase(),
       ent: this.ent,
       builder: this,
       action: action,

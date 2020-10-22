@@ -149,6 +149,11 @@ export class QueryRecorder {
     return QueryRecorder.data;
   }
 
+  static filterData(tableName: string, filterfn: (row: Data) => boolean) {
+    const rows = QueryRecorder.data.get(tableName) || [];
+    return rows.filter(filterfn);
+  }
+
   static clear() {
     QueryRecorder.queries = [];
     QueryRecorder.ids = [];
