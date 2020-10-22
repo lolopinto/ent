@@ -493,7 +493,6 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 }
 
 func (m NodeMapInfo) processConstraints(s *Schema, nodeData *NodeData) {
-
 	// TODO errors instead of panicing
 
 	// verify constraints are correct
@@ -524,38 +523,55 @@ func (m NodeMapInfo) processConstraints(s *Schema, nodeData *NodeData) {
 	tableName := nodeData.TableName
 
 	var constraints []*input.Constraint
-	for _, field := range nodeData.FieldInfo.Fields {
-		cols := []string{field.FieldName}
+	for _, f := range nodeData.FieldInfo.Fields {
+		cols := []string{f.FieldName}
 
-		if field.SingleFieldPrimaryKey() {
+		if f.SingleFieldPrimaryKey() {
 			constraints = append(constraints, &input.Constraint{
-				Name:    GetPrimaryKeyName(tableName, field.GetDbColName()),
+				Name:    GetPrimaryKeyName(tableName, f.GetDbColName()),
 				Type:    input.PrimaryKey,
 				Columns: cols,
 			})
 		}
 
-		if field.Unique() {
+		if f.Unique() {
 			constraints = append(constraints, &input.Constraint{
-				Name:    GetUniqueKeyName(tableName, field.GetDbColName()),
+				Name:    GetUniqueKeyName(tableName, f.GetDbColName()),
 				Type:    input.Unique,
 				Columns: cols,
 			})
 		}
 
-		fkey := field.ForeignKeyInfo()
+		fkey := f.ForeignKeyInfo()
+		var enumInfo *EnumInfo
 		if fkey != nil {
 			foreignInfo := m[fkey.Config]
 			if foreignInfo == nil {
-				panic(fmt.Errorf("invalid foreign key table %s", fkey.Config))
+				match := structNameRegex.FindStringSubmatch(fkey.Config)
+				if len(match) != 2 {
+					panic("invalid config name")
+				}
+				var ok bool
+				enumInfo, ok = s.Enums[match[1]]
+				if !ok {
+					panic(fmt.Errorf("invalid foreign key table %s", fkey.Config))
+				}
+				if !enumInfo.LookupTableEnum() {
+					panic(fmt.Sprintf("trying to set a foreign key to non-enum lookup table %s", match[1]))
+				}
 			}
-			foreignNodeData := foreignInfo.NodeData
+			var foreignNodeData *NodeData
+			if enumInfo != nil {
+				foreignNodeData = enumInfo.NodeData
+			} else {
+				foreignNodeData = foreignInfo.NodeData
+			}
 			foreignField := foreignNodeData.FieldInfo.GetFieldByName(fkey.Field)
 			if foreignField == nil {
 				panic(fmt.Errorf("invalid foreign key field %s", fkey.Field))
 			}
 			constraints = append(constraints, &input.Constraint{
-				Name:    GetFKeyName(nodeData.TableName, field.GetDbColName()),
+				Name:    GetFKeyName(nodeData.TableName, f.GetDbColName()),
 				Type:    input.ForeignKey,
 				Columns: cols,
 				ForeignKey: &input.ForeignKeyInfo{
