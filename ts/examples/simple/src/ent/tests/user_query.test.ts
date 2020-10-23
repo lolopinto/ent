@@ -1,23 +1,11 @@
-import { User, Contact, Event } from "src/ent/";
+import { User } from "src/ent/";
 
-import {
-  Viewer,
-  AssocEdge,
-  AssocEdgeInput,
-  IDViewer,
-  LoggedOutViewer,
-  DB,
-} from "@lolopinto/ent";
+import { IDViewer, LoggedOutViewer, DB, ID } from "@lolopinto/ent";
 
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
-import EditUserAction from "src/ent/user/actions/edit_user_action";
-import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
-import CreateContactAction from "src/ent/contact/actions/create_contact_action";
-import { FakeLogger } from "@lolopinto/ent/testutils/fake_log";
-import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
 import { randomEmail } from "src/util/random";
 import {
   UserToFriendsQuery,
@@ -93,4 +81,50 @@ test("friends query", async () => {
   expect(count).toBe(2);
   // sam more recent so always gonna come back before dany
   expect(ids).toStrictEqual([sam.id, dany.id]);
+});
+
+test("chained queries", async () => {
+  let dany = await create({
+    firstName: "Daenerys",
+    lastName: "Targaryen",
+    emailAddress: randomEmail(),
+  });
+  let sam = await create({
+    firstName: "Samwell",
+    lastName: "Tarly",
+    emailAddress: randomEmail(),
+  });
+  let action = CreateUserAction.create(loggedOutViewer, {
+    firstName: "Jon",
+    lastName: "Snow",
+    emailAddress: randomEmail(),
+  });
+  action.builder.addFriend(dany).addFriendID(sam.id);
+  const jon = await action.saveX();
+
+  const [event, event2] = await Promise.all([
+    CreateEventAction.create(loggedOutViewer, {
+      name: "fun event",
+      creatorID: sam.id,
+      startTime: new Date(),
+      location: "location",
+    }).saveX(),
+    CreateEventAction.create(loggedOutViewer, {
+      name: "fun event 2",
+      creatorID: dany.id,
+      startTime: new Date(),
+      location: "location 2",
+    }).saveX(),
+  ]);
+
+  const vc = new IDViewer(jon.id);
+  const chainedIDs = await UserToFriendsQuery.query(vc, jon.id)
+    .queryUserToHostedEvents()
+    .queryIDs();
+
+  const expectedResult = new Map<ID, ID[]>();
+  expectedResult.set(sam.id, [event.id]);
+  expectedResult.set(dany.id, [event2.id]);
+
+  expect(chainedIDs).toStrictEqual(expectedResult);
 });
