@@ -95,6 +95,30 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 				}(idx)
 			}
 			actionsWg.Wait()
+
+			// write base edge file for all the edges and then eventually one per edge...
+			if len(nodeData.EdgeInfo.Associations) == 0 {
+				return
+			}
+
+			if err := writeBaseQueryFile(nodeData, data.CodePath); err != nil {
+				serr.Append(err)
+			}
+
+			// TODO write base edge file...
+			// var edgesWg sync.WaitGroup
+			// edgesWg.Add(len(nodeData.EdgeInfo.Associations))
+
+			// for idx := range nodeData.EdgeInfo.Associations {
+			// 	go func(idx int) {
+			// 		defer edgesWg.Done()
+
+			// 		edge := nodeData.EdgeInfo.Associations[idx]
+
+			// 		spew.Dump(edge.EdgeConst)
+			// 	}(idx)
+			// }
+			// edgesWg.Wait()
 		}(key)
 	}
 
@@ -225,6 +249,10 @@ func getFilePathForEnumFile(info *schema.EnumInfo) string {
 	return fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name))
 }
 
+func getFilePathForBaseQueryFile(nodeData *schema.NodeData) string {
+	return fmt.Sprintf("src/ent/generated/%s_query_base.ts", nodeData.PackageName)
+}
+
 // TODO these import path ones should go...
 func getImportPathForEnumFile(info *schema.EnumInfo) string {
 	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(info.Enum.Name))
@@ -319,6 +347,24 @@ func writeEnumFile(enumInfo *schema.EnumInfo, codePathInfo *codegen.CodePath) er
 		AbsPathToTemplate: util.GetAbsolutePath("../schema/enum/enum.tmpl"),
 		TemplateName:      "enum.tmpl",
 		PathToFile:        getFilePathForEnumFile(enumInfo),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
+func writeBaseQueryFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data: nodeTemplateCodePath{
+			NodeData: nodeData,
+			Package:  codePathInfo.GetImportPackage(),
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ent_query_base.tmpl"),
+		TemplateName:      "ent_query_base.tmpl",
+		PathToFile:        getFilePathForBaseQueryFile(nodeData),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
