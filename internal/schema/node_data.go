@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 
@@ -256,7 +257,7 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 	return ret
 }
 
-func (nodeData *NodeData) GetImportsForQueryBaseFile() []ImportPath {
+func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) []ImportPath {
 	var ret []ImportPath
 
 	for _, unique := range nodeData.getUniqueNodes(true) {
@@ -265,6 +266,26 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile() []ImportPath {
 			PackagePath: codepath.GetInternalImportPath(),
 		})
 	}
+
+	// for each edge, find the node, and then find the downstream edges for those
+	for _, edge := range nodeData.EdgeInfo.Associations {
+		// edge is local, nothing to require
+		if edge.NodeInfo.Node == nodeData.NodeInfo.Node {
+			continue
+		}
+		node, err := s.GetNodeDataForNode(edge.NodeInfo.Node)
+		if err != nil {
+			panic(err)
+		}
+		// need a flag of if imported or something
+		for _, edge2 := range node.EdgeInfo.Associations {
+			ret = append(ret, ImportPath{
+				Import:      fmt.Sprintf("%sQuery", edge2.TsEdgeConst()),
+				PackagePath: codepath.GetInternalImportPath(),
+			})
+		}
+	}
+
 	return ret
 }
 

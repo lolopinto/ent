@@ -1,9 +1,12 @@
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery"}}
 
+{{$schema := .Schema}}
+{{$nodeData := .NodeData -}}
+
 {{with .NodeData -}}
 
-  {{ range .GetImportsForQueryBaseFile -}} 
+  {{ range .GetImportsForQueryBaseFile $schema }} 
     {{ if .DefaultImport -}}
       {{ reserveDefaultImport .PackagePath .Import}}
     {{ else -}}
@@ -25,6 +28,20 @@
     ): {{$name}} {
       return new {{$name}}(viewer, src);
     }
+
+    {{$fNodeData := $schema.GetNodeDataForNode .NodeInfo.Node}}
+    {{ range $fEdge := $fNodeData.EdgeInfo.Associations -}}
+      {{$queryName := ""}}
+      {{/* local, no import necessary */ -}}
+      {{ if eq $edge.NodeInfo.Node $nodeData.NodeInfo.Node }}
+        {{$queryName = printf "%sQuery" $fEdge.TsEdgeConst -}}
+      {{ else -}}
+        {{$queryName = useImport (printf "%sQuery" $fEdge.TsEdgeConst) -}}
+      {{ end -}}
+      query{{$fEdge.CamelCaseEdgeName}}(): {{$queryName}} {
+        return {{$queryName}}.query(this.viewer, this);
+      }
+    {{ end -}}
   }
   {{end}}
 {{end -}}

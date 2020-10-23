@@ -101,11 +101,10 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 				return
 			}
 
-			if err := writeBaseQueryFile(nodeData, data.CodePath); err != nil {
+			if err := writeBaseQueryFile(data.Schema, nodeData, data.CodePath); err != nil {
 				serr.Append(err)
 			}
 
-			// TODO write base edge file...
 			// var edgesWg sync.WaitGroup
 			// edgesWg.Add(len(nodeData.EdgeInfo.Associations))
 
@@ -357,11 +356,16 @@ func writeEnumFile(enumInfo *schema.EnumInfo, codePathInfo *codegen.CodePath) er
 	})
 }
 
-func writeBaseQueryFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+func writeBaseQueryFile(s *schema.Schema, nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
-		Data: nodeTemplateCodePath{
+		Data: struct {
+			NodeData *schema.NodeData
+			Schema   *schema.Schema
+			Package  *codegen.ImportPackage
+		}{
+			Schema:   s,
 			NodeData: nodeData,
 			Package:  codePathInfo.GetImportPackage(),
 		},
