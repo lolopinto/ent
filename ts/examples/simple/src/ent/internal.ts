@@ -9,3 +9,5 @@ export * from "src/ent/address";
 export * from "src/ent/contact";
 export * from "src/ent/event";
 export * from "src/ent/user";
+export * from "src/ent/generated/event_query_base";
+export * from "src/ent/generated/user_query_base";

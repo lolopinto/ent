@@ -266,6 +266,10 @@ func getImportPathForBaseModelFile(packageName string) string {
 	return fmt.Sprintf("src/ent/generated/%s_base", packageName)
 }
 
+func getImportPathForBaseQueryFile(packageName string) string {
+	return fmt.Sprintf("src/ent/generated/%s_query_base", packageName)
+}
+
 func getFilePathForConstFile() string {
 	return fmt.Sprintf("src/ent/const.ts")
 }
@@ -494,5 +498,6 @@ func getInternalEntFuncs(imps *tsimport.Imports) template.FuncMap {
 	m["pathBaseModelFile"] = getImportPathForBaseModelFile
 	m["pathEntFile"] = getImportPathForModelFile
 	m["pathEnumFile"] = getImportPathForEnumFile
+	m["pathBaseQueryFile"] = getImportPathForBaseQueryFile
 	return m
 }
