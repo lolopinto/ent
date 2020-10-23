@@ -256,6 +256,18 @@ func (nodeData *NodeData) GetImportPathsForDependencies() []ImportPath {
 	return ret
 }
 
+func (nodeData *NodeData) GetImportsForQueryBaseFile() []ImportPath {
+	var ret []ImportPath
+
+	for _, unique := range nodeData.getUniqueNodes(true) {
+		ret = append(ret, ImportPath{
+			Import:      unique.Node,
+			PackagePath: codepath.GetInternalImportPath(),
+		})
+	}
+	return ret
+}
+
 // don't need this distinction at the moment but why not
 func (nodeData *NodeData) getUniqueNodes(forceSelf bool) []uniqueNodeInfo {
 	var ret []uniqueNodeInfo
