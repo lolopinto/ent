@@ -58,6 +58,12 @@ export const UserType = new GraphQLObjectType({
         return user.loadSelfContact();
       },
     },
+    userToHostedEvents: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      resolve: (user: User) => {
+        return user.loadUserToHostedEvents();
+      },
+    },
     invitedEvents: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
       resolve: (user: User) => {

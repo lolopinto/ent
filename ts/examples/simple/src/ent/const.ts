@@ -36,4 +36,6 @@ export enum EdgeType {
   UserToMaybeEvents = "8d5b1dee-ce65-452e-9f8d-78eca1993800",
   // UserToSelfContact is the edgeType for the user to selfcontact edge.
   UserToSelfContact = "d504201d-cf3f-4eef-b6a0-0b46a7ae186b",
+  // UserToUserToHostedEvents is the edgeType for the user to usertohostedevents edge.
+  UserToUserToHostedEvents = "e5555185-91bf-4322-8130-d0a00eb605b7",
 }

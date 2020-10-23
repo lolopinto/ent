@@ -218,6 +218,56 @@ export class UserBuilder implements Builder<User> {
     return this;
   }
 
+  addUserToHostedEvent(...ids: ID[]): UserBuilder;
+  addUserToHostedEvent(...nodes: Event[]): UserBuilder;
+  addUserToHostedEvent(...nodes: Builder<Event>[]): UserBuilder;
+  addUserToHostedEvent(
+    ...nodes: ID[] | Event[] | Builder<Event>[]
+  ): UserBuilder {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.addUserToHostedEventID(node);
+      } else if (typeof node === "object") {
+        this.addUserToHostedEventID(node.id);
+      } else {
+        this.addUserToHostedEventID(node);
+      }
+    }
+    return this;
+  }
+
+  addUserToHostedEventID(
+    id: ID | Builder<Event>,
+    options?: AssocEdgeInputOptions,
+  ): UserBuilder {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.UserToUserToHostedEvents,
+      NodeType.Event,
+      options,
+    );
+    return this;
+  }
+
+  removeUserToHostedEvent(...ids: ID[]): UserBuilder;
+  removeUserToHostedEvent(...nodes: Event[]): UserBuilder;
+  removeUserToHostedEvent(...nodes: ID[] | Event[]): UserBuilder {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(
+          node.id,
+          EdgeType.UserToUserToHostedEvents,
+        );
+      } else {
+        this.orchestrator.removeOutboundEdge(
+          node,
+          EdgeType.UserToUserToHostedEvents,
+        );
+      }
+    }
+    return this;
+  }
+
   addInvitedEvent(...ids: ID[]): UserBuilder;
   addInvitedEvent(...nodes: Event[]): UserBuilder;
   addInvitedEvent(...nodes: Builder<Event>[]): UserBuilder;

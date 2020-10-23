@@ -7,6 +7,7 @@ import {
   UserToCreatedEventsQuery,
   UserToFriendsQuery,
   UserToSelfContactQuery,
+  UserToUserToHostedEventsQuery,
   UserToInvitedEventsQuery,
   UserToEventsAttendingQuery,
   UserToDeclinedEventsQuery,
@@ -33,6 +34,10 @@ export class EventToHostsQuery extends BaseEdgeQuery<Event, User> {
 
   querySelfContact(): UserToSelfContactQuery {
     return UserToSelfContactQuery.query(this.viewer, this);
+  }
+
+  queryUserToHostedEvents(): UserToUserToHostedEventsQuery {
+    return UserToUserToHostedEventsQuery.query(this.viewer, this);
   }
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
@@ -76,6 +81,10 @@ export class EventToInvitedQuery extends BaseEdgeQuery<Event, User> {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
 
+  queryUserToHostedEvents(): UserToUserToHostedEventsQuery {
+    return UserToUserToHostedEventsQuery.query(this.viewer, this);
+  }
+
   queryInvitedEvents(): UserToInvitedEventsQuery {
     return UserToInvitedEventsQuery.query(this.viewer, this);
   }
@@ -115,6 +124,10 @@ export class EventToAttendingQuery extends BaseEdgeQuery<Event, User> {
 
   querySelfContact(): UserToSelfContactQuery {
     return UserToSelfContactQuery.query(this.viewer, this);
+  }
+
+  queryUserToHostedEvents(): UserToUserToHostedEventsQuery {
+    return UserToUserToHostedEventsQuery.query(this.viewer, this);
   }
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
@@ -158,6 +171,10 @@ export class EventToDeclinedQuery extends BaseEdgeQuery<Event, User> {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
 
+  queryUserToHostedEvents(): UserToUserToHostedEventsQuery {
+    return UserToUserToHostedEventsQuery.query(this.viewer, this);
+  }
+
   queryInvitedEvents(): UserToInvitedEventsQuery {
     return UserToInvitedEventsQuery.query(this.viewer, this);
   }
@@ -194,6 +211,10 @@ export class EventToMaybeQuery extends BaseEdgeQuery<Event, User> {
 
   querySelfContact(): UserToSelfContactQuery {
     return UserToSelfContactQuery.query(this.viewer, this);
+  }
+
+  queryUserToHostedEvents(): UserToUserToHostedEventsQuery {
+    return UserToUserToHostedEventsQuery.query(this.viewer, this);
   }
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
