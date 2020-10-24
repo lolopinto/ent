@@ -269,10 +269,6 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) []ImportPath {
 
 	// for each edge, find the node, and then find the downstream edges for those
 	for _, edge := range nodeData.EdgeInfo.Associations {
-		// edge is local, nothing to require
-		if edge.NodeInfo.Node == nodeData.NodeInfo.Node {
-			continue
-		}
 		node, err := s.GetNodeDataForNode(edge.NodeInfo.Node)
 		if err != nil {
 			panic(err)

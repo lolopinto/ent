@@ -10,19 +10,28 @@ import {
   EventToAttendingQuery,
   EventToDeclinedQuery,
   EventToMaybeQuery,
+  UserToCreatedEventsQuery,
+  UserToFriendsQuery,
+  UserToSelfContactQuery,
+  UserToUserToHostedEventsQuery,
+  UserToInvitedEventsQuery,
+  UserToEventsAttendingQuery,
+  UserToDeclinedEventsQuery,
+  UserToMaybeEventsQuery,
 } from "src/ent/internal";
 import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
 
-export class UserToCreatedEventsQuery extends BaseEdgeQuery<User, Event> {
+export class UserToCreatedEventsQueryBase extends BaseEdgeQuery<User, Event> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
     super(viewer, src, EdgeType.UserToCreatedEvents, Event.loaderOptions());
   }
 
-  static query(
+  static query<T extends UserToCreatedEventsQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<User>,
-  ): UserToCreatedEventsQuery {
-    return new UserToCreatedEventsQuery(viewer, src);
+  ): T {
+    return new this(viewer, src);
   }
 
   queryHosts(): EventToHostsQuery {
@@ -46,13 +55,17 @@ export class UserToCreatedEventsQuery extends BaseEdgeQuery<User, Event> {
   }
 }
 
-export class UserToFriendsQuery extends BaseEdgeQuery<User, User> {
+export class UserToFriendsQueryBase extends BaseEdgeQuery<User, User> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
     super(viewer, src, EdgeType.UserToFriends, User.loaderOptions());
   }
 
-  static query(viewer: Viewer, src: EdgeQuerySource<User>): UserToFriendsQuery {
-    return new UserToFriendsQuery(viewer, src);
+  static query<T extends UserToFriendsQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
+    viewer: Viewer,
+    src: EdgeQuerySource<User>,
+  ): T {
+    return new this(viewer, src);
   }
 
   queryCreatedEvents(): UserToCreatedEventsQuery {
@@ -88,20 +101,24 @@ export class UserToFriendsQuery extends BaseEdgeQuery<User, User> {
   }
 }
 
-export class UserToSelfContactQuery extends BaseEdgeQuery<User, Contact> {
+export class UserToSelfContactQueryBase extends BaseEdgeQuery<User, Contact> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
     super(viewer, src, EdgeType.UserToSelfContact, Contact.loaderOptions());
   }
 
-  static query(
+  static query<T extends UserToSelfContactQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<User>,
-  ): UserToSelfContactQuery {
-    return new UserToSelfContactQuery(viewer, src);
+  ): T {
+    return new this(viewer, src);
   }
 }
 
-export class UserToUserToHostedEventsQuery extends BaseEdgeQuery<User, Event> {
+export class UserToUserToHostedEventsQueryBase extends BaseEdgeQuery<
+  User,
+  Event
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
     super(
       viewer,
@@ -111,11 +128,12 @@ export class UserToUserToHostedEventsQuery extends BaseEdgeQuery<User, Event> {
     );
   }
 
-  static query(
+  static query<T extends UserToUserToHostedEventsQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<User>,
-  ): UserToUserToHostedEventsQuery {
-    return new UserToUserToHostedEventsQuery(viewer, src);
+  ): T {
+    return new this(viewer, src);
   }
 
   queryHosts(): EventToHostsQuery {
@@ -139,16 +157,17 @@ export class UserToUserToHostedEventsQuery extends BaseEdgeQuery<User, Event> {
   }
 }
 
-export class UserToInvitedEventsQuery extends BaseEdgeQuery<User, Event> {
+export class UserToInvitedEventsQueryBase extends BaseEdgeQuery<User, Event> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
     super(viewer, src, EdgeType.UserToInvitedEvents, Event.loaderOptions());
   }
 
-  static query(
+  static query<T extends UserToInvitedEventsQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<User>,
-  ): UserToInvitedEventsQuery {
-    return new UserToInvitedEventsQuery(viewer, src);
+  ): T {
+    return new this(viewer, src);
   }
 
   queryHosts(): EventToHostsQuery {
@@ -172,16 +191,17 @@ export class UserToInvitedEventsQuery extends BaseEdgeQuery<User, Event> {
   }
 }
 
-export class UserToEventsAttendingQuery extends BaseEdgeQuery<User, Event> {
+export class UserToEventsAttendingQueryBase extends BaseEdgeQuery<User, Event> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
     super(viewer, src, EdgeType.UserToEventsAttending, Event.loaderOptions());
   }
 
-  static query(
+  static query<T extends UserToEventsAttendingQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<User>,
-  ): UserToEventsAttendingQuery {
-    return new UserToEventsAttendingQuery(viewer, src);
+  ): T {
+    return new this(viewer, src);
   }
 
   queryHosts(): EventToHostsQuery {
@@ -205,16 +225,17 @@ export class UserToEventsAttendingQuery extends BaseEdgeQuery<User, Event> {
   }
 }
 
-export class UserToDeclinedEventsQuery extends BaseEdgeQuery<User, Event> {
+export class UserToDeclinedEventsQueryBase extends BaseEdgeQuery<User, Event> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
     super(viewer, src, EdgeType.UserToDeclinedEvents, Event.loaderOptions());
   }
 
-  static query(
+  static query<T extends UserToDeclinedEventsQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<User>,
-  ): UserToDeclinedEventsQuery {
-    return new UserToDeclinedEventsQuery(viewer, src);
+  ): T {
+    return new this(viewer, src);
   }
 
   queryHosts(): EventToHostsQuery {
@@ -238,16 +259,17 @@ export class UserToDeclinedEventsQuery extends BaseEdgeQuery<User, Event> {
   }
 }
 
-export class UserToMaybeEventsQuery extends BaseEdgeQuery<User, Event> {
+export class UserToMaybeEventsQueryBase extends BaseEdgeQuery<User, Event> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
     super(viewer, src, EdgeType.UserToMaybeEvents, Event.loaderOptions());
   }
 
-  static query(
+  static query<T extends UserToMaybeEventsQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<User>) => T,
     viewer: Viewer,
     src: EdgeQuerySource<User>,
-  ): UserToMaybeEventsQuery {
-    return new UserToMaybeEventsQuery(viewer, src);
+  ): T {
+    return new this(viewer, src);
   }
 
   queryHosts(): EventToHostsQuery {

@@ -15,32 +15,30 @@
   {{ end}}
 
   {{$node := useImport .Node}}
+  {{$thisType := printf "new (viewer: Viewer, src: EdgeQuerySource<%s>) => T" $node}}
+
   {{range $edge := .EdgeInfo.Associations}}
-    {{$name := printf "%sQuery" $edge.TsEdgeConst -}}
+    {{$name := printf "%sQueryBase" $edge.TsEdgeConst -}}
   export class {{$name}} extends {{useImport "BaseEdgeQuery"}}<{{$node}}, {{useImport .NodeInfo.Node}}> {
     constructor(viewer: {{useImport "Viewer"}}, src: {{useImport "EdgeQuerySource"}}<{{$node}}>) {
       super(viewer, src, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}}, {{useImport .NodeInfo.Node}}.loaderOptions());
     }
 
-    static query(
+    static query<T extends {{$name}}>(
+      this: {{$thisType}},
       viewer: {{useImport "Viewer"}},
       src: {{useImport "EdgeQuerySource"}}<{{$node}}>,
-    ): {{$name}} {
-      return new {{$name}}(viewer, src);
+    ): T {
+      return new this(viewer, src);
     }
 
     {{$fNodeData := $schema.GetNodeDataForNode .NodeInfo.Node}}
     {{ range $fEdge := $fNodeData.EdgeInfo.Associations -}}
-      {{$queryName := ""}}
-      {{/* local, no import necessary */ -}}
-      {{ if eq $edge.NodeInfo.Node $nodeData.NodeInfo.Node }}
-        {{$queryName = printf "%sQuery" $fEdge.TsEdgeConst -}}
-      {{ else -}}
-        {{$queryName = useImport (printf "%sQuery" $fEdge.TsEdgeConst) -}}
-      {{ end -}}
+      {{$queryName := useImport (printf "%sQuery" $fEdge.TsEdgeConst) -}}
       query{{$fEdge.CamelCaseEdgeName}}(): {{$queryName}} {
         return {{$queryName}}.query(this.viewer, this);
       }
+      
     {{ end -}}
   }
   {{end}}

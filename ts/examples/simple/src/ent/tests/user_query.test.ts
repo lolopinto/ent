@@ -1,4 +1,4 @@
-import { User } from "src/ent/";
+import { User, UserToFriendsQuery, UserToSelfContactQuery } from "src/ent/";
 
 import { IDViewer, LoggedOutViewer, DB, ID } from "@lolopinto/ent";
 
@@ -7,10 +7,6 @@ import CreateUserAction, {
 } from "src/ent/user/actions/create_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
 import { randomEmail } from "src/util/random";
-import {
-  UserToFriendsQuery,
-  UserToSelfContactQuery,
-} from "../generated/user_query_base";
 
 const loggedOutViewer = new LoggedOutViewer();
 
