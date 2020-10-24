@@ -242,7 +242,7 @@ export class UserBuilder implements Builder<User> {
   ): UserBuilder {
     this.orchestrator.addOutboundEdge(
       id,
-      EdgeType.UserToUserToHostedEvents,
+      EdgeType.UserToHostedEvents,
       NodeType.Event,
       options,
     );
@@ -256,13 +256,10 @@ export class UserBuilder implements Builder<User> {
       if (typeof node === "object") {
         this.orchestrator.removeOutboundEdge(
           node.id,
-          EdgeType.UserToUserToHostedEvents,
+          EdgeType.UserToHostedEvents,
         );
       } else {
-        this.orchestrator.removeOutboundEdge(
-          node,
-          EdgeType.UserToUserToHostedEvents,
-        );
+        this.orchestrator.removeOutboundEdge(node, EdgeType.UserToHostedEvents);
       }
     }
     return this;

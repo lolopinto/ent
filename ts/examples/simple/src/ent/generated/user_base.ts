@@ -331,7 +331,7 @@ export class UserBase {
   loadUserToHostedEventsEdges(): Promise<AssocEdge[]> {
     return loadEdges({
       id1: this.id,
-      edgeType: EdgeType.UserToUserToHostedEvents,
+      edgeType: EdgeType.UserToHostedEvents,
       context: this.viewer.context,
     });
   }
@@ -340,7 +340,7 @@ export class UserBase {
     return loadNodesByEdge(
       this.viewer,
       this.id,
-      EdgeType.UserToUserToHostedEvents,
+      EdgeType.UserToHostedEvents,
       Event.loaderOptions(),
     );
   }
@@ -348,7 +348,7 @@ export class UserBase {
   loadUserToHostedEventsRawCountX(): Promise<number> {
     return loadRawEdgeCountX({
       id1: this.id,
-      edgeType: EdgeType.UserToUserToHostedEvents,
+      edgeType: EdgeType.UserToHostedEvents,
       context: this.viewer.context,
     });
   }
@@ -356,7 +356,7 @@ export class UserBase {
   loadUserToHostedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
     return loadEdgeForID2({
       id1: this.id,
-      edgeType: EdgeType.UserToUserToHostedEvents,
+      edgeType: EdgeType.UserToHostedEvents,
       id2,
       context: this.viewer.context,
     });

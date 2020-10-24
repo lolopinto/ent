@@ -19,7 +19,7 @@ export * from "src/ent/generated/user_query_base";
 export * from "src/ent/user/query/user_to_created_events_query";
 export * from "src/ent/user/query/user_to_friends_query";
 export * from "src/ent/user/query/user_to_self_contact_query";
-export * from "src/ent/user/query/user_to_user_to_hosted_events_query";
+export * from "src/ent/user/query/user_to_hosted_events_query";
 export * from "src/ent/user/query/user_to_invited_events_query";
 export * from "src/ent/user/query/user_to_events_attending_query";
 export * from "src/ent/user/query/user_to_declined_events_query";

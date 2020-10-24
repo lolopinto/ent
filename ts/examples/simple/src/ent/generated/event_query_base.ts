@@ -7,7 +7,7 @@ import {
   UserToCreatedEventsQuery,
   UserToFriendsQuery,
   UserToSelfContactQuery,
-  UserToUserToHostedEventsQuery,
+  UserToHostedEventsQuery,
   UserToInvitedEventsQuery,
   UserToEventsAttendingQuery,
   UserToDeclinedEventsQuery,
@@ -40,8 +40,8 @@ export class EventToHostsQueryBase extends BaseEdgeQuery<Event, User> {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
 
-  queryUserToHostedEvents(): UserToUserToHostedEventsQuery {
-    return UserToUserToHostedEventsQuery.query(this.viewer, this);
+  queryUserToHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this);
   }
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
@@ -86,8 +86,8 @@ export class EventToInvitedQueryBase extends BaseEdgeQuery<Event, User> {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
 
-  queryUserToHostedEvents(): UserToUserToHostedEventsQuery {
-    return UserToUserToHostedEventsQuery.query(this.viewer, this);
+  queryUserToHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this);
   }
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
@@ -132,8 +132,8 @@ export class EventToAttendingQueryBase extends BaseEdgeQuery<Event, User> {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
 
-  queryUserToHostedEvents(): UserToUserToHostedEventsQuery {
-    return UserToUserToHostedEventsQuery.query(this.viewer, this);
+  queryUserToHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this);
   }
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
@@ -178,8 +178,8 @@ export class EventToDeclinedQueryBase extends BaseEdgeQuery<Event, User> {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
 
-  queryUserToHostedEvents(): UserToUserToHostedEventsQuery {
-    return UserToUserToHostedEventsQuery.query(this.viewer, this);
+  queryUserToHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this);
   }
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
@@ -224,8 +224,8 @@ export class EventToMaybeQueryBase extends BaseEdgeQuery<Event, User> {
     return UserToSelfContactQuery.query(this.viewer, this);
   }
 
-  queryUserToHostedEvents(): UserToUserToHostedEventsQuery {
-    return UserToUserToHostedEventsQuery.query(this.viewer, this);
+  queryUserToHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this);
   }
 
   queryInvitedEvents(): UserToInvitedEventsQuery {

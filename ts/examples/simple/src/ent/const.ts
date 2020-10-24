@@ -30,12 +30,12 @@ export enum EdgeType {
   UserToEventsAttending = "2a98ba02-e342-4bb4-93f6-5d7ed02f5c48",
   // UserToFriends is the edgeType for the user to friends edge.
   UserToFriends = "d1a9316d-090f-4b02-b393-fd9372e2c905",
+  // UserToHostedEvents is the edgeType for the user to usertohostedevents edge.
+  UserToHostedEvents = "cf6542a4-8bae-427f-8a1f-01194047afb3",
   // UserToInvitedEvents is the edgeType for the user to invitedevents edge.
   UserToInvitedEvents = "e439f2b2-d93a-4d1a-83f0-865bda5c8337",
   // UserToMaybeEvents is the edgeType for the user to maybeevents edge.
   UserToMaybeEvents = "8d5b1dee-ce65-452e-9f8d-78eca1993800",
   // UserToSelfContact is the edgeType for the user to selfcontact edge.
   UserToSelfContact = "d504201d-cf3f-4eef-b6a0-0b46a7ae186b",
-  // UserToUserToHostedEvents is the edgeType for the user to usertohostedevents edge.
-  UserToUserToHostedEvents = "e5555185-91bf-4322-8130-d0a00eb605b7",
 }
