@@ -416,7 +416,8 @@ func writeEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e *edge.Ass
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
-	})
+		EditableCode:      true,
+	}, file.WriteOnce())
 }
 
 func writeConstFile(nodeData []enum.Data, edgeData []enum.Data) error {
