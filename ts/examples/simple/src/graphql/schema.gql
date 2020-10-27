@@ -31,6 +31,7 @@ type User {
   createdEvents: [Event!]!
   friends: [User!]!
   selfContact: Contact
+  userToHostedEvents: [Event!]!
   invitedEvents: [Event!]!
   eventsAttending: [Event!]!
   declinedEvents: [Event!]!
@@ -71,6 +72,7 @@ type Mutation {
   contactCreate(input: ContactCreateInput!): ContactCreateResponse!
   contactDelete(input: ContactDeleteInput!): ContactDeleteResponse!
   contactEdit(input: ContactEditInput!): ContactEditResponse!
+  eventAddHost(input: EventAddHostInput!): EventAddHostResponse!
   eventCreate(input: EventCreateInput!): EventCreateResponse!
   eventDelete(input: EventDeleteInput!): EventDeleteResponse!
   eventEdit(input: EventEditInput!): EventEditResponse!
@@ -110,6 +112,15 @@ input ContactEditInput {
   firstName: String
   lastName: String
   userID: String
+}
+
+type EventAddHostResponse {
+  event: Event!
+}
+
+input EventAddHostInput {
+  eventID: ID!
+  hostID: ID!
 }
 
 type EventCreateResponse {

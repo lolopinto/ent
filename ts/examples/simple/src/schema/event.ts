@@ -22,13 +22,24 @@ export default class Event extends BaseEntSchema implements Schema {
     }),
     TimeType({ name: "start_time" }),
     TimeType({ name: "end_time", nullable: true }),
-    StringType({ name: "location", graphqlName: "eventLocation" }),
+    StringType({
+      name: "location",
+      graphqlName: "eventLocation",
+    }),
   ];
 
   edges: Edge[] = [
     {
       name: "hosts",
       schemaName: "User",
+      inverseEdge: {
+        name: "userToHostedEvents",
+      },
+      edgeActions: [
+        {
+          operation: ActionOperation.AddEdge,
+        },
+      ],
     },
     {
       name: "rsvps",

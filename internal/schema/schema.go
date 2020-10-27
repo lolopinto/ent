@@ -42,6 +42,15 @@ func (s *Schema) addEnum(enumType enttype.EnumeratedType, nodeData *NodeData) {
 	)
 }
 
+func (s *Schema) GetNodeDataForNode(nodeName string) (*NodeData, error) {
+	info := s.Nodes[nodeName+"Config"]
+	if info == nil {
+		return nil, fmt.Errorf("cannot find NodeInfo for %s", nodeName)
+	}
+
+	return info.NodeData, nil
+}
+
 func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeData *NodeData) error {
 	if !node.EnumTable || len(node.DBRows) == 0 {
 		return errors.New("Can't create enum from NodeData that's not an enum table or has no rows")

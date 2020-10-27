@@ -95,6 +95,31 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 				}(idx)
 			}
 			actionsWg.Wait()
+
+			// write base edge file for all the edges and then eventually one per edge...
+			if len(nodeData.EdgeInfo.Associations) == 0 {
+				return
+			}
+
+			if err := writeBaseQueryFile(data.Schema, nodeData, data.CodePath); err != nil {
+				serr.Append(err)
+			}
+
+			var edgesWg sync.WaitGroup
+			edgesWg.Add(len(nodeData.EdgeInfo.Associations))
+
+			for idx := range nodeData.EdgeInfo.Associations {
+				go func(idx int) {
+					defer edgesWg.Done()
+
+					edge := nodeData.EdgeInfo.Associations[idx]
+
+					if err := writeEdgeQueryFile(data.Schema, nodeData, edge, data.CodePath); err != nil {
+						serr.Append(err)
+					}
+				}(idx)
+			}
+			edgesWg.Wait()
 		}(key)
 	}
 
@@ -225,7 +250,26 @@ func getFilePathForEnumFile(info *schema.EnumInfo) string {
 	return fmt.Sprintf("src/ent/generated/%s.ts", strcase.ToSnake(info.Enum.Name))
 }
 
-// TODO these import path ones should go...
+func getFilePathForBaseQueryFile(nodeData *schema.NodeData) string {
+	return fmt.Sprintf("src/ent/generated/%s_query_base.ts", nodeData.PackageName)
+}
+
+func getFilePathForEdgeQueryFile(nodeData *schema.NodeData, e *edge.AssociationEdge) string {
+	return fmt.Sprintf(
+		"src/ent/%s/query/%s.ts",
+		nodeData.PackageName,
+		strcase.ToSnake(fmt.Sprintf("%sQuery", e.TsEdgeConst())),
+	)
+}
+
+func getImportPathForEdgeQueryFile(nodeData *schema.NodeData, e *edge.AssociationEdge) string {
+	return fmt.Sprintf(
+		"src/ent/%s/query/%s",
+		nodeData.PackageName,
+		strcase.ToSnake(fmt.Sprintf("%sQuery", e.TsEdgeConst())),
+	)
+}
+
 func getImportPathForEnumFile(info *schema.EnumInfo) string {
 	return fmt.Sprintf("src/ent/generated/%s", strcase.ToSnake(info.Enum.Name))
 }
@@ -236,6 +280,10 @@ func getImportPathForModelFile(nodeData *schema.NodeData) string {
 
 func getImportPathForBaseModelFile(packageName string) string {
 	return fmt.Sprintf("src/ent/generated/%s_base", packageName)
+}
+
+func getImportPathForBaseQueryFile(packageName string) string {
+	return fmt.Sprintf("src/ent/generated/%s_query_base", packageName)
 }
 
 func getFilePathForConstFile() string {
@@ -323,6 +371,53 @@ func writeEnumFile(enumInfo *schema.EnumInfo, codePathInfo *codegen.CodePath) er
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	})
+}
+
+func writeBaseQueryFile(s *schema.Schema, nodeData *schema.NodeData, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data: struct {
+			NodeData *schema.NodeData
+			Schema   *schema.Schema
+			Package  *codegen.ImportPackage
+		}{
+			Schema:   s,
+			NodeData: nodeData,
+			Package:  codePathInfo.GetImportPackage(),
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ent_query_base.tmpl"),
+		TemplateName:      "ent_query_base.tmpl",
+		PathToFile:        getFilePathForBaseQueryFile(nodeData),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
+func writeEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e *edge.AssociationEdge, codePathInfo *codegen.CodePath) error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data: struct {
+			Schema  *schema.Schema
+			Edge    *edge.AssociationEdge
+			Package *codegen.ImportPackage
+		}{
+			Schema:  s,
+			Edge:    e,
+			Package: codePathInfo.GetImportPackage(),
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ent_query.tmpl"),
+		TemplateName:      "ent_query.tmpl",
+		PathToFile:        getFilePathForEdgeQueryFile(nodeData, e),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+		EditableCode:      true,
+	}, file.WriteOnce())
 }
 
 func writeConstFile(nodeData []enum.Data, edgeData []enum.Data) error {
@@ -448,5 +543,7 @@ func getInternalEntFuncs(imps *tsimport.Imports) template.FuncMap {
 	m["pathBaseModelFile"] = getImportPathForBaseModelFile
 	m["pathEntFile"] = getImportPathForModelFile
 	m["pathEnumFile"] = getImportPathForEnumFile
+	m["pathBaseQueryFile"] = getImportPathForBaseQueryFile
+	m["pathEdgeQueryFile"] = getImportPathForEdgeQueryFile
 	return m
 }

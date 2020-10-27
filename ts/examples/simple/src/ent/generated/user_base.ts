@@ -328,6 +328,40 @@ export class UserBase {
     );
   }
 
+  loadUserToHostedEventsEdges(): Promise<AssocEdge[]> {
+    return loadEdges({
+      id1: this.id,
+      edgeType: EdgeType.UserToHostedEvents,
+      context: this.viewer.context,
+    });
+  }
+
+  loadUserToHostedEvents(): Promise<Event[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.UserToHostedEvents,
+      Event.loaderOptions(),
+    );
+  }
+
+  loadUserToHostedEventsRawCountX(): Promise<number> {
+    return loadRawEdgeCountX({
+      id1: this.id,
+      edgeType: EdgeType.UserToHostedEvents,
+      context: this.viewer.context,
+    });
+  }
+
+  loadUserToHostedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
+    return loadEdgeForID2({
+      id1: this.id,
+      edgeType: EdgeType.UserToHostedEvents,
+      id2,
+      context: this.viewer.context,
+    });
+  }
+
   loadInvitedEventsEdges(): Promise<AssocEdge[]> {
     return loadEdges({
       id1: this.id,

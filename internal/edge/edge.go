@@ -827,6 +827,10 @@ func parseEdgeAction(elem *astparser.Result) *input.EdgeAction {
 }
 
 func getEdgeConstName(packageName, edgeName string) string {
+	//don't end up with something like UserToUserTo
+	if strings.HasPrefix(strcase.ToCamel(edgeName), strcase.ToCamel(packageName)+"To") {
+		return strcase.ToCamel(edgeName) + "Edge"
+	}
 	// todo... need to support custom edges at some point...
 	return strcase.ToCamel(packageName) + "To" + strcase.ToCamel(edgeName) + "Edge"
 }

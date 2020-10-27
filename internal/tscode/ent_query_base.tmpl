@@ -1,0 +1,45 @@
+{{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
+{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery"}}
+
+{{$schema := .Schema}}
+{{$nodeData := .NodeData -}}
+
+{{with .NodeData -}}
+
+  {{ range .GetImportsForQueryBaseFile $schema }} 
+    {{ if .DefaultImport -}}
+      {{ reserveDefaultImport .PackagePath .Import}}
+    {{ else -}}
+      {{ reserveImport .PackagePath .Import}}
+    {{end -}}
+  {{ end}}
+
+  {{$node := useImport .Node}}
+  {{$thisType := printf "new (viewer: Viewer, src: EdgeQuerySource<%s>) => T" $node}}
+
+  {{range $edge := .EdgeInfo.Associations}}
+    {{$name := printf "%sQueryBase" $edge.TsEdgeConst -}}
+  export class {{$name}} extends {{useImport "BaseEdgeQuery"}}<{{$node}}, {{useImport .NodeInfo.Node}}> {
+    constructor(viewer: {{useImport "Viewer"}}, src: {{useImport "EdgeQuerySource"}}<{{$node}}>) {
+      super(viewer, src, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}}, {{useImport .NodeInfo.Node}}.loaderOptions());
+    }
+
+    static query<T extends {{$name}}>(
+      this: {{$thisType}},
+      viewer: {{useImport "Viewer"}},
+      src: {{useImport "EdgeQuerySource"}}<{{$node}}>,
+    ): T {
+      return new this(viewer, src);
+    }
+
+    {{$fNodeData := $schema.GetNodeDataForNode .NodeInfo.Node}}
+    {{ range $fEdge := $fNodeData.EdgeInfo.Associations -}}
+      {{$queryName := useImport (printf "%sQuery" $fEdge.TsEdgeConst) -}}
+      query{{$fEdge.CamelCaseEdgeName}}(): {{$queryName}} {
+        return {{$queryName}}.query(this.viewer, this);
+      }
+      
+    {{ end -}}
+  }
+  {{end}}
+{{end -}}

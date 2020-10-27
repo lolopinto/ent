@@ -13,3 +13,14 @@
     {{exportAll (pathEnumFile .)}}
   {{ end -}}
 {{ end -}}
+
+{{ range .Schema.Nodes}}
+{{/* for now we export all the base files but eventually we want to export the individual ent files */}}
+  {{$nodeData := .NodeData -}}
+  {{if .NodeData.EdgeInfo.Associations}}
+    {{exportAll (pathBaseQueryFile .NodeData.PackageName) }}
+    {{ range $edge := .NodeData.EdgeInfo.Associations -}}
+      {{exportAll (pathEdgeQueryFile $nodeData $edge)}}
+    {{end -}}
+  {{ end -}}
+{{ end -}}
