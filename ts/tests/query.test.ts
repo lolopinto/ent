@@ -189,7 +189,7 @@ describe("simple queries", () => {
 
 const N = 2;
 function firstNFilter(q: UserToContactsQuery) {
-  return q.firstN(N);
+  return q.first(N);
 }
 
 function firstNEntsFilter(contacts: FakeContact[]) {
@@ -217,7 +217,7 @@ function verifyCountQuery({ length = 1, numQueries = 1 }) {
   }
 }
 
-function verifyBeforeCursorQuery(length: number = 1) {
+function verifyFirstAfterCursorQuery(length: number = 1) {
   const queries = QueryRecorder.getCurrentQueries();
   expect(queries.length).toBe(length);
   const query = queries[0];
@@ -226,7 +226,7 @@ function verifyBeforeCursorQuery(length: number = 1) {
   );
 }
 
-function verifyAfterCursorQuery(length: number = 1) {
+function verifyLastBeforeCursorQuery(length: number = 1) {
   const queries = QueryRecorder.getCurrentQueries();
   expect(queries.length).toBe(length);
   const query = queries[0];
@@ -235,49 +235,13 @@ function verifyAfterCursorQuery(length: number = 1) {
   );
 }
 
-describe("firstN", () => {
-  const filter = new TestQueryFilter(firstNFilter, firstNEntsFilter);
-
-  beforeEach(async () => {
-    await filter.beforeEach();
-  });
-
-  test("ids", async () => {
-    await filter.testIDs();
-    verifyQuery({});
-  });
-
-  test("rawCount", async () => {
-    await filter.testRawCount();
-    verifyCountQuery({});
-  });
-
-  test("count", async () => {
-    await filter.testCount();
-    verifyQuery({});
-  });
-
-  test("edges", async () => {
-    await filter.testEdges();
-    verifyQuery({});
-  });
-
-  test("ents", async () => {
-    await filter.testEnts();
-    // 2nd query to load the ents
-    verifyQuery({ length: 2 });
-  });
-
-  test("all", async () => {
-    await filter.testAll();
-  });
-});
-
-describe("firstN sql mode", () => {
+// for now, this always applies in sql. todo may not always be the case.
+// see comment in FirstFilter
+describe("first. no cursor", () => {
   const N = 2;
   const filter = new TestQueryFilter(
     (q: UserToContactsQuery) => {
-      return q.sql().firstN(N);
+      return q.first(N);
     },
     (contacts: FakeContact[]) => {
       return contacts.reverse().slice(0, N);
@@ -319,11 +283,11 @@ describe("firstN sql mode", () => {
   });
 });
 
-describe("lastN", () => {
+describe("last", () => {
   const N = 2;
   const filter = new TestQueryFilter(
     (q: UserToContactsQuery) => {
-      return q.lastN(N);
+      return q.last(N);
     },
     (contacts: FakeContact[]) => {
       // take the first N and then reverse it to get the last N in the right order
@@ -365,7 +329,7 @@ describe("lastN", () => {
   });
 });
 
-describe("beforeCursor", () => {
+describe("first after cursor", () => {
   const idx = 2;
   const N = 3;
   let rows: Data[] = [];
@@ -376,9 +340,7 @@ describe("beforeCursor", () => {
       }).reverse(); // need to reverse
       const cursor = new AssocEdge(rows[idx]).getCursor();
 
-      // TODO things like this which are always sql don't need this
-      //
-      return q.sql().beforeCursor(cursor, N);
+      return q.first(N, cursor);
     },
     (contacts: FakeContact[]) => {
       // < check so we shouldn't get that index
@@ -392,7 +354,7 @@ describe("beforeCursor", () => {
 
   test("ids", async () => {
     await filter.testIDs();
-    verifyBeforeCursorQuery();
+    verifyFirstAfterCursorQuery();
   });
 
   test("rawCount", async () => {
@@ -402,17 +364,17 @@ describe("beforeCursor", () => {
 
   test("count", async () => {
     await filter.testCount();
-    verifyBeforeCursorQuery();
+    verifyFirstAfterCursorQuery();
   });
 
   test("edges", async () => {
     await filter.testEdges();
-    verifyBeforeCursorQuery();
+    verifyFirstAfterCursorQuery();
   });
 
   test("ents", async () => {
     await filter.testEnts();
-    verifyBeforeCursorQuery(2);
+    verifyFirstAfterCursorQuery(2);
   });
 
   test("all", async () => {
@@ -420,7 +382,7 @@ describe("beforeCursor", () => {
   });
 });
 
-test("beforeCursor each cursor", async () => {
+test("first. after each cursor", async () => {
   let [user, contacts] = await createAllContacts();
   contacts = contacts.reverse();
   const edgesMap = await UserToContactsQuery.query(
@@ -437,8 +399,7 @@ test("beforeCursor each cursor", async () => {
       new LoggedOutViewer(),
       user.id,
     )
-      .sql()
-      .beforeCursor(edge.getCursor(), 1)
+      .first(1, edge.getCursor())
       .queryEdges();
 
     const newEdges = newEdgeMap.get(user.id) || [];
@@ -452,7 +413,7 @@ test("beforeCursor each cursor", async () => {
   }
 });
 
-describe("afterCursor", () => {
+describe("last. before cursor", () => {
   const idx = 2;
   const N = 3;
   let rows: Data[] = [];
@@ -463,8 +424,7 @@ describe("afterCursor", () => {
       }).reverse(); // need to reverse
       const cursor = new AssocEdge(rows[idx]).getCursor();
 
-      // TODO things like this which are always sql don't need this
-      return q.sql().afterCursor(cursor, N);
+      return q.last(N, cursor);
     },
     (contacts: FakeContact[]) => {
       // > check so we don't want that index
@@ -481,7 +441,7 @@ describe("afterCursor", () => {
 
   test("ids", async () => {
     await filter.testIDs();
-    verifyAfterCursorQuery();
+    verifyLastBeforeCursorQuery();
   });
 
   test("rawCount", async () => {
@@ -491,17 +451,17 @@ describe("afterCursor", () => {
 
   test("count", async () => {
     await filter.testCount();
-    verifyAfterCursorQuery();
+    verifyLastBeforeCursorQuery();
   });
 
   test("edges", async () => {
     await filter.testEdges();
-    verifyAfterCursorQuery();
+    verifyLastBeforeCursorQuery();
   });
 
   test("ents", async () => {
     await filter.testEnts();
-    verifyAfterCursorQuery(2);
+    verifyLastBeforeCursorQuery(2);
   });
 
   test("all", async () => {
@@ -509,7 +469,7 @@ describe("afterCursor", () => {
   });
 });
 
-test("afterCursor each cursor", async () => {
+test("last. before each cursor", async () => {
   let [user, contacts] = await createAllContacts();
   contacts = contacts.reverse();
   const edgesMap = await UserToContactsQuery.query(
@@ -526,8 +486,7 @@ test("afterCursor each cursor", async () => {
       new LoggedOutViewer(),
       user.id,
     )
-      .sql()
-      .afterCursor(edge.getCursor(), 1)
+      .last(1, edge.getCursor())
       .queryEdges();
 
     const newEdges = newEdgeMap.get(user.id) || [];
@@ -546,6 +505,7 @@ class MultiIDsTestQueryFilter {
   constructor(
     private filter: (q: UserToContactsQuery) => UserToContactsQuery,
     private ents: (contacts: FakeContact[]) => FakeContact[],
+    private limit?: number,
   ) {}
 
   async beforeEach() {
@@ -583,7 +543,11 @@ class MultiIDsTestQueryFilter {
         data[1].map((contact) => contact.id),
       );
     }
-    verifyQuery({ length: this.dataz.length, numQueries: this.dataz.length });
+    verifyQuery({
+      length: this.dataz.length,
+      numQueries: this.dataz.length,
+      limit: this.limit || 1000,
+    });
   }
 
   // rawCount isn't affected by filters...
@@ -613,6 +577,7 @@ class MultiIDsTestQueryFilter {
     verifyQuery({
       length: this.dataz.length,
       numQueries: this.dataz.length,
+      limit: this.limit || 1000,
     });
   }
 
@@ -629,6 +594,7 @@ class MultiIDsTestQueryFilter {
     verifyQuery({
       length: this.dataz.length,
       numQueries: this.dataz.length,
+      limit: this.limit || 1000,
     });
   }
 
@@ -656,6 +622,7 @@ class MultiIDsTestQueryFilter {
       // and then twice to fetch all the nodes for the contacts
       length: this.dataz.length + this.dataz.length + this.dataz.length * 2,
       numQueries: this.dataz.length,
+      limit: this.limit || 1000,
     });
   }
 }
@@ -699,7 +666,7 @@ describe("multi-ids", () => {
 });
 
 describe("multi-ids. firstN", () => {
-  const filter = new MultiIDsTestQueryFilter(firstNFilter, firstNEntsFilter);
+  const filter = new MultiIDsTestQueryFilter(firstNFilter, firstNEntsFilter, 2);
 
   beforeEach(async () => {
     await filter.beforeEach();
@@ -906,10 +873,10 @@ describe("chained queries 2 steps w/ filter", () => {
     UserToFriendsQuery,
     [UserToEventsAttendingQuery],
     (q: UserToFriendsQuery) => {
-      return q.firstN(2).queryEventsAttending();
+      return q.first(2).queryEventsAttending();
     },
     (q: UserToFriendsQuery) => {
-      return q.firstN(2);
+      return q.first(2);
     },
   );
 

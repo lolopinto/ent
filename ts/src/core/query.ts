@@ -14,17 +14,14 @@ import {
 import * as clause from "./clause";
 
 export interface EdgeQuery<T extends Ent> {
-  sql(): EdgeQuery<T>;
   queryEdges(): Promise<Map<ID, AssocEdge[]>>;
   queryIDs(): Promise<Map<ID, ID[]>>;
   queryCount(): Promise<Map<ID, number>>;
   queryRawCount(): Promise<Map<ID, number>>;
   queryEnts(): Promise<Map<ID, T[]>>;
-  // no offset/limit based
-  firstN(n: number): EdgeQuery<T>;
-  lastN(n: number): EdgeQuery<T>;
-  beforeCursor(cursor: string, limit: number): EdgeQuery<T>;
-  afterCursor(cursor: string, limit: number): EdgeQuery<T>;
+
+  first(n: number, after?: string): EdgeQuery<T>;
+  last(n: number, before?: string): EdgeQuery<T>;
 
   // TODO we need a way to handle singular id for e.g. unique edge
 }
@@ -61,86 +58,76 @@ function assertValidCursor(cursor: string): number {
   return time;
 }
 
-class FirstNFilter implements EdgeQueryFilter {
-  private sql: boolean;
-  constructor(private n: number) {
-    assertPositive(n);
+class FirstFilter implements EdgeQueryFilter {
+  private time: number | undefined;
+
+  constructor(private limit: number, after?: string) {
+    assertPositive(limit);
+    if (after) {
+      this.time = assertValidCursor(after);
+    }
   }
 
-  filter(edges: AssocEdge[]): AssocEdge[] {
-    return this.sql ? edges : edges.slice(0, this.n);
-  }
-
-  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
-    this.sql = true;
-    return {
-      ...options,
-      limit: this.n,
-    };
-  }
-}
-
-class LastNFilter implements EdgeQueryFilter {
-  constructor(private n: number) {
-    assertPositive(n);
-  }
-
-  filter(edges: AssocEdge[]): AssocEdge[] {
-    return edges.slice(edges.length - this.n, edges.length);
-  }
-  // not doing sql with lastN because we don't know length...
-}
-
-class AfterCursor implements EdgeQueryFilter {
-  private time: number;
-  constructor(cursor: string, private limit: number) {
-    this.time = assertValidCursor(cursor);
-  }
-
-  // same as BeforeCursor
+  // done in SQL. nothing to do here.
   // filter(edges: AssocEdge[]): AssocEdge[] {
-  //   return edges;
+  //   if (this.time) {
+  //     return edges;
+  //   }
+  //   // TODO: in the future, when we have caching for edges
+  //   // we'll want to hit that cache instead of doing this here
+  //   // so we'd need a way to indicate whether this is done in sql or not
+  //   return edges.slice(0, this.limit);
   // }
 
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+    if (!this.time) {
+      return {
+        ...options,
+        limit: this.limit,
+      };
+    }
+
     // we sort by most recent first
-    // so when paging backwards, we fetch afterCursor X
-    return {
-      ...options,
-      clause: clause.Greater("time", this.time),
-      orderby: "time ASC",
-      limit: this.limit,
-    };
-  }
-}
-
-// support paging back
-// make this optional...
-
-// TODO provide ways to parse cursor and handle this in the future
-class BeforeCursor implements EdgeQueryFilter {
-  private time: number;
-  constructor(cursor: string, private limit: number) {
-    this.time = assertValidCursor(cursor);
-  }
-
-  // for beforeCursor query, everything is done in sql (for now) and not done in
-  // application land
-  // eventually once we have caching etc, this won't make sense as we'd cache
-  // say the last 1k or 5k or 10k edges depending on the edge and then do the
-  // filtering in node-land since the cache is cheap
-  // filter(edges: AssocEdge[]): AssocEdge[] {
-  //   return edges;
-  // }
-
-  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
-    // we sort by most recent first
-    // so when paging, we fetch beforeCursor X
+    // so when paging, we fetch afterCursor X
     return {
       ...options,
       clause: clause.Less("time", this.time),
       // just to be explicit even though this is the default
       orderby: "time DESC",
+      limit: this.limit,
+    };
+  }
+}
+
+class LastFilter implements EdgeQueryFilter {
+  private time: number | undefined;
+
+  constructor(private limit: number, after?: string) {
+    assertPositive(limit);
+    if (after) {
+      this.time = assertValidCursor(after);
+    }
+  }
+
+  filter(edges: AssocEdge[]): AssocEdge[] {
+    // done in SQL. nothing to do here.
+    if (this.time) {
+      return edges;
+    }
+    return edges.slice(edges.length - this.limit, edges.length);
+  }
+
+  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+    if (!this.time) {
+      return options;
+    }
+
+    // we sort by most recent first
+    // so when paging backwards, we fetch beforeCursor X
+    return {
+      ...options,
+      clause: clause.Greater("time", this.time),
+      orderby: "time ASC",
       limit: this.limit,
     };
   }
@@ -154,7 +141,6 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
   private idsResolved: boolean;
   private edges: Map<ID, AssocEdge[]> = new Map();
   private resolvedIDs: ID[] = [];
-  private sqlMode: boolean;
 
   constructor(
     public viewer: Viewer,
@@ -199,31 +185,13 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     }
   }
 
-  sql(): this {
-    if (this.filters.length) {
-      throw new Error("cannot go into sql mode after filters set");
-    }
-    this.sqlMode = true;
+  first(n: number, after?: string): this {
+    this.filters.push(new FirstFilter(n, after));
     return this;
   }
 
-  firstN(n: number): this {
-    this.filters.push(new FirstNFilter(n));
-    return this;
-  }
-
-  lastN(n: number): this {
-    this.filters.push(new LastNFilter(n));
-    return this;
-  }
-
-  beforeCursor(cursor: string, n: number): this {
-    this.filters.push(new BeforeCursor(cursor, n));
-    return this;
-  }
-
-  afterCursor(cursor: string, n: number): this {
-    this.filters.push(new AfterCursor(cursor, n));
+  last(n: number, before?: string): this {
+    this.filters.push(new LastFilter(n, before));
     return this;
   }
 
@@ -311,13 +279,14 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     }
 
     let options: EdgeQueryableDataOptions = {};
-    if (this.sqlMode) {
-      this.filters.forEach((filter) => {
-        if (filter.query) {
-          options = filter.query(options);
-        }
-      });
-    }
+    // TODO once we add a lot of complex filters, this needs to be more complicated
+    // e.g. commutative filters. what can be done in sql or combined together etc
+    // may need to bring sql mode or something back
+    this.filters.forEach((filter) => {
+      if (filter.query) {
+        options = filter.query(options);
+      }
+    });
 
     await this.loadRawEdges(options);
 
