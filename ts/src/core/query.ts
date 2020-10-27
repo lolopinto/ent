@@ -309,8 +309,6 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     if (this.queryDispatched) {
       return this.edges;
     }
-    // TODO how does one memoize this call?
-    this.queryDispatched = true;
 
     let options: EdgeQueryableDataOptions = {};
     if (this.sqlMode) {
@@ -337,6 +335,13 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
       });
       this.edges.set(id, edges);
     }
+    // TODO how does one memoize this call?
+    this.queryDispatched = true;
+
     return this.edges;
   }
+}
+
+export interface EdgeQueryCtr<T extends Ent> {
+  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T>;
 }

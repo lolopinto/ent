@@ -1,192 +1,40 @@
 import { Pool } from "pg";
 import { QueryRecorder } from "../src/testutils/db_mock";
-import { snakeCase } from "snake-case";
-import { createRowForTest } from "../src/testutils/write";
-import {
-  AssocEdge,
-  Data,
-  ID,
-  Ent,
-  loadEdgeData,
-  Viewer,
-} from "../src/core/ent";
-import { EdgeQuery, EdgeQuerySource } from "../src/core/query";
+import { AssocEdge, Data, ID, Ent, Viewer } from "../src/core/ent";
+import { EdgeQuery, EdgeQueryCtr } from "../src/core/query";
 import { IDViewer, LoggedOutViewer } from "../src/core/viewer";
-import { fail } from "assert";
 import { advanceBy } from "jest-date-mock";
 import {
-  createUser,
   FakeUser,
-  UserCreateInput,
   UserToContactsQuery,
-  ContactCreateInput,
   FakeContact,
-  getContactBuilder,
   EdgeType,
   getUserBuilder,
   getEventBuilder,
   EventCreateInput,
-  SymmetricEdges,
-  InverseEdges,
   UserToFriendsQuery,
   FakeEvent,
   UserToEventsAttendingQuery,
   EventToHostsQuery,
 } from "./fake_data/";
+import {
+  inputs,
+  getUserInput,
+  createTestUser,
+  createAllContacts,
+  verifyUserToContactEdges,
+  verifyUserToContacts,
+  createEdges,
+} from "./fake_data/test_helpers";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
 beforeEach(async () => {
   QueryRecorder.clear();
-  // create all edges// for now all one-way
-  const edgeNames = Object.keys(EdgeType);
-  const edges = Object.values(EdgeType);
-
-  for (let i = 0; i < edges.length; i++) {
-    const edge = edges[i];
-    await createRowForTest({
-      tableName: "assoc_edge_config",
-      fields: {
-        edge_table: snakeCase(`${edge}_table`),
-        symmetric_edge: SymmetricEdges.has(edge),
-        inverse_edge_type: InverseEdges.get(edge) || null,
-        edge_type: edge,
-        edge_name: edgeNames[i],
-      },
-    });
-    const edgeData = await loadEdgeData(edge);
-  }
+  await createEdges();
   QueryRecorder.clearQueries();
 });
-
-function getContactInput(
-  user: FakeUser,
-  input?: Partial<ContactCreateInput>,
-): ContactCreateInput {
-  return {
-    firstName: "Jon",
-    lastName: "Snow",
-    emailAddress: "foo@bar.com",
-    userID: user.id,
-    ...input,
-  };
-}
-
-function getUserInput(input?: Partial<UserCreateInput>): UserCreateInput {
-  return {
-    firstName: "Jon",
-    lastName: "Snow",
-    emailAddress: "foo@bar.com",
-    phoneNumber: "415-212-1212",
-    password: "pa$$w0rd",
-    ...input,
-  };
-}
-
-async function createTestUser(
-  input?: Partial<UserCreateInput>,
-): Promise<FakeUser> {
-  const user = await createUser(new LoggedOutViewer(), {
-    firstName: "Jon",
-    lastName: "Snow",
-    password: "12345678",
-    phoneNumber: "4152221231",
-    emailAddress: "foo@bar.com",
-    ...input,
-  });
-  if (!user) {
-    fail("error creating user");
-  }
-  return user;
-}
-
-const inputs: Partial<ContactCreateInput>[] = [
-  {
-    firstName: "Arya",
-    lastName: "Stark",
-  },
-  {
-    firstName: "Robb",
-    lastName: "Stark",
-  },
-  {
-    firstName: "Sansa",
-    lastName: "Stark",
-  },
-  {
-    firstName: "Rickon",
-    lastName: "Stark",
-  },
-  {
-    firstName: "Bran",
-    lastName: "Stark",
-  },
-];
-
-async function createAllContacts(
-  input?: Partial<UserCreateInput>,
-): Promise<[FakeUser, FakeContact[]]> {
-  const user = await createTestUser(input);
-
-  const contacts = await Promise.all(
-    inputs.map(async (input) => {
-      // just to make times deterministic so that tests can consistently work
-      advanceBy(100);
-      const builder = getContactBuilder(
-        user.viewer,
-        getContactInput(user, input),
-      );
-      // add edge from user to contact
-      builder.orchestrator.addInboundEdge(
-        user.id,
-        EdgeType.UserToContacts,
-        "User",
-        {
-          time: new Date(), // set time to advanceBy time
-        },
-      );
-      return await builder.saveX();
-    }),
-  );
-  expect(contacts.length).toBe(inputs.length);
-  return [user, contacts];
-}
-
-function verifyUserToContactEdges(
-  user: FakeUser,
-  edgesMap: Map<ID, AssocEdge[]>,
-  contacts: FakeContact[],
-) {
-  const edges = edgesMap.get(user.id) || [];
-  expect(edges.length).toBe(contacts.length);
-
-  for (let i = 0; i < contacts.length; i++) {
-    const edge = edges[i];
-    const expectedEdge = {
-      id1: user.id,
-      id1Type: "User",
-      id2: contacts[i].id,
-      id2Type: "Contact",
-      data: null,
-      edgeType: EdgeType.UserToContacts,
-    };
-    expect(edge, `${i}th index`).toMatchObject(expectedEdge);
-    expect(edge.getCursor()).not.toBe("");
-  }
-}
-
-function verifyUserToContacts(
-  user: FakeUser,
-  entsMap: Map<ID, FakeContact[]>,
-  contacts: FakeContact[],
-) {
-  const ents = entsMap.get(user.id) || [];
-  expect(ents.length).toBe(contacts.length);
-  const expectedContacts = contacts.map((contact) => contact.id);
-
-  expect(ents.map((contact) => contact.id)).toStrictEqual(expectedContacts);
-}
 
 class TestQueryFilter {
   private contacts: FakeContact[] = [];
@@ -214,6 +62,10 @@ class TestQueryFilter {
 
   async testIDs() {
     const idsMap = await this.getQuery().queryIDs();
+    this.verifyIDs(idsMap);
+  }
+
+  private verifyIDs(idsMap: Map<ID, ID[]>) {
     expect(idsMap.size).toBe(1);
 
     expect(idsMap.get(this.user.id)).toStrictEqual(
@@ -224,6 +76,10 @@ class TestQueryFilter {
   // rawCount isn't affected by filters...
   async testRawCount() {
     const countMap = await this.getQuery().queryRawCount();
+    this.verifyRawCount(countMap);
+  }
+
+  private verifyRawCount(countMap: Map<ID, number>) {
     expect(countMap.size).toBe(1);
 
     expect(countMap.get(this.user.id)).toBe(inputs.length);
@@ -231,6 +87,10 @@ class TestQueryFilter {
 
   async testCount() {
     const countMap = await this.getQuery().queryCount();
+    this.verifyCount(countMap);
+  }
+
+  private verifyCount(countMap: Map<ID, number>) {
     expect(countMap.size).toBe(1);
 
     expect(countMap.get(this.user.id)).toBe(this.contacts.length);
@@ -238,6 +98,10 @@ class TestQueryFilter {
 
   async testEdges() {
     const edgesMap = await this.getQuery().queryEdges();
+    this.verifyEdges(edgesMap);
+  }
+
+  private verifyEdges(edgesMap: Map<ID, AssocEdge[]>) {
     expect(edgesMap.size).toBe(1);
 
     verifyUserToContactEdges(this.user, edgesMap, this.contacts);
@@ -245,8 +109,34 @@ class TestQueryFilter {
 
   async testEnts() {
     const entsMap = await this.getQuery(new IDViewer(this.user.id)).queryEnts();
+    this.verifyEnts(entsMap);
+  }
+
+  private verifyEnts(entsMap: Map<ID, FakeContact[]>) {
     expect(entsMap.size).toBe(1);
     verifyUserToContacts(this.user, entsMap, this.contacts);
+  }
+
+  async testAll() {
+    const query = this.getQuery(new IDViewer(this.user.id));
+    const [
+      edgesMap,
+      countMap,
+      entsMap,
+      idsMap,
+      rawCountMap,
+    ] = await Promise.all([
+      query.queryEdges(),
+      query.queryCount(),
+      query.queryEnts(),
+      query.queryIDs(),
+      query.queryRawCount(),
+    ]);
+    this.verifyCount(countMap);
+    this.verifyEdges(edgesMap);
+    this.verifyIDs(idsMap);
+    this.verifyRawCount(rawCountMap);
+    this.verifyEnts(entsMap);
   }
 }
 
@@ -290,6 +180,10 @@ describe("simple queries", () => {
   test("ents", async () => {
     await filter.testEnts();
     verifyQuery({ length: 2 });
+  });
+
+  test("all", async () => {
+    await filter.testAll();
   });
 });
 
@@ -373,6 +267,10 @@ describe("firstN", () => {
     // 2nd query to load the ents
     verifyQuery({ length: 2 });
   });
+
+  test("all", async () => {
+    await filter.testAll();
+  });
 });
 
 describe("firstN sql mode", () => {
@@ -415,6 +313,10 @@ describe("firstN sql mode", () => {
     // 2nd query to load the ents
     verifyQuery({ length: 2, limit: 2 });
   });
+
+  test("all", async () => {
+    await filter.testAll();
+  });
 });
 
 describe("lastN", () => {
@@ -456,6 +358,10 @@ describe("lastN", () => {
   test("ents", async () => {
     await filter.testEnts();
     verifyQuery({ length: 2 });
+  });
+
+  test("all", async () => {
+    await filter.testAll();
   });
 });
 
@@ -507,6 +413,10 @@ describe("beforeCursor", () => {
   test("ents", async () => {
     await filter.testEnts();
     verifyBeforeCursorQuery(2);
+  });
+
+  test("all", async () => {
+    await filter.testAll();
   });
 });
 
@@ -592,6 +502,10 @@ describe("afterCursor", () => {
   test("ents", async () => {
     await filter.testEnts();
     verifyAfterCursorQuery(2);
+  });
+
+  test("all", async () => {
+    await filter.testAll();
   });
 });
 
@@ -828,10 +742,6 @@ async function createTestEvent(
   builder.orchestrator.addOutboundEdge(user.id, EdgeType.EventToHosts, "User");
 
   return await builder.saveX();
-}
-
-interface EdgeQueryCtr<T extends Ent> {
-  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T>;
 }
 
 class ChainTestQueryFilter {
