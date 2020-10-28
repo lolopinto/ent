@@ -19,21 +19,12 @@ export class GraphQLEdgeConnection {
     this.query = new ctr(this.viewer, this.source);
   }
 
-  // TODO change these when the filters change...
-  firstN(limit: number) {
-    this.query = this.query.firstN(limit);
+  first(limit: number, cursor?: string) {
+    this.query = this.query.first(limit, cursor);
   }
 
-  lastN(limit: number) {
-    this.query = this.query.lastN(limit);
-  }
-
-  afterCursor(cursor: string, limit: number) {
-    this.query = this.query.afterCursor(cursor, limit);
-  }
-
-  beforeCursor(cursor: string, limit: number) {
-    this.query = this.query.beforeCursor(cursor, limit);
+  last(limit: number, cursor?: string) {
+    this.query = this.query.last(limit, cursor);
   }
 
   // any custom filters can be applied here...
@@ -62,11 +53,10 @@ export class GraphQLEdgeConnection {
 
   async queryPageInfo() {
     await this.queryData();
-    // TODO
+    return this.query.paginationInfo().get(this.source.id) || {};
   }
 
   private async queryData() {
-    // querying edges and ents at the same time is broken...
     const [m1, m2] = await Promise.all([
       // TODO need a test that this will only fetch edges once
       // and then fetch ents afterward
@@ -90,12 +80,5 @@ export class GraphQLEdgeConnection {
       });
     }
     this.results = results;
-    // next construct pageInfo from this
-    //    let resuls
-
-    // check if ent is there and if
   }
 }
-
-// edges
-// pageInfo

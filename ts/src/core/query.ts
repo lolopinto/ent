@@ -45,7 +45,7 @@ interface EdgeQueryFilter {
   paginationInfo?(id: ID): PaginationInfo | undefined;
 }
 
-interface PaginationInfo {
+export interface PaginationInfo {
   hasNextPage?: boolean;
   hasPreviousPage?: boolean;
 }
