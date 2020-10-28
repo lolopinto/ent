@@ -10,28 +10,27 @@ import {
   LoadEntOptions,
   loadEnts,
   EdgeQueryableDataOptions,
+  DefaultLimit,
 } from "./ent";
 import * as clause from "./clause";
 
 export interface EdgeQuery<T extends Ent> {
-  sql(): EdgeQuery<T>;
   queryEdges(): Promise<Map<ID, AssocEdge[]>>;
   queryIDs(): Promise<Map<ID, ID[]>>;
   queryCount(): Promise<Map<ID, number>>;
   queryRawCount(): Promise<Map<ID, number>>;
   queryEnts(): Promise<Map<ID, T[]>>;
-  // no offset/limit based
-  firstN(n: number): EdgeQuery<T>;
-  lastN(n: number): EdgeQuery<T>;
-  beforeCursor(cursor: string, limit: number): EdgeQuery<T>;
-  afterCursor(cursor: string, limit: number): EdgeQuery<T>;
+
+  first(n: number, after?: string): EdgeQuery<T>;
+  last(n: number, before?: string): EdgeQuery<T>;
+  paginationInfo(): Map<ID, PaginationInfo>;
 
   // TODO we need a way to handle singular id for e.g. unique edge
 }
 
 interface EdgeQueryFilter {
   // this is a filter that does the processing in TypeScript instead of at the SQL layer
-  filter?(edges: AssocEdge[]): AssocEdge[];
+  filter?(id: ID, edges: AssocEdge[]): AssocEdge[];
 
   // there's 2 ways to do it.
   // apply it in SQL
@@ -39,6 +38,16 @@ interface EdgeQueryFilter {
   query?(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions;
   // maybe it's a dynamic decision to do so and then query returns what was passed to it and filter returns what was passed to it based on the decision flow
   //  preProcess
+
+  // filter affects pagination.
+  // If filter implements this and returns a value, we use that info for the pagination details
+  // if we somehow have multiple filters in a query that use this, behavior is undefined
+  paginationInfo?(id: ID): PaginationInfo | undefined;
+}
+
+interface PaginationInfo {
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
 }
 
 function assertPositive(n: number) {
@@ -61,88 +70,93 @@ function assertValidCursor(cursor: string): number {
   return time;
 }
 
-class FirstNFilter implements EdgeQueryFilter {
-  private sql: boolean;
-  constructor(private n: number) {
-    assertPositive(n);
+class FirstFilter implements EdgeQueryFilter {
+  private time: number | undefined;
+  private pageMap: Map<ID, PaginationInfo> = new Map();
+
+  constructor(private limit: number, after?: string) {
+    assertPositive(limit);
+    if (after) {
+      this.time = assertValidCursor(after);
+    }
   }
 
-  filter(edges: AssocEdge[]): AssocEdge[] {
-    return this.sql ? edges : edges.slice(0, this.n);
+  filter(id: ID, edges: AssocEdge[]): AssocEdge[] {
+    if (edges.length > this.limit) {
+      this.pageMap.set(id, { hasNextPage: true });
+      return edges.slice(0, this.limit);
+    }
+    // TODO: in the future, when we have caching for edges
+    // we'll want to hit that cache instead of passing the limit down to the
+    // SQL query so we'll need a way to indicate whether this is done in SQL or not
+    // and then the slice will always happen
+    // so we'd need a way to indicate whether this is done in sql or not
+    return edges;
   }
 
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
-    this.sql = true;
-    return {
-      ...options,
-      limit: this.n,
-    };
-  }
-}
+    // we fetch an extra one to see if we're at the end
+    const limit = this.limit + 1;
 
-class LastNFilter implements EdgeQueryFilter {
-  constructor(private n: number) {
-    assertPositive(n);
-  }
-
-  filter(edges: AssocEdge[]): AssocEdge[] {
-    return edges.slice(edges.length - this.n, edges.length);
-  }
-  // not doing sql with lastN because we don't know length...
-}
-
-class AfterCursor implements EdgeQueryFilter {
-  private time: number;
-  constructor(cursor: string, private limit: number) {
-    this.time = assertValidCursor(cursor);
-  }
-
-  // same as BeforeCursor
-  // filter(edges: AssocEdge[]): AssocEdge[] {
-  //   return edges;
-  // }
-
-  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+    options.limit = limit;
     // we sort by most recent first
-    // so when paging backwards, we fetch afterCursor X
+    // so when paging, we fetch afterCursor X
+    if (this.time) {
+      options.clause = clause.Less("time", this.time);
+      // just to be explicit even though this is the default
+      options.orderby = "time DESC";
+    }
+    return options;
+  }
+
+  paginationInfo(id: ID): PaginationInfo | undefined {
+    return this.pageMap.get(id);
+  }
+}
+
+class LastFilter implements EdgeQueryFilter {
+  private time: number | undefined;
+  private pageMap: Map<ID, PaginationInfo> = new Map();
+
+  constructor(private limit: number, after?: string) {
+    assertPositive(limit);
+    if (after) {
+      this.time = assertValidCursor(after);
+    }
+  }
+
+  filter(id: ID, edges: AssocEdge[]): AssocEdge[] {
+    if (edges.length > this.limit) {
+      this.pageMap.set(id, { hasPreviousPage: true });
+    }
+    if (this.time) {
+      // we have an extra one, get rid of it. we only got it to see if hasPreviousPage = true
+      if (edges.length > this.limit) {
+        return edges.slice(0, edges.length - 1);
+      }
+      // done in SQL. nothing to do here.
+      return edges;
+    }
+    return edges.slice(edges.length - this.limit, edges.length);
+  }
+
+  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
+    if (!this.time) {
+      return options;
+    }
+
+    // we sort by most recent first
+    // so when paging backwards, we fetch beforeCursor X
     return {
       ...options,
       clause: clause.Greater("time", this.time),
       orderby: "time ASC",
-      limit: this.limit,
+      limit: this.limit + 1, // fetch an extra so we know if previous page
     };
   }
-}
 
-// support paging back
-// make this optional...
-
-// TODO provide ways to parse cursor and handle this in the future
-class BeforeCursor implements EdgeQueryFilter {
-  private time: number;
-  constructor(cursor: string, private limit: number) {
-    this.time = assertValidCursor(cursor);
-  }
-
-  // for beforeCursor query, everything is done in sql (for now) and not done in
-  // application land
-  // eventually once we have caching etc, this won't make sense as we'd cache
-  // say the last 1k or 5k or 10k edges depending on the edge and then do the
-  // filtering in node-land since the cache is cheap
-  // filter(edges: AssocEdge[]): AssocEdge[] {
-  //   return edges;
-  // }
-
-  query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
-    // we sort by most recent first
-    // so when paging, we fetch beforeCursor X
-    return {
-      ...options,
-      clause: clause.Less("time", this.time),
-      // just to be explicit even though this is the default
-      orderby: "time DESC",
-      limit: this.limit,
-    };
+  paginationInfo(id: ID): PaginationInfo | undefined {
+    return this.pageMap.get(id);
   }
 }
 
@@ -154,7 +168,7 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
   private idsResolved: boolean;
   private edges: Map<ID, AssocEdge[]> = new Map();
   private resolvedIDs: ID[] = [];
-  private sqlMode: boolean;
+  private pagination: Map<ID, PaginationInfo> = new Map();
 
   constructor(
     public viewer: Viewer,
@@ -199,31 +213,15 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     }
   }
 
-  sql(): this {
-    if (this.filters.length) {
-      throw new Error("cannot go into sql mode after filters set");
-    }
-    this.sqlMode = true;
+  first(n: number, after?: string): this {
+    this.assertQueryNotDispatched("first");
+    this.filters.push(new FirstFilter(n, after));
     return this;
   }
 
-  firstN(n: number): this {
-    this.filters.push(new FirstNFilter(n));
-    return this;
-  }
-
-  lastN(n: number): this {
-    this.filters.push(new LastNFilter(n));
-    return this;
-  }
-
-  beforeCursor(cursor: string, n: number): this {
-    this.filters.push(new BeforeCursor(cursor, n));
-    return this;
-  }
-
-  afterCursor(cursor: string, n: number): this {
-    this.filters.push(new AfterCursor(cursor, n));
+  last(n: number, before?: string): this {
+    this.assertQueryNotDispatched("last");
+    this.filters.push(new LastFilter(n, before));
     return this;
   }
 
@@ -290,6 +288,23 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     return results;
   }
 
+  paginationInfo(): Map<ID, PaginationInfo> {
+    this.assertQueryDispatched("paginationInfo");
+    return this.pagination;
+  }
+
+  private assertQueryDispatched(str: string) {
+    if (!this.queryDispatched) {
+      throw new Error(`cannot call ${str} until query is dispatched`);
+    }
+  }
+
+  private assertQueryNotDispatched(str: string) {
+    if (this.queryDispatched) {
+      throw new Error(`cannot call ${str} after query is dispatched`);
+    }
+  }
+
   private async loadRawEdges(options: EdgeQueryableDataOptions) {
     const ids = await this.resolveIDs();
     await Promise.all(
@@ -309,17 +324,21 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     if (this.queryDispatched) {
       return this.edges;
     }
-    // TODO how does one memoize this call?
-    this.queryDispatched = true;
+
+    // if no filter, we add the firstN filter to ensure we get pagination info
+    if (!this.filters.length) {
+      this.first(DefaultLimit);
+    }
 
     let options: EdgeQueryableDataOptions = {};
-    if (this.sqlMode) {
-      this.filters.forEach((filter) => {
-        if (filter.query) {
-          options = filter.query(options);
-        }
-      });
-    }
+    // TODO once we add a lot of complex filters, this needs to be more complicated
+    // e.g. commutative filters. what can be done in sql or combined together etc
+    // may need to bring sql mode or something back
+    this.filters.forEach((filter) => {
+      if (filter.query) {
+        options = filter.query(options);
+      }
+    });
 
     await this.loadRawEdges(options);
 
@@ -332,11 +351,24 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     for (let [id, edges] of this.edges) {
       this.filters.forEach((filter) => {
         if (filter.filter) {
-          edges = filter.filter(edges);
+          edges = filter.filter(id, edges);
+        }
+        if (filter.paginationInfo) {
+          const pagination = filter.paginationInfo(id);
+          if (pagination) {
+            this.pagination.set(id, pagination);
+          }
         }
       });
       this.edges.set(id, edges);
     }
+    // TODO how does one memoize this call?
+    this.queryDispatched = true;
+
     return this.edges;
   }
+}
+
+export interface EdgeQueryCtr<T extends Ent> {
+  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T>;
 }

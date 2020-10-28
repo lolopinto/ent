@@ -1,192 +1,48 @@
 import { Pool } from "pg";
 import { QueryRecorder } from "../src/testutils/db_mock";
-import { snakeCase } from "snake-case";
-import { createRowForTest } from "../src/testutils/write";
 import {
   AssocEdge,
   Data,
   ID,
   Ent,
-  loadEdgeData,
   Viewer,
+  DefaultLimit,
 } from "../src/core/ent";
-import { EdgeQuery, EdgeQuerySource } from "../src/core/query";
+import { EdgeQuery, EdgeQueryCtr } from "../src/core/query";
 import { IDViewer, LoggedOutViewer } from "../src/core/viewer";
-import { fail } from "assert";
 import { advanceBy } from "jest-date-mock";
 import {
-  createUser,
   FakeUser,
-  UserCreateInput,
   UserToContactsQuery,
-  ContactCreateInput,
   FakeContact,
-  getContactBuilder,
   EdgeType,
   getUserBuilder,
   getEventBuilder,
   EventCreateInput,
-  SymmetricEdges,
-  InverseEdges,
   UserToFriendsQuery,
   FakeEvent,
   UserToEventsAttendingQuery,
   EventToHostsQuery,
 } from "./fake_data/";
+import {
+  inputs,
+  getUserInput,
+  createTestUser,
+  createAllContacts,
+  verifyUserToContactEdges,
+  verifyUserToContacts,
+  createEdges,
+} from "./fake_data/test_helpers";
+import { isExportDeclaration } from "typescript";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
 beforeEach(async () => {
   QueryRecorder.clear();
-  // create all edges// for now all one-way
-  const edgeNames = Object.keys(EdgeType);
-  const edges = Object.values(EdgeType);
-
-  for (let i = 0; i < edges.length; i++) {
-    const edge = edges[i];
-    await createRowForTest({
-      tableName: "assoc_edge_config",
-      fields: {
-        edge_table: snakeCase(`${edge}_table`),
-        symmetric_edge: SymmetricEdges.has(edge),
-        inverse_edge_type: InverseEdges.get(edge) || null,
-        edge_type: edge,
-        edge_name: edgeNames[i],
-      },
-    });
-    const edgeData = await loadEdgeData(edge);
-  }
+  await createEdges();
   QueryRecorder.clearQueries();
 });
-
-function getContactInput(
-  user: FakeUser,
-  input?: Partial<ContactCreateInput>,
-): ContactCreateInput {
-  return {
-    firstName: "Jon",
-    lastName: "Snow",
-    emailAddress: "foo@bar.com",
-    userID: user.id,
-    ...input,
-  };
-}
-
-function getUserInput(input?: Partial<UserCreateInput>): UserCreateInput {
-  return {
-    firstName: "Jon",
-    lastName: "Snow",
-    emailAddress: "foo@bar.com",
-    phoneNumber: "415-212-1212",
-    password: "pa$$w0rd",
-    ...input,
-  };
-}
-
-async function createTestUser(
-  input?: Partial<UserCreateInput>,
-): Promise<FakeUser> {
-  const user = await createUser(new LoggedOutViewer(), {
-    firstName: "Jon",
-    lastName: "Snow",
-    password: "12345678",
-    phoneNumber: "4152221231",
-    emailAddress: "foo@bar.com",
-    ...input,
-  });
-  if (!user) {
-    fail("error creating user");
-  }
-  return user;
-}
-
-const inputs: Partial<ContactCreateInput>[] = [
-  {
-    firstName: "Arya",
-    lastName: "Stark",
-  },
-  {
-    firstName: "Robb",
-    lastName: "Stark",
-  },
-  {
-    firstName: "Sansa",
-    lastName: "Stark",
-  },
-  {
-    firstName: "Rickon",
-    lastName: "Stark",
-  },
-  {
-    firstName: "Bran",
-    lastName: "Stark",
-  },
-];
-
-async function createAllContacts(
-  input?: Partial<UserCreateInput>,
-): Promise<[FakeUser, FakeContact[]]> {
-  const user = await createTestUser(input);
-
-  const contacts = await Promise.all(
-    inputs.map(async (input) => {
-      // just to make times deterministic so that tests can consistently work
-      advanceBy(100);
-      const builder = getContactBuilder(
-        user.viewer,
-        getContactInput(user, input),
-      );
-      // add edge from user to contact
-      builder.orchestrator.addInboundEdge(
-        user.id,
-        EdgeType.UserToContacts,
-        "User",
-        {
-          time: new Date(), // set time to advanceBy time
-        },
-      );
-      return await builder.saveX();
-    }),
-  );
-  expect(contacts.length).toBe(inputs.length);
-  return [user, contacts];
-}
-
-function verifyUserToContactEdges(
-  user: FakeUser,
-  edgesMap: Map<ID, AssocEdge[]>,
-  contacts: FakeContact[],
-) {
-  const edges = edgesMap.get(user.id) || [];
-  expect(edges.length).toBe(contacts.length);
-
-  for (let i = 0; i < contacts.length; i++) {
-    const edge = edges[i];
-    const expectedEdge = {
-      id1: user.id,
-      id1Type: "User",
-      id2: contacts[i].id,
-      id2Type: "Contact",
-      data: null,
-      edgeType: EdgeType.UserToContacts,
-    };
-    expect(edge, `${i}th index`).toMatchObject(expectedEdge);
-    expect(edge.getCursor()).not.toBe("");
-  }
-}
-
-function verifyUserToContacts(
-  user: FakeUser,
-  entsMap: Map<ID, FakeContact[]>,
-  contacts: FakeContact[],
-) {
-  const ents = entsMap.get(user.id) || [];
-  expect(ents.length).toBe(contacts.length);
-  const expectedContacts = contacts.map((contact) => contact.id);
-
-  expect(ents.map((contact) => contact.id)).toStrictEqual(expectedContacts);
-}
 
 class TestQueryFilter {
   private contacts: FakeContact[] = [];
@@ -214,6 +70,10 @@ class TestQueryFilter {
 
   async testIDs() {
     const idsMap = await this.getQuery().queryIDs();
+    this.verifyIDs(idsMap);
+  }
+
+  private verifyIDs(idsMap: Map<ID, ID[]>) {
     expect(idsMap.size).toBe(1);
 
     expect(idsMap.get(this.user.id)).toStrictEqual(
@@ -224,6 +84,10 @@ class TestQueryFilter {
   // rawCount isn't affected by filters...
   async testRawCount() {
     const countMap = await this.getQuery().queryRawCount();
+    this.verifyRawCount(countMap);
+  }
+
+  private verifyRawCount(countMap: Map<ID, number>) {
     expect(countMap.size).toBe(1);
 
     expect(countMap.get(this.user.id)).toBe(inputs.length);
@@ -231,6 +95,10 @@ class TestQueryFilter {
 
   async testCount() {
     const countMap = await this.getQuery().queryCount();
+    this.verifyCount(countMap);
+  }
+
+  private verifyCount(countMap: Map<ID, number>) {
     expect(countMap.size).toBe(1);
 
     expect(countMap.get(this.user.id)).toBe(this.contacts.length);
@@ -238,6 +106,10 @@ class TestQueryFilter {
 
   async testEdges() {
     const edgesMap = await this.getQuery().queryEdges();
+    this.verifyEdges(edgesMap);
+  }
+
+  private verifyEdges(edgesMap: Map<ID, AssocEdge[]>) {
     expect(edgesMap.size).toBe(1);
 
     verifyUserToContactEdges(this.user, edgesMap, this.contacts);
@@ -245,8 +117,34 @@ class TestQueryFilter {
 
   async testEnts() {
     const entsMap = await this.getQuery(new IDViewer(this.user.id)).queryEnts();
+    this.verifyEnts(entsMap);
+  }
+
+  private verifyEnts(entsMap: Map<ID, FakeContact[]>) {
     expect(entsMap.size).toBe(1);
     verifyUserToContacts(this.user, entsMap, this.contacts);
+  }
+
+  async testAll() {
+    const query = this.getQuery(new IDViewer(this.user.id));
+    const [
+      edgesMap,
+      countMap,
+      entsMap,
+      idsMap,
+      rawCountMap,
+    ] = await Promise.all([
+      query.queryEdges(),
+      query.queryCount(),
+      query.queryEnts(),
+      query.queryIDs(),
+      query.queryRawCount(),
+    ]);
+    this.verifyCount(countMap);
+    this.verifyEdges(edgesMap);
+    this.verifyIDs(idsMap);
+    this.verifyRawCount(rawCountMap);
+    this.verifyEnts(entsMap);
   }
 }
 
@@ -291,25 +189,35 @@ describe("simple queries", () => {
     await filter.testEnts();
     verifyQuery({ length: 2 });
   });
+
+  test("all", async () => {
+    await filter.testAll();
+  });
 });
 
 const N = 2;
 function firstNFilter(q: UserToContactsQuery) {
-  return q.firstN(N);
+  return q.first(N);
 }
 
 function firstNEntsFilter(contacts: FakeContact[]) {
   return contacts.reverse().slice(0, N);
 }
 
-function verifyQuery({ length = 1, numQueries = 1, limit = 1000 }) {
+function verifyQuery({
+  length = 1,
+  numQueries = 1,
+  limit = DefaultLimit,
+  disablePaginationBump = false,
+}) {
   const queries = QueryRecorder.getCurrentQueries();
   expect(queries.length).toBe(length);
   for (let i = 0; i < numQueries; i++) {
     const query = queries[i];
+    let expLimit = disablePaginationBump ? limit : limit + 1;
     expect(query.qs?.whereClause, `${i}`).toBe(
       // default limit
-      `id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT ${limit}`,
+      `id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT ${expLimit}`,
     );
   }
 }
@@ -323,63 +231,32 @@ function verifyCountQuery({ length = 1, numQueries = 1 }) {
   }
 }
 
-function verifyBeforeCursorQuery(length: number = 1) {
+function verifyFirstAfterCursorQuery(length: number = 1) {
   const queries = QueryRecorder.getCurrentQueries();
   expect(queries.length).toBe(length);
   const query = queries[0];
   expect(query.qs?.whereClause).toBe(
-    `id1 = $1 AND edge_type = $2 AND time < $3 ORDER BY time DESC LIMIT 3`,
+    `id1 = $1 AND edge_type = $2 AND time < $3 ORDER BY time DESC LIMIT 4`,
   );
 }
 
-function verifyAfterCursorQuery(length: number = 1) {
+function verifyLastBeforeCursorQuery(length: number = 1) {
   const queries = QueryRecorder.getCurrentQueries();
   expect(queries.length).toBe(length);
   const query = queries[0];
   expect(query.qs?.whereClause).toBe(
-    `id1 = $1 AND edge_type = $2 AND time > $3 ORDER BY time ASC LIMIT 3`,
+    // extra fetched for pagination
+    `id1 = $1 AND edge_type = $2 AND time > $3 ORDER BY time ASC LIMIT 4`,
   );
 }
 
-describe("firstN", () => {
-  const filter = new TestQueryFilter(firstNFilter, firstNEntsFilter);
-
-  beforeEach(async () => {
-    await filter.beforeEach();
-  });
-
-  test("ids", async () => {
-    await filter.testIDs();
-    verifyQuery({});
-  });
-
-  test("rawCount", async () => {
-    await filter.testRawCount();
-    verifyCountQuery({});
-  });
-
-  test("count", async () => {
-    await filter.testCount();
-    verifyQuery({});
-  });
-
-  test("edges", async () => {
-    await filter.testEdges();
-    verifyQuery({});
-  });
-
-  test("ents", async () => {
-    await filter.testEnts();
-    // 2nd query to load the ents
-    verifyQuery({ length: 2 });
-  });
-});
-
-describe("firstN sql mode", () => {
+// for now, this always applies in sql. todo may not always be the case.
+// see comment in FirstFilter
+describe("first. no cursor", () => {
   const N = 2;
   const filter = new TestQueryFilter(
     (q: UserToContactsQuery) => {
-      return q.sql().firstN(N);
+      return q.first(N);
     },
     (contacts: FakeContact[]) => {
       return contacts.reverse().slice(0, N);
@@ -415,13 +292,17 @@ describe("firstN sql mode", () => {
     // 2nd query to load the ents
     verifyQuery({ length: 2, limit: 2 });
   });
+
+  test("all", async () => {
+    await filter.testAll();
+  });
 });
 
-describe("lastN", () => {
+describe("last", () => {
   const N = 2;
   const filter = new TestQueryFilter(
     (q: UserToContactsQuery) => {
-      return q.lastN(N);
+      return q.last(N);
     },
     (contacts: FakeContact[]) => {
       // take the first N and then reverse it to get the last N in the right order
@@ -435,7 +316,7 @@ describe("lastN", () => {
 
   test("ids", async () => {
     await filter.testIDs();
-    verifyQuery({});
+    verifyQuery({ disablePaginationBump: true });
   });
 
   test("rawCount", async () => {
@@ -445,21 +326,25 @@ describe("lastN", () => {
 
   test("count", async () => {
     await filter.testCount();
-    verifyQuery({});
+    verifyQuery({ disablePaginationBump: true });
   });
 
   test("edges", async () => {
     await filter.testEdges();
-    verifyQuery({});
+    verifyQuery({ disablePaginationBump: true });
   });
 
   test("ents", async () => {
     await filter.testEnts();
-    verifyQuery({ length: 2 });
+    verifyQuery({ length: 2, disablePaginationBump: true });
+  });
+
+  test("all", async () => {
+    await filter.testAll();
   });
 });
 
-describe("beforeCursor", () => {
+describe("first after cursor", () => {
   const idx = 2;
   const N = 3;
   let rows: Data[] = [];
@@ -470,9 +355,7 @@ describe("beforeCursor", () => {
       }).reverse(); // need to reverse
       const cursor = new AssocEdge(rows[idx]).getCursor();
 
-      // TODO things like this which are always sql don't need this
-      //
-      return q.sql().beforeCursor(cursor, N);
+      return q.first(N, cursor);
     },
     (contacts: FakeContact[]) => {
       // < check so we shouldn't get that index
@@ -486,7 +369,7 @@ describe("beforeCursor", () => {
 
   test("ids", async () => {
     await filter.testIDs();
-    verifyBeforeCursorQuery();
+    verifyFirstAfterCursorQuery();
   });
 
   test("rawCount", async () => {
@@ -496,53 +379,69 @@ describe("beforeCursor", () => {
 
   test("count", async () => {
     await filter.testCount();
-    verifyBeforeCursorQuery();
+    verifyFirstAfterCursorQuery();
   });
 
   test("edges", async () => {
     await filter.testEdges();
-    verifyBeforeCursorQuery();
+    verifyFirstAfterCursorQuery();
   });
 
   test("ents", async () => {
     await filter.testEnts();
-    verifyBeforeCursorQuery(2);
+    verifyFirstAfterCursorQuery(2);
+  });
+
+  test("all", async () => {
+    await filter.testAll();
   });
 });
 
-test("beforeCursor each cursor", async () => {
+test("first. after each cursor", async () => {
   let [user, contacts] = await createAllContacts();
   contacts = contacts.reverse();
   const edgesMap = await UserToContactsQuery.query(
     new LoggedOutViewer(),
     user.id,
   ).queryEdges();
-
   const edges = edgesMap.get(user.id) || [];
-  for (let i = 0; i < edges.length; i++) {
-    const edge = edges[i];
-    const hasEdge = i !== edges.length - 1;
 
-    const newEdgeMap = await UserToContactsQuery.query(
-      new LoggedOutViewer(),
-      user.id,
-    )
-      .sql()
-      .beforeCursor(edge.getCursor(), 1)
-      .queryEdges();
+  async function verify(
+    i: number,
+    hasEdge: boolean,
+    hasNextPage: boolean,
+    cursor?: string,
+  ) {
+    const query = UserToContactsQuery.query(new LoggedOutViewer(), user.id);
+    const newEdgeMap = await query.first(1, cursor).queryEdges();
 
     const newEdges = newEdgeMap.get(user.id) || [];
+    const pagination = query.paginationInfo().get(user.id);
     if (hasEdge) {
       expect(newEdges.length, `${i}`).toBe(1);
-      expect(newEdges[0], `${i}`).toStrictEqual(edges[i + 1]);
+      expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
     } else {
       expect(newEdges.length, `${i}`).toBe(0);
     }
-    // TODO we have no current way to know if there's more results so we need to fetch an extra one here and then discard it
+
+    if (hasNextPage) {
+      expect(pagination?.hasNextPage).toBe(true);
+      expect(pagination?.hasPreviousPage).toBe(undefined);
+    } else {
+      expect(pagination?.hasNextPage).toBe(undefined);
+      expect(pagination?.hasNextPage).toBe(undefined);
+    }
   }
+
+  await verify(0, true, true, undefined);
+  await verify(1, true, true, edges[0].getCursor());
+  await verify(2, true, true, edges[1].getCursor());
+  await verify(3, true, true, edges[2].getCursor());
+  await verify(4, true, false, edges[3].getCursor());
+  await verify(5, false, false, edges[4].getCursor());
 });
 
-describe("afterCursor", () => {
+describe("last. before cursor", () => {
   const idx = 2;
   const N = 3;
   let rows: Data[] = [];
@@ -553,8 +452,7 @@ describe("afterCursor", () => {
       }).reverse(); // need to reverse
       const cursor = new AssocEdge(rows[idx]).getCursor();
 
-      // TODO things like this which are always sql don't need this
-      return q.sql().afterCursor(cursor, N);
+      return q.last(N, cursor);
     },
     (contacts: FakeContact[]) => {
       // > check so we don't want that index
@@ -571,7 +469,7 @@ describe("afterCursor", () => {
 
   test("ids", async () => {
     await filter.testIDs();
-    verifyAfterCursorQuery();
+    verifyLastBeforeCursorQuery();
   });
 
   test("rawCount", async () => {
@@ -581,50 +479,66 @@ describe("afterCursor", () => {
 
   test("count", async () => {
     await filter.testCount();
-    verifyAfterCursorQuery();
+    verifyLastBeforeCursorQuery();
   });
 
   test("edges", async () => {
     await filter.testEdges();
-    verifyAfterCursorQuery();
+    verifyLastBeforeCursorQuery();
   });
 
   test("ents", async () => {
     await filter.testEnts();
-    verifyAfterCursorQuery(2);
+    verifyLastBeforeCursorQuery(2);
+  });
+
+  test("all", async () => {
+    await filter.testAll();
   });
 });
 
-test("afterCursor each cursor", async () => {
+test("last. before each cursor", async () => {
   let [user, contacts] = await createAllContacts();
   contacts = contacts.reverse();
   const edgesMap = await UserToContactsQuery.query(
     new LoggedOutViewer(),
     user.id,
   ).queryEdges();
-
   const edges = edgesMap.get(user.id) || [];
-  for (let i = edges.length - 1; i > 0; i--) {
-    const edge = edges[i];
-    const hasEdge = i != 0;
 
-    const newEdgeMap = await UserToContactsQuery.query(
-      new LoggedOutViewer(),
-      user.id,
-    )
-      .sql()
-      .afterCursor(edge.getCursor(), 1)
-      .queryEdges();
+  async function verify(
+    i: number,
+    hasEdge: boolean,
+    hasPreviousPage: boolean,
+    cursor?: string,
+  ) {
+    const query = UserToContactsQuery.query(new LoggedOutViewer(), user.id);
+    const newEdgeMap = await query.last(1, cursor).queryEdges();
 
     const newEdges = newEdgeMap.get(user.id) || [];
+    const pagination = query.paginationInfo().get(user.id);
     if (hasEdge) {
       expect(newEdges.length, `${i}`).toBe(1);
-      expect(newEdges[0], `${i}`).toStrictEqual(edges[i - 1]);
+      expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
     } else {
       expect(newEdges.length, `${i}`).toBe(0);
     }
-    // TODO we have no current way to know if there's more results so we need to fetch an extra one here and then discard it
+
+    if (hasPreviousPage) {
+      expect(pagination?.hasPreviousPage).toBe(true);
+      expect(pagination?.hasNextPage).toBe(undefined);
+    } else {
+      expect(pagination?.hasPreviousPage).toBe(undefined);
+      expect(pagination?.hasNextPage).toBe(undefined);
+    }
   }
+
+  await verify(4, true, true, undefined);
+  await verify(3, true, true, edges[4].getCursor());
+  await verify(2, true, true, edges[3].getCursor());
+  await verify(1, true, true, edges[2].getCursor());
+  await verify(0, true, false, edges[1].getCursor());
+  await verify(-1, false, false, edges[0].getCursor());
 });
 
 class MultiIDsTestQueryFilter {
@@ -632,6 +546,7 @@ class MultiIDsTestQueryFilter {
   constructor(
     private filter: (q: UserToContactsQuery) => UserToContactsQuery,
     private ents: (contacts: FakeContact[]) => FakeContact[],
+    private limit?: number,
   ) {}
 
   async beforeEach() {
@@ -669,7 +584,11 @@ class MultiIDsTestQueryFilter {
         data[1].map((contact) => contact.id),
       );
     }
-    verifyQuery({ length: this.dataz.length, numQueries: this.dataz.length });
+    verifyQuery({
+      length: this.dataz.length,
+      numQueries: this.dataz.length,
+      limit: this.limit || DefaultLimit,
+    });
   }
 
   // rawCount isn't affected by filters...
@@ -699,6 +618,7 @@ class MultiIDsTestQueryFilter {
     verifyQuery({
       length: this.dataz.length,
       numQueries: this.dataz.length,
+      limit: this.limit || DefaultLimit,
     });
   }
 
@@ -715,6 +635,7 @@ class MultiIDsTestQueryFilter {
     verifyQuery({
       length: this.dataz.length,
       numQueries: this.dataz.length,
+      limit: this.limit || DefaultLimit,
     });
   }
 
@@ -742,6 +663,7 @@ class MultiIDsTestQueryFilter {
       // and then twice to fetch all the nodes for the contacts
       length: this.dataz.length + this.dataz.length + this.dataz.length * 2,
       numQueries: this.dataz.length,
+      limit: this.limit || DefaultLimit,
     });
   }
 }
@@ -785,7 +707,7 @@ describe("multi-ids", () => {
 });
 
 describe("multi-ids. firstN", () => {
-  const filter = new MultiIDsTestQueryFilter(firstNFilter, firstNEntsFilter);
+  const filter = new MultiIDsTestQueryFilter(firstNFilter, firstNEntsFilter, 2);
 
   beforeEach(async () => {
     await filter.beforeEach();
@@ -828,10 +750,6 @@ async function createTestEvent(
   builder.orchestrator.addOutboundEdge(user.id, EdgeType.EventToHosts, "User");
 
   return await builder.saveX();
-}
-
-interface EdgeQueryCtr<T extends Ent> {
-  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T>;
 }
 
 class ChainTestQueryFilter {
@@ -996,10 +914,10 @@ describe("chained queries 2 steps w/ filter", () => {
     UserToFriendsQuery,
     [UserToEventsAttendingQuery],
     (q: UserToFriendsQuery) => {
-      return q.firstN(2).queryEventsAttending();
+      return q.first(2).queryEventsAttending();
     },
     (q: UserToFriendsQuery) => {
-      return q.firstN(2);
+      return q.first(2);
     },
   );
 
