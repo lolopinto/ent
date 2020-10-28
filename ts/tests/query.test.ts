@@ -1,6 +1,13 @@
 import { Pool } from "pg";
 import { QueryRecorder } from "../src/testutils/db_mock";
-import { AssocEdge, Data, ID, Ent, Viewer } from "../src/core/ent";
+import {
+  AssocEdge,
+  Data,
+  ID,
+  Ent,
+  Viewer,
+  DefaultLimit,
+} from "../src/core/ent";
 import { EdgeQuery, EdgeQueryCtr } from "../src/core/query";
 import { IDViewer, LoggedOutViewer } from "../src/core/viewer";
 import { advanceBy } from "jest-date-mock";
@@ -26,6 +33,7 @@ import {
   verifyUserToContacts,
   createEdges,
 } from "./fake_data/test_helpers";
+import { isExportDeclaration } from "typescript";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -196,14 +204,20 @@ function firstNEntsFilter(contacts: FakeContact[]) {
   return contacts.reverse().slice(0, N);
 }
 
-function verifyQuery({ length = 1, numQueries = 1, limit = 1000 }) {
+function verifyQuery({
+  length = 1,
+  numQueries = 1,
+  limit = DefaultLimit,
+  disablePaginationBump = false,
+}) {
   const queries = QueryRecorder.getCurrentQueries();
   expect(queries.length).toBe(length);
   for (let i = 0; i < numQueries; i++) {
     const query = queries[i];
+    let expLimit = disablePaginationBump ? limit : limit + 1;
     expect(query.qs?.whereClause, `${i}`).toBe(
       // default limit
-      `id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT ${limit}`,
+      `id1 = $1 AND edge_type = $2 ORDER BY time DESC LIMIT ${expLimit}`,
     );
   }
 }
@@ -222,7 +236,7 @@ function verifyFirstAfterCursorQuery(length: number = 1) {
   expect(queries.length).toBe(length);
   const query = queries[0];
   expect(query.qs?.whereClause).toBe(
-    `id1 = $1 AND edge_type = $2 AND time < $3 ORDER BY time DESC LIMIT 3`,
+    `id1 = $1 AND edge_type = $2 AND time < $3 ORDER BY time DESC LIMIT 4`,
   );
 }
 
@@ -231,7 +245,8 @@ function verifyLastBeforeCursorQuery(length: number = 1) {
   expect(queries.length).toBe(length);
   const query = queries[0];
   expect(query.qs?.whereClause).toBe(
-    `id1 = $1 AND edge_type = $2 AND time > $3 ORDER BY time ASC LIMIT 3`,
+    // extra fetched for pagination
+    `id1 = $1 AND edge_type = $2 AND time > $3 ORDER BY time ASC LIMIT 4`,
   );
 }
 
@@ -301,7 +316,7 @@ describe("last", () => {
 
   test("ids", async () => {
     await filter.testIDs();
-    verifyQuery({});
+    verifyQuery({ disablePaginationBump: true });
   });
 
   test("rawCount", async () => {
@@ -311,17 +326,17 @@ describe("last", () => {
 
   test("count", async () => {
     await filter.testCount();
-    verifyQuery({});
+    verifyQuery({ disablePaginationBump: true });
   });
 
   test("edges", async () => {
     await filter.testEdges();
-    verifyQuery({});
+    verifyQuery({ disablePaginationBump: true });
   });
 
   test("ents", async () => {
     await filter.testEnts();
-    verifyQuery({ length: 2 });
+    verifyQuery({ length: 2, disablePaginationBump: true });
   });
 
   test("all", async () => {
@@ -389,28 +404,41 @@ test("first. after each cursor", async () => {
     new LoggedOutViewer(),
     user.id,
   ).queryEdges();
-
   const edges = edgesMap.get(user.id) || [];
-  for (let i = 0; i < edges.length; i++) {
-    const edge = edges[i];
-    const hasEdge = i !== edges.length - 1;
 
-    const newEdgeMap = await UserToContactsQuery.query(
-      new LoggedOutViewer(),
-      user.id,
-    )
-      .first(1, edge.getCursor())
-      .queryEdges();
+  async function verify(
+    i: number,
+    hasEdge: boolean,
+    hasNextPage: boolean,
+    cursor?: string,
+  ) {
+    const query = UserToContactsQuery.query(new LoggedOutViewer(), user.id);
+    const newEdgeMap = await query.first(1, cursor).queryEdges();
 
     const newEdges = newEdgeMap.get(user.id) || [];
+    const pagination = query.paginationInfo().get(user.id);
     if (hasEdge) {
       expect(newEdges.length, `${i}`).toBe(1);
-      expect(newEdges[0], `${i}`).toStrictEqual(edges[i + 1]);
+      expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
     } else {
       expect(newEdges.length, `${i}`).toBe(0);
     }
-    // TODO we have no current way to know if there's more results so we need to fetch an extra one here and then discard it
+
+    if (hasNextPage) {
+      expect(pagination?.hasNextPage).toBe(true);
+      expect(pagination?.hasPreviousPage).toBe(undefined);
+    } else {
+      expect(pagination?.hasNextPage).toBe(undefined);
+      expect(pagination?.hasNextPage).toBe(undefined);
+    }
   }
+
+  await verify(0, true, true, undefined);
+  await verify(1, true, true, edges[0].getCursor());
+  await verify(2, true, true, edges[1].getCursor());
+  await verify(3, true, true, edges[2].getCursor());
+  await verify(4, true, false, edges[3].getCursor());
+  await verify(5, false, false, edges[4].getCursor());
 });
 
 describe("last. before cursor", () => {
@@ -476,28 +504,41 @@ test("last. before each cursor", async () => {
     new LoggedOutViewer(),
     user.id,
   ).queryEdges();
-
   const edges = edgesMap.get(user.id) || [];
-  for (let i = edges.length - 1; i > 0; i--) {
-    const edge = edges[i];
-    const hasEdge = i != 0;
 
-    const newEdgeMap = await UserToContactsQuery.query(
-      new LoggedOutViewer(),
-      user.id,
-    )
-      .last(1, edge.getCursor())
-      .queryEdges();
+  async function verify(
+    i: number,
+    hasEdge: boolean,
+    hasPreviousPage: boolean,
+    cursor?: string,
+  ) {
+    const query = UserToContactsQuery.query(new LoggedOutViewer(), user.id);
+    const newEdgeMap = await query.last(1, cursor).queryEdges();
 
     const newEdges = newEdgeMap.get(user.id) || [];
+    const pagination = query.paginationInfo().get(user.id);
     if (hasEdge) {
       expect(newEdges.length, `${i}`).toBe(1);
-      expect(newEdges[0], `${i}`).toStrictEqual(edges[i - 1]);
+      expect(newEdges[0], `${i}`).toStrictEqual(edges[i]);
     } else {
       expect(newEdges.length, `${i}`).toBe(0);
     }
-    // TODO we have no current way to know if there's more results so we need to fetch an extra one here and then discard it
+
+    if (hasPreviousPage) {
+      expect(pagination?.hasPreviousPage).toBe(true);
+      expect(pagination?.hasNextPage).toBe(undefined);
+    } else {
+      expect(pagination?.hasPreviousPage).toBe(undefined);
+      expect(pagination?.hasNextPage).toBe(undefined);
+    }
   }
+
+  await verify(4, true, true, undefined);
+  await verify(3, true, true, edges[4].getCursor());
+  await verify(2, true, true, edges[3].getCursor());
+  await verify(1, true, true, edges[2].getCursor());
+  await verify(0, true, false, edges[1].getCursor());
+  await verify(-1, false, false, edges[0].getCursor());
 });
 
 class MultiIDsTestQueryFilter {
@@ -546,7 +587,7 @@ class MultiIDsTestQueryFilter {
     verifyQuery({
       length: this.dataz.length,
       numQueries: this.dataz.length,
-      limit: this.limit || 1000,
+      limit: this.limit || DefaultLimit,
     });
   }
 
@@ -577,7 +618,7 @@ class MultiIDsTestQueryFilter {
     verifyQuery({
       length: this.dataz.length,
       numQueries: this.dataz.length,
-      limit: this.limit || 1000,
+      limit: this.limit || DefaultLimit,
     });
   }
 
@@ -594,7 +635,7 @@ class MultiIDsTestQueryFilter {
     verifyQuery({
       length: this.dataz.length,
       numQueries: this.dataz.length,
-      limit: this.limit || 1000,
+      limit: this.limit || DefaultLimit,
     });
   }
 
@@ -622,7 +663,7 @@ class MultiIDsTestQueryFilter {
       // and then twice to fetch all the nodes for the contacts
       length: this.dataz.length + this.dataz.length + this.dataz.length * 2,
       numQueries: this.dataz.length,
-      limit: this.limit || 1000,
+      limit: this.limit || DefaultLimit,
     });
   }
 }

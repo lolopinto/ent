@@ -1016,6 +1016,8 @@ interface loadEdgesOptions {
   queryOptions?: EdgeQueryableDataOptions;
 }
 
+export const DefaultLimit = 1000;
+
 // TODO default limit from somewhere
 export function defaultEdgeQueryOptions(
   id1: ID,
@@ -1024,7 +1026,7 @@ export function defaultEdgeQueryOptions(
   return {
     clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
     orderby: "time DESC",
-    limit: 1000,
+    limit: DefaultLimit,
   };
 }
 
