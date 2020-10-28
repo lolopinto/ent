@@ -1,6 +1,6 @@
 import { fail } from "assert";
 import { advanceBy } from "jest-date-mock";
-import { LoggedOutViewer } from "../../src/core/viewer";
+import { IDViewer, LoggedOutViewer } from "../../src/core/viewer";
 import { ID, AssocEdge, loadEdgeData } from "../../src/core/ent";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../../src/testutils/write";
@@ -16,6 +16,7 @@ import {
   SymmetricEdges,
   InverseEdges,
 } from ".";
+import { EventCreateInput, getEventBuilder } from "./fake_event";
 
 export function getContactInput(
   user: FakeUser,
@@ -166,4 +167,22 @@ export async function createEdges() {
     });
     await loadEdgeData(edge);
   }
+}
+
+export async function createTestEvent(
+  user: FakeUser,
+  input?: Partial<EventCreateInput>,
+) {
+  const vc = new IDViewer(user.id);
+  const builder = getEventBuilder(vc, {
+    startTime: new Date(),
+    location: "fun house",
+    description: "fun fun fun",
+    title: "fun time",
+    userID: user.id,
+    ...input,
+  });
+  builder.orchestrator.addOutboundEdge(user.id, EdgeType.EventToHosts, "User");
+
+  return await builder.saveX();
 }

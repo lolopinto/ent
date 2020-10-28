@@ -12,6 +12,7 @@ import {
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
   PrivacyPolicy,
+  AlwaysAllowRule,
 } from "../../src/core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
 import { Field, StringType, BaseEntSchema } from "../../src/schema";

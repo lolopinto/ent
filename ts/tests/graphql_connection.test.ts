@@ -1,7 +1,8 @@
 import { Pool } from "pg";
-import { IDViewer } from "../src/core/viewer";
+import { IDViewer, LoggedOutViewer } from "../src/core/viewer";
 import { AssocEdge } from "../src/core/ent";
 import { QueryRecorder } from "../src/testutils/db_mock";
+import { advanceBy } from "jest-date-mock";
 import {
   createUser,
   FakeUser,
@@ -20,6 +21,7 @@ import {
   FakeEvent,
   UserToEventsAttendingQuery,
   EventToHostsQuery,
+  EventToInvitedQuery,
 } from "./fake_data/";
 import {
   inputs,
@@ -29,8 +31,12 @@ import {
   verifyUserToContactEdges,
   verifyUserToContacts,
   createEdges,
+  createTestEvent,
 } from "./fake_data/test_helpers";
 import { GraphQLEdgeConnection } from "../src/graphql/query/edge_connection";
+import { ProvidedRequiredArgumentsOnDirectivesRule } from "graphql/validation/rules/ProvidedRequiredArgumentsRule";
+import { isExportDeclaration } from "typescript";
+import { testEnvironment } from "../jest.config";
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
@@ -223,4 +229,125 @@ describe("filters. before  cursor", () => {
   });
 });
 
-// TODO when not all the ents are loaded e.g. every other one being available
+describe("not all ents visible", () => {
+  let user: FakeUser;
+  let event: FakeEvent;
+  let users: FakeUser[];
+  let conn: GraphQLEdgeConnection;
+  let friendCount: number;
+  // let's make it big. 20 people
+  let friendsInput = [...inputs, ...inputs, ...inputs, ...inputs];
+  beforeEach(async () => {
+    friendCount = 0;
+    user = await createTestUser();
+    event = await createTestEvent(user);
+
+    let promises: Promise<FakeUser>[] = [];
+    for (let i = 0; i < friendsInput.length; i++) {
+      advanceBy(100);
+      let input = friendsInput[i];
+      const builder = getUserBuilder(user.viewer, getUserInput(input));
+      if (i % 2 == 1) {
+        builder.orchestrator.addOutboundEdge(
+          user.id,
+          EdgeType.UserToFriends,
+          "User",
+        );
+        friendCount++;
+      }
+      // invite user to events
+      builder.orchestrator.addInboundEdge(
+        event.id,
+        EdgeType.EventToInvited,
+        "User",
+        {
+          // just to make times deterministic so that tests can consistently work
+          time: new Date(),
+        },
+      );
+      promises.push(builder.saveX());
+    }
+    users = await Promise.all(promises);
+
+    // only few of the users invited as friends
+    const vc = new IDViewer(user.id);
+    const friendsMap = await UserToFriendsQuery.query(vc, user.id).queryEdges();
+    expect(friendsMap.get(user.id)?.length).toBe(friendCount);
+
+    // everyone  invited to event
+    const invitedEventsMap = await EventToInvitedQuery.query(
+      vc,
+      event.id,
+    ).queryEdges();
+    expect(invitedEventsMap.get(event.id)?.length).toBe(friendsInput.length);
+
+    resetConn();
+  });
+
+  function resetConn() {
+    conn = new GraphQLEdgeConnection(
+      new IDViewer(user.id),
+      event,
+      EventToInvitedQuery,
+    );
+  }
+
+  test("totalCount", async () => {
+    const count = await conn.queryTotalCount();
+    expect(count).toBe(users.length);
+  });
+
+  test("nodes", async () => {
+    const nodes = await conn.queryNodes();
+    expect(nodes.length).toBe(friendCount);
+  });
+
+  test("edges", async () => {
+    const edges = await conn.queryEdges();
+    expect(edges.length).toBe(friendCount);
+  });
+
+  test("pagination", async () => {
+    const edgesMap = await EventToInvitedQuery.query(
+      new LoggedOutViewer(),
+      event,
+    ).queryEdges();
+    const edges = edgesMap.get(event.id) || [];
+
+    async function verify(
+      first: number,
+      length: number,
+      hasNextpage: boolean | undefined,
+      index?: number,
+    ) {
+      let cursor: string | undefined;
+      if (index) {
+        cursor = edges[index].getCursor();
+      }
+      resetConn();
+      conn.first(first, cursor);
+      const [pagination, gqlEdges, nodes] = await Promise.all([
+        conn.queryPageInfo(),
+        conn.queryEdges(),
+        conn.queryNodes(),
+      ]);
+      expect(pagination.hasNextPage, `${index}`).toBe(hasNextpage);
+      expect(gqlEdges.length, `${index}`).toBe(length);
+      expect(nodes.length, `${index}`).toBe(length);
+    }
+    // TODO build exponential backoff into EntQuery so this isn't needed
+    // but this is how it is for now
+    await verify(1, 1, true);
+    await verify(2, 1, true);
+    await verify(2, 1, true, 0);
+    await verify(2, 1, true, 2);
+    await verify(2, 1, true, 4);
+    await verify(2, 1, true, 6);
+    await verify(2, 1, true, 8);
+    await verify(2, 1, true, 10);
+    await verify(2, 1, true, 12);
+    await verify(2, 1, true, 14);
+    await verify(2, 1, true, 16);
+    await verify(2, 1, undefined, 17);
+  });
+});
