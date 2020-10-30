@@ -477,17 +477,65 @@ func writeLoadAnyFile(nodeData []enum.Data, codePathInfo *codegen.CodePath) erro
 	})
 }
 
+func getSortedInternalEntFileLines(s *schema.Schema) []string {
+	lines := []string{
+		"src/ent/const",
+	}
+
+	append2 := func(list *[]string, str string) {
+		*list = append(*list, str)
+	}
+
+	var baseFiles []string
+	for _, info := range s.Nodes {
+		append2(&baseFiles, getImportPathForBaseModelFile(info.NodeData.PackageName))
+	}
+
+	var entFiles []string
+	for _, info := range s.Nodes {
+		append2(&entFiles, getImportPathForModelFile(info.NodeData))
+	}
+
+	var enums []string
+	for _, enum := range s.Enums {
+		if enum.LookupTableEnum() {
+			append2(&enums, getImportPathForEnumFile(enum))
+		}
+	}
+
+	var baseQueryFiles []string
+	var queryFiles []string
+	for _, info := range s.Nodes {
+		if len(info.NodeData.EdgeInfo.Associations) == 0 {
+			continue
+		}
+		append2(&baseQueryFiles, getImportPathForBaseQueryFile(info.NodeData.PackageName))
+		for _, edge := range info.NodeData.EdgeInfo.Associations {
+			append2(&queryFiles, getImportPathForEdgeQueryFile(info.NodeData, edge))
+		}
+	}
+
+	// bucket each group, make sure it's sorted within each bucket so that it doesn't randomly change
+	// and make sure we get the order we want
+	list := [][]string{
+		baseFiles,
+		entFiles,
+		enums,
+		baseQueryFiles,
+		queryFiles,
+	}
+	for _, l := range list {
+		sort.Strings(l)
+		lines = append(lines, l...)
+	}
+	return lines
+}
+
 func writeInternalEntFile(s *schema.Schema, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
-		Data: struct {
-			Schema  *schema.Schema
-			Package *codegen.ImportPackage
-		}{
-			s,
-			codePathInfo.GetImportPackage(),
-		},
+		Data:              getSortedInternalEntFileLines(s),
 		AbsPathToTemplate: util.GetAbsolutePath("internal.tmpl"),
 		TemplateName:      "internal.tmpl",
 		PathToFile:        codepath.GetFilePathForInternalFile(),
