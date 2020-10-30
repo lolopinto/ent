@@ -49,7 +49,7 @@
       {{/* TODO enum support e.g. account status */}} 
       {{ range $field := $gqlNode.Fields -}}
         {{$field.Name}}: {
-          {{range $import := $field.FieldImports -}}
+          {{range $import := $field.AllImports -}}
             {{ if $baseObj.ForeignImport $import.Type -}}
               {{$ignore := useImport $import.Type -}}
             {{end -}}

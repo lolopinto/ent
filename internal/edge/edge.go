@@ -292,6 +292,17 @@ func (e *AssociationEdge) TsEdgeConst() string {
 	return edgeConst
 }
 
+func (e *AssociationEdge) TsEdgeQueryName() string {
+	return fmt.Sprintf("%sQuery", e.TsEdgeConst())
+}
+
+func (e *AssociationEdge) GetGraphQLConnectionName() string {
+	// we need a unique graphql name
+	// there's nothing stopping multiple edges of different types having the same connection and then there'll be a conflict here
+	// so we use the UserToFoo names to have UserToFriendsConnection and UserToFriendsEdge names
+	return fmt.Sprintf("%sConnection", e.TsEdgeConst())
+}
+
 func (e *AssociationEdge) PluralEdge() bool {
 	return true
 }
@@ -313,13 +324,12 @@ func (edge *AssociationEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 			},
 		}
 	}
+	// return a connection
 	return []enttype.FileImport{
 		enttype.NewGQLFileImport("GraphQLNonNull"),
-		enttype.NewGQLFileImport("GraphQLList"),
-		enttype.NewGQLFileImport("GraphQLNonNull"),
 		{
-			ImportType: enttype.Node,
-			Type:       edge.NodeInfo.Node,
+			ImportType: enttype.Connection,
+			Type:       edge.GetGraphQLConnectionName(),
 		},
 	}
 }

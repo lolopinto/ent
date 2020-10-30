@@ -1,4 +1,4 @@
-{{$name := printf "%sQuery" .Edge.TsEdgeConst -}}
+{{$name := .Edge.TsEdgeQueryName -}}
 {{$base := printf "%sBase" $name -}}
 {{ reserveImport .Package.InternalImportPath $base -}}
 
