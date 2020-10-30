@@ -35,20 +35,41 @@ async function readInputs(): Promise<string[]> {
 }
 
 async function captureCustom(filePath: string) {
-  // TODO configurable paths...
-  // for now only ent/**/
-  // TODO we can probably be even smarter here but this is fine for now
-  // and then it'll be graphql/custom or something
-  const entFiles = glob.sync(path.join(filePath, "/ent/**/*.ts"), {
-    // no actions for now to speed things up
-    ignore: ["**/generated/**", "**/tests/**", "**/actions/**"],
-  });
-  const graphqlFiles = glob.sync(path.join(filePath, "/graphql/**/*.ts"), {
-    // no actions for now to speed things up
-    // no index.ts (need a better way to explicitly ignore specific files)
-    ignore: ["**/generated/**", "**/tests/**", "**/index.ts"],
-  });
-  const files = [...entFiles, ...graphqlFiles];
+  // TODO configurable paths eventually
+  // for now only files that are in the include path of the roots are allowed
+
+  const rootFiles = [
+    // right now, currently expecting all custom ent stuff to be in the ent object
+    // eventually, create a path we check e.g. ent/custom_gql/ ent/graphql?
+    // for now can just go in graphql/resolvers/ (not generated)
+    path.join(filePath, "ent/index.ts"),
+    path.join(filePath, "/graphql/resolvers/index.ts"),
+  ];
+
+  const ignore = [
+    "**/generated/**",
+    "**/tests/**",
+    "**/index.ts",
+    "**/internal.ts",
+  ];
+  const customGQLResolvers = glob.sync(
+    path.join(filePath, "/graphql/resolvers/**/*.ts"),
+    {
+      // no actions for now to speed things up
+      // no index.ts or internal file.
+      ignore: ignore,
+    },
+  );
+  const customGQLMutations = glob.sync(
+    path.join(filePath, "/graphql/mutations/**/*.ts"),
+    {
+      // no actions for now to speed things up
+      // no index.ts or internal file.
+      ignore: ignore,
+    },
+  );
+  const files = rootFiles.concat(customGQLResolvers, customGQLMutations);
+  //console.log(files);
 
   let promises: any[] = [];
   files.forEach((file) => {
