@@ -7,6 +7,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/pkg/errors"
 )
 
@@ -672,12 +673,11 @@ func getGraphQLImportsForField(cd *customData, f CustomField, s *gqlSchema) ([]*
 		if ok {
 			addGQLImports(typ)
 		} else {
-			node, ok := s.nodes[result.Type]
+			_, ok := s.nodes[result.Type]
 			if ok {
-				nodeData := node.ObjData.NodeData
 				imports = append(imports, &fileImport{
 					Type:       fmt.Sprintf("%sType", result.Type),
-					ImportPath: getImportPathForNode(nodeData),
+					ImportPath: codepath.GetImportPathForExternalGQLFile(),
 				})
 				//				s.nodes[resultre]
 				// now we need to figure out where this is from e.g.

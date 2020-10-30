@@ -197,6 +197,16 @@ func (st writeMutationStep) process(data *codegen.Data, s *gqlSchema) error {
 	return nil
 }
 
+type writeInternalIndexStep struct {
+}
+
+func (st writeInternalIndexStep) process(data *codegen.Data, s *gqlSchema) error {
+	if err := writeInternalGQLResolversFile(s, data.CodePath); err != nil {
+		return err
+	}
+	return writeGQLResolversIndexFile()
+}
+
 type generateGQLSchemaStep struct{}
 
 func (st generateGQLSchemaStep) process(data *codegen.Data, s *gqlSchema) error {
@@ -239,6 +249,7 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 		writeGraphQLTypesStep{},
 		writeQueryStep{},
 		writeMutationStep{},
+		writeInternalIndexStep{},
 		generateGQLSchemaStep{},
 		writeSchemaStep{},
 		writeIndexStep{},
@@ -258,30 +269,8 @@ func getFilePathForNode(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName)
 }
 
-func getImportPathForNode(nodeData *schema.NodeData) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", nodeData.PackageName)
-}
-
 func getFilePathForEnum(e enum.GQLEnum) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strings.ToLower(strcase.ToSnake(e.Name)))
-}
-
-func getImportPathForEnum(e enum.GQLEnum) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", e.Name)
-}
-
-func getImportPathFromEnumName(name string) string {
-	// consistent with node_map/parseInputSchema
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", strings.ToLower(strcase.ToSnake(name)))
-}
-
-func getImportPathFromNodePackage(packageName string) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", packageName)
-}
-
-func getImportPathFromNodeName(nodeName string) string {
-	// consistent with node_map/parseInputSchema
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", strings.ToLower(strcase.ToSnake(nodeName)))
 }
 
 func getQueryFilePath() string {
@@ -335,10 +324,6 @@ func getImportPathForCustomMutation(name string) string {
 
 func getFilePathForCustomQuery(name string) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strcase.ToSnake(name))
-}
-
-func getImportPathForCustomQuery(name string) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type", strcase.ToSnake(name))
 }
 
 func parseCustomData(data *codegen.Data) chan *customData {
@@ -624,6 +609,56 @@ func writeEnumFile(enum *gqlEnum) error {
 	}))
 }
 
+func writeInternalGQLResolversFile(s *gqlSchema, codePathInfo *codegen.CodePath) error {
+	var lines []string
+
+	trim := func(s string) string {
+		return strings.TrimSuffix(s, ".ts")
+	}
+
+	// this works based on what we're currently doing
+	// if we eventually add other things here, may not work?
+
+	// get top level nodes e.g. User, Photo
+	// get the enums
+	// get the custom queries
+	for _, node := range s.nodes {
+		lines = append(lines, trim(node.FilePath))
+	}
+	for _, enum := range s.enums {
+		lines = append(lines, trim(enum.FilePath))
+	}
+
+	for _, node := range s.customQueries {
+		lines = append(lines, trim(node.FilePath))
+	}
+
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data:              lines,
+		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_internal.tmpl"),
+		TemplateName:      "resolver_internal.tmpl",
+		PathToFile:        codepath.GetFilePathForInternalGQLFile(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
+func writeGQLResolversIndexFile() error {
+	imps := tsimport.NewImports()
+
+	return file.Write(&file.TemplatedBasedFileWriter{
+		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_index.tmpl"),
+		TemplateName:      "resolver_index.tmpl",
+		PathToFile:        codepath.GetFilePathForExternalGQLFile(),
+		FormatSource:      true,
+		TsImports:         imps,
+		FuncMap:           imps.FuncMap(),
+	})
+}
+
 type fieldConfig struct {
 	Exported         bool
 	Name             string
@@ -679,11 +714,11 @@ func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 			typ = imp.Type
 			break
 		case enttype.Enum:
-			importPath = getImportPathFromEnumName(imp.Type)
+			importPath = codepath.GetImportPathForExternalGQLFile()
 			typ = fmt.Sprintf("%sType", typ)
 			break
 		case enttype.Node:
-			importPath = getImportPathFromNodeName(typ)
+			importPath = codepath.GetImportPathForExternalGQLFile()
 			typ = fmt.Sprintf("%sType", typ)
 			break
 		case enttype.EntGraphQL:
@@ -726,7 +761,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 			continue
 		}
 		result.Imports = append(result.Imports, &fileImport{
-			ImportPath: getImportPathFromNodePackage(node.PackageName),
+			ImportPath: codepath.GetImportPathForExternalGQLFile(),
 			Type:       fmt.Sprintf("%sType", node.Node),
 		})
 	}
@@ -920,7 +955,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionP
 				Type:       nodeData.Node,
 			},
 			{
-				ImportPath: getImportPathForNode(nodeData),
+				ImportPath: codepath.GetImportPathForExternalGQLFile(),
 				Type:       fmt.Sprintf("%sType", nodeData.Node),
 			},
 		},
@@ -944,7 +979,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionP
 				},
 				{
 					Type:       fmt.Sprintf("%sType", nodeInfo.Node),
-					ImportPath: getImportPathForNode(nodeData),
+					ImportPath: codepath.GetImportPathForExternalGQLFile(),
 				},
 			},
 		})
@@ -1204,7 +1239,7 @@ func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 			continue
 		}
 		results = append(results, rootField{
-			ImportPath: getImportPathForNode(nodeData),
+			ImportPath: codepath.GetImportPathForExternalGQLFile(),
 			Type:       fmt.Sprintf("%sQuery", nodeData.Node),
 			Name:       strcase.ToLowerCamel(nodeData.Node),
 		})
@@ -1216,7 +1251,7 @@ func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 		}
 		query := node.Field
 		results = append(results, rootField{
-			ImportPath: getImportPathForCustomQuery(query.GraphQLName),
+			ImportPath: codepath.GetImportPathForExternalGQLFile(),
 			Name:       query.GraphQLName,
 			Type:       fmt.Sprintf("%sType", strcase.ToCamel(query.GraphQLName)),
 		})

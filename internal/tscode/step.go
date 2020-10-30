@@ -540,6 +540,7 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 func getInternalEntFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 
+	// todo kill this and inline this
 	m["pathBaseModelFile"] = getImportPathForBaseModelFile
 	m["pathEntFile"] = getImportPathForModelFile
 	m["pathEnumFile"] = getImportPathForEnumFile

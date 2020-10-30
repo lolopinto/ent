@@ -1,14 +1,14 @@
 {{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo"}}
 
 {{ range $field := .RootFields -}} 
-  import { {{$field.Type}} } from "{{$field.ImportPath}}";
+  {{reserveImport $field.ImportPath $field.Type -}}
 {{ end }}
 
 export const {{.Type}} = new {{useImport "GraphQLObjectType"}}({
   name: "{{.Node}}",
   fields: () => ({
     {{ range $field := .RootFields -}} 
-      {{$field.Name}}: {{$field.Type}},
+      {{$field.Name}}: {{useImport $field.Type}},
     {{ end -}}
   }),
 });

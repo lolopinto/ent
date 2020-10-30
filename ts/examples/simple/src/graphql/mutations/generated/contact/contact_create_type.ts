@@ -12,7 +12,7 @@ import {
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { Contact } from "src/ent/";
-import { ContactType } from "src/graphql/resolvers/generated/contact_type";
+import { ContactType } from "src/graphql/resolvers/";
 import CreateContactAction, {
   ContactCreateInput,
 } from "src/ent/contact/actions/create_contact_action";
