@@ -633,6 +633,10 @@ func writeInternalGQLResolversFile(s *gqlSchema, codePathInfo *codegen.CodePath)
 		lines = append(lines, trim(node.FilePath))
 	}
 
+	// for consistency
+	sort.Slice(lines, func(i, j int) bool {
+		return lines[i] < lines[j]
+	})
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{

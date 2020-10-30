@@ -2,6 +2,6 @@
 
 export * from "src/graphql/resolvers/generated/address_type";
 export * from "src/graphql/resolvers/generated/contact_type";
-export * from "src/graphql/resolvers/generated/user_type";
 export * from "src/graphql/resolvers/generated/event_type";
+export * from "src/graphql/resolvers/generated/user_type";
 export * from "src/graphql/resolvers/generated/viewer_type";
