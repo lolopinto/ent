@@ -609,38 +609,48 @@ func writeEnumFile(enum *gqlEnum) error {
 	}))
 }
 
-func writeInternalGQLResolversFile(s *gqlSchema, codePathInfo *codegen.CodePath) error {
-	var lines []string
-
-	trim := func(s string) string {
-		return strings.TrimSuffix(s, ".ts")
+func getSortedLines(s *gqlSchema) []string {
+	append2 := func(list *[]string, str string) {
+		*list = append(*list, strings.TrimSuffix(str, ".ts"))
 	}
-
 	// this works based on what we're currently doing
 	// if we eventually add other things here, may not work?
 
 	// get top level nodes e.g. User, Photo
 	// get the enums
 	// get the custom queries
+	var nodes []string
 	for _, node := range s.nodes {
-		lines = append(lines, trim(node.FilePath))
+		append2(&nodes, node.FilePath)
 	}
+	var enums []string
 	for _, enum := range s.enums {
-		lines = append(lines, trim(enum.FilePath))
+		append2(&enums, enum.FilePath)
 	}
 
+	var customQueries []string
 	for _, node := range s.customQueries {
-		lines = append(lines, trim(node.FilePath))
+		append2(&customQueries, node.FilePath)
 	}
 
-	// for consistency
-	sort.Slice(lines, func(i, j int) bool {
-		return lines[i] < lines[j]
-	})
+	var lines []string
+	list := [][]string{
+		nodes,
+		enums,
+		customQueries,
+	}
+	for _, l := range list {
+		sort.Strings(l)
+		lines = append(lines, l...)
+	}
+	return lines
+}
+
+func writeInternalGQLResolversFile(s *gqlSchema, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
-		Data:              lines,
+		Data:              getSortedLines(s),
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_internal.tmpl"),
 		TemplateName:      "resolver_internal.tmpl",
 		PathToFile:        codepath.GetFilePathForInternalGQLFile(),
