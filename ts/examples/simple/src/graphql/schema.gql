@@ -28,14 +28,14 @@ type User {
   emailAddress: String!
   phoneNumber: String
   accountStatus: String
-  createdEvents: [Event!]!
-  friends: [User!]!
+  createdEvents: UserToCreatedEventsConnection!
+  friends: UserToFriendsConnection!
   selfContact: Contact
-  userToHostedEvents: [Event!]!
-  invitedEvents: [Event!]!
-  eventsAttending: [Event!]!
-  declinedEvents: [Event!]!
-  maybeEvents: [Event!]!
+  userToHostedEvents: UserToHostedEventsConnection!
+  invitedEvents: UserToInvitedEventsConnection!
+  eventsAttending: UserToEventsAttendingConnection!
+  declinedEvents: UserToDeclinedEventsConnection!
+  maybeEvents: UserToMaybeEventsConnection!
   contacts: [Contact!]!
   fullName: String!
   bar: String
@@ -46,6 +46,88 @@ type User {
   contactsSameDomainNullableContentsAndList: [Contact]
 }
 
+type UserToCreatedEventsConnection {
+  edges: [UserToCreatedEventsEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+}
+
+type UserToCreatedEventsEdge {
+  node: User!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type UserToFriendsConnection {
+  edges: [UserToFriendsEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+}
+
+type UserToFriendsEdge {
+  node: User!
+  cursor: String!
+}
+
+type UserToHostedEventsConnection {
+  edges: [UserToHostedEventsEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+}
+
+type UserToHostedEventsEdge {
+  node: User!
+  cursor: String!
+}
+
+type UserToInvitedEventsConnection {
+  edges: [UserToInvitedEventsEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+}
+
+type UserToInvitedEventsEdge {
+  node: User!
+  cursor: String!
+}
+
+type UserToEventsAttendingConnection {
+  edges: [UserToEventsAttendingEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+}
+
+type UserToEventsAttendingEdge {
+  node: User!
+  cursor: String!
+}
+
+type UserToDeclinedEventsConnection {
+  edges: [UserToDeclinedEventsEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+}
+
+type UserToDeclinedEventsEdge {
+  node: User!
+  cursor: String!
+}
+
+type UserToMaybeEventsConnection {
+  edges: [UserToMaybeEventsEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+}
+
+type UserToMaybeEventsEdge {
+  node: User!
+  cursor: String!
+}
+
 type Event {
   creator: User
   id: ID!
@@ -53,15 +135,70 @@ type Event {
   startTime: Time!
   endTime: Time
   eventLocation: String!
-  hosts: [User!]!
-  invited: [User!]!
-  attending: [User!]!
-  declined: [User!]!
-  maybe: [User!]!
+  hosts: EventToHostsConnection!
+  invited: EventToInvitedConnection!
+  attending: EventToAttendingConnection!
+  declined: EventToDeclinedConnection!
+  maybe: EventToMaybeConnection!
 }
 
 """Time scalar type"""
 scalar Time
+
+type EventToHostsConnection {
+  edges: [EventToHostsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+}
+
+type EventToHostsEdge {
+  node: Event!
+  cursor: String!
+}
+
+type EventToInvitedConnection {
+  edges: [EventToInvitedEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+}
+
+type EventToInvitedEdge {
+  node: Event!
+  cursor: String!
+}
+
+type EventToAttendingConnection {
+  edges: [EventToAttendingEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+}
+
+type EventToAttendingEdge {
+  node: Event!
+  cursor: String!
+}
+
+type EventToDeclinedConnection {
+  edges: [EventToDeclinedEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+}
+
+type EventToDeclinedEdge {
+  node: Event!
+  cursor: String!
+}
+
+type EventToMaybeConnection {
+  edges: [EventToMaybeEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+}
+
+type EventToMaybeEdge {
+  node: Event!
+  cursor: String!
+}
 
 type Viewer {
   viewerID: ID

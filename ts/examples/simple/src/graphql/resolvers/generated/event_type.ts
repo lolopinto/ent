@@ -5,15 +5,28 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
-  GraphQLList,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
-import { GraphQLTime } from "@lolopinto/ent/graphql";
-import { UserType } from "src/graphql/resolvers/";
-import { Event } from "src/ent/";
+import { GraphQLTime, GraphQLEdgeConnection } from "@lolopinto/ent/graphql";
+import {
+  UserType,
+  EventToHostsConnectionType,
+  EventToInvitedConnectionType,
+  EventToAttendingConnectionType,
+  EventToDeclinedConnectionType,
+  EventToMaybeConnectionType,
+} from "src/graphql/resolvers/";
+import {
+  Event,
+  EventToHostsQuery,
+  EventToInvitedQuery,
+  EventToAttendingQuery,
+  EventToDeclinedQuery,
+  EventToMaybeQuery,
+} from "src/ent/";
 
 interface EventQueryArgs {
   id: ID;
@@ -47,33 +60,53 @@ export const EventType = new GraphQLObjectType({
       },
     },
     hosts: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      type: GraphQLNonNull(EventToHostsConnectionType()),
       resolve: (event: Event) => {
-        return event.loadHosts();
+        return new GraphQLEdgeConnection(
+          event.viewer,
+          event,
+          EventToHostsQuery,
+        );
       },
     },
     invited: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      type: GraphQLNonNull(EventToInvitedConnectionType()),
       resolve: (event: Event) => {
-        return event.loadInvited();
+        return new GraphQLEdgeConnection(
+          event.viewer,
+          event,
+          EventToInvitedQuery,
+        );
       },
     },
     attending: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      type: GraphQLNonNull(EventToAttendingConnectionType()),
       resolve: (event: Event) => {
-        return event.loadAttending();
+        return new GraphQLEdgeConnection(
+          event.viewer,
+          event,
+          EventToAttendingQuery,
+        );
       },
     },
     declined: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      type: GraphQLNonNull(EventToDeclinedConnectionType()),
       resolve: (event: Event) => {
-        return event.loadDeclined();
+        return new GraphQLEdgeConnection(
+          event.viewer,
+          event,
+          EventToDeclinedQuery,
+        );
       },
     },
     maybe: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      type: GraphQLNonNull(EventToMaybeConnectionType()),
       resolve: (event: Event) => {
-        return event.loadMaybe();
+        return new GraphQLEdgeConnection(
+          event.viewer,
+          event,
+          EventToMaybeQuery,
+        );
       },
     },
   }),

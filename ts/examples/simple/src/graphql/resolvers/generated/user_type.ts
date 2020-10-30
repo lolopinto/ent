@@ -11,8 +11,27 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
-import { EventType, ContactType } from "src/graphql/resolvers/";
-import { User } from "src/ent/";
+import { GraphQLEdgeConnection } from "@lolopinto/ent/graphql";
+import {
+  ContactType,
+  UserToCreatedEventsConnectionType,
+  UserToFriendsConnectionType,
+  UserToHostedEventsConnectionType,
+  UserToInvitedEventsConnectionType,
+  UserToEventsAttendingConnectionType,
+  UserToDeclinedEventsConnectionType,
+  UserToMaybeEventsConnectionType,
+} from "src/graphql/resolvers/";
+import {
+  User,
+  UserToCreatedEventsQuery,
+  UserToFriendsQuery,
+  UserToHostedEventsQuery,
+  UserToInvitedEventsQuery,
+  UserToEventsAttendingQuery,
+  UserToDeclinedEventsQuery,
+  UserToMaybeEventsQuery,
+} from "src/ent/";
 
 interface UserQueryArgs {
   id: ID;
@@ -40,15 +59,19 @@ export const UserType = new GraphQLObjectType({
       type: GraphQLString,
     },
     createdEvents: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      type: GraphQLNonNull(UserToCreatedEventsConnectionType()),
       resolve: (user: User) => {
-        return user.loadCreatedEvents();
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToCreatedEventsQuery,
+        );
       },
     },
     friends: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
+      type: GraphQLNonNull(UserToFriendsConnectionType()),
       resolve: (user: User) => {
-        return user.loadFriends();
+        return new GraphQLEdgeConnection(user.viewer, user, UserToFriendsQuery);
       },
     },
     selfContact: {
@@ -58,33 +81,53 @@ export const UserType = new GraphQLObjectType({
       },
     },
     userToHostedEvents: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      type: GraphQLNonNull(UserToHostedEventsConnectionType()),
       resolve: (user: User) => {
-        return user.loadUserToHostedEvents();
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToHostedEventsQuery,
+        );
       },
     },
     invitedEvents: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      type: GraphQLNonNull(UserToInvitedEventsConnectionType()),
       resolve: (user: User) => {
-        return user.loadInvitedEvents();
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToInvitedEventsQuery,
+        );
       },
     },
     eventsAttending: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      type: GraphQLNonNull(UserToEventsAttendingConnectionType()),
       resolve: (user: User) => {
-        return user.loadEventsAttending();
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToEventsAttendingQuery,
+        );
       },
     },
     declinedEvents: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      type: GraphQLNonNull(UserToDeclinedEventsConnectionType()),
       resolve: (user: User) => {
-        return user.loadDeclinedEvents();
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToDeclinedEventsQuery,
+        );
       },
     },
     maybeEvents: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      type: GraphQLNonNull(UserToMaybeEventsConnectionType()),
       resolve: (user: User) => {
-        return user.loadMaybeEvents();
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToMaybeEventsQuery,
+        );
       },
     },
     contacts: {

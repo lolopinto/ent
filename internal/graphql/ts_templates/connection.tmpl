@@ -7,7 +7,9 @@
   {{reserveImport .ImportPath .Type}}
 {{ end -}}
 
-export const {{ printf "%sType" .Edge.GetGraphQLConnectionName}} = new {{useImport "GraphQLConnectionType"}}(
- "{{.Edge.TsEdgeConst}}",
- {{useImport .NodeType }},
-);
+export const {{ printf "%sType" .Edge.GetGraphQLConnectionName}} = () => {
+  return new {{useImport "GraphQLConnectionType"}}(
+   "{{.Edge.TsEdgeConst}}",
+   {{useImport .NodeType }},
+  );
+}

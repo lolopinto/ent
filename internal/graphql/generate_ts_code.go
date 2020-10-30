@@ -284,6 +284,10 @@ func getFilePathForEnum(e enum.GQLEnum) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strings.ToLower(strcase.ToSnake(e.Name)))
 }
 
+func getFilePathForConnection(nodeData *schema.NodeData, connectionName string) string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s/%s_type.ts", nodeData.PackageName, strings.ToLower(strcase.ToSnake(connectionName)))
+}
+
 func getQueryFilePath() string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/query_type.ts")
 }
@@ -593,11 +597,11 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 						nodeType := fmt.Sprintf("%sType", nodeData.Node)
 						conn := &gqlConnection{
 							Edge:     edge,
-							FilePath: getFilePathForConnection(edge.GetGraphQLConnectionName()),
+							FilePath: getFilePathForConnection(nodeData, edge.GetGraphQLConnectionName()),
 							NodeType: nodeType,
 							Imports: []*fileImport{
 								{
-									ImportPath: getImportPathForNode(nodeData),
+									ImportPath: codepath.GetImportPathForExternalGQLFile(),
 									Type:       nodeType,
 								},
 							},
@@ -782,6 +786,7 @@ func buildFieldConfig(nodeData *schema.NodeData) *fieldConfig {
 
 func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 	imports := make([]*fileImport, len(imps))
+	fn := false
 	for idx, imp := range imps {
 		var importPath string
 		typ := imp.Type
@@ -790,20 +795,15 @@ func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 			importPath = "graphql"
 			typ = imp.Type
 			break
-		case enttype.Enum:
-			importPath = codepath.GetImportPathForExternalGQLFile()
-			typ = fmt.Sprintf("%sType", typ)
-			break
-		case enttype.Node:
+		case enttype.Enum, enttype.Connection, enttype.Node:
+			if imp.ImportType == enttype.Connection {
+				fn = true
+			}
 			importPath = codepath.GetImportPathForExternalGQLFile()
 			typ = fmt.Sprintf("%sType", typ)
 			break
 		case enttype.EntGraphQL:
 			importPath = codepath.GraphQLPackage
-			break
-		case enttype.Connection:
-			importPath = getImportPathFromConnectionName(imp.Type)
-			typ = fmt.Sprintf("%sType", typ)
 			break
 		default:
 			panic(fmt.Sprintf("unsupported Import Type %v", imp.ImportType))
@@ -811,6 +811,7 @@ func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 		imports[idx] = &fileImport{
 			Type:       typ,
 			ImportPath: importPath,
+			Function:   fn,
 		}
 	}
 	return imports
@@ -1311,7 +1312,11 @@ func typeFromImports(imports []string) string {
 func (f *fieldType) FieldType() string {
 	imps := make([]string, len(f.FieldImports))
 	for idx, imp := range f.FieldImports {
-		imps[idx] = imp.Type
+		if imp.Function {
+			imps[idx] = fmt.Sprintf("%s()", imp.Type)
+		} else {
+			imps[idx] = imp.Type
+		}
 	}
 	return typeFromImports(imps)
 }
@@ -1323,6 +1328,7 @@ func (f *fieldType) AllImports() []*fileImport {
 type fileImport struct {
 	ImportPath string
 	Type       string
+	Function   bool // defaults to no. if function, call it instead of just referencing the import when used?
 }
 
 // a root field in the schema
