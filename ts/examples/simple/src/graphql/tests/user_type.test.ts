@@ -368,11 +368,13 @@ test("load list", async () => {
     ["emailAddress", user.emailAddress],
     ["accountStatus", user.accountStatus],
     // most recent first
-    ["friends[0].id", user3.id],
-    ["friends[0].firstName", user3.firstName],
-    ["friends[0].lastName", user3.lastName],
-    ["friends[1].id", user2.id],
-    ["friends[1].firstName", user2.firstName],
-    ["friends[1].lastName", user2.lastName],
+    ["friends.nodes[0].id", user3.id],
+    ["friends.nodes[0].firstName", user3.firstName],
+    ["friends.nodes[0].lastName", user3.lastName],
+    ["friends.nodes[1].id", user2.id],
+    ["friends.nodes[1].firstName", user2.firstName],
+    ["friends.nodes[1].lastName", user2.lastName],
+    ["friends.edges[0].node.id", user3.id],
+    ["friends.edges[1].node.id", user2.id],
   );
 });
