@@ -541,7 +541,7 @@ func writeInternalEntFile(s *schema.Schema, codePathInfo *codegen.CodePath) erro
 		PathToFile:        codepath.GetFilePathForInternalFile(),
 		FormatSource:      true,
 		TsImports:         imps,
-		FuncMap:           getInternalEntFuncs(imps),
+		FuncMap:           imps.FuncMap(),
 	})
 }
 
@@ -582,17 +582,5 @@ func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["edgeInfos"] = action.GetEdgesFromEdges
 
-	return m
-}
-
-func getInternalEntFuncs(imps *tsimport.Imports) template.FuncMap {
-	m := imps.FuncMap()
-
-	// todo kill this and inline this
-	m["pathBaseModelFile"] = getImportPathForBaseModelFile
-	m["pathEntFile"] = getImportPathForModelFile
-	m["pathEnumFile"] = getImportPathForEnumFile
-	m["pathBaseQueryFile"] = getImportPathForBaseQueryFile
-	m["pathEdgeQueryFile"] = getImportPathForEdgeQueryFile
 	return m
 }
