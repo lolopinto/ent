@@ -946,6 +946,24 @@ func addConnection(nodeData *schema.NodeData, edge *edge.AssociationEdge, fields
 				Type:       edge.TsEdgeQueryName(),
 			},
 		},
+		Args: []*fieldConfigArg{
+			{
+				Name:    "first",
+				Imports: []string{"GraphQLInt"},
+			},
+			{
+				Name:    "after",
+				Imports: []string{"GraphQLString"},
+			},
+			{
+				Name:    "last",
+				Imports: []string{"GraphQLInt"},
+			},
+			{
+				Name:    "before",
+				Imports: []string{"GraphQLString"},
+			},
+		},
 		FunctionContents: fmt.Sprintf(
 			"return new GraphQLEdgeConnection(%s.viewer, %s, %s);",
 			instance, instance, edge.TsEdgeQueryName()),
@@ -1259,6 +1277,7 @@ type fieldType struct {
 	FieldImports       []*fileImport
 	// imports that are ignored in the FieldType method but needed in the file e.g. used in FunctionContents
 	ExtraImports []*fileImport
+	Args         []*fieldConfigArg
 	// no args for now. come back.
 	FunctionContents string // TODO
 	// TODO more types we need to support

@@ -1,5 +1,6 @@
 import {
   GraphQLFieldConfigMap,
+  GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -59,6 +60,12 @@ export class GraphQLConnectionType<
           type: GraphQLNonNull(GraphQLPageInfo),
           resolve: (source: GraphQLEdgeConnection) => {
             return source.queryPageInfo();
+          },
+        },
+        rawCount: {
+          type: GraphQLNonNull(GraphQLInt),
+          resolve: (source: GraphQLEdgeConnection) => {
+            return source.queryTotalCount();
           },
         },
       }),

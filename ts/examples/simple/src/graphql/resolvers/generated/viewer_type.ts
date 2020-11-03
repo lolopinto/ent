@@ -29,7 +29,6 @@ export const GQLViewerType = new GraphQLObjectType({
 
 export const ViewerType: GraphQLFieldConfig<undefined, RequestContext> = {
   type: GraphQLNonNull(GQLViewerType),
-  args: {},
   resolve: async (
     _source,
     { arg },

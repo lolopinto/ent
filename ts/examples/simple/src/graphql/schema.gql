@@ -28,14 +28,14 @@ type User {
   emailAddress: String!
   phoneNumber: String
   accountStatus: String
-  createdEvents: UserToCreatedEventsConnection!
-  friends: UserToFriendsConnection!
+  createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
+  friends(first: Int, after: String, last: Int, before: String): UserToFriendsConnection!
   selfContact: Contact
-  userToHostedEvents: UserToHostedEventsConnection!
-  invitedEvents: UserToInvitedEventsConnection!
-  eventsAttending: UserToEventsAttendingConnection!
-  declinedEvents: UserToDeclinedEventsConnection!
-  maybeEvents: UserToMaybeEventsConnection!
+  userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
+  invitedEvents(first: Int, after: String, last: Int, before: String): UserToInvitedEventsConnection!
+  eventsAttending(first: Int, after: String, last: Int, before: String): UserToEventsAttendingConnection!
+  declinedEvents(first: Int, after: String, last: Int, before: String): UserToDeclinedEventsConnection!
+  maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   contacts: [Contact!]!
   fullName: String!
   bar: String
@@ -50,6 +50,7 @@ type UserToCreatedEventsConnection {
   edges: [UserToCreatedEventsEdge!]!
   nodes: [User!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type UserToCreatedEventsEdge {
@@ -66,6 +67,7 @@ type UserToFriendsConnection {
   edges: [UserToFriendsEdge!]!
   nodes: [User!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type UserToFriendsEdge {
@@ -77,6 +79,7 @@ type UserToHostedEventsConnection {
   edges: [UserToHostedEventsEdge!]!
   nodes: [User!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type UserToHostedEventsEdge {
@@ -88,6 +91,7 @@ type UserToInvitedEventsConnection {
   edges: [UserToInvitedEventsEdge!]!
   nodes: [User!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type UserToInvitedEventsEdge {
@@ -99,6 +103,7 @@ type UserToEventsAttendingConnection {
   edges: [UserToEventsAttendingEdge!]!
   nodes: [User!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type UserToEventsAttendingEdge {
@@ -110,6 +115,7 @@ type UserToDeclinedEventsConnection {
   edges: [UserToDeclinedEventsEdge!]!
   nodes: [User!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type UserToDeclinedEventsEdge {
@@ -121,6 +127,7 @@ type UserToMaybeEventsConnection {
   edges: [UserToMaybeEventsEdge!]!
   nodes: [User!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type UserToMaybeEventsEdge {
@@ -135,11 +142,11 @@ type Event {
   startTime: Time!
   endTime: Time
   eventLocation: String!
-  hosts: EventToHostsConnection!
-  invited: EventToInvitedConnection!
-  attending: EventToAttendingConnection!
-  declined: EventToDeclinedConnection!
-  maybe: EventToMaybeConnection!
+  hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
+  invited(first: Int, after: String, last: Int, before: String): EventToInvitedConnection!
+  attending(first: Int, after: String, last: Int, before: String): EventToAttendingConnection!
+  declined(first: Int, after: String, last: Int, before: String): EventToDeclinedConnection!
+  maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
 }
 
 """Time scalar type"""
@@ -149,6 +156,7 @@ type EventToHostsConnection {
   edges: [EventToHostsEdge!]!
   nodes: [Event!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type EventToHostsEdge {
@@ -160,6 +168,7 @@ type EventToInvitedConnection {
   edges: [EventToInvitedEdge!]!
   nodes: [Event!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type EventToInvitedEdge {
@@ -171,6 +180,7 @@ type EventToAttendingConnection {
   edges: [EventToAttendingEdge!]!
   nodes: [Event!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type EventToAttendingEdge {
@@ -182,6 +192,7 @@ type EventToDeclinedConnection {
   edges: [EventToDeclinedEdge!]!
   nodes: [Event!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type EventToDeclinedEdge {
@@ -193,6 +204,7 @@ type EventToMaybeConnection {
   edges: [EventToMaybeEdge!]!
   nodes: [Event!]!
   pageInfo: PageInfo!
+  rawCount: Int!
 }
 
 type EventToMaybeEdge {

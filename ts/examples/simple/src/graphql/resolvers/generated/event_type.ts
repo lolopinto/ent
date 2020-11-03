@@ -5,6 +5,7 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLInt,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
@@ -61,6 +62,24 @@ export const EventType = new GraphQLObjectType({
     },
     hosts: {
       type: GraphQLNonNull(EventToHostsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (event: Event) => {
         return new GraphQLEdgeConnection(
           event.viewer,
@@ -71,6 +90,24 @@ export const EventType = new GraphQLObjectType({
     },
     invited: {
       type: GraphQLNonNull(EventToInvitedConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (event: Event) => {
         return new GraphQLEdgeConnection(
           event.viewer,
@@ -81,6 +118,24 @@ export const EventType = new GraphQLObjectType({
     },
     attending: {
       type: GraphQLNonNull(EventToAttendingConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (event: Event) => {
         return new GraphQLEdgeConnection(
           event.viewer,
@@ -91,6 +146,24 @@ export const EventType = new GraphQLObjectType({
     },
     declined: {
       type: GraphQLNonNull(EventToDeclinedConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (event: Event) => {
         return new GraphQLEdgeConnection(
           event.viewer,
@@ -101,6 +174,24 @@ export const EventType = new GraphQLObjectType({
     },
     maybe: {
       type: GraphQLNonNull(EventToMaybeConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (event: Event) => {
         return new GraphQLEdgeConnection(
           event.viewer,

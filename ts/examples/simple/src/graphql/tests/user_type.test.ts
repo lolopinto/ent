@@ -331,7 +331,7 @@ test("query user and nested object", async () => {
 });
 
 test("load list", async () => {
-  let [user, user2, user3] = await Promise.all([
+  let [user, user2, user3, user4, user5] = await Promise.all([
     create({
       firstName: "user1",
       lastName: "last",
@@ -347,18 +347,29 @@ test("load list", async () => {
       lastName: "last",
       emailAddress: randomEmail(),
     }),
+    create({
+      firstName: "user4",
+      lastName: "last",
+      emailAddress: randomEmail(),
+    }),
+    create({
+      firstName: "user5",
+      lastName: "last",
+      emailAddress: randomEmail(),
+    }),
   ]);
 
   let vc = new IDViewer(user.id);
   let action = EditUserAction.create(vc, user, {});
-  action.builder.addFriend(user2);
+  const friends = [user2, user3, user4, user5];
+  for (const friend of friends) {
+    // add time btw adding a new friend so that it's deterministic
+    advanceBy(86400);
+    action.builder.addFriendID(friend.id, {
+      time: new Date(),
+    });
+  }
   await action.saveX();
-
-  // add time btw adding a new friend so that it's deterministic
-  advanceBy(86400);
-  let action2 = EditUserAction.create(vc, user, {});
-  action2.builder.addFriend(user3);
-  await action2.saveX();
 
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user.id),
@@ -368,13 +379,49 @@ test("load list", async () => {
     ["emailAddress", user.emailAddress],
     ["accountStatus", user.accountStatus],
     // most recent first
-    ["friends.nodes[0].id", user3.id],
-    ["friends.nodes[0].firstName", user3.firstName],
-    ["friends.nodes[0].lastName", user3.lastName],
-    ["friends.nodes[1].id", user2.id],
-    ["friends.nodes[1].firstName", user2.firstName],
-    ["friends.nodes[1].lastName", user2.lastName],
-    ["friends.edges[0].node.id", user3.id],
-    ["friends.edges[1].node.id", user2.id],
+    ["friends.rawCount", 4],
+    ["friends.nodes[0].id", user5.id],
+    ["friends.nodes[0].firstName", user5.firstName],
+    ["friends.nodes[0].lastName", user5.lastName],
+    ["friends.nodes[1].id", user4.id],
+    ["friends.nodes[1].firstName", user4.firstName],
+    ["friends.nodes[1].lastName", user4.lastName],
+    ["friends.nodes[2].id", user3.id],
+    ["friends.nodes[2].firstName", user3.firstName],
+    ["friends.nodes[2].lastName", user3.lastName],
+    ["friends.nodes[3].id", user2.id],
+    ["friends.nodes[3].firstName", user2.firstName],
+    ["friends.nodes[3].lastName", user2.lastName],
+    ["friends.edges[0].node.id", user5.id],
+    ["friends.edges[1].node.id", user4.id],
+    ["friends.edges[2].node.id", user3.id],
+    ["friends.edges[3].node.id", user2.id],
+  );
+
+  let cursor: string;
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    ["friends.edges[0].node.id", user5.id],
+    [
+      "friends.edges[0].cursor",
+      function(c: string) {
+        cursor = c;
+        console.log(cursor);
+      },
+    ],
+  );
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    ["friends.edges[0].node.id", user5.id],
+    [
+      "friends.edges[0].cursor",
+      function(c: string) {
+        cursor = c;
+        console.log(cursor);
+      },
+    ],
   );
 });

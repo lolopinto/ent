@@ -1,5 +1,5 @@
 import { EdgeQuery, EdgeQueryCtr } from "../../core/query";
-import { AssocEdge, Ent, ID, Viewer } from "../../core/ent";
+import { AssocEdge, Data, Ent, ID, Viewer } from "../../core/ent";
 
 export interface GraphQLEdge {
   edge: AssocEdge; // TODO this should be an interface
@@ -14,9 +14,27 @@ export class GraphQLEdgeConnection {
     private viewer: Viewer,
     private source: Ent,
     ctr: EdgeQueryCtr<Ent>,
+    private args?: Data,
   ) {
     // TODO make viewer same?
     this.query = new ctr(this.viewer, this.source);
+    if (this.args) {
+      if (this.args.after && !this.args.first) {
+        throw new Error("cannot process after without first");
+      }
+      if (this.args.before && !this.args.before) {
+        throw new Error("cannot process before without last");
+      }
+      if (this.args.first) {
+        console.log("first");
+        this.query = this.query.first(this.args.first, this.args.after);
+      }
+      if (this.args.last) {
+        this.query = this.query.last(this.args.last, this.args.cursor);
+      }
+      // TODO custom args
+      // how to proceed
+    }
   }
 
   first(limit: number, cursor?: string) {

@@ -6,6 +6,7 @@ import {
   GraphQLString,
   GraphQLNonNull,
   GraphQLList,
+  GraphQLInt,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
@@ -60,6 +61,24 @@ export const UserType = new GraphQLObjectType({
     },
     createdEvents: {
       type: GraphQLNonNull(UserToCreatedEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (user: User) => {
         return new GraphQLEdgeConnection(
           user.viewer,
@@ -70,6 +89,24 @@ export const UserType = new GraphQLObjectType({
     },
     friends: {
       type: GraphQLNonNull(UserToFriendsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (user: User) => {
         return new GraphQLEdgeConnection(user.viewer, user, UserToFriendsQuery);
       },
@@ -82,6 +119,24 @@ export const UserType = new GraphQLObjectType({
     },
     userToHostedEvents: {
       type: GraphQLNonNull(UserToHostedEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (user: User) => {
         return new GraphQLEdgeConnection(
           user.viewer,
@@ -92,6 +147,24 @@ export const UserType = new GraphQLObjectType({
     },
     invitedEvents: {
       type: GraphQLNonNull(UserToInvitedEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (user: User) => {
         return new GraphQLEdgeConnection(
           user.viewer,
@@ -102,6 +175,24 @@ export const UserType = new GraphQLObjectType({
     },
     eventsAttending: {
       type: GraphQLNonNull(UserToEventsAttendingConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (user: User) => {
         return new GraphQLEdgeConnection(
           user.viewer,
@@ -112,6 +203,24 @@ export const UserType = new GraphQLObjectType({
     },
     declinedEvents: {
       type: GraphQLNonNull(UserToDeclinedEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (user: User) => {
         return new GraphQLEdgeConnection(
           user.viewer,
@@ -122,6 +231,24 @@ export const UserType = new GraphQLObjectType({
     },
     maybeEvents: {
       type: GraphQLNonNull(UserToMaybeEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (user: User) => {
         return new GraphQLEdgeConnection(
           user.viewer,
