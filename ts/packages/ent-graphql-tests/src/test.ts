@@ -453,3 +453,74 @@ test("query with object values", async () => {
     ],
   );
 });
+
+test("nullQueryPaths with partial array", async () => {
+  let rootQuery = new GraphQLObjectType({
+    name: "RootQueryType",
+    fields: {
+      users: {
+        args: {
+          ids: {
+            type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLID))),
+          },
+        },
+        type: GraphQLNonNull(GraphQLList(userType)),
+        resolve(_source, { ids }) {
+          let ret: (User | null)[] = [];
+          for (const id of ids) {
+            let num = parseInt(id, 0) || 0;
+            if (num % 2 == 0) {
+              ret.push(null);
+            } else {
+              ret.push(getUser(id));
+            }
+          }
+          return ret;
+        },
+      },
+    },
+  });
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      ids: ["1", "2"],
+    },
+    root: "users",
+    nullQueryPaths: ["[1]"],
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["[0].id", "1"],
+    ["[0].firstName", "Jon"],
+    ["[0].lastName", "Snow"],
+    ["[1].id", null],
+    ["[1].firstName", null],
+    ["[1].lastName", null],
+  );
+
+  // non-nullQuery paths way of doing it
+  cfg = {
+    schema: schema,
+    args: {
+      ids: ["1", "2"],
+    },
+    root: "users",
+  };
+
+  await expectQueryFromRoot(cfg, [
+    "",
+    [
+      {
+        id: "1",
+        firstName: "Jon",
+        lastName: "Snow",
+      },
+      null,
+    ],
+  ]);
+});
