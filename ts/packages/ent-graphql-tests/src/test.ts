@@ -454,7 +454,7 @@ test("query with object values", async () => {
   );
 });
 
-test("nullQueryPaths with partial array", async () => {
+test("nullQueryPaths with nullable list contents", async () => {
   let rootQuery = new GraphQLObjectType({
     name: "RootQueryType",
     fields: {
@@ -523,4 +523,29 @@ test("nullQueryPaths with partial array", async () => {
       null,
     ],
   ]);
+});
+
+test("nullQueryPaths with nullable list", async () => {
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "1",
+    },
+    root: "user",
+    nullQueryPaths: ["contacts"],
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["id", "1"],
+    ["firstName", "Jon"],
+    ["lastName", "Snow"],
+    ["contacts(first: 2)[0].firstName", null],
+    ["contacts(first: 2)[0].lastName", null],
+    ["contacts(first: 2)[0].emailAddress", null],
+  );
 });

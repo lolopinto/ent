@@ -370,7 +370,7 @@ async function expectFromRoot(
           current = current[part];
         }
 
-        if (listIdx !== undefined) {
+        if (listIdx !== undefined && nullPath?.indexOf("[") !== -1) {
           current = current[listIdx];
         }
 
@@ -378,6 +378,10 @@ async function expectFromRoot(
         if (nullParts.length === i + 1) {
           expect(current, `path ${nullPath} expected to be null`).toBe(null);
           return st;
+        }
+
+        if (listIdx !== undefined && nullPath?.indexOf("[") === -1) {
+          current = current[listIdx];
         }
 
         if (i === parts.length - 1) {
