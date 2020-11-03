@@ -1,6 +1,6 @@
 import express, { Express } from "express";
 import { graphqlHTTP } from "express-graphql";
-import { Viewer, loadEnt } from "@lolopinto/ent";
+import { Viewer } from "@lolopinto/ent";
 import { GraphQLSchema, GraphQLObjectType } from "graphql";
 import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import { IncomingMessage, ServerResponse } from "http";
@@ -82,7 +82,28 @@ function buildTreeFromQueryPaths(...options: Option[]) {
       if (tree[part] === undefined) {
         tree[part] = {};
       }
-      tree = tree[part];
+      if (part !== "") {
+        tree = tree[part];
+      }
+      function handleSubtree(obj: {}, tree: {}) {
+        if (Array.isArray(obj)) {
+          for (const obj2 of obj) {
+            handleSubtree(obj2, tree);
+          }
+          return;
+        }
+        for (const key in obj) {
+          if (tree[key] === undefined) {
+            tree[key] = {};
+          }
+          if (typeof obj[key] === "object") {
+            handleSubtree(obj[key], tree[key]);
+          }
+        }
+      }
+      if (typeof option[1] === "object") {
+        handleSubtree(option[1], tree);
+      }
     });
   });
   return topLevelTree;
@@ -244,6 +265,9 @@ async function expectFromRoot(
     ${config.root}${callVar} ${suffix}
   }`;
 
+  if (config.debugMode) {
+    console.log(q);
+  }
   let [st, temp] = makeGraphQLRequest(config, q);
   const res = await temp.expect("Content-Type", /json/);
   if (config.debugMode) {
@@ -287,7 +311,7 @@ async function expectFromRoot(
 
   // special case. TODO needs to be handled better
   if (options.length === 1 && options[0][0] === "") {
-    expect(options[0][1]).toBe(result);
+    expect(options[0][1]).toStrictEqual(result);
     return st;
   }
   await Promise.all(
@@ -330,6 +354,17 @@ async function expectFromRoot(
           part = part.substr(0, idx);
         }
 
+        idx = part.indexOf("(");
+        // function or arg call
+        if (idx !== -1) {
+          let endIdx = part.indexOf(")");
+          if (endIdx === -1) {
+            fail("can't have a beginning index without an end index");
+          }
+          // update part
+          part = part.substr(0, idx);
+        }
+
         current = current[part];
 
         // at the part of the path where it's expected to be null, confirm it is before proceeding
@@ -351,7 +386,7 @@ async function expectFromRoot(
             expect(
               current,
               `value of ${part} in path ${path} was not as expected`,
-            ).toBe(expected);
+            ).toStrictEqual(expected);
           }
         } else {
           expect(

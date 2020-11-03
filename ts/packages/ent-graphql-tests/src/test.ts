@@ -4,6 +4,8 @@ import {
   GraphQLString,
   GraphQLNonNull,
   GraphQLID,
+  GraphQLList,
+  GraphQLInt,
 } from "graphql";
 
 import {
@@ -52,7 +54,39 @@ interface User {
   firstName: string;
   lastName: string;
   address?: Address | null;
+  contacts?({ first: number }): Contact[];
 }
+
+interface Contact {
+  id: string;
+  firstName: string;
+  lastName: string;
+  emailAddress: string;
+  phoneNumber: string;
+}
+
+export const names: Partial<Pick<Contact, "firstName" | "lastName">>[] = [
+  {
+    firstName: "Robb",
+    lastName: "Stark",
+  },
+  {
+    firstName: "Sansa",
+    lastName: "Stark",
+  },
+  {
+    firstName: "Arya",
+    lastName: "Stark",
+  },
+  {
+    firstName: "Bran",
+    lastName: "Stark",
+  },
+  {
+    firstName: "Rickon",
+    lastName: "Stark",
+  },
+];
 
 function getUser(id: string): User {
   let result: User = {
@@ -69,6 +103,23 @@ function getUser(id: string): User {
       city: "San Francisco",
       state: "CA",
       zipCode: "94102",
+    };
+  }
+  if (num % 10 == 0) {
+    result.contacts = ({ first }) => {
+      let ret: Contact[] = [];
+      for (let i = 0; i < first; i++) {
+        let idx = i % names.length;
+        let name = names[idx]!;
+        ret.push({
+          firstName: name.firstName!,
+          lastName: name.lastName!,
+          emailAddress: `${name.firstName}@${name.lastName}.com`,
+          phoneNumber: "415-222-3322",
+          id: (i + 1000).toString(),
+        });
+      }
+      return ret;
     };
   }
   return result;
@@ -105,6 +156,27 @@ let addressType = new GraphQLObjectType({
   },
 });
 
+let contactType = new GraphQLObjectType({
+  name: "ContactType",
+  fields: {
+    id: {
+      type: GraphQLNonNull(GraphQLID),
+    },
+    firstName: {
+      type: GraphQLString,
+    },
+    lastName: {
+      type: GraphQLString,
+    },
+    emailAddress: {
+      type: GraphQLString,
+    },
+    phoneNumber: {
+      type: GraphQLString,
+    },
+  },
+});
+
 let userType = new GraphQLObjectType({
   name: "User",
   fields: {
@@ -119,6 +191,14 @@ let userType = new GraphQLObjectType({
     },
     address: {
       type: addressType,
+    },
+    contacts: {
+      type: GraphQLList(contactType),
+      args: {
+        first: {
+          type: GraphQLNonNull(GraphQLInt),
+        },
+      },
     },
   },
 });
@@ -196,6 +276,33 @@ describe("query with args", () => {
       ["address.apartment", null],
     );
   });
+
+  test("with object passed", async () => {
+    let cfg: queryRootConfig = {
+      schema: schema,
+      args: {
+        id: "2",
+      },
+      root: "user",
+    };
+
+    await expectQueryFromRoot(cfg, [
+      // TODO right now this is empty string, is there a better API for this?
+      "",
+      {
+        id: "2",
+        firstName: "Jon",
+        lastName: "Snow",
+        address: {
+          id: "23",
+          street: "1 main street",
+          state: "CA",
+          zipCode: "94102",
+          apartment: null,
+        },
+      },
+    ]);
+  });
 });
 
 test("mutation with args", async () => {
@@ -268,6 +375,80 @@ test("with async callback", async () => {
         await new Promise((resolve, reject) => {
           setTimeout(() => resolve(), 10);
         });
+      },
+    ],
+  );
+});
+
+test("query with nested args", async () => {
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "10",
+    },
+    root: "user",
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["id", "10"],
+    ["firstName", "Jon"],
+    ["lastName", "Snow"],
+    ["contacts(first: 2)[0].firstName", "Robb"],
+    ["contacts(first: 2)[0].lastName", "Stark"],
+    ["contacts(first: 2)[0].emailAddress", "Robb@Stark.com"],
+    ["contacts(first: 2)[1].firstName", "Sansa"],
+    ["contacts(first: 2)[1].lastName", "Stark"],
+    ["contacts(first: 2)[1].emailAddress", "Sansa@Stark.com"],
+  );
+});
+
+test("query with object values", async () => {
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "10",
+    },
+    root: "user",
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["id", "10"],
+    ["firstName", "Jon"],
+    ["lastName", "Snow"],
+    [
+      // this is better because we don't have to write complex things many times
+      "contacts(first: 2)",
+      [
+        {
+          firstName: "Robb",
+          lastName: "Stark",
+          emailAddress: "Robb@Stark.com",
+        },
+        {
+          firstName: "Sansa",
+          lastName: "Stark",
+          emailAddress: "Sansa@Stark.com",
+        },
+      ],
+    ],
+    [
+      "address",
+      {
+        id: "23",
+        street: "1 main street",
+        state: "CA",
+        zipCode: "94102",
+        apartment: null,
       },
     ],
   );
