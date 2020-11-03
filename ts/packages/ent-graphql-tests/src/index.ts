@@ -72,7 +72,8 @@ function buildTreeFromQueryPaths(...options: Option[]) {
     let parts = path.split(".");
 
     let tree = topLevelTree;
-    parts.forEach((part) => {
+    for (let i = 0; i < parts.length; i++) {
+      let part = parts[i];
       // a list, remove the index in the list building part
       let idx = part.indexOf("[");
       if (idx !== -1) {
@@ -101,10 +102,10 @@ function buildTreeFromQueryPaths(...options: Option[]) {
           }
         }
       }
-      if (typeof option[1] === "object") {
+      if (i === parts.length - 1 && typeof option[1] === "object") {
         handleSubtree(option[1], tree);
       }
-    });
+    }
   });
   return topLevelTree;
 }

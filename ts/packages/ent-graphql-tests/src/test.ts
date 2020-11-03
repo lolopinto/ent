@@ -203,6 +203,15 @@ let userType = new GraphQLObjectType({
   },
 });
 
+let viewerType = new GraphQLObjectType({
+  name: "Viewer",
+  fields: {
+    user: {
+      type: GraphQLNonNull(userType),
+    },
+  },
+});
+
 let rootQuery = new GraphQLObjectType({
   name: "RootQueryType",
   fields: {
@@ -215,6 +224,20 @@ let rootQuery = new GraphQLObjectType({
       type: userType,
       resolve(_source, { id }) {
         return getUser(id);
+      },
+    },
+  },
+});
+
+let viewerRootQuery = new GraphQLObjectType({
+  name: "RootQueryType",
+  fields: {
+    viewer: {
+      type: viewerType,
+      resolve() {
+        return {
+          user: getUser("20"),
+        };
       },
     },
   },
@@ -427,17 +450,37 @@ test("query with object values", async () => {
     ["lastName", "Snow"],
     [
       // this is better because we don't have to write complex things many times
-      "contacts(first: 2)",
+      "contacts(first: 5)",
       [
         {
           firstName: "Robb",
           lastName: "Stark",
           emailAddress: "Robb@Stark.com",
+          phoneNumber: "415-222-3322",
         },
         {
           firstName: "Sansa",
           lastName: "Stark",
           emailAddress: "Sansa@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Arya",
+          lastName: "Stark",
+          emailAddress: "Arya@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Bran",
+          lastName: "Stark",
+          emailAddress: "Bran@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Rickon",
+          lastName: "Stark",
+          emailAddress: "Rickon@Stark.com",
+          phoneNumber: "415-222-3322",
         },
       ],
     ],
@@ -450,6 +493,69 @@ test("query with object values", async () => {
         zipCode: "94102",
         apartment: null,
       },
+    ],
+  );
+});
+
+test("nested query with object values", async () => {
+  let schema = new GraphQLSchema({
+    query: viewerRootQuery,
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {},
+    root: "viewer",
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["user.id", "20"],
+    ["user.firstName", "Jon"],
+    ["user.lastName", "Snow"],
+    // TODO would be nice for this to be a partial query but not there yet
+    // [
+    //   "user",
+    //   {
+    //     id: "20",
+    //     firstName: "Jon",
+    //     lastName: "Snow",
+    //   },
+    // ],
+    [
+      "user.contacts(first: 5)",
+      [
+        {
+          firstName: "Robb",
+          lastName: "Stark",
+          emailAddress: "Robb@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Sansa",
+          lastName: "Stark",
+          emailAddress: "Sansa@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Arya",
+          lastName: "Stark",
+          emailAddress: "Arya@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Bran",
+          lastName: "Stark",
+          emailAddress: "Bran@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+        {
+          firstName: "Rickon",
+          lastName: "Stark",
+          emailAddress: "Rickon@Stark.com",
+          phoneNumber: "415-222-3322",
+        },
+      ],
     ],
   );
 });
