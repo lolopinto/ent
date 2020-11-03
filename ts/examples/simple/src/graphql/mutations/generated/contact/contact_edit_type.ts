@@ -13,7 +13,7 @@ import {
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
 import { Contact } from "src/ent/";
-import { ContactType } from "src/graphql/resolvers/generated/contact_type";
+import { ContactType } from "src/graphql/resolvers/";
 import EditContactAction, {
   ContactEditInput,
 } from "src/ent/contact/actions/edit_contact_action";

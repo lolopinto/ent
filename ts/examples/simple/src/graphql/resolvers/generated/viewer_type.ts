@@ -9,7 +9,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { UserType } from "src/graphql/resolvers/generated/user_type";
+import { UserType } from "src/graphql/resolvers/";
 import ViewerResolver, { GQLViewer } from "../viewer";
 
 export const GQLViewerType = new GraphQLObjectType({

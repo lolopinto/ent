@@ -12,7 +12,7 @@ import {
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
 import { Event } from "src/ent/";
-import { EventType } from "src/graphql/resolvers/generated/event_type";
+import { EventType } from "src/graphql/resolvers/";
 import EventAddHostAction from "src/ent/event/actions/event_add_host_action";
 
 interface customEventAddHostInput {

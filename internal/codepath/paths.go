@@ -32,3 +32,19 @@ func GetInternalImportPath() string {
 func GetExternalImportPath() string {
 	return "src/ent/"
 }
+
+func GetFilePathForInternalGQLFile() string {
+	return fmt.Sprintf("src/graphql/resolvers/internal.ts")
+}
+
+func GetFilePathForExternalGQLFile() string {
+	return fmt.Sprintf("src/graphql/resolvers/index.ts")
+}
+
+func GetImportPathForInternalGQLFile() string {
+	return fmt.Sprintf("src/graphql/resolvers/internal")
+}
+
+func GetImportPathForExternalGQLFile() string {
+	return fmt.Sprintf("src/graphql/resolvers/")
+}

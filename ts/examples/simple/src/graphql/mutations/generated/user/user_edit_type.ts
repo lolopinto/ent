@@ -13,7 +13,7 @@ import {
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
 import { User } from "src/ent/";
-import { UserType } from "src/graphql/resolvers/generated/user_type";
+import { UserType } from "src/graphql/resolvers/";
 import EditUserAction, {
   UserEditInput,
 } from "src/ent/user/actions/edit_user_action";
