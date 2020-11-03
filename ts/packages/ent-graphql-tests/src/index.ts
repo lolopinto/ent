@@ -365,16 +365,19 @@ async function expectFromRoot(
           part = part.substr(0, idx);
         }
 
-        current = current[part];
+        // "" as root is ok.
+        if (part !== "") {
+          current = current[part];
+        }
+
+        if (listIdx !== undefined) {
+          current = current[listIdx];
+        }
 
         // at the part of the path where it's expected to be null, confirm it is before proceeding
         if (nullParts.length === i + 1) {
           expect(current, `path ${nullPath} expected to be null`).toBe(null);
           return st;
-        }
-
-        if (listIdx !== undefined) {
-          current = current[listIdx];
         }
 
         if (i === parts.length - 1) {
