@@ -213,7 +213,7 @@ test("query custom async function nullable contents", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id, {}),
+    getConfig(new IDViewer(user.id), user.id),
     ["id", user.id],
     [
       "contactsSameDomainNullableContents",
@@ -496,7 +496,6 @@ test("load list", async () => {
     [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, false],
   );
 
-  // how to test this correctly?
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user.id, {
       undefinedQueryPaths: [`friends(after: "${cursor!}", first:1).edges[0]`],
