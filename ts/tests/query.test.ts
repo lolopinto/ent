@@ -979,3 +979,8 @@ describe("chained queries 3 steps", () => {
     await filter.testEnts();
   });
 });
+
+// TODO need to figure out a better way to test time. we had ms here
+// for times but we needed Date object comparions
+// tests work for both but production only works with Date comparisons
+// flaw with nosql parse_sql implementation

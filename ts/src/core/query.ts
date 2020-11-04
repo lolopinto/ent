@@ -102,7 +102,7 @@ class FirstFilter implements EdgeQueryFilter {
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
     if (this.time) {
-      options.clause = clause.Less("time", this.time);
+      options.clause = clause.Less("time", new Date(this.time));
       // just to be explicit even though this is the default
       options.orderby = "time DESC";
     }
@@ -149,7 +149,7 @@ class LastFilter implements EdgeQueryFilter {
     // so when paging backwards, we fetch beforeCursor X
     return {
       ...options,
-      clause: clause.Greater("time", this.time),
+      clause: clause.Greater("time", new Date(this.time)),
       orderby: "time ASC",
       limit: this.limit + 1, // fetch an extra so we know if previous page
     };
