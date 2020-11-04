@@ -964,8 +964,9 @@ func addConnection(nodeData *schema.NodeData, edge *edge.AssociationEdge, fields
 				Imports: []string{"GraphQLString"},
 			},
 		},
+		// TODO typing for args later?
 		FunctionContents: fmt.Sprintf(
-			"return new GraphQLEdgeConnection(%s.viewer, %s, %s);",
+			"return new GraphQLEdgeConnection(%s.viewer, %s, %s, args);",
 			instance, instance, edge.TsEdgeQueryName()),
 	}
 	*fields = append(*fields, gqlField)

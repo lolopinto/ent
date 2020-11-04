@@ -13,7 +13,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@lolopinto/ent-graphql-tests": "0.0.1",
+    "@lolopinto/ent-graphql-tests": "0.0.9",
     "@types/express": "^4.17.6",
     "@types/glob": "^7.1.1",
     "@types/jest": "^25.2.3",
@@ -30,7 +30,6 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "@lolopinto/ent": "0.0.22",
     "@lolopinto/ent-email": "0.0.1",
     "@lolopinto/ent-password": "0.0.2",
     "@lolopinto/ent-phonenumber": "0.0.1",

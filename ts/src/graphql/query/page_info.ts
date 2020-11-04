@@ -12,9 +12,15 @@ export const GraphQLPageInfo = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<PaginationInfo, RequestContext> => ({
     hasNextPage: {
       type: GraphQLNonNull(GraphQLBoolean),
+      resolve: (source: PaginationInfo) => {
+        return source.hasNextPage || false;
+      },
     },
     hasPreviousPage: {
       type: GraphQLNonNull(GraphQLBoolean),
+      resolve: (source: PaginationInfo) => {
+        return source.hasPreviousPage || false;
+      },
     },
   }),
 });

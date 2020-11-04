@@ -25,8 +25,9 @@ export class GraphQLEdgeConnection {
       if (this.args.before && !this.args.before) {
         throw new Error("cannot process before without last");
       }
+      //console.log(this.args);
       if (this.args.first) {
-        console.log("first");
+        //console.log("first");
         this.query = this.query.first(this.args.first, this.args.after);
       }
       if (this.args.last) {

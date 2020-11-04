@@ -78,9 +78,9 @@
           {{ template "renderArgs" (dict "Base" $baseObj "Args" $field.Args) -}}
           {{if $field.HasResolveFunction -}}
             {{if $field.HasAsyncModifier -}}
-              resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}) => {
+              resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {}) => {
             {{ else -}}
-              resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}) => {
+              resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {}) => {
             {{ end -}}
               {{$field.FunctionContents}};
             },

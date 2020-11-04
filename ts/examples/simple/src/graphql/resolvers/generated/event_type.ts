@@ -38,7 +38,7 @@ export const EventType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Event, RequestContext> => ({
     creator: {
       type: UserType,
-      resolve: (event: Event) => {
+      resolve: (event: Event, args: {}) => {
         return event.loadCreator();
       },
     },
@@ -56,7 +56,7 @@ export const EventType = new GraphQLObjectType({
     },
     eventLocation: {
       type: GraphQLNonNull(GraphQLString),
-      resolve: (event: Event) => {
+      resolve: (event: Event, args: {}) => {
         return event.location;
       },
     },
@@ -80,11 +80,12 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event) => {
+      resolve: (event: Event, args: {}) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
           EventToHostsQuery,
+          args,
         );
       },
     },
@@ -108,11 +109,12 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event) => {
+      resolve: (event: Event, args: {}) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
           EventToInvitedQuery,
+          args,
         );
       },
     },
@@ -136,11 +138,12 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event) => {
+      resolve: (event: Event, args: {}) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
           EventToAttendingQuery,
+          args,
         );
       },
     },
@@ -164,11 +167,12 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event) => {
+      resolve: (event: Event, args: {}) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
           EventToDeclinedQuery,
+          args,
         );
       },
     },
@@ -192,11 +196,12 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event) => {
+      resolve: (event: Event, args: {}) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
           EventToMaybeQuery,
+          args,
         );
       },
     },

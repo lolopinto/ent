@@ -135,7 +135,9 @@ test("query custom async function", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
+    getConfig(new IDViewer(user.id), user.id, {
+      nullQueryPaths: ["contactSameDomain"],
+    }),
     ["id", user.id],
     ["contactSameDomain.id", null], // no contact on same domain
   );
@@ -211,10 +213,17 @@ test("query custom async function nullable contents", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
+    getConfig(new IDViewer(user.id), user.id, {}),
     ["id", user.id],
-    ["contactsSameDomainNullableContents[0].id", selfContact!.id],
-    ["contactsSameDomainNullableContents[1].id", null],
+    [
+      "contactsSameDomainNullableContents",
+      [
+        {
+          id: selfContact?.id,
+        },
+        null,
+      ],
+    ],
   );
 });
 
@@ -235,7 +244,9 @@ test("query custom async function nullable list contents", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
+    getConfig(new IDViewer(user.id), user.id, {
+      nullQueryPaths: ["contactsSameDomainNullableContents[1]"],
+    }),
     ["id", user.id],
     ["contactsSameDomainNullableContents[0].id", selfContact!.id],
     ["contactsSameDomainNullableContents[1].id", null],
@@ -380,48 +391,118 @@ test("load list", async () => {
     ["accountStatus", user.accountStatus],
     // most recent first
     ["friends.rawCount", 4],
-    ["friends.nodes[0].id", user5.id],
-    ["friends.nodes[0].firstName", user5.firstName],
-    ["friends.nodes[0].lastName", user5.lastName],
-    ["friends.nodes[1].id", user4.id],
-    ["friends.nodes[1].firstName", user4.firstName],
-    ["friends.nodes[1].lastName", user4.lastName],
-    ["friends.nodes[2].id", user3.id],
-    ["friends.nodes[2].firstName", user3.firstName],
-    ["friends.nodes[2].lastName", user3.lastName],
-    ["friends.nodes[3].id", user2.id],
-    ["friends.nodes[3].firstName", user2.firstName],
-    ["friends.nodes[3].lastName", user2.lastName],
-    ["friends.edges[0].node.id", user5.id],
-    ["friends.edges[1].node.id", user4.id],
-    ["friends.edges[2].node.id", user3.id],
-    ["friends.edges[3].node.id", user2.id],
+    [
+      "friends.nodes",
+      [
+        {
+          id: user5.id,
+          firstName: user5.firstName,
+          lastName: user5.lastName,
+        },
+        {
+          id: user4.id,
+          firstName: user4.firstName,
+          lastName: user4.lastName,
+        },
+        {
+          id: user3.id,
+          firstName: user3.firstName,
+          lastName: user3.lastName,
+        },
+        {
+          id: user2.id,
+          firstName: user2.firstName,
+          lastName: user2.lastName,
+        },
+      ],
+    ],
+    [
+      "friends.edges",
+      [
+        {
+          node: {
+            id: user5.id,
+          },
+        },
+        {
+          node: {
+            id: user4.id,
+          },
+        },
+        {
+          node: {
+            id: user3.id,
+          },
+        },
+        {
+          node: {
+            id: user2.id,
+          },
+        },
+      ],
+    ],
   );
 
   let cursor: string;
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user.id),
     ["id", user.id],
-    ["friends.edges[0].node.id", user5.id],
+    ["friends(first:1).edges[0].node.id", user5.id],
     [
-      "friends.edges[0].cursor",
+      "friends(first:1).edges[0].cursor",
       function(c: string) {
         cursor = c;
-        console.log(cursor);
       },
     ],
+    [`friends(first:1).pageInfo.hasNextPage`, true],
   );
 
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user.id),
     ["id", user.id],
-    ["friends.edges[0].node.id", user5.id],
+    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, user4.id],
     [
-      "friends.edges[0].cursor",
+      `friends(after: "${cursor!}", first:1).edges[0].cursor`,
       function(c: string) {
         cursor = c;
-        console.log(cursor);
       },
     ],
+    [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, true],
+  );
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, user3.id],
+    [
+      `friends(after: "${cursor!}", first:1).edges[0].cursor`,
+      function(c: string) {
+        cursor = c;
+      },
+    ],
+    [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, true],
+  );
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, user2.id],
+    [
+      `friends(after: "${cursor!}", first:1).edges[0].cursor`,
+      function(c: string) {
+        cursor = c;
+      },
+    ],
+    [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, false],
+  );
+
+  // how to test this correctly?
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id, {
+      undefinedQueryPaths: [`friends(after: "${cursor!}", first:1).edges[0]`],
+    }),
+    ["id", user.id],
+    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, undefined],
+    [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, false],
   );
 });
