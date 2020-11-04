@@ -161,6 +161,7 @@ export interface queryRootConfig extends queryConfig {
   root: string;
   rootQueryNull?: boolean;
   nullQueryPaths?: string[];
+  undefinedQueryPaths?: string[];
 }
 
 export async function expectQueryFromRoot(
@@ -217,6 +218,7 @@ interface rootConfig extends queryConfig {
   querySuffix: string;
   rootQueryNull?: boolean;
   nullQueryPaths?: string[];
+  undefinedQueryPaths?: string[];
 }
 
 async function expectFromRoot(
@@ -322,11 +324,22 @@ async function expectFromRoot(
 
       let nullPath: string | undefined;
       let nullParts: string[] = [];
+      let undefinedPath: string | undefined;
+      let undefinedParts: string[] = [];
       if (config.nullQueryPaths) {
         for (let i = 0; i < config.nullQueryPaths.length; i++) {
           if (path.startsWith(config.nullQueryPaths[i])) {
             nullPath = config.nullQueryPaths[i];
             nullParts = nullPath.split(".");
+            break;
+          }
+        }
+      }
+      if (config.undefinedQueryPaths) {
+        for (let i = 0; i < config.undefinedQueryPaths.length; i++) {
+          if (path.startsWith(config.undefinedQueryPaths[i])) {
+            undefinedPath = config.undefinedQueryPaths[i];
+            undefinedParts = undefinedPath.split(".");
             break;
           }
         }
@@ -378,6 +391,14 @@ async function expectFromRoot(
         // at the part of the path where it's expected to be null, confirm it is before proceeding
         if (nullParts.length === i + 1) {
           expect(current, `path ${nullPath} expected to be null`).toBe(null);
+          return st;
+        }
+
+        if (undefinedParts.length === i + 1) {
+          expect(
+            current,
+            `path ${undefinedPath} expected to be undefined`,
+          ).toBe(undefined);
           return st;
         }
 

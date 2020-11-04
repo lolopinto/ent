@@ -655,3 +655,26 @@ test("nullQueryPaths with nullable list", async () => {
     ["contacts(first: 2)[0].emailAddress", null],
   );
 });
+
+test("undefinedQueryPaths", async () => {
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "10",
+    },
+    root: "user",
+    undefinedQueryPaths: ["contacts"],
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["id", "10"],
+    ["firstName", "Jon"],
+    ["lastName", "Snow"],
+    ["contacts(first: 0)[0].firstName", undefined],
+  );
+});
