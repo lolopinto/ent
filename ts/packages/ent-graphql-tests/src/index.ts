@@ -72,7 +72,8 @@ function buildTreeFromQueryPaths(...options: Option[]) {
     let parts = path.split(".");
 
     let tree = topLevelTree;
-    parts.forEach((part) => {
+    for (let i = 0; i < parts.length; i++) {
+      let part = parts[i];
       // a list, remove the index in the list building part
       let idx = part.indexOf("[");
       if (idx !== -1) {
@@ -101,10 +102,10 @@ function buildTreeFromQueryPaths(...options: Option[]) {
           }
         }
       }
-      if (typeof option[1] === "object") {
+      if (i === parts.length - 1 && typeof option[1] === "object") {
         handleSubtree(option[1], tree);
       }
-    });
+    }
   });
   return topLevelTree;
 }
@@ -160,6 +161,7 @@ export interface queryRootConfig extends queryConfig {
   root: string;
   rootQueryNull?: boolean;
   nullQueryPaths?: string[];
+  undefinedQueryPaths?: string[];
 }
 
 export async function expectQueryFromRoot(
@@ -216,6 +218,7 @@ interface rootConfig extends queryConfig {
   querySuffix: string;
   rootQueryNull?: boolean;
   nullQueryPaths?: string[];
+  undefinedQueryPaths?: string[];
 }
 
 async function expectFromRoot(
@@ -321,11 +324,22 @@ async function expectFromRoot(
 
       let nullPath: string | undefined;
       let nullParts: string[] = [];
+      let undefinedPath: string | undefined;
+      let undefinedParts: string[] = [];
       if (config.nullQueryPaths) {
         for (let i = 0; i < config.nullQueryPaths.length; i++) {
           if (path.startsWith(config.nullQueryPaths[i])) {
             nullPath = config.nullQueryPaths[i];
             nullParts = nullPath.split(".");
+            break;
+          }
+        }
+      }
+      if (config.undefinedQueryPaths) {
+        for (let i = 0; i < config.undefinedQueryPaths.length; i++) {
+          if (path.startsWith(config.undefinedQueryPaths[i])) {
+            undefinedPath = config.undefinedQueryPaths[i];
+            undefinedParts = undefinedPath.split(".");
             break;
           }
         }
@@ -370,7 +384,7 @@ async function expectFromRoot(
           current = current[part];
         }
 
-        if (listIdx !== undefined) {
+        if (listIdx !== undefined && nullPath?.indexOf("[") !== -1) {
           current = current[listIdx];
         }
 
@@ -378,6 +392,18 @@ async function expectFromRoot(
         if (nullParts.length === i + 1) {
           expect(current, `path ${nullPath} expected to be null`).toBe(null);
           return st;
+        }
+
+        if (undefinedParts.length === i + 1) {
+          expect(
+            current,
+            `path ${undefinedPath} expected to be undefined`,
+          ).toBe(undefined);
+          return st;
+        }
+
+        if (listIdx !== undefined && nullPath?.indexOf("[") === -1) {
+          current = current[listIdx];
         }
 
         if (i === parts.length - 1) {
