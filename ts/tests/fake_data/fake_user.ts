@@ -10,10 +10,13 @@ import {
 import {
   AllowIfViewerRule,
   AlwaysDenyRule,
+  AllowIfViewerInboundEdgeExistsRule,
   PrivacyPolicy,
+  AlwaysAllowRule,
 } from "../../src/core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
 import { Field, StringType, BaseEntSchema } from "../../src/schema";
+import { EdgeType } from "./internal";
 
 export class FakeUser implements Ent {
   readonly id: ID;
@@ -27,7 +30,12 @@ export class FakeUser implements Ent {
   protected readonly password: string | null;
 
   privacyPolicy: PrivacyPolicy = {
-    rules: [AllowIfViewerRule, AlwaysDenyRule],
+    rules: [
+      AllowIfViewerRule,
+      //can view user if friends
+      new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
+      AlwaysDenyRule,
+    ],
   };
 
   constructor(public viewer: Viewer, id: ID, data: Data) {

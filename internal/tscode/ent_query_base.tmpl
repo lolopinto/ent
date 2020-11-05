@@ -18,7 +18,7 @@
   {{$thisType := printf "new (viewer: Viewer, src: EdgeQuerySource<%s>) => T" $node}}
 
   {{range $edge := .EdgeInfo.Associations}}
-    {{$name := printf "%sQueryBase" $edge.TsEdgeConst -}}
+    {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
   export class {{$name}} extends {{useImport "BaseEdgeQuery"}}<{{$node}}, {{useImport .NodeInfo.Node}}> {
     constructor(viewer: {{useImport "Viewer"}}, src: {{useImport "EdgeQuerySource"}}<{{$node}}>) {
       super(viewer, src, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}}, {{useImport .NodeInfo.Node}}.loaderOptions());
@@ -34,7 +34,7 @@
 
     {{$fNodeData := $schema.GetNodeDataForNode .NodeInfo.Node}}
     {{ range $fEdge := $fNodeData.EdgeInfo.Associations -}}
-      {{$queryName := useImport (printf "%sQuery" $fEdge.TsEdgeConst) -}}
+      {{$queryName := useImport $fEdge.TsEdgeQueryName -}}
       query{{$fEdge.CamelCaseEdgeName}}(): {{$queryName}} {
         return {{$queryName}}.query(this.viewer, this);
       }

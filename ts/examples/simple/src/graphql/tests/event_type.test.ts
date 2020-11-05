@@ -95,7 +95,7 @@ test("query event with different viewer", async () => {
 
   // can load other events since privacy policy allows it
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), event.id),
+    getConfig(new IDViewer(user.id), event.id, { nullQueryPaths: ["creator"] }),
     ["id", event.id],
     ["creator.id", null], // creator is not visible
     ["startTime", event.startTime.toISOString()],

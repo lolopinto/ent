@@ -22,7 +22,7 @@ export const ContactType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Contact, RequestContext> => ({
     user: {
       type: UserType,
-      resolve: (contact: Contact) => {
+      resolve: (contact: Contact, args: {}) => {
         return contact.loadUser();
       },
     },

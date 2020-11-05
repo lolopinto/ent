@@ -6,13 +6,33 @@ import {
   GraphQLString,
   GraphQLNonNull,
   GraphQLList,
+  GraphQLInt,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
-import { EventType, ContactType } from "src/graphql/resolvers/";
-import { User } from "src/ent/";
+import { GraphQLEdgeConnection } from "@lolopinto/ent/graphql";
+import {
+  ContactType,
+  UserToCreatedEventsConnectionType,
+  UserToFriendsConnectionType,
+  UserToHostedEventsConnectionType,
+  UserToInvitedEventsConnectionType,
+  UserToEventsAttendingConnectionType,
+  UserToDeclinedEventsConnectionType,
+  UserToMaybeEventsConnectionType,
+} from "src/graphql/resolvers/";
+import {
+  User,
+  UserToCreatedEventsQuery,
+  UserToFriendsQuery,
+  UserToHostedEventsQuery,
+  UserToInvitedEventsQuery,
+  UserToEventsAttendingQuery,
+  UserToDeclinedEventsQuery,
+  UserToMaybeEventsQuery,
+} from "src/ent/";
 
 interface UserQueryArgs {
   id: ID;
@@ -40,56 +60,217 @@ export const UserType = new GraphQLObjectType({
       type: GraphQLString,
     },
     createdEvents: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
-      resolve: (user: User) => {
-        return user.loadCreatedEvents();
+      type: GraphQLNonNull(UserToCreatedEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToCreatedEventsQuery,
+          args,
+        );
       },
     },
     friends: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserType))),
-      resolve: (user: User) => {
-        return user.loadFriends();
+      type: GraphQLNonNull(UserToFriendsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToFriendsQuery,
+          args,
+        );
       },
     },
     selfContact: {
       type: ContactType,
-      resolve: (user: User) => {
+      resolve: (user: User, args: {}) => {
         return user.loadSelfContact();
       },
     },
     userToHostedEvents: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
-      resolve: (user: User) => {
-        return user.loadUserToHostedEvents();
+      type: GraphQLNonNull(UserToHostedEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToHostedEventsQuery,
+          args,
+        );
       },
     },
     invitedEvents: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
-      resolve: (user: User) => {
-        return user.loadInvitedEvents();
+      type: GraphQLNonNull(UserToInvitedEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToInvitedEventsQuery,
+          args,
+        );
       },
     },
     eventsAttending: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
-      resolve: (user: User) => {
-        return user.loadEventsAttending();
+      type: GraphQLNonNull(UserToEventsAttendingConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToEventsAttendingQuery,
+          args,
+        );
       },
     },
     declinedEvents: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
-      resolve: (user: User) => {
-        return user.loadDeclinedEvents();
+      type: GraphQLNonNull(UserToDeclinedEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToDeclinedEventsQuery,
+          args,
+        );
       },
     },
     maybeEvents: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
-      resolve: (user: User) => {
-        return user.loadMaybeEvents();
+      type: GraphQLNonNull(UserToMaybeEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (user: User, args: {}) => {
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          UserToMaybeEventsQuery,
+          args,
+        );
       },
     },
     contacts: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
-      resolve: (user: User) => {
+      resolve: (user: User, args: {}) => {
         return user.loadContacts();
       },
     },
@@ -98,37 +279,37 @@ export const UserType = new GraphQLObjectType({
     },
     bar: {
       type: GraphQLString,
-      resolve: (user: User) => {
+      resolve: (user: User, args: {}) => {
         return user.getUserBar();
       },
     },
     contactSameDomain: {
       type: ContactType,
-      resolve: async (user: User) => {
+      resolve: async (user: User, args: {}) => {
         return user.getFirstContactSameDomain();
       },
     },
     contactsSameDomain: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
-      resolve: async (user: User) => {
+      resolve: async (user: User, args: {}) => {
         return user.getContactsSameDomain();
       },
     },
     contactsSameDomainNullable: {
       type: GraphQLList(GraphQLNonNull(ContactType)),
-      resolve: async (user: User) => {
+      resolve: async (user: User, args: {}) => {
         return user.getContactsSameDomainNullable();
       },
     },
     contactsSameDomainNullableContents: {
       type: GraphQLNonNull(GraphQLList(ContactType)),
-      resolve: async (user: User) => {
+      resolve: async (user: User, args: {}) => {
         return user.getContactsSameDomainNullableContents();
       },
     },
     contactsSameDomainNullableContentsAndList: {
       type: GraphQLList(ContactType),
-      resolve: async (user: User) => {
+      resolve: async (user: User, args: {}) => {
         return user.getContactsSameDomainNullableContentsAndList();
       },
     },

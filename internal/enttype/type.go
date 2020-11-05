@@ -47,9 +47,10 @@ type TSGraphQLType interface {
 type ImportType string
 
 const (
-	GraphQL ImportType = "graphql"
-	Node    ImportType = "node"
-	Enum    ImportType = "enum"
+	GraphQL    ImportType = "graphql"
+	Node       ImportType = "node"
+	Enum       ImportType = "enum"
+	Connection ImportType = "connection"
 	// EntGraphQL refers to graphql scalars or things in the ent graphql space
 	EntGraphQL ImportType = "ent_graphql"
 )

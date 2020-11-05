@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"fmt"
 	"sort"
 	"strconv"
 
@@ -276,7 +275,7 @@ func (nodeData *NodeData) GetImportsForQueryBaseFile(s *Schema) []ImportPath {
 		// need a flag of if imported or something
 		for _, edge2 := range node.EdgeInfo.Associations {
 			ret = append(ret, ImportPath{
-				Import:      fmt.Sprintf("%sQuery", edge2.TsEdgeConst()),
+				Import:      edge2.TsEdgeQueryName(),
 				PackagePath: codepath.GetInternalImportPath(),
 			})
 		}

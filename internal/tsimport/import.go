@@ -116,7 +116,24 @@ func (imps *Imports) FuncMap() template.FuncMap {
 		"exportAll":            imps.ExportAll,
 		"exportAllAs":          imps.ExportAllAs,
 		"export":               imps.Export,
+		"dict":                 dict,
 	}
+}
+
+func dict(values ...interface{}) (map[string]interface{}, error) {
+	if len(values)%2 != 0 {
+		return nil, fmt.Errorf("odd number of elements passed to dict")
+	}
+	ret := make(map[string]interface{}, len(values)/2)
+
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].(string)
+		if !ok {
+			return nil, fmt.Errorf("dict keys must be strings")
+		}
+		ret[key] = values[i+1]
+	}
+	return ret, nil
 }
 
 // Use makes use of an export and ensures that's imported

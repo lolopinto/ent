@@ -258,7 +258,7 @@ func getFilePathForEdgeQueryFile(nodeData *schema.NodeData, e *edge.AssociationE
 	return fmt.Sprintf(
 		"src/ent/%s/query/%s.ts",
 		nodeData.PackageName,
-		strcase.ToSnake(fmt.Sprintf("%sQuery", e.TsEdgeConst())),
+		strcase.ToSnake(e.TsEdgeQueryName()),
 	)
 }
 
@@ -266,7 +266,7 @@ func getImportPathForEdgeQueryFile(nodeData *schema.NodeData, e *edge.Associatio
 	return fmt.Sprintf(
 		"src/ent/%s/query/%s",
 		nodeData.PackageName,
-		strcase.ToSnake(fmt.Sprintf("%sQuery", e.TsEdgeConst())),
+		strcase.ToSnake(e.TsEdgeQueryName()),
 	)
 }
 

@@ -20,7 +20,7 @@ export const GQLViewerType = new GraphQLObjectType({
     },
     user: {
       type: UserType,
-      resolve: async (obj: GQLViewer) => {
+      resolve: async (obj: GQLViewer, args: {}) => {
         return obj.user();
       },
     },
@@ -29,7 +29,6 @@ export const GQLViewerType = new GraphQLObjectType({
 
 export const ViewerType: GraphQLFieldConfig<undefined, RequestContext> = {
   type: GraphQLNonNull(GQLViewerType),
-  args: {},
   resolve: async (
     _source,
     { arg },

@@ -17,8 +17,6 @@ import {
   FakeContact,
   EdgeType,
   getUserBuilder,
-  getEventBuilder,
-  EventCreateInput,
   UserToFriendsQuery,
   FakeEvent,
   UserToEventsAttendingQuery,
@@ -32,8 +30,8 @@ import {
   verifyUserToContactEdges,
   verifyUserToContacts,
   createEdges,
+  createTestEvent,
 } from "./fake_data/test_helpers";
-import { isExportDeclaration } from "typescript";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -733,24 +731,6 @@ describe("multi-ids. firstN", () => {
     await filter.testEnts();
   });
 });
-
-async function createTestEvent(
-  user: FakeUser,
-  input?: Partial<EventCreateInput>,
-) {
-  const vc = new IDViewer(user.id);
-  const builder = getEventBuilder(vc, {
-    startTime: new Date(),
-    location: "fun house",
-    description: "fun fun fun",
-    title: "fun time",
-    userID: user.id,
-    ...input,
-  });
-  builder.orchestrator.addOutboundEdge(user.id, EdgeType.EventToHosts, "User");
-
-  return await builder.saveX();
-}
 
 class ChainTestQueryFilter {
   user: FakeUser;

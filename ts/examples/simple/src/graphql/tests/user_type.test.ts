@@ -135,7 +135,9 @@ test("query custom async function", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
+    getConfig(new IDViewer(user.id), user.id, {
+      nullQueryPaths: ["contactSameDomain"],
+    }),
     ["id", user.id],
     ["contactSameDomain.id", null], // no contact on same domain
   );
@@ -213,8 +215,15 @@ test("query custom async function nullable contents", async () => {
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user.id),
     ["id", user.id],
-    ["contactsSameDomainNullableContents[0].id", selfContact!.id],
-    ["contactsSameDomainNullableContents[1].id", null],
+    [
+      "contactsSameDomainNullableContents",
+      [
+        {
+          id: selfContact?.id,
+        },
+        null,
+      ],
+    ],
   );
 });
 
@@ -235,7 +244,9 @@ test("query custom async function nullable list contents", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
+    getConfig(new IDViewer(user.id), user.id, {
+      nullQueryPaths: ["contactsSameDomainNullableContents[1]"],
+    }),
     ["id", user.id],
     ["contactsSameDomainNullableContents[0].id", selfContact!.id],
     ["contactsSameDomainNullableContents[1].id", null],
@@ -331,7 +342,7 @@ test("query user and nested object", async () => {
 });
 
 test("load list", async () => {
-  let [user, user2, user3] = await Promise.all([
+  let [user, user2, user3, user4, user5] = await Promise.all([
     create({
       firstName: "user1",
       lastName: "last",
@@ -347,18 +358,29 @@ test("load list", async () => {
       lastName: "last",
       emailAddress: randomEmail(),
     }),
+    create({
+      firstName: "user4",
+      lastName: "last",
+      emailAddress: randomEmail(),
+    }),
+    create({
+      firstName: "user5",
+      lastName: "last",
+      emailAddress: randomEmail(),
+    }),
   ]);
 
   let vc = new IDViewer(user.id);
   let action = EditUserAction.create(vc, user, {});
-  action.builder.addFriend(user2);
+  const friends = [user2, user3, user4, user5];
+  for (const friend of friends) {
+    // add time btw adding a new friend so that it's deterministic
+    advanceBy(86400);
+    action.builder.addFriendID(friend.id, {
+      time: new Date(),
+    });
+  }
   await action.saveX();
-
-  // add time btw adding a new friend so that it's deterministic
-  advanceBy(86400);
-  let action2 = EditUserAction.create(vc, user, {});
-  action2.builder.addFriend(user3);
-  await action2.saveX();
 
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user.id),
@@ -368,11 +390,118 @@ test("load list", async () => {
     ["emailAddress", user.emailAddress],
     ["accountStatus", user.accountStatus],
     // most recent first
-    ["friends[0].id", user3.id],
-    ["friends[0].firstName", user3.firstName],
-    ["friends[0].lastName", user3.lastName],
-    ["friends[1].id", user2.id],
-    ["friends[1].firstName", user2.firstName],
-    ["friends[1].lastName", user2.lastName],
+    ["friends.rawCount", 4],
+    [
+      "friends.nodes",
+      [
+        {
+          id: user5.id,
+          firstName: user5.firstName,
+          lastName: user5.lastName,
+        },
+        {
+          id: user4.id,
+          firstName: user4.firstName,
+          lastName: user4.lastName,
+        },
+        {
+          id: user3.id,
+          firstName: user3.firstName,
+          lastName: user3.lastName,
+        },
+        {
+          id: user2.id,
+          firstName: user2.firstName,
+          lastName: user2.lastName,
+        },
+      ],
+    ],
+    [
+      "friends.edges",
+      [
+        {
+          node: {
+            id: user5.id,
+          },
+        },
+        {
+          node: {
+            id: user4.id,
+          },
+        },
+        {
+          node: {
+            id: user3.id,
+          },
+        },
+        {
+          node: {
+            id: user2.id,
+          },
+        },
+      ],
+    ],
+  );
+
+  let cursor: string;
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    ["friends(first:1).edges[0].node.id", user5.id],
+    [
+      "friends(first:1).edges[0].cursor",
+      function(c: string) {
+        cursor = c;
+      },
+    ],
+    [`friends(first:1).pageInfo.hasNextPage`, true],
+  );
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, user4.id],
+    [
+      `friends(after: "${cursor!}", first:1).edges[0].cursor`,
+      function(c: string) {
+        cursor = c;
+      },
+    ],
+    [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, true],
+  );
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, user3.id],
+    [
+      `friends(after: "${cursor!}", first:1).edges[0].cursor`,
+      function(c: string) {
+        cursor = c;
+      },
+    ],
+    [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, true],
+  );
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id),
+    ["id", user.id],
+    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, user2.id],
+    [
+      `friends(after: "${cursor!}", first:1).edges[0].cursor`,
+      function(c: string) {
+        cursor = c;
+      },
+    ],
+    [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, false],
+  );
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user.id, {
+      undefinedQueryPaths: [`friends(after: "${cursor!}", first:1).edges[0]`],
+    }),
+    ["id", user.id],
+    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, undefined],
+    [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, false],
   );
 });
