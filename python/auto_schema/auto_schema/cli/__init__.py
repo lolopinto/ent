@@ -18,7 +18,8 @@ parser.add_argument('-u', '--upgrade', help='upgrade')
 # this is getting bad and needs to be changed soon to something that's more extensible and makes more sense
 parser.add_argument('-d', '--downgrade', help='downgrade')
 
-if __name__ == "__main__":
+
+def main():
     # TODO we need to support running each of the alembic commands directly e.g. upgrade head, upgrade +1, downgrade -1, current, history, etc
     # so we need even more complicated things here
 
