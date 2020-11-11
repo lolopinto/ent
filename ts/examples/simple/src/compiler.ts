@@ -215,67 +215,76 @@ class Compiler {
         return node;
       }
 
+      function checkPath(
+        paths: ts.MapLike<string[]> | undefined,
+        text: string,
+      ): string | undefined {
+        // remove quotes
+        text = text.slice(1, -1);
+        let relPath: string | undefined;
+
+        for (const key in paths) {
+          let r = regexMap.get(key);
+          if (!r) {
+            continue;
+          }
+          let value = paths[key];
+          let str = value[0];
+
+          if (!r.test(text)) {
+            continue;
+          }
+          let idx = text.indexOf("/");
+          let strIdx = str.indexOf("*");
+          if (idx === -1 || strIdx === -1) {
+            continue;
+          }
+          relPath = path.relative(
+            // just because of how imports work. it's relative from directory not current path
+            path.dirname(fullPath),
+            path.join(
+              text.substr(0, idx).replace(r, str.substr(0, strIdx)),
+              text.substr(idx),
+            ),
+          );
+          // if file ends with "..", we've reached a case where we're trying to
+          // import something like foo/contact(.ts) from within foo/contact/bar/baz/page.ts
+          // and we're confused about it so we need to detect that case and handle it
+          if (relPath.endsWith("..")) {
+            // there's an actual local file here not root of directory, try that instead
+            // (if root of directory and there's ambiguity, we should use "contact/")
+            if (ts.sys.fileExists(text + ".ts")) {
+              let text2 = text + ".ts";
+              relPath = path.relative(
+                // just because of how imports work. it's relative from directory not current path
+                path.dirname(fullPath),
+                path.join(
+                  text2.substr(0, idx).replace(r, str.substr(0, strIdx)),
+                  text2.substr(idx),
+                ),
+              );
+            }
+          }
+          if (!relPath.startsWith("..")) {
+            relPath = "./" + relPath;
+          }
+
+          // tsc removes this by default so we need to also do it
+          let tsIdx = relPath.indexOf(".ts");
+          if (tsIdx !== -1) {
+            relPath = relPath.substr(0, tsIdx);
+          }
+          return relPath;
+        }
+      }
+
       function visitor(node: ts.Node) {
         if (node.kind === ts.SyntaxKind.ImportDeclaration) {
           let importNode = node as ts.ImportDeclaration;
 
           let text = importNode.moduleSpecifier.getText();
-          // remove quotes
-          text = text.slice(1, -1);
-          let relPath: string | undefined;
-
-          for (const key in paths) {
-            let r = regexMap.get(key);
-            if (!r) {
-              continue;
-            }
-            let value = paths[key];
-            let str = value[0];
-
-            if (!r.test(text)) {
-              continue;
-            }
-            let idx = text.indexOf("/");
-            let strIdx = str.indexOf("*");
-            if (idx === -1 || strIdx === -1) {
-              continue;
-            }
-            relPath = path.relative(
-              // just because of how imports work. it's relative from directory not current path
-              path.dirname(fullPath),
-              path.join(
-                text.substr(0, idx).replace(r, str.substr(0, strIdx)),
-                text.substr(idx),
-              ),
-            );
-            // if file ends with "..", we've reached a case where we're trying to
-            // import something like foo/contact(.ts) from within foo/contact/bar/baz/page.ts
-            // and we're confused about it so we need to detect that case and handle it
-            if (relPath.endsWith("..")) {
-              // there's an actual local file here not root of directory, try that instead
-              // (if root of directory and there's ambiguity, we should use "contact/")
-              if (ts.sys.fileExists(text + ".ts")) {
-                let text2 = text + ".ts";
-                relPath = path.relative(
-                  // just because of how imports work. it's relative from directory not current path
-                  path.dirname(fullPath),
-                  path.join(
-                    text2.substr(0, idx).replace(r, str.substr(0, strIdx)),
-                    text2.substr(idx),
-                  ),
-                );
-              }
-            }
-            if (!relPath.startsWith("..")) {
-              relPath = "./" + relPath;
-            }
-
-            // tsc removes this by default so we need to also do it
-            let tsIdx = relPath.indexOf(".ts");
-            if (tsIdx !== -1) {
-              relPath = relPath.substr(0, tsIdx);
-            }
-
+          let relPath = checkPath(paths, text);
+          if (relPath) {
             // update the node...
             return ts.updateImportDeclaration(
               importNode,
@@ -284,6 +293,26 @@ class Compiler {
               importNode.importClause,
               ts.createLiteral(relPath),
             );
+          }
+        }
+        if (node.kind === ts.SyntaxKind.ExportDeclaration) {
+          let exportNode = node as ts.ExportDeclaration;
+
+          let text = exportNode.moduleSpecifier?.getText();
+
+          if (text) {
+            let relPath = checkPath(paths, text);
+            if (relPath) {
+              // update the node...
+              return ts.updateExportDeclaration(
+                exportNode,
+                exportNode.decorators,
+                exportNode.modifiers,
+                exportNode.exportClause,
+                ts.createLiteral(relPath),
+                exportNode.isTypeOnly,
+              );
+            }
           }
         }
         return node;
