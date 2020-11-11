@@ -3,7 +3,6 @@ FROM node:14.15.0
 # how do we configure this? we want this to be development/test/production as needed
 ENV NODE_ENV=production
 ARG NPM_TOKEN  
-
 WORKDIR /app
 
 COPY ["package.json", "package-lock.json*", ".npmrc", "./"]
