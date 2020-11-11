@@ -1,4 +1,4 @@
-FROM node:12.18.1
+FROM node:14.15.0
 
 # how do we configure this? we want this to be development/test/production as needed
 ENV NODE_ENV=production
@@ -25,4 +25,4 @@ COPY . .
 
 RUN npm run compile
 
-CMD ["node", "src/graphql/index.ts"]  
+CMD ["node", "dist/graphql/index.js"]  
