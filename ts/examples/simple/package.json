@@ -44,9 +44,7 @@
     "jsonwebtoken": "^8.5.1",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
-    "passport-strategy": "^1.0.0"
-  },
-  "resolutions": {
-    "graphql": "^0.15.0"
+    "passport-strategy": "^1.0.0",
+    "graphql": "^15.3.0"
   }
 }
