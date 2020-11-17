@@ -1,7 +1,7 @@
 FROM lolopinto/ent
 
 # how do we configure this? we want this to be development/test/production as needed
-ENV NODE_ENV=production
+#ENV NODE_ENV=production
 ARG NPM_TOKEN  
 WORKDIR /app
 
@@ -11,7 +11,7 @@ RUN cp .docker_npmrc .npmrc
 # will not be needed eventually but needed right now since all these packages are still private
 #COPY ["$HOME/.npmrc ", "./"]
 
-RUN npm install --production
+RUN npm install 
 RUN rm -f .npmrc .docker_npmrc
 
 # TODO maybe mount this?

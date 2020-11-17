@@ -5,6 +5,7 @@ services:
     build: 
       context: .
       args:
+        # TODO rename this as GITHUB_TOKEN
         - NPM_TOKEN=${NPM_TOKEN}
     ports: 
       - 4000:4000

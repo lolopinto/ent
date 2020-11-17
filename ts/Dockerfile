@@ -34,6 +34,16 @@ RUN go env -w GOPRIVATE=github.com/lolopinto
 RUN echo $NPM_TOKEN
 RUN git config --global url."https://golang:$NPM_TOKEN@github.com".insteadOf "https://github.com"
 
+# default path but make it explicit
+ENV GOPATH=$HOME/go
+ENV PATH $PATH:$GOPATH/bin
+# hmm this isn't good because this isn't versioned and it's never deployed and we're always getting master basically
 RUN go get github.com/lolopinto/ent/tsent
+#RUN go install 
+
+# these 3 need to move from ts/package.json
+RUN npm install -g ts-node
+RUN npm install -g prettier
+RUN npm install -g tsconfig-paths
 
 CMD ["node"]
