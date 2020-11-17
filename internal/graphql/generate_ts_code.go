@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,7 +26,6 @@ import (
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
-	"github.com/square/go-jose/json"
 )
 
 type TSStep struct {
