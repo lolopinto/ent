@@ -1,18 +1,20 @@
-FROM node:14.15.0
+FROM lolopinto/ent
 
 # how do we configure this? we want this to be development/test/production as needed
 ENV NODE_ENV=production
 ARG NPM_TOKEN  
 WORKDIR /app
 
-COPY ["package.json", "package-lock.json*", ".npmrc", "./"]
+COPY ["package.json", "package-lock.json*", ".docker_npmrc", "./"]
+RUN cp .docker_npmrc .npmrc
 
 # will not be needed eventually but needed right now since all these packages are still private
 #COPY ["$HOME/.npmrc ", "./"]
 
 RUN npm install --production
-RUN rm -f .npmrc
+RUN rm -f .npmrc .docker_npmrc
 
+# TODO maybe mount this?
 COPY . .
 
 # # ok we're missing a bunch of steps here
