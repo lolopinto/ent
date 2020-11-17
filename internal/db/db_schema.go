@@ -372,17 +372,13 @@ func (s *dbSchema) generateShemaTables() {
 
 func runPythonCommand(pathToConfigs string, extraArgs ...string) {
 	args := []string{
-		"run",
-		"python3",
-		"auto_schema/gen_db_schema.py",
 		fmt.Sprintf("-s=%s", pathToConfigs),
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	}
 	if len(extraArgs) > 0 {
 		args = append(args, extraArgs...)
 	}
-	cmd := exec.Command("pipenv", args...)
-	cmd.Dir = util.GetAbsolutePath("../../python")
+	cmd := exec.Command("auto_schema", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
