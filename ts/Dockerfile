@@ -19,7 +19,6 @@ ENV PATH $PATH:/usr/local/go/bin
 
 ARG NPM_TOKEN=$NPM_TOKEN
 RUN go env -w GOPRIVATE=github.com/lolopinto
-RUN echo $NPM_TOKEN
 RUN git config --global url."https://golang:$NPM_TOKEN@github.com".insteadOf "https://github.com"
 
 # default path but make it explicit
