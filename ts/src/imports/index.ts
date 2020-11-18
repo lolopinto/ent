@@ -1,5 +1,5 @@
 import glob from "glob";
-import * as ts from "typescript";
+import ts from "typescript";
 import JSON5 from "json5";
 import * as fs from "fs";
 import * as path from "path";
