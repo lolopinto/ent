@@ -1,18 +1,6 @@
-#FROM node:14.15.0 as node-build
-#FROM nikolaik/python3.8-nodejs14-alpine:latest
 FROM nikolaik/python-nodejs:python3.8-nodejs14
 
-# FROM python:3 
-# COPY --from=node-build /usr/local/bin/node /usr/local/bin/node
-# COPY --from=node-build /usr/local/bin/npm /usr/local/bin/npm
-# needed for pg
-#RUN apt-get install libpq-dev
-# needed to get postgresql dev to be able to install psycopg2-binary
-
-# libpq-dev python-dev not available
-# RUN apk add postgresql-dev \
-#   gcc \ 
-#   linux-headers && \ 
+RUN apt update && apt --assume-yes install zsh
 
 # install auto_schema
 RUN python3 -m pip install auto_schema
@@ -41,9 +29,15 @@ ENV PATH $PATH:$GOPATH/bin
 RUN go get github.com/lolopinto/ent/tsent
 #RUN go install 
 
-# these 3 need to move from ts/package.json
-RUN npm install -g ts-node
-RUN npm install -g prettier
-RUN npm install -g tsconfig-paths
+# first 3 need to move from ts/package.json
+# maybe typescript?
+RUN npm install -g ts-node prettier typescript
+# this needs to be local apparently
+RUN npm install --save-dev tsconfig-paths 
 
 CMD ["node"]
+
+# TODO eventually need a production Dockerfile that's lighter than this...
+# don't need ts-node, prettier, tsconfig-paths for example
+
+# still need go, python and node tho because of CLI and db 
