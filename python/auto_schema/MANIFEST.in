@@ -1,0 +1,1 @@
+include auto_schema/script.py.mako
