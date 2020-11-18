@@ -364,7 +364,7 @@ func parseCustomData(data *codegen.Data) chan *customData {
 			// TODO this should find the tsconfig.json and not assume there's one at the root but fine for now
 			filepath.Join(data.CodePath.GetAbsPathToRoot(), "tsconfig.json"),
 			"-r",
-			"tsconfig-paths/register",
+			"/node_modules/tsconfig-paths/register",
 			"src/scripts/custom_graphql.ts",
 			"--path",
 			// TODO this should be a configuration option to indicate where the code root is
@@ -1522,7 +1522,7 @@ func generateSchemaFile(hasMutations bool) error {
 		return errors.Wrap(err, "error writing temporary schema file")
 	}
 
-	cmd := exec.Command("ts-node", "-r", "./node_modules/tsconfig-paths/register", filePath)
+	cmd := exec.Command("ts-node", "-r", "/node_modules/tsconfig-paths/register", filePath)
 	// TODO check this and do something useful with it
 	// and then apply this in more places
 	// for now we'll just spew it when there's an error as it's a hint as to what
