@@ -1,3 +1,5 @@
+#!/usr/bin/env ts-node-script
+
 import glob from "glob";
 import minimist from "minimist";
 import {

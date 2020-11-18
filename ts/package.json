@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent",
-  "version": "0.0.28",
+  "version": "0.0.32",
   "description": "ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -57,6 +57,9 @@
     "clean": "rm -rf dist",
     "prepare": "npm run clean && npm run compile && node src/setupPackage.js",
     "actual-publish": "npm run prepare && npm publish dist"
+  },
+  "bin": {
+    "ent-custom-graphql": "./scripts/custom_graphql.js"
   },
   "author": "lolopinto",
   "license": "ISC",
