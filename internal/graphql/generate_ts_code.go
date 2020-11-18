@@ -365,15 +365,14 @@ func parseCustomData(data *codegen.Data) chan *customData {
 			filepath.Join(data.CodePath.GetAbsPathToRoot(), "tsconfig.json"),
 			"-r",
 			"/node_modules/tsconfig-paths/register",
-			"src/scripts/custom_graphql.ts",
+			// local...
+			// this assumes package already installed
+			fmt.Sprintf("./node_modules/%s/scripts/custom_graphql.js", codepath.Package),
 			"--path",
 			// TODO this should be a configuration option to indicate where the code root is
 			filepath.Join(data.CodePath.GetAbsPathToRoot(), "src"),
 		}
-		cmd := exec.Command("ts-node", cmdArgs...)
-		// run it from the root of TS code
-		// up 2 to root and then back to root folder
-		cmd.Dir = util.GetAbsolutePath("../../ts")
+		cmd := exec.Command("ts-node-script", cmdArgs...)
 		cmd.Stdin = &buf
 		cmd.Stdout = &out
 		cmd.Stderr = &stderr
