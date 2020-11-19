@@ -22,6 +22,7 @@ export interface UserInput {
   password?: string | null;
   accountStatus?: string | null;
   emailVerified?: boolean;
+  bio?: string | null;
 }
 
 export interface UserAction extends Action<User> {
@@ -499,6 +500,7 @@ export class UserBuilder implements Builder<User> {
     addField("Password", fields.password);
     addField("AccountStatus", fields.accountStatus);
     addField("emailVerified", fields.emailVerified);
+    addField("Bio", fields.bio);
     return result;
   }
 

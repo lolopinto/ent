@@ -34,6 +34,7 @@ export default class User extends BaseEntSchema implements Schema {
       hideFromGraphQL: true,
       serverDefault: "FALSE",
     }),
+    StringType({ name: "Bio", nullable: true }),
   ];
 
   edges: Edge[] = [
