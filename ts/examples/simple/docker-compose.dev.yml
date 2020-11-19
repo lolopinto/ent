@@ -11,7 +11,7 @@ services:
       - 4000:4000
       - 9229:9229 # for debugger apparently
     volumes: 
-      - ./:/src
+      - .:/app:rw,delegated
     environment:
       - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/tsent_test
       - NPM_TOKEN=${NPM_TOKEN}

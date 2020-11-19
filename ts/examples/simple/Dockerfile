@@ -5,17 +5,17 @@ FROM lolopinto/ent
 ARG NPM_TOKEN  
 WORKDIR /app
 
-COPY ["package.json", "package-lock.json*", ".docker_npmrc", "./"]
+#COPY ["package.json", ".docker_npmrc", "./"]
+COPY package.json /app/package.json
+COPY .docker_npmrc /app/.docker_npmrc
 RUN cp .docker_npmrc .npmrc
-
-# will not be needed eventually but needed right now since all these packages are still private
-#COPY ["$HOME/.npmrc ", "./"]
 
 RUN npm install 
 RUN rm -f .npmrc .docker_npmrc
+#RUN mv /app/node_modules  /node_modules
 
 # TODO maybe mount this?
-COPY . .
+COPY . /app
 
 # # ok we're missing a bunch of steps here
 # # how to get ts-node etc?
@@ -24,6 +24,11 @@ COPY . .
 # # so that we can just do "node src/graphql/index.ts"
 # # compiler.ts is in here so we don't need that 
 
-RUN npm run compile
+# RUN ls 
 
-CMD ["node", "dist/graphql/index.js"]  
+# deleted dist locally but then this isn't being reflected here...
+RUN npm run compile
+RUN ls -la
+
+#CMD node
+CMD ["node", "--trace-warnings", "dist/graphql/index.js"]  
