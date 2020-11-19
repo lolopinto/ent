@@ -10,7 +10,9 @@ Can get the latest of each via the following command: `python3 -m pip install --
 Run the following command from `python/auto_schema` (where `setup.py` is located): `python3 setup.py sdist bdist_wheel
 `.
 
-Run `python3 -m twine upload --repository pypi dist/*` to upload to pypi. You need to be added to the project and have a token in `~/.pypirc` or equivalent location.
+Run `python3 -m twine upload --repository pypi dist/*` to upload to pypi OR `python3 -m twine upload --repository testpypi dist/*`. You need to be added to the project and have a [token](https://pypi.org/help/#apitoken) (or [test token](https://test.pypi.org/help/#apitoken))  in `~/.pypirc` or equivalent location.
+
+Recommend cleaning up after by running `rm -rf dist/`
 
 To test, install as follows: `python3 -m pip install auto_schema`
 
