@@ -10,12 +10,12 @@ COPY package.json /app/package.json
 COPY .docker_npmrc /app/.docker_npmrc
 RUN cp .docker_npmrc .npmrc
 
+COPY . /app
+
 RUN npm install 
 RUN rm -f .npmrc .docker_npmrc
 #RUN mv /app/node_modules  /node_modules
 
-# TODO maybe mount this?
-COPY . /app
 
 # # ok we're missing a bunch of steps here
 # # how to get ts-node etc?
@@ -24,11 +24,8 @@ COPY . /app
 # # so that we can just do "node src/graphql/index.ts"
 # # compiler.ts is in here so we don't need that 
 
-# RUN ls 
 
-# deleted dist locally but then this isn't being reflected here...
 RUN npm run compile
-RUN ls -la
 
-#CMD node
-CMD ["node", "--trace-warnings", "dist/graphql/index.js"]  
+RUN node dist/graphql/index.js
+#CMD ["node" "dist/graphql/index.js"]
