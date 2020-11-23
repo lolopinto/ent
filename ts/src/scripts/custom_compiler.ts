@@ -1,8 +1,12 @@
+#!/usr/bin/env node
+
 import ts from "typescript";
 import * as path from "path";
 import * as fs from "fs";
 import JSON5 from "json5";
 import glob from "glob";
+
+// TODO this should probably be its own package but for now it's here
 
 class Compiler {
   private options: ts.CompilerOptions;
@@ -343,7 +347,7 @@ class Compiler {
 // TODO use includes and exclude in tsconfig.json if it exists
 new Compiler(
   glob.sync("**/*.ts", {
-    ignore: ["node_modules/**", "tests/**", "./src/compiler.ts"],
+    ignore: ["node_modules/**", "tests/**"],
   }),
   ["node_modules/@types/node"],
 ).compile();

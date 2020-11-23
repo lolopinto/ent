@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node-script
+#!/usr/bin/env node
 
 import glob from "glob";
 import minimist from "minimist";
