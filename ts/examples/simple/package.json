@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "compile": "rm -rf dist && ts-node src/compiler.ts",
+    "compile": "rm -rf dist && ./node_modules/.bin/ent-custom-compiler",
     "test": "jest"
   },
   "author": "",
