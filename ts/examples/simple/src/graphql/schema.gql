@@ -19,6 +19,7 @@ type Contact {
   emailAddress: String!
   firstName: String!
   lastName: String!
+  fullName: String!
 }
 
 type User {

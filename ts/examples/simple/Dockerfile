@@ -10,12 +10,11 @@ COPY package.json /app/package.json
 COPY .docker_npmrc /app/.docker_npmrc
 RUN cp .docker_npmrc .npmrc
 
-COPY . /app
 
 RUN npm install 
 RUN rm -f .npmrc .docker_npmrc
-#RUN mv /app/node_modules  /node_modules
 
+COPY . /app
 
 # # ok we're missing a bunch of steps here
 # # how to get ts-node etc?
@@ -27,5 +26,9 @@ RUN rm -f .npmrc .docker_npmrc
 
 RUN npm run compile
 
-RUN node dist/graphql/index.js
-#CMD ["node" "dist/graphql/index.js"]
+# this is needed to make it work without previously running compile
+#RUN node dist/graphql/index.js
+
+# this is needed to make it work so that tsent and other commands run locally
+# there's something clearly rotten somewhere but will move on for now 
+CMD ["node", "dist/graphql/index.js"]

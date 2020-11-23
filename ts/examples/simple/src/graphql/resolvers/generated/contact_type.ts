@@ -38,6 +38,9 @@ export const ContactType = new GraphQLObjectType({
     lastName: {
       type: GraphQLNonNull(GraphQLString),
     },
+    fullName: {
+      type: GraphQLNonNull(GraphQLString),
+    },
   }),
 });
 
