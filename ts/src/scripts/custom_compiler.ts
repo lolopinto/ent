@@ -4,6 +4,8 @@ import * as fs from "fs";
 import JSON5 from "json5";
 import glob from "glob";
 
+// TODO this should probably be its own package but for now it's here
+
 class Compiler {
   private options: ts.CompilerOptions;
   private regexMap: Map<string, RegExp> = new Map();
