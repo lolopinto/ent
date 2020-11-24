@@ -27,7 +27,7 @@
     "ts-jest": "^25.2.1"
   },
   "dependencies": {
-    "@lolopinto/ent": "0.0.32",
+    "@lolopinto/ent": "0.0.36",
     "@lolopinto/ent-email": "0.0.1",
     "@lolopinto/ent-password": "0.0.2",
     "@lolopinto/ent-phonenumber": "0.0.1",
@@ -45,8 +45,5 @@
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "passport-strategy": "^1.0.0"
-  },
-  "resolutions": {
-    "graphql": "^0.15.0"
   }
 }

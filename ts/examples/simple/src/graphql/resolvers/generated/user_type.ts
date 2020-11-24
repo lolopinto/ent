@@ -59,6 +59,9 @@ export const UserType = new GraphQLObjectType({
     accountStatus: {
       type: GraphQLString,
     },
+    bio: {
+      type: GraphQLString,
+    },
     createdEvents: {
       type: GraphQLNonNull(UserToCreatedEventsConnectionType()),
       args: {

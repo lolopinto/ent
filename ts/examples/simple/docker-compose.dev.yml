@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile-develop
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
+    container_name: example_app
+    ports: 
+      - 4000:4000
+      - 9229:9229 # for debugger apparently
+    volumes: 
+      - .:/app:rw,delegated
+    environment:
+      # golang which we use needs the sslmode=disable bit
+      - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/tsent_test?sslmode=disable
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+

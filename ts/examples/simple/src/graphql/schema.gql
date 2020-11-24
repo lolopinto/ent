@@ -19,6 +19,7 @@ type Contact {
   emailAddress: String!
   firstName: String!
   lastName: String!
+  fullName: String!
 }
 
 type User {
@@ -28,6 +29,7 @@ type User {
   emailAddress: String!
   phoneNumber: String
   accountStatus: String
+  bio: String
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
   friends(first: Int, after: String, last: Int, before: String): UserToFriendsConnection!
   selfContact: Contact

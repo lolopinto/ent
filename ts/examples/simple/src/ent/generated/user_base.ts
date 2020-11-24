@@ -42,6 +42,7 @@ export class UserBase {
   protected readonly password: string | null;
   readonly accountStatus: string | null;
   readonly emailVerified: boolean;
+  readonly bio: string | null;
 
   constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
@@ -56,6 +57,7 @@ export class UserBase {
     this.password = data.password;
     this.accountStatus = data.account_status;
     this.emailVerified = data.email_verified;
+    this.bio = data.bio;
   }
 
   // by default, we always deny and it's up to the ent
@@ -227,6 +229,7 @@ export class UserBase {
       "password",
       "account_status",
       "email_verified",
+      "bio",
     ];
   }
 
