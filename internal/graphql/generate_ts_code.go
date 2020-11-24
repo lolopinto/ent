@@ -341,6 +341,10 @@ func getFilePathForCustomQuery(name string) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strcase.ToSnake(name))
 }
 
+func getTsconfigPaths() string {
+	return util.GetEnv("TSCONFIG_PATHS", "tsconfig-paths/register")
+}
+
 func parseCustomData(data *codegen.Data) chan *customData {
 	var res = make(chan *customData)
 	go func() {
@@ -364,7 +368,7 @@ func parseCustomData(data *codegen.Data) chan *customData {
 			// TODO this should find the tsconfig.json and not assume there's one at the root but fine for now
 			filepath.Join(data.CodePath.GetAbsPathToRoot(), "tsconfig.json"),
 			"-r",
-			"/node_modules/tsconfig-paths/register",
+			getTsconfigPaths(),
 			// local...
 			// this assumes package already installed
 			fmt.Sprintf("./node_modules/%s/scripts/custom_graphql.js", codepath.Package),
@@ -1521,7 +1525,7 @@ func generateSchemaFile(hasMutations bool) error {
 		return errors.Wrap(err, "error writing temporary schema file")
 	}
 
-	cmd := exec.Command("ts-node", "-r", "/node_modules/tsconfig-paths/register", filePath)
+	cmd := exec.Command("ts-node", "-r", getTsconfigPaths(), filePath)
 	// TODO check this and do something useful with it
 	// and then apply this in more places
 	// for now we'll just spew it when there's an error as it's a hint as to what

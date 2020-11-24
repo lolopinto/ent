@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/lolopinto/ent/internal/util"
 	"gopkg.in/yaml.v2"
 )
 
@@ -103,18 +104,20 @@ func GetConnectionStr() string {
 }
 
 func loadDBConfig() *DBConfig {
-	path := getEnv("PATH_TO_DB_FILE", "config/database.yml")
+	// DB_CONNECTION_STRING trumps file
+	conn := util.GetEnv("DB_CONNECTION_STRING", "")
+	if conn != "" {
+		return &DBConfig{
+			connection: conn,
+		}
+	}
+
+	path := util.GetEnv("PATH_TO_DB_FILE", "config/database.yml")
 	_, err := os.Stat(path)
 	if err != nil {
-		// this is what we'll use in production. what render supports
-		conn := getEnv("DB_CONNECTION_STRING", "")
-		if conn != "" {
-			return &DBConfig{
-				connection: conn,
-			}
-		}
-		return nil
+		log.Fatalf("no way to get db config :%v", err)
 	}
+
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatalf("could not read yml file to load db: %v", err)
@@ -138,12 +141,4 @@ func loadDBConfig() *DBConfig {
 	return &DBConfig{
 		rawDBInfo: &dbData,
 	}
-}
-
-func getEnv(key, defaultValue string) string {
-	val, ok := os.LookupEnv(key)
-	if ok {
-		return val
-	}
-	return defaultValue
 }
