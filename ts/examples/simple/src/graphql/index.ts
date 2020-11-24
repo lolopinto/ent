@@ -70,4 +70,5 @@ app.use(
   }),
 );
 app.listen(4000);
+console.log(process.env.DB_CONNECTION_STRING);
 console.log("graphql");

@@ -13,7 +13,8 @@ services:
     volumes: 
       - .:/app:rw,delegated
     environment:
-      - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/tsent_test
+      # golang which we use needs the sslmode=disable bit
+      - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/tsent_test?sslmode=disable
       - NPM_TOKEN=${NPM_TOKEN}
 
 

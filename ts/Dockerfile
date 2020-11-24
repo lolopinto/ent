@@ -28,6 +28,9 @@ ENV PATH $PATH:$GOPATH/bin
 RUN go get github.com/lolopinto/ent/tsent
 #RUN go install 
 
+# needed to tell tsent where to get tsconfig-paths + make it possible to test locally 
+ENV TSCONFIG_PATHS="/node_modules/tsconfig-paths/register"
+
 # first 3 need to move from ts/package.json
 # maybe typescript?
 RUN npm install -g ts-node prettier typescript
