@@ -20,9 +20,10 @@ RUN git config --global url."https://golang:$GITHUB_TOKEN@github.com".insteadOf 
 # default path but make it explicit
 ENV GOPATH=$HOME/go
 ENV PATH $PATH:$GOPATH/bin
-# hmm this isn't good because this isn't versioned and it's never deployed and we're always getting master basically
-RUN go get github.com/lolopinto/ent/tsent
-#RUN go install 
+ENV GO111MODULE=on
+
+RUN go get github.com/lolopinto/ent/tsent@v0.0.1
+
 
 # needed to tell tsent where to get tsconfig-paths + make it possible to test locally 
 ENV TSCONFIG_PATHS="/node_modules/tsconfig-paths/register"
