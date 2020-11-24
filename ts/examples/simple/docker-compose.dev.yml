@@ -4,7 +4,7 @@ services:
   app:
     build: 
       context: .
-      dockerfile: Dockerfile-local
+      dockerfile: Dockerfile-develop
       args:
         - GITHUB_TOKEN=${GITHUB_TOKEN}
     ports: 
@@ -17,9 +17,3 @@ services:
       - DB_CONNECTION_STRING=postgres://ola:@host.docker.internal/tsent_test?sslmode=disable
       - GITHUB_TOKEN=${GITHUB_TOKEN}
 
-
-  # db_postgres:
-  #   image: postgres:11-alpine
-  #   ports: 
-  #     - 5432:5432
-  #   #user: ola
