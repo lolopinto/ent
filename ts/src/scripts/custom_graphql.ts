@@ -75,7 +75,9 @@ async function captureCustom(filePath: string) {
 
   let promises: any[] = [];
   files.forEach((file) => {
-    promises.push(require(file));
+    if (fs.existsSync(file)) {
+      promises.push(require(file));
+    }
   });
 
   await Promise.all(promises);
