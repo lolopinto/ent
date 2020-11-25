@@ -22,7 +22,7 @@ ENV GOPATH=$HOME/go
 ENV PATH $PATH:$GOPATH/bin
 ENV GO111MODULE=on
 
-RUN go get github.com/lolopinto/ent/tsent@v0.0.1
+RUN go get github.com/lolopinto/ent/tsent@v0.0.2
 
 
 # needed to tell tsent where to get tsconfig-paths + make it possible to test locally 
