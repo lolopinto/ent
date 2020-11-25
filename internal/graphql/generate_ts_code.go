@@ -353,7 +353,6 @@ func parseCustomData(data *codegen.Data) chan *customData {
 
 		var buf bytes.Buffer
 		var out bytes.Buffer
-		var stderr bytes.Buffer
 		for key := range data.Schema.Nodes {
 			info := data.Schema.Nodes[key]
 			nodeData := info.NodeData
@@ -379,10 +378,9 @@ func parseCustomData(data *codegen.Data) chan *customData {
 		cmd := exec.Command("ts-node-script", cmdArgs...)
 		cmd.Stdin = &buf
 		cmd.Stdout = &out
-		cmd.Stderr = &stderr
+		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
-			str := stderr.String()
-			err = errors.Wrap(err, str)
+			err = errors.Wrap(err, "error generating custom graphql")
 			cd.Error = err
 			res <- &cd
 			return
@@ -1535,8 +1533,6 @@ func generateSchemaFile(hasMutations bool) error {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
-		spew.Dump(cmd.Stdout)
-		spew.Dump(cmd.Stderr)
 		return errors.Wrap(err, "error writing schema file")
 	}
 	return nil
