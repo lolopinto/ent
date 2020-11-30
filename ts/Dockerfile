@@ -1,5 +1,8 @@
 FROM nikolaik/python-nodejs:python3.8-nodejs14
 
+# this is associating this image with this repo
+LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
+
 RUN apt update && apt --assume-yes install zsh
 
 # install auto_schema
