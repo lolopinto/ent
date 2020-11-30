@@ -7,8 +7,10 @@
     "test": "tests"
   },
   "scripts": {
+    "test": "jest",
     "compile": "rm -rf dist && ./node_modules/.bin/ent-custom-compiler",
-    "test": "jest"
+    "start": "docker-compose -f docker-compose.dev.yml up --build",
+    "codegen": "docker-compose -f docker-compose.dev.yml run --rm app tsent codegen"
   },
   "author": "",
   "license": "ISC",
