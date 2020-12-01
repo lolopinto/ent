@@ -50,7 +50,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
   public constructor(
     public readonly viewer: {{useImport "Viewer"}},
     public readonly operation: {{useImport "WriteOperation"}},
-    private action: {{.Node}}Action,
+    action: {{.Node}}Action,
     public readonly existingEnt?: {{$node}} | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;

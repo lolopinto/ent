@@ -159,7 +159,7 @@ export class SimpleAction<T extends Ent> implements Action<T> {
   constructor(
     public viewer: Viewer,
     schema: BuilderSchema<T>,
-    fields: Map<string, any>,
+    private fields: Map<string, any>,
     operation: WriteOperation = WriteOperation.Insert,
     existingEnt: T | undefined = undefined,
   ) {
@@ -171,6 +171,10 @@ export class SimpleAction<T extends Ent> implements Action<T> {
       existingEnt,
       this,
     );
+  }
+
+  getInput() {
+    return this.fields;
   }
 
   changeset(): Promise<Changeset<T>> {

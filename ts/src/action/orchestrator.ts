@@ -282,7 +282,8 @@ export class Orchestrator<T extends Ent> {
   }
 
   private async validate(): Promise<void> {
-    let privacyPolicy = this.options.action?.privacyPolicy;
+    const action = this.options.action;
+    let privacyPolicy = action?.privacyPolicy;
     const builder = this.options.builder;
 
     let promises: Promise<any>[] = [];
@@ -298,12 +299,12 @@ export class Orchestrator<T extends Ent> {
 
     // have to run triggers which update fields first before field and other validators
     // so running this first to build things up
-    let triggers = this.options.action?.triggers;
+    let triggers = action?.triggers;
     if (triggers) {
       let triggerPromises: Promise<Changeset<T> | Changeset<T>[]>[] = [];
 
       triggers.forEach((trigger) => {
-        let c = trigger.changeset(builder);
+        let c = trigger.changeset(builder, action!.getInput());
         if (c) {
           triggerPromises.push(c);
         }
@@ -316,9 +317,9 @@ export class Orchestrator<T extends Ent> {
 
     promises.push(this.validateFields());
 
-    let validators = this.options.action?.validators || [];
+    let validators = action?.validators || [];
     if (validators) {
-      promises.push(this.validators(validators, builder));
+      promises.push(this.validators(validators, action!, builder));
     }
 
     await Promise.all(promises);
@@ -342,11 +343,12 @@ export class Orchestrator<T extends Ent> {
 
   private async validators(
     validators: Validator<T>[],
+    action: Action<T>,
     builder: Builder<T>,
   ): Promise<void> {
     let promises: Promise<void>[] = [];
     validators.forEach((validator) => {
-      let res = validator.validate(builder);
+      let res = validator.validate(builder, action.getInput());
       if (res) {
         promises.push(res);
       }
