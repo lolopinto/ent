@@ -15,10 +15,8 @@ export default class CreateEventAction extends CreateEventActionBase {
 
   triggers: Trigger<Event>[] = [
     {
-      changeset(builder: EventBuilder) {
-        let input = builder.getInput();
-        let creator = input.creatorID!;
-        builder.addHostID(creator);
+      changeset(builder: EventBuilder, input: EventCreateInput) {
+        builder.addHostID(input.creatorID);
       },
     },
   ];

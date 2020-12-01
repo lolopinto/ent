@@ -16,7 +16,7 @@ export { UserCreateInput };
 export default class CreateUserAction extends CreateUserActionBase {
   triggers = [
     {
-      changeset: (builder: UserBuilder): void => {
+      changeset: (builder: UserBuilder, _input: UserCreateInput): void => {
         builder.updateInput({
           accountStatus: "UNVERIFIED",
           // not needed because we have serverDefault but can also set it here.
@@ -26,12 +26,14 @@ export default class CreateUserAction extends CreateUserActionBase {
     },
     {
       // also create a contact for self when creating user
-      changeset: (builder: UserBuilder): Promise<Changeset<Contact>> => {
-        let input = builder.getInput();
+      changeset: (
+        builder: UserBuilder,
+        input: UserCreateInput,
+      ): Promise<Changeset<Contact>> => {
         let action = CreateContactAction.create(this.builder.viewer, {
           firstName: input.firstName!,
-          lastName: input.lastName!,
-          emailAddress: input.emailAddress!,
+          lastName: input.lastName,
+          emailAddress: input.emailAddress,
           userID: builder,
         });
 
@@ -48,10 +50,9 @@ export default class CreateUserAction extends CreateUserActionBase {
       // can get required fields
       // can get builder from action also
       // AND works when we have action-only fields since they'll be defined on the action but not the builder
-      observe: (builder: UserBuilder): void => {
-        let input = builder.getInput();
-        let email = input.emailAddress!;
-        let firstName = input.firstName!;
+      observe: (_builder: UserBuilder, input: UserCreateInput): void => {
+        let email = input.emailAddress;
+        let firstName = input.firstName;
         FakeComms.send({
           from: "noreply@foo.com",
           to: email,
