@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
@@ -161,6 +162,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 
 const noFields = "__NO_FIELDS__"
 
+// TODO this needs to be aware of the new nonsense now
 func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ concreteNodeActionType) ([]*field.Field, error) {
 	var fields []*field.Field
 	if !typ.supportsFieldsFromEnt() {
@@ -185,11 +187,44 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 	} else {
 		// if a field is explicitly referenced, we want to automatically add it
 		for _, fieldName := range fieldNames {
+			parts := strings.Split(fieldName, ".")
+			var required bool
+			var optional bool
+			var actionOnly bool
+			if len(parts) == 3 && parts[0] == parts[2] {
+				fieldName = parts[1]
+				switch parts[0] {
+				case "__required__":
+					required = true
+					break
+				case "__optional__":
+					optional = true
+					break
+				case "__actionOnly__":
+					actionOnly = true
+					break
+				}
+			}
 			f := fieldInfo.GetFieldByName(fieldName)
-			if f == nil {
+			if f == nil && !actionOnly {
 				return nil, fmt.Errorf("invalid field name %s passed", fieldName)
 			}
-			fields = append(fields, f)
+			if actionOnly {
+
+				/// TODO
+				continue
+			}
+			f2 := f
+			if required && f.Nullable() {
+				// required
+				f2 = f.Clone(field.Required())
+			}
+			if optional && !f.Nullable() {
+				// optional
+				f2 = f.Clone(field.Nullable())
+			}
+			// TODO handle actionOnly field
+			fields = append(fields, f2)
 		}
 
 	}

@@ -300,6 +300,19 @@ export interface Action {
 // all fields in a create/edit mutation
 export const NoFields = "__NO_FIELDS__";
 
+export function requiredField(field: string) {
+  return `__required__.${field}.__required__`;
+}
+
+export function optionalField(field: string) {
+  return `__optional__.${field}.__optional__`;
+}
+
+// field that doesn't exist in the object but will be added to the action input (and graphql)
+export function actionOnlyField(field: string) {
+  return `__actionOnly__.${field}.__actionOnly__`;
+}
+
 // no nullable constraint here since simple enough it's just part of the field
 export interface Constraint {
   name: string;

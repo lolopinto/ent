@@ -515,3 +515,54 @@ func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.Fi
 	}
 	return tsGQLType.GetTSGraphQLImports()
 }
+
+type Option func(*Field)
+
+func Nullable() Option {
+	return func(f *Field) {
+		f.nullable = true
+	}
+}
+
+func Required() Option {
+	return func(f *Field) {
+		f.nullable = false
+	}
+}
+
+func (f *Field) Clone(opts ...Option) *Field {
+	ret := &Field{
+		FieldName:                f.FieldName,
+		nullable:                 f.nullable,
+		dbName:                   f.dbName,
+		hideFromGraphQL:          f.hideFromGraphQL,
+		private:                  f.private,
+		index:                    f.index,
+		graphQLName:              f.graphQLName,
+		defaultValue:             f.defaultValue,
+		unique:                   f.unique,
+		topLevelStructField:      f.topLevelStructField,
+		dbColumn:                 f.dbColumn,
+		exposeToActionsByDefault: f.exposeToActionsByDefault,
+		singleFieldPrimaryKey:    f.singleFieldPrimaryKey,
+		disableUserEditable:      f.disableUserEditable,
+		hasDefaultValueOnCreate:  f.hasDefaultValueOnCreate,
+		hasDefaultValueOnEdit:    f.hasDefaultValueOnEdit,
+
+		// go specific things
+		entType:         f.entType,
+		fieldType:       f.fieldType,
+		tagMap:          f.tagMap,
+		pkgPath:         f.pkgPath,
+		dataTypePkgPath: f.dataTypePkgPath,
+
+		// derived fields
+		fkey:      f.fkey,
+		fieldEdge: f.fieldEdge,
+	}
+
+	for _, opt := range opts {
+		opt(ret)
+	}
+	return ret
+}

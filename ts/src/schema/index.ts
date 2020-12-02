@@ -23,6 +23,9 @@ export {
   Constraint,
   ConstraintType,
   ForeignKeyInfo,
+  requiredField,
+  optionalField,
+  actionOnlyField,
 } from "./schema";
 
 export {
