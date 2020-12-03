@@ -21,8 +21,8 @@ import (
 
 type NonEntField struct {
 	FieldName string
-	FieldType enttype.TSType
-
+	FieldType enttype.TSGraphQLType
+	Nullable  bool // required default = true
 	// TODO these are both go things. ignore
 	// Flag enum or ID
 	Flag string
@@ -30,13 +30,29 @@ type NonEntField struct {
 	NodeType string
 }
 
+func (f *NonEntField) Required() bool {
+	return !f.Nullable
+}
+
 func (f *NonEntField) GetGraphQLName() string {
 	return strcase.ToLowerCamel(f.FieldName)
 }
 
+// don't have to deal with all the id field stuff field.Field has to deal with
+func (f *NonEntField) GetTsType() string {
+	return f.FieldType.GetTSType()
+}
+
+func (f *NonEntField) TsFieldName() string {
+	return strcase.ToLowerCamel(f.FieldName)
+}
+
+// no imports for now... since all local fields
+// eventually may need it for e.g. file or something
+// TsBuilderImports
+
 type Action interface {
 	GetFields() []*field.Field
-	// TODO make this a generic abstraction. have run into this in other places
 	GetNonEntFields() []*NonEntField
 	GetEdges() []*edge.AssociationEdge
 	GetActionName() string
@@ -305,6 +321,7 @@ func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
 func GetNonEntFields(action Action) []FieldActionTemplateInfo {
 	var fields []FieldActionTemplateInfo
 
+	// TODO this is only used by go so didn't update this
 	for _, f := range action.GetNonEntFields() {
 
 		fields = append(fields, FieldActionTemplateInfo{

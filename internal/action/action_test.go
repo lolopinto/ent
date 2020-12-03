@@ -716,7 +716,7 @@ func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActio
 		for idx, nonEntField := range nonEntFields {
 			actionOnlyField := expAction.actionOnlyFields[idx]
 			require.Equal(t, actionOnlyField.name, nonEntField.FieldName, "name %s not equal", nonEntField.FieldName)
-			//			require.Equal(t, actionOnlyField.nullable, field.Nullable(), "fieldname %s not equal", nonEntField.FieldName)
+			require.Equal(t, actionOnlyField.nullable, nonEntField.Nullable, "fieldname %s not equal", nonEntField.FieldName)
 			require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.FieldType.GetGraphQLType(), "graphql type %s not equal", nonEntField.FieldName)
 			require.Equal(t, actionOnlyField.typ.tsType, nonEntField.FieldType.GetTSType(), "ts type %s not equal", nonEntField.FieldName)
 		}

@@ -39,6 +39,15 @@
         {{end -}}
       {{end -}}
     {{end -}}
+
+    {{ range $field := $action.GetNonEntFields -}}
+      {{$type := $field.GetTsType -}}
+      {{if $field.Required -}}
+        {{$field.TsFieldName}}: {{$type}};
+      {{else -}}
+        {{$field.TsFieldName}}?: {{$type}};
+      {{end -}}
+    {{end -}}
   }
 {{end}}
 

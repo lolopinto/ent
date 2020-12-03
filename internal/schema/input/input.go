@@ -202,7 +202,7 @@ type ActionField struct {
 	Nullable bool       `json:"nullable"`
 }
 
-func (f *ActionField) GetEntType() enttype.TSType {
+func (f *ActionField) GetEntType() enttype.TSGraphQLType {
 	switch f.Type {
 	case ActionTypeID:
 		if f.Nullable {

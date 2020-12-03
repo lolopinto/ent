@@ -243,6 +243,7 @@ func getNonEntFieldsFromInput(action *input.Action) []*NonEntField {
 		fields = append(fields, &NonEntField{
 			FieldName: field.Name,
 			FieldType: field.GetEntType(),
+			Nullable:  field.Nullable,
 		})
 	}
 	return fields
