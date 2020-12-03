@@ -550,7 +550,8 @@ func (f *Field) Clone(opts ...Option) *Field {
 		hasDefaultValueOnEdit:    f.hasDefaultValueOnEdit,
 
 		// go specific things
-		entType:         f.entType,
+		entType: f.entType,
+		// can't just clone this. have to update this...
 		fieldType:       f.fieldType,
 		tagMap:          f.tagMap,
 		pkgPath:         f.pkgPath,
@@ -563,6 +564,24 @@ func (f *Field) Clone(opts ...Option) *Field {
 
 	for _, opt := range opts {
 		opt(ret)
+	}
+
+	// nullability changed!
+	if ret.nullable != f.nullable {
+		// now nullable
+		if ret.nullable {
+			nullableType, ok := ret.fieldType.(enttype.NullableType)
+			if !ok {
+				panic(fmt.Errorf("couldn't covert the type %v to its nullable version", ret.fieldType))
+			}
+			ret.setFieldType(nullableType.GetNullableType())
+		} else {
+			nonNullableType, ok := ret.fieldType.(enttype.NonNullableType)
+			if !ok {
+				panic(fmt.Errorf("couldn't covert the type %v to its non-nullable version", ret.fieldType))
+			}
+			ret.setFieldType(nonNullableType.GetNonNullableType())
+		}
 	}
 	return ret
 }
