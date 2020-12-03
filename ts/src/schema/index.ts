@@ -25,7 +25,6 @@ export {
   ForeignKeyInfo,
   requiredField,
   optionalField,
-  actionOnlyField,
 } from "./schema";
 
 export {

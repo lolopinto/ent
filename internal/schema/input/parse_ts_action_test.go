@@ -183,6 +183,65 @@ func TestParseActions(t *testing.T) {
 				},
 			},
 		},
+		"action only fields": {
+			code: map[string]string{
+				"event.ts": getCodeWithSchema(
+					`
+				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
+
+				export default class Event implements Schema {
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimeType({name: "start_time"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "addCreatorAsAdmin",
+								type: "Boolean",
+							},
+							{
+								name: "localTime",
+								type: "Time",
+								nullable: true,
+							}],
+						},
+					];
+				};`),
+			},
+			expectedOutput: map[string]node{
+				"Event": {
+					fields: []field{
+						{
+							name:   "name",
+							dbType: input.String,
+						},
+						{
+							name:   "start_time",
+							dbType: input.Time,
+						},
+					},
+					actions: []action{
+						{
+							operation: ent.CreateAction,
+							actionOnlyFields: []actionField{
+								{
+									name: "addCreatorAsAdmin",
+									typ:  input.ActionTypeBoolean,
+								},
+								{
+									name:     "localTime",
+									typ:      input.ActionTypeTime,
+									nullable: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	runTestCases(t, testCases)
 }

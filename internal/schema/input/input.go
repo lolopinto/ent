@@ -2,6 +2,7 @@ package input
 
 import (
 	"encoding/json"
+	"fmt"
 	"go/types"
 
 	"github.com/lolopinto/ent/ent"
@@ -150,7 +151,7 @@ func (f *Field) GetEntType() enttype.EntType {
 			Values:      f.Type.Values,
 		}
 	}
-	panic("unsupported type")
+	panic(fmt.Sprintf("unsupported type %s", f.Type.DBType))
 }
 
 type AssocEdge struct {
@@ -192,7 +193,62 @@ type Action struct {
 	CustomGraphQLName string              `json:"graphQLName"`
 	CustomInputName   string              `json:"inputName"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL"`
+	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields"`
 }
+
+type ActionField struct {
+	Name     string     `json:"name"`
+	Type     ActionType `json:"type"`
+	Nullable bool       `json:"nullable"`
+}
+
+func (f *ActionField) GetEntType() enttype.TSType {
+	switch f.Type {
+	case ActionTypeID:
+		if f.Nullable {
+			return &enttype.NullableIDType{}
+		}
+		return &enttype.IDType{}
+	case ActionTypeBoolean:
+		if f.Nullable {
+			return &enttype.NullableBoolType{}
+		}
+		return &enttype.BoolType{}
+	case ActionTypeInt:
+		if f.Nullable {
+			return &enttype.NullableIntegerType{}
+		}
+		return &enttype.IntegerType{}
+	case ActionTypeFloat:
+		if f.Nullable {
+			return &enttype.NullableFloatType{}
+		}
+		return &enttype.FloatType{}
+	case ActionTypeString:
+		if f.Nullable {
+			return &enttype.NullableStringType{}
+		}
+		return &enttype.StringType{}
+	case ActionTypeTime:
+		if f.Nullable {
+			return &enttype.NullableTimeType{}
+		}
+		return &enttype.TimeType{}
+	}
+	panic(fmt.Sprintf("unsupported type %s", f.Type))
+}
+
+type ActionType string
+
+const (
+	// Note that these types should match ActionField.Type in schema.ts
+	ActionTypeID      ActionType = "ID"
+	ActionTypeBoolean            = "Boolean"
+	ActionTypeInt                = "Int"
+	ActionTypeFloat              = "Float"
+	ActionTypeString             = "String"
+	ActionTypeTime               = "Time"
+)
 
 type Constraint struct {
 	Name       string          `json:"name"`

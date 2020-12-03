@@ -126,8 +126,20 @@ type expectedField struct {
 }
 
 type expectedAction struct {
-	name   string
-	fields []expectedField
+	name             string
+	fields           []expectedField
+	actionOnlyFields []actionOnlyField
+}
+
+type actionOnlyField struct {
+	name     string
+	nullable bool
+	typ      fieldType
+}
+
+type fieldType struct {
+	tsType      string
+	graphqlType string
 }
 
 func TestActionFields(t *testing.T) {
@@ -591,6 +603,79 @@ func TestOverriddenOptionalActionField(t *testing.T) {
 	)
 }
 
+func TestActionOnlyFields(t *testing.T) {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	actionInfo := testhelper.ParseActionInfoForTest(
+		t,
+		absPath,
+		map[string]string{
+			"event.ts": testhelper.GetCodeWithSchema(
+				`
+				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
+
+				export default class Event implements Schema {
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimeType({name: "start_time"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "addCreatorAsAdmin",
+								type: "Boolean",
+							},
+							{
+								name: "localTime",
+								type: "Time",
+								nullable: true,
+							}],
+						},
+					];
+				};`),
+		},
+		base.TypeScript,
+		"EventConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
+		[]expectedAction{
+			{
+				name: "CreateEventAction",
+				fields: []expectedField{
+					{
+						name: "name",
+					},
+					{
+						name: "start_time",
+					},
+				},
+				actionOnlyFields: []actionOnlyField{
+					{
+						name: "addCreatorAsAdmin",
+						typ: fieldType{
+							tsType:      "boolean",
+							graphqlType: "Boolean!",
+						},
+					},
+					{
+						name:     "localTime",
+						nullable: true,
+						typ: fieldType{
+							tsType:      "Date | null",
+							graphqlType: "Time",
+						},
+					},
+				},
+			},
+		},
+	)
+}
+
 func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expectedAction) {
 	pkg, fnMap, err := schemaparser.FindFunctions(code, "configs", "GetFields", "GetActions")
 	require.Nil(t, err)
@@ -623,6 +708,17 @@ func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActio
 		for idx, field := range fields {
 			require.Equal(t, expAction.fields[idx].name, field.FieldName, "fieldname %s not equal", field.FieldName)
 			require.Equal(t, expAction.fields[idx].nullable, field.Nullable(), "fieldname %s not equal", field.FieldName)
+		}
+
+		nonEntFields := a.GetNonEntFields()
+		require.Equal(t, len(expAction.actionOnlyFields), len(nonEntFields), "length of fields")
+
+		for idx, nonEntField := range nonEntFields {
+			actionOnlyField := expAction.actionOnlyFields[idx]
+			require.Equal(t, actionOnlyField.name, nonEntField.FieldName, "name %s not equal", nonEntField.FieldName)
+			//			require.Equal(t, actionOnlyField.nullable, field.Nullable(), "fieldname %s not equal", nonEntField.FieldName)
+			require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.FieldType.GetGraphQLType(), "graphql type %s not equal", nonEntField.FieldName)
+			require.Equal(t, actionOnlyField.typ.tsType, nonEntField.FieldType.GetTSType(), "ts type %s not equal", nonEntField.FieldName)
 		}
 	}
 }

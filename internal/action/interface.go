@@ -21,9 +21,13 @@ import (
 
 type NonEntField struct {
 	FieldName string
-	FieldType enttype.Type
-	Flag      string
-	NodeType  string
+	FieldType enttype.TSType
+
+	// TODO these are both go things. ignore
+	// Flag enum or ID
+	Flag string
+	// this is a go-thing. ignore for TypeScript
+	NodeType string
 }
 
 func (f *NonEntField) GetGraphQLName() string {

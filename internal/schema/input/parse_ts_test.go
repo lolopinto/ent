@@ -67,11 +67,18 @@ type assocEdgeGroup struct {
 }
 
 type action struct {
-	operation       ent.ActionOperation // Todo?
-	fields          []string
-	actionName      string
-	graphQLName     string
-	hideFromGraphQL bool
+	operation        ent.ActionOperation // Todo?
+	fields           []string
+	actionName       string
+	graphQLName      string
+	hideFromGraphQL  bool
+	actionOnlyFields []actionField
+}
+
+type actionField struct {
+	name     string
+	typ      input.ActionType
+	nullable bool
 }
 
 type constraint struct {
@@ -191,6 +198,20 @@ func verifyActions(t *testing.T, expActions []action, actions []*input.Action) {
 		assert.Equal(t, expAction.graphQLName, action.CustomGraphQLName)
 		assert.Equal(t, expAction.hideFromGraphQL, action.HideFromGraphQL)
 		assert.Equal(t, expAction.fields, action.Fields)
+
+		verifyActionOnlyFields(t, expAction.actionOnlyFields, action.ActionOnlyFields)
+	}
+}
+
+func verifyActionOnlyFields(t *testing.T, expActionFields []actionField, actionFields []*input.ActionField) {
+	require.Len(t, actionFields, len(expActionFields))
+
+	for j, expActionField := range expActionFields {
+		actionField := actionFields[j]
+
+		assert.Equal(t, expActionField.name, actionField.Name)
+		assert.Equal(t, expActionField.nullable, actionField.Nullable)
+		assert.Equal(t, expActionField.typ, actionField.Type)
 	}
 }
 
