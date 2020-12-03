@@ -42,7 +42,7 @@ export class UserBuilder implements Builder<User> {
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    private action: UserAction,
+    action: UserAction,
     public readonly existingEnt?: User | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;

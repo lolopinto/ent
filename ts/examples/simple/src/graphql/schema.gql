@@ -335,8 +335,8 @@ input UserCreateInput {
   firstName: String!
   lastName: String!
   emailAddress: String!
-  phoneNumber: String
-  password: String
+  phoneNumber: String!
+  password: String!
 }
 
 type UserDeleteResponse {

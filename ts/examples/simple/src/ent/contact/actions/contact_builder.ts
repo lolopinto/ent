@@ -38,7 +38,7 @@ export class ContactBuilder implements Builder<Contact> {
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    private action: ContactAction,
+    action: ContactAction,
     public readonly existingEnt?: Contact | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;

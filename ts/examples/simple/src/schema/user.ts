@@ -7,6 +7,7 @@ import {
   ActionOperation,
   StringType,
   BooleanType,
+  requiredField,
 } from "@lolopinto/ent/schema";
 import { EmailType } from "@lolopinto/ent-email";
 import { PasswordType } from "@lolopinto/ent-password";
@@ -63,8 +64,8 @@ export default class User extends BaseEntSchema implements Schema {
         "FirstName",
         "LastName",
         "EmailAddress",
-        "PhoneNumber",
-        "Password",
+        requiredField("PhoneNumber"),
+        requiredField("Password"),
       ],
     },
     {

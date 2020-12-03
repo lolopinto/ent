@@ -39,7 +39,7 @@ export class EventBuilder implements Builder<Event> {
   public constructor(
     public readonly viewer: Viewer,
     public readonly operation: WriteOperation,
-    private action: EventAction,
+    action: EventAction,
     public readonly existingEnt?: Event | undefined,
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;

@@ -34,10 +34,10 @@ export const UserCreateInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     phoneNumber: {
-      type: GraphQLString,
+      type: GraphQLNonNull(GraphQLString),
     },
     password: {
-      type: GraphQLString,
+      type: GraphQLNonNull(GraphQLString),
     },
   }),
 });
