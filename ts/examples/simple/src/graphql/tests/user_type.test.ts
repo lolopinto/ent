@@ -4,7 +4,7 @@ import CreateUserAction, {
 } from "src/ent/user/actions/create_user_action";
 import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@lolopinto/ent";
 import { User } from "src/ent/";
-import { randomEmail } from "src/util/random";
+import { randomEmail, randomPhoneNumber } from "src/util/random";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import { advanceBy } from "jest-date-mock";
 import {
@@ -25,7 +25,15 @@ afterEach(() => {
 
 const loggedOutViewer = new LoggedOutViewer();
 
-async function create(input: UserCreateInput): Promise<User> {
+async function create(opts: Partial<UserCreateInput>): Promise<User> {
+  let input: UserCreateInput = {
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: "pa$$w0rd",
+    ...opts,
+  };
   return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
@@ -48,8 +56,6 @@ function getConfig(
 test("query user", async () => {
   let user = await create({
     firstName: "ffirst",
-    lastName: "last",
-    emailAddress: randomEmail(),
   });
 
   await expectQueryFromRoot(
@@ -65,8 +71,6 @@ test("query user", async () => {
 test("query custom field", async () => {
   let user = await create({
     firstName: "first",
-    lastName: "last",
-    emailAddress: randomEmail(),
   });
 
   await expectQueryFromRoot(
@@ -82,13 +86,9 @@ test("query custom function", async () => {
   let [user, user2] = await Promise.all([
     create({
       firstName: "first",
-      lastName: "last",
-      emailAddress: randomEmail(),
     }),
     create({
       firstName: "first2",
-      lastName: "last",
-      emailAddress: randomEmail(),
     }),
   ]);
   let vc = new IDViewer(user.id);
@@ -123,8 +123,6 @@ test("query custom function", async () => {
 test("query custom async function", async () => {
   let user = await create({
     firstName: "first",
-    lastName: "last",
-    emailAddress: randomEmail(),
   });
   let vc = new IDViewer(user.id);
   await CreateContactAction.create(vc, {
@@ -183,8 +181,6 @@ test("query custom async function list", async () => {
 test("query custom async function nullable list", async () => {
   let user = await create({
     firstName: "first",
-    lastName: "last",
-    emailAddress: randomEmail(),
   });
 
   await expectQueryFromRoot(
@@ -199,8 +195,6 @@ test("query custom async function nullable list", async () => {
 test("query custom async function nullable contents", async () => {
   let user = await create({
     firstName: "first",
-    lastName: "last",
-    emailAddress: randomEmail(),
   });
   let vc = new IDViewer(user.id);
   user = await User.loadX(vc, user.id);
@@ -230,8 +224,6 @@ test("query custom async function nullable contents", async () => {
 test("query custom async function nullable list contents", async () => {
   let user = await create({
     firstName: "first",
-    lastName: "last",
-    emailAddress: randomEmail(),
   });
   let vc = new IDViewer(user.id);
   user = await User.loadX(vc, user.id);
@@ -256,8 +248,6 @@ test("query custom async function nullable list contents", async () => {
 test("query custom async function nullable list and contents", async () => {
   let user = await create({
     firstName: "first",
-    lastName: "last",
-    emailAddress: randomEmail(),
   });
   let vc = new IDViewer(user.id);
   user = await User.loadX(vc, user.id);
@@ -268,8 +258,6 @@ test("query custom async function nullable list and contents", async () => {
   // the list is nullable
   let user2 = await create({
     firstName: "first",
-    lastName: "last",
-    emailAddress: randomEmail(),
   });
   let vc2 = new IDViewer(user2.id);
   user2 = await User.loadX(vc2, user2.id);
@@ -293,13 +281,9 @@ test("query user who's not visible", async () => {
   let [user, user2] = await Promise.all([
     create({
       firstName: "user1",
-      lastName: "last",
-      emailAddress: randomEmail(),
     }),
     create({
       firstName: "user2",
-      lastName: "last",
-      emailAddress: randomEmail(),
     }),
   ]);
 
@@ -316,8 +300,6 @@ test("query user who's not visible", async () => {
 test("query user and nested object", async () => {
   let user = await create({
     firstName: "ffirst",
-    lastName: "last",
-    emailAddress: randomEmail(),
   });
   let vc = new IDViewer(user.id);
   user = await User.loadX(vc, user.id);
@@ -345,28 +327,18 @@ test("load list", async () => {
   let [user, user2, user3, user4, user5] = await Promise.all([
     create({
       firstName: "user1",
-      lastName: "last",
-      emailAddress: randomEmail(),
     }),
     create({
       firstName: "user2",
-      lastName: "last",
-      emailAddress: randomEmail(),
     }),
     create({
       firstName: "user3",
-      lastName: "last",
-      emailAddress: randomEmail(),
     }),
     create({
       firstName: "user4",
-      lastName: "last",
-      emailAddress: randomEmail(),
     }),
     create({
       firstName: "user5",
-      lastName: "last",
-      emailAddress: randomEmail(),
     }),
   ]);
 

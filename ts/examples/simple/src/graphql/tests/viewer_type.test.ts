@@ -1,7 +1,7 @@
 import schema from "src/graphql/schema";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import { LoggedOutViewer, IDViewer, DB, Viewer } from "@lolopinto/ent";
-import { randomEmail } from "src/util/random";
+import { randomEmail, randomPhoneNumber } from "src/util/random";
 import {
   expectQueryFromRoot,
   queryRootConfig,
@@ -40,6 +40,8 @@ test("viewer", async () => {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: "pa$$w0rd",
   }).saveX();
   let vc = new IDViewer(user.id);
   await expectQueryFromRoot(

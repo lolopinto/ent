@@ -1,7 +1,7 @@
 import schema from "src/graphql/schema";
 import { DB, ID, Viewer, LoggedOutViewer, IDViewer } from "@lolopinto/ent";
 import { User } from "src/ent/";
-import { randomEmail } from "src/util/random";
+import { randomEmail, randomPhoneNumber } from "src/util/random";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
@@ -21,7 +21,15 @@ afterEach(() => {
 });
 
 const loggedOutViewer = new LoggedOutViewer();
-async function create(input: UserCreateInput): Promise<User> {
+async function create(opts: Partial<UserCreateInput>): Promise<User> {
+  let input: UserCreateInput = {
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    ...opts,
+  };
   return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
@@ -42,12 +50,15 @@ function getConfig(
 
 test("create", async () => {
   const email = randomEmail();
+  const phoneNumber = randomPhoneNumber();
 
   await expectMutation(
     getConfig("userCreate", {
       firstName: "Jon",
       lastName: "Snow",
       emailAddress: email,
+      phoneNumber: phoneNumber,
+      password: "pa$$w0rd",
     }),
     [
       "user.id",
@@ -59,6 +70,9 @@ test("create", async () => {
     ["user.firstName", "Jon"],
     ["user.lastName", "Snow"],
     ["user.emailAddress", email],
+    // formatted...
+    ["user.phoneNumber", `+1${phoneNumber}`],
+    // we just gonna assume password worked lol
   );
 });
 
@@ -94,6 +108,8 @@ test("edit no permissions, logged out viewer", async () => {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: email,
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
   });
 
   await expectMutation(
@@ -125,7 +141,6 @@ test("edit no permissions, other viewer", async () => {
   let user2 = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   await expectMutation(
@@ -152,6 +167,8 @@ test("delete", async () => {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: email,
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
   });
 
   await expectMutation(
@@ -184,7 +201,6 @@ test("delete. other user no permissions", async () => {
   let user2 = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   await expectMutation(

@@ -9,3 +9,9 @@ export function randomEmail(domain?: string): string {
 
   return `test+${random()}@${domain}`;
 }
+
+export function randomPhoneNumber(): string {
+  return Math.random()
+    .toString(10)
+    .substring(2, 12);
+}

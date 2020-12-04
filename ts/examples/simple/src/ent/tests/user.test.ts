@@ -11,7 +11,7 @@ import {
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
-import { randomEmail } from "src/util/random";
+import { randomEmail, randomPhoneNumber } from "src/util/random";
 
 import CreateUserAction, {
   UserCreateInput,
@@ -32,7 +32,15 @@ afterAll(async () => {
   FakeComms.clear();
 });
 
-async function create(input: UserCreateInput): Promise<User> {
+async function create(opts: Partial<UserCreateInput>): Promise<User> {
+  let input: UserCreateInput = {
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    ...opts,
+  };
   return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
@@ -46,7 +54,6 @@ test("create user", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   expect(user.firstName).toBe("Jon");
@@ -86,7 +93,6 @@ test("edit user", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   try {
@@ -112,7 +118,6 @@ test("edit user. saveXFromID", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   let vc = new IDViewer(user.id, { ent: user });
@@ -128,7 +133,6 @@ test("delete user", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   try {
@@ -148,7 +152,6 @@ test("delete user. saveXFromID", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   let vc = new IDViewer(user.id, { ent: user });
@@ -163,12 +166,10 @@ describe("privacy", () => {
     let user = await create({
       firstName: "Jon",
       lastName: "Snow",
-      emailAddress: randomEmail(),
     });
     let user2 = await create({
       firstName: "Daenerys",
       lastName: "Targaryen",
-      emailAddress: randomEmail(),
     });
 
     // we only do privacy checks when loading right now...
@@ -192,12 +193,10 @@ describe("privacy", () => {
     let user = await create({
       firstName: "Jon",
       lastName: "Snow",
-      emailAddress: randomEmail(),
     });
     let user2 = await create({
       firstName: "Daenerys",
       lastName: "Targaryen",
-      emailAddress: randomEmail(),
     });
 
     // we only do privacy checks when loading right now...
@@ -220,18 +219,18 @@ test("symmetric edge", async () => {
   let dany = await create({
     firstName: "Daenerys",
     lastName: "Targaryen",
-    emailAddress: randomEmail(),
   });
   let sam = await create({
     firstName: "Samwell",
     lastName: "Tarly",
-    emailAddress: randomEmail(),
   });
 
   let action = CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
+    password: "passs",
+    phoneNumber: randomPhoneNumber(),
   });
   let t = new Date();
   t.setTime(t.getTime() + 86400);
@@ -317,7 +316,6 @@ test("inverse edge", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
   const action = CreateEventAction.create(new LoggedOutViewer(), {
     creatorID: user.id,
@@ -368,7 +366,6 @@ test("one-way + inverse edge", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
   const event = await CreateEventAction.create(new LoggedOutViewer(), {
     creatorID: user.id,
@@ -394,17 +391,14 @@ test("loadMultiUsers", async () => {
   let jon = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
   let dany = await create({
     firstName: "Daenerys",
     lastName: "Targaryen",
-    emailAddress: randomEmail(),
   });
   let sam = await create({
     firstName: "Samwell",
     lastName: "Tarly",
-    emailAddress: randomEmail(),
   });
 
   const tests: [Viewer, number, string][] = [
@@ -476,13 +470,14 @@ test("uniqueEdge|Node", async () => {
   let jon = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   let action = CreateUserAction.create(loggedOutViewer, {
     firstName: "Sansa",
     lastName: "Stark",
     emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: "pa$$w0rd",
   });
   // make them friends
   action.builder.addFriend(jon);
