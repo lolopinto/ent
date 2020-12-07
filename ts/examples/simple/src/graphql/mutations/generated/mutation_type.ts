@@ -4,6 +4,7 @@ import { GraphQLObjectType } from "graphql";
 import { ContactCreateType } from "src/graphql/mutations/generated/contact/contact_create_type";
 import { ContactDeleteType } from "src/graphql/mutations/generated/contact/contact_delete_type";
 import { ContactEditType } from "src/graphql/mutations/generated/contact/contact_edit_type";
+import { EmailAddressEditType } from "src/graphql/mutations/generated/user/email_address_edit_type";
 import { EventAddHostType } from "src/graphql/mutations/generated/event/event_add_host_type";
 import { EventCreateType } from "src/graphql/mutations/generated/event/event_create_type";
 import { EventDeleteType } from "src/graphql/mutations/generated/event/event_delete_type";
@@ -20,6 +21,7 @@ export const MutationType = new GraphQLObjectType({
     contactCreate: ContactCreateType,
     contactDelete: ContactDeleteType,
     contactEdit: ContactEditType,
+    emailAddressEdit: EmailAddressEditType,
     eventAddHost: EventAddHostType,
     eventCreate: EventCreateType,
     eventDelete: EventDeleteType,

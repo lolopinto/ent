@@ -8,6 +8,7 @@ import {
   StringType,
   BooleanType,
   requiredField,
+  NoFields,
 } from "@lolopinto/ent/schema";
 import { EmailType } from "@lolopinto/ent-email";
 import { PasswordType } from "@lolopinto/ent-password";
@@ -70,7 +71,19 @@ export default class User extends BaseEntSchema implements Schema {
     },
     {
       operation: ActionOperation.Edit,
+      // everything is optional by default in edits anyway
       fields: ["FirstName", "LastName"],
+    },
+    {
+      // we're not saving anything in the db so we use actionOnlyField to specify a required email address
+      // send email out
+      // we need to save the code somewhere...
+      operation: ActionOperation.Edit,
+      actionName: "EditEmailAddressAction",
+      graphQLName: "emailAddressEdit",
+      // still need no fields even when we want only actionOnlyFields
+      fields: [NoFields],
+      actionOnlyFields: [{ name: "emailAddress", type: "String" }],
     },
     {
       operation: ActionOperation.Delete,
