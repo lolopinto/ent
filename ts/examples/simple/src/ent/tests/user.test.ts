@@ -22,6 +22,7 @@ import CreateEventAction from "src/ent/event/actions/create_event_action";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import { FakeLogger } from "@lolopinto/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
+import EditEmailAddressAction from "src/ent/user/actions/edit_email_address_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -561,3 +562,54 @@ function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
   expect(edge.edgeType).toBe(expectedEdge.edgeType);
   expect(edge.data).toBe(expectedEdge.data || null);
 }
+
+describe.only("edit email", () => {
+  test("existing user email", async () => {
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+    });
+    let user2 = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+    });
+    let vc = new IDViewer(user.id);
+
+    try {
+      await EditEmailAddressAction.create(vc, user, {
+        emailAddress: user2.emailAddress,
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/^cannot change email/);
+    }
+  });
+
+  test("get code step", async () => {
+    const email = randomEmail();
+
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: email,
+    });
+    let vc = new IDViewer(user.id);
+
+    const newEmail = randomEmail();
+
+    await EditEmailAddressAction.create(vc, user, {
+      emailAddress: newEmail,
+    }).saveX();
+
+    // TODO we need an API that returns the raw data for these things...
+    const authCodes = await user.loadAuthCodes();
+    // TODO need to verify right code
+    expect(authCodes.length).toEqual(1);
+    const comms = FakeComms.getSent(newEmail, Mode.EMAIL);
+    expect(comms.length).toBe(1);
+
+    // TODO use the result here and call "confirmEmail" API and have that work
+  });
+});

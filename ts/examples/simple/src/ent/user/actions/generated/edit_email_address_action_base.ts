@@ -5,16 +5,16 @@ import { Viewer, ID } from "@lolopinto/ent";
 import { User } from "src/ent/";
 import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
 
-export interface UserEditInput {
+export interface EditEmailAddressInput {
   emailAddress: string;
 }
 
 export class EditEmailAddressActionBase implements Action<User> {
   public readonly builder: UserBuilder;
   public readonly viewer: Viewer;
-  private input: UserEditInput;
+  private input: EditEmailAddressInput;
 
-  constructor(viewer: Viewer, user: User, input: UserEditInput) {
+  constructor(viewer: Viewer, user: User, input: EditEmailAddressInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new UserBuilder(
@@ -52,19 +52,19 @@ export class EditEmailAddressActionBase implements Action<User> {
   }
 
   static create<T extends EditEmailAddressActionBase>(
-    this: new (viewer: Viewer, user: User, input: UserEditInput) => T,
+    this: new (viewer: Viewer, user: User, input: EditEmailAddressInput) => T,
     viewer: Viewer,
     user: User,
-    input: UserEditInput,
+    input: EditEmailAddressInput,
   ): EditEmailAddressActionBase {
     return new this(viewer, user, input);
   }
 
   static async saveXFromID<T extends EditEmailAddressActionBase>(
-    this: new (viewer: Viewer, user: User, input: UserEditInput) => T,
+    this: new (viewer: Viewer, user: User, input: EditEmailAddressInput) => T,
     viewer: Viewer,
     id: ID,
-    input: UserEditInput,
+    input: EditEmailAddressInput,
   ): Promise<User> {
     let user = await User.loadX(viewer, id);
     return await new this(viewer, user, input).saveX();

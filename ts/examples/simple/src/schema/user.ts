@@ -81,6 +81,7 @@ export default class User extends BaseEntSchema implements Schema {
       operation: ActionOperation.Edit,
       actionName: "EditEmailAddressAction",
       graphQLName: "emailAddressEdit",
+      inputName: "EditEmailAddressInput",
       // still need no fields even when we want only actionOnlyFields
       fields: [NoFields],
       actionOnlyFields: [{ name: "emailAddress", type: "String" }],

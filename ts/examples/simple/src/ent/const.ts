@@ -3,6 +3,8 @@
 export enum NodeType {
   // Address is the node type for the Address object. Used to identify this node in edges and other places.
   Address = "address",
+  // AuthCode is the node type for the AuthCode object. Used to identify this node in edges and other places.
+  AuthCode = "authCode",
   // Contact is the node type for the Contact object. Used to identify this node in edges and other places.
   Contact = "contact",
   // Event is the node type for the Event object. Used to identify this node in edges and other places.

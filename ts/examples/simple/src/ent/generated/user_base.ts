@@ -25,7 +25,14 @@ import {
   query,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
-import { EdgeType, NodeType, Event, User, Contact } from "src/ent/internal";
+import {
+  EdgeType,
+  NodeType,
+  Event,
+  User,
+  Contact,
+  AuthCode,
+} from "src/ent/internal";
 import schema from "src/schema/user";
 
 const tableName = "users";
@@ -499,6 +506,19 @@ export class UserBase {
       id2,
       context: this.viewer.context,
     });
+  }
+
+  async loadAuthCodes(): Promise<AuthCode[]> {
+    let map = await loadEntsFromClause(
+      this.viewer,
+      query.Eq("user_id", this.id),
+      AuthCode.loaderOptions(),
+    );
+    let results: AuthCode[] = [];
+    map.forEach((ent) => {
+      results.push(ent);
+    });
+    return results;
   }
 
   async loadContacts(): Promise<Contact[]> {

@@ -29,6 +29,12 @@ export class FakeComms {
     }
   }
 
+  static getSent(to: string, mode: Mode) {
+    return this.sent.filter(
+      (option) => option.to === to && option.mode === mode,
+    );
+  }
+
   static verifyNoEmailSent() {
     expect(this.sent.length).toBe(0);
   }

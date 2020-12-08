@@ -29,6 +29,18 @@ sa.Table("assoc_edge_config", metadata,
     sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
 )
    
+sa.Table("auth_codes", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("code", sa.Text(), nullable=False),
+    sa.Column("user_id", postgresql.UUID(), nullable=False),
+    sa.Column("email_address", sa.Text(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="auth_codes_id_pkey"),
+    sa.ForeignKeyConstraint(["user_id"], ["users.id"], name="auth_codes_user_id_fkey", ondelete="CASCADE"),
+    sa.UniqueConstraint("email_address", "code", name="uniqueCode"),
+)
+   
 sa.Table("contacts", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),

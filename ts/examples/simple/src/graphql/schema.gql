@@ -1,5 +1,6 @@
 type Query {
   address(id: ID!): Address
+  authCode(id: ID!): AuthCode
   contact(id: ID!): Contact
   event(id: ID!): Event
   user(id: ID!): User
@@ -13,13 +14,11 @@ type Address {
   zip: String!
 }
 
-type Contact {
+type AuthCode {
   user: User
   id: ID!
+  code: String!
   emailAddress: String!
-  firstName: String!
-  lastName: String!
-  fullName: String!
 }
 
 type User {
@@ -38,6 +37,7 @@ type User {
   eventsAttending(first: Int, after: String, last: Int, before: String): UserToEventsAttendingConnection!
   declinedEvents(first: Int, after: String, last: Int, before: String): UserToDeclinedEventsConnection!
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
+  authCodes: [AuthCode!]!
   contacts: [Contact!]!
   fullName: String!
   bar: String
@@ -75,6 +75,15 @@ type UserToFriendsConnection {
 type UserToFriendsEdge {
   node: User!
   cursor: String!
+}
+
+type Contact {
+  user: User
+  id: ID!
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+  fullName: String!
 }
 
 type UserToHostedEventsConnection {

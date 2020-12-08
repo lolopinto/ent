@@ -15,6 +15,7 @@ import { ID, RequestContext } from "@lolopinto/ent";
 import { GraphQLEdgeConnection } from "@lolopinto/ent/graphql";
 import {
   ContactType,
+  AuthCodeType,
   UserToCreatedEventsConnectionType,
   UserToFriendsConnectionType,
   UserToHostedEventsConnectionType,
@@ -269,6 +270,12 @@ export const UserType = new GraphQLObjectType({
           UserToMaybeEventsQuery,
           args,
         );
+      },
+    },
+    authCodes: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(AuthCodeType))),
+      resolve: (user: User, args: {}) => {
+        return user.loadAuthCodes();
       },
     },
     contacts: {

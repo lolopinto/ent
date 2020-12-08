@@ -15,10 +15,10 @@ import { ID, RequestContext } from "@lolopinto/ent";
 import { User } from "src/ent/";
 import { UserType } from "src/graphql/resolvers/";
 import EditEmailAddressAction, {
-  UserEditInput,
+  EditEmailAddressInput,
 } from "src/ent/user/actions/edit_email_address_action";
 
-interface customEmailAddressEditInput extends UserEditInput {
+interface customEmailAddressEditInput extends EditEmailAddressInput {
   userID: ID;
 }
 
