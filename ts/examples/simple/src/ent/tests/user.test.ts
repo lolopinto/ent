@@ -579,7 +579,7 @@ describe.only("edit email", () => {
 
     try {
       await EditEmailAddressAction.create(vc, user, {
-        emailAddress: user2.emailAddress,
+        newEmail: user2.emailAddress,
       }).saveX();
       fail("should have thrown");
     } catch (e) {
@@ -587,7 +587,7 @@ describe.only("edit email", () => {
     }
   });
 
-  test("get code step", async () => {
+  test.only("get code step", async () => {
     const email = randomEmail();
 
     let user = await create({
@@ -600,7 +600,7 @@ describe.only("edit email", () => {
     const newEmail = randomEmail();
 
     await EditEmailAddressAction.create(vc, user, {
-      emailAddress: newEmail,
+      newEmail: newEmail,
     }).saveX();
 
     // TODO we need an API that returns the raw data for these things...
@@ -610,6 +610,9 @@ describe.only("edit email", () => {
     const comms = FakeComms.getSent(newEmail, Mode.EMAIL);
     expect(comms.length).toBe(1);
 
+    // reload user. confirm email wasn't saved...
+    user = await User.loadX(vc, user.id);
+    expect(user.emailAddress).toEqual(email);
     // TODO use the result here and call "confirmEmail" API and have that work
   });
 });

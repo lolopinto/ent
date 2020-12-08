@@ -6,7 +6,7 @@ import { User } from "src/ent/";
 import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
 
 export interface EditEmailAddressInput {
-  emailAddress: string;
+  newEmail: string;
 }
 
 export class EditEmailAddressActionBase implements Action<User> {
@@ -26,7 +26,8 @@ export class EditEmailAddressActionBase implements Action<User> {
   }
 
   getInput(): UserInput {
-    return this.input;
+    // we use a type assertion to override the weak type detection here
+    return this.input as UserInput;
   }
 
   async changeset(): Promise<Changeset<User>> {

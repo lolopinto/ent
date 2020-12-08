@@ -281,7 +281,7 @@ type EmailAddressEditResponse {
 
 input EmailAddressEditInput {
   userID: ID!
-  emailAddress: String!
+  newEmail: String!
 }
 
 type EventAddHostResponse {

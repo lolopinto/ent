@@ -296,6 +296,10 @@ func HasInput(action Action) bool {
 	return len(action.GetFields()) != 0 || len(action.GetNonEntFields()) != 0
 }
 
+func HasOnlyActionOnlyFields(action Action) bool {
+	return len(action.GetNonEntFields()) != 0 && len(action.GetFields()) == 0
+}
+
 // TODO abstract this out somewhere else...
 func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
 	var result []FieldActionTemplateInfo

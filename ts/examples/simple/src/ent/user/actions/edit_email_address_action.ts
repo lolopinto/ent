@@ -25,7 +25,7 @@ class NewAuthCode {
 
   changeset(builder: UserBuilder, input: EditEmailAddressInput) {
     return CreateAuthCodeAction.create(builder.viewer, {
-      emailAddress: input.emailAddress,
+      emailAddress: input.newEmail,
       userID: builder.viewer.viewerID!,
       code: this.getCode(),
     }).changeset();
@@ -33,11 +33,11 @@ class NewAuthCode {
 
   observe(_builder: UserBuilder, input: EditEmailAddressInput) {
     let link = `https://website/confirm?email=${
-      input.emailAddress
+      input.newEmail
     }&code=${this.getCode()}`;
 
     FakeComms.send({
-      to: input.emailAddress,
+      to: input.newEmail,
       mode: Mode.EMAIL,
       subject: "confirm email",
       from: "noreply@example-app.com",
@@ -54,9 +54,9 @@ export default class EditEmailAddressAction extends EditEmailAddressActionBase {
     {
       // confirm email not being used
       async validate(builder: UserBuilder, input: EditEmailAddressInput) {
-        const id = await User.loadIDFromEmailAddress(input.emailAddress);
+        const id = await User.loadIDFromEmailAddress(input.newEmail);
         if (id) {
-          throw new Error(`cannot change email to ${input.emailAddress}`);
+          throw new Error(`cannot change email to ${input.newEmail}`);
         }
       },
     },

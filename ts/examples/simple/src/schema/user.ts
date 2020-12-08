@@ -84,7 +84,12 @@ export default class User extends BaseEntSchema implements Schema {
       inputName: "EditEmailAddressInput",
       // still need no fields even when we want only actionOnlyFields
       fields: [NoFields],
-      actionOnlyFields: [{ name: "emailAddress", type: "String" }],
+      // we use actionOnlyField here so emailAddress is not saved
+
+      // we use a different field name so that field is not saved
+      // TODO we also need a way to unset a field in builder if we also want to
+      // use emailAddress
+      actionOnlyFields: [{ name: "newEmail", type: "String" }],
     },
     {
       operation: ActionOperation.Delete,

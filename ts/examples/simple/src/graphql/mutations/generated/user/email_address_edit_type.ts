@@ -32,7 +32,7 @@ export const EmailAddressEditInputType = new GraphQLInputObjectType({
     userID: {
       type: GraphQLNonNull(GraphQLID),
     },
-    emailAddress: {
+    newEmail: {
       type: GraphQLNonNull(GraphQLString),
     },
   }),
@@ -72,7 +72,7 @@ export const EmailAddressEditType: GraphQLFieldConfig<
       context.getViewer(),
       input.userID,
       {
-        emailAddress: input.emailAddress,
+        newEmail: input.newEmail,
       },
     );
     return { user: user };
