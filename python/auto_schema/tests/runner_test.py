@@ -963,9 +963,65 @@ class TestPostgresRunner(BaseTestRunner):
 
         assert r2.revision_message() == expected_message
 
-        r.run()
+        r2.run()
 
-        validate_metadata_after_change(r, metadata_with_table)
+        validate_metadata_after_change(r2, metadata_with_table)
+
+    @pytest.mark.usefixtures("address_metadata_table")
+    def test_server_default_no_change_string(self, new_test_runner, address_metadata_table):
+        r = new_test_runner(address_metadata_table)
+
+        run_and_validate_with_standard_metadata_tables(
+            r, address_metadata_table, ['addresses'])
+
+        conftest.identity_metadata_func(address_metadata_table)
+
+        r2 = new_test_runner(address_metadata_table, r)
+        diff = r2.compute_changes()
+
+        # nothing changed, we should have no changes
+        assert len(diff) == 0
+
+    @pytest.mark.usefixtures("address_metadata_table")
+    def test_server_default_change_string(self, new_test_runner, address_metadata_table):
+        r = new_test_runner(address_metadata_table)
+
+        run_and_validate_with_standard_metadata_tables(
+            r, address_metadata_table, ['addresses'])
+
+        conftest.metadata_with_server_default_changed_string(
+            address_metadata_table)
+
+        r2 = new_test_runner(address_metadata_table, r)
+        diff = r2.compute_changes()
+
+        assert len(diff) == 1
+
+        assert r2.revision_message() == "modify server_default value of column country from US to UK"
+        r2.run()
+
+        validate_metadata_after_change(r2, address_metadata_table)
+
+    @pytest.mark.usefixtures("address_metadata_table")
+    def test_server_default_dropped(self, new_test_runner, address_metadata_table):
+        r = new_test_runner(address_metadata_table)
+
+        run_and_validate_with_standard_metadata_tables(
+            r, address_metadata_table, ['addresses'])
+
+        conftest.metadata_with_server_default_dropped(
+            address_metadata_table)
+
+        r2 = new_test_runner(address_metadata_table, r)
+        diff = r2.compute_changes()
+
+        assert len(diff) == 1
+
+        assert r2.revision_message(
+        ) == "modify server_default value of column country from US to None"
+        r2.run()
+
+        validate_metadata_after_change(r2, address_metadata_table)
 
     # only in postgres because "No support for ALTER of constraints in SQLite dialect"
 

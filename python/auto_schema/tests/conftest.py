@@ -155,6 +155,35 @@ def metadata_with_nullable_fields():
     return metadata
 
 
+@pytest.fixture()
+def address_metadata_table():
+    metadata = sa.MetaData()
+    sa.Table("addresses", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column("street_name", sa.Text(), nullable=False),
+             sa.Column("city", sa.Text(), nullable=False),
+             sa.Column("zip", sa.Text(), nullable=False),
+             sa.Column("apartment", sa.Text(), nullable=True),
+             sa.Column("country", sa.Text(),
+                       nullable=False, server_default="US"),
+             sa.Column("state", sa.Text(), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='addresses_id_pkey'),
+             )
+    return metadata
+
+
+def identity_metadata_func(metadata):
+    return metadata
+
+
+def metadata_with_server_default_changed_string(metadata):
+    return _metadata_with_server_default_changed(metadata, 'country', 'addresses', 'UK')
+
+
+def metadata_with_server_default_dropped(metadata):
+    return _metadata_with_server_default_changed(metadata, 'country', 'addresses', None)
+
+
 def metadata_with_unique_constraint_added(metadata):
     return _add_constraint_to_metadata(
         metadata,    # and then unique constraint added afterwards
@@ -248,7 +277,7 @@ def metadata_with_multi_column_index(metadata_with_table):
     )
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_multi_column_pkey_constraint():
     metadata = sa.MetaData()
     sa.Table('user_friends_edge', metadata,
@@ -265,7 +294,7 @@ def metadata_with_multi_column_pkey_constraint():
     return metadata
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def metadata_with_multi_column_unique_constraint():
     metadata = metadata_with_contacts_table_with_no_unique_constraint()
     return _add_constraint_to_metadata(metadata,
@@ -291,7 +320,7 @@ def metadata_with_contacts_table_with_no_unique_constraint():
     return metadata
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def metadata_with_multi_column_fkey_constraint():
     metadata = sa.MetaData()
     sa.Table('t1', metadata,
@@ -345,7 +374,7 @@ def metadata_with_multi_column_fkey_constraint_removed():
     return metadata
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def metadata_with_multi_column_fkey_constraint_no_constraint_reference_table():
     metadata = sa.MetaData()
     sa.Table('t1', metadata,
@@ -371,7 +400,7 @@ def metadata_with_multi_column_fkey_constraint_no_constraint_reference_table():
     return metadata
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def metadata_with_column_check_constraint():
     metadata = sa.MetaData()
     sa.Table('t1', metadata,
@@ -392,7 +421,7 @@ def metadata_with_constraint_added_after(metadata):
     )
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def metadata_with_multi_column_check_constraint():
     metadata = sa.MetaData()
     sa.Table('t1', metadata,
@@ -414,20 +443,20 @@ def metadata_with_multi_column_check_constraint():
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_foreign_key_to_same_table():
     return metadata_assoc_edge_config()
 
 
-@pytest.fixture
-@pytest.mark.usefixtures("metadata_with_table")
+@ pytest.fixture
+@ pytest.mark.usefixtures("metadata_with_table")
 def metadata_with_two_tables(metadata_with_table):
     messages_table(metadata_with_table)
     return metadata_with_table
 
 
-@pytest.fixture
-@pytest.mark.usefixtures("metadata_with_table")
+@ pytest.fixture
+@ pytest.mark.usefixtures("metadata_with_table")
 def metadata_with_foreign_key(metadata_with_table):
     contacts_table(metadata_with_table)
     return metadata_with_table
@@ -439,14 +468,14 @@ def metadata_assoc_edge_config():
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_no_edges():
     metadata = metadata_assoc_edge_config()
     metadata.info["edges"] = {}
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_one_edge():
     metadata = metadata_assoc_edge_config()
     # 1 edge, no inverse
@@ -460,7 +489,7 @@ def metadata_with_one_edge():
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_symmetric_edge():
     metadata = metadata_assoc_edge_config()
     # 1 edge, no inverse
@@ -479,7 +508,7 @@ def metadata_with_symmetric_edge():
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_inverse_edge():
     metadata = metadata_assoc_edge_config()
     # 2 edges, inverse of each other
@@ -505,7 +534,7 @@ def status_table_info(l):
     }
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_request_data():
     metadata = metdata_enum_table()
     data = {
@@ -545,7 +574,7 @@ def metadata_with_rows_added(metadata):
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_multiple_data_tables():
     metadata = metdata_enum_table()
     complex_enum_table(metadata)
@@ -630,7 +659,7 @@ def roles_table_info():
     }
 
 
-@pytest.fixture()
+@ pytest.fixture()
 def metadata_with_triple_pkey():
     metadata = sa.MetaData()
     roles_table(metadata)
@@ -699,7 +728,7 @@ def metadata_with_triple_pkey_with_rows_changed(metadata):
     return metadata
 
 
-@pytest.fixture
+@ pytest.fixture
 def metadata_with_enum_type():
     metadata = sa.MetaData()
 
