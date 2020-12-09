@@ -165,17 +165,22 @@ class Runner(object):
         if server_default is None:
             return server_default
 
-        def strip_default(arg):
+        def normalize(arg):
             # return the underlying string instead of quoted
-            return str(arg).strip("'")
+            arg = str(arg).strip("'")
+
+            # strip the extra text padding added so we can compare effectively
+            if arg.endswith("'::text"):
+                return arg.strip("'::text")
+            return arg
 
         if isinstance(server_default, TextClause):
-            return strip_default(server_default.text)
+            return normalize(server_default.text)
 
         if isinstance(server_default, DefaultClause):
-            return strip_default(server_default.arg)
+            return normalize(server_default.arg)
 
-        return strip_default(server_default)
+        return normalize(server_default)
 
     def get_schema_path(self):
         return self.schema_path
@@ -228,6 +233,11 @@ class Runner(object):
                 return "modify comment of column %s"
             elif op.modify_name:
                 return "modify name of column %s"
+            elif op.modify_server_default is None and op.existing_server_default is not None:
+                return 'modify server_default value of column %s from %s to None' % (
+                    op.column_name,
+                    Runner.get_clause_text(op.existing_server_default)
+                )
             else:
                 raise ValueError("unsupported alter_column op")
 

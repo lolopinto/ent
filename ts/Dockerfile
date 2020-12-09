@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
 RUN apt update && apt --assume-yes install zsh
 
 # install auto_schema
-RUN python3 -m pip install auto_schema==0.0.2
+RUN python3 -m pip install auto_schema==0.0.3
 
 # get go
 RUN wget https://storage.googleapis.com/golang/go1.14.12.linux-amd64.tar.gz
