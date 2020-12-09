@@ -92,6 +92,15 @@ export default class User extends BaseEntSchema implements Schema {
       actionOnlyFields: [{ name: "newEmail", type: "String" }],
     },
     {
+      // confirm email address with code
+      operation: ActionOperation.Edit,
+      actionName: "ConfirmEditEmailAddressAction",
+      graphQLName: "confirmEditEmailAddressEdit",
+      inputName: "ConfirmEditEmailAddressInput",
+      actionOnlyFields: [{ name: "code", type: "String" }],
+      fields: [requiredField("EmailAddress")],
+    },
+    {
       operation: ActionOperation.Delete,
     },
   ];

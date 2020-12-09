@@ -229,6 +229,8 @@ type Viewer {
 }
 
 type Mutation {
+  authCodeDelete(input: AuthCodeDeleteInput!): AuthCodeDeleteResponse!
+  confirmEditEmailAddressEdit(input: ConfirmEditEmailAddressEditInput!): ConfirmEditEmailAddressEditResponse!
   contactCreate(input: ContactCreateInput!): ContactCreateResponse!
   contactDelete(input: ContactDeleteInput!): ContactDeleteResponse!
   contactEdit(input: ContactEditInput!): ContactEditResponse!
@@ -242,6 +244,24 @@ type Mutation {
   userCreate(input: UserCreateInput!): UserCreateResponse!
   userDelete(input: UserDeleteInput!): UserDeleteResponse!
   userEdit(input: UserEditInput!): UserEditResponse!
+}
+
+type AuthCodeDeleteResponse {
+  deletedAuthCodeID: ID
+}
+
+input AuthCodeDeleteInput {
+  authCodeID: ID!
+}
+
+type ConfirmEditEmailAddressEditResponse {
+  user: User!
+}
+
+input ConfirmEditEmailAddressEditInput {
+  userID: ID!
+  emailAddress: String
+  code: String!
 }
 
 type ContactCreateResponse {

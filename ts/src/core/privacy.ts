@@ -140,9 +140,6 @@ export class AllowIfFuncRule implements PrivacyPolicyRule {
 export class AllowIfViewerIsRule implements PrivacyPolicyRule {
   constructor(private property: string) {}
 
-  // TODO that this is using db
-  // :( #facepalm that this is using db fields...
-  // TODO: confirm and add comment
   async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
     const result = ent[this.property];
     if (result === v.viewerID) {

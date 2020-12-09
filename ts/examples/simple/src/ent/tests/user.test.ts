@@ -23,6 +23,7 @@ import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import { FakeLogger } from "@lolopinto/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
 import EditEmailAddressAction from "src/ent/user/actions/edit_email_address_action";
+import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_address_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -563,7 +564,7 @@ function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
   expect(edge.data).toBe(expectedEdge.data || null);
 }
 
-describe.only("edit email", () => {
+describe("edit email", () => {
   test("existing user email", async () => {
     let user = await create({
       firstName: "Jon",
@@ -587,7 +588,7 @@ describe.only("edit email", () => {
     }
   });
 
-  test.only("get code step", async () => {
+  async function createUserAndSendEmail() {
     const email = randomEmail();
 
     let user = await create({
@@ -599,7 +600,7 @@ describe.only("edit email", () => {
 
     const newEmail = randomEmail();
 
-    await EditEmailAddressAction.create(vc, user, {
+    user = await EditEmailAddressAction.create(vc, user, {
       newEmail: newEmail,
     }).saveX();
 
@@ -610,9 +611,56 @@ describe.only("edit email", () => {
     const comms = FakeComms.getSent(newEmail, Mode.EMAIL);
     expect(comms.length).toBe(1);
 
-    // reload user. confirm email wasn't saved...
-    user = await User.loadX(vc, user.id);
+    // confirm email wasn't saved.
     expect(user.emailAddress).toEqual(email);
-    // TODO use the result here and call "confirmEmail" API and have that work
+
+    const url = new URL(comms[0].body);
+    const code = url.searchParams.get("code");
+    expect(code).toBeDefined();
+
+    return { user, newEmail, code };
+  }
+
+  test("change email address", async () => {
+    let { user, newEmail, code } = await createUserAndSendEmail();
+
+    user = await ConfirmEditEmailAddressAction.create(user.viewer, user, {
+      emailAddress: newEmail,
+      code: code!,
+    }).saveX();
+    // saved now
+    expect(user.emailAddress).toEqual(newEmail);
+
+    //should have been deleted now
+    const authCodes2 = await user.loadAuthCodes();
+    expect(authCodes2.length).toEqual(0);
+  });
+
+  test("invalid code confirmed", async () => {
+    let { user, newEmail, code } = await createUserAndSendEmail();
+
+    try {
+      await ConfirmEditEmailAddressAction.create(user.viewer, user, {
+        emailAddress: newEmail,
+        code: code + "1",
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+    }
+  });
+
+  test("invalid email address confirmed", async () => {
+    let { user, code } = await createUserAndSendEmail();
+
+    try {
+      await ConfirmEditEmailAddressAction.create(user.viewer, user, {
+        emailAddress: randomEmail(),
+        code: code!,
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+    }
   });
 });

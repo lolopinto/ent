@@ -23,6 +23,9 @@ export default class AuthCode extends BaseEntSchema {
       operation: ActionOperation.Create,
       hideFromGraphQL: true,
     },
+    {
+      operation: ActionOperation.Delete,
+    },
   ];
 
   constraints: Constraint[] = [
