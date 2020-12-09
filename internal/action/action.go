@@ -227,9 +227,9 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 				// required
 				f2 = f.Clone(field.Required())
 			}
-			if optional && !f.Nullable() {
+			if optional {
 				// optional
-				f2 = f.Clone(field.Nullable())
+				f2 = f.Clone(field.Optional())
 			}
 			fields = append(fields, f2)
 		}

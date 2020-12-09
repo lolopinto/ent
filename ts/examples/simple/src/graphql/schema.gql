@@ -11,7 +11,10 @@ type Address {
   id: ID!
   streetName: String!
   city: String!
+  state: String!
   zip: String!
+  apartment: String
+  country: String!
 }
 
 type AuthCode {
@@ -38,8 +41,8 @@ type User {
   eventsAttending(first: Int, after: String, last: Int, before: String): UserToEventsAttendingConnection!
   declinedEvents(first: Int, after: String, last: Int, before: String): UserToDeclinedEventsConnection!
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
-  authCodes: [AuthCode!]!
   contacts: [Contact!]!
+  authCodes: [AuthCode!]!
   fullName: String!
   bar: String
   contactSameDomain: Contact
@@ -230,6 +233,7 @@ type Viewer {
 }
 
 type Mutation {
+  addressCreate(input: AddressCreateInput!): AddressCreateResponse!
   authCodeDelete(input: AuthCodeDeleteInput!): AuthCodeDeleteResponse!
   confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditResponse!
   confirmPhoneNumberEdit(input: ConfirmPhoneNumberEditInput!): ConfirmPhoneNumberEditResponse!
@@ -247,6 +251,19 @@ type Mutation {
   userCreate(input: UserCreateInput!): UserCreateResponse!
   userDelete(input: UserDeleteInput!): UserDeleteResponse!
   userEdit(input: UserEditInput!): UserEditResponse!
+}
+
+type AddressCreateResponse {
+  address: Address!
+}
+
+input AddressCreateInput {
+  streetName: String!
+  city: String!
+  state: String!
+  zip: String!
+  apartment: String
+  country: String
 }
 
 type AuthCodeDeleteResponse {

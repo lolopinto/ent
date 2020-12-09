@@ -404,9 +404,13 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 }
 
 func IsRequiredField(action Action, field *field.Field) bool {
-	if field.ForceRequired() {
+	if field.ForceRequiredInAction() {
 		return true
 	}
+	if field.ForceOptionalInAction() {
+		return false
+	}
+
 	// for non-create actions, not required
 	if action.GetOperation() != ent.CreateAction {
 		return false

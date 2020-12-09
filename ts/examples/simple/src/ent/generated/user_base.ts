@@ -508,19 +508,6 @@ export class UserBase {
     });
   }
 
-  async loadAuthCodes(): Promise<AuthCode[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("user_id", this.id),
-      AuthCode.loaderOptions(),
-    );
-    let results: AuthCode[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
-  }
-
   async loadContacts(): Promise<Contact[]> {
     let map = await loadEntsFromClause(
       this.viewer,
@@ -528,6 +515,19 @@ export class UserBase {
       Contact.loaderOptions(),
     );
     let results: Contact[] = [];
+    map.forEach((ent) => {
+      results.push(ent);
+    });
+    return results;
+  }
+
+  async loadAuthCodes(): Promise<AuthCode[]> {
+    let map = await loadEntsFromClause(
+      this.viewer,
+      query.Eq("user_id", this.id),
+      AuthCode.loaderOptions(),
+    );
+    let results: AuthCode[] = [];
     map.forEach((ent) => {
       results.push(ent);
     });

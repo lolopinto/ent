@@ -12,7 +12,10 @@ sa.Table("addresses", metadata,
     sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
     sa.Column("street_name", sa.Text(), nullable=False),
     sa.Column("city", sa.Text(), nullable=False),
+    sa.Column("state", sa.Text(), nullable=False),
     sa.Column("zip", sa.Text(), nullable=False),
+    sa.Column("apartment", sa.Text(), nullable=True),
+    sa.Column("country", sa.Text(), nullable=False, server_default='US'),
     sa.PrimaryKeyConstraint("id", name="addresses_id_pkey"),
 )
    

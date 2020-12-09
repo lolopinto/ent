@@ -28,7 +28,16 @@ export const AddressType = new GraphQLObjectType({
     city: {
       type: GraphQLNonNull(GraphQLString),
     },
+    state: {
+      type: GraphQLNonNull(GraphQLString),
+    },
     zip: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    apartment: {
+      type: GraphQLString,
+    },
+    country: {
       type: GraphQLNonNull(GraphQLString),
     },
   }),

@@ -272,16 +272,16 @@ export const UserType = new GraphQLObjectType({
         );
       },
     },
-    authCodes: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(AuthCodeType))),
-      resolve: (user: User, args: {}) => {
-        return user.loadAuthCodes();
-      },
-    },
     contacts: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
       resolve: (user: User, args: {}) => {
         return user.loadContacts();
+      },
+    },
+    authCodes: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(AuthCodeType))),
+      resolve: (user: User, args: {}) => {
+        return user.loadAuthCodes();
       },
     },
     fullName: {

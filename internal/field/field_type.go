@@ -57,6 +57,7 @@ type Field struct {
 	hasDefaultValueOnEdit   bool
 
 	forceRequiredInAction bool
+	forceOptionalInAction bool
 }
 
 func newFieldFromInput(f *input.Field) (*Field, error) {
@@ -331,8 +332,12 @@ func (f *Field) Nullable() bool {
 	return f.nullable
 }
 
-func (f *Field) ForceRequired() bool {
+func (f *Field) ForceRequiredInAction() bool {
 	return f.forceRequiredInAction
+}
+
+func (f *Field) ForceOptionalInAction() bool {
+	return f.forceOptionalInAction
 }
 
 func (f *Field) DefaultValue() interface{} {
@@ -524,9 +529,10 @@ func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.Fi
 
 type Option func(*Field)
 
-func Nullable() Option {
+func Optional() Option {
 	return func(f *Field) {
-		f.nullable = true
+		// optional doesn't mean nullable...
+		f.forceOptionalInAction = true
 	}
 }
 
@@ -556,6 +562,7 @@ func (f *Field) Clone(opts ...Option) *Field {
 		hasDefaultValueOnCreate:  f.hasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:    f.hasDefaultValueOnEdit,
 		forceRequiredInAction:    f.forceRequiredInAction,
+		forceOptionalInAction:    f.forceOptionalInAction,
 
 		// go specific things
 		entType: f.entType,
@@ -574,22 +581,12 @@ func (f *Field) Clone(opts ...Option) *Field {
 		opt(ret)
 	}
 
-	// nullability changed!
-	if ret.nullable != f.nullable {
-		// now nullable
-		if ret.nullable {
-			nullableType, ok := ret.fieldType.(enttype.NullableType)
-			if !ok {
-				panic(fmt.Errorf("couldn't covert the type %v to its nullable version", ret.fieldType))
-			}
-			ret.setFieldType(nullableType.GetNullableType())
-		} else {
-			nonNullableType, ok := ret.fieldType.(enttype.NonNullableType)
-			if !ok {
-				panic(fmt.Errorf("couldn't covert the type %v to its non-nullable version", ret.fieldType))
-			}
-			ret.setFieldType(nonNullableType.GetNonNullableType())
+	if ret.nullable != f.nullable && !ret.nullable {
+		nonNullableType, ok := ret.fieldType.(enttype.NonNullableType)
+		if !ok {
+			panic(fmt.Errorf("couldn't covert the type %v to its non-nullable version for field %s", ret.fieldType, ret.FieldName))
 		}
+		ret.setFieldType(nonNullableType.GetNonNullableType())
 	}
 	return ret
 }
