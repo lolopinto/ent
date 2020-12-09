@@ -56,9 +56,8 @@ export default class User extends BaseEntSchema implements Schema {
     },
   ];
 
-  // create, edit, delete
-  // TODO we need editEmail, editPhoneNumber etc
   actions: Action[] = [
+    // create user
     {
       operation: ActionOperation.Create,
       fields: [
@@ -69,11 +68,17 @@ export default class User extends BaseEntSchema implements Schema {
         requiredField("Password"),
       ],
     },
+
+    // edit user: just first name and last name since the rest involve complex things happening
     {
       operation: ActionOperation.Edit,
-      // everything is optional by default in edits anyway
+      // everything is optional by default in edits
+
       fields: ["FirstName", "LastName"],
     },
+    // edit password left as an exercise to the reader
+
+    // send confirmation code for email address
     {
       // we're not saving anything in the db so we use actionOnlyField to specify a required email address
       // send email out
@@ -90,8 +95,9 @@ export default class User extends BaseEntSchema implements Schema {
       // use emailAddress
       actionOnlyFields: [{ name: "newEmail", type: "String" }],
     },
+
+    // confirm email address with code sent in last time
     {
-      // confirm email address with code
       operation: ActionOperation.Edit,
       actionName: "ConfirmEditEmailAddressAction",
       graphQLName: "confirmEmailAddressEdit",
@@ -100,6 +106,8 @@ export default class User extends BaseEntSchema implements Schema {
       // fields are default optional in edit mutation, this says make this required in here
       fields: [requiredField("EmailAddress")],
     },
+
+    // send confirmation code for phone number
     {
       // we're not saving anything in the db so we use actionOnlyField to specify a required phone number
       // send text to code
@@ -116,8 +124,9 @@ export default class User extends BaseEntSchema implements Schema {
       // use phoneNumber
       actionOnlyFields: [{ name: "newPhoneNumber", type: "String" }],
     },
+
+    // confirm phone number with code given
     {
-      // confirm phoneNumber with code
       operation: ActionOperation.Edit,
       actionName: "ConfirmEditPhoneNumberAction",
       graphQLName: "confirmPhoneNumberEdit",
@@ -129,6 +138,8 @@ export default class User extends BaseEntSchema implements Schema {
       // overriding phoneNumber is nullable in user object
       fields: [requiredField("PhoneNumber")],
     },
+
+    // delete user
     {
       operation: ActionOperation.Delete,
     },
