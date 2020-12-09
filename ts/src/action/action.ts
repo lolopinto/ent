@@ -1,4 +1,11 @@
-import { DataOperation, Ent, EntConstructor, Viewer, ID } from "../core/ent";
+import {
+  DataOperation,
+  Ent,
+  EntConstructor,
+  Viewer,
+  ID,
+  Data,
+} from "../core/ent";
 import { PrivacyPolicy } from "../core/privacy";
 import DB from "../core/db";
 
@@ -43,17 +50,18 @@ export interface Trigger<T extends Ent> {
   // can throw if it wants. not expected to throw tho.
   changeset(
     builder: Builder<T>,
+    input: Data,
   ): // hmm Promise<void> is not yet an option...
   void | Promise<Changeset<T> | Changeset<T>[]>;
 }
 
 export interface Observer<T extends Ent> {
-  observe(builder: Builder<T>): void | Promise<void>;
+  observe(builder: Builder<T>, input: Data): void | Promise<void>;
 }
 
 export interface Validator<T extends Ent> {
   // can throw if it wants
-  validate(builder: Builder<T>): Promise<void> | void;
+  validate(builder: Builder<T>, input: Data): Promise<void> | void;
 }
 
 export interface Action<T extends Ent> {
@@ -64,6 +72,7 @@ export interface Action<T extends Ent> {
   triggers?: Trigger<T>[];
   observers?: Observer<T>[];
   validators?: Validator<T>[];
+  getInput(): Data; // this input is passed to Triggers, Observers, Validators
 
   valid(): Promise<boolean>;
   // throws if invalid

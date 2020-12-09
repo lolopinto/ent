@@ -3,6 +3,7 @@ import { Validator } from "@lolopinto/ent/action";
 import { Event } from "src/ent/";
 
 export class EventTimeValidator implements Validator<Event> {
+  // generic validator can't enforce 2nd param
   validate(builder: EventBuilder): void {
     const input = builder.getInput();
 

@@ -46,13 +46,14 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
   }
 
   async executeObservers() {
-    if (!this.options?.action?.observers) {
+    const action = this.options?.action;
+    if (!this.options || !action || !action.observers) {
       return;
     }
     const builder = this.options.builder;
     await Promise.all(
-      this.options.action.observers.map((observer) => {
-        observer.observe(builder);
+      action.observers.map((observer) => {
+        observer.observe(builder, action.getInput());
       }),
     );
   }
