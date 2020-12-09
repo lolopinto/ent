@@ -6,7 +6,7 @@ import { User } from "src/ent/";
 import { UserBuilder, UserInput } from "src/ent/user/actions/user_builder";
 
 export interface ConfirmEditEmailAddressInput {
-  emailAddress?: string;
+  emailAddress: string;
   code: string;
 }
 

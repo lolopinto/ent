@@ -55,6 +55,8 @@ type Field struct {
 	disableUserEditable     bool
 	hasDefaultValueOnCreate bool
 	hasDefaultValueOnEdit   bool
+
+	forceRequiredInAction bool
 }
 
 func newFieldFromInput(f *input.Field) (*Field, error) {
@@ -329,6 +331,10 @@ func (f *Field) Nullable() bool {
 	return f.nullable
 }
 
+func (f *Field) ForceRequired() bool {
+	return f.forceRequiredInAction
+}
+
 func (f *Field) DefaultValue() interface{} {
 	return f.defaultValue
 }
@@ -527,6 +533,7 @@ func Nullable() Option {
 func Required() Option {
 	return func(f *Field) {
 		f.nullable = false
+		f.forceRequiredInAction = true
 	}
 }
 
@@ -548,6 +555,7 @@ func (f *Field) Clone(opts ...Option) *Field {
 		disableUserEditable:      f.disableUserEditable,
 		hasDefaultValueOnCreate:  f.hasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:    f.hasDefaultValueOnEdit,
+		forceRequiredInAction:    f.forceRequiredInAction,
 
 		// go specific things
 		entType: f.entType,

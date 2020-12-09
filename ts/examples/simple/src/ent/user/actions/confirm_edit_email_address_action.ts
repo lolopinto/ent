@@ -33,7 +33,7 @@ export default class ConfirmEditEmailAddressAction extends ConfirmEditEmailAddre
         const authCode = await findAuthCode(
           builder,
           input.code,
-          input.emailAddress!,
+          input.emailAddress,
         );
         if (!authCode) {
           throw new Error(`code ${input.code} not found associated with user`);
@@ -51,7 +51,7 @@ export default class ConfirmEditEmailAddressAction extends ConfirmEditEmailAddre
         const authCode = await findAuthCode(
           builder,
           input.code,
-          input.emailAddress!,
+          input.emailAddress,
         );
         if (!authCode) {
           throw new Error(`code ${input.code} not found associated with user`);

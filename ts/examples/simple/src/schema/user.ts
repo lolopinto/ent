@@ -98,6 +98,7 @@ export default class User extends BaseEntSchema implements Schema {
       graphQLName: "confirmEditEmailAddressEdit",
       inputName: "ConfirmEditEmailAddressInput",
       actionOnlyFields: [{ name: "code", type: "String" }],
+      // fields are default optional in edit mutation, this says make this required in here
       fields: [requiredField("EmailAddress")],
     },
     {

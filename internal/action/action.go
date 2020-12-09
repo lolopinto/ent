@@ -220,7 +220,10 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 				return nil, fmt.Errorf("invalid field name %s passed", fieldName)
 			}
 			f2 := f
-			if required && f.Nullable() {
+			// required and edit field. force it to be required
+			// required. if optional or nullable, now field is required
+			// or field is now required in an edit mutation, by default, all fields are required...
+			if required {
 				// required
 				f2 = f.Clone(field.Required())
 			}
@@ -228,7 +231,6 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 				// optional
 				f2 = f.Clone(field.Nullable())
 			}
-			// TODO handle actionOnly field
 			fields = append(fields, f2)
 		}
 
