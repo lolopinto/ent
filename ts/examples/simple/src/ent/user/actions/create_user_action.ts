@@ -31,7 +31,7 @@ export default class CreateUserAction extends CreateUserActionBase {
         input: UserCreateInput,
       ): Promise<Changeset<Contact>> => {
         let action = CreateContactAction.create(this.builder.viewer, {
-          firstName: input.firstName!,
+          firstName: input.firstName,
           lastName: input.lastName,
           emailAddress: input.emailAddress,
           userID: builder,
