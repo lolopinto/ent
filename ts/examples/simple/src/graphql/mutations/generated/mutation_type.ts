@@ -2,7 +2,8 @@
 
 import { GraphQLObjectType } from "graphql";
 import { AuthCodeDeleteType } from "src/graphql/mutations/generated/auth_code/auth_code_delete_type";
-import { ConfirmEditEmailAddressEditType } from "src/graphql/mutations/generated/user/confirm_edit_email_address_edit_type";
+import { ConfirmEmailAddressEditType } from "src/graphql/mutations/generated/user/confirm_email_address_edit_type";
+import { ConfirmPhoneNumberEditType } from "src/graphql/mutations/generated/user/confirm_phone_number_edit_type";
 import { ContactCreateType } from "src/graphql/mutations/generated/contact/contact_create_type";
 import { ContactDeleteType } from "src/graphql/mutations/generated/contact/contact_delete_type";
 import { ContactEditType } from "src/graphql/mutations/generated/contact/contact_edit_type";
@@ -11,6 +12,7 @@ import { EventAddHostType } from "src/graphql/mutations/generated/event/event_ad
 import { EventCreateType } from "src/graphql/mutations/generated/event/event_create_type";
 import { EventDeleteType } from "src/graphql/mutations/generated/event/event_delete_type";
 import { EventEditType } from "src/graphql/mutations/generated/event/event_edit_type";
+import { PhoneNumberEditType } from "src/graphql/mutations/generated/user/phone_number_edit_type";
 import { UserAuthType } from "src/graphql/mutations/generated/user_auth_type";
 import { UserAuthJWTType } from "src/graphql/mutations/generated/user_auth_jwt_type";
 import { UserCreateType } from "src/graphql/mutations/generated/user/user_create_type";
@@ -21,7 +23,8 @@ export const MutationType = new GraphQLObjectType({
   name: "Mutation",
   fields: () => ({
     authCodeDelete: AuthCodeDeleteType,
-    confirmEditEmailAddressEdit: ConfirmEditEmailAddressEditType,
+    confirmEmailAddressEdit: ConfirmEmailAddressEditType,
+    confirmPhoneNumberEdit: ConfirmPhoneNumberEditType,
     contactCreate: ContactCreateType,
     contactDelete: ContactDeleteType,
     contactEdit: ContactEditType,
@@ -30,6 +33,7 @@ export const MutationType = new GraphQLObjectType({
     eventCreate: EventCreateType,
     eventDelete: EventDeleteType,
     eventEdit: EventEditType,
+    phoneNumberEdit: PhoneNumberEditType,
     userAuth: UserAuthType,
     userAuthJWT: UserAuthJWTType,
     userCreate: UserCreateType,

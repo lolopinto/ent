@@ -231,7 +231,8 @@ type Viewer {
 
 type Mutation {
   authCodeDelete(input: AuthCodeDeleteInput!): AuthCodeDeleteResponse!
-  confirmEditEmailAddressEdit(input: ConfirmEditEmailAddressEditInput!): ConfirmEditEmailAddressEditResponse!
+  confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditResponse!
+  confirmPhoneNumberEdit(input: ConfirmPhoneNumberEditInput!): ConfirmPhoneNumberEditResponse!
   contactCreate(input: ContactCreateInput!): ContactCreateResponse!
   contactDelete(input: ContactDeleteInput!): ContactDeleteResponse!
   contactEdit(input: ContactEditInput!): ContactEditResponse!
@@ -240,6 +241,7 @@ type Mutation {
   eventCreate(input: EventCreateInput!): EventCreateResponse!
   eventDelete(input: EventDeleteInput!): EventDeleteResponse!
   eventEdit(input: EventEditInput!): EventEditResponse!
+  phoneNumberEdit(input: PhoneNumberEditInput!): PhoneNumberEditResponse!
   userAuth(input: UserAuthInput!): UserAuthResponse!
   userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTResponse!
   userCreate(input: UserCreateInput!): UserCreateResponse!
@@ -255,13 +257,23 @@ input AuthCodeDeleteInput {
   authCodeID: ID!
 }
 
-type ConfirmEditEmailAddressEditResponse {
+type ConfirmEmailAddressEditResponse {
   user: User!
 }
 
-input ConfirmEditEmailAddressEditInput {
+input ConfirmEmailAddressEditInput {
   userID: ID!
   emailAddress: String!
+  code: String!
+}
+
+type ConfirmPhoneNumberEditResponse {
+  user: User!
+}
+
+input ConfirmPhoneNumberEditInput {
+  userID: ID!
+  phoneNumber: String!
   code: String!
 }
 
@@ -345,6 +357,15 @@ input EventEditInput {
   startTime: Time
   endTime: Time
   eventLocation: String
+}
+
+type PhoneNumberEditResponse {
+  user: User!
+}
+
+input PhoneNumberEditInput {
+  userID: ID!
+  newPhoneNumber: String!
 }
 
 type UserAuthResponse {

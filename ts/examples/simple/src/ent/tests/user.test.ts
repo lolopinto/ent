@@ -24,6 +24,8 @@ import { FakeLogger } from "@lolopinto/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
 import EditEmailAddressAction from "src/ent/user/actions/edit_email_address_action";
 import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_address_action";
+import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
+import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -656,6 +658,113 @@ describe("edit email", () => {
     try {
       await ConfirmEditEmailAddressAction.create(user.viewer, user, {
         emailAddress: randomEmail(),
+        code: code!,
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+    }
+  });
+});
+
+describe("edit phone number", () => {
+  test("existing user phone number", async () => {
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+    });
+    let user2 = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+    });
+    let vc = new IDViewer(user.id);
+
+    try {
+      await EditPhoneNumberAction.create(vc, user, {
+        newPhoneNumber: user2.phoneNumber!,
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/^cannot change phoneNumber/);
+    }
+  });
+
+  async function createUserAndSendSMS() {
+    const phone = randomPhoneNumber();
+
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+      phoneNumber: phone,
+    });
+    let vc = new IDViewer(user.id);
+
+    const newPhoneNumber = randomPhoneNumber();
+
+    user = await EditPhoneNumberAction.create(vc, user, {
+      newPhoneNumber: newPhoneNumber,
+    }).saveX();
+
+    // TODO we need an API that returns the raw data for these things...
+    const authCodes = await user.loadAuthCodes();
+    // TODO need to verify right code
+    expect(authCodes.length).toEqual(1);
+    const comms = FakeComms.getSent(newPhoneNumber, Mode.SMS);
+    expect(comms.length).toBe(1);
+
+    // confirm phone wasn't saved.
+    expect(user.phoneNumber).toEqual(phone);
+
+    const body = comms[0].body;
+    const r = new RegExp(/your new code is (\d+)/);
+    const match = r.exec(body);
+    const code = match![1];
+
+    expect(code).toBeDefined();
+
+    return { user, newPhoneNumber, code };
+  }
+
+  test("change phone number", async () => {
+    let { user, newPhoneNumber, code } = await createUserAndSendSMS();
+
+    user = await ConfirmEditPhoneNumberAction.create(user.viewer, user, {
+      phoneNumber: newPhoneNumber,
+      code: code!,
+    }).saveX();
+    // saved now
+    expect(user.phoneNumber).toEqual(newPhoneNumber);
+
+    //should have been deleted now
+    const authCodes2 = await user.loadAuthCodes();
+    expect(authCodes2.length).toEqual(0);
+  });
+
+  test("invalid code confirmed", async () => {
+    let { user, newPhoneNumber, code } = await createUserAndSendSMS();
+
+    try {
+      await ConfirmEditPhoneNumberAction.create(user.viewer, user, {
+        phoneNumber: newPhoneNumber,
+        code: code + "1",
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+    }
+  });
+
+  test("invalid phone number confirmed", async () => {
+    let { user, code } = await createUserAndSendSMS();
+
+    try {
+      await ConfirmEditPhoneNumberAction.create(user.viewer, user, {
+        phoneNumber: randomPhoneNumber(),
         code: code!,
       }).saveX();
       fail("should have thrown");

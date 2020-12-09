@@ -14,26 +14,26 @@ import {
 import { ID, RequestContext } from "@lolopinto/ent";
 import { User } from "src/ent/";
 import { UserType } from "src/graphql/resolvers/";
-import ConfirmEditEmailAddressAction, {
-  ConfirmEditEmailAddressInput,
-} from "src/ent/user/actions/confirm_edit_email_address_action";
+import ConfirmEditPhoneNumberAction, {
+  ConfirmEditPhoneNumberInput,
+} from "src/ent/user/actions/confirm_edit_phone_number_action";
 
-interface customConfirmEditEmailAddressEditInput
-  extends ConfirmEditEmailAddressInput {
+interface customConfirmPhoneNumberEditInput
+  extends ConfirmEditPhoneNumberInput {
   userID: ID;
 }
 
-interface ConfirmEditEmailAddressEditResponse {
+interface ConfirmPhoneNumberEditResponse {
   user: User;
 }
 
-export const ConfirmEditEmailAddressEditInputType = new GraphQLInputObjectType({
-  name: "ConfirmEditEmailAddressEditInput",
+export const ConfirmPhoneNumberEditInputType = new GraphQLInputObjectType({
+  name: "ConfirmPhoneNumberEditInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     userID: {
       type: GraphQLNonNull(GraphQLID),
     },
-    emailAddress: {
+    phoneNumber: {
       type: GraphQLNonNull(GraphQLString),
     },
     code: {
@@ -42,10 +42,10 @@ export const ConfirmEditEmailAddressEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const ConfirmEditEmailAddressEditResponseType = new GraphQLObjectType({
-  name: "ConfirmEditEmailAddressEditResponse",
+export const ConfirmPhoneNumberEditResponseType = new GraphQLObjectType({
+  name: "ConfirmPhoneNumberEditResponse",
   fields: (): GraphQLFieldConfigMap<
-    ConfirmEditEmailAddressEditResponse,
+    ConfirmPhoneNumberEditResponse,
     RequestContext
   > => ({
     user: {
@@ -54,16 +54,16 @@ export const ConfirmEditEmailAddressEditResponseType = new GraphQLObjectType({
   }),
 });
 
-export const ConfirmEditEmailAddressEditType: GraphQLFieldConfig<
+export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: customConfirmEditEmailAddressEditInput }
+  { [input: string]: customConfirmPhoneNumberEditInput }
 > = {
-  type: GraphQLNonNull(ConfirmEditEmailAddressEditResponseType),
+  type: GraphQLNonNull(ConfirmPhoneNumberEditResponseType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(ConfirmEditEmailAddressEditInputType),
+      type: GraphQLNonNull(ConfirmPhoneNumberEditInputType),
     },
   },
   resolve: async (
@@ -71,12 +71,12 @@ export const ConfirmEditEmailAddressEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<ConfirmEditEmailAddressEditResponse> => {
-    let user = await ConfirmEditEmailAddressAction.saveXFromID(
+  ): Promise<ConfirmPhoneNumberEditResponse> => {
+    let user = await ConfirmEditPhoneNumberAction.saveXFromID(
       context.getViewer(),
       input.userID,
       {
-        emailAddress: input.emailAddress,
+        phoneNumber: input.phoneNumber,
         code: input.code,
       },
     );

@@ -94,11 +94,40 @@ export default class User extends BaseEntSchema implements Schema {
       // confirm email address with code
       operation: ActionOperation.Edit,
       actionName: "ConfirmEditEmailAddressAction",
-      graphQLName: "confirmEditEmailAddressEdit",
+      graphQLName: "confirmEmailAddressEdit",
       inputName: "ConfirmEditEmailAddressInput",
       actionOnlyFields: [{ name: "code", type: "String" }],
       // fields are default optional in edit mutation, this says make this required in here
       fields: [requiredField("EmailAddress")],
+    },
+    {
+      // we're not saving anything in the db so we use actionOnlyField to specify a required phone number
+      // send text to code
+      operation: ActionOperation.Edit,
+      actionName: "EditPhoneNumberAction",
+      graphQLName: "phoneNumberEdit",
+      inputName: "EditPhoneNumberInput",
+      // still need no fields even when we want only actionOnlyFields
+      fields: [NoFields],
+      // we use actionOnlyField here so phoneNumber is not saved
+
+      // we use a different field name so that field is not saved
+      // TODO we also need a way to unset a field in builder if we also want to
+      // use phoneNumber
+      actionOnlyFields: [{ name: "newPhoneNumber", type: "String" }],
+    },
+    {
+      // confirm phoneNumber with code
+      operation: ActionOperation.Edit,
+      actionName: "ConfirmEditPhoneNumberAction",
+      graphQLName: "confirmPhoneNumberEdit",
+      inputName: "ConfirmEditPhoneNumberInput",
+      actionOnlyFields: [{ name: "code", type: "String" }],
+      // slightly different from email case above. this is an optional field that's
+      // required in this scenario
+      // we're overriding both all fields are default optional in edit AND
+      // overriding phoneNumber is nullable in user object
+      fields: [requiredField("PhoneNumber")],
     },
     {
       operation: ActionOperation.Delete,

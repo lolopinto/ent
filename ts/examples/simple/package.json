@@ -44,6 +44,7 @@
     "express-session": "^1.17.1",
     "graphql": "^15.3.0",
     "jsonwebtoken": "^8.5.1",
+    "libphonenumber-js": "^1.7.56",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "passport-strategy": "^1.0.0"
