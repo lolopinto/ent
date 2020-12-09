@@ -33,7 +33,10 @@ export const AuthCodeType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
+    },
+    phoneNumber: {
+      type: GraphQLString,
     },
   }),
 });

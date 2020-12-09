@@ -18,7 +18,8 @@ type AuthCode {
   user: User
   id: ID!
   code: String!
-  emailAddress: String!
+  emailAddress: String
+  phoneNumber: String
 }
 
 type User {
@@ -260,7 +261,7 @@ type ConfirmEditEmailAddressEditResponse {
 
 input ConfirmEditEmailAddressEditInput {
   userID: ID!
-  emailAddress: String
+  emailAddress: String!
   code: String!
 }
 

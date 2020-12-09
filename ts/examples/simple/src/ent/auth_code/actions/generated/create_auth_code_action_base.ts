@@ -16,7 +16,8 @@ import {
 export interface AuthCodeCreateInput {
   code: string;
   userID: ID | Builder<User>;
-  emailAddress: string;
+  emailAddress?: string | null;
+  phoneNumber?: string | null;
 }
 
 export class CreateAuthCodeActionBase implements Action<AuthCode> {

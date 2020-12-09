@@ -27,7 +27,8 @@ export class AuthCodeBase {
   readonly updatedAt: Date;
   readonly code: string;
   readonly userID: ID;
-  readonly emailAddress: string;
+  readonly emailAddress: string | null;
+  readonly phoneNumber: string | null;
 
   constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
@@ -38,6 +39,7 @@ export class AuthCodeBase {
     this.code = data.code;
     this.userID = data.user_id;
     this.emailAddress = data.email_address;
+    this.phoneNumber = data.phone_number;
   }
 
   // by default, we always deny and it's up to the ent
@@ -109,6 +111,7 @@ export class AuthCodeBase {
       "code",
       "user_id",
       "email_address",
+      "phone_number",
     ];
   }
 

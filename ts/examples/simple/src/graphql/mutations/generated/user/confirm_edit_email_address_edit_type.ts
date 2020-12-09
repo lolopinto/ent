@@ -34,7 +34,7 @@ export const ConfirmEditEmailAddressEditInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(GraphQLID),
     },
     emailAddress: {
-      type: GraphQLString,
+      type: GraphQLNonNull(GraphQLString),
     },
     code: {
       type: GraphQLNonNull(GraphQLString),

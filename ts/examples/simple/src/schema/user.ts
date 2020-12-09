@@ -77,7 +77,6 @@ export default class User extends BaseEntSchema implements Schema {
     {
       // we're not saving anything in the db so we use actionOnlyField to specify a required email address
       // send email out
-      // we need to save the code somewhere...
       operation: ActionOperation.Edit,
       actionName: "EditEmailAddressAction",
       graphQLName: "emailAddressEdit",

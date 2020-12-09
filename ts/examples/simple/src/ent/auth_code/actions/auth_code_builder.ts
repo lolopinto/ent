@@ -17,7 +17,8 @@ import { AuthCode, User } from "src/ent/";
 export interface AuthCodeInput {
   code?: string;
   userID?: ID | Builder<User>;
-  emailAddress?: string;
+  emailAddress?: string | null;
+  phoneNumber?: string | null;
 }
 
 export interface AuthCodeAction extends Action<AuthCode> {
@@ -120,6 +121,7 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
     addField("code", fields.code);
     addField("userID", fields.userID);
     addField("emailAddress", fields.emailAddress);
+    addField("phoneNumber", fields.phoneNumber);
     return result;
   }
 

@@ -35,10 +35,12 @@ sa.Table("auth_codes", metadata,
     sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
     sa.Column("code", sa.Text(), nullable=False),
     sa.Column("user_id", postgresql.UUID(), nullable=False),
-    sa.Column("email_address", sa.Text(), nullable=False),
+    sa.Column("email_address", sa.Text(), nullable=True),
+    sa.Column("phone_number", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id", name="auth_codes_id_pkey"),
     sa.ForeignKeyConstraint(["user_id"], ["users.id"], name="auth_codes_user_id_fkey", ondelete="CASCADE"),
     sa.UniqueConstraint("email_address", "code", name="uniqueCode"),
+    sa.UniqueConstraint("phone_number", "code", name="uniquePhoneCode"),
 )
    
 sa.Table("contacts", metadata,
