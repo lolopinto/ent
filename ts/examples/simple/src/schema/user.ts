@@ -7,6 +7,8 @@ import {
   ActionOperation,
   StringType,
   BooleanType,
+  requiredField,
+  NoFields,
 } from "@lolopinto/ent/schema";
 import { EmailType } from "@lolopinto/ent-email";
 import { PasswordType } from "@lolopinto/ent-password";
@@ -54,23 +56,90 @@ export default class User extends BaseEntSchema implements Schema {
     },
   ];
 
-  // create, edit, delete
-  // TODO we need editEmail, editPhoneNumber etc
   actions: Action[] = [
+    // create user
     {
       operation: ActionOperation.Create,
       fields: [
         "FirstName",
         "LastName",
         "EmailAddress",
-        "PhoneNumber",
-        "Password",
+        requiredField("PhoneNumber"),
+        requiredField("Password"),
       ],
     },
+
+    // edit user: just first name and last name since the rest involve complex things happening
     {
       operation: ActionOperation.Edit,
+      // everything is optional by default in edits
+
       fields: ["FirstName", "LastName"],
     },
+    // edit password left as an exercise to the reader
+
+    // send confirmation code for email address
+    {
+      // we're not saving anything in the db so we use actionOnlyField to specify a required email address
+      // send email out
+      operation: ActionOperation.Edit,
+      actionName: "EditEmailAddressAction",
+      graphQLName: "emailAddressEdit",
+      inputName: "EditEmailAddressInput",
+      // still need no fields even when we want only actionOnlyFields
+      fields: [NoFields],
+      // we use actionOnlyField here so emailAddress is not saved
+
+      // we use a different field name so that field is not saved
+      // TODO we also need a way to unset a field in builder if we also want to
+      // use emailAddress
+      actionOnlyFields: [{ name: "newEmail", type: "String" }],
+    },
+
+    // confirm email address with code sent in last time
+    {
+      operation: ActionOperation.Edit,
+      actionName: "ConfirmEditEmailAddressAction",
+      graphQLName: "confirmEmailAddressEdit",
+      inputName: "ConfirmEditEmailAddressInput",
+      actionOnlyFields: [{ name: "code", type: "String" }],
+      // fields are default optional in edit mutation, this says make this required in here
+      fields: [requiredField("EmailAddress")],
+    },
+
+    // send confirmation code for phone number
+    {
+      // we're not saving anything in the db so we use actionOnlyField to specify a required phone number
+      // send text to code
+      operation: ActionOperation.Edit,
+      actionName: "EditPhoneNumberAction",
+      graphQLName: "phoneNumberEdit",
+      inputName: "EditPhoneNumberInput",
+      // still need no fields even when we want only actionOnlyFields
+      fields: [NoFields],
+      // we use actionOnlyField here so phoneNumber is not saved
+
+      // we use a different field name so that field is not saved
+      // TODO we also need a way to unset a field in builder if we also want to
+      // use phoneNumber
+      actionOnlyFields: [{ name: "newPhoneNumber", type: "String" }],
+    },
+
+    // confirm phone number with code given
+    {
+      operation: ActionOperation.Edit,
+      actionName: "ConfirmEditPhoneNumberAction",
+      graphQLName: "confirmPhoneNumberEdit",
+      inputName: "ConfirmEditPhoneNumberInput",
+      actionOnlyFields: [{ name: "code", type: "String" }],
+      // slightly different from email case above. this is an optional field that's
+      // required in this scenario
+      // we're overriding both all fields are default optional in edit AND
+      // overriding phoneNumber is nullable in user object
+      fields: [requiredField("PhoneNumber")],
+    },
+
+    // delete user
     {
       operation: ActionOperation.Delete,
     },

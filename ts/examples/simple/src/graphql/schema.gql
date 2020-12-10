@@ -1,5 +1,6 @@
 type Query {
   address(id: ID!): Address
+  authCode(id: ID!): AuthCode
   contact(id: ID!): Contact
   event(id: ID!): Event
   user(id: ID!): User
@@ -10,16 +11,18 @@ type Address {
   id: ID!
   streetName: String!
   city: String!
+  state: String!
   zip: String!
+  apartment: String
+  country: String!
 }
 
-type Contact {
+type AuthCode {
   user: User
   id: ID!
-  emailAddress: String!
-  firstName: String!
-  lastName: String!
-  fullName: String!
+  code: String!
+  emailAddress: String
+  phoneNumber: String
 }
 
 type User {
@@ -39,6 +42,7 @@ type User {
   declinedEvents(first: Int, after: String, last: Int, before: String): UserToDeclinedEventsConnection!
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   contacts: [Contact!]!
+  authCodes: [AuthCode!]!
   fullName: String!
   bar: String
   contactSameDomain: Contact
@@ -75,6 +79,15 @@ type UserToFriendsConnection {
 type UserToFriendsEdge {
   node: User!
   cursor: String!
+}
+
+type Contact {
+  user: User
+  id: ID!
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+  fullName: String!
 }
 
 type UserToHostedEventsConnection {
@@ -220,18 +233,65 @@ type Viewer {
 }
 
 type Mutation {
+  addressCreate(input: AddressCreateInput!): AddressCreateResponse!
+  authCodeDelete(input: AuthCodeDeleteInput!): AuthCodeDeleteResponse!
+  confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditResponse!
+  confirmPhoneNumberEdit(input: ConfirmPhoneNumberEditInput!): ConfirmPhoneNumberEditResponse!
   contactCreate(input: ContactCreateInput!): ContactCreateResponse!
   contactDelete(input: ContactDeleteInput!): ContactDeleteResponse!
   contactEdit(input: ContactEditInput!): ContactEditResponse!
+  emailAddressEdit(input: EmailAddressEditInput!): EmailAddressEditResponse!
   eventAddHost(input: EventAddHostInput!): EventAddHostResponse!
   eventCreate(input: EventCreateInput!): EventCreateResponse!
   eventDelete(input: EventDeleteInput!): EventDeleteResponse!
   eventEdit(input: EventEditInput!): EventEditResponse!
+  phoneNumberEdit(input: PhoneNumberEditInput!): PhoneNumberEditResponse!
   userAuth(input: UserAuthInput!): UserAuthResponse!
   userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTResponse!
   userCreate(input: UserCreateInput!): UserCreateResponse!
   userDelete(input: UserDeleteInput!): UserDeleteResponse!
   userEdit(input: UserEditInput!): UserEditResponse!
+}
+
+type AddressCreateResponse {
+  address: Address!
+}
+
+input AddressCreateInput {
+  streetName: String!
+  city: String!
+  state: String!
+  zip: String!
+  apartment: String
+  country: String
+}
+
+type AuthCodeDeleteResponse {
+  deletedAuthCodeID: ID
+}
+
+input AuthCodeDeleteInput {
+  authCodeID: ID!
+}
+
+type ConfirmEmailAddressEditResponse {
+  user: User!
+}
+
+input ConfirmEmailAddressEditInput {
+  userID: ID!
+  emailAddress: String!
+  code: String!
+}
+
+type ConfirmPhoneNumberEditResponse {
+  user: User!
+}
+
+input ConfirmPhoneNumberEditInput {
+  userID: ID!
+  phoneNumber: String!
+  code: String!
 }
 
 type ContactCreateResponse {
@@ -263,6 +323,15 @@ input ContactEditInput {
   firstName: String
   lastName: String
   userID: String
+}
+
+type EmailAddressEditResponse {
+  user: User!
+}
+
+input EmailAddressEditInput {
+  userID: ID!
+  newEmail: String!
 }
 
 type EventAddHostResponse {
@@ -307,6 +376,15 @@ input EventEditInput {
   eventLocation: String
 }
 
+type PhoneNumberEditResponse {
+  user: User!
+}
+
+input PhoneNumberEditInput {
+  userID: ID!
+  newPhoneNumber: String!
+}
+
 type UserAuthResponse {
   token: String!
   viewerID: ID!
@@ -335,8 +413,8 @@ input UserCreateInput {
   firstName: String!
   lastName: String!
   emailAddress: String!
-  phoneNumber: String
-  password: String
+  phoneNumber: String!
+  password: String!
 }
 
 type UserDeleteResponse {

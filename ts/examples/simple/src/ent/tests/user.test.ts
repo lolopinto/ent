@@ -11,7 +11,7 @@ import {
 
 import { v4 as uuidv4 } from "uuid";
 import { NodeType, EdgeType } from "src/ent/const";
-import { randomEmail } from "src/util/random";
+import { randomEmail, randomPhoneNumber } from "src/util/random";
 
 import CreateUserAction, {
   UserCreateInput,
@@ -22,6 +22,10 @@ import CreateEventAction from "src/ent/event/actions/create_event_action";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import { FakeLogger } from "@lolopinto/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
+import EditEmailAddressAction from "src/ent/user/actions/edit_email_address_action";
+import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_address_action";
+import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
+import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -32,7 +36,15 @@ afterAll(async () => {
   FakeComms.clear();
 });
 
-async function create(input: UserCreateInput): Promise<User> {
+async function create(opts: Partial<UserCreateInput>): Promise<User> {
+  let input: UserCreateInput = {
+    firstName: "first",
+    lastName: "last",
+    emailAddress: randomEmail(),
+    password: "pa$$w0rd",
+    phoneNumber: randomPhoneNumber(),
+    ...opts,
+  };
   return await CreateUserAction.create(loggedOutViewer, input).saveX();
 }
 
@@ -46,7 +58,6 @@ test("create user", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   expect(user.firstName).toBe("Jon");
@@ -86,7 +97,6 @@ test("edit user", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   try {
@@ -112,7 +122,6 @@ test("edit user. saveXFromID", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   let vc = new IDViewer(user.id, { ent: user });
@@ -128,7 +137,6 @@ test("delete user", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   try {
@@ -148,7 +156,6 @@ test("delete user. saveXFromID", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   let vc = new IDViewer(user.id, { ent: user });
@@ -163,12 +170,10 @@ describe("privacy", () => {
     let user = await create({
       firstName: "Jon",
       lastName: "Snow",
-      emailAddress: randomEmail(),
     });
     let user2 = await create({
       firstName: "Daenerys",
       lastName: "Targaryen",
-      emailAddress: randomEmail(),
     });
 
     // we only do privacy checks when loading right now...
@@ -192,12 +197,10 @@ describe("privacy", () => {
     let user = await create({
       firstName: "Jon",
       lastName: "Snow",
-      emailAddress: randomEmail(),
     });
     let user2 = await create({
       firstName: "Daenerys",
       lastName: "Targaryen",
-      emailAddress: randomEmail(),
     });
 
     // we only do privacy checks when loading right now...
@@ -220,18 +223,18 @@ test("symmetric edge", async () => {
   let dany = await create({
     firstName: "Daenerys",
     lastName: "Targaryen",
-    emailAddress: randomEmail(),
   });
   let sam = await create({
     firstName: "Samwell",
     lastName: "Tarly",
-    emailAddress: randomEmail(),
   });
 
   let action = CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
+    password: "passs",
+    phoneNumber: randomPhoneNumber(),
   });
   let t = new Date();
   t.setTime(t.getTime() + 86400);
@@ -317,7 +320,6 @@ test("inverse edge", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
   const action = CreateEventAction.create(new LoggedOutViewer(), {
     creatorID: user.id,
@@ -368,7 +370,6 @@ test("one-way + inverse edge", async () => {
   let user = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
   const event = await CreateEventAction.create(new LoggedOutViewer(), {
     creatorID: user.id,
@@ -394,17 +395,14 @@ test("loadMultiUsers", async () => {
   let jon = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
   let dany = await create({
     firstName: "Daenerys",
     lastName: "Targaryen",
-    emailAddress: randomEmail(),
   });
   let sam = await create({
     firstName: "Samwell",
     lastName: "Tarly",
-    emailAddress: randomEmail(),
   });
 
   const tests: [Viewer, number, string][] = [
@@ -476,13 +474,14 @@ test("uniqueEdge|Node", async () => {
   let jon = await create({
     firstName: "Jon",
     lastName: "Snow",
-    emailAddress: randomEmail(),
   });
 
   let action = CreateUserAction.create(loggedOutViewer, {
     firstName: "Sansa",
     lastName: "Stark",
     emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: "pa$$w0rd",
   });
   // make them friends
   action.builder.addFriend(jon);
@@ -566,3 +565,211 @@ function verifyEdge(edge: AssocEdge, expectedEdge: AssocEdgeInput) {
   expect(edge.edgeType).toBe(expectedEdge.edgeType);
   expect(edge.data).toBe(expectedEdge.data || null);
 }
+
+describe("edit email", () => {
+  test("existing user email", async () => {
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+    });
+    let user2 = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+    });
+    let vc = new IDViewer(user.id);
+
+    try {
+      await EditEmailAddressAction.create(vc, user, {
+        newEmail: user2.emailAddress,
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/^cannot change email/);
+    }
+  });
+
+  async function createUserAndSendEmail() {
+    const email = randomEmail();
+
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: email,
+    });
+    let vc = new IDViewer(user.id);
+
+    const newEmail = randomEmail();
+
+    user = await EditEmailAddressAction.create(vc, user, {
+      newEmail: newEmail,
+    }).saveX();
+
+    // TODO we need an API that returns the raw data for these things...
+    const authCodes = await user.loadAuthCodes();
+    // TODO need to verify right code
+    expect(authCodes.length).toEqual(1);
+    const comms = FakeComms.getSent(newEmail, Mode.EMAIL);
+    expect(comms.length).toBe(1);
+
+    // confirm email wasn't saved.
+    expect(user.emailAddress).toEqual(email);
+
+    const url = new URL(comms[0].body);
+    const code = url.searchParams.get("code");
+    expect(code).toBeDefined();
+
+    return { user, newEmail, code };
+  }
+
+  test("change email address", async () => {
+    let { user, newEmail, code } = await createUserAndSendEmail();
+
+    user = await ConfirmEditEmailAddressAction.create(user.viewer, user, {
+      emailAddress: newEmail,
+      code: code!,
+    }).saveX();
+    // saved now
+    expect(user.emailAddress).toEqual(newEmail);
+
+    //should have been deleted now
+    const authCodes2 = await user.loadAuthCodes();
+    expect(authCodes2.length).toEqual(0);
+  });
+
+  test("invalid code confirmed", async () => {
+    let { user, newEmail, code } = await createUserAndSendEmail();
+
+    try {
+      await ConfirmEditEmailAddressAction.create(user.viewer, user, {
+        emailAddress: newEmail,
+        code: code + "1",
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+    }
+  });
+
+  test("invalid email address confirmed", async () => {
+    let { user, code } = await createUserAndSendEmail();
+
+    try {
+      await ConfirmEditEmailAddressAction.create(user.viewer, user, {
+        emailAddress: randomEmail(),
+        code: code!,
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+    }
+  });
+});
+
+describe("edit phone number", () => {
+  test("existing user phone number", async () => {
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+    });
+    let user2 = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+      phoneNumber: randomPhoneNumber(),
+    });
+    let vc = new IDViewer(user.id);
+
+    try {
+      await EditPhoneNumberAction.create(vc, user, {
+        newPhoneNumber: user2.phoneNumber!,
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/^cannot change phoneNumber/);
+    }
+  });
+
+  async function createUserAndSendSMS() {
+    const phone = randomPhoneNumber();
+
+    let user = await create({
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+      phoneNumber: phone,
+    });
+    let vc = new IDViewer(user.id);
+
+    const newPhoneNumber = randomPhoneNumber();
+
+    user = await EditPhoneNumberAction.create(vc, user, {
+      newPhoneNumber: newPhoneNumber,
+    }).saveX();
+
+    // TODO we need an API that returns the raw data for these things...
+    const authCodes = await user.loadAuthCodes();
+    // TODO need to verify right code
+    expect(authCodes.length).toEqual(1);
+    const comms = FakeComms.getSent(newPhoneNumber, Mode.SMS);
+    expect(comms.length).toBe(1);
+
+    // confirm phone wasn't saved.
+    expect(user.phoneNumber).toEqual(phone);
+
+    const body = comms[0].body;
+    const r = new RegExp(/your new code is (\d+)/);
+    const match = r.exec(body);
+    const code = match![1];
+
+    expect(code).toBeDefined();
+
+    return { user, newPhoneNumber, code };
+  }
+
+  test("change phone number", async () => {
+    let { user, newPhoneNumber, code } = await createUserAndSendSMS();
+
+    user = await ConfirmEditPhoneNumberAction.create(user.viewer, user, {
+      phoneNumber: newPhoneNumber,
+      code: code!,
+    }).saveX();
+    // saved now
+    expect(user.phoneNumber).toEqual(newPhoneNumber);
+
+    //should have been deleted now
+    const authCodes2 = await user.loadAuthCodes();
+    expect(authCodes2.length).toEqual(0);
+  });
+
+  test("invalid code confirmed", async () => {
+    let { user, newPhoneNumber, code } = await createUserAndSendSMS();
+
+    try {
+      await ConfirmEditPhoneNumberAction.create(user.viewer, user, {
+        phoneNumber: newPhoneNumber,
+        code: code + "1",
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+    }
+  });
+
+  test("invalid phone number confirmed", async () => {
+    let { user, code } = await createUserAndSendSMS();
+
+    try {
+      await ConfirmEditPhoneNumberAction.create(user.viewer, user, {
+        phoneNumber: randomPhoneNumber(),
+        code: code!,
+      }).saveX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/code (\d+) not found associated with user/);
+    }
+  });
+});

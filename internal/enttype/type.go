@@ -39,6 +39,7 @@ type TSTypeWithImports interface {
 }
 
 type TSGraphQLType interface {
+	TSType
 	// returns imports from outside in
 	// e.g. required string => []fileImport{newGQLFileImport("GraphQLNonNull"), newGQLFileImport("GraphQLString")}
 	GetTSGraphQLImports() []FileImport

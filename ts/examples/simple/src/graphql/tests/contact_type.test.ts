@@ -2,7 +2,7 @@ import schema from "src/graphql/schema";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@lolopinto/ent";
 import { Contact, User } from "src/ent/";
-import { randomEmail } from "src/util/random";
+import { randomEmail, randomPhoneNumber } from "src/util/random";
 import {
   expectQueryFromRoot,
   queryRootConfig,
@@ -40,6 +40,8 @@ async function createContact(): Promise<Contact> {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: "pa$$w0rd",
   }).saveX();
   let vc = new IDViewer(user.id);
   user = await User.loadX(vc, user.id);
@@ -71,6 +73,8 @@ test("query contact with different viewer", async () => {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: "pa$$w0rd",
   }).saveX();
 
   // can't load someone else's contact

@@ -8,7 +8,7 @@ import { ID, DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
-import { randomEmail, random } from "src/util/random";
+import { randomEmail, random, randomPhoneNumber } from "src/util/random";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
 import { User } from "src/ent/";
 import passport from "passport";
@@ -49,6 +49,7 @@ async function createUser(input?: Partial<UserCreateInput>): Promise<User> {
     lastName: "last",
     emailAddress: randomEmail(),
     password: random(),
+    phoneNumber: randomPhoneNumber(),
     ...input,
   }).saveX();
 }

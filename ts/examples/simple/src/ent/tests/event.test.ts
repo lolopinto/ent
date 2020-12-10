@@ -1,6 +1,6 @@
 import { Event } from "src/ent/";
 import { LoggedOutViewer, IDViewer, DB } from "@lolopinto/ent";
-import { randomEmail } from "src/util/random";
+import { randomEmail, randomPhoneNumber } from "src/util/random";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
 import EditEventAction from "src/ent/event/actions/edit_event_action";
@@ -18,6 +18,8 @@ async function createUser() {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: "pa$$w0rd",
   }).saveX();
 }
 

@@ -86,6 +86,15 @@ class UserSchemaExtended extends BaseEntSchema {
   ent = User;
 }
 
+class UserSchemaServerDefault extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "FirstName" }),
+    StringType({ name: "LastName" }),
+    StringType({ name: "account_status", serverDefault: "ACTIVE" }),
+  ];
+  ent = User;
+}
+
 class SchemaWithProcessors extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "zip" }).match(/^\d{5}(-\d{4})?$/),
@@ -145,6 +154,19 @@ test("required field not set", async () => {
   } catch (e) {
     expect(e.message).toBe("required field LastName not set");
   }
+});
+
+test("required field fine when server default exists", async () => {
+  const builder = new SimpleBuilder(
+    new LoggedOutViewer(),
+    new UserSchemaServerDefault(),
+    new Map([
+      ["FirstName", "Jon"],
+      ["LastName", "Snow"],
+    ]),
+  );
+
+  await builder.build();
 });
 
 test("schema on edit", async () => {
@@ -1599,3 +1621,5 @@ async function getEdgeOpFromBuilder<T extends Ent>(
   }
   fail(`could not find edge operation with edgeType ${edgeType}`);
 }
+
+// TODO serverDefault change...

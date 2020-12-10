@@ -39,6 +39,15 @@
         {{end -}}
       {{end -}}
     {{end -}}
+
+    {{ range $field := $action.GetNonEntFields -}}
+      {{$type := $field.GetTsType -}}
+      {{if $field.Required -}}
+        {{$field.TsFieldName}}: {{$type}};
+      {{else -}}
+        {{$field.TsFieldName}}?: {{$type}};
+      {{end -}}
+    {{end -}}
   }
 {{end}}
 
@@ -87,8 +96,13 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
 
   getInput(): {{useImport $builderInput}} {
     {{ if $hasInput -}}
-      return this.input;
+      {{ if hasOnlyActionOnlyFields $action}}
+        // we use a type assertion to override the weak type detection here
+        return this.input as {{useImport $builderInput}};
       {{ else -}}
+        return this.input;
+      {{end -}}
+    {{ else -}}
       return {};
     {{end -}}
   }

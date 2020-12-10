@@ -408,6 +408,11 @@ export class Orchestrator<T extends Ent> {
       } else if (value === undefined) {
         if (
           !field.nullable &&
+          // required field can be skipped if server default set
+          // not checking defaultValueOnCreate() or defaultValueOnEdit() as that's set above
+          // not setting server default as we're depending on the database handling that.
+          // server default allowed
+          field.serverDefault === undefined &&
           this.options.operation === WriteOperation.Insert
         ) {
           throw new Error(`required field ${field.name} not set`);

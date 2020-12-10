@@ -1,6 +1,6 @@
 import { User, Contact } from "src/ent/";
 import { DB, LoggedOutViewer, IDViewer } from "@lolopinto/ent";
-import { randomEmail } from "src/util/random";
+import { randomEmail, randomPhoneNumber } from "src/util/random";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateContactAction, {
   ContactCreateInput,
@@ -18,6 +18,8 @@ async function createUser(): Promise<User> {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: "pa$$w0rd",
   }).saveX();
 }
 
@@ -105,6 +107,8 @@ test("create contacts", async () => {
     firstName: "Ygritte",
     lastName: "",
     emailAddress: randomEmail(),
+    phoneNumber: randomPhoneNumber(),
+    password: "pa$$w0rd",
   });
   action.builder.addFriend(user);
   const ygritte = await action.saveX();

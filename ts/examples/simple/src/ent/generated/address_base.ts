@@ -27,7 +27,10 @@ export class AddressBase {
   readonly updatedAt: Date;
   readonly streetName: string;
   readonly city: string;
+  readonly state: string;
   readonly zip: string;
+  readonly apartment: string | null;
+  readonly country: string;
 
   constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
@@ -37,7 +40,10 @@ export class AddressBase {
     this.updatedAt = data.updated_at;
     this.streetName = data.street_name;
     this.city = data.city;
+    this.state = data.state;
     this.zip = data.zip;
+    this.apartment = data.apartment;
+    this.country = data.country;
   }
 
   // by default, we always deny and it's up to the ent
@@ -102,7 +108,17 @@ export class AddressBase {
   }
 
   private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "street_name", "city", "zip"];
+    return [
+      "id",
+      "created_at",
+      "updated_at",
+      "street_name",
+      "city",
+      "state",
+      "zip",
+      "apartment",
+      "country",
+    ];
   }
 
   private static schemaFields: Map<string, Field>;

@@ -12,7 +12,10 @@ sa.Table("addresses", metadata,
     sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
     sa.Column("street_name", sa.Text(), nullable=False),
     sa.Column("city", sa.Text(), nullable=False),
+    sa.Column("state", sa.Text(), nullable=False),
     sa.Column("zip", sa.Text(), nullable=False),
+    sa.Column("apartment", sa.Text(), nullable=True),
+    sa.Column("country", sa.Text(), nullable=False, server_default='US'),
     sa.PrimaryKeyConstraint("id", name="addresses_id_pkey"),
 )
    
@@ -27,6 +30,20 @@ sa.Table("assoc_edge_config", metadata,
     sa.PrimaryKeyConstraint("edge_type", name="assoc_edge_config_edge_type_pkey"),
     sa.UniqueConstraint("edge_name", name="assoc_edge_config_unique_edge_name"),
     sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
+)
+   
+sa.Table("auth_codes", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("code", sa.Text(), nullable=False),
+    sa.Column("user_id", postgresql.UUID(), nullable=False),
+    sa.Column("email_address", sa.Text(), nullable=True),
+    sa.Column("phone_number", sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id", name="auth_codes_id_pkey"),
+    sa.ForeignKeyConstraint(["user_id"], ["users.id"], name="auth_codes_user_id_fkey", ondelete="CASCADE"),
+    sa.UniqueConstraint("email_address", "code", name="uniqueCode"),
+    sa.UniqueConstraint("phone_number", "code", name="uniquePhoneCode"),
 )
    
 sa.Table("contacts", metadata,

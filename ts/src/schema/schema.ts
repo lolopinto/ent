@@ -284,6 +284,15 @@ export enum ActionOperation {
   EdgeGroup = 64,
 }
 
+export interface ActionField {
+  name: string;
+  // Type with no db component
+  // currently a subset of DBType. could be expanded in the future
+  type: "ID" | "Boolean" | "Int" | "Float" | "String" | "Time";
+  // TODO can support overriding later but for now, this is fine
+  nullable?: boolean;
+}
+
 // provides a way to configure the actions generated for the ent
 export interface Action {
   operation: ActionOperation;
@@ -292,6 +301,9 @@ export interface Action {
   inputName?: string;
   graphQLName?: string;
   hideFromGraphQL?: boolean;
+
+  // only allowed for actionOnlyField
+  actionOnlyFields?: ActionField[];
 }
 
 // sentinel that indicates an action has no fields
@@ -299,6 +311,14 @@ export interface Action {
 // required to differentiate against default value of no fields being set to indicate
 // all fields in a create/edit mutation
 export const NoFields = "__NO_FIELDS__";
+
+export function requiredField(field: string) {
+  return `__required__.${field}.__required__`;
+}
+
+export function optionalField(field: string) {
+  return `__optional__.${field}.__optional__`;
+}
 
 // no nullable constraint here since simple enough it's just part of the field
 export interface Constraint {

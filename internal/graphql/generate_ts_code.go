@@ -1011,6 +1011,14 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 		})
 	}
 
+	// add custom fields to the input
+	for _, f := range a.GetNonEntFields() {
+		result.Fields = append(result.Fields, &fieldType{
+			Name:         f.GetGraphQLName(),
+			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports()),
+		})
+	}
+
 	// add each edge that's part of the mutation as an ID
 	// use singular version so that this is friendID instead of friendsID
 	for _, edge := range a.GetEdges() {
@@ -1227,6 +1235,12 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 						fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
 					)
 				}
+			}
+			for _, f := range a.GetNonEntFields() {
+				result.FunctionContents = append(
+					result.FunctionContents,
+					fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
+				)
 			}
 			result.FunctionContents = append(result.FunctionContents, "});")
 

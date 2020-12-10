@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
@@ -85,7 +86,16 @@ func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *fie
 			return nil, err
 		}
 
-		commonInfo := getCommonInfo(nodeName, concreteAction, action.CustomActionName, action.CustomGraphQLName, action.CustomInputName, exposeToGraphQL, fields)
+		commonInfo := getCommonInfo(
+			nodeName,
+			concreteAction,
+			action.CustomActionName,
+			action.CustomGraphQLName,
+			action.CustomInputName,
+			exposeToGraphQL,
+			fields,
+			getNonEntFieldsFromInput(action),
+		)
 		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
 
@@ -96,6 +106,9 @@ func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *fie
 		}
 		if action.CustomGraphQLName != "" {
 			return nil, fmt.Errorf("cannot have a custom graphql name when using default actions")
+		}
+		if len(action.ActionOnlyFields) != 0 {
+			return nil, fmt.Errorf("cannot have action only fields when using default actions")
 		}
 		return getActionsForMutationsType(nodeName, fieldInfo, exposeToGraphQL, action.Fields)
 	}
@@ -120,6 +133,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			"",
 			exposeToGraphQL,
 			fields,
+			[]*NonEntField{},
 		),
 	))
 
@@ -137,6 +151,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			"",
 			exposeToGraphQL,
 			fields,
+			[]*NonEntField{},
 		),
 	))
 
@@ -154,6 +169,7 @@ func getActionsForMutationsType(nodeName string, fieldInfo *field.FieldInfo, exp
 			"",
 			exposeToGraphQL,
 			fields,
+			[]*NonEntField{},
 		),
 	))
 	return actions, nil
@@ -185,15 +201,54 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 	} else {
 		// if a field is explicitly referenced, we want to automatically add it
 		for _, fieldName := range fieldNames {
+			parts := strings.Split(fieldName, ".")
+			var required bool
+			var optional bool
+			if len(parts) == 3 && parts[0] == parts[2] {
+				fieldName = parts[1]
+				switch parts[0] {
+				case "__required__":
+					required = true
+					break
+				case "__optional__":
+					optional = true
+					break
+				}
+			}
 			f := fieldInfo.GetFieldByName(fieldName)
 			if f == nil {
 				return nil, fmt.Errorf("invalid field name %s passed", fieldName)
 			}
-			fields = append(fields, f)
+			f2 := f
+			// required and edit field. force it to be required
+			// required. if optional or nullable, now field is required
+			// or field is now required in an edit mutation, by default, all fields are required...
+			if required {
+				// required
+				f2 = f.Clone(field.Required())
+			}
+			if optional {
+				// optional
+				f2 = f.Clone(field.Optional())
+			}
+			fields = append(fields, f2)
 		}
 
 	}
 	return fields, nil
+}
+
+func getNonEntFieldsFromInput(action *input.Action) []*NonEntField {
+	var fields []*NonEntField
+
+	for _, field := range action.ActionOnlyFields {
+		fields = append(fields, &NonEntField{
+			FieldName: field.Name,
+			FieldType: field.GetEntType(),
+			Nullable:  field.Nullable,
+		})
+	}
+	return fields
 }
 
 func getEdgeActionType(actionStr string) concreteEdgeActionType {
@@ -335,7 +390,13 @@ func getGroupEdgeAction(commonInfo commonActionInfo) *EdgeGroupAction {
 	}
 }
 
-func getCommonInfo(nodeName string, typ concreteNodeActionType, customActionName, customGraphQLName, customInputName string, exposeToGraphQL bool, fields []*field.Field) commonActionInfo {
+func getCommonInfo(
+	nodeName string,
+	typ concreteNodeActionType,
+	customActionName, customGraphQLName, customInputName string,
+	exposeToGraphQL bool,
+	fields []*field.Field,
+	nonEntFields []*NonEntField) commonActionInfo {
 	var graphqlName string
 	if exposeToGraphQL {
 		graphqlName = getGraphQLNameForNodeActionType(typ, nodeName, customGraphQLName)
@@ -347,6 +408,7 @@ func getCommonInfo(nodeName string, typ concreteNodeActionType, customActionName
 		InputName:       getInputNameForNodeActionType(typ, nodeName, customInputName),
 		ExposeToGraphQL: exposeToGraphQL,
 		Fields:          fields,
+		NonEntFields:    nonEntFields,
 		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),
 		Operation:       typ.getOperation(),
 	}

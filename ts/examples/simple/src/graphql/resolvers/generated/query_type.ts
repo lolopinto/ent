@@ -3,6 +3,7 @@
 import { GraphQLObjectType } from "graphql";
 import {
   AddressQuery,
+  AuthCodeQuery,
   ContactQuery,
   EventQuery,
   UserQuery,
@@ -13,6 +14,7 @@ export const QueryType = new GraphQLObjectType({
   name: "Query",
   fields: () => ({
     address: AddressQuery,
+    authCode: AuthCodeQuery,
     contact: ContactQuery,
     event: EventQuery,
     user: UserQuery,

@@ -29,7 +29,7 @@
     "ts-jest": "^25.2.1"
   },
   "dependencies": {
-    "@lolopinto/ent": "0.0.39",
+    "@lolopinto/ent": "0.0.43",
     "@lolopinto/ent-email": "0.0.1",
     "@lolopinto/ent-password": "0.0.2",
     "@lolopinto/ent-phonenumber": "0.0.1",
@@ -44,6 +44,7 @@
     "express-session": "^1.17.1",
     "graphql": "^15.3.0",
     "jsonwebtoken": "^8.5.1",
+    "libphonenumber-js": "^1.7.56",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "passport-strategy": "^1.0.0"

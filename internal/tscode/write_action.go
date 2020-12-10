@@ -65,6 +65,7 @@ func writeActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePath, 
 func getCustomFuncMap(imps *tsimport.Imports) template.FuncMap {
 	m := imps.FuncMap()
 	m["hasInput"] = action.HasInput
+	m["hasOnlyActionOnlyFields"] = action.HasOnlyActionOnlyFields
 	m["isRequiredField"] = action.IsRequiredField
 	m["getWriteOperation"] = getWriteOperation
 

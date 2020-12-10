@@ -120,9 +120,28 @@ func TestEdgeGroupActions(t *testing.T) {
 	)
 }
 
+type expectedField struct {
+	name     string
+	nullable bool
+	tsType   string
+	gqlType  string
+}
+
 type expectedAction struct {
-	name   string
-	fields []string
+	name             string
+	fields           []expectedField
+	actionOnlyFields []actionOnlyField
+}
+
+type actionOnlyField struct {
+	name     string
+	nullable bool
+	typ      fieldType
+}
+
+type fieldType struct {
+	tsType      string
+	graphqlType string
 }
 
 func TestActionFields(t *testing.T) {
@@ -159,25 +178,56 @@ func TestActionFields(t *testing.T) {
 		[]expectedAction{
 			{
 				name: "CreateContactAction",
-				fields: []string{
-					"EmailAddress",
-					"FirstName",
-					"LastName",
-					"PhoneNumber",
+				fields: []expectedField{
+					{
+						name:    "EmailAddress",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "LastName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "PhoneNumber",
+						tsType:  "string",
+						gqlType: "String!",
+					},
 				},
 			},
 			{
 				name: "EditContactAction",
-				fields: []string{
-					"EmailAddress",
-					"FirstName",
-					"LastName",
-					"PhoneNumber",
+				fields: []expectedField{
+					{
+						name:    "EmailAddress",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "LastName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "PhoneNumber",
+						tsType:  "string",
+						gqlType: "String!",
+					},
 				},
 			},
 			{
-				name:   "DeleteContactAction",
-				fields: []string{},
+				name: "DeleteContactAction",
 			},
 		},
 	)
@@ -230,16 +280,32 @@ func TestActionFieldsWithPrivateFields(t *testing.T) {
 		[]expectedAction{
 			{
 				name: "CreateUserAction",
-				fields: []string{
-					"FirstName",
-					"EmailAddress",
-					"Password",
+				fields: []expectedField{
+					{
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "EmailAddress",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "Password",
+						tsType:  "string",
+						gqlType: "String!",
+					},
 				},
 			},
 			{
 				name: "EditUserAction",
-				fields: []string{
-					"FirstName",
+				fields: []expectedField{
+					{
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
 				},
 			},
 		},
@@ -286,16 +352,32 @@ func TestDefaultActionFieldsWithPrivateFields(t *testing.T) {
 		[]expectedAction{
 			{
 				name: "CreateUserAction",
-				fields: []string{
-					"EmailAddress",
-					"FirstName",
+				fields: []expectedField{
+					{
+						name:    "EmailAddress",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
 				},
 			},
 			{
 				name: "EditUserAction",
-				fields: []string{
-					"EmailAddress",
-					"FirstName",
+				fields: []expectedField{
+					{
+						name:    "EmailAddress",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
 				},
 			},
 		},
@@ -338,7 +420,33 @@ func TestDefaultNoFields(t *testing.T) {
 			{
 				name: "EditUserAction",
 				// TODO action.GetFields() shouldn't include fields that are not editable by the action
-				fields: []string{"ID", "createdAt", "updatedAt", "FirstName", "LastName"},
+				fields: []expectedField{
+					{
+						name:    "ID",
+						tsType:  "ID",
+						gqlType: "ID!",
+					},
+					{
+						name:    "createdAt",
+						tsType:  "Date",
+						gqlType: "Time!",
+					},
+					{
+						name:    "updatedAt",
+						tsType:  "Date",
+						gqlType: "Time!",
+					},
+					{
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "LastName",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+				},
 			},
 		},
 	)
@@ -380,7 +488,243 @@ func TestExplicitNoFields(t *testing.T) {
 		[]expectedAction{
 			{
 				name:   "EditUserAction",
-				fields: []string{},
+				fields: []expectedField{},
+			},
+		},
+	)
+}
+
+func TestNullableFieldInAction(t *testing.T) {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	actionInfo := testhelper.ParseActionInfoForTest(
+		t,
+		absPath,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, Field, StringType, Action, ActionOperation, BaseEntSchema} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({name: "FirstName"}),
+						StringType({name: "LastName"}),
+						StringType({name: "EmailAddress", nullable: true}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Edit, 
+							actionName: "EditEmailAddressAction",
+							graphQLName: "editEmailAddressAction",
+							fields: ["EmailAddress"],
+						},
+					];
+				}
+				`,
+			),
+		},
+		base.TypeScript,
+		"UserConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
+		[]expectedAction{
+			{
+				name: "EditEmailAddressAction",
+				fields: []expectedField{
+					{
+						name:     "EmailAddress",
+						nullable: true,
+						tsType:   "string | null",
+						gqlType:  "String",
+					},
+				},
+			},
+		},
+	)
+}
+func TestOverriddenRequiredActionField(t *testing.T) {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	actionInfo := testhelper.ParseActionInfoForTest(
+		t,
+		absPath,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, Field, StringType, Action, ActionOperation, BaseEntSchema, requiredField} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({name: "FirstName"}),
+						StringType({name: "LastName"}),
+						StringType({name: "EmailAddress", nullable: true}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Edit, 
+							actionName: "EditEmailAddressAction",
+							graphQLName: "editEmailAddressAction",
+							fields: [requiredField("EmailAddress")],
+						},
+					];
+				}
+				`,
+			),
+		},
+		base.TypeScript,
+		"UserConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
+		[]expectedAction{
+			{
+				name: "EditEmailAddressAction",
+				fields: []expectedField{
+					{
+						// not nullable!
+						name:    "EmailAddress",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+				},
+			},
+		},
+	)
+}
+
+func TestOverriddenOptionalActionField(t *testing.T) {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	actionInfo := testhelper.ParseActionInfoForTest(
+		t,
+		absPath,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, Field, StringType, Action, ActionOperation, BaseEntSchema, optionalField} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({name: "FirstName"}),
+						StringType({name: "LastName"}),
+						StringType({name: "EmailAddress", nullable: true}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Edit, 
+							actionName: "EditNameAction",
+							graphQLName: "editUserName",
+							fields: [optionalField("FirstName"), optionalField("LastName")],
+						},
+					];
+				}
+				`,
+			),
+		},
+		base.TypeScript,
+		"UserConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
+		[]expectedAction{
+			{
+				name: "EditNameAction",
+				fields: []expectedField{
+					{
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String",
+					},
+					{
+						name:    "LastName",
+						tsType:  "string",
+						gqlType: "String",
+					},
+				},
+			},
+		},
+	)
+}
+
+func TestActionOnlyFields(t *testing.T) {
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	actionInfo := testhelper.ParseActionInfoForTest(
+		t,
+		absPath,
+		map[string]string{
+			"event.ts": testhelper.GetCodeWithSchema(
+				`
+				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
+
+				export default class Event implements Schema {
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimeType({name: "start_time"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "addCreatorAsAdmin",
+								type: "Boolean",
+							},
+							{
+								name: "localTime",
+								type: "Time",
+								nullable: true,
+							}],
+						},
+					];
+				};`),
+		},
+		base.TypeScript,
+		"EventConfig",
+	)
+
+	verifyExpectedActions(
+		t,
+		actionInfo,
+		[]expectedAction{
+			{
+				name: "CreateEventAction",
+				fields: []expectedField{
+					{
+						name:    "name",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "start_time",
+						tsType:  "Date",
+						gqlType: "Time!",
+					},
+				},
+				actionOnlyFields: []actionOnlyField{
+					{
+						name: "addCreatorAsAdmin",
+						typ: fieldType{
+							tsType:      "boolean",
+							graphqlType: "Boolean!",
+						},
+					},
+					{
+						name:     "localTime",
+						nullable: true,
+						typ: fieldType{
+							tsType:      "Date | null",
+							graphqlType: "Time",
+						},
+					},
+				},
 			},
 		},
 	)
@@ -416,7 +760,22 @@ func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActio
 		require.Equal(t, len(expAction.fields), len(fields), "length of fields")
 
 		for idx, field := range fields {
-			require.Equal(t, expAction.fields[idx], field.FieldName, "fieldname %s not equal", field.FieldName)
+			expField := expAction.fields[idx]
+			require.Equal(t, expField.name, field.FieldName, "fieldname %s not equal", field.FieldName)
+			require.Equal(t, expField.nullable, field.Nullable(), "fieldname %s not equal", field.FieldName)
+			require.Equal(t, expField.gqlType, field.GetGraphQLTypeForField(), "fieldname %s not equal", field.FieldName)
+			require.Equal(t, expField.tsType, field.TsBuilderType(), "fieldname %s not equal", field.FieldName)
+		}
+
+		nonEntFields := a.GetNonEntFields()
+		require.Equal(t, len(expAction.actionOnlyFields), len(nonEntFields), "length of fields")
+
+		for idx, nonEntField := range nonEntFields {
+			actionOnlyField := expAction.actionOnlyFields[idx]
+			require.Equal(t, actionOnlyField.name, nonEntField.FieldName, "name %s not equal", nonEntField.FieldName)
+			require.Equal(t, actionOnlyField.nullable, nonEntField.Nullable, "fieldname %s not equal", nonEntField.FieldName)
+			require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.FieldType.GetGraphQLType(), "graphql type %s not equal", nonEntField.FieldName)
+			require.Equal(t, actionOnlyField.typ.tsType, nonEntField.FieldType.GetTSType(), "ts type %s not equal", nonEntField.FieldName)
 		}
 	}
 }

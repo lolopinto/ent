@@ -21,18 +21,38 @@ import (
 
 type NonEntField struct {
 	FieldName string
-	FieldType enttype.Type
-	Flag      string
-	NodeType  string
+	FieldType enttype.TSGraphQLType
+	Nullable  bool // required default = true
+	// TODO these are both go things. ignore
+	// Flag enum or ID
+	Flag string
+	// this is a go-thing. ignore for TypeScript
+	NodeType string
+}
+
+func (f *NonEntField) Required() bool {
+	return !f.Nullable
 }
 
 func (f *NonEntField) GetGraphQLName() string {
 	return strcase.ToLowerCamel(f.FieldName)
 }
 
+// don't have to deal with all the id field stuff field.Field has to deal with
+func (f *NonEntField) GetTsType() string {
+	return f.FieldType.GetTSType()
+}
+
+func (f *NonEntField) TsFieldName() string {
+	return strcase.ToLowerCamel(f.FieldName)
+}
+
+// no imports for now... since all local fields
+// eventually may need it for e.g. file or something
+// TsBuilderImports
+
 type Action interface {
 	GetFields() []*field.Field
-	// TODO make this a generic abstraction. have run into this in other places
 	GetNonEntFields() []*NonEntField
 	GetEdges() []*edge.AssociationEdge
 	GetActionName() string
@@ -273,7 +293,11 @@ func GetFields(action Action) []FieldActionTemplateInfo {
 }
 
 func HasInput(action Action) bool {
-	return len(action.GetFields()) != 0
+	return len(action.GetFields()) != 0 || len(action.GetNonEntFields()) != 0
+}
+
+func HasOnlyActionOnlyFields(action Action) bool {
+	return len(action.GetNonEntFields()) != 0 && len(action.GetFields()) == 0
 }
 
 // TODO abstract this out somewhere else...
@@ -301,6 +325,7 @@ func GetFieldsFromFields(fields []*field.Field) []FieldActionTemplateInfo {
 func GetNonEntFields(action Action) []FieldActionTemplateInfo {
 	var fields []FieldActionTemplateInfo
 
+	// TODO this is only used by go so didn't update this
 	for _, f := range action.GetNonEntFields() {
 
 		fields = append(fields, FieldActionTemplateInfo{
@@ -379,6 +404,13 @@ func GetEdgesFromEdges(edges []*edge.AssociationEdge) []EdgeActionTemplateInfo {
 }
 
 func IsRequiredField(action Action, field *field.Field) bool {
+	if field.ForceRequiredInAction() {
+		return true
+	}
+	if field.ForceOptionalInAction() {
+		return false
+	}
+
 	// for non-create actions, not required
 	if action.GetOperation() != ent.CreateAction {
 		return false

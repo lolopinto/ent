@@ -1,4 +1,10 @@
-import { DBType, Node, StringType } from "@lolopinto/ent/schema/";
+import {
+  DBType,
+  Node,
+  StringType,
+  ActionOperation,
+  optionalField,
+} from "@lolopinto/ent/schema/";
 
 // implicit schema
 const Address = {
@@ -16,9 +22,28 @@ const Address = {
         dbType: DBType.String,
       },
     },
-    StringType({ name: "zip" }).match(/^\d{5}(-\d{4})?$/),
+    StringType({ name: "state" }),
+    StringType({ name: "zip" }),
+    StringType({ name: "apartment", nullable: true }),
+    StringType({ name: "country", serverDefault: "US" }),
   ],
   patterns: [Node],
+
+  actions: [
+    {
+      operation: ActionOperation.Create,
+      fields: [
+        "street_name",
+        "city",
+        "state",
+        "zip",
+        "apartment",
+        // country is optional here but required in schema
+        // which means we need default value (or to add it as a trigger)
+        optionalField("country"),
+      ],
+    },
+  ],
 };
 
 export default Address;

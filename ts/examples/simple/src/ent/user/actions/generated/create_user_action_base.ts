@@ -9,8 +9,8 @@ export interface UserCreateInput {
   firstName: string;
   lastName: string;
   emailAddress: string;
-  phoneNumber?: string | null;
-  password?: string | null;
+  phoneNumber: string;
+  password: string;
 }
 
 export class CreateUserActionBase implements Action<User> {

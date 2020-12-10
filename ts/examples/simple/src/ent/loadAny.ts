@@ -2,7 +2,7 @@
 
 import { NodeType } from "./const";
 import { loadEnt, ID, Viewer, Ent, LoadEntOptions } from "@lolopinto/ent";
-import { Address, Contact, Event, User } from "src/ent/internal";
+import { Address, AuthCode, Contact, Event, User } from "src/ent/internal";
 
 export async function loadEntByType(
   viewer: Viewer,
@@ -16,6 +16,8 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
   switch (type) {
     case NodeType.Address:
       return Address.loaderOptions();
+    case NodeType.AuthCode:
+      return AuthCode.loaderOptions();
     case NodeType.Contact:
       return Contact.loaderOptions();
     case NodeType.Event:
