@@ -1,6 +1,5 @@
 type Query {
   address(id: ID!): Address
-  authCode(id: ID!): AuthCode
   contact(id: ID!): Contact
   event(id: ID!): Event
   user(id: ID!): User
@@ -17,12 +16,13 @@ type Address {
   country: String!
 }
 
-type AuthCode {
+type Contact {
   user: User
   id: ID!
-  code: String!
-  emailAddress: String
-  phoneNumber: String
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+  fullName: String!
 }
 
 type User {
@@ -42,7 +42,6 @@ type User {
   declinedEvents(first: Int, after: String, last: Int, before: String): UserToDeclinedEventsConnection!
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   contacts: [Contact!]!
-  authCodes: [AuthCode!]!
   fullName: String!
   bar: String
   contactSameDomain: Contact
@@ -79,15 +78,6 @@ type UserToFriendsConnection {
 type UserToFriendsEdge {
   node: User!
   cursor: String!
-}
-
-type Contact {
-  user: User
-  id: ID!
-  emailAddress: String!
-  firstName: String!
-  lastName: String!
-  fullName: String!
 }
 
 type UserToHostedEventsConnection {
@@ -234,7 +224,6 @@ type Viewer {
 
 type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreateResponse!
-  authCodeDelete(input: AuthCodeDeleteInput!): AuthCodeDeleteResponse!
   confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditResponse!
   confirmPhoneNumberEdit(input: ConfirmPhoneNumberEditInput!): ConfirmPhoneNumberEditResponse!
   contactCreate(input: ContactCreateInput!): ContactCreateResponse!
@@ -264,14 +253,6 @@ input AddressCreateInput {
   zip: String!
   apartment: String
   country: String
-}
-
-type AuthCodeDeleteResponse {
-  deletedAuthCodeID: ID
-}
-
-input AuthCodeDeleteInput {
-  authCodeID: ID!
 }
 
 type ConfirmEmailAddressEditResponse {

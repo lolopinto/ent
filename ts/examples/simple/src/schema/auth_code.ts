@@ -11,7 +11,6 @@ import {
 import { EmailType } from "@lolopinto/ent-email";
 import { PhoneNumberType } from "@lolopinto/ent-phonenumber";
 
-// TODO hide entire node from graphql
 export default class AuthCode extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "code" }),
@@ -19,6 +18,8 @@ export default class AuthCode extends BaseEntSchema {
     EmailType({ name: "emailAddress", nullable: true }),
     PhoneNumberType({ name: "phoneNumber", nullable: true }),
   ];
+
+  hideFromGraphQL = true;
 
   actions: Action[] = [
     {

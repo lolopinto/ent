@@ -2,7 +2,6 @@
 
 import { GraphQLObjectType } from "graphql";
 import { AddressCreateType } from "src/graphql/mutations/generated/address/address_create_type";
-import { AuthCodeDeleteType } from "src/graphql/mutations/generated/auth_code/auth_code_delete_type";
 import { ConfirmEmailAddressEditType } from "src/graphql/mutations/generated/user/confirm_email_address_edit_type";
 import { ConfirmPhoneNumberEditType } from "src/graphql/mutations/generated/user/confirm_phone_number_edit_type";
 import { ContactCreateType } from "src/graphql/mutations/generated/contact/contact_create_type";
@@ -24,7 +23,6 @@ export const MutationType = new GraphQLObjectType({
   name: "Mutation",
   fields: () => ({
     addressCreate: AddressCreateType,
-    authCodeDelete: AuthCodeDeleteType,
     confirmEmailAddressEdit: ConfirmEmailAddressEditType,
     confirmPhoneNumberEdit: ConfirmPhoneNumberEditType,
     contactCreate: ContactCreateType,
