@@ -20,6 +20,7 @@ type node struct {
 	enumTable       bool
 	dbRows          []map[string]interface{}
 	constraints     []constraint
+	hideFromGraphQL bool
 }
 
 type field struct {
@@ -119,6 +120,8 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 
 				require.Equal(t, expectedNode.enumTable, node.EnumTable)
 				require.Equal(t, expectedNode.dbRows, node.DBRows)
+
+				require.Equal(t, expectedNode.hideFromGraphQL, node.HideFromGraphQL)
 
 				for j, expField := range expectedNode.fields {
 					field := node.Fields[j]

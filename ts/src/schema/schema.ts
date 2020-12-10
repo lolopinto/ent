@@ -26,6 +26,11 @@ export default interface Schema {
 
   // constraints applied to the schema e.g. multi-fkey, multi-column unique keys, join table primary keys etc
   constraints?: Constraint[];
+
+  // hide a node from graphql
+  // this automatically hides all related actions to it from graphql
+  // AND hides all edges pointing to it since we can't return this object
+  hideFromGraphQL?: boolean;
 }
 
 // An AssocEdge is an edge between 2 ids that has a common table/edge format
