@@ -4,12 +4,12 @@
 |------------------------------------------------------------------------------------------------------------------|--------------------|--------------------|--------------------|
 | [Schema in code](#schema)                                                                                                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | privacy                                                                                                          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| [EntQuery](#entquery)                                                                                            |                    |                    | :heavy_check_mark: |
-| [Mutations/actions](#actions)                                                                                    | :heavy_check_mark: |                    | :heavy_check_mark: |
+| [EntQuery](#entquery)                                                                                            |                    |             :heavy_check_mark:       | :heavy_check_mark: |
+| [Mutations/actions](#actions)                                                                                    | :heavy_check_mark: |             :heavy_check_mark:       | :heavy_check_mark: |
 | per field privacy                                                                                                |                    |                    | :heavy_check_mark: |
-| data loaders (n+1 issue)                                                                                         |                    |                    | :heavy_check_mark: |
+| data loaders (n+1 issue)                                                                                         |                    |          :heavy_check_mark:          | :heavy_check_mark: |
 | [support different caches](#cache-support)                                                                       |                    |    :heavy_check_mark:                |                    |
-| per request in memory cache (raw data)                                                                           |                    |                    | :heavy_check_mark: |
+| per request in memory cache (raw data)                                                                           |                    |        :heavy_check_mark:            | :heavy_check_mark: |
 | per request in memory cache (viewer\|ents)                                                                       |                    |                    | :heavy_check_mark: |
 | [auth](#auth)                                                                                                    |                    |       :heavy_check_mark:             |    :heavy_check_mark:                |
 | patterns \| mixins                                                                                                        |                    | :heavy_check_mark: |                  :heavy_check_mark:  |
@@ -28,9 +28,9 @@
 | CLI                                                                                                              | :heavy_check_mark: | :heavy_check_mark: |     :heavy_check_mark:               |
 | [database migrations](#database-migrations)                                                                      | :heavy_check_mark: | :heavy_check_mark: |    :heavy_check_mark:                |
 | ent configuration (code ideal/yaml second)                                                                                         |                    |                    |   :heavy_check_mark:                 |
-| load assoc config in memory once                                                                                 |                    |                    |                    |
+| load assoc config in memory once                                                                                 |                    |         :heavy_check_mark:           |                    |
 | deleted_at and similar ways to change behavior                                                                   |                    |                    |     :heavy_check_mark:               |
-| dockerize everything to run in production/download easily                                                        |                    |                    |        :heavy_check_mark:            |
+| dockerize everything to run in production/download easily                                                        |                    |     :heavy_check_mark:               |        :heavy_check_mark:            |
 | [Different primary id types](#ids)                                                                               |                    |                    |   :heavy_check_mark:                 |
 | privacy at creation/edit/etc                                                                                     |                    |                    |    :heavy_check_mark:                |
 | sql builder/custom sql queries                                                                                   | :heavy_check_mark: |                    |    :heavy_check_mark:                |
@@ -54,9 +54,9 @@
 | Default Table name       |                    | :heavy_check_mark: | :heavy_check_mark: |
 | [Edges](#edges)          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | actions                  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| composite indices        |                    |                    | :heavy_check_mark: |
-| composite unique fields  |                    |                    | :heavy_check_mark: |
-| composite primary keys   |                    |                    | :heavy_check_mark: |
+| composite indices        |                    |    :heavy_check_mark:                | :heavy_check_mark: |
+| composite unique fields  |                    |      :heavy_check_mark:              | :heavy_check_mark: |
+| composite primary keys   |                    |      :heavy_check_mark:              | :heavy_check_mark: |
 | patterns                 |                    | :heavy_check_mark: | :heavy_check_mark: |
 | hide from graphql        |                    | :heavy_check_mark: | :heavy_check_mark: |
 
@@ -105,7 +105,7 @@
 | floats        | :heavy_check_mark: |                    | :heavy_check_mark: |
 | json (but not postgres type) | :heavy_check_mark: |                    | :heavy_check_mark: |
 | postgres json                |                    |                    |  |
-| string enums                 |                    |                    | :heavy_check_mark: |
+| string enums                 |                    |       :heavy_check_mark:             | :heavy_check_mark: |
 | int enums                    |                    |                    |  |
 | custom type (part of json)   | :heavy_check_mark: |                    | :heavy_check_mark: |
 | email                        | :heavy_check_mark: |       :heavy_check_mark:             | :heavy_check_mark: |
@@ -159,16 +159,16 @@
 
 | Functionality                  | Go | Typescript | MVP                |
 |--------------------------------|----|------------|--------------------|
-| ids                            |    |            | :heavy_check_mark: |
-| Edges                          |    |            | :heavy_check_mark: |
+| ids                            |    |     :heavy_check_mark:       | :heavy_check_mark: |
+| Edges                          |    | :heavy_check_mark:           | :heavy_check_mark: |
 | fetch one id                   |    |            | :heavy_check_mark: |
 | Intersection                   |    |            |                    |
 | per edge privacy               |    |            | :heavy_check_mark: |
 | union                          |    |            |                    |
 | custom logic                   |    |            |                    |
-| counts (raw \| privacy backed) |    |            | :heavy_check_mark: |
+| counts (raw \| privacy backed) |    |   :heavy_check_mark:         | :heavy_check_mark: |
 | ordering (sort by time/ name etc easily)        |    |            | :heavy_check_mark: |
-| filters e.g. pagination        |    |            | :heavy_check_mark: |
+| filters e.g. pagination        |    |   :heavy_check_mark:         | :heavy_check_mark: |
 | named custom queries           |    |            | :heavy_check_mark: |
 | toggle btw crazy joins and loading objects one by one | | |
 
@@ -193,7 +193,7 @@
 | permissions                                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | inverse edge (write field edge)            | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | nullable fields                            | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| custom mutation fields                     |                    |                    | :heavy_check_mark: |
+| custom mutation fields                     |                    |        :heavy_check_mark:            | :heavy_check_mark: |
 | custom data/time for edges                              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | placeholders and resolvers                              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | integrate fields                                        | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:  |
