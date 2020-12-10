@@ -70,8 +70,7 @@ test("create", async () => {
     ["user.firstName", "Jon"],
     ["user.lastName", "Snow"],
     ["user.emailAddress", email],
-    // formatted...
-    ["user.phoneNumber", `+1${phoneNumber}`],
+    ["user.phoneNumber", phoneNumber],
     // we just gonna assume password worked lol
   );
 });
