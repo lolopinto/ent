@@ -17,15 +17,23 @@ import (
 
 type Field struct {
 	// todo: abstract out these 2 also...
-	FieldName                string
-	tagMap                   map[string]string
-	topLevelStructField      bool            // id, updated_at, created_at no...
-	entType                  types.Type      // not all fields will have an entType. probably don't need this...
-	fieldType                enttype.EntType // this is the underlying type for the field for graphql, db, etc
-	dbColumn                 bool
-	hideFromGraphQL          bool
-	private                  bool
-	nullable                 bool
+	FieldName           string
+	tagMap              map[string]string
+	topLevelStructField bool            // id, updated_at, created_at no...
+	entType             types.Type      // not all fields will have an entType. probably don't need this...
+	fieldType           enttype.EntType // this is the underlying type for the field for graphql, db, etc
+	// in certain scenarios we need a different type for graphql vs typescript
+	graphqlFieldType enttype.TSGraphQLType
+	dbColumn         bool
+	hideFromGraphQL  bool
+	private          bool
+	// optional (in action)
+	// need to break this into optional (not required in typescript actions)
+	// ts nullable
+	// graphql required (not nullable)
+	nullable bool
+	// special case to indicate that a field is optional in ts but nullable in graphql
+	graphqlNullable          bool
 	defaultValue             interface{}
 	unique                   bool
 	fkey                     *ForeignKeyInfo
@@ -223,6 +231,9 @@ func (f *Field) GetDbTypeForField() string {
 }
 
 func (f *Field) GetGraphQLTypeForField() string {
+	if f.graphqlFieldType != nil {
+		return f.graphqlFieldType.GetGraphQLType()
+	}
 	return f.fieldType.GetGraphQLType()
 }
 
@@ -480,6 +491,14 @@ func (f *Field) setFieldType(fieldType enttype.Type) {
 	f.fieldType = fieldEntType
 }
 
+func (f *Field) setGraphQLFieldType(fieldType enttype.Type) {
+	gqlType, ok := fieldType.(enttype.TSGraphQLType)
+	if !ok {
+		panic(fmt.Errorf("invalid type %T that's not a graphql type", fieldType))
+	}
+	f.graphqlFieldType = gqlType
+}
+
 func (f *Field) setDBName(dbName string) {
 	f.dbName = dbName
 	f.addTag("db", f.dbName)
@@ -533,6 +552,7 @@ func Optional() Option {
 	return func(f *Field) {
 		// optional doesn't mean nullable...
 		f.forceOptionalInAction = true
+		f.graphqlNullable = true
 	}
 }
 
@@ -547,6 +567,7 @@ func (f *Field) Clone(opts ...Option) *Field {
 	ret := &Field{
 		FieldName:                f.FieldName,
 		nullable:                 f.nullable,
+		graphqlNullable:          f.graphqlNullable,
 		dbName:                   f.dbName,
 		hideFromGraphQL:          f.hideFromGraphQL,
 		private:                  f.private,
@@ -567,10 +588,11 @@ func (f *Field) Clone(opts ...Option) *Field {
 		// go specific things
 		entType: f.entType,
 		// can't just clone this. have to update this...
-		fieldType:       f.fieldType,
-		tagMap:          f.tagMap,
-		pkgPath:         f.pkgPath,
-		dataTypePkgPath: f.dataTypePkgPath,
+		fieldType:        f.fieldType,
+		graphqlFieldType: f.graphqlFieldType,
+		tagMap:           f.tagMap,
+		pkgPath:          f.pkgPath,
+		dataTypePkgPath:  f.dataTypePkgPath,
 
 		// derived fields
 		fkey:      f.fkey,
@@ -587,6 +609,13 @@ func (f *Field) Clone(opts ...Option) *Field {
 			panic(fmt.Errorf("couldn't covert the type %v to its non-nullable version for field %s", ret.fieldType, ret.FieldName))
 		}
 		ret.setFieldType(nonNullableType.GetNonNullableType())
+	}
+	if ret.graphqlNullable && !f.graphqlNullable {
+		nullableType, ok := ret.fieldType.(enttype.NullableType)
+		if !ok {
+			panic(fmt.Errorf("couldn't covert the type %v to its nullable version for field %s", ret.fieldType, ret.FieldName))
+		}
+		ret.setGraphQLFieldType(nullableType.GetNullableType())
 	}
 	return ret
 }

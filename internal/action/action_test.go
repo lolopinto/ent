@@ -618,7 +618,7 @@ func TestOverriddenOptionalActionField(t *testing.T) {
 						{
 							operation: ActionOperation.Edit, 
 							actionName: "EditNameAction",
-							graphQLName: "editNameAction",
+							graphQLName: "editUserName",
 							fields: [optionalField("FirstName"), optionalField("LastName")],
 						},
 					];
@@ -638,16 +638,14 @@ func TestOverriddenOptionalActionField(t *testing.T) {
 				name: "EditNameAction",
 				fields: []expectedField{
 					{
-						name:     "FirstName",
-						nullable: true,
-						tsType:   "string | null",
-						gqlType:  "String",
+						name:    "FirstName",
+						tsType:  "string",
+						gqlType: "String",
 					},
 					{
-						name:     "LastName",
-						nullable: true,
-						tsType:   "string | null",
-						gqlType:  "String",
+						name:    "LastName",
+						tsType:  "string",
+						gqlType: "String",
 					},
 				},
 			},
