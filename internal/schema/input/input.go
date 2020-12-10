@@ -23,6 +23,7 @@ type Node struct {
 	EnumTable       bool                     `json:"enumTable"`
 	DBRows          []map[string]interface{} `json:"dbRows"`
 	Constraints     []*Constraint            `json:"constraints"`
+	HideFromGraphQL bool                     `json:"hideFromGraphQL"`
 }
 
 func (n *Node) AddAssocEdge(edge *AssocEdge) {
