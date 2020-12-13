@@ -79,6 +79,9 @@ type Field struct {
 	HasDefaultValueOnCreate bool `json:"hasDefaultValueOnCreate"`
 	HasDefaultValueOnEdit   bool `json:"hasDefaultValueOnEdit"`
 
+	Polymorphic   bool     `json:"polymorphic"`
+	DerivedFields []*Field `json:"derivedFields"`
+
 	// Go specific information here
 	TagMap          map[string]string
 	GoType          types.Type

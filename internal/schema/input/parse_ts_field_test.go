@@ -476,6 +476,147 @@ func TestParseFields(t *testing.T) {
 				},
 			},
 		},
+		"polymorphic field": {
+			code: map[string]string{
+				"address.ts": getCodeWithSchema(`
+					import {Schema, Field, StringType, UUIDType} from "{schema}";
+
+					export default class Address implements Schema {
+						fields: Field[] = [
+							StringType({ name: "Street" }),
+					    StringType({ name: "City" }),
+							StringType({ name: "State" }),
+							StringType({ name: "ZipCode" }), 
+							UUIDType({
+								name: "OwnerID",
+								index: true, 
+								polymorphic: true,
+							}),
+						];
+					}
+				`),
+			},
+			expectedOutput: map[string]node{
+				"Address": {
+					fields: []field{
+						{
+							name: "Street",
+							typ: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							name: "City",
+							typ: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							name: "State",
+							typ: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							name: "ZipCode",
+							typ: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							name: "OwnerID",
+							typ: &input.FieldType{
+								DBType: input.UUID,
+							},
+							index:       true,
+							polymorphic: true,
+							derivedFields: []field{
+								{
+									name:            "OwnerType",
+									dbType:          input.String,
+									hideFromGraphQL: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"polymorphic field with restricted types": {
+			code: map[string]string{
+				"address.ts": getCodeWithSchema(`
+					import {Schema, Field, StringType, UUIDType} from "{schema}";
+
+					export default class Address implements Schema {
+						fields: Field[] = [
+							StringType({ name: "street" }),
+					    StringType({ name: "city" }),
+							StringType({ name: "state" }),
+							StringType({ name: "zip_code" }), 
+							UUIDType({
+								name: "owner_id",
+								index: true, 
+								polymorphic: true,
+								polymorphic_types: ["User", "Location"],
+							}),
+						];
+					}
+				`),
+			},
+			expectedOutput: map[string]node{
+				"Address": {
+					fields: []field{
+						{
+							name: "street",
+							typ: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							name: "city",
+							typ: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							name: "state",
+							typ: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							name: "zip_code",
+							typ: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+						{
+							name: "owner_id",
+							typ: &input.FieldType{
+								DBType: input.UUID,
+							},
+							index:       true,
+							polymorphic: true,
+							derivedFields: []field{
+								{
+									name: "owner_type",
+									typ: &input.FieldType{
+										DBType: input.StringEnum,
+										Values: []string{
+											"User",
+											"Location",
+										},
+										Type:        "owner_type",
+										GraphQLType: "owner_type",
+									},
+									hideFromGraphQL: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	runTestCases(t, testCases)

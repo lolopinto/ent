@@ -159,6 +159,9 @@ export interface FieldOptions {
   disableUserEditable?: boolean;
   defaultValueOnCreate?(): any;
   defaultValueOnEdit?(): any;
+
+  polymorphic?: boolean;
+  polymorphic_types?: string[];
 }
 
 // Field interface that each Field needs to support
