@@ -923,6 +923,86 @@ func TestCheckConstraint(t *testing.T) {
 	)
 }
 
+func TestPolymorphicField(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"address.ts": testhelper.GetCodeWithSchema(`
+		import {Schema, Field, StringType, UUIDType} from "{schema}";
+
+		export default class Address implements Schema {
+			fields: Field[] = [
+				StringType({ name: "Street" }),
+				StringType({ name: "City" }),
+				StringType({ name: "State" }),
+				StringType({ name: "ZipCode" }), 
+				UUIDType({
+					name: "OwnerID",
+					index: true, 
+					polymorphic: true,
+				}),
+			];
+		}`),
+		},
+	)
+
+	table := getTestTableFromSchema("AddressConfig", dbSchema, t)
+	columns := table.Columns
+	// address. 5 obvious fields + owner_type
+	require.Len(t, columns, 6)
+
+	col := getTestColumnFromTable(t, table, "owner_type")
+	testColumn(
+		t,
+		col,
+		"owner_type",
+		"OwnerType",
+		"owner_type",
+		[]string{strconv.Quote("owner_type"), "sa.Text()", "nullable=False"},
+	)
+}
+
+func TestPolymorphicFieldWithRestrictedTypes(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"address.ts": testhelper.GetCodeWithSchema(`
+		import {Schema, Field, StringType, UUIDType} from "{schema}";
+
+		export default class Address implements Schema {
+			fields: Field[] = [
+				StringType({ name: "Street" }),
+				StringType({ name: "City" }),
+				StringType({ name: "State" }),
+				StringType({ name: "ZipCode" }), 
+				UUIDType({
+					name: "OwnerID",
+					index: true, 
+					polymorphic: true,
+					// we enforce in typescript for now so no db changes...
+					polymorphic_types: ["User", "Location"],
+				}),
+			];
+		}`),
+		},
+	)
+
+	table := getTestTableFromSchema("AddressConfig", dbSchema, t)
+	columns := table.Columns
+	// address. 5 obvious fields + owner_type
+	require.Len(t, columns, 6)
+
+	col := getTestColumnFromTable(t, table, "owner_type")
+	testColumn(
+		t,
+		col,
+		"owner_type",
+		"OwnerType",
+		"owner_type",
+		[]string{strconv.Quote("owner_type"), "sa.Text()", "nullable=False"},
+	)
+}
+
 func getSchemaFromCode(t *testing.T, code map[string]string) *dbSchema {
 	absPath, err := filepath.Abs(".")
 	require.NoError(t, err)
@@ -1093,6 +1173,10 @@ func getTestColumnFromSchema(t *testing.T, schema *dbSchema, tableName, colName 
 	table := schema.tableMap[tableName]
 	require.NotNil(t, table)
 
+	return getTestColumnFromTable(t, table, colName)
+}
+
+func getTestColumnFromTable(t *testing.T, table *dbTable, colName string) *dbColumn {
 	for _, col := range table.Columns {
 		if col.DBColName == colName || col.EntFieldName == colName {
 			return col

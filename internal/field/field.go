@@ -34,13 +34,20 @@ func NewFieldInfoFromInputs(fields []*input.Field, options *Options) (*FieldInfo
 	if options.AddBaseFields {
 		addBaseFields(fieldInfo)
 	}
-	// TODO eventually make this smarter and use length of slice as needed
 	for _, field := range fields {
 		f, err := newFieldFromInput(field)
 		if err != nil {
 			return nil, err
 		}
 		fieldInfo.addField(f)
+		for _, derivedField := range field.DerivedFields {
+			// TODO test this....
+			f2, err := newFieldFromInput(derivedField)
+			if err != nil {
+				return nil, err
+			}
+			fieldInfo.addField(f2)
+		}
 	}
 
 	if options.SortFields {
