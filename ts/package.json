@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent",
-  "version": "0.0.44",
+  "version": "0.0.47",
   "description": "ent framework",
   "main": "index.js",
   "types": "index.d.ts",

@@ -19,3 +19,6 @@ export {
   GraphQLEdgeType,
   GraphQLConnectionType,
 } from "./query/connection_type";
+export { GraphQLNodeInterface } from "./builtins/node";
+export { GraphQLConnectionInterface } from "./builtins/connection";
+export { GraphQLEdgeInterface } from "./builtins/edge";

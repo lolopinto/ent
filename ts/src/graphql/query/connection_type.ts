@@ -7,9 +7,10 @@ import {
   GraphQLString,
 } from "graphql";
 import { RequestContext } from "src/core/context";
-import { AssocEdge, Ent } from "src/core/ent";
 import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection";
 import { GraphQLPageInfo } from "./page_info";
+import { GraphQLEdgeInterface } from "../builtins/edge";
+import { GraphQLConnectionInterface } from "../builtins/connection";
 
 export class GraphQLEdgeType<
   TNode extends GraphQLObjectType
@@ -28,6 +29,7 @@ export class GraphQLEdgeType<
           },
         },
       }),
+      interfaces: [GraphQLEdgeInterface],
     });
   }
 }
@@ -69,6 +71,7 @@ export class GraphQLConnectionType<
           },
         },
       }),
+      interfaces: [GraphQLConnectionInterface],
     });
   }
 }

@@ -448,10 +448,10 @@ func (obj gqlobjectData) Imports() []*fileImport {
 	return result
 }
 
-func (obj gqlobjectData) Interfaces() []*interfaceType {
+func (obj gqlobjectData) TSInterfaces() []*interfaceType {
 	var result []*interfaceType
 	for _, node := range obj.GQLNodes {
-		result = append(result, node.Interfaces...)
+		result = append(result, node.TSInterfaces...)
 	}
 	return result
 }
@@ -465,7 +465,7 @@ func (obj gqlobjectData) ForeignImport(name string) bool {
 			obj.m[node.Type] = true
 
 			// same for interfaces
-			for _, in := range node.Interfaces {
+			for _, in := range node.TSInterfaces {
 				obj.m[in.Name] = true
 			}
 		}
@@ -836,6 +836,12 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		TSType:   nodeData.Node,
 		GQLType:  "GraphQLObjectType",
 		Exported: true,
+		// import NodeInterface because ents are always Nodes
+		Imports: []*fileImport{{
+			ImportPath: codepath.GraphQLPackage,
+			Type:       "GraphQLNodeInterface",
+		}},
+		GQLInterfaces: []string{"GraphQLNodeInterface"},
 	}
 
 	for _, node := range nodeData.GetUniqueNodes() {
@@ -853,7 +859,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		Type:       nodeData.Node,
 	})
 
-	result.Interfaces = append(result.Interfaces, &interfaceType{
+	result.TSInterfaces = append(result.TSInterfaces, &interfaceType{
 		Name: fmt.Sprintf("%sQueryArgs", nodeData.Node),
 		Fields: []*interfaceField{
 			{
@@ -1060,7 +1066,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 			}
 		}
 
-		result.Interfaces = []*interfaceType{intType}
+		result.TSInterfaces = []*interfaceType{intType}
 	}
 
 	// TODO non ent fields 	e.g. status etc
@@ -1117,7 +1123,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionP
 			},
 		})
 
-		result.Interfaces = []*interfaceType{
+		result.TSInterfaces = []*interfaceType{
 			{
 				Exported: false,
 				Name:     fmt.Sprintf("%sResponse", actionPrefix),
@@ -1136,7 +1142,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionP
 			FieldImports: getGQLFileImportsFromStrings([]string{"GraphQLID"}),
 		})
 
-		result.Interfaces = []*interfaceType{
+		result.TSInterfaces = []*interfaceType{
 			{
 				Exported: false,
 				Name:     fmt.Sprintf("%sResponse", actionPrefix),
@@ -1282,7 +1288,10 @@ type objectType struct {
 
 	DefaultImports []*fileImport
 	Imports        []*fileImport
-	Interfaces     []*interfaceType
+	TSInterfaces   []*interfaceType
+
+	// make this a string for now since we're only doing built-in interfaces
+	GQLInterfaces []string
 }
 
 type fieldType struct {
