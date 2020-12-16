@@ -1,6 +1,6 @@
 {{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
 {{reserveImport .Package.PackagePath "ID" "RequestContext" }}
-{{reserveImport .Package.GraphQLPackagePath "GraphQLTime"}}
+{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface"}}
 
 {{ define "renderArgs"  -}}
   {{if .Args -}}
@@ -33,7 +33,7 @@
   {{reserveDefaultImport .ImportPath .Type}}
 {{ end -}}
 
-{{ range $baseObj.Interfaces -}}
+{{ range $baseObj.TSInterfaces -}}
   {{ range .Extends}}
     {{ if $baseObj.ForeignImport . -}}
       {{$ignored := useImport . -}}
@@ -88,6 +88,13 @@
         },
       {{end -}}
     }),
+    {{if .GQLInterfaces -}}
+    interfaces: [
+      {{range $interface := .GQLInterfaces -}}
+        {{useImport $interface}},
+      {{end -}}
+    ],
+    {{end -}}
   });
   
 {{end}}

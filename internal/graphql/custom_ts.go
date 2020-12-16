@@ -502,7 +502,7 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 
 			customInt.Fields = append(customInt.Fields, newInt)
 		}
-		typ.Interfaces = []*interfaceType{customInt}
+		typ.TSInterfaces = []*interfaceType{customInt}
 	}
 	return typ, nil
 }
@@ -620,17 +620,21 @@ func processCustomQueries(data *codegen.Data, cd *customData, s *gqlSchema) erro
 
 func getGraphQLImportsForField(cd *customData, f CustomField, s *gqlSchema) ([]*fileImport, error) {
 	graphqlScalars := map[string]string{
-		"String":  "GraphQLString",
-		"Date":    "Time",
-		"Int":     "GraphQLInt",
-		"Float":   "GraphQLFloat",
-		"Boolean": "GraphQLBoolean",
-		"ID":      "GraphQLID",
+		"String":     "GraphQLString",
+		"Date":       "Time",
+		"Int":        "GraphQLInt",
+		"Float":      "GraphQLFloat",
+		"Boolean":    "GraphQLBoolean",
+		"ID":         "GraphQLID",
+		"Node":       "GraphQLNodeInterface",
+		"Edge":       "GraphQLEdgeInterface",
+		"Connection": "GraphQLConnectionInterface",
 	}
 
 	var imports []*fileImport
 	addGQLImports := func(imps ...string) {
 		for _, imp := range imps {
+			// TODO this doesn't work for the new custom types?
 			imports = append(imports, &fileImport{
 				ImportPath: "graphql",
 				Type:       imp,
