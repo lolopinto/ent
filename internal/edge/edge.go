@@ -99,14 +99,14 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 }
 
 func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool) {
-	e.addFieldEdgeFromInfo(fieldName, configName, "", nullable)
+	e.addFieldEdgeFromInfo(fieldName, configName, "", "", nullable)
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName, configName, inverseEdgeName string, nullable bool) {
-	e.addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName, nullable)
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName, configName, inverseEdgeName, nodeTypeField string, nullable bool) {
+	e.addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName, nodeTypeField, nullable)
 }
 
-func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, nullable bool) {
+func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName, nodeTypeField string, nullable bool) {
 	if !strings.HasSuffix(fieldName, "ID") {
 		// TODO make this more flexible...
 		panic(fmt.Sprintf("expected field name to end with ID. FieldName was %s", fieldName))
@@ -116,16 +116,26 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 		trim = fieldName
 	}
 
-	edge := &FieldEdge{
-		FieldName:   fieldName,
-		TSFieldName: strcase.ToLowerCamel(fieldName),
+	var edgeInfo commonEdgeInfo
+	if nodeTypeField == "" {
 		// Edge name: User from UserID field
-		commonEdgeInfo: getCommonEdgeInfo(
+		edgeInfo = getCommonEdgeInfo(
 			trim,
 			schemaparser.GetEntConfigFromEntConfig(configName),
-		),
+		)
+	} else {
+		edgeInfo = commonEdgeInfo{
+			EdgeName: trim,
+		}
+	}
+
+	edge := &FieldEdge{
+		FieldName:       fieldName,
+		TSFieldName:     strcase.ToLowerCamel(fieldName),
+		commonEdgeInfo:  edgeInfo,
 		InverseEdgeName: inverseEdgeName,
 		Nullable:        nullable,
+		NodeTypeField:   nodeTypeField,
 	}
 
 	e.addEdge(edge)
@@ -203,6 +213,9 @@ type FieldEdge struct {
 	TSFieldName     string
 	InverseEdgeName string
 	Nullable        bool
+
+	// presence of this means this is dynamic and we have to use "loadAny" to load the edge instead of doing it manually
+	NodeTypeField string
 }
 
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {

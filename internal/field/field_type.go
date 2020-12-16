@@ -27,6 +27,7 @@ type Field struct {
 	dbColumn         bool
 	hideFromGraphQL  bool
 	private          bool
+	polymorphic      bool
 	// optional (in action)
 	// need to break this into optional (not required in typescript actions)
 	// ts nullable
@@ -75,6 +76,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 		dbName:                   f.StorageKey,
 		hideFromGraphQL:          f.HideFromGraphQL,
 		private:                  f.Private,
+		polymorphic:              f.Polymorphic,
 		index:                    f.Index,
 		graphQLName:              f.GraphQLName,
 		defaultValue:             f.ServerDefault,
@@ -158,6 +160,29 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 		}
 	}
 
+	if ret.polymorphic {
+		if ret.fieldEdge != nil {
+			return nil, fmt.Errorf("cannot specify fieldEdge on polymorphic field %s", ret.FieldName)
+		}
+		// set fieldEdge here based on polymorphic info
+
+		// TODO test fieldEdge...
+		var edgeName string
+		if strings.HasSuffix(ret.FieldName, "ID") {
+			edgeName = strings.TrimSuffix(ret.FieldName, "ID")
+		} else if strings.HasSuffix(ret.FieldName, "_id") {
+			edgeName = strings.TrimSuffix(ret.FieldName, "_id")
+		} else {
+			return nil, fmt.Errorf("invalid field name %s for polymorphic field", ret.FieldName)
+		}
+		// just put db name there
+		nodeTypeField := strcase.ToLowerCamel(edgeName + "Type")
+		ret.fieldEdge = &FieldEdgeInfo{
+			EdgeName:      edgeName,
+			NodeTypeField: nodeTypeField,
+		}
+	}
+
 	return ret, nil
 }
 
@@ -212,7 +237,7 @@ func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
 		panic(fmt.Errorf("invalid field %s added", f.FieldName))
 	}
 
-	edgeInfo.AddFieldEdgeFromFieldEdgeInfo(f.FieldName, fieldEdgeInfo.Config, fieldEdgeInfo.EdgeName, f.Nullable())
+	edgeInfo.AddFieldEdgeFromFieldEdgeInfo(f.FieldName, fieldEdgeInfo.Config, fieldEdgeInfo.EdgeName, fieldEdgeInfo.NodeTypeField, f.Nullable())
 }
 
 func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, nodeName string) {
@@ -571,6 +596,7 @@ func (f *Field) Clone(opts ...Option) *Field {
 		dbName:                   f.dbName,
 		hideFromGraphQL:          f.hideFromGraphQL,
 		private:                  f.private,
+		polymorphic:              f.polymorphic,
 		index:                    f.index,
 		graphQLName:              f.graphQLName,
 		defaultValue:             f.defaultValue,

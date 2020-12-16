@@ -304,6 +304,10 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 		}
 
 		config := e.GetEntConfig()
+		// TODO can augment this and add this to other node
+		if config.ConfigName == "" && e.NodeTypeField != "" {
+			continue
+		}
 
 		foreignInfo, ok := m[config.ConfigName]
 		if !ok {

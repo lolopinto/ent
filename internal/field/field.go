@@ -175,8 +175,9 @@ type ForeignKeyInfo struct {
 }
 
 type FieldEdgeInfo struct {
-	Config   string
-	EdgeName string
+	Config        string
+	EdgeName      string
+	NodeTypeField string // this implies a polymorphic field and we need to get the type from that field instead of being known at compile time
 }
 
 func GetNilableGoType(f *Field) string {

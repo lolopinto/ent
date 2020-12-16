@@ -877,10 +877,16 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 
 	for _, edge := range nodeData.EdgeInfo.FieldEdges {
 		f := fieldInfo.GetFieldByName(edge.FieldName)
+		// if field was already hidden, don't create edge for it
+		if !f.ExposeToGraphQL() {
+			continue
+		}
+
 		// TODO this shouldn't be here but be somewhere else...
 		if f != nil {
 			fieldInfo.InvalidateFieldForGraphQL(f)
 		}
+		// TODO need the type here to be Node for fieldEdges returning ent...
 		addSingularEdge(edge, &fields, instance)
 	}
 
