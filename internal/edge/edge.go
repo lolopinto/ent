@@ -220,6 +220,16 @@ type FieldEdge struct {
 
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 	// TODO required and nullable eventually (options for the edges that is)
+	if edge.NodeTypeField != "" {
+		// polymorphic. we don't know what object is being returned, just indicate Node
+		return []enttype.FileImport{
+			{
+				// node type
+				ImportType: enttype.EntGraphQL,
+				Type:       "GraphQLNodeInterface",
+			},
+		}
+	}
 	return []enttype.FileImport{
 		{
 			ImportType: enttype.Node,
