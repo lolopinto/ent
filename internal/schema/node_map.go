@@ -305,8 +305,11 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 						panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
 					}
 
-					fEdgeInfo := foreign.NodeData.EdgeInfo
-					fEdgeInfo.AddIndexEdgeFromPolymorphicOptions(f.TsFieldName(), nodeData.Node, e.Polymorphic)
+					// only add polymorphic accessors on foreign if index or unique
+					if f.Index() || f.Unique() {
+						fEdgeInfo := foreign.NodeData.EdgeInfo
+						fEdgeInfo.AddIndexEdgeFromPolymorphicOptions(f.TsFieldName(), nodeData.Node, e.Polymorphic)
+					}
 				} else {
 					panic(fmt.Errorf("couldn't find config for typ %s", typ))
 				}
