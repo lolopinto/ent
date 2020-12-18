@@ -978,10 +978,11 @@ func TestPolymorphicFieldWithRestrictedTypes(t *testing.T) {
 				UUIDType({
 					name: "OwnerID",
 					index: true, 
-					polymorphic: true,
-					// we enforce in typescript for now so no db changes...
-					polymorphic_types: ["User", "Location"],
-				}),
+					polymorphic: {
+						// we enforce in typescript for now so no db changes...
+						types: ["User", "Location"],
+					},
+					}),
 			];
 		}`),
 		},

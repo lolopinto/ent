@@ -160,8 +160,15 @@ export interface FieldOptions {
   defaultValueOnCreate?(): any;
   defaultValueOnEdit?(): any;
 
-  polymorphic?: boolean;
-  polymorphic_types?: string[];
+  polymorphic?: boolean | PolymorphicOptions;
+}
+
+export interface PolymorphicOptions {
+  //  inverse type graphql or something
+  // on by default even if hideFromGraphQL is hidden
+  // restrict to just these types
+  types?: string[];
+  hideFromInverseGraphQL?: boolean;
 }
 
 // Field interface that each Field needs to support

@@ -69,6 +69,15 @@ function processFields(dst: {}[], src:Field[]) {
     f = field;
     f['hasDefaultValueOnCreate'] = (field.defaultValueOnCreate != undefined)
     f['hasDefaultValueOnEdit'] = (field.defaultValueOnEdit != undefined)
+    if (field.polymorphic) {
+      // convert boolean into object
+      // we keep boolean as an option to keep API simple
+      if (typeof field.polymorphic ==='boolean') {
+        f['polymorphic'] = {};
+      } else {
+        f['polymorphic'] = field.polymorphic;
+      }
+    }
     dst.push(f);
   }
 }

@@ -919,6 +919,17 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		}
 		addPluralEdge(edge, &fields, instance)
 	}
+
+	for _, edge := range nodeData.EdgeInfo.IndexedEdges {
+		if nodeMap.HideFromGraphQL(edge) {
+			continue
+		}
+		if edge.Unique {
+			addSingularEdge(edge, &fields, instance)
+		} else {
+			addPluralEdge(edge, &fields, instance)
+		}
+	}
 	result.Fields = fields
 	return result
 }

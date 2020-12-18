@@ -12,6 +12,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 )
 
@@ -27,7 +28,7 @@ type Field struct {
 	dbColumn         bool
 	hideFromGraphQL  bool
 	private          bool
-	polymorphic      bool
+	polymorphic      *input.PolymorphicOptions
 	// optional (in action)
 	// need to break this into optional (not required in typescript actions)
 	// ts nullable
@@ -38,7 +39,7 @@ type Field struct {
 	defaultValue             interface{}
 	unique                   bool
 	fkey                     *ForeignKeyInfo
-	fieldEdge                *FieldEdgeInfo
+	fieldEdge                *base.FieldEdgeInfo
 	index                    bool
 	dbName                   string // storage key/column name for the field
 	graphQLName              string
@@ -154,33 +155,24 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 	}
 
 	if f.FieldEdge != nil {
-		ret.fieldEdge = &FieldEdgeInfo{
+		ret.fieldEdge = &base.FieldEdgeInfo{
 			Config:   getConfigName(f.FieldEdge[0]),
 			EdgeName: f.FieldEdge[1],
 		}
 	}
 
-	if ret.polymorphic {
+	if ret.polymorphic != nil {
 		if ret.fieldEdge != nil {
 			return nil, fmt.Errorf("cannot specify fieldEdge on polymorphic field %s", ret.FieldName)
 		}
 		// set fieldEdge here based on polymorphic info
 
+		fieldEdge, err := base.NewFieldEdgeInfo(ret.FieldName, ret.polymorphic, ret.unique)
+		if err != nil {
+			return nil, err
+		}
+		ret.fieldEdge = fieldEdge
 		// TODO test fieldEdge...
-		var edgeName string
-		if strings.HasSuffix(ret.FieldName, "ID") {
-			edgeName = strings.TrimSuffix(ret.FieldName, "ID")
-		} else if strings.HasSuffix(ret.FieldName, "_id") {
-			edgeName = strings.TrimSuffix(ret.FieldName, "_id")
-		} else {
-			return nil, fmt.Errorf("invalid field name %s for polymorphic field", ret.FieldName)
-		}
-		// just put db name there
-		nodeTypeField := strcase.ToLowerCamel(edgeName + "Type")
-		ret.fieldEdge = &FieldEdgeInfo{
-			EdgeName:      edgeName,
-			NodeTypeField: nodeTypeField,
-		}
 	}
 
 	return ret, nil
@@ -237,7 +229,11 @@ func (f *Field) AddFieldEdgeToEdgeInfo(edgeInfo *edge.EdgeInfo) {
 		panic(fmt.Errorf("invalid field %s added", f.FieldName))
 	}
 
-	edgeInfo.AddFieldEdgeFromFieldEdgeInfo(f.FieldName, fieldEdgeInfo.Config, fieldEdgeInfo.EdgeName, fieldEdgeInfo.NodeTypeField, f.Nullable())
+	edgeInfo.AddFieldEdgeFromFieldEdgeInfo(
+		f.FieldName,
+		fieldEdgeInfo,
+		f.Nullable(),
+	)
 }
 
 func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, nodeName string) {
@@ -286,7 +282,7 @@ func (f *Field) ForeignKeyInfo() *ForeignKeyInfo {
 	return f.fkey
 }
 
-func (f *Field) FieldEdgeInfo() *FieldEdgeInfo {
+func (f *Field) FieldEdgeInfo() *base.FieldEdgeInfo {
 	return f.fieldEdge
 }
 

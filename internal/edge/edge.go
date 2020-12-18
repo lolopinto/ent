@@ -15,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/nodeinfo"
 	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/enttype"
+	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
@@ -26,6 +27,8 @@ type EdgeInfo struct {
 	FieldEdges        []*FieldEdge
 	fieldEdgeMap      map[string]*FieldEdge
 	ForeignKeys       []*ForeignKeyEdge
+	IndexedEdges      []*IndexedEdge
+	indexedEdgeMap    map[string]*IndexedEdge
 	foreignKeyMap     map[string]*ForeignKeyEdge
 	Associations      []*AssociationEdge
 	assocMap          map[string]*AssociationEdge
@@ -42,6 +45,7 @@ func NewEdgeInfo(packageName string) *EdgeInfo {
 	ret.SourcePackageName = packageName
 	ret.fieldEdgeMap = make(map[string]*FieldEdge)
 	ret.foreignKeyMap = make(map[string]*ForeignKeyEdge)
+	ret.indexedEdgeMap = make(map[string]*IndexedEdge)
 	ret.assocMap = make(map[string]*AssociationEdge)
 	ret.assocGroupsMap = make(map[string]*AssociationEdgeGroup)
 	ret.keys = make(map[string]bool)
@@ -74,6 +78,11 @@ func (e *EdgeInfo) addEdge(edge Edge) {
 		e.Associations = append(e.Associations, assocEdge)
 		e.assocMap[assocEdge.EdgeName] = assocEdge
 	}
+	indexedEdge, ok := edge.(*IndexedEdge)
+	if ok {
+		e.IndexedEdges = append(e.IndexedEdges, indexedEdge)
+		e.indexedEdgeMap[indexedEdge.EdgeName] = indexedEdge
+	}
 }
 
 // this is not an edge so doesn't implement Edge interface
@@ -99,14 +108,14 @@ func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *
 }
 
 func (e *EdgeInfo) AddFieldEdgeFromForeignKeyInfo(fieldName, configName string, nullable bool) {
-	e.addFieldEdgeFromInfo(fieldName, configName, "", "", nullable)
+	e.addFieldEdgeFromInfo(fieldName, configName, "", nil, nullable)
 }
 
-func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName, configName, inverseEdgeName, nodeTypeField string, nullable bool) {
-	e.addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName, nodeTypeField, nullable)
+func (e *EdgeInfo) AddFieldEdgeFromFieldEdgeInfo(fieldName string, fieldEdgeInfo *base.FieldEdgeInfo, nullable bool) {
+	e.addFieldEdgeFromInfo(fieldName, fieldEdgeInfo.Config, fieldEdgeInfo.EdgeName, fieldEdgeInfo.Polymorphic, nullable)
 }
 
-func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName, nodeTypeField string, nullable bool) {
+func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName string, polymorphic *base.PolymorphicOptions, nullable bool) {
 	if !strings.HasSuffix(fieldName, "ID") {
 		// TODO make this more flexible...
 		panic(fmt.Sprintf("expected field name to end with ID. FieldName was %s", fieldName))
@@ -117,7 +126,7 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName, 
 	}
 
 	var edgeInfo commonEdgeInfo
-	if nodeTypeField == "" {
+	if polymorphic == nil {
 		// Edge name: User from UserID field
 		edgeInfo = getCommonEdgeInfo(
 			trim,
@@ -135,7 +144,7 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName, 
 		commonEdgeInfo:  edgeInfo,
 		InverseEdgeName: inverseEdgeName,
 		Nullable:        nullable,
-		NodeTypeField:   nodeTypeField,
+		Polymorphic:     polymorphic,
 	}
 
 	e.addEdge(edge)
@@ -148,6 +157,21 @@ func (e *EdgeInfo) AddForeignKeyEdgeFromInverseFieldInfo(dbColName, nodeName str
 			inflection.Plural(nodeName),
 			schemaparser.GetEntConfigFromName(nodeName),
 		),
+	}
+	e.addEdge(edge)
+}
+
+func (e *EdgeInfo) AddIndexEdgeFromPolymorphicOptions(tsFieldName, nodeName string, polymorphic *base.PolymorphicOptions) {
+	edge := &IndexedEdge{
+		TSFieldName: strcase.ToCamel(tsFieldName),
+		commonEdgeInfo: getCommonEdgeInfo(
+			inflection.Plural(nodeName),
+			schemaparser.GetEntConfigFromName(nodeName),
+		),
+		Unique: polymorphic.Unique,
+	}
+	if polymorphic.HideFromInverseGraphQL {
+		edge._HideFromGraphQL = true
 	}
 	e.addEdge(edge)
 }
@@ -214,14 +238,12 @@ type FieldEdge struct {
 	InverseEdgeName string
 	Nullable        bool
 
-	// presence of this means this is dynamic and we have to use "loadAny" to load the edge instead of doing it manually
-	NodeTypeField string
+	Polymorphic *base.PolymorphicOptions
 }
 
 func (edge *FieldEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 	// TODO required and nullable eventually (options for the edges that is)
-	if edge.NodeTypeField != "" {
-		// polymorphic. we don't know what object is being returned, just indicate Node
+	if edge.Polymorphic != nil {
 		return []enttype.FileImport{
 			{
 				// node type
@@ -271,6 +293,43 @@ func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
+
+// this is like a foreign key edge except different
+// refers to a field that's indexed but doesn't want to reference it as a foreign key
+// currently best use case is as a polymorphic field but nothing stopping this from being non-polymorphic
+type IndexedEdge struct {
+	//	QuotedDBColName string
+	TSFieldName string
+	Unique      bool // plural or single
+	commonEdgeInfo
+}
+
+func (e *IndexedEdge) PluralEdge() bool {
+	return !e.Unique
+}
+
+func (e *IndexedEdge) Singular() string {
+	return inflection.Singular(e.EdgeName)
+}
+
+func (e *IndexedEdge) EdgeIdentifier() string {
+	return e.Singular()
+}
+
+func (e *IndexedEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+	return []enttype.FileImport{
+		enttype.NewGQLFileImport("GraphQLNonNull"),
+		enttype.NewGQLFileImport("GraphQLList"),
+		enttype.NewGQLFileImport("GraphQLNonNull"),
+		{
+			ImportType: enttype.Node,
+			Type:       e.NodeInfo.Node,
+		},
+	}
+}
+
+var _ Edge = &IndexedEdge{}
+var _ PluralEdge = &IndexedEdge{}
 
 type InverseAssocEdge struct {
 	commonEdgeInfo

@@ -529,7 +529,7 @@ func TestParseFields(t *testing.T) {
 								DBType: input.UUID,
 							},
 							index:       true,
-							polymorphic: true,
+							polymorphic: &input.PolymorphicOptions{},
 							derivedFields: []field{
 								{
 									name:            "OwnerType",
@@ -556,8 +556,10 @@ func TestParseFields(t *testing.T) {
 							UUIDType({
 								name: "owner_id",
 								index: true, 
-								polymorphic: true,
-								polymorphic_types: ["User", "Location"],
+								polymorphic: {
+									types: ["User", "Location"],
+									hideFromInverseGraphQL:true,
+								},
 							}),
 						];
 					}
@@ -595,8 +597,11 @@ func TestParseFields(t *testing.T) {
 							typ: &input.FieldType{
 								DBType: input.UUID,
 							},
-							index:       true,
-							polymorphic: true,
+							index: true,
+							polymorphic: &input.PolymorphicOptions{
+								Types:                  []string{"User", "Location"},
+								HideFromInverseGraphQL: true,
+							},
 							derivedFields: []field{
 								{
 									name: "owner_type",

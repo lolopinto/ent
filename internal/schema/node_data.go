@@ -311,6 +311,10 @@ func (nodeData *NodeData) getUniqueNodes(forceSelf bool) []uniqueNodeInfo {
 		processNode(edge.NodeInfo)
 	}
 
+	for _, edge := range nodeData.EdgeInfo.IndexedEdges {
+		processNode(edge.NodeInfo)
+	}
+
 	// we get id fields from this...
 	for _, edge := range nodeData.EdgeInfo.FieldEdges {
 		processNode(edge.NodeInfo)

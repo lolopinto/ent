@@ -42,7 +42,7 @@ type field struct {
 	disableUserEditable     bool
 	hasDefaultValueOnCreate bool
 	hasDefaultValueOnEdit   bool
-	polymorphic             bool
+	polymorphic             *input.PolymorphicOptions
 	derivedFields           []field
 }
 
@@ -174,7 +174,12 @@ func verifyField(t *testing.T, expField field, field *input.Field) {
 
 	assert.Equal(t, expField.foreignKey, field.ForeignKey)
 	assert.Equal(t, expField.fieldEdge, field.FieldEdge)
-	assert.Equal(t, expField.polymorphic, field.Polymorphic)
+	if expField.polymorphic == nil {
+		require.Nil(t, field.Polymorphic)
+	} else {
+		require.NotNil(t, field.Polymorphic)
+		assert.Equal(t, expField.polymorphic, field.Polymorphic)
+	}
 
 	require.Len(t, expField.derivedFields, len(field.DerivedFields))
 

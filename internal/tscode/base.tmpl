@@ -317,9 +317,27 @@ export class {{$baseClass}} {
     {{end -}}
   {{end -}}
 
+  {{ range $edge := .EdgeInfo.IndexedEdges -}}
+    {{$edgeName := .CamelCaseEdgeName -}}
+    {{$fNode := .NodeInfo.Node -}}
+
+    {{ if .Unique -}}
+      async load{{$edge.Singular}}(): Promise<{{useImport $fNode}} | null> {
+        const nodes = await {{useImport $fNode}}.loadFrom{{$edge.TsFieldName}}(this.viewer, this.id);
+        return nodes[0];
+      }
+
+    {{ else -}}
+      load{{$edgeName}}(): Promise<{{useImport $fNode}}[]> {
+        return {{useImport $fNode}}.loadFrom{{$edge.TSFieldName}}(this.viewer, this.id);
+      }
+
+    {{end -}}
+  {{end -}}
+
   {{ range $edge := .EdgeInfo.FieldEdges -}}
     {{  $edgeName := .CamelCaseEdgeName -}}
-    {{ if $edge.NodeTypeField}}
+    {{ if $edge.Polymorphic}}
       async load{{$edgeName}}(): Promise<{{useImport "Ent"}}| null>{
         {{ if $edge.Nullable -}}
           if (!this.{{$edge.TSFieldName}}) {
@@ -328,7 +346,7 @@ export class {{$baseClass}} {
         {{end -}}
         return {{useImport "loadEntByType"}}(
           this.viewer,
-          this.{{$edge.NodeTypeField}} as unknown as {{useImport "NodeType"}},
+          this.{{$edge.Polymorphic.NodeTypeField}} as unknown as {{useImport "NodeType"}},
           this.{{$edge.TSFieldName}},
         );
       }
@@ -337,7 +355,7 @@ export class {{$baseClass}} {
         load{{$edgeName}}X(): Promise<{{useImport "Ent"}}> {
         return {{useImport "loadEntXByType"}}(
           this.viewer, 
-          this.{{$edge.NodeTypeField}} as unknown as {{useImport "NodeType"}},
+          this.{{$edge.Polymorphic.NodeTypeField}} as unknown as {{useImport "NodeType"}},
           this.{{$edge.TSFieldName}},
         );
       }

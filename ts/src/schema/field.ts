@@ -1,4 +1,10 @@
-import { Type, DBType, Field, FieldOptions } from "./schema";
+import {
+  Type,
+  DBType,
+  Field,
+  FieldOptions,
+  PolymorphicOptions,
+} from "./schema";
 
 export abstract class BaseField {
   name: string;
@@ -13,16 +19,14 @@ export abstract class BaseField {
   foreignKey?: [string, string];
 
   // this should only be set on id fields. if set on other fields, it's currently ignored
-  polymorphic?: boolean;
-  // to restrict to just a handful of types e.g. can
-  polymorphic_types?: string[];
+  polymorphic?: boolean | PolymorphicOptions;
   // also adds a _type field
   //  e.g. owner_id -> owner_type
   // other fields
 
   // fields derived from this one. e.g. polymorphic id fields
   // add a _type field
-  // e.g. a polymorphic user_id field adds a
+  // e.g. a polymorphic user_id field adds a user_type field
   derivedFields?: Field[];
 }
 
@@ -32,7 +36,8 @@ export class UUIDField extends BaseField implements Field {
   constructor(options: FieldOptions) {
     super();
 
-    if (options.polymorphic) {
+    const polymorphic = options.polymorphic;
+    if (polymorphic) {
       let name = "";
       if (options.name.endsWith("_id")) {
         let idx = options.name.indexOf("_id");
@@ -48,12 +53,12 @@ export class UUIDField extends BaseField implements Field {
       // can be made visible with custom fields if user wants to change this behavior
       // can't be foreignKey so need to make other changes to the field
       // intentionally not made private as it doesn't seem like it needs to be hidden
-      if (options.polymorphic_types) {
+      if (typeof polymorphic === "object" && polymorphic.types) {
         // an enum with types validated here
         this.derivedFields = [
           EnumType({
             name,
-            values: options.polymorphic_types,
+            values: polymorphic.types,
             hideFromGraphQL: true,
           }),
         ];
