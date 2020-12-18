@@ -16,10 +16,11 @@ import {
   UUIDType,
   TimeType,
 } from "../../src/schema";
+import { NodeType } from "./const";
 
 export class FakeEvent implements Ent {
   readonly id: ID;
-  readonly nodeType = "Event";
+  readonly nodeType = NodeType.FakeEvent;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly startTime: Date;

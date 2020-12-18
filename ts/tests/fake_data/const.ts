@@ -14,6 +14,12 @@ export enum EdgeType {
   UserToHostedEvents = "userToHostedEvents",
 }
 
+export enum NodeType {
+  FakeUser = "user",
+  FakeContact = "contact",
+  FakeEvent = "event",
+}
+
 export const SymmetricEdges = new Set();
 SymmetricEdges.add(EdgeType.UserToFriends);
 

@@ -14,10 +14,11 @@ import {
 } from "../../src/core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
 import { Field, StringType, BaseEntSchema, UUIDType } from "../../src/schema";
+import { NodeType } from "./const";
 
 export class FakeContact implements Ent {
   readonly id: ID;
-  readonly nodeType = "Contact";
+  readonly nodeType = NodeType.FakeContact;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly firstName: string;

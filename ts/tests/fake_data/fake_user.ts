@@ -12,15 +12,15 @@ import {
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
   PrivacyPolicy,
-  AlwaysAllowRule,
 } from "../../src/core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
 import { Field, StringType, BaseEntSchema } from "../../src/schema";
 import { EdgeType } from "./internal";
+import { NodeType } from "./const";
 
 export class FakeUser implements Ent {
   readonly id: ID;
-  readonly nodeType = "User";
+  readonly nodeType = NodeType.FakeUser;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly firstName: string;
