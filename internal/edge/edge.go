@@ -103,6 +103,10 @@ func (e *EdgeInfo) GetAssociationEdgeByName(edgeName string) *AssociationEdge {
 	return e.assocMap[edgeName]
 }
 
+func (e *EdgeInfo) GetIndexedEdgeByName(edgeName string) *IndexedEdge {
+	return e.indexedEdgeMap[edgeName]
+}
+
 func (e *EdgeInfo) GetAssociationEdgeGroupByStatusName(groupStatusName string) *AssociationEdgeGroup {
 	return e.assocGroupsMap[groupStatusName]
 }

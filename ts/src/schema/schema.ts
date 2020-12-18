@@ -164,10 +164,9 @@ export interface FieldOptions {
 }
 
 export interface PolymorphicOptions {
-  //  inverse type graphql or something
-  // on by default even if hideFromGraphQL is hidden
   // restrict to just these types
   types?: string[];
+  // hide inverse type from graphql
   hideFromInverseGraphQL?: boolean;
 }
 

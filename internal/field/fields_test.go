@@ -46,4 +46,7 @@ func TestDerivedFields(t *testing.T) {
 	// field exists
 	f := fieldInfo.GetFieldByName("OwnerType")
 	require.NotNil(t, f)
+	// TODO need to test this derived field more but testField is in different package
+	// and a lot of the fields in Field are private and its a whole thing...
+	// this field is simple enough so we ignore for now
 }

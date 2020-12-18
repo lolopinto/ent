@@ -41,7 +41,6 @@ func NewFieldInfoFromInputs(fields []*input.Field, options *Options) (*FieldInfo
 		}
 		fieldInfo.addField(f)
 		for _, derivedField := range field.DerivedFields {
-			// TODO test this....
 			f2, err := newFieldFromInput(derivedField)
 			if err != nil {
 				return nil, err

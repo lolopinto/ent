@@ -886,7 +886,6 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		if f != nil {
 			fieldInfo.InvalidateFieldForGraphQL(f)
 		}
-		// TODO need the type here to be Node for fieldEdges returning ent...
 		addSingularEdge(edge, &fields, instance)
 	}
 

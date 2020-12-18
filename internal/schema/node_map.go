@@ -326,8 +326,7 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 		}
 
 		config := e.GetEntConfig()
-		// TODO can augment this and add this to other node
-		if config.ConfigName == "" && e.Polymorphic != nil {
+		if config.ConfigName == "" {
 			continue
 		}
 

@@ -172,7 +172,6 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 			return nil, err
 		}
 		ret.fieldEdge = fieldEdge
-		// TODO test fieldEdge...
 	}
 
 	return ret, nil
