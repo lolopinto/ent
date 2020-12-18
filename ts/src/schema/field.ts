@@ -1,4 +1,10 @@
-import { Type, DBType, Field, FieldOptions } from "./schema";
+import {
+  Type,
+  DBType,
+  Field,
+  FieldOptions,
+  PolymorphicOptions,
+} from "./schema";
 
 export abstract class BaseField {
   name: string;
@@ -11,14 +17,61 @@ export abstract class BaseField {
   graphqlName?: string;
   index?: boolean;
   foreignKey?: [string, string];
+
+  // this should only be set on id fields. if set on other fields, it's currently ignored
+  polymorphic?: boolean | PolymorphicOptions;
+  // also adds a _type field
+  //  e.g. owner_id -> owner_type
+  // other fields
+
+  // fields derived from this one. e.g. polymorphic id fields
+  // add a _type field
+  // e.g. a polymorphic user_id field adds a user_type field
+  derivedFields?: Field[];
 }
 
 export class UUIDField extends BaseField implements Field {
   type: Type = { dbType: DBType.UUID };
+
+  constructor(options: FieldOptions) {
+    super();
+
+    const polymorphic = options.polymorphic;
+    if (polymorphic) {
+      let name = "";
+      if (options.name.endsWith("_id")) {
+        let idx = options.name.indexOf("_id");
+        name = options.name.substring(0, idx) + "_type";
+      } else if (options.name.endsWith("ID")) {
+        let idx = options.name.indexOf("ID");
+        name = options.name.substring(0, idx) + "Type";
+      } else {
+        throw new Error(`unsupported id polymorhpic type ${options.name}`);
+      }
+
+      // polymorphic field automatically hidden from GraphQL
+      // can be made visible with custom fields if user wants to change this behavior
+      // can't be foreignKey so need to make other changes to the field
+      // intentionally not made private as it doesn't seem like it needs to be hidden
+      if (typeof polymorphic === "object" && polymorphic.types) {
+        // an enum with types validated here
+        this.derivedFields = [
+          EnumType({
+            name,
+            values: polymorphic.types,
+            hideFromGraphQL: true,
+          }),
+        ];
+      } else {
+        // just a string field...
+        this.derivedFields = [StringType({ name, hideFromGraphQL: true })];
+      }
+    }
+  }
 }
 
 export function UUIDType(options: FieldOptions): UUIDField {
-  let result = new UUIDField();
+  let result = new UUIDField(options);
   return Object.assign(result, options);
 }
 

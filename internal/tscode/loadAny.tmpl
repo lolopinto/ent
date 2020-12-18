@@ -1,5 +1,5 @@
 {{ reserveImport "./const" "NodeType"}}
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Viewer" "Ent" "LoadEntOptions"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "loadEntX" "ID" "Viewer" "Ent" "LoadEntOptions"}}
 {{ $internalImpPath := .Package.InternalImportPath }}
 {{ range .NodeData -}}
   {{ reserveImport $internalImpPath .Name}}
@@ -11,6 +11,14 @@ export async function loadEntByType(
   id: {{useImport "ID"}},
 ): Promise<{{useImport "Ent"}} | null> {
   return {{useImport "loadEnt"}}(viewer, id, getLoaderOptions(type));
+}
+
+export async function loadEntXByType(
+  viewer: {{useImport "Viewer"}},
+  type: {{useImport "NodeType"}},
+  id: {{useImport "ID"}},
+): Promise<{{useImport "Ent"}}> {
+  return {{useImport "loadEntX"}}(viewer, id, getLoaderOptions(type));
 }
 
 export function getLoaderOptions(type: {{useImport "NodeType"}}): {{useImport "LoadEntOptions"}}<{{useImport "Ent"}}> {

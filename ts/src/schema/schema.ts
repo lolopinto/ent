@@ -159,6 +159,15 @@ export interface FieldOptions {
   disableUserEditable?: boolean;
   defaultValueOnCreate?(): any;
   defaultValueOnEdit?(): any;
+
+  polymorphic?: boolean | PolymorphicOptions;
+}
+
+export interface PolymorphicOptions {
+  // restrict to just these types
+  types?: string[];
+  // hide inverse type from graphql
+  hideFromInverseGraphQL?: boolean;
 }
 
 // Field interface that each Field needs to support

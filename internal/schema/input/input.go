@@ -79,11 +79,19 @@ type Field struct {
 	HasDefaultValueOnCreate bool `json:"hasDefaultValueOnCreate"`
 	HasDefaultValueOnEdit   bool `json:"hasDefaultValueOnEdit"`
 
+	Polymorphic   *PolymorphicOptions `json:"polymorphic"`
+	DerivedFields []*Field            `json:"derivedFields"`
+
 	// Go specific information here
 	TagMap          map[string]string
 	GoType          types.Type
 	PkgPath         string
 	DataTypePkgPath string
+}
+
+type PolymorphicOptions struct {
+	Types                  []string `json:"types"`
+	HideFromInverseGraphQL bool     `json:"hideFromInverseGraphQL"`
 }
 
 func (f *Field) GetEntType() enttype.EntType {

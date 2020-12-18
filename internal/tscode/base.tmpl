@@ -1,6 +1,7 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "PrivacyPolicy" "query"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "PrivacyPolicy" "query" "Ent"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
+{{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
 
 {{with .NodeData -}}
 {{/* TODO break this up to make it easier to use? */}}
@@ -316,33 +317,76 @@ export class {{$baseClass}} {
     {{end -}}
   {{end -}}
 
-  {{ range $edge := .EdgeInfo.FieldEdges -}}
+  {{ range $edge := .EdgeInfo.IndexedEdges -}}
     {{$edgeName := .CamelCaseEdgeName -}}
-    {{with .NodeInfo -}}
-      async load{{$edgeName}}(): Promise<{{useImport .Node}}|null> {
+    {{$fNode := .NodeInfo.Node -}}
+
+    {{ if .Unique -}}
+      async load{{$edge.Singular}}(): Promise<{{useImport $fNode}} | null> {
+        const nodes = await {{useImport $fNode}}.loadFrom{{$edge.TsFieldName}}(this.viewer, this.id);
+        return nodes[0];
+      }
+
+    {{ else -}}
+      load{{$edgeName}}(): Promise<{{useImport $fNode}}[]> {
+        return {{useImport $fNode}}.loadFrom{{$edge.TSFieldName}}(this.viewer, this.id);
+      }
+
+    {{end -}}
+  {{end -}}
+
+  {{ range $edge := .EdgeInfo.FieldEdges -}}
+    {{  $edgeName := .CamelCaseEdgeName -}}
+    {{ if $edge.Polymorphic}}
+      async load{{$edgeName}}(): Promise<{{useImport "Ent"}}| null>{
         {{ if $edge.Nullable -}}
           if (!this.{{$edge.TSFieldName}}) {
             return null;
           }
         {{end -}}
-        return {{useImport "loadEnt"}}(
-          this.viewer, 
+        return {{useImport "loadEntByType"}}(
+          this.viewer,
+          this.{{$edge.Polymorphic.NodeTypeField}} as unknown as {{useImport "NodeType"}},
           this.{{$edge.TSFieldName}},
-          {{useImport .Node}}.loaderOptions(),
         );
       }
-
-      {{if not $edge.Nullable -}}
-        load{{$edgeName}}X(): Promise<{{useImport .Node}}> {
-          return {{useImport "loadEntX"}}(
+      
+      {{ if not $edge.Nullable -}}
+        load{{$edgeName}}X(): Promise<{{useImport "Ent"}}> {
+        return {{useImport "loadEntXByType"}}(
+          this.viewer, 
+          this.{{$edge.Polymorphic.NodeTypeField}} as unknown as {{useImport "NodeType"}},
+          this.{{$edge.TSFieldName}},
+        );
+      }
+      {{end -}}
+    {{ else -}}
+      {{with .NodeInfo -}}
+        async load{{$edgeName}}(): Promise<{{useImport .Node}}|null> {
+          {{ if $edge.Nullable -}}
+            if (!this.{{$edge.TSFieldName}}) {
+              return null;
+            }
+          {{end -}}
+          return {{useImport "loadEnt"}}(
             this.viewer, 
             this.{{$edge.TSFieldName}},
             {{useImport .Node}}.loaderOptions(),
           );
         }
-      {{end -}}
+
+        {{if not $edge.Nullable -}}
+          load{{$edgeName}}X(): Promise<{{useImport .Node}}> {
+            return {{useImport "loadEntX"}}(
+              this.viewer, 
+              this.{{$edge.TSFieldName}},
+              {{useImport .Node}}.loaderOptions(),
+            );
+          }
+        {{end -}}
+      {{end}}
     {{end}}
-  {{end -}}
+  {{end}}
 }
 
 {{end -}}

@@ -42,6 +42,8 @@ type field struct {
 	disableUserEditable     bool
 	hasDefaultValueOnCreate bool
 	hasDefaultValueOnEdit   bool
+	polymorphic             *input.PolymorphicOptions
+	derivedFields           []field
 }
 
 type assocEdge struct {
@@ -126,29 +128,7 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				for j, expField := range expectedNode.fields {
 					field := node.Fields[j]
 
-					if expField.typ != nil {
-						assert.Equal(t, expField.typ, field.Type)
-					} else {
-						assert.Equal(t, expField.dbType, field.Type.DBType)
-
-					}
-					assert.Equal(t, expField.name, field.Name)
-
-					assert.Equal(t, expField.storageKey, field.StorageKey)
-
-					assert.Equal(t, expField.nullable, field.Nullable)
-					assert.Equal(t, expField.unique, field.Unique)
-					assert.Equal(t, expField.hideFromGraphQL, field.HideFromGraphQL)
-					assert.Equal(t, expField.private, field.Private)
-					assert.Equal(t, expField.graphqlName, field.GraphQLName)
-					assert.Equal(t, expField.index, field.Index)
-					assert.Equal(t, expField.primaryKey, field.PrimaryKey)
-					assert.Equal(t, expField.disableUserEditable, field.DisableUserEditable)
-					assert.Equal(t, expField.hasDefaultValueOnCreate, field.HasDefaultValueOnCreate)
-					assert.Equal(t, expField.hasDefaultValueOnEdit, field.HasDefaultValueOnEdit)
-
-					assert.Equal(t, expField.foreignKey, field.ForeignKey)
-					assert.Equal(t, expField.fieldEdge, field.FieldEdge)
+					verifyField(t, expField, field)
 				}
 
 				verifyAssocEdges(t, expectedNode.assocEdges, node.AssocEdges)
@@ -167,6 +147,45 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				verifyConstraints(t, expectedNode.constraints, node.Constraints)
 			}
 		})
+	}
+}
+
+func verifyField(t *testing.T, expField field, field *input.Field) {
+	if expField.typ != nil {
+		assert.Equal(t, expField.typ, field.Type)
+	} else {
+		assert.Equal(t, expField.dbType, field.Type.DBType)
+
+	}
+	assert.Equal(t, expField.name, field.Name)
+
+	assert.Equal(t, expField.storageKey, field.StorageKey)
+
+	assert.Equal(t, expField.nullable, field.Nullable)
+	assert.Equal(t, expField.unique, field.Unique)
+	assert.Equal(t, expField.hideFromGraphQL, field.HideFromGraphQL)
+	assert.Equal(t, expField.private, field.Private)
+	assert.Equal(t, expField.graphqlName, field.GraphQLName)
+	assert.Equal(t, expField.index, field.Index)
+	assert.Equal(t, expField.primaryKey, field.PrimaryKey)
+	assert.Equal(t, expField.disableUserEditable, field.DisableUserEditable)
+	assert.Equal(t, expField.hasDefaultValueOnCreate, field.HasDefaultValueOnCreate)
+	assert.Equal(t, expField.hasDefaultValueOnEdit, field.HasDefaultValueOnEdit)
+
+	assert.Equal(t, expField.foreignKey, field.ForeignKey)
+	assert.Equal(t, expField.fieldEdge, field.FieldEdge)
+	if expField.polymorphic == nil {
+		require.Nil(t, field.Polymorphic)
+	} else {
+		require.NotNil(t, field.Polymorphic)
+		assert.Equal(t, expField.polymorphic, field.Polymorphic)
+	}
+
+	require.Len(t, expField.derivedFields, len(field.DerivedFields))
+
+	for i, expDerivedField := range expField.derivedFields {
+		derivedField := field.DerivedFields[i]
+		verifyField(t, expDerivedField, derivedField)
 	}
 }
 

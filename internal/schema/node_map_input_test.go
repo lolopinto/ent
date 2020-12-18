@@ -298,3 +298,181 @@ func TestParseInputWithAssocEdgeGroup(t *testing.T) {
 	// inverse edge not added to map
 	//	require.NotNil(t, edgeGroup.GetAssociationByName("FriendRequestsReceived"))
 }
+
+func TestParseInputWithPolymorphicFieldEdge(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Address": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "ownerID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						DerivedFields: []*input.Field{
+							{
+								Name: "ownerType",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+						},
+						Polymorphic: &input.PolymorphicOptions{},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 1)
+
+	addressCfg := schema.Nodes["AddressConfig"]
+	assert.NotNil(t, addressCfg)
+
+	ownerEdge := addressCfg.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	assert.NotNil(t, ownerEdge)
+}
+
+func TestParseInputWithPolymorphicFieldEdgeInverseTypes(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+			"Address": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "ownerID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						Index: true,
+						DerivedFields: []*input.Field{
+							{
+								Name: "ownerType",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+						},
+						Polymorphic: &input.PolymorphicOptions{
+							Types: []string{"user"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	addressCfg := schema.Nodes["AddressConfig"]
+	assert.NotNil(t, addressCfg)
+
+	ownerEdge := addressCfg.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	assert.NotNil(t, ownerEdge)
+
+	userCfg := schema.Nodes["UserConfig"]
+	assert.NotNil(t, userCfg)
+
+	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
+	assert.NotNil(t, indexedEdge)
+}
+
+func TestParseInputWithPolymorphicFieldEdgeNotIndexed(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "firstName",
+						Type: &input.FieldType{
+							DBType: input.String,
+						},
+					},
+				},
+			},
+			"Address": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "ownerID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						DerivedFields: []*input.Field{
+							{
+								Name: "ownerType",
+								Type: &input.FieldType{
+									DBType: input.String,
+								},
+							},
+						},
+						Polymorphic: &input.PolymorphicOptions{
+							Types: []string{"user"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.TypeScript)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	addressCfg := schema.Nodes["AddressConfig"]
+	assert.NotNil(t, addressCfg)
+
+	ownerEdge := addressCfg.NodeData.EdgeInfo.GetFieldEdgeByName("owner")
+	assert.NotNil(t, ownerEdge)
+
+	userCfg := schema.Nodes["UserConfig"]
+	assert.NotNil(t, userCfg)
+
+	indexedEdge := userCfg.NodeData.EdgeInfo.GetIndexedEdgeByName("Addresses")
+	assert.Nil(t, indexedEdge)
+}

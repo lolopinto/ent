@@ -294,6 +294,28 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 	edgeInfo := nodeData.EdgeInfo
 
 	for _, e := range edgeInfo.FieldEdges {
+		if e.Polymorphic != nil {
+			for _, typ := range e.Polymorphic.Types {
+				// convert to Node type
+				typ = strcase.ToCamel(typ) + "Config"
+				foreign, ok := m[typ]
+				if ok {
+					f := fieldInfo.GetFieldByName(e.FieldName)
+					if f == nil {
+						panic(fmt.Errorf("invalid edge with Name %s", e.FieldName))
+					}
+
+					// only add polymorphic accessors on foreign if index or unique
+					if f.Index() || f.Unique() {
+						fEdgeInfo := foreign.NodeData.EdgeInfo
+						fEdgeInfo.AddIndexEdgeFromPolymorphicOptions(f.TsFieldName(), nodeData.Node, e.Polymorphic)
+					}
+				} else {
+					panic(fmt.Errorf("couldn't find config for typ %s", typ))
+				}
+			}
+			continue
+		}
 		// no inverse edge name, nothing to do here
 		if e.InverseEdgeName == "" {
 			continue
@@ -304,6 +326,9 @@ func (m NodeMapInfo) addLinkedEdges(info *NodeDataInfo) {
 		}
 
 		config := e.GetEntConfig()
+		if config.ConfigName == "" {
+			continue
+		}
 
 		foreignInfo, ok := m[config.ConfigName]
 		if !ok {

@@ -34,13 +34,19 @@ func NewFieldInfoFromInputs(fields []*input.Field, options *Options) (*FieldInfo
 	if options.AddBaseFields {
 		addBaseFields(fieldInfo)
 	}
-	// TODO eventually make this smarter and use length of slice as needed
 	for _, field := range fields {
 		f, err := newFieldFromInput(field)
 		if err != nil {
 			return nil, err
 		}
 		fieldInfo.addField(f)
+		for _, derivedField := range field.DerivedFields {
+			f2, err := newFieldFromInput(derivedField)
+			if err != nil {
+				return nil, err
+			}
+			fieldInfo.addField(f2)
+		}
 	}
 
 	if options.SortFields {
@@ -165,11 +171,6 @@ func (fieldInfo *FieldInfo) GraphQLFields() []*Field {
 type ForeignKeyInfo struct {
 	Config string
 	Field  string
-}
-
-type FieldEdgeInfo struct {
-	Config   string
-	EdgeName string
 }
 
 func GetNilableGoType(f *Field) string {

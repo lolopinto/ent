@@ -877,6 +877,11 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 
 	for _, edge := range nodeData.EdgeInfo.FieldEdges {
 		f := fieldInfo.GetFieldByName(edge.FieldName)
+		// if field was already hidden, don't create edge for it
+		if !f.ExposeToGraphQL() {
+			continue
+		}
+
 		// TODO this shouldn't be here but be somewhere else...
 		if f != nil {
 			fieldInfo.InvalidateFieldForGraphQL(f)
@@ -912,6 +917,17 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 			continue
 		}
 		addPluralEdge(edge, &fields, instance)
+	}
+
+	for _, edge := range nodeData.EdgeInfo.IndexedEdges {
+		if nodeMap.HideFromGraphQL(edge) {
+			continue
+		}
+		if edge.Unique {
+			addSingularEdge(edge, &fields, instance)
+		} else {
+			addPluralEdge(edge, &fields, instance)
+		}
 	}
 	result.Fields = fields
 	return result
