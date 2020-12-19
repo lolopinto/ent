@@ -125,13 +125,29 @@ export const AllowIfViewerRule = {
   },
 };
 
+interface FuncRule {
+  (v: Viewer, ent: Ent): boolean | Promise<boolean>;
+}
+
 export class AllowIfFuncRule implements PrivacyPolicyRule {
-  constructor(private fn: (v: Viewer, ent: Ent) => Promise<boolean>) {}
+  constructor(private fn: FuncRule) {}
 
   async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
     const result = await this.fn(v, ent);
     if (result) {
       return Allow();
+    }
+    return Skip();
+  }
+}
+
+export class DenyIfFuncRule implements PrivacyPolicyRule {
+  constructor(private fn: FuncRule) {}
+
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    const result = await this.fn(v, ent);
+    if (result) {
+      return Deny();
     }
     return Skip();
   }
@@ -265,6 +281,20 @@ export class DenyIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
 
   async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
     return denyIfEdgeExistsRule(ent.id, v.viewerID, this.edgeType, v.context);
+  }
+}
+
+// need a Deny version of this too
+export class AllowIfConditionAppliesRule implements PrivacyPolicyRule {
+  constructor(private fn: FuncRule, private rule: PrivacyPolicyRule) {}
+
+  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+    const result = await this.fn(v, ent);
+    if (!result) {
+      return Skip();
+    }
+    const r = await this.rule.apply(v, ent);
+    return r.result === privacyResult.Allow ? Allow() : Skip();
   }
 }
 

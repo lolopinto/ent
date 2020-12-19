@@ -21,6 +21,7 @@ import {
   FakeEvent,
   UserToEventsAttendingQuery,
   EventToHostsQuery,
+  NodeType,
 } from "./fake_data/";
 import {
   inputs,
@@ -759,7 +760,7 @@ class ChainTestQueryFilter {
         builder.orchestrator.addOutboundEdge(
           this.user.id,
           EdgeType.UserToFriends,
-          "User",
+          NodeType.FakeUser,
           {
             time: new Date(), // set time to advanceBy time
           },
@@ -773,19 +774,19 @@ class ChainTestQueryFilter {
         builder.orchestrator.addInboundEdge(
           this.event.id,
           EdgeType.EventToAttendees,
-          "Event",
+          NodeType.FakeEvent,
         );
         // Robb also attending the red wedding
         if (input.firstName === "Robb") {
           builder.orchestrator.addInboundEdge(
             this.event2.id,
             EdgeType.EventToInvited,
-            "Event",
+            NodeType.FakeEvent,
           );
           builder.orchestrator.addInboundEdge(
             this.event2.id,
             EdgeType.EventToAttendees,
-            "Event",
+            NodeType.FakeEvent,
           );
         }
         return await builder.saveX();
@@ -805,7 +806,10 @@ class ChainTestQueryFilter {
     return this.filter(new this.initialQuery(vc, this.user.id));
   }
 
-  private async compare(fn: (q: EdgeQuery<Ent>) => any) {
+  private async compare(
+    fn: (q: EdgeQuery<Ent>) => any,
+    comparer?: (oneHop: any, allHops: any) => any,
+  ) {
     const vc = new IDViewer(this.user.id);
     const oneHopResult = await fn(this.getQuery(vc));
 
@@ -831,7 +835,11 @@ class ChainTestQueryFilter {
         last.push(...ids);
       }
     }
-    expect(oneHopResult).toStrictEqual(allHopsResult);
+    if (comparer) {
+      comparer(oneHopResult, allHopsResult);
+    } else {
+      expect(oneHopResult).toStrictEqual(allHopsResult);
+    }
   }
 
   async testIDs() {
@@ -851,7 +859,18 @@ class ChainTestQueryFilter {
   }
 
   async testEnts() {
-    await this.compare((q) => q.queryEnts());
+    function compare(oneHop: Map<ID, Ent[]>, allHops: Map<ID, Ent[]>) {
+      expect(allHops.size).toEqual(oneHop.size);
+      for (const [key, ents] of allHops) {
+        expect(oneHop.has(key)).toEqual(true);
+
+        const oneHopEnts = oneHop.get(key)!;
+        for (let i = 0; i < ents.length; i++) {
+          expect(oneHopEnts[i].id).toEqual(ents[i].id);
+        }
+      }
+    }
+    await this.compare((q) => q.queryEnts(), compare);
   }
 }
 

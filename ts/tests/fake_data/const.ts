@@ -12,6 +12,9 @@ export enum EdgeType {
 
   EventToHosts = "eventToHosts",
   UserToHostedEvents = "userToHostedEvents",
+
+  UserToFriendRequests = "userToFriendRequests",
+  UserToIncomingFriendRequests = "userToIncomingFriendRequests",
 }
 
 export enum NodeType {
@@ -29,4 +32,7 @@ export const InverseEdges = new Map<EdgeType, EdgeType>([
 
   [EdgeType.UserToHostedEvents, EdgeType.EventToHosts],
   [EdgeType.EventToHosts, EdgeType.UserToHostedEvents],
+
+  [EdgeType.UserToFriendRequests, EdgeType.UserToIncomingFriendRequests],
+  [EdgeType.UserToIncomingFriendRequests, EdgeType.UserToFriendRequests],
 ]);

@@ -17,6 +17,7 @@ import {
   InverseEdges,
 } from ".";
 import { EventCreateInput, getEventBuilder } from "./fake_event";
+import { NodeType } from "./const";
 
 export function getContactInput(
   user: FakeUser,
@@ -101,7 +102,7 @@ export async function createAllContacts(
       builder.orchestrator.addInboundEdge(
         user.id,
         EdgeType.UserToContacts,
-        "User",
+        NodeType.FakeUser,
         {
           time: new Date(), // set time to advanceBy time
         },
@@ -125,9 +126,9 @@ export function verifyUserToContactEdges(
     const edge = edges[i];
     const expectedEdge = {
       id1: user.id,
-      id1Type: "User",
+      id1Type: NodeType.FakeUser,
       id2: contacts[i].id,
-      id2Type: "Contact",
+      id2Type: NodeType.FakeContact,
       data: null,
       edgeType: EdgeType.UserToContacts,
     };

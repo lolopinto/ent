@@ -55,6 +55,75 @@ export class UserToFriendsQuery extends BaseEdgeQuery<FakeUser, FakeUser> {
   }
 }
 
+export class UserToFriendRequestsQuery extends BaseEdgeQuery<
+  FakeUser,
+  FakeUser
+> {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
+    super(viewer, src, EdgeType.UserToFriendRequests, FakeUser.loaderOptions());
+  }
+
+  static query(
+    viewer: Viewer,
+    src: EdgeQuerySource<FakeUser>,
+  ): UserToFriendRequestsQuery {
+    return new UserToFriendRequestsQuery(viewer, src);
+  }
+
+  queryContacts(): UserToContactsQuery {
+    return UserToContactsQuery.query(this.viewer, this);
+  }
+
+  queryFriends(): UserToFriendsQuery {
+    return UserToFriendsQuery.query(this.viewer, this);
+  }
+
+  queryHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this);
+  }
+
+  queryEventsAttending(): UserToEventsAttendingQuery {
+    return UserToEventsAttendingQuery.query(this.viewer, this);
+  }
+}
+
+export class UserToIncomingFriendRequestsQuery extends BaseEdgeQuery<
+  FakeUser,
+  FakeUser
+> {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
+    super(
+      viewer,
+      src,
+      EdgeType.UserToIncomingFriendRequests,
+      FakeUser.loaderOptions(),
+    );
+  }
+
+  static query(
+    viewer: Viewer,
+    src: EdgeQuerySource<FakeUser>,
+  ): UserToIncomingFriendRequestsQuery {
+    return new UserToIncomingFriendRequestsQuery(viewer, src);
+  }
+
+  queryContacts(): UserToContactsQuery {
+    return UserToContactsQuery.query(this.viewer, this);
+  }
+
+  queryFriends(): UserToFriendsQuery {
+    return UserToFriendsQuery.query(this.viewer, this);
+  }
+
+  queryHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this);
+  }
+
+  queryEventsAttending(): UserToEventsAttendingQuery {
+    return UserToEventsAttendingQuery.query(this.viewer, this);
+  }
+}
+
 export class UserToEventsAttendingQuery extends BaseEdgeQuery<
   FakeUser,
   FakeEvent
