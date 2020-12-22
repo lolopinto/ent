@@ -12,15 +12,32 @@ import {
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
   PrivacyPolicy,
-  AlwaysAllowRule,
+  AllowIfConditionAppliesRule,
 } from "../../src/core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
 import { Field, StringType, BaseEntSchema } from "../../src/schema";
 import { EdgeType } from "./internal";
+import { NodeType } from "./const";
+import { IDViewer, IDViewerOptions } from "../../src/core/viewer";
+
+interface TokenOptions extends IDViewerOptions {
+  tokens?: {};
+}
+
+export class ViewerWithAccessToken extends IDViewer {
+  constructor(viewerID: ID, private opts?: Partial<TokenOptions>) {
+    super(viewerID, opts);
+  }
+
+  hasToken(key: string): boolean {
+    const tokens = this.opts?.tokens || {};
+    return tokens[key] !== undefined;
+  }
+}
 
 export class FakeUser implements Ent {
   readonly id: ID;
-  readonly nodeType = "User";
+  readonly nodeType = NodeType.FakeUser;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly firstName: string;
@@ -34,6 +51,20 @@ export class FakeUser implements Ent {
       AllowIfViewerRule,
       //can view user if friends
       new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriends),
+      new AllowIfConditionAppliesRule((viewer: Viewer, ent: Ent) => {
+        if (!(viewer instanceof ViewerWithAccessToken)) {
+          return false;
+        }
+
+        return viewer.hasToken("allow_outbound_friend_request");
+      }, new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriendRequests)),
+      new AllowIfConditionAppliesRule((viewer: Viewer, ent: Ent) => {
+        if (!(viewer instanceof ViewerWithAccessToken)) {
+          return false;
+        }
+
+        return viewer.hasToken("allow_incoming_friend_request");
+      }, new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToIncomingFriendRequests)),
       AlwaysDenyRule,
     ],
   };
