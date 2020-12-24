@@ -69,7 +69,14 @@ function buildTreeFromQueryPaths(...options: Option[]) {
   let topLevelTree = {};
   options.forEach((option) => {
     let path = option[0];
-    let parts = path.split(".");
+    let parts: string[] = [];
+    let match = fragmentRegex.exec(path);
+    if (match) {
+      // fragment, keep the part of the fragment e.g.  ...onUser, and then split the rest....
+      parts = [match[0], ...match[2].split(".")];
+    } else {
+      parts = splitPath(path);
+    }
 
     let tree = topLevelTree;
     for (let i = 0; i < parts.length; i++) {
@@ -221,6 +228,18 @@ interface rootConfig extends queryConfig {
   undefinedQueryPaths?: string[];
 }
 
+const fragmentRegex = /^...on (\w+)(.*)/;
+
+function splitPath(path: string) {
+  // handle fragment queries. we don't want to compare against this when checking the result
+  // but we'll make sure to send to server
+  const match = fragmentRegex.exec(path);
+  if (!match) {
+    return path.split(".");
+  }
+  return match[2].split(".");
+}
+
 async function expectFromRoot(
   config: rootConfig,
   ...options: Option[]
@@ -313,10 +332,14 @@ async function expectFromRoot(
   }
 
   // special case. TODO needs to be handled better
-  if (options.length === 1 && options[0][0] === "") {
-    expect(options[0][1]).toStrictEqual(result);
-    return st;
+  if (options.length === 1) {
+    const parts = splitPath(options[0][0]);
+    if (parts.length == 1 && parts[0] === "") {
+      expect(options[0][1]).toStrictEqual(result);
+      return st;
+    }
   }
+
   await Promise.all(
     options.map(async (option) => {
       let path = option[0];
@@ -330,7 +353,7 @@ async function expectFromRoot(
         for (let i = 0; i < config.nullQueryPaths.length; i++) {
           if (path.startsWith(config.nullQueryPaths[i])) {
             nullPath = config.nullQueryPaths[i];
-            nullParts = nullPath.split(".");
+            nullParts = splitPath(nullPath);
             break;
           }
         }
@@ -339,13 +362,13 @@ async function expectFromRoot(
         for (let i = 0; i < config.undefinedQueryPaths.length; i++) {
           if (path.startsWith(config.undefinedQueryPaths[i])) {
             undefinedPath = config.undefinedQueryPaths[i];
-            undefinedParts = undefinedPath.split(".");
+            undefinedParts = splitPath(undefinedPath);
             break;
           }
         }
       }
 
-      let parts = path.split(".");
+      let parts = splitPath(path);
       let current = result;
 
       // possible to make this smarter and better
