@@ -2,16 +2,16 @@
 {{reserveImport .Package.PackagePath "ID" "RequestContext" }}
 {{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "registerResolver" "EntNodeResolver" "resolveID" "nodeIDEncoder"}}
 {{reserveImport "src/ent/loadAny" "loadEntByType"}}
-{{reserveImport "src/ent" "NodeType" "ID"}}
+{{reserveImport "src/ent" "NodeType" }}
 
 interface NodeQueryArgs {
-  id: ID;
+  id: string;
 }
 
 const resolver = new {{useImport "EntNodeResolver"}}({{useImport "loadEntByType"}});
 {{useImport "registerResolver"}}("entNode", resolver);
 {{/* lesigh done in golang */ -}}
-{{useImport "resolveID"}}
+{{$ignore := useImport "resolveID"}}
 
 {{ template "field_config.tmpl" (dict "Base" .BaseObj "FieldConfig" .FieldConfig) -}}
 
