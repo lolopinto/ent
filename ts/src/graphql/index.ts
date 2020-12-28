@@ -22,3 +22,11 @@ export {
 export { GraphQLNodeInterface } from "./builtins/node";
 export { GraphQLConnectionInterface } from "./builtins/connection";
 export { GraphQLEdgeInterface } from "./builtins/edge";
+export {
+  NodeResolver,
+  EntNodeResolver,
+  registerResolver,
+  clearResolvers,
+  resolveID,
+  nodeIDEncoder,
+} from "./node_resolver";
