@@ -9,27 +9,27 @@ import {
   UserToIncomingFriendRequestsQuery,
   UserToFriendRequestsQuery,
   ViewerWithAccessToken,
-} from "../../tests/fake_data";
+} from "../fake_data";
 import {
   createTestUser,
   createTestEvent,
   createEdges,
   createAllContacts,
-} from "../../tests/fake_data/test_helpers";
-import { QueryRecorder } from "../testutils/db_mock";
+} from "../fake_data/test_helpers";
+import { QueryRecorder } from "../../src/testutils/db_mock";
 import { Pool } from "pg";
-import { Viewer, ID, Ent, LoadEntOptions, loadEnt } from "../core/ent";
+import { Viewer, ID, Ent, LoadEntOptions, loadEnt } from "../../src/core/ent";
 import {
   NodeResolver,
   EntNodeResolver,
   resolveID,
   registerResolver,
   nodeIDEncoder,
-} from "./node_resolver";
-import { IDViewer } from "../core/viewer";
-import { RequestContext } from "../core/context";
-import { SimpleBuilder } from "../testutils/builder";
-import { WriteOperation } from "../action";
+} from "../../src/graphql/node_resolver";
+import { IDViewer } from "../../src/core/viewer";
+import { RequestContext } from "../../src/core/context";
+import { SimpleBuilder } from "../../src/testutils/builder";
+import { WriteOperation } from "../../src/action";
 import {
   GraphQLObjectType,
   GraphQLNonNull,
@@ -37,11 +37,11 @@ import {
   GraphQLSchema,
   GraphQLString,
 } from "graphql";
-import { GraphQLNodeInterface } from "./builtins/node";
+import { GraphQLNodeInterface } from "../../src/graphql/builtins/node";
 import {
   queryRootConfig,
   expectQueryFromRoot,
-} from "../testutils/ent-graphql-tests";
+} from "../../src/testutils/ent-graphql-tests";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -64,6 +64,9 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return FakeEvent.loaderOptions();
   }
 }
+
+const resolver = new EntNodeResolver(loadEntByType);
+registerResolver("entNode", resolver);
 
 beforeEach(async () => {
   QueryRecorder.clear();
@@ -301,7 +304,7 @@ test("customresolver", async () => {
   }
 });
 
-test.only("node id encoder", async () => {
+test("node id encoder", async () => {
   let userType = new GraphQLObjectType({
     name: "User",
     fields: {
@@ -317,6 +320,9 @@ test.only("node id encoder", async () => {
       },
     },
     interfaces: [GraphQLNodeInterface],
+    isTypeOf(obj, _context: RequestContext) {
+      return obj instanceof FakeUser;
+    },
   });
 
   let viewerType = new GraphQLObjectType({
@@ -370,11 +376,7 @@ test.only("node id encoder", async () => {
     root: "viewer",
     viewer: new IDViewer(user.id),
     args: {},
-    debugMode: true,
   };
-
-  const resolver = new EntNodeResolver(loadEntByType);
-  registerResolver("entNode", resolver);
 
   const expectedID = resolver.encode(user);
   await expectQueryFromRoot(cfg, ["user.id", expectedID]);
@@ -383,14 +385,15 @@ test.only("node id encoder", async () => {
     schema: schema,
     root: "node",
     viewer: new IDViewer(user.id),
-    args: {},
-    debugMode: true,
+    args: { id: expectedID },
   };
 
-  await expectQueryFromRoot(
-    cfg2,
-    ["id", expectedID],
-    ["firstName", user.firstName],
-    ["lastName", user.lastName],
-  );
+  await expectQueryFromRoot(cfg2, [
+    "...on User",
+    {
+      id: expectedID,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    },
+  ]);
 });
