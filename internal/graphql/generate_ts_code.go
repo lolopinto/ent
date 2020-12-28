@@ -208,6 +208,12 @@ func (st writeMutationStep) process(data *codegen.Data, s *gqlSchema) error {
 	return nil
 }
 
+type writeNodeQueryStep struct{}
+
+func (st writeNodeQueryStep) process(data *codegen.Data, s *gqlSchema) error {
+	return writeNodeQueryFile(data, s)
+}
+
 type writeInternalIndexStep struct {
 }
 
@@ -258,6 +264,7 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 
 	steps := []step{
 		writeGraphQLTypesStep{},
+		writeNodeQueryStep{},
 		writeQueryStep{},
 		writeMutationStep{},
 		writeInternalIndexStep{},
@@ -290,6 +297,10 @@ func getFilePathForConnection(nodeData *schema.NodeData, connectionName string) 
 
 func getQueryFilePath() string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/query_type.ts")
+}
+
+func getNodeTypeFilePath() string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/node_type.ts")
 }
 
 func getMutationFilePath() string {
@@ -470,7 +481,9 @@ func (obj gqlobjectData) ForeignImport(name string) bool {
 			}
 		}
 		// and field config
-		obj.m[obj.FieldConfig.Name] = true
+		if obj.FieldConfig != nil {
+			obj.m[obj.FieldConfig.Name] = true
+		}
 		obj.initMap = true
 	}
 	return !obj.m[name]
@@ -555,7 +568,6 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 						Node:         nodeData.Node,
 						NodeInstance: nodeData.NodeInstance,
 						GQLNodes:     []*objectType{buildNodeForObject(nodeMap, nodeData)},
-						FieldConfig:  buildFieldConfig(nodeData),
 						Package:      data.CodePath.GetImportPackage(),
 					},
 					FilePath: getFilePathForNode(nodeData),
@@ -636,10 +648,14 @@ func writeFile(node *gqlNode) error {
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/object.tmpl"),
 		TemplateName:      "object.tmpl",
-		PathToFile:        node.FilePath,
-		FormatSource:      true,
-		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
+		OtherTemplateFiles: []string{
+			util.GetAbsolutePath("ts_templates/field_config.tmpl"),
+			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
+		},
+		PathToFile:   node.FilePath,
+		FormatSource: true,
+		TsImports:    imps,
+		FuncMap:      imps.FuncMap(),
 	}))
 }
 
@@ -682,12 +698,17 @@ func getSortedLines(s *gqlSchema) []string {
 		append2(&customQueries, node.FilePath)
 	}
 
+	random := []string{
+		getNodeTypeFilePath(),
+	}
+
 	var lines []string
 	// get the enums
 	// get top level nodes e.g. User, Photo
 	// get the connections
 	// get the custom queries
 	list := [][]string{
+		random,
 		enums,
 		nodes,
 		conns,
@@ -767,24 +788,6 @@ func (f fieldConfigArg) FieldType() string {
 	return typeFromImports(f.Imports)
 }
 
-func buildFieldConfig(nodeData *schema.NodeData) *fieldConfig {
-	return &fieldConfig{
-		Exported:    true,
-		Name:        fmt.Sprintf("%sQuery", nodeData.Node),
-		Arg:         fmt.Sprintf("%sQueryArgs", nodeData.Node),
-		TypeImports: []string{fmt.Sprintf("%sType", nodeData.Node)},
-		Args: []*fieldConfigArg{
-			{
-				Name:    "id",
-				Imports: []string{"GraphQLNonNull", "GraphQLID"},
-			},
-		},
-		FunctionContents: []string{
-			fmt.Sprintf("return %s.load(context.getViewer(), args.id);", nodeData.Node),
-		},
-	}
-}
-
 func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 	imports := make([]*fileImport, len(imps))
 	fn := false
@@ -859,17 +862,6 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		Type:       nodeData.Node,
 	})
 
-	result.TSInterfaces = append(result.TSInterfaces, &interfaceType{
-		Name: fmt.Sprintf("%sQueryArgs", nodeData.Node),
-		Fields: []*interfaceField{
-			{
-				Name:      "id",
-				Type:      "ID",
-				UseImport: true,
-			},
-		},
-	})
-
 	instance := nodeData.NodeInstance
 
 	fieldInfo := nodeData.FieldInfo
@@ -890,11 +882,17 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 	}
 
 	for _, field := range fieldInfo.GraphQLFields() {
+		gqlName := field.GetGraphQLName()
 		gqlField := &fieldType{
-			Name:               field.GetGraphQLName(),
-			HasResolveFunction: field.GetGraphQLName() != field.TsFieldName(),
+			Name:               gqlName,
+			HasResolveFunction: gqlName != field.TsFieldName(),
 			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false)),
 		}
+		if gqlName == "id" {
+			// special case, we want to return the base64 encoded id instead of uuid or something
+			gqlField.ResolverMethod = "nodeIDEncoder"
+		}
+
 		if gqlField.HasResolveFunction {
 			gqlField.FunctionContents = fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())
 		}
@@ -1116,6 +1114,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionP
 		},
 	}
 
+	// this is here but it's probably better in buildActionFieldConfig
 	if action.HasInput(a) {
 		result.Imports = append(result.Imports, &fileImport{
 			ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName())),
@@ -1321,6 +1320,7 @@ type fieldType struct {
 	Args         []*fieldConfigArg
 	// no args for now. come back.
 	FunctionContents string // TODO
+	ResolverMethod   string
 	// TODO more types we need to support
 }
 
@@ -1406,18 +1406,13 @@ type gqlRootData struct {
 }
 
 func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
-	var results []rootField
-	for key := range data.Schema.Nodes {
-
-		nodeData := data.Schema.Nodes[key].NodeData
-		if nodeData.HideFromGraphQL {
-			continue
-		}
-		results = append(results, rootField{
+	// add node query
+	results := []rootField{
+		{
+			Name:       "node",
+			Type:       "NodeQuery",
 			ImportPath: codepath.GetImportPathForExternalGQLFile(),
-			Type:       fmt.Sprintf("%sQuery", nodeData.Node),
-			Name:       strcase.ToLowerCamel(nodeData.Node),
-		})
+		},
 	}
 
 	for _, node := range s.customQueries {
@@ -1513,6 +1508,64 @@ func writeMutationFile(data *codegen.Data, s *gqlSchema) error {
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
 	}))
+}
+
+func buildNodeFieldConfig(data *codegen.Data, s *gqlSchema) *fieldConfig {
+	return &fieldConfig{
+		Exported: true,
+		Name:     "NodeQuery",
+		Arg:      "NodeQueryArgs",
+		// TODO change these...
+		TypeImports: []string{"GraphQLNodeInterface"},
+		Args: []*fieldConfigArg{
+			{
+				Name:    "id",
+				Imports: []string{"GraphQLNonNull", "GraphQLID"},
+			},
+		},
+		FunctionContents: []string{
+			"return resolveID(context.getViewer(), args.id);",
+		},
+	}
+}
+
+// marker interface that field_config.tmpl uses
+type importHelper interface {
+	ForeignImport(name string) bool
+}
+
+type nodeBaseObj struct{}
+
+// everything is foreign here
+func (n *nodeBaseObj) ForeignImport(name string) bool {
+	return true
+}
+
+func writeNodeQueryFile(data *codegen.Data, s *gqlSchema) error {
+	imps := tsimport.NewImports()
+	return file.Write(&file.TemplatedBasedFileWriter{
+		Data: struct {
+			FieldConfig *fieldConfig
+			BaseObj     *nodeBaseObj
+			Package     *codegen.ImportPackage
+		}{
+			buildNodeFieldConfig(data, s),
+			&nodeBaseObj{},
+			data.CodePath.GetImportPackage(),
+		},
+		CreateDirIfNeeded: true,
+		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/node.tmpl"),
+		TemplateName:      "node.tmpl",
+		OtherTemplateFiles: []string{
+			util.GetAbsolutePath("ts_templates/field_config.tmpl"),
+			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
+		},
+		// TODO write once...
+		PathToFile:   getNodeTypeFilePath(),
+		FormatSource: true,
+		TsImports:    imps,
+		FuncMap:      imps.FuncMap(),
+	})
 }
 
 func writeTSSchemaFile(data *codegen.Data, s *gqlSchema) error {

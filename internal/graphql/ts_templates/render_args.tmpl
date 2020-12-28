@@ -1,0 +1,17 @@
+{{if .Args -}}
+  {{$dict := . -}}
+  {{$base := .Base -}}
+  args: {
+    {{range $arg := .Args -}}
+      {{$arg.Name}}: {
+        description: "{{$arg.Description}}",
+        {{ range $import := .Imports -}}
+          {{ if $base.ForeignImport $import -}}
+            {{$ignored := useImport $import -}}
+          {{end -}}
+        {{ end -}}
+        type: {{$arg.FieldType -}},
+      },
+    {{end -}}
+  },
+{{end -}}

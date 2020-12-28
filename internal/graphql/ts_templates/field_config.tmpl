@@ -1,0 +1,44 @@
+{{$fieldConfig := .FieldConfig -}}
+{{$baseObj := .Base -}}
+
+{{$prefix := printf "const %s" $fieldConfig.Name -}}
+{{ if $fieldConfig.Exported -}}
+  {{$prefix = printf "export %s" $prefix -}}
+{{end -}}
+
+{{ range $import := $fieldConfig.TypeImports -}}
+  {{ if $baseObj.ForeignImport $import -}}
+    {{ $ignored := useImport $import -}}
+  {{ end -}}
+{{ end -}}
+{{ range $import := $fieldConfig.ArgImports -}}
+  {{ if $baseObj.ForeignImport $import -}}
+    {{ $ignored := useImport $import -}}
+  {{ end -}}
+{{ end -}}
+
+{{$prefix}}: {{useImport "GraphQLFieldConfig"}}<
+  undefined,
+  {{useImport "RequestContext"}},
+  {{$fieldConfig.Arg}}
+> = {
+  type: {{$fieldConfig.FieldType}},
+  {{ template "render_args.tmpl" (dict "Base" $baseObj "Args" $fieldConfig.Args) -}}
+  {{if $fieldConfig.ReturnTypeHint -}}
+    {{ if $fieldConfig.ResolveMethodArg -}}
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+    {{ else -}}
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+    {{end -}}
+  {{ else -}}
+    {{ if $fieldConfig.ResolveMethodArg -}}
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+    {{else -}}
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
+    {{end -}}
+  {{ end -}}
+    {{range $line := $fieldConfig.FunctionContents -}}
+      {{ $line }}
+    {{end -}}
+  },
+};

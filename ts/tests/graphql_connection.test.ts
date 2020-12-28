@@ -4,23 +4,13 @@ import { AssocEdge } from "../src/core/ent";
 import { QueryRecorder } from "../src/testutils/db_mock";
 import { advanceBy } from "jest-date-mock";
 import {
-  createUser,
   FakeUser,
-  UserCreateInput,
   UserToContactsQuery,
-  ContactCreateInput,
   FakeContact,
-  getContactBuilder,
   EdgeType,
   getUserBuilder,
-  getEventBuilder,
-  EventCreateInput,
-  SymmetricEdges,
-  InverseEdges,
   UserToFriendsQuery,
   FakeEvent,
-  UserToEventsAttendingQuery,
-  EventToHostsQuery,
   EventToInvitedQuery,
 } from "./fake_data/";
 import {
@@ -28,15 +18,10 @@ import {
   getUserInput,
   createTestUser,
   createAllContacts,
-  verifyUserToContactEdges,
-  verifyUserToContacts,
   createEdges,
   createTestEvent,
 } from "./fake_data/test_helpers";
 import { GraphQLEdgeConnection } from "../src/graphql/query/edge_connection";
-import { ProvidedRequiredArgumentsOnDirectivesRule } from "graphql/validation/rules/ProvidedRequiredArgumentsRule";
-import { isExportDeclaration } from "typescript";
-import { testEnvironment } from "../jest.config";
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 

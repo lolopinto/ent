@@ -1,4 +1,5 @@
 import { ID, Ent, Viewer, loadEnt } from "../core/ent";
+import { GraphQLFieldResolver } from "graphql";
 
 interface Node {
   id: ID;
@@ -33,12 +34,13 @@ export class EntNodeResolver implements NodeResolver {
     return parts[2];
   }
 
-  mustDecode(id: string): ID {
-    const decoded = this.decode(id);
-    if (!decoded) {
+  mustDecode(id: string): [ID, string] {
+    const decoded = Buffer.from(id, "base64").toString("ascii");
+    let parts = decoded.split(":");
+    if (parts.length != 3) {
       throw new Error(`invalid id ${id} passed to EntNodeResolver`);
     }
-    return decoded;
+    return [parts[0], parts[1]];
   }
 
   async decodeObj(viewer: Viewer, id: string): Promise<Node | null> {
@@ -72,3 +74,16 @@ export async function resolveID(
   }
   return null;
 }
+
+// this takes an in and uses the default node resolver which
+// should have been registered as part of entcodegen and decodes
+export const nodeIDEncoder: GraphQLFieldResolver<Ent, {}> = (
+  source: Ent,
+  args: {},
+) => {
+  const r = resolvers.get("entNode");
+  if (!r) {
+    throw new Error(`cannot resolve id when entNode not previously registered`);
+  }
+  return r.encode(source);
+};

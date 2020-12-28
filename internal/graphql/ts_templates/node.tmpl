@@ -1,0 +1,17 @@
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
+{{reserveImport .Package.PackagePath "ID" "RequestContext" }}
+{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "registerResolver" "EntNodeResolver" "resolveID" "nodeIDEncoder"}}
+{{reserveImport "src/ent/loadAny" "loadEntByType"}}
+{{reserveImport "src/ent" "NodeType" "ID"}}
+
+interface NodeQueryArgs {
+  id: ID;
+}
+
+const resolver = new {{useImport "EntNodeResolver"}}({{useImport "loadEntByType"}});
+{{useImport "registerResolver"}}("entNode", resolver);
+{{/* lesigh done in golang */ -}}
+{{useImport "resolveID"}}
+
+{{ template "field_config.tmpl" (dict "Base" .BaseObj "FieldConfig" .FieldConfig) -}}
+
