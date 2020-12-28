@@ -29,4 +29,6 @@ export {
   clearResolvers,
   resolveID,
   nodeIDEncoder,
+  mustDecodeIDFromGQLID,
+  encodeGQLID,
 } from "./node_resolver";

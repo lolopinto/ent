@@ -77,7 +77,7 @@ beforeEach(async () => {
 async function testObj(ent: Ent, vc?: Viewer) {
   const resolver = new EntNodeResolver(loadEntByType);
   const encodedID = resolver.encode(ent);
-  const decodedID = resolver.decode(encodedID);
+  const decodedID = EntNodeResolver.decode(encodedID);
   expect(decodedID).toEqual(ent.id);
 
   vc = vc || new IDViewer(ent.id);
@@ -166,16 +166,6 @@ class SearchResultResolver implements NodeResolver {
   encode(result: SearchResult) {
     const str = `searchResult:${result.data.context}:${result.id}`;
     return Buffer.from(str, "ascii").toString("base64");
-  }
-
-  // TODO do we even need this?
-  decode(id: string): ID | null {
-    const decoded = Buffer.from(id, "base64").toString("ascii");
-    let parts = decoded.split(":");
-    if (parts.length != 3) {
-      return null;
-    }
-    return parts[2];
   }
 
   async decodeObj(viewer: Viewer, id: string) {
