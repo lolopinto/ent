@@ -15,6 +15,8 @@ import {
   expectMutation,
 } from "./index";
 
+import { GraphQLNodeInterface } from "@lolopinto/ent/graphql";
+
 test("simplest query", async () => {
   let schema = new GraphQLSchema({
     query: new GraphQLObjectType({
@@ -40,7 +42,11 @@ test("simplest query", async () => {
   await expectQueryFromRoot(cfg, ["", "world"]);
 });
 
-interface Address {
+interface Node {
+  id: string;
+}
+
+class Address implements Node {
   id: string;
   street: string;
   city: string;
@@ -49,7 +55,7 @@ interface Address {
   apartment?: string | null;
 }
 
-interface User {
+class User implements Node {
   id: string;
   firstName: string;
   lastName: string;
@@ -57,7 +63,7 @@ interface User {
   contacts?({ first: number }): Contact[];
 }
 
-interface Contact {
+class Contact implements Node {
   id: string;
   firstName: string;
   lastName: string;
@@ -89,11 +95,10 @@ export const names: Partial<Pick<Contact, "firstName" | "lastName">>[] = [
 ];
 
 function getUser(id: string): User {
-  let result: User = {
-    id,
-    firstName: "Jon",
-    lastName: "Snow",
-  };
+  let result = new User();
+  result.id = id;
+  result.firstName = "Jon";
+  result.lastName = "Snow";
 
   let num = parseInt(id, 0) || 0;
   if (num % 2 == 0) {
@@ -126,10 +131,11 @@ function getUser(id: string): User {
 }
 
 function editUser(id: string, user: Partial<User>): User {
-  return {
-    ...getUser(id),
-    ...user,
-  };
+  let result = getUser(id);
+  for (const k in user) {
+    result[k] = user[k];
+  }
+  return result;
 }
 
 let addressType = new GraphQLObjectType({
@@ -154,6 +160,7 @@ let addressType = new GraphQLObjectType({
       type: GraphQLString,
     },
   },
+  interfaces: [GraphQLNodeInterface],
 });
 
 let contactType = new GraphQLObjectType({
@@ -175,6 +182,7 @@ let contactType = new GraphQLObjectType({
       type: GraphQLString,
     },
   },
+  interfaces: [GraphQLNodeInterface],
 });
 
 let userType = new GraphQLObjectType({
@@ -200,6 +208,11 @@ let userType = new GraphQLObjectType({
         },
       },
     },
+  },
+  interfaces: [GraphQLNodeInterface],
+  isTypeOf(obj, context) {
+    const isUser = obj instanceof User;
+    return context.async ? Promise.resolve(isUser) : isUser;
   },
 });
 
@@ -677,4 +690,45 @@ test("undefinedQueryPaths", async () => {
     ["lastName", "Snow"],
     ["contacts(first: 0)[0].firstName", undefined],
   );
+});
+
+test("inline fragments", async () => {
+  let rootQuery = new GraphQLObjectType({
+    name: "RootQueryType",
+    fields: {
+      node: {
+        args: {
+          id: {
+            type: GraphQLNonNull(GraphQLID),
+          },
+        },
+        type: GraphQLNodeInterface,
+        resolve(_source, { id }) {
+          return getUser(id);
+        },
+      },
+    },
+  });
+
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+    types: [userType, contactType, addressType],
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "10",
+    },
+    root: "node",
+  };
+
+  await expectQueryFromRoot(cfg, [
+    "...on User",
+    {
+      id: "10",
+      firstName: "Jon",
+      lastName: "Snow",
+    },
+  ]);
 });

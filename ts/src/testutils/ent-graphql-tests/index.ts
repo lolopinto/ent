@@ -1,8 +1,10 @@
+// NB: this is copied from ent-graphql-tests package until I have time to figure out how to share code here effectively
+// the circular dependencies btw this package and ent-graphql-tests seems to imply something needs to change
 import express, { Express } from "express";
 import { graphqlHTTP } from "express-graphql";
-import { Viewer } from "@lolopinto/ent";
+import { Viewer } from "../../core/ent";
 import { GraphQLSchema, GraphQLObjectType } from "graphql";
-import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
+import { buildContext, registerAuthHandler } from "../../auth";
 import { IncomingMessage, ServerResponse } from "http";
 import supertest from "supertest";
 
