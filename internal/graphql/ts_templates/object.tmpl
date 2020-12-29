@@ -1,6 +1,6 @@
 {{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
 {{reserveImport .Package.PackagePath "ID" "RequestContext" }}
-{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "nodeIDEncoder" "resolveID"}}
+{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "nodeIDEncoder" "resolveID" "mustDecodeIDFromGQLID" "encodeGQLID" }}
 
 {{$baseObj := . -}}
 
@@ -79,6 +79,13 @@
         {{useImport $interface}},
       {{end -}}
     ],
+    {{end -}}
+    {{if .IsTypeOfMethod -}}
+      isTypeOf(obj) {
+        {{ range $line := .IsTypeOfMethod -}}
+          {{$line}}
+        {{ end -}}
+      },
     {{end -}}
   });
   
