@@ -18,7 +18,7 @@ import CreateEventAction, {
   EventCreateInput,
 } from "src/ent/event/actions/create_event_action";
 
-interface EventCreateResponse {
+interface EventCreatePayload {
   event: Event;
 }
 
@@ -43,9 +43,9 @@ export const EventCreateInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const EventCreateResponseType = new GraphQLObjectType({
-  name: "EventCreateResponse",
-  fields: (): GraphQLFieldConfigMap<EventCreateResponse, RequestContext> => ({
+export const EventCreatePayloadType = new GraphQLObjectType({
+  name: "EventCreatePayload",
+  fields: (): GraphQLFieldConfigMap<EventCreatePayload, RequestContext> => ({
     event: {
       type: GraphQLNonNull(EventType),
     },
@@ -57,7 +57,7 @@ export const EventCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: EventCreateInput }
 > = {
-  type: GraphQLNonNull(EventCreateResponseType),
+  type: GraphQLNonNull(EventCreatePayloadType),
   args: {
     input: {
       description: "",
@@ -69,7 +69,7 @@ export const EventCreateType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<EventCreateResponse> => {
+  ): Promise<EventCreatePayload> => {
     let event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
       creatorID: input.creatorID,

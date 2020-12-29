@@ -11,8 +11,8 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
-import { GraphQLTime } from "@lolopinto/ent/graphql";
+import { RequestContext } from "@lolopinto/ent";
+import { GraphQLTime, mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Event } from "src/ent/";
 import { EventType } from "src/graphql/resolvers/";
 import EditEventAction, {
@@ -20,10 +20,10 @@ import EditEventAction, {
 } from "src/ent/event/actions/edit_event_action";
 
 interface customEventEditInput extends EventEditInput {
-  eventID: ID;
+  eventID: string;
 }
 
-interface EventEditResponse {
+interface EventEditPayload {
   event: Event;
 }
 
@@ -51,9 +51,9 @@ export const EventEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const EventEditResponseType = new GraphQLObjectType({
-  name: "EventEditResponse",
-  fields: (): GraphQLFieldConfigMap<EventEditResponse, RequestContext> => ({
+export const EventEditPayloadType = new GraphQLObjectType({
+  name: "EventEditPayload",
+  fields: (): GraphQLFieldConfigMap<EventEditPayload, RequestContext> => ({
     event: {
       type: GraphQLNonNull(EventType),
     },
@@ -65,7 +65,7 @@ export const EventEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventEditInput }
 > = {
-  type: GraphQLNonNull(EventEditResponseType),
+  type: GraphQLNonNull(EventEditPayloadType),
   args: {
     input: {
       description: "",
@@ -77,10 +77,10 @@ export const EventEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<EventEditResponse> => {
+  ): Promise<EventEditPayload> => {
     let event = await EditEventAction.saveXFromID(
       context.getViewer(),
-      input.eventID,
+      mustDecodeIDFromGQLID(input.eventID),
       {
         name: input.name,
         startTime: input.startTime,

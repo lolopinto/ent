@@ -17,7 +17,7 @@ import CreateAddressAction, {
   AddressCreateInput,
 } from "src/ent/address/actions/create_address_action";
 
-interface AddressCreateResponse {
+interface AddressCreatePayload {
   address: Address;
 }
 
@@ -45,9 +45,9 @@ export const AddressCreateInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const AddressCreateResponseType = new GraphQLObjectType({
-  name: "AddressCreateResponse",
-  fields: (): GraphQLFieldConfigMap<AddressCreateResponse, RequestContext> => ({
+export const AddressCreatePayloadType = new GraphQLObjectType({
+  name: "AddressCreatePayload",
+  fields: (): GraphQLFieldConfigMap<AddressCreatePayload, RequestContext> => ({
     address: {
       type: GraphQLNonNull(AddressType),
     },
@@ -59,7 +59,7 @@ export const AddressCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: AddressCreateInput }
 > = {
-  type: GraphQLNonNull(AddressCreateResponseType),
+  type: GraphQLNonNull(AddressCreatePayloadType),
   args: {
     input: {
       description: "",
@@ -71,7 +71,7 @@ export const AddressCreateType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<AddressCreateResponse> => {
+  ): Promise<AddressCreatePayload> => {
     let address = await CreateAddressAction.create(context.getViewer(), {
       streetName: input.streetName,
       city: input.city,

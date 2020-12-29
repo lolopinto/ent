@@ -5,18 +5,12 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
-  GraphQLFieldConfig,
   GraphQLFieldConfigMap,
-  GraphQLResolveInfo,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
-import { GraphQLNodeInterface } from "@lolopinto/ent/graphql";
+import { RequestContext } from "@lolopinto/ent";
+import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
 import { UserType } from "src/graphql/resolvers/";
 import { Contact } from "src/ent/";
-
-interface ContactQueryArgs {
-  id: ID;
-}
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",
@@ -29,6 +23,7 @@ export const ContactType = new GraphQLObjectType({
     },
     id: {
       type: GraphQLNonNull(GraphQLID),
+      resolve: nodeIDEncoder,
     },
     emailAddress: {
       type: GraphQLNonNull(GraphQLString),
@@ -44,26 +39,7 @@ export const ContactType = new GraphQLObjectType({
     },
   }),
   interfaces: [GraphQLNodeInterface],
+  isTypeOf(obj) {
+    return obj instanceof Contact;
+  },
 });
-
-export const ContactQuery: GraphQLFieldConfig<
-  undefined,
-  RequestContext,
-  ContactQueryArgs
-> = {
-  type: ContactType,
-  args: {
-    id: {
-      description: "",
-      type: GraphQLNonNull(GraphQLID),
-    },
-  },
-  resolve: async (
-    _source,
-    args: ContactQueryArgs,
-    context: RequestContext,
-    _info: GraphQLResolveInfo,
-  ) => {
-    return Contact.load(context.getViewer(), args.id);
-  },
-};

@@ -5,23 +5,18 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
-  GraphQLFieldConfig,
   GraphQLFieldConfigMap,
-  GraphQLResolveInfo,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
-import { GraphQLNodeInterface } from "@lolopinto/ent/graphql";
+import { RequestContext } from "@lolopinto/ent";
+import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
 import { Address } from "src/ent/";
-
-interface AddressQueryArgs {
-  id: ID;
-}
 
 export const AddressType = new GraphQLObjectType({
   name: "Address",
   fields: (): GraphQLFieldConfigMap<Address, RequestContext> => ({
     id: {
       type: GraphQLNonNull(GraphQLID),
+      resolve: nodeIDEncoder,
     },
     streetName: {
       type: GraphQLNonNull(GraphQLString),
@@ -43,26 +38,7 @@ export const AddressType = new GraphQLObjectType({
     },
   }),
   interfaces: [GraphQLNodeInterface],
+  isTypeOf(obj) {
+    return obj instanceof Address;
+  },
 });
-
-export const AddressQuery: GraphQLFieldConfig<
-  undefined,
-  RequestContext,
-  AddressQueryArgs
-> = {
-  type: AddressType,
-  args: {
-    id: {
-      description: "",
-      type: GraphQLNonNull(GraphQLID),
-    },
-  },
-  resolve: async (
-    _source,
-    args: AddressQueryArgs,
-    context: RequestContext,
-    _info: GraphQLResolveInfo,
-  ) => {
-    return Address.load(context.getViewer(), args.id);
-  },
-};

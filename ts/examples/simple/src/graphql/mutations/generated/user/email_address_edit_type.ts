@@ -11,7 +11,8 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
+import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { User } from "src/ent/";
 import { UserType } from "src/graphql/resolvers/";
 import EditEmailAddressAction, {
@@ -19,10 +20,10 @@ import EditEmailAddressAction, {
 } from "src/ent/user/actions/edit_email_address_action";
 
 interface customEmailAddressEditInput extends EditEmailAddressInput {
-  userID: ID;
+  userID: string;
 }
 
-interface EmailAddressEditResponse {
+interface EmailAddressEditPayload {
   user: User;
 }
 
@@ -38,10 +39,10 @@ export const EmailAddressEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const EmailAddressEditResponseType = new GraphQLObjectType({
-  name: "EmailAddressEditResponse",
+export const EmailAddressEditPayloadType = new GraphQLObjectType({
+  name: "EmailAddressEditPayload",
   fields: (): GraphQLFieldConfigMap<
-    EmailAddressEditResponse,
+    EmailAddressEditPayload,
     RequestContext
   > => ({
     user: {
@@ -55,7 +56,7 @@ export const EmailAddressEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEmailAddressEditInput }
 > = {
-  type: GraphQLNonNull(EmailAddressEditResponseType),
+  type: GraphQLNonNull(EmailAddressEditPayloadType),
   args: {
     input: {
       description: "",
@@ -67,10 +68,10 @@ export const EmailAddressEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<EmailAddressEditResponse> => {
+  ): Promise<EmailAddressEditPayload> => {
     let user = await EditEmailAddressAction.saveXFromID(
       context.getViewer(),
-      input.userID,
+      mustDecodeIDFromGQLID(input.userID),
       {
         newEmail: input.newEmail,
       },

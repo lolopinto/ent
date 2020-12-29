@@ -11,7 +11,8 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
+import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Contact } from "src/ent/";
 import { ContactType } from "src/graphql/resolvers/";
 import EditContactAction, {
@@ -19,10 +20,10 @@ import EditContactAction, {
 } from "src/ent/contact/actions/edit_contact_action";
 
 interface customContactEditInput extends ContactEditInput {
-  contactID: ID;
+  contactID: string;
 }
 
-interface ContactEditResponse {
+interface ContactEditPayload {
   contact: Contact;
 }
 
@@ -47,9 +48,9 @@ export const ContactEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const ContactEditResponseType = new GraphQLObjectType({
-  name: "ContactEditResponse",
-  fields: (): GraphQLFieldConfigMap<ContactEditResponse, RequestContext> => ({
+export const ContactEditPayloadType = new GraphQLObjectType({
+  name: "ContactEditPayload",
+  fields: (): GraphQLFieldConfigMap<ContactEditPayload, RequestContext> => ({
     contact: {
       type: GraphQLNonNull(ContactType),
     },
@@ -61,7 +62,7 @@ export const ContactEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customContactEditInput }
 > = {
-  type: GraphQLNonNull(ContactEditResponseType),
+  type: GraphQLNonNull(ContactEditPayloadType),
   args: {
     input: {
       description: "",
@@ -73,10 +74,10 @@ export const ContactEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<ContactEditResponse> => {
+  ): Promise<ContactEditPayload> => {
     let contact = await EditContactAction.saveXFromID(
       context.getViewer(),
-      input.contactID,
+      mustDecodeIDFromGQLID(input.contactID),
       {
         emailAddress: input.emailAddress,
         firstName: input.firstName,

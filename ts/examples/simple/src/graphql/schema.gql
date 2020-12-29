@@ -1,19 +1,6 @@
 type Query {
-  address(id: ID!): Address
-  contact(id: ID!): Contact
-  event(id: ID!): Event
-  user(id: ID!): User
+  node(id: ID!): Node
   viewer: Viewer!
-}
-
-type Address implements Node {
-  id: ID!
-  streetName: String!
-  city: String!
-  state: String!
-  zip: String!
-  apartment: String
-  country: String!
 }
 
 """node interface"""
@@ -21,13 +8,9 @@ interface Node {
   id: ID!
 }
 
-type Contact implements Node {
+type Viewer {
+  viewerID: ID
   user: User
-  id: ID!
-  emailAddress: String!
-  firstName: String!
-  lastName: String!
-  fullName: String!
 }
 
 type User implements Node {
@@ -175,6 +158,15 @@ type UserToFriendsEdge implements Edge {
   cursor: String!
 }
 
+type Contact implements Node {
+  user: User
+  id: ID!
+  emailAddress: String!
+  firstName: String!
+  lastName: String!
+  fullName: String!
+}
+
 type UserToHostedEventsConnection implements Connection {
   edges: [UserToHostedEventsEdge!]!
   nodes: [Event!]!
@@ -235,33 +227,38 @@ type UserToMaybeEventsEdge implements Edge {
   cursor: String!
 }
 
-type Viewer {
-  viewerID: ID
-  user: User
-}
-
 type Mutation {
-  addressCreate(input: AddressCreateInput!): AddressCreateResponse!
-  confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditResponse!
-  confirmPhoneNumberEdit(input: ConfirmPhoneNumberEditInput!): ConfirmPhoneNumberEditResponse!
-  contactCreate(input: ContactCreateInput!): ContactCreateResponse!
-  contactDelete(input: ContactDeleteInput!): ContactDeleteResponse!
-  contactEdit(input: ContactEditInput!): ContactEditResponse!
-  emailAddressEdit(input: EmailAddressEditInput!): EmailAddressEditResponse!
-  eventAddHost(input: EventAddHostInput!): EventAddHostResponse!
-  eventCreate(input: EventCreateInput!): EventCreateResponse!
-  eventDelete(input: EventDeleteInput!): EventDeleteResponse!
-  eventEdit(input: EventEditInput!): EventEditResponse!
-  phoneNumberEdit(input: PhoneNumberEditInput!): PhoneNumberEditResponse!
+  addressCreate(input: AddressCreateInput!): AddressCreatePayload!
+  confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditPayload!
+  confirmPhoneNumberEdit(input: ConfirmPhoneNumberEditInput!): ConfirmPhoneNumberEditPayload!
+  contactCreate(input: ContactCreateInput!): ContactCreatePayload!
+  contactDelete(input: ContactDeleteInput!): ContactDeletePayload!
+  contactEdit(input: ContactEditInput!): ContactEditPayload!
+  emailAddressEdit(input: EmailAddressEditInput!): EmailAddressEditPayload!
+  eventAddHost(input: EventAddHostInput!): EventAddHostPayload!
+  eventCreate(input: EventCreateInput!): EventCreatePayload!
+  eventDelete(input: EventDeleteInput!): EventDeletePayload!
+  eventEdit(input: EventEditInput!): EventEditPayload!
+  phoneNumberEdit(input: PhoneNumberEditInput!): PhoneNumberEditPayload!
   userAuth(input: UserAuthInput!): UserAuthResponse!
   userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTResponse!
-  userCreate(input: UserCreateInput!): UserCreateResponse!
-  userDelete(input: UserDeleteInput!): UserDeleteResponse!
-  userEdit(input: UserEditInput!): UserEditResponse!
+  userCreate(input: UserCreateInput!): UserCreatePayload!
+  userDelete(input: UserDeleteInput!): UserDeletePayload!
+  userEdit(input: UserEditInput!): UserEditPayload!
 }
 
-type AddressCreateResponse {
+type AddressCreatePayload {
   address: Address!
+}
+
+type Address implements Node {
+  id: ID!
+  streetName: String!
+  city: String!
+  state: String!
+  zip: String!
+  apartment: String
+  country: String!
 }
 
 input AddressCreateInput {
@@ -273,7 +270,7 @@ input AddressCreateInput {
   country: String
 }
 
-type ConfirmEmailAddressEditResponse {
+type ConfirmEmailAddressEditPayload {
   user: User!
 }
 
@@ -283,7 +280,7 @@ input ConfirmEmailAddressEditInput {
   code: String!
 }
 
-type ConfirmPhoneNumberEditResponse {
+type ConfirmPhoneNumberEditPayload {
   user: User!
 }
 
@@ -293,7 +290,7 @@ input ConfirmPhoneNumberEditInput {
   code: String!
 }
 
-type ContactCreateResponse {
+type ContactCreatePayload {
   contact: Contact!
 }
 
@@ -304,7 +301,7 @@ input ContactCreateInput {
   userID: String!
 }
 
-type ContactDeleteResponse {
+type ContactDeletePayload {
   deletedContactID: ID
 }
 
@@ -312,7 +309,7 @@ input ContactDeleteInput {
   contactID: ID!
 }
 
-type ContactEditResponse {
+type ContactEditPayload {
   contact: Contact!
 }
 
@@ -324,7 +321,7 @@ input ContactEditInput {
   userID: String
 }
 
-type EmailAddressEditResponse {
+type EmailAddressEditPayload {
   user: User!
 }
 
@@ -333,7 +330,7 @@ input EmailAddressEditInput {
   newEmail: String!
 }
 
-type EventAddHostResponse {
+type EventAddHostPayload {
   event: Event!
 }
 
@@ -342,7 +339,7 @@ input EventAddHostInput {
   hostID: ID!
 }
 
-type EventCreateResponse {
+type EventCreatePayload {
   event: Event!
 }
 
@@ -354,7 +351,7 @@ input EventCreateInput {
   eventLocation: String!
 }
 
-type EventDeleteResponse {
+type EventDeletePayload {
   deletedEventID: ID
 }
 
@@ -362,7 +359,7 @@ input EventDeleteInput {
   eventID: ID!
 }
 
-type EventEditResponse {
+type EventEditPayload {
   event: Event!
 }
 
@@ -375,7 +372,7 @@ input EventEditInput {
   eventLocation: String
 }
 
-type PhoneNumberEditResponse {
+type PhoneNumberEditPayload {
   user: User!
 }
 
@@ -404,7 +401,7 @@ input UserAuthJWTInput {
   password: String!
 }
 
-type UserCreateResponse {
+type UserCreatePayload {
   user: User!
 }
 
@@ -416,7 +413,7 @@ input UserCreateInput {
   password: String!
 }
 
-type UserDeleteResponse {
+type UserDeletePayload {
   deletedUserID: ID
 }
 
@@ -424,7 +421,7 @@ input UserDeleteInput {
   userID: ID!
 }
 
-type UserEditResponse {
+type UserEditPayload {
   user: User!
 }
 

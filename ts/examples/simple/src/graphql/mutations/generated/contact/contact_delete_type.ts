@@ -10,16 +10,17 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
+import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Contact } from "src/ent/";
 import DeleteContactAction from "src/ent/contact/actions/delete_contact_action";
 
 interface customContactDeleteInput {
-  contactID: ID;
+  contactID: string;
 }
 
-interface ContactDeleteResponse {
-  deletedContactID: ID;
+interface ContactDeletePayload {
+  deletedContactID: string;
 }
 
 export const ContactDeleteInputType = new GraphQLInputObjectType({
@@ -31,9 +32,9 @@ export const ContactDeleteInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const ContactDeleteResponseType = new GraphQLObjectType({
-  name: "ContactDeleteResponse",
-  fields: (): GraphQLFieldConfigMap<ContactDeleteResponse, RequestContext> => ({
+export const ContactDeletePayloadType = new GraphQLObjectType({
+  name: "ContactDeletePayload",
+  fields: (): GraphQLFieldConfigMap<ContactDeletePayload, RequestContext> => ({
     deletedContactID: {
       type: GraphQLID,
     },
@@ -45,7 +46,7 @@ export const ContactDeleteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customContactDeleteInput }
 > = {
-  type: GraphQLNonNull(ContactDeleteResponseType),
+  type: GraphQLNonNull(ContactDeletePayloadType),
   args: {
     input: {
       description: "",
@@ -57,8 +58,11 @@ export const ContactDeleteType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<ContactDeleteResponse> => {
-    await DeleteContactAction.saveXFromID(context.getViewer(), input.contactID);
+  ): Promise<ContactDeletePayload> => {
+    await DeleteContactAction.saveXFromID(
+      context.getViewer(),
+      mustDecodeIDFromGQLID(input.contactID),
+    );
     return { deletedContactID: input.contactID };
   },
 };

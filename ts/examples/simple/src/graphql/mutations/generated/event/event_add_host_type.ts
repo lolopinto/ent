@@ -10,17 +10,18 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
+import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Event } from "src/ent/";
 import { EventType } from "src/graphql/resolvers/";
 import EventAddHostAction from "src/ent/event/actions/event_add_host_action";
 
 interface customEventAddHostInput {
-  eventID: ID;
-  hostID: ID;
+  eventID: string;
+  hostID: string;
 }
 
-interface EventAddHostResponse {
+interface EventAddHostPayload {
   event: Event;
 }
 
@@ -36,9 +37,9 @@ export const EventAddHostInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const EventAddHostResponseType = new GraphQLObjectType({
-  name: "EventAddHostResponse",
-  fields: (): GraphQLFieldConfigMap<EventAddHostResponse, RequestContext> => ({
+export const EventAddHostPayloadType = new GraphQLObjectType({
+  name: "EventAddHostPayload",
+  fields: (): GraphQLFieldConfigMap<EventAddHostPayload, RequestContext> => ({
     event: {
       type: GraphQLNonNull(EventType),
     },
@@ -50,7 +51,7 @@ export const EventAddHostType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventAddHostInput }
 > = {
-  type: GraphQLNonNull(EventAddHostResponseType),
+  type: GraphQLNonNull(EventAddHostPayloadType),
   args: {
     input: {
       description: "",
@@ -62,11 +63,11 @@ export const EventAddHostType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<EventAddHostResponse> => {
+  ): Promise<EventAddHostPayload> => {
     let event = await EventAddHostAction.saveXFromID(
       context.getViewer(),
-      input.eventID,
-      input.hostID,
+      mustDecodeIDFromGQLID(input.eventID),
+      mustDecodeIDFromGQLID(input.hostID),
     );
     return { event: event };
   },

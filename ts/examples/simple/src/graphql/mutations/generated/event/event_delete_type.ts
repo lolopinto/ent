@@ -10,16 +10,17 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
+import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Event } from "src/ent/";
 import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
 interface customEventDeleteInput {
-  eventID: ID;
+  eventID: string;
 }
 
-interface EventDeleteResponse {
-  deletedEventID: ID;
+interface EventDeletePayload {
+  deletedEventID: string;
 }
 
 export const EventDeleteInputType = new GraphQLInputObjectType({
@@ -31,9 +32,9 @@ export const EventDeleteInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const EventDeleteResponseType = new GraphQLObjectType({
-  name: "EventDeleteResponse",
-  fields: (): GraphQLFieldConfigMap<EventDeleteResponse, RequestContext> => ({
+export const EventDeletePayloadType = new GraphQLObjectType({
+  name: "EventDeletePayload",
+  fields: (): GraphQLFieldConfigMap<EventDeletePayload, RequestContext> => ({
     deletedEventID: {
       type: GraphQLID,
     },
@@ -45,7 +46,7 @@ export const EventDeleteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customEventDeleteInput }
 > = {
-  type: GraphQLNonNull(EventDeleteResponseType),
+  type: GraphQLNonNull(EventDeletePayloadType),
   args: {
     input: {
       description: "",
@@ -57,8 +58,11 @@ export const EventDeleteType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<EventDeleteResponse> => {
-    await DeleteEventAction.saveXFromID(context.getViewer(), input.eventID);
+  ): Promise<EventDeletePayload> => {
+    await DeleteEventAction.saveXFromID(
+      context.getViewer(),
+      mustDecodeIDFromGQLID(input.eventID),
+    );
     return { deletedEventID: input.eventID };
   },
 };

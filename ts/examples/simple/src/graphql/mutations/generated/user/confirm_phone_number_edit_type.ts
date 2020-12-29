@@ -11,7 +11,8 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
+import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { User } from "src/ent/";
 import { UserType } from "src/graphql/resolvers/";
 import ConfirmEditPhoneNumberAction, {
@@ -20,10 +21,10 @@ import ConfirmEditPhoneNumberAction, {
 
 interface customConfirmPhoneNumberEditInput
   extends ConfirmEditPhoneNumberInput {
-  userID: ID;
+  userID: string;
 }
 
-interface ConfirmPhoneNumberEditResponse {
+interface ConfirmPhoneNumberEditPayload {
   user: User;
 }
 
@@ -42,10 +43,10 @@ export const ConfirmPhoneNumberEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const ConfirmPhoneNumberEditResponseType = new GraphQLObjectType({
-  name: "ConfirmPhoneNumberEditResponse",
+export const ConfirmPhoneNumberEditPayloadType = new GraphQLObjectType({
+  name: "ConfirmPhoneNumberEditPayload",
   fields: (): GraphQLFieldConfigMap<
-    ConfirmPhoneNumberEditResponse,
+    ConfirmPhoneNumberEditPayload,
     RequestContext
   > => ({
     user: {
@@ -59,7 +60,7 @@ export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customConfirmPhoneNumberEditInput }
 > = {
-  type: GraphQLNonNull(ConfirmPhoneNumberEditResponseType),
+  type: GraphQLNonNull(ConfirmPhoneNumberEditPayloadType),
   args: {
     input: {
       description: "",
@@ -71,10 +72,10 @@ export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<ConfirmPhoneNumberEditResponse> => {
+  ): Promise<ConfirmPhoneNumberEditPayload> => {
     let user = await ConfirmEditPhoneNumberAction.saveXFromID(
       context.getViewer(),
-      input.userID,
+      mustDecodeIDFromGQLID(input.userID),
       {
         phoneNumber: input.phoneNumber,
         code: input.code,
