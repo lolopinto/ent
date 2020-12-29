@@ -1003,7 +1003,7 @@ func addConnection(nodeData *schema.NodeData, edge *edge.AssociationEdge, fields
 func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
 	return []*objectType{
 		buildActionInputNode(nodeData, action, actionPrefix),
-		buildActionResponseNode(nodeData, action, actionPrefix),
+		buildActionPayloadNode(nodeData, action, actionPrefix),
 	}
 }
 
@@ -1109,10 +1109,10 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 	return result
 }
 
-func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
-	node := fmt.Sprintf("%sResponse", actionPrefix)
+func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
+	node := fmt.Sprintf("%sPayload", actionPrefix)
 	result := &objectType{
-		Type:     fmt.Sprintf("%sResponseType", actionPrefix),
+		Type:     fmt.Sprintf("%sPayloadType", actionPrefix),
 		Node:     node,
 		TSType:   node,
 		Exported: true,
@@ -1166,7 +1166,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionP
 		result.TSInterfaces = []*interfaceType{
 			{
 				Exported: false,
-				Name:     fmt.Sprintf("%sResponse", actionPrefix),
+				Name:     fmt.Sprintf("%sPayload", actionPrefix),
 				Fields: []*interfaceField{
 					{
 						Name:      nodeData.NodeInstance,
@@ -1185,7 +1185,7 @@ func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionP
 		result.TSInterfaces = []*interfaceType{
 			{
 				Exported: false,
-				Name:     fmt.Sprintf("%sResponse", actionPrefix),
+				Name:     fmt.Sprintf("%sPayload", actionPrefix),
 				Fields: []*interfaceField{
 					{
 						Name: fmt.Sprintf("deleted%sID", nodeInfo.Node),
@@ -1232,7 +1232,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 		ResolveMethodArg: "{ input }",
 		TypeImports: []string{
 			"GraphQLNonNull",
-			fmt.Sprintf("%sResponseType", actionPrefix),
+			fmt.Sprintf("%sPayloadType", actionPrefix),
 		},
 		Args: []*fieldConfigArg{
 			{
@@ -1243,7 +1243,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 				},
 			},
 		},
-		ReturnTypeHint: fmt.Sprintf("Promise<%sResponse>", actionPrefix),
+		ReturnTypeHint: fmt.Sprintf("Promise<%sPayload>", actionPrefix),
 	}
 
 	if a.GetOperation() == ent.CreateAction {
