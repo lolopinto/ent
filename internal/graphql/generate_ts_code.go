@@ -1284,7 +1284,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 
 		result.FunctionContents = append(
 			result.FunctionContents,
-			fmt.Sprintf("return {deleted%sID: mustDecodeIDFromGQLID(input.%sID)};", nodeData.Node, nodeData.NodeInstance),
+			fmt.Sprintf("return {deleted%sID: input.%sID};", nodeData.Node, nodeData.NodeInstance),
 		)
 	} else {
 		// some kind of editing
