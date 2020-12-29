@@ -595,7 +595,7 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 						if nodeMap.HideFromGraphQL(edge) || edge.Unique {
 							continue
 						}
-						nodeType := fmt.Sprintf("%sType", nodeData.Node)
+						nodeType := fmt.Sprintf("%sType", edge.NodeInfo.Node)
 						conn := &gqlConnection{
 							Edge:     edge,
 							FilePath: getFilePathForConnection(nodeData, edge.GetGraphQLConnectionName()),
