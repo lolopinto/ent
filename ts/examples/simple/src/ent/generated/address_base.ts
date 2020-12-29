@@ -11,6 +11,7 @@ import {
   loadRow,
   loadRowX,
   AlwaysDenyRule,
+  AllowIfViewerRule,
   PrivacyPolicy,
   query,
 } from "@lolopinto/ent";
@@ -50,7 +51,7 @@ export class AddressBase {
   // to overwrite this privacy policy in its subclasses
 
   privacyPolicy: PrivacyPolicy = {
-    rules: [AlwaysDenyRule],
+    rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
 
   static async load<T extends AddressBase>(
