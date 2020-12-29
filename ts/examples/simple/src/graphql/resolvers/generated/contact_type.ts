@@ -10,6 +10,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
+import { GraphQLNodeInterface } from "@lolopinto/ent/graphql";
 import { UserType } from "src/graphql/resolvers/";
 import { Contact } from "src/ent/";
 
@@ -42,6 +43,7 @@ export const ContactType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
   }),
+  interfaces: [GraphQLNodeInterface],
 });
 
 export const ContactQuery: GraphQLFieldConfig<
