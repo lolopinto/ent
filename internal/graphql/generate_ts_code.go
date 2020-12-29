@@ -701,6 +701,10 @@ func getSortedLines(s *gqlSchema) []string {
 	random := []string{
 		getNodeTypeFilePath(),
 	}
+	var randomImports []string
+	for _, imp := range random {
+		append2(&randomImports, imp)
+	}
 
 	var lines []string
 	// get the enums
@@ -1614,12 +1618,12 @@ func writeNodeQueryFile(data *codegen.Data, s *gqlSchema) error {
 			util.GetAbsolutePath("ts_templates/field_config.tmpl"),
 			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
 		},
-		// TODO write once...
 		PathToFile:   getNodeTypeFilePath(),
 		FormatSource: true,
 		TsImports:    imps,
 		FuncMap:      imps.FuncMap(),
-	})
+		EditableCode: true,
+	}, file.WriteOnce())
 }
 
 func writeTSSchemaFile(data *codegen.Data, s *gqlSchema) error {
