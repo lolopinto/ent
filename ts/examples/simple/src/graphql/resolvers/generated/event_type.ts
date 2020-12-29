@@ -6,14 +6,13 @@ import {
   GraphQLString,
   GraphQLNonNull,
   GraphQLInt,
-  GraphQLFieldConfig,
   GraphQLFieldConfigMap,
-  GraphQLResolveInfo,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
 import {
   GraphQLTime,
   GraphQLNodeInterface,
+  nodeIDEncoder,
   GraphQLEdgeConnection,
 } from "@lolopinto/ent/graphql";
 import {
@@ -33,10 +32,6 @@ import {
   EventToMaybeQuery,
 } from "src/ent/";
 
-interface EventQueryArgs {
-  id: ID;
-}
-
 export const EventType = new GraphQLObjectType({
   name: "Event",
   fields: (): GraphQLFieldConfigMap<Event, RequestContext> => ({
@@ -48,6 +43,7 @@ export const EventType = new GraphQLObjectType({
     },
     id: {
       type: GraphQLNonNull(GraphQLID),
+      resolve: nodeIDEncoder,
     },
     name: {
       type: GraphQLNonNull(GraphQLString),
@@ -211,26 +207,7 @@ export const EventType = new GraphQLObjectType({
     },
   }),
   interfaces: [GraphQLNodeInterface],
+  isTypeOf(obj) {
+    return obj instanceof Event;
+  },
 });
-
-export const EventQuery: GraphQLFieldConfig<
-  undefined,
-  RequestContext,
-  EventQueryArgs
-> = {
-  type: EventType,
-  args: {
-    id: {
-      description: "",
-      type: GraphQLNonNull(GraphQLID),
-    },
-  },
-  resolve: async (
-    _source,
-    args: EventQueryArgs,
-    context: RequestContext,
-    _info: GraphQLResolveInfo,
-  ) => {
-    return Event.load(context.getViewer(), args.id);
-  },
-};

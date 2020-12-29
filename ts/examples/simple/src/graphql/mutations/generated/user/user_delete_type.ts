@@ -10,16 +10,17 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
+import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { User } from "src/ent/";
 import DeleteUserAction from "src/ent/user/actions/delete_user_action";
 
 interface customUserDeleteInput {
-  userID: ID;
+  userID: string;
 }
 
-interface UserDeleteResponse {
-  deletedUserID: ID;
+interface UserDeletePayload {
+  deletedUserID: string;
 }
 
 export const UserDeleteInputType = new GraphQLInputObjectType({
@@ -31,9 +32,9 @@ export const UserDeleteInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const UserDeleteResponseType = new GraphQLObjectType({
-  name: "UserDeleteResponse",
-  fields: (): GraphQLFieldConfigMap<UserDeleteResponse, RequestContext> => ({
+export const UserDeletePayloadType = new GraphQLObjectType({
+  name: "UserDeletePayload",
+  fields: (): GraphQLFieldConfigMap<UserDeletePayload, RequestContext> => ({
     deletedUserID: {
       type: GraphQLID,
     },
@@ -45,7 +46,7 @@ export const UserDeleteType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customUserDeleteInput }
 > = {
-  type: GraphQLNonNull(UserDeleteResponseType),
+  type: GraphQLNonNull(UserDeletePayloadType),
   args: {
     input: {
       description: "",
@@ -57,8 +58,11 @@ export const UserDeleteType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<UserDeleteResponse> => {
-    await DeleteUserAction.saveXFromID(context.getViewer(), input.userID);
+  ): Promise<UserDeletePayload> => {
+    await DeleteUserAction.saveXFromID(
+      context.getViewer(),
+      mustDecodeIDFromGQLID(input.userID),
+    );
     return { deletedUserID: input.userID };
   },
 };

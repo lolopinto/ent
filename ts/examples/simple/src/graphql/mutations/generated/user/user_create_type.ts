@@ -17,7 +17,7 @@ import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 
-interface UserCreateResponse {
+interface UserCreatePayload {
   user: User;
 }
 
@@ -42,9 +42,9 @@ export const UserCreateInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const UserCreateResponseType = new GraphQLObjectType({
-  name: "UserCreateResponse",
-  fields: (): GraphQLFieldConfigMap<UserCreateResponse, RequestContext> => ({
+export const UserCreatePayloadType = new GraphQLObjectType({
+  name: "UserCreatePayload",
+  fields: (): GraphQLFieldConfigMap<UserCreatePayload, RequestContext> => ({
     user: {
       type: GraphQLNonNull(UserType),
     },
@@ -56,7 +56,7 @@ export const UserCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: UserCreateInput }
 > = {
-  type: GraphQLNonNull(UserCreateResponseType),
+  type: GraphQLNonNull(UserCreatePayloadType),
   args: {
     input: {
       description: "",
@@ -68,7 +68,7 @@ export const UserCreateType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<UserCreateResponse> => {
+  ): Promise<UserCreatePayload> => {
     let user = await CreateUserAction.create(context.getViewer(), {
       firstName: input.firstName,
       lastName: input.lastName,

@@ -11,7 +11,8 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
+import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { User } from "src/ent/";
 import { UserType } from "src/graphql/resolvers/";
 import ConfirmEditEmailAddressAction, {
@@ -20,10 +21,10 @@ import ConfirmEditEmailAddressAction, {
 
 interface customConfirmEmailAddressEditInput
   extends ConfirmEditEmailAddressInput {
-  userID: ID;
+  userID: string;
 }
 
-interface ConfirmEmailAddressEditResponse {
+interface ConfirmEmailAddressEditPayload {
   user: User;
 }
 
@@ -42,10 +43,10 @@ export const ConfirmEmailAddressEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const ConfirmEmailAddressEditResponseType = new GraphQLObjectType({
-  name: "ConfirmEmailAddressEditResponse",
+export const ConfirmEmailAddressEditPayloadType = new GraphQLObjectType({
+  name: "ConfirmEmailAddressEditPayload",
   fields: (): GraphQLFieldConfigMap<
-    ConfirmEmailAddressEditResponse,
+    ConfirmEmailAddressEditPayload,
     RequestContext
   > => ({
     user: {
@@ -59,7 +60,7 @@ export const ConfirmEmailAddressEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customConfirmEmailAddressEditInput }
 > = {
-  type: GraphQLNonNull(ConfirmEmailAddressEditResponseType),
+  type: GraphQLNonNull(ConfirmEmailAddressEditPayloadType),
   args: {
     input: {
       description: "",
@@ -71,10 +72,10 @@ export const ConfirmEmailAddressEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<ConfirmEmailAddressEditResponse> => {
+  ): Promise<ConfirmEmailAddressEditPayload> => {
     let user = await ConfirmEditEmailAddressAction.saveXFromID(
       context.getViewer(),
-      input.userID,
+      mustDecodeIDFromGQLID(input.userID),
       {
         emailAddress: input.emailAddress,
         code: input.code,

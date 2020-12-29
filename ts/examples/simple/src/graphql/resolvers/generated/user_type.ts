@@ -7,13 +7,12 @@ import {
   GraphQLNonNull,
   GraphQLList,
   GraphQLInt,
-  GraphQLFieldConfig,
   GraphQLFieldConfigMap,
-  GraphQLResolveInfo,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
 import {
   GraphQLNodeInterface,
+  nodeIDEncoder,
   GraphQLEdgeConnection,
 } from "@lolopinto/ent/graphql";
 import {
@@ -37,15 +36,12 @@ import {
   UserToMaybeEventsQuery,
 } from "src/ent/";
 
-interface UserQueryArgs {
-  id: ID;
-}
-
 export const UserType = new GraphQLObjectType({
   name: "User",
   fields: (): GraphQLFieldConfigMap<User, RequestContext> => ({
     id: {
       type: GraphQLNonNull(GraphQLID),
+      resolve: nodeIDEncoder,
     },
     firstName: {
       type: GraphQLNonNull(GraphQLString),
@@ -321,26 +317,7 @@ export const UserType = new GraphQLObjectType({
     },
   }),
   interfaces: [GraphQLNodeInterface],
+  isTypeOf(obj) {
+    return obj instanceof User;
+  },
 });
-
-export const UserQuery: GraphQLFieldConfig<
-  undefined,
-  RequestContext,
-  UserQueryArgs
-> = {
-  type: UserType,
-  args: {
-    id: {
-      description: "",
-      type: GraphQLNonNull(GraphQLID),
-    },
-  },
-  resolve: async (
-    _source,
-    args: UserQueryArgs,
-    context: RequestContext,
-    _info: GraphQLResolveInfo,
-  ) => {
-    return User.load(context.getViewer(), args.id);
-  },
-};

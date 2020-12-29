@@ -17,7 +17,7 @@ import CreateContactAction, {
   ContactCreateInput,
 } from "src/ent/contact/actions/create_contact_action";
 
-interface ContactCreateResponse {
+interface ContactCreatePayload {
   contact: Contact;
 }
 
@@ -39,9 +39,9 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const ContactCreateResponseType = new GraphQLObjectType({
-  name: "ContactCreateResponse",
-  fields: (): GraphQLFieldConfigMap<ContactCreateResponse, RequestContext> => ({
+export const ContactCreatePayloadType = new GraphQLObjectType({
+  name: "ContactCreatePayload",
+  fields: (): GraphQLFieldConfigMap<ContactCreatePayload, RequestContext> => ({
     contact: {
       type: GraphQLNonNull(ContactType),
     },
@@ -53,7 +53,7 @@ export const ContactCreateType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: ContactCreateInput }
 > = {
-  type: GraphQLNonNull(ContactCreateResponseType),
+  type: GraphQLNonNull(ContactCreatePayloadType),
   args: {
     input: {
       description: "",
@@ -65,7 +65,7 @@ export const ContactCreateType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<ContactCreateResponse> => {
+  ): Promise<ContactCreatePayload> => {
     let contact = await CreateContactAction.create(context.getViewer(), {
       emailAddress: input.emailAddress,
       firstName: input.firstName,

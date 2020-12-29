@@ -11,7 +11,8 @@ import {
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
 } from "graphql";
-import { ID, RequestContext } from "@lolopinto/ent";
+import { RequestContext } from "@lolopinto/ent";
+import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { User } from "src/ent/";
 import { UserType } from "src/graphql/resolvers/";
 import EditUserAction, {
@@ -19,10 +20,10 @@ import EditUserAction, {
 } from "src/ent/user/actions/edit_user_action";
 
 interface customUserEditInput extends UserEditInput {
-  userID: ID;
+  userID: string;
 }
 
-interface UserEditResponse {
+interface UserEditPayload {
   user: User;
 }
 
@@ -41,9 +42,9 @@ export const UserEditInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const UserEditResponseType = new GraphQLObjectType({
-  name: "UserEditResponse",
-  fields: (): GraphQLFieldConfigMap<UserEditResponse, RequestContext> => ({
+export const UserEditPayloadType = new GraphQLObjectType({
+  name: "UserEditPayload",
+  fields: (): GraphQLFieldConfigMap<UserEditPayload, RequestContext> => ({
     user: {
       type: GraphQLNonNull(UserType),
     },
@@ -55,7 +56,7 @@ export const UserEditType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: customUserEditInput }
 > = {
-  type: GraphQLNonNull(UserEditResponseType),
+  type: GraphQLNonNull(UserEditPayloadType),
   args: {
     input: {
       description: "",
@@ -67,10 +68,10 @@ export const UserEditType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<UserEditResponse> => {
+  ): Promise<UserEditPayload> => {
     let user = await EditUserAction.saveXFromID(
       context.getViewer(),
-      input.userID,
+      mustDecodeIDFromGQLID(input.userID),
       {
         firstName: input.firstName,
         lastName: input.lastName,
