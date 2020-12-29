@@ -10,6 +10,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
+import { GraphQLNodeInterface } from "@lolopinto/ent/graphql";
 import { Address } from "src/ent/";
 
 interface AddressQueryArgs {
@@ -41,6 +42,7 @@ export const AddressType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
   }),
+  interfaces: [GraphQLNodeInterface],
 });
 
 export const AddressQuery: GraphQLFieldConfig<

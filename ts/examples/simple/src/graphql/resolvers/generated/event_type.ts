@@ -11,7 +11,11 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
-import { GraphQLTime, GraphQLEdgeConnection } from "@lolopinto/ent/graphql";
+import {
+  GraphQLTime,
+  GraphQLNodeInterface,
+  GraphQLEdgeConnection,
+} from "@lolopinto/ent/graphql";
 import {
   UserType,
   EventToHostsConnectionType,
@@ -206,6 +210,7 @@ export const EventType = new GraphQLObjectType({
       },
     },
   }),
+  interfaces: [GraphQLNodeInterface],
 });
 
 export const EventQuery: GraphQLFieldConfig<

@@ -6,7 +6,7 @@ type Query {
   viewer: Viewer!
 }
 
-type Address {
+type Address implements Node {
   id: ID!
   streetName: String!
   city: String!
@@ -16,7 +16,12 @@ type Address {
   country: String!
 }
 
-type Contact {
+"""node interface"""
+interface Node {
+  id: ID!
+}
+
+type Contact implements Node {
   user: User
   id: ID!
   emailAddress: String!
@@ -25,7 +30,7 @@ type Contact {
   fullName: String!
 }
 
-type User {
+type User implements Node {
   id: ID!
   firstName: String!
   lastName: String!
@@ -51,15 +56,23 @@ type User {
   contactsSameDomainNullableContentsAndList: [Contact]
 }
 
-type UserToCreatedEventsConnection {
+type UserToCreatedEventsConnection implements Connection {
   edges: [UserToCreatedEventsEdge!]!
-  nodes: [User!]!
+  nodes: [Event!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type UserToCreatedEventsEdge {
-  node: User!
+"""connection interface"""
+interface Connection {
+  edges: [Edge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+}
+
+"""edge interface"""
+interface Edge {
+  node: Node!
   cursor: String!
 }
 
@@ -68,79 +81,12 @@ type PageInfo {
   hasPreviousPage: Boolean!
 }
 
-type UserToFriendsConnection {
-  edges: [UserToFriendsEdge!]!
-  nodes: [User!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type UserToFriendsEdge {
-  node: User!
+type UserToCreatedEventsEdge implements Edge {
+  node: Event!
   cursor: String!
 }
 
-type UserToHostedEventsConnection {
-  edges: [UserToHostedEventsEdge!]!
-  nodes: [User!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type UserToHostedEventsEdge {
-  node: User!
-  cursor: String!
-}
-
-type UserToInvitedEventsConnection {
-  edges: [UserToInvitedEventsEdge!]!
-  nodes: [User!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type UserToInvitedEventsEdge {
-  node: User!
-  cursor: String!
-}
-
-type UserToEventsAttendingConnection {
-  edges: [UserToEventsAttendingEdge!]!
-  nodes: [User!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type UserToEventsAttendingEdge {
-  node: User!
-  cursor: String!
-}
-
-type UserToDeclinedEventsConnection {
-  edges: [UserToDeclinedEventsEdge!]!
-  nodes: [User!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type UserToDeclinedEventsEdge {
-  node: User!
-  cursor: String!
-}
-
-type UserToMaybeEventsConnection {
-  edges: [UserToMaybeEventsEdge!]!
-  nodes: [User!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type UserToMaybeEventsEdge {
-  node: User!
-  cursor: String!
-}
-
-type Event {
+type Event implements Node {
   creator: User
   id: ID!
   name: String!
@@ -157,62 +103,134 @@ type Event {
 """Time scalar type"""
 scalar Time
 
-type EventToHostsConnection {
+type EventToHostsConnection implements Connection {
   edges: [EventToHostsEdge!]!
-  nodes: [Event!]!
+  nodes: [User!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type EventToHostsEdge {
-  node: Event!
+type EventToHostsEdge implements Edge {
+  node: User!
   cursor: String!
 }
 
-type EventToInvitedConnection {
+type EventToInvitedConnection implements Connection {
   edges: [EventToInvitedEdge!]!
-  nodes: [Event!]!
+  nodes: [User!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type EventToInvitedEdge {
-  node: Event!
+type EventToInvitedEdge implements Edge {
+  node: User!
   cursor: String!
 }
 
-type EventToAttendingConnection {
+type EventToAttendingConnection implements Connection {
   edges: [EventToAttendingEdge!]!
-  nodes: [Event!]!
+  nodes: [User!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type EventToAttendingEdge {
-  node: Event!
+type EventToAttendingEdge implements Edge {
+  node: User!
   cursor: String!
 }
 
-type EventToDeclinedConnection {
+type EventToDeclinedConnection implements Connection {
   edges: [EventToDeclinedEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToDeclinedEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type EventToMaybeConnection implements Connection {
+  edges: [EventToMaybeEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToMaybeEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type UserToFriendsConnection implements Connection {
+  edges: [UserToFriendsEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToFriendsEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type UserToHostedEventsConnection implements Connection {
+  edges: [UserToHostedEventsEdge!]!
   nodes: [Event!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type EventToDeclinedEdge {
+type UserToHostedEventsEdge implements Edge {
   node: Event!
   cursor: String!
 }
 
-type EventToMaybeConnection {
-  edges: [EventToMaybeEdge!]!
+type UserToInvitedEventsConnection implements Connection {
+  edges: [UserToInvitedEventsEdge!]!
   nodes: [Event!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type EventToMaybeEdge {
+type UserToInvitedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToEventsAttendingConnection implements Connection {
+  edges: [UserToEventsAttendingEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToEventsAttendingEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToDeclinedEventsConnection implements Connection {
+  edges: [UserToDeclinedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToDeclinedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToMaybeEventsConnection implements Connection {
+  edges: [UserToMaybeEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToMaybeEventsEdge implements Edge {
   node: Event!
   cursor: String!
 }

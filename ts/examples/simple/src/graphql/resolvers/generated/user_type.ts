@@ -12,7 +12,10 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { ID, RequestContext } from "@lolopinto/ent";
-import { GraphQLEdgeConnection } from "@lolopinto/ent/graphql";
+import {
+  GraphQLNodeInterface,
+  GraphQLEdgeConnection,
+} from "@lolopinto/ent/graphql";
 import {
   ContactType,
   UserToCreatedEventsConnectionType,
@@ -317,6 +320,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
   }),
+  interfaces: [GraphQLNodeInterface],
 });
 
 export const UserQuery: GraphQLFieldConfig<
