@@ -9,25 +9,39 @@ import {
   UserToIncomingFriendRequestsQuery,
   UserToFriendRequestsQuery,
   ViewerWithAccessToken,
-} from "../../tests/fake_data";
+} from "../fake_data";
 import {
   createTestUser,
   createTestEvent,
   createEdges,
   createAllContacts,
-} from "../../tests/fake_data/test_helpers";
-import { QueryRecorder } from "../testutils/db_mock";
+} from "../fake_data/test_helpers";
+import { QueryRecorder } from "../../src/testutils/db_mock";
 import { Pool } from "pg";
-import { Viewer, ID, Ent, LoadEntOptions, loadEnt } from "../core/ent";
+import { Viewer, ID, Ent, LoadEntOptions, loadEnt } from "../../src/core/ent";
 import {
   NodeResolver,
   EntNodeResolver,
   resolveID,
   registerResolver,
-} from "./node_resolver";
-import { IDViewer } from "../core/viewer";
-import { SimpleBuilder } from "../testutils/builder";
-import { WriteOperation } from "../action";
+  nodeIDEncoder,
+} from "../../src/graphql/node_resolver";
+import { IDViewer } from "../../src/core/viewer";
+import { RequestContext } from "../../src/core/context";
+import { SimpleBuilder } from "../../src/testutils/builder";
+import { WriteOperation } from "../../src/action";
+import {
+  GraphQLObjectType,
+  GraphQLNonNull,
+  GraphQLID,
+  GraphQLSchema,
+  GraphQLString,
+} from "graphql";
+import { GraphQLNodeInterface } from "../../src/graphql/builtins/node";
+import {
+  queryRootConfig,
+  expectQueryFromRoot,
+} from "../../src/testutils/ent-graphql-tests";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -51,6 +65,9 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
   }
 }
 
+const resolver = new EntNodeResolver(loadEntByType);
+registerResolver("entNode", resolver);
+
 beforeEach(async () => {
   QueryRecorder.clear();
   await createEdges();
@@ -60,7 +77,7 @@ beforeEach(async () => {
 async function testObj(ent: Ent, vc?: Viewer) {
   const resolver = new EntNodeResolver(loadEntByType);
   const encodedID = resolver.encode(ent);
-  const decodedID = resolver.decode(encodedID);
+  const decodedID = EntNodeResolver.decode(encodedID);
   expect(decodedID).toEqual(ent.id);
 
   vc = vc || new IDViewer(ent.id);
@@ -149,16 +166,6 @@ class SearchResultResolver implements NodeResolver {
   encode(result: SearchResult) {
     const str = `searchResult:${result.data.context}:${result.id}`;
     return Buffer.from(str, "ascii").toString("base64");
-  }
-
-  // TODO do we even need this?
-  decode(id: string): ID | null {
-    const decoded = Buffer.from(id, "base64").toString("ascii");
-    let parts = decoded.split(":");
-    if (parts.length != 3) {
-      return null;
-    }
-    return parts[2];
   }
 
   async decodeObj(viewer: Viewer, id: string) {
@@ -285,4 +292,98 @@ test("customresolver", async () => {
     expect(node).not.toBeNull();
     expect(node).toBeInstanceOf(SearchResult);
   }
+});
+
+test("node id encoder", async () => {
+  let userType = new GraphQLObjectType({
+    name: "User",
+    fields: {
+      id: {
+        type: GraphQLNonNull(GraphQLID),
+        resolve: nodeIDEncoder,
+      },
+      firstName: {
+        type: GraphQLString,
+      },
+      lastName: {
+        type: GraphQLString,
+      },
+    },
+    interfaces: [GraphQLNodeInterface],
+    isTypeOf(obj, _context: RequestContext) {
+      return obj instanceof FakeUser;
+    },
+  });
+
+  let viewerType = new GraphQLObjectType({
+    name: "Viewer",
+    fields: {
+      user: {
+        type: GraphQLNonNull(userType),
+        resolve: (_source, {}, context: RequestContext) => {
+          const v = context.getViewer();
+          if (!v.viewerID) {
+            // will throw. we claim non-null
+            return null;
+          }
+          return FakeUser.load(v, v.viewerID);
+        },
+      },
+    },
+  });
+
+  let rootQuery = new GraphQLObjectType({
+    name: "RootQueryType",
+    fields: {
+      node: {
+        args: {
+          id: {
+            type: GraphQLNonNull(GraphQLID),
+          },
+        },
+        type: GraphQLNodeInterface,
+        resolve(_source, { id }, context: RequestContext) {
+          return resolveID(context.getViewer(), id);
+        },
+      },
+      viewer: {
+        type: viewerType,
+        resolve: (_source, _args, context: RequestContext) => {
+          return context.getViewer();
+        },
+      },
+    },
+  });
+
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+  });
+
+  const user = await createTestUser();
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    root: "viewer",
+    viewer: new IDViewer(user.id),
+    args: {},
+  };
+
+  const expectedID = resolver.encode(user);
+  await expectQueryFromRoot(cfg, ["user.id", expectedID]);
+
+  let cfg2: queryRootConfig = {
+    schema: schema,
+    root: "node",
+    viewer: new IDViewer(user.id),
+    args: { id: expectedID },
+  };
+
+  await expectQueryFromRoot(cfg2, [
+    "...on User",
+    {
+      id: expectedID,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    },
+  ]);
 });

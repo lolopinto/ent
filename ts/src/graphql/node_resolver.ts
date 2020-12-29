@@ -1,4 +1,5 @@
 import { ID, Ent, Viewer, loadEnt } from "../core/ent";
+import { GraphQLFieldResolver } from "graphql";
 
 interface Node {
   id: ID;
@@ -6,7 +7,6 @@ interface Node {
 
 export interface NodeResolver {
   encode(node: Node): string;
-  decode(id: string): ID | null;
   decodeObj(viewer: Viewer, id: string): Promise<Node | null>;
 }
 
@@ -24,7 +24,7 @@ export class EntNodeResolver implements NodeResolver {
     return Buffer.from(str, "ascii").toString("base64");
   }
 
-  decode(id: string): ID | null {
+  static decode(id: string): ID | null {
     const decoded = Buffer.from(id, "base64").toString("ascii");
     let parts = decoded.split(":");
     if (parts.length != 3) {
@@ -33,12 +33,13 @@ export class EntNodeResolver implements NodeResolver {
     return parts[2];
   }
 
-  mustDecode(id: string): ID {
-    const decoded = this.decode(id);
-    if (!decoded) {
+  mustDecode(id: string): [ID, string] {
+    const decoded = Buffer.from(id, "base64").toString("ascii");
+    let parts = decoded.split(":");
+    if (parts.length != 3) {
       throw new Error(`invalid id ${id} passed to EntNodeResolver`);
     }
-    return decoded;
+    return [parts[0], parts[1]];
   }
 
   async decodeObj(viewer: Viewer, id: string): Promise<Node | null> {
@@ -52,10 +53,13 @@ export class EntNodeResolver implements NodeResolver {
 }
 
 let resolvers: Map<string, NodeResolver> = new Map();
+
+// used to register a new NodeResolver
 export async function registerResolver(name: string, resolver: NodeResolver) {
   resolvers.set(name, resolver);
 }
 
+// mainly needed for tests
 export async function clearResolvers() {
   resolvers.clear();
 }
@@ -71,4 +75,33 @@ export async function resolveID(
     }
   }
   return null;
+}
+
+// this takes an id and uses the default node resolver which
+// should have been registered as part of entcodegen and decodes
+export const nodeIDEncoder: GraphQLFieldResolver<Ent, {}> = (
+  source: Ent,
+  _args: {},
+) => {
+  const r = resolvers.get("entNode");
+  if (!r) {
+    throw new Error(`cannot resolve id when entNode not previously registered`);
+  }
+  return r.encode(source);
+};
+
+// This takes a GraphQL id and converts it to an ent id
+export function mustDecodeIDFromGQLID(id: string): ID {
+  const decoded = EntNodeResolver.decode(id);
+  if (!decoded) {
+    throw new Error(`wasn't able to decode invalid ${id}`);
+  }
+  return decoded;
+}
+
+// This takes an ent and returns the graphql id
+export function encodeGQLID(node: Ent): string {
+  // let's do 3 parts. we take the "node" prefix
+  const str = `node:${node.nodeType}:${node.id}`;
+  return Buffer.from(str, "ascii").toString("base64");
 }

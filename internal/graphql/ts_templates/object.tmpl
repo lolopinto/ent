@@ -1,26 +1,6 @@
 {{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
 {{reserveImport .Package.PackagePath "ID" "RequestContext" }}
-{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface"}}
-
-{{ define "renderArgs"  -}}
-  {{if .Args -}}
-    {{$dict := . -}}
-    {{$base := .Base -}}
-    args: {
-      {{range $arg := .Args -}}
-        {{$arg.Name}}: {
-          description: "{{$arg.Description}}",
-          {{ range $import := .Imports -}}
-            {{ if $base.ForeignImport $import -}}
-              {{$ignored := useImport $import -}}
-            {{end -}}
-          {{ end -}}
-          type: {{$arg.FieldType -}},
-        },
-      {{end -}}
-    },
-  {{end -}}
-{{ end -}}
+{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLNodeInterface" "GraphQLEdgeInterface" "GraphQLConnectionInterface" "nodeIDEncoder" "resolveID" "mustDecodeIDFromGQLID" "encodeGQLID" }}
 
 {{$baseObj := . -}}
 
@@ -75,8 +55,13 @@
             {{end -}}
           {{end -}}
           type: {{$field.FieldType}},
-          {{ template "renderArgs" (dict "Base" $baseObj "Args" $field.Args) -}}
-          {{if $field.HasResolveFunction -}}
+          {{ template "render_args.tmpl" (dict "Base" $baseObj "Args" $field.Args) -}}
+          {{if $field.ResolverMethod -}}
+            {{ if $baseObj.ForeignImport $field.ResolverMethod -}}
+              {{ $ignore := useImport $field.ResolverMethod -}}
+            {{end -}}
+            resolve: {{useImport $field.ResolverMethod}},
+          {{else if $field.HasResolveFunction -}}
             {{if $field.HasAsyncModifier -}}
               resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {}) => {
             {{ else -}}
@@ -95,53 +80,17 @@
       {{end -}}
     ],
     {{end -}}
+    {{if .IsTypeOfMethod -}}
+      isTypeOf(obj) {
+        {{ range $line := .IsTypeOfMethod -}}
+          {{$line}}
+        {{ end -}}
+      },
+    {{end -}}
   });
   
 {{end}}
 
-{{$fieldConfig := .FieldConfig -}}
-
-{{$prefix := printf "const %s" $fieldConfig.Name -}}
-{{ if $fieldConfig.Exported -}}
-  {{$prefix = printf "export %s" $prefix -}}
-{{end -}}
-
-
-{{ range $import := $fieldConfig.TypeImports -}}
-  {{ if $baseObj.ForeignImport $import -}}
-    {{ $ignored := useImport $import -}}
-  {{ end -}}
+{{ if .FieldConfig}}
+  {{ template "field_config.tmpl" (dict "Base" $baseObj "FieldConfig" .FieldConfig) -}}
 {{ end -}}
-{{ range $import := $fieldConfig.ArgImports -}}
-  {{ if $baseObj.ForeignImport $import -}}
-    {{ $ignored := useImport $import -}}
-  {{ end -}}
-{{ end -}}
-
-
-{{$prefix}}: {{useImport "GraphQLFieldConfig"}}<
-  undefined,
-  {{useImport "RequestContext"}},
-  {{$fieldConfig.Arg}}
-> = {
-  type: {{$fieldConfig.FieldType}},
-  {{ template "renderArgs" (dict "Base" $baseObj "Args" $fieldConfig.Args) -}}
-  {{if $fieldConfig.ReturnTypeHint -}}
-    {{ if $fieldConfig.ResolveMethodArg -}}
-      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
-    {{ else -}}
-      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
-    {{end -}}
-  {{ else -}}
-    {{ if $fieldConfig.ResolveMethodArg -}}
-      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
-    {{else -}}
-      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}, _info: {{useImport "GraphQLResolveInfo"}}) => {
-    {{end -}}
-  {{ end -}}
-    {{range $line := $fieldConfig.FunctionContents -}}
-      {{ $line }}
-    {{end -}}
-  },
-};
-
