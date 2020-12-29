@@ -161,6 +161,7 @@ export interface FieldOptions {
   defaultValueOnEdit?(): any;
 
   polymorphic?: boolean | PolymorphicOptions;
+  derivedFields?: Field[];
 }
 
 export interface PolymorphicOptions {
@@ -260,17 +261,23 @@ export function getFields(value: SchemaInputType): Map<string, Field> {
     schema = new value();
   }
 
+  function addFields(fields: Field[]) {
+    for (const field of fields) {
+      const derivedFields = field.derivedFields;
+      if (derivedFields !== undefined) {
+        addFields(derivedFields);
+      }
+      m.set(field.name, field);
+    }
+  }
+
   let m = new Map();
   if (schema.patterns) {
     for (const pattern of schema.patterns) {
-      for (const field of pattern.fields) {
-        m.set(field.name, field);
-      }
+      addFields(pattern.fields);
     }
   }
-  for (const field of schema.fields) {
-    m.set(field.name, field);
-  }
+  addFields(schema.fields);
 
   return m;
 }
