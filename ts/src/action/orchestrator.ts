@@ -437,7 +437,6 @@ export class Orchestrator<T extends Ent> {
           value = await Promise.resolve(field.format(value));
         }
       }
-
       if (value !== undefined) {
         data[dbKey] = value;
       }

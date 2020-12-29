@@ -77,6 +77,18 @@ export class Message implements Ent {
   }
 }
 
+export class Address implements Ent {
+  id: ID;
+  accountID: string;
+  nodeType = "Address";
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AlwaysAllowRule],
+  };
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
+    this.id = id;
+  }
+}
+
 export interface BuilderSchema<T extends Ent> extends Schema {
   ent: EntConstructor<T>;
 }

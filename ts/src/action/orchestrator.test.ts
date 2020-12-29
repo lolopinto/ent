@@ -16,12 +16,13 @@ import {
 } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
-import { StringType, TimeType } from "../schema/field";
+import { StringType, TimeType, UUIDType } from "../schema/field";
 import { BaseEntSchema, Field } from "../schema";
 import {
   User,
   Event,
   Contact,
+  Address,
   SimpleBuilder,
   SimpleAction,
 } from "../testutils/builder";
@@ -101,6 +102,22 @@ class SchemaWithProcessors extends BaseEntSchema {
     StringType({ name: "username" }).toLowerCase(),
   ];
   ent = User;
+}
+
+class AddressSchemaDerivedFields extends BaseEntSchema {
+  fields: Field[] = [
+    StringType({ name: "Street" }),
+    StringType({ name: "City" }),
+    StringType({ name: "State" }),
+    StringType({ name: "ZipCode" }),
+    StringType({ name: "Apartment", nullable: true }),
+    UUIDType({
+      name: "OwnerID",
+      index: true,
+      polymorphic: true,
+    }),
+  ];
+  ent = Address;
 }
 
 test("schema on create", async () => {
@@ -1623,3 +1640,24 @@ async function getEdgeOpFromBuilder<T extends Ent>(
 }
 
 // TODO serverDefault change...
+
+test("schema with derived fields", async () => {
+  const user = new User(new LoggedOutViewer(), "1", { id: "1" });
+
+  const builder = new SimpleBuilder(
+    new LoggedOutViewer(),
+    new AddressSchemaDerivedFields(),
+    new Map([
+      ["Street", "1600 Pennsylvania Avenue NW"],
+      ["City", "Washington DC"],
+      ["State", "DC"],
+      ["ZipCode", "20500"],
+      ["OwnerID", user.id],
+      ["OwnerType", user.nodeType],
+    ]),
+  );
+
+  const fields = await getFieldsFromBuilder(builder);
+  expect(fields["owner_id"]).toBe(user.id);
+  expect(fields["owner_type"]).toBe(user.nodeType);
+});
