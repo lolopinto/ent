@@ -566,6 +566,14 @@ func (f *Field) GetTSGraphQLTypeForFieldImports(forceOptional bool) []enttype.Fi
 	return tsGQLType.GetTSGraphQLImports()
 }
 
+func (f *Field) IsEditableIDField() bool {
+	if !f.EditableField() {
+		return false
+	}
+	_, ok := f.GetFieldType().(enttype.IDMarkerInterface)
+	return ok
+}
+
 type Option func(*Field)
 
 func Optional() Option {

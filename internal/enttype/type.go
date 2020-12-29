@@ -45,6 +45,11 @@ type TSGraphQLType interface {
 	GetTSGraphQLImports() []FileImport
 }
 
+type IDMarkerInterface interface {
+	TSType
+	IsIDType() bool
+}
+
 type ImportType string
 
 const (
@@ -234,6 +239,10 @@ func (t *NullableBoolType) GetTSGraphQLImports() []FileImport {
 // and eventually need to work for non uuid types...
 
 type idType struct{}
+
+func (t *idType) IsIDType() bool {
+	return true
+}
 
 func (t *idType) GetDBType() string {
 	return "postgresql.UUID()"

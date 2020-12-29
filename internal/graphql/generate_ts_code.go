@@ -1051,27 +1051,40 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 		})
 	}
 
-	if a.MutatingExistingObject() {
+	if hasCustomInput(a) {
 		// custom interface for editing
 
 		// add adminID to interface assuming it's not already there
 		intType := &interfaceType{
 			Exported: false,
 			Name:     fmt.Sprintf("custom%sInput", actionPrefix),
-			Fields: []*interfaceField{
-				{
-					Name: fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
-					// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
-					Type: "string",
-				},
-			},
+		}
+
+		// only want the id field for the object when editing said object
+		if a.MutatingExistingObject() {
+			intType.Fields = append(intType.Fields, &interfaceField{
+				Name: fmt.Sprintf("%sID", a.GetNodeInfo().NodeInstance),
+				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
+				Type: "string",
+			})
 		}
 
 		// add edges as part of the input
-		// usually onlly one edge e.g. addFriend or addAdmin etc
+		// usually only one edge e.g. addFriend or addAdmin etc
 		for _, edge := range a.GetEdges() {
 			intType.Fields = append(intType.Fields, &interfaceField{
 				Name: fmt.Sprintf("%sID", strcase.ToLowerCamel(edge.Singular())),
+				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
+				Type: "string",
+			})
+		}
+
+		for _, f := range a.GetFields() {
+			if !f.IsEditableIDField() {
+				continue
+			}
+			intType.Fields = append(intType.Fields, &interfaceField{
+				Name: f.GetGraphQLName(),
 				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 				Type: "string",
 			})
@@ -1182,6 +1195,19 @@ func buildActionResponseNode(nodeData *schema.NodeData, a action.Action, actionP
 	return result
 }
 
+func hasCustomInput(a action.Action) bool {
+	if a.MutatingExistingObject() {
+		return true
+	}
+
+	for _, f := range a.GetFields() {
+		if f.IsEditableIDField() {
+			return true
+		}
+	}
+	return false
+}
+
 func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPrefix string) (*fieldConfig, error) {
 	// TODO this is so not obvious at all
 	// these are things that are automatically useImported....
@@ -1189,7 +1215,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 		a.GetActionName(),
 	}
 	var argName string
-	if a.MutatingExistingObject() {
+	if hasCustomInput(a) {
 		argName = fmt.Sprintf("custom%sInput", actionPrefix)
 	} else {
 		argName = a.GetInputName()
@@ -1225,8 +1251,13 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 		for _, f := range a.GetFields() {
 			// we need fields like userID here which aren't exposed to graphql but editable...
 
-			// TODO ID field?
-			if f.EditableField() {
+			if f.IsEditableIDField() {
+				argImports = append(argImports, "mustDecodeIDFromGQLID")
+				result.FunctionContents = append(
+					result.FunctionContents,
+					fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
+				)
+			} else if f.EditableField() {
 				result.FunctionContents = append(
 					result.FunctionContents,
 					fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
@@ -1263,11 +1294,17 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 			)
 			for _, f := range a.GetFields() {
 				if f.ExposeToGraphQL() && f.EditableField() {
-					result.FunctionContents = append(
-						result.FunctionContents,
-						// TODO if id field convert
-						fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
-					)
+					if f.IsEditableIDField() {
+						result.FunctionContents = append(
+							result.FunctionContents,
+							fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
+						)
+					} else {
+						result.FunctionContents = append(
+							result.FunctionContents,
+							fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
+						)
+					}
 				}
 			}
 			for _, f := range a.GetNonEntFields() {
