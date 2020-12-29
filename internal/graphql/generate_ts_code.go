@@ -712,7 +712,7 @@ func getSortedLines(s *gqlSchema) []string {
 	// get the connections
 	// get the custom queries
 	list := [][]string{
-		random,
+		randomImports,
 		enums,
 		nodes,
 		conns,
