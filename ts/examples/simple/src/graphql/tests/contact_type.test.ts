@@ -8,6 +8,7 @@ import {
   queryRootConfig,
 } from "@lolopinto/ent-graphql-tests";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
+import { encodeGQLID } from "@lolopinto/ent/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -21,16 +22,17 @@ const loggedOutViewer = new LoggedOutViewer();
 
 function getConfig(
   viewer: Viewer,
-  contactID: ID,
+  contact: Contact,
   partialConfig?: Partial<queryRootConfig>,
 ): queryRootConfig {
   return {
     viewer: viewer,
     schema: schema,
-    root: "contact",
+    root: "node",
     args: {
-      id: contactID,
+      id: encodeGQLID(contact),
     },
+    inlineFragmentRoot: "Contact",
     ...partialConfig,
   };
 }
@@ -54,12 +56,12 @@ async function createContact(): Promise<Contact> {
 
 test("query contact", async () => {
   let contact = await createContact();
-  let userID = contact.userID;
+  let user = await contact.loadUserX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(userID), contact.id),
-    ["id", contact.id],
-    ["user.id", userID],
+    getConfig(new IDViewer(user.id), contact),
+    ["id", encodeGQLID(contact)],
+    ["user.id", encodeGQLID(user)],
     ["user.firstName", contact.firstName],
     ["firstName", contact.firstName],
     ["lastName", contact.lastName],
@@ -79,7 +81,7 @@ test("query contact with different viewer", async () => {
 
   // can't load someone else's contact
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), contact.id, { rootQueryNull: true }),
+    getConfig(new IDViewer(user.id), contact, { rootQueryNull: true }),
     ["id", null],
   );
 });

@@ -10,6 +10,7 @@ import {
   mutationRootConfig,
 } from "@lolopinto/ent-graphql-tests";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
+import { mustDecodeIDFromGQLID, encodeGQLID } from "@lolopinto/ent/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -62,9 +63,10 @@ test("create", async () => {
     }),
     [
       "user.id",
-      async (id: ID) => {
-        let vc = new IDViewer(id);
-        await User.loadX(vc, id);
+      async (id: string) => {
+        const decoded = mustDecodeIDFromGQLID(id);
+        let vc = new IDViewer(decoded);
+        await User.loadX(vc, decoded);
       },
     ],
     ["user.firstName", "Jon"],
@@ -88,12 +90,12 @@ test("edit", async () => {
     getConfig(
       "userEdit",
       {
-        userID: user.id,
+        userID: encodeGQLID(user),
         firstName: "Jon2",
       },
       new IDViewer(user.id),
     ),
-    ["user.id", user.id],
+    ["user.id", encodeGQLID(user)],
     ["user.firstName", "Jon2"],
     ["user.lastName", "Snow"],
     ["user.emailAddress", email],
@@ -115,7 +117,7 @@ test("edit no permissions, logged out viewer", async () => {
     getConfig(
       "userEdit",
       {
-        userID: user.id,
+        userID: encodeGQLID(user),
         firstName: "Jon2",
       },
       loggedOutViewer,
@@ -146,7 +148,7 @@ test("edit no permissions, other viewer", async () => {
     getConfig(
       "userEdit",
       {
-        userID: user.id,
+        userID: encodeGQLID(user),
         firstName: "Jon2",
       },
       new IDViewer(user2.id),
@@ -174,15 +176,16 @@ test("delete", async () => {
     getConfig(
       "userDelete",
       {
-        userID: user.id,
+        userID: encodeGQLID(user),
       },
       new IDViewer(user.id),
     ),
     [
       "deletedUserID",
-      async (id: ID) => {
-        let user = await User.load(new IDViewer(id), id);
-        expect(user).toBe(null);
+      async (id: string) => {
+        expect(mustDecodeIDFromGQLID(id)).toBe(user.id);
+        let deletedUser = await User.load(new IDViewer(user.id), user.id);
+        expect(deletedUser).toBe(null);
       },
     ],
   );
@@ -206,7 +209,7 @@ test("delete. other user no permissions", async () => {
     getConfig(
       "userDelete",
       {
-        userID: user.id,
+        userID: encodeGQLID(user),
       },
       new IDViewer(user2.id),
       {

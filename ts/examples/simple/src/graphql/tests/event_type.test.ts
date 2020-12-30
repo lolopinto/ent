@@ -11,6 +11,7 @@ import CreateEventAction, {
   EventCreateInput,
 } from "src/ent/event/actions/create_event_action";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
+import { encodeGQLID } from "@lolopinto/ent/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -23,19 +24,21 @@ const loggedOutViewer = new LoggedOutViewer();
 
 function getConfig(
   viewer: Viewer,
-  eventID: ID,
+  event: Event,
   partialConfig?: Partial<queryRootConfig>,
 ): queryRootConfig {
   return {
     viewer: viewer,
     schema: schema,
-    root: "event",
+    root: "node",
     args: {
-      id: eventID,
+      id: encodeGQLID(event),
     },
+    inlineFragmentRoot: "Event",
     ...partialConfig,
   };
 }
+
 async function createEvent(options: Partial<EventCreateInput>): Promise<Event> {
   let user = await CreateUserAction.create(loggedOutViewer, {
     firstName: "Jon",
@@ -60,12 +63,12 @@ test("query event with startTime and endTime", async () => {
   let event = await createEvent({
     endTime: new Date(Date.now() + 86400),
   });
-  let userID = event.creatorID;
+  let user = await event.loadCreatorX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(userID), event.id),
-    ["id", event.id],
-    ["creator.id", userID],
+    getConfig(new IDViewer(user.id), event),
+    ["id", encodeGQLID(event)],
+    ["creator.id", encodeGQLID(user)],
     ["startTime", event.startTime.toISOString()],
     ["endTime", event.endTime!.toISOString()],
     ["name", event.name],
@@ -75,12 +78,12 @@ test("query event with startTime and endTime", async () => {
 
 test("query event with null endTime", async () => {
   let event = await createEvent({});
-  let userID = event.creatorID;
+  let user = await event.loadCreatorX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(userID), event.id),
-    ["id", event.id],
-    ["creator.id", userID],
+    getConfig(new IDViewer(user.id), event),
+    ["id", encodeGQLID(event)],
+    ["creator.id", encodeGQLID(user)],
     ["startTime", event.startTime.toISOString()],
     ["endTime", null],
   );
@@ -99,8 +102,8 @@ test("query event with different viewer", async () => {
 
   // can load other events since privacy policy allows it
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), event.id, { nullQueryPaths: ["creator"] }),
-    ["id", event.id],
+    getConfig(new IDViewer(user.id), event, { nullQueryPaths: ["creator"] }),
+    ["id", encodeGQLID(event)],
     ["creator.id", null], // creator is not visible
     ["startTime", event.startTime.toISOString()],
     ["endTime", null],

@@ -3,6 +3,7 @@ import {
   gqlObjectType,
   gqlContextType,
   gqlQuery,
+  encodeGQLID,
 } from "@lolopinto/ent/graphql";
 import { GraphQLID } from "graphql";
 import { Viewer, RequestContext } from "@lolopinto/ent";
@@ -16,16 +17,21 @@ export class GQLViewer {
   constructor(private viewer: Viewer) {}
 
   @gqlField({ type: GraphQLID, nullable: true })
-  get viewerID() {
-    return this.viewer.viewerID;
+  async viewerID() {
+    const user = await this.user();
+    if (!user) {
+      return null;
+    }
+    return encodeGQLID(user);
   }
 
   @gqlField({ type: User, nullable: true })
   async user(): Promise<User | null> {
-    if (!this.viewerID) {
+    const v = this.viewer.viewerID;
+    if (!v) {
       return null;
     }
-    return User.loadX(this.viewer, this.viewerID);
+    return User.loadX(this.viewer, v);
   }
 }
 

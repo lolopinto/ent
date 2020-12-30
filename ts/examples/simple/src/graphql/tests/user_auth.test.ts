@@ -4,7 +4,8 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "@lolopinto/ent-graphql-tests";
-import { ID, DB, LoggedOutViewer } from "@lolopinto/ent";
+import { DB, LoggedOutViewer } from "@lolopinto/ent";
+import { encodeGQLID } from "@lolopinto/ent/graphql";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
@@ -27,15 +28,16 @@ afterEach(() => {
 });
 
 function getUserRootConfig(
-  userID: ID,
+  user: User,
   partialConfig?: Partial<queryRootConfig>,
 ): queryRootConfig {
   return {
     schema: schema,
-    root: "user",
+    root: "node",
     args: {
-      id: userID,
+      id: encodeGQLID(user),
     },
+    inlineFragmentRoot: "User",
     ...partialConfig,
   };
 }
@@ -56,7 +58,7 @@ test("no viewer", async () => {
   const user = await createUser();
 
   await expectQueryFromRoot(
-    getUserRootConfig(user.id, {
+    getUserRootConfig(user, {
       rootQueryNull: true,
     }),
     ["id", null],
@@ -114,23 +116,23 @@ test("right credentials", async () => {
       },
     },
     ["token", "1"],
-    ["viewerID", user.id],
+    ["viewerID", encodeGQLID(user)],
   );
 
   // send to authed server from above
   // and user is logged in and can make queries!
   await expectQueryFromRoot(
-    getUserRootConfig(user.id, {
+    getUserRootConfig(user, {
       // pass the agent used above to the same server and user is authed!
       test: st,
     }),
-    ["id", user.id],
+    ["id", encodeGQLID(user)],
     ["emailAddress", user.emailAddress],
   );
 
   // independent server, nothing is saved. user isn't logged in
   await expectQueryFromRoot(
-    getUserRootConfig(user.id, {
+    getUserRootConfig(user, {
       rootQueryNull: true,
     }),
     ["id", null],
