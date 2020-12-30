@@ -732,3 +732,43 @@ test("inline fragments", async () => {
     },
   ]);
 });
+
+test("inline root fragment", async () => {
+  let rootQuery = new GraphQLObjectType({
+    name: "RootQueryType",
+    fields: {
+      node: {
+        args: {
+          id: {
+            type: GraphQLNonNull(GraphQLID),
+          },
+        },
+        type: GraphQLNodeInterface,
+        resolve(_source, { id }) {
+          return getUser(id);
+        },
+      },
+    },
+  });
+
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+    types: [userType, contactType, addressType],
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    args: {
+      id: "10",
+    },
+    root: "node",
+    inlineFragmentRoot: "User",
+  };
+
+  await expectQueryFromRoot(
+    cfg,
+    ["id", "10"],
+    ["firstName", "Jon"],
+    ["lastName", "Snow"],
+  );
+});
