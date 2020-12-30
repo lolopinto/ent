@@ -95,7 +95,7 @@ function buildTreeFromQueryPaths(...options: Option[]) {
       if (part !== "") {
         tree = tree[part];
       }
-      // TODO this needs to be aware of paths etc to this part work for complicated
+      // TODO this needs to be aware of paths etc so this part works for complicated
       // cases but inlineFragmentRoot is a workaround for now.
       function handleSubtree(obj: {}, tree: {}) {
         if (Array.isArray(obj)) {
