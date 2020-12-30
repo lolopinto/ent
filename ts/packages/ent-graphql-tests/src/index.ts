@@ -93,6 +93,8 @@ function buildTreeFromQueryPaths(...options: Option[]) {
       if (part !== "") {
         tree = tree[part];
       }
+      // TODO this needs to be aware of paths etc to this part work for complicated
+      // cases but inlineFragmentRoot is a workaround for now.
       function handleSubtree(obj: {}, tree: {}) {
         if (Array.isArray(obj)) {
           for (const obj2 of obj) {
@@ -162,6 +164,7 @@ interface queryConfig {
   expectedError?: string | RegExp; // expected error message
   // todo there can be more than one etc
   callback?: (res: supertest.Response) => void;
+  inlineFragmentRoot?: string;
 }
 
 export interface queryRootConfig extends queryConfig {
@@ -282,6 +285,9 @@ async function expectFromRoot(
   if (q) {
     // if no suffix part of query, don't put it there
     suffix = `{${q}}`;
+  }
+  if (config.inlineFragmentRoot) {
+    suffix = `{...on ${config.inlineFragmentRoot}${suffix}}`;
   }
   q = `${config.queryPrefix} ${config.root}${config.querySuffix} ${queryVar} {
     ${config.root}${callVar} ${suffix}

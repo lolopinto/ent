@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent-graphql-tests",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "easy ways to test ent and graphql",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
