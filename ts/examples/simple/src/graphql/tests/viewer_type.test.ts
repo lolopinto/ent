@@ -7,6 +7,7 @@ import {
   queryRootConfig,
 } from "@lolopinto/ent-graphql-tests";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
+import { encodeGQLID } from "@lolopinto/ent/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -46,8 +47,8 @@ test("viewer", async () => {
   let vc = new IDViewer(user.id);
   await expectQueryFromRoot(
     getConfig(vc),
-    ["viewerID", user.id],
-    ["user.id", user.id],
+    ["viewerID", encodeGQLID(user)],
+    ["user.id", encodeGQLID(user)],
     ["user.firstName", user.firstName],
   );
 });

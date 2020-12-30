@@ -13,6 +13,7 @@ import {
 } from "@lolopinto/ent-graphql-tests";
 import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
+import { encodeGQLID } from "@lolopinto/ent/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -39,16 +40,17 @@ async function create(opts: Partial<UserCreateInput>): Promise<User> {
 
 function getConfig(
   viewer: Viewer,
-  userID: ID,
+  user: User,
   partialConfig?: Partial<queryRootConfig>,
 ): queryRootConfig {
   return {
     viewer: viewer,
     schema: schema,
-    root: "user",
+    root: "node",
     args: {
-      id: userID,
+      id: encodeGQLID(user),
     },
+    inlineFragmentRoot: "User",
     ...partialConfig,
   };
 }
@@ -59,8 +61,8 @@ test("query user", async () => {
   });
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     ["emailAddress", user.emailAddress],
@@ -74,8 +76,8 @@ test("query custom field", async () => {
   });
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     ["fullName", user.fullName],
@@ -100,8 +102,8 @@ test("query custom function", async () => {
   expect(edges.length).toBe(1);
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     // returns id when logged in user is same
@@ -111,8 +113,8 @@ test("query custom function", async () => {
 
   // got some reason, it thinks this person is logged out
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user2.id), user.id),
-    ["id", user.id],
+    getConfig(new IDViewer(user2.id), user),
+    ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     // returns null when viewed as different user
@@ -133,10 +135,10 @@ test("query custom async function", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id, {
+    getConfig(new IDViewer(user.id), user, {
       nullQueryPaths: ["contactSameDomain"],
     }),
-    ["id", user.id],
+    ["id", encodeGQLID(user)],
     ["contactSameDomain.id", null], // no contact on same domain
   );
 
@@ -148,9 +150,9 @@ test("query custom async function", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
-    ["contactSameDomain.id", contact.id], // query again, new contact shows up
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
+    ["contactSameDomain.id", encodeGQLID(contact)], // query again, new contact shows up
   );
 });
 
@@ -171,10 +173,10 @@ test("query custom async function list", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
-    ["contactsSameDomain[0].id", selfContact!.id],
-    ["contactsSameDomain[1].id", contact!.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
+    ["contactsSameDomain[0].id", encodeGQLID(selfContact!)],
+    ["contactsSameDomain[1].id", encodeGQLID(contact!)],
   );
 });
 
@@ -184,10 +186,10 @@ test("query custom async function nullable list", async () => {
   });
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id, {
+    getConfig(new IDViewer(user.id), user, {
       nullQueryPaths: ["contactsSameDomainNullable"],
     }),
-    ["id", user.id],
+    ["id", encodeGQLID(user)],
     ["contactsSameDomainNullable[0].id", null],
   );
 });
@@ -207,13 +209,13 @@ test("query custom async function nullable contents", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
     [
       "contactsSameDomainNullableContents",
       [
         {
-          id: selfContact?.id,
+          id: encodeGQLID(selfContact!),
         },
         null,
       ],
@@ -236,11 +238,11 @@ test("query custom async function nullable list contents", async () => {
   }).saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id, {
+    getConfig(new IDViewer(user.id), user, {
       nullQueryPaths: ["contactsSameDomainNullableContents[1]"],
     }),
-    ["id", user.id],
-    ["contactsSameDomainNullableContents[0].id", selfContact!.id],
+    ["id", encodeGQLID(user)],
+    ["contactsSameDomainNullableContents[0].id", encodeGQLID(selfContact!)],
     ["contactsSameDomainNullableContents[1].id", null],
   );
 });
@@ -269,9 +271,12 @@ test("query custom async function nullable list and contents", async () => {
     userID: user2.id,
   }).saveX();
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user2.id), user2.id),
-    ["id", user2.id],
-    ["contactsSameDomainNullableContentsAndList[0].id", selfContact2!.id],
+    getConfig(new IDViewer(user2.id), user2),
+    ["id", encodeGQLID(user2)],
+    [
+      "contactsSameDomainNullableContentsAndList[0].id",
+      encodeGQLID(selfContact2!),
+    ],
     // can query this way because of id above
     ["contactsSameDomainNullableContentsAndList[1]", null],
   );
@@ -288,7 +293,7 @@ test("query user who's not visible", async () => {
   ]);
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user2.id, { rootQueryNull: true }),
+    getConfig(new IDViewer(user.id), user2, { rootQueryNull: true }),
     ["id", null],
     ["firstName", null],
     ["lastName", null],
@@ -309,17 +314,17 @@ test("query user and nested object", async () => {
   }
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     ["emailAddress", user.emailAddress],
     ["accountStatus", user.accountStatus],
-    ["selfContact.id", selfContact.id],
+    ["selfContact.id", encodeGQLID(selfContact)],
     ["selfContact.firstName", selfContact.firstName],
     ["selfContact.lastName", selfContact.lastName],
     ["selfContact.emailAddress", selfContact.emailAddress],
-    ["selfContact.user.id", user.id],
+    ["selfContact.user.id", encodeGQLID(user)],
   );
 });
 
@@ -355,8 +360,8 @@ test("load list", async () => {
   await action.saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
     ["emailAddress", user.emailAddress],
@@ -367,22 +372,22 @@ test("load list", async () => {
       "friends.nodes",
       [
         {
-          id: user5.id,
+          id: encodeGQLID(user5),
           firstName: user5.firstName,
           lastName: user5.lastName,
         },
         {
-          id: user4.id,
+          id: encodeGQLID(user4),
           firstName: user4.firstName,
           lastName: user4.lastName,
         },
         {
-          id: user3.id,
+          id: encodeGQLID(user3),
           firstName: user3.firstName,
           lastName: user3.lastName,
         },
         {
-          id: user2.id,
+          id: encodeGQLID(user2),
           firstName: user2.firstName,
           lastName: user2.lastName,
         },
@@ -393,22 +398,22 @@ test("load list", async () => {
       [
         {
           node: {
-            id: user5.id,
+            id: encodeGQLID(user5),
           },
         },
         {
           node: {
-            id: user4.id,
+            id: encodeGQLID(user4),
           },
         },
         {
           node: {
-            id: user3.id,
+            id: encodeGQLID(user3),
           },
         },
         {
           node: {
-            id: user2.id,
+            id: encodeGQLID(user2),
           },
         },
       ],
@@ -417,9 +422,9 @@ test("load list", async () => {
 
   let cursor: string;
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
-    ["friends(first:1).edges[0].node.id", user5.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
+    ["friends(first:1).edges[0].node.id", encodeGQLID(user5)],
     [
       "friends(first:1).edges[0].cursor",
       function(c: string) {
@@ -430,9 +435,12 @@ test("load list", async () => {
   );
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
-    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, user4.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
+    [
+      `friends(after: "${cursor!}", first:1).edges[0].node.id`,
+      encodeGQLID(user4),
+    ],
     [
       `friends(after: "${cursor!}", first:1).edges[0].cursor`,
       function(c: string) {
@@ -443,9 +451,12 @@ test("load list", async () => {
   );
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
-    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, user3.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
+    [
+      `friends(after: "${cursor!}", first:1).edges[0].node.id`,
+      encodeGQLID(user3),
+    ],
     [
       `friends(after: "${cursor!}", first:1).edges[0].cursor`,
       function(c: string) {
@@ -456,9 +467,12 @@ test("load list", async () => {
   );
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id),
-    ["id", user.id],
-    [`friends(after: "${cursor!}", first:1).edges[0].node.id`, user2.id],
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
+    [
+      `friends(after: "${cursor!}", first:1).edges[0].node.id`,
+      encodeGQLID(user2),
+    ],
     [
       `friends(after: "${cursor!}", first:1).edges[0].cursor`,
       function(c: string) {
@@ -469,10 +483,10 @@ test("load list", async () => {
   );
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user.id, {
+    getConfig(new IDViewer(user.id), user, {
       undefinedQueryPaths: [`friends(after: "${cursor!}", first:1).edges[0]`],
     }),
-    ["id", user.id],
+    ["id", encodeGQLID(user)],
     [`friends(after: "${cursor!}", first:1).edges[0].node.id`, undefined],
     [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, false],
   );

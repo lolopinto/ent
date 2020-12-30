@@ -5,6 +5,7 @@ import {
   gqlContextType,
   gqlArg,
   gqlObjectType,
+  encodeGQLID,
 } from "@lolopinto/ent/graphql";
 import { useAndAuth, LocalStrategy } from "@lolopinto/ent/auth";
 import { User } from "src/ent/";
@@ -75,9 +76,10 @@ export class AuthResolver {
     if (!viewer || !viewer.viewerID) {
       throw new Error("not the right credentials");
     }
+    const user = await User.loadX(viewer, viewer.viewerID);
 
     return {
-      viewerID: viewer.viewerID,
+      viewerID: encodeGQLID(user),
       token: "1",
     };
   }
@@ -130,9 +132,10 @@ export class AuthResolver {
         expiresIn: "1h",
       },
     );
+    const user = await User.loadX(viewer, viewer.viewerID);
 
     return {
-      viewerID: viewer.viewerID.toString(),
+      viewerID: encodeGQLID(user),
       token: token,
     };
   }

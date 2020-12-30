@@ -18,6 +18,7 @@ import { PassportStrategyHandler } from "@lolopinto/ent/auth";
 import supertest from "supertest";
 import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
 import jwt from "jsonwebtoken";
+import { encodeGQLID } from "@lolopinto/ent/graphql";
 
 // TODO we need something that does this by default for all tests
 afterAll(async () => {
@@ -29,15 +30,16 @@ afterEach(() => {
 });
 
 function getUserRootConfig(
-  userID: ID,
+  user: User,
   partialConfig?: Partial<queryRootConfig>,
 ): queryRootConfig {
   return {
     schema: schema,
-    root: "user",
+    root: "node",
     args: {
-      id: userID,
+      id: encodeGQLID(user),
     },
+    inlineFragmentRoot: "User",
     ...partialConfig,
   };
 }
@@ -58,7 +60,7 @@ test("no viewer", async () => {
   const user = await createUser();
 
   await expectQueryFromRoot(
-    getUserRootConfig(user.id, {
+    getUserRootConfig(user, {
       rootQueryNull: true,
     }),
     ["id", null],
@@ -138,7 +140,7 @@ test("right credentials", async () => {
         bearerToken = token;
       },
     ],
-    ["viewerID", user.id],
+    ["viewerID", encodeGQLID(user)],
   );
 
   let headers = {};
@@ -148,19 +150,19 @@ test("right credentials", async () => {
   // send to authed server from above
   // and user is logged in and can make queries!
   await expectQueryFromRoot(
-    getUserRootConfig(user.id, {
+    getUserRootConfig(user, {
       // pass the agent used above to the same server and user is authed!
       test: st,
       // also pass the token as a bearer token for authorization
       headers: headers,
     }),
-    ["id", user.id],
+    ["id", encodeGQLID(user)],
     ["emailAddress", user.emailAddress],
   );
 
   // same server, no token, user isn't logged in
   await expectQueryFromRoot(
-    getUserRootConfig(user.id, {
+    getUserRootConfig(user, {
       // pass the agent used above to the same server and user is authed!
       test: st,
       rootQueryNull: true,
@@ -171,7 +173,7 @@ test("right credentials", async () => {
 
   // independent server, nothing is saved + no token. user isn't logged in
   await expectQueryFromRoot(
-    getUserRootConfig(user.id, {
+    getUserRootConfig(user, {
       rootQueryNull: true,
     }),
     ["id", null],
