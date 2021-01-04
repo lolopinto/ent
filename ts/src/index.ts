@@ -75,6 +75,7 @@ export {
   DenyIfEntIsVisiblePolicy,
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
+  AlwaysAllowPrivacyPolicy,
 } from "./core/privacy";
 export { BaseEdgeQuery, EdgeQuerySource } from "./core/query";
 

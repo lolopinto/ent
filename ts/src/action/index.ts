@@ -15,3 +15,4 @@ export {
   Orchestrator,
   EntChangeset,
 } from "./orchestrator";
+export { DenyIfBuilder, AllowIfBuilder } from "./privacy";

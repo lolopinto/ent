@@ -68,7 +68,7 @@ export interface Action<T extends Ent> {
   readonly viewer: Viewer;
   changeset(): Promise<Changeset<T>>;
   builder: Builder<T>;
-  privacyPolicy?: PrivacyPolicy; // todo make required?
+  getPrivacyPolicy(): PrivacyPolicy;
   triggers?: Trigger<T>[];
   observers?: Observer<T>[];
   validators?: Validator<T>[];

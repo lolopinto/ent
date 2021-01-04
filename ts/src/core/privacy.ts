@@ -334,3 +334,11 @@ export async function applyPrivacyPolicyX(
 
   throw new EntInvalidPrivacyPolicyError(policy, ent?.id);
 }
+
+export const AlwaysAllowPrivacyPolicy = {
+  rules: [AlwaysAllowRule],
+};
+
+export const AlwaysDenyPrivacyPolicy = {
+  rules: [AlwaysDenyRule],
+};
