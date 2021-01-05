@@ -1,3 +1,4 @@
+import { AlwaysAllowPrivacyPolicy } from "@lolopinto/ent";
 import {
   CreateAddressActionBase,
   AddressCreateInput,
@@ -6,4 +7,8 @@ import {
 export { AddressCreateInput };
 
 // we're only writing this once except with --force and packageName provided
-export default class CreateAddressAction extends CreateAddressActionBase {}
+export default class CreateAddressAction extends CreateAddressActionBase {
+  getPrivacyPolicy() {
+    return AlwaysAllowPrivacyPolicy;
+  }
+}

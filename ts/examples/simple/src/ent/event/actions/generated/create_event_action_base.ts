@@ -6,7 +6,13 @@ import {
   WriteOperation,
   Changeset,
 } from "@lolopinto/ent/action";
-import { Viewer, ID } from "@lolopinto/ent";
+import {
+  Viewer,
+  ID,
+  AllowIfHasIdentity,
+  PrivacyPolicy,
+  AlwaysDenyRule,
+} from "@lolopinto/ent";
 import { Event, User } from "src/ent/";
 import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
@@ -21,12 +27,18 @@ export interface EventCreateInput {
 export class CreateEventActionBase implements Action<Event> {
   public readonly builder: EventBuilder;
   public readonly viewer: Viewer;
-  private input: EventCreateInput;
+  protected input: EventCreateInput;
 
   constructor(viewer: Viewer, input: EventCreateInput) {
     this.viewer = viewer;
     this.input = input;
     this.builder = new EventBuilder(this.viewer, WriteOperation.Insert, this);
+  }
+
+  getPrivacyPolicy(): PrivacyPolicy {
+    return {
+      rules: [AllowIfHasIdentity, AlwaysDenyRule],
+    };
   }
 
   getInput(): EventInput {

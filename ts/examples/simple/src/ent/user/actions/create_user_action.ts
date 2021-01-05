@@ -9,11 +9,16 @@ import { Contact, User } from "src/ent/";
 import { Changeset } from "@lolopinto/ent/action";
 import { EntCreationObserver } from "@lolopinto/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
+import { AlwaysAllowPrivacyPolicy } from "@lolopinto/ent";
 
 export { UserCreateInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateUserAction extends CreateUserActionBase {
+  getPrivacyPolicy() {
+    return AlwaysAllowPrivacyPolicy;
+  }
+
   triggers = [
     {
       changeset: (builder: UserBuilder, _input: UserCreateInput): void => {

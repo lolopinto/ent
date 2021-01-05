@@ -6,7 +6,13 @@ import {
   WriteOperation,
   Changeset,
 } from "@lolopinto/ent/action";
-import { Viewer, ID } from "@lolopinto/ent";
+import {
+  Viewer,
+  ID,
+  AllowIfHasIdentity,
+  PrivacyPolicy,
+  AlwaysDenyRule,
+} from "@lolopinto/ent";
 import { AuthCode, User } from "src/ent/";
 import {
   AuthCodeBuilder,
@@ -23,7 +29,7 @@ export interface AuthCodeCreateInput {
 export class CreateAuthCodeActionBase implements Action<AuthCode> {
   public readonly builder: AuthCodeBuilder;
   public readonly viewer: Viewer;
-  private input: AuthCodeCreateInput;
+  protected input: AuthCodeCreateInput;
 
   constructor(viewer: Viewer, input: AuthCodeCreateInput) {
     this.viewer = viewer;
@@ -33,6 +39,12 @@ export class CreateAuthCodeActionBase implements Action<AuthCode> {
       WriteOperation.Insert,
       this,
     );
+  }
+
+  getPrivacyPolicy(): PrivacyPolicy {
+    return {
+      rules: [AllowIfHasIdentity, AlwaysDenyRule],
+    };
   }
 
   getInput(): AuthCodeInput {

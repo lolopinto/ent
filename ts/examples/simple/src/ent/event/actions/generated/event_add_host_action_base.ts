@@ -6,7 +6,14 @@ import {
   WriteOperation,
   Changeset,
 } from "@lolopinto/ent/action";
-import { Viewer, ID, AssocEdgeInputOptions } from "@lolopinto/ent";
+import {
+  Viewer,
+  ID,
+  AssocEdgeInputOptions,
+  AllowIfHasIdentity,
+  PrivacyPolicy,
+  AlwaysDenyRule,
+} from "@lolopinto/ent";
 import { Event, User } from "src/ent/";
 import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
@@ -22,6 +29,12 @@ export class EventAddHostActionBase implements Action<Event> {
       this,
       event,
     );
+  }
+
+  getPrivacyPolicy(): PrivacyPolicy {
+    return {
+      rules: [AllowIfHasIdentity, AlwaysDenyRule],
+    };
   }
 
   getInput(): EventInput {

@@ -6,7 +6,13 @@ import {
   WriteOperation,
   Changeset,
 } from "@lolopinto/ent/action";
-import { Viewer, ID } from "@lolopinto/ent";
+import {
+  Viewer,
+  ID,
+  AllowIfHasIdentity,
+  PrivacyPolicy,
+  AlwaysDenyRule,
+} from "@lolopinto/ent";
 import { Contact, User } from "src/ent/";
 import {
   ContactBuilder,
@@ -23,7 +29,7 @@ export interface ContactEditInput {
 export class EditContactActionBase implements Action<Contact> {
   public readonly builder: ContactBuilder;
   public readonly viewer: Viewer;
-  private input: ContactEditInput;
+  protected input: ContactEditInput;
 
   constructor(viewer: Viewer, contact: Contact, input: ContactEditInput) {
     this.viewer = viewer;
@@ -34,6 +40,12 @@ export class EditContactActionBase implements Action<Contact> {
       this,
       contact,
     );
+  }
+
+  getPrivacyPolicy(): PrivacyPolicy {
+    return {
+      rules: [AllowIfHasIdentity, AlwaysDenyRule],
+    };
   }
 
   getInput(): ContactInput {

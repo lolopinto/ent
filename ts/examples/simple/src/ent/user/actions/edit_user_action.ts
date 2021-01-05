@@ -8,5 +8,7 @@ export { UserEditInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class EditUserAction extends EditUserActionBase {
-  privacyPolicy = EditUserPrivacy;
+  getPrivacyPolicy() {
+    return EditUserPrivacy;
+  }
 }
