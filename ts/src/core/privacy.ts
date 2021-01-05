@@ -125,6 +125,22 @@ export const AllowIfViewerRule = {
   },
 };
 
+export class AllowIfViewerEqualsRule {
+  constructor(private id: ID) {}
+
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
+    return v.viewerID === this.id ? Allow() : Skip();
+  }
+}
+
+export class DenyIfViewerEqualsRule {
+  constructor(private id: ID) {}
+
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
+    return v.viewerID === this.id ? Deny() : Skip();
+  }
+}
+
 interface FuncRule {
   (v: Viewer, ent?: Ent): boolean | Promise<boolean>;
 }
