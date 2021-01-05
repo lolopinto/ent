@@ -78,19 +78,19 @@ export interface PrivacyPolicy {
 }
 
 export const AlwaysAllowRule = {
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(_v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     return Allow();
   },
 };
 
 export const AlwaysDenyRule = {
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(_v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     return Deny();
   },
 };
 
 export const DenyIfLoggedOutRule = {
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     if (v.viewerID === null || v.viewerID == undefined) {
       return Deny();
     }
@@ -99,7 +99,7 @@ export const DenyIfLoggedOutRule = {
 };
 
 export const DenyIfLoggedInRule = {
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     if (v.viewerID === null || v.viewerID == undefined) {
       return Skip();
     }
@@ -108,7 +108,7 @@ export const DenyIfLoggedInRule = {
 };
 
 export const AllowIfHasIdentity = {
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     if (v.viewerID === null || v.viewerID == undefined) {
       return Skip();
     }
@@ -117,8 +117,8 @@ export const AllowIfHasIdentity = {
 };
 
 export const AllowIfViewerRule = {
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
-    if (v.viewerID === ent.id) {
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+    if (v.viewerID === ent?.id) {
       return Allow();
     }
     return Skip();
@@ -126,13 +126,13 @@ export const AllowIfViewerRule = {
 };
 
 interface FuncRule {
-  (v: Viewer, ent: Ent): boolean | Promise<boolean>;
+  (v: Viewer, ent?: Ent): boolean | Promise<boolean>;
 }
 
 export class AllowIfFuncRule implements PrivacyPolicyRule {
   constructor(private fn: FuncRule) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     const result = await this.fn(v, ent);
     if (result) {
       return Allow();
@@ -144,7 +144,7 @@ export class AllowIfFuncRule implements PrivacyPolicyRule {
 export class DenyIfFuncRule implements PrivacyPolicyRule {
   constructor(private fn: FuncRule) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     const result = await this.fn(v, ent);
     if (result) {
       return Deny();
@@ -156,8 +156,11 @@ export class DenyIfFuncRule implements PrivacyPolicyRule {
 export class AllowIfViewerIsRule implements PrivacyPolicyRule {
   constructor(private property: string) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
-    const result = ent[this.property];
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+    let result: undefined;
+    if (ent) {
+      result = ent[this.property];
+    }
     if (result === v.viewerID) {
       return Allow();
     }
@@ -169,7 +172,7 @@ export class AllowIfEntIsVisibleRule<T extends Ent>
   implements PrivacyPolicyRule {
   constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
-  async apply(v: Viewer, _ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Skip();
@@ -194,7 +197,7 @@ export class DenyIfEntIsVisibleRule<T extends Ent>
   implements PrivacyPolicyRule {
   constructor(private id: ID, private options: LoadEntOptions<T>) {}
 
-  async apply(v: Viewer, _ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     const visible = await loadEnt(v, this.id, this.options);
     if (visible === null) {
       return Skip();
@@ -204,8 +207,8 @@ export class DenyIfEntIsVisibleRule<T extends Ent>
 }
 
 async function allowIfEdgeExistsRule(
-  id1: ID | null,
-  id2: ID | null,
+  id1: ID | null | undefined,
+  id2: ID | null | undefined,
   edgeType: string,
   context?: Context,
 ): Promise<PrivacyResult> {
@@ -222,7 +225,7 @@ async function allowIfEdgeExistsRule(
 export class AllowIfEdgeExistsRule implements PrivacyPolicyRule {
   constructor(private id1: ID, private id2: ID, private edgeType: string) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     return allowIfEdgeExistsRule(this.id1, this.id2, this.edgeType, v.context);
   }
 }
@@ -231,21 +234,21 @@ export class AllowIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
   constructor(private edgeType: string) {}
 
   async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
-    return allowIfEdgeExistsRule(v.viewerID, ent.id, this.edgeType, v.context);
+    return allowIfEdgeExistsRule(v.viewerID, ent?.id, this.edgeType, v.context);
   }
 }
 
 export class AllowIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
   constructor(private edgeType: string) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
-    return allowIfEdgeExistsRule(ent.id, v.viewerID, this.edgeType, v.context);
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+    return allowIfEdgeExistsRule(ent?.id, v.viewerID, this.edgeType, v.context);
   }
 }
 
 async function denyIfEdgeExistsRule(
-  id1: ID | null,
-  id2: ID | null,
+  id1: ID | null | undefined,
+  id2: ID | null | undefined,
   edgeType: string,
   context?: Context,
 ): Promise<PrivacyResult> {
@@ -263,7 +266,7 @@ async function denyIfEdgeExistsRule(
 export class DenyIfEdgeExistsRule implements PrivacyPolicyRule {
   constructor(private id1: ID, private id2: ID, private edgeType: string) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     return denyIfEdgeExistsRule(this.id1, this.id2, this.edgeType, v.context);
   }
 }
@@ -271,16 +274,16 @@ export class DenyIfEdgeExistsRule implements PrivacyPolicyRule {
 export class DenyIfViewerInboundEdgeExistsRule implements PrivacyPolicyRule {
   constructor(private edgeType: string) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
-    return denyIfEdgeExistsRule(v.viewerID, ent.id, this.edgeType, v.context);
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+    return denyIfEdgeExistsRule(v.viewerID, ent?.id, this.edgeType, v.context);
   }
 }
 
 export class DenyIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
   constructor(private edgeType: string) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
-    return denyIfEdgeExistsRule(ent.id, v.viewerID, this.edgeType, v.context);
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+    return denyIfEdgeExistsRule(ent?.id, v.viewerID, this.edgeType, v.context);
   }
 }
 
@@ -288,7 +291,7 @@ export class DenyIfViewerOutboundEdgeExistsRule implements PrivacyPolicyRule {
 export class AllowIfConditionAppliesRule implements PrivacyPolicyRule {
   constructor(private fn: FuncRule, private rule: PrivacyPolicyRule) {}
 
-  async apply(v: Viewer, ent: Ent): Promise<PrivacyResult> {
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     const result = await this.fn(v, ent);
     if (!result) {
       return Skip();

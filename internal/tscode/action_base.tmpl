@@ -1,5 +1,5 @@
 {{ reserveImport .Package.ActionPackagePath "Action" "Builder" "WriteOperation" "Changeset" "Builder" }}
-{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" }}
+{{ reserveImport .Package.PackagePath "Viewer" "ID" "Ent" "AssocEdgeInputOptions" "AllowIfHasIdentity" "PrivacyPolicy" "AlwaysDenyRule"}}
 
 {{ range .NodeData.GetImportPathsForDependencies -}}
   {{ if .DefaultImport -}}
@@ -76,7 +76,7 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
   public readonly builder: {{useImport $builderName}};
   public readonly viewer: {{$viewer}}
   {{ if $hasInput -}}
-    private input: {{$inputName}};
+    protected input: {{$inputName}};
   {{end}}
 
   constructor({{$constructor}}) {
@@ -93,6 +93,13 @@ export class {{$actionName}} implements {{useImport "Action"}}<{{$node}}> {
       {{end -}}
     );
   }
+
+  getPrivacyPolicy(): {{useImport "PrivacyPolicy"}} {
+    return {
+      rules:[{{useImport "AllowIfHasIdentity"}}, {{useImport "AlwaysDenyRule"}}],
+    };
+  };
+  
 
   getInput(): {{useImport $builderInput}} {
     {{ if $hasInput -}}
