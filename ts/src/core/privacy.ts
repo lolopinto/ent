@@ -126,7 +126,7 @@ export const AllowIfViewerRule = {
 };
 
 export class AllowIfViewerEqualsRule {
-  constructor(private id: ID) {}
+  constructor(private id: any) {}
 
   async apply(v: Viewer, _ent?: Ent): Promise<PrivacyResult> {
     return v.viewerID === this.id ? Allow() : Skip();

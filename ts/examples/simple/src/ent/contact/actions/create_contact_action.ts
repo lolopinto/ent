@@ -24,8 +24,7 @@ export default class CreateContactAction extends CreateContactActionBase {
     return {
       rules: [
         AllowIfViewerRule,
-        // TODO any
-        new AllowIfViewerEqualsRule(this.input.userID as ID),
+        new AllowIfViewerEqualsRule(this.input.userID),
         new AllowIfBuilder(this.input.userID),
         AlwaysDenyRule,
       ],
