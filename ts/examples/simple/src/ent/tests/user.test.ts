@@ -219,6 +219,7 @@ describe("privacy", () => {
   });
 });
 
+// TODO this test is finnicky
 test("symmetric edge", async () => {
   let dany = await create({
     firstName: "Daenerys",

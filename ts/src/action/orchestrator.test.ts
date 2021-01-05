@@ -1220,8 +1220,10 @@ describe("privacyPolicy", () => {
       ]),
       WriteOperation.Insert,
     );
-    action.privacyPolicy = {
-      rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+    action.getPrivacyPolicy = () => {
+      return {
+        rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+      };
     };
     let valid = await action.valid();
     expect(valid).toBe(true);
@@ -1238,8 +1240,10 @@ describe("privacyPolicy", () => {
       ]),
       WriteOperation.Insert,
     );
-    action.privacyPolicy = {
-      rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+    action.getPrivacyPolicy = () => {
+      return {
+        rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+      };
     };
     let valid = await action.valid();
     expect(valid).toBe(false);
@@ -1470,8 +1474,10 @@ describe("combo", () => {
         },
       },
     ];
-    action.privacyPolicy = {
-      rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+    action.getPrivacyPolicy = () => {
+      return {
+        rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+      };
     };
     action.validators = [
       {

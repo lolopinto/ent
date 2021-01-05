@@ -264,14 +264,14 @@ test("query custom async function nullable list and contents", async () => {
   let vc2 = new IDViewer(user2.id);
   user2 = await User.loadX(vc2, user2.id);
   let selfContact2 = await user2.loadSelfContact();
-  await CreateContactAction.create(vc, {
+  await CreateContactAction.create(vc2, {
     emailAddress: randomEmail("foo.com"),
     firstName: "Jon",
     lastName: "Snow",
     userID: user2.id,
   }).saveX();
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user2.id), user2),
+    getConfig(vc2, user2),
     ["id", encodeGQLID(user2)],
     [
       "contactsSameDomainNullableContentsAndList[0].id",

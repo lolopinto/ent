@@ -1,5 +1,9 @@
 import { Ent, ID, Viewer, Data, EntConstructor } from "../core/ent";
-import { PrivacyPolicy, AlwaysAllowRule } from "../core/privacy";
+import {
+  PrivacyPolicy,
+  AlwaysAllowRule,
+  AlwaysAllowPrivacyPolicy,
+} from "../core/privacy";
 import { Orchestrator } from "../action/orchestrator";
 import {
   Action,
@@ -166,7 +170,6 @@ export class SimpleAction<T extends Ent> implements Action<T> {
   validators: Validator<T>[] = [];
   triggers: Trigger<T>[] = [];
   observers: Observer<T>[] = [];
-  privacyPolicy: PrivacyPolicy;
 
   constructor(
     public viewer: Viewer,
@@ -183,6 +186,10 @@ export class SimpleAction<T extends Ent> implements Action<T> {
       existingEnt,
       this,
     );
+  }
+
+  getPrivacyPolicy() {
+    return AlwaysAllowPrivacyPolicy;
   }
 
   getInput() {

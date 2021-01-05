@@ -63,6 +63,8 @@ export {
   AllowIfViewerRule,
   AllowIfFuncRule,
   AllowIfViewerIsRule,
+  AllowIfViewerEqualsRule,
+  DenyIfViewerEqualsRule,
   AllowIfEdgeExistsRule,
   AllowIfViewerInboundEdgeExistsRule,
   AllowIfViewerOutboundEdgeExistsRule,
@@ -75,6 +77,7 @@ export {
   DenyIfEntIsVisiblePolicy,
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
+  AlwaysAllowPrivacyPolicy,
 } from "./core/privacy";
 export { BaseEdgeQuery, EdgeQuerySource } from "./core/query";
 

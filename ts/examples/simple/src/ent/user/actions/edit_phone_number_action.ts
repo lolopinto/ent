@@ -6,6 +6,7 @@ import {
 import { UserBuilder } from "./user_builder";
 import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
 import { User } from "src/ent/user";
+import { EditUserPrivacy } from "./edit_user_privacy";
 
 export { EditPhoneNumberInput };
 
@@ -63,4 +64,8 @@ export default class EditPhoneNumberAction extends EditPhoneNumberActionBase {
   triggers = [this.generateNewCode];
 
   observers = [this.generateNewCode];
+
+  getPrivacyPolicy() {
+    return EditUserPrivacy;
+  }
 }

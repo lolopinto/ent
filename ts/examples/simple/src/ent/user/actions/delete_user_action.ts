@@ -3,5 +3,7 @@ import { EditUserPrivacy } from "./edit_user_privacy";
 
 // we're only writing this once except with --force and packageName provided
 export default class DeleteUserAction extends DeleteUserActionBase {
-  privacyPolicy = EditUserPrivacy;
+  getPrivacyPolicy() {
+    return EditUserPrivacy;
+  }
 }

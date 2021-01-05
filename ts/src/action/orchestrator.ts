@@ -283,7 +283,7 @@ export class Orchestrator<T extends Ent> {
 
   private async validate(): Promise<void> {
     const action = this.options.action;
-    let privacyPolicy = action?.privacyPolicy;
+    let privacyPolicy = action?.getPrivacyPolicy();
     const builder = this.options.builder;
 
     let promises: Promise<any>[] = [];

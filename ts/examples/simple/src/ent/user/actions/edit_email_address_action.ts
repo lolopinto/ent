@@ -6,6 +6,7 @@ import { UserBuilder } from "./user_builder";
 import CreateAuthCodeAction from "src/ent/auth_code/actions/create_auth_code_action";
 import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
 import { User } from "src/ent/user";
+import { EditUserPrivacy } from "./edit_user_privacy";
 
 export { EditEmailAddressInput };
 
@@ -64,4 +65,8 @@ export default class EditEmailAddressAction extends EditEmailAddressActionBase {
   triggers = [this.generateNewCode];
 
   observers = [this.generateNewCode];
+
+  getPrivacyPolicy() {
+    return EditUserPrivacy;
+  }
 }

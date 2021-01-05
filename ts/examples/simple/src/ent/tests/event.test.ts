@@ -62,9 +62,13 @@ test("edit event", async () => {
   let date = new Date();
   let event = await create(date);
 
-  let editedEvent = await EditEventAction.create(loggedOutViewer, event, {
-    location: "fun location",
-  }).saveX();
+  let editedEvent = await EditEventAction.create(
+    new IDViewer(event.creatorID),
+    event,
+    {
+      location: "fun location",
+    },
+  ).saveX();
   expect(editedEvent).not.toBe(null);
   expect(editedEvent.name).toBe("fun event");
   expect(editedEvent.location).toBe("fun location");
@@ -80,7 +84,8 @@ test("edit nullable field", async () => {
   let endTime = new Date(date.getTime());
   endTime.setTime(date.getTime() + 24 * 60 * 60);
 
-  let editedEvent = await EditEventAction.create(loggedOutViewer, event, {
+  const vc = new IDViewer(event.creatorID);
+  let editedEvent = await EditEventAction.create(vc, event, {
     endTime: endTime,
   }).saveX();
   expect(editedEvent).not.toBe(null);
@@ -91,7 +96,7 @@ test("edit nullable field", async () => {
   expect(editedEvent.endTime?.toDateString()).toBe(endTime.toDateString());
 
   // re-edit and clear the value
-  editedEvent = await EditEventAction.create(loggedOutViewer, event, {
+  editedEvent = await EditEventAction.create(vc, event, {
     endTime: null,
   }).saveX();
   expect(editedEvent).not.toBe(null);
@@ -104,10 +109,10 @@ test("edit nullable field", async () => {
 
 test("delete event", async () => {
   let event = await create(new Date());
+  const vc = new IDViewer(event.creatorID);
+  await DeleteEventAction.create(vc, event).saveX();
 
-  await DeleteEventAction.create(loggedOutViewer, event).saveX();
-
-  let loadEvent = await Event.load(loggedOutViewer, event.id);
+  let loadEvent = await Event.load(vc, event.id);
   expect(loadEvent).toBe(null);
 });
 
@@ -171,7 +176,7 @@ describe("validators", () => {
       location: "location",
     }).saveX();
 
-    let action = EditEventAction.create(loggedOutViewer, event, {
+    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
       name: "fun event2",
     });
 
@@ -182,7 +187,7 @@ describe("validators", () => {
   test("edit time not changed", async () => {
     let event = await create(new Date());
 
-    let action = EditEventAction.create(loggedOutViewer, event, {
+    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
       name: "fun event2",
     });
 
@@ -193,7 +198,7 @@ describe("validators", () => {
   test("edit time not changed", async () => {
     let event = await create(new Date());
 
-    let action = EditEventAction.create(loggedOutViewer, event, {
+    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
       name: "fun event2",
     });
 
@@ -206,7 +211,7 @@ describe("validators", () => {
 
     let yesterday = new Date(event.startTime.getTime() - 86400);
 
-    let action = EditEventAction.create(loggedOutViewer, event, {
+    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
       endTime: yesterday,
     });
 
@@ -220,7 +225,7 @@ describe("validators", () => {
     let yesterday = new Date(event.startTime.getTime() - 86400);
     let yesterdayPlus = new Date(yesterday.getTime() + 3600);
 
-    let action = EditEventAction.create(loggedOutViewer, event, {
+    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
       startTime: yesterday,
       endTime: yesterdayPlus,
     });
@@ -235,7 +240,7 @@ describe("validators", () => {
     let yesterday = new Date(event.startTime.getTime() - 86400);
     let yesterdayPlus = new Date(yesterday.getTime() + 3600);
 
-    let action = EditEventAction.create(loggedOutViewer, event, {
+    let action = EditEventAction.create(new IDViewer(event.creatorID), event, {
       startTime: yesterday,
       endTime: yesterdayPlus,
     });
@@ -243,7 +248,7 @@ describe("validators", () => {
     event = await action.saveX();
 
     // now changing startTime to be before endTime incorrect...
-    action = EditEventAction.create(loggedOutViewer, event, {
+    action = EditEventAction.create(new IDViewer(event.creatorID), event, {
       startTime: new Date(),
     });
     let valid = await action.valid();
