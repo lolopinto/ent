@@ -14,7 +14,11 @@ import {
   PrivacyPolicy,
   AllowIfConditionAppliesRule,
 } from "../../src/core/privacy";
-import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
+import {
+  BuilderSchema,
+  SimpleAction,
+  SimpleBuilder,
+} from "../../src/testutils/builder";
 import { Field, StringType, BaseEntSchema } from "../../src/schema";
 import { EdgeType } from "./internal";
 import { NodeType } from "./const";
@@ -143,14 +147,26 @@ export interface UserCreateInput {
 export type UserEditInput = Partial<UserCreateInput>;
 
 export function getUserBuilder(viewer: Viewer, input: UserCreateInput) {
+  const action = getUserAction(viewer, input);
+  return action.builder;
+}
+
+export function getUserAction(viewer: Viewer, input: UserCreateInput) {
   const m = new Map();
   for (const key in input) {
     m.set(key, input[key]);
   }
-  return new SimpleBuilder(viewer, new FakeUserSchema(), m);
+  const action = new SimpleAction(viewer, new FakeUserSchema(), m);
+  action.viewerForEntLoad = (data: Data) => {
+    // load the created ent using a VC of the newly created user.
+    return new IDViewer(data.id);
+  };
+  return action;
 }
 
 export async function createUser(viewer: Viewer, input: UserCreateInput) {
-  const builder = getUserBuilder(viewer, input);
-  return await builder.saveX();
+  //  const builder = getUserBuilder(viewer, input);
+  const action = getUserAction(viewer, input);
+  return action.saveX();
+  //  return await builder.saveX();
 }

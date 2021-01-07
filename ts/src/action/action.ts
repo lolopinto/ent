@@ -78,6 +78,11 @@ export interface Action<T extends Ent> {
   // throws if invalid
   validX(): Promise<void>;
 
+  // this is used to load the ent after the action
+  // you can imagine this being overwritten for a create user or create account
+  // action to load the just-created user after the fact
+  viewerForEntLoad?(data: Data): Viewer | Promise<Viewer>;
+
   // if we have overloads we need to provide all which sucks
   // so maybe don't make the ones below required
   // save(): Promise<T | null>;

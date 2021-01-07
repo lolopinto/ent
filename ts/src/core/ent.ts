@@ -1137,7 +1137,7 @@ export async function loadNodesByEdge<T extends Ent>(
   return loadEnts(viewer, options, ...ids);
 }
 
-async function applyPrivacyPolicyForRow<T extends Ent>(
+export async function applyPrivacyPolicyForRow<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
   row: Data | null,
@@ -1150,7 +1150,7 @@ async function applyPrivacyPolicyForRow<T extends Ent>(
   return await applyPrivacyPolicyForEnt(viewer, ent);
 }
 
-async function applyPrivacyPolicyForRowX<T extends Ent>(
+export async function applyPrivacyPolicyForRowX<T extends Ent>(
   viewer: Viewer,
   options: LoadEntOptions<T>,
   row: Data,
