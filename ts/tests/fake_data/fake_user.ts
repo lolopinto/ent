@@ -165,8 +165,6 @@ export function getUserAction(viewer: Viewer, input: UserCreateInput) {
 }
 
 export async function createUser(viewer: Viewer, input: UserCreateInput) {
-  //  const builder = getUserBuilder(viewer, input);
   const action = getUserAction(viewer, input);
   return action.saveX();
-  //  return await builder.saveX();
 }

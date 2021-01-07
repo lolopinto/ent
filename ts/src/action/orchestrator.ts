@@ -504,7 +504,7 @@ export class Orchestrator<T extends Ent> {
       {
         ent: this.options.ent,
         tableName: this.options.tableName,
-        fields: [], // don't need actual fields here?
+        fields: [], // don't need actual fields here
         context: viewer.context,
       },
       row,
@@ -522,7 +522,7 @@ export class Orchestrator<T extends Ent> {
       {
         ent: this.options.ent,
         tableName: this.options.tableName,
-        fields: [], // don't need actual fields here?
+        fields: [], // don't need actual fields here
         context: viewer.context,
       },
       row,
