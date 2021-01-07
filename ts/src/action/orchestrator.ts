@@ -1,5 +1,6 @@
 import {
   ID,
+  Data,
   Ent,
   Viewer,
   EntConstructor,
@@ -9,8 +10,9 @@ import {
   EditNodeOperation,
   DeleteNodeOperation,
   loadEdgeDatas,
+  applyPrivacyPolicyForRow,
 } from "../core/ent";
-import { getFields, SchemaInputType, Edge } from "../schema/schema";
+import { getFields, SchemaInputType } from "../schema/schema";
 import { Changeset, Executor, Validator, Trigger } from "../action";
 import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
@@ -476,27 +478,63 @@ export class Orchestrator<T extends Ent> {
     );
   }
 
-  // we don't do privacy checks here but will eventually
-  async editedEnt(): Promise<T | null> {
+  private async viewerForEntLoad(data: Data) {
+    const action = this.options.action;
+    if (!action || !action.viewerForEntLoad) {
+      return this.options.viewer;
+    }
+    return await action.viewerForEntLoad(data);
+  }
+
+  async returnedRow(): Promise<Data | null> {
     if (this.mainOp && this.mainOp.returnedEntRow) {
-      // TODO we need to apply privacy while loading
-      // so we also need an API to get the raw object back e.g. for account creation
-      // or a way to inject viewer for privacy purposes
-      // return applyPrivacyPolicyForEnt(builder.viewer, ent);
-      let row = this.mainOp.returnedEntRow();
-      if (row) {
-        return new this.options.ent(this.options.viewer, row["id"], row);
-      }
+      return this.mainOp.returnedEntRow();
     }
     return null;
   }
 
-  async editedEntX(): Promise<T> {
-    let ent = await this.editedEnt();
-    if (ent) {
-      return ent;
+  async editedEnt(): Promise<T | null> {
+    const row = await this.returnedRow();
+    if (!row) {
+      return null;
     }
-    throw new Error(`ent was not created`);
+    const viewer = await this.viewerForEntLoad(row);
+    return await applyPrivacyPolicyForRow(
+      viewer,
+      {
+        ent: this.options.ent,
+        tableName: this.options.tableName,
+        fields: [], // don't need actual fields here
+        context: viewer.context,
+      },
+      row,
+    );
+  }
+
+  async editedEntX(): Promise<T> {
+    const row = await this.returnedRow();
+    if (!row) {
+      throw new Error(`ent was not created`);
+    }
+    const viewer = await this.viewerForEntLoad(row);
+    const ent = await applyPrivacyPolicyForRow(
+      viewer,
+      {
+        ent: this.options.ent,
+        tableName: this.options.tableName,
+        fields: [], // don't need actual fields here
+        context: viewer.context,
+      },
+      row,
+    );
+    if (!ent) {
+      if (this.options.operation == WriteOperation.Insert) {
+        throw new Error(`was able to create ent but not load it`);
+      } else {
+        throw new Error(`was able to edit ent but not load it`);
+      }
+    }
+    return ent;
   }
 }
 

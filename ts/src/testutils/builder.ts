@@ -165,11 +165,16 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
   }
 }
 
+interface viewerEntLoadFunc {
+  (data: Data): Viewer | Promise<Viewer>;
+}
+
 export class SimpleAction<T extends Ent> implements Action<T> {
   builder: SimpleBuilder<T>;
   validators: Validator<T>[] = [];
   triggers: Trigger<T>[] = [];
   observers: Observer<T>[] = [];
+  viewerForEntLoad: viewerEntLoadFunc | undefined;
 
   constructor(
     public viewer: Viewer,
@@ -219,10 +224,7 @@ export class SimpleAction<T extends Ent> implements Action<T> {
   async saveX(): Promise<T | void> {
     await saveBuilderX(this.builder);
     if (this.builder.operation !== WriteOperation.Delete) {
-      let ent = await this.builder.orchestrator.editedEnt();
-      if (ent) {
-        return ent;
-      }
+      return await this.builder.orchestrator.editedEntX();
     }
   }
 

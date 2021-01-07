@@ -13,6 +13,8 @@ import {
   EditNodeOperation,
   DeleteNodeOperation,
   EdgeOperation,
+  ID,
+  Data,
 } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
@@ -29,7 +31,13 @@ import {
 import { FakeComms, Mode } from "../testutils/fake_comms";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
-import { AlwaysAllowRule, DenyIfLoggedInRule } from "../core/privacy";
+import {
+  PrivacyPolicy,
+  AllowIfViewerRule,
+  AlwaysAllowRule,
+  DenyIfLoggedInRule,
+  AlwaysDenyRule,
+} from "../core/privacy";
 import { edgeDirection } from "./orchestrator";
 import { createRowForTest } from "../testutils/write";
 
@@ -1666,4 +1674,108 @@ test("schema with derived fields", async () => {
   const fields = await getFieldsFromBuilder(builder);
   expect(fields["owner_id"]).toBe(user.id);
   expect(fields["owner_type"]).toBe(user.nodeType);
+});
+
+describe("viewer for ent load", () => {
+  class CustomUser implements Ent {
+    id: ID;
+    accountID: string;
+    nodeType = "User";
+    privacyPolicy: PrivacyPolicy = {
+      rules: [AllowIfViewerRule, AlwaysDenyRule],
+    };
+    constructor(public viewer: Viewer, id: ID, public data: Data) {
+      this.id = id;
+    }
+  }
+
+  class CustomUserSchema extends BaseEntSchema {
+    fields: Field[] = [
+      StringType({ name: "FirstName" }),
+      StringType({ name: "LastName" }),
+    ];
+    ent = CustomUser;
+  }
+
+  async function createUser(): Promise<CustomUser> {
+    let action = new SimpleAction(
+      new LoggedOutViewer(),
+      new CustomUserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.viewerForEntLoad = (data: Data) => {
+      // load the created ent using a VC of the newly created user.
+      return new IDViewer(data.id);
+    };
+
+    const user = await action.saveX();
+    expect(user).toBeInstanceOf(CustomUser);
+    if (user) {
+      return user;
+    }
+    throw new Error("Impossible");
+  }
+
+  test("loadable with viewer", async () => {
+    await createUser();
+  });
+
+  test("can create but can't load user", async () => {
+    let action = new SimpleAction(
+      new LoggedOutViewer(),
+      new CustomUserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    try {
+      await action.saveX();
+      fail("should have thrown exception");
+    } catch (e) {
+      expect(e.message).toBe("was able to create ent but not load it");
+    }
+  });
+
+  test("can edit but can't load user", async () => {
+    const user = await createUser();
+    let action = new SimpleAction(
+      new LoggedOutViewer(),
+      new CustomUserSchema(),
+      new Map([["LastName", "Snow2"]]),
+      WriteOperation.Edit,
+      user,
+    );
+    try {
+      await action.saveX();
+      fail("should have thrown exception");
+    } catch (e) {
+      expect(e.message).toBe("was able to edit ent but not load it");
+    }
+  });
+
+  test("can edit, loadable with viewer", async () => {
+    const user = await createUser();
+    let action = new SimpleAction(
+      // should probably not used a LoggedOutViewer here but for testing purposes...
+      // and SimpleAction defaults to AlwaysAllowPrivacyPolicy
+      new LoggedOutViewer(),
+      new CustomUserSchema(),
+      new Map([["LastName", "Snow2"]]),
+      WriteOperation.Edit,
+      user,
+    );
+    action.viewerForEntLoad = (data: Data) => {
+      // load the edited ent using a VC of the user
+      return new IDViewer(data.id);
+    };
+
+    const editedUser = await action.saveX();
+    expect(editedUser).toBeInstanceOf(CustomUser);
+  });
 });
