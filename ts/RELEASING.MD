@@ -8,5 +8,7 @@ high level following [these steps](https://docs.github.com/en/free-pro-team@late
 * `docker tag ent ghcr.io/lolopinto/ent:(tag)`
 * `docker tag ent ghcr.io/lolopinto/ent:latest`
 
-* `docker push ghcr.io/lolopinto/ent` for above tag
-* `docker push ghcr.io/lolopinto/ent:latest`
+* `docker push ghcr.io/lolopinto/ent` for latest
+* `docker push ghcr.io/lolopinto/ent:(tag)`
+
+PS: To figure out what the new version/tag should be, current version can be found at https://github.com/users/lolopinto/packages/container/package/ent.
