@@ -141,6 +141,10 @@ func (nodeData *NodeData) HasPrivateField() bool {
 	return false
 }
 
+func (nodeData *NodeData) HasAssociationEdges() bool {
+	return nodeData.EdgeInfo.HasAssociationEdges()
+}
+
 func (nodeData *NodeData) addConstInfo(constType string, constName string, constInfo *ConstInfo) {
 	constGroup := nodeData.ConstantGroups[constType]
 	if constGroup == nil {
