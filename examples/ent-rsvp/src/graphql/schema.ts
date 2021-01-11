@@ -2,7 +2,9 @@
 
 import { GraphQLSchema } from "graphql";
 import { QueryType } from "src/graphql/resolvers/generated/query_type";
+import { MutationType } from "src/graphql/mutations/generated/mutation_type";
 
 export default new GraphQLSchema({
   query: QueryType,
+  mutation: MutationType,
 });

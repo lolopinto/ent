@@ -8,6 +8,7 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
+  loadEntsFromClause,
   loadEntFromClause,
   loadEntXFromClause,
   loadRow,
@@ -18,7 +19,7 @@ import {
   query,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
-import { NodeType } from "src/ent/internal";
+import { NodeType, Event } from "src/ent/internal";
 import schema from "src/schema/user";
 
 const tableName = "users";
@@ -174,5 +175,18 @@ export class UserBase {
 
   static getField(key: string): Field | undefined {
     return UserBase.getSchemaFields().get(key);
+  }
+
+  async loadEvents(): Promise<Event[]> {
+    let map = await loadEntsFromClause(
+      this.viewer,
+      query.Eq("creator_id", this.id),
+      Event.loaderOptions(),
+    );
+    let results: Event[] = [];
+    map.forEach((ent) => {
+      results.push(ent);
+    });
+    return results;
   }
 }

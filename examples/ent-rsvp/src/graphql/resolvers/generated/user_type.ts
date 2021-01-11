@@ -5,10 +5,12 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLList,
   GraphQLFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
+import { EventType } from "src/graphql/resolvers/";
 import { User } from "src/ent/";
 
 export const UserType = new GraphQLObjectType({
@@ -26,6 +28,12 @@ export const UserType = new GraphQLObjectType({
     },
     emailAddress: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    events: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      resolve: (user: User, args: {}) => {
+        return user.loadEvents();
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],

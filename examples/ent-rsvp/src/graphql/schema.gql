@@ -6,3 +6,50 @@ type Query {
 interface Node {
   id: ID!
 }
+
+type Mutation {
+  eventCreate(input: EventCreateInput!): EventCreatePayload!
+  eventDelete(input: EventDeleteInput!): EventDeletePayload!
+  eventEdit(input: EventEditInput!): EventEditPayload!
+}
+
+type EventCreatePayload {
+  event: Event!
+}
+
+type Event implements Node {
+  creator: User
+  id: ID!
+  name: String!
+}
+
+type User implements Node {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  events: [Event!]!
+}
+
+input EventCreateInput {
+  name: String!
+  creatorID: ID!
+}
+
+type EventDeletePayload {
+  deletedEventID: ID
+}
+
+input EventDeleteInput {
+  eventID: ID!
+}
+
+type EventEditPayload {
+  event: Event!
+}
+
+input EventEditInput {
+  eventID: ID!
+  name: String
+  creatorID: ID
+}

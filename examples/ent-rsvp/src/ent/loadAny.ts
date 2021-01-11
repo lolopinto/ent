@@ -9,7 +9,7 @@ import {
   Ent,
   LoadEntOptions,
 } from "@lolopinto/ent";
-import { User } from "src/ent/internal";
+import { Event, User } from "src/ent/internal";
 
 export async function loadEntByType(
   viewer: Viewer,
@@ -29,6 +29,8 @@ export async function loadEntXByType(
 
 export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
   switch (type) {
+    case NodeType.Event:
+      return Event.loaderOptions();
     case NodeType.User:
       return User.loaderOptions();
   }

@@ -6,6 +6,16 @@ from sqlalchemy.dialects import postgresql
 metadata = sa.MetaData()
 
  
+sa.Table("events", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("name", sa.Text(), nullable=False),
+    sa.Column("creator_id", postgresql.UUID(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="events_id_pkey"),
+    sa.ForeignKeyConstraint(["creator_id"], ["users.id"], name="events_creator_id_fkey", ondelete="CASCADE"),
+)
+   
 sa.Table("users", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
