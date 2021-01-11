@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "es2018",
+      "esnext.asynciterable"
+    ],
+    "outDir": "./dist",
+    "target": "es2015",
+    "strictNullChecks": true,
+    "downlevelIteration": true,
+    "baseUrl": ".",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "paths": {
+      "ent/*": [
+        "@lolopinto/ent/*",
+      ],
+      "src/*": [
+        "./src/*"
+      ],
+      "*": [
+        "*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "tests/**/*"
+  ]
+}

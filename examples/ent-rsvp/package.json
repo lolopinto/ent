@@ -1,0 +1,32 @@
+{
+  "name": "ent-rsvp",
+  "version": "1.0.0",
+  "description": "ent rsvp example",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "compile": "rm -rf dist && ./node_modules/.bin/ent-custom-compiler",
+    "start": "docker-compose -f docker-compose.dev.yml up --build",
+    "codegen": "docker-compose -f docker-compose.dev.yml run --rm app tsent codegen"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lolopinto/ent-starter.git"
+  },
+  "keywords": [
+    "ent rsvp"
+  ],
+  "author": "lolopinto",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lolopinto/ent-starter/issues"
+  },
+  "homepage": "https://github.com/lolopinto/ent-starter#readme",
+  "dependencies": {
+    "@lolopinto/ent": "0.0.56",
+    "@types/express": "^4.17.9",
+    "express": "^4.17.1",
+    "express-graphql": "^0.12.0",
+    "graphql": "^15.4.0"
+  }
+}
