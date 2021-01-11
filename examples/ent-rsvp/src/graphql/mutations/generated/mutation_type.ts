@@ -7,6 +7,9 @@ import { EventActivityEditType } from "src/graphql/mutations/generated/event_act
 import { EventCreateType } from "src/graphql/mutations/generated/event/event_create_type";
 import { EventDeleteType } from "src/graphql/mutations/generated/event/event_delete_type";
 import { EventEditType } from "src/graphql/mutations/generated/event/event_edit_type";
+import { GuestCreateType } from "src/graphql/mutations/generated/guest/guest_create_type";
+import { GuestDeleteType } from "src/graphql/mutations/generated/guest/guest_delete_type";
+import { GuestEditType } from "src/graphql/mutations/generated/guest/guest_edit_type";
 import { GuestGroupCreateType } from "src/graphql/mutations/generated/guest_group/guest_group_create_type";
 import { GuestGroupDeleteType } from "src/graphql/mutations/generated/guest_group/guest_group_delete_type";
 import { GuestGroupEditType } from "src/graphql/mutations/generated/guest_group/guest_group_edit_type";
@@ -20,6 +23,9 @@ export const MutationType = new GraphQLObjectType({
     eventCreate: EventCreateType,
     eventDelete: EventDeleteType,
     eventEdit: EventEditType,
+    guestCreate: GuestCreateType,
+    guestDelete: GuestDeleteType,
+    guestEdit: GuestEditType,
     guestGroupCreate: GuestGroupCreateType,
     guestGroupDelete: GuestGroupDeleteType,
     guestGroupEdit: GuestGroupEditType,

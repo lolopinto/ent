@@ -14,6 +14,9 @@ type Mutation {
   eventCreate(input: EventCreateInput!): EventCreatePayload!
   eventDelete(input: EventDeleteInput!): EventDeletePayload!
   eventEdit(input: EventEditInput!): EventEditPayload!
+  guestCreate(input: GuestCreateInput!): GuestCreatePayload!
+  guestDelete(input: GuestDeleteInput!): GuestDeletePayload!
+  guestEdit(input: GuestEditInput!): GuestEditPayload!
   guestGroupCreate(input: GuestGroupCreateInput!): GuestGroupCreatePayload!
   guestGroupDelete(input: GuestGroupDeleteInput!): GuestGroupDeletePayload!
   guestGroupEdit(input: GuestGroupEditInput!): GuestGroupEditPayload!
@@ -37,6 +40,7 @@ type Event implements Node {
   id: ID!
   name: String!
   eventActivities: [EventActivity!]!
+  guests: [Guest!]!
   guestGroups: [GuestGroup!]!
 }
 
@@ -48,10 +52,20 @@ type User implements Node {
   events: [Event!]!
 }
 
+type Guest implements Node {
+  event: Event
+  guestGroup: GuestGroup
+  id: ID!
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+}
+
 type GuestGroup implements Node {
   event: Event
   id: ID!
   invitationName: String!
+  guests: [Guest!]!
 }
 
 """Time scalar type"""
@@ -111,6 +125,39 @@ input EventEditInput {
   eventID: ID!
   name: String
   creatorID: ID
+}
+
+type GuestCreatePayload {
+  guest: Guest!
+}
+
+input GuestCreateInput {
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  eventID: ID!
+  guestGroupID: ID!
+}
+
+type GuestDeletePayload {
+  deletedGuestID: ID
+}
+
+input GuestDeleteInput {
+  guestID: ID!
+}
+
+type GuestEditPayload {
+  guest: Guest!
+}
+
+input GuestEditInput {
+  guestID: ID!
+  firstName: String
+  lastName: String
+  emailAddress: String
+  eventID: ID
+  guestGroupID: ID
 }
 
 type GuestGroupCreatePayload {

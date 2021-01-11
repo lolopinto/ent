@@ -8,7 +8,6 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadEntsFromClause,
   loadRow,
   loadRowX,
   AlwaysDenyRule,
@@ -17,18 +16,21 @@ import {
   query,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
-import { NodeType, Guest, Event } from "src/ent/internal";
-import schema from "src/schema/guest_group";
+import { NodeType, Event, GuestGroup } from "src/ent/internal";
+import schema from "src/schema/guest";
 
-const tableName = "guest_groups";
+const tableName = "guests";
 
-export class GuestGroupBase {
-  readonly nodeType = NodeType.GuestGroup;
+export class GuestBase {
+  readonly nodeType = NodeType.Guest;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly invitationName: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly emailAddress: string;
   readonly eventID: ID;
+  readonly guestGroupID: ID;
 
   constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
@@ -36,8 +38,11 @@ export class GuestGroupBase {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
-    this.invitationName = data.invitation_name;
+    this.firstName = data.first_name;
+    this.lastName = data.last_name;
+    this.emailAddress = data.email_address;
     this.eventID = data.event_id;
+    this.guestGroupID = data.guest_group_id;
   }
 
   // by default, we always deny and it's up to the ent
@@ -47,88 +52,84 @@ export class GuestGroupBase {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
 
-  static async load<T extends GuestGroupBase>(
+  static async load<T extends GuestBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, GuestGroupBase.loaderOptions.apply(this));
+    return loadEnt(viewer, id, GuestBase.loaderOptions.apply(this));
   }
 
-  static async loadX<T extends GuestGroupBase>(
+  static async loadX<T extends GuestBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, GuestGroupBase.loaderOptions.apply(this));
+    return loadEntX(viewer, id, GuestBase.loaderOptions.apply(this));
   }
 
-  static async loadMany<T extends GuestGroupBase>(
+  static async loadMany<T extends GuestBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, GuestGroupBase.loaderOptions.apply(this), ...ids);
+    return loadEnts(viewer, GuestBase.loaderOptions.apply(this), ...ids);
   }
 
-  static async loadRawData<T extends GuestGroupBase>(
+  static async loadRawData<T extends GuestBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
   ): Promise<Data | null> {
     return await loadRow({
-      ...GuestGroupBase.loaderOptions.apply(this),
+      ...GuestBase.loaderOptions.apply(this),
       clause: query.Eq("id", id),
     });
   }
 
-  static async loadRawDataX<T extends GuestGroupBase>(
+  static async loadRawDataX<T extends GuestBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
   ): Promise<Data> {
     return await loadRowX({
-      ...GuestGroupBase.loaderOptions.apply(this),
+      ...GuestBase.loaderOptions.apply(this),
       clause: query.Eq("id", id),
     });
   }
 
-  static loaderOptions<T extends GuestGroupBase>(
+  static loaderOptions<T extends GuestBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: GuestGroupBase.getFields(),
+      fields: GuestBase.getFields(),
       ent: this,
     };
   }
 
   private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "invitation_name", "event_id"];
+    return [
+      "id",
+      "created_at",
+      "updated_at",
+      "first_name",
+      "last_name",
+      "email_address",
+      "event_id",
+      "guest_group_id",
+    ];
   }
 
   private static schemaFields: Map<string, Field>;
 
   private static getSchemaFields(): Map<string, Field> {
-    if (GuestGroupBase.schemaFields != null) {
-      return GuestGroupBase.schemaFields;
+    if (GuestBase.schemaFields != null) {
+      return GuestBase.schemaFields;
     }
-    return (GuestGroupBase.schemaFields = getFields(schema));
+    return (GuestBase.schemaFields = getFields(schema));
   }
 
   static getField(key: string): Field | undefined {
-    return GuestGroupBase.getSchemaFields().get(key);
-  }
-
-  async loadGuests(): Promise<Guest[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("guest_group_id", this.id),
-      Guest.loaderOptions(),
-    );
-    let results: Guest[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+    return GuestBase.getSchemaFields().get(key);
   }
 
   async loadEvent(): Promise<Event | null> {
@@ -137,5 +138,13 @@ export class GuestGroupBase {
 
   loadEventX(): Promise<Event> {
     return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
+  }
+
+  async loadGuestGroup(): Promise<GuestGroup | null> {
+    return loadEnt(this.viewer, this.guestGroupID, GuestGroup.loaderOptions());
+  }
+
+  loadGuestGroupX(): Promise<GuestGroup> {
+    return loadEntX(this.viewer, this.guestGroupID, GuestGroup.loaderOptions());
   }
 }

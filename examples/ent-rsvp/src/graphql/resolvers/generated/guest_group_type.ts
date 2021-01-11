@@ -5,11 +5,12 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLList,
   GraphQLFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
-import { EventType } from "src/graphql/resolvers/";
+import { GuestType, EventType } from "src/graphql/resolvers/";
 import { GuestGroup } from "src/ent/";
 
 export const GuestGroupType = new GraphQLObjectType({
@@ -27,6 +28,12 @@ export const GuestGroupType = new GraphQLObjectType({
     },
     invitationName: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    guests: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GuestType))),
+      resolve: (guestGroup: GuestGroup, args: {}) => {
+        return guestGroup.loadGuests();
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],
