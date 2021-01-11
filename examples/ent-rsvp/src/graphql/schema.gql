@@ -1,0 +1,8 @@
+type Query {
+  node(id: ID!): Node
+}
+
+"""node interface"""
+interface Node {
+  id: ID!
+}
