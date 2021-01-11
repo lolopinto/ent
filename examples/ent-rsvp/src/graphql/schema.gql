@@ -8,19 +8,32 @@ interface Node {
 }
 
 type Mutation {
+  eventActivityCreate(input: EventActivityCreateInput!): EventActivityCreatePayload!
+  eventActivityDelete(input: EventActivityDeleteInput!): EventActivityDeletePayload!
+  eventActivityEdit(input: EventActivityEditInput!): EventActivityEditPayload!
   eventCreate(input: EventCreateInput!): EventCreatePayload!
   eventDelete(input: EventDeleteInput!): EventDeletePayload!
   eventEdit(input: EventEditInput!): EventEditPayload!
 }
 
-type EventCreatePayload {
-  event: Event!
+type EventActivityCreatePayload {
+  eventActivity: EventActivity!
+}
+
+type EventActivity implements Node {
+  event: Event
+  id: ID!
+  name: String!
+  startTime: Time!
+  endTime: Time
+  location: String!
 }
 
 type Event implements Node {
   creator: User
   id: ID!
   name: String!
+  eventActivities: [EventActivity!]!
 }
 
 type User implements Node {
@@ -29,6 +42,42 @@ type User implements Node {
   lastName: String!
   emailAddress: String!
   events: [Event!]!
+}
+
+"""Time scalar type"""
+scalar Time
+
+input EventActivityCreateInput {
+  name: String!
+  eventID: ID!
+  startTime: Time!
+  endTime: Time
+  location: String!
+}
+
+type EventActivityDeletePayload {
+  deletedEventActivityID: ID
+}
+
+input EventActivityDeleteInput {
+  eventActivityID: ID!
+}
+
+type EventActivityEditPayload {
+  eventActivity: EventActivity!
+}
+
+input EventActivityEditInput {
+  eventActivityID: ID!
+  name: String
+  eventID: ID
+  startTime: Time
+  endTime: Time
+  location: String
+}
+
+type EventCreatePayload {
+  event: Event!
 }
 
 input EventCreateInput {

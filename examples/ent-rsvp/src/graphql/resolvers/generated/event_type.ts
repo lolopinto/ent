@@ -5,11 +5,12 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLList,
   GraphQLFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
-import { UserType } from "src/graphql/resolvers/";
+import { EventActivityType, UserType } from "src/graphql/resolvers/";
 import { Event } from "src/ent/";
 
 export const EventType = new GraphQLObjectType({
@@ -27,6 +28,12 @@ export const EventType = new GraphQLObjectType({
     },
     name: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    eventActivities: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventActivityType))),
+      resolve: (event: Event, args: {}) => {
+        return event.loadEventActivities();
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],

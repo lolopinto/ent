@@ -3,6 +3,8 @@
 export enum NodeType {
   // Event is the node type for the Event object. Used to identify this node in edges and other places.
   Event = "event",
+  // EventActivity is the node type for the EventActivity object. Used to identify this node in edges and other places.
+  EventActivity = "eventActivity",
   // User is the node type for the User object. Used to identify this node in edges and other places.
   User = "user",
 }

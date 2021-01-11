@@ -8,7 +8,6 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadEntsFromClause,
   loadRow,
   loadRowX,
   AlwaysDenyRule,
@@ -17,18 +16,21 @@ import {
   query,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
-import { NodeType, EventActivity, User } from "src/ent/internal";
-import schema from "src/schema/event";
+import { NodeType, Event } from "src/ent/internal";
+import schema from "src/schema/event_activity";
 
-const tableName = "events";
+const tableName = "event_activities";
 
-export class EventBase {
-  readonly nodeType = NodeType.Event;
+export class EventActivityBase {
+  readonly nodeType = NodeType.EventActivity;
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly name: string;
-  readonly creatorID: ID;
+  readonly eventID: ID;
+  readonly startTime: Date;
+  readonly endTime: Date | null;
+  readonly location: string;
 
   constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
@@ -37,7 +39,10 @@ export class EventBase {
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.name = data.name;
-    this.creatorID = data.creator_id;
+    this.eventID = data.event_id;
+    this.startTime = data.start_time;
+    this.endTime = data.end_time;
+    this.location = data.location;
   }
 
   // by default, we always deny and it's up to the ent
@@ -47,95 +52,95 @@ export class EventBase {
     rules: [AllowIfViewerRule, AlwaysDenyRule],
   };
 
-  static async load<T extends EventBase>(
+  static async load<T extends EventActivityBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T | null> {
-    return loadEnt(viewer, id, EventBase.loaderOptions.apply(this));
+    return loadEnt(viewer, id, EventActivityBase.loaderOptions.apply(this));
   }
 
-  static async loadX<T extends EventBase>(
+  static async loadX<T extends EventActivityBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     id: ID,
   ): Promise<T> {
-    return loadEntX(viewer, id, EventBase.loaderOptions.apply(this));
+    return loadEntX(viewer, id, EventActivityBase.loaderOptions.apply(this));
   }
 
-  static async loadMany<T extends EventBase>(
+  static async loadMany<T extends EventActivityBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     viewer: Viewer,
     ...ids: ID[]
   ): Promise<T[]> {
-    return loadEnts(viewer, EventBase.loaderOptions.apply(this), ...ids);
+    return loadEnts(
+      viewer,
+      EventActivityBase.loaderOptions.apply(this),
+      ...ids,
+    );
   }
 
-  static async loadRawData<T extends EventBase>(
+  static async loadRawData<T extends EventActivityBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
   ): Promise<Data | null> {
     return await loadRow({
-      ...EventBase.loaderOptions.apply(this),
+      ...EventActivityBase.loaderOptions.apply(this),
       clause: query.Eq("id", id),
     });
   }
 
-  static async loadRawDataX<T extends EventBase>(
+  static async loadRawDataX<T extends EventActivityBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
     id: ID,
   ): Promise<Data> {
     return await loadRowX({
-      ...EventBase.loaderOptions.apply(this),
+      ...EventActivityBase.loaderOptions.apply(this),
       clause: query.Eq("id", id),
     });
   }
 
-  static loaderOptions<T extends EventBase>(
+  static loaderOptions<T extends EventActivityBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
     return {
       tableName: tableName,
-      fields: EventBase.getFields(),
+      fields: EventActivityBase.getFields(),
       ent: this,
     };
   }
 
   private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "name", "creator_id"];
+    return [
+      "id",
+      "created_at",
+      "updated_at",
+      "name",
+      "event_id",
+      "start_time",
+      "end_time",
+      "location",
+    ];
   }
 
   private static schemaFields: Map<string, Field>;
 
   private static getSchemaFields(): Map<string, Field> {
-    if (EventBase.schemaFields != null) {
-      return EventBase.schemaFields;
+    if (EventActivityBase.schemaFields != null) {
+      return EventActivityBase.schemaFields;
     }
-    return (EventBase.schemaFields = getFields(schema));
+    return (EventActivityBase.schemaFields = getFields(schema));
   }
 
   static getField(key: string): Field | undefined {
-    return EventBase.getSchemaFields().get(key);
+    return EventActivityBase.getSchemaFields().get(key);
   }
 
-  async loadEventActivities(): Promise<EventActivity[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("event_id", this.id),
-      EventActivity.loaderOptions(),
-    );
-    let results: EventActivity[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+  async loadEvent(): Promise<Event | null> {
+    return loadEnt(this.viewer, this.eventID, Event.loaderOptions());
   }
 
-  async loadCreator(): Promise<User | null> {
-    return loadEnt(this.viewer, this.creatorID, User.loaderOptions());
-  }
-
-  loadCreatorX(): Promise<User> {
-    return loadEntX(this.viewer, this.creatorID, User.loaderOptions());
+  loadEventX(): Promise<Event> {
+    return loadEntX(this.viewer, this.eventID, Event.loaderOptions());
   }
 }
