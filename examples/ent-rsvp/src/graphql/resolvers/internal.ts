@@ -3,4 +3,5 @@
 export * from "src/graphql/resolvers/generated/node_type";
 export * from "src/graphql/resolvers/generated/event_activity_type";
 export * from "src/graphql/resolvers/generated/event_type";
+export * from "src/graphql/resolvers/generated/guest_group_type";
 export * from "src/graphql/resolvers/generated/user_type";

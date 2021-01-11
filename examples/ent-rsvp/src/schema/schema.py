@@ -29,6 +29,16 @@ sa.Table("events", metadata,
     sa.ForeignKeyConstraint(["creator_id"], ["users.id"], name="events_creator_id_fkey", ondelete="CASCADE"),
 )
    
+sa.Table("guest_groups", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("invitation_name", sa.Text(), nullable=False),
+    sa.Column("event_id", postgresql.UUID(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="guest_groups_id_pkey"),
+    sa.ForeignKeyConstraint(["event_id"], ["events.id"], name="guest_groups_event_id_fkey", ondelete="CASCADE"),
+)
+   
 sa.Table("users", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),

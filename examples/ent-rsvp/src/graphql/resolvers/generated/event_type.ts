@@ -10,7 +10,11 @@ import {
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
-import { EventActivityType, UserType } from "src/graphql/resolvers/";
+import {
+  EventActivityType,
+  GuestGroupType,
+  UserType,
+} from "src/graphql/resolvers/";
 import { Event } from "src/ent/";
 
 export const EventType = new GraphQLObjectType({
@@ -33,6 +37,12 @@ export const EventType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventActivityType))),
       resolve: (event: Event, args: {}) => {
         return event.loadEventActivities();
+      },
+    },
+    guestGroups: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GuestGroupType))),
+      resolve: (event: Event, args: {}) => {
+        return event.loadGuestGroups();
       },
     },
   }),
