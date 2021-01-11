@@ -82,15 +82,17 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     };
   }
 
-  // this gets the inputs that have been written for a given edgeType and operation
-  // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
-  getEdgeInputData(edgeType: {{useImport "EdgeType"}}, op: {{useImport "WriteOperation"}}) {
-    return this.orchestrator.getInputEdges(edgeType, op);
-  }
+  {{if .HasAssociationEdges -}}
+    // this gets the inputs that have been written for a given edgeType and operation
+    // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
+    getEdgeInputData(edgeType: {{useImport "EdgeType"}}, op: {{useImport "WriteOperation"}}) {
+      return this.orchestrator.getInputEdges(edgeType, op);
+    }
 
-  clearInputEdges(edgeType: {{useImport "EdgeType"}}, op: {{useImport "WriteOperation"}}, id?: {{useImport "ID"}}) {
-    this.orchestrator.clearInputEdges(edgeType, op, id);
-  }
+    clearInputEdges(edgeType: {{useImport "EdgeType"}}, op: {{useImport "WriteOperation"}}, id?: {{useImport "ID"}}) {
+      this.orchestrator.clearInputEdges(edgeType, op, id);
+    }
+  {{end -}}
 
   {{ $edgeInfos := edgeInfos .EdgeInfo.Associations -}}
   {{ range $edge := $edgeInfos -}}  
