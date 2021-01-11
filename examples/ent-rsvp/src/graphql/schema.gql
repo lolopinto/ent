@@ -12,8 +12,6 @@ type Mutation {
   eventActivityDelete(input: EventActivityDeleteInput!): EventActivityDeletePayload!
   eventActivityEdit(input: EventActivityEditInput!): EventActivityEditPayload!
   eventCreate(input: EventCreateInput!): EventCreatePayload!
-  eventDelete(input: EventDeleteInput!): EventDeletePayload!
-  eventEdit(input: EventEditInput!): EventEditPayload!
   guestCreate(input: GuestCreateInput!): GuestCreatePayload!
   guestDelete(input: GuestDeleteInput!): GuestDeletePayload!
   guestEdit(input: GuestEditInput!): GuestEditPayload!
@@ -108,24 +106,6 @@ type EventCreatePayload {
 input EventCreateInput {
   name: String!
   creatorID: ID!
-}
-
-type EventDeletePayload {
-  deletedEventID: ID
-}
-
-input EventDeleteInput {
-  eventID: ID!
-}
-
-type EventEditPayload {
-  event: Event!
-}
-
-input EventEditInput {
-  eventID: ID!
-  name: String
-  creatorID: ID
 }
 
 type GuestCreatePayload {

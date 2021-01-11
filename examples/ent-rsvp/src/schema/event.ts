@@ -15,7 +15,7 @@ export default class Event extends BaseEntSchema {
 
   actions: Action[] = [
     {
-      operation: ActionOperation.Mutations,
+      operation: ActionOperation.Create,
     },
   ];
 }
