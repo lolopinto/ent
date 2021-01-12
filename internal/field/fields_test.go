@@ -6,6 +6,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,4 +50,10 @@ func TestDerivedFields(t *testing.T) {
 	// TODO need to test this derived field more but testField is in different package
 	// and a lot of the fields in Field are private and its a whole thing...
 	// this field is simple enough so we ignore for now
+
+	f2 := fieldInfo.GetFieldByName("OwnerID")
+	require.NotNil(t, f2)
+
+	assert.Equal(t, f2.TsBuilderImports(), []string{"ID", "Ent", "Builder"})
+	assert.Equal(t, f2.TsBuilderType(), "ID | Builder<Ent>")
 }
