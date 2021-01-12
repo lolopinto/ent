@@ -15,7 +15,14 @@ export default class GuestGroup extends BaseEntSchema {
 
   actions: Action[] = [
     {
-      operation: ActionOperation.Mutations,
+      operation: ActionOperation.Create,
+    },
+    {
+      operation: ActionOperation.Edit,
+      fields: ["InvitationName"],
+    },
+    {
+      operation: ActionOperation.Delete,
     },
   ];
 }

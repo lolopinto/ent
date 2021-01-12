@@ -165,7 +165,6 @@ type GuestGroupEditPayload {
 input GuestGroupEditInput {
   guestGroupID: ID!
   invitationName: String
-  eventID: ID
 }
 
 type UserCreatePayload {
