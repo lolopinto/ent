@@ -88,9 +88,9 @@ type Event implements Node {
   creator: User
   id: ID!
   name: String!
+  eventActivities: [EventActivity!]!
   guests: [Guest!]!
   guestGroups: [GuestGroup!]!
-  eventActivities: [EventActivity!]!
 }
 
 type User implements Node {

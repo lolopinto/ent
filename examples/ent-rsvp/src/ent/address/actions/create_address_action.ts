@@ -15,10 +15,10 @@ export default class CreateAddressAction extends CreateAddressActionBase {
     return {
       rules: [
         new AllowIfBuilder(this.input.ownerID),
-        new AllowIfEntIsVisibleRule(
-          this.input.ownerID,
-          getLoaderOptions((this.input.ownerType as unknown) as NodeType),
-        ),
+        // new AllowIfEntIsVisibleRule(
+        //   this.input.ownerID,
+        //   getLoaderOptions((this.input.ownerType as unknown) as NodeType),
+        // ),
       ],
     };
   }

@@ -19,7 +19,7 @@ export interface AddressInput {
   state?: string;
   zipCode?: string;
   apartment?: string | null;
-  ownerID?: ID;
+  ownerID?: ID | Builder<Ent>;
   ownerType?: string;
 }
 
