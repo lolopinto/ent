@@ -8,6 +8,9 @@ interface Node {
 }
 
 type Mutation {
+  addressCreate(input: AddressCreateInput!): AddressCreatePayload!
+  addressDelete(input: AddressDeleteInput!): AddressDeletePayload!
+  addressEdit(input: AddressEditInput!): AddressEditPayload!
   eventActivityCreate(input: EventActivityCreateInput!): EventActivityCreatePayload!
   eventActivityDelete(input: EventActivityDeleteInput!): EventActivityDeletePayload!
   eventActivityEdit(input: EventActivityEditInput!): EventActivityEditPayload!
@@ -19,6 +22,53 @@ type Mutation {
   guestGroupDelete(input: GuestGroupDeleteInput!): GuestGroupDeletePayload!
   guestGroupEdit(input: GuestGroupEditInput!): GuestGroupEditPayload!
   userCreate(input: UserCreateInput!): UserCreatePayload!
+}
+
+type AddressCreatePayload {
+  address: Address!
+}
+
+type Address implements Node {
+  owner: Node
+  id: ID!
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  apartment: String
+}
+
+input AddressCreateInput {
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  apartment: String
+  ownerID: ID!
+  ownerType: String!
+}
+
+type AddressDeletePayload {
+  deletedAddressID: ID
+}
+
+input AddressDeleteInput {
+  addressID: ID!
+}
+
+type AddressEditPayload {
+  address: Address!
+}
+
+input AddressEditInput {
+  addressID: ID!
+  street: String
+  city: String
+  state: String
+  zipCode: String
+  apartment: String
+  ownerID: ID
+  ownerType: String
 }
 
 type EventActivityCreatePayload {
@@ -38,9 +88,9 @@ type Event implements Node {
   creator: User
   id: ID!
   name: String!
-  eventActivities: [EventActivity!]!
   guests: [Guest!]!
   guestGroups: [GuestGroup!]!
+  eventActivities: [EventActivity!]!
 }
 
 type User implements Node {

@@ -6,6 +6,21 @@ from sqlalchemy.dialects import postgresql
 metadata = sa.MetaData()
 
  
+sa.Table("addresses", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("street", sa.Text(), nullable=False),
+    sa.Column("city", sa.Text(), nullable=False),
+    sa.Column("state", sa.Text(), nullable=False),
+    sa.Column("zip_code", sa.Text(), nullable=False),
+    sa.Column("apartment", sa.Text(), nullable=True),
+    sa.Column("owner_id", postgresql.UUID(), nullable=False),
+    sa.Column("owner_type", sa.Text(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="addresses_id_pkey"),
+    sa.UniqueConstraint("owner_id", name="addresses_unique_owner_id"),
+)
+   
 sa.Table("event_activities", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),

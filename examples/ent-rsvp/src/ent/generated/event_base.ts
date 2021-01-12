@@ -19,9 +19,9 @@ import {
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
   NodeType,
-  EventActivity,
   Guest,
   GuestGroup,
+  EventActivity,
   User,
 } from "src/ent/internal";
 import schema from "src/schema/event";
@@ -124,19 +124,6 @@ export class EventBase {
     return EventBase.getSchemaFields().get(key);
   }
 
-  async loadEventActivities(): Promise<EventActivity[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("event_id", this.id),
-      EventActivity.loaderOptions(),
-    );
-    let results: EventActivity[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
-  }
-
   async loadGuests(): Promise<Guest[]> {
     let map = await loadEntsFromClause(
       this.viewer,
@@ -157,6 +144,19 @@ export class EventBase {
       GuestGroup.loaderOptions(),
     );
     let results: GuestGroup[] = [];
+    map.forEach((ent) => {
+      results.push(ent);
+    });
+    return results;
+  }
+
+  async loadEventActivities(): Promise<EventActivity[]> {
+    let map = await loadEntsFromClause(
+      this.viewer,
+      query.Eq("event_id", this.id),
+      EventActivity.loaderOptions(),
+    );
+    let results: EventActivity[] = [];
     map.forEach((ent) => {
       results.push(ent);
     });

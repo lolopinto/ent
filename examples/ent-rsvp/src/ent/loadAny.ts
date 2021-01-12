@@ -10,6 +10,7 @@ import {
   LoadEntOptions,
 } from "@lolopinto/ent";
 import {
+  Address,
   Event,
   EventActivity,
   Guest,
@@ -35,6 +36,8 @@ export async function loadEntXByType(
 
 export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
   switch (type) {
+    case NodeType.Address:
+      return Address.loaderOptions();
     case NodeType.Event:
       return Event.loaderOptions();
     case NodeType.EventActivity:
