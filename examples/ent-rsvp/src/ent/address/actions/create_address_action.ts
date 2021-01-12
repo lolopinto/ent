@@ -1,9 +1,13 @@
-import { AllowIfEntIsVisibleRule } from "@lolopinto/ent";
+import { ID, Ent, AllowIfEntIsVisibleRule } from "@lolopinto/ent";
+import {
+  AllowIfConditionAppliesRule,
+  AlwaysDenyRule,
+} from "@lolopinto/ent/core/privacy";
 import {
   CreateAddressActionBase,
   AddressCreateInput,
 } from "src/ent/address/actions/generated/create_address_action_base";
-import { AllowIfBuilder } from "@lolopinto/ent/action";
+import { AllowIfBuilder, Builder } from "@lolopinto/ent/action";
 import { getLoaderOptions } from "src/ent/loadAny";
 import { NodeType } from "src/ent/const";
 
@@ -15,10 +19,16 @@ export default class CreateAddressAction extends CreateAddressActionBase {
     return {
       rules: [
         new AllowIfBuilder(this.input.ownerID),
-        // new AllowIfEntIsVisibleRule(
-        //   this.input.ownerID,
-        //   getLoaderOptions((this.input.ownerType as unknown) as NodeType),
-        // ),
+        // TODO this is too complicated.
+        // change AllowIfEntIsVisibleRule to take Builder and discard it
+        // need a better conditional check?
+        // and/or a sub rule that somehow enforces types in some kind of chaining
+        new AllowIfConditionAppliesRule(() => {
+          return (
+            (this.input.ownerID as Builder<Ent>).placeholderID === undefined
+          );
+        }, new AllowIfEntIsVisibleRule(this.input.ownerID as ID, getLoaderOptions((this.input.ownerType as unknown) as NodeType))),
+        AlwaysDenyRule,
       ],
     };
   }

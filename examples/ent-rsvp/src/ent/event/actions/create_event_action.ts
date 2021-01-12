@@ -1,8 +1,10 @@
 import {
   AllowIfViewerEqualsRule,
   AlwaysDenyRule,
+  Ent,
   PrivacyPolicy,
 } from "@lolopinto/ent";
+import { Trigger } from "@lolopinto/ent/action";
 import {
   CreateEventActionBase,
   EventCreateInput,
