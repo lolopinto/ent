@@ -445,6 +445,9 @@ func (f *Field) getIDFieldTypeName() string {
 		return ""
 	}
 
+	if f.polymorphic != nil {
+		return "Ent"
+	}
 	var typeName string
 	if f.fkey != nil {
 		typeName = f.fkey.Config
@@ -454,17 +457,25 @@ func (f *Field) getIDFieldTypeName() string {
 	return typeName
 }
 
-func (f *Field) TsBuilderType() string {
-	typ := f.TsType()
+func (f *Field) getIDFieldType() string {
 	typeName := f.getIDFieldTypeName()
-	if typeName == "" {
-		return typ
+	if typeName == "" || typeName == "Ent" {
+		return typeName
 	}
 	match := structNameRegex.FindStringSubmatch(typeName)
 	if len(match) != 2 {
-		panic("invalid config name")
+		panic(fmt.Sprintf("invalid config name %s", typeName))
 	}
-	return fmt.Sprintf("%s | Builder<%s>", typ, match[1])
+	return match[1]
+}
+
+func (f *Field) TsBuilderType() string {
+	typ := f.TsType()
+	typeName := f.getIDFieldType()
+	if typeName == "" {
+		return typ
+	}
+	return fmt.Sprintf("%s | Builder<%s>", typ, typeName)
 }
 
 func (f *Field) TsBuilderImports() []string {
@@ -473,15 +484,11 @@ func (f *Field) TsBuilderImports() []string {
 	if ok {
 		ret = typ.GetTsTypeImports()
 	}
-	typeName := f.getIDFieldTypeName()
+	typeName := f.getIDFieldType()
 	if typeName == "" {
 		return ret
 	}
-	match := structNameRegex.FindStringSubmatch(typeName)
-	if len(match) != 2 {
-		panic("invalid config name")
-	}
-	ret = append(ret, match[1], "ID", "Builder")
+	ret = append(ret, typeName, "Builder")
 	return ret
 }
 
