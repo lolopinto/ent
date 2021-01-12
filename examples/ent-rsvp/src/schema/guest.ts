@@ -5,7 +5,6 @@ import {
   StringType,
   UUIDType,
   Action,
-  TimeType,
 } from "@lolopinto/ent";
 import { EmailType } from "@lolopinto/ent-email";
 
