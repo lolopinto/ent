@@ -12,7 +12,6 @@ import {
   AllowIfHasIdentity,
   PrivacyPolicy,
   AlwaysDenyRule,
-  Ent,
 } from "@lolopinto/ent";
 import { Event, User } from "src/ent/";
 import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
@@ -28,7 +27,7 @@ interface customAddressInput {
 export interface EventCreateInput {
   name: string;
   creatorID: ID | Builder<User>;
-  address?: customAddressInput;
+  address?: customAddressInput | null;
 }
 
 export class CreateEventActionBase implements Action<Event> {

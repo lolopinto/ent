@@ -1,9 +1,8 @@
-import { Event, User, EventActivity } from "src/ent";
+import { Event, User } from "src/ent";
 import { DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
 import CreateUserAction from "../user/actions/create_user_action";
 import { randomEmail } from "src/util/random";
 import CreateEventAction from "../event/actions/create_event_action";
-import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
 import CreateAddressAction from "../address/actions/create_address_action";
 import { Address } from "../internal";
 
