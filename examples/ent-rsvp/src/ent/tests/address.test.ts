@@ -43,3 +43,20 @@ test("create address", async () => {
   }).saveX();
   expect(address).toBeInstanceOf(Address);
 });
+
+test("create event and address", async () => {
+  const user = await createUser();
+  const event = await CreateEventAction.create(new IDViewer(user.id), {
+    creatorID: user.id,
+    name: `${user.firstName}'s wedding`,
+    address: {
+      street: "1 main street",
+      city: "San Francisco",
+      state: "CA",
+      zipCode: "91111",
+    },
+  }).saveX();
+  const address = await Address.loadFromOwnerID(event.viewer, event.id);
+  expect(address).not.toBeNull();
+  expect(address).toBeInstanceOf(Address);
+});
