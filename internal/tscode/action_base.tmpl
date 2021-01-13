@@ -17,6 +17,22 @@
 {{ $action := .Action -}}
 {{ $actionName := printf "%sBase" $action.GetActionName -}}
 
+{{ range $int := $action.GetCustomInterfaces -}}
+  interface {{$int.Name}} {
+    {{ range $field := $int.Fields -}}
+      {{$type := $field.TsBuilderType -}}
+      {{range $import := $field.TsBuilderImports -}}
+        {{ $ignore := useImport $import -}}
+      {{end -}}
+      {{if $field.ForceRequiredInAction -}}
+        {{$field.TsFieldName}}: {{$type}};
+      {{else -}}
+        {{$field.TsFieldName}}?: {{$type}};
+      {{end -}}
+    {{end -}}
+  }
+{{end -}}
+
 {{ $node := useImport .NodeData.Node -}}
 {{ $viewer := useImport "Viewer"}}
 

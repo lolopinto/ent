@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"regexp"
+	"sort"
 	"strconv"
 
 	"github.com/iancoleman/strcase"
@@ -63,6 +64,13 @@ type Action interface {
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetOperation() ent.ActionOperation
 	IsDeletingNode() bool
+	AddCustomField(*NonEntField, *field.Field)
+	GetCustomInterfaces() []*CustomInterface
+}
+
+type CustomInterface struct {
+	Name   string
+	Fields []*field.Field
 }
 
 type ActionInfo struct {
@@ -124,6 +132,7 @@ type commonActionInfo struct {
 	NonEntFields    []*NonEntField
 	Edges           []*edge.AssociationEdge // for edge actions for now but eventually other actions
 	Operation       ent.ActionOperation
+	customFields    map[string][]*field.Field
 	nodeinfo.NodeInfo
 }
 
@@ -165,6 +174,34 @@ func (action *commonActionInfo) GetOperation() ent.ActionOperation {
 
 func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
+}
+
+func (action *commonActionInfo) AddCustomField(f *NonEntField, cf *field.Field) {
+	if action.customFields == nil {
+		action.customFields = make(map[string][]*field.Field)
+	}
+	fields, ok := action.customFields[f.FieldName]
+	if !ok {
+		fields = make([]*field.Field, 0)
+	}
+	fields = append(fields, cf)
+	action.customFields[f.FieldName] = fields
+}
+
+func (action *commonActionInfo) GetCustomInterfaces() []*CustomInterface {
+	var ret []*CustomInterface
+
+	for k, v := range action.customFields {
+		ret = append(ret, &CustomInterface{
+			Name:   fmt.Sprintf("custom%sInput", strcase.ToCamel(k)),
+			Fields: v,
+		})
+	}
+
+	sort.Slice(ret, func(i, j int) bool {
+		return ret[i].Name < ret[j].Name
+	})
+	return ret
 }
 
 type CreateAction struct {

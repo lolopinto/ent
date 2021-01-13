@@ -51,6 +51,7 @@ type Field struct {
 	// which overrides that behavor for the create action
 	// and also we need a way to restrict some fields to not even be set in triggers e.g. password can only be set by top-level-actions API
 	// (e.g. graphql mutation/rest/worker job) and not via a trigger
+	derivedWhenEmbedded bool
 
 	singleFieldPrimaryKey bool
 	inverseEdge           *edge.AssociationEdge
@@ -89,6 +90,7 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 		disableUserEditable:      f.DisableUserEditable,
 		hasDefaultValueOnCreate:  f.HasDefaultValueOnCreate,
 		hasDefaultValueOnEdit:    f.HasDefaultValueOnEdit,
+		derivedWhenEmbedded:      f.DerivedWhenEmbedded,
 
 		// go specific things
 		entType:         f.GoType,
@@ -356,7 +358,7 @@ func (f *Field) EvolvedIDField() bool {
 	// TODO kill above and convert to this
 	// if there's a fieldEdge or a foreign key or an inverse edge to this, this is an ID field
 	// and we should use the ID type and add a builder
-	return f.fieldEdge != nil || f.fkey != nil || f.inverseEdge != nil
+	return f.fieldEdge != nil || f.fkey != nil || f.inverseEdge != nil || f.polymorphic != nil
 }
 
 func (f *Field) Nullable() bool {
@@ -581,6 +583,18 @@ func (f *Field) IsEditableIDField() bool {
 	return ok
 }
 
+func (f *Field) EmbeddableInParentAction() bool {
+	if !f.EditableField() {
+		return false
+	}
+
+	if f.EvolvedIDField() {
+		return false
+	}
+
+	return !f.derivedWhenEmbedded
+}
+
 type Option func(*Field)
 
 func Optional() Option {
@@ -620,6 +634,7 @@ func (f *Field) Clone(opts ...Option) *Field {
 		hasDefaultValueOnEdit:    f.hasDefaultValueOnEdit,
 		forceRequiredInAction:    f.forceRequiredInAction,
 		forceOptionalInAction:    f.forceOptionalInAction,
+		derivedWhenEmbedded:      f.derivedWhenEmbedded,
 
 		// go specific things
 		entType: f.entType,

@@ -303,7 +303,7 @@ export class Orchestrator<T extends Ent> {
     // so running this first to build things up
     let triggers = action?.triggers;
     if (triggers) {
-      let triggerPromises: Promise<Changeset<T> | Changeset<T>[]>[] = [];
+      let triggerPromises: Promise<Changeset<T> | void | Changeset<T>[]>[] = [];
 
       triggers.forEach((trigger) => {
         let c = trigger.changeset(builder, action!.getInput());
@@ -328,16 +328,18 @@ export class Orchestrator<T extends Ent> {
   }
 
   private async triggers(
-    triggerPromises: Promise<Changeset<T> | Changeset<T>[]>[],
+    triggerPromises: Promise<Changeset<T> | void | Changeset<T>[]>[],
   ): Promise<void> {
     // keep changesets to use later
-    let changesets: (Changeset<T> | Changeset<T>[])[] = await Promise.all(
-      triggerPromises,
-    );
+    let changesets: (
+      | Changeset<T>
+      | void
+      | Changeset<T>[]
+    )[] = await Promise.all(triggerPromises);
     changesets.forEach((c) => {
       if (Array.isArray(c)) {
         this.changesets.push(...c);
-      } else {
+      } else if (c) {
         this.changesets.push(c);
       }
     });

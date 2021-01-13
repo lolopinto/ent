@@ -50,6 +50,11 @@ type IDMarkerInterface interface {
 	IsIDType() bool
 }
 
+type TSTypeWithActionFields interface {
+	TSType
+	GetActionName() string
+}
+
 type ImportType string
 
 const (
@@ -495,6 +500,70 @@ func (t *NullableTimeType) GetTSGraphQLImports() []FileImport {
 			ImportType: EntGraphQL,
 		},
 	}
+}
+
+type objectType struct {
+	TSType      string
+	GraphQLType string
+	ActionName  string
+}
+
+func (t *objectType) GetDBType() string {
+	panic("objectType not a DB type yet")
+}
+
+func (t *objectType) GetZeroValue() string {
+	return "{}"
+}
+
+func (t *objectType) GetCastToMethod() string {
+	panic("GetCastToMethod doesn't apply for objectType")
+}
+
+func (t *objectType) GetActionName() string {
+	return t.ActionName
+}
+
+type ObjectType struct {
+	objectType
+}
+
+func (t *ObjectType) GetGraphQLType() string {
+	return fmt.Sprintf("%s!", t.GraphQLType)
+}
+
+func (t *ObjectType) GetTSType() string {
+	return t.TSType
+}
+
+func (t *ObjectType) GetNullableType() Type {
+	return &NullableObjectType{}
+}
+
+func (t *ObjectType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		NewGQLFileImport("GraphQLNonNull"),
+	}
+}
+
+type NullableObjectType struct {
+	objectType
+}
+
+func (t *NullableObjectType) GetGraphQLType() string {
+	return t.GraphQLType
+}
+
+func (t *NullableObjectType) GetTSType() string {
+	return fmt.Sprintf("%s | null", t.TSType)
+}
+
+func (t *NullableObjectType) GetNullableType() Type {
+	return &ObjectType{}
+}
+
+func (t *NullableObjectType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{}
 }
 
 type typeConfig struct {

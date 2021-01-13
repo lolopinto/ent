@@ -51,8 +51,7 @@ export interface Trigger<T extends Ent> {
   changeset(
     builder: Builder<T>,
     input: Data,
-  ): // hmm Promise<void> is not yet an option...
-  void | Promise<Changeset<T> | Changeset<T>[]>;
+  ): void | Promise<Changeset<T> | void | Changeset<T>[]>;
 }
 
 export interface Observer<T extends Ent> {
