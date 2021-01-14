@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/types"
 
+	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schemaparser"
@@ -79,8 +80,9 @@ type Field struct {
 	HasDefaultValueOnCreate bool `json:"hasDefaultValueOnCreate"`
 	HasDefaultValueOnEdit   bool `json:"hasDefaultValueOnEdit"`
 
-	Polymorphic   *PolymorphicOptions `json:"polymorphic"`
-	DerivedFields []*Field            `json:"derivedFields"`
+	Polymorphic         *PolymorphicOptions `json:"polymorphic"`
+	DerivedWhenEmbedded bool                `json:"derivedWhenEmbedded"`
+	DerivedFields       []*Field            `json:"derivedFields"`
 
 	// Go specific information here
 	TagMap          map[string]string
@@ -206,12 +208,13 @@ type Action struct {
 }
 
 type ActionField struct {
-	Name     string     `json:"name"`
-	Type     ActionType `json:"type"`
-	Nullable bool       `json:"nullable"`
+	Name       string     `json:"name"`
+	Type       ActionType `json:"type"`
+	Nullable   bool       `json:"nullable"`
+	ActionName string     `json:"actionName"`
 }
 
-func (f *ActionField) GetEntType() enttype.TSGraphQLType {
+func (f *ActionField) GetEntType(inputName string) enttype.TSGraphQLType {
 	switch f.Type {
 	case ActionTypeID:
 		if f.Nullable {
@@ -243,6 +246,23 @@ func (f *ActionField) GetEntType() enttype.TSGraphQLType {
 			return &enttype.NullableTimeType{}
 		}
 		return &enttype.TimeType{}
+	case ActionTypeObject:
+		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(f.Name))
+		gqlType := fmt.Sprintf("%s%s", f.Name, inputName)
+
+		if f.Nullable {
+			typ := &enttype.NullableObjectType{}
+			typ.TSType = tsType
+			typ.ActionName = f.ActionName
+			typ.GraphQLType = gqlType
+
+			return typ
+		}
+		typ := &enttype.ObjectType{}
+		typ.TSType = tsType
+		typ.GraphQLType = gqlType
+		typ.ActionName = f.ActionName
+		return typ
 	}
 	panic(fmt.Sprintf("unsupported type %s", f.Type))
 }
@@ -257,6 +277,7 @@ const (
 	ActionTypeFloat              = "Float"
 	ActionTypeString             = "String"
 	ActionTypeTime               = "Time"
+	ActionTypeObject             = "Object"
 )
 
 type Constraint struct {

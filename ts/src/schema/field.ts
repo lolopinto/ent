@@ -28,6 +28,7 @@ export abstract class BaseField {
   // add a _type field
   // e.g. a polymorphic user_id field adds a user_type field
   derivedFields?: Field[];
+  derivedWhenEmbedded?: boolean;
 }
 
 export class UUIDField extends BaseField implements Field {
@@ -60,11 +61,18 @@ export class UUIDField extends BaseField implements Field {
             name,
             values: polymorphic.types,
             hideFromGraphQL: true,
+            derivedWhenEmbedded: true,
           }),
         ];
       } else {
         // just a string field...
-        this.derivedFields = [StringType({ name, hideFromGraphQL: true })];
+        this.derivedFields = [
+          StringType({
+            name,
+            hideFromGraphQL: true,
+            derivedWhenEmbedded: true,
+          }),
+        ];
       }
     }
   }

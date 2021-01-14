@@ -159,6 +159,11 @@ export interface FieldOptions {
   disableUserEditable?: boolean;
   defaultValueOnCreate?(): any;
   defaultValueOnEdit?(): any;
+  // this is very specific.
+  // maybe there's a better way to indicate this
+  // we sometimes have actionOnlyFields when an action creates a child object and we want to skip
+  // including derived fields in the actionOnlyField created in the parent
+  derivedWhenEmbedded?: boolean;
 
   polymorphic?: boolean | PolymorphicOptions;
   derivedFields?: Field[];
@@ -305,13 +310,25 @@ export enum ActionOperation {
   EdgeGroup = 64,
 }
 
+type actionFieldType =
+  | "ID"
+  | "Boolean"
+  | "Int"
+  | "Float"
+  | "String"
+  | "Time"
+  | "Object";
+// TODO...
+//  | Array<actionFieldType>;
+
 export interface ActionField {
   name: string;
   // Type with no db component
   // currently a subset of DBType. could be expanded in the future
-  type: "ID" | "Boolean" | "Int" | "Float" | "String" | "Time";
+  type: actionFieldType;
   // TODO can support overriding later but for now, this is fine
   nullable?: boolean;
+  actionName?: string; // take the fields of this action and add them as this. only works with type "Object"
 }
 
 // provides a way to configure the actions generated for the ent

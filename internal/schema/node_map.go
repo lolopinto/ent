@@ -122,6 +122,9 @@ func (m NodeMapInfo) buildPostRunDepgraph(s *Schema, edgeData *assocEdgeData) *d
 		m.addNewConstsAndEdges(info, edgeData)
 	}, "LinkedEdges", "InverseEdges")
 
+	g.AddItem("ActionFields", func(info *NodeDataInfo) {
+		m.addActionFields(info)
+	})
 	return g
 }
 
@@ -514,6 +517,47 @@ func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdg
 		}
 
 		m.addNewEdgeType(nodeData, constName, constValue, assocEdge)
+	}
+}
+
+func (m NodeMapInfo) addActionFields(info *NodeDataInfo) {
+	for _, a := range info.NodeData.ActionInfo.Actions {
+		for _, f := range a.GetNonEntFields() {
+			typ := f.FieldType
+			t, ok := typ.(enttype.TSTypeWithActionFields)
+			if !ok {
+				continue
+			}
+			actionName := t.GetActionName()
+			if actionName == "" {
+				continue
+			}
+
+			config := info.NodeData.Node + "Config"
+			for k, v := range m {
+				if k == config {
+					continue
+				}
+				a2 := v.NodeData.ActionInfo.GetByName(actionName)
+				if a2 == nil {
+					continue
+				}
+				fields := a2.GetFields()
+				for _, f2 := range fields {
+					if f2.EmbeddableInParentAction() {
+
+						f3 := f2
+						if action.IsRequiredField(a2, f2) {
+							f3 = f2.Clone(field.Required())
+						}
+						a.AddCustomField(t, f3)
+					}
+				}
+
+				break
+			}
+
+		}
 	}
 }
 

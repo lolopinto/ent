@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"go/ast"
 	"regexp"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
@@ -63,6 +65,14 @@ type Action interface {
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetOperation() ent.ActionOperation
 	IsDeletingNode() bool
+	AddCustomField(enttype.TSGraphQLType, *field.Field)
+	GetCustomInterfaces() []*CustomInterface
+}
+
+type CustomInterface struct {
+	TSType  string
+	GQLType string
+	Fields  []*field.Field
 }
 
 type ActionInfo struct {
@@ -116,14 +126,15 @@ func (info *ActionInfo) addActions(actions ...Action) {
 }
 
 type commonActionInfo struct {
-	ActionName      string
-	ExposeToGraphQL bool
-	InputName       string
-	GraphQLName     string
-	Fields          []*field.Field
-	NonEntFields    []*NonEntField
-	Edges           []*edge.AssociationEdge // for edge actions for now but eventually other actions
-	Operation       ent.ActionOperation
+	ActionName       string
+	ExposeToGraphQL  bool
+	InputName        string
+	GraphQLName      string
+	Fields           []*field.Field
+	NonEntFields     []*NonEntField
+	Edges            []*edge.AssociationEdge // for edge actions for now but eventually other actions
+	Operation        ent.ActionOperation
+	customInterfaces map[string]*CustomInterface
 	nodeinfo.NodeInfo
 }
 
@@ -165,6 +176,38 @@ func (action *commonActionInfo) GetOperation() ent.ActionOperation {
 
 func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
+}
+
+func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *field.Field) {
+	if action.customInterfaces == nil {
+		action.customInterfaces = make(map[string]*CustomInterface)
+	}
+	// TODO these 2 need to be refactored to be TSObjectType or something
+	tsTyp := strings.TrimSuffix(typ.GetTSType(), " | null")
+	gqlType := strings.TrimSuffix(typ.GetGraphQLType(), "!")
+
+	ci, ok := action.customInterfaces[tsTyp]
+	if !ok {
+		ci = &CustomInterface{
+			TSType:  tsTyp,
+			GQLType: gqlType,
+		}
+	}
+	ci.Fields = append(ci.Fields, cf)
+	action.customInterfaces[tsTyp] = ci
+}
+
+func (action *commonActionInfo) GetCustomInterfaces() []*CustomInterface {
+	var ret []*CustomInterface
+
+	for _, v := range action.customInterfaces {
+		ret = append(ret, v)
+	}
+
+	sort.Slice(ret, func(i, j int) bool {
+		return ret[i].TSType < ret[j].TSType
+	})
+	return ret
 }
 
 type CreateAction struct {
