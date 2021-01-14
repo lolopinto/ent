@@ -168,6 +168,10 @@ func (m NodeMapInfo) processDepgrah(s *Schema, edgeData *assocEdgeData) (*assocE
 		})
 
 		m.processConstraints(s, info.NodeData)
+	}
+
+	// need to run this after running everything above
+	for _, info := range m {
 		if err := info.PostProcess(); err != nil {
 			return nil, err
 		}
