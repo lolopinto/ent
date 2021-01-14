@@ -6,6 +6,9 @@ import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import { IncomingMessage, ServerResponse } from "http";
 import supertest from "supertest";
 
+// TODO need to make it obvious that jest-expect-message is a peer?dependency and setupFilesAfterEnv is a requirement to use this
+// or change the usage here.
+
 function server(config: queryConfig): Express {
   const viewer = config.viewer;
   if (viewer) {

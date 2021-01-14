@@ -1293,6 +1293,12 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 				)
 			}
 		}
+		for _, f := range a.GetNonEntFields() {
+			result.FunctionContents = append(
+				result.FunctionContents,
+				fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
+			)
+		}
 		result.FunctionContents = append(result.FunctionContents, "}).saveX();")
 
 		result.FunctionContents = append(
