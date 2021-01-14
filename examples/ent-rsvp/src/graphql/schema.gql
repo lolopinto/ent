@@ -89,8 +89,8 @@ type Event implements Node {
   id: ID!
   name: String!
   eventActivities: [EventActivity!]!
-  guests: [Guest!]!
   guestGroups: [GuestGroup!]!
+  guests: [Guest!]!
 }
 
 type User implements Node {
@@ -101,6 +101,13 @@ type User implements Node {
   events: [Event!]!
 }
 
+type GuestGroup implements Node {
+  event: Event
+  id: ID!
+  invitationName: String!
+  guests: [Guest!]!
+}
+
 type Guest implements Node {
   event: Event
   guestGroup: GuestGroup
@@ -108,13 +115,6 @@ type Guest implements Node {
   firstName: String!
   lastName: String!
   emailAddress: String!
-}
-
-type GuestGroup implements Node {
-  event: Event
-  id: ID!
-  invitationName: String!
-  guests: [Guest!]!
 }
 
 """Time scalar type"""

@@ -12,8 +12,8 @@ import { RequestContext } from "@lolopinto/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
 import {
   EventActivityType,
-  GuestType,
   GuestGroupType,
+  GuestType,
   UserType,
 } from "src/graphql/resolvers/";
 import { Event } from "src/ent/";
@@ -40,16 +40,16 @@ export const EventType = new GraphQLObjectType({
         return event.loadEventActivities();
       },
     },
-    guests: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GuestType))),
-      resolve: (event: Event, args: {}) => {
-        return event.loadGuests();
-      },
-    },
     guestGroups: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GuestGroupType))),
       resolve: (event: Event, args: {}) => {
         return event.loadGuestGroups();
+      },
+    },
+    guests: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GuestType))),
+      resolve: (event: Event, args: {}) => {
+        return event.loadGuests();
       },
     },
   }),
