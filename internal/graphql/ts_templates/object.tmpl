@@ -38,8 +38,11 @@
 {{$nodeInstance := .NodeInstance -}}
 
 {{ range $gqlNode := .GQLNodes -}}
-
-  export const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
+  {{ if $gqlNode.Exported -}}
+    export const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
+  {{ else -}}
+    const {{$gqlNode.Type}} = new {{useImport $gqlNode.GQLType}}({
+  {{ end -}}
     name: "{{$gqlNode.Node}}",
     {{ if eq $gqlNode.GQLType "GraphQLInputObjectType" -}}
       fields: (): {{useImport "GraphQLInputFieldConfigMap"}} => ({
