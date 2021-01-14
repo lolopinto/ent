@@ -317,10 +317,23 @@ export class AllowIfConditionAppliesRule implements PrivacyPolicyRule {
   }
 }
 
+// TODO different variants
+export class AllowIfSubPolicyAllowsRule implements PrivacyPolicyRule {
+  constructor(private policy: PrivacyPolicy) {}
+
+  async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
+    const result = await applyPrivacyPolicy(v, this.policy, ent);
+    if (result) {
+      return Allow();
+    }
+    return Skip();
+  }
+}
+
 export async function applyPrivacyPolicy(
   v: Viewer,
   policy: PrivacyPolicy,
-  ent: Ent,
+  ent: Ent | undefined,
 ): Promise<boolean> {
   try {
     return await applyPrivacyPolicyX(v, policy, ent);

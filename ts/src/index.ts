@@ -78,6 +78,8 @@ export {
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
   AlwaysAllowPrivacyPolicy,
+  AllowIfConditionAppliesRule,
+  AllowIfSubPolicyAllowsRule,
 } from "./core/privacy";
 export { BaseEdgeQuery, EdgeQuerySource } from "./core/query";
 
