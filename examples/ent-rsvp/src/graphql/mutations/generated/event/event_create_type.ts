@@ -27,7 +27,7 @@ interface EventCreatePayload {
   event: Event;
 }
 
-export const addressEventCreateInput = new GraphQLInputObjectType({
+const addressEventCreateInput = new GraphQLInputObjectType({
   name: "addressEventCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     street: {
