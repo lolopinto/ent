@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"go/types"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -32,6 +33,27 @@ type NodeDataInfo struct {
 	NodeData      *NodeData
 	ShouldCodegen bool
 	depgraph      *depgraph.Depgraph
+}
+
+func (info *NodeDataInfo) PostProcess() error {
+	edgeInfo := info.NodeData.EdgeInfo
+	// sort for consistent ordering
+	sort.Slice(edgeInfo.ForeignKeys, func(i, j int) bool {
+		return edgeInfo.ForeignKeys[i].EdgeName < edgeInfo.ForeignKeys[j].EdgeName
+	})
+
+	sort.Slice(edgeInfo.Associations, func(i, j int) bool {
+		return edgeInfo.Associations[i].EdgeName < edgeInfo.Associations[j].EdgeName
+	})
+
+	sort.Slice(edgeInfo.FieldEdges, func(i, j int) bool {
+		return edgeInfo.FieldEdges[i].EdgeName < edgeInfo.FieldEdges[j].EdgeName
+	})
+
+	sort.Slice(edgeInfo.IndexedEdges, func(i, j int) bool {
+		return edgeInfo.IndexedEdges[i].EdgeName < edgeInfo.IndexedEdges[j].EdgeName
+	})
+	return nil
 }
 
 // NodeMapInfo holds all the information about the schema
@@ -146,6 +168,9 @@ func (m NodeMapInfo) processDepgrah(s *Schema, edgeData *assocEdgeData) (*assocE
 		})
 
 		m.processConstraints(s, info.NodeData)
+		if err := info.PostProcess(); err != nil {
+			return nil, err
+		}
 	}
 
 	// need to also process enums too
