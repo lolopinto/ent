@@ -18,7 +18,7 @@
 {{ $actionName := printf "%sBase" $action.GetActionName -}}
 
 {{ range $int := $action.GetCustomInterfaces -}}
-  interface {{$int.Name}} {
+  interface {{$int.TSType}} {
     {{ range $field := $int.Fields -}}
       {{$type := $field.TsBuilderType -}}
       {{range $import := $field.TsBuilderImports -}}

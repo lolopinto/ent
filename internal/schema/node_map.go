@@ -550,7 +550,7 @@ func (m NodeMapInfo) addActionFields(info *NodeDataInfo) {
 						if action.IsRequiredField(a2, f2) {
 							f3 = f2.Clone(field.Required())
 						}
-						a.AddCustomField(f, f3)
+						a.AddCustomField(t, f3)
 					}
 				}
 

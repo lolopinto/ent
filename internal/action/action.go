@@ -94,7 +94,7 @@ func parseActionsFromInput(nodeName string, action *input.Action, fieldInfo *fie
 			action.CustomInputName,
 			exposeToGraphQL,
 			fields,
-			getNonEntFieldsFromInput(action),
+			getNonEntFieldsFromInput(nodeName, action, concreteAction),
 		)
 		return []Action{concreteAction.getAction(commonInfo)}, nil
 	}
@@ -238,13 +238,15 @@ func getFieldsForAction(fieldNames []string, fieldInfo *field.FieldInfo, typ con
 	return fields, nil
 }
 
-func getNonEntFieldsFromInput(action *input.Action) []*NonEntField {
+func getNonEntFieldsFromInput(nodeName string, action *input.Action, typ concreteNodeActionType) []*NonEntField {
 	var fields []*NonEntField
+
+	inputName := getInputNameForNodeActionType(typ, nodeName, action.CustomInputName)
 
 	for _, field := range action.ActionOnlyFields {
 		fields = append(fields, &NonEntField{
 			FieldName: field.Name,
-			FieldType: field.GetEntType(),
+			FieldType: field.GetEntType(inputName),
 			Nullable:  field.Nullable,
 		})
 	}

@@ -45,13 +45,18 @@ type TSGraphQLType interface {
 	GetTSGraphQLImports() []FileImport
 }
 
+// type TSObjectType interface {
+// 	TSGraphQLType
+// 	GetTSName() string
+// }
+
 type IDMarkerInterface interface {
 	TSType
 	IsIDType() bool
 }
 
 type TSTypeWithActionFields interface {
-	TSType
+	TSGraphQLType
 	GetActionName() string
 }
 
@@ -543,6 +548,9 @@ func (t *ObjectType) GetNullableType() Type {
 func (t *ObjectType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLNonNull"),
+		{
+			Type: t.GraphQLType,
+		},
 	}
 }
 
@@ -563,7 +571,11 @@ func (t *NullableObjectType) GetNullableType() Type {
 }
 
 func (t *NullableObjectType) GetTSGraphQLImports() []FileImport {
-	return []FileImport{}
+	return []FileImport{
+		{
+			Type: t.GraphQLType,
+		},
+	}
 }
 
 type typeConfig struct {

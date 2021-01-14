@@ -214,7 +214,7 @@ type ActionField struct {
 	ActionName string     `json:"actionName"`
 }
 
-func (f *ActionField) GetEntType() enttype.TSGraphQLType {
+func (f *ActionField) GetEntType(inputName string) enttype.TSGraphQLType {
 	switch f.Type {
 	case ActionTypeID:
 		if f.Nullable {
@@ -248,16 +248,19 @@ func (f *ActionField) GetEntType() enttype.TSGraphQLType {
 		return &enttype.TimeType{}
 	case ActionTypeObject:
 		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(f.Name))
+		gqlType := fmt.Sprintf("%s%s", f.Name, inputName)
 
 		if f.Nullable {
 			typ := &enttype.NullableObjectType{}
 			typ.TSType = tsType
 			typ.ActionName = f.ActionName
+			typ.GraphQLType = gqlType
 
 			return typ
 		}
 		typ := &enttype.ObjectType{}
 		typ.TSType = tsType
+		typ.GraphQLType = gqlType
 		typ.ActionName = f.ActionName
 		return typ
 	}

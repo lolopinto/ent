@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
@@ -64,13 +65,14 @@ type Action interface {
 	GetNodeInfo() nodeinfo.NodeInfo
 	GetOperation() ent.ActionOperation
 	IsDeletingNode() bool
-	AddCustomField(*NonEntField, *field.Field)
+	AddCustomField(enttype.TSGraphQLType, *field.Field)
 	GetCustomInterfaces() []*CustomInterface
 }
 
 type CustomInterface struct {
-	Name   string
-	Fields []*field.Field
+	TSType  string
+	GQLType string
+	Fields  []*field.Field
 }
 
 type ActionInfo struct {
@@ -124,15 +126,15 @@ func (info *ActionInfo) addActions(actions ...Action) {
 }
 
 type commonActionInfo struct {
-	ActionName      string
-	ExposeToGraphQL bool
-	InputName       string
-	GraphQLName     string
-	Fields          []*field.Field
-	NonEntFields    []*NonEntField
-	Edges           []*edge.AssociationEdge // for edge actions for now but eventually other actions
-	Operation       ent.ActionOperation
-	customFields    map[string][]*field.Field
+	ActionName       string
+	ExposeToGraphQL  bool
+	InputName        string
+	GraphQLName      string
+	Fields           []*field.Field
+	NonEntFields     []*NonEntField
+	Edges            []*edge.AssociationEdge // for edge actions for now but eventually other actions
+	Operation        ent.ActionOperation
+	customInterfaces map[string]*CustomInterface
 	nodeinfo.NodeInfo
 }
 
@@ -176,30 +178,34 @@ func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
 }
 
-func (action *commonActionInfo) AddCustomField(f *NonEntField, cf *field.Field) {
-	if action.customFields == nil {
-		action.customFields = make(map[string][]*field.Field)
+func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *field.Field) {
+	if action.customInterfaces == nil {
+		action.customInterfaces = make(map[string]*CustomInterface)
 	}
-	fields, ok := action.customFields[f.FieldName]
+	// TODO these 2 need to be refactored to be TSObjectType or something
+	tsTyp := strings.TrimSuffix(typ.GetTSType(), " | null")
+	gqlType := strings.TrimSuffix(typ.GetGraphQLType(), "!")
+
+	ci, ok := action.customInterfaces[tsTyp]
 	if !ok {
-		fields = make([]*field.Field, 0)
+		ci = &CustomInterface{
+			TSType:  tsTyp,
+			GQLType: gqlType,
+		}
 	}
-	fields = append(fields, cf)
-	action.customFields[f.FieldName] = fields
+	ci.Fields = append(ci.Fields, cf)
+	action.customInterfaces[tsTyp] = ci
 }
 
 func (action *commonActionInfo) GetCustomInterfaces() []*CustomInterface {
 	var ret []*CustomInterface
 
-	for k, v := range action.customFields {
-		ret = append(ret, &CustomInterface{
-			Name:   fmt.Sprintf("custom%sInput", strcase.ToCamel(k)),
-			Fields: v,
-		})
+	for _, v := range action.customInterfaces {
+		ret = append(ret, v)
 	}
 
 	sort.Slice(ret, func(i, j int) bool {
-		return ret[i].Name < ret[j].Name
+		return ret[i].TSType < ret[j].TSType
 	})
 	return ret
 }

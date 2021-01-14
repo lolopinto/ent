@@ -814,7 +814,10 @@ func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 			importPath = codepath.GraphQLPackage
 			break
 		default:
-			panic(fmt.Sprintf("unsupported Import Type %v", imp.ImportType))
+			// empty means nothing to import and that's ok...
+			if imp.ImportType != "" {
+				panic(fmt.Sprintf("unsupported Import Type %v", imp.ImportType))
+			}
 		}
 		imports[idx] = &fileImport{
 			Type:       typ,
@@ -1001,10 +1004,32 @@ func addConnection(nodeData *schema.NodeData, edge *edge.AssociationEdge, fields
 }
 
 func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
-	return []*objectType{
+	var ret []*objectType
+	for _, c := range action.GetCustomInterfaces() {
+		ret = append(ret, buildCustomInputNode(c))
+	}
+	ret = append(ret,
 		buildActionInputNode(nodeData, action, actionPrefix),
 		buildActionPayloadNode(nodeData, action, actionPrefix),
+	)
+	return ret
+}
+
+func buildCustomInputNode(c *action.CustomInterface) *objectType {
+	result := &objectType{
+		Type:    c.GQLType,
+		Node:    c.GQLType,
+		TSType:  c.GQLType,
+		GQLType: "GraphQLInputObjectType",
 	}
+
+	for _, f := range c.Fields {
+		result.Fields = append(result.Fields, &fieldType{
+			Name:         f.GetGraphQLName(),
+			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false)),
+		})
+	}
+	return result
 }
 
 func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPrefix string) *objectType {
