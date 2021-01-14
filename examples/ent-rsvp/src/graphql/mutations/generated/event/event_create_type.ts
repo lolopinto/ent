@@ -93,6 +93,7 @@ export const EventCreateType: GraphQLFieldConfig<
     let event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
       creatorID: mustDecodeIDFromGQLID(input.creatorID),
+      address: input.address,
     }).saveX();
     return { event: event };
   },

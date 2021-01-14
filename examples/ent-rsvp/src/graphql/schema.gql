@@ -156,6 +156,15 @@ type EventCreatePayload {
 input EventCreateInput {
   name: String!
   creatorID: ID!
+  address: addressEventCreateInput
+}
+
+input addressEventCreateInput {
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  apartment: String
 }
 
 type GuestCreatePayload {
