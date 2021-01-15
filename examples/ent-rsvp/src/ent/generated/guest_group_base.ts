@@ -8,6 +8,11 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
+  AssocEdge,
+  loadEdges,
+  loadRawEdgeCountX,
+  loadNodesByEdge,
+  loadEdgeForID2,
   loadEntsFromClause,
   loadRow,
   loadRowX,
@@ -17,7 +22,13 @@ import {
   query,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
-import { NodeType, Guest, Event } from "src/ent/internal";
+import {
+  EdgeType,
+  NodeType,
+  EventActivity,
+  Guest,
+  Event,
+} from "src/ent/internal";
 import schema from "src/schema/guest_group";
 
 const tableName = "guest_groups";
@@ -116,6 +127,40 @@ export class GuestGroupBase {
 
   static getField(key: string): Field | undefined {
     return GuestGroupBase.getSchemaFields().get(key);
+  }
+
+  loadGuestGroupToInvitedEventsEdges(): Promise<AssocEdge[]> {
+    return loadEdges({
+      id1: this.id,
+      edgeType: EdgeType.GuestGroupToInvitedEvents,
+      context: this.viewer.context,
+    });
+  }
+
+  loadGuestGroupToInvitedEvents(): Promise<EventActivity[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.GuestGroupToInvitedEvents,
+      EventActivity.loaderOptions(),
+    );
+  }
+
+  loadGuestGroupToInvitedEventsRawCountX(): Promise<number> {
+    return loadRawEdgeCountX({
+      id1: this.id,
+      edgeType: EdgeType.GuestGroupToInvitedEvents,
+      context: this.viewer.context,
+    });
+  }
+
+  loadGuestGroupToInvitedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
+    return loadEdgeForID2({
+      id1: this.id,
+      edgeType: EdgeType.GuestGroupToInvitedEvents,
+      id2,
+      context: this.viewer.context,
+    });
   }
 
   async loadGuests(): Promise<Guest[]> {

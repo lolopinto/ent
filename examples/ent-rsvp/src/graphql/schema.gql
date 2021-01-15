@@ -11,9 +11,11 @@ type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
   addressDelete(input: AddressDeleteInput!): AddressDeletePayload!
   addressEdit(input: AddressEditInput!): AddressEditPayload!
+  eventActivityAddInvite(input: EventActivityAddInviteInput!): EventActivityAddInvitePayload!
   eventActivityCreate(input: EventActivityCreateInput!): EventActivityCreatePayload!
   eventActivityDelete(input: EventActivityDeleteInput!): EventActivityDeletePayload!
   eventActivityEdit(input: EventActivityEditInput!): EventActivityEditPayload!
+  eventActivityRemoveInvite(input: EventActivityRemoveInviteInput!): EventActivityRemoveInvitePayload!
   eventCreate(input: EventCreateInput!): EventCreatePayload!
   guestCreate(input: GuestCreateInput!): GuestCreatePayload!
   guestDelete(input: GuestDeleteInput!): GuestDeletePayload!
@@ -71,7 +73,7 @@ input AddressEditInput {
   ownerType: String
 }
 
-type EventActivityCreatePayload {
+type EventActivityAddInvitePayload {
   eventActivity: EventActivity!
 }
 
@@ -82,6 +84,9 @@ type EventActivity implements Node {
   startTime: Time!
   endTime: Time
   location: String!
+  attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
+  declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
+  invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
 }
 
 type Event implements Node {
@@ -105,7 +110,38 @@ type GuestGroup implements Node {
   event: Event
   id: ID!
   invitationName: String!
+  guestGroupToInvitedEvents(first: Int, after: String, last: Int, before: String): GuestGroupToInvitedEventsConnection!
   guests: [Guest!]!
+}
+
+type GuestGroupToInvitedEventsConnection implements Connection {
+  edges: [GuestGroupToInvitedEventsEdge!]!
+  nodes: [EventActivity!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+"""connection interface"""
+interface Connection {
+  edges: [Edge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+}
+
+"""edge interface"""
+interface Edge {
+  node: Node!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type GuestGroupToInvitedEventsEdge implements Edge {
+  node: EventActivity!
+  cursor: String!
 }
 
 type Guest implements Node {
@@ -115,10 +151,81 @@ type Guest implements Node {
   firstName: String!
   lastName: String!
   emailAddress: String!
+  guestToAttendingEvents(first: Int, after: String, last: Int, before: String): GuestToAttendingEventsConnection!
+  guestToDeclinedEvents(first: Int, after: String, last: Int, before: String): GuestToDeclinedEventsConnection!
+}
+
+type GuestToAttendingEventsConnection implements Connection {
+  edges: [GuestToAttendingEventsEdge!]!
+  nodes: [EventActivity!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type GuestToAttendingEventsEdge implements Edge {
+  node: EventActivity!
+  cursor: String!
+}
+
+type GuestToDeclinedEventsConnection implements Connection {
+  edges: [GuestToDeclinedEventsEdge!]!
+  nodes: [EventActivity!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type GuestToDeclinedEventsEdge implements Edge {
+  node: EventActivity!
+  cursor: String!
 }
 
 """Time scalar type"""
 scalar Time
+
+type EventActivityToAttendingConnection implements Connection {
+  edges: [EventActivityToAttendingEdge!]!
+  nodes: [Guest!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventActivityToAttendingEdge implements Edge {
+  node: Guest!
+  cursor: String!
+}
+
+type EventActivityToDeclinedConnection implements Connection {
+  edges: [EventActivityToDeclinedEdge!]!
+  nodes: [Guest!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventActivityToDeclinedEdge implements Edge {
+  node: Guest!
+  cursor: String!
+}
+
+type EventActivityToInvitesConnection implements Connection {
+  edges: [EventActivityToInvitesEdge!]!
+  nodes: [GuestGroup!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventActivityToInvitesEdge implements Edge {
+  node: GuestGroup!
+  cursor: String!
+}
+
+input EventActivityAddInviteInput {
+  eventActivityID: ID!
+  inviteID: ID!
+}
+
+type EventActivityCreatePayload {
+  eventActivity: EventActivity!
+}
 
 input EventActivityCreateInput {
   name: String!
@@ -147,6 +254,15 @@ input EventActivityEditInput {
   startTime: Time
   endTime: Time
   location: String
+}
+
+type EventActivityRemoveInvitePayload {
+  eventActivity: EventActivity!
+}
+
+input EventActivityRemoveInviteInput {
+  eventActivityID: ID!
+  inviteID: ID!
 }
 
 type EventCreatePayload {

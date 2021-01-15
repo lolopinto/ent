@@ -14,3 +14,18 @@ export enum NodeType {
   // User is the node type for the User object. Used to identify this node in edges and other places.
   User = "user",
 }
+
+export enum EdgeType {
+  // EventActivityToAttending is the edgeType for the eventActivity to attending edge.
+  EventActivityToAttending = "8025c416-c0a9-42dd-9bf4-f97f283d31a2",
+  // EventActivityToDeclined is the edgeType for the eventActivity to declined edge.
+  EventActivityToDeclined = "f3ff6b74-c055-4562-b5dd-07e4e2d8c8e3",
+  // EventActivityToInvites is the edgeType for the eventActivity to invites edge.
+  EventActivityToInvites = "64ef93f6-7edf-42ce-a3e4-8c30d9851645",
+  // GuestGroupToInvitedEvents is the edgeType for the guestGroup to guestgrouptoinvitedevents edge.
+  GuestGroupToInvitedEvents = "759e4abe-f866-41b7-aae8-40be4e8ab21e",
+  // GuestToAttendingEvents is the edgeType for the guest to guesttoattendingevents edge.
+  GuestToAttendingEvents = "ea0de57e-25de-47ab-8ddc-324f41c892a3",
+  // GuestToDeclinedEvents is the edgeType for the guest to guesttodeclinedevents edge.
+  GuestToDeclinedEvents = "5798e422-75d3-42ac-9ef8-30bd35e34f9f",
+}

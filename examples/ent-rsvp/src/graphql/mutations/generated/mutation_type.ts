@@ -4,9 +4,11 @@ import { GraphQLObjectType } from "graphql";
 import { AddressCreateType } from "src/graphql/mutations/generated/address/address_create_type";
 import { AddressDeleteType } from "src/graphql/mutations/generated/address/address_delete_type";
 import { AddressEditType } from "src/graphql/mutations/generated/address/address_edit_type";
+import { EventActivityAddInviteType } from "src/graphql/mutations/generated/event_activity/event_activity_add_invite_type";
 import { EventActivityCreateType } from "src/graphql/mutations/generated/event_activity/event_activity_create_type";
 import { EventActivityDeleteType } from "src/graphql/mutations/generated/event_activity/event_activity_delete_type";
 import { EventActivityEditType } from "src/graphql/mutations/generated/event_activity/event_activity_edit_type";
+import { EventActivityRemoveInviteType } from "src/graphql/mutations/generated/event_activity/event_activity_remove_invite_type";
 import { EventCreateType } from "src/graphql/mutations/generated/event/event_create_type";
 import { GuestCreateType } from "src/graphql/mutations/generated/guest/guest_create_type";
 import { GuestDeleteType } from "src/graphql/mutations/generated/guest/guest_delete_type";
@@ -22,9 +24,11 @@ export const MutationType = new GraphQLObjectType({
     addressCreate: AddressCreateType,
     addressDelete: AddressDeleteType,
     addressEdit: AddressEditType,
+    eventActivityAddInvite: EventActivityAddInviteType,
     eventActivityCreate: EventActivityCreateType,
     eventActivityDelete: EventActivityDeleteType,
     eventActivityEdit: EventActivityEditType,
+    eventActivityRemoveInvite: EventActivityRemoveInviteType,
     eventCreate: EventCreateType,
     guestCreate: GuestCreateType,
     guestDelete: GuestDeleteType,

@@ -21,6 +21,19 @@ sa.Table("addresses", metadata,
     sa.UniqueConstraint("owner_id", name="addresses_unique_owner_id"),
 )
    
+sa.Table("assoc_edge_config", metadata,
+    sa.Column("edge_type", postgresql.UUID(), nullable=False),
+    sa.Column("edge_name", sa.Text(), nullable=False),
+    sa.Column("symmetric_edge", sa.Boolean(), nullable=False, server_default='false'),
+    sa.Column("inverse_edge_type", postgresql.UUID(), nullable=True),
+    sa.Column("edge_table", sa.Text(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(), nullable=False),
+    sa.PrimaryKeyConstraint("edge_type", name="assoc_edge_config_edge_type_pkey"),
+    sa.UniqueConstraint("edge_name", name="assoc_edge_config_unique_edge_name"),
+    sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
+)
+   
 sa.Table("event_activities", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -32,6 +45,17 @@ sa.Table("event_activities", metadata,
     sa.Column("location", sa.Text(), nullable=False),
     sa.PrimaryKeyConstraint("id", name="event_activities_id_pkey"),
     sa.ForeignKeyConstraint(["event_id"], ["events.id"], name="event_activities_event_id_fkey", ondelete="CASCADE"),
+)
+   
+sa.Table("event_rsvps", metadata,
+    sa.Column("id1", postgresql.UUID(), nullable=False),
+    sa.Column("id1_type", sa.Text(), nullable=False),
+    sa.Column("edge_type", postgresql.UUID(), nullable=False),
+    sa.Column("id2", postgresql.UUID(), nullable=False),
+    sa.Column("id2_type", sa.Text(), nullable=False),
+    sa.Column("time", sa.TIMESTAMP(), nullable=False),
+    sa.Column("data", sa.Text(), nullable=True),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="event_rsvps_id1_edge_type_id2_pkey"),
 )
    
 sa.Table("events", metadata,
@@ -82,6 +106,12 @@ sa.Table("users", metadata,
 
 metadata.info["edges"] = {
   'public': {
+    'EventActivityToAttendingEdge': {"edge_name":"EventActivityToAttendingEdge", "edge_type":"8025c416-c0a9-42dd-9bf4-f97f283d31a2", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"ea0de57e-25de-47ab-8ddc-324f41c892a3"},
+    'EventActivityToDeclinedEdge': {"edge_name":"EventActivityToDeclinedEdge", "edge_type":"f3ff6b74-c055-4562-b5dd-07e4e2d8c8e3", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"5798e422-75d3-42ac-9ef8-30bd35e34f9f"},
+    'EventActivityToInvitesEdge': {"edge_name":"EventActivityToInvitesEdge", "edge_type":"64ef93f6-7edf-42ce-a3e4-8c30d9851645", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"759e4abe-f866-41b7-aae8-40be4e8ab21e"},
+    'GuestGroupToInvitedEventsEdge': {"edge_name":"GuestGroupToInvitedEventsEdge", "edge_type":"759e4abe-f866-41b7-aae8-40be4e8ab21e", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"64ef93f6-7edf-42ce-a3e4-8c30d9851645"},
+    'GuestToAttendingEventsEdge': {"edge_name":"GuestToAttendingEventsEdge", "edge_type":"ea0de57e-25de-47ab-8ddc-324f41c892a3", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"8025c416-c0a9-42dd-9bf4-f97f283d31a2"},
+    'GuestToDeclinedEventsEdge': {"edge_name":"GuestToDeclinedEventsEdge", "edge_type":"5798e422-75d3-42ac-9ef8-30bd35e34f9f", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"f3ff6b74-c055-4562-b5dd-07e4e2d8c8e3"},
   }
 }
 

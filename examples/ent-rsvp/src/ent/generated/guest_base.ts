@@ -8,6 +8,11 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
+  AssocEdge,
+  loadEdges,
+  loadRawEdgeCountX,
+  loadNodesByEdge,
+  loadEdgeForID2,
   loadRow,
   loadRowX,
   AlwaysDenyRule,
@@ -16,7 +21,13 @@ import {
   query,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
-import { NodeType, Event, GuestGroup } from "src/ent/internal";
+import {
+  EdgeType,
+  NodeType,
+  EventActivity,
+  Event,
+  GuestGroup,
+} from "src/ent/internal";
 import schema from "src/schema/guest";
 
 const tableName = "guests";
@@ -130,6 +141,74 @@ export class GuestBase {
 
   static getField(key: string): Field | undefined {
     return GuestBase.getSchemaFields().get(key);
+  }
+
+  loadGuestToAttendingEventsEdges(): Promise<AssocEdge[]> {
+    return loadEdges({
+      id1: this.id,
+      edgeType: EdgeType.GuestToAttendingEvents,
+      context: this.viewer.context,
+    });
+  }
+
+  loadGuestToAttendingEvents(): Promise<EventActivity[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.GuestToAttendingEvents,
+      EventActivity.loaderOptions(),
+    );
+  }
+
+  loadGuestToAttendingEventsRawCountX(): Promise<number> {
+    return loadRawEdgeCountX({
+      id1: this.id,
+      edgeType: EdgeType.GuestToAttendingEvents,
+      context: this.viewer.context,
+    });
+  }
+
+  loadGuestToAttendingEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
+    return loadEdgeForID2({
+      id1: this.id,
+      edgeType: EdgeType.GuestToAttendingEvents,
+      id2,
+      context: this.viewer.context,
+    });
+  }
+
+  loadGuestToDeclinedEventsEdges(): Promise<AssocEdge[]> {
+    return loadEdges({
+      id1: this.id,
+      edgeType: EdgeType.GuestToDeclinedEvents,
+      context: this.viewer.context,
+    });
+  }
+
+  loadGuestToDeclinedEvents(): Promise<EventActivity[]> {
+    return loadNodesByEdge(
+      this.viewer,
+      this.id,
+      EdgeType.GuestToDeclinedEvents,
+      EventActivity.loaderOptions(),
+    );
+  }
+
+  loadGuestToDeclinedEventsRawCountX(): Promise<number> {
+    return loadRawEdgeCountX({
+      id1: this.id,
+      edgeType: EdgeType.GuestToDeclinedEvents,
+      context: this.viewer.context,
+    });
+  }
+
+  loadGuestToDeclinedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
+    return loadEdgeForID2({
+      id1: this.id,
+      edgeType: EdgeType.GuestToDeclinedEvents,
+      id2,
+      context: this.viewer.context,
+    });
   }
 
   async loadEvent(): Promise<Event | null> {

@@ -5,6 +5,7 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLInt,
   GraphQLFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
@@ -12,9 +13,20 @@ import {
   GraphQLTime,
   GraphQLNodeInterface,
   nodeIDEncoder,
+  GraphQLEdgeConnection,
 } from "@lolopinto/ent/graphql";
-import { EventType } from "src/graphql/resolvers/";
-import { EventActivity } from "src/ent/";
+import {
+  EventType,
+  EventActivityToAttendingConnectionType,
+  EventActivityToDeclinedConnectionType,
+  EventActivityToInvitesConnectionType,
+} from "src/graphql/resolvers/";
+import {
+  EventActivity,
+  EventActivityToAttendingQuery,
+  EventActivityToDeclinedQuery,
+  EventActivityToInvitesQuery,
+} from "src/ent/";
 
 export const EventActivityType = new GraphQLObjectType({
   name: "EventActivity",
@@ -40,6 +52,93 @@ export const EventActivityType = new GraphQLObjectType({
     },
     location: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    attending: {
+      type: GraphQLNonNull(EventActivityToAttendingConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (eventActivity: EventActivity, args: {}) => {
+        return new GraphQLEdgeConnection(
+          eventActivity.viewer,
+          eventActivity,
+          EventActivityToAttendingQuery,
+          args,
+        );
+      },
+    },
+    declined: {
+      type: GraphQLNonNull(EventActivityToDeclinedConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (eventActivity: EventActivity, args: {}) => {
+        return new GraphQLEdgeConnection(
+          eventActivity.viewer,
+          eventActivity,
+          EventActivityToDeclinedQuery,
+          args,
+        );
+      },
+    },
+    invites: {
+      type: GraphQLNonNull(EventActivityToInvitesConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (eventActivity: EventActivity, args: {}) => {
+        return new GraphQLEdgeConnection(
+          eventActivity.viewer,
+          eventActivity,
+          EventActivityToInvitesQuery,
+          args,
+        );
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],

@@ -6,6 +6,7 @@ import {
   UUIDType,
   Action,
   TimeType,
+  Edge,
 } from "@lolopinto/ent";
 
 export default class EventActivity extends BaseEntSchema {
@@ -21,6 +22,45 @@ export default class EventActivity extends BaseEntSchema {
   actions: Action[] = [
     {
       operation: ActionOperation.Mutations,
+    },
+  ];
+
+  edges: Edge[] = [
+    {
+      name: "rsvp",
+      groupStatusName: "rsvpStatus",
+      tableName: "event_rsvps",
+      assocEdges: [
+        {
+          name: "invites",
+          schemaName: "GuestGroup",
+          inverseEdge: {
+            name: "guestGroupToInvitedEvents",
+          },
+          edgeActions: [
+            {
+              operation: ActionOperation.AddEdge,
+            },
+            {
+              operation: ActionOperation.RemoveEdge,
+            },
+          ],
+        },
+        {
+          name: "attending",
+          schemaName: "Guest",
+          inverseEdge: {
+            name: "guestToAttendingEvents",
+          },
+        },
+        {
+          name: "declined",
+          schemaName: "Guest",
+          inverseEdge: {
+            name: "guestToDeclinedEvents",
+          },
+        },
+      ],
     },
   ];
 }

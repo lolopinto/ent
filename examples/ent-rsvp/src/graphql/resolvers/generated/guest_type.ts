@@ -5,12 +5,26 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLInt,
   GraphQLFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
-import { EventType, GuestGroupType } from "src/graphql/resolvers/";
-import { Guest } from "src/ent/";
+import {
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+  GraphQLEdgeConnection,
+} from "@lolopinto/ent/graphql";
+import {
+  EventType,
+  GuestGroupType,
+  GuestToAttendingEventsConnectionType,
+  GuestToDeclinedEventsConnectionType,
+} from "src/graphql/resolvers/";
+import {
+  Guest,
+  GuestToAttendingEventsQuery,
+  GuestToDeclinedEventsQuery,
+} from "src/ent/";
 
 export const GuestType = new GraphQLObjectType({
   name: "Guest",
@@ -39,6 +53,64 @@ export const GuestType = new GraphQLObjectType({
     },
     emailAddress: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    guestToAttendingEvents: {
+      type: GraphQLNonNull(GuestToAttendingEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (guest: Guest, args: {}) => {
+        return new GraphQLEdgeConnection(
+          guest.viewer,
+          guest,
+          GuestToAttendingEventsQuery,
+          args,
+        );
+      },
+    },
+    guestToDeclinedEvents: {
+      type: GraphQLNonNull(GuestToDeclinedEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
+      resolve: (guest: Guest, args: {}) => {
+        return new GraphQLEdgeConnection(
+          guest.viewer,
+          guest,
+          GuestToDeclinedEventsQuery,
+          args,
+        );
+      },
     },
   }),
   interfaces: [GraphQLNodeInterface],
