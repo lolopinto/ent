@@ -6,11 +6,15 @@
 
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
 {{ range $baseObj.Imports -}} 
-  {{reserveImport .ImportPath .Type}}
+  {{if .ImportPath -}}
+    {{reserveImport .ImportPath .Type}}
+  {{end -}}
 {{ end -}}
 
 {{ range $baseObj.DefaultImports -}} 
-  {{reserveDefaultImport .ImportPath .Type}}
+  {{if .ImportPath -}}
+    {{reserveDefaultImport .ImportPath .Type}}
+  {{end -}}
 {{ end -}}
 
 {{ range $baseObj.TSInterfaces -}}
@@ -74,7 +78,9 @@
             {{ else -}}
               resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {}) => {
             {{ end -}}
-              {{$field.FunctionContents}};
+              {{ range $field.FunctionContents -}}
+                {{.}}
+              {{ end -}}
             },
           {{end -}}
         },

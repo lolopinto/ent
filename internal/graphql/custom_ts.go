@@ -193,7 +193,7 @@ type fieldConfigBuilder interface {
 	build(cd *customData, field CustomField) (*fieldConfig, error)
 	getArg() string
 	getResolveMethodArg() string
-	getTypeImports() []string
+	getTypeImports() []*fileImport
 	getArgs() []*fieldConfigArg
 	getReturnTypeHint() string
 	getArgMap(cd *customData) map[string]*CustomObject
@@ -224,12 +224,19 @@ func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
 	return "{ input }" // TODO not always input
 }
 
-func (mfcg *mutationFieldConfigBuilder) getTypeImports() []string {
+func (mfcg *mutationFieldConfigBuilder) getTypeImports() []*fileImport {
 	prefix := strcase.ToCamel(mfcg.field.GraphQLName)
-	return []string{
-		"GraphQLNonNull",
-		// TODO we should pass this in instead of automatically doing this
-		fmt.Sprintf("%sResponseType", prefix),
+	return []*fileImport{
+		{
+			Type:       "GraphQLNonNull",
+			ImportPath: "graphql",
+		},
+		{
+			// TODO we should pass this in instead of automatically doing this
+			// TODO this should be PayloadType
+			Type:       fmt.Sprintf("%sResponseType", prefix),
+			ImportPath: "",
+		},
 	}
 }
 
@@ -279,19 +286,24 @@ func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
 	return "{ arg }" // TODO?
 }
 
-func (qfcg *queryFieldConfigBuilder) getTypeImports() []string {
+func (qfcg *queryFieldConfigBuilder) getTypeImports() []*fileImport {
 	if len(qfcg.field.Results) != 1 {
 		panic("INVALID")
 	}
 	r := qfcg.field.Results[0]
 	if r.Nullable != "" {
 		// nullable
-		return []string{r.Type}
+		return []*fileImport{{Type: r.Type}}
 	}
 	// TODO these too...
-	return []string{
-		"GraphQLNonNull",
-		fmt.Sprintf("%sType", r.Type),
+	return []*fileImport{
+		{
+			Type:       "GraphQLNonNull",
+			ImportPath: "graphql",
+		},
+		{
+			Type: fmt.Sprintf("%sType", r.Type),
+		},
 	}
 }
 
@@ -334,7 +346,7 @@ func (qfcg *queryFieldConfigBuilder) getArgMap(cd *customData) map[string]*Custo
 
 func buildFieldConfigFrom(builder fieldConfigBuilder, cd *customData, field CustomField) (*fieldConfig, error) {
 	prefix := strcase.ToCamel(field.GraphQLName)
-	var argImports []string
+	var argImports []*fileImport
 
 	// args that "useImport" should be called on
 	// assumes they're reserved somewhere else...
@@ -344,13 +356,17 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, cd *customData, field Cust
 		}
 		cls := cd.Classes[arg.Type]
 		if cls != nil && cls.Exported {
-			argImports = append(argImports, arg.Type)
+			argImports = append(argImports, &fileImport{
+				Type: arg.Type,
+			})
 		}
 	}
 	for _, result := range field.Results {
 		cls := cd.Classes[result.Type]
 		if cls != nil && cls.Exported {
-			argImports = append(argImports, result.Type)
+			argImports = append(argImports, &fileImport{
+				Type: result.Type,
+			})
 		}
 	}
 
@@ -590,18 +606,24 @@ func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance
 		// for an accessor or field, we only add a resolve function if named differently
 		if field.GraphQLName != field.FunctionName {
 			gqlField.HasResolveFunction = true
-			gqlField.FunctionContents = fmt.Sprintf("return %s.%s;", instance, field.FunctionName)
+			gqlField.FunctionContents = []string{
+				fmt.Sprintf("return %s.%s;", instance, field.FunctionName),
+			}
 		}
 		break
 
 	case Function:
 		gqlField.HasResolveFunction = true
-		gqlField.FunctionContents = fmt.Sprintf("return %s.%s();", instance, field.FunctionName)
+		gqlField.FunctionContents = []string{
+			fmt.Sprintf("return %s.%s();", instance, field.FunctionName),
+		}
 		break
 	case AsyncFunction:
 		gqlField.HasAsyncModifier = true
 		gqlField.HasResolveFunction = true
-		gqlField.FunctionContents = fmt.Sprintf("return %s.%s();", instance, field.FunctionName)
+		gqlField.FunctionContents = []string{
+			fmt.Sprintf("return %s.%s();", instance, field.FunctionName),
+		}
 
 		break
 	}

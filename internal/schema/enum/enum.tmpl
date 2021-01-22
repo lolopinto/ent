@@ -7,3 +7,12 @@ export enum {{.Name}} {
     {{.Name}} = {{.Value}},
   {{ end -}}
 }
+
+{{$enumName := .Name}}
+export function get{{.Name}}Values() {
+  return [
+  {{ range $data := .Values -}} 
+    {{$enumName}}.{{.Name}},
+  {{ end -}}
+  ];
+}
