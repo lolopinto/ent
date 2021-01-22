@@ -28,7 +28,7 @@ function randomNum(): string {
 }
 
 export class GuestGroupBuilder implements Builder<GuestGroup> {
-  private orchestrator: Orchestrator<GuestGroup>;
+  orchestrator: Orchestrator<GuestGroup>;
   readonly placeholderID: ID;
   readonly ent = GuestGroup;
   private input: GuestGroupInput;

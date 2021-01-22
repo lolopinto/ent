@@ -1,12 +1,55 @@
-import { AllowIfEntIsVisiblePolicy, PrivacyPolicy } from "@lolopinto/ent";
-import { Event, EventActivityBase } from "src/ent/internal";
+import {
+  AllowIfEdgeExistsRule,
+  AllowIfEntIsVisiblePolicy,
+  AlwaysAllowRule,
+  AlwaysDenyRule,
+  DelayedResultRule,
+  DenyIfEntIsNotVisibleRule,
+  PrivacyPolicy,
+} from "@lolopinto/ent";
+import {
+  Event,
+  EventActivityBase,
+  EventActivityRsvpStatus,
+} from "src/ent/internal";
+import { Guest } from ".";
+import { EdgeType } from "./const";
+import { AllowIfEventCreatorRule } from "./event/privacy/event_creator";
 
 // we're only writing this once except with --force and packageName provided
 export class EventActivity extends EventActivityBase {
-  // can view activity if invited to event
-  // TODO this will change to only those invited but for now this is fine
-  privacyPolicy: PrivacyPolicy = new AllowIfEntIsVisiblePolicy(
-    this.eventID,
-    Event.loaderOptions(),
-  );
+  privacyPolicy: PrivacyPolicy = {
+    rules: [
+      // if can't see event, can see activity
+      new DenyIfEntIsNotVisibleRule(this.eventID, Event.loaderOptions()),
+      // creator can see
+      new AllowIfEventCreatorRule(this.eventID),
+      // can see if viewer guest group is invited to activity
+      new DelayedResultRule(async (v, _ent) => {
+        if (!this.viewer.viewerID) {
+          return null;
+        }
+        // viewer can be User or Guest...
+        const g = await Guest.load(v, this.viewer.viewerID);
+
+        if (!g) {
+          return null;
+        }
+
+        return new AllowIfEdgeExistsRule(
+          this.id,
+          g.guestGroupID,
+          EdgeType.EventActivityToInvites,
+        );
+      }),
+      AlwaysDenyRule,
+    ],
+  };
+
+  protected async rsvpStatus() {
+    if (!this.viewer.viewerID) {
+      return EventActivityRsvpStatus.CannotRsvp;
+    }
+    return EventActivityRsvpStatus.CanRsvp;
+  }
 }

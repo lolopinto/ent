@@ -32,7 +32,7 @@ function randomNum(): string {
 }
 
 export class AddressBuilder implements Builder<Address> {
-  private orchestrator: Orchestrator<Address>;
+  orchestrator: Orchestrator<Address>;
   readonly placeholderID: ID;
   readonly ent = Address;
   private input: AddressInput;

@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/lolopinto/ent-starter#readme",
   "dependencies": {
-    "@lolopinto/ent": "0.0.59",
+    "@lolopinto/ent": "0.0.60",
     "@lolopinto/ent-email": "0.0.1",
     "@lolopinto/ent-graphql-tests": "0.0.11",
     "@types/express": "^4.17.9",

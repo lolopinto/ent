@@ -31,7 +31,7 @@ function randomNum(): string {
 }
 
 export class EventActivityBuilder implements Builder<EventActivity> {
-  private orchestrator: Orchestrator<EventActivity>;
+  orchestrator: Orchestrator<EventActivity>;
   readonly placeholderID: ID;
   readonly ent = EventActivity;
   private input: EventActivityInput;

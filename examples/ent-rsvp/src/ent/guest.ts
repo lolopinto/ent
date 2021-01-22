@@ -3,26 +3,9 @@ import {
   AllowIfViewerRule,
   AlwaysDenyRule,
   PrivacyPolicy,
-  PrivacyPolicyRule,
-  Viewer,
-  Ent,
-  Skip,
-  Allow,
 } from "@lolopinto/ent";
 import { AllowIfEventCreatorRule } from "src/ent/event/privacy/event_creator";
-
-class AllowIfGuestInSameGuestGroupRule implements PrivacyPolicyRule {
-  async apply(viewer: Viewer, ent: Ent) {
-    if (!viewer.viewerID) {
-      return Skip();
-    }
-    const data = await Guest.loadRawData(viewer.viewerID);
-    if (data && data.guest_group_id == (ent as Guest).guestGroupID) {
-      return Allow();
-    }
-    return Skip();
-  }
-}
+import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
 
 // we're only writing this once except with --force and packageName provided
 export class Guest extends GuestBase {

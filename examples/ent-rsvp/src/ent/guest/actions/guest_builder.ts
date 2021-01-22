@@ -31,7 +31,7 @@ function randomNum(): string {
 }
 
 export class GuestBuilder implements Builder<Guest> {
-  private orchestrator: Orchestrator<Guest>;
+  orchestrator: Orchestrator<Guest>;
   readonly placeholderID: ID;
   readonly ent = Guest;
   private input: GuestInput;

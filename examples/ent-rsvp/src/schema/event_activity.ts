@@ -30,6 +30,12 @@ export default class EventActivity extends BaseEntSchema {
       name: "rsvp",
       groupStatusName: "rsvpStatus",
       tableName: "event_rsvps",
+      statusEnums: ["attending", "declined"],
+      nullStateFn: "rsvpStatus",
+      nullStates: ["canRsvp", "cannotRsvp"],
+      edgeAction: {
+        operation: ActionOperation.EdgeGroup,
+      },
       assocEdges: [
         {
           name: "invites",

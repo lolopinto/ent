@@ -19,12 +19,20 @@ import {
   AllowIfViewerRule,
   PrivacyPolicy,
   query,
+  getEdgeTypeInGroup,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
 import { EdgeType, NodeType, Guest, GuestGroup, Event } from "src/ent/internal";
 import schema from "src/schema/event_activity";
 
 const tableName = "event_activities";
+
+export enum EventActivityRsvpStatus {
+  Attending = "attending",
+  Declined = "declined",
+  CanRsvp = "canRsvp",
+  CannotRsvp = "cannotRsvp",
+}
 
 export class EventActivityBase {
   readonly nodeType = NodeType.EventActivity;
@@ -139,6 +147,35 @@ export class EventActivityBase {
 
   static getField(key: string): Field | undefined {
     return EventActivityBase.getSchemaFields().get(key);
+  }
+
+  // this should be overwritten by subclasses as needed.
+  protected async rsvpStatus() {
+    return EventActivityRsvpStatus.CanRsvp;
+  }
+
+  getEventActivityRsvpStatusMap() {
+    let m: Map<EventActivityRsvpStatus, EdgeType> = new Map();
+    m.set(EventActivityRsvpStatus.Attending, EdgeType.EventActivityToAttending);
+    m.set(EventActivityRsvpStatus.Declined, EdgeType.EventActivityToDeclined);
+    return m;
+  }
+
+  async viewerRsvpStatus(): Promise<EventActivityRsvpStatus> {
+    const ret = await this.rsvpStatus();
+    if (!this.viewer.viewerID) {
+      return ret;
+    }
+    const g = await getEdgeTypeInGroup(
+      this.viewer,
+      this.id,
+      this.viewer.viewerID!,
+      this.getEventActivityRsvpStatusMap(),
+    );
+    if (g) {
+      return g[0];
+    }
+    return ret;
   }
 
   loadAttendingEdges(): Promise<AssocEdge[]> {
