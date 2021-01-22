@@ -31,6 +31,10 @@
 
 {{end}}
 
+{{ range .Enums -}}
+  {{ template "enum.tmpl" . -}}
+{{ end -}}
+
 {{/* these 2 probably need to change */}}
 {{/* TODO these definitely need to change now */}}
 {{/* node and nodeInstance do not make sense for non-ents e.g. custom types...*/}}

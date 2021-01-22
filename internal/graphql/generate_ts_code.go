@@ -433,6 +433,7 @@ type gqlobjectData struct {
 	Node         string
 	NodeInstance string
 	GQLNodes     []*objectType
+	Enums        []*gqlEnum
 	FieldConfig  *fieldConfig
 	initMap      bool
 	m            map[string]bool
@@ -479,6 +480,9 @@ func (obj gqlobjectData) ForeignImport(name string) bool {
 			for _, in := range node.TSInterfaces {
 				obj.m[in.Name] = true
 			}
+		}
+		for _, enum := range obj.Enums {
+			obj.m[enum.Type] = true
 		}
 		// and field config
 		if obj.FieldConfig != nil {
@@ -592,6 +596,7 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 								Node:         nodeData.Node,
 								NodeInstance: nodeData.NodeInstance,
 								GQLNodes:     buildActionNodes(nodeData, action, actionPrefix),
+								Enums:        buildActionEnums(nodeData, action),
 								FieldConfig:  fieldCfg,
 								Package:      data.CodePath.GetImportPackage(),
 							},
@@ -651,6 +656,7 @@ func writeFile(node *gqlNode) error {
 		OtherTemplateFiles: []string{
 			util.GetAbsolutePath("ts_templates/field_config.tmpl"),
 			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
+			util.GetAbsolutePath("ts_templates/enum.tmpl"),
 		},
 		PathToFile:   node.FilePath,
 		FormatSource: true,
@@ -920,6 +926,23 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		}
 	}
 
+	for _, group := range nodeData.EdgeInfo.AssocGroups {
+		fields = append(fields, &fieldType{
+			Name: group.GetStatusMethod(),
+			//			HasResolveFunction: true,
+			//			HasAsyncModifier:   true,
+			FieldImports: getGQLFileImports(
+				[]enttype.FileImport{
+					{
+						Type:       group.ConstType,
+						ImportType: enttype.Enum,
+					},
+				},
+			),
+			//			FunctionContents: fmt.Sprintf(""),
+		})
+	}
+
 	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
@@ -1012,6 +1035,17 @@ func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPre
 		buildActionInputNode(nodeData, action, actionPrefix),
 		buildActionPayloadNode(nodeData, action, actionPrefix),
 	)
+	return ret
+}
+
+func buildActionEnums(nodeData *schema.NodeData, action action.Action) []*gqlEnum {
+	var ret []*gqlEnum
+	for _, enumType := range action.GetGQLEnums() {
+		ret = append(ret, &gqlEnum{
+			Type: fmt.Sprintf("%sType", enumType.Name),
+			Enum: enumType,
+		})
+	}
 	return ret
 }
 
@@ -1117,6 +1151,17 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 				// we're doing these as strings instead of ids because we're going to convert from gql id to ent id
 				Type: "string",
 			})
+		}
+
+		for _, f := range a.GetNonEntFields() {
+			_, ok := f.FieldType.(enttype.IDMarkerInterface)
+			// same logic above for regular fields
+			if ok {
+				intType.Fields = append(intType.Fields, &interfaceField{
+					Name: f.GetGraphQLName(),
+					Type: "string",
+				})
+			}
 		}
 
 		// TODO do we need to overwrite some fields?
@@ -1343,10 +1388,18 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 				}
 			}
 			for _, f := range a.GetNonEntFields() {
-				result.FunctionContents = append(
-					result.FunctionContents,
-					fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
-				)
+				_, ok := f.FieldType.(enttype.IDMarkerInterface)
+				if ok {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
+					)
+				} else {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
+					)
+				}
 			}
 			result.FunctionContents = append(result.FunctionContents, "});")
 
