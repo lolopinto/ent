@@ -15,6 +15,17 @@ export enum NodeType {
   User = "user",
 }
 
+export function getNodeTypeValues() {
+  return [
+    NodeType.Address,
+    NodeType.Event,
+    NodeType.EventActivity,
+    NodeType.Guest,
+    NodeType.GuestGroup,
+    NodeType.User,
+  ];
+}
+
 export enum EdgeType {
   // EventActivityToAttending is the edgeType for the eventActivity to attending edge.
   EventActivityToAttending = "8025c416-c0a9-42dd-9bf4-f97f283d31a2",
@@ -28,4 +39,15 @@ export enum EdgeType {
   GuestToAttendingEvents = "ea0de57e-25de-47ab-8ddc-324f41c892a3",
   // GuestToDeclinedEvents is the edgeType for the guest to guesttodeclinedevents edge.
   GuestToDeclinedEvents = "5798e422-75d3-42ac-9ef8-30bd35e34f9f",
+}
+
+export function getEdgeTypeValues() {
+  return [
+    EdgeType.EventActivityToAttending,
+    EdgeType.EventActivityToDeclined,
+    EdgeType.EventActivityToInvites,
+    EdgeType.GuestGroupToInvitedEvents,
+    EdgeType.GuestToAttendingEvents,
+    EdgeType.GuestToDeclinedEvents,
+  ];
 }

@@ -9,7 +9,6 @@ import CreateGuestAction, {
   GuestCreateInput,
 } from "../guest/actions/create_guest_action";
 import EventActivityAddInviteAction from "../event_activity/actions/event_activity_add_invite_action";
-import { cachedDataVersionTag } from "v8";
 import EventActivityRemoveInviteAction from "../event_activity/actions/event_activity_remove_invite_action";
 import { Guest } from "../guest";
 import EditEventActivityRsvpStatusAction from "../event_activity/actions/edit_event_activity_rsvp_status_action";

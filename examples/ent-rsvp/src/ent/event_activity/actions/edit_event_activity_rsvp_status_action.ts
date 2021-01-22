@@ -9,10 +9,13 @@ import { EdgeType } from "src/ent/const";
 import {
   EditEventActivityRsvpStatusActionBase,
   EditEventActivityRsvpStatusInput,
+  EventActivityRsvpStatusInput,
+  getEventActivityRsvpStatusInputValues,
 } from "src/ent/event_activity/actions/generated/edit_event_activity_rsvp_status_action_base";
 import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
 
 export { EditEventActivityRsvpStatusInput };
+export { EventActivityRsvpStatusInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class EditEventActivityRsvpStatusAction extends EditEventActivityRsvpStatusActionBase {

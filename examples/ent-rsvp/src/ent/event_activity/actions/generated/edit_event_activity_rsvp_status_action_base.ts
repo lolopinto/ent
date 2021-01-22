@@ -25,6 +25,13 @@ export enum EventActivityRsvpStatusInput {
   Declined = "declined",
 }
 
+export function getEventActivityRsvpStatusInputValues() {
+  return [
+    EventActivityRsvpStatusInput.Attending,
+    EventActivityRsvpStatusInput.Declined,
+  ];
+}
+
 export interface EditEventActivityRsvpStatusInput {
   rsvpStatus: EventActivityRsvpStatusInput;
   guestID: ID;

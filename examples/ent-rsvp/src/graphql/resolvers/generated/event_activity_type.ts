@@ -14,18 +14,21 @@ import {
   GraphQLNodeInterface,
   nodeIDEncoder,
   GraphQLEdgeConnection,
+  convertToGQLEnum,
 } from "@lolopinto/ent/graphql";
 import {
   EventType,
   EventActivityToAttendingConnectionType,
   EventActivityToDeclinedConnectionType,
   EventActivityToInvitesConnectionType,
+  EventActivityRsvpStatusType,
 } from "src/graphql/resolvers/";
 import {
   EventActivity,
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
+  getEventActivityRsvpStatusValues,
 } from "src/ent/";
 
 export const EventActivityType = new GraphQLObjectType({
@@ -137,6 +140,17 @@ export const EventActivityType = new GraphQLObjectType({
           eventActivity,
           EventActivityToInvitesQuery,
           args,
+        );
+      },
+    },
+    viewerRsvpStatus: {
+      type: EventActivityRsvpStatusType,
+      resolve: async (eventActivity: EventActivity, args: {}) => {
+        const ret = await eventActivity.viewerRsvpStatus();
+        return convertToGQLEnum(
+          ret,
+          getEventActivityRsvpStatusValues(),
+          EventActivityRsvpStatusType.getValues(),
         );
       },
     },

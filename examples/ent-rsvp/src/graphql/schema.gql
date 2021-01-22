@@ -16,6 +16,7 @@ type Mutation {
   eventActivityDelete(input: EventActivityDeleteInput!): EventActivityDeletePayload!
   eventActivityEdit(input: EventActivityEditInput!): EventActivityEditPayload!
   eventActivityRemoveInvite(input: EventActivityRemoveInviteInput!): EventActivityRemoveInvitePayload!
+  eventActivityRsvpStatusEdit(input: EventActivityRsvpStatusEditInput!): EventActivityRsvpStatusEditPayload!
   eventCreate(input: EventCreateInput!): EventCreatePayload!
   guestCreate(input: GuestCreateInput!): GuestCreatePayload!
   guestDelete(input: GuestDeleteInput!): GuestDeletePayload!
@@ -87,6 +88,7 @@ type EventActivity implements Node {
   attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
+  viewerRsvpStatus: EventActivityRsvpStatus
 }
 
 type Event implements Node {
@@ -218,6 +220,13 @@ type EventActivityToInvitesEdge implements Edge {
   cursor: String!
 }
 
+enum EventActivityRsvpStatus {
+  ATTENDING
+  DECLINED
+  CANRSVP
+  CANNOTRSVP
+}
+
 input EventActivityAddInviteInput {
   eventActivityID: ID!
   inviteID: ID!
@@ -263,6 +272,21 @@ type EventActivityRemoveInvitePayload {
 input EventActivityRemoveInviteInput {
   eventActivityID: ID!
   inviteID: ID!
+}
+
+type EventActivityRsvpStatusEditPayload {
+  eventActivity: EventActivity!
+}
+
+input EventActivityRsvpStatusEditInput {
+  eventActivityID: ID!
+  rsvpStatus: EventActivityRsvpStatusInput!
+  guestID: ID!
+}
+
+enum EventActivityRsvpStatusInput {
+  ATTENDING
+  DECLINED
 }
 
 type EventCreatePayload {
