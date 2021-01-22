@@ -179,15 +179,14 @@ type AssocEdge struct {
 }
 
 type AssocEdgeGroup struct {
-	Name            string       `json:"name"`
-	GroupStatusName string       `json:"groupStatusName"`
-	TableName       string       `json:"tableName"`
-	AssocEdges      []*AssocEdge `json:"assocEdges"`
-	// TODO...
-	EdgeActions []*EdgeAction `json:"edgeActions"`
-	StatusEnums []string      `json:"statusEnums"`
-	NullStateFn string        `json:"nullStateFn"`
-	NullStates  []string      `json:"nullStates"`
+	Name            string        `json:"name"`
+	GroupStatusName string        `json:"groupStatusName"`
+	TableName       string        `json:"tableName"`
+	AssocEdges      []*AssocEdge  `json:"assocEdges"`
+	EdgeActions     []*EdgeAction `json:"edgeActions"`
+	StatusEnums     []string      `json:"statusEnums"`
+	NullStateFn     string        `json:"nullStateFn"`
+	NullStates      []string      `json:"nullStates"`
 
 	// TS specific
 	EdgeAction *EdgeAction `json:"edgeAction"`

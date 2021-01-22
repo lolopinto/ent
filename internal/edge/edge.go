@@ -493,9 +493,8 @@ func (edgeGroup *AssociationEdgeGroup) DefaultNullState() string {
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMap() map[string]string {
-	edges := edgeGroup.GetStatusEdges()
 	m := make(map[string]string)
-	for _, edge := range edges {
+	for _, edge := range edgeGroup.statusEdges {
 		m[enum.GetTSEnumNameForVal(edge.EdgeName)] = edge.TsEdgeConst()
 	}
 	return m
@@ -507,8 +506,7 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusEdges() []*AssociationEdge {
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusValues() []string {
 	var values []string
-	edges := edgeGroup.GetStatusEdges()
-	for _, v := range edges {
+	for _, v := range edgeGroup.statusEdges {
 		values = append(values, v.EdgeName)
 	}
 	return values

@@ -165,6 +165,7 @@ func TestParseEdges(t *testing.T) {
 							{
 								name: "friendships",
 								groupStatusName: "friendshipStatus",
+								nullStates: "canRequest",
 								assocEdges: [
 									{
 										name: "friendRequests",
@@ -190,6 +191,7 @@ func TestParseEdges(t *testing.T) {
 						{
 							name:            "friendships",
 							groupStatusName: "friendshipStatus",
+							nullStates:      []string{"canRequest"},
 							assocEdges: []assocEdge{
 								{
 									name:       "friendRequests",
