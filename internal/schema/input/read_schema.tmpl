@@ -41,6 +41,10 @@ for (const key in potentialSchemas) {
       if (isAssocEdge(edge)) {
         assocEdges.push(edge)
       } else {
+        // array-ify this
+        if (edge.nullStates && !Array.isArray(edge.nullStates)) {
+          edge.nullStates = [edge.nullStates];
+        }
         assocEdgeGroups.push(edge)
       }
     }

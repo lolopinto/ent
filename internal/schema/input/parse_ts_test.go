@@ -67,6 +67,9 @@ type assocEdgeGroup struct {
 	tableName       string
 	assocEdges      []assocEdge
 	edgeActions     []action
+	statusEnums     []string
+	nullStates      []string
+	nullStateFn     string
 }
 
 type action struct {
@@ -133,16 +136,7 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 
 				verifyAssocEdges(t, expectedNode.assocEdges, node.AssocEdges)
 
-				for j, expEdgeGroup := range expectedNode.assocEdgeGroups {
-					edgeGroup := node.AssocEdgeGroups[j]
-
-					assert.Equal(t, expEdgeGroup.name, edgeGroup.Name)
-					assert.Equal(t, expEdgeGroup.groupStatusName, edgeGroup.GroupStatusName)
-					assert.Equal(t, expEdgeGroup.tableName, edgeGroup.TableName)
-
-					verifyAssocEdges(t, expEdgeGroup.assocEdges, edgeGroup.AssocEdges)
-				}
-
+				verifyAssocEdgeGroups(t, expectedNode.assocEdgeGroups, node.AssocEdgeGroups)
 				verifyActions(t, expectedNode.actions, node.Actions)
 				verifyConstraints(t, expectedNode.constraints, node.Constraints)
 			}
@@ -189,7 +183,25 @@ func verifyField(t *testing.T, expField field, field *input.Field) {
 	}
 }
 
+func verifyAssocEdgeGroups(t *testing.T, expAssocEdgeGroups []assocEdgeGroup, assocEdgeGroups []*input.AssocEdgeGroup) {
+	require.Len(t, expAssocEdgeGroups, len(assocEdgeGroups))
+
+	for j, expEdgeGroup := range expAssocEdgeGroups {
+		edgeGroup := assocEdgeGroups[j]
+
+		assert.Equal(t, expEdgeGroup.name, edgeGroup.Name)
+		assert.Equal(t, expEdgeGroup.groupStatusName, edgeGroup.GroupStatusName)
+		assert.Equal(t, expEdgeGroup.tableName, edgeGroup.TableName)
+		assert.Equal(t, expEdgeGroup.statusEnums, edgeGroup.StatusEnums)
+		assert.Equal(t, expEdgeGroup.nullStates, edgeGroup.NullStates)
+		assert.Equal(t, expEdgeGroup.nullStateFn, edgeGroup.NullStateFn)
+
+		verifyAssocEdges(t, expEdgeGroup.assocEdges, edgeGroup.AssocEdges)
+	}
+}
+
 func verifyAssocEdges(t *testing.T, expAssocEdges []assocEdge, assocEdges []*input.AssocEdge) {
+	require.Len(t, expAssocEdges, len(assocEdges))
 	for j, expEdge := range expAssocEdges {
 		edge := assocEdges[j]
 

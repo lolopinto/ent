@@ -31,13 +31,14 @@ func writeBaseActionFile(nodeData *schema.NodeData, codePathInfo *codegen.CodePa
 			BuilderPath: getImportPathForBuilderFile(nodeData),
 			Package:     codePathInfo.GetImportPackage(),
 		},
-		CreateDirIfNeeded: true,
-		AbsPathToTemplate: util.GetAbsolutePath("action_base.tmpl"),
-		TemplateName:      "action_base.tmpl",
-		PathToFile:        getFilePathForActionBaseFile(nodeData, action),
-		FormatSource:      true,
-		TsImports:         imps,
-		FuncMap:           getFuncMapForActionBase(imps),
+		CreateDirIfNeeded:  true,
+		AbsPathToTemplate:  util.GetAbsolutePath("action_base.tmpl"),
+		OtherTemplateFiles: []string{util.GetAbsolutePath("../schema/enum/enum.tmpl")},
+		TemplateName:       "action_base.tmpl",
+		PathToFile:         getFilePathForActionBaseFile(nodeData, action),
+		FormatSource:       true,
+		TsImports:          imps,
+		FuncMap:            getFuncMapForActionBase(imps),
 	})
 }
 
@@ -78,6 +79,7 @@ func getFuncMapForActionBase(imps *tsimport.Imports) template.FuncMap {
 	m["edges"] = action.GetEdges
 	m["removeEdgeAction"] = action.IsRemoveEdgeAction
 	m["edgeAction"] = action.IsEdgeAction
+	m["edgeGroupAction"] = action.IsEdgeGroupAction
 
 	return m
 }

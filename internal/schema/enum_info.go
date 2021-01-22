@@ -6,8 +6,8 @@ import (
 )
 
 type EnumInfo struct {
-	Enum     enum.Enum
-	GQLEnum  enum.GQLEnum
+	Enum     *enum.Enum
+	GQLEnum  *enum.GQLEnum
 	NodeData *NodeData
 	// InputNode needed to generate columns etc for db columns
 	// Presence of this indicates should be in its own file

@@ -13,7 +13,7 @@ import {
   applyPrivacyPolicyForRow,
 } from "../core/ent";
 import { getFields, SchemaInputType } from "../schema/schema";
-import { Changeset, Executor, Validator, Trigger } from "../action";
+import { Changeset, Executor, Validator } from "../action";
 import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
@@ -31,13 +31,17 @@ export interface OrchestratorOptions<T extends Ent> {
   editedFields(): Map<string, any>;
 }
 
-// hmm is it worth having multiple types here or just having one?
-// we have one type here instead
-interface EdgeInputData {
+interface edgeInputDataOpts {
   edgeType: string;
   id: Builder<Ent> | ID; // when an OutboundEdge, this is the id2, when an inbound edge, this is the id1
   nodeType?: string; // expected to be set for WriteOperation.Insert and undefined for WriteOperation.Delete
   options?: AssocEdgeInputOptions;
+}
+
+// hmm is it worth having multiple types here or just having one?
+// we have one type here instead
+export interface EdgeInputData extends edgeInputDataOpts {
+  isBuilder(id: Builder<Ent> | ID): id is Builder<Ent>;
 }
 
 export enum edgeDirection {
@@ -45,11 +49,27 @@ export enum edgeDirection {
   outboundEdge,
 }
 
-interface internalEdgeInputData extends EdgeInputData {
+interface internalEdgeInputData extends edgeInputDataOpts {
   direction: edgeDirection;
 }
 
-type IDMap = Map<ID, internalEdgeInputData>;
+class edgeInputData implements EdgeInputData {
+  direction: edgeDirection;
+  edgeType: string;
+  id: Builder<Ent> | ID;
+  nodeType?: string;
+  options?: AssocEdgeInputOptions;
+
+  constructor(opts: internalEdgeInputData) {
+    Object.assign(this, opts);
+  }
+
+  isBuilder(id: Builder<Ent> | ID): id is Builder<Ent> {
+    return (id as Builder<Ent>).placeholderID !== undefined;
+  }
+}
+
+type IDMap = Map<ID, edgeInputData>;
 type OperationMap = Map<WriteOperation, IDMap>;
 // this is a map of
 // edgeType : {
@@ -69,10 +89,13 @@ export class Orchestrator<T extends Ent> {
   private dependencies: Map<ID, Builder<T>> = new Map();
   private fieldsToResolve: string[] = [];
   private mainOp: DataOperation | null;
+  viewer: Viewer;
 
-  constructor(private options: OrchestratorOptions<T>) {}
+  constructor(private options: OrchestratorOptions<T>) {
+    this.viewer = options.viewer;
+  }
 
-  private addEdge(edge: internalEdgeInputData, op: WriteOperation) {
+  private addEdge(edge: edgeInputData, op: WriteOperation) {
     this.edgeSet.add(edge.edgeType);
 
     // need this because we're not referring to type T of the class
@@ -85,7 +108,7 @@ export class Orchestrator<T extends Ent> {
     let m1: OperationMap = this.edges.get(edge.edgeType) || new Map();
     let m2: IDMap = m1.get(op) || new Map();
     let id: ID;
-    if (isBuilder(edge.id)) {
+    if (edge.isBuilder(edge.id)) {
       id = edge.id.placeholderID;
     } else {
       id = edge.id;
@@ -104,13 +127,13 @@ export class Orchestrator<T extends Ent> {
     options?: AssocEdgeInputOptions,
   ) {
     this.addEdge(
-      {
+      new edgeInputData({
         id: id1,
         edgeType,
         nodeType,
         options,
         direction: edgeDirection.inboundEdge,
-      },
+      }),
       WriteOperation.Insert,
     );
   }
@@ -122,35 +145,35 @@ export class Orchestrator<T extends Ent> {
     options?: AssocEdgeInputOptions,
   ) {
     this.addEdge(
-      {
+      new edgeInputData({
         id: id2,
         edgeType,
         nodeType,
         options,
         direction: edgeDirection.outboundEdge,
-      },
+      }),
       WriteOperation.Insert,
     );
   }
 
   removeInboundEdge(id1: ID, edgeType: string) {
     this.addEdge(
-      {
+      new edgeInputData({
         id: id1,
         edgeType,
         direction: edgeDirection.inboundEdge,
-      },
+      }),
       WriteOperation.Delete,
     );
   }
 
   removeOutboundEdge(id2: ID, edgeType: string) {
     this.addEdge(
-      {
+      new edgeInputData({
         id: id2,
         edgeType,
         direction: edgeDirection.outboundEdge,
-      },
+      }),
       WriteOperation.Delete,
     );
   }
@@ -161,7 +184,7 @@ export class Orchestrator<T extends Ent> {
   getInputEdges(edgeType: string, op: WriteOperation): EdgeInputData[] {
     let m: IDMap = this.edges.get(edgeType)?.get(op) || new Map();
     // want a list and not an IterableIterator
-    let ret: EdgeInputData[] = [];
+    let ret: edgeInputData[] = [];
     m.forEach((v) => ret.push(v));
 
     return ret;

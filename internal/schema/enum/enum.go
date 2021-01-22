@@ -1,5 +1,13 @@
 package enum
 
+import (
+	"strconv"
+	"strings"
+	"unicode"
+
+	"github.com/iancoleman/strcase"
+)
+
 type Enum struct {
 	Name     string
 	Values   []Data
@@ -17,4 +25,57 @@ type Data struct {
 	Value       string
 	Comment     string
 	PackagePath string
+}
+
+func GetTSEnumNameForVal(val string) string {
+	allUpper := true
+	for _, char := range val {
+		if !unicode.IsLetter(char) {
+			continue
+		}
+		if !unicode.IsUpper(char) {
+			allUpper = false
+			break
+		}
+	}
+	// keep all caps constants as all caps constants
+	if allUpper {
+		return val
+	}
+	return strcase.ToCamel(val)
+}
+
+func GetEnums(tsName, gqlName, gqlType string, values []string) (*Enum, *GQLEnum) {
+	tsVals := make([]Data, len(values))
+	gqlVals := make([]Data, len(values))
+	for i, val := range values {
+		tsName := GetTSEnumNameForVal(val)
+
+		gqlVals[i] = Data{
+			Name: strings.ToUpper(val),
+			// norm for graphql enums is all caps
+			Value: strconv.Quote(strings.ToUpper(val)),
+		}
+		tsVals[i] = Data{
+			Name: tsName,
+			// value is actually what's put there for now
+			// TODO we need to figure out if there's a standard here
+			// or a way to have keys: values for the generated enums
+			Value: strconv.Quote(val),
+		}
+	}
+
+	gqlEnum := &GQLEnum{
+		Name:   gqlName,
+		Type:   gqlType,
+		Values: gqlVals,
+	}
+
+	tsEnum := &Enum{
+		Name:   tsName,
+		Values: tsVals,
+		// not the best way to determine this but works for now
+		Imported: len(tsVals) == 0,
+	}
+	return tsEnum, gqlEnum
 }

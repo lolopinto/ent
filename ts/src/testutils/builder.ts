@@ -124,8 +124,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     if (this.operation === WriteOperation.Insert) {
       for (const [key, value] of fields) {
         if (key === "id" && value === "{id}") {
-          // hmm is this still needed?
-          fields[key] = QueryRecorder.newID();
+          fields.set(key, QueryRecorder.newID());
         }
       }
     }

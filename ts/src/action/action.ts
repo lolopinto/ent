@@ -5,6 +5,9 @@ import {
   Viewer,
   ID,
   Data,
+  loadEdgeForID2,
+  AssocEdge,
+  AssocEdgeInputOptions,
 } from "../core/ent";
 import { PrivacyPolicy } from "../core/privacy";
 import DB from "../core/db";
@@ -149,4 +152,75 @@ async function saveBuilderImpl<T extends Ent>(
   if (!error && executor.executeObservers) {
     await executor.executeObservers();
   }
+}
+
+// Orchestrator in orchestrator.ts in generated Builders
+// we indicate the API we expect here. Not typing it to Orchestrator class in Orchestrator.ts
+// for flexibility
+interface Orchestrator {
+  addOutboundEdge<T2 extends Ent>(
+    id2: ID | Builder<T2>,
+    edgeType: string,
+    nodeType: string,
+    options?: AssocEdgeInputOptions,
+  );
+  removeOutboundEdge(id2: ID, edgeType: string);
+  viewer: Viewer;
+}
+
+async function modifyEdgeSet<T extends string>(
+  orchestrator: Orchestrator,
+  id1: ID,
+  id2: ID,
+  inputEnumValue: string,
+  enumValue: string,
+  edgeType: T,
+  nodeType: string,
+) {
+  let edge = await loadEdgeForID2({
+    id1: id1,
+    id2: id2,
+    edgeType: edgeType,
+    context: orchestrator.viewer.context,
+  });
+  if (edge) {
+    if (enumValue !== inputEnumValue) {
+      orchestrator.removeOutboundEdge(id2, edgeType);
+    }
+  } else {
+    if (inputEnumValue === enumValue) {
+      orchestrator.addOutboundEdge(id2, edgeType, nodeType);
+    }
+  }
+}
+
+// This sets one edge in a group
+// used for assoc groups where setting the value of one edge in the group
+// unsets the other
+// e.g. 3 states for event rsvp: attending, maybe, declined. user can't be rsvped as more than one at a time so this helps you
+// so that setting an rsvp status for one clears the others (if set)
+// or for friendship status: incoming_friend_request, outgoing_friend_request, are_friends
+// accepting a friend request should clear an incoming or outgoing friend request
+// @args
+// orchestrator: see interface
+// inputEnumValue: the value of the enum. should be one of the keys of m
+// id1: source ID in Orchestrator. We take this as extra param because we need it to check if edge exists
+// id2: target id
+// nodeType: nodeType of ent in question
+// m: Map<enumType, to EdgeType to check>
+export async function setEdgeTypeInGroup<T extends string>(
+  orchestrator: Orchestrator,
+  inputEnumValue: string,
+  id1: ID,
+  id2: ID,
+  nodeType: string,
+  m: Map<T, string>,
+) {
+  let promises: Promise<void>[] = [];
+  for (const [k, v] of m) {
+    promises.push(
+      modifyEdgeSet(orchestrator, id1, id2, inputEnumValue, k, v, nodeType),
+    );
+  }
+  await Promise.all(promises);
 }

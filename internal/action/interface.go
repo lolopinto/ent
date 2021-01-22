@@ -15,6 +15,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/internal/astparser"
@@ -57,6 +58,7 @@ type Action interface {
 	GetFields() []*field.Field
 	GetNonEntFields() []*NonEntField
 	GetEdges() []*edge.AssociationEdge
+	GetEdgeGroup() *edge.AssociationEdgeGroup
 	GetActionName() string
 	ExposedToGraphQL() bool
 	GetGraphQLName() string
@@ -67,6 +69,8 @@ type Action interface {
 	IsDeletingNode() bool
 	AddCustomField(enttype.TSGraphQLType, *field.Field)
 	GetCustomInterfaces() []*CustomInterface
+	GetTSEnums() []*enum.Enum
+	GetGQLEnums() []*enum.GQLEnum
 }
 
 type CustomInterface struct {
@@ -133,8 +137,11 @@ type commonActionInfo struct {
 	Fields           []*field.Field
 	NonEntFields     []*NonEntField
 	Edges            []*edge.AssociationEdge // for edge actions for now but eventually other actions
+	EdgeGroup        *edge.AssociationEdgeGroup
 	Operation        ent.ActionOperation
 	customInterfaces map[string]*CustomInterface
+	tsEnums          []*enum.Enum
+	gqlEnums         []*enum.GQLEnum
 	nodeinfo.NodeInfo
 }
 
@@ -160,6 +167,10 @@ func (action *commonActionInfo) GetFields() []*field.Field {
 
 func (action *commonActionInfo) GetEdges() []*edge.AssociationEdge {
 	return action.Edges
+}
+
+func (action *commonActionInfo) GetEdgeGroup() *edge.AssociationEdgeGroup {
+	return action.EdgeGroup
 }
 
 func (action *commonActionInfo) GetNonEntFields() []*NonEntField {
@@ -208,6 +219,14 @@ func (action *commonActionInfo) GetCustomInterfaces() []*CustomInterface {
 		return ret[i].TSType < ret[j].TSType
 	})
 	return ret
+}
+
+func (action *commonActionInfo) GetTSEnums() []*enum.Enum {
+	return action.tsEnums
+}
+
+func (action *commonActionInfo) GetGQLEnums() []*enum.GQLEnum {
+	return action.gqlEnums
 }
 
 type CreateAction struct {
@@ -471,4 +490,8 @@ func IsRemoveEdgeAction(action Action) bool {
 
 func IsEdgeAction(action Action) bool {
 	return action.GetOperation() == ent.RemoveEdgeAction || action.GetOperation() == ent.AddEdgeAction
+}
+
+func IsEdgeGroupAction(action Action) bool {
+	return action.GetOperation() == ent.EdgeGroupAction
 }

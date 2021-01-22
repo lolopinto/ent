@@ -287,7 +287,7 @@ func getFilePathForNode(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName)
 }
 
-func getFilePathForEnum(e enum.GQLEnum) string {
+func getFilePathForEnum(e *enum.GQLEnum) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strings.ToLower(strcase.ToSnake(e.Name)))
 }
 
@@ -507,7 +507,7 @@ type gqlNode struct {
 }
 
 type gqlEnum struct {
-	Enum enum.GQLEnum
+	Enum *enum.GQLEnum
 	Type string // the generated Type
 	// Enum Name is the graphql Name
 	FilePath string

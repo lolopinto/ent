@@ -16,6 +16,7 @@ import (
 	"github.com/lolopinto/ent/internal/depgraph"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/lolopinto/ent/internal/util"
@@ -472,13 +473,57 @@ type EdgeAction struct {
 }
 
 type AssociationEdgeGroup struct {
-	GroupName       string                      // this is the name of the edge which is different from the name of the status. confusing
-	GroupStatusName string                      // should be something like RsvpStatus
-	ConstType       string                      // and then this becomes EventRsvpStatus
-	Edges           map[string]*AssociationEdge // TODO...
-	EdgeActions     []*EdgeAction
-	actionEdges     map[string]bool
-	NodeInfo        nodeinfo.NodeInfo
+	GroupName         string // this is the name of the edge which is different from the name of the status. confusing
+	GroupStatusName   string // should be something like RsvpStatus
+	TSGroupStatusName string // changes RsvpStatus to rsvpStatus
+	DestNodeInfo      nodeinfo.NodeInfo
+	ConstType         string                      // and then this becomes EventRsvpStatus
+	Edges             map[string]*AssociationEdge // TODO...
+	EdgeActions       []*EdgeAction
+	StatusEnums       []string
+	NullStateFn       string
+	NullStates        []string
+	actionEdges       map[string]bool
+	statusEdges       []*AssociationEdge
+	NodeInfo          nodeinfo.NodeInfo
+}
+
+func (edgeGroup *AssociationEdgeGroup) DefaultNullState() string {
+	return enum.GetTSEnumNameForVal(edgeGroup.NullStates[0])
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetStatusMap() map[string]string {
+	edges := edgeGroup.GetStatusEdges()
+	m := make(map[string]string)
+	for _, edge := range edges {
+		m[enum.GetTSEnumNameForVal(edge.EdgeName)] = edge.TsEdgeConst()
+	}
+	return m
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetStatusEdges() []*AssociationEdge {
+	return edgeGroup.statusEdges
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetStatusValues() []string {
+	var values []string
+	edges := edgeGroup.GetStatusEdges()
+	for _, v := range edges {
+		values = append(values, v.EdgeName)
+	}
+	return values
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetIDArg() string {
+	return strcase.ToLowerCamel(edgeGroup.DestNodeInfo.Node + "ID")
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {
+	return fmt.Sprintf("viewer%s", strcase.ToCamel(edgeGroup.GroupStatusName))
+}
+
+func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
+	return fmt.Sprintf("get%sMap", edgeGroup.ConstType)
 }
 
 func (edgeGroup *AssociationEdgeGroup) EdgeIdentifier() string {
@@ -630,9 +675,10 @@ func assocEdgeFromInput(packageName string, node *input.Node, edge *input.AssocE
 
 func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *input.AssocEdgeGroup, edgeInfo *EdgeInfo) *AssociationEdgeGroup {
 	assocEdgeGroup := &AssociationEdgeGroup{
-		GroupName:       edgeGroup.Name,
-		GroupStatusName: edgeGroup.GroupStatusName,
-		NodeInfo:        nodeinfo.GetNodeInfo(packageName),
+		GroupName:         edgeGroup.Name,
+		GroupStatusName:   edgeGroup.GroupStatusName,
+		TSGroupStatusName: strcase.ToLowerCamel(edgeGroup.GroupStatusName),
+		NodeInfo:          nodeinfo.GetNodeInfo(packageName),
 	}
 
 	// no overriden table name, get default one
@@ -643,7 +689,17 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 
 	assocEdgeGroup.Edges = make(map[string]*AssociationEdge)
 
-	assocEdgeGroup.EdgeActions = edgeActionsFromInput(edgeGroup.EdgeActions)
+	if edgeGroup.EdgeAction != nil {
+		assocEdgeGroup.EdgeActions = edgeActionsFromInput([]*input.EdgeAction{edgeGroup.EdgeAction})
+	} else {
+		assocEdgeGroup.EdgeActions = edgeActionsFromInput(edgeGroup.EdgeActions)
+	}
+	assocEdgeGroup.StatusEnums = edgeGroup.StatusEnums
+	assocEdgeGroup.NullStateFn = edgeGroup.NullStateFn
+	assocEdgeGroup.NullStates = edgeGroup.NullStates
+	if assocEdgeGroup.NullStateFn != "" && len(assocEdgeGroup.NullStates) == 0 {
+		panic("cannot have null state fn with no null states")
+	}
 
 	for _, edge := range edgeGroup.AssocEdges {
 		// if input edge doesn't have its own tableName, use group tableName
@@ -657,11 +713,41 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 		// need to audit everything related to assoc groups anyways
 		// }
 		edgeInfo.addEdge(assocEdge)
+
+	}
+
+	var statusEdges []*AssociationEdge
+	if len(assocEdgeGroup.StatusEnums) == 0 {
+		for _, v := range assocEdgeGroup.Edges {
+			statusEdges = append(statusEdges, v)
+		}
+	} else {
+		for _, v := range edgeGroup.StatusEnums {
+			edge := assocEdgeGroup.GetAssociationByName(v)
+			if edge == nil {
+				panic(fmt.Errorf("invalid assoc %s in group %s", v, assocEdgeGroup.GroupName))
+			}
+			statusEdges = append(statusEdges, edge)
+		}
+	}
+	assocEdgeGroup.statusEdges = statusEdges
+	edgeMap := make(map[string]bool)
+	for _, v := range statusEdges {
+		nodeName := v.NodeInfo.Node
+		edgeMap[nodeName] = true
+	}
+
+	if len(edgeMap) != 1 {
+		panic("AssocEdgeGroup with mismatched edges. All edges in Group should have the same Schema Name")
+	}
+
+	for k := range edgeMap {
+		assocEdgeGroup.DestNodeInfo = nodeinfo.GetNodeInfo(k)
 	}
 
 	assocEdgeGroup.AddActionEdges(edgeGroup.ActionEdges)
 
-	assocEdgeGroup.ConstType = assocEdgeGroup.NodeInfo.Node + edgeGroup.GroupStatusName
+	assocEdgeGroup.ConstType = strcase.ToCamel(assocEdgeGroup.NodeInfo.Node + strcase.ToCamel(edgeGroup.GroupStatusName))
 	edgeInfo.addEdgeGroup(assocEdgeGroup)
 
 	return assocEdgeGroup
