@@ -51,10 +51,11 @@ func GetEnums(tsName, gqlName, gqlType string, values []string) (*Enum, *GQLEnum
 	for i, val := range values {
 		tsName := GetTSEnumNameForVal(val)
 
+		gqlVal := strings.ToUpper(strcase.ToSnake(val))
 		gqlVals[i] = Data{
-			Name: strings.ToUpper(val),
+			Name: gqlVal,
 			// norm for graphql enums is all caps
-			Value: strconv.Quote(strings.ToUpper(val)),
+			Value: strconv.Quote(gqlVal),
 		}
 		tsVals[i] = Data{
 			Name: tsName,
