@@ -951,7 +951,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 	}
 
 	for _, group := range nodeData.EdgeInfo.AssocGroups {
-		tsValuesMethod := "get" + group.ConstType + "Values"
+		tsValuesMethod := group.GetEnumValuesMethod()
 
 		fields = append(fields, &fieldType{
 			Name:               group.GetStatusMethod(),
@@ -1496,7 +1496,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 							ImportPath: actionPath,
 						},
 						&fileImport{
-							Type:       enum.GetTSName(), //Input?
+							Type:       enum.GetTSName(),
 							ImportPath: actionPath,
 						})
 				} else {
