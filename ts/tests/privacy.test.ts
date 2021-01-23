@@ -250,7 +250,7 @@ describe("applyPrivacyPolicyX", () => {
       fail("should not get here");
     } catch (e) {
       expect(e.message).toBe(
-        `ent ${user.id} is not visible for privacy reasons`,
+        `ent ${user.id} of type User is not visible for privacy reasons`,
       );
     }
   });

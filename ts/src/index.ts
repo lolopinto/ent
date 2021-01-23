@@ -40,6 +40,7 @@ export {
   loadRawEdgeCountX,
   loadEdgeForID2,
   loadNodesByEdge,
+  getEdgeTypeInGroup,
 } from "./core/ent";
 import DB from "./core/db";
 export { DB };
@@ -71,10 +72,16 @@ export {
   DenyIfEdgeExistsRule,
   DenyIfViewerInboundEdgeExistsRule,
   DenyIfViewerOutboundEdgeExistsRule,
+  DenyIfEdgeDoesNotExistRule,
+  DenyIfViewerInboundEdgeDoesNotExistRule,
+  DenyIfViewerOutboundEdgeDoesNotExistRule,
   AllowIfEntIsVisibleRule,
+  AllowIfEntIsNotVisibleRule,
   DenyIfEntIsVisibleRule,
+  DenyIfEntIsNotVisibleRule,
   AllowIfEntIsVisiblePolicy,
   DenyIfEntIsVisiblePolicy,
+  DelayedResultRule,
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
   AlwaysAllowPrivacyPolicy,

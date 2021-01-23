@@ -459,6 +459,7 @@ func (m NodeMapInfo) addInverseAssocEdges(info *NodeDataInfo) {
 	}
 }
 
+// this seems like go only?
 func (m NodeMapInfo) addNewConstsAndEdges(info *NodeDataInfo, edgeData *assocEdgeData) {
 	nodeData := info.NodeData
 
@@ -858,6 +859,21 @@ func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base
 		nodeData.EdgeInfo, err = edge.EdgeInfoFromInput(packageName, node)
 		if err != nil {
 			return nil, err
+		}
+
+		for _, group := range nodeData.EdgeInfo.AssocGroups {
+			values := group.GetStatusValues()
+			for _, v := range group.NullStates {
+				values = append(values, v)
+			}
+			s.addEnumFrom(
+				group.ConstType,
+				group.ConstType,
+				fmt.Sprintf("%s!", group.ConstType),
+				values,
+				nodeData,
+				nil,
+			)
 		}
 
 		nodeData.ActionInfo, err = action.ParseFromInput(packageName, node.Actions, nodeData.FieldInfo, nodeData.EdgeInfo, lang)

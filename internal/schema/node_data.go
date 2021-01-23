@@ -56,7 +56,7 @@ type NodeData struct {
 	HideFromGraphQL bool
 	EnumTable       bool
 	DBRows          []map[string]interface{}
-	tsEnums         []enum.Enum
+	tsEnums         []*enum.Enum
 	// fine to just reuse input constraints for now
 	Constraints []*input.Constraint
 }
@@ -206,7 +206,7 @@ func (nodeData *NodeData) GetUniqueNodes() []uniqueNodeInfo {
 	return nodeData.getUniqueNodes(false)
 }
 
-func (nodeData *NodeData) GetTSEnums() []enum.Enum {
+func (nodeData *NodeData) GetTSEnums() []*enum.Enum {
 	return nodeData.tsEnums
 }
 

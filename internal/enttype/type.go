@@ -51,7 +51,7 @@ type TSGraphQLType interface {
 // }
 
 type IDMarkerInterface interface {
-	TSType
+	TSGraphQLType
 	IsIDType() bool
 }
 

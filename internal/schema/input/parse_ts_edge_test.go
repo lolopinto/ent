@@ -69,7 +69,7 @@ func TestParseEdges(t *testing.T) {
 							name: "createdEvents",
 							schemaName: "Event",
 						},
-					];	
+					];
 				};`),
 			},
 			expectedOutput: map[string]node{
@@ -97,10 +97,10 @@ func TestParseEdges(t *testing.T) {
 				"user.ts": getCodeWithSchema(
 					`
 					import {Schema, Field, Edge} from "{schema}";
-	
+
 					export default class User implements Schema {
 						fields: Field[] = [];
-	
+
 						edges: Edge[] = [
 							{
 								name: "friends",
@@ -128,10 +128,10 @@ func TestParseEdges(t *testing.T) {
 				"post.ts": getCodeWithSchema(
 					`
 					import {Schema, Field, Edge} from "{schema}";
-	
+
 					export default class Post implements Schema {
 						fields: Field[] = [];
-	
+
 						edges: Edge[] = [
 							{
 								name: "likers",
@@ -157,14 +157,15 @@ func TestParseEdges(t *testing.T) {
 				"user.ts": getCodeWithSchema(
 					`
 					import {Schema, Field, Edge} from "{schema}";
-	
+
 					export default class User implements Schema {
 						fields: Field[] = [];
-	
+
 						edges: Edge[] = [
 							{
 								name: "friendships",
 								groupStatusName: "friendshipStatus",
+								nullStates: "canRequest",
 								assocEdges: [
 									{
 										name: "friendRequests",
@@ -190,6 +191,7 @@ func TestParseEdges(t *testing.T) {
 						{
 							name:            "friendships",
 							groupStatusName: "friendshipStatus",
+							nullStates:      []string{"canRequest"},
 							assocEdges: []assocEdge{
 								{
 									name:       "friendRequests",
@@ -232,7 +234,7 @@ func TestParseEdges(t *testing.T) {
 								},
 							],
 						},
-					];	
+					];
 				};`),
 			},
 			expectedOutput: map[string]node{
@@ -261,10 +263,10 @@ func TestParseEdges(t *testing.T) {
 				"post.ts": getCodeWithSchema(
 					`
 					import {Schema, Field, Edge} from "{schema}";
-	
+
 					export default class Post implements Schema {
 						fields: Field[] = [];
-	
+
 						edges: Edge[] = [
 							{
 								name: "likers",
@@ -282,6 +284,68 @@ func TestParseEdges(t *testing.T) {
 							name:            "likers",
 							schemaName:      "User",
 							hideFromGraphQL: true,
+						},
+					},
+				},
+			},
+		},
+		"assoc group": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(
+					`
+				import {Schema, Field, Edge, ActionOperation} from "{schema}";
+
+				export default class User implements Schema {
+					fields: Field[] = [];
+					edges: Edge[] = [
+						{
+							name: "friendships",
+							groupStatusName: "friendshipStatus",
+							nullStateFn:"friendshipStatus",
+							nullStates: ["canRequest", "cannotRequest"],
+							edgeAction: {
+								operation: ActionOperation.EdgeGroup,
+							},
+							assocEdges: [
+								{
+									name: "outgoingRequest",
+									schemaName: "User",
+									inverseEdge: {
+										name: "incomingRequest",
+									},
+								},
+								{
+									name: "friends",
+									schemaName: "User",
+									symmetric: true,
+								},
+							],
+						},
+					];	
+				};`),
+			},
+			expectedOutput: map[string]node{
+				"User": {
+					assocEdgeGroups: []assocEdgeGroup{
+						{
+							name:            "friendships",
+							groupStatusName: "friendshipStatus",
+							nullStates:      []string{"canRequest", "cannotRequest"},
+							nullStateFn:     "friendshipStatus",
+							assocEdges: []assocEdge{
+								{
+									name:       "outgoingRequest",
+									schemaName: "User",
+									inverseEdge: &inverseAssocEdge{
+										name: "incomingRequest",
+									},
+								},
+								{
+									name:       "friends",
+									schemaName: "User",
+									symmetric:  true,
+								},
+							},
 						},
 					},
 				},

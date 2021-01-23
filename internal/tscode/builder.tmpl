@@ -42,7 +42,7 @@ function randomNum(): string {
 {{$builder := printf "%sBuilder" .Node}}
 
 export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
-  private orchestrator: {{useImport "Orchestrator"}}<{{$node}}>;
+  orchestrator: {{useImport "Orchestrator"}}<{{$node}}>;
   readonly placeholderID: {{useImport "ID"}};
   readonly ent = {{$node}};
   private input: {{.Node}}Input;

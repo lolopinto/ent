@@ -88,14 +88,42 @@ export interface InverseAssocEdge {
   name: string;
 }
 
+export interface EdgeGroupAction {
+  // TODO ideally this only requires AddEdge|RemoveEdge but can't get it to work (yet)
+  //  operation: EdgeActionOperation;
+  operation: ActionOperation.EdgeGroup; // implied and don't put it?
+  //   ActionOperation,
+  //   ActionOperation.AddEdge | ActionOperation.RemoveEdge
+  // >;
+  actionName?: string;
+  hideFromGraphQL?: boolean;
+  graphQLName?: string;
+}
+
+// interface AssocEdgeNullState {
+//   name: string;
+//   fnName: string;
+// }
+
 // AssocEdgeGroup provides a way to group related edges together
 // e.g. rsvps and you have an invited, attending, declined edge all together in the same
 // table and a way to configure it so that changing one edge also affects the others
 export interface AssocEdgeGroup {
   name: string;
-  groupStatusName: string;
+  groupStatusName: string; // e.g. EventRsvpStatus
   tableName?: string;
   assocEdges: AssocEdge[];
+  statusEnums?: string[]; // if present, restrict to these instead of all given enums...
+  //  extraEnums:
+  // either single item or should be list with way to differentiate btw them...
+  // nullStates are not part of input, just output...
+  nullStates: string | string[];
+  // if more than one nullState. must pass this in
+  nullStateFn?: string;
+  //  nullStates?: string | AssocEdgeNullState[]; // if the edge doesn't exist, return this instead
+  ///  rest
+  // edgeAction -> where a setRsvp yes/no is best
+  edgeAction?: EdgeGroupAction;
 }
 
 // edges we support from the schema

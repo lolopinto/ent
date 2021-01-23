@@ -5,6 +5,8 @@ import { Pool } from "pg";
 import { QueryRecorder, queryType } from "../testutils/db_mock";
 import { Field, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
+import { loadEdgeForID2 } from "../core/ent";
+import { setEdgeTypeInGroup } from "./action";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -27,7 +29,7 @@ class UserSchema implements BuilderSchema<User> {
 const viewer = new LoggedOutViewer();
 const schema = new UserSchema();
 
-function getCreateBuilder(): SimpleBuilder<User> {
+function getUserCreateBuilder(): SimpleBuilder<User> {
   return new SimpleBuilder(
     viewer,
     schema,
@@ -38,9 +40,25 @@ function getCreateBuilder(): SimpleBuilder<User> {
   );
 }
 
-beforeEach(async () => {
-  // does assoc_edge_config loader need to be cleared?
-  const edges = ["edge"];
+function getUserEditBuilder(
+  user: User,
+  m: Map<string, any>,
+): SimpleBuilder<User> {
+  return new SimpleBuilder(
+    new IDViewer(user.id),
+    schema,
+    m,
+    WriteOperation.Edit,
+    user,
+  );
+}
+
+async function createUser(): Promise<User> {
+  const builder = getUserCreateBuilder();
+  return await builder.saveX();
+}
+
+async function createEdgeRows(edges: string[]) {
   for (const edge of edges) {
     await createRowForTest({
       tableName: "assoc_edge_config",
@@ -53,11 +71,17 @@ beforeEach(async () => {
       },
     });
   }
+}
+
+beforeEach(async () => {
+  // does assoc_edge_config loader need to be cleared?
+  const edges = ["edge"];
+  await createEdgeRows(["edge"]);
   QueryRecorder.clearQueries();
 });
 
 test("simple", async () => {
-  const builder = getCreateBuilder();
+  const builder = getUserCreateBuilder();
 
   let ent = await builder.saveX();
   QueryRecorder.validateQueriesInTx(
@@ -72,7 +96,7 @@ test("simple", async () => {
 });
 
 test("new ent with edge", async () => {
-  const builder = getCreateBuilder();
+  const builder = getUserCreateBuilder();
   const id2 = QueryRecorder.newID();
   builder.orchestrator.addOutboundEdge(id2, "edge", "User");
   await builder.saveX();
@@ -90,21 +114,13 @@ test("new ent with edge", async () => {
 });
 
 test("existing ent with edge", async () => {
-  const builder = getCreateBuilder();
+  const user = await createUser();
 
-  let user = await builder.saveX();
-
-  const builder2 = new SimpleBuilder(
-    new IDViewer(user.id),
-    schema,
-    new Map([["foo", "bar"]]),
-    WriteOperation.Edit,
-    user,
-  );
+  const builder = getUserEditBuilder(user, new Map([["foo", "bar"]]));
   const id2 = QueryRecorder.newID();
 
-  builder2.orchestrator.addOutboundEdge(id2, "edge", "User");
-  await builder2.saveX();
+  builder.orchestrator.addOutboundEdge(id2, "edge", "User");
+  await builder.saveX();
 
   QueryRecorder.validateQueryStructuresInTx(
     [
@@ -133,13 +149,12 @@ test("existing ent with edge", async () => {
 });
 
 test("insert with incorrect resolver", async () => {
-  const builder = getCreateBuilder();
-  const builder2 = getCreateBuilder();
+  const builder = getUserCreateBuilder();
+  const builder2 = getUserCreateBuilder();
   builder.orchestrator.addOutboundEdge(builder2, "edge", "User");
 
-  let ent: User | null = null;
   try {
-    ent = await builder.saveX();
+    await builder.saveX();
     fail("should have thrown exception");
   } catch (error) {
     expect(error.message).toMatch(/could not resolve placeholder value/);
@@ -150,4 +165,82 @@ test("insert with incorrect resolver", async () => {
       type: queryType.INSERT,
     },
   ]);
+});
+
+test("setEdgeTypeInGroup", async () => {
+  const edgeTypes = ["edge1", "edge2", "edge3"];
+  let m = new Map<string, string>();
+  for (const edgeType of edgeTypes) {
+    m.set(edgeType + "Enum", edgeType);
+  }
+
+  await createEdgeRows(edgeTypes);
+  const [user1, user2] = await Promise.all([createUser(), createUser()]);
+
+  for (const edgeType of edgeTypes) {
+    const edge = await loadEdgeForID2({
+      id1: user1.id,
+      id2: user2.id,
+      edgeType,
+    });
+    expect(edge).toBeUndefined();
+  }
+
+  // TODO should be able to do empty map here
+  const builder = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
+
+  // let's manually do edge1 and then we'll set separate edges...
+  builder.orchestrator.addOutboundEdge(user2.id, "edge1", user2.nodeType);
+  await builder.saveX();
+
+  const edge = await loadEdgeForID2({
+    id1: user1.id,
+    id2: user2.id,
+    edgeType: "edge1",
+  });
+  expect(edge).toBeDefined();
+  expect(edge?.id1).toBe(user1.id);
+  expect(edge?.id2).toBe(user2.id);
+  expect(edge?.edgeType).toBe("edge1");
+
+  async function verifyEdges(edgeTypes: string[], edgeSet: string) {
+    const edges = await Promise.all(
+      edgeTypes.map(async (edgeType) => {
+        return await loadEdgeForID2({
+          id1: user1.id,
+          id2: user2.id,
+          edgeType,
+        });
+      }),
+    );
+    for (let i = 0; i < edges.length; i++) {
+      const edge = edges[i];
+      const edgeType = edgeTypes[i];
+
+      if (edgeType == edgeSet) {
+        expect(edge).toBeDefined();
+        expect(edge?.id1).toBe(user1.id);
+        expect(edge?.id2).toBe(user2.id);
+        expect(edge?.edgeType).toBe(edgeType);
+      } else {
+        expect(edge).toBeUndefined();
+      }
+    }
+  }
+
+  for (const edgeType of edgeTypes) {
+    const builder2 = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
+    // set each edge
+    await setEdgeTypeInGroup(
+      builder2.orchestrator,
+      edgeType + "Enum",
+      user1.id,
+      user2.id,
+      "User",
+      m,
+    );
+    await builder2.saveX();
+    // verify said edge is set and others unset
+    await verifyEdges(edgeTypes, edgeType);
+  }
 });

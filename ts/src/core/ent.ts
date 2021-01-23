@@ -8,7 +8,6 @@ import {
   QueryResult,
 } from "pg";
 import {
-  EntPrivacyError,
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
   PrivacyPolicy,
@@ -286,11 +285,9 @@ export async function applyPrivacyPolicyForEntX<T extends Ent>(
   viewer: Viewer,
   ent: T,
 ): Promise<T> {
-  const visible = await applyPrivacyPolicyX(viewer, ent.privacyPolicy, ent);
-  if (visible) {
-    return ent;
-  }
-  throw new EntPrivacyError(ent.privacyPolicy, ent.id);
+  // this will throw
+  await applyPrivacyPolicyX(viewer, ent.privacyPolicy, ent);
+  return ent;
 }
 
 function logQuery(query: string, values: any[]) {
@@ -1117,7 +1114,7 @@ export async function loadEdgeForID2(
   options: loadEdgeForIDOptions,
 ): Promise<AssocEdge | undefined> {
   // TODO at some point, same as in go, we can be smart about this and have heuristics to determine if we fetch everything here or not
-  // we're assuming a cache here but not always tue and this can be expensive if not...
+  // we're assuming a cache here but not always true and this can be expensive if not...
   const edges = await loadEdges(options);
   return edges.find((edge) => edge.id2 == options.id2);
 }
@@ -1179,4 +1176,40 @@ async function applyPrivacyPolicyForRows<T extends Ent>(
     }),
   );
   return m;
+}
+
+async function loadEdgeWithConst<T extends string>(
+  viewer: Viewer,
+  id1: ID,
+  id2: ID,
+  edgeEnum: T,
+  edgeType: string,
+): Promise<[T, AssocEdge | undefined]> {
+  const edge = await loadEdgeForID2({
+    id1: id1,
+    id2: id2,
+    edgeType: edgeType,
+    context: viewer.context,
+  });
+  return [edgeEnum, edge];
+}
+
+// given a viewer, an id pair, and a map of edgeEnum to EdgeType
+// return the edgeEnum that's set in the group
+export async function getEdgeTypeInGroup<T extends string>(
+  viewer: Viewer,
+  id1: ID,
+  id2: ID,
+  m: Map<T, string>,
+): Promise<[T, AssocEdge] | undefined> {
+  let promises: Promise<[T, AssocEdge | undefined]>[] = [];
+  for (const [k, v] of m) {
+    promises.push(loadEdgeWithConst(viewer, id1, id2, k, v));
+  }
+  const results = await Promise.all(promises);
+  for (const res of results) {
+    if (res[1]) {
+      return [res[0], res[1]];
+    }
+  }
 }

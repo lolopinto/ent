@@ -287,7 +287,7 @@ func getFilePathForNode(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", nodeData.PackageName)
 }
 
-func getFilePathForEnum(e enum.GQLEnum) string {
+func getFilePathForEnum(e *enum.GQLEnum) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strings.ToLower(strcase.ToSnake(e.Name)))
 }
 
@@ -433,6 +433,7 @@ type gqlobjectData struct {
 	Node         string
 	NodeInstance string
 	GQLNodes     []*objectType
+	Enums        []*gqlEnum
 	FieldConfig  *fieldConfig
 	initMap      bool
 	m            map[string]bool
@@ -455,6 +456,10 @@ func (obj gqlobjectData) Imports() []*fileImport {
 			// append field imports to get non-graphql imports (and graphql but most already manually included)
 			result = append(result, field.AllImports()...)
 		}
+	}
+	if obj.FieldConfig != nil {
+		result = append(result, obj.FieldConfig.ArgImports...)
+		result = append(result, obj.FieldConfig.TypeImports...)
 	}
 	return result
 }
@@ -480,9 +485,27 @@ func (obj gqlobjectData) ForeignImport(name string) bool {
 				obj.m[in.Name] = true
 			}
 		}
+		for _, enum := range obj.Enums {
+			obj.m[enum.Type] = true
+		}
 		// and field config
 		if obj.FieldConfig != nil {
-			obj.m[obj.FieldConfig.Name] = true
+			fcfg := obj.FieldConfig
+			obj.m[fcfg.Name] = true
+
+			for _, imp := range fcfg.ArgImports {
+				// local...
+				if imp.ImportPath == "" {
+					obj.m[imp.Type] = true
+				}
+			}
+
+			for _, imp := range fcfg.TypeImports {
+				// local...
+				if imp.ImportPath == "" {
+					obj.m[imp.Type] = true
+				}
+			}
 		}
 		obj.initMap = true
 	}
@@ -507,7 +530,7 @@ type gqlNode struct {
 }
 
 type gqlEnum struct {
-	Enum enum.GQLEnum
+	Enum *enum.GQLEnum
 	Type string // the generated Type
 	// Enum Name is the graphql Name
 	FilePath string
@@ -592,6 +615,7 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 								Node:         nodeData.Node,
 								NodeInstance: nodeData.NodeInstance,
 								GQLNodes:     buildActionNodes(nodeData, action, actionPrefix),
+								Enums:        buildActionEnums(nodeData, action),
 								FieldConfig:  fieldCfg,
 								Package:      data.CodePath.GetImportPackage(),
 							},
@@ -651,6 +675,7 @@ func writeFile(node *gqlNode) error {
 		OtherTemplateFiles: []string{
 			util.GetAbsolutePath("ts_templates/field_config.tmpl"),
 			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
+			util.GetAbsolutePath("ts_templates/enum.tmpl"),
 		},
 		PathToFile:   node.FilePath,
 		FormatSource: true,
@@ -771,15 +796,20 @@ type fieldConfig struct {
 	Name             string
 	Arg              string
 	ResolveMethodArg string
-	TypeImports      []string
-	ArgImports       []string // incase it's { [argName: string]: any }, we need to know difference
+	TypeImports      []*fileImport
+	//	ArgImports       []string // incase it's { [argName: string]: any }, we need to know difference
+	ArgImports       []*fileImport
 	Args             []*fieldConfigArg
 	FunctionContents []string
 	ReturnTypeHint   string
 }
 
 func (f fieldConfig) FieldType() string {
-	return typeFromImports(f.TypeImports)
+	imps := make([]string, len(f.TypeImports))
+	for i, imp := range f.TypeImports {
+		imps[i] = imp.Type
+	}
+	return typeFromImports(imps)
 }
 
 type fieldConfigArg struct {
@@ -904,7 +934,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		}
 
 		if gqlField.HasResolveFunction {
-			gqlField.FunctionContents = fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())
+			gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())}
 		}
 		fields = append(fields, gqlField)
 	}
@@ -918,6 +948,44 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		} else {
 			addConnection(nodeData, edge, &fields, instance)
 		}
+	}
+
+	for _, group := range nodeData.EdgeInfo.AssocGroups {
+		tsValuesMethod := group.GetEnumValuesMethod()
+
+		fields = append(fields, &fieldType{
+			Name:               group.GetStatusMethod(),
+			HasResolveFunction: true,
+			HasAsyncModifier:   true,
+			FieldImports: getGQLFileImports(
+				[]enttype.FileImport{
+					{
+						Type:       group.ConstType,
+						ImportType: enttype.Enum,
+					},
+				},
+			),
+			ExtraImports: []*fileImport{
+				{
+					ImportPath: codepath.GraphQLPackage,
+					Type:       "convertToGQLEnum",
+				},
+				{
+					ImportPath: codepath.GetExternalImportPath(),
+					Type:       tsValuesMethod,
+				},
+			},
+			FunctionContents: []string{
+				// get the value
+				// convert to gql value
+				// TODO need to do this for more enums generically...
+				fmt.Sprintf("const ret = await %s.%s()", group.NodeInfo.NodeInstance, group.GetStatusMethod()),
+				fmt.Sprintf("return convertToGQLEnum(ret, %s(), %s.getValues())",
+					tsValuesMethod,
+					group.ConstType+"Type",
+				),
+			},
+		})
 	}
 
 	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
@@ -946,7 +1014,7 @@ func addSingularEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports()),
-		FunctionContents:   fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName()),
+		FunctionContents:   []string{fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName())},
 	}
 	*fields = append(*fields, gqlField)
 }
@@ -956,7 +1024,7 @@ func addPluralEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
 		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports()),
-		FunctionContents:   fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName()),
+		FunctionContents:   []string{fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName())},
 	}
 	*fields = append(*fields, gqlField)
 }
@@ -996,9 +1064,11 @@ func addConnection(nodeData *schema.NodeData, edge *edge.AssociationEdge, fields
 			},
 		},
 		// TODO typing for args later?
-		FunctionContents: fmt.Sprintf(
-			"return new GraphQLEdgeConnection(%s.viewer, %s, %s, args);",
-			instance, instance, edge.TsEdgeQueryName()),
+		FunctionContents: []string{
+			fmt.Sprintf(
+				"return new GraphQLEdgeConnection(%s.viewer, %s, %s, args);",
+				instance, instance, edge.TsEdgeQueryName()),
+		},
 	}
 	*fields = append(*fields, gqlField)
 }
@@ -1012,6 +1082,17 @@ func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPre
 		buildActionInputNode(nodeData, action, actionPrefix),
 		buildActionPayloadNode(nodeData, action, actionPrefix),
 	)
+	return ret
+}
+
+func buildActionEnums(nodeData *schema.NodeData, action action.Action) []*gqlEnum {
+	var ret []*gqlEnum
+	for _, enumType := range action.GetGQLEnums() {
+		ret = append(ret, &gqlEnum{
+			Type: fmt.Sprintf("%sType", enumType.Name),
+			Enum: enumType,
+		})
+	}
 	return ret
 }
 
@@ -1119,6 +1200,17 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 			})
 		}
 
+		for _, f := range a.GetNonEntFields() {
+			_, ok := f.FieldType.(enttype.IDMarkerInterface)
+			// same logic above for regular fields
+			if ok {
+				intType.Fields = append(intType.Fields, &interfaceField{
+					Name: f.GetGraphQLName(),
+					Type: "string",
+				})
+			}
+		}
+
 		// TODO do we need to overwrite some fields?
 		if action.HasInput(a) {
 			intType.Extends = []string{
@@ -1144,7 +1236,7 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 		GQLType:  "GraphQLObjectType",
 		DefaultImports: []*fileImport{
 			{
-				ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName())),
+				ImportPath: getActionPath(nodeData, a),
 				Type:       a.GetActionName(),
 			},
 		},
@@ -1167,7 +1259,7 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 	// this is here but it's probably better in buildActionFieldConfig
 	if action.HasInput(a) {
 		result.Imports = append(result.Imports, &fileImport{
-			ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName())),
+			ImportPath: getActionPath(nodeData, a),
 			Type:       a.GetInputName(),
 		})
 	}
@@ -1237,27 +1329,47 @@ func hasCustomInput(a action.Action) bool {
 	return false
 }
 
+func getActionPath(nodeData *schema.NodeData, a action.Action) string {
+	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()))
+}
+
+func getActionBasePath(nodeData *schema.NodeData, a action.Action) string {
+	return fmt.Sprintf("src/ent/%s/actions/generated/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()+"Base"))
+}
+
 func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPrefix string) (*fieldConfig, error) {
 	// TODO this is so not obvious at all
 	// these are things that are automatically useImported....
-	argImports := []string{
-		a.GetActionName(),
+	argImports := []*fileImport{
+		{
+			Type:       a.GetActionName(),
+			ImportPath: getActionPath(nodeData, a),
+		},
 	}
 	var argName string
 	if hasCustomInput(a) {
 		argName = fmt.Sprintf("custom%sInput", actionPrefix)
 	} else {
 		argName = a.GetInputName()
-		argImports = append(argImports, argName)
+		argImports = append(argImports, &fileImport{
+			Type:       argName,
+			ImportPath: getActionPath(nodeData, a),
+		})
 	}
 	result := &fieldConfig{
 		Exported:         true,
 		Name:             fmt.Sprintf("%sType", actionPrefix),
 		Arg:              fmt.Sprintf("{ [input: string]: %s}", argName),
 		ResolveMethodArg: "{ input }",
-		TypeImports: []string{
-			"GraphQLNonNull",
-			fmt.Sprintf("%sPayloadType", actionPrefix),
+		TypeImports: []*fileImport{
+			{
+				ImportPath: "graphql",
+				Type:       "GraphQLNonNull",
+			},
+			{
+				// local so it's fine
+				Type: fmt.Sprintf("%sPayloadType", actionPrefix),
+			},
 		},
 		Args: []*fieldConfigArg{
 			{
@@ -1281,7 +1393,10 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 			// we need fields like userID here which aren't exposed to graphql but editable...
 
 			if f.IsEditableIDField() {
-				argImports = append(argImports, "mustDecodeIDFromGQLID")
+				argImports = append(argImports, &fileImport{
+					Type:       "mustDecodeIDFromGQLID",
+					ImportPath: codepath.GraphQLPackage,
+				})
 				result.FunctionContents = append(
 					result.FunctionContents,
 					fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
@@ -1306,7 +1421,10 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 			fmt.Sprintf("return {%s: %s};", nodeData.NodeInstance, nodeData.NodeInstance),
 		)
 	} else if a.GetOperation() == ent.DeleteAction {
-		argImports = append(argImports, "mustDecodeIDFromGQLID")
+		argImports = append(argImports, &fileImport{
+			Type:       "mustDecodeIDFromGQLID",
+			ImportPath: codepath.GraphQLPackage,
+		})
 
 		result.FunctionContents = append(
 			result.FunctionContents,
@@ -1319,7 +1437,10 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 		)
 	} else {
 		// some kind of editing
-		argImports = append(argImports, "mustDecodeIDFromGQLID")
+		argImports = append(argImports, &fileImport{
+			Type:       "mustDecodeIDFromGQLID",
+			ImportPath: codepath.GraphQLPackage,
+		})
 
 		if action.HasInput(a) {
 			// have fields and therefore input
@@ -1343,10 +1464,47 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 				}
 			}
 			for _, f := range a.GetNonEntFields() {
-				result.FunctionContents = append(
-					result.FunctionContents,
-					fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
-				)
+				_, ok := f.FieldType.(enttype.IDMarkerInterface)
+				enum, enumOk := f.FieldType.(enttype.EnumeratedType)
+				if ok {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
+					)
+				} else if enumOk {
+					tsValuesMethod := "get" + enum.GetTSName() + "Values"
+					actionPath := getActionBasePath(nodeData, a)
+
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf(
+							"%s: convertFromGQLEnum(input.%s, %s(), %s.getValues()) as %s,",
+							f.TsFieldName(),
+							f.TsFieldName(),
+							tsValuesMethod,
+							enum.GetGraphQLName()+"Type",
+							enum.GetTSName(),
+						),
+					)
+					argImports = append(argImports,
+						&fileImport{
+							Type:       "convertFromGQLEnum",
+							ImportPath: codepath.GraphQLPackage,
+						},
+						&fileImport{
+							Type:       tsValuesMethod,
+							ImportPath: actionPath,
+						},
+						&fileImport{
+							Type:       enum.GetTSName(),
+							ImportPath: actionPath,
+						})
+				} else {
+					result.FunctionContents = append(
+						result.FunctionContents,
+						fmt.Sprintf("%s: input.%s,", f.TsFieldName(), f.TsFieldName()),
+					)
+				}
 			}
 			result.FunctionContents = append(result.FunctionContents, "});")
 
@@ -1408,7 +1566,7 @@ type fieldType struct {
 	ExtraImports []*fileImport
 	Args         []*fieldConfigArg
 	// no args for now. come back.
-	FunctionContents string // TODO
+	FunctionContents []string
 	ResolverMethod   string
 	// TODO more types we need to support
 }
@@ -1604,8 +1762,12 @@ func buildNodeFieldConfig(data *codegen.Data, s *gqlSchema) *fieldConfig {
 		Exported: true,
 		Name:     "NodeQuery",
 		Arg:      "NodeQueryArgs",
-		// TODO change these...
-		TypeImports: []string{"GraphQLNodeInterface"},
+		TypeImports: []*fileImport{
+			{
+				Type:       "GraphQLNodeInterface",
+				ImportPath: codepath.GraphQLPackage,
+			},
+		},
 		Args: []*fieldConfigArg{
 			{
 				Name:    "id",

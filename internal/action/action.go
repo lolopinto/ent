@@ -3,7 +3,6 @@ package action
 import (
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -12,6 +11,7 @@ import (
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/base"
+	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 
 	"github.com/lolopinto/ent/internal/field"
@@ -304,53 +304,58 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 	for idx, edgeAction := range edgeActions {
 		typ := getEdgeActionType(edgeAction.Action)
 
-		countGroupInfo := make(map[string]int)
-		for _, edge := range assocGroup.Edges {
-			nodeName := edge.NodeInfo.Node
-			currentVal, ok := countGroupInfo[nodeName]
-			if !ok {
-				countGroupInfo[nodeName] = 1
-			} else {
-				countGroupInfo[nodeName] = currentVal + 1
+		var tsEnums []*enum.Enum
+		var gqlEnums []*enum.GQLEnum
+		var fields []*NonEntField
+		if lang == base.GoLang {
+			fields = []*NonEntField{
+				{
+					FieldName: assocGroup.GroupStatusName,
+					FieldType: &enttype.StringType{},
+					Flag:      "Enum",
+				},
+				{
+					FieldName: strcase.ToCamel(assocGroup.DestNodeInfo.Node + "ID"),
+					FieldType: &enttype.StringType{},
+					Flag:      "ID",
+					NodeType:  fmt.Sprintf("models.%sType", assocGroup.DestNodeInfo.Node), // TODO should take it from codegenInfo
+				},
 			}
-		}
-		maxInt := math.MinInt64
-		var node string
+		} else {
+			values := assocGroup.GetStatusValues()
+			typ := fmt.Sprintf("%sInput", assocGroup.ConstType)
 
-		for nodeName, count := range countGroupInfo {
-			if count > maxInt {
-				maxInt = count
-				node = nodeName
-			}
-		}
-
-		if node == "" {
-			panic("invalid edge") // TODO
-		}
-
-		// how do I pass rsvp status??
-		actions[idx] = typ.getAction(
-			getCommonInfoForGroupEdgeAction(
-				nodeName,
-				assocGroup,
-				typ,
-				edgeAction,
-				lang,
-				[]*NonEntField{
-					{
-						FieldName: assocGroup.GroupStatusName,
-						FieldType: &enttype.StringType{},
-						Flag:      "Enum",
-					},
-					{
-						FieldName: strcase.ToCamel(node + "ID"),
-						FieldType: &enttype.StringType{},
-						Flag:      "ID",
-						NodeType:  fmt.Sprintf("models.%sType", node), // TODO should take it from codegenInfo
+			fields = []*NonEntField{
+				{
+					FieldName: assocGroup.TSGroupStatusName,
+					FieldType: &enttype.EnumType{
+						Values:      values,
+						Type:        typ,
+						GraphQLType: typ,
 					},
 				},
-			),
+				{
+					FieldName: assocGroup.GetIDArg(),
+					FieldType: &enttype.IDType{},
+				},
+			}
+			tsEnum, gqlEnum := enum.GetEnums(typ, typ, typ, values)
+			tsEnums = append(tsEnums, tsEnum)
+			gqlEnums = append(gqlEnums, gqlEnum)
+		}
+
+		commonInfo := getCommonInfoForGroupEdgeAction(nodeName,
+			assocGroup,
+			typ,
+			edgeAction,
+			lang,
+			fields,
 		)
+		commonInfo.tsEnums = tsEnums
+		commonInfo.gqlEnums = gqlEnums
+		commonInfo.EdgeGroup = assocGroup
+
+		actions[idx] = typ.getAction(commonInfo)
 	}
 	return actions
 }
@@ -430,7 +435,7 @@ func getCommonInfoForEdgeAction(
 	return commonActionInfo{
 		ActionName:      getActionNameForEdgeActionType(typ, nodeName, assocEdge, edgeAction.CustomActionName, lang),
 		GraphQLName:     graphqlName,
-		InputName:       "", // TODO
+		InputName:       typ.getDefaultInputName(nodeName, assocEdge),
 		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
 		Edges:           edges,
 		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),
@@ -461,7 +466,7 @@ func getCommonInfoForGroupEdgeAction(
 	return commonActionInfo{
 		ActionName:      actionName,
 		GraphQLName:     graphqlName,
-		InputName:       "", // TODO
+		InputName:       typ.getDefaultInputName(nodeName, assocEdgeGroup),
 		ExposeToGraphQL: edgeAction.ExposeToGraphQL,
 		NonEntFields:    fields,
 		NodeInfo:        nodeinfo.GetNodeInfo(nodeName),

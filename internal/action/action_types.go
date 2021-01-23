@@ -31,6 +31,7 @@ type concreteEdgeActionType interface {
 	concreteActionType
 	getDefaultActionName(nodeName string, edge edge.ActionableEdge, lang base.Language) string
 	getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string
+	getDefaultInputName(nodeName string, edge edge.ActionableEdge) string
 }
 
 type createActionType struct {
@@ -159,7 +160,12 @@ func (action *addEdgeActionType) getDefaultActionName(nodeName string, edge edge
 
 func (action *addEdgeActionType) getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string {
 	// eventAddInvitee
-	return strcase.ToLowerCamel(nodeName) + "Add" + edge.EdgeIdentifier()
+	return strcase.ToLowerCamel(nodeName) + "Add" + strcase.ToCamel(edge.EdgeIdentifier())
+}
+
+func (action *addEdgeActionType) getDefaultInputName(nodeName string, edge edge.ActionableEdge) string {
+	// TODO only used in TS right now
+	return strcase.ToCamel(nodeName) + "Add" + strcase.ToCamel(edge.EdgeIdentifier()) + "Input"
 }
 
 func (action *addEdgeActionType) getAction(commonInfo commonActionInfo) Action {
@@ -189,12 +195,17 @@ func (action *removeEdgeActionType) getDefaultActionName(nodeName string, edge e
 	if lang == base.TypeScript {
 		return strcase.ToCamel(nodeName) + "Remove" + edge.EdgeIdentifier() + "Action"
 	}
-	return "Remove" + edge.EdgeIdentifier() + "Action"
+	return "Remove" + strcase.ToCamel(edge.EdgeIdentifier()) + "Action"
 }
 
 func (action *removeEdgeActionType) getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string {
 	// do we need the node?
-	return strcase.ToLowerCamel(nodeName) + "Remove" + edge.EdgeIdentifier()
+	return strcase.ToLowerCamel(nodeName) + "Remove" + strcase.ToCamel(edge.EdgeIdentifier())
+}
+
+func (action *removeEdgeActionType) getDefaultInputName(nodeName string, edge edge.ActionableEdge) string {
+	// TODO only used in TS for now
+	return strcase.ToCamel(nodeName) + "Remove" + strcase.ToCamel(edge.EdgeIdentifier()) + "Input"
 }
 
 func (action *removeEdgeActionType) getAction(commonInfo commonActionInfo) Action {
@@ -220,11 +231,15 @@ type groupEdgeActionType struct {
 }
 
 func (action *groupEdgeActionType) getDefaultActionName(nodeName string, edge edge.ActionableEdge, lang base.Language) string {
-	return fmt.Sprintf("Edit%s%sAction", strcase.ToCamel(nodeName), edge.EdgeIdentifier())
+	return fmt.Sprintf("Edit%s%sAction", strcase.ToCamel(nodeName), strcase.ToCamel(edge.EdgeIdentifier()))
+}
+
+func (action *groupEdgeActionType) getDefaultInputName(nodeName string, edge edge.ActionableEdge) string {
+	return fmt.Sprintf("Edit%s%sInput", strcase.ToCamel(nodeName), strcase.ToCamel(edge.EdgeIdentifier()))
 }
 
 func (action *groupEdgeActionType) getDefaultGraphQLName(nodeName string, edge edge.ActionableEdge) string {
-	return fmt.Sprintf("%s%sEdit", nodeName, edge.EdgeIdentifier())
+	return fmt.Sprintf("%s%sEdit", strcase.ToLowerCamel(nodeName), strcase.ToCamel(edge.EdgeIdentifier()))
 }
 
 func (action *groupEdgeActionType) getAction(commonInfo commonActionInfo) Action {

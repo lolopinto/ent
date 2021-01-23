@@ -16,7 +16,7 @@ type processCustomRoot interface {
 	getFilePath(string) string
 	getArgObject(cd *customData, arg CustomItem) *CustomObject
 	getFields(cd *customData) []CustomField
-	buildFieldConfig(cd *customData, field CustomField) (*fieldConfig, error)
+	buildFieldConfig(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error)
 }
 
 type customMutationsProcesser struct {
@@ -49,11 +49,12 @@ func (cm *customMutationsProcesser) getFields(cd *customData) []CustomField {
 	return cd.Mutations
 }
 
-func (cm *customMutationsProcesser) buildFieldConfig(cd *customData, field CustomField) (*fieldConfig, error) {
+func (cm *customMutationsProcesser) buildFieldConfig(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
 	b := &mutationFieldConfigBuilder{
 		field,
+		cm.getFilePath(field.GraphQLName),
 	}
-	return b.build(cd, field)
+	return b.build(data, cd, field)
 }
 
 type customQueriesProcesser struct {
@@ -78,11 +79,12 @@ func (cq *customQueriesProcesser) getFields(cd *customData) []CustomField {
 	return cd.Queries
 }
 
-func (cq *customQueriesProcesser) buildFieldConfig(cd *customData, field CustomField) (*fieldConfig, error) {
+func (cq *customQueriesProcesser) buildFieldConfig(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
 	b := &queryFieldConfigBuilder{
 		field,
+		cq.getFilePath(field.GraphQLName),
 	}
-	return b.build(cd, field)
+	return b.build(data, cd, field)
 }
 
 func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processCustomRoot) ([]*gqlNode, error) {
@@ -130,7 +132,7 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 			objTypes = append(objTypes, argType)
 		}
 
-		hasResponse := false
+		hasPayload := false
 		for _, result := range field.Results {
 			// 0 -1 allowed...
 			object := cd.Objects[result.Type]
@@ -138,7 +140,7 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 				continue
 			}
 
-			responseType, err := buildObjectType(data, cd, s, result, object, filePath, "GraphQLObjectType")
+			payloadType, err := buildObjectType(data, cd, s, result, object, filePath, "GraphQLObjectType")
 			if err != nil {
 				return nil, err
 			}
@@ -150,25 +152,25 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 					return nil, err
 				}
 				if cls.DefaultExport {
-					responseType.DefaultImports = append(responseType.DefaultImports, &fileImport{
+					payloadType.DefaultImports = append(payloadType.DefaultImports, &fileImport{
 						ImportPath: importPath,
 						Type:       field.Node,
 					})
 				} else {
-					responseType.Imports = append(responseType.Imports, &fileImport{
+					payloadType.Imports = append(payloadType.Imports, &fileImport{
 						ImportPath: importPath,
 						Type:       field.Node,
 					})
 				}
 			}
-			hasResponse = true
-			objTypes = append(objTypes, responseType)
+			hasPayload = true
+			objTypes = append(objTypes, payloadType)
 		}
-		if !hasResponse {
-			return nil, errors.New("no response for mutation. TODO handle")
+		if !hasPayload {
+			return nil, errors.New("no payload for mutation. TODO handle")
 		}
 
-		fieldConfig, err := cr.buildFieldConfig(cd, field)
+		fieldConfig, err := cr.buildFieldConfig(data, cd, field)
 		if err != nil {
 			return nil, err
 		}
@@ -190,21 +192,27 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 }
 
 type fieldConfigBuilder interface {
-	build(cd *customData, field CustomField) (*fieldConfig, error)
+	build(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error)
 	getArg() string
 	getResolveMethodArg() string
-	getTypeImports() []string
+	getTypeImports() []*fileImport
 	getArgs() []*fieldConfigArg
 	getReturnTypeHint() string
 	getArgMap(cd *customData) map[string]*CustomObject
+	getFilePath() string
 }
 
 type mutationFieldConfigBuilder struct {
-	field CustomField
+	field    CustomField
+	filePath string
 }
 
-func (mfcg *mutationFieldConfigBuilder) build(cd *customData, field CustomField) (*fieldConfig, error) {
-	return buildFieldConfigFrom(mfcg, cd, field)
+func (mfcg *mutationFieldConfigBuilder) build(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
+	return buildFieldConfigFrom(mfcg, data, cd, field)
+}
+
+func (mfcg *mutationFieldConfigBuilder) getFilePath() string {
+	return mfcg.filePath
 }
 
 func (mfcg *mutationFieldConfigBuilder) getArg() string {
@@ -224,12 +232,18 @@ func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
 	return "{ input }" // TODO not always input
 }
 
-func (mfcg *mutationFieldConfigBuilder) getTypeImports() []string {
+func (mfcg *mutationFieldConfigBuilder) getTypeImports() []*fileImport {
 	prefix := strcase.ToCamel(mfcg.field.GraphQLName)
-	return []string{
-		"GraphQLNonNull",
-		// TODO we should pass this in instead of automatically doing this
-		fmt.Sprintf("%sResponseType", prefix),
+	return []*fileImport{
+		{
+			Type:       "GraphQLNonNull",
+			ImportPath: "graphql",
+		},
+		{
+			// TODO we should pass this in instead of automatically doing this
+			Type:       fmt.Sprintf("%sPayloadType", prefix),
+			ImportPath: "",
+		},
 	}
 }
 
@@ -249,7 +263,7 @@ func (mfcg *mutationFieldConfigBuilder) getArgs() []*fieldConfigArg {
 
 func (mfcg *mutationFieldConfigBuilder) getReturnTypeHint() string {
 	prefix := strcase.ToCamel(mfcg.field.GraphQLName)
-	return fmt.Sprintf("Promise<%sResponse>", prefix)
+	return fmt.Sprintf("Promise<%sPayload>", prefix)
 }
 
 func (mfcg *mutationFieldConfigBuilder) getArgMap(cd *customData) map[string]*CustomObject {
@@ -257,11 +271,16 @@ func (mfcg *mutationFieldConfigBuilder) getArgMap(cd *customData) map[string]*Cu
 }
 
 type queryFieldConfigBuilder struct {
-	field CustomField
+	field    CustomField
+	filePath string
 }
 
-func (qfcg *queryFieldConfigBuilder) build(cd *customData, field CustomField) (*fieldConfig, error) {
-	return buildFieldConfigFrom(qfcg, cd, field)
+func (qfcg *queryFieldConfigBuilder) build(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
+	return buildFieldConfigFrom(qfcg, data, cd, field)
+}
+
+func (qfcg *queryFieldConfigBuilder) getFilePath() string {
+	return qfcg.filePath
 }
 
 func (qfcg *queryFieldConfigBuilder) getArg() string {
@@ -279,19 +298,24 @@ func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
 	return "{ arg }" // TODO?
 }
 
-func (qfcg *queryFieldConfigBuilder) getTypeImports() []string {
+func (qfcg *queryFieldConfigBuilder) getTypeImports() []*fileImport {
 	if len(qfcg.field.Results) != 1 {
 		panic("INVALID")
 	}
 	r := qfcg.field.Results[0]
 	if r.Nullable != "" {
 		// nullable
-		return []string{r.Type}
+		return []*fileImport{{Type: r.Type}}
 	}
 	// TODO these too...
-	return []string{
-		"GraphQLNonNull",
-		fmt.Sprintf("%sType", r.Type),
+	return []*fileImport{
+		{
+			Type:       "GraphQLNonNull",
+			ImportPath: "graphql",
+		},
+		{
+			Type: fmt.Sprintf("%sType", r.Type),
+		},
 	}
 }
 
@@ -332,9 +356,9 @@ func (qfcg *queryFieldConfigBuilder) getArgMap(cd *customData) map[string]*Custo
 	return cd.Args
 }
 
-func buildFieldConfigFrom(builder fieldConfigBuilder, cd *customData, field CustomField) (*fieldConfig, error) {
+func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
 	prefix := strcase.ToCamel(field.GraphQLName)
-	var argImports []string
+	var argImports []*fileImport
 
 	// args that "useImport" should be called on
 	// assumes they're reserved somewhere else...
@@ -344,13 +368,27 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, cd *customData, field Cust
 		}
 		cls := cd.Classes[arg.Type]
 		if cls != nil && cls.Exported {
-			argImports = append(argImports, arg.Type)
+			path, err := getRelativeImportPath(data, builder.getFilePath(), cls.Path)
+			if err != nil {
+				return nil, err
+			}
+			argImports = append(argImports, &fileImport{
+				Type:       arg.Type,
+				ImportPath: path,
+			})
 		}
 	}
 	for _, result := range field.Results {
 		cls := cd.Classes[result.Type]
 		if cls != nil && cls.Exported {
-			argImports = append(argImports, result.Type)
+			path, err := getRelativeImportPath(data, builder.getFilePath(), cls.Path)
+			if err != nil {
+				return nil, err
+			}
+			argImports = append(argImports, &fileImport{
+				Type:       result.Type,
+				ImportPath: path,
+			})
 		}
 	}
 
@@ -401,6 +439,9 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, cd *customData, field Cust
 }
 
 func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item CustomItem, obj *CustomObject, destPath, gqlType string) (*objectType, error) {
+	// TODO right now it depends on custom inputs and outputs being FooInput and FooPayload to work
+	// we shouldn't do that and we should be smarter
+	// maybe add PayloadType if no Payload suffix otherwise Payload. Same for InputType and Input
 	typ := &objectType{
 		Type:     fmt.Sprintf("%sType", item.Type),
 		Node:     obj.NodeName,
@@ -416,7 +457,7 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 	}
 
 	for _, f := range fields {
-		// maybe we'll care for input vs response here at some point
+		// maybe we'll care for input vs Payload here at some point
 		gqlField, err := getCustomGQLField(cd, f, s, "obj")
 		if err != nil {
 			return nil, err
@@ -590,18 +631,24 @@ func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance
 		// for an accessor or field, we only add a resolve function if named differently
 		if field.GraphQLName != field.FunctionName {
 			gqlField.HasResolveFunction = true
-			gqlField.FunctionContents = fmt.Sprintf("return %s.%s;", instance, field.FunctionName)
+			gqlField.FunctionContents = []string{
+				fmt.Sprintf("return %s.%s;", instance, field.FunctionName),
+			}
 		}
 		break
 
 	case Function:
 		gqlField.HasResolveFunction = true
-		gqlField.FunctionContents = fmt.Sprintf("return %s.%s();", instance, field.FunctionName)
+		gqlField.FunctionContents = []string{
+			fmt.Sprintf("return %s.%s();", instance, field.FunctionName),
+		}
 		break
 	case AsyncFunction:
 		gqlField.HasAsyncModifier = true
 		gqlField.HasResolveFunction = true
-		gqlField.FunctionContents = fmt.Sprintf("return %s.%s();", instance, field.FunctionName)
+		gqlField.FunctionContents = []string{
+			fmt.Sprintf("return %s.%s();", instance, field.FunctionName),
+		}
 
 		break
 	}
