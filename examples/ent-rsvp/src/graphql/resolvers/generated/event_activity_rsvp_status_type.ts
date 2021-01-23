@@ -11,11 +11,11 @@ export const EventActivityRsvpStatusType = new GraphQLEnumType({
     DECLINED: {
       value: "DECLINED",
     },
-    CANRSVP: {
-      value: "CANRSVP",
+    CAN_RSVP: {
+      value: "CAN_RSVP",
     },
-    CANNOTRSVP: {
-      value: "CANNOTRSVP",
+    CANNOT_RSVP: {
+      value: "CANNOT_RSVP",
     },
   },
 });

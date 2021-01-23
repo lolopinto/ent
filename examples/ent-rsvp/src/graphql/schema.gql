@@ -223,8 +223,8 @@ type EventActivityToInvitesEdge implements Edge {
 enum EventActivityRsvpStatus {
   ATTENDING
   DECLINED
-  CANRSVP
-  CANNOTRSVP
+  CAN_RSVP
+  CANNOT_RSVP
 }
 
 input EventActivityAddInviteInput {
