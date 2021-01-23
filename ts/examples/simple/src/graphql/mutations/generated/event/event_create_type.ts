@@ -3,6 +3,7 @@
 import {
   GraphQLObjectType,
   GraphQLInputObjectType,
+  GraphQLID,
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfig,
@@ -11,12 +12,16 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { GraphQLTime } from "@lolopinto/ent/graphql";
+import { GraphQLTime, mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Event } from "src/ent/";
 import { EventType } from "src/graphql/resolvers/";
 import CreateEventAction, {
   EventCreateInput,
 } from "src/ent/event/actions/create_event_action";
+
+interface customEventCreateInput extends EventCreateInput {
+  creatorID: string;
+}
 
 interface EventCreatePayload {
   event: Event;
@@ -29,7 +34,7 @@ export const EventCreateInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     creatorID: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLID),
     },
     startTime: {
       type: GraphQLNonNull(GraphQLTime),
@@ -55,7 +60,7 @@ export const EventCreatePayloadType = new GraphQLObjectType({
 export const EventCreateType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: EventCreateInput }
+  { [input: string]: customEventCreateInput }
 > = {
   type: GraphQLNonNull(EventCreatePayloadType),
   args: {
@@ -72,7 +77,7 @@ export const EventCreateType: GraphQLFieldConfig<
   ): Promise<EventCreatePayload> => {
     let event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
-      creatorID: input.creatorID,
+      creatorID: mustDecodeIDFromGQLID(input.creatorID),
       startTime: input.startTime,
       endTime: input.endTime,
       location: input.location,

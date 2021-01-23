@@ -17,6 +17,9 @@ export const GQLViewerType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<GQLViewer, RequestContext> => ({
     viewerID: {
       type: GraphQLID,
+      resolve: async (obj: GQLViewer, args: {}) => {
+        return obj.viewerID();
+      },
     },
     user: {
       type: UserType,

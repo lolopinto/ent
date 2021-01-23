@@ -32,7 +32,7 @@ class UserAuthJWTInput {
 }
 
 @gqlObjectType()
-export class UserAuthResponse {
+export class UserAuthPayload {
   @gqlField()
   token: string;
 
@@ -43,7 +43,7 @@ export class UserAuthResponse {
 // TODO abstract classes..
 
 @gqlObjectType()
-class UserAuthJWTResponse {
+class UserAuthJWTPayload {
   @gqlField()
   token: string;
 
@@ -52,11 +52,11 @@ class UserAuthJWTResponse {
 }
 
 export class AuthResolver {
-  @gqlMutation({ name: "userAuth", type: UserAuthResponse })
+  @gqlMutation({ name: "userAuth", type: UserAuthPayload })
   async userAuth(
     @gqlContextType() context: RequestContext,
     @gqlArg("input") input: UserAuthInput,
-  ): Promise<UserAuthResponse> {
+  ): Promise<UserAuthPayload> {
     const viewer = await useAndAuth(
       context,
       new LocalStrategy({
@@ -84,11 +84,11 @@ export class AuthResolver {
     };
   }
 
-  @gqlMutation({ name: "userAuthJWT", type: UserAuthJWTResponse })
+  @gqlMutation({ name: "userAuthJWT", type: UserAuthJWTPayload })
   async userAuthJWT(
     @gqlContextType() context: RequestContext,
     @gqlArg("input") input: UserAuthJWTInput,
-  ): Promise<UserAuthJWTResponse> {
+  ): Promise<UserAuthJWTPayload> {
     // TODO: auth locally with username/password
     // get jwt, sign it return it
     // and then use jwt to get viewer

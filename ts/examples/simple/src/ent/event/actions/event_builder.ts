@@ -31,7 +31,7 @@ function randomNum(): string {
 }
 
 export class EventBuilder implements Builder<Event> {
-  private orchestrator: Orchestrator<Event>;
+  orchestrator: Orchestrator<Event>;
   readonly placeholderID: ID;
   readonly ent = Event;
   private input: EventInput;
@@ -80,91 +80,6 @@ export class EventBuilder implements Builder<Event> {
   clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
     this.orchestrator.clearInputEdges(edgeType, op, id);
   }
-
-  addHost(...ids: ID[]): EventBuilder;
-  addHost(...nodes: User[]): EventBuilder;
-  addHost(...nodes: Builder<User>[]): EventBuilder;
-  addHost(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
-    for (const node of nodes) {
-      if (this.isBuilder(node)) {
-        this.addHostID(node);
-      } else if (typeof node === "object") {
-        this.addHostID(node.id);
-      } else {
-        this.addHostID(node);
-      }
-    }
-    return this;
-  }
-
-  addHostID(
-    id: ID | Builder<User>,
-    options?: AssocEdgeInputOptions,
-  ): EventBuilder {
-    this.orchestrator.addOutboundEdge(
-      id,
-      EdgeType.EventToHosts,
-      NodeType.User,
-      options,
-    );
-    return this;
-  }
-
-  removeHost(...ids: ID[]): EventBuilder;
-  removeHost(...nodes: User[]): EventBuilder;
-  removeHost(...nodes: ID[] | User[]): EventBuilder {
-    for (const node of nodes) {
-      if (typeof node === "object") {
-        this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToHosts);
-      } else {
-        this.orchestrator.removeOutboundEdge(node, EdgeType.EventToHosts);
-      }
-    }
-    return this;
-  }
-
-  addInvited(...ids: ID[]): EventBuilder;
-  addInvited(...nodes: User[]): EventBuilder;
-  addInvited(...nodes: Builder<User>[]): EventBuilder;
-  addInvited(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
-    for (const node of nodes) {
-      if (this.isBuilder(node)) {
-        this.addInvitedID(node);
-      } else if (typeof node === "object") {
-        this.addInvitedID(node.id);
-      } else {
-        this.addInvitedID(node);
-      }
-    }
-    return this;
-  }
-
-  addInvitedID(
-    id: ID | Builder<User>,
-    options?: AssocEdgeInputOptions,
-  ): EventBuilder {
-    this.orchestrator.addOutboundEdge(
-      id,
-      EdgeType.EventToInvited,
-      NodeType.User,
-      options,
-    );
-    return this;
-  }
-
-  removeInvited(...ids: ID[]): EventBuilder;
-  removeInvited(...nodes: User[]): EventBuilder;
-  removeInvited(...nodes: ID[] | User[]): EventBuilder {
-    for (const node of nodes) {
-      if (typeof node === "object") {
-        this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToInvited);
-      } else {
-        this.orchestrator.removeOutboundEdge(node, EdgeType.EventToInvited);
-      }
-    }
-    return this;
-  }
-
   addAttending(...ids: ID[]): EventBuilder;
   addAttending(...nodes: User[]): EventBuilder;
   addAttending(...nodes: Builder<User>[]): EventBuilder;
@@ -247,6 +162,90 @@ export class EventBuilder implements Builder<Event> {
         this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToDeclined);
       } else {
         this.orchestrator.removeOutboundEdge(node, EdgeType.EventToDeclined);
+      }
+    }
+    return this;
+  }
+
+  addHost(...ids: ID[]): EventBuilder;
+  addHost(...nodes: User[]): EventBuilder;
+  addHost(...nodes: Builder<User>[]): EventBuilder;
+  addHost(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.addHostID(node);
+      } else if (typeof node === "object") {
+        this.addHostID(node.id);
+      } else {
+        this.addHostID(node);
+      }
+    }
+    return this;
+  }
+
+  addHostID(
+    id: ID | Builder<User>,
+    options?: AssocEdgeInputOptions,
+  ): EventBuilder {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.EventToHosts,
+      NodeType.User,
+      options,
+    );
+    return this;
+  }
+
+  removeHost(...ids: ID[]): EventBuilder;
+  removeHost(...nodes: User[]): EventBuilder;
+  removeHost(...nodes: ID[] | User[]): EventBuilder {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToHosts);
+      } else {
+        this.orchestrator.removeOutboundEdge(node, EdgeType.EventToHosts);
+      }
+    }
+    return this;
+  }
+
+  addInvited(...ids: ID[]): EventBuilder;
+  addInvited(...nodes: User[]): EventBuilder;
+  addInvited(...nodes: Builder<User>[]): EventBuilder;
+  addInvited(...nodes: ID[] | User[] | Builder<User>[]): EventBuilder {
+    for (const node of nodes) {
+      if (this.isBuilder(node)) {
+        this.addInvitedID(node);
+      } else if (typeof node === "object") {
+        this.addInvitedID(node.id);
+      } else {
+        this.addInvitedID(node);
+      }
+    }
+    return this;
+  }
+
+  addInvitedID(
+    id: ID | Builder<User>,
+    options?: AssocEdgeInputOptions,
+  ): EventBuilder {
+    this.orchestrator.addOutboundEdge(
+      id,
+      EdgeType.EventToInvited,
+      NodeType.User,
+      options,
+    );
+    return this;
+  }
+
+  removeInvited(...ids: ID[]): EventBuilder;
+  removeInvited(...nodes: User[]): EventBuilder;
+  removeInvited(...nodes: ID[] | User[]): EventBuilder {
+    for (const node of nodes) {
+      if (typeof node === "object") {
+        this.orchestrator.removeOutboundEdge(node.id, EdgeType.EventToInvited);
+      } else {
+        this.orchestrator.removeOutboundEdge(node, EdgeType.EventToInvited);
       }
     }
     return this;

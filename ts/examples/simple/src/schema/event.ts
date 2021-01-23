@@ -7,6 +7,7 @@ import {
   ActionOperation,
   StringType,
   TimeType,
+  UUIDType,
 } from "@lolopinto/ent/schema/";
 
 /// explicit schema
@@ -15,7 +16,7 @@ export default class Event extends BaseEntSchema implements Schema {
     StringType({ name: "name" }),
     // TODO this should be an id type...
     // we should warn when we see an "ID/id/Id" field as non-id type and ask if they wanna change it
-    StringType({
+    UUIDType({
       name: "creatorID",
       fieldEdge: ["User", "createdEvents"],
       storageKey: "user_id",
@@ -44,6 +45,7 @@ export default class Event extends BaseEntSchema implements Schema {
     {
       name: "rsvps",
       groupStatusName: "rsvpStatus",
+      nullStates: ["canRsvp"],
       assocEdges: [
         {
           name: "invited",

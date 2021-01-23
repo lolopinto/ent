@@ -21,6 +21,7 @@ import EditContactAction, {
 
 interface customContactEditInput extends ContactEditInput {
   contactID: string;
+  userID: string;
 }
 
 interface ContactEditPayload {
@@ -43,7 +44,7 @@ export const ContactEditInputType = new GraphQLInputObjectType({
       type: GraphQLString,
     },
     userID: {
-      type: GraphQLString,
+      type: GraphQLID,
     },
   }),
 });
