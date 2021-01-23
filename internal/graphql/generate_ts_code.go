@@ -490,7 +490,22 @@ func (obj gqlobjectData) ForeignImport(name string) bool {
 		}
 		// and field config
 		if obj.FieldConfig != nil {
-			obj.m[obj.FieldConfig.Name] = true
+			fcfg := obj.FieldConfig
+			obj.m[fcfg.Name] = true
+
+			for _, imp := range fcfg.ArgImports {
+				// local...
+				if imp.ImportPath == "" {
+					obj.m[imp.Type] = true
+				}
+			}
+
+			for _, imp := range fcfg.TypeImports {
+				// local...
+				if imp.ImportPath == "" {
+					obj.m[imp.Type] = true
+				}
+			}
 		}
 		obj.initMap = true
 	}
@@ -781,10 +796,7 @@ type fieldConfig struct {
 	Name             string
 	Arg              string
 	ResolveMethodArg string
-	// TODO []*fileImport
-	//	TypeImports []string
-	TypeImports []*fileImport
-	// TODO []*fileImport
+	TypeImports      []*fileImport
 	//	ArgImports       []string // incase it's { [argName: string]: any }, we need to know difference
 	ArgImports       []*fileImport
 	Args             []*fieldConfigArg
@@ -1224,7 +1236,7 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 		GQLType:  "GraphQLObjectType",
 		DefaultImports: []*fileImport{
 			{
-				ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName())),
+				ImportPath: getActionPath(nodeData, a),
 				Type:       a.GetActionName(),
 			},
 		},
@@ -1247,7 +1259,7 @@ func buildActionPayloadNode(nodeData *schema.NodeData, a action.Action, actionPr
 	// this is here but it's probably better in buildActionFieldConfig
 	if action.HasInput(a) {
 		result.Imports = append(result.Imports, &fileImport{
-			ImportPath: fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName())),
+			ImportPath: getActionPath(nodeData, a),
 			Type:       a.GetInputName(),
 		})
 	}
@@ -1317,12 +1329,21 @@ func hasCustomInput(a action.Action) bool {
 	return false
 }
 
+func getActionPath(nodeData *schema.NodeData, a action.Action) string {
+	return fmt.Sprintf("src/ent/%s/actions/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()))
+}
+
+func getActionBasePath(nodeData *schema.NodeData, a action.Action) string {
+	return fmt.Sprintf("src/ent/%s/actions/generated/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()+"Base"))
+}
+
 func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPrefix string) (*fieldConfig, error) {
 	// TODO this is so not obvious at all
 	// these are things that are automatically useImported....
 	argImports := []*fileImport{
 		{
-			Type: a.GetActionName(),
+			Type:       a.GetActionName(),
+			ImportPath: getActionPath(nodeData, a),
 		},
 	}
 	var argName string
@@ -1331,7 +1352,8 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 	} else {
 		argName = a.GetInputName()
 		argImports = append(argImports, &fileImport{
-			Type: argName,
+			Type:       argName,
+			ImportPath: getActionPath(nodeData, a),
 		})
 	}
 	result := &fieldConfig{
@@ -1345,8 +1367,8 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 				Type:       "GraphQLNonNull",
 			},
 			{
+				// local so it's fine
 				Type: fmt.Sprintf("%sPayloadType", actionPrefix),
-				// TODO?
 			},
 		},
 		Args: []*fieldConfigArg{
@@ -1451,7 +1473,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 					)
 				} else if enumOk {
 					tsValuesMethod := "get" + enum.GetTSName() + "Values"
-					actionPath := fmt.Sprintf("src/ent/%s/actions/generated/%s", nodeData.PackageName, strcase.ToSnake(a.GetActionName()+"Base"))
+					actionPath := getActionBasePath(nodeData, a)
 
 					result.FunctionContents = append(
 						result.FunctionContents,

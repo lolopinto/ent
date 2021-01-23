@@ -251,7 +251,11 @@ export class {{$baseClass}} {
     }
 
     async {{$group.GetStatusMethod}}(): Promise<{{$group.ConstType}}> {
-      const ret = await this.{{$group.NullStateFn}}();
+      {{if $group.NullStateFn -}}
+        const ret = await this.{{$group.NullStateFn}}();
+      {{else -}}
+        const ret= {{$group.ConstType}}.{{$group.DefaultNullState}};
+      {{end -}}
       if (!this.viewer.viewerID) {
         return ret;
       }
