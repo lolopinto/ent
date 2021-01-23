@@ -22,13 +22,13 @@ type User implements Node {
   accountStatus: String
   bio: String
   createdEvents(first: Int, after: String, last: Int, before: String): UserToCreatedEventsConnection!
+  declinedEvents(first: Int, after: String, last: Int, before: String): UserToDeclinedEventsConnection!
+  eventsAttending(first: Int, after: String, last: Int, before: String): UserToEventsAttendingConnection!
   friends(first: Int, after: String, last: Int, before: String): UserToFriendsConnection!
+  invitedEvents(first: Int, after: String, last: Int, before: String): UserToInvitedEventsConnection!
+  maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   selfContact: Contact
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
-  invitedEvents(first: Int, after: String, last: Int, before: String): UserToInvitedEventsConnection!
-  eventsAttending(first: Int, after: String, last: Int, before: String): UserToEventsAttendingConnection!
-  declinedEvents(first: Int, after: String, last: Int, before: String): UserToDeclinedEventsConnection!
-  maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   contacts: [Contact!]!
   fullName: String!
   bar: String
@@ -76,39 +76,16 @@ type Event implements Node {
   startTime: Time!
   endTime: Time
   eventLocation: String!
-  hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
-  invited(first: Int, after: String, last: Int, before: String): EventToInvitedConnection!
   attending(first: Int, after: String, last: Int, before: String): EventToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventToDeclinedConnection!
+  hosts(first: Int, after: String, last: Int, before: String): EventToHostsConnection!
+  invited(first: Int, after: String, last: Int, before: String): EventToInvitedConnection!
   maybe(first: Int, after: String, last: Int, before: String): EventToMaybeConnection!
+  viewerRsvpStatus: EventRsvpStatus
 }
 
 """Time scalar type"""
 scalar Time
-
-type EventToHostsConnection implements Connection {
-  edges: [EventToHostsEdge!]!
-  nodes: [User!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type EventToHostsEdge implements Edge {
-  node: User!
-  cursor: String!
-}
-
-type EventToInvitedConnection implements Connection {
-  edges: [EventToInvitedEdge!]!
-  nodes: [User!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type EventToInvitedEdge implements Edge {
-  node: User!
-  cursor: String!
-}
 
 type EventToAttendingConnection implements Connection {
   edges: [EventToAttendingEdge!]!
@@ -134,6 +111,30 @@ type EventToDeclinedEdge implements Edge {
   cursor: String!
 }
 
+type EventToHostsConnection implements Connection {
+  edges: [EventToHostsEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToHostsEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
+type EventToInvitedConnection implements Connection {
+  edges: [EventToInvitedEdge!]!
+  nodes: [User!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToInvitedEdge implements Edge {
+  node: User!
+  cursor: String!
+}
+
 type EventToMaybeConnection implements Connection {
   edges: [EventToMaybeEdge!]!
   nodes: [User!]!
@@ -146,6 +147,38 @@ type EventToMaybeEdge implements Edge {
   cursor: String!
 }
 
+enum EventRsvpStatus {
+  INVITED
+  ATTENDING
+  DECLINED
+  MAYBE
+  CANRSVP
+}
+
+type UserToDeclinedEventsConnection implements Connection {
+  edges: [UserToDeclinedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToDeclinedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToEventsAttendingConnection implements Connection {
+  edges: [UserToEventsAttendingEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToEventsAttendingEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
 type UserToFriendsConnection implements Connection {
   edges: [UserToFriendsEdge!]!
   nodes: [User!]!
@@ -155,6 +188,30 @@ type UserToFriendsConnection implements Connection {
 
 type UserToFriendsEdge implements Edge {
   node: User!
+  cursor: String!
+}
+
+type UserToInvitedEventsConnection implements Connection {
+  edges: [UserToInvitedEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToInvitedEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type UserToMaybeEventsConnection implements Connection {
+  edges: [UserToMaybeEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToMaybeEventsEdge implements Edge {
+  node: Event!
   cursor: String!
 }
 
@@ -179,54 +236,6 @@ type UserToHostedEventsEdge implements Edge {
   cursor: String!
 }
 
-type UserToInvitedEventsConnection implements Connection {
-  edges: [UserToInvitedEventsEdge!]!
-  nodes: [Event!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type UserToInvitedEventsEdge implements Edge {
-  node: Event!
-  cursor: String!
-}
-
-type UserToEventsAttendingConnection implements Connection {
-  edges: [UserToEventsAttendingEdge!]!
-  nodes: [Event!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type UserToEventsAttendingEdge implements Edge {
-  node: Event!
-  cursor: String!
-}
-
-type UserToDeclinedEventsConnection implements Connection {
-  edges: [UserToDeclinedEventsEdge!]!
-  nodes: [Event!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type UserToDeclinedEventsEdge implements Edge {
-  node: Event!
-  cursor: String!
-}
-
-type UserToMaybeEventsConnection implements Connection {
-  edges: [UserToMaybeEventsEdge!]!
-  nodes: [Event!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
-
-type UserToMaybeEventsEdge implements Edge {
-  node: Event!
-  cursor: String!
-}
-
 type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
   confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditPayload!
@@ -240,8 +249,8 @@ type Mutation {
   eventDelete(input: EventDeleteInput!): EventDeletePayload!
   eventEdit(input: EventEditInput!): EventEditPayload!
   phoneNumberEdit(input: PhoneNumberEditInput!): PhoneNumberEditPayload!
-  userAuth(input: UserAuthInput!): UserAuthResponse!
-  userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTResponse!
+  userAuth(input: UserAuthInput!): UserAuthPayload!
+  userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTPayload!
   userCreate(input: UserCreateInput!): UserCreatePayload!
   userDelete(input: UserDeleteInput!): UserDeletePayload!
   userEdit(input: UserEditInput!): UserEditPayload!
@@ -298,7 +307,7 @@ input ContactCreateInput {
   emailAddress: String!
   firstName: String!
   lastName: String!
-  userID: String!
+  userID: ID!
 }
 
 type ContactDeletePayload {
@@ -318,7 +327,7 @@ input ContactEditInput {
   emailAddress: String
   firstName: String
   lastName: String
-  userID: String
+  userID: ID
 }
 
 type EmailAddressEditPayload {
@@ -345,7 +354,7 @@ type EventCreatePayload {
 
 input EventCreateInput {
   name: String!
-  creatorID: String!
+  creatorID: ID!
   startTime: Time!
   endTime: Time
   eventLocation: String!
@@ -366,7 +375,7 @@ type EventEditPayload {
 input EventEditInput {
   eventID: ID!
   name: String
-  creatorID: String
+  creatorID: ID
   startTime: Time
   endTime: Time
   eventLocation: String
@@ -381,7 +390,7 @@ input PhoneNumberEditInput {
   newPhoneNumber: String!
 }
 
-type UserAuthResponse {
+type UserAuthPayload {
   token: String!
   viewerID: ID!
 }
@@ -391,7 +400,7 @@ input UserAuthInput {
   password: String!
 }
 
-type UserAuthJWTResponse {
+type UserAuthJWTPayload {
   token: String!
   viewerID: ID!
 }

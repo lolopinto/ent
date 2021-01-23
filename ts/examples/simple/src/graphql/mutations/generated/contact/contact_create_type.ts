@@ -3,6 +3,7 @@
 import {
   GraphQLObjectType,
   GraphQLInputObjectType,
+  GraphQLID,
   GraphQLString,
   GraphQLNonNull,
   GraphQLFieldConfig,
@@ -11,11 +12,16 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
+import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Contact } from "src/ent/";
 import { ContactType } from "src/graphql/resolvers/";
 import CreateContactAction, {
   ContactCreateInput,
 } from "src/ent/contact/actions/create_contact_action";
+
+interface customContactCreateInput extends ContactCreateInput {
+  userID: string;
+}
 
 interface ContactCreatePayload {
   contact: Contact;
@@ -34,7 +40,7 @@ export const ContactCreateInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     userID: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLID),
     },
   }),
 });
@@ -51,7 +57,7 @@ export const ContactCreatePayloadType = new GraphQLObjectType({
 export const ContactCreateType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: ContactCreateInput }
+  { [input: string]: customContactCreateInput }
 > = {
   type: GraphQLNonNull(ContactCreatePayloadType),
   args: {
@@ -70,7 +76,7 @@ export const ContactCreateType: GraphQLFieldConfig<
       emailAddress: input.emailAddress,
       firstName: input.firstName,
       lastName: input.lastName,
-      userID: input.userID,
+      userID: mustDecodeIDFromGQLID(input.userID),
     }).saveX();
     return { contact: contact };
   },

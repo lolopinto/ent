@@ -9,7 +9,7 @@ import { Contact, User } from "src/ent/";
 import { Changeset } from "@lolopinto/ent/action";
 import { EntCreationObserver } from "@lolopinto/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@lolopinto/ent/testutils/fake_comms";
-import { AlwaysAllowPrivacyPolicy } from "@lolopinto/ent";
+import { AlwaysAllowPrivacyPolicy, Data, IDViewer } from "@lolopinto/ent";
 
 export { UserCreateInput };
 
@@ -17,6 +17,10 @@ export { UserCreateInput };
 export default class CreateUserAction extends CreateUserActionBase {
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
+  }
+
+  viewerForEntLoad(data: Data) {
+    return new IDViewer(data.id);
   }
 
   triggers = [
@@ -50,11 +54,6 @@ export default class CreateUserAction extends CreateUserActionBase {
 
   observers = [
     {
-      // TODO this seems better as Action<T>
-      // and will be better for typing to get the fields from the action since we
-      // can get required fields
-      // can get builder from action also
-      // AND works when we have action-only fields since they'll be defined on the action but not the builder
       observe: (_builder: UserBuilder, input: UserCreateInput): void => {
         let email = input.emailAddress;
         let firstName = input.firstName;

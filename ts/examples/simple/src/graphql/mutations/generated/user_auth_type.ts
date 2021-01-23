@@ -12,7 +12,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { UserAuthInput, UserAuthResponse, AuthResolver } from "../auth";
+import { UserAuthInput, UserAuthPayload, AuthResolver } from "../auth";
 
 export const UserAuthInputType = new GraphQLInputObjectType({
   name: "UserAuthInput",
@@ -26,9 +26,9 @@ export const UserAuthInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const UserAuthResponseType = new GraphQLObjectType({
-  name: "UserAuthResponse",
-  fields: (): GraphQLFieldConfigMap<UserAuthResponse, RequestContext> => ({
+export const UserAuthPayloadType = new GraphQLObjectType({
+  name: "UserAuthPayload",
+  fields: (): GraphQLFieldConfigMap<UserAuthPayload, RequestContext> => ({
     token: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -43,7 +43,7 @@ export const UserAuthType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: UserAuthInput }
 > = {
-  type: GraphQLNonNull(UserAuthResponseType),
+  type: GraphQLNonNull(UserAuthPayloadType),
   args: {
     input: {
       description: "",
@@ -55,7 +55,7 @@ export const UserAuthType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<UserAuthResponse> => {
+  ): Promise<UserAuthPayload> => {
     const r = new AuthResolver();
     return r.userAuth(context, {
       emailAddress: input.emailAddress,

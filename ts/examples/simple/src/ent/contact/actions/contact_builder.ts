@@ -11,7 +11,6 @@ import {
   Orchestrator,
 } from "@lolopinto/ent/action";
 import schema from "src/schema/contact";
-import { EdgeType } from "src/ent/const";
 import { Contact, User } from "src/ent/";
 
 export interface ContactInput {
@@ -30,7 +29,7 @@ function randomNum(): string {
 }
 
 export class ContactBuilder implements Builder<Contact> {
-  private orchestrator: Orchestrator<Contact>;
+  orchestrator: Orchestrator<Contact>;
   readonly placeholderID: ID;
   readonly ent = Contact;
   private input: ContactInput;
@@ -68,16 +67,6 @@ export class ContactBuilder implements Builder<Contact> {
       ...this.input,
       ...input,
     };
-  }
-
-  // this gets the inputs that have been written for a given edgeType and operation
-  // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
-  getEdgeInputData(edgeType: EdgeType, op: WriteOperation) {
-    return this.orchestrator.getInputEdges(edgeType, op);
-  }
-
-  clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
-    this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
   async build(): Promise<Changeset<Contact>> {

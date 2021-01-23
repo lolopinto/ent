@@ -13,6 +13,16 @@ export enum NodeType {
   User = "user",
 }
 
+export function getNodeTypeValues() {
+  return [
+    NodeType.Address,
+    NodeType.AuthCode,
+    NodeType.Contact,
+    NodeType.Event,
+    NodeType.User,
+  ];
+}
+
 export enum EdgeType {
   // EventToAttending is the edgeType for the event to attending edge.
   EventToAttending = "6ebc0c47-ea29-4635-b991-95e44162174d",
@@ -40,4 +50,22 @@ export enum EdgeType {
   UserToMaybeEvents = "8d5b1dee-ce65-452e-9f8d-78eca1993800",
   // UserToSelfContact is the edgeType for the user to selfcontact edge.
   UserToSelfContact = "d504201d-cf3f-4eef-b6a0-0b46a7ae186b",
+}
+
+export function getEdgeTypeValues() {
+  return [
+    EdgeType.EventToAttending,
+    EdgeType.EventToDeclined,
+    EdgeType.EventToHosts,
+    EdgeType.EventToInvited,
+    EdgeType.EventToMaybe,
+    EdgeType.UserToCreatedEvents,
+    EdgeType.UserToDeclinedEvents,
+    EdgeType.UserToEventsAttending,
+    EdgeType.UserToFriends,
+    EdgeType.UserToHostedEvents,
+    EdgeType.UserToInvitedEvents,
+    EdgeType.UserToMaybeEvents,
+    EdgeType.UserToSelfContact,
+  ];
 }

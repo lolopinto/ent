@@ -283,13 +283,13 @@ test("symmetric edge", async () => {
     id2Type: NodeType.User,
   });
 
-  // logged out viewer here (because no privacy for creation yet)
   // even though can load raw edges above. can't load the nodes that you can't see privacy of
   const loadedUser = await User.load(jon.viewer, dany.id);
-  expect(loadedUser).toBe(null);
+  expect(loadedUser).toBeInstanceOf(User);
 
+  // jon loading via self
   const friends = await jon.loadFriends();
-  expect(friends.length).toBe(0);
+  expect(friends.length).toBe(2);
 
   let vc = new IDViewer(jon.id, { ent: jon });
   // delete all the edges and let's confirm it works
@@ -499,7 +499,7 @@ test("uniqueEdge|Node", async () => {
   expect(contacts.length).toBe(1);
   let contact = contacts[0];
 
-  let contact2 = await CreateContactAction.create(loggedOutViewer, {
+  let contact2 = await CreateContactAction.create(new IDViewer(jon.id), {
     emailAddress: sansa.emailAddress,
     firstName: sansa.firstName,
     lastName: sansa.lastName,

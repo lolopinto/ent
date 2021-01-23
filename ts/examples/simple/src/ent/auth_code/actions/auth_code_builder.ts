@@ -11,7 +11,6 @@ import {
   Orchestrator,
 } from "@lolopinto/ent/action";
 import schema from "src/schema/auth_code";
-import { EdgeType } from "src/ent/const";
 import { AuthCode, User } from "src/ent/";
 
 export interface AuthCodeInput {
@@ -30,7 +29,7 @@ function randomNum(): string {
 }
 
 export class AuthCodeBuilder implements Builder<AuthCode> {
-  private orchestrator: Orchestrator<AuthCode>;
+  orchestrator: Orchestrator<AuthCode>;
   readonly placeholderID: ID;
   readonly ent = AuthCode;
   private input: AuthCodeInput;
@@ -68,16 +67,6 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
       ...this.input,
       ...input,
     };
-  }
-
-  // this gets the inputs that have been written for a given edgeType and operation
-  // WriteOperation.Insert for adding an edge and WriteOperation.Delete for deleting an edge
-  getEdgeInputData(edgeType: EdgeType, op: WriteOperation) {
-    return this.orchestrator.getInputEdges(edgeType, op);
-  }
-
-  clearInputEdges(edgeType: EdgeType, op: WriteOperation, id?: ID) {
-    this.orchestrator.clearInputEdges(edgeType, op, id);
   }
 
   async build(): Promise<Changeset<AuthCode>> {

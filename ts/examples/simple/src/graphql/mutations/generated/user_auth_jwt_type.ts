@@ -19,7 +19,7 @@ interface UserAuthJWTInput {
   password: string;
 }
 
-interface UserAuthJWTResponse {
+interface UserAuthJWTPayload {
   token: string;
   viewerID: ID;
 }
@@ -36,9 +36,9 @@ export const UserAuthJWTInputType = new GraphQLInputObjectType({
   }),
 });
 
-export const UserAuthJWTResponseType = new GraphQLObjectType({
-  name: "UserAuthJWTResponse",
-  fields: (): GraphQLFieldConfigMap<UserAuthJWTResponse, RequestContext> => ({
+export const UserAuthJWTPayloadType = new GraphQLObjectType({
+  name: "UserAuthJWTPayload",
+  fields: (): GraphQLFieldConfigMap<UserAuthJWTPayload, RequestContext> => ({
     token: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -53,7 +53,7 @@ export const UserAuthJWTType: GraphQLFieldConfig<
   RequestContext,
   { [input: string]: UserAuthJWTInput }
 > = {
-  type: GraphQLNonNull(UserAuthJWTResponseType),
+  type: GraphQLNonNull(UserAuthJWTPayloadType),
   args: {
     input: {
       description: "",
@@ -65,7 +65,7 @@ export const UserAuthJWTType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<UserAuthJWTResponse> => {
+  ): Promise<UserAuthJWTPayload> => {
     const r = new AuthResolver();
     return r.userAuthJWT(context, {
       emailAddress: input.emailAddress,

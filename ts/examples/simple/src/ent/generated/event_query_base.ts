@@ -5,107 +5,15 @@ import {
   Event,
   User,
   UserToCreatedEventsQuery,
+  UserToDeclinedEventsQuery,
+  UserToEventsAttendingQuery,
   UserToFriendsQuery,
+  UserToInvitedEventsQuery,
+  UserToMaybeEventsQuery,
   UserToSelfContactQuery,
   UserToHostedEventsQuery,
-  UserToInvitedEventsQuery,
-  UserToEventsAttendingQuery,
-  UserToDeclinedEventsQuery,
-  UserToMaybeEventsQuery,
 } from "src/ent/internal";
 import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
-
-export class EventToHostsQueryBase extends BaseEdgeQuery<Event, User> {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Event>) {
-    super(viewer, src, EdgeType.EventToHosts, User.loaderOptions());
-  }
-
-  static query<T extends EventToHostsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Event>) => T,
-    viewer: Viewer,
-    src: EdgeQuerySource<Event>,
-  ): T {
-    return new this(viewer, src);
-  }
-
-  queryCreatedEvents(): UserToCreatedEventsQuery {
-    return UserToCreatedEventsQuery.query(this.viewer, this);
-  }
-
-  queryFriends(): UserToFriendsQuery {
-    return UserToFriendsQuery.query(this.viewer, this);
-  }
-
-  querySelfContact(): UserToSelfContactQuery {
-    return UserToSelfContactQuery.query(this.viewer, this);
-  }
-
-  queryUserToHostedEvents(): UserToHostedEventsQuery {
-    return UserToHostedEventsQuery.query(this.viewer, this);
-  }
-
-  queryInvitedEvents(): UserToInvitedEventsQuery {
-    return UserToInvitedEventsQuery.query(this.viewer, this);
-  }
-
-  queryEventsAttending(): UserToEventsAttendingQuery {
-    return UserToEventsAttendingQuery.query(this.viewer, this);
-  }
-
-  queryDeclinedEvents(): UserToDeclinedEventsQuery {
-    return UserToDeclinedEventsQuery.query(this.viewer, this);
-  }
-
-  queryMaybeEvents(): UserToMaybeEventsQuery {
-    return UserToMaybeEventsQuery.query(this.viewer, this);
-  }
-}
-
-export class EventToInvitedQueryBase extends BaseEdgeQuery<Event, User> {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Event>) {
-    super(viewer, src, EdgeType.EventToInvited, User.loaderOptions());
-  }
-
-  static query<T extends EventToInvitedQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Event>) => T,
-    viewer: Viewer,
-    src: EdgeQuerySource<Event>,
-  ): T {
-    return new this(viewer, src);
-  }
-
-  queryCreatedEvents(): UserToCreatedEventsQuery {
-    return UserToCreatedEventsQuery.query(this.viewer, this);
-  }
-
-  queryFriends(): UserToFriendsQuery {
-    return UserToFriendsQuery.query(this.viewer, this);
-  }
-
-  querySelfContact(): UserToSelfContactQuery {
-    return UserToSelfContactQuery.query(this.viewer, this);
-  }
-
-  queryUserToHostedEvents(): UserToHostedEventsQuery {
-    return UserToHostedEventsQuery.query(this.viewer, this);
-  }
-
-  queryInvitedEvents(): UserToInvitedEventsQuery {
-    return UserToInvitedEventsQuery.query(this.viewer, this);
-  }
-
-  queryEventsAttending(): UserToEventsAttendingQuery {
-    return UserToEventsAttendingQuery.query(this.viewer, this);
-  }
-
-  queryDeclinedEvents(): UserToDeclinedEventsQuery {
-    return UserToDeclinedEventsQuery.query(this.viewer, this);
-  }
-
-  queryMaybeEvents(): UserToMaybeEventsQuery {
-    return UserToMaybeEventsQuery.query(this.viewer, this);
-  }
-}
 
 export class EventToAttendingQueryBase extends BaseEdgeQuery<Event, User> {
   constructor(viewer: Viewer, src: EdgeQuerySource<Event>) {
@@ -124,8 +32,24 @@ export class EventToAttendingQueryBase extends BaseEdgeQuery<Event, User> {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
 
+  queryDeclinedEvents(): UserToDeclinedEventsQuery {
+    return UserToDeclinedEventsQuery.query(this.viewer, this);
+  }
+
+  queryEventsAttending(): UserToEventsAttendingQuery {
+    return UserToEventsAttendingQuery.query(this.viewer, this);
+  }
+
   queryFriends(): UserToFriendsQuery {
     return UserToFriendsQuery.query(this.viewer, this);
+  }
+
+  queryInvitedEvents(): UserToInvitedEventsQuery {
+    return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
+  queryMaybeEvents(): UserToMaybeEventsQuery {
+    return UserToMaybeEventsQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {
@@ -134,22 +58,6 @@ export class EventToAttendingQueryBase extends BaseEdgeQuery<Event, User> {
 
   queryUserToHostedEvents(): UserToHostedEventsQuery {
     return UserToHostedEventsQuery.query(this.viewer, this);
-  }
-
-  queryInvitedEvents(): UserToInvitedEventsQuery {
-    return UserToInvitedEventsQuery.query(this.viewer, this);
-  }
-
-  queryEventsAttending(): UserToEventsAttendingQuery {
-    return UserToEventsAttendingQuery.query(this.viewer, this);
-  }
-
-  queryDeclinedEvents(): UserToDeclinedEventsQuery {
-    return UserToDeclinedEventsQuery.query(this.viewer, this);
-  }
-
-  queryMaybeEvents(): UserToMaybeEventsQuery {
-    return UserToMaybeEventsQuery.query(this.viewer, this);
   }
 }
 
@@ -170,8 +78,24 @@ export class EventToDeclinedQueryBase extends BaseEdgeQuery<Event, User> {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
 
+  queryDeclinedEvents(): UserToDeclinedEventsQuery {
+    return UserToDeclinedEventsQuery.query(this.viewer, this);
+  }
+
+  queryEventsAttending(): UserToEventsAttendingQuery {
+    return UserToEventsAttendingQuery.query(this.viewer, this);
+  }
+
   queryFriends(): UserToFriendsQuery {
     return UserToFriendsQuery.query(this.viewer, this);
+  }
+
+  queryInvitedEvents(): UserToInvitedEventsQuery {
+    return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
+  queryMaybeEvents(): UserToMaybeEventsQuery {
+    return UserToMaybeEventsQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {
@@ -181,21 +105,97 @@ export class EventToDeclinedQueryBase extends BaseEdgeQuery<Event, User> {
   queryUserToHostedEvents(): UserToHostedEventsQuery {
     return UserToHostedEventsQuery.query(this.viewer, this);
   }
+}
 
-  queryInvitedEvents(): UserToInvitedEventsQuery {
-    return UserToInvitedEventsQuery.query(this.viewer, this);
+export class EventToHostsQueryBase extends BaseEdgeQuery<Event, User> {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Event>) {
+    super(viewer, src, EdgeType.EventToHosts, User.loaderOptions());
   }
 
-  queryEventsAttending(): UserToEventsAttendingQuery {
-    return UserToEventsAttendingQuery.query(this.viewer, this);
+  static query<T extends EventToHostsQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<Event>) => T,
+    viewer: Viewer,
+    src: EdgeQuerySource<Event>,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  queryCreatedEvents(): UserToCreatedEventsQuery {
+    return UserToCreatedEventsQuery.query(this.viewer, this);
   }
 
   queryDeclinedEvents(): UserToDeclinedEventsQuery {
     return UserToDeclinedEventsQuery.query(this.viewer, this);
   }
 
+  queryEventsAttending(): UserToEventsAttendingQuery {
+    return UserToEventsAttendingQuery.query(this.viewer, this);
+  }
+
+  queryFriends(): UserToFriendsQuery {
+    return UserToFriendsQuery.query(this.viewer, this);
+  }
+
+  queryInvitedEvents(): UserToInvitedEventsQuery {
+    return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this);
+  }
+
+  querySelfContact(): UserToSelfContactQuery {
+    return UserToSelfContactQuery.query(this.viewer, this);
+  }
+
+  queryUserToHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this);
+  }
+}
+
+export class EventToInvitedQueryBase extends BaseEdgeQuery<Event, User> {
+  constructor(viewer: Viewer, src: EdgeQuerySource<Event>) {
+    super(viewer, src, EdgeType.EventToInvited, User.loaderOptions());
+  }
+
+  static query<T extends EventToInvitedQueryBase>(
+    this: new (viewer: Viewer, src: EdgeQuerySource<Event>) => T,
+    viewer: Viewer,
+    src: EdgeQuerySource<Event>,
+  ): T {
+    return new this(viewer, src);
+  }
+
+  queryCreatedEvents(): UserToCreatedEventsQuery {
+    return UserToCreatedEventsQuery.query(this.viewer, this);
+  }
+
+  queryDeclinedEvents(): UserToDeclinedEventsQuery {
+    return UserToDeclinedEventsQuery.query(this.viewer, this);
+  }
+
+  queryEventsAttending(): UserToEventsAttendingQuery {
+    return UserToEventsAttendingQuery.query(this.viewer, this);
+  }
+
+  queryFriends(): UserToFriendsQuery {
+    return UserToFriendsQuery.query(this.viewer, this);
+  }
+
+  queryInvitedEvents(): UserToInvitedEventsQuery {
+    return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
+  queryMaybeEvents(): UserToMaybeEventsQuery {
+    return UserToMaybeEventsQuery.query(this.viewer, this);
+  }
+
+  querySelfContact(): UserToSelfContactQuery {
+    return UserToSelfContactQuery.query(this.viewer, this);
+  }
+
+  queryUserToHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this);
   }
 }
 
@@ -216,8 +216,24 @@ export class EventToMaybeQueryBase extends BaseEdgeQuery<Event, User> {
     return UserToCreatedEventsQuery.query(this.viewer, this);
   }
 
+  queryDeclinedEvents(): UserToDeclinedEventsQuery {
+    return UserToDeclinedEventsQuery.query(this.viewer, this);
+  }
+
+  queryEventsAttending(): UserToEventsAttendingQuery {
+    return UserToEventsAttendingQuery.query(this.viewer, this);
+  }
+
   queryFriends(): UserToFriendsQuery {
     return UserToFriendsQuery.query(this.viewer, this);
+  }
+
+  queryInvitedEvents(): UserToInvitedEventsQuery {
+    return UserToInvitedEventsQuery.query(this.viewer, this);
+  }
+
+  queryMaybeEvents(): UserToMaybeEventsQuery {
+    return UserToMaybeEventsQuery.query(this.viewer, this);
   }
 
   querySelfContact(): UserToSelfContactQuery {
@@ -226,21 +242,5 @@ export class EventToMaybeQueryBase extends BaseEdgeQuery<Event, User> {
 
   queryUserToHostedEvents(): UserToHostedEventsQuery {
     return UserToHostedEventsQuery.query(this.viewer, this);
-  }
-
-  queryInvitedEvents(): UserToInvitedEventsQuery {
-    return UserToInvitedEventsQuery.query(this.viewer, this);
-  }
-
-  queryEventsAttending(): UserToEventsAttendingQuery {
-    return UserToEventsAttendingQuery.query(this.viewer, this);
-  }
-
-  queryDeclinedEvents(): UserToDeclinedEventsQuery {
-    return UserToDeclinedEventsQuery.query(this.viewer, this);
-  }
-
-  queryMaybeEvents(): UserToMaybeEventsQuery {
-    return UserToMaybeEventsQuery.query(this.viewer, this);
   }
 }

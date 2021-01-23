@@ -21,6 +21,7 @@ import EditEventAction, {
 
 interface customEventEditInput extends EventEditInput {
   eventID: string;
+  creatorID: string;
 }
 
 interface EventEditPayload {
@@ -37,7 +38,7 @@ export const EventEditInputType = new GraphQLInputObjectType({
       type: GraphQLString,
     },
     creatorID: {
-      type: GraphQLString,
+      type: GraphQLID,
     },
     startTime: {
       type: GraphQLTime,

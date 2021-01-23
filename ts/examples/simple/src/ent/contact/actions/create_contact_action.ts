@@ -12,7 +12,8 @@ import {
   AllowIfViewerRule,
   AlwaysDenyRule,
   PrivacyPolicy,
-  ID,
+  Data,
+  IDViewer,
 } from "@lolopinto/ent";
 import { AllowIfBuilder } from "@lolopinto/ent/action";
 
@@ -29,5 +30,11 @@ export default class CreateContactAction extends CreateContactActionBase {
         AlwaysDenyRule,
       ],
     };
+  }
+
+  viewerForEntLoad(data: Data) {
+    // needed if created in user action and we want to make sure this
+    // ent is viewable. especially bcos of EntCreationObserver
+    return new IDViewer(data.user_id);
   }
 }

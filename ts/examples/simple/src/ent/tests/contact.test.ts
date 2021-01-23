@@ -28,7 +28,7 @@ async function create(
   firstName: string,
   lastName: string,
 ): Promise<Contact> {
-  return await CreateContactAction.create(loggedOutViewer, {
+  return await CreateContactAction.create(new IDViewer(user.id), {
     emailAddress: randomEmail(),
     firstName: firstName,
     lastName: lastName,
@@ -43,7 +43,7 @@ async function createMany(
   let results: Contact[] = [];
   for (const name of names) {
     // TODO eventually a multi-create API
-    let contact = await CreateContactAction.create(loggedOutViewer, {
+    let contact = await CreateContactAction.create(new IDViewer(user.id), {
       emailAddress: randomEmail(),
       firstName: name.firstName,
       lastName: name.lastName,
