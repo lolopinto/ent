@@ -5,6 +5,7 @@ import {
   FieldOptions,
   PolymorphicOptions,
 } from "./schema";
+import { snakeCase } from "snake-case";
 
 export abstract class BaseField {
   name: string;
@@ -279,6 +280,10 @@ export class EnumField extends BaseField implements Field {
     this.values = options.values;
   }
 
+  convertForGQL(value: string) {
+    return snakeCase(value).toUpperCase();
+  }
+
   valid(val: any): boolean {
     // lookup table enum and indicated via presence of foreignKey
     if (!this.values) {
@@ -286,7 +291,7 @@ export class EnumField extends BaseField implements Field {
     }
     let str = String(val);
     return this.values.some(
-      (value) => value === str || value.toUpperCase() === str,
+      (value) => value === str || this.convertForGQL(value) === str,
     );
   }
 
@@ -301,7 +306,7 @@ export class EnumField extends BaseField implements Field {
     for (let i = 0; i < this.values.length; i++) {
       let value = this.values[i];
       // store the format that maps to the given value in the db instead of saving the upper case value
-      if (str === value || str.toLowerCase() === value.toLowerCase()) {
+      if (str === value || str === this.convertForGQL(value)) {
         return value;
       }
     }

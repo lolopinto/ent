@@ -86,6 +86,51 @@ describe("gql support", () => {
   });
 });
 
+describe("gql support camel case", () => {
+  const values = [
+    "areFriends",
+    "outgoingFriendRequest",
+    "incomingFriendRequest",
+    "canSendRequest",
+    "cannotRequest",
+  ];
+  const expectedVals = [
+    "ARE_FRIENDS",
+    "OUTGOING_FRIEND_REQUEST",
+    "INCOMING_FRIEND_REQUEST",
+    "CAN_SEND_REQUEST",
+    "CANNOT_REQUEST",
+  ];
+  let e = enumF("friendship status", values);
+
+  test("same case", () => {
+    values.forEach((enumValue) => {
+      testEnum(e, {
+        value: enumValue,
+        valid: true,
+        formatted: enumValue,
+      });
+    });
+  });
+
+  test("converted", () => {
+    values.forEach((enumValue, idx) => {
+      expect(e.convertForGQL(enumValue)).toEqual(expectedVals[idx]);
+    });
+  });
+
+  test("validate expected", () => {
+    expectedVals.forEach((val, idx) => {
+      testEnum(e, {
+        value: val,
+        valid: true,
+        // the enum values are lowercase so we expect it to be formatted correctly as lowercase
+        formatted: values[idx],
+      });
+    });
+  });
+});
+
 describe("mixed case enum", () => {
   let e = enumF("rainbow", [
     "Red",
