@@ -98,13 +98,6 @@ export class Orchestrator<T extends Ent> {
   private addEdge(edge: edgeInputData, op: WriteOperation) {
     this.edgeSet.add(edge.edgeType);
 
-    // need this because we're not referring to type T of the class
-    function isBuilder<T2 extends Ent>(
-      val: Builder<T2> | any,
-    ): val is Builder<T2> {
-      return (val as Builder<T2>).placeholderID !== undefined;
-    }
-
     let m1: OperationMap = this.edges.get(edge.edgeType) || new Map();
     let m2: IDMap = m1.get(op) || new Map();
     let id: ID;

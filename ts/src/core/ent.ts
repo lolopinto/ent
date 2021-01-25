@@ -491,6 +491,7 @@ interface EdgeOperationOptions {
   operation: WriteOperation;
   id1Placeholder?: boolean;
   id2Placeholder?: boolean;
+  dataPlaceholder?: boolean;
 }
 
 export class EdgeOperation implements DataOperation {
@@ -601,6 +602,17 @@ export class EdgeOperation implements DataOperation {
         "id2",
       );
     }
+    if (this.options.dataPlaceholder) {
+      if (!this.edgeInput.data) {
+        throw new Error(`data placeholder set but edgeInput data undefined`);
+      }
+      let [data, _] = this.resolveImpl(
+        executor,
+        this.edgeInput.data.toString(),
+        "data",
+      );
+      this.edgeInput.data = data.toString();
+    }
   }
 
   symmetricEdge(): EdgeOperation {
@@ -647,11 +659,11 @@ export class EdgeOperation implements DataOperation {
   ): [ID, string, boolean, ID, boolean] {
     let destIDVal: ID;
     let destPlaceholder = false;
-    if (typeof destID === "string" || typeof destID === "number") {
-      destIDVal = destID;
-    } else {
+    if (this.isBuilder(destID)) {
       destIDVal = destID.placeholderID;
       destPlaceholder = true;
+    } else {
+      destIDVal = destID;
     }
     let srcIDVal: ID;
     let srcType: string;
@@ -671,6 +683,24 @@ export class EdgeOperation implements DataOperation {
     return [srcIDVal, srcType, srcPlaceholder, destIDVal, destPlaceholder];
   }
 
+  private static isBuilder(val: Builder<Ent> | any): val is Builder<Ent> {
+    return (val as Builder<Ent>).placeholderID !== undefined;
+  }
+
+  private static resolveData(
+    data?: Builder<Ent> | string,
+  ): [string | undefined, boolean] {
+    if (!data) {
+      return [undefined, false];
+    }
+
+    if (this.isBuilder(data)) {
+      return [data.placeholderID.toString(), true];
+    }
+
+    return [data, false];
+  }
+
   static inboundEdge<T extends Ent, T2 extends Ent>(
     builder: Builder<T>,
     edgeType: string,
@@ -685,7 +715,7 @@ export class EdgeOperation implements DataOperation {
       id1Val,
       id1Placeholder,
     ] = EdgeOperation.resolveIDs(builder, id1);
-
+    let [data, dataPlaceholder] = EdgeOperation.resolveData(options?.data);
     const edge: AssocEdgeInput = {
       id1: id1Val,
       edgeType: edgeType,
@@ -694,11 +724,15 @@ export class EdgeOperation implements DataOperation {
       id1Type: nodeType,
       ...options,
     };
+    if (data) {
+      edge.data = data;
+    }
 
     return new EdgeOperation(edge, {
       operation: WriteOperation.Insert,
-      id2Placeholder: id2Placeholder,
-      id1Placeholder: id1Placeholder,
+      id2Placeholder,
+      id1Placeholder,
+      dataPlaceholder,
     });
   }
 
@@ -716,6 +750,7 @@ export class EdgeOperation implements DataOperation {
       id2Val,
       id2Placeholder,
     ] = EdgeOperation.resolveIDs(builder, id2);
+    let [data, dataPlaceholder] = EdgeOperation.resolveData(options?.data);
 
     const edge: AssocEdgeInput = {
       id1: id1Val,
@@ -725,11 +760,15 @@ export class EdgeOperation implements DataOperation {
       id1Type: id1Type,
       ...options,
     };
+    if (data) {
+      edge.data = data;
+    }
 
     return new EdgeOperation(edge, {
       operation: WriteOperation.Insert,
-      id1Placeholder: id1Placeholder,
-      id2Placeholder: id2Placeholder,
+      id1Placeholder,
+      id2Placeholder,
+      dataPlaceholder,
     });
   }
 
@@ -927,7 +966,7 @@ export class AssocEdge {
 
 export interface AssocEdgeInputOptions {
   time?: Date;
-  data?: string;
+  data?: string | Builder<Ent>;
 }
 
 export interface AssocEdgeInput extends AssocEdgeInputOptions {
