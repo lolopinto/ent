@@ -15,6 +15,8 @@ import {
   EdgeOperation,
   ID,
   Data,
+  loadEdges,
+  loadRow,
 } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
@@ -40,6 +42,7 @@ import {
 } from "../core/privacy";
 import { edgeDirection } from "./orchestrator";
 import { createRowForTest } from "../testutils/write";
+import * as clause from "../core/clause";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -347,7 +350,6 @@ const getLoggedInBuilder = () => {
 };
 
 const getCreateBuilder = (map: Map<string, any>) => {
-  const viewer = new IDViewer("1");
   return new SimpleBuilder(
     new LoggedOutViewer(),
     new UserSchema(),
@@ -659,6 +661,87 @@ describe("inbound edge", () => {
       time: date,
     });
   });
+
+  test("id in data field with placeholder", async () => {
+    // create user1
+    const builder = getCreateBuilder(
+      new Map([
+        ["FirstName", "Arya"],
+        ["LastName", "Stark"],
+      ]),
+    );
+    const user = await builder.saveX();
+
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.builder.orchestrator.addInboundEdge(user.id, "edge", "User");
+    action.triggers = [
+      {
+        changeset: (builder: SimpleBuilder<User>) => {
+          const derivedAction = new SimpleAction(
+            new LoggedOutViewer(),
+            new UserSchema(),
+            new Map([
+              ["FirstName", "Sansa"],
+              ["LastName", "Stark"],
+            ]),
+            WriteOperation.Insert,
+          );
+
+          // take the edges and write it as 3 edge
+          const edges = builder.orchestrator.getInputEdges(
+            "edge",
+            WriteOperation.Insert,
+          );
+          edges.forEach((edge) => {
+            builder.orchestrator.addInboundEdge(
+              edge.id,
+              edge.edgeType,
+              edge.nodeType!,
+              {
+                data: derivedAction.builder,
+              },
+            );
+          });
+
+          return derivedAction.changeset();
+        },
+      },
+    ];
+
+    const newUser = await action.saveX();
+    expect(newUser).toBeInstanceOf(User);
+    if (!newUser) {
+      fail("impossible");
+    }
+
+    const edges = await loadEdges({
+      id1: user.id,
+      edgeType: "edge",
+    });
+    expect(edges.length).toBe(1);
+    const edge = edges[0];
+    expect(edge.id1).toBe(user.id);
+    expect(edge.id2).toBe(newUser.id);
+    expect(edge.data).toBeDefined();
+
+    // we were able to resolve the id correctly and then set it as needed
+    const sansaData = await loadRow({
+      tableName: "users",
+      fields: ["first_name", "last_name"],
+      clause: clause.Eq("id", edge.data),
+    });
+    expect(sansaData).toBeDefined();
+    expect(sansaData?.first_name).toBe("Sansa");
+    expect(sansaData?.last_name).toBe("Stark");
+  });
 });
 
 describe("outbound edge", () => {
@@ -963,6 +1046,87 @@ describe("outbound edge", () => {
       id1Type: "",
       time: date,
     });
+  });
+
+  test("id in data field with placeholder", async () => {
+    // create user1
+    const builder = getCreateBuilder(
+      new Map([
+        ["FirstName", "Arya"],
+        ["LastName", "Stark"],
+      ]),
+    );
+    const user = await builder.saveX();
+
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.builder.orchestrator.addOutboundEdge(user.id, "edge", "User");
+    action.triggers = [
+      {
+        changeset: (builder: SimpleBuilder<User>) => {
+          const derivedAction = new SimpleAction(
+            new LoggedOutViewer(),
+            new UserSchema(),
+            new Map([
+              ["FirstName", "Sansa"],
+              ["LastName", "Stark"],
+            ]),
+            WriteOperation.Insert,
+          );
+
+          // take the edges and write it as 3 edge
+          const edges = builder.orchestrator.getInputEdges(
+            "edge",
+            WriteOperation.Insert,
+          );
+          edges.forEach((edge) => {
+            builder.orchestrator.addOutboundEdge(
+              edge.id,
+              edge.edgeType,
+              edge.nodeType!,
+              {
+                data: derivedAction.builder,
+              },
+            );
+          });
+
+          return derivedAction.changeset();
+        },
+      },
+    ];
+
+    const newUser = await action.saveX();
+    expect(newUser).toBeInstanceOf(User);
+    if (!newUser) {
+      fail("impossible");
+    }
+
+    const edges = await loadEdges({
+      id1: newUser.id,
+      edgeType: "edge",
+    });
+    expect(edges.length).toBe(1);
+    const edge = edges[0];
+    expect(edge.id1).toBe(newUser.id);
+    expect(edge.id2).toBe(user.id);
+    expect(edge.data).toBeDefined();
+
+    // we were able to resolve the id correctly and then set it as needed
+    const sansaData = await loadRow({
+      tableName: "users",
+      fields: ["first_name", "last_name"],
+      clause: clause.Eq("id", edge.data),
+    });
+    expect(sansaData).toBeDefined();
+    expect(sansaData?.first_name).toBe("Sansa");
+    expect(sansaData?.last_name).toBe("Stark");
   });
 });
 
