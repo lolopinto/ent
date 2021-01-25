@@ -253,6 +253,21 @@ func getNonEntFieldsFromInput(nodeName string, action *input.Action, typ concret
 	return fields
 }
 
+func getNonEntFieldsFromAssocGroup(nodeName string, assocGroup *edge.AssociationEdgeGroup, action *edge.EdgeAction, typ concreteEdgeActionType) []*NonEntField {
+	var fields []*NonEntField
+
+	inputName := getInputNameForEdgeActionType(typ, assocGroup, nodeName, "")
+
+	for _, field := range action.ActionOnlyFields {
+		fields = append(fields, &NonEntField{
+			FieldName: field.Name,
+			FieldType: field.GetEntType(inputName),
+			Nullable:  field.Nullable,
+		})
+	}
+	return fields
+}
+
 func getEdgeActionType(actionStr string) concreteEdgeActionType {
 	var typ concreteEdgeActionType
 	switch actionStr {
@@ -343,6 +358,8 @@ func processEdgeGroupActions(nodeName string, assocGroup *edge.AssociationEdgeGr
 			tsEnums = append(tsEnums, tsEnum)
 			gqlEnums = append(gqlEnums, gqlEnum)
 		}
+		nonEntFields := getNonEntFieldsFromAssocGroup(nodeName, assocGroup, edgeAction, typ)
+		fields = append(fields, nonEntFields...)
 
 		commonInfo := getCommonInfoForGroupEdgeAction(nodeName,
 			assocGroup,

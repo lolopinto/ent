@@ -470,6 +470,7 @@ type EdgeAction struct {
 	CustomActionName  string
 	CustomGraphQLName string
 	ExposeToGraphQL   bool
+	ActionOnlyFields  []*input.ActionField
 }
 
 type AssociationEdgeGroup struct {
@@ -614,6 +615,7 @@ func edgeActionsFromInput(actions []*input.EdgeAction) []*EdgeAction {
 			CustomActionName:  action.CustomActionName,
 			CustomGraphQLName: action.CustomGraphQLName,
 			Action:            getTypeNameActionOperationFromTypeName(action.Operation),
+			ActionOnlyFields:  action.ActionOnlyFields,
 		}
 	}
 	return ret

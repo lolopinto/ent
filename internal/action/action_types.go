@@ -325,3 +325,10 @@ func getGraphQLNameForEdgeActionType(
 	}
 	return typ.getDefaultGraphQLName(nodeName, assocEdge)
 }
+
+func getInputNameForEdgeActionType(typ concreteEdgeActionType, edge edge.ActionableEdge, nodeName, customName string) string {
+	if customName != "" {
+		return customName
+	}
+	return typ.getDefaultInputName(nodeName, edge)
+}

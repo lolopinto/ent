@@ -197,6 +197,16 @@ func verifyAssocEdgeGroups(t *testing.T, expAssocEdgeGroups []assocEdgeGroup, as
 		assert.Equal(t, expEdgeGroup.nullStateFn, edgeGroup.NullStateFn)
 
 		verifyAssocEdges(t, expEdgeGroup.assocEdges, edgeGroup.AssocEdges)
+		if len(expEdgeGroup.edgeActions) != 0 {
+			if edgeGroup.EdgeAction != nil {
+				verifyEdgeActions(t, expEdgeGroup.edgeActions, []*input.EdgeAction{edgeGroup.EdgeAction})
+			} else {
+				verifyEdgeActions(t, expEdgeGroup.edgeActions, edgeGroup.EdgeActions)
+			}
+		} else {
+			require.Nil(t, edgeGroup.EdgeAction)
+			require.Len(t, edgeGroup.EdgeActions, 0)
+		}
 	}
 }
 
@@ -259,6 +269,7 @@ func verifyEdgeActions(t *testing.T, expActions []action, actions []*input.EdgeA
 		assert.Equal(t, expAction.actionName, action.CustomActionName)
 		assert.Equal(t, expAction.graphQLName, action.CustomGraphQLName)
 		assert.Equal(t, expAction.hideFromGraphQL, action.HideFromGraphQL)
+		verifyActionOnlyFields(t, expAction.actionOnlyFields, action.ActionOnlyFields)
 	}
 }
 

@@ -80,6 +80,7 @@ export interface EdgeAction {
   actionName?: string;
   hideFromGraphQL?: boolean;
   graphQLName?: string;
+  actionOnlyFields?: ActionField[];
 }
 
 // Information about the inverse edge of an assoc edge
@@ -98,6 +99,7 @@ export interface EdgeGroupAction {
   actionName?: string;
   hideFromGraphQL?: boolean;
   graphQLName?: string;
+  actionOnlyFields?: ActionField[];
 }
 
 // interface AssocEdgeNullState {
