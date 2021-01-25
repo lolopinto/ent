@@ -35,6 +35,7 @@ export function getEventActivityRsvpStatusInputValues() {
 export interface EditEventActivityRsvpStatusInput {
   rsvpStatus: EventActivityRsvpStatusInput;
   guestID: ID;
+  dietaryRestrictions?: string | null;
 }
 
 export class EditEventActivityRsvpStatusActionBase

@@ -13,6 +13,7 @@ import {
   loadRawEdgeCountX,
   loadNodesByEdge,
   loadEdgeForID2,
+  loadEntsFromClause,
   loadRow,
   loadRowX,
   AlwaysDenyRule,
@@ -25,6 +26,7 @@ import {
   EdgeType,
   NodeType,
   EventActivity,
+  GuestData,
   Event,
   GuestGroup,
 } from "src/ent/internal";
@@ -209,6 +211,19 @@ export class GuestBase {
       id2,
       context: this.viewer.context,
     });
+  }
+
+  async loadGuestData(): Promise<GuestData[]> {
+    let map = await loadEntsFromClause(
+      this.viewer,
+      query.Eq("guest_id", this.id),
+      GuestData.loaderOptions(),
+    );
+    let results: GuestData[] = [];
+    map.forEach((ent) => {
+      results.push(ent);
+    });
+    return results;
   }
 
   async loadEvent(): Promise<Event | null> {

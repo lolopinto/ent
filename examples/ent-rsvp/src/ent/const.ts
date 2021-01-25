@@ -9,6 +9,8 @@ export enum NodeType {
   EventActivity = "eventActivity",
   // Guest is the node type for the Guest object. Used to identify this node in edges and other places.
   Guest = "guest",
+  // GuestData is the node type for the GuestData object. Used to identify this node in edges and other places.
+  GuestData = "guestData",
   // GuestGroup is the node type for the GuestGroup object. Used to identify this node in edges and other places.
   GuestGroup = "guestGroup",
   // User is the node type for the User object. Used to identify this node in edges and other places.
@@ -21,6 +23,7 @@ export function getNodeTypeValues() {
     NodeType.Event,
     NodeType.EventActivity,
     NodeType.Guest,
+    NodeType.GuestData,
     NodeType.GuestGroup,
     NodeType.User,
   ];

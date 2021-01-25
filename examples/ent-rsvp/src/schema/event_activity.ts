@@ -35,6 +35,13 @@ export default class EventActivity extends BaseEntSchema {
       nullStates: ["canRsvp", "cannotRsvp"],
       edgeAction: {
         operation: ActionOperation.EdgeGroup,
+        actionOnlyFields: [
+          {
+            name: "dietaryRestrictions",
+            type: "String",
+            nullable: true,
+          },
+        ],
       },
       assocEdges: [
         {

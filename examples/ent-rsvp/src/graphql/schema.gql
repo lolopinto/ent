@@ -282,6 +282,7 @@ input EventActivityRsvpStatusEditInput {
   eventActivityID: ID!
   rsvpStatus: EventActivityRsvpStatusInput!
   guestID: ID!
+  dietaryRestrictions: String
 }
 
 enum EventActivityRsvpStatusInput {

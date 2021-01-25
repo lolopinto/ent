@@ -4,6 +4,7 @@ import {
   GraphQLObjectType,
   GraphQLInputObjectType,
   GraphQLID,
+  GraphQLString,
   GraphQLEnumType,
   GraphQLNonNull,
   GraphQLFieldConfig,
@@ -60,6 +61,9 @@ export const EventActivityRsvpStatusEditInputType = new GraphQLInputObjectType({
     guestID: {
       type: GraphQLNonNull(GraphQLID),
     },
+    dietaryRestrictions: {
+      type: GraphQLString,
+    },
   }),
 });
 
@@ -103,6 +107,7 @@ export const EventActivityRsvpStatusEditType: GraphQLFieldConfig<
           EventActivityRsvpStatusInputType.getValues(),
         ) as EventActivityRsvpStatusInput,
         guestID: mustDecodeIDFromGQLID(input.guestID),
+        dietaryRestrictions: input.dietaryRestrictions,
       },
     );
     return { eventActivity: eventActivity };

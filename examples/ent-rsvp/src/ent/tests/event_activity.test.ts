@@ -1,4 +1,4 @@
-import { Event, User, EventActivity, GuestGroup } from "src/ent";
+import { Event, User, EventActivity, GuestGroup, GuestData } from "src/ent";
 import { DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
 import CreateUserAction from "../user/actions/create_user_action";
 import { randomEmail } from "src/util/random";
@@ -305,12 +305,26 @@ describe("rsvps", () => {
     output: EventActivityRsvpStatus,
     activityCount: (activity: EventActivity) => Promise<number>,
     guestCount: (guest: Guest) => Promise<number>,
-    guestActivity?: [EventActivity, Guest[]],
+    options?: {
+      // must provide both eventActivity and
+      eventActivity?: EventActivity;
+      guests?: Guest[];
+      dietaryRestrictions?: string;
+    },
   ): Promise<[EventActivity, Guest[]]> {
     let activity: EventActivity;
     let guests: Guest[];
-    if (guestActivity) {
-      [activity, guests] = guestActivity;
+    if (options && options.eventActivity && options.guests) {
+      activity = options.eventActivity;
+      guests = options.guests;
+    } else if (
+      options &&
+      ((options.eventActivity && !options.guests) ||
+        (!options.eventActivity && options.guests))
+    ) {
+      throw new Error(
+        "must provide both or neither of guests and eventActivity",
+      );
     } else {
       [activity, guests] = await createAndInvitePlusGuests(0);
     }
@@ -329,6 +343,7 @@ describe("rsvps", () => {
       {
         guestID: guest.id,
         rsvpStatus: input,
+        dietaryRestrictions: options?.dietaryRestrictions,
       },
     );
 
@@ -425,7 +440,10 @@ describe("rsvps", () => {
       EventActivityRsvpStatus.Attending,
       (activity: EventActivity) => activity.loadAttendingRawCountX(),
       (guest: Guest) => guest.loadGuestToAttendingEventsRawCountX(),
-      [activity, guests],
+      {
+        eventActivity: activity,
+        guests,
+      },
     );
 
     // confirm count has changed back to 0
@@ -438,12 +456,77 @@ describe("rsvps", () => {
       EventActivityRsvpStatus.Declined,
       (activity: EventActivity) => activity.loadDeclinedRawCountX(),
       (guest: Guest) => guest.loadGuestToDeclinedEventsRawCountX(),
-      [activity, guests],
+      {
+        eventActivity: activity,
+        guests,
+      },
     );
 
     // confirm count has changed back to 0
     count = await activity.loadAttendingRawCountX();
     expect(count).toEqual(0);
+  });
+
+  test("rsvp dietary restrictions", async () => {
+    // start with attending
+    let [activity, guests] = await doRsvpForSelf(
+      EventActivityRsvpStatusInput.Attending,
+      EventActivityRsvpStatus.Attending,
+      (activity: EventActivity) => activity.loadAttendingRawCountX(),
+      (guest: Guest) => guest.loadGuestToAttendingEventsRawCountX(),
+      {
+        dietaryRestrictions: "shellfish",
+      },
+    );
+
+    let edges = await activity.loadAttendingEdges();
+    expect(edges.length).toEqual(1);
+
+    let edge = edges[0];
+    expect(edge.data).toBeDefined();
+
+    let guestData = await GuestData.loadX(activity.viewer, edge.data!);
+    expect(guestData.dietaryRestrictions).toEqual("shellfish");
+
+    await doRsvpForSelf(
+      EventActivityRsvpStatusInput.Declined,
+      EventActivityRsvpStatus.Declined,
+      (activity: EventActivity) => activity.loadDeclinedRawCountX(),
+      (guest: Guest) => guest.loadGuestToDeclinedEventsRawCountX(),
+      {
+        eventActivity: activity,
+        guests: guests,
+        dietaryRestrictions: "shellfish",
+      },
+    );
+
+    // can't load it anymore now that we've declined the rsvp
+    const loaded = await GuestData.load(activity.viewer, guestData.id);
+    expect(loaded).toBeNull();
+
+    // change rsvp back to attending
+    await doRsvpForSelf(
+      EventActivityRsvpStatusInput.Attending,
+      EventActivityRsvpStatus.Attending,
+      (activity: EventActivity) => activity.loadAttendingRawCountX(),
+      (guest: Guest) => guest.loadGuestToAttendingEventsRawCountX(),
+      {
+        eventActivity: activity,
+        guests: guests,
+        dietaryRestrictions: "mushrooms",
+      },
+    );
+
+    edges = await activity.loadAttendingEdges();
+    expect(edges.length).toEqual(1);
+
+    edge = edges[0];
+    expect(edge.data).toBeDefined();
+
+    const guestData2 = await GuestData.loadX(activity.viewer, edge.data!);
+    expect(guestData2.dietaryRestrictions).toEqual("mushrooms");
+
+    expect(guestData.id).not.toEqual(guestData2.id);
   });
 
   test("rsvp attending for other guest in group", async () => {

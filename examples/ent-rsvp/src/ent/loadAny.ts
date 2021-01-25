@@ -14,6 +14,7 @@ import {
   Event,
   EventActivity,
   Guest,
+  GuestData,
   GuestGroup,
   User,
 } from "src/ent/internal";
@@ -44,6 +45,8 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return EventActivity.loaderOptions();
     case NodeType.Guest:
       return Guest.loaderOptions();
+    case NodeType.GuestData:
+      return GuestData.loaderOptions();
     case NodeType.GuestGroup:
       return GuestGroup.loaderOptions();
     case NodeType.User:

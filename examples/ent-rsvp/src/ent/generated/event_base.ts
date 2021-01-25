@@ -20,6 +20,7 @@ import { Field, getFields } from "@lolopinto/ent/schema";
 import {
   NodeType,
   EventActivity,
+  GuestData,
   GuestGroup,
   Guest,
   User,
@@ -131,6 +132,19 @@ export class EventBase {
       EventActivity.loaderOptions(),
     );
     let results: EventActivity[] = [];
+    map.forEach((ent) => {
+      results.push(ent);
+    });
+    return results;
+  }
+
+  async loadGuestData(): Promise<GuestData[]> {
+    let map = await loadEntsFromClause(
+      this.viewer,
+      query.Eq("event_id", this.id),
+      GuestData.loaderOptions(),
+    );
+    let results: GuestData[] = [];
     map.forEach((ent) => {
       results.push(ent);
     });
