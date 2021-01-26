@@ -2,10 +2,15 @@ import { WriteOperation } from "../action";
 import { User, BuilderSchema, SimpleBuilder } from "../testutils/builder";
 import { IDViewer, LoggedOutViewer } from "./viewer";
 import { Pool } from "pg";
-import { QueryRecorder, queryType } from "../testutils/db_mock";
+import { QueryRecorder } from "../testutils/db_mock";
 import { Field, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
-import { loadEdgeForID2, getEdgeTypeInGroup } from "../core/ent";
+import {
+  AssocEdge,
+  getEdgeTypeInGroup,
+  loadCustomEdges,
+  loadEdges,
+} from "../core/ent";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -150,4 +155,29 @@ test("getEdgeTypeInGroup", async () => {
     // verify said edge is set and others unset
     await verifyEdges(edgeType);
   }
+});
+
+test("custom edge", async () => {
+  class AssocEdgeSubclass extends AssocEdge {}
+  const user = await createUser();
+  const builder = getUserEditBuilder(user, new Map([["foo", "bar2"]]));
+  builder.orchestrator.addOutboundEdge(user.id, "edge", "User");
+  await builder.saveX();
+
+  const edges = await loadCustomEdges({
+    id1: user.id,
+    edgeType: "edge",
+    ctr: AssocEdgeSubclass,
+  });
+  expect(edges.length).toBe(1);
+  const edge = edges[0];
+  expect(edge).toBeInstanceOf(AssocEdgeSubclass);
+
+  const edges2 = await loadEdges({
+    id1: user.id,
+    edgeType: "edge",
+  });
+  expect(edges2.length).toBe(1);
+  const edge2 = edges2[0];
+  expect(edge2).toBeInstanceOf(AssocEdge);
 });

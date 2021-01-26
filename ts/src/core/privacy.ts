@@ -5,6 +5,7 @@ import {
   loadEdgeForID2,
   LoadEntOptions,
   loadEnt,
+  AssocEdge,
 } from "./ent";
 import { Context } from "./context";
 
@@ -281,7 +282,12 @@ async function allowIfEdgeExistsRule(
   context?: Context,
 ): Promise<PrivacyResult> {
   if (id1 && id2) {
-    const edge = await loadEdgeForID2({ id1, edgeType, id2, context });
+    const edge = await loadEdgeForID2({
+      id1,
+      edgeType,
+      id2,
+      context,
+    });
     if (edge) {
       return Allow();
     }
@@ -321,7 +327,12 @@ async function denyIfEdgeExistsRule(
 ): Promise<PrivacyResult> {
   // edge doesn't exist if no viewer
   if (id1 && id2) {
-    const edge = await loadEdgeForID2({ id1, edgeType, id2, context });
+    const edge = await loadEdgeForID2({
+      id1,
+      edgeType,
+      id2,
+      context,
+    });
     if (edge) {
       return Deny();
     }
@@ -339,7 +350,12 @@ async function denyIfEdgeDoesNotExistRule(
   if (!id1 || !id2) {
     return Deny();
   }
-  const edge = await loadEdgeForID2({ id1, edgeType, id2, context });
+  const edge = await loadEdgeForID2({
+    id1,
+    edgeType,
+    id2,
+    context,
+  });
   if (!edge) {
     return Deny();
   }

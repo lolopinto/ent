@@ -5,32 +5,33 @@ import {
   AssocEdge,
   Ent,
   Viewer,
-  loadEdges,
   loadRawEdgeCountX,
   LoadEntOptions,
   loadEnts,
   EdgeQueryableDataOptions,
   DefaultLimit,
+  AssocEdgeConstructor,
+  loadCustomEdges,
 } from "./ent";
 import * as clause from "./clause";
 
-export interface EdgeQuery<T extends Ent> {
-  queryEdges(): Promise<Map<ID, AssocEdge[]>>;
+export interface EdgeQuery<T extends Ent, TEdge extends AssocEdge> {
+  queryEdges(): Promise<Map<ID, TEdge[]>>;
   queryIDs(): Promise<Map<ID, ID[]>>;
   queryCount(): Promise<Map<ID, number>>;
   queryRawCount(): Promise<Map<ID, number>>;
   queryEnts(): Promise<Map<ID, T[]>>;
 
-  first(n: number, after?: string): EdgeQuery<T>;
-  last(n: number, before?: string): EdgeQuery<T>;
+  first(n: number, after?: string): EdgeQuery<T, TEdge>;
+  last(n: number, before?: string): EdgeQuery<T, TEdge>;
   paginationInfo(): Map<ID, PaginationInfo>;
 
   // TODO we need a way to handle singular id for e.g. unique edge
 }
 
-interface EdgeQueryFilter {
+interface EdgeQueryFilter<T extends AssocEdge> {
   // this is a filter that does the processing in TypeScript instead of at the SQL layer
-  filter?(id: ID, edges: AssocEdge[]): AssocEdge[];
+  filter?(id: ID, edges: T[]): T[];
 
   // there's 2 ways to do it.
   // apply it in SQL
@@ -70,7 +71,7 @@ function assertValidCursor(cursor: string): number {
   return time;
 }
 
-class FirstFilter implements EdgeQueryFilter {
+class FirstFilter<T extends AssocEdge> implements EdgeQueryFilter<T> {
   private time: number | undefined;
   private pageMap: Map<ID, PaginationInfo> = new Map();
 
@@ -81,7 +82,7 @@ class FirstFilter implements EdgeQueryFilter {
     }
   }
 
-  filter(id: ID, edges: AssocEdge[]): AssocEdge[] {
+  filter(id: ID, edges: T[]): T[] {
     if (edges.length > this.limit) {
       this.pageMap.set(id, { hasNextPage: true });
       return edges.slice(0, this.limit);
@@ -114,7 +115,7 @@ class FirstFilter implements EdgeQueryFilter {
   }
 }
 
-class LastFilter implements EdgeQueryFilter {
+class LastFilter<T extends AssocEdge> implements EdgeQueryFilter<T> {
   private time: number | undefined;
   private pageMap: Map<ID, PaginationInfo> = new Map();
 
@@ -125,7 +126,7 @@ class LastFilter implements EdgeQueryFilter {
     }
   }
 
-  filter(id: ID, edges: AssocEdge[]): AssocEdge[] {
+  filter(id: ID, edges: T[]): T[] {
     if (edges.length > this.limit) {
       this.pageMap.set(id, { hasPreviousPage: true });
     }
@@ -160,21 +161,31 @@ class LastFilter implements EdgeQueryFilter {
   }
 }
 
-export type EdgeQuerySource<T extends Ent> = T | T[] | ID | ID[] | EdgeQuery<T>;
+export type EdgeQuerySource<T extends Ent, TEdge extends AssocEdge> =
+  | T
+  | T[]
+  | ID
+  | ID[]
+  | EdgeQuery<T, TEdge>;
 
-export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
-  private filters: EdgeQueryFilter[] = [];
+export class BaseEdgeQuery<
+  TSource extends Ent,
+  TDest extends Ent,
+  TEdge extends AssocEdge
+> {
+  private filters: EdgeQueryFilter<TEdge>[] = [];
   private queryDispatched: boolean;
   private idsResolved: boolean;
-  private edges: Map<ID, AssocEdge[]> = new Map();
+  private edges: Map<ID, TEdge[]> = new Map();
   private resolvedIDs: ID[] = [];
   private pagination: Map<ID, PaginationInfo> = new Map();
 
   constructor(
     public viewer: Viewer,
-    public src: EdgeQuerySource<TSource>,
+    public src: EdgeQuerySource<TSource, TEdge>,
     private edgeType: string,
     private ctr: LoadEntOptions<TDest>,
+    private edgeCtr: AssocEdgeConstructor<TEdge>,
   ) {}
 
   // TODO memoization...
@@ -197,9 +208,9 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
   }
 
   private isEdgeQuery(
-    obj: TSource | ID | EdgeQuery<TSource>,
-  ): obj is EdgeQuery<TSource> {
-    if ((obj as EdgeQuery<TSource>).queryIDs !== undefined) {
+    obj: TSource | ID | EdgeQuery<TSource, TEdge>,
+  ): obj is EdgeQuery<TSource, TEdge> {
+    if ((obj as EdgeQuery<TSource, TEdge>).queryIDs !== undefined) {
       return true;
     }
     return false;
@@ -225,7 +236,7 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     return this;
   }
 
-  async queryEdges(): Promise<Map<ID, AssocEdge[]>> {
+  async queryEdges(): Promise<Map<ID, TEdge[]>> {
     return await this.loadEdges();
   }
 
@@ -309,11 +320,12 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
     const ids = await this.resolveIDs();
     await Promise.all(
       ids.map(async (id) => {
-        const edges = await loadEdges({
+        const edges = await loadCustomEdges({
           id1: id,
           edgeType: this.edgeType,
           context: this.viewer.context,
           queryOptions: options,
+          ctr: this.edgeCtr,
         });
         this.edges.set(id, edges);
       }),
@@ -369,6 +381,6 @@ export class BaseEdgeQuery<TSource extends Ent, TDest extends Ent> {
   }
 }
 
-export interface EdgeQueryCtr<T extends Ent> {
-  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T>;
+export interface EdgeQueryCtr<T extends Ent, TEdge extends AssocEdge> {
+  new (viewer: Viewer, src: EdgeQuerySource<T, TEdge>): EdgeQuery<T, TEdge>;
 }
