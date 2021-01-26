@@ -201,6 +201,7 @@ type EdgeAction struct {
 	CustomGraphQLName string              `json:"graphQLName"`
 	CustomInputName   string              `json:"inputName"`
 	HideFromGraphQL   bool                `json:"hideFromGraphQL"`
+	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields"`
 }
 
 type Action struct {

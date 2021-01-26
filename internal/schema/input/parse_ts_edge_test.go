@@ -321,6 +321,77 @@ func TestParseEdges(t *testing.T) {
 								},
 							],
 						},
+					];
+				};`),
+			},
+			expectedOutput: map[string]node{
+				"User": {
+					assocEdgeGroups: []assocEdgeGroup{
+						{
+							name:            "friendships",
+							groupStatusName: "friendshipStatus",
+							nullStates:      []string{"canRequest", "cannotRequest"},
+							nullStateFn:     "friendshipStatus",
+							assocEdges: []assocEdge{
+								{
+									name:       "outgoingRequest",
+									schemaName: "User",
+									inverseEdge: &inverseAssocEdge{
+										name: "incomingRequest",
+									},
+								},
+								{
+									name:       "friends",
+									schemaName: "User",
+									symmetric:  true,
+								},
+							},
+							edgeActions: []action{
+								{
+									operation: ent.EdgeGroupAction,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"group with action only fields": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(
+					`
+				import {Schema, Field, Edge, ActionOperation} from "{schema}";
+
+				export default class User implements Schema {
+					fields: Field[] = [];
+					edges: Edge[] = [
+						{
+							name: "friendships",
+							groupStatusName: "friendshipStatus",
+							nullStateFn:"friendshipStatus",
+							nullStates: ["canRequest", "cannotRequest"],
+							edgeAction: {
+								operation: ActionOperation.EdgeGroup,
+								actionOnlyFields: [{
+									name: "blah",
+									type: "String",
+								}],
+							},
+							assocEdges: [
+								{
+									name: "outgoingRequest",
+									schemaName: "User",
+									inverseEdge: {
+										name: "incomingRequest",
+									},
+								},
+								{
+									name: "friends",
+									schemaName: "User",
+									symmetric: true,
+								},
+							],
+						},
 					];	
 				};`),
 			},
@@ -344,6 +415,17 @@ func TestParseEdges(t *testing.T) {
 									name:       "friends",
 									schemaName: "User",
 									symmetric:  true,
+								},
+							},
+							edgeActions: []action{
+								{
+									operation: ent.EdgeGroupAction,
+									actionOnlyFields: []actionField{
+										{
+											name: "blah",
+											typ:  input.ActionTypeString,
+										},
+									},
 								},
 							},
 						},
