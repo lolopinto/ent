@@ -22,6 +22,8 @@ import {
   UserToEventsAttendingQuery,
   EventToHostsQuery,
   NodeType,
+  UserToCustomEdgeQuery,
+  CustomEdge,
 } from "./fake_data/";
 import {
   inputs,
@@ -191,6 +193,46 @@ describe("simple queries", () => {
 
   test("all", async () => {
     await filter.testAll();
+  });
+});
+
+describe("custom edge", () => {
+  let user1, user2: FakeUser;
+
+  beforeEach(async () => {
+    user2 = await createTestUser();
+
+    const builder = getUserBuilder(new LoggedOutViewer(), getUserInput());
+    builder.orchestrator.addOutboundEdge(
+      user2.id,
+      EdgeType.UserToCustomEdge,
+      NodeType.FakeUser,
+    );
+    user1 = await builder.saveX();
+  });
+
+  test("ids", async () => {
+    const idsMap = await UserToCustomEdgeQuery.query(
+      user1.viewer,
+      user1,
+    ).queryIDs();
+    const ids = idsMap.get(user1.id);
+    expect(ids?.length).toBe(1);
+    expect(ids).toEqual([user2.id]);
+  });
+
+  test("edges", async () => {
+    const edgesMap = await UserToCustomEdgeQuery.query(
+      user1.viewer,
+      user1,
+    ).queryEdges();
+    const edges = edgesMap.get(user1.id);
+    expect(edges?.length).toBe(1);
+    const edge = edges![0];
+    expect(edge).toBeInstanceOf(CustomEdge);
+    expect(edge.id1).toBe(user1.id);
+    expect(edge.id2).toBe(user2.id);
+    expect(edge.edgeType).toBe(EdgeType.UserToCustomEdge);
   });
 });
 
@@ -740,10 +782,12 @@ class ChainTestQueryFilter {
   friends: FakeUser[];
 
   constructor(
-    private initialQuery: EdgeQueryCtr<Ent>,
-    private subsequentQueries: EdgeQueryCtr<Ent>[],
-    private filter: (q: EdgeQuery<Ent>) => EdgeQuery<Ent>,
-    private lastHopFilter?: (q: EdgeQuery<Ent>) => EdgeQuery<Ent>,
+    private initialQuery: EdgeQueryCtr<Ent, AssocEdge>,
+    private subsequentQueries: EdgeQueryCtr<Ent, AssocEdge>[],
+    private filter: (q: EdgeQuery<Ent, AssocEdge>) => EdgeQuery<Ent, AssocEdge>,
+    private lastHopFilter?: (
+      q: EdgeQuery<Ent, AssocEdge>,
+    ) => EdgeQuery<Ent, AssocEdge>,
   ) {}
 
   async beforeEach() {
@@ -807,7 +851,7 @@ class ChainTestQueryFilter {
   }
 
   private async compare(
-    fn: (q: EdgeQuery<Ent>) => any,
+    fn: (q: EdgeQuery<Ent, AssocEdge>) => any,
     comparer?: (oneHop: any, allHops: any) => any,
   ) {
     const vc = new IDViewer(this.user.id);

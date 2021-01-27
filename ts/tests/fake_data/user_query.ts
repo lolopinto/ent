@@ -75,6 +75,52 @@ export class UserToFriendsQuery extends BaseEdgeQuery<
   }
 }
 
+// example with custom method
+export class CustomEdge extends AssocEdge {
+  async loadUser(viewer: Viewer) {
+    return await FakeUser.load(viewer, this.id2);
+  }
+}
+
+export class UserToCustomEdgeQuery extends BaseEdgeQuery<
+  FakeUser,
+  FakeUser,
+  CustomEdge
+> {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, CustomEdge>) {
+    super(
+      viewer,
+      src,
+      EdgeType.UserToCustomEdge,
+      FakeUser.loaderOptions(),
+      CustomEdge,
+    );
+  }
+
+  static query(
+    viewer: Viewer,
+    src: EdgeQuerySource<FakeUser, CustomEdge>,
+  ): UserToCustomEdgeQuery {
+    return new UserToCustomEdgeQuery(viewer, src);
+  }
+
+  queryContacts(): UserToContactsQuery {
+    return UserToContactsQuery.query(this.viewer, this);
+  }
+
+  queryFriends(): UserToFriendsQuery {
+    return UserToFriendsQuery.query(this.viewer, this);
+  }
+
+  queryHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this);
+  }
+
+  queryEventsAttending(): UserToEventsAttendingQuery {
+    return UserToEventsAttendingQuery.query(this.viewer, this);
+  }
+}
+
 export class UserToFriendRequestsQuery extends BaseEdgeQuery<
   FakeUser,
   FakeUser,

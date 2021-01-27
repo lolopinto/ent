@@ -1,6 +1,7 @@
 export enum EdgeType {
   UserToContacts = "userToContacts",
   UserToFriends = "userToFriends",
+  UserToCustomEdge = "userToCustomEdge",
 
   UserToEventsAttending = "userToEventsAttending",
   EventToAttendees = "eventToAttendees",
