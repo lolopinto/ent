@@ -1,19 +1,20 @@
 import { EdgeQuery, EdgeQueryCtr } from "../../core/query";
 import { AssocEdge, Data, Ent, ID, Viewer } from "../../core/ent";
 
-export interface GraphQLEdge {
-  edge: AssocEdge; // TODO this should be an interface
+export interface GraphQLEdge<T extends AssocEdge> {
+  edge: T;
   node: Ent;
 }
 
-export class GraphQLEdgeConnection {
-  private query: EdgeQuery<Ent>;
-  private results: GraphQLEdge[] = [];
+// TODO probably need to template Ent. maybe 2 ents?
+export class GraphQLEdgeConnection<TEdge extends AssocEdge> {
+  private query: EdgeQuery<Ent, TEdge>;
+  private results: GraphQLEdge<TEdge>[] = [];
 
   constructor(
     private viewer: Viewer,
     private source: Ent,
-    ctr: EdgeQueryCtr<Ent>,
+    ctr: EdgeQueryCtr<Ent, TEdge>,
     private args?: Data,
   ) {
     // TODO make viewer same?
@@ -45,7 +46,7 @@ export class GraphQLEdgeConnection {
   }
 
   // any custom filters can be applied here...
-  modifyQuery(fn: (query: EdgeQuery<Ent>) => EdgeQuery<Ent>) {
+  modifyQuery(fn: (query: EdgeQuery<Ent, TEdge>) => EdgeQuery<Ent, TEdge>) {
     this.query = fn(this.query);
   }
 
@@ -85,7 +86,7 @@ export class GraphQLEdgeConnection {
     const edges = m1.get(this.source.id) || [];
     (m2.get(this.source.id) || []).forEach((ent) => entsMap.set(ent.id, ent));
 
-    let results: GraphQLEdge[] = [];
+    let results: GraphQLEdge<TEdge>[] = [];
     for (const edge of edges) {
       const node = entsMap.get(edge.id2);
       if (!node) {
