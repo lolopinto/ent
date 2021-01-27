@@ -7,26 +7,35 @@ import {
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
+  GuestGroupToInvitedEventsEdge,
 } from "src/ent/internal";
 import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
 
 export class GuestGroupToInvitedEventsQueryBase extends BaseEdgeQuery<
   GuestGroup,
-  EventActivity
+  EventActivity,
+  GuestGroupToInvitedEventsEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<GuestGroup>) {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<GuestGroup, GuestGroupToInvitedEventsEdge>,
+  ) {
     super(
       viewer,
       src,
       EdgeType.GuestGroupToInvitedEvents,
       EventActivity.loaderOptions(),
+      GuestGroupToInvitedEventsEdge,
     );
   }
 
   static query<T extends GuestGroupToInvitedEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<GuestGroup>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<GuestGroup, GuestGroupToInvitedEventsEdge>,
+    ) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<GuestGroup>,
+    src: EdgeQuerySource<GuestGroup, GuestGroupToInvitedEventsEdge>,
   ): T {
     return new this(viewer, src);
   }

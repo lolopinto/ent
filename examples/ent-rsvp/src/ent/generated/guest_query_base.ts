@@ -7,26 +7,36 @@ import {
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
+  GuestToAttendingEventsEdge,
+  GuestToDeclinedEventsEdge,
 } from "src/ent/internal";
 import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
 
 export class GuestToAttendingEventsQueryBase extends BaseEdgeQuery<
   Guest,
-  EventActivity
+  EventActivity,
+  GuestToAttendingEventsEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Guest>) {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<Guest, GuestToAttendingEventsEdge>,
+  ) {
     super(
       viewer,
       src,
       EdgeType.GuestToAttendingEvents,
       EventActivity.loaderOptions(),
+      GuestToAttendingEventsEdge,
     );
   }
 
   static query<T extends GuestToAttendingEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Guest>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Guest, GuestToAttendingEventsEdge>,
+    ) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Guest>,
+    src: EdgeQuerySource<Guest, GuestToAttendingEventsEdge>,
   ): T {
     return new this(viewer, src);
   }
@@ -46,21 +56,29 @@ export class GuestToAttendingEventsQueryBase extends BaseEdgeQuery<
 
 export class GuestToDeclinedEventsQueryBase extends BaseEdgeQuery<
   Guest,
-  EventActivity
+  EventActivity,
+  GuestToDeclinedEventsEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<Guest>) {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<Guest, GuestToDeclinedEventsEdge>,
+  ) {
     super(
       viewer,
       src,
       EdgeType.GuestToDeclinedEvents,
       EventActivity.loaderOptions(),
+      GuestToDeclinedEventsEdge,
     );
   }
 
   static query<T extends GuestToDeclinedEventsQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<Guest>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<Guest, GuestToDeclinedEventsEdge>,
+    ) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<Guest>,
+    src: EdgeQuerySource<Guest, GuestToDeclinedEventsEdge>,
   ): T {
     return new this(viewer, src);
   }

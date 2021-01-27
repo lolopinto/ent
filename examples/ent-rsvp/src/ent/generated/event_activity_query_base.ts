@@ -8,26 +8,37 @@ import {
   GuestToAttendingEventsQuery,
   GuestToDeclinedEventsQuery,
   GuestGroupToInvitedEventsQuery,
+  EventActivityToAttendingEdge,
+  EventActivityToDeclinedEdge,
+  EventActivityToInvitesEdge,
 } from "src/ent/internal";
 import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
 
 export class EventActivityToAttendingQueryBase extends BaseEdgeQuery<
   EventActivity,
-  Guest
+  Guest,
+  EventActivityToAttendingEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<EventActivity, EventActivityToAttendingEdge>,
+  ) {
     super(
       viewer,
       src,
       EdgeType.EventActivityToAttending,
       Guest.loaderOptions(),
+      EventActivityToAttendingEdge,
     );
   }
 
   static query<T extends EventActivityToAttendingQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<EventActivity, EventActivityToAttendingEdge>,
+    ) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<EventActivity>,
+    src: EdgeQuerySource<EventActivity, EventActivityToAttendingEdge>,
   ): T {
     return new this(viewer, src);
   }
@@ -43,16 +54,29 @@ export class EventActivityToAttendingQueryBase extends BaseEdgeQuery<
 
 export class EventActivityToDeclinedQueryBase extends BaseEdgeQuery<
   EventActivity,
-  Guest
+  Guest,
+  EventActivityToDeclinedEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
-    super(viewer, src, EdgeType.EventActivityToDeclined, Guest.loaderOptions());
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<EventActivity, EventActivityToDeclinedEdge>,
+  ) {
+    super(
+      viewer,
+      src,
+      EdgeType.EventActivityToDeclined,
+      Guest.loaderOptions(),
+      EventActivityToDeclinedEdge,
+    );
   }
 
   static query<T extends EventActivityToDeclinedQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<EventActivity, EventActivityToDeclinedEdge>,
+    ) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<EventActivity>,
+    src: EdgeQuerySource<EventActivity, EventActivityToDeclinedEdge>,
   ): T {
     return new this(viewer, src);
   }
@@ -68,21 +92,29 @@ export class EventActivityToDeclinedQueryBase extends BaseEdgeQuery<
 
 export class EventActivityToInvitesQueryBase extends BaseEdgeQuery<
   EventActivity,
-  GuestGroup
+  GuestGroup,
+  EventActivityToInvitesEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
+  constructor(
+    viewer: Viewer,
+    src: EdgeQuerySource<EventActivity, EventActivityToInvitesEdge>,
+  ) {
     super(
       viewer,
       src,
       EdgeType.EventActivityToInvites,
       GuestGroup.loaderOptions(),
+      EventActivityToInvitesEdge,
     );
   }
 
   static query<T extends EventActivityToInvitesQueryBase>(
-    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity>) => T,
+    this: new (
+      viewer: Viewer,
+      src: EdgeQuerySource<EventActivity, EventActivityToInvitesEdge>,
+    ) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<EventActivity>,
+    src: EdgeQuerySource<EventActivity, EventActivityToInvitesEdge>,
   ): T {
     return new this(viewer, src);
   }
