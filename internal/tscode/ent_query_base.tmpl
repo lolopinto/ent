@@ -1,5 +1,6 @@
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
-{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery"}}
+{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge"}}
+{{$importPath := .Package.InternalImportPath -}}
 
 {{$schema := .Schema}}
 {{$nodeData := .NodeData -}}
@@ -15,19 +16,22 @@
   {{ end}}
 
   {{$node := useImport .Node}}
-  {{$thisType := printf "new (viewer: Viewer, src: EdgeQuerySource<%s>) => T" $node}}
 
   {{range $edge := .EdgeInfo.Associations}}
     {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
-  export class {{$name}} extends {{useImport "BaseEdgeQuery"}}<{{$node}}, {{useImport .NodeInfo.Node}}> {
-    constructor(viewer: {{useImport "Viewer"}}, src: {{useImport "EdgeQuerySource"}}<{{$node}}>) {
-      super(viewer, src, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}}, {{useImport .NodeInfo.Node}}.loaderOptions());
+    {{ reserveImport $importPath $edge.TsEdgeQueryEdgeName -}}
+    {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
+    {{$thisType := printf "new (viewer: Viewer, src: EdgeQuerySource<%s, %s>) => T" $node $edgeName}}
+
+  export class {{$name}} extends {{useImport "BaseEdgeQuery"}}<{{$node}}, {{useImport .NodeInfo.Node}}, {{$edgeName}}> {
+    constructor(viewer: {{useImport "Viewer"}}, src: {{useImport "EdgeQuerySource"}}<{{$node}}, {{$edgeName}}>) {
+      super(viewer, src, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}}, {{useImport .NodeInfo.Node}}.loaderOptions(), {{$edgeName}});
     }
 
     static query<T extends {{$name}}>(
       this: {{$thisType}},
       viewer: {{useImport "Viewer"}},
-      src: {{useImport "EdgeQuerySource"}}<{{$node}}>,
+      src: {{useImport "EdgeQuerySource"}}<{{$node}}, {{$edgeName}}>,
     ): T {
       return new this(viewer, src);
     }
