@@ -16,7 +16,7 @@ export class EventToAttendeesQuery extends BaseEdgeQuery<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
     super(
       viewer,
       src,
@@ -28,7 +28,7 @@ export class EventToAttendeesQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeEvent, AssocEdge>,
+    src: EdgeQuerySource<FakeEvent>,
   ): EventToAttendeesQuery {
     return new EventToAttendeesQuery(viewer, src);
   }
@@ -39,7 +39,7 @@ export class EventToInvitedQuery extends BaseEdgeQuery<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
     super(
       viewer,
       src,
@@ -51,7 +51,7 @@ export class EventToInvitedQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeEvent, AssocEdge>,
+    src: EdgeQuerySource<FakeEvent>,
   ): EventToInvitedQuery {
     return new EventToInvitedQuery(viewer, src);
   }
@@ -62,7 +62,7 @@ export class EventToDeclinedQuery extends BaseEdgeQuery<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
     super(
       viewer,
       src,
@@ -74,7 +74,7 @@ export class EventToDeclinedQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeEvent, AssocEdge>,
+    src: EdgeQuerySource<FakeEvent>,
   ): EventToDeclinedQuery {
     return new EventToDeclinedQuery(viewer, src);
   }
@@ -85,7 +85,7 @@ export class EventToMaybeQuery extends BaseEdgeQuery<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
     super(
       viewer,
       src,
@@ -97,7 +97,7 @@ export class EventToMaybeQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeEvent, AssocEdge>,
+    src: EdgeQuerySource<FakeEvent>,
   ): EventToMaybeQuery {
     return new EventToMaybeQuery(viewer, src);
   }
@@ -108,7 +108,7 @@ export class EventToHostsQuery extends BaseEdgeQuery<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
     super(
       viewer,
       src,
@@ -120,7 +120,7 @@ export class EventToHostsQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeEvent, AssocEdge>,
+    src: EdgeQuerySource<FakeEvent>,
   ): EventToHostsQuery {
     return new EventToHostsQuery(viewer, src);
   }

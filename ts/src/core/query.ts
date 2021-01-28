@@ -161,12 +161,12 @@ class LastFilter<T extends AssocEdge> implements EdgeQueryFilter<T> {
   }
 }
 
-export type EdgeQuerySource<T extends Ent, TEdge extends AssocEdge> =
+export type EdgeQuerySource<T extends Ent> =
   | T
   | T[]
   | ID
   | ID[]
-  | EdgeQuery<T, TEdge>;
+  | EdgeQuery<T, AssocEdge>;
 
 export class BaseEdgeQuery<
   TSource extends Ent,
@@ -182,7 +182,7 @@ export class BaseEdgeQuery<
 
   constructor(
     public viewer: Viewer,
-    public src: EdgeQuerySource<TSource, TEdge>,
+    public src: EdgeQuerySource<TSource>,
     private edgeType: string,
     private ctr: LoadEntOptions<TDest>,
     private edgeCtr: AssocEdgeConstructor<TEdge>,
@@ -208,9 +208,9 @@ export class BaseEdgeQuery<
   }
 
   private isEdgeQuery(
-    obj: TSource | ID | EdgeQuery<TSource, TEdge>,
-  ): obj is EdgeQuery<TSource, TEdge> {
-    if ((obj as EdgeQuery<TSource, TEdge>).queryIDs !== undefined) {
+    obj: TSource | ID | EdgeQuery<TSource, AssocEdge>,
+  ): obj is EdgeQuery<TSource, AssocEdge> {
+    if ((obj as EdgeQuery<TSource, AssocEdge>).queryIDs !== undefined) {
       return true;
     }
     return false;
@@ -382,5 +382,5 @@ export class BaseEdgeQuery<
 }
 
 export interface EdgeQueryCtr<T extends Ent, TEdge extends AssocEdge> {
-  new (viewer: Viewer, src: EdgeQuerySource<T, TEdge>): EdgeQuery<T, TEdge>;
+  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T, TEdge>;
 }

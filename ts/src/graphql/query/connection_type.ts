@@ -17,7 +17,20 @@ export class GraphQLEdgeType<
   TNode extends GraphQLObjectType,
   TEdge extends AssocEdge
 > extends GraphQLObjectType {
-  constructor(name: string, nodeType: TNode) {
+  constructor(
+    name: string,
+    nodeType: TNode,
+    optionalFields?: () => GraphQLFieldConfigMap<
+      GraphQLEdge<TEdge>,
+      RequestContext
+    >,
+  ) {
+    let optional:
+      | GraphQLFieldConfigMap<GraphQLEdge<TEdge>, RequestContext>
+      | undefined;
+    if (optionalFields) {
+      optional = optionalFields();
+    }
     super({
       name: `${name}Edge`,
       fields: (): GraphQLFieldConfigMap<
@@ -33,18 +46,28 @@ export class GraphQLEdgeType<
             return obj.edge.getCursor();
           },
         },
+        ...optional,
       }),
       interfaces: [GraphQLEdgeInterface],
     });
   }
 }
 
+interface connectionOptions<T extends AssocEdge> {
+  fields?(): GraphQLFieldConfigMap<GraphQLEdge<T>, RequestContext>;
+}
+
 export class GraphQLConnectionType<
   TNode extends GraphQLObjectType,
   TEdge extends AssocEdge
 > extends GraphQLObjectType {
-  constructor(name: string, nodeType: TNode) {
-    const edgeType = new GraphQLEdgeType(name, nodeType);
+  edgeType: GraphQLEdgeType<TNode, TEdge>;
+  constructor(
+    name: string,
+    nodeType: TNode,
+    options?: connectionOptions<TEdge>,
+  ) {
+    const edgeType = new GraphQLEdgeType(name, nodeType, options?.fields);
 
     super({
       name: `${name}Connection`,
@@ -79,5 +102,7 @@ export class GraphQLConnectionType<
       }),
       interfaces: [GraphQLConnectionInterface],
     });
+
+    this.edgeType = edgeType;
   }
 }

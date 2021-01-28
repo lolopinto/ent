@@ -18,7 +18,7 @@ export class UserToContactsQuery extends BaseEdgeQuery<
   FakeContact,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
     super(
       viewer,
       src,
@@ -30,7 +30,7 @@ export class UserToContactsQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser, AssocEdge>,
+    src: EdgeQuerySource<FakeUser>,
   ): UserToContactsQuery {
     return new UserToContactsQuery(viewer, src);
   }
@@ -41,7 +41,7 @@ export class UserToFriendsQuery extends BaseEdgeQuery<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
     super(
       viewer,
       src,
@@ -53,7 +53,7 @@ export class UserToFriendsQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser, AssocEdge>,
+    src: EdgeQuerySource<FakeUser>,
   ): UserToFriendsQuery {
     return new UserToFriendsQuery(viewer, src);
   }
@@ -73,6 +73,10 @@ export class UserToFriendsQuery extends BaseEdgeQuery<
   queryEventsAttending(): UserToEventsAttendingQuery {
     return UserToEventsAttendingQuery.query(this.viewer, this);
   }
+
+  queryCustomEdge(): UserToCustomEdgeQuery {
+    return UserToCustomEdgeQuery.query(this.viewer, this);
+  }
 }
 
 // example with custom method
@@ -87,7 +91,7 @@ export class UserToCustomEdgeQuery extends BaseEdgeQuery<
   FakeUser,
   CustomEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, CustomEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
     super(
       viewer,
       src,
@@ -99,7 +103,7 @@ export class UserToCustomEdgeQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser, CustomEdge>,
+    src: EdgeQuerySource<FakeUser>,
   ): UserToCustomEdgeQuery {
     return new UserToCustomEdgeQuery(viewer, src);
   }
@@ -126,7 +130,7 @@ export class UserToFriendRequestsQuery extends BaseEdgeQuery<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
     super(
       viewer,
       src,
@@ -138,7 +142,7 @@ export class UserToFriendRequestsQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser, AssocEdge>,
+    src: EdgeQuerySource<FakeUser>,
   ): UserToFriendRequestsQuery {
     return new UserToFriendRequestsQuery(viewer, src);
   }
@@ -158,6 +162,10 @@ export class UserToFriendRequestsQuery extends BaseEdgeQuery<
   queryEventsAttending(): UserToEventsAttendingQuery {
     return UserToEventsAttendingQuery.query(this.viewer, this);
   }
+
+  queryCustomEdge(): UserToCustomEdgeQuery {
+    return UserToCustomEdgeQuery.query(this.viewer, this);
+  }
 }
 
 export class UserToIncomingFriendRequestsQuery extends BaseEdgeQuery<
@@ -165,7 +173,7 @@ export class UserToIncomingFriendRequestsQuery extends BaseEdgeQuery<
   FakeUser,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
     super(
       viewer,
       src,
@@ -177,7 +185,7 @@ export class UserToIncomingFriendRequestsQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser, AssocEdge>,
+    src: EdgeQuerySource<FakeUser>,
   ): UserToIncomingFriendRequestsQuery {
     return new UserToIncomingFriendRequestsQuery(viewer, src);
   }
@@ -197,6 +205,10 @@ export class UserToIncomingFriendRequestsQuery extends BaseEdgeQuery<
   queryEventsAttending(): UserToEventsAttendingQuery {
     return UserToEventsAttendingQuery.query(this.viewer, this);
   }
+
+  queryCustomEdge(): UserToCustomEdgeQuery {
+    return UserToCustomEdgeQuery.query(this.viewer, this);
+  }
 }
 
 export class UserToEventsAttendingQuery extends BaseEdgeQuery<
@@ -204,7 +216,7 @@ export class UserToEventsAttendingQuery extends BaseEdgeQuery<
   FakeEvent,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
     super(
       viewer,
       src,
@@ -216,7 +228,7 @@ export class UserToEventsAttendingQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser, AssocEdge>,
+    src: EdgeQuerySource<FakeUser>,
   ): UserToEventsAttendingQuery {
     return new UserToEventsAttendingQuery(viewer, src);
   }
@@ -243,7 +255,7 @@ export class UserToHostedEventsQuery extends BaseEdgeQuery<
   FakeEvent,
   AssocEdge
 > {
-  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser, AssocEdge>) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<FakeUser>) {
     super(
       viewer,
       src,
@@ -255,7 +267,7 @@ export class UserToHostedEventsQuery extends BaseEdgeQuery<
 
   static query(
     viewer: Viewer,
-    src: EdgeQuerySource<FakeUser, AssocEdge>,
+    src: EdgeQuerySource<FakeUser>,
   ): UserToHostedEventsQuery {
     return new UserToHostedEventsQuery(viewer, src);
   }
