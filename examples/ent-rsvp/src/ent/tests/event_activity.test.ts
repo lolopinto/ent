@@ -1,4 +1,11 @@
-import { Event, User, EventActivity, GuestGroup, GuestData } from "src/ent";
+import {
+  Event,
+  User,
+  EventActivity,
+  GuestGroup,
+  GuestData,
+  EventActivityToAttendingQuery,
+} from "src/ent";
 import { DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
 import CreateUserAction from "../user/actions/create_user_action";
 import { randomEmail } from "src/util/random";
@@ -481,6 +488,20 @@ describe("rsvps", () => {
 
     let edges = await activity.loadAttendingEdges();
     expect(edges.length).toEqual(1);
+
+    let edgesMap = await EventActivityToAttendingQuery.query(
+      activity.viewer,
+      activity.id,
+    ).queryEdges();
+    let edges2 = edgesMap.get(activity.id) || [];
+    expect(edges2.length).toEqual(1);
+
+    const dr = await edges2[0].dietaryRestrictions({
+      getViewer() {
+        return activity.viewer;
+      },
+    });
+    expect(dr).toEqual("shellfish");
 
     let edge = edges[0];
     expect(edge.data).toBeDefined();
