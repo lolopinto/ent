@@ -19,10 +19,7 @@ export class EventActivityToAttendingQueryBase extends BaseEdgeQuery<
   Guest,
   EventActivityToAttendingEdge
 > {
-  constructor(
-    viewer: Viewer,
-    src: EdgeQuerySource<EventActivity, EventActivityToAttendingEdge>,
-  ) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
     super(
       viewer,
       src,
@@ -33,12 +30,9 @@ export class EventActivityToAttendingQueryBase extends BaseEdgeQuery<
   }
 
   static query<T extends EventActivityToAttendingQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: EdgeQuerySource<EventActivity, EventActivityToAttendingEdge>,
-    ) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<EventActivity, EventActivityToAttendingEdge>,
+    src: EdgeQuerySource<EventActivity>,
   ): T {
     return new this(viewer, src);
   }
@@ -57,10 +51,7 @@ export class EventActivityToDeclinedQueryBase extends BaseEdgeQuery<
   Guest,
   EventActivityToDeclinedEdge
 > {
-  constructor(
-    viewer: Viewer,
-    src: EdgeQuerySource<EventActivity, EventActivityToDeclinedEdge>,
-  ) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
     super(
       viewer,
       src,
@@ -71,12 +62,9 @@ export class EventActivityToDeclinedQueryBase extends BaseEdgeQuery<
   }
 
   static query<T extends EventActivityToDeclinedQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: EdgeQuerySource<EventActivity, EventActivityToDeclinedEdge>,
-    ) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<EventActivity, EventActivityToDeclinedEdge>,
+    src: EdgeQuerySource<EventActivity>,
   ): T {
     return new this(viewer, src);
   }
@@ -95,10 +83,7 @@ export class EventActivityToInvitesQueryBase extends BaseEdgeQuery<
   GuestGroup,
   EventActivityToInvitesEdge
 > {
-  constructor(
-    viewer: Viewer,
-    src: EdgeQuerySource<EventActivity, EventActivityToInvitesEdge>,
-  ) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<EventActivity>) {
     super(
       viewer,
       src,
@@ -109,12 +94,9 @@ export class EventActivityToInvitesQueryBase extends BaseEdgeQuery<
   }
 
   static query<T extends EventActivityToInvitesQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: EdgeQuerySource<EventActivity, EventActivityToInvitesEdge>,
-    ) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<EventActivity>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<EventActivity, EventActivityToInvitesEdge>,
+    src: EdgeQuerySource<EventActivity>,
   ): T {
     return new this(viewer, src);
   }

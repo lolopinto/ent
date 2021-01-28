@@ -16,10 +16,7 @@ export class GuestGroupToInvitedEventsQueryBase extends BaseEdgeQuery<
   EventActivity,
   GuestGroupToInvitedEventsEdge
 > {
-  constructor(
-    viewer: Viewer,
-    src: EdgeQuerySource<GuestGroup, GuestGroupToInvitedEventsEdge>,
-  ) {
+  constructor(viewer: Viewer, src: EdgeQuerySource<GuestGroup>) {
     super(
       viewer,
       src,
@@ -30,12 +27,9 @@ export class GuestGroupToInvitedEventsQueryBase extends BaseEdgeQuery<
   }
 
   static query<T extends GuestGroupToInvitedEventsQueryBase>(
-    this: new (
-      viewer: Viewer,
-      src: EdgeQuerySource<GuestGroup, GuestGroupToInvitedEventsEdge>,
-    ) => T,
+    this: new (viewer: Viewer, src: EdgeQuerySource<GuestGroup>) => T,
     viewer: Viewer,
-    src: EdgeQuerySource<GuestGroup, GuestGroupToInvitedEventsEdge>,
+    src: EdgeQuerySource<GuestGroup>,
   ): T {
     return new this(viewer, src);
   }
