@@ -8,6 +8,8 @@ import CreateGuestAction, {
   GuestCreateInput,
 } from "src/ent/guest/actions/create_guest_action";
 import { Guest } from "../guest";
+import { AuthCode } from "../auth_code";
+import { AuthCodeBase } from "../generated/auth_code_base";
 
 afterAll(async () => {
   await DB.getInstance().endPool();
@@ -115,6 +117,20 @@ test("create guests", async () => {
   const guestID = loadedGuests[0].id;
   const guest = await Guest.load(new IDViewer(guestID), guestID);
   expect(guest).toBeInstanceOf(Guest);
+
+  if (!guest) {
+    fail("impossicant");
+  }
+
+  const code = await AuthCode.loadFromGuestID(guest.viewer, guest.id);
+  expect(code).toBeInstanceOf(AuthCode);
+
+  if (!code) {
+    fail("impossicant");
+  }
+  expect(code.emailAddress).toBe(guest.emailAddress);
+  expect(code.guestID).toBe(guest.id);
+  expect(code.sentCode).toBe(false);
 });
 
 describe("privacy", () => {
