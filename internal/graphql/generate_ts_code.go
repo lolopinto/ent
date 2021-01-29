@@ -80,12 +80,110 @@ type customData struct {
 }
 
 type CustomItem struct {
-	Name         string       `json:"name"`
-	Type         string       `json:"type"`
-	Nullable     NullableItem `json:"nullable"`
-	List         bool         `json:"list"`
-	IsContextArg bool         `json:"isContextArg"`
-	TSType       *string      `json:"tsType"`
+	Name               string       `json:"name"`
+	Type               string       `json:"type"`
+	Nullable           NullableItem `json:"nullable"`
+	List               bool         `json:"list"`
+	IsContextArg       bool         `json:"isContextArg"`
+	TSType             *string      `json:"tsType"`
+	imports            []*fileImport
+	importsInitialized bool
+}
+
+func (item *CustomItem) addImportImpl(imps ...string) {
+	for _, imp := range imps {
+		// TODO this doesn't work for the new custom types?
+		item.imports = append(item.imports, &fileImport{
+			ImportPath: "graphql",
+			Type:       imp,
+		})
+	}
+}
+
+func (item *CustomItem) initialize() error {
+	switch item.Nullable {
+	case NullableTrue:
+		if item.List {
+			item.addImportImpl("GraphQLList", "GraphQLNonNull")
+		}
+		break
+
+	case NullableContents:
+		if !item.List {
+			return fmt.Errorf("list required to use this option")
+		}
+		item.addImportImpl("GraphQLNonNull", "GraphQLList")
+		break
+
+	case NullableContentsAndList:
+		if !item.List {
+			return fmt.Errorf("list required to use this option")
+		}
+		item.addImportImpl("GraphQLList")
+		break
+
+	default:
+		if item.List {
+			item.addImportImpl("GraphQLNonNull", "GraphQLList", "GraphQLNonNull")
+		} else {
+			item.addImportImpl("GraphQLNonNull")
+		}
+	}
+
+	return nil
+}
+
+func (item *CustomItem) addGQLImport(imps ...string) {
+	item.addImportImpl(imps...)
+}
+
+func (item *CustomItem) addImport(imp *fileImport) {
+	item.imports = append(item.imports, imp)
+}
+
+var graphqlScalars = map[string]string{
+	"String":     "GraphQLString",
+	"Date":       "Time",
+	"Int":        "GraphQLInt",
+	"Float":      "GraphQLFloat",
+	"Boolean":    "GraphQLBoolean",
+	"ID":         "GraphQLID",
+	"Node":       "GraphQLNodeInterface",
+	"Edge":       "GraphQLEdgeInterface",
+	"Connection": "GraphQLConnectionInterface",
+}
+
+func (item *CustomItem) getImports(s *gqlSchema) ([]*fileImport, error) {
+	if err := item.initialize(); err != nil {
+		return nil, err
+	}
+
+	typ, ok := graphqlScalars[item.Type]
+
+	if ok {
+		item.addGQLImport(typ)
+	} else {
+		_, ok := s.nodes[item.Type]
+		if ok {
+			item.addImport(
+				&fileImport{
+					Type:       fmt.Sprintf("%sType", item.Type),
+					ImportPath: codepath.GetImportPathForExternalGQLFile(),
+				})
+			//				s.nodes[resultre]
+			// now we need to figure out where this is from e.g.
+			// result.Type a native thing e.g. User so getUserType
+			// TODO need to add it to DefaultImport for the entire file...
+			// e.g. getImportPathForNode
+			// or in cd.Classes and figure that out for what the path should be...
+			//				imports = append(imports, fmt.Sprintf("%sType", result.Type))
+			//				spew.Dump(result.Type + " needs to be added to import for file...")
+		} else {
+			return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
+		}
+	}
+
+	return item.imports, nil
 }
 
 type CustomFile struct {
@@ -156,7 +254,7 @@ func (st writeGraphQLTypesStep) process(data *codegen.Data, s *gqlSchema) error 
 					go func(idx int) {
 						defer wg2.Done()
 						conn := node.connections[idx]
-						if err := writeConnectionFile(conn); err != nil {
+						if err := writeConnectionFile(data, s, conn); err != nil {
 							serr.Append((err))
 						}
 					}(idx)
@@ -519,6 +617,8 @@ type gqlSchema struct {
 	customQueries   []*gqlNode
 	customMutations []*gqlNode
 	customData      *customData
+	edgeNames       map[string]bool
+	customEdges     map[string]*objectType
 }
 
 type gqlNode struct {
@@ -550,6 +650,7 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 		var hasMutations bool
 		nodes := make(map[string]*gqlNode)
 		enums := make(map[string]*gqlEnum)
+		edgeNames := make(map[string]bool)
 		var wg sync.WaitGroup
 		var m sync.Mutex
 		wg.Add(len(data.Schema.Nodes))
@@ -641,6 +742,10 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 									ImportPath: codepath.GetImportPathForExternalGQLFile(),
 									Type:       nodeType,
 								},
+								{
+									ImportPath: codepath.GetExternalImportPath(),
+									Type:       edge.TsEdgeQueryEdgeName(),
+								},
 							},
 							Package: data.CodePath.GetImportPackage(),
 						}
@@ -651,6 +756,9 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 				m.Lock()
 				defer m.Unlock()
 				nodes[nodeData.Node] = &obj
+				for _, conn := range obj.connections {
+					edgeNames[conn.Edge.TsEdgeQueryEdgeName()] = true
+				}
 			}(key)
 		}
 
@@ -658,7 +766,9 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 		result <- &gqlSchema{
 			nodes:        nodes,
 			enums:        enums,
+			edgeNames:    edgeNames,
 			hasMutations: hasMutations,
+			customEdges:  make(map[string]*objectType),
 		}
 	}()
 	return result
@@ -676,6 +786,7 @@ func writeFile(node *gqlNode) error {
 			util.GetAbsolutePath("ts_templates/field_config.tmpl"),
 			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
 			util.GetAbsolutePath("ts_templates/enum.tmpl"),
+			util.GetAbsolutePath("ts_templates/field.tmpl"),
 		},
 		PathToFile:   node.FilePath,
 		FormatSource: true,
@@ -777,17 +888,38 @@ func writeGQLResolversIndexFile() error {
 	})
 }
 
-func writeConnectionFile(conn *gqlConnection) error {
+type connectionBaseObj struct{}
+
+// everything is foreign here
+func (n *connectionBaseObj) ForeignImport(name string) bool {
+	return true
+}
+
+func writeConnectionFile(data *codegen.Data, s *gqlSchema, conn *gqlConnection) error {
 	imps := tsimport.NewImports()
 	return file.Write((&file.TemplatedBasedFileWriter{
-		Data:              conn,
+		Data: struct {
+			Connection   *gqlConnection
+			CustomObject *objectType
+			BaseObj      *connectionBaseObj
+			Package      *codegen.ImportPackage
+		}{
+			conn,
+			s.customEdges[conn.Edge.TsEdgeQueryEdgeName()],
+			&connectionBaseObj{},
+			data.CodePath.GetImportPackage(),
+		},
 		CreateDirIfNeeded: true,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/connection.tmpl"),
 		TemplateName:      "connection.tmpl",
-		PathToFile:        conn.FilePath,
-		FormatSource:      true,
-		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
+		OtherTemplateFiles: []string{
+			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
+			util.GetAbsolutePath("ts_templates/field.tmpl"),
+		},
+		PathToFile:   conn.FilePath,
+		FormatSource: true,
+		TsImports:    imps,
+		FuncMap:      imps.FuncMap(),
 	}))
 }
 
@@ -1810,6 +1942,7 @@ func writeNodeQueryFile(data *codegen.Data, s *gqlSchema) error {
 		OtherTemplateFiles: []string{
 			util.GetAbsolutePath("ts_templates/field_config.tmpl"),
 			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
+			util.GetAbsolutePath("ts_templates/field.tmpl"),
 		},
 		PathToFile:   getNodeTypeFilePath(),
 		FormatSource: true,
