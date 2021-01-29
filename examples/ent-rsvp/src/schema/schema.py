@@ -102,6 +102,7 @@ sa.Table("guests", metadata,
     sa.PrimaryKeyConstraint("id", name="guests_id_pkey"),
     sa.ForeignKeyConstraint(["event_id"], ["events.id"], name="guests_event_id_fkey", ondelete="CASCADE"),
     sa.ForeignKeyConstraint(["guest_group_id"], ["guest_groups.id"], name="guests_guest_group_id_fkey", ondelete="CASCADE"),
+    sa.UniqueConstraint("event_id", "email_address", name="uniqueEmail"),
 )
    
 sa.Table("users", metadata,

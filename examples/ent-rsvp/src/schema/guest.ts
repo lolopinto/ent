@@ -5,6 +5,8 @@ import {
   StringType,
   UUIDType,
   Action,
+  Constraint,
+  ConstraintType,
 } from "@lolopinto/ent";
 import { EmailType } from "@lolopinto/ent-email";
 
@@ -20,6 +22,14 @@ export default class Guest extends BaseEntSchema {
   actions: Action[] = [
     {
       operation: ActionOperation.Mutations,
+    },
+  ];
+
+  constraints: Constraint[] = [
+    {
+      name: "uniqueEmail",
+      type: ConstraintType.Unique,
+      columns: ["eventID", "EmailAddress"],
     },
   ];
 }
