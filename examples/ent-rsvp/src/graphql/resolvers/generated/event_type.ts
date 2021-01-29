@@ -23,7 +23,7 @@ export const EventType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Event, RequestContext> => ({
     creator: {
       type: UserType,
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return event.loadCreator();
       },
     },
@@ -36,19 +36,19 @@ export const EventType = new GraphQLObjectType({
     },
     eventActivities: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventActivityType))),
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return event.loadEventActivities();
       },
     },
     guestGroups: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GuestGroupType))),
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return event.loadGuestGroups();
       },
     },
     guests: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GuestType))),
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return event.loadGuests();
       },
     },

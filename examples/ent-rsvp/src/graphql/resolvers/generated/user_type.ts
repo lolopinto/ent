@@ -31,7 +31,7 @@ export const UserType = new GraphQLObjectType({
     },
     events: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return user.loadEvents();
       },
     },

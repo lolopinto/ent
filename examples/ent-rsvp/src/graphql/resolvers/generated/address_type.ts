@@ -16,7 +16,7 @@ export const AddressType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Address, RequestContext> => ({
     owner: {
       type: GraphQLNodeInterface,
-      resolve: (address: Address, args: {}) => {
+      resolve: (address: Address, args: {}, context: RequestContext) => {
         return address.loadOwner();
       },
     },

@@ -194,6 +194,7 @@ type EventActivityToAttendingConnection implements Connection {
 type EventActivityToAttendingEdge implements Edge {
   node: Guest!
   cursor: String!
+  dietaryRestrictions: String
 }
 
 type EventActivityToDeclinedConnection implements Connection {

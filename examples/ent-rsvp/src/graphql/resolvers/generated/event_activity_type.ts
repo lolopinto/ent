@@ -36,7 +36,11 @@ export const EventActivityType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<EventActivity, RequestContext> => ({
     event: {
       type: EventType,
-      resolve: (eventActivity: EventActivity, args: {}) => {
+      resolve: (
+        eventActivity: EventActivity,
+        args: {},
+        context: RequestContext,
+      ) => {
         return eventActivity.loadEvent();
       },
     },
@@ -76,7 +80,11 @@ export const EventActivityType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (eventActivity: EventActivity, args: {}) => {
+      resolve: (
+        eventActivity: EventActivity,
+        args: {},
+        context: RequestContext,
+      ) => {
         return new GraphQLEdgeConnection(
           eventActivity.viewer,
           eventActivity,
@@ -105,7 +113,11 @@ export const EventActivityType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (eventActivity: EventActivity, args: {}) => {
+      resolve: (
+        eventActivity: EventActivity,
+        args: {},
+        context: RequestContext,
+      ) => {
         return new GraphQLEdgeConnection(
           eventActivity.viewer,
           eventActivity,
@@ -134,7 +146,11 @@ export const EventActivityType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (eventActivity: EventActivity, args: {}) => {
+      resolve: (
+        eventActivity: EventActivity,
+        args: {},
+        context: RequestContext,
+      ) => {
         return new GraphQLEdgeConnection(
           eventActivity.viewer,
           eventActivity,
@@ -145,7 +161,11 @@ export const EventActivityType = new GraphQLObjectType({
     },
     viewerRsvpStatus: {
       type: EventActivityRsvpStatusType,
-      resolve: async (eventActivity: EventActivity, args: {}) => {
+      resolve: async (
+        eventActivity: EventActivity,
+        args: {},
+        context: RequestContext,
+      ) => {
         const ret = await eventActivity.viewerRsvpStatus();
         return convertToGQLEnum(
           ret,

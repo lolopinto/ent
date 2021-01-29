@@ -31,13 +31,13 @@ export const GuestType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Guest, RequestContext> => ({
     event: {
       type: EventType,
-      resolve: (guest: Guest, args: {}) => {
+      resolve: (guest: Guest, args: {}, context: RequestContext) => {
         return guest.loadEvent();
       },
     },
     guestGroup: {
       type: GuestGroupType,
-      resolve: (guest: Guest, args: {}) => {
+      resolve: (guest: Guest, args: {}, context: RequestContext) => {
         return guest.loadGuestGroup();
       },
     },
@@ -74,7 +74,7 @@ export const GuestType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guest: Guest, args: {}) => {
+      resolve: (guest: Guest, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           guest.viewer,
           guest,
@@ -103,7 +103,7 @@ export const GuestType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (guest: Guest, args: {}) => {
+      resolve: (guest: Guest, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           guest.viewer,
           guest,

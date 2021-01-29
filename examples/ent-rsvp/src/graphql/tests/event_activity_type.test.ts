@@ -59,7 +59,7 @@ async function createActivity() {
   return activity;
 }
 
-test("rsvp", async () => {
+async function createGuestPlus() {
   const activity = await createActivity();
   const event = await activity.loadEventX();
   const group = await CreateGuestGroupAction.create(event.viewer, {
@@ -80,7 +80,11 @@ test("rsvp", async () => {
     guestGroupID: group.id,
     eventID: group.eventID,
   }).saveX();
+  return { guest, activity };
+}
 
+test("rsvp", async () => {
+  const { guest, activity } = await createGuestPlus();
   // set attending
   await expectMutation(
     {
@@ -89,13 +93,23 @@ test("rsvp", async () => {
       schema,
       args: {
         eventActivityID: encodeGQLID(activity),
-        rsvpStatus: "ATTENDING", // need to convert enum...
+        rsvpStatus: "ATTENDING",
         guestID: encodeGQLID(guest),
       },
     },
     ["eventActivity.id", encodeGQLID(activity)],
-    // need to convert enum...
     ["eventActivity.viewerRsvpStatus", "ATTENDING"],
+    [
+      "eventActivity.attending.edges",
+      [
+        {
+          node: {
+            id: encodeGQLID(guest),
+          },
+          dietaryRestrictions: null,
+        },
+      ],
+    ],
   );
 
   // set declined
@@ -113,10 +127,35 @@ test("rsvp", async () => {
     ["eventActivity.id", encodeGQLID(activity)],
     ["eventActivity.viewerRsvpStatus", "DECLINED"],
   );
-  // const activity2 = await EventActivity.loadX(
-  //   new IDViewer(guest.id),
-  //   activity.id,
-  // );
-  // const r = await activity2.viewerRsvpStatus();
-  // console.log(r);
+});
+
+test("rsvp with dietary restrictions", async () => {
+  const { guest, activity } = await createGuestPlus();
+
+  await expectMutation(
+    {
+      viewer: new IDViewer(guest.id),
+      mutation: "eventActivityRsvpStatusEdit",
+      schema,
+      args: {
+        eventActivityID: encodeGQLID(activity),
+        rsvpStatus: "ATTENDING",
+        guestID: encodeGQLID(guest),
+        dietaryRestrictions: "shellfish",
+      },
+    },
+    ["eventActivity.id", encodeGQLID(activity)],
+    ["eventActivity.viewerRsvpStatus", "ATTENDING"],
+    [
+      "eventActivity.attending.edges",
+      [
+        {
+          node: {
+            id: encodeGQLID(guest),
+          },
+          dietaryRestrictions: "shellfish",
+        },
+      ],
+    ],
+  );
 });
