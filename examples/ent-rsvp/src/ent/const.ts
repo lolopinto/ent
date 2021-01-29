@@ -3,6 +3,8 @@
 export enum NodeType {
   // Address is the node type for the Address object. Used to identify this node in edges and other places.
   Address = "address",
+  // AuthCode is the node type for the AuthCode object. Used to identify this node in edges and other places.
+  AuthCode = "authCode",
   // Event is the node type for the Event object. Used to identify this node in edges and other places.
   Event = "event",
   // EventActivity is the node type for the EventActivity object. Used to identify this node in edges and other places.
@@ -20,6 +22,7 @@ export enum NodeType {
 export function getNodeTypeValues() {
   return [
     NodeType.Address,
+    NodeType.AuthCode,
     NodeType.Event,
     NodeType.EventActivity,
     NodeType.Guest,

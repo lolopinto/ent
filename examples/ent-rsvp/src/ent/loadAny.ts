@@ -11,6 +11,7 @@ import {
 } from "@lolopinto/ent";
 import {
   Address,
+  AuthCode,
   Event,
   EventActivity,
   Guest,
@@ -39,6 +40,8 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
   switch (type) {
     case NodeType.Address:
       return Address.loaderOptions();
+    case NodeType.AuthCode:
+      return AuthCode.loaderOptions();
     case NodeType.Event:
       return Event.loaderOptions();
     case NodeType.EventActivity:

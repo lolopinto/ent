@@ -2,6 +2,7 @@
 
 export * from "src/ent/const";
 export * from "src/ent/generated/address_base";
+export * from "src/ent/generated/auth_code_base";
 export * from "src/ent/generated/event_activity_base";
 export * from "src/ent/generated/event_base";
 export * from "src/ent/generated/guest_base";
@@ -9,6 +10,7 @@ export * from "src/ent/generated/guest_data_base";
 export * from "src/ent/generated/guest_group_base";
 export * from "src/ent/generated/user_base";
 export * from "src/ent/address";
+export * from "src/ent/auth_code";
 export * from "src/ent/event";
 export * from "src/ent/event_activity";
 export * from "src/ent/guest";

@@ -26,6 +26,7 @@ import {
   EdgeType,
   NodeType,
   EventActivity,
+  AuthCode,
   GuestData,
   Event,
   GuestGroup,
@@ -211,6 +212,19 @@ export class GuestBase {
       id2,
       context: this.viewer.context,
     });
+  }
+
+  async loadAuthCodes(): Promise<AuthCode[]> {
+    let map = await loadEntsFromClause(
+      this.viewer,
+      query.Eq("guest_id", this.id),
+      AuthCode.loaderOptions(),
+    );
+    let results: AuthCode[] = [];
+    map.forEach((ent) => {
+      results.push(ent);
+    });
+    return results;
   }
 
   async loadGuestData(): Promise<GuestData[]> {
