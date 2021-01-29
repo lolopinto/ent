@@ -5,7 +5,6 @@ import {
   loadEdgeForID2,
   LoadEntOptions,
   loadEnt,
-  AssocEdge,
 } from "./ent";
 import { Context } from "./context";
 

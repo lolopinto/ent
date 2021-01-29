@@ -586,11 +586,13 @@ func processCustomFields(cd *customData, s *gqlSchema) error {
 			// create new obj
 			obj = &objectType{
 				GQLType: "GraphQLObjectType",
-				TSType:  fmt.Sprintf("GraphQLEdge<%s>", nodeName),
-				Node:    nodeName,
+				// needed to reference the edge
+				TSType: fmt.Sprintf("GraphQLEdge<%s>", nodeName),
+				Node:   nodeName,
 			}
 			s.customEdges[nodeName] = obj
-			instance = "edge.edge" // special case. what we wanna use is later not here
+			// the edge property of GraphQLEdge is where the data is
+			instance = "edge.edge"
 		} else {
 			return fmt.Errorf("can't find %s node that has custom fields", nodeName)
 		}
@@ -650,7 +652,8 @@ func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance
 		if err != nil {
 			return nil, err
 		}
-		// TODO we're dropping data here this is wrong...
+		// TODO we're dropping ImportPath here this is wrong...
+		// this is assuming it's all GraphQL or something that has already been included
 		for _, imp := range imps {
 			cfgArg.Imports = append(cfgArg.Imports, imp.Type)
 		}
@@ -669,19 +672,12 @@ func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance
 		}
 		break
 
-	case Function:
+	case Function, AsyncFunction:
+		gqlField.HasAsyncModifier = field.FieldType == AsyncFunction
 		gqlField.HasResolveFunction = true
 		gqlField.FunctionContents = []string{
 			fmt.Sprintf("return %s.%s(%s);", instance, field.FunctionName, strings.Join(args, ",")),
 		}
-		break
-	case AsyncFunction:
-		gqlField.HasAsyncModifier = true
-		gqlField.HasResolveFunction = true
-		gqlField.FunctionContents = []string{
-			fmt.Sprintf("return %s.%s(%s);", instance, field.FunctionName, strings.Join(args, ",")),
-		}
-
 		break
 	}
 

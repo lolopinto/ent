@@ -80,14 +80,13 @@ type customData struct {
 }
 
 type CustomItem struct {
-	Name               string       `json:"name"`
-	Type               string       `json:"type"`
-	Nullable           NullableItem `json:"nullable"`
-	List               bool         `json:"list"`
-	IsContextArg       bool         `json:"isContextArg"`
-	TSType             *string      `json:"tsType"`
-	imports            []*fileImport
-	importsInitialized bool
+	Name         string       `json:"name"`
+	Type         string       `json:"type"`
+	Nullable     NullableItem `json:"nullable"`
+	List         bool         `json:"list"`
+	IsContextArg bool         `json:"isContextArg"`
+	TSType       *string      `json:"tsType"`
+	imports      []*fileImport
 }
 
 func (item *CustomItem) addImportImpl(imps ...string) {

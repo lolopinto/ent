@@ -393,7 +393,6 @@ test("custom edge fields", async () => {
   const conn = new GraphQLConnectionType("CustomEdge", eventType);
 
   const length = (m: GraphQLFieldMap<any, any>) => {
-    //    console.log(m);
     let count = 0;
     for (let k in m) {
       count++;
