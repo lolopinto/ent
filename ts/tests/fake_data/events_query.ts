@@ -1,4 +1,4 @@
-import { Viewer } from "../../src/core/ent";
+import { AssocEdge, Viewer } from "../../src/core/ent";
 import { BaseEdgeQuery, EdgeQuerySource } from "../../src/core/query";
 import { FakeUser } from "./fake_user";
 import { EdgeType, FakeEvent } from "./internal";
@@ -11,9 +11,19 @@ interface EventsDestQuery {
   queryMaybe(): EventToMaybeQuery;
 }
 
-export class EventToAttendeesQuery extends BaseEdgeQuery<FakeEvent, FakeUser> {
+export class EventToAttendeesQuery extends BaseEdgeQuery<
+  FakeEvent,
+  FakeUser,
+  AssocEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
-    super(viewer, src, EdgeType.EventToAttendees, FakeUser.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.EventToAttendees,
+      FakeUser.loaderOptions(),
+      AssocEdge,
+    );
   }
 
   static query(
@@ -24,9 +34,19 @@ export class EventToAttendeesQuery extends BaseEdgeQuery<FakeEvent, FakeUser> {
   }
 }
 
-export class EventToInvitedQuery extends BaseEdgeQuery<FakeEvent, FakeUser> {
+export class EventToInvitedQuery extends BaseEdgeQuery<
+  FakeEvent,
+  FakeUser,
+  AssocEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
-    super(viewer, src, EdgeType.EventToInvited, FakeUser.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.EventToInvited,
+      FakeUser.loaderOptions(),
+      AssocEdge,
+    );
   }
 
   static query(
@@ -37,9 +57,19 @@ export class EventToInvitedQuery extends BaseEdgeQuery<FakeEvent, FakeUser> {
   }
 }
 
-export class EventToDeclinedQuery extends BaseEdgeQuery<FakeEvent, FakeUser> {
+export class EventToDeclinedQuery extends BaseEdgeQuery<
+  FakeEvent,
+  FakeUser,
+  AssocEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
-    super(viewer, src, EdgeType.EventToDeclined, FakeUser.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.EventToDeclined,
+      FakeUser.loaderOptions(),
+      AssocEdge,
+    );
   }
 
   static query(
@@ -50,9 +80,19 @@ export class EventToDeclinedQuery extends BaseEdgeQuery<FakeEvent, FakeUser> {
   }
 }
 
-export class EventToMaybeQuery extends BaseEdgeQuery<FakeEvent, FakeUser> {
+export class EventToMaybeQuery extends BaseEdgeQuery<
+  FakeEvent,
+  FakeUser,
+  AssocEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
-    super(viewer, src, EdgeType.EventToMaybe, FakeUser.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.EventToMaybe,
+      FakeUser.loaderOptions(),
+      AssocEdge,
+    );
   }
 
   static query(
@@ -63,9 +103,19 @@ export class EventToMaybeQuery extends BaseEdgeQuery<FakeEvent, FakeUser> {
   }
 }
 
-export class EventToHostsQuery extends BaseEdgeQuery<FakeEvent, FakeUser> {
+export class EventToHostsQuery extends BaseEdgeQuery<
+  FakeEvent,
+  FakeUser,
+  AssocEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<FakeEvent>) {
-    super(viewer, src, EdgeType.EventToHosts, FakeUser.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.EventToHosts,
+      FakeUser.loaderOptions(),
+      AssocEdge,
+    );
   }
 
   static query(

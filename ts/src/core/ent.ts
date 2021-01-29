@@ -1045,11 +1045,19 @@ export type EdgeQueryableDataOptions = Partial<
   Pick<QueryableDataOptions, "limit" | "orderby" | "clause">
 >;
 
+export interface AssocEdgeConstructor<T extends AssocEdge> {
+  new (row: Data): T;
+}
+
 interface loadEdgesOptions {
   id1: ID;
   edgeType: string;
   context?: Context;
   queryOptions?: EdgeQueryableDataOptions;
+}
+
+interface loadCustomEdgesOptions<T extends AssocEdge> extends loadEdgesOptions {
+  ctr: AssocEdgeConstructor<T>;
 }
 
 export const DefaultLimit = 1000;
@@ -1069,6 +1077,12 @@ export function defaultEdgeQueryOptions(
 export async function loadEdges(
   options: loadEdgesOptions,
 ): Promise<AssocEdge[]> {
+  return loadCustomEdges({ ...options, ctr: AssocEdge });
+}
+
+export async function loadCustomEdges<T extends AssocEdge>(
+  options: loadCustomEdgesOptions<T>,
+): Promise<T[]> {
   const { id1, edgeType, context } = options;
   const edgeData = await loadEdgeData(edgeType);
   if (!edgeData) {
@@ -1089,7 +1103,7 @@ export async function loadEdges(
     context,
   });
   return rows.map((row) => {
-    return new AssocEdge(row);
+    return new options.ctr(row);
   });
 }
 
@@ -1120,7 +1134,11 @@ export async function loadUniqueNode<T extends Ent>(
   edgeType: string,
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
-  const edge = await loadUniqueEdge({ id1, edgeType, context: viewer.context });
+  const edge = await loadUniqueEdge({
+    id1,
+    edgeType,
+    context: viewer.context,
+  });
   if (!edge) {
     return null;
   }
@@ -1165,7 +1183,11 @@ export async function loadNodesByEdge<T extends Ent>(
   options: LoadEntOptions<T>,
 ): Promise<T[]> {
   // load edges
-  const rows = await loadEdges({ id1, edgeType, context: viewer.context });
+  const rows = await loadEdges({
+    id1,
+    edgeType,
+    context: viewer.context,
+  });
 
   // extract id2s
   const ids = rows.map((row) => row.id2);

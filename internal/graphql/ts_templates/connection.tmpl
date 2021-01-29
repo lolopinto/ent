@@ -1,15 +1,38 @@
 {{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLInputObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo" "GraphQLInputFieldConfigMap" "GraphQLBoolean" }}
 {{reserveImport .Package.PackagePath "ID" "RequestContext" }}
-{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLEdgeType" "GraphQLConnectionType" }}
+{{reserveImport .Package.GraphQLPackagePath "GraphQLTime" "GraphQLEdgeType" "GraphQLConnectionType" "GraphQLEdge"}}
 
+{{$conn := .Connection}}
+{{$baseObj := .BaseObj}}
 {{/* import types that we may need e.g. UserType, ContactType, etc */}}
-{{ range .Imports -}} 
+{{ range $conn.Imports -}} 
   {{reserveImport .ImportPath .Type}}
 {{ end -}}
 
-export const {{ printf "%sType" .Edge.GetGraphQLConnectionName}} = () => {
+export const {{ printf "%sType" $conn.Edge.GetGraphQLConnectionName}} = () => {
   return new {{useImport "GraphQLConnectionType"}}(
-   "{{.Edge.TsEdgeConst}}",
-   {{useImport .NodeType }},
+   "{{$conn.Edge.TsEdgeConst}}",
+   {{useImport $conn.NodeType -}},
+   {{ $obj := .CustomObject -}}
+   {{ if $obj -}}
+    {{ range $obj.Imports -}} 
+      {{if .ImportPath -}}
+        {{reserveImport .ImportPath .Type -}}
+      {{end -}}
+    {{ end -}}
+    {{ range $obj.DefaultImports -}}    
+      {{if .ImportPath -}}
+        {{reserveDefaultImport .ImportPath .Type -}}
+      {{end -}}
+    {{ end -}}
+    {
+      fields: (): {{useImport "GraphQLFieldConfigMap"}}<
+        {{useImport "GraphQLEdge"}}<{{useImport "EventActivityToAttendingEdge"}}>,
+        {{useImport "RequestContext"}}
+      > => ({
+        {{ template "field.tmpl" (dict "Base" $baseObj "Node" $obj "NodeInstance" "edge") -}}
+      }),
+    },
+   {{ end -}}
   );
 }

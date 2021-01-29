@@ -383,6 +383,10 @@ func (e *AssociationEdge) TsEdgeQueryName() string {
 	return fmt.Sprintf("%sQuery", e.TsEdgeConst())
 }
 
+func (e *AssociationEdge) TsEdgeQueryEdgeName() string {
+	return fmt.Sprintf("%sEdge", e.TsEdgeConst())
+}
+
 func (e *AssociationEdge) GetGraphQLConnectionName() string {
 	// we need a unique graphql name
 	// there's nothing stopping multiple edges of different types having the same connection and then there'll be a conflict here

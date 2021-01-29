@@ -1,0 +1,31 @@
+{{$gqlNode := .Node -}}
+{{$baseObj := .Base -}}
+{{$nodeInstance := .NodeInstance -}}
+
+{{ range $field := $gqlNode.Fields -}}
+  {{$field.Name}}: {
+    {{range $import := $field.AllImports -}}
+      {{ if $baseObj.ForeignImport $import.Type -}}
+        {{$ignore := useImport $import.Type -}}
+      {{end -}}
+    {{end -}}
+    type: {{$field.FieldType}},
+    {{ template "render_args.tmpl" (dict "Base" $baseObj "Args" $field.Args) -}}
+    {{if $field.ResolverMethod -}}
+      {{ if $baseObj.ForeignImport $field.ResolverMethod -}}
+        {{ $ignore := useImport $field.ResolverMethod -}}
+      {{end -}}
+      resolve: {{useImport $field.ResolverMethod}},
+    {{else if $field.HasResolveFunction -}}
+      {{if $field.HasAsyncModifier -}}
+        resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {}, context: {{useImport "RequestContext"}}) => {
+      {{ else -}}
+        resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {}, context: {{useImport "RequestContext"}}) => {
+      {{ end -}}
+        {{ range $field.FunctionContents -}}
+          {{.}}
+        {{ end -}}
+      },
+    {{end -}}
+  },
+{{end -}}

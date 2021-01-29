@@ -57,35 +57,8 @@
     {{ else -}}
       fields: (): {{useImport "GraphQLFieldConfigMap"}}<{{$gqlNode.TSType}}, {{useImport "RequestContext"}}> => ({
     {{ end -}}
-      {{/* TODO enum support e.g. account status */}} 
-      {{ range $field := $gqlNode.Fields -}}
-        {{$field.Name}}: {
-          {{range $import := $field.AllImports -}}
-            {{ if $baseObj.ForeignImport $import.Type -}}
-              {{$ignore := useImport $import.Type -}}
-            {{end -}}
-          {{end -}}
-          type: {{$field.FieldType}},
-          {{ template "render_args.tmpl" (dict "Base" $baseObj "Args" $field.Args) -}}
-          {{if $field.ResolverMethod -}}
-            {{ if $baseObj.ForeignImport $field.ResolverMethod -}}
-              {{ $ignore := useImport $field.ResolverMethod -}}
-            {{end -}}
-            resolve: {{useImport $field.ResolverMethod}},
-          {{else if $field.HasResolveFunction -}}
-            {{if $field.HasAsyncModifier -}}
-              resolve: async({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {}) => {
-            {{ else -}}
-              resolve: ({{$nodeInstance}}: {{$gqlNode.TSType}}, args: {}) => {
-            {{ end -}}
-              {{ range $field.FunctionContents -}}
-                {{.}}
-              {{ end -}}
-            },
-          {{end -}}
-        },
-      {{end -}}
-    }),
+      {{ template "field.tmpl" (dict "Base" $baseObj "Node" $gqlNode "NodeInstance" $nodeInstance) -}}
+      }),
     {{if .GQLInterfaces -}}
     interfaces: [
       {{range $interface := .GQLInterfaces -}}

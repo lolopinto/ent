@@ -1,5 +1,6 @@
 import { Pool } from "pg";
 import { IDViewer, LoggedOutViewer } from "../src/core/viewer";
+import { RequestContext } from "../src/core/context";
 import { AssocEdge } from "../src/core/ent";
 import { QueryRecorder } from "../src/testutils/db_mock";
 import { advanceBy } from "jest-date-mock";
@@ -12,6 +13,7 @@ import {
   UserToFriendsQuery,
   FakeEvent,
   EventToInvitedQuery,
+  UserToHostedEventsQuery,
 } from "./fake_data/";
 import {
   inputs,
@@ -21,7 +23,25 @@ import {
   createEdges,
   createTestEvent,
 } from "./fake_data/test_helpers";
-import { GraphQLEdgeConnection } from "../src/graphql/query/edge_connection";
+import {
+  GraphQLEdge,
+  GraphQLEdgeConnection,
+} from "../src/graphql/query/edge_connection";
+import { GraphQLConnectionType } from "../src/graphql/query/connection_type";
+import {
+  GraphQLObjectType,
+  GraphQLNonNull,
+  GraphQLID,
+  GraphQLSchema,
+  GraphQLString,
+  GraphQLFieldMap,
+  GraphQLFieldConfigMap,
+} from "graphql";
+import { GraphQLNodeInterface } from "../src/graphql/builtins/node";
+import {
+  expectQueryFromRoot,
+  queryRootConfig,
+} from "../src/testutils/ent-graphql-tests";
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
@@ -335,4 +355,113 @@ describe("not all ents visible", () => {
     await verify(2, 1, true, 16);
     await verify(2, 1, undefined, 17);
   });
+});
+
+test("custom edge fields", async () => {
+  let userType = new GraphQLObjectType({
+    name: "User",
+    fields: {
+      id: {
+        type: GraphQLNonNull(GraphQLID),
+      },
+      firstName: {
+        type: GraphQLString,
+      },
+      lastName: {
+        type: GraphQLString,
+      },
+    },
+    interfaces: [GraphQLNodeInterface],
+    isTypeOf(obj, _context: RequestContext) {
+      return obj instanceof FakeUser;
+    },
+  });
+
+  let eventType = new GraphQLObjectType({
+    name: "Event",
+    fields: {
+      id: {
+        type: GraphQLNonNull(GraphQLID),
+      },
+    },
+    interfaces: [GraphQLNodeInterface],
+    isTypeOf(obj, _context: RequestContext) {
+      return obj instanceof FakeEvent;
+    },
+  });
+
+  const conn = new GraphQLConnectionType("CustomEdge", eventType);
+
+  const length = (m: GraphQLFieldMap<any, any>) => {
+    let count = 0;
+    for (let k in m) {
+      count++;
+    }
+    return count;
+  };
+  const fields = conn.edgeType.getFields();
+  // default.
+  expect(length(fields)).toBe(2);
+  expect(fields["node"]).toBeDefined();
+  expect(fields["cursor"]).toBeDefined();
+
+  const conn2 = new GraphQLConnectionType("CustomEdge", eventType, {
+    fields: (): GraphQLFieldConfigMap<GraphQLEdge, RequestContext> => ({
+      bar: {
+        type: GraphQLString,
+        resolve() {
+          return "customEdgeData";
+        },
+      },
+    }),
+  });
+
+  const fields2 = conn2.edgeType.getFields();
+  expect(length(fields2)).toBe(3);
+  expect(fields2["bar"]).toBeDefined();
+  expect(fields2["node"]).toBeDefined();
+  expect(fields2["cursor"]).toBeDefined();
+
+  const user = await createTestUser();
+  const event = await createTestEvent(user);
+
+  let rootQuery = new GraphQLObjectType({
+    name: "RootQueryType",
+    fields: {
+      conn: {
+        type: conn2,
+        async resolve(_source, { id }, context: RequestContext) {
+          return new GraphQLEdgeConnection(
+            new IDViewer(user.id),
+            user,
+            UserToHostedEventsQuery,
+          );
+        },
+      },
+    },
+  });
+
+  let schema = new GraphQLSchema({
+    query: rootQuery,
+    types: [userType, eventType],
+  });
+
+  let cfg: queryRootConfig = {
+    schema: schema,
+    root: "conn",
+    viewer: new IDViewer(user.id),
+    args: {},
+  };
+
+  await expectQueryFromRoot(cfg, [
+    "edges",
+    [
+      {
+        node: {
+          id: event.id,
+        },
+        bar: "customEdgeData",
+      },
+    ],
+  ]);
 });
