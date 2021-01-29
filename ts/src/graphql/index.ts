@@ -14,7 +14,7 @@ export {
 
 export { GraphQLTime } from "./scalars/time";
 export { GraphQLPageInfo } from "./query/page_info";
-export { GraphQLEdgeConnection } from "./query/edge_connection";
+export { GraphQLEdge, GraphQLEdgeConnection } from "./query/edge_connection";
 export {
   GraphQLEdgeType,
   GraphQLConnectionType,
