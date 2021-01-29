@@ -2,6 +2,7 @@ import {
   Action,
   ActionOperation,
   BaseEntSchema,
+  BooleanType,
   Constraint,
   ConstraintType,
   Field,
@@ -15,6 +16,7 @@ export default class AuthCode extends BaseEntSchema {
     StringType({ name: "code" }),
     UUIDType({ name: "guestID", foreignKey: ["Guest", "ID"], unique: true }),
     EmailType({ name: "emailAddress" }),
+    BooleanType({ name: "sentCode", serverDefault: "FALSE" }),
   ];
 
   hideFromGraphQL = true;

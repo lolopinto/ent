@@ -17,6 +17,7 @@ export interface AuthCodeInput {
   code?: string;
   guestID?: ID | Builder<Guest>;
   emailAddress?: string;
+  sentCode?: boolean;
 }
 
 export interface AuthCodeAction extends Action<AuthCode> {
@@ -109,6 +110,7 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
     addField("code", fields.code);
     addField("guestID", fields.guestID);
     addField("emailAddress", fields.emailAddress);
+    addField("sentCode", fields.sentCode);
     return result;
   }
 

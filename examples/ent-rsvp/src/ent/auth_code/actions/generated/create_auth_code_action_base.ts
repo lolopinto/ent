@@ -23,6 +23,7 @@ export interface AuthCodeCreateInput {
   code: string;
   guestID: ID | Builder<Guest>;
   emailAddress: string;
+  sentCode?: boolean;
 }
 
 export class CreateAuthCodeActionBase implements Action<AuthCode> {

@@ -31,6 +31,7 @@ export class AuthCodeBase {
   readonly code: string;
   readonly guestID: ID;
   readonly emailAddress: string;
+  readonly sentCode: boolean;
 
   constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
@@ -41,6 +42,7 @@ export class AuthCodeBase {
     this.code = data.code;
     this.guestID = data.guest_id;
     this.emailAddress = data.email_address;
+    this.sentCode = data.sent_code;
   }
 
   // by default, we always deny and it's up to the ent
@@ -160,6 +162,7 @@ export class AuthCodeBase {
       "code",
       "guest_id",
       "email_address",
+      "sent_code",
     ];
   }
 
