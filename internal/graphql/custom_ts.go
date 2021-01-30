@@ -299,23 +299,21 @@ func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
 
 func (qfcg *queryFieldConfigBuilder) getTypeImports() []*fileImport {
 	if len(qfcg.field.Results) != 1 {
-		panic("INVALID")
+		panic("invalid number of results for custom field")
 	}
 	r := qfcg.field.Results[0]
-	if r.Nullable != "" {
-		// nullable
-		return []*fileImport{{Type: r.Type}}
-	}
-	// TODO these too...
-	return []*fileImport{
-		{
+	var ret []*fileImport
+	if r.Nullable == "" {
+		ret = append(ret, &fileImport{
 			Type:       "GraphQLNonNull",
 			ImportPath: "graphql",
-		},
-		{
-			Type: fmt.Sprintf("%sType", r.Type),
-		},
+		})
 	}
+	ret = append(ret, &fileImport{
+		Type: fmt.Sprintf("%sType", r.Type),
+		//		ImportPath is local here
+	})
+	return ret
 }
 
 func (qfcg *queryFieldConfigBuilder) getArgs() []*fieldConfigArg {
