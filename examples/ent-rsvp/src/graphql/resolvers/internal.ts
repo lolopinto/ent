@@ -14,3 +14,4 @@ export * from "src/graphql/resolvers/generated/event_activity/event_activity_to_
 export * from "src/graphql/resolvers/generated/guest/guest_to_attending_events_connection_type";
 export * from "src/graphql/resolvers/generated/guest/guest_to_declined_events_connection_type";
 export * from "src/graphql/resolvers/generated/guest_group/guest_group_to_invited_events_connection_type";
+export * from "src/graphql/resolvers/generated/viewer_type";
