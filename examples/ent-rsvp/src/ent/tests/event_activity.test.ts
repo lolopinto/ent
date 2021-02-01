@@ -1,20 +1,11 @@
 import {
-  Event,
-  User,
   EventActivity,
-  GuestGroup,
   GuestData,
   EventActivityToAttendingQuery,
 } from "src/ent";
-import { DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
-import CreateUserAction from "../user/actions/create_user_action";
-import { randomEmail } from "src/util/random";
-import CreateEventAction from "../event/actions/create_event_action";
+import { DB, IDViewer } from "@lolopinto/ent";
 import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
 import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
-import CreateGuestAction, {
-  GuestCreateInput,
-} from "../guest/actions/create_guest_action";
 import EventActivityAddInviteAction from "../event_activity/actions/event_activity_add_invite_action";
 import EventActivityRemoveInviteAction from "../event_activity/actions/event_activity_remove_invite_action";
 import { Guest } from "../guest";
@@ -22,43 +13,19 @@ import EditEventActivityRsvpStatusAction from "../event_activity/actions/edit_ev
 import { EventActivityRsvpStatusInput } from "../event_activity/actions/generated/edit_event_activity_rsvp_status_action_base";
 import { EventActivityRsvpStatus } from "../generated/event_activity_base";
 
+import {
+  createUser,
+  createEvent,
+  createActivity,
+  createActivityAndGroup,
+  createAndInvite,
+  createAndInvitePlusGuests,
+  createGuests,
+} from "src/testutils";
+
 afterAll(async () => {
   await DB.getInstance().endPool();
 });
-
-async function createUser() {
-  const user = await CreateUserAction.create(new LoggedOutViewer(), {
-    firstName: "Jon",
-    lastName: "Snow",
-    emailAddress: randomEmail(),
-  }).saveX();
-  expect(user).toBeInstanceOf(User);
-  return user;
-}
-
-async function createEvent() {
-  const user = await createUser();
-  const event = await CreateEventAction.create(new IDViewer(user.id), {
-    creatorID: user.id,
-    name: `${user.firstName}'s wedding`,
-  }).saveX();
-  expect(event).toBeInstanceOf(Event);
-  return event;
-}
-
-async function createActivity() {
-  const event = await createEvent();
-  const activity = await CreateEventActivityAction.create(
-    new IDViewer(event.creatorID),
-    {
-      startTime: new Date(),
-      location: "fun location",
-      name: "welcome dinner",
-      eventID: event.id,
-    },
-  ).saveX();
-  return activity;
-}
 
 describe("create event activity", () => {
   test("valid", async () => {
@@ -100,69 +67,6 @@ describe("load activity", () => {
     }
   });
 });
-
-type input = Pick<GuestCreateInput, "firstName" | "lastName" | "emailAddress">;
-
-const inputs: input[][] = [
-  [
-    {
-      firstName: "Robb",
-      lastName: "Stark",
-      emailAddress: randomEmail(),
-    },
-    {
-      firstName: "Talisa",
-      lastName: "Stark",
-      emailAddress: randomEmail(),
-    },
-  ],
-  [
-    {
-      firstName: "Catelyn",
-      lastName: "Stark",
-      emailAddress: randomEmail(),
-    },
-  ],
-  [
-    {
-      firstName: "Edmure",
-      lastName: "Tully",
-      emailAddress: randomEmail(),
-    },
-    {
-      firstName: "Roslyn",
-      lastName: "Frey",
-      emailAddress: randomEmail(),
-    },
-  ],
-];
-
-async function createActivityAndGroup(): Promise<[EventActivity, GuestGroup]> {
-  const activity = await createActivity();
-  const event = await activity.loadEventX();
-  const group = await CreateGuestGroupAction.create(event.viewer, {
-    invitationName: "people",
-    eventID: event.id,
-  }).saveX();
-
-  return [activity, group];
-}
-
-async function createAndInvite(): Promise<[EventActivity, GuestGroup]> {
-  const [activity, group] = await createActivityAndGroup();
-  const count = await activity.loadInvitesRawCountX();
-  expect(count).toBe(0);
-
-  const reloaded = await EventActivityAddInviteAction.saveXFromID(
-    activity.viewer,
-    activity.id,
-    group.id,
-  );
-  const newCount = await reloaded.loadInvitesRawCountX();
-  expect(newCount).toBe(1);
-
-  return [activity, group];
-}
 
 describe("invites", () => {
   test("invite guest group", async () => {
@@ -279,32 +183,6 @@ describe("invites", () => {
     }
   });
 });
-
-async function createAndInvitePlusGuests(
-  idx: number,
-): Promise<[EventActivity, Guest[]]> {
-  const [activity, group] = await createAndInvite();
-
-  // TODO need to create this when creating guest group
-  // so build on top of https://github.com/lolopinto/ent/pull/205
-
-  const guests = await createGuests(group, idx);
-
-  return [activity, guests];
-}
-
-async function createGuests(group: GuestGroup, idx: number): Promise<Guest[]> {
-  return await Promise.all(
-    inputs[idx].map(async (input) => {
-      return CreateGuestAction.create(group.viewer, {
-        ...input,
-        emailAddress: randomEmail(),
-        guestGroupID: group.id,
-        eventID: group.eventID,
-      }).saveX();
-    }),
-  );
-}
 
 describe("rsvps", () => {
   async function doRsvpForSelf(

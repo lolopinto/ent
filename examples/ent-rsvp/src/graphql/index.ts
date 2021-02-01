@@ -2,9 +2,38 @@ import express from "express";
 import { graphqlHTTP } from "express-graphql";
 import schema from "./schema";
 import { IncomingMessage, ServerResponse } from "http";
-import { buildContext } from "@lolopinto/ent/auth";
+import {
+  buildContext,
+  registerAuthHandler,
+  PassportStrategyHandler,
+} from "@lolopinto/ent/auth";
+import passport from "passport";
+import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
+import { IDViewer } from "@lolopinto/ent";
 
 let app = express();
+
+app.use(passport.initialize());
+
+registerAuthHandler(
+  "viewer",
+  new PassportStrategyHandler(
+    new JWTStrategy(
+      {
+        secretOrKey: "secret",
+        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      },
+      function(jwt_payload: {}, next) {
+        return next(null, jwt_payload["viewerID"].toString(), {});
+      },
+    ),
+    { session: false },
+    function(context, viewerID) {
+      // toViewer method
+      return new IDViewer(viewerID, { context });
+    },
+  ),
+);
 
 app.use(
   "/graphql",

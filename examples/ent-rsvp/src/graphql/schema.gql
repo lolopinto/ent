@@ -167,6 +167,7 @@ type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
   addressDelete(input: AddressDeleteInput!): AddressDeletePayload!
   addressEdit(input: AddressEditInput!): AddressEditPayload!
+  authGuest(input: AuthGuestInput!): AuthGuestPayload!
   eventActivityAddInvite(input: EventActivityAddInviteInput!): EventActivityAddInvitePayload!
   eventActivityCreate(input: EventActivityCreateInput!): EventActivityCreatePayload!
   eventActivityDelete(input: EventActivityDeleteInput!): EventActivityDeletePayload!
@@ -228,6 +229,16 @@ input AddressEditInput {
   apartment: String
   ownerID: ID
   ownerType: String
+}
+
+type AuthGuestPayload {
+  token: String!
+  viewer: Viewer!
+}
+
+input AuthGuestInput {
+  emailAddress: String!
+  code: String!
 }
 
 type EventActivityAddInvitePayload {
