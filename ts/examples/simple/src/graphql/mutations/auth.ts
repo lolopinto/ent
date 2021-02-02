@@ -7,11 +7,10 @@ import {
   gqlObjectType,
   encodeGQLID,
 } from "@lolopinto/ent/graphql";
-import { useAndAuth, LocalStrategy } from "@lolopinto/ent/auth";
+import { useAndVerifyAuth, useAndVerifyAuthJWT } from "@lolopinto/ent-passport";
 import { User } from "src/ent/";
-import { IDViewer, ID, RequestContext } from "@lolopinto/ent";
+import { ID, RequestContext } from "@lolopinto/ent";
 import { GraphQLID } from "graphql";
-import jwt from "jsonwebtoken";
 
 @gqlInputObjectType()
 // we're going to test exporting UserAuthInput types
@@ -33,9 +32,6 @@ class UserAuthJWTInput {
 
 @gqlObjectType()
 export class UserAuthPayload {
-  @gqlField()
-  token: string;
-
   @gqlField({ type: GraphQLID })
   viewerID: ID;
 }
@@ -57,30 +53,27 @@ export class AuthResolver {
     @gqlContextType() context: RequestContext,
     @gqlArg("input") input: UserAuthInput,
   ): Promise<UserAuthPayload> {
-    const viewer = await useAndAuth(
+    const viewer = await useAndVerifyAuth(
       context,
-      new LocalStrategy({
-        verifyFn: async () => {
-          const data = await User.validateEmailPassword(
-            input.emailAddress,
-            input.password,
-          );
-          if (!data) {
-            return null;
-          }
-          return new IDViewer(data.id, { context });
-        },
-      }),
+      async () => {
+        const data = await User.validateEmailPassword(
+          input.emailAddress,
+          input.password,
+        );
+        return data?.id;
+      },
+      User.loaderOptions(),
     );
-
-    if (!viewer || !viewer.viewerID) {
+    if (!viewer) {
       throw new Error("not the right credentials");
     }
-    const user = await User.loadX(viewer, viewer.viewerID);
+    const user = await viewer?.viewer();
+    if (!user) {
+      throw new Error("not the right credentials");
+    }
 
     return {
       viewerID: encodeGQLID(user),
-      token: "1",
     };
   }
 
@@ -89,51 +82,37 @@ export class AuthResolver {
     @gqlContextType() context: RequestContext,
     @gqlArg("input") input: UserAuthJWTInput,
   ): Promise<UserAuthJWTPayload> {
-    // TODO: auth locally with username/password
-    // get jwt, sign it return it
-    // and then use jwt to get viewer
-    // this is only done on login
-    // everywhere else we need a jwt thing that's registered and checked for every request
-
-    const viewer = await useAndAuth(
+    const [viewer, token] = await useAndVerifyAuthJWT(
       context,
-      new LocalStrategy({
-        verifyFn: async (_ctx?: RequestContext) => {
-          const data = await User.validateEmailPassword(
-            input.emailAddress,
-            input.password,
-          );
-          if (!data) {
-            return null;
-          }
-          return new IDViewer(data.id, { context });
+      async () => {
+        const data = await User.validateEmailPassword(
+          input.emailAddress,
+          input.password,
+        );
+        return data?.id;
+      },
+      {
+        secretOrKey: "secret",
+        signInOptions: {
+          algorithm: "HS256",
+          audience: "https://foo.com/website",
+          issuer: "https://foo.com",
+          expiresIn: "1h",
         },
-      }),
+      },
+      User.loaderOptions(),
       // don't store this in session since we're using JWT here
       {
         session: false,
       },
     );
-
-    if (!viewer?.viewerID) {
+    if (!viewer) {
       throw new Error("not the right credentials");
     }
-
-    const token = jwt.sign(
-      {
-        viewerID: viewer.viewerID,
-      },
-      "secret",
-      {
-        algorithm: "HS256",
-        audience: "https://foo.com/website",
-        issuer: "https://foo.com",
-        subject: viewer.viewerID.toString(),
-        expiresIn: "1h",
-      },
-    );
-    const user = await User.loadX(viewer, viewer.viewerID);
-
+    const user = await viewer?.viewer();
+    if (!user) {
+      throw new Error("not the right credentials");
+    }
     return {
       viewerID: encodeGQLID(user),
       token: token,

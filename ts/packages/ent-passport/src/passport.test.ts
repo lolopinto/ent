@@ -10,7 +10,7 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "@lolopinto/ent-graphql-tests";
-import { clearAuthHandlers, registerAuthHandler } from "@lolopinto/ent/auth";
+import { clearAuthHandlers } from "@lolopinto/ent/auth";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -27,8 +27,7 @@ import { useAndVerifyAuth, useAndVerifyAuthJWT } from "./passport";
 import { PassportStrategyHandler, PassportAuthHandler } from "./passport";
 import { Express } from "express";
 import supertest from "supertest";
-import passport from "passport";
-import session from "express-session";
+import jwt from "jsonwebtoken";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -225,22 +224,25 @@ interface User {
 }
 
 async function createUser(opts?: Partial<User>) {
-  return await createRowForTest({
-    tableName: "users",
-    fields: {
-      id: "1",
-      first_name: "Dany",
-      last_name: "Targaryen",
-      email_address: "dany@targaryen.com",
-      password: "12345678",
-      ...opts,
+  return await createRowForTest(
+    {
+      tableName: "users",
+      fields: {
+        id: "1",
+        first_name: "Dany",
+        last_name: "Targaryen",
+        email_address: "dany@targaryen.com",
+        password: "12345678",
+        ...opts,
+      },
     },
-  });
+    "RETURNING *",
+  );
 }
 
 describe("jwt", () => {
   test("logged in", async () => {
-    await createUser();
+    const user = await createUser();
 
     let jwtToken: string = "";
 
@@ -262,6 +264,10 @@ describe("jwt", () => {
       [
         "token",
         function(token) {
+          const decoded = jwt.decode(token);
+          expect(decoded).not.toBe(null);
+          expect(decoded!["viewerID"]).toBe(user?.id);
+
           jwtToken = token;
         },
       ],

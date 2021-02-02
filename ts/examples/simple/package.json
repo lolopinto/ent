@@ -31,6 +31,7 @@
   "dependencies": {
     "@lolopinto/ent": "0.0.61",
     "@lolopinto/ent-email": "0.0.1",
+    "@lolopinto/ent-passport": "0.0.1",
     "@lolopinto/ent-password": "0.0.2",
     "@lolopinto/ent-phonenumber": "0.0.1",
     "@types/express-session": "^1.17.0",
