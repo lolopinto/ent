@@ -4,7 +4,7 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "@lolopinto/ent-graphql-tests";
-import { ID, DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
+import { DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";

@@ -1,14 +1,29 @@
-// TODO this should be moved to ent-passport or something like that
 import passport, { AuthenticateOptions } from "passport";
-import { Auth, AuthViewer } from "./auth";
+import { Auth, AuthViewer } from "@lolopinto/ent/auth";
 import { IncomingMessage } from "http";
 import { Strategy } from "passport-strategy";
-import { RequestContext } from "../index";
-import { ID, Viewer } from "../core/ent";
-import { IDViewer } from "../core/viewer";
+import {
+  Ent,
+  ID,
+  loadEnt,
+  LoadEntOptions,
+  Viewer,
+  RequestContext,
+  IDViewer,
+} from "@lolopinto/ent";
+import { registerAuthHandler } from "@lolopinto/ent/auth";
+import {
+  ExtractJwt,
+  JwtFromRequestFunction,
+  StrategyOptions,
+  VerifyCallback,
+  Strategy as JWTStrategy,
+} from "passport-jwt";
+import jwt from "jsonwebtoken";
+import { Express } from "express";
 
 interface UserToViewerFunc {
-  (context: RequestContext, user: any): Viewer;
+  (context: RequestContext, user: any): Viewer | Promise<Viewer>;
 }
 
 export interface PassportAuthOptions {
@@ -54,22 +69,22 @@ export class PassportAuthHandler implements Auth {
     if (!user) {
       return null;
     }
-    return toViewer(context, user, this.options?.userToViewer);
+    return await toViewer(context, user, this.options?.userToViewer);
   }
 }
 
-function toViewer(
+async function toViewer(
   context: RequestContext,
   obj: any,
   userToViewer?: UserToViewerFunc,
-): Viewer {
+): Promise<Viewer> {
   //console.log("viewer", obj);
 
   if ((obj as Viewer).viewerID !== undefined) {
     return obj;
   }
   if (userToViewer) {
-    return userToViewer(context, obj);
+    return await userToViewer(context, obj);
   }
 
   throw new Error("cannot convert to Viewer");
@@ -77,6 +92,20 @@ function toViewer(
 
 // passportstrategyhandler
 // to be used for other requests when JWT is passed
+
+function defaultReqToViewer(loadOptions?: LoadEntOptions<Ent>) {
+  return async (context: RequestContext, viewerID: string | ID) => {
+    let ent: Ent | null = null;
+    if (loadOptions) {
+      ent = await loadEnt(
+        new IDViewer(viewerID, { context }),
+        viewerID,
+        loadOptions,
+      );
+    }
+    return new IDViewer(viewerID, { context, ent: ent });
+  };
+}
 
 export class PassportStrategyHandler implements Auth {
   constructor(
@@ -102,15 +131,60 @@ export class PassportStrategyHandler implements Auth {
       return null;
     }
 
-    const viewer = toViewer(context, viewerMaybe, this.reqToViewer);
+    const viewer = await toViewer(context, viewerMaybe, this.reqToViewer);
     // needed to pass viewer to auth
     await context.authViewer(viewer);
     return viewer;
   }
+
+  static jwtHandler(opts: JwtHandlerOptions) {
+    let strategyOpts: StrategyOptions;
+    if (opts.strategyOpts) {
+      strategyOpts = opts.strategyOpts;
+    } else {
+      if (!opts.secretOrKey) {
+        throw new Error(
+          `must provide secretOrKey if strategyOpts not proivded`,
+        );
+      }
+      strategyOpts = {
+        secretOrKey: opts.secretOrKey,
+        jwtFromRequest:
+          opts.jwtFromRequest || ExtractJwt.fromAuthHeaderAsBearerToken(),
+      };
+    }
+
+    let reqToViewer: UserToViewerFunc =
+      opts.reqToViewer || defaultReqToViewer(opts.loaderOptions);
+
+    return new PassportStrategyHandler(
+      new JWTStrategy(strategyOpts, function(jwt_payload: {}, next) {
+        return next(null, jwt_payload["viewerID"].toString(), {});
+      }),
+      opts.authOptions,
+      reqToViewer,
+    );
+  }
+
+  static testInitFunction(opts: JwtHandlerOptions) {
+    return (app: Express) => {
+      app.use(passport.initialize());
+      registerAuthHandler("viewer", PassportStrategyHandler.jwtHandler(opts));
+    };
+  }
+}
+
+interface JwtHandlerOptions {
+  loaderOptions?: LoadEntOptions<Ent>;
+  authOptions?: AuthenticateOptions;
+  verifyFn?: VerifyCallback; // if not provided, a default one which takes viewerID from payload is used
+  strategyOpts?: StrategyOptions;
+  secretOrKey?: string | Buffer; // if strategyOpts not provided, can just pass this and we'd pass this along with ExtractJwt.fromAuthHeaderAsBearerToken to take it from request
+  jwtFromRequest?: JwtFromRequestFunction;
+  reqToViewer?: UserToViewerFunc;
 }
 
 interface LocalStrategyOptions {
-  // hmmmmmmmmmm how to pass Context all the way down?
   verifyFn: (context?: RequestContext) => AuthViewer | Promise<AuthViewer>;
 }
 
@@ -141,7 +215,7 @@ function promisifiedAuth(
   options?: AuthenticateOptions,
 ) {
   return new Promise<AuthViewer>((resolve, reject) => {
-    const done = (err: Error, user: Viewer | null | undefined, _info: any) => {
+    const done = (err: Error, user: Viewer | null, _info: any) => {
       //console.log("done", err, user);
       if (err) {
         reject(err);
@@ -208,4 +282,70 @@ export async function useAndAuth(
 
   // console.log("useAndAuth", viewer);
   return viewer;
+}
+
+export async function useAndVerifyAuth(
+  context: RequestContext,
+  verifyFn: () => Promise<ID | null>,
+  options?: AuthenticateOptions,
+  loadOptions?: LoadEntOptions<Ent>,
+): Promise<AuthViewer> {
+  const strategy = new LocalStrategy({
+    verifyFn: async (ctx: RequestContext) => {
+      const viewerID = await verifyFn();
+      if (!viewerID) {
+        return null;
+      }
+      const reqToViewer = defaultReqToViewer(loadOptions);
+      return reqToViewer(ctx, viewerID);
+    },
+  });
+
+  return await useAndAuth(context, strategy, options);
+}
+
+interface JWTOptions {
+  viewerToPayload?: (v: Viewer) => string | object | Buffer;
+  secretOrKey: jwt.Secret;
+  signInOptions?: jwt.SignOptions;
+}
+
+export function defaultViewerToPayload(viewer: Viewer): {} {
+  if (!viewer.viewerID) {
+    return {};
+  }
+  return { viewerID: viewer.viewerID.toString() };
+}
+
+export async function useAndVerifyAuthJWT(
+  context: RequestContext,
+  verifyFn: () => Promise<ID | null>,
+  jwtOptions: JWTOptions,
+  options?: AuthenticateOptions,
+  loadOptions?: LoadEntOptions<Ent>,
+): Promise<[AuthViewer, string]> {
+  const viewer = await useAndVerifyAuth(
+    context,
+    verifyFn,
+    options,
+    loadOptions,
+  );
+
+  if (!viewer || !viewer.viewerID) {
+    throw new Error(`invalid login credentials`);
+  }
+
+  let payload: string | object | Buffer;
+  if (jwtOptions.viewerToPayload) {
+    payload = jwtOptions.viewerToPayload(viewer);
+  } else {
+    payload = defaultViewerToPayload(viewer);
+  }
+
+  const token = jwt.sign(payload, jwtOptions.secretOrKey, {
+    // may eventually want to provide way to customize subject but not right now
+    subject: viewer.viewerID.toString(),
+    ...jwtOptions.signInOptions,
+  });
+  return [viewer, token];
 }

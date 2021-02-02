@@ -45,7 +45,8 @@
   },
   "peerDependencies": {
     "@lolopinto/ent": "0.0.13",
-    "graphql": "^15.3.0"
+    "graphql": "^15.3.0",
+    "jest-expect-message": "^1.0.2"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
