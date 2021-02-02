@@ -10,6 +10,7 @@ import {
   Viewer,
   RequestContext,
   IDViewer,
+  loadEntX,
 } from "@lolopinto/ent";
 import { registerAuthHandler } from "@lolopinto/ent/auth";
 import {
@@ -21,6 +22,7 @@ import {
 } from "passport-jwt";
 import jwt from "jsonwebtoken";
 import { Express } from "express";
+import session from "express-session";
 
 interface UserToViewerFunc {
   (context: RequestContext, user: any): Viewer | Promise<Viewer>;
@@ -28,8 +30,9 @@ interface UserToViewerFunc {
 
 export interface PassportAuthOptions {
   serializeViewer?(viewer: Viewer): unknown;
-  deserializeViewer?(id: unknown): Viewer;
-  userToViewer: UserToViewerFunc;
+  deserializeViewer?(id: unknown): Promise<Viewer> | Viewer;
+  userToViewer?: UserToViewerFunc;
+  loadOptions?: LoadEntOptions<Ent>; // helpful when userToViewer not passed
 }
 
 // should this be renamed to session?
@@ -55,7 +58,15 @@ export class PassportAuthHandler implements Auth {
     passport.deserializeUser(function(id: unknown, done) {
       let deserializeUser = that.options?.deserializeViewer;
       if (!deserializeUser) {
-        deserializeUser = (id: ID) => {
+        deserializeUser = async (id: ID) => {
+          if (that.options?.loadOptions) {
+            let ent = await loadEntX(
+              new IDViewer(id, { context }),
+              id,
+              that.options.loadOptions,
+            );
+            return new IDViewer(id, { context, ent });
+          }
           return new IDViewer({ viewerID: id, context });
         };
       }
@@ -63,13 +74,25 @@ export class PassportAuthHandler implements Auth {
       done(null, deserializeUser(id));
     });
 
-    //console.log("passport auth handler");
     let user = context.request["user"];
-    //console.log("req.user", user);
     if (!user) {
       return null;
     }
-    return await toViewer(context, user, this.options?.userToViewer);
+    let userr = await user;
+    return await toViewer(context, userr, this.options?.userToViewer);
+  }
+
+  static testInitSessionBasedFunction(secret: string) {
+    return (app: Express) => {
+      app.use(
+        session({
+          secret: secret,
+        }),
+      );
+      app.use(passport.initialize());
+      app.use(passport.session());
+      registerAuthHandler("viewer", new PassportAuthHandler());
+    };
   }
 }
 
@@ -78,8 +101,6 @@ async function toViewer(
   obj: any,
   userToViewer?: UserToViewerFunc,
 ): Promise<Viewer> {
-  //console.log("viewer", obj);
-
   if ((obj as Viewer).viewerID !== undefined) {
     return obj;
   }
@@ -166,7 +187,7 @@ export class PassportStrategyHandler implements Auth {
     );
   }
 
-  static testInitFunction(opts: JwtHandlerOptions) {
+  static testInitJWTFunction(opts: JwtHandlerOptions) {
     return (app: Express) => {
       app.use(passport.initialize());
       registerAuthHandler("viewer", PassportStrategyHandler.jwtHandler(opts));
@@ -270,7 +291,6 @@ export async function useAndAuth(
   passport.use(strategy);
   let viewer = await promisifiedAuth(context, strategy, options);
 
-  //console.log("useAndAuth viewer", viewer);
   if (!viewer) {
     return viewer;
   }
@@ -287,8 +307,8 @@ export async function useAndAuth(
 export async function useAndVerifyAuth(
   context: RequestContext,
   verifyFn: () => Promise<ID | null>,
-  options?: AuthenticateOptions,
   loadOptions?: LoadEntOptions<Ent>,
+  options?: AuthenticateOptions,
 ): Promise<AuthViewer> {
   const strategy = new LocalStrategy({
     verifyFn: async (ctx: RequestContext) => {
@@ -297,7 +317,8 @@ export async function useAndVerifyAuth(
         return null;
       }
       const reqToViewer = defaultReqToViewer(loadOptions);
-      return reqToViewer(ctx, viewerID);
+      const v = await reqToViewer(ctx, viewerID);
+      return v;
     },
   });
 
@@ -321,14 +342,14 @@ export async function useAndVerifyAuthJWT(
   context: RequestContext,
   verifyFn: () => Promise<ID | null>,
   jwtOptions: JWTOptions,
-  options?: AuthenticateOptions,
   loadOptions?: LoadEntOptions<Ent>,
+  options?: AuthenticateOptions,
 ): Promise<[AuthViewer, string]> {
   const viewer = await useAndVerifyAuth(
     context,
     verifyFn,
-    options,
     loadOptions,
+    options,
   );
 
   if (!viewer || !viewer.viewerID) {

@@ -10,7 +10,7 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "@lolopinto/ent-graphql-tests";
-import { clearAuthHandlers } from "@lolopinto/ent/auth";
+import { clearAuthHandlers, registerAuthHandler } from "@lolopinto/ent/auth";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -23,8 +23,12 @@ import { QueryRecorder } from "@lolopinto/ent/testutils/db_mock";
 import { createRowForTest } from "@lolopinto/ent/testutils/write";
 import { Pool } from "pg";
 import { loadRow, query, Ent } from "@lolopinto/ent";
-import { useAndVerifyAuthJWT } from "./passport";
-import { PassportStrategyHandler } from "./passport";
+import { useAndVerifyAuth, useAndVerifyAuthJWT } from "./passport";
+import { PassportStrategyHandler, PassportAuthHandler } from "./passport";
+import { Express } from "express";
+import supertest from "supertest";
+import passport from "passport";
+import session from "express-session";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -127,15 +131,48 @@ const authUserType: GraphQLFieldConfig<undefined, RequestContext, { args }> = {
       {
         secretOrKey: "secret",
       },
+      UserClass.loaderOptions(),
       {
         session: false,
       },
-      UserClass.loaderOptions(),
     );
     return {
       viewer,
       token,
     };
+  },
+};
+
+const authUserSessionType: GraphQLFieldConfig<
+  undefined,
+  RequestContext,
+  { args }
+> = {
+  args: {
+    emailAddress: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    password: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+  type: GraphQLNonNull(viewerType),
+  async resolve(_source, args, context) {
+    return await useAndVerifyAuth(
+      context,
+      async () => {
+        const row = await loadRow({
+          tableName: "users",
+          clause: query.And(
+            query.Eq("email_address", args["emailAddress"]),
+            query.Eq("password", args["password"]),
+          ),
+          fields: ["id"],
+        });
+        return row?.id;
+      },
+      UserClass.loaderOptions(),
+    );
   },
 };
 
@@ -151,6 +188,7 @@ const mutationType = new GraphQLObjectType({
   name: "MutationType",
   fields: {
     authUser: authUserType,
+    authUserSession: authUserSessionType,
   },
 });
 
@@ -200,92 +238,175 @@ async function createUser(opts?: Partial<User>) {
   });
 }
 
-test("logged in", async () => {
-  await createUser();
+describe("jwt", () => {
+  test("logged in", async () => {
+    await createUser();
 
-  let jwtToken: string = "";
+    let jwtToken: string = "";
 
-  const st = await expectMutation(
-    {
-      mutation: "authUser",
-      schema,
-      disableInputWrapping: true,
-      args: {
-        emailAddress: "dany@targaryen.com",
-        password: "12345678",
+    const st = await expectMutation(
+      {
+        mutation: "authUser",
+        schema,
+        disableInputWrapping: true,
+        args: {
+          emailAddress: "dany@targaryen.com",
+          password: "12345678",
+        },
+        init: PassportStrategyHandler.testInitJWTFunction({
+          secretOrKey: "secret",
+          loaderOptions: UserClass.loaderOptions(),
+        }),
       },
-      init: PassportStrategyHandler.testInitFunction({
-        secretOrKey: "secret",
-        loaderOptions: UserClass.loaderOptions(),
-      }),
-    },
-    ["viewer.user.id", "1"],
-    [
-      "token",
-      function(token) {
-        jwtToken = token;
+      ["viewer.user.id", "1"],
+      [
+        "token",
+        function(token) {
+          jwtToken = token;
+        },
+      ],
+    );
+
+    let headers = {};
+    if (jwtToken) {
+      headers["Authorization"] = `Bearer ${jwtToken}`;
+    }
+
+    // user is logged in
+    await expectQueryFromRoot(
+      {
+        root: "viewer",
+        schema,
+        args: {},
+        test: st,
+        headers: headers,
       },
-    ],
-  );
+      ["user.id", "1"],
+      ["user.emailAddress", "dany@targaryen.com"],
+    );
 
-  let headers = {};
-  if (jwtToken) {
-    headers["Authorization"] = `Bearer ${jwtToken}`;
-  }
+    // user still logged in without st since this is session-less
+    await expectQueryFromRoot(
+      {
+        root: "viewer",
+        schema,
+        args: {},
+        headers: headers,
+      },
+      ["user.id", "1"],
+    );
 
-  // user is logged in
-  await expectQueryFromRoot(
-    {
-      root: "viewer",
-      schema,
-      args: {},
-      test: st,
-      headers: headers,
-    },
-    ["user.id", "1"],
-    ["user.emailAddress", "dany@targaryen.com"],
-  );
+    // no headers, user logged out
+    await expectQueryFromRoot(
+      {
+        root: "viewer",
+        schema,
+        test: st,
+        args: {},
+        nullQueryPaths: ["user"],
+      },
+      ["user.id", null],
+    );
+  });
 
-  // user still logged in without st since this is session-less
-  await expectQueryFromRoot(
-    {
-      root: "viewer",
-      schema,
-      args: {},
-      headers: headers,
-    },
-    ["user.id", "1"],
-  );
-
-  // no headers, user logged out
-  await expectQueryFromRoot(
-    {
-      root: "viewer",
-      schema,
-      test: st,
-      args: {},
-      nullQueryPaths: ["user"],
-    },
-    ["user.id", null],
-  );
+  test("invalid credentials", async () => {
+    await expectMutation(
+      {
+        mutation: "authUser",
+        schema,
+        disableInputWrapping: true,
+        args: {
+          emailAddress: "dany@targaryen.com",
+          password: "12345678",
+        },
+        init: PassportStrategyHandler.testInitJWTFunction({
+          secretOrKey: "secret",
+          loaderOptions: UserClass.loaderOptions(),
+        }),
+        expectedError: "invalid login credentials",
+      },
+      ["viewer.user.id", "1"],
+    );
+  });
 });
 
-test("invalid credentials", async () => {
-  await expectMutation(
-    {
-      mutation: "authUser",
-      schema,
-      disableInputWrapping: true,
-      args: {
-        emailAddress: "dany@targaryen.com",
-        password: "12345678",
+describe("session based", () => {
+  test("logged in", async () => {
+    await createUser();
+
+    const st = await expectMutation(
+      {
+        // pass a function that takes a server that keeps track of cookies etc
+        // and use that for this request
+        test: (app: Express) => {
+          return supertest.agent(app);
+        },
+        mutation: "authUserSession",
+        schema,
+        disableInputWrapping: true,
+        args: {
+          emailAddress: "dany@targaryen.com",
+          password: "12345678",
+        },
+        //        init: PassportAuthHandler.testInitSessionBasedFunction("secret"),
+        init: (app: Express) => {
+          app.use(
+            session({
+              secret: "secret",
+            }),
+          );
+          app.use(passport.initialize());
+          app.use(passport.session());
+          registerAuthHandler(
+            "viewer",
+            new PassportAuthHandler({
+              loadOptions: UserClass.loaderOptions(),
+            }),
+          );
+        },
       },
-      init: PassportStrategyHandler.testInitFunction({
-        secretOrKey: "secret",
-        loaderOptions: UserClass.loaderOptions(),
-      }),
-      expectedError: "invalid login credentials",
-    },
-    ["viewer.user.id", "1"],
-  );
+      ["user.id", "1"],
+    );
+
+    // resend with authed server
+    // user is still logged in
+    await expectQueryFromRoot(
+      {
+        root: "viewer",
+        schema,
+        args: {},
+        test: st,
+      },
+      ["user.id", "1"],
+      ["user.emailAddress", "dany@targaryen.com"],
+    );
+
+    // user logged out if not attached to server
+    await expectQueryFromRoot(
+      {
+        root: "viewer",
+        schema,
+        args: {},
+        nullQueryPaths: ["user"],
+      },
+      ["user.id", null],
+    );
+  });
+
+  test("invalid credentials", async () => {
+    await expectMutation(
+      {
+        mutation: "authUser",
+        schema,
+        disableInputWrapping: true,
+        args: {
+          emailAddress: "dany@targaryen.com",
+          password: "12345678",
+        },
+        init: PassportAuthHandler.testInitSessionBasedFunction("secret"),
+        expectedError: "invalid login credentials",
+      },
+      ["viewer.user.id", null],
+    );
+  });
 });
