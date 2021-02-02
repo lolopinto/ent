@@ -163,23 +163,27 @@ func (item *CustomItem) getImports(s *gqlSchema) ([]*fileImport, error) {
 		item.addGQLImport(typ)
 	} else {
 		_, ok := s.nodes[item.Type]
-		if ok {
-			item.addImport(
-				&fileImport{
-					Type:       fmt.Sprintf("%sType", item.Type),
-					ImportPath: codepath.GetImportPathForExternalGQLFile(),
-				})
-			//				s.nodes[resultre]
-			// now we need to figure out where this is from e.g.
-			// result.Type a native thing e.g. User so getUserType
-			// TODO need to add it to DefaultImport for the entire file...
-			// e.g. getImportPathForNode
-			// or in cd.Classes and figure that out for what the path should be...
-			//				imports = append(imports, fmt.Sprintf("%sType", result.Type))
-			//				spew.Dump(result.Type + " needs to be added to import for file...")
-		} else {
-			return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
+		if !ok {
+			// class name different from node Name so check
+			_, ok := s.customData.Objects[item.Type]
+			if !ok {
+				return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
+			}
 		}
+		// TODO need to fix GQLViewerType / ViewerType weirdness here
+		item.addImport(
+			&fileImport{
+				Type:       fmt.Sprintf("%sType", item.Type),
+				ImportPath: codepath.GetImportPathForExternalGQLFile(),
+			})
+		//				s.nodes[resultre]
+		// now we need to figure out where this is from e.g.
+		// result.Type a native thing e.g. User so getUserType
+		// TODO need to add it to DefaultImport for the entire file...
+		// e.g. getImportPathForNode
+		// or in cd.Classes and figure that out for what the path should be...
+		//				imports = append(imports, fmt.Sprintf("%sType", result.Type))
+		//				spew.Dump(result.Type + " needs to be added to import for file...")
 	}
 
 	return item.imports, nil
