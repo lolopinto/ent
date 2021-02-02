@@ -82,7 +82,10 @@ export class PassportAuthHandler implements Auth {
     return await toViewer(context, userr, this.options?.userToViewer);
   }
 
-  static testInitSessionBasedFunction(secret: string) {
+  static testInitSessionBasedFunction(
+    secret: string,
+    options?: PassportAuthOptions,
+  ) {
     return (app: Express) => {
       app.use(
         session({
@@ -91,7 +94,7 @@ export class PassportAuthHandler implements Auth {
       );
       app.use(passport.initialize());
       app.use(passport.session());
-      registerAuthHandler("viewer", new PassportAuthHandler());
+      registerAuthHandler("viewer", new PassportAuthHandler(options));
     };
   }
 }

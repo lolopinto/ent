@@ -348,22 +348,9 @@ describe("session based", () => {
           emailAddress: "dany@targaryen.com",
           password: "12345678",
         },
-        //        init: PassportAuthHandler.testInitSessionBasedFunction("secret"),
-        init: (app: Express) => {
-          app.use(
-            session({
-              secret: "secret",
-            }),
-          );
-          app.use(passport.initialize());
-          app.use(passport.session());
-          registerAuthHandler(
-            "viewer",
-            new PassportAuthHandler({
-              loadOptions: UserClass.loaderOptions(),
-            }),
-          );
-        },
+        init: PassportAuthHandler.testInitSessionBasedFunction("secret", {
+          loadOptions: UserClass.loaderOptions(),
+        }),
       },
       ["user.id", "1"],
     );
