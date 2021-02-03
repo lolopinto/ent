@@ -1,5 +1,4 @@
-import { ID, Ent, Viewer, LoadEntOptions, Data } from "./../src/core/ent";
-import * as clause from "./../src/core/clause";
+import { ID, Ent, Viewer, LoadEntOptions, Data } from "./ent";
 import {
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
@@ -14,12 +13,12 @@ import {
   PrivacyPolicy,
   AllowIfEntIsVisiblePolicy,
   DenyIfEntIsVisiblePolicy,
-} from "./../src/core/privacy";
+} from "./privacy";
 
-import { LoggedOutViewer, IDViewer } from "./../src/core/viewer";
+import { LoggedOutViewer, IDViewer } from "./viewer";
 import { Pool } from "pg";
-import { QueryRecorder } from "../src/testutils/db_mock";
-import { createRowForTest } from "../src/testutils/write";
+import { QueryRecorder } from "../testutils/db_mock";
+import { createRowForTest } from "../testutils/write";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

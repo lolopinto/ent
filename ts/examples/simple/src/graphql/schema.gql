@@ -148,11 +148,11 @@ type EventToMaybeEdge implements Edge {
 }
 
 enum EventRsvpStatus {
-  INVITED
-  ATTENDING
   DECLINED
   MAYBE
-  CANRSVP
+  INVITED
+  ATTENDING
+  CAN_RSVP
 }
 
 type UserToDeclinedEventsConnection implements Connection {
@@ -391,7 +391,6 @@ input PhoneNumberEditInput {
 }
 
 type UserAuthPayload {
-  token: String!
   viewerID: ID!
 }
 

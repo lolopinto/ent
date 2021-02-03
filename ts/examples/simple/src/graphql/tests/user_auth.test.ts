@@ -10,12 +10,12 @@ import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import { randomEmail, random, randomPhoneNumber } from "src/util/random";
-import { clearAuthHandlers, registerAuthHandler } from "@lolopinto/ent/auth";
+import { clearAuthHandlers } from "@lolopinto/ent/auth";
 import { User } from "src/ent/";
 import passport from "passport";
 import session from "express-session";
 import { Express } from "express";
-import { PassportAuthHandler } from "@lolopinto/ent/auth";
+import { PassportAuthHandler } from "@lolopinto/ent-passport";
 import supertest from "supertest";
 
 // TODO we need something that does this by default for all tests
@@ -78,7 +78,6 @@ test("wrong login credentials", async () => {
       },
       expectedError: /not the right credentials/,
     },
-    ["token", null],
     ["viewerID", null],
   );
 });
@@ -98,16 +97,9 @@ test("right credentials", async () => {
       test: (app: Express) => {
         return supertest.agent(app);
       },
-      init: (app: Express) => {
-        app.use(
-          session({
-            secret: "secret",
-          }),
-        );
-        app.use(passport.initialize());
-        app.use(passport.session());
-        registerAuthHandler("viewer", new PassportAuthHandler());
-      },
+      init: PassportAuthHandler.testInitSessionBasedFunction("secret", {
+        loadOptions: User.loaderOptions(),
+      }),
       mutation: "userAuth",
       schema,
       args: {
@@ -115,7 +107,6 @@ test("right credentials", async () => {
         password: pw,
       },
     },
-    ["token", "1"],
     ["viewerID", encodeGQLID(user)],
   );
 

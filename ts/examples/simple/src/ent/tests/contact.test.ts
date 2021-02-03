@@ -70,7 +70,7 @@ test("create contacts", async () => {
     if (includeSelf) {
       expLength++;
       // include the self created contact from account creation
-      inputs.unshift({ firstName: "Jon", lastName: "Snow" });
+      inputs.push({ firstName: "Jon", lastName: "Snow" });
     }
     expect(contacts.length).toBe(expLength);
     let idx = 0;
@@ -100,6 +100,7 @@ test("create contacts", async () => {
 
   // viewer can load their own contacts
   const loadedContacts = await user.loadContacts();
+  // TODO need to figure out order here. previously self was first. now it's last
   verifyContacts(loadedContacts, true);
 
   // ygritte can't see jon snow's contacts

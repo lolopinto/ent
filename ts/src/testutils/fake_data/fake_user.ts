@@ -6,23 +6,19 @@ import {
   loadEnt,
   loadEntX,
   LoadEntOptions,
-} from "../../src/core/ent";
+} from "../../core/ent";
 import {
   AllowIfViewerRule,
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
   PrivacyPolicy,
   AllowIfConditionAppliesRule,
-} from "../../src/core/privacy";
-import {
-  BuilderSchema,
-  SimpleAction,
-  SimpleBuilder,
-} from "../../src/testutils/builder";
-import { Field, StringType, BaseEntSchema } from "../../src/schema";
+} from "../../core/privacy";
+import { BuilderSchema, SimpleAction } from "../builder";
+import { Field, StringType, BaseEntSchema } from "../../schema";
 import { EdgeType } from "./internal";
 import { NodeType } from "./const";
-import { IDViewer, IDViewerOptions } from "../../src/core/viewer";
+import { IDViewer, IDViewerOptions } from "../../core/viewer";
 
 interface TokenOptions extends IDViewerOptions {
   tokens?: {};
