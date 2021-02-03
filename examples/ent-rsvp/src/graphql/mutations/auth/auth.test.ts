@@ -1,4 +1,4 @@
-import { DB, IDViewer } from "@lolopinto/ent";
+import { DB } from "@lolopinto/ent";
 import {
   expectMutation,
   expectQueryFromRoot,
@@ -7,12 +7,9 @@ import { createAndInvitePlusGuests } from "src/testutils";
 import schema from "src/graphql/schema";
 import { AuthCode } from "src/ent/auth_code";
 import { encodeGQLID } from "@lolopinto/ent/graphql";
-import { PassportStrategyHandler } from "@lolopinto/ent/auth";
-import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
-import passport from "passport";
-import { Express } from "express";
-import { registerAuthHandler } from "@lolopinto/ent/auth";
+import { PassportStrategyHandler } from "@lolopinto/ent-passport";
 import supertest from "supertest";
+import { Guest } from "src/ent";
 
 afterAll(async () => {
   await DB.getInstance().endPool();
@@ -50,28 +47,13 @@ test("log guest in", async () => {
         emailAddress: code.emailAddress,
         code: code.code,
       },
-      init: (app: Express) => {
-        app.use(passport.initialize());
-        registerAuthHandler(
-          "viewer",
-          new PassportStrategyHandler(
-            new JWTStrategy(
-              {
-                secretOrKey: "secret",
-                jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-              },
-              function(jwt_payload: {}, next) {
-                return next(
-                  null,
-                  new IDViewer(jwt_payload["viewerID"].toString()),
-                  {},
-                );
-              },
-            ),
-            { session: false },
-          ),
-        );
-      },
+      init: PassportStrategyHandler.testInitJWTFunction({
+        secretOrKey: "secret",
+        loaderOptions: Guest.loaderOptions(),
+        authOptions: {
+          session: false,
+        },
+      }),
     },
     // guest is returned as viewer
     ["viewer.guest.id", encodeGQLID(guest)],

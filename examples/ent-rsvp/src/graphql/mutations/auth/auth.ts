@@ -1,12 +1,4 @@
-import {
-  ID,
-  IDViewer,
-  loadEntFromClause,
-  loadRows,
-  RequestContext,
-  loadRow,
-  query,
-} from "@lolopinto/ent";
+import { RequestContext, loadRow, query } from "@lolopinto/ent";
 import {
   gqlContextType,
   gqlArg,
@@ -16,8 +8,7 @@ import {
   gqlObjectType,
 } from "@lolopinto/ent/graphql";
 import { Guest } from "src/ent";
-import { LocalStrategy, useAndAuth } from "@lolopinto/ent/auth";
-import jwt from "jsonwebtoken";
+import { useAndVerifyAuthJWT } from "@lolopinto/ent-passport";
 import { GQLViewer } from "../../resolvers/viewer";
 
 @gqlInputObjectType()
@@ -43,49 +34,35 @@ export class AuthGuestResolver {
     @gqlContextType() context: RequestContext,
     @gqlArg("input") input: AuthGuestInput,
   ): Promise<AuthGuestPayload> {
-    const viewer = await useAndAuth(
+    const [viewer, token] = await useAndVerifyAuthJWT(
       context,
-      new LocalStrategy({
-        verifyFn: async () => {
-          // TODO make this easier
-          const row = await loadRow({
-            tableName: "auth_codes",
-            clause: query.And(
-              query.Eq("email_address", input.emailAddress),
-              query.Eq("code", input.code),
-            ),
-            fields: ["id", "guest_id"],
-          });
-          if (!row) {
-            return null;
-          }
-          const guest = await Guest.loadX(
-            new IDViewer(row.guest_id, { context }),
-            row.guest_id,
-          );
-          return guest.viewer;
+      async () => {
+        // TODO make this easier
+        const row = await loadRow({
+          tableName: "auth_codes",
+          clause: query.And(
+            query.Eq("email_address", input.emailAddress),
+            query.Eq("code", input.code),
+          ),
+          fields: ["guest_id"],
+        });
+        return row?.guest_id;
+      },
+      {
+        secretOrKey: "secret",
+        signInOptions: {
+          algorithm: "HS256",
+          expiresIn: "24h",
         },
-      }),
+      },
+      Guest.loaderOptions(),
       {
         session: false,
       },
     );
-    if (!viewer || !viewer.viewerID) {
+    if (!viewer) {
       throw new Error(`could not log user in with given credentials`);
     }
-
-    const token = jwt.sign(
-      {
-        viewerID: viewer.viewerID,
-      },
-      "secret",
-      {
-        algorithm: "HS256",
-        subject: viewer.viewerID.toString(),
-        expiresIn: "24h",
-      },
-    );
-
     return {
       viewer: new GQLViewer(viewer),
       token: token,
