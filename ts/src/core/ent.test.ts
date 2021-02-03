@@ -10,7 +10,14 @@ import {
   getEdgeTypeInGroup,
   loadCustomEdges,
   loadEdges,
-} from "../core/ent";
+  ID,
+  Ent,
+  Data,
+  Viewer,
+  loadDerivedEnt,
+  loadDerivedEntX,
+} from "./ent";
+import { PrivacyPolicy, AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -82,6 +89,59 @@ beforeEach(async () => {
   const edges = ["edge"];
   await createEdgeRows(["edge"]);
   QueryRecorder.clearQueries();
+});
+
+const loggedOutViewer = new LoggedOutViewer();
+
+class DerivedUser implements Ent {
+  id: ID;
+  accountID: string;
+  nodeType = "User";
+  privacyPolicy: PrivacyPolicy = {
+    rules: [AllowIfViewerRule, AlwaysDenyRule],
+  };
+  constructor(public viewer: Viewer, data: Data) {
+    this.id = data["id"];
+  }
+
+  static async load(v: Viewer, data: Data): Promise<DerivedUser | null> {
+    return loadDerivedEnt(v, data, DerivedUser);
+  }
+
+  static async loadX(v: Viewer, data: Data): Promise<DerivedUser> {
+    return loadDerivedEntX(v, data, DerivedUser);
+  }
+}
+
+describe("loadDerivedEnt", () => {
+  test("loggedout", async () => {
+    const user = await DerivedUser.load(loggedOutViewer, { id: "1" });
+    expect(user).toBe(null);
+  });
+
+  test("id viewer", async () => {
+    const user = await DerivedUser.load(new IDViewer("1"), { id: "1" });
+    expect(user).not.toBe(null);
+    expect(user?.id).toBe("1");
+  });
+});
+
+describe("loadEntX", () => {
+  test("loggedout", async () => {
+    try {
+      await DerivedUser.loadX(loggedOutViewer, { id: "1" });
+      fail("should not have gotten here");
+    } catch (e) {}
+  });
+
+  test("id viewer", async () => {
+    try {
+      const user = await DerivedUser.loadX(new IDViewer("1"), { id: "1" });
+      expect(user.id).toBe("1");
+    } catch (e) {
+      fail(e.message);
+    }
+  });
 });
 
 test("getEdgeTypeInGroup", async () => {

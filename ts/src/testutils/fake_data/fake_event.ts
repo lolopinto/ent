@@ -6,16 +6,16 @@ import {
   loadEnt,
   loadEntX,
   LoadEntOptions,
-} from "../../src/core/ent";
-import { AlwaysAllowRule, PrivacyPolicy } from "../../src/core/privacy";
-import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
+} from "../../core/ent";
+import { AlwaysAllowRule, PrivacyPolicy } from "../../core/privacy";
+import { BuilderSchema, SimpleBuilder } from "../builder";
 import {
   Field,
   StringType,
   BaseEntSchema,
   UUIDType,
   TimeType,
-} from "../../src/schema";
+} from "../../schema";
 import { NodeType } from "./const";
 
 export class FakeEvent implements Ent {
