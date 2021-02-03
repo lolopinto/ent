@@ -1,5 +1,5 @@
-import { AssocEdge, Viewer } from "../../src/core/ent";
-import { BaseEdgeQuery, EdgeQuerySource } from "../../src/core/query";
+import { AssocEdge, Viewer } from "../../core/ent";
+import { BaseEdgeQuery, EdgeQuerySource } from "../../core/query";
 import { FakeUser } from "./fake_user";
 import { EdgeType, FakeEvent } from "./internal";
 

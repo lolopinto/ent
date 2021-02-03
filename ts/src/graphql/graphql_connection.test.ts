@@ -1,9 +1,26 @@
 import { Pool } from "pg";
-import { IDViewer, LoggedOutViewer } from "../src/core/viewer";
-import { RequestContext } from "../src/core/context";
-import { AssocEdge } from "../src/core/ent";
-import { QueryRecorder } from "../src/testutils/db_mock";
+import { IDViewer, LoggedOutViewer } from "../core/viewer";
+import { RequestContext } from "../core/context";
+import { AssocEdge } from "../core/ent";
+import { QueryRecorder } from "../testutils/db_mock";
 import { advanceBy } from "jest-date-mock";
+
+import { GraphQLEdge, GraphQLEdgeConnection } from "./query/edge_connection";
+import { GraphQLConnectionType } from "./query/connection_type";
+import {
+  GraphQLObjectType,
+  GraphQLNonNull,
+  GraphQLID,
+  GraphQLSchema,
+  GraphQLString,
+  GraphQLFieldMap,
+  GraphQLFieldConfigMap,
+} from "graphql";
+import { GraphQLNodeInterface } from "./builtins/node";
+import {
+  expectQueryFromRoot,
+  queryRootConfig,
+} from "../testutils/ent-graphql-tests";
 import {
   FakeUser,
   UserToContactsQuery,
@@ -14,7 +31,7 @@ import {
   FakeEvent,
   EventToInvitedQuery,
   UserToHostedEventsQuery,
-} from "./fake_data/";
+} from "../testutils/fake_data/index";
 import {
   inputs,
   getUserInput,
@@ -22,26 +39,7 @@ import {
   createAllContacts,
   createEdges,
   createTestEvent,
-} from "./fake_data/test_helpers";
-import {
-  GraphQLEdge,
-  GraphQLEdgeConnection,
-} from "../src/graphql/query/edge_connection";
-import { GraphQLConnectionType } from "../src/graphql/query/connection_type";
-import {
-  GraphQLObjectType,
-  GraphQLNonNull,
-  GraphQLID,
-  GraphQLSchema,
-  GraphQLString,
-  GraphQLFieldMap,
-  GraphQLFieldConfigMap,
-} from "graphql";
-import { GraphQLNodeInterface } from "../src/graphql/builtins/node";
-import {
-  expectQueryFromRoot,
-  queryRootConfig,
-} from "../src/testutils/ent-graphql-tests";
+} from "../testutils/fake_data/test_helpers";
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
@@ -54,15 +52,18 @@ beforeEach(async () => {
 class TestConnection {
   private user: FakeUser;
   private contacts: FakeContact[];
-  conn: GraphQLEdgeConnection;
+  conn: GraphQLEdgeConnection<AssocEdge>;
   constructor(
     private ents: (contacts: FakeContact[]) => FakeContact[],
-    private filter?: (conn: GraphQLEdgeConnection, user: FakeUser) => void,
+    private filter?: (
+      conn: GraphQLEdgeConnection<AssocEdge>,
+      user: FakeUser,
+    ) => void,
   ) {}
 
   async beforeEach() {
     [this.user, this.contacts] = await createAllContacts();
-    this.conn = new GraphQLEdgeConnection(
+    this.conn = new GraphQLEdgeConnection<AssocEdge>(
       new IDViewer(this.user.id),
       this.user,
       UserToContactsQuery,
@@ -126,7 +127,7 @@ describe("no filters", () => {
 describe("filters. firstN", () => {
   const filter = new TestConnection(
     (contacts) => contacts.reverse().slice(0, 2),
-    (conn: GraphQLEdgeConnection) => {
+    (conn: GraphQLEdgeConnection<AssocEdge>) => {
       conn.first(2);
     },
   );
@@ -158,7 +159,7 @@ describe("filters. firstN + cursor", () => {
   const filter = new TestConnection(
     // get the next 2
     (contacts) => contacts.reverse().slice(2, 4),
-    (conn: GraphQLEdgeConnection, user: FakeUser) => {
+    (conn: GraphQLEdgeConnection<AssocEdge>, user: FakeUser) => {
       let rows = QueryRecorder.filterData("user_to_contacts_table", (row) => {
         return row.id1 === user.id;
       }).reverse(); // need to reverse
@@ -199,7 +200,7 @@ describe("filters. before  cursor", () => {
         // get 2, 3
         .slice(2, 4)
         .reverse(),
-    (conn: GraphQLEdgeConnection, user: FakeUser) => {
+    (conn: GraphQLEdgeConnection<AssocEdge>, user: FakeUser) => {
       let rows = QueryRecorder.filterData("user_to_contacts_table", (row) => {
         return row.id1 === user.id;
       }).reverse(); // need to reverse
@@ -238,7 +239,7 @@ describe("not all ents visible", () => {
   let user: FakeUser;
   let event: FakeEvent;
   let users: FakeUser[];
-  let conn: GraphQLEdgeConnection;
+  let conn: GraphQLEdgeConnection<AssocEdge>;
   let friendCount: number;
   // let's make it big. 20 people
   let friendsInput = [...inputs, ...inputs, ...inputs, ...inputs];
@@ -290,7 +291,7 @@ describe("not all ents visible", () => {
   });
 
   function resetConn() {
-    conn = new GraphQLEdgeConnection(
+    conn = new GraphQLEdgeConnection<AssocEdge>(
       new IDViewer(user.id),
       event,
       EventToInvitedQuery,
@@ -406,7 +407,10 @@ test("custom edge fields", async () => {
   expect(fields["cursor"]).toBeDefined();
 
   const conn2 = new GraphQLConnectionType("CustomEdge", eventType, {
-    fields: (): GraphQLFieldConfigMap<GraphQLEdge, RequestContext> => ({
+    fields: (): GraphQLFieldConfigMap<
+      GraphQLEdge<AssocEdge>,
+      RequestContext
+    > => ({
       bar: {
         type: GraphQLString,
         resolve() {
@@ -431,7 +435,7 @@ test("custom edge fields", async () => {
       conn: {
         type: conn2,
         async resolve(_source, { id }, context: RequestContext) {
-          return new GraphQLEdgeConnection(
+          return new GraphQLEdgeConnection<AssocEdge>(
             new IDViewer(user.id),
             user,
             UserToHostedEventsQuery,
