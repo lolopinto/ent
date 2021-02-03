@@ -81,7 +81,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -110,7 +110,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -139,7 +139,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -168,7 +168,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -197,7 +197,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -226,7 +226,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -237,7 +237,7 @@ export const UserType = new GraphQLObjectType({
     },
     selfContact: {
       type: ContactType,
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return user.loadSelfContact();
       },
     },
@@ -261,7 +261,7 @@ export const UserType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           user.viewer,
           user,
@@ -272,7 +272,7 @@ export const UserType = new GraphQLObjectType({
     },
     contacts: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return user.loadContacts();
       },
     },
@@ -281,37 +281,37 @@ export const UserType = new GraphQLObjectType({
     },
     bar: {
       type: GraphQLString,
-      resolve: (user: User, args: {}) => {
+      resolve: (user: User, args: {}, context: RequestContext) => {
         return user.getUserBar();
       },
     },
     contactSameDomain: {
       type: ContactType,
-      resolve: async (user: User, args: {}) => {
+      resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getFirstContactSameDomain();
       },
     },
     contactsSameDomain: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
-      resolve: async (user: User, args: {}) => {
+      resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getContactsSameDomain();
       },
     },
     contactsSameDomainNullable: {
       type: GraphQLList(GraphQLNonNull(ContactType)),
-      resolve: async (user: User, args: {}) => {
+      resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getContactsSameDomainNullable();
       },
     },
     contactsSameDomainNullableContents: {
       type: GraphQLNonNull(GraphQLList(ContactType)),
-      resolve: async (user: User, args: {}) => {
+      resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getContactsSameDomainNullableContents();
       },
     },
     contactsSameDomainNullableContentsAndList: {
       type: GraphQLList(ContactType),
-      resolve: async (user: User, args: {}) => {
+      resolve: async (user: User, args: {}, context: RequestContext) => {
         return user.getContactsSameDomainNullableContentsAndList();
       },
     },

@@ -18,12 +18,30 @@ import {
   UserToMaybeEventsQuery,
   UserToSelfContactQuery,
   UserToHostedEventsQuery,
+  UserToCreatedEventsEdge,
+  UserToDeclinedEventsEdge,
+  UserToEventsAttendingEdge,
+  UserToFriendsEdge,
+  UserToInvitedEventsEdge,
+  UserToMaybeEventsEdge,
+  UserToSelfContactEdge,
+  UserToHostedEventsEdge,
 } from "src/ent/internal";
 import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
 
-export class UserToCreatedEventsQueryBase extends BaseEdgeQuery<User, Event> {
+export class UserToCreatedEventsQueryBase extends BaseEdgeQuery<
+  User,
+  Event,
+  UserToCreatedEventsEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
-    super(viewer, src, EdgeType.UserToCreatedEvents, Event.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.UserToCreatedEvents,
+      Event.loaderOptions(),
+      UserToCreatedEventsEdge,
+    );
   }
 
   static query<T extends UserToCreatedEventsQueryBase>(
@@ -55,9 +73,19 @@ export class UserToCreatedEventsQueryBase extends BaseEdgeQuery<User, Event> {
   }
 }
 
-export class UserToDeclinedEventsQueryBase extends BaseEdgeQuery<User, Event> {
+export class UserToDeclinedEventsQueryBase extends BaseEdgeQuery<
+  User,
+  Event,
+  UserToDeclinedEventsEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
-    super(viewer, src, EdgeType.UserToDeclinedEvents, Event.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.UserToDeclinedEvents,
+      Event.loaderOptions(),
+      UserToDeclinedEventsEdge,
+    );
   }
 
   static query<T extends UserToDeclinedEventsQueryBase>(
@@ -89,9 +117,19 @@ export class UserToDeclinedEventsQueryBase extends BaseEdgeQuery<User, Event> {
   }
 }
 
-export class UserToEventsAttendingQueryBase extends BaseEdgeQuery<User, Event> {
+export class UserToEventsAttendingQueryBase extends BaseEdgeQuery<
+  User,
+  Event,
+  UserToEventsAttendingEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
-    super(viewer, src, EdgeType.UserToEventsAttending, Event.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.UserToEventsAttending,
+      Event.loaderOptions(),
+      UserToEventsAttendingEdge,
+    );
   }
 
   static query<T extends UserToEventsAttendingQueryBase>(
@@ -123,9 +161,19 @@ export class UserToEventsAttendingQueryBase extends BaseEdgeQuery<User, Event> {
   }
 }
 
-export class UserToFriendsQueryBase extends BaseEdgeQuery<User, User> {
+export class UserToFriendsQueryBase extends BaseEdgeQuery<
+  User,
+  User,
+  UserToFriendsEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
-    super(viewer, src, EdgeType.UserToFriends, User.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.UserToFriends,
+      User.loaderOptions(),
+      UserToFriendsEdge,
+    );
   }
 
   static query<T extends UserToFriendsQueryBase>(
@@ -169,9 +217,19 @@ export class UserToFriendsQueryBase extends BaseEdgeQuery<User, User> {
   }
 }
 
-export class UserToInvitedEventsQueryBase extends BaseEdgeQuery<User, Event> {
+export class UserToInvitedEventsQueryBase extends BaseEdgeQuery<
+  User,
+  Event,
+  UserToInvitedEventsEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
-    super(viewer, src, EdgeType.UserToInvitedEvents, Event.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.UserToInvitedEvents,
+      Event.loaderOptions(),
+      UserToInvitedEventsEdge,
+    );
   }
 
   static query<T extends UserToInvitedEventsQueryBase>(
@@ -203,9 +261,19 @@ export class UserToInvitedEventsQueryBase extends BaseEdgeQuery<User, Event> {
   }
 }
 
-export class UserToMaybeEventsQueryBase extends BaseEdgeQuery<User, Event> {
+export class UserToMaybeEventsQueryBase extends BaseEdgeQuery<
+  User,
+  Event,
+  UserToMaybeEventsEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
-    super(viewer, src, EdgeType.UserToMaybeEvents, Event.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.UserToMaybeEvents,
+      Event.loaderOptions(),
+      UserToMaybeEventsEdge,
+    );
   }
 
   static query<T extends UserToMaybeEventsQueryBase>(
@@ -237,9 +305,19 @@ export class UserToMaybeEventsQueryBase extends BaseEdgeQuery<User, Event> {
   }
 }
 
-export class UserToSelfContactQueryBase extends BaseEdgeQuery<User, Contact> {
+export class UserToSelfContactQueryBase extends BaseEdgeQuery<
+  User,
+  Contact,
+  UserToSelfContactEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
-    super(viewer, src, EdgeType.UserToSelfContact, Contact.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.UserToSelfContact,
+      Contact.loaderOptions(),
+      UserToSelfContactEdge,
+    );
   }
 
   static query<T extends UserToSelfContactQueryBase>(
@@ -251,9 +329,19 @@ export class UserToSelfContactQueryBase extends BaseEdgeQuery<User, Contact> {
   }
 }
 
-export class UserToHostedEventsQueryBase extends BaseEdgeQuery<User, Event> {
+export class UserToHostedEventsQueryBase extends BaseEdgeQuery<
+  User,
+  Event,
+  UserToHostedEventsEdge
+> {
   constructor(viewer: Viewer, src: EdgeQuerySource<User>) {
-    super(viewer, src, EdgeType.UserToHostedEvents, Event.loaderOptions());
+    super(
+      viewer,
+      src,
+      EdgeType.UserToHostedEvents,
+      Event.loaderOptions(),
+      UserToHostedEventsEdge,
+    );
   }
 
   static query<T extends UserToHostedEventsQueryBase>(

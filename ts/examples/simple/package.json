@@ -29,7 +29,7 @@
     "ts-jest": "^25.2.1"
   },
   "dependencies": {
-    "@lolopinto/ent": "0.0.61",
+    "@lolopinto/ent": "0.0.67",
     "@lolopinto/ent-email": "0.0.1",
     "@lolopinto/ent-passport": "0.0.1",
     "@lolopinto/ent-password": "0.0.2",

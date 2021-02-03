@@ -29,9 +29,6 @@ export const UserAuthInputType = new GraphQLInputObjectType({
 export const UserAuthPayloadType = new GraphQLObjectType({
   name: "UserAuthPayload",
   fields: (): GraphQLFieldConfigMap<UserAuthPayload, RequestContext> => ({
-    token: {
-      type: GraphQLNonNull(GraphQLString),
-    },
     viewerID: {
       type: GraphQLNonNull(GraphQLID),
     },
