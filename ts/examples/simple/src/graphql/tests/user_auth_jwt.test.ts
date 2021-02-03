@@ -4,19 +4,16 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "@lolopinto/ent-graphql-tests";
-import { ID, DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
+import { DB, LoggedOutViewer } from "@lolopinto/ent";
 import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import { randomEmail, random, randomPhoneNumber } from "src/util/random";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
 import { User } from "src/ent/";
-import passport from "passport";
 import { Express } from "express";
-import { registerAuthHandler } from "@lolopinto/ent/auth";
-import { PassportStrategyHandler } from "@lolopinto/ent/auth";
+import { PassportStrategyHandler } from "@lolopinto/ent-passport";
 import supertest from "supertest";
-import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
 import jwt from "jsonwebtoken";
 import { encodeGQLID } from "@lolopinto/ent/graphql";
 
@@ -78,7 +75,7 @@ test("wrong login credentials", async () => {
         emailAddress: user.emailAddress,
         password: random(),
       },
-      expectedError: /not the right credentials/,
+      expectedError: /invalid login credentials/,
     },
     ["token", null],
     ["viewerID", null],
@@ -101,28 +98,13 @@ test("right credentials", async () => {
       test: (app: Express) => {
         return supertest.agent(app);
       },
-      init: (app: Express) => {
-        app.use(passport.initialize());
-        registerAuthHandler(
-          "viewer",
-          new PassportStrategyHandler(
-            new JWTStrategy(
-              {
-                secretOrKey: "secret",
-                jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-              },
-              function(jwt_payload: {}, next) {
-                return next(
-                  null,
-                  new IDViewer(jwt_payload["viewerID"].toString()),
-                  {},
-                );
-              },
-            ),
-            { session: false },
-          ),
-        );
-      },
+      init: PassportStrategyHandler.testInitJWTFunction({
+        secretOrKey: "secret",
+        loaderOptions: User.loaderOptions(),
+        authOptions: {
+          session: false,
+        },
+      }),
       mutation: "userAuthJWT",
       schema,
       args: {
