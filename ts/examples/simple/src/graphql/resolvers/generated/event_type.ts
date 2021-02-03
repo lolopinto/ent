@@ -40,7 +40,7 @@ export const EventType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<Event, RequestContext> => ({
     creator: {
       type: UserType,
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return event.loadCreator();
       },
     },
@@ -59,7 +59,7 @@ export const EventType = new GraphQLObjectType({
     },
     eventLocation: {
       type: GraphQLNonNull(GraphQLString),
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return event.location;
       },
     },
@@ -83,7 +83,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -112,7 +112,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -141,7 +141,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -170,7 +170,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -199,7 +199,7 @@ export const EventType = new GraphQLObjectType({
           type: GraphQLString,
         },
       },
-      resolve: (event: Event, args: {}) => {
+      resolve: (event: Event, args: {}, context: RequestContext) => {
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
@@ -210,7 +210,7 @@ export const EventType = new GraphQLObjectType({
     },
     viewerRsvpStatus: {
       type: EventRsvpStatusType,
-      resolve: async (event: Event, args: {}) => {
+      resolve: async (event: Event, args: {}, context: RequestContext) => {
         const ret = await event.viewerRsvpStatus();
         return convertToGQLEnum(
           ret,

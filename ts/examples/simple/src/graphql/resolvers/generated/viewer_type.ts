@@ -17,13 +17,13 @@ export const GQLViewerType = new GraphQLObjectType({
   fields: (): GraphQLFieldConfigMap<GQLViewer, RequestContext> => ({
     viewerID: {
       type: GraphQLID,
-      resolve: async (obj: GQLViewer, args: {}) => {
+      resolve: async (obj: GQLViewer, args: {}, context: RequestContext) => {
         return obj.viewerID();
       },
     },
     user: {
       type: UserType,
-      resolve: async (obj: GQLViewer, args: {}) => {
+      resolve: async (obj: GQLViewer, args: {}, context: RequestContext) => {
         return obj.user();
       },
     },

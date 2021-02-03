@@ -78,7 +78,6 @@ test("wrong login credentials", async () => {
       },
       expectedError: /not the right credentials/,
     },
-    ["token", null],
     ["viewerID", null],
   );
 });
