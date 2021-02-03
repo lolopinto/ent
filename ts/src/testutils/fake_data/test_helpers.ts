@@ -1,9 +1,9 @@
 import { fail } from "assert";
 import { advanceBy } from "jest-date-mock";
-import { IDViewer, LoggedOutViewer } from "../../src/core/viewer";
-import { ID, AssocEdge, loadEdgeData } from "../../src/core/ent";
+import { IDViewer, LoggedOutViewer } from "../../core/viewer";
+import { ID, AssocEdge, loadEdgeData } from "../../core/ent";
 import { snakeCase } from "snake-case";
-import { createRowForTest } from "../../src/testutils/write";
+import { createRowForTest } from "../write";
 
 import {
   createUser,

@@ -1,9 +1,26 @@
 import { Pool } from "pg";
-import { IDViewer, LoggedOutViewer } from "../src/core/viewer";
-import { RequestContext } from "../src/core/context";
-import { AssocEdge } from "../src/core/ent";
-import { QueryRecorder } from "../src/testutils/db_mock";
+import { IDViewer, LoggedOutViewer } from "../core/viewer";
+import { RequestContext } from "../core/context";
+import { AssocEdge } from "../core/ent";
+import { QueryRecorder } from "../testutils/db_mock";
 import { advanceBy } from "jest-date-mock";
+
+import { GraphQLEdge, GraphQLEdgeConnection } from "./query/edge_connection";
+import { GraphQLConnectionType } from "./query/connection_type";
+import {
+  GraphQLObjectType,
+  GraphQLNonNull,
+  GraphQLID,
+  GraphQLSchema,
+  GraphQLString,
+  GraphQLFieldMap,
+  GraphQLFieldConfigMap,
+} from "graphql";
+import { GraphQLNodeInterface } from "./builtins/node";
+import {
+  expectQueryFromRoot,
+  queryRootConfig,
+} from "../testutils/ent-graphql-tests";
 import {
   FakeUser,
   UserToContactsQuery,
@@ -14,7 +31,7 @@ import {
   FakeEvent,
   EventToInvitedQuery,
   UserToHostedEventsQuery,
-} from "./fake_data/";
+} from "../testutils/fake_data/index";
 import {
   inputs,
   getUserInput,
@@ -22,26 +39,7 @@ import {
   createAllContacts,
   createEdges,
   createTestEvent,
-} from "./fake_data/test_helpers";
-import {
-  GraphQLEdge,
-  GraphQLEdgeConnection,
-} from "../src/graphql/query/edge_connection";
-import { GraphQLConnectionType } from "../src/graphql/query/connection_type";
-import {
-  GraphQLObjectType,
-  GraphQLNonNull,
-  GraphQLID,
-  GraphQLSchema,
-  GraphQLString,
-  GraphQLFieldMap,
-  GraphQLFieldConfigMap,
-} from "graphql";
-import { GraphQLNodeInterface } from "../src/graphql/builtins/node";
-import {
-  expectQueryFromRoot,
-  queryRootConfig,
-} from "../src/testutils/ent-graphql-tests";
+} from "../testutils/fake_data/test_helpers";
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 

@@ -1,15 +1,8 @@
 import { Pool } from "pg";
-import { QueryRecorder } from "../src/testutils/db_mock";
-import {
-  AssocEdge,
-  Data,
-  ID,
-  Ent,
-  Viewer,
-  DefaultLimit,
-} from "../src/core/ent";
-import { EdgeQuery, EdgeQueryCtr } from "../src/core/query";
-import { IDViewer, LoggedOutViewer } from "../src/core/viewer";
+import { QueryRecorder } from "../testutils/db_mock";
+import { AssocEdge, Data, ID, Ent, Viewer, DefaultLimit } from "./ent";
+import { EdgeQuery, EdgeQueryCtr } from "./query";
+import { IDViewer, LoggedOutViewer } from "./viewer";
 import { advanceBy } from "jest-date-mock";
 import {
   FakeUser,
@@ -24,7 +17,7 @@ import {
   NodeType,
   UserToCustomEdgeQuery,
   CustomEdge,
-} from "./fake_data/";
+} from "../testutils/fake_data/index";
 import {
   inputs,
   getUserInput,
@@ -34,7 +27,7 @@ import {
   verifyUserToContacts,
   createEdges,
   createTestEvent,
-} from "./fake_data/test_helpers";
+} from "../testutils/fake_data/test_helpers";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

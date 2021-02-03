@@ -9,27 +9,27 @@ import {
   UserToIncomingFriendRequestsQuery,
   UserToFriendRequestsQuery,
   ViewerWithAccessToken,
-} from "../fake_data";
+} from "../testutils/fake_data";
 import {
   createTestUser,
   createTestEvent,
   createEdges,
   createAllContacts,
-} from "../fake_data/test_helpers";
-import { QueryRecorder } from "../../src/testutils/db_mock";
+} from "../testutils/fake_data/test_helpers";
+import { QueryRecorder } from "../testutils/db_mock";
 import { Pool } from "pg";
-import { Viewer, ID, Ent, LoadEntOptions, loadEnt } from "../../src/core/ent";
+import { Viewer, ID, Ent, LoadEntOptions, loadEnt } from "../core/ent";
 import {
   NodeResolver,
   EntNodeResolver,
   resolveID,
   registerResolver,
   nodeIDEncoder,
-} from "../../src/graphql/node_resolver";
-import { IDViewer } from "../../src/core/viewer";
-import { RequestContext } from "../../src/core/context";
-import { SimpleBuilder } from "../../src/testutils/builder";
-import { WriteOperation } from "../../src/action";
+} from "./node_resolver";
+import { IDViewer } from "../core/viewer";
+import { RequestContext } from "../core/context";
+import { SimpleBuilder } from "../testutils/builder";
+import { WriteOperation } from "../action";
 import {
   GraphQLObjectType,
   GraphQLNonNull,
@@ -37,11 +37,11 @@ import {
   GraphQLSchema,
   GraphQLString,
 } from "graphql";
-import { GraphQLNodeInterface } from "../../src/graphql/builtins/node";
+import { GraphQLNodeInterface } from "./builtins/node";
 import {
   queryRootConfig,
   expectQueryFromRoot,
-} from "../../src/testutils/ent-graphql-tests";
+} from "../testutils/ent-graphql-tests";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);

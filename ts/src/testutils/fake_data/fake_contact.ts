@@ -6,14 +6,14 @@ import {
   loadEnt,
   loadEntX,
   LoadEntOptions,
-} from "../../src/core/ent";
+} from "../../core/ent";
 import {
   AllowIfViewerIsRule,
   AlwaysDenyRule,
   PrivacyPolicy,
-} from "../../src/core/privacy";
-import { BuilderSchema, SimpleBuilder } from "../../src/testutils/builder";
-import { Field, StringType, BaseEntSchema, UUIDType } from "../../src/schema";
+} from "../../core/privacy";
+import { BuilderSchema, SimpleBuilder } from "../builder";
+import { Field, StringType, BaseEntSchema, UUIDType } from "../../schema";
 import { NodeType } from "./const";
 
 export class FakeContact implements Ent {
