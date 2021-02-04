@@ -14,7 +14,7 @@ import {
   StringType,
   BaseEntSchema,
   UUIDType,
-  TimeType,
+  TimestampType,
 } from "../../schema";
 import { NodeType } from "./const";
 
@@ -80,10 +80,10 @@ export class FakeEventSchema extends BaseEntSchema
   implements BuilderSchema<FakeEvent> {
   ent = FakeEvent;
   fields: Field[] = [
-    TimeType({
+    TimestampType({
       name: "startTime",
     }),
-    TimeType({
+    TimestampType({
       name: "endTime",
       nullable: true,
     }),
