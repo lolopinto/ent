@@ -86,13 +86,6 @@ class UserWithTimestampNoFormatSchema implements Schema {
   ent = User;
 }
 
-let tdb: TempDB;
-beforeAll(async () => {
-  tdb = new TempDB();
-
-  await tdb.beforeAll();
-});
-
 async function createRegUsers() {
   await tdb.create(
     table(
@@ -118,6 +111,13 @@ async function createUsersWithTZ() {
     ),
   );
 }
+
+let tdb: TempDB;
+beforeAll(async () => {
+  tdb = new TempDB();
+
+  await tdb.beforeAll();
+});
 
 afterAll(async () => {
   await tdb.afterAll();
@@ -225,6 +225,33 @@ describe("timestamp", () => {
     // difference btw date not in db and value stored is within tz differences
     expectWithinTZ(createdAt, date);
     expectWithinTZ(updatedAt, date);
+  });
+
+  test("neither toISO formatting nor new parser", async () => {
+    const date = new Date();
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new UserWithTimestampNoFormatSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    // reset to default ts parser
+    const prevParser = pg.types.getTypeParser(1114);
+    pg.types.setTypeParser(1114, defaultTimestampParser);
+
+    const user = await builder.saveX();
+    const createdAt: Date = user.data.created_at;
+    const updatedAt: Date = user.data.updated_at;
+
+    // this is fine but depends on db and node server being in sync
+    // don't currently have a good way to test this so showing this in action
+    expect(Math.abs(createdAt.getTime() - date.getTime())).toBeLessThan(10);
+    expect(Math.abs(updatedAt.getTime() - date.getTime())).toBeLessThan(10);
+
+    // restore parser
+    pg.types.setTypeParser(1114, prevParser);
   });
 });
 
