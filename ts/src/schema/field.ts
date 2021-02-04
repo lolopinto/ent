@@ -211,12 +211,12 @@ export function StringType(options: StringOptions): StringField {
   return Object.assign(result, options);
 }
 
-export interface TimeOptions extends FieldOptions {
+export interface TimestampOptions extends FieldOptions {
   withTimezone?: boolean;
 }
 
-export class TimeField extends BaseField implements Field {
-  type: Type = { dbType: DBType.Time };
+export class TimestampField extends BaseField implements Field {
+  type: Type = { dbType: DBType.Timestamp };
   withTimezone?: boolean;
 
   format(val: Date): any {
@@ -228,8 +228,8 @@ export class TimeField extends BaseField implements Field {
   }
 }
 
-export function TimeType(options: TimeOptions): TimeField {
-  let result = new TimeField();
+export function TimestampType(options: TimestampOptions): TimestampField {
+  let result = new TimestampField();
   return Object.assign(result, options);
 }
 

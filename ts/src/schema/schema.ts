@@ -150,10 +150,14 @@ export enum DBType {
   Int = "Int",
   Float = "Float",
   String = "String",
-  Time = "Time",
+  //
+  Timestamp = "Timestamp",
   JSON = "JSON", // tuple, lists, everything else converges on this
   Enum = "Enum", // enum type in the database
   StringEnum = "StringEnum", // string type in the database
+  // TODO...
+  // Date = "Date",
+  // Time = "Time",
 }
 
 // represents the type of each field

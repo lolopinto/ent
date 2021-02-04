@@ -1,19 +1,18 @@
 import { Field, DBType, Pattern } from "./schema";
 import { v4 as uuidv4 } from "uuid";
-import { TimeType } from "./field";
+import { TimestampType } from "./field";
 
 let tsFields: Field[];
 tsFields = [
-  TimeType({
+  TimestampType({
     name: "createdAt",
     hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
       return new Date();
     },
-    // TODO need a withTimezone time
   }),
-  TimeType({
+  TimestampType({
     name: "updatedAt",
     hideFromGraphQL: true,
     disableUserEditable: true,

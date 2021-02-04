@@ -1,5 +1,5 @@
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { StringType, TimeType, UUIDType } from "../schema/field";
+import { StringType, TimestampType, UUIDType } from "../schema/field";
 import { BaseEntSchema, Schema, Field } from "../schema";
 import { User, SimpleBuilder } from "../testutils/builder";
 import {
@@ -34,14 +34,14 @@ class UserWithTimezoneSchema implements Schema {
     }),
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
-    TimeType({
+    TimestampType({
       name: "createdAt",
       defaultValueOnCreate: () => {
         return new Date();
       },
       withTimezone: true,
     }),
-    TimeType({
+    TimestampType({
       name: "updatedAt",
       defaultValueOnCreate: () => {
         return new Date();
@@ -67,7 +67,7 @@ class UserWithTimestampNoFormatSchema implements Schema {
     {
       name: "createdAt",
       type: {
-        dbType: DBType.Time,
+        dbType: DBType.Timestamp,
       },
       defaultValueOnCreate: () => {
         return new Date();
@@ -76,7 +76,7 @@ class UserWithTimestampNoFormatSchema implements Schema {
     {
       name: "updatedAt",
       type: {
-        dbType: DBType.Time,
+        dbType: DBType.Timestamp,
       },
       defaultValueOnCreate: () => {
         return new Date();
@@ -150,23 +150,6 @@ describe("timestamp", () => {
     // when retrieved, we get a timestamp that's close to what we expect.
     expect(Math.abs(createdAt.getTime() - date.getTime())).toBeLessThan(10);
     expect(Math.abs(updatedAt.getTime() - date.getTime())).toBeLessThan(10);
-
-    // console.log(date.toLocaleTimeString(), date.toUTCString(), date.getTime());
-    // console.log(
-    //   createdAt.toLocaleTimeString(),
-    //   createdAt.toUTCString(),
-    //   createdAt.getTime(),
-    //   createdAt.getTimezoneOffset(),
-    // );
-    // console.log(
-    //   updatedAt.toLocaleTimeString(),
-    //   updatedAt.toUTCString(),
-    //   updatedAt.getTime(),
-    // );
-    // console.log(
-    //   createdAt.getTime() - date.getTime(),
-    //   updatedAt.getTime() - date.getTime(),
-    // );
   });
 
   test("no setTypeParser", async () => {

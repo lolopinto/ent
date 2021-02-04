@@ -38,8 +38,8 @@ export {
   StringOptions,
   StringField,
   StringType,
-  TimeField,
-  TimeType,
+  TimestampField as TimeField,
+  TimestampType as TimeType,
   EnumField,
   EnumType,
 } from "./field";

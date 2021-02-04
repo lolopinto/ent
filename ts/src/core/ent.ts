@@ -253,15 +253,13 @@ export function createDataLoader(options: SelectDataOptions) {
     // TODO is there a better way of doing this?
     // context not needed because we're creating a loader which has its own cache which is being used here
     const nodes = await loadRows(rowOptions);
-    let result: Data[] = [];
-    ids.forEach((id) => {
+    let result: (Data | Error)[] = ids.map((id) => {
       for (const node of nodes) {
         if (node[col] === id) {
-          result.push(node);
-          return;
+          return node;
         }
       }
-      return null;
+      return new Error(`couldn't find data for row ${id}`);
     });
 
     return result;
