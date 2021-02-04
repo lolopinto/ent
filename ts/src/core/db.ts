@@ -1,4 +1,4 @@
-import { Pool, ClientConfig, PoolClient } from "pg";
+import pg, { Pool, ClientConfig, PoolClient } from "pg";
 import * as fs from "fs";
 import { safeLoad } from "js-yaml";
 
@@ -68,3 +68,13 @@ export default class DB {
     return DB.instance;
   }
 }
+
+export const defaultTimestampParser = pg.types.getTypeParser(1114);
+// add (UTC) timezone to it so it's parsed as UTC time correctly
+pg.types.setTypeParser(1114, function(val: string) {
+  let d = new Date(val + "Z");
+  return d;
+});
+
+// tell pg to treat this as UTC time when parsing and store it that way
+//(pg.defaults as any).parseInputDatesAsUTC = true;

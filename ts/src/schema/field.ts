@@ -211,11 +211,24 @@ export function StringType(options: StringOptions): StringField {
   return Object.assign(result, options);
 }
 
-export class TimeField extends BaseField implements Field {
-  type: Type = { dbType: DBType.Time };
+export interface TimeOptions extends FieldOptions {
+  withTimezone?: boolean;
 }
 
-export function TimeType(options: FieldOptions): TimeField {
+export class TimeField extends BaseField implements Field {
+  type: Type = { dbType: DBType.Time };
+  withTimezone?: boolean;
+
+  format(val: Date): any {
+    // don't format this way if with timeone
+    if (this.withTimezone) {
+      return val;
+    }
+    return val.toISOString();
+  }
+}
+
+export function TimeType(options: TimeOptions): TimeField {
   let result = new TimeField();
   return Object.assign(result, options);
 }

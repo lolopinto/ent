@@ -323,4 +323,4 @@ export class QueryRecorder {
 }
 
 // TODO
-process.env.DB_CONNECTION_STRING = "ss";
+process.env.DB_CONNECTION_STRING = "INVALID DATABASE";

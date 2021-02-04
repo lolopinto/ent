@@ -10,9 +10,6 @@ export {
   DBType,
   Type,
   FieldOptions,
-  Timestamps,
-  Node,
-  BaseEntSchema,
   SchemaConstructor,
   SchemaInputType,
   getFields,
@@ -26,6 +23,7 @@ export {
   requiredField,
   optionalField,
 } from "./schema";
+export { Timestamps, Node, BaseEntSchema } from "./base_schema";
 
 export {
   BaseField,
