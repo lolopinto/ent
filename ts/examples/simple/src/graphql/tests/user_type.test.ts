@@ -55,7 +55,7 @@ function getConfig(
   };
 }
 
-test.only("query user", async () => {
+test("query user", async () => {
   let user = await create({
     firstName: "ffirst",
   });
