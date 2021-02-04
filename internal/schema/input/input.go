@@ -45,7 +45,7 @@ const (
 	Int               = "Int"
 	Float             = "Float"
 	String            = "String"
-	Time              = "Time"
+	Timestamp         = "Timestamp"
 	JSON              = "JSON"
 	Enum              = "Enum"
 	StringEnum        = "StringEnum"
@@ -126,7 +126,7 @@ func (f *Field) GetEntType() enttype.EntType {
 			return &enttype.NullableStringType{}
 		}
 		return &enttype.StringType{}
-	case Time:
+	case Timestamp:
 		if f.Nullable {
 			return &enttype.NullableTimeType{}
 		}

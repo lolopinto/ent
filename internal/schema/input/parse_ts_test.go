@@ -319,14 +319,14 @@ func nodeFields() []field {
 		},
 		{
 			name:                    "createdAt",
-			dbType:                  input.Time,
+			dbType:                  input.Timestamp,
 			hideFromGraphQL:         true,
 			disableUserEditable:     true,
 			hasDefaultValueOnCreate: true,
 		},
 		{
 			name:                    "updatedAt",
-			dbType:                  input.Time,
+			dbType:                  input.Timestamp,
 			hideFromGraphQL:         true,
 			disableUserEditable:     true,
 			hasDefaultValueOnCreate: true,
