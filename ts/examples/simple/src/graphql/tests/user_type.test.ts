@@ -328,7 +328,7 @@ test("query user and nested object", async () => {
   );
 });
 
-test("load list", async () => {
+test.only("load list", async () => {
   let [user, user2, user3, user4, user5] = await Promise.all([
     create({
       firstName: "user1",
@@ -360,7 +360,9 @@ test("load list", async () => {
   await action.saveX();
 
   await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
+    getConfig(new IDViewer(user.id), user, {
+      debugMode: true,
+    }),
     ["id", encodeGQLID(user)],
     ["firstName", user.firstName],
     ["lastName", user.lastName],
