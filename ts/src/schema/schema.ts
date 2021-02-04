@@ -152,6 +152,7 @@ export enum DBType {
   String = "String",
   //
   Timestamp = "Timestamp",
+  Timestamptz = "Timestamptz",
   JSON = "JSON", // tuple, lists, everything else converges on this
   Enum = "Enum", // enum type in the database
   StringEnum = "StringEnum", // string type in the database

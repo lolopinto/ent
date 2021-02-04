@@ -219,6 +219,15 @@ export class TimestampField extends BaseField implements Field {
   type: Type = { dbType: DBType.Timestamp };
   withTimezone?: boolean;
 
+  constructor(options: TimestampOptions) {
+    super();
+    if (options.withTimezone) {
+      this.type = {
+        dbType: DBType.Timestamptz,
+      };
+    }
+  }
+
   format(val: Date): any {
     // don't format this way if with timeone
     if (this.withTimezone) {
@@ -229,7 +238,7 @@ export class TimestampField extends BaseField implements Field {
 }
 
 export function TimestampType(options: TimestampOptions): TimestampField {
-  let result = new TimestampField();
+  let result = new TimestampField(options);
   return Object.assign(result, options);
 }
 
