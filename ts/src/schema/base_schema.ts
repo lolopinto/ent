@@ -1,9 +1,8 @@
-import { Field, DBType, Pattern } from "./schema";
+import { Field, Pattern } from "./schema";
 import { v4 as uuidv4 } from "uuid";
-import { TimestampType } from "./field";
+import { TimestampType, UUIDType } from "./field";
 
-let tsFields: Field[];
-tsFields = [
+let tsFields: Field[] = [
   TimestampType({
     name: "createdAt",
     hideFromGraphQL: true,
@@ -30,20 +29,41 @@ export const Timestamps = {
   fields: tsFields,
 };
 
-let nodeFields: Field[] = [
-  {
-    name: "ID",
-    type: {
-      dbType: DBType.UUID,
-    },
-    primaryKey: true,
+let nodeField = UUIDType({
+  name: "ID",
+  primaryKey: true,
+  disableUserEditable: true,
+  defaultValueOnCreate: () => {
+    return uuidv4();
+  },
+});
+
+let nodeFields: Field[] = [nodeField].concat(tsFields);
+
+let nodeFieldsWithTZ: Field[] = [
+  nodeField,
+  TimestampType({
+    name: "createdAt",
+    hideFromGraphQL: true,
     disableUserEditable: true,
     defaultValueOnCreate: () => {
-      return uuidv4();
+      return new Date();
     },
-  },
+    withTimezone: true,
+  }),
+  TimestampType({
+    name: "updatedAt",
+    hideFromGraphQL: true,
+    disableUserEditable: true,
+    defaultValueOnCreate: () => {
+      return new Date();
+    },
+    defaultValueOnEdit: () => {
+      return new Date();
+    },
+    withTimezone: true,
+  }),
 ];
-nodeFields = nodeFields.concat(tsFields);
 
 // Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps)
 export const Node = {
@@ -54,4 +74,12 @@ export const Node = {
 // exists just to have less typing and easier for clients to implement
 export abstract class BaseEntSchema {
   patterns: Pattern[] = [Node];
+}
+
+export abstract class BaseEntSchemaWithTZ {
+  patterns: Pattern[] = [
+    {
+      fields: nodeFieldsWithTZ,
+    },
+  ];
 }

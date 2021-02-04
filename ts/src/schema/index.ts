@@ -23,7 +23,12 @@ export {
   requiredField,
   optionalField,
 } from "./schema";
-export { Timestamps, Node, BaseEntSchema } from "./base_schema";
+export {
+  Timestamps,
+  Node,
+  BaseEntSchema,
+  BaseEntSchemaWithTZ,
+} from "./base_schema";
 
 export {
   BaseField,

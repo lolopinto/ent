@@ -1,4 +1,4 @@
-import { LoggedOutViewer, IDViewer } from "../core/viewer";
+import { LoggedOutViewer } from "../core/viewer";
 import { StringType, TimestampType, UUIDType } from "../schema/field";
 import { BaseEntSchema, Schema, Field } from "../schema";
 import { User, SimpleBuilder } from "../testutils/builder";
@@ -13,7 +13,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import pg from "pg";
 import { defaultTimestampParser } from "../core/db";
-import { DBType } from "./schema";
+import { BaseEntSchemaWithTZ } from "./base_schema";
 
 class UserSchema extends BaseEntSchema {
   fields: Field[] = [
@@ -52,36 +52,11 @@ class UserWithTimezoneSchema implements Schema {
   ent = User;
 }
 
-class UserWithTimestampNoFormatSchema implements Schema {
+class UserWithTimestampNoFormatSchema extends BaseEntSchemaWithTZ {
   fields: Field[] = [
-    UUIDType({
-      name: "ID",
-      primaryKey: true,
-      defaultValueOnCreate: () => {
-        return uuidv4();
-      },
-    }),
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
     // manual timestamps. no formatting that comes with TimeType
-    {
-      name: "createdAt",
-      type: {
-        dbType: DBType.Timestamp,
-      },
-      defaultValueOnCreate: () => {
-        return new Date();
-      },
-    },
-    {
-      name: "updatedAt",
-      type: {
-        dbType: DBType.Timestamp,
-      },
-      defaultValueOnCreate: () => {
-        return new Date();
-      },
-    },
   ];
   ent = User;
 }
