@@ -43,8 +43,9 @@ export {
   StringOptions,
   StringField,
   StringType,
-  TimestampField as TimeField,
-  TimestampType as TimeType,
+  TimestampField,
+  TimestampType,
+  TimestamptzType,
   EnumField,
   EnumType,
 } from "./field";

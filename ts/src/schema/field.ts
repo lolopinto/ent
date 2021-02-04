@@ -242,6 +242,12 @@ export function TimestampType(options: TimestampOptions): TimestampField {
   return Object.assign(result, options);
 }
 
+export function TimestamptzType(options: FieldOptions): TimestampField {
+  let opts: TimestampOptions = { withTimezone: true, ...options, ...options };
+  let result = new TimestampField(opts);
+  return Object.assign(result, opts);
+}
+
 // export class JSON extends BaseField implements Field {
 //   type: Type = {dbType: DBType.JSON}
 // }
