@@ -550,11 +550,11 @@ export class EdgeOperation implements DataOperation {
       data: edge.data || null,
     };
     if (edge.time) {
-      fields["time"] = edge.time;
+      fields["time"] = edge.time.toISOString();
     } else {
       // todo make this a schema field like what we do in generated base files...
       // maybe when actions exist?
-      fields["time"] = new Date();
+      fields["time"] = new Date().toISOString();
     }
     if (edge.data) {
       fields["data"] = edge.data;
