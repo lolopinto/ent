@@ -139,7 +139,7 @@ function formatForReturn(val: any): any {
 }
 
 // go through the data and return it as needed
-function getDataToReturn(
+export function getDataToReturn(
   data: Data,
   colNames?: Set<string>,
   returningAll?: boolean,
