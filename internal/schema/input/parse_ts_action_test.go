@@ -13,12 +13,12 @@ func TestParseActions(t *testing.T) {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
 						StringType({name: "name"}),
-						TimeType({name: "start_time"}),
+						TimestampType({name: "start_time"}),
 					];
 
 					actions: Action[] = [
@@ -37,7 +37,7 @@ func TestParseActions(t *testing.T) {
 						},
 						{
 							name:   "start_time",
-							dbType: input.Time,
+							dbType: input.Timestamp,
 						},
 					},
 					actions: []action{
@@ -52,12 +52,12 @@ func TestParseActions(t *testing.T) {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
 						StringType({name: "name"}),
-						TimeType({name: "start_time"}),
+						TimestampType({name: "start_time"}),
 					];
 
 					actions: Action[] = [
@@ -76,7 +76,7 @@ func TestParseActions(t *testing.T) {
 						},
 						{
 							name:   "start_time",
-							dbType: input.Time,
+							dbType: input.Timestamp,
 						},
 					},
 					actions: []action{
@@ -91,13 +91,13 @@ func TestParseActions(t *testing.T) {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
 						StringType({name: "name"}),
-						TimeType({name: "start_time"}),
-						TimeType({name: "end_time", nullable: true}),
+						TimestampType({name: "start_time"}),
+						TimestampType({name: "end_time", nullable: true}),
 					];
 
 					actions: Action[] = [
@@ -122,11 +122,11 @@ func TestParseActions(t *testing.T) {
 						},
 						{
 							name:   "start_time",
-							dbType: input.Time,
+							dbType: input.Timestamp,
 						},
 						{
 							name:     "end_time",
-							dbType:   input.Time,
+							dbType:   input.Timestamp,
 							nullable: true,
 						},
 					},
@@ -148,12 +148,12 @@ func TestParseActions(t *testing.T) {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
 						StringType({name: "name"}),
-						TimeType({name: "start_time"}),
+						TimestampType({name: "start_time"}),
 					];
 
 					actions: Action[] = [
@@ -172,7 +172,7 @@ func TestParseActions(t *testing.T) {
 						},
 						{
 							name:   "start_time",
-							dbType: input.Time,
+							dbType: input.Timestamp,
 						},
 					},
 					actions: []action{
@@ -187,12 +187,12 @@ func TestParseActions(t *testing.T) {
 			code: map[string]string{
 				"event.ts": getCodeWithSchema(
 					`
-				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
 						StringType({name: "name"}),
-						TimeType({name: "start_time"}),
+						TimestampType({name: "start_time"}),
 					];
 
 					actions: Action[] = [
@@ -220,7 +220,7 @@ func TestParseActions(t *testing.T) {
 						},
 						{
 							name:   "start_time",
-							dbType: input.Time,
+							dbType: input.Timestamp,
 						},
 					},
 					actions: []action{

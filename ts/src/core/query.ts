@@ -103,7 +103,7 @@ class FirstFilter<T extends AssocEdge> implements EdgeQueryFilter<T> {
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
     if (this.time) {
-      options.clause = clause.Less("time", new Date(this.time));
+      options.clause = clause.Less("time", new Date(this.time).toISOString());
       // just to be explicit even though this is the default
       options.orderby = "time DESC";
     }
@@ -150,7 +150,7 @@ class LastFilter<T extends AssocEdge> implements EdgeQueryFilter<T> {
     // so when paging backwards, we fetch beforeCursor X
     return {
       ...options,
-      clause: clause.Greater("time", new Date(this.time)),
+      clause: clause.Greater("time", new Date(this.time).toISOString()),
       orderby: "time ASC",
       limit: this.limit + 1, // fetch an extra so we know if previous page
     };

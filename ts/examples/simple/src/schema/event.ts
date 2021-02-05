@@ -6,7 +6,7 @@ import {
   BaseEntSchema,
   ActionOperation,
   StringType,
-  TimeType,
+  TimestampType,
   UUIDType,
 } from "@lolopinto/ent/schema/";
 
@@ -21,8 +21,8 @@ export default class Event extends BaseEntSchema implements Schema {
       fieldEdge: ["User", "createdEvents"],
       storageKey: "user_id",
     }),
-    TimeType({ name: "start_time" }),
-    TimeType({ name: "end_time", nullable: true }),
+    TimestampType({ name: "start_time" }),
+    TimestampType({ name: "end_time", nullable: true }),
     StringType({
       name: "location",
       graphqlName: "eventLocation",

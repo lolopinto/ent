@@ -20,7 +20,7 @@ import {
 } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
-import { StringType, TimeType, UUIDType } from "../schema/field";
+import { StringType, TimestampType, UUIDType } from "../schema/field";
 import { BaseEntSchema, Field } from "../schema";
 import {
   User,
@@ -234,20 +234,22 @@ test("schema on delete", async () => {
 test("schema with null fields", async () => {
   class SchemaWithNullFields extends BaseEntSchema {
     fields: Field[] = [
-      TimeType({ name: "startTime" }),
-      TimeType({ name: "endTime", nullable: true }),
+      TimestampType({ name: "startTime" }),
+      TimestampType({ name: "endTime", nullable: true }),
     ];
     ent = User;
   }
 
+  const d = new Date();
   const builder = new SimpleBuilder(
     new LoggedOutViewer(),
     new SchemaWithNullFields(),
-    new Map([["startTime", new Date()]]),
+    new Map([["startTime", d]]),
   );
 
   const fields = await getFieldsFromBuilder(builder);
-  expect(fields["start_time"]).toBeInstanceOf(Date);
+  expect(fields["start_time"]).toBeDefined();
+  expect(fields["start_time"]).toEqual(d.toISOString());
   validateFieldsExist(fields, "id", "created_at", "updated_at");
   validateFieldsDoNotExist(fields, "end_time");
 
@@ -255,13 +257,13 @@ test("schema with null fields", async () => {
     new LoggedOutViewer(),
     new SchemaWithNullFields(),
     new Map([
-      ["startTime", new Date()],
+      ["startTime", d],
       ["endTime", null],
     ]),
   );
   const fields2 = await getFieldsFromBuilder(builder2);
-  expect(fields2["start_time"]).toBeInstanceOf(Date);
-  expect(fields2["end_time"]).toBe(null);
+  expect(fields2["start_time"]).toBeDefined();
+  expect(fields2["start_time"]).toEqual(d.toISOString());
 
   validateFieldsExist(fields2, "id", "created_at", "updated_at");
 });
@@ -1313,8 +1315,8 @@ describe("remove outbound edge", () => {
 describe("validators", () => {
   class EventSchema extends BaseEntSchema {
     fields: Field[] = [
-      TimeType({ name: "startTime" }),
-      TimeType({ name: "endTime" }),
+      TimestampType({ name: "startTime" }),
+      TimestampType({ name: "endTime" }),
     ];
     ent = Event;
   }

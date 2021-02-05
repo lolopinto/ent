@@ -4,7 +4,7 @@ import { mocked } from "ts-jest/utils";
 import { ID, Ent, Data } from "../core/ent";
 import { Clause } from "../core/clause";
 
-import { performQuery, queryResult } from "./parse_sql";
+import { performQuery, queryResult, getDataToReturn } from "./parse_sql";
 
 const eventEmitter = {
   on: jest.fn(),
@@ -151,7 +151,15 @@ export class QueryRecorder {
 
   static filterData(tableName: string, filterfn: (row: Data) => boolean) {
     const rows = QueryRecorder.data.get(tableName) || [];
-    return rows.filter(filterfn);
+    let result: Data[] = [];
+    for (const row of rows) {
+      // transform the data into whatever the return value should be before filtering
+      const row2 = getDataToReturn(row, undefined, true);
+      if (filterfn(row2)) {
+        result.push(row2);
+      }
+    }
+    return result;
   }
 
   static clear() {
@@ -323,4 +331,4 @@ export class QueryRecorder {
 }
 
 // TODO
-process.env.DB_CONNECTION_STRING = "ss";
+process.env.DB_CONNECTION_STRING = "INVALID DATABASE";

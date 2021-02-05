@@ -231,11 +231,11 @@ func TestParseFields(t *testing.T) {
 		"server default": {
 			code: map[string]string{
 				"user.ts": getCodeWithSchema(`
-				import {Schema, Field, TimeType} from "{schema}";
+				import {Schema, Field, TimestampType} from "{schema}";
 
 				export default class User implements Schema {
 					fields: Field[] = [
-						TimeType({name: "updated_at", serverDefault: 'now()'}),
+						TimestampType({name: "updated_at", serverDefault: 'now()'}),
 					]
 				}`),
 			},
@@ -244,7 +244,7 @@ func TestParseFields(t *testing.T) {
 					fields: []field{
 						{
 							name:          "updated_at",
-							dbType:        input.Time,
+							dbType:        input.Timestamp,
 							serverDefault: "now()",
 						},
 					},
@@ -287,14 +287,14 @@ func TestParseFields(t *testing.T) {
 					]
 				}`),
 				"event.ts": getCodeWithSchema(`
-				import {Schema, BaseEntSchema, Field, TimeType, StringType, UUIDType} from "{schema}"
+				import {Schema, BaseEntSchema, Field, TimestampType, StringType, UUIDType} from "{schema}"
 
 				export default class Event extends BaseEntSchema implements Schema {
 					fields: Field[] = [
 						StringType({name: "name"}),
 						UUIDType({name: "creator_id", foreignKey: ["User", "ID"]}),
-						TimeType({name: "start_time"}),
-						TimeType({name: "end_time", nullable: true}),
+						TimestampType({name: "start_time"}),
+						TimestampType({name: "end_time", nullable: true}),
 						StringType({name: "location"}),
 					]
 				}`),
@@ -336,11 +336,11 @@ func TestParseFields(t *testing.T) {
 						},
 						field{
 							name:   "start_time",
-							dbType: input.Time,
+							dbType: input.Timestamp,
 						},
 						field{
 							name:     "end_time",
-							dbType:   input.Time,
+							dbType:   input.Timestamp,
 							nullable: true,
 						},
 						field{

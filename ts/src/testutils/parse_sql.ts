@@ -128,9 +128,41 @@ function isPreparedStatementValue(val: any) {
   return str.startsWith("$");
 }
 
+// regex from https://www.regextester.com/97766
+const isoStringRegex = /^(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?$/;
+
+function formatForReturn(val: any): any {
+  if (typeof val === "string" && isoStringRegex.test(val)) {
+    return new Date(val);
+  }
+  return val;
+}
+
+// go through the data and return it as needed
+export function getDataToReturn(
+  data: Data,
+  colNames?: Set<string>,
+  returningAll?: boolean,
+): Data {
+  let ret: Data = {};
+  if (returningAll) {
+    for (const key in data) {
+      ret[key] = formatForReturn(data[key]);
+    }
+  } else if (colNames) {
+    for (const key of colNames) {
+      ret[key] = formatForReturn(data[key]);
+    }
+  } else {
+    throw new Error(`must pass returningAll or colNames`);
+  }
+  return ret;
+}
+
 function parseInsertStatement(
   ast: InsertReplace,
   values: any[], // values passed to query
+  returningAll: boolean,
 ): [string, Data, Data | null] {
   const tableName = getTableName(ast.table);
   const colInfo = getColumns(ast.columns);
@@ -153,16 +185,19 @@ function parseInsertStatement(
   }
 
   let returningData: Data | null = null;
-  if (ast.returning) {
-    returningData = {};
+  if (returningAll) {
+    returningData = getDataToReturn(data, undefined, true);
+  } else if (ast.returning) {
     assert(ast.returning.type === "returning");
+    let returningCols = new Set<string>();
     for (const col of ast.returning.columns) {
       const colName = getColumnFromRef(col);
       if (data[colName] === undefined) {
         throw new Error(`invalid column ${colName}`);
       }
-      returningData[colName] = data[colName];
+      returningCols.add(colName);
     }
+    returningData = getDataToReturn(data, returningCols);
   }
   return [tableName, data, returningData];
 }
@@ -363,17 +398,13 @@ function parseSelectStatement(
       continue;
     }
     if (colsInfo.allCols) {
-      results.push(data);
+      results.push(getDataToReturn(data, undefined, true));
     } else {
-      let result = {};
+      let cols = new Set<string>();
       for (const col of colsInfo?.columns || []) {
-        if (data[col] === undefined) {
-          data[col] = null;
-          //          throw new Error(`requested a non-existing column ${col}`);
-        }
-        result[col] = data[col];
+        cols.add(col);
       }
-      results.push(result);
+      results.push(getDataToReturn(data, cols));
     }
 
     // don't apply limit early if there's an ordering or count
@@ -469,16 +500,14 @@ function parseUpdateStatement(
     list[i] = data;
 
     if (returningAll) {
-      returnedRows.push(data);
+      returnedRows.push(getDataToReturn(data, undefined, true));
     } else if (columns.size) {
-      let returning: Data = {};
       for (const col of columns) {
         if (data[col] === undefined) {
           throw new Error(`invalid column ${col}`);
         }
-        returning[col] = data[col];
       }
-      returnedRows.push(returning);
+      returnedRows.push(getDataToReturn(data, columns));
     }
   }
   map.set(tableName, list);
@@ -578,19 +607,17 @@ export function performQuery(
   }
 
   if (isInsertOrReplace(ast)) {
-    const [tableName, data, returningData] = parseInsertStatement(ast, values);
+    const [tableName, data, returningData] = parseInsertStatement(
+      ast,
+      values,
+      returningAll,
+    );
     let list = map.get(tableName) || [];
     list.push(data);
     map.set(tableName, list);
     if (returningData !== null) {
       return newQueryResult({
         rows: [returningData],
-        rowCount: 1,
-      });
-    }
-    if (returningAll) {
-      return newQueryResult({
-        rows: [data],
         rowCount: 1,
       });
     }

@@ -17,7 +17,7 @@ import {
 } from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { BaseEntSchema, Field } from "../schema";
-import { StringType, TimeType, BooleanType } from "../schema/field";
+import { StringType, TimestampType, BooleanType } from "../schema/field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { FakeLogger, EntCreationObserver } from "../testutils/fake_log";
 import { createRowForTest } from "../testutils/write";
@@ -146,7 +146,7 @@ class MessageSchema extends BaseEntSchema {
     StringType({ name: "to" }),
     StringType({ name: "message" }),
     BooleanType({ name: "transient", nullable: true }),
-    TimeType({ name: "expiresAt", nullable: true }),
+    TimestampType({ name: "expiresAt", nullable: true }),
   ];
   ent = Message;
 }

@@ -211,13 +211,41 @@ export function StringType(options: StringOptions): StringField {
   return Object.assign(result, options);
 }
 
-export class TimeField extends BaseField implements Field {
-  type: Type = { dbType: DBType.Time };
+export interface TimestampOptions extends FieldOptions {
+  withTimezone?: boolean;
 }
 
-export function TimeType(options: FieldOptions): TimeField {
-  let result = new TimeField();
+export class TimestampField extends BaseField implements Field {
+  type: Type = { dbType: DBType.Timestamp };
+  withTimezone?: boolean;
+
+  constructor(options: TimestampOptions) {
+    super();
+    if (options.withTimezone) {
+      this.type = {
+        dbType: DBType.Timestamptz,
+      };
+    }
+  }
+
+  format(val: Date): any {
+    // don't format this way if with timeone
+    if (this.withTimezone) {
+      return val;
+    }
+    return val.toISOString();
+  }
+}
+
+export function TimestampType(options: TimestampOptions): TimestampField {
+  let result = new TimestampField(options);
   return Object.assign(result, options);
+}
+
+export function TimestamptzType(options: FieldOptions): TimestampField {
+  let opts: TimestampOptions = { withTimezone: true, ...options, ...options };
+  let result = new TimestampField(opts);
+  return Object.assign(result, opts);
 }
 
 // export class JSON extends BaseField implements Field {
