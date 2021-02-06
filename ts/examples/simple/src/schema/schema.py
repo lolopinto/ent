@@ -92,6 +92,25 @@ sa.Table("events", metadata,
     sa.PrimaryKeyConstraint("id", name="events_id_pkey"),
 )
    
+sa.Table("holidays", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column("label", sa.Text(), nullable=False),
+    sa.Column("date", sa.Date(), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="holidays_id_pkey"),
+)
+   
+sa.Table("hours_of_operations", metadata,
+    sa.Column("id", postgresql.UUID(), nullable=False),
+    sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
+    sa.Column("day_of_week", sa.Text(), nullable=False),
+    sa.Column("open", sa.Time(), nullable=False),
+    sa.Column("close", sa.Time(timezone=True), nullable=False),
+    sa.PrimaryKeyConstraint("id", name="hours_of_operations_id_pkey"),
+)
+   
 sa.Table("user_created_events_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
