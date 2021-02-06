@@ -48,4 +48,9 @@ export {
   TimestamptzType,
   EnumField,
   EnumType,
+  TimeType,
+  TimeField,
+  TimetzType,
+  DateType,
+  DateField,
 } from "./field";
