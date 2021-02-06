@@ -4,6 +4,7 @@ import {
   Field,
   FieldOptions,
   PolymorphicOptions,
+  ForeignKeyInfo,
 } from "./schema";
 import { snakeCase } from "snake-case";
 
@@ -243,9 +244,102 @@ export function TimestampType(options: TimestampOptions): TimestampField {
 }
 
 export function TimestamptzType(options: FieldOptions): TimestampField {
-  let opts: TimestampOptions = { withTimezone: true, ...options, ...options };
+  let opts: TimestampOptions = { withTimezone: true, ...options };
   let result = new TimestampField(opts);
   return Object.assign(result, opts);
+}
+
+export interface TimeOptions extends FieldOptions {
+  withTimezone?: boolean;
+  precision?: number;
+}
+
+export const leftPad = (val: number): string => {
+  if (val >= 0) {
+    if (val < 10) {
+      return `0${val}`;
+    }
+    return val.toString();
+  }
+  if (val > -10) {
+    return `-0${val * -1}`;
+  }
+  return val.toString();
+};
+
+export class TimeField extends BaseField implements Field {
+  type: Type = { dbType: DBType.Time };
+  withTimezone?: boolean;
+
+  constructor(options: TimeOptions) {
+    super();
+    if (options.withTimezone) {
+      this.type = {
+        dbType: DBType.Timetz,
+      };
+    }
+  }
+
+  format(val: any): any {
+    // allow database handle it
+    // https://www.postgresql.org/docs/9.1/datatype-datetime.html#AEN5668
+    if (!(val instanceof Date)) {
+      return val;
+    }
+    let offset = "";
+
+    if (this.withTimezone) {
+      // for some reason this API is backwards
+      let div = (val.getTimezoneOffset() / 60) * -1;
+
+      offset = leftPad(div);
+    }
+    let hh = leftPad(val.getHours());
+    let mm = leftPad(val.getMinutes());
+    let ss = leftPad(val.getSeconds());
+    let ms = leftPad(val.getMilliseconds());
+    let ret = `${hh}:${mm}:${ss}.${ms}${offset}`;
+    return ret;
+  }
+}
+
+export function TimeType(options: TimeOptions): TimeField {
+  let result = new TimeField(options);
+  return Object.assign(result, options);
+}
+
+export function TimetzType(options: FieldOptions): TimeField {
+  let opts: TimestampOptions = {
+    withTimezone: true,
+    ...options,
+  };
+  let result = new TimeField(opts);
+  return Object.assign(result, opts);
+}
+
+export class DateField extends BaseField implements Field {
+  type: Type = { dbType: DBType.Date };
+
+  format(val: any): any {
+    if (!(val instanceof Date)) {
+      return val;
+    }
+
+    let yy = leftPad(val.getFullYear());
+
+    // lol this API
+    // for some reason this is 0-index
+    let mm = leftPad(val.getMonth() + 1);
+    let dd = leftPad(val.getDate());
+    let ret = `${yy}-${mm}-${dd}`;
+
+    return ret;
+  }
+}
+
+export function DateType(options: FieldOptions): DateField {
+  let result = new DateField();
+  return Object.assign(result, options);
 }
 
 // export class JSON extends BaseField implements Field {

@@ -1,5 +1,12 @@
 import { LoggedOutViewer } from "../core/viewer";
-import { StringType, TimestamptzType, UUIDType } from "../schema/field";
+import {
+  StringType,
+  TimeType,
+  TimetzType,
+  UUIDType,
+  leftPad,
+  DateType,
+} from "../schema/field";
 import { BaseEntSchema, Schema, Field } from "../schema";
 import { User, SimpleBuilder } from "../testutils/builder";
 import {
@@ -8,13 +15,19 @@ import {
   text,
   timestamp,
   timestamptz,
+  time,
+  timetz,
   uuid,
+  date,
 } from "../testutils/db/test_db";
 import { v4 as uuidv4 } from "uuid";
 import pg from "pg";
 import { defaultTimestampParser } from "../core/db";
 import { BaseEntSchemaWithTZ } from "./base_schema";
 import { DBType } from "./schema";
+import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
+import { ID, Ent, Viewer, Data } from "../core/ent";
+import { validate } from "graphql";
 
 class UserSchema extends BaseEntSchema {
   fields: Field[] = [
@@ -144,8 +157,8 @@ describe("timestamp", () => {
     );
 
     // reset to default ts parser
-    const prevParser = pg.types.getTypeParser(1114);
-    pg.types.setTypeParser(1114, defaultTimestampParser);
+    const prevParser = pg.types.getTypeParser(pg.types.builtins.TIMESTAMP);
+    pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, defaultTimestampParser);
 
     const user = await builder.saveX();
     const createdAt: Date = user.data.created_at;
@@ -162,7 +175,7 @@ describe("timestamp", () => {
     expectWithinTZ(updatedAt, date);
 
     // restore parser
-    pg.types.setTypeParser(1114, prevParser);
+    pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, prevParser);
   });
 
   function expectWithinTZ(date1: Date, date2: Date) {
@@ -201,8 +214,8 @@ describe("timestamp", () => {
       ]),
     );
     // reset to default ts parser
-    const prevParser = pg.types.getTypeParser(1114);
-    pg.types.setTypeParser(1114, defaultTimestampParser);
+    const prevParser = pg.types.getTypeParser(pg.types.builtins.TIMESTAMP);
+    pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, defaultTimestampParser);
 
     const user = await builder.saveX();
     const createdAt: Date = user.data.created_at;
@@ -214,7 +227,7 @@ describe("timestamp", () => {
     expect(Math.abs(updatedAt.getTime() - date.getTime())).toBeLessThan(10);
 
     // restore parser
-    pg.types.setTypeParser(1114, prevParser);
+    pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, prevParser);
   });
 });
 
@@ -240,4 +253,239 @@ test("timestamptz", async () => {
 
   expect(date.getTimezoneOffset()).toBe(createdAt.getTimezoneOffset());
   expect(date.getTimezoneOffset()).toBe(updatedAt.getTimezoneOffset());
+});
+
+class Hours implements Ent {
+  id: ID;
+  accountID: string;
+  nodeType = "Hours";
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
+    this.id = id;
+  }
+}
+
+class HoursSchema implements Schema {
+  fields: Field[] = [
+    // should be an enum but let's ignore that
+    StringType({ name: "dayOfWeek" }),
+    TimeType({ name: "open" }),
+    TimeType({ name: "close" }),
+  ];
+  ent = Hours;
+}
+
+class HoursTZSchema implements Schema {
+  fields: Field[] = [
+    // should be an enum but let's ignore that
+    StringType({ name: "dayOfWeek" }),
+    TimetzType({ name: "open" }),
+    TimetzType({ name: "close" }),
+  ];
+  ent = Hours;
+}
+
+const timeRegex = /^([01][0-9]):([0-5][0-9]):([0-5][0-9])(.[0-9]+)?$/;
+
+describe("time", () => {
+  beforeAll(async () => {
+    await createTimeTable();
+  });
+
+  afterAll(async () => {
+    await tdb.drop("hours");
+  });
+
+  async function createTimeTable() {
+    await tdb.create(
+      table("hours", text("day_of_week"), time("open"), time("close")),
+    );
+  }
+
+  test("date object", async () => {
+    const open = new Date();
+    open.setHours(8);
+    open.setMinutes(0);
+    open.setSeconds(0);
+    open.setMilliseconds(0);
+
+    const close = new Date();
+    close.setHours(17);
+    close.setMinutes(0);
+    close.setSeconds(0);
+    close.setMilliseconds(0);
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new HoursSchema(),
+      new Map<string, any>([
+        ["dayOfWeek", "sunday"],
+        ["open", open],
+        ["close", close],
+      ]),
+    );
+
+    const hours = await builder.saveX();
+    expect(hours.data.open).toEqual("08:00:00");
+    expect(hours.data.close).toEqual("17:00:00");
+  });
+
+  test("time format", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new HoursSchema(),
+      new Map<string, any>([
+        ["dayOfWeek", "sunday"],
+        ["open", "8:00 AM"],
+        ["close", "5:00 PM"],
+      ]),
+    );
+
+    const hours = await builder.saveX();
+    expect(hours.data.open).toEqual("08:00:00");
+    expect(hours.data.close).toEqual("17:00:00");
+  });
+});
+
+const dateOffset = (d: Date): string => {
+  // for some reason this API is backwards
+  return leftPad((d.getTimezoneOffset() / 60) * -1);
+};
+
+describe("timetz", () => {
+  beforeAll(async () => {
+    await createTimeTable();
+  });
+
+  afterAll(async () => {
+    await tdb.drop("hours");
+  });
+
+  async function createTimeTable() {
+    await tdb.create(
+      table("hours", text("day_of_week"), timetz("open"), timetz("close")),
+    );
+  }
+
+  test("date object", async () => {
+    const open = new Date();
+    open.setHours(8);
+    open.setMinutes(0);
+    open.setSeconds(0);
+    open.setMilliseconds(0);
+
+    const close = new Date();
+    close.setHours(17);
+    close.setMinutes(0);
+    close.setSeconds(0);
+    close.setMilliseconds(0);
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new HoursTZSchema(),
+      new Map<string, any>([
+        ["dayOfWeek", "sunday"],
+        ["open", open],
+        ["close", close],
+      ]),
+    );
+
+    let offset = dateOffset(open);
+
+    const hours = await builder.saveX();
+    expect(hours.data.open).toEqual(`08:00:00${offset}`);
+    expect(hours.data.close).toEqual(`17:00:00${offset}`);
+  });
+
+  test("time format", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new HoursSchema(),
+      new Map<string, any>([
+        ["dayOfWeek", "sunday"],
+        ["open", "8:00 AM"],
+        ["close", "5:00 PM"],
+      ]),
+    );
+
+    const d = new Date();
+    let offset = dateOffset(d);
+
+    const hours = await builder.saveX();
+    expect(hours.data.open).toEqual(`08:00:00${offset}`);
+    expect(hours.data.close).toEqual(`17:00:00${offset}`);
+  });
+});
+
+class Holiday implements Ent {
+  id: ID;
+  accountID: string;
+  nodeType = "Holiday";
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
+    this.id = id;
+  }
+}
+
+class HolidaySchema implements Schema {
+  fields: Field[] = [
+    // should be an enum but let's ignore that
+    StringType({ name: "label" }),
+    DateType({ name: "date" }),
+  ];
+  ent = Holiday;
+}
+
+describe("date", () => {
+  beforeAll(async () => {
+    await createHolidaysTable();
+  });
+
+  afterAll(async () => {
+    await tdb.drop("hours");
+  });
+
+  async function createHolidaysTable() {
+    await tdb.create(table("holidays", text("label"), date("date")));
+  }
+
+  // for some reason, a Date object is returned here and it accounts for timezone
+  // parsing in this format seems to work consistently
+  // parsing with "2021-01-20" doesn't...
+  const getInaugauration = () => {
+    return new Date(Date.parse("January 20, 2021"));
+  };
+
+  const expectedValue = () => {
+    return getInaugauration();
+  };
+
+  test("date object", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new HolidaySchema(),
+      new Map<string, any>([
+        ["label", "inaugaration"],
+        ["date", getInaugauration()],
+      ]),
+    );
+
+    const holiday = await builder.saveX();
+
+    expect(holiday.data.date).toEqual(expectedValue());
+  });
+
+  test("date format", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      new HolidaySchema(),
+      new Map<string, any>([
+        ["label", "inaugaration"],
+        ["date", "2021-01-20"],
+      ]),
+    );
+
+    const holiday = await builder.saveX();
+    expect(holiday.data.date).toEqual(expectedValue());
+  });
 });

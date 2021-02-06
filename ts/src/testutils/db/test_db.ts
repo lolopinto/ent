@@ -57,6 +57,36 @@ export function timestamptz(name: string, opts?: options): Column {
   };
 }
 
+export function time(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "TIME WITHOUT TIME ZONE";
+    },
+    ...opts,
+  };
+}
+
+export function timetz(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "TIME WITH TIME ZONE";
+    },
+    ...opts,
+  };
+}
+
+export function date(name: string, opts?: options): Column {
+  return {
+    name,
+    datatype() {
+      return "DATE";
+    },
+    ...opts,
+  };
+}
+
 export function table(name: string, ...cols: Column[]): Table {
   return {
     name,
@@ -122,8 +152,6 @@ export class TempDB {
     for (const [_, table] of this.tables) {
       await this.dbClient.query(table.create());
     }
-
-    //    await this.dbClient.end();
   }
 
   async afterAll() {
@@ -142,9 +170,7 @@ export class TempDB {
     for (const tableName of tables) {
       const table = this.tables.get(tableName);
       if (!table) {
-        throw new Error(
-          `cannot drop table ${tableName} since it doesn't exist`,
-        );
+        continue;
       }
       await this.dbClient.query(table.drop());
       this.tables.delete(tableName);

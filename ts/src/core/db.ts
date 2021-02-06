@@ -69,9 +69,12 @@ export default class DB {
   }
 }
 
-export const defaultTimestampParser = pg.types.getTypeParser(1114);
+export const defaultTimestampParser = pg.types.getTypeParser(
+  pg.types.builtins.TIMESTAMP,
+);
 // add (UTC) timezone to it so it's parsed as UTC time correctly
-pg.types.setTypeParser(1114, function(val: string) {
+pg.types.builtins.TIMESTAMP;
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, function(val: string) {
   let d = new Date(val + "Z");
   return d;
 });
