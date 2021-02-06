@@ -1,6 +1,7 @@
 import { GraphQLScalarType } from "graphql";
 import { Kind, ValueNode } from "graphql/language";
 
+// Time refers to a Timestamp or Date scalar
 export const GraphQLTime = new GraphQLScalarType({
   name: "Time",
   description: "Time scalar type",

@@ -433,42 +433,42 @@ func (t *NullableFloatType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{NewGQLFileImport("GraphQLFloat")}
 }
 
-type timeType struct{}
+type timestampType struct{}
 
-func (t *timeType) GetDBType() string {
+func (t *timestampType) GetDBType() string {
 	return "sa.TIMESTAMP()"
 }
 
-func (t *timeType) GetZeroValue() string {
+func (t *timestampType) GetZeroValue() string {
 	return "time.Time{}"
 }
 
-func (t *timeType) DefaultGraphQLFieldName() string {
+func (t *timestampType) DefaultGraphQLFieldName() string {
 	return "time"
 }
 
-type TimeType struct {
-	timeType
+type TimestampType struct {
+	timestampType
 }
 
 // use the built in graphql type
-func (t *TimeType) GetGraphQLType() string {
+func (t *TimestampType) GetGraphQLType() string {
 	return "Time!"
 }
 
-func (t *TimeType) GetTSType() string {
+func (t *TimestampType) GetTSType() string {
 	return "Date"
 }
 
-func (t *TimeType) GetCastToMethod() string {
+func (t *TimestampType) GetCastToMethod() string {
 	return "cast.ToTime"
 }
 
-func (t *TimeType) GetNullableType() Type {
-	return &NullableTimeType{}
+func (t *TimestampType) GetNullableType() Type {
+	return &NullableTimestampType{}
 }
 
-func (t *TimeType) GetTSGraphQLImports() []FileImport {
+func (t *TimestampType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{
 		NewGQLFileImport("GraphQLNonNull"),
 		{
@@ -478,20 +478,125 @@ func (t *TimeType) GetTSGraphQLImports() []FileImport {
 	}
 }
 
-type NullableTimeType struct {
-	timeType
+type TimestamptzType struct {
+	TimestampType
 }
 
-func (t *NullableTimeType) GetCastToMethod() string {
+func (t *TimestamptzType) GetDBType() string {
+	return "sa.TIMESTAMP(timezone=True)"
+}
+
+func (t *TimestamptzType) GetNullableType() Type {
+	return &NullableTimestamptzType{}
+}
+
+type DateType struct {
+	TimestampType
+}
+
+func (t *DateType) GetDBType() string {
+	return "sa.Date()"
+}
+
+func (t *DateType) GetNullableType() Type {
+	return &NullableDateType{}
+}
+
+type NullableTimestampType struct {
+	timestampType
+}
+
+func (t *NullableTimestampType) GetCastToMethod() string {
 	return "cast.ToNullableTime"
 }
 
-func (t *NullableTimeType) GetGraphQLType() string {
+func (t *NullableTimestampType) GetGraphQLType() string {
 	return "Time"
 }
 
-func (t *NullableTimeType) GetTSType() string {
+func (t *NullableTimestampType) GetTSType() string {
 	return "Date | null"
+}
+
+func (t *NullableTimestampType) GetNonNullableType() Type {
+	return &TimestampType{}
+}
+
+func (t *NullableTimestampType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		{
+			Type:       "GraphQLTime",
+			ImportType: EntGraphQL,
+		},
+	}
+}
+
+type NullableTimestamptzType struct {
+	NullableTimestampType
+}
+
+func (t *NullableTimestamptzType) GetDBType() string {
+	return "sa.TIMESTAMP(timezone=True)"
+}
+
+func (t *NullableTimestamptzType) GetNonNullableType() Type {
+	return &TimestamptzType{}
+}
+
+type NullableDateType struct {
+	NullableTimestampType
+}
+
+func (t *NullableDateType) GetDBType() string {
+	return "sa.Date()"
+}
+
+func (t *NullableDateType) GetNonNullableType() Type {
+	return &DateType{}
+}
+
+type TimeType struct {
+	TimestampType
+}
+
+func (t *TimeType) GetDBType() string {
+	return "sa.Time()"
+}
+
+func (t *TimeType) GetNullableType() Type {
+	return &NullableTimeType{}
+}
+
+func (t *TimeType) GetTSGraphQLImports() []FileImport {
+	return []FileImport{
+		NewGQLFileImport("GraphQLNonNull"),
+		// string format for time. or do we want a new scalar time?
+		NewGQLFileImport("GraphQLString"),
+	}
+}
+
+func (t *TimeType) GetGraphQLType() string {
+	return "String!"
+}
+
+type TimetzType struct {
+	TimeType
+}
+
+func (t *TimetzType) GetDBType() string {
+	return "sa.Time(timezone=True)"
+}
+
+func (t *TimetzType) GetNullableType() Type {
+	return &NullableTimetzType{}
+}
+
+type NullableTimeType struct {
+	NullableTimestampType
+}
+
+func (t *NullableTimeType) GetDBType() string {
+	return "sa.Time()"
 }
 
 func (t *NullableTimeType) GetNonNullableType() Type {
@@ -500,11 +605,25 @@ func (t *NullableTimeType) GetNonNullableType() Type {
 
 func (t *NullableTimeType) GetTSGraphQLImports() []FileImport {
 	return []FileImport{
-		{
-			Type:       "GraphQLTime",
-			ImportType: EntGraphQL,
-		},
+		// string format for time. or do we want a new scalar time?
+		NewGQLFileImport("GraphQLString"),
 	}
+}
+
+func (t *NullableTimeType) GetGraphQLType() string {
+	return "String"
+}
+
+type NullableTimetzType struct {
+	NullableTimeType
+}
+
+func (t *NullableTimetzType) GetDBType() string {
+	return "sa.Time(timezone=True)"
+}
+
+func (t *NullableTimetzType) GetNonNullableType() Type {
+	return &TimetzType{}
 }
 
 type objectType struct {
@@ -1041,9 +1160,9 @@ func getBasicType(typ types.Type) Type {
 	case "*float32", "*float64":
 		return &NullableFloatType{}
 	case "time.Time":
-		return &TimeType{}
+		return &TimestampType{}
 	case "*time.Time":
-		return &NullableTimeType{}
+		return &NullableTimestampType{}
 	default:
 		return nil
 	}
