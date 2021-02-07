@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/iancoleman/strcase"
 )
 
 // Imports keeps track of imports in a generated typescript file
@@ -117,6 +119,7 @@ func (imps *Imports) FuncMap() template.FuncMap {
 		"exportAllAs":          imps.ExportAllAs,
 		"export":               imps.Export,
 		"dict":                 dict,
+		"toCamel":              strcase.ToCamel,
 	}
 }
 
