@@ -1,6 +1,7 @@
 import {
   BaseEntSchemaWithTZ,
   Field,
+  ActionOperation,
   EnumType,
   TimeType,
   TimetzType,
@@ -23,5 +24,11 @@ export default class HoursOfOperation extends BaseEntSchemaWithTZ {
     // just to test we have different types
     TimeType({ name: "open" }),
     TimetzType({ name: "close" }),
+  ];
+
+  actions = [
+    {
+      operation: ActionOperation.Create,
+    },
   ];
 }

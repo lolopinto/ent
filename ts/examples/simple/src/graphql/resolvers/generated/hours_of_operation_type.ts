@@ -8,8 +8,12 @@ import {
   GraphQLFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
-import { HoursOfOperation } from "src/ent/";
+import {
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+  convertToGQLEnum,
+} from "@lolopinto/ent/graphql";
+import { HoursOfOperation, getDayOfWeekValues } from "src/ent/";
 import { dayOfWeekType } from "src/graphql/resolvers/";
 
 export const HoursOfOperationType = new GraphQLObjectType({
@@ -21,6 +25,18 @@ export const HoursOfOperationType = new GraphQLObjectType({
     },
     dayOfWeek: {
       type: GraphQLNonNull(dayOfWeekType),
+      resolve: (
+        hoursOfOperation: HoursOfOperation,
+        args: {},
+        context: RequestContext,
+      ) => {
+        const ret = hoursOfOperation.dayOfWeek;
+        return convertToGQLEnum(
+          ret,
+          getDayOfWeekValues(),
+          dayOfWeekType.getValues(),
+        );
+      },
     },
     open: {
       type: GraphQLNonNull(GraphQLString),

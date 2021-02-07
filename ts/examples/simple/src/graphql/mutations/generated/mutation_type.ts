@@ -12,6 +12,8 @@ import { EventAddHostType } from "src/graphql/mutations/generated/event/event_ad
 import { EventCreateType } from "src/graphql/mutations/generated/event/event_create_type";
 import { EventDeleteType } from "src/graphql/mutations/generated/event/event_delete_type";
 import { EventEditType } from "src/graphql/mutations/generated/event/event_edit_type";
+import { HolidayCreateType } from "src/graphql/mutations/generated/holiday/holiday_create_type";
+import { HoursOfOperationCreateType } from "src/graphql/mutations/generated/hours_of_operation/hours_of_operation_create_type";
 import { PhoneNumberEditType } from "src/graphql/mutations/generated/user/phone_number_edit_type";
 import { UserAuthType } from "src/graphql/mutations/generated/user_auth_type";
 import { UserAuthJWTType } from "src/graphql/mutations/generated/user_auth_jwt_type";
@@ -33,6 +35,8 @@ export const MutationType = new GraphQLObjectType({
     eventCreate: EventCreateType,
     eventDelete: EventDeleteType,
     eventEdit: EventEditType,
+    holidayCreate: HolidayCreateType,
+    hoursOfOperationCreate: HoursOfOperationCreateType,
     phoneNumberEdit: PhoneNumberEditType,
     userAuth: UserAuthType,
     userAuthJWT: UserAuthJWTType,

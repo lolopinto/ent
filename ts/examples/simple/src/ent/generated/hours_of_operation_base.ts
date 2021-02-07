@@ -31,7 +31,7 @@ export enum dayOfWeek {
   Saturday = "Saturday",
 }
 
-export function getdayOfWeekValues() {
+export function getDayOfWeekValues() {
   return [
     dayOfWeek.Sunday,
     dayOfWeek.Monday,
