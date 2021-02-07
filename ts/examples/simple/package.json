@@ -29,12 +29,13 @@
     "ts-jest": "^25.2.1"
   },
   "dependencies": {
-    "@lolopinto/ent": "0.0.70",
+    "@lolopinto/ent": "0.0.72",
     "@lolopinto/ent-email": "0.0.1",
     "@lolopinto/ent-passport": "0.0.1",
     "@lolopinto/ent-password": "0.0.2",
     "@lolopinto/ent-phonenumber": "0.0.1",
     "@types/express-session": "^1.17.0",
+    "@types/luxon": "^1.25.1",
     "@types/node": "^13.13.4",
     "@types/passport-jwt": "^3.0.3",
     "@types/passport-local": "^1.0.33",
@@ -46,6 +47,7 @@
     "graphql": "^15.3.0",
     "jsonwebtoken": "^8.5.1",
     "libphonenumber-js": "^1.7.56",
+    "luxon": "^1.25.0",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "passport-strategy": "^1.0.0"

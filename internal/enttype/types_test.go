@@ -15,6 +15,7 @@ import (
 type expType struct {
 	db                  string
 	graphql             string
+	graphqlImports      []enttype.FileImport
 	graphqlPanics       bool
 	goTypePanics        bool
 	castToMethod        string
@@ -38,8 +39,12 @@ func f() string {
 
 	assert.IsType(t, &enttype.StringType{}, ret.entType)
 	testType(t, expType{
-		db:           "sa.Text()",
-		graphql:      "String!",
+		db:      "sa.Text()",
+		graphql: "String!",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			enttype.NewGQLFileImport("GraphQLString"),
+		},
 		zeroValue:    strconv.Quote(""),
 		castToMethod: "cast.ToString",
 		goType:       "string",
@@ -59,8 +64,12 @@ func f() ent.NodeType {
 
 	assert.IsType(t, &enttype.StringType{}, ret.entType)
 	testType(t, expType{
-		db:        "sa.Text()",
-		graphql:   "String!",
+		db:      "sa.Text()",
+		graphql: "String!",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			enttype.NewGQLFileImport("GraphQLString"),
+		},
 		zeroValue: strconv.Quote(""),
 		// this probably doesn't work correctly in practice because strong types broken?
 		// would need castToMethod plus special enum cast
@@ -80,8 +89,11 @@ func f() *string {
 
 	assert.IsType(t, &enttype.NullableStringType{}, ret.entType)
 	testType(t, expType{
-		db:              "sa.Text()",
-		graphql:         "String",
+		db:      "sa.Text()",
+		graphql: "String",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLString"),
+		},
 		zeroValue:       strconv.Quote(""),
 		castToMethod:    "cast.ToNullableString",
 		goType:          "*string",
@@ -99,8 +111,12 @@ func f() bool {
 
 	assert.IsType(t, &enttype.BoolType{}, ret.entType)
 	testType(t, expType{
-		db:           "sa.Boolean()",
-		graphql:      "Boolean!",
+		db:      "sa.Boolean()",
+		graphql: "Boolean!",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			enttype.NewGQLFileImport("GraphQLBoolean"),
+		},
 		zeroValue:    "false",
 		castToMethod: "cast.ToBool",
 		goType:       "bool",
@@ -118,8 +134,11 @@ func f() *bool {
 
 	assert.IsType(t, &enttype.NullableBoolType{}, ret.entType)
 	testType(t, expType{
-		db:              "sa.Boolean()",
-		graphql:         "Boolean",
+		db:      "sa.Boolean()",
+		graphql: "Boolean",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLBoolean"),
+		},
 		zeroValue:       "false",
 		castToMethod:    "cast.ToNullableBool",
 		nonNullableType: &enttype.BoolType{},
@@ -130,8 +149,12 @@ func f() *bool {
 
 func TestIDType(t *testing.T) {
 	testType(t, expType{
-		db:           "postgresql.UUID()",
-		graphql:      "ID!",
+		db:      "postgresql.UUID()",
+		graphql: "ID!",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			enttype.NewGQLFileImport("GraphQLID"),
+		},
 		zeroValue:    "",
 		castToMethod: "cast.ToUUIDString",
 		nullableType: &enttype.NullableIDType{},
@@ -143,8 +166,11 @@ func TestIDType(t *testing.T) {
 
 func TestNullableIDType(t *testing.T) {
 	testType(t, expType{
-		db:              "postgresql.UUID()",
-		graphql:         "ID",
+		db:      "postgresql.UUID()",
+		graphql: "ID",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLID"),
+		},
 		zeroValue:       "",
 		castToMethod:    "cast.ToNullableUUIDString",
 		nonNullableType: &enttype.IDType{},
@@ -163,8 +189,12 @@ func f() int {
 
 	assert.IsType(t, &enttype.IntegerType{}, ret.entType)
 	testType(t, expType{
-		db:           "sa.Integer()",
-		graphql:      "Int!",
+		db:      "sa.Integer()",
+		graphql: "Int!",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			enttype.NewGQLFileImport("GraphQLInt"),
+		},
 		zeroValue:    "0",
 		castToMethod: "cast.ToInt",
 		goType:       "int",
@@ -182,8 +212,11 @@ func f() *int {
 
 	assert.IsType(t, &enttype.NullableIntegerType{}, ret.entType)
 	testType(t, expType{
-		db:              "sa.Integer()",
-		graphql:         "Int",
+		db:      "sa.Integer()",
+		graphql: "Int",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLInt"),
+		},
 		zeroValue:       "0",
 		castToMethod:    "cast.ToNullableInt",
 		nonNullableType: &enttype.IntegerType{},
@@ -213,8 +246,12 @@ func f() float32 {
 func testFloatType(t *testing.T, ret returnType, goType string) {
 	assert.IsType(t, &enttype.FloatType{}, ret.entType)
 	testType(t, expType{
-		db:           "sa.Float()",
-		graphql:      "Float!",
+		db:      "sa.Float()",
+		graphql: "Float!",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			enttype.NewGQLFileImport("GraphQLFloat"),
+		},
 		zeroValue:    "0.0",
 		castToMethod: "cast.ToFloat",
 		goType:       goType,
@@ -244,8 +281,11 @@ func f() *float32 {
 func testNullableFloatType(t *testing.T, ret returnType, goType string) {
 	assert.IsType(t, &enttype.NullableFloatType{}, ret.entType)
 	testType(t, expType{
-		db:              "sa.Float()",
-		graphql:         "Float",
+		db:      "sa.Float()",
+		graphql: "Float",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLFloat"),
+		},
 		zeroValue:       "0.0",
 		castToMethod:    "cast.ToNullableFloat",
 		goType:          goType,
@@ -254,7 +294,7 @@ func testNullableFloatType(t *testing.T, ret returnType, goType string) {
 	}, ret)
 }
 
-func TestTimeType(t *testing.T) {
+func TestTimestampType(t *testing.T) {
 	ret := getTestReturnType(t, `package main 
 
 	import "time"
@@ -263,20 +303,27 @@ func f() time.Time {
 	return time.Time{}
 	}`)
 
-	assert.IsType(t, &enttype.TimeType{}, ret.entType)
+	assert.IsType(t, &enttype.TimestampType{}, ret.entType)
 	testType(t, expType{
-		db:                  "sa.TIMESTAMP()",
-		graphql:             "Time!",
+		db:      "sa.TIMESTAMP()",
+		graphql: "Time!",
+		graphqlImports: []enttype.FileImport{
+			enttype.NewGQLFileImport("GraphQLNonNull"),
+			{
+				Type:       "GraphQLTime",
+				ImportType: enttype.EntGraphQL,
+			},
+		},
 		zeroValue:           "time.Time{}",
 		castToMethod:        "cast.ToTime",
-		nullableType:        &enttype.NullableTimeType{},
+		nullableType:        &enttype.NullableTimestampType{},
 		defaultGQLFieldName: "time",
 		goType:              "time.Time",
 		tsType:              "Date",
 	}, ret)
 }
 
-func TestNullableTimeType(t *testing.T) {
+func TestNullableTimestampType(t *testing.T) {
 	ret := getTestReturnType(t, `package main 
 
 	import "time"
@@ -285,13 +332,19 @@ func f() *time.Time {
 	return nil
 	}`)
 
-	assert.IsType(t, &enttype.NullableTimeType{}, ret.entType)
+	assert.IsType(t, &enttype.NullableTimestampType{}, ret.entType)
 	testType(t, expType{
-		db:                  "sa.TIMESTAMP()",
-		graphql:             "Time",
+		db:      "sa.TIMESTAMP()",
+		graphql: "Time",
+		graphqlImports: []enttype.FileImport{
+			{
+				Type:       "GraphQLTime",
+				ImportType: enttype.EntGraphQL,
+			},
+		},
 		zeroValue:           "time.Time{}",
 		castToMethod:        "cast.ToNullableTime",
-		nonNullableType:     &enttype.TimeType{},
+		nonNullableType:     &enttype.TimestampType{},
 		defaultGQLFieldName: "time",
 		goType:              "*time.Time",
 		tsType:              "Date | null",
@@ -799,6 +852,8 @@ func TestMapType(t *testing.T) {
 	)
 }
 
+// use testTypeDirectly for new time types?
+//or testhelper.GetCodeWithSchema
 func TestEnumType(t *testing.T) {
 	testTypeDirectly(t,
 		map[string]*typeTestCase{
@@ -814,8 +869,14 @@ func TestEnumType(t *testing.T) {
 					},
 				},
 				expType{
-					db:           "sa.Text()",
-					graphql:      "AccountStatus",
+					db:      "sa.Text()",
+					graphql: "AccountStatus",
+					graphqlImports: []enttype.FileImport{
+						{
+							Type:       "AccountStatus",
+							ImportType: enttype.Enum,
+						},
+					},
 					tsType:       "AccountStatus | null",
 					goTypePanics: true,
 					nonNullableType: &enttype.EnumType{
@@ -843,8 +904,15 @@ func TestEnumType(t *testing.T) {
 					},
 				},
 				expType{
-					db:           "sa.Text()",
-					graphql:      "AccountStatus!",
+					db:      "sa.Text()",
+					graphql: "AccountStatus!",
+					graphqlImports: []enttype.FileImport{
+						enttype.NewGQLFileImport("GraphQLNonNull"),
+						{
+							Type:       "AccountStatus",
+							ImportType: enttype.Enum,
+						},
+					},
 					tsType:       "AccountStatus",
 					goTypePanics: true,
 					nullableType: &enttype.NullableEnumType{
@@ -880,7 +948,14 @@ func TestEnumType(t *testing.T) {
 						strconv.Quote("DISABLED"),
 						strconv.Quote("account_status"),
 					),
-					graphql:      "AccountStatus!",
+					graphql: "AccountStatus!",
+					graphqlImports: []enttype.FileImport{
+						enttype.NewGQLFileImport("GraphQLNonNull"),
+						{
+							Type:       "AccountStatus",
+							ImportType: enttype.Enum,
+						},
+					},
 					tsType:       "AccountStatus",
 					goTypePanics: true,
 					nullableType: &enttype.NullableEnumType{
@@ -916,7 +991,13 @@ func TestEnumType(t *testing.T) {
 						strconv.Quote("DISABLED"),
 						strconv.Quote("account_status"),
 					),
-					graphql:      "AccountStatus",
+					graphql: "AccountStatus",
+					graphqlImports: []enttype.FileImport{
+						{
+							Type:       "AccountStatus",
+							ImportType: enttype.Enum,
+						},
+					},
 					tsType:       "AccountStatus | null",
 					goTypePanics: true,
 					nonNullableType: &enttype.EnumType{
@@ -934,6 +1015,170 @@ func TestEnumType(t *testing.T) {
 			},
 		},
 	)
+}
+
+func TestTimestamptzType(t *testing.T) {
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"nullable": {
+			&enttype.NullableTimestamptzType{},
+			expType{
+				db:      "sa.TIMESTAMP(timezone=True)",
+				graphql: "Time",
+				graphqlImports: []enttype.FileImport{
+					{
+						Type:       "GraphQLTime",
+						ImportType: enttype.EntGraphQL,
+					},
+				},
+				tsType:              "Date | null",
+				nonNullableType:     &enttype.TimestamptzType{},
+				castToMethod:        "cast.ToNullableTime",
+				defaultGQLFieldName: "time",
+				zeroValue:           "time.Time{}",
+			},
+			nil,
+		},
+		"not nullable": {
+			&enttype.TimestamptzType{},
+			expType{
+				db:      "sa.TIMESTAMP(timezone=True)",
+				graphql: "Time!",
+				graphqlImports: []enttype.FileImport{
+					enttype.NewGQLFileImport("GraphQLNonNull"),
+					{
+						Type:       "GraphQLTime",
+						ImportType: enttype.EntGraphQL,
+					},
+				},
+				tsType:              "Date",
+				nullableType:        &enttype.NullableTimestamptzType{},
+				castToMethod:        "cast.ToTime",
+				defaultGQLFieldName: "time",
+				zeroValue:           "time.Time{}",
+			},
+			nil,
+		},
+	})
+}
+
+func TestTimeType(t *testing.T) {
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"nullable": {
+			&enttype.NullableTimeType{},
+			expType{
+				db:      "sa.Time()",
+				graphql: "String",
+				graphqlImports: []enttype.FileImport{
+					enttype.NewGQLFileImport("GraphQLString"),
+				},
+				tsType:              "Date | null",
+				nonNullableType:     &enttype.TimeType{},
+				castToMethod:        "cast.ToNullableTime",
+				defaultGQLFieldName: "time",
+				zeroValue:           "time.Time{}",
+			},
+			nil,
+		},
+		"not nullable": {
+			&enttype.TimeType{},
+			expType{
+				db:      "sa.Time()",
+				graphql: "String!",
+				graphqlImports: []enttype.FileImport{
+					enttype.NewGQLFileImport("GraphQLNonNull"),
+					enttype.NewGQLFileImport("GraphQLString"),
+				},
+				tsType:              "Date",
+				nullableType:        &enttype.NullableTimeType{},
+				castToMethod:        "cast.ToTime",
+				defaultGQLFieldName: "time",
+				zeroValue:           "time.Time{}",
+			},
+			nil,
+		},
+	})
+}
+
+func TestTimetzType(t *testing.T) {
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"nullable": {
+			&enttype.NullableTimetzType{},
+			expType{
+				db:      "sa.Time(timezone=True)",
+				graphql: "String",
+				graphqlImports: []enttype.FileImport{
+					enttype.NewGQLFileImport("GraphQLString"),
+				},
+				tsType:              "Date | null",
+				nonNullableType:     &enttype.TimetzType{},
+				castToMethod:        "cast.ToNullableTime",
+				defaultGQLFieldName: "time",
+				zeroValue:           "time.Time{}",
+			},
+			nil,
+		},
+		"not nullable": {
+			&enttype.TimetzType{},
+			expType{
+				db:      "sa.Time(timezone=True)",
+				graphql: "String!",
+				graphqlImports: []enttype.FileImport{
+					enttype.NewGQLFileImport("GraphQLNonNull"),
+					enttype.NewGQLFileImport("GraphQLString"),
+				},
+				tsType:              "Date",
+				nullableType:        &enttype.NullableTimetzType{},
+				castToMethod:        "cast.ToTime",
+				defaultGQLFieldName: "time",
+				zeroValue:           "time.Time{}",
+			},
+			nil,
+		},
+	})
+}
+
+func TestDateType(t *testing.T) {
+	testTypeDirectly(t, map[string]*typeTestCase{
+		"nullable": {
+			&enttype.NullableDateType{},
+			expType{
+				db:      "sa.Date()",
+				graphql: "Time",
+				graphqlImports: []enttype.FileImport{
+					{
+						Type:       "GraphQLTime",
+						ImportType: enttype.EntGraphQL,
+					},
+				},
+				tsType:              "Date | null",
+				nonNullableType:     &enttype.DateType{},
+				castToMethod:        "cast.ToNullableTime",
+				defaultGQLFieldName: "time",
+				zeroValue:           "time.Time{}",
+			},
+			nil,
+		},
+		"not nullable": {
+			&enttype.DateType{},
+			expType{
+				db:      "sa.Date()",
+				graphql: "Time!",
+				graphqlImports: []enttype.FileImport{
+					enttype.NewGQLFileImport("GraphQLNonNull"),
+					{
+						Type:       "GraphQLTime",
+						ImportType: enttype.EntGraphQL,
+					},
+				},
+				tsType:              "Date",
+				nullableType:        &enttype.NullableDateType{},
+				castToMethod:        "cast.ToTime",
+				defaultGQLFieldName: "time",
+				zeroValue:           "time.Time{}",
+			},
+			nil,
+		},
+	})
 }
 
 func testTypeDirectly(t *testing.T, testCases map[string]*typeTestCase) {
@@ -1000,6 +1245,13 @@ func testType(t *testing.T, exp expType, ret returnType) {
 		assert.Panics(t, func() { typ.GetGraphQLType() })
 	} else {
 		assert.Equal(t, exp.graphql, typ.GetGraphQLType())
+		gqlType, ok := typ.(enttype.TSGraphQLType)
+		if ok {
+			assert.Equal(t, exp.graphqlImports, gqlType.GetTSGraphQLImports())
+		} else {
+			// not a gqlType. this should be 0
+			assert.Len(t, exp.graphqlImports, 0)
+		}
 	}
 
 	entType, ok := typ.(enttype.EntType)

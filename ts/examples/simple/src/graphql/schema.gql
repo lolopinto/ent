@@ -148,10 +148,10 @@ type EventToMaybeEdge implements Edge {
 }
 
 enum EventRsvpStatus {
+  DECLINED
   MAYBE
   INVITED
   ATTENDING
-  DECLINED
   CAN_RSVP
 }
 
@@ -248,6 +248,8 @@ type Mutation {
   eventCreate(input: EventCreateInput!): EventCreatePayload!
   eventDelete(input: EventDeleteInput!): EventDeletePayload!
   eventEdit(input: EventEditInput!): EventEditPayload!
+  holidayCreate(input: HolidayCreateInput!): HolidayCreatePayload!
+  hoursOfOperationCreate(input: HoursOfOperationCreateInput!): HoursOfOperationCreatePayload!
   phoneNumberEdit(input: PhoneNumberEditInput!): PhoneNumberEditPayload!
   userAuth(input: UserAuthInput!): UserAuthPayload!
   userAuthJWT(input: UserAuthJWTInput!): UserAuthJWTPayload!
@@ -379,6 +381,48 @@ input EventEditInput {
   startTime: Time
   endTime: Time
   eventLocation: String
+}
+
+type HolidayCreatePayload {
+  holiday: Holiday!
+}
+
+type Holiday implements Node {
+  id: ID!
+  label: String!
+  date: Time!
+}
+
+input HolidayCreateInput {
+  label: String!
+  date: Time!
+}
+
+type HoursOfOperationCreatePayload {
+  hoursOfOperation: HoursOfOperation!
+}
+
+type HoursOfOperation implements Node {
+  id: ID!
+  dayOfWeek: dayOfWeek!
+  open: String!
+  close: String!
+}
+
+enum dayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+input HoursOfOperationCreateInput {
+  dayOfWeek: dayOfWeek!
+  open: String!
+  close: String!
 }
 
 type PhoneNumberEditPayload {

@@ -168,25 +168,25 @@ def validate_table(schema_table, db_table, dialect, metadata):
 
     assert schema_table.name == db_table.name
 
-    validate_columns(schema_table, db_table, metadata)
+    validate_columns(schema_table, db_table, metadata, dialect)
     validate_constraints(schema_table, db_table, dialect, metadata)
     validate_indexes(schema_table, db_table, metadata)
 
 
-def validate_columns(schema_table, db_table, metadata):
+def validate_columns(schema_table, db_table, metadata, dialect):
     schema_columns = schema_table.columns
     db_columns = db_table.columns
     assert len(schema_columns) == len(db_columns)
     for schema_column, db_column in zip(schema_columns, db_columns):
-        validate_column(schema_column, db_column, metadata)
+        validate_column(schema_column, db_column, metadata, dialect)
 
 
-def validate_column(schema_column, db_column, metadata):
+def validate_column(schema_column, db_column, metadata, dialect):
     assert schema_column != db_column
     assert(id(schema_column)) != id(db_column)
 
     assert schema_column.name == db_column.name
-    validate_column_type(schema_column, db_column, metadata)
+    validate_column_type(schema_column, db_column, metadata, dialect)
     assert schema_column.primary_key == db_column.primary_key
     assert schema_column.nullable == db_column.nullable
 
@@ -221,11 +221,21 @@ def validate_column_server_default(schema_column, db_column):
         assert schema_clause_text == db_clause_text
 
 
-def validate_column_type(schema_column, db_column, metadata):
+def validate_column_type(schema_column, db_column, metadata, dialect):
     # print(type(schema_column.type).__name__, schema_column.type, db_column.type, schema_column.type == db_column.type, str(schema_column.type) == str(db_column.type))
 
     if isinstance(schema_column.type, sa.TIMESTAMP):
-        assert schema_column.type.timezone == db_column.type.timezone
+        # timezone not supported in sqlite so this is just ignored there
+        if dialect != 'sqlite':
+            assert schema_column.type.timezone == db_column.type.timezone
+        else:
+            assert str(db_column.type) == "TIMESTAMP"
+    elif isinstance(schema_column.type, sa.Time):
+        # timezone not supported in sqlite so this is just ignored there
+        if dialect != 'sqlite':
+            assert schema_column.type.timezone == db_column.type.timezone
+        else:
+            assert str(db_column.type) == "TIME"
     elif isinstance(schema_column.type, sa.Numeric):
         assert isinstance(db_column.type, sa.Numeric)
         # precision is tricky so ignore this for now
@@ -289,7 +299,7 @@ def validate_constraints(schema_table, db_table, dialect, metadata):
     schema_constraints = sorted(schema_table.constraints, key=sort_fn)
     db_constraints = sorted(db_table.constraints, key=sort_fn)
 
-    bool_columns = []
+    bool_column_names_set = set()
     # sqlite doesn't support native boolean datatype so it adds another constraint.
     # This is us working around that...
     if dialect == 'sqlite':
@@ -330,7 +340,7 @@ def validate_constraints(schema_table, db_table, dialect, metadata):
 
         assert len(schema_constraint_columns) == len(db_constraint_columns)
         for schema_column, db_column in zip(schema_constraint_columns, db_constraint_columns):
-            validate_column(schema_column, db_column, metadata)
+            validate_column(schema_column, db_column, metadata, dialect)
 
 
 def validate_foreign_key(schema_column, db_column):
@@ -927,6 +937,35 @@ class BaseTestRunner(object):
         assert_num_files(r3, 3)
         validate_metadata_after_change(r3, new_metadata)
         validate_data_from_metadata(new_metadata, r3)
+
+    @pytest.mark.usefixtures("table_with_timestamptz_plus_date")
+    def test_table_with_timestamptz_plus_date(self, new_test_runner, table_with_timestamptz_plus_date):
+        r = new_test_runner(table_with_timestamptz_plus_date)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            table_with_timestamptz_plus_date,
+        )
+        validate_data_from_metadata(table_with_timestamptz_plus_date, r)
+
+    @pytest.mark.usefixtures("metadata_table_with_time")
+    def test_table_with_time(self, new_test_runner, metadata_table_with_time):
+        r = new_test_runner(metadata_table_with_time)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_table_with_time,
+            new_table_names=["hours"]
+        )
+        validate_data_from_metadata(metadata_table_with_time, r)
+
+    @pytest.mark.usefixtures("metadata_table_with_timetz")
+    def test_table_with_timetz(self, new_test_runner, metadata_table_with_timetz):
+        r = new_test_runner(metadata_table_with_timetz)
+        run_and_validate_with_standard_metadata_tables(
+            r,
+            metadata_table_with_timetz,
+            new_table_names=["hours"]
+        )
+        validate_data_from_metadata(metadata_table_with_timetz, r)
 
 
 class TestPostgresRunner(BaseTestRunner):

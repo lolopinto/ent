@@ -172,6 +172,45 @@ def address_metadata_table():
     return metadata
 
 
+@pytest.fixture()
+def table_with_timestamptz_plus_date():
+    metadata = sa.MetaData()
+    sa.Table("accounts", metadata,
+             sa.Column('id', sa.Integer(), nullable=False),
+             sa.Column('email_address', sa.String(255), nullable=False),
+             sa.Column('first_name', sa.Text(), nullable=False),
+             sa.Column('last_name', sa.Text(), nullable=False),
+             sa.Column('created_at', sa.TIMESTAMP(), nullable=False),
+             sa.Column('phone_number', sa.Text(), nullable=False),
+             sa.Column('updated_at', sa.TIMESTAMP(
+                 timezone=True), nullable=False),
+             sa.PrimaryKeyConstraint("id", name='accounts_id_pkey'),
+             )
+    return metadata
+
+
+@pytest.fixture()
+def metadata_table_with_time():
+    metadata = sa.MetaData()
+    sa.Table("hours", metadata,
+             sa.Column('day_of_week', sa.String(255), nullable=False),
+             sa.Column('open', sa.Time(), nullable=False),
+             sa.Column('close', sa.Time(), nullable=False),
+             )
+    return metadata
+
+
+@pytest.fixture()
+def metadata_table_with_timetz():
+    metadata = sa.MetaData()
+    sa.Table("hours", metadata,
+             sa.Column('day_of_week', sa.String(255), nullable=False),
+             sa.Column('open', sa.Time(timezone=True), nullable=False),
+             sa.Column('close', sa.Time(timezone=True), nullable=False),
+             )
+    return metadata
+
+
 def identity_metadata_func(metadata):
     return metadata
 
