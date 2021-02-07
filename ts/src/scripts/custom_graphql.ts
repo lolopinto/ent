@@ -53,6 +53,8 @@ async function captureCustom(filePath: string) {
     "**/tests/**",
     "**/index.ts",
     "**/internal.ts",
+    // ignore test files.
+    "**/*.test.ts",
   ];
   const customGQLResolvers = glob.sync(
     path.join(filePath, "/graphql/resolvers/**/*.ts"),
