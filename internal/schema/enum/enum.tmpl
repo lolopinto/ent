@@ -9,7 +9,7 @@ export enum {{.Name}} {
 }
 
 {{$enumName := .Name}}
-export function get{{.Name}}Values() {
+export function get{{toCamel .Name}}Values() {
   return [
   {{ range $data := .Values -}} 
     {{$enumName}}.{{.Name}},

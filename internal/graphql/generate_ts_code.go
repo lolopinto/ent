@@ -1063,13 +1063,36 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 			HasResolveFunction: gqlName != field.TsFieldName(),
 			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false)),
 		}
-		if gqlName == "id" {
-			// special case, we want to return the base64 encoded id instead of uuid or something
-			gqlField.ResolverMethod = "nodeIDEncoder"
-		}
+		ftype := field.GetFieldType()
+		enumType, ok := ftype.(enttype.EnumeratedType)
+		if ok {
+			tsValuesMethod := fmt.Sprintf("get%sValues", strcase.ToCamel(enumType.GetTSType()))
+			gqlField.HasResolveFunction = true
+			gqlField.ExtraImports = append(
+				gqlField.ExtraImports,
+				&fileImport{
+					ImportPath: codepath.GraphQLPackage,
+					Type:       "convertToGQLEnum",
+				},
+				&fileImport{
+					ImportPath: codepath.GetExternalImportPath(),
+					Type:       tsValuesMethod,
+				},
+			)
+			gqlField.FunctionContents = []string{fmt.Sprintf("const ret = %s.%s;", instance, field.TsFieldName()),
+				fmt.Sprintf("return convertToGQLEnum(ret, %s(), %s.getValues())",
+					tsValuesMethod,
+					enumType.GetGraphQLName()+"Type",
+				)}
+		} else {
+			if gqlName == "id" {
+				// special case, we want to return the base64 encoded id instead of uuid or something
+				gqlField.ResolverMethod = "nodeIDEncoder"
+			}
 
-		if gqlField.HasResolveFunction {
-			gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())}
+			if gqlField.HasResolveFunction {
+				gqlField.FunctionContents = []string{fmt.Sprintf("return %s.%s;", instance, field.TsFieldName())}
+			}
 		}
 		fields = append(fields, gqlField)
 	}
@@ -1607,7 +1630,7 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 						fmt.Sprintf("%s: mustDecodeIDFromGQLID(input.%s),", f.TsFieldName(), f.TsFieldName()),
 					)
 				} else if enumOk {
-					tsValuesMethod := "get" + enum.GetTSName() + "Values"
+					tsValuesMethod := "get" + strcase.ToCamel(enum.GetTSName()) + "Values"
 					actionPath := getActionBasePath(nodeData, a)
 
 					result.FunctionContents = append(
