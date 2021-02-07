@@ -9,7 +9,15 @@ import {
   Ent,
   LoadEntOptions,
 } from "@lolopinto/ent";
-import { Address, AuthCode, Contact, Event, User } from "src/ent/internal";
+import {
+  Address,
+  AuthCode,
+  Contact,
+  Event,
+  Holiday,
+  HoursOfOperation,
+  User,
+} from "src/ent/internal";
 
 export async function loadEntByType(
   viewer: Viewer,
@@ -37,6 +45,10 @@ export function getLoaderOptions(type: NodeType): LoadEntOptions<Ent> {
       return Contact.loaderOptions();
     case NodeType.Event:
       return Event.loaderOptions();
+    case NodeType.Holiday:
+      return Holiday.loaderOptions();
+    case NodeType.HoursOfOperation:
+      return HoursOfOperation.loaderOptions();
     case NodeType.User:
       return User.loaderOptions();
   }

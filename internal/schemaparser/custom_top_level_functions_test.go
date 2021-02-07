@@ -44,7 +44,7 @@ func TestFuncThatReturnsOneItem(t *testing.T) {
 				results: []field{
 					field{
 						name: "time", // from default field name
-						typ:  &enttype.TimeType{},
+						typ:  &enttype.TimestampType{},
 					},
 				},
 			}

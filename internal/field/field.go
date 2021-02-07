@@ -215,7 +215,7 @@ func addBaseFields(fieldInfo *FieldInfo) {
 	createdAtField.hideFromGraphQL = true
 	createdAtField.exposeToActionsByDefault = false
 	createdAtField.topLevelStructField = false
-	createdAtField.fieldType = &enttype.TimeType{}
+	createdAtField.fieldType = &enttype.TimestampType{}
 	fieldInfo.addField(createdAtField)
 
 	updatedAtField := newField("UpdatedAt")
@@ -223,7 +223,7 @@ func addBaseFields(fieldInfo *FieldInfo) {
 	// immutable instead...?
 	updatedAtField.exposeToActionsByDefault = false
 	updatedAtField.topLevelStructField = false
-	updatedAtField.fieldType = &enttype.TimeType{}
+	updatedAtField.fieldType = &enttype.TimestampType{}
 	fieldInfo.addField(updatedAtField)
 }
 

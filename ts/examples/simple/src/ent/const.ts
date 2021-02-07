@@ -9,6 +9,10 @@ export enum NodeType {
   Contact = "contact",
   // Event is the node type for the Event object. Used to identify this node in edges and other places.
   Event = "event",
+  // Holiday is the node type for the Holiday object. Used to identify this node in edges and other places.
+  Holiday = "holiday",
+  // HoursOfOperation is the node type for the HoursOfOperation object. Used to identify this node in edges and other places.
+  HoursOfOperation = "hoursOfOperation",
   // User is the node type for the User object. Used to identify this node in edges and other places.
   User = "user",
 }
@@ -19,6 +23,8 @@ export function getNodeTypeValues() {
     NodeType.AuthCode,
     NodeType.Contact,
     NodeType.Event,
+    NodeType.Holiday,
+    NodeType.HoursOfOperation,
     NodeType.User,
   ];
 }

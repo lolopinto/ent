@@ -662,12 +662,12 @@ func TestActionOnlyFields(t *testing.T) {
 		map[string]string{
 			"event.ts": testhelper.GetCodeWithSchema(
 				`
-				import {Schema, Action, Field, ActionOperation, StringType, TimeType} from "{schema}";
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
 
 				export default class Event implements Schema {
 					fields: Field[] = [
 						StringType({name: "name"}),
-						TimeType({name: "start_time"}),
+						TimestampType({name: "start_time"}),
 					];
 
 					actions: Action[] = [

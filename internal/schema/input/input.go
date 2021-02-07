@@ -39,16 +39,20 @@ type DBType string
 
 const (
 	// Note that these types should match enum DBType in schema.ts
-	UUID       DBType = "UUID"
-	Int64ID           = "Int64ID"
-	Boolean           = "Boolean"
-	Int               = "Int"
-	Float             = "Float"
-	String            = "String"
-	Time              = "Time"
-	JSON              = "JSON"
-	Enum              = "Enum"
-	StringEnum        = "StringEnum"
+	UUID        DBType = "UUID"
+	Int64ID            = "Int64ID"
+	Boolean            = "Boolean"
+	Int                = "Int"
+	Float              = "Float"
+	String             = "String"
+	Timestamp          = "Timestamp"
+	Timestamptz        = "Timestamptz"
+	Time               = "Time"
+	Timetz             = "Timetz"
+	Date               = "Date"
+	JSON               = "JSON"
+	Enum               = "Enum"
+	StringEnum         = "StringEnum"
 )
 
 type FieldType struct {
@@ -126,11 +130,31 @@ func (f *Field) GetEntType() enttype.EntType {
 			return &enttype.NullableStringType{}
 		}
 		return &enttype.StringType{}
+	case Timestamp:
+		if f.Nullable {
+			return &enttype.NullableTimestampType{}
+		}
+		return &enttype.TimestampType{}
+	case Timestamptz:
+		if f.Nullable {
+			return &enttype.NullableTimestamptzType{}
+		}
+		return &enttype.TimestamptzType{}
 	case Time:
 		if f.Nullable {
 			return &enttype.NullableTimeType{}
 		}
 		return &enttype.TimeType{}
+	case Timetz:
+		if f.Nullable {
+			return &enttype.NullableTimetzType{}
+		}
+		return &enttype.TimetzType{}
+	case Date:
+		if f.Nullable {
+			return &enttype.NullableDateType{}
+		}
+		return &enttype.DateType{}
 	case JSON:
 		return &enttype.RawJSONType{}
 
@@ -250,9 +274,9 @@ func (f *ActionField) GetEntType(inputName string) enttype.TSGraphQLType {
 		return &enttype.StringType{}
 	case ActionTypeTime:
 		if f.Nullable {
-			return &enttype.NullableTimeType{}
+			return &enttype.NullableTimestampType{}
 		}
-		return &enttype.TimeType{}
+		return &enttype.TimestampType{}
 	case ActionTypeObject:
 		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(f.Name))
 		gqlType := fmt.Sprintf("%s%s", f.Name, inputName)

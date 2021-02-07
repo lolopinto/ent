@@ -253,15 +253,13 @@ export function createDataLoader(options: SelectDataOptions) {
     // TODO is there a better way of doing this?
     // context not needed because we're creating a loader which has its own cache which is being used here
     const nodes = await loadRows(rowOptions);
-    let result: Data[] = [];
-    ids.forEach((id) => {
+    let result: (Data | Error)[] = ids.map((id) => {
       for (const node of nodes) {
         if (node[col] === id) {
-          result.push(node);
-          return;
+          return node;
         }
       }
-      return null;
+      return new Error(`couldn't find data for row ${id}`);
     });
 
     return result;
@@ -552,11 +550,11 @@ export class EdgeOperation implements DataOperation {
       data: edge.data || null,
     };
     if (edge.time) {
-      fields["time"] = edge.time;
+      fields["time"] = edge.time.toISOString();
     } else {
       // todo make this a schema field like what we do in generated base files...
       // maybe when actions exist?
-      fields["time"] = new Date();
+      fields["time"] = new Date().toISOString();
     }
     if (edge.data) {
       fields["data"] = edge.data;
