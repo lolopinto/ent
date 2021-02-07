@@ -526,11 +526,11 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusMethod() string {
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetStatusMapMethod() string {
-	return fmt.Sprintf("get%sMap", edgeGroup.ConstType)
+	return fmt.Sprintf("get%sMap", strcase.ToCamel(edgeGroup.ConstType))
 }
 
 func (edgeGroup *AssociationEdgeGroup) GetEnumValuesMethod() string {
-	return fmt.Sprintf("get%sValues", edgeGroup.ConstType)
+	return fmt.Sprintf("get%sValues", strcase.ToCamel(edgeGroup.ConstType))
 }
 
 func (edgeGroup *AssociationEdgeGroup) EdgeIdentifier() string {
