@@ -459,3 +459,152 @@ func TestConstraints(t *testing.T) {
 
 	runTestCases(t, testCases)
 }
+
+func TestIndices(t *testing.T) {
+	testCases := map[string]testCase{
+		"multi-column index": {
+			code: map[string]string{
+				"contact.ts": getCodeWithSchema(`
+					import {BaseEntSchema, Field, StringType, Index} from "{schema}";
+
+					export default class Contact extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: "firstName",
+							}),
+							StringType({
+								name: "lastName",
+							}),
+							// this *should* be EmailType but not worth it
+							StringType({
+								name: "emailAddress",
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "contacts_name_index",
+								columns: ["firstName", "lastName"],
+							},
+						];
+					}
+				`),
+			},
+			expectedOutput: map[string]node{
+				"Contact": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "firstName",
+							dbType: input.String,
+						},
+						field{
+							name:   "lastName",
+							dbType: input.String,
+						},
+						field{
+							name:   "emailAddress",
+							dbType: input.String,
+						}),
+					indices: []index{
+						{
+							name:    "contacts_name_index",
+							columns: []string{"firstName", "lastName"},
+						},
+					},
+				},
+			},
+		},
+		// same example from above can also be represented as unique index
+		"multi-column unique index": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+					import {Field, StringType, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+						];
+					}
+					`),
+				"contact.ts": getCodeWithSchema(`
+					import {BaseEntSchema, Field, UUIDType, StringType, Index} from "{schema}";
+
+					export default class Contact extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: "firstName",
+							}),
+							StringType({
+								name: "lastName",
+							}),
+							// this *should* be EmailType but not worth it
+							StringType({
+								name: "emailAddress",
+							}),
+							UUIDType({
+								name: "userID",
+								foreignKey: ["User", "ID"],
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "contacts_unique_email",
+								columns: ["emailAddress", "userID"],
+								unique: true,
+							},
+						];
+					}
+				`),
+			},
+			expectedOutput: map[string]node{
+				"User": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "firstName",
+							dbType: input.String,
+						},
+						field{
+							name:   "lastName",
+							dbType: input.String,
+						},
+					),
+				},
+				"Contact": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "firstName",
+							dbType: input.String,
+						},
+						field{
+							name:   "lastName",
+							dbType: input.String,
+						},
+						field{
+							name:   "emailAddress",
+							dbType: input.String,
+						},
+						field{
+							name:       "userID",
+							dbType:     input.UUID,
+							foreignKey: &[2]string{"User", "ID"},
+						}),
+					indices: []index{
+						{
+							name:    "contacts_unique_email",
+							columns: []string{"emailAddress", "userID"},
+							unique:  true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	runTestCases(t, testCases)
+}
