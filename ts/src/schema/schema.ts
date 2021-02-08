@@ -25,6 +25,8 @@ export default interface Schema {
   // constraints applied to the schema e.g. multi-fkey, multi-column unique keys, join table primary keys etc
   constraints?: Constraint[];
 
+  indices?: Index[];
+
   // hide a node from graphql
   // this automatically hides all related actions to it from graphql
   // AND hides all edges pointing to it since we can't return this object
@@ -338,6 +340,12 @@ export interface Constraint {
   columns: string[];
   fkey?: ForeignKeyInfo;
   condition?: string; // only applies in check constraint
+}
+
+export interface Index {
+  name: string;
+  columns: string[];
+  unique?: boolean; // can also create a unique constraint this way because why not...
 }
 
 export interface ForeignKeyInfo {

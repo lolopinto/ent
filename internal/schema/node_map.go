@@ -884,6 +884,7 @@ func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base
 		nodeData.EnumTable = node.EnumTable
 		nodeData.DBRows = node.DBRows
 		nodeData.Constraints = node.Constraints
+		nodeData.Indices = node.Indices
 		nodeData.HideFromGraphQL = node.HideFromGraphQL
 
 		// not in schema.Nodes...

@@ -18,6 +18,7 @@ export {
   EdgeAction,
   NoFields,
   Constraint,
+  Index,
   ConstraintType,
   ForeignKeyInfo,
   requiredField,

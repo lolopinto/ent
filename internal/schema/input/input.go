@@ -24,6 +24,7 @@ type Node struct {
 	EnumTable       bool                     `json:"enumTable"`
 	DBRows          []map[string]interface{} `json:"dbRows"`
 	Constraints     []*Constraint            `json:"constraints"`
+	Indices         []*Index                 `json:"indices"`
 	HideFromGraphQL bool                     `json:"hideFromGraphQL"`
 }
 
@@ -317,6 +318,12 @@ type Constraint struct {
 	Columns    []string        `json:"columns"`
 	ForeignKey *ForeignKeyInfo `json:"fkey"`
 	Condition  string          `json:"condition"`
+}
+
+type Index struct {
+	Name    string   `json:"name"`
+	Columns []string `json:"columns"`
+	Unique  bool     `json:"unique"`
 }
 
 type ConstraintType string

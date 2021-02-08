@@ -59,6 +59,8 @@ type NodeData struct {
 	tsEnums         []*enum.Enum
 	// fine to just reuse input constraints for now
 	Constraints []*input.Constraint
+	// same as above. fine to just reuse
+	Indices []*input.Index
 }
 
 func newNodeData(packageName string) *NodeData {
