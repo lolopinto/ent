@@ -73,9 +73,6 @@ func (col *dbColumn) getLineInTable() string {
 type dbConstraint interface {
 	getConstraintString() string
 }
-type dbIndex interface {
-	getIndexString() string
-}
 
 type colBasedConstraint interface {
 	getName() string
@@ -326,6 +323,7 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 		}
 	}
 
+	// let's just use exising constraint for this
 	for _, index := range nodeData.Indices {
 		cols, err := findConstraintDBColumns(index.Columns, columns)
 		util.Die(err)
