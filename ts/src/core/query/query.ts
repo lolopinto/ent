@@ -1,5 +1,3 @@
-//import { Edge } from "src/schema";
-
 import {
   ID,
   AssocEdge,
@@ -12,10 +10,11 @@ import {
   DefaultLimit,
   AssocEdgeConstructor,
   loadCustomEdges,
-} from "./ent";
-import * as clause from "./clause";
+  Data,
+} from "../ent";
+import * as clause from "../clause";
 
-export interface EdgeQuery<T extends Ent, TEdge extends AssocEdge> {
+export interface EdgeQuery<T extends Ent, TEdge extends Data> {
   queryEdges(): Promise<Map<ID, TEdge[]>>;
   queryIDs(): Promise<Map<ID, ID[]>>;
   queryCount(): Promise<Map<ID, number>>;
@@ -25,11 +24,9 @@ export interface EdgeQuery<T extends Ent, TEdge extends AssocEdge> {
   first(n: number, after?: string): EdgeQuery<T, TEdge>;
   last(n: number, before?: string): EdgeQuery<T, TEdge>;
   paginationInfo(): Map<ID, PaginationInfo>;
-
-  // TODO we need a way to handle singular id for e.g. unique edge
 }
 
-interface EdgeQueryFilter<T extends AssocEdge> {
+interface EdgeQueryFilter<T extends Data> {
   // this is a filter that does the processing in TypeScript instead of at the SQL layer
   filter?(id: ID, edges: T[]): T[];
 
@@ -51,19 +48,21 @@ export interface PaginationInfo {
   hasPreviousPage?: boolean;
 }
 
+// TODO can we generalize EdgeQuery to support any clause
 function assertPositive(n: number) {
   if (n < 0) {
     throw new Error("cannot use a negative number");
   }
 }
 
-function assertValidCursor(cursor: string): number {
+function assertValidCursor(cursor: string, col: string): number {
   let decoded = Buffer.from(cursor, "base64").toString("ascii");
   let parts = decoded.split(":");
   // invalid or unknown cursor. nothing to do here.
-  if (parts.length !== 2 || parts[0] !== "time") {
+  if (parts.length !== 2 || parts[0] !== col) {
     throw new Error(`invalid cursor ${cursor} passed`);
   }
+  // TODO check if numeric or not but for now we're only doing numbers
   const time = parseInt(parts[1], 10);
   if (isNaN(time)) {
     throw new Error(`invalid cursor ${cursor} passed`);
@@ -71,21 +70,41 @@ function assertValidCursor(cursor: string): number {
   return time;
 }
 
-class FirstFilter<T extends AssocEdge> implements EdgeQueryFilter<T> {
-  private time: number | undefined;
+export interface FilterOptions {
+  limit: number;
+  before?: string;
+  after?: string;
+  sortCol?: string; // what column are we sorting by. defaults to `time`
+  // if sortCol is provided, check if time or not
+  sortColNotTime?: boolean;
+}
+
+class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
+  private offset: any | undefined;
+  private sortCol: string;
   private pageMap: Map<ID, PaginationInfo> = new Map();
 
-  constructor(private limit: number, after?: string) {
-    assertPositive(limit);
-    if (after) {
-      this.time = assertValidCursor(after);
+  constructor(private options: FilterOptions) {
+    assertPositive(options.limit);
+
+    if (options.before) {
+      throw new Error(`cannot specify before with a first filter`);
+    }
+    this.sortCol = options.sortCol || "time";
+    if (options.after) {
+      this.offset = assertValidCursor(options.after, this.sortCol);
+    }
+    if (this.options.sortColNotTime && !this.options.sortCol) {
+      throw new Error(
+        `cannot specify sortColNotTime without specifying a sortCol`,
+      );
     }
   }
 
   filter(id: ID, edges: T[]): T[] {
-    if (edges.length > this.limit) {
+    if (edges.length > this.options.limit) {
       this.pageMap.set(id, { hasNextPage: true });
-      return edges.slice(0, this.limit);
+      return edges.slice(0, this.options.limit);
     }
     // TODO: in the future, when we have caching for edges
     // we'll want to hit that cache instead of passing the limit down to the
@@ -97,15 +116,20 @@ class FirstFilter<T extends AssocEdge> implements EdgeQueryFilter<T> {
 
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
     // we fetch an extra one to see if we're at the end
-    const limit = this.limit + 1;
+    const limit = this.options.limit + 1;
 
     options.limit = limit;
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
-    if (this.time) {
-      options.clause = clause.Less("time", new Date(this.time).toISOString());
-      // just to be explicit even though this is the default
-      options.orderby = "time DESC";
+    if (this.offset) {
+      if (this.options.sortColNotTime) {
+        options.clause = clause.Less(this.sortCol, this.offset);
+      }
+      options.clause = clause.Less(
+        this.sortCol,
+        new Date(this.offset).toISOString(),
+      );
+      options.orderby = `${this.sortCol} DESC`;
     }
     return options;
   }
@@ -115,45 +139,60 @@ class FirstFilter<T extends AssocEdge> implements EdgeQueryFilter<T> {
   }
 }
 
-class LastFilter<T extends AssocEdge> implements EdgeQueryFilter<T> {
-  private time: number | undefined;
+class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
+  private offset: any | undefined;
+  private sortCol: string;
   private pageMap: Map<ID, PaginationInfo> = new Map();
 
-  constructor(private limit: number, after?: string) {
-    assertPositive(limit);
-    if (after) {
-      this.time = assertValidCursor(after);
+  constructor(private options: FilterOptions) {
+    assertPositive(options.limit);
+
+    if (options.after) {
+      throw new Error(`cannot specify after with a last filter`);
+    }
+    this.sortCol = options.sortCol || "time";
+    if (options.before) {
+      this.offset = assertValidCursor(options.before, this.sortCol);
+    }
+    if (this.options.sortColNotTime && !this.options.sortCol) {
+      throw new Error(
+        `cannot specify sortColNotTime without specifying a sortCol`,
+      );
     }
   }
 
   filter(id: ID, edges: T[]): T[] {
-    if (edges.length > this.limit) {
+    if (edges.length > this.options.limit) {
       this.pageMap.set(id, { hasPreviousPage: true });
     }
-    if (this.time) {
+    if (this.offset) {
       // we have an extra one, get rid of it. we only got it to see if hasPreviousPage = true
-      if (edges.length > this.limit) {
+      if (edges.length > this.options.limit) {
         return edges.slice(0, edges.length - 1);
       }
       // done in SQL. nothing to do here.
       return edges;
     }
-    return edges.slice(edges.length - this.limit, edges.length);
+    return edges.slice(edges.length - this.options.limit, edges.length);
   }
 
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
-    if (!this.time) {
+    if (!this.offset) {
       return options;
     }
 
-    // we sort by most recent first
-    // so when paging backwards, we fetch beforeCursor X
-    return {
-      ...options,
-      clause: clause.Greater("time", new Date(this.time).toISOString()),
-      orderby: "time ASC",
-      limit: this.limit + 1, // fetch an extra so we know if previous page
-    };
+    options.orderby = `${this.sortCol} ASC`;
+    options.limit = this.options.limit + 1; // fetch an extra so we know if previous pag
+
+    if (this.options.sortColNotTime) {
+      options.clause = clause.Greater(this.sortCol, this.offset);
+    } else {
+      options.clause = clause.Greater(
+        this.sortCol,
+        new Date(this.offset).toISOString(),
+      );
+    }
+    return options;
   }
 
   paginationInfo(id: ID): PaginationInfo | undefined {
@@ -161,86 +200,45 @@ class LastFilter<T extends AssocEdge> implements EdgeQueryFilter<T> {
   }
 }
 
-export type EdgeQuerySource<T extends Ent> =
-  | T
-  | T[]
-  | ID
-  | ID[]
-  | EdgeQuery<T, AssocEdge>;
-
-export class BaseEdgeQuery<
-  TSource extends Ent,
-  TDest extends Ent,
-  TEdge extends AssocEdge
-> {
+export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   private filters: EdgeQueryFilter<TEdge>[] = [];
   private queryDispatched: boolean;
-  private idsResolved: boolean;
-  private edges: Map<ID, TEdge[]> = new Map();
-  private resolvedIDs: ID[] = [];
+  //  private idsResolved: boolean;
+  protected edges: Map<ID, TEdge[]> = new Map();
+  //  private resolvedIDs: ID[] = [];
   private pagination: Map<ID, PaginationInfo> = new Map();
 
   constructor(
     public viewer: Viewer,
-    public src: EdgeQuerySource<TSource>,
-    private edgeType: string,
-    private ctr: LoadEntOptions<TDest>,
-    private edgeCtr: AssocEdgeConstructor<TEdge>,
+    public src: ID,
+    //    private ctr: LoadEntOptions<TDest>,
+    private sortCol: string,
   ) {}
 
-  // TODO memoization...
-  private async resolveIDs(): Promise<ID[]> {
-    if (this.idsResolved) {
-      return this.resolvedIDs;
-    }
-    if (Array.isArray(this.src)) {
-      this.src.forEach((obj: TSource | ID) => this.addID(obj));
-    } else if (this.isEdgeQuery(this.src)) {
-      const idsMap = await this.src.queryIDs();
-      for (const [_, ids] of idsMap) {
-        ids.forEach((id) => this.resolvedIDs.push(id));
-      }
-    } else {
-      this.addID(this.src);
-    }
-    this.idsResolved = true;
-    return this.resolvedIDs;
-  }
-
-  private isEdgeQuery(
-    obj: TSource | ID | EdgeQuery<TSource, AssocEdge>,
-  ): obj is EdgeQuery<TSource, AssocEdge> {
-    if ((obj as EdgeQuery<TSource, AssocEdge>).queryIDs !== undefined) {
-      return true;
-    }
-    return false;
-  }
-
-  private addID(obj: TSource | ID) {
-    if (typeof obj === "object") {
-      this.resolvedIDs.push(obj.id);
-    } else {
-      this.resolvedIDs.push(obj);
-    }
-  }
+  //  protected abstract resolveIDs(): Promise<ID[]>;
 
   first(n: number, after?: string): this {
     this.assertQueryNotDispatched("first");
-    this.filters.push(new FirstFilter(n, after));
+    this.filters.push(
+      new FirstFilter({ limit: n, after, sortCol: this.sortCol }),
+    );
     return this;
   }
 
   last(n: number, before?: string): this {
     this.assertQueryNotDispatched("last");
-    this.filters.push(new LastFilter(n, before));
+    this.filters.push(
+      new LastFilter({ limit: n, before, sortCol: this.sortCol }),
+    );
     return this;
   }
 
-  async queryEdges(): Promise<Map<ID, TEdge[]>> {
+  // this is basically just raw rows
+  readonly queryEdges = async (): Promise<Map<ID, TEdge[]>> => {
     return await this.loadEdges();
-  }
+  };
 
-  async queryIDs(): Promise<Map<ID, ID[]>> {
+  readonly queryIDs = async (): Promise<Map<ID, ID[]>> => {
     const edges = await this.loadEdges();
     let results: Map<ID, ID[]> = new Map();
     for (const [id, edge_data] of edges) {
@@ -250,54 +248,39 @@ export class BaseEdgeQuery<
       );
     }
     return results;
-  }
+  };
 
-  // doesn't work with filters...
-  async queryRawCount(): Promise<Map<ID, number>> {
-    let results: Map<ID, number> = new Map();
-    const ids = await this.resolveIDs();
-    await Promise.all(
-      ids.map(async (id) => {
-        const count = await loadRawEdgeCountX({
-          id1: id,
-          edgeType: this.edgeType,
-          context: this.viewer.context,
-        });
-        results.set(id, count);
-      }),
-    );
-    return results;
-  }
-
-  // works with filters
-  async queryCount(): Promise<Map<ID, number>> {
+  readonly queryCount = async (): Promise<Map<ID, number>> => {
     let results: Map<ID, number> = new Map();
     const edges = await this.loadEdges();
     edges.forEach((list, id) => {
       results.set(id, list.length);
     });
     return results;
-  }
+  };
 
-  async queryEnts(): Promise<Map<ID, TDest[]>> {
+  protected abstract loadEntsFromEdges(
+    id: ID,
+    edges: TEdge[],
+  ): Promise<TDest[]>;
+
+  readonly queryEnts = async (): Promise<Map<ID, TDest[]>> => {
     // applies filters and then gets things after
     const edges = await this.loadEdges();
-    let promises: Promise<any>[] = [];
+    let promises: Promise<void>[] = [];
     const results: Map<ID, TDest[]> = new Map();
 
-    const loadEntsForID = async (id: ID, edges: AssocEdge[]) => {
-      const ids = edges.map((edge) => edge.id2);
-      const ents = await loadEnts(this.viewer, this.ctr, ...ids);
+    const loadEntsForID = async (id: ID, edges: TEdge[]) => {
+      const ents = await this.loadEntsFromEdges(id, edges);
       results.set(id, ents);
     };
-
     for (const [id, edgesList] of edges) {
       promises.push(loadEntsForID(id, edgesList));
     }
 
     await Promise.all(promises);
     return results;
-  }
+  };
 
   paginationInfo(): Map<ID, PaginationInfo> {
     this.assertQueryDispatched("paginationInfo");
@@ -316,21 +299,9 @@ export class BaseEdgeQuery<
     }
   }
 
-  private async loadRawEdges(options: EdgeQueryableDataOptions) {
-    const ids = await this.resolveIDs();
-    await Promise.all(
-      ids.map(async (id) => {
-        const edges = await loadCustomEdges({
-          id1: id,
-          edgeType: this.edgeType,
-          context: this.viewer.context,
-          queryOptions: options,
-          ctr: this.edgeCtr,
-        });
-        this.edges.set(id, edges);
-      }),
-    );
-  }
+  protected abstract loadRawData(
+    options: EdgeQueryableDataOptions,
+  ): Promise<void>;
 
   private async loadEdges() {
     if (this.queryDispatched) {
@@ -352,7 +323,7 @@ export class BaseEdgeQuery<
       }
     });
 
-    await this.loadRawEdges(options);
+    await this.loadRawData(options);
 
     // no filters. nothing to do here.
     if (!this.filters.length) {
@@ -379,8 +350,4 @@ export class BaseEdgeQuery<
 
     return this.edges;
   }
-}
-
-export interface EdgeQueryCtr<T extends Ent, TEdge extends AssocEdge> {
-  new (viewer: Viewer, src: EdgeQuerySource<T>): EdgeQuery<T, TEdge>;
 }

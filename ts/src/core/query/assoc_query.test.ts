@@ -1,8 +1,9 @@
 import { Pool } from "pg";
-import { QueryRecorder } from "../testutils/db_mock";
-import { AssocEdge, Data, ID, Ent, Viewer, DefaultLimit } from "./ent";
-import { EdgeQuery, EdgeQueryCtr } from "./query";
-import { IDViewer, LoggedOutViewer } from "./viewer";
+import { QueryRecorder } from "../../testutils/db_mock";
+import { AssocEdge, Data, ID, Ent, Viewer, DefaultLimit } from "../ent";
+import { EdgeQuery } from "./query";
+import { EdgeQueryCtr } from "./assoc_query";
+import { IDViewer, LoggedOutViewer } from "../viewer";
 import { advanceBy } from "jest-date-mock";
 import {
   FakeUser,
@@ -17,7 +18,7 @@ import {
   NodeType,
   UserToCustomEdgeQuery,
   CustomEdge,
-} from "../testutils/fake_data/index";
+} from "../../testutils/fake_data/index";
 import {
   inputs,
   getUserInput,
@@ -27,7 +28,7 @@ import {
   verifyUserToContacts,
   createEdges,
   createTestEvent,
-} from "../testutils/fake_data/test_helpers";
+} from "../../testutils/fake_data/test_helpers";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -142,7 +143,7 @@ class TestQueryFilter {
   }
 }
 
-describe("simple queries", () => {
+describe.only("simple queries", () => {
   const filter = new TestQueryFilter(
     (q: UserToContactsQuery) => {
       // no filters
@@ -189,7 +190,7 @@ describe("simple queries", () => {
   });
 });
 
-describe("custom edge", () => {
+describe.only("custom edge", () => {
   let user1, user2: FakeUser;
 
   beforeEach(async () => {
@@ -286,7 +287,7 @@ function verifyLastBeforeCursorQuery(length: number = 1) {
 
 // for now, this always applies in sql. todo may not always be the case.
 // see comment in FirstFilter
-describe("first. no cursor", () => {
+describe.only("first. no cursor", () => {
   const N = 2;
   const filter = new TestQueryFilter(
     (q: UserToContactsQuery) => {
@@ -332,7 +333,7 @@ describe("first. no cursor", () => {
   });
 });
 
-describe("last", () => {
+describe.only("last", () => {
   const N = 2;
   const filter = new TestQueryFilter(
     (q: UserToContactsQuery) => {
@@ -378,7 +379,7 @@ describe("last", () => {
   });
 });
 
-describe("first after cursor", () => {
+describe.only("first after cursor", () => {
   const idx = 2;
   const N = 3;
   let rows: Data[] = [];
@@ -431,7 +432,7 @@ describe("first after cursor", () => {
   });
 });
 
-test("first. after each cursor", async () => {
+test.only("first. after each cursor", async () => {
   let [user, contacts] = await createAllContacts();
   contacts = contacts.reverse();
   const edgesMap = await UserToContactsQuery.query(
@@ -475,7 +476,7 @@ test("first. after each cursor", async () => {
   await verify(5, false, false, edges[4].getCursor());
 });
 
-describe("last. before cursor", () => {
+describe.only("last. before cursor", () => {
   const idx = 2;
   const N = 3;
   let rows: Data[] = [];
@@ -531,7 +532,7 @@ describe("last. before cursor", () => {
   });
 });
 
-test("last. before each cursor", async () => {
+test.only("last. before each cursor", async () => {
   let [user, contacts] = await createAllContacts();
   contacts = contacts.reverse();
   const edgesMap = await UserToContactsQuery.query(
