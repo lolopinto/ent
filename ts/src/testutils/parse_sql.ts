@@ -72,7 +72,10 @@ function getColumns(cols: string[] | null | any[] | Column[] | "*"): ColsInfo {
       result.push(col);
     } else {
       assert(col.type === "expr", "invalid col type");
-      assert(col.as === null, "column as not-null"); // TODO support this
+      if (col.as !== "count") {
+        // count supported as function below...
+        assert(col.as === null, "column as not-null"); // TODO support this
+      }
       assert(col.expr !== null, "null col expr");
       if (col.expr.column) {
         // regular column

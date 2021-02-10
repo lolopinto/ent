@@ -49,6 +49,7 @@ beforeEach(async () => {
   QueryRecorder.clearQueries();
 });
 
+// TODO need this for custom edges...
 class TestConnection {
   private user: FakeUser;
   private contacts: FakeContact[];

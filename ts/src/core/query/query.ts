@@ -119,6 +119,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     const limit = this.options.limit + 1;
 
     options.limit = limit;
+    options.orderby = `${this.sortCol} DESC`;
     // we sort by most recent first
     // so when paging, we fetch afterCursor X
     if (this.offset) {
@@ -129,7 +130,6 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         this.sortCol,
         new Date(this.offset).toISOString(),
       );
-      options.orderby = `${this.sortCol} DESC`;
     }
     return options;
   }
@@ -203,17 +203,10 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
 export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   private filters: EdgeQueryFilter<TEdge>[] = [];
   private queryDispatched: boolean;
-  //  private idsResolved: boolean;
   protected edges: Map<ID, TEdge[]> = new Map();
-  //  private resolvedIDs: ID[] = [];
   private pagination: Map<ID, PaginationInfo> = new Map();
 
-  constructor(
-    public viewer: Viewer,
-    public src: ID,
-    //    private ctr: LoadEntOptions<TDest>,
-    private sortCol: string,
-  ) {}
+  constructor(public viewer: Viewer, private sortCol: string) {}
 
   //  protected abstract resolveIDs(): Promise<ID[]>;
 
@@ -238,13 +231,15 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
     return await this.loadEdges();
   };
 
+  protected abstract dataToID(edge: TEdge): ID;
+
   readonly queryIDs = async (): Promise<Map<ID, ID[]>> => {
     const edges = await this.loadEdges();
     let results: Map<ID, ID[]> = new Map();
     for (const [id, edge_data] of edges) {
       results.set(
         id,
-        edge_data.map((edge) => edge.id2),
+        edge_data.map((edge) => this.dataToID(edge)),
       );
     }
     return results;
@@ -349,5 +344,17 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
     this.queryDispatched = true;
 
     return this.edges;
+  }
+
+  getCursor(row: TEdge): string {
+    let datum = row[this.sortCol];
+    if (!datum) {
+      return "";
+    }
+    if (datum instanceof Date) {
+      datum = datum.getTime();
+    }
+    const str = `${this.sortCol}:${datum}`;
+    return Buffer.from(str, "ascii").toString("base64");
   }
 }

@@ -13,6 +13,7 @@ import {
   AllowIfViewerInboundEdgeExistsRule,
   PrivacyPolicy,
   AllowIfConditionAppliesRule,
+  AlwaysAllowRule,
 } from "../../core/privacy";
 import { BuilderSchema, SimpleAction } from "../builder";
 import { Field, StringType, BaseEntSchema } from "../../schema";

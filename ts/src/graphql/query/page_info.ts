@@ -5,7 +5,7 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { RequestContext } from "../../core/context";
-import { PaginationInfo } from "../../core/query/assoc_query";
+import { PaginationInfo } from "../../core/query/query";
 
 export const GraphQLPageInfo = new GraphQLObjectType({
   name: "PageInfo",

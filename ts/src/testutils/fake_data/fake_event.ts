@@ -99,6 +99,7 @@ export class FakeEventSchema extends BaseEntSchema
     }),
     UUIDType({
       name: "userID",
+      foreignKey: ["User", "ID"],
     }),
   ];
 }

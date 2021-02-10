@@ -1,5 +1,3 @@
-//import { Edge } from "src/schema";
-
 import {
   ID,
   AssocEdge,
@@ -9,14 +7,12 @@ import {
   LoadEntOptions,
   loadEnts,
   EdgeQueryableDataOptions,
-  DefaultLimit,
   AssocEdgeConstructor,
   loadCustomEdges,
 } from "../ent";
 import { EdgeQuery, BaseEdgeQuery } from "./query";
-import * as clause from "../clause";
 
-// TODO no more plurals for privacy reasons
+// TODO no more plurals for privacy reasons?
 export type EdgeQuerySource<T extends Ent> =
   | T
   | T[]
@@ -24,36 +20,22 @@ export type EdgeQuerySource<T extends Ent> =
   | ID[]
   | EdgeQuery<T, AssocEdge>;
 
-function getID<TSource extends Ent>(src: EdgeQuerySource<TSource>): ID {
-  if (typeof src === "string" || typeof src === "number") {
-    return src;
-  } else if ((src as Ent).id !== undefined) {
-    return (src as Ent).id;
-  } else {
-    throw new Error("not supported yet");
-  }
-}
-
 export class AssocEdgeQueryBase<
   TSource extends Ent,
   TDest extends Ent,
   TEdge extends AssocEdge
 > extends BaseEdgeQuery<TDest, TEdge> {
-  //  private filters: EdgeQueryFilter<TEdge>[] = [];
-  //  private queryDispatched: boolean;
   private idsResolved: boolean;
-  //  private edges: Map<ID, TEdge[]> = new Map();
   private resolvedIDs: ID[] = [];
-  //  private pagination: Map<ID, PaginationInfo> = new Map();
 
   constructor(
     public viewer: Viewer,
-    public src2: EdgeQuerySource<TSource>,
+    public src: EdgeQuerySource<TSource>,
     private edgeType: string,
-    private ctr: LoadEntOptions<TDest>,
+    private options: LoadEntOptions<TDest>,
     private edgeCtr: AssocEdgeConstructor<TEdge>,
   ) {
-    super(viewer, getID(src2), "time");
+    super(viewer, "time");
   }
 
   // TODO memoization...
@@ -61,15 +43,15 @@ export class AssocEdgeQueryBase<
     if (this.idsResolved) {
       return this.resolvedIDs;
     }
-    if (Array.isArray(this.src2)) {
-      this.src2.forEach((obj: TSource | ID) => this.addID(obj));
-    } else if (this.isEdgeQuery(this.src2)) {
-      const idsMap = await this.src2.queryIDs();
+    if (Array.isArray(this.src)) {
+      this.src.forEach((obj: TSource | ID) => this.addID(obj));
+    } else if (this.isEdgeQuery(this.src)) {
+      const idsMap = await this.src.queryIDs();
       for (const [_, ids] of idsMap) {
         ids.forEach((id) => this.resolvedIDs.push(id));
       }
     } else {
-      this.addID(this.src2);
+      this.addID(this.src);
     }
     this.idsResolved = true;
     return this.resolvedIDs;
@@ -114,7 +96,11 @@ export class AssocEdgeQueryBase<
     edges: AssocEdge[],
   ): Promise<TDest[]> {
     const ids = edges.map((edge) => edge.id2);
-    return await loadEnts(this.viewer, this.ctr, ...ids);
+    return await loadEnts(this.viewer, this.options, ...ids);
+  }
+
+  protected dataToID(edge: AssocEdge): ID {
+    return edge.id2;
   }
 
   protected async loadRawData(options: EdgeQueryableDataOptions) {

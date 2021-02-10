@@ -1217,7 +1217,7 @@ export async function applyPrivacyPolicyForRowX<T extends Ent>(
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
-async function applyPrivacyPolicyForRows<T extends Ent>(
+export async function applyPrivacyPolicyForRows<T extends Ent>(
   viewer: Viewer,
   rows: Data[],
   options: LoadEntOptions<T>,

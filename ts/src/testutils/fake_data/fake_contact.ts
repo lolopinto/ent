@@ -83,6 +83,7 @@ export class FakeContactSchema extends BaseEntSchema
     }),
     UUIDType({
       name: "userID",
+      foreignKey: ["User", "ID"],
     }),
   ];
 }

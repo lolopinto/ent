@@ -1,9 +1,10 @@
-import { AssocEdge, Viewer } from "../../core/ent";
+import { CustomEdgeQueryBase } from "../../core/query/custom_query";
+import { AssocEdge, Ent, ID, Viewer } from "../../core/ent";
 import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
 } from "../../core/query/assoc_query";
-
+import * as clause from "../../core/clause";
 import {
   EdgeType,
   FakeUser,
@@ -36,6 +37,29 @@ export class UserToContactsQuery extends AssocEdgeQueryBase<
     src: EdgeQuerySource<FakeUser>,
   ): UserToContactsQuery {
     return new UserToContactsQuery(viewer, src);
+  }
+}
+
+function getID(src: Ent | ID) {
+  if (typeof src === "object") {
+    return src.id;
+  } else {
+    return src;
+  }
+}
+
+export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<FakeContact> {
+  constructor(viewer: Viewer, src: ID | FakeUser) {
+    super(
+      viewer,
+      src,
+      FakeContact.loaderOptions(),
+      clause.Eq("user_id", getID(src)),
+    );
+  }
+
+  static query(viewer: Viewer, src: FakeUser | ID): UserToContactsFkeyQuery {
+    return new UserToContactsFkeyQuery(viewer, src);
   }
 }
 

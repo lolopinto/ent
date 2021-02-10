@@ -143,7 +143,7 @@ class TestQueryFilter {
   }
 }
 
-describe.only("simple queries", () => {
+describe("simple queries", () => {
   const filter = new TestQueryFilter(
     (q: UserToContactsQuery) => {
       // no filters
@@ -190,7 +190,7 @@ describe.only("simple queries", () => {
   });
 });
 
-describe.only("custom edge", () => {
+describe("custom edge", () => {
   let user1, user2: FakeUser;
 
   beforeEach(async () => {
@@ -287,7 +287,7 @@ function verifyLastBeforeCursorQuery(length: number = 1) {
 
 // for now, this always applies in sql. todo may not always be the case.
 // see comment in FirstFilter
-describe.only("first. no cursor", () => {
+describe("first. no cursor", () => {
   const N = 2;
   const filter = new TestQueryFilter(
     (q: UserToContactsQuery) => {
@@ -333,7 +333,7 @@ describe.only("first. no cursor", () => {
   });
 });
 
-describe.only("last", () => {
+describe("last", () => {
   const N = 2;
   const filter = new TestQueryFilter(
     (q: UserToContactsQuery) => {
@@ -379,7 +379,7 @@ describe.only("last", () => {
   });
 });
 
-describe.only("first after cursor", () => {
+describe("first after cursor", () => {
   const idx = 2;
   const N = 3;
   let rows: Data[] = [];
@@ -432,7 +432,7 @@ describe.only("first after cursor", () => {
   });
 });
 
-test.only("first. after each cursor", async () => {
+test("first. after each cursor", async () => {
   let [user, contacts] = await createAllContacts();
   contacts = contacts.reverse();
   const edgesMap = await UserToContactsQuery.query(
@@ -476,7 +476,7 @@ test.only("first. after each cursor", async () => {
   await verify(5, false, false, edges[4].getCursor());
 });
 
-describe.only("last. before cursor", () => {
+describe("last. before cursor", () => {
   const idx = 2;
   const N = 3;
   let rows: Data[] = [];
@@ -532,7 +532,7 @@ describe.only("last. before cursor", () => {
   });
 });
 
-test.only("last. before each cursor", async () => {
+test("last. before each cursor", async () => {
   let [user, contacts] = await createAllContacts();
   contacts = contacts.reverse();
   const edgesMap = await UserToContactsQuery.query(

@@ -1,4 +1,5 @@
-import { EdgeQuery, EdgeQueryCtr } from "../../core/query/assoc_query";
+import { EdgeQuery } from "../../core/query/query";
+import { EdgeQueryCtr } from "../../core/query/assoc_query";
 import { AssocEdge, Data, Ent, ID, Viewer } from "../../core/ent";
 
 export interface GraphQLEdge<T extends AssocEdge> {
