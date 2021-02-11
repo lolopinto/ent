@@ -99,7 +99,7 @@ export class AssocEdgeQueryBase<
     return await loadEnts(this.viewer, this.options, ...ids);
   }
 
-  protected dataToID(edge: AssocEdge): ID {
+  dataToID(edge: AssocEdge): ID {
     return edge.id2;
   }
 

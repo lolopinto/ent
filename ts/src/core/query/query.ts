@@ -19,6 +19,7 @@ export interface EdgeQuery<T extends Ent, TEdge extends Data> {
   last(n: number, before?: string): EdgeQuery<T, TEdge>;
   paginationInfo(): Map<ID, PaginationInfo>;
   getCursor(row: TEdge): string;
+  dataToID(edge: TEdge): ID;
 }
 
 interface EdgeQueryFilter<T extends Data> {
@@ -203,8 +204,6 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
 
   constructor(public viewer: Viewer, private sortCol: string) {}
 
-  //  protected abstract resolveIDs(): Promise<ID[]>;
-
   first(n: number, after?: string): this {
     this.assertQueryNotDispatched("first");
     this.filters.push(
@@ -226,7 +225,7 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
     return await this.loadEdges();
   };
 
-  protected abstract dataToID(edge: TEdge): ID;
+  abstract dataToID(edge: TEdge): ID;
 
   readonly queryIDs = async (): Promise<Map<ID, ID[]>> => {
     const edges = await this.loadEdges();

@@ -65,7 +65,7 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
     this.edges.set(this.id, rows);
   }
 
-  protected dataToID(edge: Data): ID {
+  dataToID(edge: Data): ID {
     return edge.id;
   }
 
