@@ -87,7 +87,6 @@ export const inputs: Partial<ContactCreateInput>[] = [
 
 export async function createAllContacts(
   input?: Partial<UserCreateInput>,
-  disableAddEdge?: boolean,
 ): Promise<[FakeUser, FakeContact[]]> {
   const user = await createTestUser(input);
 
@@ -99,17 +98,15 @@ export async function createAllContacts(
         user.viewer,
         getContactInput(user, input),
       );
-      if (!disableAddEdge) {
-        // add edge from user to contact
-        builder.orchestrator.addInboundEdge(
-          user.id,
-          EdgeType.UserToContacts,
-          NodeType.FakeUser,
-          {
-            time: new Date(), // set time to advanceBy time
-          },
-        );
-      }
+      // add edge from user to contact
+      builder.orchestrator.addInboundEdge(
+        user.id,
+        EdgeType.UserToContacts,
+        NodeType.FakeUser,
+        {
+          time: new Date(), // set time to advanceBy time
+        },
+      );
       return await builder.saveX();
     }),
   );

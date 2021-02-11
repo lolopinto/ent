@@ -36,7 +36,7 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
   async queryRawCount(): Promise<Map<ID, number>> {
     const row = await loadRow({
       ...this.options,
-      fields: ["count(*) as count"],
+      fields: ["count(1)"],
       clause: this.clause,
     });
     if (!row) {

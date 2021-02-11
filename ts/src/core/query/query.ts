@@ -1,15 +1,9 @@
 import {
   ID,
-  AssocEdge,
   Ent,
   Viewer,
-  loadRawEdgeCountX,
-  LoadEntOptions,
-  loadEnts,
   EdgeQueryableDataOptions,
   DefaultLimit,
-  AssocEdgeConstructor,
-  loadCustomEdges,
   Data,
 } from "../ent";
 import * as clause from "../clause";
@@ -24,6 +18,7 @@ export interface EdgeQuery<T extends Ent, TEdge extends Data> {
   first(n: number, after?: string): EdgeQuery<T, TEdge>;
   last(n: number, before?: string): EdgeQuery<T, TEdge>;
   paginationInfo(): Map<ID, PaginationInfo>;
+  getCursor(row: TEdge): string;
 }
 
 interface EdgeQueryFilter<T extends Data> {
