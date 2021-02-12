@@ -1202,6 +1202,10 @@ func addConnection(nodeData *schema.NodeData, edge *edge.AssociationEdge, fields
 				ImportPath: codepath.GetExternalImportPath(),
 				Type:       edge.TsEdgeQueryName(),
 			},
+			{
+				ImportPath: codepath.Package,
+				Type:       "AssocEdge",
+			},
 		},
 		Args: []*fieldConfigArg{
 			{
@@ -1224,8 +1228,14 @@ func addConnection(nodeData *schema.NodeData, edge *edge.AssociationEdge, fields
 		// TODO typing for args later?
 		FunctionContents: []string{
 			fmt.Sprintf(
-				"return new GraphQLEdgeConnection(%s.viewer, %s, %s, args);",
-				instance, instance, edge.TsEdgeQueryName()),
+				"return new GraphQLEdgeConnection<AssocEdge>(%s.viewer, %s, (v, %s: %s) => %s.query(v, %s), args);",
+				instance,
+				instance,
+				instance,
+				nodeData.Node,
+				edge.TsEdgeQueryName(),
+				instance,
+			),
 		},
 	}
 	*fields = append(*fields, gqlField)
