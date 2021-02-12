@@ -201,6 +201,11 @@ type Edge interface {
 	GetTSGraphQLTypeImports() []enttype.FileImport
 }
 
+type ConnectionEdge interface {
+	Edge
+	TsEdgeQueryName() string
+}
+
 // marker interface
 type PluralEdge interface {
 	Edge
@@ -306,6 +311,7 @@ func (e *ForeignKeyEdge) TsEdgeQueryName() string {
 
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
+var _ ConnectionEdge = &ForeignKeyEdge{}
 
 // this is like a foreign key edge except different
 // refers to a field that's indexed but doesn't want to reference it as a foreign key
@@ -473,6 +479,7 @@ func (e *AssociationEdge) CloneWithCommonInfo(configName string) *AssociationEdg
 
 var _ Edge = &AssociationEdge{}
 var _ PluralEdge = &AssociationEdge{}
+var _ ConnectionEdge = &AssociationEdge{}
 
 // EdgeAction holds as little data as possible about the edge action
 // and depends on action to take that information, process it and generate the
