@@ -155,11 +155,11 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 	e.addEdge(edge)
 }
 
-func (e *EdgeInfo) AddForeignKeyEdgeFromInverseFieldInfo(dbColName, nodeName string) {
+func (e *EdgeInfo) AddForeignKeyEdgeFromInverseFieldInfo(dbColName, edgeName, nodeName string) {
 	edge := &ForeignKeyEdge{
 		QuotedDBColName: dbColName,
 		commonEdgeInfo: getCommonEdgeInfo(
-			inflection.Plural(nodeName),
+			edgeName,
 			schemaparser.GetEntConfigFromName(nodeName),
 		),
 	}

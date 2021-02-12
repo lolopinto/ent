@@ -299,22 +299,22 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbColumn, constraints *[]dbConstraint) {
 	for _, constraint := range nodeData.Constraints {
 		switch constraint.Type {
-		case input.PrimaryKey:
+		case input.PrimaryKeyConstraint:
 			err := s.addPrimaryKeyConstraint(nodeData, constraint, columns, constraints)
 			util.Die(err)
 			break
 
-		case input.Unique:
+		case input.UniqueConstraint:
 			err := s.addUniqueConstraint(nodeData, constraint, columns, constraints)
 			util.Die(err)
 			break
 
-		case input.ForeignKey:
+		case input.ForeignKeyConstraint:
 			err := s.addForeignKeyConstraint(nodeData, constraint, columns, constraints)
 			util.Die(err)
 			break
 
-		case input.Check:
+		case input.CheckConstraint:
 			err := s.addCheckConstraint(nodeData, constraint, constraints)
 			util.Die(err)
 

@@ -181,7 +181,10 @@ describe("mixed case enum", () => {
 });
 
 test("fkey enum", () => {
-  let e = EnumType({ name: "role", foreignKey: ["Role", "role"] });
+  let e = EnumType({
+    name: "role",
+    foreignKey: { schema: "Role", column: "role" },
+  });
   ["1", "2", "3", "HAPPY", "sad"].forEach((id) => {
     // everything is valid since we don't currently support validating from source
     // and depend on db foreign key validation to do it
@@ -212,7 +215,11 @@ describe("errors", () => {
 
   test("fkey and values provided", () => {
     try {
-      EnumType({ name: "role", values: ["sss"], foreignKey: ["Role", "role"] });
+      EnumType({
+        name: "role",
+        values: ["sss"],
+        foreignKey: { schema: "Role", column: "role" },
+      });
       fail("shouldn't get here");
     } catch (err) {
       expect(err.message).toMatch(
@@ -226,7 +233,7 @@ describe("errors", () => {
       EnumType({
         name: "role",
         values: [],
-        foreignKey: ["Role", "role"],
+        foreignKey: { schema: "Role", column: "role" },
       });
       fail("shouldn't get here");
     } catch (err) {
@@ -240,7 +247,7 @@ describe("errors", () => {
     try {
       EnumType({
         name: "role",
-        foreignKey: ["Role", "role"],
+        foreignKey: { schema: "Role", column: "role" },
         createEnumType: true,
       });
       fail("shouldn't get here");
@@ -255,7 +262,7 @@ describe("errors", () => {
     try {
       EnumType({
         name: "role",
-        foreignKey: ["Role", "role"],
+        foreignKey: { schema: "Role", column: "role" },
         tsType: "Role",
       });
       fail("shouldn't get here");
@@ -270,7 +277,7 @@ describe("errors", () => {
     try {
       EnumType({
         name: "role",
-        foreignKey: ["Role", "role"],
+        foreignKey: { schema: "Role", column: "role" },
         graphQLType: "Role",
       });
       fail("shouldn't get here");

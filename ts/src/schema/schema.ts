@@ -173,6 +173,18 @@ export interface Type {
   values?: string[]; // values e.g. enum values
 }
 
+export interface ForeignKey {
+  schema: string;
+  column: string;
+  name?: string; // optional but if we have multiple foreign keys to the same schema, it becomes required for all but one
+  // defaults to pluralize(schema) if not provided
+}
+
+export interface FieldEdge {
+  schema: string;
+  inverseEdge: string;
+}
+
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
@@ -186,8 +198,8 @@ export interface FieldOptions {
   private?: boolean;
   graphqlName?: string;
   index?: boolean;
-  foreignKey?: [string, string];
-  fieldEdge?: [string, string]; // replaces fieldEdge above...
+  foreignKey?: ForeignKey;
+  fieldEdge?: FieldEdge;
   primaryKey?: boolean; // can only have one in a schema. Node provides id as default primary key in a schema
 
   // indicates that this can't be edited by the user
