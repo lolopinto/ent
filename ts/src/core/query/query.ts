@@ -22,7 +22,7 @@ export interface EdgeQuery<T extends Ent, TEdge extends Data> {
   dataToID(edge: TEdge): ID;
 }
 
-interface EdgeQueryFilter<T extends Data> {
+export interface EdgeQueryFilter<T extends Data> {
   // this is a filter that does the processing in TypeScript instead of at the SQL layer
   filter?(id: ID, edges: T[]): T[];
 
@@ -66,7 +66,7 @@ function assertValidCursor(cursor: string, col: string): number {
   return time;
 }
 
-export interface FilterOptions {
+interface FilterOptions {
   limit: number;
   before?: string;
   after?: string;
