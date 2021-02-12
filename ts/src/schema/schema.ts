@@ -183,9 +183,6 @@ export interface ForeignKey {
 export interface FieldEdge {
   schema: string;
   inverseEdge: string;
-  //  column: string;
-  //  name?: string; // optional but if we have multiple fieldEdges to the same schema, it becomes required for all but one
-  // defaults to schema if not provided
 }
 
 // FieldOptions are configurable options for fields.
