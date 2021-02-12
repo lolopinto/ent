@@ -1,5 +1,5 @@
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
-{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase"}}
+{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query"}}
 {{$importPath := .Package.InternalImportPath -}}
 
 {{$schema := .Schema}}
@@ -46,4 +46,21 @@
     {{ end -}}
   }
   {{end}}
+
+  {{range $edge := .EdgeInfo.ForeignKeys -}}
+    {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
+    {{$node := useImport $edge.NodeInfo.Node -}}
+    export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$node}}> {
+      constructor(viewer: {{useImport "Viewer"}}, src: {{$node}} | {{useImport "ID"}}) {
+        let id: {{useImport "ID"}};
+        if (typeof src === "object") {
+          id = src.id;
+        } else {
+          id = src;
+        }
+        super(viewer, src, {{$node}}.loaderOptions(), {{useImport "query"}}.Eq({{$edge.QuotedDBColName}}, id));
+      }
+    }
+    
+  {{end }}
 {{end -}}
