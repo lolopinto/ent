@@ -77,8 +77,8 @@ type Field struct {
 	Index           bool   `json:"index"`
 	PrimaryKey      bool   `json:"primaryKey"`
 
-	FieldEdge     *[2]string  `json:"fieldEdge"` // this only really makes sense on id fields...
-	ForeignKey    *[2]string  `json:"foreignKey"`
+	FieldEdge     *FieldEdge  `json:"fieldEdge"` // this only really makes sense on id fields...
+	ForeignKey    *ForeignKey `json:"foreignKey"`
 	ServerDefault interface{} `json:"serverDefault"`
 	// DisableUserEditable true == DefaultValueOnCreate required
 	DisableUserEditable     bool `json:"disableUserEditable"`
@@ -94,6 +94,17 @@ type Field struct {
 	GoType          types.Type
 	PkgPath         string
 	DataTypePkgPath string
+}
+
+type ForeignKey struct {
+	Schema string `json:"schema"`
+	Column string `json:"column"`
+	Name   string `json:"name"`
+}
+
+type FieldEdge struct {
+	Schema      string `json:"schema"`
+	InverseEdge string `json:"inverseEdge"`
 }
 
 type PolymorphicOptions struct {
@@ -163,8 +174,8 @@ func (f *Field) GetEntType() enttype.EntType {
 		typ := f.Type.Type
 		graphqlType := f.Type.GraphQLType
 		if f.ForeignKey != nil {
-			typ = f.ForeignKey[0]
-			graphqlType = f.ForeignKey[0]
+			typ = f.ForeignKey.Schema
+			graphqlType = f.ForeignKey.Schema
 		}
 		if f.Type.Type == "" {
 			panic("enum type name is required")
@@ -330,10 +341,10 @@ type ConstraintType string
 
 const (
 	// Note that these type should match enum ConstraintType in schema.ts
-	PrimaryKey ConstraintType = "primary"
-	ForeignKey                = "foreign"
-	Unique                    = "unique"
-	Check                     = "check"
+	PrimaryKeyConstraint ConstraintType = "primary"
+	ForeignKeyConstraint                = "foreign"
+	UniqueConstraint                    = "unique"
+	CheckConstraint                     = "check"
 )
 
 type ForeignKeyInfo struct {

@@ -73,7 +73,7 @@ func TestForeignKeyFieldConstraint(t *testing.T) {
 						}),
 						UUIDType({
 							name: "ownerID",
-							foreignKey: ["User", "ID"],
+							foreignKey: {schema:"User", column:"ID"},
 						}),
 					];
 				}
@@ -89,7 +89,7 @@ func TestForeignKeyFieldConstraint(t *testing.T) {
 					"contacts",
 					&input.Constraint{
 						Name:    "contacts_owner_id_fkey",
-						Type:    input.ForeignKey,
+						Type:    input.ForeignKeyConstraint,
 						Columns: []string{"ownerID"},
 						ForeignKey: &input.ForeignKeyInfo{
 							TableName: "users",
@@ -131,7 +131,7 @@ func TestUniqueFieldConstraint(t *testing.T) {
 				Constraints: constraintsWithNodeConstraints("users",
 					&input.Constraint{
 						Name:    "users_unique_email_address",
-						Type:    input.Unique,
+						Type:    input.UniqueConstraint,
 						Columns: []string{"emailAddress"},
 					},
 				),
@@ -172,7 +172,7 @@ func TestConstraints(t *testing.T) {
 					Constraints: []*input.Constraint{
 						{
 							Name:    "user_photos_pkey",
-							Type:    input.PrimaryKey,
+							Type:    input.PrimaryKeyConstraint,
 							Columns: []string{"UserID", "PhotoID"},
 						},
 					},
@@ -205,7 +205,7 @@ func TestConstraints(t *testing.T) {
 							}),
 							UUIDType({
 								name: "userID",
-								foreignKey: ["User", "ID"],
+								foreignKey: {schema:"User", column:"ID"},
 							}),
 						];
 
@@ -227,7 +227,7 @@ func TestConstraints(t *testing.T) {
 					Constraints: constraintsWithNodeConstraints("contacts",
 						&input.Constraint{
 							Name:    "contacts_user_id_fkey",
-							Type:    input.ForeignKey,
+							Type:    input.ForeignKeyConstraint,
 							Columns: []string{"userID"},
 							ForeignKey: &input.ForeignKeyInfo{
 								TableName: "users",
@@ -237,7 +237,7 @@ func TestConstraints(t *testing.T) {
 						},
 						&input.Constraint{
 							Name:    "contacts_unique_email",
-							Type:    input.Unique,
+							Type:    input.UniqueConstraint,
 							Columns: []string{"emailAddress", "userID"},
 						}),
 				},
@@ -295,7 +295,7 @@ func TestConstraints(t *testing.T) {
 				"User": {
 					Constraints: constraintsWithNodeConstraints("users", &input.Constraint{
 						Name:    "users_unique_email_address",
-						Type:    input.Unique,
+						Type:    input.UniqueConstraint,
 						Columns: []string{"emailAddress"},
 					}),
 				},
@@ -303,7 +303,7 @@ func TestConstraints(t *testing.T) {
 					Constraints: constraintsWithNodeConstraints("contacts",
 						&input.Constraint{
 							Name:    "contacts_user_fkey",
-							Type:    input.ForeignKey,
+							Type:    input.ForeignKeyConstraint,
 							Columns: []string{"userID", "emailAddress"},
 							ForeignKey: &input.ForeignKeyInfo{
 								TableName: "users",
@@ -341,7 +341,7 @@ func TestConstraints(t *testing.T) {
 				"Item": {
 					Constraints: constraintsWithNodeConstraints("items", &input.Constraint{
 						Name:      "item_positive_price",
-						Type:      input.Check,
+						Type:      input.CheckConstraint,
 						Columns:   []string{},
 						Condition: "price > 0",
 					}),
@@ -394,19 +394,19 @@ func TestConstraints(t *testing.T) {
 				"Item": {
 					Constraints: constraintsWithNodeConstraints("items", &input.Constraint{
 						Name:      "item_positive_price",
-						Type:      input.Check,
+						Type:      input.CheckConstraint,
 						Columns:   []string{"price"},
 						Condition: "price > 0",
 					},
 						&input.Constraint{
 							Name:      "item_positive_discount_price",
-							Type:      input.Check,
+							Type:      input.CheckConstraint,
 							Columns:   []string{"discount_price"},
 							Condition: "discount_price > 0",
 						},
 						&input.Constraint{
 							Name:      "item_price_greater_than_discount",
-							Type:      input.Check,
+							Type:      input.CheckConstraint,
 							Columns:   []string{"price", "discount_price"},
 							Condition: "price > discount_price",
 						}),
@@ -459,7 +459,7 @@ func TestEnumConstraints(t *testing.T) {
 					Constraints: []*input.Constraint{
 						{
 							Name:    "roles_role_pkey",
-							Type:    input.PrimaryKey,
+							Type:    input.PrimaryKeyConstraint,
 							Columns: []string{"role"},
 						},
 					},
@@ -542,7 +542,7 @@ func TestEnumConstraints(t *testing.T) {
 						fields: Field[] = [
 							EnumType({
 								name: 'status',
-								foreignKey: ["RequestStatus", "status"],
+								foreignKey: {schema:"RequestStatus", column:"status"},
 							}),
 						];
 					}`),
@@ -552,7 +552,7 @@ func TestEnumConstraints(t *testing.T) {
 					Constraints: []*input.Constraint{
 						{
 							Name:    "request_statuses_status_pkey",
-							Type:    input.PrimaryKey,
+							Type:    input.PrimaryKeyConstraint,
 							Columns: []string{"status"},
 						},
 					},
@@ -560,7 +560,7 @@ func TestEnumConstraints(t *testing.T) {
 				"Request": {
 					Constraints: constraintsWithNodeConstraints("requests", &input.Constraint{
 						Name:    "requests_status_fkey",
-						Type:    input.ForeignKey,
+						Type:    input.ForeignKeyConstraint,
 						Columns: []string{"status"},
 						ForeignKey: &input.ForeignKeyInfo{
 							TableName: "request_statuses",
@@ -723,7 +723,7 @@ func constraintsWithNodeConstraints(tableName string, constraints ...*input.Cons
 	return append([]*input.Constraint{
 		{
 			Name:    fmt.Sprintf("%s_id_pkey", tableName),
-			Type:    input.PrimaryKey,
+			Type:    input.PrimaryKeyConstraint,
 			Columns: []string{"ID"},
 		},
 	}, constraints...)

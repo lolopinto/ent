@@ -13,6 +13,7 @@ import (
 type FieldEdgeInfo struct {
 	Config      string
 	EdgeName    string
+	Name        string
 	Polymorphic *PolymorphicOptions
 }
 

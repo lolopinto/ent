@@ -48,7 +48,7 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:    "user_photos_pkey",
-							typ:     input.PrimaryKey,
+							typ:     input.PrimaryKeyConstraint,
 							columns: []string{"UserID", "PhotoID"},
 						},
 					},
@@ -88,7 +88,7 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:    "username_pkey",
-							typ:     input.PrimaryKey,
+							typ:     input.PrimaryKeyConstraint,
 							columns: []string{"username"},
 						},
 					},
@@ -128,7 +128,7 @@ func TestConstraints(t *testing.T) {
 							}),
 							UUIDType({
 								name: "userID",
-								foreignKey: ["User", "ID"],
+								foreignKey: {schema:"User", column:"ID"},
 							}),
 						];
 
@@ -172,12 +172,12 @@ func TestConstraints(t *testing.T) {
 						field{
 							name:       "userID",
 							dbType:     input.UUID,
-							foreignKey: &[2]string{"User", "ID"},
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID"},
 						}),
 					constraints: []constraint{
 						{
 							name:    "contacts_unique_email",
-							typ:     input.Unique,
+							typ:     input.UniqueConstraint,
 							columns: []string{"emailAddress", "userID"},
 						},
 					},
@@ -247,7 +247,7 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:    "contacts_user_fkey",
-							typ:     input.ForeignKey,
+							typ:     input.ForeignKeyConstraint,
 							columns: []string{"userID"},
 							fkey: &fkeyInfo{
 								tableName: "User",
@@ -328,7 +328,7 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:    "contacts_user_fkey",
-							typ:     input.ForeignKey,
+							typ:     input.ForeignKeyConstraint,
 							columns: []string{"userID", "emailAddress"},
 							fkey: &fkeyInfo{
 								tableName: "User",
@@ -373,7 +373,7 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:      "item_positive_price",
-							typ:       input.Check,
+							typ:       input.CheckConstraint,
 							condition: "price > 0",
 							columns:   []string{},
 						},
@@ -435,19 +435,19 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:      "item_positive_price",
-							typ:       input.Check,
+							typ:       input.CheckConstraint,
 							condition: "price > 0",
 							columns:   []string{"price"},
 						},
 						{
 							name:      "item_positive_discount_price",
-							typ:       input.Check,
+							typ:       input.CheckConstraint,
 							condition: "discount_price > 0",
 							columns:   []string{"discount_price"},
 						},
 						{
 							name:      "item_price_greater_than_discount",
-							typ:       input.Check,
+							typ:       input.CheckConstraint,
 							condition: "price > discount_price",
 							columns:   []string{"price", "discount_price"},
 						},
@@ -548,7 +548,7 @@ func TestIndices(t *testing.T) {
 							}),
 							UUIDType({
 								name: "userID",
-								foreignKey: ["User", "ID"],
+								foreignKey: {schema:"User", column:"ID"},
 							}),
 						];
 
@@ -592,7 +592,7 @@ func TestIndices(t *testing.T) {
 						field{
 							name:       "userID",
 							dbType:     input.UUID,
-							foreignKey: &[2]string{"User", "ID"},
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID"},
 						}),
 					indices: []index{
 						{
