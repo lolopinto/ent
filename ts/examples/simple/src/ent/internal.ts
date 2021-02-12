@@ -22,6 +22,8 @@ export * from "src/ent/event/query/event_to_declined_query";
 export * from "src/ent/event/query/event_to_hosts_query";
 export * from "src/ent/event/query/event_to_invited_query";
 export * from "src/ent/event/query/event_to_maybe_query";
+export * from "src/ent/user/query/user_to_auth_codes_query";
+export * from "src/ent/user/query/user_to_contacts_query";
 export * from "src/ent/user/query/user_to_created_events_query";
 export * from "src/ent/user/query/user_to_declined_events_query";
 export * from "src/ent/user/query/user_to_events_attending_query";
