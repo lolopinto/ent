@@ -382,7 +382,7 @@ export class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
 }
 
 export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
-  constructor(viewer: Viewer, src: AuthCode | ID) {
+  constructor(viewer: Viewer, src: User | ID) {
     let id: ID;
     if (typeof src === "object") {
       id = src.id;
@@ -393,16 +393,16 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
   }
 
   static query<T extends UserToAuthCodesQueryBase>(
-    this: new (viewer: Viewer, src: AuthCode | ID) => T,
+    this: new (viewer: Viewer, src: User | ID) => T,
     viewer: Viewer,
-    src: AuthCode | ID,
+    src: User | ID,
   ): T {
     return new this(viewer, src);
   }
 }
 
 export class UserToContactsQueryBase extends CustomEdgeQueryBase<Contact> {
-  constructor(viewer: Viewer, src: Contact | ID) {
+  constructor(viewer: Viewer, src: User | ID) {
     let id: ID;
     if (typeof src === "object") {
       id = src.id;
@@ -413,9 +413,9 @@ export class UserToContactsQueryBase extends CustomEdgeQueryBase<Contact> {
   }
 
   static query<T extends UserToContactsQueryBase>(
-    this: new (viewer: Viewer, src: Contact | ID) => T,
+    this: new (viewer: Viewer, src: User | ID) => T,
     viewer: Viewer,
-    src: Contact | ID,
+    src: User | ID,
   ): T {
     return new this(viewer, src);
   }

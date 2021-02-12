@@ -49,11 +49,12 @@
 
   {{range $edge := .EdgeInfo.ForeignKeys -}}
     {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
+    {{$srcNode := useImport $edge.SourceNodeName -}}
     {{$node := useImport $edge.NodeInfo.Node -}}
-    {{$thisType := printf "new (viewer: Viewer, src: %s | ID ) => T" $node }}
+    {{$thisType := printf "new (viewer: Viewer, src: %s | ID ) => T" $srcNode }}
 
     export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$node}}> {
-      constructor(viewer: {{useImport "Viewer"}}, src: {{$node}} | {{useImport "ID"}}) {
+      constructor(viewer: {{useImport "Viewer"}}, src: {{$srcNode}} | {{useImport "ID"}}) {
         let id: {{useImport "ID"}};
         if (typeof src === "object") {
           id = src.id;
@@ -66,7 +67,7 @@
       static query<T extends {{$name}}>(
         this: {{$thisType}},
         viewer: {{useImport "Viewer"}},
-        src: {{$node}} | {{useImport "ID"}},
+        src: {{$srcNode}} | {{useImport "ID"}},
       ): T {
         return new this(viewer, src);
       }
