@@ -391,6 +391,14 @@ export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
     }
     super(viewer, src, AuthCode.loaderOptions(), query.Eq("user_id", id));
   }
+
+  static query<T extends UserToAuthCodesQueryBase>(
+    this: new (viewer: Viewer, src: AuthCode | ID) => T,
+    viewer: Viewer,
+    src: AuthCode | ID,
+  ): T {
+    return new this(viewer, src);
+  }
 }
 
 export class UserToContactsQueryBase extends CustomEdgeQueryBase<Contact> {
@@ -402,5 +410,13 @@ export class UserToContactsQueryBase extends CustomEdgeQueryBase<Contact> {
       id = src;
     }
     super(viewer, src, Contact.loaderOptions(), query.Eq("user_id", id));
+  }
+
+  static query<T extends UserToContactsQueryBase>(
+    this: new (viewer: Viewer, src: Contact | ID) => T,
+    viewer: Viewer,
+    src: Contact | ID,
+  ): T {
+    return new this(viewer, src);
   }
 }
