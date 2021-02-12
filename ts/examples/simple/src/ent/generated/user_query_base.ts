@@ -5,6 +5,7 @@ import {
   User,
   Event,
   Contact,
+  AuthCode,
   EventToAttendingQuery,
   EventToDeclinedQuery,
   EventToHostsQuery,
@@ -27,7 +28,14 @@ import {
   UserToSelfContactEdge,
   UserToHostedEventsEdge,
 } from "src/ent/internal";
-import { Viewer, EdgeQuerySource, AssocEdgeQueryBase } from "@lolopinto/ent";
+import {
+  ID,
+  Viewer,
+  EdgeQuerySource,
+  AssocEdgeQueryBase,
+  CustomEdgeQueryBase,
+  query,
+} from "@lolopinto/ent";
 
 export class UserToCreatedEventsQueryBase extends AssocEdgeQueryBase<
   User,
@@ -370,5 +378,29 @@ export class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
 
   queryMaybe(): EventToMaybeQuery {
     return EventToMaybeQuery.query(this.viewer, this);
+  }
+}
+
+export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
+  constructor(viewer: Viewer, src: AuthCode | ID) {
+    let id: ID;
+    if (typeof src === "object") {
+      id = src.id;
+    } else {
+      id = src;
+    }
+    super(viewer, src, AuthCode.loaderOptions(), query.Eq("user_id", id));
+  }
+}
+
+export class UserToContactsQueryBase extends CustomEdgeQueryBase<Contact> {
+  constructor(viewer: Viewer, src: Contact | ID) {
+    let id: ID;
+    if (typeof src === "object") {
+      id = src.id;
+    } else {
+      id = src;
+    }
+    super(viewer, src, Contact.loaderOptions(), query.Eq("user_id", id));
   }
 }

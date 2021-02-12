@@ -36,6 +36,7 @@ type EdgeInfo struct {
 	AssocGroups       []*AssociationEdgeGroup
 	assocGroupsMap    map[string]*AssociationEdgeGroup
 	SourcePackageName string
+	SourceNodeName    string
 
 	// don't want name overlap even when being added programmatically because we use those names in all kinds of places even graphql
 	keys map[string]bool
@@ -44,6 +45,7 @@ type EdgeInfo struct {
 func NewEdgeInfo(packageName string) *EdgeInfo {
 	ret := &EdgeInfo{}
 	ret.SourcePackageName = packageName
+	ret.SourceNodeName = strcase.ToCamel(packageName)
 	ret.fieldEdgeMap = make(map[string]*FieldEdge)
 	ret.foreignKeyMap = make(map[string]*ForeignKeyEdge)
 	ret.indexedEdgeMap = make(map[string]*IndexedEdge)
@@ -158,6 +160,7 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 func (e *EdgeInfo) AddForeignKeyEdgeFromInverseFieldInfo(dbColName, edgeName, nodeName string) {
 	edge := &ForeignKeyEdge{
 		QuotedDBColName: dbColName,
+		SourceNodeName:  e.SourceNodeName,
 		commonEdgeInfo: getCommonEdgeInfo(
 			edgeName,
 			schemaparser.GetEntConfigFromName(nodeName),
@@ -269,6 +272,7 @@ var _ Edge = &FieldEdge{}
 
 type ForeignKeyEdge struct {
 	QuotedDBColName string
+	SourceNodeName  string
 	commonEdgeInfo
 }
 
@@ -294,6 +298,10 @@ func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
 			Type:       e.NodeInfo.Node,
 		},
 	}
+}
+
+func (e *ForeignKeyEdge) TsEdgeQueryName() string {
+	return fmt.Sprintf("%sTo%sQuery", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
 }
 
 var _ Edge = &ForeignKeyEdge{}
@@ -370,7 +378,7 @@ type AssociationEdge struct {
 }
 
 // TsEdgeConst returns the Edge const as used in typescript.
-// It transforms UserToFriends Edge to UserToFriends since that's
+// It transforms UserToFriendsEdge to UserToFriends since that's
 // in an enum
 // will evntually fix at edge creation
 func (e *AssociationEdge) TsEdgeConst() string {
