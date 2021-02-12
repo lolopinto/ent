@@ -37,8 +37,8 @@ type field struct {
 	graphqlName             string
 	index                   bool
 	primaryKey              bool
-	foreignKey              *[2]string
-	fieldEdge               *[2]string
+	foreignKey              *input.ForeignKey
+	fieldEdge               *input.FieldEdge
 	serverDefault           string
 	disableUserEditable     bool
 	hasDefaultValueOnCreate bool

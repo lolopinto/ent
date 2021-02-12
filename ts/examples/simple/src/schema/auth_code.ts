@@ -14,7 +14,7 @@ import { PhoneNumberType } from "@lolopinto/ent-phonenumber";
 export default class AuthCode extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "code" }),
-    UUIDType({ name: "userID", foreignKey: ["User", "ID"] }),
+    UUIDType({ name: "userID", foreignKey: { schema: "User", column: "ID" } }),
     EmailType({ name: "emailAddress", nullable: true }),
     PhoneNumberType({ name: "phoneNumber", nullable: true }),
   ];

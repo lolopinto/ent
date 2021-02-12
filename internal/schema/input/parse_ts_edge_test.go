@@ -55,7 +55,7 @@ func TestParseEdges(t *testing.T) {
 
 				export default class Event implements Schema {
 					fields: Field[] = [
-						StringType({name: "creatorID", fieldEdge:["User", "createdEvents"]}),
+						StringType({name: "creatorID", fieldEdge:{schema:"User", inverseEdge:"createdEvents"}}),
 					];
 				};`),
 				"user.ts": getCodeWithSchema(
@@ -77,7 +77,7 @@ func TestParseEdges(t *testing.T) {
 					fields: []field{
 						{
 							name:      "creatorID",
-							fieldEdge: &[2]string{"User", "createdEvents"},
+							fieldEdge: &input.FieldEdge{Schema: "User", InverseEdge: "createdEvents"},
 							dbType:    input.String,
 						},
 					},

@@ -18,7 +18,7 @@ export default class Event extends BaseEntSchema implements Schema {
     // we should warn when we see an "ID/id/Id" field as non-id type and ask if they wanna change it
     UUIDType({
       name: "creatorID",
-      fieldEdge: ["User", "createdEvents"],
+      fieldEdge: { schema: "User", inverseEdge: "createdEvents" },
       storageKey: "user_id",
     }),
     TimestampType({ name: "start_time" }),

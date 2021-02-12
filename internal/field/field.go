@@ -171,6 +171,7 @@ func (fieldInfo *FieldInfo) GraphQLFields() []*Field {
 type ForeignKeyInfo struct {
 	Config string
 	Field  string
+	Name   string
 }
 
 func GetNilableGoType(f *Field) string {
@@ -277,7 +278,10 @@ func GetFieldInfoForStruct(s *ast.StructType, info *types.Info) (*FieldInfo, err
 			if len(parts) != 2 {
 				return nil, errors.New("invalid foreign key struct tag format")
 			}
-			field.ForeignKey = &[2]string{parts[0], parts[1]}
+			field.ForeignKey = &input.ForeignKey{
+				Schema: parts[0],
+				Column: parts[1],
+			}
 		}
 
 		// only care when there's something here

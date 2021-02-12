@@ -762,7 +762,7 @@ func TestMultiColumnUniqueKey(t *testing.T) {
 						}),
 						UUIDType({
 							name: "userID",
-							foreignKey: ["User", "ID"],
+							foreignKey: {schema: "User", column:"ID"},
 						}),
 					];
 
@@ -1119,7 +1119,7 @@ func TestMultiColumnUniqueIndex(t *testing.T) {
 							}),
 							UUIDType({
 								name: "userID",
-								foreignKey: ["User", "ID"],
+								foreignKey: {schema: "User", column:"ID"},
 							}),
 						];
 
