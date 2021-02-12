@@ -18,9 +18,9 @@ import {
   EventToInvitedEdge,
   EventToMaybeEdge,
 } from "src/ent/internal";
-import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
+import { Viewer, EdgeQuerySource, AssocEdgeQueryBase } from "@lolopinto/ent";
 
-export class EventToAttendingQueryBase extends BaseEdgeQuery<
+export class EventToAttendingQueryBase extends AssocEdgeQueryBase<
   Event,
   User,
   EventToAttendingEdge
@@ -76,7 +76,7 @@ export class EventToAttendingQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class EventToDeclinedQueryBase extends BaseEdgeQuery<
+export class EventToDeclinedQueryBase extends AssocEdgeQueryBase<
   Event,
   User,
   EventToDeclinedEdge
@@ -132,7 +132,7 @@ export class EventToDeclinedQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class EventToHostsQueryBase extends BaseEdgeQuery<
+export class EventToHostsQueryBase extends AssocEdgeQueryBase<
   Event,
   User,
   EventToHostsEdge
@@ -188,7 +188,7 @@ export class EventToHostsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class EventToInvitedQueryBase extends BaseEdgeQuery<
+export class EventToInvitedQueryBase extends AssocEdgeQueryBase<
   Event,
   User,
   EventToInvitedEdge
@@ -244,7 +244,7 @@ export class EventToInvitedQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class EventToMaybeQueryBase extends BaseEdgeQuery<
+export class EventToMaybeQueryBase extends AssocEdgeQueryBase<
   Event,
   User,
   EventToMaybeEdge

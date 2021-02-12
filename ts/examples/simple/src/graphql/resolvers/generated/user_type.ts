@@ -9,7 +9,7 @@ import {
   GraphQLInt,
   GraphQLFieldConfigMap,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext, AssocEdge } from "@lolopinto/ent";
 import {
   GraphQLNodeInterface,
   nodeIDEncoder,
@@ -82,10 +82,10 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
-          UserToCreatedEventsQuery,
+          (v, user: User) => UserToCreatedEventsQuery.query(v, user),
           args,
         );
       },
@@ -111,10 +111,10 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
-          UserToDeclinedEventsQuery,
+          (v, user: User) => UserToDeclinedEventsQuery.query(v, user),
           args,
         );
       },
@@ -140,10 +140,10 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
-          UserToEventsAttendingQuery,
+          (v, user: User) => UserToEventsAttendingQuery.query(v, user),
           args,
         );
       },
@@ -169,10 +169,10 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
-          UserToFriendsQuery,
+          (v, user: User) => UserToFriendsQuery.query(v, user),
           args,
         );
       },
@@ -198,10 +198,10 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
-          UserToInvitedEventsQuery,
+          (v, user: User) => UserToInvitedEventsQuery.query(v, user),
           args,
         );
       },
@@ -227,10 +227,10 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
-          UserToMaybeEventsQuery,
+          (v, user: User) => UserToMaybeEventsQuery.query(v, user),
           args,
         );
       },
@@ -262,10 +262,10 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
-          UserToHostedEventsQuery,
+          (v, user: User) => UserToHostedEventsQuery.query(v, user),
           args,
         );
       },

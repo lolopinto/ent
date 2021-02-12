@@ -27,9 +27,9 @@ import {
   UserToSelfContactEdge,
   UserToHostedEventsEdge,
 } from "src/ent/internal";
-import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
+import { Viewer, EdgeQuerySource, AssocEdgeQueryBase } from "@lolopinto/ent";
 
-export class UserToCreatedEventsQueryBase extends BaseEdgeQuery<
+export class UserToCreatedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToCreatedEventsEdge
@@ -73,7 +73,7 @@ export class UserToCreatedEventsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToDeclinedEventsQueryBase extends BaseEdgeQuery<
+export class UserToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToDeclinedEventsEdge
@@ -117,7 +117,7 @@ export class UserToDeclinedEventsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToEventsAttendingQueryBase extends BaseEdgeQuery<
+export class UserToEventsAttendingQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToEventsAttendingEdge
@@ -161,7 +161,7 @@ export class UserToEventsAttendingQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToFriendsQueryBase extends BaseEdgeQuery<
+export class UserToFriendsQueryBase extends AssocEdgeQueryBase<
   User,
   User,
   UserToFriendsEdge
@@ -217,7 +217,7 @@ export class UserToFriendsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToInvitedEventsQueryBase extends BaseEdgeQuery<
+export class UserToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToInvitedEventsEdge
@@ -261,7 +261,7 @@ export class UserToInvitedEventsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToMaybeEventsQueryBase extends BaseEdgeQuery<
+export class UserToMaybeEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToMaybeEventsEdge
@@ -305,7 +305,7 @@ export class UserToMaybeEventsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToSelfContactQueryBase extends BaseEdgeQuery<
+export class UserToSelfContactQueryBase extends AssocEdgeQueryBase<
   User,
   Contact,
   UserToSelfContactEdge
@@ -329,7 +329,7 @@ export class UserToSelfContactQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToHostedEventsQueryBase extends BaseEdgeQuery<
+export class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToHostedEventsEdge
