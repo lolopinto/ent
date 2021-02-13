@@ -175,8 +175,8 @@ test("query custom async function list", async () => {
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user),
     ["id", encodeGQLID(user)],
-    ["contactsSameDomain[0].id", encodeGQLID(selfContact!)],
-    ["contactsSameDomain[1].id", encodeGQLID(contact!)],
+    ["contactsSameDomain[0].id", encodeGQLID(contact!)],
+    ["contactsSameDomain[1].id", encodeGQLID(selfContact!)],
   );
 });
 
@@ -214,10 +214,10 @@ test("query custom async function nullable contents", async () => {
     [
       "contactsSameDomainNullableContents",
       [
+        null,
         {
           id: encodeGQLID(selfContact!),
         },
-        null,
       ],
     ],
   );
@@ -230,7 +230,7 @@ test("query custom async function nullable list contents", async () => {
   let vc = new IDViewer(user.id);
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
-  let contact = await CreateContactAction.create(vc, {
+  await CreateContactAction.create(vc, {
     emailAddress: randomEmail("foo.com"),
     firstName: "Jon",
     lastName: "Snow",
@@ -239,11 +239,11 @@ test("query custom async function nullable list contents", async () => {
 
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user, {
-      nullQueryPaths: ["contactsSameDomainNullableContents[1]"],
+      nullQueryPaths: ["contactsSameDomainNullableContents[0]"],
     }),
     ["id", encodeGQLID(user)],
-    ["contactsSameDomainNullableContents[0].id", encodeGQLID(selfContact!)],
-    ["contactsSameDomainNullableContents[1].id", null],
+    ["contactsSameDomainNullableContents[0].id", null],
+    ["contactsSameDomainNullableContents[1].id", encodeGQLID(selfContact!)],
   );
 });
 
@@ -273,12 +273,12 @@ test("query custom async function nullable list and contents", async () => {
   await expectQueryFromRoot(
     getConfig(vc2, user2),
     ["id", encodeGQLID(user2)],
+    // can query this way because of id above
+    ["contactsSameDomainNullableContentsAndList[0]", null],
     [
-      "contactsSameDomainNullableContentsAndList[0].id",
+      "contactsSameDomainNullableContentsAndList[1].id",
       encodeGQLID(selfContact2!),
     ],
-    // can query this way because of id above
-    ["contactsSameDomainNullableContentsAndList[1]", null],
   );
 });
 
