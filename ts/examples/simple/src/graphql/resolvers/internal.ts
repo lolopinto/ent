@@ -14,6 +14,7 @@ export * from "src/graphql/resolvers/generated/event/event_to_declined_connectio
 export * from "src/graphql/resolvers/generated/event/event_to_hosts_connection_type";
 export * from "src/graphql/resolvers/generated/event/event_to_invited_connection_type";
 export * from "src/graphql/resolvers/generated/event/event_to_maybe_connection_type";
+export * from "src/graphql/resolvers/generated/user/user_to_contacts_connection_type";
 export * from "src/graphql/resolvers/generated/user/user_to_created_events_connection_type";
 export * from "src/graphql/resolvers/generated/user/user_to_declined_events_connection_type";
 export * from "src/graphql/resolvers/generated/user/user_to_events_attending_connection_type";
