@@ -29,7 +29,7 @@ type User implements Node {
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   selfContact: Contact
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
-  contacts(first: Int, after: String, last: Int, before: String): UserToContactsEdgeConnection!
+  contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
   fullName: String!
   bar: String
   contactSameDomain: Contact
@@ -236,14 +236,14 @@ type UserToHostedEventsEdge implements Edge {
   cursor: String!
 }
 
-type UserToContactsEdgeConnection implements Connection {
-  edges: [UserToContactsEdgeEdge!]!
+type UserToContactsConnection implements Connection {
+  edges: [UserToContactsEdge!]!
   nodes: [Contact!]!
   pageInfo: PageInfo!
   rawCount: Int!
 }
 
-type UserToContactsEdgeEdge implements Edge {
+type UserToContactsEdge implements Edge {
   node: Contact!
   cursor: String!
 }

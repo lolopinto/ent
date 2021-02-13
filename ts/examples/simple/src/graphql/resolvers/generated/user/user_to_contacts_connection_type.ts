@@ -4,5 +4,5 @@ import { GraphQLConnectionType } from "@lolopinto/ent/graphql";
 import { ContactType } from "src/graphql/resolvers/";
 
 export const UserToContactsConnectionType = () => {
-  return new GraphQLConnectionType("UserToContactsEdge", ContactType);
+  return new GraphQLConnectionType("UserToContacts", ContactType);
 };

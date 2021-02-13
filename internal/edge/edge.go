@@ -320,7 +320,7 @@ func (e *ForeignKeyEdge) TsEdgeQueryEdgeName() string {
 }
 
 func (e *ForeignKeyEdge) GetGraphQLEdgePrefix() string {
-	return e.TsEdgeQueryEdgeName()
+	return fmt.Sprintf("%sTo%s", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
 }
 
 var _ Edge = &ForeignKeyEdge{}
