@@ -3,7 +3,7 @@ import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@lolopinto/ent";
-import { User } from "src/ent/";
+import { Contact, User } from "src/ent/";
 import { randomEmail, randomPhoneNumber } from "src/util/random";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import { advanceBy } from "jest-date-mock";
@@ -11,7 +11,9 @@ import {
   queryRootConfig,
   expectQueryFromRoot,
 } from "@lolopinto/ent-graphql-tests";
-import CreateContactAction from "src/ent/contact/actions/create_contact_action";
+import CreateContactAction, {
+  ContactCreateInput,
+} from "src/ent/contact/actions/create_contact_action";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
 import { encodeGQLID } from "@lolopinto/ent/graphql";
 
@@ -328,7 +330,7 @@ test("query user and nested object", async () => {
   );
 });
 
-test("load list", async () => {
+test("load assoc connection", async () => {
   let [user, user2, user3, user4, user5] = await Promise.all([
     create({
       firstName: "user1",
@@ -489,5 +491,73 @@ test("load list", async () => {
     ["id", encodeGQLID(user)],
     [`friends(after: "${cursor!}", first:1).edges[0].node.id`, undefined],
     [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, false],
+  );
+});
+
+async function createMany(
+  user: User,
+  names: Pick<ContactCreateInput, "firstName" | "lastName">[],
+): Promise<Contact[]> {
+  let results: Contact[] = [];
+  for (const name of names) {
+    // for deterministic sorting
+    advanceBy(86400);
+    // TODO eventually a multi-create API
+    let contact = await CreateContactAction.create(new IDViewer(user.id), {
+      emailAddress: randomEmail(),
+      firstName: name.firstName,
+      lastName: name.lastName,
+      userID: user.id,
+    }).saveX();
+    results.push(contact);
+  }
+
+  return results;
+}
+
+test("load fkey connection", async () => {
+  const user = await create({});
+  let inputs = [
+    { firstName: "Robb", lastName: "Stark" },
+    { firstName: "Sansa", lastName: "Stark" },
+    { firstName: "Arya", lastName: "Stark" },
+    { firstName: "Bran", lastName: "Stark" },
+    { firstName: "Rickon", lastName: "Stark" },
+  ];
+  const contacts = await createMany(user, inputs);
+  const selfContact = await user.loadSelfContact();
+
+  await expectQueryFromRoot(
+    getConfig(new IDViewer(user.id), user),
+    ["id", encodeGQLID(user)],
+    ["firstName", user.firstName],
+    ["lastName", user.lastName],
+    ["emailAddress", user.emailAddress],
+    ["accountStatus", user.accountStatus],
+    ["contacts.rawCount", 6],
+    [
+      // most recent first
+      "contacts.nodes",
+      [
+        {
+          id: encodeGQLID(contacts[4]),
+        },
+        {
+          id: encodeGQLID(contacts[3]),
+        },
+        {
+          id: encodeGQLID(contacts[2]),
+        },
+        {
+          id: encodeGQLID(contacts[1]),
+        },
+        {
+          id: encodeGQLID(contacts[0]),
+        },
+        {
+          id: encodeGQLID(selfContact!),
+        },
+      ],
+    ],
   );
 });
