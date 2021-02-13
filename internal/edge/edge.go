@@ -203,6 +203,9 @@ type Edge interface {
 
 type ConnectionEdge interface {
 	Edge
+	GetGraphQLEdgePrefix() string
+	GetGraphQLConnectionName() string
+	TsEdgeQueryEdgeName() string
 	TsEdgeQueryName() string
 }
 
@@ -294,19 +297,30 @@ func (e *ForeignKeyEdge) EdgeIdentifier() string {
 }
 
 func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+	// return a connection
 	return []enttype.FileImport{
 		enttype.NewGQLFileImport("GraphQLNonNull"),
-		enttype.NewGQLFileImport("GraphQLList"),
-		enttype.NewGQLFileImport("GraphQLNonNull"),
 		{
-			ImportType: enttype.Node,
-			Type:       e.NodeInfo.Node,
+			ImportType: enttype.Connection,
+			Type:       e.GetGraphQLConnectionName(),
 		},
 	}
 }
 
 func (e *ForeignKeyEdge) TsEdgeQueryName() string {
 	return fmt.Sprintf("%sTo%sQuery", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+}
+
+func (e *ForeignKeyEdge) GetGraphQLConnectionName() string {
+	return fmt.Sprintf("%sTo%sConnection", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+}
+
+func (e *ForeignKeyEdge) TsEdgeQueryEdgeName() string {
+	return fmt.Sprintf("%sTo%sEdge", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+}
+
+func (e *ForeignKeyEdge) GetGraphQLEdgePrefix() string {
+	return e.TsEdgeQueryEdgeName()
 }
 
 var _ Edge = &ForeignKeyEdge{}
@@ -395,6 +409,10 @@ func (e *AssociationEdge) TsEdgeConst() string {
 
 func (e *AssociationEdge) TsEdgeQueryName() string {
 	return fmt.Sprintf("%sQuery", e.TsEdgeConst())
+}
+
+func (e *AssociationEdge) GetGraphQLEdgePrefix() string {
+	return e.TsEdgeConst()
 }
 
 func (e *AssociationEdge) TsEdgeQueryEdgeName() string {

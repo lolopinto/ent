@@ -24,6 +24,7 @@ import {
   UserToInvitedEventsConnectionType,
   UserToMaybeEventsConnectionType,
   UserToHostedEventsConnectionType,
+  UserToContactsConnectionType,
 } from "src/graphql/resolvers/";
 import {
   User,
@@ -272,7 +273,7 @@ export const UserType = new GraphQLObjectType({
       },
     },
     contacts: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
+      type: GraphQLNonNull(UserToContactsConnectionType()),
       args: {
         first: {
           description: "",

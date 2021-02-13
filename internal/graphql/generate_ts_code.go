@@ -641,10 +641,30 @@ type gqlEnum struct {
 
 type gqlConnection struct {
 	FilePath string
-	Edge     *edge.AssociationEdge
+	Edge     edge.ConnectionEdge
 	Imports  []*fileImport
 	NodeType string
 	Package  *codegen.ImportPackage
+}
+
+func getGqlConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, data *codegen.Data) *gqlConnection {
+	nodeType := fmt.Sprintf("%sType", edge.GetNodeInfo().Node)
+	return &gqlConnection{
+		Edge:     edge,
+		FilePath: getFilePathForConnection(nodeData, edge.GetGraphQLConnectionName()),
+		NodeType: nodeType,
+		Imports: []*fileImport{
+			{
+				ImportPath: codepath.GetImportPathForExternalGQLFile(),
+				Type:       nodeType,
+			},
+			{
+				ImportPath: codepath.GetExternalImportPath(),
+				Type:       edge.TsEdgeQueryEdgeName(),
+			},
+		},
+		Package: data.CodePath.GetImportPackage(),
+	}
 }
 
 func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
@@ -735,23 +755,15 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 						if nodeMap.HideFromGraphQL(edge) || edge.Unique {
 							continue
 						}
-						nodeType := fmt.Sprintf("%sType", edge.NodeInfo.Node)
-						conn := &gqlConnection{
-							Edge:     edge,
-							FilePath: getFilePathForConnection(nodeData, edge.GetGraphQLConnectionName()),
-							NodeType: nodeType,
-							Imports: []*fileImport{
-								{
-									ImportPath: codepath.GetImportPathForExternalGQLFile(),
-									Type:       nodeType,
-								},
-								{
-									ImportPath: codepath.GetExternalImportPath(),
-									Type:       edge.TsEdgeQueryEdgeName(),
-								},
-							},
-							Package: data.CodePath.GetImportPackage(),
+						conn := getGqlConnection(nodeData, edge, data)
+						obj.connections = append(obj.connections, conn)
+					}
+
+					for _, edge := range edgeInfo.ForeignKeys {
+						if nodeMap.HideFromGraphQL(edge) {
+							continue
 						}
+						conn := getGqlConnection(nodeData, edge, data)
 						obj.connections = append(obj.connections, conn)
 					}
 				}
