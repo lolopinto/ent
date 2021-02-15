@@ -68,7 +68,7 @@ test("create user", async () => {
   // confirm contact was automatically created
   let v = new IDViewer(user.id);
   user = await User.loadX(v, user.id);
-  let contacts = await user.loadContacts();
+  let contacts = await user.queryContacts().queryEnts();
   expect(contacts.length).toBe(1);
   let contact = contacts[0];
 
@@ -495,7 +495,7 @@ test("uniqueEdge|Node", async () => {
   jon = await User.loadX(vc, jon.id);
 
   // jon was created as his own contact
-  let contacts = await jon.loadContacts();
+  let contacts = await jon.queryContacts().queryEnts();
   expect(contacts.length).toBe(1);
   let contact = contacts[0];
 
@@ -528,11 +528,11 @@ test("uniqueEdge|Node", async () => {
   const jonFromHimself = await User.loadX(v, jon.id);
   const [jonContact, allContacts] = await Promise.all([
     jonFromHimself.loadSelfContact(),
-    jonFromHimself.loadContacts(),
+    jonFromHimself.queryContacts().queryEnts(),
   ]);
   expect(jonContact).not.toBe(null);
   expect(jonContact?.id).toBe(contact.id);
-  expect(allContacts?.length).toBe(2);
+  expect(allContacts.length).toBe(2);
 
   // sansa can load jon because friends but can't load his contact
   const v2 = new IDViewer(sansa.id);
@@ -607,8 +607,7 @@ describe("edit email", () => {
       newEmail: newEmail,
     }).saveX();
 
-    // TODO we need an API that returns the raw data for these things...
-    const authCodes = await user.loadAuthCodes();
+    const authCodes = await user.queryAuthCodes().queryEdges();
     // TODO need to verify right code
     expect(authCodes.length).toEqual(1);
     const comms = FakeComms.getSent(newEmail, Mode.EMAIL);
@@ -635,8 +634,8 @@ describe("edit email", () => {
     expect(user.emailAddress).toEqual(newEmail);
 
     //should have been deleted now
-    const authCodes2 = await user.loadAuthCodes();
-    expect(authCodes2.length).toEqual(0);
+    const count = await user.queryAuthCodes().queryRawCount();
+    expect(count).toEqual(0);
   });
 
   test("invalid code confirmed", async () => {
@@ -711,8 +710,7 @@ describe("edit phone number", () => {
       newPhoneNumber: newPhoneNumber,
     }).saveX();
 
-    // TODO we need an API that returns the raw data for these things...
-    const authCodes = await user.loadAuthCodes();
+    const authCodes = await user.queryAuthCodes().queryEdges();
     // TODO need to verify right code
     expect(authCodes.length).toEqual(1);
     const comms = FakeComms.getSent(newPhoneNumber, Mode.SMS);
@@ -742,8 +740,8 @@ describe("edit phone number", () => {
     expect(user.phoneNumber).toEqual(newPhoneNumber);
 
     //should have been deleted now
-    const authCodes2 = await user.loadAuthCodes();
-    expect(authCodes2.length).toEqual(0);
+    const count = await user.queryAuthCodes().queryRawCount();
+    expect(count).toEqual(0);
   });
 
   test("invalid code confirmed", async () => {

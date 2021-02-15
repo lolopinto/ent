@@ -291,7 +291,7 @@ export class {{$baseClass}} {
         });
       }
 
-      load{{$edgeName}}(): Promise<{{.Node}} | null> {
+      load{{$edgeName}}(): Promise<{{useImport .Node}} | null> {
         return {{useImport "loadUniqueNode"}}(
           this.viewer, 
           this.id, 
@@ -340,18 +340,11 @@ export class {{$baseClass}} {
 
   {{ range $edge := .EdgeInfo.ForeignKeys -}}
     {{$edgeName := .CamelCaseEdgeName -}}
+    {{$queryName := useImport .TsEdgeQueryName -}}
     {{with .NodeInfo -}}
-      async load{{$edgeName}}(): Promise<{{useImport .Node}}[]> {
-        let map = await {{useImport "loadEntsFromClause"}}(
-          this.viewer, 
-          {{useImport "query"}}.Eq({{$edge.QuotedDBColName}}, this.id), 
-          {{useImport .Node}}.loaderOptions(),
-        );
-        let results: {{useImport .Node}}[] = [];
-        map.forEach((ent) => {
-          results.push(ent);
-        })
-        return results;
+      query{{$edgeName}}(): {{$queryName}} {
+        {{/* TODO change entquery to NodeBase and use this instead of id here? */}}
+        return {{$queryName}}.query(this.viewer, this.id);
       }
 
     {{end -}}
