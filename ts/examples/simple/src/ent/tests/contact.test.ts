@@ -98,11 +98,10 @@ test("create contacts", async () => {
   expect(user).toBeInstanceOf(User);
 
   // viewer can load their own contacts
-  const loadedContactsMap = await UserToContactsQuery.query(
+  const loadedContacts = await UserToContactsQuery.query(
     user.viewer,
     user,
   ).queryEnts();
-  const loadedContacts = loadedContactsMap.get(user.id) || [];
   // we're using entquery so the order is reversed (from most recently created to first created)
   let inputs2 = inputs.reverse();
   // include the self created contact from account creation
@@ -123,6 +122,6 @@ test("create contacts", async () => {
 
   // ygritte can load jon (because they are friends) but not his contacts
   let jonFromYgritte = await User.loadX(new IDViewer(ygritte!.id), user.id);
-  const contactsViaYgritte = await jonFromYgritte.loadContacts();
+  const contactsViaYgritte = await jonFromYgritte.queryContacts().queryEnts();
   expect(contactsViaYgritte.length).toBe(0);
 });

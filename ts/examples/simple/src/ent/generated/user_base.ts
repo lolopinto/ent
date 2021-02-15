@@ -13,7 +13,6 @@ import {
   loadRawEdgeCountX,
   loadNodesByEdge,
   loadEdgeForID2,
-  loadEntsFromClause,
   loadEntFromClause,
   loadEntXFromClause,
   loadRow,
@@ -32,7 +31,8 @@ import {
   Event,
   User,
   Contact,
-  AuthCode,
+  UserToAuthCodesQuery,
+  UserToContactsQuery,
 } from "src/ent/internal";
 import schema from "src/schema/user";
 
@@ -509,29 +509,11 @@ export class UserBase {
     });
   }
 
-  async loadAuthCodes(): Promise<AuthCode[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("user_id", this.id),
-      AuthCode.loaderOptions(),
-    );
-    let results: AuthCode[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+  queryAuthCodes(): UserToAuthCodesQuery {
+    return UserToAuthCodesQuery.query(this.viewer, this.id);
   }
 
-  async loadContacts(): Promise<Contact[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("user_id", this.id),
-      Contact.loaderOptions(),
-    );
-    let results: Contact[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+  queryContacts(): UserToContactsQuery {
+    return UserToContactsQuery.query(this.viewer, this.id);
   }
 }
