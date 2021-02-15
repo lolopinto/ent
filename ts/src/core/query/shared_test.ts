@@ -46,60 +46,46 @@ class TestQueryFilter<TData extends Data> {
   }
 
   async testIDs() {
-    const idsMap = await this.getQuery().queryIDs();
-    this.verifyIDs(idsMap);
+    const ids = await this.getQuery().queryIDs();
+    this.verifyIDs(ids);
   }
 
-  private verifyIDs(idsMap: Map<ID, ID[]>) {
-    expect(idsMap.size).toBe(1);
-
-    expect(idsMap.get(this.user.id)).toStrictEqual(
-      this.contacts.map((contact) => contact.id),
-    );
+  private verifyIDs(ids: ID[]) {
+    expect(ids).toStrictEqual(this.contacts.map((contact) => contact.id));
   }
 
   // rawCount isn't affected by filters...
   async testRawCount() {
-    const countMap = await this.getQuery().queryRawCount();
-    this.verifyRawCount(countMap);
+    const count = await this.getQuery().queryRawCount();
+    this.verifyRawCount(count);
   }
 
-  private verifyRawCount(countMap: Map<ID, number>) {
-    expect(countMap.size).toBe(1);
-
-    expect(countMap.get(this.user.id)).toBe(inputs.length);
+  private verifyRawCount(count: number) {
+    expect(count).toBe(inputs.length);
   }
 
   async testCount() {
-    const countMap = await this.getQuery().queryCount();
-    this.verifyCount(countMap);
+    const count = await this.getQuery().queryCount();
+    this.verifyCount(count);
   }
 
-  private verifyCount(countMap: Map<ID, number>) {
-    expect(countMap.size).toBe(1);
-
-    expect(countMap.get(this.user.id)).toBe(this.contacts.length);
+  private verifyCount(count: number) {
+    expect(count).toBe(this.contacts.length);
   }
 
   async testEdges() {
-    const edgesMap = await this.getQuery().queryEdges();
-    this.verifyEdges(edgesMap);
+    const edges = await this.getQuery().queryEdges();
+    this.verifyEdges(edges);
   }
 
-  private verifyEdges(edgesMap: Map<ID, Data[]>) {
-    expect(edgesMap.size).toBe(1);
-
+  private verifyEdges(edges: Data[]) {
     const q = this.getQuery();
 
     // TODO sad not generic enough
     if (q instanceof UserToContactsFkeyQuery) {
-      verifyUserToContactRawData(this.user, edgesMap, this.contacts);
+      verifyUserToContactRawData(this.user, edges, this.contacts);
     } else {
-      verifyUserToContactEdges(
-        this.user,
-        edgesMap as Map<ID, AssocEdge[]>,
-        this.contacts,
-      );
+      verifyUserToContactEdges(this.user, edges as AssocEdge[], this.contacts);
     }
   }
 
@@ -108,31 +94,24 @@ class TestQueryFilter<TData extends Data> {
     this.verifyEnts(entsMap);
   }
 
-  private verifyEnts(entsMap: Map<ID, FakeContact[]>) {
-    expect(entsMap.size).toBe(1);
-    verifyUserToContacts(this.user, entsMap, this.contacts);
+  private verifyEnts(ents: FakeContact[]) {
+    verifyUserToContacts(this.user, ents, this.contacts);
   }
 
   async testAll() {
     const query = this.getQuery(new IDViewer(this.user.id));
-    const [
-      edgesMap,
-      countMap,
-      idsMap,
-      rawCountMap,
-      entsMap,
-    ] = await Promise.all([
+    const [edges, count, ids, rawCount, ents] = await Promise.all([
       query.queryEdges(),
       query.queryCount(),
       query.queryIDs(),
       query.queryRawCount(),
       query.queryEnts(),
     ]);
-    this.verifyCount(countMap);
-    this.verifyEdges(edgesMap);
-    this.verifyIDs(idsMap);
-    this.verifyRawCount(rawCountMap);
-    this.verifyEnts(entsMap as Map<ID, FakeContact[]>); // TS bug?
+    this.verifyCount(count);
+    this.verifyEdges(edges);
+    this.verifyIDs(ids);
+    this.verifyRawCount(rawCount);
+    this.verifyEnts(ents);
   }
 }
 
@@ -409,10 +388,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   test("first. after each cursor", async () => {
     let [user, contacts] = await createAllContacts();
     contacts = contacts.reverse();
-    const edgesMap = await opts
-      .newQuery(new LoggedOutViewer(), user)
-      .queryEdges();
-    const edges = edgesMap.get(user.id) || [];
+    const edges = await opts.newQuery(new LoggedOutViewer(), user).queryEdges();
 
     let query: EdgeQuery<FakeContact, Data>;
 
@@ -423,9 +399,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       cursor?: string,
     ) {
       query = opts.newQuery(new LoggedOutViewer(), user);
-      const newEdgeMap = await query.first(1, cursor).queryEdges();
+      const newEdges = await query.first(1, cursor).queryEdges();
 
-      const newEdges = newEdgeMap.get(user.id) || [];
       const pagination = query.paginationInfo().get(user.id);
       if (hasEdge) {
         expect(newEdges.length, `${i}`).toBe(1);
@@ -512,10 +487,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   test("last. before each cursor", async () => {
     let [user, contacts] = await createAllContacts();
     contacts = contacts.reverse();
-    const edgesMap = await opts
-      .newQuery(new LoggedOutViewer(), user)
-      .queryEdges();
-    const edges = edgesMap.get(user.id) || [];
+    const edges = await opts.newQuery(new LoggedOutViewer(), user).queryEdges();
 
     let query: EdgeQuery<FakeContact, Data>;
     async function verify(
@@ -525,9 +497,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       cursor?: string,
     ) {
       query = opts.newQuery(new LoggedOutViewer(), user);
-      const newEdgeMap = await query.last(1, cursor).queryEdges();
+      const newEdges = await query.last(1, cursor).queryEdges();
 
-      const newEdges = newEdgeMap.get(user.id) || [];
       const pagination = query.paginationInfo().get(user.id);
       if (hasEdge) {
         expect(newEdges.length, `${i}`).toBe(1);

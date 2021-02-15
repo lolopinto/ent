@@ -101,15 +101,18 @@ describe("not all ents visible", () => {
 
     // only few of the users invited as friends
     const vc = new IDViewer(user.id);
-    const friendsMap = await UserToFriendsQuery.query(vc, user.id).queryEdges();
-    expect(friendsMap.get(user.id)?.length).toBe(friendCount);
+    const friendsEdge = await UserToFriendsQuery.query(
+      vc,
+      user.id,
+    ).queryEdges();
+    expect(friendsEdge.length).toBe(friendCount);
 
     // everyone  invited to event
-    const invitedEventsMap = await EventToInvitedQuery.query(
+    const invitedEventsEdges = await EventToInvitedQuery.query(
       vc,
       event.id,
     ).queryEdges();
-    expect(invitedEventsMap.get(event.id)?.length).toBe(friendsInput.length);
+    expect(invitedEventsEdges.length).toBe(friendsInput.length);
 
     resetConn();
   });
@@ -138,11 +141,10 @@ describe("not all ents visible", () => {
   });
 
   test("pagination", async () => {
-    const edgesMap = await EventToInvitedQuery.query(
+    const edges = await EventToInvitedQuery.query(
       new LoggedOutViewer(),
       event,
     ).queryEdges();
-    const edges = edgesMap.get(event.id) || [];
 
     async function verify(
       first: number,

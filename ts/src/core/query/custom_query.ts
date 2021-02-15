@@ -33,7 +33,7 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
     }
   }
 
-  async queryRawCount(): Promise<Map<ID, number>> {
+  async queryRawCount(): Promise<number> {
     const row = await loadRow({
       ...this.options,
       fields: ["count(1)"],
@@ -42,7 +42,12 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
     if (!row) {
       throw new Error(`could not find count`);
     }
-    return new Map<ID, number>([[this.id, row.count]]);
+    return parseInt(row.count, 10);
+  }
+
+  async queryAllRawCount(): Promise<Map<ID, number>> {
+    const count = await this.queryRawCount();
+    return new Map<ID, number>([[this.id, count]]);
   }
 
   protected async loadRawData(options: EdgeQueryableDataOptions) {

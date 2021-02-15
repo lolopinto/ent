@@ -46,7 +46,7 @@ export class AssocEdgeQueryBase<
     if (Array.isArray(this.src)) {
       this.src.forEach((obj: TSource | ID) => this.addID(obj));
     } else if (this.isEdgeQuery(this.src)) {
-      const idsMap = await this.src.queryIDs();
+      const idsMap = await this.src.queryAllIDs();
       for (const [_, ids] of idsMap) {
         ids.forEach((id) => this.resolvedIDs.push(id));
       }
@@ -75,7 +75,22 @@ export class AssocEdgeQueryBase<
   }
 
   // doesn't work with filters...
-  async queryRawCount(): Promise<Map<ID, number>> {
+  async queryRawCount(): Promise<number> {
+    const ids = await this.resolveIDs();
+    if (ids.length !== 1) {
+      throw new Error(
+        "cannot call queryRawCount when more than one id is requested",
+      );
+    }
+
+    return await loadRawEdgeCountX({
+      id1: ids[0],
+      edgeType: this.edgeType,
+      context: this.viewer.context,
+    });
+  }
+
+  async queryAllRawCount(): Promise<Map<ID, number>> {
     let results: Map<ID, number> = new Map();
     const ids = await this.resolveIDs();
     await Promise.all(
