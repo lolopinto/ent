@@ -71,22 +71,20 @@ describe("custom edge", () => {
   });
 
   test("ids", async () => {
-    const idsMap = await UserToCustomEdgeQuery.query(
+    const ids = await UserToCustomEdgeQuery.query(
       user1.viewer,
       user1,
     ).queryIDs();
-    const ids = idsMap.get(user1.id);
-    expect(ids?.length).toBe(1);
+    expect(ids.length).toBe(1);
     expect(ids).toEqual([user2.id]);
   });
 
   test("edges", async () => {
-    const edgesMap = await UserToCustomEdgeQuery.query(
+    const edges = await UserToCustomEdgeQuery.query(
       user1.viewer,
       user1,
     ).queryEdges();
-    const edges = edgesMap.get(user1.id);
-    expect(edges?.length).toBe(1);
+    expect(edges.length).toBe(1);
     const edge = edges![0];
     expect(edge).toBeInstanceOf(CustomEdge);
     expect(edge.id1).toBe(user1.id);
@@ -163,7 +161,7 @@ class MultiIDsTestQueryFilter {
   }
 
   async testIDs() {
-    const idsMap = await this.getQuery().queryIDs();
+    const idsMap = await this.getQuery().queryAllIDs();
 
     expect(idsMap.size).toBe(this.dataz.length);
 
@@ -183,7 +181,7 @@ class MultiIDsTestQueryFilter {
 
   // rawCount isn't affected by filters...
   async testRawCount() {
-    const countMap = await this.getQuery().queryRawCount();
+    const countMap = await this.getQuery().queryAllRawCount();
 
     expect(countMap.size).toBe(this.dataz.length);
 
@@ -196,7 +194,7 @@ class MultiIDsTestQueryFilter {
   }
 
   async testCount() {
-    const countMap = await this.getQuery().queryCount();
+    const countMap = await this.getQuery().queryAllCount();
 
     expect(countMap.size).toBe(this.dataz.length);
 
@@ -213,14 +211,18 @@ class MultiIDsTestQueryFilter {
   }
 
   async testEdges() {
-    const edgesMap = await this.getQuery().queryEdges();
+    const edgesMap = await this.getQuery().queryAllEdges();
 
     expect(edgesMap.size).toBe(this.dataz.length);
 
     for (let i = 0; i < this.dataz.length; i++) {
       let data = this.dataz[i];
 
-      verifyUserToContactEdges(data[0], edgesMap, data[1]);
+      verifyUserToContactEdges(
+        data[0],
+        edgesMap.get(data[0].id) || [],
+        data[1],
+      );
     }
     verifyQuery({
       length: this.dataz.length,
@@ -231,21 +233,25 @@ class MultiIDsTestQueryFilter {
 
   async testEnts() {
     // privacy...
-    const entsMap = await this.getQuery().queryEnts();
+    const entsMap = await this.getQuery().queryAllEnts();
     expect(entsMap.size).toBe(this.dataz.length);
     for (let i = 0; i < this.dataz.length; i++) {
       let data = this.dataz[i];
-      verifyUserToContacts(data[0], entsMap, []);
+      verifyUserToContacts(data[0], entsMap.get(data[0].id) || [], []);
     }
 
     // privacy. only data for the first id is visible in this case
     const entsMap2 = await this.getQuery(
       new IDViewer(this.dataz[0][0].id),
-    ).queryEnts();
+    ).queryAllEnts();
     expect(entsMap2.size).toBe(this.dataz.length);
     for (let i = 0; i < this.dataz.length; i++) {
       let data = this.dataz[i];
-      verifyUserToContacts(data[0], entsMap2, i == 0 ? data[1] : []);
+      verifyUserToContacts(
+        data[0],
+        entsMap2.get(data[0].id) || [],
+        i == 0 ? data[1] : [],
+      );
     }
     verifyQuery({
       // extra query for the nodes
@@ -388,11 +394,11 @@ class ChainTestQueryFilter {
 
     expect(this.friends.length).toBe(inputs.length);
 
-    const countMap = await UserToFriendsQuery.query(
+    const count = await UserToFriendsQuery.query(
       new IDViewer(this.user.id),
       this.user.id,
     ).queryCount();
-    expect(countMap.get(this.user.id)).toStrictEqual(inputs.length);
+    expect(count).toStrictEqual(inputs.length);
   }
 
   getQuery(vc: Viewer) {
@@ -421,8 +427,7 @@ class ChainTestQueryFilter {
         break;
       }
 
-      let result = await query.queryIDs();
-      // reset last
+      let result = await query.queryAllIDs();
       last = [];
       for (const [_, ids] of result) {
         last.push(...ids);
@@ -436,19 +441,19 @@ class ChainTestQueryFilter {
   }
 
   async testIDs() {
-    await this.compare((q) => q.queryIDs());
+    await this.compare((q) => q.queryAllIDs());
   }
 
   async testCount() {
-    await this.compare((q) => q.queryCount());
+    await this.compare((q) => q.queryAllCount());
   }
 
   async testRawCount() {
-    await this.compare((q) => q.queryRawCount());
+    await this.compare((q) => q.queryAllRawCount());
   }
 
   async testEdges() {
-    await this.compare((q) => q.queryEdges());
+    await this.compare((q) => q.queryAllEdges());
   }
 
   async testEnts() {
@@ -463,7 +468,7 @@ class ChainTestQueryFilter {
         }
       }
     }
-    await this.compare((q) => q.queryEnts(), compare);
+    await this.compare((q) => q.queryAllEnts(), compare);
   }
 }
 
