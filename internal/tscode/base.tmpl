@@ -278,6 +278,7 @@ export class {{$baseClass}} {
   {{range $edge := .EdgeInfo.Associations -}}
     {{$edgeName := .CamelCaseEdgeName -}}
     {{$uniqueEdge := .Unique -}}
+    {{$queryName := useImport .TsEdgeQueryName -}}
     {{with .NodeInfo -}}
     {{$edgeType := useImport "EdgeType"}}
     {{$assocEdgeType := useImport "AssocEdge"}}
@@ -301,29 +302,9 @@ export class {{$baseClass}} {
       }
 
      {{ else -}}
-      load{{$edgeName}}Edges():Promise<{{$assocEdgeType}}[]> {
-        return {{useImport "loadEdges"}}({
-          id1:this.id, 
-          edgeType: {{$edgeType}}.{{$edge.TsEdgeConst}},
-          context: this.viewer.context,
-        });
-      }
-
-      load{{$edgeName}}():Promise<{{useImport .Node}}[]> {
-        return {{useImport "loadNodesByEdge"}}(
-          this.viewer, 
-          this.id, 
-          {{$edgeType}}.{{$edge.TsEdgeConst}}, 
-          {{useImport .Node}}.loaderOptions(),
-        );
-      }
-
-      load{{$edgeName}}RawCountX():Promise<number> {
-        return {{useImport "loadRawEdgeCountX"}}({
-          id1: this.id, 
-          edgeType: {{$edgeType}}.{{$edge.TsEdgeConst}},
-          context: this.viewer.context,
-        });
+      query{{$edgeName}}(): {{$queryName}} {
+        {{/* TODO change entquery to NodeBase and use this instead of id here? */}}
+        return {{$queryName}}.query(this.viewer, this.id);
       }
 
       load{{$edge.Singular}}EdgeFor(id2: {{$idType}}):Promise<{{$assocEdgeType}}|undefined> {
@@ -341,13 +322,11 @@ export class {{$baseClass}} {
   {{ range $edge := .EdgeInfo.ForeignKeys -}}
     {{$edgeName := .CamelCaseEdgeName -}}
     {{$queryName := useImport .TsEdgeQueryName -}}
-    {{with .NodeInfo -}}
       query{{$edgeName}}(): {{$queryName}} {
         {{/* TODO change entquery to NodeBase and use this instead of id here? */}}
         return {{$queryName}}.query(this.viewer, this.id);
       }
-
-    {{end -}}
+      
   {{end -}}
 
   {{ range $edge := .EdgeInfo.IndexedEdges -}}

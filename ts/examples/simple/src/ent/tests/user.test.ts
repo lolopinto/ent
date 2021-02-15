@@ -245,10 +245,10 @@ test("symmetric edge", async () => {
   const jon = await action.saveX();
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
-    jon.loadFriendsEdges(),
-    jon.loadFriendsRawCountX(),
-    dany.loadFriendsEdges(),
-    dany.loadFriendsRawCountX(),
+    jon.queryFriends().queryEdges(),
+    jon.queryFriends().queryRawCount(),
+    dany.queryFriends().queryEdges(),
+    dany.queryFriends().queryRawCount(),
   ]);
   expect(edges.length).toBe(2);
 
@@ -288,7 +288,7 @@ test("symmetric edge", async () => {
   expect(loadedUser).toBeInstanceOf(User);
 
   // jon loading via self
-  const friends = await jon.loadFriends();
+  const friends = await jon.queryFriends().queryEnts();
   expect(friends.length).toBe(2);
 
   let vc = new IDViewer(jon.id, { ent: jon });
@@ -304,11 +304,11 @@ test("symmetric edge", async () => {
     danyReloadedEdgesCount,
     samReloadedEdgesCount,
   ] = await Promise.all([
-    jon.loadFriendsEdges(),
-    jon.loadFriendsRawCountX(),
-    dany.loadFriendsEdges(),
-    dany.loadFriendsRawCountX(),
-    sam.loadFriendsRawCountX(),
+    jon.queryFriends().queryEdges(),
+    jon.queryFriends().queryRawCount(),
+    dany.queryFriends().queryEdges(),
+    dany.queryFriends().queryRawCount(),
+    sam.queryFriends().queryRawCount(),
   ]);
   expect(jonReloadedEdges.length).toBe(0);
   expect(jonReloadedEdgesCount).toBe(0);
@@ -332,10 +332,10 @@ test("inverse edge", async () => {
   const event = await action.saveX();
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
-    event.loadInvitedEdges(),
-    event.loadInvitedRawCountX(),
-    user.loadInvitedEventsEdges(),
-    user.loadInvitedEventsRawCountX(),
+    event.queryInvited().queryEdges(),
+    event.queryInvited().queryRawCount(),
+    user.queryInvitedEvents().queryEdges(),
+    user.queryInvitedEvents().queryRawCount(),
   ]);
   expect(edges.length).toBe(1);
   expect(edgesCount).toBe(1);
@@ -362,7 +362,7 @@ test("inverse edge", async () => {
   const loadedEvent = await Event.load(v, event.id);
   expect(loadedEvent).not.toBe(null);
 
-  const invitedEvents = await user.loadInvitedEvents();
+  const invitedEvents = await user.queryInvitedEvents().queryEnts();
   expect(invitedEvents.length).toBe(1);
   expect(invitedEvents[0].id).toBe(loadedEvent?.id);
 });
@@ -381,7 +381,7 @@ test("one-way + inverse edge", async () => {
 
   // setting the creator id field also sets edge from user -> created event
   // because of the configuration
-  const edges = await user.loadCreatedEventsEdges();
+  const edges = await user.queryCreatedEvents().queryEdges();
   expect(edges.length).toBe(1);
   verifyEdge(edges[0], {
     id1: user.id,

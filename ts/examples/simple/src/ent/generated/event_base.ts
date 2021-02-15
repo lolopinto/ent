@@ -9,9 +9,6 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  loadEdges,
-  loadRawEdgeCountX,
-  loadNodesByEdge,
   loadEdgeForID2,
   loadRow,
   loadRowX,
@@ -22,7 +19,16 @@ import {
   getEdgeTypeInGroup,
 } from "@lolopinto/ent";
 import { Field, getFields } from "@lolopinto/ent/schema";
-import { EdgeType, NodeType, User } from "src/ent/internal";
+import {
+  EdgeType,
+  NodeType,
+  User,
+  EventToAttendingQuery,
+  EventToDeclinedQuery,
+  EventToHostsQuery,
+  EventToInvitedQuery,
+  EventToMaybeQuery,
+} from "src/ent/internal";
 import schema from "src/schema/event";
 
 const tableName = "events";
@@ -182,29 +188,8 @@ export class EventBase {
     return ret;
   }
 
-  loadAttendingEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.EventToAttending,
-      context: this.viewer.context,
-    });
-  }
-
-  loadAttending(): Promise<User[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.EventToAttending,
-      User.loaderOptions(),
-    );
-  }
-
-  loadAttendingRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.EventToAttending,
-      context: this.viewer.context,
-    });
+  queryAttending(): EventToAttendingQuery {
+    return EventToAttendingQuery.query(this.viewer, this.id);
   }
 
   loadAttendingEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
@@ -216,29 +201,8 @@ export class EventBase {
     });
   }
 
-  loadDeclinedEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.EventToDeclined,
-      context: this.viewer.context,
-    });
-  }
-
-  loadDeclined(): Promise<User[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.EventToDeclined,
-      User.loaderOptions(),
-    );
-  }
-
-  loadDeclinedRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.EventToDeclined,
-      context: this.viewer.context,
-    });
+  queryDeclined(): EventToDeclinedQuery {
+    return EventToDeclinedQuery.query(this.viewer, this.id);
   }
 
   loadDeclinedEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
@@ -250,29 +214,8 @@ export class EventBase {
     });
   }
 
-  loadHostsEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.EventToHosts,
-      context: this.viewer.context,
-    });
-  }
-
-  loadHosts(): Promise<User[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.EventToHosts,
-      User.loaderOptions(),
-    );
-  }
-
-  loadHostsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.EventToHosts,
-      context: this.viewer.context,
-    });
+  queryHosts(): EventToHostsQuery {
+    return EventToHostsQuery.query(this.viewer, this.id);
   }
 
   loadHostEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
@@ -284,29 +227,8 @@ export class EventBase {
     });
   }
 
-  loadInvitedEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.EventToInvited,
-      context: this.viewer.context,
-    });
-  }
-
-  loadInvited(): Promise<User[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.EventToInvited,
-      User.loaderOptions(),
-    );
-  }
-
-  loadInvitedRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.EventToInvited,
-      context: this.viewer.context,
-    });
+  queryInvited(): EventToInvitedQuery {
+    return EventToInvitedQuery.query(this.viewer, this.id);
   }
 
   loadInvitedEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
@@ -318,29 +240,8 @@ export class EventBase {
     });
   }
 
-  loadMaybeEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.EventToMaybe,
-      context: this.viewer.context,
-    });
-  }
-
-  loadMaybe(): Promise<User[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.EventToMaybe,
-      User.loaderOptions(),
-    );
-  }
-
-  loadMaybeRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.EventToMaybe,
-      context: this.viewer.context,
-    });
+  queryMaybe(): EventToMaybeQuery {
+    return EventToMaybeQuery.query(this.viewer, this.id);
   }
 
   loadMaybeEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
