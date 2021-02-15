@@ -100,8 +100,8 @@ test("query custom function", async () => {
   action.builder.addFriend(user2);
   await action.saveX();
 
-  const edges = await user.loadFriendsEdges();
-  expect(edges.length).toBe(1);
+  const count = await user.queryFriends().queryCount();
+  expect(count).toBe(1);
 
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user),

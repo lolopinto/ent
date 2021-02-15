@@ -53,7 +53,7 @@ test("create event", async () => {
   expect(creator!.id).toBe(event.creatorID);
 
   // creator is added as host too
-  const hosts = await event.loadHosts();
+  const hosts = await event.queryHosts().queryEnts();
   expect(hosts.length).toBe(1);
   expect(hosts[0].id).toBe(event.creatorID);
 });
