@@ -36,6 +36,7 @@ type EdgeInfo struct {
 	AssocGroups       []*AssociationEdgeGroup
 	assocGroupsMap    map[string]*AssociationEdgeGroup
 	SourcePackageName string
+	SourceNodeName    string
 
 	// don't want name overlap even when being added programmatically because we use those names in all kinds of places even graphql
 	keys map[string]bool
@@ -44,6 +45,7 @@ type EdgeInfo struct {
 func NewEdgeInfo(packageName string) *EdgeInfo {
 	ret := &EdgeInfo{}
 	ret.SourcePackageName = packageName
+	ret.SourceNodeName = strcase.ToCamel(packageName)
 	ret.fieldEdgeMap = make(map[string]*FieldEdge)
 	ret.foreignKeyMap = make(map[string]*ForeignKeyEdge)
 	ret.indexedEdgeMap = make(map[string]*IndexedEdge)
@@ -158,6 +160,7 @@ func (e *EdgeInfo) addFieldEdgeFromInfo(fieldName, configName, inverseEdgeName s
 func (e *EdgeInfo) AddForeignKeyEdgeFromInverseFieldInfo(dbColName, edgeName, nodeName string) {
 	edge := &ForeignKeyEdge{
 		QuotedDBColName: dbColName,
+		SourceNodeName:  e.SourceNodeName,
 		commonEdgeInfo: getCommonEdgeInfo(
 			edgeName,
 			schemaparser.GetEntConfigFromName(nodeName),
@@ -196,6 +199,14 @@ type Edge interface {
 	CamelCaseEdgeName() string
 	HideFromGraphQL() bool
 	GetTSGraphQLTypeImports() []enttype.FileImport
+}
+
+type ConnectionEdge interface {
+	Edge
+	GetGraphQLEdgePrefix() string
+	GetGraphQLConnectionName() string
+	TsEdgeQueryEdgeName() string
+	TsEdgeQueryName() string
 }
 
 // marker interface
@@ -269,6 +280,7 @@ var _ Edge = &FieldEdge{}
 
 type ForeignKeyEdge struct {
 	QuotedDBColName string
+	SourceNodeName  string
 	commonEdgeInfo
 }
 
@@ -285,19 +297,35 @@ func (e *ForeignKeyEdge) EdgeIdentifier() string {
 }
 
 func (e *ForeignKeyEdge) GetTSGraphQLTypeImports() []enttype.FileImport {
+	// return a connection
 	return []enttype.FileImport{
 		enttype.NewGQLFileImport("GraphQLNonNull"),
-		enttype.NewGQLFileImport("GraphQLList"),
-		enttype.NewGQLFileImport("GraphQLNonNull"),
 		{
-			ImportType: enttype.Node,
-			Type:       e.NodeInfo.Node,
+			ImportType: enttype.Connection,
+			Type:       e.GetGraphQLConnectionName(),
 		},
 	}
 }
 
+func (e *ForeignKeyEdge) TsEdgeQueryName() string {
+	return fmt.Sprintf("%sTo%sQuery", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+}
+
+func (e *ForeignKeyEdge) GetGraphQLConnectionName() string {
+	return fmt.Sprintf("%sTo%sConnection", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+}
+
+func (e *ForeignKeyEdge) TsEdgeQueryEdgeName() string {
+	return fmt.Sprintf("%sTo%sEdge", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+}
+
+func (e *ForeignKeyEdge) GetGraphQLEdgePrefix() string {
+	return fmt.Sprintf("%sTo%s", e.SourceNodeName, strcase.ToCamel(e.EdgeName))
+}
+
 var _ Edge = &ForeignKeyEdge{}
 var _ PluralEdge = &ForeignKeyEdge{}
+var _ ConnectionEdge = &ForeignKeyEdge{}
 
 // this is like a foreign key edge except different
 // refers to a field that's indexed but doesn't want to reference it as a foreign key
@@ -370,7 +398,7 @@ type AssociationEdge struct {
 }
 
 // TsEdgeConst returns the Edge const as used in typescript.
-// It transforms UserToFriends Edge to UserToFriends since that's
+// It transforms UserToFriendsEdge to UserToFriends since that's
 // in an enum
 // will evntually fix at edge creation
 func (e *AssociationEdge) TsEdgeConst() string {
@@ -381,6 +409,10 @@ func (e *AssociationEdge) TsEdgeConst() string {
 
 func (e *AssociationEdge) TsEdgeQueryName() string {
 	return fmt.Sprintf("%sQuery", e.TsEdgeConst())
+}
+
+func (e *AssociationEdge) GetGraphQLEdgePrefix() string {
+	return e.TsEdgeConst()
 }
 
 func (e *AssociationEdge) TsEdgeQueryEdgeName() string {
@@ -465,6 +497,7 @@ func (e *AssociationEdge) CloneWithCommonInfo(configName string) *AssociationEdg
 
 var _ Edge = &AssociationEdge{}
 var _ PluralEdge = &AssociationEdge{}
+var _ ConnectionEdge = &AssociationEdge{}
 
 // EdgeAction holds as little data as possible about the edge action
 // and depends on action to take that information, process it and generate the

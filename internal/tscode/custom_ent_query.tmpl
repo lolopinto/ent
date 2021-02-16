@@ -1,0 +1,5 @@
+{{$name := .TsEdgeQueryName -}}
+{{$base := printf "%sBase" $name -}}
+{{ reserveImport .Package.InternalImportPath $base -}}
+
+export class {{$name}} extends {{useImport $base}} {}

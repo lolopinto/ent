@@ -84,7 +84,7 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection<AssocEdge>(
+        return new GraphQLEdgeConnection(
           event.viewer,
           event,
           (v, event: Event) => EventToAttendingQuery.query(v, event),
@@ -113,7 +113,7 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection<AssocEdge>(
+        return new GraphQLEdgeConnection(
           event.viewer,
           event,
           (v, event: Event) => EventToDeclinedQuery.query(v, event),
@@ -142,7 +142,7 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection<AssocEdge>(
+        return new GraphQLEdgeConnection(
           event.viewer,
           event,
           (v, event: Event) => EventToHostsQuery.query(v, event),
@@ -171,7 +171,7 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection<AssocEdge>(
+        return new GraphQLEdgeConnection(
           event.viewer,
           event,
           (v, event: Event) => EventToInvitedQuery.query(v, event),
@@ -200,7 +200,7 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection<AssocEdge>(
+        return new GraphQLEdgeConnection(
           event.viewer,
           event,
           (v, event: Event) => EventToMaybeQuery.query(v, event),
