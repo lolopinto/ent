@@ -98,11 +98,10 @@ test("create contacts", async () => {
   expect(user).toBeInstanceOf(User);
 
   // viewer can load their own contacts
-  const loadedContactsMap = await UserToContactsQuery.query(
+  const loadedContacts = await UserToContactsQuery.query(
     user.viewer,
     user,
   ).queryEnts();
-  const loadedContacts = loadedContactsMap.get(user.id) || [];
   // we're using entquery so the order is reversed (from most recently created to first created)
   let inputs2 = inputs.reverse();
   // include the self created contact from account creation
