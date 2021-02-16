@@ -1,4 +1,4 @@
-import { UserBase, UserToContactsQuery } from "src/ent/internal";
+import { UserBase } from "src/ent/internal";
 import {
   PrivacyPolicy,
   AllowIfViewerRule,
@@ -48,10 +48,6 @@ export class User extends UserBase {
     return null;
   }
 
-  private async loadContactsDeterministic() {
-    return await UserToContactsQuery.query(this.viewer, this).queryEnts();
-  }
-
   @gqlField({
     type: "Contact",
     nullable: true,
@@ -64,7 +60,7 @@ export class User extends UserBase {
     }
     let [selfContactEdge, contacts] = await Promise.all([
       this.loadSelfContactEdge(),
-      this.loadContactsDeterministic(),
+      this.loadContacts(),
     ]);
     return contacts!.find((contact) => {
       if (selfContactEdge?.id2 === contact.id) {
@@ -84,7 +80,7 @@ export class User extends UserBase {
     if (!domain) {
       return [];
     }
-    let contacts = await this.loadContactsDeterministic();
+    let contacts = await this.loadContacts();
     return contacts.filter((contact) => {
       return domain === this.getDomainFromEmail(contact.emailAddress);
     });
@@ -101,7 +97,7 @@ export class User extends UserBase {
     if (!domain) {
       return null;
     }
-    let contacts = await this.loadContactsDeterministic();
+    let contacts = await this.loadContacts();
     contacts = contacts.filter((contact) => {
       return (
         this.id !== contact.userID &&
@@ -127,7 +123,7 @@ export class User extends UserBase {
     if (!domain) {
       return [];
     }
-    let contacts = await this.loadContactsDeterministic();
+    let contacts = await this.loadContacts();
     return contacts.map((contact) => {
       let contactDomain = this.getDomainFromEmail(contact.emailAddress);
       if (contactDomain === domain) {
@@ -150,7 +146,7 @@ export class User extends UserBase {
     if (!domain) {
       return null;
     }
-    let contacts = await this.loadContactsDeterministic();
+    let contacts = await this.loadContacts();
     return contacts.map((contact) => {
       let contactDomain = this.getDomainFromEmail(contact.emailAddress);
       if (contactDomain === domain) {

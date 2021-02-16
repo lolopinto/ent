@@ -28,19 +28,19 @@ import schema from "src/schema/event";
 const tableName = "events";
 
 export enum EventRsvpStatus {
-  Declined = "declined",
-  Maybe = "maybe",
   Invited = "invited",
   Attending = "attending",
+  Declined = "declined",
+  Maybe = "maybe",
   CanRsvp = "canRsvp",
 }
 
 export function getEventRsvpStatusValues() {
   return [
-    EventRsvpStatus.Declined,
-    EventRsvpStatus.Maybe,
     EventRsvpStatus.Invited,
     EventRsvpStatus.Attending,
+    EventRsvpStatus.Declined,
+    EventRsvpStatus.Maybe,
     EventRsvpStatus.CanRsvp,
   ];
 }
@@ -213,7 +213,6 @@ export class EventBase {
       edgeType: EdgeType.EventToAttending,
       id2,
       context: this.viewer.context,
-      ctr: AssocEdge,
     });
   }
 
@@ -248,7 +247,6 @@ export class EventBase {
       edgeType: EdgeType.EventToDeclined,
       id2,
       context: this.viewer.context,
-      ctr: AssocEdge,
     });
   }
 
@@ -283,7 +281,6 @@ export class EventBase {
       edgeType: EdgeType.EventToHosts,
       id2,
       context: this.viewer.context,
-      ctr: AssocEdge,
     });
   }
 
@@ -318,7 +315,6 @@ export class EventBase {
       edgeType: EdgeType.EventToInvited,
       id2,
       context: this.viewer.context,
-      ctr: AssocEdge,
     });
   }
 
@@ -353,7 +349,6 @@ export class EventBase {
       edgeType: EdgeType.EventToMaybe,
       id2,
       context: this.viewer.context,
-      ctr: AssocEdge,
     });
   }
 

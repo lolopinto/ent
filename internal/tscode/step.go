@@ -114,21 +114,7 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 
 					edge := nodeData.EdgeInfo.Associations[idx]
 
-					if err := writeAssocEdgeQueryFile(data.Schema, nodeData, edge, data.CodePath); err != nil {
-						serr.Append(err)
-					}
-				}(idx)
-			}
-
-			edgesWg.Add(len(nodeData.EdgeInfo.ForeignKeys))
-
-			for idx := range nodeData.EdgeInfo.ForeignKeys {
-				go func(idx int) {
-					defer edgesWg.Done()
-
-					edge := nodeData.EdgeInfo.ForeignKeys[idx]
-
-					if err := writeCustomEdgeQueryFile(data.Schema, nodeData, edge, data.CodePath); err != nil {
+					if err := writeEdgeQueryFile(data.Schema, nodeData, edge, data.CodePath); err != nil {
 						serr.Append(err)
 					}
 				}(idx)
@@ -268,7 +254,7 @@ func getFilePathForBaseQueryFile(nodeData *schema.NodeData) string {
 	return fmt.Sprintf("src/ent/generated/%s_query_base.ts", nodeData.PackageName)
 }
 
-func getFilePathForAssocEdgeQueryFile(nodeData *schema.NodeData, e *edge.AssociationEdge) string {
+func getFilePathForEdgeQueryFile(nodeData *schema.NodeData, e *edge.AssociationEdge) string {
 	return fmt.Sprintf(
 		"src/ent/%s/query/%s.ts",
 		nodeData.PackageName,
@@ -276,23 +262,7 @@ func getFilePathForAssocEdgeQueryFile(nodeData *schema.NodeData, e *edge.Associa
 	)
 }
 
-func getFilePathForCustomEdgeQueryFile(nodeData *schema.NodeData, e *edge.ForeignKeyEdge) string {
-	return fmt.Sprintf(
-		"src/ent/%s/query/%s.ts",
-		nodeData.PackageName,
-		strcase.ToSnake(e.TsEdgeQueryName()),
-	)
-}
-
-func getImportPathForAssocEdgeQueryFile(nodeData *schema.NodeData, e *edge.AssociationEdge) string {
-	return fmt.Sprintf(
-		"src/ent/%s/query/%s",
-		nodeData.PackageName,
-		strcase.ToSnake(e.TsEdgeQueryName()),
-	)
-}
-
-func getImportPathForCustomEdgeQueryFile(nodeData *schema.NodeData, e *edge.ForeignKeyEdge) string {
+func getImportPathForEdgeQueryFile(nodeData *schema.NodeData, e *edge.AssociationEdge) string {
 	return fmt.Sprintf(
 		"src/ent/%s/query/%s",
 		nodeData.PackageName,
@@ -426,43 +396,23 @@ func writeBaseQueryFile(s *schema.Schema, nodeData *schema.NodeData, codePathInf
 	})
 }
 
-func writeAssocEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e *edge.AssociationEdge, codePathInfo *codegen.CodePath) error {
+func writeEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e *edge.AssociationEdge, codePathInfo *codegen.CodePath) error {
 	imps := tsimport.NewImports()
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Data: struct {
+			Schema  *schema.Schema
 			Edge    *edge.AssociationEdge
 			Package *codegen.ImportPackage
 		}{
+			Schema:  s,
 			Edge:    e,
 			Package: codePathInfo.GetImportPackage(),
 		},
 		CreateDirIfNeeded: true,
-		AbsPathToTemplate: util.GetAbsolutePath("assoc_ent_query.tmpl"),
-		TemplateName:      "assoc_ent_query.tmpl",
-		PathToFile:        getFilePathForAssocEdgeQueryFile(nodeData, e),
-		FormatSource:      true,
-		TsImports:         imps,
-		FuncMap:           imps.FuncMap(),
-		EditableCode:      true,
-	}, file.WriteOnce())
-}
-
-func writeCustomEdgeQueryFile(s *schema.Schema, nodeData *schema.NodeData, e *edge.ForeignKeyEdge, codePathInfo *codegen.CodePath) error {
-	imps := tsimport.NewImports()
-
-	return file.Write(&file.TemplatedBasedFileWriter{
-		Data: struct {
-			Package         *codegen.ImportPackage
-			TsEdgeQueryName string
-		}{
-			Package:         codePathInfo.GetImportPackage(),
-			TsEdgeQueryName: e.TsEdgeQueryName(),
-		},
-		CreateDirIfNeeded: true,
-		AbsPathToTemplate: util.GetAbsolutePath("custom_ent_query.tmpl"),
-		TemplateName:      "custom_ent_query.tmpl",
-		PathToFile:        getFilePathForCustomEdgeQueryFile(nodeData, e),
+		AbsPathToTemplate: util.GetAbsolutePath("ent_query.tmpl"),
+		TemplateName:      "ent_query.tmpl",
+		PathToFile:        getFilePathForEdgeQueryFile(nodeData, e),
 		FormatSource:      true,
 		TsImports:         imps,
 		FuncMap:           imps.FuncMap(),
@@ -556,23 +506,12 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	var baseQueryFiles []string
 	var queryFiles []string
 	for _, info := range s.Nodes {
-		hasBaseQueryFile := false
-		if len(info.NodeData.EdgeInfo.Associations) != 0 {
-			hasBaseQueryFile = true
-			for _, edge := range info.NodeData.EdgeInfo.Associations {
-				append2(&queryFiles, getImportPathForAssocEdgeQueryFile(info.NodeData, edge))
-			}
+		if len(info.NodeData.EdgeInfo.Associations) == 0 {
+			continue
 		}
-
-		if len(info.NodeData.EdgeInfo.ForeignKeys) != 0 {
-			hasBaseQueryFile = true
-			for _, edge := range info.NodeData.EdgeInfo.ForeignKeys {
-				append2(&queryFiles, getImportPathForCustomEdgeQueryFile(info.NodeData, edge))
-			}
-		}
-
-		if hasBaseQueryFile {
-			append2(&baseQueryFiles, getImportPathForBaseQueryFile(info.NodeData.PackageName))
+		append2(&baseQueryFiles, getImportPathForBaseQueryFile(info.NodeData.PackageName))
+		for _, edge := range info.NodeData.EdgeInfo.Associations {
+			append2(&queryFiles, getImportPathForEdgeQueryFile(info.NodeData, edge))
 		}
 	}
 

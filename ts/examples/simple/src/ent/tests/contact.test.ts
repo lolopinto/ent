@@ -5,7 +5,6 @@ import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateContactAction, {
   ContactCreateInput,
 } from "src/ent/contact/actions/create_contact_action";
-import { UserToContactsQuery } from "../user/query/user_to_contacts_query";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -66,11 +65,14 @@ test("create contact", async () => {
 });
 
 test("create contacts", async () => {
-  function verifyContacts(
-    contacts: Contact[],
-    inputs: Pick<ContactCreateInput, "firstName" | "lastName">[],
-  ) {
-    expect(contacts.length).toBe(inputs.length);
+  function verifyContacts(contacts: Contact[], includeSelf: boolean = false) {
+    let expLength = 5;
+    if (includeSelf) {
+      expLength++;
+      // include the self created contact from account creation
+      inputs.push({ firstName: "Jon", lastName: "Snow" });
+    }
+    expect(contacts.length).toBe(expLength);
     let idx = 0;
     for (const input of inputs) {
       let contact = contacts[idx];
@@ -88,8 +90,7 @@ test("create contacts", async () => {
   ];
   let user = await createUser();
   const contacts = await createMany(user, inputs);
-  // it'll be in the initial order because it's in order of creation
-  verifyContacts(contacts, inputs);
+  verifyContacts(contacts);
 
   const userId = contacts[0].userID;
   const v = new IDViewer(userId);
@@ -98,16 +99,9 @@ test("create contacts", async () => {
   expect(user).toBeInstanceOf(User);
 
   // viewer can load their own contacts
-  const loadedContacts = await UserToContactsQuery.query(
-    user.viewer,
-    user,
-  ).queryEnts();
-  // we're using entquery so the order is reversed (from most recently created to first created)
-  let inputs2 = inputs.reverse();
-  // include the self created contact from account creation
-  inputs2.push({ firstName: "Jon", lastName: "Snow" });
-
-  verifyContacts(loadedContacts, inputs2);
+  const loadedContacts = await user.loadContacts();
+  // TODO need to figure out order here. previously self was first. now it's last
+  verifyContacts(loadedContacts, true);
 
   // ygritte can't see jon snow's contacts
   let action = CreateUserAction.create(loggedOutViewer, {

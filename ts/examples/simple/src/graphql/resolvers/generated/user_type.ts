@@ -24,7 +24,6 @@ import {
   UserToInvitedEventsConnectionType,
   UserToMaybeEventsConnectionType,
   UserToHostedEventsConnectionType,
-  UserToContactsConnectionType,
 } from "src/graphql/resolvers/";
 import {
   User,
@@ -35,7 +34,6 @@ import {
   UserToInvitedEventsQuery,
   UserToMaybeEventsQuery,
   UserToHostedEventsQuery,
-  UserToContactsQuery,
 } from "src/ent/";
 
 export const UserType = new GraphQLObjectType({
@@ -84,7 +82,7 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
           (v, user: User) => UserToCreatedEventsQuery.query(v, user),
@@ -113,7 +111,7 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
           (v, user: User) => UserToDeclinedEventsQuery.query(v, user),
@@ -142,7 +140,7 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
           (v, user: User) => UserToEventsAttendingQuery.query(v, user),
@@ -171,7 +169,7 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
           (v, user: User) => UserToFriendsQuery.query(v, user),
@@ -200,7 +198,7 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
           (v, user: User) => UserToInvitedEventsQuery.query(v, user),
@@ -229,7 +227,7 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
           (v, user: User) => UserToMaybeEventsQuery.query(v, user),
@@ -264,7 +262,7 @@ export const UserType = new GraphQLObjectType({
         },
       },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           user.viewer,
           user,
           (v, user: User) => UserToHostedEventsQuery.query(v, user),
@@ -273,32 +271,9 @@ export const UserType = new GraphQLObjectType({
       },
     },
     contacts: {
-      type: GraphQLNonNull(UserToContactsConnectionType()),
-      args: {
-        first: {
-          description: "",
-          type: GraphQLInt,
-        },
-        after: {
-          description: "",
-          type: GraphQLString,
-        },
-        last: {
-          description: "",
-          type: GraphQLInt,
-        },
-        before: {
-          description: "",
-          type: GraphQLString,
-        },
-      },
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ContactType))),
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
-          user.viewer,
-          user,
-          (v, user: User) => UserToContactsQuery.query(v, user),
-          args,
-        );
+        return user.loadContacts();
       },
     },
     fullName: {

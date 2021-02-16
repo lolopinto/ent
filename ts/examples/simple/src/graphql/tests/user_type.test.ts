@@ -3,7 +3,7 @@ import CreateUserAction, {
   UserCreateInput,
 } from "src/ent/user/actions/create_user_action";
 import { DB, LoggedOutViewer, IDViewer, ID, Viewer } from "@lolopinto/ent";
-import { Contact, User } from "src/ent/";
+import { User } from "src/ent/";
 import { randomEmail, randomPhoneNumber } from "src/util/random";
 import EditUserAction from "src/ent/user/actions/edit_user_action";
 import { advanceBy } from "jest-date-mock";
@@ -11,9 +11,7 @@ import {
   queryRootConfig,
   expectQueryFromRoot,
 } from "@lolopinto/ent-graphql-tests";
-import CreateContactAction, {
-  ContactCreateInput,
-} from "src/ent/contact/actions/create_contact_action";
+import CreateContactAction from "src/ent/contact/actions/create_contact_action";
 import { clearAuthHandlers } from "@lolopinto/ent/auth";
 import { encodeGQLID } from "@lolopinto/ent/graphql";
 
@@ -177,8 +175,8 @@ test("query custom async function list", async () => {
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user),
     ["id", encodeGQLID(user)],
-    ["contactsSameDomain[0].id", encodeGQLID(contact!)],
-    ["contactsSameDomain[1].id", encodeGQLID(selfContact!)],
+    ["contactsSameDomain[0].id", encodeGQLID(selfContact!)],
+    ["contactsSameDomain[1].id", encodeGQLID(contact!)],
   );
 });
 
@@ -216,10 +214,10 @@ test("query custom async function nullable contents", async () => {
     [
       "contactsSameDomainNullableContents",
       [
-        null,
         {
           id: encodeGQLID(selfContact!),
         },
+        null,
       ],
     ],
   );
@@ -232,7 +230,7 @@ test("query custom async function nullable list contents", async () => {
   let vc = new IDViewer(user.id);
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
-  await CreateContactAction.create(vc, {
+  let contact = await CreateContactAction.create(vc, {
     emailAddress: randomEmail("foo.com"),
     firstName: "Jon",
     lastName: "Snow",
@@ -241,11 +239,11 @@ test("query custom async function nullable list contents", async () => {
 
   await expectQueryFromRoot(
     getConfig(new IDViewer(user.id), user, {
-      nullQueryPaths: ["contactsSameDomainNullableContents[0]"],
+      nullQueryPaths: ["contactsSameDomainNullableContents[1]"],
     }),
     ["id", encodeGQLID(user)],
-    ["contactsSameDomainNullableContents[0].id", null],
-    ["contactsSameDomainNullableContents[1].id", encodeGQLID(selfContact!)],
+    ["contactsSameDomainNullableContents[0].id", encodeGQLID(selfContact!)],
+    ["contactsSameDomainNullableContents[1].id", null],
   );
 });
 
@@ -275,12 +273,12 @@ test("query custom async function nullable list and contents", async () => {
   await expectQueryFromRoot(
     getConfig(vc2, user2),
     ["id", encodeGQLID(user2)],
-    // can query this way because of id above
-    ["contactsSameDomainNullableContentsAndList[0]", null],
     [
-      "contactsSameDomainNullableContentsAndList[1].id",
+      "contactsSameDomainNullableContentsAndList[0].id",
       encodeGQLID(selfContact2!),
     ],
+    // can query this way because of id above
+    ["contactsSameDomainNullableContentsAndList[1]", null],
   );
 });
 
@@ -330,7 +328,7 @@ test("query user and nested object", async () => {
   );
 });
 
-test("load assoc connection", async () => {
+test("load list", async () => {
   let [user, user2, user3, user4, user5] = await Promise.all([
     create({
       firstName: "user1",
@@ -491,73 +489,5 @@ test("load assoc connection", async () => {
     ["id", encodeGQLID(user)],
     [`friends(after: "${cursor!}", first:1).edges[0].node.id`, undefined],
     [`friends(after: "${cursor!}", first:1).pageInfo.hasNextPage`, false],
-  );
-});
-
-async function createMany(
-  user: User,
-  names: Pick<ContactCreateInput, "firstName" | "lastName">[],
-): Promise<Contact[]> {
-  let results: Contact[] = [];
-  for (const name of names) {
-    // for deterministic sorting
-    advanceBy(86400);
-    // TODO eventually a multi-create API
-    let contact = await CreateContactAction.create(new IDViewer(user.id), {
-      emailAddress: randomEmail(),
-      firstName: name.firstName,
-      lastName: name.lastName,
-      userID: user.id,
-    }).saveX();
-    results.push(contact);
-  }
-
-  return results;
-}
-
-test("load fkey connection", async () => {
-  const user = await create({});
-  let inputs = [
-    { firstName: "Robb", lastName: "Stark" },
-    { firstName: "Sansa", lastName: "Stark" },
-    { firstName: "Arya", lastName: "Stark" },
-    { firstName: "Bran", lastName: "Stark" },
-    { firstName: "Rickon", lastName: "Stark" },
-  ];
-  const contacts = await createMany(user, inputs);
-  const selfContact = await user.loadSelfContact();
-
-  await expectQueryFromRoot(
-    getConfig(new IDViewer(user.id), user),
-    ["id", encodeGQLID(user)],
-    ["firstName", user.firstName],
-    ["lastName", user.lastName],
-    ["emailAddress", user.emailAddress],
-    ["accountStatus", user.accountStatus],
-    ["contacts.rawCount", 6],
-    [
-      // most recent first
-      "contacts.nodes",
-      [
-        {
-          id: encodeGQLID(contacts[4]),
-        },
-        {
-          id: encodeGQLID(contacts[3]),
-        },
-        {
-          id: encodeGQLID(contacts[2]),
-        },
-        {
-          id: encodeGQLID(contacts[1]),
-        },
-        {
-          id: encodeGQLID(contacts[0]),
-        },
-        {
-          id: encodeGQLID(selfContact!),
-        },
-      ],
-    ],
   );
 });
