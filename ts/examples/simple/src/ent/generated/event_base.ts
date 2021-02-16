@@ -33,19 +33,19 @@ import schema from "src/schema/event";
 const tableName = "events";
 
 export enum EventRsvpStatus {
+  Invited = "invited",
   Attending = "attending",
   Declined = "declined",
   Maybe = "maybe",
-  Invited = "invited",
   CanRsvp = "canRsvp",
 }
 
 export function getEventRsvpStatusValues() {
   return [
+    EventRsvpStatus.Invited,
     EventRsvpStatus.Attending,
     EventRsvpStatus.Declined,
     EventRsvpStatus.Maybe,
-    EventRsvpStatus.Invited,
     EventRsvpStatus.CanRsvp,
   ];
 }

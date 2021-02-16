@@ -97,7 +97,7 @@ func (s *Step) ProcessData(data *codegen.Data) error {
 			actionsWg.Wait()
 
 			// write base edge file for all the edges and then eventually one per edge...
-			if len(nodeData.EdgeInfo.Associations) == 0 {
+			if len(nodeData.EdgeInfo.Associations) == 0 && len(nodeData.EdgeInfo.ForeignKeys) == 0 {
 				return
 			}
 
