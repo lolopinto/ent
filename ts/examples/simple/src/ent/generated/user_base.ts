@@ -9,7 +9,6 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  loadEdgeForID2,
   loadEntFromClause,
   loadEntXFromClause,
   loadRow,
@@ -32,7 +31,6 @@ import {
   UserToFriendsQuery,
   UserToInvitedEventsQuery,
   UserToMaybeEventsQuery,
-  UserToSelfContactQuery,
   UserToHostedEventsQuery,
   UserToAuthCodesQuery,
   UserToContactsQuery,
@@ -261,78 +259,24 @@ export class UserBase {
     return UserToCreatedEventsQuery.query(this.viewer, this.id);
   }
 
-  loadCreatedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToCreatedEvents,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
   queryDeclinedEvents(): UserToDeclinedEventsQuery {
     return UserToDeclinedEventsQuery.query(this.viewer, this.id);
-  }
-
-  loadDeclinedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToDeclinedEvents,
-      id2,
-      context: this.viewer.context,
-    });
   }
 
   queryEventsAttending(): UserToEventsAttendingQuery {
     return UserToEventsAttendingQuery.query(this.viewer, this.id);
   }
 
-  loadEventsAttendingEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToEventsAttending,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
   queryFriends(): UserToFriendsQuery {
     return UserToFriendsQuery.query(this.viewer, this.id);
-  }
-
-  loadFriendEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToFriends,
-      id2,
-      context: this.viewer.context,
-    });
   }
 
   queryInvitedEvents(): UserToInvitedEventsQuery {
     return UserToInvitedEventsQuery.query(this.viewer, this.id);
   }
 
-  loadInvitedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToInvitedEvents,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
   queryMaybeEvents(): UserToMaybeEventsQuery {
     return UserToMaybeEventsQuery.query(this.viewer, this.id);
-  }
-
-  loadMaybeEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToMaybeEvents,
-      id2,
-      context: this.viewer.context,
-    });
   }
 
   loadSelfContactEdge(): Promise<AssocEdge | null> {
@@ -354,15 +298,6 @@ export class UserBase {
 
   queryUserToHostedEvents(): UserToHostedEventsQuery {
     return UserToHostedEventsQuery.query(this.viewer, this.id);
-  }
-
-  loadUserToHostedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToHostedEvents,
-      id2,
-      context: this.viewer.context,
-    });
   }
 
   queryAuthCodes(): UserToAuthCodesQuery {

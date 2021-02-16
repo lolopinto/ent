@@ -91,6 +91,18 @@ describe("custom edge", () => {
     expect(edge.id2).toBe(user2.id);
     expect(edge.edgeType).toBe(EdgeType.UserToCustomEdge);
   });
+
+  test("id2", async () => {
+    const edge = await UserToCustomEdgeQuery.query(
+      user1.viewer,
+      user1,
+    ).queryID2(user2.id);
+    expect(edge).toBeDefined();
+    expect(edge).toBeInstanceOf(CustomEdge);
+    expect(edge!.id1).toBe(user1.id);
+    expect(edge!.id2).toBe(user2.id);
+    expect(edge!.edgeType).toBe(EdgeType.UserToCustomEdge);
+  });
 });
 
 const N = 2;
@@ -299,6 +311,32 @@ describe("multi-ids", () => {
 
   test("ents", async () => {
     await filter.testEnts();
+  });
+
+  test("id2", async () => {
+    //    const users = filter.dataz.map((data) => data[0]);
+    for (let i = 0; i < filter.dataz.length; i++) {
+      const id1 = filter.dataz[i][0].id;
+      // get user that corresponds to position
+      const query = filter.getQuery(new IDViewer(id1));
+
+      const id2 = filter.dataz[i][1][0].id;
+      //get first contact for user
+      const m = await query.queryAllID2(id2);
+
+      for (let j = 0; j < filter.dataz.length; j++) {
+        const edge = m.get(filter.dataz[j][0].id);
+        if (i == j) {
+          expect(edge).toBeDefined();
+          expect(edge).toBeInstanceOf(AssocEdge);
+          expect(edge!.id1).toBe(id1);
+          expect(edge!.id2).toBe(id2);
+          expect(edge!.edgeType).toBe(EdgeType.UserToContacts);
+        } else {
+          expect(edge).toBeUndefined();
+        }
+      }
+    }
   });
 });
 

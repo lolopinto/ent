@@ -278,7 +278,6 @@ export class {{$baseClass}} {
   {{range $edge := .EdgeInfo.Associations -}}
     {{$edgeName := .CamelCaseEdgeName -}}
     {{$uniqueEdge := .Unique -}}
-    {{$queryName := useImport .TsEdgeQueryName -}}
     {{with .NodeInfo -}}
     {{$edgeType := useImport "EdgeType"}}
     {{$assocEdgeType := useImport "AssocEdge"}}
@@ -302,18 +301,10 @@ export class {{$baseClass}} {
       }
 
      {{ else -}}
+      {{$queryName := useImport $edge.TsEdgeQueryName -}}
       query{{$edgeName}}(): {{$queryName}} {
         {{/* TODO change entquery to NodeBase and use this instead of id here? */}}
         return {{$queryName}}.query(this.viewer, this.id);
-      }
-
-      load{{$edge.Singular}}EdgeFor(id2: {{$idType}}):Promise<{{$assocEdgeType}}|undefined> {
-        return {{useImport "loadEdgeForID2"}}({
-          id1: this.id, 
-          edgeType: {{$edgeType}}.{{$edge.TsEdgeConst}}, 
-          id2,
-          context: this.viewer.context,
-        });
       }
      {{end}}
     {{end -}}
@@ -326,7 +317,7 @@ export class {{$baseClass}} {
         {{/* TODO change entquery to NodeBase and use this instead of id here? */}}
         return {{$queryName}}.query(this.viewer, this.id);
       }
-      
+
   {{end -}}
 
   {{ range $edge := .EdgeInfo.IndexedEdges -}}

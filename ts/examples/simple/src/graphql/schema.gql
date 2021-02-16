@@ -148,10 +148,10 @@ type EventToMaybeEdge implements Edge {
 }
 
 enum EventRsvpStatus {
+  ATTENDING
   DECLINED
   MAYBE
   INVITED
-  ATTENDING
   CAN_RSVP
 }
 

@@ -5,6 +5,9 @@ import { GraphQLEnumType } from "graphql";
 export const EventRsvpStatusType = new GraphQLEnumType({
   name: "EventRsvpStatus",
   values: {
+    ATTENDING: {
+      value: "ATTENDING",
+    },
     DECLINED: {
       value: "DECLINED",
     },
@@ -13,9 +16,6 @@ export const EventRsvpStatusType = new GraphQLEnumType({
     },
     INVITED: {
       value: "INVITED",
-    },
-    ATTENDING: {
-      value: "ATTENDING",
     },
     CAN_RSVP: {
       value: "CAN_RSVP",

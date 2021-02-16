@@ -262,7 +262,7 @@ test("symmetric edge", async () => {
     id2Type: NodeType.User,
   });
 
-  const samEdge = await jon.loadFriendEdgeFor(sam.id);
+  const samEdge = await jon.queryFriends().queryID2(sam.id);
   expect(samEdge).not.toBe(null);
   verifyEdge(samEdge!, {
     id1: jon.id,
