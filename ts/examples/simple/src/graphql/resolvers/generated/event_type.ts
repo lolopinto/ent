@@ -8,7 +8,7 @@ import {
   GraphQLInt,
   GraphQLFieldConfigMap,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext, AssocEdge } from "@lolopinto/ent";
 import {
   GraphQLTime,
   GraphQLNodeInterface,
@@ -84,10 +84,10 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           event.viewer,
           event,
-          EventToAttendingQuery,
+          (v, event: Event) => EventToAttendingQuery.query(v, event),
           args,
         );
       },
@@ -113,10 +113,10 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           event.viewer,
           event,
-          EventToDeclinedQuery,
+          (v, event: Event) => EventToDeclinedQuery.query(v, event),
           args,
         );
       },
@@ -142,10 +142,10 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           event.viewer,
           event,
-          EventToHostsQuery,
+          (v, event: Event) => EventToHostsQuery.query(v, event),
           args,
         );
       },
@@ -171,10 +171,10 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           event.viewer,
           event,
-          EventToInvitedQuery,
+          (v, event: Event) => EventToInvitedQuery.query(v, event),
           args,
         );
       },
@@ -200,10 +200,10 @@ export const EventType = new GraphQLObjectType({
         },
       },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return new GraphQLEdgeConnection(
+        return new GraphQLEdgeConnection<AssocEdge>(
           event.viewer,
           event,
-          EventToMaybeQuery,
+          (v, event: Event) => EventToMaybeQuery.query(v, event),
           args,
         );
       },

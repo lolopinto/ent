@@ -1,7 +1,7 @@
 import { fail } from "assert";
 import { advanceBy } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
-import { ID, AssocEdge, loadEdgeData } from "../../core/ent";
+import { ID, AssocEdge, Data, loadEdgeData } from "../../core/ent";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../write";
 
@@ -134,6 +134,30 @@ export function verifyUserToContactEdges(
     };
     expect(edge, `${i}th index`).toMatchObject(expectedEdge);
     expect(edge.getCursor()).not.toBe("");
+  }
+}
+
+export function verifyUserToContactRawData(
+  user: FakeUser,
+  edgesMap: Map<ID, Data[]>,
+  contacts: FakeContact[],
+) {
+  const edges = edgesMap.get(user.id) || [];
+  expect(edges.length).toBe(contacts.length);
+
+  for (let i = 0; i < contacts.length; i++) {
+    const contact = contacts[i];
+    const edge = edges[i];
+    const expectedEdge = {
+      id: contact.id,
+      created_at: contact.createdAt,
+      updated_at: contact.updatedAt,
+      first_name: contact.firstName,
+      last_name: contact.lastName,
+      email_address: contact.emailAddress,
+      user_id: contact.userID,
+    };
+    expect(edge, `${i}th index`).toMatchObject(expectedEdge);
   }
 }
 

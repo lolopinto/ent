@@ -1,24 +1,30 @@
-import { EdgeQuery, EdgeQueryCtr } from "../../core/query";
-import { AssocEdge, Data, Ent, ID, Viewer } from "../../core/ent";
+import { EdgeQuery, BaseEdgeQuery } from "../../core/query/query";
+import { Data, Ent, ID, Viewer } from "../../core/ent";
 
-export interface GraphQLEdge<T extends AssocEdge> {
+// TODO getCursor...
+export interface GraphQLEdge<T extends Data> {
   edge: T;
   node: Ent;
+  cursor: string;
+}
+
+interface edgeQueryCtr<T extends Ent, TEdge extends Data> {
+  (v: Viewer, src: Ent): EdgeQuery<T, TEdge>;
 }
 
 // TODO probably need to template Ent. maybe 2 ents?
-export class GraphQLEdgeConnection<TEdge extends AssocEdge> {
-  private query: EdgeQuery<Ent, TEdge>;
+export class GraphQLEdgeConnection<TEdge extends Data> {
+  query: EdgeQuery<Ent, TEdge>;
   private results: GraphQLEdge<TEdge>[] = [];
 
   constructor(
     private viewer: Viewer,
     private source: Ent,
-    ctr: EdgeQueryCtr<Ent, TEdge>,
+    getQuery: edgeQueryCtr<Ent, TEdge>,
     private args?: Data,
   ) {
     // TODO make viewer same?
-    this.query = new ctr(this.viewer, this.source);
+    this.query = getQuery(this.viewer, this.source);
     if (this.args) {
       if (this.args.after && !this.args.first) {
         throw new Error("cannot process after without first");
@@ -88,13 +94,14 @@ export class GraphQLEdgeConnection<TEdge extends AssocEdge> {
 
     let results: GraphQLEdge<TEdge>[] = [];
     for (const edge of edges) {
-      const node = entsMap.get(edge.id2);
+      const node = entsMap.get(this.query.dataToID(edge));
       if (!node) {
         continue;
       }
       results.push({
         edge,
         node,
+        cursor: this.query.getCursor(edge),
       });
     }
     this.results = results;

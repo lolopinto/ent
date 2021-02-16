@@ -42,9 +42,6 @@ export class GraphQLEdgeType<
         },
         cursor: {
           type: GraphQLNonNull(GraphQLString),
-          resolve: (obj: GraphQLEdge<TEdge>) => {
-            return obj.edge.getCursor();
-          },
         },
         ...optional,
       }),

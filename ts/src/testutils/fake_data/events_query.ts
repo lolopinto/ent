@@ -1,5 +1,8 @@
 import { AssocEdge, Viewer } from "../../core/ent";
-import { BaseEdgeQuery, EdgeQuerySource } from "../../core/query";
+import {
+  AssocEdgeQueryBase,
+  EdgeQuerySource,
+} from "../../core/query/assoc_query";
 import { FakeUser } from "./fake_user";
 import { EdgeType, FakeEvent } from "./internal";
 
@@ -11,7 +14,7 @@ interface EventsDestQuery {
   queryMaybe(): EventToMaybeQuery;
 }
 
-export class EventToAttendeesQuery extends BaseEdgeQuery<
+export class EventToAttendeesQuery extends AssocEdgeQueryBase<
   FakeEvent,
   FakeUser,
   AssocEdge
@@ -34,7 +37,7 @@ export class EventToAttendeesQuery extends BaseEdgeQuery<
   }
 }
 
-export class EventToInvitedQuery extends BaseEdgeQuery<
+export class EventToInvitedQuery extends AssocEdgeQueryBase<
   FakeEvent,
   FakeUser,
   AssocEdge
@@ -57,7 +60,7 @@ export class EventToInvitedQuery extends BaseEdgeQuery<
   }
 }
 
-export class EventToDeclinedQuery extends BaseEdgeQuery<
+export class EventToDeclinedQuery extends AssocEdgeQueryBase<
   FakeEvent,
   FakeUser,
   AssocEdge
@@ -80,7 +83,7 @@ export class EventToDeclinedQuery extends BaseEdgeQuery<
   }
 }
 
-export class EventToMaybeQuery extends BaseEdgeQuery<
+export class EventToMaybeQuery extends AssocEdgeQueryBase<
   FakeEvent,
   FakeUser,
   AssocEdge
@@ -103,7 +106,7 @@ export class EventToMaybeQuery extends BaseEdgeQuery<
   }
 }
 
-export class EventToHostsQuery extends BaseEdgeQuery<
+export class EventToHostsQuery extends AssocEdgeQueryBase<
   FakeEvent,
   FakeUser,
   AssocEdge
