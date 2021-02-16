@@ -8,7 +8,7 @@ import {
   GraphQLInt,
   GraphQLFieldConfigMap,
 } from "graphql";
-import { RequestContext } from "@lolopinto/ent";
+import { RequestContext, AssocEdge } from "@lolopinto/ent";
 import {
   GraphQLTime,
   GraphQLNodeInterface,

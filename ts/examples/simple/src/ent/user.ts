@@ -49,11 +49,7 @@ export class User extends UserBase {
   }
 
   private async loadContactsDeterministic() {
-    const contactsMap = await UserToContactsQuery.query(
-      this.viewer,
-      this,
-    ).queryEnts();
-    return contactsMap.get(this.id) || [];
+    return await UserToContactsQuery.query(this.viewer, this).queryEnts();
   }
 
   @gqlField({

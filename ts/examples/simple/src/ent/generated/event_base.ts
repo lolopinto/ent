@@ -213,6 +213,7 @@ export class EventBase {
       edgeType: EdgeType.EventToAttending,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
@@ -247,6 +248,7 @@ export class EventBase {
       edgeType: EdgeType.EventToDeclined,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
@@ -281,6 +283,7 @@ export class EventBase {
       edgeType: EdgeType.EventToHosts,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
@@ -315,6 +318,7 @@ export class EventBase {
       edgeType: EdgeType.EventToInvited,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
@@ -349,6 +353,7 @@ export class EventBase {
       edgeType: EdgeType.EventToMaybe,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 

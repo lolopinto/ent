@@ -1214,6 +1214,10 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 				ImportPath: codepath.GetExternalImportPath(),
 				Type:       edge.TsEdgeQueryName(),
 			},
+			{
+				ImportPath: codepath.Package,
+				Type:       "AssocEdge",
+			},
 		},
 		Args: []*fieldConfigArg{
 			{

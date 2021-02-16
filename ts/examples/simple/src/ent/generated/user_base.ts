@@ -285,6 +285,7 @@ export class UserBase {
       edgeType: EdgeType.UserToCreatedEvents,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
@@ -319,6 +320,7 @@ export class UserBase {
       edgeType: EdgeType.UserToDeclinedEvents,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
@@ -353,6 +355,7 @@ export class UserBase {
       edgeType: EdgeType.UserToEventsAttending,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
@@ -387,6 +390,7 @@ export class UserBase {
       edgeType: EdgeType.UserToFriends,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
@@ -421,6 +425,7 @@ export class UserBase {
       edgeType: EdgeType.UserToInvitedEvents,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
@@ -455,6 +460,7 @@ export class UserBase {
       edgeType: EdgeType.UserToMaybeEvents,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
@@ -506,6 +512,7 @@ export class UserBase {
       edgeType: EdgeType.UserToHostedEvents,
       id2,
       context: this.viewer.context,
+      ctr: AssocEdge,
     });
   }
 
