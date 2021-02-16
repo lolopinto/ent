@@ -2,6 +2,7 @@ import {
   Viewer,
   Ent,
   ID,
+  AssocEdge,
   loadEdgeForID2,
   LoadEntOptions,
   loadEnt,
@@ -286,6 +287,7 @@ async function allowIfEdgeExistsRule(
       edgeType,
       id2,
       context,
+      ctr: AssocEdge,
     });
     if (edge) {
       return Allow();
@@ -331,6 +333,7 @@ async function denyIfEdgeExistsRule(
       edgeType,
       id2,
       context,
+      ctr: AssocEdge,
     });
     if (edge) {
       return Deny();
@@ -354,6 +357,7 @@ async function denyIfEdgeDoesNotExistRule(
     edgeType,
     id2,
     context,
+    ctr: AssocEdge,
   });
   if (!edge) {
     return Deny();

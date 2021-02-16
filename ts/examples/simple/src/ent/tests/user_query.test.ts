@@ -36,12 +36,7 @@ test("self contact query", async () => {
   user = await User.loadX(vc, user.id);
   let selfContact = await user.loadSelfContact();
 
-  const selfContactsMap = await UserToSelfContactQuery.query(
-    vc,
-    user.id,
-  ).queryEnts();
-  expect(selfContactsMap.size).toBe(1);
-  const contacts = selfContactsMap.get(user.id) || [];
+  const contacts = await UserToSelfContactQuery.query(vc, user.id).queryEnts();
 
   expect(contacts).toStrictEqual([selfContact]);
 });
@@ -73,13 +68,10 @@ test("friends query", async () => {
   const vc = new IDViewer(jon.id);
   const query = UserToFriendsQuery.query(vc, jon.id);
 
-  const [countMap, idsMap] = await Promise.all([
+  const [count, ids] = await Promise.all([
     query.queryRawCount(),
     query.queryIDs(),
   ]);
-
-  const count = countMap.get(jon.id);
-  const ids = idsMap.get(jon.id);
 
   expect(count).toBe(2);
   // sam more recent so always gonna come back before dany
@@ -123,7 +115,7 @@ test("chained queries", async () => {
   const vc = new IDViewer(jon.id);
   const chainedIDs = await UserToFriendsQuery.query(vc, jon.id)
     .queryUserToHostedEvents()
-    .queryIDs();
+    .queryAllIDs();
 
   const expectedResult = new Map<ID, ID[]>();
   expectedResult.set(sam.id, [event.id]);

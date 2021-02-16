@@ -9,6 +9,7 @@ import {
   EdgeQueryableDataOptions,
   AssocEdgeConstructor,
   loadCustomEdges,
+  loadEdgeForID2,
 } from "../ent";
 import { EdgeQuery, BaseEdgeQuery } from "./query";
 
@@ -46,7 +47,7 @@ export class AssocEdgeQueryBase<
     if (Array.isArray(this.src)) {
       this.src.forEach((obj: TSource | ID) => this.addID(obj));
     } else if (this.isEdgeQuery(this.src)) {
-      const idsMap = await this.src.queryIDs();
+      const idsMap = await this.src.queryAllIDs();
       for (const [_, ids] of idsMap) {
         ids.forEach((id) => this.resolvedIDs.push(id));
       }
@@ -74,8 +75,28 @@ export class AssocEdgeQueryBase<
     }
   }
 
+  private async getSingleID() {
+    const ids = await this.resolveIDs();
+    if (ids.length !== 1) {
+      throw new Error(
+        "cannot call queryRawCount when more than one id is requested",
+      );
+    }
+    return ids[0];
+  }
+
   // doesn't work with filters...
-  async queryRawCount(): Promise<Map<ID, number>> {
+  async queryRawCount(): Promise<number> {
+    const id = await this.getSingleID();
+
+    return await loadRawEdgeCountX({
+      id1: id,
+      edgeType: this.edgeType,
+      context: this.viewer.context,
+    });
+  }
+
+  async queryAllRawCount(): Promise<Map<ID, number>> {
     let results: Map<ID, number> = new Map();
     const ids = await this.resolveIDs();
     await Promise.all(
@@ -107,6 +128,13 @@ export class AssocEdgeQueryBase<
     const ids = await this.resolveIDs();
     await Promise.all(
       ids.map(async (id) => {
+        // there'll be filters for special edges here...
+        // and then depending on that, we use this
+        // what happens if you do first(10).id2(XX)
+        // doesn't make sense
+        // so only makes sense if one of these...
+
+        // Id2 needs to be an option
         const edges = await loadCustomEdges({
           id1: id,
           edgeType: this.edgeType,
@@ -117,6 +145,39 @@ export class AssocEdgeQueryBase<
         this.edges.set(id, edges);
       }),
     );
+  }
+
+  async queryID2(id2: ID): Promise<TEdge | undefined> {
+    const id = await this.getSingleID();
+
+    return loadEdgeForID2({
+      id1: id,
+      edgeType: this.edgeType,
+      id2,
+      context: this.viewer.context,
+      ctr: this.edgeCtr,
+    });
+  }
+
+  async queryAllID2(id2: ID): Promise<Map<ID, TEdge>> {
+    const ids = await this.resolveIDs();
+
+    const m = new Map<ID, TEdge>();
+    await Promise.all(
+      ids.map(async (id) => {
+        const edge = await loadEdgeForID2({
+          id1: id,
+          edgeType: this.edgeType,
+          id2,
+          context: this.viewer.context,
+          ctr: this.edgeCtr,
+        });
+        if (edge) {
+          m.set(id, edge);
+        }
+      }),
+    );
+    return m;
   }
 }
 

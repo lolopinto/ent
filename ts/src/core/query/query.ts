@@ -9,18 +9,27 @@ import {
 import * as clause from "../clause";
 
 export interface EdgeQuery<T extends Ent, TEdge extends Data> {
-  queryEdges(): Promise<Map<ID, TEdge[]>>;
-  queryIDs(): Promise<Map<ID, ID[]>>;
-  queryCount(): Promise<Map<ID, number>>;
-  queryRawCount(): Promise<Map<ID, number>>;
-  queryEnts(): Promise<Map<ID, T[]>>;
+  // if more than one, the single-version methods should throw
+  queryEdges(): Promise<TEdge[]>;
+  queryAllEdges(): Promise<Map<ID, TEdge[]>>;
+  queryIDs(): Promise<ID[]>;
+  queryAllIDs(): Promise<Map<ID, ID[]>>;
+  queryCount(): Promise<number>;
+  queryAllCount(): Promise<Map<ID, number>>;
+  queryRawCount(): Promise<number>;
+  queryAllRawCount(): Promise<Map<ID, number>>;
+  queryEnts(): Promise<T[]>;
+  queryAllEnts(): Promise<Map<ID, T[]>>;
 
   first(n: number, after?: string): EdgeQuery<T, TEdge>;
   last(n: number, before?: string): EdgeQuery<T, TEdge>;
+
   paginationInfo(): Map<ID, PaginationInfo>;
   getCursor(row: TEdge): string;
   dataToID(edge: TEdge): ID;
 }
+
+//maybe id2 shouldn't return EdgeQuery but a different object from which you can query edge. the ent you don't need to query since you can just query that on your own.
 
 export interface EdgeQueryFilter<T extends Data> {
   // this is a filter that does the processing in TypeScript instead of at the SQL layer
@@ -130,6 +139,7 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     return options;
   }
 
+  // TODO?
   paginationInfo(id: ID): PaginationInfo | undefined {
     return this.pageMap.get(id);
   }
@@ -220,14 +230,36 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
     return this;
   }
 
+  private async querySingleEdge(method: string): Promise<TEdge[]> {
+    const edges = await this.loadEdges();
+    if (edges.size !== 1) {
+      throw new Error(
+        `cannot call ${method} when more than one id is requested`,
+      );
+    }
+    for (const [_, v] of edges) {
+      return v;
+    }
+    throw new Error(`should be impossible to get here`);
+  }
+
   // this is basically just raw rows
-  readonly queryEdges = async (): Promise<Map<ID, TEdge[]>> => {
+  readonly queryEdges = async (): Promise<TEdge[]> => {
+    return await this.querySingleEdge("queryEdges");
+  };
+
+  readonly queryAllEdges = async (): Promise<Map<ID, TEdge[]>> => {
     return await this.loadEdges();
   };
 
   abstract dataToID(edge: TEdge): ID;
 
-  readonly queryIDs = async (): Promise<Map<ID, ID[]>> => {
+  readonly queryIDs = async (): Promise<ID[]> => {
+    const edges = await this.querySingleEdge("queryIDs");
+    return edges.map((edge) => this.dataToID(edge));
+  };
+
+  readonly queryAllIDs = async (): Promise<Map<ID, ID[]>> => {
     const edges = await this.loadEdges();
     let results: Map<ID, ID[]> = new Map();
     for (const [id, edge_data] of edges) {
@@ -239,7 +271,12 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
     return results;
   };
 
-  readonly queryCount = async (): Promise<Map<ID, number>> => {
+  readonly queryCount = async (): Promise<number> => {
+    const edges = await this.querySingleEdge("queryCount");
+    return edges.length;
+  };
+
+  readonly queryAllCount = async (): Promise<Map<ID, number>> => {
     let results: Map<ID, number> = new Map();
     const edges = await this.loadEdges();
     edges.forEach((list, id) => {
@@ -253,7 +290,12 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
     edges: TEdge[],
   ): Promise<TDest[]>;
 
-  readonly queryEnts = async (): Promise<Map<ID, TDest[]>> => {
+  readonly queryEnts = async (): Promise<TDest[]> => {
+    const edges = await this.querySingleEdge("queryEnts");
+    return await this.loadEntsFromEdges("id", edges);
+  };
+
+  readonly queryAllEnts = async (): Promise<Map<ID, TDest[]>> => {
     // applies filters and then gets things after
     const edges = await this.loadEdges();
     let promises: Promise<void>[] = [];

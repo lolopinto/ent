@@ -50,7 +50,7 @@ async function main() {
 
       await user.loadFriends();
       await user.loadFriends();
-      await user.loadContacts();
+      await user.queryContacts().queryEnts();
       // await loadEdges({
       //   id1: user.id,
       //   edgeType: EdgeType.UserToFriends,

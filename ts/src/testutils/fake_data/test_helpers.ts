@@ -116,10 +116,9 @@ export async function createAllContacts(
 
 export function verifyUserToContactEdges(
   user: FakeUser,
-  edgesMap: Map<ID, AssocEdge[]>,
+  edges: AssocEdge[],
   contacts: FakeContact[],
 ) {
-  const edges = edgesMap.get(user.id) || [];
   expect(edges.length).toBe(contacts.length);
 
   for (let i = 0; i < contacts.length; i++) {
@@ -139,10 +138,9 @@ export function verifyUserToContactEdges(
 
 export function verifyUserToContactRawData(
   user: FakeUser,
-  edgesMap: Map<ID, Data[]>,
+  edges: Data[],
   contacts: FakeContact[],
 ) {
-  const edges = edgesMap.get(user.id) || [];
   expect(edges.length).toBe(contacts.length);
 
   for (let i = 0; i < contacts.length; i++) {
@@ -163,10 +161,9 @@ export function verifyUserToContactRawData(
 
 export function verifyUserToContacts(
   user: FakeUser,
-  entsMap: Map<ID, FakeContact[]>,
+  ents: FakeContact[],
   contacts: FakeContact[],
 ) {
-  const ents = entsMap.get(user.id) || [];
   expect(ents.length).toBe(contacts.length);
   const expectedContacts = contacts.map((contact) => contact.id);
 

@@ -23,7 +23,6 @@ export class GraphQLEdgeConnection<TEdge extends Data> {
     getQuery: edgeQueryCtr<Ent, TEdge>,
     private args?: Data,
   ) {
-    // TODO make viewer same?
     this.query = getQuery(this.viewer, this.source);
     if (this.args) {
       if (this.args.after && !this.args.first) {
@@ -57,8 +56,7 @@ export class GraphQLEdgeConnection<TEdge extends Data> {
   }
 
   async queryTotalCount() {
-    const countMap = await this.query.queryRawCount();
-    return countMap.get(this.source.id) || 0;
+    return await this.query.queryRawCount();
   }
 
   async queryEdges() {
@@ -71,8 +69,7 @@ export class GraphQLEdgeConnection<TEdge extends Data> {
   // if nodes queried just return ents
   // unlikely to query nodes and pageInfo so we just load this separately for now
   async queryNodes() {
-    const entsMap = await this.query.queryEnts();
-    return entsMap.get(this.source.id) || [];
+    return await this.query.queryEnts();
   }
 
   async queryPageInfo() {
@@ -81,7 +78,7 @@ export class GraphQLEdgeConnection<TEdge extends Data> {
   }
 
   private async queryData() {
-    const [m1, m2] = await Promise.all([
+    const [edges, ents] = await Promise.all([
       // TODO need a test that this will only fetch edges once
       // and then fetch ents afterward
       this.query.queryEdges(),
@@ -89,8 +86,7 @@ export class GraphQLEdgeConnection<TEdge extends Data> {
     ]);
 
     let entsMap = new Map<ID, Ent>();
-    const edges = m1.get(this.source.id) || [];
-    (m2.get(this.source.id) || []).forEach((ent) => entsMap.set(ent.id, ent));
+    ents.forEach((ent) => entsMap.set(ent.id, ent));
 
     let results: GraphQLEdge<TEdge>[] = [];
     for (const edge of edges) {
