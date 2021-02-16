@@ -1,6 +1,7 @@
 package enum
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -46,6 +47,7 @@ func GetTSEnumNameForVal(val string) string {
 }
 
 func GetEnums(tsName, gqlName, gqlType string, values []string) (*Enum, *GQLEnum) {
+	sort.Strings(values)
 	tsVals := make([]Data, len(values))
 	gqlVals := make([]Data, len(values))
 	for i, val := range values {

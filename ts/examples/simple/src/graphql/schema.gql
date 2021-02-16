@@ -148,11 +148,11 @@ type EventToMaybeEdge implements Edge {
 }
 
 enum EventRsvpStatus {
-  INVITED
   ATTENDING
-  DECLINED
-  MAYBE
   CAN_RSVP
+  DECLINED
+  INVITED
+  MAYBE
 }
 
 type UserToDeclinedEventsConnection implements Connection {
@@ -422,13 +422,13 @@ type HoursOfOperation implements Node {
 }
 
 enum dayOfWeek {
-  SUNDAY
+  FRIDAY
   MONDAY
+  SATURDAY
+  SUNDAY
+  THURSDAY
   TUESDAY
   WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
 }
 
 input HoursOfOperationCreateInput {
