@@ -1078,7 +1078,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		ftype := field.GetFieldType()
 		enumType, ok := ftype.(enttype.EnumeratedType)
 		if ok {
-			tsValuesMethod := fmt.Sprintf("get%sValues", strcase.ToCamel(enumType.GetTSType()))
+			tsValuesMethod := fmt.Sprintf("get%sValues", strcase.ToCamel(enumType.GetTSName()))
 			gqlField.HasResolveFunction = true
 			gqlField.ExtraImports = append(
 				gqlField.ExtraImports,
