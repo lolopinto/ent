@@ -9,6 +9,7 @@ import {
   EdgeQueryableDataOptions,
   AssocEdgeConstructor,
   loadCustomEdges,
+  loadEdgeForID2,
 } from "../ent";
 import { EdgeQuery, BaseEdgeQuery } from "./query";
 
@@ -74,17 +75,22 @@ export class AssocEdgeQueryBase<
     }
   }
 
-  // doesn't work with filters...
-  async queryRawCount(): Promise<number> {
+  private async getSingleID() {
     const ids = await this.resolveIDs();
     if (ids.length !== 1) {
       throw new Error(
         "cannot call queryRawCount when more than one id is requested",
       );
     }
+    return ids[0];
+  }
+
+  // doesn't work with filters...
+  async queryRawCount(): Promise<number> {
+    const id = await this.getSingleID();
 
     return await loadRawEdgeCountX({
-      id1: ids[0],
+      id1: id,
       edgeType: this.edgeType,
       context: this.viewer.context,
     });
@@ -122,6 +128,13 @@ export class AssocEdgeQueryBase<
     const ids = await this.resolveIDs();
     await Promise.all(
       ids.map(async (id) => {
+        // there'll be filters for special edges here...
+        // and then depending on that, we use this
+        // what happens if you do first(10).id2(XX)
+        // doesn't make sense
+        // so only makes sense if one of these...
+
+        // Id2 needs to be an option
         const edges = await loadCustomEdges({
           id1: id,
           edgeType: this.edgeType,
@@ -132,6 +145,39 @@ export class AssocEdgeQueryBase<
         this.edges.set(id, edges);
       }),
     );
+  }
+
+  async queryID2(id2: ID): Promise<TEdge | undefined> {
+    const id = await this.getSingleID();
+
+    return loadEdgeForID2({
+      id1: id,
+      edgeType: this.edgeType,
+      id2,
+      context: this.viewer.context,
+      ctr: this.edgeCtr,
+    });
+  }
+
+  async queryAllID2(id2: ID): Promise<Map<ID, TEdge>> {
+    const ids = await this.resolveIDs();
+
+    const m = new Map<ID, TEdge>();
+    await Promise.all(
+      ids.map(async (id) => {
+        const edge = await loadEdgeForID2({
+          id1: id,
+          edgeType: this.edgeType,
+          id2,
+          context: this.viewer.context,
+          ctr: this.edgeCtr,
+        });
+        if (edge) {
+          m.set(id, edge);
+        }
+      }),
+    );
+    return m;
   }
 }
 

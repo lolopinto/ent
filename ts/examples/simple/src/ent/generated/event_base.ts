@@ -9,7 +9,6 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  loadEdgeForID2,
   loadRow,
   loadRowX,
   AlwaysDenyRule,
@@ -34,19 +33,19 @@ import schema from "src/schema/event";
 const tableName = "events";
 
 export enum EventRsvpStatus {
+  Attending = "attending",
   Declined = "declined",
   Maybe = "maybe",
   Invited = "invited",
-  Attending = "attending",
   CanRsvp = "canRsvp",
 }
 
 export function getEventRsvpStatusValues() {
   return [
+    EventRsvpStatus.Attending,
     EventRsvpStatus.Declined,
     EventRsvpStatus.Maybe,
     EventRsvpStatus.Invited,
-    EventRsvpStatus.Attending,
     EventRsvpStatus.CanRsvp,
   ];
 }
@@ -192,65 +191,20 @@ export class EventBase {
     return EventToAttendingQuery.query(this.viewer, this.id);
   }
 
-  loadAttendingEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.EventToAttending,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
   queryDeclined(): EventToDeclinedQuery {
     return EventToDeclinedQuery.query(this.viewer, this.id);
-  }
-
-  loadDeclinedEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.EventToDeclined,
-      id2,
-      context: this.viewer.context,
-    });
   }
 
   queryHosts(): EventToHostsQuery {
     return EventToHostsQuery.query(this.viewer, this.id);
   }
 
-  loadHostEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.EventToHosts,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
   queryInvited(): EventToInvitedQuery {
     return EventToInvitedQuery.query(this.viewer, this.id);
   }
 
-  loadInvitedEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.EventToInvited,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
   queryMaybe(): EventToMaybeQuery {
     return EventToMaybeQuery.query(this.viewer, this.id);
-  }
-
-  loadMaybeEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.EventToMaybe,
-      id2,
-      context: this.viewer.context,
-    });
   }
 
   async loadCreator(): Promise<User | null> {

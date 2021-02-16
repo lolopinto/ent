@@ -5,7 +5,7 @@ import { Pool } from "pg";
 import { QueryRecorder, queryType } from "../testutils/db_mock";
 import { Field, StringType, UUIDType } from "../schema";
 import { createRowForTest } from "../testutils/write";
-import { loadEdgeForID2 } from "../core/ent";
+import { AssocEdge, loadEdgeForID2 } from "../core/ent";
 import { setEdgeTypeInGroup } from "./action";
 
 jest.mock("pg");
@@ -182,6 +182,7 @@ test("setEdgeTypeInGroup", async () => {
       id1: user1.id,
       id2: user2.id,
       edgeType,
+      ctr: AssocEdge,
     });
     expect(edge).toBeUndefined();
   }
@@ -197,6 +198,7 @@ test("setEdgeTypeInGroup", async () => {
     id1: user1.id,
     id2: user2.id,
     edgeType: "edge1",
+    ctr: AssocEdge,
   });
   expect(edge).toBeDefined();
   expect(edge?.id1).toBe(user1.id);
@@ -210,6 +212,7 @@ test("setEdgeTypeInGroup", async () => {
           id1: user1.id,
           id2: user2.id,
           edgeType,
+          ctr: AssocEdge,
         });
       }),
     );

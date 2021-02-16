@@ -181,6 +181,7 @@ async function modifyEdgeSet<T extends string>(
     id1: id1,
     id2: id2,
     edgeType: edgeType,
+    ctr: AssocEdge,
     context: orchestrator.viewer.context,
   });
   if (edge) {

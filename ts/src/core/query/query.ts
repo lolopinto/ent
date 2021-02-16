@@ -29,6 +29,8 @@ export interface EdgeQuery<T extends Ent, TEdge extends Data> {
   dataToID(edge: TEdge): ID;
 }
 
+//maybe id2 shouldn't return EdgeQuery but a different object from which you can query edge. the ent you don't need to query since you can just query that on your own.
+
 export interface EdgeQueryFilter<T extends Data> {
   // this is a filter that does the processing in TypeScript instead of at the SQL layer
   filter?(id: ID, edges: T[]): T[];
