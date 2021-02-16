@@ -6,12 +6,12 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { RequestContext } from "src/core/context";
+import { RequestContext } from "../../core/context";
 import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection";
 import { GraphQLPageInfo } from "./page_info";
 import { GraphQLEdgeInterface } from "../builtins/edge";
 import { GraphQLConnectionInterface } from "../builtins/connection";
-import { AssocEdge } from "src/core/ent";
+import { AssocEdge } from "../../core/ent";
 
 export class GraphQLEdgeType<
   TNode extends GraphQLObjectType,

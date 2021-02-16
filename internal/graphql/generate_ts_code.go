@@ -641,10 +641,30 @@ type gqlEnum struct {
 
 type gqlConnection struct {
 	FilePath string
-	Edge     *edge.AssociationEdge
+	Edge     edge.ConnectionEdge
 	Imports  []*fileImport
 	NodeType string
 	Package  *codegen.ImportPackage
+}
+
+func getGqlConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, data *codegen.Data) *gqlConnection {
+	nodeType := fmt.Sprintf("%sType", edge.GetNodeInfo().Node)
+	return &gqlConnection{
+		Edge:     edge,
+		FilePath: getFilePathForConnection(nodeData, edge.GetGraphQLConnectionName()),
+		NodeType: nodeType,
+		Imports: []*fileImport{
+			{
+				ImportPath: codepath.GetImportPathForExternalGQLFile(),
+				Type:       nodeType,
+			},
+			{
+				ImportPath: codepath.GetExternalImportPath(),
+				Type:       edge.TsEdgeQueryEdgeName(),
+			},
+		},
+		Package: data.CodePath.GetImportPackage(),
+	}
 }
 
 func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
@@ -735,23 +755,15 @@ func buildGQLSchema(data *codegen.Data) chan *gqlSchema {
 						if nodeMap.HideFromGraphQL(edge) || edge.Unique {
 							continue
 						}
-						nodeType := fmt.Sprintf("%sType", edge.NodeInfo.Node)
-						conn := &gqlConnection{
-							Edge:     edge,
-							FilePath: getFilePathForConnection(nodeData, edge.GetGraphQLConnectionName()),
-							NodeType: nodeType,
-							Imports: []*fileImport{
-								{
-									ImportPath: codepath.GetImportPathForExternalGQLFile(),
-									Type:       nodeType,
-								},
-								{
-									ImportPath: codepath.GetExternalImportPath(),
-									Type:       edge.TsEdgeQueryEdgeName(),
-								},
-							},
-							Package: data.CodePath.GetImportPackage(),
+						conn := getGqlConnection(nodeData, edge, data)
+						obj.connections = append(obj.connections, conn)
+					}
+
+					for _, edge := range edgeInfo.ForeignKeys {
+						if nodeMap.HideFromGraphQL(edge) {
+							continue
 						}
+						conn := getGqlConnection(nodeData, edge, data)
 						obj.connections = append(obj.connections, conn)
 					}
 				}
@@ -1150,7 +1162,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		if nodeMap.HideFromGraphQL(edge) {
 			continue
 		}
-		addPluralEdge(edge, &fields, instance)
+		addConnection(nodeData, edge, &fields, instance)
 	}
 
 	for _, edge := range nodeData.EdgeInfo.IndexedEdges {
@@ -1187,7 +1199,7 @@ func addPluralEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
 	*fields = append(*fields, gqlField)
 }
 
-func addConnection(nodeData *schema.NodeData, edge *edge.AssociationEdge, fields *[]*fieldType, instance string) {
+func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *[]*fieldType, instance string) {
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
@@ -1201,10 +1213,6 @@ func addConnection(nodeData *schema.NodeData, edge *edge.AssociationEdge, fields
 			{
 				ImportPath: codepath.GetExternalImportPath(),
 				Type:       edge.TsEdgeQueryName(),
-			},
-			{
-				ImportPath: codepath.Package,
-				Type:       "AssocEdge",
 			},
 		},
 		Args: []*fieldConfigArg{
@@ -1228,7 +1236,7 @@ func addConnection(nodeData *schema.NodeData, edge *edge.AssociationEdge, fields
 		// TODO typing for args later?
 		FunctionContents: []string{
 			fmt.Sprintf(
-				"return new GraphQLEdgeConnection<AssocEdge>(%s.viewer, %s, (v, %s: %s) => %s.query(v, %s), args);",
+				"return new GraphQLEdgeConnection(%s.viewer, %s, (v, %s: %s) => %s.query(v, %s), args);",
 				instance,
 				instance,
 				instance,
