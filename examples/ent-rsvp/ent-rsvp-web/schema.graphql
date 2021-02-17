@@ -1,0 +1,464 @@
+"""Exposes a URL that specifies the behaviour of this scalar."""
+directive @specifiedBy(
+  """The URL that specifies the behaviour of this scalar."""
+  url: String!
+) on SCALAR
+
+type Address implements Node {
+  owner: Node
+  id: ID!
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  apartment: String
+}
+
+input AddressCreateInput {
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  apartment: String
+  ownerID: ID!
+  ownerType: String!
+}
+
+type AddressCreatePayload {
+  address: Address!
+}
+
+input AddressDeleteInput {
+  addressID: ID!
+}
+
+type AddressDeletePayload {
+  deletedAddressID: ID
+}
+
+input AddressEditInput {
+  addressID: ID!
+  street: String
+  city: String
+  state: String
+  zipCode: String
+  apartment: String
+  ownerID: ID
+  ownerType: String
+}
+
+type AddressEditPayload {
+  address: Address!
+}
+
+input addressEventCreateInput {
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  apartment: String
+}
+
+input AuthGuestInput {
+  emailAddress: String!
+  code: String!
+}
+
+type AuthGuestPayload {
+  token: String!
+  viewer: Viewer!
+}
+
+"""connection interface"""
+interface Connection {
+  edges: [Edge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+}
+
+"""edge interface"""
+interface Edge {
+  node: Node!
+  cursor: String!
+}
+
+type Event implements Node {
+  creator: User
+  id: ID!
+  name: String!
+  eventActivities(first: Int, after: String, last: Int, before: String): EventToEventActivitiesConnection!
+  guestGroups(first: Int, after: String, last: Int, before: String): EventToGuestGroupsConnection!
+  guests(first: Int, after: String, last: Int, before: String): EventToGuestsConnection!
+}
+
+type EventActivity implements Node {
+  event: Event
+  id: ID!
+  name: String!
+  startTime: Time!
+  endTime: Time
+  location: String!
+  attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
+  declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
+  invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
+  viewerRsvpStatus: EventActivityRsvpStatus
+}
+
+input EventActivityAddInviteInput {
+  eventActivityID: ID!
+  inviteID: ID!
+}
+
+type EventActivityAddInvitePayload {
+  eventActivity: EventActivity!
+}
+
+input EventActivityCreateInput {
+  name: String!
+  eventID: ID!
+  startTime: Time!
+  endTime: Time
+  location: String!
+}
+
+type EventActivityCreatePayload {
+  eventActivity: EventActivity!
+}
+
+input EventActivityDeleteInput {
+  eventActivityID: ID!
+}
+
+type EventActivityDeletePayload {
+  deletedEventActivityID: ID
+}
+
+input EventActivityEditInput {
+  eventActivityID: ID!
+  name: String
+  eventID: ID
+  startTime: Time
+  endTime: Time
+  location: String
+}
+
+type EventActivityEditPayload {
+  eventActivity: EventActivity!
+}
+
+input EventActivityRemoveInviteInput {
+  eventActivityID: ID!
+  inviteID: ID!
+}
+
+type EventActivityRemoveInvitePayload {
+  eventActivity: EventActivity!
+}
+
+enum EventActivityRsvpStatus {
+  ATTENDING
+  DECLINED
+  CAN_RSVP
+  CANNOT_RSVP
+}
+
+input EventActivityRsvpStatusEditInput {
+  eventActivityID: ID!
+  rsvpStatus: EventActivityRsvpStatusInput!
+  guestID: ID!
+  dietaryRestrictions: String
+}
+
+type EventActivityRsvpStatusEditPayload {
+  eventActivity: EventActivity!
+}
+
+enum EventActivityRsvpStatusInput {
+  ATTENDING
+  DECLINED
+}
+
+type EventActivityToAttendingConnection implements Connection {
+  edges: [EventActivityToAttendingEdge!]!
+  nodes: [Guest!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventActivityToAttendingEdge implements Edge {
+  node: Guest!
+  cursor: String!
+  dietaryRestrictions: String
+}
+
+type EventActivityToDeclinedConnection implements Connection {
+  edges: [EventActivityToDeclinedEdge!]!
+  nodes: [Guest!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventActivityToDeclinedEdge implements Edge {
+  node: Guest!
+  cursor: String!
+}
+
+type EventActivityToInvitesConnection implements Connection {
+  edges: [EventActivityToInvitesEdge!]!
+  nodes: [GuestGroup!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventActivityToInvitesEdge implements Edge {
+  node: GuestGroup!
+  cursor: String!
+}
+
+input EventCreateInput {
+  name: String!
+  creatorID: ID!
+  address: addressEventCreateInput
+}
+
+type EventCreatePayload {
+  event: Event!
+}
+
+type EventToEventActivitiesConnection implements Connection {
+  edges: [EventToEventActivitiesEdge!]!
+  nodes: [EventActivity!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToEventActivitiesEdge implements Edge {
+  node: EventActivity!
+  cursor: String!
+}
+
+type EventToGuestGroupsConnection implements Connection {
+  edges: [EventToGuestGroupsEdge!]!
+  nodes: [GuestGroup!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToGuestGroupsEdge implements Edge {
+  node: GuestGroup!
+  cursor: String!
+}
+
+type EventToGuestsConnection implements Connection {
+  edges: [EventToGuestsEdge!]!
+  nodes: [Guest!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToGuestsEdge implements Edge {
+  node: Guest!
+  cursor: String!
+}
+
+type Guest implements Node {
+  event: Event
+  guestGroup: GuestGroup
+  id: ID!
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  guestToAttendingEvents(first: Int, after: String, last: Int, before: String): GuestToAttendingEventsConnection!
+  guestToDeclinedEvents(first: Int, after: String, last: Int, before: String): GuestToDeclinedEventsConnection!
+}
+
+input GuestCreateInput {
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  eventID: ID!
+  guestGroupID: ID!
+}
+
+type GuestCreatePayload {
+  guest: Guest!
+}
+
+input GuestDeleteInput {
+  guestID: ID!
+}
+
+type GuestDeletePayload {
+  deletedGuestID: ID
+}
+
+input GuestEditInput {
+  guestID: ID!
+  firstName: String
+  lastName: String
+  emailAddress: String
+  eventID: ID
+  guestGroupID: ID
+}
+
+type GuestEditPayload {
+  guest: Guest!
+}
+
+type GuestGroup implements Node {
+  event: Event
+  id: ID!
+  invitationName: String!
+  guestGroupToInvitedEvents(first: Int, after: String, last: Int, before: String): GuestGroupToInvitedEventsConnection!
+  guests(first: Int, after: String, last: Int, before: String): GuestGroupToGuestsConnection!
+}
+
+input GuestGroupCreateInput {
+  invitationName: String!
+  eventID: ID!
+}
+
+type GuestGroupCreatePayload {
+  guestGroup: GuestGroup!
+}
+
+input GuestGroupDeleteInput {
+  guestGroupID: ID!
+}
+
+type GuestGroupDeletePayload {
+  deletedGuestGroupID: ID
+}
+
+input GuestGroupEditInput {
+  guestGroupID: ID!
+  invitationName: String
+}
+
+type GuestGroupEditPayload {
+  guestGroup: GuestGroup!
+}
+
+type GuestGroupToGuestsConnection implements Connection {
+  edges: [GuestGroupToGuestsEdge!]!
+  nodes: [Guest!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type GuestGroupToGuestsEdge implements Edge {
+  node: Guest!
+  cursor: String!
+}
+
+type GuestGroupToInvitedEventsConnection implements Connection {
+  edges: [GuestGroupToInvitedEventsEdge!]!
+  nodes: [EventActivity!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type GuestGroupToInvitedEventsEdge implements Edge {
+  node: EventActivity!
+  cursor: String!
+}
+
+type GuestToAttendingEventsConnection implements Connection {
+  edges: [GuestToAttendingEventsEdge!]!
+  nodes: [EventActivity!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type GuestToAttendingEventsEdge implements Edge {
+  node: EventActivity!
+  cursor: String!
+}
+
+type GuestToDeclinedEventsConnection implements Connection {
+  edges: [GuestToDeclinedEventsEdge!]!
+  nodes: [EventActivity!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type GuestToDeclinedEventsEdge implements Edge {
+  node: EventActivity!
+  cursor: String!
+}
+
+type Mutation {
+  addressCreate(input: AddressCreateInput!): AddressCreatePayload!
+  addressDelete(input: AddressDeleteInput!): AddressDeletePayload!
+  addressEdit(input: AddressEditInput!): AddressEditPayload!
+  authGuest(input: AuthGuestInput!): AuthGuestPayload!
+  eventActivityAddInvite(input: EventActivityAddInviteInput!): EventActivityAddInvitePayload!
+  eventActivityCreate(input: EventActivityCreateInput!): EventActivityCreatePayload!
+  eventActivityDelete(input: EventActivityDeleteInput!): EventActivityDeletePayload!
+  eventActivityEdit(input: EventActivityEditInput!): EventActivityEditPayload!
+  eventActivityRemoveInvite(input: EventActivityRemoveInviteInput!): EventActivityRemoveInvitePayload!
+  eventActivityRsvpStatusEdit(input: EventActivityRsvpStatusEditInput!): EventActivityRsvpStatusEditPayload!
+  eventCreate(input: EventCreateInput!): EventCreatePayload!
+  guestCreate(input: GuestCreateInput!): GuestCreatePayload!
+  guestDelete(input: GuestDeleteInput!): GuestDeletePayload!
+  guestEdit(input: GuestEditInput!): GuestEditPayload!
+  guestGroupCreate(input: GuestGroupCreateInput!): GuestGroupCreatePayload!
+  guestGroupDelete(input: GuestGroupDeleteInput!): GuestGroupDeletePayload!
+  guestGroupEdit(input: GuestGroupEditInput!): GuestGroupEditPayload!
+  userCreate(input: UserCreateInput!): UserCreatePayload!
+}
+
+"""node interface"""
+interface Node {
+  id: ID!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type Query {
+  node(id: ID!): Node
+  viewer: Viewer
+}
+
+"""Time scalar type"""
+scalar Time
+
+type User implements Node {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  events(first: Int, after: String, last: Int, before: String): UserToEventsConnection!
+}
+
+input UserCreateInput {
+  firstName: String!
+  lastName: String!
+  emailAddress: String!
+  password: String!
+}
+
+type UserCreatePayload {
+  user: User!
+}
+
+type UserToEventsConnection implements Connection {
+  edges: [UserToEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
+}
+
+type Viewer {
+  user: User
+  guest: Guest
+}
+
