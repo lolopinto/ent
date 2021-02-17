@@ -15,8 +15,14 @@ export default class Guest extends BaseEntSchema {
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
     EmailType({ name: "EmailAddress" }),
-    UUIDType({ name: "eventID", foreignKey: ["Event", "ID"] }),
-    UUIDType({ name: "guestGroupID", foreignKey: ["GuestGroup", "ID"] }),
+    UUIDType({
+      name: "eventID",
+      foreignKey: { schema: "Event", column: "ID" },
+    }),
+    UUIDType({
+      name: "guestGroupID",
+      foreignKey: { schema: "GuestGroup", column: "ID" },
+    }),
   ];
 
   actions: Action[] = [

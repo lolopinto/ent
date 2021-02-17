@@ -1,4 +1,4 @@
-import { AlwaysDenyRule, Ent, loadEdgeForID2 } from "@lolopinto/ent";
+import { AlwaysDenyRule, AssocEdge, Ent, loadEdgeForID2 } from "@lolopinto/ent";
 import { Changeset, Trigger, WriteOperation } from "@lolopinto/ent/action";
 import {
   DenyIfEdgeDoesNotExistRule,
@@ -107,6 +107,7 @@ export default class EditEventActivityRsvpStatusAction extends EditEventActivity
               id1: ent.id,
               id2: edge.id,
               edgeType: EdgeType.EventActivityToAttending,
+              ctr: AssocEdge,
             });
 
             if (!edgeData || !edgeData.data) {

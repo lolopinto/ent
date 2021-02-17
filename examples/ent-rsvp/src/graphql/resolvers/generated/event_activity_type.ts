@@ -88,7 +88,8 @@ export const EventActivityType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           eventActivity.viewer,
           eventActivity,
-          EventActivityToAttendingQuery,
+          (v, eventActivity: EventActivity) =>
+            EventActivityToAttendingQuery.query(v, eventActivity),
           args,
         );
       },
@@ -121,7 +122,8 @@ export const EventActivityType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           eventActivity.viewer,
           eventActivity,
-          EventActivityToDeclinedQuery,
+          (v, eventActivity: EventActivity) =>
+            EventActivityToDeclinedQuery.query(v, eventActivity),
           args,
         );
       },
@@ -154,7 +156,8 @@ export const EventActivityType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           eventActivity.viewer,
           eventActivity,
-          EventActivityToInvitesQuery,
+          (v, eventActivity: EventActivity) =>
+            EventActivityToInvitesQuery.query(v, eventActivity),
           args,
         );
       },

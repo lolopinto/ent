@@ -4,15 +4,24 @@ import {
   EdgeType,
   Guest,
   EventActivity,
+  AuthCode,
+  GuestData,
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
   GuestToAttendingEventsEdge,
   GuestToDeclinedEventsEdge,
 } from "src/ent/internal";
-import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
+import {
+  ID,
+  Viewer,
+  EdgeQuerySource,
+  AssocEdgeQueryBase,
+  CustomEdgeQueryBase,
+  query,
+} from "@lolopinto/ent";
 
-export class GuestToAttendingEventsQueryBase extends BaseEdgeQuery<
+export class GuestToAttendingEventsQueryBase extends AssocEdgeQueryBase<
   Guest,
   EventActivity,
   GuestToAttendingEventsEdge
@@ -48,7 +57,7 @@ export class GuestToAttendingEventsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class GuestToDeclinedEventsQueryBase extends BaseEdgeQuery<
+export class GuestToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
   Guest,
   EventActivity,
   GuestToDeclinedEventsEdge
@@ -81,5 +90,45 @@ export class GuestToDeclinedEventsQueryBase extends BaseEdgeQuery<
 
   queryInvites(): EventActivityToInvitesQuery {
     return EventActivityToInvitesQuery.query(this.viewer, this);
+  }
+}
+
+export class GuestToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
+  constructor(viewer: Viewer, src: Guest | ID) {
+    let id: ID;
+    if (typeof src === "object") {
+      id = src.id;
+    } else {
+      id = src;
+    }
+    super(viewer, src, AuthCode.loaderOptions(), query.Eq("guest_id", id));
+  }
+
+  static query<T extends GuestToAuthCodesQueryBase>(
+    this: new (viewer: Viewer, src: Guest | ID) => T,
+    viewer: Viewer,
+    src: Guest | ID,
+  ): T {
+    return new this(viewer, src);
+  }
+}
+
+export class GuestToGuestDataQueryBase extends CustomEdgeQueryBase<GuestData> {
+  constructor(viewer: Viewer, src: Guest | ID) {
+    let id: ID;
+    if (typeof src === "object") {
+      id = src.id;
+    } else {
+      id = src;
+    }
+    super(viewer, src, GuestData.loaderOptions(), query.Eq("guest_id", id));
+  }
+
+  static query<T extends GuestToGuestDataQueryBase>(
+    this: new (viewer: Viewer, src: Guest | ID) => T,
+    viewer: Viewer,
+    src: Guest | ID,
+  ): T {
+    return new this(viewer, src);
   }
 }

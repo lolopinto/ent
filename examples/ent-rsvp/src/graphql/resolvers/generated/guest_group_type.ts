@@ -5,7 +5,6 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
-  GraphQLList,
   GraphQLInt,
   GraphQLFieldConfigMap,
 } from "graphql";
@@ -16,11 +15,15 @@ import {
   GraphQLEdgeConnection,
 } from "@lolopinto/ent/graphql";
 import {
-  GuestType,
   EventType,
   GuestGroupToInvitedEventsConnectionType,
+  GuestGroupToGuestsConnectionType,
 } from "src/graphql/resolvers/";
-import { GuestGroup, GuestGroupToInvitedEventsQuery } from "src/ent/";
+import {
+  GuestGroup,
+  GuestGroupToInvitedEventsQuery,
+  GuestGroupToGuestsQuery,
+} from "src/ent/";
 
 export const GuestGroupType = new GraphQLObjectType({
   name: "GuestGroup",
@@ -62,15 +65,40 @@ export const GuestGroupType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           guestGroup.viewer,
           guestGroup,
-          GuestGroupToInvitedEventsQuery,
+          (v, guestGroup: GuestGroup) =>
+            GuestGroupToInvitedEventsQuery.query(v, guestGroup),
           args,
         );
       },
     },
     guests: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GuestType))),
+      type: GraphQLNonNull(GuestGroupToGuestsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (guestGroup: GuestGroup, args: {}, context: RequestContext) => {
-        return guestGroup.loadGuests();
+        return new GraphQLEdgeConnection(
+          guestGroup.viewer,
+          guestGroup,
+          (v, guestGroup: GuestGroup) =>
+            GuestGroupToGuestsQuery.query(v, guestGroup),
+          args,
+        );
       },
     },
   }),

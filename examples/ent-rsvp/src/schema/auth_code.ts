@@ -14,7 +14,11 @@ import { EmailType } from "@lolopinto/ent-email";
 export default class AuthCode extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "code" }),
-    UUIDType({ name: "guestID", foreignKey: ["Guest", "ID"], unique: true }),
+    UUIDType({
+      name: "guestID",
+      foreignKey: { schema: "Guest", column: "ID" },
+      unique: true,
+    }),
     EmailType({ name: "emailAddress" }),
     BooleanType({ name: "sentCode", serverDefault: "FALSE" }),
   ];

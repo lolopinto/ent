@@ -95,7 +95,7 @@ export async function createActivityAndGroup(): Promise<
 
 export async function createAndInvite(): Promise<[EventActivity, GuestGroup]> {
   const [activity, group] = await createActivityAndGroup();
-  const count = await activity.loadInvitesRawCountX();
+  const count = await activity.queryInvites().queryCount();
   expect(count).toBe(0);
 
   const reloaded = await EventActivityAddInviteAction.saveXFromID(
@@ -103,7 +103,7 @@ export async function createAndInvite(): Promise<[EventActivity, GuestGroup]> {
     activity.id,
     group.id,
   );
-  const newCount = await reloaded.loadInvitesRawCountX();
+  const newCount = await reloaded.queryInvites().queryCount();
   expect(newCount).toBe(1);
 
   return [activity, group];

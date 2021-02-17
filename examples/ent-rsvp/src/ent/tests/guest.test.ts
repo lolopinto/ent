@@ -110,7 +110,7 @@ async function createGuestGroups() {
 test("create guests", async () => {
   const groups = await createGuestGroups();
 
-  const loadedGuests = await groups[0].loadGuests();
+  const loadedGuests = await groups[0].queryGuests().queryEnts();
   expect(loadedGuests.length).toBe(inputs[0].length);
 
   // guest can load themselves
@@ -141,7 +141,7 @@ describe("privacy", () => {
 
   test("guests in same groups can load themselves", async () => {
     for (const group of groups) {
-      const guests = await group.loadGuests();
+      const guests = await group.queryGuests().queryEnts();
       for (const guest of guests) {
         for (const guest2 of guests) {
           // guest needs to be able to load themselves or guests in same guest group
@@ -154,7 +154,7 @@ describe("privacy", () => {
   test("guests in different guest group cannot load", async () => {
     let guestsMap = new Map();
     for (const group of groups) {
-      const guests = await group.loadGuests();
+      const guests = await group.queryGuests().queryEnts();
       guestsMap.set(group.id, guests);
     }
 

@@ -12,9 +12,9 @@ import {
   EventActivityToDeclinedEdge,
   EventActivityToInvitesEdge,
 } from "src/ent/internal";
-import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
+import { Viewer, EdgeQuerySource, AssocEdgeQueryBase } from "@lolopinto/ent";
 
-export class EventActivityToAttendingQueryBase extends BaseEdgeQuery<
+export class EventActivityToAttendingQueryBase extends AssocEdgeQueryBase<
   EventActivity,
   Guest,
   EventActivityToAttendingEdge
@@ -46,7 +46,7 @@ export class EventActivityToAttendingQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class EventActivityToDeclinedQueryBase extends BaseEdgeQuery<
+export class EventActivityToDeclinedQueryBase extends AssocEdgeQueryBase<
   EventActivity,
   Guest,
   EventActivityToDeclinedEdge
@@ -78,7 +78,7 @@ export class EventActivityToDeclinedQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class EventActivityToInvitesQueryBase extends BaseEdgeQuery<
+export class EventActivityToInvitesQueryBase extends AssocEdgeQueryBase<
   EventActivity,
   GuestGroup,
   EventActivityToInvitesEdge

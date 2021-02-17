@@ -9,11 +9,6 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  loadEdges,
-  loadRawEdgeCountX,
-  loadNodesByEdge,
-  loadEdgeForID2,
-  loadEntsFromClause,
   loadRow,
   loadRowX,
   AlwaysDenyRule,
@@ -25,11 +20,12 @@ import { Field, getFields } from "@lolopinto/ent/schema";
 import {
   EdgeType,
   NodeType,
-  EventActivity,
-  AuthCode,
-  GuestData,
   Event,
   GuestGroup,
+  GuestToAttendingEventsQuery,
+  GuestToDeclinedEventsQuery,
+  GuestToAuthCodesQuery,
+  GuestToGuestDataQuery,
 } from "src/ent/internal";
 import schema from "src/schema/guest";
 
@@ -146,98 +142,20 @@ export class GuestBase {
     return GuestBase.getSchemaFields().get(key);
   }
 
-  loadGuestToAttendingEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.GuestToAttendingEvents,
-      context: this.viewer.context,
-    });
+  queryGuestToAttendingEvents(): GuestToAttendingEventsQuery {
+    return GuestToAttendingEventsQuery.query(this.viewer, this.id);
   }
 
-  loadGuestToAttendingEvents(): Promise<EventActivity[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.GuestToAttendingEvents,
-      EventActivity.loaderOptions(),
-    );
+  queryGuestToDeclinedEvents(): GuestToDeclinedEventsQuery {
+    return GuestToDeclinedEventsQuery.query(this.viewer, this.id);
   }
 
-  loadGuestToAttendingEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.GuestToAttendingEvents,
-      context: this.viewer.context,
-    });
+  queryAuthCodes(): GuestToAuthCodesQuery {
+    return GuestToAuthCodesQuery.query(this.viewer, this.id);
   }
 
-  loadGuestToAttendingEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.GuestToAttendingEvents,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
-  loadGuestToDeclinedEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.GuestToDeclinedEvents,
-      context: this.viewer.context,
-    });
-  }
-
-  loadGuestToDeclinedEvents(): Promise<EventActivity[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.GuestToDeclinedEvents,
-      EventActivity.loaderOptions(),
-    );
-  }
-
-  loadGuestToDeclinedEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.GuestToDeclinedEvents,
-      context: this.viewer.context,
-    });
-  }
-
-  loadGuestToDeclinedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.GuestToDeclinedEvents,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
-  async loadAuthCodes(): Promise<AuthCode[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("guest_id", this.id),
-      AuthCode.loaderOptions(),
-    );
-    let results: AuthCode[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
-  }
-
-  async loadGuestData(): Promise<GuestData[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("guest_id", this.id),
-      GuestData.loaderOptions(),
-    );
-    let results: GuestData[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+  queryGuestData(): GuestToGuestDataQuery {
+    return GuestToGuestDataQuery.query(this.viewer, this.id);
   }
 
   async loadEvent(): Promise<Event | null> {

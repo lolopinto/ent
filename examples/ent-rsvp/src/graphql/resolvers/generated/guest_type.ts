@@ -78,7 +78,7 @@ export const GuestType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           guest.viewer,
           guest,
-          GuestToAttendingEventsQuery,
+          (v, guest: Guest) => GuestToAttendingEventsQuery.query(v, guest),
           args,
         );
       },
@@ -107,7 +107,7 @@ export const GuestType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           guest.viewer,
           guest,
-          GuestToDeclinedEventsQuery,
+          (v, guest: Guest) => GuestToDeclinedEventsQuery.query(v, guest),
           args,
         );
       },

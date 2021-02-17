@@ -10,7 +10,10 @@ import {
 export default class Event extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "Name" }),
-    UUIDType({ name: "creatorID", foreignKey: ["User", "ID"] }),
+    UUIDType({
+      name: "creatorID",
+      foreignKey: { schema: "User", column: "ID" },
+    }),
   ];
 
   actions: Action[] = [

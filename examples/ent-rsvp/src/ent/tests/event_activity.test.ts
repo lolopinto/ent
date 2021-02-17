@@ -130,7 +130,7 @@ describe("invites", () => {
       activity.id,
       group.id,
     );
-    const newCount = await reloaded.loadInvitesRawCountX();
+    const newCount = await reloaded.queryInvites().queryCount();
     expect(newCount).toBe(0);
 
     // calling it twice is fine
@@ -139,7 +139,7 @@ describe("invites", () => {
       activity.id,
       group.id,
     );
-    const newCount2 = await reloaded2.loadInvitesRawCountX();
+    const newCount2 = await reloaded2.queryInvites().queryCount();
     expect(newCount2).toBe(0);
   });
 
@@ -295,8 +295,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Attending,
       EventActivityRsvpStatus.Attending,
-      (activity: EventActivity) => activity.loadAttendingRawCountX(),
-      (guest: Guest) => guest.loadGuestToAttendingEventsRawCountX(),
+      (activity: EventActivity) => activity.queryAttending().queryCount(),
+      (guest: Guest) => guest.queryGuestToAttendingEvents().queryCount(),
     );
   });
 
@@ -304,8 +304,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Declined,
       EventActivityRsvpStatus.Declined,
-      (activity: EventActivity) => activity.loadDeclinedRawCountX(),
-      (guest: Guest) => guest.loadGuestToDeclinedEventsRawCountX(),
+      (activity: EventActivity) => activity.queryDeclined().queryCount(),
+      (guest: Guest) => guest.queryGuestToDeclinedEvents().queryCount(),
     );
   });
 
@@ -314,8 +314,8 @@ describe("rsvps", () => {
     let [activity, guests] = await doRsvpForSelf(
       EventActivityRsvpStatusInput.Declined,
       EventActivityRsvpStatus.Declined,
-      (activity: EventActivity) => activity.loadDeclinedRawCountX(),
-      (guest: Guest) => guest.loadGuestToDeclinedEventsRawCountX(),
+      (activity: EventActivity) => activity.queryDeclined().queryCount(),
+      (guest: Guest) => guest.queryGuestToDeclinedEvents().queryCount(),
     );
 
     // switch to attending
@@ -323,8 +323,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Attending,
       EventActivityRsvpStatus.Attending,
-      (activity: EventActivity) => activity.loadAttendingRawCountX(),
-      (guest: Guest) => guest.loadGuestToAttendingEventsRawCountX(),
+      (activity: EventActivity) => activity.queryAttending().queryCount(),
+      (guest: Guest) => guest.queryGuestToAttendingEvents().queryCount(),
       {
         eventActivity: activity,
         guests,
@@ -332,15 +332,15 @@ describe("rsvps", () => {
     );
 
     // confirm count has changed back to 0
-    let count = await activity.loadDeclinedRawCountX();
+    let count = await activity.queryDeclined().queryCount();
     expect(count).toEqual(0);
 
     // switch back one more time to declined
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Declined,
       EventActivityRsvpStatus.Declined,
-      (activity: EventActivity) => activity.loadDeclinedRawCountX(),
-      (guest: Guest) => guest.loadGuestToDeclinedEventsRawCountX(),
+      (activity: EventActivity) => activity.queryDeclined().queryCount(),
+      (guest: Guest) => guest.queryGuestToDeclinedEvents().queryCount(),
       {
         eventActivity: activity,
         guests,
@@ -348,7 +348,7 @@ describe("rsvps", () => {
     );
 
     // confirm count has changed back to 0
-    count = await activity.loadAttendingRawCountX();
+    count = await activity.queryAttending().queryCount();
     expect(count).toEqual(0);
   });
 
@@ -357,21 +357,19 @@ describe("rsvps", () => {
     let [activity, guests] = await doRsvpForSelf(
       EventActivityRsvpStatusInput.Attending,
       EventActivityRsvpStatus.Attending,
-      (activity: EventActivity) => activity.loadAttendingRawCountX(),
-      (guest: Guest) => guest.loadGuestToAttendingEventsRawCountX(),
+      (activity: EventActivity) => activity.queryAttending().queryCount(),
+      (guest: Guest) => guest.queryGuestToAttendingEvents().queryCount(),
       {
         dietaryRestrictions: "shellfish",
       },
     );
 
-    let edges = await activity.loadAttendingEdges();
-    expect(edges.length).toEqual(1);
+    let edges = await activity.queryAttending().queryEdges();
 
-    let edgesMap = await EventActivityToAttendingQuery.query(
+    let edges2 = await EventActivityToAttendingQuery.query(
       activity.viewer,
       activity.id,
     ).queryEdges();
-    let edges2 = edgesMap.get(activity.id) || [];
     expect(edges2.length).toEqual(1);
 
     const dr = await edges2[0].dietaryRestrictions({
@@ -390,8 +388,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Declined,
       EventActivityRsvpStatus.Declined,
-      (activity: EventActivity) => activity.loadDeclinedRawCountX(),
-      (guest: Guest) => guest.loadGuestToDeclinedEventsRawCountX(),
+      (activity: EventActivity) => activity.queryDeclined().queryCount(),
+      (guest: Guest) => guest.queryGuestToDeclinedEvents().queryCount(),
       {
         eventActivity: activity,
         guests: guests,
@@ -407,8 +405,8 @@ describe("rsvps", () => {
     await doRsvpForSelf(
       EventActivityRsvpStatusInput.Attending,
       EventActivityRsvpStatus.Attending,
-      (activity: EventActivity) => activity.loadAttendingRawCountX(),
-      (guest: Guest) => guest.loadGuestToAttendingEventsRawCountX(),
+      (activity: EventActivity) => activity.queryAttending().queryCount(),
+      (guest: Guest) => guest.queryGuestToAttendingEvents().queryCount(),
       {
         eventActivity: activity,
         guests: guests,
@@ -416,7 +414,7 @@ describe("rsvps", () => {
       },
     );
 
-    edges = await activity.loadAttendingEdges();
+    edges = await activity.queryAttending().queryEdges();
     expect(edges.length).toEqual(1);
 
     edge = edges[0];
@@ -432,8 +430,8 @@ describe("rsvps", () => {
     await doRsvpForOther(
       EventActivityRsvpStatusInput.Attending,
       EventActivityRsvpStatus.Attending,
-      (activity: EventActivity) => activity.loadAttendingRawCountX(),
-      (guest: Guest) => guest.loadGuestToAttendingEventsRawCountX(),
+      (activity: EventActivity) => activity.queryAttending().queryCount(),
+      (guest: Guest) => guest.queryGuestToAttendingEvents().queryCount(),
     );
   });
 
@@ -441,8 +439,8 @@ describe("rsvps", () => {
     await doRsvpForOther(
       EventActivityRsvpStatusInput.Declined,
       EventActivityRsvpStatus.Declined,
-      (activity: EventActivity) => activity.loadDeclinedRawCountX(),
-      (guest: Guest) => guest.loadGuestToDeclinedEventsRawCountX(),
+      (activity: EventActivity) => activity.queryDeclined().queryCount(),
+      (guest: Guest) => guest.queryGuestToDeclinedEvents().queryCount(),
     );
   });
 

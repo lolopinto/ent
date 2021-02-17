@@ -8,7 +8,6 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
-  loadEntsFromClause,
   loadRow,
   loadRowX,
   AlwaysDenyRule,
@@ -19,11 +18,11 @@ import {
 import { Field, getFields } from "@lolopinto/ent/schema";
 import {
   NodeType,
-  EventActivity,
-  GuestData,
-  GuestGroup,
-  Guest,
   User,
+  EventToEventActivitiesQuery,
+  EventToGuestDataQuery,
+  EventToGuestGroupsQuery,
+  EventToGuestsQuery,
 } from "src/ent/internal";
 import schema from "src/schema/event";
 
@@ -125,56 +124,20 @@ export class EventBase {
     return EventBase.getSchemaFields().get(key);
   }
 
-  async loadEventActivities(): Promise<EventActivity[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("event_id", this.id),
-      EventActivity.loaderOptions(),
-    );
-    let results: EventActivity[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+  queryEventActivities(): EventToEventActivitiesQuery {
+    return EventToEventActivitiesQuery.query(this.viewer, this.id);
   }
 
-  async loadGuestData(): Promise<GuestData[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("event_id", this.id),
-      GuestData.loaderOptions(),
-    );
-    let results: GuestData[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+  queryGuestData(): EventToGuestDataQuery {
+    return EventToGuestDataQuery.query(this.viewer, this.id);
   }
 
-  async loadGuestGroups(): Promise<GuestGroup[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("event_id", this.id),
-      GuestGroup.loaderOptions(),
-    );
-    let results: GuestGroup[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+  queryGuestGroups(): EventToGuestGroupsQuery {
+    return EventToGuestGroupsQuery.query(this.viewer, this.id);
   }
 
-  async loadGuests(): Promise<Guest[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("event_id", this.id),
-      Guest.loaderOptions(),
-    );
-    let results: Guest[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+  queryGuests(): EventToGuestsQuery {
+    return EventToGuestsQuery.query(this.viewer, this.id);
   }
 
   async loadCreator(): Promise<User | null> {

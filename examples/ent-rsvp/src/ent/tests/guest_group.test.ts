@@ -154,7 +154,7 @@ test("guest loading guest group", async () => {
     }),
   );
 
-  const guests = await group.loadGuests();
+  const guests = await group.queryGuests().queryEnts();
   expect(guests.length).toBe(inputs.length);
 
   // guest can load group

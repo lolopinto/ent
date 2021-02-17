@@ -18,16 +18,58 @@ type User implements Node {
   firstName: String!
   lastName: String!
   emailAddress: String!
-  events: [Event!]!
+  events(first: Int, after: String, last: Int, before: String): UserToEventsConnection!
+}
+
+type UserToEventsConnection implements Connection {
+  edges: [UserToEventsEdge!]!
+  nodes: [Event!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+"""connection interface"""
+interface Connection {
+  edges: [Edge!]!
+  nodes: [Node!]!
+  pageInfo: PageInfo!
+}
+
+"""edge interface"""
+interface Edge {
+  node: Node!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type UserToEventsEdge implements Edge {
+  node: Event!
+  cursor: String!
 }
 
 type Event implements Node {
   creator: User
   id: ID!
   name: String!
-  eventActivities: [EventActivity!]!
-  guestGroups: [GuestGroup!]!
-  guests: [Guest!]!
+  eventActivities(first: Int, after: String, last: Int, before: String): EventToEventActivitiesConnection!
+  guestGroups(first: Int, after: String, last: Int, before: String): EventToGuestGroupsConnection!
+  guests(first: Int, after: String, last: Int, before: String): EventToGuestsConnection!
+}
+
+type EventToEventActivitiesConnection implements Connection {
+  edges: [EventToEventActivitiesEdge!]!
+  nodes: [EventActivity!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToEventActivitiesEdge implements Edge {
+  node: EventActivity!
+  cursor: String!
 }
 
 type EventActivity implements Node {
@@ -53,24 +95,6 @@ type EventActivityToAttendingConnection implements Connection {
   rawCount: Int!
 }
 
-"""connection interface"""
-interface Connection {
-  edges: [Edge!]!
-  nodes: [Node!]!
-  pageInfo: PageInfo!
-}
-
-"""edge interface"""
-interface Edge {
-  node: Node!
-  cursor: String!
-}
-
-type PageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-}
-
 type EventActivityToAttendingEdge implements Edge {
   node: Guest!
   cursor: String!
@@ -93,7 +117,7 @@ type GuestGroup implements Node {
   id: ID!
   invitationName: String!
   guestGroupToInvitedEvents(first: Int, after: String, last: Int, before: String): GuestGroupToInvitedEventsConnection!
-  guests: [Guest!]!
+  guests(first: Int, after: String, last: Int, before: String): GuestGroupToGuestsConnection!
 }
 
 type GuestGroupToInvitedEventsConnection implements Connection {
@@ -105,6 +129,18 @@ type GuestGroupToInvitedEventsConnection implements Connection {
 
 type GuestGroupToInvitedEventsEdge implements Edge {
   node: EventActivity!
+  cursor: String!
+}
+
+type GuestGroupToGuestsConnection implements Connection {
+  edges: [GuestGroupToGuestsEdge!]!
+  nodes: [Guest!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type GuestGroupToGuestsEdge implements Edge {
+  node: Guest!
   cursor: String!
 }
 
@@ -161,6 +197,30 @@ enum EventActivityRsvpStatus {
   DECLINED
   CAN_RSVP
   CANNOT_RSVP
+}
+
+type EventToGuestGroupsConnection implements Connection {
+  edges: [EventToGuestGroupsEdge!]!
+  nodes: [GuestGroup!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToGuestGroupsEdge implements Edge {
+  node: GuestGroup!
+  cursor: String!
+}
+
+type EventToGuestsConnection implements Connection {
+  edges: [EventToGuestsEdge!]!
+  nodes: [Guest!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type EventToGuestsEdge implements Edge {
+  node: Guest!
+  cursor: String!
 }
 
 type Mutation {

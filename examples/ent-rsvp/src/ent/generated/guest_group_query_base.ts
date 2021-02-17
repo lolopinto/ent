@@ -4,14 +4,22 @@ import {
   EdgeType,
   GuestGroup,
   EventActivity,
+  Guest,
   EventActivityToAttendingQuery,
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
   GuestGroupToInvitedEventsEdge,
 } from "src/ent/internal";
-import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
+import {
+  ID,
+  Viewer,
+  EdgeQuerySource,
+  AssocEdgeQueryBase,
+  CustomEdgeQueryBase,
+  query,
+} from "@lolopinto/ent";
 
-export class GuestGroupToInvitedEventsQueryBase extends BaseEdgeQuery<
+export class GuestGroupToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   GuestGroup,
   EventActivity,
   GuestGroupToInvitedEventsEdge
@@ -44,5 +52,25 @@ export class GuestGroupToInvitedEventsQueryBase extends BaseEdgeQuery<
 
   queryInvites(): EventActivityToInvitesQuery {
     return EventActivityToInvitesQuery.query(this.viewer, this);
+  }
+}
+
+export class GuestGroupToGuestsQueryBase extends CustomEdgeQueryBase<Guest> {
+  constructor(viewer: Viewer, src: GuestGroup | ID) {
+    let id: ID;
+    if (typeof src === "object") {
+      id = src.id;
+    } else {
+      id = src;
+    }
+    super(viewer, src, Guest.loaderOptions(), query.Eq("guest_group_id", id));
+  }
+
+  static query<T extends GuestGroupToGuestsQueryBase>(
+    this: new (viewer: Viewer, src: GuestGroup | ID) => T,
+    viewer: Viewer,
+    src: GuestGroup | ID,
+  ): T {
+    return new this(viewer, src);
   }
 }

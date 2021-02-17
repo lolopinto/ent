@@ -9,11 +9,6 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  loadEdges,
-  loadRawEdgeCountX,
-  loadNodesByEdge,
-  loadEdgeForID2,
-  loadEntsFromClause,
   loadRow,
   loadRowX,
   AlwaysDenyRule,
@@ -25,9 +20,9 @@ import { Field, getFields } from "@lolopinto/ent/schema";
 import {
   EdgeType,
   NodeType,
-  EventActivity,
-  Guest,
   Event,
+  GuestGroupToInvitedEventsQuery,
+  GuestGroupToGuestsQuery,
 } from "src/ent/internal";
 import schema from "src/schema/guest_group";
 
@@ -129,51 +124,12 @@ export class GuestGroupBase {
     return GuestGroupBase.getSchemaFields().get(key);
   }
 
-  loadGuestGroupToInvitedEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.GuestGroupToInvitedEvents,
-      context: this.viewer.context,
-    });
+  queryGuestGroupToInvitedEvents(): GuestGroupToInvitedEventsQuery {
+    return GuestGroupToInvitedEventsQuery.query(this.viewer, this.id);
   }
 
-  loadGuestGroupToInvitedEvents(): Promise<EventActivity[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.GuestGroupToInvitedEvents,
-      EventActivity.loaderOptions(),
-    );
-  }
-
-  loadGuestGroupToInvitedEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.GuestGroupToInvitedEvents,
-      context: this.viewer.context,
-    });
-  }
-
-  loadGuestGroupToInvitedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.GuestGroupToInvitedEvents,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
-  async loadGuests(): Promise<Guest[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("guest_group_id", this.id),
-      Guest.loaderOptions(),
-    );
-    let results: Guest[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+  queryGuests(): GuestGroupToGuestsQuery {
+    return GuestGroupToGuestsQuery.query(this.viewer, this.id);
   }
 
   async loadEvent(): Promise<Event | null> {

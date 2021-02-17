@@ -10,7 +10,10 @@ import {
 export default class GuestGroup extends BaseEntSchema {
   fields: Field[] = [
     StringType({ name: "InvitationName" }),
-    UUIDType({ name: "EventID", foreignKey: ["Event", "ID"] }),
+    UUIDType({
+      name: "EventID",
+      foreignKey: { schema: "Event", column: "ID" },
+    }),
   ];
 
   actions: Action[] = [

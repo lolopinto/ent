@@ -5,18 +5,27 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
-  GraphQLList,
+  GraphQLInt,
   GraphQLFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
 import {
-  EventActivityType,
-  GuestGroupType,
-  GuestType,
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+  GraphQLEdgeConnection,
+} from "@lolopinto/ent/graphql";
+import {
   UserType,
+  EventToEventActivitiesConnectionType,
+  EventToGuestGroupsConnectionType,
+  EventToGuestsConnectionType,
 } from "src/graphql/resolvers/";
-import { Event } from "src/ent/";
+import {
+  Event,
+  EventToEventActivitiesQuery,
+  EventToGuestGroupsQuery,
+  EventToGuestsQuery,
+} from "src/ent/";
 
 export const EventType = new GraphQLObjectType({
   name: "Event",
@@ -35,21 +44,90 @@ export const EventType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     eventActivities: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventActivityType))),
+      type: GraphQLNonNull(EventToEventActivitiesConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return event.loadEventActivities();
+        return new GraphQLEdgeConnection(
+          event.viewer,
+          event,
+          (v, event: Event) => EventToEventActivitiesQuery.query(v, event),
+          args,
+        );
       },
     },
     guestGroups: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GuestGroupType))),
+      type: GraphQLNonNull(EventToGuestGroupsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return event.loadGuestGroups();
+        return new GraphQLEdgeConnection(
+          event.viewer,
+          event,
+          (v, event: Event) => EventToGuestGroupsQuery.query(v, event),
+          args,
+        );
       },
     },
     guests: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GuestType))),
+      type: GraphQLNonNull(EventToGuestsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (event: Event, args: {}, context: RequestContext) => {
-        return event.loadGuests();
+        return new GraphQLEdgeConnection(
+          event.viewer,
+          event,
+          (v, event: Event) => EventToGuestsQuery.query(v, event),
+          args,
+        );
       },
     },
   }),

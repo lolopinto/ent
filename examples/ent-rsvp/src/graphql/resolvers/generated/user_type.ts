@@ -5,13 +5,17 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
-  GraphQLList,
+  GraphQLInt,
   GraphQLFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
-import { EventType } from "src/graphql/resolvers/";
-import { User } from "src/ent/";
+import {
+  GraphQLNodeInterface,
+  nodeIDEncoder,
+  GraphQLEdgeConnection,
+} from "@lolopinto/ent/graphql";
+import { UserToEventsConnectionType } from "src/graphql/resolvers/";
+import { User, UserToEventsQuery } from "src/ent/";
 
 export const UserType = new GraphQLObjectType({
   name: "User",
@@ -30,9 +34,32 @@ export const UserType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     events: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EventType))),
+      type: GraphQLNonNull(UserToEventsConnectionType()),
+      args: {
+        first: {
+          description: "",
+          type: GraphQLInt,
+        },
+        after: {
+          description: "",
+          type: GraphQLString,
+        },
+        last: {
+          description: "",
+          type: GraphQLInt,
+        },
+        before: {
+          description: "",
+          type: GraphQLString,
+        },
+      },
       resolve: (user: User, args: {}, context: RequestContext) => {
-        return user.loadEvents();
+        return new GraphQLEdgeConnection(
+          user.viewer,
+          user,
+          (v, user: User) => UserToEventsQuery.query(v, user),
+          args,
+        );
       },
     },
   }),

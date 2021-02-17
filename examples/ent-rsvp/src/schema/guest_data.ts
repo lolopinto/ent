@@ -13,11 +13,11 @@ export default class GuestData extends BaseEntSchema {
   fields: Field[] = [
     UUIDType({
       name: "guestID",
-      foreignKey: ["Guest", "ID"],
+      foreignKey: { schema: "Guest", column: "ID" },
     }),
     UUIDType({
       name: "eventID",
-      foreignKey: ["Event", "ID"],
+      foreignKey: { schema: "Event", column: "ID" },
     }),
     StringType({
       name: "dietaryRestrictions",
