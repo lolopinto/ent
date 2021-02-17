@@ -453,4 +453,5 @@ input UserCreateInput {
   firstName: String!
   lastName: String!
   emailAddress: String!
+  password: String!
 }

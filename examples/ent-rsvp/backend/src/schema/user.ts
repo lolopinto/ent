@@ -19,6 +19,7 @@ export default class User extends BaseEntSchema {
   actions: Action[] = [
     {
       operation: ActionOperation.Create,
+      fields: ["FirstName", "LastName", "EmailAddress", "Password"],
     },
   ];
 }
