@@ -1,36 +1,15 @@
-import { Event, User, GuestGroup } from "src/ent";
-import { DB, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
-import CreateUserAction from "../user/actions/create_user_action";
+import { GuestGroup } from "src/ent";
+import { DB, IDViewer } from "@lolopinto/ent";
 import { randomEmail } from "src/util/random";
-import CreateEventAction from "../event/actions/create_event_action";
 import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
 import EditGuestGroupAction from "../guest_group/actions/edit_guest_group_action";
 import DeleteGuestGroupAction from "../guest_group/actions/delete_guest_group_action";
 import CreateGuestAction from "../guest/actions/create_guest_action";
+import { createUser, createEvent } from "src/testutils";
 
 afterAll(async () => {
   await DB.getInstance().endPool();
 });
-
-async function createUser() {
-  const user = await CreateUserAction.create(new LoggedOutViewer(), {
-    firstName: "Jon",
-    lastName: "Snow",
-    emailAddress: randomEmail(),
-  }).saveX();
-  expect(user).toBeInstanceOf(User);
-  return user;
-}
-
-async function createEvent() {
-  const user = await createUser();
-  const event = await CreateEventAction.create(new IDViewer(user.id), {
-    creatorID: user.id,
-    name: `${user.firstName}'s wedding`,
-  }).saveX();
-  expect(event).toBeInstanceOf(Event);
-  return event;
-}
 
 async function createGuestGroup() {
   const event = await createEvent();

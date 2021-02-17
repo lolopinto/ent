@@ -25,7 +25,9 @@ export interface UserAction extends Action<User> {
 }
 
 function randomNum(): string {
-  return Math.random().toString(10).substring(2);
+  return Math.random()
+    .toString(10)
+    .substring(2);
 }
 
 export class UserBuilder implements Builder<User> {
@@ -102,7 +104,7 @@ export class UserBuilder implements Builder<User> {
 
     let result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
+    const addField = function(key: string, value: any) {
       if (value !== undefined) {
         result.set(key, value);
       }

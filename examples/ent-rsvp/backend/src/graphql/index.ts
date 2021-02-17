@@ -1,13 +1,13 @@
 import express from "express";
 import { graphqlHTTP } from "express-graphql";
-import schema from "./schema";
 import { IncomingMessage, ServerResponse } from "http";
 import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import { PassportStrategyHandler } from "@lolopinto/ent-passport";
 import passport from "passport";
-import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
-import { IDViewer } from "@lolopinto/ent";
 import cors from "cors";
+// this line fixes the issue by loading ent first but we need to do that consistently everywhere
+import { User } from "src/ent";
+import schema from "./schema";
 
 let app = express();
 
@@ -16,22 +16,10 @@ app.use(cors());
 
 registerAuthHandler(
   "viewer",
-  new PassportStrategyHandler(
-    new JWTStrategy(
-      {
-        secretOrKey: "secret",
-        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      },
-      function(jwt_payload: {}, next) {
-        return next(null, jwt_payload["viewerID"].toString(), {});
-      },
-    ),
-    { session: false },
-    function(context, viewerID) {
-      // toViewer method
-      return new IDViewer(viewerID, { context });
-    },
-  ),
+  PassportStrategyHandler.jwtHandler({
+    secretOrKey: "secret",
+    loaderOptions: User.loaderOptions(),
+  }),
 );
 
 app.use(
@@ -49,3 +37,4 @@ app.use(
   }),
 );
 app.listen(4000);
+console.log("graphql");

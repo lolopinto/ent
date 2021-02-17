@@ -12,6 +12,7 @@ test("create user", async () => {
     firstName: "Jon",
     lastName: "Snow",
     emailAddress: randomEmail(),
+    password: "pa$$w0rd",
   }).saveX();
   expect(user).toBeInstanceOf(User);
 });
