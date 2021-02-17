@@ -87,7 +87,7 @@ export const EventType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
-          EventToAttendingQuery,
+          (v, event: Event) => EventToAttendingQuery.query(v, event),
           args,
         );
       },
@@ -116,7 +116,7 @@ export const EventType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
-          EventToDeclinedQuery,
+          (v, event: Event) => EventToDeclinedQuery.query(v, event),
           args,
         );
       },
@@ -145,7 +145,7 @@ export const EventType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
-          EventToHostsQuery,
+          (v, event: Event) => EventToHostsQuery.query(v, event),
           args,
         );
       },
@@ -174,7 +174,7 @@ export const EventType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
-          EventToInvitedQuery,
+          (v, event: Event) => EventToInvitedQuery.query(v, event),
           args,
         );
       },
@@ -203,7 +203,7 @@ export const EventType = new GraphQLObjectType({
         return new GraphQLEdgeConnection(
           event.viewer,
           event,
-          EventToMaybeQuery,
+          (v, event: Event) => EventToMaybeQuery.query(v, event),
           args,
         );
       },

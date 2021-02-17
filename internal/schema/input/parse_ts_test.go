@@ -20,6 +20,7 @@ type node struct {
 	enumTable       bool
 	dbRows          []map[string]interface{}
 	constraints     []constraint
+	indices         []index
 	hideFromGraphQL bool
 }
 
@@ -36,8 +37,8 @@ type field struct {
 	graphqlName             string
 	index                   bool
 	primaryKey              bool
-	foreignKey              *[2]string
-	fieldEdge               *[2]string
+	foreignKey              *input.ForeignKey
+	fieldEdge               *input.FieldEdge
 	serverDefault           string
 	disableUserEditable     bool
 	hasDefaultValueOnCreate bool
@@ -95,6 +96,12 @@ type constraint struct {
 	condition string
 }
 
+type index struct {
+	name    string
+	columns []string
+	unique  bool
+}
+
 type fkeyInfo struct {
 	tableName string
 	ondelete  input.OnDeleteFkey
@@ -139,6 +146,7 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 				verifyAssocEdgeGroups(t, expectedNode.assocEdgeGroups, node.AssocEdgeGroups)
 				verifyActions(t, expectedNode.actions, node.Actions)
 				verifyConstraints(t, expectedNode.constraints, node.Constraints)
+				verifyIndices(t, expectedNode.indices, node.Indices)
 			}
 		})
 	}
@@ -292,6 +300,18 @@ func verifyConstraints(t *testing.T, expConstraints []constraint, constraints []
 			assert.Equal(t, expConstraint.fkey.ondelete, constraint.ForeignKey.OnDelete)
 			assert.Equal(t, expConstraint.fkey.columns, constraint.ForeignKey.Columns)
 		}
+	}
+}
+
+func verifyIndices(t *testing.T, expIndices []index, indices []*input.Index) {
+	require.Len(t, indices, len(expIndices))
+
+	for j, expIndex := range expIndices {
+		index := indices[j]
+
+		assert.Equal(t, expIndex.name, index.Name)
+		assert.Equal(t, expIndex.columns, index.Columns)
+		assert.Equal(t, expIndex.unique, index.Unique)
 	}
 }
 

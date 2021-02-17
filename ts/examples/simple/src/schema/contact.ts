@@ -14,7 +14,7 @@ export default class Contact extends BaseEntSchema implements Schema {
     EmailType({ name: "emailAddress" }),
     StringType({ name: "firstName" }),
     StringType({ name: "lastName" }),
-    UUIDType({ name: "userID", foreignKey: ["User", "ID"] }),
+    UUIDType({ name: "userID", foreignKey: { schema: "User", column: "ID" } }),
   ];
 
   // create, edit, delete

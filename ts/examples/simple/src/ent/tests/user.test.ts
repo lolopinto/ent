@@ -68,7 +68,7 @@ test("create user", async () => {
   // confirm contact was automatically created
   let v = new IDViewer(user.id);
   user = await User.loadX(v, user.id);
-  let contacts = await user.loadContacts();
+  let contacts = await user.queryContacts().queryEnts();
   expect(contacts.length).toBe(1);
   let contact = contacts[0];
 
@@ -245,10 +245,10 @@ test("symmetric edge", async () => {
   const jon = await action.saveX();
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
-    jon.loadFriendsEdges(),
-    jon.loadFriendsRawCountX(),
-    dany.loadFriendsEdges(),
-    dany.loadFriendsRawCountX(),
+    jon.queryFriends().queryEdges(),
+    jon.queryFriends().queryRawCount(),
+    dany.queryFriends().queryEdges(),
+    dany.queryFriends().queryRawCount(),
   ]);
   expect(edges.length).toBe(2);
 
@@ -262,7 +262,7 @@ test("symmetric edge", async () => {
     id2Type: NodeType.User,
   });
 
-  const samEdge = await jon.loadFriendEdgeFor(sam.id);
+  const samEdge = await jon.queryFriends().queryID2(sam.id);
   expect(samEdge).not.toBe(null);
   verifyEdge(samEdge!, {
     id1: jon.id,
@@ -288,7 +288,7 @@ test("symmetric edge", async () => {
   expect(loadedUser).toBeInstanceOf(User);
 
   // jon loading via self
-  const friends = await jon.loadFriends();
+  const friends = await jon.queryFriends().queryEnts();
   expect(friends.length).toBe(2);
 
   let vc = new IDViewer(jon.id, { ent: jon });
@@ -304,11 +304,11 @@ test("symmetric edge", async () => {
     danyReloadedEdgesCount,
     samReloadedEdgesCount,
   ] = await Promise.all([
-    jon.loadFriendsEdges(),
-    jon.loadFriendsRawCountX(),
-    dany.loadFriendsEdges(),
-    dany.loadFriendsRawCountX(),
-    sam.loadFriendsRawCountX(),
+    jon.queryFriends().queryEdges(),
+    jon.queryFriends().queryRawCount(),
+    dany.queryFriends().queryEdges(),
+    dany.queryFriends().queryRawCount(),
+    sam.queryFriends().queryRawCount(),
   ]);
   expect(jonReloadedEdges.length).toBe(0);
   expect(jonReloadedEdgesCount).toBe(0);
@@ -332,10 +332,10 @@ test("inverse edge", async () => {
   const event = await action.saveX();
 
   const [edges, edgesCount, edges2, edges2Count] = await Promise.all([
-    event.loadInvitedEdges(),
-    event.loadInvitedRawCountX(),
-    user.loadInvitedEventsEdges(),
-    user.loadInvitedEventsRawCountX(),
+    event.queryInvited().queryEdges(),
+    event.queryInvited().queryRawCount(),
+    user.queryInvitedEvents().queryEdges(),
+    user.queryInvitedEvents().queryRawCount(),
   ]);
   expect(edges.length).toBe(1);
   expect(edgesCount).toBe(1);
@@ -362,7 +362,7 @@ test("inverse edge", async () => {
   const loadedEvent = await Event.load(v, event.id);
   expect(loadedEvent).not.toBe(null);
 
-  const invitedEvents = await user.loadInvitedEvents();
+  const invitedEvents = await user.queryInvitedEvents().queryEnts();
   expect(invitedEvents.length).toBe(1);
   expect(invitedEvents[0].id).toBe(loadedEvent?.id);
 });
@@ -381,7 +381,7 @@ test("one-way + inverse edge", async () => {
 
   // setting the creator id field also sets edge from user -> created event
   // because of the configuration
-  const edges = await user.loadCreatedEventsEdges();
+  const edges = await user.queryCreatedEvents().queryEdges();
   expect(edges.length).toBe(1);
   verifyEdge(edges[0], {
     id1: user.id,
@@ -495,7 +495,7 @@ test("uniqueEdge|Node", async () => {
   jon = await User.loadX(vc, jon.id);
 
   // jon was created as his own contact
-  let contacts = await jon.loadContacts();
+  let contacts = await jon.queryContacts().queryEnts();
   expect(contacts.length).toBe(1);
   let contact = contacts[0];
 
@@ -528,11 +528,11 @@ test("uniqueEdge|Node", async () => {
   const jonFromHimself = await User.loadX(v, jon.id);
   const [jonContact, allContacts] = await Promise.all([
     jonFromHimself.loadSelfContact(),
-    jonFromHimself.loadContacts(),
+    jonFromHimself.queryContacts().queryEnts(),
   ]);
   expect(jonContact).not.toBe(null);
   expect(jonContact?.id).toBe(contact.id);
-  expect(allContacts?.length).toBe(2);
+  expect(allContacts.length).toBe(2);
 
   // sansa can load jon because friends but can't load his contact
   const v2 = new IDViewer(sansa.id);
@@ -607,8 +607,7 @@ describe("edit email", () => {
       newEmail: newEmail,
     }).saveX();
 
-    // TODO we need an API that returns the raw data for these things...
-    const authCodes = await user.loadAuthCodes();
+    const authCodes = await user.queryAuthCodes().queryEdges();
     // TODO need to verify right code
     expect(authCodes.length).toEqual(1);
     const comms = FakeComms.getSent(newEmail, Mode.EMAIL);
@@ -635,8 +634,8 @@ describe("edit email", () => {
     expect(user.emailAddress).toEqual(newEmail);
 
     //should have been deleted now
-    const authCodes2 = await user.loadAuthCodes();
-    expect(authCodes2.length).toEqual(0);
+    const count = await user.queryAuthCodes().queryRawCount();
+    expect(count).toEqual(0);
   });
 
   test("invalid code confirmed", async () => {
@@ -711,8 +710,7 @@ describe("edit phone number", () => {
       newPhoneNumber: newPhoneNumber,
     }).saveX();
 
-    // TODO we need an API that returns the raw data for these things...
-    const authCodes = await user.loadAuthCodes();
+    const authCodes = await user.queryAuthCodes().queryEdges();
     // TODO need to verify right code
     expect(authCodes.length).toEqual(1);
     const comms = FakeComms.getSent(newPhoneNumber, Mode.SMS);
@@ -742,8 +740,8 @@ describe("edit phone number", () => {
     expect(user.phoneNumber).toEqual(newPhoneNumber);
 
     //should have been deleted now
-    const authCodes2 = await user.loadAuthCodes();
-    expect(authCodes2.length).toEqual(0);
+    const count = await user.queryAuthCodes().queryRawCount();
+    expect(count).toEqual(0);
   });
 
   test("invalid code confirmed", async () => {

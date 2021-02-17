@@ -1161,16 +1161,17 @@ export async function loadRawEdgeCountX(
   return parseInt(row["count"], 10);
 }
 
-interface loadEdgeForIDOptions extends loadEdgesOptions {
+interface loadEdgeForIDOptions<T extends AssocEdge>
+  extends loadCustomEdgesOptions<T> {
   id2: ID;
 }
 
-export async function loadEdgeForID2(
-  options: loadEdgeForIDOptions,
-): Promise<AssocEdge | undefined> {
+export async function loadEdgeForID2<T extends AssocEdge>(
+  options: loadEdgeForIDOptions<T>,
+): Promise<T | undefined> {
   // TODO at some point, same as in go, we can be smart about this and have heuristics to determine if we fetch everything here or not
   // we're assuming a cache here but not always true and this can be expensive if not...
-  const edges = await loadEdges(options);
+  const edges = await loadCustomEdges(options);
   return edges.find((edge) => edge.id2 == options.id2);
 }
 
@@ -1217,7 +1218,7 @@ export async function applyPrivacyPolicyForRowX<T extends Ent>(
   return await applyPrivacyPolicyForEntX(viewer, ent);
 }
 
-async function applyPrivacyPolicyForRows<T extends Ent>(
+export async function applyPrivacyPolicyForRows<T extends Ent>(
   viewer: Viewer,
   rows: Data[],
   options: LoadEntOptions<T>,
@@ -1249,6 +1250,7 @@ async function loadEdgeWithConst<T extends string>(
     id2: id2,
     edgeType: edgeType,
     context: viewer.context,
+    ctr: AssocEdge,
   });
   return [edgeEnum, edge];
 }

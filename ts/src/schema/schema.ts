@@ -25,6 +25,8 @@ export default interface Schema {
   // constraints applied to the schema e.g. multi-fkey, multi-column unique keys, join table primary keys etc
   constraints?: Constraint[];
 
+  indices?: Index[];
+
   // hide a node from graphql
   // this automatically hides all related actions to it from graphql
   // AND hides all edges pointing to it since we can't return this object
@@ -171,6 +173,18 @@ export interface Type {
   values?: string[]; // values e.g. enum values
 }
 
+export interface ForeignKey {
+  schema: string;
+  column: string;
+  name?: string; // optional but if we have multiple foreign keys to the same schema, it becomes required for all but one
+  // defaults to pluralize(schema) if not provided
+}
+
+export interface FieldEdge {
+  schema: string;
+  inverseEdge: string;
+}
+
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
@@ -184,8 +198,8 @@ export interface FieldOptions {
   private?: boolean;
   graphqlName?: string;
   index?: boolean;
-  foreignKey?: [string, string];
-  fieldEdge?: [string, string]; // replaces fieldEdge above...
+  foreignKey?: ForeignKey;
+  fieldEdge?: FieldEdge;
   primaryKey?: boolean; // can only have one in a schema. Node provides id as default primary key in a schema
 
   // indicates that this can't be edited by the user
@@ -338,6 +352,12 @@ export interface Constraint {
   columns: string[];
   fkey?: ForeignKeyInfo;
   condition?: string; // only applies in check constraint
+}
+
+export interface Index {
+  name: string;
+  columns: string[];
+  unique?: boolean; // can also create a unique constraint this way because why not...
 }
 
 export interface ForeignKeyInfo {

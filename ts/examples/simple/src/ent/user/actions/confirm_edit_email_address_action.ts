@@ -16,7 +16,7 @@ async function findAuthCode(
   emailAddress: string,
 ) {
   const user = await User.loadX(builder.viewer, builder.viewer.viewerID!);
-  const authCodes = await user.loadAuthCodes();
+  const authCodes = await user.queryAuthCodes().queryEnts();
   return authCodes.find(
     (authCode) =>
       authCode.code == code && authCode.emailAddress == emailAddress,

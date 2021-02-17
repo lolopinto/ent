@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/internal/edge"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -151,15 +152,16 @@ func newFieldFromInput(f *input.Field) (*Field, error) {
 
 	if f.ForeignKey != nil {
 		ret.fkey = &ForeignKeyInfo{
-			Config: getConfigName(f.ForeignKey[0]),
-			Field:  f.ForeignKey[1],
+			Config: getConfigName(f.ForeignKey.Schema),
+			Field:  f.ForeignKey.Column,
+			Name:   f.ForeignKey.Name,
 		}
 	}
 
 	if f.FieldEdge != nil {
 		ret.fieldEdge = &base.FieldEdgeInfo{
-			Config:   getConfigName(f.FieldEdge[0]),
-			EdgeName: f.FieldEdge[1],
+			Config:   getConfigName(f.FieldEdge.Schema),
+			EdgeName: f.FieldEdge.InverseEdge,
 		}
 	}
 
@@ -242,8 +244,13 @@ func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(edgeInfo *edge.EdgeInfo, node
 	if fkeyInfo == nil {
 		panic(fmt.Errorf("invalid field %s added", f.FieldName))
 	}
+	edgeName := fkeyInfo.Name
+	if edgeName == "" {
+		edgeName = inflection.Plural(nodeName)
+	}
 	edgeInfo.AddForeignKeyEdgeFromInverseFieldInfo(
 		f.GetQuotedDBColName(),
+		edgeName,
 		nodeName,
 	)
 }

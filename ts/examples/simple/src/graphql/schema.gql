@@ -29,7 +29,7 @@ type User implements Node {
   maybeEvents(first: Int, after: String, last: Int, before: String): UserToMaybeEventsConnection!
   selfContact: Contact
   userToHostedEvents(first: Int, after: String, last: Int, before: String): UserToHostedEventsConnection!
-  contacts: [Contact!]!
+  contacts(first: Int, after: String, last: Int, before: String): UserToContactsConnection!
   fullName: String!
   bar: String
   contactSameDomain: Contact
@@ -148,10 +148,10 @@ type EventToMaybeEdge implements Edge {
 }
 
 enum EventRsvpStatus {
-  DECLINED
-  MAYBE
   INVITED
   ATTENDING
+  DECLINED
+  MAYBE
   CAN_RSVP
 }
 
@@ -233,6 +233,18 @@ type UserToHostedEventsConnection implements Connection {
 
 type UserToHostedEventsEdge implements Edge {
   node: Event!
+  cursor: String!
+}
+
+type UserToContactsConnection implements Connection {
+  edges: [UserToContactsEdge!]!
+  nodes: [Contact!]!
+  pageInfo: PageInfo!
+  rawCount: Int!
+}
+
+type UserToContactsEdge implements Edge {
+  node: Contact!
   cursor: String!
 }
 

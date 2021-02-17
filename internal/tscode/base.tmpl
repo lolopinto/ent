@@ -291,7 +291,7 @@ export class {{$baseClass}} {
         });
       }
 
-      load{{$edgeName}}(): Promise<{{.Node}} | null> {
+      load{{$edgeName}}(): Promise<{{useImport .Node}} | null> {
         return {{useImport "loadUniqueNode"}}(
           this.viewer, 
           this.id, 
@@ -301,38 +301,10 @@ export class {{$baseClass}} {
       }
 
      {{ else -}}
-      load{{$edgeName}}Edges():Promise<{{$assocEdgeType}}[]> {
-        return {{useImport "loadEdges"}}({
-          id1:this.id, 
-          edgeType: {{$edgeType}}.{{$edge.TsEdgeConst}},
-          context: this.viewer.context,
-        });
-      }
-
-      load{{$edgeName}}():Promise<{{useImport .Node}}[]> {
-        return {{useImport "loadNodesByEdge"}}(
-          this.viewer, 
-          this.id, 
-          {{$edgeType}}.{{$edge.TsEdgeConst}}, 
-          {{useImport .Node}}.loaderOptions(),
-        );
-      }
-
-      load{{$edgeName}}RawCountX():Promise<number> {
-        return {{useImport "loadRawEdgeCountX"}}({
-          id1: this.id, 
-          edgeType: {{$edgeType}}.{{$edge.TsEdgeConst}},
-          context: this.viewer.context,
-        });
-      }
-
-      load{{$edge.Singular}}EdgeFor(id2: {{$idType}}):Promise<{{$assocEdgeType}}|undefined> {
-        return {{useImport "loadEdgeForID2"}}({
-          id1: this.id, 
-          edgeType: {{$edgeType}}.{{$edge.TsEdgeConst}}, 
-          id2,
-          context: this.viewer.context,
-        });
+      {{$queryName := useImport $edge.TsEdgeQueryName -}}
+      query{{$edgeName}}(): {{$queryName}} {
+        {{/* TODO change entquery to NodeBase and use this instead of id here? */}}
+        return {{$queryName}}.query(this.viewer, this.id);
       }
      {{end}}
     {{end -}}
@@ -340,21 +312,12 @@ export class {{$baseClass}} {
 
   {{ range $edge := .EdgeInfo.ForeignKeys -}}
     {{$edgeName := .CamelCaseEdgeName -}}
-    {{with .NodeInfo -}}
-      async load{{$edgeName}}(): Promise<{{useImport .Node}}[]> {
-        let map = await {{useImport "loadEntsFromClause"}}(
-          this.viewer, 
-          {{useImport "query"}}.Eq({{$edge.QuotedDBColName}}, this.id), 
-          {{useImport .Node}}.loaderOptions(),
-        );
-        let results: {{useImport .Node}}[] = [];
-        map.forEach((ent) => {
-          results.push(ent);
-        })
-        return results;
+    {{$queryName := useImport .TsEdgeQueryName -}}
+      query{{$edgeName}}(): {{$queryName}} {
+        {{/* TODO change entquery to NodeBase and use this instead of id here? */}}
+        return {{$queryName}}.query(this.viewer, this.id);
       }
 
-    {{end -}}
   {{end -}}
 
   {{ range $edge := .EdgeInfo.IndexedEdges -}}

@@ -5,6 +5,7 @@ import {
   User,
   Event,
   Contact,
+  AuthCode,
   EventToAttendingQuery,
   EventToDeclinedQuery,
   EventToHostsQuery,
@@ -27,9 +28,16 @@ import {
   UserToSelfContactEdge,
   UserToHostedEventsEdge,
 } from "src/ent/internal";
-import { Viewer, EdgeQuerySource, BaseEdgeQuery } from "@lolopinto/ent";
+import {
+  ID,
+  Viewer,
+  EdgeQuerySource,
+  AssocEdgeQueryBase,
+  CustomEdgeQueryBase,
+  query,
+} from "@lolopinto/ent";
 
-export class UserToCreatedEventsQueryBase extends BaseEdgeQuery<
+export class UserToCreatedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToCreatedEventsEdge
@@ -73,7 +81,7 @@ export class UserToCreatedEventsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToDeclinedEventsQueryBase extends BaseEdgeQuery<
+export class UserToDeclinedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToDeclinedEventsEdge
@@ -117,7 +125,7 @@ export class UserToDeclinedEventsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToEventsAttendingQueryBase extends BaseEdgeQuery<
+export class UserToEventsAttendingQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToEventsAttendingEdge
@@ -161,7 +169,7 @@ export class UserToEventsAttendingQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToFriendsQueryBase extends BaseEdgeQuery<
+export class UserToFriendsQueryBase extends AssocEdgeQueryBase<
   User,
   User,
   UserToFriendsEdge
@@ -217,7 +225,7 @@ export class UserToFriendsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToInvitedEventsQueryBase extends BaseEdgeQuery<
+export class UserToInvitedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToInvitedEventsEdge
@@ -261,7 +269,7 @@ export class UserToInvitedEventsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToMaybeEventsQueryBase extends BaseEdgeQuery<
+export class UserToMaybeEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToMaybeEventsEdge
@@ -305,7 +313,7 @@ export class UserToMaybeEventsQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToSelfContactQueryBase extends BaseEdgeQuery<
+export class UserToSelfContactQueryBase extends AssocEdgeQueryBase<
   User,
   Contact,
   UserToSelfContactEdge
@@ -329,7 +337,7 @@ export class UserToSelfContactQueryBase extends BaseEdgeQuery<
   }
 }
 
-export class UserToHostedEventsQueryBase extends BaseEdgeQuery<
+export class UserToHostedEventsQueryBase extends AssocEdgeQueryBase<
   User,
   Event,
   UserToHostedEventsEdge
@@ -370,5 +378,45 @@ export class UserToHostedEventsQueryBase extends BaseEdgeQuery<
 
   queryMaybe(): EventToMaybeQuery {
     return EventToMaybeQuery.query(this.viewer, this);
+  }
+}
+
+export class UserToAuthCodesQueryBase extends CustomEdgeQueryBase<AuthCode> {
+  constructor(viewer: Viewer, src: User | ID) {
+    let id: ID;
+    if (typeof src === "object") {
+      id = src.id;
+    } else {
+      id = src;
+    }
+    super(viewer, src, AuthCode.loaderOptions(), query.Eq("user_id", id));
+  }
+
+  static query<T extends UserToAuthCodesQueryBase>(
+    this: new (viewer: Viewer, src: User | ID) => T,
+    viewer: Viewer,
+    src: User | ID,
+  ): T {
+    return new this(viewer, src);
+  }
+}
+
+export class UserToContactsQueryBase extends CustomEdgeQueryBase<Contact> {
+  constructor(viewer: Viewer, src: User | ID) {
+    let id: ID;
+    if (typeof src === "object") {
+      id = src.id;
+    } else {
+      id = src;
+    }
+    super(viewer, src, Contact.loaderOptions(), query.Eq("user_id", id));
+  }
+
+  static query<T extends UserToContactsQueryBase>(
+    this: new (viewer: Viewer, src: User | ID) => T,
+    viewer: Viewer,
+    src: User | ID,
+  ): T {
+    return new this(viewer, src);
   }
 }

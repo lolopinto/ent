@@ -88,7 +88,7 @@ export {
   AllowIfConditionAppliesRule,
   AllowIfSubPolicyAllowsRule,
 } from "./core/privacy";
-export { BaseEdgeQuery, EdgeQuerySource } from "./core/query";
+export * from "./core/query";
 
 export * from "./schema/";
 import * as q from "./core/clause";

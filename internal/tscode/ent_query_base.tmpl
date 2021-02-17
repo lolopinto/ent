@@ -1,5 +1,5 @@
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
-{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge"}}
+{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query"}}
 {{$importPath := .Package.InternalImportPath -}}
 
 {{$schema := .Schema}}
@@ -23,7 +23,7 @@
     {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
     {{$thisType := printf "new (viewer: Viewer, src: EdgeQuerySource<%s>) => T" $node }}
 
-  export class {{$name}} extends {{useImport "BaseEdgeQuery"}}<{{$node}}, {{useImport .NodeInfo.Node}}, {{$edgeName}}> {
+  export class {{$name}} extends {{useImport "AssocEdgeQueryBase"}}<{{$node}}, {{useImport .NodeInfo.Node}}, {{$edgeName}}> {
     constructor(viewer: {{useImport "Viewer"}}, src: {{useImport "EdgeQuerySource"}}<{{$node}}>) {
       super(viewer, src, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}}, {{useImport .NodeInfo.Node}}.loaderOptions(), {{$edgeName}});
     }
@@ -46,4 +46,32 @@
     {{ end -}}
   }
   {{end}}
+
+  {{range $edge := .EdgeInfo.ForeignKeys -}}
+    {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
+    {{$srcNode := useImport $edge.SourceNodeName -}}
+    {{$node := useImport $edge.NodeInfo.Node -}}
+    {{$thisType := printf "new (viewer: Viewer, src: %s | ID ) => T" $srcNode }}
+
+    export class {{$name}} extends {{useImport "CustomEdgeQueryBase"}}<{{$node}}> {
+      constructor(viewer: {{useImport "Viewer"}}, src: {{$srcNode}} | {{useImport "ID"}}) {
+        let id: {{useImport "ID"}};
+        if (typeof src === "object") {
+          id = src.id;
+        } else {
+          id = src;
+        }
+        super(viewer, src, {{$node}}.loaderOptions(), {{useImport "query"}}.Eq({{$edge.QuotedDBColName}}, id));
+      }
+
+      static query<T extends {{$name}}>(
+        this: {{$thisType}},
+        viewer: {{useImport "Viewer"}},
+        src: {{$srcNode}} | {{useImport "ID"}},
+      ): T {
+        return new this(viewer, src);
+      }
+    }
+
+  {{end }}
 {{end -}}

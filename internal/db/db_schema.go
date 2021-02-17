@@ -203,6 +203,8 @@ func (constraint *uniqueConstraint) getColumns() []*dbColumn {
 type indexConstraint struct {
 	dbColumns []*dbColumn
 	tableName string
+	unique    bool
+	name      string
 }
 
 func (constraint *indexConstraint) getConstraintString() string {
@@ -214,15 +216,23 @@ func (constraint *indexConstraint) getConstraintString() string {
 		idxNameParts = append(idxNameParts, col.DBColName)
 		colNames = append(colNames, strconv.Quote(col.DBColName))
 	}
-	idxNameParts = append(idxNameParts, "idx")
 
-	fields := []string{
-		strconv.Quote(getNameFromParts(idxNameParts)),
+	idxName := constraint.name
+	if idxName == "" {
+		idxNameParts = append(idxNameParts, "idx")
+		idxName = getNameFromParts(idxNameParts)
 	}
-	fields = append(fields, colNames...)
+
+	args := []string{
+		strconv.Quote(idxName),
+	}
+	args = append(args, colNames...)
+	if constraint.unique {
+		args = append(args, "unique=True")
+	}
 
 	return fmt.Sprintf(
-		"sa.Index(%s)", strings.Join(fields, ", "),
+		"sa.Index(%s)", strings.Join(args, ", "),
 	)
 }
 
@@ -289,28 +299,41 @@ func (s *dbSchema) createTableForNode(nodeData *schema.NodeData) *dbTable {
 func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbColumn, constraints *[]dbConstraint) {
 	for _, constraint := range nodeData.Constraints {
 		switch constraint.Type {
-		case input.PrimaryKey:
+		case input.PrimaryKeyConstraint:
 			err := s.addPrimaryKeyConstraint(nodeData, constraint, columns, constraints)
 			util.Die(err)
 			break
 
-		case input.Unique:
+		case input.UniqueConstraint:
 			err := s.addUniqueConstraint(nodeData, constraint, columns, constraints)
 			util.Die(err)
 			break
 
-		case input.ForeignKey:
+		case input.ForeignKeyConstraint:
 			err := s.addForeignKeyConstraint(nodeData, constraint, columns, constraints)
 			util.Die(err)
 			break
 
-		case input.Check:
+		case input.CheckConstraint:
 			err := s.addCheckConstraint(nodeData, constraint, constraints)
 			util.Die(err)
 
 		default:
 			util.Die(fmt.Errorf("unsupported constraint type %s", constraint.Type))
 		}
+	}
+
+	// let's just use exising constraint for this
+	for _, index := range nodeData.Indices {
+		cols, err := findConstraintDBColumns(index.Columns, columns)
+		util.Die(err)
+		constraint := &indexConstraint{
+			dbColumns: cols,
+			tableName: nodeData.GetTableName(),
+			unique:    index.Unique,
+			name:      index.Name,
+		}
+		*constraints = append(*constraints, constraint)
 	}
 }
 
@@ -688,10 +711,10 @@ func findColumn(columns []*dbColumn, name string) *dbColumn {
 	return nil
 }
 
-func findConstraintDBColumns(inputConstraint *input.Constraint, columns []*dbColumn) ([]*dbColumn, error) {
+func findConstraintDBColumns(constraintCols []string, columns []*dbColumn) ([]*dbColumn, error) {
 	var dbColumns []*dbColumn
 
-	for _, col := range inputConstraint.Columns {
+	for _, col := range constraintCols {
 		dbColumn := findColumn(columns, col)
 		if dbColumn == nil {
 			return nil, fmt.Errorf("couldn't find column with name %s", col)
@@ -702,7 +725,7 @@ func findConstraintDBColumns(inputConstraint *input.Constraint, columns []*dbCol
 }
 
 func (s *dbSchema) addPrimaryKeyConstraint(nodeData *schema.NodeData, inputConstraint *input.Constraint, columns []*dbColumn, constraints *[]dbConstraint) error {
-	dbColumns, err := findConstraintDBColumns(inputConstraint, columns)
+	dbColumns, err := findConstraintDBColumns(inputConstraint.Columns, columns)
 
 	if err != nil {
 		return err
@@ -729,7 +752,7 @@ func (s *dbSchema) addForeignKeyConstraint(nodeData *schema.NodeData, inputConst
 		return fmt.Errorf("couldn't find table %s", fkeyTableName)
 	}
 
-	dbColumns, err := findConstraintDBColumns(inputConstraint, columns)
+	dbColumns, err := findConstraintDBColumns(inputConstraint.Columns, columns)
 	if err != nil {
 		return err
 	}
@@ -768,7 +791,7 @@ func (s *dbSchema) addForeignKeyConstraint(nodeData *schema.NodeData, inputConst
 }
 
 func (s *dbSchema) addUniqueConstraint(nodeData *schema.NodeData, inputConstraint *input.Constraint, columns []*dbColumn, constraints *[]dbConstraint) error {
-	dbColumns, err := findConstraintDBColumns(inputConstraint, columns)
+	dbColumns, err := findConstraintDBColumns(inputConstraint.Columns, columns)
 
 	if err != nil {
 		return err

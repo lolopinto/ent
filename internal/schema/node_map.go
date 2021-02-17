@@ -597,7 +597,7 @@ func (m NodeMapInfo) processConstraints(s *Schema, nodeData *NodeData) {
 	// verify constraints are correct
 	for _, constraint := range nodeData.Constraints {
 		switch constraint.Type {
-		case input.ForeignKey:
+		case input.ForeignKeyConstraint:
 			if constraint.ForeignKey == nil {
 				panic("ForeignKey cannot be nil when type is ForeignKey")
 			}
@@ -605,16 +605,16 @@ func (m NodeMapInfo) processConstraints(s *Schema, nodeData *NodeData) {
 				panic("Foreign Key column length should be equal to the length of source columns")
 			}
 			break
-		case input.Check:
+		case input.CheckConstraint:
 			if constraint.Condition == "" {
 				panic("Condition is required when constraint type is Check")
 			}
 		}
 
-		if constraint.Condition != "" && constraint.Type != input.Check {
+		if constraint.Condition != "" && constraint.Type != input.CheckConstraint {
 			panic("Condition can only be set when constraint is check type")
 		}
-		if constraint.ForeignKey != nil && constraint.Type != input.ForeignKey {
+		if constraint.ForeignKey != nil && constraint.Type != input.ForeignKeyConstraint {
 			panic("ForeignKey can only be set when constraint is ForeignKey type")
 		}
 	}
@@ -628,7 +628,7 @@ func (m NodeMapInfo) processConstraints(s *Schema, nodeData *NodeData) {
 		if f.SingleFieldPrimaryKey() {
 			constraints = append(constraints, &input.Constraint{
 				Name:    GetPrimaryKeyName(tableName, f.GetDbColName()),
-				Type:    input.PrimaryKey,
+				Type:    input.PrimaryKeyConstraint,
 				Columns: cols,
 			})
 		}
@@ -636,7 +636,7 @@ func (m NodeMapInfo) processConstraints(s *Schema, nodeData *NodeData) {
 		if f.Unique() {
 			constraints = append(constraints, &input.Constraint{
 				Name:    GetUniqueKeyName(tableName, f.GetDbColName()),
-				Type:    input.Unique,
+				Type:    input.UniqueConstraint,
 				Columns: cols,
 			})
 		}
@@ -671,7 +671,7 @@ func (m NodeMapInfo) processConstraints(s *Schema, nodeData *NodeData) {
 			}
 			constraints = append(constraints, &input.Constraint{
 				Name:    GetFKeyName(nodeData.TableName, f.GetDbColName()),
-				Type:    input.ForeignKey,
+				Type:    input.ForeignKeyConstraint,
 				Columns: cols,
 				ForeignKey: &input.ForeignKeyInfo{
 					TableName: foreignNodeData.TableName,
@@ -862,15 +862,11 @@ func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base
 		}
 
 		for _, group := range nodeData.EdgeInfo.AssocGroups {
-			values := group.GetStatusValues()
-			for _, v := range group.NullStates {
-				values = append(values, v)
-			}
 			s.addEnumFrom(
 				group.ConstType,
 				group.ConstType,
 				fmt.Sprintf("%s!", group.ConstType),
-				values,
+				group.GetEnumValues(),
 				nodeData,
 				nil,
 			)
@@ -884,6 +880,7 @@ func (m NodeMapInfo) parseInputSchema(s *Schema, schema *input.Schema, lang base
 		nodeData.EnumTable = node.EnumTable
 		nodeData.DBRows = node.DBRows
 		nodeData.Constraints = node.Constraints
+		nodeData.Indices = node.Indices
 		nodeData.HideFromGraphQL = node.HideFromGraphQL
 
 		// not in schema.Nodes...

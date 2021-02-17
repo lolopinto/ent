@@ -762,7 +762,7 @@ func TestMultiColumnUniqueKey(t *testing.T) {
 						}),
 						UUIDType({
 							name: "userID",
-							foreignKey: ["User", "ID"],
+							foreignKey: {schema: "User", column:"ID"},
 						}),
 					];
 
@@ -927,6 +927,20 @@ func TestPolymorphicField(t *testing.T) {
 	dbSchema := getSchemaFromCode(
 		t,
 		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+				import {Field, StringType, BaseEntSchema} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'firstName',
+						}),
+						StringType({
+							name: 'lastName',
+						}),
+					];
+				}
+			`),
 			"address.ts": testhelper.GetCodeWithSchema(`
 		import {Schema, Field, StringType, UUIDType} from "{schema}";
 
@@ -966,6 +980,31 @@ func TestPolymorphicFieldWithRestrictedTypes(t *testing.T) {
 	dbSchema := getSchemaFromCode(
 		t,
 		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+				import {Field, StringType, BaseEntSchema} from "{schema}";
+
+				export default class User extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'firstName',
+						}),
+						StringType({
+							name: 'lastName',
+						}),
+					];
+				}
+			`),
+			"location.ts": testhelper.GetCodeWithSchema(`
+				import {Field, StringType, BaseEntSchema} from "{schema}";
+
+				export default class Location extends BaseEntSchema {
+					fields: Field[] = [
+						StringType({
+							name: 'location',
+						}),
+					];
+				}
+			`),
 			"address.ts": testhelper.GetCodeWithSchema(`
 		import {Schema, Field, StringType, UUIDType} from "{schema}";
 
@@ -1001,6 +1040,111 @@ func TestPolymorphicFieldWithRestrictedTypes(t *testing.T) {
 		"OwnerType",
 		"owner_type",
 		[]string{strconv.Quote("owner_type"), "sa.Text()", "nullable=False"},
+	)
+}
+
+func TestMultiColumnIndex(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"contact.ts": testhelper.GetCodeWithSchema(`
+					import {BaseEntSchema, Field, StringType, Index} from "{schema}";
+
+					export default class Contact extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: "firstName",
+							}),
+							StringType({
+								name: "lastName",
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "contacts_name_index",
+								columns: ["firstName", "lastName"],
+							},
+						];
+					}
+				`),
+		},
+	)
+
+	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 2)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "firstName", "lastName")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, %s)", strconv.Quote("contacts_name_index"), strconv.Quote("first_name"), strconv.Quote("last_name")),
+	)
+}
+
+func TestMultiColumnUniqueIndex(t *testing.T) {
+	dbSchema := getSchemaFromCode(
+		t,
+		map[string]string{
+			"user.ts": testhelper.GetCodeWithSchema(`
+					import {Field, StringType, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+						];
+					}
+				`),
+			"contact.ts": testhelper.GetCodeWithSchema(`
+					import {BaseEntSchema, Field, UUIDType, StringType, Index} from "{schema}";
+
+					export default class Contact extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: "firstName",
+							}),
+							StringType({
+								name: "lastName",
+							}),
+							// this *should* be EmailType but not worth it
+							StringType({
+								name: "emailAddress",
+							}),
+							UUIDType({
+								name: "userID",
+								foreignKey: {schema: "User", column:"ID"},
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "contacts_unique_email",
+								columns: ["emailAddress", "userID"],
+								unique: true,
+							},
+						];
+					}
+				`),
+		},
+	)
+
+	table := getTestTableFromSchema("ContactConfig", dbSchema, t)
+	constraints := table.Constraints
+	require.Len(t, constraints, 3)
+
+	constraint := getTestIndexedConstraintFromTable(t, table, "emailAddress", "userID")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, %s, unique=True)", strconv.Quote("contacts_unique_email"), strconv.Quote("email_address"), strconv.Quote("user_id")),
 	)
 }
 
@@ -1245,6 +1389,17 @@ func getTestUniqueKeyConstraintFromTable(t *testing.T, table *dbTable, colFieldN
 		}
 	}
 	t.Errorf("no unique constraint in table %s for column(s) %v", table.QuotedTableName, colFieldName)
+	return nil
+}
+
+func getTestIndexedConstraintFromTable(t *testing.T, table *dbTable, colFieldName ...string) dbConstraint {
+	for _, constraint := range table.Constraints {
+		indConstraint, ok := constraint.(*indexConstraint)
+		if ok && util.StringsEqual(getColNames(indConstraint.dbColumns), colFieldName) {
+			return indConstraint
+		}
+	}
+	t.Errorf("no index constraint in table %s for column(s) %v", table.QuotedTableName, colFieldName)
 	return nil
 }
 

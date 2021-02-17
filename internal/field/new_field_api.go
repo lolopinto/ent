@@ -201,7 +201,7 @@ var m = map[string]fn{
 			configName := args[0].Literal
 			fieldName := args[1].Literal
 
-			f.ForeignKey = &[2]string{configName, fieldName}
+			f.ForeignKey = &input.ForeignKey{Schema: configName, Column: fieldName}
 		})
 	},
 	"field.FieldEdge": func(f *input.Field, args astparser.Results) error {
@@ -209,7 +209,7 @@ var m = map[string]fn{
 			configName := args[0].Literal
 			edgeName := args[1].Literal
 
-			f.FieldEdge = &[2]string{configName, edgeName}
+			f.FieldEdge = &input.FieldEdge{Schema: configName, InverseEdge: edgeName}
 		})
 	},
 }

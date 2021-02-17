@@ -11,7 +11,7 @@
 
 export const {{ printf "%sType" $conn.Edge.GetGraphQLConnectionName}} = () => {
   return new {{useImport "GraphQLConnectionType"}}(
-   "{{$conn.Edge.TsEdgeConst}}",
+   "{{$conn.Edge.GetGraphQLEdgePrefix}}",
    {{useImport $conn.NodeType -}},
    {{ $obj := .CustomObject -}}
    {{ if $obj -}}
@@ -27,7 +27,7 @@ export const {{ printf "%sType" $conn.Edge.GetGraphQLConnectionName}} = () => {
     {{ end -}}
     {
       fields: (): {{useImport "GraphQLFieldConfigMap"}}<
-        {{useImport "GraphQLEdge"}}<{{useImport "EventActivityToAttendingEdge"}}>,
+        {{useImport "GraphQLEdge"}}<{{useImport $conn.Edge.TsEdgeQueryEdgeName}}>,
         {{useImport "RequestContext"}}
       > => ({
         {{ template "field.tmpl" (dict "Base" $baseObj "Node" $obj "NodeInstance" "edge") -}}

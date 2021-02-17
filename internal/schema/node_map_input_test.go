@@ -147,7 +147,7 @@ func TestParseInputWithForeignKey(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
-						ForeignKey: &[2]string{"User", "id"},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id"},
 					},
 				},
 			},
@@ -172,6 +172,236 @@ func TestParseInputWithForeignKey(t *testing.T) {
 
 	eventsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Events")
 	assert.NotNil(t, eventsEdge)
+}
+
+func TestParseInputWithForeignKeyWithCustomName(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+				},
+			},
+			"Event": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "UserID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id", Name: "CreatedEvents"},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	// still config name because of artifact of go and old schema
+	eventConfig := schema.Nodes["EventConfig"]
+	assert.NotNil(t, eventConfig)
+
+	userEdge := eventConfig.NodeData.EdgeInfo.GetFieldEdgeByName("User")
+	assert.NotNil(t, userEdge)
+
+	// still config name because of artifact of go and old schema
+	userConfig := schema.Nodes["UserConfig"]
+	assert.NotNil(t, userConfig)
+
+	// edge name is different since name was given
+	createdEventsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("CreatedEvents")
+	assert.NotNil(t, createdEventsEdge)
+}
+
+func TestMultipleForeignKeysDuplicateEdgeName(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+				},
+			},
+			"Request": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "CreatorID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id"},
+					},
+					{
+						Name: "HelperID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id"},
+					},
+				},
+			},
+		},
+	}
+
+	// panics because duplicate edge name since edgeName wasn't given for either
+	assert.Panics(t, func() {
+		schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	})
+}
+
+func TestMultipleForeignKeysOneEdgeName(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+				},
+			},
+			"Request": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "CreatorID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id"},
+					},
+					{
+						Name: "HelperID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id", Name: "helpedRequests"},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	// still config name because of artifact of go and old schema
+	requestConfig := schema.Nodes["RequestConfig"]
+	assert.NotNil(t, requestConfig)
+
+	helperEdge := requestConfig.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
+	assert.NotNil(t, helperEdge)
+
+	creatorEdge := requestConfig.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
+	assert.NotNil(t, creatorEdge)
+
+	// still config name because of artifact of go and old schema
+	userConfig := schema.Nodes["UserConfig"]
+	assert.NotNil(t, userConfig)
+
+	requestsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("Requests")
+	assert.NotNil(t, requestsEdge)
+
+	helpedRequestsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("helpedRequests")
+	assert.NotNil(t, helpedRequestsEdge)
+}
+
+func TestMultipleForeignKeys(t *testing.T) {
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"User": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+				},
+			},
+			"Request": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+					},
+					{
+						Name: "CreatorID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id", Name: "createdRequests"},
+					},
+					{
+						Name: "HelperID",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						ForeignKey: &input.ForeignKey{Schema: "User", Column: "id", Name: "helpedRequests"},
+					},
+				},
+			},
+		},
+	}
+
+	schema, err := schema.ParseFromInputSchema(inputSchema, base.GoLang)
+	require.Nil(t, err)
+	assert.Len(t, schema.Nodes, 2)
+
+	// still config name because of artifact of go and old schema
+	requestConfig := schema.Nodes["RequestConfig"]
+	assert.NotNil(t, requestConfig)
+
+	helperEdge := requestConfig.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
+	assert.NotNil(t, helperEdge)
+
+	creatorEdge := requestConfig.NodeData.EdgeInfo.GetFieldEdgeByName("Helper")
+	assert.NotNil(t, creatorEdge)
+
+	// still config name because of artifact of go and old schema
+	userConfig := schema.Nodes["UserConfig"]
+	assert.NotNil(t, userConfig)
+
+	requestsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("createdRequests")
+	assert.NotNil(t, requestsEdge)
+
+	helpedRequestsEdge := userConfig.NodeData.EdgeInfo.GetForeignKeyEdgeByName("helpedRequests")
+	assert.NotNil(t, helpedRequestsEdge)
 }
 
 func TestParseInputWithFieldEdge(t *testing.T) {
@@ -206,7 +436,7 @@ func TestParseInputWithFieldEdge(t *testing.T) {
 						Type: &input.FieldType{
 							DBType: input.UUID,
 						},
-						FieldEdge: &[2]string{"User", "CreatedEvents"},
+						FieldEdge: &input.FieldEdge{Schema: "User", InverseEdge: "CreatedEvents"},
 					},
 				},
 			},

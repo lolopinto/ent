@@ -1,6 +1,10 @@
-import { AssocEdge, Viewer } from "../../core/ent";
-import { BaseEdgeQuery, EdgeQuerySource } from "../../core/query";
-
+import { CustomEdgeQueryBase } from "../../core/query/custom_query";
+import { AssocEdge, Ent, ID, Viewer } from "../../core/ent";
+import {
+  AssocEdgeQueryBase,
+  EdgeQuerySource,
+} from "../../core/query/assoc_query";
+import * as clause from "../../core/clause";
 import {
   EdgeType,
   FakeUser,
@@ -13,7 +17,7 @@ import {
   EventToMaybeQuery,
 } from "./internal";
 
-export class UserToContactsQuery extends BaseEdgeQuery<
+export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,
   FakeContact,
   AssocEdge
@@ -36,7 +40,30 @@ export class UserToContactsQuery extends BaseEdgeQuery<
   }
 }
 
-export class UserToFriendsQuery extends BaseEdgeQuery<
+function getID(src: Ent | ID) {
+  if (typeof src === "object") {
+    return src.id;
+  } else {
+    return src;
+  }
+}
+
+export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<FakeContact> {
+  constructor(viewer: Viewer, src: ID | FakeUser) {
+    super(
+      viewer,
+      src,
+      FakeContact.loaderOptions(),
+      clause.Eq("user_id", getID(src)),
+    );
+  }
+
+  static query(viewer: Viewer, src: FakeUser | ID): UserToContactsFkeyQuery {
+    return new UserToContactsFkeyQuery(viewer, src);
+  }
+}
+
+export class UserToFriendsQuery extends AssocEdgeQueryBase<
   FakeUser,
   FakeUser,
   AssocEdge
@@ -86,7 +113,7 @@ export class CustomEdge extends AssocEdge {
   }
 }
 
-export class UserToCustomEdgeQuery extends BaseEdgeQuery<
+export class UserToCustomEdgeQuery extends AssocEdgeQueryBase<
   FakeUser,
   FakeUser,
   CustomEdge
@@ -125,7 +152,7 @@ export class UserToCustomEdgeQuery extends BaseEdgeQuery<
   }
 }
 
-export class UserToFriendRequestsQuery extends BaseEdgeQuery<
+export class UserToFriendRequestsQuery extends AssocEdgeQueryBase<
   FakeUser,
   FakeUser,
   AssocEdge
@@ -168,7 +195,7 @@ export class UserToFriendRequestsQuery extends BaseEdgeQuery<
   }
 }
 
-export class UserToIncomingFriendRequestsQuery extends BaseEdgeQuery<
+export class UserToIncomingFriendRequestsQuery extends AssocEdgeQueryBase<
   FakeUser,
   FakeUser,
   AssocEdge
@@ -211,7 +238,7 @@ export class UserToIncomingFriendRequestsQuery extends BaseEdgeQuery<
   }
 }
 
-export class UserToEventsAttendingQuery extends BaseEdgeQuery<
+export class UserToEventsAttendingQuery extends AssocEdgeQueryBase<
   FakeUser,
   FakeEvent,
   AssocEdge
@@ -250,7 +277,7 @@ export class UserToEventsAttendingQuery extends BaseEdgeQuery<
   }
 }
 
-export class UserToHostedEventsQuery extends BaseEdgeQuery<
+export class UserToHostedEventsQuery extends AssocEdgeQueryBase<
   FakeUser,
   FakeEvent,
   AssocEdge

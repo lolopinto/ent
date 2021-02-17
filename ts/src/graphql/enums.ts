@@ -1,7 +1,7 @@
 import { GraphQLEnumValue } from "graphql";
 
 export function convertToGQLEnum(
-  val: string,
+  val: string | null,
   tsValues: string[],
   gqlValues: GraphQLEnumValue[],
 ) {

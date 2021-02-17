@@ -292,7 +292,7 @@ func TestParseFields(t *testing.T) {
 				export default class Event extends BaseEntSchema implements Schema {
 					fields: Field[] = [
 						StringType({name: "name"}),
-						UUIDType({name: "creator_id", foreignKey: ["User", "ID"]}),
+						UUIDType({name: "creator_id", foreignKey: {schema:"User", column:"ID"}}),
 						TimestampType({name: "start_time"}),
 						TimestampType({name: "end_time", nullable: true}),
 						StringType({name: "location"}),
@@ -332,7 +332,7 @@ func TestParseFields(t *testing.T) {
 						field{
 							name:       "creator_id",
 							dbType:     input.UUID,
-							foreignKey: &[2]string{"User", "ID"},
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID"},
 						},
 						field{
 							name:   "start_time",

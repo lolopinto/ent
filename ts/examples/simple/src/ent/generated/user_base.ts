@@ -9,11 +9,6 @@ import {
   loadEnts,
   LoadEntOptions,
   AssocEdge,
-  loadEdges,
-  loadRawEdgeCountX,
-  loadNodesByEdge,
-  loadEdgeForID2,
-  loadEntsFromClause,
   loadEntFromClause,
   loadEntXFromClause,
   loadRow,
@@ -29,10 +24,16 @@ import { Field, getFields } from "@lolopinto/ent/schema";
 import {
   EdgeType,
   NodeType,
-  Event,
-  User,
   Contact,
-  AuthCode,
+  UserToCreatedEventsQuery,
+  UserToDeclinedEventsQuery,
+  UserToEventsAttendingQuery,
+  UserToFriendsQuery,
+  UserToInvitedEventsQuery,
+  UserToMaybeEventsQuery,
+  UserToHostedEventsQuery,
+  UserToAuthCodesQuery,
+  UserToContactsQuery,
 } from "src/ent/internal";
 import schema from "src/schema/user";
 
@@ -254,208 +255,28 @@ export class UserBase {
     return UserBase.getSchemaFields().get(key);
   }
 
-  loadCreatedEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.UserToCreatedEvents,
-      context: this.viewer.context,
-    });
+  queryCreatedEvents(): UserToCreatedEventsQuery {
+    return UserToCreatedEventsQuery.query(this.viewer, this.id);
   }
 
-  loadCreatedEvents(): Promise<Event[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.UserToCreatedEvents,
-      Event.loaderOptions(),
-    );
+  queryDeclinedEvents(): UserToDeclinedEventsQuery {
+    return UserToDeclinedEventsQuery.query(this.viewer, this.id);
   }
 
-  loadCreatedEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.UserToCreatedEvents,
-      context: this.viewer.context,
-    });
+  queryEventsAttending(): UserToEventsAttendingQuery {
+    return UserToEventsAttendingQuery.query(this.viewer, this.id);
   }
 
-  loadCreatedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToCreatedEvents,
-      id2,
-      context: this.viewer.context,
-    });
+  queryFriends(): UserToFriendsQuery {
+    return UserToFriendsQuery.query(this.viewer, this.id);
   }
 
-  loadDeclinedEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.UserToDeclinedEvents,
-      context: this.viewer.context,
-    });
+  queryInvitedEvents(): UserToInvitedEventsQuery {
+    return UserToInvitedEventsQuery.query(this.viewer, this.id);
   }
 
-  loadDeclinedEvents(): Promise<Event[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.UserToDeclinedEvents,
-      Event.loaderOptions(),
-    );
-  }
-
-  loadDeclinedEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.UserToDeclinedEvents,
-      context: this.viewer.context,
-    });
-  }
-
-  loadDeclinedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToDeclinedEvents,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
-  loadEventsAttendingEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.UserToEventsAttending,
-      context: this.viewer.context,
-    });
-  }
-
-  loadEventsAttending(): Promise<Event[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.UserToEventsAttending,
-      Event.loaderOptions(),
-    );
-  }
-
-  loadEventsAttendingRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.UserToEventsAttending,
-      context: this.viewer.context,
-    });
-  }
-
-  loadEventsAttendingEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToEventsAttending,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
-  loadFriendsEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.UserToFriends,
-      context: this.viewer.context,
-    });
-  }
-
-  loadFriends(): Promise<User[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.UserToFriends,
-      User.loaderOptions(),
-    );
-  }
-
-  loadFriendsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.UserToFriends,
-      context: this.viewer.context,
-    });
-  }
-
-  loadFriendEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToFriends,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
-  loadInvitedEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.UserToInvitedEvents,
-      context: this.viewer.context,
-    });
-  }
-
-  loadInvitedEvents(): Promise<Event[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.UserToInvitedEvents,
-      Event.loaderOptions(),
-    );
-  }
-
-  loadInvitedEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.UserToInvitedEvents,
-      context: this.viewer.context,
-    });
-  }
-
-  loadInvitedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToInvitedEvents,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
-  loadMaybeEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.UserToMaybeEvents,
-      context: this.viewer.context,
-    });
-  }
-
-  loadMaybeEvents(): Promise<Event[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.UserToMaybeEvents,
-      Event.loaderOptions(),
-    );
-  }
-
-  loadMaybeEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.UserToMaybeEvents,
-      context: this.viewer.context,
-    });
-  }
-
-  loadMaybeEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToMaybeEvents,
-      id2,
-      context: this.viewer.context,
-    });
+  queryMaybeEvents(): UserToMaybeEventsQuery {
+    return UserToMaybeEventsQuery.query(this.viewer, this.id);
   }
 
   loadSelfContactEdge(): Promise<AssocEdge | null> {
@@ -475,63 +296,15 @@ export class UserBase {
     );
   }
 
-  loadUserToHostedEventsEdges(): Promise<AssocEdge[]> {
-    return loadEdges({
-      id1: this.id,
-      edgeType: EdgeType.UserToHostedEvents,
-      context: this.viewer.context,
-    });
+  queryUserToHostedEvents(): UserToHostedEventsQuery {
+    return UserToHostedEventsQuery.query(this.viewer, this.id);
   }
 
-  loadUserToHostedEvents(): Promise<Event[]> {
-    return loadNodesByEdge(
-      this.viewer,
-      this.id,
-      EdgeType.UserToHostedEvents,
-      Event.loaderOptions(),
-    );
+  queryAuthCodes(): UserToAuthCodesQuery {
+    return UserToAuthCodesQuery.query(this.viewer, this.id);
   }
 
-  loadUserToHostedEventsRawCountX(): Promise<number> {
-    return loadRawEdgeCountX({
-      id1: this.id,
-      edgeType: EdgeType.UserToHostedEvents,
-      context: this.viewer.context,
-    });
-  }
-
-  loadUserToHostedEventEdgeFor(id2: ID): Promise<AssocEdge | undefined> {
-    return loadEdgeForID2({
-      id1: this.id,
-      edgeType: EdgeType.UserToHostedEvents,
-      id2,
-      context: this.viewer.context,
-    });
-  }
-
-  async loadAuthCodes(): Promise<AuthCode[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("user_id", this.id),
-      AuthCode.loaderOptions(),
-    );
-    let results: AuthCode[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
-  }
-
-  async loadContacts(): Promise<Contact[]> {
-    let map = await loadEntsFromClause(
-      this.viewer,
-      query.Eq("user_id", this.id),
-      Contact.loaderOptions(),
-    );
-    let results: Contact[] = [];
-    map.forEach((ent) => {
-      results.push(ent);
-    });
-    return results;
+  queryContacts(): UserToContactsQuery {
+    return UserToContactsQuery.query(this.viewer, this.id);
   }
 }

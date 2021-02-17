@@ -1,7 +1,7 @@
 import { fail } from "assert";
 import { advanceBy } from "jest-date-mock";
 import { IDViewer, LoggedOutViewer } from "../../core/viewer";
-import { ID, AssocEdge, loadEdgeData } from "../../core/ent";
+import { ID, AssocEdge, Data, loadEdgeData } from "../../core/ent";
 import { snakeCase } from "snake-case";
 import { createRowForTest } from "../write";
 
@@ -116,10 +116,9 @@ export async function createAllContacts(
 
 export function verifyUserToContactEdges(
   user: FakeUser,
-  edgesMap: Map<ID, AssocEdge[]>,
+  edges: AssocEdge[],
   contacts: FakeContact[],
 ) {
-  const edges = edgesMap.get(user.id) || [];
   expect(edges.length).toBe(contacts.length);
 
   for (let i = 0; i < contacts.length; i++) {
@@ -137,12 +136,34 @@ export function verifyUserToContactEdges(
   }
 }
 
-export function verifyUserToContacts(
+export function verifyUserToContactRawData(
   user: FakeUser,
-  entsMap: Map<ID, FakeContact[]>,
+  edges: Data[],
   contacts: FakeContact[],
 ) {
-  const ents = entsMap.get(user.id) || [];
+  expect(edges.length).toBe(contacts.length);
+
+  for (let i = 0; i < contacts.length; i++) {
+    const contact = contacts[i];
+    const edge = edges[i];
+    const expectedEdge = {
+      id: contact.id,
+      created_at: contact.createdAt,
+      updated_at: contact.updatedAt,
+      first_name: contact.firstName,
+      last_name: contact.lastName,
+      email_address: contact.emailAddress,
+      user_id: contact.userID,
+    };
+    expect(edge, `${i}th index`).toMatchObject(expectedEdge);
+  }
+}
+
+export function verifyUserToContacts(
+  user: FakeUser,
+  ents: FakeContact[],
+  contacts: FakeContact[],
+) {
   expect(ents.length).toBe(contacts.length);
   const expectedContacts = contacts.map((contact) => contact.id);
 

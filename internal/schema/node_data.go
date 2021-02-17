@@ -59,6 +59,8 @@ type NodeData struct {
 	tsEnums         []*enum.Enum
 	// fine to just reuse input constraints for now
 	Constraints []*input.Constraint
+	// same as above. fine to just reuse
+	Indices []*input.Index
 }
 
 func newNodeData(packageName string) *NodeData {
@@ -233,6 +235,19 @@ func (nodeData *NodeData) GetImportsForBaseFile() []ImportPath {
 				PackagePath: codepath.GetInternalImportPath(),
 			})
 		}
+	}
+
+	for _, edge := range nodeData.EdgeInfo.Associations {
+		ret = append(ret, ImportPath{
+			Import:      edge.TsEdgeQueryName(),
+			PackagePath: codepath.GetInternalImportPath(),
+		})
+	}
+	for _, edge := range nodeData.EdgeInfo.ForeignKeys {
+		ret = append(ret, ImportPath{
+			Import:      edge.TsEdgeQueryName(),
+			PackagePath: codepath.GetInternalImportPath(),
+		})
 	}
 	return ret
 }

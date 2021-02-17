@@ -4,7 +4,8 @@ import {
   Field,
   FieldOptions,
   PolymorphicOptions,
-  ForeignKeyInfo,
+  ForeignKey,
+  FieldEdge,
 } from "./schema";
 import { snakeCase } from "snake-case";
 
@@ -18,7 +19,7 @@ export abstract class BaseField {
   private?: boolean;
   graphqlName?: string;
   index?: boolean;
-  foreignKey?: [string, string];
+  foreignKey?: ForeignKey;
 
   // this should only be set on id fields. if set on other fields, it's currently ignored
   polymorphic?: boolean | PolymorphicOptions;

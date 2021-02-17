@@ -1,4 +1,4 @@
-import { UserBase } from "src/ent/internal";
+import { UserBase, UserToContactsQuery } from "src/ent/internal";
 import {
   PrivacyPolicy,
   AllowIfViewerRule,
@@ -60,7 +60,7 @@ export class User extends UserBase {
     }
     let [selfContactEdge, contacts] = await Promise.all([
       this.loadSelfContactEdge(),
-      this.loadContacts(),
+      this.queryContacts().queryEnts(),
     ]);
     return contacts!.find((contact) => {
       if (selfContactEdge?.id2 === contact.id) {
@@ -80,7 +80,7 @@ export class User extends UserBase {
     if (!domain) {
       return [];
     }
-    let contacts = await this.loadContacts();
+    let contacts = await this.queryContacts().queryEnts();
     return contacts.filter((contact) => {
       return domain === this.getDomainFromEmail(contact.emailAddress);
     });
@@ -97,7 +97,7 @@ export class User extends UserBase {
     if (!domain) {
       return null;
     }
-    let contacts = await this.loadContacts();
+    let contacts = await this.queryContacts().queryEnts();
     contacts = contacts.filter((contact) => {
       return (
         this.id !== contact.userID &&
@@ -123,7 +123,7 @@ export class User extends UserBase {
     if (!domain) {
       return [];
     }
-    let contacts = await this.loadContacts();
+    let contacts = await this.queryContacts().queryEnts();
     return contacts.map((contact) => {
       let contactDomain = this.getDomainFromEmail(contact.emailAddress);
       if (contactDomain === domain) {
@@ -146,7 +146,7 @@ export class User extends UserBase {
     if (!domain) {
       return null;
     }
-    let contacts = await this.loadContacts();
+    let contacts = await this.queryContacts().queryEnts();
     return contacts.map((contact) => {
       let contactDomain = this.getDomainFromEmail(contact.emailAddress);
       if (contactDomain === domain) {

@@ -134,7 +134,7 @@ class SearchResult {
 
     let results: SearchResult[] = [];
 
-    friendsEdge.get(user.id)?.forEach((edge) =>
+    friendsEdge.forEach((edge) =>
       results.push(
         new SearchResult({
           id: edge.id2,
@@ -142,7 +142,7 @@ class SearchResult {
         }),
       ),
     );
-    friendRequestsEdge.get(user.id)?.forEach((edge) =>
+    friendRequestsEdge.forEach((edge) =>
       results.push(
         new SearchResult({
           id: edge.id2,
@@ -150,7 +150,7 @@ class SearchResult {
         }),
       ),
     );
-    incomingFriendRequestsEdge.get(user.id)?.forEach((edge) =>
+    incomingFriendRequestsEdge.forEach((edge) =>
       results.push(
         new SearchResult({
           id: edge.id2,
@@ -241,9 +241,9 @@ test("customresolver", async () => {
     UserToIncomingFriendRequestsQuery.query(user.viewer, user).queryEdges(),
   ]);
 
-  expect(friendsEdge.get(user.id)!.length).toEqual(1);
-  expect(friendRequestsEdge.get(user.id)!.length).toEqual(1);
-  expect(incomingFriendRequestsEdge.get(user.id)!.length).toEqual(1);
+  expect(friendsEdge.length).toEqual(1);
+  expect(friendRequestsEdge.length).toEqual(1);
+  expect(incomingFriendRequestsEdge.length).toEqual(1);
 
   // can't load these users in this context
   let friendRequestLoaded = await FakeUser.load(

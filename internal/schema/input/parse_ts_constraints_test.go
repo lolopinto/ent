@@ -48,7 +48,7 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:    "user_photos_pkey",
-							typ:     input.PrimaryKey,
+							typ:     input.PrimaryKeyConstraint,
 							columns: []string{"UserID", "PhotoID"},
 						},
 					},
@@ -88,7 +88,7 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:    "username_pkey",
-							typ:     input.PrimaryKey,
+							typ:     input.PrimaryKeyConstraint,
 							columns: []string{"username"},
 						},
 					},
@@ -128,7 +128,7 @@ func TestConstraints(t *testing.T) {
 							}),
 							UUIDType({
 								name: "userID",
-								foreignKey: ["User", "ID"],
+								foreignKey: {schema:"User", column:"ID"},
 							}),
 						];
 
@@ -172,12 +172,12 @@ func TestConstraints(t *testing.T) {
 						field{
 							name:       "userID",
 							dbType:     input.UUID,
-							foreignKey: &[2]string{"User", "ID"},
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID"},
 						}),
 					constraints: []constraint{
 						{
 							name:    "contacts_unique_email",
-							typ:     input.Unique,
+							typ:     input.UniqueConstraint,
 							columns: []string{"emailAddress", "userID"},
 						},
 					},
@@ -247,7 +247,7 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:    "contacts_user_fkey",
-							typ:     input.ForeignKey,
+							typ:     input.ForeignKeyConstraint,
 							columns: []string{"userID"},
 							fkey: &fkeyInfo{
 								tableName: "User",
@@ -328,7 +328,7 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:    "contacts_user_fkey",
-							typ:     input.ForeignKey,
+							typ:     input.ForeignKeyConstraint,
 							columns: []string{"userID", "emailAddress"},
 							fkey: &fkeyInfo{
 								tableName: "User",
@@ -373,7 +373,7 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:      "item_positive_price",
-							typ:       input.Check,
+							typ:       input.CheckConstraint,
 							condition: "price > 0",
 							columns:   []string{},
 						},
@@ -435,21 +435,170 @@ func TestConstraints(t *testing.T) {
 					constraints: []constraint{
 						{
 							name:      "item_positive_price",
-							typ:       input.Check,
+							typ:       input.CheckConstraint,
 							condition: "price > 0",
 							columns:   []string{"price"},
 						},
 						{
 							name:      "item_positive_discount_price",
-							typ:       input.Check,
+							typ:       input.CheckConstraint,
 							condition: "discount_price > 0",
 							columns:   []string{"discount_price"},
 						},
 						{
 							name:      "item_price_greater_than_discount",
-							typ:       input.Check,
+							typ:       input.CheckConstraint,
 							condition: "price > discount_price",
 							columns:   []string{"price", "discount_price"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	runTestCases(t, testCases)
+}
+
+func TestIndices(t *testing.T) {
+	testCases := map[string]testCase{
+		"multi-column index": {
+			code: map[string]string{
+				"contact.ts": getCodeWithSchema(`
+					import {BaseEntSchema, Field, StringType, Index} from "{schema}";
+
+					export default class Contact extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: "firstName",
+							}),
+							StringType({
+								name: "lastName",
+							}),
+							// this *should* be EmailType but not worth it
+							StringType({
+								name: "emailAddress",
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "contacts_name_index",
+								columns: ["firstName", "lastName"],
+							},
+						];
+					}
+				`),
+			},
+			expectedOutput: map[string]node{
+				"Contact": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "firstName",
+							dbType: input.String,
+						},
+						field{
+							name:   "lastName",
+							dbType: input.String,
+						},
+						field{
+							name:   "emailAddress",
+							dbType: input.String,
+						}),
+					indices: []index{
+						{
+							name:    "contacts_name_index",
+							columns: []string{"firstName", "lastName"},
+						},
+					},
+				},
+			},
+		},
+		// same example from above can also be represented as unique index
+		"multi-column unique index": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+					import {Field, StringType, BaseEntSchema} from "{schema}";
+
+					export default class User extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: 'firstName',
+							}),
+							StringType({
+								name: 'lastName',
+							}),
+						];
+					}
+					`),
+				"contact.ts": getCodeWithSchema(`
+					import {BaseEntSchema, Field, UUIDType, StringType, Index} from "{schema}";
+
+					export default class Contact extends BaseEntSchema {
+						fields: Field[] = [
+							StringType({
+								name: "firstName",
+							}),
+							StringType({
+								name: "lastName",
+							}),
+							// this *should* be EmailType but not worth it
+							StringType({
+								name: "emailAddress",
+							}),
+							UUIDType({
+								name: "userID",
+								foreignKey: {schema:"User", column:"ID"},
+							}),
+						];
+
+						indices: Index[] = [
+							{
+								name: "contacts_unique_email",
+								columns: ["emailAddress", "userID"],
+								unique: true,
+							},
+						];
+					}
+				`),
+			},
+			expectedOutput: map[string]node{
+				"User": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "firstName",
+							dbType: input.String,
+						},
+						field{
+							name:   "lastName",
+							dbType: input.String,
+						},
+					),
+				},
+				"Contact": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "firstName",
+							dbType: input.String,
+						},
+						field{
+							name:   "lastName",
+							dbType: input.String,
+						},
+						field{
+							name:   "emailAddress",
+							dbType: input.String,
+						},
+						field{
+							name:       "userID",
+							dbType:     input.UUID,
+							foreignKey: &input.ForeignKey{Schema: "User", Column: "ID"},
+						}),
+					indices: []index{
+						{
+							name:    "contacts_unique_email",
+							columns: []string{"emailAddress", "userID"},
+							unique:  true,
 						},
 					},
 				},
