@@ -17,6 +17,7 @@ export interface UserInput {
   firstName?: string;
   lastName?: string;
   emailAddress?: string;
+  password?: string;
 }
 
 export interface UserAction extends Action<User> {
@@ -109,6 +110,7 @@ export class UserBuilder implements Builder<User> {
     addField("FirstName", fields.firstName);
     addField("LastName", fields.lastName);
     addField("EmailAddress", fields.emailAddress);
+    addField("Password", fields.password);
     return result;
   }
 
