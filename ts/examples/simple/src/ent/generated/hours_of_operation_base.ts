@@ -22,24 +22,24 @@ import schema from "src/schema/hours_of_operation";
 const tableName = "hours_of_operations";
 
 export enum dayOfWeek {
-  Friday = "Friday",
-  Monday = "Monday",
-  Saturday = "Saturday",
   Sunday = "Sunday",
-  Thursday = "Thursday",
+  Monday = "Monday",
   Tuesday = "Tuesday",
   Wednesday = "Wednesday",
+  Thursday = "Thursday",
+  Friday = "Friday",
+  Saturday = "Saturday",
 }
 
 export function getDayOfWeekValues() {
   return [
-    dayOfWeek.Friday,
-    dayOfWeek.Monday,
-    dayOfWeek.Saturday,
     dayOfWeek.Sunday,
-    dayOfWeek.Thursday,
+    dayOfWeek.Monday,
     dayOfWeek.Tuesday,
     dayOfWeek.Wednesday,
+    dayOfWeek.Thursday,
+    dayOfWeek.Friday,
+    dayOfWeek.Saturday,
   ];
 }
 

@@ -542,6 +542,16 @@ func (edgeGroup *AssociationEdgeGroup) GetStatusEdges() []*AssociationEdge {
 	return edgeGroup.statusEdges
 }
 
+func (edgeGroup *AssociationEdgeGroup) GetEnumValues() []string {
+	// enum status values
+	values := edgeGroup.GetStatusValues()
+	// and then null state for deterministic order
+	for _, v := range edgeGroup.NullStates {
+		values = append(values, v)
+	}
+	return values
+}
+
 func (edgeGroup *AssociationEdgeGroup) GetStatusValues() []string {
 	var values []string
 	for _, v := range edgeGroup.statusEdges {
@@ -742,6 +752,8 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 		panic("cannot have null state fn with no null states")
 	}
 
+	var statusEdges []*AssociationEdge
+
 	for _, edge := range edgeGroup.AssocEdges {
 		// if input edge doesn't have its own tableName, use group tableName
 		if edge.TableName == "" {
@@ -755,14 +767,13 @@ func assocEdgeGroupFromInput(packageName string, node *input.Node, edgeGroup *in
 		// }
 		edgeInfo.addEdge(assocEdge)
 
+		// do it in the order this was written
+		if len(assocEdgeGroup.StatusEnums) == 0 {
+			statusEdges = append(statusEdges, assocEdge)
+		}
 	}
 
-	var statusEdges []*AssociationEdge
-	if len(assocEdgeGroup.StatusEnums) == 0 {
-		for _, v := range assocEdgeGroup.Edges {
-			statusEdges = append(statusEdges, v)
-		}
-	} else {
+	if len(assocEdgeGroup.StatusEnums) != 0 {
 		for _, v := range edgeGroup.StatusEnums {
 			edge := assocEdgeGroup.GetAssociationByName(v)
 			if edge == nil {
