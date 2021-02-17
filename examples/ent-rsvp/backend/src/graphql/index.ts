@@ -7,10 +7,12 @@ import { PassportStrategyHandler } from "@lolopinto/ent-passport";
 import passport from "passport";
 import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
 import { IDViewer } from "@lolopinto/ent";
+import cors from "cors";
 
 let app = express();
 
 app.use(passport.initialize());
+app.use(cors());
 
 registerAuthHandler(
   "viewer",
