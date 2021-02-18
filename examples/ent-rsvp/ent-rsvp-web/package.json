@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "bootstrap": "^4.6.0",
+    "email-addresses": "^4.0.0",
     "graphql": "^15.5.0",
     "react": "^17.0.1",
     "react-bootstrap": "^1.5.0",

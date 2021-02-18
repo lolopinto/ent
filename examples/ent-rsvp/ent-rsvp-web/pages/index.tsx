@@ -9,7 +9,9 @@ import Link from "next/link";
 
 import createEnvironment from "../src/initRelayEnvironment";
 import userCreate from "../src/mutations/userCreate";
+import emailAvailable from "../src/mutations/emailAvailable";
 import { Environment } from "relay-runtime";
+import { parseOneAddress } from "email-addresses";
 const environment = createEnvironment();
 
 export default function Home() {
@@ -136,32 +138,53 @@ function Register({ visible, environment, callback }: registerProps) {
   const [lastName, setLastName] = useState("");
   const [validated, setValidated] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [emailValid, setEmailValid] = useState(true);
+  const [emailUnavailable, setEmailUnavailable] = useState(false);
+
+  const handleEmailChange = (val) => {
+    setEmail(val);
+    const e = parseOneAddress(val);
+    if (!e || e.type !== "mailbox") {
+      setEmailValid(false);
+    } else {
+      emailAvailable(environment, val, function (response, errors) {
+        if (response.emailAvailable) {
+          setEmailValid(true);
+        } else {
+          setEmailValid(false);
+          setEmailUnavailable(true);
+        }
+      });
+    }
+  };
 
   function handleSubmit(event) {
-    event.preventDefault();
-    event.stopPropagation();
     const form = event.currentTarget;
-    if (!form.checkValidity()) {
-      return;
+    const validity = form.checkValidity();
+    if (validity === false) {
+      event.preventDefault();
+      event.stopPropagation();
     }
     setValidated(true);
-    userCreate(
-      environment,
-      firstName,
-      lastName,
-      email,
-      password,
-      (response, errors) => {
-        if (errors) {
-          console.error(errors);
-          setShowError(true);
-          return;
-        }
-        if (callback) {
-          callback();
-        }
-      },
-    );
+    if (validity) {
+      userCreate(
+        environment,
+        firstName,
+        lastName,
+        email,
+        password,
+        (response, errors) => {
+          if (errors) {
+            console.error(errors);
+            setShowError(true);
+            return;
+          }
+          if (callback) {
+            callback();
+          }
+        },
+      );
+    }
   }
 
   if (!visible) {
@@ -200,17 +223,19 @@ function Register({ visible, environment, callback }: registerProps) {
           </Form.Control.Feedback>
         </Form.Group>
         <Form.Group controlId="email">
-          <Form.Label>Email</Form.Label>
+          <Form.Label>Email Address</Form.Label>
           <Form.Control
             size="lg"
             autoFocus
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => handleEmailChange(e.target.value)}
+            isInvalid={!emailValid}
             required
           />
           <Form.Control.Feedback type="invalid">
-            Please provide a valid Email address
+            {emailUnavailable && "Email Address is unavailable"}
+            {!emailUnavailable && "Please provide a valid Email Address"}
           </Form.Control.Feedback>
         </Form.Group>
         <Form.Group controlId="password">

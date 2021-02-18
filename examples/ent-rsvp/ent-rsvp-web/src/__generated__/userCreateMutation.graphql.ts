@@ -15,9 +15,7 @@ export type userCreateMutationVariables = {
 export type userCreateMutationResponse = {
     readonly userCreate: {
         readonly user: {
-            readonly firstName: string;
-            readonly lastName: string;
-            readonly emailAddress: string;
+            readonly id: string;
         };
     };
 };
@@ -34,9 +32,6 @@ mutation userCreateMutation(
 ) {
   userCreate(input: $input) {
     user {
-      firstName
-      lastName
-      emailAddress
       id
     }
   }
@@ -53,65 +48,48 @@ var v0 = [
 ],
 v1 = [
   {
-    "kind": "Variable",
-    "name": "input",
-    "variableName": "input"
-  }
-],
-v2 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "firstName",
-  "storageKey": null
-},
-v3 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "lastName",
-  "storageKey": null
-},
-v4 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "emailAddress",
-  "storageKey": null
-};
-return {
-  "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
-    "kind": "Fragment",
-    "metadata": null,
-    "name": "userCreateMutation",
+    "alias": null,
+    "args": [
+      {
+        "kind": "Variable",
+        "name": "input",
+        "variableName": "input"
+      }
+    ],
+    "concreteType": "UserCreatePayload",
+    "kind": "LinkedField",
+    "name": "userCreate",
+    "plural": false,
     "selections": [
       {
         "alias": null,
-        "args": (v1/*: any*/),
-        "concreteType": "UserCreatePayload",
+        "args": null,
+        "concreteType": "User",
         "kind": "LinkedField",
-        "name": "userCreate",
+        "name": "user",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": null,
-            "concreteType": "User",
-            "kind": "LinkedField",
-            "name": "user",
-            "plural": false,
-            "selections": [
-              (v2/*: any*/),
-              (v3/*: any*/),
-              (v4/*: any*/)
-            ],
+            "kind": "ScalarField",
+            "name": "id",
             "storageKey": null
           }
         ],
         "storageKey": null
       }
     ],
+    "storageKey": null
+  }
+];
+return {
+  "fragment": {
+    "argumentDefinitions": (v0/*: any*/),
+    "kind": "Fragment",
+    "metadata": null,
+    "name": "userCreateMutation",
+    "selections": (v1/*: any*/),
     "type": "Mutation",
     "abstractKey": null
   },
@@ -120,50 +98,17 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
     "name": "userCreateMutation",
-    "selections": [
-      {
-        "alias": null,
-        "args": (v1/*: any*/),
-        "concreteType": "UserCreatePayload",
-        "kind": "LinkedField",
-        "name": "userCreate",
-        "plural": false,
-        "selections": [
-          {
-            "alias": null,
-            "args": null,
-            "concreteType": "User",
-            "kind": "LinkedField",
-            "name": "user",
-            "plural": false,
-            "selections": [
-              (v2/*: any*/),
-              (v3/*: any*/),
-              (v4/*: any*/),
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "id",
-                "storageKey": null
-              }
-            ],
-            "storageKey": null
-          }
-        ],
-        "storageKey": null
-      }
-    ]
+    "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "75f2773e53528c9e2c71702d750e87e9",
+    "cacheID": "ea5f216ebdc6835b74254d373b6d3bee",
     "id": null,
     "metadata": {},
     "name": "userCreateMutation",
     "operationKind": "mutation",
-    "text": "mutation userCreateMutation(\n  $input: UserCreateInput!\n) {\n  userCreate(input: $input) {\n    user {\n      firstName\n      lastName\n      emailAddress\n      id\n    }\n  }\n}\n"
+    "text": "mutation userCreateMutation(\n  $input: UserCreateInput!\n) {\n  userCreate(input: $input) {\n    user {\n      id\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = '4f8eeda6b3353b16c391c08c4d58adf2';
+(node as any).hash = '0b3fddf9252345c0f16a72a5ec88c741';
 export default node;
