@@ -1,7 +1,6 @@
 package input_test
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
@@ -114,12 +113,10 @@ type testCase struct {
 }
 
 func runTestCases(t *testing.T, testCases map[string]testCase) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
 
 	for key, tt := range testCases {
 		t.Run(key, func(t *testing.T) {
-			schema := testhelper.ParseInputSchemaForTest(t, absPath, tt.code)
+			schema := testhelper.ParseInputSchemaForTest(t, tt.code)
 
 			require.Len(t, schema.Nodes, len(tt.expectedOutput))
 

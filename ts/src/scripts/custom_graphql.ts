@@ -113,7 +113,7 @@ async function main() {
     throw new Error("path required");
   }
 
-  const gqlPath = findGraphQLPath(options.path);
+  const gqlPath = process.env.GRAPHQL_PATH || findGraphQLPath(options.path);
   if (!gqlPath) {
     throw new Error("could not find graphql path");
   }
