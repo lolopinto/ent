@@ -18,15 +18,41 @@ func GetCodeWithSchema(code string) string {
 	schemaPath := input.GetAbsoluteSchemaPathForTest()
 	fieldPath := strings.Replace(schemaPath, "schema", "field", 1)
 
-	r := strings.NewReplacer("{schema}", schemaPath, "{field}", fieldPath)
+	rootPath := input.GetAbsoluteRootPathForTest()
+	gqlPath := filepath.Join(rootPath, "graphql")
+	r := strings.NewReplacer(
+		"{schema}", schemaPath,
+		"{field}", fieldPath,
+		"{root}", rootPath,
+		"{graphql}", gqlPath,
+	)
 	return r.Replace(code)
 }
 
-func ParseInputSchemaForTest(t *testing.T, absPath string, code map[string]string) *input.Schema {
-	dirPath, err := ioutil.TempDir(absPath, "project")
-	// delete temporary created file
-	defer os.RemoveAll(dirPath)
-	require.NoError(t, err)
+type Options struct {
+	tempDir string
+}
+
+func TempDir(path string) func(*Options) {
+	return func(opt *Options) {
+		opt.tempDir = path
+	}
+}
+
+func ParseInputSchemaForTest(t *testing.T, code map[string]string, opts ...func(*Options)) *input.Schema {
+	opt := &Options{}
+	for _, o := range opts {
+		o(opt)
+	}
+	dirPath := opt.tempDir
+	if dirPath == "" {
+		absPath, err := filepath.Abs(".")
+		require.NoError(t, err)
+		dirPath, err = ioutil.TempDir(absPath, "project")
+		// delete temporary created dir
+		defer os.RemoveAll(dirPath)
+		require.NoError(t, err)
+	}
 
 	schemaDir := filepath.Join(dirPath, "src", "schema")
 	require.NoError(t, os.MkdirAll(schemaDir, os.ModePerm))
@@ -43,8 +69,8 @@ func ParseInputSchemaForTest(t *testing.T, absPath string, code map[string]strin
 	return inputSchema
 }
 
-func ParseSchemaForTest(t *testing.T, absPath string, code map[string]string, lang base.Language) *schema.Schema {
-	inputSchema := ParseInputSchemaForTest(t, absPath, code)
+func ParseSchemaForTest(t *testing.T, code map[string]string, lang base.Language, opts ...func(*Options)) *schema.Schema {
+	inputSchema := ParseInputSchemaForTest(t, code, opts...)
 	s, err := schema.ParseFromInputSchema(inputSchema, lang)
 	require.NoError(t, err)
 
@@ -52,8 +78,8 @@ func ParseSchemaForTest(t *testing.T, absPath string, code map[string]string, la
 	return s
 }
 
-func ParseActionInfoForTest(t *testing.T, absPath string, code map[string]string, lang base.Language, nodeName string) *action.ActionInfo {
-	schema := ParseSchemaForTest(t, absPath, code, lang)
+func ParseActionInfoForTest(t *testing.T, code map[string]string, lang base.Language, nodeName string) *action.ActionInfo {
+	schema := ParseSchemaForTest(t, code, lang)
 
 	info := schema.Nodes[nodeName]
 	require.NotNil(t, info)

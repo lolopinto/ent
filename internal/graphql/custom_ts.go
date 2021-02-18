@@ -7,7 +7,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/pkg/errors"
 )
 
 type processCustomRoot interface {
@@ -50,8 +49,18 @@ func (cm *customMutationsProcesser) getFields(cd *customData) []CustomField {
 
 func (cm *customMutationsProcesser) buildFieldConfig(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
 	b := &mutationFieldConfigBuilder{
-		field,
-		cm.getFilePath(field.GraphQLName),
+		field:    field,
+		filePath: cm.getFilePath(field.GraphQLName),
+		cd:       cd,
+	}
+
+	for _, arg := range field.Args {
+		if arg.IsContextArg {
+			continue
+		}
+		if arg.Name == "input" {
+			b.inputArg = &arg
+		}
 	}
 	return b.build(data, cd, field)
 }
@@ -131,7 +140,6 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 			objTypes = append(objTypes, argType)
 		}
 
-		hasPayload := false
 		for _, result := range field.Results {
 			// 0 -1 allowed...
 			object := cd.Objects[result.Type]
@@ -162,11 +170,7 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 					})
 				}
 			}
-			hasPayload = true
 			objTypes = append(objTypes, payloadType)
-		}
-		if !hasPayload {
-			return nil, errors.New("no payload for mutation. TODO handle")
 		}
 
 		fieldConfig, err := cr.buildFieldConfig(data, cd, field)
@@ -204,6 +208,8 @@ type fieldConfigBuilder interface {
 type mutationFieldConfigBuilder struct {
 	field    CustomField
 	filePath string
+	cd       *customData
+	inputArg *CustomItem
 }
 
 func (mfcg *mutationFieldConfigBuilder) build(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
@@ -215,54 +221,88 @@ func (mfcg *mutationFieldConfigBuilder) getFilePath() string {
 }
 
 func (mfcg *mutationFieldConfigBuilder) getArg() string {
-	for _, arg := range mfcg.field.Args {
-		if arg.IsContextArg {
-			continue
-		}
-		// assume input object type.
-		// this may eventually not be input but may be other types...
-		return fmt.Sprintf("{ [input: string]: %s}", arg.Type)
-
+	// for input object type, type it
+	// everything else, leave blank similar to what we do for queries. see queryFieldConfigBuilder.getArg
+	if mfcg.inputArg != nil {
+		return fmt.Sprintf("{ [input: string]: %s}", mfcg.inputArg.Type)
 	}
 	return ""
 }
 
 func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
-	return "{ input }" // TODO not always input
+	if mfcg.inputArg != nil {
+		return "{ input }"
+	}
+
+	// otherwise, custom and destructure it
+
+	var args []string
+	for _, arg := range mfcg.field.Args {
+		if arg.IsContextArg {
+			continue
+		}
+
+		args = append(args, arg.Name)
+	}
+
+	return fmt.Sprintf("{%s}", strings.Join(args, ", "))
 }
 
 func (mfcg *mutationFieldConfigBuilder) getTypeImports() []*fileImport {
-	prefix := strcase.ToCamel(mfcg.field.GraphQLName)
-	return []*fileImport{
-		{
+	if len(mfcg.field.Results) != 1 {
+		panic("invalid number of results for custom field")
+	}
+	r := mfcg.field.Results[0]
+	var ret []*fileImport
+	if r.Nullable == "" {
+		ret = append(ret, &fileImport{
 			Type:       "GraphQLNonNull",
 			ImportPath: "graphql",
-		},
-		{
+		})
+	}
+	gqlType, ok := graphqlScalars[r.Type]
+	if ok {
+		// this is not relay mutation friendly...
+		// scalar. return that
+		ret = append(ret, &fileImport{
+			Type:       gqlType,
+			ImportPath: "graphql",
+		})
+	} else {
+		prefix := strcase.ToCamel(mfcg.field.GraphQLName)
+
+		ret = append(ret, &fileImport{
 			// TODO we should pass this in instead of automatically doing this
 			Type:       fmt.Sprintf("%sPayloadType", prefix),
 			ImportPath: "",
-		},
+		})
 	}
+	return ret
 }
 
 func (mfcg *mutationFieldConfigBuilder) getArgs() []*fieldConfigArg {
-	prefix := strcase.ToCamel(mfcg.field.GraphQLName)
-	return []*fieldConfigArg{
-		{
-			Name: "input",
-			Imports: []string{
-				"GraphQLNonNull",
-				// same for this about passing it in
-				fmt.Sprintf("%sInputType", prefix),
+	if mfcg.inputArg != nil {
+		prefix := strcase.ToCamel(mfcg.field.GraphQLName)
+		return []*fieldConfigArg{
+			{
+				Name: "input",
+				Imports: []string{
+					"GraphQLNonNull",
+					// same for this about passing it in
+					fmt.Sprintf("%sInputType", prefix),
+				},
 			},
-		},
+		}
 	}
+	return getFieldConfigArgs(mfcg.field)
 }
 
 func (mfcg *mutationFieldConfigBuilder) getReturnTypeHint() string {
-	prefix := strcase.ToCamel(mfcg.field.GraphQLName)
-	return fmt.Sprintf("Promise<%sPayload>", prefix)
+	if mfcg.inputArg != nil {
+		prefix := strcase.ToCamel(mfcg.field.GraphQLName)
+		return fmt.Sprintf("Promise<%sPayload>", prefix)
+	}
+	return ""
 }
 
 func (mfcg *mutationFieldConfigBuilder) getArgMap(cd *customData) map[string]*CustomObject {
@@ -283,18 +323,19 @@ func (qfcg *queryFieldConfigBuilder) getFilePath() string {
 }
 
 func (qfcg *queryFieldConfigBuilder) getArg() string {
-	for _, arg := range qfcg.field.Args {
-		if arg.IsContextArg {
-			continue
-		}
-		// TODO
-		//		return fmt.Sprintf("{ [input: string]: %s}", arg.Type)
-	}
+	// we don't type query args for now since it can be whatever. TODO make this work
 	return ""
 }
 
 func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
-	return "{ arg }" // TODO?
+	var args []string
+	for _, arg := range qfcg.field.Args {
+		if arg.IsContextArg {
+			continue
+		}
+		args = append(args, arg.Name)
+	}
+	return fmt.Sprintf("{%s}", strings.Join(args, ", "))
 }
 
 func (qfcg *queryFieldConfigBuilder) getTypeImports() []*fileImport {
@@ -309,18 +350,35 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports() []*fileImport {
 			ImportPath: "graphql",
 		})
 	}
-	ret = append(ret, &fileImport{
-		Type: fmt.Sprintf("%sType", r.Type),
-		//		ImportPath is local here
-	})
+
+	gqlType, ok := graphqlScalars[r.Type]
+	if ok {
+		// scalar. return that
+		ret = append(ret, &fileImport{
+			Type:       gqlType,
+			ImportPath: "graphql",
+		})
+	} else {
+		ret = append(ret, &fileImport{
+			Type: fmt.Sprintf("%sType", r.Type),
+			//		ImportPath is local here
+		})
+	}
+
 	return ret
 }
 
-func (qfcg *queryFieldConfigBuilder) getArgs() []*fieldConfigArg {
+func getFieldConfigArgs(field CustomField) []*fieldConfigArg {
 	var args []*fieldConfigArg
-	for _, arg := range qfcg.field.Args {
+	for _, arg := range field.Args {
 		if arg.IsContextArg {
 			continue
+		}
+
+		gqlType, ok := graphqlScalars[arg.Type]
+		typ := arg.Type
+		if ok {
+			typ = gqlType
 		}
 
 		// non-null
@@ -329,12 +387,10 @@ func (qfcg *queryFieldConfigBuilder) getArgs() []*fieldConfigArg {
 			// TODO this needs to also change to fileImport
 			imports = []string{
 				"GraphQLNonNull",
-				arg.Type,
+				typ,
 			}
 		} else {
-			imports = []string{
-				arg.Type,
-			}
+			imports = []string{typ}
 		}
 		args = append(args, &fieldConfigArg{
 			Name:    arg.Name,
@@ -342,6 +398,10 @@ func (qfcg *queryFieldConfigBuilder) getArgs() []*fieldConfigArg {
 		})
 	}
 	return args
+}
+
+func (qfcg *queryFieldConfigBuilder) getArgs() []*fieldConfigArg {
+	return getFieldConfigArgs(qfcg.field)
 }
 
 func (qfcg *queryFieldConfigBuilder) getReturnTypeHint() string {
@@ -359,33 +419,37 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, cd *cu
 
 	// args that "useImport" should be called on
 	// assumes they're reserved somewhere else...
+
+	addToArgImport := func(typ string) error {
+		cls := cd.Classes[typ]
+		if cls != nil && cls.Exported {
+			path, err := getRelativeImportPath(data, builder.getFilePath(), cls.Path)
+			if err != nil {
+				return err
+			}
+			argImports = append(argImports, &fileImport{
+				Type:       typ,
+				ImportPath: path,
+			})
+		}
+		return nil
+	}
 	for _, arg := range field.Args {
 		if arg.IsContextArg {
 			continue
 		}
-		cls := cd.Classes[arg.Type]
-		if cls != nil && cls.Exported {
-			path, err := getRelativeImportPath(data, builder.getFilePath(), cls.Path)
-			if err != nil {
-				return nil, err
-			}
-			argImports = append(argImports, &fileImport{
-				Type:       arg.Type,
-				ImportPath: path,
-			})
+		if err := addToArgImport(arg.Type); err != nil {
+			return nil, err
 		}
 	}
+
+	if err := addToArgImport(field.Node); err != nil {
+		return nil, err
+	}
+
 	for _, result := range field.Results {
-		cls := cd.Classes[result.Type]
-		if cls != nil && cls.Exported {
-			path, err := getRelativeImportPath(data, builder.getFilePath(), cls.Path)
-			if err != nil {
-				return nil, err
-			}
-			argImports = append(argImports, &fileImport{
-				Type:       result.Type,
-				ImportPath: path,
-			})
+		if err := addToArgImport(result.Type); err != nil {
+			return nil, err
 		}
 	}
 
@@ -425,7 +489,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, cd *cu
 	}
 	result.FunctionContents = []string{
 		fmt.Sprintf("const r = new %s();", field.Node),
-		fmt.Sprintf("return r.%s(", field.GraphQLName),
+		fmt.Sprintf("return r.%s(", field.FunctionName),
 		// put all the args on one line separated by a comma. we'll depend on prettier to format correctly
 		strings.Join(argContents, ","),
 		// closing the funtion call..
@@ -513,8 +577,8 @@ func buildObjectType(data *codegen.Data, cd *customData, s *gqlSchema, item Cust
 			if len(field.Results) == 1 {
 				result := field.Results[0]
 				// check for imported paths that are being used
-				if result.TSType != nil {
-					newInt.Type = *result.TSType
+				if result.TSType != "" {
+					newInt.Type = result.TSType
 					if cls != nil {
 						file := cd.Files[cls.Path]
 						if file != nil {
