@@ -1,4 +1,5 @@
 type Query {
+  emailAvailable(email: String!): Boolean!
   node(id: ID!): Node
   viewer: Viewer
 }

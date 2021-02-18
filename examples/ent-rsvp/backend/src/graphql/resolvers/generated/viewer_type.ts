@@ -32,7 +32,7 @@ export const ViewerType: GraphQLFieldConfig<undefined, RequestContext> = {
   type: GQLViewerType,
   resolve: async (
     _source,
-    { arg },
+    {},
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {

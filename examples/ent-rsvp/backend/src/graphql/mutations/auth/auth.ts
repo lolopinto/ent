@@ -6,8 +6,9 @@ import {
   gqlInputObjectType,
   gqlField,
   gqlObjectType,
+  gqlQuery,
 } from "@lolopinto/ent/graphql";
-import { Guest } from "src/ent";
+import { Guest, User } from "src/ent";
 import { useAndVerifyAuthJWT } from "@lolopinto/ent-passport";
 import { GQLViewer } from "../../resolvers/viewer";
 
@@ -67,5 +68,16 @@ export class AuthGuestResolver {
       viewer: new GQLViewer(viewer),
       token: token,
     };
+  }
+
+  @gqlQuery({ name: "emailAvailable", type: Boolean })
+  async emailAvailable(@gqlArg("email") email: string) {
+    const f = User.getField("EmailAddress");
+    if (!f || !f.format) {
+      throw new Error("could not find field EmailAddress for User");
+    }
+    const val = f.format(email);
+    const id = await User.loadIDFromEmailAddress(val);
+    return id === null;
   }
 }
