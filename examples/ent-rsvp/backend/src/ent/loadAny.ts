@@ -18,7 +18,7 @@ import {
   GuestData,
   GuestGroup,
   User,
-} from "src/ent/internal";
+} from "src/ent/";
 
 export async function loadEntByType(
   viewer: Viewer,

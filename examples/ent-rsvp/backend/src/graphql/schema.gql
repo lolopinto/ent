@@ -229,6 +229,7 @@ type Mutation {
   addressDelete(input: AddressDeleteInput!): AddressDeletePayload!
   addressEdit(input: AddressEditInput!): AddressEditPayload!
   authGuest(input: AuthGuestInput!): AuthGuestPayload!
+  emailAvailable(email: String!): Boolean!
   eventActivityAddInvite(input: EventActivityAddInviteInput!): EventActivityAddInvitePayload!
   eventActivityCreate(input: EventActivityCreateInput!): EventActivityCreatePayload!
   eventActivityDelete(input: EventActivityDeleteInput!): EventActivityDeletePayload!

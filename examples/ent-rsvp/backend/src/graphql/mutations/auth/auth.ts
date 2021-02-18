@@ -8,8 +8,8 @@ import {
   gqlObjectType,
   gqlQuery,
 } from "@lolopinto/ent/graphql";
-import { Guest, User } from "src/ent";
 import { useAndVerifyAuthJWT } from "@lolopinto/ent-passport";
+import { Guest, User } from "src/ent";
 import { GQLViewer } from "../../resolvers/viewer";
 
 @gqlInputObjectType()
@@ -79,5 +79,10 @@ export class AuthGuestResolver {
     const val = f.format(email);
     const id = await User.loadIDFromEmailAddress(val);
     return id === null;
+  }
+
+  @gqlMutation({ name: "emailAvailable", type: Boolean })
+  async emailAvailableMutation(@gqlArg("email") email: string) {
+    return this.emailAvailable(email);
   }
 }
