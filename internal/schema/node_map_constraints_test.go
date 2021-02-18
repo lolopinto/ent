@@ -2,7 +2,6 @@ package schema_test
 
 import (
 	"fmt"
-	"path/filepath"
 	"testing"
 
 	"github.com/lolopinto/ent/internal/schema"
@@ -672,12 +671,8 @@ func runTestCases(t *testing.T, testCases map[string]testCase) {
 }
 
 func testConstraints(t *testing.T, code map[string]string, expectedMap map[string]*schema.NodeData) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
-
 	s := testhelper.ParseSchemaForTest(
 		t,
-		absPath,
 		code,
 		base.TypeScript,
 	)

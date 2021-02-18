@@ -1,7 +1,6 @@
 package field_test
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/lolopinto/ent/internal/schema/base"
@@ -11,11 +10,7 @@ import (
 )
 
 func TestDerivedFields(t *testing.T) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
-
 	schema := testhelper.ParseSchemaForTest(t,
-		absPath,
 		map[string]string{
 			"address.ts": testhelper.GetCodeWithSchema(`
 		import {Schema, Field, StringType, UUIDType} from "{schema}";

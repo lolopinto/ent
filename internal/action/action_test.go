@@ -1,7 +1,6 @@
 package action_test
 
 import (
-	"path/filepath"
 	"sync"
 	"testing"
 
@@ -385,11 +384,8 @@ func TestDefaultActionFieldsWithPrivateFields(t *testing.T) {
 }
 
 func TestDefaultNoFields(t *testing.T) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
 	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		absPath,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
 				`import {Schema, Field, StringType, Action, ActionOperation, BaseEntSchema, NoFields} from "{schema}";
@@ -453,11 +449,8 @@ func TestDefaultNoFields(t *testing.T) {
 }
 
 func TestExplicitNoFields(t *testing.T) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
 	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		absPath,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
 				`import {Schema, Field, StringType, Action, ActionOperation, BaseEntSchema, NoFields} from "{schema}";
@@ -495,11 +488,8 @@ func TestExplicitNoFields(t *testing.T) {
 }
 
 func TestNullableFieldInAction(t *testing.T) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
 	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		absPath,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
 				`import {Schema, Field, StringType, Action, ActionOperation, BaseEntSchema} from "{schema}";
@@ -546,11 +536,8 @@ func TestNullableFieldInAction(t *testing.T) {
 	)
 }
 func TestOverriddenRequiredActionField(t *testing.T) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
 	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		absPath,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
 				`import {Schema, Field, StringType, Action, ActionOperation, BaseEntSchema, requiredField} from "{schema}";
@@ -598,11 +585,8 @@ func TestOverriddenRequiredActionField(t *testing.T) {
 }
 
 func TestOverriddenOptionalActionField(t *testing.T) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
 	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		absPath,
 		map[string]string{
 			"user.ts": testhelper.GetCodeWithSchema(
 				`import {Schema, Field, StringType, Action, ActionOperation, BaseEntSchema, optionalField} from "{schema}";
@@ -654,11 +638,8 @@ func TestOverriddenOptionalActionField(t *testing.T) {
 }
 
 func TestActionOnlyFields(t *testing.T) {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
 	actionInfo := testhelper.ParseActionInfoForTest(
 		t,
-		absPath,
 		map[string]string{
 			"event.ts": testhelper.GetCodeWithSchema(
 				`

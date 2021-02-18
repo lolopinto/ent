@@ -1,8 +1,8 @@
 {{ reserveImport "./const" "NodeType"}}
 {{ reserveImport .Package.PackagePath "loadEnt" "loadEntX" "ID" "Viewer" "Ent" "LoadEntOptions"}}
-{{ $internalImpPath := .Package.InternalImportPath }}
+{{ $impPath := .Package.ExternalImportPath }}
 {{ range .NodeData -}}
-  {{ reserveImport $internalImpPath .Name}}
+  {{ reserveImport $impPath .Name}}
 {{ end -}}
 
 export async function loadEntByType(

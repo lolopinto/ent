@@ -101,6 +101,10 @@ type schemaData struct {
 	Path string
 }
 
+func GetAbsoluteRootPathForTest() string {
+	return util.GetAbsolutePath("../../../ts/src/")
+}
+
 func GetAbsoluteSchemaPathForTest() string {
 	schemaPath := util.GetAbsolutePath("../../../ts/src/schema/index.ts")
 	// trim the suffix for the import

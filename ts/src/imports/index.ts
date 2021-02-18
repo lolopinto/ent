@@ -99,7 +99,7 @@ export function findTSConfigFile(filePath: string): string | null {
 function readCompilerOptions(filePath: string): ts.CompilerOptions {
   let configPath = findTSConfigFile(filePath);
   if (!configPath) {
-    throw new Error(`couldn't find tsconfig.json in path hierarchy`);
+    return {};
   }
   const root = path.join(filePath, "..");
   let json = {};

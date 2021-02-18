@@ -1149,11 +1149,8 @@ func TestMultiColumnUniqueIndex(t *testing.T) {
 }
 
 func getSchemaFromCode(t *testing.T, code map[string]string) *dbSchema {
-	absPath, err := filepath.Abs(".")
-	require.NoError(t, err)
 	schema := testhelper.ParseSchemaForTest(
 		t,
-		absPath,
 		code,
 		base.TypeScript,
 	)

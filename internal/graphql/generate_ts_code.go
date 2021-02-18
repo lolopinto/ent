@@ -22,6 +22,7 @@ import (
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/enum"
+	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
@@ -85,7 +86,7 @@ type CustomItem struct {
 	Nullable     NullableItem `json:"nullable"`
 	List         bool         `json:"list"`
 	IsContextArg bool         `json:"isContextArg"`
-	TSType       *string      `json:"tsType"`
+	TSType       string       `json:"tsType"`
 	imports      []*fileImport
 }
 
@@ -343,6 +344,21 @@ func (st writeIndexStep) process(data *codegen.Data, s *gqlSchema) error {
 	return writeTSIndexFile(data, s)
 }
 
+func buildSchema(data *codegen.Data, fromTest bool) (*gqlSchema, error) {
+	cd, s := <-parseCustomData(data, fromTest), <-buildGQLSchema(data)
+	if cd.Error != nil {
+		return nil, cd.Error
+	}
+	// put this here after the fact
+	s.customData = cd
+
+	if err := processCustomData(data, s); err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
 func (p *TSStep) ProcessData(data *codegen.Data) error {
 	// these all need to be done after
 	// 1a/ build data (actions and nodes)
@@ -352,14 +368,8 @@ func (p *TSStep) ProcessData(data *codegen.Data) error {
 	// 4/ write query/mutation/schema file
 	// schema file depends on query/mutation so not quite worth the complication of breaking those 2 up
 
-	cd, s := <-parseCustomData(data), <-buildGQLSchema(data)
-	if cd.Error != nil {
-		return cd.Error
-	}
-	// put this here after the fact
-	s.customData = cd
-
-	if err := processCustomData(data, s); err != nil {
+	s, err := buildSchema(data, false)
+	if err != nil {
 		return err
 	}
 
@@ -457,7 +467,7 @@ func getTsconfigPaths() string {
 	return util.GetEnv("TSCONFIG_PATHS", "tsconfig-paths/register")
 }
 
-func parseCustomData(data *codegen.Data) chan *customData {
+func parseCustomData(data *codegen.Data, fromTest bool) chan *customData {
 	var res = make(chan *customData)
 	go func() {
 		var cd customData
@@ -473,24 +483,66 @@ func parseCustomData(data *codegen.Data) chan *customData {
 			buf.WriteString("\n")
 		}
 
-		cmdArgs := []string{
-			"--log-error", // TODO spend more time figuring this out
-			"--project",
-			// TODO this should find the tsconfig.json and not assume there's one at the root but fine for now
-			filepath.Join(data.CodePath.GetAbsPathToRoot(), "tsconfig.json"),
-			"-r",
-			getTsconfigPaths(),
-			// local...
-			// this assumes package already installed
-			fmt.Sprintf("./node_modules/%s/scripts/custom_graphql.js", codepath.Package),
-			"--path",
-			// TODO this should be a configuration option to indicate where the code root is
-			filepath.Join(data.CodePath.GetAbsPathToRoot(), "src"),
+		// similar to writeTsFile in parse_ts.go
+		// unfortunately that this is being done
+
+		var cmdName string
+		var cmdArgs []string
+		var env []string
+		if fromTest {
+			env = []string{
+				fmt.Sprintf(
+					"GRAPHQL_PATH=%s",
+					filepath.Join(input.GetAbsoluteRootPathForTest(), "graphql"),
+				),
+			}
+			cmdName = "ts-node"
+			opts, err := json.Marshal(map[string]interface{}{
+				"lib":                    []string{"esnext", "dom"},
+				"moduleResolution":       "node",
+				"experimentalDecorators": true,
+				"emitDecoratorMetadata":  true,
+				"downlevelIteration":     true,
+				"esModuleInterop":        true,
+			})
+			if err != nil {
+				panic(errors.Wrap(err, "error creating json compiler options"))
+			}
+
+			cmdArgs = []string{
+				"--compiler-options",
+				string(opts),
+				util.GetAbsolutePath("../../ts/src/scripts/custom_graphql.ts"),
+				"--path",
+				filepath.Join(data.CodePath.GetAbsPathToRoot(), "src"),
+			}
+		} else {
+			cmdArgs = []string{
+				"--log-error", // TODO spend more time figuring this out
+				"--project",
+				// TODO this should find the tsconfig.json and not assume there's one at the root but fine for now
+				filepath.Join(data.CodePath.GetAbsPathToRoot(), "tsconfig.json"),
+				"-r",
+				getTsconfigPaths(),
+				// local...
+				// this assumes package already installed
+				fmt.Sprintf("./node_modules/%s/scripts/custom_graphql.js", codepath.Package),
+				"--path",
+				// TODO this should be a configuration option to indicate where the code root is
+				filepath.Join(data.CodePath.GetAbsPathToRoot(), "src"),
+			}
+			cmdName = "ts-node-script"
 		}
-		cmd := exec.Command("ts-node-script", cmdArgs...)
+
+		cmd := exec.Command(cmdName, cmdArgs...)
 		cmd.Stdin = &buf
 		cmd.Stdout = &out
 		cmd.Stderr = os.Stderr
+		if len(env) != 0 {
+			env2 := append(os.Environ(), env...)
+			cmd.Env = env2
+		}
+
 		if err := cmd.Run(); err != nil {
 			err = errors.Wrap(err, "error generating custom graphql")
 			cd.Error = err
