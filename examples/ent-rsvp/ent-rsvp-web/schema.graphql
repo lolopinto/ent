@@ -69,6 +69,16 @@ type AuthGuestPayload {
   viewer: Viewer!
 }
 
+input AuthUserInput {
+  emailAddress: String!
+  password: String!
+}
+
+type AuthUserPayload {
+  token: String!
+  viewer: Viewer!
+}
+
 """connection interface"""
 interface Connection {
   edges: [Edge!]!
@@ -392,6 +402,7 @@ type Mutation {
   addressDelete(input: AddressDeleteInput!): AddressDeletePayload!
   addressEdit(input: AddressEditInput!): AddressEditPayload!
   authGuest(input: AuthGuestInput!): AuthGuestPayload!
+  authUser(input: AuthUserInput!): AuthUserPayload!
   emailAvailable(email: String!): Boolean!
   eventActivityAddInvite(input: EventActivityAddInviteInput!): EventActivityAddInvitePayload!
   eventActivityCreate(input: EventActivityCreateInput!): EventActivityCreatePayload!

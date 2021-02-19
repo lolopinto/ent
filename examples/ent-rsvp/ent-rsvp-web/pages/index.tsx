@@ -2,22 +2,28 @@ import React, { useState } from "react";
 
 import Alert from "react-bootstrap/Alert";
 import Container from "react-bootstrap/Container";
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Link from "next/link";
 
 import createEnvironment from "../src/initRelayEnvironment";
-import userCreate from "../src/mutations/userCreate";
-import emailAvailable from "../src/mutations/emailAvailable";
-import { Environment } from "relay-runtime";
-import { parseOneAddress } from "email-addresses";
+import Login from "../src/components/login";
+import Register from "../src/components/register";
+import { useSession } from "../src/session";
+import { useRouter } from "next/router";
+
 const environment = createEnvironment();
 
-export default function Home() {
+export default function Index() {
   const [loginVisible, setLoginVisible] = useState(true);
   const [registerVisible, setRegisterVisible] = useState(false);
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
+  const session = useSession();
+  const router = useRouter();
+
+  // logged in. go home
+  if (session) {
+    router.push("/home");
+  }
 
   function toggle(event) {
     setLoginVisible(!loginVisible);
@@ -49,6 +55,7 @@ export default function Home() {
   }
 
   function registeredSuccessfully() {
+    console.log("registerd");
     setLoginVisible(true);
     setRegisterVisible(false);
     setShowLoginSuccess(true);
@@ -67,197 +74,5 @@ export default function Home() {
       />
       {renderLink()}
     </Container>
-  );
-}
-
-function Login({ visible, environment }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [validated, setValidated] = useState(false);
-
-  function handleSubmit(event) {
-    const form = event.currentTarget;
-    if (form.checkValidity() === false) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    setValidated(true);
-  }
-
-  if (!visible) {
-    return null;
-  }
-  return (
-    <div className="Login">
-      <Form noValidate validated={validated} onSubmit={handleSubmit}>
-        <Form.Group controlId="email">
-          <Form.Label>Email</Form.Label>
-          <Form.Control
-            size="lg"
-            autoFocus
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Form.Control.Feedback type="invalid">
-            Please provide a valid Email Address.
-          </Form.Control.Feedback>
-        </Form.Group>
-        <Form.Group controlId="password">
-          <Form.Label>Password</Form.Label>
-          <Form.Control
-            size="lg"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <Form.Control.Feedback type="invalid">
-            Please provide a valid Password.
-          </Form.Control.Feedback>
-        </Form.Group>
-        <Button block size="lg" type="submit">
-          Login
-        </Button>
-      </Form>
-    </div>
-  );
-}
-
-interface registerProps {
-  visible: boolean;
-  environment: Environment;
-  callback?: () => void;
-}
-
-function Register({ visible, environment, callback }: registerProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [validated, setValidated] = useState(false);
-  const [showError, setShowError] = useState(false);
-  const [emailValid, setEmailValid] = useState(true);
-  const [emailUnavailable, setEmailUnavailable] = useState(false);
-
-  const handleEmailChange = (val) => {
-    setEmail(val);
-    const e = parseOneAddress(val);
-    if (!e || e.type !== "mailbox") {
-      setEmailValid(false);
-    } else {
-      emailAvailable(environment, val, function (response, errors) {
-        if (response.emailAvailable) {
-          setEmailValid(true);
-        } else {
-          setEmailValid(false);
-          setEmailUnavailable(true);
-        }
-      });
-    }
-  };
-
-  function handleSubmit(event) {
-    const form = event.currentTarget;
-    const validity = form.checkValidity();
-    if (validity === false) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    setValidated(true);
-    if (validity) {
-      userCreate(
-        environment,
-        firstName,
-        lastName,
-        email,
-        password,
-        (response, errors) => {
-          if (errors) {
-            console.error(errors);
-            setShowError(true);
-            return;
-          }
-          if (callback) {
-            callback();
-          }
-        },
-      );
-    }
-  }
-
-  if (!visible) {
-    return null;
-  }
-
-  return (
-    <div className="Register">
-      <Form noValidate validated={validated} onSubmit={handleSubmit}>
-        <Form.Group controlId="firstName">
-          <Form.Label>First Name</Form.Label>
-          <Form.Control
-            size="lg"
-            autoFocus
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            required
-          />
-          <Form.Control.Feedback type="invalid">
-            Please provide a valid First Name.
-          </Form.Control.Feedback>
-        </Form.Group>
-        <Form.Group controlId="lastName">
-          <Form.Label>Last Name</Form.Label>
-          <Form.Control
-            size="lg"
-            autoFocus
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            required
-          />
-          <Form.Control.Feedback type="invalid">
-            Please provide a valid Last Name.
-          </Form.Control.Feedback>
-        </Form.Group>
-        <Form.Group controlId="email">
-          <Form.Label>Email Address</Form.Label>
-          <Form.Control
-            size="lg"
-            autoFocus
-            type="email"
-            value={email}
-            onChange={(e) => handleEmailChange(e.target.value)}
-            isInvalid={!emailValid}
-            required
-          />
-          <Form.Control.Feedback type="invalid">
-            {emailUnavailable && "Email Address is unavailable"}
-            {!emailUnavailable && "Please provide a valid Email Address"}
-          </Form.Control.Feedback>
-        </Form.Group>
-        <Form.Group controlId="password">
-          <Form.Label>Password</Form.Label>
-          <Form.Control
-            size="lg"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <Form.Control.Feedback type="invalid">
-            Please provide a Password
-          </Form.Control.Feedback>
-        </Form.Group>
-        <Button block size="lg" type="submit">
-          Create Account
-        </Button>
-        <Alert show={showError} variant="danger">
-          There was an error creating the account
-        </Alert>
-      </Form>
-    </div>
   );
 }

@@ -1,5 +1,9 @@
 import { graphql, commitMutation } from "react-relay";
-import { Environment } from "relay-runtime";
+import { Environment, PayloadError } from "relay-runtime";
+import {
+  UserCreateInput,
+  userCreateMutationResponse,
+} from "../__generated__/userCreateMutation.graphql";
 
 const mutation = graphql`
   mutation userCreateMutation($input: UserCreateInput!) {
@@ -13,24 +17,26 @@ const mutation = graphql`
 
 export default function commit(
   environment: Environment,
-  firstName: string,
-  lastName: string,
-  emailAddress: string,
-  password: string,
-  callback?: any,
+  input: UserCreateInput,
+  callback?: (
+    r: userCreateMutationResponse,
+    errs: ReadonlyArray<PayloadError> | undefined | null,
+  ) => void,
 ) {
-  // Now we just call commitMutation with the appropriate parameters
   return commitMutation(environment, {
     mutation,
     variables: {
-      input: { firstName, lastName, emailAddress, password },
+      input,
     },
-    onCompleted: (response: any, errors) => {
+    onCompleted: (response: userCreateMutationResponse, errors) => {
       console.log("Response received from server.", response, errors);
       if (callback) {
         callback(response, errors);
       }
     },
-    onError: (err) => console.error(err),
+    onError: (err) => {
+      console.log("wwhwww");
+      console.error(err);
+    },
   });
 }

@@ -1,7 +1,6 @@
 import { Environment, Network, RecordSource, Store } from "relay-runtime";
 
 async function fetchQuery(operation, variables) {
-  console.log(process.env.NEXT_PUBLIC_RELAY_ENDPOINT);
   return await fetch(process.env.NEXT_PUBLIC_RELAY_ENDPOINT, {
     method: "POST",
     headers: {
