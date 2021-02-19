@@ -29,7 +29,24 @@ export class AuthGuestPayload {
   viewer: GQLViewer;
 }
 
-export class AuthGuestResolver {
+@gqlInputObjectType()
+class AuthUserInput {
+  @gqlField()
+  emailAddress: string;
+  @gqlField()
+  password: string;
+}
+
+@gqlObjectType()
+export class AuthUserPayload {
+  @gqlField()
+  token: string;
+
+  @gqlField({ type: GQLViewer })
+  viewer: GQLViewer;
+}
+
+export class AuthResolver {
   @gqlMutation({ name: "authGuest", type: AuthGuestPayload })
   async authGuest(
     @gqlContextType() context: RequestContext,
@@ -84,5 +101,40 @@ export class AuthGuestResolver {
   @gqlMutation({ name: "emailAvailable", type: Boolean })
   async emailAvailableMutation(@gqlArg("email") email: string) {
     return this.emailAvailable(email);
+  }
+
+  @gqlMutation({ name: "authUser", type: AuthUserPayload })
+  async authUser(
+    @gqlContextType() context: RequestContext,
+    @gqlArg("input") input: AuthUserInput,
+  ): Promise<AuthUserPayload> {
+    const [viewer, token] = await useAndVerifyAuthJWT(
+      context,
+      async () => {
+        const data = await User.validateEmailPassword(
+          input.emailAddress,
+          input.password,
+        );
+        return data?.id;
+      },
+      {
+        secretOrKey: "secret",
+        signInOptions: {
+          algorithm: "HS256",
+          expiresIn: "24h",
+        },
+      },
+      User.loaderOptions(),
+      {
+        session: false,
+      },
+    );
+    if (!viewer) {
+      throw new Error(`not the right credentials`);
+    }
+    return {
+      viewer: new GQLViewer(viewer),
+      token,
+    };
   }
 }

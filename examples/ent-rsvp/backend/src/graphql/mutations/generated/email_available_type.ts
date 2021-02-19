@@ -8,7 +8,7 @@ import {
   GraphQLBoolean,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { AuthGuestResolver } from "../auth/auth";
+import { AuthResolver } from "../auth/auth";
 
 export const EmailAvailableType: GraphQLFieldConfig<
   undefined,
@@ -27,7 +27,7 @@ export const EmailAvailableType: GraphQLFieldConfig<
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
-    const r = new AuthGuestResolver();
+    const r = new AuthResolver();
     return r.emailAvailableMutation(email);
   },
 };

@@ -12,28 +12,28 @@ import {
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GQLViewerType } from "src/graphql/resolvers/";
-import { AuthGuestPayload, AuthResolver } from "../auth/auth";
+import { AuthUserPayload, AuthResolver } from "../auth/auth";
 
-interface AuthGuestInput {
+interface AuthUserInput {
   emailAddress: string;
-  code: string;
+  password: string;
 }
 
-export const AuthGuestInputType = new GraphQLInputObjectType({
-  name: "AuthGuestInput",
+export const AuthUserInputType = new GraphQLInputObjectType({
+  name: "AuthUserInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     emailAddress: {
       type: GraphQLNonNull(GraphQLString),
     },
-    code: {
+    password: {
       type: GraphQLNonNull(GraphQLString),
     },
   }),
 });
 
-export const AuthGuestPayloadType = new GraphQLObjectType({
-  name: "AuthGuestPayload",
-  fields: (): GraphQLFieldConfigMap<AuthGuestPayload, RequestContext> => ({
+export const AuthUserPayloadType = new GraphQLObjectType({
+  name: "AuthUserPayload",
+  fields: (): GraphQLFieldConfigMap<AuthUserPayload, RequestContext> => ({
     token: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -43,16 +43,16 @@ export const AuthGuestPayloadType = new GraphQLObjectType({
   }),
 });
 
-export const AuthGuestType: GraphQLFieldConfig<
+export const AuthUserType: GraphQLFieldConfig<
   undefined,
   RequestContext,
-  { [input: string]: AuthGuestInput }
+  { [input: string]: AuthUserInput }
 > = {
-  type: GraphQLNonNull(AuthGuestPayloadType),
+  type: GraphQLNonNull(AuthUserPayloadType),
   args: {
     input: {
       description: "",
-      type: GraphQLNonNull(AuthGuestInputType),
+      type: GraphQLNonNull(AuthUserInputType),
     },
   },
   resolve: async (
@@ -60,11 +60,11 @@ export const AuthGuestType: GraphQLFieldConfig<
     { input },
     context: RequestContext,
     _info: GraphQLResolveInfo,
-  ): Promise<AuthGuestPayload> => {
+  ): Promise<AuthUserPayload> => {
     const r = new AuthResolver();
-    return r.authGuest(context, {
+    return r.authUser(context, {
       emailAddress: input.emailAddress,
-      code: input.code,
+      password: input.password,
     });
   },
 };
