@@ -333,6 +333,15 @@ input EventActivityCreateInput {
   startTime: Time!
   endTime: Time
   location: String!
+  address: addressEventActivityCreateInput
+}
+
+input addressEventActivityCreateInput {
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  apartment: String
 }
 
 type EventActivityDeletePayload {

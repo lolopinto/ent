@@ -19,12 +19,21 @@ import {
   EventActivityInput,
 } from "src/ent/event_activity/actions/event_activity_builder";
 
+interface customAddressInput {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  apartment?: string | null;
+}
+
 export interface EventActivityCreateInput {
   name: string;
   eventID: ID | Builder<Event>;
   startTime: Date;
   endTime?: Date | null;
   location: string;
+  address?: customAddressInput | null;
 }
 
 export class CreateEventActivityActionBase implements Action<EventActivity> {

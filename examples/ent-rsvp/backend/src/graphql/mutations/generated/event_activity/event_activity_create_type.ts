@@ -27,6 +27,27 @@ interface EventActivityCreatePayload {
   eventActivity: EventActivity;
 }
 
+const addressEventActivityCreateInput = new GraphQLInputObjectType({
+  name: "addressEventActivityCreateInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    street: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    city: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    state: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    zipCode: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    apartment: {
+      type: GraphQLString,
+    },
+  }),
+});
+
 export const EventActivityCreateInputType = new GraphQLInputObjectType({
   name: "EventActivityCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -44,6 +65,9 @@ export const EventActivityCreateInputType = new GraphQLInputObjectType({
     },
     location: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    address: {
+      type: addressEventActivityCreateInput,
     },
   }),
 });
@@ -86,6 +110,7 @@ export const EventActivityCreateType: GraphQLFieldConfig<
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.location,
+        address: input.address,
       },
     ).saveX();
     return { eventActivity: eventActivity };

@@ -24,7 +24,21 @@ export default class EventActivity extends BaseEntSchema {
 
   actions: Action[] = [
     {
-      operation: ActionOperation.Mutations,
+      operation: ActionOperation.Create,
+      actionOnlyFields: [
+        {
+          name: "address",
+          type: "Object",
+          nullable: true,
+          actionName: "CreateAddressAction",
+        },
+      ],
+    },
+    {
+      operation: ActionOperation.Edit,
+    },
+    {
+      operation: ActionOperation.Delete,
     },
   ];
 
