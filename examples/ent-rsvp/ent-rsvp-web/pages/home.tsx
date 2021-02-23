@@ -1,13 +1,20 @@
 import { useRouter } from "next/router";
 import { useSession } from "../src/session";
-import Container from "react-bootstrap/Container";
+import { useEffect } from "react";
+import Layout from "../src/components/layout";
 
 export default function Home() {
-  const session = useSession();
+  const [session, loading] = useSession();
   const router = useRouter();
 
-  if (!session) {
-    router.push("/login");
-  
-  return <Container className="p-3">Logged in!</Container>;
+  useEffect(() => {
+    if (!loading && !session) {
+      router.push("/login");
+    }
+  }, [loading, session]);
+
+  if (loading) {
+    return "Loading...";
+  }
+  return <Layout>Logged in!</Layout>;
 }

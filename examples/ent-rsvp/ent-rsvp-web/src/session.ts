@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+
 export const LOGGED_IN_CREDS = "logged_in_creds";
 
 interface Viewer {
@@ -26,13 +28,19 @@ export const SetLoggedInCreds = (token: string, viewer: Viewer) => {
   }
 };
 
-export function useSession(): null | LoggedinCreds {
-  if (typeof localStorage === "undefined") {
-    return null;
-  }
-  const creds = localStorage.getItem(LOGGED_IN_CREDS);
-  if (!creds) {
-    return null;
-  }
-  return JSON.parse(creds) as LoggedinCreds;
+export function useSession(): [null | LoggedinCreds, boolean] {
+  const [creds, setCreds] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (typeof localStorage === "undefined") {
+      return;
+    }
+    const creds = localStorage.getItem(LOGGED_IN_CREDS);
+    if (creds) {
+      setCreds(creds);
+    }
+    setLoading(false);
+  });
+
+  return [creds, loading];
 }

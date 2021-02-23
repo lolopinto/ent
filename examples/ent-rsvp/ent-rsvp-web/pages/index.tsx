@@ -1,11 +1,9 @@
-import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
 import Alert from "react-bootstrap/Alert";
-import Container from "react-bootstrap/Container";
-import "bootstrap/dist/css/bootstrap.min.css";
 import Link from "next/link";
 
 import createEnvironment from "../src/initRelayEnvironment";
+import Layout from "../src/components/layout";
 import Login from "../src/components/login";
 import Register from "../src/components/register";
 import { useSession } from "../src/session";
@@ -17,12 +15,16 @@ export default function Index() {
   const [loginVisible, setLoginVisible] = useState(true);
   const [registerVisible, setRegisterVisible] = useState(false);
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
-  const session = useSession();
+  const [session, loading] = useSession();
   const router = useRouter();
 
-  // logged in. go home
-  if (session) {
-    router.push("/home");
+  useEffect(() => {
+    if (session) {
+      router.push("/home");
+    }
+  });
+  if (loading) {
+    return "Loading...";
   }
 
   function toggle(event) {
@@ -55,14 +57,14 @@ export default function Index() {
   }
 
   function registeredSuccessfully() {
-    console.log("registerd");
+    //    console.log("registerd");
     setLoginVisible(true);
     setRegisterVisible(false);
     setShowLoginSuccess(true);
   }
 
   return (
-    <Container className="p-3">
+    <Layout>
       <Alert show={showLoginSuccess} variant="success">
         Successfully created account. You may login with given credentials now.
       </Alert>
@@ -73,6 +75,6 @@ export default function Index() {
         callback={registeredSuccessfully}
       />
       {renderLink()}
-    </Container>
+    </Layout>
   );
 }

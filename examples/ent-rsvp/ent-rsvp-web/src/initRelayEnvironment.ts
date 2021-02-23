@@ -1,19 +1,27 @@
 import { Environment, Network, RecordSource, Store } from "relay-runtime";
 
 async function fetchQuery(operation, variables) {
-  return await fetch(process.env.NEXT_PUBLIC_RELAY_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      // TODO
-      //      "Authorization": `Bearer ${AuthToken()}`,
-    },
-    body: JSON.stringify({
-      query: operation.text, // GraphQL text from input
-      variables,
-    }),
-  }).then((response) => response.json());
+  try {
+    const response = await fetch(process.env.NEXT_PUBLIC_RELAY_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        // TODO
+        //      "Authorization": `Bearer ${AuthToken()}`,
+      },
+      body: JSON.stringify({
+        query: operation.text,
+        variables,
+      }),
+    });
+    console.log("response...");
+    console.log(response);
+    return response.json();
+  } catch (err) {
+    console.log("errrrrorrrrr");
+    console.error(err);
+  }
 }
 
 let relayEnvironment: Environment = null;
