@@ -19,15 +19,6 @@ export default class Event extends BaseEntSchema {
   actions: Action[] = [
     {
       operation: ActionOperation.Create,
-      fields: ["Name", "creatorID"],
-      actionOnlyFields: [
-        {
-          name: "address",
-          type: "Object",
-          nullable: true,
-          actionName: "CreateAddressAction",
-        },
-      ],
     },
   ];
 }

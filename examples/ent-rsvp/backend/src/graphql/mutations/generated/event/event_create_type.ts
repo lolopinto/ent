@@ -27,27 +27,6 @@ interface EventCreatePayload {
   event: Event;
 }
 
-const addressEventCreateInput = new GraphQLInputObjectType({
-  name: "addressEventCreateInput",
-  fields: (): GraphQLInputFieldConfigMap => ({
-    street: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    city: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    state: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    zipCode: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    apartment: {
-      type: GraphQLString,
-    },
-  }),
-});
-
 export const EventCreateInputType = new GraphQLInputObjectType({
   name: "EventCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -56,9 +35,6 @@ export const EventCreateInputType = new GraphQLInputObjectType({
     },
     creatorID: {
       type: GraphQLNonNull(GraphQLID),
-    },
-    address: {
-      type: addressEventCreateInput,
     },
   }),
 });
@@ -93,7 +69,6 @@ export const EventCreateType: GraphQLFieldConfig<
     let event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
       creatorID: mustDecodeIDFromGQLID(input.creatorID),
-      address: input.address,
     }).saveX();
     return { event: event };
   },

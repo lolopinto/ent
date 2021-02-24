@@ -9,6 +9,7 @@ import {
   Deny,
 } from "@lolopinto/ent";
 import { Builder } from "@lolopinto/ent/action";
+import { EventActivity } from "src/ent";
 import { Event } from "src/ent/internal";
 
 export class AllowIfEventCreatorRule implements PrivacyPolicyRule {
@@ -50,4 +51,20 @@ export class DenyIfNotEventCreatorRule implements PrivacyPolicyRule {
 export class AllowIfEventCreatorPrivacyPolicy {
   constructor(private id: ID | Builder<Ent>) {}
   rules = [new AllowIfEventCreatorRule(this.id), AlwaysDenyRule];
+}
+
+export class AllowIfEventCreatorFromActivityRule implements PrivacyPolicyRule {
+  constructor(private id: ID) {}
+
+  async apply(viewer: Viewer, _ent: Ent) {
+    const ent = await EventActivity.load(viewer, this.id);
+    if (!ent) {
+      return Skip();
+    }
+    const event = await ent.loadEventX();
+    if (event.creatorID === viewer.viewerID) {
+      return Allow();
+    }
+    return Skip();
+  }
 }

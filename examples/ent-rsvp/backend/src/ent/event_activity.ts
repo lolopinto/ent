@@ -7,12 +7,13 @@ import {
   DenyIfEntIsNotVisibleRule,
   PrivacyPolicy,
 } from "@lolopinto/ent";
+import { gqlField } from "@lolopinto/ent/graphql";
 import {
   Event,
   EventActivityBase,
   EventActivityRsvpStatus,
 } from "src/ent/internal";
-import { Guest } from ".";
+import { Address, Guest } from ".";
 import { EdgeType } from "./const";
 import { AllowIfEventCreatorRule } from "./event/privacy/event_creator";
 
@@ -51,5 +52,10 @@ export class EventActivity extends EventActivityBase {
       return EventActivityRsvpStatus.CannotRsvp;
     }
     return EventActivityRsvpStatus.CanRsvp;
+  }
+
+  @gqlField({ name: "address", type: "Address", nullable: true })
+  async address(): Promise<Address | null> {
+    return Address.loadFromOwnerID(this.viewer, this.id);
   }
 }

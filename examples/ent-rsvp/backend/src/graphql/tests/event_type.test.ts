@@ -19,29 +19,9 @@ test("create event", async () => {
       args: {
         creatorID: encodeGQLID(user),
         name: "fun event",
-        address: {
-          street: "1 main street",
-          city: "San Francisco",
-          state: "CA",
-          zipCode: "91111",
-        },
       },
     },
     ["event.name", "fun event"],
     ["event.creator.id", encodeGQLID(user)],
-    [
-      "event.id",
-      async function(id) {
-        const address = await Address.loadFromOwnerID(
-          user.viewer,
-          mustDecodeIDFromGQLID(id),
-        );
-        expect(address).not.toBeNull();
-        expect(address?.street).toBe("1 main street");
-        expect(address?.city).toBe("San Francisco");
-        expect(address?.state).toBe("CA");
-        expect(address?.zipCode).toBe("91111");
-      },
-    ],
   );
 });

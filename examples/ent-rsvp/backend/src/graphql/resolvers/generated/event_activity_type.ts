@@ -18,6 +18,7 @@ import {
 } from "@lolopinto/ent/graphql";
 import {
   EventType,
+  AddressType,
   EventActivityToAttendingConnectionType,
   EventActivityToDeclinedConnectionType,
   EventActivityToInvitesConnectionType,
@@ -175,6 +176,16 @@ export const EventActivityType = new GraphQLObjectType({
           getEventActivityRsvpStatusValues(),
           EventActivityRsvpStatusType.getValues(),
         );
+      },
+    },
+    address: {
+      type: AddressType,
+      resolve: async (
+        eventActivity: EventActivity,
+        args: {},
+        context: RequestContext,
+      ) => {
+        return eventActivity.address();
       },
     },
   }),

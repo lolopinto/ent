@@ -1,4 +1,4 @@
-import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
+import { AllowIfEventCreatorFromActivityRule } from "src/ent/event/privacy/event_creator";
 import {
   PrivacyPolicy,
   AlwaysDenyRule,
@@ -11,9 +11,14 @@ export class EditAddressPrivacy implements PrivacyPolicy {
   constructor(private builder: AddressBuilder) {}
 
   rules: PrivacyPolicyRule[] = [
-    new AllowIfSubPolicyAllowsRule(
-      new AllowIfEventCreatorPrivacyPolicy(this.builder.existingEnt!.ownerID),
-    ),
+    new AllowIfSubPolicyAllowsRule({
+      rules: [
+        new AllowIfEventCreatorFromActivityRule(
+          this.builder.existingEnt!.ownerID,
+        ),
+        AlwaysDenyRule,
+      ],
+    }),
     AlwaysDenyRule,
   ];
 }

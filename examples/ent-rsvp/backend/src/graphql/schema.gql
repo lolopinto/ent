@@ -84,6 +84,7 @@ type EventActivity implements Node {
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
   viewerRsvpStatus: EventActivityRsvpStatus
+  address: Address
 }
 
 """Time scalar type"""
@@ -200,6 +201,16 @@ enum EventActivityRsvpStatus {
   CANNOT_RSVP
 }
 
+type Address implements Node {
+  owner: Node
+  id: ID!
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  apartment: String
+}
+
 type EventToGuestGroupsConnection implements Connection {
   edges: [EventToGuestGroupsEdge!]!
   nodes: [GuestGroup!]!
@@ -249,16 +260,6 @@ type Mutation {
 
 type AddressCreatePayload {
   address: Address!
-}
-
-type Address implements Node {
-  owner: Node
-  id: ID!
-  street: String!
-  city: String!
-  state: String!
-  zipCode: String!
-  apartment: String
 }
 
 input AddressCreateInput {
@@ -397,15 +398,6 @@ type EventCreatePayload {
 input EventCreateInput {
   name: String!
   creatorID: ID!
-  address: addressEventCreateInput
-}
-
-input addressEventCreateInput {
-  street: String!
-  city: String!
-  state: String!
-  zipCode: String!
-  apartment: String
 }
 
 type GuestCreatePayload {

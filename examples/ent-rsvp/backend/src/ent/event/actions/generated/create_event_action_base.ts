@@ -16,18 +16,9 @@ import {
 import { Event, User } from "src/ent/";
 import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
-interface customAddressInput {
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  apartment?: string | null;
-}
-
 export interface EventCreateInput {
   name: string;
   creatorID: ID | Builder<User>;
-  address?: customAddressInput | null;
 }
 
 export class CreateEventActionBase implements Action<Event> {
