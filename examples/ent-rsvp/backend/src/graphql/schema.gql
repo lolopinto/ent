@@ -1,5 +1,6 @@
 type Query {
   emailAvailable(email: String!): Boolean!
+  eventSlugAvaiable(slug: String!): Boolean!
   node(id: ID!): Node
   viewer: Viewer
 }
@@ -56,6 +57,7 @@ type Event implements Node {
   creator: User
   id: ID!
   name: String!
+  slug: String
   eventActivities(first: Int, after: String, last: Int, before: String): EventToEventActivitiesConnection!
   guestGroups(first: Int, after: String, last: Int, before: String): EventToGuestGroupsConnection!
   guests(first: Int, after: String, last: Int, before: String): EventToGuestsConnection!
@@ -400,6 +402,7 @@ type EventCreatePayload {
 
 input EventCreateInput {
   name: String!
+  slug: String
   creatorID: ID!
 }
 

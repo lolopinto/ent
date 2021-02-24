@@ -8,6 +8,8 @@ import {
   loadEntX,
   loadEnts,
   LoadEntOptions,
+  loadEntFromClause,
+  loadEntXFromClause,
   loadRow,
   loadRowX,
   AlwaysDenyRule,
@@ -34,6 +36,7 @@ export class EventBase {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly name: string;
+  readonly slug: string | null;
   readonly creatorID: ID;
 
   constructor(public viewer: Viewer, id: ID, data: Data) {
@@ -43,6 +46,7 @@ export class EventBase {
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.name = data.name;
+    this.slug = data.slug;
     this.creatorID = data.creator_id;
   }
 
@@ -97,6 +101,54 @@ export class EventBase {
     });
   }
 
+  static async loadFromSlug<T extends EventBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    viewer: Viewer,
+    slug: string,
+  ): Promise<T | null> {
+    return loadEntFromClause(
+      viewer,
+      EventBase.loaderOptions.apply(this),
+      query.Eq("slug", slug),
+    );
+  }
+
+  static async loadFromSlugX<T extends EventBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    viewer: Viewer,
+    slug: string,
+  ): Promise<T> {
+    return loadEntXFromClause(
+      viewer,
+      EventBase.loaderOptions.apply(this),
+      query.Eq("slug", slug),
+    );
+  }
+
+  static async loadIDFromSlug<T extends EventBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    slug: string,
+  ): Promise<ID | null> {
+    const row = await loadRow({
+      ...EventBase.loaderOptions.apply(this),
+      clause: query.Eq("slug", slug),
+    });
+    if (!row) {
+      return null;
+    }
+    return row["id"];
+  }
+
+  static async loadRawDataFromSlug<T extends EventBase>(
+    this: new (viewer: Viewer, id: ID, data: Data) => T,
+    slug: string,
+  ): Promise<Data | null> {
+    return await loadRow({
+      ...EventBase.loaderOptions.apply(this),
+      clause: query.Eq("slug", slug),
+    });
+  }
+
   static loaderOptions<T extends EventBase>(
     this: new (viewer: Viewer, id: ID, data: Data) => T,
   ): LoadEntOptions<T> {
@@ -108,7 +160,7 @@ export class EventBase {
   }
 
   private static getFields(): string[] {
-    return ["id", "created_at", "updated_at", "name", "creator_id"];
+    return ["id", "created_at", "updated_at", "name", "slug", "creator_id"];
   }
 
   private static schemaFields: Map<string, Field>;

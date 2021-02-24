@@ -15,6 +15,7 @@ import { Event, User } from "src/ent/";
 
 export interface EventInput {
   name?: string;
+  slug?: string | null;
   creatorID?: ID | Builder<User>;
 }
 
@@ -106,6 +107,7 @@ export class EventBuilder implements Builder<Event> {
       }
     };
     addField("Name", fields.name);
+    addField("Slug", fields.slug);
     addField("creatorID", fields.creatorID);
     return result;
   }

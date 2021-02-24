@@ -18,6 +18,7 @@ import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
 export interface EventCreateInput {
   name: string;
+  slug?: string | null;
   creatorID: ID | Builder<User>;
 }
 

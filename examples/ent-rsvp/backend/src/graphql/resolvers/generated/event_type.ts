@@ -43,6 +43,9 @@ export const EventType = new GraphQLObjectType({
     name: {
       type: GraphQLNonNull(GraphQLString),
     },
+    slug: {
+      type: GraphQLString,
+    },
     eventActivities: {
       type: GraphQLNonNull(EventToEventActivitiesConnectionType()),
       args: {

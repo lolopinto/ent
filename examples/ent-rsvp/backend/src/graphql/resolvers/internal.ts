@@ -20,4 +20,6 @@ export * from "src/graphql/resolvers/generated/guest_group/guest_group_to_guests
 export * from "src/graphql/resolvers/generated/guest_group/guest_group_to_invited_events_connection_type";
 export * from "src/graphql/resolvers/generated/user/user_to_events_connection_type";
 export * from "src/graphql/resolvers/generated/email_available_type";
+export * from "src/graphql/resolvers/generated/event_slug_available_type";
+export * from "src/graphql/resolvers/generated/eventt_type";
 export * from "src/graphql/resolvers/generated/viewer_type";

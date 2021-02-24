@@ -33,6 +33,9 @@ export const EventCreateInputType = new GraphQLInputObjectType({
     name: {
       type: GraphQLNonNull(GraphQLString),
     },
+    slug: {
+      type: GraphQLString,
+    },
     creatorID: {
       type: GraphQLNonNull(GraphQLID),
     },
@@ -68,6 +71,7 @@ export const EventCreateType: GraphQLFieldConfig<
   ): Promise<EventCreatePayload> => {
     let event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
+      slug: input.slug,
       creatorID: mustDecodeIDFromGQLID(input.creatorID),
     }).saveX();
     return { event: event };

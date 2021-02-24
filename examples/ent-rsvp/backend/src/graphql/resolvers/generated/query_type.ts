@@ -3,6 +3,8 @@
 import { GraphQLObjectType } from "graphql";
 import {
   EmailAvailableType,
+  EventSlugAvailableType,
+  EventtType,
   NodeQuery,
   ViewerType,
 } from "src/graphql/resolvers/";
@@ -11,6 +13,8 @@ export const QueryType = new GraphQLObjectType({
   name: "Query",
   fields: () => ({
     emailAvailable: EmailAvailableType,
+    eventSlugAvailable: EventSlugAvailableType,
+    eventt: EventtType,
     node: NodeQuery,
     viewer: ViewerType,
   }),
