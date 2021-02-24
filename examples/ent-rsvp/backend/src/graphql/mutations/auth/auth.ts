@@ -121,7 +121,7 @@ export class AuthResolver {
         secretOrKey: "secret",
         signInOptions: {
           algorithm: "HS256",
-          expiresIn: "24h",
+          expiresIn: "30 days",
         },
       },
       User.loaderOptions(),

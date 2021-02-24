@@ -33,6 +33,7 @@ export interface EventActivityCreateInput {
   startTime: Date;
   endTime?: Date | null;
   location: string;
+  description?: string | null;
   address?: customAddressInput | null;
 }
 

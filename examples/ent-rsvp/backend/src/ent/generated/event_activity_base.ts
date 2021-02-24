@@ -56,6 +56,7 @@ export class EventActivityBase {
   readonly startTime: Date;
   readonly endTime: Date | null;
   readonly location: string;
+  readonly description: string | null;
 
   constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
@@ -68,6 +69,7 @@ export class EventActivityBase {
     this.startTime = data.start_time;
     this.endTime = data.end_time;
     this.location = data.location;
+    this.description = data.description;
   }
 
   // by default, we always deny and it's up to the ent
@@ -145,6 +147,7 @@ export class EventActivityBase {
       "start_time",
       "end_time",
       "location",
+      "description",
     ];
   }
 

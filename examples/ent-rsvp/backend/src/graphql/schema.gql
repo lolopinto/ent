@@ -80,6 +80,7 @@ type EventActivity implements Node {
   startTime: Time!
   endTime: Time
   location: String!
+  description: String
   attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
@@ -334,6 +335,7 @@ input EventActivityCreateInput {
   startTime: Time!
   endTime: Time
   location: String!
+  description: String
   address: addressEventActivityCreateInput
 }
 
@@ -364,6 +366,7 @@ input EventActivityEditInput {
   startTime: Time
   endTime: Time
   location: String
+  description: String
 }
 
 type EventActivityRemoveInvitePayload {

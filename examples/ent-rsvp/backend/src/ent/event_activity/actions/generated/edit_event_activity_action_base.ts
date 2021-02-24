@@ -25,6 +25,7 @@ export interface EventActivityEditInput {
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
+  description?: string | null;
 }
 
 export class EditEventActivityActionBase implements Action<EventActivity> {

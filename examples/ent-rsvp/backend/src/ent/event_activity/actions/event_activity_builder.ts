@@ -20,6 +20,7 @@ export interface EventActivityInput {
   startTime?: Date;
   endTime?: Date | null;
   location?: string;
+  description?: string | null;
 }
 
 export interface EventActivityAction extends Action<EventActivity> {
@@ -273,6 +274,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     addField("StartTime", fields.startTime);
     addField("EndTime", fields.endTime);
     addField("Location", fields.location);
+    addField("Description", fields.description);
     return result;
   }
 

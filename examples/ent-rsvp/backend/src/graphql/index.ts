@@ -31,7 +31,7 @@ const corsOptions: CorsOptions = {
     "Content-Length",
     "X-CSRF-Token",
   ],
-  maxAge: -1,
+  maxAge: 86400,
 };
 app.options("/graphql", cors(corsOptions));
 

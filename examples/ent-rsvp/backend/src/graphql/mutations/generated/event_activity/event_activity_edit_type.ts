@@ -49,6 +49,9 @@ export const EventActivityEditInputType = new GraphQLInputObjectType({
     location: {
       type: GraphQLString,
     },
+    description: {
+      type: GraphQLString,
+    },
   }),
 });
 
@@ -90,6 +93,7 @@ export const EventActivityEditType: GraphQLFieldConfig<
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.location,
+        description: input.description,
       },
     );
     return { eventActivity: eventActivity };

@@ -61,6 +61,9 @@ export const EventActivityType = new GraphQLObjectType({
     location: {
       type: GraphQLNonNull(GraphQLString),
     },
+    description: {
+      type: GraphQLString,
+    },
     attending: {
       type: GraphQLNonNull(EventActivityToAttendingConnectionType()),
       args: {

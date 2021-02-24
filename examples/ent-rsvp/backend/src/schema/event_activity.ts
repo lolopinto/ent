@@ -20,6 +20,7 @@ export default class EventActivity extends BaseEntSchema {
     TimestampType({ name: "EndTime", nullable: true }),
     // Name of location, not address. TODO address
     StringType({ name: "Location" }),
+    StringType({ name: "Description", nullable: true }),
   ];
 
   actions: Action[] = [

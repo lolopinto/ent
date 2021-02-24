@@ -66,6 +66,9 @@ export const EventActivityCreateInputType = new GraphQLInputObjectType({
     location: {
       type: GraphQLNonNull(GraphQLString),
     },
+    description: {
+      type: GraphQLString,
+    },
     address: {
       type: addressEventActivityCreateInput,
     },
@@ -110,6 +113,7 @@ export const EventActivityCreateType: GraphQLFieldConfig<
         startTime: input.startTime,
         endTime: input.endTime,
         location: input.location,
+        description: input.description,
         address: input.address,
       },
     ).saveX();
