@@ -2,14 +2,18 @@ import { Environment, Network, RecordSource, Store } from "relay-runtime";
 
 async function fetchQuery(operation, variables) {
   try {
+    let headers = {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    };
+    const creds = localStorage.getItem("logged_in_creds");
+    if (creds) {
+      const credsObj = JSON.parse(creds);
+      headers["Authorization"] = `Bearer ${credsObj.token}`;
+    }
     const response = await fetch(process.env.NEXT_PUBLIC_RELAY_ENDPOINT, {
       method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        // TODO
-        //      "Authorization": `Bearer ${AuthToken()}`,
-      },
+      headers,
       body: JSON.stringify({
         query: operation.text,
         variables,

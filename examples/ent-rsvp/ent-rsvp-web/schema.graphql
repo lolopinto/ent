@@ -51,7 +51,7 @@ type AddressEditPayload {
   address: Address!
 }
 
-input addressEventCreateInput {
+input addressEventActivityCreateInput {
   street: String!
   city: String!
   state: String!
@@ -96,6 +96,7 @@ type Event implements Node {
   creator: User
   id: ID!
   name: String!
+  slug: String
   eventActivities(first: Int, after: String, last: Int, before: String): EventToEventActivitiesConnection!
   guestGroups(first: Int, after: String, last: Int, before: String): EventToGuestGroupsConnection!
   guests(first: Int, after: String, last: Int, before: String): EventToGuestsConnection!
@@ -108,10 +109,12 @@ type EventActivity implements Node {
   startTime: Time!
   endTime: Time
   location: String!
+  description: String
   attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
   viewerRsvpStatus: EventActivityRsvpStatus
+  address: Address
 }
 
 input EventActivityAddInviteInput {
@@ -129,6 +132,8 @@ input EventActivityCreateInput {
   startTime: Time!
   endTime: Time
   location: String!
+  description: String
+  address: addressEventActivityCreateInput
 }
 
 type EventActivityCreatePayload {
@@ -150,6 +155,7 @@ input EventActivityEditInput {
   startTime: Time
   endTime: Time
   location: String
+  description: String
 }
 
 type EventActivityEditPayload {
@@ -227,8 +233,8 @@ type EventActivityToInvitesEdge implements Edge {
 
 input EventCreateInput {
   name: String!
+  slug: String
   creatorID: ID!
-  address: addressEventCreateInput
 }
 
 type EventCreatePayload {
@@ -432,6 +438,8 @@ type PageInfo {
 
 type Query {
   emailAvailable(email: String!): Boolean!
+  eventSlugAvailable(slug: String!): Boolean!
+  eventt(slug: String!): Event
   node(id: ID!): Node
   viewer: Viewer
 }

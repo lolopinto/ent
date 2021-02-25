@@ -64,7 +64,7 @@ export default function Index() {
   }
 
   return (
-    <Layout>
+    <Layout allowLoggedout={true}>
       <Alert show={showLoginSuccess} variant="success">
         Successfully created account. You may login with given credentials now.
       </Alert>

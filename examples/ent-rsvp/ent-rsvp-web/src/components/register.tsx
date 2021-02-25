@@ -103,7 +103,6 @@ export default function Register({
           <Form.Label>Last Name</Form.Label>
           <Form.Control
             size="lg"
-            autoFocus
             type="text"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
@@ -117,7 +116,6 @@ export default function Register({
           <Form.Label>Email Address</Form.Label>
           <Form.Control
             size="lg"
-            autoFocus
             type="email"
             value={email}
             onChange={(e) => handleEmailChange(e.target.value)}

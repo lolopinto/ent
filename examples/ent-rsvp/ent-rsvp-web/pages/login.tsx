@@ -25,7 +25,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Layout>
+    <Layout allowLoggedout={true}>
       <Login environment={environment} visible />
     </Layout>
   );
