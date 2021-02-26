@@ -179,7 +179,17 @@ export async function loadEnts<T extends Ent>(
   // TODO do we want this loader check all over the place?
   if (l) {
     const rows = await l.loadMany(ids);
-    m = await applyPrivacyPolicyForRows(viewer, rows, options);
+    let rows2: Data[] = [];
+    for (const row of rows) {
+      if (!row) {
+        continue;
+      }
+      if (row instanceof Error) {
+        throw row;
+      }
+      rows2.push(row);
+    }
+    m = await applyPrivacyPolicyForRows(viewer, rows2, options);
   } else {
     const col = options.pkey || "id";
     m = await loadEntsFromClause(viewer, clause.In(col, ...ids), options);
@@ -253,13 +263,13 @@ export function createDataLoader(options: SelectDataOptions) {
     // TODO is there a better way of doing this?
     // context not needed because we're creating a loader which has its own cache which is being used here
     const nodes = await loadRows(rowOptions);
-    let result: (Data | Error)[] = ids.map((id) => {
+    let result: (Data | null)[] = ids.map((id) => {
       for (const node of nodes) {
         if (node[col] === id) {
           return node;
         }
       }
-      return new Error(`couldn't find data for row ${id}`);
+      return null;
     });
 
     return result;
@@ -1026,7 +1036,17 @@ export async function loadEdgeDatas(
   }
 
   const rows = await assocEdgeLoader.loadMany(edgeTypes);
-  return new Map(rows.map((row) => [row["edge_type"], new AssocEdgeData(row)]));
+  const m = new Map<string, AssocEdgeData>();
+  rows.forEach((row) => {
+    if (!row) {
+      return;
+    }
+    if (row instanceof Error) {
+      throw row;
+    }
+    m.set(row["edge_type"], new AssocEdgeData(row));
+  });
+  return m;
 }
 
 const edgeFields = [
