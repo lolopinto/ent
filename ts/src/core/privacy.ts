@@ -145,7 +145,7 @@ export const AllowIfHasIdentity = {
 
 export const AllowIfViewerRule = {
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
-    if (v.viewerID === ent?.id) {
+    if (v.viewerID && v.viewerID === ent?.id) {
       return Allow();
     }
     return Skip();
