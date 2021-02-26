@@ -1,5 +1,10 @@
 import { WriteOperation } from "../action";
-import { User, BuilderSchema, SimpleBuilder } from "../testutils/builder";
+import {
+  User,
+  BuilderSchema,
+  SimpleBuilder,
+  SimpleAction,
+} from "../testutils/builder";
 import { IDViewer, LoggedOutViewer } from "./viewer";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
@@ -16,8 +21,11 @@ import {
   Viewer,
   loadDerivedEnt,
   loadDerivedEntX,
+  loadEnt,
+  loadEntX,
 } from "./ent";
 import { PrivacyPolicy, AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
+import { Context, ContextCache } from "./context";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -126,7 +134,7 @@ describe("loadDerivedEnt", () => {
   });
 });
 
-describe("loadEntX", () => {
+describe("loadDerivedEntX", () => {
   test("loggedout", async () => {
     try {
       await DerivedUser.loadX(loggedOutViewer, { id: "1" });
@@ -240,4 +248,165 @@ test("custom edge", async () => {
   expect(edges2.length).toBe(1);
   const edge2 = edges2[0];
   expect(edge2).toBeInstanceOf(AssocEdge);
+});
+
+class contextImpl implements Context {
+  cache?: ContextCache = new ContextCache();
+  viewer = new LoggedOutViewer();
+
+  getViewer(): Viewer {
+    return this.viewer;
+  }
+}
+
+describe("loadEnt(X)", () => {
+  const noCtxV = new LoggedOutViewer();
+  const options = {
+    ent: User,
+    fields: ["id", "foo"],
+    tableName: "users",
+  };
+  const ctx = new contextImpl();
+
+  test("loadEnt. no data. no context", async () => {
+    const ent = await loadEnt(noCtxV, "1", options);
+    expect(ent).toBeNull();
+  });
+
+  test("loadEnt. no data. with context", async () => {
+    const ent = await loadEnt(ctx.getViewer(), "1", options);
+    expect(ent).toBeNull();
+  });
+
+  test("loadEntX. no data. no context", async () => {
+    try {
+      await loadEntX(noCtxV, "1", options);
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/couldn't find row for query id/);
+    }
+  });
+
+  test("loadEntX. no data. with context", async () => {
+    try {
+      await loadEntX(ctx.getViewer(), "1", options);
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(/couldn't find row for query id/);
+    }
+  });
+
+  test("loadEnt. data. no context", async () => {
+    const user = await createUser();
+    const ent = await loadEnt(noCtxV, user.id, options);
+    expect(ent).not.toBeNull();
+    expect(ent).toBeInstanceOf(User);
+  });
+
+  test("loadEnt. data. with context", async () => {
+    const user = await createUser();
+    const ent = await loadEnt(ctx.getViewer(), user.id, options);
+    expect(ent).not.toBeNull();
+    expect(ent).toBeInstanceOf(User);
+  });
+
+  test("loadEntX. data. no context", async () => {
+    const user = await createUser();
+    const ent = await loadEntX(noCtxV, user.id, options);
+    expect(ent).toBeInstanceOf(User);
+  });
+
+  test("loadEntX. data. with context", async () => {
+    const user = await createUser();
+    const ent = await loadEntX(ctx.getViewer(), user.id, options);
+    expect(ent).toBeInstanceOf(User);
+  });
+
+  class User2 implements Ent {
+    id: ID;
+    accountID: string;
+    nodeType = "User2";
+    privacyPolicy = {
+      rules: [AllowIfViewerRule, AlwaysDenyRule],
+    };
+
+    constructor(public viewer: Viewer, id: ID, public data: Data) {
+      this.id = id;
+    }
+  }
+
+  class User2Schema implements BuilderSchema<User2> {
+    ent = User2;
+    fields: Field[] = [
+      UUIDType({
+        name: "id",
+      }),
+      StringType({
+        name: "foo",
+      }),
+    ];
+  }
+
+  function getBuilder() {
+    const action = new SimpleAction(
+      viewer,
+      new User2Schema(),
+      new Map([
+        ["id", "{id}"],
+        ["foo", "bar"],
+      ]),
+    );
+    action.viewerForEntLoad = (data: Data) => {
+      return new IDViewer(data.id);
+    };
+    return action.builder;
+  }
+
+  test("loadEntX. not visible privacy. with context", async () => {
+    const user = await getBuilder().saveX();
+    try {
+      await loadEntX(ctx.getViewer(), user.id, {
+        ent: User2,
+        fields: ["id", "foo"],
+        tableName: "user2s",
+      });
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(
+        /ent (.+) of type User2 is not visible for privacy reasons/,
+      );
+    }
+  });
+
+  test("loadEntX. not visible privacy. no context", async () => {
+    const user = await getBuilder().saveX();
+    try {
+      await loadEntX(noCtxV, user.id, {
+        ent: User2,
+        fields: ["id", "foo"],
+        tableName: "user2s",
+      });
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(
+        /ent (.+) of type User2 is not visible for privacy reasons/,
+      );
+    }
+  });
+
+  test("retrieving garbage", async () => {
+    const user = await getBuilder().saveX();
+    try {
+      await loadEntX(noCtxV, user.id, {
+        ent: User2,
+        // this would throw in SQL land since columns don't exist but we're more flexible with parse_sql so need to handle this
+        fields: ["firstName", "lastName"],
+        tableName: "user2s",
+      });
+    } catch (e) {
+      expect(e.message).toMatch(
+        /ent undefined of type User2 is not visible for privacy reasons/,
+      );
+    }
+  });
 });

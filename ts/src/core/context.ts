@@ -27,7 +27,7 @@ export interface RequestContext extends Context {
 }
 
 export class ContextCache {
-  loaders: Map<string, DataLoader<ID, Data>> = new Map();
+  loaders: Map<string, DataLoader<ID, Data | null>> = new Map();
 
   // only create as needed for the "requests" which need it
   getEntLoader(loaderOptions: SelectDataOptions) {

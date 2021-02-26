@@ -1,9 +1,5 @@
 import { Ent, ID, Viewer, Data, EntConstructor } from "../core/ent";
-import {
-  PrivacyPolicy,
-  AlwaysAllowRule,
-  AlwaysAllowPrivacyPolicy,
-} from "../core/privacy";
+import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { Orchestrator } from "../action/orchestrator";
 import {
   Action,
@@ -25,9 +21,8 @@ export class User implements Ent {
   id: ID;
   accountID: string;
   nodeType = "User";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AlwaysAllowRule],
-  };
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
   constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
@@ -37,9 +32,8 @@ export class Event implements Ent {
   id: ID;
   accountID: string;
   nodeType = "Event";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AlwaysAllowRule],
-  };
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
   constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
@@ -49,9 +43,8 @@ export class Contact implements Ent {
   id: ID;
   accountID: string;
   nodeType = "Contact";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AlwaysAllowRule],
-  };
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
   constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
@@ -61,9 +54,8 @@ export class Group implements Ent {
   id: ID;
   accountID: string;
   nodeType = "Group";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AlwaysAllowRule],
-  };
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
   constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
@@ -73,9 +65,8 @@ export class Message implements Ent {
   id: ID;
   accountID: string;
   nodeType = "Message";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AlwaysAllowRule],
-  };
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
   constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
@@ -85,9 +76,8 @@ export class Address implements Ent {
   id: ID;
   accountID: string;
   nodeType = "Address";
-  privacyPolicy: PrivacyPolicy = {
-    rules: [AlwaysAllowRule],
-  };
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
   constructor(public viewer: Viewer, id: ID, public data: Data) {
     this.id = id;
   }
