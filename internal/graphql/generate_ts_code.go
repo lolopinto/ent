@@ -707,7 +707,7 @@ func getGqlConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, data 
 		NodeType: nodeType,
 		Imports: []*fileImport{
 			{
-				ImportPath: codepath.GetImportPathForExternalGQLFile(),
+				ImportPath: codepath.GetImportPathForInternalGQLFile(),
 				Type:       nodeType,
 			},
 			{
@@ -1036,7 +1036,7 @@ func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 			if imp.ImportType == enttype.Connection {
 				fn = true
 			}
-			importPath = codepath.GetImportPathForExternalGQLFile()
+			importPath = codepath.GetImportPathForInternalGQLFile()
 			typ = fmt.Sprintf("%sType", typ)
 			break
 		case enttype.EntGraphQL:
@@ -1092,7 +1092,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 			continue
 		}
 		result.Imports = append(result.Imports, &fileImport{
-			ImportPath: codepath.GetImportPathForExternalGQLFile(),
+			ImportPath: codepath.GetImportPathForInternalGQLFile(),
 			Type:       fmt.Sprintf("%sType", node.Node),
 		})
 	}
@@ -1886,7 +1886,7 @@ func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 		{
 			Name:       "node",
 			Type:       "NodeQueryType",
-			ImportPath: codepath.GetImportPathForExternalGQLFile(),
+			ImportPath: codepath.GetImportPathForInternalGQLFile(),
 		},
 	}
 
@@ -1896,7 +1896,7 @@ func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 		}
 		query := node.Field
 		results = append(results, rootField{
-			ImportPath: codepath.GetImportPathForExternalGQLFile(),
+			ImportPath: codepath.GetImportPathForInternalGQLFile(),
 			Name:       query.GraphQLName,
 			Type:       fmt.Sprintf("%sQueryType", strcase.ToCamel(query.GraphQLName)),
 		})
