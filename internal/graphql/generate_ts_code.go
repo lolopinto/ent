@@ -171,7 +171,6 @@ func (item *CustomItem) getImports(s *gqlSchema) ([]*fileImport, error) {
 				return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
 			}
 		}
-		// TODO still need to handle this
 		item.addImport(
 			&fileImport{
 				Type:       fmt.Sprintf("%sType", item.Type),
