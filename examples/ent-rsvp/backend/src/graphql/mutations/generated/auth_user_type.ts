@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { GQLViewerType } from "src/graphql/resolvers/internal";
+import { ViewerTypeType } from "src/graphql/resolvers/internal";
 import { AuthUserPayload, AuthResolver } from "../auth/auth";
 
 interface AuthUserInput {
@@ -38,7 +38,7 @@ export const AuthUserPayloadType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     viewer: {
-      type: GraphQLNonNull(GQLViewerType),
+      type: GraphQLNonNull(ViewerTypeType),
     },
   }),
 });

@@ -10,7 +10,7 @@ import {
 } from "@lolopinto/ent/graphql";
 import { useAndVerifyAuthJWT } from "@lolopinto/ent-passport";
 import { Guest, User } from "src/ent";
-import { GQLViewer } from "../../resolvers/viewer";
+import { ViewerType } from "../../resolvers/viewer";
 
 @gqlInputObjectType()
 class AuthGuestInput {
@@ -25,8 +25,8 @@ export class AuthGuestPayload {
   @gqlField()
   token: string;
 
-  @gqlField({ type: GQLViewer })
-  viewer: GQLViewer;
+  @gqlField({ type: ViewerType })
+  viewer: ViewerType;
 }
 
 @gqlInputObjectType()
@@ -42,8 +42,8 @@ export class AuthUserPayload {
   @gqlField()
   token: string;
 
-  @gqlField({ type: GQLViewer })
-  viewer: GQLViewer;
+  @gqlField({ type: ViewerType })
+  viewer: ViewerType;
 }
 
 export class AuthResolver {
@@ -82,7 +82,7 @@ export class AuthResolver {
       throw new Error(`could not log user in with given credentials`);
     }
     return {
-      viewer: new GQLViewer(viewer),
+      viewer: new ViewerType(viewer),
       token: token,
     };
   }
@@ -133,7 +133,7 @@ export class AuthResolver {
       throw new Error(`not the right credentials`);
     }
     return {
-      viewer: new GQLViewer(viewer),
+      viewer: new ViewerType(viewer),
       token,
     };
   }

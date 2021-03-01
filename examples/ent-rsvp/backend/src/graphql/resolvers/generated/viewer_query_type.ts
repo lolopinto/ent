@@ -8,20 +8,20 @@ import {
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { UserType, GuestType } from "src/graphql/resolvers/internal";
-import ViewerResolver, { GQLViewer } from "../viewer";
+import ViewerResolver, { ViewerType } from "../viewer";
 
-export const GQLViewerType = new GraphQLObjectType({
+export const ViewerTypeType = new GraphQLObjectType({
   name: "Viewer",
-  fields: (): GraphQLFieldConfigMap<GQLViewer, RequestContext> => ({
+  fields: (): GraphQLFieldConfigMap<ViewerType, RequestContext> => ({
     user: {
       type: UserType,
-      resolve: async (obj: GQLViewer, args: {}, context: RequestContext) => {
+      resolve: async (obj: ViewerType, args: {}, context: RequestContext) => {
         return obj.user();
       },
     },
     guest: {
       type: GuestType,
-      resolve: async (obj: GQLViewer, args: {}, context: RequestContext) => {
+      resolve: async (obj: ViewerType, args: {}, context: RequestContext) => {
         return obj.guest();
       },
     },
@@ -29,7 +29,7 @@ export const GQLViewerType = new GraphQLObjectType({
 });
 
 export const ViewerQueryType: GraphQLFieldConfig<undefined, RequestContext> = {
-  type: GQLViewerType,
+  type: ViewerTypeType,
   resolve: async (
     _source,
     {},

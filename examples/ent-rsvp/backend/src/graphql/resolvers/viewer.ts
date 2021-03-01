@@ -11,8 +11,7 @@ import { Guest, User } from "src/ent/";
 @gqlObjectType({ name: "Viewer" })
 
 // TODO when this wasn't exported, it didn't work...
-// TODO when this is named ViewerType, it breaks
-export class GQLViewer {
+export class ViewerType {
   constructor(private viewer: Viewer) {}
 
   @gqlField({ type: User, nullable: true })
@@ -35,8 +34,8 @@ export class GQLViewer {
 }
 
 export default class ViewerResolver {
-  @gqlQuery({ name: "viewer", type: GQLViewer, nullable: true })
-  viewer(@gqlContextType() context: RequestContext): GQLViewer {
-    return new GQLViewer(context.getViewer());
+  @gqlQuery({ name: "viewer", type: ViewerType, nullable: true })
+  viewer(@gqlContextType() context: RequestContext): ViewerType {
+    return new ViewerType(context.getViewer());
   }
 }
