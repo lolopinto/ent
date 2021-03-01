@@ -3,7 +3,7 @@
 import { GraphQLString, GraphQLFieldConfigMap } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLConnectionType, GraphQLEdge } from "@lolopinto/ent/graphql";
-import { GuestType } from "src/graphql/resolvers/";
+import { GuestType } from "src/graphql/resolvers/internal";
 import { EventActivityToAttendingEdge } from "src/ent/";
 
 export const EventActivityToAttendingConnectionType = () => {

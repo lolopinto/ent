@@ -2,12 +2,11 @@ import {
   expectMutation,
   expectQueryFromRoot,
 } from "@lolopinto/ent-graphql-tests";
-import { Address, Event } from "src/ent";
+import { Event } from "src/ent";
 import { DB, ID } from "@lolopinto/ent";
 import schema from "src/graphql/schema";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { createUser } from "src/testutils";
-import DeleteEventActivityAction from "src/ent/event_activity/actions/delete_event_activity_action";
 import DeleteEventAction from "src/ent/event/actions/delete_event_action";
 
 afterAll(async () => {
@@ -147,7 +146,7 @@ test("query from slug", async () => {
 
   await expectQueryFromRoot(
     {
-      root: "eventt",
+      root: "event",
       schema,
       args: {
         slug: "fun-event",

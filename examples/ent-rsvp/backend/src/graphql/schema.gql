@@ -1,18 +1,24 @@
 type Query {
   emailAvailable(email: String!): Boolean!
-  eventSlugAvaiable(slug: String!): Boolean!
+  event(slug: String!): Event
+  eventSlugAvailable(slug: String!): Boolean!
   node(id: ID!): Node
   viewer: Viewer
+}
+
+type Event implements Node {
+  creator: User
+  id: ID!
+  name: String!
+  slug: String
+  eventActivities(first: Int, after: String, last: Int, before: String): EventToEventActivitiesConnection!
+  guestGroups(first: Int, after: String, last: Int, before: String): EventToGuestGroupsConnection!
+  guests(first: Int, after: String, last: Int, before: String): EventToGuestsConnection!
 }
 
 """node interface"""
 interface Node {
   id: ID!
-}
-
-type Viewer {
-  user: User
-  guest: Guest
 }
 
 type User implements Node {
@@ -51,16 +57,6 @@ type PageInfo {
 type UserToEventsEdge implements Edge {
   node: Event!
   cursor: String!
-}
-
-type Event implements Node {
-  creator: User
-  id: ID!
-  name: String!
-  slug: String
-  eventActivities(first: Int, after: String, last: Int, before: String): EventToEventActivitiesConnection!
-  guestGroups(first: Int, after: String, last: Int, before: String): EventToGuestGroupsConnection!
-  guests(first: Int, after: String, last: Int, before: String): EventToGuestsConnection!
 }
 
 type EventToEventActivitiesConnection implements Connection {
@@ -236,6 +232,11 @@ type EventToGuestsConnection implements Connection {
 type EventToGuestsEdge implements Edge {
   node: Guest!
   cursor: String!
+}
+
+type Viewer {
+  user: User
+  guest: Guest
 }
 
 type Mutation {

@@ -19,7 +19,7 @@ import {
   GuestGroupType,
   GuestToAttendingEventsConnectionType,
   GuestToDeclinedEventsConnectionType,
-} from "src/graphql/resolvers/";
+} from "src/graphql/resolvers/internal";
 import {
   Guest,
   GuestToAttendingEventsQuery,

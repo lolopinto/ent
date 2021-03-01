@@ -19,7 +19,7 @@ import {
   EventToEventActivitiesConnectionType,
   EventToGuestGroupsConnectionType,
   EventToGuestsConnectionType,
-} from "src/graphql/resolvers/";
+} from "src/graphql/resolvers/internal";
 import {
   Event,
   EventToEventActivitiesQuery,

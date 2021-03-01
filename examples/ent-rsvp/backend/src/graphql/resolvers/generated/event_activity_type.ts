@@ -23,7 +23,7 @@ import {
   EventActivityToDeclinedConnectionType,
   EventActivityToInvitesConnectionType,
   EventActivityRsvpStatusType,
-} from "src/graphql/resolvers/";
+} from "src/graphql/resolvers/internal";
 import {
   EventActivity,
   EventActivityToAttendingQuery,

@@ -2,20 +2,20 @@
 
 import { GraphQLObjectType } from "graphql";
 import {
-  EmailAvailableType,
-  EventSlugAvailableType,
-  EventtType,
-  NodeQuery,
-  ViewerType,
-} from "src/graphql/resolvers/";
+  EmailAvailableQueryType,
+  EventQueryType,
+  EventSlugAvailableQueryType,
+  NodeQueryType,
+  ViewerQueryType,
+} from "src/graphql/resolvers/internal";
 
 export const QueryType = new GraphQLObjectType({
   name: "Query",
   fields: () => ({
-    emailAvailable: EmailAvailableType,
-    eventSlugAvailable: EventSlugAvailableType,
-    eventt: EventtType,
-    node: NodeQuery,
-    viewer: ViewerType,
+    emailAvailable: EmailAvailableQueryType,
+    event: EventQueryType,
+    eventSlugAvailable: EventSlugAvailableQueryType,
+    node: NodeQueryType,
+    viewer: ViewerQueryType,
   }),
 });

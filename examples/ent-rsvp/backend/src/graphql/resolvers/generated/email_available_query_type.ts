@@ -5,26 +5,29 @@ import {
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLResolveInfo,
+  GraphQLBoolean,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { EventType } from "src/graphql/resolvers/internal";
-import { EventResolver } from "../event";
+import { AuthResolver } from "../../mutations/auth/auth";
 
-export const EventtType: GraphQLFieldConfig<undefined, RequestContext> = {
-  type: EventType,
+export const EmailAvailableQueryType: GraphQLFieldConfig<
+  undefined,
+  RequestContext
+> = {
+  type: GraphQLNonNull(GraphQLBoolean),
   args: {
-    slug: {
+    email: {
       description: "",
       type: GraphQLNonNull(GraphQLString),
     },
   },
   resolve: async (
     _source,
-    { slug },
+    { email },
     context: RequestContext,
     _info: GraphQLResolveInfo,
   ) => {
-    const r = new EventResolver();
-    return r.event(context, slug);
+    const r = new AuthResolver();
+    return r.emailAvailable(email);
   },
 };

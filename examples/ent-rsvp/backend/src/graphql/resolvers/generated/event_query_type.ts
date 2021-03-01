@@ -5,16 +5,13 @@ import {
   GraphQLNonNull,
   GraphQLFieldConfig,
   GraphQLResolveInfo,
-  GraphQLBoolean,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { EventResolver } from "../event";
+import { EventType } from "src/graphql/resolvers/internal";
 
-export const EventSlugAvailableType: GraphQLFieldConfig<
-  undefined,
-  RequestContext
-> = {
-  type: GraphQLNonNull(GraphQLBoolean),
+export const EventQueryType: GraphQLFieldConfig<undefined, RequestContext> = {
+  type: EventType,
   args: {
     slug: {
       description: "",
@@ -28,6 +25,6 @@ export const EventSlugAvailableType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ) => {
     const r = new EventResolver();
-    return r.emailAvailable(slug);
+    return r.event(context, slug);
   },
 };

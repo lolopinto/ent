@@ -11,7 +11,7 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { GQLViewerType } from "src/graphql/resolvers/";
+import { GQLViewerType } from "src/graphql/resolvers/internal";
 import { AuthGuestPayload, AuthResolver } from "../auth/auth";
 
 interface AuthGuestInput {

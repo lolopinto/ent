@@ -9,10 +9,7 @@ export class EventResolver {
     return id === null;
   }
 
-  // TODO can't call this event because it clashes with built in event-type
-  // TODO this doesn't generate EventType so need to fix that...
-  // so need to come up with new name and new path
-  @gqlQuery({ name: "eventt", type: "Event", nullable: true })
+  @gqlQuery({ name: "event", type: "Event", nullable: true })
   async event(
     @gqlContextType() context: RequestContext,
     @gqlArg("slug") slug: string,
