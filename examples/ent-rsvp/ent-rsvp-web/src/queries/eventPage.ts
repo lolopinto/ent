@@ -2,7 +2,7 @@ import { graphql } from "react-relay";
 
 const query = graphql`
   query eventPageQuery($slug: String!) {
-    eventt(slug: $slug) {
+    event(slug: $slug) {
       id
       name
       eventActivities(first: 10) {

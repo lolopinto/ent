@@ -438,8 +438,8 @@ type PageInfo {
 
 type Query {
   emailAvailable(email: String!): Boolean!
+  event(slug: String!): Event
   eventSlugAvailable(slug: String!): Boolean!
-  eventt(slug: String!): Event
   node(id: ID!): Node
   viewer: Viewer
 }

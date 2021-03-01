@@ -51,7 +51,7 @@ function renderEventsPage(args: homeArgs) {
     return null;
   }
   console.log(props);
-  const event = props.eventt;
+  const event = props.event;
 
   return (
     <Card>

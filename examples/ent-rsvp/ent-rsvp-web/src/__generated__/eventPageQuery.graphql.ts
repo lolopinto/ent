@@ -7,7 +7,7 @@ export type eventPageQueryVariables = {
     slug: string;
 };
 export type eventPageQueryResponse = {
-    readonly eventt: {
+    readonly event: {
         readonly id: string;
         readonly name: string;
         readonly eventActivities: {
@@ -45,7 +45,7 @@ export type eventPageQuery = {
 query eventPageQuery(
   $slug: String!
 ) {
-  eventt(slug: $slug) {
+  event(slug: $slug) {
     id
     name
     eventActivities(first: 10) {
@@ -108,7 +108,7 @@ v3 = [
     ],
     "concreteType": "Event",
     "kind": "LinkedField",
-    "name": "eventt",
+    "name": "event",
     "plural": false,
     "selections": [
       (v1/*: any*/),
@@ -265,14 +265,14 @@ return {
     "selections": (v3/*: any*/)
   },
   "params": {
-    "cacheID": "fc8916a5532d91c06ea3fae062ac5de5",
+    "cacheID": "e290f6b9291444e73858f02f37cdd4ad",
     "id": null,
     "metadata": {},
     "name": "eventPageQuery",
     "operationKind": "query",
-    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  eventt(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n        }\n      }\n    }\n  }\n}\n"
+    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n        }\n      }\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = 'a27930b2ef19cff9193c6e06dbedb17a';
+(node as any).hash = '5bfad1a0e2d372e661afbe97a3305fd5';
 export default node;
