@@ -171,11 +171,11 @@ func (item *CustomItem) getImports(s *gqlSchema) ([]*fileImport, error) {
 				return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
 			}
 		}
-		// TODO need to fix GQLViewerType / ViewerType weirdness here
+		// TODO still need to handle this
 		item.addImport(
 			&fileImport{
 				Type:       fmt.Sprintf("%sType", item.Type),
-				ImportPath: codepath.GetImportPathForExternalGQLFile(),
+				ImportPath: codepath.GetImportPathForInternalGQLFile(),
 			})
 		//				s.nodes[resultre]
 		// now we need to figure out where this is from e.g.
@@ -410,8 +410,8 @@ func getQueryFilePath() string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/query_type.ts")
 }
 
-func getNodeTypeFilePath() string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/node_type.ts")
+func getNodeQueryTypeFilePath() string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/node_query_type.ts")
 }
 
 func getMutationFilePath() string {
@@ -460,7 +460,7 @@ func getImportPathForCustomMutation(name string) string {
 }
 
 func getFilePathForCustomQuery(name string) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strcase.ToSnake(name))
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_query_type.ts", strcase.ToSnake(name))
 }
 
 func getTsconfigPaths() string {
@@ -902,7 +902,7 @@ func getSortedLines(s *gqlSchema) []string {
 	}
 
 	random := []string{
-		getNodeTypeFilePath(),
+		getNodeQueryTypeFilePath(),
 	}
 	var randomImports []string
 	for _, imp := range random {
@@ -1885,7 +1885,7 @@ func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 	results := []rootField{
 		{
 			Name:       "node",
-			Type:       "NodeQuery",
+			Type:       "NodeQueryType",
 			ImportPath: codepath.GetImportPathForExternalGQLFile(),
 		},
 	}
@@ -1898,7 +1898,7 @@ func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 		results = append(results, rootField{
 			ImportPath: codepath.GetImportPathForExternalGQLFile(),
 			Name:       query.GraphQLName,
-			Type:       fmt.Sprintf("%sType", strcase.ToCamel(query.GraphQLName)),
+			Type:       fmt.Sprintf("%sQueryType", strcase.ToCamel(query.GraphQLName)),
 		})
 	}
 
@@ -1988,7 +1988,7 @@ func writeMutationFile(data *codegen.Data, s *gqlSchema) error {
 func buildNodeFieldConfig(data *codegen.Data, s *gqlSchema) *fieldConfig {
 	return &fieldConfig{
 		Exported: true,
-		Name:     "NodeQuery",
+		Name:     "NodeQueryType",
 		Arg:      "NodeQueryArgs",
 		TypeImports: []*fileImport{
 			{
@@ -2040,7 +2040,7 @@ func writeNodeQueryFile(data *codegen.Data, s *gqlSchema) error {
 			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
 			util.GetAbsolutePath("ts_templates/field.tmpl"),
 		},
-		PathToFile:   getNodeTypeFilePath(),
+		PathToFile:   getNodeQueryTypeFilePath(),
 		FormatSource: true,
 		TsImports:    imps,
 		FuncMap:      imps.FuncMap(),
