@@ -7,6 +7,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codepath"
 )
 
 type processCustomRoot interface {
@@ -14,7 +15,7 @@ type processCustomRoot interface {
 	getFilePath(string) string
 	getArgObject(cd *customData, arg CustomItem) *CustomObject
 	getFields(cd *customData) []CustomField
-	buildFieldConfig(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error)
+	buildFieldConfig(data *codegen.Data, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error)
 }
 
 type customMutationsProcesser struct {
@@ -47,7 +48,7 @@ func (cm *customMutationsProcesser) getFields(cd *customData) []CustomField {
 	return cd.Mutations
 }
 
-func (cm *customMutationsProcesser) buildFieldConfig(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
+func (cm *customMutationsProcesser) buildFieldConfig(data *codegen.Data, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
 	b := &mutationFieldConfigBuilder{
 		field:    field,
 		filePath: cm.getFilePath(field.GraphQLName),
@@ -62,7 +63,7 @@ func (cm *customMutationsProcesser) buildFieldConfig(data *codegen.Data, cd *cus
 			b.inputArg = &arg
 		}
 	}
-	return b.build(data, cd, field)
+	return b.build(data, cd, s, field)
 }
 
 type customQueriesProcesser struct {
@@ -87,12 +88,12 @@ func (cq *customQueriesProcesser) getFields(cd *customData) []CustomField {
 	return cd.Queries
 }
 
-func (cq *customQueriesProcesser) buildFieldConfig(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
+func (cq *customQueriesProcesser) buildFieldConfig(data *codegen.Data, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
 	b := &queryFieldConfigBuilder{
 		field,
 		cq.getFilePath(field.GraphQLName),
 	}
-	return b.build(data, cd, field)
+	return b.build(data, cd, s, field)
 }
 
 func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processCustomRoot) ([]*gqlNode, error) {
@@ -173,7 +174,7 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 			objTypes = append(objTypes, payloadType)
 		}
 
-		fieldConfig, err := cr.buildFieldConfig(data, cd, field)
+		fieldConfig, err := cr.buildFieldConfig(data, cd, s, field)
 		if err != nil {
 			return nil, err
 		}
@@ -195,10 +196,11 @@ func processFields(data *codegen.Data, cd *customData, s *gqlSchema, cr processC
 }
 
 type fieldConfigBuilder interface {
-	build(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error)
+	build(data *codegen.Data, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error)
 	getArg() string
+	getName() string
 	getResolveMethodArg() string
-	getTypeImports() []*fileImport
+	getTypeImports(s *gqlSchema) []*fileImport
 	getArgs() []*fieldConfigArg
 	getReturnTypeHint() string
 	getArgMap(cd *customData) map[string]*CustomObject
@@ -212,8 +214,12 @@ type mutationFieldConfigBuilder struct {
 	inputArg *CustomItem
 }
 
-func (mfcg *mutationFieldConfigBuilder) build(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
-	return buildFieldConfigFrom(mfcg, data, cd, field)
+func (mfcg *mutationFieldConfigBuilder) getName() string {
+	return fmt.Sprintf("%sType", strcase.ToCamel(mfcg.field.GraphQLName))
+}
+
+func (mfcg *mutationFieldConfigBuilder) build(data *codegen.Data, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
+	return buildFieldConfigFrom(mfcg, data, s, cd, field)
 }
 
 func (mfcg *mutationFieldConfigBuilder) getFilePath() string {
@@ -248,7 +254,7 @@ func (mfcg *mutationFieldConfigBuilder) getResolveMethodArg() string {
 	return fmt.Sprintf("{%s}", strings.Join(args, ", "))
 }
 
-func (mfcg *mutationFieldConfigBuilder) getTypeImports() []*fileImport {
+func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport {
 	if len(mfcg.field.Results) != 1 {
 		panic("invalid number of results for custom field")
 	}
@@ -260,13 +266,19 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports() []*fileImport {
 			ImportPath: "graphql",
 		})
 	}
-	gqlType, ok := graphqlScalars[r.Type]
+	scalarType, ok := graphqlScalars[r.Type]
+	_, ok2 := s.nodes[r.Type]
 	if ok {
-		// this is not relay mutation friendly...
 		// scalar. return that
 		ret = append(ret, &fileImport{
-			Type:       gqlType,
+			Type:       scalarType,
 			ImportPath: "graphql",
+		})
+	} else if ok2 {
+		ret = append(ret, &fileImport{
+			Type: fmt.Sprintf("%sType", r.Type),
+			// it's an existing node, make sure to reference it
+			ImportPath: codepath.GetImportPathForInternalGQLFile(),
 		})
 	} else {
 		prefix := strcase.ToCamel(mfcg.field.GraphQLName)
@@ -314,8 +326,12 @@ type queryFieldConfigBuilder struct {
 	filePath string
 }
 
-func (qfcg *queryFieldConfigBuilder) build(data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
-	return buildFieldConfigFrom(qfcg, data, cd, field)
+func (qfcg *queryFieldConfigBuilder) getName() string {
+	return fmt.Sprintf("%sQueryType", strcase.ToCamel(qfcg.field.GraphQLName))
+}
+
+func (qfcg *queryFieldConfigBuilder) build(data *codegen.Data, cd *customData, s *gqlSchema, field CustomField) (*fieldConfig, error) {
+	return buildFieldConfigFrom(qfcg, data, s, cd, field)
 }
 
 func (qfcg *queryFieldConfigBuilder) getFilePath() string {
@@ -338,7 +354,7 @@ func (qfcg *queryFieldConfigBuilder) getResolveMethodArg() string {
 	return fmt.Sprintf("{%s}", strings.Join(args, ", "))
 }
 
-func (qfcg *queryFieldConfigBuilder) getTypeImports() []*fileImport {
+func (qfcg *queryFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport {
 	if len(qfcg.field.Results) != 1 {
 		panic("invalid number of results for custom field")
 	}
@@ -359,10 +375,19 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports() []*fileImport {
 			ImportPath: "graphql",
 		})
 	} else {
-		ret = append(ret, &fileImport{
-			Type: fmt.Sprintf("%sType", r.Type),
-			//		ImportPath is local here
-		})
+		_, ok := s.nodes[r.Type]
+		if ok {
+			ret = append(ret, &fileImport{
+				Type: fmt.Sprintf("%sType", r.Type),
+				// it's an existing node, make sure to reference it
+				ImportPath: codepath.GetImportPathForInternalGQLFile(),
+			})
+		} else {
+			ret = append(ret, &fileImport{
+				Type: fmt.Sprintf("%sType", r.Type),
+				//		ImportPath is local here
+			})
+		}
 	}
 
 	return ret
@@ -413,8 +438,7 @@ func (qfcg *queryFieldConfigBuilder) getArgMap(cd *customData) map[string]*Custo
 	return cd.Args
 }
 
-func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, cd *customData, field CustomField) (*fieldConfig, error) {
-	prefix := strcase.ToCamel(field.GraphQLName)
+func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gqlSchema, cd *customData, field CustomField) (*fieldConfig, error) {
 	var argImports []*fileImport
 
 	// args that "useImport" should be called on
@@ -455,10 +479,10 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, cd *cu
 
 	result := &fieldConfig{
 		Exported:         true,
-		Name:             fmt.Sprintf("%sType", prefix),
+		Name:             builder.getName(),
 		Arg:              builder.getArg(),
 		ResolveMethodArg: builder.getResolveMethodArg(),
-		TypeImports:      builder.getTypeImports(),
+		TypeImports:      builder.getTypeImports(s),
 		ArgImports:       argImports,
 		Args:             builder.getArgs(),
 		ReturnTypeHint:   builder.getReturnTypeHint(),
