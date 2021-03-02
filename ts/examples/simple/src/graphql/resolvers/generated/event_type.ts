@@ -24,7 +24,7 @@ import {
   EventToInvitedConnectionType,
   EventToMaybeConnectionType,
   EventRsvpStatusType,
-} from "src/graphql/resolvers/";
+} from "src/graphql/resolvers/internal";
 import {
   Event,
   EventToAttendingQuery,

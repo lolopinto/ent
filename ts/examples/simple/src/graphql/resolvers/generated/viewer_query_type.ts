@@ -9,7 +9,7 @@ import {
   GraphQLResolveInfo,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { UserType } from "src/graphql/resolvers/";
+import { UserType } from "src/graphql/resolvers/internal";
 import ViewerResolver, { GQLViewer } from "../viewer";
 
 export const GQLViewerType = new GraphQLObjectType({
@@ -30,7 +30,7 @@ export const GQLViewerType = new GraphQLObjectType({
   }),
 });
 
-export const ViewerType: GraphQLFieldConfig<undefined, RequestContext> = {
+export const ViewerQueryType: GraphQLFieldConfig<undefined, RequestContext> = {
   type: GraphQLNonNull(GQLViewerType),
   resolve: async (
     _source,

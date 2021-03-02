@@ -9,7 +9,7 @@ import {
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@lolopinto/ent/graphql";
-import { UserType } from "src/graphql/resolvers/";
+import { UserType } from "src/graphql/resolvers/internal";
 import { Contact } from "src/ent/";
 
 export const ContactType = new GraphQLObjectType({

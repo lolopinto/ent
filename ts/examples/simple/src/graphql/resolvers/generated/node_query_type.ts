@@ -21,7 +21,7 @@ const resolver = new EntNodeResolver(loadEntByType);
 registerResolver("entNode", resolver);
 // add any custom Node Resolvers here
 
-export const NodeQuery: GraphQLFieldConfig<
+export const NodeQueryType: GraphQLFieldConfig<
   undefined,
   RequestContext,
   NodeQueryArgs
