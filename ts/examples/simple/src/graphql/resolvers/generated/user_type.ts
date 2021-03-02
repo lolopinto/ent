@@ -25,7 +25,7 @@ import {
   UserToMaybeEventsConnectionType,
   UserToHostedEventsConnectionType,
   UserToContactsConnectionType,
-} from "src/graphql/resolvers/";
+} from "src/graphql/resolvers/internal";
 import {
   User,
   UserToCreatedEventsQuery,

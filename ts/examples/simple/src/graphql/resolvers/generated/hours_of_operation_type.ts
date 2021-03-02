@@ -14,7 +14,7 @@ import {
   convertToGQLEnum,
 } from "@lolopinto/ent/graphql";
 import { HoursOfOperation, getDayOfWeekValues } from "src/ent/";
-import { dayOfWeekType } from "src/graphql/resolvers/";
+import { dayOfWeekType } from "src/graphql/resolvers/internal";
 
 export const HoursOfOperationType = new GraphQLObjectType({
   name: "HoursOfOperation",

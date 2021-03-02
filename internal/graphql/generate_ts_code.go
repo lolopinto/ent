@@ -171,11 +171,10 @@ func (item *CustomItem) getImports(s *gqlSchema) ([]*fileImport, error) {
 				return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
 			}
 		}
-		// TODO need to fix GQLViewerType / ViewerType weirdness here
 		item.addImport(
 			&fileImport{
 				Type:       fmt.Sprintf("%sType", item.Type),
-				ImportPath: codepath.GetImportPathForExternalGQLFile(),
+				ImportPath: codepath.GetImportPathForInternalGQLFile(),
 			})
 		//				s.nodes[resultre]
 		// now we need to figure out where this is from e.g.
@@ -410,8 +409,8 @@ func getQueryFilePath() string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/query_type.ts")
 }
 
-func getNodeTypeFilePath() string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/node_type.ts")
+func getNodeQueryTypeFilePath() string {
+	return fmt.Sprintf("src/graphql/resolvers/generated/node_query_type.ts")
 }
 
 func getMutationFilePath() string {
@@ -460,7 +459,7 @@ func getImportPathForCustomMutation(name string) string {
 }
 
 func getFilePathForCustomQuery(name string) string {
-	return fmt.Sprintf("src/graphql/resolvers/generated/%s_type.ts", strcase.ToSnake(name))
+	return fmt.Sprintf("src/graphql/resolvers/generated/%s_query_type.ts", strcase.ToSnake(name))
 }
 
 func getTsconfigPaths() string {
@@ -707,7 +706,7 @@ func getGqlConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, data 
 		NodeType: nodeType,
 		Imports: []*fileImport{
 			{
-				ImportPath: codepath.GetImportPathForExternalGQLFile(),
+				ImportPath: codepath.GetImportPathForInternalGQLFile(),
 				Type:       nodeType,
 			},
 			{
@@ -902,7 +901,7 @@ func getSortedLines(s *gqlSchema) []string {
 	}
 
 	random := []string{
-		getNodeTypeFilePath(),
+		getNodeQueryTypeFilePath(),
 	}
 	var randomImports []string
 	for _, imp := range random {
@@ -1021,7 +1020,7 @@ func (f fieldConfigArg) FieldType() string {
 	return typeFromImports(f.Imports)
 }
 
-func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
+func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*fileImport {
 	imports := make([]*fileImport, len(imps))
 	fn := false
 	for idx, imp := range imps {
@@ -1036,7 +1035,12 @@ func getGQLFileImports(imps []enttype.FileImport) []*fileImport {
 			if imp.ImportType == enttype.Connection {
 				fn = true
 			}
-			importPath = codepath.GetImportPathForExternalGQLFile()
+			// TODO this depends on if mutation or not
+			if mutation {
+				importPath = codepath.GetImportPathForExternalGQLFile()
+			} else {
+				importPath = codepath.GetImportPathForInternalGQLFile()
+			}
 			typ = fmt.Sprintf("%sType", typ)
 			break
 		case enttype.EntGraphQL:
@@ -1092,7 +1096,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 			continue
 		}
 		result.Imports = append(result.Imports, &fileImport{
-			ImportPath: codepath.GetImportPathForExternalGQLFile(),
+			ImportPath: codepath.GetImportPathForInternalGQLFile(),
 			Type:       fmt.Sprintf("%sType", node.Node),
 		})
 	}
@@ -1125,7 +1129,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 		gqlField := &fieldType{
 			Name:               gqlName,
 			HasResolveFunction: gqlName != field.TsFieldName(),
-			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false)),
+			FieldImports:       getGQLFileImports(field.GetTSGraphQLTypeForFieldImports(false), false),
 		}
 		ftype := field.GetFieldType()
 		enumType, ok := ftype.(enttype.EnumeratedType)
@@ -1186,6 +1190,7 @@ func buildNodeForObject(nodeMap schema.NodeMapInfo, nodeData *schema.NodeData) *
 						ImportType: enttype.Enum,
 					},
 				},
+				false,
 			),
 			ExtraImports: []*fileImport{
 				{
@@ -1235,7 +1240,7 @@ func addSingularEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
-		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports()),
+		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
 		FunctionContents:   []string{fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName())},
 	}
 	*fields = append(*fields, gqlField)
@@ -1245,7 +1250,7 @@ func addPluralEdge(edge edge.Edge, fields *[]*fieldType, instance string) {
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
-		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports()),
+		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
 		FunctionContents:   []string{fmt.Sprintf("return %s.load%s();", instance, edge.CamelCaseEdgeName())},
 	}
 	*fields = append(*fields, gqlField)
@@ -1255,7 +1260,7 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 	gqlField := &fieldType{
 		Name:               edge.GraphQLEdgeName(),
 		HasResolveFunction: true,
-		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports()),
+		FieldImports:       getGQLFileImports(edge.GetTSGraphQLTypeImports(), false),
 		// import GraphQLEdgeConnection and EdgeQuery file
 		ExtraImports: []*fileImport{
 			{
@@ -1335,7 +1340,7 @@ func buildCustomInputNode(c *action.CustomInterface) *objectType {
 	for _, f := range c.Fields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false)),
+			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false), false),
 		})
 	}
 	return result
@@ -1368,7 +1373,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 		}
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f))),
+			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(!action.IsRequiredField(a, f)), true),
 		})
 	}
 
@@ -1376,7 +1381,7 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 	for _, f := range a.GetNonEntFields() {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports()),
+			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(), true),
 		})
 	}
 
@@ -1885,8 +1890,8 @@ func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 	results := []rootField{
 		{
 			Name:       "node",
-			Type:       "NodeQuery",
-			ImportPath: codepath.GetImportPathForExternalGQLFile(),
+			Type:       "NodeQueryType",
+			ImportPath: codepath.GetImportPathForInternalGQLFile(),
 		},
 	}
 
@@ -1896,9 +1901,9 @@ func getQueryData(data *codegen.Data, s *gqlSchema) []rootField {
 		}
 		query := node.Field
 		results = append(results, rootField{
-			ImportPath: codepath.GetImportPathForExternalGQLFile(),
+			ImportPath: codepath.GetImportPathForInternalGQLFile(),
 			Name:       query.GraphQLName,
-			Type:       fmt.Sprintf("%sType", strcase.ToCamel(query.GraphQLName)),
+			Type:       fmt.Sprintf("%sQueryType", strcase.ToCamel(query.GraphQLName)),
 		})
 	}
 
@@ -1988,7 +1993,7 @@ func writeMutationFile(data *codegen.Data, s *gqlSchema) error {
 func buildNodeFieldConfig(data *codegen.Data, s *gqlSchema) *fieldConfig {
 	return &fieldConfig{
 		Exported: true,
-		Name:     "NodeQuery",
+		Name:     "NodeQueryType",
 		Arg:      "NodeQueryArgs",
 		TypeImports: []*fileImport{
 			{
@@ -2040,7 +2045,7 @@ func writeNodeQueryFile(data *codegen.Data, s *gqlSchema) error {
 			util.GetAbsolutePath("ts_templates/render_args.tmpl"),
 			util.GetAbsolutePath("ts_templates/field.tmpl"),
 		},
-		PathToFile:   getNodeTypeFilePath(),
+		PathToFile:   getNodeQueryTypeFilePath(),
 		FormatSource: true,
 		TsImports:    imps,
 		FuncMap:      imps.FuncMap(),
