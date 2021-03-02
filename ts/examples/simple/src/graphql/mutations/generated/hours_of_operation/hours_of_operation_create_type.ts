@@ -11,9 +11,8 @@ import {
   GraphQLInputFieldConfigMap,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { dayOfWeekType } from "src/graphql/resolvers/internal";
+import { dayOfWeekType, HoursOfOperationType } from "src/graphql/resolvers/";
 import { HoursOfOperation } from "src/ent/";
-import { HoursOfOperationType } from "src/graphql/resolvers/";
 import CreateHoursOfOperationAction, {
   HoursOfOperationCreateInput,
 } from "src/ent/hours_of_operation/actions/create_hours_of_operation_action";
