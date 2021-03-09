@@ -7,7 +7,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
-	"github.com/lolopinto/ent/internal/codepath"
 )
 
 type processCustomRoot interface {
@@ -201,7 +200,7 @@ type fieldConfigBuilder interface {
 	getName() string
 	getResolveMethodArg() string
 	getTypeImports(s *gqlSchema) []*fileImport
-	getArgs() []*fieldConfigArg
+	getArgs(s *gqlSchema) []*fieldConfigArg
 	getReturnTypeHint() string
 	getArgMap(cd *customData) map[string]*CustomObject
 	getFilePath() string
@@ -266,21 +265,11 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImpo
 			ImportPath: "graphql",
 		})
 	}
-	scalarType, ok := graphqlScalars[r.Type]
-	_, ok2 := s.nodes[r.Type]
-	if ok {
-		// scalar. return that
-		ret = append(ret, &fileImport{
-			Type:       scalarType,
-			ImportPath: "graphql",
-		})
-	} else if ok2 {
-		ret = append(ret, &fileImport{
-			Type: fmt.Sprintf("%sType", r.Type),
-			// it's an existing node, make sure to reference it
-			ImportPath: codepath.GetImportPathForInternalGQLFile(),
-		})
+	imp := s.getImportFor(r.Type, true)
+	if imp != nil {
+		ret = append(ret, imp)
 	} else {
+
 		prefix := strcase.ToCamel(mfcg.field.GraphQLName)
 
 		ret = append(ret, &fileImport{
@@ -289,24 +278,27 @@ func (mfcg *mutationFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImpo
 			ImportPath: "",
 		})
 	}
+
 	return ret
 }
 
-func (mfcg *mutationFieldConfigBuilder) getArgs() []*fieldConfigArg {
+func (mfcg *mutationFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg {
 	if mfcg.inputArg != nil {
 		prefix := strcase.ToCamel(mfcg.field.GraphQLName)
 		return []*fieldConfigArg{
 			{
 				Name: "input",
-				Imports: []string{
-					"GraphQLNonNull",
+				Imports: []*fileImport{
+					getNativeGQLImportFor("GraphQLNonNull"),
 					// same for this about passing it in
-					fmt.Sprintf("%sInputType", prefix),
+					{
+						Type: fmt.Sprintf("%sInputType", prefix),
+					},
 				},
 			},
 		}
 	}
-	return getFieldConfigArgs(mfcg.field)
+	return getFieldConfigArgs(mfcg.field, s, true)
 }
 
 func (mfcg *mutationFieldConfigBuilder) getReturnTypeHint() string {
@@ -367,55 +359,44 @@ func (qfcg *queryFieldConfigBuilder) getTypeImports(s *gqlSchema) []*fileImport 
 		})
 	}
 
-	gqlType, ok := graphqlScalars[r.Type]
-	if ok {
-		// scalar. return that
-		ret = append(ret, &fileImport{
-			Type:       gqlType,
-			ImportPath: "graphql",
-		})
+	imp := s.getImportFor(r.Type, false)
+	if imp != nil {
+		ret = append(ret, imp)
 	} else {
-		_, ok := s.nodes[r.Type]
-		if ok {
-			ret = append(ret, &fileImport{
-				Type: fmt.Sprintf("%sType", r.Type),
-				// it's an existing node, make sure to reference it
-				ImportPath: codepath.GetImportPathForInternalGQLFile(),
-			})
-		} else {
-			ret = append(ret, &fileImport{
-				Type: fmt.Sprintf("%sType", r.Type),
-				//		ImportPath is local here
-			})
-		}
+		// new type
+		ret = append(ret, &fileImport{
+			Type: fmt.Sprintf("%sType", r.Type),
+			//		ImportPath is local here
+		})
 	}
 
 	return ret
 }
 
-func getFieldConfigArgs(field CustomField) []*fieldConfigArg {
+func getFieldConfigArgs(field CustomField, s *gqlSchema, mutation bool) []*fieldConfigArg {
 	var args []*fieldConfigArg
 	for _, arg := range field.Args {
 		if arg.IsContextArg {
 			continue
 		}
 
-		gqlType, ok := graphqlScalars[arg.Type]
-		typ := arg.Type
-		if ok {
-			typ = gqlType
+		imp := s.getImportFor(arg.Type, mutation)
+		if imp == nil {
+			// local
+			imp = &fileImport{
+				Type: arg.Type,
+			}
 		}
 
 		// non-null
-		var imports []string
+		var imports []*fileImport
 		if arg.Nullable == "" {
-			// TODO this needs to also change to fileImport
-			imports = []string{
-				"GraphQLNonNull",
-				typ,
+			imports = []*fileImport{
+				getNativeGQLImportFor("GraphQLNonNull"), imp,
 			}
+
 		} else {
-			imports = []string{typ}
+			imports = []*fileImport{imp}
 		}
 		args = append(args, &fieldConfigArg{
 			Name:    arg.Name,
@@ -425,8 +406,8 @@ func getFieldConfigArgs(field CustomField) []*fieldConfigArg {
 	return args
 }
 
-func (qfcg *queryFieldConfigBuilder) getArgs() []*fieldConfigArg {
-	return getFieldConfigArgs(qfcg.field)
+func (qfcg *queryFieldConfigBuilder) getArgs(s *gqlSchema) []*fieldConfigArg {
+	return getFieldConfigArgs(qfcg.field, s, false)
 }
 
 func (qfcg *queryFieldConfigBuilder) getReturnTypeHint() string {
@@ -484,7 +465,7 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 		ResolveMethodArg: builder.getResolveMethodArg(),
 		TypeImports:      builder.getTypeImports(s),
 		ArgImports:       argImports,
-		Args:             builder.getArgs(),
+		Args:             builder.getArgs(s),
 		ReturnTypeHint:   builder.getReturnTypeHint(),
 	}
 
@@ -734,14 +715,12 @@ func getCustomGQLField(cd *customData, field CustomField, s *gqlSchema, instance
 			Name: arg.Name,
 		}
 
-		imps, err := arg.getImports(s)
+		imps, err := arg.getImports(s, cd)
 		if err != nil {
 			return nil, err
 		}
-		// TODO we're dropping ImportPath here this is wrong...
-		// this is assuming it's all GraphQL or something that has already been included
 		for _, imp := range imps {
-			cfgArg.Imports = append(cfgArg.Imports, imp.Type)
+			cfgArg.Imports = append(cfgArg.Imports, imp)
 		}
 
 		gqlField.Args = append(gqlField.Args, cfgArg)
@@ -785,7 +764,7 @@ func getGraphQLImportsForField(cd *customData, f CustomField, s *gqlSchema) ([]*
 
 	for _, result := range f.Results {
 
-		imps, err := result.getImports(s)
+		imps, err := result.getImports(s, cd)
 		if err != nil {
 			return nil, err
 		}
