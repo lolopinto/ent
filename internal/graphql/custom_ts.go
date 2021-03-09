@@ -7,6 +7,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/codepath"
 )
 
 type processCustomRoot interface {
@@ -457,17 +458,6 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 		}
 	}
 
-	result := &fieldConfig{
-		Exported:         true,
-		Name:             builder.getName(),
-		Arg:              builder.getArg(),
-		ResolveMethodArg: builder.getResolveMethodArg(),
-		TypeImports:      builder.getTypeImports(s),
-		ArgImports:       argImports,
-		Args:             builder.getArgs(s),
-		ReturnTypeHint:   builder.getReturnTypeHint(),
-	}
-
 	argMap := builder.getArgMap(cd)
 	argContents := make([]string, len(field.Args))
 	for idx, arg := range field.Args {
@@ -477,7 +467,15 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 		}
 		argType := argMap[arg.Type]
 		if argType == nil {
-			argContents[idx] = arg.Name
+			if arg.TSType == "ID" {
+				argImports = append(argImports, &fileImport{
+					Type:       "mustDecodeIDFromGQLID",
+					ImportPath: codepath.GraphQLPackage,
+				})
+				argContents[idx] = fmt.Sprintf("mustDecodeIDFromGQLID(%s)", arg.Name)
+			} else {
+				argContents[idx] = arg.Name
+			}
 		} else {
 			fields, ok := cd.Fields[arg.Type]
 			if !ok {
@@ -491,13 +489,23 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, data *codegen.Data, s *gql
 			argContents[idx] = fmt.Sprintf("{%s},", strings.Join(args, ","))
 		}
 	}
-	result.FunctionContents = []string{
-		fmt.Sprintf("const r = new %s();", field.Node),
-		fmt.Sprintf("return r.%s(", field.FunctionName),
-		// put all the args on one line separated by a comma. we'll depend on prettier to format correctly
-		strings.Join(argContents, ","),
-		// closing the funtion call..
-		");",
+	result := &fieldConfig{
+		Exported:         true,
+		Name:             builder.getName(),
+		Arg:              builder.getArg(),
+		ResolveMethodArg: builder.getResolveMethodArg(),
+		TypeImports:      builder.getTypeImports(s),
+		ArgImports:       argImports,
+		Args:             builder.getArgs(s),
+		ReturnTypeHint:   builder.getReturnTypeHint(),
+		FunctionContents: []string{
+			fmt.Sprintf("const r = new %s();", field.Node),
+			fmt.Sprintf("return r.%s(", field.FunctionName),
+			// put all the args on one line separated by a comma. we'll depend on prettier to format correctly
+			strings.Join(argContents, ","),
+			// closing the funtion call..
+			");",
+		},
 	}
 
 	return result, nil
