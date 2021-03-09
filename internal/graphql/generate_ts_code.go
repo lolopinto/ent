@@ -629,6 +629,9 @@ func (obj gqlobjectData) Imports() []*fileImport {
 	if obj.FieldConfig != nil {
 		result = append(result, obj.FieldConfig.ArgImports...)
 		result = append(result, obj.FieldConfig.TypeImports...)
+		for _, arg := range obj.FieldConfig.Args {
+			result = append(result, arg.Imports...)
+		}
 	}
 	return result
 }

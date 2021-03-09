@@ -394,7 +394,6 @@ func getFieldConfigArgs(field CustomField, s *gqlSchema, mutation bool) []*field
 			imports = []*fileImport{
 				getNativeGQLImportFor("GraphQLNonNull"), imp,
 			}
-
 		} else {
 			imports = []*fileImport{imp}
 		}
