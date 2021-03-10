@@ -13,7 +13,7 @@ import {
   applyPrivacyPolicyForRow,
 } from "../core/ent";
 import { getFields, SchemaInputType } from "../schema/schema";
-import { Changeset, Executor, Validator } from "../action";
+import { Changeset, Executor, Validator, TriggerReturn } from "../action";
 import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
@@ -319,7 +319,7 @@ export class Orchestrator<T extends Ent> {
     // so running this first to build things up
     let triggers = action?.triggers;
     if (triggers) {
-      let triggerPromises: Promise<Changeset<T> | void | Changeset<T>[]>[] = [];
+      let triggerPromises: TriggerReturn<T>[] = [];
 
       triggers.forEach((trigger) => {
         let c = trigger.changeset(builder, action!.getInput());
@@ -343,15 +343,16 @@ export class Orchestrator<T extends Ent> {
     await Promise.all(promises);
   }
 
-  private async triggers(
-    triggerPromises: Promise<Changeset<T> | void | Changeset<T>[]>[],
-  ): Promise<void> {
+  private async triggers(triggerPromises: TriggerReturn<T>[]): Promise<void> {
     // keep changesets to use later
-    let changesets: (
-      | Changeset<T>
-      | void
-      | Changeset<T>[]
-    )[] = await Promise.all(triggerPromises);
+    let changesets = await Promise.all(
+      triggerPromises.map(async (promise) => {
+        if (Array.isArray(promise)) {
+          return await Promise.all(promise);
+        }
+        return await promise;
+      }),
+    );
     changesets.forEach((c) => {
       if (Array.isArray(c)) {
         this.changesets.push(...c);

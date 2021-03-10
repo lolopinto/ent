@@ -10,6 +10,7 @@ export {
   saveBuilder,
   saveBuilderX,
   setEdgeTypeInGroup,
+  TriggerReturn,
 } from "./action";
 export {
   OrchestratorOptions,
