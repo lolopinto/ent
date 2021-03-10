@@ -19,15 +19,11 @@ const (
 
 // first simple version of sql builder
 type sqlBuilder struct {
-	entity     DBObject
-	fields     DBFields
-	colsString string // not long term value of course
-	tableName  string
-	clause     sql.QueryClause
-	// keeping these so as to not kill existing use cases
-	// TODO kill inField, inArgs
-	inField      string
-	inArgs       []interface{}
+	entity       DBObject
+	fields       DBFields
+	colsString   string // not long term value of course
+	tableName    string
+	clause       sql.QueryClause
 	order        string
 	rawQuery     string
 	rawValues    []interface{}
@@ -63,12 +59,6 @@ func getDeleteQuery(tableName string, clause sql.QueryClause) *sqlBuilder {
 		tableName: tableName,
 		clause:    clause,
 	}
-}
-
-func (s *sqlBuilder) in(field string, args []interface{}) *sqlBuilder {
-	s.inField = field
-	s.inArgs = args
-	return s
 }
 
 func (s *sqlBuilder) orderBy(orderBy string) *sqlBuilder {
