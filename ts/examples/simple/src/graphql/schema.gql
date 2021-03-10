@@ -250,6 +250,7 @@ type UserToContactsEdge implements Edge {
 
 type Mutation {
   addressCreate(input: AddressCreateInput!): AddressCreatePayload!
+  bulkUploadContact(userID: ID!, file: Upload!): User!
   confirmEmailAddressEdit(input: ConfirmEmailAddressEditInput!): ConfirmEmailAddressEditPayload!
   confirmPhoneNumberEdit(input: ConfirmPhoneNumberEditInput!): ConfirmPhoneNumberEditPayload!
   contactCreate(input: ContactCreateInput!): ContactCreatePayload!
@@ -292,6 +293,9 @@ input AddressCreateInput {
   apartment: String
   country: String
 }
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
 
 type ConfirmEmailAddressEditPayload {
   user: User!
