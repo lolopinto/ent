@@ -383,7 +383,7 @@ test("custom type", () => {
           isContextArg: true,
         },
         {
-          type: "Upload",
+          type: "GraphQLUpload",
           name: "file",
           needsResolving: true,
         },
