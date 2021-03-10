@@ -68,3 +68,7 @@ func GenerateRandPassword() string {
 	}
 	return string(result)
 }
+
+func GenerateRandPhoneNumber() string {
+	return GenerateRandCode(9)
+}
