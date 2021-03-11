@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent-graphql-tests",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "easy ways to test ent and graphql",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,6 +39,7 @@
     "@types/express-graphql": "^0.9.0",
     "@types/jest": "^26.0.9",
     "graphql": "^15.3.0",
+    "graphql-upload": "^11.0.0",
     "jest": "^26.2.2",
     "ts-jest": "^26.1.4",
     "typescript": "^3.9.7"

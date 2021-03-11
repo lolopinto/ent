@@ -48,13 +48,17 @@ export interface Changeset<T extends Ent> {
   dependencies?: Map<ID, Builder<T>>;
 }
 
+export type TriggerReturn<T extends Ent> =
+  | void
+  | Promise<
+      Changeset<T> | void | Changeset<T>[] | Changeset<T>[] | Changeset<T>
+    >
+  | Promise<Changeset<T>>[];
+
 export interface Trigger<T extends Ent> {
   // TODO: way in the future. detect any writes happening in changesets and optionally throw if configured to do so
   // can throw if it wants. not expected to throw tho.
-  changeset(
-    builder: Builder<T>,
-    input: Data,
-  ): void | Promise<Changeset<T> | void | Changeset<T>[]>;
+  changeset(builder: Builder<T>, input: Data): TriggerReturn<T>;
 }
 
 export interface Observer<T extends Ent> {

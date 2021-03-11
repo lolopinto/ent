@@ -3,15 +3,15 @@ import graphqlHTTP from "express-graphql";
 
 import schema from "./schema";
 import { IncomingMessage, ServerResponse } from "http";
-import { IDViewer } from "@lolopinto/ent";
 import passport from "passport";
 import session from "express-session";
 import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import {
   PassportAuthHandler,
   PassportStrategyHandler,
-} from "@lolopinto/ent/auth";
-import { Strategy as JWTStrategy, ExtractJwt } from "passport-jwt";
+} from "@lolopinto/ent-passport";
+import { graphqlUploadExpress } from "graphql-upload";
+import { User } from "src/ent";
 
 let app = express();
 // app.use(
@@ -26,37 +26,18 @@ app.use(passport.initialize());
 //registerAuthHandler("viewer", new PassportAuthHandler());
 registerAuthHandler(
   "viewer",
-  new PassportStrategyHandler(
-    new JWTStrategy(
-      {
-        // apparently issuer, audience, algos not required
-        // for HS256 ones
-        // issuer: "https://foo.com",
-        // audience: "https://foo.com/website",
-        // algorithms: ["HS256"],
-        secretOrKey: "secret",
-        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-        // jsonWebTokenOptions: {
-        //   algorithms: ["HS256"],
-        //   audience: "https://foo.com/website",
-        //   issuer: "https://foo.com",
-        // },
-      },
-      function(jwt_payload: {}, next) {
-        // console.log("jwt payload", jwt_payload);
-        return next(null, jwt_payload["viewerID"].toString(), {});
-      },
-    ),
-    { session: false },
-    function(context, viewerID) {
-      // toViewer method
-      return new IDViewer(viewerID, { context });
+  PassportStrategyHandler.jwtHandler({
+    secretOrKey: "secret",
+    authOptions: {
+      session: false,
     },
-  ),
+    loaderOptions: User.loaderOptions(),
+  }),
 );
 
 app.use(
   "/graphql",
+  graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }),
   graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
     let doWork = async () => {
       let context = await buildContext(request, response);
