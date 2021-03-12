@@ -67,12 +67,12 @@ jobs:
         registry-url: 'https://npm.pkg.github.com'
         scope: '@lolopinto'
         node-version: 14.x
-    - run: npm ci 
+    - run: cd ts && npm ci 
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
     - run: npm install -g ts-node prettier typescript 
       # this needs to be local. same as in ts/Dockerfile
-    - run: npm install --save-dev tsconfig-paths 
+    - run: cd ts && npm install --save-dev tsconfig-paths 
 
     - name: Build
       run: go build -v ./...
