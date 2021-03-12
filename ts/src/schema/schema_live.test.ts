@@ -165,12 +165,12 @@ describe("timestamp", () => {
     const updatedAt: Date = user.data.updated_at;
 
     // with default parser, value we get back is off
-    expect(Math.abs(createdAt.getTime() - date.getTime())).toBeGreaterThan(
-      date.getTimezoneOffset() * 60000,
-    );
-    expect(Math.abs(updatedAt.getTime() - date.getTime())).toBeGreaterThan(
-      date.getTimezoneOffset() * 60000,
-    );
+    expect(
+      Math.abs(createdAt.getTime() - date.getTime()),
+    ).toBeGreaterThanOrEqual(date.getTimezoneOffset() * 60000);
+    expect(
+      Math.abs(updatedAt.getTime() - date.getTime()),
+    ).toBeGreaterThanOrEqual(date.getTimezoneOffset() * 60000);
     expectWithinTZ(createdAt, date);
     expectWithinTZ(updatedAt, date);
 
@@ -349,7 +349,11 @@ describe("time", () => {
 
 const dateOffset = (d: Date): string => {
   // for some reason this API is backwards
-  return leftPad((d.getTimezoneOffset() / 60) * -1);
+  const val = leftPad((d.getTimezoneOffset() / 60) * -1);
+  if (val == "00") {
+    return "+00";
+  }
+  return val;
 };
 
 describe("timetz", () => {

@@ -132,10 +132,13 @@ export class TempDB {
   }
 
   async beforeAll() {
+    const user = process.env.POSTGRES_USER || "";
+    const password = process.env.POSTGRES_PASSWORD || "";
+
     this.client = new Client({
       host: "localhost",
-      user: "postgres",
-      password: "postgres",
+      user,
+      password,
     });
     await this.client.connect();
 
@@ -143,40 +146,35 @@ export class TempDB {
 
     await this.client.query(`CREATE DATABASE ${this.db}`);
 
-    process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+    if (user && password) {
+      process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
+    } else {
+      process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+    }
 
-    try {
-      this.dbClient = new Client({
-        host: "localhost",
-        database: this.db,
-        user: "postgres",
-        password: "postgres",
-      });
-      console.log(this.dbClient);
-      await this.dbClient.connect();
+    this.dbClient = new Client({
+      host: "localhost",
+      database: this.db,
+      user,
+      password,
+    });
+    await this.dbClient.connect();
 
-      for (const [_, table] of this.tables) {
-        await this.dbClient.query(table.create());
-      }
-    } catch(e) {
-      console.error(e);
+    for (const [_, table] of this.tables) {
+      await this.dbClient.query(table.create());
     }
   }
 
   async afterAll() {
-    try {
-      // end our connection to db
-      await this.dbClient.end();
-      // end any pool connection
-      await DB.getInstance().endPool();
+    // end our connection to db
+    await this.dbClient.end();
+    // end any pool connection
+    await DB.getInstance().endPool();
 
-      // drop db
-      await this.client.query(`DROP DATABASE ${this.db}`);
+    // drop db
+    await this.client.query(`DROP DATABASE ${this.db}`);
 
-      await this.client.end();
-    } catch(e) {
-      console.error(e);
-    }
+    await this.client.end();
   }
 
   async drop(...tables: string[]) {
