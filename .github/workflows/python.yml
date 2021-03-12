@@ -51,4 +51,3 @@ jobs:
     - run: python -m pytest
       env: 
         DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
-        pytest
