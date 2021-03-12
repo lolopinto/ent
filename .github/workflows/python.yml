@@ -50,7 +50,7 @@ jobs:
     - name: Install pipenv
       run: |
         python -m pip install --upgrade pip 
-        pin install pipenv==2018.11.26
+        pip install pipenv==2018.11.26
 
     - name: Install dependencies
       run: | 
