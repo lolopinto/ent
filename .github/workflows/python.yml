@@ -11,7 +11,7 @@ on:
 
 defaults:
   run:
-    working-directory: ./python/
+    working-directory: ./python/auto_schema
 
 jobs:
   build:
@@ -47,15 +47,17 @@ jobs:
       with:
         python-version: '>3.6'
 
-    - name: Install dependencies
+    - name: Install pipenv
       run: |
-        python -m pip install --upgrade pip
-        pip install pipenv
+        python -m pip install --upgrade pip pipenv 
 
-    - name: Test with pytest
+    - name: Install dependencies
       run: | 
-        pipenv install
+        pipenv install -deploy -dev
+
+    - name: run test suite
+      run: |
         pipenv shell
-        python -m pytest
+        python -m pytest -svvv
       env: 
         DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
