@@ -40,6 +40,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
