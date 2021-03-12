@@ -58,7 +58,6 @@ jobs:
 
     - name: run test suite
       run: |
-        pipenv shell
-        python -m pytest -svvv
+        pipenv run pytest -svvv
       env: 
         DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
