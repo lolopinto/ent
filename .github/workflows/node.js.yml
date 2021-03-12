@@ -9,6 +9,10 @@ on:
   pull_request:
     branches: [ master ]
 
+defaults: 
+  run: 
+    working-directory: ./ts
+
 jobs:
   build:
 
@@ -38,17 +42,14 @@ jobs:
         node-version: [14.x, 15.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
-    defaults: 
-      run: 
-        working-directory: ./ts
-
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
         always-auth: true
-        registry-url: 'https://npm.pkg.github.com/lolopinto'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@lolopinto'
         node-version: ${{ matrix.node-version }}
     - run: npm ci 
       env:
