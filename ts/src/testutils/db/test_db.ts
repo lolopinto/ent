@@ -143,27 +143,35 @@ export class TempDB {
 
     process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
 
-    this.dbClient = new Client({
-      host: "localhost",
-      database: this.db,
-    });
-    await this.dbClient.connect();
+    try {
+      this.dbClient = new Client({
+        host: "localhost",
+        database: this.db,
+      });
+      console.log(this.dbClient);
+      await this.dbClient.connect();
 
-    for (const [_, table] of this.tables) {
-      await this.dbClient.query(table.create());
-    }
+      for (const [_, table] of this.tables) {
+        await this.dbClient.query(table.create());
+      }
+    } catch(e) {
+      console.error(e);
   }
 
   async afterAll() {
-    // end our connection to db
-    await this.dbClient.end();
-    // end any pool connection
-    await DB.getInstance().endPool();
+    try {
+      // end our connection to db
+      await this.dbClient.end();
+      // end any pool connection
+      await DB.getInstance().endPool();
 
-    // drop db
-    await this.client.query(`DROP DATABASE ${this.db}`);
+      // drop db
+      await this.client.query(`DROP DATABASE ${this.db}`);
 
-    await this.client.end();
+      await this.client.end();
+    } catch(e) {
+      console.error(e);
+    }
   }
 
   async drop(...tables: string[]) {
