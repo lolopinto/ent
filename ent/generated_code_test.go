@@ -39,7 +39,7 @@ func (suite *generatedCodeSuite) getPhoneNumber(user *models.User) string {
 func (suite *generatedCodeSuite) TestLoadIDFrom() {
 	user := testingutils.CreateTestUser(suite.T())
 	user = testingutils.EditUser(suite.T(), user, map[string]interface{}{
-		"phone_number": "+16501234567",
+		"phone_number": util.GenerateRandPhoneNumber(),
 	})
 
 	testCases := map[string]struct {
@@ -87,7 +87,7 @@ func (suite *generatedCodeSuite) TestLoadIDFrom() {
 func (suite *generatedCodeSuite) TestLoadUserFrom() {
 	user := testingutils.CreateTestUser(suite.T())
 	user = testingutils.EditUser(suite.T(), user, map[string]interface{}{
-		"phone_number": "+16501234567",
+		"phone_number": util.GenerateRandPhoneNumber(),
 	})
 
 	user2 := testingutils.CreateTestUser(suite.T())
