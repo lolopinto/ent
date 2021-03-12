@@ -156,6 +156,7 @@ export class TempDB {
       }
     } catch(e) {
       console.error(e);
+    }
   }
 
   async afterAll() {
