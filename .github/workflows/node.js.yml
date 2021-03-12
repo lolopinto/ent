@@ -40,11 +40,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - working-directory: ts
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+
+    - name: Test
+      working-directory: ts
     - run: npm ci
     - run: npm run build --if-present
     - run: npm test
+    
