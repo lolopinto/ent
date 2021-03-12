@@ -54,7 +54,8 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Test with pytest
-    - run: pipenv shell
-    - run: python -m pytest
+      run: | 
+        pipenv shell
+        python -m pytest
       env: 
         DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
