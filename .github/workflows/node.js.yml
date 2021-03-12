@@ -57,4 +57,6 @@ jobs:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
     - run: npm run build --if-present 
     - run: npm test
-    
+      env:
+        POSTGRES_PASSWORD: 'postgres'
+        POSTGRES_USER: 'postgres'    
