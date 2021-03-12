@@ -27,13 +27,12 @@ func (db *DBConfig) GetConnectionStr() string {
 		return db.connection
 	}
 
-	dbData := db.rawDBInfo
 	// Todo probably throw here?
-	if dbData == nil {
-		return ""
+	if db.rawDBInfo == nil {
+		panic("no connection string or db ")
 	}
 
-	return getConnectionStr(dbData, "postgres", true)
+	return db.rawDBInfo.GetConnectionStr("postgres", true)
 }
 
 func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
@@ -42,10 +41,21 @@ func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
 	}
 	// postgres only for now as above. specific driver also
 	// no ssl mode
-	return getConnectionStr(db.rawDBInfo, "postgres", false)
+	return db.rawDBInfo.GetConnectionStr("postgres", false)
 }
 
-func getConnectionStr(dbData *RawDbInfo, driver string, sslmode bool) string {
+type RawDbInfo struct {
+	Dialect  string `yaml:"dialect"`
+	Database string `yaml:"database"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Pool     int    `yaml:"pool"`
+	SslMode  string `yaml:"sslmode"`
+}
+
+func (dbData *RawDbInfo) GetConnectionStr(driver string, sslmode bool) string {
 	format := "{driver}://{user}:{password}@{host}:{port}/{dbname}"
 	parts := []string{
 		"{driver}", driver,
@@ -64,17 +74,6 @@ func getConnectionStr(dbData *RawDbInfo, driver string, sslmode bool) string {
 	r := strings.NewReplacer(parts...)
 
 	return r.Replace(format)
-}
-
-type RawDbInfo struct {
-	Dialect  string `yaml:"dialect"`
-	Database string `yaml:"database"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Pool     int    `yaml:"pool"`
-	SslMode  string `yaml:"sslmode"`
 }
 
 func init() {
@@ -101,6 +100,14 @@ func GetConnectionStr() string {
 		log.Fatalf("invalid config")
 	}
 	return cfg.DB.GetConnectionStr()
+}
+
+func ResetConfig(rdbi *RawDbInfo) {
+	cfg = &Config{
+		DB: &DBConfig{
+			rawDBInfo: rdbi,
+		},
+	}
 }
 
 func loadDBConfig() *DBConfig {
