@@ -55,7 +55,7 @@ jobs:
     - name: Test with pytest
       run: | 
         pipenv shell
-        pipenv install
+        pipenv sync
         python -m pytest
       env: 
         DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres'
