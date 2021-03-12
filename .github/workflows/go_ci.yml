@@ -64,9 +64,9 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: 14.x
-    - run: npm install -g ts-node prettier typescript uuid
+    - run: npm install -g ts-node prettier typescript 
       # this needs to be local. same as in ts/Dockerfile
-    - run: npm install --save-dev tsconfig-paths
+    - run: npm install --save-dev tsconfig-paths uuid
 
     - name: Build
       run: go build -v ./...
