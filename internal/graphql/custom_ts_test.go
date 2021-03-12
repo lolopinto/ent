@@ -615,6 +615,6 @@ func TestCustomUploadType(t *testing.T) {
 
 	assert.Equal(t, typ.ImportPath, "graphql-upload")
 	assert.Equal(t, typ.Type, "GraphQLUpload")
-	assert.Equal(t, typ.TSType, "")
-	assert.Equal(t, typ.TSImportPath, "")
+	assert.Equal(t, typ.TSType, "FileUpload")
+	assert.Equal(t, typ.TSImportPath, "graphql-upload")
 }
