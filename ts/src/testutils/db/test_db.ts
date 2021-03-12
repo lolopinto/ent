@@ -142,8 +142,10 @@ export class TempDB {
     this.db = randomDB();
 
     await this.client.query(`CREATE DATABASE ${this.db}`);
+  
 
-    process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+//    process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+    process.env.DB_CONNECTION_STRING = `postgres://postgres:postgres@localhost:5432/${this.db}`;
 
     try {
       this.dbClient = new Client({
