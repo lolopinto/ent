@@ -48,9 +48,8 @@ jobs:
       uses: actions/setup-node@v2
       with:
         always-auth: true
-        registry-url: https://npm.pkg.github.com/lolopinto
+        registry-url: 'https://npm.pkg.github.com/lolopinto'
         node-version: ${{ matrix.node-version }}
-
     - run: npm ci 
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
