@@ -134,6 +134,8 @@ export class TempDB {
   async beforeAll() {
     this.client = new Client({
       host: "localhost",
+      user: "postgres",
+      password: "postgres",
     });
     await this.client.connect();
 
@@ -147,6 +149,8 @@ export class TempDB {
       this.dbClient = new Client({
         host: "localhost",
         database: this.db,
+        user: "postgres",
+        password: "postgres",
       });
       console.log(this.dbClient);
       await this.dbClient.connect();
