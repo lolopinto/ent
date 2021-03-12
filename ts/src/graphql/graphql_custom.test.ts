@@ -8,8 +8,9 @@ import {
   gqlObjectType,
   gqlQuery,
   gqlContextType,
+  gqlFileUpload,
 } from "./graphql";
-import { GraphQLID } from "graphql";
+import { GraphQLBoolean, GraphQLID } from "graphql";
 import { ID, Viewer } from "../core/ent";
 
 import {
@@ -20,8 +21,9 @@ import {
   validateCustomObjects,
   validateCustomMutations,
   validateCustomQueries,
-  CustomTypes,
+  CustomObjectTypes,
   validateNoCustomQueries,
+  validateCustomTypes,
 } from "./graphql_field_helpers";
 import { RequestContext } from "../core/context";
 
@@ -249,7 +251,11 @@ test("mutation with different types", async () => {
     },
   ]);
 
-  validateNoCustom(CustomTypes.Field, CustomTypes.Mutation, CustomTypes.Object);
+  validateNoCustom(
+    CustomObjectTypes.Field,
+    CustomObjectTypes.Mutation,
+    CustomObjectTypes.Object,
+  );
 
   GQLCapture.resolve([]);
 });
@@ -270,7 +276,7 @@ test("mutation with no args", () => {
       args: [],
     },
   ]);
-  validateNoCustom(CustomTypes.Mutation);
+  validateNoCustom(CustomObjectTypes.Mutation);
   GQLCapture.resolve([]);
 });
 
@@ -341,7 +347,52 @@ test("query with return type", () => {
     },
   ]);
 
-  validateNoCustom(CustomTypes.Field, CustomTypes.Object, CustomTypes.Query);
+  validateNoCustom(
+    CustomObjectTypes.Field,
+    CustomObjectTypes.Object,
+    CustomObjectTypes.Query,
+  );
 
+  GQLCapture.resolve([]);
+});
+
+test("custom type", () => {
+  class ProfilePictureUploadResolver {
+    @gqlMutation({ name: "profilePictureUpload", type: GraphQLBoolean })
+    profilePictureUpload(
+      @gqlContextType() context: RequestContext,
+      @gqlArg("file", { type: gqlFileUpload }) file,
+    ) {
+      // yay successful upload
+      return true;
+    }
+  }
+
+  validateCustomMutations([
+    {
+      nodeName: "ProfilePictureUploadResolver",
+      functionName: "profilePictureUpload",
+      gqlName: "profilePictureUpload",
+      fieldType: CustomFieldType.Function,
+      results: [],
+      args: [
+        {
+          type: "Context",
+          name: "context",
+          needsResolving: true,
+          isContextArg: true,
+        },
+        {
+          type: "GraphQLUpload",
+          name: "file",
+          needsResolving: true,
+        },
+      ],
+    },
+  ]);
+
+  validateCustomTypes([gqlFileUpload]);
+
+  validateNoCustom(CustomObjectTypes.Mutation, CustomObjectTypes.CustomTypes);
   GQLCapture.resolve([]);
 });

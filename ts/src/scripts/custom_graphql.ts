@@ -130,13 +130,13 @@ async function main() {
     parseImports(options.path),
   ]);
 
-  const fromMap = (m: Map<string, CustomObject>) => {
+  function fromMap<T extends any>(m: Map<string, T>) {
     let result = {};
     for (const [key, value] of m) {
       result[key] = value;
     }
     return result;
-  };
+  }
   GQLCapture.resolve(nodes);
 
   let args = fromMap(GQLCapture.getCustomArgs());
@@ -145,6 +145,7 @@ async function main() {
   let queries = GQLCapture.getProcessedCustomQueries();
   let mutations = GQLCapture.getProcessedCustomMutations();
   let objects = fromMap(GQLCapture.getCustomObjects());
+  let customTypes = fromMap(GQLCapture.getCustomTypes());
 
   let classes = {};
   let allFiles = {};
@@ -209,6 +210,7 @@ async function main() {
       classes,
       objects,
       files: allFiles,
+      customTypes,
     }),
   );
 }

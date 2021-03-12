@@ -20,6 +20,7 @@ func init() {
 	rootCmd.AddCommand(codegenCmd)
 	rootCmd.AddCommand(downgradeCmd)
 	rootCmd.AddCommand(upgradeCmd)
+	rootCmd.AddCommand(fixEdgesCmd)
 
 	codegenCmd.Flags().StringVarP(&codegenInfo.step, "step", "s", "", "limit to only run a particular step e.g. db, graphql, codegen")
 }

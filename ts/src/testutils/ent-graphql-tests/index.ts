@@ -1,12 +1,20 @@
 // NB: this is copied from ent-graphql-tests package until I have time to figure out how to share code here effectively
 // the circular dependencies btw this package and ent-graphql-tests seems to imply something needs to change
-import express, { Express } from "express";
+import express, { Express, RequestHandler } from "express";
 import { graphqlHTTP } from "express-graphql";
 import { Viewer } from "../../core/ent";
-import { GraphQLSchema, GraphQLObjectType } from "graphql";
+import {
+  GraphQLSchema,
+  GraphQLObjectType,
+  GraphQLScalarType,
+  isWrappingType,
+  GraphQLArgument,
+  GraphQLList,
+} from "graphql";
 import { buildContext, registerAuthHandler } from "../../auth";
 import { IncomingMessage, ServerResponse } from "http";
 import supertest from "supertest";
+import * as fs from "fs";
 
 function server(config: queryConfig): Express {
   const viewer = config.viewer;
@@ -22,8 +30,8 @@ function server(config: queryConfig): Express {
   if (config.init) {
     config.init(app);
   }
-  app.use(
-    "/graphql",
+  let handlers = config.customHandlers || [];
+  handlers.push(
     graphqlHTTP((request: IncomingMessage, response: ServerResponse) => {
       const doWork = async () => {
         let context = await buildContext(request, response);
@@ -35,6 +43,7 @@ function server(config: queryConfig): Express {
       return doWork();
     }),
   );
+  app.use("/graphql", ...handlers);
 
   return app;
 }
@@ -42,6 +51,7 @@ function server(config: queryConfig): Express {
 function makeGraphQLRequest(
   config: queryConfig,
   query: string,
+  fieldArgs: GraphQLArgument[],
 ): [supertest.SuperTest<supertest.Test>, supertest.Test] {
   let test: supertest.SuperTest<supertest.Test>;
 
@@ -55,16 +65,83 @@ function makeGraphQLRequest(
     test = supertest(server(config));
   }
 
-  return [
-    test,
-    test
-      .post("/graphql")
-      .set(config.headers || {})
-      .send({
+  function getInnerType(typ, list) {
+    if (isWrappingType(typ)) {
+      if (typ instanceof GraphQLList) {
+        return getInnerType(typ.ofType, true);
+      }
+      return getInnerType(typ.ofType, list);
+    }
+    return [typ, list];
+  }
+
+  let files = new Map();
+
+  // handle files
+  fieldArgs.forEach((fieldArg) => {
+    let [typ, list] = getInnerType(fieldArg.type, false);
+
+    if (typ instanceof GraphQLScalarType && typ.name == "Upload") {
+      let value = config.args[fieldArg.name];
+      if (list) {
+        expect(Array.isArray(value)).toBe(true);
+        // clone if we're going to make changes
+        value = [...value];
+
+        for (let i = 0; i < value.length; i++) {
+          files.set(`${fieldArg.name}.${i}`, value[i]);
+          value[i] = null;
+        }
+        config.args[fieldArg.name] = value;
+      } else {
+        files.set(fieldArg.name, value);
+        config.args[fieldArg.name] = null;
+      }
+    }
+  });
+
+  if (files.size) {
+    let ret = test.post("/graphql").set(config.headers || {});
+
+    ret.field(
+      "operations",
+      JSON.stringify({
         query: query,
-        variables: JSON.stringify(config.args),
+        variables: config.args,
       }),
-  ];
+    );
+
+    let m = {};
+    let idx = 0;
+    for (const [key, val] of files) {
+      m[idx] = [`variables.${key}`];
+      idx++;
+    }
+
+    ret.field("map", JSON.stringify(m));
+
+    idx = 0;
+    for (let [key, val] of files) {
+      if (typeof val === "string") {
+        val = fs.createReadStream(val);
+      }
+      ret.attach(`${idx}`, val, key);
+      idx++;
+    }
+
+    return [test, ret];
+  } else {
+    return [
+      test,
+      test
+        .post("/graphql")
+        .set(config.headers || {})
+        .send({
+          query: query,
+          variables: JSON.stringify(config.args),
+        }),
+    ];
+  }
 }
 
 function buildTreeFromQueryPaths(...options: Option[]) {
@@ -167,6 +244,7 @@ interface queryConfig {
   // todo there can be more than one etc
   callback?: (res: supertest.Response) => void;
   inlineFragmentRoot?: string;
+  customHandlers?: RequestHandler[];
 }
 
 export interface queryRootConfig extends queryConfig {
@@ -298,7 +376,7 @@ async function expectFromRoot(
   if (config.debugMode) {
     console.log(q);
   }
-  let [st, temp] = makeGraphQLRequest(config, q);
+  let [st, temp] = makeGraphQLRequest(config, q, fieldArgs);
   const res = await temp.expect("Content-Type", /json/);
   if (config.debugMode) {
     console.log(res.body);

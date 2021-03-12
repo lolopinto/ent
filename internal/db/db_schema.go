@@ -422,6 +422,10 @@ func DowngradeDB(codePathInfo *codegen.CodePath, revision string) {
 	runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
 }
 
+func FixEdges(codePathInfo *codegen.CodePath) {
+	runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-f=True")
+}
+
 func (s *dbSchema) writeSchemaFile() {
 	util.Die(file.Write(&file.TemplatedBasedFileWriter{
 		Data:              s.getSchemaForTemplate(),

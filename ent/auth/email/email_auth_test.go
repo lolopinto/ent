@@ -112,9 +112,9 @@ func (suite *emailAuthTestSuite) createUser(passwords ...string) *models.User {
 	user, err := action.CreateUser(viewer.LoggedOutViewer()).
 		SetFirstName("Jon").
 		SetLastName("Snow").
-		SetEmailAddress("test@email.com").
+		SetEmailAddress(util.GenerateRandEmail()).
 		SetPassword(password).
-		SetPhoneNumber("4159876543").Save()
+		SetPhoneNumber(util.GenerateRandPhoneNumber()).Save()
 
 	require.NoError(suite.T(), err)
 	require.Equal(suite.T(), user.FirstName, "Jon")

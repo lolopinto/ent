@@ -72,12 +72,13 @@ type customData struct {
 	Inputs  map[string]*CustomObject `json:"inputs"`
 	Objects map[string]*CustomObject `json:"objects"`
 	// map of class to fields in that class
-	Fields    map[string][]CustomField    `json:"fields"`
-	Queries   []CustomField               `json:"queries"`
-	Mutations []CustomField               `json:"mutations"`
-	Classes   map[string]*CustomClassInfo `json:"classes"`
-	Files     map[string]*CustomFile      `json:"files"`
-	Error     error
+	Fields      map[string][]CustomField    `json:"fields"`
+	Queries     []CustomField               `json:"queries"`
+	Mutations   []CustomField               `json:"mutations"`
+	Classes     map[string]*CustomClassInfo `json:"classes"`
+	Files       map[string]*CustomFile      `json:"files"`
+	CustomTypes map[string]*CustomType      `json:"customTypes"`
+	Error       error
 }
 
 type CustomItem struct {
@@ -88,6 +89,15 @@ type CustomItem struct {
 	IsContextArg bool         `json:"isContextArg"`
 	TSType       string       `json:"tsType"`
 	imports      []*fileImport
+}
+
+type CustomType struct {
+	Type       string `json:"type"`
+	ImportPath string `json:"importPath"`
+
+	// both of these are optional
+	TSType       string `json:"tsType"`
+	TSImportPath string `json:"tsImportPath"`
 }
 
 func (item *CustomItem) addImportImpl(imps ...string) {
@@ -133,47 +143,54 @@ func (item *CustomItem) initialize() error {
 	return nil
 }
 
-func (item *CustomItem) addGQLImport(imps ...string) {
-	item.addImportImpl(imps...)
-}
-
 func (item *CustomItem) addImport(imp *fileImport) {
 	item.imports = append(item.imports, imp)
 }
 
-var graphqlScalars = map[string]string{
-	"String":     "GraphQLString",
-	"Date":       "Time",
-	"Int":        "GraphQLInt",
-	"Float":      "GraphQLFloat",
-	"Boolean":    "GraphQLBoolean",
-	"ID":         "GraphQLID",
-	"Node":       "GraphQLNodeInterface",
-	"Edge":       "GraphQLEdgeInterface",
-	"Connection": "GraphQLConnectionInterface",
+func getNativeGQLImportFor(typ string) *fileImport {
+	return &fileImport{
+		Type:       typ,
+		ImportPath: "graphql",
+	}
 }
 
-func (item *CustomItem) getImports(s *gqlSchema) ([]*fileImport, error) {
+func getEntGQLImportFor(typ string) *fileImport {
+	return &fileImport{
+		Type:       typ,
+		ImportPath: codepath.GraphQLPackage,
+	}
+}
+
+var knownTypes = map[string]*fileImport{
+	"String":     getNativeGQLImportFor("GraphQLString"),
+	"Date":       getEntGQLImportFor("Time"),
+	"Int":        getNativeGQLImportFor("GraphQLInt"),
+	"Float":      getNativeGQLImportFor("GraphQLFloat"),
+	"Boolean":    getNativeGQLImportFor("GraphQLBoolean"),
+	"ID":         getNativeGQLImportFor("GraphQLID"),
+	"Node":       getEntGQLImportFor("GraphQLNodeInterface"),
+	"Edge":       getEntGQLImportFor("GraphQLEdgeInterface"),
+	"Connection": getEntGQLImportFor("GraphQLConnectionInterface"),
+}
+
+func (item *CustomItem) getImports(s *gqlSchema, cd *customData) ([]*fileImport, error) {
 	if err := item.initialize(); err != nil {
 		return nil, err
 	}
 
-	typ, ok := graphqlScalars[item.Type]
-
-	if ok {
-		item.addGQLImport(typ)
+	// TODO need to know if mutation or query...
+	imp := s.getImportFor(item.Type, false)
+	if imp != nil {
+		item.addImport(imp)
 	} else {
-		_, ok := s.nodes[item.Type]
+		_, ok := s.customData.Objects[item.Type]
 		if !ok {
-			// class name different from node Name so check
-			_, ok := s.customData.Objects[item.Type]
-			if !ok {
-				return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
-			}
+			return nil, fmt.Errorf("found a type %s which was not part of the schema", item.Type)
 		}
 		item.addImport(
 			&fileImport{
-				Type:       fmt.Sprintf("%sType", item.Type),
+				Type: fmt.Sprintf("%sType", item.Type),
+				// TODO same here. need to know if mutation or query
 				ImportPath: codepath.GetImportPathForInternalGQLFile(),
 			})
 		//				s.nodes[resultre]
@@ -612,6 +629,9 @@ func (obj gqlobjectData) Imports() []*fileImport {
 	if obj.FieldConfig != nil {
 		result = append(result, obj.FieldConfig.ArgImports...)
 		result = append(result, obj.FieldConfig.TypeImports...)
+		for _, arg := range obj.FieldConfig.Args {
+			result = append(result, arg.Imports...)
+		}
 	}
 	return result
 }
@@ -673,6 +693,45 @@ type gqlSchema struct {
 	customData      *customData
 	edgeNames       map[string]bool
 	customEdges     map[string]*objectType
+}
+
+func (s *gqlSchema) getImportFor(typ string, mutation bool) *fileImport {
+	// known type e.g. boolean, string, etc
+	knownType, ok := knownTypes[typ]
+	if ok {
+		return knownType
+	}
+
+	// custom nodes in the schema.
+	// e.g. User object, Event
+	_, ok = s.nodes[typ]
+	if ok {
+		if mutation {
+			return &fileImport{
+				Type: fmt.Sprintf("%sType", typ),
+				// it's an existing node, make sure to reference it
+				ImportPath: codepath.GetImportPathForExternalGQLFile(),
+			}
+		}
+		return &fileImport{
+			Type: fmt.Sprintf("%sType", typ),
+			// it's an existing node, make sure to reference it
+			ImportPath: codepath.GetImportPathForInternalGQLFile(),
+		}
+	}
+
+	// Custom type added
+	customTyp, ok := s.customData.CustomTypes[typ]
+	if ok {
+		return &fileImport{
+			ImportPath: customTyp.ImportPath,
+			Type:       customTyp.Type,
+		}
+	}
+
+	// don't know needs to be handled at each endpoint
+
+	return nil
 }
 
 type gqlNode struct {
@@ -1013,11 +1072,15 @@ func (f fieldConfig) FieldType() string {
 type fieldConfigArg struct {
 	Name        string
 	Description string
-	Imports     []string
+	Imports     []*fileImport
 }
 
 func (f fieldConfigArg) FieldType() string {
-	return typeFromImports(f.Imports)
+	typs := make([]string, len(f.Imports))
+	for idx, imp := range f.Imports {
+		typs[idx] = imp.Type
+	}
+	return typeFromImports(typs)
 }
 
 func getGQLFileImports(imps []enttype.FileImport, mutation bool) []*fileImport {
@@ -1275,19 +1338,19 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 		Args: []*fieldConfigArg{
 			{
 				Name:    "first",
-				Imports: []string{"GraphQLInt"},
+				Imports: []*fileImport{getNativeGQLImportFor("GraphQLInt")},
 			},
 			{
 				Name:    "after",
-				Imports: []string{"GraphQLString"},
+				Imports: []*fileImport{getNativeGQLImportFor("GraphQLString")},
 			},
 			{
 				Name:    "last",
-				Imports: []string{"GraphQLInt"},
+				Imports: []*fileImport{getNativeGQLImportFor("GraphQLInt")},
 			},
 			{
 				Name:    "before",
-				Imports: []string{"GraphQLString"},
+				Imports: []*fileImport{getNativeGQLImportFor("GraphQLString")},
 			},
 		},
 		// TODO typing for args later?
@@ -1607,9 +1670,12 @@ func buildActionFieldConfig(nodeData *schema.NodeData, a action.Action, actionPr
 		Args: []*fieldConfigArg{
 			{
 				Name: "input",
-				Imports: []string{
-					"GraphQLNonNull",
-					fmt.Sprintf("%sInputType", actionPrefix),
+				Imports: []*fileImport{
+					getNativeGQLImportFor("GraphQLNonNull"),
+					{
+						// local
+						Type: fmt.Sprintf("%sInputType", actionPrefix),
+					},
 				},
 			},
 		},
@@ -1862,7 +1928,11 @@ func (f *fieldType) FieldType() string {
 }
 
 func (f *fieldType) AllImports() []*fileImport {
-	return append(f.FieldImports, f.ExtraImports...)
+	ret := append(f.FieldImports, f.ExtraImports...)
+	for _, arg := range f.Args {
+		ret = append(ret, arg.Imports...)
+	}
+	return ret
 }
 
 type fileImport struct {
@@ -2004,7 +2074,7 @@ func buildNodeFieldConfig(data *codegen.Data, s *gqlSchema) *fieldConfig {
 		Args: []*fieldConfigArg{
 			{
 				Name:    "id",
-				Imports: []string{"GraphQLNonNull", "GraphQLID"},
+				Imports: []*fileImport{getNativeGQLImportFor("GraphQLNonNull"), getNativeGQLImportFor("GraphQLID")},
 			},
 		},
 		FunctionContents: []string{

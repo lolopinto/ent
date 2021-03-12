@@ -5,6 +5,7 @@ import {
   CustomObject,
   CustomMutation,
   CustomQuery,
+  CustomType,
 } from "./graphql";
 
 export function validateOneCustomField(expected: CustomField) {
@@ -150,28 +151,50 @@ export function validateNoCustomObjects() {
   expect(GQLCapture.getCustomObjects().size).toBe(0);
 }
 
-export enum CustomTypes {
+export function validateNoCustomTypes() {
+  expect(GQLCapture.getCustomTypes().size).toBe(0);
+}
+
+export enum CustomObjectTypes {
   Field = 0x1,
   Arg = 0x2,
   Object = 0x4,
   InputObject = 0x8,
   Query = 0x10,
   Mutation = 0x20,
+  CustomTypes = 0x40,
 }
 
 // TODO what's a good name for this instead
 export function validateNoCustom(...exceptions: number[]) {
   let bit = 0;
   exceptions.forEach((exp) => (bit = bit | exp));
-  const validate = (typ: CustomTypes, validateFn: () => void) => {
+  const validate = (typ: CustomObjectTypes, validateFn: () => void) => {
     if (!(bit & typ)) {
       validateFn();
     }
   };
-  validate(CustomTypes.Field, validateNoCustomFields);
-  validate(CustomTypes.Arg, validateNoCustomArgs);
-  validate(CustomTypes.Object, validateNoCustomObjects);
-  validate(CustomTypes.Query, validateNoCustomQueries);
-  validate(CustomTypes.Mutation, validateNoCustomMutations);
-  validate(CustomTypes.InputObject, validateNoCustomInputObjects);
+  validate(CustomObjectTypes.Field, validateNoCustomFields);
+  validate(CustomObjectTypes.Arg, validateNoCustomArgs);
+  validate(CustomObjectTypes.Object, validateNoCustomObjects);
+  validate(CustomObjectTypes.Query, validateNoCustomQueries);
+  validate(CustomObjectTypes.Mutation, validateNoCustomMutations);
+  validate(CustomObjectTypes.InputObject, validateNoCustomInputObjects);
+  validate(CustomObjectTypes.CustomTypes, validateNoCustomTypes);
+}
+
+export function validateCustomTypes(expected: CustomType[]) {
+  const actual = GQLCapture.getCustomTypes();
+  expect(actual.size).toBe(expected.length);
+
+  for (let i = 0; i < expected.length; i++) {
+    let expectedObj = expected[i];
+    let obj = actual.get(expectedObj.type);
+    expect(obj).not.toBe(undefined);
+
+    expect(obj!.type).toBe(expectedObj.type);
+    expect(obj!.importPath).toBe(expectedObj.importPath);
+    expect(obj!.tsType).toBe(expectedObj.tsType);
+    expect(obj!.tsImportPath).toBe(expectedObj.tsImportPath);
+  }
 }

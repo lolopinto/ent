@@ -5,12 +5,18 @@ interface ClassType<T = any> {
   new (...args: any[]): T;
 }
 
+export interface CustomType {
+  type: string;
+  importPath: string;
+  tsType?: string;
+  tsImportPath?: string;
+}
 // scalars or classes
 // string for GraphQL name in situation where we can't load the object
 // e.g. User, Contact etc
-type Type = GraphQLScalarType | ClassType | string;
+// CustomType for types that are not in "graphql" and we need to know where to load it from...
+type Type = GraphQLScalarType | ClassType | string | CustomType;
 
-// TODO lists/ nullables (list nullables) /etc
 export interface gqlFieldOptions {
   name?: string;
   nullable?: boolean | NullableListOptions;
@@ -147,6 +153,7 @@ export class GQLCapture {
   private static customArgs: Map<string, CustomObject> = new Map();
   private static customInputObjects: Map<string, CustomObject> = new Map();
   private static customObjects: Map<string, CustomObject> = new Map();
+  private static customTypes: Map<string, CustomType> = new Map();
 
   static clear(): void {
     this.customFields.clear();
@@ -155,6 +162,7 @@ export class GQLCapture {
     this.customArgs.clear();
     this.customInputObjects.clear();
     this.customObjects.clear();
+    this.customTypes.clear();
   }
 
   static getCustomFields(): Map<string, CustomField[]> {
@@ -179,6 +187,10 @@ export class GQLCapture {
 
   static getCustomObjects(): Map<string, CustomObject> {
     return this.customObjects;
+  }
+
+  static getCustomTypes(): Map<string, CustomType> {
+    return this.customTypes;
   }
 
   private static getNullableArg(fd: Field): ProcessedField {
@@ -269,16 +281,38 @@ export class GQLCapture {
       }
       return false;
     };
+
+    const isCustomType = (type: Type): type is CustomType => {
+      return (type as CustomType).importPath !== undefined;
+    };
+
+    const addCustomType = (type: CustomType) => {
+      const customType = this.customTypes.get(type.type);
+
+      if (customType && customType !== type) {
+        throw new Error(
+          `cannot add multiple custom types of name ${type.type}`,
+        );
+      }
+
+      this.customTypes.set(type.type, type);
+    };
+
     let list: boolean | undefined;
 
     if (options?.type) {
       if (isArray(options.type)) {
         list = true;
+        const ofType = options.type[0];
         //console.log(options);
-        if (isString(options.type[0])) {
-          type = options.type[0];
+        if (isString(ofType)) {
+          type = ofType;
+        } else if (isCustomType(ofType)) {
+          type = ofType.type;
+          addCustomType(ofType);
         } else {
-          type = options.type[0].name;
+          // GraphQLScalarType or ClassType
+          type = ofType.name;
         }
       } else if (isString(options.type)) {
         type = options.type;
@@ -287,7 +321,11 @@ export class GQLCapture {
           list = true;
           type = type.substr(1, type.length - 2);
         }
+      } else if (isCustomType(options.type)) {
+        type = options.type.type;
+        addCustomType(options.type);
       } else {
+        // GraphQLScalarType or ClassType
         type = options.type.name;
       }
     }
@@ -593,6 +631,7 @@ export class GQLCapture {
     this.customArgs.forEach((_val, key) => baseArgs.set(key, true));
     this.customInputObjects.forEach((_val, key) => baseArgs.set(key, true));
     baseArgs.set("Context", true);
+    this.customTypes.forEach((_val, key) => baseArgs.set(key, true));
 
     const resolveFields = (fields: CustomField[]) => {
       fields.forEach((field) => {
@@ -644,3 +683,13 @@ export const gqlObjectType = GQLCapture.gqlObjectType;
 export const gqlQuery = GQLCapture.gqlQuery;
 export const gqlMutation = GQLCapture.gqlMutation;
 export const gqlContextType = GQLCapture.gqlContextType;
+
+// this requires the developer to npm-install "graphql-upload on their own"
+const gqlFileUpload: CustomType = {
+  type: "GraphQLUpload",
+  importPath: "graphql-upload",
+  tsType: "FileUpload",
+  tsImportPath: "graphql-upload",
+};
+
+export { gqlFileUpload };

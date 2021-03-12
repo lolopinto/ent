@@ -19,13 +19,18 @@ import (
 	"github.com/lolopinto/ent/internal/schemaparser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
 // TODO: this entire file is *really really* slow. figure out how to make it faster
 // and break into integration test framework since we don't necessarily need to run that often
 
-func TestFunctionThatReturns(t *testing.T) {
-	verifyGeneratedCode(t, `package graphql
+type customFunctionsSuite struct {
+	suite.Suite
+}
+
+func (suite *customFunctionsSuite) TestFunctionThatReturns() {
+	verifyGeneratedCode(suite.T(), `package graphql
 	
 	import "time"
 
@@ -43,8 +48,8 @@ func serverTime() time.Time {
 	)
 }
 
-func TestFunctionThatReturnsDirectly(t *testing.T) {
-	verifyGeneratedCode(t, `package graphql
+func (suite *customFunctionsSuite) TestFunctionThatReturnsDirectly() {
+	verifyGeneratedCode(suite.T(), `package graphql
 	
 	import "time"
 
@@ -62,8 +67,8 @@ func serverTime() (*time.Time, error) {
 	)
 }
 
-func TestFunctionThatLooksLikeItReturnsDirectly(t *testing.T) {
-	verifyGeneratedCode(t, `package graphql
+func (suite *customFunctionsSuite) TestFunctionThatLooksLikeItReturnsDirectly() {
+	verifyGeneratedCode(suite.T(), `package graphql
 	
 	import "time"
 
@@ -85,8 +90,8 @@ func serverTime() (time.Time, error) {
 	)
 }
 
-func TestFunctionThatReturnsObjDirectly(t *testing.T) {
-	verifyGeneratedCode(t, `package graphql
+func (suite *customFunctionsSuite) TestFunctionThatReturnsObjDirectly() {
+	verifyGeneratedCode(suite.T(), `package graphql
 	
 	import "github.com/lolopinto/ent/internal/test_schema/models"
 
@@ -106,8 +111,8 @@ return nil, nil
 }
 
 // TODO: they're all slow but including models makes it *super* slow
-func TestFunctionThatReturnsObjInMutation(t *testing.T) {
-	verifyGeneratedCode(t, `package graphql
+func (suite *customFunctionsSuite) TestFunctionThatReturnsObjInMutation() {
+	verifyGeneratedCode(suite.T(), `package graphql
 	
 	import "github.com/lolopinto/ent/internal/test_schema/models"
 
@@ -132,9 +137,9 @@ func loggedInUser() (*models.User, error) {
 	)
 }
 
-func TestFunctionWithArgs(t *testing.T) {
+func (suite *customFunctionsSuite) TestFunctionWithArgs() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -154,9 +159,9 @@ func Log(ctx context.Context, event string) {
 	)
 }
 
-func TestFunctionWithArgsNoInputObj(t *testing.T) {
+func (suite *customFunctionsSuite) TestFunctionWithArgsNoInputObj() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -178,9 +183,9 @@ func Log(ctx context.Context, event string, t time.Time) {
 	)
 }
 
-func TestFunctionThatReturnsError(t *testing.T) {
+func (suite *customFunctionsSuite) TestFunctionThatReturnsError() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 	
 // @graphql logEvent Mutation
@@ -202,9 +207,9 @@ func Log() error{
 	)
 }
 
-func TestFunctionThatTakesAndReturnsObject(t *testing.T) {
+func (suite *customFunctionsSuite) TestFunctionThatTakesAndReturnsObject() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 	
 	import "context"
@@ -235,9 +240,9 @@ func Block(ctx context.Context, user *models.User) (*models.User, error) {
 	)
 }
 
-func TestFunctionThatOverridesParamName(t *testing.T) {
+func (suite *customFunctionsSuite) TestFunctionThatOverridesParamName() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -258,9 +263,9 @@ func Log(ctx context.Context, datapoint string) {
 	)
 }
 
-func TestFuncThatTakesMultipleArgOfSameType(t *testing.T) {
+func (suite *customFunctionsSuite) TestFuncThatTakesMultipleArgOfSameType() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -284,9 +289,9 @@ func AdminAddFriend(ctx context.Context, frienderID, friendeeID string) error {
 	)
 }
 
-func TestFuncThatTakesMultipleArgsOfObjects(t *testing.T) {
+func (suite *customFunctionsSuite) TestFuncThatTakesMultipleArgsOfObjects() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -318,9 +323,9 @@ func AdminAddFriend(ctx context.Context, friender, friendee *models.User) error 
 	)
 }
 
-func TestFuncThatTakesMultipleArgsOfObjectsNoInputObj(t *testing.T) {
+func (suite *customFunctionsSuite) TestFuncThatTakesMultipleArgsOfObjectsNoInputObj() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -353,9 +358,9 @@ func AdminAddFriend(ctx context.Context, friender, friendee *models.User) error 
 	)
 }
 
-func TestFuncThatTakesSliceOfObject(t *testing.T) {
+func (suite *customFunctionsSuite) TestFuncThatTakesSliceOfObject() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -391,9 +396,9 @@ func AdminAddFriends(ctx context.Context, friends []*models.User) error {
 	)
 }
 
-func TestFuncThatTakesSliceOfObjectNoInputObj(t *testing.T) {
+func (suite *customFunctionsSuite) TestFuncThatTakesSliceOfObjectNoInputObj() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -430,9 +435,9 @@ func AdminAddFriends(ctx context.Context, friends []*models.User) error {
 	)
 }
 
-func TestFuncThatTakesSliceOfScalar(t *testing.T) {
+func (suite *customFunctionsSuite) TestFuncThatTakesSliceOfScalar() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -456,9 +461,9 @@ func AdminAddFriends(ctx context.Context, friendIDs []string) error {
 	)
 }
 
-func TestFuncThatReturnsMultipleNamedItems(t *testing.T) {
+func (suite *customFunctionsSuite) TestFuncThatReturnsMultipleNamedItems() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -485,9 +490,9 @@ func Auth(ctx context.Context, email, password string) (user *models.User, token
 	)
 }
 
-func TestFuncThatReturnsMultipleItemsGraphQLReturn(t *testing.T) {
+func (suite *customFunctionsSuite) TestFuncThatReturnsMultipleItemsGraphQLReturn() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -516,9 +521,9 @@ func Auth(ctx context.Context, email, password string) (*models.User, string, er
 	)
 }
 
-func TestFuncThatReturnsNonNullItem(t *testing.T) {
+func (suite *customFunctionsSuite) TestFuncThatReturnsNonNullItem() {
 	verifyGeneratedCode(
-		t,
+		suite.T(),
 		`package graphql
 
 		import "context"
@@ -664,4 +669,10 @@ func parse(t *testing.T, code, dirPath, packagePath string, nodes []string) {
 	assert.Nil(t, result.Error)
 	assert.NotNil(t, result.Functions)
 	assert.Len(t, result.Objects, 0)
+}
+
+func TestSuite(t *testing.T) {
+	if !testing.Short() {
+		suite.Run(t, new(customFunctionsSuite))
+	}
 }

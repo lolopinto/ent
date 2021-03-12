@@ -10,7 +10,7 @@
     "PATH_TO_DB_FILE": "testdata/config/database.yml",
     "DB_CONNECTION_STRING": "postgres://ola:@localhost/ent_test?sslmode=disable"
   },
-  "go.testTimeout": "30s",
+  "go.testTimeout": "90s",
   "prettier.configPath": "ts/.prettierrc"
   // "jest.pathToConfig": "jest.config.js",
   // // TODO need to figure out how to get vscode intellisense to understand all these paths

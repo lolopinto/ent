@@ -134,7 +134,7 @@ func (auth *PhonePinAuth) Authenticate(ctx context.Context, phoneNumber, pin str
 }
 
 // AvailableAndValid returns a boolean indicating that the phoneNumber/pin combo can be used to sign-in or register
-// Dpoesn't clear the PIN because it could eventually be used in the corresponding account create mutation
+// Doesn't clear the PIN because it could eventually be used in the corresponding account create mutation
 // If this is a OneTimePINValidator or anything that clears when Validate is called, beware!
 func (auth *PhonePinAuth) AvailableAndValid(ctx context.Context, phoneNumber, pin string) (bool, error) {
 	if err := auth.validateArgs(); err != nil {
