@@ -82,7 +82,7 @@ jobs:
       env:
           # format of this string is different for python
           # if the logic here changes and we need to access golang, we'd need to rewrite this
-          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable'
+          DB_CONNECTION_STRING: 'postgresql+psycopg2://postgres:postgres@localhost:5432/postgres?sslmode=disable'
 
     - name: Test
 #      run:  go test ./ent/... -short 
