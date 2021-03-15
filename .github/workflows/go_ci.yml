@@ -82,6 +82,8 @@ jobs:
       env:
           # format of this string is different for python
           # if the logic here changes and we need to access golang, we'd need to rewrite this
+          # not sure what changed here but now psycopg2 needed
+          # also need an AUTO_SCHEMA_DB_CONNECTION_STRING
           DB_CONNECTION_STRING: 'postgresql+psycopg2://postgres:postgres@localhost:5432/postgres?sslmode=disable'
 
     - name: Test

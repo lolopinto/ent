@@ -300,7 +300,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	}
 
 	edgeData, err := b.loadEdges()
-	spew.Dump(b.edges, edgeData)
+	//	spew.Dump(b.edges, edgeData)
 	if err != nil {
 		return nil, err
 	}
@@ -334,6 +334,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		ops = append(ops, edge)
 		edgeInfo := edgeData[edge.EdgeType()]
 
+		spew.Dump(edgeInfo, edge, edge.EdgeType(), edgeData)
 		// symmetric edge. same edge type
 		if edgeInfo.SymmetricEdge {
 			ops = append(ops, edge.SymmetricEdge())
