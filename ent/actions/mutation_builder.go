@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/syncerr"
@@ -299,6 +300,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	}
 
 	edgeData, err := b.loadEdges()
+	spew.Dump(b.edges, edgeData)
 	if err != nil {
 		return nil, err
 	}

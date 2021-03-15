@@ -85,7 +85,8 @@ jobs:
           DB_CONNECTION_STRING: postgres://postgres:postgres@localhost:5432/postgres
 
     - name: Test
-      run:  go test ./ent/... -short 
+#      run:  go test ./ent/... -short 
+      run: go test  -run ^TestModelsSuite/TestGenLoadEdgeByType/$ github.com/lolopinto/ent/ent -v
       env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable'
           POSTGRES_PASSWORD: 'postgres'
