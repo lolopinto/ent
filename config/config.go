@@ -18,8 +18,9 @@ type Config struct {
 
 type DBConfig struct {
 	// depending on what we have return what's needed?
-	connection string
-	rawDBInfo  *RawDbInfo
+	connection           string
+	autoSchemaConnection string
+	rawDBInfo            *RawDbInfo
 }
 
 func (db *DBConfig) GetConnectionStr() string {
@@ -36,12 +37,15 @@ func (db *DBConfig) GetConnectionStr() string {
 }
 
 func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
+	if db.autoSchemaConnection != "" {
+		return db.autoSchemaConnection
+	}
 	if db.connection != "" {
 		return db.connection
 	}
 	// postgres only for now as above. specific driver also
 	// no ssl mode
-	return db.rawDBInfo.GetConnectionStr("postgres", false)
+	return db.rawDBInfo.GetConnectionStr("postgresql+psycopg2", false)
 }
 
 type RawDbInfo struct {
@@ -113,9 +117,11 @@ func ResetConfig(rdbi *RawDbInfo) {
 func loadDBConfig() *DBConfig {
 	// DB_CONNECTION_STRING trumps file
 	conn := util.GetEnv("DB_CONNECTION_STRING", "")
+	autoSchemaConn := util.GetEnv("AUTO_SCHEMA_DB_CONNECTION_STRING", "")
 	if conn != "" {
 		return &DBConfig{
-			connection: conn,
+			connection:           conn,
+			autoSchemaConnection: autoSchemaConn,
 		}
 	}
 

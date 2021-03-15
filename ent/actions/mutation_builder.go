@@ -3,6 +3,7 @@ package actions
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/davecgh/go-spew/spew"
@@ -300,7 +301,7 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	}
 
 	edgeData, err := b.loadEdges()
-	//	spew.Dump(b.edges, edgeData)
+	spew.Dump(b.edges, edgeData)
 	if err != nil {
 		return nil, err
 	}
@@ -329,12 +330,19 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		)
 	}
 
+	if len(b.edges) != len(edgeData) {
+		log.Println("couldn't load all the data for edges")
+	}
+
 	edges := b.edges
 	for _, edge := range edges {
 		ops = append(ops, edge)
 		edgeInfo := edgeData[edge.EdgeType()]
 
-		spew.Dump(edgeInfo, edge, edge.EdgeType(), edgeData)
+		if edgeInfo == nil {
+			return nil, fmt.Errorf("couldn't load edgeData for edge %s", edge.EdgeType())
+		}
+		//		spew.Dump(edgeInfo, edge, edge.EdgeType(), edgeData)
 		// symmetric edge. same edge type
 		if edgeInfo.SymmetricEdge {
 			ops = append(ops, edge.SymmetricEdge())

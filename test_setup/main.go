@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/db"
 )
@@ -16,6 +18,10 @@ func main() {
 
 	codepath := codegen.NewCodePath("../internal/test_schema/models/configs", "")
 	db.UpgradeDB(codepath)
+
+	allEdges := <-ent.GenLoadAssocEdges()
+	spew.Dump(allEdges)
+
 	// fix edges if broken?
 	//	db.FixEdges(codepath)
 }
