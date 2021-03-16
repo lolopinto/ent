@@ -22,6 +22,6 @@ func main() {
 	allEdges := <-ent.GenLoadAssocEdges()
 	spew.Dump(allEdges)
 
-	// fix edges if broken?
-	//	db.FixEdges(codepath)
+	// fix edges if broken
+	db.FixEdges(codepath)
 }
