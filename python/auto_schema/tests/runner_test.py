@@ -967,6 +967,37 @@ class BaseTestRunner(object):
         )
         validate_data_from_metadata(metadata_table_with_timetz, r)
 
+    @pytest.mark.usefixtures("metadata_with_one_edge")
+    def test_fix_edges(self, new_test_runner, metadata_with_one_edge):
+        r = run_edge_metadata_script(
+            new_test_runner,
+            metadata_with_one_edge,
+            "add edge UserToFollowersEdge"
+        )
+
+        # no changes when re-run
+        run_edge_metadata_script(
+            new_test_runner, metadata_with_one_edge, "", num_files=2, prev_runner=r, num_changes=0)
+
+        # can re-run with same edges and nothing happens
+        runner.Runner.fix_edges(metadata_with_one_edge, {
+                                'connection': r.connection})
+
+        conn = r.get_connection()
+        conn.execute('delete from assoc_edge_config')
+
+        # validate edges fails because edges incorrect
+        with pytest.raises(AssertionError):
+            validate_edges_from_metadata(metadata_with_one_edge, r)
+
+        # re-run again. it fixes
+        runner.Runner.fix_edges(metadata_with_one_edge, {
+                                'connection': r.connection})
+
+        # no changes
+        run_edge_metadata_script(
+            new_test_runner, metadata_with_one_edge, "", num_files=2, prev_runner=r, num_changes=0)
+
 
 class TestPostgresRunner(BaseTestRunner):
 
