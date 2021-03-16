@@ -58,7 +58,7 @@ jobs:
         python-version: '>3.6' 
       
     - name: install auto_schema
-      run: python3 -m pip install wheel auto_schema==0.0.3
+      run: python3 -m pip install wheel auto_schema==0.0.5
 
     - name: Setup nodejs
       uses: actions/setup-node@v2
