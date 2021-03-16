@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="auto_schema",  # auto_schema_test to test
-    version="0.0.3",  # 0.0.3 was last test version
+    version="0.0.5",  # 0.0.3 was last test version
     author="Ola Okelola",
     author_email="email@email.com",
     description="auto schema for a db",
