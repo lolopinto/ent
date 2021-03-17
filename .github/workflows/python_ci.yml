@@ -4,10 +4,6 @@
 name: Python auto_schema tests
 
 on:
-  push:
-    branches: [ master ]
-    paths:
-      - python/**
   pull_request:
     branches: [ master ]
     paths:
