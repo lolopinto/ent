@@ -1,11 +1,6 @@
 name: Go CI
 
 on:
-  push:
-    branches: [ master ]
-    paths-ignore:
-      - python/**
-      - /examples/**
   pull_request:
     branches: [ master ]
     paths-ignore:
