@@ -1196,7 +1196,7 @@ class TestPostgresRunner(BaseTestRunner):
         r2 = new_test_runner(metadata_with_enum_type, r)
 
         with pytest.raises(ValueError, match="postgres doesn't support enum removals"):
-            diff = r2.compute_changes()
+            r2.compute_changes()
 
     @pytest.mark.usefixtures("metadata_with_table")
     def test_remove_column(self, new_test_runner, metadata_with_table):

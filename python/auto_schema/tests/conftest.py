@@ -13,7 +13,7 @@ from auto_schema import runner
 
 class Postgres:
     def get_url(self, _schema_path):
-        return "postgresql://localhost/autoschema_test"
+        return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost/autoschema_test")
 
     def get_finalizer(self, metadata, session, connection, transaction, engine):
         def fn():
