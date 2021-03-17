@@ -132,8 +132,13 @@ export class TempDB {
   }
 
   async beforeAll() {
+    const user = process.env.POSTGRES_USER || "";
+    const password = process.env.POSTGRES_PASSWORD || "";
+
     this.client = new Client({
       host: "localhost",
+      user,
+      password,
     });
     await this.client.connect();
 
@@ -141,11 +146,17 @@ export class TempDB {
 
     await this.client.query(`CREATE DATABASE ${this.db}`);
 
-    process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+    if (user && password) {
+      process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
+    } else {
+      process.env.DB_CONNECTION_STRING = `postgres://localhost/${this.db}?`;
+    }
 
     this.dbClient = new Client({
       host: "localhost",
       database: this.db,
+      user,
+      password,
     });
     await this.dbClient.connect();
 

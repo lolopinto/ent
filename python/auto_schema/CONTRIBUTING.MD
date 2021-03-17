@@ -7,3 +7,5 @@ make changes to code and then run as following:
 assumes a local postgres db named `autoschema_test` exists
 
 credentials: `postgresql://localhost/autoschema_test`
+
+or it uses the one provided via environment variable `DB_CONNECTION_STRING`

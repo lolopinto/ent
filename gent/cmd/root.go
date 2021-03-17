@@ -49,6 +49,7 @@ func init() {
 	rootCmd.AddCommand(initPhoneAuthCmd)
 	rootCmd.AddCommand(initViewerCmd)
 	rootCmd.AddCommand(initEmailAuthCmd)
+	rootCmd.AddCommand(fixEdgesCmd)
 }
 
 func Execute() {

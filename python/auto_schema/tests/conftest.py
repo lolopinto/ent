@@ -13,7 +13,7 @@ from auto_schema import runner
 
 class Postgres:
     def get_url(self, _schema_path):
-        return "postgresql://localhost/autoschema_test"
+        return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost/autoschema_test")
 
     def get_finalizer(self, metadata, session, connection, transaction, engine):
         def fn():
@@ -916,7 +916,8 @@ def contacts_table(metadata):
 # todo: one postgres test with uuid
 def assoc_edge_config_table(metadata):
     sa.Table('assoc_edge_config', metadata,
-             sa.Column('edge_type', sa.Integer(), nullable=False),
+             sa.Column('edge_type', sa.Integer(), nullable=False,
+                       sqlite_on_conflict_primary_key='IGNORE'),
              sa.Column('edge_name', sa.Text(), nullable=False),
              # use false instead of FALSE to avoid the need for craziness here
              sa.Column('symmetric_edge', sa.Boolean(),

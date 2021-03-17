@@ -74,6 +74,7 @@ func TestCustomMutation(t *testing.T) {
 	require.Len(t, s.customData.Mutations, 1)
 	require.Len(t, s.customData.Classes, 1)
 	require.Len(t, s.customData.Files, 1)
+	require.Len(t, s.customData.CustomTypes, 0)
 
 	item := s.customData.Mutations[0]
 	assert.Equal(t, item.Node, "AuthResolver")
@@ -143,9 +144,15 @@ func TestCustomMutation(t *testing.T) {
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "email",
-			Imports: []string{
-				"GraphQLNonNull",
-				"GraphQLString",
+			Imports: []*fileImport{
+				{
+					Type:       "GraphQLNonNull",
+					ImportPath: "graphql",
+				},
+				{
+					Type:       "GraphQLString",
+					ImportPath: "graphql",
+				},
 			},
 		},
 	})
@@ -216,6 +223,7 @@ func TestCustomQuery(t *testing.T) {
 	require.Len(t, s.customData.Mutations, 0)
 	require.Len(t, s.customData.Classes, 1)
 	require.Len(t, s.customData.Files, 1)
+	require.Len(t, s.customData.CustomTypes, 0)
 
 	item := s.customData.Queries[0]
 	assert.Equal(t, item.Node, "AuthResolver")
@@ -285,9 +293,15 @@ func TestCustomQuery(t *testing.T) {
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "email",
-			Imports: []string{
-				"GraphQLNonNull",
-				"GraphQLString",
+			Imports: []*fileImport{
+				{
+					Type:       "GraphQLNonNull",
+					ImportPath: "graphql",
+				},
+				{
+					Type:       "GraphQLString",
+					ImportPath: "graphql",
+				},
 			},
 		},
 	})
@@ -375,6 +389,7 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	require.Len(t, s.customData.Mutations, 0)
 	require.Len(t, s.customData.Classes, 1)
 	require.Len(t, s.customData.Files, 1)
+	require.Len(t, s.customData.CustomTypes, 0)
 
 	item := s.customData.Queries[0]
 	assert.Equal(t, item.Node, "UsernameResolver")
@@ -440,9 +455,15 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
 		{
 			Name: "username",
-			Imports: []string{
-				"GraphQLNonNull",
-				"GraphQLString",
+			Imports: []*fileImport{
+				{
+					Type:       "GraphQLNonNull",
+					ImportPath: "graphql",
+				},
+				{
+					Type:       "GraphQLString",
+					ImportPath: "graphql",
+				},
 			},
 		},
 	})
@@ -452,4 +473,148 @@ func TestCustomQueryReferencesExistingObject(t *testing.T) {
 		"username",
 		");",
 	})
+}
+
+func TestCustomUploadType(t *testing.T) {
+	m := map[string]string{}
+
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	dirPath, err := ioutil.TempDir(absPath, "project")
+	defer os.RemoveAll(dirPath)
+	require.NoError(t, err)
+
+	schema := testhelper.ParseSchemaForTest(t, m, base.TypeScript, testhelper.TempDir(dirPath))
+	data := &codegen.Data{
+		Schema:   schema,
+		CodePath: codegen.NewCodePath(filepath.Join(dirPath, "src/schema"), ""),
+	}
+
+	schemaDir := filepath.Join(dirPath, "src", "graphql", "mutations", "file")
+	require.NoError(t, os.MkdirAll(schemaDir, os.ModePerm))
+
+	code := testhelper.GetCodeWithSchema(`
+			import {RequestContext} from "{root}";
+			import {gqlMutation, gqlArg, gqlFileUpload} from "{graphql}";
+
+			export class ProfilePicResolver {
+			  @gqlMutation({ name: "profilePicUpload", type: Boolean })
+				// TODO TS type
+			  async profilePicUpload(@gqlArg("file", {type: gqlFileUpload}) file) {
+					return true;
+				}
+		  }
+		`)
+
+	path := filepath.Join(schemaDir, "upload.ts")
+	require.NoError(t, ioutil.WriteFile(path, []byte(code), os.ModePerm))
+
+	s, err := buildSchema(data, true)
+	require.NoError(t, err)
+
+	require.Len(t, s.customData.Args, 0)
+	require.Len(t, s.customData.Inputs, 0)
+	require.Len(t, s.customData.Objects, 0)
+	require.Len(t, s.customData.Fields, 0)
+	require.Len(t, s.customData.Queries, 0)
+	require.Len(t, s.customData.Mutations, 1)
+	require.Len(t, s.customData.Classes, 1)
+	require.Len(t, s.customData.Files, 1)
+	require.Len(t, s.customData.CustomTypes, 1)
+
+	item := s.customData.Mutations[0]
+	assert.Equal(t, item.Node, "ProfilePicResolver")
+	assert.Equal(t, item.GraphQLName, "profilePicUpload")
+	assert.Equal(t, item.FunctionName, "profilePicUpload")
+	assert.Equal(t, item.FieldType, AsyncFunction)
+
+	require.Len(t, item.Args, 1)
+	arg := item.Args[0]
+	assert.Equal(t, arg.Name, "file")
+	assert.Equal(t, arg.Type, "GraphQLUpload")
+	assert.Equal(t, arg.Nullable, NullableItem(""))
+	assert.Equal(t, arg.List, false)
+	assert.Equal(t, arg.IsContextArg, false)
+	assert.Equal(t, arg.TSType, "")
+
+	require.Len(t, item.Results, 1)
+	result := item.Results[0]
+	assert.Equal(t, result.Name, "")
+	assert.Equal(t, result.Type, "Boolean")
+	assert.Equal(t, result.Nullable, NullableItem(""))
+	assert.Equal(t, result.List, false)
+	assert.Equal(t, result.IsContextArg, false)
+	assert.Equal(t, result.TSType, "boolean")
+
+	require.Len(t, s.customQueries, 0)
+	require.Len(t, s.customMutations, 1)
+
+	gqlNode := s.customMutations[0]
+	assert.Len(t, gqlNode.connections, 0)
+	assert.Len(t, gqlNode.Dependents, 0)
+	assert.Equal(t, gqlNode.Field, &item)
+	assert.Equal(t, gqlNode.FilePath, "src/graphql/mutations/generated/profile_pic_upload_type.ts")
+
+	objData := gqlNode.ObjData
+	require.NotNil(t, objData)
+	assert.Nil(t, objData.NodeData)
+	assert.Equal(t, objData.Node, "ProfilePicResolver")
+	assert.Equal(t, objData.NodeInstance, "obj")
+	assert.Len(t, objData.Enums, 0)
+	assert.Len(t, objData.GQLNodes, 0)
+
+	fcfg := objData.FieldConfig
+	require.NotNil(t, fcfg)
+
+	assert.True(t, fcfg.Exported)
+	assert.Equal(t, fcfg.Name, "ProfilePicUploadType")
+	assert.Equal(t, fcfg.Arg, "")
+	assert.Equal(t, fcfg.ResolveMethodArg, "{file}")
+	assert.Equal(t, fcfg.ReturnTypeHint, "")
+	assert.Equal(t, fcfg.TypeImports, []*fileImport{
+		{
+			Type:       "GraphQLNonNull",
+			ImportPath: "graphql",
+		},
+		{
+			Type:       "GraphQLBoolean",
+			ImportPath: "graphql",
+		},
+	})
+	assert.Equal(t, fcfg.ArgImports, []*fileImport{
+		{
+			Type:       "ProfilePicResolver",
+			ImportPath: "../file/upload",
+		},
+	})
+	assert.Equal(t, fcfg.Args, []*fieldConfigArg{
+		{
+			Name: "file",
+			Imports: []*fileImport{
+				{
+					Type:       "GraphQLNonNull",
+					ImportPath: "graphql",
+				},
+				{
+					Type:       "GraphQLUpload",
+					ImportPath: "graphql-upload",
+				},
+			},
+		},
+	})
+	assert.Equal(t, fcfg.FunctionContents, []string{
+		"const r = new ProfilePicResolver();",
+		"return r.profilePicUpload(",
+		"file",
+		");",
+	})
+
+	typ := s.customData.CustomTypes["GraphQLUpload"]
+
+	assert.NotNil(t, typ)
+
+	assert.Equal(t, typ.ImportPath, "graphql-upload")
+	assert.Equal(t, typ.Type, "GraphQLUpload")
+	assert.Equal(t, typ.TSType, "FileUpload")
+	assert.Equal(t, typ.TSImportPath, "graphql-upload")
 }

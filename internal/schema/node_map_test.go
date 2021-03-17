@@ -14,6 +14,7 @@ import (
 	"github.com/lolopinto/ent/internal/parsehelper"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/testingutils"
+	"github.com/lolopinto/ent/internal/testingutils/test_db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -351,11 +352,10 @@ type TodoConfig struct {
 
 	edges := s.GetEdges()
 
-	if len(edges) != 2 {
-		t.Errorf("Expected 2 edges generated in schema, got %d instead", len(edges))
-	}
 	accountTodosEdge := edges["AccountToTodosEdge"]
 	todoAccountsEdge := edges["TodoToAccountsEdge"]
+	require.NotNil(t, accountTodosEdge)
+	require.NotNil(t, todoAccountsEdge)
 
 	expectedEdge := &ent.AssocEdgeData{
 		EdgeName:      "AccountToTodosEdge",
@@ -490,11 +490,6 @@ type EventConfig struct {
 
 	edges := s.GetEdges()
 
-	// TODO event rsvp status consts coming
-	if len(edges) != 4 {
-		t.Errorf("Expected 4 edges generated in schema, got %d instead", len(edges))
-	}
-
 	expectedEdgeNames := []string{
 		"EventToAttendingUsersEdge",
 		"AccountToEventsAttendingEdge",
@@ -572,7 +567,7 @@ func TestGeneratedConstants(t *testing.T) {
 				"AccountType": "account",
 			},
 			"ent.EdgeType": {
-				"AccountToFriendsEdge": "",
+				"AccountToFriends2Edge": "",
 			},
 		},
 	)
@@ -635,7 +630,7 @@ func (config *AccountConfig) GetTableName() string {
 
 	func (config *AccountConfig) GetEdges() ent.EdgeMap{
 		return ent.EdgeMap{
-			"Friends": ent.AssociationEdge{
+			"Friends2": ent.AssociationEdge{
 				EntConfig:   AccountConfig{},
 			},
 		}
@@ -744,16 +739,14 @@ func getSchemaForNewConstsAndEdges2(t *testing.T) *schema.Schema {
 func testEdgesFromConstsAndEdges(t *testing.T, s *schema.Schema) {
 	newEdges := s.GetNewEdges()
 
-	if len(newEdges) != 1 {
-		t.Errorf("Expected 1 new edge generated in schema, got %d instead", len(newEdges))
-	}
+	require.Len(t, newEdges, 1)
 	newEdge := newEdges[0]
 
 	expectedEdge := &ent.AssocEdgeData{
-		EdgeName:        "AccountToFriendsEdge",
+		EdgeName:        "AccountToFriends2Edge",
 		SymmetricEdge:   false,
 		InverseEdgeType: sql.NullString{},
-		EdgeTable:       "account_friends_edges",
+		EdgeTable:       "account_friends_2_edges",
 	}
 
 	testEdge(t, newEdge, expectedEdge)
@@ -867,17 +860,38 @@ func testConstants(t *testing.T, info *schema.NodeDataInfo, constMap map[string]
 
 type edgeTestSuite struct {
 	testingutils.Suite
+	tdb *test_db.TestDB
 }
 
 func (suite *edgeTestSuite) SetupSuite() {
-	suite.Tables = []string{
-		"assoc_edge_config",
+	suite.tdb = &test_db.TestDB{
+		Tables: []test_db.Table{
+			{
+				Name: "assoc_edge_config",
+				Columns: []test_db.Column{
+					test_db.UUID("edge_type", test_db.PrimaryKey()),
+					test_db.Text("edge_name"),
+					test_db.Bool("symmetric_edge"),
+					test_db.UUID("inverse_edge_type", test_db.Nullable()),
+					test_db.Text("edge_table"),
+					test_db.Timestamp("created_at"),
+					test_db.Timestamp("updated_at"),
+				},
+			},
+		},
 	}
-	// this depends on "jarvis_test" having the table pre-configured but empty.
-	// ran this command: "pg_dump -t assoc_edge_config ent_test | psql jarvis_test"
-	// and then "delete from assoc_edge_config;" in psql to delete the rows to be clean
-	// TODO fix this to be done correctly
+
+	err := suite.tdb.BeforeAll()
+	require.Nil(suite.T(), err)
+
+	suite.Tables = []string{"assoc_edge_config"}
+	suite.Suite.ForceClean = true
 	suite.Suite.SetupSuite()
+}
+
+func (suite *edgeTestSuite) TearDownSuite() {
+	err := suite.tdb.AfterAll()
+	require.Nil(suite.T(), err)
 }
 
 func (suite *edgeTestSuite) TestNewVsExistingEdges() {

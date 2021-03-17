@@ -554,7 +554,7 @@ func (l *loadNodesLoader) GetSQLBuilder() (*sqlBuilder, error) {
 		for idx, id := range l.ids {
 			inArgs[idx] = id
 		}
-		builder.in(l.pkey, inArgs)
+		builder.clause = sql.In(l.pkey, inArgs...)
 	} else if l.clause != nil {
 		builder.clause = l.clause
 	} else if l.rawQuery != "" {

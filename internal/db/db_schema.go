@@ -19,7 +19,7 @@ import (
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema/input"
 
-	"github.com/lolopinto/ent/data"
+	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/util"
@@ -420,6 +420,10 @@ func UpgradeDB(codePathInfo *codegen.CodePath) {
 
 func DowngradeDB(codePathInfo *codegen.CodePath, revision string) {
 	runPythonCommand(codePathInfo.GetRootPathToConfigs(), fmt.Sprintf("-d=%s", revision))
+}
+
+func FixEdges(codePathInfo *codegen.CodePath) {
+	runPythonCommand(codePathInfo.GetRootPathToConfigs(), "-f=True")
 }
 
 func (s *dbSchema) writeSchemaFile() {

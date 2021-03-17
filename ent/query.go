@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/lolopinto/ent/data"
+	"github.com/lolopinto/ent/ent/data"
 	"github.com/pkg/errors"
 )
 

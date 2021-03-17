@@ -34,6 +34,7 @@ func (suite *modelsTestSuite) SetupSuite() {
 }
 
 func (suite *modelsTestSuite) TestLoadNodeRawDataViaQueryClause() {
+	suite.T().Skip("doesn't work without db cleaner")
 	user := testingutils.CreateTestUser(suite.T())
 
 	var testCases = map[string]struct {
@@ -575,6 +576,8 @@ func (suite *modelsTestSuite) TestLoadingMultiNodesWithJSON() {
 }
 
 func (suite *modelsTestSuite) TestLoadRawQueryWithJSON() {
+	suite.T().Skip("doesn't work without db cleaner")
+
 	// This tests the raw_data mode
 	// We still don't have a way to test StructScan that loader orchestrates on its own since we go through caching layer as expected
 	residentNames := []string{"The Queen", "Prince Phillip"}
