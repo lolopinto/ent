@@ -47,10 +47,12 @@ func (suite *phoneAuthTestSuite) SetupSuite() {
 func (suite *phoneAuthTestSuite) SetupTest() {
 	auth.Clear()
 	// clear redis in between each test
-	redis := cache.NewRedis(&redis.Options{
+	redis, _ := cache.NewRedis(&redis.Options{
 		Addr: "localhost:6379",
 	})
-	redis.Clear()
+	if redis != nil {
+		redis.Clear()
+	}
 	jwt.TimeFunc = time.Now
 }
 
@@ -70,18 +72,21 @@ func (suite *phoneAuthTestSuite) createUser() *models.User {
 
 func (suite *phoneAuthTestSuite) getValidators() map[string]phonenumber.Validator {
 	memory := cache.NewMemory(10*time.Minute, 10*time.Minute)
-	redis := cache.NewRedis(&redis.Options{
-		Addr: "localhost:6379",
-	})
-
-	return map[string]phonenumber.Validator{
+	ret := map[string]phonenumber.Validator{
 		"memory": &phonenumber.MemoryValidator{
 			Memory: memory,
 		},
-		"redis": &phonenumber.RedisValidator{
-			Redis: redis,
-		},
 	}
+	redis, _ := cache.NewRedis(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	// if no redis (none has been set up in github actions for example), don't use said validator
+	if redis != nil {
+		ret["redis"] = &phonenumber.RedisValidator{
+			Redis: redis,
+		}
+	}
+	return ret
 }
 
 func (suite *phoneAuthTestSuite) runFuncWithValidator(fn func(t *testing.T, validator phonenumber.Validator)) {

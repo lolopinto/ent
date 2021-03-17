@@ -5,7 +5,7 @@ import (
 
 	"github.com/khaiql/dbcleaner"
 	"github.com/khaiql/dbcleaner/engine"
-	"github.com/lolopinto/ent/config"
+	"github.com/lolopinto/ent/ent/config"
 	"github.com/stretchr/testify/suite"
 )
 

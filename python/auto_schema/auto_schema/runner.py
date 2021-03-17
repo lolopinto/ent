@@ -1,4 +1,5 @@
 import pprint
+from collections.abc import Mapping
 
 import sqlalchemy as sa
 
@@ -51,8 +52,11 @@ class Runner(object):
 
     @classmethod
     def fix_edges(cls, metadata, args):
-        engine = sa.create_engine(args.engine)
-        connection = engine.connect()
+        if isinstance(args, Mapping) and args.get('connection'):
+            connection = args.get('connection')
+        else:
+            engine = sa.create_engine(args.engine)
+            connection = engine.connect()
 
         edges_map = metadata.info.setdefault("edges", {})
         ops_impl.add_edges_from(connection, list(edges_map['public'].values()))

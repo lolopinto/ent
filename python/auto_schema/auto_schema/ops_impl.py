@@ -16,18 +16,24 @@ def add_edges_from(connection, edges):
         edge['updated_at'] = t
         edges_to_write.append(edge)
 
-    connection.execute(
-        table.insert().values(edges_to_write)
-    )
+    dialect = connection.dialect.name
+    if dialect == 'sqlite':
+        stmt = table.insert().values(
+            edges_to_write)
+    else:
+        stmt = postgresql.insert(table).values(
+            edges_to_write).on_conflict_do_nothing()
+
+    connection.execute(stmt)
 
 
-@Operations.implementation_for(ops.AddEdgesOp)
+@ Operations.implementation_for(ops.AddEdgesOp)
 def add_edges(operations, operation):
     connection = operations.get_bind()
     add_edges_from(connection, operation.edges)
 
 
-@Operations.implementation_for(ops.RemoveEdgesOp)
+@ Operations.implementation_for(ops.RemoveEdgesOp)
 def drop_edge(operations, operation):
     edge_types = [edge['edge_type'] for edge in operation.edges]
 
@@ -38,7 +44,7 @@ def drop_edge(operations, operation):
     )
 
 
-@Operations.implementation_for(ops.ModifyEdgeOp)
+@ Operations.implementation_for(ops.ModifyEdgeOp)
 def modify_edge(operations, operation):
     connection = operations.get_bind()
     table = _get_table(connection)
@@ -59,7 +65,7 @@ def _get_table(connection, name='assoc_edge_config'):
     return metadata.tables[name]
 
 
-@Operations.implementation_for(ops.AddRowsOp)
+@ Operations.implementation_for(ops.AddRowsOp)
 def add_rows(operations, operation):
     connection = operations.get_bind()
     table = _get_table(connection, name=operation.table_name)
@@ -69,7 +75,7 @@ def add_rows(operations, operation):
     )
 
 
-@Operations.implementation_for(ops.RemoveRowsOp)
+@ Operations.implementation_for(ops.RemoveRowsOp)
 def remove_rows(operations, operation):
     connection = operations.get_bind()
     table = _get_table(connection, name=operation.table_name)
