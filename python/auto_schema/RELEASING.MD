@@ -18,7 +18,7 @@ Steps to release new version:
 * Recommend cleaning up after by running `rm -rf dist/`
 
 ## Testing
-To test, install as follows: `python3 -m pip install auto_schema`
+To test, install as follows: `python3 -m pip install auto_schema=={version}`
 
 If done in a `venv`, prerequisites are as follows:
 * `python3 -m venv .`

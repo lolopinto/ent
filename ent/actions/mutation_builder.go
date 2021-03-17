@@ -3,6 +3,7 @@ package actions
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/lolopinto/ent/ent"
@@ -327,11 +328,18 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		)
 	}
 
+	if len(b.edges) != len(edgeData) {
+		log.Println("couldn't load all the data for edges")
+	}
+
 	edges := b.edges
 	for _, edge := range edges {
 		ops = append(ops, edge)
 		edgeInfo := edgeData[edge.EdgeType()]
 
+		if edgeInfo == nil {
+			return nil, fmt.Errorf("couldn't load edgeData for edge %s", edge.EdgeType())
+		}
 		// symmetric edge. same edge type
 		if edgeInfo.SymmetricEdge {
 			ops = append(ops, edge.SymmetricEdge())

@@ -168,7 +168,7 @@ func TestSelectBuilder(t *testing.T) {
 }
 
 func TestInsertBuilder(t *testing.T) {
-	now := time.Now()
+	now := time.Now().UTC()
 	var testCases = map[string]sqlTestCase{
 		"insert return values": {
 			getInsertQuery(

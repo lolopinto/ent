@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lolopinto/ent/data"
 	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -128,8 +128,9 @@ func (suite *castSuite) TestToTime() {
 	assert.Nil(suite.T(), err)
 	assert.False(suite.T(), t.IsZero())
 	// confirm it's a valid time within the near recent time
-	assert.True(suite.T(), t.Before(time.Now()))
-	assert.False(suite.T(), t.After(time.Now().Add(-2*time.Second)))
+	now := time.Now().UTC()
+	assert.True(suite.T(), t.Before(now))
+	assert.True(suite.T(), t.After(now.Add(-2*time.Second)))
 }
 
 func (suite *castSuite) TestNullableToTime() {

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 var alphanumeric = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz"
@@ -30,6 +31,17 @@ func GenerateRandAlphaNumericKey(n int) string {
 	var sb strings.Builder
 	Die(generateRandKey(n, alphanumeric, &sb))
 	return sb.String()
+}
+
+func GenerateRandDBName() string {
+	var sb strings.Builder
+	Die(generateRandKey(10, alphanumeric, &sb))
+	str := strings.ToLower(sb.String())
+	if unicode.IsNumber(rune(str[0])) {
+		// add leading digit
+		return string(lowerCase[rand.Intn(len(lowerCase))]) + str
+	}
+	return str
 }
 
 func generateRandKey(n int, charset string, sb *strings.Builder) error {
@@ -67,4 +79,8 @@ func GenerateRandPassword() string {
 		result[i], result[idx] = result[idx], result[i]
 	}
 	return string(result)
+}
+
+func GenerateRandPhoneNumber() string {
+	return GenerateRandCode(9)
 }
