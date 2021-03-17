@@ -88,7 +88,7 @@ jobs:
           AUTO_SCHEMA_DB_CONNECTION_STRING: 'postgresql+psycopg2://postgres:postgres@localhost:5432/postgres?sslmode=disable'
 
     - name: Test
-      run:  go test ./ent/... -short 
+      run:  go test ./... -short 
       env:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable'
           POSTGRES_PASSWORD: 'postgres'
