@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/uuid"
 	"github.com/lolopinto/ent/data"
 	"github.com/lolopinto/ent/ent/cast"
@@ -128,8 +129,11 @@ func (suite *castSuite) TestToTime() {
 	assert.Nil(suite.T(), err)
 	assert.False(suite.T(), t.IsZero())
 	// confirm it's a valid time within the near recent time
-	assert.True(suite.T(), t.Before(time.Now()))
-	assert.False(suite.T(), t.After(time.Now().Add(-10*time.Second)))
+	now := time.Now()
+	assert.True(suite.T(), t.Before(now))
+	spew.Dump(t)
+	spew.Dump(now)
+	assert.False(suite.T(), t.After(now.Add(-10*time.Second)))
 }
 
 func (suite *castSuite) TestNullableToTime() {
