@@ -40,7 +40,8 @@ func ToTime(v interface{}) (time.Time, error) {
 	if !ok {
 		return t, fmt.Errorf("could not convert time field %v to appropriate type", v)
 	}
-	return t, nil
+	// stored as utc and it's time without timezone
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), time.UTC), nil
 }
 
 func ToNullableTime(v interface{}) (*time.Time, error) {
