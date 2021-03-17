@@ -6,8 +6,14 @@ name: Node.js CI
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+    - python/**
+    - /examples/**
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - python/**
+      - /examples/**
 
 defaults: 
   run: 
@@ -52,6 +58,14 @@ jobs:
         registry-url: 'https://npm.pkg.github.com'
         scope: '@lolopinto'
         node-version: ${{ matrix.node-version }}
+
+    - uses: actions/cache@v2
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
     - run: npm ci 
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
