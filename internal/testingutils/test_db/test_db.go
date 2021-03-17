@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/ent/data"
@@ -41,10 +40,8 @@ func (tdb *TestDB) BeforeAll() error {
 	tdb.rootDB = db
 
 	tdb.dbName = util.GenerateRandDBName()
-	spew.Dump(tdb.dbName)
 	_, err = db.Query(fmt.Sprintf("CREATE DATABASE %s", tdb.dbName))
 	if err != nil {
-		spew.Dump("create error")
 		return err
 	}
 
@@ -52,7 +49,6 @@ func (tdb *TestDB) BeforeAll() error {
 
 	privatedb, err := sqlx.Open("postgres", dbInfo.GetConnectionStr("postgres", true))
 	if err != nil {
-		spew.Dump("error")
 		return err
 	}
 	if err = db.Ping(); err != nil {
