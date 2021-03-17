@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lolopinto/ent/data"
 	"github.com/lolopinto/ent/ent/cast"
+	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

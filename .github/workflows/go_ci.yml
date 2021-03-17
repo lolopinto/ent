@@ -3,8 +3,14 @@ name: Go CI
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      - python/**
+      - /examples/**
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - python/*
+      - /examples/**
 
 jobs:
 
@@ -100,5 +106,3 @@ jobs:
           DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable'
           POSTGRES_PASSWORD: 'postgres'
           POSTGRES_USER: 'postgres'
-
-

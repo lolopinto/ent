@@ -7,8 +7,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
-	"github.com/lolopinto/ent/config"
-	"github.com/lolopinto/ent/data"
+	"github.com/lolopinto/ent/ent/config"
+	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/util"
 )
 

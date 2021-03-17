@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" //driver not used
-	"github.com/lolopinto/ent/config"
+	"github.com/lolopinto/ent/ent/config"
 )
 
 var db *sqlx.DB
@@ -53,7 +52,6 @@ func CloseDB() error {
 // TODO this obviously needs to be cleaned up
 // used by tests
 func ResetDB(db2 *sqlx.DB, rdbi *config.RawDbInfo) error {
-	spew.Dump("reset db called")
 	dbMutex.Lock()
 	defer dbMutex.Unlock()
 
