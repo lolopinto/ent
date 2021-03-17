@@ -47,6 +47,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
+    - uses: actions/cache@v2
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('ts/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
@@ -74,8 +81,8 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
 
-    - name: Build
-      run: go build -v ./...
+    # - name: Build
+    #   run: go build -v ./...
       
     - name: setup db
       run: cd test_setup && go run .
