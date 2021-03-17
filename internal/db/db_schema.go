@@ -19,7 +19,7 @@ import (
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/schema/input"
 
-	"github.com/lolopinto/ent/data"
+	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/util"

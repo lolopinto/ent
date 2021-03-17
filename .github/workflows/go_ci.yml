@@ -1,0 +1,108 @@
+name: Go CI
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - python/**
+      - /examples/**
+  pull_request:
+    branches: [ master ]
+    paths-ignore:
+      - python/*
+      - /examples/**
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    
+    # Service containers to run with `build`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    - uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - uses: actions/cache@v2
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('ts/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15
+        
+    - name: Set up python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '>3.6' 
+      
+    - name: install auto_schema
+      run: python3 -m pip install wheel auto_schema==0.0.5
+
+    - name: Setup nodejs
+      uses: actions/setup-node@v2
+      with:
+        always-auth: true
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@lolopinto'
+        node-version: 14.x
+    - run: npm install -g ts-node prettier typescript 
+    - run: |
+        cd ts 
+        npm ci
+      env:
+        NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+
+    # - name: Build
+    #   run: go build -v ./...
+      
+    - name: setup db
+      run: cd test_setup && go run .
+      env:
+          # format of this string is different for python
+          # if the logic here changes and we need to access golang, we'd need to rewrite this
+          # not sure what changed here but now psycopg2 needed
+          # also need an AUTO_SCHEMA_DB_CONNECTION_STRING
+          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable'
+          AUTO_SCHEMA_DB_CONNECTION_STRING: 'postgresql+psycopg2://postgres:postgres@localhost:5432/postgres?sslmode=disable'
+
+    - name: Test
+      run:  go test ./... -short 
+      env:
+          DB_CONNECTION_STRING: 'postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable'
+          POSTGRES_PASSWORD: 'postgres'
+          POSTGRES_USER: 'postgres'

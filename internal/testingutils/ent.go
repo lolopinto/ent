@@ -280,7 +280,7 @@ func GetDefaultEventFieldsUserID(userID string) map[string]interface{} {
 	return map[string]interface{}{
 		"name":       "Fun event",
 		"user_id":    userID,
-		"start_time": time.Now(),
+		"start_time": time.Now().UTC(),
 		"location":   "fun location!",
 	}
 }
