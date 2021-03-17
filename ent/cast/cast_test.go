@@ -129,7 +129,7 @@ func (suite *castSuite) TestToTime() {
 	assert.False(suite.T(), t.IsZero())
 	// confirm it's a valid time within the near recent time
 	assert.True(suite.T(), t.Before(time.Now()))
-	assert.False(suite.T(), t.After(time.Now().Add(-2*time.Second)))
+	assert.False(suite.T(), t.After(time.Now().Add(-10*time.Second)))
 }
 
 func (suite *castSuite) TestNullableToTime() {

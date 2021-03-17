@@ -6,7 +6,6 @@ import (
 	"log"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/ent/viewer"
 	"github.com/lolopinto/ent/internal/syncerr"
@@ -301,7 +300,6 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 	}
 
 	edgeData, err := b.loadEdges()
-	spew.Dump(b.edges, edgeData)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +340,6 @@ func (b *EntMutationBuilder) GetChangeset() (ent.Changeset, error) {
 		if edgeInfo == nil {
 			return nil, fmt.Errorf("couldn't load edgeData for edge %s", edge.EdgeType())
 		}
-		//		spew.Dump(edgeInfo, edge, edge.EdgeType(), edgeData)
 		// symmetric edge. same edge type
 		if edgeInfo.SymmetricEdge {
 			ops = append(ops, edge.SymmetricEdge())

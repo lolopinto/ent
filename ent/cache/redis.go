@@ -10,10 +10,15 @@ type Redis struct {
 	client *redis.Client
 }
 
-func NewRedis(option *redis.Options) *Redis {
+func NewRedis(option *redis.Options) (*Redis, error) {
+	client := redis.NewClient(option)
+	_, err := client.Ping().Result()
+	if err != nil {
+		return nil, err
+	}
 	return &Redis{
 		redis.NewClient(option),
-	}
+	}, nil
 }
 
 func (r *Redis) Get(key string) (interface{}, bool, error) {
