@@ -9,6 +9,7 @@ on:
     paths-ignore:
       - python/**
       - /examples/**
+      - .github/**
 
 defaults: 
   run: 

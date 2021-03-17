@@ -6,6 +6,8 @@ on:
     paths-ignore:
       - python/*
       - /examples/**
+      - .github/**
+
 
 jobs:
 
