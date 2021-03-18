@@ -17,9 +17,6 @@ export type guestCreateMutationResponse = {
     readonly guestCreate: {
         readonly guest: {
             readonly id: string;
-            readonly firstName: string;
-            readonly lastName: string;
-            readonly emailAddress: string;
         };
     };
 };
@@ -37,9 +34,6 @@ mutation guestCreateMutation(
   guestCreate(input: $input) {
     guest {
       id
-      firstName
-      lastName
-      emailAddress
     }
   }
 }
@@ -82,27 +76,6 @@ v1 = [
             "kind": "ScalarField",
             "name": "id",
             "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "firstName",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "lastName",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "emailAddress",
-            "storageKey": null
           }
         ],
         "storageKey": null
@@ -129,14 +102,14 @@ return {
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "a4909b7c0fe06a3bf5dcf3ecc15b59ed",
+    "cacheID": "7ec4849a182d14d05e7eb8cf4fca7441",
     "id": null,
     "metadata": {},
     "name": "guestCreateMutation",
     "operationKind": "mutation",
-    "text": "mutation guestCreateMutation(\n  $input: GuestCreateInput!\n) {\n  guestCreate(input: $input) {\n    guest {\n      id\n      firstName\n      lastName\n      emailAddress\n    }\n  }\n}\n"
+    "text": "mutation guestCreateMutation(\n  $input: GuestCreateInput!\n) {\n  guestCreate(input: $input) {\n    guest {\n      id\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = '077707e4a01510e6304ee7f1dfd24245';
+(node as any).hash = '8eb6e3365fc239faa28c249b393537da';
 export default node;

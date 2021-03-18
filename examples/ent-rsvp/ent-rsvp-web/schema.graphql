@@ -313,8 +313,6 @@ input GuestEditInput {
   firstName: String
   lastName: String
   emailAddress: String
-  eventID: ID
-  guestGroupID: ID
 }
 
 type GuestEditPayload {
@@ -434,6 +432,8 @@ interface Node {
 type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
+  startCursor: String!
+  endCursor: String!
 }
 
 type Query {

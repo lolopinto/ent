@@ -25,7 +25,9 @@ import Col from "react-bootstrap/Col";
 import guestGroupCreate from "../../src/mutations/guestGroupCreate";
 import { guestGroupCreateMutationResponse } from "../../src/__generated__/guestGroupCreateMutation.graphql";
 import guestCreate from "../../src/mutations/guestCreate";
+import guestGroupDelete from "../../src/mutations/guestGroupDelete";
 import { guestCreateMutationResponse } from "../../src/__generated__/guestCreateMutation.graphql";
+import { MdDelete } from "react-icons/md";
 
 const environment = createEnvironment();
 
@@ -77,6 +79,10 @@ function renderEventsPage(args: homeArgs) {
 
 function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [currentDeletedGuestGroup, setCurrentDeletedGuestGroup] = useState(
+    null,
+  );
   const event = arg.props.event;
 
   const renderGuestGroup = (guestGroup) => {
@@ -87,6 +93,13 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
         </div>
       </Fragment>
     ));
+  };
+
+  const onDelete = (e, guestGroup) => {
+    setCurrentDeletedGuestGroup(guestGroup);
+    setShowDeleteModal(true);
+    e.stopPropagation();
+    e.preventDefault();
   };
 
   return (
@@ -121,15 +134,21 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
                   <th>invitation name</th>
                   <th>count</th>
                   <th>guests</th>
+                  <th>actions</th>
                 </tr>
               </thead>
 
               <tbody>
-                {event.guestGroups.nodes.map((guestGroup, i) => (
+                {event.guestGroups.edges.map((guestGroupEdge, i) => (
                   <tr key={i}>
-                    <td>{guestGroup.invitationName}</td>
-                    <td>{guestGroup.guests.rawCount}</td>
-                    <td>{renderGuestGroup(guestGroup)}</td>
+                    <td>{guestGroupEdge.node.invitationName}</td>
+                    <td>{guestGroupEdge.node.guests.rawCount}</td>
+                    <td>{renderGuestGroup(guestGroupEdge.node)}</td>
+                    <td>
+                      <MdDelete
+                        onClick={(e) => onDelete(e, guestGroupEdge.node)}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -141,6 +160,12 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
             setShow={setShowModal}
             reloadData={arg.reloadData}
           />
+          <ConfirmDelete
+            guestGroup={currentDeletedGuestGroup}
+            showModal={showDeleteModal}
+            eventID={event.id}
+            setShowModal={setShowDeleteModal}
+          />
         </Container>
       </Tab>
     </Tabs>
@@ -151,6 +176,45 @@ interface Guest {
   firstName: string;
   lastName: string;
   emailAddress: string;
+}
+
+function ConfirmDelete({ guestGroup, eventID, showModal, setShowModal }) {
+  const deleteGuestGroup = () => {
+    //    delete guest group
+    guestGroupDelete(
+      environment,
+      eventID,
+      {
+        guestGroupID: guestGroup.id,
+      },
+      function (r, errs) {
+        if (errs && errs.length) {
+          console.error(errs);
+        }
+        setShowModal(false);
+      },
+    );
+  };
+
+  if (!showModal || !guestGroup) {
+    return null;
+  }
+
+  return (
+    <Modal show={showModal}>
+      <Modal.Body>
+        Are you sure you want to delete {guestGroup.invitationName}?
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => setShowModal(false)}>
+          No, don't delete
+        </Button>
+        <Button variant="primary" onClick={() => deleteGuestGroup()}>
+          Yes, I'm sure
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
 }
 
 function CreateGuestGroup(props: {

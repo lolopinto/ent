@@ -33,17 +33,19 @@ export type eventPageQueryResponse = {
             }>;
         };
         readonly guestGroups: {
-            readonly nodes: ReadonlyArray<{
-                readonly id: string;
-                readonly invitationName: string;
-                readonly guests: {
-                    readonly rawCount: number;
-                    readonly nodes: ReadonlyArray<{
-                        readonly id: string;
-                        readonly firstName: string;
-                        readonly lastName: string;
-                        readonly emailAddress: string;
-                    }>;
+            readonly edges: ReadonlyArray<{
+                readonly node: {
+                    readonly id: string;
+                    readonly invitationName: string;
+                    readonly guests: {
+                        readonly rawCount: number;
+                        readonly nodes: ReadonlyArray<{
+                            readonly id: string;
+                            readonly firstName: string;
+                            readonly lastName: string;
+                            readonly emailAddress: string;
+                        }>;
+                    };
                 };
             }>;
         };
@@ -82,22 +84,35 @@ query eventPageQuery(
             zipCode
             apartment
           }
+          __typename
         }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
       }
     }
     guestGroups(first: 100) {
-      nodes {
-        id
-        invitationName
-        guests {
-          rawCount
-          nodes {
-            id
-            firstName
-            lastName
-            emailAddress
+      edges {
+        node {
+          id
+          invitationName
+          guests {
+            rawCount
+            nodes {
+              id
+              firstName
+              lastName
+              emailAddress
+            }
           }
+          __typename
         }
+        cursor
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
       }
     }
   }
@@ -112,157 +127,240 @@ var v0 = [
     "name": "slug"
   }
 ],
-v1 = {
+v1 = [
+  {
+    "kind": "Variable",
+    "name": "slug",
+    "variableName": "slug"
+  }
+],
+v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v2 = {
+v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "name",
   "storageKey": null
 },
-v3 = {
+v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "rawCount",
   "storageKey": null
 },
-v4 = [
+v5 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "cursor",
+  "storageKey": null
+},
+v6 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "__typename",
+  "storageKey": null
+},
+v7 = {
+  "alias": null,
+  "args": null,
+  "concreteType": "PageInfo",
+  "kind": "LinkedField",
+  "name": "pageInfo",
+  "plural": false,
+  "selections": [
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "endCursor",
+      "storageKey": null
+    },
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "hasNextPage",
+      "storageKey": null
+    }
+  ],
+  "storageKey": null
+},
+v8 = [
+  (v4/*: any*/),
   {
     "alias": null,
-    "args": [
-      {
-        "kind": "Variable",
-        "name": "slug",
-        "variableName": "slug"
-      }
-    ],
-    "concreteType": "Event",
+    "args": null,
+    "concreteType": "EventToEventActivitiesEdge",
     "kind": "LinkedField",
-    "name": "event",
-    "plural": false,
+    "name": "edges",
+    "plural": true,
     "selections": [
-      (v1/*: any*/),
-      (v2/*: any*/),
+      (v5/*: any*/),
       {
         "alias": null,
-        "args": [
-          {
-            "kind": "Literal",
-            "name": "first",
-            "value": 10
-          }
-        ],
-        "concreteType": "EventToEventActivitiesConnection",
+        "args": null,
+        "concreteType": "EventActivity",
         "kind": "LinkedField",
-        "name": "eventActivities",
+        "name": "node",
         "plural": false,
         "selections": [
+          (v2/*: any*/),
           (v3/*: any*/),
           {
             "alias": null,
             "args": null,
-            "concreteType": "EventToEventActivitiesEdge",
+            "kind": "ScalarField",
+            "name": "description",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "startTime",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "endTime",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "location",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "Address",
             "kind": "LinkedField",
-            "name": "edges",
-            "plural": true,
+            "name": "address",
+            "plural": false,
             "selections": [
+              (v2/*: any*/),
               {
                 "alias": null,
                 "args": null,
                 "kind": "ScalarField",
-                "name": "cursor",
+                "name": "street",
                 "storageKey": null
               },
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "EventActivity",
+                "kind": "ScalarField",
+                "name": "city",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "state",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "zipCode",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "apartment",
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          },
+          (v6/*: any*/)
+        ],
+        "storageKey": null
+      }
+    ],
+    "storageKey": null
+  },
+  (v7/*: any*/)
+],
+v9 = [
+  {
+    "alias": null,
+    "args": null,
+    "concreteType": "EventToGuestGroupsEdge",
+    "kind": "LinkedField",
+    "name": "edges",
+    "plural": true,
+    "selections": [
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "GuestGroup",
+        "kind": "LinkedField",
+        "name": "node",
+        "plural": false,
+        "selections": [
+          (v2/*: any*/),
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "invitationName",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "GuestGroupToGuestsConnection",
+            "kind": "LinkedField",
+            "name": "guests",
+            "plural": false,
+            "selections": [
+              (v4/*: any*/),
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "Guest",
                 "kind": "LinkedField",
-                "name": "node",
-                "plural": false,
+                "name": "nodes",
+                "plural": true,
                 "selections": [
-                  (v1/*: any*/),
                   (v2/*: any*/),
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "description",
+                    "name": "firstName",
                     "storageKey": null
                   },
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "startTime",
+                    "name": "lastName",
                     "storageKey": null
                   },
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "endTime",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "location",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "concreteType": "Address",
-                    "kind": "LinkedField",
-                    "name": "address",
-                    "plural": false,
-                    "selections": [
-                      (v1/*: any*/),
-                      {
-                        "alias": null,
-                        "args": null,
-                        "kind": "ScalarField",
-                        "name": "street",
-                        "storageKey": null
-                      },
-                      {
-                        "alias": null,
-                        "args": null,
-                        "kind": "ScalarField",
-                        "name": "city",
-                        "storageKey": null
-                      },
-                      {
-                        "alias": null,
-                        "args": null,
-                        "kind": "ScalarField",
-                        "name": "state",
-                        "storageKey": null
-                      },
-                      {
-                        "alias": null,
-                        "args": null,
-                        "kind": "ScalarField",
-                        "name": "zipCode",
-                        "storageKey": null
-                      },
-                      {
-                        "alias": null,
-                        "args": null,
-                        "kind": "ScalarField",
-                        "name": "apartment",
-                        "storageKey": null
-                      }
-                    ],
+                    "name": "emailAddress",
                     "storageKey": null
                   }
                 ],
@@ -270,93 +368,29 @@ v4 = [
               }
             ],
             "storageKey": null
-          }
+          },
+          (v6/*: any*/)
         ],
-        "storageKey": "eventActivities(first:10)"
+        "storageKey": null
       },
-      {
-        "alias": null,
-        "args": [
-          {
-            "kind": "Literal",
-            "name": "first",
-            "value": 100
-          }
-        ],
-        "concreteType": "EventToGuestGroupsConnection",
-        "kind": "LinkedField",
-        "name": "guestGroups",
-        "plural": false,
-        "selections": [
-          {
-            "alias": null,
-            "args": null,
-            "concreteType": "GuestGroup",
-            "kind": "LinkedField",
-            "name": "nodes",
-            "plural": true,
-            "selections": [
-              (v1/*: any*/),
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "invitationName",
-                "storageKey": null
-              },
-              {
-                "alias": null,
-                "args": null,
-                "concreteType": "GuestGroupToGuestsConnection",
-                "kind": "LinkedField",
-                "name": "guests",
-                "plural": false,
-                "selections": [
-                  (v3/*: any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "concreteType": "Guest",
-                    "kind": "LinkedField",
-                    "name": "nodes",
-                    "plural": true,
-                    "selections": [
-                      (v1/*: any*/),
-                      {
-                        "alias": null,
-                        "args": null,
-                        "kind": "ScalarField",
-                        "name": "firstName",
-                        "storageKey": null
-                      },
-                      {
-                        "alias": null,
-                        "args": null,
-                        "kind": "ScalarField",
-                        "name": "lastName",
-                        "storageKey": null
-                      },
-                      {
-                        "alias": null,
-                        "args": null,
-                        "kind": "ScalarField",
-                        "name": "emailAddress",
-                        "storageKey": null
-                      }
-                    ],
-                    "storageKey": null
-                  }
-                ],
-                "storageKey": null
-              }
-            ],
-            "storageKey": null
-          }
-        ],
-        "storageKey": "guestGroups(first:100)"
-      }
+      (v5/*: any*/)
     ],
     "storageKey": null
+  },
+  (v7/*: any*/)
+],
+v10 = [
+  {
+    "kind": "Literal",
+    "name": "first",
+    "value": 10
+  }
+],
+v11 = [
+  {
+    "kind": "Literal",
+    "name": "first",
+    "value": 100
   }
 ];
 return {
@@ -365,7 +399,41 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "eventPageQuery",
-    "selections": (v4/*: any*/),
+    "selections": [
+      {
+        "alias": null,
+        "args": (v1/*: any*/),
+        "concreteType": "Event",
+        "kind": "LinkedField",
+        "name": "event",
+        "plural": false,
+        "selections": [
+          (v2/*: any*/),
+          (v3/*: any*/),
+          {
+            "alias": "eventActivities",
+            "args": null,
+            "concreteType": "EventToEventActivitiesConnection",
+            "kind": "LinkedField",
+            "name": "__Event_eventActivities_connection",
+            "plural": false,
+            "selections": (v8/*: any*/),
+            "storageKey": null
+          },
+          {
+            "alias": "guestGroups",
+            "args": null,
+            "concreteType": "EventToGuestGroupsConnection",
+            "kind": "LinkedField",
+            "name": "__Event_guestGroups_connection",
+            "plural": false,
+            "selections": (v9/*: any*/),
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      }
+    ],
     "type": "Query",
     "abstractKey": null
   },
@@ -374,17 +442,90 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
     "name": "eventPageQuery",
-    "selections": (v4/*: any*/)
+    "selections": [
+      {
+        "alias": null,
+        "args": (v1/*: any*/),
+        "concreteType": "Event",
+        "kind": "LinkedField",
+        "name": "event",
+        "plural": false,
+        "selections": [
+          (v2/*: any*/),
+          (v3/*: any*/),
+          {
+            "alias": null,
+            "args": (v10/*: any*/),
+            "concreteType": "EventToEventActivitiesConnection",
+            "kind": "LinkedField",
+            "name": "eventActivities",
+            "plural": false,
+            "selections": (v8/*: any*/),
+            "storageKey": "eventActivities(first:10)"
+          },
+          {
+            "alias": null,
+            "args": (v10/*: any*/),
+            "filters": null,
+            "handle": "connection",
+            "key": "Event_eventActivities",
+            "kind": "LinkedHandle",
+            "name": "eventActivities"
+          },
+          {
+            "alias": null,
+            "args": (v11/*: any*/),
+            "concreteType": "EventToGuestGroupsConnection",
+            "kind": "LinkedField",
+            "name": "guestGroups",
+            "plural": false,
+            "selections": (v9/*: any*/),
+            "storageKey": "guestGroups(first:100)"
+          },
+          {
+            "alias": null,
+            "args": (v11/*: any*/),
+            "filters": null,
+            "handle": "connection",
+            "key": "Event_guestGroups",
+            "kind": "LinkedHandle",
+            "name": "guestGroups"
+          }
+        ],
+        "storageKey": null
+      }
+    ]
   },
   "params": {
-    "cacheID": "465b05f64b4757dfcd73bd7f735546b2",
+    "cacheID": "99eaf0945d4046d107ac405062e2064a",
     "id": null,
-    "metadata": {},
+    "metadata": {
+      "connection": [
+        {
+          "count": null,
+          "cursor": null,
+          "direction": "forward",
+          "path": [
+            "event",
+            "eventActivities"
+          ]
+        },
+        {
+          "count": null,
+          "cursor": null,
+          "direction": "forward",
+          "path": [
+            "event",
+            "guestGroups"
+          ]
+        }
+      ]
+    },
     "name": "eventPageQuery",
     "operationKind": "query",
-    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n        }\n      }\n    }\n    guestGroups(first: 100) {\n      nodes {\n        id\n        invitationName\n        guests {\n          rawCount\n          nodes {\n            id\n            firstName\n            lastName\n            emailAddress\n          }\n        }\n      }\n    }\n  }\n}\n"
+    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n          __typename\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    guestGroups(first: 100) {\n      edges {\n        node {\n          id\n          invitationName\n          guests {\n            rawCount\n            nodes {\n              id\n              firstName\n              lastName\n              emailAddress\n            }\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = '488be396cfdbc19577717e918f467b4f';
+(node as any).hash = 'c9587105fda5d0faf8587440debfe93e';
 export default node;
