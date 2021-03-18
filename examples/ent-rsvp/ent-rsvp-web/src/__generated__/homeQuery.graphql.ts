@@ -12,29 +12,10 @@ export type homeQueryResponse = {
                 readonly edges: ReadonlyArray<{
                     readonly node: {
                         readonly id: string;
-                        readonly creator: {
-                            readonly id: string;
-                            readonly firstName: string;
-                        } | null;
                         readonly name: string;
+                        readonly slug: string | null;
                         readonly eventActivities: {
-                            readonly edges: ReadonlyArray<{
-                                readonly node: {
-                                    readonly id: string;
-                                    readonly name: string;
-                                    readonly startTime: unknown;
-                                    readonly endTime: unknown | null;
-                                    readonly location: string;
-                                    readonly address: {
-                                        readonly id: string;
-                                        readonly street: string;
-                                        readonly city: string;
-                                        readonly state: string;
-                                        readonly zipCode: string;
-                                        readonly apartment: string | null;
-                                    } | null;
-                                };
-                            }>;
+                            readonly rawCount: number;
                         };
                     };
                     readonly cursor: string;
@@ -63,29 +44,10 @@ query homeQuery {
         edges {
           node {
             id
-            creator {
-              id
-              firstName
-            }
             name
+            slug
             eventActivities(first: 10) {
-              edges {
-                node {
-                  id
-                  name
-                  startTime
-                  endTime
-                  location
-                  address {
-                    id
-                    street
-                    city
-                    state
-                    zipCode
-                    apartment
-                  }
-                }
-              }
+              rawCount
             }
           }
           cursor
@@ -119,7 +81,7 @@ v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "name",
+  "name": "rawCount",
   "storageKey": null
 },
 v3 = [
@@ -168,23 +130,17 @@ v3 = [
                       {
                         "alias": null,
                         "args": null,
-                        "concreteType": "User",
-                        "kind": "LinkedField",
-                        "name": "creator",
-                        "plural": false,
-                        "selections": [
-                          (v0/*: any*/),
-                          {
-                            "alias": null,
-                            "args": null,
-                            "kind": "ScalarField",
-                            "name": "firstName",
-                            "storageKey": null
-                          }
-                        ],
+                        "kind": "ScalarField",
+                        "name": "name",
                         "storageKey": null
                       },
-                      (v2/*: any*/),
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "slug",
+                        "storageKey": null
+                      },
                       {
                         "alias": null,
                         "args": (v1/*: any*/),
@@ -193,98 +149,7 @@ v3 = [
                         "name": "eventActivities",
                         "plural": false,
                         "selections": [
-                          {
-                            "alias": null,
-                            "args": null,
-                            "concreteType": "EventToEventActivitiesEdge",
-                            "kind": "LinkedField",
-                            "name": "edges",
-                            "plural": true,
-                            "selections": [
-                              {
-                                "alias": null,
-                                "args": null,
-                                "concreteType": "EventActivity",
-                                "kind": "LinkedField",
-                                "name": "node",
-                                "plural": false,
-                                "selections": [
-                                  (v0/*: any*/),
-                                  (v2/*: any*/),
-                                  {
-                                    "alias": null,
-                                    "args": null,
-                                    "kind": "ScalarField",
-                                    "name": "startTime",
-                                    "storageKey": null
-                                  },
-                                  {
-                                    "alias": null,
-                                    "args": null,
-                                    "kind": "ScalarField",
-                                    "name": "endTime",
-                                    "storageKey": null
-                                  },
-                                  {
-                                    "alias": null,
-                                    "args": null,
-                                    "kind": "ScalarField",
-                                    "name": "location",
-                                    "storageKey": null
-                                  },
-                                  {
-                                    "alias": null,
-                                    "args": null,
-                                    "concreteType": "Address",
-                                    "kind": "LinkedField",
-                                    "name": "address",
-                                    "plural": false,
-                                    "selections": [
-                                      (v0/*: any*/),
-                                      {
-                                        "alias": null,
-                                        "args": null,
-                                        "kind": "ScalarField",
-                                        "name": "street",
-                                        "storageKey": null
-                                      },
-                                      {
-                                        "alias": null,
-                                        "args": null,
-                                        "kind": "ScalarField",
-                                        "name": "city",
-                                        "storageKey": null
-                                      },
-                                      {
-                                        "alias": null,
-                                        "args": null,
-                                        "kind": "ScalarField",
-                                        "name": "state",
-                                        "storageKey": null
-                                      },
-                                      {
-                                        "alias": null,
-                                        "args": null,
-                                        "kind": "ScalarField",
-                                        "name": "zipCode",
-                                        "storageKey": null
-                                      },
-                                      {
-                                        "alias": null,
-                                        "args": null,
-                                        "kind": "ScalarField",
-                                        "name": "apartment",
-                                        "storageKey": null
-                                      }
-                                    ],
-                                    "storageKey": null
-                                  }
-                                ],
-                                "storageKey": null
-                              }
-                            ],
-                            "storageKey": null
-                          }
+                          (v2/*: any*/)
                         ],
                         "storageKey": "eventActivities(first:10)"
                       }
@@ -319,13 +184,7 @@ v3 = [
                 ],
                 "storageKey": null
               },
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "rawCount",
-                "storageKey": null
-              }
+              (v2/*: any*/)
             ],
             "storageKey": "events(first:10)"
           }
@@ -354,14 +213,14 @@ return {
     "selections": (v3/*: any*/)
   },
   "params": {
-    "cacheID": "0af07d680607537f7b0bddaa7b8ab5b4",
+    "cacheID": "39e49bdba581796036a8e432da8e69be",
     "id": null,
     "metadata": {},
     "name": "homeQuery",
     "operationKind": "query",
-    "text": "query homeQuery {\n  viewer {\n    user {\n      id\n      events(first: 10) {\n        edges {\n          node {\n            id\n            creator {\n              id\n              firstName\n            }\n            name\n            eventActivities(first: 10) {\n              edges {\n                node {\n                  id\n                  name\n                  startTime\n                  endTime\n                  location\n                  address {\n                    id\n                    street\n                    city\n                    state\n                    zipCode\n                    apartment\n                  }\n                }\n              }\n            }\n          }\n          cursor\n        }\n        pageInfo {\n          hasNextPage\n        }\n        rawCount\n      }\n    }\n  }\n}\n"
+    "text": "query homeQuery {\n  viewer {\n    user {\n      id\n      events(first: 10) {\n        edges {\n          node {\n            id\n            name\n            slug\n            eventActivities(first: 10) {\n              rawCount\n            }\n          }\n          cursor\n        }\n        pageInfo {\n          hasNextPage\n        }\n        rawCount\n      }\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = '2c7c744ffb4b3f1b23eb158cf518acbb';
+(node as any).hash = 'd672ab2ac937e1d7981cb10ee1586e20';
 export default node;

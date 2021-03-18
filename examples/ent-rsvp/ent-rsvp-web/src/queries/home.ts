@@ -9,29 +9,10 @@ const query = graphql`
           edges {
             node {
               id
-              creator {
-                id
-                firstName
-              }
               name
+              slug
               eventActivities(first: 10) {
-                edges {
-                  node {
-                    id
-                    name
-                    startTime
-                    endTime
-                    location
-                    address {
-                      id
-                      street
-                      city
-                      state
-                      zipCode
-                      apartment
-                    }
-                  }
-                }
+                rawCount
               }
             }
             cursor

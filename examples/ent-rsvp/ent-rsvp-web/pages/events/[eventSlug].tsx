@@ -11,6 +11,7 @@ import query from "../../src/queries/eventPage";
 import Card from "react-bootstrap/Card";
 import ListGroup from "react-bootstrap/ListGroup";
 import { DateTime } from "luxon";
+import { Alert } from "react-bootstrap";
 const environment = createEnvironment();
 
 export default function EventPage() {
@@ -52,6 +53,9 @@ function renderEventsPage(args: homeArgs) {
   }
   console.log(props);
   const event = props.event;
+  if (!event) {
+    return <Alert variant="danger">Couldn't load event</Alert>;
+  }
 
   return (
     <Card>

@@ -18,11 +18,13 @@ import DatePicker from "react-datepicker";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import "react-datepicker/dist/react-datepicker.css";
-import { fetchQuery } from "relay-runtime";
+import { Environment, fetchQuery } from "relay-runtime";
 import eventSlugAvailableQuery from "../src/queries/eventSlugAvailable";
 import { eventSlugAvailableQueryResponse } from "../src/__generated__/eventSlugAvailableQuery.graphql";
 import { useRouter } from "next/router";
 const environment = createEnvironment();
+import Card from "react-bootstrap/Card";
+import ListGroup from "react-bootstrap/ListGroup";
 
 export default function Home() {
   return (
@@ -49,7 +51,8 @@ function renderHome(args: homeArgs) {
   return <Events props={props} environment={environment} />;
 }
 
-function Events({ props, environment }) {
+function Events(arg: { props: homeQueryResponse; environment: Environment }) {
+  const { props, environment } = arg;
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   if (!props) {
     return <>{"Logged in! Loading"}</>;
@@ -70,6 +73,9 @@ function Events({ props, environment }) {
 
   return (
     <div>
+      {edges.map((edge, i) => (
+        <Event key={i} event={edge.node} />
+      ))}
       <Button size="lg" variant="primary" onClick={createEventClicked}>
         Create Event
       </Button>
@@ -352,5 +358,19 @@ function CreateEvent({ environment, visible, creatorID }) {
         </Button>
       </div>
     </Form>
+  );
+}
+
+function Event({ event }) {
+  console.log(event.slug);
+  return (
+    <Card>
+      <Link href={`/events/${event.slug ?? event.id}`}>
+        <a>
+          <Card.Title>{event.name}</Card.Title>
+        </a>
+      </Link>
+      <Card.Subtitle>{event.eventActivities.rawCount} activities</Card.Subtitle>
+    </Card>
   );
 }
