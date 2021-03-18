@@ -32,6 +32,21 @@ export type eventPageQueryResponse = {
                 };
             }>;
         };
+        readonly guestGroups: {
+            readonly nodes: ReadonlyArray<{
+                readonly id: string;
+                readonly invitationName: string;
+                readonly guests: {
+                    readonly rawCount: number;
+                    readonly nodes: ReadonlyArray<{
+                        readonly id: string;
+                        readonly firstName: string;
+                        readonly lastName: string;
+                        readonly emailAddress: string;
+                    }>;
+                };
+            }>;
+        };
     } | null;
 };
 export type eventPageQuery = {
@@ -70,6 +85,21 @@ query eventPageQuery(
         }
       }
     }
+    guestGroups(first: 100) {
+      nodes {
+        id
+        invitationName
+        guests {
+          rawCount
+          nodes {
+            id
+            firstName
+            lastName
+            emailAddress
+          }
+        }
+      }
+    }
   }
 }
 */
@@ -96,7 +126,14 @@ v2 = {
   "name": "name",
   "storageKey": null
 },
-v3 = [
+v3 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "rawCount",
+  "storageKey": null
+},
+v4 = [
   {
     "alias": null,
     "args": [
@@ -127,13 +164,7 @@ v3 = [
         "name": "eventActivities",
         "plural": false,
         "selections": [
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "rawCount",
-            "storageKey": null
-          },
+          (v3/*: any*/),
           {
             "alias": null,
             "args": null,
@@ -242,6 +273,87 @@ v3 = [
           }
         ],
         "storageKey": "eventActivities(first:10)"
+      },
+      {
+        "alias": null,
+        "args": [
+          {
+            "kind": "Literal",
+            "name": "first",
+            "value": 100
+          }
+        ],
+        "concreteType": "EventToGuestGroupsConnection",
+        "kind": "LinkedField",
+        "name": "guestGroups",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "GuestGroup",
+            "kind": "LinkedField",
+            "name": "nodes",
+            "plural": true,
+            "selections": [
+              (v1/*: any*/),
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "invitationName",
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "GuestGroupToGuestsConnection",
+                "kind": "LinkedField",
+                "name": "guests",
+                "plural": false,
+                "selections": [
+                  (v3/*: any*/),
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "Guest",
+                    "kind": "LinkedField",
+                    "name": "nodes",
+                    "plural": true,
+                    "selections": [
+                      (v1/*: any*/),
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "firstName",
+                        "storageKey": null
+                      },
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "lastName",
+                        "storageKey": null
+                      },
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "emailAddress",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          }
+        ],
+        "storageKey": "guestGroups(first:100)"
       }
     ],
     "storageKey": null
@@ -253,7 +365,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "eventPageQuery",
-    "selections": (v3/*: any*/),
+    "selections": (v4/*: any*/),
     "type": "Query",
     "abstractKey": null
   },
@@ -262,17 +374,17 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
     "name": "eventPageQuery",
-    "selections": (v3/*: any*/)
+    "selections": (v4/*: any*/)
   },
   "params": {
-    "cacheID": "e290f6b9291444e73858f02f37cdd4ad",
+    "cacheID": "465b05f64b4757dfcd73bd7f735546b2",
     "id": null,
     "metadata": {},
     "name": "eventPageQuery",
     "operationKind": "query",
-    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n        }\n      }\n    }\n  }\n}\n"
+    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n        }\n      }\n    }\n    guestGroups(first: 100) {\n      nodes {\n        id\n        invitationName\n        guests {\n          rawCount\n          nodes {\n            id\n            firstName\n            lastName\n            emailAddress\n          }\n        }\n      }\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = '5bfad1a0e2d372e661afbe97a3305fd5';
+(node as any).hash = '488be396cfdbc19577717e918f467b4f';
 export default node;

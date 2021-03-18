@@ -27,6 +27,21 @@ const query = graphql`
           }
         }
       }
+      guestGroups(first: 100) {
+        nodes {
+          id
+          invitationName
+          guests {
+            rawCount
+            nodes {
+              id
+              firstName
+              lastName
+              emailAddress
+            }
+          }
+        }
+      }
     }
   }
 `;
