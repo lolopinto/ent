@@ -17,8 +17,8 @@ import {
   mustDecodeIDFromGQLID,
   convertFromGQLEnum,
 } from "@lolopinto/ent/graphql";
-import { EventActivity } from "src/ent/";
 import { EventActivityType } from "src/graphql/resolvers/";
+import { EventActivity } from "src/ent/";
 import EditEventActivityRsvpStatusAction, {
   EditEventActivityRsvpStatusInput,
 } from "src/ent/event_activity/actions/edit_event_activity_rsvp_status_action";

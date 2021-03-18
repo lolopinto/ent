@@ -436,8 +436,6 @@ input GuestEditInput {
   firstName: String
   lastName: String
   emailAddress: String
-  eventID: ID
-  guestGroupID: ID
 }
 
 type GuestGroupCreatePayload {

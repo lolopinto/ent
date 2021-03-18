@@ -21,8 +21,6 @@ import EditGuestAction, {
 
 interface customGuestEditInput extends GuestEditInput {
   guestID: string;
-  eventID: string;
-  guestGroupID: string;
 }
 
 interface GuestEditPayload {
@@ -43,12 +41,6 @@ export const GuestEditInputType = new GraphQLInputObjectType({
     },
     emailAddress: {
       type: GraphQLString,
-    },
-    eventID: {
-      type: GraphQLID,
-    },
-    guestGroupID: {
-      type: GraphQLID,
     },
   }),
 });

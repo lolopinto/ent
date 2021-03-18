@@ -27,7 +27,14 @@ export default class Guest extends BaseEntSchema {
 
   actions: Action[] = [
     {
-      operation: ActionOperation.Mutations,
+      operation: ActionOperation.Create,
+    },
+    {
+      operation: ActionOperation.Delete,
+    },
+    {
+      operation: ActionOperation.Edit,
+      fields: ["FirstName", "LastName", "EmailAddress"],
     },
   ];
 
