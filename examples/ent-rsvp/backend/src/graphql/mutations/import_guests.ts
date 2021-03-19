@@ -39,11 +39,15 @@ export class ImportGuestResolver {
 
     let parsedHeaders = false;
     let columns: string[] = [];
+    let extraColumns: string[] = [];
 
     for await (const record of parser) {
       if (!parsedHeaders) {
         for (const val of record) {
           columns.push(val);
+          if (!requiredColumns.has(val)) {
+            extraColumns.push(val);
+          }
           requiredColumns.delete(val);
         }
         parsedHeaders = true;
@@ -60,26 +64,66 @@ export class ImportGuestResolver {
         continue;
       }
 
+      const r = /^additional\s?guest(\s?(\d+)?\s?(email.*)?)?$/i;
       let row: Data = {};
+      let extraGuests: Data[] = [];
       for (let i = 0; i < record.length; i++) {
         let column = columns[i];
-        row[column] = record[i];
+        let value = record[i];
+
+        const match = r.exec(column);
+        // expected. let's bounce
+        if (!match) {
+          row[column] = value;
+          continue;
+        }
+        if (!value) {
+          continue;
+        }
+        let guestCount = 0;
+        if (match[2]) {
+          guestCount = parseInt(match[2], 10);
+        }
+        let extraGuest = extraGuests[guestCount] || {};
+        if (extraGuests[guestCount] == undefined) {
+          extraGuests[guestCount] = {};
+        }
+        if (match[3]) {
+          extraGuest.emailAddress = value;
+        } else {
+          extraGuest.name = value;
+        }
+
+        extraGuests[guestCount] = extraGuest;
       }
+
+      // TODO this can be updated to check for duplicates but we don't care about that since not a real world program
       let groupAction = CreateGuestGroupAction.create(context.getViewer(), {
         invitationName: row.invitationName,
         eventID,
       });
-      // this doesn't work when they are siblings in the graph...
-      let guestAction = CreateGuestAction.create(context.getViewer(), {
-        eventID,
-        guestGroupID: groupAction.builder,
-        name: row.name,
-        emailAddress: row.emailAddress,
-      });
-      // TODO other guests....
-      actions.push(groupAction, guestAction);
+      actions.push(groupAction);
+      actions.push(
+        CreateGuestAction.create(context.getViewer(), {
+          eventID,
+          guestGroupID: groupAction.builder,
+          name: row.name,
+          emailAddress: row.emailAddress,
+        }),
+      );
+
+      extraGuests.forEach((guest) =>
+        actions.push(
+          CreateGuestAction.create(context.getViewer(), {
+            eventID,
+            guestGroupID: groupAction.builder,
+            name: guest.name,
+            emailAddress: guest.emailAddress,
+          }),
+        ),
+      );
     }
-    console.log(columns);
+
     const action = BaseAction.bulkAction(event, EventBuilder, ...actions);
     return action.saveX();
   }
