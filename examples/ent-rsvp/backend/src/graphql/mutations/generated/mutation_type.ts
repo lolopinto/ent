@@ -20,6 +20,7 @@ import { GuestEditType } from "src/graphql/mutations/generated/guest/guest_edit_
 import { GuestGroupCreateType } from "src/graphql/mutations/generated/guest_group/guest_group_create_type";
 import { GuestGroupDeleteType } from "src/graphql/mutations/generated/guest_group/guest_group_delete_type";
 import { GuestGroupEditType } from "src/graphql/mutations/generated/guest_group/guest_group_edit_type";
+import { ImportGuestsType } from "src/graphql/mutations/generated/import_guests_type";
 import { UserCreateType } from "src/graphql/mutations/generated/user/user_create_type";
 
 export const MutationType = new GraphQLObjectType({
@@ -44,6 +45,7 @@ export const MutationType = new GraphQLObjectType({
     guestGroupCreate: GuestGroupCreateType,
     guestGroupDelete: GuestGroupDeleteType,
     guestGroupEdit: GuestGroupEditType,
+    importGuests: ImportGuestsType,
     userCreate: UserCreateType,
   }),
 });

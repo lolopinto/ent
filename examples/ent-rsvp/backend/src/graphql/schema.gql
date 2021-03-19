@@ -52,6 +52,8 @@ interface Edge {
 type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
+  startCursor: String!
+  endCursor: String!
 }
 
 type UserToEventsEdge implements Edge {
@@ -259,6 +261,7 @@ type Mutation {
   guestGroupCreate(input: GuestGroupCreateInput!): GuestGroupCreatePayload!
   guestGroupDelete(input: GuestGroupDeleteInput!): GuestGroupDeletePayload!
   guestGroupEdit(input: GuestGroupEditInput!): GuestGroupEditPayload!
+  importGuests(eventID: ID!, file: Upload!): Event!
   userCreate(input: UserCreateInput!): UserCreatePayload!
 }
 
@@ -463,6 +466,9 @@ input GuestGroupEditInput {
   guestGroupID: ID!
   invitationName: String
 }
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
 
 type UserCreatePayload {
   user: User!
