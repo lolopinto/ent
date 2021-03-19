@@ -411,7 +411,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
       if (hasNextPage) {
         expect(pagination?.hasNextPage).toBe(true);
-        expect(pagination?.hasPreviousPage).toBe(undefined);
+        expect(pagination?.hasPreviousPage).toBe(false);
       } else {
         expect(pagination?.hasNextPage).toBe(undefined);
         expect(pagination?.hasNextPage).toBe(undefined);
@@ -509,7 +509,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
       if (hasPreviousPage) {
         expect(pagination?.hasPreviousPage).toBe(true);
-        expect(pagination?.hasNextPage).toBe(undefined);
+        expect(pagination?.hasNextPage).toBe(false);
       } else {
         expect(pagination?.hasPreviousPage).toBe(undefined);
         expect(pagination?.hasNextPage).toBe(undefined);

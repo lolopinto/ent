@@ -149,7 +149,7 @@ describe("not all ents visible", () => {
     async function verify(
       first: number,
       length: number,
-      hasNextpage: boolean | undefined,
+      hasNextpage: boolean,
       index?: number,
     ) {
       let cursor: string | undefined;
@@ -164,8 +164,11 @@ describe("not all ents visible", () => {
         conn.queryNodes(),
       ]);
       expect(pagination.hasNextPage, `${index}`).toBe(hasNextpage);
+      expect(pagination.hasPreviousPage, `${index}`).toBe(false);
       expect(gqlEdges.length, `${index}`).toBe(length);
       expect(nodes.length, `${index}`).toBe(length);
+      // TODO: not equal even though we're querying only one because the cursors are not privacy-aware
+      // TODO: fix
     }
     // TODO build exponential backoff into EntQuery so this isn't needed
     // but this is how it is for now
@@ -180,7 +183,7 @@ describe("not all ents visible", () => {
     await verify(2, 1, true, 12);
     await verify(2, 1, true, 14);
     await verify(2, 1, true, 16);
-    await verify(2, 1, undefined, 17);
+    await verify(2, 1, false, 17);
   });
 });
 

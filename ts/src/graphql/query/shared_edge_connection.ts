@@ -1,47 +1,14 @@
 import { Pool } from "pg";
-import { IDViewer, LoggedOutViewer } from "../../core/viewer";
-import { RequestContext } from "../../core/context";
-import { AssocEdge, Viewer, Data, Ent } from "../../core/ent";
+import { IDViewer } from "../../core/viewer";
+import { Viewer, Data, Ent } from "../../core/ent";
 import { QueryRecorder } from "../../testutils/db_mock";
-import { advanceBy } from "jest-date-mock";
-
-import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection";
-import { GraphQLConnectionType } from "./connection_type";
-import {
-  GraphQLObjectType,
-  GraphQLNonNull,
-  GraphQLID,
-  GraphQLSchema,
-  GraphQLString,
-  GraphQLFieldMap,
-  GraphQLFieldConfigMap,
-} from "graphql";
-import { GraphQLNodeInterface } from "../builtins/node";
-import {
-  expectQueryFromRoot,
-  queryRootConfig,
-} from "../../testutils/ent-graphql-tests";
-import {
-  FakeUser,
-  UserToContactsQuery,
-  FakeContact,
-  EdgeType,
-  getUserBuilder,
-  UserToFriendsQuery,
-  FakeEvent,
-  EventToInvitedQuery,
-  UserToHostedEventsQuery,
-} from "../../testutils/fake_data/index";
+import { GraphQLEdgeConnection } from "./edge_connection";
+import { FakeUser, FakeContact } from "../../testutils/fake_data/index";
 import {
   inputs,
-  getUserInput,
-  createTestUser,
   createAllContacts,
-  createEdges,
-  createTestEvent,
 } from "../../testutils/fake_data/test_helpers";
 import { EdgeQuery } from "../../core/query/query";
-import { Edge } from "src/schema";
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
@@ -131,8 +98,8 @@ export const commonTests = <TEdge extends Data>(
 
     test("pagination", async () => {
       const pagination = await filter.conn.queryPageInfo();
-      expect(pagination?.hasNextPage).toBe(undefined);
-      expect(pagination?.hasPreviousPage).toBe(undefined);
+      expect(pagination.hasNextPage).toBe(false);
+      expect(pagination.hasPreviousPage).toBe(false);
     });
   });
 
@@ -162,9 +129,15 @@ export const commonTests = <TEdge extends Data>(
     });
 
     test("pagination", async () => {
-      const pagination = await filter.conn.queryPageInfo();
-      expect(pagination?.hasNextPage).toBe(true);
-      expect(pagination?.hasPreviousPage).toBe(undefined);
+      const [pagination, edges] = await Promise.all([
+        filter.conn.queryPageInfo(),
+        filter.conn.queryEdges(),
+      ]);
+      expect(pagination.hasNextPage).toBe(true);
+      expect(pagination.hasPreviousPage).toBe(false);
+      expect(edges.length).toBe(2);
+      expect(edges[0].cursor).toBe(pagination.startCursor);
+      expect(edges[1].cursor).toBe(pagination.endCursor);
     });
   });
 
@@ -202,9 +175,15 @@ export const commonTests = <TEdge extends Data>(
     });
 
     test("pagination", async () => {
-      const pagination = await filter.conn.queryPageInfo();
-      expect(pagination?.hasNextPage).toBe(true);
-      expect(pagination?.hasPreviousPage).toBe(undefined);
+      const [pagination, edges] = await Promise.all([
+        filter.conn.queryPageInfo(),
+        filter.conn.queryEdges(),
+      ]);
+      expect(pagination.hasNextPage).toBe(true);
+      expect(pagination.hasPreviousPage).toBe(false);
+      expect(edges.length).toBe(2);
+      expect(edges[0].cursor).toBe(pagination.startCursor);
+      expect(edges[1].cursor).toBe(pagination.endCursor);
     });
   });
 
@@ -247,9 +226,15 @@ export const commonTests = <TEdge extends Data>(
     });
 
     test("pagination", async () => {
-      const pagination = await filter.conn.queryPageInfo();
-      expect(pagination?.hasNextPage).toBe(undefined);
-      expect(pagination?.hasPreviousPage).toBe(true);
+      const [pagination, edges] = await Promise.all([
+        filter.conn.queryPageInfo(),
+        filter.conn.queryEdges(),
+      ]);
+      expect(pagination.hasNextPage).toBe(false);
+      expect(pagination.hasPreviousPage).toBe(true);
+      expect(edges.length).toBe(2);
+      expect(edges[0].cursor).toBe(pagination.startCursor);
+      expect(edges[1].cursor).toBe(pagination.endCursor);
     });
   });
 };
