@@ -2,6 +2,7 @@ import {
   GraphQLBoolean,
   GraphQLFieldConfigMap,
   GraphQLNonNull,
+  GraphQLString,
   GraphQLObjectType,
 } from "graphql";
 import { RequestContext } from "../../core/context";
@@ -21,6 +22,12 @@ export const GraphQLPageInfo = new GraphQLObjectType({
       resolve: (source: PaginationInfo) => {
         return source.hasPreviousPage || false;
       },
+    },
+    startCursor: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    endCursor: {
+      type: GraphQLNonNull(GraphQLString),
     },
   }),
 });

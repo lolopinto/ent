@@ -74,7 +74,14 @@ export class GraphQLEdgeConnection<TEdge extends Data> {
 
   async queryPageInfo() {
     await this.queryData();
-    return this.query.paginationInfo().get(this.source.id) || {};
+    return (
+      this.query.paginationInfo().get(this.source.id) || {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: "",
+        endCursor: "",
+      }
+    );
   }
 
   private async queryData() {
