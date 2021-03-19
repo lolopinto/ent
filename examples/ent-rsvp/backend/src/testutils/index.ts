@@ -45,37 +45,32 @@ export async function createActivity() {
   return activity;
 }
 
-type input = Pick<GuestCreateInput, "firstName" | "lastName" | "emailAddress">;
+type input = Pick<GuestCreateInput, "name" | "emailAddress">;
 
 const inputs: input[][] = [
   [
     {
-      firstName: "Robb",
-      lastName: "Stark",
+      name: "Robb Stark",
       emailAddress: randomEmail(),
     },
     {
-      firstName: "Talisa",
-      lastName: "Stark",
-      emailAddress: randomEmail(),
-    },
-  ],
-  [
-    {
-      firstName: "Catelyn",
-      lastName: "Stark",
+      name: "Talisa Stark",
       emailAddress: randomEmail(),
     },
   ],
   [
     {
-      firstName: "Edmure",
-      lastName: "Tully",
+      name: "Catelyn Stark",
+      emailAddress: randomEmail(),
+    },
+  ],
+  [
+    {
+      name: "Edmure Tully",
       emailAddress: randomEmail(),
     },
     {
-      firstName: "Roslyn",
-      lastName: "Frey",
+      name: "Roslyn Frey",
       emailAddress: randomEmail(),
     },
   ],
@@ -154,8 +149,7 @@ export async function createGuestPlus() {
   );
 
   const guest = await CreateGuestAction.create(group.viewer, {
-    firstName: "Robb",
-    lastName: "Stark",
+    name: "Robb Stark",
     emailAddress: randomEmail(),
     guestGroupID: group.id,
     eventID: group.eventID,

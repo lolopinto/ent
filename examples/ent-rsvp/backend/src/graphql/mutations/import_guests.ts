@@ -28,19 +28,12 @@ export class ImportGuestResolver {
 
     const parser = file2.createReadStream().pipe(
       parse({
-        //        columns: ["invitationName"],
-        //        fromLine: 1, // skip header
         trim: true,
         skipEmptyLines: true,
       }),
     );
 
-    let requiredColumns = new Set([
-      "invitationName",
-      "firstName",
-      "lastName",
-      "emailAddress",
-    ]);
+    let requiredColumns = new Set(["invitationName", "name", "emailAddress"]);
 
     let actions: Action<Ent>[] = [];
 
@@ -76,13 +69,11 @@ export class ImportGuestResolver {
         invitationName: row.invitationName,
         eventID,
       });
-      //      groupAction.changeset
       // this doesn't work when they are siblings in the graph...
       let guestAction = CreateGuestAction.create(context.getViewer(), {
         eventID,
         guestGroupID: groupAction.builder,
-        firstName: row.firstName,
-        lastName: row.lastName,
+        name: row.name,
         emailAddress: row.emailAddress,
       });
       // TODO other guests....

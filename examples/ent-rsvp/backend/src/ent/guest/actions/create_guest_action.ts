@@ -20,6 +20,9 @@ export default class CreateGuestAction extends CreateGuestActionBase {
   triggers: Trigger<Ent>[] = [
     {
       async changeset(builder: GuestBuilder, input: GuestCreateInput) {
+        if (!input.emailAddress) {
+          return;
+        }
         return CreateAuthCodeAction.create(builder.viewer, {
           code: createNewCode(),
           guestID: builder,

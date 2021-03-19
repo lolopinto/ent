@@ -108,9 +108,9 @@ type Guest implements Node {
   event: Event
   guestGroup: GuestGroup
   id: ID!
-  firstName: String!
-  lastName: String!
-  emailAddress: String!
+  name: String!
+  emailAddress: String
+  title: String
   guestToAttendingEvents(first: Int, after: String, last: Int, before: String): GuestToAttendingEventsConnection!
   guestToDeclinedEvents(first: Int, after: String, last: Int, before: String): GuestToDeclinedEventsConnection!
 }
@@ -415,11 +415,11 @@ type GuestCreatePayload {
 }
 
 input GuestCreateInput {
-  firstName: String!
-  lastName: String!
-  emailAddress: String!
+  name: String!
   eventID: ID!
+  emailAddress: String
   guestGroupID: ID!
+  title: String
 }
 
 type GuestDeletePayload {
@@ -436,8 +436,7 @@ type GuestEditPayload {
 
 input GuestEditInput {
   guestID: ID!
-  firstName: String
-  lastName: String
+  name: String
   emailAddress: String
 }
 

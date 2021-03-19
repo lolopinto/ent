@@ -31,20 +31,20 @@ interface GuestCreatePayload {
 export const GuestCreateInputType = new GraphQLInputObjectType({
   name: "GuestCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
-    firstName: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    lastName: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    emailAddress: {
+    name: {
       type: GraphQLNonNull(GraphQLString),
     },
     eventID: {
       type: GraphQLNonNull(GraphQLID),
     },
+    emailAddress: {
+      type: GraphQLString,
+    },
     guestGroupID: {
       type: GraphQLNonNull(GraphQLID),
+    },
+    title: {
+      type: GraphQLString,
     },
   }),
 });
@@ -77,11 +77,11 @@ export const GuestCreateType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ): Promise<GuestCreatePayload> => {
     let guest = await CreateGuestAction.create(context.getViewer(), {
-      firstName: input.firstName,
-      lastName: input.lastName,
-      emailAddress: input.emailAddress,
+      name: input.name,
       eventID: mustDecodeIDFromGQLID(input.eventID),
+      emailAddress: input.emailAddress,
       guestGroupID: mustDecodeIDFromGQLID(input.guestGroupID),
+      title: input.title,
     }).saveX();
     return { guest: guest };
   },

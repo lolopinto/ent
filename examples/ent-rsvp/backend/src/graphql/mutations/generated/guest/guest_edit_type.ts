@@ -33,10 +33,7 @@ export const GuestEditInputType = new GraphQLInputObjectType({
     guestID: {
       type: GraphQLNonNull(GraphQLID),
     },
-    firstName: {
-      type: GraphQLString,
-    },
-    lastName: {
+    name: {
       type: GraphQLString,
     },
     emailAddress: {
@@ -76,8 +73,7 @@ export const GuestEditType: GraphQLFieldConfig<
       context.getViewer(),
       mustDecodeIDFromGQLID(input.guestID),
       {
-        firstName: input.firstName,
-        lastName: input.lastName,
+        name: input.name,
         emailAddress: input.emailAddress,
       },
     );

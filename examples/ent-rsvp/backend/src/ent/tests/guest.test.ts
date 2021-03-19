@@ -13,9 +13,9 @@ afterAll(async () => {
   await DB.getInstance().endPool();
 });
 
-type input = Pick<GuestCreateInput, "firstName" | "lastName" | "emailAddress">;
+type input = Pick<GuestCreateInput, "name" | "emailAddress">;
 async function createGuestGroup(guests: input[]) {
-  const name = guests.map((g) => g.firstName).join(" ");
+  const name = guests.map((g) => g.name).join(" ");
   const event = await createEvent();
 
   const group = await CreateGuestGroupAction.create(
@@ -32,32 +32,27 @@ async function createGuestGroup(guests: input[]) {
 const inputs: input[][] = [
   [
     {
-      firstName: "Robb",
-      lastName: "Stark",
+      name: "Robb Stark",
       emailAddress: randomEmail(),
     },
     {
-      firstName: "Talisa",
-      lastName: "Stark",
-      emailAddress: randomEmail(),
-    },
-  ],
-  [
-    {
-      firstName: "Catelyn",
-      lastName: "Stark",
+      name: "Talisa Stark",
       emailAddress: randomEmail(),
     },
   ],
   [
     {
-      firstName: "Edmure",
-      lastName: "Tully",
+      name: "Catelyn Stark",
+      emailAddress: randomEmail(),
+    },
+  ],
+  [
+    {
+      name: "Edmure Tully",
       emailAddress: randomEmail(),
     },
     {
-      firstName: "Roslyn",
-      lastName: "Frey",
+      name: "Roslyn Frey",
       emailAddress: randomEmail(),
     },
   ],
@@ -72,8 +67,7 @@ async function createGuestGroups() {
         guests.map(async (input) => {
           return CreateGuestAction.create(group.viewer, {
             guestGroupID: group.id,
-            firstName: input.firstName,
-            lastName: input.lastName,
+            name: input.name,
             emailAddress: input.emailAddress,
             eventID: group.eventID,
           }).saveX();

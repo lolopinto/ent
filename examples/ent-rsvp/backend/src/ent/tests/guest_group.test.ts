@@ -110,13 +110,11 @@ test("guest loading guest group", async () => {
   const group = await createGuestGroup();
   const inputs = [
     {
-      firstName: "Edmure",
-      lastName: "Tully",
+      name: "Edmure Tully",
       emailAddress: randomEmail(),
     },
     {
-      firstName: "Roslyn",
-      lastName: "Frey",
+      name: "Roslyn Frey",
       emailAddress: randomEmail(),
     },
   ];
@@ -125,8 +123,7 @@ test("guest loading guest group", async () => {
     inputs.map(async (input) => {
       return CreateGuestAction.create(group.viewer, {
         guestGroupID: group.id,
-        firstName: input.firstName,
-        lastName: input.lastName,
+        name: input.name,
         emailAddress: input.emailAddress,
         eventID: group.eventID,
       }).saveX();

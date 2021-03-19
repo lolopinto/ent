@@ -14,9 +14,9 @@ afterAll(async () => {
 test("bulk upload. required columns not provided", async () => {
   const event = await createEvent();
 
-  const csv = `invitationName, firstName, lastName
-  Ms. Arya Stark, Arya, Stark
-  Mr. Rickon Stark, Rickon, Stark`;
+  const csv = `invitationName, name
+  Ms. Arya Stark, Arya Stark
+  Mr. Rickon Stark, Rickon Stark`;
 
   await expectMutation(
     {
@@ -43,13 +43,12 @@ test("bulk upload. required columns not provided", async () => {
 test("bulk upload guests", async () => {
   const event = await createEvent();
 
-  // , additional guest firstName, additional guest lastName, additional guest emailAddress
-  const csv = `invitationName, firstName, lastName, emailAddress 
-  Ms. Arya Stark, Arya, Stark, ${randomEmail()}
-  Mr. Robb Stark, Robb, Stark, ${randomEmail()}
-  Mr. Rickon Stark, Rickon, Stark, ${randomEmail()}
-  Mr. Bran Stark, Bran, Stark, ${randomEmail()}
-  Mr. Rickon Stark, Rickon, Stark, ${randomEmail()}`;
+  const csv = `invitationName, name, emailAddress 
+  Ms. Arya Stark, Arya Stark, ${randomEmail()}
+  Mr. Robb Stark, Robb Stark, ${randomEmail()}
+  Mr. Rickon Stark, Rickon Stark, ${randomEmail()}
+  Mr. Bran Stark, Bran Stark, ${randomEmail()}
+  Mr. Rickon Stark, Rickon Stark, ${randomEmail()}`;
 
   await expectMutation(
     {
@@ -96,12 +95,12 @@ test.skip("bulk upload. extra guests", async () => {
   const event = await createEvent();
 
   // , additional guest firstName, additional guest lastName, additional guest emailAddress
-  const csv = `invitationName, firstName, lastName, emailAddress, additional guest firstName, additional guest lastName, additional guest emailAddress
-  Ms. Arya Stark, Arya, Stark, ${randomEmail()}
-  Mr. Robb Stark, Robb, Stark, ${randomEmail()}
-  Mr. Rickon Stark, Rickon, Stark, ${randomEmail()}
-  Mr. Bran Stark, Bran, Stark, ${randomEmail()}
-  Mr. Rickon Stark, Rickon, Stark, ${randomEmail()}`;
+  const csv = `invitationName, name, emailAddress, additional guest firstName, additional guest lastName, additional guest emailAddress
+  Ms. Arya Stark, Arya Stark, ${randomEmail()}
+  Mr. Robb Stark, Robb Stark, ${randomEmail()}
+  Mr. Rickon Stark, Rickon Stark, ${randomEmail()}
+  Mr. Bran Stark, Bran Stark, ${randomEmail()}
+  Mr. Rickon Stark, Rickon Stark, ${randomEmail()}`;
 
   await expectMutation(
     {

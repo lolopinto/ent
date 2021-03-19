@@ -12,9 +12,8 @@ import { Guest } from "src/ent/";
 import { GuestBuilder, GuestInput } from "src/ent/guest/actions/guest_builder";
 
 export interface GuestEditInput {
-  firstName?: string;
-  lastName?: string;
-  emailAddress?: string;
+  name?: string;
+  emailAddress?: string | null;
 }
 
 export class EditGuestActionBase implements Action<Guest> {

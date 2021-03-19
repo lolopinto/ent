@@ -36,11 +36,11 @@ export class GuestBase {
   readonly id: ID;
   readonly createdAt: Date;
   readonly updatedAt: Date;
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly emailAddress: string;
+  readonly name: string;
   readonly eventID: ID;
+  readonly emailAddress: string | null;
   readonly guestGroupID: ID;
+  readonly title: string | null;
 
   constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
@@ -48,11 +48,11 @@ export class GuestBase {
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
-    this.firstName = data.first_name;
-    this.lastName = data.last_name;
-    this.emailAddress = data.email_address;
+    this.name = data.name;
     this.eventID = data.event_id;
+    this.emailAddress = data.email_address;
     this.guestGroupID = data.guest_group_id;
+    this.title = data.title;
   }
 
   // by default, we always deny and it's up to the ent
@@ -121,11 +121,11 @@ export class GuestBase {
       "id",
       "created_at",
       "updated_at",
-      "first_name",
-      "last_name",
-      "email_address",
+      "name",
       "event_id",
+      "email_address",
       "guest_group_id",
+      "title",
     ];
   }
 

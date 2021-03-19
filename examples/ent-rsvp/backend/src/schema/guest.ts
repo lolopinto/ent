@@ -12,17 +12,17 @@ import { EmailType } from "@lolopinto/ent-email";
 
 export default class Guest extends BaseEntSchema {
   fields: Field[] = [
-    StringType({ name: "FirstName" }),
-    StringType({ name: "LastName" }),
-    EmailType({ name: "EmailAddress" }),
+    StringType({ name: "Name" }),
     UUIDType({
       name: "eventID",
       foreignKey: { schema: "Event", column: "ID" },
     }),
+    EmailType({ name: "EmailAddress", nullable: true }),
     UUIDType({
       name: "guestGroupID",
       foreignKey: { schema: "GuestGroup", column: "ID" },
     }),
+    StringType({ name: "title", nullable: true }),
   ];
 
   actions: Action[] = [
@@ -34,7 +34,7 @@ export default class Guest extends BaseEntSchema {
     },
     {
       operation: ActionOperation.Edit,
-      fields: ["FirstName", "LastName", "EmailAddress"],
+      fields: ["Name", "EmailAddress"],
     },
   ];
 

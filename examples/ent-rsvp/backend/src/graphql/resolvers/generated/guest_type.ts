@@ -45,14 +45,14 @@ export const GuestType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLID),
       resolve: nodeIDEncoder,
     },
-    firstName: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    lastName: {
+    name: {
       type: GraphQLNonNull(GraphQLString),
     },
     emailAddress: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
+    },
+    title: {
+      type: GraphQLString,
     },
     guestToAttendingEvents: {
       type: GraphQLNonNull(GuestToAttendingEventsConnectionType()),

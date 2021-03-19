@@ -17,11 +17,11 @@ import { Guest, Event, GuestGroup } from "src/ent/";
 import { GuestBuilder, GuestInput } from "src/ent/guest/actions/guest_builder";
 
 export interface GuestCreateInput {
-  firstName: string;
-  lastName: string;
-  emailAddress: string;
+  name: string;
   eventID: ID | Builder<Event>;
+  emailAddress?: string | null;
   guestGroupID: ID | Builder<GuestGroup>;
+  title?: string | null;
 }
 
 export class CreateGuestActionBase implements Action<Guest> {

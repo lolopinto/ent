@@ -15,11 +15,11 @@ import { EdgeType, NodeType } from "src/ent/const";
 import { Guest, EventActivity, Event, GuestGroup } from "src/ent/";
 
 export interface GuestInput {
-  firstName?: string;
-  lastName?: string;
-  emailAddress?: string;
+  name?: string;
   eventID?: ID | Builder<Event>;
+  emailAddress?: string | null;
   guestGroupID?: ID | Builder<GuestGroup>;
+  title?: string | null;
 }
 
 export interface GuestAction extends Action<Guest> {
@@ -218,11 +218,11 @@ export class GuestBuilder implements Builder<Guest> {
         result.set(key, value);
       }
     };
-    addField("FirstName", fields.firstName);
-    addField("LastName", fields.lastName);
-    addField("EmailAddress", fields.emailAddress);
+    addField("Name", fields.name);
     addField("eventID", fields.eventID);
+    addField("EmailAddress", fields.emailAddress);
     addField("guestGroupID", fields.guestGroupID);
+    addField("title", fields.title);
     return result;
   }
 
