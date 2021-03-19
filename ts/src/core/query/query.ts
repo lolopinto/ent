@@ -49,8 +49,10 @@ export interface EdgeQueryFilter<T extends Data> {
 }
 
 export interface PaginationInfo {
-  hasNextPage?: boolean;
-  hasPreviousPage?: boolean;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  startCursor: string;
+  endCursor: string;
 }
 
 // TODO can we generalize EdgeQuery to support any clause
@@ -77,6 +79,7 @@ function assertValidCursor(cursor: string, col: string): number {
 
 interface FilterOptions {
   limit: number;
+  query: BaseEdgeQuery<Ent, Data>;
   before?: string;
   after?: string;
   sortCol?: string; // what column are we sorting by. defaults to `time`
@@ -87,6 +90,7 @@ interface FilterOptions {
 class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
+  private edgeQuery: BaseEdgeQuery<Ent, Data>;
   private pageMap: Map<ID, PaginationInfo> = new Map();
 
   constructor(private options: FilterOptions) {
@@ -104,12 +108,19 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
         `cannot specify sortColNotTime without specifying a sortCol`,
       );
     }
+    this.edgeQuery = options.query;
   }
 
   filter(id: ID, edges: T[]): T[] {
     if (edges.length > this.options.limit) {
-      this.pageMap.set(id, { hasNextPage: true });
-      return edges.slice(0, this.options.limit);
+      const ret = edges.slice(0, this.options.limit);
+      this.pageMap.set(id, {
+        hasNextPage: true,
+        hasPreviousPage: false,
+        startCursor: this.edgeQuery.getCursor(ret[0]),
+        endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
+      });
+      return ret;
     }
     // TODO: in the future, when we have caching for edges
     // we'll want to hit that cache instead of passing the limit down to the
@@ -149,6 +160,7 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
   private offset: any | undefined;
   private sortCol: string;
   private pageMap: Map<ID, PaginationInfo> = new Map();
+  private edgeQuery: BaseEdgeQuery<Ent, Data>;
 
   constructor(private options: FilterOptions) {
     assertPositive(options.limit);
@@ -165,21 +177,32 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
         `cannot specify sortColNotTime without specifying a sortCol`,
       );
     }
+    this.edgeQuery = options.query;
   }
 
   filter(id: ID, edges: T[]): T[] {
-    if (edges.length > this.options.limit) {
-      this.pageMap.set(id, { hasPreviousPage: true });
-    }
+    let ret: T[] = [];
     if (this.offset) {
       // we have an extra one, get rid of it. we only got it to see if hasPreviousPage = true
       if (edges.length > this.options.limit) {
-        return edges.slice(0, edges.length - 1);
+        ret = edges.slice(0, edges.length - 1);
+      } else {
+        // done in SQL. nothing to do here.
+        ret = edges;
       }
-      // done in SQL. nothing to do here.
-      return edges;
+    } else {
+      ret = edges.slice(edges.length - this.options.limit, edges.length);
     }
-    return edges.slice(edges.length - this.options.limit, edges.length);
+
+    if (edges.length > this.options.limit) {
+      this.pageMap.set(id, {
+        hasPreviousPage: true,
+        hasNextPage: false,
+        startCursor: this.edgeQuery.getCursor(ret[0]),
+        endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
+      });
+    }
+    return ret;
   }
 
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
@@ -217,7 +240,7 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   first(n: number, after?: string): this {
     this.assertQueryNotDispatched("first");
     this.filters.push(
-      new FirstFilter({ limit: n, after, sortCol: this.sortCol }),
+      new FirstFilter({ limit: n, after, sortCol: this.sortCol, query: this }),
     );
     return this;
   }
@@ -225,7 +248,7 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   last(n: number, before?: string): this {
     this.assertQueryNotDispatched("last");
     this.filters.push(
-      new LastFilter({ limit: n, before, sortCol: this.sortCol }),
+      new LastFilter({ limit: n, before, sortCol: this.sortCol, query: this }),
     );
     return this;
   }
