@@ -21,6 +21,7 @@ export interface EventActivityInput {
   endTime?: Date | null;
   location?: string;
   description?: string | null;
+  inviteAllGuests?: boolean;
 }
 
 export interface EventActivityAction extends Action<EventActivity> {
@@ -275,6 +276,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     addField("EndTime", fields.endTime);
     addField("Location", fields.location);
     addField("Description", fields.description);
+    addField("InviteAllGuests", fields.inviteAllGuests);
     return result;
   }
 

@@ -58,6 +58,7 @@ sa.Table("event_activities", metadata,
     sa.Column("end_time", sa.TIMESTAMP(), nullable=True),
     sa.Column("location", sa.Text(), nullable=False),
     sa.Column("description", sa.Text(), nullable=True),
+    sa.Column("invite_all_guests", sa.Boolean(), nullable=False, server_default='FALSE'),
     sa.PrimaryKeyConstraint("id", name="event_activities_id_pkey"),
     sa.ForeignKeyConstraint(["event_id"], ["events.id"], name="event_activities_event_id_fkey", ondelete="CASCADE"),
 )

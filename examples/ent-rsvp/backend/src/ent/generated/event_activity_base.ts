@@ -57,6 +57,7 @@ export class EventActivityBase {
   readonly endTime: Date | null;
   readonly location: string;
   readonly description: string | null;
+  readonly inviteAllGuests: boolean;
 
   constructor(public viewer: Viewer, id: ID, data: Data) {
     this.id = id;
@@ -70,6 +71,7 @@ export class EventActivityBase {
     this.endTime = data.end_time;
     this.location = data.location;
     this.description = data.description;
+    this.inviteAllGuests = data.invite_all_guests;
   }
 
   // by default, we always deny and it's up to the ent
@@ -148,6 +150,7 @@ export class EventActivityBase {
       "end_time",
       "location",
       "description",
+      "invite_all_guests",
     ];
   }
 

@@ -7,6 +7,7 @@ import {
   Action,
   TimestampType,
   Edge,
+  BooleanType,
 } from "@lolopinto/ent";
 
 export default class EventActivity extends BaseEntSchema {
@@ -21,6 +22,7 @@ export default class EventActivity extends BaseEntSchema {
     // Name of location, not address. TODO address
     StringType({ name: "Location" }),
     StringType({ name: "Description", nullable: true }),
+    BooleanType({name: "InviteAllGuests", serverDefault: "FALSE"})
   ];
 
   actions: Action[] = [

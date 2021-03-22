@@ -10,6 +10,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
+  GraphQLBoolean,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLTime, mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
@@ -51,6 +52,9 @@ export const EventActivityEditInputType = new GraphQLInputObjectType({
     },
     description: {
       type: GraphQLString,
+    },
+    inviteAllGuests: {
+      type: GraphQLBoolean,
     },
   }),
 });
@@ -94,6 +98,7 @@ export const EventActivityEditType: GraphQLFieldConfig<
         endTime: input.endTime,
         location: input.location,
         description: input.description,
+        inviteAllGuests: input.inviteAllGuests,
       },
     );
     return { eventActivity: eventActivity };

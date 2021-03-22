@@ -26,6 +26,7 @@ export interface EventActivityEditInput {
   endTime?: Date | null;
   location?: string;
   description?: string | null;
+  inviteAllGuests?: boolean;
 }
 
 export class EditEventActivityActionBase implements Action<EventActivity> {

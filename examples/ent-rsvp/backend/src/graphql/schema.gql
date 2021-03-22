@@ -81,6 +81,7 @@ type EventActivity implements Node {
   endTime: Time
   location: String!
   description: String
+  inviteAllGuests: Boolean!
   attending(first: Int, after: String, last: Int, before: String): EventActivityToAttendingConnection!
   declined(first: Int, after: String, last: Int, before: String): EventActivityToDeclinedConnection!
   invites(first: Int, after: String, last: Int, before: String): EventActivityToInvitesConnection!
@@ -342,6 +343,7 @@ input EventActivityCreateInput {
   endTime: Time
   location: String!
   description: String
+  inviteAllGuests: Boolean
   address: addressEventActivityCreateInput
 }
 
@@ -373,6 +375,7 @@ input EventActivityEditInput {
   endTime: Time
   location: String
   description: String
+  inviteAllGuests: Boolean
 }
 
 type EventActivityRemoveInvitePayload {

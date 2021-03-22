@@ -7,6 +7,7 @@ import {
   GraphQLNonNull,
   GraphQLInt,
   GraphQLFieldConfigMap,
+  GraphQLBoolean,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import {
@@ -63,6 +64,9 @@ export const EventActivityType = new GraphQLObjectType({
     },
     description: {
       type: GraphQLString,
+    },
+    inviteAllGuests: {
+      type: GraphQLNonNull(GraphQLBoolean),
     },
     attending: {
       type: GraphQLNonNull(EventActivityToAttendingConnectionType()),

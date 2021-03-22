@@ -34,6 +34,7 @@ export interface EventActivityCreateInput {
   endTime?: Date | null;
   location: string;
   description?: string | null;
+  inviteAllGuests?: boolean;
   address?: customAddressInput | null;
 }
 
