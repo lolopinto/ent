@@ -281,19 +281,19 @@ type Guest implements Node {
   event: Event
   guestGroup: GuestGroup
   id: ID!
-  firstName: String!
-  lastName: String!
-  emailAddress: String!
+  name: String!
+  emailAddress: String
+  title: String
   guestToAttendingEvents(first: Int, after: String, last: Int, before: String): GuestToAttendingEventsConnection!
   guestToDeclinedEvents(first: Int, after: String, last: Int, before: String): GuestToDeclinedEventsConnection!
 }
 
 input GuestCreateInput {
-  firstName: String!
-  lastName: String!
-  emailAddress: String!
+  name: String!
   eventID: ID!
+  emailAddress: String
   guestGroupID: ID!
+  title: String
 }
 
 type GuestCreatePayload {
@@ -310,8 +310,7 @@ type GuestDeletePayload {
 
 input GuestEditInput {
   guestID: ID!
-  firstName: String
-  lastName: String
+  name: String
   emailAddress: String
 }
 
@@ -421,6 +420,7 @@ type Mutation {
   guestGroupCreate(input: GuestGroupCreateInput!): GuestGroupCreatePayload!
   guestGroupDelete(input: GuestGroupDeleteInput!): GuestGroupDeletePayload!
   guestGroupEdit(input: GuestGroupEditInput!): GuestGroupEditPayload!
+  importGuests(eventID: ID!, file: Upload!): Event!
   userCreate(input: UserCreateInput!): UserCreatePayload!
 }
 
@@ -446,6 +446,9 @@ type Query {
 
 """Time scalar type"""
 scalar Time
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
 
 type User implements Node {
   id: ID!

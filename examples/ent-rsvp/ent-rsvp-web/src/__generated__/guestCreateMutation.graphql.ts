@@ -4,11 +4,11 @@
 
 import { ConcreteRequest } from "relay-runtime";
 export type GuestCreateInput = {
-    firstName: string;
-    lastName: string;
-    emailAddress: string;
+    name: string;
     eventID: string;
+    emailAddress?: string | null;
     guestGroupID: string;
+    title?: string | null;
 };
 export type guestCreateMutationVariables = {
     input: GuestCreateInput;

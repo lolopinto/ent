@@ -41,9 +41,9 @@ export type eventPageQueryResponse = {
                         readonly rawCount: number;
                         readonly nodes: ReadonlyArray<{
                             readonly id: string;
-                            readonly firstName: string;
-                            readonly lastName: string;
-                            readonly emailAddress: string;
+                            readonly name: string;
+                            readonly emailAddress: string | null;
+                            readonly title: string | null;
                         }>;
                     };
                 };
@@ -101,9 +101,9 @@ query eventPageQuery(
             rawCount
             nodes {
               id
-              firstName
-              lastName
+              name
               emailAddress
+              title
             }
           }
           __typename
@@ -342,25 +342,19 @@ v9 = [
                 "plural": true,
                 "selections": [
                   (v2/*: any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "firstName",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "lastName",
-                    "storageKey": null
-                  },
+                  (v3/*: any*/),
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
                     "name": "emailAddress",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "title",
                     "storageKey": null
                   }
                 ],
@@ -497,7 +491,7 @@ return {
     ]
   },
   "params": {
-    "cacheID": "99eaf0945d4046d107ac405062e2064a",
+    "cacheID": "9ba84ce1b600ce60230987371e659e29",
     "id": null,
     "metadata": {
       "connection": [
@@ -523,9 +517,9 @@ return {
     },
     "name": "eventPageQuery",
     "operationKind": "query",
-    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n          __typename\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    guestGroups(first: 100) {\n      edges {\n        node {\n          id\n          invitationName\n          guests {\n            rawCount\n            nodes {\n              id\n              firstName\n              lastName\n              emailAddress\n            }\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n          __typename\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    guestGroups(first: 100) {\n      edges {\n        node {\n          id\n          invitationName\n          guests {\n            rawCount\n            nodes {\n              id\n              name\n              emailAddress\n              title\n            }\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = 'c9587105fda5d0faf8587440debfe93e';
+(node as any).hash = 'e2a59ab11251094c7c73fb4268116776';
 export default node;

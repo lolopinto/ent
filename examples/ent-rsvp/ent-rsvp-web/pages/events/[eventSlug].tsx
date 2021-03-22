@@ -89,7 +89,7 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
     return guestGroup.guests.nodes.map((guest, i) => (
       <Fragment key={i}>
         <div>
-          {guest.firstName} {guest.lastName} {guest.emailAddress}
+          {guest.name} {guest.emailAddress}
         </div>
       </Fragment>
     ));
@@ -173,9 +173,9 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
 }
 
 interface Guest {
-  firstName: string;
-  lastName: string;
+  name: string;
   emailAddress: string;
+  title?: string;
 }
 
 function ConfirmDelete({ guestGroup, eventID, showModal, setShowModal }) {
@@ -253,9 +253,8 @@ function CreateGuestGroup(props: {
             {
               guestGroupID,
               eventID,
-              firstName: guest.firstName,
-              lastName: guest.lastName,
-              emailAddress: guest.emailAddress,
+              name: guest.name,
+              emailAddress: guest.emailAddress || null,
             },
             function (r2, errs2) {
               if (errs2 && errs2.length) {
@@ -279,7 +278,7 @@ function CreateGuestGroup(props: {
   };
 
   function addGuest(e) {
-    let guest: Guest = { firstName: "", lastName: "", emailAddress: "" };
+    let guest: Guest = { name: "", emailAddress: "" };
     const clone = [...guests];
     clone.push(guest);
     setGuests(clone);
@@ -316,21 +315,12 @@ function CreateGuestGroup(props: {
           </Form.Group>
           {guests.map((guest, i) => (
             <Form.Row key={i}>
-              <Form.Group as={Col} controlId={`firstName-${i}`}>
-                <Form.Label>First Name</Form.Label>
+              <Form.Group as={Col} controlId={`name-${i}`}>
+                <Form.Label>Name</Form.Label>
                 <Form.Control
                   type="text"
-                  value={guest.firstName}
-                  onChange={(e) => setValue(i, "firstName", e.target.value)}
-                  required
-                />
-              </Form.Group>
-              <Form.Group as={Col} controlId={`lastName-${i}`}>
-                <Form.Label>Last Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={guest.lastName}
-                  onChange={(e) => setValue(i, "lastName", e.target.value)}
+                  value={guest.name}
+                  onChange={(e) => setValue(i, "name", e.target.value)}
                   required
                 />
               </Form.Group>
@@ -340,7 +330,6 @@ function CreateGuestGroup(props: {
                   type="email"
                   value={guest.emailAddress}
                   onChange={(e) => setValue(i, "emailAddress", e.target.value)}
-                  required
                 />
               </Form.Group>
             </Form.Row>

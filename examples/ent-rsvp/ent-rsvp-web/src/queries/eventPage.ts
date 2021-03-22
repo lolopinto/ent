@@ -36,9 +36,9 @@ const query = graphql`
               rawCount
               nodes {
                 id
-                firstName
-                lastName
+                name
                 emailAddress
+                title
               }
             }
           }
