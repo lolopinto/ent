@@ -5,6 +5,8 @@ import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import { PassportStrategyHandler } from "@lolopinto/ent-passport";
 import passport from "passport";
 import cors, { CorsOptions } from "cors";
+import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
+
 // this line fixes the issue by loading ent first but we need to do that consistently everywhere
 import { User } from "src/ent";
 import schema from "./schema";
@@ -38,6 +40,7 @@ app.options("/graphql", cors(corsOptions));
 app.post(
   "/graphql",
   cors(corsOptions),
+  graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }),
   graphqlHTTP((request: IncomingMessage, response: ServerResponse, params) => {
     //    console.log("params", params);
     let doWork = async () => {

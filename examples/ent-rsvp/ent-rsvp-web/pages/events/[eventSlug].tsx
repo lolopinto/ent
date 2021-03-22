@@ -26,8 +26,8 @@ import guestGroupCreate from "../../src/mutations/guestGroupCreate";
 import { guestGroupCreateMutationResponse } from "../../src/__generated__/guestGroupCreateMutation.graphql";
 import guestCreate from "../../src/mutations/guestCreate";
 import guestGroupDelete from "../../src/mutations/guestGroupDelete";
-import { guestCreateMutationResponse } from "../../src/__generated__/guestCreateMutation.graphql";
 import { MdDelete } from "react-icons/md";
+import importGuests from "../../src/mutations/importGuests";
 
 const environment = createEnvironment();
 
@@ -64,6 +64,7 @@ interface homeArgs {
 function renderEventsPage(args: homeArgs) {
   const { error, props, retry } = args;
   if (error) {
+    console.error(error);
     return "Error. sadness";
   }
   if (!props) {
@@ -78,8 +79,9 @@ function renderEventsPage(args: homeArgs) {
 }
 
 function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
-  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [currentDeletedGuestGroup, setCurrentDeletedGuestGroup] = useState(
     null,
   );
@@ -122,10 +124,12 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
       <Tab eventKey="guests" title="Guests">
         <Container>
           <Row>
-            <Button variant="light" onClick={() => setShowModal(true)}>
+            <Button variant="light" onClick={() => setShowCreateModal(true)}>
               Add Guests
             </Button>
-            <Button variant="light">Import spreadsheet</Button>
+            <Button variant="light" onClick={() => setShowImportModal(true)}>
+              Import Guests
+            </Button>
           </Row>
           <Row>
             <Table striped bordered hover>
@@ -156,8 +160,14 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
           </Row>
           <CreateGuestGroup
             eventID={event.id}
-            show={showModal}
-            setShow={setShowModal}
+            show={showCreateModal}
+            setShow={setShowCreateModal}
+            reloadData={arg.reloadData}
+          />
+          <ImportGuests
+            eventID={event.id}
+            show={showImportModal}
+            setShow={setShowImportModal}
             reloadData={arg.reloadData}
           />
           <ConfirmDelete
@@ -239,7 +249,7 @@ function CreateGuestGroup(props: {
       },
       async function (r: guestGroupCreateMutationResponse, errs) {
         if (errs && errs.length) {
-          console.error(`error creating guest group`);
+          return console.error(`error creating guest group`);
         }
 
         const guestGroupID = r.guestGroupCreate.guestGroup.id;
@@ -342,6 +352,78 @@ function CreateGuestGroup(props: {
       <Modal.Footer>
         <Button variant="primary" onClick={saveGuestGroup}>
           Save
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+function ImportGuests(props: {
+  eventID: string;
+  show: boolean;
+  setShow;
+  reloadData;
+}) {
+  const { eventID, show, setShow, reloadData } = props;
+  const [file, setFile] = useState(null);
+  const handleClose = () => setShow(false);
+
+  const saveImportGuests = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    importGuests(environment, eventID, file, function (r, errs) {
+      if (errs && errs.length) {
+        return console.error("error importing guests");
+      }
+
+      // close
+      handleClose();
+      reloadData();
+    });
+  };
+
+  const fileChanged = (e) => {
+    const files = e.target.files;
+
+    if (files.length !== 1) {
+      throw new Error(`incorrect number of files selected`);
+    }
+    setFile(files[0]);
+  };
+
+  return (
+    <Modal show={show} onHide={handleClose} size="lg">
+      <Modal.Header closeButton>
+        <Modal.Title>Import guests</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        Here are the guidelines for the csv:
+        <ul>
+          <li>
+            enter column headers. The following are required: "invitationName",
+            "name", "emailAddress".
+          </li>
+          <li>
+            For additional guests in a group, they should be of the format:
+            "additional guest ", "additional guest 2" etc.
+          </li>
+          <li>
+            If any additional guest has an email address, add a column with
+            "email" or "email address" added to the suffix like above.
+          </li>
+        </ul>
+        <input
+          type="file"
+          id="file"
+          name="file"
+          accept=".csv"
+          onChange={fileChanged}
+        />
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="primary" onClick={saveImportGuests}>
+          Import
         </Button>
       </Modal.Footer>
     </Modal>

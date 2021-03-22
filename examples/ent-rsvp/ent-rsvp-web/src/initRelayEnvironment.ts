@@ -1,26 +1,62 @@
 import { Environment, Network, RecordSource, Store } from "relay-runtime";
+import { extractFiles } from "extract-files";
 
 async function fetchQuery(operation, variables) {
   try {
     let headers = {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
+      Accept: "application/json",
     };
     const creds = localStorage.getItem("logged_in_creds");
     if (creds) {
       const credsObj = JSON.parse(creds);
       headers["Authorization"] = `Bearer ${credsObj.token}`;
     }
-    const response = await fetch(process.env.NEXT_PUBLIC_RELAY_ENDPOINT, {
+
+    const fetchOptions: RequestInit = {
       method: "POST",
       headers,
-      body: JSON.stringify({
-        query: operation.text,
-        variables,
-      }),
-    });
-    console.log("response...");
-    console.log(response);
+    };
+
+    const op = {
+      query: operation.text,
+      variables,
+    };
+
+    const { clone, files } = extractFiles(
+      op,
+      undefined,
+      function (f): f is File {
+        return (f as File).name !== undefined;
+      },
+    );
+    const opJSON = JSON.stringify(clone);
+
+    if (files.size) {
+      const form = new FormData();
+
+      form.append("operations", opJSON);
+
+      const map = {};
+      let i = 0;
+      files.forEach((paths) => {
+        map[i++] = paths;
+      });
+      form.append("map", JSON.stringify(map));
+
+      i = 0;
+      files.forEach((paths, file) => {
+        form.append(`${i++}`, file, file.name);
+      });
+      fetchOptions.body = form;
+    } else {
+      fetchOptions.headers["Content-Type"] = "application/json";
+      fetchOptions.body = opJSON;
+    }
+
+    const response = await fetch(
+      process.env.NEXT_PUBLIC_RELAY_ENDPOINT,
+      fetchOptions,
+    );
     return response.json();
   } catch (err) {
     console.log("errrrrorrrrr");

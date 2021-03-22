@@ -10,9 +10,11 @@
     "update-graphql": "get-graphql-schema http://localhost:4000/graphql > schema.graphql"
   },
   "dependencies": {
+    "@types/extract-files": "^8.1.0",
     "@types/react-datepicker": "^3.1.5",
     "bootstrap": "^4.6.0",
     "email-addresses": "^4.0.0",
+    "extract-files": "^9.0.0",
     "graphql": "^15.5.0",
     "luxon": "^1.26.0",
     "react": "^17.0.1",

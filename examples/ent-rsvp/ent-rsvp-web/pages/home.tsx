@@ -44,6 +44,7 @@ interface homeArgs {
 function renderHome(args: homeArgs) {
   const { error, props } = args;
   if (error) {
+    console.error(error);
     return "Error. sadness";
   }
 
