@@ -21,6 +21,7 @@ import {
   createAndInvite,
   createAndInvitePlusGuests,
   createGuests,
+  createGuestPlus,
 } from "src/testutils";
 
 afterAll(async () => {
@@ -47,6 +48,39 @@ describe("create event activity", () => {
         "ent undefined is not visible for privacy reasons",
       );
     }
+  });
+
+  test("invite guests flag. no guest group", async () => {
+    const activity = await createActivity({ inviteAllGuests: true });
+    expect(activity.inviteAllGuests).toEqual(true);
+    const count = await activity.queryInvites().queryCount();
+
+    expect(count).toBe(0);
+  });
+
+  test("invite guests flag. existing guest group", async () => {
+    const event = await createEvent();
+    const group = await CreateGuestGroupAction.create(event.viewer, {
+      invitationName: "people",
+      eventID: event.id,
+    }).saveX();
+
+    const activity = await CreateEventActivityAction.create(event.viewer, {
+      startTime: new Date(),
+      location: "fun location",
+      name: "welcome dinner",
+      eventID: event.id,
+      inviteAllGuests: true,
+    }).saveX();
+    expect(activity.inviteAllGuests).toEqual(true);
+
+    const [count, ents] = await Promise.all([
+      activity.queryInvites().queryCount(),
+      activity.queryInvites().queryEnts(),
+    ]);
+    expect(count).toBe(1);
+    expect(ents.length).toBe(1);
+    expect(ents[0].id).toBe(group.id);
   });
 });
 

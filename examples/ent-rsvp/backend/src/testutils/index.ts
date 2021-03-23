@@ -1,14 +1,17 @@
 import { Guest, Event, User, EventActivity, GuestGroup } from "src/ent";
-import { IDViewer, LoggedOutViewer } from "@lolopinto/ent";
+import { ID, IDViewer, LoggedOutViewer } from "@lolopinto/ent";
 import { randomEmail } from "src/util/random";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
-import CreateEventActivityAction from "src/ent/event_activity/actions/create_event_activity_action";
+import CreateEventActivityAction, {
+  EventActivityCreateInput,
+} from "src/ent/event_activity/actions/create_event_activity_action";
 import CreateGuestGroupAction from "src/ent/guest_group/actions/create_guest_group_action";
 import CreateGuestAction, {
   GuestCreateInput,
 } from "src/ent/guest/actions/create_guest_action";
 import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
+import { Builder } from "@lolopinto/ent/action";
 
 export async function createUser() {
   const user = await CreateUserAction.create(new LoggedOutViewer(), {
@@ -31,18 +34,34 @@ export async function createEvent() {
   return event;
 }
 
-export async function createActivity() {
-  const event = await createEvent();
-  const activity = await CreateEventActivityAction.create(
-    new IDViewer(event.creatorID),
-    {
-      startTime: new Date(),
-      location: "fun location",
-      name: "welcome dinner",
-      eventID: event.id,
-    },
-  ).saveX();
-  return activity;
+export async function createActivity(
+  input?: Partial<EventActivityCreateInput>,
+  event?: Event,
+) {
+  let eventID: ID | Builder<Event>;
+
+  if (event && input?.eventID) {
+    if (event.id !== input.eventID) {
+      throw new Error(`passed eventID and event that don't match`);
+    }
+  }
+
+  if (!event) {
+    event = await createEvent();
+    eventID = event.id;
+  } else if (input?.eventID) {
+    eventID = input.eventID;
+  } else {
+    eventID = event.id;
+  }
+
+  return await CreateEventActivityAction.create(event.viewer, {
+    startTime: new Date(),
+    location: "fun location",
+    name: "welcome dinner",
+    eventID: eventID,
+    ...input,
+  }).saveX();
 }
 
 type input = Pick<GuestCreateInput, "name" | "emailAddress">;
