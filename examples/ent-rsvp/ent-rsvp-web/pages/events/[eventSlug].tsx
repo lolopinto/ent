@@ -668,8 +668,8 @@ function ConfirmActivityDelete({
   showModal,
   setShowModal,
 }) {
-  const deleteGuestGroup = () => {
-    //    delete guest group
+  const deleteActivity = () => {
+    //    delete activity
     eventActivityDelete(
       environment,
       eventID,
@@ -698,7 +698,7 @@ function ConfirmActivityDelete({
         <Button variant="secondary" onClick={() => setShowModal(false)}>
           No, don't delete
         </Button>
-        <Button variant="primary" onClick={() => deleteGuestGroup()}>
+        <Button variant="primary" onClick={() => deleteActivity()}>
           Yes, I'm sure
         </Button>
       </Modal.Footer>
@@ -763,8 +763,9 @@ function EventActivity({ activity, reloadData, event }) {
     setEditedActivity(clone);
   }
 
-  function onSave() {
-    console.log("onsave called", editedActivity);
+  function onSave(e) {
+    e.preventDefault();
+    e.stopPropagation();
 
     if (!editedActivity) {
       throw new Error("tried to save when no activity was edited");
@@ -773,6 +774,7 @@ function EventActivity({ activity, reloadData, event }) {
     let addressDone = false;
     const done = () => {
       setEditing(false);
+      setEditedActivity(null);
       reloadData();
     };
     activityEdit(
@@ -813,7 +815,7 @@ function EventActivity({ activity, reloadData, event }) {
       },
     );
   }
-  if (editing) {
+  if (editing && editedActivity) {
     return (
       <Card>
         <Form onSubmit={onSave}>
