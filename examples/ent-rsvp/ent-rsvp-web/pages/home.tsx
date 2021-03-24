@@ -20,7 +20,7 @@ import { eventSlugAvailableQueryResponse } from "../src/__generated__/eventSlugA
 import { useRouter } from "next/router";
 const environment = createEnvironment();
 import Card from "react-bootstrap/Card";
-import EditActivity, { Activity } from "../src/components/editActivity";
+import EditActivity, { NewActivity } from "../src/components/editActivity";
 
 export default function Home() {
   return (
@@ -167,19 +167,8 @@ function CreateEvent({ environment, visible, creatorID }) {
   }
 
   function addActivity() {
-    let activity: Activity = {
-      name: "",
-      startTime: new Date(),
-      endTime: null,
-      location: "",
-      description: "",
-      street: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      apartment: "",
-      inviteAllGuests: false,
-    };
+    let activity = NewActivity();
+
     const clone = [...activities];
     clone.push(activity);
     setActivities(clone);

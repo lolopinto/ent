@@ -20,16 +20,31 @@ export interface Activity {
   inviteAllGuests?: boolean;
 }
 
+export function NewActivity(): Activity {
+  return {
+    name: "",
+    startTime: new Date(),
+    endTime: null,
+    location: "",
+    description: "",
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    apartment: "",
+    inviteAllGuests: false,
+  };
+}
+
 interface args {
   activity: Activity;
   saveButton?: boolean;
   setValue: (n: number, k: string, v: any) => void;
-  onSave?: any;
   i: number;
 }
 
 export default function EditActivity(props: args) {
-  const { activity, saveButton, setValue, i, onSave } = props;
+  const { activity, saveButton, setValue, i } = props;
 
   return (
     <Fragment>
@@ -148,7 +163,7 @@ export default function EditActivity(props: args) {
         </Form.Group>
       </Form.Row>
       {saveButton && (
-        <Button size="sm" variant="primary" onClick={onSave}>
+        <Button size="sm" variant="primary" type="submit">
           Save
         </Button>
       )}

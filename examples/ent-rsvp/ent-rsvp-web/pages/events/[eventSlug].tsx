@@ -28,9 +28,14 @@ import guestCreate from "../../src/mutations/guestCreate";
 import guestGroupDelete from "../../src/mutations/guestGroupDelete";
 import { MdEdit, MdDelete } from "react-icons/md";
 import importGuests from "../../src/mutations/importGuests";
-import EditActivity, { Activity } from "../../src/components/editActivity";
+import EditActivity, {
+  Activity,
+  NewActivity,
+} from "../../src/components/editActivity";
 import activityEdit from "../../src/mutations/eventActivityEdit";
 import addressEdit from "../../src/mutations/addressEdit";
+import eventActivityCreate from "../../src/mutations/eventActivityCreate";
+import eventActivityDelete from "../../src/mutations/eventActivityDelete";
 
 const environment = createEnvironment();
 
@@ -88,6 +93,8 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
   const [currentDeletedGuestGroup, setCurrentDeletedGuestGroup] = useState(
     null,
   );
+  const [addActivityMode, setAddActivityMode] = useState(false);
+  const [editedActivity, setEditedActivity] = useState(null);
   const event = arg.props.event;
 
   const renderGuestGroup = (guestGroup) => {
@@ -115,6 +122,52 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
     e.preventDefault();
   };
 
+  function addActivity(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setAddActivityMode(true);
+    setEditedActivity(NewActivity());
+  }
+
+  function setValue(_, k: string, v: any) {
+    const clone = { ...editedActivity };
+    clone[k] = v;
+    setEditedActivity(clone);
+  }
+
+  function onSave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    eventActivityCreate(
+      environment,
+      {
+        name: editedActivity.name,
+        eventID: event.id,
+        description: editedActivity.description,
+        startTime: editedActivity.startTime,
+        endTime: editedActivity.endTime,
+        location: editedActivity.location,
+        inviteAllGuests: editedActivity.inviteAllGuests,
+        address: {
+          street: editedActivity.street,
+          city: editedActivity.city,
+          state: editedActivity.state,
+          zipCode: editedActivity.zipCode,
+          apartment: editedActivity.apartment,
+        },
+      },
+      function (r, errs) {
+        if (errs && errs.length) {
+          return console.error(errs);
+        }
+        setAddActivityMode(false);
+        setEditedActivity(null);
+        arg.reloadData();
+      },
+    );
+  }
+
   return (
     <Tabs defaultActiveKey="activities">
       <Tab eventKey="activities" title="Activities">
@@ -129,9 +182,25 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
                 <EventActivity
                   activity={edge.node}
                   reloadData={arg.reloadData}
+                  event={event}
                 />
               </Fragment>
             ))}
+            {!addActivityMode && (
+              <Link href="#">
+                <a onClick={addActivity}>Add activity</a>
+              </Link>
+            )}
+            {addActivityMode && (
+              <Form onSubmit={onSave}>
+                <EditActivity
+                  activity={editedActivity}
+                  setValue={setValue}
+                  i={0}
+                  saveButton={true}
+                />
+              </Form>
+            )}
           </Card.Body>
         </Card>
       </Tab>
@@ -469,9 +538,54 @@ function ImportGuests(props: {
   );
 }
 
-function EventActivity({ activity, reloadData }) {
+function ConfirmActivityDelete({
+  eventActivity,
+  eventID,
+  showModal,
+  setShowModal,
+}) {
+  const deleteGuestGroup = () => {
+    //    delete guest group
+    eventActivityDelete(
+      environment,
+      eventID,
+      {
+        eventActivityID: eventActivity.id,
+      },
+      function (r, errs) {
+        if (errs && errs.length) {
+          console.error(errs);
+        }
+        setShowModal(false);
+      },
+    );
+  };
+
+  if (!showModal || !eventActivity) {
+    return null;
+  }
+
+  return (
+    <Modal show={showModal}>
+      <Modal.Body>
+        Are you sure you want to delete {eventActivity.name}?
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => setShowModal(false)}>
+          No, don't delete
+        </Button>
+        <Button variant="primary" onClick={() => deleteGuestGroup()}>
+          Yes, I'm sure
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+function EventActivity({ activity, reloadData, event }) {
   const [editing, setEditing] = useState(false);
   const [editedActivity, setEditedActivity] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   function renderAddress() {
     const address = activity.address;
@@ -513,10 +627,15 @@ function EventActivity({ activity, reloadData }) {
     setEditing(true);
   }
 
+  function onDelete(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteModal(true);
+  }
+
   function setValue(_, k: string, v: any) {
     const clone = { ...editedActivity };
     clone[k] = v;
-    console.log(clone);
     setEditedActivity(clone);
   }
 
@@ -572,45 +691,57 @@ function EventActivity({ activity, reloadData }) {
   }
   if (editing) {
     return (
-      <EditActivity
-        activity={editedActivity}
-        setValue={setValue}
-        i={0}
-        saveButton={true}
-        onSave={onSave}
-      />
+      <Form onSubmit={onSave}>
+        <EditActivity
+          activity={editedActivity}
+          setValue={setValue}
+          i={0}
+          saveButton={true}
+        />
+      </Form>
     );
   }
   // TODO there should be a cancel edit button here if this were productionized but meh
   return (
-    <Card>
-      <Card.Title>
-        {activity.name} <MdEdit onClick={editMode} />
-      </Card.Title>
-      <ListGroup variant="flush">
-        <ListGroup.Item>Description: {activity.description}</ListGroup.Item>
-        <ListGroup.Item>
-          Start Time:{" "}
-          <time dateTime={activity.startTime}>
-            {DateTime.fromISO(activity.startTime).toFormat("MM-dd-yyyy hh:mm")}
-          </time>
-        </ListGroup.Item>
-        {activity.endTime ? (
+    <Fragment>
+      <ConfirmActivityDelete
+        eventActivity={activity}
+        eventID={event.id}
+        showModal={showDeleteModal}
+        setShowModal={setShowDeleteModal}
+      />
+      <Card>
+        <Card.Title>
+          {activity.name} <MdEdit onClick={editMode} />
+          <MdDelete onClick={onDelete} />
+        </Card.Title>
+        <ListGroup variant="flush">
+          <ListGroup.Item>Description: {activity.description}</ListGroup.Item>
           <ListGroup.Item>
-            End Time:
-            <time dateTime={activity.endTime}>
-              {DateTime.fromISO(activity.endTime).toFormat("MM-dd-yyyy hh:mm")}
+            Start Time:{" "}
+            <time dateTime={activity.startTime}>
+              {DateTime.fromISO(activity.startTime).toFormat(
+                "MM-dd-yyyy hh:mm",
+              )}
             </time>
           </ListGroup.Item>
-        ) : (
-          ""
-        )}
-        <ListGroup.Item>{activity.location}</ListGroup.Item>
-        <ListGroup.Item>{renderAddress()}</ListGroup.Item>
-        <ListGroup.Item>
-          Invite all guests: {activity.inviteAllGuests ? "Yes" : "No"}
-        </ListGroup.Item>
-      </ListGroup>
-    </Card>
+          {activity.endTime && (
+            <ListGroup.Item>
+              End Time:
+              <time dateTime={activity.endTime}>
+                {DateTime.fromISO(activity.endTime).toFormat(
+                  "MM-dd-yyyy hh:mm",
+                )}
+              </time>
+            </ListGroup.Item>
+          )}
+          <ListGroup.Item>Location: {activity.location}</ListGroup.Item>
+          <ListGroup.Item>{renderAddress()}</ListGroup.Item>
+          <ListGroup.Item>
+            Invite all guests: {activity.inviteAllGuests ? "Yes" : "No"}
+          </ListGroup.Item>
+        </ListGroup>
+      </Card>
+    </Fragment>
   );
 }
