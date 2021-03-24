@@ -14,6 +14,7 @@ const mutation = graphql`
         startTime
         endTime
         location
+        inviteAllGuests
         address {
           id
           street

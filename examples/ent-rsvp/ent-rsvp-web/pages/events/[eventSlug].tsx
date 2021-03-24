@@ -471,6 +471,9 @@ function Activity({ activity }) {
         )}
         <ListGroup.Item>{activity.location}</ListGroup.Item>
         <ListGroup.Item>{renderAddress()}</ListGroup.Item>
+        <ListGroup.Item>
+          Invite all guests: {activity.inviteAllGuests ? "Yes" : "No"}
+        </ListGroup.Item>
       </ListGroup>
     </Card>
   );

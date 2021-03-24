@@ -21,6 +21,7 @@ export type eventPageQueryResponse = {
                     readonly startTime: unknown;
                     readonly endTime: unknown | null;
                     readonly location: string;
+                    readonly inviteAllGuests: boolean;
                     readonly address: {
                         readonly id: string;
                         readonly street: string;
@@ -76,6 +77,7 @@ query eventPageQuery(
           startTime
           endTime
           location
+          inviteAllGuests
           address {
             id
             street
@@ -241,6 +243,13 @@ v8 = [
             "args": null,
             "kind": "ScalarField",
             "name": "location",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "inviteAllGuests",
             "storageKey": null
           },
           {
@@ -491,7 +500,7 @@ return {
     ]
   },
   "params": {
-    "cacheID": "9ba84ce1b600ce60230987371e659e29",
+    "cacheID": "40fc957d2895d40a1e18ded5448e7c87",
     "id": null,
     "metadata": {
       "connection": [
@@ -517,9 +526,9 @@ return {
     },
     "name": "eventPageQuery",
     "operationKind": "query",
-    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n          __typename\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    guestGroups(first: 100) {\n      edges {\n        node {\n          id\n          invitationName\n          guests {\n            rawCount\n            nodes {\n              id\n              name\n              emailAddress\n              title\n            }\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          inviteAllGuests\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n          __typename\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    guestGroups(first: 100) {\n      edges {\n        node {\n          id\n          invitationName\n          guests {\n            rawCount\n            nodes {\n              id\n              name\n              emailAddress\n              title\n            }\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = 'e2a59ab11251094c7c73fb4268116776';
+(node as any).hash = 'd3722ab7e75e752ffa515ba6e11be694';
 export default node;

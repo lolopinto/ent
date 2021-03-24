@@ -10,6 +10,7 @@ export type EventActivityCreateInput = {
     endTime?: unknown | null;
     location: string;
     description?: string | null;
+    inviteAllGuests?: boolean | null;
     address?: addressEventActivityCreateInput | null;
 };
 export type addressEventActivityCreateInput = {
@@ -30,6 +31,7 @@ export type eventActivityCreateMutationResponse = {
             readonly startTime: unknown;
             readonly endTime: unknown | null;
             readonly location: string;
+            readonly inviteAllGuests: boolean;
             readonly address: {
                 readonly id: string;
                 readonly street: string;
@@ -59,6 +61,7 @@ mutation eventActivityCreateMutation(
       startTime
       endTime
       location
+      inviteAllGuests
       address {
         id
         street
@@ -142,6 +145,13 @@ v2 = [
           {
             "alias": null,
             "args": null,
+            "kind": "ScalarField",
+            "name": "inviteAllGuests",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
             "concreteType": "Address",
             "kind": "LinkedField",
             "name": "address",
@@ -211,14 +221,14 @@ return {
     "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "817e88ebaca5c0a9c843cf2f2e3ebcfd",
+    "cacheID": "7202c2e69fc109a244e8aa10b3bb9b0c",
     "id": null,
     "metadata": {},
     "name": "eventActivityCreateMutation",
     "operationKind": "mutation",
-    "text": "mutation eventActivityCreateMutation(\n  $input: EventActivityCreateInput!\n) {\n  eventActivityCreate(input: $input) {\n    eventActivity {\n      id\n      name\n      startTime\n      endTime\n      location\n      address {\n        id\n        street\n        city\n        state\n        zipCode\n        apartment\n      }\n    }\n  }\n}\n"
+    "text": "mutation eventActivityCreateMutation(\n  $input: EventActivityCreateInput!\n) {\n  eventActivityCreate(input: $input) {\n    eventActivity {\n      id\n      name\n      startTime\n      endTime\n      location\n      inviteAllGuests\n      address {\n        id\n        street\n        city\n        state\n        zipCode\n        apartment\n      }\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = '09a75afcee95a6c80b774881d155e509';
+(node as any).hash = 'b5e597c6f2ed3464426ddcbaefd8e233';
 export default node;

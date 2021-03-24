@@ -99,6 +99,7 @@ interface Activity {
   state: string;
   zipCode: string;
   apartment: string | null;
+  inviteAllGuests?: boolean;
 }
 
 function CreateEvent({ environment, visible, creatorID }) {
@@ -150,6 +151,7 @@ function CreateEvent({ environment, visible, creatorID }) {
               startTime: activity.startTime,
               endTime: activity.endTime,
               location: activity.location,
+              inviteAllGuests: activity.inviteAllGuests,
               address: {
                 street: activity.street,
                 city: activity.city,
@@ -193,6 +195,7 @@ function CreateEvent({ environment, visible, creatorID }) {
       state: "",
       zipCode: "",
       apartment: "",
+      inviteAllGuests: false,
     };
     const clone = [...activities];
     clone.push(activity);
@@ -344,6 +347,18 @@ function CreateEvent({ environment, visible, creatorID }) {
                 value={activity.zipCode}
                 onChange={(e) => setValue(i, "zipCode", e.target.value)}
                 required
+              />
+            </Form.Group>
+          </Form.Row>
+          <Form.Row>
+            <Form.Group controlId={`inviteAllGuests-${i}`}>
+              <Form.Check
+                type="checkbox"
+                value={activity.inviteAllGuests}
+                label="Invite All Guests to Activity"
+                onChange={(e) =>
+                  setValue(i, "inviteAllGuests", e.target.checked)
+                }
               />
             </Form.Group>
           </Form.Row>

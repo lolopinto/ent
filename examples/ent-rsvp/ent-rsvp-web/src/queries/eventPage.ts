@@ -16,6 +16,7 @@ const query = graphql`
             startTime
             endTime
             location
+            inviteAllGuests
             address {
               id
               street

@@ -26,7 +26,7 @@ async function fetchQuery(operation, variables) {
       op,
       undefined,
       function (f): f is File {
-        return (f as File).name !== undefined;
+        return f instanceof File;
       },
     );
     const opJSON = JSON.stringify(clone);
