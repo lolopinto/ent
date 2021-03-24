@@ -581,6 +581,7 @@ function EventActivity({ activity, reloadData }) {
       />
     );
   }
+  // TODO there should be a cancel edit button here if this were productionized but meh
   return (
     <Card>
       <Card.Title>
