@@ -36,6 +36,8 @@ import activityEdit from "../../src/mutations/eventActivityEdit";
 import addressEdit from "../../src/mutations/addressEdit";
 import eventActivityCreate from "../../src/mutations/eventActivityCreate";
 import eventActivityDelete from "../../src/mutations/eventActivityDelete";
+import eventActivityAddInvite from "../../src/mutations/eventActivityAddInvite";
+import eventActivityRemoveInvite from "../../src/mutations/eventActivityRemoveInvite";
 
 const environment = createEnvironment();
 
@@ -279,6 +281,12 @@ function Guests({ event, reloadData }) {
 }
 
 function Invites({ event, reloadData }) {
+  useEffect(() => {
+    console.log(event);
+  }, [event]);
+
+  const [editMode, setEditMode] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState(undefined);
   const renderInvitedEvents = (guestGroup) => {
     return guestGroup.invitedEvents.nodes.map((event, i) => (
       <Fragment key={i}>
@@ -287,8 +295,112 @@ function Invites({ event, reloadData }) {
     ));
   };
 
+  function edit(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    setEditMode(true);
+  }
+
+  function onChange(e) {
+    console.log(e.target.value);
+    setSelectedActivity(e.target.value);
+  }
+
+  function invitationChanged(id: string, invited: boolean) {
+    if (invited) {
+      eventActivityAddInvite(
+        environment,
+        {
+          eventActivityID: selectedActivity,
+          inviteID: id,
+        },
+        function (r, errs) {
+          if (errs && errs.length) {
+            return console.error(errs);
+          }
+          reloadData();
+        },
+      );
+    } else {
+      eventActivityRemoveInvite(
+        environment,
+        {
+          eventActivityID: selectedActivity,
+          inviteID: id,
+        },
+        function (r, errs) {
+          if (errs && errs.length) {
+            return console.error(errs);
+          }
+          reloadData();
+        },
+      );
+    }
+  }
+
+  if (editMode) {
+    return (
+      <Fragment>
+        <Form>
+          <Form.Group controlId="eventActivity">
+            <Form.Label>Pick Activity to edit invites</Form.Label>
+            <Form.Control as="select" size="sm" onChange={onChange}>
+              <option key="choose" value={undefined}>
+                choose
+              </option>
+              {event.eventActivities.edges.map((edge, i) => (
+                <option key={edge.node.id} value={edge.node.id}>
+                  {edge.node.name}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+        </Form>
+        {selectedActivity && (
+          <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th>invited</th>
+                <th>invitation name</th>
+                <th>guests</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {event.guestGroups.edges.map((guestGroupEdge, i) => (
+                <tr key={i}>
+                  <td>
+                    <Form.Group controlId={`invited-${guestGroupEdge.node.id}`}>
+                      <Form.Check
+                        type="checkbox"
+                        checked={guestGroupEdge.node.invitedEvents.nodes.some(
+                          (activity) => activity.id === selectedActivity,
+                        )}
+                        onChange={(e) =>
+                          invitationChanged(
+                            guestGroupEdge.node.id,
+                            e.target.checked,
+                          )
+                        }
+                      />
+                    </Form.Group>
+                  </td>
+                  <td>{guestGroupEdge.node.invitationName}</td>
+                  <td>{renderGuestGroup(guestGroupEdge.node)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Fragment>
+    );
+  }
+
   return (
     <Container>
+      <Link href="#">
+        <a onClick={edit}>Edit invites</a>
+      </Link>
       <Table striped bordered hover>
         <thead>
           <tr>
