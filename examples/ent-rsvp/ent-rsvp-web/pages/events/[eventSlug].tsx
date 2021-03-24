@@ -49,7 +49,7 @@ export default function EventPage() {
       setEventSlug(router.query.eventSlug);
     }
   }, [router.query]);
-  console.log(eventSlug);
+
   return (
     <Layout>
       {eventSlug ? (
@@ -281,10 +281,6 @@ function Guests({ event, reloadData }) {
 }
 
 function Invites({ event, reloadData }) {
-  useEffect(() => {
-    console.log(event);
-  }, [event]);
-
   const [editMode, setEditMode] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(undefined);
   const renderInvitedEvents = (guestGroup) => {
@@ -302,7 +298,6 @@ function Invites({ event, reloadData }) {
   }
 
   function onChange(e) {
-    console.log(e.target.value);
     setSelectedActivity(e.target.value);
   }
 
@@ -511,7 +506,6 @@ function CreateGuestGroup(props: {
               }
               doneCount++;
               if (doneCount == guests.length) {
-                console.log("guest group created");
                 // close modal
                 setShow(false);
                 // reload data for main page
@@ -610,7 +604,7 @@ function ImportGuests(props: {
     e.preventDefault();
     e.stopPropagation();
 
-    importGuests(environment, eventID, file, function (r, errs) {
+    importGuests(environment, { eventID, file }, function (r, errs) {
       if (errs && errs.length) {
         return console.error("error importing guests");
       }

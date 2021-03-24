@@ -4,6 +4,7 @@ import {
   UserCreateInput,
   userCreateMutationResponse,
 } from "../__generated__/userCreateMutation.graphql";
+import commit from "./base";
 
 const mutation = graphql`
   mutation userCreateMutation($input: UserCreateInput!) {
@@ -15,28 +16,4 @@ const mutation = graphql`
   }
 `;
 
-export default function commit(
-  environment: Environment,
-  input: UserCreateInput,
-  callback?: (
-    r: userCreateMutationResponse,
-    errs: ReadonlyArray<PayloadError> | undefined | null,
-  ) => void,
-) {
-  return commitMutation(environment, {
-    mutation,
-    variables: {
-      input,
-    },
-    onCompleted: (response: userCreateMutationResponse, errors) => {
-      console.log("Response received from server.", response, errors);
-      if (callback) {
-        callback(response, errors);
-      }
-    },
-    onError: (err) => {
-      console.log("wwhwww");
-      console.error(err);
-    },
-  });
-}
+export default commit<UserCreateInput, userCreateMutationResponse>(mutation);

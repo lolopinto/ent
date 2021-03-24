@@ -1,9 +1,9 @@
-import { graphql, commitMutation } from "react-relay";
-import { Environment, PayloadError } from "relay-runtime";
+import { graphql } from "react-relay";
 import {
   EventActivityCreateInput,
   eventActivityCreateMutationResponse,
 } from "../__generated__/eventActivityCreateMutation.graphql";
+import commit from "./base";
 
 const mutation = graphql`
   mutation eventActivityCreateMutation($input: EventActivityCreateInput!) {
@@ -28,22 +28,7 @@ const mutation = graphql`
   }
 `;
 
-export default function commit(
-  environment: Environment,
-  input: EventActivityCreateInput,
-  callback?: (
-    r: eventActivityCreateMutationResponse,
-    errs: ReadonlyArray<PayloadError> | null | undefined,
-  ) => void,
-) {
-  return commitMutation(environment, {
-    mutation,
-    variables: { input },
-    onCompleted: (response: eventActivityCreateMutationResponse, errors) => {
-      if (callback) {
-        Promise.resolve(callback(response, errors));
-      }
-    },
-    onError: (err) => console.error(err),
-  });
-}
+export default commit<
+  EventActivityCreateInput,
+  eventActivityCreateMutationResponse
+>(mutation);

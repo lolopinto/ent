@@ -1,9 +1,9 @@
-import { graphql, commitMutation } from "react-relay";
-import { Environment, PayloadError } from "relay-runtime";
+import { graphql } from "react-relay";
 import {
   GuestCreateInput,
   guestCreateMutationResponse,
 } from "../__generated__/guestCreateMutation.graphql";
+import commit from "./base";
 
 const mutation = graphql`
   mutation guestCreateMutation($input: GuestCreateInput!) {
@@ -15,23 +15,4 @@ const mutation = graphql`
   }
 `;
 
-// TODO simplify this for mutations so that all that's needed is the query and we can get the types easily
-export default function commit(
-  environment: Environment,
-  input: GuestCreateInput,
-  callback?: (
-    r: guestCreateMutationResponse,
-    errs: ReadonlyArray<PayloadError> | null | undefined,
-  ) => void,
-) {
-  return commitMutation(environment, {
-    mutation,
-    variables: { input },
-    onCompleted: (response: guestCreateMutationResponse, errors) => {
-      if (callback) {
-        Promise.resolve(callback(response, errors));
-      }
-    },
-    onError: (err) => console.error(err),
-  });
-}
+export default commit<GuestCreateInput, guestCreateMutationResponse>(mutation);
