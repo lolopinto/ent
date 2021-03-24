@@ -87,40 +87,32 @@ function renderEventsPage(args: homeArgs) {
 }
 
 function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [currentDeletedGuestGroup, setCurrentDeletedGuestGroup] = useState(
-    null,
-  );
-  const [addActivityMode, setAddActivityMode] = useState(false);
-  const [editedActivity, setEditedActivity] = useState(null);
   const event = arg.props.event;
 
-  const renderGuestGroup = (guestGroup) => {
-    return guestGroup.guests.nodes.map((guest, i) => (
-      <Fragment key={i}>
-        <div>
-          {guest.name} {guest.emailAddress}
-        </div>
-      </Fragment>
-    ));
-  };
+  return (
+    <Tabs defaultActiveKey="activities">
+      <Tab eventKey="activities" title="Activities">
+        <Activities event={event} reloadData={arg.reloadData} />
+      </Tab>
+      <Tab eventKey="guests" title="Guests">
+        <Guests event={event} reloadData={arg.reloadData} />
+      </Tab>
+      <Tab eventKey="invites" title="Invites">
+        <Invites event={event} reloadData={arg.reloadData} />
+      </Tab>
+    </Tabs>
+  );
+}
 
-  const renderInvitedEvents = (guestGroup) => {
-    return guestGroup.invitedEvents.nodes.map((event, i) => (
-      <Fragment key={i}>
-        <div>{event.name}</div>
-      </Fragment>
-    ));
-  };
+interface Guest {
+  name: string;
+  emailAddress: string;
+  title?: string;
+}
 
-  const onDelete = (e, guestGroup) => {
-    setCurrentDeletedGuestGroup(guestGroup);
-    setShowDeleteModal(true);
-    e.stopPropagation();
-    e.preventDefault();
-  };
+function Activities({ event, reloadData }) {
+  const [addActivityMode, setAddActivityMode] = useState(false);
+  const [editedActivity, setEditedActivity] = useState(null);
 
   function addActivity(e) {
     e.preventDefault();
@@ -163,137 +155,163 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
         }
         setAddActivityMode(false);
         setEditedActivity(null);
-        arg.reloadData();
+        reloadData();
       },
     );
   }
 
   return (
-    <Tabs defaultActiveKey="activities">
-      <Tab eventKey="activities" title="Activities">
-        <Card>
-          <Card.Title>{event.name}</Card.Title>
-          <Card.Subtitle>
-            {event.eventActivities.rawCount} activities
-          </Card.Subtitle>
-          <Card.Body>
-            {event.eventActivities.edges.map((edge, i) => (
-              <Fragment key={`activity-${i}`}>
-                <EventActivity
-                  activity={edge.node}
-                  reloadData={arg.reloadData}
-                  event={event}
-                />
-              </Fragment>
-            ))}
-            {!addActivityMode && (
-              <Link href="#">
-                <a onClick={addActivity}>Add activity</a>
-              </Link>
-            )}
-            {addActivityMode && (
-              <Form onSubmit={onSave}>
-                <EditActivity
-                  activity={editedActivity}
-                  setValue={setValue}
-                  i={0}
-                  saveButton={true}
-                />
-              </Form>
-            )}
-          </Card.Body>
-        </Card>
-      </Tab>
-      <Tab eventKey="guests" title="Guests">
-        <Container>
-          <Row>
-            <Button variant="light" onClick={() => setShowCreateModal(true)}>
-              Add Guests
-            </Button>
-            <Button variant="light" onClick={() => setShowImportModal(true)}>
-              Import Guests
-            </Button>
-          </Row>
-          <Row>
-            <Table striped bordered hover>
-              <thead>
-                <tr>
-                  <th>invitation name</th>
-                  <th>count</th>
-                  <th>guests</th>
-                  <th>actions</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {event.guestGroups.edges.map((guestGroupEdge, i) => (
-                  <tr key={i}>
-                    <td>{guestGroupEdge.node.invitationName}</td>
-                    <td>{guestGroupEdge.node.guests.rawCount}</td>
-                    <td>{renderGuestGroup(guestGroupEdge.node)}</td>
-                    <td>
-                      <MdDelete
-                        onClick={(e) => onDelete(e, guestGroupEdge.node)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </Row>
-          <CreateGuestGroup
-            eventID={event.id}
-            show={showCreateModal}
-            setShow={setShowCreateModal}
-            reloadData={arg.reloadData}
-          />
-          <ImportGuests
-            eventID={event.id}
-            show={showImportModal}
-            setShow={setShowImportModal}
-            reloadData={arg.reloadData}
-          />
-          <ConfirmDelete
-            guestGroup={currentDeletedGuestGroup}
-            showModal={showDeleteModal}
-            eventID={event.id}
-            setShowModal={setShowDeleteModal}
-          />
-        </Container>
-      </Tab>
-      <Tab eventKey="invites" title="Invites">
-        <Container>
-          <Table striped bordered hover>
-            <thead>
-              <tr>
-                <th>invitation name</th>
-                <th>count</th>
-                <th>guests</th>
-                <th>events invited</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {event.guestGroups.edges.map((guestGroupEdge, i) => (
-                <tr key={i}>
-                  <td>{guestGroupEdge.node.invitationName}</td>
-                  <td>{guestGroupEdge.node.guests.rawCount}</td>
-                  <td>{renderGuestGroup(guestGroupEdge.node)}</td>
-                  <td>{renderInvitedEvents(guestGroupEdge.node)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Container>
-      </Tab>
-    </Tabs>
+    <Card style={{ paddingLeft: "10px" }}>
+      <Card.Title>{event.name}</Card.Title>
+      <Card.Subtitle>{event.eventActivities.rawCount} activities</Card.Subtitle>
+      <Card.Body>
+        {event.eventActivities.edges.map((edge, i) => (
+          <Fragment key={`activity-${i}`}>
+            <EventActivity
+              activity={edge.node}
+              reloadData={reloadData}
+              event={event}
+            />
+          </Fragment>
+        ))}
+        {!addActivityMode && (
+          <Link href="#">
+            <a onClick={addActivity}>Add activity</a>
+          </Link>
+        )}
+        {addActivityMode && (
+          <Card style={{ margin: "10px", padding: "10px" }}>
+            <Form onSubmit={onSave}>
+              <EditActivity
+                activity={editedActivity}
+                setValue={setValue}
+                i={0}
+                saveButton={true}
+              />
+            </Form>
+          </Card>
+        )}
+      </Card.Body>
+    </Card>
   );
 }
 
-interface Guest {
-  name: string;
-  emailAddress: string;
-  title?: string;
+const renderGuestGroup = (guestGroup) => {
+  return guestGroup.guests.nodes.map((guest, i) => (
+    <Fragment key={i}>
+      <div>
+        {guest.name} {guest.emailAddress}
+      </div>
+    </Fragment>
+  ));
+};
+
+function Guests({ event, reloadData }) {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [currentDeletedGuestGroup, setCurrentDeletedGuestGroup] = useState(
+    null,
+  );
+
+  const onDelete = (e, guestGroup) => {
+    setCurrentDeletedGuestGroup(guestGroup);
+    setShowDeleteModal(true);
+    e.stopPropagation();
+    e.preventDefault();
+  };
+
+  return (
+    <Container>
+      <Row>
+        <Button variant="light" onClick={() => setShowCreateModal(true)}>
+          Add Guests
+        </Button>
+        <Button variant="light" onClick={() => setShowImportModal(true)}>
+          Import Guests
+        </Button>
+      </Row>
+      <Row>
+        <Table striped bordered hover>
+          <thead>
+            <tr>
+              <th>invitation name</th>
+              <th>count</th>
+              <th>guests</th>
+              <th>actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {event.guestGroups.edges.map((guestGroupEdge, i) => (
+              <tr key={i}>
+                <td>{guestGroupEdge.node.invitationName}</td>
+                <td>{guestGroupEdge.node.guests.rawCount}</td>
+                <td>{renderGuestGroup(guestGroupEdge.node)}</td>
+                <td>
+                  <MdDelete onClick={(e) => onDelete(e, guestGroupEdge.node)} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </Row>
+      <CreateGuestGroup
+        eventID={event.id}
+        show={showCreateModal}
+        setShow={setShowCreateModal}
+        reloadData={reloadData}
+      />
+      <ImportGuests
+        eventID={event.id}
+        show={showImportModal}
+        setShow={setShowImportModal}
+        reloadData={reloadData}
+      />
+      <ConfirmDelete
+        guestGroup={currentDeletedGuestGroup}
+        showModal={showDeleteModal}
+        eventID={event.id}
+        setShowModal={setShowDeleteModal}
+      />
+    </Container>
+  );
+}
+
+function Invites({ event, reloadData }) {
+  const renderInvitedEvents = (guestGroup) => {
+    return guestGroup.invitedEvents.nodes.map((event, i) => (
+      <Fragment key={i}>
+        <div>{event.name}</div>
+      </Fragment>
+    ));
+  };
+
+  return (
+    <Container>
+      <Table striped bordered hover>
+        <thead>
+          <tr>
+            <th>invitation name</th>
+            <th>count</th>
+            <th>guests</th>
+            <th>events invited</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {event.guestGroups.edges.map((guestGroupEdge, i) => (
+            <tr key={i}>
+              <td>{guestGroupEdge.node.invitationName}</td>
+              <td>{guestGroupEdge.node.guests.rawCount}</td>
+              <td>{renderGuestGroup(guestGroupEdge.node)}</td>
+              <td>{renderInvitedEvents(guestGroupEdge.node)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </Container>
+  );
 }
 
 function ConfirmDelete({ guestGroup, eventID, showModal, setShowModal }) {
@@ -691,14 +709,16 @@ function EventActivity({ activity, reloadData, event }) {
   }
   if (editing) {
     return (
-      <Form onSubmit={onSave}>
-        <EditActivity
-          activity={editedActivity}
-          setValue={setValue}
-          i={0}
-          saveButton={true}
-        />
-      </Form>
+      <Card>
+        <Form onSubmit={onSave}>
+          <EditActivity
+            activity={editedActivity}
+            setValue={setValue}
+            i={0}
+            saveButton={true}
+          />
+        </Form>
+      </Card>
     );
   }
   // TODO there should be a cancel edit button here if this were productionized but meh
@@ -710,8 +730,8 @@ function EventActivity({ activity, reloadData, event }) {
         showModal={showDeleteModal}
         setShowModal={setShowDeleteModal}
       />
-      <Card>
-        <Card.Title>
+      <Card style={{ margin: "10px" }}>
+        <Card.Title style={{ paddingLeft: "5px" }}>
           {activity.name} <MdEdit onClick={editMode} />
           <MdDelete onClick={onDelete} />
         </Card.Title>
