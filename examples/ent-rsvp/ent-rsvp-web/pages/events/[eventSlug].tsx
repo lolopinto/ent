@@ -26,8 +26,11 @@ import guestGroupCreate from "../../src/mutations/guestGroupCreate";
 import { guestGroupCreateMutationResponse } from "../../src/__generated__/guestGroupCreateMutation.graphql";
 import guestCreate from "../../src/mutations/guestCreate";
 import guestGroupDelete from "../../src/mutations/guestGroupDelete";
-import { MdDelete } from "react-icons/md";
+import { MdEdit, MdDelete } from "react-icons/md";
 import importGuests from "../../src/mutations/importGuests";
+import EditActivity, { Activity } from "../../src/components/editActivity";
+import activityEdit from "../../src/mutations/eventActivityEdit";
+import addressEdit from "../../src/mutations/addressEdit";
 
 const environment = createEnvironment();
 
@@ -123,7 +126,10 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
           <Card.Body>
             {event.eventActivities.edges.map((edge, i) => (
               <Fragment key={`activity-${i}`}>
-                <Activity activity={edge.node} />
+                <EventActivity
+                  activity={edge.node}
+                  reloadData={arg.reloadData}
+                />
               </Fragment>
             ))}
           </Card.Body>
@@ -463,7 +469,10 @@ function ImportGuests(props: {
   );
 }
 
-function Activity({ activity }) {
+function EventActivity({ activity, reloadData }) {
+  const [editing, setEditing] = useState(false);
+  const [editedActivity, setEditedActivity] = useState(null);
+
   function renderAddress() {
     const address = activity.address;
     if (!address) {
@@ -481,9 +490,102 @@ function Activity({ activity }) {
       </Fragment>
     );
   }
+
+  function editMode() {
+    const edited: Activity = {
+      name: activity.name,
+      startTime: DateTime.fromISO(activity.startTime).toJSDate(),
+      endTime: null,
+      location: activity.location,
+      description: activity.description,
+      street: activity?.address.street,
+      city: activity?.address.city,
+      state: activity?.address.state,
+      zipCode: activity?.address.zipCode,
+      apartment: activity?.address.apartment,
+      inviteAllGuests: activity.inviteAllGuests,
+    };
+    if (activity.endTime) {
+      edited.endTime = DateTime.fromISO(activity.endTime).toJSDate();
+    }
+    setEditedActivity(edited);
+
+    setEditing(true);
+  }
+
+  function setValue(_, k: string, v: any) {
+    const clone = { ...editedActivity };
+    clone[k] = v;
+    console.log(clone);
+    setEditedActivity(clone);
+  }
+
+  function onSave() {
+    console.log("onsave called", editedActivity);
+
+    if (!editedActivity) {
+      throw new Error("tried to save when no activity was edited");
+    }
+    let activityDone = false;
+    let addressDone = false;
+    const done = () => {
+      setEditing(false);
+      reloadData();
+    };
+    activityEdit(
+      environment,
+      {
+        eventActivityID: activity.id,
+        name: editedActivity.name,
+        startTime: editedActivity.startTime,
+        endTime: editedActivity.endTime,
+        location: editedActivity.location,
+        description: editedActivity.description,
+        inviteAllGuests: editedActivity.inviteAllGuests,
+      },
+      function (r, errs) {
+        if (errs && errs.length) {
+          return console.error(errs);
+        }
+        activityDone = true;
+        addressDone && done();
+      },
+    );
+    addressEdit(
+      environment,
+      {
+        addressID: activity.address.id,
+        street: editedActivity.street,
+        city: editedActivity.city,
+        state: editedActivity.state,
+        zipCode: editedActivity.zipCode,
+        apartment: editedActivity.apartment,
+      },
+      function (r, errs) {
+        if (errs && errs.length) {
+          return console.error(errs);
+        }
+        addressDone = true;
+        activityDone && done();
+      },
+    );
+  }
+  if (editing) {
+    return (
+      <EditActivity
+        activity={editedActivity}
+        setValue={setValue}
+        i={0}
+        saveButton={true}
+        onSave={onSave}
+      />
+    );
+  }
   return (
     <Card>
-      <Card.Title>{activity.name}</Card.Title>
+      <Card.Title>
+        {activity.name} <MdEdit onClick={editMode} />
+      </Card.Title>
       <ListGroup variant="flush">
         <ListGroup.Item>Description: {activity.description}</ListGroup.Item>
         <ListGroup.Item>
