@@ -42,6 +42,12 @@ const query = graphql`
                 title
               }
             }
+            invitedEvents: guestGroupToInvitedEvents(first: 10) {
+              nodes {
+                id
+                name
+              }
+            }
           }
         }
       }

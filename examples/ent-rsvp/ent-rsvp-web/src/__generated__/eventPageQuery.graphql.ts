@@ -47,6 +47,12 @@ export type eventPageQueryResponse = {
                             readonly title: string | null;
                         }>;
                     };
+                    readonly invitedEvents: {
+                        readonly nodes: ReadonlyArray<{
+                            readonly id: string;
+                            readonly name: string;
+                        }>;
+                    };
                 };
             }>;
         };
@@ -106,6 +112,12 @@ query eventPageQuery(
               name
               emailAddress
               title
+            }
+          }
+          invitedEvents: guestGroupToInvitedEvents(first: 10) {
+            nodes {
+              id
+              name
             }
           }
           __typename
@@ -310,6 +322,13 @@ v8 = [
 ],
 v9 = [
   {
+    "kind": "Literal",
+    "name": "first",
+    "value": 10
+  }
+],
+v10 = [
+  {
     "alias": null,
     "args": null,
     "concreteType": "EventToGuestGroupsEdge",
@@ -372,6 +391,30 @@ v9 = [
             ],
             "storageKey": null
           },
+          {
+            "alias": "invitedEvents",
+            "args": (v9/*: any*/),
+            "concreteType": "GuestGroupToInvitedEventsConnection",
+            "kind": "LinkedField",
+            "name": "guestGroupToInvitedEvents",
+            "plural": false,
+            "selections": [
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "EventActivity",
+                "kind": "LinkedField",
+                "name": "nodes",
+                "plural": true,
+                "selections": [
+                  (v2/*: any*/),
+                  (v3/*: any*/)
+                ],
+                "storageKey": null
+              }
+            ],
+            "storageKey": "guestGroupToInvitedEvents(first:10)"
+          },
           (v6/*: any*/)
         ],
         "storageKey": null
@@ -381,13 +424,6 @@ v9 = [
     "storageKey": null
   },
   (v7/*: any*/)
-],
-v10 = [
-  {
-    "kind": "Literal",
-    "name": "first",
-    "value": 10
-  }
 ],
 v11 = [
   {
@@ -430,7 +466,7 @@ return {
             "kind": "LinkedField",
             "name": "__Event_guestGroups_connection",
             "plural": false,
-            "selections": (v9/*: any*/),
+            "selections": (v10/*: any*/),
             "storageKey": null
           }
         ],
@@ -458,7 +494,7 @@ return {
           (v3/*: any*/),
           {
             "alias": null,
-            "args": (v10/*: any*/),
+            "args": (v9/*: any*/),
             "concreteType": "EventToEventActivitiesConnection",
             "kind": "LinkedField",
             "name": "eventActivities",
@@ -468,7 +504,7 @@ return {
           },
           {
             "alias": null,
-            "args": (v10/*: any*/),
+            "args": (v9/*: any*/),
             "filters": null,
             "handle": "connection",
             "key": "Event_eventActivities",
@@ -482,7 +518,7 @@ return {
             "kind": "LinkedField",
             "name": "guestGroups",
             "plural": false,
-            "selections": (v9/*: any*/),
+            "selections": (v10/*: any*/),
             "storageKey": "guestGroups(first:100)"
           },
           {
@@ -500,7 +536,7 @@ return {
     ]
   },
   "params": {
-    "cacheID": "40fc957d2895d40a1e18ded5448e7c87",
+    "cacheID": "30538752ea812564d31c4340f29f8b8e",
     "id": null,
     "metadata": {
       "connection": [
@@ -526,9 +562,9 @@ return {
     },
     "name": "eventPageQuery",
     "operationKind": "query",
-    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          inviteAllGuests\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n          __typename\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    guestGroups(first: 100) {\n      edges {\n        node {\n          id\n          invitationName\n          guests {\n            rawCount\n            nodes {\n              id\n              name\n              emailAddress\n              title\n            }\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query eventPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n    name\n    eventActivities(first: 10) {\n      rawCount\n      edges {\n        cursor\n        node {\n          id\n          name\n          description\n          startTime\n          endTime\n          location\n          inviteAllGuests\n          address {\n            id\n            street\n            city\n            state\n            zipCode\n            apartment\n          }\n          __typename\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    guestGroups(first: 100) {\n      edges {\n        node {\n          id\n          invitationName\n          guests {\n            rawCount\n            nodes {\n              id\n              name\n              emailAddress\n              title\n            }\n          }\n          invitedEvents: guestGroupToInvitedEvents(first: 10) {\n            nodes {\n              id\n              name\n            }\n          }\n          __typename\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = 'd3722ab7e75e752ffa515ba6e11be694';
+(node as any).hash = '05684241b452da19f1ed14d086336f07';
 export default node;

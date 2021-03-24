@@ -97,6 +97,14 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
     ));
   };
 
+  const renderInvitedEvents = (guestGroup) => {
+    return guestGroup.invitedEvents.nodes.map((event, i) => (
+      <Fragment key={i}>
+        <div>{event.name}</div>
+      </Fragment>
+    ));
+  };
+
   const onDelete = (e, guestGroup) => {
     setCurrentDeletedGuestGroup(guestGroup);
     setShowDeleteModal(true);
@@ -176,6 +184,31 @@ function EventsPage(arg: { props: eventPageQueryResponse; reloadData }) {
             eventID={event.id}
             setShowModal={setShowDeleteModal}
           />
+        </Container>
+      </Tab>
+      <Tab eventKey="invites" title="Invites">
+        <Container>
+          <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th>invitation name</th>
+                <th>count</th>
+                <th>guests</th>
+                <th>events invited</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {event.guestGroups.edges.map((guestGroupEdge, i) => (
+                <tr key={i}>
+                  <td>{guestGroupEdge.node.invitationName}</td>
+                  <td>{guestGroupEdge.node.guests.rawCount}</td>
+                  <td>{renderGuestGroup(guestGroupEdge.node)}</td>
+                  <td>{renderInvitedEvents(guestGroupEdge.node)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         </Container>
       </Tab>
     </Tabs>
