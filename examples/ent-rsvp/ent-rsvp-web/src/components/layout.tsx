@@ -6,22 +6,37 @@ import { useSession } from "../../src/session";
 
 interface args {
   allowLoggedout?: boolean;
+  allowGuest?: boolean;
   children?: any;
 }
 
 export default function Layout(props: args) {
   const [session, loading] = useSession();
   const router = useRouter();
-  useEffect(() => {
-    if (props.allowLoggedout) {
-      return;
-    }
-    if (!loading && !session) {
+  const goLogin = () => {
+    console.log("gologincalled");
+    if (router.pathname !== "login") {
       router.push("/login");
     }
-  }, [loading, session, props.allowLoggedout]);
+  };
+  useEffect(() => {
+    console.log("start", loading, session);
+    if (props.allowLoggedout || loading) {
+      return;
+    }
+    if (!loading && !session?.viewer) {
+      goLogin();
+      return;
+    }
 
-  if (loading && !props.allowLoggedout) {
+    console.log("vewer", session.viewer.guest);
+    if (session.viewer.guest !== null && props.allowGuest) {
+      return;
+    }
+    goLogin();
+  }, [loading, session, props.allowLoggedout, props.allowGuest]);
+
+  if (loading) {
     return <Fragment>Loading...</Fragment>;
   }
   return <Container className="p-3">{props.children}</Container>;

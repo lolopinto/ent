@@ -11,7 +11,6 @@ import {
   EditEventActivityRsvpStatusActionBase,
   EditEventActivityRsvpStatusInput,
   EventActivityRsvpStatusInput,
-  getEventActivityRsvpStatusInputValues,
 } from "src/ent/event_activity/actions/generated/edit_event_activity_rsvp_status_action_base";
 import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
 import DeleteGuestDataAction from "src/ent/guest_data/actions/delete_guest_data_action";

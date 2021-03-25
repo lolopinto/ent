@@ -37,7 +37,7 @@ export function useSession(): [null | LoggedinCreds, boolean] {
     }
     const creds = localStorage.getItem(LOGGED_IN_CREDS);
     if (creds) {
-      setCreds(creds);
+      setCreds(JSON.parse(creds));
     }
     setLoading(false);
   });

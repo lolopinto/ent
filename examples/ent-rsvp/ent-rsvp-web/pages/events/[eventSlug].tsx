@@ -19,7 +19,7 @@ import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
 import Table from "react-bootstrap/Table";
 import Modal from "react-bootstrap/Modal";
-import { Form } from "react-bootstrap";
+import Form from "react-bootstrap/Form";
 import Link from "next/link";
 import Col from "react-bootstrap/Col";
 import guestGroupCreate from "../../src/mutations/guestGroupCreate";
@@ -38,6 +38,7 @@ import eventActivityCreate from "../../src/mutations/eventActivityCreate";
 import eventActivityDelete from "../../src/mutations/eventActivityDelete";
 import eventActivityAddInvite from "../../src/mutations/eventActivityAddInvite";
 import eventActivityRemoveInvite from "../../src/mutations/eventActivityRemoveInvite";
+import Address from "../../src/components/address";
 
 const environment = createEnvironment();
 
@@ -711,24 +712,6 @@ function EventActivity({ activity, reloadData, event }) {
   const [editedActivity, setEditedActivity] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  function renderAddress() {
-    const address = activity.address;
-    if (!address) {
-      return null;
-    }
-
-    return (
-      <Fragment>
-        <div>
-          {address.street} {address.apartment}
-        </div>
-        <div>
-          {address.city}, {address.state} {address.zipCode}
-        </div>
-      </Fragment>
-    );
-  }
-
   function editMode() {
     const edited: Activity = {
       name: activity.name,
@@ -864,7 +847,9 @@ function EventActivity({ activity, reloadData, event }) {
             </ListGroup.Item>
           )}
           <ListGroup.Item>Location: {activity.location}</ListGroup.Item>
-          <ListGroup.Item>{renderAddress()}</ListGroup.Item>
+          <ListGroup.Item>
+            <Address activity={activity} />
+          </ListGroup.Item>
           <ListGroup.Item>
             Invite all guests: {activity.inviteAllGuests ? "Yes" : "No"}
           </ListGroup.Item>

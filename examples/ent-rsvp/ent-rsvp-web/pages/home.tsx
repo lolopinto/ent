@@ -52,7 +52,7 @@ function Events(arg: { props: homeQueryResponse; environment: Environment }) {
   const { props, environment } = arg;
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   if (!props) {
-    return <>{"Logged in! Loading"}</>;
+    return <>{"Logged in! Loading..."}</>;
   }
 
   console.log(props);

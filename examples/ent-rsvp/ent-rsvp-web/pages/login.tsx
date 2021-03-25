@@ -11,10 +11,10 @@ export default function LoginPage() {
   const [session, loading] = useSession();
   const router = useRouter();
   useEffect(() => {
-    if (session) {
+    if (session && session?.viewer?.user) {
       router.push("/home");
     }
-  });
+  }, [session]);
 
   if (loading) {
     return "Loading...";

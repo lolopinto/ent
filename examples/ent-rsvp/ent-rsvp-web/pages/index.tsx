@@ -19,7 +19,7 @@ export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    if (session) {
+    if (session && session?.viewer?.user) {
       router.push("/home");
     }
   });
