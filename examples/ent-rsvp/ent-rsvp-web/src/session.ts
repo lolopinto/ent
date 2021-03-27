@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
-
+import { useLocalStorage } from "react-use";
 export const LOGGED_IN_CREDS = "logged_in_creds";
 
 interface Viewer {
   guest: {
     id: string;
+    // not really null but nullable because gql
+    emailAddress: string | null;
   } | null;
   user: {
     id: string;
@@ -16,31 +17,17 @@ interface LoggedinCreds {
   viewer: Viewer;
 }
 
-export const SetLoggedInCreds = (token: string, viewer: Viewer) => {
-  if (typeof localStorage === "undefined") {
-    console.error(`tried to set token ${token} when localStorage is undefined`);
-  } else {
-    const creds = {
-      token,
-      viewer,
-    };
-    localStorage.setItem(LOGGED_IN_CREDS, JSON.stringify(creds));
-  }
-};
+export function useSession(): [
+  null | LoggedinCreds,
+  (t: string, v: Viewer) => void,
+  () => void,
+] {
+  const [creds, setCreds, clearSession] = useLocalStorage(LOGGED_IN_CREDS);
 
-export function useSession(): [null | LoggedinCreds, boolean] {
-  const [creds, setCreds] = useState(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    if (typeof localStorage === "undefined") {
-      return;
-    }
-    const creds = localStorage.getItem(LOGGED_IN_CREDS);
-    if (creds) {
-      setCreds(JSON.parse(creds));
-    }
-    setLoading(false);
-  });
+  const setCredsPublicAPI = (token: string, viewer: Viewer) => {
+    console.log(token, viewer);
+    setCreds({ token, viewer });
+  };
 
-  return [creds, loading];
+  return [creds as LoggedinCreds, setCredsPublicAPI, clearSession];
 }

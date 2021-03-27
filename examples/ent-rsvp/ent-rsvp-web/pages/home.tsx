@@ -51,11 +51,11 @@ function renderHome(args: homeArgs) {
 function Events(arg: { props: homeQueryResponse; environment: Environment }) {
   const { props, environment } = arg;
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  console.log(props);
   if (!props) {
     return <>{"Logged in! Loading..."}</>;
   }
 
-  console.log(props);
   const eventsConnection = props.viewer.user.events;
   const creatorID = props.viewer.user.id;
   const edges = eventsConnection.edges;

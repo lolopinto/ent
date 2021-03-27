@@ -15,6 +15,7 @@ export type authGuestMutationResponse = {
         readonly viewer: {
             readonly guest: {
                 readonly id: string;
+                readonly emailAddress: string | null;
             } | null;
             readonly user: {
                 readonly id: string;
@@ -38,6 +39,7 @@ mutation authGuestMutation(
     viewer {
       guest {
         id
+        emailAddress
       }
       user {
         id
@@ -56,15 +58,13 @@ var v0 = [
     "name": "input"
   }
 ],
-v1 = [
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "id",
-    "storageKey": null
-  }
-],
+v1 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "id",
+  "storageKey": null
+},
 v2 = [
   {
     "alias": null,
@@ -95,7 +95,16 @@ v2 = [
             "kind": "LinkedField",
             "name": "guest",
             "plural": false,
-            "selections": (v1/*: any*/),
+            "selections": [
+              (v1/*: any*/),
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "emailAddress",
+                "storageKey": null
+              }
+            ],
             "storageKey": null
           },
           {
@@ -105,7 +114,9 @@ v2 = [
             "kind": "LinkedField",
             "name": "user",
             "plural": false,
-            "selections": (v1/*: any*/),
+            "selections": [
+              (v1/*: any*/)
+            ],
             "storageKey": null
           }
         ],
@@ -140,14 +151,14 @@ return {
     "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "38a5c370e997c72ab83089a20199c44c",
+    "cacheID": "3197fed2c8e6c999f35091e8805f1259",
     "id": null,
     "metadata": {},
     "name": "authGuestMutation",
     "operationKind": "mutation",
-    "text": "mutation authGuestMutation(\n  $input: AuthGuestInput!\n) {\n  authGuest(input: $input) {\n    viewer {\n      guest {\n        id\n      }\n      user {\n        id\n      }\n    }\n    token\n  }\n}\n"
+    "text": "mutation authGuestMutation(\n  $input: AuthGuestInput!\n) {\n  authGuest(input: $input) {\n    viewer {\n      guest {\n        id\n        emailAddress\n      }\n      user {\n        id\n      }\n    }\n    token\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = 'fd065e2ae292552615c259823ef6be17';
+(node as any).hash = 'fabed21ee31eee105f8204480957003c';
 export default node;

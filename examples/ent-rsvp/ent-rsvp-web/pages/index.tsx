@@ -8,6 +8,7 @@ import Login from "../src/components/login";
 import Register from "../src/components/register";
 import { useSession } from "../src/session";
 import { useRouter } from "next/router";
+import Spinner from "react-bootstrap/Spinner";
 
 const environment = createEnvironment();
 
@@ -15,17 +16,17 @@ export default function Index() {
   const [loginVisible, setLoginVisible] = useState(true);
   const [registerVisible, setRegisterVisible] = useState(false);
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
-  const [session, loading] = useSession();
+  const [loading, setLoading] = useState(true);
+  const [session] = useSession();
+
   const router = useRouter();
 
   useEffect(() => {
+    setLoading(false);
     if (session && session?.viewer?.user) {
       router.push("/home");
     }
-  });
-  if (loading) {
-    return "Loading...";
-  }
+  }, [session]);
 
   function toggle(event) {
     setLoginVisible(!loginVisible);
@@ -61,6 +62,17 @@ export default function Index() {
     setLoginVisible(true);
     setRegisterVisible(false);
     setShowLoginSuccess(true);
+  }
+
+  if (loading || session?.viewer?.user) {
+    // still loading and figuring things out
+    return (
+      <Layout allowLoggedout={true}>
+        <Spinner animation="border" role="status">
+          <span className="sr-only">Loading...</span>
+        </Spinner>
+      </Layout>
+    );
   }
 
   return (

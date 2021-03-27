@@ -1,5 +1,4 @@
-import { graphql, commitMutation } from "react-relay";
-import { Environment, PayloadError } from "relay-runtime";
+import { graphql } from "react-relay";
 import {
   UserCreateInput,
   userCreateMutationResponse,

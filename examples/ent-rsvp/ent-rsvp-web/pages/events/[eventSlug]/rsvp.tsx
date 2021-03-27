@@ -23,6 +23,7 @@ import guestEdit from "../../../src/mutations/guestEdit";
 import eventActivityRsvp from "../../../src/mutations/eventActivityRsvpStatusEdit";
 import { Button } from "react-bootstrap";
 import Link from "next/link";
+import { useSession } from "../../../src/session";
 
 const environment = createEnvironment();
 
@@ -30,35 +31,53 @@ export default function Rsvp() {
   const router = useRouter();
   const [eventSlug, setEventSlug] = useState(null);
   const [showError, setShowError] = useState(false);
+  const [session, setSession, clearSession] = useSession();
 
   useEffect(() => {
-    if (router.query.eventSlug && router.query.email && router.query.code) {
-      setEventSlug(router.query.eventSlug);
-
-      authGuest(
-        environment,
-        {
-          code: router.query.code as string,
-          emailAddress: router.query.email as string,
-        },
-        (response, errors) => {
-          if (errors) {
-            console.error(errors);
-            setShowError(true);
-            return;
-          }
-          console.log("valid!");
-        },
-      );
+    console.log(session);
+    if (!session?.viewer.guest || !router.query.email) {
+      return;
     }
-  }, [router.query.eventSlug, router.query.email, router.query.code]);
+    // wrong email
+    if (session.viewer.guest.emailAddress != router.query.email) {
+      clearSession();
+    }
+  }, [router.query.email, session]);
+
+  useEffect(() => {
+    if (session?.viewer?.guest) {
+      return;
+    }
+    if (!router.query.eventSlug || !router.query.email || !router.query.code) {
+      return;
+    }
+    authGuest(
+      environment,
+      {
+        code: router.query.code as string,
+        emailAddress: router.query.email as string,
+      },
+      (response, errors) => {
+        if (errors) {
+          console.error(errors);
+          setShowError(true);
+          return;
+        }
+        setSession(response.authGuest.token, response.authGuest.viewer);
+      },
+    );
+  }, [router.query.eventSlug, router.query.email, router.query.code, session]);
+
+  useEffect(() => {
+    setEventSlug(router.query.eventSlug);
+  }, [router.query.eventSlug]);
 
   return (
     <Layout allowGuest={true}>
       <Alert show={showError} variant="danger">
         There was an error logging in
       </Alert>
-      {eventSlug ? (
+      {eventSlug && session?.viewer?.guest ? (
         <QueryRenderer<rsvpQueryOp>
           environment={environment}
           query={query}
@@ -101,8 +120,6 @@ function renderRsvpPage(args: homeArgs) {
 }
 
 function RsvpPage(arg: { props: rsvpPageQueryResponse; reloadData }) {
-  console.log(arg.props);
-
   const activities = arg.props.viewer.guest.guestGroup.invitedActivities.nodes;
 
   const guests = arg.props.viewer.guest.guestGroup.guests.nodes;

@@ -5,12 +5,14 @@ import Button from "react-bootstrap/Button";
 import "bootstrap/dist/css/bootstrap.min.css";
 import authUser from "../mutations/authUser";
 import { useRouter } from "next/router";
+import { useSession } from "../session";
 
 export default function Login({ visible, environment }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [validated, setValidated] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [session, setSession, clearSession] = useSession();
   const router = useRouter();
 
   function handleSubmit(event) {
@@ -34,6 +36,8 @@ export default function Login({ visible, environment }) {
             setShowError(true);
             return;
           }
+          setSession(response.authUser.token, response.authUser.viewer);
+
           // redirect home after successful login.
           router.push("/home");
         },
