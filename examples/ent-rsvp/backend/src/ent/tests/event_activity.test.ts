@@ -2,6 +2,7 @@ import {
   EventActivity,
   GuestData,
   EventActivityToAttendingQuery,
+  GuestToAttendingEventsQuery,
 } from "src/ent";
 import { DB, IDViewer } from "@lolopinto/ent";
 import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
@@ -413,6 +414,23 @@ describe("rsvps", () => {
     });
     expect(dr).toEqual("shellfish");
 
+    // check inverse edge
+    const guestID = edges2[0].id2;
+
+    let inverseEdges2 = await GuestToAttendingEventsQuery.query(
+      new IDViewer(guestID),
+      guestID,
+    ).queryEdges();
+
+    expect(inverseEdges2.length).toEqual(1);
+
+    const dr2 = await edges2[0].dietaryRestrictions({
+      getViewer() {
+        return activity.viewer;
+      },
+    });
+    expect(dr2).toEqual("shellfish");
+
     let edge = edges[0];
     expect(edge.data).toBeDefined();
 
@@ -427,7 +445,6 @@ describe("rsvps", () => {
       {
         eventActivity: activity,
         guests: guests,
-        dietaryRestrictions: "shellfish",
       },
     );
 

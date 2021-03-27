@@ -45,6 +45,7 @@ export type rsvpPageQueryResponse = {
                                 readonly node: {
                                     readonly id: string;
                                 };
+                                readonly dietaryRestrictions: string | null;
                             }>;
                         };
                         readonly declined: {
@@ -107,6 +108,7 @@ query rsvpPageQuery(
                 node {
                   id
                 }
+                dietaryRestrictions
               }
             }
             declined: guestToDeclinedEvents {
@@ -337,6 +339,13 @@ v6 = {
                   "plural": false,
                   "selections": (v2/*: any*/),
                   "storageKey": null
+                },
+                {
+                  "alias": null,
+                  "args": null,
+                  "kind": "ScalarField",
+                  "name": "dietaryRestrictions",
+                  "storageKey": null
                 }
               ],
               "storageKey": null
@@ -465,14 +474,14 @@ return {
     ]
   },
   "params": {
-    "cacheID": "589d39dda9dfa66754f050bdebafd8b1",
+    "cacheID": "f21e4a3b0ce860c1fc89f3e8dd1a4ecd",
     "id": null,
     "metadata": {},
     "name": "rsvpPageQuery",
     "operationKind": "query",
-    "text": "query rsvpPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n  }\n  viewer {\n    guest {\n      guestGroup {\n        invitedActivities: guestGroupToInvitedEvents(first: 100) {\n          nodes {\n            id\n            name\n            description\n            startTime\n            endTime\n            location\n            event {\n              id\n            }\n            address {\n              id\n              street\n              city\n              state\n              zipCode\n              apartment\n            }\n          }\n        }\n        guests {\n          nodes {\n            id\n            name\n            emailAddress\n            title\n            attending: guestToAttendingEvents {\n              edges {\n                node {\n                  id\n                }\n              }\n            }\n            declined: guestToDeclinedEvents {\n              nodes {\n                id\n              }\n            }\n          }\n        }\n        id\n      }\n      id\n    }\n  }\n}\n"
+    "text": "query rsvpPageQuery(\n  $slug: String!\n) {\n  event(slug: $slug) {\n    id\n  }\n  viewer {\n    guest {\n      guestGroup {\n        invitedActivities: guestGroupToInvitedEvents(first: 100) {\n          nodes {\n            id\n            name\n            description\n            startTime\n            endTime\n            location\n            event {\n              id\n            }\n            address {\n              id\n              street\n              city\n              state\n              zipCode\n              apartment\n            }\n          }\n        }\n        guests {\n          nodes {\n            id\n            name\n            emailAddress\n            title\n            attending: guestToAttendingEvents {\n              edges {\n                node {\n                  id\n                }\n                dietaryRestrictions\n              }\n            }\n            declined: guestToDeclinedEvents {\n              nodes {\n                id\n              }\n            }\n          }\n        }\n        id\n      }\n      id\n    }\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = '4e44c131fa5011f3df13521315799c1c';
+(node as any).hash = 'c7c7179c0f2e21005fee06deef34ff06';
 export default node;

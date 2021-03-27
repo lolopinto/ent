@@ -40,8 +40,7 @@ const query = graphql`
                   node {
                     id
                   }
-                  # TODO this needs to be in the inverse...
-                  #                  dietaryRestrictions
+                  dietaryRestrictions
                 }
               }
               declined: guestToDeclinedEvents {

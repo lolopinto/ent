@@ -158,6 +158,7 @@ type GuestToAttendingEventsConnection implements Connection {
 type GuestToAttendingEventsEdge implements Edge {
   node: EventActivity!
   cursor: String!
+  dietaryRestrictions: String
 }
 
 type GuestToDeclinedEventsConnection implements Connection {
