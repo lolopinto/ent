@@ -1,33 +1,14 @@
 import { GraphQLScalarType, GraphQLError } from "graphql";
 import { Kind, ValueNode } from "graphql/language";
 import { DateTime } from "luxon";
+import { parseDate } from "../../core/date";
 
 // Time refers to a Timestamp or Date scalar
 
 function parseValue(input: any): Date {
-  let dt: DateTime;
-  if (typeof input === "number") {
-    dt = DateTime.fromMillis(input);
-  } else if (typeof input === "string") {
-    dt = DateTime.fromISO(input);
-    if (!dt.isValid) {
-      let ms = Date.parse(input);
-      if (ms === NaN) {
-        throw new GraphQLError(`invalid input for type Time ${input}`);
-      }
-      dt = DateTime.fromMillis(ms);
-    }
-  } else if (input instanceof Date) {
-    return input;
-  } else if (input instanceof DateTime) {
-    dt = input;
-  } else {
-    throw new GraphQLError(`invalid input for type Time ${input}`);
-  }
-  if (!dt.isValid) {
-    throw new GraphQLError(`invalid input for type Time ${input}`);
-  }
-  return dt.toJSDate();
+  return parseDate(input, (msg: string) => {
+    return new GraphQLError(msg);
+  }).toJSDate();
 }
 
 // Date or Timestamp

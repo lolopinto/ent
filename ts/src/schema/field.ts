@@ -5,7 +5,6 @@ import {
   FieldOptions,
   PolymorphicOptions,
   ForeignKey,
-  FieldEdge,
 } from "./schema";
 import { snakeCase } from "snake-case";
 
@@ -230,11 +229,15 @@ export class TimestampField extends BaseField implements Field {
     }
   }
 
-  format(val: Date): any {
-    // don't format this way if with timeone
+  format(val: any): any {
+    // TODO eventually change this to use parseDate() in core/date.ts
+    if (typeof val === "number") {
+      val = new Date(val);
+    }
     if (this.withTimezone) {
       return val;
     }
+
     return val.toISOString();
   }
 }

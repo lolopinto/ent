@@ -229,7 +229,7 @@ function randomEmail(): string {
   return `test+${rand}@email.com`;
 }
 
-test.only("empty", async () => {
+test("empty", async () => {
   const viewer = new LoggedOutViewer();
   const user = new User(viewer, "1", {});
 
