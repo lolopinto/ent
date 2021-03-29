@@ -167,43 +167,19 @@ test("insert with incorrect resolver", async () => {
   ]);
 });
 
-test("setEdgeTypeInGroup", async () => {
+describe("setEdgeTypeInGroup", () => {
   const edgeTypes = ["edge1", "edge2", "edge3"];
+  let user1, user2: User;
   let m = new Map<string, string>();
-  for (const edgeType of edgeTypes) {
-    m.set(edgeType + "Enum", edgeType);
-  }
 
-  await createEdgeRows(edgeTypes);
-  const [user1, user2] = await Promise.all([createUser(), createUser()]);
+  beforeEach(async () => {
+    for (const edgeType of edgeTypes) {
+      m.set(edgeType + "Enum", edgeType);
+    }
 
-  for (const edgeType of edgeTypes) {
-    const edge = await loadEdgeForID2({
-      id1: user1.id,
-      id2: user2.id,
-      edgeType,
-      ctr: AssocEdge,
-    });
-    expect(edge).toBeUndefined();
-  }
-
-  // TODO should be able to do empty map here
-  const builder = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
-
-  // let's manually do edge1 and then we'll set separate edges...
-  builder.orchestrator.addOutboundEdge(user2.id, "edge1", user2.nodeType);
-  await builder.saveX();
-
-  const edge = await loadEdgeForID2({
-    id1: user1.id,
-    id2: user2.id,
-    edgeType: "edge1",
-    ctr: AssocEdge,
+    await createEdgeRows(edgeTypes);
+    [user1, user2] = await Promise.all([createUser(), createUser()]);
   });
-  expect(edge).toBeDefined();
-  expect(edge?.id1).toBe(user1.id);
-  expect(edge?.id2).toBe(user2.id);
-  expect(edge?.edgeType).toBe("edge1");
 
   async function verifyEdges(edgeTypes: string[], edgeSet: string) {
     const edges = await Promise.all(
@@ -231,19 +207,99 @@ test("setEdgeTypeInGroup", async () => {
     }
   }
 
-  for (const edgeType of edgeTypes) {
+  test("base case", async () => {
+    for (const edgeType of edgeTypes) {
+      const edge = await loadEdgeForID2({
+        id1: user1.id,
+        id2: user2.id,
+        edgeType,
+        ctr: AssocEdge,
+      });
+      expect(edge).toBeUndefined();
+    }
+
+    // TODO should be able to do empty map here
+    const builder = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
+
+    // let's manually do edge1 and then we'll set separate edges...
+    builder.orchestrator.addOutboundEdge(user2.id, "edge1", user2.nodeType);
+    await builder.saveX();
+
+    const edge = await loadEdgeForID2({
+      id1: user1.id,
+      id2: user2.id,
+      edgeType: "edge1",
+      ctr: AssocEdge,
+    });
+    expect(edge).toBeDefined();
+    expect(edge?.id1).toBe(user1.id);
+    expect(edge?.id2).toBe(user2.id);
+    expect(edge?.edgeType).toBe("edge1");
+    expect(edge?.data).toBeNull();
+
+    for (const edgeType of edgeTypes) {
+      const builder2 = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
+      // set each edge
+      await setEdgeTypeInGroup(
+        builder2.orchestrator,
+        edgeType + "Enum",
+        user1.id,
+        user2.id,
+        "User",
+        m,
+      );
+      await builder2.saveX();
+      // verify said edge is set and others unset
+      await verifyEdges(edgeTypes, edgeType);
+    }
+  });
+
+  test("add data afterwards to existing edge", async () => {
+    const builder = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
+
+    // let's manually do edge1
+    builder.orchestrator.addOutboundEdge(user2.id, "edge1", user2.nodeType);
+    await builder.saveX();
+
     const builder2 = getUserEditBuilder(user1, new Map([["foo", "bar2"]]));
     // set each edge
     await setEdgeTypeInGroup(
       builder2.orchestrator,
-      edgeType + "Enum",
+      "edge1" + "Enum",
       user1.id,
       user2.id,
       "User",
       m,
     );
+    const edgeInputs = builder2.orchestrator.getInputEdges(
+      "edge1",
+      WriteOperation.Insert,
+    );
+    expect(edgeInputs.length).toBe(1);
+
+    edgeInputs.forEach((input) =>
+      builder2.orchestrator.addOutboundEdge(
+        input.id,
+        input.edgeType,
+        input.nodeType!,
+        {
+          data: "data!",
+        },
+      ),
+    );
+
     await builder2.saveX();
-    // verify said edge is set and others unset
-    await verifyEdges(edgeTypes, edgeType);
-  }
+
+    const edge = await loadEdgeForID2({
+      id1: user1.id,
+      id2: user2.id,
+      edgeType: "edge1",
+      ctr: AssocEdge,
+    });
+    expect(edge).toBeDefined();
+    expect(edge?.id1).toBe(user1.id);
+    expect(edge?.id2).toBe(user2.id);
+    expect(edge?.edgeType).toBe("edge1");
+    expect(edge?.data).toBe("data!");
+  });
 });

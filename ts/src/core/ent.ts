@@ -566,9 +566,6 @@ export class EdgeOperation implements DataOperation {
       // maybe when actions exist?
       fields["time"] = new Date().toISOString();
     }
-    if (edge.data) {
-      fields["data"] = edge.data;
-    }
 
     await createRow(
       q,
