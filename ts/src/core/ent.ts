@@ -638,6 +638,7 @@ export class EdgeOperation implements DataOperation {
         operation: this.options.operation,
         id1Placeholder: this.options.id2Placeholder,
         id2Placeholder: this.options.id1Placeholder,
+        dataPlaceholder: this.options.dataPlaceholder,
       },
     );
   }
@@ -657,6 +658,7 @@ export class EdgeOperation implements DataOperation {
         operation: this.options.operation,
         id1Placeholder: this.options.id2Placeholder,
         id2Placeholder: this.options.id1Placeholder,
+        dataPlaceholder: this.options.dataPlaceholder,
       },
     );
   }
