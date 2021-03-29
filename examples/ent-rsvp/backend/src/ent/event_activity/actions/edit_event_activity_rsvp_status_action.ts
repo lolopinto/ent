@@ -52,7 +52,9 @@ export default class EditEventActivityRsvpStatusAction extends EditEventActivity
         builder: EventActivityBuilder,
         input: EditEventActivityRsvpStatusInput,
       ): Promise<void | Changeset<Ent>[]> => {
+        console.log(input);
         if (!input.dietaryRestrictions || !builder.existingEnt) {
+          console("return early");
           return;
         }
         const ent = builder.existingEnt;
@@ -62,6 +64,7 @@ export default class EditEventActivityRsvpStatusAction extends EditEventActivity
           EdgeType.EventActivityToAttending,
           WriteOperation.Insert,
         );
+        console.log("edges", edges);
         return await Promise.all(
           edges.map(async (edge) => {
             if (edge.isBuilder(edge.id)) {
@@ -72,6 +75,7 @@ export default class EditEventActivityRsvpStatusAction extends EditEventActivity
               eventID: ent.eventID,
               dietaryRestrictions: dietaryRestrictions,
             });
+            console.log(action.builder);
             builder.addAttendingID(edge.id, {
               data: action.builder,
               time: edge.options?.time,

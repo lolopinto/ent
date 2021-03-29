@@ -29,5 +29,6 @@ export function useSession(): [
     setCreds({ token, viewer });
   };
 
+  // TODO really need to verify that this is still valid in some way
   return [creds as LoggedinCreds, setCredsPublicAPI, clearSession];
 }

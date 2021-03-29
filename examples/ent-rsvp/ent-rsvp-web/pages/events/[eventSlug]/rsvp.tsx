@@ -18,7 +18,7 @@ import Address from "../../../src/components/address";
 import Container from "react-bootstrap/Container";
 import Form from "react-bootstrap/Form";
 
-import { MdEdit, MdDelete } from "react-icons/md";
+import { MdEdit, MdRestaurantMenu } from "react-icons/md";
 import guestEdit from "../../../src/mutations/guestEdit";
 import eventActivityRsvp from "../../../src/mutations/eventActivityRsvpStatusEdit";
 import { Button } from "react-bootstrap";
@@ -177,27 +177,31 @@ function Time({ activity }) {
 
 function Guest({ guest, activity, reloadData }) {
   const [name, setName] = useState(guest.name);
-  const [editing, setEditing] = useState(false);
-  const [attending, setAttending] = useState(false);
-  const [declined, setDeclined] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editingDietaryRestrictions, setEditingDietaryRestrictions] = useState(
+    false,
+  );
+  const [dietaryRestrictions, setDietaryRestrictions] = useState("");
   const [attendingVariant, setAttendingVariant] = useState("outline-danger");
   const [declinedVariant, setDeclinedVariant] = useState("outline-danger");
 
   useEffect(() => {
-    let att = guest.attending.edges.some(
+    let attendingEdge = guest.attending.edges.find(
       (edge) => edge.node.id === activity.id,
     );
-    setAttending(att);
-    setAttendingVariant(att ? "danger" : "outline-danger");
+    setAttendingVariant(attendingEdge ? "danger" : "outline-danger");
 
-    let decl = guest.declined.nodes.some((node) => node.id === activity.id);
-    setDeclined(decl);
-    setDeclinedVariant(decl ? "danger" : "outline-danger");
-  }, [guest, attending]);
+    let declined = guest.declined.nodes.find((node) => node.id === activity.id);
+    setDeclinedVariant(declined ? "danger" : "outline-danger");
 
-  useEffect(() => {
+    if (attendingEdge) {
+      console.log(attendingEdge.dietaryRestrictions);
+      setDietaryRestrictions(attendingEdge.dietaryRestrictions || "");
+    }
+
     if (guest) {
       setName(guest.name);
+      //      setDietaryRestrictions(guest);
     }
   }, [guest]);
 
@@ -218,16 +222,22 @@ function Guest({ guest, activity, reloadData }) {
     );
   };
 
-  const cancel = (e) => {
+  const cancelNameChange = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setEditing(false);
+    setEditingName(false);
   };
 
-  const save = (e) => {
+  const cancelDietaryRestrictions = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setEditing(false);
+    setEditingDietaryRestrictions(false);
+  };
+
+  const saveName = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingName(false);
 
     guestEdit(
       environment,
@@ -244,9 +254,33 @@ function Guest({ guest, activity, reloadData }) {
     );
   };
 
+  const saveDietaryRestrictions = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingDietaryRestrictions(false);
+
+    console.log("saving", dietaryRestrictions);
+    // TODO save...
+    eventActivityRsvp(
+      environment,
+      {
+        eventActivityID: activity.id,
+        guestID: guest.id,
+        rsvpStatus: "ATTENDING",
+        dietaryRestrictions: dietaryRestrictions,
+      },
+      function (r, errs) {
+        if (errs && errs.length) {
+          return console.error(errs);
+        }
+        reloadData();
+      },
+    );
+  };
+
   return (
     <Container>
-      {editing && (
+      {editingName && (
         <Fragment>
           <Form>
             <Form.Group controlId="name">
@@ -261,18 +295,46 @@ function Guest({ guest, activity, reloadData }) {
             </Form.Group>
           </Form>
           <Link href="#">
-            <a onClick={cancel}>Cancel</a>
+            <a onClick={cancelNameChange}>Cancel</a>
           </Link>{" "}
           <Link href="#">
-            <a onClick={save}>Save</a>
+            <a onClick={saveName}>Save</a>
+          </Link>
+        </Fragment>
+      )}
+      {editingDietaryRestrictions && (
+        <Fragment>
+          <Form>
+            <Form.Group controlId="dietaryRestrictions">
+              <Form.Control
+                size="sm"
+                autoFocus
+                type="text"
+                value={dietaryRestrictions}
+                onChange={(e) => setDietaryRestrictions(e.target.value)}
+                required
+              />
+            </Form.Group>
+            <Form.Text>
+              Please let us know if you have any dietary restrictions.
+            </Form.Text>
+          </Form>
+          <Link href="#">
+            <a onClick={cancelDietaryRestrictions}>Cancel</a>
+          </Link>{" "}
+          <Link href="#">
+            <a onClick={saveDietaryRestrictions}>Save</a>
           </Link>
         </Fragment>
       )}
       <div>
-        {!editing && (
+        {!editingName && (
           <Fragment>
             {name}
-            <MdEdit onClick={() => setEditing(true)} />
+            <MdEdit onClick={() => setEditingName(true)} />
+            <MdRestaurantMenu
+              onClick={() => setEditingDietaryRestrictions(true)}
+            />
           </Fragment>
         )}
       </div>
