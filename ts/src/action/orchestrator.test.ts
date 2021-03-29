@@ -43,20 +43,21 @@ import {
 import { edgeDirection } from "./orchestrator";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
+import { snakeCase } from "snake-case";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
 beforeEach(async () => {
   // does assoc_edge_config loader need to be cleared?
-  const edges = ["edge"];
+  const edges = ["edge", "inverseEdge", "symmetricEdge"];
   for (const edge of edges) {
     await createRowForTest({
       tableName: "assoc_edge_config",
       fields: {
-        edge_table: `${edge}_table`,
-        symmetric_edge: false,
-        inverse_edge_type: null,
+        edge_table: `${snakeCase(edge)}_table`,
+        symmetric_edge: edge == "symmetricEdge",
+        inverse_edge_type: edge === "edge" ? "inverseEdge" : "edge",
         edge_type: edge,
         edge_name: "name",
       },
@@ -381,7 +382,7 @@ describe("inbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "2",
       id1Type: "User",
@@ -416,7 +417,7 @@ describe("inbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "2",
       id1Type: "User",
@@ -468,7 +469,7 @@ describe("inbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "2",
       id1Type: "User",
@@ -526,7 +527,7 @@ describe("inbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "2",
       id1Type: "User",
@@ -587,7 +588,7 @@ describe("inbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "2",
       id1Type: "User",
@@ -653,7 +654,7 @@ describe("inbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "2",
       id1Type: "User",
@@ -732,7 +733,7 @@ describe("inbound edge", () => {
     const edge = edges[0];
     expect(edge.id1).toBe(user.id);
     expect(edge.id2).toBe(newUser.id);
-    expect(edge.data).toBeDefined();
+    expect(edge.data).not.toBeNull();
 
     // we were able to resolve the id correctly and then set it as needed
     const sansaData = await loadRow({
@@ -743,6 +744,105 @@ describe("inbound edge", () => {
     expect(sansaData).toBeDefined();
     expect(sansaData?.first_name).toBe("Sansa");
     expect(sansaData?.last_name).toBe("Stark");
+
+    const inverseEdges = await loadEdges({
+      id1: newUser.id,
+      edgeType: "inverseEdge",
+    });
+    expect(inverseEdges.length).toBe(1);
+    expect(inverseEdges[0].data).toBe(edge.data);
+  });
+
+  test("id in data field symmetric edge", async () => {
+    // create user1
+    const builder = getCreateBuilder(
+      new Map([
+        ["FirstName", "Arya"],
+        ["LastName", "Stark"],
+      ]),
+    );
+    const user = await builder.saveX();
+
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.builder.orchestrator.addInboundEdge(
+      user.id,
+      "symmetricEdge",
+      "User",
+    );
+    action.triggers = [
+      {
+        changeset: (builder: SimpleBuilder<User>) => {
+          const derivedAction = new SimpleAction(
+            new LoggedOutViewer(),
+            new UserSchema(),
+            new Map([
+              ["FirstName", "Sansa"],
+              ["LastName", "Stark"],
+            ]),
+            WriteOperation.Insert,
+          );
+
+          // take the edges and write it as 3 edge
+          const edges = builder.orchestrator.getInputEdges(
+            "symmetricEdge",
+            WriteOperation.Insert,
+          );
+          edges.forEach((edge) => {
+            builder.orchestrator.addInboundEdge(
+              edge.id,
+              edge.edgeType,
+              edge.nodeType!,
+              {
+                data: derivedAction.builder,
+              },
+            );
+          });
+
+          return derivedAction.changeset();
+        },
+      },
+    ];
+
+    const newUser = await action.saveX();
+    expect(newUser).toBeInstanceOf(User);
+    if (!newUser) {
+      fail("impossible");
+    }
+
+    const edges = await loadEdges({
+      id1: user.id,
+      edgeType: "symmetricEdge",
+    });
+    expect(edges.length).toBe(1);
+    const edge = edges[0];
+    expect(edge.id1).toBe(user.id);
+    expect(edge.id2).toBe(newUser.id);
+    expect(edge.data).not.toBeNull();
+
+    // we were able to resolve the id correctly and then set it as needed
+    const sansaData = await loadRow({
+      tableName: "users",
+      fields: ["first_name", "last_name"],
+      clause: clause.Eq("id", edge.data),
+    });
+    expect(sansaData).toBeDefined();
+    expect(sansaData?.first_name).toBe("Sansa");
+    expect(sansaData?.last_name).toBe("Stark");
+
+    const inverseEdges = await loadEdges({
+      id1: newUser.id,
+      edgeType: "symmetricEdge",
+    });
+    expect(inverseEdges.length).toBe(1);
+    expect(inverseEdges[0].data).toBe(edge.data);
   });
 });
 
@@ -767,7 +867,8 @@ describe("outbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    // 3 ops, edit, outbound, inverse
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "1",
       id1Type: "User",
@@ -802,7 +903,8 @@ describe("outbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    // 3 ops, create, outbound, inverse
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: builder.placeholderID,
       id1Type: "",
@@ -854,7 +956,7 @@ describe("outbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "1",
       id1Type: "User",
@@ -912,7 +1014,8 @@ describe("outbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    // 3 ops, edit, outbound, inverse
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id2: "2",
       id2Type: "User",
@@ -973,7 +1076,8 @@ describe("outbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    // 3 ops, edit, outbound, inverse
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "1",
       id1Type: "User",
@@ -1039,7 +1143,8 @@ describe("outbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Delete),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    // 3 ops, edit, outbound, inverse
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id2: "2",
       id2Type: "User",
@@ -1126,10 +1231,107 @@ describe("outbound edge", () => {
       fields: ["first_name", "last_name"],
       clause: clause.Eq("id", edge.data),
     });
-    expect(sansaData).toBeDefined();
+    expect(sansaData).not.toBeNull();
     expect(sansaData?.first_name).toBe("Sansa");
     expect(sansaData?.last_name).toBe("Stark");
+
+    // load inverse
+    const inverseEdges = await loadEdges({
+      id1: user.id,
+      edgeType: "inverseEdge",
+    });
+    expect(inverseEdges.length).toBe(1);
+    const inverseEdge = inverseEdges[0];
+    expect(inverseEdge.data).toBe(edge.data);
   });
+});
+
+test("id in data field symmetric edge", async () => {
+  // create user1
+  const builder = getCreateBuilder(
+    new Map([
+      ["FirstName", "Arya"],
+      ["LastName", "Stark"],
+    ]),
+  );
+  const user = await builder.saveX();
+
+  const action = new SimpleAction(
+    new LoggedOutViewer(),
+    new UserSchema(),
+    new Map([
+      ["FirstName", "Jon"],
+      ["LastName", "Snow"],
+    ]),
+    WriteOperation.Insert,
+  );
+  action.builder.orchestrator.addOutboundEdge(user.id, "symmetricEdge", "User");
+  action.triggers = [
+    {
+      changeset: (builder: SimpleBuilder<User>) => {
+        const derivedAction = new SimpleAction(
+          new LoggedOutViewer(),
+          new UserSchema(),
+          new Map([
+            ["FirstName", "Sansa"],
+            ["LastName", "Stark"],
+          ]),
+          WriteOperation.Insert,
+        );
+
+        // take the edges and write it as 3 edge
+        const edges = builder.orchestrator.getInputEdges(
+          "symmetricEdge",
+          WriteOperation.Insert,
+        );
+        edges.forEach((edge) => {
+          builder.orchestrator.addOutboundEdge(
+            edge.id,
+            edge.edgeType,
+            edge.nodeType!,
+            {
+              data: derivedAction.builder,
+            },
+          );
+        });
+
+        return derivedAction.changeset();
+      },
+    },
+  ];
+
+  const newUser = await action.saveX();
+  expect(newUser).toBeInstanceOf(User);
+  if (!newUser) {
+    fail("impossible");
+  }
+
+  const edges = await loadEdges({
+    id1: user.id,
+    edgeType: "symmetricEdge",
+  });
+  expect(edges.length).toBe(1);
+  const edge = edges[0];
+  expect(edge.id1).toBe(user.id);
+  expect(edge.id2).toBe(newUser.id);
+  expect(edge.data).not.toBeNull();
+
+  // we were able to resolve the id correctly and then set it as needed
+  const sansaData = await loadRow({
+    tableName: "users",
+    fields: ["first_name", "last_name"],
+    clause: clause.Eq("id", edge.data),
+  });
+  expect(sansaData).toBeDefined();
+  expect(sansaData?.first_name).toBe("Sansa");
+  expect(sansaData?.last_name).toBe("Stark");
+
+  const inverseEdges = await loadEdges({
+    id1: newUser.id,
+    edgeType: "symmetricEdge",
+  });
+  expect(inverseEdges.length).toBe(1);
+  expect(inverseEdges[0].data).toBe(edge.data);
 });
 
 test("multi-ids then take and add to other edge", async () => {
@@ -1227,7 +1429,7 @@ describe("remove inbound edge", () => {
       builder.orchestrator.getInputEdges("edge", WriteOperation.Insert),
     ).toEqual([]);
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "2",
       edgeType: "edge",
@@ -1284,7 +1486,7 @@ describe("remove outbound edge", () => {
       ]),
     );
 
-    const edgeOp = await getEdgeOpFromBuilder(builder, 2, "edge");
+    const edgeOp = await getEdgeOpFromBuilder(builder, 3, "edge");
     expect(edgeOp.edgeInput).toStrictEqual({
       id1: "1",
       edgeType: "edge",
