@@ -1,4 +1,4 @@
-import { Ent, DataOperation, Viewer } from "../core/ent";
+import { Ent, DataOperation, ID, Viewer, Data } from "../core/ent";
 import {
   Action,
   Builder,
@@ -24,10 +24,16 @@ import {
 } from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { BaseEntSchema, Field } from "../schema";
-import { StringType, TimestampType, BooleanType } from "../schema/field";
+import {
+  StringType,
+  TimestampType,
+  BooleanType,
+  UUIDType,
+} from "../schema/field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { FakeLogger, EntCreationObserver } from "../testutils/fake_log";
 import { createRowForTest } from "../testutils/write";
+import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { BaseAction } from "./experimental_action";
 
 jest.mock("pg");
@@ -66,6 +72,7 @@ afterEach(() => {
   operations = [];
 });
 
+// TODO: why do we still need these???
 jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
 
 async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
@@ -143,8 +150,25 @@ class UserSchema extends BaseEntSchema {
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
     StringType({ name: "EmailAddress", nullable: true }),
+    UUIDType({ name: "AccountID", nullable: true }),
   ];
   ent = User;
+}
+
+class Account implements Ent {
+  id: ID;
+  accountID: string;
+  nodeType = "Account";
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
+    this.id = id;
+  }
+}
+
+class AccountSchema extends BaseEntSchema {
+  ent = Account;
+  fields: Field[] = [];
 }
 
 class ContactSchema extends BaseEntSchema {
@@ -474,8 +498,6 @@ test("list-with-complex-layers", async () => {
     WriteOperation.Edit,
     group,
   );
-  // this would ordinarily be built into the action...
-  // TODO: edge to self? that makes no sense
 
   action.triggers = [
     {
@@ -506,7 +528,6 @@ test("list-with-complex-layers", async () => {
           );
         }
 
-        // TODO this didn't make sense earlier so had to change this
         // workspaceMemeer
         // inbound edge from user -> group
         action.builder.orchestrator.addInboundEdge(
@@ -571,66 +592,62 @@ test("list-with-complex-layers", async () => {
     message,
   );
 
-  // QueryRecorder.validateQueryStructuresInTx(
-  //   [
-  //     {
-  //       tableName: "groups",
-  //       type: queryType.UPDATE,
-  //     },
-  //     {
-  //       tableName: "users",
-  //       type: queryType.INSERT,
-  //     },
-  //     {
-  //       tableName: "contacts",
-  //       type: queryType.INSERT,
-  //     },
-  //     {
-  //       tableName: "messages",
-  //       type: queryType.INSERT,
-  //     },
-  //     {
-  //       tableName: "workspaceMember_table",
-  //       type: queryType.INSERT,
-  //     },
-  //     {
-  //       tableName: "channelMember_table",
-  //       type: queryType.INSERT,
-  //     },
-  //     {
-  //       tableName: "channelMember_table",
-  //       type: queryType.INSERT,
-  //     },
-  //     {
-  //       tableName: "channelMember_table",
-  //       type: queryType.INSERT,
-  //     },
-  //     {
-  //       tableName: "selfContact_table",
-  //       type: queryType.INSERT,
-  //     },
-  //     {
-  //       tableName: "senderToMessage_table",
-  //       type: queryType.INSERT,
-  //     },
-  //     {
-  //       tableName: "recipientToMessage_table",
-  //       type: queryType.INSERT,
-  //     },
-  //   ],
-  //   [
-  //     {
-  //       //        tableName: "groups",
-  //       type: queryType.INSERT,
-  //     },
-  //   ],
-  // );
-  // TODO
-  // done????
-  FakeLogger.verifyLogs(4); // should be 4
-  //  console.log(FakeLogger.logs);
-  // TODO important and need to fix
-  // same double counting bug where the observer for Contact is being called twice
+  QueryRecorder.validateQueryStructuresInTx(
+    [
+      {
+        tableName: "users",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "contacts",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "messages",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "groups",
+        type: queryType.UPDATE,
+      },
+
+      {
+        tableName: "channelMember_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "channelMember_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "channelMember_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "selfContact_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "senderToMessage_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "recipientToMessage_table",
+        type: queryType.INSERT,
+      },
+      {
+        tableName: "workspaceMember_table",
+        type: queryType.INSERT,
+      },
+    ],
+    [
+      {
+        //        tableName: "groups",
+        type: queryType.INSERT,
+      },
+    ],
+  );
+  FakeLogger.verifyLogs(4);
   expect(FakeLogger.contains(`ent User created with id ${user?.id}`)).toBe(
     true,
   );
@@ -645,7 +662,7 @@ test("list-with-complex-layers", async () => {
   ).toBe(true);
 });
 
-test("siblings via bulk-action", async () => {
+test("nested siblings via bulk-action", async () => {
   const group = await createGroup();
   const inputs: { firstName: string; lastName: string }[] = [
     {
@@ -656,30 +673,39 @@ test("siblings via bulk-action", async () => {
       firstName: "Robb",
       lastName: "Stark",
     },
-    // {
-    //   firstName: "Sansa",
-    //   lastName: "Stark",
-    // },
-    // {
-    //   firstName: "Rickon",
-    //   lastName: "Stark",
-    // },
-    // {
-    //   firstName: "Bran",
-    //   lastName: "Stark",
-    // },
+    {
+      firstName: "Sansa",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Rickon",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Bran",
+      lastName: "Stark",
+    },
   ];
+  const accountAction = new SimpleAction(
+    new LoggedOutViewer(),
+    new AccountSchema(),
+    new Map([]),
+    WriteOperation.Insert,
+  );
+
   const actions: SimpleAction<Ent>[] = inputs.map(
     (input) =>
       new UserAction(
         new LoggedOutViewer(),
-        new Map([
+        new Map<string, any>([
           ["FirstName", input.firstName],
           ["LastName", input.lastName],
+          ["AccountID", accountAction.builder],
         ]),
         WriteOperation.Insert,
       ),
   );
+  actions.push(accountAction);
 
   class GroupBuilder extends SimpleBuilder<Group> {
     constructor(
@@ -716,16 +742,34 @@ test("siblings via bulk-action", async () => {
   );
 
   const action = BaseAction.bulkAction(group, GroupBuilder, ...actions);
-  const res = await action.saveX();
-  //  console.log(res);
+  await action.saveX();
+
   const ents = await Promise.all(actions.map((action) => action.editedEnt()));
-  //  console.log(ents);
+  const users = ents.slice(0, inputs.length);
+  expect(users.length).toBe(inputs.length);
+  const account = ents[inputs.length];
+  const message = ents[inputs.length + 1];
+  expect(account).toBeInstanceOf(Account);
+  expect(message).toBeInstanceOf(Message);
+
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
+    const user = users[i];
+    expect(user).not.toBeNull();
+    if (!user) {
+      fail("impossicant");
+    }
+    expect(user).toBeInstanceOf(User);
+
+    expect(input.firstName).toBe(user["data"].first_name);
+    expect(input.lastName).toBe(user["data"].last_name);
+    expect(user["data"].account_id).toBe(account?.id);
+  }
+
+  if (!message) {
+    fail("impossicant");
+  }
+
+  expect(message["data"].sender).toBe(users[0]?.id);
+  expect(message["data"].to).toBe(users[1]?.id);
 });
-
-// TODO still need to fix https://github.com/lolopinto/ent/issues/51
-
-// TODO need to figure out what the issue with importGuests and if it was different from this...
-// If so, recreate
-
-// disabling observers didn't work
-// TODO: next completely flatten and see what happens
