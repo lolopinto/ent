@@ -53,7 +53,7 @@ export class {{$builder}} implements {{useImport "Builder"}}<{{$node}}> {
     action: {{.Node}}Action,
     public readonly existingEnt?: {{$node}} | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
     this.input = action.getInput();
 
     this.orchestrator = new {{useImport "Orchestrator"}}({
