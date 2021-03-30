@@ -434,7 +434,7 @@ test("complex-based-with-dependencies", async () => {
 // this is the join a slack workspace and autojoin channels flow
 // this also creates a contact for the user
 // combines the slack + social contact management app flows into one just for complicated-ness
-test.only("list-with-complex-layers", async () => {
+test("list-with-complex-layers", async () => {
   async function fetchUserName() {
     return {
       firstName: "Sansa",
@@ -626,8 +626,9 @@ test.only("list-with-complex-layers", async () => {
   //   ],
   // );
   // TODO
-  FakeLogger.verifyLogs(5); // should be 4
-  console.log(FakeLogger.logs);
+  // done????
+  FakeLogger.verifyLogs(4); // should be 4
+  //  console.log(FakeLogger.logs);
   // TODO important and need to fix
   // same double counting bug where the observer for Contact is being called twice
   expect(FakeLogger.contains(`ent User created with id ${user?.id}`)).toBe(
@@ -725,3 +726,6 @@ test("siblings via bulk-action", async () => {
 
 // TODO need to figure out what the issue with importGuests and if it was different from this...
 // If so, recreate
+
+// disabling observers didn't work
+// TODO: next completely flatten and see what happens

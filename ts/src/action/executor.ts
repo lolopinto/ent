@@ -3,8 +3,10 @@ import { Changeset, Executor } from "../action";
 import { Builder } from "../action";
 import Graph from "graph-data-structure";
 import { OrchestratorOptions } from "./orchestrator";
-import util from "util";
 
+// interface executorOptions<T extends Ent> extends OrchestratorOptions<T> {
+//   disableObservers?: boolean;
+// }
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
@@ -46,11 +48,14 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
     };
   }
 
-  private executed: boolean;
+  //  private executed: boolean;
   async executeObservers() {
-    if (this.executed) {
-      return;
-    }
+    // if (this.options?.disableObservers) {
+    //   //      return;
+    // }
+    // if (this.executed) {
+    //   //      return;
+    // }
     const action = this.options?.action;
     if (!this.options || !action || !action.observers) {
       return;
@@ -61,7 +66,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
         observer.observe(builder, action.getInput());
       }),
     );
-    this.executed = true;
+    //    this.executed = true;
   }
 }
 
@@ -127,8 +132,30 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
       }
     };
 
+    let ourChangesets = new Map<ID, Changeset<Ent>>();
+    changesets.forEach((c) => ourChangesets.set(c.placeholderID, c));
     // create a new changeset representing the source changeset with the simple executor
     // this is probably what's causing the observer issue
+    // graph.addNode(placeholderID.toString());
+    // //    this.changesetMap.set(placeholderID.toString(), this);
+
+    // for (let [key, builder] of dependencies) {
+    //   graph.addEdge(
+    //     placeholderID.toString(),
+    //     builder.placeholderID.toString(),
+    //     1,
+    //   );
+    // }
+
+    //    changesets.forEach((c) => impl(c));
+
+    // let opts: executorOptions<T> | undefined;
+    // if (this.options) {
+    //   opts = {
+    //     disableObservers: true,
+    //     ...this.options,
+    //   };
+    // }
     impl({
       viewer: this.viewer,
       placeholderID: this.placeholderID,
@@ -152,7 +179,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     let remainOps: Set<DataOperation> = new Set();
     let seenExec: Map<ID, Executor<Ent>> = new Map();
 
-    console.log(graph.nodes());
+    //    console.log(graph.nodes());
     graph.nodes().forEach((node) => {
       // TODO throw if we see any undefined because we're trying to write with incomplete data
       let c = this.changesetMap.get(node);
@@ -184,7 +211,15 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
           remainOps.add(op);
         }
       }
-      this.executors.push(executor);
+
+      // only add executors that are part of the changeset to what should be executed directly here
+      // or self.
+      if (
+        ourChangesets.has(c.placeholderID) ||
+        c.placeholderID === placeholderID
+      ) {
+        this.executors.push(executor);
+      }
     });
     //    console.log(this.executors.length);
     // get all the operations and put node operations first
@@ -236,12 +271,12 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     return null;
   }
 
-  private executed: boolean;
+  //  private executed: boolean;
   async executeObservers() {
-    if (this.executed) {
-      return;
-    }
-    console.log(this.executors);
+    // if (this.executed) {
+    //   return;
+    // }
+    //    console.log(this.executors);
     await Promise.all(
       this.executors.map((executor) => {
         if (!executor.executeObservers) {
@@ -250,6 +285,6 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
         return executor.executeObservers();
       }),
     );
-    this.executed = true;
+    //    this.executed = true;
   }
 }
