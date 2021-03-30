@@ -28,9 +28,9 @@ interface EntBuilder<T extends Ent> extends Builder<T> {
 export class BaseAction<T extends Ent> implements Action<T> {
   builder: EntBuilder<T>;
   private input: {};
-  triggers: Trigger<T>[] = [];
-  observers: Observer<T>[] = [];
-  validators: Validator<T>[] = [];
+  triggers: Trigger<Ent>[] = [];
+  observers: Observer<Ent>[] = [];
+  validators: Validator<Ent>[] = [];
 
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
@@ -72,14 +72,14 @@ export class BaseAction<T extends Ent> implements Action<T> {
   static bulkAction<T extends Ent>(
     ent: T,
     builderCtr: BuilderConstructor<T>,
-    ...actions: Action<T>[]
+    ...actions: Action<Ent>[]
   ): BaseAction<T> {
     let action = new BaseAction(ent.viewer, builderCtr, {
       existingEnt: ent,
     });
     action.triggers = [
       {
-        changeset: (builder: Builder<T>, _input): Promise<Changeset<T>>[] => {
+        changeset: (builder: Builder<T>, _input): Promise<Changeset<Ent>>[] => {
           return actions.map((action) => action.changeset());
         },
       },
