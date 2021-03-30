@@ -12,4 +12,4 @@ const mutation = graphql`
 export default commit<
   { eventID: string; file: File },
   importGuestsMutationResponse
->(mutation);
+>(mutation, true);

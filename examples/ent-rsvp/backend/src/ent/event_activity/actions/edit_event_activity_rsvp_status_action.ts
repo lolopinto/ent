@@ -54,7 +54,7 @@ export default class EditEventActivityRsvpStatusAction extends EditEventActivity
       ): Promise<void | Changeset<Ent>[]> => {
         console.log(input);
         if (!input.dietaryRestrictions || !builder.existingEnt) {
-          console("return early");
+          console.log("return early");
           return;
         }
         const ent = builder.existingEnt;

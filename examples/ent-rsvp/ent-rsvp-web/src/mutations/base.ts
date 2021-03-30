@@ -1,10 +1,12 @@
 import { commitMutation } from "react-relay";
 import { Environment, PayloadError, GraphQLTaggedNode } from "relay-runtime";
 
-export default function commit<TInput, TResponse>(mutation: GraphQLTaggedNode) {
+export default function commit<TInput, TResponse>(
+  mutation: GraphQLTaggedNode,
+  disableInputWrapping?: boolean,
+) {
   return function (
     environment: Environment,
-
     input: TInput,
     callback?: (
       r: TResponse,
@@ -13,7 +15,7 @@ export default function commit<TInput, TResponse>(mutation: GraphQLTaggedNode) {
   ) {
     return commitMutation(environment, {
       mutation,
-      variables: { input },
+      variables: disableInputWrapping ? input : { input },
       onCompleted: (response: TResponse, errors) => {
         if (callback) {
           Promise.resolve(callback(response, errors));

@@ -42,7 +42,7 @@ export class GuestBuilder implements Builder<Guest> {
     action: GuestAction,
     public readonly existingEnt?: Guest | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Guest`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({

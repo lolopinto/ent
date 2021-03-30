@@ -39,7 +39,7 @@ export class GuestGroupBuilder implements Builder<GuestGroup> {
     action: GuestGroupAction,
     public readonly existingEnt?: GuestGroup | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-GuestGroup`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({

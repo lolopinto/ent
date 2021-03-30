@@ -39,7 +39,7 @@ export class GuestDataBuilder implements Builder<GuestData> {
     action: GuestDataAction,
     public readonly existingEnt?: GuestData | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-GuestData`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({

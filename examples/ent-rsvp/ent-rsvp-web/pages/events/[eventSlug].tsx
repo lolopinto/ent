@@ -605,6 +605,7 @@ function ImportGuests(props: {
     e.preventDefault();
     e.stopPropagation();
 
+    console.log(eventID, file);
     importGuests(environment, { eventID, file }, function (r, errs) {
       if (errs && errs.length) {
         return console.error("error importing guests");

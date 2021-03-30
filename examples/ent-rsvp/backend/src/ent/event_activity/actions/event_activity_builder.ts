@@ -44,7 +44,7 @@ export class EventActivityBuilder implements Builder<EventActivity> {
     action: EventActivityAction,
     public readonly existingEnt?: EventActivity | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-EventActivity`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({

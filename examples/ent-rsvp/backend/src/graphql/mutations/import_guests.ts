@@ -22,6 +22,7 @@ export class ImportGuestResolver {
     @gqlArg("eventID", { type: GraphQLID }) eventID: ID,
     @gqlArg("file", { type: gqlFileUpload }) file: Promise<FileUpload>,
   ) {
+    console.log(file, eventID);
     const file2 = await file;
 
     const event = await Event.loadX(context.getViewer(), eventID);

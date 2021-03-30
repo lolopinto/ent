@@ -43,7 +43,7 @@ export class AddressBuilder implements Builder<Address> {
     action: AddressAction,
     public readonly existingEnt?: Address | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Address`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({
