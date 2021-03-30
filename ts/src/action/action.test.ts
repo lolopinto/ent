@@ -55,7 +55,8 @@ function getUserEditBuilder(
 
 async function createUser(): Promise<User> {
   const builder = getUserCreateBuilder();
-  return await builder.saveX();
+  await builder.saveX();
+  return await builder.editedEntX();
 }
 
 async function createEdgeRows(edges: string[]) {
@@ -83,7 +84,8 @@ beforeEach(async () => {
 test("simple", async () => {
   const builder = getUserCreateBuilder();
 
-  let ent = await builder.saveX();
+  await builder.saveX();
+  let ent = await builder.editedEntX();
   QueryRecorder.validateQueriesInTx(
     [
       {

@@ -153,12 +153,10 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
 
   async save(): Promise<void> {
     await saveBuilder(this);
-    await this.editedEnt();
   }
 
   async saveX(): Promise<void> {
     await saveBuilderX(this);
-    await this.orchestrator.editedEntX();
   }
 
   async valid(): Promise<boolean> {
@@ -226,11 +224,9 @@ export class SimpleAction<T extends Ent> implements Action<T> {
     return null;
   }
 
-  async saveX(): Promise<T | void> {
+  async saveX(): Promise<T> {
     await saveBuilderX(this.builder);
-    if (this.builder.operation !== WriteOperation.Delete) {
-      return await this.builder.orchestrator.editedEntX();
-    }
+    return await this.builder.orchestrator.editedEntX();
   }
 
   async editedEnt(): Promise<T | null> {

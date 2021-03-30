@@ -229,7 +229,8 @@ test("customresolver", async () => {
     NodeType.FakeUser,
   );
 
-  user = await builder.saveX();
+  await builder.saveX();
+  user = await builder.editedEntX();
 
   const [
     friendsEdge,

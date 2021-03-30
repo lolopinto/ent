@@ -74,7 +74,8 @@ function getUserEditBuilder(
 
 async function createUser(): Promise<User> {
   const builder = getUserCreateBuilder();
-  return await builder.saveX();
+  await builder.saveX();
+  return await builder.editedEntX();
 }
 
 async function createEdgeRows(edges: string[]) {
@@ -363,7 +364,9 @@ describe("loadEnt(X)", () => {
   }
 
   test("loadEntX. not visible privacy. with context", async () => {
-    const user = await getBuilder().saveX();
+    const b = getBuilder();
+    await b.saveX();
+    const user = await b.editedEntX();
     try {
       await loadEntX(ctx.getViewer(), user.id, {
         ent: User2,
@@ -379,7 +382,9 @@ describe("loadEnt(X)", () => {
   });
 
   test("loadEntX. not visible privacy. no context", async () => {
-    const user = await getBuilder().saveX();
+    const b = getBuilder();
+    await b.saveX();
+    const user = await b.editedEntX();
     try {
       await loadEntX(noCtxV, user.id, {
         ent: User2,
@@ -395,7 +400,9 @@ describe("loadEnt(X)", () => {
   });
 
   test("retrieving garbage", async () => {
-    const user = await getBuilder().saveX();
+    const b = getBuilder();
+    await b.saveX();
+    const user = await b.editedEntX();
     try {
       await loadEntX(noCtxV, user.id, {
         ent: User2,
