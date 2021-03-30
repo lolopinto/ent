@@ -109,7 +109,11 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     action?: Action<T> | undefined,
   ) {
     // create dynamic placeholder
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    // TODO: do we need to use this as the node when there's an existingEnt
+    // same for generated builders.
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-${
+      schema.ent?.name
+    }`;
 
     if (this.operation === WriteOperation.Insert) {
       for (const [key, value] of fields) {
@@ -143,14 +147,26 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     return await this.orchestrator.editedEnt();
   }
 
-  async save(): Promise<T | null> {
-    await saveBuilder(this);
-    return await this.editedEnt();
+  async editedEntX(): Promise<T> {
+    return await this.orchestrator.editedEntX();
   }
 
-  async saveX(): Promise<T> {
+  async save(): Promise<void> {
+    await saveBuilder(this);
+    await this.editedEnt();
+  }
+
+  async saveX(): Promise<void> {
     await saveBuilderX(this);
-    return await this.orchestrator.editedEntX();
+    await this.orchestrator.editedEntX();
+  }
+
+  async valid(): Promise<boolean> {
+    return await this.orchestrator.valid();
+  }
+
+  async validX(): Promise<void> {
+    return await this.orchestrator.validX();
   }
 }
 

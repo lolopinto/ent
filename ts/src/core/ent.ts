@@ -464,8 +464,9 @@ export class EditNodeOperation implements DataOperation {
       }
       let ent = executor.resolveValue(value.placeholderID);
       if (!ent) {
+        //        console.log(executor);
         throw new Error(
-          `couldn't resolve field ${fieldName} with value ${value.placeholderID}`,
+          `couldn't resolve field \`${fieldName}\` with value ${value.placeholderID}`,
         );
       }
       fields[fieldName] = ent.id;

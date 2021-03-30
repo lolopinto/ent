@@ -3,13 +3,14 @@ import { Changeset, Executor } from "../action";
 import { Builder } from "../action";
 import Graph from "graph-data-structure";
 import { OrchestratorOptions } from "./orchestrator";
+import util from "util";
 
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
   constructor(
     private viewer: Viewer,
-    private placeholderID: ID,
+    public placeholderID: ID,
     private ent: EntConstructor<T>,
     private operations: DataOperation[],
     private options?: OrchestratorOptions<T>,
@@ -17,7 +18,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
   private lastOp: DataOperation | undefined;
   private createdEnt: T | null = null;
 
-  resolveValue(val: ID): T | null {
+  resolveValue(val: ID): Ent | null {
     if (val === this.placeholderID && val !== undefined) {
       return this.createdEnt;
     }
@@ -45,7 +46,11 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
     };
   }
 
+  private executed: boolean;
   async executeObservers() {
+    if (this.executed) {
+      return;
+    }
     const action = this.options?.action;
     if (!this.options || !action || !action.observers) {
       return;
@@ -56,6 +61,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
         observer.observe(builder, action.getInput());
       }),
     );
+    this.executed = true;
   }
 }
 
@@ -75,34 +81,35 @@ function getCreatedEnt<T extends Ent>(
 
 export class ComplexExecutor<T extends Ent> implements Executor<T> {
   private idx: number = 0;
-  private mapper: Map<ID, T> = new Map();
+  private mapper: Map<ID, Ent> = new Map();
   private lastOp: DataOperation | undefined;
   private allOperations: DataOperation[] = [];
-  private changesetMap: Map<string, Changeset<T>> = new Map();
-  private nodeOpMap: Map<DataOperation, Changeset<T>> = new Map();
-  private executors: Executor<T>[] = [];
+  private changesetMap: Map<string, Changeset<Ent>> = new Map();
+  private nodeOpMap: Map<DataOperation, Changeset<Ent>> = new Map();
+  private executors: Executor<Ent>[] = [];
 
   constructor(
     private viewer: Viewer,
-    private placeholderID: ID,
+    public placeholderID: ID,
     private ent: EntConstructor<T>,
     operations: DataOperation[],
     dependencies: Map<ID, Builder<T>>,
     changesets: Changeset<T>[],
     private options?: OrchestratorOptions<T>,
   ) {
+    //    console.log("sss", placeholderID, operations, dependencies, changesets);
     let graph = Graph();
 
-    const impl = (c: Changeset<T>) => {
+    const impl = (c: Changeset<Ent>) => {
       this.changesetMap.set(c.placeholderID.toString(), c);
 
       graph.addNode(c.placeholderID.toString());
       if (c.dependencies) {
         for (let [key, builder] of c.dependencies) {
-          // dependency should go first...
+          // graph goes from changeset -> dependencies so?
           graph.addEdge(
-            builder.placeholderID.toString(),
             c.placeholderID.toString(),
+            builder.placeholderID.toString(),
             1,
           );
         }
@@ -113,11 +120,15 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
         // if so, need to call this outside the loop once
         c.changesets.forEach((c2) => {
           impl(c2);
+
+          //          c2.executor();
+          //          for (op)
         });
       }
     };
 
     // create a new changeset representing the source changeset with the simple executor
+    // this is probably what's causing the observer issue
     impl({
       viewer: this.viewer,
       placeholderID: this.placeholderID,
@@ -139,11 +150,19 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     // TODO: this logic can be rewritten to be smarter and probably not need a set
     let nodeOps: Set<DataOperation> = new Set();
     let remainOps: Set<DataOperation> = new Set();
+    let seenExec: Map<ID, Executor<Ent>> = new Map();
 
+    console.log(graph.nodes());
     graph.nodes().forEach((node) => {
       // TODO throw if we see any undefined because we're trying to write with incomplete data
       let c = this.changesetMap.get(node);
       if (!c) {
+        // hmm this doesn't break anything... we should just confirm that this works and have a nicetohave to fix this
+        // this isn't even the issue for this case.
+        // so the issue I found in ent-rsvp is different...
+        //        console.log("non-existent", node);
+        // this case is different...
+        //        return;
         throw new Error(
           `trying to do a write with incomplete mutation data ${node}`,
         );
@@ -152,6 +171,11 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
       // does this work if we're going to call this to figure out the executor?
       // we need to override this for ourselves and instead of doing executor(), it does list like we have in ComplexExecutor...
       let executor = c.executor();
+      if (seenExec.get(executor.placeholderID)) {
+        //        console.log("seenExec", executor);
+        return;
+      }
+      seenExec.set(executor.placeholderID, executor);
       for (let op of executor) {
         if (op.returnedEntRow) {
           nodeOps.add(op);
@@ -162,8 +186,10 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
       }
       this.executors.push(executor);
     });
+    //    console.log(this.executors.length);
     // get all the operations and put node operations first
     this.allOperations = [...nodeOps, ...remainOps];
+    //    console.log(util.inspect(this.allOperations, true, 3));
   }
 
   [Symbol.iterator]() {
@@ -172,7 +198,9 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
 
   private handleCreatedEnt() {
     let c = this.nodeOpMap.get(this.lastOp!);
+    //    console.log(this.lastOp, c);
     if (!c) {
+      //      console.log("no changeset", this.lastOp);
       // nothing to do here
       return;
     }
@@ -199,15 +227,21 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     };
   }
 
-  resolveValue(val: ID): T | null {
+  resolveValue(val: ID): Ent | null {
     let ent = this.mapper.get(val);
     if (ent) {
       return ent;
     }
+    //    console.log(this.mapper);
     return null;
   }
 
+  private executed: boolean;
   async executeObservers() {
+    if (this.executed) {
+      return;
+    }
+    console.log(this.executors);
     await Promise.all(
       this.executors.map((executor) => {
         if (!executor.executeObservers) {
@@ -216,5 +250,6 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
         return executor.executeObservers();
       }),
     );
+    this.executed = true;
   }
 }
