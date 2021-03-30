@@ -566,9 +566,6 @@ export class EdgeOperation implements DataOperation {
       // maybe when actions exist?
       fields["time"] = new Date().toISOString();
     }
-    if (edge.data) {
-      fields["data"] = edge.data;
-    }
 
     await createRow(
       q,
@@ -638,6 +635,7 @@ export class EdgeOperation implements DataOperation {
         operation: this.options.operation,
         id1Placeholder: this.options.id2Placeholder,
         id2Placeholder: this.options.id1Placeholder,
+        dataPlaceholder: this.options.dataPlaceholder,
       },
     );
   }
@@ -657,6 +655,7 @@ export class EdgeOperation implements DataOperation {
         operation: this.options.operation,
         id1Placeholder: this.options.id2Placeholder,
         id2Placeholder: this.options.id1Placeholder,
+        dataPlaceholder: this.options.dataPlaceholder,
       },
     );
   }

@@ -188,13 +188,16 @@ async function modifyEdgeSet<T extends string>(
     ctr: AssocEdge,
     context: orchestrator.viewer.context,
   });
+  // always add the edge because the data field may be getting overwritten later on
+  // and we need to give that operation a chance to succeed
+  // TODO: can save a write here by checking in EdgeOperation and not doing this write if nothing
+  // has changed.
+  if (inputEnumValue === enumValue) {
+    orchestrator.addOutboundEdge(id2, edgeType, nodeType);
+  }
   if (edge) {
     if (enumValue !== inputEnumValue) {
       orchestrator.removeOutboundEdge(id2, edgeType);
-    }
-  } else {
-    if (inputEnumValue === enumValue) {
-      orchestrator.addOutboundEdge(id2, edgeType, nodeType);
     }
   }
 }

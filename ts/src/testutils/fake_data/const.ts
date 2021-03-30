@@ -24,7 +24,7 @@ export enum NodeType {
   FakeEvent = "event",
 }
 
-export const SymmetricEdges = new Set();
+export const SymmetricEdges = new Set<string>();
 SymmetricEdges.add(EdgeType.UserToFriends);
 
 export const InverseEdges = new Map<EdgeType, EdgeType>([
