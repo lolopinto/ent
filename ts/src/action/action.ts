@@ -31,7 +31,6 @@ export interface Builder<T extends Ent> {
 export interface Executor<T extends Ent>
   extends Iterable<DataOperation>,
     Iterator<DataOperation> {
-  placeholderID: ID;
   // this returns a non-privacy checked "ent"
   resolveValue(val: any): Ent | null;
   executeObservers?(): Promise<void>;
