@@ -361,6 +361,14 @@ const getCreateBuilder = (map: Map<string, any>) => {
   );
 };
 
+const createUser = async (map: Map<string, any>): Promise<User> => {
+  const builder = getCreateBuilder(map);
+
+  //  const
+  await builder.saveX();
+  return builder.editedEntX();
+};
+
 describe("inbound edge", () => {
   test("no options", async () => {
     const builder = getLoggedInBuilder();
@@ -667,13 +675,12 @@ describe("inbound edge", () => {
 
   test("id in data field with placeholder", async () => {
     // create user1
-    const builder = getCreateBuilder(
+    const user = await createUser(
       new Map([
         ["FirstName", "Arya"],
         ["LastName", "Stark"],
       ]),
     );
-    const user = await builder.saveX();
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
@@ -755,13 +762,12 @@ describe("inbound edge", () => {
 
   test("id in data field symmetric edge", async () => {
     // create user1
-    const builder = getCreateBuilder(
+    const user = await createUser(
       new Map([
         ["FirstName", "Arya"],
         ["LastName", "Stark"],
       ]),
     );
-    const user = await builder.saveX();
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
@@ -1157,13 +1163,12 @@ describe("outbound edge", () => {
 
   test("id in data field with placeholder", async () => {
     // create user1
-    const builder = getCreateBuilder(
+    const user = await createUser(
       new Map([
         ["FirstName", "Arya"],
         ["LastName", "Stark"],
       ]),
     );
-    const user = await builder.saveX();
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
@@ -1247,14 +1252,12 @@ describe("outbound edge", () => {
 });
 
 test("id in data field symmetric edge", async () => {
-  // create user1
-  const builder = getCreateBuilder(
+  const user = await createUser(
     new Map([
       ["FirstName", "Arya"],
       ["LastName", "Stark"],
     ]),
   );
-  const user = await builder.saveX();
 
   const action = new SimpleAction(
     new LoggedOutViewer(),

@@ -67,7 +67,8 @@ describe("custom edge", () => {
       EdgeType.UserToCustomEdge,
       NodeType.FakeUser,
     );
-    user1 = await builder.saveX();
+    await builder.saveX();
+    user1 = await builder.editedEntX();
   });
 
   test("ids", async () => {
@@ -426,7 +427,8 @@ class ChainTestQueryFilter {
             NodeType.FakeEvent,
           );
         }
-        return await builder.saveX();
+        await builder.saveX();
+        return await builder.editedEntX();
       }),
     );
 
