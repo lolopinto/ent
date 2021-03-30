@@ -762,12 +762,13 @@ describe("inbound edge", () => {
 
   test("id in data field symmetric edge", async () => {
     // create user1
-    const user = await createUser(
+    const builder = getCreateBuilder(
       new Map([
         ["FirstName", "Arya"],
         ["LastName", "Stark"],
       ]),
     );
+    const user = await builder.saveX();
 
     const action = new SimpleAction(
       new LoggedOutViewer(),
