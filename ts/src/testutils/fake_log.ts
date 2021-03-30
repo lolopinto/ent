@@ -6,8 +6,7 @@ export class FakeLogger {
   // more ideal is capturing all console.logs
   // we do it in golang for example
   // and will need this for production launch anyways
-  // TODO remake as private?
-  static logs: string[] = [];
+  private static logs: string[] = [];
 
   static log(line: string) {
     this.logs.push(line);
