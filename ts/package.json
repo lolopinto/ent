@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent",
-  "version": "0.0.81",
+  "version": "0.0.82",
   "description": "ent framework",
   "main": "index.js",
   "types": "index.d.ts",
@@ -61,7 +61,7 @@
     "test": "jest",
     "clean": "rm -rf dist",
     "prepare-code": "npm run clean && npm run compile && node src/setupPackage.js",
-    "actual-publish": "npm run prepare-code && npm publish dist"
+    "actual-publish": "npm run prepare-code && cd dist && npm publish --verbose --registry https://npm.pkg.github.com/ && cd .."
   },
   "bin": {
     "ent-custom-graphql": "./scripts/custom_graphql.js",
@@ -74,7 +74,7 @@
     "url": "git@github.com:lolopinto/ent.git"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
+    "registry": "https://npm.pkg.github.com"
   },
   "resolutions": {
     "graphql": "^15.3.0"
