@@ -85,7 +85,7 @@ export class Orchestrator<T extends Ent> {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap = new Map();
   private validatedFields: {} | null;
-  private changesets: Changeset<T>[] = [];
+  private changesets: Changeset<Ent>[] = [];
   private dependencies: Map<ID, Builder<T>> = new Map();
   private fieldsToResolve: string[] = [];
   private mainOp: DataOperation | null;
@@ -319,7 +319,7 @@ export class Orchestrator<T extends Ent> {
     // so running this first to build things up
     let triggers = action?.triggers;
     if (triggers) {
-      let triggerPromises: TriggerReturn<T>[] = [];
+      let triggerPromises: TriggerReturn[] = [];
 
       triggers.forEach((trigger) => {
         let c = trigger.changeset(builder, action!.getInput());
@@ -343,7 +343,7 @@ export class Orchestrator<T extends Ent> {
     await Promise.all(promises);
   }
 
-  private async triggers(triggerPromises: TriggerReturn<T>[]): Promise<void> {
+  private async triggers(triggerPromises: TriggerReturn[]): Promise<void> {
     // keep changesets to use later
     let changesets = await Promise.all(
       triggerPromises.map(async (promise) => {
@@ -564,11 +564,11 @@ export class EntChangeset<T extends Ent> implements Changeset<T> {
     public readonly ent: EntConstructor<T>,
     public operations: DataOperation[],
     public dependencies?: Map<ID, Builder<T>>,
-    public changesets?: Changeset<T>[],
+    public changesets?: Changeset<Ent>[],
     private options?: OrchestratorOptions<T>,
   ) {}
 
-  executor(): Executor<T> {
+  executor(): Executor {
     // TODO: write comment here similar to go
     // if we have dependencies but no changesets, we just need a simple
     // executor and depend on something else in the stack to handle this correctly

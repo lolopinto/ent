@@ -84,7 +84,7 @@ async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
 async function executeAction<T extends Ent, E = any>(
   action: Action<T>,
   name?: E,
-): Promise<Executor<T>> {
+): Promise<Executor> {
   const exec = await executor(action.builder);
   if (name !== undefined) {
     expect(exec).toBeInstanceOf(name);
@@ -94,7 +94,7 @@ async function executeAction<T extends Ent, E = any>(
 }
 
 async function executeOperations<T extends Ent>(
-  executor: Executor<T>,
+  executor: Executor,
   builder: Builder<T>,
 ): Promise<void> {
   const client = await DB.getInstance().getNewClient();
@@ -124,9 +124,7 @@ async function executeOperations<T extends Ent>(
   }
 }
 
-async function executor<T extends Ent>(
-  builder: Builder<T>,
-): Promise<Executor<T>> {
+async function executor<T extends Ent>(builder: Builder<T>): Promise<Executor> {
   const changeset = await builder.build();
   return changeset.executor();
 }
@@ -209,7 +207,7 @@ class MessageAction extends SimpleAction<Message> {
 
   triggers: Trigger<Message>[] = [
     {
-      changeset: (builder: SimpleBuilder<Message>): void => {
+      changeset: (builder: SimpleBuilder<Message>, _input: Data): void => {
         let sender = builder.fields.get("sender");
         let to = builder.fields.get("to");
 
