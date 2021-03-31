@@ -28,37 +28,32 @@ export interface Builder<T extends Ent> {
   editedEnt?(): Promise<T | null>;
 }
 
-export interface Executor<T extends Ent>
+export interface Executor
   extends Iterable<DataOperation>,
     Iterator<DataOperation> {
   // this returns a non-privacy checked "ent"
-  // TODO are we sure we want Executor with type-T
-  // and maybe only want resolveValue somehow??
-  // Executor needs to work on multiple types at once eventually...
-  resolveValue(val: any): T | null;
+  resolveValue(val: any): Ent | null;
   executeObservers?(): Promise<void>;
 }
 
 export interface Changeset<T extends Ent> {
-  executor(): Executor<T>;
+  executor(): Executor;
   viewer: Viewer;
   placeholderID: ID;
   ent: EntConstructor<T>;
-  changesets?: Changeset<T>[];
+  changesets?: Changeset<Ent>[];
   dependencies?: Map<ID, Builder<T>>;
 }
 
-export type TriggerReturn<T extends Ent> =
+export type TriggerReturn =
   | void
-  | Promise<
-      Changeset<T> | void | Changeset<T>[] | Changeset<T>[] | Changeset<T>
-    >
-  | Promise<Changeset<T>>[];
+  | Promise<Changeset<Ent> | void | Changeset<Ent>[] | Changeset<Ent>>
+  | Promise<Changeset<Ent>>[];
 
 export interface Trigger<T extends Ent> {
   // TODO: way in the future. detect any writes happening in changesets and optionally throw if configured to do so
   // can throw if it wants. not expected to throw tho.
-  changeset(builder: Builder<T>, input: Data): TriggerReturn<T>;
+  changeset(builder: Builder<T>, input: Data): TriggerReturn;
 }
 
 export interface Observer<T extends Ent> {

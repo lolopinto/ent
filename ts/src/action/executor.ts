@@ -5,7 +5,7 @@ import Graph from "graph-data-structure";
 import { OrchestratorOptions } from "./orchestrator";
 
 // private to ent
-export class ListBasedExecutor<T extends Ent> implements Executor<T> {
+export class ListBasedExecutor<T extends Ent> implements Executor {
   private idx: number = 0;
   constructor(
     private viewer: Viewer,
@@ -17,7 +17,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor<T> {
   private lastOp: DataOperation | undefined;
   private createdEnt: T | null = null;
 
-  resolveValue(val: ID): T | null {
+  resolveValue(val: ID): Ent | null {
     if (val === this.placeholderID && val !== undefined) {
       return this.createdEnt;
     }
@@ -73,14 +73,14 @@ function getCreatedEnt<T extends Ent>(
   return null;
 }
 
-export class ComplexExecutor<T extends Ent> implements Executor<T> {
+export class ComplexExecutor<T extends Ent> implements Executor {
   private idx: number = 0;
-  private mapper: Map<ID, T> = new Map();
+  private mapper: Map<ID, Ent> = new Map();
   private lastOp: DataOperation | undefined;
   private allOperations: DataOperation[] = [];
-  private changesetMap: Map<string, Changeset<T>> = new Map();
-  private nodeOpMap: Map<DataOperation, Changeset<T>> = new Map();
-  private executors: Executor<T>[] = [];
+  private changesetMap: Map<string, Changeset<Ent>> = new Map();
+  private nodeOpMap: Map<DataOperation, Changeset<Ent>> = new Map();
+  private executors: Executor[] = [];
 
   constructor(
     private viewer: Viewer,
@@ -93,7 +93,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
   ) {
     let graph = Graph();
 
-    const impl = (c: Changeset<T>) => {
+    const impl = (c: Changeset<Ent>) => {
       this.changesetMap.set(c.placeholderID.toString(), c);
 
       graph.addNode(c.placeholderID.toString());
@@ -109,13 +109,14 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
       }
 
       if (c.changesets) {
-        // TODO may not want this because of double-counting and may want each changeset's executor to handle this
-        // if so, need to call this outside the loop once
         c.changesets.forEach((c2) => {
           impl(c2);
         });
       }
     };
+
+    let localChangesets = new Map<ID, Changeset<Ent>>();
+    changesets.forEach((c) => localChangesets.set(c.placeholderID, c));
 
     // create a new changeset representing the source changeset with the simple executor
     impl({
@@ -140,17 +141,23 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     let nodeOps: Set<DataOperation> = new Set();
     let remainOps: Set<DataOperation> = new Set();
 
-    graph.nodes().forEach((node) => {
-      // TODO throw if we see any undefined because we're trying to write with incomplete data
+    let sorted = graph.topologicalSort(graph.nodes());
+    sorted.forEach((node) => {
       let c = this.changesetMap.get(node);
+
       if (!c) {
+        // phew. expect it to be handled somewhere else
+        // we can just skip it and expect the resolver to handle this correctly
+        // this means it's not a changeset that was created by this ent and can/will be handled elsewhere
+        if (dependencies.has(node)) {
+          return;
+        }
         throw new Error(
-          `trying to do a write with incomplete mutation data ${node}`,
+          `trying to do a write with incomplete mutation data ${node}. current node: ${placeholderID}`,
         );
       }
 
-      // does this work if we're going to call this to figure out the executor?
-      // we need to override this for ourselves and instead of doing executor(), it does list like we have in ComplexExecutor...
+      // get ordered list of ops
       let executor = c.executor();
       for (let op of executor) {
         if (op.returnedEntRow) {
@@ -160,7 +167,15 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
           remainOps.add(op);
         }
       }
-      this.executors.push(executor);
+
+      // only add executors that are part of the changeset to what should be tracked here
+      // or self.
+      if (
+        localChangesets.has(c.placeholderID) ||
+        c.placeholderID === placeholderID
+      ) {
+        this.executors.push(executor);
+      }
     });
     // get all the operations and put node operations first
     this.allOperations = [...nodeOps, ...remainOps];
@@ -199,7 +214,7 @@ export class ComplexExecutor<T extends Ent> implements Executor<T> {
     };
   }
 
-  resolveValue(val: ID): T | null {
+  resolveValue(val: ID): Ent | null {
     let ent = this.mapper.get(val);
     if (ent) {
       return ent;

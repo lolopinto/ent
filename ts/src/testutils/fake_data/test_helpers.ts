@@ -107,7 +107,8 @@ export async function createAllContacts(
           time: new Date(), // set time to advanceBy time
         },
       );
-      return await builder.saveX();
+      await builder.saveX();
+      return await builder.editedEntX();
     }),
   );
   expect(contacts.length).toBe(inputs.length);
@@ -206,5 +207,6 @@ export async function createTestEvent(
   });
   builder.orchestrator.addOutboundEdge(user.id, EdgeType.EventToHosts, "User");
 
-  return await builder.saveX();
+  await builder.saveX();
+  return await builder.editedEntX();
 }

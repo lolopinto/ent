@@ -95,7 +95,12 @@ describe("not all ents visible", () => {
           time: new Date(),
         },
       );
-      promises.push(builder.saveX());
+      promises.push(
+        (async function() {
+          await builder.saveX();
+          return builder.editedEntX();
+        })(),
+      );
     }
     users = await Promise.all(promises);
 

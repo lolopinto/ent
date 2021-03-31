@@ -1,7 +1,14 @@
-import { Ent, DataOperation, Viewer } from "../core/ent";
-import { Builder, Changeset, Executor, WriteOperation } from "../action";
+import { Ent, DataOperation, ID, Viewer, Data } from "../core/ent";
+import {
+  Action,
+  Builder,
+  Changeset,
+  Executor,
+  WriteOperation,
+  Trigger,
+  Observer,
+} from "../action";
 import * as action from "../action";
-import * as ent from "../core/ent";
 
 import DB from "../core/db";
 
@@ -17,10 +24,17 @@ import {
 } from "../testutils/builder";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { BaseEntSchema, Field } from "../schema";
-import { StringType, TimestampType, BooleanType } from "../schema/field";
+import {
+  StringType,
+  TimestampType,
+  BooleanType,
+  UUIDType,
+} from "../schema/field";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { FakeLogger, EntCreationObserver } from "../testutils/fake_log";
 import { createRowForTest } from "../testutils/write";
+import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
+import { BaseAction } from "./experimental_action";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -58,6 +72,7 @@ afterEach(() => {
   operations = [];
 });
 
+// TODO: why do we still need these???
 jest.spyOn(action, "saveBuilder").mockImplementation(saveBuilder);
 
 async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
@@ -67,9 +82,9 @@ async function saveBuilder<T extends Ent>(builder: Builder<T>): Promise<void> {
 }
 
 async function executeAction<T extends Ent, E = any>(
-  action: action.Action<T>,
+  action: Action<T>,
   name?: E,
-): Promise<Executor<T>> {
+): Promise<Executor> {
   const exec = await executor(action.builder);
   if (name !== undefined) {
     expect(exec).toBeInstanceOf(name);
@@ -79,7 +94,7 @@ async function executeAction<T extends Ent, E = any>(
 }
 
 async function executeOperations<T extends Ent>(
-  executor: Executor<T>,
+  executor: Executor,
   builder: Builder<T>,
 ): Promise<void> {
   const client = await DB.getInstance().getNewClient();
@@ -109,11 +124,23 @@ async function executeOperations<T extends Ent>(
   }
 }
 
-async function executor<T extends Ent>(
-  builder: Builder<T>,
-): Promise<Executor<T>> {
+async function executor<T extends Ent>(builder: Builder<T>): Promise<Executor> {
   const changeset = await builder.build();
   return changeset.executor();
+}
+
+async function createGroup() {
+  let groupID = QueryRecorder.newID();
+  let groupFields = {
+    id: groupID,
+    name: "group",
+  };
+  // need to create the group first
+  await createRowForTest({
+    tableName: "groups",
+    fields: groupFields,
+  });
+  return new Group(new LoggedOutViewer(), groupID, groupFields);
 }
 
 class UserSchema extends BaseEntSchema {
@@ -121,8 +148,25 @@ class UserSchema extends BaseEntSchema {
     StringType({ name: "FirstName" }),
     StringType({ name: "LastName" }),
     StringType({ name: "EmailAddress", nullable: true }),
+    UUIDType({ name: "AccountID", nullable: true }),
   ];
   ent = User;
+}
+
+class Account implements Ent {
+  id: ID;
+  accountID: string;
+  nodeType = "Account";
+  privacyPolicy = AlwaysAllowPrivacyPolicy;
+
+  constructor(public viewer: Viewer, id: ID, public data: Data) {
+    this.id = id;
+  }
+}
+
+class AccountSchema extends BaseEntSchema {
+  ent = Account;
+  fields: Field[] = [];
 }
 
 class ContactSchema extends BaseEntSchema {
@@ -161,9 +205,9 @@ class MessageAction extends SimpleAction<Message> {
     super(viewer, new MessageSchema(), fields, operation, existingEnt);
   }
 
-  triggers: action.Trigger<Message>[] = [
+  triggers: Trigger<Message>[] = [
     {
-      changeset: (builder: SimpleBuilder<Message>): void => {
+      changeset: (builder: SimpleBuilder<Message>, _input: Data): void => {
         let sender = builder.fields.get("sender");
         let to = builder.fields.get("to");
 
@@ -173,7 +217,7 @@ class MessageAction extends SimpleAction<Message> {
     },
   ];
 
-  observers: action.Observer<Message>[] = [new EntCreationObserver<Message>()];
+  observers: Observer<Message>[] = [new EntCreationObserver<Message>()];
 }
 
 class UserAction extends SimpleAction<User> {
@@ -188,7 +232,7 @@ class UserAction extends SimpleAction<User> {
     super(viewer, new UserSchema(), fields, operation, existingEnt);
   }
 
-  triggers: action.Trigger<User>[] = [
+  triggers: Trigger<User>[] = [
     {
       changeset: (
         builder: SimpleBuilder<User>,
@@ -218,7 +262,7 @@ class UserAction extends SimpleAction<User> {
     },
   ];
 
-  observers: action.Observer<User>[] = [new EntCreationObserver<User>()];
+  observers: Observer<User>[] = [new EntCreationObserver<User>()];
 }
 
 function randomEmail(): string {
@@ -242,7 +286,7 @@ test.only("empty", async () => {
   );
 
   let ent = await builder.save();
-  expect(ent).toBe(null);
+  expect(ent).toBeUndefined();
   // TODO for now it's the EditNodeOperation but we should skip it when no fields
   expect(operations.length).toBe(1);
 });
@@ -295,7 +339,7 @@ test("simple-one-op-no-created-ent", async () => {
 
   action.builder.orchestrator.addOutboundEdge(id2, "fake_edge", "user");
 
-  const exec = await executeAction(action);
+  const exec = await executeAction(action, ListBasedExecutor);
   let ent = await action.editedEnt();
   expect(ent).not.toBe(null);
   expect(exec.resolveValue(action.builder.placeholderID)).toStrictEqual(ent);
@@ -354,7 +398,7 @@ test("list-based-with-dependency", async () => {
     fail("should not have gotten here");
   } catch (e) {
     expect(e.message).toBe(
-      `couldn't resolve field user_id with value ${userBuilder.placeholderID}`,
+      `couldn't resolve field \`user_id\` with value ${userBuilder.placeholderID}`,
     );
     expect(operations.length).toBe(1);
   }
@@ -439,17 +483,8 @@ test("list-with-complex-layers", async () => {
   async function getInvitee(viewer: Viewer): Promise<User> {
     return new User(viewer, QueryRecorder.newID(), {});
   }
-  let groupID = QueryRecorder.newID();
-  let groupFields = {
-    id: groupID,
-    name: "group",
-  };
-  // need to create the group first
-  await createRowForTest({
-    tableName: "groups",
-    fields: groupFields,
-  });
-  const group = new Group(new LoggedOutViewer(), groupID, groupFields);
+
+  const group = await createGroup();
 
   let userAction: UserAction;
   let messageAction: SimpleAction<Message>;
@@ -461,12 +496,7 @@ test("list-with-complex-layers", async () => {
     WriteOperation.Edit,
     group,
   );
-  // this would ordinarily be built into the action...
-  action.builder.orchestrator.addInboundEdge(
-    group.id,
-    "workspaceMember",
-    "user",
-  );
+
   action.triggers = [
     {
       changeset: async (
@@ -486,14 +516,23 @@ test("list-with-complex-layers", async () => {
           ]),
           WriteOperation.Insert,
         );
+
         for (let channel of autoJoinChannels) {
-          // for extra credit make this
-          builder.orchestrator.addOutboundEdge(
+          // user -> channel edge (channel Member)
+          userAction.builder.orchestrator.addOutboundEdge(
             channel.id,
             "channelMember",
             "Channel",
           );
         }
+
+        // workspaceMemeer
+        // inbound edge from user -> group
+        action.builder.orchestrator.addInboundEdge(
+          userAction.builder,
+          "workspaceMember",
+          "user",
+        );
 
         messageAction = new MessageAction(
           builder.viewer,
@@ -554,10 +593,6 @@ test("list-with-complex-layers", async () => {
   QueryRecorder.validateQueryStructuresInTx(
     [
       {
-        tableName: "groups",
-        type: queryType.UPDATE,
-      },
-      {
         tableName: "users",
         type: queryType.INSERT,
       },
@@ -570,9 +605,10 @@ test("list-with-complex-layers", async () => {
         type: queryType.INSERT,
       },
       {
-        tableName: "workspaceMember_table",
-        type: queryType.INSERT,
+        tableName: "groups",
+        type: queryType.UPDATE,
       },
+
       {
         tableName: "channelMember_table",
         type: queryType.INSERT,
@@ -597,6 +633,10 @@ test("list-with-complex-layers", async () => {
         tableName: "recipientToMessage_table",
         type: queryType.INSERT,
       },
+      {
+        tableName: "workspaceMember_table",
+        type: queryType.INSERT,
+      },
     ],
     [
       {
@@ -605,9 +645,7 @@ test("list-with-complex-layers", async () => {
       },
     ],
   );
-  FakeLogger.verifyLogs(5); // should be 4
-  // TODO important and need to fix
-  // same double counting bug where the observer for Contact is being called twice
+  FakeLogger.verifyLogs(4);
   expect(FakeLogger.contains(`ent User created with id ${user?.id}`)).toBe(
     true,
   );
@@ -620,4 +658,116 @@ test("list-with-complex-layers", async () => {
   expect(
     FakeLogger.contains(`ent Contact created with id ${contact?.id}`),
   ).toBe(true);
+});
+
+test("nested siblings via bulk-action", async () => {
+  const group = await createGroup();
+  const inputs: { firstName: string; lastName: string }[] = [
+    {
+      firstName: "Arya",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Robb",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Sansa",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Rickon",
+      lastName: "Stark",
+    },
+    {
+      firstName: "Bran",
+      lastName: "Stark",
+    },
+  ];
+  const accountAction = new SimpleAction(
+    new LoggedOutViewer(),
+    new AccountSchema(),
+    new Map([]),
+    WriteOperation.Insert,
+  );
+
+  const actions: SimpleAction<Ent>[] = inputs.map(
+    (input) =>
+      new UserAction(
+        new LoggedOutViewer(),
+        new Map<string, any>([
+          ["FirstName", input.firstName],
+          ["LastName", input.lastName],
+          ["AccountID", accountAction.builder],
+        ]),
+        WriteOperation.Insert,
+      ),
+  );
+  actions.push(accountAction);
+
+  class GroupBuilder extends SimpleBuilder<Group> {
+    constructor(
+      viewer: Viewer,
+      operation: WriteOperation,
+      action: SimpleAction<Group>,
+      existingEnt?: Group,
+    ) {
+      super(
+        viewer,
+        new GroupSchema(),
+        new Map(),
+        operation,
+        existingEnt,
+        action,
+      );
+    }
+  }
+
+  let action1 = actions[0];
+  let action2 = actions[1];
+  actions.push(
+    new MessageAction(
+      group.viewer,
+      new Map<string, any>([
+        ["sender", action1.builder],
+        ["to", action2.builder],
+        ["message", `${inputs[0].firstName} has joined!`],
+        ["transient", true],
+        ["expiresAt", new Date().setTime(new Date().getTime() + 86400)],
+      ]),
+      WriteOperation.Insert,
+    ),
+  );
+
+  const action = BaseAction.bulkAction(group, GroupBuilder, ...actions);
+  await action.saveX();
+
+  const ents = await Promise.all(actions.map((action) => action.editedEnt()));
+  const users = ents.slice(0, inputs.length);
+  expect(users.length).toBe(inputs.length);
+  const account = ents[inputs.length];
+  const message = ents[inputs.length + 1];
+  expect(account).toBeInstanceOf(Account);
+  expect(message).toBeInstanceOf(Message);
+
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
+    const user = users[i];
+    expect(user).not.toBeNull();
+    if (!user) {
+      fail("impossicant");
+    }
+    expect(user).toBeInstanceOf(User);
+
+    expect(input.firstName).toBe(user["data"].first_name);
+    expect(input.lastName).toBe(user["data"].last_name);
+    expect(user["data"].account_id).toBe(account?.id);
+  }
+
+  if (!message) {
+    fail("impossicant");
+  }
+
+  expect(message["data"].sender).toBe(users[0]?.id);
+  expect(message["data"].to).toBe(users[1]?.id);
 });

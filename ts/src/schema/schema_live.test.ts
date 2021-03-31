@@ -8,7 +8,7 @@ import {
   DateType,
 } from "../schema/field";
 import { BaseEntSchema, Schema, Field } from "../schema";
-import { User, SimpleBuilder } from "../testutils/builder";
+import { User, SimpleAction } from "../testutils/builder";
 import {
   table,
   TempDB,
@@ -127,7 +127,7 @@ describe("timestamp", () => {
 
   test("standard", async () => {
     const date = new Date();
-    const builder = new SimpleBuilder(
+    const action = new SimpleAction(
       new LoggedOutViewer(),
       new UserSchema(),
       new Map([
@@ -135,7 +135,7 @@ describe("timestamp", () => {
         ["LastName", "Snow"],
       ]),
     );
-    const user = await builder.saveX();
+    const user = await action.saveX();
     const createdAt: Date = user.data.created_at;
     const updatedAt: Date = user.data.updated_at;
 
@@ -147,7 +147,7 @@ describe("timestamp", () => {
 
   test("no setTypeParser", async () => {
     const date = new Date();
-    const builder = new SimpleBuilder(
+    const action = new SimpleAction(
       new LoggedOutViewer(),
       new UserSchema(),
       new Map([
@@ -160,7 +160,7 @@ describe("timestamp", () => {
     const prevParser = pg.types.getTypeParser(pg.types.builtins.TIMESTAMP);
     pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, defaultTimestampParser);
 
-    const user = await builder.saveX();
+    const user = await action.saveX();
     const createdAt: Date = user.data.created_at;
     const updatedAt: Date = user.data.updated_at;
 
@@ -186,7 +186,7 @@ describe("timestamp", () => {
 
   test("no toISO formattting", async () => {
     const date = new Date();
-    const builder = new SimpleBuilder(
+    const action = new SimpleAction(
       new LoggedOutViewer(),
       new UserWithTimestampNoFormatSchema(),
       new Map([
@@ -194,7 +194,7 @@ describe("timestamp", () => {
         ["LastName", "Snow"],
       ]),
     );
-    const user = await builder.saveX();
+    const user = await action.saveX();
     const createdAt: Date = user.data.created_at;
     const updatedAt: Date = user.data.updated_at;
 
@@ -205,7 +205,7 @@ describe("timestamp", () => {
 
   test("neither toISO formatting nor new parser", async () => {
     const date = new Date();
-    const builder = new SimpleBuilder(
+    const action = new SimpleAction(
       new LoggedOutViewer(),
       new UserWithTimestampNoFormatSchema(),
       new Map([
@@ -217,7 +217,7 @@ describe("timestamp", () => {
     const prevParser = pg.types.getTypeParser(pg.types.builtins.TIMESTAMP);
     pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, defaultTimestampParser);
 
-    const user = await builder.saveX();
+    const user = await action.saveX();
     const createdAt: Date = user.data.created_at;
     const updatedAt: Date = user.data.updated_at;
 
@@ -234,7 +234,7 @@ describe("timestamp", () => {
 test("timestamptz", async () => {
   await createUsersWithTZ();
   const date = new Date();
-  const builder = new SimpleBuilder(
+  const action = new SimpleAction(
     new LoggedOutViewer(),
     new UserWithTimezoneSchema(),
     new Map([
@@ -243,7 +243,7 @@ test("timestamptz", async () => {
     ]),
   );
 
-  const user = await builder.saveX();
+  const user = await action.saveX();
   const createdAt: Date = user.data.created_at;
   const updatedAt: Date = user.data.updated_at;
 
@@ -315,7 +315,7 @@ describe("time", () => {
     close.setMinutes(0);
     close.setSeconds(0);
     close.setMilliseconds(0);
-    const builder = new SimpleBuilder(
+    const action = new SimpleAction(
       new LoggedOutViewer(),
       new HoursSchema(),
       new Map<string, any>([
@@ -325,13 +325,13 @@ describe("time", () => {
       ]),
     );
 
-    const hours = await builder.saveX();
+    const hours = await action.saveX();
     expect(hours.data.open).toEqual("08:00:00");
     expect(hours.data.close).toEqual("17:00:00");
   });
 
   test("time format", async () => {
-    const builder = new SimpleBuilder(
+    const action = new SimpleAction(
       new LoggedOutViewer(),
       new HoursSchema(),
       new Map<string, any>([
@@ -341,7 +341,7 @@ describe("time", () => {
       ]),
     );
 
-    const hours = await builder.saveX();
+    const hours = await action.saveX();
     expect(hours.data.open).toEqual("08:00:00");
     expect(hours.data.close).toEqual("17:00:00");
   });
@@ -383,7 +383,7 @@ describe("timetz", () => {
     close.setMinutes(0);
     close.setSeconds(0);
     close.setMilliseconds(0);
-    const builder = new SimpleBuilder(
+    const action = new SimpleAction(
       new LoggedOutViewer(),
       new HoursTZSchema(),
       new Map<string, any>([
@@ -395,13 +395,13 @@ describe("timetz", () => {
 
     let offset = dateOffset(open);
 
-    const hours = await builder.saveX();
+    const hours = await action.saveX();
     expect(hours.data.open).toEqual(`08:00:00${offset}`);
     expect(hours.data.close).toEqual(`17:00:00${offset}`);
   });
 
   test("time format", async () => {
-    const builder = new SimpleBuilder(
+    const action = new SimpleAction(
       new LoggedOutViewer(),
       new HoursSchema(),
       new Map<string, any>([
@@ -414,7 +414,7 @@ describe("timetz", () => {
     const d = new Date();
     let offset = dateOffset(d);
 
-    const hours = await builder.saveX();
+    const hours = await action.saveX();
     expect(hours.data.open).toEqual(`08:00:00${offset}`);
     expect(hours.data.close).toEqual(`17:00:00${offset}`);
   });
@@ -465,7 +465,7 @@ describe("date", () => {
   };
 
   test("date object", async () => {
-    const builder = new SimpleBuilder(
+    const action = new SimpleAction(
       new LoggedOutViewer(),
       new HolidaySchema(),
       new Map<string, any>([
@@ -474,13 +474,13 @@ describe("date", () => {
       ]),
     );
 
-    const holiday = await builder.saveX();
+    const holiday = await action.saveX();
 
     expect(holiday.data.date).toEqual(expectedValue());
   });
 
   test("date format", async () => {
-    const builder = new SimpleBuilder(
+    const action = new SimpleAction(
       new LoggedOutViewer(),
       new HolidaySchema(),
       new Map<string, any>([
@@ -489,7 +489,7 @@ describe("date", () => {
       ]),
     );
 
-    const holiday = await builder.saveX();
+    const holiday = await action.saveX();
     expect(holiday.data.date).toEqual(expectedValue());
   });
 });
