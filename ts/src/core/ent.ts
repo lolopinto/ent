@@ -434,7 +434,7 @@ export interface Queryer {
 export interface DataOperation {
   performWrite(queryer: Queryer, context?: Context): Promise<void>;
   returnedEntRow?(): Data | null; // optional to indicate the row that was created
-  resolve?<T extends Ent>(executor: Executor<T>): void; //throws?
+  resolve?(executor: Executor): void; //throws?
 }
 
 export interface EditNodeOptions extends EditRowOptions {
@@ -449,7 +449,7 @@ export class EditNodeOperation implements DataOperation {
     private existingEnt: Ent | null = null,
   ) {}
 
-  resolve<T extends Ent>(executor: Executor<T>): void {
+  resolve<T extends Ent>(executor: Executor): void {
     if (!this.options.fieldsToResolve.length) {
       return;
     }
@@ -579,7 +579,7 @@ export class EdgeOperation implements DataOperation {
   }
 
   private resolveImpl<T extends Ent>(
-    executor: Executor<T>,
+    executor: Executor,
     placeholder: ID,
     desc: string,
   ): [ID, string] {
@@ -592,7 +592,7 @@ export class EdgeOperation implements DataOperation {
     return [ent.id, ent.nodeType];
   }
 
-  resolve<T extends Ent>(executor: Executor<T>): void {
+  resolve(executor: Executor): void {
     if (this.options.id1Placeholder) {
       [this.edgeInput.id1, this.edgeInput.id1Type] = this.resolveImpl(
         executor,

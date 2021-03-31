@@ -125,7 +125,7 @@ export class SimpleBuilder<T extends Ent> implements Builder<T> {
     this.fields = fields;
 
     this.ent = schema.ent;
-    this.orchestrator = new Orchestrator({
+    this.orchestrator = new Orchestrator<T>({
       viewer: this.viewer,
       operation: operation,
       tableName: pluralize(snakeCase(this.ent.name)).toLowerCase(),

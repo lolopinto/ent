@@ -5,7 +5,7 @@ import Graph from "graph-data-structure";
 import { OrchestratorOptions } from "./orchestrator";
 
 // private to ent
-export class ListBasedExecutor<T extends Ent> implements Executor<T> {
+export class ListBasedExecutor<T extends Ent> implements Executor {
   private idx: number = 0;
   constructor(
     private viewer: Viewer,
@@ -73,14 +73,14 @@ function getCreatedEnt<T extends Ent>(
   return null;
 }
 
-export class ComplexExecutor<T extends Ent> implements Executor<T> {
+export class ComplexExecutor<T extends Ent> implements Executor {
   private idx: number = 0;
   private mapper: Map<ID, Ent> = new Map();
   private lastOp: DataOperation | undefined;
   private allOperations: DataOperation[] = [];
   private changesetMap: Map<string, Changeset<Ent>> = new Map();
   private nodeOpMap: Map<DataOperation, Changeset<Ent>> = new Map();
-  private executors: Executor<Ent>[] = [];
+  private executors: Executor[] = [];
 
   constructor(
     private viewer: Viewer,
