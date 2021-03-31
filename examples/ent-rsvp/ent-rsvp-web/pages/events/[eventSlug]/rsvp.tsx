@@ -34,7 +34,6 @@ export default function Rsvp() {
   const [session, setSession, clearSession] = useSession();
 
   useEffect(() => {
-    console.log(session);
     if (!session?.viewer.guest || !router.query.email) {
       return;
     }
@@ -195,13 +194,11 @@ function Guest({ guest, activity, reloadData }) {
     setDeclinedVariant(declined ? "danger" : "outline-danger");
 
     if (attendingEdge) {
-      console.log(attendingEdge.dietaryRestrictions);
       setDietaryRestrictions(attendingEdge.dietaryRestrictions || "");
     }
 
     if (guest) {
       setName(guest.name);
-      //      setDietaryRestrictions(guest);
     }
   }, [guest]);
 
@@ -259,8 +256,6 @@ function Guest({ guest, activity, reloadData }) {
     e.stopPropagation();
     setEditingDietaryRestrictions(false);
 
-    console.log("saving", dietaryRestrictions);
-    // TODO save...
     eventActivityRsvp(
       environment,
       {
