@@ -24,6 +24,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
+	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
@@ -513,21 +514,10 @@ func parseCustomData(data *codegen.Data, fromTest bool) chan *customData {
 				),
 			}
 			cmdName = "ts-node"
-			opts, err := json.Marshal(map[string]interface{}{
-				"lib":                    []string{"esnext", "dom"},
-				"moduleResolution":       "node",
-				"experimentalDecorators": true,
-				"emitDecoratorMetadata":  true,
-				"downlevelIteration":     true,
-				"esModuleInterop":        true,
-			})
-			if err != nil {
-				panic(errors.Wrap(err, "error creating json compiler options"))
-			}
 
 			cmdArgs = []string{
 				"--compiler-options",
-				string(opts),
+				testingutils.DefaultCompilerOptions(),
 				util.GetAbsolutePath("../../ts/src/scripts/custom_graphql.ts"),
 				"--path",
 				filepath.Join(data.CodePath.GetAbsPathToRoot(), "src"),
