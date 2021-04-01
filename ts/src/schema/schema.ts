@@ -308,13 +308,17 @@ type actionFieldType =
 // TODO...
 //  | Array<actionFieldType>;
 
+type NullableListOptions = "contents" | "contentsAndList";
+
 export interface ActionField {
   name: string;
   // Type with no db component
   // currently a subset of DBType. could be expanded in the future
   type: actionFieldType;
   // TODO can support overriding later but for now, this is fine
-  nullable?: boolean;
+  nullable?: boolean | NullableListOptions;
+  // list of something
+  list?: boolean;
   actionName?: string; // take the fields of this action and add them as this. only works with type "Object"
 }
 

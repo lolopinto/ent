@@ -194,8 +194,14 @@ func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *fi
 		action.customInterfaces = make(map[string]*CustomInterface)
 	}
 	// TODO these 2 need to be refactored to be TSObjectType or something
+	// tsInterfaceName...
+	// because we can't be trimming
 	tsTyp := strings.TrimSuffix(typ.GetTSType(), " | null")
+	tsTyp = strings.TrimSuffix(tsTyp, "[]")
 	gqlType := strings.TrimSuffix(typ.GetGraphQLType(), "!")
+	gqlType = strings.TrimPrefix(gqlType, "[")
+	gqlType = strings.TrimSuffix(gqlType, "]")
+	gqlType = strings.TrimSuffix(gqlType, "!")
 
 	ci, ok := action.customInterfaces[tsTyp]
 	if !ok {

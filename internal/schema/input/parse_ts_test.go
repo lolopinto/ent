@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/schema/testhelper"
 	"github.com/stretchr/testify/assert"
@@ -85,6 +86,7 @@ type actionField struct {
 	name     string
 	typ      input.ActionType
 	nullable bool
+	tsType   enttype.TSGraphQLType
 }
 
 type constraint struct {
@@ -261,6 +263,10 @@ func verifyActionOnlyFields(t *testing.T, expActionFields []actionField, actionF
 		assert.Equal(t, expActionField.name, actionField.Name)
 		assert.Equal(t, expActionField.nullable, actionField.Nullable)
 		assert.Equal(t, expActionField.typ, actionField.Type)
+
+		if expActionField.tsType != nil {
+			assert.Equal(t, expActionField.tsType, actionField.GetEntType("field"))
+		}
 	}
 }
 

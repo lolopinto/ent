@@ -216,6 +216,7 @@ type CustomImportInfo struct {
 	DefaultImport bool   `json:"defaultImport"`
 }
 
+// TODO flag...
 type NullableItem string
 
 const NullableContents NullableItem = "contents"
