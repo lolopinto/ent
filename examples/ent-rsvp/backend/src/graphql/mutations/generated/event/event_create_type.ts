@@ -6,13 +6,15 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLList,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
   GraphQLInputFieldConfigMap,
+  GraphQLBoolean,
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
-import { mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
+import { GraphQLTime, mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
 import { Event } from "src/ent/";
 import { EventType } from "src/graphql/resolvers/";
 import CreateEventAction, {
@@ -27,6 +29,30 @@ interface EventCreatePayload {
   event: Event;
 }
 
+const activityEventCreateInput = new GraphQLInputObjectType({
+  name: "activityEventCreateInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    startTime: {
+      type: GraphQLNonNull(GraphQLTime),
+    },
+    endTime: {
+      type: GraphQLTime,
+    },
+    location: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    description: {
+      type: GraphQLString,
+    },
+    inviteAllGuests: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+  }),
+});
+
 export const EventCreateInputType = new GraphQLInputObjectType({
   name: "EventCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -38,6 +64,9 @@ export const EventCreateInputType = new GraphQLInputObjectType({
     },
     creatorID: {
       type: GraphQLNonNull(GraphQLID),
+    },
+    activities: {
+      type: GraphQLList(GraphQLNonNull(activityEventCreateInput)),
     },
   }),
 });
@@ -73,6 +102,7 @@ export const EventCreateType: GraphQLFieldConfig<
       name: input.name,
       slug: input.slug,
       creatorID: mustDecodeIDFromGQLID(input.creatorID),
+      activities: input.activities,
     }).saveX();
     return { event: event };
   },

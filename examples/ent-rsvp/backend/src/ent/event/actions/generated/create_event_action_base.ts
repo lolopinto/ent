@@ -16,10 +16,20 @@ import {
 import { Event, User } from "src/ent/";
 import { EventBuilder, EventInput } from "src/ent/event/actions/event_builder";
 
+interface customActivityInput {
+  name: string;
+  startTime: Date;
+  endTime?: Date | null;
+  location: string;
+  description?: string | null;
+  inviteAllGuests?: boolean;
+}
+
 export interface EventCreateInput {
   name: string;
   slug?: string | null;
   creatorID: ID | Builder<User>;
+  activities?: customActivityInput[] | null;
 }
 
 export class CreateEventActionBase implements Action<Event> {

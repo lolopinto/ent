@@ -31,4 +31,38 @@ describe("create event", () => {
       );
     }
   });
+
+  test("create activities also", async () => {
+    let user = await createUser();
+
+    const event = await CreateEventAction.create(user.viewer, {
+      name: "fun event",
+      creatorID: user.id,
+      activities: [
+        {
+          startTime: new Date(),
+          location: "location",
+          name: "welcome dinner",
+          inviteAllGuests: true,
+        },
+        {
+          startTime: new Date(),
+          name: "closing brunch",
+          location: "whaa",
+          description: "all are welcome",
+          // TODO it doesn't add actionOnlyFields!!!
+          // TODO address
+          //          address: {},
+        },
+      ],
+    }).saveX();
+    expect(event).toBeInstanceOf(Event);
+    const activities = await event.queryEventActivities().queryEnts();
+    expect(activities.length).toBe(2);
+
+    expect(activities.map((a) => a.name).sort()).toStrictEqual([
+      "closing brunch",
+      "welcome dinner",
+    ]);
+  });
 });

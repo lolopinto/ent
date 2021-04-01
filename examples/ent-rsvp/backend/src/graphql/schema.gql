@@ -412,6 +412,16 @@ input EventCreateInput {
   name: String!
   slug: String
   creatorID: ID!
+  activities: [activityEventCreateInput!]
+}
+
+input activityEventCreateInput {
+  name: String!
+  startTime: Time!
+  endTime: Time
+  location: String!
+  description: String
+  inviteAllGuests: Boolean!
 }
 
 type GuestCreatePayload {

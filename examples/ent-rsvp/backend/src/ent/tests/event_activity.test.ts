@@ -22,7 +22,6 @@ import {
   createAndInvite,
   createAndInvitePlusGuests,
   createGuests,
-  createGuestPlus,
 } from "src/testutils";
 
 afterAll(async () => {
