@@ -19,9 +19,16 @@ import {
   GuestGroupInput,
 } from "src/ent/guest_group/actions/guest_group_builder";
 
+interface customGuestInput {
+  name: string;
+  emailAddress?: string | null;
+  title?: string | null;
+}
+
 export interface GuestGroupCreateInput {
   invitationName: string;
   eventID: ID | Builder<Event>;
+  guests?: customGuestInput[] | null;
 }
 
 export class CreateGuestGroupActionBase implements Action<GuestGroup> {

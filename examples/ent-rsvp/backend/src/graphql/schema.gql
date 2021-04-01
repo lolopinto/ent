@@ -451,6 +451,13 @@ type GuestGroupCreatePayload {
 input GuestGroupCreateInput {
   invitationName: String!
   eventID: ID!
+  guests: [guestGuestGroupCreateInput!]
+}
+
+input guestGuestGroupCreateInput {
+  name: String!
+  emailAddress: String
+  title: String
 }
 
 type GuestGroupDeletePayload {

@@ -79,6 +79,30 @@ describe("create guest group", () => {
     expect(invited.length).toBe(1);
     expect(invited[0].id).toBe(activity2.id);
   });
+
+  test("create guests while creating guest group", async () => {
+    const event = await createEvent();
+    const group = await CreateGuestGroupAction.create(event.viewer, {
+      invitationName: "people",
+      eventID: event.id,
+      guests: [
+        {
+          name: "Arya Stark",
+          emailAddress: randomEmail(),
+        },
+        {
+          name: "Robb Stark",
+        },
+      ],
+    }).saveX();
+    expect(group).toBeInstanceOf(GuestGroup);
+    const guests = await group.queryGuests().queryEnts();
+    expect(guests.length).toBe(2);
+    expect(guests.map((guest) => guest.name).sort()).toStrictEqual([
+      "Arya Stark",
+      "Robb Stark",
+    ]);
+  });
 });
 
 test("load guest group", async () => {

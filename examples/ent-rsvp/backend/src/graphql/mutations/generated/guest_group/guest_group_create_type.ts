@@ -6,6 +6,7 @@ import {
   GraphQLID,
   GraphQLString,
   GraphQLNonNull,
+  GraphQLList,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
   GraphQLResolveInfo,
@@ -27,6 +28,21 @@ interface GuestGroupCreatePayload {
   guestGroup: GuestGroup;
 }
 
+const guestGuestGroupCreateInput = new GraphQLInputObjectType({
+  name: "guestGuestGroupCreateInput",
+  fields: (): GraphQLInputFieldConfigMap => ({
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    emailAddress: {
+      type: GraphQLString,
+    },
+    title: {
+      type: GraphQLString,
+    },
+  }),
+});
+
 export const GuestGroupCreateInputType = new GraphQLInputObjectType({
   name: "GuestGroupCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
@@ -35,6 +51,9 @@ export const GuestGroupCreateInputType = new GraphQLInputObjectType({
     },
     eventID: {
       type: GraphQLNonNull(GraphQLID),
+    },
+    guests: {
+      type: GraphQLList(GraphQLNonNull(guestGuestGroupCreateInput)),
     },
   }),
 });
@@ -72,6 +91,7 @@ export const GuestGroupCreateType: GraphQLFieldConfig<
     let guestGroup = await CreateGuestGroupAction.create(context.getViewer(), {
       invitationName: input.invitationName,
       eventID: mustDecodeIDFromGQLID(input.eventID),
+      guests: input.guests,
     }).saveX();
     return { guestGroup: guestGroup };
   },

@@ -8,6 +8,7 @@ import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_a
 import { Trigger } from "@lolopinto/ent/action";
 import { Ent } from "@lolopinto/ent";
 import { GuestGroupBuilder } from "./guest_group_builder";
+import CreateGuestAction from "src/ent/guest/actions/create_guest_action";
 
 export { GuestGroupCreateInput };
 
@@ -42,6 +43,26 @@ export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {
               .addInviteID(builder)
               .changeset(),
           ),
+        );
+      },
+    },
+    {
+      async changeset(
+        builder: GuestGroupBuilder,
+        input: GuestGroupCreateInput,
+      ) {
+        if (!input.guests) {
+          return;
+        }
+
+        return await Promise.all(
+          input.guests.map(async (guest) => {
+            return CreateGuestAction.create(builder.viewer, {
+              eventID: input.eventID,
+              guestGroupID: builder,
+              ...guest,
+            }).changeset();
+          }),
         );
       },
     },
