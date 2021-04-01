@@ -1,8 +1,16 @@
-import { Schema, Field, Edge, AssocEdge, AssocEdgeGroup } from "../schema";
+import {
+  Action,
+  Schema,
+  Field,
+  Edge,
+  AssocEdge,
+  AssocEdgeGroup,
+} from "../schema";
 import glob from "glob";
 import * as path from "path";
 import { pascalCase } from "pascal-case";
 import minimist from "minimist";
+import { ActionField, EdgeGroupAction } from "../schema/schema";
 
 function isAssocEdge(edge: Edge): edge is AssocEdge {
   return (edge as AssocEdge).schemaName != undefined;
@@ -25,6 +33,72 @@ function processFields(dst: {}[], src: Field[]) {
     }
     dst.push(f);
   }
+}
+
+enum NullableResult {
+  CONTENTS = "contents",
+  CONTENTS_AND_LIST = "contentsAndList",
+  ITEM = "true", // nullable = true
+}
+
+type ProcessedActionField =
+  | Exclude<ActionField, "nullable">
+  | {
+      nullable?: NullableResult;
+    };
+
+type ProcessedAssocEdge =
+  | Exclude<AssocEdge, "actionOnlyFields" | "edgeActions">
+  | {
+      edgeActions?: OutputAction[];
+      //      actionOnlyFields?: ProcessedActionField[];
+    };
+
+type ProcessedAssocEdgeGroup =
+  | Exclude<AssocEdgeGroup, "edgeAction">
+  | {
+      edgeAction?: OutputAction;
+      //      actionOnlyFields?: ProcessedActionField[];
+    };
+
+// type ProcessedEdgeGroupAction =
+//   | Exclude<EdgeGroupAction, "actionOnlyFields">
+//   | {
+//       actionOnlyFields?: OutputAction[];
+//     };
+
+interface InputAction {
+  actionOnlyFields?: ActionField[];
+}
+
+interface OutputAction {
+  actionOnlyFields?: ProcessedActionField[];
+}
+
+function processAction(action: InputAction): OutputAction {
+  if (!action.actionOnlyFields) {
+    return action;
+  }
+
+  let ret = action as OutputAction;
+  ret.actionOnlyFields = action.actionOnlyFields.map((f) => {
+    let f2 = f as ProcessedActionField;
+    if (!f.nullable) {
+      return f2;
+    }
+    if (typeof f.nullable === "boolean") {
+      f2.nullable = NullableResult.ITEM;
+    } else {
+      if (f.nullable === "contentsAndList") {
+        f2.nullable = NullableResult.CONTENTS_AND_LIST;
+      } else {
+        f2.nullable = NullableResult.CONTENTS;
+      }
+    }
+
+    return f2;
+  });
+  return ret;
 }
 
 async function main() {
@@ -68,16 +142,24 @@ async function main() {
       }
     }
     processFields(fields, schema.fields);
-    let assocEdges: AssocEdge[] = [];
+    let assocEdges: ProcessedAssocEdge[] = [];
     let assocEdgeGroups: AssocEdgeGroup[] = [];
     if (schema.edges) {
       for (const edge of schema.edges) {
         if (isAssocEdge(edge)) {
-          assocEdges.push(edge);
+          let edge2: ProcessedAssocEdge = edge;
+          edge2.edgeActions = edge.edgeActions?.map((action) =>
+            processAction(action),
+          );
+          assocEdges.push(edge2);
         } else {
           // array-ify this
           if (edge.nullStates && !Array.isArray(edge.nullStates)) {
             edge.nullStates = [edge.nullStates];
+          }
+          let group: ProcessedAssocEdgeGroup = edge;
+          if (edge.edgeAction) {
+            group.edgeAction = processAction(edge.edgeAction);
           }
           assocEdgeGroups.push(edge);
         }
@@ -88,7 +170,7 @@ async function main() {
       fields: fields,
       assocEdges: assocEdges,
       assocEdgeGroups: assocEdgeGroups,
-      actions: schema.actions,
+      actions: schema.actions?.map((action) => processAction(action)),
       enumTable: schema.enumTable,
       dbRows: schema.dbRows,
       constraints: schema.constraints,

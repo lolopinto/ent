@@ -626,30 +626,31 @@ func (t *NullableTimetzType) GetNonNullableType() Type {
 	return &TimetzType{}
 }
 
-type objectType struct {
+// public for tests
+type CommonObjectType struct {
 	TSType      string
 	GraphQLType string
 	ActionName  string
 }
 
-func (t *objectType) GetDBType() string {
+func (t *CommonObjectType) GetDBType() string {
 	panic("objectType not a DB type yet")
 }
 
-func (t *objectType) GetZeroValue() string {
+func (t *CommonObjectType) GetZeroValue() string {
 	return "{}"
 }
 
-func (t *objectType) GetCastToMethod() string {
+func (t *CommonObjectType) GetCastToMethod() string {
 	panic("GetCastToMethod doesn't apply for objectType")
 }
 
-func (t *objectType) GetActionName() string {
+func (t *CommonObjectType) GetActionName() string {
 	return t.ActionName
 }
 
 type ObjectType struct {
-	objectType
+	CommonObjectType
 }
 
 func (t *ObjectType) GetGraphQLType() string {
@@ -674,7 +675,7 @@ func (t *ObjectType) GetTSGraphQLImports() []FileImport {
 }
 
 type NullableObjectType struct {
-	objectType
+	CommonObjectType
 }
 
 func (t *NullableObjectType) GetGraphQLType() string {
@@ -695,6 +696,71 @@ func (t *NullableObjectType) GetTSGraphQLImports() []FileImport {
 			Type: t.GraphQLType,
 		},
 	}
+}
+
+type ListWrapperType struct {
+	Type TSGraphQLType
+	// doesn't care if content is nullable. that's handled by Type passed...
+	Nullable bool
+}
+
+func (t *ListWrapperType) GetDBType() string {
+	panic("ListWrapperType not a DB type yet")
+}
+
+func (t *ListWrapperType) GetZeroValue() string {
+	return "{}"
+}
+
+func (t *ListWrapperType) GetCastToMethod() string {
+	panic("GetCastToMethod doesn't apply for ListWrapperType")
+}
+
+func (t *ListWrapperType) GetGraphQLType() string {
+	if t.Nullable {
+		return fmt.Sprintf("[%s]", t.Type.GetGraphQLType())
+	}
+	return fmt.Sprintf("[%s]!", t.Type.GetGraphQLType())
+}
+
+func (t *ListWrapperType) GetTSType() string {
+	if t.Nullable {
+		return fmt.Sprintf("%s[] | null", t.Type.GetTSType())
+	}
+	return fmt.Sprintf("%s[]", t.Type.GetTSType())
+}
+
+func (t *ListWrapperType) GetNullableType() Type {
+	return &ListWrapperType{
+		Type:     t.Type,
+		Nullable: true,
+	}
+}
+
+func (t *ListWrapperType) GetNonNullableType() Type {
+	return &ListWrapperType{
+		Type:     t.Type,
+		Nullable: false,
+	}
+}
+
+func (t *ListWrapperType) GetTSGraphQLImports() []FileImport {
+	var ret = []FileImport{}
+
+	if !t.Nullable {
+		ret = append(ret, NewGQLFileImport("GraphQLNonNull"))
+	}
+	ret = append(ret, NewGQLFileImport("GraphQLList"))
+	ret = append(ret, t.Type.GetTSGraphQLImports()...)
+	return ret
+}
+
+func (t *ListWrapperType) GetActionName() string {
+	t2, ok := t.Type.(TSTypeWithActionFields)
+	if !ok {
+		return ""
+	}
+	return t2.GetActionName()
 }
 
 type typeConfig struct {
