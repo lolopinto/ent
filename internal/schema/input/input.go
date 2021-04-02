@@ -355,7 +355,7 @@ func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) enttype.
 		return &enttype.TimestampType{}
 	case ActionTypeObject:
 		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(inflection.Singular(f.Name)))
-		gqlType := fmt.Sprintf("%s%s", inflection.Singular(f.Name), inputName)
+		gqlType := fmt.Sprintf("%s%s", strcase.ToCamel(inflection.Singular(f.Name)), inputName)
 
 		if nullable {
 			typ := &enttype.NullableObjectType{}
