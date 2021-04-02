@@ -6,6 +6,7 @@ import (
 	"go/types"
 
 	"github.com/iancoleman/strcase"
+	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schemaparser"
@@ -250,50 +251,113 @@ type Action struct {
 	ActionOnlyFields  []*ActionField      `json:"actionOnlyFields"`
 }
 
+type NullableItem string
+
+const NullableContents NullableItem = "contents"
+const NullableContentsAndList NullableItem = "contentsAndList"
+const NullableTrue NullableItem = "true"
+
+type actionField struct {
+	Name       string       `json:"name"`
+	Type       ActionType   `json:"type"`
+	Nullable   NullableItem `json:"nullable"`
+	List       bool         `json:"list"`
+	ActionName string       `json:"actionName"`
+}
+
 type ActionField struct {
-	Name       string     `json:"name"`
-	Type       ActionType `json:"type"`
-	Nullable   bool       `json:"nullable"`
-	ActionName string     `json:"actionName"`
+	Name             string
+	Type             ActionType
+	Nullable         bool
+	list             bool
+	nullableContents bool
+	ActionName       string
+}
+
+func (f *ActionField) UnmarshalJSON(data []byte) error {
+	var af actionField
+	err := json.Unmarshal(data, &af)
+	if err != nil {
+		return err
+	}
+
+	f.list = af.List
+	f.Name = af.Name
+	f.ActionName = af.ActionName
+	f.Type = af.Type
+
+	switch af.Nullable {
+	case NullableContentsAndList:
+		if !af.List {
+			return fmt.Errorf("list required to use this option")
+		}
+		f.Nullable = true
+		f.nullableContents = true
+		break
+
+	case NullableContents:
+		if !af.List {
+			return fmt.Errorf("list required to use this option")
+		}
+		f.nullableContents = true
+		break
+
+	case NullableTrue:
+		f.Nullable = true
+		break
+	}
+
+	return nil
 }
 
 func (f *ActionField) GetEntType(inputName string) enttype.TSGraphQLType {
+	if !f.list {
+		return f.getEntTypeHelper(inputName, f.Nullable)
+	}
+	typ := f.getEntTypeHelper(inputName, f.nullableContents)
+	return &enttype.ListWrapperType{
+		Type:     typ,
+		Nullable: f.Nullable,
+	}
+}
+
+func (f *ActionField) getEntTypeHelper(inputName string, nullable bool) enttype.TSGraphQLType {
 	switch f.Type {
 	case ActionTypeID:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableIDType{}
 		}
 		return &enttype.IDType{}
 	case ActionTypeBoolean:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableBoolType{}
 		}
 		return &enttype.BoolType{}
 	case ActionTypeInt:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableIntegerType{}
 		}
 		return &enttype.IntegerType{}
 	case ActionTypeFloat:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableFloatType{}
 		}
 		return &enttype.FloatType{}
 	case ActionTypeString:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableStringType{}
 		}
 		return &enttype.StringType{}
 	case ActionTypeTime:
-		if f.Nullable {
+		if nullable {
 			return &enttype.NullableTimestampType{}
 		}
 		return &enttype.TimestampType{}
 	case ActionTypeObject:
-		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(f.Name))
-		gqlType := fmt.Sprintf("%s%s", f.Name, inputName)
+		tsType := fmt.Sprintf("custom%sInput", strcase.ToCamel(inflection.Singular(f.Name)))
+		gqlType := fmt.Sprintf("%s%s", strcase.ToCamel(inflection.Singular(f.Name)), strcase.ToCamel(inputName))
 
-		if f.Nullable {
+		if nullable {
 			typ := &enttype.NullableObjectType{}
 			typ.TSType = tsType
 			typ.ActionName = f.ActionName

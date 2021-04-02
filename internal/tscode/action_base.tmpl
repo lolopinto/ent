@@ -37,7 +37,16 @@
         {{$field.TsFieldName}}?: {{$type}};
       {{end -}}
     {{end -}}
+    {{ range $field := $int.NonEntFields -}}
+      {{$type := $field.GetTsType -}}
+      {{if $field.Required -}}
+        {{$field.TsFieldName}}: {{$type}};
+      {{else -}}
+        {{$field.TsFieldName}}?: {{$type}};
+      {{end -}}
+    {{end -}}
   }
+  
 {{end -}}
 
 {{ $node := useImport .NodeData.Node -}}

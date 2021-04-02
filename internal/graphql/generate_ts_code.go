@@ -468,6 +468,10 @@ func getImportPathForAction(nodeData *schema.NodeData, action action.Action) str
 	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", nodeData.PackageName, strcase.ToSnake(action.GetGraphQLName()))
 }
 
+func getImportPathForActionFromPackage(packageName string, action action.Action) string {
+	return fmt.Sprintf("src/graphql/mutations/generated/%s/%s_type", packageName, strcase.ToSnake(action.GetGraphQLName()))
+}
+
 func getFilePathForCustomMutation(name string) string {
 	return fmt.Sprintf("src/graphql/mutations/generated/%s_type.ts", strcase.ToSnake(name))
 }
@@ -1362,7 +1366,9 @@ func addConnection(nodeData *schema.NodeData, edge edge.ConnectionEdge, fields *
 func buildActionNodes(nodeData *schema.NodeData, action action.Action, actionPrefix string) []*objectType {
 	var ret []*objectType
 	for _, c := range action.GetCustomInterfaces() {
-		ret = append(ret, buildCustomInputNode(c))
+		if c.Action == nil {
+			ret = append(ret, buildCustomInputNode(c))
+		}
 	}
 	ret = append(ret,
 		buildActionInputNode(nodeData, action, actionPrefix),
@@ -1384,16 +1390,24 @@ func buildActionEnums(nodeData *schema.NodeData, action action.Action) []*gqlEnu
 
 func buildCustomInputNode(c *action.CustomInterface) *objectType {
 	result := &objectType{
-		Type:    c.GQLType,
-		Node:    c.GQLType,
-		TSType:  c.GQLType,
-		GQLType: "GraphQLInputObjectType",
+		Type:     c.GQLType,
+		Node:     c.GQLType,
+		TSType:   c.GQLType,
+		GQLType:  "GraphQLInputObjectType",
+		Exported: true,
 	}
 
 	for _, f := range c.Fields {
 		result.Fields = append(result.Fields, &fieldType{
 			Name:         f.GetGraphQLName(),
-			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false), false),
+			FieldImports: getGQLFileImports(f.GetTSGraphQLTypeForFieldImports(false), true),
+		})
+	}
+
+	for _, f := range c.NonEntFields {
+		result.Fields = append(result.Fields, &fieldType{
+			Name:         f.GetGraphQLName(),
+			FieldImports: getGQLFileImports(f.FieldType.GetTSGraphQLImports(), true),
 		})
 	}
 	return result
@@ -1409,6 +1423,17 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 		TSType:   node,
 		Exported: true,
 		GQLType:  "GraphQLInputObjectType",
+	}
+
+	// maybe not the best place for this probably but it makes sense
+	// as dependencies...
+	for _, c := range a.GetCustomInterfaces() {
+		if c.Action != nil {
+			result.Imports = append(result.Imports, &fileImport{
+				Type:       c.GQLType,
+				ImportPath: getImportPathForActionFromPackage(c.Action.GetNodeInfo().PackageName, c.Action),
+			})
+		}
 	}
 
 	// add id field for edit and delete mutations
@@ -1506,8 +1531,6 @@ func buildActionInputNode(nodeData *schema.NodeData, a action.Action, actionPref
 
 		result.TSInterfaces = []*interfaceType{intType}
 	}
-
-	// TODO non ent fields 	e.g. status etc
 
 	return result
 }
