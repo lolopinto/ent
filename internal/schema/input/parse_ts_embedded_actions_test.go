@@ -60,7 +60,7 @@ func TestParseEmbeddedActions(t *testing.T) {
 										CommonObjectType: enttype.CommonObjectType{
 											TSType:      "customAddressInput",
 											ActionName:  "CreateAddressAction",
-											GraphQLType: "addressfield",
+											GraphQLType: "AddressField",
 										},
 									},
 								},
@@ -121,9 +121,9 @@ func TestParseEmbeddedActions(t *testing.T) {
 										Nullable: true,
 										Type: &enttype.ObjectType{
 											CommonObjectType: enttype.CommonObjectType{
-												TSType:      "customAddressesInput",
+												TSType:      "customAddressInput",
 												ActionName:  "CreateAddressAction",
-												GraphQLType: "addressesfield",
+												GraphQLType: "AddressField",
 											},
 										},
 									},
@@ -185,9 +185,9 @@ func TestParseEmbeddedActions(t *testing.T) {
 										Nullable: true,
 										Type: &enttype.NullableObjectType{
 											CommonObjectType: enttype.CommonObjectType{
-												TSType:      "customAddressesInput",
+												TSType:      "customAddressInput",
 												ActionName:  "CreateAddressAction",
-												GraphQLType: "addressesfield",
+												GraphQLType: "AddressField",
 											},
 										},
 									},
@@ -247,9 +247,9 @@ func TestParseEmbeddedActions(t *testing.T) {
 									tsType: &enttype.ListWrapperType{
 										Type: &enttype.NullableObjectType{
 											CommonObjectType: enttype.CommonObjectType{
-												TSType:      "customAddressesInput",
+												TSType:      "customAddressInput",
 												ActionName:  "CreateAddressAction",
-												GraphQLType: "addressesfield",
+												GraphQLType: "AddressField",
 											},
 										},
 									},
@@ -308,9 +308,9 @@ func TestParseEmbeddedActions(t *testing.T) {
 									tsType: &enttype.ListWrapperType{
 										Type: &enttype.ObjectType{
 											CommonObjectType: enttype.CommonObjectType{
-												TSType:      "customAddressesInput",
+												TSType:      "customAddressInput",
 												ActionName:  "CreateAddressAction",
-												GraphQLType: "addressesfield",
+												GraphQLType: "AddressField",
 											},
 										},
 									},
