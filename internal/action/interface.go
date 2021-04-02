@@ -68,15 +68,20 @@ type Action interface {
 	GetOperation() ent.ActionOperation
 	IsDeletingNode() bool
 	AddCustomField(enttype.TSGraphQLType, *field.Field)
+	AddCustomNonEntField(enttype.TSGraphQLType, *NonEntField)
+	AddCustomInterfaces(a Action)
 	GetCustomInterfaces() []*CustomInterface
 	GetTSEnums() []*enum.Enum
 	GetGQLEnums() []*enum.GQLEnum
 }
 
 type CustomInterface struct {
-	TSType  string
-	GQLType string
-	Fields  []*field.Field
+	TSType       string
+	GQLType      string
+	Fields       []*field.Field
+	NonEntFields []*NonEntField
+	Action       Action
+	// if present, means that this interface should be imported in GraphQL instead...
 }
 
 type ActionInfo struct {
@@ -189,10 +194,7 @@ func (action *commonActionInfo) IsDeletingNode() bool {
 	return action.Operation == ent.DeleteAction
 }
 
-func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *field.Field) {
-	if action.customInterfaces == nil {
-		action.customInterfaces = make(map[string]*CustomInterface)
-	}
+func getTypes(typ enttype.TSGraphQLType) (string, string) {
 	// TODO these 2 need to be refactored to be TSObjectType or something
 	// tsInterfaceName...
 	// because we can't be trimming
@@ -203,6 +205,16 @@ func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *fi
 	gqlType = strings.TrimSuffix(gqlType, "]")
 	gqlType = strings.TrimSuffix(gqlType, "!")
 
+	return tsTyp, gqlType
+}
+
+func (action *commonActionInfo) getCustomInterface(typ enttype.TSGraphQLType) *CustomInterface {
+	if action.customInterfaces == nil {
+		action.customInterfaces = make(map[string]*CustomInterface)
+	}
+
+	tsTyp, gqlType := getTypes(typ)
+
 	ci, ok := action.customInterfaces[tsTyp]
 	if !ok {
 		ci = &CustomInterface{
@@ -210,8 +222,43 @@ func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *fi
 			GQLType: gqlType,
 		}
 	}
-	ci.Fields = append(ci.Fields, cf)
 	action.customInterfaces[tsTyp] = ci
+	return ci
+}
+
+func (action *commonActionInfo) AddCustomField(typ enttype.TSGraphQLType, cf *field.Field) {
+	ci := action.getCustomInterface(typ)
+	ci.Fields = append(ci.Fields, cf)
+}
+
+func (action *commonActionInfo) AddCustomNonEntField(typ enttype.TSGraphQLType, cf *NonEntField) {
+	ci := action.getCustomInterface(typ)
+	ci.NonEntFields = append(ci.NonEntFields, cf)
+}
+
+// Unclear what the best solution is here but the decision here is to
+// create (duplicate) a private interface in the action that represents the input
+// but in GraphQL we import the existing one since GraphQL names are unique
+// across the types and we don't crazy naming conflicts in here
+// we can (and should?) probably namespace the private generated interface name by adding a new prefix
+// but no conflicts yet so leaving it for now
+// This choice isn't consistent but is the easiest path so doing that
+func (action *commonActionInfo) AddCustomInterfaces(a2 Action) {
+	if action.customInterfaces == nil {
+		action.customInterfaces = make(map[string]*CustomInterface)
+	}
+	for _, inter := range a2.GetCustomInterfaces() {
+		// don't add to graphql
+		action.customInterfaces[inter.TSType] = &CustomInterface{
+			TSType:  inter.TSType,
+			GQLType: inter.GQLType,
+			// this flag indicates that we're going to import this input in graphql
+			// from where this is generated
+			Action:       a2,
+			Fields:       inter.Fields,
+			NonEntFields: inter.NonEntFields,
+		}
+	}
 }
 
 func (action *commonActionInfo) GetCustomInterfaces() []*CustomInterface {

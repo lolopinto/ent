@@ -572,8 +572,8 @@ func (m NodeMapInfo) addActionFields(info *NodeDataInfo) {
 				if a2 == nil {
 					continue
 				}
-				fields := a2.GetFields()
-				for _, f2 := range fields {
+
+				for _, f2 := range a2.GetFields() {
 					if f2.EmbeddableInParentAction() {
 
 						f3 := f2
@@ -583,6 +583,12 @@ func (m NodeMapInfo) addActionFields(info *NodeDataInfo) {
 						a.AddCustomField(t, f3)
 					}
 				}
+
+				for _, f2 := range a2.GetNonEntFields() {
+					a.AddCustomNonEntField(t, f2)
+				}
+
+				a.AddCustomInterfaces(a2)
 
 				break
 			}
