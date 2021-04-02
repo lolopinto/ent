@@ -1,4 +1,4 @@
-import { Event } from "src/ent";
+import { Address, Event } from "src/ent";
 import { DB, IDViewer } from "@lolopinto/ent";
 import CreateEventAction from "../event/actions/create_event_action";
 import { createUser } from "src/testutils";
@@ -50,9 +50,12 @@ describe("create event", () => {
           name: "closing brunch",
           location: "whaa",
           description: "all are welcome",
-          // TODO it doesn't add actionOnlyFields!!!
-          // TODO address
-          //          address: {},
+          address: {
+            street: "1 main street",
+            city: "San Francisco",
+            state: "CA",
+            zipCode: "94012",
+          },
         },
       ],
     }).saveX();
@@ -64,5 +67,17 @@ describe("create event", () => {
       "closing brunch",
       "welcome dinner",
     ]);
+
+    const activity = activities.find((a) => a.name == "closing brunch");
+    expect(activity).toBeDefined();
+    if (!activity) {
+      fail("impossicant");
+    }
+    const address = await Address.loadFromOwnerID(activity.viewer, activity.id);
+    expect(address).not.toBe(null);
+    expect(address?.street).toBe("1 main street");
+    expect(address?.city).toBe("San Francisco");
+    expect(address?.state).toBe("CA");
+    expect(address?.ownerID).toBe(activity.id);
   });
 });

@@ -28,8 +28,8 @@ interface EventActivityCreatePayload {
   eventActivity: EventActivity;
 }
 
-const addressEventActivityCreateInput = new GraphQLInputObjectType({
-  name: "addressEventActivityCreateInput",
+export const AddressEventActivityCreateInput = new GraphQLInputObjectType({
+  name: "AddressEventActivityCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     street: {
       type: GraphQLNonNull(GraphQLString),
@@ -74,7 +74,7 @@ export const EventActivityCreateInputType = new GraphQLInputObjectType({
       type: GraphQLBoolean,
     },
     address: {
-      type: addressEventActivityCreateInput,
+      type: AddressEventActivityCreateInput,
     },
   }),
 });

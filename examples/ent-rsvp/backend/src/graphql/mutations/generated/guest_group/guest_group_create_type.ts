@@ -28,8 +28,8 @@ interface GuestGroupCreatePayload {
   guestGroup: GuestGroup;
 }
 
-const guestGuestGroupCreateInput = new GraphQLInputObjectType({
-  name: "guestGuestGroupCreateInput",
+export const GuestGuestGroupCreateInput = new GraphQLInputObjectType({
+  name: "GuestGuestGroupCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     name: {
       type: GraphQLNonNull(GraphQLString),
@@ -53,7 +53,7 @@ export const GuestGroupCreateInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(GraphQLID),
     },
     guests: {
-      type: GraphQLList(GraphQLNonNull(guestGuestGroupCreateInput)),
+      type: GraphQLList(GraphQLNonNull(GuestGuestGroupCreateInput)),
     },
   }),
 });

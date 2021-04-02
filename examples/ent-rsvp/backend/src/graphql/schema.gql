@@ -345,10 +345,10 @@ input EventActivityCreateInput {
   location: String!
   description: String
   inviteAllGuests: Boolean
-  address: addressEventActivityCreateInput
+  address: AddressEventActivityCreateInput
 }
 
-input addressEventActivityCreateInput {
+input AddressEventActivityCreateInput {
   street: String!
   city: String!
   state: String!
@@ -412,16 +412,17 @@ input EventCreateInput {
   name: String!
   slug: String
   creatorID: ID!
-  activities: [activityEventCreateInput!]
+  activities: [ActivityEventCreateInput!]
 }
 
-input activityEventCreateInput {
+input ActivityEventCreateInput {
   name: String!
   startTime: Time!
   endTime: Time
   location: String!
   description: String
   inviteAllGuests: Boolean!
+  address: AddressEventActivityCreateInput
 }
 
 type GuestCreatePayload {
@@ -461,10 +462,10 @@ type GuestGroupCreatePayload {
 input GuestGroupCreateInput {
   invitationName: String!
   eventID: ID!
-  guests: [guestGuestGroupCreateInput!]
+  guests: [GuestGuestGroupCreateInput!]
 }
 
-input guestGuestGroupCreateInput {
+input GuestGuestGroupCreateInput {
   name: String!
   emailAddress: String
   title: String

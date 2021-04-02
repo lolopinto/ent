@@ -7,7 +7,7 @@ import {
   Data,
   Viewer,
 } from "@lolopinto/ent";
-import { Builder, EdgeInputData } from "@lolopinto/ent/action";
+import { EdgeInputData } from "@lolopinto/ent/action";
 import { GuestGroup } from "src/ent/";
 import { GuestGroupBuilder } from "src/ent/guest_group/actions/guest_group_builder";
 

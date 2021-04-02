@@ -23,6 +23,15 @@ interface customActivityInput {
   location: string;
   description?: string | null;
   inviteAllGuests?: boolean;
+  address?: customAddressInput | null;
+}
+
+interface customAddressInput {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  apartment?: string | null;
 }
 
 export interface EventCreateInput {

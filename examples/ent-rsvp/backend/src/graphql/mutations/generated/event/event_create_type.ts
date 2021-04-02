@@ -15,6 +15,7 @@ import {
 } from "graphql";
 import { RequestContext } from "@lolopinto/ent";
 import { GraphQLTime, mustDecodeIDFromGQLID } from "@lolopinto/ent/graphql";
+import { AddressEventActivityCreateInput } from "src/graphql/mutations/generated/event_activity/event_activity_create_type";
 import { Event } from "src/ent/";
 import { EventType } from "src/graphql/resolvers/";
 import CreateEventAction, {
@@ -29,8 +30,8 @@ interface EventCreatePayload {
   event: Event;
 }
 
-const activityEventCreateInput = new GraphQLInputObjectType({
-  name: "activityEventCreateInput",
+export const ActivityEventCreateInput = new GraphQLInputObjectType({
+  name: "ActivityEventCreateInput",
   fields: (): GraphQLInputFieldConfigMap => ({
     name: {
       type: GraphQLNonNull(GraphQLString),
@@ -50,6 +51,9 @@ const activityEventCreateInput = new GraphQLInputObjectType({
     inviteAllGuests: {
       type: GraphQLNonNull(GraphQLBoolean),
     },
+    address: {
+      type: AddressEventActivityCreateInput,
+    },
   }),
 });
 
@@ -66,7 +70,7 @@ export const EventCreateInputType = new GraphQLInputObjectType({
       type: GraphQLNonNull(GraphQLID),
     },
     activities: {
-      type: GraphQLList(GraphQLNonNull(activityEventCreateInput)),
+      type: GraphQLList(GraphQLNonNull(ActivityEventCreateInput)),
     },
   }),
 });

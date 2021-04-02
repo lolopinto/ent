@@ -7,16 +7,23 @@ import {
   Allow,
   AlwaysDenyRule,
   Deny,
+  Data,
 } from "@lolopinto/ent";
 import { Builder } from "@lolopinto/ent/action";
 import { EventActivity } from "src/ent";
 import { Event } from "src/ent/internal";
 
 export class AllowIfEventCreatorRule implements PrivacyPolicyRule {
-  constructor(private id: ID | Builder<Ent>) {}
+  constructor(private id: ID | Builder<Ent>, private input?: Data) {}
 
   async apply(viewer: Viewer, _ent: Ent) {
     if (typeof this.id === "object") {
+      // if we're creating something with an eventID, allow this
+      // e.g. creating an event while creating an activity
+      if (this.input && this.input.eventID === this.id) {
+        return Allow();
+      }
+
       return Skip();
     }
     const ent = await Event.load(viewer, this.id);
@@ -49,8 +56,8 @@ export class DenyIfNotEventCreatorRule implements PrivacyPolicyRule {
 }
 
 export class AllowIfEventCreatorPrivacyPolicy {
-  constructor(private id: ID | Builder<Ent>) {}
-  rules = [new AllowIfEventCreatorRule(this.id), AlwaysDenyRule];
+  constructor(private id: ID | Builder<Ent>, private input?: Data) {}
+  rules = [new AllowIfEventCreatorRule(this.id, this.input), AlwaysDenyRule];
 }
 
 export class AllowIfEventCreatorFromActivityRule implements PrivacyPolicyRule {

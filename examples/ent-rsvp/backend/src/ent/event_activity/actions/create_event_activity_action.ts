@@ -15,7 +15,7 @@ import { EventToGuestGroupsQuery } from "src/ent";
 export default class CreateEventActivityAction extends CreateEventActivityActionBase {
   getPrivacyPolicy() {
     // only creator of event can create activity
-    return new AllowIfEventCreatorPrivacyPolicy(this.input.eventID);
+    return new AllowIfEventCreatorPrivacyPolicy(this.input.eventID, this.input);
   }
 
   triggers: Trigger<Ent>[] = [
