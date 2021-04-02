@@ -130,6 +130,15 @@ type expectedAction struct {
 	name             string
 	fields           []expectedField
 	actionOnlyFields []actionOnlyField
+	customInterfaces []customInterface
+}
+
+type customInterface struct {
+	fields       []expectedField
+	nonEntFields []actionOnlyField
+	tsType       string
+	gqlType      string
+	actionName   string
 }
 
 type actionOnlyField struct {
@@ -711,6 +720,194 @@ func TestActionOnlyFields(t *testing.T) {
 	)
 }
 
+func TestEmbeddedActionOnlyFields(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		map[string]string{
+			"address.ts": testhelper.GetCodeWithSchema(
+				`import {Schema, Action, Field, StringType, UUIDType, ActionOperation} from "{schema}";
+
+	export default class Address implements Schema {
+		fields: Field[] = [
+			StringType({ name: "Street" }),
+			StringType({ name: "City" }),
+			StringType({ name: "State" }),
+			StringType({ name: "ZipCode" }), 
+		];
+
+		actions: Action[] = [
+			{
+				operation: ActionOperation.Create,
+			},
+		];
+	}`),
+			"event_activity.ts": testhelper.GetCodeWithSchema(`				import {Schema, Action, Field, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+
+				export default class EventActivity implements Schema {
+					fields: Field[] = [
+						StringType({name: "name"}),
+						UUIDType({name: "eventID"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "address",
+								actionName: "CreateAddressAction",
+								type: "Object",
+							}],
+						},
+					];
+				};`),
+			"event.ts": testhelper.GetCodeWithSchema(
+				`
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
+
+				export default class Event implements Schema {
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimestampType({name: "start_time"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "activities",
+								actionName: "CreateEventActivityAction",
+								list: true,
+								type: "Object",
+							}],
+						},
+					];
+				};`),
+		},
+		base.TypeScript,
+	)
+
+	activityActionInfo := schema.Nodes["EventActivityConfig"].NodeData.ActionInfo
+	require.NotNil(t, activityActionInfo)
+
+	activityFields := []expectedField{
+		{
+			name:    "name",
+			tsType:  "string",
+			gqlType: "String!",
+		},
+		{
+			name:    "eventID",
+			tsType:  "ID",
+			gqlType: "ID!",
+		},
+	}
+
+	addressFields := []expectedField{
+		{
+			name:    "Street",
+			tsType:  "string",
+			gqlType: "String!",
+		},
+		{
+			name:    "City",
+			tsType:  "string",
+			gqlType: "String!",
+		},
+		{
+			name:    "State",
+			tsType:  "string",
+			gqlType: "String!",
+		},
+		{
+			name:    "ZipCode",
+			tsType:  "string",
+			gqlType: "String!",
+		},
+	}
+
+	verifyExpectedActions(
+		t,
+		activityActionInfo,
+		[]expectedAction{
+			{
+				name:   "CreateEventActivityAction",
+				fields: activityFields,
+				actionOnlyFields: []actionOnlyField{
+					{
+						name: "address",
+						typ: fieldType{
+							tsType:      "customAddressInput",
+							graphqlType: "AddressEventActivityCreateInput!",
+						},
+					},
+				},
+				customInterfaces: []customInterface{
+					{
+						fields:  addressFields,
+						tsType:  "customAddressInput",
+						gqlType: "AddressEventActivityCreateInput",
+					},
+				},
+			},
+		},
+	)
+	eventActionInfo := schema.Nodes["EventConfig"].NodeData.ActionInfo
+	require.NotNil(t, eventActionInfo)
+
+	verifyExpectedActions(
+		t,
+		eventActionInfo,
+		[]expectedAction{
+			{
+				name: "CreateEventAction",
+				fields: []expectedField{
+					{
+						name:    "name",
+						tsType:  "string",
+						gqlType: "String!",
+					},
+					{
+						name:    "start_time",
+						tsType:  "Date",
+						gqlType: "Time!",
+					},
+				},
+				actionOnlyFields: []actionOnlyField{
+					{
+						name: "activities",
+						typ: fieldType{
+							tsType:      "customActivityInput[]",
+							graphqlType: "[ActivityEventCreateInput!]!",
+						},
+					},
+				},
+				customInterfaces: []customInterface{
+					{
+						fields:  activityFields,
+						tsType:  "customActivityInput",
+						gqlType: "ActivityEventCreateInput",
+						nonEntFields: []actionOnlyField{
+							{
+								name: "address",
+								typ: fieldType{
+									tsType:      "customAddressInput",
+									graphqlType: "AddressEventActivityCreateInput!",
+								},
+							},
+						},
+					},
+					{
+						fields:     addressFields,
+						tsType:     "customAddressInput",
+						gqlType:    "AddressEventActivityCreateInput",
+						actionName: "CreateEventActivityAction",
+					},
+				},
+			},
+		},
+	)
+}
+
 func verifyExpectedFields(t *testing.T, code, nodeName string, expActions []expectedAction) {
 	pkg, fnMap, err := schemaparser.FindFunctions(code, "configs", "GetFields", "GetActions")
 	require.Nil(t, err)
@@ -736,28 +933,56 @@ func verifyExpectedActions(t *testing.T, actionInfo *action.ActionInfo, expActio
 		a := actionInfo.GetByName(expAction.name)
 		require.NotNil(t, a, "action by name %s is nil", expAction.name)
 
-		fields := a.GetFields()
+		verifyFields(t, a.GetFields(), expAction.fields)
 
-		require.Equal(t, len(expAction.fields), len(fields), "length of fields")
+		verifyNonEntFields(t, a.GetNonEntFields(), expAction.actionOnlyFields)
 
-		for idx, field := range fields {
-			expField := expAction.fields[idx]
-			require.Equal(t, expField.name, field.FieldName, "fieldname %s not equal", field.FieldName)
-			require.Equal(t, expField.nullable, field.Nullable(), "fieldname %s not equal", field.FieldName)
-			require.Equal(t, expField.gqlType, field.GetGraphQLTypeForField(), "fieldname %s not equal", field.FieldName)
-			require.Equal(t, expField.tsType, field.TsBuilderType(), "fieldname %s not equal", field.FieldName)
+		if len(expAction.customInterfaces) != 0 {
+			// only do this for when we want to test this
+			// TODO we should change everywhere to test this
+			customInterfaces := a.GetCustomInterfaces()
+			require.Len(t, expAction.customInterfaces, len(customInterfaces))
+
+			for idx, customInt := range customInterfaces {
+				expCustomInt := expAction.customInterfaces[idx]
+
+				assert.Equal(t, customInt.TSType, expCustomInt.tsType)
+				assert.Equal(t, customInt.GQLType, expCustomInt.gqlType)
+
+				verifyFields(t, customInt.Fields, expCustomInt.fields)
+				verifyNonEntFields(t, customInt.NonEntFields, expCustomInt.nonEntFields)
+
+				if expCustomInt.actionName == "" {
+					assert.Nil(t, customInt.Action)
+				} else {
+					assert.Equal(t, expCustomInt.actionName, customInt.Action.GetActionName())
+				}
+			}
 		}
+	}
+}
 
-		nonEntFields := a.GetNonEntFields()
-		require.Equal(t, len(expAction.actionOnlyFields), len(nonEntFields), "length of fields")
+func verifyFields(t *testing.T, fields []*field.Field, expFields []expectedField) {
+	require.Equal(t, len(expFields), len(fields), "length of fields")
 
-		for idx, nonEntField := range nonEntFields {
-			actionOnlyField := expAction.actionOnlyFields[idx]
-			require.Equal(t, actionOnlyField.name, nonEntField.FieldName, "name %s not equal", nonEntField.FieldName)
-			require.Equal(t, actionOnlyField.nullable, nonEntField.Nullable, "fieldname %s not equal", nonEntField.FieldName)
-			require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.FieldType.GetGraphQLType(), "graphql type %s not equal", nonEntField.FieldName)
-			require.Equal(t, actionOnlyField.typ.tsType, nonEntField.FieldType.GetTSType(), "ts type %s not equal", nonEntField.FieldName)
-		}
+	for idx, field := range fields {
+		expField := expFields[idx]
+		require.Equal(t, expField.name, field.FieldName, "fieldname %s not equal", field.FieldName)
+		require.Equal(t, expField.nullable, field.Nullable(), "fieldname %s not equal", field.FieldName)
+		require.Equal(t, expField.gqlType, field.GetGraphQLTypeForField(), "fieldname %s not equal", field.FieldName)
+		require.Equal(t, expField.tsType, field.TsBuilderType(), "fieldname %s not equal", field.FieldName)
+	}
+}
+
+func verifyNonEntFields(t *testing.T, nonEntFields []*action.NonEntField, expFields []actionOnlyField) {
+	require.Equal(t, len(expFields), len(nonEntFields), "length of fields")
+
+	for idx, nonEntField := range nonEntFields {
+		actionOnlyField := expFields[idx]
+		require.Equal(t, actionOnlyField.name, nonEntField.FieldName, "name %s not equal. idx %d", nonEntField.FieldName, idx)
+		require.Equal(t, actionOnlyField.nullable, nonEntField.Nullable, "fieldname %s not equal. idx %d", nonEntField.FieldName, idx)
+		require.Equal(t, actionOnlyField.typ.graphqlType, nonEntField.FieldType.GetGraphQLType(), "graphql type %s not equal. idx %d", nonEntField.FieldName, idx)
+		require.Equal(t, actionOnlyField.typ.tsType, nonEntField.FieldType.GetTSType(), "ts type %s not equal. idx %d", nonEntField.FieldName, idx)
 	}
 }
 
