@@ -4,6 +4,16 @@ directive @specifiedBy(
   url: String!
 ) on SCALAR
 
+input ActivityEventCreateInput {
+  name: String!
+  startTime: Time!
+  endTime: Time
+  location: String!
+  description: String
+  inviteAllGuests: Boolean!
+  address: AddressEventActivityCreateInput
+}
+
 type Address implements Node {
   owner: Node
   id: ID!
@@ -51,7 +61,7 @@ type AddressEditPayload {
   address: Address!
 }
 
-input addressEventActivityCreateInput {
+input AddressEventActivityCreateInput {
   street: String!
   city: String!
   state: String!
@@ -135,7 +145,7 @@ input EventActivityCreateInput {
   location: String!
   description: String
   inviteAllGuests: Boolean
-  address: addressEventActivityCreateInput
+  address: AddressEventActivityCreateInput
 }
 
 type EventActivityCreatePayload {
@@ -238,6 +248,7 @@ input EventCreateInput {
   name: String!
   slug: String
   creatorID: ID!
+  activities: [ActivityEventCreateInput!]
 }
 
 type EventCreatePayload {
@@ -332,6 +343,7 @@ type GuestGroup implements Node {
 input GuestGroupCreateInput {
   invitationName: String!
   eventID: ID!
+  guests: [GuestGuestGroupCreateInput!]
 }
 
 type GuestGroupCreatePayload {
@@ -377,6 +389,12 @@ type GuestGroupToInvitedEventsConnection implements Connection {
 type GuestGroupToInvitedEventsEdge implements Edge {
   node: EventActivity!
   cursor: String!
+}
+
+input GuestGuestGroupCreateInput {
+  name: String!
+  emailAddress: String
+  title: String
 }
 
 type GuestToAttendingEventsConnection implements Connection {

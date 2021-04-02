@@ -9,8 +9,6 @@ import {
 } from "../src/__generated__/homeQuery.graphql";
 import eventCreate from "../src/mutations/eventCreate";
 import { eventCreateMutationResponse } from "../src/__generated__/eventCreateMutation.graphql";
-import eventActivityCreate from "../src/mutations/eventActivityCreate";
-import { eventActivityCreateMutationResponse } from "../src/__generated__/eventActivityCreateMutation.graphql";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Link from "next/link";
@@ -108,60 +106,36 @@ function CreateEvent({ environment, visible, creatorID }) {
     console.log("submit called");
     eventCreate(
       environment,
-      { name, creatorID, slug },
+      {
+        name,
+        creatorID,
+        slug,
+        activities: activities.map((activity) => {
+          return {
+            name: activity.name,
+            description: activity.description,
+            startTime: activity.startTime,
+            endTime: activity.endTime,
+            location: activity.location,
+            inviteAllGuests: activity.inviteAllGuests,
+            address: {
+              street: activity.street,
+              city: activity.city,
+              state: activity.state,
+              zipCode: activity.zipCode,
+              apartment: activity.apartment,
+            },
+          };
+        }),
+      },
       async function (r: eventCreateMutationResponse, errs) {
         if (errs && errs.length) {
           console.error(`error creating event`);
           return;
         }
-        const eventID = r.eventCreate.event.id;
         const eventSlug = r.eventCreate.event.slug;
 
-        let doneCount = 0;
-        let errCount = 0;
-
-        function goToEventPage() {
-          router.push(`events/${eventSlug}`);
-        }
-
-        activities.map((activity) => {
-          eventActivityCreate(
-            environment,
-            {
-              name: activity.name,
-              eventID,
-              description: activity.description,
-              startTime: activity.startTime,
-              endTime: activity.endTime,
-              location: activity.location,
-              inviteAllGuests: activity.inviteAllGuests,
-              address: {
-                street: activity.street,
-                city: activity.city,
-                state: activity.state,
-                zipCode: activity.zipCode,
-                apartment: activity.apartment,
-              },
-            },
-            function (r: eventActivityCreateMutationResponse, errs) {
-              if (errs && errs.length) {
-                errCount += 1;
-                return;
-              }
-              doneCount++;
-              if (doneCount == activities.length) {
-                //                route
-                console.log("event created");
-                goToEventPage();
-              }
-            },
-          );
-        });
-        if (!activities.length) {
-          goToEventPage();
-        }
-
-        console.log(r, errs);
+        router.push(`events/${eventSlug}`);
       },
     );
   }

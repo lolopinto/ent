@@ -8,6 +8,23 @@ export type EventCreateInput = {
     name: string;
     slug?: string | null;
     creatorID: string;
+    activities?: Array<ActivityEventCreateInput> | null;
+};
+export type ActivityEventCreateInput = {
+    name: string;
+    startTime: unknown;
+    endTime?: unknown | null;
+    location: string;
+    description?: string | null;
+    inviteAllGuests: boolean;
+    address?: AddressEventActivityCreateInput | null;
+};
+export type AddressEventActivityCreateInput = {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    apartment?: string | null;
 };
 export type eventCreateMutationVariables = {
     input: EventCreateInput;

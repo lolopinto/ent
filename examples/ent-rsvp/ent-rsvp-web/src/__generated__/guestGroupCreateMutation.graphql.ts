@@ -6,6 +6,12 @@ import { ConcreteRequest } from "relay-runtime";
 export type GuestGroupCreateInput = {
     invitationName: string;
     eventID: string;
+    guests?: Array<GuestGuestGroupCreateInput> | null;
+};
+export type GuestGuestGroupCreateInput = {
+    name: string;
+    emailAddress?: string | null;
+    title?: string | null;
 };
 export type guestGroupCreateMutationVariables = {
     input: GuestGroupCreateInput;

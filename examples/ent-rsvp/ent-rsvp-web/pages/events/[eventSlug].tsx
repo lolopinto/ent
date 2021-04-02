@@ -24,7 +24,6 @@ import Link from "next/link";
 import Col from "react-bootstrap/Col";
 import guestGroupCreate from "../../src/mutations/guestGroupCreate";
 import { guestGroupCreateMutationResponse } from "../../src/__generated__/guestGroupCreateMutation.graphql";
-import guestCreate from "../../src/mutations/guestCreate";
 import guestGroupDelete from "../../src/mutations/guestGroupDelete";
 import { MdEdit, MdDelete } from "react-icons/md";
 import importGuests from "../../src/mutations/importGuests";
@@ -480,42 +479,20 @@ function CreateGuestGroup(props: {
       {
         eventID,
         invitationName,
+        guests: guests.map((guest) => {
+          return {
+            name: guest.name,
+            emailAddress: guest.emailAddress || null,
+          };
+        }),
       },
       async function (r: guestGroupCreateMutationResponse, errs) {
         if (errs && errs.length) {
           return console.error(`error creating guest group`);
         }
-
-        const guestGroupID = r.guestGroupCreate.guestGroup.id;
-
-        let doneCount = 0;
-        let errCount = 0;
-
-        guests.map((guest) => {
-          guestCreate(
-            environment,
-            {
-              guestGroupID,
-              eventID,
-              name: guest.name,
-              emailAddress: guest.emailAddress || null,
-            },
-            function (r2, errs2) {
-              if (errs2 && errs2.length) {
-                errCount++;
-                return;
-              }
-              doneCount++;
-              if (doneCount == guests.length) {
-                // close modal
-                setShow(false);
-                // reload data for main page
-                // TODO there really should be a way to get it as part of mutation but whatevs
-                reloadData();
-              }
-            },
-          );
-        });
+        // close modal
+        setShow(false);
+        reloadData();
       },
     );
   };

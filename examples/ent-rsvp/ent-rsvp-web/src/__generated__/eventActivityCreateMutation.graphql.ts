@@ -11,9 +11,9 @@ export type EventActivityCreateInput = {
     location: string;
     description?: string | null;
     inviteAllGuests?: boolean | null;
-    address?: addressEventActivityCreateInput | null;
+    address?: AddressEventActivityCreateInput | null;
 };
-export type addressEventActivityCreateInput = {
+export type AddressEventActivityCreateInput = {
     street: string;
     city: string;
     state: string;
