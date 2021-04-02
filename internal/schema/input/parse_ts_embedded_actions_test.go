@@ -60,7 +60,7 @@ func TestParseEmbeddedActions(t *testing.T) {
 										CommonObjectType: enttype.CommonObjectType{
 											TSType:      "customAddressInput",
 											ActionName:  "CreateAddressAction",
-											GraphQLType: "addressfield",
+											GraphQLType: "AddressField",
 										},
 									},
 								},
@@ -121,9 +121,9 @@ func TestParseEmbeddedActions(t *testing.T) {
 										Nullable: true,
 										Type: &enttype.ObjectType{
 											CommonObjectType: enttype.CommonObjectType{
-												TSType:      "customAddressesInput",
+												TSType:      "customAddressInput",
 												ActionName:  "CreateAddressAction",
-												GraphQLType: "addressesfield",
+												GraphQLType: "AddressField",
 											},
 										},
 									},
@@ -185,9 +185,9 @@ func TestParseEmbeddedActions(t *testing.T) {
 										Nullable: true,
 										Type: &enttype.NullableObjectType{
 											CommonObjectType: enttype.CommonObjectType{
-												TSType:      "customAddressesInput",
+												TSType:      "customAddressInput",
 												ActionName:  "CreateAddressAction",
-												GraphQLType: "addressesfield",
+												GraphQLType: "AddressField",
 											},
 										},
 									},
@@ -247,9 +247,9 @@ func TestParseEmbeddedActions(t *testing.T) {
 									tsType: &enttype.ListWrapperType{
 										Type: &enttype.NullableObjectType{
 											CommonObjectType: enttype.CommonObjectType{
-												TSType:      "customAddressesInput",
+												TSType:      "customAddressInput",
 												ActionName:  "CreateAddressAction",
-												GraphQLType: "addressesfield",
+												GraphQLType: "AddressField",
 											},
 										},
 									},
@@ -308,9 +308,120 @@ func TestParseEmbeddedActions(t *testing.T) {
 									tsType: &enttype.ListWrapperType{
 										Type: &enttype.ObjectType{
 											CommonObjectType: enttype.CommonObjectType{
-												TSType:      "customAddressesInput",
+												TSType:      "customAddressInput",
 												ActionName:  "CreateAddressAction",
-												GraphQLType: "addressesfield",
+												GraphQLType: "AddressField",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"double embedded action": {
+			code: map[string]string{
+				"address.ts": getAddressCode(),
+				"event_activity.ts": getCodeWithSchema(`
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType, UUIDType} from "{schema}";
+
+				export default class EventActivity implements Schema {
+					fields: Field[] = [
+						StringType({name: "name"}),
+						UUIDType({name: "eventID"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "address",
+								actionName: "CreateAddressAction",
+								type: "Object",
+							}],
+						},
+					];
+				};`),
+				"event.ts": getCodeWithSchema(`
+				import {Schema, Action, Field, ActionOperation, StringType, TimestampType} from "{schema}";
+
+				export default class Event implements Schema {
+					fields: Field[] = [
+						StringType({name: "name"}),
+						TimestampType({name: "start_time"}),
+					];
+
+					actions: Action[] = [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [{
+								name: "activities",
+								actionName: "CreateEventActivityAction",
+								list: true,
+								type: "Object",
+							}],
+						},
+					];
+				};`),
+			},
+			expectedOutput: map[string]node{
+				"Address": getExpectedOutputAddress(),
+				"EventActivity": {
+					fields: []field{
+						{
+							name:   "name",
+							dbType: input.String,
+						},
+						{
+							name:   "eventID",
+							dbType: input.UUID,
+						},
+					},
+					actions: []action{
+						{
+							operation: ent.CreateAction,
+							actionOnlyFields: []actionField{
+								{
+									name: "address",
+									typ:  input.ActionTypeObject,
+									tsType: &enttype.ObjectType{
+										CommonObjectType: enttype.CommonObjectType{
+											TSType:      "customAddressInput",
+											ActionName:  "CreateAddressAction",
+											GraphQLType: "AddressField",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				"Event": {
+					fields: []field{
+						{
+							name:   "name",
+							dbType: input.String,
+						},
+						{
+							name:   "start_time",
+							dbType: input.Timestamp,
+						},
+					},
+					actions: []action{
+						{
+							operation: ent.CreateAction,
+							actionOnlyFields: []actionField{
+								{
+									name: "activities",
+									typ:  input.ActionTypeObject,
+									tsType: &enttype.ListWrapperType{
+										Type: &enttype.ObjectType{
+											CommonObjectType: enttype.CommonObjectType{
+												TSType:      "customActivityInput",
+												ActionName:  "CreateEventActivityAction",
+												GraphQLType: "ActivityField",
 											},
 										},
 									},

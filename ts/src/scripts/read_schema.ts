@@ -1,16 +1,9 @@
-import {
-  Action,
-  Schema,
-  Field,
-  Edge,
-  AssocEdge,
-  AssocEdgeGroup,
-} from "../schema";
+import { Schema, Field, Edge, AssocEdge, AssocEdgeGroup } from "../schema";
 import glob from "glob";
 import * as path from "path";
 import { pascalCase } from "pascal-case";
 import minimist from "minimist";
-import { ActionField, EdgeGroupAction } from "../schema/schema";
+import { ActionField } from "../schema/schema";
 
 function isAssocEdge(edge: Edge): edge is AssocEdge {
   return (edge as AssocEdge).schemaName != undefined;
@@ -51,21 +44,13 @@ type ProcessedAssocEdge =
   | Exclude<AssocEdge, "actionOnlyFields" | "edgeActions">
   | {
       edgeActions?: OutputAction[];
-      //      actionOnlyFields?: ProcessedActionField[];
     };
 
 type ProcessedAssocEdgeGroup =
   | Exclude<AssocEdgeGroup, "edgeAction">
   | {
       edgeAction?: OutputAction;
-      //      actionOnlyFields?: ProcessedActionField[];
     };
-
-// type ProcessedEdgeGroupAction =
-//   | Exclude<EdgeGroupAction, "actionOnlyFields">
-//   | {
-//       actionOnlyFields?: OutputAction[];
-//     };
 
 interface InputAction {
   actionOnlyFields?: ActionField[];
