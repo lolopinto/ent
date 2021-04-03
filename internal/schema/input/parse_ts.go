@@ -38,7 +38,7 @@ func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
 
 	cmdArgs = append(
 		cmdArgs,
-		util.GetAbsolutePath("../../../ts/src/scripts/read_schema.ts"),
+		util.GetPathToScript("scripts/read_schema.ts", fromTest),
 		"--path",
 		schemaPath,
 	)
