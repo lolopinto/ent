@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.source https://github.com/lolopinto/ent
 RUN apt update && apt --assume-yes install zsh
 
 # install auto_schema
-RUN python3 -m pip install auto_schema==0.0.3
+RUN python3 -m pip install auto_schema==0.0.5
 
 # get go
 RUN wget https://storage.googleapis.com/golang/go1.14.12.linux-amd64.tar.gz
@@ -25,7 +25,7 @@ ENV GOPATH=$HOME/go
 ENV PATH $PATH:$GOPATH/bin
 ENV GO111MODULE=on
 
-RUN go get github.com/lolopinto/ent/tsent@v0.0.6
+RUN go get github.com/lolopinto/ent/tsent@v0.0.8
 
 
 # needed to tell tsent where to get tsconfig-paths + make it possible to test locally 
