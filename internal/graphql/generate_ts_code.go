@@ -510,6 +510,8 @@ func parseCustomData(data *codegen.Data, fromTest bool) chan *customData {
 		var cmdName string
 		var cmdArgs []string
 		var env []string
+
+		scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", fromTest)
 		if fromTest {
 			env = []string{
 				fmt.Sprintf(
@@ -522,7 +524,7 @@ func parseCustomData(data *codegen.Data, fromTest bool) chan *customData {
 			cmdArgs = []string{
 				"--compiler-options",
 				testingutils.DefaultCompilerOptions(),
-				util.GetAbsolutePath("../../ts/src/scripts/custom_graphql.ts"),
+				scriptPath,
 				"--path",
 				filepath.Join(data.CodePath.GetAbsPathToRoot(), "src"),
 			}
@@ -534,9 +536,7 @@ func parseCustomData(data *codegen.Data, fromTest bool) chan *customData {
 				filepath.Join(data.CodePath.GetAbsPathToRoot(), "tsconfig.json"),
 				"-r",
 				getTsconfigPaths(),
-				// local...
-				// this assumes package already installed
-				fmt.Sprintf("./node_modules/%s/scripts/custom_graphql.js", codepath.Package),
+				scriptPath,
 				"--path",
 				// TODO this should be a configuration option to indicate where the code root is
 				filepath.Join(data.CodePath.GetAbsPathToRoot(), "src"),
