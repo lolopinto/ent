@@ -1,4 +1,3 @@
-import pprint
 from collections.abc import Mapping
 
 import sqlalchemy as sa
@@ -6,6 +5,7 @@ import sqlalchemy as sa
 from alembic.migration import MigrationContext
 from alembic.autogenerate import produce_migrations
 from alembic.autogenerate import render_python_code
+from alembic.util.exc import CommandError
 
 from sqlalchemy.sql.schema import DefaultClause
 from sqlalchemy.sql.elements import TextClause
@@ -215,7 +215,15 @@ class Runner(object):
 
         # TODO we need a top level upgrade path which is run when we get to production instead of running this
         # we need to only call upgrade() and not revision() and then upgrade()
-        self.revision(diff)
+        try:
+            self.revision(diff)
+        except CommandError as err:
+            # expected when not up to date so let's make it up to date by upgrading
+            if str(err) == "Target database is not up to date.":
+                pass
+            else:
+                raise err
+
         self.upgrade()
 
     def revision_message(self, diff=None):
