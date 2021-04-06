@@ -2,7 +2,9 @@ import os
 import sys
 import argparse
 
-from auto_schema import runner
+# run from auto_schema root. conflicts with pip-installed auto_schema when that exists so can't have
+# that installed when runnning this...
+from auto_schema.runner import Runner
 
 from importlib import import_module
 
@@ -30,12 +32,16 @@ def main():
     metadata = schema.get_metadata()
 
     if args.fix_edges:
-        runner.Runner.fix_edges(metadata, args)
+        Runner.fix_edges(metadata, args)
     else:
-        r = runner.Runner.from_command_line(metadata, args)
+        r = Runner.from_command_line(metadata, args)
         if args.upgrade:
             r.upgrade()
         elif args.downgrade is not None:
             r.downgrade(args.downgrade)
         else:
             r.run()
+
+
+if __name__ == '__main__':
+    main()
