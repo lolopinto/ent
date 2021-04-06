@@ -42,7 +42,7 @@ export class EventBuilder implements Builder<Event> {
     action: EventAction,
     public readonly existingEnt?: Event | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Event`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({

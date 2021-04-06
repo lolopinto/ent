@@ -62,6 +62,8 @@ interface Edge {
 type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
+  startCursor: String!
+  endCursor: String!
 }
 
 type UserToCreatedEventsEdge implements Edge {
