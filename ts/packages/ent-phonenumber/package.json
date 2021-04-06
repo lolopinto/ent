@@ -40,6 +40,6 @@
     "libphonenumber-js": "^1.7.56"
   },
   "peerDependencies": {
-    "@lolopinto/ent": "0.0.13"
+    "@lolopinto/ent": "0.0.83"
   }
 }
