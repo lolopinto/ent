@@ -17,7 +17,6 @@ ENV PATH $PATH:/usr/local/go/bin
 
 ARG GITHUB_TOKEN=$GITHUB_TOKEN
 RUN go env -w GOPRIVATE=github.com/lolopinto/ent
-#ENV GOPRIVATE github.com/lolopinto/ent
 RUN git config --global url."https://golang:$GITHUB_TOKEN@github.com".insteadOf "https://github.com"
 
 # default path but make it explicit
@@ -26,22 +25,6 @@ ENV GOPATH=$HOME/go
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
 
-#RUN git config credential.https://github.com/lolopinto lolopinto
-#ENV rm -rf $GOPATH/pkg/mod/github.com/lolopinto
-#ENV GO111MODULE=on
-
-#COPY .netrc .netrc
-#RUN cd $GOROOT
-#RUN go get github.com/lolopinto/ent@v0.0.9
-#RUN 
-# RUN git clone https://golang:$GITHUB_TOKEN@github.com/lolopinto/ent.git
-# RUN cd ent && git checkout tags/v0.0.9
-# RUN cd ent && go mod edit -replace github.com/lolopinto/ent=/ent
-# RUN cd ent/tsent && go install .
-
-#RUN pwd
-# WORKDIR $GOPATH/src/github.com/lolopinto/ent/tsent
-# RUN pwd
 RUN go install github.com/lolopinto/ent/tsent@v0.0.9
 
 # needed to tell tsent where to get tsconfig-paths + make it possible to test locally 
