@@ -31,7 +31,7 @@
     "registry": "https://npm.pkg.github.com/"
   },
   "peerDependencies": {
-    "@lolopinto/ent": "0.0.68"
+    "@lolopinto/ent": "0.0.83"
   },
   "devDependencies": {
     "@lolopinto/ent": "0.0.67",
