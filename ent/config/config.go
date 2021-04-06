@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -8,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/lib/pq"
 	"github.com/lolopinto/ent/internal/util"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
@@ -17,38 +20,6 @@ type Config struct {
 }
 
 type DBConfig struct {
-	// depending on what we have return what's needed?
-	connection           string
-	autoSchemaConnection string
-	rawDBInfo            *RawDbInfo
-}
-
-func (db *DBConfig) GetConnectionStr() string {
-	if db.connection != "" {
-		return db.connection
-	}
-
-	// Todo probably throw here?
-	if db.rawDBInfo == nil {
-		panic("no connection string or db ")
-	}
-
-	return db.rawDBInfo.GetConnectionStr("postgres", true)
-}
-
-func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
-	if db.autoSchemaConnection != "" {
-		return db.autoSchemaConnection
-	}
-	if db.connection != "" {
-		return db.connection
-	}
-	// postgres only for now as above. specific driver also
-	// no ssl mode
-	return db.rawDBInfo.GetConnectionStr("postgresql+psycopg2", false)
-}
-
-type RawDbInfo struct {
 	Dialect  string `yaml:"dialect"`
 	Database string `yaml:"database"`
 	User     string `yaml:"user"`
@@ -59,21 +30,63 @@ type RawDbInfo struct {
 	SslMode  string `yaml:"sslmode"`
 }
 
-func (dbData *RawDbInfo) GetConnectionStr(driver string, sslmode bool) string {
-	format := "{driver}://{user}:{password}@{host}:{port}/{dbname}"
+func (db *DBConfig) GetConnectionStr() string {
+	return db.getConnectionStr("postgres", true)
+}
+
+func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
+	// postgres only for now as above. specific driver also
+	// no ssl mode
+	return db.getConnectionStr("postgresql+psycopg2", false)
+}
+
+func (r *DBConfig) setDbName(val string) {
+	r.Database = val
+}
+
+func (r *DBConfig) setUser(val string) {
+	r.User = val
+}
+
+func (r *DBConfig) setPassword(val string) {
+	r.Password = val
+}
+
+func (r *DBConfig) setHost(val string) {
+	r.Host = val
+}
+
+func (r *DBConfig) setPort(val string) {
+	port, err := strconv.Atoi(val)
+	if err != nil {
+		panic(err)
+	}
+	r.Port = port
+}
+
+func (r *DBConfig) setSSLMode(val string) {
+	r.SslMode = val
+}
+
+func (dbData *DBConfig) getConnectionStr(driver string, sslmode bool) string {
+	format := "{driver}://{user}:{password}@{host}/{dbname}"
 	parts := []string{
 		"{driver}", driver,
 		"{user}", dbData.User,
 		"{password}", dbData.Password,
 		"{host}", dbData.Host,
-		"{port}", strconv.Itoa(dbData.Port),
 		"{dbname}", dbData.Database,
 	}
+	if dbData.Port != 0 {
+		format = "{driver}://{user}:{password}@{host}:{port}/{dbname}"
+		parts = append(parts, "{port}", strconv.Itoa(dbData.Port))
+	}
+
 	if sslmode {
 		format = format + "?sslmode={sslmode}"
-		parts = append(parts, []string{
+		parts = append(parts,
 			"{sslmode}", dbData.SslMode,
-		}...)
+		)
 	}
 	r := strings.NewReplacer(parts...)
 
@@ -106,27 +119,68 @@ func GetConnectionStr() string {
 	return cfg.DB.GetConnectionStr()
 }
 
-func ResetConfig(rdbi *RawDbInfo) {
+func ResetConfig(rdbi *DBConfig) {
 	cfg = &Config{
-		DB: &DBConfig{
-			rawDBInfo: rdbi,
-		},
+		DB: rdbi,
 	}
+}
+
+func parseConnectionString() (*DBConfig, error) {
+	// DB_CONNECTION_STRING trumps file
+	conn := util.GetEnv("DB_CONNECTION_STRING", "")
+
+	if conn == "" {
+		return nil, nil
+	}
+
+	url, err := pq.ParseURL(conn)
+	if err != nil {
+		return nil, errors.Wrap(err, "error parsing url")
+	}
+	parts := strings.Split(url, " ")
+
+	r := &DBConfig{
+		// only postgres supported for now
+		Dialect: "postgres",
+	}
+	m := map[string]func(string){
+		"dbname":   r.setDbName,
+		"host":     r.setHost,
+		"user":     r.setUser,
+		"password": r.setPassword,
+		"port":     r.setPort,
+		"sslmode":  r.setSSLMode,
+	}
+
+	for _, part := range parts {
+
+		parts2 := strings.Split(part, "=")
+		if len(parts2) != 2 {
+			log.Fatal("invalid 2")
+		}
+
+		fn := m[parts2[0]]
+		if fn == nil {
+			return nil, fmt.Errorf("invalid key %s in url", parts2[0])
+		}
+
+		fn(parts2[1])
+	}
+	return r, nil
 }
 
 func loadDBConfig() *DBConfig {
 	// DB_CONNECTION_STRING trumps file
-	conn := util.GetEnv("DB_CONNECTION_STRING", "")
-	autoSchemaConn := util.GetEnv("AUTO_SCHEMA_DB_CONNECTION_STRING", "")
-	if conn != "" {
-		return &DBConfig{
-			connection:           conn,
-			autoSchemaConnection: autoSchemaConn,
-		}
+	dbInfo, err := parseConnectionString()
+	if err != nil {
+		panic(err)
+	}
+	if dbInfo != nil {
+		return dbInfo
 	}
 
 	path := util.GetEnv("PATH_TO_DB_FILE", "config/database.yml")
-	_, err := os.Stat(path)
+	_, err = os.Stat(path)
 	if err != nil {
 		log.Fatalf("no way to get db config :%v", err)
 	}
@@ -136,7 +190,7 @@ func loadDBConfig() *DBConfig {
 		log.Fatalf("could not read yml file to load db: %v", err)
 	}
 
-	var dbData RawDbInfo
+	var dbData DBConfig
 	err = yaml.Unmarshal(b, &dbData)
 	if err != nil {
 		log.Fatal(err)
@@ -151,7 +205,5 @@ func loadDBConfig() *DBConfig {
 		log.Fatalf("invalid database configuration")
 	}
 
-	return &DBConfig{
-		rawDBInfo: &dbData,
-	}
+	return &dbData
 }

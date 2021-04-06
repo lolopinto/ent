@@ -20,7 +20,7 @@ type TestDB struct {
 }
 
 func (tdb *TestDB) BeforeAll() error {
-	dbInfo := config.RawDbInfo{
+	dbInfo := config.DBConfig{
 		Dialect:  "postgres",
 		Port:     5432,
 		User:     os.Getenv("POSTGRES_USER"),
@@ -29,7 +29,7 @@ func (tdb *TestDB) BeforeAll() error {
 		SslMode:  "disable",
 	}
 
-	db, err := sqlx.Open("postgres", dbInfo.GetConnectionStr("postgres", true))
+	db, err := sqlx.Open("postgres", dbInfo.GetConnectionStr())
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (tdb *TestDB) BeforeAll() error {
 
 	dbInfo.Database = tdb.dbName
 
-	privatedb, err := sqlx.Open("postgres", dbInfo.GetConnectionStr("postgres", true))
+	privatedb, err := sqlx.Open("postgres", dbInfo.GetConnectionStr())
 	if err != nil {
 		return err
 	}
