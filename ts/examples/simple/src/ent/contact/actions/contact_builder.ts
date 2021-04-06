@@ -40,7 +40,7 @@ export class ContactBuilder implements Builder<Contact> {
     action: ContactAction,
     public readonly existingEnt?: Contact | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Contact`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({

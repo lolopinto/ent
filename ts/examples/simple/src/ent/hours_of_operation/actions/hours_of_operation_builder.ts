@@ -39,7 +39,7 @@ export class HoursOfOperationBuilder implements Builder<HoursOfOperation> {
     action: HoursOfOperationAction,
     public readonly existingEnt?: HoursOfOperation | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-HoursOfOperation`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({

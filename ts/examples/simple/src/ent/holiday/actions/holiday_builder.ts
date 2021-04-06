@@ -38,7 +38,7 @@ export class HolidayBuilder implements Builder<Holiday> {
     action: HolidayAction,
     public readonly existingEnt?: Holiday | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Holiday`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({
