@@ -41,6 +41,6 @@
     "ts-jest": "^26.1.4"
   },
   "peerDependencies": {
-    "@lolopinto/ent": "0.0.21"
+    "@lolopinto/ent": "0.0.83"
   }
 }
