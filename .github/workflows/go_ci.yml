@@ -3,10 +3,10 @@ name: Go CI
 on:
   pull_request:
     branches: [ master ]
-    paths-ignore:
-      - python/*
-      - /examples/**
-      - .github/**
+    paths:
+      - '*.go'
+      - ts/src/**
+      - .github/workflows/go_ci.yml
 
 
 jobs:
