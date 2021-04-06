@@ -21,7 +21,6 @@ RUN git config --global url."https://golang:$GITHUB_TOKEN@github.com".insteadOf 
 
 # default path but make it explicit
 ENV GOPATH=$HOME/go
-#ENV PATH $PATH:$GOPATH/bin
 ENV GOBIN $GOPATH/bin
 ENV PATH $PATH:$GOPATH/bin
 
