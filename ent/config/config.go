@@ -142,6 +142,7 @@ func parseConnectionString() (*DBConfig, error) {
 	r := &DBConfig{
 		// only postgres supported for now
 		Dialect: "postgres",
+		SslMode: "disable",
 	}
 	m := map[string]func(string){
 		"dbname":   r.setDbName,
