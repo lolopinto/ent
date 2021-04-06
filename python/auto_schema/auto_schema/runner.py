@@ -213,8 +213,6 @@ class Runner(object):
         # migration_script = produce_migrations(self.mc, self.metadata)
         # print(render_python_code(migration_script.upgrade_ops))
 
-        # TODO we need a top level upgrade path which is run when we get to production instead of running this
-        # we need to only call upgrade() and not revision() and then upgrade()
         try:
             self.revision(diff)
         except CommandError as err:
