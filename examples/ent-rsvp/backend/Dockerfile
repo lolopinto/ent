@@ -4,4 +4,7 @@ WORKDIR /app
 
 COPY . /app
 
+RUN npm run compile
+RUN npm run upgrade
+
 CMD ["node", "dist/graphql/index.js"]
