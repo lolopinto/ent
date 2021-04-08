@@ -80,7 +80,7 @@ function renderEventsPage(args: homeArgs) {
   if (!props) {
     return null;
   }
-  console.log(props);
+  //  console.log(props);
   if (!props.event) {
     return <Alert variant="danger">Couldn't load event</Alert>;
   }
@@ -582,7 +582,7 @@ function ImportGuests(props: {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log(eventID, file);
+    //    console.log(eventID, file);
     importGuests(environment, { eventID, file }, function (r, errs) {
       if (errs && errs.length) {
         return console.error("error importing guests");

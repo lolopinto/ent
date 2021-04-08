@@ -6,10 +6,12 @@ async function fetchQuery(operation, variables) {
     let headers = {
       Accept: "application/json",
     };
-    const creds = localStorage.getItem("logged_in_creds");
-    if (creds) {
-      const credsObj = JSON.parse(creds);
-      headers["Authorization"] = `Bearer ${credsObj.token}`;
+    if (typeof localStorage !== "undefined") {
+      const creds = localStorage.getItem("logged_in_creds");
+      if (creds) {
+        const credsObj = JSON.parse(creds);
+        headers["Authorization"] = `Bearer ${credsObj.token}`;
+      }
     }
 
     const fetchOptions: RequestInit = {
@@ -25,9 +27,11 @@ async function fetchQuery(operation, variables) {
     const { clone, files } = extractFiles(
       op,
       undefined,
-      function (f): f is File {
-        return f instanceof File;
-      },
+      typeof File !== "undefined"
+        ? function (f): f is File {
+            return f instanceof File;
+          }
+        : undefined,
     );
     const opJSON = JSON.stringify(clone);
 

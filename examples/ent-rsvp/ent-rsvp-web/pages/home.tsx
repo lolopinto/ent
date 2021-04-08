@@ -49,7 +49,7 @@ function renderHome(args: homeArgs) {
 function Events(arg: { props: homeQueryResponse; environment: Environment }) {
   const { props, environment } = arg;
   const [showCreateEvent, setShowCreateEvent] = useState(false);
-  console.log(props);
+  //  console.log(props);
   if (!props) {
     return <>{"Logged in! Loading..."}</>;
   }
@@ -208,7 +208,7 @@ function CreateEvent({ environment, visible, creatorID }) {
 }
 
 function Event({ event }) {
-  console.log(event.slug);
+  //  console.log(event.slug);
   return (
     <Card>
       <Link href={`/events/${event.slug ?? event.id}`}>

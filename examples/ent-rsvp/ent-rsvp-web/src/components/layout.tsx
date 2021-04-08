@@ -45,5 +45,5 @@ export default function Layout(props: args) {
     goLogin();
   }, [session, props.allowLoggedout, props.allowGuest]);
 
-  return <Container className="p-3">{props.children}</Container>;
+  return <Container className="p-3">{!loading && props.children}</Container>;
 }
