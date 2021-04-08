@@ -5,7 +5,6 @@ import {
   FieldOptions,
   PolymorphicOptions,
   ForeignKey,
-  FieldEdge,
 } from "./schema";
 import { snakeCase } from "snake-case";
 
