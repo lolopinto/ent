@@ -4,7 +4,9 @@ WORKDIR /app
 
 COPY . /app
 
-RUN npm install && npm run compile
+RUN npm install 
+RUN npm run compile
+
 ARG DB_CONNECTION_STRING=$DB_CONNECTION_STRING
 ENV DB_CONNECTION_STRING=$DB_CONNECTION_STRING
 
