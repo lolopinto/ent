@@ -12,6 +12,10 @@ const mutation = graphql`
         user {
           id
         }
+        guest {
+          id
+          emailAddress
+        }
       }
       token
     }
