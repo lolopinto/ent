@@ -4,7 +4,7 @@ import { IncomingMessage, ServerResponse } from "http";
 import { buildContext, registerAuthHandler } from "@lolopinto/ent/auth";
 import { PassportStrategyHandler } from "@lolopinto/ent-passport";
 import passport from "passport";
-import cors, { CorsOptions } from "cors";
+import cors, { CorsOptions, CorsOptionsDelegate } from "cors";
 import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
 
 // this line fixes the issue by loading ent first but we need to do that consistently everywhere
@@ -12,6 +12,8 @@ import { User } from "src/ent";
 import schema from "./schema";
 
 let app = express();
+app.disable("x-powered-by");
+
 app.use(passport.initialize());
 registerAuthHandler(
   "viewer",
@@ -21,40 +23,38 @@ registerAuthHandler(
   }),
 );
 
-const corsOptions: CorsOptions = {
-  origin: "*",
-  methods: "POST, GET, OPTIONS, DELETE",
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "Accept",
-    "Accept-Encoding",
-    "Accept-Language",
-    "Content-Length",
-    "X-CSRF-Token",
-  ],
-  maxAge: 86400,
+const delegagte: CorsOptionsDelegate = function(req, callback) {
+  const corsOptions: CorsOptions = {
+    origin: req.headers.origin || "*",
+    methods: ["POST", "OPTIONS", "GET", "DELETE", "PATCH"],
+    allowedHeaders: [
+      "Content-Type",
+      "Content-Length",
+      "Authorization",
+      "Accept",
+      "Accept-Encoding",
+      "Accept-Language",
+    ],
+    maxAge: -1,
+  };
+  callback(null, corsOptions);
 };
-app.options("/graphql", cors(corsOptions));
 
-app.post(
+app.options("/graphql", cors(delegagte));
+
+app.use(
   "/graphql",
-  cors(corsOptions),
+  cors(delegagte),
   graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }),
   graphqlHTTP((request: IncomingMessage, response: ServerResponse, params) => {
-    //    console.log("params", params);
     let doWork = async () => {
       let context = await buildContext(request, response);
-      //      console.log(context, schema);
       return {
         schema: schema,
         graphiql: true,
         context,
-        //        pretty: true,
       };
     };
-    // console.log(request.headers, request.method);
-    // console.log(response.getHeaders());
     return doWork();
   }),
 );

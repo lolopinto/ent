@@ -9,10 +9,6 @@ const mutation = graphql`
   mutation authUserMutation($input: AuthUserInput!) {
     authUser(input: $input) {
       viewer {
-        guest {
-          id
-          emailAddress
-        }
         user {
           id
         }

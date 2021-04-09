@@ -132,6 +132,7 @@ export class AuthResolver {
     if (!viewer) {
       throw new Error(`not the right credentials`);
     }
+    console.log(viewer, token);
     return {
       viewer: new ViewerType(viewer),
       token,

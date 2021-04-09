@@ -61,7 +61,7 @@ async function fetchQuery(operation, variables) {
       process.env.NEXT_PUBLIC_RELAY_ENDPOINT,
       fetchOptions,
     );
-    return response.json();
+    return await response.json();
   } catch (err) {
     console.log("errrrrorrrrr");
     console.error(err);

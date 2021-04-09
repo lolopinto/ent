@@ -13,10 +13,6 @@ export type authUserMutationVariables = {
 export type authUserMutationResponse = {
     readonly authUser: {
         readonly viewer: {
-            readonly guest: {
-                readonly id: string;
-                readonly emailAddress: string | null;
-            } | null;
             readonly user: {
                 readonly id: string;
             } | null;
@@ -37,10 +33,6 @@ mutation authUserMutation(
 ) {
   authUser(input: $input) {
     viewer {
-      guest {
-        id
-        emailAddress
-      }
       user {
         id
       }
@@ -58,14 +50,7 @@ var v0 = [
     "name": "input"
   }
 ],
-v1 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "id",
-  "storageKey": null
-},
-v2 = [
+v1 = [
   {
     "alias": null,
     "args": [
@@ -91,31 +76,18 @@ v2 = [
           {
             "alias": null,
             "args": null,
-            "concreteType": "Guest",
-            "kind": "LinkedField",
-            "name": "guest",
-            "plural": false,
-            "selections": [
-              (v1/*: any*/),
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "emailAddress",
-                "storageKey": null
-              }
-            ],
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
             "concreteType": "User",
             "kind": "LinkedField",
             "name": "user",
             "plural": false,
             "selections": [
-              (v1/*: any*/)
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "id",
+                "storageKey": null
+              }
             ],
             "storageKey": null
           }
@@ -139,7 +111,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "authUserMutation",
-    "selections": (v2/*: any*/),
+    "selections": (v1/*: any*/),
     "type": "Mutation",
     "abstractKey": null
   },
@@ -148,17 +120,17 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
     "name": "authUserMutation",
-    "selections": (v2/*: any*/)
+    "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "1c3761bdffab6929a7cc2886f7a16593",
+    "cacheID": "1a8e8d5f419d8a02e1459f702b84453c",
     "id": null,
     "metadata": {},
     "name": "authUserMutation",
     "operationKind": "mutation",
-    "text": "mutation authUserMutation(\n  $input: AuthUserInput!\n) {\n  authUser(input: $input) {\n    viewer {\n      guest {\n        id\n        emailAddress\n      }\n      user {\n        id\n      }\n    }\n    token\n  }\n}\n"
+    "text": "mutation authUserMutation(\n  $input: AuthUserInput!\n) {\n  authUser(input: $input) {\n    viewer {\n      user {\n        id\n      }\n    }\n    token\n  }\n}\n"
   }
 };
 })();
-(node as any).hash = '0f273259d3c6a713e95d0f3017607281';
+(node as any).hash = '948ec2469fd5f8f4615bb9829d5e29ed';
 export default node;

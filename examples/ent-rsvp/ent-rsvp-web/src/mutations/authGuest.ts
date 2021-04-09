@@ -14,9 +14,6 @@ const mutation = graphql`
           id
           emailAddress
         }
-        user {
-          id
-        }
       }
       token
     }
