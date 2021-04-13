@@ -18,31 +18,31 @@ export default function Login({ visible, environment }) {
   function handleSubmit(event) {
     const form = event.currentTarget;
     const validity = form.checkValidity();
-    if (validity === false) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
     setValidated(true);
-    if (validity) {
-      authUser(
-        environment,
-        {
-          emailAddress: email,
-          password: password,
-        },
-        (response, errors) => {
-          if (errors) {
-            console.error(errors);
-            setShowError(true);
-            return;
-          }
-          setSession(response.authUser.token, response.authUser.viewer);
-
-          // redirect home after successful login.
-          router.push("/home");
-        },
-      );
+    event.preventDefault();
+    event.stopPropagation();
+    if (validity === false) {
+      return;
     }
+
+    authUser(
+      environment,
+      {
+        emailAddress: email,
+        password: password,
+      },
+      (response, errors) => {
+        if (errors) {
+          console.error(errors);
+          setShowError(true);
+          return;
+        }
+        setSession(response.authUser.token, response.authUser.viewer);
+
+        // redirect home after successful login.
+        router.push("/home");
+      },
+    );
   }
 
   if (!visible) {
