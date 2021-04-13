@@ -27,7 +27,7 @@
   "dependencies": {
     "@lolopinto/ent": "^0.0.83",
     "@lolopinto/ent-email": "0.0.1",
-    "@lolopinto/ent-passport": "0.0.1",
+    "@lolopinto/ent-passport": "^0.0.2",
     "@lolopinto/ent-password": "0.0.2",
     "@types/bcryptjs": "^2.4.2",
     "@types/express": "^4.17.9",
