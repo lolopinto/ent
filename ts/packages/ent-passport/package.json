@@ -1,6 +1,6 @@
 {
   "name": "@lolopinto/ent-passport",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "ent passport integration",
   "main": "dist/passport.js",
   "types": "dist/passport.d.ts",
@@ -34,7 +34,7 @@
     "@lolopinto/ent": "0.0.83"
   },
   "devDependencies": {
-    "@lolopinto/ent": "0.0.67",
+    "@lolopinto/ent": "0.0.83",
     "@lolopinto/ent-graphql-tests": "0.0.11",
     "@types/express-session": "^1.17.3",
     "@types/jest": "^26.0.20",
