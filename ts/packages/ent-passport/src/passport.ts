@@ -309,19 +309,21 @@ export async function useAndAuth(
 
 export async function useAndVerifyAuth(
   context: RequestContext,
-  verifyFn: () => Promise<ID | null>,
+  verifyFn: () => Promise<Viewer | ID | null>,
   loadOptions?: LoadEntOptions<Ent>,
   options?: AuthenticateOptions,
 ): Promise<AuthViewer> {
   const strategy = new LocalStrategy({
     verifyFn: async (ctx: RequestContext) => {
-      const viewerID = await verifyFn();
-      if (!viewerID) {
+      const viewerMaybe = await verifyFn();
+      if (!viewerMaybe) {
         return null;
       }
-      const reqToViewer = defaultReqToViewer(loadOptions);
-      const v = await reqToViewer(ctx, viewerID);
-      return v;
+      return await toViewer(
+        context,
+        viewerMaybe,
+        defaultReqToViewer(loadOptions),
+      );
     },
   });
 
@@ -343,7 +345,7 @@ export function defaultViewerToPayload(viewer: Viewer): {} {
 
 export async function useAndVerifyAuthJWT(
   context: RequestContext,
-  verifyFn: () => Promise<ID | null>,
+  verifyFn: () => Promise<ID | Viewer | null>,
   jwtOptions: JWTOptions,
   loadOptions?: LoadEntOptions<Ent>,
   options?: AuthenticateOptions,

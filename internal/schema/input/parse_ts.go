@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/lolopinto/ent/internal/cmd"
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/pkg/errors"
@@ -28,21 +29,24 @@ func ParseSchemaFromTSDir(dirPath string, fromTest bool) (*Schema, error) {
 	// TODO dependencies as needed docker file?
 
 	var cmdArgs []string
-
+	cmdName := "ts-node"
 	if fromTest {
 		cmdArgs = []string{
 			"--compiler-options",
 			testingutils.DefaultCompilerOptions(),
 		}
+	} else {
+		cmdName = "ts-node-script"
+		cmdArgs = cmd.GetArgsForScript(dirPath)
 	}
 
 	cmdArgs = append(
 		cmdArgs,
-		util.GetAbsolutePath("../../../ts/src/scripts/read_schema.ts"),
+		util.GetPathToScript("scripts/read_schema.ts", fromTest),
 		"--path",
 		schemaPath,
 	)
-	execCmd := exec.Command("ts-node", cmdArgs...)
+	execCmd := exec.Command(cmdName, cmdArgs...)
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer

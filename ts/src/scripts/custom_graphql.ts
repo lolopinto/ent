@@ -6,7 +6,6 @@ import {
   // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
   ProcessedCustomField,
-  CustomObject,
 } from "../graphql/graphql";
 import * as readline from "readline";
 import * as path from "path";

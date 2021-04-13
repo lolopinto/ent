@@ -40,7 +40,7 @@ export class AuthCodeBuilder implements Builder<AuthCode> {
     action: AuthCodeAction,
     public readonly existingEnt?: AuthCode | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-AuthCode`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({

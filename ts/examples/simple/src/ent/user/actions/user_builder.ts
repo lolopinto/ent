@@ -45,7 +45,7 @@ export class UserBuilder implements Builder<User> {
     action: UserAction,
     public readonly existingEnt?: User | undefined,
   ) {
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-User`;
     this.input = action.getInput();
 
     this.orchestrator = new Orchestrator({

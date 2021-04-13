@@ -45,7 +45,7 @@
     "typescript": "^3.9.7"
   },
   "peerDependencies": {
-    "@lolopinto/ent": "0.0.13",
+    "@lolopinto/ent": "0.0.83",
     "graphql": "^15.3.0",
     "jest-expect-message": "^1.0.2"
   },

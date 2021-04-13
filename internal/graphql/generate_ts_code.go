@@ -15,6 +15,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/action"
+	"github.com/lolopinto/ent/internal/cmd"
 	"github.com/lolopinto/ent/internal/codegen"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/edge"
@@ -484,10 +485,6 @@ func getFilePathForCustomQuery(name string) string {
 	return fmt.Sprintf("src/graphql/resolvers/generated/%s_query_type.ts", strcase.ToSnake(name))
 }
 
-func getTsconfigPaths() string {
-	return util.GetEnv("TSCONFIG_PATHS", "tsconfig-paths/register")
-}
-
 func parseCustomData(data *codegen.Data, fromTest bool) chan *customData {
 	var res = make(chan *customData)
 	go func() {
@@ -510,6 +507,8 @@ func parseCustomData(data *codegen.Data, fromTest bool) chan *customData {
 		var cmdName string
 		var cmdArgs []string
 		var env []string
+
+		scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", fromTest)
 		if fromTest {
 			env = []string{
 				fmt.Sprintf(
@@ -522,25 +521,18 @@ func parseCustomData(data *codegen.Data, fromTest bool) chan *customData {
 			cmdArgs = []string{
 				"--compiler-options",
 				testingutils.DefaultCompilerOptions(),
-				util.GetAbsolutePath("../../ts/src/scripts/custom_graphql.ts"),
+				scriptPath,
 				"--path",
 				filepath.Join(data.CodePath.GetAbsPathToRoot(), "src"),
 			}
 		} else {
-			cmdArgs = []string{
-				"--log-error", // TODO spend more time figuring this out
-				"--project",
-				// TODO this should find the tsconfig.json and not assume there's one at the root but fine for now
-				filepath.Join(data.CodePath.GetAbsPathToRoot(), "tsconfig.json"),
-				"-r",
-				getTsconfigPaths(),
-				// local...
-				// this assumes package already installed
-				fmt.Sprintf("./node_modules/%s/scripts/custom_graphql.js", codepath.Package),
+			cmdArgs = append(
+				cmd.GetArgsForScript(data.CodePath.GetAbsPathToRoot()),
+				scriptPath,
 				"--path",
 				// TODO this should be a configuration option to indicate where the code root is
 				filepath.Join(data.CodePath.GetAbsPathToRoot(), "src"),
-			}
+			)
 			cmdName = "ts-node-script"
 		}
 
@@ -2182,7 +2174,7 @@ func generateSchemaFile(hasMutations bool) error {
 		return errors.Wrap(err, "error writing temporary schema file")
 	}
 
-	cmd := exec.Command("ts-node", "-r", getTsconfigPaths(), filePath)
+	cmd := exec.Command("ts-node", "-r", cmd.GetTsconfigPaths(), filePath)
 	// TODO check this and do something useful with it
 	// and then apply this in more places
 	// for now we'll just spew it when there's an error as it's a hint as to what

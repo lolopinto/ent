@@ -51,7 +51,7 @@ func CloseDB() error {
 
 // TODO this obviously needs to be cleaned up
 // used by tests
-func ResetDB(db2 *sqlx.DB, rdbi *config.RawDbInfo) error {
+func ResetDB(db2 *sqlx.DB, rdbi *config.DBConfig) error {
 	dbMutex.Lock()
 	defer dbMutex.Unlock()
 
