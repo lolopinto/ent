@@ -11,6 +11,7 @@ import {
 } from "../core/ent";
 import { PrivacyPolicy } from "../core/privacy";
 import DB from "../core/db";
+import { log } from "../core/logger";
 
 export enum WriteOperation {
   Insert = "insert",
@@ -143,7 +144,7 @@ async function saveBuilderImpl<T extends Ent>(
     if (throwErr) {
       throw e;
     } else {
-      console.error(e);
+      log("error", e);
     }
   } finally {
     client.release();

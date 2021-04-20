@@ -108,3 +108,5 @@ export { query };
 export { Context, RequestContext, ContextCache } from "./core/context";
 
 export { IDViewer, LoggedOutViewer, IDViewerOptions } from "./core/viewer";
+
+export { loadConfig } from "./core/config";

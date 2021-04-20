@@ -20,6 +20,7 @@ import { Context } from "./context";
 
 import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
+import { log, logTrace } from "./logger";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -299,9 +300,10 @@ export async function applyPrivacyPolicyForEntX<T extends Ent>(
 }
 
 function logQuery(query: string, values: any[]) {
-  // console.log(query);
-  // console.log(values);
-  // console.trace();
+  // TODO ensuring correct values...
+  log("query", query);
+  log("query", values);
+  logTrace();
 }
 
 // TODO long term figure out if this API should be exposed
@@ -332,12 +334,13 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
 
   const query = buildQuery(options);
   const values = options.clause.values();
+  console.log(options.clause);
   logQuery(query, values);
   try {
     const res = await pool.query(query, values);
     if (res.rowCount != 1) {
       if (res.rowCount > 1) {
-        console.error("got more than one row for query " + query);
+        log("error", "got more than one row for query " + query);
       }
       return null;
     }
@@ -349,7 +352,7 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
 
     return res.rows[0];
   } catch (e) {
-    console.error(e);
+    log("error", e);
     return null;
   }
 }
@@ -379,7 +382,7 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
     return res.rows;
   } catch (e) {
     // TODO need to change every query to catch an error!
-    console.error(e);
+    log("error", e);
     return [];
   }
 }
@@ -837,7 +840,7 @@ async function mutateRow(
     }
     return res;
   } catch (err) {
-    console.error(err);
+    log("error", err);
     throw err;
   }
 }
