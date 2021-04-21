@@ -36,3 +36,7 @@ export function logTrace() {
     console.trace();
   }
 }
+
+export function logEnabled(level: logType) {
+  return logLevels.has(level);
+}

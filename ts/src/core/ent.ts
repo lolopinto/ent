@@ -20,7 +20,7 @@ import { Context } from "./context";
 
 import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
-import { log, logTrace } from "./logger";
+import { log, logEnabled, logTrace } from "./logger";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -111,10 +111,13 @@ export async function loadEnt<T extends Ent>(
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
   const l = viewer.context?.cache?.getEntLoader(options);
+  //  console.debug(l, id);
+
   if (!l) {
     const col = options.pkey || "id";
     return loadEntFromClause(viewer, options, clause.Eq(col, id));
   }
+
   const row = await l.load(id);
   return await applyPrivacyPolicyForRow(viewer, options, row);
 }
@@ -252,6 +255,54 @@ export async function loadDerivedEntX<T extends Ent>(
 // ent based data-loader
 // keep this private to the package for now
 export function createDataLoader(options: SelectDataOptions) {
+  const loaderOptions: DataLoader.Options<any, any> = {};
+
+  // if query logging is enabled, we should log what's happening with loader
+  if (logEnabled("query")) {
+    const m = new Map();
+    loaderOptions.cacheMap = {
+      get(key) {
+        const ret = m.get(key);
+        if (ret) {
+          log("query", {
+            "dataloader-cache-hit": key,
+            "tableName": options.tableName,
+          });
+          // } else {
+          //   log("query", {
+          //     "dataloader-cache-miss": key,
+          //     "tableName": options.tableName,
+          //   });
+        }
+        return ret;
+      },
+
+      set(key, value) {
+        // log("query", {
+        //   "dataloader-cache-set": key,
+        //   "tableName": options.tableName,
+        // });
+        return m.set(key, value);
+      },
+
+      delete(key) {
+        // log("query", {
+        //   "dataloader-cache-delete": key,
+        //   "tableName": options.tableName,
+        // });
+        return m.delete(key);
+      },
+
+      clear() {
+        // log("query", {
+        //   "dataloader-cache-clear": true,
+        //   "tableName": options.tableName,
+        // });
+        return m.clear();
+      },
+    };
+  }
+
   return new DataLoader(async (ids: ID[]) => {
     if (!ids.length) {
       return [];
@@ -275,7 +326,7 @@ export function createDataLoader(options: SelectDataOptions) {
     });
 
     return result;
-  });
+  }, loaderOptions);
 }
 
 export async function applyPrivacyPolicyForEnt<T extends Ent>(
