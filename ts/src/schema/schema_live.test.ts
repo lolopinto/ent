@@ -65,6 +65,7 @@ class UserWithTimestampNoFormatSchema implements Schema {
       defaultValueOnCreate: () => {
         return new Date();
       },
+      logValue: (val) => val,
     },
     {
       name: "updatedAt",
@@ -74,6 +75,7 @@ class UserWithTimestampNoFormatSchema implements Schema {
       defaultValueOnCreate: () => {
         return new Date();
       },
+      logValue: (val) => val,
     },
   ];
   ent = User;

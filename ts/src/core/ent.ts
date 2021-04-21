@@ -85,6 +85,7 @@ interface LoadRowsOptions extends QueryableDataOptions {}
 export interface EditRowOptions extends DataOptions {
   // fields to be edited
   fields: Data;
+  fieldsToLog?: Data;
   pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
@@ -299,10 +300,11 @@ export async function applyPrivacyPolicyForEntX<T extends Ent>(
   return ent;
 }
 
-function logQuery(query: string, values: any[]) {
-  // TODO ensuring correct values...
-  log("query", query);
-  log("query", values);
+function logQuery(query: string, logValues: any[]) {
+  log("query", {
+    query: query,
+    values: logValues,
+  });
   logTrace();
 }
 
@@ -333,11 +335,9 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   const pool = DB.getInstance().getPool();
 
   const query = buildQuery(options);
-  const values = options.clause.values();
-  console.log(options.clause);
-  logQuery(query, values);
+  logQuery(query, options.clause.logValues());
   try {
-    const res = await pool.query(query, values);
+    const res = await pool.query(query, options.clause.values());
     if (res.rowCount != 1) {
       if (res.rowCount > 1) {
         log("error", "got more than one row for query " + query);
@@ -368,13 +368,11 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
 
   const pool = DB.getInstance().getPool();
 
-  // always start at 1
-  const values = options.clause.values();
   const query = buildQuery(options);
 
-  logQuery(query, values);
+  logQuery(query, options.clause.logValues());
   try {
-    const res = await pool.query(query, values);
+    const res = await pool.query(query, options.clause.values());
     // put the rows in the cache...
     if (cache) {
       cache.primeCache(options, res.rows);
@@ -828,9 +826,10 @@ async function mutateRow(
   queryer: Queryer,
   query: string,
   values: any[],
+  logValues: any[],
   options: DataOptions,
 ) {
-  logQuery(query, values);
+  logQuery(query, logValues);
 
   let cache = options.context?.cache;
   try {
@@ -848,14 +847,18 @@ async function mutateRow(
 export function buildInsertQuery(
   options: EditRowOptions,
   suffix?: string,
-): [string, string[]] {
+): [string, string[], string[]] {
   let fields: string[] = [];
   let values: any[] = [];
+  let logValues: any[] = [];
   let valsString: string[] = [];
   let idx = 1;
   for (const key in options.fields) {
     fields.push(key);
     values.push(options.fields[key]);
+    if (options.fieldsToLog) {
+      logValues.push(options.fieldsToLog[key]);
+    }
     valsString.push(`$${idx}`);
     idx++;
   }
@@ -868,7 +871,7 @@ export function buildInsertQuery(
     query = query + " " + suffix;
   }
 
-  return [query, values];
+  return [query, values, logValues];
 }
 
 // TODO: these three are not to be exported out of this package
@@ -878,9 +881,9 @@ export async function createRow(
   options: EditRowOptions,
   suffix: string,
 ): Promise<Data | null> {
-  const [query, values] = buildInsertQuery(options, suffix);
+  const [query, values, logValues] = buildInsertQuery(options, suffix);
 
-  const res = await mutateRow(queryer, query, values, options);
+  const res = await mutateRow(queryer, query, values, logValues, options);
 
   if (res?.rowCount === 1) {
     return res.rows[0];
@@ -888,22 +891,24 @@ export async function createRow(
   return null;
 }
 
-export async function editRow(
-  queryer: Queryer,
+export function buildUpdateQuery(
   options: EditRowOptions,
   id: ID,
   suffix?: string,
-): Promise<Data | null> {
+): [string, any[], any[]] {
   let valsString: string[] = [];
   let values: any[] = [];
+  let logValues: any[] = [];
 
   let idx = 1;
   for (const key in options.fields) {
     values.push(options.fields[key]);
+    if (options.fieldsToLog) {
+      logValues.push(options.fieldsToLog[key]);
+    }
     valsString.push(`${key} = $${idx}`);
     idx++;
   }
-  values.push(id);
 
   const vals = valsString.join(", ");
   const col = options.pkey || "id";
@@ -913,7 +918,21 @@ export async function editRow(
     query = query + " " + suffix;
   }
 
-  const res = await mutateRow(queryer, query, values, options);
+  return [query, values, logValues];
+}
+
+export async function editRow(
+  queryer: Queryer,
+  options: EditRowOptions,
+  id: ID,
+  suffix?: string,
+): Promise<Data | null> {
+  const [query, values, logValues] = buildUpdateQuery(options, id, suffix);
+
+  // add id as value to prepared query
+  values.push(id);
+
+  const res = await mutateRow(queryer, query, values, logValues, options);
 
   if (res?.rowCount == 1) {
     // for now assume id primary key
@@ -930,8 +949,7 @@ export async function deleteRows(
   cls: clause.Clause,
 ): Promise<void> {
   const query = `DELETE FROM ${options.tableName} WHERE ${cls.clause(1)}`;
-  const values = cls.values();
-  await mutateRow(queryer, query, values, options);
+  await mutateRow(queryer, query, cls.values(), cls.logValues(), options);
 }
 
 export class DeleteNodeOperation implements DataOperation {
