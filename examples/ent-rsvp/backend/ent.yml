@@ -1,0 +1,5 @@
+log: 
+  - query
+  - error
+  - warn
+  - info
