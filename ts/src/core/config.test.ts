@@ -1,5 +1,6 @@
 import { loadConfig } from "./config";
 import DB from "./db";
+import { logIf } from "./logger";
 
 afterEach(() => {
   delete process.env.DB_CONNECTION_STRING;
@@ -14,7 +15,15 @@ test("db connection string", () => {
 
 test("env variable", () => {
   process.env.DB_CONNECTION_STRING = `postgres://:@localhost/ent_test`;
+  const oldConsoleError = console.error;
+  let errors: any[] = [];
+  console.error = (...val: any[]) => {
+    errors.push(...val);
+  };
   loadConfig();
+  console.error = oldConsoleError;
+  expect(errors.length).toEqual(1);
+  expect(errors[0]).toMatch(/^error opening file/);
   const db = DB.getInstance();
   expect(db.config.connectionString).toEqual(process.env.DB_CONNECTION_STRING);
 });
@@ -78,5 +87,35 @@ test("db scoped to env in config file", () => {
   });
 });
 
-// TODO logger next...
-// TODO tests...
+test("logger", () => {
+  loadConfig(Buffer.from(`log: info`));
+
+  logIf("error", () => {
+    fail("error logQuery not set. shouldn't be called");
+  });
+
+  logIf("warn", () => {
+    fail("warn logQuery not set. shouldn't be called");
+  });
+
+  logIf("query", () => {
+    fail("query logQuery not set. shouldn't be called");
+  });
+
+  logIf("debug", () => {
+    fail("debug logQuery not set. shouldn't be called");
+  });
+
+  const oldConsoleLog = console.log;
+  let logs: any[] = [];
+  console.log = (...val: any[]) => {
+    logs.push(...val);
+  };
+
+  logIf("info", () => {
+    return "hallo";
+  });
+  console.log = oldConsoleLog;
+  expect(logs.length).toBe(1);
+  expect(logs[0]).toBe("hallo");
+});

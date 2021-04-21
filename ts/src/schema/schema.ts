@@ -196,6 +196,7 @@ export interface FieldOptions {
   unique?: boolean;
   hideFromGraphQL?: boolean;
   private?: boolean;
+  sensitive?: boolean;
   graphqlName?: string;
   index?: boolean;
   foreignKey?: ForeignKey;
@@ -233,6 +234,8 @@ export interface Field extends FieldOptions {
   valid?(val: any): boolean;
   //valid?(val: any): Promise<boolean>;
   format?(val: any): any;
+
+  logValue(val: any): any;
 }
 
 export interface SchemaConstructor {

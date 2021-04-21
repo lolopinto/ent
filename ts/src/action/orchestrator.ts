@@ -11,6 +11,7 @@ import {
   DeleteNodeOperation,
   loadEdgeDatas,
   applyPrivacyPolicyForRow,
+  EditNodeOptions,
 } from "../core/ent";
 import { getFields, SchemaInputType } from "../schema/schema";
 import { Changeset, Executor, Validator, TriggerReturn } from "../action";
@@ -84,7 +85,8 @@ type EdgeMap = Map<string, OperationMap>;
 export class Orchestrator<T extends Ent> {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap = new Map();
-  private validatedFields: {} | null;
+  private validatedFields: Data | null;
+  private logValues: Data | null;
   private changesets: Changeset<Ent>[] = [];
   private dependencies: Map<ID, Builder<T>> = new Map();
   private fieldsToResolve: string[] = [];
@@ -202,12 +204,17 @@ export class Orchestrator<T extends Ent> {
           tableName: this.options.tableName,
         });
       default:
+        const opts: EditNodeOptions = {
+          fields: this.validatedFields!,
+          tableName: this.options.tableName,
+          fieldsToResolve: this.fieldsToResolve,
+        };
+        if (this.logValues) {
+          opts.fieldsToLog = this.logValues;
+        }
         this.mainOp = new EditNodeOperation(
-          {
-            fields: this.validatedFields!,
-            tableName: this.options.tableName,
-            fieldsToResolve: this.fieldsToResolve,
-          },
+          opts,
+
           this.options.builder.existingEnt,
         );
         return this.mainOp;
@@ -398,6 +405,7 @@ export class Orchestrator<T extends Ent> {
     const editedFields = this.options.editedFields();
     // build up data to be saved...
     let data = {};
+    let logValues = {};
     const schemaFields = getFields(this.options.schema);
     for (const [fieldName, field] of schemaFields) {
       let value = editedFields.get(fieldName);
@@ -460,10 +468,12 @@ export class Orchestrator<T extends Ent> {
       }
       if (value !== undefined) {
         data[dbKey] = value;
+        logValues[dbKey] = field.logValue(value);
       }
     }
 
     this.validatedFields = data;
+    this.logValues = logValues;
   }
 
   async valid(): Promise<boolean> {
