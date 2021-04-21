@@ -9,6 +9,7 @@ import { IncomingMessage, ServerResponse } from "http";
 
 import DataLoader from "dataloader";
 import * as clause from "./clause";
+import { log } from "./logger";
 
 export interface Context {
   getViewer(): Viewer;
@@ -64,7 +65,14 @@ export class ContextCache {
     if (!m) {
       return null;
     }
-    let rows = m.get(this.getkey(options));
+    const key = this.getkey(options);
+    let rows = m.get(key);
+    if (rows) {
+      log("query", {
+        "cache-hit": key,
+        "tableName": options.tableName,
+      });
+    }
     return rows || null;
   }
 
@@ -73,7 +81,14 @@ export class ContextCache {
     if (!m) {
       return null;
     }
-    let row = m.get(this.getkey(options));
+    const key = this.getkey(options);
+    let row = m.get(key);
+    if (row) {
+      log("query", {
+        "cache-hit": key,
+        "tableName": options.tableName,
+      });
+    }
     return row || null;
   }
 
