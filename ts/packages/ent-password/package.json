@@ -34,13 +34,13 @@
     "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
-    "@lolopinto/ent": "0.0.21",
+    "@lolopinto/ent": "0.0.84",
     "@types/jest": "^26.0.9",
     "jest": "^26.2.2",
     "password-validator": "^5.1.0",
     "ts-jest": "^26.1.4"
   },
   "peerDependencies": {
-    "@lolopinto/ent": "0.0.83"
+    "@lolopinto/ent": "^0.0.84"
   }
 }

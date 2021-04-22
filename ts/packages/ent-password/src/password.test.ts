@@ -120,3 +120,7 @@ describe("password format", () => {
     await testPw("Pa$$w0rd", 12); // not going higher than this because we want test to be fast enough
   });
 });
+
+test("log value", () => {
+  expect(pw().logValue("password")).toEqual("********");
+});
