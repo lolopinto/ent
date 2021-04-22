@@ -2,6 +2,7 @@ import { Viewer } from "../core/ent";
 import { LoggedOutViewer } from "../core/viewer";
 import { RequestContext, ContextCache } from "../core/context";
 import { IncomingMessage, ServerResponse } from "http";
+import { log } from "../core/logger";
 
 export type AuthViewer = Viewer | null;
 export interface Auth {
@@ -19,16 +20,19 @@ export async function clearAuthHandlers() {
 
 export async function getLoggedInViewer(
   context: RequestContext,
-): Promise<Viewer> {
+): Promise<Viewer | null> {
   for (const [name, authHandler] of handlers) {
     let v = await authHandler.authViewer(context);
     if (v !== null) {
-      //      console.log(`auth handler ${name} authenticated user ${v.viewerID}`);
+      log(
+        "info",
+        `auth handler \`${name}\` authenticated user \`${v.viewerID}\``,
+      );
       return v;
     }
   }
-  //  console.log("no auth handler returned viewer. default to logged out viewer");
-  return new LoggedOutViewer();
+  log("info", "no auth handler returned viewer. default to logged out viewer");
+  return null;
 }
 
 export async function buildContext(
@@ -36,23 +40,26 @@ export async function buildContext(
   response: ServerResponse,
 ): Promise<RequestContext> {
   const ctx = new contextImpl(request, response);
-
   let viewer = await getLoggedInViewer(ctx);
-  ctx.cache = new ContextCache();
-  // TODO since this is done, whatever other call to authViewer that was needed no longer needed
-  ctx.authViewer(viewer);
+  if (viewer) {
+    // TODO since this is done, whatever other call to authViewer that was needed no longer needed
+    ctx.authViewer(viewer);
+  }
   return ctx;
 }
 
 class contextImpl implements RequestContext {
   cache?: ContextCache;
-  private loggedOutViewer: LoggedOutViewer = new LoggedOutViewer();
+  private loggedOutViewer: LoggedOutViewer;
   private viewer: Viewer;
 
   constructor(
     public request: IncomingMessage,
     public response: ServerResponse,
   ) {
+    this.cache = new ContextCache();
+    // needs to be after this.cache above
+    this.loggedOutViewer = new LoggedOutViewer(this);
     this.viewer = this.loggedOutViewer;
   }
 
