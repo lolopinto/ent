@@ -71,7 +71,7 @@ const delegagte: CorsOptionsDelegate = function(req, callback) {
 app.options("/graphql", cors(delegagte));
 
 app.use(Sentry.Handlers.errorHandler());
-const r = /(query|mutation) (\w+)\(/;
+const r = /(query|mutation) (\w+)/;
 app.use(
   "/graphql",
   cors(delegagte),

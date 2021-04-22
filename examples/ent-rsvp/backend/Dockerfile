@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . /app
 
-RUN rm -rf node_modules && npm install 
+RUN rm -rf node_modules && rm package-lock.json && npm install 
 RUN npm run compile
 
 ARG DB_CONNECTION_STRING=$DB_CONNECTION_STRING
