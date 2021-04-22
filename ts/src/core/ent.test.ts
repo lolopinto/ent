@@ -253,7 +253,7 @@ test("custom edge", async () => {
 
 class contextImpl implements Context {
   cache?: ContextCache = new ContextCache();
-  viewer = new LoggedOutViewer();
+  viewer = new LoggedOutViewer(this);
 
   getViewer(): Viewer {
     return this.viewer;
@@ -293,7 +293,7 @@ describe("loadEnt(X)", () => {
       await loadEntX(ctx.getViewer(), "1", options);
       fail("should have thrown");
     } catch (e) {
-      expect(e.message).toMatch(/couldn't find row for query id/);
+      expect(e.message).toMatch(/couldn't find row for id 1/);
     }
   });
 

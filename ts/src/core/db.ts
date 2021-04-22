@@ -2,7 +2,40 @@ import pg, { Pool, ClientConfig, PoolClient } from "pg";
 import * as fs from "fs";
 import { safeLoad } from "js-yaml";
 
-function getClientConfig(): ClientConfig | null {
+export interface Database {
+  database?: string;
+  user?: string;
+  password?: string;
+  host?: string;
+  port?: number;
+  ssl?: boolean;
+  sslmode?: string;
+}
+
+// probably should just be string?
+// depends on NODE_ENV values.
+export type env = "production" | "test" | "development";
+export declare type DBDict = Record<env, Database>;
+
+function isDbDict(v: Database | DBDict): v is DBDict {
+  return (
+    v["production"] !== undefined ||
+    v["development"] !== undefined ||
+    v["test"] !== undefined
+  );
+}
+
+// order
+// env variable
+// connString in config
+// db in Config file (helpful for test vs development)
+// database file in yml file
+// database/config.yml
+function getClientConfig(args?: {
+  connectionString?: string;
+  dbFile?: string;
+  db?: Database | DBDict;
+}): ClientConfig | null {
   // if there's a db connection string, use that first
   const str = process.env.DB_CONNECTION_STRING;
   if (str) {
@@ -11,9 +44,36 @@ function getClientConfig(): ClientConfig | null {
     };
   }
 
+  let file = "config/database.yml";
+  if (args) {
+    if (args.connectionString) {
+      return {
+        connectionString: args.connectionString,
+      };
+    }
+
+    if (args.db) {
+      let db: Database;
+      if (isDbDict(args.db)) {
+        if (!process.env.NODE_ENV) {
+          throw new Error(`process.env.NODE_ENV is undefined`);
+        }
+        db = args.db[process.env.NODE_ENV];
+      } else {
+        db = args.db;
+      }
+      return db;
+    }
+
+    if (args.dbFile) {
+      file = args.dbFile;
+    }
+  }
+
   try {
-    // TODO support multiple environments
-    let data = fs.readFileSync("config/database.yml", { encoding: "utf8" });
+    // TODO support multiple environments in database/config.yaml file.
+    // if needed for now, general yaml file should be used
+    let data = fs.readFileSync(file, { encoding: "utf8" });
     let yaml = safeLoad(data);
     if (yaml) {
       return {
@@ -36,7 +96,7 @@ export default class DB {
   private static instance: DB;
 
   private pool: Pool;
-  private constructor(config: ClientConfig) {
+  private constructor(public config: ClientConfig) {
     this.pool = new Pool(config);
   }
 
@@ -66,6 +126,17 @@ export default class DB {
     }
     DB.instance = new DB(clientConfig);
     return DB.instance;
+  }
+
+  static initDB(args?: {
+    connectionString?: string;
+    dbFile?: string;
+    db?: Database | DBDict;
+  }) {
+    const config = getClientConfig(args);
+    if (config) {
+      DB.instance = new DB(config);
+    }
   }
 }
 

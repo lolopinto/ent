@@ -2,6 +2,26 @@ export interface Clause {
   clause(idx: number): string;
   values(): any[];
   instanceKey(): string;
+  // values to log when querying
+  logValues(): any[];
+}
+
+export interface SensitiveValue {
+  value(): any;
+  logValue(): any;
+}
+
+function isSensitive(val: any): val is SensitiveValue {
+  return (
+    typeof val === "object" && (val as SensitiveValue).logValue !== undefined
+  );
+}
+
+function rawValue(val: any) {
+  if (isSensitive(val)) {
+    return val.value();
+  }
+  return val;
 }
 
 class simpleClause implements Clause {
@@ -12,11 +32,21 @@ class simpleClause implements Clause {
   }
 
   values(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.value.value()];
+    }
+    return [this.value];
+  }
+
+  logValues(): any[] {
+    if (isSensitive(this.value)) {
+      return [this.value.logValue()];
+    }
     return [this.value];
   }
 
   instanceKey(): string {
-    return `${this.col}${this.op}${this.value}`;
+    return `${this.col}${this.op}${rawValue(this.value)}`;
   }
 }
 
@@ -38,11 +68,31 @@ class inClause implements Clause {
   }
 
   values(): any[] {
-    return this.value;
+    const result: any[] = [];
+    for (const value of this.value) {
+      if (isSensitive(value)) {
+        result.push(value.value());
+      } else {
+        result.push(value);
+      }
+    }
+    return result;
+  }
+
+  logValues(): any[] {
+    const result: any[] = [];
+    for (const value of this.value) {
+      if (isSensitive(value)) {
+        result.push(value.logValue());
+      } else {
+        result.push(value);
+      }
+    }
+    return result;
   }
 
   instanceKey(): string {
-    return `in:${this.col}:${this.value.join(",")}`;
+    return `in:${this.col}:${this.values().join(",")}`;
   }
 }
 
@@ -62,6 +112,14 @@ class compositeClause implements Clause {
     let result = [];
     for (const clause of this.clauses) {
       result = result.concat(...clause.values());
+    }
+    return result;
+  }
+
+  logValues(): any[] {
+    let result = [];
+    for (const clause of this.clauses) {
+      result = result.concat(...clause.logValues());
     }
     return result;
   }
@@ -104,4 +162,18 @@ export function Or(...args: Clause[]): compositeClause {
 // todo?
 export function In(col: string, ...values: any): Clause {
   return new inClause(col, values);
+}
+
+// wrap a query in the db with this to ensure that it doesn't show up in the logs
+// e.g. if querying for password, SSN, etc
+// we'll pass the right fields to query and log something along the lines of `****`
+export function sensitiveValue(val: any): SensitiveValue {
+  return {
+    value() {
+      return val;
+    },
+    logValue() {
+      return "*".repeat(`${val}`.length);
+    },
+  };
 }

@@ -16,6 +16,7 @@ export abstract class BaseField {
   unique?: boolean;
   hideFromGraphQL?: boolean;
   private?: boolean;
+  sensitive?: boolean;
   graphqlName?: string;
   index?: boolean;
   foreignKey?: ForeignKey;
@@ -31,6 +32,14 @@ export abstract class BaseField {
   // e.g. a polymorphic user_id field adds a user_type field
   derivedFields?: Field[];
   derivedWhenEmbedded?: boolean;
+
+  logValue(val: any): any {
+    if (this.sensitive) {
+      // for sensitive things, don't log the actual value
+      return "*".repeat(`${val}`.length);
+    }
+    return val;
+  }
 }
 
 export class UUIDField extends BaseField implements Field {

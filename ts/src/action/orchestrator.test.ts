@@ -39,11 +39,13 @@ import {
   AlwaysAllowRule,
   DenyIfLoggedInRule,
   AlwaysDenyRule,
+  AlwaysAllowPrivacyPolicy,
 } from "../core/privacy";
 import { edgeDirection } from "./orchestrator";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
 import { snakeCase } from "snake-case";
+import { setLogLevels } from "../core/logger";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -2148,5 +2150,91 @@ describe("viewer for ent load", () => {
 
     const editedUser = await action.saveX();
     expect(editedUser).toBeInstanceOf(CustomUser);
+  });
+});
+
+describe("logging queries", () => {
+  let oldConsoleError;
+  let oldConsoleLog;
+  let logs: any[] = [];
+  let errors: any[] = [];
+
+  beforeAll(() => {
+    oldConsoleLog = console.log;
+    oldConsoleError = console.error;
+
+    console.log = (...any) => {
+      logs.push(...any);
+    };
+    console.error = (...any) => {
+      errors.push(...any);
+    };
+    setLogLevels("query");
+  });
+
+  afterAll(() => {
+    console.log = oldConsoleLog;
+    console.error = oldConsoleError;
+  });
+
+  afterEach(() => {
+    logs = [];
+    errors = [];
+  });
+
+  class SensitiveUser implements Ent {
+    id: ID;
+    accountID: string;
+    nodeType = "User";
+    privacyPolicy: PrivacyPolicy = AlwaysAllowPrivacyPolicy;
+
+    constructor(public viewer: Viewer, id: ID, public data: Data) {
+      this.id = id;
+    }
+  }
+  class SensitiveValuesSchema extends BaseEntSchema {
+    fields: Field[] = [
+      StringType({ name: "FirstName" }),
+      StringType({ name: "LastName", sensitive: true }),
+    ];
+    ent = SensitiveUser;
+  }
+
+  test("regular", async () => {
+    let action = new SimpleAction(
+      new LoggedOutViewer(),
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    await action.saveX();
+    expect(logs.length).toBeGreaterThan(1);
+    const lastLog = logs[logs.length - 1];
+    expect(lastLog.query).toMatch(/INSERT INTO users/);
+    expect(lastLog.values.length).toBe(5);
+    // get the last two
+    expect(lastLog.values.slice(3)).toStrictEqual(["Jon", "Snow"]);
+  });
+
+  test("sensitive", async () => {
+    let action = new SimpleAction(
+      new LoggedOutViewer(),
+      new SensitiveValuesSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    await action.saveX();
+    expect(logs.length).toBeGreaterThan(1);
+    const lastLog = logs[logs.length - 1];
+    expect(lastLog.query).toMatch(/INSERT INTO sensitive_users/);
+    expect(lastLog.values.length).toBe(5);
+    // get the last two. Snow replaced with **** since sensitive
+    expect(lastLog.values.slice(3)).toStrictEqual(["Jon", "****"]);
   });
 });

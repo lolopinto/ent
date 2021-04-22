@@ -20,6 +20,7 @@ import { Context } from "./context";
 
 import * as clause from "./clause";
 import { WriteOperation, Builder } from "../action";
+import { log, logEnabled, logTrace } from "./logger";
 
 export interface Viewer {
   viewerID: ID | null;
@@ -84,6 +85,7 @@ interface LoadRowsOptions extends QueryableDataOptions {}
 export interface EditRowOptions extends DataOptions {
   // fields to be edited
   fields: Data;
+  fieldsToLog?: Data;
   pkey?: string; // what key are we loading from. if not provided we're loading from column "id"
 }
 
@@ -109,10 +111,13 @@ export async function loadEnt<T extends Ent>(
   options: LoadEntOptions<T>,
 ): Promise<T | null> {
   const l = viewer.context?.cache?.getEntLoader(options);
+  //  console.debug(l, id);
+
   if (!l) {
     const col = options.pkey || "id";
     return loadEntFromClause(viewer, options, clause.Eq(col, id));
   }
+
   const row = await l.load(id);
   return await applyPrivacyPolicyForRow(viewer, options, row);
 }
@@ -250,6 +255,54 @@ export async function loadDerivedEntX<T extends Ent>(
 // ent based data-loader
 // keep this private to the package for now
 export function createDataLoader(options: SelectDataOptions) {
+  const loaderOptions: DataLoader.Options<any, any> = {};
+
+  // if query logging is enabled, we should log what's happening with loader
+  if (logEnabled("query")) {
+    const m = new Map();
+    loaderOptions.cacheMap = {
+      get(key) {
+        const ret = m.get(key);
+        if (ret) {
+          log("query", {
+            "dataloader-cache-hit": key,
+            "tableName": options.tableName,
+          });
+          // } else {
+          //   log("query", {
+          //     "dataloader-cache-miss": key,
+          //     "tableName": options.tableName,
+          //   });
+        }
+        return ret;
+      },
+
+      set(key, value) {
+        // log("query", {
+        //   "dataloader-cache-set": key,
+        //   "tableName": options.tableName,
+        // });
+        return m.set(key, value);
+      },
+
+      delete(key) {
+        // log("query", {
+        //   "dataloader-cache-delete": key,
+        //   "tableName": options.tableName,
+        // });
+        return m.delete(key);
+      },
+
+      clear() {
+        // log("query", {
+        //   "dataloader-cache-clear": true,
+        //   "tableName": options.tableName,
+        // });
+        return m.clear();
+      },
+    };
+  }
+
   return new DataLoader(async (ids: ID[]) => {
     if (!ids.length) {
       return [];
@@ -273,7 +326,7 @@ export function createDataLoader(options: SelectDataOptions) {
     });
 
     return result;
-  });
+  }, loaderOptions);
 }
 
 export async function applyPrivacyPolicyForEnt<T extends Ent>(
@@ -298,10 +351,12 @@ export async function applyPrivacyPolicyForEntX<T extends Ent>(
   return ent;
 }
 
-function logQuery(query: string, values: any[]) {
-  // console.log(query);
-  // console.log(values);
-  // console.trace();
+function logQuery(query: string, logValues: any[]) {
+  log("query", {
+    query: query,
+    values: logValues,
+  });
+  logTrace();
 }
 
 // TODO long term figure out if this API should be exposed
@@ -331,13 +386,12 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   const pool = DB.getInstance().getPool();
 
   const query = buildQuery(options);
-  const values = options.clause.values();
-  logQuery(query, values);
+  logQuery(query, options.clause.logValues());
   try {
-    const res = await pool.query(query, values);
+    const res = await pool.query(query, options.clause.values());
     if (res.rowCount != 1) {
       if (res.rowCount > 1) {
-        console.error("got more than one row for query " + query);
+        log("error", "got more than one row for query " + query);
       }
       return null;
     }
@@ -349,7 +403,7 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
 
     return res.rows[0];
   } catch (e) {
-    console.error(e);
+    log("error", e);
     return null;
   }
 }
@@ -365,13 +419,11 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
 
   const pool = DB.getInstance().getPool();
 
-  // always start at 1
-  const values = options.clause.values();
   const query = buildQuery(options);
 
-  logQuery(query, values);
+  logQuery(query, options.clause.logValues());
   try {
-    const res = await pool.query(query, values);
+    const res = await pool.query(query, options.clause.values());
     // put the rows in the cache...
     if (cache) {
       cache.primeCache(options, res.rows);
@@ -379,7 +431,7 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
     return res.rows;
   } catch (e) {
     // TODO need to change every query to catch an error!
-    console.error(e);
+    log("error", e);
     return [];
   }
 }
@@ -824,9 +876,10 @@ async function mutateRow(
   queryer: Queryer,
   query: string,
   values: any[],
+  logValues: any[],
   options: DataOptions,
 ) {
-  logQuery(query, values);
+  logQuery(query, logValues);
 
   let cache = options.context?.cache;
   try {
@@ -836,7 +889,7 @@ async function mutateRow(
     }
     return res;
   } catch (err) {
-    console.error(err);
+    log("error", err);
     throw err;
   }
 }
@@ -844,14 +897,18 @@ async function mutateRow(
 export function buildInsertQuery(
   options: EditRowOptions,
   suffix?: string,
-): [string, string[]] {
+): [string, string[], string[]] {
   let fields: string[] = [];
   let values: any[] = [];
+  let logValues: any[] = [];
   let valsString: string[] = [];
   let idx = 1;
   for (const key in options.fields) {
     fields.push(key);
     values.push(options.fields[key]);
+    if (options.fieldsToLog) {
+      logValues.push(options.fieldsToLog[key]);
+    }
     valsString.push(`$${idx}`);
     idx++;
   }
@@ -864,7 +921,7 @@ export function buildInsertQuery(
     query = query + " " + suffix;
   }
 
-  return [query, values];
+  return [query, values, logValues];
 }
 
 // TODO: these three are not to be exported out of this package
@@ -874,9 +931,9 @@ export async function createRow(
   options: EditRowOptions,
   suffix: string,
 ): Promise<Data | null> {
-  const [query, values] = buildInsertQuery(options, suffix);
+  const [query, values, logValues] = buildInsertQuery(options, suffix);
 
-  const res = await mutateRow(queryer, query, values, options);
+  const res = await mutateRow(queryer, query, values, logValues, options);
 
   if (res?.rowCount === 1) {
     return res.rows[0];
@@ -884,22 +941,24 @@ export async function createRow(
   return null;
 }
 
-export async function editRow(
-  queryer: Queryer,
+export function buildUpdateQuery(
   options: EditRowOptions,
   id: ID,
   suffix?: string,
-): Promise<Data | null> {
+): [string, any[], any[]] {
   let valsString: string[] = [];
   let values: any[] = [];
+  let logValues: any[] = [];
 
   let idx = 1;
   for (const key in options.fields) {
     values.push(options.fields[key]);
+    if (options.fieldsToLog) {
+      logValues.push(options.fieldsToLog[key]);
+    }
     valsString.push(`${key} = $${idx}`);
     idx++;
   }
-  values.push(id);
 
   const vals = valsString.join(", ");
   const col = options.pkey || "id";
@@ -909,7 +968,21 @@ export async function editRow(
     query = query + " " + suffix;
   }
 
-  const res = await mutateRow(queryer, query, values, options);
+  return [query, values, logValues];
+}
+
+export async function editRow(
+  queryer: Queryer,
+  options: EditRowOptions,
+  id: ID,
+  suffix?: string,
+): Promise<Data | null> {
+  const [query, values, logValues] = buildUpdateQuery(options, id, suffix);
+
+  // add id as value to prepared query
+  values.push(id);
+
+  const res = await mutateRow(queryer, query, values, logValues, options);
 
   if (res?.rowCount == 1) {
     // for now assume id primary key
@@ -926,8 +999,7 @@ export async function deleteRows(
   cls: clause.Clause,
 ): Promise<void> {
   const query = `DELETE FROM ${options.tableName} WHERE ${cls.clause(1)}`;
-  const values = cls.values();
-  await mutateRow(queryer, query, values, options);
+  await mutateRow(queryer, query, cls.values(), cls.logValues(), options);
 }
 
 export class DeleteNodeOperation implements DataOperation {
