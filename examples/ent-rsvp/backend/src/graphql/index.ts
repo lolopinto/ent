@@ -35,6 +35,8 @@ Sentry.init({
   ],
 });
 
+//https://docs.sentry.io/platforms/node/guides/express/
+
 app.use(Sentry.Handlers.requestHandler());
 app.use(Sentry.Handlers.tracingHandler());
 
@@ -69,12 +71,20 @@ const delegagte: CorsOptionsDelegate = function(req, callback) {
 app.options("/graphql", cors(delegagte));
 
 app.use(Sentry.Handlers.errorHandler());
-
+const r = /(query|mutation) (\w+)\(/;
 app.use(
   "/graphql",
   cors(delegagte),
   graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }),
   graphqlHTTP((request: IncomingMessage, response: ServerResponse, params) => {
+    if (params && params.query) {
+      const result = r.exec(params.query);
+      if (result) {
+        // set the query or mutation name as the sentry transaction name
+        //https://docs.sentry.io/platforms/node/guides/express/enriching-events/transaction-name/
+        Sentry.configureScope((scope) => scope.setTransactionName(result[2]));
+      }
+    }
     let doWork = async () => {
       let context = await buildContext(request, response);
       return {
