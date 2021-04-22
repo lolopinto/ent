@@ -17,6 +17,8 @@ export class Password extends BaseField implements Field {
   // hardcode password to be private and hidden from graphql by default
   private = true;
   hideFromGraphQL = true;
+  // indicate sensitive so that we don't log the value of the password
+  sensitive = true;
 
   constructor() {
     super();
