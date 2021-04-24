@@ -1,6 +1,7 @@
 import { loadConfig } from "./config";
 import DB from "./db";
 import { logIf } from "./logger";
+import { MockLogs } from "../testutils/mock_log";
 
 afterEach(() => {
   delete process.env.DB_CONNECTION_STRING;
@@ -15,15 +16,12 @@ test("db connection string", () => {
 
 test("env variable", () => {
   process.env.DB_CONNECTION_STRING = `postgres://:@localhost/ent_test`;
-  const oldConsoleError = console.error;
-  let errors: any[] = [];
-  console.error = (...val: any[]) => {
-    errors.push(...val);
-  };
+  const ml = new MockLogs();
+  ml.mock();
   loadConfig();
-  console.error = oldConsoleError;
-  expect(errors.length).toEqual(1);
-  expect(errors[0]).toMatch(/^error opening file/);
+  ml.restore();
+  expect(ml.errors.length).toEqual(1);
+  expect(ml.errors[0]).toMatch(/^error opening file/);
   const db = DB.getInstance();
   expect(db.config.connectionString).toEqual(process.env.DB_CONNECTION_STRING);
 });
@@ -106,16 +104,13 @@ test("logger", () => {
     fail("debug logQuery not set. shouldn't be called");
   });
 
-  const oldConsoleLog = console.log;
-  let logs: any[] = [];
-  console.log = (...val: any[]) => {
-    logs.push(...val);
-  };
+  const ml = new MockLogs();
+  ml.mock();
 
   logIf("info", () => {
     return "hallo";
   });
-  console.log = oldConsoleLog;
-  expect(logs.length).toBe(1);
-  expect(logs[0]).toBe("hallo");
+  ml.restore();
+  expect(ml.logs.length).toBe(1);
+  expect(ml.logs[0]).toBe("hallo");
 });

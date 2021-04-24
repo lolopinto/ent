@@ -26,12 +26,14 @@ import { setLogLevels } from "../logger";
 import DB from "../db";
 
 class TestQueryFilter<TData extends Data> {
-  private contacts: FakeContact[] = [];
+  private allContacts: FakeContact[] = [];
+  private filteredContacts: FakeContact[] = [];
   private user: FakeUser;
   constructor(
     private filter: (
       q: EdgeQuery<FakeContact, TData>,
       user: FakeUser,
+      contacts: FakeContact[],
     ) => EdgeQuery<FakeContact, TData>,
     private newQuery: (
       v: Viewer,
@@ -43,9 +45,9 @@ class TestQueryFilter<TData extends Data> {
 
   async beforeEach() {
     //    console.log("sss");
-    [this.user, this.contacts] = await createAllContacts();
+    [this.user, this.allContacts] = await createAllContacts();
     //    console.log(this.user, this.contacts);
-    this.contacts = this.ents(this.contacts);
+    this.filteredContacts = this.ents(this.allContacts);
     QueryRecorder.clearQueries();
   }
 
@@ -53,6 +55,7 @@ class TestQueryFilter<TData extends Data> {
     return this.filter(
       this.newQuery(viewer || this.defaultViewer, this.user),
       this.user,
+      this.allContacts,
     );
   }
 
@@ -62,7 +65,9 @@ class TestQueryFilter<TData extends Data> {
   }
 
   private verifyIDs(ids: ID[]) {
-    expect(ids).toStrictEqual(this.contacts.map((contact) => contact.id));
+    expect(ids).toStrictEqual(
+      this.filteredContacts.map((contact) => contact.id),
+    );
   }
 
   // rawCount isn't affected by filters...
@@ -81,7 +86,7 @@ class TestQueryFilter<TData extends Data> {
   }
 
   private verifyCount(count: number) {
-    expect(count).toBe(this.contacts.length);
+    expect(count).toBe(this.filteredContacts.length);
   }
 
   async testEdges() {
@@ -94,9 +99,13 @@ class TestQueryFilter<TData extends Data> {
 
     // TODO sad not generic enough
     if (q instanceof UserToContactsFkeyQuery) {
-      verifyUserToContactRawData(this.user, edges, this.contacts);
+      verifyUserToContactRawData(this.user, edges, this.filteredContacts);
     } else {
-      verifyUserToContactEdges(this.user, edges as AssocEdge[], this.contacts);
+      verifyUserToContactEdges(
+        this.user,
+        edges as AssocEdge[],
+        this.filteredContacts,
+      );
     }
   }
 
@@ -106,7 +115,7 @@ class TestQueryFilter<TData extends Data> {
   }
 
   private verifyEnts(ents: FakeContact[]) {
-    verifyUserToContacts(this.user, ents, this.contacts);
+    verifyUserToContacts(this.user, ents, this.filteredContacts);
   }
 
   async testAll() {
@@ -211,6 +220,10 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   function getViewer() {
     // live db, let's do context because we're testing complicated paths
     // may be worth breaking this out later
+
+    // opts.liveDB no context too...
+    // maybe this one we just always hit the db
+    // we don't get value out of testing parse_sql no context....
     if (opts.liveDB) {
       return new TestContext().getViewer();
     }
@@ -221,9 +234,8 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   let tdb: TempDB;
   beforeAll(async () => {
     // want error on by default in tests?
-    setLogLevels(["error", "warn", "query", "info"]);
+    setLogLevels(["error", "warn", "info"]);
     if (opts.liveDB) {
-      console.log("ebeforeAll");
       const tables = [
         FakeUser.getTestTable(),
         FakeContact.getTestTable(),
@@ -253,10 +265,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
 
   afterAll(async () => {
     if (opts.liveDB && tdb) {
-      console.log("afterAll");
       await tdb.afterAll();
-
-      //      await DB.getInstance().endPool();
     }
   });
 
@@ -409,12 +418,18 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   });
 
   // TODO...
-  describe.only("first after cursor", () => {
+  describe.skip("first after cursor", () => {
     const idx = 2;
     const N = 3;
     let rows: Data[] = [];
     const filter = new TestQueryFilter(
-      (q: EdgeQuery<FakeContact, TData>, user: FakeUser) => {
+      (
+        q: EdgeQuery<FakeContact, TData>,
+        user: FakeUser,
+        contacts: FakeContact[],
+      ) => {
+        console.log(user);
+
         //        if (opts.liveDB)
         rows = QueryRecorder.filterData(
           opts.tableName,
@@ -508,7 +523,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     await verify(5, false, false, query!.getCursor(edges[4]));
   });
 
-  describe("last. before cursor", () => {
+  describe.skip("last. before cursor", () => {
     const idx = 2;
     const N = 3;
     let rows: Data[] = [];

@@ -43,6 +43,12 @@ export {
   getEdgeTypeInGroup,
 } from "./core/ent";
 import DB from "./core/db";
+export {
+  ObjectLoader,
+  ObjectLoaderFactory,
+  RawCountLoaderFactory,
+  RawCountLoader,
+} from "./core/loader";
 export { DB };
 
 // TODO figure out if this should be its own

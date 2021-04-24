@@ -162,7 +162,7 @@ function traverse(
             });
           } else {
             // TODO
-            console.log("ttt?", sourceFile.fileName, text, imported.name);
+            //            console.log("ttt?", sourceFile.fileName, text, imported.name);
           }
         } else {
           let name = importNode.importClause?.name?.text;

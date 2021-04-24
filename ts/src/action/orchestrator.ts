@@ -479,12 +479,12 @@ export class Orchestrator<T extends Ent> {
   }
 
   async valid(): Promise<boolean> {
-    //    try {
-    await this.validate();
-    // } catch (e) {
-    //   log("error", e);
-    //   return false;
-    // }
+    try {
+      await this.validate();
+    } catch (e) {
+      log("error", e);
+      return false;
+    }
     return true;
   }
 

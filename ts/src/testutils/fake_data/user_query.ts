@@ -16,6 +16,7 @@ import {
   EventToInvitedQuery,
   EventToMaybeQuery,
 } from "./internal";
+import { RawCountLoaderFactory } from "../../core/loader";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,
@@ -50,12 +51,15 @@ function getID(src: Ent | ID) {
 
 export class UserToContactsFkeyQuery extends CustomEdgeQueryBase<FakeContact> {
   constructor(viewer: Viewer, src: ID | FakeUser) {
-    super(
-      viewer,
+    super(viewer, {
       src,
-      FakeContact.loaderOptions(),
-      clause.Eq("user_id", getID(src)),
-    );
+      countLoaderFactory: new RawCountLoaderFactory(
+        FakeContact.loaderOptions(),
+        "user_id",
+      ),
+      options: FakeContact.loaderOptions(),
+      clause: clause.Eq("user_id", getID(src)),
+    });
   }
 
   static query(viewer: Viewer, src: FakeUser | ID): UserToContactsFkeyQuery {

@@ -12,6 +12,7 @@ import { IncomingMessage, ServerResponse } from "http";
 import DataLoader from "dataloader";
 import * as clause from "./clause";
 import { log } from "./logger";
+import { Loader, LoaderFactory } from "./loader_interfaces";
 
 export interface Context {
   getViewer(): Viewer;
@@ -31,12 +32,11 @@ export interface RequestContext extends Context {
 
 export class ContextCache {
   loaders: Map<string, DataLoader<ID, Data | null>> = new Map();
-  countLoaders: Map<
-    string,
-    Map<string, DataLoader<ID, Data | null>>
-  > = new Map();
+
+  realLoaders: Map<string, Loader<any, any>> = new Map();
 
   // only create as needed for the "requests" which need it
+  // TODO delete
   getEntLoader(loaderOptions: SelectDataOptions) {
     let l = this.loaders.get(loaderOptions.tableName);
 
@@ -48,20 +48,18 @@ export class ContextCache {
     return l;
   }
 
-  getCountLoader(loaderOptions: QueryableDataOptions, col: string) {
-    let m = this.countLoaders.get(loaderOptions.tableName);
-    if (!m) {
-      m = new Map<string, DataLoader<ID, Data | null>>();
-      this.countLoaders.set(loaderOptions.tableName, m);
-    }
-    let l = m.get(col);
+  getRealLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V> {
+    let l = this.realLoaders.get(name);
     if (l) {
       return l;
     }
-    l = createCountDataLoader(loaderOptions, [col]);
-    m.set(col, l);
+    log("debug", `new context-aware loader created for ${name}`);
+    l = create();
+    //    l = factory.createLoader(context);
+    this.realLoaders.set(name, l);
     return l;
   }
+
   // we have a per-table map to make it easier to purge and have less things to compare with
   private itemMap: Map<string, Map<string, Data>> = new Map();
   private listMap: Map<string, Map<string, Data[]>> = new Map();

@@ -31,7 +31,7 @@ export async function editRowForTest(
   const client = await DB.getInstance().getNewClient();
 
   try {
-    await editRow(client, options, id, suffix);
+    return await editRow(client, options, id, suffix);
   } finally {
     client.release();
   }
