@@ -1,5 +1,5 @@
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
-{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query"}}
+{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory"}}
 {{$importPath := .Package.InternalImportPath -}}
 
 {{$schema := .Schema}}
@@ -61,7 +61,15 @@
         } else {
           id = src;
         }
-        super(viewer, src, {{$node}}.loaderOptions(), {{useImport "query"}}.Eq({{$edge.QuotedDBColName}}, id));
+        super(viewer, {
+          src: src, 
+          countLoaderFactory: new {{useImport "RawCountLoaderFactory"}}(
+            {{$node}}.loaderOptions(),
+            {{$edge.QuotedDBColName}},
+          ),
+          options:{{$node}}.loaderOptions(), 
+          clause: {{useImport "query"}}.Eq({{$edge.QuotedDBColName}}, id)
+        });
       }
 
       static query<T extends {{$name}}>(
