@@ -425,6 +425,7 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   }
 
   getCursor(row: TEdge): string {
+    console.log(row);
     let datum = row[this.sortCol];
     if (!datum) {
       return "";

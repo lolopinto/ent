@@ -111,44 +111,53 @@ async function saveBuilderImpl<T extends Ent>(
   throwErr: boolean,
 ): Promise<void> {
   let changeset: Changeset<T>;
-  try {
-    changeset = await builder.build();
-  } catch (e) {
-    if (throwErr) {
-      throw e;
-    } else {
-      // expected...
-      return;
-    }
-  }
+  //  try {
+  //  console.log("saveBuilder");
+  changeset = await builder.build();
+  // } catch (e) {
+  //   log("error", e);
+  //   if (throwErr) {
+  //     throw e;
+  //   } else {
+  //     // expected...
+  //     return;
+  //   }
+  // }
   const executor = changeset!.executor();
+  //  console.log("executor", executor);
 
+  const instance = DB.getInstance();
+  //  console.log("instance", instance);
   const client = await DB.getInstance().getNewClient();
+  //  console.log("client", client);
 
   let error = false;
-  try {
-    await client.query("BEGIN");
-    for (const operation of executor) {
-      // resolve any placeholders before writes
-      if (operation.resolve) {
-        operation.resolve(executor);
-      }
+  //  try {
+  //  console.log("begin");
+  await client.query("BEGIN");
+  for (const operation of executor) {
+    // resolve any placeholders before writes
+    if (operation.resolve) {
+      operation.resolve(executor);
+    }
 
-      await operation.performWrite(client, builder.viewer.context);
-    }
-    await client.query("COMMIT");
-  } catch (e) {
-    error = true;
-    await client.query("ROLLBACK");
-    // rethrow the exception to be caught
-    if (throwErr) {
-      throw e;
-    } else {
-      log("error", e);
-    }
-  } finally {
-    client.release();
+    //    console.log("write");
+    await operation.performWrite(client, builder.viewer.context);
   }
+  await client.query("COMMIT");
+  //  console.log("comit");
+  // } catch (e) {
+  //   error = true;
+  //   await client.query("ROLLBACK");
+  //   log("error", e);
+  //   // rethrow the exception to be caught
+  //   if (throwErr) {
+  //     throw e;
+  //   }
+  // } finally {
+  //
+  client.release();
+  //  }
 
   if (!error && executor.executeObservers) {
     await executor.executeObservers();

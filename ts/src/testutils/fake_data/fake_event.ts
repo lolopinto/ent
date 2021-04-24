@@ -17,6 +17,7 @@ import {
   TimestampType,
 } from "../../schema";
 import { NodeType } from "./const";
+import { table, uuid, text, timestamptz } from "../db/test_db";
 
 export class FakeEvent implements Ent {
   readonly id: ID;
@@ -58,6 +59,21 @@ export class FakeEvent implements Ent {
       "description",
       "user_id",
     ];
+  }
+
+  static getTestTable() {
+    return table(
+      "fake_events",
+      uuid("id", { primaryKey: true }),
+      timestamptz("created_at"),
+      timestamptz("updated_at"),
+      timestamptz("start_time"),
+      timestamptz("end_time", { nullable: true }),
+      text("location"),
+      text("title"),
+      text("description", { nullable: true }),
+      uuid("user_id"),
+    );
   }
 
   static loaderOptions(): LoadEntOptions<FakeEvent> {

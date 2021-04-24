@@ -4,6 +4,7 @@ export interface Clause {
   instanceKey(): string;
   // values to log when querying
   logValues(): any[];
+  transformAggregate?: (keys: any[]) => Clause;
 }
 
 export interface SensitiveValue {
@@ -25,7 +26,7 @@ function rawValue(val: any) {
 }
 
 class simpleClause implements Clause {
-  constructor(private col: string, private value: any, private op: string) {}
+  constructor(protected col: string, private value: any, private op: string) {}
 
   clause(idx: number): string {
     return `${this.col} ${this.op} $${idx}`;
@@ -47,6 +48,17 @@ class simpleClause implements Clause {
 
   instanceKey(): string {
     return `${this.col}${this.op}${rawValue(this.value)}`;
+  }
+}
+
+// indicates that this can be converted to join...
+class eqClause extends simpleClause {
+  transformAggregate(keys: any[]): Clause {
+    console.log("transform");
+    console.log("this", this);
+    console.log("col", this.col);
+    console.log("keys", keys);
+    return new inClause(this.col, keys);
   }
 }
 
@@ -132,7 +144,7 @@ class compositeClause implements Clause {
 }
 
 export function Eq(col: string, value: any): simpleClause {
-  return new simpleClause(col, value, "=");
+  return new eqClause(col, value, "=");
 }
 
 export function Greater(col: string, value: any): simpleClause {

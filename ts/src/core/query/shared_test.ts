@@ -12,8 +12,18 @@ import {
   verifyUserToContactRawData,
   verifyUserToContactEdges,
   verifyUserToContacts,
+  createEdges,
+  edgeTableNames,
 } from "../../testutils/fake_data/test_helpers";
 import { EdgeQuery } from "./query";
+import {
+  TempDB,
+  assoc_edge_config_table,
+  assoc_edge_table,
+} from "../../testutils/db/test_db";
+import { TestContext } from "../../testutils/context/test_context";
+import { setLogLevels } from "../logger";
+import DB from "../db";
 
 class TestQueryFilter<TData extends Data> {
   private contacts: FakeContact[] = [];
@@ -28,6 +38,7 @@ class TestQueryFilter<TData extends Data> {
       user: FakeUser,
     ) => EdgeQuery<FakeContact, TData>,
     private ents: (contacts: FakeContact[]) => FakeContact[],
+    private defaultViewer: Viewer,
   ) {}
 
   async beforeEach() {
@@ -40,7 +51,7 @@ class TestQueryFilter<TData extends Data> {
 
   getQuery(viewer?: Viewer) {
     return this.filter(
-      this.newQuery(viewer || new LoggedOutViewer(), this.user),
+      this.newQuery(viewer || this.defaultViewer, this.user),
       this.user,
     );
   }
@@ -125,6 +136,7 @@ interface options<TData extends Data> {
   entsLength?: number;
   where: string;
   sortCol: string;
+  liveDB?: boolean; // if livedb creates temp db and not depending on mock
 }
 
 export const commonTests = <TData extends Data>(opts: options<TData>) => {
@@ -134,6 +146,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     limit = DefaultLimit,
     disablePaginationBump = false,
   }) {
+    if (opts.liveDB) {
+      return;
+    }
     const queries = QueryRecorder.getCurrentQueries();
     expect(queries.length).toBe(length);
     for (let i = 0; i < numQueries; i++) {
@@ -147,6 +162,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   }
 
   function verifyCountQuery({ length = 1, numQueries = 1 }) {
+    if (opts.liveDB) {
+      return;
+    }
     const queries = QueryRecorder.getCurrentQueries();
     expect(queries.length).toBe(length);
     for (let i = 0; i < numQueries; i++) {
@@ -158,6 +176,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   }
 
   function verifyFirstAfterCursorQuery(length: number = 1) {
+    if (opts.liveDB) {
+      return;
+    }
     const queries = QueryRecorder.getCurrentQueries();
     expect(queries.length).toBe(length);
     const query = queries[0];
@@ -171,6 +192,9 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   }
 
   function verifyLastBeforeCursorQuery(length: number = 1) {
+    if (opts.liveDB) {
+      return;
+    }
     const queries = QueryRecorder.getCurrentQueries();
     expect(queries.length).toBe(length);
     const query = queries[0];
@@ -184,6 +208,58 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     );
   }
 
+  function getViewer() {
+    // live db, let's do context because we're testing complicated paths
+    // may be worth breaking this out later
+    if (opts.liveDB) {
+      return new TestContext().getViewer();
+    }
+    // no context when not live db
+    return new LoggedOutViewer();
+  }
+
+  let tdb: TempDB;
+  beforeAll(async () => {
+    // want error on by default in tests?
+    setLogLevels(["error", "warn", "query", "info"]);
+    if (opts.liveDB) {
+      console.log("ebeforeAll");
+      const tables = [
+        FakeUser.getTestTable(),
+        FakeContact.getTestTable(),
+        assoc_edge_config_table(),
+      ];
+      edgeTableNames().forEach((tableName) =>
+        tables.push(assoc_edge_table(tableName)),
+      );
+
+      tdb = new TempDB(...tables);
+
+      await tdb.beforeAll();
+
+      // create once
+      await createEdges();
+    }
+  });
+
+  beforeEach(async () => {
+    //    console.log("beforeEach");
+    // TODO figure out why this failed in the absence of this and have it fail loudly...
+
+    if (!opts.liveDB) {
+      await createEdges();
+    }
+  });
+
+  afterAll(async () => {
+    if (opts.liveDB && tdb) {
+      console.log("afterAll");
+      await tdb.afterAll();
+
+      //      await DB.getInstance().endPool();
+    }
+  });
+
   describe("simple queries", () => {
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeContact, TData>) => {
@@ -196,6 +272,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         // reverse because edges are most recent first
         return contacts.reverse();
       },
+      getViewer(),
     );
 
     beforeEach(async () => {
@@ -244,6 +321,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       (contacts: FakeContact[]) => {
         return contacts.reverse().slice(0, N);
       },
+      getViewer(),
     );
 
     beforeEach(async () => {
@@ -293,6 +371,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         // take the first N and then reverse it to get the last N in the right order
         return contacts.slice(0, N).reverse();
       },
+      getViewer(),
     );
 
     beforeEach(async () => {
@@ -329,12 +408,14 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     });
   });
 
-  describe("first after cursor", () => {
+  // TODO...
+  describe.only("first after cursor", () => {
     const idx = 2;
     const N = 3;
     let rows: Data[] = [];
     const filter = new TestQueryFilter(
       (q: EdgeQuery<FakeContact, TData>, user: FakeUser) => {
+        //        if (opts.liveDB)
         rows = QueryRecorder.filterData(
           opts.tableName,
           opts.getFilterFn(user),
@@ -349,6 +430,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
         // < check so we shouldn't get that index
         return contacts.reverse().slice(idx + 1, idx + N);
       },
+      getViewer(),
     );
 
     beforeEach(async () => {
@@ -388,7 +470,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   test("first. after each cursor", async () => {
     let [user, contacts] = await createAllContacts();
     contacts = contacts.reverse();
-    const edges = await opts.newQuery(new LoggedOutViewer(), user).queryEdges();
+    const edges = await opts.newQuery(getViewer(), user).queryEdges();
 
     let query: EdgeQuery<FakeContact, Data>;
 
@@ -398,7 +480,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       hasNextPage: boolean,
       cursor?: string,
     ) {
-      query = opts.newQuery(new LoggedOutViewer(), user);
+      query = opts.newQuery(getViewer(), user);
       const newEdges = await query.first(1, cursor).queryEdges();
 
       const pagination = query.paginationInfo().get(user.id);
@@ -448,6 +530,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
           .slice(0, idx)
           .reverse(); // because of order returned
       },
+      getViewer(),
     );
 
     beforeEach(async () => {
@@ -487,7 +570,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
   test("last. before each cursor", async () => {
     let [user, contacts] = await createAllContacts();
     contacts = contacts.reverse();
-    const edges = await opts.newQuery(new LoggedOutViewer(), user).queryEdges();
+    const edges = await opts.newQuery(getViewer(), user).queryEdges();
 
     let query: EdgeQuery<FakeContact, Data>;
     async function verify(
@@ -496,7 +579,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
       hasPreviousPage: boolean,
       cursor?: string,
     ) {
-      query = opts.newQuery(new LoggedOutViewer(), user);
+      query = opts.newQuery(getViewer(), user);
       const newEdges = await query.last(1, cursor).queryEdges();
 
       const pagination = query.paginationInfo().get(user.id);
@@ -524,3 +607,6 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     await verify(-1, false, false, query!.getCursor(edges[0]));
   });
 };
+
+// TODO parse_sql group by...
+// or test it with real db...

@@ -19,6 +19,7 @@ import { WriteOperation, Builder, Action } from "../action";
 import { snakeCase } from "snake-case";
 import { applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
+import { log } from "../core/logger";
 
 export interface OrchestratorOptions<T extends Ent> {
   viewer: Viewer;
@@ -474,14 +475,16 @@ export class Orchestrator<T extends Ent> {
 
     this.validatedFields = data;
     this.logValues = logValues;
+    //    console.log(this.validatedFields);
   }
 
   async valid(): Promise<boolean> {
-    try {
-      await this.validate();
-    } catch (e) {
-      return false;
-    }
+    //    try {
+    await this.validate();
+    // } catch (e) {
+    //   log("error", e);
+    //   return false;
+    // }
     return true;
   }
 
@@ -495,6 +498,7 @@ export class Orchestrator<T extends Ent> {
 
     let ops: DataOperation[] = [this.buildMainOp()];
     await this.buildEdgeOps(ops);
+    //    console.log("post build");
 
     return new EntChangeset(
       this.options.viewer,

@@ -11,15 +11,14 @@ import {
   buildInsertQuery,
   buildUpdateQuery,
   buildQuery,
-  Viewer,
   loadEnt,
   loadEnts,
 } from "./ent";
 import { clearLogLevels, setLogLevels } from "./logger";
 import * as clause from "./clause";
-import { Context, ContextCache } from "./context";
 import { LoggedOutViewer } from "./viewer";
 import { User } from "../testutils/builder";
+import { TestContext } from "../testutils/context/test_context";
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
@@ -363,17 +362,8 @@ describe("raw data access", () => {
   });
 });
 
-class contextImpl implements Context {
-  cache: ContextCache = new ContextCache();
-  viewer = new LoggedOutViewer(this);
-
-  getViewer(): Viewer {
-    return this.viewer;
-  }
-}
-
 describe("ent cache logging", () => {
-  const ctx = new contextImpl();
+  const ctx = new TestContext();
 
   beforeEach(async () => {
     // prime the row
@@ -468,7 +458,7 @@ describe("ent cache logging", () => {
 });
 
 describe("dataloader cache logging", () => {
-  const ctx = new contextImpl();
+  const ctx = new TestContext();
 
   beforeEach(async () => {
     // prime the row

@@ -25,7 +25,7 @@ import {
   loadEntX,
 } from "./ent";
 import { PrivacyPolicy, AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
-import { Context, ContextCache } from "./context";
+import { TestContext } from "../testutils/context/test_context";
 
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
@@ -251,15 +251,6 @@ test("custom edge", async () => {
   expect(edge2).toBeInstanceOf(AssocEdge);
 });
 
-class contextImpl implements Context {
-  cache?: ContextCache = new ContextCache();
-  viewer = new LoggedOutViewer(this);
-
-  getViewer(): Viewer {
-    return this.viewer;
-  }
-}
-
 describe("loadEnt(X)", () => {
   const noCtxV = new LoggedOutViewer();
   const options = {
@@ -267,7 +258,7 @@ describe("loadEnt(X)", () => {
     fields: ["id", "foo"],
     tableName: "users",
   };
-  const ctx = new contextImpl();
+  const ctx = new TestContext();
 
   test("loadEnt. no data. no context", async () => {
     const ent = await loadEnt(noCtxV, "1", options);
