@@ -191,7 +191,6 @@ export class TempDB {
     this.db = randomDB();
 
     await this.client.query(`CREATE DATABASE ${this.db}`);
-    console.log(this.db, DB.instance);
 
     if (user && password) {
       process.env.DB_CONNECTION_STRING = `postgres://${user}:${password}@localhost:5432/${this.db}`;
@@ -214,18 +213,13 @@ export class TempDB {
 
   async afterAll() {
     // end our connection to db
-    //    console.log("end connection");
     await this.dbClient.end();
     // end any pool connection
-    // console.log("end pool");
-    // console.log(DB.getInstance());
     await DB.getInstance().endPool();
 
     // drop db
-    //    console.log("drop db");
     await this.client.query(`DROP DATABASE ${this.db}`);
 
-    //    console.log("bye client");
     await this.client.end();
   }
 

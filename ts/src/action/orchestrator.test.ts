@@ -47,6 +47,8 @@ import * as clause from "../core/clause";
 import { snakeCase } from "snake-case";
 import { setLogLevels } from "../core/logger";
 
+import { MockLogs } from "../testutils/mock_log";
+
 jest.mock("pg");
 QueryRecorder.mockPool(Pool);
 
@@ -1629,6 +1631,32 @@ describe("privacyPolicy", () => {
     let valid = await action.valid();
     expect(valid).toBe(false);
   });
+
+  test("invalidX simple policy", async () => {
+    const viewer = new IDViewer("1");
+    const action = new SimpleAction(
+      viewer,
+      new UserSchema(),
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+    );
+    action.getPrivacyPolicy = () => {
+      return {
+        rules: [DenyIfLoggedInRule, AlwaysAllowRule],
+      };
+    };
+    try {
+      await action.validX();
+      fail("should have thrown");
+    } catch (e) {
+      expect(e.message).toMatch(
+        /ent undefined is not visible for privacy reasons/,
+      );
+    }
+  });
 });
 
 describe("trigger", () => {
@@ -2154,32 +2182,19 @@ describe("viewer for ent load", () => {
 });
 
 describe("logging queries", () => {
-  let oldConsoleError;
-  let oldConsoleLog;
-  let logs: any[] = [];
-  let errors: any[] = [];
+  let mockLog = new MockLogs();
 
   beforeAll(() => {
-    oldConsoleLog = console.log;
-    oldConsoleError = console.error;
-
-    console.log = (...any) => {
-      logs.push(...any);
-    };
-    console.error = (...any) => {
-      errors.push(...any);
-    };
+    mockLog.mock();
     setLogLevels("query");
   });
 
   afterAll(() => {
-    console.log = oldConsoleLog;
-    console.error = oldConsoleError;
+    mockLog.restore();
   });
 
   afterEach(() => {
-    logs = [];
-    errors = [];
+    mockLog.clear();
   });
 
   class SensitiveUser implements Ent {
@@ -2211,8 +2226,8 @@ describe("logging queries", () => {
       WriteOperation.Insert,
     );
     await action.saveX();
-    expect(logs.length).toBeGreaterThan(1);
-    const lastLog = logs[logs.length - 1];
+    expect(mockLog.logs.length).toBeGreaterThan(1);
+    const lastLog = mockLog.logAt(mockLog.logs.length - 1);
     expect(lastLog.query).toMatch(/INSERT INTO users/);
     expect(lastLog.values.length).toBe(5);
     // get the last two
@@ -2230,8 +2245,8 @@ describe("logging queries", () => {
       WriteOperation.Insert,
     );
     await action.saveX();
-    expect(logs.length).toBeGreaterThan(1);
-    const lastLog = logs[logs.length - 1];
+    expect(mockLog.logs.length).toBeGreaterThan(1);
+    const lastLog = mockLog.logAt(mockLog.logs.length - 1);
     expect(lastLog.query).toMatch(/INSERT INTO sensitive_users/);
     expect(lastLog.values.length).toBe(5);
     // get the last two. Snow replaced with **** since sensitive

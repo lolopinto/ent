@@ -54,10 +54,6 @@ class simpleClause implements Clause {
 // indicates that this can be converted to join...
 class eqClause extends simpleClause {
   transformAggregate(keys: any[]): Clause {
-    console.log("transform");
-    console.log("this", this);
-    console.log("col", this.col);
-    console.log("keys", keys);
     return new inClause(this.col, keys);
   }
 }

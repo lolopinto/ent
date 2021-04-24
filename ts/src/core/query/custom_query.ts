@@ -5,14 +5,27 @@ import {
   EdgeQueryableDataOptions,
   LoadEntOptions,
   loadRows,
-  loadRow,
   Viewer,
   applyPrivacyPolicyForRows,
   DefaultLimit,
-  loadCount,
 } from "../ent";
 import { BaseEdgeQuery } from "./query";
 import * as clause from "../clause";
+import { LoaderFactory } from "../loader_interfaces";
+
+export interface CustomEdgeQueryOptions<T extends Ent> {
+  src: Ent | ID;
+  countLoaderFactory: LoaderFactory<ID, number>;
+  // TODO???
+  //  dataLoaderFactory: LoaderFactory<ID, Data>;
+  // TODO filters...
+  // TODO...
+  options: LoadEntOptions<T>;
+  // TODO
+  clause: clause.Clause;
+  // defaults to created_at
+  sortColumn?: string;
+}
 
 export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
   TDest,
@@ -21,46 +34,21 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
   private id: ID;
   constructor(
     public viewer: Viewer,
-    src: Ent | ID,
-    private options: LoadEntOptions<TDest>,
-    private clause: clause.Clause,
-    private sortColumn: string = "created_at",
+    private options: CustomEdgeQueryOptions<TDest>, // src: Ent | ID, // private options: LoadEntOptions<TDest>, // private clause: clause.Clause, // // count loaderFactory // // TODO make this an options array // private loaderFactory: LoaderFactory<ID, number>, // private sortColumn: string = "created_at",
   ) {
-    super(viewer, sortColumn);
-    if (typeof src === "object") {
-      this.id = src.id;
+    super(viewer, options.sortColumn || "created_at");
+    options.sortColumn = options.sortColumn || "created_at";
+    if (typeof options.src === "object") {
+      this.id = options.src.id;
     } else {
-      this.id = src;
+      this.id = options.src;
     }
   }
 
   async queryRawCount(): Promise<number> {
-    const result = await loadCount(
-      {
-        ...this.options,
-        context: this.viewer.context,
-        fields: ["count(1)"],
-        clause: this.clause,
-      },
-      // test...
-
-      [process.env.NODE_ENV === "test" ? "user_id" : "event_id"],
-      // clearly wrong...
-      //      [this.clause.instanceKey()],
-    );
-    console.log(result);
-    return result;
-    // const row = await loadRow({
-    //   ...this.options,
-    //   fields: ["count(1)"],
-    //   clause: this.clause,
-    // });
-    // // all have to do is l.load(...)
-    // // the key is the order...
-    // if (!row) {
-    //   throw new Error(`could not find count`);
-    // }
-    // return parseInt(row.count, 10) || 0;
+    return await this.options.countLoaderFactory
+      .createLoader(this.viewer.context)
+      .load(this.id);
   }
 
   async queryAllRawCount(): Promise<Map<ID, number>> {
@@ -68,19 +56,20 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
     return new Map<ID, number>([[this.id, count]]);
   }
 
+  // TODO...
   protected async loadRawData(options: EdgeQueryableDataOptions) {
-    let cls = this.clause;
+    let cls = this.options.clause;
     if (options.clause) {
       cls = clause.And(cls, options.clause);
     }
     if (!options.orderby) {
-      options.orderby = `${this.sortColumn} DESC`;
+      options.orderby = `${this.options.sortColumn} DESC`;
     }
     if (!options.limit) {
       options.limit = DefaultLimit;
     }
     const rows = await loadRows({
-      ...this.options,
+      ...this.options.options,
       ...options,
       clause: cls,
       context: this.viewer.context,
@@ -96,7 +85,7 @@ export class CustomEdgeQueryBase<TDest extends Ent> extends BaseEdgeQuery<
     const ents = await applyPrivacyPolicyForRows(
       this.viewer,
       rows,
-      this.options,
+      this.options.options,
     );
     //    console.log(ents);
     return Array.from(ents.values());

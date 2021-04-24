@@ -244,30 +244,6 @@ export async function loadDerivedEnt<T extends Ent>(
   return await applyPrivacyPolicyForEnt(viewer, ent);
 }
 
-export async function loadCount(
-  options: QueryableDataOptions,
-  cols: string[],
-): Promise<number> {
-  //  console.log(options);
-  const l = options.context?.cache?.getCountLoader(options, cols[0]);
-  if (l) {
-    //    console.log("l", l, options.clause.values());
-    // TODO....
-    //    console.log;
-    const row = await l.load(options.clause.values()[0]);
-    //    console.log("post-row", row);
-    if (!row) {
-      return 0;
-    }
-    return parseInt(row["count"], 10);
-  }
-  const row = await loadRow(options);
-  if (!row) {
-    throw new Error(`could not find count`);
-  }
-  return parseInt(row.count, 10) || 0;
-}
-
 export async function loadDerivedEntX<T extends Ent>(
   viewer: Viewer,
   data: Data,
@@ -286,7 +262,7 @@ export async function loadDerivedEntX<T extends Ent>(
 
 class cacheMap {
   private m = new Map();
-  constructor(private options: SelectDataOptions) {}
+  constructor(private options: DataOptions) {}
   get(key) {
     const ret = this.m.get(key);
     if (ret) {
@@ -362,33 +338,8 @@ export function createDataLoader(options: SelectDataOptions) {
   }, loaderOptions);
 }
 
-// TODO generate and pass this all the way down instead of what we do here.
-// interface loader {
-//   key
-// }
-
-// can be generalized as aggregate DL
-export function createCountDataLoader(
-  options: QueryableDataOptions,
-  cols: string[],
-) {
-  if (options.fields.length !== 1 && options.fields[0] != "count(1)") {
-    //    console.log(options.fields);
-    throw new Error(`this only works with count for now`);
-  }
-
-  const transformAggregate = options.clause.transformAggregate?.bind(
-    options.clause,
-  );
-  if (!transformAggregate) {
-    throw new Error(`clause cannot be transformed into an aggregate query`);
-  }
-
-  if (cols.length !== 1) {
-    throw new Error(`currently only works with 1 column`);
-  }
-
-  const loaderOptions: DataLoader.Options<any, any> = {};
+export function createCountDataLoader(options: DataOptions, col: string) {
+  const loaderOptions: DataLoader.Options<ID, number> = {};
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
@@ -397,35 +348,39 @@ export function createCountDataLoader(
 
   // key|clause...
   // key is id|clause is what we're transforming to...
-  return new DataLoader(async (keys: string[]) => {
-    console.log("keys", keys);
+  return new DataLoader(async (keys: ID[]) => {
     if (!keys.length) {
       return [];
     }
-    // add new fields...
-    // now we
-    const rowOptions = { ...options };
-    rowOptions.fields.push(...cols);
-    // TODO do we want to group by multiple?
-    rowOptions.groupby = `${cols.join(",")}`;
-    //    console.log("rowOp", rowOptions);
-    const newClause = transformAggregate(keys);
-    //    console.log(newClause);
-    rowOptions.clause = transformAggregate(keys);
-    //    console.log("rowOptions", rowOptions);
+
+    // keep query simple if we're only fetching for one id
+    if (keys.length == 1) {
+      const row = await loadRow({
+        ...options,
+        fields: ["count(1)"],
+        clause: clause.Eq(col, keys[0]),
+      });
+      return [parseInt(row?.count, 10) || 0];
+    }
+
+    const rowOptions: LoadRowOptions = {
+      ...options,
+      fields: ["count(1)", col],
+      groupby: col,
+      // TODO also need to make sure we test multi-count
+      // e.g. tests for RawCountLoader
+      clause: clause.In(col, ...keys),
+    };
     const rows = await loadRows(rowOptions);
     //    console.log("rows", rows);
-    let result: (Data | null)[] = keys.map((key) => {
+    let result: number[] = keys.map((key) => {
       for (const row of rows) {
-        // how do we do equality check here?
-        // works for one column but needs to be changed to work for more
-        if (row[cols[0]] === key) {
-          return row;
+        if (row[col] === key) {
+          return parseInt(row.count, 10);
         }
       }
-      return null;
+      return 0;
     });
-    //    console.log(result);
     return result;
   }, loaderOptions);
 }
@@ -511,11 +466,7 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   }
 }
 
-// so need to make this the raw data accessor
-// would we need our own cache then? seems like no...
-async function loadRawRow(options: LoadRowOptions): Promise<Data | null> {
-  return null;
-}
+// TODO this should throw, we can't be hiding errors here
 export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   let cache = options.context?.cache;
   if (cache) {
