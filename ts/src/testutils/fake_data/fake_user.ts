@@ -13,13 +13,13 @@ import {
   AllowIfViewerInboundEdgeExistsRule,
   PrivacyPolicy,
   AllowIfConditionAppliesRule,
-  AlwaysAllowRule,
 } from "../../core/privacy";
 import { BuilderSchema, SimpleAction } from "../builder";
 import { Field, StringType, BaseEntSchema } from "../../schema";
 import { EdgeType } from "./internal";
 import { NodeType } from "./const";
 import { IDViewer, IDViewerOptions } from "../../core/viewer";
+import { table, uuid, text, timestamptz } from "../db/test_db";
 
 interface TokenOptions extends IDViewerOptions {
   tokens?: {};
@@ -92,6 +92,20 @@ export class FakeUser implements Ent {
       "phone_number",
       "password",
     ];
+  }
+
+  static getTestTable() {
+    return table(
+      "fake_users",
+      uuid("id", { primaryKey: true }),
+      timestamptz("created_at"),
+      timestamptz("updated_at"),
+      text("first_name"),
+      text("last_name"),
+      text("email_address"),
+      text("phone_number"),
+      text("password"),
+    );
   }
 
   static loaderOptions(): LoadEntOptions<FakeUser> {

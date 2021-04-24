@@ -15,6 +15,7 @@ import {
 import { BuilderSchema, SimpleBuilder } from "../builder";
 import { Field, StringType, BaseEntSchema, UUIDType } from "../../schema";
 import { NodeType } from "./const";
+import { table, uuid, text, timestamptz } from "../db/test_db";
 
 export class FakeContact implements Ent {
   readonly id: ID;
@@ -50,6 +51,19 @@ export class FakeContact implements Ent {
       "email_address",
       "user_id",
     ];
+  }
+
+  static getTestTable() {
+    return table(
+      "fake_contacts",
+      uuid("id", { primaryKey: true }),
+      timestamptz("created_at"),
+      timestamptz("updated_at"),
+      text("first_name"),
+      text("last_name"),
+      text("email_address"),
+      uuid("user_id"),
+    );
   }
 
   static loaderOptions(): LoadEntOptions<FakeContact> {

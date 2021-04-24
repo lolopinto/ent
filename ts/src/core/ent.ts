@@ -72,6 +72,7 @@ export interface SelectDataOptions extends DataOptions {
 export interface QueryableDataOptions extends SelectDataOptions {
   clause: clause.Clause;
   orderby?: string; // this technically doesn't make sense when querying just one row but whatevs
+  groupby?: string;
   limit?: number;
 }
 
@@ -243,6 +244,30 @@ export async function loadDerivedEnt<T extends Ent>(
   return await applyPrivacyPolicyForEnt(viewer, ent);
 }
 
+export async function loadCount(
+  options: QueryableDataOptions,
+  cols: string[],
+): Promise<number> {
+  //  console.log(options);
+  const l = options.context?.cache?.getCountLoader(options, cols[0]);
+  if (l) {
+    //    console.log("l", l, options.clause.values());
+    // TODO....
+    //    console.log;
+    const row = await l.load(options.clause.values()[0]);
+    //    console.log("post-row", row);
+    if (!row) {
+      return 0;
+    }
+    return parseInt(row["count"], 10);
+  }
+  const row = await loadRow(options);
+  if (!row) {
+    throw new Error(`could not find count`);
+  }
+  return parseInt(row.count, 10) || 0;
+}
+
 export async function loadDerivedEntX<T extends Ent>(
   viewer: Viewer,
   data: Data,
@@ -254,53 +279,61 @@ export async function loadDerivedEntX<T extends Ent>(
 
 // ent based data-loader
 // keep this private to the package for now
+// ID-dataloader. simple
+// because we know exactly what we're looking for...
+
+// count-dataloader next?
+
+class cacheMap {
+  private m = new Map();
+  constructor(private options: SelectDataOptions) {}
+  get(key) {
+    const ret = this.m.get(key);
+    if (ret) {
+      log("query", {
+        "dataloader-cache-hit": key,
+        "tableName": this.options.tableName,
+      });
+      // } else {
+      //   log("query", {
+      //     "dataloader-cache-miss": key,
+      //     "tableName": options.tableName,
+      //   });
+    }
+    return ret;
+  }
+
+  set(key, value) {
+    // log("query", {
+    //   "dataloader-cache-set": key,
+    //   "tableName": options.tableName,
+    // });
+    return this.m.set(key, value);
+  }
+
+  delete(key) {
+    // log("query", {
+    //   "dataloader-cache-delete": key,
+    //   "tableName": options.tableName,
+    // });
+    return this.m.delete(key);
+  }
+
+  clear() {
+    // log("query", {
+    //   "dataloader-cache-clear": true,
+    //   "tableName": options.tableName,
+    // });
+    return this.m.clear();
+  }
+}
+
 export function createDataLoader(options: SelectDataOptions) {
   const loaderOptions: DataLoader.Options<any, any> = {};
 
   // if query logging is enabled, we should log what's happening with loader
   if (logEnabled("query")) {
-    const m = new Map();
-    loaderOptions.cacheMap = {
-      get(key) {
-        const ret = m.get(key);
-        if (ret) {
-          log("query", {
-            "dataloader-cache-hit": key,
-            "tableName": options.tableName,
-          });
-          // } else {
-          //   log("query", {
-          //     "dataloader-cache-miss": key,
-          //     "tableName": options.tableName,
-          //   });
-        }
-        return ret;
-      },
-
-      set(key, value) {
-        // log("query", {
-        //   "dataloader-cache-set": key,
-        //   "tableName": options.tableName,
-        // });
-        return m.set(key, value);
-      },
-
-      delete(key) {
-        // log("query", {
-        //   "dataloader-cache-delete": key,
-        //   "tableName": options.tableName,
-        // });
-        return m.delete(key);
-      },
-
-      clear() {
-        // log("query", {
-        //   "dataloader-cache-clear": true,
-        //   "tableName": options.tableName,
-        // });
-        return m.clear();
-      },
-    };
+    loaderOptions.cacheMap = new cacheMap(options);
   }
 
   return new DataLoader(async (ids: ID[]) => {
@@ -325,6 +358,74 @@ export function createDataLoader(options: SelectDataOptions) {
       return null;
     });
 
+    return result;
+  }, loaderOptions);
+}
+
+// TODO generate and pass this all the way down instead of what we do here.
+// interface loader {
+//   key
+// }
+
+// can be generalized as aggregate DL
+export function createCountDataLoader(
+  options: QueryableDataOptions,
+  cols: string[],
+) {
+  if (options.fields.length !== 1 && options.fields[0] != "count(1)") {
+    //    console.log(options.fields);
+    throw new Error(`this only works with count for now`);
+  }
+
+  const transformAggregate = options.clause.transformAggregate?.bind(
+    options.clause,
+  );
+  if (!transformAggregate) {
+    throw new Error(`clause cannot be transformed into an aggregate query`);
+  }
+
+  if (cols.length !== 1) {
+    throw new Error(`currently only works with 1 column`);
+  }
+
+  const loaderOptions: DataLoader.Options<any, any> = {};
+
+  // if query logging is enabled, we should log what's happening with loader
+  if (logEnabled("query")) {
+    loaderOptions.cacheMap = new cacheMap(options);
+  }
+
+  // key|clause...
+  // key is id|clause is what we're transforming to...
+  return new DataLoader(async (keys: string[]) => {
+    console.log("keys", keys);
+    if (!keys.length) {
+      return [];
+    }
+    // add new fields...
+    // now we
+    const rowOptions = { ...options };
+    rowOptions.fields.push(...cols);
+    // TODO do we want to group by multiple?
+    rowOptions.groupby = `${cols.join(",")}`;
+    //    console.log("rowOp", rowOptions);
+    const newClause = transformAggregate(keys);
+    //    console.log(newClause);
+    rowOptions.clause = transformAggregate(keys);
+    //    console.log("rowOptions", rowOptions);
+    const rows = await loadRows(rowOptions);
+    //    console.log("rows", rows);
+    let result: (Data | null)[] = keys.map((key) => {
+      for (const row of rows) {
+        // how do we do equality check here?
+        // works for one column but needs to be changed to work for more
+        if (row[cols[0]] === key) {
+          return row;
+        }
+      }
+      return null;
+    });
+    //    console.log(result);
     return result;
   }, loaderOptions);
 }
@@ -374,6 +475,8 @@ export async function loadRowX(options: LoadRowOptions): Promise<Data> {
   return result;
 }
 
+///
+// and make this use DataLoader if possible
 export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   let cache = options.context?.cache;
   if (cache) {
@@ -408,6 +511,11 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   }
 }
 
+// so need to make this the raw data accessor
+// would we need our own cache then? seems like no...
+async function loadRawRow(options: LoadRowOptions): Promise<Data | null> {
+  return null;
+}
 export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   let cache = options.context?.cache;
   if (cache) {
@@ -417,12 +525,13 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
     }
   }
 
-  const pool = DB.getInstance().getPool();
-
   const query = buildQuery(options);
+  //  console.log("query", query);
+  const pool = DB.getInstance().getPool();
 
   logQuery(query, options.clause.logValues());
   try {
+    //    console.log("pool query");
     const res = await pool.query(query, options.clause.values());
     // put the rows in the cache...
     if (cache) {
@@ -442,6 +551,9 @@ export function buildQuery(options: QueryableDataOptions): string {
   // always start at 1
   const whereClause = options.clause.clause(1);
   let query = `SELECT ${fields} FROM ${options.tableName} WHERE ${whereClause}`;
+  if (options.groupby) {
+    query = `${query} GROUP BY ${options.groupby}`;
+  }
   if (options.orderby) {
     query = `${query} ORDER BY ${options.orderby}`;
   }
@@ -530,6 +642,7 @@ export class EditNodeOperation implements DataOperation {
       ...this.options,
       context,
     };
+    //    console.log("performWrite", options);
     if (this.existingEnt) {
       this.row = await editRow(
         queryer,
@@ -624,6 +737,7 @@ export class EdgeOperation implements DataOperation {
       {
         tableName: edgeData.edgeTable,
         fields: fields,
+        fieldsToLog: fields,
         context,
       },
       "ON CONFLICT(id1, edge_type, id2) DO UPDATE SET data = EXCLUDED.data",
@@ -889,6 +1003,7 @@ async function mutateRow(
     }
     return res;
   } catch (err) {
+    // TODO:::why is this not rethrowing?
     log("error", err);
     throw err;
   }
@@ -933,6 +1048,7 @@ export async function createRow(
 ): Promise<Data | null> {
   const [query, values, logValues] = buildInsertQuery(options, suffix);
 
+  //  console.log("createRow", query, values, logValues);
   const res = await mutateRow(queryer, query, values, logValues, options);
 
   if (res?.rowCount === 1) {
@@ -1249,7 +1365,7 @@ export async function loadRawEdgeCountX(
     clause: clause.And(clause.Eq("id1", id1), clause.Eq("edge_type", edgeType)),
     context,
   });
-  return parseInt(row["count"], 10);
+  return parseInt(row["count"], 10) || 0;
 }
 
 interface loadEdgeForIDOptions<T extends AssocEdge>

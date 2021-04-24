@@ -186,10 +186,18 @@ export async function createEdges() {
         inverse_edge_type: InverseEdges.get(edge) || null,
         edge_type: edge,
         edge_name: edgeNames[i],
+        created_at: new Date(),
+        updated_at: new Date(),
       },
     });
-    await loadEdgeData(edge);
+    const edgeData = await loadEdgeData(edge);
+    expect(edgeData).toBeDefined();
   }
+}
+
+export function edgeTableNames() {
+  const edges = Object.values(EdgeType);
+  return edges.map((edge) => snakeCase(`${edge}_table`));
 }
 
 export async function createTestEvent(

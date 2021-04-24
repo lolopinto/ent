@@ -16,7 +16,11 @@ export async function createRowForTest(
 ): Promise<Data | null> {
   const client = await DB.getInstance().getNewClient();
 
-  return await createRow(client, options, suffix || "");
+  try {
+    return await createRow(client, options, suffix || "");
+  } finally {
+    client.release();
+  }
 }
 
 export async function editRowForTest(
@@ -26,7 +30,11 @@ export async function editRowForTest(
 ) {
   const client = await DB.getInstance().getNewClient();
 
-  return await editRow(client, options, id, suffix);
+  try {
+    await editRow(client, options, id, suffix);
+  } finally {
+    client.release();
+  }
 }
 
 export async function deleteRowsForTest(
@@ -35,5 +43,9 @@ export async function deleteRowsForTest(
 ) {
   const client = await DB.getInstance().getNewClient();
 
-  return await deleteRows(client, options, cls);
+  try {
+    return await deleteRows(client, options, cls);
+  } finally {
+    client.release();
+  }
 }

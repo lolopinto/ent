@@ -4,6 +4,8 @@ import {
   Data,
   SelectDataOptions,
   createDataLoader,
+  QueryableDataOptions,
+  createCountDataLoader,
 } from "../core/ent";
 import { IncomingMessage, ServerResponse } from "http";
 
@@ -29,6 +31,10 @@ export interface RequestContext extends Context {
 
 export class ContextCache {
   loaders: Map<string, DataLoader<ID, Data | null>> = new Map();
+  countLoaders: Map<
+    string,
+    Map<string, DataLoader<ID, Data | null>>
+  > = new Map();
 
   // only create as needed for the "requests" which need it
   getEntLoader(loaderOptions: SelectDataOptions) {
@@ -42,6 +48,20 @@ export class ContextCache {
     return l;
   }
 
+  getCountLoader(loaderOptions: QueryableDataOptions, col: string) {
+    let m = this.countLoaders.get(loaderOptions.tableName);
+    if (!m) {
+      m = new Map<string, DataLoader<ID, Data | null>>();
+      this.countLoaders.set(loaderOptions.tableName, m);
+    }
+    let l = m.get(col);
+    if (l) {
+      return l;
+    }
+    l = createCountDataLoader(loaderOptions, [col]);
+    m.set(col, l);
+    return l;
+  }
   // we have a per-table map to make it easier to purge and have less things to compare with
   private itemMap: Map<string, Map<string, Data>> = new Map();
   private listMap: Map<string, Map<string, Data[]>> = new Map();
