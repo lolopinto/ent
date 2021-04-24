@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -20,8 +20,14 @@
 {{$viewerType := useImport "Viewer"}}
 {{$idType := useImport "ID" }}
 {{$dataType := useImport "Data" }}
+{{$loaderName := printf "%sLoader" .NodeInstance }}
 
 const tableName = "{{.TableName}}";
+const fields =[
+  {{range $field := .FieldInfo.Fields -}}
+    '{{$field.GetDbColName}}',
+  {{end}}
+];
 
 {{$baseClass := printf "%sBase" .Node -}}
 {{$constructor := "arg: new (viewer: Viewer, id: ID, data: Data) => T"}}
@@ -82,7 +88,8 @@ export class {{$baseClass}} {
     return {{useImport "loadEntX"}}(
       viewer, 
       id, 
-      {{$baseClass}}.loaderOptions.apply(this),
+      {{$baseClass}}.
+      loaderOptions.apply(this),
     );
   }
 
@@ -101,21 +108,21 @@ export class {{$baseClass}} {
   static async loadRawData<T extends {{$baseClass}}>(
     this: {{$thisType}},
     id: ID,
+    context?: {{useImport "Context"}},
   ): Promise<{{$dataType}} | null> {
-    return await {{useImport "loadRow"}}({
-      ...{{$baseClass}}.loaderOptions.apply(this),
-      clause: {{useImport "query"}}.Eq("id", id),
-    });
+    return await {{$loaderName}}.createLoader(context).load(id);
   }
 
   static async loadRawDataX<T extends {{$baseClass}}>(
     this: {{$thisType}},
     id: ID,
+    context?: {{useImport "Context"}},
   ): Promise<{{$dataType}}> {
-    return await {{useImport "loadRowX"}}({
-      ...{{$baseClass}}.loaderOptions.apply(this),
-      clause: {{useImport "query"}}.Eq("id", id),
-    });
+    const row = await {{$loaderName}}.createLoader(context).load(id);
+    if (!row) {
+      throw new Error(`couldn't load row for ${id}`);
+    }
+    return row;
   }
 
   {{ range $field := .FieldInfo.Fields -}}
@@ -208,17 +215,9 @@ export class {{$baseClass}} {
   ): {{useImport "LoadEntOptions"}}<T> {
     return {
       tableName: tableName,
-      fields: {{$baseClass}}.getFields(),
+      fields: fields,
       ent: this,
     };
-  }
-
-  private static getFields(): string[] {
-    return [
-    {{range $field := .FieldInfo.Fields -}}
-      '{{$field.GetDbColName}}',
-    {{end}}
-    ];
   }
 
   private static schemaFields: Map<string, {{useImport "Field"}}>;
@@ -392,4 +391,5 @@ export class {{$baseClass}} {
   {{end}}
 }
 
+export const {{$loaderName}} = new {{useImport "ObjectLoaderFactory"}}({{$baseClass}}.loaderOptions());
 {{end -}}
