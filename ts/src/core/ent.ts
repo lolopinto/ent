@@ -266,6 +266,8 @@ class cacheMap {
   get(key) {
     const ret = this.m.get(key);
     if (ret) {
+      // should this be debug?
+      // might be a lot?
       log("query", {
         "dataloader-cache-hit": key,
         "tableName": this.options.tableName,

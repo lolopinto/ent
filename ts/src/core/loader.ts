@@ -67,8 +67,7 @@ export class ObjectLoader implements Loader<ID, Data> {
       clause: clause.Eq(col, id),
       context: this.context,
     };
-    const row = await loadRow(rowOptions);
-    return null;
+    return await loadRow(rowOptions);
   }
 }
 
