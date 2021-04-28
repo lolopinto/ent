@@ -87,7 +87,7 @@ export class ObjectLoader implements Loader<ID, Data | null> {
 export class ObjectLoaderFactory implements LoaderFactory<ID, Data | null> {
   name: string;
   constructor(private options: SelectDataOptions) {
-    this.name = options.tableName;
+    this.name = `options.tableName:${options.pkey || "id"}`;
   }
 
   createLoader(context?: Context) {
