@@ -126,6 +126,35 @@ export async function loadEntFromClause<T extends Ent>(
   return await applyPrivacyPolicyForRow(viewer, options, row);
 }
 
+// TODO new loadEnt
+// kill loadEntFromClause, loadEnt etc for this?
+export async function loadEntFromLoader<T extends Ent>(
+  viewer: Viewer,
+  options: LoadEntOptions<T>,
+  loaderFactory: LoaderFactory<ID, Data | null>,
+  id: ID,
+): Promise<T | null> {
+  const row = await loaderFactory.createLoader(viewer.context).load(id);
+  return await applyPrivacyPolicyForRow(viewer, options, row);
+}
+
+export async function loadEntXFromLoader<T extends Ent>(
+  viewer: Viewer,
+  options: LoadEntOptions<T>,
+  loaderFactory: LoaderFactory<ID, Data | null>,
+  id: ID,
+): Promise<T> {
+  const row = await loaderFactory.createLoader(viewer.context).load(id);
+  if (!row) {
+    // todo make this better
+    throw new Error(
+      `couldn't find row for factory ${loaderFactory.name}
+         with value ${id}`,
+    );
+  }
+  return await applyPrivacyPolicyForRowX(viewer, options, row);
+}
+
 export async function loadEntX<T extends Ent>(
   viewer: Viewer,
   id: ID,

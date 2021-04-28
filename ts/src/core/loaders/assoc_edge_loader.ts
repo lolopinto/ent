@@ -78,8 +78,6 @@ function createLoader<T extends AssocEdge>(
       " ORDER BY time DESC";
 
     const rows = await performRawQuery(query, cls.values(), cls.logValues());
-    // console.log(query);
-    // console.log(rows);
     for (const row of rows) {
       const srcID = row.id1;
       const idx = m.get(srcID);
@@ -90,7 +88,6 @@ function createLoader<T extends AssocEdge>(
       }
       result[idx].push(new edgeCtr(row));
     }
-    //    console.log(result);
     return result;
   }, loaderOptions);
 }
