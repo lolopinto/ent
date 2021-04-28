@@ -6,6 +6,8 @@ export {
   loadEntXFromClause,
   loadEnts,
   loadEntsFromClause,
+  loadEntFromLoader,
+  loadEntXFromLoader,
   loadDerivedEnt,
   loadDerivedEntX,
   applyPrivacyPolicyForEnt,
