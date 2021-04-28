@@ -1,5 +1,5 @@
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
-{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory"}}
+{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdge" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory"}}
 {{$importPath := .Package.InternalImportPath -}}
 
 {{$schema := .Schema}}
@@ -21,11 +21,23 @@
     {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
     {{ reserveImport $importPath $edge.TsEdgeQueryEdgeName -}}
     {{$edgeName := useImport $edge.TsEdgeQueryEdgeName -}}
+    {{$edgeType := printf "%s.%s" (useImport "EdgeType") $edge.TsEdgeConst -}}
     {{$thisType := printf "new (viewer: Viewer, src: EdgeQuerySource<%s>) => T" $node }}
 
   export class {{$name}} extends {{useImport "AssocEdgeQueryBase"}}<{{$node}}, {{useImport .NodeInfo.Node}}, {{$edgeName}}> {
     constructor(viewer: {{useImport "Viewer"}}, src: {{useImport "EdgeQuerySource"}}<{{$node}}>) {
-      super(viewer, src, {{useImport "EdgeType"}}.{{$edge.TsEdgeConst}}, {{useImport .NodeInfo.Node}}.loaderOptions(), {{$edgeName}});
+      super(
+        viewer, 
+        src, 
+        new {{useImport "AssocEdgeCountLoaderFactory"}}(
+          {{$edgeType}},
+        ),
+        new {{useImport "AssocEdgeLoaderFactory"}}(
+          {{$edgeType}},
+          {{$edgeName}},
+        ),
+        {{useImport .NodeInfo.Node}}.loaderOptions(),
+      );
     }
 
     static query<T extends {{$name}}>(

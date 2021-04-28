@@ -75,7 +75,7 @@ function createLoader<T extends AssocEdge>(
       `SELECT DISTINCT t.id1, t.id2, t.edge_type, t.time, id1_type, id2_type, data from ${tableName} inner join lateral ` +
       `(SELECT DISTINCT id1, id2, edge_type, time from ${tableName} t2 where t2.id1 = ${tableName}.id1 ${orderby} ${limit}) t on true WHERE ` +
       cls.clause(1) +
-      "ORDER BY time DESC";
+      " ORDER BY time DESC";
 
     const rows = await performRawQuery(query, cls.values(), cls.logValues());
     // console.log(query);
