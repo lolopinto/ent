@@ -6,15 +6,12 @@ import {
   Validator,
   Observer,
 } from "../action";
+import { Ent, Viewer, ID, Data, PrivacyPolicy } from "../core/base";
 import {
-  Ent,
-  Viewer,
-  DataOperation,
   EditNodeOperation,
   DeleteNodeOperation,
+  DataOperation,
   EdgeOperation,
-  ID,
-  Data,
   loadEdges,
   loadRow,
 } from "../core/ent";
@@ -34,7 +31,6 @@ import { FakeComms, Mode } from "../testutils/fake_comms";
 import { Pool } from "pg";
 import { QueryRecorder } from "../testutils/db_mock";
 import {
-  PrivacyPolicy,
   AllowIfViewerRule,
   AlwaysAllowRule,
   DenyIfLoggedInRule,

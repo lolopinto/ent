@@ -1,4 +1,4 @@
-import { Ent, ID, Viewer, Data, EntConstructor } from "../core/ent";
+import { Ent, ID, Viewer, Data, EntConstructor } from "../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import { Orchestrator } from "../action/orchestrator";
 import {

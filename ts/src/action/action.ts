@@ -1,15 +1,17 @@
 import {
-  DataOperation,
   Ent,
   EntConstructor,
   Viewer,
   ID,
   Data,
+  PrivacyPolicy,
+} from "../core/base";
+import {
+  DataOperation,
   loadEdgeForID2,
   AssocEdge,
   AssocEdgeInputOptions,
 } from "../core/ent";
-import { PrivacyPolicy } from "../core/privacy";
 import DB from "../core/db";
 import { log } from "../core/logger";
 

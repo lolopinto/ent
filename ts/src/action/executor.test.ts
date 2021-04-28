@@ -1,4 +1,5 @@
-import { Ent, DataOperation, ID, Viewer, Data } from "../core/ent";
+import { Ent, ID, Viewer, Data } from "../core/base";
+import { DataOperation } from "../core/ent";
 import {
   Action,
   Builder,

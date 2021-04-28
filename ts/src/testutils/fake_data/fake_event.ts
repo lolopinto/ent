@@ -3,11 +3,11 @@ import {
   Ent,
   Viewer,
   Data,
-  loadEnt,
-  loadEntX,
   LoadEntOptions,
-} from "../../core/ent";
-import { AlwaysAllowRule, PrivacyPolicy } from "../../core/privacy";
+  PrivacyPolicy,
+} from "../../core/base";
+import { loadEnt, loadEntX } from "../../core/ent";
+import { AlwaysAllowRule } from "../../core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../builder";
 import {
   Field,

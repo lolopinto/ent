@@ -1,4 +1,13 @@
-import { ID, Ent, Viewer, LoadEntOptions, Data } from "./ent";
+import {
+  ID,
+  Ent,
+  Viewer,
+  LoadEntOptions,
+  Data,
+  DenyWithReason,
+  Skip,
+  PrivacyPolicy,
+} from "./base";
 import {
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
@@ -8,9 +17,6 @@ import {
   AllowIfViewerRule,
   AllowIfViewerIsRule,
   AllowIfFuncRule,
-  DenyWithReason,
-  Skip,
-  PrivacyPolicy,
   AllowIfEntIsVisiblePolicy,
   DenyIfEntIsVisiblePolicy,
 } from "./privacy";

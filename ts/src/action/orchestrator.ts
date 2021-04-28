@@ -1,9 +1,5 @@
+import { ID, Data, Ent, Viewer, EntConstructor } from "../core/base";
 import {
-  ID,
-  Data,
-  Ent,
-  Viewer,
-  EntConstructor,
   AssocEdgeInputOptions,
   DataOperation,
   EdgeOperation,

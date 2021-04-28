@@ -3,15 +3,11 @@ import {
   Ent,
   Viewer,
   Data,
-  loadEnt,
-  loadEntX,
   LoadEntOptions,
-} from "../../core/ent";
-import {
-  AllowIfViewerIsRule,
-  AlwaysDenyRule,
   PrivacyPolicy,
-} from "../../core/privacy";
+} from "../../core/base";
+import { loadEnt, loadEntX } from "../../core/ent";
+import { AllowIfViewerIsRule, AlwaysDenyRule } from "../../core/privacy";
 import { BuilderSchema, SimpleBuilder } from "../builder";
 import { Field, StringType, BaseEntSchema, UUIDType } from "../../schema";
 import { NodeType } from "./const";
@@ -114,6 +110,11 @@ export function getContactBuilder(viewer: Viewer, input: ContactCreateInput) {
   for (const key in input) {
     m.set(key, input[key]);
   }
+  //To lock in the value of Date now incase of advanceTo/advanceBy
+  m.set("createdAt", new Date());
+  m.set("updatedAt", new Date());
+
+  //  console.debug(m);
   return new SimpleBuilder(viewer, new FakeContactSchema(), m);
 }
 

@@ -1,5 +1,6 @@
 import { QueryRecorder } from "../../testutils/db_mock";
-import { Data, ID, Viewer, DefaultLimit, AssocEdge } from "../ent";
+import { Data, ID, Viewer } from "../base";
+import { DefaultLimit, AssocEdge } from "../ent";
 import { IDViewer, LoggedOutViewer } from "../viewer";
 import {
   FakeUser,
@@ -13,17 +14,12 @@ import {
   verifyUserToContactEdges,
   verifyUserToContacts,
   createEdges,
-  edgeTableNames,
+  setupTempDB,
 } from "../../testutils/fake_data/test_helpers";
 import { EdgeQuery } from "./query";
-import {
-  TempDB,
-  assoc_edge_config_table,
-  assoc_edge_table,
-} from "../../testutils/db/test_db";
+import { TempDB } from "../../testutils/db/test_db";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
-import DB from "../db";
 
 class TestQueryFilter<TData extends Data> {
   private allContacts: FakeContact[] = [];
@@ -236,21 +232,7 @@ export const commonTests = <TData extends Data>(opts: options<TData>) => {
     // want error on by default in tests?
     setLogLevels(["error", "warn", "info"]);
     if (opts.liveDB) {
-      const tables = [
-        FakeUser.getTestTable(),
-        FakeContact.getTestTable(),
-        assoc_edge_config_table(),
-      ];
-      edgeTableNames().forEach((tableName) =>
-        tables.push(assoc_edge_table(tableName)),
-      );
-
-      tdb = new TempDB(...tables);
-
-      await tdb.beforeAll();
-
-      // create once
-      await createEdges();
+      tdb = await setupTempDB();
     }
   });
 

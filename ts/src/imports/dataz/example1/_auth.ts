@@ -5,7 +5,7 @@ import {
   gqlArg,
   gqlObjectType,
 } from "../../../graphql/graphql";
-import { ID } from "../../../core/ent";
+import { ID } from "../../../core/base";
 import { GraphQLID } from "graphql";
 
 @gqlInputObjectType()

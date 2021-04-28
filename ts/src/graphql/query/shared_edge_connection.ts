@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { IDViewer } from "../../core/viewer";
-import { Viewer, Data, Ent } from "../../core/ent";
+import { Viewer, Data, Ent } from "../../core/base";
 import { QueryRecorder } from "../../testutils/db_mock";
 import { GraphQLEdgeConnection } from "./edge_connection";
 import { FakeUser, FakeContact } from "../../testutils/fake_data/index";

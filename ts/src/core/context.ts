@@ -2,27 +2,89 @@ import {
   Viewer,
   ID,
   Data,
+  DataOptions,
   SelectDataOptions,
-  createDataLoader,
-  QueryableDataOptions,
-  createCountDataLoader,
-} from "../core/ent";
+  Loader,
+} from "./base";
 import { IncomingMessage, ServerResponse } from "http";
 
 import DataLoader from "dataloader";
 import * as clause from "./clause";
-import { log } from "./logger";
-import { Loader, LoaderFactory } from "./loader_interfaces";
+import { log, logEnabled } from "./logger";
+import { Context, LoadRowOptions } from "./base";
+import { loadRows } from "./ent";
 
-export interface Context {
-  getViewer(): Viewer;
-  // optional per (request)contet
-  // absence means we are not doing any caching
-  // presence means we have loader, ent cache etc
-  cache?: ContextCache;
+// export interface Context {
+//   getViewer(): Viewer;
+//   // optional per (request)contet
+//   // absence means we are not doing any caching
+//   // presence means we have loader, ent cache etc
+//   cache?: ContextCache;
+// }
+
+// TODO kill and createDataLoader
+class cacheMap {
+  private m = new Map();
+  constructor(private options: DataOptions) {}
+  get(key) {
+    const ret = this.m.get(key);
+    if (ret) {
+      log("query", {
+        "dataloader-cache-hit": key,
+        "tableName": this.options.tableName,
+      });
+    }
+    return ret;
+  }
+
+  set(key, value) {
+    return this.m.set(key, value);
+  }
+
+  delete(key) {
+    return this.m.delete(key);
+  }
+
+  clear() {
+    return this.m.clear();
+  }
 }
 
-// RequestBasedContet e.g. from an HTTP request with a server/response conponent
+function createDataLoader(options: SelectDataOptions) {
+  const loaderOptions: DataLoader.Options<any, any> = {};
+
+  // if query logging is enabled, we should log what's happening with loader
+  if (logEnabled("query")) {
+    loaderOptions.cacheMap = new cacheMap(options);
+  }
+
+  return new DataLoader(async (ids: ID[]) => {
+    if (!ids.length) {
+      return [];
+    }
+    let col = options.pkey || "id";
+    const rowOptions: LoadRowOptions = {
+      ...options,
+      clause: clause.In(col, ...ids),
+    };
+
+    // TODO is there a better way of doing this?
+    // context not needed because we're creating a loader which has its own cache which is being used here
+    const nodes = await loadRows(rowOptions);
+    let result: (Data | null)[] = ids.map((id) => {
+      for (const node of nodes) {
+        if (node[col] === id) {
+          return node;
+        }
+      }
+      return null;
+    });
+
+    return result;
+  }, loaderOptions);
+}
+
+// RequestBasedContext e.g. from an HTTP request with a server/response conponent
 export interface RequestContext extends Context {
   authViewer(viewer: Viewer): Promise<void>; //logs user in and changes viewer to this
   logout(): Promise<void>;
@@ -37,15 +99,15 @@ export class ContextCache {
 
   // only create as needed for the "requests" which need it
   // TODO delete
-  getEntLoader(loaderOptions: SelectDataOptions) {
+  getEntLoader(loaderOptions: SelectDataOptions): DataLoader<ID, Data | null> {
     let l = this.loaders.get(loaderOptions.tableName);
 
     if (l) {
       return l;
     }
-    l = createDataLoader(loaderOptions);
-    this.loaders.set(loaderOptions.tableName, l);
-    return l;
+    let l2 = createDataLoader(loaderOptions);
+    this.loaders.set(loaderOptions.tableName, l2);
+    return l2;
   }
 
   getRealLoader<T, V>(name: string, create: () => Loader<T, V>): Loader<T, V> {
@@ -55,7 +117,6 @@ export class ContextCache {
     }
     log("debug", `new context-aware loader created for ${name}`);
     l = create();
-    //    l = factory.createLoader(context);
     this.realLoaders.set(name, l);
     return l;
   }

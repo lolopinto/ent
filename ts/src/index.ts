@@ -1,15 +1,5 @@
+export * from "./core/base";
 export {
-  Viewer,
-  Ent,
-  Data,
-  EntConstructor,
-  ID,
-  SelectDataOptions,
-  QueryableDataOptions,
-  LoadRowOptions,
-  EditRowOptions,
-  LoadEntOptions,
-  EditEntOptions,
   loadEnt,
   loadEntFromClause,
   loadEntX,
@@ -43,25 +33,12 @@ export {
   getEdgeTypeInGroup,
 } from "./core/ent";
 import DB from "./core/db";
-export {
-  ObjectLoader,
-  ObjectLoaderFactory,
-  RawCountLoaderFactory,
-  RawCountLoader,
-} from "./core/loader";
+export * from "./core/loaders";
 export { DB };
 
 // TODO figure out if this should be its own
 export {
-  PrivacyResult,
-  PrivacyError,
   EntPrivacyError,
-  Allow,
-  Skip,
-  Deny,
-  DenyWithReason,
-  PrivacyPolicyRule,
-  PrivacyPolicy,
   AlwaysAllowRule,
   AlwaysDenyRule,
   DenyIfLoggedInRule,
@@ -111,7 +88,7 @@ const query = {
 
 export { query };
 
-export { Context, RequestContext, ContextCache } from "./core/context";
+export { RequestContext, ContextCache } from "./core/context";
 
 export { IDViewer, LoggedOutViewer, IDViewerOptions } from "./core/viewer";
 

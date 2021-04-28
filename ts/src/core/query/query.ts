@@ -1,11 +1,5 @@
-import {
-  ID,
-  Ent,
-  Viewer,
-  EdgeQueryableDataOptions,
-  DefaultLimit,
-  Data,
-} from "../ent";
+import { ID, Ent, Viewer, EdgeQueryableDataOptions, Data } from "../base";
+import { DefaultLimit, getCursor } from "../ent";
 import * as clause from "../clause";
 import memoize from "memoizee";
 
@@ -142,11 +136,12 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     if (this.offset) {
       if (this.options.sortColNotTime) {
         options.clause = clause.Less(this.sortCol, this.offset);
+      } else {
+        options.clause = clause.Less(
+          this.sortCol,
+          new Date(this.offset).toISOString(),
+        );
       }
-      options.clause = clause.Less(
-        this.sortCol,
-        new Date(this.offset).toISOString(),
-      );
     }
     return options;
   }
@@ -425,17 +420,23 @@ export abstract class BaseEdgeQuery<TDest extends Ent, TEdge extends Data> {
   }
 
   getCursor(row: TEdge): string {
-    if (!row) {
-      throw new Error(`no row passed to getCursor`);
-    }
-    let datum = row[this.sortCol];
-    if (!datum) {
-      return "";
-    }
-    if (datum instanceof Date) {
-      datum = datum.getTime();
-    }
-    const str = `${this.sortCol}:${datum}`;
-    return Buffer.from(str, "ascii").toString("base64");
+    return getCursor(row, this.sortCol, (datum) => {
+      if (datum instanceof Date) {
+        return datum.getTime();
+      }
+      return datum;
+    });
+    // if (!row) {
+    //   throw new Error(`no row passed to getCursor`);
+    // }
+    // let datum = row[this.sortCol];
+    // if (!datum) {
+    //   return "";
+    // }
+    // if (datum instanceof Date) {
+    //   datum = datum.getTime();
+    // }
+    // const str = `${this.sortCol}:${datum}`;
+    // return Buffer.from(str, "ascii").toString("base64");
   }
 }

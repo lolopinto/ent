@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { QueryRecorder } from "../../testutils/db_mock";
-import { Data, Viewer } from "../ent";
+import { Data, Viewer } from "../base";
 import {
   FakeUser,
   UserToContactsFkeyQuery,
