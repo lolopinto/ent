@@ -1,4 +1,4 @@
-{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context"}}
+{{ reserveImport .Package.PackagePath "loadEnt" "ID" "Data" "Viewer" "loadEntX" "loadEnts" "LoadEntOptions" "AssocEdge" "loadEdges" "loadRawEdgeCountX" "loadNodesByEdge" "loadEdgeForID2" "loadEntsFromClause" "loadEntFromClause" "loadEntXFromClause" "loadRow" "loadRows" "loadRowX" "loadUniqueEdge" "loadUniqueNode" "AlwaysDenyRule" "AllowIfViewerRule" "PrivacyPolicy" "query" "Ent" "getEdgeTypeInGroup" "ObjectLoaderFactory" "Context" "loadEntXFromLoader" "loadEntFromLoader"}}
 {{ reserveImport .Package.SchemaPackagePath "Field" "getFields"}}
 {{ reserveImport .Package.InternalImportPath "EdgeType" "NodeType" }}
 {{ reserveImport "src/ent/loadAny" "loadEntByType" "loadEntXByType"}}
@@ -21,6 +21,7 @@
 {{$idType := useImport "ID" }}
 {{$dataType := useImport "Data" }}
 {{$loaderName := printf "%sLoader" .NodeInstance }}
+{{$pkgName := .PackageName -}}
 
 const tableName = "{{.TableName}}";
 const fields =[
@@ -125,17 +126,20 @@ export class {{$baseClass}} {
     return row;
   }
 
+
   {{ range $field := .FieldInfo.Fields -}}
     {{ if $field.Unique -}}
+      {{$fieldLoader := printf "%s%sLoader" $pkgName $field.CamelCaseName -}}
       static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         viewer: {{$viewerType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<T | null> {
-        return {{useImport "loadEntFromClause"}}(
+        return {{useImport "loadEntFromLoader"}}(
           viewer, 
           {{$baseClass}}.loaderOptions.apply(this), 
-          {{useImport "query"}}.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
+          {{$fieldLoader}},
+          {{$field.TsFieldName}},
         );
       }
 
@@ -144,33 +148,28 @@ export class {{$baseClass}} {
         viewer: Viewer,
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<T> {
-        return {{useImport "loadEntXFromClause"}}(
+        return {{useImport "loadEntXFromLoader"}}(
           viewer, 
           {{$baseClass}}.loaderOptions.apply(this), 
-          {{useImport "query"}}.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
+          {{$fieldLoader}},
+          {{$field.TsFieldName}},
         );
       }
 
       static async loadIDFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
+        context?: {{useImport "Context"}},
       ): Promise<{{$idType}} | null> {
-        const row = await {{useImport "loadRow"}}({
-          ...{{$baseClass}}.loaderOptions.apply(this),
-          clause: {{useImport "query"}}.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
-        }); 
-        if (!row) { return null;}
-        return row['id'];
+        const row = await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
+        return row?.id;
       }
 
       static async loadRawDataFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
         this: {{$thisType}},
         {{$field.TsFieldName}}: {{$field.GetNotNullableTsType}},
       ): Promise<{{$dataType}} | null> {
-        return await {{useImport "loadRow"}}({
-          ...{{$baseClass}}.loaderOptions.apply(this),
-          clause: {{useImport "query"}}.Eq({{$field.GetQuotedDBColName}}, {{$field.TsFieldName}}),
-        }); 
+        return await {{$fieldLoader}}.createLoader(context).load({{$field.TsFieldName}});
       }
     {{ else if $field.Index -}}
       static async loadFrom{{$field.CamelCaseName}}<T extends {{$baseClass}}>(
@@ -392,4 +391,16 @@ export class {{$baseClass}} {
 }
 
 export const {{$loaderName}} = new {{useImport "ObjectLoaderFactory"}}({{$baseClass}}.loaderOptions());
+{{ range $field := .FieldInfo.Fields -}}
+  {{ if $field.Unique -}}
+  export const {{printf "%s%sLoader" $pkgName $field.CamelCaseName}} = new {{useImport "ObjectLoaderFactory"}}(
+      {
+        ...{{$baseClass}}.loaderOptions(),
+        pkey: {{$field.GetQuotedDBColName}},
+      },
+    );
+  {{ end -}}
+
+{{end -}}
+
 {{end -}}
